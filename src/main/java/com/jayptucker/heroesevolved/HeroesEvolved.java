@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
+import com.jayptucker.heroesevolved.sounds.ModSounds;
 
 @Mod(HeroesEvolved.MOD_ID)
 public final class HeroesEvolved {
@@ -19,7 +20,8 @@ public final class HeroesEvolved {
         AbilityRegistry.register(modEventBus);
         ModAbilities.register(modEventBus);
         ModDataAttachments.register(modEventBus);
-        
+        ModSounds.register(modEventBus);
+
         LOGGER.info("Heroes Evolved initialized.");
     }
 }

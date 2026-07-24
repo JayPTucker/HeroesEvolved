@@ -1,0 +1,13 @@
+{
+  "new_beginning": {
+    "subtitle": "subtitles.heroesevolved.new_beginning",
+    "sounds": [
+      {
+        "name": "heroesevolved:music/new_beginning",
+        "stream": true,
+        "volume": 0.8,
+        "pitch": 1.0
+      }
+    ]
+  }
+}
