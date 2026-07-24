@@ -7,7 +7,19 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+
 public record PlayerAbilityData(Map<ResourceLocation, AbilityProgress> abilities) {
+
+    public static final Codec<PlayerAbilityData> CODEC = RecordCodecBuilder.create(instance ->
+        instance.group(
+            Codec.unboundedMap(ResourceLocation.CODEC, AbilityProgress.CODEC)
+                .fieldOf("abilities")
+                .forGetter(PlayerAbilityData::abilities)
+        ).apply(instance, PlayerAbilityData::new)
+    );
+
     public PlayerAbilityData {
         abilities = Map.copyOf(abilities);
     }

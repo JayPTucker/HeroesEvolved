@@ -1,12 +1,25 @@
 package com.jayptucker.heroesevolved.ability.data;
 
 import java.util.Objects;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 public record AbilityProgress(
     AbilityStatus status,
     int level,
     int mastery
 ) {
+
+    public static final Codec<AbilityProgress> CODEC = RecordCodecBuilder.create(instance ->
+        instance.group(
+            AbilityStatus.CODEC.fieldOf("status")
+                .forGetter(AbilityProgress::status),
+            Codec.intRange(1, Integer.MAX_VALUE).fieldOf("level")
+                .forGetter(AbilityProgress::level),
+            Codec.intRange(0, Integer.MAX_VALUE).fieldOf("mastery")
+                .forGetter(AbilityProgress::mastery)
+        ).apply(instance, AbilityProgress::new)
+    );
 
     public AbilityProgress {
         Objects.requireNonNull(status, "Status cannot be null.");
