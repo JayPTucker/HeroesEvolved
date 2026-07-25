@@ -11,13 +11,18 @@ import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 
+import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.config.ModConfig;
+
 @Mod(HeroesEvolved.MOD_ID)
 public final class HeroesEvolved {
     public static final String MOD_ID = "heroesevolved";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public HeroesEvolved(IEventBus modEventBus) {
+    public HeroesEvolved(IEventBus modEventBus, ModContainer modContainer) {
 
+        modContainer.registerConfig(ModConfig.Type.COMMON, HeroesEvolvedConfig.COMMON_SPEC);
         AbilityRegistry.register(modEventBus);
         ModAbilities.register(modEventBus);
         ModDataAttachments.register(modEventBus);
