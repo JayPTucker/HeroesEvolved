@@ -9,7 +9,7 @@
     "description": {
       "translate": "advancement.heroesevolved.new_beginning.description"
     },
-    "frame": "task",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": false,
     "hidden": true

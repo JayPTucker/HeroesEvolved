@@ -11,20 +11,19 @@ import java.util.function.Supplier;
 
 public final class ModSounds {
     private static final DeferredRegister<SoundEvent> SOUND_EVENTS =
-        DeferredRegister.create(BuiltInRegistries.SOUND_EVENT, HeroesEvolved.MOD_ID);
+            DeferredRegister.create(BuiltInRegistries.SOUND_EVENT, HeroesEvolved.MOD_ID);
 
     public static final Supplier<SoundEvent> NEW_BEGINNING =
-        SOUND_EVENTS.register("new_beginning", () ->
-            SoundEvent.createVariableRangeEvent(
-                ResourceLocation.fromNamespaceAndPath(
-                    HeroesEvolved.MOD_ID,
-                    "new_beginning"
-                )
-            )
-        );
-    
-    private ModSounds() {
+            SOUND_EVENTS.register("new_beginning", () ->
+                    SoundEvent.createVariableRangeEvent(
+                            ResourceLocation.fromNamespaceAndPath(
+                                    HeroesEvolved.MOD_ID,
+                                    "new_beginning"
+                            )
+                    )
+            );
 
+    private ModSounds() {
     }
 
     public static void register(IEventBus modEventBus) {

@@ -1,6 +1,8 @@
 package com.jayptucker.heroesevolved;
 
 import com.mojang.logging.LogUtils;
+
+import com.jayptucker.heroesevolved.sounds.ModSounds;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import org.slf4j.Logger;
@@ -8,7 +10,6 @@ import org.slf4j.Logger;
 import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
-import com.jayptucker.heroesevolved.sounds.ModSounds;
 
 @Mod(HeroesEvolved.MOD_ID)
 public final class HeroesEvolved {

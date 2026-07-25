@@ -1,6 +1,7 @@
 package com.jayptucker.heroesevolved.events;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
+
 import com.jayptucker.heroesevolved.sounds.ModSounds;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.resources.ResourceLocation;
@@ -17,9 +18,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
-@EventBusSubscriber(modid = HeroesEvolved.MOD_ID, bus = EventBusSubscriber.Bus.GAME)
+@EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class PlayerOnboardingEvents {
-    private static final int ONBOARDING_DELAY_TICKS = 20 * 5;
+    private static final int ONBOARDING_DELAY_TICKS = 20 * 1;
 
     private static final ResourceLocation NEW_BEGINNING_ADVANCEMENT =
             ResourceLocation.fromNamespaceAndPath(
