@@ -4,6 +4,7 @@ import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import net.minecraft.server.level.ServerPlayer;
+import com.jayptucker.heroesevolved.network.PlayerPowerSyncService;
 
 import java.util.Objects;
 
@@ -46,10 +47,16 @@ public final class PlayerEnergyService {
     public static void restore(ServerPlayer player, int amount) {
         validateAmount(amount);
 
-        setEnergy(player, Math.min(
-            getMaximumEnergy(player),
-            getEnergy(player) + amount
-        ));
+        int restoredEnergy = Math.min(
+                getMaximumEnergy(player),
+                getEnergy(player) + amount
+        );
+
+        if (restoredEnergy == getEnergy(player)) {
+            return;
+        }
+
+        setEnergy(player, restoredEnergy);
     }
 
     public static void restoreNaturally(ServerPlayer player) {
@@ -61,9 +68,11 @@ public final class PlayerEnergyService {
 
     private static void setEnergy(ServerPlayer player, int energy) {
         player.setData(
-            ModDataAttachments.PLAYER_ENERGY.get(),
-            new PlayerEnergyData(energy)
+                ModDataAttachments.PLAYER_ENERGY.get(),
+                new PlayerEnergyData(energy)
         );
+
+        PlayerPowerSyncService.sync(player);
     }
 
     private static void validateAmount(int amount) {

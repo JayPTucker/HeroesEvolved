@@ -23,8 +23,8 @@ public final class CombatTrackingEvents {
         }
 
         player.setData(
-                ModDataAttachments.PLAYER_COMBAT.get(),
-                new PlayerCombatData(player.serverLevel().getGameTime())
+            ModDataAttachments.PLAYER_COMBAT.get(),
+            new PlayerCombatData(player.serverLevel().getGameTime())
         );
     }
 }

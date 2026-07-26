@@ -4,6 +4,7 @@ import com.jayptucker.heroesevolved.ability.data.AbilityProgress;
 import com.jayptucker.heroesevolved.ability.data.PlayerAbilityData;
 import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
+import com.jayptucker.heroesevolved.network.PlayerPowerSyncService;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -12,53 +13,51 @@ import java.util.Optional;
 
 public final class PlayerAbilityService {
     private PlayerAbilityService() {
-
     }
 
     public static PlayerAbilityData getData(ServerPlayer player) {
         Objects.requireNonNull(player, "Player cannot be null.");
+
         return player.getData(ModDataAttachments.PLAYER_ABILITIES.get());
     }
 
     public static Optional<AbilityProgress> getAbility(
-        ServerPlayer player,
-        ResourceLocation abilityId
+            ServerPlayer player,
+            ResourceLocation abilityId
     ) {
         Objects.requireNonNull(abilityId, "Ability ID cannot be null.");
+
         return getData(player).ability(abilityId);
     }
 
     public static boolean assignDormantAbility(
-        ServerPlayer player,
-        ResourceLocation abilityId
+            ServerPlayer player,
+            ResourceLocation abilityId
     ) {
         validateRegisteredAbility(abilityId);
 
         PlayerAbilityData data = getData(player);
+
         if (data.hasAbility(abilityId)) {
             return false;
         }
 
-        player.setData(
-            ModDataAttachments.PLAYER_ABILITIES.get(),
-            data.assignDormant(abilityId)
-        );
-
+        saveData(player, data.assignDormant(abilityId));
         return true;
     }
 
     public static boolean grantAbility(
-        ServerPlayer player,
-        ResourceLocation abilityId
+            ServerPlayer player,
+            ResourceLocation abilityId
     ) {
         validateRegisteredAbility(abilityId);
 
         PlayerAbilityData data = getData(player);
 
         if (!data.hasAbility(abilityId)) {
-            player.setData(
-                ModDataAttachments.PLAYER_ABILITIES.get(),
-                data.assignDormant(abilityId).unlock(abilityId)
+            saveData(
+                    player,
+                    data.assignDormant(abilityId).unlock(abilityId)
             );
 
             return true;
@@ -66,10 +65,13 @@ public final class PlayerAbilityService {
 
         return unlockAbility(player, abilityId);
     }
+
     public static boolean unlockAbility(
-        ServerPlayer player,
-        ResourceLocation abilityId
+            ServerPlayer player,
+            ResourceLocation abilityId
     ) {
+        validateRegisteredAbility(abilityId);
+
         PlayerAbilityData data = getData(player);
         Optional<AbilityProgress> progress = data.ability(abilityId);
 
@@ -77,12 +79,20 @@ public final class PlayerAbilityService {
             return false;
         }
 
+        saveData(player, data.unlock(abilityId));
+        return true;
+    }
+
+    private static void saveData(
+            ServerPlayer player,
+            PlayerAbilityData data
+    ) {
         player.setData(
-            ModDataAttachments.PLAYER_ABILITIES.get(),
-            data.unlock(abilityId)
+                ModDataAttachments.PLAYER_ABILITIES.get(),
+                data
         );
 
-        return true;
+        PlayerPowerSyncService.sync(player);
     }
 
     private static void validateRegisteredAbility(ResourceLocation abilityId) {
