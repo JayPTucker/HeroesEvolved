@@ -3,7 +3,7 @@ package com.jayptucker.heroesevolved.config;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 public final class HeroesEvolvedConfig {
-        public static final ModConfigSpec COMMON_SPEC;
+    public static final ModConfigSpec COMMON_SPEC;
     public static final Common COMMON;
 
     static {
@@ -22,6 +22,9 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue baseEnergy;
         public final ModConfigSpec.IntValue energyPerLevel;
         public final ModConfigSpec.IntValue energyRegenerationPerSecond;
+        public final ModConfigSpec.IntValue regenerationEnergyCost;
+        public final ModConfigSpec.IntValue regenerationIntervalTicks;
+        public final ModConfigSpec.IntValue regenerationDamageDelayTicks;
 
         private Common(ModConfigSpec.Builder builder) {
             builder.push("progression");
@@ -63,6 +66,22 @@ public final class HeroesEvolvedConfig {
                 energyRegenerationPerSecond = builder
                         .comment("Energy naturally restored every second.")
                         .defineInRange("energyRegenerationPerSecond", 1, 0, 1_000);
+
+                builder.pop();
+        
+                builder.push("regeneration");
+
+                regenerationEnergyCost = builder
+                        .comment("Energy consumed each time Regeneration restores health.")
+                        .defineInRange("energyCost", 3, 0, 1_000);
+
+                regenerationIntervalTicks = builder
+                        .comment("Ticks between each Regeneration heal. Twenty ticks equal one second.")
+                        .defineInRange("healIntervalTicks", 40, 1, 20 * 60);
+
+                regenerationDamageDelayTicks = builder
+                        .comment("Ticks the player must go without taking damage before Regeneration begins.")
+                        .defineInRange("damageDelayTicks", 20 * 6, 0, 20 * 60);
 
                 builder.pop();
         }

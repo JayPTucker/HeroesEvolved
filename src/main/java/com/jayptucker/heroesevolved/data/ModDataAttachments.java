@@ -8,6 +8,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionData;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyData;
+import com.jayptucker.heroesevolved.combat.PlayerCombatData;
 
 import java.util.function.Supplier;
 
@@ -40,6 +41,12 @@ public final class ModDataAttachments {
                 AttachmentType.<PlayerEnergyData>builder(PlayerEnergyData::initial)
                         .serialize(PlayerEnergyData.CODEC)
                         .copyOnDeath()
+                        .build()
+    );
+
+    public static final Supplier<AttachmentType<PlayerCombatData>> PLAYER_COMBAT =
+        ATTACHMENTS.register("player_combat", () ->
+                AttachmentType.builder(PlayerCombatData::empty)
                         .build()
     );
 

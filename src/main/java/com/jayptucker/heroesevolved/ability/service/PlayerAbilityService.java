@@ -47,6 +47,25 @@ public final class PlayerAbilityService {
         return true;
     }
 
+    public static boolean grantAbility(
+        ServerPlayer player,
+        ResourceLocation abilityId
+    ) {
+        validateRegisteredAbility(abilityId);
+
+        PlayerAbilityData data = getData(player);
+
+        if (!data.hasAbility(abilityId)) {
+            player.setData(
+                ModDataAttachments.PLAYER_ABILITIES.get(),
+                data.assignDormant(abilityId).unlock(abilityId)
+            );
+
+            return true;
+        }
+
+        return unlockAbility(player, abilityId);
+    }
     public static boolean unlockAbility(
         ServerPlayer player,
         ResourceLocation abilityId
