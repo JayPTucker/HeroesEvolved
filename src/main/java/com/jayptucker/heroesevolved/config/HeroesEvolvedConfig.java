@@ -19,6 +19,9 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue maximumLevel;
         public final ModConfigSpec.LongValue baseMasteryPerLevel;
         public final ModConfigSpec.LongValue masteryIncreasePerLevel;
+        public final ModConfigSpec.IntValue baseEnergy;
+        public final ModConfigSpec.IntValue energyPerLevel;
+        public final ModConfigSpec.IntValue energyRegenerationPerSecond;
 
         private Common(ModConfigSpec.Builder builder) {
             builder.push("progression");
@@ -46,6 +49,22 @@ public final class HeroesEvolvedConfig {
                     );
 
             builder.pop();
+
+            builder.push("energy");
+
+                baseEnergy = builder
+                        .comment("Energy available to a level-one player.")
+                        .defineInRange("baseEnergy", 100, 1, 10_000);
+
+                energyPerLevel = builder
+                        .comment("Additional maximum energy gained for each character level after level one.")
+                        .defineInRange("energyPerLevel", 10, 0, 1_000);
+
+                energyRegenerationPerSecond = builder
+                        .comment("Energy naturally restored every second.")
+                        .defineInRange("energyRegenerationPerSecond", 1, 0, 1_000);
+
+                builder.pop();
         }
     }
 }
