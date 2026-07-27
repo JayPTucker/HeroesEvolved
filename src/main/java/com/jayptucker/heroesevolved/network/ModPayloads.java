@@ -22,6 +22,11 @@ public final class ModPayloads {
                 PlayerPowerSyncPayload.TYPE,
                 PlayerPowerSyncPayload.STREAM_CODEC,
                 PlayerPowerSyncPayload::handle
+            )
+            .playToClient(
+                OverexertionEffectPayload.TYPE,
+                OverexertionEffectPayload.STREAM_CODEC,
+                OverexertionEffectPayload::handle
             );
     }
 }

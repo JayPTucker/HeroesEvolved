@@ -14,6 +14,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
+import com.jayptucker.heroesevolved.network.ClientOverexertionState;
+
 @EventBusSubscriber(
         modid = HeroesEvolved.MOD_ID,
         value = Dist.CLIENT,
@@ -42,6 +44,7 @@ public final class EnergyHudOverlay {
             GuiGraphics guiGraphics,
             DeltaTracker deltaTracker
     ) {
+        renderOverexertionBorder(guiGraphics);
         PlayerPowerSyncPayload snapshot = ClientPowerState.getSnapshot();
 
         if (snapshot.maximumEnergy() <= 0 || snapshot.abilities().stream()
@@ -97,5 +100,28 @@ public final class EnergyHudOverlay {
             0xFFFFD7DC,
             true
         );
+    }
+
+    private static void renderOverexertionBorder(
+        GuiGraphics guiGraphics
+    ) {
+        float intensity = ClientOverexertionState.getIntensity();
+
+        if (intensity <= 0.0F) {
+            return;
+        }
+
+        int thickness = 8;
+        int alpha = (int) (150 * intensity);
+        int color = (alpha << 24) | 0x8A000D;
+
+        int width = guiGraphics.guiWidth();
+        int height = guiGraphics.guiHeight();
+
+        // Four translucent crimson strips create a non-intrusive screen edge.
+        guiGraphics.fill(0, 0, width, thickness, color);
+        guiGraphics.fill(0, height - thickness, width, height, color);
+        guiGraphics.fill(0, 0, thickness, height, color);
+        guiGraphics.fill(width - thickness, 0, width, height, color);
     }
 }

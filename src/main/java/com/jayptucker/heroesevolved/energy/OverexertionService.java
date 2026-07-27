@@ -7,6 +7,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 
+import com.jayptucker.heroesevolved.network.OverexertionEffectPayload;
+import net.neoforged.neoforge.network.PacketDistributor;
+
 import java.util.Objects;
 
 public final class OverexertionService {
@@ -14,9 +17,14 @@ public final class OverexertionService {
     }
 
     public static void apply(
+
         ServerPlayer player,
         int energyCost
     ) {
+        int nauseaDurationTicks = HeroesEvolvedConfig.COMMON
+        .overexertionNauseaDurationSeconds
+        .get() * 20;
+
         Objects.requireNonNull(player, "Player cannot be null.");
 
         if (energyCost < 0) {
@@ -72,11 +80,15 @@ public final class OverexertionService {
         // Amplifier 0 means Nausea I.
         player.addEffect(new MobEffectInstance(
             MobEffects.CONFUSION,
-            HeroesEvolvedConfig.COMMON
-                .overexertionNauseaDurationSeconds
-                .get() * 20,
+            nauseaDurationTicks,
             0
         ));
+
+        // Only the affected player receives this packet.
+        PacketDistributor.sendToPlayer(
+            player,
+            new OverexertionEffectPayload(nauseaDurationTicks)
+        );
 
         // Generic damage has no attacker, because the player caused it to themselves.
         player.hurt(player.damageSources().generic(), damage);
