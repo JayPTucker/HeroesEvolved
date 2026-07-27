@@ -48,8 +48,8 @@ public final class PlayerEnergyService {
         validateAmount(amount);
 
         int restoredEnergy = Math.min(
-                getMaximumEnergy(player),
-                getEnergy(player) + amount
+            getMaximumEnergy(player),
+            getEnergy(player) + amount
         );
 
         if (restoredEnergy == getEnergy(player)) {
@@ -68,8 +68,8 @@ public final class PlayerEnergyService {
 
     private static void setEnergy(ServerPlayer player, int energy) {
         player.setData(
-                ModDataAttachments.PLAYER_ENERGY.get(),
-                new PlayerEnergyData(energy)
+            ModDataAttachments.PLAYER_ENERGY.get(),
+            new PlayerEnergyData(energy)
         );
 
         PlayerPowerSyncService.sync(player);
@@ -79,5 +79,25 @@ public final class PlayerEnergyService {
         if (amount < 0) {
             throw new IllegalArgumentException("Energy amount cannot be negative.");
         }
+    }
+
+    public static int consumeUpTo(
+        ServerPlayer player,
+        int requestedAmount
+) {
+    validateAmount(requestedAmount);
+
+    // Normal ability use needs the full cost.
+    // Overexertion instead takes every remaining point of energy.
+    int consumedAmount = Math.min(
+        getEnergy(player),
+        requestedAmount
+    );
+
+    if (consumedAmount > 0) {
+        setEnergy(player, getEnergy(player) - consumedAmount);
+    }
+
+        return consumedAmount;
     }
 }

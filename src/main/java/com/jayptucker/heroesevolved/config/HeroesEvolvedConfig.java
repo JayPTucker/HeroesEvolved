@@ -26,6 +26,12 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue regenerationIntervalTicks;
         public final ModConfigSpec.IntValue regenerationDamageDelayTicks;
 
+        // Controls how dangerous it is to use an ability without enough energy.
+        public final ModConfigSpec.DoubleValue overexertionBaseDamage;
+        public final ModConfigSpec.DoubleValue overexertionDamagePerMissingEnergy;
+        public final ModConfigSpec.IntValue overexertionWeaknessDurationSeconds;
+        public final ModConfigSpec.IntValue overexertionNauseaDurationSeconds;
+
         private Common(ModConfigSpec.Builder builder) {
             builder.push("progression");
 
@@ -82,6 +88,30 @@ public final class HeroesEvolvedConfig {
                 regenerationDamageDelayTicks = builder
                         .comment("Ticks the player must go without taking damage before Regeneration begins.")
                         .defineInRange("damageDelayTicks", 20 * 6, 0, 20 * 60);
+
+                builder.pop();
+
+                builder.push("overexertion");
+
+                // Base damage is measured in Minecraft health points.
+                // Two health points equals one heart.
+                overexertionBaseDamage = builder
+                        .comment("Base health damage caused by overexertion.")
+                        .defineInRange("baseDamage", 2.0D, 0.0D, 20.0D);
+
+                // The more energy an ability is short by, the more damage it causes.
+                overexertionDamagePerMissingEnergy = builder
+                        .comment("Additional damage for each missing point of energy.")
+                        .defineInRange("damagePerMissingEnergy", 0.25D, 0.0D, 10.0D);
+
+                overexertionWeaknessDurationSeconds = builder
+                        .comment("Duration of Weakness I after overexertion.")
+                        .defineInRange("weaknessDurationSeconds", 15, 0, 300);
+
+                // Ten seconds is the requested default Nausea duration.
+                overexertionNauseaDurationSeconds = builder
+                        .comment("Duration of Nausea I after overexertion.")
+                        .defineInRange("nauseaDurationSeconds", 10, 0, 300);
 
                 builder.pop();
         }

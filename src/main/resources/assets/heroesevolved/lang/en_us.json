@@ -11,6 +11,8 @@
   "screen.heroesevolved.unlocked": "Unlocked",
   "screen.heroesevolved.dormant": "Dormant",
   "screen.heroesevolved.ability_details": "Level %s  •  Mastery %s",
-  "ability.heroesevolved.regeneration": "Regeneration"
+  "ability.heroesevolved.regeneration": "Regeneration",
+
+  "message.heroesevolved.overexertion": "Your nose begins to bleed."
 }
 
