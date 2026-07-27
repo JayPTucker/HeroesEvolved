@@ -1,5 +1,16 @@
 {
   "advancement.heroesevolved.new_beginning.title": "New Beginning",
   "advancement.heroesevolved.new_beginning.description": "Something within you has awakened.",
-  "subtitles.heroesevolved.new_beginning": "A new beginning"
+  "subtitles.heroesevolved.new_beginning": "A new beginning",
+
+  "key.categories.heroesevolved": "Heroes Evolved",
+  "key.heroesevolved.open_powers": "Open Powers",
+  "screen.heroesevolved.powers": "Powers",
+  "screen.heroesevolved.energy": "Energy: %s / %s",
+  "screen.heroesevolved.no_abilities": "No abilities discovered.",
+  "screen.heroesevolved.unlocked": "Unlocked",
+  "screen.heroesevolved.dormant": "Dormant",
+  "screen.heroesevolved.ability_details": "Level %s  •  Mastery %s",
+  "ability.heroesevolved.regeneration": "Regeneration"
 }
+
