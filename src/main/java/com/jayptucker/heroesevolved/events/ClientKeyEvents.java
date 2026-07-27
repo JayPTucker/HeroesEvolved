@@ -5,6 +5,7 @@ import com.jayptucker.heroesevolved.ability.AbilitySlot;
 import com.jayptucker.heroesevolved.gui.screen.PowersScreen;
 import com.jayptucker.heroesevolved.input.ModKeyMappings;
 import com.jayptucker.heroesevolved.network.ActivateAbilitySlotPayload;
+import com.jayptucker.heroesevolved.network.FlightForwardInputPayload;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -17,6 +18,12 @@ import net.neoforged.neoforge.network.PacketDistributor;
         value = Dist.CLIENT
 )
 public final class ClientKeyEvents {
+    private static boolean ability1WasDown;
+    private static boolean ability2WasDown;
+    private static boolean ability3WasDown;
+    private static boolean flightForwardWasDown;
+    private static int forwardInputResendTicks;
+
     private ClientKeyEvents() {
     }
 
@@ -31,37 +38,48 @@ public final class ClientKeyEvents {
         }
 
         if (minecraft.player == null || minecraft.screen != null) {
+            syncFlightForwardInput(false);
             return;
         }
+
+        syncFlightForwardInput(minecraft.options.keyUp.isDown());
 
         boolean allowOverexertion =
                 minecraft.options.keyShift.isDown();
 
-        sendAbilityRequestIfPressed(
+        ability1WasDown = sendAbilityRequestIfPressed(
                 ModKeyMappings.ABILITY_1,
                 AbilitySlot.PRIMARY,
-                allowOverexertion
+                allowOverexertion,
+                ability1WasDown
         );
 
-        sendAbilityRequestIfPressed(
+        ability2WasDown = sendAbilityRequestIfPressed(
                 ModKeyMappings.ABILITY_2,
                 AbilitySlot.SECONDARY,
-                allowOverexertion
+                allowOverexertion,
+                ability2WasDown
         );
 
-        sendAbilityRequestIfPressed(
+        ability3WasDown = sendAbilityRequestIfPressed(
                 ModKeyMappings.ABILITY_3,
                 AbilitySlot.TERTIARY,
-                allowOverexertion
+                allowOverexertion,
+                ability3WasDown
         );
     }
 
-    private static void sendAbilityRequestIfPressed(
+    private static boolean sendAbilityRequestIfPressed(
             net.minecraft.client.KeyMapping keyMapping,
             AbilitySlot slot,
-            boolean allowOverexertion
+            boolean allowOverexertion,
+            boolean wasDown
     ) {
-        while (keyMapping.consumeClick()) {
+        boolean isDown = keyMapping.isDown();
+
+        // Key-repeat events must not activate a toggle more than once.
+        // A request is sent only when the key changes from up to down.
+        if (isDown && !wasDown) {
             PacketDistributor.sendToServer(
                     new ActivateAbilitySlotPayload(
                             slot,
@@ -69,5 +87,23 @@ public final class ClientKeyEvents {
                     )
             );
         }
+
+        return isDown;
+    }
+
+    private static void syncFlightForwardInput(boolean movingForward) {
+        boolean stateChanged = flightForwardWasDown != movingForward;
+        boolean shouldResend = movingForward
+                && ++forwardInputResendTicks >= 5;
+
+        if (!stateChanged && !shouldResend) {
+            return;
+        }
+
+        flightForwardWasDown = movingForward;
+        forwardInputResendTicks = 0;
+        PacketDistributor.sendToServer(
+                new FlightForwardInputPayload(movingForward)
+        );
     }
 }

@@ -32,6 +32,17 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue overexertionWeaknessDurationSeconds;
         public final ModConfigSpec.IntValue overexertionNauseaDurationSeconds;
 
+        // Flight
+        public final ModConfigSpec.IntValue flightLaunchEnergyCost;
+        public final ModConfigSpec.IntValue flightLaunchCooldownTicks;
+        public final ModConfigSpec.IntValue flightLaunchAscentDurationSeconds;
+        public final ModConfigSpec.DoubleValue flightAscentSpeed;
+        public final ModConfigSpec.DoubleValue flightForwardSpeed;
+        public final ModConfigSpec.DoubleValue flightCruiseSpeed;
+        public final ModConfigSpec.IntValue flightEnergyDrainPerSecond;
+        public final ModConfigSpec.IntValue flightSafeLandingSeconds;
+        public final ModConfigSpec.IntValue flightTrailIntervalTicks;
+
         private Common(ModConfigSpec.Builder builder) {
             builder.push("progression");
 
@@ -112,6 +123,47 @@ public final class HeroesEvolvedConfig {
                 overexertionNauseaDurationSeconds = builder
                         .comment("Duration of Nausea I after overexertion.")
                         .defineInRange("nauseaDurationSeconds", 10, 0, 300);
+
+                builder.pop();
+
+                builder.push("flight");
+
+                flightLaunchEnergyCost = builder
+                        .comment("Energy consumed when Launch begins a Flight session.")
+                        .defineInRange("launchEnergyCost", 25, 0, 1_000);
+
+                flightLaunchCooldownTicks = builder
+                        .comment("Cooldown in ticks after using Flight Launch.")
+                        .defineInRange("launchCooldownTicks", 20 * 8, 0, 20 * 60);
+
+                flightLaunchAscentDurationSeconds = builder
+                        .comment("Seconds spent steadily ascending before Launch boosts forward.")
+                        .defineInRange("launchAscentDurationSeconds", 3, 1, 30);
+
+                flightAscentSpeed = builder
+                        .comment("Per-tick speed applied during Flight Launch's ascent phase.")
+                        .defineInRange("ascentSpeed", 0.85D, 0.01D, 4.0D);
+
+                flightForwardSpeed = builder
+                        .comment("Forward burst speed applied after Flight Launch ascends.")
+                        .defineInRange("forwardSpeed", 15.0D, 0.1D, 70.0D);
+
+                flightCruiseSpeed = builder
+                        .comment("Forward speed while Flight is held in the direction the player is looking.")
+                        .defineInRange("cruiseSpeed", 0.75D, 0.05D, 4.0D);
+
+                // Five is Level 1 sustained-flight cost.
+                flightEnergyDrainPerSecond = builder
+                        .comment("Energy drained every second while Flight is enabled.")
+                        .defineInRange("energyDrainPerSecond", 4, 0, 1_000);
+
+                flightSafeLandingSeconds = builder
+                        .comment("Slow Falling duration when Flight ends from zero energy.")
+                        .defineInRange("safeLandingSeconds", 10, 0, 60);
+
+                flightTrailIntervalTicks = builder
+                        .comment("Ticks between white contrail particle emissions.")
+                        .defineInRange("trailIntervalTicks", 2, 1, 20);
 
                 builder.pop();
         }

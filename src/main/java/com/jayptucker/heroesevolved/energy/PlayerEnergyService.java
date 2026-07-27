@@ -16,6 +16,10 @@ public final class PlayerEnergyService {
     public static int getEnergy(ServerPlayer player) {
         Objects.requireNonNull(player, "Player cannot be null.");
 
+        if (hasUnlimitedEnergy(player)) {
+            return getMaximumEnergy(player);
+        }
+
         return Math.min(
             player.getData(ModDataAttachments.PLAYER_ENERGY.get()).energy(),
             getMaximumEnergy(player)
@@ -34,6 +38,10 @@ public final class PlayerEnergyService {
 
     public static boolean tryConsume(ServerPlayer player, int amount) {
         validateAmount(amount);
+
+        if (hasUnlimitedEnergy(player)) {
+            return true;
+        }
 
         int currentEnergy = getEnergy(player);
         if (currentEnergy < amount) {
@@ -66,6 +74,33 @@ public final class PlayerEnergyService {
         );
     }
 
+    public static boolean hasUnlimitedEnergy(ServerPlayer player) {
+        Objects.requireNonNull(player, "Player cannot be null.");
+
+        return player.getData(
+            ModDataAttachments.PLAYER_UNLIMITED_ENERGY.get()
+        );
+    }
+
+    public static void setUnlimitedEnergy(
+        ServerPlayer player,
+        boolean enabled
+    ) {
+        Objects.requireNonNull(player, "Player cannot be null.");
+
+        player.setData(
+            ModDataAttachments.PLAYER_UNLIMITED_ENERGY.get(),
+            enabled
+        );
+
+        // Keep the stored value and HUD consistent when test mode changes.
+        if (enabled) {
+            setEnergy(player, getMaximumEnergy(player));
+        } else {
+            PlayerPowerSyncService.sync(player);
+        }
+    }
+
     private static void setEnergy(ServerPlayer player, int energy) {
         player.setData(
             ModDataAttachments.PLAYER_ENERGY.get(),
@@ -86,6 +121,10 @@ public final class PlayerEnergyService {
         int requestedAmount
 ) {
     validateAmount(requestedAmount);
+
+    if (hasUnlimitedEnergy(player)) {
+        return 0;
+    }
 
     // Normal ability use needs the full cost.
     // Overexertion instead takes every remaining point of energy.

@@ -98,11 +98,18 @@ public final class AbilityUseService {
             PlayerEnergyService.tryConsume(player, energyCost);
         }
 
-        CooldownService.startCooldown(
-                player,
-                actionId,
-                abilityAction.cooldownTicks(progress.level())
-        );
+        int cooldownTicks = abilityAction.cooldownTicks(progress.level());
+
+        // Zero means this action has no cooldown. Avoid storing a zero-tick
+        // entry, because a one-tick client/server timing difference can make
+        // the HUD briefly display it as a one-second cooldown.
+        if (cooldownTicks > 0) {
+            CooldownService.startCooldown(
+                    player,
+                    actionId,
+                    cooldownTicks
+            );
+        }
 
         // The client needs the new cooldown end-time to gray out this slot.
         PlayerPowerSyncService.sync(player);

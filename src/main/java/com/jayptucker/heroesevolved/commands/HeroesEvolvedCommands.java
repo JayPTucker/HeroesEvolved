@@ -3,6 +3,8 @@ package com.jayptucker.heroesevolved.commands;
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
+import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -91,7 +93,60 @@ public final class HeroesEvolvedCommands {
                                         )
                                 )
                         )
+                        .then(Commands.literal("stamina")
+                                .then(Commands.literal("unlimited")
+                                        .then(Commands.argument(
+                                                        "targets",
+                                                        EntityArgument.players()
+                                                )
+                                                .executes(context -> setUnlimitedStamina(
+                                                        context.getSource(),
+                                                        EntityArgument.getPlayers(
+                                                                context,
+                                                                "targets"
+                                                        ),
+                                                        true
+                                                ))
+                                                .then(Commands.argument(
+                                                                "enabled",
+                                                                BoolArgumentType.bool()
+                                                        )
+                                                        .executes(context -> setUnlimitedStamina(
+                                                                context.getSource(),
+                                                                EntityArgument.getPlayers(
+                                                                        context,
+                                                                        "targets"
+                                                                ),
+                                                                BoolArgumentType.getBool(
+                                                                        context,
+                                                                        "enabled"
+                                                                )
+                                                        ))
+                                                )
+                                        )
+                                )
+                        )
         );
+    }
+
+    private static int setUnlimitedStamina(
+            CommandSourceStack source,
+            java.util.Collection<ServerPlayer> players,
+            boolean enabled
+    ) {
+        for (ServerPlayer player : players) {
+            PlayerEnergyService.setUnlimitedEnergy(player, enabled);
+        }
+
+        source.sendSuccess(
+                () -> Component.literal(
+                        "Unlimited stamina " + (enabled ? "enabled" : "disabled")
+                                + " for " + players.size() + " player(s)."
+                ),
+                true
+        );
+
+        return players.size();
     }
 
     private static int giveAbility(

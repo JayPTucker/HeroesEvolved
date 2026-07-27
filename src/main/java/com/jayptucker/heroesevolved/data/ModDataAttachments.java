@@ -10,6 +10,8 @@ import com.jayptucker.heroesevolved.progression.PlayerProgressionData;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyData;
 import com.jayptucker.heroesevolved.combat.PlayerCombatData;
 import com.jayptucker.heroesevolved.cooldown.PlayerCooldownData;
+import com.jayptucker.heroesevolved.flight.PlayerFlightData;
+import com.mojang.serialization.Codec;
 
 import java.util.function.Supplier;
 
@@ -45,6 +47,14 @@ public final class ModDataAttachments {
                 .build()
     );
 
+    // Operator-controlled test state, saved with the player between relogs.
+    public static final Supplier<AttachmentType<Boolean>> PLAYER_UNLIMITED_ENERGY =
+        ATTACHMENTS.register("player_unlimited_energy", () ->
+            AttachmentType.<Boolean>builder(() -> false)
+                .serialize(Codec.BOOL)
+                .build()
+        );
+
     public static final Supplier<AttachmentType<PlayerCooldownData>> PLAYER_COOLDOWNS =
         ATTACHMENTS.register("player_cooldowns", () ->
             AttachmentType.<PlayerCooldownData>builder(
@@ -58,6 +68,12 @@ public final class ModDataAttachments {
         ATTACHMENTS.register("player_combat", () ->
             AttachmentType.builder(PlayerCombatData::empty)
                 .build()
+    );
+
+    public static final Supplier<AttachmentType<PlayerFlightData>> PLAYER_FLIGHT =
+        ATTACHMENTS.register("player_flight", () ->
+                AttachmentType.builder(PlayerFlightData::empty)
+                        .build()
     );
 
     public static void register(IEventBus modEventBus) {
