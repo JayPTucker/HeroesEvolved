@@ -4,7 +4,7 @@ import java.util.List;
 
 public final class ClientPowerState {
     private static volatile PlayerPowerSyncPayload latestSnapshot =
-        new PlayerPowerSyncPayload(0, 0, List.of());
+        new PlayerPowerSyncPayload(0, 0, List.of(), List.of());
 
     private ClientPowerState() {
     }

@@ -1,7 +1,9 @@
 package com.jayptucker.heroesevolved.ability.service;
 
 import com.jayptucker.heroesevolved.ability.Ability;
+import com.jayptucker.heroesevolved.ability.AbilityAction;
 import com.jayptucker.heroesevolved.ability.AbilityActivationResult;
+import com.jayptucker.heroesevolved.ability.AbilitySlot;
 import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.ability.AbilityUseResult;
 import com.jayptucker.heroesevolved.ability.data.AbilityProgress;
@@ -11,65 +13,82 @@ import com.jayptucker.heroesevolved.energy.OverexertionService;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import com.jayptucker.heroesevolved.network.PlayerPowerSyncService;
 
+import java.util.Map;
 import java.util.Optional;
 
 public final class AbilityUseService {
     private AbilityUseService() {
     }
 
-    public static AbilityUseResult activate(
-        ServerPlayer player,
-        ResourceLocation abilityId,
-        boolean allowOverexertion
+    public static AbilityUseResult activateAssignedAction(
+            ServerPlayer player,
+            AbilitySlot slot,
+            boolean allowOverexertion
     ) {
-        Ability ability = AbilityRegistry.ABILITIES.get(abilityId);
+        Optional<Map.Entry<ResourceLocation, AbilityProgress>> assignment =
+                PlayerAbilityService.getData(player).assignedPower();
 
-        // Never trust an ability ID without checking it exists in our registry.
-        if (ability == null) {
-            return AbilityUseResult.UNKNOWN_ABILITY;
+        if (assignment.isEmpty()) {
+            return AbilityUseResult.NO_ASSIGNED_POWER;
         }
 
-        Optional<AbilityProgress> progress =
-            PlayerAbilityService.getAbility(player, abilityId);
+        ResourceLocation powerId = assignment.get().getKey();
+        AbilityProgress progress = assignment.get().getValue();
 
-        // Players cannot use powers they have not unlocked.
-        if (progress.isEmpty() || !progress.get().isUnlocked()) {
+        if (!progress.isUnlocked()) {
             return AbilityUseResult.NOT_UNLOCKED;
         }
 
-        if (CooldownService.isOnCooldown(player, abilityId)) {
+        Ability power = AbilityRegistry.ABILITIES.get(powerId);
+
+        if (power == null) {
+            return AbilityUseResult.UNKNOWN_ABILITY;
+        }
+
+        Optional<AbilityAction> action = power.action(slot);
+
+        if (action.isEmpty()) {
+            return AbilityUseResult.ACTION_NOT_ASSIGNED;
+        }
+
+        AbilityAction abilityAction = action.get();
+
+        // Individual actions unlock at different levels of the same power.
+        if (!abilityAction.definition().isUnlockedAt(progress.level())) {
+            return AbilityUseResult.ACTION_LOCKED;
+        }
+
+        ResourceLocation actionId = abilityAction.definition().id();
+
+        if (CooldownService.isOnCooldown(player, actionId)) {
             return AbilityUseResult.ON_COOLDOWN;
         }
 
-        AbilityProgress abilityProgress = progress.get();
-
         AbilityUseContext context = new AbilityUseContext(
-            player,
-            abilityId,
-            abilityProgress.level()
+                player,
+                powerId,
+                progress.level()
         );
 
-        // Individual abilities can reject use for their own reasons:
-        // invalid target, player is flying, no missing health, and so on.
-        if (!ability.canUse(context)) {
+        if (!abilityAction.canUse(context)) {
             return AbilityUseResult.CANNOT_USE;
         }
 
-        int energyCost = ability.energyCost(abilityProgress.level());
+        int energyCost = abilityAction.energyCost(progress.level());
 
         boolean requiresOverexertion =
-            PlayerEnergyService.getEnergy(player) < energyCost;
+                PlayerEnergyService.getEnergy(player) < energyCost;
 
-        // The player must deliberately allow overexertion.
-        // Abilities never harm a player automatically for lacking energy.
+        // Holding Shift when pressing a slot is the player's explicit consent
+        // to use overexertion if they lack the required energy.
         if (requiresOverexertion && !allowOverexertion) {
             return AbilityUseResult.INSUFFICIENT_ENERGY;
         }
 
-        // The ability itself performs its effect here.
-        // We only charge energy if it reports a successful activation.
-        if (ability.activate(context) != AbilityActivationResult.SUCCESS) {
+        if (abilityAction.activate(context)
+                != AbilityActivationResult.SUCCESS) {
             return AbilityUseResult.ACTIVATION_REJECTED;
         }
 
@@ -79,15 +98,17 @@ public final class AbilityUseService {
             PlayerEnergyService.tryConsume(player, energyCost);
         }
 
-        // Cooldown starts after a successful use, never after a failed attempt.
         CooldownService.startCooldown(
-            player,
-            abilityId,
-            ability.cooldownTicks(abilityProgress.level())
+                player,
+                actionId,
+                abilityAction.cooldownTicks(progress.level())
         );
 
+        // The client needs the new cooldown end-time to gray out this slot.
+        PlayerPowerSyncService.sync(player);
+
         return requiresOverexertion
-            ? AbilityUseResult.OVEREXERTED_SUCCESS
-            : AbilityUseResult.SUCCESS;
+                ? AbilityUseResult.OVEREXERTED_SUCCESS
+                : AbilityUseResult.SUCCESS;
     }
 }

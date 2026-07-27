@@ -2,7 +2,6 @@ package com.jayptucker.heroesevolved.ability.data;
 
 import net.minecraft.resources.ResourceLocation;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -22,6 +21,12 @@ public record PlayerAbilityData(Map<ResourceLocation, AbilityProgress> abilities
 
     public PlayerAbilityData {
         abilities = Map.copyOf(abilities);
+
+        if (abilities.size() > 1) {
+            throw new IllegalArgumentException(
+                "A player can only have one assigned power."
+            );
+        }
     }
 
 
@@ -40,30 +45,53 @@ public record PlayerAbilityData(Map<ResourceLocation, AbilityProgress> abilities
         return ability(abilityId).isPresent();
     }
 
+    public boolean hasAssignedPower() {
+        return !abilities.isEmpty();
+    }
+
+    public Optional<Map.Entry<ResourceLocation, AbilityProgress>> assignedPower() {
+        return abilities.entrySet().stream().findFirst();
+    }
+
 
     public PlayerAbilityData assignDormant(ResourceLocation abilityId) {
         Objects.requireNonNull(abilityId, "Ability ID cannot be null.");
 
-        if (hasAbility(abilityId)) {
-            return this;
+        if (hasAssignedPower()) {
+            if (hasAbility(abilityId)) {
+                return this;
+            }
+
+            throw new IllegalStateException(
+                "A player already has an assigned power."
+            );
         }
 
-        return withAbility(abilityId, AbilityProgress.dormant());
+        return new PlayerAbilityData(Map.of(abilityId, AbilityProgress.dormant()));
     }
 
         public PlayerAbilityData unlock(ResourceLocation abilityId) {
         AbilityProgress progress = requireAbility(abilityId);
-        return withAbility(abilityId, progress.unlock());
+        return withProgress(abilityId, progress.unlock());
     }
 
     public PlayerAbilityData gainMastery(ResourceLocation abilityId, int amount) {
         AbilityProgress progress = requireAbility(abilityId);
-        return withAbility(abilityId, progress.gainMastery(amount));
+        return withProgress(abilityId, progress.gainMastery(amount));
     }
 
     public PlayerAbilityData setLevel(ResourceLocation abilityId, int level) {
         AbilityProgress progress = requireAbility(abilityId);
-        return withAbility(abilityId, progress.withLevel(level));
+        return withProgress(abilityId, progress.withLevel(level));
+    }
+
+    public PlayerAbilityData replaceWithUnlockedPower(ResourceLocation abilityId) {
+        Objects.requireNonNull(abilityId, "Ability ID cannot be null.");
+
+        return new PlayerAbilityData(Map.of(
+            abilityId,
+            AbilityProgress.dormant().unlock()
+        ));
     }
 
     private AbilityProgress requireAbility(ResourceLocation abilityId) {
@@ -72,9 +100,10 @@ public record PlayerAbilityData(Map<ResourceLocation, AbilityProgress> abilities
         );
     }
 
-    private PlayerAbilityData withAbility(ResourceLocation abilityId, AbilityProgress progress) {
-        Map<ResourceLocation, AbilityProgress> updatedAbilities = new HashMap<>(abilities);
-        updatedAbilities.put(abilityId, progress);
-        return new PlayerAbilityData(updatedAbilities);
+    private PlayerAbilityData withProgress(
+            ResourceLocation abilityId,
+            AbilityProgress progress
+    ) {
+        return new PlayerAbilityData(Map.of(abilityId, progress));
     }
 }

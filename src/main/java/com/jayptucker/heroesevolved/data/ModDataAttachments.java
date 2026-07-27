@@ -47,11 +47,11 @@ public final class ModDataAttachments {
 
     public static final Supplier<AttachmentType<PlayerCooldownData>> PLAYER_COOLDOWNS =
         ATTACHMENTS.register("player_cooldowns", () ->
-                AttachmentType.<PlayerCooldownData>builder(
-                                PlayerCooldownData::empty
-                        )
-                        .serialize(PlayerCooldownData.CODEC)
-                        .build()
+            AttachmentType.<PlayerCooldownData>builder(
+                    PlayerCooldownData::empty
+                )
+                .serialize(PlayerCooldownData.CODEC)
+                .build()
     );
 
     public static final Supplier<AttachmentType<PlayerCombatData>> PLAYER_COMBAT =

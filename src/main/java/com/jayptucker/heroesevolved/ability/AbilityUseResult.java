@@ -4,7 +4,10 @@ public enum AbilityUseResult {
     SUCCESS,
     OVEREXERTED_SUCCESS,
 
-    // Failure reasons allow a future HUD or chat message to explain why use failed.
+    NO_ASSIGNED_POWER,
+    ACTION_NOT_ASSIGNED,
+    ACTION_LOCKED,
+
     UNKNOWN_ABILITY,
     NOT_UNLOCKED,
     ON_COOLDOWN,

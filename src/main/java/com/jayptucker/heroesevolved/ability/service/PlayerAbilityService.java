@@ -38,7 +38,7 @@ public final class PlayerAbilityService {
 
         PlayerAbilityData data = getData(player);
 
-        if (data.hasAbility(abilityId)) {
+        if (data.hasAssignedPower()) {
             return false;
         }
 
@@ -54,16 +54,16 @@ public final class PlayerAbilityService {
 
         PlayerAbilityData data = getData(player);
 
-        if (!data.hasAbility(abilityId)) {
-            saveData(
-                    player,
-                    data.assignDormant(abilityId).unlock(abilityId)
-            );
-
-            return true;
+        if (data.hasAssignedPower()) {
+            return false;
         }
 
-        return unlockAbility(player, abilityId);
+        saveData(
+                player,
+                data.assignDormant(abilityId).unlock(abilityId)
+        );
+
+        return true;
     }
 
     public static boolean unlockAbility(
@@ -80,6 +80,25 @@ public final class PlayerAbilityService {
         }
 
         saveData(player, data.unlock(abilityId));
+        return true;
+    }
+
+    public static boolean replaceWithAbility(
+            ServerPlayer player,
+            ResourceLocation abilityId
+    ) {
+        validateRegisteredAbility(abilityId);
+
+        PlayerAbilityData data = getData(player);
+
+        if (data.hasAbility(abilityId)
+                && data.ability(abilityId)
+                .map(AbilityProgress::isUnlocked)
+                .orElse(false)) {
+            return false;
+        }
+
+        saveData(player, data.replaceWithUnlockedPower(abilityId));
         return true;
     }
 

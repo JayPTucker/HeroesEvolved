@@ -63,4 +63,13 @@ public final class CooldownService {
                 .startCooldown(abilityId, expirationTime)
         );
     }
+
+    public static long getExpirationGameTime(
+        ServerPlayer player,
+        ResourceLocation abilityId
+    ) {
+        long gameTime = player.serverLevel().getGameTime();
+
+        return gameTime + getRemainingTicks(player, abilityId);
+    }
 }

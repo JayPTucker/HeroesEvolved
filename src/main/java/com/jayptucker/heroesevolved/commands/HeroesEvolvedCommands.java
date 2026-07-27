@@ -58,6 +58,38 @@ public final class HeroesEvolvedCommands {
                                                 )
                                         )
                                 )
+                                .then(Commands.literal("replace")
+                                        .then(Commands.argument(
+                                                        "targets",
+                                                        EntityArgument.players()
+                                                )
+                                                .then(Commands.argument(
+                                                                "ability",
+                                                                StringArgumentType.word()
+                                                        )
+                                                        .suggests((context, builder) ->
+                                                                SharedSuggestionProvider.suggest(
+                                                                        AbilityRegistry.ABILITIES
+                                                                                .keySet()
+                                                                                .stream()
+                                                                                .map(ResourceLocation::toString),
+                                                                        builder
+                                                                )
+                                                        )
+                                                        .executes(context -> replaceAbility(
+                                                                context.getSource(),
+                                                                EntityArgument.getPlayers(
+                                                                        context,
+                                                                        "targets"
+                                                                ),
+                                                                StringArgumentType.getString(
+                                                                        context,
+                                                                        "ability"
+                                                                )
+                                                        ))
+                                                )
+                                        )
+                                )
                         )
         );
     }
@@ -86,7 +118,7 @@ public final class HeroesEvolvedCommands {
 
         if (grantedCount == 0) {
             source.sendFailure(Component.literal(
-                    "Every selected player already has this ability unlocked."
+                    "Every selected player already has an assigned power."
             ));
             return 0;
         }
@@ -102,6 +134,48 @@ public final class HeroesEvolvedCommands {
         );
 
         return grantedCount;
+    }
+
+    private static int replaceAbility(
+            CommandSourceStack source,
+            java.util.Collection<ServerPlayer> players,
+            String abilityName
+    ) {
+        ResourceLocation abilityId = toAbilityId(abilityName);
+
+        if (!AbilityRegistry.ABILITIES.containsKey(abilityId)) {
+            source.sendFailure(Component.literal(
+                    "Unknown Heroes Evolved power: " + abilityName
+            ));
+            return 0;
+        }
+
+        int replacedCount = 0;
+
+        for (ServerPlayer player : players) {
+            if (PlayerAbilityService.replaceWithAbility(player, abilityId)) {
+                replacedCount++;
+            }
+        }
+
+        if (replacedCount == 0) {
+            source.sendFailure(Component.literal(
+                    "Every selected player already has this power unlocked."
+            ));
+            return 0;
+        }
+
+        int finalReplacedCount = replacedCount;
+
+        source.sendSuccess(
+                () -> Component.literal(
+                        "Replaced the power of " + finalReplacedCount
+                                + " player(s) with " + abilityId.getPath() + "."
+                ),
+                true
+        );
+
+        return replacedCount;
     }
 
     private static ResourceLocation toAbilityId(String abilityName) {

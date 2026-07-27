@@ -13,6 +13,9 @@
   "screen.heroesevolved.ability_details": "Level %s  •  Mastery %s",
   "ability.heroesevolved.regeneration": "Regeneration",
 
-  "message.heroesevolved.overexertion": "Your nose begins to bleed."
+  "message.heroesevolved.overexertion": "Your nose begins to bleed.",
+  "key.heroesevolved.ability_1": "Ability 1",
+  "key.heroesevolved.ability_2": "Ability 2",
+  "key.heroesevolved.ability_3": "Ability 3"
 }
 

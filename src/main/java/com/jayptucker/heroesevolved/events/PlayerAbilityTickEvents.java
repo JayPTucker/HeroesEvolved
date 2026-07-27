@@ -33,20 +33,20 @@ public final class PlayerAbilityTickEvents {
 
         PlayerAbilityData abilityData = PlayerAbilityService.getData(player);
 
-        abilityData.abilities().forEach((abilityId, progress) -> {
-            if (!progress.isUnlocked()) {
+        abilityData.assignedPower().ifPresent(assignment -> {
+            if (!assignment.getValue().isUnlocked()) {
                 return;
             }
 
-            Ability ability = AbilityRegistry.ABILITIES.get(abilityId);
+            Ability ability = AbilityRegistry.ABILITIES.get(assignment.getKey());
             if (ability == null) {
                 return;
             }
 
             ability.tick(new AbilityUseContext(
                     player,
-                    abilityId,
-                    progress.level()
+                    assignment.getKey(),
+                    assignment.getValue().level()
             ));
         });
     }

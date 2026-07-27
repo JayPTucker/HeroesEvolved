@@ -17,7 +17,7 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("1")
+        event.registrar("2")
             .playToClient(
                 PlayerPowerSyncPayload.TYPE,
                 PlayerPowerSyncPayload.STREAM_CODEC,
@@ -27,6 +27,11 @@ public final class ModPayloads {
                 OverexertionEffectPayload.TYPE,
                 OverexertionEffectPayload.STREAM_CODEC,
                 OverexertionEffectPayload::handle
+            )
+            .playToServer(
+                ActivateAbilitySlotPayload.TYPE,
+                ActivateAbilitySlotPayload.STREAM_CODEC,
+                ActivateAbilitySlotPayload::handle
             );
     }
 }

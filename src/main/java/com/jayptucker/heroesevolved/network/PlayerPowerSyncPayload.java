@@ -14,7 +14,8 @@ import java.util.List;
 public record PlayerPowerSyncPayload(
         int energy,
         int maximumEnergy,
-        List<AbilitySnapshot> abilities
+        List<AbilitySnapshot> abilities,
+        List<AbilityActionSnapshot> actions
 ) implements CustomPacketPayload {
     public static final Type<PlayerPowerSyncPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(
@@ -36,9 +37,9 @@ public record PlayerPowerSyncPayload(
             buffer -> {
                 int size = buffer.readVarInt();
 
-                if (size < 0 || size > 256) {
+                if (size < 0 || size > 1) {
                     throw new IllegalArgumentException(
-                            "Invalid ability snapshot count: " + size
+                            "Invalid assigned-power snapshot count: " + size
                     );
                 }
 
@@ -52,6 +53,38 @@ public record PlayerPowerSyncPayload(
             }
     );
 
+    private static final StreamCodec<
+            RegistryFriendlyByteBuf,
+            List<AbilityActionSnapshot>
+    > ACTION_LIST_STREAM_CODEC = StreamCodec.of(
+            (buffer, actions) -> {
+                buffer.writeVarInt(actions.size());
+
+                for (AbilityActionSnapshot action : actions) {
+                    AbilityActionSnapshot.STREAM_CODEC.encode(buffer, action);
+                }
+            },
+            buffer -> {
+                int size = buffer.readVarInt();
+
+                if (size < 0 || size > 3) {
+                    throw new IllegalArgumentException(
+                            "Invalid action snapshot count: " + size
+                    );
+                }
+
+                List<AbilityActionSnapshot> actions = new ArrayList<>(size);
+
+                for (int index = 0; index < size; index++) {
+                    actions.add(
+                            AbilityActionSnapshot.STREAM_CODEC.decode(buffer)
+                    );
+                }
+
+                return List.copyOf(actions);
+            }
+    );
+
     public static final StreamCodec<
             RegistryFriendlyByteBuf,
             PlayerPowerSyncPayload
@@ -62,19 +95,20 @@ public record PlayerPowerSyncPayload(
             PlayerPowerSyncPayload::maximumEnergy,
             ABILITY_LIST_STREAM_CODEC,
             PlayerPowerSyncPayload::abilities,
+            ACTION_LIST_STREAM_CODEC,
+            PlayerPowerSyncPayload::actions,
             PlayerPowerSyncPayload::new
     );
 
     public PlayerPowerSyncPayload {
-        if (energy < 0) {
-            throw new IllegalArgumentException("Energy cannot be negative.");
-        }
-
-        if (maximumEnergy < 0) {
-            throw new IllegalArgumentException("Maximum energy cannot be negative.");
+        if (energy < 0 || maximumEnergy < 0) {
+            throw new IllegalArgumentException(
+                    "Energy values cannot be negative."
+            );
         }
 
         abilities = List.copyOf(abilities);
+        actions = List.copyOf(actions);
     }
 
     @Override
