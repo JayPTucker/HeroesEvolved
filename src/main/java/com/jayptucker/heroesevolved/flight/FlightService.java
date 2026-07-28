@@ -5,7 +5,6 @@ import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.energy.OverexertionService;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
-import com.jayptucker.heroesevolved.particles.ModParticles;
 import com.jayptucker.heroesevolved.network.FlightVisualSyncService;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
@@ -160,7 +159,9 @@ public final class FlightService {
 
         long gameTime = player.serverLevel().getGameTime();
 
-        if (gameTime % HeroesEvolvedConfig.COMMON
+        // A contrail belongs to the forward Flight pose, not to hovering.
+        if (flightData.visualPoseActive()
+                && gameTime % HeroesEvolvedConfig.COMMON
                 .flightTrailIntervalTicks.get() == 0) {
             spawnContrail(player);
         }
@@ -411,13 +412,21 @@ public final class FlightService {
     }
 
     private static void spawnContrail(ServerPlayer player) {
+        // The rendered Flight pose places the player's feet behind and above
+        // their normal standing position. Match that visual position so the
+        // server-synchronized trail originates beneath the animated feet.
+        Vec3 horizontalLook = player.getLookAngle().multiply(1.0D, 0.0D, 1.0D);
+
+        if (horizontalLook.lengthSqr() < 0.0001D) {
+            horizontalLook = Vec3.directionFromRotation(0.0F, player.getYRot());
+        }
+
         Vec3 particlePosition = player.position()
-                // player.position() is at the feet; a small lift prevents
-                // particles clipping into the ground during low flight.
-                .add(0.0D, 0.15D, 0.0D);
+                .add(horizontalLook.normalize().scale(-0.85D))
+                .add(0.0D, 0.80D, 0.0D);
 
         player.serverLevel().sendParticles(
-                ModParticles.CONTRAIL.get(),
+                ParticleTypes.CLOUD,
                 particlePosition.x,
                 particlePosition.y,
                 particlePosition.z,

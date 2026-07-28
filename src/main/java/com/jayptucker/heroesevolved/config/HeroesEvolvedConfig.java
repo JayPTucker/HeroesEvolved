@@ -150,7 +150,7 @@ public final class HeroesEvolvedConfig {
 
                 flightCruiseSpeed = builder
                         .comment("Forward speed while Flight is held in the direction the player is looking.")
-                        .defineInRange("cruiseSpeed", 0.75D, 0.05D, 4.0D);
+                        .defineInRange("cruiseSpeed", 1.20D, 0.05D, 4.0D);
 
                 // Five is Level 1 sustained-flight cost.
                 flightEnergyDrainPerSecond = builder

@@ -53,9 +53,9 @@ public final class FlightPoseRenderer {
         player.yBodyRot = bodyYaw;
         player.yBodyRotO = bodyYaw;
 
-        // This matches Minecraft's Elytra-flight pitch calculation, allowing
-        // the horizontal body to aim up or down with the player's view.
-        float flightPitch = -90.0F - viewPitch;
+        // Turn the model face-down into its Flight pose, then let its pitch
+        // follow the player's view for climbing and diving.
+        float flightPitch = 90.0F + viewPitch;
 
         // Keep the head aligned with the Flight body. Without this, vanilla
         // applies the look pitch a second time and the head bends unnaturally
@@ -71,7 +71,7 @@ public final class FlightPoseRenderer {
         );
         // Keep the head centered with the body, then lift it slightly so the
         // player looks ahead rather than directly along the body's flat axis.
-        float headYaw = bodyYaw + 180.0F;
+        float headYaw = bodyYaw + 0.0F;
         player.setYHeadRot(headYaw);
         player.yHeadRotO = headYaw;
         player.setXRot(HEAD_LOOK_UP_DEGREES);
@@ -82,6 +82,10 @@ public final class FlightPoseRenderer {
         // rather than relative to the world's north/south axis.
         event.getPoseStack().pushPose();
         event.getPoseStack().translate(0.0D, 0.9D, 0.0D);
+        // Rotate the completed horizontal pose toward the player's travel
+        // direction. Keeping this separate prevents it from flipping torso
+        // orientation back toward the sky.
+        event.getPoseStack().mulPose(Axis.YP.rotationDegrees(180.0F));
         event.getPoseStack().mulPose(Axis.YP.rotationDegrees(-bodyYaw));
         event.getPoseStack().mulPose(
                 Axis.XP.rotationDegrees(flightPitch)
