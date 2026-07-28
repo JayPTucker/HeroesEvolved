@@ -65,7 +65,23 @@ public final class AbilitySlotHudOverlay {
 
             y += LINE_HEIGHT;
         }
-    }
+
+        // Add Ctrl to the screen
+        KeyMapping sprintKey = Minecraft.getInstance().options.keySprint;
+        KeyMapping forwardKey = Minecraft.getInstance().options.keyUp;
+
+        String boostText = sprintKey.getTranslatedKeyMessage().getString()
+                + " -> Flight Boost";
+
+        guiGraphics.drawString(
+                Minecraft.getInstance().font,
+                boostText,
+                START_X,
+                y,
+                0xFFFFD7DC,
+                true
+        );
+    } 
 
     private static boolean isOnCooldown(
             AbilityActionSnapshot action

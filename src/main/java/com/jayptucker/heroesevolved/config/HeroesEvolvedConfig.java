@@ -40,6 +40,7 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.DoubleValue flightForwardSpeed;
         public final ModConfigSpec.DoubleValue flightCruiseSpeed;
         public final ModConfigSpec.IntValue flightEnergyDrainPerSecond;
+        public final ModConfigSpec.IntValue flightBoostEnergyDrainPerSecond;
         public final ModConfigSpec.IntValue flightSafeLandingSeconds;
         public final ModConfigSpec.IntValue flightTrailIntervalTicks;
 
@@ -149,13 +150,16 @@ public final class HeroesEvolvedConfig {
                         .defineInRange("forwardSpeed", 15.0D, 0.1D, 70.0D);
 
                 flightCruiseSpeed = builder
-                        .comment("Forward speed while Flight is held in the direction the player is looking.")
-                        .defineInRange("cruiseSpeed", 1.20D, 0.05D, 4.0D);
+                        .comment("Forward speed while Flight Boost is active.")
+                        .defineInRange("cruiseSpeed", 2.0D, 0.05D, 4.0D);
 
-                // Five is Level 1 sustained-flight cost.
                 flightEnergyDrainPerSecond = builder
-                        .comment("Energy drained every second while Flight is enabled.")
+                        .comment("Energy drained every second during normal Flight.")
                         .defineInRange("energyDrainPerSecond", 4, 0, 1_000);
+
+                flightBoostEnergyDrainPerSecond = builder
+                        .comment("Energy drained every second while Flight Boost is active.")
+                        .defineInRange("boostEnergyDrainPerSecond", 15, 0, 1_000);
 
                 flightSafeLandingSeconds = builder
                         .comment("Slow Falling duration when Flight ends from zero energy.")

@@ -42,7 +42,12 @@ public final class ClientKeyEvents {
             return;
         }
 
-        syncFlightForwardInput(minecraft.options.keyUp.isDown());
+        // Normal forward movement keeps the player upright. Flight Boost is
+        // deliberately separate and follows Minecraft's rebindable sprint
+        // key (Left Ctrl by default) while moving forward.
+        boolean flightBoostActive = minecraft.options.keyUp.isDown()
+                && minecraft.options.keySprint.isDown();
+        syncFlightForwardInput(flightBoostActive);
 
         boolean allowOverexertion =
                 minecraft.options.keyShift.isDown();
@@ -91,19 +96,19 @@ public final class ClientKeyEvents {
         return isDown;
     }
 
-    private static void syncFlightForwardInput(boolean movingForward) {
-        boolean stateChanged = flightForwardWasDown != movingForward;
-        boolean shouldResend = movingForward
+    private static void syncFlightForwardInput(boolean boostActive) {
+        boolean stateChanged = flightForwardWasDown != boostActive;
+        boolean shouldResend = boostActive
                 && ++forwardInputResendTicks >= 5;
 
         if (!stateChanged && !shouldResend) {
             return;
         }
 
-        flightForwardWasDown = movingForward;
+        flightForwardWasDown = boostActive;
         forwardInputResendTicks = 0;
         PacketDistributor.sendToServer(
-                new FlightForwardInputPayload(movingForward)
+                new FlightForwardInputPayload(boostActive)
         );
     }
 }

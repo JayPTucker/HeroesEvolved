@@ -11,10 +11,15 @@ import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.level.Explosion;
+import net.minecraft.world.level.ExplosionDamageCalculator;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.NeoForgeMod;
 
@@ -34,6 +39,20 @@ public final class FlightService {
                     1.0D,
                     AttributeModifier.Operation.ADD_VALUE
             );
+
+    // Flight Boost is an offensive shockwave, but its owner is excluded so
+    // activating the power cannot damage the flying player.
+    private static final ExplosionDamageCalculator
+            FLIGHT_BOOST_EXPLOSION_DAMAGE_CALCULATOR =
+            new ExplosionDamageCalculator() {
+                @Override
+                public boolean shouldDamageEntity(
+                        Explosion explosion,
+                        Entity entity
+                ) {
+                    return entity != explosion.getDirectSourceEntity();
+                }
+            };
 
     private FlightService() {
     }
@@ -80,6 +99,9 @@ public final class FlightService {
             return;
         }
 
+        boolean startingBoost = movingForward
+                && !flightData.visualPoseActive()
+                && !player.onGround();
         PlayerFlightData updatedData = flightData.withVisualPoseActive(
                 movingForward && !player.onGround()
         );
@@ -92,6 +114,11 @@ public final class FlightService {
                 ModDataAttachments.PLAYER_FLIGHT.get(),
                 updatedData
         );
+
+        if (startingBoost) {
+            triggerFlightBoostSonicBoom(player);
+        }
+
         FlightVisualSyncService.syncToTrackingPlayers(player);
     }
 
@@ -170,7 +197,11 @@ public final class FlightService {
             return;
         }
 
-        int energyDrain = HeroesEvolvedConfig.COMMON
+        int energyDrain = flightData.visualPoseActive()
+                ? HeroesEvolvedConfig.COMMON
+                .flightBoostEnergyDrainPerSecond
+                .get()
+                : HeroesEvolvedConfig.COMMON
                 .flightEnergyDrainPerSecond
                 .get();
 
@@ -409,6 +440,29 @@ public final class FlightService {
                     0.04D
             );
         }
+    }
+
+    private static void triggerFlightBoostSonicBoom(ServerPlayer player) {
+        Vec3 explosionPosition = player.position().add(0.0D, 0.9D, 0.0D);
+
+        // NONE keeps terrain intact and prevents fire, while the custom
+        // calculator still allows the blast to hurt nearby entities.
+        player.serverLevel().explode(
+                player,
+                null,
+                FLIGHT_BOOST_EXPLOSION_DAMAGE_CALCULATOR,
+                explosionPosition.x,
+                explosionPosition.y,
+                explosionPosition.z,
+                5.0F,
+                false,
+                Level.ExplosionInteraction.NONE,
+                ParticleTypes.EXPLOSION,
+                ParticleTypes.EXPLOSION_EMITTER,
+                SoundEvents.GENERIC_EXPLODE
+        );
+
+        spawnForwardShockwave(player, player.getLookAngle());
     }
 
     private static void spawnContrail(ServerPlayer player) {
