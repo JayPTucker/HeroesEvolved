@@ -2,6 +2,8 @@ package com.jayptucker.heroesevolved.ability.service;
 
 import com.jayptucker.heroesevolved.ability.data.AbilityProgress;
 import com.jayptucker.heroesevolved.ability.data.PlayerAbilityData;
+import com.jayptucker.heroesevolved.ability.Ability;
+import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.network.PlayerPowerSyncService;
@@ -100,6 +102,25 @@ public final class PlayerAbilityService {
 
         saveData(player, data.replaceWithUnlockedPower(abilityId));
         return true;
+    }
+
+    public static boolean removeAssignedAbility(ServerPlayer player) {
+        PlayerAbilityData data = getData(player);
+
+        return data.assignedPower().map(assignment -> {
+            Ability ability = AbilityRegistry.ABILITIES.get(assignment.getKey());
+
+            if (ability != null) {
+                ability.onRevoked(new AbilityUseContext(
+                        player,
+                        assignment.getKey(),
+                        assignment.getValue().level()
+                ));
+            }
+
+            saveData(player, data.clearAssignedPower());
+            return true;
+        }).orElse(false);
     }
 
     private static void saveData(

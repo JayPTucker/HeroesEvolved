@@ -17,11 +17,16 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("4")
+        event.registrar("5")
             .playToClient(
                 PlayerPowerSyncPayload.TYPE,
                 PlayerPowerSyncPayload.STREAM_CODEC,
                 PlayerPowerSyncPayload::handle
+            )
+            .playToClient(
+                EclipseStatePayload.TYPE,
+                EclipseStatePayload.STREAM_CODEC,
+                EclipseStatePayload::handle
             )
             .playToClient(
                 OverexertionEffectPayload.TYPE,

@@ -4,6 +4,7 @@ import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
+import com.jayptucker.heroesevolved.events.EclipseService;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.commands.CommandSourceStack;
@@ -92,6 +93,20 @@ public final class HeroesEvolvedCommands {
                                                 )
                                         )
                                 )
+                                .then(Commands.literal("remove")
+                                        .then(Commands.argument(
+                                                        "targets",
+                                                        EntityArgument.players()
+                                                )
+                                                .executes(context -> removeAbility(
+                                                        context.getSource(),
+                                                        EntityArgument.getPlayers(
+                                                                context,
+                                                                "targets"
+                                                        )
+                                                ))
+                                        )
+                                )
                         )
                         .then(Commands.literal("stamina")
                                 .then(Commands.literal("unlimited")
@@ -126,7 +141,62 @@ public final class HeroesEvolvedCommands {
                                         )
                                 )
                         )
+                        .then(Commands.literal("eclipse")
+                                .then(Commands.literal("start")
+                                        .executes(context -> startEclipse(
+                                                context.getSource()
+                                        ))
+                                )
+                                .then(Commands.literal("stop")
+                                        .executes(context -> stopEclipse(
+                                                context.getSource()
+                                        ))
+                                )
+                                .then(Commands.literal("status")
+                                        .executes(context -> eclipseStatus(
+                                                context.getSource()
+                                        ))
+                                )
+                        )
         );
+    }
+
+    private static int startEclipse(CommandSourceStack source) {
+        if (!EclipseService.start(source.getServer())) {
+            source.sendFailure(Component.literal("An Eclipse is already active."));
+            return 0;
+        }
+
+        source.sendSuccess(
+                () -> Component.literal("Started the Eclipse."),
+                true
+        );
+        return 1;
+    }
+
+    private static int stopEclipse(CommandSourceStack source) {
+        if (!EclipseService.end(source.getServer())) {
+            source.sendFailure(Component.literal("No Eclipse is currently active."));
+            return 0;
+        }
+
+        source.sendSuccess(
+                () -> Component.literal("Stopped the Eclipse."),
+                true
+        );
+        return 1;
+    }
+
+    private static int eclipseStatus(CommandSourceStack source) {
+        boolean active = EclipseService.isActive(source.getServer());
+        source.sendSuccess(
+                () -> Component.literal(
+                        active ? "An Eclipse is currently active."
+                                : "No Eclipse is currently active."
+                ),
+                false
+        );
+        return 1;
     }
 
     private static int setUnlimitedStamina(
@@ -231,6 +301,39 @@ public final class HeroesEvolvedCommands {
         );
 
         return replacedCount;
+    }
+
+    private static int removeAbility(
+            CommandSourceStack source,
+            java.util.Collection<ServerPlayer> players
+    ) {
+        int removedCount = 0;
+
+        for (ServerPlayer player : players) {
+            if (PlayerAbilityService.removeAssignedAbility(player)) {
+                removedCount++;
+            }
+        }
+
+        if (removedCount == 0) {
+            source.sendFailure(Component.literal(
+                    "None of the selected players have a power to remove."
+            ));
+            return 0;
+        }
+
+        int finalRemovedCount = removedCount;
+
+        source.sendSuccess(
+                () -> Component.literal(
+                        "Removed the power of "
+                                + finalRemovedCount
+                                + " player(s)."
+                ),
+                true
+        );
+
+        return removedCount;
     }
 
     private static ResourceLocation toAbilityId(String abilityName) {

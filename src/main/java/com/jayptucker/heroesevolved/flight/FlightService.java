@@ -5,6 +5,7 @@ import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.energy.OverexertionService;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
+import com.jayptucker.heroesevolved.events.EclipseService;
 import com.jayptucker.heroesevolved.network.FlightVisualSyncService;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
@@ -61,6 +62,12 @@ public final class FlightService {
         return player.getData(
                 ModDataAttachments.PLAYER_FLIGHT.get()
         ).sessionActive();
+    }
+
+    public static void stopForPowerRemoval(ServerPlayer player) {
+        if (hasActiveSession(player)) {
+            endSession(player, false);
+        }
     }
 
     public static void launch(ServerPlayer player) {
@@ -146,6 +153,15 @@ public final class FlightService {
         PlayerFlightData flightData = player.getData(
                 ModDataAttachments.PLAYER_FLIGHT.get()
         );
+
+        // Flight is an active power. End its session safely as soon as the
+        // Eclipse suppresses powers, including applying no fall-damage risk.
+        if (EclipseService.arePowersSuppressed(player)) {
+            if (flightData.sessionActive()) {
+                endSession(player, false);
+            }
+            return;
+        }
 
         if (!flightData.sessionActive()) {
             return;

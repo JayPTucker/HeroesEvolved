@@ -32,6 +32,11 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue overexertionWeaknessDurationSeconds;
         public final ModConfigSpec.IntValue overexertionNauseaDurationSeconds;
 
+        // Eclipse
+        public final ModConfigSpec.LongValue eclipseIntervalTicks;
+        public final ModConfigSpec.LongValue eclipseDurationTicks;
+        public final ModConfigSpec.DoubleValue eclipseDormantAbilityChance;
+
         // Flight
         public final ModConfigSpec.IntValue flightLaunchEnergyCost;
         public final ModConfigSpec.IntValue flightLaunchCooldownTicks;
@@ -124,6 +129,22 @@ public final class HeroesEvolvedConfig {
                 overexertionNauseaDurationSeconds = builder
                         .comment("Duration of Nausea I after overexertion.")
                         .defineInRange("nauseaDurationSeconds", 10, 0, 300);
+
+                builder.pop();
+
+                builder.push("eclipse");
+
+                eclipseIntervalTicks = builder
+                        .comment("Ticks between Eclipse starts. 144000 ticks is six Minecraft days, or about two real hours.")
+                        .defineInRange("intervalTicks", 144_000L, 20L, Long.MAX_VALUE);
+
+                eclipseDurationTicks = builder
+                        .comment("How long an Eclipse remains active. 6000 ticks is about five real minutes.")
+                        .defineInRange("durationTicks", 6_000L, 20L, Long.MAX_VALUE);
+
+                eclipseDormantAbilityChance = builder
+                        .comment("Chance for an eligible player to receive one dormant ability during an Eclipse.")
+                        .defineInRange("dormantAbilityChance", 0.40D, 0.0D, 1.0D);
 
                 builder.pop();
 

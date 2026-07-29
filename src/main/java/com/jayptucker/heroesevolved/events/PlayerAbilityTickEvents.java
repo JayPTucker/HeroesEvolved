@@ -31,6 +31,12 @@ public final class PlayerAbilityTickEvents {
             PlayerEnergyService.restoreNaturally(player);
         }
 
+        // Energy is allowed to recover, but awakened powers—including
+        // passive powers such as Regeneration—are dormant during an Eclipse.
+        if (EclipseService.arePowersSuppressed(player)) {
+            return;
+        }
+
         PlayerAbilityData abilityData = PlayerAbilityService.getData(player);
 
         abilityData.assignedPower().ifPresent(assignment -> {

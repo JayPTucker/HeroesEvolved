@@ -11,6 +11,7 @@ import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.cooldown.CooldownService;
 import com.jayptucker.heroesevolved.energy.OverexertionService;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
+import com.jayptucker.heroesevolved.events.EclipseService;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import com.jayptucker.heroesevolved.network.PlayerPowerSyncService;
@@ -27,6 +28,12 @@ public final class AbilityUseService {
             AbilitySlot slot,
             boolean allowOverexertion
     ) {
+        // Eclipse suppression applies before a power can consume energy,
+        // start a cooldown, or change any server-side state.
+        if (EclipseService.arePowersSuppressed(player)) {
+            return AbilityUseResult.POWER_SUPPRESSED;
+        }
+
         Optional<Map.Entry<ResourceLocation, AbilityProgress>> assignment =
                 PlayerAbilityService.getData(player).assignedPower();
 

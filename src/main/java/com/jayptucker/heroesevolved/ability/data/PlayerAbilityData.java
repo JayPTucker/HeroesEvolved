@@ -94,6 +94,10 @@ public record PlayerAbilityData(Map<ResourceLocation, AbilityProgress> abilities
         ));
     }
 
+    public PlayerAbilityData clearAssignedPower() {
+        return empty();
+    }
+
     private AbilityProgress requireAbility(ResourceLocation abilityId) {
         return ability(abilityId).orElseThrow(() ->
             new IllegalArgumentException("Player does not have ability: " + abilityId)

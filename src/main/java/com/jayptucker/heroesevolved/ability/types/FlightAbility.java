@@ -55,6 +55,11 @@ public final class FlightAbility implements Ability {
         return AbilityActivationResult.REJECTED;
     }
 
+    @Override
+    public void onRevoked(AbilityUseContext context) {
+        FlightService.stopForPowerRemoval(context.player());
+    }
+
     private static final class FlightToggleAction implements AbilityAction {
         private static final AbilityActionDefinition DEFINITION =
                 new AbilityActionDefinition(

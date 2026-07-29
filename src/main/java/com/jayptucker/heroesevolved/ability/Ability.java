@@ -31,6 +31,14 @@ public interface Ability {
 
     }
 
+    /**
+     * Called before an administrator or future gameplay system removes this
+     * ability from a player. Stateful powers can clean up here.
+     */
+    default void onRevoked(AbilityUseContext context) {
+
+    }
+
     default void tick(AbilityUseContext context) {
         
     }

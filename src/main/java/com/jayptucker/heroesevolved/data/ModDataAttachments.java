@@ -55,6 +55,16 @@ public final class ModDataAttachments {
                 .build()
         );
 
+    // Stores the last Eclipse that gave this player an ability-roll attempt.
+    // It prevents reconnecting players from rerolling during the same event.
+    public static final Supplier<AttachmentType<Long>> PLAYER_LAST_ECLIPSE_ROLL =
+        ATTACHMENTS.register("player_last_eclipse_roll", () ->
+            AttachmentType.<Long>builder(() -> -1L)
+                .serialize(Codec.LONG)
+                .copyOnDeath()
+                .build()
+        );
+
     public static final Supplier<AttachmentType<PlayerCooldownData>> PLAYER_COOLDOWNS =
         ATTACHMENTS.register("player_cooldowns", () ->
             AttachmentType.<PlayerCooldownData>builder(

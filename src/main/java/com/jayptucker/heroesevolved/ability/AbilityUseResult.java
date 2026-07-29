@@ -10,6 +10,7 @@ public enum AbilityUseResult {
 
     UNKNOWN_ABILITY,
     NOT_UNLOCKED,
+    POWER_SUPPRESSED,
     ON_COOLDOWN,
     INSUFFICIENT_ENERGY,
     CANNOT_USE,
