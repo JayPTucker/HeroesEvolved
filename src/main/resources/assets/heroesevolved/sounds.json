@@ -9,5 +9,15 @@
         "pitch": 1.0
       }
     ]
+  },
+  "time_blink": {
+    "subtitle": "subtitles.heroesevolved.time_blink",
+    "sounds": [
+      {
+        "name": "heroesevolved:ability/time_blink",
+        "volume": 0.9,
+        "pitch": 1.0
+      }
+    ]
   }
 }

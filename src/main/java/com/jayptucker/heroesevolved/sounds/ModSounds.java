@@ -23,6 +23,16 @@ public final class ModSounds {
                     )
             );
 
+    public static final Supplier<SoundEvent> TIME_BLINK =
+            SOUND_EVENTS.register("time_blink", () ->
+                    SoundEvent.createVariableRangeEvent(
+                            ResourceLocation.fromNamespaceAndPath(
+                                    HeroesEvolved.MOD_ID,
+                                    "time_blink"
+                            )
+                    )
+            );
+
     private ModSounds() {
     }
 

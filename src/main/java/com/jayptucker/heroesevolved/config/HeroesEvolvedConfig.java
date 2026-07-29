@@ -67,6 +67,11 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.DoubleValue flightCycloneOrbitSpeed;
         public final ModConfigSpec.DoubleValue flightCycloneLaunchSpeed;
 
+        // Time Manipulation
+        public final ModConfigSpec.IntValue timeBlinkEnergyCost;
+        public final ModConfigSpec.IntValue timeBlinkCooldownTicks;
+        public final ModConfigSpec.IntValue timeBlinkDistance;
+
         private Common(ModConfigSpec.Builder builder) {
             builder.push("progression");
 
@@ -275,6 +280,22 @@ public final class HeroesEvolvedConfig {
                 flightCycloneLaunchSpeed = builder
                         .comment("Horizontal speed applied when Cyclone throws its targets outward.")
                         .defineInRange("cycloneLaunchSpeed", 2.25D, 0.1D, 10.0D);
+
+                builder.pop();
+
+                builder.push("time");
+
+                timeBlinkEnergyCost = builder
+                        .comment("Energy consumed by Time Manipulation Blink.")
+                        .defineInRange("blinkEnergyCost", 25, 0, 1_000);
+
+                timeBlinkCooldownTicks = builder
+                        .comment("Cooldown in ticks after using Time Manipulation Blink.")
+                        .defineInRange("blinkCooldownTicks", 20 * 6, 0, 20 * 60);
+
+                timeBlinkDistance = builder
+                        .comment("Maximum Blink distance in blocks.")
+                        .defineInRange("blinkDistance", 16, 2, 128);
 
                 builder.pop();
         }

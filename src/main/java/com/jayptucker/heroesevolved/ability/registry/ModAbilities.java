@@ -11,6 +11,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import com.jayptucker.heroesevolved.ability.types.FlightAbility;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.minecraft.resources.ResourceLocation;
+import com.jayptucker.heroesevolved.ability.types.TimeManipulationAbility;
 
 public final class ModAbilities {
     public static final DeferredRegister<Ability> ABILITIES =
@@ -25,6 +26,7 @@ public final class ModAbilities {
     private ModAbilities() {
     }
 
+    // FLIGHT
     public static final ResourceLocation FLIGHT_ID =
         ResourceLocation.fromNamespaceAndPath(
                 HeroesEvolved.MOD_ID,
@@ -37,4 +39,19 @@ public final class ModAbilities {
     public static void register(IEventBus modEventBus) {
         ABILITIES.register(modEventBus);
     }
+
+    // TIME MANIPULATION
+    public static final ResourceLocation TIME_MANIPULATION_ID =
+        ResourceLocation.fromNamespaceAndPath(
+                HeroesEvolved.MOD_ID,
+                "time_manipulation"
+        );
+
+    public static final DeferredHolder<
+            Ability,
+            TimeManipulationAbility
+    > TIME_MANIPULATION = ABILITIES.register(
+            TIME_MANIPULATION_ID.getPath(),
+            TimeManipulationAbility::new
+    );
 }

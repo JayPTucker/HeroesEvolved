@@ -34,6 +34,10 @@
   "ability.heroesevolved.flight": "Flight",
   "action.heroesevolved.flight_toggle": "Flight Toggle",
   "action.heroesevolved.flight_launch": "Launch",
-  "action.heroesevolved.flight_cyclone": "Cyclone"
+  "action.heroesevolved.flight_cyclone": "Cyclone",
+
+  "ability.heroesevolved.time_manipulation": "Time Manipulation",
+  "action.heroesevolved.time_blink": "Blink",
+  "subtitles.heroesevolved.time_blink": "Time shifts"
 }
 
