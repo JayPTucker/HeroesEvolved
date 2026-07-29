@@ -37,6 +37,8 @@ public final class PlayerAbilityTickEvents {
             return;
         }
 
+        AwakeningService.tryAwakenAtCriticalHealth(player);
+
         PlayerAbilityData abilityData = PlayerAbilityService.getData(player);
 
         abilityData.assignedPower().ifPresent(assignment -> {

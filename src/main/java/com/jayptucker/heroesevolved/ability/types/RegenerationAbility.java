@@ -65,6 +65,13 @@ public final class RegenerationAbility implements Ability {
     }
 
     @Override
+    public void onAwaken(AbilityUseContext context) {
+        ServerPlayer player = context.player();
+        player.setHealth(player.getMaxHealth());
+        spawnHealingParticles(player);
+    }
+
+    @Override
     public void tick(AbilityUseContext context) {
         int intervalTicks = HeroesEvolvedConfig.COMMON.regenerationIntervalTicks.get();
 

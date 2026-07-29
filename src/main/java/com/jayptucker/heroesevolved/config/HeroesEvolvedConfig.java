@@ -37,6 +37,9 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.LongValue eclipseDurationTicks;
         public final ModConfigSpec.DoubleValue eclipseDormantAbilityChance;
 
+        // Awakening
+        public final ModConfigSpec.DoubleValue awakeningHealthThreshold;
+
         // Flight
         public final ModConfigSpec.IntValue flightLaunchEnergyCost;
         public final ModConfigSpec.IntValue flightLaunchCooldownTicks;
@@ -145,6 +148,14 @@ public final class HeroesEvolvedConfig {
                 eclipseDormantAbilityChance = builder
                         .comment("Chance for an eligible player to receive one dormant ability during an Eclipse.")
                         .defineInRange("dormantAbilityChance", 0.40D, 0.0D, 1.0D);
+
+                builder.pop();
+
+                builder.push("awakening");
+
+                awakeningHealthThreshold = builder
+                        .comment("A dormant power awakens when health falls strictly below this many health points. Four points equals two hearts.")
+                        .defineInRange("healthThreshold", 4.0D, 0.1D, 20.0D);
 
                 builder.pop();
 

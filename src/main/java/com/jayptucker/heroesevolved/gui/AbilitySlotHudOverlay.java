@@ -2,6 +2,7 @@ package com.jayptucker.heroesevolved.gui;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.ability.AbilitySlot;
+import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.input.ModKeyMappings;
 import com.jayptucker.heroesevolved.network.AbilityActionSnapshot;
 import com.jayptucker.heroesevolved.network.ClientPowerState;
@@ -45,6 +46,12 @@ public final class AbilitySlotHudOverlay {
             GuiGraphics guiGraphics,
             net.minecraft.client.DeltaTracker deltaTracker
     ) {
+        // Dormant powers are intentionally unknown to the player. Do not
+        // reveal their actions or controls until the awakening occurs.
+        if (!hasUnlockedAbility()) {
+            return;
+        }
+
         int y = START_Y;
 
         for (AbilityActionSnapshot action
@@ -66,12 +73,18 @@ public final class AbilitySlotHudOverlay {
             y += LINE_HEIGHT;
         }
 
-        // Add Ctrl to the screen
+        if (!hasUnlockedFlightAbility()) {
+            return;
+        }
+
+        // Flight Boost is a Flight-only control hint, not a universal action.
         KeyMapping sprintKey = Minecraft.getInstance().options.keySprint;
         KeyMapping forwardKey = Minecraft.getInstance().options.keyUp;
 
         String boostText = sprintKey.getTranslatedKeyMessage().getString()
-                + " -> Flight Boost";
+                + " + "
+                + forwardKey.getTranslatedKeyMessage().getString()
+                + "  Flight Boost";
 
         guiGraphics.drawString(
                 Minecraft.getInstance().font,
@@ -81,7 +94,20 @@ public final class AbilitySlotHudOverlay {
                 0xFFFFD7DC,
                 true
         );
-    } 
+    }
+
+    private static boolean hasUnlockedFlightAbility() {
+        return ClientPowerState.getSnapshot().abilities().stream().anyMatch(
+                ability -> ability.unlocked()
+                        && ability.abilityId().equals(ModAbilities.FLIGHT_ID)
+        );
+    }
+
+    private static boolean hasUnlockedAbility() {
+        return ClientPowerState.getSnapshot().abilities().stream().anyMatch(
+                ability -> ability.unlocked()
+        );
+    }
 
     private static boolean isOnCooldown(
             AbilityActionSnapshot action

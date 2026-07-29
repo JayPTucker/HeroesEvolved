@@ -39,6 +39,14 @@ public interface Ability {
 
     }
 
+    /**
+     * Called once when a dormant ability becomes awakened through gameplay.
+     * Individual powers may provide a dramatic first-use reaction here.
+     */
+    default void onAwaken(AbilityUseContext context) {
+
+    }
+
     default void tick(AbilityUseContext context) {
         
     }

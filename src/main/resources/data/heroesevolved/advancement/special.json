@@ -1,13 +1,13 @@
 {
   "display": {
     "icon": {
-      "id": "minecraft:clock"
+      "id": "minecraft:nether_star"
     },
     "title": {
-      "translate": "advancement.heroesevolved.something_feels_different.title"
+      "translate": "advancement.heroesevolved.special.title"
     },
     "description": {
-      "translate": "advancement.heroesevolved.something_feels_different.description"
+      "translate": "advancement.heroesevolved.special.description"
     },
     "frame": "challenge",
     "show_toast": true,

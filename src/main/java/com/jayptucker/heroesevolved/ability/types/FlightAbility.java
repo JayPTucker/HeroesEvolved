@@ -60,6 +60,13 @@ public final class FlightAbility implements Ability {
         FlightService.stopForPowerRemoval(context.player());
     }
 
+    @Override
+    public void onAwaken(AbilityUseContext context) {
+        // A Flight awakening begins with the power's signature Launch rather
+        // than requiring a frightened player to find the keybind first.
+        FlightService.launch(context.player());
+    }
+
     private static final class FlightToggleAction implements AbilityAction {
         private static final AbilityActionDefinition DEFINITION =
                 new AbilityActionDefinition(
