@@ -15,6 +15,7 @@ import com.jayptucker.heroesevolved.events.EclipseService;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import com.jayptucker.heroesevolved.network.PlayerPowerSyncService;
+import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 
 import java.util.Map;
 import java.util.Optional;
@@ -63,7 +64,9 @@ public final class AbilityUseService {
         AbilityAction abilityAction = action.get();
 
         // Individual actions unlock at different levels of the same power.
-        if (!abilityAction.definition().isUnlockedAt(progress.level())) {
+        int powerLevel = PlayerProgressionService.getLevel(player);
+
+        if (!abilityAction.definition().isUnlockedAt(powerLevel)) {
             return AbilityUseResult.ACTION_LOCKED;
         }
 
@@ -76,14 +79,14 @@ public final class AbilityUseService {
         AbilityUseContext context = new AbilityUseContext(
                 player,
                 powerId,
-                progress.level()
+                powerLevel
         );
 
         if (!abilityAction.canUse(context)) {
             return AbilityUseResult.CANNOT_USE;
         }
 
-        int energyCost = abilityAction.energyCost(progress.level());
+        int energyCost = abilityAction.energyCost(powerLevel);
 
         boolean requiresOverexertion =
                 PlayerEnergyService.getEnergy(player) < energyCost;
@@ -105,7 +108,7 @@ public final class AbilityUseService {
             PlayerEnergyService.tryConsume(player, energyCost);
         }
 
-        int cooldownTicks = abilityAction.cooldownTicks(progress.level());
+        int cooldownTicks = abilityAction.cooldownTicks(powerLevel);
 
         // Zero means this action has no cooldown. Avoid storing a zero-tick
         // entry, because a one-tick client/server timing difference can make

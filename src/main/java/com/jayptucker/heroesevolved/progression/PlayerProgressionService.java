@@ -33,4 +33,26 @@ public final class PlayerProgressionService {
 
         return updatedData;
     }
+
+    /**
+     * Sets a player's shared power level by storing the exact Mastery
+     * threshold for that level. This keeps every system level-driven rather
+     * than creating a separate command-only level value.
+     */
+    public static PlayerProgressionData setLevel(
+            ServerPlayer player,
+            int level
+    ) {
+        Objects.requireNonNull(player, "Player cannot be null.");
+
+        long mastery = ProgressionCalculator.masteryRequiredForLevel(level);
+        PlayerProgressionData updatedData = new PlayerProgressionData(mastery);
+
+        player.setData(
+                ModDataAttachments.PLAYER_PROGRESSION.get(),
+                updatedData
+        );
+
+        return updatedData;
+    }
 }

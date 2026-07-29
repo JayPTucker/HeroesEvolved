@@ -7,6 +7,8 @@ import com.jayptucker.heroesevolved.ability.data.PlayerAbilityData;
 import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
+import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
+import com.jayptucker.heroesevolved.progression.MasteryService;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -31,6 +33,8 @@ public final class PlayerAbilityTickEvents {
             PlayerEnergyService.restoreNaturally(player);
         }
 
+        MasteryService.tickActiveTime(player);
+
         // Energy is allowed to recover, but awakened powers—including
         // passive powers such as Regeneration—are dormant during an Eclipse.
         if (EclipseService.arePowersSuppressed(player)) {
@@ -54,7 +58,7 @@ public final class PlayerAbilityTickEvents {
             ability.tick(new AbilityUseContext(
                     player,
                     assignment.getKey(),
-                    assignment.getValue().level()
+                    PlayerProgressionService.getLevel(player)
             ));
         });
     }

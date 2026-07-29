@@ -1,6 +1,7 @@
 package com.jayptucker.heroesevolved.network;
 
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
+import com.jayptucker.heroesevolved.flight.FlightService;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -17,7 +18,8 @@ public final class FlightVisualSyncService {
                 player,
                 new FlightVisualStatePayload(
                         player.getId(),
-                        visualPoseActive
+                        visualPoseActive,
+                        FlightService.isCycloneActive(player)
                 )
         );
     }
@@ -34,7 +36,8 @@ public final class FlightVisualSyncService {
                 receivingPlayer,
                 new FlightVisualStatePayload(
                         flyingPlayer.getId(),
-                        visualPoseActive
+                        visualPoseActive,
+                        FlightService.isCycloneActive(flyingPlayer)
                 )
         );
     }

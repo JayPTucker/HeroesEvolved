@@ -2,9 +2,11 @@ package com.jayptucker.heroesevolved.events;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.ability.AbilitySlot;
+import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.gui.screen.PowersScreen;
 import com.jayptucker.heroesevolved.input.ModKeyMappings;
 import com.jayptucker.heroesevolved.network.ActivateAbilitySlotPayload;
+import com.jayptucker.heroesevolved.network.ClientPowerState;
 import com.jayptucker.heroesevolved.network.FlightForwardInputPayload;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -22,7 +24,13 @@ public final class ClientKeyEvents {
     private static boolean ability2WasDown;
     private static boolean ability3WasDown;
     private static boolean flightForwardWasDown;
+    private static boolean jumpWasDown;
     private static int forwardInputResendTicks;
+    private static long lastJumpPressGameTime = Long.MIN_VALUE;
+
+    // Minecraft's normal double-tap window is short enough to feel natural
+    // without accidentally enabling Flight during ordinary jumping.
+    private static final long FLIGHT_DOUBLE_TAP_WINDOW_TICKS = 7L;
 
     private ClientKeyEvents() {
     }
@@ -39,8 +47,11 @@ public final class ClientKeyEvents {
 
         if (minecraft.player == null || minecraft.screen != null) {
             syncFlightForwardInput(false);
+            jumpWasDown = false;
             return;
         }
+
+        handleFlightDoubleTap(minecraft);
 
         // Normal forward movement keeps the player upright. Flight Boost is
         // deliberately separate and follows Minecraft's rebindable sprint
@@ -71,6 +82,39 @@ public final class ClientKeyEvents {
                 AbilitySlot.TERTIARY,
                 allowOverexertion,
                 ability3WasDown
+        );
+    }
+
+    private static void handleFlightDoubleTap(Minecraft minecraft) {
+        boolean jumpIsDown = minecraft.options.keyJump.isDown();
+
+        if (jumpIsDown && !jumpWasDown && hasAwakenedFlight()) {
+            long gameTime = minecraft.level.getGameTime();
+
+            if (lastJumpPressGameTime != Long.MIN_VALUE
+                    && gameTime - lastJumpPressGameTime
+                    <= FLIGHT_DOUBLE_TAP_WINDOW_TICKS) {
+                PacketDistributor.sendToServer(
+                        new ActivateAbilitySlotPayload(
+                                AbilitySlot.PRIMARY,
+                                minecraft.options.keyShift.isDown()
+                        )
+                );
+
+                // A completed double tap cannot combine with the next jump.
+                lastJumpPressGameTime = Long.MIN_VALUE;
+            } else {
+                lastJumpPressGameTime = gameTime;
+            }
+        }
+
+        jumpWasDown = jumpIsDown;
+    }
+
+    private static boolean hasAwakenedFlight() {
+        return ClientPowerState.getSnapshot().abilities().stream().anyMatch(
+                ability -> ability.unlocked()
+                        && ability.abilityId().equals(ModAbilities.FLIGHT_ID)
         );
     }
 

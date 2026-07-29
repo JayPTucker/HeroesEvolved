@@ -30,9 +30,13 @@ public final class FlightAbility implements Ability {
     private static final AbilityAction LAUNCH =
             new LaunchAction();
 
+    private static final AbilityAction CYCLONE =
+            new CycloneAction();
+
     private static final Map<AbilitySlot, AbilityAction> ACTIONS = Map.of(
             AbilitySlot.PRIMARY, FLIGHT_TOGGLE,
-            AbilitySlot.SECONDARY, LAUNCH
+            AbilitySlot.SECONDARY, LAUNCH,
+            AbilitySlot.TERTIARY, CYCLONE
     );
 
     @Override
@@ -138,6 +142,46 @@ public final class FlightAbility implements Ability {
         @Override
         public AbilityActivationResult activate(AbilityUseContext context) {
             FlightService.launch(context.player());
+            return AbilityActivationResult.SUCCESS;
+        }
+    }
+
+    private static final class CycloneAction implements AbilityAction {
+        private static final AbilityActionDefinition DEFINITION =
+                new AbilityActionDefinition(
+                        ResourceLocation.fromNamespaceAndPath(
+                                HeroesEvolved.MOD_ID,
+                                "flight_cyclone"
+                        ),
+                        "action.heroesevolved.flight_cyclone",
+                        5,
+                        0,
+                        0
+                );
+
+        @Override
+        public AbilityActionDefinition definition() {
+            return DEFINITION;
+        }
+
+        @Override
+        public int energyCost(int powerLevel) {
+            return HeroesEvolvedConfig.COMMON.flightCycloneEnergyCost.get();
+        }
+
+        @Override
+        public int cooldownTicks(int powerLevel) {
+            return HeroesEvolvedConfig.COMMON.flightCycloneCooldownTicks.get();
+        }
+
+        @Override
+        public boolean canUse(AbilityUseContext context) {
+            return !context.player().isPassenger();
+        }
+
+        @Override
+        public AbilityActivationResult activate(AbilityUseContext context) {
+            FlightService.startCyclone(context.player());
             return AbilityActivationResult.SUCCESS;
         }
     }

@@ -7,6 +7,9 @@ import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.cooldown.CooldownService;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
+import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
+import com.jayptucker.heroesevolved.progression.ProgressionCalculator;
+import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -20,6 +23,14 @@ public final class PlayerPowerSyncService {
     }
 
     public static void sync(ServerPlayer player) {
+        long mastery = PlayerProgressionService.getData(player).mastery();
+        int level = PlayerProgressionService.getLevel(player);
+        int maximumLevel = HeroesEvolvedConfig.COMMON.maximumLevel.get();
+        long masteryRequiredForCurrentLevel =
+                ProgressionCalculator.masteryRequiredForLevel(level);
+        long masteryRequiredForNextLevel = level >= maximumLevel
+                ? mastery
+                : ProgressionCalculator.masteryRequiredForLevel(level + 1);
         Optional<Map.Entry<ResourceLocation, AbilityProgress>> assignment =
                 PlayerAbilityService.getData(player).assignedPower();
 
@@ -27,16 +38,18 @@ public final class PlayerPowerSyncService {
                 .map(entry -> List.of(new AbilitySnapshot(
                         entry.getKey(),
                         entry.getValue().isUnlocked(),
-                        entry.getValue().level(),
-                        entry.getValue().mastery()
+                        level,
+                        mastery,
+                        masteryRequiredForCurrentLevel,
+                        masteryRequiredForNextLevel,
+                        maximumLevel
                 )))
                 .orElseGet(List::of);
 
         List<AbilityActionSnapshot> actions = assignment
                 .map(entry -> createActionSnapshots(
                         player,
-                        entry.getKey(),
-                        entry.getValue()
+                        entry.getKey()
                 ))
                 .orElseGet(List::of);
 
@@ -53,8 +66,7 @@ public final class PlayerPowerSyncService {
 
     private static List<AbilityActionSnapshot> createActionSnapshots(
             ServerPlayer player,
-            ResourceLocation powerId,
-            AbilityProgress progress
+            ResourceLocation powerId
     ) {
         Ability power = AbilityRegistry.ABILITIES.get(powerId);
 
@@ -69,8 +81,7 @@ public final class PlayerPowerSyncService {
                 .map(entry -> toSnapshot(
                         player,
                         entry.getKey(),
-                        entry.getValue(),
-                        progress.level()
+                        entry.getValue()
                 ))
                 .toList();
     }
@@ -78,15 +89,16 @@ public final class PlayerPowerSyncService {
     private static AbilityActionSnapshot toSnapshot(
             ServerPlayer player,
             com.jayptucker.heroesevolved.ability.AbilitySlot slot,
-            AbilityAction action,
-            int powerLevel
+            AbilityAction action
     ) {
         ResourceLocation actionId = action.definition().id();
 
         return new AbilityActionSnapshot(
                 slot,
                 action.definition().displayNameKey(),
-                action.definition().isUnlockedAt(powerLevel),
+                action.definition().isUnlockedAt(
+                        PlayerProgressionService.getLevel(player)
+                ),
                 CooldownService.getExpirationGameTime(player, actionId)
         );
     }

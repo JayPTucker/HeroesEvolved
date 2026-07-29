@@ -14,10 +14,18 @@
   "screen.heroesevolved.no_abilities": "No abilities discovered.",
   "screen.heroesevolved.unlocked": "Unlocked",
   "screen.heroesevolved.dormant": "Dormant",
+  "screen.heroesevolved.mastery_progress": "Mastery: %s / %s",
+  "screen.heroesevolved.mastery_complete": "Maximum Mastery reached",
+  "screen.heroesevolved.mastery_dormant": "This power must awaken before it can gain Mastery.",
+  "screen.heroesevolved.mastery_tooltip_title": "Mastery Progress",
+  "screen.heroesevolved.mastery_tooltip_power": "Use your power for the greatest Mastery gains.",
+  "screen.heroesevolved.mastery_tooltip_combat": "Defeat hostile mobs for additional Mastery.",
+  "screen.heroesevolved.mastery_tooltip_active": "Stay active to earn a small amount over time.",
   "screen.heroesevolved.ability_details": "Level %s  •  Mastery %s",
   "ability.heroesevolved.regeneration": "Regeneration",
 
   "message.heroesevolved.overexertion": "Your nose begins to bleed.",
+  "message.heroesevolved.level_up": "You suddenly feel stronger...",
   "key.heroesevolved.ability_1": "Ability 1",
   "key.heroesevolved.ability_2": "Ability 2",
   "key.heroesevolved.ability_3": "Ability 3",
@@ -25,6 +33,7 @@
 
   "ability.heroesevolved.flight": "Flight",
   "action.heroesevolved.flight_toggle": "Flight Toggle",
-  "action.heroesevolved.flight_launch": "Launch"
+  "action.heroesevolved.flight_launch": "Launch",
+  "action.heroesevolved.flight_cyclone": "Cyclone"
 }
 

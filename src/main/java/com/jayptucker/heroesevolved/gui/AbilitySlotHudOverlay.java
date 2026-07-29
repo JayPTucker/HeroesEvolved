@@ -73,7 +73,7 @@ public final class AbilitySlotHudOverlay {
             y += LINE_HEIGHT;
         }
 
-        if (!hasUnlockedFlightAbility()) {
+        if (!hasUnlockedFlightBoost()) {
             return;
         }
 
@@ -96,10 +96,11 @@ public final class AbilitySlotHudOverlay {
         );
     }
 
-    private static boolean hasUnlockedFlightAbility() {
+    private static boolean hasUnlockedFlightBoost() {
         return ClientPowerState.getSnapshot().abilities().stream().anyMatch(
                 ability -> ability.unlocked()
                         && ability.abilityId().equals(ModAbilities.FLIGHT_ID)
+                        && ability.level() >= 2
         );
     }
 

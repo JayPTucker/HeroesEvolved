@@ -19,6 +19,14 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue maximumLevel;
         public final ModConfigSpec.LongValue baseMasteryPerLevel;
         public final ModConfigSpec.LongValue masteryIncreasePerLevel;
+        public final ModConfigSpec.IntValue activeMasteryIntervalTicks;
+        public final ModConfigSpec.IntValue activeMasteryAmount;
+        public final ModConfigSpec.IntValue mobKillMasteryAmount;
+        public final ModConfigSpec.IntValue mobKillWindowTicks;
+        public final ModConfigSpec.IntValue mobKillFullRewardLimit;
+        public final ModConfigSpec.IntValue mobKillMaximumRewardedKills;
+        public final ModConfigSpec.IntValue powerUseMasteryAmount;
+        public final ModConfigSpec.IntValue powerUseMasteryCooldownTicks;
         public final ModConfigSpec.IntValue baseEnergy;
         public final ModConfigSpec.IntValue energyPerLevel;
         public final ModConfigSpec.IntValue energyRegenerationPerSecond;
@@ -51,13 +59,20 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue flightBoostEnergyDrainPerSecond;
         public final ModConfigSpec.IntValue flightSafeLandingSeconds;
         public final ModConfigSpec.IntValue flightTrailIntervalTicks;
+        public final ModConfigSpec.IntValue flightCycloneEnergyCost;
+        public final ModConfigSpec.IntValue flightCycloneCooldownTicks;
+        public final ModConfigSpec.IntValue flightCycloneDurationSeconds;
+        public final ModConfigSpec.DoubleValue flightCycloneRadius;
+        public final ModConfigSpec.DoubleValue flightCycloneOrbitRadius;
+        public final ModConfigSpec.DoubleValue flightCycloneOrbitSpeed;
+        public final ModConfigSpec.DoubleValue flightCycloneLaunchSpeed;
 
         private Common(ModConfigSpec.Builder builder) {
             builder.push("progression");
 
             maximumLevel = builder
                     .comment("The highest character level a player can reach.")
-                    .defineInRange("maximumLevel", 50, 1, 1_000);
+                    .defineInRange("maximumLevel", 5, 1, 1_000);
 
             baseMasteryPerLevel = builder
                     .comment("Mastery required to advance from level 1 to level 2.")
@@ -72,10 +87,42 @@ public final class HeroesEvolvedConfig {
                     .comment("Additional Mastery required for each later level.")
                     .defineInRange(
                             "masteryIncreasePerLevel",
-                            25L,
+                            100L,
                             0L,
                             Long.MAX_VALUE
                     );
+
+            activeMasteryIntervalTicks = builder
+                    .comment("Ticks of active, non-AFK play required for an active-time Mastery award.")
+                    .defineInRange("activeMasteryIntervalTicks", 20 * 60, 20, 20 * 60 * 60);
+
+            activeMasteryAmount = builder
+                    .comment("Mastery awarded for each active-time interval.")
+                    .defineInRange("activeMasteryAmount", 1, 1, 1_000);
+
+            mobKillMasteryAmount = builder
+                    .comment("Full Mastery awarded for an eligible hostile-mob kill.")
+                    .defineInRange("mobKillMasteryAmount", 2, 1, 1_000);
+
+            mobKillWindowTicks = builder
+                    .comment("Rolling window used to reduce repeated kills of the same hostile-mob type.")
+                    .defineInRange("mobKillWindowTicks", 20 * 60 * 10, 20, 20 * 60 * 60);
+
+            mobKillFullRewardLimit = builder
+                    .comment("Same-type kills in the rolling window that grant full Mastery before diminishing returns.")
+                    .defineInRange("mobKillFullRewardLimit", 6, 1, 1_000);
+
+            mobKillMaximumRewardedKills = builder
+                    .comment("Maximum same-type kills in the rolling window that can grant any Mastery.")
+                    .defineInRange("mobKillMaximumRewardedKills", 12, 1, 1_000);
+
+            powerUseMasteryAmount = builder
+                    .comment("Mastery awarded for a meaningful power use. This is intentionally the highest reward source.")
+                    .defineInRange("powerUseMasteryAmount", 2, 1, 1_000);
+
+            powerUseMasteryCooldownTicks = builder
+                    .comment("Minimum ticks between Mastery awards for the same power, preventing toggle or heal spam.")
+                    .defineInRange("powerUseMasteryCooldownTicks", 20 * 20, 20, 20 * 60 * 60);
 
             builder.pop();
 
@@ -87,7 +134,7 @@ public final class HeroesEvolvedConfig {
 
                 energyPerLevel = builder
                         .comment("Additional maximum energy gained for each character level after level one.")
-                        .defineInRange("energyPerLevel", 10, 0, 1_000);
+                        .defineInRange("energyPerLevel", 20, 0, 1_000);
 
                 energyRegenerationPerSecond = builder
                         .comment("Energy naturally restored every second.")
@@ -199,7 +246,35 @@ public final class HeroesEvolvedConfig {
 
                 flightTrailIntervalTicks = builder
                         .comment("Ticks between white contrail particle emissions.")
-                        .defineInRange("trailIntervalTicks", 2, 1, 20);
+                        .defineInRange("trailIntervalTicks", 1, 1, 20);
+
+                flightCycloneEnergyCost = builder
+                        .comment("Energy consumed to begin Flight Cyclone.")
+                        .defineInRange("cycloneEnergyCost", 50, 0, 1_000);
+
+                flightCycloneCooldownTicks = builder
+                        .comment("Cooldown in ticks after using Flight Cyclone.")
+                        .defineInRange("cycloneCooldownTicks", 20 * 30, 0, 20 * 60 * 10);
+
+                flightCycloneDurationSeconds = builder
+                        .comment("Seconds Flight Cyclone keeps its targets suspended.")
+                        .defineInRange("cycloneDurationSeconds", 10, 1, 60);
+
+                flightCycloneRadius = builder
+                        .comment("Horizontal radius, in blocks, of Flight Cyclone's pull.")
+                        .defineInRange("cycloneRadius", 12.0D, 1.0D, 32.0D);
+
+                flightCycloneOrbitRadius = builder
+                        .comment("Radius, in blocks, of the Flight user's path around Cyclone.")
+                        .defineInRange("cycloneOrbitRadius", 16.0D, 1.0D, 32.0D);
+
+                flightCycloneOrbitSpeed = builder
+                        .comment("Radians travelled per tick while circling Flight Cyclone.")
+                        .defineInRange("cycloneOrbitSpeed", 0.40D, 0.01D, 1.0D);
+
+                flightCycloneLaunchSpeed = builder
+                        .comment("Horizontal speed applied when Cyclone throws its targets outward.")
+                        .defineInRange("cycloneLaunchSpeed", 2.25D, 0.1D, 10.0D);
 
                 builder.pop();
         }

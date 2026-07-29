@@ -5,6 +5,7 @@ import java.util.Set;
 
 public final class ClientFlightVisualState {
     private static final Set<Integer> ACTIVE_FLIGHT_ENTITIES = new HashSet<>();
+    private static final Set<Integer> ACTIVE_CYCLONE_ENTITIES = new HashSet<>();
 
     private ClientFlightVisualState() {
     }
@@ -13,11 +14,25 @@ public final class ClientFlightVisualState {
         return ACTIVE_FLIGHT_ENTITIES.contains(entityId);
     }
 
-    public static void update(int entityId, boolean flightActive) {
+    public static boolean isCycloneActive(int entityId) {
+        return ACTIVE_CYCLONE_ENTITIES.contains(entityId);
+    }
+
+    public static void update(
+            int entityId,
+            boolean flightActive,
+            boolean cycloneActive
+    ) {
         if (flightActive) {
             ACTIVE_FLIGHT_ENTITIES.add(entityId);
         } else {
             ACTIVE_FLIGHT_ENTITIES.remove(entityId);
+        }
+
+        if (cycloneActive) {
+            ACTIVE_CYCLONE_ENTITIES.add(entityId);
+        } else {
+            ACTIVE_CYCLONE_ENTITIES.remove(entityId);
         }
     }
 }

@@ -9,6 +9,7 @@ import com.jayptucker.heroesevolved.combat.PlayerCombatData;
 import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
+import com.jayptucker.heroesevolved.progression.MasteryService;
 
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.server.level.ServerLevel;
@@ -87,6 +88,7 @@ public final class RegenerationAbility implements Ability {
 
         context.player().heal(HEALTH_RESTORED_PER_TICK);
         spawnHealingParticles(context.player());
+        MasteryService.awardPowerUse(context.player(), context.abilityId());
 
         
     }

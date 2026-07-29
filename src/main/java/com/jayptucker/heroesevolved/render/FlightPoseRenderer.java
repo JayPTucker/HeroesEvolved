@@ -5,6 +5,7 @@ import com.jayptucker.heroesevolved.network.ClientFlightVisualState;
 import com.mojang.math.Axis;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -35,11 +36,13 @@ public final class FlightPoseRenderer {
             return;
         }
 
-        float viewYaw = Mth.rotLerp(
-                event.getPartialTick(),
-                player.yRotO,
-                player.getYRot()
-        );
+        float viewYaw = ClientFlightVisualState.isCycloneActive(player.getId())
+                ? cycloneTravelYaw(player, event.getPartialTick())
+                : Mth.rotLerp(
+                        event.getPartialTick(),
+                        player.yRotO,
+                        player.getYRot()
+                );
         float bodyYaw = viewYaw + 180.0F;
         float viewPitch = player.getXRot();
 
@@ -141,6 +144,19 @@ public final class FlightPoseRenderer {
     private static boolean shouldUseFlightPose(Player player) {
         return ClientFlightVisualState.isFlightActive(player.getId())
                 && !player.onGround();
+    }
+
+    private static float cycloneTravelYaw(Player player, float partialTick) {
+        Vec3 velocity = player.getDeltaMovement();
+        Vec3 horizontalVelocity = new Vec3(velocity.x, 0.0D, velocity.z);
+
+        if (horizontalVelocity.lengthSqr() < 0.01D) {
+            return Mth.rotLerp(partialTick, player.yRotO, player.getYRot());
+        }
+
+        return (float) Math.toDegrees(
+                Math.atan2(-horizontalVelocity.x, horizontalVelocity.z)
+        );
     }
 
     private record BodyYaw(float current, float previous) {

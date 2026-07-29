@@ -3,6 +3,7 @@ package com.jayptucker.heroesevolved;
 import com.mojang.logging.LogUtils;
 
 import com.jayptucker.heroesevolved.sounds.ModSounds;
+import com.jayptucker.heroesevolved.particles.ModParticles;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import org.slf4j.Logger;
@@ -27,6 +28,7 @@ public final class HeroesEvolved {
         ModAbilities.register(modEventBus);
         ModDataAttachments.register(modEventBus);
         ModSounds.register(modEventBus);
+        ModParticles.register(modEventBus);
 
         LOGGER.info("Heroes Evolved initialized.");
     }

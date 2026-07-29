@@ -10,7 +10,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 public record FlightVisualStatePayload(
         int entityId,
-        boolean flightActive
+        boolean flightActive,
+        boolean cycloneActive
 ) implements CustomPacketPayload {
     public static final Type<FlightVisualStatePayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(
@@ -26,6 +27,8 @@ public record FlightVisualStatePayload(
             FlightVisualStatePayload::entityId,
             ByteBufCodecs.BOOL,
             FlightVisualStatePayload::flightActive,
+            ByteBufCodecs.BOOL,
+            FlightVisualStatePayload::cycloneActive,
             FlightVisualStatePayload::new
     );
 
@@ -42,7 +45,8 @@ public record FlightVisualStatePayload(
         // fully server-authoritative in FlightService.
         ClientFlightVisualState.update(
                 payload.entityId(),
-                payload.flightActive()
+                payload.flightActive(),
+                payload.cycloneActive()
         );
     }
 }

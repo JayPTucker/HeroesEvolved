@@ -5,7 +5,10 @@ import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.events.EclipseService;
+import com.jayptucker.heroesevolved.network.PlayerPowerSyncService;
+import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.mojang.brigadier.arguments.BoolArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -105,6 +108,29 @@ public final class HeroesEvolvedCommands {
                                                                 "targets"
                                                         )
                                                 ))
+                                        )
+                                )
+                                .then(Commands.literal("level")
+                                        .then(Commands.argument(
+                                                        "targets",
+                                                        EntityArgument.players()
+                                                )
+                                                .then(Commands.argument(
+                                                                "level",
+                                                                IntegerArgumentType.integer(1, 5)
+                                                        )
+                                                        .executes(context -> setPowerLevel(
+                                                                context.getSource(),
+                                                                EntityArgument.getPlayers(
+                                                                        context,
+                                                                        "targets"
+                                                                ),
+                                                                IntegerArgumentType.getInteger(
+                                                                        context,
+                                                                        "level"
+                                                                )
+                                                        ))
+                                                )
                                         )
                                 )
                         )
@@ -334,6 +360,34 @@ public final class HeroesEvolvedCommands {
         );
 
         return removedCount;
+    }
+
+    private static int setPowerLevel(
+            CommandSourceStack source,
+            java.util.Collection<ServerPlayer> players,
+            int level
+    ) {
+        for (ServerPlayer player : players) {
+            PlayerProgressionService.setLevel(player, level);
+
+            // Level changes affect maximum stamina, so refill to the new cap
+            // and immediately update the player's client-side HUD and menu.
+            PlayerEnergyService.restore(
+                    player,
+                    PlayerEnergyService.getMaximumEnergy(player)
+            );
+            PlayerPowerSyncService.sync(player);
+        }
+
+        source.sendSuccess(
+                () -> Component.literal(
+                        "Set " + players.size() + " player(s) to power level "
+                                + level + "."
+                ),
+                true
+        );
+
+        return players.size();
     }
 
     private static ResourceLocation toAbilityId(String abilityName) {
