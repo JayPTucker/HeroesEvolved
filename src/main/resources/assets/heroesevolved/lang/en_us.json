@@ -38,6 +38,10 @@
 
   "ability.heroesevolved.time_manipulation": "Time Manipulation",
   "action.heroesevolved.time_blink": "Blink",
-  "subtitles.heroesevolved.time_blink": "Time shifts"
+  "action.heroesevolved.time_slow": "Time Slow",
+  "subtitles.heroesevolved.time_blink": "Time shifts",
+  "subtitles.heroesevolved.time_slow": "Time slows",
+  "subtitles.heroesevolved.time_unslow": "Time resumes",
+  "subtitles.heroesevolved.flight_launch": "Flight launches"
 }
 

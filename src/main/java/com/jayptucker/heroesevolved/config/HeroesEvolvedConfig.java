@@ -71,6 +71,11 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue timeBlinkEnergyCost;
         public final ModConfigSpec.IntValue timeBlinkCooldownTicks;
         public final ModConfigSpec.IntValue timeBlinkDistance;
+        public final ModConfigSpec.IntValue timeSlowEnergyCost;
+        public final ModConfigSpec.IntValue timeSlowCooldownTicks;
+        public final ModConfigSpec.IntValue timeSlowDurationSeconds;
+        public final ModConfigSpec.DoubleValue timeSlowRadius;
+        public final ModConfigSpec.IntValue timeSlowTickIntervalTicks;
 
         private Common(ModConfigSpec.Builder builder) {
             builder.push("progression");
@@ -296,6 +301,31 @@ public final class HeroesEvolvedConfig {
                 timeBlinkDistance = builder
                         .comment("Maximum Blink distance in blocks.")
                         .defineInRange("blinkDistance", 16, 2, 128);
+
+                timeSlowEnergyCost = builder
+                        .comment("Energy consumed to create a Time Slow field.")
+                        .defineInRange("slowEnergyCost", 85, 0, 1_000);
+
+                timeSlowCooldownTicks = builder
+                        .comment("Cooldown in ticks after using Time Slow.")
+                        .defineInRange(
+                                "slowCooldownTicks",
+                                20 * 45,
+                                0,
+                                20 * 60 * 10
+                        );
+
+                timeSlowDurationSeconds = builder
+                        .comment("Seconds a Time Slow field remains active.")
+                        .defineInRange("slowDurationSeconds", 10, 1, 60);
+
+                timeSlowRadius = builder
+                        .comment("Radius, in blocks, of a Time Slow field.")
+                        .defineInRange("slowRadius", 50.0D, 1.0D, 128.0D);
+
+                timeSlowTickIntervalTicks = builder
+                        .comment("Ticks between updates for entities inside Time Slow.")
+                        .defineInRange("slowTickIntervalTicks", 20, 2, 100);
 
                 builder.pop();
         }

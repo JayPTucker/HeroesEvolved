@@ -28,6 +28,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.NeoForgeMod;
+import com.jayptucker.heroesevolved.sounds.ModSounds;
+import net.minecraft.sounds.SoundSource;
 
 import java.util.HashMap;
 import java.util.List;
@@ -92,6 +94,17 @@ public final class FlightService {
     }
 
     public static void launch(ServerPlayer player) {
+        player.serverLevel().playSound(
+                null,
+                player.getX(),
+                player.getY(),
+                player.getZ(),
+                ModSounds.FLIGHT_LAUNCH.get(),
+                SoundSource.PLAYERS,
+                0.90F,
+                1.0F
+        );
+        
         int ascentDurationTicks = HeroesEvolvedConfig.COMMON
                 .flightLaunchAscentDurationSeconds
                 .get() * 20;

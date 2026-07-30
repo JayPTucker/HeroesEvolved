@@ -19,5 +19,35 @@
         "pitch": 1.0
       }
     ]
+  },
+  "time_slow": {
+    "subtitle": "subtitles.heroesevolved.time_slow",
+    "sounds": [
+      {
+        "name": "heroesevolved:ability/time_slow",
+        "volume": 0.9,
+        "pitch": 1.0
+      }
+    ]
+  },
+  "time_unslow": {
+    "subtitle": "subtitles.heroesevolved.time_unslow",
+    "sounds": [
+      {
+        "name": "heroesevolved:ability/time_unslow",
+        "volume": 0.9,
+        "pitch": 1.0
+      }
+    ]
+  },
+  "flight_launch": {
+    "subtitle": "subtitles.heroesevolved.flight_launch",
+    "sounds": [
+      {
+        "name": "heroesevolved:ability/flight_launch",
+        "volume": 0.9,
+        "pitch": 1.0
+      }
+    ]
   }
 }

@@ -33,6 +33,36 @@ public final class ModSounds {
                     )
             );
 
+    public static final Supplier<SoundEvent> TIME_SLOW =
+            SOUND_EVENTS.register("time_slow", () ->
+                    SoundEvent.createVariableRangeEvent(
+                            ResourceLocation.fromNamespaceAndPath(
+                                    HeroesEvolved.MOD_ID,
+                                    "time_slow"
+                            )
+                    )
+            );
+
+    public static final Supplier<SoundEvent> TIME_UNSLOW =
+            SOUND_EVENTS.register("time_unslow", () ->
+                    SoundEvent.createVariableRangeEvent(
+                            ResourceLocation.fromNamespaceAndPath(
+                                    HeroesEvolved.MOD_ID,
+                                    "time_unslow"
+                            )
+                    )
+            );
+        
+        public static final Supplier<SoundEvent> FLIGHT_LAUNCH =
+            SOUND_EVENTS.register("flight_launch", () ->
+                SoundEvent.createVariableRangeEvent(
+                        ResourceLocation.fromNamespaceAndPath(
+                                HeroesEvolved.MOD_ID,
+                                "flight_launch"
+                        )
+                )
+        );
+
     private ModSounds() {
     }
 

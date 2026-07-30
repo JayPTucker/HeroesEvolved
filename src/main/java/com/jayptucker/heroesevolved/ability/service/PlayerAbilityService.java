@@ -100,6 +100,15 @@ public final class PlayerAbilityService {
             return false;
         }
 
+        // Replacing a power must clean up its runtime state first. Flight,
+        // for example, grants a temporary flying permission that must never
+        // survive after the player receives a different power.
+        data.assignedPower().ifPresent(assignment -> {
+            if (!assignment.getKey().equals(abilityId)) {
+                revokeAbility(player, assignment);
+            }
+        });
+
         saveData(player, data.replaceWithUnlockedPower(abilityId));
         return true;
     }
@@ -108,19 +117,26 @@ public final class PlayerAbilityService {
         PlayerAbilityData data = getData(player);
 
         return data.assignedPower().map(assignment -> {
-            Ability ability = AbilityRegistry.ABILITIES.get(assignment.getKey());
-
-            if (ability != null) {
-                ability.onRevoked(new AbilityUseContext(
-                        player,
-                        assignment.getKey(),
-                        assignment.getValue().level()
-                ));
-            }
+            revokeAbility(player, assignment);
 
             saveData(player, data.clearAssignedPower());
             return true;
         }).orElse(false);
+    }
+
+    private static void revokeAbility(
+            ServerPlayer player,
+            java.util.Map.Entry<ResourceLocation, AbilityProgress> assignment
+    ) {
+        Ability ability = AbilityRegistry.ABILITIES.get(assignment.getKey());
+
+        if (ability != null) {
+            ability.onRevoked(new AbilityUseContext(
+                    player,
+                    assignment.getKey(),
+                    assignment.getValue().level()
+            ));
+        }
     }
 
     private static void saveData(

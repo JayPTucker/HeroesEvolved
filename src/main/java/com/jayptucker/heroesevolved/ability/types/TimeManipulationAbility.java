@@ -12,6 +12,7 @@ import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
 import com.jayptucker.heroesevolved.progression.MasteryService;
 import com.jayptucker.heroesevolved.sounds.ModSounds;
+import com.jayptucker.heroesevolved.time.TimeSlowService;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -33,10 +34,11 @@ public final class TimeManipulationAbility implements Ability {
 
     private static final AbilityAction BLINK = new BlinkAction();
 
-    // Level 1 starts with only Blink. We will add Temporal Field to
-    // SECONDARY later, after its reusable field service exists.
+    private static final AbilityAction TIME_SLOW = new TimeSlowAction();
+
     private static final Map<AbilitySlot, AbilityAction> ACTIONS = Map.of(
-            AbilitySlot.PRIMARY, BLINK
+            AbilitySlot.PRIMARY, BLINK,
+            AbilitySlot.SECONDARY, TIME_SLOW
     );
 
     @Override
@@ -57,6 +59,18 @@ public final class TimeManipulationAbility implements Ability {
     @Override
     public AbilityActivationResult activate(AbilityUseContext context) {
         return AbilityActivationResult.REJECTED;
+    }
+
+    @Override
+    public void onRevoked(AbilityUseContext context) {
+        TimeSlowService.stop(context.player());
+    }
+
+    @Override
+    public void onAwaken(AbilityUseContext context) {
+        // Time Manipulation first awakens as a defensive reflex: the world
+        // around the player slows before they consciously control the power.
+        TimeSlowService.start(context.player());
     }
 
     private static final class BlinkAction implements AbilityAction {
@@ -146,6 +160,53 @@ public final class TimeManipulationAbility implements Ability {
 
             // No safe destination means no stamina is consumed or cooldown used.
             return AbilityActivationResult.REJECTED;
+        }
+    }
+
+    private static final class TimeSlowAction implements AbilityAction {
+        private static final AbilityActionDefinition DEFINITION =
+                new AbilityActionDefinition(
+                        ResourceLocation.fromNamespaceAndPath(
+                                HeroesEvolved.MOD_ID,
+                                "time_slow"
+                        ),
+                        "action.heroesevolved.time_slow",
+                        1,
+                        0,
+                        0
+                );
+
+        @Override
+        public AbilityActionDefinition definition() {
+            return DEFINITION;
+        }
+
+        @Override
+        public int energyCost(int powerLevel) {
+            return HeroesEvolvedConfig.COMMON.timeSlowEnergyCost.get();
+        }
+
+        @Override
+        public int cooldownTicks(int powerLevel) {
+            return HeroesEvolvedConfig.COMMON.timeSlowCooldownTicks.get();
+        }
+
+        @Override
+        public boolean canUse(AbilityUseContext context) {
+            return !context.player().isPassenger()
+                    && !TimeSlowService.hasActiveField(context.player());
+        }
+
+        @Override
+        public AbilityActivationResult activate(AbilityUseContext context) {
+            ServerPlayer player = context.player();
+
+            TimeSlowService.start(player);
+            MasteryService.awardPowerUse(
+                    player,
+                    context.abilityId()
+            );
+            return AbilityActivationResult.SUCCESS;
         }
     }
 }
