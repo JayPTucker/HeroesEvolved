@@ -3,10 +3,12 @@ package com.jayptucker.heroesevolved.events;
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.ability.AbilitySlot;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
+import com.jayptucker.heroesevolved.client.sound.FlightBoostWindSound;
 import com.jayptucker.heroesevolved.gui.screen.PowersScreen;
 import com.jayptucker.heroesevolved.input.ModKeyMappings;
 import com.jayptucker.heroesevolved.network.ActivateAbilitySlotPayload;
 import com.jayptucker.heroesevolved.network.ClientPowerState;
+import com.jayptucker.heroesevolved.network.ClientFlightVisualState;
 import com.jayptucker.heroesevolved.network.FlightForwardInputPayload;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -47,6 +49,7 @@ public final class ClientKeyEvents {
 
         if (minecraft.player == null || minecraft.screen != null) {
             syncFlightForwardInput(false);
+            FlightBoostWindSound.update(false);
             jumpWasDown = false;
             return;
         }
@@ -59,6 +62,12 @@ public final class ClientKeyEvents {
         boolean flightBoostActive = minecraft.options.keyUp.isDown()
                 && minecraft.options.keySprint.isDown();
         syncFlightForwardInput(flightBoostActive);
+        FlightBoostWindSound.update(
+                flightBoostActive
+                        && ClientFlightVisualState.isFlightActive(
+                                minecraft.player.getId()
+                        )
+        );
 
         boolean allowOverexertion =
                 minecraft.options.keyShift.isDown();

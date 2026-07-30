@@ -30,6 +30,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.NeoForgeMod;
 import com.jayptucker.heroesevolved.sounds.ModSounds;
 import net.minecraft.sounds.SoundSource;
+import net.neoforged.neoforge.registries.DeferredHolder;
 
 import java.util.HashMap;
 import java.util.List;
@@ -41,10 +42,18 @@ public final class FlightService {
             Math.toRadians(75.0D);
     private static final double CYCLONE_ORBIT_HEIGHT = 3.0D;
     private static final int CYCLONE_ASCENT_TICKS = 15;
+    private static final double TRAIL_PARTICLE_SPACING = 0.35D;
+    private static final double TRAIL_RESET_DISTANCE = 12.0D;
+    private static final int MAX_TRAIL_PARTICLES_PER_EMISSION = 16;
 
     // Cyclones are short-lived combat effects. Keeping their active state in
     // memory avoids persisting an incomplete tornado across a server restart.
     private static final Map<UUID, CycloneState> ACTIVE_CYCLONES =
+            new HashMap<>();
+
+    // The previous emission point lets the server fill the distance travelled
+    // in one tick, keeping a fast Flight Boost contrail continuous.
+    private static final Map<UUID, Vec3> LAST_CONTRAIL_POSITIONS =
             new HashMap<>();
 
     private static final ResourceLocation FLIGHT_PERMISSION_MODIFIER_ID =
@@ -104,7 +113,7 @@ public final class FlightService {
                 0.90F,
                 1.0F
         );
-        
+
         int ascentDurationTicks = HeroesEvolvedConfig.COMMON
                 .flightLaunchAscentDurationSeconds
                 .get() * 20;
@@ -291,10 +300,14 @@ public final class FlightService {
 
         // Cyclone uses the Flight Boost pose again, so its contrail uses the
         // same animated-foot position as high-speed forward flight.
-        if ((flightData.visualPoseActive() || cycloneActive)
+        boolean contrailActive = flightData.visualPoseActive() || cycloneActive;
+
+        if (contrailActive
                 && gameTime % HeroesEvolvedConfig.COMMON
                 .flightTrailIntervalTicks.get() == 0) {
             spawnContrail(player, false);
+        } else if (!contrailActive) {
+            LAST_CONTRAIL_POSITIONS.remove(player.getUUID());
         }
 
         // Cyclone already charges a large, one-time activation cost. It must
@@ -721,6 +734,7 @@ public final class FlightService {
                 PlayerFlightData.empty()
         );
         ACTIVE_CYCLONES.remove(player.getUUID());
+        LAST_CONTRAIL_POSITIONS.remove(player.getUUID());
 
         FlightVisualSyncService.syncToTrackingPlayers(player);
 
@@ -788,6 +802,7 @@ public final class FlightService {
     }
 
     private static void triggerFlightBoostSonicBoom(ServerPlayer player) {
+        
         Vec3 explosionPosition = player.position().add(0.0D, 0.9D, 0.0D);
 
         // NONE keeps terrain intact and prevents fire, while the custom
@@ -804,7 +819,7 @@ public final class FlightService {
                 Level.ExplosionInteraction.NONE,
                 ParticleTypes.EXPLOSION,
                 ParticleTypes.EXPLOSION_EMITTER,
-                SoundEvents.GENERIC_EXPLODE
+                ModSounds.FLIGHT_BOOST
         );
 
         spawnForwardShockwave(player, player.getLookAngle());
@@ -830,12 +845,46 @@ public final class FlightService {
                     .add(0.0D, 0.80D, 0.0D);
         }
 
-        player.serverLevel().sendParticles(
+        Vec3 previousPosition = LAST_CONTRAIL_POSITIONS.put(
+                player.getUUID(),
+                particlePosition
+        );
+
+        if (previousPosition == null
+                || previousPosition.distanceToSqr(particlePosition)
+                > TRAIL_RESET_DISTANCE * TRAIL_RESET_DISTANCE) {
+            sendContrailParticle(player.serverLevel(), particlePosition);
+            return;
+        }
+
+        double distance = previousPosition.distanceTo(particlePosition);
+        int particleCount = Math.clamp(
+                (int) Math.ceil(distance / TRAIL_PARTICLE_SPACING),
+                1,
+                MAX_TRAIL_PARTICLES_PER_EMISSION
+        );
+
+        // Each particle is placed along the travelled path instead of all
+        // spawning at the player. This removes visible gaps at high speed.
+        for (int index = 1; index <= particleCount; index++) {
+            Vec3 interpolatedPosition = previousPosition.lerp(
+                    particlePosition,
+                    (double) index / particleCount
+            );
+            sendContrailParticle(player.serverLevel(), interpolatedPosition);
+        }
+    }
+
+    private static void sendContrailParticle(
+            ServerLevel level,
+            Vec3 position
+    ) {
+        level.sendParticles(
                 ModParticles.WHITE_CONTRAIL_SMOKE.get(),
-                particlePosition.x,
-                particlePosition.y,
-                particlePosition.z,
-                3,
+                position.x,
+                position.y,
+                position.z,
+                1,
                 0.0D,
                 0.0D,
                 0.0D,

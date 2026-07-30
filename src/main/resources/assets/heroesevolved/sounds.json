@@ -45,7 +45,17 @@
     "sounds": [
       {
         "name": "heroesevolved:ability/flight_launch",
-        "volume": 0.9,
+        "volume": 1.0,
+        "pitch": 1.0
+      }
+    ]
+  },
+   "flight_boost": {
+    "subtitle": "subtitles.heroesevolved.flight_boost",
+    "sounds": [
+      {
+        "name": "heroesevolved:ability/flight_boost",
+        "volume": 2.0,
         "pitch": 1.0
       }
     ]

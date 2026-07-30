@@ -5,6 +5,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.util.function.Supplier;
@@ -61,6 +62,16 @@ public final class ModSounds {
                                 "flight_launch"
                         )
                 )
+        );
+
+        public static final DeferredHolder<SoundEvent, SoundEvent> FLIGHT_BOOST =
+                SOUND_EVENTS.register("flight_boost", () ->
+                        SoundEvent.createVariableRangeEvent(
+                                ResourceLocation.fromNamespaceAndPath(
+                                        HeroesEvolved.MOD_ID, 
+                                        "flight_boost"
+                                )
+                        )
         );
 
     private ModSounds() {
