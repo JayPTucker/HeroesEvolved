@@ -1,11 +1,22 @@
 package com.jayptucker.heroesevolved.time;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.Display;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import com.jayptucker.heroesevolved.entity.TemporalEchoEntity;
@@ -22,6 +33,8 @@ public final class TemporalEchoService {
     private static final Map<UUID, List<TemporalEchoEntity>> SNAPSHOT_ECHOES =
             new HashMap<>();
     private static final Map<UUID, UUID> ECHO_RECIPIENTS = new HashMap<>();
+    private static final Map<UUID, EchoPlayback> ECHO_PLAYBACKS = new HashMap<>();
+    private static final List<GhostBlock> GHOST_BLOCKS = new ArrayList<>();
 
     private TemporalEchoService() {
     }
@@ -49,6 +62,9 @@ public final class TemporalEchoService {
                     data.playerName() + " (Past Echo)"
             );
             ECHO_RECIPIENTS.put(echo.getUUID(), data.playerId());
+            ECHO_PLAYBACKS.put(echo.getUUID(), new EchoPlayback(
+                    echo, data, snapshot, level.getGameTime()
+            ));
             echoes.add(echo);
         }
         SNAPSHOT_ECHOES.put(ownerId, echoes);
@@ -65,16 +81,19 @@ public final class TemporalEchoService {
                 echo.discard();
             }
             ECHO_RECIPIENTS.remove(echo.getUUID());
+            ECHO_PLAYBACKS.remove(echo.getUUID());
         }
     }
 
     public static void tick() {
         for (List<TemporalEchoEntity> echoes : SNAPSHOT_ECHOES.values()) {
             for (TemporalEchoEntity echo : echoes) {
+                replayHistory(echo);
                 emitFlicker(echo);
                 transferOfferedItems(echo);
             }
         }
+        removeExpiredGhostBlocks();
     }
 
     private static TemporalEchoEntity createEcho(
@@ -110,6 +129,140 @@ public final class TemporalEchoService {
                     echo.getX(), echo.getY() + 1.0D, echo.getZ(),
                     2, 0.20D, 0.45D, 0.20D, 0.0D);
         }
+    }
+
+    /** Replays a recorded minute of history, then loops back to its start. */
+    private static void replayHistory(TemporalEchoEntity echo) {
+        EchoPlayback playback = ECHO_PLAYBACKS.get(echo.getUUID());
+        if (playback == null || echo.isRemoved()
+                || !(echo.level() instanceof ServerLevel level)) {
+            return;
+        }
+
+        int playbackTick = (int) ((level.getGameTime() - playback.startedAt())
+                % TemporalEchoRecordingService.getRecordingLengthTicks());
+        moveEchoToFrame(playback, playbackTick);
+        replayActions(playback, playbackTick);
+    }
+
+    private static void moveEchoToFrame(EchoPlayback playback, int playbackTick) {
+        List<TemporalEchoFrame> frames = playback.data().frames();
+        if (frames.isEmpty()) {
+            return;
+        }
+
+        TemporalEchoFrame previous = frames.getFirst();
+        TemporalEchoFrame next = previous;
+        for (TemporalEchoFrame frame : frames) {
+            if (frame.playbackTick() > playbackTick) {
+                next = frame;
+                break;
+            }
+            previous = frame;
+            next = frame;
+        }
+
+        double progress = next.playbackTick() == previous.playbackTick()
+                ? 0.0D
+                : (double) (playbackTick - previous.playbackTick())
+                        / (next.playbackTick() - previous.playbackTick());
+        double sourceX = lerp(progress, previous.x(), next.x());
+        double sourceY = lerp(progress, previous.y(), next.y());
+        double sourceZ = lerp(progress, previous.z(), next.z());
+        float yaw = (float) lerp(progress, previous.yaw(), next.yaw());
+        float pitch = (float) lerp(progress, previous.pitch(), next.pitch());
+        PlayerTemporalSnapshotData snapshot = playback.snapshot();
+        TemporalEchoEntity echo = playback.echo();
+        echo.teleportTo(
+                snapshot.snapshotMinX() + (sourceX - snapshot.sourceMinX()),
+                sourceY,
+                snapshot.snapshotMinZ() + (sourceZ - snapshot.sourceMinZ())
+        );
+        echo.setYRot(yaw);
+        echo.setYHeadRot(yaw);
+        echo.setXRot(pitch);
+    }
+
+    private static void replayActions(EchoPlayback playback, int playbackTick) {
+        if (!(playback.echo().level() instanceof ServerLevel level)) {
+            return;
+        }
+        for (TemporalEchoAction action : playback.data().actions()) {
+            if (action.playbackTick() == playbackTick) {
+                showGhostAction(level, playback.snapshot(), action);
+            }
+        }
+    }
+
+    /**
+     * Block actions are deliberately visual only. The snapshot's real blocks
+     * are never edited by an echo replay, so history cannot create dupes.
+     */
+    private static void showGhostAction(
+            ServerLevel level,
+            PlayerTemporalSnapshotData snapshot,
+            TemporalEchoAction action
+    ) {
+        Block block = BuiltInRegistries.BLOCK.get(action.blockId());
+        BlockState state = (block == null ? Blocks.STONE : block).defaultBlockState();
+        BlockPos source = action.position();
+        double x = snapshot.snapshotMinX() + (source.getX() - snapshot.sourceMinX()) + 0.5D;
+        double y = source.getY() + 0.5D;
+        double z = snapshot.snapshotMinZ() + (source.getZ() - snapshot.sourceMinZ()) + 0.5D;
+
+        level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, state),
+                x, y, z, action.placement() ? 10 : 22,
+                0.22D, 0.22D, 0.22D, 0.05D);
+        level.sendParticles(ParticleTypes.END_ROD,
+                x, y, z, action.placement() ? 8 : 14,
+                0.18D, 0.18D, 0.18D, 0.015D);
+
+        if (action.placement()) {
+            spawnGhostBlock(level, state, x - 0.5D, y - 0.5D, z - 0.5D);
+        }
+
+        SoundEvent sound = action.placement()
+                ? state.getSoundType().getPlaceSound()
+                : state.getSoundType().getBreakSound();
+        level.playSound(null, x, y, z, sound, SoundSource.BLOCKS,
+                0.55F, action.placement() ? 1.18F : 0.88F);
+    }
+
+    /** A block display is visual-only: it cannot collide, be mined, or alter the snapshot. */
+    private static void spawnGhostBlock(
+            ServerLevel level,
+            BlockState state,
+            double x,
+            double y,
+            double z
+    ) {
+        Display.BlockDisplay ghost = EntityType.BLOCK_DISPLAY.create(level);
+        if (ghost == null) {
+            return;
+        }
+
+        CompoundTag tag = new CompoundTag();
+        tag.put(Display.BlockDisplay.TAG_BLOCK_STATE, NbtUtils.writeBlockState(state));
+        ghost.load(tag);
+        ghost.setPos(x, y, z);
+        ghost.setGlowingTag(true);
+        ghost.setNoGravity(true);
+        level.addFreshEntity(ghost);
+        GHOST_BLOCKS.add(new GhostBlock(ghost, level.getGameTime() + 20L));
+    }
+
+    private static void removeExpiredGhostBlocks() {
+        GHOST_BLOCKS.removeIf(ghost -> {
+            if (!ghost.display().isRemoved()
+                    && ghost.display().level().getGameTime() >= ghost.expiresAt()) {
+                ghost.display().discard();
+            }
+            return ghost.display().isRemoved();
+        });
+    }
+
+    private static double lerp(double progress, double start, double end) {
+        return start + (end - start) * progress;
     }
 
     /**
@@ -156,5 +309,16 @@ public final class TemporalEchoService {
                     echo.getX(), echo.getY() + 1.0D, echo.getZ(),
                     12, 0.25D, 0.50D, 0.25D, 0.05D);
         }
+    }
+
+    private record EchoPlayback(
+            TemporalEchoEntity echo,
+            TemporalEchoData data,
+            PlayerTemporalSnapshotData snapshot,
+            long startedAt
+    ) {
+    }
+
+    private record GhostBlock(Display.BlockDisplay display, long expiresAt) {
     }
 }

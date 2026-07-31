@@ -28,8 +28,6 @@ public final class TemporalChestService {
             new HashSet<>();
     private static final Map<UUID, List<ParadoxState>> UNRESOLVED_PARADOXES =
             new HashMap<>();
-    private static final Map<UUID, List<ParadoxState>> RESTORED_TIMELINE_SLOTS =
-            new HashMap<>();
 
     private TemporalChestService() {
     }
@@ -77,42 +75,10 @@ public final class TemporalChestService {
             return;
         }
 
-        boolean paradoxDetected = false;
         for (int slot = 0; slot < pastChest.getContainerSize(); slot++) {
             ItemStack openedStack = session.openedContents().get(slot);
             ItemStack pastStack = pastChest.getItem(slot);
             ItemStack presentStack = presentChest.getItem(slot);
-
-            // Taking an item from the Past is always a temporal violation.
-            // The Present may still be updated safely below, but the entire
-            // snapshot group must feel the resulting paradox on return.
-            if (isRemoval(openedStack, pastStack)) {
-                paradoxDetected = true;
-                recordParadox(
-                        session.snapshotOwnerId(),
-                        session.presentPosition(),
-                        slot,
-                        openedStack
-                );
-            }
-
-            if (isRestoredTimelineRemoval(
-                    player,
-                    session.snapshotOwnerId(),
-                    session.presentPosition(),
-                    slot,
-                    openedStack,
-                    pastStack
-            )) {
-                paradoxDetected = true;
-                recordParadox(
-                        session.snapshotOwnerId(),
-                        session.presentPosition(),
-                        slot,
-                        openedStack
-                );
-                continue;
-            }
 
             if (applyPastChange(
                     presentChest,
@@ -121,7 +87,6 @@ public final class TemporalChestService {
                     pastStack,
                     presentStack
             )) {
-                paradoxDetected = true;
                 recordParadox(
                         session.snapshotOwnerId(),
                         session.presentPosition(),
@@ -132,21 +97,13 @@ public final class TemporalChestService {
         }
         presentChest.setChanged();
 
-        if (paradoxDetected) {
-            PENDING_PARADOX_WARNINGS.add(session.snapshotOwnerId());
-        }
-
-        resolveRestoredTimeline(player, session, pastChest);
+        resolveRestoredTimeline(session, pastChest, presentChest);
     }
 
     /** A paradox belongs to the shared snapshot, not the player who caused it. */
-    public static boolean hasPendingParadoxWarning(UUID snapshotOwnerId) {
-        return PENDING_PARADOX_WARNINGS.contains(snapshotOwnerId);
-    }
-
-    /** Called after every traveler in the returning group has seen the warning. */
-    public static void clearParadoxWarning(UUID snapshotOwnerId) {
-        PENDING_PARADOX_WARNINGS.remove(snapshotOwnerId);
+    public static boolean hasActiveParadox(UUID snapshotOwnerId) {
+        return PENDING_PARADOX_WARNINGS.contains(snapshotOwnerId)
+                || UNRESOLVED_PARADOXES.containsKey(snapshotOwnerId);
     }
 
     public static boolean consumeRestorationMessage(UUID snapshotOwnerId) {
@@ -156,7 +113,6 @@ public final class TemporalChestService {
     /** A replacement snapshot starts a new timeline and clears old history. */
     public static void clearSnapshotHistory(ServerPlayer player) {
         UNRESOLVED_PARADOXES.remove(player.getUUID());
-        RESTORED_TIMELINE_SLOTS.remove(player.getUUID());
         PENDING_PARADOX_WARNINGS.remove(player.getUUID());
         PENDING_RESTORATION_MESSAGES.remove(player.getUUID());
     }
@@ -179,13 +135,11 @@ public final class TemporalChestService {
         }
 
         List<ItemStack> availablePresentItems = copyContents(presentChest);
-        boolean paradoxDetected = false;
         for (int slot = 0; slot < pastChest.getContainerSize(); slot++) {
             ItemStack requiredStack = pastChest.getItem(slot);
             if (!requiredStack.isEmpty()
                     && !consumeMatchingItems(
                     availablePresentItems, requiredStack)) {
-                paradoxDetected = true;
                 // The player can repair this contradiction by rebuilding the
                 // chest at the same Past position and restoring this stack.
                 recordParadox(
@@ -214,9 +168,6 @@ public final class TemporalChestService {
         presentChest.setChanged();
         present.setBlock(presentPosition, Blocks.AIR.defaultBlockState(), 3);
 
-        if (paradoxDetected) {
-            PENDING_PARADOX_WARNINGS.add(snapshotOwnerId(player));
-        }
     }
 
     private static boolean consumeMatchingItems(
@@ -242,9 +193,9 @@ public final class TemporalChestService {
     }
 
     private static void resolveRestoredTimeline(
-            ServerPlayer player,
             OpenTemporalChest session,
-            ChestBlockEntity pastChest
+            ChestBlockEntity pastChest,
+            ChestBlockEntity presentChest
     ) {
         UUID snapshotOwnerId = session.snapshotOwnerId();
         List<ParadoxState> paradoxes = UNRESOLVED_PARADOXES.get(snapshotOwnerId);
@@ -259,25 +210,21 @@ public final class TemporalChestService {
                         pastChest.getItem(paradox.slot()),
                         paradox.requiredStack()
                 ) && pastChest.getItem(paradox.slot()).getCount()
+                        >= paradox.requiredStack().getCount()
+                        && ItemStack.isSameItemSameComponents(
+                        presentChest.getItem(paradox.slot()),
+                        paradox.requiredStack()
+                ) && presentChest.getItem(paradox.slot()).getCount()
                         >= paradox.requiredStack().getCount())
                 .toList();
         boolean restored = !restoredStates.isEmpty();
         paradoxes.removeAll(restoredStates);
 
-        if (restored) {
-            List<ParadoxState> restoredSlots = RESTORED_TIMELINE_SLOTS
-                    .computeIfAbsent(snapshotOwnerId,
-                            ignored -> new ArrayList<>());
-            for (ParadoxState restoredState : restoredStates) {
-                if (!restoredSlots.contains(restoredState)) {
-                    restoredSlots.add(restoredState);
-                }
-            }
-        }
-
         if (paradoxes.isEmpty()) {
             UNRESOLVED_PARADOXES.remove(snapshotOwnerId);
             if (restored) {
+                // All repairable contradictions are fixed.
+                PENDING_PARADOX_WARNINGS.remove(snapshotOwnerId);
                 PENDING_RESTORATION_MESSAGES.add(snapshotOwnerId);
             }
         }
@@ -357,27 +304,6 @@ public final class TemporalChestService {
                     presentPosition.immutable(), slot, requiredStack.copy()
             ));
         }
-    }
-
-    private static boolean isRestoredTimelineRemoval(
-            ServerPlayer player,
-            UUID snapshotOwnerId,
-            BlockPos presentPosition,
-            int slot,
-            ItemStack openedStack,
-            ItemStack pastStack
-    ) {
-        if (!isRemoval(openedStack, pastStack)) {
-            return false;
-        }
-
-        return RESTORED_TIMELINE_SLOTS.getOrDefault(
-                snapshotOwnerId, List.of()
-        ).stream().anyMatch(paradox -> paradox.presentPosition().equals(
-                presentPosition
-        ) && paradox.slot() == slot && ItemStack.isSameItemSameComponents(
-                paradox.requiredStack(), openedStack
-        ));
     }
 
     private static void copyContents(ChestBlockEntity source,

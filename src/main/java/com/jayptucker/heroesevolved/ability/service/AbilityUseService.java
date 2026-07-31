@@ -77,6 +77,14 @@ public final class AbilityUseService {
                 allowOverexertion
         );
 
+        // A held modifier has a second purpose for persistent abilities:
+        // end the effect immediately. This branch is intentionally before
+        // cooldown and energy checks, because ending an effect is always free.
+        if (context.modifierHeld() && abilityAction.deactivate(context)) {
+            PlayerPowerSyncService.sync(player);
+            return AbilityUseResult.SUCCESS;
+        }
+
         ResourceLocation cooldownId = abilityAction.cooldownId(context);
 
         if (CooldownService.isOnCooldown(player, cooldownId)) {

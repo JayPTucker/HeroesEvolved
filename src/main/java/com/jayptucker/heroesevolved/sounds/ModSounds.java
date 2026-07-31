@@ -53,6 +53,17 @@ public final class ModSounds {
                             )
                     )
             );
+
+    /** Shared cue for activating or releasing local Time Slow/Time Stop. */
+    public static final Supplier<SoundEvent> TIME_SLOW_STOP =
+            SOUND_EVENTS.register("time_slow_stop", () ->
+                    SoundEvent.createVariableRangeEvent(
+                            ResourceLocation.fromNamespaceAndPath(
+                                    HeroesEvolved.MOD_ID,
+                                    "time_slow_stop"
+                            )
+                    )
+            );
         
         public static final Supplier<SoundEvent> FLIGHT_LAUNCH =
             SOUND_EVENTS.register("flight_launch", () ->

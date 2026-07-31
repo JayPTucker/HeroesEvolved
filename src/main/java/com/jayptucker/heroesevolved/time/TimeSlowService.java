@@ -68,7 +68,7 @@ public final class TimeSlowService {
                 player.getX(),
                 player.getY(),
                 player.getZ(),
-                ModSounds.TIME_SLOW.get(),
+                ModSounds.TIME_SLOW_STOP.get(),
                 SoundSource.PLAYERS,
                 0.90F,
                 1.0F
@@ -303,7 +303,7 @@ public final class TimeSlowService {
         // The owner receives a direct sound packet, which prevents the end
         // cue from being lost if they have moved away from the field center.
         owner.playNotifySound(
-                ModSounds.TIME_UNSLOW.get(),
+                ModSounds.TIME_SLOW_STOP.get(),
                 SoundSource.PLAYERS,
                 0.90F,
                 1.0F
@@ -315,7 +315,7 @@ public final class TimeSlowService {
                 field.center().x,
                 field.center().y,
                 field.center().z,
-                ModSounds.TIME_UNSLOW.get(),
+                ModSounds.TIME_SLOW_STOP.get(),
                 SoundSource.PLAYERS,
                 0.90F,
                 1.0F

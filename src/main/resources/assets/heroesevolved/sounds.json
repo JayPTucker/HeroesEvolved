@@ -40,6 +40,16 @@
       }
     ]
   },
+  "time_slow_stop": {
+    "subtitle": "subtitles.heroesevolved.time_slow_stop",
+    "sounds": [
+      {
+        "name": "heroesevolved:ability/time_slow_stop",
+        "volume": 0.9,
+        "pitch": 1.0
+      }
+    ]
+  },
   "flight_launch": {
     "subtitle": "subtitles.heroesevolved.flight_launch",
     "sounds": [

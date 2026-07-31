@@ -83,7 +83,12 @@ public final class TemporalSnapshotService {
                 sourceMinZ,
                 snapshotMin.getX(),
                 snapshotMin.getZ(),
-                captureEchoes(player, sourceMinX, sourceMinZ, widthBlocks)
+                TemporalEchoRecordingService.capturePlayersInside(
+                        player,
+                        sourceMinX,
+                        sourceMinZ,
+                        widthBlocks
+                )
         );
         TemporalChestService.clearSnapshotHistory(player);
         player.setData(ModDataAttachments.PLAYER_TEMPORAL_SNAPSHOT.get(), data);
@@ -163,7 +168,7 @@ public final class TemporalSnapshotService {
                 })
                 .toList();
         boolean showParadoxWarning = TemporalChestService
-                .hasPendingParadoxWarning(visit.ownerId());
+                .hasActiveParadox(visit.ownerId());
         boolean showRestorationMessage = TemporalChestService
                 .consumeRestorationMessage(visit.ownerId());
 
@@ -178,11 +183,6 @@ public final class TemporalSnapshotService {
                     showParadoxWarning,
                     showRestorationMessage
             );
-        }
-        if (showParadoxWarning) {
-            // The entire return group saw the message, so this snapshot is
-            // ready to track its next paradox independently.
-            TemporalChestService.clearParadoxWarning(visit.ownerId());
         }
         if (player.getUUID().equals(visit.ownerId())) {
             TemporalEchoService.removeSnapshotEchoes(visit.ownerId());
@@ -233,6 +233,7 @@ public final class TemporalSnapshotService {
     }
 
     public static void tick(MinecraftServer server) {
+        TemporalEchoRecordingService.tick(server);
         TemporalEchoService.tick();
         int budget = HeroesEvolvedConfig.COMMON
                 .timeSnapshotCopyBlocksPerTick.get();
@@ -350,28 +351,6 @@ public final class TemporalSnapshotService {
 
     private static int snapshotWidthBlocks() {
         return HeroesEvolvedConfig.COMMON.timeSnapshotWidthChunks.get() * 16;
-    }
-
-    private static List<TemporalEchoData> captureEchoes(
-            ServerPlayer owner,
-            int sourceMinX,
-            int sourceMinZ,
-            int widthBlocks
-    ) {
-        int sourceMaxX = sourceMinX + widthBlocks;
-        int sourceMaxZ = sourceMinZ + widthBlocks;
-        return owner.serverLevel().players().stream()
-                .filter(player -> player.getX() >= sourceMinX
-                        && player.getX() < sourceMaxX
-                        && player.getZ() >= sourceMinZ
-                        && player.getZ() < sourceMaxZ)
-                .map(player -> new TemporalEchoData(
-                        player.getUUID(),
-                        player.getName().getString(),
-                        player.getX(), player.getY(), player.getZ(),
-                        player.getYRot(), player.getXRot()
-                ))
-                .toList();
     }
 
     private static double clampToSnapshot(double coordinate, int width) {

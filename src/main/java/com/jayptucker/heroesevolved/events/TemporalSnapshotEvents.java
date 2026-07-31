@@ -6,6 +6,8 @@ import com.jayptucker.heroesevolved.time.TemporalChestService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.BlockEvent;
@@ -72,7 +74,19 @@ public final class TemporalSnapshotEvents {
             return;
         }
 
-        present.destroyBlock(presentPos, true, player);
+        BlockState pastState = snapshotLevel.getBlockState(event.getPos());
+        Block.dropResources(
+                pastState,
+                snapshotLevel,
+                event.getPos(),
+                snapshotLevel.getBlockEntity(event.getPos()),
+                player,
+                player.getMainHandItem()
+        );
+
+        // The Present reflects the changed timeline, but never creates a
+        // second item drop that could be collected for duplication.
+        present.destroyBlock(presentPos, false, player);
         snapshotLevel.setBlock(event.getPos(),
                 net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3);
     }

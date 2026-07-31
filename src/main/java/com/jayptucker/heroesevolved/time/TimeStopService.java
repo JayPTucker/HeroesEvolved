@@ -2,11 +2,13 @@ package com.jayptucker.heroesevolved.time;
 
 import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
 import com.jayptucker.heroesevolved.events.EclipseService;
+import com.jayptucker.heroesevolved.sounds.ModSounds;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.Level;
@@ -37,6 +39,8 @@ public final class TimeStopService {
     public static void start(ServerPlayer player, int powerLevel) {
         ServerLevel level = player.serverLevel();
 
+        playTemporalCue(level, player.position(), player);
+
         ACTIVE_FIELDS.put(
                 player.getUUID(),
                 new TimeStopField(
@@ -49,7 +53,11 @@ public final class TimeStopService {
     }
 
     public static void stop(ServerPlayer player) {
-        ACTIVE_FIELDS.remove(player.getUUID());
+        TimeStopField field = ACTIVE_FIELDS.remove(player.getUUID());
+
+        if (field != null) {
+            playTemporalCue(player.serverLevel(), field.center(), player);
+        }
 
         if (ACTIVE_FIELDS.isEmpty()) {
             restoreAllProjectiles();
@@ -66,11 +74,17 @@ public final class TimeStopService {
                     field.ownerId()
             );
 
-            if (level == null
+            boolean hasEnded = level == null
                     || owner == null
                     || EclipseService.arePowersSuppressed(owner)
-                    || field.advanceTimer()) {
+                    || field.advanceTimer();
+
+            if (hasEnded) {
                 iterator.remove();
+
+                if (level != null && owner != null) {
+                    playTemporalCue(level, field.center(), owner);
+                }
             }
         }
 
@@ -227,6 +241,30 @@ public final class TimeStopService {
                     new ClientboundSetEntityMotionPacket(projectile)
             );
         }
+    }
+
+    /** Plays the same cue for freezing time and returning it to normal. */
+    private static void playTemporalCue(
+            ServerLevel level,
+            Vec3 position,
+            ServerPlayer owner
+    ) {
+        owner.playNotifySound(
+                ModSounds.TIME_SLOW_STOP.get(),
+                SoundSource.PLAYERS,
+                0.90F,
+                1.0F
+        );
+        level.playSound(
+                owner,
+                position.x,
+                position.y,
+                position.z,
+                ModSounds.TIME_SLOW_STOP.get(),
+                SoundSource.PLAYERS,
+                0.90F,
+                1.0F
+        );
     }
 
     private static final class TimeStopField {

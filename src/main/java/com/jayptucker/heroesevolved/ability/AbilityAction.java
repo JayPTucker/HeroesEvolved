@@ -9,6 +9,15 @@ public interface AbilityAction {
 
     AbilityActivationResult activate(AbilityUseContext context);
 
+    /**
+     * Lets toggle-style actions end an existing effect without paying their
+     * activation cost or starting a second cooldown. Shift is the shared
+     * "end active ability" modifier used by the input layer.
+     */
+    default boolean deactivate(AbilityUseContext context) {
+        return false;
+    }
+
     default int energyCost(int powerLevel) {
         return definition().energyCostForLevel(powerLevel);
     }

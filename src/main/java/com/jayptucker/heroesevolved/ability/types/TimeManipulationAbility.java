@@ -391,6 +391,16 @@ public final class TimeManipulationAbility implements Ability {
         }
 
         @Override
+        public boolean deactivate(AbilityUseContext context) {
+            if (!TimeSlowService.hasActiveField(context.player())) {
+                return false;
+            }
+
+            TimeSlowService.stop(context.player());
+            return true;
+        }
+
+        @Override
         public AbilityActivationResult activate(AbilityUseContext context) {
             ServerPlayer player = context.player();
 
@@ -435,6 +445,16 @@ public final class TimeManipulationAbility implements Ability {
         public boolean canUse(AbilityUseContext context) {
             return !context.player().isPassenger()
                     && !TimeStopService.hasActiveField(context.player());
+        }
+
+        @Override
+        public boolean deactivate(AbilityUseContext context) {
+            if (!TimeStopService.hasActiveField(context.player())) {
+                return false;
+            }
+
+            TimeStopService.stop(context.player());
+            return true;
         }
 
         @Override
