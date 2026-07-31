@@ -11,6 +11,8 @@ import com.jayptucker.heroesevolved.energy.PlayerEnergyData;
 import com.jayptucker.heroesevolved.combat.PlayerCombatData;
 import com.jayptucker.heroesevolved.cooldown.PlayerCooldownData;
 import com.jayptucker.heroesevolved.flight.PlayerFlightData;
+import com.jayptucker.heroesevolved.time.PlayerTemporalSnapshotData;
+import com.jayptucker.heroesevolved.time.PlayerTemporalVisitData;
 import com.mojang.serialization.Codec;
 
 import java.util.function.Supplier;
@@ -85,6 +87,30 @@ public final class ModDataAttachments {
                 AttachmentType.builder(PlayerFlightData::empty)
                         .build()
     );
+
+    public static final Supplier<AttachmentType<PlayerTemporalSnapshotData>>
+            PLAYER_TEMPORAL_SNAPSHOT = ATTACHMENTS.register(
+                    "player_temporal_snapshot",
+                    () -> AttachmentType
+                            .<PlayerTemporalSnapshotData>builder(
+                                    PlayerTemporalSnapshotData::empty
+                            )
+                            .serialize(PlayerTemporalSnapshotData.CODEC)
+                            .copyOnDeath()
+                            .build()
+            );
+
+    public static final Supplier<AttachmentType<PlayerTemporalVisitData>>
+            PLAYER_TEMPORAL_VISIT = ATTACHMENTS.register(
+                    "player_temporal_visit",
+                    () -> AttachmentType
+                            .<PlayerTemporalVisitData>builder(
+                                    PlayerTemporalVisitData::empty
+                            )
+                            .serialize(PlayerTemporalVisitData.CODEC)
+                            .copyOnDeath()
+                            .build()
+            );
 
     public static void register(IEventBus modEventBus) {
         ATTACHMENTS.register(modEventBus);

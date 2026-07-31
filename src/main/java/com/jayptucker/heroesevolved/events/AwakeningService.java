@@ -48,7 +48,8 @@ public final class AwakeningService {
             ability.onAwaken(new AbilityUseContext(
                     player,
                     abilityId,
-                    assignment.get().getValue().level()
+                    assignment.get().getValue().level(),
+                    false
             ));
         }
 

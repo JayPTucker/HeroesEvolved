@@ -43,6 +43,13 @@ public final class ModKeyMappings {
             "key.categories.heroesevolved"
     );
 
+    public static final KeyMapping ABILITY_4 = new KeyMapping(
+            "key.heroesevolved.ability_4",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_X,
+            "key.categories.heroesevolved"
+    );
+
     private ModKeyMappings() {
     }
 
@@ -52,5 +59,6 @@ public final class ModKeyMappings {
         event.register(ABILITY_1);
         event.register(ABILITY_2);
         event.register(ABILITY_3);
+        event.register(ABILITY_4);
     }
 }

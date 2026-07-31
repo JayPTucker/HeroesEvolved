@@ -67,7 +67,9 @@ public record PlayerPowerSyncPayload(
             buffer -> {
                 int size = buffer.readVarInt();
 
-                if (size < 0 || size > 3) {
+                // Time Manipulation has a fourth, Level 5 action. Keep this
+                // packet limit aligned with the highest supported slot count.
+                if (size < 0 || size > 5) {
                     throw new IllegalArgumentException(
                             "Invalid action snapshot count: " + size
                     );

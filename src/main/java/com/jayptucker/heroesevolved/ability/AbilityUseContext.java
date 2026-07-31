@@ -8,7 +8,8 @@ import java.util.Objects;
 public record AbilityUseContext(
     ServerPlayer player, 
     ResourceLocation abilityId, 
-    int abilityLevel
+    int abilityLevel,
+    boolean modifierHeld
 ) {
     public AbilityUseContext {
         Objects.requireNonNull(player, "Player cannot be null.");

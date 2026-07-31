@@ -58,7 +58,8 @@ public final class PlayerAbilityTickEvents {
             ability.tick(new AbilityUseContext(
                     player,
                     assignment.getKey(),
-                    PlayerProgressionService.getLevel(player)
+                    PlayerProgressionService.getLevel(player),
+                    false
             ));
         });
     }

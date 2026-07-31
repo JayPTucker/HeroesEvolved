@@ -134,7 +134,8 @@ public final class PlayerAbilityService {
             ability.onRevoked(new AbilityUseContext(
                     player,
                     assignment.getKey(),
-                    assignment.getValue().level()
+                    assignment.getValue().level(),
+                    false
             ));
         }
     }

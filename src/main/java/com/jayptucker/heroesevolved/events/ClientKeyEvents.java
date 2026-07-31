@@ -25,6 +25,7 @@ public final class ClientKeyEvents {
     private static boolean ability1WasDown;
     private static boolean ability2WasDown;
     private static boolean ability3WasDown;
+    private static boolean ability4WasDown;
     private static boolean flightForwardWasDown;
     private static boolean jumpWasDown;
     private static int forwardInputResendTicks;
@@ -91,6 +92,13 @@ public final class ClientKeyEvents {
                 AbilitySlot.TERTIARY,
                 allowOverexertion,
                 ability3WasDown
+        );
+
+        ability4WasDown = sendAbilityRequestIfPressed(
+                ModKeyMappings.ABILITY_4,
+                AbilitySlot.QUATERNARY,
+                allowOverexertion,
+                ability4WasDown
         );
     }
 

@@ -54,11 +54,12 @@ public final class TimeSlowService {
         }
     }
 
-    public static void start(ServerPlayer player) {
+    public static void start(ServerPlayer player, int powerLevel) {
         ServerLevel level = player.serverLevel();
         int durationTicks = HeroesEvolvedConfig.COMMON
                 .timeSlowDurationSeconds
                 .get() * 20;
+        int tickInterval = getTickIntervalForLevel(powerLevel);
 
         // Starting here, instead of inside the keybind action, keeps the
         // activation sound consistent for manual use and forced awakening.
@@ -79,7 +80,8 @@ public final class TimeSlowService {
                         player.getUUID(),
                         level.dimension(),
                         player.position(),
-                        durationTicks
+                        durationTicks,
+                        tickInterval
                 )
         );
     }
@@ -120,9 +122,9 @@ public final class TimeSlowService {
     }
 
     /**
-     * Returns true on nineteen out of every twenty normal ticks. Cancelling
-     * those entity ticks produces an effective one-tick-per-second rate for
-     * AI, projectiles, falling blocks, item entities, and other entities.
+     * Returns true on all but one tick in the field's level-based interval.
+     * Cancelling those entity ticks slows AI, falling blocks, item entities,
+     * and other non-projectile entities at the field's current mastery level.
      */
     public static boolean shouldSkipEntityTick(Entity entity) {
         if (!(entity.level() instanceof ServerLevel level)) {
@@ -132,7 +134,12 @@ public final class TimeSlowService {
         TimeSlowField field = getContainingField(entity, level);
 
         if (entity instanceof Projectile projectile) {
-            updateProjectileMotion(projectile, level, field != null);
+            updateProjectileMotion(
+                    projectile,
+                    level,
+                    field != null,
+                    field == null ? 1 : field.tickInterval()
+            );
 
             // Projectiles move every server tick at one twentieth of their
             // stored velocity. This avoids the client/server rubber-banding
@@ -144,9 +151,7 @@ public final class TimeSlowService {
             return false;
         }
 
-        int interval = HeroesEvolvedConfig.COMMON
-                .timeSlowTickIntervalTicks
-                .get();
+        int interval = field.tickInterval();
         long gameTime = level.getGameTime();
 
         // Staggering entities prevents every delayed entity from updating on
@@ -156,8 +161,8 @@ public final class TimeSlowService {
     }
 
     /**
-     * Captures the result of a projectile's one slow movement tick. After
-     * twenty slow ticks, that result becomes the next full-speed velocity,
+     * Captures the result of a projectile's slow movement ticks. After its
+     * level-based interval completes, that result becomes the next full-speed velocity,
      * matching one normal tick of drag without applying it twenty times.
      */
     public static void afterEntityTick(Entity entity) {
@@ -178,9 +183,7 @@ public final class TimeSlowService {
 
         state.advanceMovementTick();
 
-        if (state.shouldUpdateFullVelocity(
-                HeroesEvolvedConfig.COMMON.timeSlowTickIntervalTicks.get()
-        )) {
+        if (state.shouldUpdateFullVelocity()) {
             state.updateFullVelocity(projectile.getDeltaMovement());
         }
     }
@@ -191,7 +194,7 @@ public final class TimeSlowService {
     ) {
         double radius = HeroesEvolvedConfig.COMMON.timeSlowRadius.get();
         double radiusSquared = radius * radius;
-        long gameTime = level.getGameTime();
+        TimeSlowField strongestField = null;
 
         for (TimeSlowField field : ACTIVE_FIELDS.values()) {
             if (!field.dimension().equals(level.dimension())
@@ -202,17 +205,22 @@ public final class TimeSlowService {
 
             if (entity.position().distanceToSqr(field.center())
                     <= radiusSquared) {
-                return field;
+                if (strongestField == null
+                        || field.tickInterval()
+                        > strongestField.tickInterval()) {
+                    strongestField = field;
+                }
             }
         }
 
-        return null;
+        return strongestField;
     }
 
     private static void updateProjectileMotion(
             Projectile projectile,
             ServerLevel level,
-            boolean isSlowed
+            boolean isSlowed,
+            int tickInterval
     ) {
         UUID projectileId = projectile.getUUID();
 
@@ -226,19 +234,18 @@ public final class TimeSlowService {
                     ignored -> new ProjectileState(
                             projectile,
                             projectile.isNoGravity(),
-                            projectile.getDeltaMovement()
+                            projectile.getDeltaMovement(),
+                            tickInterval
                     )
         );
 
-        int interval = HeroesEvolvedConfig.COMMON
-                .timeSlowTickIntervalTicks
-                .get();
+        state.setTickInterval(tickInterval);
 
         // Time Slow controls when the projectile advances. Leaving vanilla
         // gravity active would make arrows fall between their slow updates.
         projectile.setNoGravity(true);
         projectile.setDeltaMovement(
-                state.fullVelocity().scale(1.0D / interval)
+                state.fullVelocity().scale(1.0D / tickInterval)
         );
 
         if (state.consumeVelocitySyncRequest()) {
@@ -315,22 +322,43 @@ public final class TimeSlowService {
         );
     }
 
+    private static int getTickIntervalForLevel(int powerLevel) {
+        return switch (Math.clamp(powerLevel, 1, 5)) {
+            case 1 -> HeroesEvolvedConfig.COMMON
+                    .timeSlowLevelOneTickIntervalTicks.get();
+            case 2 -> HeroesEvolvedConfig.COMMON
+                    .timeSlowLevelTwoTickIntervalTicks.get();
+            case 3 -> HeroesEvolvedConfig.COMMON
+                    .timeSlowLevelThreeTickIntervalTicks.get();
+            case 4 -> HeroesEvolvedConfig.COMMON
+                    .timeSlowLevelFourTickIntervalTicks.get();
+            case 5 -> HeroesEvolvedConfig.COMMON
+                    .timeSlowLevelFiveTickIntervalTicks.get();
+            default -> throw new IllegalStateException(
+                    "Unexpected Time Slow power level."
+            );
+        };
+    }
+
     private static final class TimeSlowField {
         private final UUID ownerId;
         private final ResourceKey<Level> dimension;
         private final Vec3 center;
         private int remainingTicks;
+        private final int tickInterval;
 
         private TimeSlowField(
                 UUID ownerId,
                 ResourceKey<Level> dimension,
                 Vec3 center,
-                int remainingTicks
+                int remainingTicks,
+                int tickInterval
         ) {
             this.ownerId = ownerId;
             this.dimension = dimension;
             this.center = center;
             this.remainingTicks = remainingTicks;
+            this.tickInterval = tickInterval;
         }
 
         private UUID ownerId() {
@@ -353,23 +381,30 @@ public final class TimeSlowService {
         private boolean hasEnded() {
             return remainingTicks <= 0;
         }
+
+        private int tickInterval() {
+            return tickInterval;
+        }
     }
 
     private static final class ProjectileState {
         private final Projectile projectile;
         private final boolean wasNoGravity;
         private Vec3 fullVelocity;
+        private int tickInterval;
         private int movementTicks;
         private boolean velocitySyncRequested = true;
 
         private ProjectileState(
                 Projectile projectile,
                 boolean wasNoGravity,
-                Vec3 fullVelocity
+                Vec3 fullVelocity,
+                int tickInterval
         ) {
             this.projectile = projectile;
             this.wasNoGravity = wasNoGravity;
             this.fullVelocity = fullVelocity;
+            this.tickInterval = tickInterval;
         }
 
         private Projectile projectile() {
@@ -388,18 +423,24 @@ public final class TimeSlowService {
             movementTicks++;
         }
 
-        private boolean shouldUpdateFullVelocity(int interval) {
-            return movementTicks >= interval;
+        private boolean shouldUpdateFullVelocity() {
+            return movementTicks >= tickInterval;
         }
 
         private void updateFullVelocity(Vec3 slowedVelocity) {
             fullVelocity = slowedVelocity.scale(
-                    HeroesEvolvedConfig.COMMON
-                            .timeSlowTickIntervalTicks
-                            .get()
+                    tickInterval
             );
             movementTicks = 0;
             velocitySyncRequested = true;
+        }
+
+        private void setTickInterval(int tickInterval) {
+            if (this.tickInterval != tickInterval) {
+                this.tickInterval = tickInterval;
+                movementTicks = 0;
+                velocitySyncRequested = true;
+            }
         }
 
         private boolean consumeVelocitySyncRequest() {

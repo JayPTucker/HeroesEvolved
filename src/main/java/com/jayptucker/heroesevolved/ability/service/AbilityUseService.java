@@ -70,23 +70,24 @@ public final class AbilityUseService {
             return AbilityUseResult.ACTION_LOCKED;
         }
 
-        ResourceLocation actionId = abilityAction.definition().id();
-
-        if (CooldownService.isOnCooldown(player, actionId)) {
-            return AbilityUseResult.ON_COOLDOWN;
-        }
-
         AbilityUseContext context = new AbilityUseContext(
                 player,
                 powerId,
-                powerLevel
+                powerLevel,
+                allowOverexertion
         );
+
+        ResourceLocation cooldownId = abilityAction.cooldownId(context);
+
+        if (CooldownService.isOnCooldown(player, cooldownId)) {
+            return AbilityUseResult.ON_COOLDOWN;
+        }
 
         if (!abilityAction.canUse(context)) {
             return AbilityUseResult.CANNOT_USE;
         }
 
-        int energyCost = abilityAction.energyCost(powerLevel);
+        int energyCost = abilityAction.energyCost(context);
 
         boolean requiresOverexertion =
                 PlayerEnergyService.getEnergy(player) < energyCost;
@@ -108,7 +109,7 @@ public final class AbilityUseService {
             PlayerEnergyService.tryConsume(player, energyCost);
         }
 
-        int cooldownTicks = abilityAction.cooldownTicks(powerLevel);
+        int cooldownTicks = abilityAction.cooldownTicks(context);
 
         // Zero means this action has no cooldown. Avoid storing a zero-tick
         // entry, because a one-tick client/server timing difference can make
@@ -116,7 +117,7 @@ public final class AbilityUseService {
         if (cooldownTicks > 0) {
             CooldownService.startCooldown(
                     player,
-                    actionId,
+                    cooldownId,
                     cooldownTicks
             );
         }

@@ -73,6 +73,29 @@ public final class AbilitySlotHudOverlay {
             y += LINE_HEIGHT;
         }
 
+        if (hasUnlockedGroupTeleport()) {
+            String groupTeleportText = Minecraft.getInstance()
+                    .options
+                    .keyShift
+                    .getTranslatedKeyMessage()
+                    .getString()
+                    + " + "
+                    + getKeyMapping(AbilitySlot.PRIMARY)
+                    .getTranslatedKeyMessage()
+                    .getString()
+                    + "  Group Teleport";
+
+            guiGraphics.drawString(
+                    Minecraft.getInstance().font,
+                    groupTeleportText,
+                    START_X,
+                    y,
+                    0xFFFFD7DC,
+                    true
+            );
+            y += LINE_HEIGHT;
+        }
+
         if (!hasUnlockedFlightBoost()) {
             return;
         }
@@ -100,6 +123,16 @@ public final class AbilitySlotHudOverlay {
         return ClientPowerState.getSnapshot().abilities().stream().anyMatch(
                 ability -> ability.unlocked()
                         && ability.abilityId().equals(ModAbilities.FLIGHT_ID)
+                        && ability.level() >= 2
+        );
+    }
+
+    private static boolean hasUnlockedGroupTeleport() {
+        return ClientPowerState.getSnapshot().abilities().stream().anyMatch(
+                ability -> ability.unlocked()
+                        && ability.abilityId().equals(
+                        ModAbilities.TIME_MANIPULATION_ID
+                )
                         && ability.level() >= 2
         );
     }
@@ -140,6 +173,13 @@ public final class AbilitySlotHudOverlay {
                 .getTranslatedKeyMessage()
                 .getString();
 
+        if (action.displayNameKey().equals(
+                "hud.heroesevolved.temporal_snapshot_create"
+        )) {
+            keyName = Minecraft.getInstance().options.keyShift
+                    .getTranslatedKeyMessage().getString() + " + " + keyName;
+        }
+
         String actionName = Component.translatable(
                 action.displayNameKey()
         ).getString();
@@ -152,12 +192,13 @@ public final class AbilitySlotHudOverlay {
             long remainingTicks = action.cooldownEndGameTime()
                     - Minecraft.getInstance().level.getGameTime();
 
-            long remainingSeconds = (long) Math.ceil(
-                    remainingTicks / 20.0D
-            );
+            long remainingSeconds = (long) Math.ceil(remainingTicks / 20.0D);
+            String remainingText = remainingSeconds >= 60
+                    ? (long) Math.ceil(remainingSeconds / 60.0D) + "m"
+                    : remainingSeconds + "s";
 
             return keyName + "  " + actionName
-                    + " (" + remainingSeconds + "s)";
+                    + " (" + remainingText + ")";
         }
 
         return keyName + "  " + actionName;
@@ -168,6 +209,7 @@ public final class AbilitySlotHudOverlay {
             case PRIMARY -> ModKeyMappings.ABILITY_1;
             case SECONDARY -> ModKeyMappings.ABILITY_2;
             case TERTIARY -> ModKeyMappings.ABILITY_3;
+            case QUATERNARY -> ModKeyMappings.ABILITY_4;
         };
     }
 }

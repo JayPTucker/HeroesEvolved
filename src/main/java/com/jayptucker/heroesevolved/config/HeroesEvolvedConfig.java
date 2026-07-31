@@ -69,13 +69,41 @@ public final class HeroesEvolvedConfig {
 
         // Time Manipulation
         public final ModConfigSpec.IntValue timeBlinkEnergyCost;
-        public final ModConfigSpec.IntValue timeBlinkCooldownTicks;
-        public final ModConfigSpec.IntValue timeBlinkDistance;
+        public final ModConfigSpec.IntValue timeBlinkLevelOneCooldownTicks;
+        public final ModConfigSpec.IntValue timeBlinkLevelTwoCooldownTicks;
+        public final ModConfigSpec.IntValue timeBlinkLevelThreeCooldownTicks;
+        public final ModConfigSpec.IntValue timeBlinkLevelFourCooldownTicks;
+        public final ModConfigSpec.IntValue timeBlinkLevelFiveCooldownTicks;
+        public final ModConfigSpec.IntValue timeBlinkLevelOneDistance;
+        public final ModConfigSpec.IntValue timeBlinkLevelTwoDistance;
+        public final ModConfigSpec.IntValue timeBlinkLevelThreeDistance;
+        public final ModConfigSpec.IntValue timeBlinkLevelFourDistance;
+        public final ModConfigSpec.IntValue timeBlinkLevelFiveDistance;
+        public final ModConfigSpec.IntValue timeStopLevelThreeEnergyCost;
+        public final ModConfigSpec.IntValue timeStopLevelFourEnergyCost;
+        public final ModConfigSpec.IntValue timeStopLevelFiveEnergyCost;
+        public final ModConfigSpec.IntValue timeStopLevelThreeCooldownTicks;
+        public final ModConfigSpec.IntValue timeStopLevelFourCooldownTicks;
+        public final ModConfigSpec.IntValue timeStopLevelFiveCooldownTicks;
+        public final ModConfigSpec.IntValue timeStopLevelThreeDurationSeconds;
+        public final ModConfigSpec.IntValue timeStopLevelFourDurationSeconds;
+        public final ModConfigSpec.IntValue timeStopLevelFiveDurationSeconds;
+        public final ModConfigSpec.DoubleValue timeStopRadius;
+        public final ModConfigSpec.IntValue timeSnapshotEnergyCost;
+        public final ModConfigSpec.IntValue timeSnapshotCooldownTicks;
+        public final ModConfigSpec.IntValue timeSnapshotTravelCooldownTicks;
+        public final ModConfigSpec.IntValue timeSnapshotWidthChunks;
+        public final ModConfigSpec.IntValue timeSnapshotCopyBlocksPerTick;
+        public final ModConfigSpec.DoubleValue timeSnapshotGroupTravelRadius;
         public final ModConfigSpec.IntValue timeSlowEnergyCost;
         public final ModConfigSpec.IntValue timeSlowCooldownTicks;
         public final ModConfigSpec.IntValue timeSlowDurationSeconds;
         public final ModConfigSpec.DoubleValue timeSlowRadius;
-        public final ModConfigSpec.IntValue timeSlowTickIntervalTicks;
+        public final ModConfigSpec.IntValue timeSlowLevelOneTickIntervalTicks;
+        public final ModConfigSpec.IntValue timeSlowLevelTwoTickIntervalTicks;
+        public final ModConfigSpec.IntValue timeSlowLevelThreeTickIntervalTicks;
+        public final ModConfigSpec.IntValue timeSlowLevelFourTickIntervalTicks;
+        public final ModConfigSpec.IntValue timeSlowLevelFiveTickIntervalTicks;
 
         private Common(ModConfigSpec.Builder builder) {
             builder.push("progression");
@@ -294,13 +322,109 @@ public final class HeroesEvolvedConfig {
                         .comment("Energy consumed by Time Manipulation Blink.")
                         .defineInRange("blinkEnergyCost", 25, 0, 1_000);
 
-                timeBlinkCooldownTicks = builder
-                        .comment("Cooldown in ticks after using Time Manipulation Blink.")
-                        .defineInRange("blinkCooldownTicks", 20 * 6, 0, 20 * 60);
+                timeBlinkLevelOneCooldownTicks = builder
+                        .comment("Cooldown in ticks after Level 1 Blink.")
+                        .defineInRange("blinkLevel1CooldownTicks", 20 * 6, 0, 20 * 60);
 
-                timeBlinkDistance = builder
-                        .comment("Maximum Blink distance in blocks.")
-                        .defineInRange("blinkDistance", 16, 2, 128);
+                timeBlinkLevelTwoCooldownTicks = builder
+                        .comment("Cooldown in ticks after Level 2 Blink.")
+                        .defineInRange("blinkLevel2CooldownTicks", 20 * 3, 0, 20 * 60);
+
+                timeBlinkLevelThreeCooldownTicks = builder
+                        .comment("Cooldown in ticks after Level 3 Blink.")
+                        .defineInRange("blinkLevel3CooldownTicks", 0, 0, 20 * 60);
+
+                timeBlinkLevelFourCooldownTicks = builder
+                        .comment("Cooldown in ticks after Level 4 Blink.")
+                        .defineInRange("blinkLevel4CooldownTicks", 0, 0, 20 * 60);
+
+                timeBlinkLevelFiveCooldownTicks = builder
+                        .comment("Cooldown in ticks after Level 5 Blink.")
+                        .defineInRange("blinkLevel5CooldownTicks", 0, 0, 20 * 60);
+
+                timeBlinkLevelOneDistance = builder
+                        .comment("Maximum Blink distance, in blocks, at Level 1.")
+                        .defineInRange("blinkLevel1Distance", 16, 2, 150);
+
+                timeBlinkLevelTwoDistance = builder
+                        .comment("Maximum Blink distance, in blocks, at Level 2.")
+                        .defineInRange("blinkLevel2Distance", 45, 2, 150);
+
+                timeBlinkLevelThreeDistance = builder
+                        .comment("Maximum Blink distance, in blocks, at Level 3.")
+                        .defineInRange("blinkLevel3Distance", 80, 2, 150);
+
+                timeBlinkLevelFourDistance = builder
+                        .comment("Maximum Blink distance, in blocks, at Level 4.")
+                        .defineInRange("blinkLevel4Distance", 115, 2, 150);
+
+                timeBlinkLevelFiveDistance = builder
+                        .comment("Maximum Blink distance, in blocks, at Level 5.")
+                        .defineInRange("blinkLevel5Distance", 150, 2, 150);
+
+                timeStopLevelThreeEnergyCost = builder
+                        .comment("Energy consumed by Level 3 Time Stop.")
+                        .defineInRange("stopLevel3EnergyCost", 100, 0, 1_000);
+
+                timeStopLevelFourEnergyCost = builder
+                        .comment("Energy consumed by Level 4 Time Stop.")
+                        .defineInRange("stopLevel4EnergyCost", 125, 0, 1_000);
+
+                timeStopLevelFiveEnergyCost = builder
+                        .comment("Energy consumed by Level 5 Time Stop.")
+                        .defineInRange("stopLevel5EnergyCost", 150, 0, 1_000);
+
+                timeStopLevelThreeCooldownTicks = builder
+                        .comment("Cooldown in ticks after Level 3 Time Stop.")
+                        .defineInRange("stopLevel3CooldownTicks", 20 * 90, 0, 20 * 60 * 10);
+
+                timeStopLevelFourCooldownTicks = builder
+                        .comment("Cooldown in ticks after Level 4 Time Stop.")
+                        .defineInRange("stopLevel4CooldownTicks", 20 * 120, 0, 20 * 60 * 10);
+
+                timeStopLevelFiveCooldownTicks = builder
+                        .comment("Cooldown in ticks after Level 5 Time Stop.")
+                        .defineInRange("stopLevel5CooldownTicks", 20 * 180, 0, 20 * 60 * 10);
+
+                timeStopLevelThreeDurationSeconds = builder
+                        .comment("Maximum seconds Level 3 Time Stop remains active.")
+                        .defineInRange("stopLevel3DurationSeconds", 20, 1, 60);
+
+                timeStopLevelFourDurationSeconds = builder
+                        .comment("Maximum seconds Level 4 Time Stop remains active.")
+                        .defineInRange("stopLevel4DurationSeconds", 40, 1, 60);
+
+                timeStopLevelFiveDurationSeconds = builder
+                        .comment("Maximum seconds Level 5 Time Stop remains active.")
+                        .defineInRange("stopLevel5DurationSeconds", 60, 1, 60);
+
+                timeStopRadius = builder
+                        .comment("Radius, in blocks, of a Time Stop field.")
+                        .defineInRange("stopRadius", 50.0D, 1.0D, 128.0D);
+
+                timeSnapshotEnergyCost = builder
+                        .comment("Energy consumed when creating or replacing a Temporal Snapshot.")
+                        .defineInRange("snapshotEnergyCost", 100, 0, 1_000);
+
+                timeSnapshotCooldownTicks = builder
+                        .comment("Cooldown in ticks after creating or replacing a Temporal Snapshot.")
+                        .defineInRange("snapshotCooldownTicks", 20 * 60 * 20, 0, 20 * 60 * 30);
+
+                timeSnapshotTravelCooldownTicks = builder
+                        .comment("Cooldown in ticks after travelling between the present and a Temporal Snapshot.")
+                        .defineInRange("snapshotTravelCooldownTicks", 20 * 30, 0, 20 * 60 * 30);
+
+                timeSnapshotWidthChunks = builder
+                        .comment("Width of each Temporal Snapshot area, in chunks.")
+                        .defineInRange("snapshotWidthChunks", 12, 2, 24);
+
+                timeSnapshotCopyBlocksPerTick = builder
+                        .comment("Snapshot block states copied per server tick while a snapshot is forming.")
+                        .defineInRange("snapshotCopyBlocksPerTick", 8_192, 256, 32_768);
+
+                timeSnapshotGroupTravelRadius = builder
+                        .comment("Radius, in blocks, of players brought along during Temporal Snapshot travel.")
+                        .defineInRange("snapshotGroupTravelRadius", 6.0D, 1.0D, 32.0D);
 
                 timeSlowEnergyCost = builder
                         .comment("Energy consumed to create a Time Slow field.")
@@ -323,9 +447,25 @@ public final class HeroesEvolvedConfig {
                         .comment("Radius, in blocks, of a Time Slow field.")
                         .defineInRange("slowRadius", 50.0D, 1.0D, 128.0D);
 
-                timeSlowTickIntervalTicks = builder
-                        .comment("Ticks between updates for entities inside Time Slow.")
-                        .defineInRange("slowTickIntervalTicks", 20, 2, 100);
+                timeSlowLevelOneTickIntervalTicks = builder
+                        .comment("Ticks between updates for Level 1 Time Slow. ")
+                        .defineInRange("slowLevel1TickIntervalTicks", 7, 1, 100);
+
+                timeSlowLevelTwoTickIntervalTicks = builder
+                        .comment("Ticks between updates for Level 2 Time Slow.")
+                        .defineInRange("slowLevel2TickIntervalTicks", 9, 1, 100);
+
+                timeSlowLevelThreeTickIntervalTicks = builder
+                        .comment("Ticks between updates for Level 3 Time Slow.")
+                        .defineInRange("slowLevel3TickIntervalTicks", 13, 1, 100);
+
+                timeSlowLevelFourTickIntervalTicks = builder
+                        .comment("Ticks between updates for Level 4 Time Slow.")
+                        .defineInRange("slowLevel4TickIntervalTicks", 17, 1, 100);
+
+                timeSlowLevelFiveTickIntervalTicks = builder
+                        .comment("Ticks between updates for Level 5 Time Slow.")
+                        .defineInRange("slowLevel5TickIntervalTicks", 20, 1, 100);
 
                 builder.pop();
         }
