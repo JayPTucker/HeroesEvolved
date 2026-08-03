@@ -12,6 +12,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
+import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 /** Mirrors authorised player block edits from a snapshot into its present. */
@@ -38,6 +39,22 @@ public final class TemporalSnapshotEvents {
         if (event.getEntity() instanceof ServerPlayer player
                 && event.getContainer() instanceof net.minecraft.world.inventory.ChestMenu menu) {
             TemporalChestService.onClose(player, menu);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onItemPickedUp(ItemEntityPickupEvent.Post event) {
+        if (event.getPlayer() instanceof ServerPlayer player) {
+            int pickedUp = event.getOriginalStack().getCount()
+                    - event.getCurrentStack().getCount();
+            if (pickedUp <= 0) {
+                return;
+            }
+            com.jayptucker.heroesevolved.time.TemporalParadoxService
+                    .onTemporalLootPickedUp(
+                            player,
+                            event.getOriginalStack().copyWithCount(pickedUp)
+                    );
         }
     }
 

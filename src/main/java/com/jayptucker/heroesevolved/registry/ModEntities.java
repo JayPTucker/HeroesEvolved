@@ -3,6 +3,7 @@ package com.jayptucker.heroesevolved.registry;
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.entity.CarryAnchorEntity;
 import com.jayptucker.heroesevolved.entity.TemporalEchoEntity;
+import com.jayptucker.heroesevolved.entity.TemporalGhostBlockEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -26,7 +27,10 @@ public final class ModEntities {
                             .noSummon()
                             .noSave()
                             .clientTrackingRange(64)
-                            .updateInterval(20)
+                            // Echoes replay movement continuously, so a
+                            // twenty-tick sync interval visibly stutters for
+                            // remote players. Send tracked updates each tick.
+                            .updateInterval(1)
                             .build(id.toString())
             );
 
@@ -42,6 +46,22 @@ public final class ModEntities {
                             .clientTrackingRange(64)
                             .updateInterval(1)
                             .build(id.toString())
+            );
+
+    public static final DeferredHolder<
+            EntityType<?>, EntityType<TemporalGhostBlockEntity>>
+            TEMPORAL_GHOST_BLOCK = ENTITY_TYPES.register(
+                    "temporal_ghost_block", id ->
+                            EntityType.Builder.<TemporalGhostBlockEntity>of(
+                                            TemporalGhostBlockEntity::new,
+                                            MobCategory.MISC
+                                    )
+                                    .sized(1.0F, 1.0F)
+                                    .noSummon()
+                                    .noSave()
+                                    .clientTrackingRange(64)
+                                    .updateInterval(1)
+                                    .build(id.toString())
             );
 
     private ModEntities() {

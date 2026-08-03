@@ -27,5 +27,9 @@ public final class ModEntityRenderers {
                 ModEntities.CARRY_ANCHOR.get(),
                 CarryAnchorRenderer::new
         );
+        event.registerEntityRenderer(
+                ModEntities.TEMPORAL_GHOST_BLOCK.get(),
+                TemporalGhostBlockRenderer::new
+        );
     }
 }

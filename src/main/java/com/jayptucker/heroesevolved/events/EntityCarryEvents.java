@@ -14,6 +14,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 /**
  * Lets any player carry one entity at a time. Riding is used instead of
@@ -35,6 +36,13 @@ public final class EntityCarryEvents {
         }
 
         Entity target = event.getTarget();
+        if (target instanceof TemporalEchoEntity echo
+                && com.jayptucker.heroesevolved.time.TemporalParadoxService
+                .restoreByEcho(player, echo.getProfileId())) {
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.SUCCESS);
+            return;
+        }
         if (!canPickUp(player, target)) {
             return;
         }
@@ -83,6 +91,16 @@ public final class EntityCarryEvents {
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             EntityCarryService.release(player);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onCarriedEntityAttacked(LivingIncomingDamageEvent event) {
+        // Invulnerability is the primary safeguard; cancelling this event as
+        // well prevents attack animations and edge-case mod damage while an
+        // entity is visibly being carried.
+        if (EntityCarryService.isBeingCarried(event.getEntity())) {
+            event.setCanceled(true);
         }
     }
 }

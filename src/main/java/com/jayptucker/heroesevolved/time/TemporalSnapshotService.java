@@ -235,6 +235,7 @@ public final class TemporalSnapshotService {
     public static void tick(MinecraftServer server) {
         TemporalEchoRecordingService.tick(server);
         TemporalEchoService.tick();
+        TemporalParadoxService.tick(server);
         int budget = HeroesEvolvedConfig.COMMON
                 .timeSnapshotCopyBlocksPerTick.get();
         var iterator = ACTIVE_BUILDS.values().iterator();
@@ -298,7 +299,7 @@ public final class TemporalSnapshotService {
         snapshotLevel.playSound(
                 null,
                 traveller.getX(), traveller.getY(), traveller.getZ(),
-                ModSounds.TIME_SLOW.get(),
+                ModSounds.TIME_SLOW_STOP.get(),
                 SoundSource.PLAYERS,
                 0.90F,
                 1.0F
@@ -312,6 +313,8 @@ public final class TemporalSnapshotService {
             boolean showParadoxWarning,
             boolean showRestorationMessage
     ) {
+        // Items stolen from a dead Past echo are confined to the Past.
+        TemporalParadoxService.eraseTemporalLoot(traveller);
         double x = visit.sourceMinX() + traveller.getX()
                 - visit.snapshotMinX();
         double z = visit.sourceMinZ() + traveller.getZ()
@@ -321,7 +324,7 @@ public final class TemporalSnapshotService {
         sourceLevel.playSound(
                 null,
                 traveller.getX(), traveller.getY(), traveller.getZ(),
-                ModSounds.TIME_SLOW.get(),
+                ModSounds.TIME_SLOW_STOP.get(),
                 SoundSource.PLAYERS,
                 0.90F,
                 1.0F

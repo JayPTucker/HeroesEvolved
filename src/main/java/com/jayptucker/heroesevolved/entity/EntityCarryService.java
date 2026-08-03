@@ -13,7 +13,7 @@ import java.util.UUID;
 
 /** Maintains invisible carry anchors for server-synchronized held entities. */
 public final class EntityCarryService {
-    private static final double HOLD_DISTANCE = 0.85D;
+    private static final double HOLD_DISTANCE = 1.45D;
     private static final double HOLD_HEIGHT = 0.85D;
     private static final Map<UUID, CarryAnchorEntity> CARRY_ANCHORS =
             new HashMap<>();
@@ -76,6 +76,12 @@ public final class EntityCarryService {
                 && !anchor.getPassengers().isEmpty();
     }
 
+    /** Carried entities are protected from every damage source until set down. */
+    public static boolean isBeingCarried(Entity entity) {
+        return CARRIED_ENTITIES.values().stream()
+                .anyMatch(state -> state.entity() == entity);
+    }
+
     public static void tick(ServerPlayer player) {
         CarryAnchorEntity anchor = CARRY_ANCHORS.get(player.getUUID());
         if (anchor == null) {
@@ -123,7 +129,7 @@ public final class EntityCarryService {
         // Keep the held hitbox outside the carrier's own hitbox. This avoids
         // physical collision pushing while still placing it at arm's length.
         double clearance = carrier.getBbWidth() / 2.0D
-                + carried.getBbWidth() / 2.0D + 0.15D;
+                + carried.getBbWidth() / 2.0D + 0.35D;
         Vec3 position = carrier.position()
                 .add(horizontalLook.scale(Math.max(HOLD_DISTANCE, clearance)))
                 .add(0.0D, HOLD_HEIGHT, 0.0D);
@@ -145,6 +151,7 @@ public final class EntityCarryService {
                 entity,
                 entity.isNoGravity(),
                 entity.noPhysics,
+                entity.isInvulnerable(),
                 entity instanceof Mob mob && mob.isNoAi()
         ));
         keepCarriedState(entity);
@@ -155,6 +162,7 @@ public final class EntityCarryService {
         entity.resetFallDistance();
         entity.setNoGravity(true);
         entity.noPhysics = true;
+        entity.setInvulnerable(true);
         if (entity instanceof Mob mob) {
             mob.setNoAi(true);
         }
@@ -168,6 +176,7 @@ public final class EntityCarryService {
 
         state.entity().setNoGravity(state.hadNoGravity());
         state.entity().noPhysics = state.hadNoPhysics();
+        state.entity().setInvulnerable(state.hadInvulnerable());
         if (state.entity() instanceof Mob mob) {
             mob.setNoAi(state.mobHadNoAi());
         }
@@ -177,6 +186,7 @@ public final class EntityCarryService {
             Entity entity,
             boolean hadNoGravity,
             boolean hadNoPhysics,
+            boolean hadInvulnerable,
             boolean mobHadNoAi
     ) {
     }

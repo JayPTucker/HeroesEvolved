@@ -4,15 +4,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.Display;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -20,6 +16,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import com.jayptucker.heroesevolved.entity.TemporalEchoEntity;
+import com.jayptucker.heroesevolved.entity.TemporalGhostBlockEntity;
 import com.jayptucker.heroesevolved.registry.ModEntities;
 
 import java.util.ArrayList;
@@ -34,6 +31,8 @@ public final class TemporalEchoService {
             new HashMap<>();
     private static final Map<UUID, UUID> ECHO_RECIPIENTS = new HashMap<>();
     private static final Map<UUID, EchoPlayback> ECHO_PLAYBACKS = new HashMap<>();
+    private static final Map<UUID, EchoSnapshotContext> ECHO_CONTEXTS =
+            new HashMap<>();
     private static final List<GhostBlock> GHOST_BLOCKS = new ArrayList<>();
 
     private TemporalEchoService() {
@@ -65,6 +64,9 @@ public final class TemporalEchoService {
             ECHO_PLAYBACKS.put(echo.getUUID(), new EchoPlayback(
                     echo, data, snapshot, level.getGameTime()
             ));
+            ECHO_CONTEXTS.put(echo.getUUID(), new EchoSnapshotContext(
+                    ownerId, data
+            ));
             echoes.add(echo);
         }
         SNAPSHOT_ECHOES.put(ownerId, echoes);
@@ -82,15 +84,53 @@ public final class TemporalEchoService {
             }
             ECHO_RECIPIENTS.remove(echo.getUUID());
             ECHO_PLAYBACKS.remove(echo.getUUID());
+            ECHO_CONTEXTS.remove(echo.getUUID());
+        }
+    }
+
+    /**
+     * An attack turns a replay into a consequence rather than allowing a
+     * player to delete the Past. Its replay and item-delivery behavior stop
+     * immediately, then its normal mob AI pursues the attacker.
+     */
+    public static void provoke(
+            TemporalEchoEntity echo,
+            ServerPlayer attacker
+    ) {
+        ECHO_PLAYBACKS.remove(echo.getUUID());
+        ECHO_RECIPIENTS.remove(echo.getUUID());
+        echo.becomeHostile(attacker);
+        if (echo.level() instanceof ServerLevel level) {
+            level.sendParticles(ParticleTypes.REVERSE_PORTAL,
+                    echo.getX(), echo.getY() + 1.0D, echo.getZ(),
+                    36, 0.35D, 0.65D, 0.35D, 0.12D);
+            level.playSound(null, echo.getX(), echo.getY(), echo.getZ(),
+                    SoundEvents.WARDEN_ANGRY, SoundSource.HOSTILE,
+                    0.65F, 1.35F);
+        }
+    }
+
+    /** Drops only the inventory captured with this echo, never live inventory. */
+    public static void onEchoKilled(TemporalEchoEntity echo) {
+        EchoSnapshotContext context = ECHO_CONTEXTS.remove(echo.getUUID());
+        ECHO_PLAYBACKS.remove(echo.getUUID());
+        ECHO_RECIPIENTS.remove(echo.getUUID());
+        if (context != null && echo.level() instanceof ServerLevel level) {
+            TemporalParadoxService.onEchoKilled(
+                    context.snapshotOwnerId(), context.data(), level,
+                    echo.position()
+            );
         }
     }
 
     public static void tick() {
         for (List<TemporalEchoEntity> echoes : SNAPSHOT_ECHOES.values()) {
             for (TemporalEchoEntity echo : echoes) {
-                replayHistory(echo);
-                emitFlicker(echo);
-                transferOfferedItems(echo);
+                if (!echo.isHostile()) {
+                    replayHistory(echo);
+                    emitFlicker(echo);
+                    transferOfferedItems(echo);
+                }
             }
         }
         removeExpiredGhostBlocks();
@@ -173,7 +213,10 @@ public final class TemporalEchoService {
         float pitch = (float) lerp(progress, previous.pitch(), next.pitch());
         PlayerTemporalSnapshotData snapshot = playback.snapshot();
         TemporalEchoEntity echo = playback.echo();
-        echo.teleportTo(
+        // setPos lets the normal entity tracker send small relative movement
+        // updates. teleportTo sends abrupt teleport packets and made remote
+        // echoes look laggy even when the server replay was smooth.
+        echo.setPos(
                 snapshot.snapshotMinX() + (sourceX - snapshot.sourceMinX()),
                 sourceY,
                 snapshot.snapshotMinZ() + (sourceZ - snapshot.sourceMinZ())
@@ -236,14 +279,10 @@ public final class TemporalEchoService {
             double y,
             double z
     ) {
-        Display.BlockDisplay ghost = EntityType.BLOCK_DISPLAY.create(level);
-        if (ghost == null) {
-            return;
-        }
-
-        CompoundTag tag = new CompoundTag();
-        tag.put(Display.BlockDisplay.TAG_BLOCK_STATE, NbtUtils.writeBlockState(state));
-        ghost.load(tag);
+        TemporalGhostBlockEntity ghost = new TemporalGhostBlockEntity(
+                ModEntities.TEMPORAL_GHOST_BLOCK.get(), level
+        );
+        ghost.setBlockState(state);
         ghost.setPos(x, y, z);
         ghost.setGlowingTag(true);
         ghost.setNoGravity(true);
@@ -319,6 +358,12 @@ public final class TemporalEchoService {
     ) {
     }
 
-    private record GhostBlock(Display.BlockDisplay display, long expiresAt) {
+    private record EchoSnapshotContext(
+            UUID snapshotOwnerId,
+            TemporalEchoData data
+    ) {
+    }
+
+    private record GhostBlock(TemporalGhostBlockEntity display, long expiresAt) {
     }
 }

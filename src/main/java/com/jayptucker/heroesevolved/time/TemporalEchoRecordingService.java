@@ -16,7 +16,9 @@ import java.util.UUID;
 /** Records the most recent minute of player movement and block actions. */
 public final class TemporalEchoRecordingService {
     private static final int RECORDING_LENGTH_TICKS = 20 * 60;
-    private static final int SAMPLE_INTERVAL_TICKS = 4;
+    // A one-tick sample gives the playback enough detail to mirror normal
+    // walking and sprinting smoothly instead of approximating four-tick hops.
+    private static final int SAMPLE_INTERVAL_TICKS = 1;
     private static final Map<UUID, PlayerRecording> RECORDINGS = new HashMap<>();
 
     private TemporalEchoRecordingService() {
@@ -128,8 +130,23 @@ public final class TemporalEchoRecordingService {
                 player.getX(), player.getY(), player.getZ(),
                 player.getYRot(), player.getXRot(),
                 frames,
-                actions
+                actions,
+                captureInventory(player)
         );
+    }
+
+    private static List<TemporalEchoInventoryEntry> captureInventory(
+            ServerPlayer player
+    ) {
+        List<TemporalEchoInventoryEntry> entries = new java.util.ArrayList<>();
+        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+            net.minecraft.world.item.ItemStack stack = player.getInventory()
+                    .getItem(slot);
+            if (!stack.isEmpty()) {
+                entries.add(new TemporalEchoInventoryEntry(slot, stack.copy()));
+            }
+        }
+        return List.copyOf(entries);
     }
 
     private static final class PlayerRecording {

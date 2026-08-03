@@ -22,8 +22,13 @@ public final class TemporalEchoRenderer
                 echo.getProfileId(),
                 echo.getProfileName()
         );
+        // getOrLoad requests the captured player's skin when it is not in
+        // this client's cache yet. The fallback keeps the renderer safe while
+        // that asynchronous lookup finishes.
         return Minecraft.getInstance().getSkinManager()
-                .getInsecureSkin(profile)
+                .getOrLoad(profile)
+                .getNow(Minecraft.getInstance().getSkinManager()
+                        .getInsecureSkin(profile))
                 .texture();
     }
 }

@@ -838,11 +838,12 @@ public final class FlightService {
                     .add(horizontalLookDirection(player).scale(-0.35D))
                     .add(0.0D, 0.15D, 0.0D);
         } else {
-            // The Flight Boost pose places the animated feet behind and above
-            // their normal standing position.
+            // Entity position is the player's feet. Keep the server-side
+            // trail near that point so it follows the animated feet instead
+            // of cutting through the middle of the flying body.
             particlePosition = player.position()
                     .add(horizontalLookDirection(player).scale(-0.85D))
-                    .add(0.0D, 0.80D, 0.0D);
+                    .add(0.0D, 0.15D, 0.0D);
         }
 
         Vec3 previousPosition = LAST_CONTRAIL_POSITIONS.put(
@@ -879,17 +880,25 @@ public final class FlightService {
             ServerLevel level,
             Vec3 position
     ) {
-        level.sendParticles(
-                ModParticles.WHITE_CONTRAIL_SMOKE.get(),
-                position.x,
-                position.y,
-                position.z,
-                1,
-                0.0D,
-                0.0D,
-                0.0D,
-                0.0D
-        );
+        // Normal server particle broadcasts stop at a short distance. A
+        // contrail is a long-lived world effect, so force-send it to every
+        // player in this dimension; each client can still apply its own
+        // particle settings when rendering it.
+        for (ServerPlayer viewer : level.players()) {
+            level.sendParticles(
+                    viewer,
+                    ModParticles.WHITE_CONTRAIL_SMOKE.get(),
+                    true,
+                    position.x,
+                    position.y,
+                    position.z,
+                    1,
+                    0.0D,
+                    0.0D,
+                    0.0D,
+                    0.0D
+            );
+        }
     }
 
     private record CycloneState(

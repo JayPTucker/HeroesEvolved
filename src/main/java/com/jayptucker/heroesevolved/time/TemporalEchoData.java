@@ -16,7 +16,8 @@ public record TemporalEchoData(
         float yaw,
         float pitch,
         List<TemporalEchoFrame> frames,
-        List<TemporalEchoAction> actions
+        List<TemporalEchoAction> actions,
+        List<TemporalEchoInventoryEntry> inventory
 ) {
     private static final Codec<UUID> UUID_CODEC = Codec.STRING.xmap(
             UUID::fromString,
@@ -42,6 +43,9 @@ public record TemporalEchoData(
                             .forGetter(TemporalEchoData::frames),
                     TemporalEchoAction.CODEC.listOf()
                             .optionalFieldOf("actions", List.of())
-                            .forGetter(TemporalEchoData::actions)
+                            .forGetter(TemporalEchoData::actions),
+                    TemporalEchoInventoryEntry.CODEC.listOf()
+                            .optionalFieldOf("inventory", List.of())
+                            .forGetter(TemporalEchoData::inventory)
             ).apply(instance, TemporalEchoData::new));
 }
