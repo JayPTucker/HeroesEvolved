@@ -1,4 +1,20 @@
 {
+  "nuclear_siren": {
+    "subtitle": "subtitles.heroesevolved.nuclear_siren",
+    "sounds": [{ "name": "heroesevolved:intro/nuclear_siren", "stream": true }]
+  },
+  "crowd_panic": {
+    "subtitle": "subtitles.heroesevolved.crowd_panic",
+    "sounds": [
+      { "name": "heroesevolved:intro/crowd_panic" },
+      { "name": "heroesevolved:intro/crowd_panic_2" },
+      { "name": "heroesevolved:intro/crowd_panic_3" }
+    ]
+  },
+  "nuclear_blast": {
+    "subtitle": "subtitles.heroesevolved.nuclear_blast",
+    "sounds": [{ "name": "heroesevolved:intro/nuclear_blast", "stream": true }]
+  },
   "new_beginning": {
     "subtitle": "subtitles.heroesevolved.new_beginning",
     "sounds": [

@@ -1,6 +1,7 @@
 package com.jayptucker.heroesevolved.time;
 
 import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
+import com.jayptucker.heroesevolved.events.EclipseService;
 import com.jayptucker.heroesevolved.sounds.ModSounds;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.resources.ResourceKey;
@@ -101,8 +102,10 @@ public final class TimeSlowService {
                     field.ownerId()
             );
 
+            // Matches Time Stop: an Eclipse suppresses active fields too.
             boolean hasEnded = level == null
                     || owner == null
+                    || EclipseService.arePowersSuppressed(owner)
                     || field.advanceTimer();
 
             if (hasEnded) {
@@ -111,6 +114,15 @@ public final class TimeSlowService {
                 if (level != null && owner != null) {
                     playEndSound(level, field, owner);
                 }
+            } else if (level.getGameTime() % 10 == 0) {
+                // Slowed time takes on a faded, sepia warmth.
+                com.jayptucker.heroesevolved.network.ScreenTintPayload.sendAround(
+                        level, field.center(),
+                        HeroesEvolvedConfig.COMMON.timeSlowRadius.get(),
+                        0x30806030, 14,
+                        com.jayptucker.heroesevolved.network.ScreenTintPayload
+                                .Style.HOLD
+                );
             }
         }
 

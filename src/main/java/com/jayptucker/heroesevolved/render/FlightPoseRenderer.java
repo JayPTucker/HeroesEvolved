@@ -1,11 +1,10 @@
 package com.jayptucker.heroesevolved.render;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
+import com.jayptucker.heroesevolved.flight.FlightVisualGeometry;
 import com.jayptucker.heroesevolved.network.ClientFlightVisualState;
 import com.mojang.math.Axis;
-import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -36,15 +35,11 @@ public final class FlightPoseRenderer {
             return;
         }
 
-        float viewYaw = ClientFlightVisualState.isCycloneActive(player.getId())
-                ? cycloneTravelYaw(player, event.getPartialTick())
-                : Mth.rotLerp(
-                        event.getPartialTick(),
-                        player.yRotO,
-                        player.getYRot()
-                );
+        float viewYaw = FlightVisualGeometry.yaw(player,
+                ClientFlightVisualState.isCycloneActive(player.getId()), event.getPartialTick());
         float bodyYaw = viewYaw + 180.0F;
         float viewPitch = player.getXRot();
+        float renderPitch = FlightVisualGeometry.pitch(player, event.getPartialTick());
 
         // Minecraft's upright player model faces the opposite direction once
         // it is pitched horizontal, so Flight uses the inverted yaw to keep
@@ -58,7 +53,7 @@ public final class FlightPoseRenderer {
 
         // Turn the model face-down into its Flight pose, then let its pitch
         // follow the player's view for climbing and diving.
-        float flightPitch = 90.0F + viewPitch;
+        float flightPitch = 90.0F + renderPitch;
 
         // Keep the head aligned with the Flight body. Without this, vanilla
         // applies the look pitch a second time and the head bends unnaturally
@@ -84,7 +79,7 @@ public final class FlightPoseRenderer {
         // rotations make the pitch relative to the direction the player faces,
         // rather than relative to the world's north/south axis.
         event.getPoseStack().pushPose();
-        event.getPoseStack().translate(0.0D, 0.9D, 0.0D);
+        event.getPoseStack().translate(0.0D, FlightVisualGeometry.PIVOT_HEIGHT, 0.0D);
         // Rotate the completed horizontal pose toward the player's travel
         // direction. Keeping this separate prevents it from flipping torso
         // orientation back toward the sky.
@@ -94,7 +89,7 @@ public final class FlightPoseRenderer {
                 Axis.XP.rotationDegrees(flightPitch)
         );
         event.getPoseStack().mulPose(Axis.YP.rotationDegrees(bodyYaw));
-        event.getPoseStack().translate(0.0D, -0.9D, 0.0D);
+        event.getPoseStack().translate(0.0D, -FlightVisualGeometry.PIVOT_HEIGHT, 0.0D);
 
         // Stop vanilla's walk cycle for this render pass so the legs remain
         // straight instead of appearing to run while the player is flying.
@@ -144,19 +139,6 @@ public final class FlightPoseRenderer {
     private static boolean shouldUseFlightPose(Player player) {
         return ClientFlightVisualState.isFlightActive(player.getId())
                 && !player.onGround();
-    }
-
-    private static float cycloneTravelYaw(Player player, float partialTick) {
-        Vec3 velocity = player.getDeltaMovement();
-        Vec3 horizontalVelocity = new Vec3(velocity.x, 0.0D, velocity.z);
-
-        if (horizontalVelocity.lengthSqr() < 0.01D) {
-            return Mth.rotLerp(partialTick, player.yRotO, player.getYRot());
-        }
-
-        return (float) Math.toDegrees(
-                Math.atan2(-horizontalVelocity.x, horizontalVelocity.z)
-        );
     }
 
     private record BodyYaw(float current, float previous) {

@@ -105,12 +105,50 @@ public final class EntityCarryService {
             return;
         }
 
+        // The anchor always lives in the carried entity's level. After a
+        // dimension change the player's coordinates belong to a different
+        // world, so set the entity down where it was being held instead.
+        boolean sameLevel = anchor.level() == player.level();
+        double x = sameLevel ? player.getX() : anchor.getX();
+        double y = sameLevel ? player.getY() : anchor.getY() - HOLD_HEIGHT;
+        double z = sameLevel ? player.getZ() : anchor.getZ();
         for (Entity passenger : anchor.getPassengers()) {
             passenger.stopRiding();
-            passenger.teleportTo(player.getX(), player.getY(), player.getZ());
+            passenger.teleportTo(x, y, z);
         }
         restoreCarriedState(player.getUUID());
         anchor.discard();
+    }
+
+    /**
+     * Lets go of the carried entity from where it is being held and flings
+     * it. Returns the thrown entity, or null if nothing was carried.
+     */
+    public static Entity hurl(ServerPlayer player, Vec3 velocity) {
+        CarryAnchorEntity anchor = CARRY_ANCHORS.remove(player.getUUID());
+        CarriedEntityState state = CARRIED_ENTITIES.get(player.getUUID());
+        if (anchor == null || state == null) {
+            if (anchor != null) {
+                anchor.discard();
+            }
+            return null;
+        }
+
+        Entity carried = state.entity();
+        carried.stopRiding();
+        carried.teleportTo(anchor.getX(), anchor.getY(), anchor.getZ());
+        restoreCarriedState(player.getUUID());
+        anchor.discard();
+
+        carried.setDeltaMovement(velocity);
+        carried.hurtMarked = true;
+        if (carried instanceof ServerPlayer thrownPlayer) {
+            thrownPlayer.connection.send(
+                    new net.minecraft.network.protocol.game
+                            .ClientboundSetEntityMotionPacket(thrownPlayer)
+            );
+        }
+        return carried;
     }
 
     private static void positionAnchor(

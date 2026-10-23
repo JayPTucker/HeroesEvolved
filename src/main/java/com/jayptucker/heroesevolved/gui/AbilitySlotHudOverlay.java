@@ -210,6 +210,7 @@ public final class AbilitySlotHudOverlay {
             case SECONDARY -> ModKeyMappings.ABILITY_2;
             case TERTIARY -> ModKeyMappings.ABILITY_3;
             case QUATERNARY -> ModKeyMappings.ABILITY_4;
+            case QUINARY -> ModKeyMappings.ABILITY_5;
         };
     }
 }

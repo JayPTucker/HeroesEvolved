@@ -27,7 +27,11 @@ public record PlayerProgressionData(long mastery) {
             throw new IllegalArgumentException("Mastery gain must be positive.");
         }
 
-        long updatedMastery = Math.min(Long.MAX_VALUE, mastery + amount);
+        // mastery + amount can wrap negative before Math.min sees it, which
+        // would throw from the constructor. Saturate instead.
+        long updatedMastery = Long.MAX_VALUE - mastery < amount
+                ? Long.MAX_VALUE
+                : mastery + amount;
         return new PlayerProgressionData(updatedMastery);
     }
 }

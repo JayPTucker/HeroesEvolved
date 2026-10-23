@@ -1,5 +1,8 @@
 package com.jayptucker.heroesevolved.ability.types;
 
+import com.jayptucker.heroesevolved.effects.AbilityEffects;
+import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
+
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.ability.Ability;
 import com.jayptucker.heroesevolved.ability.AbilityAction;
@@ -10,7 +13,9 @@ import com.jayptucker.heroesevolved.ability.AbilityDefinition;
 import com.jayptucker.heroesevolved.ability.AbilitySlot;
 import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
+import com.jayptucker.heroesevolved.entity.TemporalEchoEntity;
 import com.jayptucker.heroesevolved.progression.MasteryService;
+import com.jayptucker.heroesevolved.time.TemporalEntityEchoService;
 import com.jayptucker.heroesevolved.sounds.ModSounds;
 import com.jayptucker.heroesevolved.time.TimeSlowService;
 import com.jayptucker.heroesevolved.time.TimeStopService;
@@ -65,11 +70,25 @@ public final class TimeManipulationAbility implements Ability {
     private static final AbilityAction TEMPORAL_SNAPSHOT =
             new TemporalSnapshotAction();
 
+    /** Level 4: rewind fifteen seconds of your own position and lost health. */
+    private static final AbilityAction REWIND =
+            com.jayptucker.heroesevolved.ability.SimpleAction
+                    .builder("time_rewind", 4)
+                    .cost(HeroesEvolvedConfig.COMMON.timeRewindEnergyCost::get,
+                            HeroesEvolvedConfig.COMMON.timeRewindCooldownTicks::get)
+                    .canUse(context -> !context.player().isPassenger()
+                            && com.jayptucker.heroesevolved.time.TimeRewindService
+                            .canRewind(context.player()))
+                    .activate(context -> com.jayptucker.heroesevolved.time
+                            .TimeRewindService.rewind(context.player()))
+                    .build();
+
     private static final Map<AbilitySlot, AbilityAction> ACTIONS = Map.of(
             AbilitySlot.PRIMARY, BLINK,
             AbilitySlot.SECONDARY, TIME_SLOW,
             AbilitySlot.TERTIARY, TIME_STOP,
-            AbilitySlot.QUATERNARY, TEMPORAL_SNAPSHOT
+            AbilitySlot.QUATERNARY, REWIND,
+            AbilitySlot.QUINARY, TEMPORAL_SNAPSHOT
     );
 
     @Override
@@ -96,6 +115,7 @@ public final class TimeManipulationAbility implements Ability {
     public void onRevoked(AbilityUseContext context) {
         TimeSlowService.stop(context.player());
         TimeStopService.stop(context.player());
+        com.jayptucker.heroesevolved.time.TimeRewindService.forget(context.player());
     }
 
     @Override
@@ -211,10 +231,15 @@ public final class TimeManipulationAbility implements Ability {
                             destinationBox
                     );
 
+            spawnAfterimage(level, player.position());
             player.teleportTo(
                     destination.x,
                     destination.y,
                     destination.z
+            );
+            com.jayptucker.heroesevolved.network.ScreenTintPayload.send(
+                    player, 0x50FFFFFF, 4,
+                    com.jayptucker.heroesevolved.network.ScreenTintPayload.Style.FLASH
             );
 
             if (carriedDestination != null && carriedEntity.isAlive()) {
@@ -238,12 +263,31 @@ public final class TimeManipulationAbility implements Ability {
                     1.0F
             );
 
-            MasteryService.awardPowerUse(
+            MasteryService.markPowerUse(
                     player,
                     context.abilityId()
             );
 
             return AbilityActivationResult.SUCCESS;
+        }
+
+        /**
+         * A body-shaped shimmer left where the player stood, as if the
+         * light from that moment had not caught up yet.
+         */
+        private static void spawnAfterimage(ServerLevel level, Vec3 feet) {
+            AbilityEffects.send(level,
+                    Kind.TEMPORAL_BURST,
+                    feet, feet, 1.3D);
+            for (double height = 0.1D; height <= 1.8D; height += 0.15D) {
+                // Narrow at the head, wider at the shoulders and body.
+                double width = height > 1.45D ? 0.18D : 0.28D;
+                level.sendParticles(ParticleTypes.END_ROD,
+                        feet.x, feet.y + height, feet.z,
+                        2, width, 0.02D, width, 0.0D);
+            }
+            level.sendParticles(ParticleTypes.REVERSE_PORTAL,
+                    feet.x, feet.y + 1.0D, feet.z, 20, 0.25D, 0.6D, 0.25D, 0.02D);
         }
 
         private static LivingEntity findBlinkCarryTarget(
@@ -256,6 +300,10 @@ public final class TimeManipulationAbility implements Ability {
                     candidate -> candidate != player
                             && candidate.isAlive()
                             && !candidate.isPassenger()
+                            // Echoes and replaying Past mobs are recordings,
+                            // not bodies that can be carried out of history.
+                            && !(candidate instanceof TemporalEchoEntity)
+                            && !TemporalEntityEchoService.isReplaying(candidate)
                             && (!(candidate instanceof Player otherPlayer)
                             || !otherPlayer.isSpectator())
             );
@@ -405,7 +453,7 @@ public final class TimeManipulationAbility implements Ability {
             ServerPlayer player = context.player();
 
             TimeSlowService.start(player, context.abilityLevel());
-            MasteryService.awardPowerUse(
+            MasteryService.markPowerUse(
                     player,
                     context.abilityId()
             );
@@ -465,7 +513,7 @@ public final class TimeManipulationAbility implements Ability {
             // overlapping effects from competing over entities and projectiles.
             TimeSlowService.stop(player);
             TimeStopService.start(player, context.abilityLevel());
-            MasteryService.awardPowerUse(player, context.abilityId());
+            MasteryService.markPowerUse(player, context.abilityId());
             return AbilityActivationResult.SUCCESS;
         }
     }
@@ -490,14 +538,21 @@ public final class TimeManipulationAbility implements Ability {
 
         @Override
         public int energyCost(AbilityUseContext context) {
-            return context.modifierHeld()
+            if (inPast(context)) {
+                // Returning is always free, so a traveller who has spent
+                // their energy can never be stranded in the Past.
+                return 0;
+            }
+
+            return creatingSnapshot(context)
                     ? HeroesEvolvedConfig.COMMON.timeSnapshotEnergyCost.get()
-                    : 40;
+                    : HeroesEvolvedConfig.COMMON
+                            .timeSnapshotTravelEnergyCost.get();
         }
 
         @Override
         public int cooldownTicks(AbilityUseContext context) {
-            return context.modifierHeld()
+            return creatingSnapshot(context)
                     ? HeroesEvolvedConfig.COMMON.timeSnapshotCooldownTicks.get()
                     : HeroesEvolvedConfig.COMMON
                             .timeSnapshotTravelCooldownTicks.get();
@@ -505,36 +560,54 @@ public final class TimeManipulationAbility implements Ability {
 
         @Override
         public ResourceLocation cooldownId(AbilityUseContext context) {
-            return context.modifierHeld()
+            return creatingSnapshot(context)
                     ? TEMPORAL_SNAPSHOT_CREATE_COOLDOWN
                     : TEMPORAL_SNAPSHOT_TRAVEL_COOLDOWN;
         }
 
         @Override
         public boolean canUse(AbilityUseContext context) {
-            if (TemporalSnapshotService.isTemporalDimension(
-                    context.player().serverLevel())) {
-                return !context.modifierHeld()
-                        && TemporalSnapshotService.returnToPresent(
-                        context.player());
+            // canUse must only check. Travel used to happen here, before
+            // the energy check, so it was free whenever energy ran short.
+            ServerPlayer player = context.player();
+            if (inPast(context)) {
+                return TemporalSnapshotService.canReturnToPresent(player);
             }
 
             return context.modifierHeld()
-                    || TemporalSnapshotService.enterSnapshot(context.player());
+                    ? TemporalSnapshotService.canBeginSnapshot(player)
+                    : TemporalSnapshotService.canEnterSnapshot(player);
         }
 
         @Override
         public AbilityActivationResult activate(AbilityUseContext context) {
-            // canUse performs travel immediately because its success depends
-            // on destination availability. Snapshot creation happens here.
-            if (TemporalSnapshotService.isTemporalDimension(
-                    context.player().serverLevel()) || !context.modifierHeld()) {
-                return AbilityActivationResult.SUCCESS;
+            ServerPlayer player = context.player();
+            boolean succeeded;
+            if (inPast(context)) {
+                succeeded = TemporalSnapshotService.returnToPresent(player);
+            } else if (context.modifierHeld()) {
+                succeeded = TemporalSnapshotService.beginSnapshot(player);
+            } else {
+                succeeded = TemporalSnapshotService.enterSnapshot(player);
             }
 
-            return TemporalSnapshotService.beginSnapshot(context.player())
+            if (succeeded) {
+                MasteryService.markPowerUse(player, context.abilityId());
+            }
+            return succeeded
                     ? AbilityActivationResult.SUCCESS
                     : AbilityActivationResult.REJECTED;
+        }
+
+        private static boolean inPast(AbilityUseContext context) {
+            return TemporalSnapshotService.isTemporalDimension(
+                    context.player().serverLevel()
+            );
+        }
+
+        /** Shift creates a snapshot in the Present; in the Past it means nothing. */
+        private static boolean creatingSnapshot(AbilityUseContext context) {
+            return context.modifierHeld() && !inPast(context);
         }
     }
 }

@@ -1,5 +1,8 @@
 package com.jayptucker.heroesevolved.flight;
 
+import com.jayptucker.heroesevolved.effects.AbilityEffects;
+import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
+
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
@@ -119,7 +122,7 @@ public final class FlightService {
                 .get() * 20;
 
         startFlightSession(player, ascentDurationTicks);
-        MasteryService.awardPowerUse(player, ModAbilities.FLIGHT_ID);
+        MasteryService.markPowerUse(player, ModAbilities.FLIGHT_ID);
     }
 
     public static boolean toggleFlight(ServerPlayer player) {
@@ -169,7 +172,7 @@ public final class FlightService {
                 )
         );
 
-        MasteryService.awardPowerUse(player, ModAbilities.FLIGHT_ID);
+        MasteryService.markPowerUse(player, ModAbilities.FLIGHT_ID);
         FlightVisualSyncService.syncToTrackingPlayers(player);
     }
 
@@ -293,19 +296,26 @@ public final class FlightService {
         }
 
         if (flightData.visualPoseActive()) {
-            MasteryService.awardPowerUse(player, ModAbilities.FLIGHT_ID);
+            MasteryService.markPowerUse(player, ModAbilities.FLIGHT_ID);
         }
 
         long gameTime = player.serverLevel().getGameTime();
 
-        // Cyclone uses the Flight Boost pose again, so its contrail uses the
-        // same animated-foot position as high-speed forward flight.
+        // Both modes use the pitched flight pose; cyclone yaw follows travel.
         boolean contrailActive = flightData.visualPoseActive() || cycloneActive;
+
+        // Wind rushing past at Boost speed whitens the edges of vision.
+        if (flightData.visualPoseActive() && gameTime % 10 == 0) {
+            com.jayptucker.heroesevolved.network.ScreenTintPayload.send(
+                    player, 0x30E8F4FF, 14,
+                    com.jayptucker.heroesevolved.network.ScreenTintPayload.Style.EDGE
+            );
+        }
 
         if (contrailActive
                 && gameTime % HeroesEvolvedConfig.COMMON
                 .flightTrailIntervalTicks.get() == 0) {
-            spawnContrail(player, false);
+            spawnContrail(player, cycloneActive);
         } else if (!contrailActive) {
             LAST_CONTRAIL_POSITIONS.remove(player.getUUID());
         }
@@ -338,7 +348,9 @@ public final class FlightService {
             return;
         }
 
-        PlayerEnergyService.tryConsume(player, energyDrain);
+        if (PlayerEnergyService.tryConsume(player, energyDrain)) {
+            MasteryService.awardEnergySpent(player, energyDrain);
+        }
     }
 
     private static PlayerFlightData handlePendingForwardLaunch(
@@ -577,6 +589,12 @@ public final class FlightService {
     private static void spawnCycloneParticles(ServerLevel level, Vec3 center) {
         long gameTime = level.getGameTime();
 
+        if (gameTime % 6L == 0L) {
+            AbilityEffects.send(level,
+                    Kind.FLIGHT_CYCLONE,
+                    center, center, 2.0D);
+        }
+
         if (gameTime % 2L != 0L) {
             return;
         }
@@ -765,40 +783,9 @@ public final class FlightService {
             ServerPlayer player,
             Vec3 direction
     ) {
-        ServerLevel level = player.serverLevel();
-        Vec3 normalizedDirection = direction.normalize();
-
-        // This basis creates a ring perpendicular to travel direction.
-        // For horizontal flight, the result is a vertical smoke ring.
-        Vec3 referenceAxis = Math.abs(normalizedDirection.y) > 0.9D
-                ? new Vec3(1.0D, 0.0D, 0.0D)
-                : new Vec3(0.0D, 1.0D, 0.0D);
-
-        Vec3 right = normalizedDirection.cross(referenceAxis).normalize();
-        Vec3 up = right.cross(normalizedDirection).normalize();
-        Vec3 ringCenter = player.position().add(0.0D, 1.0D, 0.0D);
-
-        for (int index = 0; index < 32; index++) {
-            double angle = (Math.PI * 2.0D * index) / 32.0D;
-            double radius = 2.0D;
-            Vec3 particlePosition = ringCenter
-                    .add(right.scale(Math.cos(angle) * radius))
-                    .add(up.scale(Math.sin(angle) * radius));
-
-            level.sendParticles(
-                    // Reuse the registered white contrail particle so the
-                    // sonic boom reads as a bright, lingering vapor ring.
-                    ModParticles.WHITE_CONTRAIL_SMOKE.get(),
-                    particlePosition.x,
-                    particlePosition.y,
-                    particlePosition.z,
-                    1,
-                    0.0D,
-                    0.0D,
-                    0.0D,
-                    0.04D
-            );
-        }
+        Vec3 center = FlightVisualGeometry.bodyCenter(player.position());
+        AbilityEffects.send(player.serverLevel(), Kind.FLIGHT_BURST,
+                center, center.add(direction), 3.0D);
     }
 
     private static void triggerFlightBoostSonicBoom(ServerPlayer player) {
@@ -829,22 +816,10 @@ public final class FlightService {
             ServerPlayer player,
             boolean cycloneActive
     ) {
-        Vec3 particlePosition;
-
-        if (cycloneActive) {
-            // Cyclone uses the normal upright model, so its contrail belongs
-            // directly beneath the player's ordinary feet.
-            particlePosition = player.position()
-                    .add(horizontalLookDirection(player).scale(-0.35D))
-                    .add(0.0D, 0.15D, 0.0D);
-        } else {
-            // Entity position is the player's feet. Keep the server-side
-            // trail near that point so it follows the animated feet instead
-            // of cutting through the middle of the flying body.
-            particlePosition = player.position()
-                    .add(horizontalLookDirection(player).scale(-0.85D))
-                    .add(0.0D, 0.15D, 0.0D);
-        }
+        boolean posed = player.getData(ModDataAttachments.PLAYER_FLIGHT.get())
+                .visualPoseActive() && !player.onGround();
+        Vec3 particlePosition = FlightVisualGeometry.feet(player.position(),
+                FlightVisualGeometry.direction(player, cycloneActive, 1.0F), posed);
 
         Vec3 previousPosition = LAST_CONTRAIL_POSITIONS.put(
                 player.getUUID(),

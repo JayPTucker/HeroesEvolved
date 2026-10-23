@@ -64,6 +64,15 @@ public final class CooldownService {
         );
     }
 
+    /** Ends every cooldown the player has. Used by the admin menu. */
+    public static void clearAll(ServerPlayer player) {
+        Objects.requireNonNull(player, "Player cannot be null.");
+        player.setData(
+            ModDataAttachments.PLAYER_COOLDOWNS.get(),
+            PlayerCooldownData.empty()
+        );
+    }
+
     public static long getExpirationGameTime(
         ServerPlayer player,
         ResourceLocation abilityId

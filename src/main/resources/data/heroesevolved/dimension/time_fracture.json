@@ -1,0 +1,17 @@
+{
+  "type": "heroesevolved:time_fracture",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "minecraft:plains",
+      "layers": [
+        { "height": 1, "block": "minecraft:bedrock" },
+        { "height": 62, "block": "minecraft:stone" },
+        { "height": 1, "block": "minecraft:light_gray_concrete" }
+      ],
+      "lakes": false,
+      "features": false,
+      "structure_overrides": []
+    }
+  }
+}

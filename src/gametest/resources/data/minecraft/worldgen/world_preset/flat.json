@@ -1,0 +1,48 @@
+{
+  "dimensions": {
+    "minecraft:overworld": {
+      "type": "minecraft:overworld",
+      "generator": {
+        "type": "minecraft:flat",
+        "settings": {
+          "biome": "minecraft:plains",
+          "layers": [
+            { "height": 1, "block": "minecraft:bedrock" },
+            { "height": 2, "block": "minecraft:dirt" },
+            { "height": 1, "block": "minecraft:grass_block" }
+          ],
+          "lakes": false, "features": false, "structure_overrides": []
+        }
+      }
+    },
+    "minecraft:the_nether": {
+      "type": "minecraft:the_nether",
+      "generator": {
+        "type": "minecraft:noise", "settings": "minecraft:nether",
+        "biome_source": { "type": "minecraft:multi_noise", "preset": "minecraft:nether" }
+      }
+    },
+    "minecraft:the_end": {
+      "type": "minecraft:the_end",
+      "generator": {
+        "type": "minecraft:noise", "settings": "minecraft:end",
+        "biome_source": { "type": "minecraft:the_end" }
+      }
+    },
+    "heroesevolved:time_fracture": {
+      "type": "heroesevolved:time_fracture",
+      "generator": {
+        "type": "minecraft:flat",
+        "settings": {
+          "biome": "minecraft:plains",
+          "layers": [
+            { "height": 1, "block": "minecraft:bedrock" },
+            { "height": 62, "block": "minecraft:stone" },
+            { "height": 1, "block": "minecraft:light_gray_concrete" }
+          ],
+          "lakes": false, "features": false, "structure_overrides": []
+        }
+      }
+    }
+  }
+}

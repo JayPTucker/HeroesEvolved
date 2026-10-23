@@ -1,6 +1,7 @@
 package com.jayptucker.heroesevolved.entity;
 
 import com.jayptucker.heroesevolved.time.TemporalEchoService;
+import com.jayptucker.heroesevolved.time.TemporalParadoxService;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -91,6 +92,10 @@ public final class TemporalEchoEntity extends PathfinderMob {
         hostile = true;
         setNoAi(false);
         setNoGravity(false);
+        // Replaying echoes are invulnerable so they cannot be farmed. A
+        // disturbed echo must become mortal, or survival players could never
+        // defeat it.
+        setInvulnerable(false);
         setTarget(attacker);
         setCustomName(net.minecraft.network.chat.Component.literal(
                 getProfileName() + " (Temporal Echo)"
@@ -118,13 +123,36 @@ public final class TemporalEchoEntity extends PathfinderMob {
             return false;
         }
 
-        return hostile && super.hurt(source, amount);
+        if (!hostile || !super.hurt(source, amount)) {
+            return false;
+        }
+
+        // Wounding your own past self wounds you as well.
+        if (source.getEntity() instanceof net.minecraft.server.level.ServerPlayer
+                attacker && attacker.getUUID().equals(getProfileId())) {
+            TemporalParadoxService.mirrorSelfDamage(attacker, amount);
+        }
+        return true;
+    }
+
+    /** True when this echo is a recording of the given player. */
+    public boolean isEchoOf(net.minecraft.world.entity.player.Player player) {
+        return player.getUUID().equals(getProfileId());
+    }
+
+    /** Stops replaying history and turns to look at the player who broke it. */
+    public void faceIntruder(net.minecraft.world.entity.player.Player player) {
+        // Replaying echoes have no AI, so turn the body and head directly.
+        lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES,
+                player.getEyePosition());
+        setYHeadRot(getYRot());
+        yBodyRot = getYRot();
     }
 
     @Override
     public void die(DamageSource source) {
         super.die(source);
-        TemporalEchoService.onEchoKilled(this);
+        TemporalEchoService.onEchoKilled(this, source.getEntity());
     }
 
     @Override

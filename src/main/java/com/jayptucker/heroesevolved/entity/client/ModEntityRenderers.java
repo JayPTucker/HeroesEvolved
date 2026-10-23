@@ -31,5 +31,9 @@ public final class ModEntityRenderers {
                 ModEntities.TEMPORAL_GHOST_BLOCK.get(),
                 TemporalGhostBlockRenderer::new
         );
+        event.registerEntityRenderer(
+                ModEntities.QUAKE_DEBRIS.get(),
+                QuakeDebrisRenderer::new
+        );
     }
 }

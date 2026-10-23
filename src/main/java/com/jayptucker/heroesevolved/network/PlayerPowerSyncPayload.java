@@ -14,6 +14,7 @@ import java.util.List;
 public record PlayerPowerSyncPayload(
         int energy,
         int maximumEnergy,
+        int energyRegenerationPerSecond,
         List<AbilitySnapshot> abilities,
         List<AbilityActionSnapshot> actions
 ) implements CustomPacketPayload {
@@ -69,7 +70,7 @@ public record PlayerPowerSyncPayload(
 
                 // Time Manipulation has a fourth, Level 5 action. Keep this
                 // packet limit aligned with the highest supported slot count.
-                if (size < 0 || size > 5) {
+                if (size < 0 || size > 8) {
                     throw new IllegalArgumentException(
                             "Invalid action snapshot count: " + size
                     );
@@ -95,6 +96,8 @@ public record PlayerPowerSyncPayload(
             PlayerPowerSyncPayload::energy,
             ByteBufCodecs.VAR_INT,
             PlayerPowerSyncPayload::maximumEnergy,
+            ByteBufCodecs.VAR_INT,
+            PlayerPowerSyncPayload::energyRegenerationPerSecond,
             ABILITY_LIST_STREAM_CODEC,
             PlayerPowerSyncPayload::abilities,
             ACTION_LIST_STREAM_CODEC,

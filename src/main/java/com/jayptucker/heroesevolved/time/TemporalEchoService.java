@@ -18,14 +18,18 @@ import net.minecraft.sounds.SoundSource;
 import com.jayptucker.heroesevolved.entity.TemporalEchoEntity;
 import com.jayptucker.heroesevolved.entity.TemporalGhostBlockEntity;
 import com.jayptucker.heroesevolved.registry.ModEntities;
+import com.jayptucker.heroesevolved.data.ModDataAttachments;
+import net.minecraft.server.MinecraftServer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 import java.util.UUID;
 
-/** Manages non-interactive visual echoes for Temporal Snapshot travel. */
+/** Manages the player echoes replayed during Temporal Snapshot visits. */
 public final class TemporalEchoService {
     private static final Map<UUID, List<TemporalEchoEntity>> SNAPSHOT_ECHOES =
             new HashMap<>();
@@ -34,6 +38,9 @@ public final class TemporalEchoService {
     private static final Map<UUID, EchoSnapshotContext> ECHO_CONTEXTS =
             new HashMap<>();
     private static final List<GhostBlock> GHOST_BLOCKS = new ArrayList<>();
+    // Echoes whose history was broken by meeting their present self, mapped
+    // to that traveller so they keep watching them.
+    private static final Map<UUID, UUID> DIVERGED_ECHOES = new HashMap<>();
 
     private TemporalEchoService() {
     }
@@ -70,9 +77,11 @@ public final class TemporalEchoService {
             echoes.add(echo);
         }
         SNAPSHOT_ECHOES.put(ownerId, echoes);
+        TemporalEntityEchoService.spawn(ownerId, level, snapshot);
     }
 
     public static void removeSnapshotEchoes(UUID ownerId) {
+        TemporalEntityEchoService.remove(ownerId);
         List<TemporalEchoEntity> echoes = SNAPSHOT_ECHOES.remove(ownerId);
         if (echoes == null) {
             return;
@@ -85,7 +94,32 @@ public final class TemporalEchoService {
             ECHO_RECIPIENTS.remove(echo.getUUID());
             ECHO_PLAYBACKS.remove(echo.getUUID());
             ECHO_CONTEXTS.remove(echo.getUUID());
+            DIVERGED_ECHOES.remove(echo.getUUID());
         }
+    }
+
+    /**
+     * Meeting your past self face to face breaks the recording: the echo
+     * stops replaying history, turns to watch you, and a paradox begins.
+     */
+    public static void encounter(
+            TemporalEchoEntity echo,
+            ServerPlayer traveller
+    ) {
+        if (echo.isHostile() || !echo.isEchoOf(traveller)) {
+            return;
+        }
+
+        ECHO_PLAYBACKS.remove(echo.getUUID());
+        ECHO_RECIPIENTS.remove(echo.getUUID());
+        DIVERGED_ECHOES.put(echo.getUUID(), traveller.getUUID());
+        echo.faceIntruder(traveller);
+        if (echo.level() instanceof ServerLevel level) {
+            level.sendParticles(ParticleTypes.REVERSE_PORTAL,
+                    echo.getX(), echo.getY() + 1.0D, echo.getZ(),
+                    30, 0.35D, 0.65D, 0.35D, 0.10D);
+        }
+        TemporalParadoxService.onSelfEncounter(traveller);
     }
 
     /**
@@ -99,7 +133,11 @@ public final class TemporalEchoService {
     ) {
         ECHO_PLAYBACKS.remove(echo.getUUID());
         ECHO_RECIPIENTS.remove(echo.getUUID());
+        DIVERGED_ECHOES.remove(echo.getUUID());
         echo.becomeHostile(attacker);
+        if (echo.isEchoOf(attacker)) {
+            TemporalParadoxService.onSelfEncounter(attacker);
+        }
         if (echo.level() instanceof ServerLevel level) {
             level.sendParticles(ParticleTypes.REVERSE_PORTAL,
                     echo.getX(), echo.getY() + 1.0D, echo.getZ(),
@@ -111,10 +149,22 @@ public final class TemporalEchoService {
     }
 
     /** Drops only the inventory captured with this echo, never live inventory. */
-    public static void onEchoKilled(TemporalEchoEntity echo) {
+    public static void onEchoKilled(
+            TemporalEchoEntity echo,
+            net.minecraft.world.entity.Entity killer
+    ) {
         EchoSnapshotContext context = ECHO_CONTEXTS.remove(echo.getUUID());
         ECHO_PLAYBACKS.remove(echo.getUUID());
         ECHO_RECIPIENTS.remove(echo.getUUID());
+        DIVERGED_ECHOES.remove(echo.getUUID());
+
+        // Killing your own past self leaves no one to grow into the present
+        // you. There is nothing to loot: you simply stop existing.
+        if (killer instanceof ServerPlayer player && echo.isEchoOf(player)) {
+            TemporalParadoxService.eraseFromTimeline(player);
+            return;
+        }
+
         if (context != null && echo.level() instanceof ServerLevel level) {
             TemporalParadoxService.onEchoKilled(
                     context.snapshotOwnerId(), context.data(), level,
@@ -123,17 +173,65 @@ public final class TemporalEchoService {
         }
     }
 
-    public static void tick() {
+    public static void tick(MinecraftServer server) {
+        removeAbandonedSnapshots(server);
         for (List<TemporalEchoEntity> echoes : SNAPSHOT_ECHOES.values()) {
             for (TemporalEchoEntity echo : echoes) {
                 if (!echo.isHostile()) {
                     replayHistory(echo);
+                    watchIntruder(echo, server);
                     emitFlicker(echo);
                     transferOfferedItems(echo);
                 }
             }
         }
+        TemporalEntityEchoService.tick();
         removeExpiredGhostBlocks();
+    }
+
+    /**
+     * Echoes exist only while someone is visiting their snapshot. Without
+     * this, the owner logging out or a guest returning alone would leave
+     * replaying echoes and Past mobs behind forever.
+     */
+    private static void removeAbandonedSnapshots(MinecraftServer server) {
+        ServerLevel pastLevel = server.getLevel(
+                TemporalSnapshotService.TEMPORAL_DIMENSION
+        );
+        Set<UUID> visitedSnapshots = new HashSet<>();
+        if (pastLevel != null) {
+            for (ServerPlayer visitor : pastLevel.players()) {
+                PlayerTemporalVisitData visit = visitor.getData(
+                        ModDataAttachments.PLAYER_TEMPORAL_VISIT.get()
+                );
+                if (visit.visiting()) {
+                    visitedSnapshots.add(visit.ownerId());
+                }
+            }
+        }
+
+        Set<UUID> owners = new HashSet<>(SNAPSHOT_ECHOES.keySet());
+        TemporalEntityEchoService.owners().forEach(owners::add);
+        for (UUID ownerId : owners) {
+            if (!visitedSnapshots.contains(ownerId)) {
+                removeSnapshotEchoes(ownerId);
+            }
+        }
+    }
+
+    private static void watchIntruder(
+            TemporalEchoEntity echo,
+            MinecraftServer server
+    ) {
+        UUID intruderId = DIVERGED_ECHOES.get(echo.getUUID());
+        if (intruderId == null) {
+            return;
+        }
+
+        ServerPlayer intruder = server.getPlayerList().getPlayer(intruderId);
+        if (intruder != null && intruder.level() == echo.level()) {
+            echo.faceIntruder(intruder);
+        }
     }
 
     private static TemporalEchoEntity createEcho(

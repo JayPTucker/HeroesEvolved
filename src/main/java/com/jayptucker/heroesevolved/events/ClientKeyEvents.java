@@ -7,6 +7,8 @@ import com.jayptucker.heroesevolved.client.sound.FlightBoostWindSound;
 import com.jayptucker.heroesevolved.gui.screen.PowersScreen;
 import com.jayptucker.heroesevolved.input.ModKeyMappings;
 import com.jayptucker.heroesevolved.network.ActivateAbilitySlotPayload;
+import com.jayptucker.heroesevolved.network.AdminActionPayload;
+import com.jayptucker.heroesevolved.network.ReleaseAbilitySlotPayload;
 import com.jayptucker.heroesevolved.network.ClientPowerState;
 import com.jayptucker.heroesevolved.network.ClientFlightVisualState;
 import com.jayptucker.heroesevolved.network.FlightForwardInputPayload;
@@ -26,6 +28,7 @@ public final class ClientKeyEvents {
     private static boolean ability2WasDown;
     private static boolean ability3WasDown;
     private static boolean ability4WasDown;
+    private static boolean ability5WasDown;
     private static boolean flightForwardWasDown;
     private static boolean jumpWasDown;
     private static int forwardInputResendTicks;
@@ -48,7 +51,21 @@ public final class ClientKeyEvents {
             }
         }
 
+        while (ModKeyMappings.OPEN_ADMIN.consumeClick()) {
+            if (minecraft.player != null && minecraft.screen == null
+                    && minecraft.player.hasPermissions(2)) {
+                // The server answers with fresh state and opens the menu.
+                PacketDistributor.sendToServer(AdminActionPayload.of(
+                        AdminActionPayload.Action.OPEN,
+                        minecraft.player.getUUID()
+                ));
+            }
+        }
+
         if (minecraft.player == null || minecraft.screen != null) {
+            if (minecraft.player != null) {
+                releaseHeldAbilities();
+            }
             syncFlightForwardInput(false);
             FlightBoostWindSound.update(false);
             jumpWasDown = false;
@@ -100,6 +117,37 @@ public final class ClientKeyEvents {
                 allowOverexertion,
                 ability4WasDown
         );
+
+        ability5WasDown = sendAbilityRequestIfPressed(
+                ModKeyMappings.ABILITY_5,
+                AbilitySlot.QUINARY,
+                allowOverexertion,
+                ability5WasDown
+        );
+    }
+
+    /**
+     * Opening a screen hides key releases from us, so end any held
+     * (channelled) ability now instead of leaving it running.
+     */
+    private static void releaseHeldAbilities() {
+        boolean[] held = {
+                ability1WasDown, ability2WasDown, ability3WasDown,
+                ability4WasDown, ability5WasDown
+        };
+        AbilitySlot[] slots = AbilitySlot.values();
+        for (int index = 0; index < held.length; index++) {
+            if (held[index]) {
+                PacketDistributor.sendToServer(
+                        new ReleaseAbilitySlotPayload(slots[index])
+                );
+            }
+        }
+        ability1WasDown = false;
+        ability2WasDown = false;
+        ability3WasDown = false;
+        ability4WasDown = false;
+        ability5WasDown = false;
     }
 
     private static void handleFlightDoubleTap(Minecraft minecraft) {
@@ -152,6 +200,10 @@ public final class ClientKeyEvents {
                             allowOverexertion
                     )
             );
+        } else if (!isDown && wasDown) {
+            // Held abilities (Quake Blast) end when the key is let go.
+            // Everything else simply ignores the release.
+            PacketDistributor.sendToServer(new ReleaseAbilitySlotPayload(slot));
         }
 
         return isDown;

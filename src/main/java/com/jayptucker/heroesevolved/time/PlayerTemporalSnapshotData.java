@@ -15,7 +15,8 @@ public record PlayerTemporalSnapshotData(
         int sourceMinZ,
         int snapshotMinX,
         int snapshotMinZ,
-        List<TemporalEchoData> echoes
+        List<TemporalEchoData> echoes,
+        List<TemporalEntityEchoData> entityEchoes
 ) {
     public static final Codec<PlayerTemporalSnapshotData> CODEC =
             RecordCodecBuilder.create(instance -> instance.group(
@@ -43,7 +44,12 @@ public record PlayerTemporalSnapshotData(
                     // field, so default it to an empty list when loading them.
                     TemporalEchoData.CODEC.listOf()
                             .optionalFieldOf("echoes", List.of())
-                            .forGetter(PlayerTemporalSnapshotData::echoes)
+                            .forGetter(PlayerTemporalSnapshotData::echoes),
+                    // Likewise, snapshots made before mobs were recorded
+                    // simply have no entity echoes.
+                    TemporalEntityEchoData.CODEC.listOf()
+                            .optionalFieldOf("entity_echoes", List.of())
+                            .forGetter(PlayerTemporalSnapshotData::entityEchoes)
             ).apply(instance, PlayerTemporalSnapshotData::new));
 
     public static PlayerTemporalSnapshotData empty() {
@@ -55,6 +61,7 @@ public record PlayerTemporalSnapshotData(
                 0,
                 0,
                 0,
+                List.of(),
                 List.of()
         );
     }
@@ -68,7 +75,8 @@ public record PlayerTemporalSnapshotData(
                 sourceMinZ,
                 snapshotMinX,
                 snapshotMinZ,
-                echoes
+                echoes,
+                entityEchoes
         );
     }
 }

@@ -18,6 +18,14 @@ public interface AbilityAction {
         return false;
     }
 
+    /**
+     * Called when the action's key is let go. Held actions (channels) end
+     * here; most actions ignore it. Releases are never trusted to happen:
+     * channels must also stop on their own (energy, a time limit, death).
+     */
+    default void release(AbilityUseContext context) {
+    }
+
     default int energyCost(int powerLevel) {
         return definition().energyCostForLevel(powerLevel);
     }

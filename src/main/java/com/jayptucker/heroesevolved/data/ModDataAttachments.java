@@ -115,6 +115,21 @@ public final class ModDataAttachments {
     public static void register(IEventBus modEventBus) {
         ATTACHMENTS.register(modEventBus);
     }
+
+    public static final Supplier<AttachmentType<Boolean>> TIME_INTRO_SEEN =
+            ATTACHMENTS.register("time_intro_seen", () -> AttachmentType
+                    .<Boolean>builder(() -> false).serialize(Codec.BOOL).copyOnDeath().build());
+
+    public static final Supplier<AttachmentType<com.jayptucker.heroesevolved.intro.PowerIntroHistory>> POWER_INTRO_HISTORY =
+            ATTACHMENTS.register("power_intro_history", () -> AttachmentType
+                    .builder(com.jayptucker.heroesevolved.intro.PowerIntroHistory::empty)
+                    .serialize(com.jayptucker.heroesevolved.intro.PowerIntroHistory.CODEC).copyOnDeath().build());
+
+    public static final Supplier<AttachmentType<com.jayptucker.heroesevolved.time.intro.TimeIntroVisit>>
+            TIME_INTRO_VISIT = ATTACHMENTS.register("time_intro_visit", () -> AttachmentType
+                    .builder(com.jayptucker.heroesevolved.time.intro.TimeIntroVisit::empty)
+                    .serialize(com.jayptucker.heroesevolved.time.intro.TimeIntroVisit.CODEC)
+                    .copyOnDeath().build());
     
     
 }

@@ -1,0 +1,25 @@
+Human panic recordings
+======================
+"Crowd in panic" by IENBA (2019)
+https://freesound.org/people/IENBA/sounds/491405/
+License: CC0 1.0 Universal public domain dedication
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Recorded and performed by Video Games and Animation students at the National
+School of Arts of Uruguay during a Sound Design Workshop (Licenciatura en
+Lenguajes y Medios Audiovisuales), as credited on the source page.
+
+Input: publicly available HQ MP3 rendition of the CC0 recording:
+https://cdn.freesound.org/previews/491/491405_9616576-hq.mp3
+
+Edits for Heroes Evolved: three short excerpts at 2.4-5.4, 12.5-15.5 and
+24.8-28.0 seconds; mono downmix, 44.1 kHz resampling, removal of sub-bass,
+gentle high-frequency rolloff, level normalization, and fades. No synthesized
+voices or changed vocal identities. Output files: crowd_panic.ogg,
+crowd_panic_2.ogg and crowd_panic_3.ogg.
+
+Original procedural assets
+==========================
+nuclear_siren.ogg and nuclear_blast.ogg were synthesized for this project.
+The blast combines a pressure crack, bass impulse, turbulent roar and echoes.
+Rebuild these assets with tools/generate-intro-audio.py.

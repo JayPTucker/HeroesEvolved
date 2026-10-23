@@ -2,6 +2,7 @@ package com.jayptucker.heroesevolved.registry;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.entity.CarryAnchorEntity;
+import com.jayptucker.heroesevolved.entity.QuakeDebrisEntity;
 import com.jayptucker.heroesevolved.entity.TemporalEchoEntity;
 import com.jayptucker.heroesevolved.entity.TemporalGhostBlockEntity;
 import net.minecraft.core.registries.Registries;
@@ -62,6 +63,22 @@ public final class ModEntities {
                                     .clientTrackingRange(64)
                                     .updateInterval(1)
                                     .build(id.toString())
+            );
+
+    public static final DeferredHolder<EntityType<?>, EntityType<QuakeDebrisEntity>>
+            QUAKE_DEBRIS = ENTITY_TYPES.register("quake_debris", id ->
+                    EntityType.Builder.<QuakeDebrisEntity>of(
+                                    QuakeDebrisEntity::new,
+                                    MobCategory.MISC
+                            )
+                            .sized(0.5F, 0.5F)
+                            .noSummon()
+                            .noSave()
+                            .clientTrackingRange(64)
+                            // Clients simulate the arc themselves; occasional
+                            // corrections are enough.
+                            .updateInterval(10)
+                            .build(id.toString())
             );
 
     private ModEntities() {

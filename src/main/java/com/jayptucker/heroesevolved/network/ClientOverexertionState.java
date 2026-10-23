@@ -25,6 +25,11 @@ public final class ClientOverexertionState {
         );
     }
 
+    /** Clears the border timer when leaving a world; see ClientCameraShakeState. */
+    public static void reset() {
+        expirationGameTime = -1L;
+    }
+
     public static float getIntensity() {
         Minecraft minecraft = Minecraft.getInstance();
 
@@ -34,6 +39,13 @@ public final class ClientOverexertionState {
 
         long remainingTicks =
                 expirationGameTime - minecraft.level.getGameTime();
+
+        // Overexertion lasts seconds; anything longer is left over from a
+        // world whose clock ran ahead of this one.
+        if (remainingTicks > 20L * 60L * 10L) {
+            reset();
+            return 0.0F;
+        }
 
         if (remainingTicks <= 0) {
             return 0.0F;

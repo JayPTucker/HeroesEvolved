@@ -50,15 +50,33 @@ public final class ModKeyMappings {
             "key.categories.heroesevolved"
     );
 
+    // V is unbound in vanilla; C and X are its hotbar save/load keys.
+    public static final KeyMapping ABILITY_5 = new KeyMapping(
+            "key.heroesevolved.ability_5",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_V,
+            "key.categories.heroesevolved"
+    );
+
+    /** Operators only; the server rejects anyone else's request. */
+    public static final KeyMapping OPEN_ADMIN = new KeyMapping(
+            "key.heroesevolved.open_admin",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_O,
+            "key.categories.heroesevolved"
+    );
+
     private ModKeyMappings() {
     }
 
     @SubscribeEvent
     public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
         event.register(OPEN_POWERS);
+        event.register(OPEN_ADMIN);
         event.register(ABILITY_1);
         event.register(ABILITY_2);
         event.register(ABILITY_3);
         event.register(ABILITY_4);
+        event.register(ABILITY_5);
     }
 }

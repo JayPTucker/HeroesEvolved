@@ -2,6 +2,7 @@ package com.jayptucker.heroesevolved.network;
 
 import com.jayptucker.heroesevolved.ability.Ability;
 import com.jayptucker.heroesevolved.ability.AbilityAction;
+import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.ability.data.AbilityProgress;
 import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
@@ -60,6 +61,7 @@ public final class PlayerPowerSyncService {
                 new PlayerPowerSyncPayload(
                         PlayerEnergyService.getEnergy(player),
                         PlayerEnergyService.getMaximumEnergy(player),
+                        PlayerEnergyService.regenerationPerSecond(player),
                         abilities,
                         actions
                 )
@@ -94,14 +96,16 @@ public final class PlayerPowerSyncService {
             AbilityAction action
     ) {
         ResourceLocation actionId = action.definition().id();
+        int level = PlayerProgressionService.getLevel(player);
+        int unlockLevel = action.definition().unlockLevel();
+        boolean unlocked = action.definition().isUnlockedAt(level);
 
         if (actionId.equals(ResourceLocation.fromNamespaceAndPath(
                 com.jayptucker.heroesevolved.HeroesEvolved.MOD_ID,
                 "temporal_snapshot"
         ))) {
-            boolean unlocked = action.definition().isUnlockedAt(
-                    PlayerProgressionService.getLevel(player)
-            );
+            AbilityUseContext create = previewContext(player, true);
+            AbilityUseContext travel = previewContext(player, false);
             return Stream.of(
                     new AbilityActionSnapshot(
                             slot,
@@ -109,7 +113,10 @@ public final class PlayerPowerSyncService {
                             unlocked,
                             CooldownService.getExpirationGameTime(player,
                                     TimeManipulationAbility
-                                            .TEMPORAL_SNAPSHOT_CREATE_COOLDOWN)
+                                            .TEMPORAL_SNAPSHOT_CREATE_COOLDOWN),
+                            unlockLevel,
+                            action.energyCost(create),
+                            action.cooldownTicks(create)
                     ),
                     new AbilityActionSnapshot(
                             slot,
@@ -117,18 +124,41 @@ public final class PlayerPowerSyncService {
                             unlocked,
                             CooldownService.getExpirationGameTime(player,
                                     TimeManipulationAbility
-                                            .TEMPORAL_SNAPSHOT_TRAVEL_COOLDOWN)
+                                            .TEMPORAL_SNAPSHOT_TRAVEL_COOLDOWN),
+                            unlockLevel,
+                            action.energyCost(travel),
+                            action.cooldownTicks(travel)
                     )
             );
         }
 
+        AbilityUseContext preview = previewContext(player, false);
         return Stream.of(new AbilityActionSnapshot(
                 slot,
                 action.definition().displayNameKey(),
-                action.definition().isUnlockedAt(
-                        PlayerProgressionService.getLevel(player)
-                ),
-                CooldownService.getExpirationGameTime(player, actionId)
+                unlocked,
+                CooldownService.getExpirationGameTime(player, actionId),
+                unlockLevel,
+                action.energyCost(preview),
+                action.cooldownTicks(preview)
         ));
+    }
+
+    /**
+     * Costs and cooldowns can depend on the player's level and state, so
+     * the skills menu shows the values that would apply right now.
+     */
+    private static AbilityUseContext previewContext(
+            ServerPlayer player,
+            boolean modifierHeld
+    ) {
+        return new AbilityUseContext(
+                player,
+                PlayerAbilityService.getData(player).assignedPower()
+                        .map(Map.Entry::getKey)
+                        .orElseThrow(),
+                PlayerProgressionService.getLevel(player),
+                modifierHeld
+        );
     }
 }

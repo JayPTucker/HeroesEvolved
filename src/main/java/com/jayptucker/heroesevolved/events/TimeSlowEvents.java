@@ -15,6 +15,7 @@ public final class TimeSlowEvents {
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         TimeSlowService.tick(event.getServer());
+        com.jayptucker.heroesevolved.time.TimeRewindService.tick(event.getServer());
     }
 
     @SubscribeEvent

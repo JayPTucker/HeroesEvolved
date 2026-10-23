@@ -75,6 +75,8 @@ public final class EntityCarryEvents {
     private static boolean canPickUp(ServerPlayer player, Entity target) {
         return target != player
                 && !(target instanceof TemporalEchoEntity)
+                && !com.jayptucker.heroesevolved.time.TemporalEntityEchoService
+                        .isPastCopy(target)
                 && !target.isPassenger()
                 && target.getPassengers().isEmpty()
                 && !EntityCarryService.isCarrying(player);
@@ -89,6 +91,26 @@ public final class EntityCarryEvents {
 
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            EntityCarryService.release(player);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerChangedDimension(
+            PlayerEvent.PlayerChangedDimensionEvent event
+    ) {
+        // Without this the anchor stayed behind in the old dimension and
+        // dragged the carried entity to the player's new coordinates there.
+        if (event.getEntity() instanceof ServerPlayer player) {
+            EntityCarryService.release(player);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerDeath(
+            net.neoforged.neoforge.event.entity.living.LivingDeathEvent event
+    ) {
         if (event.getEntity() instanceof ServerPlayer player) {
             EntityCarryService.release(player);
         }

@@ -3,6 +3,7 @@ package com.jayptucker.heroesevolved.time;
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
+import com.jayptucker.heroesevolved.data.TemporalErasureSavedData;
 import com.jayptucker.heroesevolved.sounds.ModSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
@@ -51,20 +52,45 @@ public final class TemporalSnapshotService {
         return level.dimension().equals(TEMPORAL_DIMENSION);
     }
 
+    public static boolean canBeginSnapshot(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        return !isTemporalDimension(player.serverLevel())
+                && !ACTIVE_BUILDS.containsKey(player.getUUID())
+                && server != null
+                && server.getLevel(TEMPORAL_DIMENSION) != null
+                // Rebuilding a Past while someone is standing in it would
+                // overwrite the ground beneath them.
+                && !hasVisitors(server, player.getUUID());
+    }
+
+    public static boolean canEnterSnapshot(ServerPlayer player) {
+        PlayerTemporalSnapshotData data = player.getData(
+                ModDataAttachments.PLAYER_TEMPORAL_SNAPSHOT.get()
+        );
+        MinecraftServer server = player.getServer();
+        return data.ready()
+                && !ACTIVE_BUILDS.containsKey(player.getUUID())
+                && !isTemporalDimension(player.serverLevel())
+                && server != null
+                && server.getLevel(TEMPORAL_DIMENSION) != null;
+    }
+
+    public static boolean canReturnToPresent(ServerPlayer player) {
+        PlayerTemporalVisitData visit = player.getData(
+                ModDataAttachments.PLAYER_TEMPORAL_VISIT.get()
+        );
+        return visit.visiting()
+                && isTemporalDimension(player.serverLevel())
+                && getPresentLevel(player) != null;
+    }
+
     public static boolean beginSnapshot(ServerPlayer player) {
-        if (isTemporalDimension(player.serverLevel())
-                || ACTIVE_BUILDS.containsKey(player.getUUID())) {
+        if (!canBeginSnapshot(player)) {
             return false;
         }
 
         MinecraftServer server = player.getServer();
-        ServerLevel snapshotLevel = server == null
-                ? null
-                : server.getLevel(TEMPORAL_DIMENSION);
-
-        if (snapshotLevel == null) {
-            return false;
-        }
+        ServerLevel snapshotLevel = server.getLevel(TEMPORAL_DIMENSION);
 
         int widthBlocks = snapshotWidthBlocks();
         int sourceMinX = (player.chunkPosition().x
@@ -88,9 +114,16 @@ public final class TemporalSnapshotService {
                         sourceMinX,
                         sourceMinZ,
                         widthBlocks
+                ),
+                TemporalEchoRecordingService.captureEntitiesInside(
+                        player,
+                        sourceMinX,
+                        sourceMinZ,
+                        widthBlocks
                 )
         );
         TemporalChestService.clearSnapshotHistory(player);
+        TemporalErasureSavedData.get(server).clearSnapshot(player.getUUID());
         player.setData(ModDataAttachments.PLAYER_TEMPORAL_SNAPSHOT.get(), data);
 
         ACTIVE_BUILDS.put(
@@ -113,21 +146,66 @@ public final class TemporalSnapshotService {
         return true;
     }
 
-    public static boolean enterSnapshot(ServerPlayer player) {
+    /**
+     * A snapshot interrupted by its owner logging out or a server restart
+     * is still marked as forming. Copy it again so the owner is not left
+     * with a cooldown and a Past that can never be entered.
+     */
+    public static void resumeInterruptedBuild(ServerPlayer player) {
         PlayerTemporalSnapshotData data = player.getData(
                 ModDataAttachments.PLAYER_TEMPORAL_SNAPSHOT.get()
         );
-        if (!data.ready() || ACTIVE_BUILDS.containsKey(player.getUUID())) {
+        MinecraftServer server = player.getServer();
+        if (!data.exists() || data.ready() || server == null
+                || ACTIVE_BUILDS.containsKey(player.getUUID())) {
+            return;
+        }
+
+        ServerLevel source = server.getLevel(ResourceKey.create(
+                Registries.DIMENSION, data.sourceDimension()
+        ));
+        ServerLevel snapshotLevel = server.getLevel(TEMPORAL_DIMENSION);
+        if (source == null || snapshotLevel == null) {
+            return;
+        }
+
+        ACTIVE_BUILDS.put(player.getUUID(), new SnapshotBuildTask(
+                player.getUUID(), source, snapshotLevel, data,
+                snapshotWidthBlocks()
+        ));
+        player.displayClientMessage(
+                Component.literal("Your temporal snapshot is forming..."),
+                true
+        );
+    }
+
+    /**
+     * Called whenever a player leaves the Past by any route, including death
+     * or commands. Temporal loot stays behind and the visit ends.
+     */
+    public static void onLeftPast(ServerPlayer player) {
+        PlayerTemporalVisitData visit = player.getData(
+                ModDataAttachments.PLAYER_TEMPORAL_VISIT.get()
+        );
+        if (!visit.visiting() || isTemporalDimension(player.serverLevel())) {
+            return;
+        }
+
+        TemporalParadoxService.eraseTemporalLoot(player);
+        TemporalParadoxService.resolveSelfParadox(player);
+        player.setData(ModDataAttachments.PLAYER_TEMPORAL_VISIT.get(),
+                PlayerTemporalVisitData.empty());
+    }
+
+    public static boolean enterSnapshot(ServerPlayer player) {
+        if (!canEnterSnapshot(player)) {
             return false;
         }
 
-        MinecraftServer server = player.getServer();
-        ServerLevel snapshotLevel = server == null
-                ? null
-                : server.getLevel(TEMPORAL_DIMENSION);
-        if (snapshotLevel == null) {
-            return false;
-        }
+        PlayerTemporalSnapshotData data = player.getData(
+                ModDataAttachments.PLAYER_TEMPORAL_SNAPSHOT.get()
+        );
+        ServerLevel snapshotLevel = player.getServer().getLevel(TEMPORAL_DIMENSION);
 
         List<ServerPlayer> travellers = nearbyPlayers(player);
         for (ServerPlayer traveller : travellers) {
@@ -141,22 +219,14 @@ public final class TemporalSnapshotService {
     }
 
     public static boolean returnToPresent(ServerPlayer player) {
-        PlayerTemporalVisitData visit = player.getData(
-                ModDataAttachments.PLAYER_TEMPORAL_VISIT.get()
-        );
-        if (!visit.visiting() || !isTemporalDimension(player.serverLevel())) {
+        if (!canReturnToPresent(player)) {
             return false;
         }
 
-        MinecraftServer server = player.getServer();
-        ResourceKey<Level> sourceKey = ResourceKey.create(
-                Registries.DIMENSION,
-                visit.sourceDimension()
+        PlayerTemporalVisitData visit = player.getData(
+                ModDataAttachments.PLAYER_TEMPORAL_VISIT.get()
         );
-        ServerLevel sourceLevel = server == null ? null : server.getLevel(sourceKey);
-        if (sourceLevel == null) {
-            return false;
-        }
+        ServerLevel sourceLevel = getPresentLevel(player);
 
         List<ServerPlayer> returningTravellers = nearbyPlayers(player).stream()
                 .filter(traveller -> {
@@ -184,10 +254,20 @@ public final class TemporalSnapshotService {
                     showRestorationMessage
             );
         }
-        if (player.getUUID().equals(visit.ownerId())) {
-            TemporalEchoService.removeSnapshotEchoes(visit.ownerId());
-        }
+        // Echoes are removed once no visitor of this snapshot remains; see
+        // TemporalEchoService#tick.
         return true;
+    }
+
+    private static boolean hasVisitors(MinecraftServer server, UUID ownerId) {
+        ServerLevel pastLevel = server.getLevel(TEMPORAL_DIMENSION);
+        return pastLevel != null && pastLevel.players().stream()
+                .anyMatch(visitor -> {
+                    PlayerTemporalVisitData visit = visitor.getData(
+                            ModDataAttachments.PLAYER_TEMPORAL_VISIT.get()
+                    );
+                    return visit.visiting() && visit.ownerId().equals(ownerId);
+                });
     }
 
     public static boolean isVisitorInsideSnapshot(
@@ -234,7 +314,7 @@ public final class TemporalSnapshotService {
 
     public static void tick(MinecraftServer server) {
         TemporalEchoRecordingService.tick(server);
-        TemporalEchoService.tick();
+        TemporalEchoService.tick(server);
         TemporalParadoxService.tick(server);
         int budget = HeroesEvolvedConfig.COMMON
                 .timeSnapshotCopyBlocksPerTick.get();
@@ -315,6 +395,7 @@ public final class TemporalSnapshotService {
     ) {
         // Items stolen from a dead Past echo are confined to the Past.
         TemporalParadoxService.eraseTemporalLoot(traveller);
+        TemporalParadoxService.resolveSelfParadox(traveller);
         double x = visit.sourceMinX() + traveller.getX()
                 - visit.snapshotMinX();
         double z = visit.sourceMinZ() + traveller.getZ()

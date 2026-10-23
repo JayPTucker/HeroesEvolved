@@ -1,11 +1,23 @@
 package com.jayptucker.heroesevolved.time;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
+import com.jayptucker.heroesevolved.network.ScreenTintPayload;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
@@ -16,17 +28,109 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** Owns the reversible consequences of stealing from a slain Past echo. */
+/**
+ * Owns the consequences of changing history: stealing from a slain Past
+ * echo, and the far more dangerous act of meeting your own past self.
+ */
 public final class TemporalParadoxService {
+    public static final ResourceKey<DamageType> TEMPORAL_PARADOX_DAMAGE =
+            ResourceKey.create(
+                    Registries.DAMAGE_TYPE,
+                    ResourceLocation.fromNamespaceAndPath(
+                            HeroesEvolved.MOD_ID,
+                            "temporal_paradox"
+                    )
+            );
+
     private static final String TEMPORAL_LOOT_KEY = "heroes_evolved_temporal_loot";
+    // A pulsing violet edge: the world itself seems to be coming apart.
+    private static final int PARADOX_TINT = 0x60602090;
     private static final int COLLAPSE_DURATION_TICKS = 20 * 60 * 5;
     // A five-minute rescue window should create pressure without killing a
     // full-health player long before the timeline can be repaired.
     private static final int DAMAGE_INTERVAL_TICKS = 20 * 30;
     private static final int FLICKER_INTERVAL_TICKS = 6;
+    // Two versions of one person cannot share a moment for long. The
+    // traveller must leave the Past before this collapse completes.
+    private static final int SELF_PARADOX_DURATION_TICKS = 20 * 90;
+    private static final int SELF_PARADOX_DAMAGE_INTERVAL_TICKS = 20 * 15;
     private static final Map<UUID, ParadoxState> ACTIVE_PARADOXES = new HashMap<>();
+    private static final Map<UUID, SelfParadoxState> SELF_PARADOXES =
+            new HashMap<>();
 
     private TemporalParadoxService() {
+    }
+
+    /**
+     * A traveller has made contact with their own past self. History has
+     * diverged around them, and they begin to unravel until they leave.
+     */
+    public static void onSelfEncounter(ServerPlayer traveller) {
+        if (SELF_PARADOXES.containsKey(traveller.getUUID())) {
+            return;
+        }
+
+        SELF_PARADOXES.put(traveller.getUUID(), new SelfParadoxState(
+                SELF_PARADOX_DURATION_TICKS,
+                traveller.isInvisible()
+        ));
+        traveller.addEffect(new MobEffectInstance(
+                MobEffects.CONFUSION, 20 * 8, 0
+        ));
+        traveller.serverLevel().playSound(null,
+                traveller.getX(), traveller.getY(), traveller.getZ(),
+                SoundEvents.WARDEN_HEARTBEAT, SoundSource.PLAYERS,
+                1.0F, 0.6F);
+        ScreenTintPayload.send(traveller, PARADOX_TINT,
+                SELF_PARADOX_DURATION_TICKS, ScreenTintPayload.Style.PULSE);
+        traveller.sendSystemMessage(Component.literal(
+                "Your past self sees you. The timeline begins to tear - "
+                        + "return to the Present before it collapses!"
+        ).withStyle(ChatFormatting.DARK_PURPLE));
+    }
+
+    public static boolean hasSelfParadox(ServerPlayer player) {
+        return SELF_PARADOXES.containsKey(player.getUUID());
+    }
+
+    /** Leaving the Past separates the two versions and heals the tear. */
+    public static void resolveSelfParadox(ServerPlayer player) {
+        SelfParadoxState state = SELF_PARADOXES.remove(player.getUUID());
+        if (state == null) {
+            return;
+        }
+
+        player.setInvisible(state.wasInvisible());
+        ScreenTintPayload.send(player, PARADOX_TINT, 0,
+                ScreenTintPayload.Style.PULSE);
+        ScreenTintPayload.send(player, 0x60FFFFFF, 6, ScreenTintPayload.Style.FLASH);
+        player.sendSystemMessage(Component.literal(
+                "Time snaps back into place."
+        ).withStyle(ChatFormatting.GRAY));
+    }
+
+    /** Damage dealt to your own past self is felt by your present self. */
+    public static void mirrorSelfDamage(ServerPlayer attacker, float amount) {
+        onSelfEncounter(attacker);
+        attacker.hurt(paradoxDamage(attacker), amount);
+    }
+
+    /** The grandfather paradox: without a past, the present self cannot exist. */
+    public static void eraseFromTimeline(ServerPlayer player) {
+        SelfParadoxState state = SELF_PARADOXES.remove(player.getUUID());
+        if (state != null) {
+            player.setInvisible(state.wasInvisible());
+        }
+        player.serverLevel().sendParticles(
+                net.minecraft.core.particles.ParticleTypes.REVERSE_PORTAL,
+                player.getX(), player.getY() + 1.0D, player.getZ(),
+                80, 0.4D, 0.9D, 0.4D, 0.2D
+        );
+        player.hurt(paradoxDamage(player), Float.MAX_VALUE);
+    }
+
+    private static DamageSource paradoxDamage(ServerPlayer player) {
+        return player.damageSources().source(TEMPORAL_PARADOX_DAMAGE);
     }
 
     public static void onEchoKilled(
@@ -77,6 +181,8 @@ public final class TemporalParadoxService {
                 )
         );
         state.removedItems().add(normalStack.copyWithCount(removed));
+        ScreenTintPayload.send(victim, PARADOX_TINT, state.remainingTicks,
+                ScreenTintPayload.Style.PULSE);
         victim.sendSystemMessage(net.minecraft.network.chat.Component.literal(
                 "You suddenly feel short of breath..."
         ));
@@ -109,6 +215,8 @@ public final class TemporalParadoxService {
                 }
             }
             victim.setInvisible(state.wasInvisible());
+            ScreenTintPayload.send(victim, PARADOX_TINT, 0,
+                    ScreenTintPayload.Style.PULSE);
             victim.sendSystemMessage(net.minecraft.network.chat.Component.literal(
                     "Your breath returns as the timeline stabilizes."
             ));
@@ -129,14 +237,43 @@ public final class TemporalParadoxService {
                 continue;
             }
             state.remainingTicks--;
-            applyPhaseFlicker(victim, state);
+            applyPhaseFlicker(victim, state.remainingTicks, state.wasInvisible());
             if (state.remainingTicks % DAMAGE_INTERVAL_TICKS == 0) {
-                victim.hurt(victim.damageSources().magic(), 2.0F);
+                victim.hurt(paradoxDamage(victim), 2.0F);
             }
             if (state.remainingTicks <= 0) {
                 victim.setInvisible(state.wasInvisible());
-                victim.kill();
+                victim.hurt(paradoxDamage(victim), Float.MAX_VALUE);
                 iterator.remove();
+            }
+        }
+
+        var selfIterator = SELF_PARADOXES.entrySet().iterator();
+        while (selfIterator.hasNext()) {
+            Map.Entry<UUID, SelfParadoxState> entry = selfIterator.next();
+            ServerPlayer traveller = server.getPlayerList().getPlayer(
+                    entry.getKey()
+            );
+            if (traveller == null) {
+                continue;
+            }
+
+            SelfParadoxState state = entry.getValue();
+            state.remainingTicks--;
+            applyPhaseFlicker(traveller, state.remainingTicks,
+                    state.wasInvisible());
+            if (state.remainingTicks % SELF_PARADOX_DAMAGE_INTERVAL_TICKS == 0) {
+                traveller.hurt(paradoxDamage(traveller), 2.0F);
+            }
+            if (state.remainingTicks == 20 * 15) {
+                traveller.sendSystemMessage(Component.literal(
+                        "You are fading from existence..."
+                ).withStyle(ChatFormatting.DARK_RED));
+            }
+            if (state.remainingTicks <= 0) {
+                selfIterator.remove();
+                traveller.setInvisible(state.wasInvisible());
+                traveller.hurt(paradoxDamage(traveller), Float.MAX_VALUE);
             }
         }
     }
@@ -205,12 +342,13 @@ public final class TemporalParadoxService {
      */
     private static void applyPhaseFlicker(
             ServerPlayer victim,
-            ParadoxState state
+            int remainingTicks,
+            boolean wasInvisible
     ) {
-        boolean fadingOut = (state.remainingTicks / FLICKER_INTERVAL_TICKS) % 2 == 0;
-        victim.setInvisible(state.wasInvisible() || fadingOut);
+        boolean fadingOut = (remainingTicks / FLICKER_INTERVAL_TICKS) % 2 == 0;
+        victim.setInvisible(wasInvisible || fadingOut);
 
-        if (!fadingOut && state.remainingTicks % 10 == 0) {
+        if (!fadingOut && remainingTicks % 10 == 0) {
             victim.serverLevel().sendParticles(
                     net.minecraft.core.particles.ParticleTypes.REVERSE_PORTAL,
                     victim.getX(), victim.getY() + 1.0D, victim.getZ(),
@@ -220,6 +358,18 @@ public final class TemporalParadoxService {
     }
 
     private record LootIdentity(UUID snapshotOwnerId, UUID victimId) {
+    }
+
+    private static final class SelfParadoxState {
+        private int remainingTicks;
+        private final boolean wasInvisible;
+
+        private SelfParadoxState(int remainingTicks, boolean wasInvisible) {
+            this.remainingTicks = remainingTicks;
+            this.wasInvisible = wasInvisible;
+        }
+
+        private boolean wasInvisible() { return wasInvisible; }
     }
 
     private static final class ParadoxState {

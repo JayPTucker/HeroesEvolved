@@ -18,6 +18,16 @@ public final class TimeStopEvents {
         TimeStopService.tick(event.getServer());
     }
 
+    @SubscribeEvent
+    public static void onIncomingDamage(
+            net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent event
+    ) {
+        if (TimeStopService.storeImpact(
+                event.getEntity(), event.getSource(), event.getAmount())) {
+            event.setCanceled(true);
+        }
+    }
+
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onEntityTick(EntityTickEvent.Pre event) {
         if (TimeStopService.shouldStopEntityTick(event.getEntity())) {

@@ -29,7 +29,99 @@ public final class TimeStopService {
     private static final Map<UUID, StoppedProjectile> STOPPED_PROJECTILES =
             new HashMap<>();
 
+    // Hits landed on frozen creatures by the field's owner. Nothing moves
+    // while time is stopped, so the force waits and lands all at once.
+    private static final Map<UUID, StoredImpact> STORED_IMPACTS = new HashMap<>();
+    private static boolean releasingImpacts;
+
     private TimeStopService() {
+    }
+
+    /**
+     * Holds damage the field's owner deals to a frozen creature until time
+     * resumes, the way Hiro strikes a frozen opponent and every blow lands
+     * the instant time restarts.
+     *
+     * @return true if the damage was stored and must not apply now
+     */
+    public static boolean storeImpact(
+            net.minecraft.world.entity.LivingEntity target,
+            net.minecraft.world.damagesource.DamageSource source,
+            float amount
+    ) {
+        if (releasingImpacts
+                || !(target.level() instanceof ServerLevel level)
+                || !(source.getEntity() instanceof ServerPlayer attacker)) {
+            return false;
+        }
+
+        TimeStopField field = getContainingField(target, level);
+        if (field == null || !field.ownerId().equals(attacker.getUUID())) {
+            return false;
+        }
+
+        StoredImpact impact = STORED_IMPACTS.computeIfAbsent(
+                target.getUUID(),
+                ignored -> new StoredImpact(target, attacker.getUUID())
+        );
+        impact.damage += amount;
+        impact.hits++;
+        impact.push = impact.push.add(attacker.getLookAngle().scale(0.35D));
+
+        // A frozen ripple marks each blow waiting to land.
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.ENCHANTED_HIT,
+                target.getX(), target.getY() + target.getBbHeight() * 0.6D,
+                target.getZ(), 6 + impact.hits * 2, 0.25D, 0.3D, 0.25D, 0.0D);
+        level.playSound(null, target.getX(), target.getY(), target.getZ(),
+                net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_HIT,
+                SoundSource.PLAYERS, 0.7F, 0.5F + impact.hits * 0.1F);
+        return true;
+    }
+
+    private static void releaseImpacts(MinecraftServer server, UUID ownerId) {
+        ServerPlayer owner = server.getPlayerList().getPlayer(ownerId);
+        releasingImpacts = true;
+        try {
+            var iterator = STORED_IMPACTS.values().iterator();
+            while (iterator.hasNext()) {
+                StoredImpact impact = iterator.next();
+                if (!impact.ownerId.equals(ownerId)) {
+                    continue;
+                }
+                iterator.remove();
+
+                var target = impact.target;
+                if (target.isRemoved() || !target.isAlive()
+                        || !(target.level() instanceof ServerLevel level)) {
+                    continue;
+                }
+
+                target.invulnerableTime = 0;
+                target.hurt(owner == null
+                        ? level.damageSources().magic()
+                        : owner.damageSources().playerAttack(owner),
+                        impact.damage);
+                double pushLength = Math.min(3.0D, impact.push.length());
+                Vec3 push = impact.push.lengthSqr() < 0.0001D
+                        ? Vec3.ZERO
+                        : impact.push.normalize().scale(pushLength);
+                target.setDeltaMovement(push.add(0.0D, 0.2D + pushLength * 0.1D, 0.0D));
+                target.hurtMarked = true;
+
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT,
+                        target.getX(), target.getY() + target.getBbHeight() * 0.6D,
+                        target.getZ(), 10 + impact.hits * 4,
+                        0.3D, 0.4D, 0.3D, 0.4D);
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.SWEEP_ATTACK,
+                        target.getX(), target.getY() + target.getBbHeight() * 0.6D,
+                        target.getZ(), Math.min(6, impact.hits), 0.3D, 0.3D, 0.3D, 0.0D);
+                level.playSound(null, target.getX(), target.getY(), target.getZ(),
+                        net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_CRIT,
+                        SoundSource.PLAYERS, 1.0F, 0.8F);
+            }
+        } finally {
+            releasingImpacts = false;
+        }
     }
 
     public static boolean hasActiveField(ServerPlayer player) {
@@ -57,6 +149,7 @@ public final class TimeStopService {
 
         if (field != null) {
             playTemporalCue(player.serverLevel(), field.center(), player);
+            releaseImpacts(player.getServer(), player.getUUID());
         }
 
         if (ACTIVE_FIELDS.isEmpty()) {
@@ -85,6 +178,16 @@ public final class TimeStopService {
                 if (level != null && owner != null) {
                     playTemporalCue(level, field.center(), owner);
                 }
+                releaseImpacts(server, field.ownerId());
+            } else if (level != null && level.getGameTime() % 10 == 0) {
+                // Stopped time looks drained and cold to anyone inside it.
+                com.jayptucker.heroesevolved.network.ScreenTintPayload.sendAround(
+                        level, field.center(),
+                        HeroesEvolvedConfig.COMMON.timeStopRadius.get(),
+                        0x40506A90, 14,
+                        com.jayptucker.heroesevolved.network.ScreenTintPayload
+                                .Style.HOLD
+                );
             }
         }
 
@@ -304,6 +407,22 @@ public final class TimeStopService {
 
         private boolean hasEnded() {
             return remainingTicks <= 0;
+        }
+    }
+
+    private static final class StoredImpact {
+        private final net.minecraft.world.entity.LivingEntity target;
+        private final UUID ownerId;
+        private float damage;
+        private int hits;
+        private Vec3 push = Vec3.ZERO;
+
+        private StoredImpact(
+                net.minecraft.world.entity.LivingEntity target,
+                UUID ownerId
+        ) {
+            this.target = target;
+            this.ownerId = ownerId;
         }
     }
 

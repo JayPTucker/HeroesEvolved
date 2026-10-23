@@ -23,6 +23,13 @@ public final class ModParticles {
                     () -> new SimpleParticleType(false)
             );
 
+    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> PRESSURE_RING =
+            PARTICLES.register("pressure_ring", () -> new SimpleParticleType(false));
+    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> ENERGY_STREAK =
+            PARTICLES.register("energy_streak", () -> new SimpleParticleType(false));
+    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> POWER_MOTE =
+            PARTICLES.register("power_mote", () -> new SimpleParticleType(false));
+
     private ModParticles() {
     }
 

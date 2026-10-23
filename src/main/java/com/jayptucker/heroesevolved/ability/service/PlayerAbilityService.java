@@ -144,12 +144,18 @@ public final class PlayerAbilityService {
             ServerPlayer player,
             PlayerAbilityData data
     ) {
+        PlayerAbilityData previous = getData(player);
         player.setData(
                 ModDataAttachments.PLAYER_ABILITIES.get(),
                 data
         );
+        com.jayptucker.heroesevolved.intro.PowerIntroService.assignmentChanged(player);
 
         PlayerPowerSyncService.sync(player);
+        data.assignedPower().filter(entry -> entry.getValue().isUnlocked()
+                && previous.ability(entry.getKey()).filter(AbilityProgress::isUnlocked).isEmpty())
+                .ifPresent(entry -> com.jayptucker.heroesevolved.intro.PowerIntroService
+                        .acquired(player, entry.getKey()));
     }
 
     private static void validateRegisteredAbility(ResourceLocation abilityId) {

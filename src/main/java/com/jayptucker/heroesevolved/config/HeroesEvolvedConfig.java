@@ -15,24 +15,53 @@ public final class HeroesEvolvedConfig {
     private HeroesEvolvedConfig() {
     }
 
+    private static ModConfigSpec.IntValue energy(
+            ModConfigSpec.Builder builder,
+            String action,
+            int defaultCost
+    ) {
+        return builder
+                .comment("Energy consumed by " + action + ".")
+                .defineInRange(action + "EnergyCost", defaultCost, 0, 1_000);
+    }
+
+    private static ModConfigSpec.IntValue cooldown(
+            ModConfigSpec.Builder builder,
+            String action,
+            int defaultTicks
+    ) {
+        return builder
+                .comment("Cooldown in ticks after " + action + ".")
+                .defineInRange(action + "CooldownTicks", defaultTicks, 0, 20 * 60 * 30);
+    }
+
     public static final class Common {
         public final ModConfigSpec.IntValue maximumLevel;
         public final ModConfigSpec.LongValue baseMasteryPerLevel;
         public final ModConfigSpec.LongValue masteryIncreasePerLevel;
         public final ModConfigSpec.IntValue activeMasteryIntervalTicks;
         public final ModConfigSpec.IntValue activeMasteryAmount;
-        public final ModConfigSpec.IntValue mobKillMasteryAmount;
+        public final ModConfigSpec.IntValue mobKillMasteryPerTenHealth;
+        public final ModConfigSpec.DoubleValue masteryPerEnergySpent;
+        public final ModConfigSpec.IntValue energyRegenerationBonusEveryLevels;
         public final ModConfigSpec.IntValue mobKillWindowTicks;
         public final ModConfigSpec.IntValue mobKillFullRewardLimit;
         public final ModConfigSpec.IntValue mobKillMaximumRewardedKills;
-        public final ModConfigSpec.IntValue powerUseMasteryAmount;
-        public final ModConfigSpec.IntValue powerUseMasteryCooldownTicks;
         public final ModConfigSpec.IntValue baseEnergy;
         public final ModConfigSpec.IntValue energyPerLevel;
         public final ModConfigSpec.IntValue energyRegenerationPerSecond;
         public final ModConfigSpec.IntValue regenerationEnergyCost;
         public final ModConfigSpec.IntValue regenerationIntervalTicks;
         public final ModConfigSpec.IntValue regenerationDamageDelayTicks;
+        public final ModConfigSpec.IntValue regenerationMendingEnergyCost;
+        public final ModConfigSpec.IntValue regenerationMendingCooldownTicks;
+        public final ModConfigSpec.IntValue regenerationBloodGiftEnergyCost;
+        public final ModConfigSpec.IntValue regenerationBloodGiftCooldownTicks;
+        public final ModConfigSpec.IntValue regenerationIndestructibleEnergyCost;
+        public final ModConfigSpec.IntValue regenerationIndestructibleCooldownTicks;
+        public final ModConfigSpec.IntValue regenerationResurrectionCooldownTicks;
+        public final ModConfigSpec.IntValue flightGrabEnergyCost;
+        public final ModConfigSpec.IntValue flightGrabCooldownTicks;
 
         // Controls how dangerous it is to use an ability without enough energy.
         public final ModConfigSpec.DoubleValue overexertionBaseDamage;
@@ -90,6 +119,7 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue timeStopLevelFiveDurationSeconds;
         public final ModConfigSpec.DoubleValue timeStopRadius;
         public final ModConfigSpec.IntValue timeSnapshotEnergyCost;
+        public final ModConfigSpec.IntValue timeSnapshotTravelEnergyCost;
         public final ModConfigSpec.IntValue timeSnapshotCooldownTicks;
         public final ModConfigSpec.IntValue timeSnapshotTravelCooldownTicks;
         public final ModConfigSpec.IntValue timeSnapshotWidthChunks;
@@ -104,6 +134,46 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue timeSlowLevelThreeTickIntervalTicks;
         public final ModConfigSpec.IntValue timeSlowLevelFourTickIntervalTicks;
         public final ModConfigSpec.IntValue timeSlowLevelFiveTickIntervalTicks;
+        public final ModConfigSpec.IntValue quakeShockwaveEnergyCost;
+        public final ModConfigSpec.IntValue quakeShockwaveCooldownTicks;
+        public final ModConfigSpec.IntValue quakeSlamEnergyCost;
+        public final ModConfigSpec.IntValue quakeSlamCooldownTicks;
+        public final ModConfigSpec.IntValue quakeTremorSenseEnergyCost;
+        public final ModConfigSpec.IntValue quakeTremorSenseCooldownTicks;
+        public final ModConfigSpec.IntValue quakeEarthquakeEnergyCost;
+        public final ModConfigSpec.IntValue quakeEarthquakeCooldownTicks;
+        public final ModConfigSpec.IntValue quakeEarthquakeDurationSeconds;
+        public final ModConfigSpec.DoubleValue quakeEarthquakeRadius;
+        public final ModConfigSpec.BooleanValue quakeShattersFragileBlocks;
+        public final ModConfigSpec.IntValue quakeBlastEnergyCost;
+        public final ModConfigSpec.IntValue quakeBlastDrainPerSecond;
+        public final ModConfigSpec.IntValue quakeBlastCooldownTicks;
+        public final ModConfigSpec.IntValue flightDiveEnergyCost;
+        public final ModConfigSpec.IntValue flightDiveCooldownTicks;
+        public final ModConfigSpec.IntValue timeRewindEnergyCost;
+        public final ModConfigSpec.IntValue timeRewindCooldownTicks;
+        public final ModConfigSpec.IntValue regenerationAuraEnergyCost;
+        public final ModConfigSpec.IntValue regenerationAuraCooldownTicks;
+        public final ModConfigSpec.IntValue electroBallEnergyCost;
+        public final ModConfigSpec.IntValue electroBallCooldownTicks;
+        public final ModConfigSpec.IntValue telekinesisDisarmEnergyCost;
+        public final ModConfigSpec.IntValue telekinesisDisarmCooldownTicks;
+        public final ModConfigSpec.IntValue electroChainEnergyCost;
+        public final ModConfigSpec.IntValue electroChainCooldownTicks;
+        public final ModConfigSpec.IntValue electroThunderstrikeEnergyCost;
+        public final ModConfigSpec.IntValue electroThunderstrikeCooldownTicks;
+        public final ModConfigSpec.IntValue electroRideEnergyCost;
+        public final ModConfigSpec.IntValue electroRideCooldownTicks;
+        public final ModConfigSpec.IntValue electroStormEnergyCost;
+        public final ModConfigSpec.IntValue electroStormCooldownTicks;
+        public final ModConfigSpec.IntValue telekinesisPushEnergyCost;
+        public final ModConfigSpec.IntValue telekinesisPushCooldownTicks;
+        public final ModConfigSpec.IntValue telekinesisGripEnergyCost;
+        public final ModConfigSpec.IntValue telekinesisGripCooldownTicks;
+        public final ModConfigSpec.IntValue telekinesisBulletStopEnergyCost;
+        public final ModConfigSpec.IntValue telekinesisBulletStopCooldownTicks;
+        public final ModConfigSpec.IntValue telekinesisStormEnergyCost;
+        public final ModConfigSpec.IntValue telekinesisStormCooldownTicks;
 
         private Common(ModConfigSpec.Builder builder) {
             builder.push("progression");
@@ -112,11 +182,15 @@ public final class HeroesEvolvedConfig {
                     .comment("The highest character level a player can reach.")
                     .defineInRange("maximumLevel", 5, 1, 1_000);
 
+            // Key names changed with the energy-based rebalance, so existing
+            // config files pick up the new defaults instead of the old curve.
             baseMasteryPerLevel = builder
-                    .comment("Mastery required to advance from level 1 to level 2.")
+                    .comment("Mastery required to advance from level 1 to level 2. "
+                            + "With the defaults the curve is 800 / 2400 / 4800 / 8000 "
+                            + "total, roughly 2-3 hours of active play to reach level 5.")
                     .defineInRange(
-                            "baseMasteryPerLevel",
-                            100L,
+                            "masteryForLevelTwo",
+                            800L,
                             1L,
                             Long.MAX_VALUE
                     );
@@ -124,11 +198,17 @@ public final class HeroesEvolvedConfig {
             masteryIncreasePerLevel = builder
                     .comment("Additional Mastery required for each later level.")
                     .defineInRange(
-                            "masteryIncreasePerLevel",
-                            100L,
+                            "masteryIncreaseEachLevel",
+                            800L,
                             0L,
                             Long.MAX_VALUE
                     );
+
+            masteryPerEnergySpent = builder
+                    .comment("Mastery earned per point of energy spent on powers. "
+                            + "This is the main Mastery source; energy regeneration "
+                            + "naturally limits how fast it can be earned.")
+                    .defineInRange("masteryPerEnergySpent", 1.0D, 0.0D, 100.0D);
 
             activeMasteryIntervalTicks = builder
                     .comment("Ticks of active, non-AFK play required for an active-time Mastery award.")
@@ -136,11 +216,12 @@ public final class HeroesEvolvedConfig {
 
             activeMasteryAmount = builder
                     .comment("Mastery awarded for each active-time interval.")
-                    .defineInRange("activeMasteryAmount", 1, 1, 1_000);
+                    .defineInRange("activeMasteryPerInterval", 3, 1, 1_000);
 
-            mobKillMasteryAmount = builder
-                    .comment("Full Mastery awarded for an eligible hostile-mob kill.")
-                    .defineInRange("mobKillMasteryAmount", 2, 1, 1_000);
+            mobKillMasteryPerTenHealth = builder
+                    .comment("Mastery for a hostile-mob kill per 10 points of the mob's "
+                            + "maximum health (a zombie earns this once, a Warden 25 times).")
+                    .defineInRange("mobKillMasteryPerTenHealth", 3, 0, 1_000);
 
             mobKillWindowTicks = builder
                     .comment("Rolling window used to reduce repeated kills of the same hostile-mob type.")
@@ -153,14 +234,6 @@ public final class HeroesEvolvedConfig {
             mobKillMaximumRewardedKills = builder
                     .comment("Maximum same-type kills in the rolling window that can grant any Mastery.")
                     .defineInRange("mobKillMaximumRewardedKills", 12, 1, 1_000);
-
-            powerUseMasteryAmount = builder
-                    .comment("Mastery awarded for a meaningful power use. This is intentionally the highest reward source.")
-                    .defineInRange("powerUseMasteryAmount", 2, 1, 1_000);
-
-            powerUseMasteryCooldownTicks = builder
-                    .comment("Minimum ticks between Mastery awards for the same power, preventing toggle or heal spam.")
-                    .defineInRange("powerUseMasteryCooldownTicks", 20 * 20, 20, 20 * 60 * 60);
 
             builder.pop();
 
@@ -178,6 +251,11 @@ public final class HeroesEvolvedConfig {
                         .comment("Energy naturally restored every second.")
                         .defineInRange("energyRegenerationPerSecond", 1, 0, 1_000);
 
+                energyRegenerationBonusEveryLevels = builder
+                        .comment("Every this many levels, energy regenerates 1 point faster per second, "
+                                + "so higher-level powers stay usable. 0 disables the bonus.")
+                        .defineInRange("energyRegenerationBonusEveryLevels", 2, 0, 1_000);
+
                 builder.pop();
         
                 builder.push("regeneration");
@@ -193,6 +271,34 @@ public final class HeroesEvolvedConfig {
                 regenerationDamageDelayTicks = builder
                         .comment("Ticks the player must go without taking damage before Regeneration begins.")
                         .defineInRange("damageDelayTicks", 20 * 6, 0, 20 * 60);
+
+                regenerationMendingEnergyCost = builder
+                        .comment("Energy consumed by Rapid Mending.")
+                        .defineInRange("mendingEnergyCost", 25, 0, 1_000);
+
+                regenerationMendingCooldownTicks = builder
+                        .comment("Cooldown in ticks after Rapid Mending.")
+                        .defineInRange("mendingCooldownTicks", 20 * 20, 0, 20 * 60 * 10);
+
+                regenerationBloodGiftEnergyCost = builder
+                        .comment("Energy consumed by Blood Gift.")
+                        .defineInRange("bloodGiftEnergyCost", 30, 0, 1_000);
+
+                regenerationBloodGiftCooldownTicks = builder
+                        .comment("Cooldown in ticks after Blood Gift.")
+                        .defineInRange("bloodGiftCooldownTicks", 20 * 30, 0, 20 * 60 * 10);
+
+                regenerationIndestructibleEnergyCost = builder
+                        .comment("Energy consumed by Indestructible.")
+                        .defineInRange("indestructibleEnergyCost", 40, 0, 1_000);
+
+                regenerationIndestructibleCooldownTicks = builder
+                        .comment("Cooldown in ticks after Indestructible.")
+                        .defineInRange("indestructibleCooldownTicks", 20 * 60, 0, 20 * 60 * 10);
+
+                regenerationResurrectionCooldownTicks = builder
+                        .comment("Cooldown in ticks before Resurrection can save the player from death again.")
+                        .defineInRange("resurrectionCooldownTicks", 20 * 60 * 10, 0, 20 * 60 * 120);
 
                 builder.pop();
 
@@ -293,6 +399,14 @@ public final class HeroesEvolvedConfig {
                 flightCycloneCooldownTicks = builder
                         .comment("Cooldown in ticks after using Flight Cyclone.")
                         .defineInRange("cycloneCooldownTicks", 20 * 30, 0, 20 * 60 * 10);
+
+                flightGrabEnergyCost = builder
+                        .comment("Energy consumed by Skyward Grab. Hurling a held target costs a third of this.")
+                        .defineInRange("grabEnergyCost", 30, 0, 1_000);
+
+                flightGrabCooldownTicks = builder
+                        .comment("Cooldown in ticks after hurling a target with Skyward Grab.")
+                        .defineInRange("grabCooldownTicks", 20 * 5, 0, 20 * 60 * 10);
 
                 flightCycloneDurationSeconds = builder
                         .comment("Seconds Flight Cyclone keeps its targets suspended.")
@@ -406,6 +520,10 @@ public final class HeroesEvolvedConfig {
                         .comment("Energy consumed when creating or replacing a Temporal Snapshot.")
                         .defineInRange("snapshotEnergyCost", 100, 0, 1_000);
 
+                timeSnapshotTravelEnergyCost = builder
+                        .comment("Energy consumed when travelling into a Temporal Snapshot. Returning to the present is free.")
+                        .defineInRange("snapshotTravelEnergyCost", 40, 0, 1_000);
+
                 timeSnapshotCooldownTicks = builder
                         .comment("Cooldown in ticks after creating or replacing a Temporal Snapshot.")
                         .defineInRange("snapshotCooldownTicks", 20 * 60 * 20, 0, 20 * 60 * 30);
@@ -467,6 +585,95 @@ public final class HeroesEvolvedConfig {
                         .comment("Ticks between updates for Level 5 Time Slow.")
                         .defineInRange("slowLevel5TickIntervalTicks", 20, 1, 100);
 
+                builder.pop();
+
+                builder.push("quake");
+
+                quakeShockwaveEnergyCost = builder
+                        .comment("Energy consumed by a Quake Shockwave.")
+                        .defineInRange("shockwaveEnergyCost", 15, 0, 1_000);
+
+                quakeShockwaveCooldownTicks = builder
+                        .comment("Cooldown in ticks after a Quake Shockwave.")
+                        .defineInRange("shockwaveCooldownTicks", 30, 0, 20 * 60 * 10);
+
+                quakeSlamEnergyCost = builder
+                        .comment("Energy consumed by Seismic Slam.")
+                        .defineInRange("slamEnergyCost", 35, 0, 1_000);
+
+                quakeSlamCooldownTicks = builder
+                        .comment("Cooldown in ticks after Seismic Slam.")
+                        .defineInRange("slamCooldownTicks", 20 * 6, 0, 20 * 60 * 10);
+
+                quakeTremorSenseEnergyCost = builder
+                        .comment("Energy consumed by Tremor Sense.")
+                        .defineInRange("tremorSenseEnergyCost", 30, 0, 1_000);
+
+                quakeTremorSenseCooldownTicks = builder
+                        .comment("Cooldown in ticks after Tremor Sense.")
+                        .defineInRange("tremorSenseCooldownTicks", 20 * 30, 0, 20 * 60 * 10);
+
+                quakeEarthquakeEnergyCost = builder
+                        .comment("Energy consumed by Earthquake.")
+                        .defineInRange("earthquakeEnergyCost", 120, 0, 1_000);
+
+                quakeEarthquakeCooldownTicks = builder
+                        .comment("Cooldown in ticks after Earthquake.")
+                        .defineInRange("earthquakeCooldownTicks", 20 * 120, 0, 20 * 60 * 30);
+
+                quakeEarthquakeDurationSeconds = builder
+                        .comment("Seconds an Earthquake keeps shaking before its aftershock.")
+                        .defineInRange("earthquakeDurationSeconds", 8, 1, 60);
+
+                quakeEarthquakeRadius = builder
+                        .comment("Radius, in blocks, of an Earthquake.")
+                        .defineInRange("earthquakeRadius", 16.0D, 4.0D, 48.0D);
+
+                quakeShattersFragileBlocks = builder
+                        .comment("Whether Quake powers shatter glass, glass panes and ice. Respects claim/protection mods.")
+                        .define("shattersFragileBlocks", true);
+
+                quakeBlastEnergyCost = energy(builder, "quakeBlast", 10);
+                quakeBlastDrainPerSecond = builder
+                        .comment("Energy drained every second while Quake Blast is held.")
+                        .defineInRange("quakeBlastDrainPerSecond", 8, 0, 1_000);
+                quakeBlastCooldownTicks = cooldown(builder, "quakeBlast", 30);
+
+                builder.pop();
+
+                builder.push("fifthAbilities");
+                flightDiveEnergyCost = energy(builder, "flightDiveBomb", 35);
+                flightDiveCooldownTicks = cooldown(builder, "flightDiveBomb", 20 * 8);
+                timeRewindEnergyCost = energy(builder, "timeRewind", 45);
+                timeRewindCooldownTicks = cooldown(builder, "timeRewind", 20 * 45);
+                regenerationAuraEnergyCost = energy(builder, "healingAura", 45);
+                regenerationAuraCooldownTicks = cooldown(builder, "healingAura", 20 * 60);
+                electroBallEnergyCost = energy(builder, "ballLightning", 25);
+                electroBallCooldownTicks = cooldown(builder, "ballLightning", 20 * 3);
+                telekinesisDisarmEnergyCost = energy(builder, "disarm", 20);
+                telekinesisDisarmCooldownTicks = cooldown(builder, "disarm", 20 * 8);
+                builder.pop();
+
+                builder.push("electrokinesis");
+                electroChainEnergyCost = energy(builder, "chainLightning", 18);
+                electroChainCooldownTicks = cooldown(builder, "chainLightning", 25);
+                electroThunderstrikeEnergyCost = energy(builder, "thunderstrike", 45);
+                electroThunderstrikeCooldownTicks = cooldown(builder, "thunderstrike", 20 * 10);
+                electroRideEnergyCost = energy(builder, "rideTheLightning", 30);
+                electroRideCooldownTicks = cooldown(builder, "rideTheLightning", 20 * 5);
+                electroStormEnergyCost = energy(builder, "stormSurge", 110);
+                electroStormCooldownTicks = cooldown(builder, "stormSurge", 20 * 120);
+                builder.pop();
+
+                builder.push("telekinesis");
+                telekinesisPushEnergyCost = energy(builder, "push", 15);
+                telekinesisPushCooldownTicks = cooldown(builder, "push", 30);
+                telekinesisGripEnergyCost = energy(builder, "grip", 30);
+                telekinesisGripCooldownTicks = cooldown(builder, "grip", 20 * 10);
+                telekinesisBulletStopEnergyCost = energy(builder, "bulletStop", 40);
+                telekinesisBulletStopCooldownTicks = cooldown(builder, "bulletStop", 20 * 30);
+                telekinesisStormEnergyCost = energy(builder, "telekineticStorm", 110);
+                telekinesisStormCooldownTicks = cooldown(builder, "telekineticStorm", 20 * 120);
                 builder.pop();
         }
     }

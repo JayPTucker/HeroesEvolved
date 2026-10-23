@@ -31,6 +31,14 @@ public final class HeroesEvolvedCommands {
         event.getDispatcher().register(
                 Commands.literal(HeroesEvolved.MOD_ID)
                         .requires(source -> source.hasPermission(2))
+                        .then(Commands.literal("admin")
+                                .executes(context -> {
+                                    com.jayptucker.heroesevolved.admin.AdminService
+                                            .open(context.getSource()
+                                                    .getPlayerOrException());
+                                    return 1;
+                                })
+                        )
                         .then(Commands.literal("power")
                                 .then(Commands.literal("give")
                                         .then(Commands.argument(

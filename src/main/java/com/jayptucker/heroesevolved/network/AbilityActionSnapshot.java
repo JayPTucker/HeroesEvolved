@@ -10,7 +10,10 @@ public record AbilityActionSnapshot(
         AbilitySlot slot,
         String displayNameKey,
         boolean unlocked,
-        long cooldownEndGameTime
+        long cooldownEndGameTime,
+        int unlockLevel,
+        int energyCost,
+        int cooldownTicks
 ) {
     public static final StreamCodec<
             RegistryFriendlyByteBuf,
@@ -21,6 +24,9 @@ public record AbilityActionSnapshot(
                 buffer.writeUtf(snapshot.displayNameKey(), 256);
                 buffer.writeBoolean(snapshot.unlocked());
                 buffer.writeVarLong(snapshot.cooldownEndGameTime());
+                buffer.writeVarInt(snapshot.unlockLevel());
+                buffer.writeVarInt(snapshot.energyCost());
+                buffer.writeVarInt(snapshot.cooldownTicks());
             },
             buffer -> {
                 int slotIndex = buffer.readVarInt();
@@ -36,7 +42,10 @@ public record AbilityActionSnapshot(
                         slots[slotIndex],
                         buffer.readUtf(256),
                         buffer.readBoolean(),
-                        buffer.readVarLong()
+                        buffer.readVarLong(),
+                        buffer.readVarInt(),
+                        buffer.readVarInt(),
+                        buffer.readVarInt()
                 );
             }
     );

@@ -7,6 +7,7 @@ import com.jayptucker.heroesevolved.ability.data.AbilityProgress;
 import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
+import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -45,10 +46,13 @@ public final class AwakeningService {
         Ability ability = AbilityRegistry.ABILITIES.get(abilityId);
 
         if (ability != null) {
+            // Every other system reads the shared progression level; the
+            // stored per-ability level is always 1 and would make awakening
+            // reactions ignore a player's actual power level.
             ability.onAwaken(new AbilityUseContext(
                     player,
                     abilityId,
-                    assignment.get().getValue().level(),
+                    PlayerProgressionService.getLevel(player),
                     false
             ));
         }

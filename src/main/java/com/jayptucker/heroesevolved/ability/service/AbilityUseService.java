@@ -1,5 +1,7 @@
 package com.jayptucker.heroesevolved.ability.service;
 
+import com.jayptucker.heroesevolved.effects.AbilityEffects;
+
 import com.jayptucker.heroesevolved.ability.Ability;
 import com.jayptucker.heroesevolved.ability.AbilityAction;
 import com.jayptucker.heroesevolved.ability.AbilityActivationResult;
@@ -15,6 +17,7 @@ import com.jayptucker.heroesevolved.events.EclipseService;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import com.jayptucker.heroesevolved.network.PlayerPowerSyncService;
+import com.jayptucker.heroesevolved.progression.MasteryService;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 
 import java.util.Map;
@@ -24,11 +27,36 @@ public final class AbilityUseService {
     private AbilityUseService() {
     }
 
+    /** Forwards a key release to the assigned power's action in that slot. */
+    public static void releaseAssignedAction(ServerPlayer player, AbilitySlot slot) {
+        PlayerAbilityService.getData(player).assignedPower()
+                .filter(entry -> entry.getValue().isUnlocked())
+                .ifPresent(entry -> {
+                    Ability power = AbilityRegistry.ABILITIES.get(entry.getKey());
+                    if (power == null) {
+                        return;
+                    }
+                    power.action(slot).ifPresent(action -> action.release(
+                            new AbilityUseContext(
+                                    player,
+                                    entry.getKey(),
+                                    PlayerProgressionService.getLevel(player),
+                                    false
+                            )
+                    ));
+                });
+    }
+
     public static AbilityUseResult activateAssignedAction(
             ServerPlayer player,
             AbilitySlot slot,
             boolean allowOverexertion
     ) {
+        if (com.jayptucker.heroesevolved.intro.PowerIntroService.isActive(player)
+                || com.jayptucker.heroesevolved.time.intro.TimeIntroService.isVisiting(player)
+                || com.jayptucker.heroesevolved.time.intro.TimeIntroService.isCity(player.level())) {
+            return AbilityUseResult.CANNOT_USE;
+        }
         // Eclipse suppression applies before a power can consume energy,
         // start a cooldown, or change any server-side state.
         if (EclipseService.arePowersSuppressed(player)) {
@@ -111,11 +139,21 @@ public final class AbilityUseService {
             return AbilityUseResult.ACTIVATION_REJECTED;
         }
 
+        AbilityEffects.onAction(
+                player, powerId, abilityAction.definition().id().getPath());
+        com.jayptucker.heroesevolved.effects.ArmPoseActions.onAction(
+                player, abilityAction.definition().id().getPath());
+
         if (requiresOverexertion) {
             OverexertionService.apply(player, energyCost);
+            power.onOverexerted(context);
         } else {
             PlayerEnergyService.tryConsume(player, energyCost);
         }
+
+        // Mastery is earned in proportion to energy spent, so stronger
+        // actions earn more and nothing can be spammed for free progress.
+        MasteryService.awardEnergySpent(player, energyCost);
 
         int cooldownTicks = abilityAction.cooldownTicks(context);
 

@@ -47,6 +47,14 @@ public interface Ability {
 
     }
 
+    /**
+     * Called after an action of this power was used through overexertion,
+     * for power-specific consequences on top of the shared ones.
+     */
+    default void onOverexerted(AbilityUseContext context) {
+
+    }
+
     default void tick(AbilityUseContext context) {
         
     }

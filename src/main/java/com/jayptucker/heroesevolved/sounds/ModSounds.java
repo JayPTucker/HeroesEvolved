@@ -88,6 +88,13 @@ public final class ModSounds {
     private ModSounds() {
     }
 
+    public static final Supplier<SoundEvent> NUCLEAR_SIREN = SOUND_EVENTS.register("nuclear_siren", () ->
+            SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "nuclear_siren")));
+    public static final Supplier<SoundEvent> CROWD_PANIC = SOUND_EVENTS.register("crowd_panic", () ->
+            SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "crowd_panic")));
+    public static final Supplier<SoundEvent> NUCLEAR_BLAST = SOUND_EVENTS.register("nuclear_blast", () ->
+            SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "nuclear_blast")));
+
     public static void register(IEventBus modEventBus) {
         SOUND_EVENTS.register(modEventBus);
     }

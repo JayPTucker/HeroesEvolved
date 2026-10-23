@@ -17,7 +17,44 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("8")
+        event.registrar("17")
+            .playToClient(PowerIntroPayload.TYPE, PowerIntroPayload.STREAM_CODEC, PowerIntroPayload::handle)
+            .playToClient(TimeIntroPayload.TYPE, TimeIntroPayload.STREAM_CODEC, TimeIntroPayload::handle)
+            .playToServer(
+                ReleaseAbilitySlotPayload.TYPE,
+                ReleaseAbilitySlotPayload.STREAM_CODEC,
+                ReleaseAbilitySlotPayload::handle
+            )
+            .playToClient(
+                ArmPosePayload.TYPE,
+                ArmPosePayload.STREAM_CODEC,
+                ArmPosePayload::handle
+            )
+            .playToClient(
+                AbilityEffectPayload.TYPE,
+                AbilityEffectPayload.STREAM_CODEC,
+                AbilityEffectPayload::handle
+            )
+            .playToClient(
+                ScreenTintPayload.TYPE,
+                ScreenTintPayload.STREAM_CODEC,
+                ScreenTintPayload::handle
+            )
+            .playToClient(
+                AdminStatePayload.TYPE,
+                AdminStatePayload.STREAM_CODEC,
+                AdminStatePayload::handle
+            )
+            .playToServer(
+                AdminActionPayload.TYPE,
+                AdminActionPayload.STREAM_CODEC,
+                AdminActionPayload::handle
+            )
+            .playToClient(
+                CameraShakePayload.TYPE,
+                CameraShakePayload.STREAM_CODEC,
+                CameraShakePayload::handle
+            )
             .playToClient(
                 PlayerPowerSyncPayload.TYPE,
                 PlayerPowerSyncPayload.STREAM_CODEC,

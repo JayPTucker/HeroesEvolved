@@ -68,10 +68,24 @@ public final class PlayerEnergyService {
     }
 
     public static void restoreNaturally(ServerPlayer player) {
-        restore(
-            player,
-            HeroesEvolvedConfig.COMMON.energyRegenerationPerSecond.get()
-        );
+        restore(player, regenerationPerSecond(player));
+    }
+
+    /** Base regeneration plus one point for every few levels gained. */
+    public static int regenerationPerSecond(ServerPlayer player) {
+        int base = HeroesEvolvedConfig.COMMON.energyRegenerationPerSecond.get();
+        // Electrokinetics are fed by thunderstorms.
+        if (com.jayptucker.heroesevolved.events.ElectroEvents
+                .hasAwakenedElectrokinesis(player)) {
+            base += com.jayptucker.heroesevolved.electro.ElectroService
+                    .stormEnergyBonus(player);
+        }
+        int everyLevels = HeroesEvolvedConfig.COMMON
+            .energyRegenerationBonusEveryLevels.get();
+        if (everyLevels <= 0) {
+            return base;
+        }
+        return base + (PlayerProgressionService.getLevel(player) - 1) / everyLevels;
     }
 
     public static boolean hasUnlimitedEnergy(ServerPlayer player) {

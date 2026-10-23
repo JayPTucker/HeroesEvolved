@@ -1,0 +1,28 @@
+// Load test sources only for this verification run, not into the released mod.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+      afterEvaluate {
+        def rewindTests = sourceSets.create('rewindGameTest') {
+            java.srcDir('src/gametest/java')
+            resources.srcDir('src/gametest/resources')
+            compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+            runtimeClasspath += sourceSets.main.runtimeClasspath
+        }
+        neoForge {
+            mods {
+                heroesevolved {
+                    sourceSet(rewindTests)
+                }
+            }
+            runs {
+                gameTestServer {
+                    gameDirectory = project.file('build/rewind-gametest-world')
+                }
+            }
+        }
+        tasks.named('runGameTestServer') {
+            dependsOn(tasks.named('rewindGameTestClasses'))
+        }
+      }
+    }
+}
