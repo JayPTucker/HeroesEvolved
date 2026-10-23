@@ -184,6 +184,8 @@ public final class TimeIntroService {
                 if (visitor == null || !visitor.isAlive() || isVisiting(visitor) || isCity(visitor.level())) continue;
                 next.visitors.add(id);
                 visitor.setData(ModDataAttachments.TIME_INTRO_VISIT, TimeIntroVisit.capture(visitor));
+                // Remembered for good: telepaths who were there recognise the city in others' dreams.
+                visitor.setData(ModDataAttachments.PLAYER_SEEN_FUTURE_CITY.get(), true);
                 if (PlayerAbilityService.getData(visitor).ability(POWER)
                         .filter(progress -> progress.isUnlocked()).isPresent()) {
                     visitor.setData(ModDataAttachments.TIME_INTRO_SEEN, true);

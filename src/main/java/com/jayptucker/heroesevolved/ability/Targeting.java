@@ -17,12 +17,13 @@ public final class Targeting {
     private Targeting() {
     }
 
-    /** The living entity under the crosshair, stopping at walls. */
+    /** The living entity under the crosshair, stopping at walls. Accepts the base power range. */
     public static LivingEntity livingEntityInSight(
             ServerPlayer player,
-            double range,
+            double baseRange,
             Predicate<LivingEntity> filter
     ) {
+        double range = AbilityRanges.ranged(baseRange);
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle();
         Vec3 end = eye.add(look.scale(range));

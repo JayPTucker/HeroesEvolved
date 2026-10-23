@@ -1,5 +1,7 @@
 package com.jayptucker.heroesevolved.quake;
 
+import com.jayptucker.heroesevolved.ability.AbilityRanges;
+
 import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
@@ -91,13 +93,14 @@ public final class QuakeService {
     /**
      * A focused vibration blast from the palms. It hurls whatever it hits,
      * turns arrows back on their archer, and shatters glass. Aimed at the
-     * ground close by, the recoil launches Quake into the air instead.
+     * ground, the recoil launches Quake upward. In midair, it launches
+     * opposite the full aim direction, preserving jump momentum.
      */
     public static void shockwave(ServerPlayer player, int powerLevel) {
         ServerLevel level = player.serverLevel();
         Vec3 origin = player.getEyePosition();
         Vec3 direction = player.getLookAngle().normalize();
-        double range = 6.0D + powerLevel * 2.0D;
+        double range = AbilityRanges.ranged(6.0D + powerLevel * 2.0D);
         float damage = 3.0F + powerLevel * 1.5F;
         double knockback = 1.0D + powerLevel * 0.3D;
 
@@ -119,18 +122,16 @@ public final class QuakeService {
                     3 + powerLevel, 0.45D);
         }
 
-        // Daisy flies by firing vibrations into the ground beneath her.
-        boolean propulsion = hit.getType() == HitResult.Type.BLOCK
-                && player.getXRot() > 50.0F
-                && length < 4.5D;
-        Vec3 recoil = direction.reverse().scale(
-                propulsion ? 1.3D + powerLevel * 0.12D : 0.12D
-        );
+        // Jumping frees the recoil in any direction; downward shots can launch
+        // directly from the ground. Air propulsion does not require a block hit.
+        boolean propulsion = !player.onGround() || direction.y < -0.35D;
+        Vec3 velocity = QuakePropulsion.recoil(player.getDeltaMovement(), direction,
+                propulsion ? 1.3D + powerLevel * 0.12D : 0.12D, 3.0D);
         if (propulsion) {
-            recoil = recoil.add(0.0D, 0.35D, 0.0D);
+            player.resetFallDistance();
             CUSHIONED_LANDINGS.add(player.getUUID());
         }
-        setVelocity(player, player.getDeltaMovement().add(recoil));
+        setVelocity(player, velocity);
 
         level.playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS,
@@ -283,14 +284,15 @@ public final class QuakeService {
             }
             MasteryService.awardEnergySpent(player, drain);
             ArmPosePayload.show(player, ArmPose.TWO_HANDS_STRAIN, 15);
-            // Daisy plants her feet to hold a sustained blast.
-            player.addEffect(new MobEffectInstance(
-                    MobEffects.MOVEMENT_SLOWDOWN, 15, 1, false, false));
+            if (player.onGround()) {
+                player.addEffect(new MobEffectInstance(
+                        MobEffects.MOVEMENT_SLOWDOWN, 15, 1, false, false));
+            }
         }
 
         Vec3 origin = player.getEyePosition();
         Vec3 direction = player.getLookAngle().normalize();
-        double range = 10.0D + blast.powerLevel;
+        double range = AbilityRanges.ranged(10.0D + blast.powerLevel);
         BlockHitResult hit = level.clip(new ClipContext(
                 origin, origin.add(direction.scale(range)),
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player
@@ -326,19 +328,16 @@ public final class QuakeService {
             CameraShakePayload.sendAround(level, player.position(), 6.0D, 0.6F, 10);
         }
 
-        // Pointed at the ground below, the beam holds Quake aloft.
-        if (hitBlock && player.getXRot() > 50.0F && length < 5.5D) {
-            Vec3 velocity = player.getDeltaMovement();
-            setVelocity(player, new Vec3(velocity.x * 0.9D,
-                    Math.max(velocity.y, 0.28D + blast.powerLevel * 0.02D),
-                    velocity.z * 0.9D));
+        boolean propelling = !player.onGround() || direction.y < -0.35D;
+        if (propelling) {
+            double thrust = blast.propelling ? 0.10D + blast.powerLevel * 0.012D
+                    : 0.9D + blast.powerLevel * 0.10D;
+            setVelocity(player, QuakePropulsion.recoil(player.getDeltaMovement(), direction,
+                    thrust, 2.4D + blast.powerLevel * 0.10D));
             player.resetFallDistance();
             CUSHIONED_LANDINGS.add(player.getUUID());
-        } else if (!player.onGround() && blast.ageTicks % 2 == 0) {
-            // In the air, the recoil pushes Quake gently backward.
-            setVelocity(player, player.getDeltaMovement()
-                    .add(direction.reverse().scale(0.04D)));
         }
+        blast.propelling = propelling;
 
         if (blast.ageTicks >= BLAST_MAXIMUM_TICKS) {
             stopQuakeBlast(player, true);
@@ -1194,6 +1193,7 @@ public final class QuakeService {
     private static final class Blast {
         private final int powerLevel;
         private int ageTicks;
+        private boolean propelling;
 
         private Blast(int powerLevel) {
             this.powerLevel = powerLevel;

@@ -31,6 +31,7 @@ public final class HeroesEvolvedCommands {
         event.getDispatcher().register(
                 Commands.literal(HeroesEvolved.MOD_ID)
                         .requires(source -> source.hasPermission(2))
+                        .then(com.jayptucker.heroesevolved.story.sylar.SylarCommands.branch())
                         .then(Commands.literal("admin")
                                 .executes(context -> {
                                     com.jayptucker.heroesevolved.admin.AdminService
@@ -277,7 +278,7 @@ public final class HeroesEvolvedCommands {
 
         if (grantedCount == 0) {
             source.sendFailure(Component.literal(
-                    "Every selected player already has an assigned power."
+                    "Selected players already have powers, or this unique power belongs to another player."
             ));
             return 0;
         }
@@ -319,7 +320,7 @@ public final class HeroesEvolvedCommands {
 
         if (replacedCount == 0) {
             source.sendFailure(Component.literal(
-                    "Every selected player already has this power unlocked."
+                    "Selected players already have this power unlocked, or it belongs to another player."
             ));
             return 0;
         }

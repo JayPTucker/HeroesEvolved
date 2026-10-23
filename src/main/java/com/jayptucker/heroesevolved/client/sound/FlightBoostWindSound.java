@@ -11,7 +11,7 @@ import net.minecraft.util.RandomSource;
  * A local, controllable wind loop for the player using Flight Boost.
  *
  * <p>Unlike a server one-shot sound, this instance can begin fading on the
- * exact client tick that the player releases the boost keys.</p>
+ * client tick that forward flight stops or the selected speed returns to normal.</p>
  */
 public final class FlightBoostWindSound
         extends AbstractTickableSoundInstance {

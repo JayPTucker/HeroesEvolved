@@ -1,5 +1,7 @@
 package com.jayptucker.heroesevolved.ability.types;
 
+import com.jayptucker.heroesevolved.ability.AbilityRanges;
+
 import com.jayptucker.heroesevolved.effects.AbilityEffects;
 import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 
@@ -365,7 +367,7 @@ public final class TimeManipulationAbility implements Ability {
         }
 
         private static int getMaximumDistance(int powerLevel) {
-            return switch (Math.clamp(powerLevel, 1, 5)) {
+            return AbilityRanges.ranged(switch (Math.clamp(powerLevel, 1, 5)) {
                 case 1 -> HeroesEvolvedConfig.COMMON
                         .timeBlinkLevelOneDistance.get();
                 case 2 -> HeroesEvolvedConfig.COMMON
@@ -379,7 +381,7 @@ public final class TimeManipulationAbility implements Ability {
                 default -> throw new IllegalStateException(
                         "Unexpected Blink power level."
                 );
-            };
+            });
         }
 
         /**

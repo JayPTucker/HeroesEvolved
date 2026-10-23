@@ -84,6 +84,11 @@ public final class ModEntities {
     private ModEntities() {
     }
 
+    public static final DeferredHolder<EntityType<?>, EntityType<com.jayptucker.heroesevolved.story.sylar.SylarEntity>> SYLAR =
+            ENTITY_TYPES.register("sylar", id -> EntityType.Builder.<com.jayptucker.heroesevolved.story.sylar.SylarEntity>of(
+                    com.jayptucker.heroesevolved.story.sylar.SylarEntity::new, MobCategory.MISC)
+                    .sized(.6F, 1.8F).noSave().noSummon().clientTrackingRange(96).updateInterval(3).build(id.toString()));
+
     public static void register(IEventBus modEventBus) {
         ENTITY_TYPES.register(modEventBus);
         modEventBus.addListener(ModEntities::registerAttributes);
@@ -91,5 +96,6 @@ public final class ModEntities {
 
     private static void registerAttributes(EntityAttributeCreationEvent event) {
         event.put(TEMPORAL_ECHO.get(), TemporalEchoEntity.createAttributes().build());
+        event.put(SYLAR.get(), com.jayptucker.heroesevolved.story.sylar.SylarEntity.createAttributes().build());
     }
 }

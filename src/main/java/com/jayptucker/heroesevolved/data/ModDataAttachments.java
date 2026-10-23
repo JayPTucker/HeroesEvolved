@@ -59,6 +59,25 @@ public final class ModDataAttachments {
 
     // Stores the last Eclipse that gave this player an ability-roll attempt.
     // It prevents reconnecting players from rerolling during the same event.
+    // How many of the Telepathy storyline's memories this player has heard.
+    public static final Supplier<AttachmentType<Integer>> PLAYER_STORY_PROGRESS =
+        ATTACHMENTS.register("player_story_progress", () ->
+            AttachmentType.<Integer>builder(() -> 0)
+                .serialize(Codec.INT)
+                .copyOnDeath()
+                .build()
+        );
+
+    // Whether this player has stood in the future city of the time vision,
+    // as the time traveller or as someone pulled along with them.
+    public static final Supplier<AttachmentType<Boolean>> PLAYER_SEEN_FUTURE_CITY =
+        ATTACHMENTS.register("player_seen_future_city", () ->
+            AttachmentType.<Boolean>builder(() -> false)
+                .serialize(Codec.BOOL)
+                .copyOnDeath()
+                .build()
+        );
+
     public static final Supplier<AttachmentType<Long>> PLAYER_LAST_ECLIPSE_ROLL =
         ATTACHMENTS.register("player_last_eclipse_roll", () ->
             AttachmentType.<Long>builder(() -> -1L)
@@ -66,6 +85,10 @@ public final class ModDataAttachments {
                 .copyOnDeath()
                 .build()
         );
+
+    public static final Supplier<AttachmentType<Integer>> PLAYER_RADIATION_STRESS =
+        ATTACHMENTS.register("player_radiation_stress", () -> AttachmentType.<Integer>builder(() -> 0)
+                .serialize(Codec.intRange(0, 100)).build());
 
     public static final Supplier<AttachmentType<PlayerCooldownData>> PLAYER_COOLDOWNS =
         ATTACHMENTS.register("player_cooldowns", () ->

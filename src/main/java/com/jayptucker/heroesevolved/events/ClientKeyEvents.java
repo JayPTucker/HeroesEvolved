@@ -12,6 +12,8 @@ import com.jayptucker.heroesevolved.network.ReleaseAbilitySlotPayload;
 import com.jayptucker.heroesevolved.network.ClientPowerState;
 import com.jayptucker.heroesevolved.network.ClientFlightVisualState;
 import com.jayptucker.heroesevolved.network.FlightForwardInputPayload;
+import com.jayptucker.heroesevolved.network.FlightSpeedInputPayload;
+import net.neoforged.neoforge.client.event.InputEvent;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -31,6 +33,7 @@ public final class ClientKeyEvents {
     private static boolean ability5WasDown;
     private static boolean flightForwardWasDown;
     private static boolean jumpWasDown;
+    private static double flightScrollRemainder;
     private static int forwardInputResendTicks;
     private static long lastJumpPressGameTime = Long.MIN_VALUE;
 
@@ -63,6 +66,7 @@ public final class ClientKeyEvents {
         }
 
         if (minecraft.player == null || minecraft.screen != null) {
+            flightScrollRemainder = 0;
             if (minecraft.player != null) {
                 releaseHeldAbilities();
             }
@@ -74,18 +78,13 @@ public final class ClientKeyEvents {
 
         handleFlightDoubleTap(minecraft);
 
-        // Normal forward movement keeps the player upright. Flight Boost is
-        // deliberately separate and follows Minecraft's rebindable sprint
-        // key (Left Ctrl by default) while moving forward.
-        boolean flightBoostActive = minecraft.options.keyUp.isDown()
-                && minecraft.options.keySprint.isDown();
-        syncFlightForwardInput(flightBoostActive);
-        FlightBoostWindSound.update(
-                flightBoostActive
-                        && ClientFlightVisualState.isFlightActive(
-                                minecraft.player.getId()
-                        )
-        );
+        // Forward flight uses the wheel-selected speed. Sprint/Ctrl is not a boost input.
+        boolean movingForward = hasAwakenedFlight()
+                && ClientFlightVisualState.isFlightEnabled(minecraft.player.getId())
+                && minecraft.options.keyUp.isDown();
+        syncFlightForwardInput(movingForward);
+        FlightBoostWindSound.update(movingForward
+                && ClientFlightVisualState.isFlightActive(minecraft.player.getId()));
 
         boolean allowOverexertion =
                 minecraft.options.keyShift.isDown();
@@ -124,6 +123,26 @@ public final class ClientKeyEvents {
                 allowOverexertion,
                 ability5WasDown
         );
+    }
+
+    @SubscribeEvent
+    public static void onMouseScroll(InputEvent.MouseScrollingEvent event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.screen != null || mc.isPaused() || !hasAwakenedFlight()
+                || !ClientFlightVisualState.isFlightEnabled(mc.player.getId())
+                || ClientFlightVisualState.isCycloneActive(mc.player.getId())
+                || mc.player.onGround() || !mc.player.isAlive() || mc.player.isSpectator()) {
+            flightScrollRemainder = 0; return;
+        }
+        double delta = event.getScrollDeltaY();
+        if (!Double.isFinite(delta) || delta == 0) return;
+        event.setCanceled(true);
+        if (Math.signum(delta) != Math.signum(flightScrollRemainder)) flightScrollRemainder = 0;
+        flightScrollRemainder += delta;
+        int notches = Math.min(4, (int) Math.abs(flightScrollRemainder));
+        for (int i = 0; i < notches; i++)
+            PacketDistributor.sendToServer(new FlightSpeedInputPayload(delta > 0 ? 1 : -1));
+        flightScrollRemainder = Math.copySign(Math.abs(flightScrollRemainder) % 1, delta);
     }
 
     /**
@@ -209,19 +228,19 @@ public final class ClientKeyEvents {
         return isDown;
     }
 
-    private static void syncFlightForwardInput(boolean boostActive) {
-        boolean stateChanged = flightForwardWasDown != boostActive;
-        boolean shouldResend = boostActive
+    private static void syncFlightForwardInput(boolean movingForward) {
+        boolean stateChanged = flightForwardWasDown != movingForward;
+        boolean shouldResend = movingForward
                 && ++forwardInputResendTicks >= 5;
 
         if (!stateChanged && !shouldResend) {
             return;
         }
 
-        flightForwardWasDown = boostActive;
+        flightForwardWasDown = movingForward;
         forwardInputResendTicks = 0;
         PacketDistributor.sendToServer(
-                new FlightForwardInputPayload(boostActive)
+                new FlightForwardInputPayload(movingForward)
         );
     }
 }

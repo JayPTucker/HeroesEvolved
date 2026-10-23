@@ -46,12 +46,13 @@ public final class PowerIntroGameTests {
         return player;
     }
     private static void remove(ServerPlayer player) {
+        com.jayptucker.heroesevolved.PowerOwnershipTestSupport.release(player);
         PowerIntroService.forget(player);
         FlightService.stopForPowerRemoval(player);
         player.serverLevel().removePlayerImmediately(player, Entity.RemovalReason.DISCARDED);
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 180)
+    @GameTest(template = "rewind_empty", timeoutTicks = 180, batch = "PowerIntroGameTests.quakeChargesThenFracturesTerrain")
     public static void quakeChargesThenFracturesTerrain(GameTestHelper helper) {
         ServerPlayer player = player(helper);
         BlockPos center = player.blockPosition(), near = center.offset(6, 0, 0), outside = center.offset(13, 0, 0);
@@ -93,7 +94,7 @@ public final class PowerIntroGameTests {
         });
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 160)
+    @GameTest(template = "rewind_empty", timeoutTicks = 160, batch = "PowerIntroGameTests.regenerationRepairsOwnerAndNearbyLife")
     public static void regenerationRepairsOwnerAndNearbyLife(GameTestHelper helper) {
         ServerPlayer player = player(helper);
         player.setHealth(2);
@@ -119,7 +120,7 @@ public final class PowerIntroGameTests {
         });
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 150)
+    @GameTest(template = "rewind_empty", timeoutTicks = 150, batch = "PowerIntroGameTests.flightReleasesIntoActualFlight")
     public static void flightReleasesIntoActualFlight(GameTestHelper helper) {
         ServerPlayer player = player(helper);
         PlayerAbilityService.grantAbility(player, ModAbilities.FLIGHT_ID);
@@ -135,7 +136,7 @@ public final class PowerIntroGameTests {
         });
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 150)
+    @GameTest(template = "rewind_empty", timeoutTicks = 150, batch = "PowerIntroGameTests.electricalIntroDoesNotBurnTerrain")
     public static void electricalIntroDoesNotBurnTerrain(GameTestHelper helper) {
         ServerPlayer player = player(helper);
         BlockPos wood = player.blockPosition().offset(3, 0, 0);
@@ -152,7 +153,7 @@ public final class PowerIntroGameTests {
         });
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 150)
+    @GameTest(template = "rewind_empty", timeoutTicks = 150, batch = "PowerIntroGameTests.telekinesisLiftsAndReleasesLooseObjects")
     public static void telekinesisLiftsAndReleasesLooseObjects(GameTestHelper helper) {
         ServerPlayer player = player(helper);
         ItemEntity item = new ItemEntity(helper.getLevel(), player.getX() + 3, player.getY(), player.getZ(), new ItemStack(Items.IRON_INGOT));
@@ -171,7 +172,7 @@ public final class PowerIntroGameTests {
         });
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 90)
+    @GameTest(template = "rewind_empty", timeoutTicks = 90, batch = "PowerIntroGameTests.removalInterruptsChargeWithoutDamagingTerrain")
     public static void removalInterruptsChargeWithoutDamagingTerrain(GameTestHelper helper) {
         ServerPlayer player = player(helper);
         BlockPos stone = player.blockPosition().offset(5, 0, 0);
@@ -189,7 +190,7 @@ public final class PowerIntroGameTests {
         });
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 150)
+    @GameTest(template = "rewind_empty", timeoutTicks = 150, batch = "PowerIntroGameTests.nonBuildingQuakeStillFinishes")
     public static void nonBuildingQuakeStillFinishes(GameTestHelper helper) {
         ServerPlayer player = player(helper);
         player.getAbilities().mayBuild = false;

@@ -20,14 +20,15 @@ import java.util.Map;
  *
  * <ul>
  *   <li>Level 1, Shockwave: a palm blast that hurls targets, reflects
- *   projectiles and shatters glass. Aimed at nearby ground, it launches
- *   Quake into the air.</li>
+ *   projectiles and shatters glass. Jump and fire at any angle to launch
+ *   opposite the shot, or aim down to take off.</li>
  *   <li>Level 2, Seismic Slam: a ground punch whose ring of force throws
  *   everything outward. Used in midair, Quake plunges first.</li>
  *   <li>Level 3, Tremor Sense: feel heartbeats; nearby creatures glow
  *   through walls for Quake alone.</li>
  *   <li>Level 4, Quake Blast: hold the key to pour a two-handed beam of
- *   vibration, draining energy every second. Aimed below, it hovers.</li>
+ *   vibration, draining energy every second. Jump to propel opposite the
+ *   beam; aiming down lifts Quake.</li>
  *   <li>Level 5, Earthquake: a sustained quake ending in an aftershock.
  *   Shift ends it early.</li>
  *   <li>Passive: vibration-cushioned landings. Overexertion fractures

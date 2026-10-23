@@ -34,6 +34,23 @@ public final class ArmPoseActions {
             Map.entry("electro_thunderstrike", new Pose(ArmPose.ARMS_RAISED, 15)),
             Map.entry("electro_storm_surge", new Pose(ArmPose.ARMS_WIDE, 20)),
 
+            Map.entry("radiation_radiant_touch", new Pose(ArmPose.ONE_HAND, 8)),
+            Map.entry("radiation_pulse", new Pose(ArmPose.ARMS_WIDE, 15)),
+            Map.entry("radiation_emp", new Pose(ArmPose.ARMS_WIDE, 16)),
+            Map.entry("radiation_meltdown_beam", new Pose(ArmPose.TWO_HANDS_STRAIN, 15)),
+
+            Map.entry("cryo_frost_bolt", new Pose(ArmPose.ONE_HAND, 8)),
+            Map.entry("cryo_flash_freeze", new Pose(ArmPose.ONE_HAND, 12)),
+            Map.entry("cryo_ice_wall", new Pose(ArmPose.ARMS_RAISED, 12)),
+            Map.entry("cryo_glacial_spikes", new Pose(ArmPose.GROUND, 14)),
+            Map.entry("cryo_blizzard", new Pose(ArmPose.ARMS_RAISED, 30)),
+
+            Map.entry("telepathy_read_mind", new Pose(ArmPose.TEMPLE, 20)),
+            Map.entry("telepathy_suggestion", new Pose(ArmPose.TEMPLE, 20)),
+            Map.entry("telepathy_mind_link", new Pose(ArmPose.TEMPLE, 30)),
+            Map.entry("telepathy_puppet", new Pose(ArmPose.ONE_HAND, 20)),
+            Map.entry("telepathy_nightmare", new Pose(ArmPose.ONE_HAND, 25)),
+
             Map.entry("telekinesis_push", new Pose(ArmPose.ONE_HAND, 8)),
             Map.entry("telekinesis_grip", new Pose(ArmPose.ONE_HAND, 15)),
             Map.entry("telekinesis_bullet_stop", new Pose(ArmPose.TWO_HANDS, 20)),

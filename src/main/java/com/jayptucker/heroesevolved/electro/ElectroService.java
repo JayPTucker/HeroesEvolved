@@ -1,5 +1,7 @@
 package com.jayptucker.heroesevolved.electro;
 
+import com.jayptucker.heroesevolved.ability.AbilityRanges;
+
 import com.jayptucker.heroesevolved.ability.Targeting;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
@@ -73,7 +75,7 @@ public final class ElectroService {
         if (target == null) {
             BlockHitResult hit = level.clip(new ClipContext(
                     player.getEyePosition(),
-                    player.getEyePosition().add(player.getLookAngle().scale(16.0D)),
+                    player.getEyePosition().add(player.getLookAngle().scale(AbilityRanges.ranged(16.0D))),
                     ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
             drawArc(level, hand, hit.getLocation(), level.getRandom());
             level.sendParticles(ParticleTypes.ELECTRIC_SPARK, hit.getLocation().x,
@@ -93,7 +95,7 @@ public final class ElectroService {
 
                 from = to;
                 damage *= 0.75F;
-                current = nearestUnstruck(level, current, player, struck, 5.0D);
+                current = nearestUnstruck(level, current, player, struck, AbilityRanges.ranged(5.0D));
             }
         }
 
@@ -153,7 +155,7 @@ public final class ElectroService {
         ServerLevel level = player.serverLevel();
         Vec3 eye = player.getEyePosition();
         BlockHitResult hit = level.clip(new ClipContext(eye,
-                eye.add(player.getLookAngle().scale(48.0D)),
+                eye.add(player.getLookAngle().scale(AbilityRanges.ranged(48.0D))),
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, player));
         if (hit.getType() != HitResult.Type.BLOCK) {
             player.displayClientMessage(Component.literal(
@@ -194,7 +196,7 @@ public final class ElectroService {
         ServerLevel level = player.serverLevel();
         Vec3 direction = player.getLookAngle().multiply(1.0D, 0.35D, 1.0D)
                 .normalize();
-        double maximumDistance = 10.0D + powerLevel;
+        double maximumDistance = AbilityRanges.ranged(10.0D + powerLevel);
         Vec3 start = player.position();
         Vec3 end = start;
 
@@ -355,7 +357,7 @@ public final class ElectroService {
     // ------------------------------------------------------------------
 
     private static final List<Orb> ORBS = new ArrayList<>();
-    private static final int ORB_LIFETIME_TICKS = 50;
+    private static final int ORB_LIFETIME_TICKS = AbilityRanges.ranged(50);
 
     /**
      * A crackling sphere of current that drifts forward, lashing out at

@@ -4,7 +4,12 @@ import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
+import com.jayptucker.heroesevolved.cryo.CryoService;
+import com.jayptucker.heroesevolved.cryo.ColdDomeService;
+import com.jayptucker.heroesevolved.cryo.TemporaryBlocks;
 import com.jayptucker.heroesevolved.effects.AbilityEffects;
+import com.jayptucker.heroesevolved.effects.PrivateGlow;
+import com.jayptucker.heroesevolved.telepathy.TelepathyService;
 import com.jayptucker.heroesevolved.entity.QuakeDebrisEntity;
 import com.jayptucker.heroesevolved.events.EclipseService;
 import com.jayptucker.heroesevolved.flight.FlightService;
@@ -14,6 +19,7 @@ import com.jayptucker.heroesevolved.network.CameraShakePayload;
 import com.jayptucker.heroesevolved.network.PowerIntroPayload;
 import com.jayptucker.heroesevolved.network.ScreenTintPayload;
 import com.jayptucker.heroesevolved.sounds.ModSounds;
+import com.jayptucker.heroesevolved.radiation.RadiationService;
 import com.jayptucker.heroesevolved.time.intro.TimeIntroService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
@@ -53,6 +59,10 @@ public final class PowerIntroService {
             "flight", new Spec(30, 60, 0xD7F1FF, ArmPose.GROUND, Kind.FLIGHT_AWAKEN_CHARGE, Kind.FLIGHT_AWAKEN_RELEASE),
             "electrokinesis", new Spec(50, 40, 0x60B5FF, ArmPose.ARMS_WIDE, Kind.ELECTRIC_AWAKEN_CHARGE, Kind.ELECTRIC_AWAKEN_RELEASE),
             "telekinesis", new Spec(40, 50, 0xBC86F5, ArmPose.TEMPLE, Kind.PSYCHIC_AWAKEN_CHARGE, Kind.PSYCHIC_AWAKEN_RELEASE),
+            // Telepathy shares the psychic visuals, tinted toward a softer violet.
+            "telepathy", new Spec(60, 50, 0xA070FF, ArmPose.TEMPLE, Kind.PSYCHIC_AWAKEN_CHARGE, Kind.PSYCHIC_AWAKEN_RELEASE),
+            "cryokinesis", new Spec(60, 50, 0xBFEFFF, ArmPose.TWO_HANDS_STRAIN, Kind.CRYO_AWAKEN_CHARGE, Kind.CRYO_AWAKEN_RELEASE),
+            "radiation", new Spec(600, 50, 0xFF781C, ArmPose.ARMS_WIDE, Kind.NUCLEAR_CHARGE, Kind.NUCLEAR_SHOCKWAVE),
             "regeneration", new Spec(50, 40, 0xFFD89B, ArmPose.ARMS_WIDE, Kind.REGEN_AWAKEN_CHARGE, Kind.REGEN_AWAKEN_RELEASE));
     private static final Map<UUID, Session> SESSIONS = new HashMap<>();
     private static final Map<UUID, Integer> SOFT_LANDINGS = new HashMap<>();
@@ -97,6 +107,12 @@ public final class PowerIntroService {
                 && !TimeIntroService.isCity(player.level()) && !EclipseService.arePowersSuppressed(player);
     }
 
+    public static int radiationChargeRemaining(ServerPlayer player) {
+        Session session = SESSIONS.get(player.getUUID());
+        return session != null && session.power.getPath().equals("radiation") && isActive(player)
+                ? Math.max(0, session.spec.chargeTicks - session.age) : 0;
+    }
+
     /** Consumed once, and expires even if the owner never takes a fall. */
     public static boolean cushionFall(ServerPlayer player) {
         return SOFT_LANDINGS.remove(player.getUUID()) != null;
@@ -134,6 +150,9 @@ public final class PowerIntroService {
             if (session.power.getPath().equals("quake") && age % 12 == 0)
                 CameraShakePayload.sendAround(player.serverLevel(), player.position(), 18, age / 150.0F, 12);
             if (session.power.getPath().equals("regeneration") && age % 6 == 0) player.heal(0.75F);
+            if (session.power.getPath().equals("telepathy")) chargeTelepathy(session, age);
+            if (session.power.getPath().equals("cryokinesis")) chargeCryokinesis(session, age);
+            if (session.power.getPath().equals("radiation")) chargeRadiation(session, age);
         }
         if (age == spec.chargeTicks) release(session);
         if (age >= spec.chargeTicks) aftermath(session, age - spec.chargeTicks);
@@ -159,17 +178,27 @@ public final class PowerIntroService {
             case "electrokinesis" -> SoundEvents.BEACON_POWER_SELECT;
             case "telekinesis" -> SoundEvents.BEACON_ACTIVATE;
             case "regeneration" -> SoundEvents.TOTEM_USE;
+            case "telepathy" -> SoundEvents.ILLUSIONER_CAST_SPELL;
+            case "cryokinesis" -> SoundEvents.PLAYER_HURT_FREEZE;
+            case "radiation" -> SoundEvents.BEACON_ACTIVATE;
             default -> SoundEvents.WIND_CHARGE_BURST.value();
         };
         sound(player, sound, 0.9F, 0.7F);
+        if (session.power.getPath().equals("radiation")) {
+            RadiationService.syncVisuals(player);
+            com.jayptucker.heroesevolved.telepathy.FutureVisions.radiationAwakening(player);
+        }
     }
 
     private static void release(Session session) {
         ServerPlayer player = session.player;
         session.releaseOrigin = player.position();
         caption(session, 1);
-        AbilityEffects.send(player.serverLevel(), session.spec.release, player.position(), player.getEyePosition(),
-                session.power.getPath().equals("quake") ? QuakeIntroBlast.RADIUS : 8);
+        if (!session.power.getPath().equals("radiation"))
+            AbilityEffects.send(player.serverLevel(), session.spec.release, player.position(), player.getEyePosition(),
+                    session.power.getPath().equals("quake") ? QuakeIntroBlast.RADIUS
+                            : session.power.getPath().equals("cryokinesis")
+                            ? ColdDomeService.AWAKENING_RADIUS : 8);
         ScreenTintPayload.send(player, 0x55000000 | session.spec.color, 18, ScreenTintPayload.Style.FLASH);
         switch (session.power.getPath()) {
             case "quake" -> {
@@ -212,6 +241,9 @@ public final class PowerIntroService {
                 }
                 sound(player, SoundEvents.BEACON_POWER_SELECT, 1.4F, 1.25F);
             }
+            case "telepathy" -> releaseTelepathy(session);
+            case "cryokinesis" -> releaseCryokinesis(session);
+            case "radiation" -> releaseRadiation(session);
         }
         SOFT_LANDINGS.put(player.getUUID(), 20 * 30);
     }
@@ -254,7 +286,156 @@ public final class PowerIntroService {
             case "regeneration" -> {
                 if (tick % 12 == 0) AbilityEffects.at(player, Kind.HEALING_AURA, 5);
             }
+            case "telepathy" -> {
+                // Stray thoughts drift past as the new sense settles.
+                if (tick > 0 && tick % 12 == 0 && tick <= 36) {
+                    List<LivingEntity> minds = player.serverLevel().getEntitiesOfClass(LivingEntity.class,
+                            player.getBoundingBox().inflate(16), mind -> mind != player && mind.isAlive());
+                    if (!minds.isEmpty()) {
+                        LivingEntity mind = minds.get(player.getRandom().nextInt(minds.size()));
+                        player.displayClientMessage(net.minecraft.network.chat.Component.literal(
+                                mind.getName().getString() + ": " + TelepathyService.thoughtsOf(mind, player))
+                                .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE,
+                                        net.minecraft.ChatFormatting.ITALIC), true);
+                        TelepathyService.whisper(player, 0.9F + tick / 60.0F);
+                    }
+                }
+            }
+            case "cryokinesis" -> {
+                if (tick < 40 && tick % 4 == 0) {
+                    player.serverLevel().sendParticles(net.minecraft.core.particles.ParticleTypes.SNOWFLAKE,
+                            session.releaseOrigin.x, session.releaseOrigin.y + 1.5, session.releaseOrigin.z,
+                            30, 4, 1.5, 4, 0.05);
+                }
+            }
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Telepathy: voices in the static, then every mind lights up.
+    // ------------------------------------------------------------------
+
+    private static void chargeTelepathy(Session session, int age) {
+        ServerPlayer player = session.player;
+        if (age % 8 != 0) return;
+        // The whispers grow louder and more numerous as the charge builds.
+        TelepathyService.whisper(player, 0.6F + age / (float) session.spec.chargeTicks * 0.8F);
+        double reach = 4 + 20.0 * age / session.spec.chargeTicks;
+        for (LivingEntity mind : player.serverLevel().getEntitiesOfClass(LivingEntity.class,
+                player.getBoundingBox().inflate(reach), mind -> mind != player && mind.isAlive()
+                        && mind.distanceToSqr(player) <= reach * reach)) {
+            PrivateGlow.glow(player, mind, 20);
+        }
+    }
+
+    private static void releaseTelepathy(Session session) {
+        ServerPlayer player = session.player;
+        ArmPosePayload.show(player, ArmPose.ARMS_WIDE, 30);
+        for (LivingEntity mind : player.serverLevel().getEntitiesOfClass(LivingEntity.class,
+                player.getBoundingBox().inflate(24), mind -> mind != player && mind.isAlive()
+                        && mind.distanceToSqr(player) <= 24 * 24)) {
+            PrivateGlow.glow(player, mind, 120);
+            // Hostile minds nearby reel from the psychic shout.
+            if (mind instanceof Enemy && mind.distanceToSqr(player) <= 12 * 12) {
+                if (mind instanceof Mob mob) mob.setTarget(null);
+                mind.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 1));
+                mind.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100, 0));
+                mind.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 100, 0));
+            }
+        }
+        AbilityEffects.send(player.serverLevel(), Kind.PSYCHIC_PUSH, player.position(),
+                player.position().add(0, 1, 0), 12);
+        sound(player, SoundEvents.EVOKER_PREPARE_ATTACK, 1.5F, 0.8F);
+        sound(player, SoundEvents.BEACON_ACTIVATE, 1.2F, 0.7F);
+    }
+
+    // ------------------------------------------------------------------
+    // Radiation: the Glowing Man burns brighter, then the first flash.
+    // ------------------------------------------------------------------
+
+    private static void chargeRadiation(Session session, int age) {
+        ServerPlayer player = session.player;
+        player.setGlowingTag(true);
+        player.clearFire();
+        player.resetFallDistance();
+        double intensity = age / (double) session.spec.chargeTicks;
+        // Lifted slightly off the ground by the heat pouring out of you.
+        if (age > session.spec.chargeTicks - 40) {
+            Vec3 motion = player.getDeltaMovement();
+            velocity(player, new Vec3(motion.x * 0.3, 0.03, motion.z * 0.3));
+        }
+        player.serverLevel().sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD,
+                player.getX(), player.getY() + 1, player.getZ(), (int) (2 + intensity * 10),
+                0.4 + intensity, 0.7 + intensity, 0.4 + intensity, 0.01);
+        if (age % 10 == 0) {
+            RadiationService.awakeningAura(player);
+            com.jayptucker.heroesevolved.radiation.RadiationDecay.tick(player, (float) intensity, true);
+            CameraShakePayload.sendAround(player.serverLevel(), player.position(), 16,
+                    (float) (0.1 + intensity * 0.45), 12);
+        }
+        if (age % 20 == 0) {
+            RadiationService.syncVisuals(player);
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                    "message.heroesevolved.nuclear_uncontrolled", (session.spec.chargeTicks - age + 19) / 20)
+                    .withStyle(net.minecraft.ChatFormatting.GOLD), true);
+        }
+    }
+
+    private static void releaseRadiation(Session session) {
+        ServerPlayer player = session.player;
+        ArmPosePayload.show(player, ArmPose.ARMS_RAISED, 30);
+        RadiationService.awakeningRelease(player);
+    }
+
+    // ------------------------------------------------------------------
+    // Cryokinesis: frost creeps outward, then everything locks in ice.
+    // ------------------------------------------------------------------
+
+    private static void chargeCryokinesis(Session session, int age) {
+        ServerPlayer player = session.player;
+        // Frost creeps across the edges of vision (vanilla freezing overlay).
+        player.setTicksFrozen(Math.min(140, age * 3));
+        if (age % 6 != 0) return;
+        ServerLevel level = player.serverLevel();
+        double radius = 1.5 + 5.0 * age / session.spec.chargeTicks;
+        for (int point = 0; point < 12; point++) {
+            double angle = Math.PI * 2 * point / 12 + age * 0.1;
+            BlockPos around = BlockPos.containing(player.getX() + Math.cos(angle) * radius,
+                    player.getY(), player.getZ() + Math.sin(angle) * radius);
+            BlockPos ground = CryoService.surfaceNear(level, around, 3);
+            if (ground != null && !TemporaryBlocks.freezeWater(level, ground)) {
+                TemporaryBlocks.place(level, ground.above(), Blocks.SNOW.defaultBlockState(),
+                        20 * 20, player);
+            }
+        }
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.SNOWFLAKE,
+                player.getX(), player.getY() + 1, player.getZ(), 20, radius / 2, 0.8, radius / 2, 0.02);
+    }
+
+    private static void releaseCryokinesis(Session session) {
+        ServerPlayer player = session.player;
+        ServerLevel level = player.serverLevel();
+        ArmPosePayload.show(player, ArmPose.ARMS_WIDE, 30);
+
+        // The first awakening creates a larger, temporary cold dome around every nearby lifeform.
+        ColdDomeService.awakening(player);
+
+        // A crown of ice spikes erupts around the awakening.
+        for (int spike = 0; spike < 10; spike++) {
+            double angle = Math.PI * 2 * spike / 10;
+            BlockPos around = BlockPos.containing(player.getX() + Math.cos(angle) * 4.5,
+                    player.getY(), player.getZ() + Math.sin(angle) * 4.5);
+            BlockPos ground = CryoService.surfaceNear(level, around, 3);
+            if (ground == null) continue;
+            TemporaryBlocks.place(level, ground.above(), Blocks.PACKED_ICE.defaultBlockState(), 100, player);
+            TemporaryBlocks.place(level, ground.above(2), Blocks.BLUE_ICE.defaultBlockState(), 110, player);
+        }
+
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.SNOWFLAKE,
+                player.getX(), player.getY() + 1, player.getZ(), 200, 5, 2, 5, 0.2);
+        sound(player, SoundEvents.GLASS_BREAK, 1.6F, 0.5F);
+        sound(player, SoundEvents.POWDER_SNOW_BREAK, 1.6F, 0.6F);
+        CameraShakePayload.sendAround(level, player.position(), 20, 0.8F, 14);
     }
 
     private static void debris(ServerPlayer player, double phase) {
@@ -299,12 +480,16 @@ public final class PowerIntroService {
     private static void finish(Session session) {
         ArmPosePayload.clear(session.player);
         SESSIONS.remove(session.player.getUUID());
+        if (session.power.getPath().equals("radiation")) RadiationService.refreshGlow(session.player);
     }
     public static void cancel(ServerPlayer player) {
         Session session = SESSIONS.remove(player.getUUID());
+        if (session != null && session.power.getPath().equals("radiation"))
+            com.jayptucker.heroesevolved.radiation.RadiationDecay.clear(player);
         if (session != null && session.age > 0) {
             ArmPosePayload.clear(player);
             caption(session, -1);
+            if (session.power.getPath().equals("radiation")) RadiationService.refreshGlow(player);
         }
     }
     public static void forget(ServerPlayer player) { cancel(player); SOFT_LANDINGS.remove(player.getUUID()); }

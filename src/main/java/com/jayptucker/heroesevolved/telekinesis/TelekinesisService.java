@@ -1,5 +1,7 @@
 package com.jayptucker.heroesevolved.telekinesis;
 
+import com.jayptucker.heroesevolved.ability.AbilityRanges;
+
 import com.jayptucker.heroesevolved.effects.AbilityEffects;
 import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 
@@ -67,20 +69,21 @@ public final class TelekinesisService {
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle();
         double strength = 1.4D + powerLevel * 0.2D;
+        double range = AbilityRanges.ranged(8.0D);
 
         for (Entity entity : level.getEntities(player,
-                player.getBoundingBox().inflate(8.0D), Entity::isAlive)) {
+                player.getBoundingBox().inflate(range), Entity::isAlive)) {
             if (entity instanceof TemporalEchoEntity) {
                 continue;
             }
             Vec3 toEntity = entity.getBoundingBox().getCenter().subtract(eye);
             double distance = toEntity.length();
-            if (distance > 8.0D || distance < 0.01D
+            if (distance > range || distance < 0.01D
                     || toEntity.normalize().dot(look) < CONE_COSINE) {
                 continue;
             }
 
-            double falloff = 1.0D - 0.5D * distance / 8.0D;
+            double falloff = 1.0D - 0.5D * distance / range;
             setVelocity(entity, look.scale(strength * falloff).add(0.0D, 0.3D, 0.0D));
             if (entity instanceof LivingEntity living) {
                 if (TemporalEntityEchoService.isReplaying(living)) {
@@ -156,7 +159,7 @@ public final class TelekinesisService {
         setVelocity(grip.target, player.getLookAngle().scale(2.6D)
                 .add(0.0D, 0.2D, 0.0D));
         IMPACTS.put(grip.target.getUUID(), new Impact(grip.target,
-                player.getUUID(), player.serverLevel().getGameTime() + 30,
+                player.getUUID(), player.serverLevel().getGameTime() + AbilityRanges.ranged(30),
                 4.0F + grip.powerLevel, false));
         player.serverLevel().playSound(null, player.getX(), player.getY(),
                 player.getZ(), SoundEvents.WIND_CHARGE_BURST.value(),
@@ -379,7 +382,7 @@ public final class TelekinesisService {
             LivingEntity target = grip.target;
             if (player == null || !target.isAlive() || target.isRemoved()
                     || target.level() != player.level()
-                    || target.distanceToSqr(player) > 24.0D * 24.0D
+                    || target.distanceToSqr(player) > Math.pow(AbilityRanges.ranged(24.0D), 2)
                     || gameTime >= grip.until
                     || EclipseService.arePowersSuppressed(player)) {
                 iterator.remove();

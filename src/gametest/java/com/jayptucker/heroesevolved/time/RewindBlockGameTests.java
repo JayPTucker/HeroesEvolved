@@ -34,6 +34,7 @@ public final class RewindBlockGameTests {
     }
 
     private static void remove(ServerPlayer player) {
+        com.jayptucker.heroesevolved.PowerOwnershipTestSupport.release(player);
         TimeRewindService.forget(player);
         player.serverLevel().removePlayerImmediately(player, Entity.RemovalReason.DISCARDED);
     }
@@ -51,7 +52,7 @@ public final class RewindBlockGameTests {
         return result.toString();
     }
 
-    @GameTest(template = "rewind_empty")
+    @GameTest(template = "rewind_empty", batch = "RewindBlockGameTests.restoresMiningAndExplosion")
     public static void restoresMiningAndExplosion(GameTestHelper helper) {
         helper.setBlock(3, 1, 3, Blocks.STONE);
         helper.setBlock(7, 2, 7, Blocks.GLASS);
@@ -69,7 +70,7 @@ public final class RewindBlockGameTests {
         } finally { remove(player); }
     }
 
-    @GameTest(template = "rewind_empty")
+    @GameTest(template = "rewind_empty", batch = "RewindBlockGameTests.repeatedEditsRespectCutoff")
     public static void repeatedEditsRespectCutoff(GameTestHelper helper) {
         helper.setBlock(3, 1, 3, Blocks.STONE);
         ServerPlayer player = watcher(helper);
@@ -86,7 +87,7 @@ public final class RewindBlockGameTests {
         } finally { remove(player); }
     }
 
-    @GameTest(template = "rewind_empty")
+    @GameTest(template = "rewind_empty", batch = "RewindBlockGameTests.removesPlacedBlocksAndChecksFutureTerrain")
     public static void removesPlacedBlocksAndChecksFutureTerrain(GameTestHelper helper) {
         ServerPlayer player = watcher(helper);
         try {
@@ -103,7 +104,7 @@ public final class RewindBlockGameTests {
         } finally { remove(player); }
     }
 
-    @GameTest(template = "rewind_empty")
+    @GameTest(template = "rewind_empty", batch = "RewindBlockGameTests.restoresContainerContentsWithoutLooseCopies")
     public static void restoresContainerContentsWithoutLooseCopies(GameTestHelper helper) {
         helper.setBlock(3, 1, 3, Blocks.CHEST);
         BlockPos pos = helper.absolutePos(new BlockPos(3, 1, 3));
@@ -123,7 +124,7 @@ public final class RewindBlockGameTests {
         } finally { remove(player); }
     }
 
-    @GameTest(template = "rewind_empty")
+    @GameTest(template = "rewind_empty", batch = "RewindBlockGameTests.ignoresNoOpAndDistantChanges")
     public static void ignoresNoOpAndDistantChanges(GameTestHelper helper) {
         helper.setBlock(3, 1, 3, Blocks.STONE);
         ServerPlayer player = watcher(helper);
@@ -139,7 +140,7 @@ public final class RewindBlockGameTests {
         } finally { remove(player); }
     }
 
-    @GameTest(template = "rewind_empty")
+    @GameTest(template = "rewind_empty", batch = "RewindBlockGameTests.fullFifteenSecondRewindRestoresTerrain")
     public static void fullFifteenSecondRewindRestoresTerrain(GameTestHelper helper) {
         helper.setBlock(3, 1, 3, Blocks.STONE);
         ServerPlayer player = watcher(helper);
@@ -158,7 +159,7 @@ public final class RewindBlockGameTests {
         } finally { remove(player); }
     }
 
-    @GameTest(template = "rewind_empty")
+    @GameTest(template = "rewind_empty", batch = "RewindBlockGameTests.overlappingRewindsPreserveBothTimelines")
     public static void overlappingRewindsPreserveBothTimelines(GameTestHelper helper) {
         helper.setBlock(3, 1, 3, Blocks.STONE);
         ServerPlayer first = watcher(helper);
@@ -176,7 +177,7 @@ public final class RewindBlockGameTests {
         } finally { remove(first); remove(second); }
     }
 
-    @GameTest(template = "rewind_empty")
+    @GameTest(template = "rewind_empty", batch = "RewindBlockGameTests.restoresFireFluidAndBlockProperties")
     public static void restoresFireFluidAndBlockProperties(GameTestHelper helper) {
         var original = Blocks.OAK_STAIRS.defaultBlockState().setValue(
                 net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING,

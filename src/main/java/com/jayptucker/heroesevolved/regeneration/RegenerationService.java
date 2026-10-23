@@ -98,18 +98,7 @@ public final class RegenerationService {
         player.clearFire();
 
         ServerLevel level = player.serverLevel();
-        // Blood is drawn back into the body: particles fly inward.
-        for (int index = 0; index < 40; index++) {
-            double angle = index * 0.6D;
-            double height = (index % 10) * 0.2D;
-            Vec3 from = player.position().add(
-                    Math.cos(angle) * 1.6D, height, Math.sin(angle) * 1.6D
-            );
-            Vec3 toward = player.position().add(0.0D, 1.0D, 0.0D).subtract(from);
-            level.sendParticles(index % 3 == 0 ? BRIGHT_BLOOD : BLOOD,
-                    from.x, from.y, from.z, 0,
-                    toward.x, toward.y, toward.z, 0.12D);
-        }
+        // The successful-action cue builds the healing strands on each client.
         level.playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.SLIME_SQUISH_SMALL, SoundSource.PLAYERS, 1.0F, 0.7F);
         level.playSound(null, player.getX(), player.getY(), player.getZ(),

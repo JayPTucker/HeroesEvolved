@@ -6,6 +6,7 @@ import com.jayptucker.heroesevolved.ability.Ability;
 import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
+import com.jayptucker.heroesevolved.data.PowerOwnershipSavedData;
 import com.jayptucker.heroesevolved.network.PlayerPowerSyncService;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -44,6 +45,7 @@ public final class PlayerAbilityService {
             return false;
         }
 
+        if (!claim(player, abilityId)) return false;
         saveData(player, data.assignDormant(abilityId));
         return true;
     }
@@ -60,6 +62,7 @@ public final class PlayerAbilityService {
             return false;
         }
 
+        if (!claim(player, abilityId)) return false;
         saveData(
                 player,
                 data.assignDormant(abilityId).unlock(abilityId)
@@ -81,6 +84,7 @@ public final class PlayerAbilityService {
             return false;
         }
 
+        if (!claim(player, abilityId)) return false;
         saveData(player, data.unlock(abilityId));
         return true;
     }
@@ -103,6 +107,7 @@ public final class PlayerAbilityService {
         // Replacing a power must clean up its runtime state first. Flight,
         // for example, grants a temporary flying permission that must never
         // survive after the player receives a different power.
+        if (!claim(player, abilityId)) return false;
         data.assignedPower().ifPresent(assignment -> {
             if (!assignment.getKey().equals(abilityId)) {
                 revokeAbility(player, assignment);
@@ -164,5 +169,12 @@ public final class PlayerAbilityService {
         if (!AbilityRegistry.ABILITIES.containsKey(abilityId)) {
             throw new IllegalArgumentException("Unknown ability: " + abilityId);
         }
+    }
+
+    public static boolean availableTo(ServerPlayer player, ResourceLocation abilityId) {
+        return PowerOwnershipSavedData.get(player.getServer()).available(abilityId, player.getUUID());
+    }
+    private static boolean claim(ServerPlayer player, ResourceLocation abilityId) {
+        return PowerOwnershipSavedData.get(player.getServer()).claim(abilityId, player.getUUID());
     }
 }

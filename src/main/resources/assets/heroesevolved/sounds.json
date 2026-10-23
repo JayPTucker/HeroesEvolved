@@ -1,4 +1,8 @@
 {
+  "nuclear_charge": {
+    "subtitle": "subtitles.heroesevolved.nuclear_charge",
+    "sounds": [{ "name": "heroesevolved:ability/nuclear_charge" }]
+  },
   "nuclear_siren": {
     "subtitle": "subtitles.heroesevolved.nuclear_siren",
     "sounds": [{ "name": "heroesevolved:intro/nuclear_siren", "stream": true }]
@@ -75,6 +79,10 @@
         "pitch": 1.0
       }
     ]
+  },
+  "sylar_watch": {
+    "subtitle": "subtitles.heroesevolved.sylar_watch",
+    "sounds": [{ "name": "heroesevolved:story/sylar_watch" }]
   },
    "flight_boost": {
     "subtitle": "subtitles.heroesevolved.flight_boost",

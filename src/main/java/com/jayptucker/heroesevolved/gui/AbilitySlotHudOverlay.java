@@ -96,22 +96,18 @@ public final class AbilitySlotHudOverlay {
             y += LINE_HEIGHT;
         }
 
-        if (!hasUnlockedFlightBoost()) {
+        if (!hasFlightSpeedControl()) {
             return;
         }
 
-        // Flight Boost is a Flight-only control hint, not a universal action.
-        KeyMapping sprintKey = Minecraft.getInstance().options.keySprint;
-        KeyMapping forwardKey = Minecraft.getInstance().options.keyUp;
-
-        String boostText = sprintKey.getTranslatedKeyMessage().getString()
-                + " + "
-                + forwardKey.getTranslatedKeyMessage().getString()
-                + "  Flight Boost";
+        var mc = Minecraft.getInstance();
+        int step = mc.player == null ? 0 : com.jayptucker.heroesevolved.network.ClientFlightVisualState.speedStep(mc.player.getId());
+        String speedText = net.minecraft.network.chat.Component.translatable(
+                "hud.heroesevolved.flight_speed", step + 1).getString();
 
         guiGraphics.drawString(
                 Minecraft.getInstance().font,
-                boostText,
+                speedText,
                 START_X,
                 y,
                 0xFFFFD7DC,
@@ -119,11 +115,11 @@ public final class AbilitySlotHudOverlay {
         );
     }
 
-    private static boolean hasUnlockedFlightBoost() {
+    private static boolean hasFlightSpeedControl() {
         return ClientPowerState.getSnapshot().abilities().stream().anyMatch(
                 ability -> ability.unlocked()
                         && ability.abilityId().equals(ModAbilities.FLIGHT_ID)
-                        && ability.level() >= 2
+                        && ability.level() >= 1
         );
     }
 
@@ -133,7 +129,7 @@ public final class AbilitySlotHudOverlay {
                         && ability.abilityId().equals(
                         ModAbilities.TIME_MANIPULATION_ID
                 )
-                        && ability.level() >= 2
+                        && ability.level() >= 1
         );
     }
 

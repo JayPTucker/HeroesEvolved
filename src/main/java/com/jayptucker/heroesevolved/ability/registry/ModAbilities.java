@@ -95,4 +95,49 @@ public final class ModAbilities {
             TELEKINESIS_ID.getPath(),
             com.jayptucker.heroesevolved.ability.types.TelekinesisAbility::new
     );
+
+    // TELEPATHY
+    public static final ResourceLocation TELEPATHY_ID =
+        ResourceLocation.fromNamespaceAndPath(
+                HeroesEvolved.MOD_ID,
+                "telepathy"
+        );
+
+    public static final DeferredHolder<
+            Ability,
+            com.jayptucker.heroesevolved.ability.types.TelepathyAbility
+    > TELEPATHY = ABILITIES.register(
+            TELEPATHY_ID.getPath(),
+            com.jayptucker.heroesevolved.ability.types.TelepathyAbility::new
+    );
+
+    // CRYOKINESIS
+    public static final ResourceLocation CRYOKINESIS_ID =
+        ResourceLocation.fromNamespaceAndPath(
+                HeroesEvolved.MOD_ID,
+                "cryokinesis"
+        );
+
+    public static final DeferredHolder<
+            Ability,
+            com.jayptucker.heroesevolved.ability.types.CryokinesisAbility
+    > CRYOKINESIS = ABILITIES.register(
+            CRYOKINESIS_ID.getPath(),
+            com.jayptucker.heroesevolved.ability.types.CryokinesisAbility::new
+    );
+
+    // RADIATION (the Glowing Man)
+    public static final ResourceLocation RADIATION_ID =
+        ResourceLocation.fromNamespaceAndPath(
+                HeroesEvolved.MOD_ID,
+                "radiation"
+        );
+
+    public static final DeferredHolder<
+            Ability,
+            com.jayptucker.heroesevolved.ability.types.RadiationAbility
+    > RADIATION = ABILITIES.register(
+            RADIATION_ID.getPath(),
+            com.jayptucker.heroesevolved.ability.types.RadiationAbility::new
+    );
 }

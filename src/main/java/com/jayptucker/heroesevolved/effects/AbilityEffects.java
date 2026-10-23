@@ -76,6 +76,10 @@ public final class AbilityEffects {
                     at(player, Kind.ELECTRIC_NOVA, action.equals("electro_storm_surge") ? 7.0D : 1.1D);
                 }
             }
+            // A faint psychic ripple around the telepath; the tether to the
+            // target mind is sent by TelepathyService itself.
+            case "telepathy" -> at(player, Kind.MIND_PULSE,
+                    action.equals("telepathy_nightmare") ? 3.0D : 1.4D);
             default -> { /* Quake's cues are synchronized to its actual wave/impact. */ }
         }
     }

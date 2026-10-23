@@ -134,12 +134,13 @@ public final class EclipseService {
 
         List<ResourceLocation> abilityIds = AbilityRegistry.ABILITIES.keySet()
                 .stream()
+                .filter(power -> PlayerAbilityService.availableTo(player, power))
                 .sorted(Comparator.comparing(ResourceLocation::toString))
                 .toList();
 
         if (abilityIds.isEmpty()) {
             HeroesEvolved.LOGGER.warn(
-                    "Skipped Eclipse ability assignment because no abilities are registered."
+                    "Skipped Eclipse ability assignment because no unclaimed abilities remain."
             );
             return false;
         }

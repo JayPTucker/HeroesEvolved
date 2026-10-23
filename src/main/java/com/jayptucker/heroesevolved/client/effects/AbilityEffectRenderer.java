@@ -18,9 +18,14 @@ public final class AbilityEffectRenderer {
     private static final int TEMPORAL = 0xDAC8FF;
     private static final int BLOOD = 0xFF667A;
     private static final int WIND = 0xD9F4FF;
+    private static ClientLevel budgetWorld;
+    private static long budgetTick;
+    private static int emitted, motes;
 
     private AbilityEffectRenderer() {
     }
+
+    static void clear() { budgetWorld = null; emitted = 0; motes = 0; }
 
     public static void play(AbilityEffectPayload effect) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -36,14 +41,21 @@ public final class AbilityEffectRenderer {
             target = origin.add(target.subtract(origin).normalize().scale(256));
         }
         float size = Math.clamp(effect.scale(), 0.1F, 64.0F);
-        boolean detail = minecraft.options.particles().get() != ParticleStatus.MINIMAL;
-        int density = minecraft.options.particles().get() == ParticleStatus.ALL ? 24 : 12;
+        Vec3 view = minecraft.gameRenderer.getMainCamera().getPosition();
+        Vec3 segment = target.subtract(origin);
+        double along = segment.lengthSqr() < .001 ? 0 : Math.clamp(view.subtract(origin).dot(segment) / segment.lengthSqr(), 0, 1);
+        double viewDistance = view.distanceTo(origin.add(segment.scale(along)));
+        if (viewDistance > 192 + size) return;
+        boolean detail = minecraft.options.particles().get() != ParticleStatus.MINIMAL && viewDistance < 72 + size;
+        int density = minecraft.options.particles().get() == ParticleStatus.ALL && viewDistance < 40 + size ? 20 : 10;
         Vec3 direction = target.subtract(origin).normalize();
         if (direction.lengthSqr() < 0.001D) {
             direction = UP;
         }
 
-        if (AwakeningEffects.play(level, effect.kind(), origin, size, detail, density)
+        if (NuclearEffects.play(level, effect.kind(), origin, size, detail)
+                || CryoEffects.play(level, effect.kind(), origin, target, size, detail)
+                || AwakeningEffects.play(level, effect.kind(), origin, size, detail, density)
                 || DetailedAbilityEffects.play(level, effect.kind(), origin, target, size, detail, density)) {
             return;
         }
@@ -51,12 +63,13 @@ public final class AbilityEffectRenderer {
         switch (effect.kind()) {
             case QUAKE_BEAM -> {
                 double length = origin.distanceTo(target);
-                int rings = Math.clamp((int) Math.ceil(length / 1.8D), 1, 12);
+                int rings = Math.clamp((int) Math.ceil(length / 3.5D), 1, detail ? 16 : 6);
                 for (int i = 0; i < rings; i++) {
-                    double distance = Math.min(length, 0.6D + i * 1.8D);
+                    double distance = length * (i + .5) / rings;
                     float radius = (float) (0.23D + distance * 0.065D);
-                    ring(level, origin.add(direction.scale(distance)), direction,
-                            radius * 0.6F, radius * 1.7F, 11, i / 2, QUAKE, 0.72F);
+                    add(new PowerParticle(level, ARC, origin.add(direction.scale(distance)), direction,
+                            radius * .65F, radius * 1.3F, 10, i / 3, QUAKE, .5F)
+                            .arc(i * 2.4F, .045F, 4.8F, .045F));
                 }
                 if (detail) {
                     burst(level, target, direction.reverse(), QUAKE, density / 2, 0.12F);
@@ -70,7 +83,7 @@ public final class AbilityEffectRenderer {
                 if (detail) {
                     ring(level, center.add(0, 0.09D, 0), UP, 0.5F, size * 0.9F,
                             duration + 3, 3, 0xFFFFFF, 0.4F);
-                    burst(level, center, UP, QUAKE, density, 0.09F);
+                    DetailedAbilityEffects.faults(level, center, size, density / 2);
                 }
             }
             case QUAKE_PULSE -> {
@@ -78,6 +91,7 @@ public final class AbilityEffectRenderer {
                 if (detail) {
                     ring(level, origin.add(0, 0.3D, 0), UP, 0.15F, size * 0.75F,
                             20, 3, 0xE8FAFF, 0.32F);
+                    DetailedAbilityEffects.faults(level, origin.add(0, .08, 0), size * .65F, 6);
                 }
             }
             case TREMOR_SCAN -> {
@@ -96,7 +110,11 @@ public final class AbilityEffectRenderer {
             case ELECTRIC_NOVA -> {
                 ring(level, origin.add(0, 0.5D, 0), UP, 0.2F, size, 14, 0, ELECTRIC, 0.6F);
                 if (detail) {
-                    burst(level, origin.add(0, 1, 0), UP, ELECTRIC, density, 0.14F);
+                    for (int i = 0; i < 5; i++) {
+                        double angle = i * Math.PI * 2 / 5;
+                        lightning(level, origin.add(0, .8, 0), origin.add(Math.cos(angle) * size,
+                                .1, Math.sin(angle) * size), false);
+                    }
                 }
             }
             case PSYCHIC_PUSH -> {
@@ -107,8 +125,8 @@ public final class AbilityEffectRenderer {
                 }
             }
             case PSYCHIC_BIND -> {
-                ring(level, origin.add(0, 0.3D, 0), UP, size, size * 0.85F, 10, 0, PSYCHIC, 0.5F);
-                ring(level, origin.add(0, 1.2D, 0), UP, size * 0.8F, size, 10, 0, 0xE6DAFF, 0.4F);
+                DetailedAbilityEffects.orbit(level, origin.add(0, .35, 0), new Vec3(.2, 1, .1), size, 12, PSYCHIC, .12F, Vec3.ZERO);
+                DetailedAbilityEffects.orbit(level, origin.add(0, 1.2, 0), new Vec3(-.2, 1, .1), size * .8F, 12, 0xE6DAFF, -.12F, Vec3.ZERO);
                 if (detail) {
                     DetailedAbilityEffects.orbit(level, origin.add(0, 0.8D, 0),
                             new Vec3(0.3D, 1, 0.2D), size, 12, PSYCHIC, 0.13F, Vec3.ZERO);
@@ -127,6 +145,15 @@ public final class AbilityEffectRenderer {
                         field ? size : 0.1F, 24, 0, TEMPORAL, 0.55F);
                 if (detail) {
                     helix(level, origin, 0.65F, 1.9F, TEMPORAL, density, 24);
+                    Vec3 dial = origin.add(0, .18, 0);
+                    for (int hand = 0; hand < 2; hand++) {
+                        double angle = level.getGameTime() * (hand == 0 ? .03 : .13);
+                        Vec3 tip = dial.add(Math.cos(angle) * size * (hand == 0 ? .45 : .7), 0,
+                                Math.sin(angle) * size * (hand == 0 ? .45 : .7));
+                        streak(level, dial, tip, .025F, 18, 0xFFE2AB);
+                    }
+                    add(new PowerParticle(level, ARC, dial, UP, size * .72F, size * .72F,
+                            24, 0, TEMPORAL, .5F).arc(0, field ? .08F : -.16F, 4.6F, .018F));
                     // Clock-like radial ticks; the center stays clear for aiming.
                     for (int i = 0; i < 12; i++) {
                         double angle = Math.PI * 2 * i / 12;
@@ -145,27 +172,21 @@ public final class AbilityEffectRenderer {
                 }
             }
             case BLOOD_THREAD -> {
-                int steps = detail ? 18 : 8;
-                for (int i = 0; i < steps; i++) {
+                int steps = detail ? 12 : 6;
+                Vec3 previous = origin;
+                for (int i = 1; i <= steps; i++) {
                     float t = i / (float) steps;
                     Vec3 point = origin.lerp(target, t).add(0, Math.sin(t * Math.PI) * 0.3D, 0);
-                    mote(level, point, target.subtract(point).normalize().scale(0.07D),
-                            0.06F, 20, BLOOD);
+                    streak(level, previous, point, .025F, 18, BLOOD);
+                    if (i % 3 == 0) mote(level, point, target.subtract(point).normalize().scale(.07), .045F, 20, 0xFFD7A5);
+                    previous = point;
                 }
             }
             case FLIGHT_BURST -> {
-                // Flight payloads already carry the body's pivot, including pitch.
-                ring(level, origin, direction, 0.4F, size, 16, 0, WIND, 0.5F);
-                if (detail) {
-                    ring(level, origin.subtract(direction.scale(0.4D)),
-                            direction, 0.4F, size * 1.25F, 20, 3, WIND, 0.3F);
-                }
+                FlightEffects.burst(level, origin, direction, size, detail);
             }
             case FLIGHT_CYCLONE -> {
-                if (detail) {
-                    helix(level, origin, size, 5.0F, WIND, density, 16);
-                    helix(level, origin.add(0, 5, 0), size * 1.5F, 6.0F, WIND, density, 16);
-                }
+                FlightEffects.cyclone(level, origin, detail);
             }
         }
     }
@@ -182,9 +203,9 @@ public final class AbilityEffectRenderer {
                     (random.nextDouble() - 0.5D) * jitter,
                     (random.nextDouble() - 0.5D) * jitter,
                     (random.nextDouble() - 0.5D) * jitter);
-            streak(level, previous, next, 0.09F, 7, ELECTRIC);
+            streak(level, previous, next, 0.055F, 5, ELECTRIC);
             if (detail) {
-                streak(level, previous, next, 0.025F, 6, 0xEEFAFF);
+                streak(level, previous, next, 0.018F, 4, 0xEEFAFF);
                 if (i % 4 == 0) {
                     Vec3 branch = next.add((random.nextDouble() - 0.5D) * 1.2D,
                             random.nextDouble() * 0.7D, (random.nextDouble() - 0.5D) * 1.2D);
@@ -206,13 +227,19 @@ public final class AbilityEffectRenderer {
 
     static void helix(ClientLevel level, Vec3 origin, float radius, float height,
                               int color, int count, int ticks) {
-        double phase = level.getGameTime() * 0.3D;
-        for (int i = 0; i < count; i++) {
-            double t = i / (double) count;
-            double angle = t * Math.PI * 4 + phase;
-            Vec3 position = origin.add(Math.cos(angle) * radius, height * t, Math.sin(angle) * radius);
-            Vec3 velocity = new Vec3(-Math.sin(angle) * 0.035D, 0.025D, Math.cos(angle) * 0.035D);
-            mote(level, position, velocity, 0.065F, ticks, color);
+        // Two continuous rising strands, with sparse cells at their tips.
+        double phase = level.getGameTime() * .18;
+        int segments = count <= 6 ? 5 : 10;
+        for (int strand = 0; strand < 2; strand++) {
+            Vec3 previous = null;
+            for (int i = 0; i <= segments; i++) {
+                double t = i / (double) segments, angle = t * Math.PI * 2 + phase + strand * Math.PI;
+                Vec3 point = origin.add(Math.cos(angle) * radius, height * t, Math.sin(angle) * radius);
+                if (previous != null) add(new PowerParticle(level, STREAK, previous, point,
+                        .026F, .009F, ticks, i / 3, color, .48F));
+                if (i % 3 == 0) mote(level, point, new Vec3(0, .025, 0), .045F, ticks, color);
+                previous = point;
+            }
         }
     }
 
@@ -226,6 +253,9 @@ public final class AbilityEffectRenderer {
     }
 
     static void mote(ClientLevel level, Vec3 position, Vec3 velocity, float size, int ticks, int color) {
+        resetBudget(level);
+        int limit = Minecraft.getInstance().options.particles().get() == ParticleStatus.ALL ? 96 : 40;
+        if (motes++ >= limit) return;
         PowerParticle particle = new PowerParticle(level, MOTE, position, UP,
                 size, size * 0.4F, ticks, 0, color, 0.85F);
         particle.setParticleSpeed(velocity.x, velocity.y, velocity.z);
@@ -233,7 +263,17 @@ public final class AbilityEffectRenderer {
     }
 
     static void add(PowerParticle particle) {
-        Minecraft.getInstance().particleEngine.add(particle);
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        resetBudget(mc.level);
+        int limit = switch (mc.options.particles().get()) { case ALL -> 240; case DECREASED -> 140; case MINIMAL -> 72; };
+        if (emitted++ < limit) mc.particleEngine.add(particle);
+    }
+
+    private static void resetBudget(ClientLevel level) {
+        if (budgetWorld != level || budgetTick != level.getGameTime()) {
+            budgetWorld = level; budgetTick = level.getGameTime(); emitted = 0; motes = 0;
+        }
     }
 
     private static boolean valid(Vec3 position) {

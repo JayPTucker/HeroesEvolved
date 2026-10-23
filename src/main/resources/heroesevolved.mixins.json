@@ -5,9 +5,11 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "LevelBlockRewindMixin",
+    "EmpSignalMixin",
     "PlayerListSaveAccess"
   ],
   "client": [
+    "FlightSprintMixin",
     "PlayerModelMixin",
     "IntroRenderDistanceMixin"
   ],

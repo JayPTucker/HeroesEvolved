@@ -72,6 +72,7 @@ public final class TimeIntroGameTests {
     }
 
     private static void remove(ServerPlayer player) {
+        com.jayptucker.heroesevolved.PowerOwnershipTestSupport.release(player);
         TimeIntroService.logout(player);
         PlayerList list = player.getServer().getPlayerList();
         TimeIntroGameTests.<List<ServerPlayer>>field(list, "players").remove(player);
@@ -79,7 +80,7 @@ public final class TimeIntroGameTests {
         player.serverLevel().removePlayerImmediately(player, Entity.RemovalReason.DISCARDED);
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 650)
+    @GameTest(template = "rewind_empty", timeoutTicks = 650, batch = "TimeIntroGameTests.fullSceneAudienceReturnAndRecovery")
     public static void fullSceneAudienceReturnAndRecovery(GameTestHelper helper) {
         ServerLevel source = helper.getLevel();
         ServerLevel city = source.getServer().getLevel(TimeIntroService.DIMENSION);
@@ -161,7 +162,7 @@ public final class TimeIntroGameTests {
         });
     }
 
-    @GameTest(template = "rewind_empty")
+    @GameTest(template = "rewind_empty", batch = "TimeIntroGameTests.cityDetailsAndEscapeTiming")
     public static void cityDetailsAndEscapeTiming(GameTestHelper helper) {
         ServerLevel city = helper.getLevel().getServer().getLevel(TimeIntroService.DIMENSION);
         Villager stale = EntityType.VILLAGER.create(city);
@@ -184,7 +185,7 @@ public final class TimeIntroGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = "rewind_empty")
+    @GameTest(template = "rewind_empty", batch = "TimeIntroGameTests.cityUpgradesAndMixedNeighbourhoods")
     public static void cityUpgradesAndMixedNeighbourhoods(GameTestHelper helper) {
         ServerLevel city = helper.getLevel().getServer().getLevel(TimeIntroService.DIMENSION);
         // An old building on the viewing avenue must disappear completely when rebuilt.

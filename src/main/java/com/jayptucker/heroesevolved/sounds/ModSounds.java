@@ -94,6 +94,10 @@ public final class ModSounds {
             SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "crowd_panic")));
     public static final Supplier<SoundEvent> NUCLEAR_BLAST = SOUND_EVENTS.register("nuclear_blast", () ->
             SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "nuclear_blast")));
+    public static final Supplier<SoundEvent> NUCLEAR_CHARGE = SOUND_EVENTS.register("nuclear_charge", () ->
+            SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "nuclear_charge")));
+    public static final Supplier<SoundEvent> SYLAR_WATCH = SOUND_EVENTS.register("sylar_watch", () ->
+            SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "sylar_watch")));
 
     public static void register(IEventBus modEventBus) {
         SOUND_EVENTS.register(modEventBus);

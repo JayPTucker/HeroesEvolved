@@ -25,9 +25,45 @@ final class DetailedAbilityEffects {
         Vec3 axis = delta.lengthSqr() < 0.0001D ? UP : delta.normalize();
         float phase = (float) (level.getGameTime() * 0.3D);
         switch (kind) {
+            case NUCLEAR_RAY -> {
+                // A tapered incandescent core, warm halo, and sparse turbulent eddies.
+                streak(level, origin, target, .13F, 10, 0xFF6B16);
+                streak(level, origin, target, .035F, 7, 0xFFF4C9);
+                ring(level, target, axis, .12F, 1.8F, 12, 0, 0xFFAE41, .65F);
+                if (detail) {
+                    int eddies = Math.clamp((int) delta.length() / 6, 1, 10);
+                    for (int i = 0; i < eddies; i++)
+                        add(new PowerParticle(level, ARC, origin.lerp(target, (i + .5) / eddies), axis,
+                                .12F, .38F, 12, i / 2, 0xFFB64B, .45F)
+                                .arc(i * 2.4F, .12F, 2.2F, .025F));
+                    burst(level, target, axis.reverse(), 0xFFDC8D, 10, .13F);
+                }
+            }
+            case MIND_LINK -> {
+                // Interleaved waveforms converge on a small halo at the target's head.
+                int segments = detail ? 12 : 6;
+                Vec3 right = basis(axis);
+                Vec3 previous = origin;
+                for (int i = 1; i <= segments; i++) {
+                    double t = i / (double) segments;
+                    Vec3 next = origin.lerp(target, t).add(right.scale(Math.sin(t * Math.PI * 4 + phase)
+                            * Math.sin(t * Math.PI) * .14));
+                    streak(level, previous, next, .018F, 16, 0xC2ABEA);
+                    previous = next;
+                }
+                orbit(level, target, UP, .32F, 20, 0xEBDAFF, -.08F, Vec3.ZERO);
+                if (detail) orbit(level, target, axis, .42F, 18, VIOLET, .09F, Vec3.ZERO);
+            }
+            case MIND_PULSE -> {
+                Vec3 head = origin.add(0, 1.65, 0);
+                for (int i = 0; i < (detail ? 3 : 1); i++)
+                    add(new PowerParticle(level, ARC, head, new Vec3(.15 * i, 1, .1),
+                            .2F, size * (.5F + i * .2F), 22, i * 3, 0xCDB6EB, .38F)
+                            .arc(i * 2.1F, -.045F, 4.2F, .018F));
+            }
             case QUAKE_CHANNEL -> {
                 int fronts = detail ? 6 : 3;
-                double length = Math.min(24, delta.length());
+                double length = Math.min(128, delta.length());
                 for (int i = 0; i < fronts; i++) {
                     double along = length * (i + 0.5D) / fronts;
                     float radius = 0.18F + (float) along * 0.035F;
@@ -141,7 +177,8 @@ final class DetailedAbilityEffects {
                 int trails = detail ? 2 : 1;
                 for (int i = 0; i < trails; i++) {
                     Vec3 start = origin.add(right.scale(trails == 1 ? 0 : (i == 0 ? -0.16D : 0.16D)));
-                    streak(level, start, start.subtract(axis.scale(2.0D)), 0.055F, 6, CYAN);
+                    add(new PowerParticle(level, STREAK, start, start.subtract(axis.scale(2.5D)),
+                            .035F, .1F, 9, 0, 0xE0ECEF, .4F));
                 }
                 if (detail) {
                     orbit(level, origin.subtract(axis.scale(0.4D)), axis, 0.4F,
@@ -150,16 +187,15 @@ final class DetailedAbilityEffects {
             }
             case DIVE_IMPACT -> {
                 Vec3 center = origin.add(0, 0.12D, 0);
-                ring(level, center, UP, 0.3F, size, 14, 0, CYAN, 0.7F);
+                FlightEffects.burst(level, center, UP, size, detail);
                 if (detail) {
-                    ring(level, center.add(0, 0.13D, 0), UP, 0.3F, size * 1.2F,
-                            20, 3, 0xFFFFFF, 0.35F);
-                    orbit(level, center.add(0, 0.3D, 0), UP, size * 0.6F,
-                            20, CYAN, 0.15F, Vec3.ZERO);
-                    shards(level, center, UP, size, density, 0xDDF8FF);
-                    burst(level, center, UP, CYAN, density, 0.12F);
+                    for (int i = 0; i < 6; i++)
+                        add(new PowerParticle(level, ARC, center, UP, .4F, size * 1.2F,
+                                18, i % 3, 0xC7D2CE, .3F).arc(i * 1.05F, .02F, .85F, .12F));
+                    burst(level, center, UP, 0xD7E4E6, 10, .12F);
                 }
             }
+
             default -> { return false; }
         }
         return true;
@@ -170,6 +206,18 @@ final class DetailedAbilityEffects {
         float phase = (float) (level.getGameTime() * speed);
         add(new PowerParticle(level, ARC, center, normal, radius, radius * 1.05F,
                 ticks, 0, color, 0.7F).arc(phase, speed, 3.4F, 0.035F).moving(velocity));
+    }
+
+    /** Cosmetic fissures break up the perfect circular silhouette without scanning terrain. */
+    static void faults(ClientLevel level, Vec3 center, float radius, int count) {
+        for (int i = 0; i < count; i++) {
+            double a = i * Math.PI * 2 / count + level.getGameTime() * .013;
+            Vec3 radial = new Vec3(Math.cos(a), 0, Math.sin(a));
+            Vec3 tangent = new Vec3(-radial.z, 0, radial.x);
+            Vec3 elbow = center.add(radial.scale(radius * .45)).add(tangent.scale(radius * .08));
+            delayedRibbon(level, center.add(radial.scale(.5)), elbow, .028F, 16, i % 3, 0xB7C8CE);
+            delayedRibbon(level, elbow, center.add(radial.scale(radius * .8)), .018F, 12, 3 + i % 3, CYAN);
+        }
     }
 
     private static void movingCore(ClientLevel level, Vec3 point, Vec3 velocity,

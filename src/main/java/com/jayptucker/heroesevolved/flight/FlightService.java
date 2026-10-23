@@ -13,7 +13,6 @@ import com.jayptucker.heroesevolved.progression.MasteryService;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.network.FlightVisualSyncService;
-import com.jayptucker.heroesevolved.particles.ModParticles;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.resources.ResourceLocation;
@@ -45,18 +44,10 @@ public final class FlightService {
             Math.toRadians(75.0D);
     private static final double CYCLONE_ORBIT_HEIGHT = 3.0D;
     private static final int CYCLONE_ASCENT_TICKS = 15;
-    private static final double TRAIL_PARTICLE_SPACING = 0.35D;
-    private static final double TRAIL_RESET_DISTANCE = 12.0D;
-    private static final int MAX_TRAIL_PARTICLES_PER_EMISSION = 16;
 
     // Cyclones are short-lived combat effects. Keeping their active state in
     // memory avoids persisting an incomplete tornado across a server restart.
     private static final Map<UUID, CycloneState> ACTIVE_CYCLONES =
-            new HashMap<>();
-
-    // The previous emission point lets the server fill the distance travelled
-    // in one tick, keeping a fast Flight Boost contrail continuous.
-    private static final Map<UUID, Vec3> LAST_CONTRAIL_POSITIONS =
             new HashMap<>();
 
     private static final ResourceLocation FLIGHT_PERMISSION_MODIFIER_ID =
@@ -176,46 +167,39 @@ public final class FlightService {
         FlightVisualSyncService.syncToTrackingPlayers(player);
     }
 
-    public static void setForwardInput(
-            ServerPlayer player,
-            boolean movingForward
-    ) {
-        PlayerFlightData flightData = player.getData(
-                ModDataAttachments.PLAYER_FLIGHT.get()
-        );
+    public static void setForwardInput(ServerPlayer player, boolean movingForward) {
+        PlayerFlightData data = player.getData(ModDataAttachments.PLAYER_FLIGHT.get());
+        if (!data.flightEnabled() || isCycloneActive(player)) return;
+        player.setData(ModDataAttachments.PLAYER_FLIGHT.get(), data.withForwardInput(movingForward));
+        refreshSpeedState(player);
+    }
 
-        if (!flightData.flightEnabled()) {
-            return;
-        }
+    public static void changeSpeed(ServerPlayer player, int direction) {
+        PlayerFlightData data = player.getData(ModDataAttachments.PLAYER_FLIGHT.get());
+        if (direction == 0 || !data.flightEnabled() || player.onGround() || !player.isAlive()
+                || player.isSpectator() || player.isPassenger() || isCycloneActive(player)
+                || EclipseService.arePowersSuppressed(player)
+                || !com.jayptucker.heroesevolved.ability.service.PlayerAbilityService
+                        .getAbility(player, ModAbilities.FLIGHT_ID)
+                        .map(com.jayptucker.heroesevolved.ability.data.AbilityProgress::isUnlocked).orElse(false)) return;
+        int level = PlayerProgressionService.getLevel(player);
+        int step = FlightSpeedControl.adjust(data.speedStep(), direction, level);
+        player.setData(ModDataAttachments.PLAYER_FLIGHT.get(), data.withSpeedStep(step));
+        if (step == 0 && data.speedStep() > 0) setPlayerVelocity(player, player.getDeltaMovement().scale(.25D));
+        refreshSpeedState(player);
+        FlightVisualSyncService.syncToTrackingPlayers(player);
+        player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                "message.heroesevolved.flight_speed", step + 1, FlightSpeedControl.maximumStep(level) + 1), true);
+    }
 
-        // Cyclone controls its own server-side path. Boost input must not
-        // re-enable the horizontal Flight pose during that sequence.
-        if (ACTIVE_CYCLONES.containsKey(player.getUUID())) {
-            return;
-        }
-
-        boolean boostUnlocked = PlayerProgressionService.getLevel(player) >= 2;
-        boolean boostActive = movingForward && boostUnlocked;
-        boolean startingBoost = boostActive
-                && !flightData.visualPoseActive()
-                && !player.onGround();
-        PlayerFlightData updatedData = flightData.withVisualPoseActive(
-                boostActive && !player.onGround()
-        );
-
-        if (updatedData == flightData) {
-            return;
-        }
-
-        player.setData(
-                ModDataAttachments.PLAYER_FLIGHT.get(),
-                updatedData
-        );
-
-        if (startingBoost) {
-            triggerFlightBoostSonicBoom(player);
-        }
-
+    private static void refreshSpeedState(ServerPlayer player) {
+        PlayerFlightData data = player.getData(ModDataAttachments.PLAYER_FLIGHT.get());
+        int step = Math.min(data.speedStep(), FlightSpeedControl.maximumStep(PlayerProgressionService.getLevel(player)));
+        boolean active = data.movingForward() && step > 0 && !player.onGround() && data.launchTicksRemaining() == 0;
+        PlayerFlightData updated = data.withSpeedStep(step).withVisualPoseActive(active);
+        if (updated == data) return;
+        player.setData(ModDataAttachments.PLAYER_FLIGHT.get(), updated);
+        if (active && !data.visualPoseActive()) triggerFlightBoostSonicBoom(player);
         FlightVisualSyncService.syncToTrackingPlayers(player);
     }
 
@@ -292,6 +276,8 @@ public final class FlightService {
         flightData = player.getData(ModDataAttachments.PLAYER_FLIGHT.get());
 
         if (!cycloneActive) {
+            refreshSpeedState(player);
+            flightData = player.getData(ModDataAttachments.PLAYER_FLIGHT.get());
             applyForwardFlightMovement(player, flightData);
         }
 
@@ -302,7 +288,6 @@ public final class FlightService {
         long gameTime = player.serverLevel().getGameTime();
 
         // Both modes use the pitched flight pose; cyclone yaw follows travel.
-        boolean contrailActive = flightData.visualPoseActive() || cycloneActive;
 
         // Wind rushing past at Boost speed whitens the edges of vision.
         if (flightData.visualPoseActive() && gameTime % 10 == 0) {
@@ -312,13 +297,7 @@ public final class FlightService {
             );
         }
 
-        if (contrailActive
-                && gameTime % HeroesEvolvedConfig.COMMON
-                .flightTrailIntervalTicks.get() == 0) {
-            spawnContrail(player, cycloneActive);
-        } else if (!contrailActive) {
-            LAST_CONTRAIL_POSITIONS.remove(player.getUUID());
-        }
+        // Vapor is reconstructed on clients from the existing synchronized flight pose.
 
         // Cyclone already charges a large, one-time activation cost. It must
         // not also trigger Flight's sustained drain and overexert its owner.
@@ -393,21 +372,11 @@ public final class FlightService {
 
         Vec3 lookDirection = player.getLookAngle().normalize();
         Vec3 currentVelocity = player.getDeltaMovement();
-        double desiredCruiseSpeed = HeroesEvolvedConfig.COMMON
-                .flightCruiseSpeed
-                .get();
-        double currentForwardSpeed = currentVelocity.dot(lookDirection);
-
-        // Launch momentum is preserved. Once it slows below cruising speed,
-        // holding forward keeps the player moving exactly where they look.
-        if (currentForwardSpeed < desiredCruiseSpeed) {
-            setPlayerVelocity(
-                    player,
-                    currentVelocity.add(lookDirection.scale(
-                            desiredCruiseSpeed - currentForwardSpeed
-                    ))
-            );
-        }
+        double desiredCruiseSpeed = FlightSpeedControl.speed(flightData.speedStep(),
+                HeroesEvolvedConfig.COMMON.flightCruiseSpeed.get());
+        // Approach the selected velocity in either direction, so scrolling down brakes
+        // rather than retaining the old minimum-speed boost indefinitely.
+        setPlayerVelocity(player, currentVelocity.lerp(lookDirection.scale(desiredCruiseSpeed), .22D));
     }
 
     private static boolean tickCyclone(ServerPlayer player) {
@@ -595,32 +564,6 @@ public final class FlightService {
                     center, center, 2.0D);
         }
 
-        if (gameTime % 2L != 0L) {
-            return;
-        }
-
-        for (int layer = 0; layer < 18; layer++) {
-            double height = layer;
-            // A tornado is narrow near the ground and broadens toward its top.
-            double radius = 0.6D + layer * 0.30D;
-            double angle = gameTime * 0.35D + layer * 1.2D;
-
-            for (int side = 0; side < 2; side++) {
-                double particleAngle = angle + side * Math.PI;
-
-                level.sendParticles(
-                        ParticleTypes.CLOUD,
-                        center.x + Math.cos(particleAngle) * radius,
-                        center.y + height,
-                        center.z + Math.sin(particleAngle) * radius,
-                        1,
-                        0.0D,
-                        0.0D,
-                        0.0D,
-                        0.015D
-                );
-            }
-        }
     }
 
     private static Vec3 horizontalLookDirection(ServerPlayer player) {
@@ -752,7 +695,6 @@ public final class FlightService {
                 PlayerFlightData.empty()
         );
         ACTIVE_CYCLONES.remove(player.getUUID());
-        LAST_CONTRAIL_POSITIONS.remove(player.getUUID());
 
         FlightVisualSyncService.syncToTrackingPlayers(player);
 
@@ -804,76 +746,12 @@ public final class FlightService {
                 2.0F,
                 false,
                 Level.ExplosionInteraction.NONE,
-                ParticleTypes.EXPLOSION,
-                ParticleTypes.EXPLOSION_EMITTER,
+                ParticleTypes.CLOUD,
+                ParticleTypes.CLOUD,
                 ModSounds.FLIGHT_BOOST
         );
 
         spawnForwardShockwave(player, player.getLookAngle());
-    }
-
-    private static void spawnContrail(
-            ServerPlayer player,
-            boolean cycloneActive
-    ) {
-        boolean posed = player.getData(ModDataAttachments.PLAYER_FLIGHT.get())
-                .visualPoseActive() && !player.onGround();
-        Vec3 particlePosition = FlightVisualGeometry.feet(player.position(),
-                FlightVisualGeometry.direction(player, cycloneActive, 1.0F), posed);
-
-        Vec3 previousPosition = LAST_CONTRAIL_POSITIONS.put(
-                player.getUUID(),
-                particlePosition
-        );
-
-        if (previousPosition == null
-                || previousPosition.distanceToSqr(particlePosition)
-                > TRAIL_RESET_DISTANCE * TRAIL_RESET_DISTANCE) {
-            sendContrailParticle(player.serverLevel(), particlePosition);
-            return;
-        }
-
-        double distance = previousPosition.distanceTo(particlePosition);
-        int particleCount = Math.clamp(
-                (int) Math.ceil(distance / TRAIL_PARTICLE_SPACING),
-                1,
-                MAX_TRAIL_PARTICLES_PER_EMISSION
-        );
-
-        // Each particle is placed along the travelled path instead of all
-        // spawning at the player. This removes visible gaps at high speed.
-        for (int index = 1; index <= particleCount; index++) {
-            Vec3 interpolatedPosition = previousPosition.lerp(
-                    particlePosition,
-                    (double) index / particleCount
-            );
-            sendContrailParticle(player.serverLevel(), interpolatedPosition);
-        }
-    }
-
-    private static void sendContrailParticle(
-            ServerLevel level,
-            Vec3 position
-    ) {
-        // Normal server particle broadcasts stop at a short distance. A
-        // contrail is a long-lived world effect, so force-send it to every
-        // player in this dimension; each client can still apply its own
-        // particle settings when rendering it.
-        for (ServerPlayer viewer : level.players()) {
-            level.sendParticles(
-                    viewer,
-                    ModParticles.WHITE_CONTRAIL_SMOKE.get(),
-                    true,
-                    position.x,
-                    position.y,
-                    position.z,
-                    1,
-                    0.0D,
-                    0.0D,
-                    0.0D,
-                    0.0D
-            );
-        }
     }
 
     private record CycloneState(

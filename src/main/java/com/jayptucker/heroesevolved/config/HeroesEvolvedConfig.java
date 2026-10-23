@@ -36,6 +36,8 @@ public final class HeroesEvolvedConfig {
     }
 
     public static final class Common {
+        public final ModConfigSpec.BooleanValue sylarEnabled, sylarCanAcquirePowers;
+        public final ModConfigSpec.IntValue sylarFirstEncounterSeconds, sylarEncounterIntervalSeconds;
         public final ModConfigSpec.IntValue maximumLevel;
         public final ModConfigSpec.LongValue baseMasteryPerLevel;
         public final ModConfigSpec.LongValue masteryIncreasePerLevel;
@@ -158,6 +160,36 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue electroBallCooldownTicks;
         public final ModConfigSpec.IntValue telekinesisDisarmEnergyCost;
         public final ModConfigSpec.IntValue telekinesisDisarmCooldownTicks;
+        public final ModConfigSpec.IntValue telepathyReadEnergyCost;
+        public final ModConfigSpec.IntValue telepathyReadCooldownTicks;
+        public final ModConfigSpec.IntValue telepathySuggestionEnergyCost;
+        public final ModConfigSpec.IntValue telepathySuggestionCooldownTicks;
+        public final ModConfigSpec.IntValue telepathyLinkEnergyCost;
+        public final ModConfigSpec.IntValue telepathyLinkCooldownTicks;
+        public final ModConfigSpec.IntValue telepathyPuppetEnergyCost;
+        public final ModConfigSpec.IntValue telepathyPuppetCooldownTicks;
+        public final ModConfigSpec.IntValue telepathyNightmareEnergyCost;
+        public final ModConfigSpec.IntValue telepathyNightmareCooldownTicks;
+        public final ModConfigSpec.IntValue cryoBoltEnergyCost;
+        public final ModConfigSpec.IntValue cryoBoltCooldownTicks;
+        public final ModConfigSpec.IntValue cryoFreezeEnergyCost;
+        public final ModConfigSpec.IntValue cryoFreezeCooldownTicks;
+        public final ModConfigSpec.IntValue cryoWallEnergyCost;
+        public final ModConfigSpec.IntValue cryoWallCooldownTicks;
+        public final ModConfigSpec.IntValue cryoSpikesEnergyCost;
+        public final ModConfigSpec.IntValue cryoSpikesCooldownTicks;
+        public final ModConfigSpec.IntValue cryoBlizzardEnergyCost;
+        public final ModConfigSpec.IntValue cryoBlizzardCooldownTicks;
+        public final ModConfigSpec.IntValue radiationTouchEnergyCost;
+        public final ModConfigSpec.IntValue radiationTouchCooldownTicks;
+        public final ModConfigSpec.IntValue radiationPulseEnergyCost;
+        public final ModConfigSpec.IntValue radiationPulseCooldownTicks;
+        public final ModConfigSpec.IntValue radiationEmpEnergyCost;
+        public final ModConfigSpec.IntValue radiationEmpCooldownTicks;
+        public final ModConfigSpec.IntValue radiationBeamEnergyCost;
+        public final ModConfigSpec.IntValue radiationBeamCooldownTicks;
+        public final ModConfigSpec.IntValue radiationDetonationEnergyCost;
+        public final ModConfigSpec.IntValue radiationDetonationCooldownTicks;
         public final ModConfigSpec.IntValue electroChainEnergyCost;
         public final ModConfigSpec.IntValue electroChainCooldownTicks;
         public final ModConfigSpec.IntValue electroThunderstrikeEnergyCost;
@@ -176,6 +208,15 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue telekinesisStormCooldownTicks;
 
         private Common(ModConfigSpec.Builder builder) {
+            builder.push("sylar");
+            sylarEnabled = builder.comment("Enable the unique Sylar storyline hunter in the Overworld.").define("enabled", true);
+            sylarCanAcquirePowers = builder.comment("Allow completed, interruptible encounters to teach Sylar NPC copies; player roles remain exclusive.")
+                    .define("canAcquirePowers", true);
+            sylarFirstEncounterSeconds = builder.comment("Minimum grace after an awakened player becomes eligible, before the first ominous hint.")
+                    .defineInRange("firstEncounterSeconds", 300, 60, 86400);
+            sylarEncounterIntervalSeconds = builder.comment("Minimum pause between early story sightings; random delay is added. Escapes grant ten minutes.")
+                    .defineInRange("encounterIntervalSeconds", 180, 60, 86400);
+            builder.pop();
             builder.push("progression");
 
             maximumLevel = builder
@@ -373,7 +414,7 @@ public final class HeroesEvolvedConfig {
                         .defineInRange("forwardSpeed", 15.0D, 0.1D, 70.0D);
 
                 flightCruiseSpeed = builder
-                        .comment("Forward speed while Flight Boost is active.")
+                        .comment("Maximum wheel-selected forward Flight speed at Level 5. Lower levels unlock progressively faster settings.")
                         .defineInRange("cruiseSpeed", 2.0D, 0.05D, 4.0D);
 
                 flightEnergyDrainPerSecond = builder
@@ -381,7 +422,7 @@ public final class HeroesEvolvedConfig {
                         .defineInRange("energyDrainPerSecond", 4, 0, 1_000);
 
                 flightBoostEnergyDrainPerSecond = builder
-                        .comment("Energy drained every second while Flight Boost is active.")
+                        .comment("Energy drained every second while moving forward above normal wheel-selected Flight speed.")
                         .defineInRange("boostEnergyDrainPerSecond", 15, 0, 1_000);
 
                 flightSafeLandingSeconds = builder
@@ -457,23 +498,23 @@ public final class HeroesEvolvedConfig {
                         .defineInRange("blinkLevel5CooldownTicks", 0, 0, 20 * 60);
 
                 timeBlinkLevelOneDistance = builder
-                        .comment("Maximum Blink distance, in blocks, at Level 1.")
+                        .comment("Base Blink distance at Level 1; the shared ranged-power multiplier doubles this in play.")
                         .defineInRange("blinkLevel1Distance", 16, 2, 150);
 
                 timeBlinkLevelTwoDistance = builder
-                        .comment("Maximum Blink distance, in blocks, at Level 2.")
+                        .comment("Base Blink distance at Level 2; the shared ranged-power multiplier doubles this in play.")
                         .defineInRange("blinkLevel2Distance", 45, 2, 150);
 
                 timeBlinkLevelThreeDistance = builder
-                        .comment("Maximum Blink distance, in blocks, at Level 3.")
+                        .comment("Base Blink distance at Level 3; the shared ranged-power multiplier doubles this in play.")
                         .defineInRange("blinkLevel3Distance", 80, 2, 150);
 
                 timeBlinkLevelFourDistance = builder
-                        .comment("Maximum Blink distance, in blocks, at Level 4.")
+                        .comment("Base Blink distance at Level 4; the shared ranged-power multiplier doubles this in play.")
                         .defineInRange("blinkLevel4Distance", 115, 2, 150);
 
                 timeBlinkLevelFiveDistance = builder
-                        .comment("Maximum Blink distance, in blocks, at Level 5.")
+                        .comment("Base Blink distance at Level 5; the shared ranged-power multiplier doubles this in play.")
                         .defineInRange("blinkLevel5Distance", 150, 2, 150);
 
                 timeStopLevelThreeEnergyCost = builder
@@ -652,6 +693,45 @@ public final class HeroesEvolvedConfig {
                 electroBallCooldownTicks = cooldown(builder, "ballLightning", 20 * 3);
                 telekinesisDisarmEnergyCost = energy(builder, "disarm", 20);
                 telekinesisDisarmCooldownTicks = cooldown(builder, "disarm", 20 * 8);
+                builder.pop();
+
+                builder.push("telepathy");
+                telepathyReadEnergyCost = energy(builder, "readMind", 10);
+                telepathyReadCooldownTicks = cooldown(builder, "readMind", 20 * 3);
+                telepathySuggestionEnergyCost = energy(builder, "suggestion", 25);
+                telepathySuggestionCooldownTicks = cooldown(builder, "suggestion", 20 * 12);
+                telepathyLinkEnergyCost = energy(builder, "mindLink", 35);
+                telepathyLinkCooldownTicks = cooldown(builder, "mindLink", 20 * 60);
+                telepathyPuppetEnergyCost = energy(builder, "puppet", 50);
+                telepathyPuppetCooldownTicks = cooldown(builder, "puppet", 20 * 45);
+                telepathyNightmareEnergyCost = energy(builder, "nightmare", 90);
+                telepathyNightmareCooldownTicks = cooldown(builder, "nightmare", 20 * 90);
+                builder.pop();
+
+                builder.push("cryokinesis");
+                cryoBoltEnergyCost = energy(builder, "frostBolt", 14);
+                cryoBoltCooldownTicks = cooldown(builder, "frostBolt", 20);
+                cryoFreezeEnergyCost = energy(builder, "flashFreeze", 30);
+                cryoFreezeCooldownTicks = cooldown(builder, "flashFreeze", 20 * 10);
+                cryoWallEnergyCost = energy(builder, "iceWall", 35);
+                cryoWallCooldownTicks = cooldown(builder, "iceWall", 20 * 15);
+                cryoSpikesEnergyCost = energy(builder, "glacialSpikes", 45);
+                cryoSpikesCooldownTicks = cooldown(builder, "glacialSpikes", 20 * 12);
+                cryoBlizzardEnergyCost = energy(builder, "blizzard", 110);
+                cryoBlizzardCooldownTicks = cooldown(builder, "blizzard", 20 * 120);
+                builder.pop();
+
+                builder.push("radiation");
+                radiationTouchEnergyCost = energy(builder, "radiantTouch", 15);
+                radiationTouchCooldownTicks = cooldown(builder, "radiantTouch", 20);
+                radiationPulseEnergyCost = energy(builder, "radiationPulse", 30);
+                radiationPulseCooldownTicks = cooldown(builder, "radiationPulse", 20 * 8);
+                radiationEmpEnergyCost = energy(builder, "emp", 30);
+                radiationEmpCooldownTicks = cooldown(builder, "emp", 20 * 20);
+                radiationBeamEnergyCost = energy(builder, "meltdownBeam", 25);
+                radiationBeamCooldownTicks = cooldown(builder, "meltdownBeam", 20 * 6);
+                radiationDetonationEnergyCost = energy(builder, "explodingMan", 140);
+                radiationDetonationCooldownTicks = cooldown(builder, "explodingMan", 20 * 600);
                 builder.pop();
 
                 builder.push("electrokinesis");

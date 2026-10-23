@@ -7,7 +7,18 @@ public final class ClientFlightVisualState {
     private static final Set<Integer> ACTIVE_FLIGHT_ENTITIES = new HashSet<>();
     private static final Set<Integer> ACTIVE_CYCLONE_ENTITIES = new HashSet<>();
 
+    private static final Set<Integer> ENABLED = new HashSet<>();
+    private static final java.util.Map<Integer, Integer> SPEEDS = new java.util.HashMap<>();
+    public static boolean isFlightEnabled(int id) { return ENABLED.contains(id); }
+    public static int speedStep(int id) { return SPEEDS.getOrDefault(id, 0); }
+
     private ClientFlightVisualState() {
+    }
+
+    public static void clear() {
+        ENABLED.clear(); SPEEDS.clear();
+        ACTIVE_FLIGHT_ENTITIES.clear();
+        ACTIVE_CYCLONE_ENTITIES.clear();
     }
 
     public static boolean isFlightActive(int entityId) {
@@ -21,8 +32,12 @@ public final class ClientFlightVisualState {
     public static void update(
             int entityId,
             boolean flightActive,
-            boolean cycloneActive
+            boolean cycloneActive,
+            boolean flightEnabled,
+            int speedStep
     ) {
+        if (flightEnabled) { ENABLED.add(entityId); SPEEDS.put(entityId, Math.clamp(speedStep, 0, 4)); }
+        else { ENABLED.remove(entityId); SPEEDS.remove(entityId); }
         if (flightActive) {
             ACTIVE_FLIGHT_ENTITIES.add(entityId);
         } else {

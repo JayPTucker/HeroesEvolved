@@ -52,7 +52,8 @@ public final class AbilityUseService {
             AbilitySlot slot,
             boolean allowOverexertion
     ) {
-        if (com.jayptucker.heroesevolved.intro.PowerIntroService.isActive(player)
+        if (com.jayptucker.heroesevolved.cryo.CryoService.isFrozen(player)
+                || com.jayptucker.heroesevolved.intro.PowerIntroService.isActive(player)
                 || com.jayptucker.heroesevolved.time.intro.TimeIntroService.isVisiting(player)
                 || com.jayptucker.heroesevolved.time.intro.TimeIntroService.isCity(player.level())) {
             return AbilityUseResult.CANNOT_USE;
@@ -141,6 +142,7 @@ public final class AbilityUseService {
 
         AbilityEffects.onAction(
                 player, powerId, abilityAction.definition().id().getPath());
+        com.jayptucker.heroesevolved.story.sylar.SylarStoryService.notice(player);
         com.jayptucker.heroesevolved.effects.ArmPoseActions.onAction(
                 player, abilityAction.definition().id().getPath());
 

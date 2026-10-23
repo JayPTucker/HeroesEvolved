@@ -7,7 +7,6 @@ import com.jayptucker.heroesevolved.effects.AbilityEffects;
 import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 import com.jayptucker.heroesevolved.network.ArmPosePayload;
 import com.jayptucker.heroesevolved.network.CameraShakePayload;
-import com.jayptucker.heroesevolved.particles.ModParticles;
 import com.jayptucker.heroesevolved.progression.MasteryService;
 import com.jayptucker.heroesevolved.sounds.ModSounds;
 import net.minecraft.core.particles.ParticleTypes;
@@ -89,8 +88,6 @@ public final class DiveBombService {
                 .visualPoseActive() && !player.onGround();
         Vec3 feet = FlightVisualGeometry.feet(player.position(),
                 FlightVisualGeometry.direction(player, FlightService.isCycloneActive(player), 1.0F), posed);
-        level.sendParticles(ModParticles.WHITE_CONTRAIL_SMOKE.get(),
-                feet.x, feet.y, feet.z, 1, 0.08D, 0.08D, 0.08D, 0.0D);
         if (dive.ageTicks % 2 == 0) {
             AbilityEffects.send(level, Kind.DIVE_TRAIL, feet, feet.add(dive.velocity), 1.0D);
         }
@@ -118,10 +115,8 @@ public final class DiveBombService {
         push(player, Vec3.ZERO);
         player.resetFallDistance();
         ArmPosePayload.show(player, ArmPose.GROUND, 10);
-        level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, center.x, center.y + 0.3D,
-                center.z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
         level.sendParticles(ParticleTypes.CLOUD, center.x, center.y + 0.2D, center.z,
-                40, radius / 2, 0.1D, radius / 2, 0.15D);
+                12, radius / 2, 0.1D, radius / 2, 0.15D);
         AbilityEffects.send(level, Kind.DIVE_IMPACT, center,
                 center.add(0.0D, 1.0D, 0.0D), radius);
         level.playSound(null, center.x, center.y, center.z,

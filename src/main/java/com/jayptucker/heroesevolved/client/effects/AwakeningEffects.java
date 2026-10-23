@@ -40,10 +40,11 @@ final class AwakeningEffects {
             }
             case FLIGHT_AWAKEN_RELEASE -> {
                 ring(level, feet.add(0, 0.15, 0), UP, 0.4F, size, 25, 0, WHITE, 0.8F);
-                for (int i = 0; i < (detail ? 8 : 3); i++) {
-                    ring(level, feet.add(0, i * 1.5, 0), UP, 0.4F, 1.2F + i * 0.3F,
-                            24 + i, i * 2, CYAN, 0.6F);
-                }
+                FlightEffects.burst(level, chest, UP, size * .7F, detail);
+                for (int i = 0; i < (detail ? 5 : 2); i++)
+                    add(new PowerParticle(level, PowerParticle.Shape.ARC, feet.add(0, i * 2.2, 0), UP,
+                            .5F + i * .2F, 1.4F + i * .3F, 20, i * 2, WHITE, .3F)
+                            .arc(i * 2.4F, .14F, 2.4F, .06F));
                 helix(level, feet, 1.5F, 13, WHITE, detail ? 48 : 12, 35);
                 if (detail) spokes(level, chest, 7, 18, WHITE, 22);
             }

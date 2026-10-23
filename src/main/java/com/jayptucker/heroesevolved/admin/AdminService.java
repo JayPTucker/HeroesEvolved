@@ -156,6 +156,7 @@ public final class AdminService {
         }
 
         String name = target.getName().getString();
+        if (!PlayerAbilityService.availableTo(target, powerId)) return "That unique power already belongs to another player.";
         return PlayerAbilityService.replaceWithAbility(target, powerId)
                 ? "Gave " + name + " " + powerId.getPath() + " (awakened)."
                 : name + " already has that power awakened.";

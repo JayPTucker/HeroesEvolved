@@ -19,7 +19,9 @@ public final class FlightVisualSyncService {
                 new FlightVisualStatePayload(
                         player.getId(),
                         visualPoseActive,
-                        FlightService.isCycloneActive(player)
+                        FlightService.isCycloneActive(player),
+                        player.getData(ModDataAttachments.PLAYER_FLIGHT.get()).flightEnabled(),
+                        player.getData(ModDataAttachments.PLAYER_FLIGHT.get()).speedStep()
                 )
         );
     }
@@ -37,7 +39,9 @@ public final class FlightVisualSyncService {
                 new FlightVisualStatePayload(
                         flyingPlayer.getId(),
                         visualPoseActive,
-                        FlightService.isCycloneActive(flyingPlayer)
+                        FlightService.isCycloneActive(flyingPlayer),
+                        flyingPlayer.getData(ModDataAttachments.PLAYER_FLIGHT.get()).flightEnabled(),
+                        flyingPlayer.getData(ModDataAttachments.PLAYER_FLIGHT.get()).speedStep()
                 )
         );
     }

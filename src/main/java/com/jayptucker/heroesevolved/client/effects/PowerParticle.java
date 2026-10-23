@@ -19,10 +19,12 @@ import java.util.Optional;
 
 /** Expanding oriented rings, continuous ribbons, and gently drifting luminous motes. */
 public final class PowerParticle extends TextureSheetParticle {
-    public enum Shape { RING, STREAK, MOTE, ARC }
+    public enum Shape { RING, STREAK, MOTE, ARC, CRYSTAL }
 
     private static final EnumMap<Shape, SpriteSet> SPRITES = new EnumMap<>(Shape.class);
     private static final ParticleGroup GROUP = new ParticleGroup(768);
+    private ParticleGroup group = GROUP;
+    private boolean lingering;
     private final Shape shape;
     private final Vec3 axisOrEnd;
     private final float startSize;
@@ -32,6 +34,9 @@ public final class PowerParticle extends TextureSheetParticle {
     private float arcSpeed;
     private float arcSpan;
     private float arcWidth;
+    private final Quaternionf ringRotation;
+    private final Vec3 arcRight;
+    private final Vec3 arcUp;
 
     public PowerParticle(ClientLevel level, Shape shape, Vec3 position, Vec3 axisOrEnd,
                          float startSize, float endSize, int lifetime, int delay,
@@ -42,13 +47,17 @@ public final class PowerParticle extends TextureSheetParticle {
         this.startSize = startSize;
         this.endSize = endSize;
         this.opacity = opacity;
+        Vec3 normal = axisOrEnd.lengthSqr() < .001 ? new Vec3(0, 1, 0) : axisOrEnd.normalize();
+        ringRotation = new Quaternionf().rotationTo(0, 0, 1, (float) normal.x, (float) normal.y, (float) normal.z);
+        arcRight = normal.cross(Math.abs(normal.y) > .9 ? new Vec3(1, 0, 0) : new Vec3(0, 1, 0)).normalize();
+        arcUp = arcRight.cross(normal).normalize();
         this.lifetime = Math.max(1, lifetime);
         this.age = -delay;
         this.hasPhysics = false;
         this.friction = 0.94F;
         setColor(((color >> 16) & 255) / 255.0F, ((color >> 8) & 255) / 255.0F,
                 (color & 255) / 255.0F);
-        SpriteSet sprites = SPRITES.get(shape == Shape.ARC ? Shape.STREAK : shape);
+        SpriteSet sprites = SPRITES.get(shape == Shape.ARC || shape == Shape.CRYSTAL ? Shape.STREAK : shape);
         if (sprites != null) {
             pickSprite(sprites);
         } else {
@@ -68,6 +77,12 @@ public final class PowerParticle extends TextureSheetParticle {
     public PowerParticle moving(Vec3 velocity) {
         setParticleSpeed(velocity.x, velocity.y, velocity.z);
         friction = 1.0F;
+        return this;
+    }
+
+    public PowerParticle lingering(ParticleGroup group) {
+        this.group = group;
+        lingering = true;
         return this;
     }
 
@@ -104,12 +119,13 @@ public final class PowerParticle extends TextureSheetParticle {
         // Fast attack, soft decay; no large opaque flash in first person.
         float fade = shape == Shape.RING ? 1 - progress * progress * progress
                 : (1 - progress) * (1 - progress);
+        if (lingering) {
+            float tail = Mth.clamp((progress - .4F) / .6F, 0, 1);
+            fade = 1 - tail * tail * (3 - 2 * tail);
+        }
         alpha = opacity * Math.min(1.0F, (age + partialTick + 1) / 2.0F) * fade;
         if (shape == Shape.RING) {
-            Vec3 normal = axisOrEnd.lengthSqr() < 0.001D ? new Vec3(0, 1, 0)
-                    : axisOrEnd.normalize();
-            Quaternionf rotation = new Quaternionf().rotationTo(0, 0, 1,
-                    (float) normal.x, (float) normal.y, (float) normal.z);
+            Quaternionf rotation = new Quaternionf(ringRotation);
             renderRotatedQuad(buffer, camera, rotation, partialTick);
             // The ring remains visible from above and below.
             renderRotatedQuad(buffer, camera, rotation.rotateY((float) Math.PI), partialTick);
@@ -117,6 +133,16 @@ public final class PowerParticle extends TextureSheetParticle {
             renderStreak(buffer, camera, partialTick);
         } else if (shape == Shape.ARC) {
             renderArc(buffer, camera, partialTick);
+        } else if (shape == Shape.CRYSTAL) {
+            Vec3 center = new Vec3(Mth.lerp(partialTick, xo, x), Mth.lerp(partialTick, yo, y), Mth.lerp(partialTick, zo, z));
+            Vec3 longAxis = axisOrEnd.normalize().scale(getQuadSize(partialTick) * 3);
+            Vec3 side = arcRight.scale(getQuadSize(partialTick));
+            Vec3 view = camera.getPosition();
+            vertex(buffer, center.subtract(longAxis).subtract(view), getU0(), getV0());
+            vertex(buffer, center.add(side).subtract(view), getU1(), getV0());
+            vertex(buffer, center.add(longAxis).subtract(view), getU1(), getV1());
+            vertex(buffer, center.subtract(side).subtract(view), getU0(), getV1());
+            renderRibbon(buffer, camera, center.subtract(longAxis), center.add(longAxis), getQuadSize(partialTick) * .16F, 1);
         } else {
             super.render(buffer, camera, partialTick);
         }
@@ -127,21 +153,20 @@ public final class PowerParticle extends TextureSheetParticle {
     }
 
     private void renderArc(VertexConsumer buffer, Camera camera, float partialTick) {
-        Vec3 normal = axisOrEnd.lengthSqr() < 0.001D ? new Vec3(0, 1, 0) : axisOrEnd.normalize();
-        Vec3 reference = Math.abs(normal.y) > 0.9D ? new Vec3(1, 0, 0) : new Vec3(0, 1, 0);
-        Vec3 right = normal.cross(reference).normalize();
-        Vec3 up = right.cross(normal).normalize();
+        Vec3 right = arcRight;
+        Vec3 up = arcUp;
         Vec3 center = new Vec3(Mth.lerp(partialTick, xo, x), Mth.lerp(partialTick, yo, y),
                 Mth.lerp(partialTick, zo, z));
         double radius = getQuadSize(partialTick);
         double angle = arcPhase + (age + partialTick) * arcSpeed;
         Vec3 previous = center.add(right.scale(Math.cos(angle) * radius))
                 .add(up.scale(Math.sin(angle) * radius));
-        for (int index = 1; index <= 12; index++) {
-            double nextAngle = angle + arcSpan * index / 12.0D;
+        int segments = camera.getPosition().distanceToSqr(center) > 64 * 64 ? 6 : 12;
+        for (int index = 1; index <= segments; index++) {
+            double nextAngle = angle + arcSpan * index / segments;
             Vec3 next = center.add(right.scale(Math.cos(nextAngle) * radius))
                     .add(up.scale(Math.sin(nextAngle) * radius));
-            float taper = 0.2F + 0.8F * (float) Math.sin(Math.PI * (index - 0.5D) / 12.0D);
+            float taper = 0.2F + 0.8F * (float) Math.sin(Math.PI * (index - 0.5D) / segments);
             renderRibbon(buffer, camera, previous, next, arcWidth * taper, taper);
             previous = next;
         }
@@ -196,11 +221,12 @@ public final class PowerParticle extends TextureSheetParticle {
         // orb or pressure front does not vanish at the edge of the camera view.
         double extent = getQuadSize(partialTick) * Math.sqrt(2.0D)
                 + (shape == Shape.ARC ? arcWidth : 0.0D);
+        if (shape == Shape.CRYSTAL) extent = getQuadSize(partialTick) * 4;
         return new AABB(new Vec3(xo, yo, zo), new Vec3(x, y, z)).inflate(extent);
     }
 
     @Override
     public Optional<ParticleGroup> getParticleGroup() {
-        return Optional.of(GROUP);
+        return Optional.of(group);
     }
 }

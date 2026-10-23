@@ -11,7 +11,9 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record FlightVisualStatePayload(
         int entityId,
         boolean flightActive,
-        boolean cycloneActive
+        boolean cycloneActive,
+        boolean flightEnabled,
+        int speedStep
 ) implements CustomPacketPayload {
     public static final Type<FlightVisualStatePayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(
@@ -29,6 +31,10 @@ public record FlightVisualStatePayload(
             FlightVisualStatePayload::flightActive,
             ByteBufCodecs.BOOL,
             FlightVisualStatePayload::cycloneActive,
+            ByteBufCodecs.BOOL,
+            FlightVisualStatePayload::flightEnabled,
+            ByteBufCodecs.VAR_INT,
+            FlightVisualStatePayload::speedStep,
             FlightVisualStatePayload::new
     );
 
@@ -46,7 +52,9 @@ public record FlightVisualStatePayload(
         ClientFlightVisualState.update(
                 payload.entityId(),
                 payload.flightActive(),
-                payload.cycloneActive()
+                payload.cycloneActive(),
+                payload.flightEnabled(),
+                payload.speedStep()
         );
     }
 }

@@ -17,8 +17,8 @@ foreach ($effectName in @('pressure_ring', 'energy_streak', 'power_mote')) {
                 $effectAlpha = switch ($effectName) {
                     'pressure_ring' {
                         # A crisp pressure front with a softer inner echo.
-                        [Math]::Exp(-[Math]::Pow(($effectRadius - 0.87) / 0.025, 2)) * 0.95 +
-                            [Math]::Exp(-[Math]::Pow(($effectRadius - 0.79) / 0.045, 2)) * 0.3
+                        [Math]::Exp(-[Math]::Pow(($effectRadius - 0.87) / 0.018, 2)) * (0.72 + 0.23 * [Math]::Sin([Math]::Atan2($effectV, $effectU) * 17) * [Math]::Sin([Math]::Atan2($effectV, $effectU) * 7)) +
+                            [Math]::Exp(-[Math]::Pow(($effectRadius - 0.82) / 0.055, 2)) * 0.18
                     }
                     'energy_streak' {
                         # Feathered ribbon with a bright central filament.
@@ -28,7 +28,7 @@ foreach ($effectName in @('pressure_ring', 'energy_streak', 'power_mote')) {
                     'power_mote' {
                         [Math]::Exp(-$effectRadius * $effectRadius * 10) * 0.8 +
                             [Math]::Exp(-[Math]::Abs($effectU * $effectV) * 120) *
-                            [Math]::Exp(-$effectRadius * $effectRadius * 7) * 0.3
+                            [Math]::Exp(-$effectRadius * $effectRadius * 7) * 0.18
                     }
                 }
                 $effectByte = [int]([Math]::Clamp($effectAlpha, 0.0, 1.0) * 255)
