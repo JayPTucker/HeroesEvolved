@@ -25,6 +25,7 @@ public final class HeroesEvolved {
     public HeroesEvolved(IEventBus modEventBus, ModContainer modContainer) {
 
         modContainer.registerConfig(ModConfig.Type.COMMON, HeroesEvolvedConfig.COMMON_SPEC);
+        modContainer.registerConfig(ModConfig.Type.CLIENT, com.jayptucker.heroesevolved.config.ClientVisualSettings.SPEC);
         AbilityRegistry.register(modEventBus);
         ModAbilities.register(modEventBus);
         ModDataAttachments.register(modEventBus);

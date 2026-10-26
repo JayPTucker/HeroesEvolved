@@ -1,23 +1,43 @@
 {
   "nuclear_charge": {
     "subtitle": "subtitles.heroesevolved.nuclear_charge",
-    "sounds": [{ "name": "heroesevolved:ability/nuclear_charge" }]
+    "sounds": [
+      {
+        "name": "heroesevolved:ability/nuclear_charge"
+      }
+    ]
   },
   "nuclear_siren": {
     "subtitle": "subtitles.heroesevolved.nuclear_siren",
-    "sounds": [{ "name": "heroesevolved:intro/nuclear_siren", "stream": true }]
+    "sounds": [
+      {
+        "name": "heroesevolved:intro/nuclear_siren",
+        "stream": true
+      }
+    ]
   },
   "crowd_panic": {
     "subtitle": "subtitles.heroesevolved.crowd_panic",
     "sounds": [
-      { "name": "heroesevolved:intro/crowd_panic" },
-      { "name": "heroesevolved:intro/crowd_panic_2" },
-      { "name": "heroesevolved:intro/crowd_panic_3" }
+      {
+        "name": "heroesevolved:intro/crowd_panic"
+      },
+      {
+        "name": "heroesevolved:intro/crowd_panic_2"
+      },
+      {
+        "name": "heroesevolved:intro/crowd_panic_3"
+      }
     ]
   },
   "nuclear_blast": {
     "subtitle": "subtitles.heroesevolved.nuclear_blast",
-    "sounds": [{ "name": "heroesevolved:intro/nuclear_blast", "stream": true }]
+    "sounds": [
+      {
+        "name": "heroesevolved:intro/nuclear_blast",
+        "stream": true
+      }
+    ]
   },
   "new_beginning": {
     "subtitle": "subtitles.heroesevolved.new_beginning",
@@ -44,7 +64,7 @@
     "subtitle": "subtitles.heroesevolved.time_slow",
     "sounds": [
       {
-        "name": "heroesevolved:ability/time_slow",
+          "name": "heroesevolved:ability/time_slow_stop",
         "volume": 0.9,
         "pitch": 1.0
       }
@@ -82,15 +102,46 @@
   },
   "sylar_watch": {
     "subtitle": "subtitles.heroesevolved.sylar_watch",
-    "sounds": [{ "name": "heroesevolved:story/sylar_watch" }]
+    "sounds": [
+      {
+        "name": "heroesevolved:story/sylar_watch"
+      }
+    ]
   },
-   "flight_boost": {
+  "flight_boost": {
     "subtitle": "subtitles.heroesevolved.flight_boost",
     "sounds": [
       {
         "name": "heroesevolved:ability/flight_boost",
         "volume": 2.0,
         "pitch": 1.0
+      }
+    ]
+  },
+  "sonic_cry": {
+    "subtitle": "subtitles.heroesevolved.sonic_cry",
+    "sounds": [
+      {
+        "name": "heroesevolved:ability/sonic_cry",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "sonic_burst": {
+    "subtitle": "subtitles.heroesevolved.sonic_burst",
+    "sounds": [
+      {
+        "name": "heroesevolved:ability/sonic_burst",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "sonic_scream": {
+    "subtitle": "subtitles.heroesevolved.sonic_scream",
+    "sounds": [
+      {
+        "name": "heroesevolved:ability/sonic_scream",
+        "attenuation_distance": 24
       }
     ]
   }

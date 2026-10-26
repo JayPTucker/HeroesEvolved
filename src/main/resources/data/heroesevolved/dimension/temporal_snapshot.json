@@ -6,7 +6,8 @@
       "layers": [],
       "lakes": false,
       "features": false,
-      "structure_overrides": []
+      "structure_overrides": [],
+      "biome": "minecraft:plains"
     }
   }
 }

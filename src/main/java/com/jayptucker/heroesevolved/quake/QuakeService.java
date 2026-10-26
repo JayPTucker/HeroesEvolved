@@ -246,6 +246,7 @@ public final class QuakeService {
 
     /** Ends the beam: on release, exhaustion, or its time limit. */
     public static void stopQuakeBlast(ServerPlayer player, boolean exhausted) {
+        QuakeBlockPressure.clear(player);
         if (BLASTS.remove(player.getUUID()) == null) {
             return;
         }
@@ -273,6 +274,11 @@ public final class QuakeService {
     ) {
         ServerLevel level = player.serverLevel();
         blast.ageTicks++;
+        if (!com.jayptucker.heroesevolved.ability.service.PowerRules.canAct(player)) {
+            QuakeBlockPressure.clear(player);
+            blast.ageTicks--;
+            return;
+        }
 
         // Stamina drains in half-second steps while the beam is held.
         if (blast.ageTicks % 10 == 0) {
@@ -299,6 +305,7 @@ public final class QuakeService {
         ));
         boolean hitBlock = hit.getType() == HitResult.Type.BLOCK;
         double length = hitBlock ? hit.getLocation().distanceTo(origin) : range;
+        QuakeBlockPressure.tick(player, hitBlock ? hit.getBlockPos() : null);
 
         if (blast.ageTicks % 3 == 0) {
             Vec3 palms = origin.add(direction.scale(Math.min(0.6D, length * 0.5D)))

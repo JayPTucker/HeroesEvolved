@@ -16,7 +16,7 @@ public final class OverexertionService {
     private OverexertionService() {
     }
 
-    public static void apply(
+    public static int apply(
 
         ServerPlayer player,
         int energyCost
@@ -46,7 +46,7 @@ public final class OverexertionService {
         int missingEnergy = energyCost - availableEnergy;
 
         // The ability consumes every bit of remaining energy.
-        PlayerEnergyService.consumeUpTo(player, energyCost);
+        int consumed = PlayerEnergyService.consumeUpTo(player, energyCost);
 
         // Larger energy shortages cause greater physical strain.
         float damage = (float) Math.min(
@@ -92,5 +92,6 @@ public final class OverexertionService {
 
         // Generic damage has no attacker, because the player caused it to themselves.
         player.hurt(player.damageSources().generic(), damage);
+        return consumed;
     }
 }

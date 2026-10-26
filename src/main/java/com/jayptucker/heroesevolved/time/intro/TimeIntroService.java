@@ -92,6 +92,8 @@ public final class TimeIntroService {
     }
 
     public static void login(ServerPlayer player) {
+        if (player.getData(ModDataAttachments.PLAYER_SEEN_FUTURE_CITY))
+            com.jayptucker.heroesevolved.time.TemporalStoryService.reach(player, com.jayptucker.heroesevolved.time.TemporalStoryService.VISION);
         if (isVisiting(player) || isCity(player.level())) {
             returnHome(player, false);
         }
@@ -287,6 +289,7 @@ public final class TimeIntroService {
         persist(player);
         cue(player, completed ? TimeIntroPayload.RETURN : TimeIntroPayload.CANCEL);
         if (completed) {
+            com.jayptucker.heroesevolved.time.TemporalStoryService.reach(player, com.jayptucker.heroesevolved.time.TemporalStoryService.VISION);
             player.playNotifySound(ModSounds.TIME_BLINK.get(), SoundSource.PLAYERS, 0.9F, 0.85F);
             ScreenTintPayload.send(player, 0x908AB6FF, 25, ScreenTintPayload.Style.FLASH);
             AbilityEffects.at(player, AbilityEffectPayload.Kind.TEMPORAL_BURST, 4);

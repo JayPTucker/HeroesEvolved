@@ -170,6 +170,7 @@ public final class FlightService {
     public static void setForwardInput(ServerPlayer player, boolean movingForward) {
         PlayerFlightData data = player.getData(ModDataAttachments.PLAYER_FLIGHT.get());
         if (!data.flightEnabled() || isCycloneActive(player)) return;
+        if (movingForward && !com.jayptucker.heroesevolved.ability.service.PowerRules.canAct(player)) return;
         player.setData(ModDataAttachments.PLAYER_FLIGHT.get(), data.withForwardInput(movingForward));
         refreshSpeedState(player);
     }
@@ -177,6 +178,7 @@ public final class FlightService {
     public static void changeSpeed(ServerPlayer player, int direction) {
         PlayerFlightData data = player.getData(ModDataAttachments.PLAYER_FLIGHT.get());
         if (direction == 0 || !data.flightEnabled() || player.onGround() || !player.isAlive()
+                || !com.jayptucker.heroesevolved.ability.service.PowerRules.canAct(player)
                 || player.isSpectator() || player.isPassenger() || isCycloneActive(player)
                 || EclipseService.arePowersSuppressed(player)
                 || !com.jayptucker.heroesevolved.ability.service.PlayerAbilityService
@@ -238,6 +240,10 @@ public final class FlightService {
         }
 
         if (!flightData.sessionActive()) {
+            return;
+        }
+        if (com.jayptucker.heroesevolved.ability.service.PowerRules.immobilized(player)) {
+            player.setDeltaMovement(Vec3.ZERO);
             return;
         }
 
@@ -731,6 +737,12 @@ public final class FlightService {
     }
 
     private static void triggerFlightBoostSonicBoom(ServerPlayer player) {
+        var cooldown = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "flight_sonic_boom");
+        if (!com.jayptucker.heroesevolved.ability.service.PowerRules.canAct(player)
+                || com.jayptucker.heroesevolved.cooldown.CooldownService.isOnCooldown(player, cooldown)
+                || !PlayerEnergyService.tryConsume(player, 5)) return;
+        com.jayptucker.heroesevolved.cooldown.CooldownService.startCooldown(player, cooldown, 40);
+        MasteryService.awardEnergySpent(player, 5);
         
         Vec3 explosionPosition = player.position().add(0.0D, 0.9D, 0.0D);
 

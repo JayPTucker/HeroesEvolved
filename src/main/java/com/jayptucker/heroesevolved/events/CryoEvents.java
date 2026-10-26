@@ -24,6 +24,10 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class CryoEvents {
+    @SubscribeEvent public static void chunkLoaded(net.neoforged.neoforge.event.level.ChunkEvent.Load event) {
+        if (event.getLevel() instanceof net.minecraft.server.level.ServerLevel level
+                && event.getChunk() instanceof net.minecraft.world.level.chunk.LevelChunk chunk) TemporaryBlocks.recover(level, chunk);
+    }
     private CryoEvents() {
     }
 

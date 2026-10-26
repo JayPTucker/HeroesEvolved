@@ -16,6 +16,11 @@ public final class ArmPoseActions {
     }
 
     private static final Map<String, Pose> POSES = Map.ofEntries(
+            Map.entry("sonic_cry", new Pose(ArmPose.ARMS_WIDE, 14)),
+            Map.entry("sonic_burst", new Pose(ArmPose.ARMS_WIDE, 16)),
+            Map.entry("sonic_echo_sense", new Pose(ArmPose.TEMPLE, 16)),
+            Map.entry("sonic_vault", new Pose(ArmPose.TWO_HANDS, 12)),
+            Map.entry("sonic_scream", new Pose(ArmPose.ARMS_WIDE, 100)),
             Map.entry("flight_launch", new Pose(ArmPose.ARMS_RAISED, 25)),
             Map.entry("flight_cyclone", new Pose(ArmPose.ARMS_WIDE, 100)),
 

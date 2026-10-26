@@ -1,0 +1,585 @@
+[
+  {
+    "power": "quake",
+    "branches": [
+      [
+        {
+          "name": "Fault Control",
+          "description": "Reduce activation stamina costs by 10%."
+        },
+        {
+          "name": "Seismic Lance",
+          "description": "Strike one target up to 40 blocks away for 7 + level damage and a powerful directional shove.",
+          "energy": 24,
+          "cooldown": 70
+        },
+        {
+          "name": "Fault Control Mastery",
+          "description": "Reduce activation stamina costs by another 15% (25% total)."
+        }
+      ],
+      [
+        {
+          "name": "Tectonic Force",
+          "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
+        },
+        {
+          "name": "Aftershock",
+          "description": "Damage visible enemies within 8 blocks and slow them for 5 seconds. Does not destroy terrain.",
+          "energy": 32,
+          "cooldown": 160
+        },
+        {
+          "name": "Tectonic Force Mastery",
+          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        }
+      ],
+      [
+        {
+          "name": "Steady Rhythm",
+          "description": "Reduce ability cooldowns by 10%."
+        },
+        {
+          "name": "Fault Step",
+          "description": "Kick away from your aim while blasting nearby enemies backward. Useful in midair.",
+          "energy": 22,
+          "cooldown": 100
+        },
+        {
+          "name": "Steady Rhythm Mastery",
+          "description": "Reduce ability cooldowns by another 15% (25% total)."
+        }
+      ]
+    ]
+  },
+  {
+    "power": "flight",
+    "branches": [
+      [
+        {
+          "name": "Aerodynamic Control",
+          "description": "Reduce activation stamina costs by 10%."
+        },
+        {
+          "name": "Slipstream Dash",
+          "description": "Dash along your aim and gain 5 seconds of Slow Falling.",
+          "energy": 22,
+          "cooldown": 100
+        },
+        {
+          "name": "Aerodynamic Control Mastery",
+          "description": "Reduce activation stamina costs by another 15% (25% total)."
+        }
+      ],
+      [
+        {
+          "name": "Wind Pressure",
+          "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
+        },
+        {
+          "name": "Air Brake",
+          "description": "Stop your momentum and leave a 4-second wind screen that reflects incoming projectiles within 7 blocks.",
+          "energy": 28,
+          "cooldown": 160
+        },
+        {
+          "name": "Wind Pressure Mastery",
+          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        }
+      ],
+      [
+        {
+          "name": "Second Wind",
+          "description": "Reduce ability cooldowns by 10%."
+        },
+        {
+          "name": "Updraft",
+          "description": "Launch upward, lift visible enemies within 6 blocks, and gain 8 seconds of Slow Falling.",
+          "energy": 30,
+          "cooldown": 180
+        },
+        {
+          "name": "Second Wind Mastery",
+          "description": "Reduce ability cooldowns by another 15% (25% total)."
+        }
+      ]
+    ]
+  },
+  {
+    "power": "cryokinesis",
+    "branches": [
+      [
+        {
+          "name": "Cold Discipline",
+          "description": "Reduce activation stamina costs by 10%."
+        },
+        {
+          "name": "Ice Lance",
+          "description": "Pierce a visible target up to 40 blocks away for 6 + level damage and freeze it solid for 4 seconds.",
+          "energy": 26,
+          "cooldown": 100
+        },
+        {
+          "name": "Cold Discipline Mastery",
+          "description": "Reduce activation stamina costs by another 15% (25% total)."
+        }
+      ],
+      [
+        {
+          "name": "Brittle Edge",
+          "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
+        },
+        {
+          "name": "Frost Armor",
+          "description": "Coat yourself in frost: Resistance II and Fire Resistance for 8 seconds.",
+          "energy": 30,
+          "cooldown": 260
+        },
+        {
+          "name": "Brittle Edge Mastery",
+          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        }
+      ],
+      [
+        {
+          "name": "Winter Rhythm",
+          "description": "Reduce ability cooldowns by 10%."
+        },
+        {
+          "name": "Cold Snap",
+          "description": "Freeze visible enemies within 7 blocks for 3 seconds and deal 2 damage. Leaves terrain intact.",
+          "energy": 32,
+          "cooldown": 180
+        },
+        {
+          "name": "Winter Rhythm Mastery",
+          "description": "Reduce ability cooldowns by another 15% (25% total)."
+        }
+      ]
+    ]
+  },
+  {
+    "power": "electrokinesis",
+    "branches": [
+      [
+        {
+          "name": "Voltage Control",
+          "description": "Reduce activation stamina costs by 10%."
+        },
+        {
+          "name": "Arc Lance",
+          "description": "Shock a target up to 40 blocks away for 8 + level damage, briefly stagger it, then arc to two nearby enemies.",
+          "energy": 28,
+          "cooldown": 100
+        },
+        {
+          "name": "Voltage Control Mastery",
+          "description": "Reduce activation stamina costs by another 15% (25% total)."
+        }
+      ],
+      [
+        {
+          "name": "High Voltage",
+          "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
+        },
+        {
+          "name": "Static Screen",
+          "description": "Leave a 6-second electric screen that reflects incoming projectiles within 7 blocks.",
+          "energy": 28,
+          "cooldown": 220
+        },
+        {
+          "name": "High Voltage Mastery",
+          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        }
+      ],
+      [
+        {
+          "name": "Quick Circuit",
+          "description": "Reduce ability cooldowns by 10%."
+        },
+        {
+          "name": "Overcharge",
+          "description": "Electrify your reflexes: Speed II and Haste II for 8 seconds.",
+          "energy": 25,
+          "cooldown": 220
+        },
+        {
+          "name": "Quick Circuit Mastery",
+          "description": "Reduce ability cooldowns by another 15% (25% total)."
+        }
+      ]
+    ]
+  },
+  {
+    "power": "telekinesis",
+    "branches": [
+      [
+        {
+          "name": "Fine Control",
+          "description": "Reduce activation stamina costs by 10%."
+        },
+        {
+          "name": "Kinetic Lance",
+          "description": "Hit a target up to 40 blocks away for 6 + level damage and launch it along your aim.",
+          "energy": 24,
+          "cooldown": 100
+        },
+        {
+          "name": "Fine Control Mastery",
+          "description": "Reduce activation stamina costs by another 15% (25% total)."
+        }
+      ],
+      [
+        {
+          "name": "Crushing Will",
+          "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
+        },
+        {
+          "name": "Gravity Well",
+          "description": "Leave a 5-second gravity well that pulls visible enemies within 10 blocks toward its center.",
+          "energy": 35,
+          "cooldown": 240
+        },
+        {
+          "name": "Crushing Will Mastery",
+          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        }
+      ],
+      [
+        {
+          "name": "Mental Recovery",
+          "description": "Reduce ability cooldowns by 10%."
+        },
+        {
+          "name": "Levitation Step",
+          "description": "Rise for a brief moment and gain 9 seconds of Slow Falling for precise aerial movement.",
+          "energy": 22,
+          "cooldown": 160
+        },
+        {
+          "name": "Mental Recovery Mastery",
+          "description": "Reduce ability cooldowns by another 15% (25% total)."
+        }
+      ]
+    ]
+  },
+  {
+    "power": "telepathy",
+    "branches": [
+      [
+        {
+          "name": "Quiet Mind",
+          "description": "Reduce activation stamina costs by 10%."
+        },
+        {
+          "name": "Psychic Silence",
+          "description": "Crush a visible mind up to 40 blocks away with Weakness II for 6 seconds and a strong 5-second slow.",
+          "energy": 24,
+          "cooldown": 120
+        },
+        {
+          "name": "Quiet Mind Mastery",
+          "description": "Reduce activation stamina costs by another 15% (25% total)."
+        }
+      ],
+      [
+        {
+          "name": "Mental Pressure",
+          "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
+        },
+        {
+          "name": "Shared Focus",
+          "description": "Give yourself and teammates within 10 blocks Night Vision for 12 seconds and Resistance for 6 seconds.",
+          "energy": 28,
+          "cooldown": 220
+        },
+        {
+          "name": "Mental Pressure Mastery",
+          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        }
+      ],
+      [
+        {
+          "name": "Clear Thoughts",
+          "description": "Reduce ability cooldowns by 10%."
+        },
+        {
+          "name": "Terror Pulse",
+          "description": "Disorient visible enemies within 8 blocks: blindness, weakness and knockback. Mobs lose their targets.",
+          "energy": 32,
+          "cooldown": 180
+        },
+        {
+          "name": "Clear Thoughts Mastery",
+          "description": "Reduce ability cooldowns by another 15% (25% total)."
+        }
+      ]
+    ]
+  },
+  {
+    "power": "regeneration",
+    "branches": [
+      [
+        {
+          "name": "Cellular Efficiency",
+          "description": "Reduce activation stamina costs by 10%."
+        },
+        {
+          "name": "Cauterize",
+          "description": "Purge your harmful status effects, extinguish yourself, and instantly restore 6 health.",
+          "energy": 28,
+          "cooldown": 180
+        },
+        {
+          "name": "Cellular Efficiency Mastery",
+          "description": "Reduce activation stamina costs by another 15% (25% total)."
+        }
+      ],
+      [
+        {
+          "name": "Blood Strength",
+          "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
+        },
+        {
+          "name": "Adrenal Rush",
+          "description": "Heal 4 health and gain Speed II and Haste for 8 seconds.",
+          "energy": 30,
+          "cooldown": 240
+        },
+        {
+          "name": "Blood Strength Mastery",
+          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        }
+      ],
+      [
+        {
+          "name": "Rapid Recovery",
+          "description": "Reduce ability cooldowns by 10%."
+        },
+        {
+          "name": "Transfusion",
+          "description": "Sacrifice 3 health to heal a target up to 40 blocks away for 10 health and grant Absorption for 10 seconds. Requires more than 4 health.",
+          "energy": 30,
+          "cooldown": 200
+        },
+        {
+          "name": "Rapid Recovery Mastery",
+          "description": "Reduce ability cooldowns by another 15% (25% total)."
+        }
+      ]
+    ]
+  },
+  {
+    "power": "time_manipulation",
+    "branches": [
+      [
+        {
+          "name": "Temporal Precision",
+          "description": "Reduce activation stamina costs by 10%."
+        },
+        {
+          "name": "Selective Stasis",
+          "description": "Suspend a visible target up to 40 blocks away for 4-5.5 seconds, including its AI and actions. One target at a time.",
+          "energy": 22,
+          "cooldown": 160
+        },
+        {
+          "name": "Temporal Precision Mastery",
+          "description": "Reduce activation stamina costs by another 15% (25% total)."
+        }
+      ],
+      [
+        {
+          "name": "Accelerated Force",
+          "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
+        },
+        {
+          "name": "Spatial Anchor",
+          "description": "Shift + key remembers safe ground. Press normally to return within 512 blocks in the same dimension. Destination must remain loaded and clear.",
+          "energy": 15,
+          "cooldown": 60
+        },
+        {
+          "name": "Accelerated Force Mastery",
+          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        }
+      ],
+      [
+        {
+          "name": "Clockwork Rhythm",
+          "description": "Reduce ability cooldowns by 10%."
+        },
+        {
+          "name": "Second Chance",
+          "description": "Return yourself to five seconds ago, recovering lost health and reducing fire. Leaves inventories, blocks and everyone else untouched. Requires five seconds of history.",
+          "energy": 30,
+          "cooldown": 400
+        },
+        {
+          "name": "Clockwork Rhythm Mastery",
+          "description": "Reduce ability cooldowns by another 15% (25% total)."
+        }
+      ]
+    ]
+  },
+  {
+    "power": "radiation",
+    "branches": [
+      [
+        {
+          "name": "Stable Emission",
+          "description": "Reduce activation stamina costs by 10%."
+        },
+        {
+          "name": "Gamma Lance",
+          "description": "Irradiate a target up to 40 blocks away for 9 + level damage and lingering radiation for 6 seconds.",
+          "energy": 30,
+          "cooldown": 120
+        },
+        {
+          "name": "Stable Emission Mastery",
+          "description": "Reduce activation stamina costs by another 15% (25% total)."
+        }
+      ],
+      [
+        {
+          "name": "Gamma Pressure",
+          "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
+        },
+        {
+          "name": "Lead Skin",
+          "description": "Condense a protective layer around yourself for Resistance II for 8 seconds.",
+          "energy": 32,
+          "cooldown": 260
+        },
+        {
+          "name": "Gamma Pressure Mastery",
+          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        }
+      ],
+      [
+        {
+          "name": "Reactor Rhythm",
+          "description": "Reduce ability cooldowns by 10%."
+        },
+        {
+          "name": "Decontaminate",
+          "description": "Purge harmful effects and flames from yourself and teammates within 8 blocks, then grant 8 seconds of Fire Resistance.",
+          "energy": 30,
+          "cooldown": 200
+        },
+        {
+          "name": "Reactor Rhythm Mastery",
+          "description": "Reduce ability cooldowns by another 15% (25% total)."
+        }
+      ]
+    ]
+  },
+  {
+    "power": "sonic_resonance",
+    "branches": [
+      [
+        {
+          "name": "Breath Control",
+          "description": "Reduce activation stamina costs by 10%."
+        },
+        {
+          "name": "Focused Shriek",
+          "description": "Concentrate your scream on one target up to 40 blocks away for 9 + level damage and knockback.",
+          "energy": 26,
+          "cooldown": 100
+        },
+        {
+          "name": "Breath Control Mastery",
+          "description": "Reduce activation stamina costs by another 15% (25% total)."
+        }
+      ],
+      [
+        {
+          "name": "Vocal Power",
+          "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
+        },
+        {
+          "name": "Dissonant Wave",
+          "description": "Scream at visible enemies within 8 blocks for 3 damage, Weakness II for 6 seconds and a strong 4-second slow.",
+          "energy": 30,
+          "cooldown": 180
+        },
+        {
+          "name": "Vocal Power Mastery",
+          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        }
+      ],
+      [
+        {
+          "name": "Resonant Rhythm",
+          "description": "Reduce ability cooldowns by 10%."
+        },
+        {
+          "name": "Resonant Guard",
+          "description": "Gain Resistance and leave a 5-second sonic screen that reflects incoming projectiles within 7 blocks.",
+          "energy": 30,
+          "cooldown": 220
+        },
+        {
+          "name": "Resonant Rhythm Mastery",
+          "description": "Reduce ability cooldowns by another 15% (25% total)."
+        }
+      ]
+    ]
+  },
+  {
+    "power": "superspeed",
+    "branches": [
+      [
+        {
+          "name": "Efficient Stride",
+          "description": "Reduce activation stamina costs by 10%."
+        },
+        {
+          "name": "Reflex Focus",
+          "description": "For 6 seconds, dodge an incoming projectile sideways if there is a clear escape path. Each successful dodge costs 3 stamina; at most once per second.",
+          "energy": 20,
+          "cooldown": 160
+        },
+        {
+          "name": "Efficient Stride Mastery",
+          "description": "Reduce activation stamina costs by another 15% (25% total)."
+        }
+      ],
+      [
+        {
+          "name": "Kinetic Force",
+          "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
+        },
+        {
+          "name": "Momentum Strike",
+          "description": "Rush a visible enemy up to 40 blocks away along a clear path and land a powerful strike. Cannot pass through walls.",
+          "energy": 28,
+          "cooldown": 180
+        },
+        {
+          "name": "Kinetic Force Mastery",
+          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        }
+      ],
+      [
+        {
+          "name": "Quick Recovery",
+          "description": "Reduce ability cooldowns by 10%."
+        },
+        {
+          "name": "Slipstream Rescue",
+          "description": "Carry a nearby villager, friendly creature, teammate or crouching player up to 12 blocks ahead. Both bodies need a clear path.",
+          "energy": 24,
+          "cooldown": 120
+        },
+        {
+          "name": "Quick Recovery Mastery",
+          "description": "Reduce ability cooldowns by another 15% (25% total)."
+        }
+      ]
+    ]
+  }
+]

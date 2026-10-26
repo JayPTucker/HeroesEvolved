@@ -2,15 +2,19 @@ package com.jayptucker.heroesevolved.events;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.ability.ArmPose;
+import com.jayptucker.heroesevolved.client.FirstPersonArmGeometry;
+import com.jayptucker.heroesevolved.client.effects.RadiationVisuals;
 import com.jayptucker.heroesevolved.network.ClientArmPoseState;
+import com.jayptucker.heroesevolved.render.RadiationGlowLayer;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
-import net.minecraft.util.Mth;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.player.PlayerModelPart;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -18,9 +22,9 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
 
 /**
- * In first person, empty hands are raised and thrust forward while a power
- * pose is active. Two-handed poses also show the off arm, which vanilla
- * never draws when it is empty.
+ * Draws power poses directly in camera space, without vanilla's idle-hand
+ * rotations or the third-person arm pivot. Two-handed poses draw both arms
+ * during the main-hand pass, including when vanilla skips an empty offhand.
  */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID, value = Dist.CLIENT)
 public final class FirstPersonArmEvents {
@@ -31,8 +35,7 @@ public final class FirstPersonArmEvents {
     public static void onRenderHand(RenderHandEvent event) {
         Minecraft minecraft = Minecraft.getInstance();
         AbstractClientPlayer player = minecraft.player;
-        if (player == null || player.isInvisible()
-                || !event.getItemStack().isEmpty()) {
+        if (player == null || player.isInvisible()) {
             return;
         }
 
@@ -46,9 +49,18 @@ public final class FirstPersonArmEvents {
         if (oneHanded && !mainHand) {
             return;
         }
+        if (oneHanded && !event.getItemStack().isEmpty()) return;
 
         HumanoidArm side = mainHand ? player.getMainArm() : player.getMainArm().getOpposite();
         event.setCanceled(true);
+        if (!oneHanded) {
+            // Render both hands exactly once, even while an item is held. Vanilla's
+            // per-hand item transforms otherwise rotate the arms across each other.
+            if (!mainHand) return;
+            renderArm(event.getPoseStack(), event, player, HumanoidArm.RIGHT, pose);
+            renderArm(event.getPoseStack(), event, player, HumanoidArm.LEFT, pose);
+            return;
+        }
         renderArm(event.getPoseStack(), event, player, side, pose);
     }
 
@@ -64,42 +76,34 @@ public final class FirstPersonArmEvents {
             HumanoidArm side,
             ArmPose pose
     ) {
-        float f = side == HumanoidArm.RIGHT ? 1.0F : -1.0F;
-        float time = player.tickCount + event.getPartialTick();
-        float tremble = pose == ArmPose.TWO_HANDS_STRAIN
-                ? Mth.sin(time * 2.7F) * 0.012F : 0.0F;
-
-        poseStack.pushPose();
-        // Vanilla rests an empty arm at (0.64, -0.6, -0.72), turned 45 degrees.
-        // Powers pull it inward, raise it and push it out in front.
-        switch (pose) {
-            case ARMS_RAISED -> poseStack.translate(f * 0.45F, -0.05F, -0.7F);
-            case ARMS_WIDE -> poseStack.translate(f * 0.75F, -0.45F, -0.6F);
-            case GROUND -> poseStack.translate(f * 0.38F, -0.62F, -0.82F);
-            case TEMPLE -> poseStack.translate(f * 0.32F, -0.12F, -0.5F);
-            default -> poseStack.translate(f * 0.36F + tremble, -0.36F + tremble, -0.86F);
-        }
-        poseStack.mulPose(Axis.YP.rotationDegrees(f * (pose == ArmPose.ARMS_WIDE ? 55.0F : 18.0F)));
-        if (pose == ArmPose.ARMS_RAISED) {
-            poseStack.mulPose(Axis.XP.rotationDegrees(-35.0F));
-        }
-
-        // Vanilla's mapping from this hand space onto the arm model.
-        poseStack.translate(f * -1.0F, 3.6F, 3.5F);
-        poseStack.mulPose(Axis.ZP.rotationDegrees(f * 120.0F));
-        poseStack.mulPose(Axis.XP.rotationDegrees(200.0F));
-        poseStack.mulPose(Axis.YP.rotationDegrees(f * -135.0F));
-        poseStack.translate(f * 5.6F, 0.0F, 0.0F);
-
         PlayerRenderer renderer = (PlayerRenderer) Minecraft.getInstance()
                 .getEntityRenderDispatcher().getRenderer(player);
-        if (side == HumanoidArm.RIGHT) {
-            renderer.renderRightHand(poseStack, event.getMultiBufferSource(),
-                    event.getPackedLight(), player);
-        } else {
-            renderer.renderLeftHand(poseStack, event.getMultiBufferSource(),
-                    event.getPackedLight(), player);
+        var arm = side == HumanoidArm.RIGHT ? renderer.getModel().rightArm : renderer.getModel().leftArm;
+        var sleeve = side == HumanoidArm.RIGHT ? renderer.getModel().rightSleeve : renderer.getModel().leftSleeve;
+        var oldArm = arm.storePose();
+        var oldSleeve = sleeve.storePose();
+        boolean showSleeve = player.isModelPartShown(side == HumanoidArm.RIGHT
+                ? PlayerModelPart.RIGHT_SLEEVE : PlayerModelPart.LEFT_SLEEVE);
+        poseStack.pushPose();
+        try {
+            FirstPersonArmGeometry.pose(poseStack, side, pose, player.tickCount + event.getPartialTick());
+            arm.setPos(0, 0, 0);
+            arm.setRotation(0, 0, 0);
+            sleeve.copyFrom(arm);
+            var buffer = event.getMultiBufferSource().getBuffer(RenderType.entityTranslucent(player.getSkin().texture()));
+            arm.render(poseStack, buffer, event.getPackedLight(), OverlayTexture.NO_OVERLAY);
+            if (showSleeve) sleeve.render(poseStack, buffer, event.getPackedLight(), OverlayTexture.NO_OVERLAY);
+            float heat = RadiationVisuals.heat(player);
+            if (heat > 0) {
+                var glow = event.getMultiBufferSource().getBuffer(RenderType.eyes(RadiationGlowLayer.TEXTURE));
+                int color = RadiationGlowLayer.color(heat, player.tickCount + event.getPartialTick());
+                arm.render(poseStack, glow, 0xF000F0, OverlayTexture.NO_OVERLAY, color);
+                if (showSleeve) sleeve.render(poseStack, glow, 0xF000F0, OverlayTexture.NO_OVERLAY, color);
+            }
+        } finally {
+            arm.loadPose(oldArm);
+            sleeve.loadPose(oldSleeve);
+            poseStack.popPose();
         }
-        poseStack.popPose();
     }
 }

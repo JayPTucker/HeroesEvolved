@@ -1,0 +1,182 @@
+[
+  {
+    "power": "quake",
+    "action": "quake_seismic_slam",
+    "energy": 0.85,
+    "cooldown": 0.8
+  },
+  {
+    "power": "quake",
+    "action": "quake_earthquake",
+    "energy": 0.85,
+    "cooldown": 0.65
+  },
+  {
+    "power": "flight",
+    "action": "flight_dive_bomb",
+    "energy": 0.8,
+    "cooldown": 0.75
+  },
+  {
+    "power": "flight",
+    "action": "flight_cyclone",
+    "energy": 0.85,
+    "cooldown": 0.75
+  },
+  {
+    "power": "cryokinesis",
+    "action": "cryo_ice_wall",
+    "energy": 0.8,
+    "cooldown": 0.8
+  },
+  {
+    "power": "cryokinesis",
+    "action": "cryo_blizzard",
+    "energy": 0.8,
+    "cooldown": 0.6
+  },
+  {
+    "power": "electrokinesis",
+    "action": "electro_chain_lightning",
+    "energy": 1,
+    "cooldown": 1.2
+  },
+  {
+    "power": "electrokinesis",
+    "action": "electro_thunderstrike",
+    "energy": 0.85,
+    "cooldown": 0.8
+  },
+  {
+    "power": "electrokinesis",
+    "action": "electro_storm_surge",
+    "energy": 0.85,
+    "cooldown": 0.6
+  },
+  {
+    "power": "telekinesis",
+    "action": "telekinesis_push",
+    "energy": 0.8,
+    "cooldown": 1
+  },
+  {
+    "power": "telekinesis",
+    "action": "telekinesis_bullet_stop",
+    "energy": 0.8,
+    "cooldown": 0.7
+  },
+  {
+    "power": "telekinesis",
+    "action": "telekinesis_storm",
+    "energy": 0.85,
+    "cooldown": 0.6
+  },
+  {
+    "power": "telepathy",
+    "action": "telepathy_read_mind",
+    "energy": 0.7,
+    "cooldown": 0.7
+  },
+  {
+    "power": "telepathy",
+    "action": "telepathy_mind_link",
+    "energy": 0.75,
+    "cooldown": 0.6
+  },
+  {
+    "power": "telepathy",
+    "action": "telepathy_puppet",
+    "energy": 1,
+    "cooldown": 1.15
+  },
+  {
+    "power": "telepathy",
+    "action": "telepathy_nightmare",
+    "energy": 0.8,
+    "cooldown": 0.7
+  },
+  {
+    "power": "regeneration",
+    "action": "regeneration_rapid_mending",
+    "energy": 1,
+    "cooldown": 1.25
+  },
+  {
+    "power": "regeneration",
+    "action": "regeneration_blood_gift",
+    "energy": 0.7,
+    "cooldown": 0.75
+  },
+  {
+    "power": "regeneration",
+    "action": "regeneration_healing_aura",
+    "energy": 0.8,
+    "cooldown": 0.6
+  },
+  {
+    "power": "time_manipulation",
+    "action": "time_slow",
+    "energy": 0.65,
+    "cooldown": 0.6
+  },
+  {
+    "power": "time_manipulation",
+    "action": "time_stop",
+    "energy": 0.6,
+    "cooldown": 0.35
+  },
+  {
+    "power": "time_manipulation",
+    "action": "time_rewind",
+    "energy": 1,
+    "cooldown": 1.2
+  },
+  {
+    "power": "radiation",
+    "action": "radiation_emp",
+    "energy": 0.8,
+    "cooldown": 0.7
+  },
+  {
+    "power": "radiation",
+    "action": "radiation_pulse",
+    "energy": 0.85,
+    "cooldown": 0.8
+  },
+  {
+    "power": "radiation",
+    "action": "radiation_exploding_man",
+    "energy": 1,
+    "cooldown": 0.75
+  },
+  {
+    "power": "sonic_resonance",
+    "action": "sonic_burst",
+    "energy": 0.8,
+    "cooldown": 0.8
+  },
+  {
+    "power": "sonic_resonance",
+    "action": "sonic_scream",
+    "energy": 0.8,
+    "cooldown": 0.8
+  },
+  {
+    "power": "sonic_resonance",
+    "action": "sonic_echo_sense",
+    "energy": 0.8,
+    "cooldown": 0.75
+  },
+  {
+    "power": "superspeed",
+    "action": "speed_quickstep",
+    "energy": 1,
+    "cooldown": 1
+  },
+  {
+    "power": "superspeed",
+    "action": "speed_redline",
+    "energy": 1,
+    "cooldown": 1
+  }
+]

@@ -28,9 +28,9 @@ import java.util.UUID;
 
 /** Bounded before-images of real block mutations, shared by nearby time users. */
 public final class TimeRewindBlocks {
-    public static final double RECORDING_RADIUS = 32.0D;
+    public static final double RECORDING_RADIUS = 64.0D;
     private static final int RETENTION_TICKS = (TimeRewindService.REWIND_SECONDS + 1) * 20;
-    private static final int MAX_CHANGES = 16_384;
+    private static final int MAX_CHANGES = 524_288;
     private static final Map<UUID, Journal> JOURNALS = new HashMap<>();
     private static final Map<UUID, LooseDrop> DROPS = new HashMap<>();
     private static final Deque<PendingChange> MUTATIONS = new ArrayDeque<>();
@@ -163,6 +163,7 @@ public final class TimeRewindBlocks {
         try {
             for (BlockSnapshot snapshot : plan.blocks.values()) {
                 BlockPos pos = snapshot.getPos();
+                if (!com.jayptucker.heroesevolved.effects.WorldMutationPolicy.canEdit(player, level, pos)) continue;
                 if (level.getBlockState(pos) != snapshot.getState()) {
                     // Avoid spilling a container a second time during rollback.
                     level.removeBlockEntity(pos);

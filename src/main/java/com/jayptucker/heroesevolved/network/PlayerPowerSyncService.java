@@ -78,7 +78,7 @@ public final class PlayerPowerSyncService {
             return List.of();
         }
 
-        return power.actions()
+        return com.jayptucker.heroesevolved.skills.SkillTreeService.actions(player, powerId)
                 .entrySet()
                 .stream()
                 .sorted(Map.Entry.comparingByKey())
@@ -115,8 +115,8 @@ public final class PlayerPowerSyncService {
                                     TimeManipulationAbility
                                             .TEMPORAL_SNAPSHOT_CREATE_COOLDOWN),
                             unlockLevel,
-                            action.energyCost(create),
-                            action.cooldownTicks(create)
+                            com.jayptucker.heroesevolved.skills.SkillTreeService.activationCost(player, create.abilityId(), com.jayptucker.heroesevolved.ability.PowerBalance.energy(actionId, action.energyCost(create))),
+                            com.jayptucker.heroesevolved.skills.SkillTreeService.cooldown(player, create.abilityId(), com.jayptucker.heroesevolved.ability.PowerBalance.cooldown(actionId, action.cooldownTicks(create)))
                     ),
                     new AbilityActionSnapshot(
                             slot,
@@ -126,8 +126,8 @@ public final class PlayerPowerSyncService {
                                     TimeManipulationAbility
                                             .TEMPORAL_SNAPSHOT_TRAVEL_COOLDOWN),
                             unlockLevel,
-                            action.energyCost(travel),
-                            action.cooldownTicks(travel)
+                            com.jayptucker.heroesevolved.skills.SkillTreeService.activationCost(player, travel.abilityId(), com.jayptucker.heroesevolved.ability.PowerBalance.energy(actionId, action.energyCost(travel))),
+                            com.jayptucker.heroesevolved.skills.SkillTreeService.cooldown(player, travel.abilityId(), com.jayptucker.heroesevolved.ability.PowerBalance.cooldown(actionId, action.cooldownTicks(travel)))
                     )
             );
         }
@@ -139,8 +139,8 @@ public final class PlayerPowerSyncService {
                 unlocked,
                 CooldownService.getExpirationGameTime(player, actionId),
                 unlockLevel,
-                action.energyCost(preview),
-                action.cooldownTicks(preview)
+                com.jayptucker.heroesevolved.skills.SkillTreeService.activationCost(player, preview.abilityId(), com.jayptucker.heroesevolved.ability.PowerBalance.energy(actionId, action.energyCost(preview))),
+                com.jayptucker.heroesevolved.skills.SkillTreeService.cooldown(player, preview.abilityId(), com.jayptucker.heroesevolved.ability.PowerBalance.cooldown(actionId, action.cooldownTicks(preview)))
         ));
     }
 

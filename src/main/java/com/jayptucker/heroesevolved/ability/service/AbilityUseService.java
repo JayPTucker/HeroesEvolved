@@ -36,7 +36,7 @@ public final class AbilityUseService {
                     if (power == null) {
                         return;
                     }
-                    power.action(slot).ifPresent(action -> action.release(
+                    Optional.ofNullable(com.jayptucker.heroesevolved.skills.SkillTreeService.actions(player, entry.getKey()).get(slot)).ifPresent(action -> action.release(
                             new AbilityUseContext(
                                     player,
                                     entry.getKey(),
@@ -52,7 +52,9 @@ public final class AbilityUseService {
             AbilitySlot slot,
             boolean allowOverexertion
     ) {
-        if (com.jayptucker.heroesevolved.cryo.CryoService.isFrozen(player)
+        if (EclipseService.arePowersSuppressed(player)) return AbilityUseResult.POWER_SUPPRESSED;
+        if (!PowerRules.canAct(player)
+                || com.jayptucker.heroesevolved.cryo.CryoService.isFrozen(player)
                 || com.jayptucker.heroesevolved.intro.PowerIntroService.isActive(player)
                 || com.jayptucker.heroesevolved.time.intro.TimeIntroService.isVisiting(player)
                 || com.jayptucker.heroesevolved.time.intro.TimeIntroService.isCity(player.level())) {
@@ -84,7 +86,7 @@ public final class AbilityUseService {
             return AbilityUseResult.UNKNOWN_ABILITY;
         }
 
-        Optional<AbilityAction> action = power.action(slot);
+        Optional<AbilityAction> action = Optional.ofNullable(com.jayptucker.heroesevolved.skills.SkillTreeService.actions(player, powerId).get(slot));
 
         if (action.isEmpty()) {
             return AbilityUseResult.ACTION_NOT_ASSIGNED;
@@ -124,7 +126,7 @@ public final class AbilityUseService {
             return AbilityUseResult.CANNOT_USE;
         }
 
-        int energyCost = abilityAction.energyCost(context);
+        int energyCost = com.jayptucker.heroesevolved.skills.SkillTreeService.activationCost(player, powerId, com.jayptucker.heroesevolved.ability.PowerBalance.energy(abilityAction.definition().id(), abilityAction.energyCost(context)));
 
         boolean requiresOverexertion =
                 PlayerEnergyService.getEnergy(player) < energyCost;
@@ -146,18 +148,19 @@ public final class AbilityUseService {
         com.jayptucker.heroesevolved.effects.ArmPoseActions.onAction(
                 player, abilityAction.definition().id().getPath());
 
+        int energySpent;
         if (requiresOverexertion) {
-            OverexertionService.apply(player, energyCost);
+            energySpent = OverexertionService.apply(player, energyCost);
             power.onOverexerted(context);
         } else {
-            PlayerEnergyService.tryConsume(player, energyCost);
+            energySpent = PlayerEnergyService.consumeUpTo(player, energyCost);
         }
 
         // Mastery is earned in proportion to energy spent, so stronger
         // actions earn more and nothing can be spammed for free progress.
-        MasteryService.awardEnergySpent(player, energyCost);
+        MasteryService.awardEnergySpent(player, energySpent);
 
-        int cooldownTicks = abilityAction.cooldownTicks(context);
+        int cooldownTicks = com.jayptucker.heroesevolved.skills.SkillTreeService.cooldown(player, powerId, com.jayptucker.heroesevolved.ability.PowerBalance.cooldown(abilityAction.definition().id(), abilityAction.cooldownTicks(context)));
 
         // Zero means this action has no cooldown. Avoid storing a zero-tick
         // entry, because a one-tick client/server timing difference can make

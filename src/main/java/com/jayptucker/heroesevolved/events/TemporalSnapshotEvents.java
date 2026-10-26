@@ -44,6 +44,7 @@ public final class TemporalSnapshotEvents {
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             TemporalSnapshotService.resumeInterruptedBuild(player);
+            com.jayptucker.heroesevolved.time.TemporalParadoxService.login(player);
         }
     }
 
@@ -51,6 +52,7 @@ public final class TemporalSnapshotEvents {
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             TemporalEchoRecordingService.forgetPlayer(player.getUUID());
+            com.jayptucker.heroesevolved.time.TemporalParadoxService.logout(player);
         }
     }
 
@@ -198,6 +200,10 @@ public final class TemporalSnapshotEvents {
 
         BlockPos presentPos = TemporalSnapshotService.toPresentPosition(
                 player, event.getPos());
+        if (!com.jayptucker.heroesevolved.effects.WorldMutationPolicy.canEdit(player, present, presentPos)) {
+            player.displayClientMessage(Component.literal("That part of the Present is protected."), true);
+            return;
+        }
         if (snapshotLevel.getBlockEntity(event.getPos())
                 instanceof net.minecraft.world.level.block.entity.ChestBlockEntity
                 pastChest) {
@@ -268,6 +274,7 @@ public final class TemporalSnapshotEvents {
 
         // Vanilla consumes the item in the snapshot; the matching state is
         // then applied to the present only when its position is replaceable.
-        present.setBlock(presentPos, event.getPlacedBlock(), 3);
+        if (!com.jayptucker.heroesevolved.effects.WorldMutationPolicy.place(player, present, presentPos, event.getPlacedBlock()))
+            event.setCanceled(true);
     }
 }

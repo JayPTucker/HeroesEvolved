@@ -63,6 +63,8 @@ public final class PowerIntroService {
             "telepathy", new Spec(60, 50, 0xA070FF, ArmPose.TEMPLE, Kind.PSYCHIC_AWAKEN_CHARGE, Kind.PSYCHIC_AWAKEN_RELEASE),
             "cryokinesis", new Spec(60, 50, 0xBFEFFF, ArmPose.TWO_HANDS_STRAIN, Kind.CRYO_AWAKEN_CHARGE, Kind.CRYO_AWAKEN_RELEASE),
             "radiation", new Spec(600, 50, 0xFF781C, ArmPose.ARMS_WIDE, Kind.NUCLEAR_CHARGE, Kind.NUCLEAR_SHOCKWAVE),
+            "sonic_resonance", new Spec(45, 35, 0xE5CB78, ArmPose.ARMS_WIDE, Kind.SONIC_SENSE, Kind.SONIC_BURST),
+            "superspeed", new Spec(40, 40, 0xFFBE45, ArmPose.ARMS_WIDE, Kind.SPEED_BURST, Kind.SPEED_VORTEX),
             "regeneration", new Spec(50, 40, 0xFFD89B, ArmPose.ARMS_WIDE, Kind.REGEN_AWAKEN_CHARGE, Kind.REGEN_AWAKEN_RELEASE));
     private static final Map<UUID, Session> SESSIONS = new HashMap<>();
     private static final Map<UUID, Integer> SOFT_LANDINGS = new HashMap<>();
@@ -243,6 +245,12 @@ public final class PowerIntroService {
             }
             case "telepathy" -> releaseTelepathy(session);
             case "cryokinesis" -> releaseCryokinesis(session);
+            case "superspeed" -> {
+                sound(player, SoundEvents.WIND_CHARGE_BURST.value(), 1.2F, 1.2F);
+                repelEnemies(player, 6, 0, .8);
+                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("speed.heroesevolved.awakened"));
+            }
+            case "sonic_resonance" -> com.jayptucker.heroesevolved.sonic.SonicService.burst(player, 1, true);
             case "radiation" -> releaseRadiation(session);
         }
         SOFT_LANDINGS.put(player.getUUID(), 20 * 30);

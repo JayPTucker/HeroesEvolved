@@ -20,6 +20,8 @@ import com.jayptucker.heroesevolved.progression.MasteryService;
 import com.jayptucker.heroesevolved.time.TemporalEntityEchoService;
 import com.jayptucker.heroesevolved.sounds.ModSounds;
 import com.jayptucker.heroesevolved.time.TimeSlowService;
+import com.jayptucker.heroesevolved.time.SpaceTimeService;
+import com.jayptucker.heroesevolved.time.TemporalStoryService;
 import com.jayptucker.heroesevolved.time.TimeStopService;
 import com.jayptucker.heroesevolved.time.TemporalSnapshotService;
 import net.minecraft.core.particles.ParticleTypes;
@@ -72,7 +74,7 @@ public final class TimeManipulationAbility implements Ability {
     private static final AbilityAction TEMPORAL_SNAPSHOT =
             new TemporalSnapshotAction();
 
-    /** Level 4: rewind fifteen seconds of your own position and lost health. */
+    /** Level 4: restore the recorded local timeline, including blocks and entities. */
     private static final AbilityAction REWIND =
             com.jayptucker.heroesevolved.ability.SimpleAction
                     .builder("time_rewind", 4)
@@ -115,6 +117,7 @@ public final class TimeManipulationAbility implements Ability {
 
     @Override
     public void onRevoked(AbilityUseContext context) {
+        SpaceTimeService.forget(context.player());
         TimeSlowService.stop(context.player());
         TimeStopService.stop(context.player());
         com.jayptucker.heroesevolved.time.TimeRewindService.forget(context.player());
@@ -185,6 +188,12 @@ public final class TimeManipulationAbility implements Ability {
                     context.abilityLevel()
             );
 
+            for (int distance = 1; distance <= maximumDistance; distance++) {
+                if (!level.hasChunkAt(BlockPos.containing(origin.add(direction.scale(distance))))) {
+                    maximumDistance = distance - 1; break;
+                }
+            }
+            if (maximumDistance < 2) return AbilityActivationResult.REJECTED;
             // Blink now uses the first solid block in the player's line of
             // sight. This makes its destination predictable: stand on top of
             // the block you are looking at, never somewhere below it.
@@ -195,24 +204,25 @@ public final class TimeManipulationAbility implements Ability {
                     ClipContext.Fluid.NONE,
                     player
             ));
-            if (hit.getType() != HitResult.Type.BLOCK) {
-                return AbilityActivationResult.REJECTED;
-            }
-
-            Vec3 destination = findSafeLandingDestination(
-                    level,
-                    player,
-                    hit.getBlockPos()
-            );
+            Vec3 destination = hit.getType() == HitResult.Type.BLOCK
+                    ? findSafeLandingDestination(level, player, hit.getBlockPos()) : null;
+            // If the aimed surface has no headroom, step back along the visible ray.
+            // Looking into open air is useful for escaping a fall or crossing a gap.
             if (destination == null) {
-                return AbilityActivationResult.REJECTED;
+                double distance = hit.getType() == HitResult.Type.BLOCK
+                        ? Math.max(0, origin.distanceTo(hit.getLocation()) - .8) : maximumDistance;
+                for (double d = distance; d >= 2; d -= .5) {
+                    Vec3 candidate = player.position().add(direction.scale(d));
+                    if (SpaceTimeService.safe(player, candidate)) { destination = candidate; break; }
+                }
             }
+            if (destination == null) return AbilityActivationResult.REJECTED;
 
             // Carry Blink is intentionally folded into the familiar Blink
             // input: beginning at Level 2, Sneak selects the nearest living
             // target within one block and brings it along when space permits.
             LivingEntity carriedEntity = context.abilityLevel() >= 2
-                    && player.isShiftKeyDown()
+                    && context.modifierHeld()
                     ? findBlinkCarryTarget(player, level)
                     : null;
 
@@ -234,11 +244,11 @@ public final class TimeManipulationAbility implements Ability {
                     );
 
             spawnAfterimage(level, player.position());
-            player.teleportTo(
-                    destination.x,
-                    destination.y,
-                    destination.z
-            );
+            player.teleportTo(destination.x, destination.y, destination.z);
+            player.resetFallDistance();
+            player.setDeltaMovement(Vec3.ZERO);
+            player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket(player));
+            AbilityEffects.send(level, Kind.TEMPORAL_BURST, destination, destination.add(0, 1, 0), 1.5);
             com.jayptucker.heroesevolved.network.ScreenTintPayload.send(
                     player, 0x50FFFFFF, 4,
                     com.jayptucker.heroesevolved.network.ScreenTintPayload.Style.FLASH
@@ -250,6 +260,11 @@ public final class TimeManipulationAbility implements Ability {
                         carriedDestination.y,
                         carriedDestination.z
                 );
+                carriedEntity.resetFallDistance();
+                carriedEntity.setDeltaMovement(Vec3.ZERO);
+                carriedEntity.hurtMarked = true;
+                if (carriedEntity instanceof ServerPlayer passenger) passenger.connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket(passenger));
+                TemporalStoryService.reach(player, TemporalStoryService.RESCUE);
             }
 
             // The server plays this once at the destination, so the player
@@ -307,7 +322,7 @@ public final class TimeManipulationAbility implements Ability {
                             && !(candidate instanceof TemporalEchoEntity)
                             && !TemporalEntityEchoService.isReplaying(candidate)
                             && (!(candidate instanceof Player otherPlayer)
-                            || !otherPlayer.isSpectator())
+                            || !otherPlayer.isSpectator() && (player.isAlliedTo(otherPlayer) || otherPlayer.isShiftKeyDown()))
             );
 
             return candidates.stream()
@@ -356,7 +371,7 @@ public final class TimeManipulationAbility implements Ability {
                 );
 
                 if (!candidateBox.intersects(playerDestinationBox)
-                        && level.noCollision(carriedEntity, candidateBox)) {
+                        && SpaceTimeService.safe(carriedEntity, candidateDestination)) {
                     return candidateDestination;
                 }
             }
@@ -402,7 +417,7 @@ public final class TimeManipulationAbility implements Ability {
             AABB candidateBox = player.getBoundingBox().move(
                     candidate.subtract(player.position())
             );
-            return level.noCollision(player, candidateBox) ? candidate : null;
+            return SpaceTimeService.safe(player, candidate) ? candidate : null;
         }
     }
 
@@ -454,6 +469,7 @@ public final class TimeManipulationAbility implements Ability {
         public AbilityActivationResult activate(AbilityUseContext context) {
             ServerPlayer player = context.player();
 
+            TimeStopService.stop(player);
             TimeSlowService.start(player, context.abilityLevel());
             MasteryService.markPowerUse(
                     player,
@@ -514,7 +530,7 @@ public final class TimeManipulationAbility implements Ability {
             // Stopping time supersedes a current slow field, preventing two
             // overlapping effects from competing over entities and projectiles.
             TimeSlowService.stop(player);
-            TimeStopService.start(player, context.abilityLevel());
+            TimeStopService.start(player, context.abilityLevel(), context.modifierHeld());
             MasteryService.markPowerUse(player, context.abilityId());
             return AbilityActivationResult.SUCCESS;
         }
@@ -554,6 +570,7 @@ public final class TimeManipulationAbility implements Ability {
 
         @Override
         public int cooldownTicks(AbilityUseContext context) {
+            if (inPast(context)) return 0;
             return creatingSnapshot(context)
                     ? HeroesEvolvedConfig.COMMON.timeSnapshotCooldownTicks.get()
                     : HeroesEvolvedConfig.COMMON
@@ -562,6 +579,7 @@ public final class TimeManipulationAbility implements Ability {
 
         @Override
         public ResourceLocation cooldownId(AbilityUseContext context) {
+            if (inPast(context)) return ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "temporal_return");
             return creatingSnapshot(context)
                     ? TEMPORAL_SNAPSHOT_CREATE_COOLDOWN
                     : TEMPORAL_SNAPSHOT_TRAVEL_COOLDOWN;
@@ -585,6 +603,7 @@ public final class TimeManipulationAbility implements Ability {
         public AbilityActivationResult activate(AbilityUseContext context) {
             ServerPlayer player = context.player();
             boolean succeeded;
+            boolean travellingToPast = !inPast(context) && !context.modifierHeld();
             if (inPast(context)) {
                 succeeded = TemporalSnapshotService.returnToPresent(player);
             } else if (context.modifierHeld()) {
@@ -595,6 +614,7 @@ public final class TimeManipulationAbility implements Ability {
 
             if (succeeded) {
                 MasteryService.markPowerUse(player, context.abilityId());
+                if (travellingToPast) TemporalStoryService.reach(player, TemporalStoryService.TRAVEL);
             }
             return succeeded
                     ? AbilityActivationResult.SUCCESS

@@ -37,6 +37,14 @@ public final class ModAbilities {
     public static final DeferredHolder<Ability, FlightAbility> FLIGHT =
             ABILITIES.register(FLIGHT_ID.getPath(), FlightAbility::new);
 
+    public static final ResourceLocation SONIC_RESONANCE_ID = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "sonic_resonance");
+    public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.SonicResonanceAbility> SONIC_RESONANCE =
+            ABILITIES.register(SONIC_RESONANCE_ID.getPath(), com.jayptucker.heroesevolved.ability.types.SonicResonanceAbility::new);
+
+    public static final ResourceLocation SUPERSPEED_ID = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "superspeed");
+    public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.SuperspeedAbility> SUPERSPEED =
+            ABILITIES.register(SUPERSPEED_ID.getPath(), com.jayptucker.heroesevolved.ability.types.SuperspeedAbility::new);
+
     public static void register(IEventBus modEventBus) {
         ABILITIES.register(modEventBus);
     }

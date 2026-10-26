@@ -17,7 +17,10 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("22")
+        event.registrar("25")
+            .playToClient(SonicVoicePayload.TYPE, SonicVoicePayload.STREAM_CODEC, SonicVoicePayload::handle)
+            .playToServer(SkillTreeActionPayload.TYPE, SkillTreeActionPayload.STREAM_CODEC, SkillTreeActionPayload::handle)
+            .playToClient(SkillTreeStatePayload.TYPE, SkillTreeStatePayload.STREAM_CODEC, SkillTreeStatePayload::handle)
             .playToServer(FlightSpeedInputPayload.TYPE, FlightSpeedInputPayload.STREAM_CODEC, FlightSpeedInputPayload::handle)
             .playToClient(NuclearCloudPayload.TYPE, NuclearCloudPayload.STREAM_CODEC, NuclearCloudPayload::handle)
             .playToClient(RadiationStatePayload.TYPE, RadiationStatePayload.STREAM_CODEC, RadiationStatePayload::handle)

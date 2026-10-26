@@ -25,6 +25,59 @@ final class DetailedAbilityEffects {
         Vec3 axis = delta.lengthSqr() < 0.0001D ? UP : delta.normalize();
         float phase = (float) (level.getGameTime() * 0.3D);
         switch (kind) {
+            case SPEED_TRAIL -> {
+                Vec3 from = origin.add(0, .65, 0), to = target.add(0, .65, 0);
+                if (from.distanceToSqr(to) > .001) {
+                    streak(level, from, to, .065F, 32, 0xFFB52E);
+                    streak(level, from.add(0, .65, 0), to.add(0, .65, 0), .03F, 26, 0xFFE9AD);
+                    if (detail) {
+                        Vec3 right = basis(axis);
+                        Vec3 previous = from;
+                        // A fixed jagged ribbon budget, independent of speed or distance.
+                        for (int i = 1; i <= 6; i++) {
+                            Vec3 point = from.lerp(to, i / 6.0).add(right.scale(Math.sin(i * 4.3 + phase) * .20));
+                            streak(level, previous, point, .025F, 20 + i, i % 2 == 0 ? 0xFFF2CE : 0xFF6A20);
+                            previous = point;
+                        }
+                        ring(level, origin.add(0, .9, 0), axis, .34F, .06F, 16, 0, GOLD, .30F);
+                    }
+                }
+            }
+            case SPEED_BURST, SPEED_IMPACT -> {
+                Vec3 point = kind == Kind.SPEED_IMPACT ? target : origin.add(0, .8, 0);
+                ring(level, point, axis, .1F, size, 12, 0, 0xFFD16A, .55F);
+                if (detail) {
+                    burst(level, point, axis, 0xFFE6AB, 8, .18F);
+                    for (int i = 0; i < 3; i++)
+                        add(new PowerParticle(level, ARC, point, new Vec3(i == 0 ? 1 : .1, i == 1 ? 1 : .3, i == 2 ? 1 : .2),
+                                .1F, size * .7F, 15, i, 0xFF8B24, .6F).arc(i * 2.1F, .22F, 3.5F, .025F));
+                }
+            }
+            case SPEED_VORTEX -> {
+                ring(level, origin.add(0, .1, 0), UP, size * .7F, size, 16, 0, GOLD, .35F);
+                for (int i = 0; i < (detail ? 5 : 2); i++)
+                    add(new PowerParticle(level, ARC, origin.add(0, .3 + i * .45, 0), UP,
+                            size * (1 - i * .12F), size * (.8F - i * .10F), 18, 0,
+                            i % 2 == 0 ? 0xFFD881 : 0xD9F4FF, .45F).arc(phase + i * 1.7F, .30F, 4.2F, .06F));
+            }
+            case SONIC_WAVE -> {
+                int fronts = detail ? 10 : 4;
+                for (int i = 0; i < fronts; i++) {
+                    float t = (i + .5F) / fronts;
+                    Vec3 point = origin.lerp(target, t);
+                    ring(level, point, axis, .12F + t, .35F + t * 3, 12, i / 2, i % 2 == 0 ? 0xF8D983 : 0xC0F0E7, .48F);
+                    if (detail) add(new PowerParticle(level, ARC, point, axis, .2F + t, .5F + t * 3,
+                            14, i / 2, GOLD, .4F).arc(i * 2.4F, .07F, 2.2F, .025F));
+                }
+            }
+            case SONIC_BURST, SONIC_SENSE -> {
+                boolean sense = kind == Kind.SONIC_SENSE;
+                ring(level, origin.add(0, .12, 0), UP, .3F, size, sense ? 32 : 16, 0, GOLD, .6F);
+                for (int i = 0; i < (detail ? 4 : 1); i++)
+                    add(new PowerParticle(level, ARC, origin.add(0, 1, 0), new Vec3(i % 2, .35, 1 - i % 2),
+                            .3F, size * .7F, 20, i * 2, 0xBEF0DF, .35F).arc(i * 1.6F, .045F, 4.4F, .04F));
+            }
+
             case NUCLEAR_RAY -> {
                 // A tapered incandescent core, warm halo, and sparse turbulent eddies.
                 streak(level, origin, target, .13F, 10, 0xFF6B16);
@@ -155,6 +208,28 @@ final class DetailedAbilityEffects {
                                 new Vec3(0, 0.04D, 0), 0.055F, 28, i % 2 == 0 ? CRIMSON : GOLD);
                     }
                     helix(level, origin, 0.55F, 1.9F, CRIMSON, density / 2, 24);
+                }
+            }
+            case TEMPORAL_BURST, TEMPORAL_FIELD -> {
+                boolean field = kind == Kind.TEMPORAL_FIELD;
+                Vec3 center = origin.add(0, .08, 0);
+                float radius = Math.min(size, 48);
+                // Clock-face arcs are world-anchored meshes, not hundreds of particles.
+                ring(level, center, UP, field ? radius * .15F : 1.2F, field ? radius : .05F,
+                        field ? 32 : 16, 0, GOLD, .45F);
+                ring(level, center.add(0, .05, 0), UP, field ? radius * .2F : .1F,
+                        field ? radius * .95F : 1.6F, 24, 2, VIOLET, .25F);
+                if (detail) {
+                    for (int i = 0; i < 12; i++) {
+                        double a = i * Math.PI / 6;
+                        Vec3 direction = new Vec3(Math.cos(a), 0, Math.sin(a));
+                        streak(level, center.add(direction.scale(radius * .85)),
+                                center.add(direction.scale(radius)), .025F, 28, i % 3 == 0 ? GOLD : CYAN);
+                    }
+                    for (int i = 0; i < 3; i++)
+                        add(new PowerParticle(level, ARC, origin.add(0, .8, 0), new Vec3(i == 0 ? 1 : 0, i == 1 ? 1 : .2, i == 2 ? 1 : 0),
+                                .2F, Math.min(radius, 1.6F), 22, i * 2, GOLD, .55F)
+                                .arc(i * 2.1F, field ? .04F : -.16F, 4.4F, .025F));
                 }
             }
             case TEMPORAL_REWIND -> {

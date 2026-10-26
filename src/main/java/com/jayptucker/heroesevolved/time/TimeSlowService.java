@@ -39,6 +39,8 @@ public final class TimeSlowService {
     private TimeSlowService() {
     }
 
+    public static void clear() { ACTIVE_FIELDS.clear(); restoreAllProjectiles(); }
+
     public static boolean hasActiveField(ServerPlayer player) {
         return ACTIVE_FIELDS.containsKey(player.getUUID());
     }
@@ -75,6 +77,7 @@ public final class TimeSlowService {
                 1.0F
         );
 
+        com.jayptucker.heroesevolved.effects.AbilityEffects.at(player, com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind.TEMPORAL_FIELD, HeroesEvolvedConfig.COMMON.timeSlowRadius.get());
         ACTIVE_FIELDS.put(
                 player.getUUID(),
                 new TimeSlowField(
@@ -105,6 +108,8 @@ public final class TimeSlowService {
             // Matches Time Stop: an Eclipse suppresses active fields too.
             boolean hasEnded = level == null
                     || owner == null
+                    || !owner.isAlive() || owner.level() != level || !SpaceTimeService.awakened(owner)
+                    || com.jayptucker.heroesevolved.cryo.CryoService.isFrozen(owner)
                     || EclipseService.arePowersSuppressed(owner)
                     || field.advanceTimer();
 
@@ -114,7 +119,10 @@ public final class TimeSlowService {
                 if (level != null && owner != null) {
                     playEndSound(level, field, owner);
                 }
-            } else if (level.getGameTime() % 10 == 0) {
+            } else {
+                field.center = owner.position();
+                if (level.getGameTime() % 10 != 0) continue;
+                owner.displayClientMessage(net.minecraft.network.chat.Component.translatable("time.heroesevolved.slowed", (field.remainingTicks + 19) / 20), true);
                 // Slowed time takes on a faded, sepia warmth.
                 com.jayptucker.heroesevolved.network.ScreenTintPayload.sendAround(
                         level, field.center(),
@@ -210,7 +218,8 @@ public final class TimeSlowService {
 
         for (TimeSlowField field : ACTIVE_FIELDS.values()) {
             if (!field.dimension().equals(level.dimension())
-                    || field.ownerId().equals(entity.getUUID())
+                    || field.ownerId().equals(entity.getUUID()) || entity.isSpectator()
+                    || com.jayptucker.heroesevolved.speed.SpeedService.outrunsTime(entity)
                     || field.hasEnded()) {
                 continue;
             }
@@ -355,7 +364,7 @@ public final class TimeSlowService {
     private static final class TimeSlowField {
         private final UUID ownerId;
         private final ResourceKey<Level> dimension;
-        private final Vec3 center;
+        private Vec3 center;
         private int remainingTicks;
         private final int tickInterval;
 

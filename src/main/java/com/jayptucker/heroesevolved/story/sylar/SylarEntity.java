@@ -103,6 +103,14 @@ public final class SylarEntity extends PathfinderMob implements Enemy {
         if (power.equals(ModAbilities.CRYOKINESIS_ID)) {
             kind = Kind.CRYO_BOLT; victim.setTicksFrozen(Math.min(victim.getTicksRequiredToFreeze(), victim.getTicksFrozen() + 60));
             victim.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 1));
+        } else if (power.equals(ModAbilities.SUPERSPEED_ID)) {
+            Vec3 from = position(), difference = victim.position().subtract(from);
+            Vec3 end = com.jayptucker.heroesevolved.speed.SpeedService.swept(this,
+                    difference.normalize().scale(Math.max(0, difference.length() - 1.8)));
+            if (end.distanceToSqr(victim.position()) > 9) return;
+            teleportTo(end.x, end.y, end.z);
+            AbilityEffects.send(level, Kind.SPEED_TRAIL, from, end, 1);
+            kind = Kind.SPEED_IMPACT;
         } else if (power.equals(ModAbilities.ELECTROKINESIS_ID)) kind = Kind.ELECTRIC_ARC;
         else if (power.equals(ModAbilities.QUAKE_ID)) kind = Kind.QUAKE_BEAM;
         else if (power.equals(ModAbilities.RADIATION_ID)) { kind = Kind.NUCLEAR_CHARGE; victim.igniteForSeconds(2); }

@@ -31,6 +31,8 @@ public final class PlayerProgressionService {
                 updatedData
         );
 
+        rememberSkillLevel(player);
+
         return updatedData;
     }
 
@@ -53,6 +55,14 @@ public final class PlayerProgressionService {
                 updatedData
         );
 
+        rememberSkillLevel(player);
+
         return updatedData;
+    }
+
+    private static void rememberSkillLevel(ServerPlayer player) {
+        com.jayptucker.heroesevolved.ability.service.PlayerAbilityService.getData(player).assignedPower()
+                .filter(e -> e.getValue().isUnlocked())
+                .ifPresent(e -> com.jayptucker.heroesevolved.skills.SkillTreeService.build(player, e.getKey()));
     }
 }

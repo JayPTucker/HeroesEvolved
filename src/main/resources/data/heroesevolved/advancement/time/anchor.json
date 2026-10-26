@@ -1,0 +1,19 @@
+{
+  "display": {
+    "icon": {
+      "id": "minecraft:clock"
+    },
+    "title": "A Place to Return",
+    "description": "Remember safe ground using Spatial Anchor.",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "experienced": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "parent": "heroesevolved:time/vision"
+}

@@ -50,10 +50,7 @@ public final class AbilityEffects {
     public static void onAction(ServerPlayer player, ResourceLocation power, String action) {
         switch (power.getPath()) {
             case "time_manipulation" -> {
-                if (!action.equals("time_rewind")) {
-                    at(player, action.equals("time_blink") ? Kind.TEMPORAL_BURST : Kind.TEMPORAL_FIELD,
-                            action.equals("time_stop") ? 7.0D : 3.0D);
-                }
+                if (action.equals("temporal_snapshot")) at(player, Kind.TEMPORAL_FIELD, 3);
             }
             case "flight" -> {
                 if (!action.equals("flight_cyclone") && !action.equals("flight_dive_bomb")) {

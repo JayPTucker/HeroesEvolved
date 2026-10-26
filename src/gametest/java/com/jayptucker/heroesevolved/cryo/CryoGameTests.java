@@ -223,9 +223,25 @@ public final class CryoGameTests {
     @GameTest(template = "rewind_empty", timeoutTicks = 100, batch = "CryoGameTests.rangedBlastsLightningAndPushReachBeyondOldLimits")
     public static void rangedBlastsLightningAndPushReachBeyondOldLimits(GameTestHelper helper) {
         ServerPlayer player = player(helper, 65);
-        Cow cow = target(helper, EntityType.COW, player.position().add(0, 0, 12));
+        Cow cow = target(helper, EntityType.COW, player.position().add(0, 0, 40));
         cow.setNoAi(true);
-        try {
+        // The forty-block target can leave the template's normal chunk tickets.
+        // Make entity accessibility deterministic regardless of chunk alignment.
+        var forced = new java.util.HashSet<net.minecraft.world.level.ChunkPos>();
+        for (int z = 0; z <= 48; z += 8) {
+            var chunk = new net.minecraft.world.level.ChunkPos(player.blockPosition().offset(0, 0, z));
+            if (!helper.getLevel().getForcedChunks().contains(chunk.toLong())) {
+                helper.getLevel().setChunkForced(chunk.x, chunk.z, true); forced.add(chunk);
+            }
+            helper.getLevel().getChunk(chunk.x, chunk.z);
+        }
+        helper.startSequence().thenWaitUntil(() -> {
+            helper.assertTrue(helper.getLevel().getEntities(player,
+                    new net.minecraft.world.phys.AABB(player.position(), cow.position()).inflate(2), Entity::isAlive).contains(cow),
+                    "Wait for the distant target's chunk to become accessible before checking power range");
+        }).thenExecute(() -> {
+            try {
+            cow.setPos(player.position().add(0, 0, 12));
             aim(player, cow);
             QuakeService.shockwave(player, 1);
             helper.assertTrue(cow.getHealth() < cow.getMaxHealth(), "Level one Quake must hit twelve blocks away (old range eight)");
@@ -243,12 +259,23 @@ public final class CryoGameTests {
             cow.setHealth(cow.getMaxHealth());
             cow.invulnerableTime = 0;
             cow.setPos(player.position().add(0, 0, 40));
+            cow.setDeltaMovement(Vec3.ZERO);
             aim(player, cow);
+            helper.assertTrue(helper.getLevel().getEntities(player,
+                    new net.minecraft.world.phys.AABB(player.position(), cow.position()).inflate(2), Entity::isAlive).contains(cow),
+                    "The distant target's chunk must be accessible before testing beam range");
             RadiationService.addMass(player, 20);
             helper.assertTrue(RadiationService.meltdownBeam(player, 1), "Mass must vent into a beam");
-            helper.assertTrue(cow.getHealth() < cow.getMaxHealth(), "Radiation beam must hit forty blocks away (old range twenty-four)");
-            helper.succeed();
-        } finally { remove(player, cow); }
+            helper.assertTrue(cow.getHealth() < cow.getMaxHealth(), "Radiation beam must hit forty blocks away (old range twenty-four)"
+                    + "; alive=" + cow.isAlive() + "; removed=" + cow.isRemoved()
+                    + "; loaded=" + helper.getLevel().hasChunkAt(cow.blockPosition())
+                    + "; visible=" + player.hasLineOfSight(cow)
+                    + "; query=" + helper.getLevel().getEntities(player,
+                            new net.minecraft.world.phys.AABB(player.getEyePosition(), player.getEyePosition().add(player.getLookAngle().scale(48))).inflate(1.2), Entity::isAlive).contains(cow));
+        } finally {
+            remove(player, cow);
+            for (var chunk : forced) helper.getLevel().setChunkForced(chunk.x, chunk.z, false);
+        } }).thenSucceed();
     }
 
     @GameTest(template = "rewind_empty", timeoutTicks = 100, batch = "CryoGameTests.distantTelekineticGripSurvivesItsMaintenanceCheck")

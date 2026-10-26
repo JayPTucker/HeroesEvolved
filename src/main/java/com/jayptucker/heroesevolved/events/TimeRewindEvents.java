@@ -17,6 +17,13 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 /** A personal timeline cannot carry across a world change or a new life. */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class TimeRewindEvents {
+    @SubscribeEvent public static void entityBorn(net.neoforged.neoforge.event.entity.EntityJoinLevelEvent event) {
+        com.jayptucker.heroesevolved.time.TimeRewindEntities.born(event.getEntity(), event.loadedFromDisk());
+    }
+    @SubscribeEvent public static void login(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player)
+            com.jayptucker.heroesevolved.time.PendingPlayerRewinds.get(player.getServer()).login(player);
+    }
     private TimeRewindEvents() {
     }
 
@@ -39,6 +46,9 @@ public final class TimeRewindEvents {
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            com.jayptucker.heroesevolved.time.SpaceTimeService.forget(player);
+            com.jayptucker.heroesevolved.time.TimeStopService.stop(player);
+            com.jayptucker.heroesevolved.time.TimeSlowService.stop(player);
             TimeRewindService.forget(player);
         }
     }
@@ -46,6 +56,9 @@ public final class TimeRewindEvents {
     @SubscribeEvent
     public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            com.jayptucker.heroesevolved.time.SpaceTimeService.forget(player);
+            com.jayptucker.heroesevolved.time.TimeStopService.stop(player);
+            com.jayptucker.heroesevolved.time.TimeSlowService.stop(player);
             TimeRewindService.forget(player);
         }
     }
@@ -53,12 +66,18 @@ public final class TimeRewindEvents {
     @SubscribeEvent
     public static void onDimensionChanged(PlayerEvent.PlayerChangedDimensionEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            com.jayptucker.heroesevolved.time.SpaceTimeService.forget(player);
+            com.jayptucker.heroesevolved.time.TimeStopService.stop(player);
+            com.jayptucker.heroesevolved.time.TimeSlowService.stop(player);
             TimeRewindService.forget(player);
         }
     }
 
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
+        com.jayptucker.heroesevolved.time.SpaceTimeService.clear();
+        com.jayptucker.heroesevolved.time.TimeStopService.clear();
+        com.jayptucker.heroesevolved.time.TimeSlowService.clear();
         TimeRewindService.clear();
     }
 }

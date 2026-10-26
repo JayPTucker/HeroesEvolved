@@ -181,6 +181,7 @@ public final class TemporalParadoxService {
                 )
         );
         state.removedItems().add(normalStack.copyWithCount(removed));
+        persist(victim, state);
         ScreenTintPayload.send(victim, PARADOX_TINT, state.remainingTicks,
                 ScreenTintPayload.Style.PULSE);
         victim.sendSystemMessage(net.minecraft.network.chat.Component.literal(
@@ -206,6 +207,10 @@ public final class TemporalParadoxService {
         }
 
         ServerPlayer victim = restorer.getServer().getPlayerList().getPlayer(victimId);
+        if (victim == null) {
+            restorer.displayClientMessage(Component.literal("The person whose timeline needs repair must be online."), true);
+            return false;
+        }
         if (victim != null) {
             for (ItemStack stack : state.removedItems()) {
                 ItemStack remaining = stack.copy();
@@ -222,6 +227,7 @@ public final class TemporalParadoxService {
             ));
         }
         ACTIVE_PARADOXES.remove(victimId);
+        victim.setData(com.jayptucker.heroesevolved.data.ModDataAttachments.TEMPORAL_RECOVERY, TemporalRecoveryData.empty());
         restorer.sendSystemMessage(net.minecraft.network.chat.Component.literal(
                 "Timeline restored."
         ));
@@ -237,6 +243,7 @@ public final class TemporalParadoxService {
                 continue;
             }
             state.remainingTicks--;
+            if (state.remainingTicks % 20 == 0) persist(victim, state);
             applyPhaseFlicker(victim, state.remainingTicks, state.wasInvisible());
             if (state.remainingTicks % DAMAGE_INTERVAL_TICKS == 0) {
                 victim.hurt(paradoxDamage(victim), 2.0F);
@@ -244,6 +251,7 @@ public final class TemporalParadoxService {
             if (state.remainingTicks <= 0) {
                 victim.setInvisible(state.wasInvisible());
                 victim.hurt(paradoxDamage(victim), Float.MAX_VALUE);
+                victim.setData(com.jayptucker.heroesevolved.data.ModDataAttachments.TEMPORAL_RECOVERY, TemporalRecoveryData.empty());
                 iterator.remove();
             }
         }
@@ -288,6 +296,27 @@ public final class TemporalParadoxService {
                         snapshotOwnerId + ":" + victimId)
         );
     }
+
+    private static void persist(ServerPlayer victim, ParadoxState state) {
+        victim.setData(com.jayptucker.heroesevolved.data.ModDataAttachments.TEMPORAL_RECOVERY,
+                new TemporalRecoveryData(state.snapshotOwnerId, state.removedItems.stream().map(ItemStack::copy).toList(),
+                        state.remainingTicks, state.wasInvisible));
+    }
+    public static void login(ServerPlayer player) {
+        TemporalRecoveryData data = player.getData(com.jayptucker.heroesevolved.data.ModDataAttachments.TEMPORAL_RECOVERY);
+        if (data.remaining() > 0 && !data.removed().isEmpty()) {
+            ACTIVE_PARADOXES.put(player.getUUID(), new ParadoxState(data.owner(), player.getUUID(),
+                    new ArrayList<>(data.removed().stream().map(ItemStack::copy).toList()), data.remaining(),
+                    player.level().getGameTime(), data.invisible()));
+            player.sendSystemMessage(Component.literal("Your timeline still needs repair. Your missing possessions remain recoverable."));
+        }
+    }
+    public static void logout(ServerPlayer player) {
+        ParadoxState state = ACTIVE_PARADOXES.remove(player.getUUID());
+        if (state != null) { persist(player, state); player.setInvisible(state.wasInvisible); }
+        resolveSelfParadox(player);
+    }
+    public static void clearRuntime() { ACTIVE_PARADOXES.clear(); SELF_PARADOXES.clear(); }
 
     private static LootIdentity readTemporalLoot(ItemStack stack) {
         CustomData data = stack.get(DataComponents.CUSTOM_DATA);

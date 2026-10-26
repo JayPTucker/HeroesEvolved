@@ -63,6 +63,84 @@ public class EffectGeometryCheck {
         public VertexConsumer setNormal(float x,float y,float z) { return this; }
     }
     public static void main(String[] args) throws Exception {
+        float previousOpacity = 1;
+        for (int age = 0; age <= 24; age++) {
+            float alpha = com.jayptucker.heroesevolved.client.effects.SpeedAfterimages.opacity(age);
+            if (!Float.isFinite(alpha) || alpha < 0 || alpha > .42F || alpha > previousOpacity || age >= 18 && alpha != 0)
+                throw new AssertionError("Afterimages must fade monotonically and expire");
+            previousOpacity = alpha;
+        }
+        System.out.println("PASS: Player afterimages fade from 42% opacity to zero and expire after 18 ticks.");
+        for (int age : new int[]{0, 1, 2, 40, 100}) {
+            float full = com.jayptucker.heroesevolved.client.sound.SonicVoiceEnvelope.gain(age, -1);
+            float fading = com.jayptucker.heroesevolved.client.sound.SonicVoiceEnvelope.gain(age, 1);
+            float stopped = com.jayptucker.heroesevolved.client.sound.SonicVoiceEnvelope.gain(age, 0);
+            if (!Float.isFinite(full) || full < 0 || full > 1 || fading > full || stopped != 0)
+                throw new AssertionError("Canary cry playback ramp is invalid");
+        }
+        if (com.jayptucker.heroesevolved.client.sound.SonicVoiceEnvelope.gain(0, -1) != 0
+                || com.jayptucker.heroesevolved.client.sound.SonicVoiceEnvelope.gain(2, -1) != 1
+                || com.jayptucker.heroesevolved.client.sound.SonicVoiceEnvelope.gain(100, 1) != .5F)
+            throw new AssertionError("Canary cry attack/release timing changed");
+        System.out.println("PASS: Continuous Canary cry uses bounded attack and release ramps with a silent endpoint.");
+        // A late default Screen background used to blur the already-drawn title
+        // and descriptions. Neither custom menu should invoke that GPU pass.
+        new com.jayptucker.heroesevolved.gui.screen.SkillTreeScreen(null).renderBackground(null, 0, 0, 0);
+        new com.jayptucker.heroesevolved.gui.screen.PowersScreen().renderBackground(null, 0, 0, 0);
+        System.out.println("PASS: Power menus do not invoke a late world/menu blur after drawing their content.");
+        RegistryFriendlyByteBuf skillBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), RegistryAccess.EMPTY);
+        try {
+            var build = new com.jayptucker.heroesevolved.skills.SkillTreeData.Build(5,
+                    java.util.Set.of("sonic_resonance_0_0", "sonic_resonance_0_1"),
+                    java.util.Map.of("PRIMARY", "sonic_resonance_0_1"));
+            var state = new com.jayptucker.heroesevolved.network.SkillTreeStatePayload("sonic_resonance", true, 5, build);
+            com.jayptucker.heroesevolved.network.SkillTreeStatePayload.STREAM_CODEC.encode(skillBuffer, state);
+            if (!state.equals(com.jayptucker.heroesevolved.network.SkillTreeStatePayload.STREAM_CODEC.decode(skillBuffer)) || skillBuffer.readableBytes() != 0)
+                throw new AssertionError("Skill purchases/loadout did not round-trip");
+            for (var operation : com.jayptucker.heroesevolved.network.SkillTreeActionPayload.Operation.values()) {
+                var action = new com.jayptucker.heroesevolved.network.SkillTreeActionPayload(operation, "sonic_resonance_0_1",
+                        com.jayptucker.heroesevolved.ability.AbilitySlot.QUINARY);
+                com.jayptucker.heroesevolved.network.SkillTreeActionPayload.STREAM_CODEC.encode(skillBuffer, action);
+                if (!action.equals(com.jayptucker.heroesevolved.network.SkillTreeActionPayload.STREAM_CODEC.decode(skillBuffer)))
+                    throw new AssertionError("Skill request did not round-trip");
+            }
+            var voice = new com.jayptucker.heroesevolved.network.SonicVoicePayload(17, java.util.UUID.randomUUID(), true);
+            com.jayptucker.heroesevolved.network.SonicVoicePayload.STREAM_CODEC.encode(skillBuffer, voice);
+            if (!voice.equals(com.jayptucker.heroesevolved.network.SonicVoicePayload.STREAM_CODEC.decode(skillBuffer)))
+                throw new AssertionError("Sustained scream identity did not round-trip");
+            skillBuffer.clear(); skillBuffer.writeUtf("sonic_resonance"); skillBuffer.writeBoolean(true);
+            skillBuffer.writeVarInt(5); skillBuffer.writeVarInt(5); skillBuffer.writeVarInt(91);
+            try {
+                com.jayptucker.heroesevolved.network.SkillTreeStatePayload.STREAM_CODEC.decode(skillBuffer);
+                throw new AssertionError("Oversized skill state was accepted");
+            } catch (IllegalArgumentException expected) { }
+        } finally { skillBuffer.release(); }
+        System.out.println("PASS: Skill purchases, all request operations, chosen keys and sustained voice identity round-trip; oversized state is rejected.");
+        for (boolean slim : new boolean[]{false, true}) {
+            var root = LayerDefinition.create(PlayerModel.createMesh(CubeDeformation.NONE, slim), 64, 64).bakeRoot();
+            PlayerModel<AbstractClientPlayer> model = new PlayerModel<>(root, slim);
+            for (var pose : new com.jayptucker.heroesevolved.ability.ArmPose[]{
+                    com.jayptucker.heroesevolved.ability.ArmPose.TWO_HANDS,
+                    com.jayptucker.heroesevolved.ability.ArmPose.TWO_HANDS_STRAIN}) {
+                for (var side : net.minecraft.world.entity.HumanoidArm.values()) {
+                    var arm = side == net.minecraft.world.entity.HumanoidArm.RIGHT ? model.rightArm : model.leftArm;
+                    var sleeve = side == net.minecraft.world.entity.HumanoidArm.RIGHT ? model.rightSleeve : model.leftSleeve;
+                    arm.setPos(0, 0, 0); arm.setRotation(0, 0, 0); sleeve.copyFrom(arm);
+                    for (float time : new float[]{0, 1, 17.25F, 10000}) {
+                        PoseStack transform = new PoseStack();
+                        com.jayptucker.heroesevolved.client.FirstPersonArmGeometry.pose(transform, side, pose, time);
+                        Vertices vertices = new Vertices(); vertices.camera = Vec3.ZERO;
+                        vertices.bounds = side == net.minecraft.world.entity.HumanoidArm.RIGHT
+                                ? new AABB(.1, -.6, -1.1, .7, -.1, -.02)
+                                : new AABB(-.7, -.6, -1.1, -.1, -.1, -.02);
+                        arm.render(transform, vertices, 0xF000F0, 0);
+                        sleeve.render(transform, vertices, 0xF000F0, 0);
+                        if (vertices.count != 48) throw new AssertionError("Missing arm or sleeve in first-person blast pose");
+                    }
+                }
+            }
+        }
+        System.out.println("PASS: Both first-person blast arms and sleeves stay on their own sides, forward of the camera, for wide/slim skins and trembling poses.");
         for (int speed = 0; speed <= 4; speed++) {
             RegistryFriendlyByteBuf flightBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), RegistryAccess.EMPTY);
             try {

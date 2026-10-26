@@ -65,6 +65,8 @@ public final class TemporaryBlocks {
         Key key = new Key(level, pos.immutable());
         Placed previous = PLACED.get(key);
         boolean replacingTemporary = previous != null && previous.placed.equals(original);
+        remember(level, new FrostRecovery(pos.immutable(), replacingTemporary ? previous.original : original,
+                state, Math.max(replacingTemporary ? previous.meltAt : 0, level.getGameTime() + durationTicks)));
         if (!level.setBlock(pos, state, Block.UPDATE_ALL)) return false;
         PLACED.put(key, new Placed(level, pos.immutable(), replacingTemporary ? previous.original : original, state,
                 Math.max(replacingTemporary ? previous.meltAt : 0, level.getGameTime() + durationTicks), true));
@@ -97,6 +99,8 @@ public final class TemporaryBlocks {
         if (previous != null && original.equals(previous.placed)) {
             PLACED.put(key, new Placed(level, key.pos, previous.original, previous.placed,
                     Math.max(previous.meltAt, level.getGameTime() + duration), previous.effects));
+            remember(level, new FrostRecovery(key.pos, previous.original, previous.placed,
+                    Math.max(previous.meltAt, level.getGameTime() + duration)));
             return true;
         }
         if (PLACED.size() >= MAXIMUM_PLACED || original.isAir() || original.is(Blocks.PACKED_ICE)
@@ -111,6 +115,7 @@ public final class TemporaryBlocks {
         if (net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(
                 new net.neoforged.neoforge.event.level.BlockEvent.BreakEvent(level, pos.immutable(), original, owner)).isCanceled()) return false;
         BlockState ice = Blocks.PACKED_ICE.defaultBlockState();
+        remember(level, new FrostRecovery(pos.immutable(), original, ice, level.getGameTime() + duration));
         if (!level.setBlock(pos, ice, Block.UPDATE_ALL)) return false;
         PLACED.put(key, new Placed(level, pos.immutable(), original, ice, level.getGameTime() + duration, false));
         return true;
@@ -131,8 +136,8 @@ public final class TemporaryBlocks {
 
     /** Restores everything at once; called when the server stops. */
     public static void meltAll() {
-        for (Placed placed : PLACED.values()) {
-            melt(placed, false);
+        for (Placed placed : java.util.List.copyOf(PLACED.values())) {
+            if (placed.level.hasChunkAt(placed.pos)) melt(placed, false);
         }
         PLACED.clear();
     }
@@ -141,9 +146,11 @@ public final class TemporaryBlocks {
         ServerLevel level = placed.level;
         // Someone mined or replaced it already: leave their change alone.
         if (!level.getBlockState(placed.pos).equals(placed.placed)) {
+            forgetRecovery(level, placed.pos);
             return;
         }
         level.setBlock(placed.pos, placed.original, Block.UPDATE_ALL);
+        forgetRecovery(level, placed.pos);
         if (effects) {
             level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, placed.placed),
                     placed.pos.getX() + 0.5D, placed.pos.getY() + 0.5D,
@@ -166,5 +173,28 @@ public final class TemporaryBlocks {
             long meltAt,
             boolean effects
     ) {
+    }
+
+    private static void remember(ServerLevel level, FrostRecovery recovery) {
+        var chunk = level.getChunkAt(recovery.pos());
+        var entries = new java.util.ArrayList<>(chunk.getData(com.jayptucker.heroesevolved.data.ModDataAttachments.FROST_RECOVERY));
+        entries.removeIf(entry -> entry.pos().equals(recovery.pos())); entries.add(recovery);
+        chunk.setData(com.jayptucker.heroesevolved.data.ModDataAttachments.FROST_RECOVERY, java.util.List.copyOf(entries));
+        chunk.setUnsaved(true);
+    }
+    private static void forgetRecovery(ServerLevel level, BlockPos pos) {
+        var chunk = level.getChunkAt(pos);
+        var entries = new java.util.ArrayList<>(chunk.getData(com.jayptucker.heroesevolved.data.ModDataAttachments.FROST_RECOVERY));
+        if (entries.removeIf(entry -> entry.pos().equals(pos))) {
+            chunk.setData(com.jayptucker.heroesevolved.data.ModDataAttachments.FROST_RECOVERY, java.util.List.copyOf(entries));
+            chunk.setUnsaved(true);
+        }
+    }
+    public static void recover(ServerLevel level, net.minecraft.world.level.chunk.LevelChunk chunk) {
+        for (FrostRecovery entry : chunk.getData(com.jayptucker.heroesevolved.data.ModDataAttachments.FROST_RECOVERY)) {
+            if (new net.minecraft.world.level.ChunkPos(entry.pos()).equals(chunk.getPos())
+                    && chunk.getBlockState(entry.pos()).equals(entry.placed()))
+                PLACED.put(new Key(level, entry.pos()), new Placed(level, entry.pos(), entry.original(), entry.placed(), entry.expires(), false));
+        }
     }
 }

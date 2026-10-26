@@ -52,6 +52,7 @@ public final class TimeRewindService {
             record(player, gameTime);
         }
         TimeRewindBlocks.prune(gameTime);
+        TimeRewindEntities.prune(gameTime);
     }
 
     static void record(ServerPlayer player, long gameTime) {
@@ -62,7 +63,8 @@ public final class TimeRewindService {
         Deque<Sample> samples = HISTORY.computeIfAbsent(player.getUUID(), ignored -> new ArrayDeque<>());
         long blockRevision = TimeRewindBlocks.track(player);
         samples.addLast(new Sample(gameTime, player.level().dimension(), player.position(),
-                player.getYRot(), player.getXRot(), player.getHealth(), player.isOnFire(), blockRevision));
+                player.getYRot(), player.getXRot(), player.getHealth(), player.isOnFire(), blockRevision,
+                TimeRewindEntities.capture(player), TimeRewindContainers.capture(player)));
         while (!samples.isEmpty() && samples.getFirst().gameTime < gameTime - REWIND_TICKS - 20) {
             samples.removeFirst();
         }
@@ -70,7 +72,8 @@ public final class TimeRewindService {
 
     public static boolean canRewind(ServerPlayer player) {
         Sample target = target(player);
-        return target != null && TimeRewindBlocks.plan(player, target.blockRevision) != null;
+        return target != null && target.entities.complete() && target.containers.complete()
+                && TimeRewindBlocks.plan(player, target.blockRevision) != null;
     }
 
     public static boolean rewind(ServerPlayer player) {
@@ -82,6 +85,10 @@ public final class TimeRewindService {
         }
 
         ServerLevel level = player.serverLevel();
+        if (!target.entities.complete() || !target.containers.complete()) {
+            player.displayClientMessage(Component.literal("There were too many entities to record a complete rewind. Wait for a complete history."), true);
+            return false;
+        }
         TimeRewindBlocks.Plan blocks = TimeRewindBlocks.plan(player, target.blockRevision);
         if (blocks == null) {
             player.displayClientMessage(Component.literal(
@@ -119,11 +126,14 @@ public final class TimeRewindService {
         }
         AbilityEffects.send(level, Kind.TEMPORAL_BURST, from, from.add(0.0D, 1.0D, 0.0D), 2.0D);
 
+        TimeStopService.stop(player);
+        TimeSlowService.stop(player);
+        SpaceTimeService.forget(player);
         TimeRewindBlocks.restore(player, blocks);
+        TimeRewindContainers.restore(player, target.containers);
+        TimeRewindEntities.restore(player, target.entities, target.gameTime);
         player.teleportTo(level, target.position.x, target.position.y,
                 target.position.z, target.yaw, target.pitch);
-        player.setDeltaMovement(Vec3.ZERO);
-        player.connection.send(new ClientboundSetEntityMotionPacket(player));
         player.resetFallDistance();
         if (target.health > player.getHealth()) {
             player.setHealth(Math.min(player.getMaxHealth(), target.health));
@@ -143,18 +153,22 @@ public final class TimeRewindService {
         // The rewound seconds no longer happened; you cannot rewind into them.
         samples.clear();
         TimeRewindBlocks.forget(player.getUUID());
+        TimeRewindEntities.forget(player.getUUID());
         MasteryService.markPowerUse(player, ModAbilities.TIME_MANIPULATION_ID);
+        TemporalStoryService.reach(player, TemporalStoryService.REWRITE);
         return true;
     }
 
     public static void forget(ServerPlayer player) {
         HISTORY.remove(player.getUUID());
         TimeRewindBlocks.forget(player.getUUID());
+        TimeRewindEntities.forget(player.getUUID());
     }
 
     public static void clear() {
         HISTORY.clear();
         TimeRewindBlocks.clear();
+        TimeRewindEntities.clear();
     }
 
     /** Use the same clock for recording and selecting history, in every dimension. */
@@ -201,7 +215,9 @@ public final class TimeRewindService {
             float pitch,
             float health,
             boolean onFire,
-            long blockRevision
+            long blockRevision,
+            TimeRewindEntities.Frame entities,
+            TimeRewindContainers.Frame containers
     ) {
     }
 }

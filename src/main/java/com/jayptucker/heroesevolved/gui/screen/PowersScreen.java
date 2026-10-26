@@ -65,6 +65,9 @@ public final class PowersScreen extends Screen {
                         button -> onClose())
                 .bounds(left + PANEL_WIDTH / 2 - 40, top + panelHeight() - 26, 80, 20)
                 .build());
+        addRenderableWidget(Button.builder(Component.literal("Skill Tree"),
+                        button -> SkillTreeScreen.open(this))
+                .bounds(left + 10, top + panelHeight() - 26, 84, 20).build());
 
         if (minecraft != null && minecraft.player != null
                 && minecraft.player.hasPermissions(2)) {

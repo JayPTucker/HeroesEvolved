@@ -64,14 +64,14 @@ public final class TimeStopService {
                 target.getUUID(),
                 ignored -> new StoredImpact(target, attacker.getUUID())
         );
-        impact.damage += amount;
-        impact.hits++;
+        impact.damage = Math.min(target instanceof ServerPlayer ? 12 : 40, impact.damage + amount);
+        impact.hits = Math.min(8, impact.hits + 1);
         impact.push = impact.push.add(attacker.getLookAngle().scale(0.35D));
 
         // A frozen ripple marks each blow waiting to land.
         level.sendParticles(net.minecraft.core.particles.ParticleTypes.ENCHANTED_HIT,
                 target.getX(), target.getY() + target.getBbHeight() * 0.6D,
-                target.getZ(), 6 + impact.hits * 2, 0.25D, 0.3D, 0.25D, 0.0D);
+                target.getZ(), Math.min(20, 6 + impact.hits * 2), 0.25D, 0.3D, 0.25D, 0.0D);
         level.playSound(null, target.getX(), target.getY(), target.getZ(),
                 net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_HIT,
                 SoundSource.PLAYERS, 0.7F, 0.5F + impact.hits * 0.1F);
@@ -110,7 +110,7 @@ public final class TimeStopService {
 
                 level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT,
                         target.getX(), target.getY() + target.getBbHeight() * 0.6D,
-                        target.getZ(), 10 + impact.hits * 4,
+                        target.getZ(), Math.min(40, 10 + impact.hits * 4),
                         0.3D, 0.4D, 0.3D, 0.4D);
                 level.sendParticles(net.minecraft.core.particles.ParticleTypes.SWEEP_ATTACK,
                         target.getX(), target.getY() + target.getBbHeight() * 0.6D,
@@ -124,22 +124,41 @@ public final class TimeStopService {
         }
     }
 
+    public static void clear() { ACTIVE_FIELDS.clear(); restoreAllProjectiles(); STORED_IMPACTS.clear(); }
+
     public static boolean hasActiveField(ServerPlayer player) {
         return ACTIVE_FIELDS.containsKey(player.getUUID());
     }
 
-    public static void start(ServerPlayer player, int powerLevel) {
+    public static boolean isStopped(Entity entity) {
+        return SpaceTimeService.isSuspended(entity) || entity.level() instanceof ServerLevel level && getContainingField(entity, level) != null;
+    }
+
+    public static void start(ServerPlayer player, int powerLevel) { start(player, powerLevel, false); }
+
+    public static void start(ServerPlayer player, int powerLevel, boolean carryCompanion) {
         ServerLevel level = player.serverLevel();
 
         playTemporalCue(level, player.position(), player);
 
+        UUID companion = carryCompanion ? level.getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,
+                player.getBoundingBox().inflate(1), e -> e != player && e.isAlive() && !e.isSpectator()
+                        && !(e instanceof com.jayptucker.heroesevolved.entity.TemporalEchoEntity)
+                        && !TemporalEntityEchoService.isReplaying(e)
+                        && (!(e instanceof ServerPlayer other) || player.isAlliedTo(other) || other.isShiftKeyDown()))
+                .stream().min(java.util.Comparator.comparingDouble(e -> e.distanceToSqr(player)))
+                .map(Entity::getUUID).orElse(null) : null;
+        if (companion != null) TemporalStoryService.reach(player, TemporalStoryService.RESCUE);
+        com.jayptucker.heroesevolved.effects.AbilityEffects.at(player,
+                com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind.TEMPORAL_FIELD,
+                HeroesEvolvedConfig.COMMON.timeStopRadius.get());
         ACTIVE_FIELDS.put(
                 player.getUUID(),
                 new TimeStopField(
                         player.getUUID(),
                         level.dimension(),
                         player.position(),
-                        durationSecondsForLevel(powerLevel) * 20
+                        durationSecondsForLevel(powerLevel) * 20, companion
                 )
         );
     }
@@ -169,6 +188,8 @@ public final class TimeStopService {
 
             boolean hasEnded = level == null
                     || owner == null
+                    || !owner.isAlive() || owner.level() != level || !SpaceTimeService.awakened(owner)
+                    || com.jayptucker.heroesevolved.cryo.CryoService.isFrozen(owner)
                     || EclipseService.arePowersSuppressed(owner)
                     || field.advanceTimer();
 
@@ -180,6 +201,7 @@ public final class TimeStopService {
                 }
                 releaseImpacts(server, field.ownerId());
             } else if (level != null && level.getGameTime() % 10 == 0) {
+                owner.displayClientMessage(net.minecraft.network.chat.Component.translatable("time.heroesevolved.stopped", (field.remainingTicks + 19) / 20), true);
                 // Stopped time looks drained and cold to anyone inside it.
                 com.jayptucker.heroesevolved.network.ScreenTintPayload.sendAround(
                         level, field.center(),
@@ -212,7 +234,7 @@ public final class TimeStopService {
             updateProjectileState(projectile, level, field != null);
         }
 
-        return field != null;
+        return field != null || SpaceTimeService.isSuspended(entity);
     }
 
     public static int energyCostForLevel(int powerLevel) {
@@ -245,12 +267,12 @@ public final class TimeStopService {
 
     private static int durationSecondsForLevel(int powerLevel) {
         return switch (Math.clamp(powerLevel, 3, 5)) {
-            case 3 -> HeroesEvolvedConfig.COMMON
-                    .timeStopLevelThreeDurationSeconds.get();
-            case 4 -> HeroesEvolvedConfig.COMMON
-                    .timeStopLevelFourDurationSeconds.get();
-            case 5 -> HeroesEvolvedConfig.COMMON
-                    .timeStopLevelFiveDurationSeconds.get();
+            case 3 -> Math.min(HeroesEvolvedConfig.COMMON
+                    .timeStopLevelThreeDurationSeconds.get(), 6);
+            case 4 -> Math.min(HeroesEvolvedConfig.COMMON
+                    .timeStopLevelFourDurationSeconds.get(), 8);
+            case 5 -> Math.min(HeroesEvolvedConfig.COMMON
+                    .timeStopLevelFiveDurationSeconds.get(), 10);
             default -> throw new IllegalStateException(
                     "Unexpected Time Stop power level."
             );
@@ -267,6 +289,9 @@ public final class TimeStopService {
         for (TimeStopField field : ACTIVE_FIELDS.values()) {
             if (field.dimension().equals(level.dimension())
                     && !field.ownerId().equals(entity.getUUID())
+                    && !entity.getUUID().equals(field.companion)
+                    && !entity.isSpectator()
+                    && !com.jayptucker.heroesevolved.speed.SpeedService.outrunsTime(entity)
                     && !field.hasEnded()
                     && entity.position().distanceToSqr(field.center())
                     <= radiusSquared) {
@@ -375,17 +400,19 @@ public final class TimeStopService {
         private final ResourceKey<Level> dimension;
         private final Vec3 center;
         private int remainingTicks;
+        private final UUID companion;
 
         private TimeStopField(
                 UUID ownerId,
                 ResourceKey<Level> dimension,
                 Vec3 center,
-                int remainingTicks
+                int remainingTicks, UUID companion
         ) {
             this.ownerId = ownerId;
             this.dimension = dimension;
             this.center = center;
             this.remainingTicks = remainingTicks;
+            this.companion = companion;
         }
 
         private UUID ownerId() {

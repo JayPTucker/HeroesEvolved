@@ -1,0 +1,24 @@
+// Render the real skill screen at two GUI scales, save screenshots, then exit.
+// This source set is never included in the released mod.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('skillUiPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/afterimage-preview-world')
+                        systemProperty('heroes.preview.afterimages', 'true')
+                        programArguments.addAll('--width', '1100', '--height', '800')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('skillUiPreviewClasses')) }
+        }
+    }
+}

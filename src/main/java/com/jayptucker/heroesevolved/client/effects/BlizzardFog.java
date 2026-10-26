@@ -51,7 +51,7 @@ public final class BlizzardFog {
                     - Math.sqrt(delta.x * delta.x + delta.z * delta.z + above * above)) / 1.5);
             desired = Math.max(desired, Mth.clamp(inside, 0, 1));
         }
-        strength = Mth.lerp(0.35F, strength, desired);
+        strength = Mth.lerp(0.35F, strength, desired * com.jayptucker.heroesevolved.config.ClientVisualSettings.FOG.get().floatValue());
         if (strength < 0.005F) strength = 0;
     }
     @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)

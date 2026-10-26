@@ -29,9 +29,28 @@ public final class ModDataAttachments {
                 .build()
         );
 
+    public static final Supplier<AttachmentType<com.jayptucker.heroesevolved.time.SpaceTimeService.Anchor>> SPACE_TIME_ANCHOR =
+            ATTACHMENTS.register("space_time_anchor", () -> AttachmentType.builder(com.jayptucker.heroesevolved.time.SpaceTimeService.Anchor::empty)
+                    .serialize(com.jayptucker.heroesevolved.time.SpaceTimeService.Anchor.CODEC).copyOnDeath().build());
+    public static final Supplier<AttachmentType<Integer>> TEMPORAL_STORY =
+            ATTACHMENTS.register("temporal_story", () -> AttachmentType.<Integer>builder(() -> 0).serialize(Codec.INT).copyOnDeath().build());
+
     private ModDataAttachments() {
 
     }
+    public static final Supplier<AttachmentType<com.jayptucker.heroesevolved.skills.SkillTreeData>> SKILL_TREES =
+            ATTACHMENTS.register("skill_trees", () -> AttachmentType
+                    .builder(com.jayptucker.heroesevolved.skills.SkillTreeData::empty)
+                    .serialize(com.jayptucker.heroesevolved.skills.SkillTreeData.CODEC).copyOnDeath().build());
+    public static final Supplier<AttachmentType<com.jayptucker.heroesevolved.time.TemporalRecoveryData>> TEMPORAL_RECOVERY =
+            ATTACHMENTS.register("temporal_recovery", () -> AttachmentType
+                    .builder(com.jayptucker.heroesevolved.time.TemporalRecoveryData::empty)
+                    .serialize(com.jayptucker.heroesevolved.time.TemporalRecoveryData.CODEC).copyOnDeath().build());
+
+    public static final Supplier<AttachmentType<java.util.List<com.jayptucker.heroesevolved.cryo.FrostRecovery>>> FROST_RECOVERY =
+            ATTACHMENTS.register("frost_recovery", () -> AttachmentType
+                    .<java.util.List<com.jayptucker.heroesevolved.cryo.FrostRecovery>>builder(() -> java.util.List.of())
+                    .serialize(com.jayptucker.heroesevolved.cryo.FrostRecovery.CODEC.listOf()).build());
 
     public static final Supplier<AttachmentType<PlayerProgressionData>> PLAYER_PROGRESSION =
         ATTACHMENTS.register("player_progression", () ->
@@ -96,6 +115,7 @@ public final class ModDataAttachments {
                     PlayerCooldownData::empty
                 )
                 .serialize(PlayerCooldownData.CODEC)
+                .copyOnDeath()
                 .build()
     );
 

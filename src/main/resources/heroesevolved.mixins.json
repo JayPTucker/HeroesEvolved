@@ -6,7 +6,9 @@
   "mixins": [
     "LevelBlockRewindMixin",
     "EmpSignalMixin",
-    "PlayerListSaveAccess"
+    "PlayerListSaveAccess",
+    "StoppedTimeInputMixin",
+    "SpeedWaterCollisionMixin"
   ],
   "client": [
     "FlightSprintMixin",

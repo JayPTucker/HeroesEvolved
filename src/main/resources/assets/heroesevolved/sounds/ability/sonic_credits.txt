@@ -1,0 +1,15 @@
+Sonic Resonance — user-selected reference excerpt
+Source: "Black Canary (Dinah Lance) Canary Cry Evolution"
+Uploaded by Superhero Lover
+https://www.youtube.com/watch?v=UviuiYaAGQA&t=100
+Selected excerpt: 1:40.55 through 1:46.15 (5.60 seconds).
+
+The user explicitly selected the actual reference cry after reviewing the
+previous synthesized approximation. The held sound uses this short excerpt;
+short attacks use shorter cuts of the same excerpt.
+
+Processing: mono conversion, constant level adjustment, short edge fades
+and Vorbis encoding. Original speed and pitch. No stretching, synthesis,
+layering or looping. This is source-media attribution, not a CC0 recording.
+Prepare from the locally supplied source with tools/prepare-sonic-reference.py.
+Existing imported recordings are unchanged.

@@ -67,6 +67,7 @@ public final class CryoService {
             new DustParticleOptions(new Vector3f(0.75F, 0.92F, 1.0F), 1.0F);
     private static final int MAXIMUM_CHILL_TICKS = 280;
 
+    private static final Map<UUID, Long> THAW_GRACE = new HashMap<>();
     private static final Map<UUID, Frozen> FROZEN = new HashMap<>();
     private static final Map<UUID, Chilled> CHILLED = new HashMap<>();
     private static final ResourceLocation CHILL_SLOW = ResourceLocation.fromNamespaceAndPath("heroesevolved", "cryo_chill");
@@ -134,6 +135,12 @@ public final class CryoService {
 
     /** Pausing the full mob tick also stops attacks, brains, creeper fuses and spell windups. */
     public static boolean shouldPauseMob(Entity entity) { return entity instanceof Mob && isFrozen(entity); }
+    public static void releaseEntity(Entity entity) {
+        Frozen frozen = FROZEN.remove(entity.getUUID());
+        if (frozen != null) thaw(frozen, false);
+        Chilled chilled = CHILLED.remove(entity.getUUID());
+        if (chilled != null) { slow(chilled.target, 0); chilled.target.setTicksFrozen(0); }
+    }
 
     public static void syncTo(ServerPlayer viewer, Entity target) {
         Frozen frozen = FROZEN.get(target.getUUID());
@@ -160,8 +167,12 @@ public final class CryoService {
         // than by switching off the mob's AI, which would be saved with the
         // mob if its chunk unloaded mid-freeze.
         Frozen old = isFrozen(target) ? FROZEN.get(target.getUUID()) : null;
+        if (target instanceof ServerPlayer && old == null
+                && THAW_GRACE.getOrDefault(target.getUUID(), 0L) > level.getServer().overworld().getGameTime()) return false;
+        if (target instanceof ServerPlayer) durationTicks = Math.min(60, durationTicks);
         Frozen state = new Frozen(target, old == null ? target.position() : old.lockedAt,
-                Math.max(old == null ? 0 : old.until, level.getGameTime() + Math.clamp(durationTicks, 1, 600)),
+                old != null && target instanceof ServerPlayer ? old.until
+                        : Math.max(old == null ? 0 : old.until, level.getGameTime() + Math.clamp(durationTicks, 1, 600)),
                 caster == null ? null : caster.getUUID(), level.dimension());
         FROZEN.put(target.getUUID(), state);
         if (old != null) return true;
@@ -209,7 +220,7 @@ public final class CryoService {
 
         thaw(frozen, true);
         FROZEN.remove(target.getUUID());
-        return amount * 1.5F + 4.0F;
+        return target instanceof ServerPlayer ? amount + Math.min(6, amount * .25F + 2) : amount * 1.5F + 4.0F;
     }
 
     private static void thaw(Frozen frozen, boolean shatter) {
@@ -220,6 +231,7 @@ public final class CryoService {
         if (!(target.level() instanceof ServerLevel level)) {
             return;
         }
+        if (target instanceof ServerPlayer) THAW_GRACE.put(target.getUUID(), level.getServer().overworld().getGameTime() + 40);
         PacketDistributor.sendToPlayersTrackingEntityAndSelf(target,
                 new FrozenEntityPayload(target.getId(), target.getUUID(), 0));
         AbilityEffects.send(level, shatter ? Kind.CRYO_SHATTER : Kind.CRYO_CHILL,
@@ -567,6 +579,7 @@ public final class CryoService {
     // ------------------------------------------------------------------
 
     public static void tick(MinecraftServer server) {
+        THAW_GRACE.values().removeIf(until -> until <= server.overworld().getGameTime());
         ColdDomeService.tick(server);
         long gameTime = server.overworld().getGameTime();
 
@@ -669,6 +682,7 @@ public final class CryoService {
         BLIZZARDS.clear();
         DELAYED.clear();
         coldDamageDepth = 0;
+        THAW_GRACE.clear();
     }
 
     private static void push(Entity entity, Vec3 velocity) {
