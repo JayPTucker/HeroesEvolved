@@ -76,6 +76,13 @@ public final class FutureVisions {
     private FutureVisions() {
     }
 
+    /** The memories this player has heard so far, in story order (for the journal). */
+    public static List<String> heard(ServerPlayer player) {
+        int progress = Math.min(FRAGMENTS.size(),
+                player.getData(ModDataAttachments.PLAYER_STORY_PROGRESS.get()));
+        return List.copyOf(FRAGMENTS.subList(0, Math.max(0, progress)));
+    }
+
     public static int fragmentCount() {
         return FRAGMENTS.size();
     }

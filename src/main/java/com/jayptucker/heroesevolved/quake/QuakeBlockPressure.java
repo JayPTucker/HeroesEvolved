@@ -31,7 +31,12 @@ public final class QuakeBlockPressure {
         long now = level.getGameTime();
         if (old.updated == now) return;
         int ticks = old.ticks + 1;
+        com.jayptucker.heroesevolved.expansion.FacilityService.technique(player, target, "fracture");
         int required = Math.clamp((int) Math.ceil(16 + hardness * 12), 20, 240);
+        if (com.jayptucker.heroesevolved.expansion.PowerReactions.resonating(level, target)) {
+            required = Math.max(10, required / 3);
+            com.jayptucker.heroesevolved.expansion.FacilityService.discovery(player, "seam_chorus");
+        }
         level.destroyBlockProgress(old.animation, old.pos, Math.min(9, ticks * 10 / required));
         ACTIVE.put(player.getUUID(), new Pressure(level, old.pos, state, ticks, old.animation, now));
         if (ticks >= required) {

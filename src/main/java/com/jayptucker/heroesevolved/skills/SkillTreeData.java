@@ -6,15 +6,17 @@ import java.util.*;
 
 /** Immutable, per-power purchases. Saved with the player, including across death. */
 public record SkillTreeData(Map<String, Build> powers) {
-    public record Build(int highestLevel, Set<String> learned, Map<String, String> slots) {
+    public record Build(int highestLevel, Set<String> learned, Map<String, String> slots, int training) {
         public static final Codec<Build> CODEC = RecordCodecBuilder.create(i -> i.group(
                 Codec.intRange(1, 100).fieldOf("highest_level").forGetter(Build::highestLevel),
                 Codec.STRING.listOf().xmap(Set::copyOf, ArrayList::new).fieldOf("learned").forGetter(Build::learned),
-                Codec.unboundedMap(Codec.STRING, Codec.STRING).fieldOf("slots").forGetter(Build::slots)
+                Codec.unboundedMap(Codec.STRING, Codec.STRING).fieldOf("slots").forGetter(Build::slots),
+                Codec.intRange(0, 6).optionalFieldOf("training", 0).forGetter(Build::training)
         ).apply(i, Build::new));
         public Build { learned = Set.copyOf(learned); slots = Map.copyOf(slots); }
+        public Build(int level, Set<String> learned, Map<String, String> slots) { this(level, learned, slots, 0); }
         public static Build empty() { return new Build(1, Set.of(), Map.of()); }
-        public int earned() { return 3 + 2 * (highestLevel - 1); }
+        public int earned() { return 3 + 2 * (highestLevel - 1) + training; }
     }
     public static final Codec<SkillTreeData> CODEC = Codec.unboundedMap(Codec.STRING, Build.CODEC)
             .xmap(SkillTreeData::new, SkillTreeData::powers);

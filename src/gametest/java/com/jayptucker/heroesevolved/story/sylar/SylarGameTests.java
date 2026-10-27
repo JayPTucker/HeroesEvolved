@@ -245,6 +245,8 @@ public final class SylarGameTests {
     public static void naturalStoryStartsWithGraceAndOneHintRatherThanAnAmbush(GameTestHelper helper) {
         reset(helper); List<Packet<?>> packets = new ArrayList<>();
         ServerPlayer quarry = player(helper, ModAbilities.QUAKE_ID, 5, packets);
+        // Other fixtures also build distant platforms. Keep this no-surface test above their height band.
+        quarry.setPos(quarry.position().add(0, 80, 0));
         SylarStoryService.notice(quarry);
         helper.runAfterDelay(25, () -> {
             var trail = SylarStoryData.get(quarry.getServer()).trail(quarry.getUUID());

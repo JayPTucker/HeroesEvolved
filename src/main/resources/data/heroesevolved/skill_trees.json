@@ -16,6 +16,39 @@
         {
           "name": "Fault Control Mastery",
           "description": "Reduce activation stamina costs by another 15% (25% total)."
+        },
+        {
+          "id": "quake_fault_script",
+          "name": "Fault Script",
+          "description": "Write a twelve-step fault along nearby ground. After two seconds it erupts outward, hitting each enemy once.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "quake_0_0",
+          "mechanic": "fault_script",
+          "energy": 18,
+          "cooldown": 80
+        },
+        {
+          "id": "quake_short_fuse",
+          "name": "Short Fuse",
+          "description": "Fault Script erupts after one second instead of two.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "quake_fault_script",
+          "mechanic": "short_fuse"
+        },
+        {
+          "id": "quake_undertow",
+          "name": "Undertow",
+          "description": "Your written fault returns for a second pass after its first wave.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "quake_short_fuse",
+          "mechanic": "undertow"
         }
       ],
       [
@@ -32,6 +65,39 @@
         {
           "name": "Tectonic Force Mastery",
           "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        },
+        {
+          "id": "quake_counterforce",
+          "name": "Counterforce",
+          "description": "Brace for five seconds, absorbing half of incoming damage into a counterwave. Cast again to release; stored force releases at expiry.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "quake_1_0",
+          "mechanic": "counterforce",
+          "energy": 14,
+          "cooldown": 20
+        },
+        {
+          "id": "quake_counter_balance",
+          "name": "Counter Balance",
+          "description": "Counterforce absorbs 70% of incoming damage instead of 50%.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "quake_counterforce",
+          "mechanic": "counter_balance"
+        },
+        {
+          "id": "quake_stolen_thunder",
+          "name": "Stolen Thunder",
+          "description": "Your counterwave can release up to 24 damage, and stored force kicks you opposite your aim for an escape or launch.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "quake_counter_balance",
+          "mechanic": "stolen_thunder"
         }
       ],
       [
@@ -48,8 +114,46 @@
         {
           "name": "Steady Rhythm Mastery",
           "description": "Reduce ability cooldowns by another 15% (25% total)."
+        },
+        {
+          "id": "quake_seamfinder",
+          "name": "Surgical Fracture",
+          "description": "Open a small seam in the aimed wall. Only ordinary blocks of hardness 2 or less fracture; containers are spared.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "quake_2_0",
+          "mechanic": "seamfinder",
+          "energy": 20,
+          "cooldown": 120
+        },
+        {
+          "id": "quake_seam_sight",
+          "name": "Wider Incision",
+          "description": "Surgical Fracture examines twelve blocks instead of six.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "quake_seamfinder",
+          "mechanic": "seam_sight"
+        },
+        {
+          "id": "quake_surgical_silence",
+          "name": "Master Incision",
+          "description": "Surgical Fracture reaches ordinary material up to hardness 4. This precise technique does not add fresh Sylar attention.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "quake_seam_sight",
+          "mechanic": "surgical_silence"
         }
       ]
+    ],
+    "branch_names": [
+      "FAULTWRIGHT",
+      "COUNTERFORCE",
+      "SEAMFINDER"
     ]
   },
   {
@@ -122,6 +226,39 @@
         {
           "name": "Cold Discipline Mastery",
           "description": "Reduce activation stamina costs by another 15% (25% total)."
+        },
+        {
+          "id": "cryokinesis_rime_loom",
+          "name": "Rime Loom",
+          "description": "Weave a sixteen-block temporary ice path ahead. It lasts twelve seconds and preserves the original terrain.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "cryokinesis_0_0",
+          "mechanic": "rime_loom",
+          "energy": 24,
+          "cooldown": 140
+        },
+        {
+          "id": "cryokinesis_double_weave",
+          "name": "Double Weave",
+          "description": "Rime Loom becomes three blocks wide.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "cryokinesis_rime_loom",
+          "mechanic": "double_weave"
+        },
+        {
+          "id": "cryokinesis_suspension_stitch",
+          "name": "Suspension Stitch",
+          "description": "Extend the weave to 24 blocks. Looking upward stitches it into ascending stairs.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "cryokinesis_double_weave",
+          "mechanic": "suspension_stitch"
         }
       ],
       [
@@ -138,6 +275,39 @@
         {
           "name": "Brittle Edge Mastery",
           "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        },
+        {
+          "id": "cryokinesis_stillheart",
+          "name": "Stillheart Cocoon",
+          "description": "Preserve a friendly creature or consenting ally in ice. They cannot act, take 80% less damage, and recover 2 health at release. Players remain inside for three seconds; mobs for six. Shift targets yourself.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "cryokinesis_1_0",
+          "mechanic": "stillheart",
+          "energy": 26,
+          "cooldown": 240
+        },
+        {
+          "id": "cryokinesis_sterile_ice",
+          "name": "Sterile Ice",
+          "description": "A Stillheart Cocoon removes harmful status effects when it forms.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "cryokinesis_stillheart",
+          "mechanic": "sterile_ice"
+        },
+        {
+          "id": "cryokinesis_second_spring",
+          "name": "Second Spring",
+          "description": "A Stillheart Cocoon restores 6 health when it opens instead of 2.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "cryokinesis_sterile_ice",
+          "mechanic": "second_spring"
         }
       ],
       [
@@ -154,8 +324,46 @@
         {
           "name": "Winter Rhythm Mastery",
           "description": "Reduce ability cooldowns by another 15% (25% total)."
+        },
+        {
+          "id": "cryokinesis_brittle_constellation",
+          "name": "Brittle Constellation",
+          "description": "Link up to four visible enemies near your aim with frozen stars. Hitting a linked frozen target releases a 4-damage fracture through the other links.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "cryokinesis_2_0",
+          "mechanic": "brittle_constellation",
+          "energy": 28,
+          "cooldown": 180
+        },
+        {
+          "id": "cryokinesis_long_winter",
+          "name": "Long Winter",
+          "description": "Constellation links last ten seconds instead of six.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "cryokinesis_brittle_constellation",
+          "mechanic": "long_winter"
+        },
+        {
+          "id": "cryokinesis_shattered_sky",
+          "name": "Shattered Sky",
+          "description": "A triggered constellation sends 7 damage through its other links instead of 4.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "cryokinesis_long_winter",
+          "mechanic": "shattered_sky"
         }
       ]
+    ],
+    "branch_names": [
+      "RIME ARCHITECT",
+      "PRESERVATION",
+      "CONSTELLATION"
     ]
   },
   {
@@ -175,6 +383,39 @@
         {
           "name": "Voltage Control Mastery",
           "description": "Reduce activation stamina costs by another 15% (25% total)."
+        },
+        {
+          "id": "electrokinesis_circuit_thread",
+          "name": "Circuit Thread",
+          "description": "Trace up to 48 connected iron, copper, chain, or lightning-rod blocks. Enemies touching the network are shocked once. Can overload the annex relay partition.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "electrokinesis_0_0",
+          "mechanic": "circuit_thread",
+          "energy": 22,
+          "cooldown": 100
+        },
+        {
+          "id": "electrokinesis_live_wire",
+          "name": "Live Wire",
+          "description": "Circuit Thread reaches enemies within 2.5 blocks of its conductors instead of 1.5.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "electrokinesis_circuit_thread",
+          "mechanic": "live_wire"
+        },
+        {
+          "id": "electrokinesis_copper_choir",
+          "name": "Copper Choir",
+          "description": "Circuit Thread can jump a single air block between aligned conductors.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "electrokinesis_live_wire",
+          "mechanic": "copper_choir"
         }
       ],
       [
@@ -191,6 +432,39 @@
         {
           "name": "High Voltage Mastery",
           "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        },
+        {
+          "id": "electrokinesis_ground_sink",
+          "name": "Ground Sink",
+          "description": "Leave an eight-second grounding field. Nearby allies shed 40% of incoming projectile damage into it. Cast again to discharge up to 16 stored damage nearby.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "electrokinesis_1_0",
+          "mechanic": "ground_sink",
+          "energy": 18,
+          "cooldown": 40
+        },
+        {
+          "id": "electrokinesis_insulated_roots",
+          "name": "Insulated Roots",
+          "description": "Ground Sink remains for twelve seconds instead of eight.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "electrokinesis_ground_sink",
+          "mechanic": "insulated_roots"
+        },
+        {
+          "id": "electrokinesis_faraday_garden",
+          "name": "Faraday Garden",
+          "description": "Your grounding field absorbs 65% of allied projectile damage instead of 40%.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "electrokinesis_insulated_roots",
+          "mechanic": "faraday_garden"
         }
       ],
       [
@@ -207,8 +481,46 @@
         {
           "name": "Quick Circuit Mastery",
           "description": "Reduce ability cooldowns by another 15% (25% total)."
+        },
+        {
+          "id": "electrokinesis_arc_lattice",
+          "name": "Arc Lattice",
+          "description": "Place up to three anchors by aiming at surfaces. Connecting wires shock each crossing enemy once; anchors must be within 24 blocks of one another.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "electrokinesis_2_0",
+          "mechanic": "arc_lattice",
+          "energy": 10,
+          "cooldown": 20
+        },
+        {
+          "id": "electrokinesis_closed_circuit",
+          "name": "Closed Circuit",
+          "description": "Your lattice lasts fifteen seconds instead of nine.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "electrokinesis_arc_lattice",
+          "mechanic": "closed_circuit"
+        },
+        {
+          "id": "electrokinesis_storm_geometry",
+          "name": "Storm Geometry",
+          "description": "A lattice crossing deals 10 damage instead of 6.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "electrokinesis_closed_circuit",
+          "mechanic": "storm_geometry"
         }
       ]
+    ],
+    "branch_names": [
+      "CONDUCTOR",
+      "GROUNDKEEPER",
+      "STORM GEOMETRY"
     ]
   },
   {
@@ -578,6 +890,64 @@
         {
           "name": "Quick Recovery Mastery",
           "description": "Reduce ability cooldowns by another 15% (25% total)."
+        }
+      ]
+    ]
+  },
+  {
+    "power": "precognition",
+    "branch_names": [
+      "ORACLE",
+      "RED MARGIN",
+      "SHARED FATE"
+    ],
+    "branches": [
+      [
+        {
+          "name": "Clear Sight",
+          "description": "Reduce activation stamina costs by 10%."
+        },
+        {
+          "name": "Object Reading",
+          "description": "Read the annex incident and briefly outline nearby villagers, including captives through walls.",
+          "energy": 14,
+          "cooldown": 120
+        },
+        {
+          "name": "Clear Sight Mastery",
+          "description": "Reduce activation stamina costs by another 15%."
+        }
+      ],
+      [
+        {
+          "name": "Ink Pressure",
+          "description": "Increase outgoing damage by 10% while awakened."
+        },
+        {
+          "name": "Red Margin",
+          "description": "Mark the intentions of three nearby enemies. Each loses its next damaging attack against you or a nearby friend during four seconds.",
+          "energy": 26,
+          "cooldown": 200
+        },
+        {
+          "name": "Ink Pressure Mastery",
+          "description": "Increase outgoing damage by another 15%."
+        }
+      ],
+      [
+        {
+          "name": "Shared Perspective",
+          "description": "Reduce cooldowns by 10%."
+        },
+        {
+          "name": "Omen Relay",
+          "description": "Share six seconds of committed-threat warnings with nearby scoreboard teammates.",
+          "energy": 22,
+          "cooldown": 160
+        },
+        {
+          "name": "Shared Perspective Mastery",
+          "description": "Reduce cooldowns by another 15%."
         }
       ]
     ]

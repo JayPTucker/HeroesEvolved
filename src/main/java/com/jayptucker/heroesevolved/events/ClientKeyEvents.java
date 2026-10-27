@@ -54,6 +54,12 @@ public final class ClientKeyEvents {
             }
         }
 
+        while (ModKeyMappings.OPEN_JOURNAL.consumeClick()) {
+            if (minecraft.player != null && minecraft.screen == null) {
+                com.jayptucker.heroesevolved.gui.screen.JournalScreen.open(null);
+            }
+        }
+
         while (ModKeyMappings.OPEN_ADMIN.consumeClick()) {
             if (minecraft.player != null && minecraft.screen == null
                     && minecraft.player.hasPermissions(2)) {

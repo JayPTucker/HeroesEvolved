@@ -38,7 +38,7 @@ public final class CameraShakeEvents {
         float strength = ClientCameraShakeState.getStrength(
                 minecraft.level.getGameTime(), partialTick
         );
-        strength *= com.jayptucker.heroesevolved.config.ClientVisualSettings.SHAKE.get().floatValue();
+        strength *= com.jayptucker.heroesevolved.client.VisualComfort.shakeScale();
         if (strength <= 0.0F) {
             return;
         }

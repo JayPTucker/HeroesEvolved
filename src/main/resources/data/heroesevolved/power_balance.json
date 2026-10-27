@@ -178,5 +178,11 @@
     "action": "speed_redline",
     "energy": 1,
     "cooldown": 1
+  },
+  {
+    "power": "precognition",
+    "action": "precog_paint",
+    "energy": 1,
+    "cooldown": 1
   }
 ]

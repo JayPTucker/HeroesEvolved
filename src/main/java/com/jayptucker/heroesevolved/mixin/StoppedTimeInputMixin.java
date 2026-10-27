@@ -16,7 +16,7 @@ public abstract class StoppedTimeInputMixin {
     @Shadow public ServerPlayer player;
     private boolean heroes$stopped() {
         // Vanilla reschedules network-thread calls. Only consult temporal state on the server thread.
-        return player.getServer() != null && player.getServer().isSameThread() && TimeStopService.isStopped(player);
+        return player.getServer() != null && player.getServer().isSameThread() && (TimeStopService.isStopped(player) || com.jayptucker.heroesevolved.expansion.ExpansionSkills.preserved(player));
     }
     @Inject(method = "handleMovePlayer", at = @At("HEAD"), cancellable = true)
     private void heroes$holdPosition(ServerboundMovePlayerPacket packet, CallbackInfo ci) {

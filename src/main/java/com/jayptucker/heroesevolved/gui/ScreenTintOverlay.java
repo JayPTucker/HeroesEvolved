@@ -39,8 +39,11 @@ public final class ScreenTintOverlay {
         for (ClientScreenTintState.ActiveTint tint : ClientScreenTintState.active()) {
             int peakAlpha = (tint.color() >>> 24) & 0xFF;
             int alpha = Math.round(peakAlpha * tint.strength());
-            if (tint.style() == ScreenTintPayload.Style.FLASH)
-                alpha = Math.round(alpha * com.jayptucker.heroesevolved.config.ClientVisualSettings.FLASH.get().floatValue());
+            // Full-screen washes (flashes and white-outs) follow the flash
+            // and photosensitivity settings; edge tints are left readable.
+            if (tint.style() == ScreenTintPayload.Style.FLASH
+                    || tint.style() == ScreenTintPayload.Style.HOLD)
+                alpha = com.jayptucker.heroesevolved.client.VisualComfort.flashAlpha(alpha);
             if (alpha <= 0) {
                 continue;
             }

@@ -14,6 +14,7 @@ import com.jayptucker.heroesevolved.cooldown.CooldownService;
 import com.jayptucker.heroesevolved.energy.OverexertionService;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.events.EclipseService;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import com.jayptucker.heroesevolved.network.PlayerPowerSyncService;
@@ -58,6 +59,12 @@ public final class AbilityUseService {
                 || com.jayptucker.heroesevolved.intro.PowerIntroService.isActive(player)
                 || com.jayptucker.heroesevolved.time.intro.TimeIntroService.isVisiting(player)
                 || com.jayptucker.heroesevolved.time.intro.TimeIntroService.isCity(player.level())) {
+            PowerFeedback.explain(player, Component.literal(
+                    com.jayptucker.heroesevolved.cryo.CryoService.isFrozen(player)
+                            ? "You're frozen solid and can't move a muscle."
+                            : com.jayptucker.heroesevolved.intro.PowerIntroService.isActive(player)
+                            ? "Your power is still awakening..."
+                            : "You can't use your power right now."));
             return AbilityUseResult.CANNOT_USE;
         }
         // Eclipse suppression applies before a power can consume energy,
@@ -97,7 +104,12 @@ public final class AbilityUseService {
         // Individual actions unlock at different levels of the same power.
         int powerLevel = PlayerProgressionService.getLevel(player);
 
+        Component actionName = Component.translatable(abilityAction.definition().displayNameKey());
+
         if (!abilityAction.definition().isUnlockedAt(powerLevel)) {
+            PowerFeedback.explain(player, actionName.copy().append(Component.literal(
+                    " unlocks at Level " + abilityAction.definition().unlockLevel()
+                            + " (you're Level " + powerLevel + ").")));
             return AbilityUseResult.ACTION_LOCKED;
         }
 
@@ -119,10 +131,16 @@ public final class AbilityUseService {
         ResourceLocation cooldownId = abilityAction.cooldownId(context);
 
         if (CooldownService.isOnCooldown(player, cooldownId)) {
+            long remaining = CooldownService.getRemainingTicks(player, cooldownId);
+            PowerFeedback.explain(player, actionName.copy().append(Component.literal(
+                    String.format(" is recovering: ready in %.1fs.", remaining / 20.0D))));
             return AbilityUseResult.ON_COOLDOWN;
         }
 
         if (!abilityAction.canUse(context)) {
+            // Many actions explain their own refusal; this is the fallback.
+            PowerFeedback.explain(player, actionName.copy().append(Component.literal(
+                    " can't be used right now.")));
             return AbilityUseResult.CANNOT_USE;
         }
 
@@ -134,6 +152,10 @@ public final class AbilityUseService {
         // Holding Shift when pressing a slot is the player's explicit consent
         // to use overexertion if they lack the required energy.
         if (requiresOverexertion && !allowOverexertion) {
+            PowerFeedback.explain(player, actionName.copy().append(Component.literal(
+                    " needs " + energyCost + " stamina (you have "
+                            + PlayerEnergyService.getEnergy(player)
+                            + "). Hold Shift to overexert.")));
             return AbilityUseResult.INSUFFICIENT_ENERGY;
         }
 
@@ -144,7 +166,7 @@ public final class AbilityUseService {
 
         AbilityEffects.onAction(
                 player, powerId, abilityAction.definition().id().getPath());
-        com.jayptucker.heroesevolved.story.sylar.SylarStoryService.notice(player);
+        if (!abilityAction.definition().id().getPath().equals("quake_seamfinder") || !com.jayptucker.heroesevolved.skills.SkillTreeService.has(player, "quake_surgical_silence")) com.jayptucker.heroesevolved.story.sylar.SylarStoryService.notice(player);
         com.jayptucker.heroesevolved.effects.ArmPoseActions.onAction(
                 player, abilityAction.definition().id().getPath());
 
@@ -176,6 +198,7 @@ public final class AbilityUseService {
         // The client needs the new cooldown end-time to gray out this slot.
         PlayerPowerSyncService.sync(player);
 
+        com.jayptucker.heroesevolved.expansion.FacilityService.onPowerUse(player, abilityAction.definition().id().getPath());
         return requiresOverexertion
                 ? AbilityUseResult.OVEREXERTED_SUCCESS
                 : AbilityUseResult.SUCCESS;

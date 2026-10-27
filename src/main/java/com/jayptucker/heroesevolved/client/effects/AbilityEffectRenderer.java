@@ -61,6 +61,16 @@ public final class AbilityEffectRenderer {
         }
 
         switch (effect.kind()) {
+            case PROPHECY_THREAD -> {
+                for (int i = 0; i < (detail ? 8 : 4); i++) {
+                    Vec3 point = origin.lerp(target, i / (detail ? 7.0 : 3.0));
+                    add(new PowerParticle(level, ARC, point, direction, .06F, .12F, 16, i / 2, 0xF7D88D, .6F).arc(i * .7F, .025F, 2, .02F));
+                }
+            }
+            case PROPHECY_BREAK -> {
+                ring(level, origin, UP, .2F, size, 20, 0, 0xF7D88D, .6F);
+                ring(level, origin.add(0, .8, 0), direction, .1F, size * .6F, 24, 2, 0xE8FFFF, .4F);
+            }
             case QUAKE_BEAM -> {
                 double length = origin.distanceTo(target);
                 int rings = Math.clamp((int) Math.ceil(length / 3.5D), 1, detail ? 16 : 6);

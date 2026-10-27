@@ -65,7 +65,9 @@ public final class ClientScreenTintState {
                 // A held tint fades in quickly and out over its last 15%.
                 case HOLD, EDGE -> Math.min(Math.min(1.0D, life * 8.0D),
                         (1.0D - life) / 0.15D);
-                case PULSE -> (0.55D + 0.45D * Math.sin(now / 160.0D))
+                // With reduced flashing a pulse holds steady instead of throbbing.
+                case PULSE -> (com.jayptucker.heroesevolved.client.VisualComfort.reduceFlashing()
+                        ? 0.6D : 0.55D + 0.45D * Math.sin(now / 160.0D))
                         * Math.min(1.0D, (1.0D - life) / 0.15D);
             };
             active.add(new ActiveTint(tint.color, tint.style,

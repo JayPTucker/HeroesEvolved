@@ -42,6 +42,7 @@ public final class SkillActionService {
     public static boolean canUse(AbilityUseContext c, int branch) {
         if (c.abilityId().getPath().equals("superspeed")) return com.jayptucker.heroesevolved.speed.SpeedService.canUseSkill(c, branch);
         if (c.abilityId().getPath().equals("time_manipulation")) return com.jayptucker.heroesevolved.time.SpaceTimeService.canUse(c, branch);
+        if (c.abilityId().getPath().equals("precognition")) return true;
         if (branch == 0 && !c.abilityId().getPath().equals("flight") && !c.abilityId().getPath().equals("regeneration"))
             return aimed(c.player(), false) != null;
         if (branch == 2 && c.abilityId().getPath().equals("regeneration"))
@@ -79,6 +80,7 @@ public final class SkillActionService {
             }
             case "electrokinesis" -> {
                 if (branch == 0) {
+                    com.jayptucker.heroesevolved.expansion.PowerReactions.electric(p, target);
                     hit(p, target, 8 + level); effect(target, MobEffects.MOVEMENT_SLOWDOWN, 50, 3);
                     LivingEntity primary = target;
                     for (var t : nearby(p, 40).stream().filter(t -> t != primary && t.distanceToSqr(primary) < 36).limit(2).toList()) {
@@ -114,6 +116,7 @@ public final class SkillActionService {
                 }
                 visual(p, target, Kind.REGENERATION, 3);
             }
+            case "precognition" -> { return com.jayptucker.heroesevolved.expansion.PrecognitionService.skill(c, branch); }
             case "superspeed" -> { return com.jayptucker.heroesevolved.speed.SpeedService.skill(c, branch); }
             case "time_manipulation" -> {
                 return com.jayptucker.heroesevolved.time.SpaceTimeService.activate(c, branch);

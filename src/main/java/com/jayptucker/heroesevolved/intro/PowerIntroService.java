@@ -87,6 +87,7 @@ public final class PowerIntroService {
     private PowerIntroService() {}
 
     public static void acquired(ServerPlayer player, ResourceLocation power) {
+        if (power.getPath().equals("precognition")) { com.jayptucker.heroesevolved.expansion.PrecognitionService.awaken(player); return; }
         Session current = SESSIONS.get(player.getUUID());
         if (current != null && !current.power.equals(power)) cancel(player);
         if (power.equals(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "time_manipulation"))) {

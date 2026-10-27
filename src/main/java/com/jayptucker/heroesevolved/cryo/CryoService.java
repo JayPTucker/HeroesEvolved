@@ -166,6 +166,7 @@ public final class CryoService {
         // The ice is enforced every tick (position, target, pathing) rather
         // than by switching off the mob's AI, which would be saved with the
         // mob if its chunk unloaded mid-freeze.
+        if (caster != null) com.jayptucker.heroesevolved.expansion.FacilityService.technique(caster, target.blockPosition(), "cold");
         Frozen old = isFrozen(target) ? FROZEN.get(target.getUUID()) : null;
         if (target instanceof ServerPlayer && old == null
                 && THAW_GRACE.getOrDefault(target.getUUID(), 0L) > level.getServer().overworld().getGameTime()) return false;

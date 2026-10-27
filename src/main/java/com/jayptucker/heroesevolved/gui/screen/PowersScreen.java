@@ -68,6 +68,12 @@ public final class PowersScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal("Skill Tree"),
                         button -> SkillTreeScreen.open(this))
                 .bounds(left + 10, top + panelHeight() - 26, 84, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("Journal"),
+                        button -> JournalScreen.open(this))
+                .bounds(left + PANEL_WIDTH - 120, top + panelHeight() - 26, 54, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("Settings"),
+                        button -> minecraft.setScreen(new EffectsSettingsScreen(this)))
+                .bounds(left + PANEL_WIDTH - 64, top + panelHeight() - 26, 54, 20).build());
 
         if (minecraft != null && minecraft.player != null
                 && minecraft.player.hasPermissions(2)) {

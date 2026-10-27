@@ -10,20 +10,24 @@ trees = json.loads((resources / "data/heroesevolved/skill_trees.json").read_text
 lang = json.loads((assets / "lang/en_us.json").read_text(encoding="utf-8"))
 sounds = json.loads((assets / "sounds.json").read_text(encoding="utf-8"))
 expected = {"quake", "flight", "cryokinesis", "electrokinesis", "telekinesis", "telepathy",
-            "regeneration", "time_manipulation", "radiation", "sonic_resonance", "superspeed"}
-assert {t["power"] for t in trees} == expected and len(trees) == 11
+            "regeneration", "time_manipulation", "radiation", "sonic_resonance", "superspeed", "precognition"}
+assert {t["power"] for t in trees} == expected and len(trees) == 12
 nodes = 0
+actives = 0
 for tree in trees:
     assert len(tree["branches"]) == 3
     for branch, lane in enumerate(tree["branches"]):
-        assert len(lane) == 3
+        assert 3 <= len(lane) <= 12
         for tier, node in enumerate(lane):
             nodes += 1
             assert node["name"] and node["description"]
-            if tier == 1:
-                key = f'action.heroesevolved.{tree["power"]}_{branch}_1'
+            if node.get("active", tier == 1):
+                actives += 1
+                key = 'action.heroesevolved.' + node.get("id", f'{tree["power"]}_{branch}_{tier}')
                 assert lang[key] == node["name"] and lang[key + ".desc"] == node["description"]
                 assert 0 < node["energy"] <= 100 and 20 <= node["cooldown"] <= 1200
+for name in ("foretold", "revised"):
+    assert len((assets / f"paintings/{name}.map").read_bytes()) == 16384
 for event, definition in sounds.items():
     subtitle = definition.get("subtitle")
     if subtitle:
@@ -55,4 +59,4 @@ for name in ("sonic_cry", "sonic_burst", "sonic_scream"):
         assert 0.5 <= duration <= 2.5
     print(f"PASS: {name}: mono Vorbis, {duration:.2f}s, {len(data):,} bytes")
 assert (assets / "sounds/ability/sonic_credits.txt").is_file()
-print(f"PASS: {nodes} skill nodes, 33 optional actions, all custom sound files/subtitles and voice provenance.")
+print(f"PASS: {nodes} skill nodes, {actives} optional actions, all custom sound files/subtitles and voice provenance.")

@@ -59,6 +59,14 @@ public final class ModKeyMappings {
     );
 
     /** Operators only; the server rejects anyone else's request. */
+    // J is unbound in vanilla.
+    public static final KeyMapping OPEN_JOURNAL = new KeyMapping(
+            "key.heroesevolved.open_journal",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_J,
+            "key.categories.heroesevolved"
+    );
+
     public static final KeyMapping OPEN_ADMIN = new KeyMapping(
             "key.heroesevolved.open_admin",
             InputConstants.Type.KEYSYM,
@@ -73,6 +81,7 @@ public final class ModKeyMappings {
     public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
         event.register(OPEN_POWERS);
         event.register(OPEN_ADMIN);
+        event.register(OPEN_JOURNAL);
         event.register(ABILITY_1);
         event.register(ABILITY_2);
         event.register(ABILITY_3);

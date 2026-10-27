@@ -23,3 +23,16 @@ jobs:
 
       - name: Build with Gradle
         run: ./gradlew build
+
+      # The gameplay tests live in src/gametest and are loaded only for this
+      # run by an init script, so they never ship in the released jar. The
+      # game-test server exits non-zero if any required test fails.
+      - name: Run gameplay tests
+        run: ./gradlew -I tools/rewind-gametest.init.gradle runGameTestServer
+
+      - name: Upload game test logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gametest-logs
+          path: build/rewind-gametest-world/logs/

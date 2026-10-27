@@ -14,6 +14,8 @@ public final class CombatTrackingEvents {
 
     @SubscribeEvent
     public static void onLivingDamage(LivingDamageEvent.Post event) {
+        if (event.getNewDamage() > 0 && event.getSource().getEntity() instanceof ServerPlayer attacker && attacker != event.getEntity())
+            attacker.setData(ModDataAttachments.PLAYER_COMBAT, new PlayerCombatData(attacker.level().getGameTime()));
         if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }

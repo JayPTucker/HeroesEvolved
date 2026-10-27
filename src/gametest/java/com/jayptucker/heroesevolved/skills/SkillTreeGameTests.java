@@ -28,7 +28,7 @@ import java.util.*;
 @PrefixGameTestTemplate(false)
 public final class SkillTreeGameTests {
     private static final List<String> POWERS = List.of("quake", "flight", "cryokinesis", "electrokinesis", "telekinesis",
-            "telepathy", "regeneration", "time_manipulation", "radiation", "sonic_resonance", "superspeed");
+            "telepathy", "regeneration", "time_manipulation", "radiation", "sonic_resonance", "superspeed", "precognition");
     private static ResourceLocation id(String power) { return ResourceLocation.fromNamespaceAndPath("heroesevolved", power); }
     private static ServerPlayer player(GameTestHelper h, String power, int level) {
         var p = new FakePlayer(h.getLevel(), new GameProfile(UUID.randomUUID(), "skill-test"));
@@ -37,7 +37,8 @@ public final class SkillTreeGameTests {
         PlayerProgressionService.setLevel(p, level); return p;
     }
     private static void cleanup(ServerPlayer p) {
-        SkillActionService.forget(p); SonicService.stop(p);
+        SkillActionService.forget(p);
+        com.jayptucker.heroesevolved.expansion.PrecognitionService.forget(p); SonicService.stop(p);
         com.jayptucker.heroesevolved.speed.SpeedService.forget(p);
         com.jayptucker.heroesevolved.time.SpaceTimeService.forget(p);
         com.jayptucker.heroesevolved.flight.FlightService.stopForPowerRemoval(p);
@@ -54,8 +55,8 @@ public final class SkillTreeGameTests {
         for (String power : POWERS) {
             h.assertTrue(AbilityRegistry.ABILITIES.containsKey(id(power)), "Unregistered power in skill catalog");
             var nodes = SkillCatalog.nodes(power);
-            h.assertTrue(nodes.size() == 9 && nodes.stream().filter(SkillCatalog.Node::active).count() == 3, "Missing nodes or sub-abilities: " + power);
-            h.assertTrue(nodes.stream().map(SkillCatalog.Node::cost).mapToInt(Integer::intValue).sum() == 15,
+            h.assertTrue(nodes.size() == (Set.of("quake", "cryokinesis", "electrokinesis").contains(power) ? 18 : 9) && nodes.stream().filter(SkillCatalog.Node::active).count() == (Set.of("quake", "cryokinesis", "electrokinesis").contains(power) ? 6 : 3), "Missing nodes or sub-abilities: " + power);
+            h.assertTrue(nodes.stream().map(SkillCatalog.Node::cost).mapToInt(Integer::intValue).sum() >= 15,
                     "Completing all branches must cost more than the eleven level-five points");
         }
         h.succeed();
@@ -167,7 +168,7 @@ public final class SkillTreeGameTests {
                     }
                     var context = new AbilityUseContext(p, id(power), 5, settingAnchor);
                     h.assertTrue(SkillActionService.canUse(context, branch) && SkillActionService.activate(context, branch), "Optional skill must activate: " + power + "/" + branch);
-                    if (branch == 0 && !power.equals("flight") && !power.equals("regeneration") && !power.equals("telepathy") && !power.equals("time_manipulation") && !power.equals("superspeed"))
+                    if (branch == 0 && !power.equals("flight") && !power.equals("regeneration") && !power.equals("telepathy") && !power.equals("time_manipulation") && !power.equals("superspeed") && !power.equals("precognition"))
                         h.assertTrue(victim.getHealth() < before, "Aimed attack must damage its target: " + power);
                     if (branch == 0 && power.equals("telepathy")) h.assertTrue(victim.hasEffect(MobEffects.WEAKNESS), "Psychic Silence must weaken its target");
                     if (branch == 0 && power.equals("time_manipulation")) h.assertTrue(com.jayptucker.heroesevolved.time.SpaceTimeService.isSuspended(victim), "Selective Stasis must pause its target");
@@ -240,7 +241,8 @@ public final class SkillTreeGameTests {
         h.runAfterDelay(6, () -> {
             try {
                 h.assertTrue(victim.getDeltaMovement().z < 0, "The gravity well must pull a mob toward its anchor over time");
-                SkillActionService.forget(p); victim.setDeltaMovement(Vec3.ZERO);
+                SkillActionService.forget(p);
+        com.jayptucker.heroesevolved.expansion.PrecognitionService.forget(p); victim.setDeltaMovement(Vec3.ZERO);
                 SkillActionService.tick(h.getLevel().getServer());
                 h.assertTrue(victim.getDeltaMovement().lengthSqr() == 0, "Removed field must stop altering its targets");
                 h.succeed();

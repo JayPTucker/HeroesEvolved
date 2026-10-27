@@ -136,6 +136,8 @@ public final class PlayerAbilityService {
         Ability ability = AbilityRegistry.ABILITIES.get(assignment.getKey());
 
         com.jayptucker.heroesevolved.skills.SkillActionService.forget(player);
+        com.jayptucker.heroesevolved.expansion.ExpansionSkills.forget(player);
+        com.jayptucker.heroesevolved.expansion.PrecognitionService.forget(player);
 
         if (ability != null) {
             ability.onRevoked(new AbilityUseContext(

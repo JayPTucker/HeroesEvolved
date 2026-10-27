@@ -4,7 +4,10 @@ Open your survival inventory and click **Skills**, beside the recipe book and
 above the inventory slots. The Powers menu also has a **Skill Tree** button.
 The button follows the inventory when opening or closing the recipe book.
 
-Each of the eleven powers has three branches, with nine nodes in total. Every
+The original trees use the format below. Quake, Cryokinesis and Electrokinesis now
+have eighteen nodes across two pages, and Precognition is the twelfth power. See
+[A Future Unwritten](a-future-unwritten.md) for new techniques, capstones, respecialization
+and discovery points. Every original
 branch contains an opening passive, an optional active skill, and a mastery
 passive. Existing power skills keep their normal level unlocks.
 

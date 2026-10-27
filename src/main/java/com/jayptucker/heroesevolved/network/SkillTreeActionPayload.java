@@ -9,7 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record SkillTreeActionPayload(Operation operation, String node, AbilitySlot slot) implements CustomPacketPayload {
-    public enum Operation { OPEN, BUY, EQUIP }
+    public enum Operation { OPEN, BUY, EQUIP, RESPEC }
     public static final Type<SkillTreeActionPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath("heroesevolved", "skill_tree_action"));
     public static final StreamCodec<RegistryFriendlyByteBuf, SkillTreeActionPayload> STREAM_CODEC = StreamCodec.of(
             (b, v) -> { b.writeEnum(v.operation); b.writeUtf(v.node, 96); b.writeEnum(v.slot); },
@@ -22,8 +22,9 @@ public record SkillTreeActionPayload(Operation operation, String node, AbilitySl
                 case OPEN -> true;
                 case BUY -> SkillTreeService.purchase(player, payload.node);
                 case EQUIP -> SkillTreeService.equip(player, payload.slot, payload.node);
+                case RESPEC -> SkillTreeService.respecialize(player);
             };
-            if (!accepted) PowerFeedback.reject(player, "Cannot change that skill. Check its level, prerequisite and available points.");
+            if (!accepted) PowerFeedback.reject(player, payload.operation == Operation.RESPEC ? "Wait ten seconds after combat before respecializing." : "Cannot change that skill. Check its level, prerequisite and available points.");
             SkillTreeService.sync(player);
         });
     }

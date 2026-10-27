@@ -18,7 +18,7 @@ public final class SkillTreeService {
         var build = data.build(power.toString());
         int highest = Math.max(build.highestLevel(), PlayerProgressionService.getLevel(player));
         if (highest != build.highestLevel()) {
-            build = new SkillTreeData.Build(highest, build.learned(), build.slots());
+            build = new SkillTreeData.Build(highest, build.learned(), build.slots(), build.training());
             player.setData(ModDataAttachments.SKILL_TREES, data.with(power.toString(), build));
         }
         return build;
@@ -33,8 +33,9 @@ public final class SkillTreeService {
         if (build.learned().contains(node.id()) || PlayerProgressionService.getLevel(player) < node.level()
                 || !node.prerequisite().isEmpty() && !build.learned().contains(node.prerequisite())
                 || SkillCatalog.available(power.getPath(), build) < node.cost()) return false;
+        if (node.capstone() && SkillCatalog.nodes(power.getPath()).stream().anyMatch(n -> n.capstone() && build.learned().contains(n.id()))) return false;
         Set<String> learned = new HashSet<>(build.learned()); learned.add(node.id());
-        save(player, power, new SkillTreeData.Build(build.highestLevel(), learned, build.slots()));
+        save(player, power, new SkillTreeData.Build(build.highestLevel(), learned, build.slots(), build.training()));
         player.sendSystemMessage(Component.literal("Learned " + node.name() + (node.active() ? ". Choose a key in your skill tree to equip it." : ".")));
         return true;
     }
@@ -62,7 +63,7 @@ public final class SkillTreeService {
             slots.values().removeIf(actionId::equals); // A sub-ability occupies one key only.
             slots.put(slot.name(), actionId);
         }
-        save(player, power, new SkillTreeData.Build(build.highestLevel(), build.learned(), slots));
+        save(player, power, new SkillTreeData.Build(build.highestLevel(), build.learned(), slots, build.training()));
         return true;
     }
     private static void save(ServerPlayer player, ResourceLocation power, SkillTreeData.Build build) {
@@ -91,6 +92,30 @@ public final class SkillTreeService {
     public static double bonus(ServerPlayer player, ResourceLocation power, int branch) {
         var build = build(player, power); String prefix = power.getPath() + "_" + branch + "_";
         return (build.learned().contains(prefix + "0") ? .10 : 0) + (build.learned().contains(prefix + "2") ? .15 : 0);
+    }
+    public static boolean has(ServerPlayer player, String id) {
+        return PlayerAbilityService.getData(player).assignedPower().filter(e -> e.getValue().isUnlocked())
+                .map(e -> build(player, e.getKey()).learned().contains(id)).orElse(false);
+    }
+    public static void awardTraining(ServerPlayer player) {
+        PlayerAbilityService.getData(player).assignedPower().ifPresent(e -> {
+            var b = build(player, e.getKey());
+            save(player, e.getKey(), new SkillTreeData.Build(b.highestLevel(), b.learned(), b.slots(), Math.min(6, b.training() + 2)));
+            sync(player);
+        });
+    }
+    public static boolean respecialize(ServerPlayer player) {
+        var assignment = PlayerAbilityService.getData(player).assignedPower();
+        if (assignment.isEmpty() || !assignment.get().getValue().isUnlocked() || !PowerRules.canAct(player)
+                || player.getData(ModDataAttachments.PLAYER_COMBAT).wasDamagedWithin(player.level().getGameTime(), 200)) return false;
+        var power = assignment.get().getKey(); var b = build(player, power);
+        for (var action : actions(player, power).values()) {
+            var context = new AbilityUseContext(player, power, PlayerProgressionService.getLevel(player), true);
+            action.release(context); action.deactivate(context);
+        }
+        com.jayptucker.heroesevolved.expansion.ExpansionSkills.forget(player);
+        save(player, power, new SkillTreeData.Build(b.highestLevel(), Set.of(), Map.of(), b.training()));
+        return true;
     }
     public static void sync(ServerPlayer player) { SkillTreeStatePayload.send(player); PlayerPowerSyncService.sync(player); }
 }

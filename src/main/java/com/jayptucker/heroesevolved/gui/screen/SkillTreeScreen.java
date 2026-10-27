@@ -19,7 +19,7 @@ public final class SkillTreeScreen extends Screen {
     private SkillTreeStatePayload previous;
     private Button purchase;
     private boolean pending;
-    private int refresh;
+    private int refresh, page;
     private final List<Button> slotButtons = new ArrayList<>();
     private final Map<String, Button> nodeButtons = new HashMap<>();
     private static final String[] BRANCHES = {"CONTROL", "FORCE", "SURVIVAL"};
@@ -41,8 +41,9 @@ public final class SkillTreeScreen extends Screen {
     @Override protected void init() {
         previous = ClientSkillTreeState.get(); slotButtons.clear(); nodeButtons.clear();
         for (var node : SkillCatalog.nodes(previous.power())) {
+            if (node.tier() / 3 != page) continue;
             int x = left() + 10 + node.branch() * (columnWidth() + 6);
-            int y = top() + 58 + node.tier() * (rowHeight() + rowGap());
+            int y = top() + 58 + (node.tier() % 3) * (rowHeight() + rowGap());
             Button button = new NodeButton(node, x, y, columnWidth(), rowHeight());
             nodeButtons.put(node.id(), addRenderableWidget(button));
         }
@@ -51,10 +52,11 @@ public final class SkillTreeScreen extends Screen {
             pending = true;
             send(SkillTreeActionPayload.Operation.BUY, selected, AbilitySlot.PRIMARY);
         }).bounds(left() + 10, top() + panelHeight() - 25, 114, 18).build());
-        addRenderableWidget(Button.builder(Component.literal("Power details"), b -> minecraft.setScreen(new PowersScreen()))
+        Button respec = addRenderableWidget(Button.builder(Component.literal("Respecialize"), b -> { pending = true; send(SkillTreeActionPayload.Operation.RESPEC, "", AbilitySlot.PRIMARY); })
                 .bounds(left() + 130, top() + panelHeight() - 25, 98, 18).build());
         addRenderableWidget(Button.builder(Component.literal("Back"), b -> onClose())
                 .bounds(left() + panelWidth() - 64, top() + panelHeight() - 25, 54, 18).build());
+        respec.setTooltip(Tooltip.create(Component.literal("Refund all purchases and restore default actions. Earned points and cooldowns remain. Requires ten seconds out of combat.")));
         int slotWidth = (panelWidth() - 24) / 5;
         for (var slot : AbilitySlot.values()) {
             final AbilitySlot chosen = slot;
@@ -67,7 +69,19 @@ public final class SkillTreeScreen extends Screen {
             }).bounds(left() + 10 + slot.ordinal() * slotWidth, top() + panelHeight() - 49, slotWidth - 3, 18).build();
             slotButtons.add(addRenderableWidget(button));
         }
+        if (SkillCatalog.rows(previous.power()) > 3) {
+            addRenderableWidget(Button.builder(Component.literal("<"), b -> changePage(-1)).bounds(left() + panelWidth() - 48, top() + 23, 18, 16).build());
+            addRenderableWidget(Button.builder(Component.literal(">"), b -> changePage(1)).bounds(left() + panelWidth() - 28, top() + 23, 18, 16).build());
+        }
         refreshButtons();
+    }
+    private void changePage(int delta) {
+        page = Math.clamp(page + delta, 0, (SkillCatalog.rows(ClientSkillTreeState.get().power()) - 1) / 3);
+        rebuildWidgets();
+    }
+    @Override public boolean mouseScrolled(double x, double y, double sx, double sy) {
+        if (x >= left() && x <= left() + panelWidth() && y >= top() && y <= top() + panelHeight()) { changePage(sy < 0 ? 1 : -1); return true; }
+        return super.mouseScrolled(x, y, sx, sy);
     }
     private void send(SkillTreeActionPayload.Operation operation, String node, AbilitySlot slot) {
         PacketDistributor.sendToServer(new SkillTreeActionPayload(operation, node, slot));
@@ -85,6 +99,7 @@ public final class SkillTreeScreen extends Screen {
     private boolean canLearn(SkillCatalog.Node node, SkillTreeStatePayload state) {
         return state.awakened() && state.level() >= node.level() && !state.build().learned().contains(node.id())
                 && (node.prerequisite().isEmpty() || state.build().learned().contains(node.prerequisite()))
+                && (!node.capstone() || SkillCatalog.nodes(state.power()).stream().noneMatch(n -> n.capstone() && state.build().learned().contains(n.id())))
                 && SkillCatalog.available(state.power(), state.build()) >= node.cost();
     }
     private void refreshButtons() {
@@ -96,6 +111,7 @@ public final class SkillTreeScreen extends Screen {
                 : !node.prerequisite().isEmpty() && !state.build().learned().contains(node.prerequisite()) ? "Requires parent"
                 : SkillCatalog.available(state.power(), state.build()) < node.cost() ? "Need " + node.cost() + " points"
                 : "Spend " + node.cost() + (node.cost() == 1 ? " point" : " points");
+        if (node != null && node.capstone() && !state.build().learned().contains(node.id()) && SkillCatalog.nodes(state.power()).stream().anyMatch(n -> n.capstone() && state.build().learned().contains(n.id()))) purchaseLabel = "One capstone only";
         purchase.setMessage(Component.literal(purchaseLabel));
         purchase.setTooltip(node == null ? null : Tooltip.create(Component.literal(node.name() + ": level " + node.level()
                 + ", " + node.cost() + " points" + (node.prerequisite().isEmpty() ? "" : ". Requires "
@@ -115,7 +131,7 @@ public final class SkillTreeScreen extends Screen {
         var state = ClientSkillTreeState.get();
         if (state != previous) {
             pending = false;
-            if (!state.power().equals(previous.power())) { selected = ""; rebuildWidgets(); }
+            if (!state.power().equals(previous.power())) { selected = ""; page = 0; rebuildWidgets(); }
             previous = state; refreshButtons();
         }
         if (++refresh % 60 == 0 && minecraft.getConnection() != null)
@@ -135,13 +151,13 @@ public final class SkillTreeScreen extends Screen {
         String power = state.power().isEmpty() ? "No power discovered" : Component.translatable("ability.heroesevolved." + state.power()).getString();
         g.drawString(font, power + " / Skill Tree", l + 10, t + 10, 0xFFF2F5FA, false);
         int points = state.awakened() ? SkillCatalog.available(state.power(), state.build()) : 0;
-        g.drawString(font, points + " points  |  Level " + state.level() + "  |  +2 per level", l + 10, t + 25, 0xFFB9D2DF, false);
+        g.drawString(font, points + " points  |  Level " + state.level() + "  |  " + (page + 1) + "/" + ((SkillCatalog.rows(state.power()) + 2) / 3), l + 10, t + 25, 0xFFB9D2DF, false);
         if (state.power().isEmpty()) {
             g.drawWordWrap(font, Component.literal("Discover a power to reveal its skill tree. Each power has its own branches, purchases and loadout."), l + 16, t + 65, w - 32, 0xFFBBC9D7);
         } else {
             for (int branch = 0; branch < 3; branch++) {
                 int x = l + 10 + branch * (columnWidth() + 6);
-                g.drawCenteredString(font, BRANCHES[branch], x + columnWidth() / 2, t + 44, COLORS[branch]);
+                g.drawCenteredString(font, SkillCatalog.branchName(state.power(), branch), x + columnWidth() / 2, t + 44, COLORS[branch]);
                 for (int tier = 0; tier < 2; tier++) {
                     int y = t + 58 + tier * (rowHeight() + rowGap()) + rowHeight();
                     g.fill(x + columnWidth() / 2 - 1, y, x + columnWidth() / 2 + 1, y + rowGap(), COLORS[branch] & 0x55FFFFFF);
@@ -169,7 +185,7 @@ public final class SkillTreeScreen extends Screen {
             }, DEFAULT_NARRATION);
             this.node = node;
             setTooltip(Tooltip.create(Component.literal(node.name() + "\n" + node.description() + "\nLevel "
-                    + node.level() + " / " + node.cost() + " points" + (node.tier() > 0 ? " / requires the node above" : "")
+                    + node.level() + " / " + node.cost() + " points" + (!node.prerequisite().isEmpty() ? " / requires " + SkillCatalog.find(node.power(), node.prerequisite()).map(SkillCatalog.Node::name).orElse("parent") : "")
                     + (node.active() ? "\n" + node.energy() + " stamina / " + node.cooldown() / 20.0 + "s base cooldown" : ""))));
         }
         @Override protected void renderWidget(GuiGraphics g, int mx, int my, float partial) {

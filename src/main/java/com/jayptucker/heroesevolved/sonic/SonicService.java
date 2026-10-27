@@ -40,6 +40,10 @@ public final class SonicService {
         double range = sustained ? 40 : 24 + powerLevel * 4;
         var hit = level.clip(new ClipContext(origin, origin.add(aim.scale(range)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
         double length = hit.getType() == HitResult.Type.BLOCK ? origin.distanceTo(hit.getLocation()) : range;
+        if (hit.getType() == HitResult.Type.BLOCK) {
+            for (int x = -1; x <= 1; x++) for (int y = -1; y <= 1; y++)
+                com.jayptucker.heroesevolved.expansion.PowerReactions.resonate(level, hit.getBlockPos().offset(x, y, 0), player.getServer().overworld().getGameTime() + 160);
+        }
         int affected = 0;
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(range),
                 target -> canHit(player, target))) {

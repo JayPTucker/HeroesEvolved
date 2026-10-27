@@ -125,7 +125,18 @@ public final class SylarEntity extends PathfinderMob implements Enemy {
             victim.push(away); victim.hurtMarked = true;
         }
     }
+    private int nextPredictedDodge;
     @Override public boolean hurt(DamageSource source, float amount) {
+        if (!level().isClientSide && tickCount >= nextPredictedDodge && source.getDirectEntity() instanceof net.minecraft.world.entity.projectile.Projectile
+                && SylarStoryData.get(level().getServer()).knows(ModAbilities.PRECOGNITION_ID)) {
+            Vec3 facing = getLookAngle().multiply(1, 0, 1).normalize(), side = new Vec3(-facing.z, 0, facing.x);
+            Vec3 end = com.jayptucker.heroesevolved.speed.SpeedService.swept(this, side.scale(2));
+            if (end.distanceToSqr(position()) >= 2.25) {
+                nextPredictedDodge = tickCount + 80;
+                AbilityEffects.send((ServerLevel) level(), Kind.PROPHECY_BREAK, position(), end, 1.5);
+                teleportTo(end.x, end.y, end.z); return false;
+            }
+        }
         boolean hit = super.hurt(source, amount);
         if (hit && amount > 0 && !level().isClientSide) {
             interrupt(); SylarStoryService.provoked(this);

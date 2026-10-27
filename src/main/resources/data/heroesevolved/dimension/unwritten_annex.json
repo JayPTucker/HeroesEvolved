@@ -1,0 +1,13 @@
+{
+  "type": "heroesevolved:time_fracture",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "layers": [],
+      "lakes": false,
+      "features": false,
+      "structure_overrides": [],
+      "biome": "minecraft:plains"
+    }
+  }
+}

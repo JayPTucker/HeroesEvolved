@@ -65,18 +65,6 @@ public record ActivateAbilitySlotPayload(
                 payload.slot(),
                 payload.allowOverexertion()
         );
-        if (result != com.jayptucker.heroesevolved.ability.AbilityUseResult.SUCCESS
-                && result != com.jayptucker.heroesevolved.ability.AbilityUseResult.OVEREXERTED_SUCCESS) {
-            String reason = switch (result) {
-                case NO_ASSIGNED_POWER -> "You have not discovered a power yet.";
-                case NOT_UNLOCKED -> "Your power has not awakened yet.";
-                case ACTION_LOCKED -> "Increase your power level to unlock this ability.";
-                case ON_COOLDOWN -> "That ability is still recovering.";
-                case INSUFFICIENT_ENERGY -> "Not enough stamina. Hold Shift to overexert.";
-                case POWER_SUPPRESSED -> "The Eclipse is suppressing your power.";
-                default -> "You cannot use that ability right now. Check your target and status.";
-            };
-            com.jayptucker.heroesevolved.ability.service.PowerFeedback.reject(player, reason);
-        }
+        com.jayptucker.heroesevolved.ability.service.PowerFeedback.report(player, result);
     }
 }

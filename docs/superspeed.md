@@ -46,7 +46,7 @@ Running trails send at most ten bounded segment descriptions per second per movi
 
 A whirlwind considers at most 32 affected entities per update. Transient movement modifiers and runtime combat state are removed on cleanup. Existing imported recordings remain unchanged; new speed cues use vanilla wind and sweep sounds.
 
-Both client and server need the updated mod: effect protocol version is now **25**.
+Both client and server need the updated mod: effect protocol version is now **26**.
 
 ## Verification
 

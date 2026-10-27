@@ -485,6 +485,7 @@ public final class ElectroService {
     // ------------------------------------------------------------------
 
     private static void shock(ServerPlayer player, LivingEntity target, float damage) {
+        com.jayptucker.heroesevolved.expansion.PowerReactions.electric(player, target);
         // Water conducts: wet targets take half again as much.
         float amount = target.isInWaterRainOrBubble() ? damage * 1.5F : damage;
         // Power damage uses the player-attack type for aggro and kill credit;
