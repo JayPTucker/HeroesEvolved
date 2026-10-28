@@ -1,8 +1,16 @@
 # Skill trees and Sonic Resonance
 
-Open your survival inventory and click **Skills**, beside the recipe book and
-above the inventory slots. The Powers menu also has a **Skill Tree** button.
-The button follows the inventory when opening or closing the recipe book.
+Open your survival inventory and click **Skills** (the eclipse beside the recipe book), or press
+**P**. Both open the **Abilities** page, which is also the skill tree:
+
+- The left column is your power: its passive and its five core abilities, with the key each is on.
+- Each of the three branches is drawn as its real tree: the root on top forks into an upgrade path
+  (left) and a technique path (right) that ends in the capstone. Connectors light up as you learn.
+- Click a hex to see what it does in the card on the right. Skills you can learn now pulse; click
+  **LEARN** (or click the selected hex again) to spend the points.
+- A learned active skill shows a row of key buttons: click one to put the skill on that key. A core
+  ability that was replaced shows **RESTORE** to put it back. **RESPEC** (beside your points) refunds
+  everything; it needs ten seconds out of combat.
 
 Every tree now has eighteen nodes: the original nine below, plus a technique, an
 upgrade and a capstone in each branch (see [the new powers guide](new-powers.md)). See
@@ -95,6 +103,7 @@ checks with `python tools/verify-skill-content.py`.
 
 For actual Minecraft-rendered layout previews, run
 `gradlew.bat runClient --init-script tools/skill-ui-preview.init.gradle`.
-The isolated client saves normal, locked and learned skill states at GUI scales
-two and three in `build/skill-ui-preview-world/screenshots/`, then exits. This
+The isolated client saves the Abilities page with nothing learned, with one branch partly learned,
+and with a wider build, at GUI scales two and three, in `build/skill-ui-preview-world/screenshots/`,
+then exits. This
 fixture is excluded from the released JAR.

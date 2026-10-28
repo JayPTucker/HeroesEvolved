@@ -84,8 +84,7 @@ public class EffectGeometryCheck {
             throw new AssertionError("Canary cry attack/release timing changed");
         System.out.println("PASS: Continuous Canary cry uses bounded attack and release ramps with a silent endpoint.");
         // A late default Screen background used to blur the already-drawn title
-        // and descriptions. Neither custom menu should invoke that GPU pass.
-        new com.jayptucker.heroesevolved.gui.screen.SkillTreeScreen(null).renderBackground(null, 0, 0, 0);
+        // and descriptions. The Abilities menu should not invoke that GPU pass.
         new com.jayptucker.heroesevolved.gui.screen.PowersScreen().renderBackground(null, 0, 0, 0);
         System.out.println("PASS: Power menus do not invoke a late world/menu blur after drawing their content.");
         RegistryFriendlyByteBuf skillBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), RegistryAccess.EMPTY);
