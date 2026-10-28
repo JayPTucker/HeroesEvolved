@@ -88,8 +88,12 @@ public final class SkillActionService {
                     }
                 }
                 if (branch == 1) { reflect(p, p.position(), 7); field(p, power, 120); }
-                if (branch == 2) { effect(p, MobEffects.MOVEMENT_SPEED, 160, 1); effect(p, MobEffects.DIG_SPEED, 160, 1); }
-                visual(p, target, Kind.ELECTRIC_ARC, 3);
+                if (branch == 2) {
+                    effect(p, MobEffects.MOVEMENT_SPEED, 160, 1); effect(p, MobEffects.DIG_SPEED, 160, 1);
+                    com.jayptucker.heroesevolved.electro.ElectroService.fillCharge(p);
+                }
+                // Overcharge shows itself: the filled Charge sets the body crackling.
+                if (branch != 2) visual(p, target, Kind.ELECTRIC_ARC, 3);
             }
             case "telekinesis" -> {
                 if (branch == 0) { hit(p, target, 6 + level); push(target, p.getLookAngle().scale(2)); }

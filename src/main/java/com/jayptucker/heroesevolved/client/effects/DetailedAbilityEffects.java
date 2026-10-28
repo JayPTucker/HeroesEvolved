@@ -136,36 +136,6 @@ final class DetailedAbilityEffects {
                     burst(level, center, axis, CYAN, density / 2, 0.08F);
                 }
             }
-            case ELECTRIC_ORB -> {
-                // The shell moves with the projectile between its two-tick updates.
-                Vec3 velocity = delta.length() > 1.0D ? axis : delta;
-                movingCore(level, origin, velocity, 0.16F, 4, 0xE6F8FF);
-                orbit(level, origin, UP, size, 4, BLUE, 0.35F, velocity);
-                if (detail) {
-                    orbit(level, origin, new Vec3(1, 0.3D, 0), size * 0.9F,
-                            4, 0xBCEAFF, -0.4F, velocity);
-                    orbit(level, origin, new Vec3(0, 0.25D, 1), size * 1.1F,
-                            4, BLUE, 0.3F, velocity);
-                    streak(level, origin.subtract(axis.scale(0.6D)), origin, 0.07F, 5, BLUE);
-                }
-            }
-            case ELECTRIC_IMPACT -> {
-                ring(level, origin, UP, 0.15F, size, 14, 0, BLUE, 0.65F);
-                if (detail) {
-                    orbit(level, origin, new Vec3(1, 0.2D, 0), size * 0.7F,
-                            14, 0xD5F4FF, 0.3F, Vec3.ZERO);
-                    orbit(level, origin, new Vec3(0, 0.2D, 1), size * 0.8F,
-                            14, BLUE, -0.2F, Vec3.ZERO);
-                    burst(level, origin, UP, BLUE, density, 0.2F);
-                    for (int i = 0; i < 8; i++) {
-                        double angle = i * Math.PI / 4;
-                        Vec3 radial = new Vec3(Math.cos(angle), 0.15D, Math.sin(angle));
-                        Vec3 elbow = origin.add(radial.scale(size * 0.5D)).add(0, 0.25D, 0);
-                        streak(level, origin, elbow, 0.045F, 7, 0xE6FAFF);
-                        streak(level, elbow, origin.add(radial.scale(size)), 0.025F, 9, BLUE);
-                    }
-                }
-            }
             case PSYCHIC_TETHER -> {
                 // A curved force filament pulls toward the caster, unlike an electrical bolt.
                 Vec3 previous = origin;

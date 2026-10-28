@@ -17,7 +17,7 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("28")
+        event.registrar("29")
             .playToServer(com.jayptucker.heroesevolved.expansion.IncidentActionPayload.TYPE, com.jayptucker.heroesevolved.expansion.IncidentActionPayload.STREAM_CODEC, com.jayptucker.heroesevolved.expansion.IncidentActionPayload::handle)
             .playToServer(JournalRequestPayload.TYPE, JournalRequestPayload.STREAM_CODEC, JournalRequestPayload::handle)
             .playToClient(StoryJournalPayload.TYPE, StoryJournalPayload.STREAM_CODEC, StoryJournalPayload::handle)

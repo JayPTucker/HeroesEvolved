@@ -13,7 +13,6 @@ import static com.jayptucker.heroesevolved.client.effects.PowerParticle.Shape.*;
 public final class AbilityEffectRenderer {
     private static final Vec3 UP = new Vec3(0, 1, 0);
     private static final int QUAKE = 0xB9E8F4;
-    private static final int ELECTRIC = 0x63BAFF;
     private static final int PSYCHIC = 0xBD94FF;
     private static final int TEMPORAL = 0xDAC8FF;
     private static final int BLOOD = 0xFF667A;
@@ -56,6 +55,7 @@ public final class AbilityEffectRenderer {
         if (NuclearEffects.play(level, effect.kind(), origin, size, detail)
                 || CryoEffects.play(level, effect.kind(), origin, target, size, detail)
                 || PyroEffects.play(level, effect.kind(), origin, target, size, detail)
+                || ElectroEffects.play(level, effect.kind(), origin, target, size, detail)
                 || AwakeningEffects.play(level, effect.kind(), origin, size, detail, density)
                 || DetailedAbilityEffects.play(level, effect.kind(), origin, target, size, detail, density)) {
             return;
@@ -115,17 +115,6 @@ public final class AbilityEffectRenderer {
                 ring(level, origin.add(0, 0.4D, 0), UP, 0.7F, 1.5F, 9, 0, QUAKE, 0.5F);
                 if (detail) {
                     helix(level, origin, 0.5F, 1.6F, QUAKE, density / 2, 10);
-                }
-            }
-            case ELECTRIC_ARC -> lightning(level, origin, target, detail);
-            case ELECTRIC_NOVA -> {
-                ring(level, origin.add(0, 0.5D, 0), UP, 0.2F, size, 14, 0, ELECTRIC, 0.6F);
-                if (detail) {
-                    for (int i = 0; i < 5; i++) {
-                        double angle = i * Math.PI * 2 / 5;
-                        lightning(level, origin.add(0, .8, 0), origin.add(Math.cos(angle) * size,
-                                .1, Math.sin(angle) * size), false);
-                    }
                 }
             }
             case PSYCHIC_PUSH -> {
@@ -199,31 +188,6 @@ public final class AbilityEffectRenderer {
             case FLIGHT_CYCLONE -> {
                 FlightEffects.cyclone(level, origin, detail);
             }
-        }
-    }
-
-    private static void lightning(ClientLevel level, Vec3 from, Vec3 to, boolean detail) {
-        Vec3 delta = to.subtract(from);
-        int segments = Math.clamp((int) (delta.length() * 2), 3, detail ? 32 : 12);
-        Vec3 previous = from;
-        RandomSource random = level.random;
-        for (int i = 1; i <= segments; i++) {
-            double t = i / (double) segments;
-            double jitter = Math.sin(t * Math.PI) * 0.4D;
-            Vec3 next = i == segments ? to : from.add(delta.scale(t)).add(
-                    (random.nextDouble() - 0.5D) * jitter,
-                    (random.nextDouble() - 0.5D) * jitter,
-                    (random.nextDouble() - 0.5D) * jitter);
-            streak(level, previous, next, 0.055F, 5, ELECTRIC);
-            if (detail) {
-                streak(level, previous, next, 0.018F, 4, 0xEEFAFF);
-                if (i % 4 == 0) {
-                    Vec3 branch = next.add((random.nextDouble() - 0.5D) * 1.2D,
-                            random.nextDouble() * 0.7D, (random.nextDouble() - 0.5D) * 1.2D);
-                    streak(level, next, branch, 0.035F, 5, ELECTRIC);
-                }
-            }
-            previous = next;
         }
     }
 

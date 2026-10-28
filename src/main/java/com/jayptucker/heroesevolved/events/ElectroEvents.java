@@ -58,10 +58,30 @@ public final class ElectroEvents {
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (event.getEntity() instanceof ServerPlayer player
-                && hasAwakenedElectrokinesis(player)) {
-            ElectroService.ambientCrackle(player,
-                    player.serverLevel().getGameTime());
+                && hasAwakenedElectrokinesis(player)
+                && !EclipseService.arePowersSuppressed(player)) {
+            ElectroService.playerTick(player);
         }
+    }
+
+    @SubscribeEvent
+    public static void logout(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) ElectroService.forget(player);
+    }
+
+    @SubscribeEvent
+    public static void dimension(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) ElectroService.forget(player);
+    }
+
+    @SubscribeEvent
+    public static void death(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) ElectroService.forget(player);
+    }
+
+    @SubscribeEvent
+    public static void stop(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
+        ElectroService.clear();
     }
 
     public static boolean hasAwakenedElectrokinesis(ServerPlayer player) {

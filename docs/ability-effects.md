@@ -18,7 +18,7 @@ owner.
 | Power | Visual language |
 | --- | --- |
 | Quake | Pale cyan pressure fronts, delayed concentric beam rings, ground impact waves, and descending plunge pulses. Existing terrain debris and camera shake remain. |
-| Electrokinesis | Blue continuous jagged ribbons with white cores and short branches, plus radial discharge rings. |
+| Electrokinesis | Fractal bolts with tapering forks in the additive lightning render type (soft glow, bright body, white core), re-struck to flicker; see [Electrokinesis](electrokinesis.md). |
 | Telekinesis | Violet force rings, bands around held creatures, and orbiting motes. |
 | Time manipulation | Lavender collapse/expansion rings, gold clock ticks, and rising afterimage motes. |
 | Regeneration | Crimson and warm gold healing helices, moving blood threads, and a revival burst. |
@@ -73,8 +73,10 @@ Quake Blast ends when its key is released.
    Z for a private expanding scan; hold X for the channel beam; V for earthquake pulses and its
    final aftershock. Check against nearby slopes as well as a flat surface.
 2. Electrokinesis: replace the power with `heroesevolved:electrokinesis`; use
-   chain lightning against several creatures, send Ball Lightning through open
-   ground and into a wall, call Thunderstrike, and dash across open ground.
+   tap and hold Chain Lightning against several creatures, send Ball Lightning through open
+   ground and burst it with Shift, call Thunderstrike (watch the warning, then the strike), dash
+   across open ground and step on its scar, and wind up Storm Surge. Or run
+   `tools/electro-preview.init.gradle` for screenshots of all of it.
 3. Telekinesis: replace with `heroesevolved:telekinesis`; grip and throw a
    creature, stop/release arrows, disarm an armed mob near loose items, and use
    the storm to lift multiple targets. Watch for tethers and landing impacts.
@@ -166,7 +168,7 @@ sound registrations and playback timing are preserved.
 | Radiation | White-hot vent beam with an orange halo and turbulent eddies; broken condensation fronts at detonation; a rising fireball, overlapping smoke column, rolling mushroom crown and spreading dust skirt. |
 | Flight | Entirely new twin boot vortices following the pitched body, broad soft wakes at speed, curved sonic-pressure fronts, layered cyclone wind ribbons and vapor-based dive impacts/awakening. |
 | Quake | Broken widening compression arcs, sharp pressure fronts and delayed jagged ground fissure highlights. Highlights are cosmetic and may be occluded on uneven terrain. |
-| Electrokinesis | Slimmer short-lived white-core bolts, branching radial discharges, moving orbital cores and discharge impacts. |
+| Electrokinesis | Rebuilt: branched fractal bolts drawn like vanilla lightning, a held Live Current stream, a plasma-knot orb, a telegraphed sky strike that lights the sky, a crackling body aura when Charged, and short-lived light blocks for real flashes. |
 | Cryokinesis | Moving diamond-shaped ice fragments with bright facets, lance highlights, rime rings, dense wind-driven snow, larger cold domes, local blizzard fog and frozen shells. |
 | Telekinesis | Oppositely rotating tilted binding arcs, curved force tethers and orbital fields. |
 | Telepathy | Dedicated fine waveforms linking minds, small head halos and outward psychic crescents, distinct from telekinetic restraint bands. |

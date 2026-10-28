@@ -34,10 +34,7 @@ public final class ArmPoseActions {
             Map.entry("regeneration_healing_aura", new Pose(ArmPose.ARMS_WIDE, 25)),
             Map.entry("regeneration_indestructible", new Pose(ArmPose.ARMS_WIDE, 10)),
 
-            Map.entry("electro_chain_lightning", new Pose(ArmPose.ONE_HAND, 8)),
             Map.entry("electro_ball_lightning", new Pose(ArmPose.TWO_HANDS, 10)),
-            Map.entry("electro_thunderstrike", new Pose(ArmPose.ARMS_RAISED, 15)),
-            Map.entry("electro_storm_surge", new Pose(ArmPose.ARMS_WIDE, 20)),
 
             Map.entry("radiation_radiant_touch", new Pose(ArmPose.ONE_HAND, 8)),
             Map.entry("radiation_pulse", new Pose(ArmPose.ARMS_WIDE, 15)),

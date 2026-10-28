@@ -13,6 +13,7 @@ allprojects {
                 runs {
                     client {
                         gameDirectory = project.file('build/skill-ui-preview-world')
+                        systemProperty('heroes.preview.skills', 'true')
                         programArguments.addAll('--width', '1100', '--height', '800')
                     }
                 }

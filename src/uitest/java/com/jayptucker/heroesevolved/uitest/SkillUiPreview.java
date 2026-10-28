@@ -25,7 +25,7 @@ public final class SkillUiPreview {
     private static int ticks, frames;
 
     @SubscribeEvent public static void tick(ClientTickEvent.Post event) {
-        if (Boolean.getBoolean("heroes.preview.afterimages") || Boolean.getBoolean("heroes.preview.unwritten")) return;
+        if (!Boolean.getBoolean("heroes.preview.skills")) return;
         Minecraft mc = Minecraft.getInstance();
         if (shown || ++ticks < 40 || mc.getOverlay() != null || mc.screen == null) return;
         shown = true;

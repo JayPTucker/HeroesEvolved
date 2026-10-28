@@ -120,14 +120,7 @@ final class AwakeningEffects {
         }
     }
     private static void bolt(ClientLevel level, Vec3 from, Vec3 to, int color) {
-        Vec3 previous = from;
-        int segments = Math.clamp((int) from.distanceTo(to), 3, 18);
-        for (int i = 1; i <= segments; i++) {
-            Vec3 next = from.lerp(to, i / (double) segments);
-            if (i < segments) next = next.add((level.random.nextDouble() - 0.5) * 0.8,
-                    (level.random.nextDouble() - 0.5) * 0.8, (level.random.nextDouble() - 0.5) * 0.8);
-            streak(level, previous, next, 0.06F, 12, color);
-            previous = next;
-        }
+        // The awakening uses the same branched lightning as the Electrokinesis kit.
+        ElectroEffects.bolt(level, from, to, color == WHITE ? 0.09F : 0.06F, 6, 0, 1F, true, 0.22, 1);
     }
 }

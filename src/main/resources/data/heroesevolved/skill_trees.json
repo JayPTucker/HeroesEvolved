@@ -578,7 +578,7 @@
         },
         {
           "name": "Overcharge",
-          "description": "Electrify your reflexes: Speed II and Haste II for 8 seconds.",
+          "description": "Electrify your reflexes: Speed II and Haste II for 8 seconds, and fill your Charge to Overcharged.",
           "energy": 25,
           "cooldown": 220
         },

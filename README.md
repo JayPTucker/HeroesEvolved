@@ -7,7 +7,7 @@ events and evolving abilities. Build and run with Java 21.
 
 Open the survival inventory and click **Skills**, next to the recipe book.
 Every power has three named branches of six nodes: eighteen per power, 288 in all.
-The skill screen is laid out like the Advancements screen. Earn three points when your power awakens and two more per power level.
+The Abilities page is also the skill tree: each branch is drawn as its real tree, and you learn skills and put them on keys right there. Earn three points when your power awakens and two more per power level.
 Spend them on your preferred build and equip learned skills to your existing
 five ability keys. Purchases and loadouts persist across death and relogging.
 
@@ -18,8 +18,7 @@ Empathic Mimicry. Sonic voice attacks use recorded screams, including a position
 sustained scream that stops when you release its key.
 
 See [the skill guide](docs/skill-trees.md) for the original optional skills,
-point costs, prerequisites and loadout controls. The Powers menu also provides
-a Skill Tree button and live ability costs and cooldowns.
+point costs, prerequisites and loadout controls.
 
 See [Superspeed](docs/superspeed.md) for sprint controls, progression and the Enhanced Speed / Flash-inspired design.
 
@@ -27,6 +26,8 @@ See [A Future Unwritten](docs/a-future-unwritten.md) for the first playable expa
 135 skill nodes, 45 optional actions, Precognition, shared reactions, prophetic
 paintings, and the repeatable Hourglass Annex rescue operation. Find a cartographer
 or share a prophetic canvas, then open **J** to read and follow the omen.
+
+See [Electrokinesis](docs/electrokinesis.md) for the rebuilt lightning kit: Charge, tap-or-hold Chain Lightning, and the delayed Thunderstrike.
 
 See [Pyrokinesis and Helixite](docs/pyrokinesis.md) for the fire power, its real-fire rules,
 reactions with Cryokinesis, Flight and Superspeed, and the new Helixite crystal ore.
