@@ -1,0 +1,76 @@
+# Containment: Gabriel Gray. The bars were not cut; they were unmade. The blood trail ends at his cage.
+# Visitors hear ticking. BunkerBuilder.inCell matches this interior.
+name: bunker_cell
+anchor: 0 0 0
+palette:
+  A = polished_deepslate
+  B = cracked_deepslate_bricks
+  C = bone_block[axis=x]
+  D = skeleton_skull[rotation=6]
+  E = iron_bars
+  F = gray_bed[facing=south,part=head]
+  G = redstone_wire
+  H = gray_bed[facing=south,part=foot]
+  I = dark_oak_stairs[facing=south]
+  J = spruce_slab[type=top]
+  K = lectern[facing=north] @log:gabriel
+  L = chest[facing=west] @loot:cell
+  M = chiseled_deepslate
+  N = tripwire_hook[facing=north]
+  O = candle[candles=3,lit=false]
+  P = cobweb
+  Q = deepslate_bricks
+  R = soul_lantern[hanging=true]
+
+# floor
+layer 0:
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+
+# the cage, the bench, the trail
+layer 1:
+BBBBBBBB
+B....CDB
+B.EEEE.B
+B.EF..G.
+B.EHGGG.
+BIEEEE.B
+BJJ.K.LB
+BBBBBBBB
+
+layer 2:
+BBBBBBBB
+B......B
+B.EEEE.B
+M.E.....
+B.E.....
+B.EEEE.B
+BNO....B
+BBBMBBBB
+
+layer 3:
+BBBMBBBB
+B......B
+BPEEEE.B
+B.E....B
+M.E..E.B
+B.EEEE.B
+B.....PB
+BBBBBBBB
+
+# ceiling
+layer 4:
+QQQQQQQQ
+QRQQQQQQ
+QQQQQQQQ
+QQQQQQQQ
+QQQQQQQQ
+QQQQQQQQ
+QQQQQQQQ
+QQQQQQQQ

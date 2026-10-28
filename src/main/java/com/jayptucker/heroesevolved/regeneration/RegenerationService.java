@@ -125,6 +125,10 @@ public final class RegenerationService {
      * health, which she regrows, and it burns the undead.
      */
     public static boolean bloodGift(ServerPlayer player, int powerLevel) {
+        // Holding an empty syringe bottles the gift instead: a donated sample for the Formula.
+        if (com.jayptucker.heroesevolved.formula.FormulaService.bottleBloodGift(player, powerLevel)) {
+            return true;
+        }
         LivingEntity target = findBloodGiftTarget(player);
         if (target == null) {
             player.displayClientMessage(Component.literal(

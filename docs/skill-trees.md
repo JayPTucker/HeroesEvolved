@@ -4,8 +4,8 @@ Open your survival inventory and click **Skills**, beside the recipe book and
 above the inventory slots. The Powers menu also has a **Skill Tree** button.
 The button follows the inventory when opening or closing the recipe book.
 
-The original trees use the format below. Quake, Cryokinesis and Electrokinesis now
-have eighteen nodes across two pages, and Precognition is the twelfth power. See
+Every tree now has eighteen nodes: the original nine below, plus a technique, an
+upgrade and a capstone in each branch (see [the new powers guide](new-powers.md)). See
 [A Future Unwritten](a-future-unwritten.md) for new techniques, capstones, respecialization
 and discovery points. Every original
 branch contains an opening passive, an optional active skill, and a mastery
@@ -42,7 +42,14 @@ free. Other costs round up to at least one.
 | Sonic Resonance | Focused Shriek | Dissonant Wave | Resonant Guard |
 | Superspeed | Reflex Focus | Momentum Strike | Slipstream Rescue |
 
-Select a node to inspect its description, requirements, cost and base cooldown.
+The screen is laid out like the vanilla Advancements screen. The tree grows left to
+right from your power's emblem. Drag to pan (the mouse wheel scrolls; Shift + wheel
+scrolls sideways). Passive nodes have square frames, active skills rounded frames and
+capstones spiked frames; learned nodes and their connecting lines turn gold, nodes you
+can afford pulse, and locked nodes are dimmed. Hover a node for its full details.
+A tree can set an optional `"icon"` item id per node in `skill_trees.json`.
+
+Click a node to select it; its description appears below the map.
 Use **Spend points** to learn it. Select a learned active skill, then use an
 **Equip** button to assign it to one of the five existing ability keys. The
 buttons use your actual key bindings. A sub-ability occupies one key at a time.

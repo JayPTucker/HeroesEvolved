@@ -1,0 +1,110 @@
+# A timber-frame family home that burned when the city did. The fire began in the kitchen (south-west);
+# charring fades with distance from there. Generated across the overworld.
+# Exported to data/heroesevolved/structure/ruins/burnt_house.nbt.
+name: ruins_burnt_house
+anchor: 0 0 0
+palette:
+  f = spruce_planks
+  s = soul_soil
+  S = stone_bricks
+  c = cracked_stone_bricks
+  W = stripped_birch_wood
+  D = stripped_spruce_wood
+  B = blackstone
+  L = stripped_dark_oak_log[axis=y]
+  l = stripped_dark_oak_log[axis=x]
+  g = iron_bars
+  K = furnace[facing=east]
+  F = campfire[lit=false,facing=east]
+  k = spruce_slab[type=top]
+  e = spruce_fence
+  t = spruce_pressure_plate
+  q = spruce_stairs[facing=west]
+  Q = spruce_stairs[facing=east]
+  a = gray_carpet
+  X = chest[facing=west] @loot:ruins_house
+  m = moss_carpet
+  C = coarse_dirt
+  v = short_grass
+  V = vine[north=true]
+  d = dead_bush
+
+# floor, set into the ground
+layer 0:
+fffffffffff
+fffffffffff
+fffffffffff
+fffffffffff
+fffffffffff
+fffsfffCfff
+ffsssfCffff
+ffsffffffff
+fffffffffff
+
+# plinth and ground floor
+layer 1:
+LSSSSLSSSSL
+S......m.XS
+Sv......m.S
+c..llQeq.mS
+L..a......L
+cka....v.dS
+BK..aav.a.S
+cF.......vS
+LcBc..SSSSL
+
+layer 2:
+LDDgDLWgWWL
+D.V.....V.W
+D..L......g
+B.....t...W
+L.........L
+B.........W
+_.........g
+B_........W
+LB_g..DgDWL
+
+layer 3:
+LDBBDLWBWWL
+D.V.....V.W
+B.........B
+B.........W
+L.........L
+_.........D
+_.........B
+_.........D
+L___BlBDDDL
+
+# what is left of the frame
+layer 4:
+lllllllllll
+_........._
+_........._
+_........._
+L....llllll
+_........._
+_........._
+_........._
+L____L____L
+
+layer 5:
+L_________L
+_........._
+_........._
+_........._
+_........._
+_........._
+_........._
+_........._
+___________
+
+layer 6:
+___________
+___________
+___________
+___________
+___________
+___________
+___________
+___________
+___________

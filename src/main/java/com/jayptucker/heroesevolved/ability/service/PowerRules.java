@@ -15,7 +15,8 @@ public final class PowerRules {
     private static final Set<UUID> REWINDING = new HashSet<>();
     private PowerRules() {}
     public static boolean immobilized(ServerPlayer player) {
-        return com.jayptucker.heroesevolved.expansion.ExpansionSkills.preserved(player) || CryoService.isFrozen(player) || TimeStopService.isStopped(player) || REWINDING.contains(player.getUUID());
+        return com.jayptucker.heroesevolved.expansion.ExpansionSkills.preserved(player) || CryoService.isFrozen(player) || TimeStopService.isStopped(player) || REWINDING.contains(player.getUUID())
+                || com.jayptucker.heroesevolved.story.bunker.CryoChamberService.isInside(player);
     }
     public static boolean canAct(ServerPlayer player) {
         return player.isAlive() && !player.isSpectator() && !immobilized(player)

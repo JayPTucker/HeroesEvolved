@@ -1,0 +1,182 @@
+# Isaac Mendez's loft studio. He painted the future, including the one that came true.
+# Exported to data/heroesevolved/structure/ruins/isaac_studio.nbt.
+name: ruins_isaac_studio
+anchor: 0 0 0
+palette:
+  f = spruce_planks
+  R = bricks
+  s = stone_bricks
+  i = iron_bars
+  A = spruce_trapdoor[facing=south,half=top,open=false]
+  k = stone_brick_slab[type=top]
+  c = smooth_stone
+  P = stone_brick_wall
+  G = glass
+  e = spruce_fence
+  B = barrel[facing=up]
+  x = cobblestone
+  y = brick_slab[type=bottom]
+  V = vine[south=true]
+  W = vine[north=true]
+  m = moss_carpet
+  ! = air @painting:explosion:east
+  ? = air @painting:eclipse:west
+  E = spruce_fence
+  C = white_wool
+  M = white_bed[facing=east,part=head]
+  u = cauldron
+  T = spruce_slab[type=top]
+  p = flower_pot
+  1 = orange_carpet
+  2 = yellow_carpet
+  3 = red_carpet
+  X = chest[facing=east] @loot:isaac_studio
+
+# floor
+layer 0:
+_s__s___s__s_
+_fffffffffff_
+_fffffffffff_
+_fffffffffff_
+_fffffffffff_
+_fffffffffff_
+_fffffffffff_
+_fffffffffff_
+_fffffffffff_
+_fffffffffff_
+_s__s___s__s_
+
+# studio
+layer 1:
+_s__s___s__s_
+_RRRRRRRRRRR_
+_R......yxxR_
+_R..3.2E.yxR_
+_R...1....CR_
+_R..E..3..CR_
+_R.1..1....R_
+_R...2...MMR_
+_RXuT......R_
+_RRRRR.RRRRR_
+_s__s___s__s_
+
+layer 2:
+_s__s___s__s_
+_RiiRRiRRiiR_
+_R.......y.R_
+_R.....C...R_
+_R........CR_
+_R..C......R_
+_R.........R_
+_R.........R_
+_R..p......R_
+_RiiRR.RRiiR_
+_s__s___sW_s_
+
+layer 3:
+_s__s___s____
+_RiiRRiRRi___
+_R........___
+_R.........R_
+_R.........R_
+_R!........R_
+_R........?R_
+_R.........R_
+_R.........R_
+_RiiRR.RRiiR_
+_s_Ws___sWWs_
+
+layer 4:
+_sV_sV_Vs____
+_RiiRRiRRi___
+_R........___
+_R.........R_
+_R.........R_
+_R.........R_
+_R.........R_
+_R.........R_
+_R.........R_
+_RiiRRRRRiiR_
+_s_WsAAAsWWs_
+
+layer 5:
+_sV_sV_Vs____
+_RiiRRiRR____
+_R.......____
+_R.......____
+_R.........R_
+_R.........R_
+_R.........R_
+_R.........R_
+_R.........R_
+_RiiRRRRRiiR_
+_s_Ws___s_Ws_
+
+# lintel band
+layer 6:
+ksVksVkVs____
+_RRRRRRRR____
+_R.......____
+_R.......____
+_R.........R_
+_R.........R_
+_R.........R_
+_R.........R_
+_R.........R_
+_RRRRRRRRRRR_
+kskkskkkskksk
+
+layer 7:
+_sVVsV_Vs____
+_RRRRRRRR____
+_R.......____
+_R.......____
+_R.........R_
+_R.........R_
+_R.........R_
+_R.........R_
+_R.........R_
+_RRRRRRRRRRR_
+_s__s___s__s_
+
+# roof and skylight
+layer 8:
+__VV_V_V_____
+_cccccccc____
+_cccccccc____
+_cccccccc____
+_cccGGGccccc_
+_cccGGGccccc_
+_cccGGGccccc_
+_ccccccccccc_
+_ccccccccccc_
+_ccccccccccc_
+_____________
+
+# parapet and tank legs
+layer 9:
+_____________
+_PPPPPPPP____
+_Pm__m_______
+_P___________
+_P_________P_
+_P_________P_
+_P______ee_P_
+_P______ee_P_
+_P_m______mP_
+_PPPPPPPPPPP_
+_____________
+
+# water tank
+layer 10:
+_____________
+_____________
+_____________
+_____________
+_____________
+_____________
+________BB___
+________BB___
+_____________
+_____________
+_____________

@@ -34,7 +34,7 @@ public final class FacilityService {
     public static void discovery(ServerPlayer p, String id) {
         FacilityData d = FacilityData.get(p.getServer());
         if (d.discover(p.getUUID(), id)) {
-            if (id.equals("brittle_fan") || id.equals("rime_circuit") || id.equals("seam_chorus") || id.equals("annex_saved")) SkillTreeService.awardTraining(p);
+            if (id.equals("brittle_fan") || id.equals("rime_circuit") || id.equals("seam_chorus") || id.equals("thermal_shock") || id.equals("steam_veil") || id.equals("firestorm") || id.equals("annex_saved")) SkillTreeService.awardTraining(p);
             p.sendSystemMessage(Component.literal("Discovery: " + id.replace('_', ' ') + ". Your journal remembers."));
         }
     }
@@ -195,6 +195,9 @@ public final class FacilityService {
         for (UUID id : List.copyOf(d.visitors.keySet())) {
             ServerPlayer p = server.getPlayerList().getPlayer(id); if (p == null) continue;
             if (saved) discovery(p, "annex_saved");
+            // A rescued captive with a regenerating bloodline leaves one sample per player, once.
+            if (saved && d.discover(p.getUUID(), "annex_blood"))
+                com.jayptucker.heroesevolved.formula.FormulaService.giveRescueSample(p);
             tell(p, saved ? "A FUTURE REVISED: two people live. The painting remembers their escape. The city may still be saved."
                     : "A SCAR IN THE FUTURE: the operation ended before everyone was safe. Return, study the painting, and attempt another route.");
         }

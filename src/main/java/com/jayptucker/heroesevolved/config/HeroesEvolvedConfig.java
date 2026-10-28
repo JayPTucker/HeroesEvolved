@@ -37,6 +37,7 @@ public final class HeroesEvolvedConfig {
 
     public static final class Common {
         public final ModConfigSpec.BooleanValue sylarEnabled, sylarCanAcquirePowers;
+        public final ModConfigSpec.BooleanValue bunkerEnabled;
         public final ModConfigSpec.IntValue sylarFirstEncounterSeconds, sylarEncounterIntervalSeconds;
         public final ModConfigSpec.IntValue maximumLevel;
         public final ModConfigSpec.LongValue baseMasteryPerLevel;
@@ -198,6 +199,20 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue electroRideCooldownTicks;
         public final ModConfigSpec.IntValue electroStormEnergyCost;
         public final ModConfigSpec.IntValue electroStormCooldownTicks;
+        public final ModConfigSpec.BooleanValue pyroWorldFire;
+        public final ModConfigSpec.BooleanValue formulaAllowForcedDraws;
+        public final ModConfigSpec.IntValue formulaForcedDrawCooldownSeconds;
+        public final ModConfigSpec.DoubleValue formulaDonatedSuccess, formulaForcedSuccess;
+        public final ModConfigSpec.IntValue pyroFlareEnergyCost;
+        public final ModConfigSpec.IntValue pyroFlareCooldownTicks;
+        public final ModConfigSpec.IntValue pyroPalmEnergyCost;
+        public final ModConfigSpec.IntValue pyroPalmCooldownTicks;
+        public final ModConfigSpec.IntValue pyroRingEnergyCost;
+        public final ModConfigSpec.IntValue pyroRingCooldownTicks;
+        public final ModConfigSpec.IntValue pyroBackdraftEnergyCost;
+        public final ModConfigSpec.IntValue pyroBackdraftCooldownTicks;
+        public final ModConfigSpec.IntValue pyroInfernoEnergyCost;
+        public final ModConfigSpec.IntValue pyroInfernoCooldownTicks;
         public final ModConfigSpec.IntValue telekinesisPushEnergyCost;
         public final ModConfigSpec.IntValue telekinesisPushCooldownTicks;
         public final ModConfigSpec.IntValue telekinesisGripEnergyCost;
@@ -208,6 +223,11 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue telekinesisStormCooldownTicks;
 
         private Common(ModConfigSpec.Builder builder) {
+            builder.push("bunker");
+            bunkerEnabled = builder.comment("New players wake sealed in a Cryochamber in the stasis bunker under world spawn.",
+                            "The bunker is built once, the first time a player joins.")
+                    .define("enabled", true);
+            builder.pop();
             builder.push("sylar");
             sylarEnabled = builder.comment("Enable the unique Sylar storyline hunter in the Overworld.").define("enabled", true);
             sylarCanAcquirePowers = builder.comment("Allow completed, interruptible encounters to teach Sylar NPC copies; player roles remain exclusive.")
@@ -754,6 +774,35 @@ public final class HeroesEvolvedConfig {
                 telekinesisBulletStopCooldownTicks = cooldown(builder, "bulletStop", 20 * 30);
                 telekinesisStormEnergyCost = energy(builder, "telekineticStorm", 110);
                 telekinesisStormCooldownTicks = cooldown(builder, "telekineticStorm", 20 * 120);
+                builder.pop();
+
+                builder.push("formula");
+                formulaAllowForcedDraws = builder.comment("Allow blood to be drawn from a helpless Regeneration owner without consent.",
+                                "Forced draws still respect PvP and scoreboard-team rules.")
+                        .define("allowForcedDraws", true);
+                formulaForcedDrawCooldownSeconds = builder.comment("How long one Regeneration owner is protected after a forced draw.")
+                        .defineInRange("forcedDrawCooldownSeconds", 600, 0, 60 * 60 * 24);
+                formulaDonatedSuccess = builder.comment("Chance an injection awakens a power when its blood was donated.")
+                        .defineInRange("donatedSuccessChance", 0.85, 0, 1);
+                formulaForcedSuccess = builder.comment("Chance an injection awakens a power when its blood was taken by force.")
+                        .defineInRange("forcedSuccessChance", 0.60, 0, 1);
+                builder.pop();
+
+                builder.push("pyrokinesis");
+                pyroWorldFire = builder.comment("Pyrokinetic fire is real, spreading vanilla fire. It still respects",
+                                "protection, build permissions and the doFireTick gamerule. False makes every",
+                                "pyrokinetic flame cosmetic: it burns creatures but never places fire blocks.")
+                        .define("worldFire", true);
+                pyroFlareEnergyCost = energy(builder, "flare", 14);
+                pyroFlareCooldownTicks = cooldown(builder, "flare", 25);
+                pyroPalmEnergyCost = energy(builder, "flamePalm", 12);
+                pyroPalmCooldownTicks = cooldown(builder, "flamePalm", 20 * 4);
+                pyroRingEnergyCost = energy(builder, "ringOfFire", 35);
+                pyroRingCooldownTicks = cooldown(builder, "ringOfFire", 20 * 15);
+                pyroBackdraftEnergyCost = energy(builder, "backdraft", 25);
+                pyroBackdraftCooldownTicks = cooldown(builder, "backdraft", 20 * 5);
+                pyroInfernoEnergyCost = energy(builder, "inferno", 110);
+                pyroInfernoCooldownTicks = cooldown(builder, "inferno", 20 * 120);
                 builder.pop();
         }
     }

@@ -173,6 +173,39 @@
         {
           "name": "Aerodynamic Control Mastery",
           "description": "Reduce activation stamina costs by another 15% (25% total)."
+        },
+        {
+          "id": "flight_sky_catch",
+          "name": "Sky Catch",
+          "description": "Dash to the nearest friend within 16 blocks and wrap them in wind: Slow Falling, a fall reset and two hearts of absorption.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "flight_0_0",
+          "mechanic": "sky_catch",
+          "energy": 20,
+          "cooldown": 160
+        },
+        {
+          "id": "flight_safe_harbor",
+          "name": "Safe Harbor",
+          "description": "Sky Catch also grants Resistance for eight seconds.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "flight_sky_catch",
+          "mechanic": "safe_harbor"
+        },
+        {
+          "id": "flight_guardian_angel",
+          "name": "Guardian Angel",
+          "description": "Once a minute, a teammate within 16 blocks who would take fall damage lands softly instead.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "flight_safe_harbor",
+          "mechanic": "guardian_angel"
         }
       ],
       [
@@ -189,6 +222,39 @@
         {
           "name": "Wind Pressure Mastery",
           "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        },
+        {
+          "id": "flight_tailwind",
+          "name": "Tailwind",
+          "description": "Leave a twelve-block wind current for ten seconds. Friends in it gain Speed II and Jump Boost; enemies are pushed along it.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "flight_1_0",
+          "mechanic": "tailwind",
+          "energy": 22,
+          "cooldown": 240
+        },
+        {
+          "id": "flight_jetstream",
+          "name": "Jetstream",
+          "description": "The current reaches twenty blocks and gives Speed III.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "flight_tailwind",
+          "mechanic": "jetstream"
+        },
+        {
+          "id": "flight_pressure_front",
+          "name": "Pressure Front",
+          "description": "Enemies caught in your current take damage every second.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "flight_jetstream",
+          "mechanic": "pressure_front"
         }
       ],
       [
@@ -205,8 +271,46 @@
         {
           "name": "Second Wind Mastery",
           "description": "Reduce ability cooldowns by another 15% (25% total)."
+        },
+        {
+          "id": "flight_thunderclap",
+          "name": "Thunderclap",
+          "description": "Clap the air apart: enemies within six blocks take 4 damage, are thrown back and slowed.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "flight_2_0",
+          "mechanic": "thunderclap",
+          "energy": 24,
+          "cooldown": 160
+        },
+        {
+          "id": "flight_wider_clap",
+          "name": "Wider Clap",
+          "description": "Thunderclap reaches nine blocks.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "flight_thunderclap",
+          "mechanic": "wider_clap"
+        },
+        {
+          "id": "flight_sound_barrier",
+          "name": "Sound Barrier",
+          "description": "Flying at full speed buffets every enemy within three blocks you pass.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "flight_wider_clap",
+          "mechanic": "sound_barrier"
         }
       ]
+    ],
+    "branch_names": [
+      "INTERCEPTOR",
+      "SLIPSTREAM",
+      "PRESSURE FRONT"
     ]
   },
   {
@@ -540,6 +644,39 @@
         {
           "name": "Fine Control Mastery",
           "description": "Reduce activation stamina costs by another 15% (25% total)."
+        },
+        {
+          "id": "telekinesis_remote_hand",
+          "name": "Remote Hand",
+          "description": "Flip a lever, press a button, or open a door, trapdoor or gate up to 24 blocks away.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "telekinesis_0_0",
+          "mechanic": "remote_hand",
+          "energy": 8,
+          "cooldown": 40
+        },
+        {
+          "id": "telekinesis_long_reach",
+          "name": "Long Reach",
+          "description": "Remote Hand reaches 48 blocks.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "telekinesis_remote_hand",
+          "mechanic": "long_reach"
+        },
+        {
+          "id": "telekinesis_retrieve",
+          "name": "Retrieve",
+          "description": "Remote Hand can pull the first stack out of a chest or other container you could open.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "telekinesis_long_reach",
+          "mechanic": "retrieve"
         }
       ],
       [
@@ -556,6 +693,39 @@
         {
           "name": "Crushing Will Mastery",
           "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        },
+        {
+          "id": "telekinesis_kinetic_volley",
+          "name": "Kinetic Volley",
+          "description": "Hurl three stone fragments at a visible enemy within 32 blocks, 4 damage each.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "telekinesis_1_0",
+          "mechanic": "kinetic_volley",
+          "energy": 24,
+          "cooldown": 120
+        },
+        {
+          "id": "telekinesis_five_fragments",
+          "name": "Five Fragments",
+          "description": "Kinetic Volley throws five fragments.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "telekinesis_kinetic_volley",
+          "mechanic": "five_fragments"
+        },
+        {
+          "id": "telekinesis_iron_rain",
+          "name": "Iron Rain",
+          "description": "Fragments also stagger their target with Slowness III.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "telekinesis_five_fragments",
+          "mechanic": "iron_rain"
         }
       ],
       [
@@ -572,8 +742,46 @@
         {
           "name": "Mental Recovery Mastery",
           "description": "Reduce ability cooldowns by another 15% (25% total)."
+        },
+        {
+          "id": "telekinesis_force_bubble",
+          "name": "Force Bubble",
+          "description": "A three-block bubble for six seconds: hostile projectiles bounce off and enemies are pushed out.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "telekinesis_2_0",
+          "mechanic": "force_bubble",
+          "energy": 30,
+          "cooldown": 300
+        },
+        {
+          "id": "telekinesis_wider_bubble",
+          "name": "Wider Bubble",
+          "description": "Force Bubble grows to five blocks.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "telekinesis_force_bubble",
+          "mechanic": "wider_bubble"
+        },
+        {
+          "id": "telekinesis_bastion",
+          "name": "Bastion",
+          "description": "The bubble lasts ten seconds and gives everyone inside Resistance II.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "telekinesis_wider_bubble",
+          "mechanic": "bastion"
         }
       ]
+    ],
+    "branch_names": [
+      "FINE MANIPULATION",
+      "KINETIC ARSENAL",
+      "BASTION"
     ]
   },
   {
@@ -593,6 +801,39 @@
         {
           "name": "Quiet Mind Mastery",
           "description": "Reduce activation stamina costs by another 15% (25% total)."
+        },
+        {
+          "id": "telepathy_persuasion",
+          "name": "Persuasion",
+          "description": "A suggestion that cannot be refused. A mob becomes your ally and fights your enemies for 20 seconds; a villager gives you hero's discounts; a hostile player cannot attack you for six seconds.",
+          "active": true,
+          "level": 4,
+          "cost": 2,
+          "requires": "telepathy_0_0",
+          "mechanic": "persuasion",
+          "energy": 40,
+          "cooldown": 400
+        },
+        {
+          "id": "telepathy_silver_tongue",
+          "name": "Silver Tongue",
+          "description": "Persuasion reaches 24 blocks and lasts 40 seconds.",
+          "active": false,
+          "level": 4,
+          "cost": 1,
+          "requires": "telepathy_persuasion",
+          "mechanic": "silver_tongue"
+        },
+        {
+          "id": "telepathy_edens_voice",
+          "name": "Eden's Voice",
+          "description": "Persuasion also sways every hostile mob within eight blocks.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "telepathy_silver_tongue",
+          "mechanic": "edens_voice"
         }
       ],
       [
@@ -609,6 +850,39 @@
         {
           "name": "Mental Pressure Mastery",
           "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        },
+        {
+          "id": "telepathy_memory_walk",
+          "name": "Memory Walk",
+          "description": "Read a mind up to 24 blocks away. Players reveal their power; every unseen player within 32 blocks is exposed for ten seconds.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "telepathy_1_0",
+          "mechanic": "memory_walk",
+          "energy": 18,
+          "cooldown": 200
+        },
+        {
+          "id": "telepathy_deep_read",
+          "name": "Deep Read",
+          "description": "Memory Walk exposes the unseen within 48 blocks and outlines nearby hostile mobs.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "telepathy_memory_walk",
+          "mechanic": "deep_read"
+        },
+        {
+          "id": "telepathy_dreamweaver",
+          "name": "Dreamweaver",
+          "description": "Memory Walk also puts an enemy target into a waking sleep for six seconds.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "telepathy_deep_read",
+          "mechanic": "dreamweaver"
         }
       ],
       [
@@ -625,8 +899,46 @@
         {
           "name": "Clear Thoughts Mastery",
           "description": "Reduce ability cooldowns by another 15% (25% total)."
+        },
+        {
+          "id": "telepathy_hive_link",
+          "name": "Hive Link",
+          "description": "Link the minds of nearby teammates for thirty seconds: they see each other through walls and in the dark.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "telepathy_2_0",
+          "mechanic": "hive_link",
+          "energy": 26,
+          "cooldown": 600
+        },
+        {
+          "id": "telepathy_shared_senses",
+          "name": "Shared Senses",
+          "description": "Anything hunting a linked mind glows for the whole link.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "telepathy_hive_link",
+          "mechanic": "shared_senses"
+        },
+        {
+          "id": "telepathy_mind_network",
+          "name": "Mind Network",
+          "description": "Linked teammates share a quarter of every wound among the link.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "telepathy_shared_senses",
+          "mechanic": "mind_network"
         }
       ]
+    ],
+    "branch_names": [
+      "WHISPER",
+      "DREAMWEAVER",
+      "MIND NETWORK"
     ]
   },
   {
@@ -646,6 +958,39 @@
         {
           "name": "Cellular Efficiency Mastery",
           "description": "Reduce activation stamina costs by another 15% (25% total)."
+        },
+        {
+          "id": "regeneration_take_the_wound",
+          "name": "Take the Wound",
+          "description": "Heal a friend up to 8 health and take half of it as your own wound.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "regeneration_0_0",
+          "mechanic": "take_the_wound",
+          "energy": 16,
+          "cooldown": 160
+        },
+        {
+          "id": "regeneration_martyrs_grace",
+          "name": "Martyr's Grace",
+          "description": "You take only a quarter of the wound.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "regeneration_take_the_wound",
+          "mechanic": "martyrs_grace"
+        },
+        {
+          "id": "regeneration_martyr",
+          "name": "Martyr",
+          "description": "Once every two minutes, take a killing blow meant for a teammate within eight blocks.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "regeneration_martyrs_grace",
+          "mechanic": "martyr"
         }
       ],
       [
@@ -662,6 +1007,39 @@
         {
           "name": "Blood Strength Mastery",
           "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        },
+        {
+          "id": "regeneration_adaptation",
+          "name": "Adaptation",
+          "description": "For thirty seconds, each repeat of the same kind of harm hurts 40% less.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "regeneration_1_0",
+          "mechanic": "adaptation",
+          "energy": 20,
+          "cooldown": 600
+        },
+        {
+          "id": "regeneration_thick_skin",
+          "name": "Thick Skin",
+          "description": "Adaptation reduces repeated harm by 60%.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "regeneration_adaptation",
+          "mechanic": "thick_skin"
+        },
+        {
+          "id": "regeneration_perfect_adaptation",
+          "name": "Perfect Adaptation",
+          "description": "Fire and wither can no longer hurt you.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "regeneration_thick_skin",
+          "mechanic": "perfect_adaptation"
         }
       ],
       [
@@ -678,8 +1056,46 @@
         {
           "name": "Rapid Recovery Mastery",
           "description": "Reduce ability cooldowns by another 15% (25% total)."
+        },
+        {
+          "id": "regeneration_revive",
+          "name": "Revive",
+          "description": "Pull a friend below 30% health back to 60%, with Regeneration II.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "regeneration_2_0",
+          "mechanic": "revive",
+          "energy": 30,
+          "cooldown": 400
+        },
+        {
+          "id": "regeneration_field_medic",
+          "name": "Field Medic",
+          "description": "Revive reaches 16 blocks.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "regeneration_revive",
+          "mechanic": "field_medic"
+        },
+        {
+          "id": "regeneration_second_wind",
+          "name": "Second Wind",
+          "description": "Revive also clears harmful effects and grants strong absorption.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "regeneration_field_medic",
+          "mechanic": "second_wind"
         }
       ]
+    ],
+    "branch_names": [
+      "MARTYR",
+      "ADAPTATION",
+      "RECOVERY"
     ]
   },
   {
@@ -699,6 +1115,39 @@
         {
           "name": "Temporal Precision Mastery",
           "description": "Reduce activation stamina costs by another 15% (25% total)."
+        },
+        {
+          "id": "time_manipulation_stasis_seal",
+          "name": "Stasis Seal",
+          "description": "Seal a point in time for ten seconds: projectiles entering it hang frozen. Cast again to throw them all where you look.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "time_manipulation_0_0",
+          "mechanic": "stasis_seal",
+          "energy": 24,
+          "cooldown": 200
+        },
+        {
+          "id": "time_manipulation_wider_seal",
+          "name": "Wider Seal",
+          "description": "The seal holds a five-block radius.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "time_manipulation_stasis_seal",
+          "mechanic": "wider_seal"
+        },
+        {
+          "id": "time_manipulation_return_to_sender",
+          "name": "Return to Sender",
+          "description": "Thrown projectiles become yours and fly half again as fast.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "time_manipulation_wider_seal",
+          "mechanic": "return_to_sender"
         }
       ],
       [
@@ -715,6 +1164,39 @@
         {
           "name": "Accelerated Force Mastery",
           "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        },
+        {
+          "id": "time_manipulation_shared_blink",
+          "name": "Shared Blink",
+          "description": "Fold space to an aimed surface within 24 blocks, bringing up to three friends beside you.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "time_manipulation_1_0",
+          "mechanic": "shared_blink",
+          "energy": 26,
+          "cooldown": 200
+        },
+        {
+          "id": "time_manipulation_far_fold",
+          "name": "Far Fold",
+          "description": "Shared Blink reaches 48 blocks.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "time_manipulation_shared_blink",
+          "mechanic": "far_fold"
+        },
+        {
+          "id": "time_manipulation_wayfinder",
+          "name": "Wayfinder",
+          "description": "After a Shared Blink, everyone with you gains Speed II and Slow Falling.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "time_manipulation_far_fold",
+          "mechanic": "wayfinder"
         }
       ],
       [
@@ -731,8 +1213,46 @@
         {
           "name": "Clockwork Rhythm Mastery",
           "description": "Reduce ability cooldowns by another 15% (25% total)."
+        },
+        {
+          "id": "time_manipulation_accelerate",
+          "name": "Accelerate Time",
+          "description": "Years pass in a moment around you: crops, saplings and young animals within three blocks grow up.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "time_manipulation_2_0",
+          "mechanic": "accelerate",
+          "energy": 18,
+          "cooldown": 400
+        },
+        {
+          "id": "time_manipulation_era_radius",
+          "name": "Wider Era",
+          "description": "Accelerate Time reaches five blocks.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "time_manipulation_accelerate",
+          "mechanic": "era_radius"
+        },
+        {
+          "id": "time_manipulation_eras_end",
+          "name": "Era's End",
+          "description": "Enemies caught in the accelerated moment wither: 4 damage and Weakness II.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "time_manipulation_era_radius",
+          "mechanic": "eras_end"
         }
       ]
+    ],
+    "branch_names": [
+      "STILLNESS",
+      "WAYFINDER",
+      "HISTORIAN"
     ]
   },
   {
@@ -752,6 +1272,39 @@
         {
           "name": "Stable Emission Mastery",
           "description": "Reduce activation stamina costs by another 15% (25% total)."
+        },
+        {
+          "id": "radiation_heat_vent",
+          "name": "Heat Vent",
+          "description": "Dump up to 30 stress into a cone ahead, burning everything in it.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "radiation_0_0",
+          "mechanic": "heat_vent",
+          "energy": 10,
+          "cooldown": 200
+        },
+        {
+          "id": "radiation_clean_vent",
+          "name": "Clean Vent",
+          "description": "Vent up to 50 stress without setting anything alight.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "radiation_heat_vent",
+          "mechanic": "clean_vent"
+        },
+        {
+          "id": "radiation_containment",
+          "name": "Containment",
+          "description": "Venting wraps you in Fire Resistance and Resistance.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "radiation_clean_vent",
+          "mechanic": "containment"
         }
       ],
       [
@@ -768,6 +1321,39 @@
         {
           "name": "Gamma Pressure Mastery",
           "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        },
+        {
+          "id": "radiation_reactor_core",
+          "name": "Reactor Core",
+          "description": "Turn up to 20 stress into stamina, and give nearby friends a burst of energy.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "radiation_1_0",
+          "mechanic": "reactor_core",
+          "energy": 6,
+          "cooldown": 300
+        },
+        {
+          "id": "radiation_power_transfer",
+          "name": "Power Transfer",
+          "description": "Reactor Core converts up to 40 stress.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "radiation_reactor_core",
+          "mechanic": "power_transfer"
+        },
+        {
+          "id": "radiation_reactor",
+          "name": "Reactor",
+          "description": "Friends you power also gain Haste II and Strength.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "radiation_power_transfer",
+          "mechanic": "reactor"
         }
       ],
       [
@@ -784,8 +1370,46 @@
         {
           "name": "Reactor Rhythm Mastery",
           "description": "Reduce ability cooldowns by another 15% (25% total)."
+        },
+        {
+          "id": "radiation_glowing_path",
+          "name": "Glowing Path",
+          "description": "Contaminate the ground around you for ten seconds; enemies standing in it sicken.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "radiation_2_0",
+          "mechanic": "glowing_path",
+          "energy": 28,
+          "cooldown": 400
+        },
+        {
+          "id": "radiation_wider_path",
+          "name": "Wider Path",
+          "description": "The contaminated zone grows to nine blocks.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "radiation_glowing_path",
+          "mechanic": "wider_path"
+        },
+        {
+          "id": "radiation_catastrophe",
+          "name": "Catastrophe",
+          "description": "The zone lasts twenty seconds and withers those who stay.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "radiation_wider_path",
+          "mechanic": "catastrophe"
         }
       ]
+    ],
+    "branch_names": [
+      "CONTAINMENT",
+      "REACTOR",
+      "CATASTROPHE"
     ]
   },
   {
@@ -805,6 +1429,39 @@
         {
           "name": "Breath Control Mastery",
           "description": "Reduce activation stamina costs by another 15% (25% total)."
+        },
+        {
+          "id": "sonic_resonance_shatter_note",
+          "name": "Shatter Note",
+          "description": "Find a resonant frequency: glass, ice and leaves around an aimed point up to 24 blocks away shatter.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "sonic_resonance_0_0",
+          "mechanic": "shatter_note",
+          "energy": 20,
+          "cooldown": 120
+        },
+        {
+          "id": "sonic_resonance_wider_shatter",
+          "name": "Wider Shatter",
+          "description": "Shatter Note breaks a 5x5x5 area.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "sonic_resonance_shatter_note",
+          "mechanic": "wider_shatter"
+        },
+        {
+          "id": "sonic_resonance_resonant_breaker",
+          "name": "Resonant Breaker",
+          "description": "Shatter Note also breaks stone, dirt and wood (hardness up to 3). Protected ground is always spared.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "sonic_resonance_wider_shatter",
+          "mechanic": "resonant_breaker"
         }
       ],
       [
@@ -821,6 +1478,39 @@
         {
           "name": "Vocal Power Mastery",
           "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        },
+        {
+          "id": "sonic_resonance_echo_map",
+          "name": "Echo Map",
+          "description": "Sound out the rock: ores within twelve blocks glimmer for you alone.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "sonic_resonance_1_0",
+          "mechanic": "echo_map",
+          "energy": 16,
+          "cooldown": 400
+        },
+        {
+          "id": "sonic_resonance_deep_echo",
+          "name": "Deep Echo",
+          "description": "Echo Map reaches twenty blocks.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "sonic_resonance_echo_map",
+          "mechanic": "deep_echo"
+        },
+        {
+          "id": "sonic_resonance_cartographer",
+          "name": "Cartographer",
+          "description": "Echo Map also outlines every creature within 32 blocks and exposes the unseen.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "sonic_resonance_deep_echo",
+          "mechanic": "cartographer"
         }
       ],
       [
@@ -837,8 +1527,46 @@
         {
           "name": "Resonant Rhythm Mastery",
           "description": "Reduce ability cooldowns by another 15% (25% total)."
+        },
+        {
+          "id": "sonic_resonance_quiet_zone",
+          "name": "Quiet Zone",
+          "description": "A six-block field of silence for ten seconds: mobs inside lose their targets.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "sonic_resonance_2_0",
+          "mechanic": "quiet_zone",
+          "energy": 26,
+          "cooldown": 400
+        },
+        {
+          "id": "sonic_resonance_long_silence",
+          "name": "Long Silence",
+          "description": "The Quiet Zone lasts fifteen seconds.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "sonic_resonance_quiet_zone",
+          "mechanic": "long_silence"
+        },
+        {
+          "id": "sonic_resonance_harmonist",
+          "name": "Harmonist",
+          "description": "Friends inside the Quiet Zone slowly heal.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "sonic_resonance_long_silence",
+          "mechanic": "harmonist"
         }
       ]
+    ],
+    "branch_names": [
+      "RESONANT BREAKER",
+      "ECHO CARTOGRAPHER",
+      "HARMONIST"
     ]
   },
   {
@@ -858,6 +1586,39 @@
         {
           "name": "Efficient Stride Mastery",
           "description": "Reduce activation stamina costs by another 15% (25% total)."
+        },
+        {
+          "id": "superspeed_mirage",
+          "name": "Speed Mirage",
+          "description": "Afterimages fill the air for six seconds: mobs hunting you lose the trail and stumble.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "superspeed_0_0",
+          "mechanic": "mirage",
+          "energy": 20,
+          "cooldown": 240
+        },
+        {
+          "id": "superspeed_lingering_mirage",
+          "name": "Lingering Mirage",
+          "description": "The mirage lasts ten seconds.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "superspeed_mirage",
+          "mechanic": "lingering_mirage"
+        },
+        {
+          "id": "superspeed_time_remnant",
+          "name": "Time Remnant",
+          "description": "Your remnants strike enemies within four blocks every second.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "superspeed_lingering_mirage",
+          "mechanic": "time_remnant"
         }
       ],
       [
@@ -874,6 +1635,39 @@
         {
           "name": "Kinetic Force Mastery",
           "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+        },
+        {
+          "id": "superspeed_lightning_throw",
+          "name": "Lightning Throw",
+          "description": "Spend your Momentum (at least 30) to hurl a bolt of your own lightning at an enemy within 32 blocks. It counts as electricity.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "superspeed_1_0",
+          "mechanic": "lightning_throw",
+          "energy": 18,
+          "cooldown": 100
+        },
+        {
+          "id": "superspeed_charged_throw",
+          "name": "Charged Throw",
+          "description": "The bolt chains to two more enemies.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "superspeed_lightning_throw",
+          "mechanic": "charged_throw"
+        },
+        {
+          "id": "superspeed_infinite_mass",
+          "name": "Infinite Mass Punch",
+          "description": "At 90 Momentum or more, your next punch spends it all for a devastating, launching blow.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "superspeed_charged_throw",
+          "mechanic": "infinite_mass"
         }
       ],
       [
@@ -890,16 +1684,54 @@
         {
           "name": "Quick Recovery Mastery",
           "description": "Reduce ability cooldowns by another 15% (25% total)."
+        },
+        {
+          "id": "superspeed_perception",
+          "name": "Perception",
+          "description": "For six seconds the world slows for you: projectiles near you crawl at a third of their speed.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "superspeed_2_0",
+          "mechanic": "perception",
+          "energy": 22,
+          "cooldown": 300
+        },
+        {
+          "id": "superspeed_long_perception",
+          "name": "Long Perception",
+          "description": "Perception lasts ten seconds.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "superspeed_perception",
+          "mechanic": "long_perception"
+        },
+        {
+          "id": "superspeed_flash_time",
+          "name": "Flash Time",
+          "description": "Projectiles near you stop dead in the air while Perception lasts.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "superspeed_long_perception",
+          "mechanic": "flash_time"
         }
       ]
+    ],
+    "branch_names": [
+      "COURIER",
+      "MOMENTUM FIGHTER",
+      "PERCEPTION"
     ]
   },
   {
     "power": "precognition",
     "branch_names": [
       "ORACLE",
-      "RED MARGIN",
-      "SHARED FATE"
+      "PAINTER",
+      "FATEKEEPER"
     ],
     "branches": [
       [
@@ -916,6 +1748,39 @@
         {
           "name": "Clear Sight Mastery",
           "description": "Reduce activation stamina costs by another 15%."
+        },
+        {
+          "id": "precognition_foresight",
+          "name": "Foresight",
+          "description": "For ten seconds, sidestep the next three blows you see coming.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "precognition_0_0",
+          "mechanic": "foresight",
+          "energy": 24,
+          "cooldown": 400
+        },
+        {
+          "id": "precognition_clear_sight",
+          "name": "Clear Sight",
+          "description": "Foresight sidesteps five blows.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "precognition_foresight",
+          "mechanic": "clear_sight"
+        },
+        {
+          "id": "precognition_fatekeeper",
+          "name": "Fatekeeper",
+          "description": "Teammates within eight blocks also sidestep one blow.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "precognition_clear_sight",
+          "mechanic": "fatekeeper"
         }
       ],
       [
@@ -932,6 +1797,39 @@
         {
           "name": "Ink Pressure Mastery",
           "description": "Increase outgoing damage by another 15%."
+        },
+        {
+          "id": "precognition_find_the_path",
+          "name": "Find the Path",
+          "description": "A vision points the way to the nearest Helixite within 32 blocks.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "precognition_1_0",
+          "mechanic": "find_the_path",
+          "energy": 16,
+          "cooldown": 600
+        },
+        {
+          "id": "precognition_far_sight",
+          "name": "Far Sight",
+          "description": "Find the Path searches 64 blocks.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "precognition_find_the_path",
+          "mechanic": "far_sight"
+        },
+        {
+          "id": "precognition_the_painter",
+          "name": "The Painter",
+          "description": "The vision also shows where the nearest village lies.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "precognition_far_sight",
+          "mechanic": "the_painter"
         }
       ],
       [
@@ -948,8 +1846,669 @@
         {
           "name": "Shared Perspective Mastery",
           "description": "Reduce cooldowns by another 15%."
+        },
+        {
+          "id": "precognition_shared_omen",
+          "name": "Shared Omen",
+          "description": "For eight seconds, any teammate within 24 blocks braces the moment something chooses them as prey.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "precognition_2_0",
+          "mechanic": "shared_omen",
+          "energy": 20,
+          "cooldown": 300
+        },
+        {
+          "id": "precognition_long_omen",
+          "name": "Long Omen",
+          "description": "Shared Omen lasts twelve seconds.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "precognition_shared_omen",
+          "mechanic": "long_omen"
+        },
+        {
+          "id": "precognition_isaacs_gift",
+          "name": "Isaac's Gift",
+          "description": "Bracing also grants absorption.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "precognition_long_omen",
+          "mechanic": "isaacs_gift"
         }
       ]
+    ]
+  },
+  {
+    "power": "pyrokinesis",
+    "branches": [
+      [
+        {
+          "name": "Steady Hands",
+          "description": "Reduce activation stamina costs by 10%."
+        },
+        {
+          "name": "Ember Lash",
+          "description": "Whip a line of fire at a visible target up to 40 blocks away: 6 + level damage, five seconds of burning, and a short pull toward you.",
+          "energy": 22,
+          "cooldown": 80
+        },
+        {
+          "name": "Steady Hands Mastery",
+          "description": "Reduce activation stamina costs by another 15% (25% total)."
+        },
+        {
+          "id": "pyrokinesis_ember_mine",
+          "name": "Ember Mine",
+          "description": "Hide a smouldering ember on aimed ground. It erupts for 6 + level fire damage when an enemy steps near it. Two at a time; each lasts forty seconds and only you can see it.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "pyrokinesis_0_0",
+          "mechanic": "ember_mine",
+          "energy": 20,
+          "cooldown": 100
+        },
+        {
+          "id": "pyrokinesis_long_fuse",
+          "name": "Long Fuse",
+          "description": "Keep three Ember Mines at once, and widen each eruption from 2.5 to 4 blocks.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "pyrokinesis_ember_mine",
+          "mechanic": "long_fuse"
+        },
+        {
+          "id": "pyrokinesis_wildfire",
+          "name": "Wildfire",
+          "description": "Erupting mines leave a ring of real fire and set off your other mines within eight blocks.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "pyrokinesis_long_fuse",
+          "mechanic": "wildfire"
+        }
+      ],
+      [
+        {
+          "name": "Stoke",
+          "description": "Increase outgoing attack damage by 10%."
+        },
+        {
+          "name": "Heat Mantle",
+          "description": "Wrap yourself in flame for eight seconds: Resistance, burning anything within 2.5 blocks, and burning up projectiles that come within 3 blocks.",
+          "energy": 28,
+          "cooldown": 240
+        },
+        {
+          "name": "Stoke Mastery",
+          "description": "Increase outgoing attack damage by another 15% (25% total)."
+        },
+        {
+          "id": "pyrokinesis_blue_lance",
+          "name": "Blue Lance",
+          "description": "A piercing jet of blue flame, 24 blocks long. It always burns at blue heat: (8 + level) x 1.5 damage to everything in the line.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "pyrokinesis_1_0",
+          "mechanic": "blue_lance",
+          "energy": 30,
+          "cooldown": 160
+        },
+        {
+          "id": "pyrokinesis_white_heat",
+          "name": "White Heat",
+          "description": "Your flames turn blue at 60 Heat instead of 80.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "pyrokinesis_blue_lance",
+          "mechanic": "white_heat"
+        },
+        {
+          "id": "pyrokinesis_flints_fury",
+          "name": "Flint's Fury",
+          "description": "Inferno always burns blue and reaches three blocks farther.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "pyrokinesis_white_heat",
+          "mechanic": "flints_fury"
+        }
+      ],
+      [
+        {
+          "name": "Warm Blood",
+          "description": "Reduce ability cooldowns by 10%."
+        },
+        {
+          "name": "Cauterizing Flame",
+          "description": "Sear your wounds closed: heal 4 + level, clear harmful effects and put out any flames on you.",
+          "energy": 24,
+          "cooldown": 300
+        },
+        {
+          "name": "Warm Blood Mastery",
+          "description": "Reduce ability cooldowns by another 15% (25% total)."
+        },
+        {
+          "id": "pyrokinesis_fire_shepherd",
+          "name": "Fire Shepherd",
+          "description": "Draw up to 32 nearby fires into your hands and put them out. Each restores stamina and a little health. The firefighter's technique.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "pyrokinesis_2_0",
+          "mechanic": "fire_shepherd",
+          "energy": 10,
+          "cooldown": 120
+        },
+        {
+          "id": "pyrokinesis_thaw",
+          "name": "Thaw",
+          "description": "Fire Shepherd also thaws frozen and chilled friends within five blocks.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "pyrokinesis_fire_shepherd",
+          "mechanic": "thaw"
+        },
+        {
+          "id": "pyrokinesis_pillar_of_flame",
+          "name": "Pillar of Flame",
+          "description": "Backdraft launches almost twice as high and lets you drift down slowly for three seconds.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "pyrokinesis_thaw",
+          "mechanic": "pillar_of_flame"
+        }
+      ]
+    ],
+    "branch_names": [
+      "KINDLER",
+      "BLUE FLAME",
+      "PHOENIX"
+    ]
+  },
+  {
+    "power": "invisibility",
+    "branches": [
+      [
+        {
+          "name": "Quiet Feet",
+          "description": "Reduce activation stamina costs by 10%."
+        },
+        {
+          "name": "Blind Spot",
+          "description": "Strike a visible enemy up to 40 blocks away from where they cannot see: 6 + level damage and four seconds of Blindness.",
+          "energy": 22,
+          "cooldown": 100
+        },
+        {
+          "name": "Quiet Feet Mastery",
+          "description": "Reduce activation stamina costs by another 15% (25% total)."
+        },
+        {
+          "id": "invisibility_smoke_and_mirrors",
+          "name": "Smoke and Mirrors",
+          "description": "Every hostile mob within twelve blocks loses its target and staggers.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "invisibility_0_0",
+          "mechanic": "smoke_and_mirrors",
+          "energy": 20,
+          "cooldown": 300
+        },
+        {
+          "id": "invisibility_lingering_mirage",
+          "name": "Lingering Mirage",
+          "description": "Smoke and Mirrors reaches eighteen blocks and staggers twice as long.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "invisibility_smoke_and_mirrors",
+          "mechanic": "lingering_mirage"
+        },
+        {
+          "id": "invisibility_assassin",
+          "name": "Assassin",
+          "description": "Unseen Strike from full invisibility deals triple damage.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "invisibility_lingering_mirage",
+          "mechanic": "assassin"
+        }
+      ],
+      [
+        {
+          "name": "Cold Precision",
+          "description": "Increase outgoing attack damage by 10%."
+        },
+        {
+          "name": "Vanishing Guard",
+          "description": "Fade from sight for six seconds with Resistance.",
+          "energy": 24,
+          "cooldown": 300
+        },
+        {
+          "name": "Cold Precision Mastery",
+          "description": "Increase outgoing attack damage by another 15% (25% total)."
+        },
+        {
+          "id": "invisibility_pickpocket",
+          "name": "Pickpocket",
+          "description": "Lift the held item out of a mob's hand within four blocks.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "invisibility_1_0",
+          "mechanic": "pickpocket",
+          "energy": 14,
+          "cooldown": 200
+        },
+        {
+          "id": "invisibility_light_fingers",
+          "name": "Light Fingers",
+          "description": "Pickpocket reaches eight blocks.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "invisibility_pickpocket",
+          "mechanic": "light_fingers"
+        },
+        {
+          "id": "invisibility_phantom",
+          "name": "Phantom",
+          "description": "While fully unseen you take 30% less damage.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "invisibility_light_fingers",
+          "mechanic": "phantom"
+        }
+      ],
+      [
+        {
+          "name": "Practiced Exit",
+          "description": "Reduce ability cooldowns by 10%."
+        },
+        {
+          "name": "Slip Away",
+          "description": "Vanish for five seconds with Speed II; anything hunting you loses the trail.",
+          "energy": 20,
+          "cooldown": 240
+        },
+        {
+          "name": "Practiced Exit Mastery",
+          "description": "Reduce ability cooldowns by another 15% (25% total)."
+        },
+        {
+          "id": "invisibility_cloak_field",
+          "name": "Cloak Field",
+          "description": "Leave a four-block cloak in place for fifteen seconds; friends inside stay unseen.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "invisibility_2_0",
+          "mechanic": "cloak_field",
+          "energy": 30,
+          "cooldown": 600
+        },
+        {
+          "id": "invisibility_wider_cloak",
+          "name": "Wider Cloak",
+          "description": "Cloak Field covers six blocks.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "invisibility_cloak_field",
+          "mechanic": "wider_cloak"
+        },
+        {
+          "id": "invisibility_claudes_lesson",
+          "name": "Claude's Lesson",
+          "description": "Fade drains stamina half as fast.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "invisibility_wider_cloak",
+          "mechanic": "claudes_lesson"
+        }
+      ]
+    ],
+    "branch_names": [
+      "AMBUSH",
+      "GHOST",
+      "ESCAPE"
+    ]
+  },
+  {
+    "power": "phasing",
+    "branches": [
+      [
+        {
+          "name": "Light Step",
+          "description": "Reduce activation stamina costs by 10%."
+        },
+        {
+          "name": "Through-Strike",
+          "description": "Reach through a visible enemy up to 40 blocks away: 6 + level damage that ignores armor.",
+          "energy": 24,
+          "cooldown": 100
+        },
+        {
+          "name": "Light Step Mastery",
+          "description": "Reduce activation stamina costs by another 15% (25% total)."
+        },
+        {
+          "id": "phasing_phase_carry",
+          "name": "Phase Carry",
+          "description": "Phase through the wall ahead with up to three friends.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "phasing_0_0",
+          "mechanic": "phase_carry",
+          "energy": 26,
+          "cooldown": 200
+        },
+        {
+          "id": "phasing_thicker_walls",
+          "name": "Thicker Walls",
+          "description": "Phase Step and Phase Carry pass four more blocks.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "phasing_phase_carry",
+          "mechanic": "thicker_walls"
+        },
+        {
+          "id": "phasing_ghost_network",
+          "name": "Ghost Network",
+          "description": "Every Phase Step leaves you intangible for two seconds on arrival.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "phasing_thicker_walls",
+          "mechanic": "ghost_network"
+        }
+      ],
+      [
+        {
+          "name": "Dense Core",
+          "description": "Increase outgoing attack damage by 10%."
+        },
+        {
+          "name": "Solidify",
+          "description": "Make yourself dense: Resistance II for six seconds.",
+          "energy": 20,
+          "cooldown": 300
+        },
+        {
+          "name": "Dense Core Mastery",
+          "description": "Increase outgoing attack damage by another 15% (25% total)."
+        },
+        {
+          "id": "phasing_phase_lock",
+          "name": "Phase Lock",
+          "description": "Sink an enemy within 16 blocks halfway into the ground for three seconds.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "phasing_1_0",
+          "mechanic": "phase_lock",
+          "energy": 24,
+          "cooldown": 240
+        },
+        {
+          "id": "phasing_long_lock",
+          "name": "Long Lock",
+          "description": "Phase Lock holds for five seconds.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "phasing_phase_lock",
+          "mechanic": "long_lock"
+        },
+        {
+          "id": "phasing_entombed",
+          "name": "Entombed",
+          "description": "Locked enemies take damage every second.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "phasing_long_lock",
+          "mechanic": "entombed"
+        }
+      ],
+      [
+        {
+          "name": "Loose Molecules",
+          "description": "Reduce ability cooldowns by 10%."
+        },
+        {
+          "name": "Fade Through",
+          "description": "Three seconds of intangibility, free of upkeep.",
+          "energy": 18,
+          "cooldown": 240
+        },
+        {
+          "name": "Loose Molecules Mastery",
+          "description": "Reduce ability cooldowns by another 15% (25% total)."
+        },
+        {
+          "id": "phasing_phase_fall",
+          "name": "Phase Fall",
+          "description": "Phase Drop with up to three friends. Shift rises instead.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "phasing_2_0",
+          "mechanic": "phase_fall",
+          "energy": 22,
+          "cooldown": 200
+        },
+        {
+          "id": "phasing_deep_fall",
+          "name": "Deep Fall",
+          "description": "Phase Fall reaches 32 blocks.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "phasing_phase_fall",
+          "mechanic": "deep_fall"
+        },
+        {
+          "id": "phasing_untouchable",
+          "name": "Untouchable",
+          "description": "Intangible drains stamina half as fast.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "phasing_deep_fall",
+          "mechanic": "untouchable"
+        }
+      ]
+    ],
+    "branch_names": [
+      "INFILTRATOR",
+      "DENSITY",
+      "ESCAPE ARTIST"
+    ]
+  },
+  {
+    "power": "empathic_mimicry",
+    "branches": [
+      [
+        {
+          "name": "Open Mind",
+          "description": "Reduce activation stamina costs by 10%."
+        },
+        {
+          "name": "Borrowed Strike",
+          "description": "Lash out with a borrowed instinct at an enemy up to 40 blocks away: 6 + level damage.",
+          "energy": 22,
+          "cooldown": 100
+        },
+        {
+          "name": "Open Mind Mastery",
+          "description": "Reduce activation stamina costs by another 15% (25% total)."
+        },
+        {
+          "id": "empathic_mimicry_sense_powers",
+          "name": "Sense Powers",
+          "description": "Feel every powered person and Sylar within 48 blocks; they glow for you for eight seconds.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "empathic_mimicry_0_0",
+          "mechanic": "sense_powers",
+          "energy": 16,
+          "cooldown": 400
+        },
+        {
+          "id": "empathic_mimicry_quick_study",
+          "name": "Quick Study",
+          "description": "Empathize reaches 16 blocks and works without line of sight.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "empathic_mimicry_sense_powers",
+          "mechanic": "quick_study"
+        },
+        {
+          "id": "empathic_mimicry_sylars_mirror",
+          "name": "Sylar's Mirror",
+          "description": "Absorbing from Sylar takes everything he has learned, and you can hold one more memory.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "empathic_mimicry_quick_study",
+          "mechanic": "sylars_mirror"
+        }
+      ],
+      [
+        {
+          "name": "Strong Echo",
+          "description": "Increase outgoing attack damage by 10%."
+        },
+        {
+          "name": "Empathic Surge",
+          "description": "You and nearby teammates feel each other's strength: Strength for eight seconds.",
+          "energy": 26,
+          "cooldown": 300
+        },
+        {
+          "name": "Strong Echo Mastery",
+          "description": "Increase outgoing attack damage by another 15% (25% total)."
+        },
+        {
+          "id": "empathic_mimicry_overcharge",
+          "name": "Overcharge",
+          "description": "Your next Echo uses the borrowed power at your full level.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "empathic_mimicry_1_0",
+          "mechanic": "overcharge",
+          "energy": 14,
+          "cooldown": 200
+        },
+        {
+          "id": "empathic_mimicry_twin_echo",
+          "name": "Twin Echo",
+          "description": "An overcharged Echo recovers twice as fast.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "empathic_mimicry_overcharge",
+          "mechanic": "twin_echo"
+        },
+        {
+          "id": "empathic_mimicry_peters_burden",
+          "name": "Peter's Burden",
+          "description": "Echoes cost 25% less stamina.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "empathic_mimicry_twin_echo",
+          "mechanic": "peters_burden"
+        }
+      ],
+      [
+        {
+          "name": "Steady Heart",
+          "description": "Reduce ability cooldowns by 10%."
+        },
+        {
+          "name": "Calm",
+          "description": "Soothe yourself and nearby teammates, clearing harmful effects.",
+          "energy": 18,
+          "cooldown": 240
+        },
+        {
+          "name": "Steady Heart Mastery",
+          "description": "Reduce ability cooldowns by another 15% (25% total)."
+        },
+        {
+          "id": "empathic_mimicry_absorb_pain",
+          "name": "Absorb Pain",
+          "description": "Take a friend's harmful effects onto yourself at half duration, and heal them for 4.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "requires": "empathic_mimicry_2_0",
+          "mechanic": "absorb_pain",
+          "energy": 20,
+          "cooldown": 240
+        },
+        {
+          "id": "empathic_mimicry_shared_healing",
+          "name": "Shared Healing",
+          "description": "Absorb Pain heals 8.",
+          "active": false,
+          "level": 3,
+          "cost": 1,
+          "requires": "empathic_mimicry_absorb_pain",
+          "mechanic": "shared_healing"
+        },
+        {
+          "id": "empathic_mimicry_empaths_calm",
+          "name": "Empath's Calm",
+          "description": "Poison and wither cannot take hold of you.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3,
+          "requires": "empathic_mimicry_shared_healing",
+          "mechanic": "empaths_calm"
+        }
+      ]
+    ],
+    "branch_names": [
+      "ECHO HUNTER",
+      "RESONANCE",
+      "EMPATHY"
     ]
   }
 ]

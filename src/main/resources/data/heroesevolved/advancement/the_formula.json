@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "id": "heroesevolved:formula_vial"
+    },
+    "title": {
+      "translate": "advancement.heroesevolved.the_formula.title"
+    },
+    "description": {
+      "translate": "advancement.heroesevolved.the_formula.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "granted": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "granted"
+    ]
+  ],
+  "parent": "heroesevolved:something_feels_different"
+}

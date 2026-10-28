@@ -55,6 +55,7 @@ public final class AbilityEffectRenderer {
 
         if (NuclearEffects.play(level, effect.kind(), origin, size, detail)
                 || CryoEffects.play(level, effect.kind(), origin, target, size, detail)
+                || PyroEffects.play(level, effect.kind(), origin, target, size, detail)
                 || AwakeningEffects.play(level, effect.kind(), origin, size, detail, density)
                 || DetailedAbilityEffects.play(level, effect.kind(), origin, target, size, detail, density)) {
             return;

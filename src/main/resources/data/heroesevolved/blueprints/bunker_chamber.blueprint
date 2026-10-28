@@ -1,0 +1,470 @@
+# The Odessa stasis hall, Sublevel 4: fourteen sealed Cryochambers under copper galleries and red emergency light.
+# A lush cave broke through the south-east ceiling; its roots and glow berries light that end. Isaac Mendez's
+# painting of a sleeper waking hangs in the west gallery. A trail of blood runs from Claire Bennet's pod to the door.
+# Placed by BunkerBuilder with its anchor on the bunker floor 18 blocks south of the shaft.
+# Pods and the orientation lectern must stay on their cells: tests and saved pod assignments use them.
+name: bunker_chamber
+anchor: 7 0 0
+palette:
+  A = polished_deepslate
+  B = yellow_concrete
+  C = black_concrete
+  D = polished_tuff
+  E = white_concrete
+  F = cracked_deepslate_tiles
+  G = rooted_dirt
+  H = moss_block
+  I = deepslate_tiles
+  J = deepslate_tile_wall
+  K = barrel[facing=up]
+  L = iron_block
+  M = heroesevolved:cryochamber[facing=east,half=lower,open=false] @pod
+  N = redstone_wire
+  O = heroesevolved:cryochamber[facing=west,half=lower,open=false] @pod
+  P = smooth_quartz_slab[type=top]
+  Q = dark_oak_stairs[facing=west]
+  R = lectern[facing=north] @log:orientation
+  S = dark_oak_stairs[facing=east]
+  T = heavy_weighted_pressure_plate
+  U = waxed_weathered_cut_copper_slab[type=bottom]
+  V = iron_bars
+  W = moss_carpet
+  X = mangrove_roots
+  Y = short_grass
+  Z = fern
+  a = dark_oak_stairs[facing=south]
+  b = polished_deepslate_stairs[facing=north]
+  c = azalea
+  d = heroesevolved:cryochamber[facing=east,half=upper,open=false]
+  e = heroesevolved:cryochamber[facing=west,half=upper,open=false]
+  f = black_stained_glass_pane
+  g = lever[face=floor,facing=east]
+  h = lever[face=floor,facing=west]
+  i = glow_lichen[east=true]
+  j = polished_deepslate_slab[type=bottom]
+  k = redstone_lamp[lit=false]
+  l = waxed_weathered_cut_copper
+  m = spruce_wall_sign[facing=east] @sign:pod01
+  n = spruce_wall_sign[facing=west] @sign:pod08
+  o = spruce_wall_sign[facing=east] @sign:pod02
+  p = spruce_wall_sign[facing=west] @sign:pod09
+  q = spruce_wall_sign[facing=east] @sign:pod03
+  r = spruce_wall_sign[facing=west] @sign:pod10
+  s = spruce_wall_sign[facing=east] @sign:pod04
+  t = spruce_wall_sign[facing=west] @sign:pod11
+  u = spruce_wall_sign[facing=east] @sign:pod05
+  v = spruce_wall_sign[facing=west] @sign:pod12
+  w = spruce_wall_sign[facing=east] @sign:pod06
+  x = spruce_wall_sign[facing=west] @sign:pod13
+  y = spruce_wall_sign[facing=east] @sign:pod07
+  z = spruce_wall_sign[facing=west] @sign:pod14
+  0 = lightning_rod[facing=north]
+  1 = cave_vines[age=25,berries=true]
+  2 = orange_concrete
+  3 = polished_deepslate_stairs[facing=west,half=top]
+  4 = polished_deepslate_stairs[facing=east,half=top]
+  5 = waxed_weathered_cut_copper_slab[type=top]
+  6 = cave_vines_plant[berries=true]
+  7 = spruce_wall_sign[facing=south] @sign:wing
+  8 = cobweb
+  9 = spruce_wall_sign[facing=north] @sign:screen
+  ! = tuff_bricks
+  $ = iron_trapdoor[facing=north,open=true,half=bottom]
+  % = iron_trapdoor[facing=west,open=true,half=bottom]
+  & = waxed_oxidized_copper_bulb[lit=false]
+  * = iron_trapdoor[facing=east,open=true,half=bottom]
+  + = iron_trapdoor[facing=south,open=true,half=bottom]
+  = = waxed_copper_bulb[lit=true]
+  ? = spruce_wall_sign[facing=east] @sign:exhibit
+  ^ = air @painting:sleeper:east
+  ~ = waxed_exposed_copper_bulb[lit=true]
+  < = chiseled_tuff_bricks
+  > = chain[axis=y]
+  / = dark_oak_wood
+  | = soul_lantern[hanging=true]
+  ; = pointed_dripstone[thickness=tip,vertical_direction=down]
+  , = pointed_dripstone[thickness=frustum,vertical_direction=down]
+  { = hanging_roots
+  } = flowering_azalea_leaves[persistent=true]
+  ( = spore_blossom
+  ) = azalea_leaves[persistent=true]
+  - = deepslate_bricks
+  α = red_stained_glass
+  β = glowstone
+  γ = dirt
+signs:
+  pod01 light_blue glow = SUBJECT 01 | STASIS SEALED | AWAITING | REVIVAL
+  pod02 light_blue glow = SUBJECT 02 | STASIS SEALED | AWAITING | REVIVAL
+  pod03 light_blue glow = SUBJECT 03 | STASIS SEALED | AWAITING | REVIVAL
+  pod04 light_blue glow = SUBJECT 04 | STASIS SEALED | AWAITING | REVIVAL
+  pod05 light_blue glow = SUBJECT 05 | STASIS SEALED | AWAITING | REVIVAL
+  pod06 light_blue glow = SUBJECT 06 | STASIS SEALED | AWAITING | REVIVAL
+  pod07 light_blue glow = SUBJECT 07 | STASIS SEALED | AWAITING | REVIVAL
+  pod08 light_blue glow = SUBJECT 08 | STASIS SEALED | AWAITING | REVIVAL
+  pod09 light_blue glow = SUBJECT 09 | STASIS SEALED | AWAITING | REVIVAL
+  pod10 light_blue glow = SUBJECT 10 | STASIS SEALED | AWAITING | REVIVAL
+  pod11 light_blue glow = SUBJECT 11 | STASIS SEALED | AWAITING | REVIVAL
+  pod12 red glow = SUBJECT 12 | T. SPRAGUE | TRANSFERRED | KIRBY PLAZA
+  pod13 red glow = SUBJECT 13 | P. PETRELLI | STATUS: | MISSING
+  pod14 red glow = SUBJECT 14 | C. BENNET | BLOOD DRAWN | DAY 3
+  wing white glow = STASIS WING | SUBLEVEL 4 | ODESSA SITE | PRIMATECH
+  exhibit yellow glow = EXHIBIT 9 | I. MENDEZ | THE SLEEPER | WHO IS THIS?
+  screen yellow glow = SIGNAL LOST | 2,190 DAYS | SINCE LAST | CONTACT
+
+# floor: the checker runner leads from the door to the console and the display
+layer 0:
+AAAAAAAAAAAAAAA
+AAAAABCBCBAAAAA
+AAAAADCECDAAAAA
+AAAAADECEDAAAAA
+AAAAADCECDAAAAA
+AAAAADECEDAAAAA
+AAAAADCECDAAAAA
+AAAAADECEDAAAAA
+AAAAADCECDAAAAA
+AAAAADECEDAAAAA
+AAAAADCECDAAAAA
+AAAAADECEDAAAAA
+AAAAADCECDAAAAA
+AAAAADECEDAAAAA
+AAAAADCECDAFCFA
+AAAAADECEDFCGCA
+AAAAADCECDCGHGA
+AAAAADECEDGHHHA
+AAAAADCECGHHHHA
+AAAAADECEDGHHHA
+AAAAADCECDCGHGA
+AAAAAAAAAAFCGCA
+AAAAAAAAAAAAAAA
+
+# pods, console, roots
+layer 1:
+IIIIIA...AIIIII
+IAJK.......KJAI
+ILM.....N...OLI
+IAJ......N..JAI
+ILM.........OLI
+IAJ.......N.JAI
+ILM.........OLI
+IAJ..P...PN.JAI
+ILM.QP.R.PS.OLI
+IAJ..P...P..JAI
+ILM...T....NOLI
+IAJ.......N.JAI
+ILM.........OLI
+IAJ.......N.JAI
+ILM........UOLI
+IAJ.......V.UAI
+I..........W.WI
+I.II.......XXYI
+I.II......W.XXI
+I.II......Z.X.I
+I.IK.a.a.a.Y.WI
+IAbb.PPPPP.W.cI
+IIIIAAAAAAAIIII
+
+layer 2:
+IIIIIA...AIIIII
+IAJ........KJAI
+ILd.........eLI
+IAJ.........JAI
+ILd.........eLI
+IAJ.........JAI
+ILd.........eLI
+IAJ..f......JAI
+ILd..g...f..eLI
+IAJ..f...h..JAI
+ILd.........eLI
+IAJ.........JAI
+ILd.........eLI
+IAJ.........JAI
+ILd.........eLI
+IAJ.........JAI
+I.............I
+I.II........XiI
+I.IIV......XXiI
+I.II..........I
+IAbb.........iI
+I....f.f.f...iI
+IIIIABBBBBAIIII
+
+# pod caps and nameplates
+layer 3:
+IIIIIA...AIIIII
+IAj..k...k..jAI
+Illm.......nllI
+IAj.........jAI
+Illo.......pllI
+IAj.........jAI
+Illq.......rllI
+IAj.........jAI
+Ills.......tllI
+IAj.........jAI
+Illu.......vllI
+IAj.........jAI
+Illw.......xllI
+IAj.........jAI
+Illy.......zllI
+IAj.........jAI
+I............iI
+I.IIV........iI
+I.II........X.I
+IAbb.........XI
+I............iI
+I.............I
+IIIIACBCBCAIIII
+
+layer 4:
+IIIIIAjjjAIIIII
+IA0.........0AI
+I.0.........0.I
+IA0.........0AI
+I.0.........0.I
+IA0.........0AI
+I.0.........0.I
+IA0.........0AI
+I.0.........0.I
+IA0.........0AI
+I.0.........0.I
+IA0.........0AI
+I.0.........0.I
+IA0.........0AI
+I.0.........0.I
+IA0.........0AI
+I.............I
+I.IIV.........I
+IAbb........X.I
+I..........1..I
+I.............I
+I.............I
+IIIIACC2CCAIIII
+
+layer 5:
+IIIIIIIIIIIIIII
+IA3.........4AI
+I.5.........5.I
+IA3.........4AI
+I.5.........5.I
+IA3.........4AI
+I.5.........5.I
+IA3.........4AI
+I.5.........5.I
+IA3.........4AI
+I.5.........5.I
+IA3.........4AI
+I.5.........5.I
+IA3.........4AI
+I.5.........5.I
+IA3.........4AI
+I...V.........I
+IAbb.........1I
+I...........XiI
+I..........6..I
+I............iI
+I............iI
+IIIIAC222CAIIII
+
+# gallery decks and the bridge
+layer 6:
+IIIIIIIIIIIIIII
+I5555555555555I
+I5555555555555I
+I555...7...555I
+I555.......555I
+I555.......555I
+I555.......555I
+I555.......555I
+I555.......555I
+I555.......555I
+I555.......555I
+I555.......555I
+I555.......555I
+I555........55I
+I555..........I
+I555..........I
+I555.........iI
+I............6I
+I...........X.I
+I..........6.iI
+I...........1iI
+I.............I
+IIIIABBBBBAIIII
+
+# railings and the painting
+layer 7:
+IIIIIIIIIIIIIII
+I..8V.....V...I
+I...V.....V..8I
+I...VVVVVVV...I
+IA..V.....V..AI
+I...V.....V...I
+I...V.....V...I
+I...V.....V...I
+I...V.....V...I
+IA..V.....V..AI
+I...V.....V...I
+I...V.....V...I
+I...V.........I
+I...V.........I
+IA..V.........I
+I...V.........I
+I...V......1..I
+I............6I
+I...........X.I
+I..........6..I
+I...........6.I
+I......9......I
+IIIIAAAAAAAIIII
+
+layer 8:
+IIIIIIIIIIIIIII
+!.............!
+!......$......!
+!.....%&*.....!
+!A.....+.....A!
+!.............!
+!.............!
+!......$......!
+!.....%=*.....!
+!A?....+.....A!
+!.............!
+!.............!
+!^.....$......!
+!.....%~*.....!
+!A.....+......!
+!............i!
+!..........6..!
+!............6!
+!.........1.Xi!
+!..........6..!
+!...........6i!
+!............i!
+IIIIIIIIIIIIIII
+
+layer 9:
+IIIIIIIIIIIIIII
+!.............!
+<.............<
+!......>......!
+!A...........A!
+!.............!
+!.............!
+<.............<
+!......>......!
+!A...........A!
+!.............!
+!.............!
+<.............<
+!......>......!
+!A............!
+!.............!
+!..........6.1!
+<............6<
+!.........6./.!
+!..........6.i!
+!...........6i!
+!.............!
+IIIIIIIIIIIIIII
+
+layer 10:
+IIIIIIIIIIIIIII
+!.............!
+!.............!
+!......>......!
+!A|..........A!
+!.............!
+!....;........!
+!.............!
+!......>......!
+!A..........|A!
+!.............!
+!.............!
+!.............!
+!......>......!
+!A|...........!
+!........;....!
+!..........6.6!
+!..........X.6!
+!.........6./.!
+!..........6X.!
+!...........6.!
+!.............!
+IIIIIIIIIIIIIII
+
+# beams, ducts, roots
+layer 11:
+IIIIIIIIIIIIIII
+I8..l.....l..8I
+I...l.....l...I
+I...l..>..l...I
+IAAAAAAAAAAAAAI
+I...l.....l...I
+I...l,....l...I
+I...l.....l...I
+I...l..>..l...I
+IAAAAAAAAAAAAAI
+I...l.....l...I
+I.=.l.....l...I
+I.=.l.....l...I
+I...l..>..l...I
+IAAAAAAAAAAAAAI
+I...l....,{}.{I
+I...l.....}6}6I
+I...l....({.X6I
+I...l.....6X/)I
+IAAAAAAAAA{6AXI
+I...l.....l{6.I
+I8..l.....l...I
+IIIIIIIIIIIIIII
+
+# ceiling, red emergency glass, the breach
+layer 12:
+---------------
+---------------
+-------α-------
+---------------
+---------------
+---------------
+---------------
+-------α-------
+---------------
+---------------
+---------------
+---------------
+-------α-------
+---------------
+---------------
+-----------GH--
+----------GHGG-
+-------α--HGGH-
+----------GGHG-
+-----------HGG-
+------------GH-
+---------------
+---------------
+
+# lamps behind the glass
+layer 13:
+_______________
+_______________
+_______β_______
+_______________
+_______________
+_______________
+_______________
+_______β_______
+_______________
+_______________
+_______________
+_______________
+_______β_______
+_______________
+_______________
+___________γγ__
+__________γγγγ_
+_______β__γγγγ_
+__________γγγγ_
+___________γγγ_
+____________γγ_
+_______________
+_______________

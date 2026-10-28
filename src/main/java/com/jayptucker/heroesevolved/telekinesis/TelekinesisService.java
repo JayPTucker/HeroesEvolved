@@ -112,6 +112,11 @@ public final class TelekinesisService {
     // Telekinetic Grip
     // ------------------------------------------------------------------
 
+    /** True while any telekinetic holds this creature in the air. */
+    public static boolean isHeld(net.minecraft.world.entity.Entity entity) {
+        return GRIPS.values().stream().anyMatch(grip -> grip.target == entity);
+    }
+
     public static boolean isGripping(ServerPlayer player) {
         return GRIPS.containsKey(player.getUUID());
     }

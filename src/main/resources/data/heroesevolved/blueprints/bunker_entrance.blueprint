@@ -1,0 +1,152 @@
+# The way back down: a ruined concrete hut around the bunker hatch, with a radio mast that marks it from afar.
+# Placed with its anchor on the hatch at the surface; the hatch cell itself is left alone.
+name: bunker_entrance
+anchor: 4 0 4
+palette:
+  A = short_grass
+  B = dead_bush
+  C = polished_andesite
+  D = light_gray_concrete
+  E = cracked_stone_bricks
+  F = smooth_stone
+  G = fern
+  H = cobblestone
+  I = cobblestone_slab[type=bottom]
+  J = moss_carpet
+  K = spruce_wall_sign[facing=south] @sign:site
+  L = vine[west=true]
+  M = vine[north=true]
+  N = smooth_stone_slab[type=top]
+  O = smooth_stone_slab[type=bottom]
+  P = moss_block
+  Q = iron_bars
+  R = smooth_quartz_stairs[facing=east]
+  S = smooth_quartz_stairs[facing=east,half=top]
+  T = red_stained_glass
+  U = lightning_rod[facing=up]
+signs:
+  site white = ODESSA SITE | RESTRICTED | PRIMATECH | RESEARCH
+
+# ground
+layer 0:
+___A__B__
+_CDDEDDCA
+_DFFFFFD_
+GDFFFFFD_
+_EFF_FFE_
+_DFFFFFD_
+ADFFFFFDG
+_CDDEDDC_
+__G__A___
+
+layer 1:
+_________
+_CDEDDDC_
+_DHH...D_
+_EHI...E_
+_D.....D_
+_D.J...D_
+_D.....D_
+_CDE.DDC_
+___K_____
+
+layer 2:
+_________
+_CEDDDEC_
+_EI....E_
+_D.....DL
+_D.....D_
+_D.....D_
+_E.....E_
+_CED.DEC_
+____M____
+
+layer 3:
+_________
+_C..DEDC_
+_......D_
+_......DL
+_D.....D_
+_E.....EL
+_D.....D_
+_C.DNEDC_
+____M_M__
+
+# the remains of the roof
+layer 4:
+_________
+____OOOO_
+____POOO_
+____OOPO_
+____OOOJ_
+____OPOO_
+____OOOO_
+____OOOO_
+_________
+
+# radio mast
+layer 5:
+_________
+_________
+_____J___
+_________
+_________
+_________
+______Q__
+_________
+_________
+
+layer 6:
+_________
+_________
+_________
+_________
+_________
+_________
+______Q__
+_________
+_________
+
+layer 7:
+_________
+_________
+_________
+_________
+_________
+_________
+_____RQ__
+_________
+_________
+
+layer 8:
+_________
+_________
+_________
+_________
+_________
+_________
+_____SQ__
+_________
+_________
+
+layer 9:
+_________
+_________
+_________
+_________
+_________
+_________
+______QT_
+_________
+_________
+
+layer 10:
+_________
+_________
+_________
+_________
+_________
+_________
+______U__
+_________
+_________

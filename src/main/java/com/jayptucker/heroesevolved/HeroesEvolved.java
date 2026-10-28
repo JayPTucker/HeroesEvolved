@@ -32,6 +32,7 @@ public final class HeroesEvolved {
         ModSounds.register(modEventBus);
         ModParticles.register(modEventBus);
         ModEntities.register(modEventBus);
+        com.jayptucker.heroesevolved.registry.ModItems.register(modEventBus);
 
         LOGGER.info("Heroes Evolved initialized.");
     }

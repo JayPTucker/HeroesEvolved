@@ -1,0 +1,269 @@
+# The Bennet house in Odessa: Noah, Sandra, Lyle and Claire. The fire took the east wing; a young oak grows there now.
+# Claire's room survived upstairs. Her chest holds a note for her dad.
+# Exported to data/heroesevolved/structure/ruins/bennet_house.nbt.
+name: ruins_bennet_house
+anchor: 0 0 0
+palette:
+  f = spruce_planks
+  s = stone_bricks
+  p = stripped_spruce_wood
+  G = gravel
+  w = smooth_stone
+  W = smooth_sandstone
+  T = cut_sandstone
+  Q = smooth_quartz
+  P = birch_planks
+  g = glass_pane
+  u = spruce_trapdoor[facing=south,half=top,open=true]
+  n = spruce_trapdoor[facing=north,half=top,open=true]
+  e = birch_fence
+  h = birch_slab[type=bottom]
+  ( = dark_oak_stairs[facing=north]
+  ) = dark_oak_stairs[facing=south]
+  R = dark_oak_planks
+  b = blackstone
+  c = coal_block
+  l = stripped_dark_oak_log[axis=z]
+  L = stripped_dark_oak_log[axis=y]
+  a = gray_carpet
+  C = coarse_dirt
+  o = oak_log[axis=y]
+  v = oak_leaves[persistent=true]
+  m = moss_carpet
+  V = vine[west=true]
+  r = red_wool
+  k = birch_slab[type=top]
+  y = lantern[hanging=false]
+  t = spruce_slab[type=top]
+  d = black_stained_glass_pane
+  q = oak_stairs[facing=west]
+  H = pink_bed[facing=west,part=head]
+  E = pink_bed[facing=west,part=foot]
+  X = chest[facing=east] @loot:bennet_house
+  Z = yellow_carpet
+  Y = yellow_wall_banner[facing=east]
+  M = spruce_planks
+  N = spruce_wall_sign[facing=south] @sign:mailbox
+  2 = red_terracotta
+  3 = red_terracotta
+  4 = red_terracotta
+  5 = black_stained_glass_pane
+  6 = red_terracotta
+  7 = polished_blackstone_button[face=wall,facing=east]
+  D = dead_bush
+  F = short_grass
+signs:
+  mailbox black = THE BENNETS | 1 | 
+
+# foundation, floors, driveway
+layer 0:
+__________________
+_sssssssssss_GGGG_
+_sfffffffffs_GGGG_
+_sfffffffffs_GGGG_
+_sfffffffffs_GGGG_
+_sfffffffCfs_GGGG_
+_sffffffffCs_GGGG_
+_sfffffffffs_GGGG_
+_sssssssssss_GGGG_
+_ppppppppppp_GGGG_
+_ppppppppppp_GGGG_
+_____www_____GGGG_
+_____www_____GGGG_
+_____www__________
+
+# ground floor and yard
+layer 1:
+__________________
+_TWWWWWccWcc______
+_Wrrr..q.mac_F__v_
+_W...k.....WV_____
+_W........aW______
+_W......m.oW__33__
+_W..t....a.WV7227_
+_W......a..c__22__
+_TWWWW.WcWcc_7227_
+___m__________44__
+_e__e___e_me______
+_________D______D_
+v_D_F_____F_e_____
+eeeee___eeeee____e
+
+layer 2:
+__n_n___n_n_______
+_TWgWWWccgcc______
+_W_...q....c______
+_W...y...L.WV_____
+_W.........W______
+_W........o_______
+_W..d......WV_55__
+_W.........c__66__
+_TWgWW.Wcgcc__66__
+__u_u___u_u_______
+_e__e___e__e______
+__________________
+____________e_____
+__________________
+
+layer 3:
+__________________
+_TWWWWWbbWbb______
+_W...q.....b______
+_W.......L._V_____
+_W........._______
+_W........oW______
+_W........._V_____
+_W.........b__m___
+_TbbWWWWbb_b______
+__________________
+_e__e___e__e______
+__________________
+____________M_____
+____________N_____
+
+# upper floor and trim band
+layer 4:
+__________________
+_QQQQQQbb__b______
+_QPPP.PPl..b______
+_QPPPPPPl..QV_____
+_QPPPPPP...vV_____
+_QPPPPPP..oQ______
+_QPPPPPP.v.QV_____
+_QPPPPPP...b______
+_QQQQQQQ...b______
+_hhhhhhhhhhh______
+_hhhhhhhhhhh______
+__________________
+__________________
+__________________
+
+# Claire's room
+layer 5:
+__________________
+_TWWWWWbb_________
+_WHE......._______
+_W........._______
+_W..Z..._.v_V_____
+_Wk..Z...vov______
+_Wm.......v_______
+_WX........_______
+_TWWWWWW._________
+__________________
+__________________
+__________________
+__________________
+__________________
+
+layer 6:
+___n_n____________
+_TWWgWWbb_________
+_W........._______
+_WY........_______
+_W.......v._______
+_Wy.......v_______
+_W.........v______
+_W........._______
+_TWgWWgW._________
+__u_uu_u__________
+__________________
+__________________
+__________________
+__________________
+
+layer 7:
+__________________
+_TWWWWWbb_________
+_W........._______
+_W........._______
+_W........._______
+_W........._______
+_W........._______
+_W........._______
+_TWWWWWbb_________
+__________________
+__________________
+__________________
+__________________
+__________________
+
+# roof begins
+layer 8:
+((((((((__________
+__________________
+_W________________
+_W________________
+_W________________
+_W________________
+__________________
+__________________
+__________________
+))))))))__________
+__________________
+__________________
+__________________
+__________________
+
+layer 9:
+__________________
+((((((g(__________
+__m_______________
+_W________________
+_W________________
+__________________
+__________________
+__________________
+))))))))__________
+__________________
+__________________
+__________________
+__________________
+__________________
+
+layer 10:
+__________________
+__________________
+((((((((__________
+__________________
+__________________
+__________________
+__________________
+))))))))__________
+__________________
+__________________
+__________________
+__________________
+__________________
+__________________
+
+layer 11:
+__________________
+__________________
+__________________
+((((((((__________
+__________________
+__________________
+))))))))__________
+__________________
+__________________
+__________________
+__________________
+__________________
+__________________
+__________________
+
+layer 12:
+__________________
+__________________
+__________________
+__________________
+RRRRRRRR__________
+RRRRRRRR__________
+__________________
+__________________
+__________________
+__________________
+__________________
+__________________
+__________________
+__________________

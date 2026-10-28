@@ -32,6 +32,7 @@ public final class HeroesEvolvedCommands {
                 Commands.literal(HeroesEvolved.MOD_ID)
                         .requires(source -> source.hasPermission(2))
                         .then(com.jayptucker.heroesevolved.story.sylar.SylarCommands.branch())
+                        .then(com.jayptucker.heroesevolved.structure.BlueprintCommands.branch())
                         .then(Commands.literal("admin")
                                 .executes(context -> {
                                     com.jayptucker.heroesevolved.admin.AdminService

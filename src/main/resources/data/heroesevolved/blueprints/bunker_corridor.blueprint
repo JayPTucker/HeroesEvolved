@@ -1,0 +1,87 @@
+# The corridor between the records room and the stasis hall, with doors to the lab (east) and the cell (west).
+# The blood trail from the stasis hall turns into the cell.
+name: bunker_corridor
+anchor: 2 0 0
+palette:
+  A = polished_deepslate
+  B = polished_tuff
+  C = yellow_concrete
+  D = deepslate_tiles
+  E = redstone_wire
+  F = spruce_wall_sign[facing=east] @sign:cell
+  G = spruce_wall_sign[facing=west] @sign:lab
+  H = polished_deepslate_stairs[facing=west,half=top]
+  I = polished_deepslate_stairs[facing=east,half=top]
+  J = redstone_lamp[lit=false]
+  K = lightning_rod[facing=north]
+  L = chain[axis=z]
+  M = deepslate_bricks
+  N = waxed_copper_bulb[lit=true]
+  O = red_stained_glass
+signs:
+  cell red glow = CONTAINMENT | G. GRAY | DO NOT OPEN | 
+  lab white glow = FORMULA LAB | STAFF ONLY | 
+
+# floor
+layer 0:
+AABAA
+AABAA
+AABAA
+AACAA
+AACAA
+AABAA
+AABAA
+AABAA
+
+# doors
+layer 1:
+D...D
+A.E.A
+D...D
+.E...
+.....
+D.E.D
+A.E.A
+D...D
+
+layer 2:
+D...D
+A...A
+DF.GD
+.....
+.....
+D...D
+A...A
+D...D
+
+layer 3:
+D...D
+A...A
+D...D
+.....
+.....
+D...D
+A...A
+D...D
+
+# pipes and status lights
+layer 4:
+DDDDD
+AH.IA
+JK.LJ
+DK.LD
+DK.LD
+JK.LJ
+AH.IA
+DDDDD
+
+# ceiling
+layer 5:
+MMMMM
+AAAAA
+MMNMM
+MMMMM
+MMMMM
+MMOMM
+AAAAA
+MMMMM

@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "GHG",
+    "OBO",
+    "OOO"
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:glass"
+    },
+    "H": {
+      "item": "heroesevolved:helixite_shard"
+    },
+    "B": {
+      "item": "minecraft:brewing_stand"
+    },
+    "O": {
+      "item": "minecraft:copper_ingot"
+    }
+  },
+  "result": {
+    "id": "heroesevolved:synthesis_station",
+    "count": 1
+  }
+}

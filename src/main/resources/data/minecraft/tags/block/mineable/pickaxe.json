@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "heroesevolved:helixite_ore",
+    "heroesevolved:deepslate_helixite_ore",
+    "heroesevolved:centrifuge",
+    "heroesevolved:synthesis_station",
+    "heroesevolved:cryochamber"
+  ]
+}

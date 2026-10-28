@@ -78,6 +78,14 @@ public final class RadiationService {
         return player.getData(ModDataAttachments.PLAYER_RADIATION_STRESS);
     }
 
+    /** Lowers Critical Mass by up to {@code amount}; returns how much was actually vented. */
+    public static int vent(ServerPlayer player, int amount) {
+        int mass = mass(player), vented = Math.min(mass, Math.max(0, amount));
+        player.setData(ModDataAttachments.PLAYER_RADIATION_STRESS, mass - vented);
+        syncVisuals(player);
+        return vented;
+    }
+
     /** Raises Critical Mass. At 100% containment begins to fail. */
     public static void addMass(ServerPlayer player, int amount) {
         int mass = Math.min(MAXIMUM_MASS, mass(player) + amount);

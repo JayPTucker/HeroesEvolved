@@ -92,6 +92,7 @@ public final class SonicService {
         voice(player, true);
     }
     public static void sense(ServerPlayer player) {
+        com.jayptucker.heroesevolved.invisibility.InvisibilityService.revealAround(player.serverLevel(), player.position(), 32, 100);
         for (LivingEntity target : player.serverLevel().getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(32),
                 target -> target != player && target.isAlive() && !target.isSpectator() && target.distanceToSqr(player) <= 32 * 32).stream().limit(128).toList())
             PrivateGlow.glow(player, target, 80);

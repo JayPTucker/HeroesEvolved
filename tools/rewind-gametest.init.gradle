@@ -22,6 +22,9 @@ allprojects {
         }
         tasks.named('runGameTestServer') {
             dependsOn(tasks.named('rewindGameTestClasses'))
+            // Every run starts from a fresh world, so saved data (like an already-built bunker) never leaks between runs.
+            def staleWorld = project.file('build/rewind-gametest-world/world')
+            doFirst { staleWorld.deleteDir() }
         }
       }
     }

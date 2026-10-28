@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "HIH",
+    "ICI",
+    "SSS"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "H": {
+      "item": "heroesevolved:helixite_shard"
+    },
+    "C": {
+      "item": "minecraft:comparator"
+    },
+    "S": {
+      "item": "minecraft:smooth_stone"
+    }
+  },
+  "result": {
+    "id": "heroesevolved:centrifuge",
+    "count": 1
+  }
+}

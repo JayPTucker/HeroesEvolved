@@ -184,5 +184,29 @@
     "action": "precog_paint",
     "energy": 1,
     "cooldown": 1
+  },
+  {
+    "power": "pyrokinesis",
+    "action": "pyro_inferno",
+    "energy": 0.8,
+    "cooldown": 0.6
+  },
+  {
+    "power": "invisibility",
+    "action": "invisibility_ghost_protocol",
+    "energy": 1,
+    "cooldown": 1
+  },
+  {
+    "power": "phasing",
+    "action": "phasing_walk",
+    "energy": 1,
+    "cooldown": 1
+  },
+  {
+    "power": "empathic_mimicry",
+    "action": "mimicry_empathize",
+    "energy": 1,
+    "cooldown": 1
   }
 ]

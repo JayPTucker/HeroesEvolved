@@ -10,8 +10,9 @@ trees = json.loads((resources / "data/heroesevolved/skill_trees.json").read_text
 lang = json.loads((assets / "lang/en_us.json").read_text(encoding="utf-8"))
 sounds = json.loads((assets / "sounds.json").read_text(encoding="utf-8"))
 expected = {"quake", "flight", "cryokinesis", "electrokinesis", "telekinesis", "telepathy",
-            "regeneration", "time_manipulation", "radiation", "sonic_resonance", "superspeed", "precognition"}
-assert {t["power"] for t in trees} == expected and len(trees) == 12
+            "regeneration", "time_manipulation", "radiation", "sonic_resonance", "superspeed", "precognition", "pyrokinesis",
+            "invisibility", "phasing", "empathic_mimicry"}
+assert {t["power"] for t in trees} == expected and len(trees) == 16
 nodes = 0
 actives = 0
 for tree in trees:

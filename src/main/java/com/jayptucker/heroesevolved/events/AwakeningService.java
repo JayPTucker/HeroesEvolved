@@ -29,7 +29,11 @@ public final class AwakeningService {
                 .awakeningHealthThreshold.get()) {
             return false;
         }
+        return awakenAssigned(player);
+    }
 
+    /** Awakens a dormant assignment now: unlock, the power's own intro, and the shared advancement. */
+    public static boolean awakenAssigned(ServerPlayer player) {
         Optional<Map.Entry<ResourceLocation, AbilityProgress>> assignment =
                 PlayerAbilityService.getData(player).assignedPower();
 

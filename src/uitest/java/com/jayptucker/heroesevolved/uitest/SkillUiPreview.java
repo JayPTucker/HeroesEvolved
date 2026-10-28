@@ -38,14 +38,11 @@ public final class SkillUiPreview {
 
     @SubscribeEvent public static void rendered(RenderFrameEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
-        if (!shown || (!(mc.screen instanceof SkillTreeScreen) && !(mc.screen instanceof PaintingScreen))) return;
+        if (!shown || (!(mc.screen instanceof SkillTreeScreen) && !(mc.screen instanceof PaintingScreen)
+                && !(mc.screen instanceof com.jayptucker.heroesevolved.gui.screen.PowersScreen))) return;
         frames++;
         if (frames == 3) capture(mc, "skill-tree-scale2.png");
-        if (frames == 4) for (var child : mc.screen.children()) {
-            if (child instanceof Button button && button.getMessage().getString().equals("Focused Shriek")) {
-                button.onPress(); break;
-            }
-        }
+        if (frames == 4 && mc.screen instanceof SkillTreeScreen tree) tree.select("sonic_resonance_0_1");
         if (frames == 6) capture(mc, "skill-tree-locked.png");
         if (frames == 7) { mc.options.guiScale().set(3); mc.resizeDisplay(); }
         if (frames == 10) capture(mc, "skill-tree-scale3.png");
@@ -59,14 +56,35 @@ public final class SkillUiPreview {
             ClientSkillTreeState.update(new SkillTreeStatePayload("cryokinesis", true, 5,
                     new SkillTreeData.Build(5, Set.of("cryokinesis_0_0"), Map.of(), 4)));
             mc.screen.tick();
-            for (var child : mc.screen.children()) if (child instanceof Button b && b.getMessage().getString().equals(">")) { b.onPress(); break; }
+            if (mc.screen instanceof SkillTreeScreen tree) tree.select("cryokinesis_suspension_stitch");
         }
         if (frames == 22) capture(mc, "unwritten-tree-page2-scale3.png");
         if (frames == 23) { mc.options.guiScale().set(2); mc.resizeDisplay(); }
         if (frames == 26) capture(mc, "unwritten-tree-page2-scale2.png");
         if (frames == 27) mc.setScreen(new PaintingScreen());
         if (frames == 32) capture(mc, "unwritten-paintings.png");
-        if (frames == 36) mc.stop();
+        if (frames == 36) {
+            // The Abilities screen for a level 4 Pyrokinetic with a few skills learned and one equipped.
+            var id = com.jayptucker.heroesevolved.ability.registry.ModAbilities.PYROKINESIS_ID;
+            var actions = new java.util.ArrayList<com.jayptucker.heroesevolved.network.AbilityActionSnapshot>();
+            var ability = com.jayptucker.heroesevolved.ability.registry.AbilityRegistry.ABILITIES.get(id);
+            for (var slot : com.jayptucker.heroesevolved.ability.AbilitySlot.values()) {
+                var action = ability.actions().get(slot);
+                String key = slot == com.jayptucker.heroesevolved.ability.AbilitySlot.QUATERNARY ? "action.heroesevolved.pyrokinesis_blue_lance" : action.definition().displayNameKey();
+                actions.add(new com.jayptucker.heroesevolved.network.AbilityActionSnapshot(slot, key, action.definition().unlockLevel() <= 4, 0,
+                        action.definition().unlockLevel(), action.energyCost(4), action.cooldownTicks(4)));
+            }
+            com.jayptucker.heroesevolved.network.ClientPowerState.update(new com.jayptucker.heroesevolved.network.PlayerPowerSyncPayload(72, 140, 6,
+                    java.util.List.of(new com.jayptucker.heroesevolved.network.AbilitySnapshot(id, true, 4, 5200, 4000, 7000, 5)), actions));
+            ClientSkillTreeState.update(new SkillTreeStatePayload("pyrokinesis", true, 4, new SkillTreeData.Build(4,
+                    Set.of("pyrokinesis_0_0", "pyrokinesis_0_1", "pyrokinesis_1_0", "pyrokinesis_blue_lance", "pyrokinesis_2_0"),
+                    Map.of("QUATERNARY", "pyrokinesis_blue_lance"))));
+            mc.setScreen(new com.jayptucker.heroesevolved.gui.screen.PowersScreen());
+        }
+        if (frames == 40) capture(mc, "abilities-scale2.png");
+        if (frames == 41) { mc.options.guiScale().set(3); mc.resizeDisplay(); }
+        if (frames == 45) capture(mc, "abilities-scale3.png");
+        if (frames == 48) mc.stop();
     }
 
     private static final class PaintingScreen extends net.minecraft.client.gui.screens.Screen {

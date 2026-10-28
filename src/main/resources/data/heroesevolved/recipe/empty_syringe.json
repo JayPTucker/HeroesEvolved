@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "  P",
+    " B ",
+    "N  "
+  ],
+  "key": {
+    "P": {
+      "item": "minecraft:glass_pane"
+    },
+    "B": {
+      "item": "minecraft:glass_bottle"
+    },
+    "N": {
+      "item": "minecraft:iron_nugget"
+    }
+  },
+  "result": {
+    "id": "heroesevolved:empty_syringe",
+    "count": 2
+  }
+}

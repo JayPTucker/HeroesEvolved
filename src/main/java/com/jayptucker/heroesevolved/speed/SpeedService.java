@@ -105,6 +105,7 @@ public final class SpeedService {
         }
         FLURRIES.put(p.getUUID(), new Flurry(p, t, 2 + level / 2, now(p))); cue(p); return true;
     }
+    public static boolean hasWhirlwind(ServerPlayer p) { return VORTICES.containsKey(p.getUUID()); }
     public static boolean whirlwind(ServerPlayer p) {
         VORTICES.put(p.getUUID(), new Vortex(p, p.position(), p.level(), now(p) + 100));
         AbilityEffects.at(p, Kind.SPEED_VORTEX, 6); cue(p); return true;
@@ -279,6 +280,14 @@ public final class SpeedService {
         r.previous = p.position();
     }
     public static int momentum(ServerPlayer p) { Runner r = RUNNERS.get(p.getUUID()); return r == null ? 0 : r.momentum; }
+    /** Spends all Momentum if at least {@code minimum} is banked; returns the amount spent, or 0. */
+    public static int spendMomentum(ServerPlayer p, int minimum) {
+        Runner r = RUNNERS.get(p.getUUID());
+        if (r == null || r.momentum < minimum) return 0;
+        int spent = r.momentum;
+        r.momentum = 0;
+        return spent;
+    }
     public static float consumeImpact(ServerPlayer p, boolean pvp) {
         Runner r = RUNNERS.get(p.getUUID());
         if (r == null || r.momentum < 50 || !PowerRules.canAct(p)) return 0;

@@ -1,0 +1,111 @@
+# A brick house the blast wave pushed over from the east. The west wall and the chimney still stand;
+# the rest is a slope of rubble and roof tiles. Generated across the overworld.
+# Exported to data/heroesevolved/structure/ruins/collapsed_house.nbt.
+name: ruins_collapsed_house
+anchor: 0 0 0
+palette:
+  S = stone_bricks
+  f = oak_planks
+  R = bricks
+  k = stone_brick_slab[type=top]
+  y = brick_slab[type=bottom]
+  w = brick_wall
+  N = campfire[lit=false,facing=east]
+  p = glass_pane
+  c = cobblestone
+  C = mossy_cobblestone
+  u = deepslate_tile_stairs[facing=east]
+  U = deepslate_tile_stairs[facing=west,half=top]
+  h = deepslate_tile_slab[type=bottom]
+  m = moss_carpet
+  v = short_grass
+  F = fern
+  V = vine[west=true]
+  X = chest[facing=east] @loot:ruins_house
+
+# foundation, set into the ground
+layer 0:
+SSSSSSSSSS_
+SffffffffS_
+SffffffffS_
+SffffffffS_
+SffffffffSS
+SffffffffS_
+SffffffffS_
+SffffffffS_
+SffffffffS_
+SSSSSSSSSS_
+
+# ground floor and rubble
+layer 1:
+SRRRRRRyyy_
+R.X.ccCcccF
+Rhm.cCcccC_
+Ru.vCcccCcc
+RN..cccCcc_
+RN..ccCcccc
+Rh.FcCcccCc
+Ruv.CcccCc_
+Rv..cccCccv
+SRRRRRRyyy_
+
+layer 2:
+SRRRRyy..._
+R...huUccC_
+p...mUhcCc_
+R...UhuCcch
+RR..huUccc_
+RR..uUhccCh
+R...UhucCch
+p...hmUCcc_
+R...uUhccc_
+SRRRRyy..._
+
+layer 3:
+SRRyy....._
+R......hCU_
+p......uch_
+R......mcu_
+RR.....hcU_
+RR.....uCh_
+RV....mUcu_
+p......hcU_
+R......uch_
+SRRyy....._
+
+layer 4:
+SRR......._
+k.......u__
+k.......U__
+k.......h__
+R.......u__
+R.......U__
+kV......h__
+k.......u__
+k.......U__
+SRR......._
+
+# chimney stack
+layer 5-7:
+___________
+___________
+___________
+___________
+R__________
+R__________
+_V_________
+___________
+___________
+___________
+
+layer 8:
+___________
+___________
+___________
+___________
+w__________
+w__________
+___________
+___________
+___________
+___________

@@ -1,0 +1,149 @@
+# The generator hall: fourteen power cells on the walls, three still burning, around a cold reactor.
+# When the last cell dies, the pods open. Placed east of the records room, sharing its east wall.
+name: bunker_generator
+anchor: 0 0 0
+palette:
+  A = polished_deepslate
+  B = yellow_concrete
+  C = black_concrete
+  D = deepslate_tiles
+  E = skeleton_skull[rotation=4]
+  F = white_carpet
+  G = waxed_copper_block
+  H = iron_block
+  I = ladder[facing=south]
+  J = barrel[facing=up]
+  K = smooth_quartz_slab[type=top]
+  L = tuff_bricks
+  M = waxed_oxidized_copper_bulb[lit=false]
+  N = waxed_copper_bulb[lit=true]
+  O = spruce_wall_sign[facing=south] @sign:cells
+  P = waxed_weathered_cut_copper
+  Q = tinted_glass
+  R = magma_block
+  S = black_stained_glass_pane
+  T = lever[face=floor,facing=north]
+  U = polished_deepslate_slab[type=bottom]
+  V = orange_stained_glass
+  W = waxed_weathered_cut_copper_slab[type=top]
+  X = iron_trapdoor[facing=north,open=true,half=bottom]
+  Y = iron_trapdoor[facing=west,open=true,half=bottom]
+  Z = iron_trapdoor[facing=east,open=true,half=bottom]
+  a = iron_bars
+  b = iron_trapdoor[facing=south,open=true,half=bottom]
+  c = lightning_rod[facing=east]
+  d = lightning_rod[facing=north]
+  e = chain[axis=y]
+  f = waxed_copper_grate
+  g = deepslate_bricks
+  h = red_stained_glass
+signs:
+  cells red glow = POWER CELLS | 3 OF 14 | REMAINING | 
+
+# floor and hazard ring
+layer 0:
+AAAAAAAAAA
+AAAAAAAAAA
+AAAAAAAAAA
+AAAAAAAAAA
+AAABCBCAAA
+AAACAABAAA
+AAABAACAAA
+AAACBCBAAA
+AAAAAAAAAA
+AAAAAAAAAA
+AAAAAAAAAA
+
+# reactor base
+layer 1:
+DDDDDDDDDD
+.........D
+D........D
+DE.......D
+DF.G..G..D
+D...HH...D
+D...HH...D
+D..G..G..D
+DI.......D
+D.JJ..KK.D
+DDDDDDDDDD
+
+layer 2:
+DLLDLLDLLD
+..MMMNMMML
+L....O..ML
+D.......MD
+L..PQQP.NL
+L..QRRQ.ML
+D..QRRQ.MD
+L..PQQP.NL
+LI......ML
+D.J...ST.D
+LLLDLLDLLL
+
+layer 3:
+DLLDLLDLLD
+L.UUUUUUUL
+L.......UL
+D.......UD
+L..PQQP.UL
+L..QVVQ.UL
+D..QVVQ.UD
+L..PQQP.UL
+LI......UL
+D........D
+LLLDLLDLLL
+
+# catwalk
+layer 4:
+DLLDLLDLLD
+L........L
+L.......WL
+D.......WD
+L..PQQP.WL
+L..QVVQ.WL
+D..QVVQ.WD
+L..PQQP.WL
+LI......WL
+DWWWWWWWWD
+LLLDLLDLLL
+
+layer 5:
+DLLDLLDLLD
+L.X......L
+LYMZ...a.L
+D.b....a.D
+L..PQQPa.L
+LccQ..Qa.L
+D..Q..QacD
+L..PQQPa.L
+L.aaaaaaaL
+D........D
+LLLDLLDLLL
+
+layer 6:
+DDDDDDDDDD
+D....d...D
+D.e..d...D
+D....d...D
+D..G..G..D
+D...ff...D
+D...ff...D
+D..G..G..D
+D........D
+D........D
+DDDDDDDDDD
+
+# ceiling
+layer 7:
+gggggggggg
+gggggggggg
+gggggggggg
+gggggggggg
+gggggggggg
+gggggggggg
+gggggggggg
+gggggggggg
+gggggggggg
+gggggggghg
+gggggggggg

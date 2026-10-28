@@ -1,0 +1,116 @@
+# Security checkpoint: a barrier with a gate, a guard post under the monitor wall, lockers, Company-issue gear,
+# and a red rug over the trapdoor to Sublevel 4-B (bunker_office). Placed west of the records room.
+name: bunker_security
+anchor: 0 0 0
+palette:
+  A = polished_deepslate
+  B = yellow_concrete
+  C = black_concrete
+  D = spruce_trapdoor[facing=north,half=top,open=false]
+  E = deepslate_tiles
+  F = iron_bars
+  G = smooth_quartz_slab[type=top]
+  H = dark_oak_stairs[facing=west]
+  I = red_carpet
+  J = barrel[facing=north]
+  K = chest[facing=north] @loot:security
+  L = barrel[facing=up]
+  M = tuff_bricks
+  N = gray_concrete
+  O = lever[face=floor,facing=east]
+  P = light_blue_stained_glass
+  Q = iron_trapdoor[facing=north,open=true,half=bottom]
+  R = spruce_wall_sign[facing=east] @sign:checkpoint
+  S = iron_trapdoor[facing=west,open=true,half=bottom]
+  T = waxed_oxidized_copper_bulb[lit=false]
+  U = iron_trapdoor[facing=east,open=true,half=bottom]
+  V = iron_trapdoor[facing=south,open=true,half=bottom]
+  W = iron_trapdoor[facing=north,half=bottom,open=false]
+  X = cobweb
+  Y = chain[axis=y]
+  Z = deepslate_bricks
+  a = red_stained_glass
+  b = waxed_copper_bulb[lit=true]
+signs:
+  checkpoint white glow = CHECKPOINT | ALL STAFF | SHOW ID | 
+
+# floor; the trapdoor under the rug
+layer 0:
+AAAAAAAAAA
+AAAAABAAAA
+AAAAACAAAA
+AAAAABAAAA
+AAAAACAAAA
+AAAAABAAAA
+AAAAACAAAA
+AAAAABAAAA
+AADAACAAAA
+AAAAABAAAA
+AAAAAAAAAA
+
+# barrier, desk, lockers
+layer 1:
+EEEEEEEEEE
+E....F....
+E.G..F...E
+E.GH.F...E
+E.G..F...E
+E........E
+E....F...E
+E.II.F...E
+E.II.F...E
+EJJJJF.KLE
+EEEEEEEEEE
+
+layer 2:
+EMMEMMEMME
+M....F....
+MN...F...M
+ECO..F...E
+MN...F...M
+M........M
+E....F...E
+M....F...M
+M....F...M
+EJJJJF..LE
+MMMEMMEMMM
+
+layer 3:
+EMMEMMEMME
+M........M
+MC.......M
+EP.......E
+MC...F.Q.M
+M....RSTUM
+E....F.V.E
+M........M
+M........M
+EWWWW....E
+MMMEMMEMMM
+
+layer 4:
+EEEEEEEEEE
+E.......XE
+E........E
+E........E
+E........E
+E......Y.E
+E........E
+E........E
+E........E
+EX.......E
+EEEEEEEEEE
+
+# ceiling
+layer 5:
+ZZZZZZZZZZ
+ZZZZZZZZZZ
+ZZZZZZZaZZ
+ZZZZZZZZZZ
+ZZZZZZZZZZ
+ZZZbZZZZZZ
+ZZZZZZZZZZ
+ZZZZZZZZZZ
+ZZZZZZZZZZ
+ZZZZZZZZZZ
+ZZZZZZZZZZ

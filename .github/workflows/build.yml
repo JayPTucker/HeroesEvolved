@@ -24,6 +24,11 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build
 
+      - name: Validate blueprints and skill content
+        run: |
+          python3 tools/blueprint.py validate src/main/resources/data/heroesevolved/blueprints/*.blueprint
+          python3 tools/verify-skill-content.py
+
       # The gameplay tests live in src/gametest and are loaded only for this
       # run by an init script, so they never ship in the released jar. The
       # game-test server exits non-zero if any required test fails.

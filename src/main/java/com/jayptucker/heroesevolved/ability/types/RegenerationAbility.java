@@ -130,7 +130,8 @@ public final class RegenerationAbility implements Ability {
             context.player(), context.abilityLevel()
         );
 
-        if (!canUse(context)) {
+        // A forced blood draw leaves the body drained: it cannot regrow for a while.
+        if (!canUse(context) || context.player().hasEffect(com.jayptucker.heroesevolved.registry.ModItems.DRAINED)) {
             return;
         }
 

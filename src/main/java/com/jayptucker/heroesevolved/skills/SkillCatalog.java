@@ -11,7 +11,7 @@ import java.util.*;
 public final class SkillCatalog {
     public record Node(String id, String power, int branch, int tier, String name, String description,
                        int energy, int cooldown, int cost, int level, boolean active, String prerequisite,
-                       String mechanic, boolean capstone) {
+                       String mechanic, boolean capstone, String icon) {
         public ResourceLocation actionId() { return ResourceLocation.fromNamespaceAndPath("heroesevolved", id); }
         public AbilityAction action() {
             return SimpleAction.builder(id, level()).cost(() -> energy, () -> cooldown)
@@ -49,7 +49,8 @@ public final class SkillCatalog {
                                 n.has("level") ? n.get("level").getAsInt() : tier == 0 ? 1 : tier == 1 ? 2 : 4,
                                 active, n.has("requires") ? n.get("requires").getAsString() : parent,
                                 n.has("mechanic") ? n.get("mechanic").getAsString() : "",
-                                n.has("capstone") && n.get("capstone").getAsBoolean()));
+                                n.has("capstone") && n.get("capstone").getAsBoolean(),
+                                n.has("icon") ? n.get("icon").getAsString() : ""));
                         parent = id; tier++;
                     }
                     if (tier < 1 || tier > 12) throw new IllegalStateException("Invalid branch length");

@@ -1,374 +1,189 @@
 package com.jayptucker.heroesevolved.gui.screen;
 
+import com.jayptucker.heroesevolved.ability.AbilityAction;
 import com.jayptucker.heroesevolved.ability.AbilitySlot;
+import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.input.ModKeyMappings;
-import com.jayptucker.heroesevolved.network.AbilityActionSnapshot;
-import com.jayptucker.heroesevolved.network.AbilitySnapshot;
-import com.jayptucker.heroesevolved.network.AdminActionPayload;
-import com.jayptucker.heroesevolved.network.ClientPowerState;
-import com.jayptucker.heroesevolved.network.PlayerPowerSyncPayload;
+import com.jayptucker.heroesevolved.network.*;
+import com.jayptucker.heroesevolved.skills.SkillCatalog;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.Mth;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 /**
- * The player's skills menu: the power's level track, Mastery and energy,
- * its passive, and a card for every skill showing its key, cost, cooldown,
- * live status and what it does.
+ * The Abilities screen: every ability the player has or can earn on one page. A hex grid shows the
+ * power's own five abilities beside the three skill branches; hovering or clicking any hex fills the
+ * card on the right with what it does, what it costs, which key it is on, and what it still needs.
+ * Level, Mastery, stamina and unspent points run along the bottom.
  */
 public final class PowersScreen extends Screen {
-    private static final int PANEL_WIDTH = 340;
-    private static final int MAXIMUM_PANEL_HEIGHT = 262;
-    private static final int PADDING = 12;
-    private static final int CARD_HEIGHT = 30;
-    private static final int CARD_GAP = 3;
-    private static final int SKILLS_TOP = 118;
+    private static final ResourceLocation HEX_OPEN = hex("open"), HEX_LOCKED = hex("locked"), HEX_LEARNED = hex("learned"),
+            HEX_POWER = hex("power"), HEX_SELECTED = hex("selected");
+    private static final int HEX_W = 26, HEX_H = 30;
+    private static final int GOLD = 0xFFF2D27A, TEXT = 0xFFEDE3D6, MUTED = 0xFFB8A99A, DIM = 0xFF77695E, RED = 0xFFE07A6A,
+            GREEN = 0xFF9BD67A, ENERGY = 0xFF57B6E0, LINE = 0xFF8A7A6C;
 
-    private static final int BORDER = 0xFF6B101D;
-    private static final int BACKGROUND = 0xFF16090D;
-    private static final int CARD = 0xFF241017;
-    private static final int CARD_LOCKED = 0xFF1A0D11;
-    private static final int TITLE = 0xFFFFD7DC;
-    private static final int TEXT = 0xFFE7C9CE;
-    private static final int MUTED = 0xFFB89A9F;
-    private static final int DIM = 0xFF6E5559;
-    private static final int ACCENT = 0xFFC51E32;
-    private static final int READY = 0xFF92D66C;
-    private static final int TRACK = 0xFF3A2028;
-    private static final int ENERGY = 0xFF3FA7D6;
+    private enum Kind { POWER, CORE, ACTIVE, PASSIVE, CAPSTONE }
+    private record Cell(int column, int row, Kind kind, Component name, Component description, ItemStack icon,
+                        boolean owned, boolean available, List<Component> facts, Component status, String nodeId) {}
 
-    private int scroll;
+    private final List<Cell> cells = new ArrayList<>();
+    private Cell selected;
+    private int refresh;
 
-    public PowersScreen() {
+    private final net.minecraft.client.gui.screens.Screen parent;
+
+    public PowersScreen() { this(null); }
+
+    /** Opened from the inventory's eclipse button; closing returns there. */
+    public PowersScreen(net.minecraft.client.gui.screens.Screen parent) {
         super(Component.translatable("screen.heroesevolved.powers"));
+        this.parent = parent;
     }
 
-    private int panelHeight() {
-        return Math.min(MAXIMUM_PANEL_HEIGHT, height - 8);
+    @Override public void onClose() { minecraft.setScreen(parent); }
+
+    private static ResourceLocation hex(String name) { return ResourceLocation.fromNamespaceAndPath("heroesevolved", "hex/" + name); }
+
+    // ------------------------------------------------------------------
+    // Layout
+    // ------------------------------------------------------------------
+
+    private int contentWidth() { return Math.min(width - 16, 500); }
+    private int left() { return (width - contentWidth()) / 2; }
+    private int rowSpacing() { return Mth.clamp((height - 110) / 6, 31, 40); }
+    /** The grid, card and bottom bar are centred vertically as one block. */
+    private int gridTop() { return Math.max(40, (height - (14 + 6 * rowSpacing() + 44)) / 2); }
+    private int columnX(int column) { return left() + 8 + column * 62 + (column > 0 ? 6 : 0); }
+    private int cellY(int row) { return gridTop() + 14 + row * rowSpacing(); }
+    private int cardLeft() { return columnX(3) + HEX_W + 18; }
+    private int cardRight() { return left() + contentWidth(); }
+    private int bottomY() { return cellY(5) + HEX_H + 14; }
+
+    private static final String[] TABS = {"ABILITIES", "SKILL TREE", "JOURNAL", "SETTINGS", "CLOSE"};
+
+    private int tabX(int index) {
+        int total = 0;
+        for (String tab : TABS) total += font.width(tab) + 18;
+        int x = (width - total) / 2;
+        for (int i = 0; i < index; i++) x += font.width(TABS[i]) + 18;
+        return x;
     }
 
-    @Override
-    protected void init() {
-        int left = (width - PANEL_WIDTH) / 2;
-        int top = (height - panelHeight()) / 2;
-
-        addRenderableWidget(Button.builder(CommonComponents.GUI_DONE,
-                        button -> onClose())
-                .bounds(left + PANEL_WIDTH / 2 - 40, top + panelHeight() - 26, 80, 20)
-                .build());
-        addRenderableWidget(Button.builder(Component.literal("Skill Tree"),
-                        button -> SkillTreeScreen.open(this))
-                .bounds(left + 10, top + panelHeight() - 26, 84, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Journal"),
-                        button -> JournalScreen.open(this))
-                .bounds(left + PANEL_WIDTH - 120, top + panelHeight() - 26, 54, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Settings"),
-                        button -> minecraft.setScreen(new EffectsSettingsScreen(this)))
-                .bounds(left + PANEL_WIDTH - 64, top + panelHeight() - 26, 54, 20).build());
-
-        if (minecraft != null && minecraft.player != null
-                && minecraft.player.hasPermissions(2)) {
-            addRenderableWidget(Button.builder(Component.literal("Admin"),
-                            button -> PacketDistributor.sendToServer(
-                                    AdminActionPayload.of(
-                                            AdminActionPayload.Action.OPEN,
-                                            minecraft.player.getUUID())))
-                    .bounds(left + PANEL_WIDTH - 54, top + 6, 46, 16)
-                    .build());
+    @Override protected void init() {
+        if (minecraft.getConnection() != null)
+            PacketDistributor.sendToServer(new SkillTreeActionPayload(SkillTreeActionPayload.Operation.OPEN, "", AbilitySlot.PRIMARY));
+        if (minecraft != null && minecraft.player != null && minecraft.player.hasPermissions(2)) {
+            addRenderableWidget(Button.builder(Component.literal("Admin"), b -> PacketDistributor.sendToServer(
+                            AdminActionPayload.of(AdminActionPayload.Action.OPEN, minecraft.player.getUUID())))
+                    .bounds(width - 52, 4, 46, 16).build());
         }
     }
 
-    @Override
-    public void render(
-            GuiGraphics graphics,
-            int mouseX,
-            int mouseY,
-            float partialTick
-    ) {
-        graphics.fill(0, 0, width, height, 0x50000000);
+    // ------------------------------------------------------------------
+    // Data: every ability as a cell
+    // ------------------------------------------------------------------
 
-        int left = (width - PANEL_WIDTH) / 2;
-        int top = (height - panelHeight()) / 2;
-        graphics.fill(left - 1, top - 1, left + PANEL_WIDTH + 1,
-                top + panelHeight() + 1, BORDER);
-        graphics.fill(left, top, left + PANEL_WIDTH, top + panelHeight(),
-                BACKGROUND);
+    private void rebuild() {
+        cells.clear();
+        PlayerPowerSyncPayload sync = ClientPowerState.getSnapshot();
+        AbilitySnapshot power = sync.abilities().stream().findFirst().orElse(null);
+        if (power == null) return;
+        String path = power.abilityId().getPath();
+        int level = power.level();
+        boolean awake = power.unlocked();
+        var tree = ClientSkillTreeState.get();
+        boolean treeFresh = tree.power().equals(path);
+        var learned = treeFresh ? tree.build().learned() : java.util.Set.<String>of();
+        Map<String, String> slots = treeFresh ? tree.build().slots() : Map.of();
+        int points = treeFresh && awake ? SkillCatalog.available(path, tree.build()) : 0;
 
-        PlayerPowerSyncPayload snapshot = ClientPowerState.getSnapshot();
-        Optional<AbilitySnapshot> power = snapshot.abilities().stream().findFirst();
-        int x = left + PADDING;
+        cells.add(new Cell(0, 0, Kind.POWER, Component.translatable("ability." + power.abilityId().getNamespace() + "." + path),
+                Component.translatable("ability." + power.abilityId().getNamespace() + "." + path + ".passive"),
+                PowerIcons.emblem(path), awake, awake, List.of(Component.literal("Your power's passive effects, always on.")),
+                Component.translatable(awake ? "screen.heroesevolved.awakened" : "screen.heroesevolved.dormant")
+                        .withStyle(awake ? ChatFormatting.GREEN : ChatFormatting.RED), ""));
 
-        if (power.isEmpty()) {
-            graphics.drawString(font, title, x, top + 10, TITLE, false);
-            drawWrapped(graphics, Component.translatable(
-                    "screen.heroesevolved.no_power"), x, top + 34,
-                    PANEL_WIDTH - PADDING * 2, MUTED, 4);
-            drawEnergy(graphics, snapshot, x, top + 80);
-            super.render(graphics, mouseX, mouseY, partialTick);
-            return;
+        var ability = AbilityRegistry.ABILITIES.get(power.abilityId());
+        int row = 1;
+        for (AbilitySlot slot : AbilitySlot.values()) {
+            AbilityAction action = ability == null ? null : ability.actions().get(slot);
+            if (action == null) { row++; continue; }
+            String id = action.definition().id().getPath();
+            boolean unlocked = awake && level >= action.definition().unlockLevel();
+            AbilityActionSnapshot onKey = sync.actions().stream().filter(a -> a.slot() == slot).findFirst().orElse(null);
+            boolean equipped = onKey != null && onKey.displayNameKey().equals(action.definition().displayNameKey());
+            int energy = equipped ? onKey.energyCost() : action.energyCost(Math.max(1, level));
+            int cooldown = equipped ? (int) onKey.cooldownTicks() : action.cooldownTicks(Math.max(1, level));
+            List<Component> facts = new ArrayList<>();
+            facts.add(fact("Key", key(slot)));
+            facts.add(fact("Stamina", energy <= 0 ? "free" : String.valueOf(energy)));
+            facts.add(fact("Cooldown", seconds(cooldown)));
+            facts.add(fact("Unlocks", "Level " + action.definition().unlockLevel()));
+            Component status = !awake ? Component.literal("Awakens with your power").withStyle(ChatFormatting.RED)
+                    : !unlocked ? Component.literal("Unlocks at Level " + action.definition().unlockLevel()).withStyle(ChatFormatting.RED)
+                    : equipped ? Component.literal("Ready on " + key(slot)).withStyle(ChatFormatting.GREEN)
+                    : Component.literal("Replaced on " + key(slot) + " by ").append(Component.translatable(onKey.displayNameKey()))
+                            .append(". Reset it in the Skill Tree.").withStyle(ChatFormatting.GOLD);
+            cells.add(new Cell(0, row++, Kind.CORE, Component.translatable(action.definition().displayNameKey()),
+                    Component.translatable(action.definition().displayNameKey() + ".desc"), PowerIcons.action(path, id),
+                    unlocked, unlocked, facts, status, ""));
         }
 
-        AbilitySnapshot ability = power.get();
-        String powerKey = "ability." + ability.abilityId().getNamespace() + "."
-                + ability.abilityId().getPath();
-
-        graphics.drawString(font, Component.translatable(powerKey), x, top + 10,
-                TITLE, true);
-        Component status = Component.translatable(ability.unlocked()
-                ? "screen.heroesevolved.awakened"
-                : "screen.heroesevolved.dormant");
-        graphics.drawString(font, status,
-                x + font.width(Component.translatable(powerKey)) + 8, top + 10,
-                ability.unlocked() ? READY : 0xFFC47C7C, false);
-
-        drawLevelTrack(graphics, ability, x, top + 28, mouseX, mouseY);
-        drawMastery(graphics, ability, x, top + 52, mouseX, mouseY);
-        drawEnergy(graphics, snapshot, x, top + 66);
-
-        Component passive = Component.translatable("screen.heroesevolved.passive")
-                .append(Component.translatable(powerKey + ".passive"));
-        if (!ability.unlocked()) {
-            passive = Component.translatable("screen.heroesevolved.dormant_hint");
-        }
-        drawWrapped(graphics, passive, x, top + 82, PANEL_WIDTH - PADDING * 2,
-                MUTED, 2);
-
-        drawSkills(graphics, snapshot, ability, left, top, mouseX, mouseY);
-        super.render(graphics, mouseX, mouseY, partialTick);
-    }
-
-    /** Five nodes, lit up to the current level, joined by a progress line. */
-    private void drawLevelTrack(
-            GuiGraphics graphics,
-            AbilitySnapshot ability,
-            int x,
-            int y,
-            int mouseX,
-            int mouseY
-    ) {
-        int levels = Math.max(1, ability.maximumLevel());
-        int trackWidth = PANEL_WIDTH - PADDING * 2 - 12;
-        int spacing = levels > 1 ? trackWidth / (levels - 1) : 0;
-        float progress = masteryProgress(ability);
-
-        for (int index = 0; index < levels - 1; index++) {
-            int startX = x + 6 + index * spacing;
-            graphics.fill(startX, y + 5, startX + spacing, y + 7, TRACK);
-            int level = index + 1;
-            int filled = level < ability.level() ? spacing
-                    : level == ability.level() ? Math.round(spacing * progress) : 0;
-            if (filled > 0) {
-                graphics.fill(startX, y + 5, startX + filled, y + 7, ACCENT);
+        boolean capstoneTaken = SkillCatalog.nodes(path).stream().anyMatch(n -> n.capstone() && learned.contains(n.id()));
+        for (SkillCatalog.Node node : SkillCatalog.nodes(path)) {
+            boolean has = learned.contains(node.id());
+            boolean prerequisite = node.prerequisite().isEmpty() || learned.contains(node.prerequisite());
+            boolean canLearn = awake && !has && level >= node.level() && prerequisite && points >= node.cost()
+                    && !(node.capstone() && capstoneTaken);
+            List<Component> facts = new ArrayList<>();
+            facts.add(fact("Branch", SkillCatalog.branchName(path, node.branch())));
+            if (node.active()) {
+                facts.add(fact("Stamina", String.valueOf(node.energy())));
+                facts.add(fact("Cooldown", seconds(node.cooldown())));
             }
+            facts.add(fact("Cost", node.cost() + (node.cost() == 1 ? " point" : " points")));
+            facts.add(fact("Needs", "Level " + node.level() + (node.prerequisite().isEmpty() ? ""
+                    : ", " + SkillCatalog.find(path, node.prerequisite()).map(SkillCatalog.Node::name).orElse("parent"))));
+            String keyOf = slots.entrySet().stream().filter(e -> e.getValue().equals(node.id())).map(e -> key(AbilitySlot.valueOf(e.getKey()))).findFirst().orElse(null);
+            Component status = has ? (node.active() ? (keyOf != null ? Component.literal("Learned. Ready on " + keyOf).withStyle(ChatFormatting.GREEN)
+                            : Component.literal("Learned. Equip it to a key in the Skill Tree.").withStyle(ChatFormatting.GOLD))
+                            : Component.literal("Learned").withStyle(ChatFormatting.GREEN))
+                    : canLearn ? Component.literal("Ready to learn in the Skill Tree").withStyle(ChatFormatting.AQUA)
+                    : node.capstone() && capstoneTaken ? Component.literal("You already chose a capstone").withStyle(ChatFormatting.RED)
+                    : level < node.level() ? Component.literal("Reach Level " + node.level()).withStyle(ChatFormatting.RED)
+                    : !prerequisite ? Component.literal("Learn its parent first").withStyle(ChatFormatting.RED)
+                    : Component.literal("Needs " + node.cost() + " points").withStyle(ChatFormatting.RED);
+            Kind kind = node.capstone() ? Kind.CAPSTONE : node.active() ? Kind.ACTIVE : Kind.PASSIVE;
+            cells.add(new Cell(1 + node.branch(), node.tier(), kind, Component.literal(node.name()), Component.literal(node.description()),
+                    PowerIcons.node(node), has, has || canLearn, facts, status, node.id()));
         }
-
-        for (int index = 0; index < levels; index++) {
-            int level = index + 1;
-            int centerX = x + 6 + index * spacing;
-            boolean reached = level <= ability.level();
-            graphics.fill(centerX - 6, y, centerX + 6, y + 12,
-                    reached ? 0xFFFFD7DC : BORDER);
-            graphics.fill(centerX - 5, y + 1, centerX + 5, y + 11,
-                    reached ? ACCENT : BACKGROUND);
-            String label = String.valueOf(level);
-            graphics.drawString(font, label, centerX - font.width(label) / 2 + 1,
-                    y + 2, reached ? 0xFFFFFFFF : DIM, false);
-        }
+        if (selected != null) selected = cells.stream().filter(c -> c.column == selected.column && c.row == selected.row).findFirst().orElse(null);
     }
 
-    private void drawMastery(
-            GuiGraphics graphics,
-            AbilitySnapshot ability,
-            int x,
-            int y,
-            int mouseX,
-            int mouseY
-    ) {
-        NumberFormat numbers = NumberFormat.getIntegerInstance();
-        Component text;
-        if (!ability.unlocked()) {
-            text = Component.translatable("screen.heroesevolved.mastery_dormant");
-        } else if (ability.level() >= ability.maximumLevel()) {
-            text = Component.translatable("screen.heroesevolved.mastery_complete");
-        } else {
-            long remaining = ability.masteryRequiredForNextLevel() - ability.mastery();
-            text = Component.translatable("screen.heroesevolved.mastery_line",
-                    numbers.format(ability.mastery()),
-                    numbers.format(ability.masteryRequiredForNextLevel()),
-                    numbers.format(Math.max(0, remaining)),
-                    ability.level() + 1);
-        }
-        graphics.drawString(font, text, x, y, TEXT, false);
-
-        if (ability.unlocked() && mouseY >= y - 26 && mouseY < y + 9
-                && mouseX >= x && mouseX < x + PANEL_WIDTH - PADDING * 2) {
-            graphics.renderTooltip(font, List.of(
-                    Component.translatable("screen.heroesevolved.mastery_tooltip_title"),
-                    Component.translatable("screen.heroesevolved.mastery_tooltip_power"),
-                    Component.translatable("screen.heroesevolved.mastery_tooltip_combat"),
-                    Component.translatable("screen.heroesevolved.mastery_tooltip_active")
-            ), Optional.empty(), mouseX, mouseY);
-        }
+    private static Component fact(String label, String value) {
+        return Component.literal(label + "  ").withStyle(ChatFormatting.GRAY).append(Component.literal(value).withStyle(ChatFormatting.WHITE));
     }
 
-    private void drawEnergy(
-            GuiGraphics graphics,
-            PlayerPowerSyncPayload snapshot,
-            int x,
-            int y
-    ) {
-        int barWidth = 150;
-        graphics.fill(x, y, x + barWidth, y + 6, TRACK);
-        float fraction = snapshot.maximumEnergy() <= 0 ? 0.0F
-                : Math.clamp(snapshot.energy() / (float) snapshot.maximumEnergy(),
-                0.0F, 1.0F);
-        graphics.fill(x, y, x + Math.round(barWidth * fraction), y + 6, ENERGY);
-        graphics.drawString(font, Component.translatable(
-                        "screen.heroesevolved.energy_line",
-                        snapshot.energy(), snapshot.maximumEnergy(),
-                        snapshot.energyRegenerationPerSecond()),
-                x + barWidth + 6, y - 1, MUTED, false);
+    private static String seconds(long ticks) {
+        if (ticks <= 0) return "none";
+        double s = ticks / 20.0;
+        return s == Math.floor(s) ? (int) s + "s" : String.format("%.1fs", s);
     }
 
-    private void drawSkills(
-            GuiGraphics graphics,
-            PlayerPowerSyncPayload snapshot,
-            AbilitySnapshot ability,
-            int left,
-            int top,
-            int mouseX,
-            int mouseY
-    ) {
-        int areaTop = top + SKILLS_TOP;
-        int areaBottom = top + panelHeight() - 32;
-        int x = left + PADDING;
-        int cardWidth = PANEL_WIDTH - PADDING * 2;
-
-        graphics.drawString(font, Component.translatable(
-                "screen.heroesevolved.skills"), x, areaTop - 11, TITLE, false);
-
-        List<AbilityActionSnapshot> actions = snapshot.actions();
-        if (actions.isEmpty()) {
-            graphics.drawString(font, Component.translatable(
-                    "screen.heroesevolved.no_skills"), x, areaTop + 4, MUTED, false);
-            return;
-        }
-
-        int contentHeight = actions.size() * (CARD_HEIGHT + CARD_GAP);
-        int maximumScroll = Math.max(0, contentHeight - (areaBottom - areaTop));
-        scroll = Math.clamp(scroll, 0, maximumScroll);
-
-        graphics.enableScissor(left, areaTop, left + PANEL_WIDTH, areaBottom);
-        long gameTime = minecraft == null || minecraft.level == null
-                ? 0L : minecraft.level.getGameTime();
-        int y = areaTop - scroll;
-        for (AbilityActionSnapshot action : actions) {
-            drawSkillCard(graphics, action, ability, x, y, cardWidth, gameTime);
-            y += CARD_HEIGHT + CARD_GAP;
-        }
-        graphics.disableScissor();
-
-        if (maximumScroll > 0) {
-            String hint = scroll < maximumScroll ? "v more" : "^";
-            graphics.drawString(font, hint,
-                    left + PANEL_WIDTH - PADDING - font.width(hint),
-                    areaTop - 11, DIM, false);
-        }
-    }
-
-    private void drawSkillCard(
-            GuiGraphics graphics,
-            AbilityActionSnapshot action,
-            AbilitySnapshot ability,
-            int x,
-            int y,
-            int width,
-            long gameTime
-    ) {
-        boolean usable = action.unlocked() && ability.unlocked();
-        graphics.fill(x, y, x + width, y + CARD_HEIGHT,
-                usable ? CARD : CARD_LOCKED);
-        graphics.fill(x, y, x + 2, y + CARD_HEIGHT, usable ? ACCENT : BORDER);
-
-        // Key badge.
-        String key = keyLabel(action.slot());
-        int badgeWidth = Math.max(14, font.width(key) + 6);
-        graphics.fill(x + 6, y + 4, x + 6 + badgeWidth, y + 15,
-                usable ? 0xFF5A1622 : 0xFF2C1A1F);
-        graphics.drawString(font, key, x + 6 + (badgeWidth - font.width(key)) / 2,
-                y + 6, usable ? 0xFFFFFFFF : DIM, false);
-
-        int nameX = x + 12 + badgeWidth;
-        graphics.drawString(font, Component.translatable(action.displayNameKey()),
-                nameX, y + 6, usable ? TITLE : DIM, false);
-
-        // Right side: lock, cooldown, or cost.
-        Component right;
-        int rightColor;
-        long remaining = action.cooldownEndGameTime() - gameTime;
-        if (!action.unlocked()) {
-            right = Component.translatable("screen.heroesevolved.unlocks_at",
-                    action.unlockLevel());
-            rightColor = DIM;
-        } else if (remaining > 0) {
-            right = Component.translatable("screen.heroesevolved.ready_in",
-                    formatSeconds(remaining));
-            rightColor = 0xFFE0A040;
-        } else {
-            right = costLine(action);
-            rightColor = MUTED;
-        }
-        graphics.drawString(font, right, x + width - 6 - font.width(right),
-                y + 6, rightColor, false);
-
-        List<FormattedCharSequence> description = font.split(
-                Component.translatable(action.displayNameKey() + ".desc"),
-                width - 18
-        );
-        if (!description.isEmpty()) {
-            graphics.drawString(font, description.getFirst(), x + 8, y + 18,
-                    usable ? MUTED : DIM, false);
-        }
-    }
-
-    private Component costLine(AbilityActionSnapshot action) {
-        if (action.energyCost() <= 0 && action.cooldownTicks() <= 0) {
-            return Component.translatable("screen.heroesevolved.free");
-        }
-        Component cost = action.energyCost() > 0
-                ? Component.translatable("screen.heroesevolved.cost_energy",
-                action.energyCost())
-                : Component.translatable("screen.heroesevolved.cost_free");
-        if (action.cooldownTicks() > 0) {
-            cost = cost.copy().append("  ").append(Component.translatable(
-                    "screen.heroesevolved.cost_cooldown",
-                    formatSeconds(action.cooldownTicks())));
-        }
-        return cost;
-    }
-
-    private static String formatSeconds(long ticks) {
-        double seconds = ticks / 20.0D;
-        if (seconds >= 60.0D) {
-            long minutes = (long) (seconds / 60.0D);
-            long rest = Math.round(seconds - minutes * 60.0D);
-            return rest == 0 ? minutes + "m" : minutes + "m " + rest + "s";
-        }
-        return seconds >= 10.0D || seconds == Math.floor(seconds)
-                ? Math.round(seconds) + "s"
-                : String.format("%.1fs", seconds);
-    }
-
-    private static String keyLabel(AbilitySlot slot) {
+    private static String key(AbilitySlot slot) {
         KeyMapping mapping = switch (slot) {
             case PRIMARY -> ModKeyMappings.ABILITY_1;
             case SECONDARY -> ModKeyMappings.ABILITY_2;
@@ -379,61 +194,240 @@ public final class PowersScreen extends Screen {
         return mapping.getTranslatedKeyMessage().getString().toUpperCase();
     }
 
-    private void drawWrapped(
-            GuiGraphics graphics,
-            Component text,
-            int x,
-            int y,
-            int width,
-            int color,
-            int maximumLines
-    ) {
-        List<FormattedCharSequence> lines = font.split(text, width);
-        for (int index = 0; index < Math.min(maximumLines, lines.size()); index++) {
-            graphics.drawString(font, lines.get(index), x, y + index * 10,
-                    color, false);
+    // ------------------------------------------------------------------
+    // Input
+    // ------------------------------------------------------------------
+
+    private Cell cellAt(double x, double y) {
+        for (Cell cell : cells) {
+            int cx = columnX(cell.column), cy = cellY(cell.row);
+            if (x >= cx && x < cx + HEX_W && y >= cy && y < cy + HEX_H) return cell;
         }
+        return null;
     }
 
-    private static float masteryProgress(AbilitySnapshot ability) {
-        if (ability.level() >= ability.maximumLevel()) {
-            return 1.0F;
+    @Override public boolean mouseClicked(double x, double y, int button) {
+        for (int i = 0; i < TABS.length; i++) {
+            int tx = tabX(i);
+            if (y >= 8 && y < 22 && x >= tx - 4 && x < tx + font.width(TABS[i]) + 4) {
+                switch (i) {
+                    case 1 -> { String node = selected == null ? "" : selected.nodeId; SkillTreeScreen.open(this);
+                        if (!node.isEmpty() && minecraft.screen instanceof SkillTreeScreen tree) tree.select(node); }
+                    case 2 -> JournalScreen.open(this);
+                    case 3 -> minecraft.setScreen(new EffectsSettingsScreen(this));
+                    case 4 -> onClose();
+                    default -> { }
+                }
+                return true;
+            }
+        }
+        Cell cell = cellAt(x, y);
+        if (cell != null) {
+            if (selected == cell && !cell.nodeId.isEmpty()) {
+                // A second click on a skill opens it in the tree.
+                SkillTreeScreen.open(this);
+                if (minecraft.screen instanceof SkillTreeScreen tree) tree.select(cell.nodeId);
+            }
+            selected = cell;
+            return true;
+        }
+        return super.mouseClicked(x, y, button);
+    }
+
+    @Override public void tick() {
+        if (++refresh % 60 == 0 && minecraft.getConnection() != null)
+            PacketDistributor.sendToServer(new SkillTreeActionPayload(SkillTreeActionPayload.Operation.OPEN, "", AbilitySlot.PRIMARY));
+    }
+
+    // ------------------------------------------------------------------
+    // Rendering
+    // ------------------------------------------------------------------
+
+    @Override public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partial) {
+        // Warm dark backdrop with a vignette, drawn in render() so text stays sharp.
+    }
+
+    @Override public void render(GuiGraphics g, int mouseX, int mouseY, float partial) {
+        rebuild();
+        g.fillGradient(0, 0, width, height, 0xE8140A07, 0xF0281008);
+        g.fillGradient(0, height - height / 3, width, height, 0x00000000, 0x80000000);
+        renderTabs(g, mouseX, mouseY);
+
+        if (cells.isEmpty()) {
+            g.drawCenteredString(font, Component.literal("NO POWER YET").withStyle(ChatFormatting.BOLD), width / 2, height / 2 - 30, GOLD);
+            int y = height / 2 - 12;
+            for (FormattedCharSequence line : font.split(Component.translatable("screen.heroesevolved.no_power"), Math.min(320, width - 40)))
+                { g.drawCenteredString(font, line, width / 2, y, TEXT); y += 11; }
+            renderBottom(g, null);
+            super.render(g, mouseX, mouseY, partial);
+            return;
         }
 
-        long range = ability.masteryRequiredForNextLevel()
-                - ability.masteryRequiredForCurrentLevel();
-        if (range <= 0) {
-            return 0.0F;
+        // Column headings, like the screenshot's PROWLER / BRAVE / FORAGER.
+        PlayerPowerSyncPayload sync = ClientPowerState.getSnapshot();
+        String path = sync.abilities().getFirst().abilityId().getPath();
+        heading(g, 0, "POWER", GOLD);
+        for (int b = 0; b < 3; b++) heading(g, b + 1, SkillCatalog.branchName(path, b), TEXT);
+
+        // Connector lines down each branch.
+        for (int column = 1; column <= 3; column++)
+            for (int row = 0; row < 5; row++) {
+                int x = columnX(column) + HEX_W / 2, y1 = cellY(row) + HEX_H - 2, y2 = cellY(row + 1) + 2;
+                final int c = column, r = row;
+                boolean lit = cells.stream().anyMatch(cell -> cell.column == c && cell.row == r + 1 && cell.owned);
+                g.fill(x - 1, y1, x + 1, y2, lit ? 0xFFD08A4A : LINE);
+            }
+        int sepX = columnX(1) - 9;
+        g.fill(sepX, gridTop() + 10, sepX + 1, cellY(5) + HEX_H, 0x55FFFFFF);
+
+        Cell hovered = cellAt(mouseX, mouseY);
+        for (Cell cell : cells) {
+            int x = columnX(cell.column), y = cellY(cell.row);
+            ResourceLocation frame = cell.kind == Kind.POWER ? HEX_POWER : cell.owned ? HEX_LEARNED : cell.available ? HEX_OPEN : HEX_LOCKED;
+            g.blitSprite(frame, x, y, HEX_W, HEX_H);
+            g.renderFakeItem(cell.icon, x + 5, y + 7);
+            if (!cell.owned && !cell.available) g.fill(x + 4, y + 7, x + 22, y + 23, 0x88201A16);
+            if (cell.kind == Kind.CAPSTONE) g.drawString(font, "✦", x + HEX_W - 7, y - 1, GOLD, true);
+            if (cell == hovered || cell == selected) g.blitSprite(HEX_SELECTED, x, y, HEX_W, HEX_H);
+        }
+        // Small key letters under the abilities that are on a key right now.
+        for (Cell cell : cells) {
+            String keyLabel = keyLabel(cell);
+            if (keyLabel != null) {
+                int x = columnX(cell.column) + HEX_W - 4, y = cellY(cell.row) + HEX_H - 8;
+                g.fill(x - 1, y - 1, x + font.width(keyLabel) + 1, y + 8, 0xDD000000);
+                g.drawString(font, keyLabel, x, y, GOLD, false);
+            }
         }
 
-        long earnedInLevel = ability.mastery()
-                - ability.masteryRequiredForCurrentLevel();
-        return Math.clamp(earnedInLevel / (float) range, 0.0F, 1.0F);
+        Cell shown = hovered != null ? hovered : selected != null ? selected : cells.getFirst();
+        renderCard(g, shown);
+        renderBottom(g, sync.abilities().getFirst());
+        super.render(g, mouseX, mouseY, partial);
     }
 
-    @Override
-    public boolean mouseScrolled(
-            double mouseX,
-            double mouseY,
-            double scrollX,
-            double scrollY
-    ) {
-        scroll -= (int) (scrollY * 16);
-        return true;
+    private String keyLabel(Cell cell) {
+        if (!cell.owned) return null;
+        for (Component fact : cell.facts) {
+            String text = fact.getString();
+            if (cell.kind == Kind.CORE && text.startsWith("Key") && cell.status.getString().startsWith("Ready")) return text.substring(3).strip();
+        }
+        if (cell.status.getString().startsWith("Learned. Ready on ")) return cell.status.getString().substring("Learned. Ready on ".length());
+        return null;
     }
 
-    @Override
-    public void renderBackground(
-            GuiGraphics graphics,
-            int mouseX,
-            int mouseY,
-            float partialTick
-    ) {
-        // Intentionally empty: the Powers screen should not blur the game world.
+    private void heading(GuiGraphics g, int column, String text, int color) {
+        int center = columnX(column) + HEX_W / 2;
+        float scale = Math.min(1F, 58F / Math.max(1, font.width(text)));
+        g.pose().pushPose();
+        g.pose().translate(center, gridTop() + (1 - scale) * 4, 0);
+        g.pose().scale(scale, scale, 1);
+        g.drawCenteredString(font, text, 0, 0, color);
+        g.pose().popPose();
     }
 
-    @Override
-    public boolean isPauseScreen() {
-        return false;
+    private void renderTabs(GuiGraphics g, int mouseX, int mouseY) {
+        for (int i = 0; i < TABS.length; i++) {
+            int x = tabX(i);
+            boolean hover = mouseY >= 8 && mouseY < 22 && mouseX >= x - 4 && mouseX < x + font.width(TABS[i]) + 4;
+            g.drawString(font, TABS[i], x, 10, i == 0 ? GOLD : hover ? TEXT : MUTED, false);
+            if (i == 0) {
+                int center = x + font.width(TABS[i]) / 2;
+                g.fill(center - 6, 22, center + 6, 23, GOLD);
+                g.fill(center - 3, 24, center + 3, 25, GOLD);
+            }
+        }
+        g.fill(left(), 30, left() + contentWidth(), 31, 0x44FFFFFF);
     }
+
+    private void renderCard(GuiGraphics g, Cell cell) {
+        int x = cardLeft(), right = cardRight(), y = gridTop() + 6, width = right - x;
+        g.fill(x, y, right, cellY(5) + HEX_H, 0x66000000);
+        g.fill(x, y, right, y + 1, 0x66F2D27A);
+        // Big icon in a hexagon.
+        g.pose().pushPose();
+        g.pose().translate(x + 8, y + 8, 0);
+        g.pose().scale(1.6F, 1.6F, 1);
+        g.blitSprite(cell.kind == Kind.POWER ? HEX_POWER : cell.owned ? HEX_LEARNED : cell.available ? HEX_OPEN : HEX_LOCKED, 0, 0, HEX_W, HEX_H);
+        g.renderFakeItem(cell.icon, 5, 7);
+        g.pose().popPose();
+        // Name, large.
+        int textX = x + 58;
+        g.pose().pushPose();
+        g.pose().translate(textX, y + 12, 0);
+        g.pose().scale(1.4F, 1.4F, 1);
+        var nameLines = font.split(cell.name.copy().withStyle(ChatFormatting.BOLD), (int) ((right - textX - 6) / 1.4F));
+        for (int i = 0; i < Math.min(2, nameLines.size()); i++) g.drawString(font, nameLines.get(i), 0, i * 10, TEXT, true);
+        g.pose().popPose();
+        String kind = switch (cell.kind) {
+            case POWER -> "Passive power";
+            case CORE -> "Core ability";
+            case ACTIVE -> "Active skill";
+            case PASSIVE -> "Passive skill";
+            case CAPSTONE -> "Capstone (one per build)";
+        };
+        g.drawString(font, kind, textX, y + 12 + Math.min(2, nameLines.size()) * 14 + 2, MUTED, false);
+
+        int cursor = y + 60;
+        // Facts in two columns.
+        for (int i = 0; i < cell.facts.size(); i++) {
+            int fx = x + 8 + (i % 2) * (width / 2), fy = cursor + (i / 2) * 11;
+            g.drawString(font, font.plainSubstrByWidth(cell.facts.get(i).getString(), width / 2 - 10).isEmpty() ? Component.empty() : cell.facts.get(i), fx, fy, TEXT, false);
+        }
+        cursor += ((cell.facts.size() + 1) / 2) * 11 + 6;
+        g.fill(x + 8, cursor - 3, right - 8, cursor - 2, 0x33FFFFFF);
+        int bottom = cellY(5) + HEX_H - 16;
+        for (FormattedCharSequence line : font.split(cell.description, width - 16)) {
+            if (cursor > bottom - 10) break;
+            g.drawString(font, line, x + 8, cursor, TEXT, false);
+            cursor += 10;
+        }
+        for (FormattedCharSequence line : font.split(cell.status, width - 16)) {
+            g.drawString(font, line, x + 8, bottom, TEXT, false);
+            bottom += 10;
+        }
+        if (!cell.nodeId.isEmpty()) g.drawString(font, "Click again to open it in the Skill Tree", x + 8, y - 10, DIM, false);
+    }
+
+    private void renderBottom(GuiGraphics g, AbilitySnapshot power) {
+        PlayerPowerSyncPayload sync = ClientPowerState.getSnapshot();
+        int x = left() + 8, y = bottomY();
+        int barWidth = Math.max(50, cardLeft() - x - 34 - 96);
+        if (power != null) {
+            g.drawString(font, "Level", x, y, MUTED, false);
+            g.drawString(font, Component.literal(String.valueOf(power.level())).withStyle(ChatFormatting.BOLD), x, y + 11, TEXT, false);
+            float progress = mastery(power);
+            int bx = x + 34;
+            g.fill(bx, y + 4, bx + barWidth, y + 7, 0xFF2A2A2A);
+            g.fill(bx, y + 4, bx + (int) (barWidth * progress), y + 7, 0xFF5FA8C8);
+            String mastery = !power.unlocked() ? "Awakens before it can grow"
+                    : power.level() >= power.maximumLevel() ? "Mastered"
+                    : power.mastery() + " / " + power.masteryRequiredForNextLevel() + " Mastery";
+            g.drawString(font, mastery, bx, y + 11, MUTED, false);
+            var tree = ClientSkillTreeState.get();
+            if (tree.power().equals(power.abilityId().getPath()) && power.unlocked()) {
+                int points = SkillCatalog.available(tree.power(), tree.build());
+                int px = bx + barWidth + 12;
+                g.blitSprite(HEX_POWER, px, y - 2, 18, 21);
+                g.drawCenteredString(font, "↑", px + 9, y + 4, TEXT);
+                g.drawString(font, Component.literal(String.valueOf(points)).withStyle(ChatFormatting.BOLD), px + 22, y + 4, GOLD, false);
+                g.drawString(font, "points", px + 22 + font.width(String.valueOf(points)) + 8, y + 4, MUTED, false);
+            }
+        }
+        // Stamina bar across the bottom edge.
+        float fraction = sync.maximumEnergy() <= 0 ? 0 : Mth.clamp(sync.energy() / (float) sync.maximumEnergy(), 0, 1);
+        int sx = cardLeft(), sw = cardRight() - sx, sy = y + 4;
+        String stamina = "Stamina " + sync.energy() + " / " + sync.maximumEnergy() + "  (+" + sync.energyRegenerationPerSecond() + "/s)";
+        g.fill(sx, sy, sx + sw, sy + 3, 0xFF1C2A33);
+        g.fill(sx, sy, sx + (int) (sw * fraction), sy + 3, ENERGY);
+        g.drawString(font, stamina, sx, sy + 7, ENERGY, false);
+    }
+
+    private static float mastery(AbilitySnapshot power) {
+        if (power.level() >= power.maximumLevel()) return 1;
+        long range = power.masteryRequiredForNextLevel() - power.masteryRequiredForCurrentLevel();
+        return range <= 0 ? 0 : Mth.clamp((power.mastery() - power.masteryRequiredForCurrentLevel()) / (float) range, 0, 1);
+    }
+
+    @Override public boolean isPauseScreen() { return false; }
 }

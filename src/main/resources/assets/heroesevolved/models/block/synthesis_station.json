@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "top": "heroesevolved:block/synthesis_station_top",
+    "front": "heroesevolved:block/synthesis_station_front",
+    "side": "heroesevolved:block/synthesis_station_side"
+  }
+}

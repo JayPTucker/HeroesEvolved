@@ -41,6 +41,8 @@ public final class AbilityEffects {
     }
 
     public static void scan(ServerPlayer player, double radius) {
+        // Tremor Sense feels footsteps, seen or not.
+        com.jayptucker.heroesevolved.invisibility.InvisibilityService.revealAround(player.serverLevel(), player.position(), radius, 100);
         // Tremor Sense is private, just like its existing revealed outlines.
         PacketDistributor.sendToPlayer(player, new AbilityEffectPayload(Kind.TREMOR_SCAN,
                 player.position(), player.position(), (float) Math.min(64.0D, radius)));

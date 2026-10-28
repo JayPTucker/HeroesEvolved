@@ -1,0 +1,84 @@
+# The Formula lab, abandoned: a working Centrifuge and Synthesis Station on the bench, the Helixite assay,
+# a cracked specimen tube, and a chest with a shard and two syringes.
+name: bunker_lab
+anchor: 0 0 0
+palette:
+  A = polished_deepslate
+  B = yellow_concrete
+  C = black_concrete
+  D = deepslate_tiles
+  E = yellow_terracotta
+  F = smooth_quartz
+  G = chest[facing=west] @loot:lab
+  H = lectern[facing=north] @log:helixite
+  I = white_carpet
+  J = barrel[facing=up]
+  K = glass_pane
+  L = iron_block
+  M = tuff_bricks
+  N = cauldron
+  O = heroesevolved:centrifuge[facing=south]
+  P = brewing_stand
+  Q = heroesevolved:synthesis_station[facing=south]
+  R = amethyst_cluster[facing=up]
+  S = flower_pot
+  T = air
+  U = pearlescent_froglight
+  V = end_rod[facing=down]
+  W = cobweb
+  X = deepslate_bricks
+  Y = waxed_copper_bulb[lit=true]
+
+# floor
+layer 0:
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+ABAAAAAA
+ACAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+
+# bench
+layer 1:
+DDDDDDDD
+DEFFFFED
+D......D
+......GD
+.......D
+D..H.I.D
+DJJ..KLD
+DDDDDDDD
+
+# lab equipment
+layer 2:
+DMMDMMDM
+MNOPQRSM
+M......M
+.......D
+.......M
+M.....KM
+DJ...TUD
+MMMDMMDM
+
+layer 3:
+DDDDDDDD
+D.V.V.WD
+D......D
+D......D
+D......D
+DW.....D
+D.....LD
+DDDDDDDD
+
+# ceiling and bulbs
+layer 4:
+XXXXXXXX
+XXXXXXXX
+XXYXXYXX
+XXXXXXXX
+XXXXXXXX
+XXXXXXXX
+XXXXXXXX
+XXXXXXXX

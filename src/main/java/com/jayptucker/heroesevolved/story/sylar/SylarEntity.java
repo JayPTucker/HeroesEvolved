@@ -112,6 +112,9 @@ public final class SylarEntity extends PathfinderMob implements Enemy {
             AbilityEffects.send(level, Kind.SPEED_TRAIL, from, end, 1);
             kind = Kind.SPEED_IMPACT;
         } else if (power.equals(ModAbilities.ELECTROKINESIS_ID)) kind = Kind.ELECTRIC_ARC;
+        else if (power.equals(ModAbilities.PYROKINESIS_ID)) { kind = Kind.FIRE_BOLT; victim.igniteForSeconds(3); }
+        else if (power.equals(ModAbilities.INVISIBILITY_ID)) { kind = Kind.MIND_PULSE; addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 60, 0, false, false)); }
+        else if (power.equals(ModAbilities.PHASING_ID)) { kind = Kind.TEMPORAL_FIELD; victim.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 1)); }
         else if (power.equals(ModAbilities.QUAKE_ID)) kind = Kind.QUAKE_BEAM;
         else if (power.equals(ModAbilities.RADIATION_ID)) { kind = Kind.NUCLEAR_CHARGE; victim.igniteForSeconds(2); }
         else if (power.equals(ModAbilities.TIME_MANIPULATION_ID)) {

@@ -28,7 +28,8 @@ import java.util.*;
 @PrefixGameTestTemplate(false)
 public final class SkillTreeGameTests {
     private static final List<String> POWERS = List.of("quake", "flight", "cryokinesis", "electrokinesis", "telekinesis",
-            "telepathy", "regeneration", "time_manipulation", "radiation", "sonic_resonance", "superspeed", "precognition");
+            "telepathy", "regeneration", "time_manipulation", "radiation", "sonic_resonance", "superspeed", "precognition", "pyrokinesis",
+            "invisibility", "phasing", "empathic_mimicry");
     private static ResourceLocation id(String power) { return ResourceLocation.fromNamespaceAndPath("heroesevolved", power); }
     private static ServerPlayer player(GameTestHelper h, String power, int level) {
         var p = new FakePlayer(h.getLevel(), new GameProfile(UUID.randomUUID(), "skill-test"));
@@ -55,7 +56,7 @@ public final class SkillTreeGameTests {
         for (String power : POWERS) {
             h.assertTrue(AbilityRegistry.ABILITIES.containsKey(id(power)), "Unregistered power in skill catalog");
             var nodes = SkillCatalog.nodes(power);
-            h.assertTrue(nodes.size() == (Set.of("quake", "cryokinesis", "electrokinesis").contains(power) ? 18 : 9) && nodes.stream().filter(SkillCatalog.Node::active).count() == (Set.of("quake", "cryokinesis", "electrokinesis").contains(power) ? 6 : 3), "Missing nodes or sub-abilities: " + power);
+            h.assertTrue(nodes.size() == 18 && nodes.stream().filter(SkillCatalog.Node::active).count() == 6, "Missing nodes or sub-abilities: " + power);
             h.assertTrue(nodes.stream().map(SkillCatalog.Node::cost).mapToInt(Integer::intValue).sum() >= 15,
                     "Completing all branches must cost more than the eleven level-five points");
         }

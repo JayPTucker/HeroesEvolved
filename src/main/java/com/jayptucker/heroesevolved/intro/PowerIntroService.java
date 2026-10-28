@@ -54,18 +54,22 @@ import java.util.UUID;
 /** Short, server-authoritative first-acquisition sequences. Time retains its city cinematic. */
 public final class PowerIntroService {
     private record Spec(int chargeTicks, int releaseTicks, int color, ArmPose pose, Kind charge, Kind release) {}
-    private static final Map<String, Spec> SPECS = Map.of(
-            "quake", new Spec(60, 40, 0xB1E9FA, ArmPose.TWO_HANDS_STRAIN, Kind.QUAKE_AWAKEN_CHARGE, Kind.QUAKE_AWAKEN_RELEASE),
-            "flight", new Spec(30, 60, 0xD7F1FF, ArmPose.GROUND, Kind.FLIGHT_AWAKEN_CHARGE, Kind.FLIGHT_AWAKEN_RELEASE),
-            "electrokinesis", new Spec(50, 40, 0x60B5FF, ArmPose.ARMS_WIDE, Kind.ELECTRIC_AWAKEN_CHARGE, Kind.ELECTRIC_AWAKEN_RELEASE),
-            "telekinesis", new Spec(40, 50, 0xBC86F5, ArmPose.TEMPLE, Kind.PSYCHIC_AWAKEN_CHARGE, Kind.PSYCHIC_AWAKEN_RELEASE),
+    private static final Map<String, Spec> SPECS = Map.ofEntries(
+            Map.entry("quake", new Spec(60, 40, 0xB1E9FA, ArmPose.TWO_HANDS_STRAIN, Kind.QUAKE_AWAKEN_CHARGE, Kind.QUAKE_AWAKEN_RELEASE)),
+            Map.entry("flight", new Spec(30, 60, 0xD7F1FF, ArmPose.GROUND, Kind.FLIGHT_AWAKEN_CHARGE, Kind.FLIGHT_AWAKEN_RELEASE)),
+            Map.entry("electrokinesis", new Spec(50, 40, 0x60B5FF, ArmPose.ARMS_WIDE, Kind.ELECTRIC_AWAKEN_CHARGE, Kind.ELECTRIC_AWAKEN_RELEASE)),
+            Map.entry("telekinesis", new Spec(40, 50, 0xBC86F5, ArmPose.TEMPLE, Kind.PSYCHIC_AWAKEN_CHARGE, Kind.PSYCHIC_AWAKEN_RELEASE)),
             // Telepathy shares the psychic visuals, tinted toward a softer violet.
-            "telepathy", new Spec(60, 50, 0xA070FF, ArmPose.TEMPLE, Kind.PSYCHIC_AWAKEN_CHARGE, Kind.PSYCHIC_AWAKEN_RELEASE),
-            "cryokinesis", new Spec(60, 50, 0xBFEFFF, ArmPose.TWO_HANDS_STRAIN, Kind.CRYO_AWAKEN_CHARGE, Kind.CRYO_AWAKEN_RELEASE),
-            "radiation", new Spec(600, 50, 0xFF781C, ArmPose.ARMS_WIDE, Kind.NUCLEAR_CHARGE, Kind.NUCLEAR_SHOCKWAVE),
-            "sonic_resonance", new Spec(45, 35, 0xE5CB78, ArmPose.ARMS_WIDE, Kind.SONIC_SENSE, Kind.SONIC_BURST),
-            "superspeed", new Spec(40, 40, 0xFFBE45, ArmPose.ARMS_WIDE, Kind.SPEED_BURST, Kind.SPEED_VORTEX),
-            "regeneration", new Spec(50, 40, 0xFFD89B, ArmPose.ARMS_WIDE, Kind.REGEN_AWAKEN_CHARGE, Kind.REGEN_AWAKEN_RELEASE));
+            Map.entry("telepathy", new Spec(60, 50, 0xA070FF, ArmPose.TEMPLE, Kind.PSYCHIC_AWAKEN_CHARGE, Kind.PSYCHIC_AWAKEN_RELEASE)),
+            Map.entry("cryokinesis", new Spec(60, 50, 0xBFEFFF, ArmPose.TWO_HANDS_STRAIN, Kind.CRYO_AWAKEN_CHARGE, Kind.CRYO_AWAKEN_RELEASE)),
+            Map.entry("radiation", new Spec(600, 50, 0xFF781C, ArmPose.ARMS_WIDE, Kind.NUCLEAR_CHARGE, Kind.NUCLEAR_SHOCKWAVE)),
+            Map.entry("sonic_resonance", new Spec(45, 35, 0xE5CB78, ArmPose.ARMS_WIDE, Kind.SONIC_SENSE, Kind.SONIC_BURST)),
+            Map.entry("superspeed", new Spec(40, 40, 0xFFBE45, ArmPose.ARMS_WIDE, Kind.SPEED_BURST, Kind.SPEED_VORTEX)),
+            Map.entry("regeneration", new Spec(50, 40, 0xFFD89B, ArmPose.ARMS_WIDE, Kind.REGEN_AWAKEN_CHARGE, Kind.REGEN_AWAKEN_RELEASE)),
+            Map.entry("pyrokinesis", new Spec(50, 40, 0xFF8A2A, ArmPose.TWO_HANDS_STRAIN, Kind.PYRO_AWAKEN_CHARGE, Kind.PYRO_AWAKEN_RELEASE)),
+            Map.entry("invisibility", new Spec(40, 40, 0xCFD8E0, ArmPose.ARMS_WIDE, Kind.MIND_PULSE, Kind.PSYCHIC_FIELD)),
+            Map.entry("phasing", new Spec(40, 40, 0x9FE3D6, ArmPose.TWO_HANDS, Kind.TEMPORAL_FIELD, Kind.TEMPORAL_BURST)),
+            Map.entry("empathic_mimicry", new Spec(50, 40, 0xE8C27A, ArmPose.TEMPLE, Kind.PROPHECY_THREAD, Kind.PSYCHIC_AWAKEN_RELEASE)));
     private static final Map<UUID, Session> SESSIONS = new HashMap<>();
     private static final Map<UUID, Integer> SOFT_LANDINGS = new HashMap<>();
 
@@ -184,6 +188,7 @@ public final class PowerIntroService {
             case "telepathy" -> SoundEvents.ILLUSIONER_CAST_SPELL;
             case "cryokinesis" -> SoundEvents.PLAYER_HURT_FREEZE;
             case "radiation" -> SoundEvents.BEACON_ACTIVATE;
+            case "pyrokinesis" -> SoundEvents.FIRECHARGE_USE;
             default -> SoundEvents.WIND_CHARGE_BURST.value();
         };
         sound(player, sound, 0.9F, 0.7F);
@@ -253,6 +258,13 @@ public final class PowerIntroService {
             }
             case "sonic_resonance" -> com.jayptucker.heroesevolved.sonic.SonicService.burst(player, 1, true);
             case "radiation" -> releaseRadiation(session);
+            case "pyrokinesis" -> {
+                ArmPosePayload.show(player, ArmPose.ARMS_WIDE, 30);
+                com.jayptucker.heroesevolved.pyro.PyroService.awaken(player);
+            }
+            case "invisibility" -> com.jayptucker.heroesevolved.invisibility.InvisibilityService.awaken(player);
+            case "phasing" -> com.jayptucker.heroesevolved.phasing.PhasingService.awaken(player);
+            case "empathic_mimicry" -> com.jayptucker.heroesevolved.mimicry.MimicryService.awaken(player);
         }
         SOFT_LANDINGS.put(player.getUUID(), 20 * 30);
     }
@@ -308,6 +320,13 @@ public final class PowerIntroService {
                                         net.minecraft.ChatFormatting.ITALIC), true);
                         TelepathyService.whisper(player, 0.9F + tick / 60.0F);
                     }
+                }
+            }
+            case "pyrokinesis" -> {
+                if (tick < 30 && tick % 5 == 0) {
+                    player.serverLevel().sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME,
+                            session.releaseOrigin.x, session.releaseOrigin.y + 1, session.releaseOrigin.z,
+                            24, 3, 1, 3, 0.04);
                 }
             }
             case "cryokinesis" -> {

@@ -1,0 +1,119 @@
+# Records room: the lockdown order, the last researcher's log, Hiro's note in the supply chest, and Exhibit 4,
+# Isaac Mendez's black sun, recovered by the Company. Placed with its anchor one block south of the shaft.
+name: bunker_records
+anchor: 5 0 0
+palette:
+  A = polished_deepslate
+  B = white_concrete
+  C = black_concrete
+  D = yellow_concrete
+  E = deepslate_tiles
+  F = dark_oak_stairs[facing=south]
+  G = smooth_quartz_slab[type=top]
+  H = barrel[facing=east]
+  I = white_carpet
+  J = bookshelf
+  K = dark_oak_stairs[facing=north]
+  L = chiseled_bookshelf[facing=west,slot_0_occupied=true,slot_2_occupied=true,slot_4_occupied=true]
+  M = lectern[facing=south] @log:lockdown
+  N = lectern[facing=south] @log:quiet_years
+  O = barrel[facing=up]
+  P = chest[facing=north] @loot:records
+  Q = tuff_bricks
+  R = air @painting:eclipse:south
+  S = black_stained_glass_pane
+  T = lantern[hanging=false]
+  U = barrel[facing=up,open=true]
+  V = spruce_wall_sign[facing=south] @sign:exhibit4
+  W = cobweb
+  X = iron_trapdoor[facing=east,half=bottom,open=false]
+  Y = iron_trapdoor[facing=north,open=true,half=bottom]
+  Z = iron_trapdoor[facing=west,open=true,half=bottom]
+  a = waxed_exposed_copper_bulb[lit=true]
+  b = iron_trapdoor[facing=east,open=true,half=bottom]
+  c = iron_trapdoor[facing=south,open=true,half=bottom]
+  d = deepslate_bricks
+  e = red_stained_glass
+signs:
+  exhibit4 yellow glow = EXHIBIT 4 | I. MENDEZ | THE BLACK SUN | 
+
+# floor: the runner from the shaft to the corridor
+layer 0:
+AAAAAAAAAAA
+AAAABCBAAAA
+AAAACBCAAAA
+AAAABCBAAAA
+AAAACBCAAAA
+AAAABCBAAAA
+AAAACBCAAAA
+AAAABCBAAAA
+AAAACBCAAAA
+AAADCDCDAAA
+AAAAAAAAAAA
+
+# desks, lecterns, filing
+layer 1:
+EEEEE.EEEEE
+.......F...
+E.....GGG.E
+EH....I.GJE
+EH.K...K.LE
+EH.M...N.JE
+E...I....LE
+EH.......JE
+EH.O.P.O.LE
+E.I.......E
+EEEE...EEEE
+
+layer 2:
+EQQEQ.EQQEQ
+...R.......
+Q......S..Q
+EH......TLE
+QH.......JQ
+QH.......LQ
+EU.......JE
+QH.......LQ
+QH.....I.JQ
+E.........E
+QQQE...QQEQ
+
+layer 3:
+EQQEQQEQQEQ
+Q....V....Q
+Q.........Q
+EH.......JE
+QH.......LQ
+QH.......JQ
+EH.......LE
+QH.......JQ
+QH.......LQ
+E.........E
+QQQE...QQEQ
+
+layer 4:
+EEEEEEEEEEE
+EW.......WE
+E.........E
+EX........E
+EX...Y....E
+EX..Zab...E
+EX...c....E
+EX........E
+EX........E
+E........WE
+EEEEEEEEEEE
+
+# ceiling
+layer 5:
+ddddddddddd
+ddddddddddd
+ddedddddddd
+ddddddddddd
+ddddddddddd
+ddddddddddd
+ddddddddddd
+ddddddddddd
+ddddddddedd
+ddddddddddd
+ddddddddddd

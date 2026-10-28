@@ -1,0 +1,124 @@
+{
+  "variants": {
+    "charged=true,facing=north,half=lower,open=true": {
+      "model": "heroesevolved:block/cryochamber_lower_open"
+    },
+    "charged=false,facing=north,half=lower,open=true": {
+      "model": "heroesevolved:block/cryochamber_lower_open"
+    },
+    "charged=true,facing=north,half=lower,open=false": {
+      "model": "heroesevolved:block/cryochamber_lower_closed"
+    },
+    "charged=false,facing=north,half=lower,open=false": {
+      "model": "heroesevolved:block/cryochamber_lower_closed"
+    },
+    "charged=true,facing=north,half=upper,open=true": {
+      "model": "heroesevolved:block/cryochamber_upper_open"
+    },
+    "charged=false,facing=north,half=upper,open=true": {
+      "model": "heroesevolved:block/cryochamber_upper_open"
+    },
+    "charged=true,facing=north,half=upper,open=false": {
+      "model": "heroesevolved:block/cryochamber_upper_closed"
+    },
+    "charged=false,facing=north,half=upper,open=false": {
+      "model": "heroesevolved:block/cryochamber_upper_closed"
+    },
+    "charged=true,facing=east,half=lower,open=true": {
+      "model": "heroesevolved:block/cryochamber_lower_open",
+      "y": 90
+    },
+    "charged=false,facing=east,half=lower,open=true": {
+      "model": "heroesevolved:block/cryochamber_lower_open",
+      "y": 90
+    },
+    "charged=true,facing=east,half=lower,open=false": {
+      "model": "heroesevolved:block/cryochamber_lower_closed",
+      "y": 90
+    },
+    "charged=false,facing=east,half=lower,open=false": {
+      "model": "heroesevolved:block/cryochamber_lower_closed",
+      "y": 90
+    },
+    "charged=true,facing=east,half=upper,open=true": {
+      "model": "heroesevolved:block/cryochamber_upper_open",
+      "y": 90
+    },
+    "charged=false,facing=east,half=upper,open=true": {
+      "model": "heroesevolved:block/cryochamber_upper_open",
+      "y": 90
+    },
+    "charged=true,facing=east,half=upper,open=false": {
+      "model": "heroesevolved:block/cryochamber_upper_closed",
+      "y": 90
+    },
+    "charged=false,facing=east,half=upper,open=false": {
+      "model": "heroesevolved:block/cryochamber_upper_closed",
+      "y": 90
+    },
+    "charged=true,facing=south,half=lower,open=true": {
+      "model": "heroesevolved:block/cryochamber_lower_open",
+      "y": 180
+    },
+    "charged=false,facing=south,half=lower,open=true": {
+      "model": "heroesevolved:block/cryochamber_lower_open",
+      "y": 180
+    },
+    "charged=true,facing=south,half=lower,open=false": {
+      "model": "heroesevolved:block/cryochamber_lower_closed",
+      "y": 180
+    },
+    "charged=false,facing=south,half=lower,open=false": {
+      "model": "heroesevolved:block/cryochamber_lower_closed",
+      "y": 180
+    },
+    "charged=true,facing=south,half=upper,open=true": {
+      "model": "heroesevolved:block/cryochamber_upper_open",
+      "y": 180
+    },
+    "charged=false,facing=south,half=upper,open=true": {
+      "model": "heroesevolved:block/cryochamber_upper_open",
+      "y": 180
+    },
+    "charged=true,facing=south,half=upper,open=false": {
+      "model": "heroesevolved:block/cryochamber_upper_closed",
+      "y": 180
+    },
+    "charged=false,facing=south,half=upper,open=false": {
+      "model": "heroesevolved:block/cryochamber_upper_closed",
+      "y": 180
+    },
+    "charged=true,facing=west,half=lower,open=true": {
+      "model": "heroesevolved:block/cryochamber_lower_open",
+      "y": 270
+    },
+    "charged=false,facing=west,half=lower,open=true": {
+      "model": "heroesevolved:block/cryochamber_lower_open",
+      "y": 270
+    },
+    "charged=true,facing=west,half=lower,open=false": {
+      "model": "heroesevolved:block/cryochamber_lower_closed",
+      "y": 270
+    },
+    "charged=false,facing=west,half=lower,open=false": {
+      "model": "heroesevolved:block/cryochamber_lower_closed",
+      "y": 270
+    },
+    "charged=true,facing=west,half=upper,open=true": {
+      "model": "heroesevolved:block/cryochamber_upper_open",
+      "y": 270
+    },
+    "charged=false,facing=west,half=upper,open=true": {
+      "model": "heroesevolved:block/cryochamber_upper_open",
+      "y": 270
+    },
+    "charged=true,facing=west,half=upper,open=false": {
+      "model": "heroesevolved:block/cryochamber_upper_closed",
+      "y": 270
+    },
+    "charged=false,facing=west,half=upper,open=false": {
+      "model": "heroesevolved:block/cryochamber_upper_closed",
+      "y": 270
+    }
+  }
+}

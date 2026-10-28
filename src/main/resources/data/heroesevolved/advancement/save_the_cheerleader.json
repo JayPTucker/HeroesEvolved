@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "id": "heroesevolved:regenerative_blood_sample"
+    },
+    "title": {
+      "translate": "advancement.heroesevolved.save_the_cheerleader.title"
+    },
+    "description": {
+      "translate": "advancement.heroesevolved.save_the_cheerleader.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "granted": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "granted"
+    ]
+  ],
+  "parent": "heroesevolved:something_feels_different"
+}

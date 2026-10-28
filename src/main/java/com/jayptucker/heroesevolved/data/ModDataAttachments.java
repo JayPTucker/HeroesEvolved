@@ -35,6 +35,20 @@ public final class ModDataAttachments {
     public static final Supplier<AttachmentType<Integer>> TEMPORAL_STORY =
             ATTACHMENTS.register("temporal_story", () -> AttachmentType.<Integer>builder(() -> 0).serialize(Codec.INT).copyOnDeath().build());
 
+    /** Game time of the last forced blood draw from this player; protects Regeneration owners from repeated draws. */
+    public static final Supplier<AttachmentType<Long>> LAST_FORCED_DRAW =
+            ATTACHMENTS.register("last_forced_draw", () -> AttachmentType.<Long>builder(() -> Long.MIN_VALUE / 2).serialize(Codec.LONG).copyOnDeath().build());
+    /** Empathic Mimicry's remembered powers. */
+    public static final Supplier<AttachmentType<com.jayptucker.heroesevolved.mimicry.MimicryService.Memory>> MIMIC_MEMORY =
+            ATTACHMENTS.register("mimic_memory", () -> AttachmentType.builder(com.jayptucker.heroesevolved.mimicry.MimicryService.Memory::empty)
+                    .serialize(com.jayptucker.heroesevolved.mimicry.MimicryService.Memory.CODEC).copyOnDeath().build());
+    /** Set once a player has woken from (or been told about) the stasis bunker. */
+    public static final Supplier<AttachmentType<Boolean>> BUNKER_AWOKEN =
+            ATTACHMENTS.register("bunker_awoken", () -> AttachmentType.<Boolean>builder(() -> false).serialize(Codec.BOOL).copyOnDeath().build());
+    /** Set when a power was awakened by the Formula rather than by nature. */
+    public static final Supplier<AttachmentType<Boolean>> FORMULA_BORN =
+            ATTACHMENTS.register("formula_born", () -> AttachmentType.<Boolean>builder(() -> false).serialize(Codec.BOOL).copyOnDeath().build());
+
     private ModDataAttachments() {
 
     }

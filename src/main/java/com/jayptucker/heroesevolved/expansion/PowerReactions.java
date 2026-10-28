@@ -7,6 +7,9 @@ import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.*;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.server.MinecraftServer;
 import net.neoforged.bus.api.*;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
@@ -63,11 +66,86 @@ public final class PowerReactions {
         } finally { depth--; }
         return true;
     }
+    /** Thermal Shock: fire meets a frozen enemy. The ice flashes to steam around it. */
+    public static boolean thermal(ServerPlayer p, LivingEntity t) {
+        if (!consume(p, t)) return false;
+        depth++;
+        try {
+            t.invulnerableTime = 0;
+            t.hurt(p.damageSources().playerAttack(p), t instanceof ServerPlayer ? 4 : 10);
+            for (LivingEntity other : ExpansionSkills.enemies(p, t.position(), 3).stream().limit(6).toList()) {
+                if (other != t) other.hurt(p.damageSources().playerAttack(p), other instanceof ServerPlayer ? 2 : 4);
+                other.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.BLINDNESS, 40));
+            }
+            AbilityEffects.send(p.serverLevel(), Kind.STEAM, t.position(), t.getEyePosition(), 3);
+            AbilityEffects.send(p.serverLevel(), Kind.CRYO_SHATTER, t.position(), t.getEyePosition(), 1.5);
+            p.serverLevel().playSound(null, t.getX(), t.getY(), t.getZ(), net.minecraft.sounds.SoundEvents.FIRE_EXTINGUISH,
+                    net.minecraft.sounds.SoundSource.PLAYERS, 1.4F, 0.6F);
+            FacilityService.discovery(p, "thermal_shock");
+        } finally { depth--; }
+        return true;
+    }
+    private record Veil(ServerLevel level, Vec3 center, long until) {}
+    private static final List<Veil> VEILS = new ArrayList<>();
+    /** Steam Veil: fire striking water or ice raises a cloud that hides everyone inside from mobs. */
+    public static void steamVeil(ServerPlayer p, ServerLevel level, Vec3 at) {
+        long now = level.getServer().overworld().getGameTime();
+        VEILS.removeIf(v -> v.until <= now);
+        if (VEILS.size() >= 32 || VEILS.stream().anyMatch(v -> v.level == level && v.center.distanceToSqr(at) < 9)) return;
+        VEILS.add(new Veil(level, at, now + 120));
+        AbilityEffects.send(level, Kind.STEAM, at, at.add(0, 2, 0), 4);
+        level.playSound(null, at.x, at.y, at.z, net.minecraft.sounds.SoundEvents.FIRE_EXTINGUISH,
+                net.minecraft.sounds.SoundSource.PLAYERS, 1.2F, 0.7F);
+        FacilityService.discovery(p, "steam_veil");
+    }
+    /** Mobs inside a veil cannot see out of it, and mobs outside cannot target anyone within. */
+    public static boolean veiled(LivingEntity entity) {
+        long now = entity.level().getServer() == null ? 0 : entity.level().getServer().overworld().getGameTime();
+        for (Veil v : VEILS) if (v.until > now && v.level == entity.level() && v.center.distanceToSqr(entity.position()) <= 16) return true;
+        return false;
+    }
+    private static final Map<UUID, Long> FIRESTORMS = new HashMap<>();
+    /** Firestorm: a Flight Cyclone or Superspeed Whirlwind passing through a Ring of Fire catches alight. */
+    public static void firestorm(ServerPlayer owner, ServerLevel level, Vec3 center, double radius) {
+        long now = level.getServer().overworld().getGameTime();
+        for (ServerPlayer spinner : level.getEntitiesOfClass(ServerPlayer.class, new AABB(center, center).inflate(radius + 2),
+                s -> com.jayptucker.heroesevolved.flight.FlightService.isCycloneActive(s)
+                        || com.jayptucker.heroesevolved.speed.SpeedService.hasWhirlwind(s))) {
+            if (FIRESTORMS.getOrDefault(spinner.getUUID(), 0L) > now) continue;
+            FIRESTORMS.put(spinner.getUUID(), now + 100);
+            spinner.displayClientMessage(net.minecraft.network.chat.Component.translatable("reaction.heroesevolved.firestorm")
+                    .withStyle(net.minecraft.ChatFormatting.GOLD), true);
+            FacilityService.discovery(spinner, "firestorm");
+            if (spinner != owner) FacilityService.discovery(owner, "firestorm");
+        }
+    }
+    private static void tickFirestorms(MinecraftServer server) {
+        long now = server.overworld().getGameTime();
+        FIRESTORMS.values().removeIf(until -> until <= now);
+        if (now % 10 != 0) return;
+        for (UUID id : FIRESTORMS.keySet()) {
+            ServerPlayer spinner = server.getPlayerList().getPlayer(id);
+            if (spinner == null) continue;
+            depth++;
+            try {
+                for (LivingEntity t : ExpansionSkills.enemies(spinner, spinner.position(), 6).stream().limit(12).toList()) {
+                    t.igniteForSeconds(3);
+                    if (now % 20 == 0) t.hurt(spinner.damageSources().playerAttack(spinner), t instanceof ServerPlayer ? 1 : 3);
+                }
+            } finally { depth--; }
+            AbilityEffects.send(spinner.serverLevel(), Kind.FIRE_RING, spinner.position(), spinner.getEyePosition(), 5);
+        }
+    }
+    @SubscribeEvent public static void tick(net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) { tickFirestorms(e.getServer()); }
+    @SubscribeEvent public static void target(net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent e) {
+        if (VEILS.isEmpty() || e.getNewAboutToBeSetTarget() == null) return;
+        if (veiled(e.getNewAboutToBeSetTarget()) || veiled(e.getEntity())) e.setCanceled(true);
+    }
     @SubscribeEvent(priority = EventPriority.HIGHEST) public static void incoming(LivingIncomingDamageEvent e) {
         if (depth == 0 && e.getSource().getDirectEntity() instanceof ServerPlayer p
                 && com.jayptucker.heroesevolved.ability.service.PowerRules.canAct(p)
                 && com.jayptucker.heroesevolved.ability.service.PlayerAbilityService.getData(p).assignedPower()
                 .filter(a -> a.getValue().isUnlocked() && a.getKey().getPath().equals("quake")).isPresent()) quake(p, e.getEntity());
     }
-    @SubscribeEvent public static void stopping(ServerStoppingEvent e) { SEAMS.clear(); REACTED.clear(); depth = 0; }
+    @SubscribeEvent public static void stopping(ServerStoppingEvent e) { SEAMS.clear(); REACTED.clear(); VEILS.clear(); FIRESTORMS.clear(); depth = 0; }
 }

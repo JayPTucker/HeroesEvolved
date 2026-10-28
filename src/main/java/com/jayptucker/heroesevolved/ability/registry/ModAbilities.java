@@ -49,6 +49,20 @@ public final class ModAbilities {
     public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.PrecognitionAbility> PRECOGNITION =
             ABILITIES.register("precognition", com.jayptucker.heroesevolved.ability.types.PrecognitionAbility::new);
 
+    public static final ResourceLocation INVISIBILITY_ID = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "invisibility");
+    public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.InvisibilityAbility> INVISIBILITY =
+            ABILITIES.register(INVISIBILITY_ID.getPath(), com.jayptucker.heroesevolved.ability.types.InvisibilityAbility::new);
+    public static final ResourceLocation PHASING_ID = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "phasing");
+    public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.PhasingAbility> PHASING =
+            ABILITIES.register(PHASING_ID.getPath(), com.jayptucker.heroesevolved.ability.types.PhasingAbility::new);
+    public static final ResourceLocation MIMICRY_ID = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "empathic_mimicry");
+    public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.MimicryAbility> MIMICRY =
+            ABILITIES.register(MIMICRY_ID.getPath(), com.jayptucker.heroesevolved.ability.types.MimicryAbility::new);
+
+    public static final ResourceLocation PYROKINESIS_ID = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "pyrokinesis");
+    public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.PyrokinesisAbility> PYROKINESIS =
+            ABILITIES.register(PYROKINESIS_ID.getPath(), com.jayptucker.heroesevolved.ability.types.PyrokinesisAbility::new);
+
     public static void register(IEventBus modEventBus) {
         ABILITIES.register(modEventBus);
     }
