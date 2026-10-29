@@ -54,7 +54,7 @@ A donation costs the donor 4 hearts, which their regeneration grows back. It als
 - asleep
 
 A forced draw deals 6 damage and leaves the owner **Drained** for 30 seconds: Weakness II, and their
-passive regeneration stops. They're told who did it.
+passive regeneration stops. They're told who did it. While Drained, the Regeneration owner is also mortal: a lethal blow kills them instead of putting them down.
 
 **Limits on forced draws:**
 

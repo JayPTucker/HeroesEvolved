@@ -1,15 +1,6 @@
 package com.jayptucker.heroesevolved.ability.types;
 
-import com.jayptucker.heroesevolved.HeroesEvolved;
-import com.jayptucker.heroesevolved.ability.Ability;
-import com.jayptucker.heroesevolved.ability.AbilityAction;
-import com.jayptucker.heroesevolved.ability.AbilityActionDefinition;
-import com.jayptucker.heroesevolved.ability.AbilityActivationResult;
-import com.jayptucker.heroesevolved.ability.AbilityActivationType;
-import com.jayptucker.heroesevolved.ability.AbilityDefinition;
-import com.jayptucker.heroesevolved.ability.AbilitySlot;
-import com.jayptucker.heroesevolved.ability.AbilityUseContext;
-import com.jayptucker.heroesevolved.ability.SimpleAction;
+import com.jayptucker.heroesevolved.ability.*;
 import com.jayptucker.heroesevolved.telekinesis.TelekinesisService;
 import net.minecraft.resources.ResourceLocation;
 
@@ -17,170 +8,108 @@ import java.util.Map;
 
 import static com.jayptucker.heroesevolved.config.HeroesEvolvedConfig.COMMON;
 
-/**
- * Telekinesis, inspired by Sylar.
- *
- * <ul>
- *   <li>Level 1, Telekinetic Push: a cone of force; things hit walls hard.</li>
- *   <li>Level 2, Grip: hold a creature in the air, choking. Press again
- *   to hurl it.</li>
- *   <li>Level 3, Bullet Stop: freeze incoming projectiles, then fling
- *   them where you look.</li>
- *   <li>Level 4, Disarm: tear the weapon from a mob's hands (players are
- *   yanked toward you instead) and draw in loose items nearby.</li>
- *   <li>Level 5, Telekinetic Storm: lift everyone around you, then slam
- *   them down.</li>
- *   <li>Passive: loose items drift toward you. Overexertion brings a
- *   blinding migraine.</li>
- * </ul>
- */
+/** A physical control kit: gather, hold beside you, redirect, then use the collision. */
 public final class TelekinesisAbility implements Ability {
-    private static final AbilityDefinition DEFINITION =
-            new AbilityDefinition(0, 0, 5, AbilityActivationType.INSTANT);
-
+    private static final AbilityDefinition DEFINITION = new AbilityDefinition(0, 0, 5, AbilityActivationType.INSTANT);
     private static final Map<AbilitySlot, AbilityAction> ACTIONS = Map.of(
             AbilitySlot.PRIMARY, SimpleAction.builder("telekinesis_push", 1)
-                    .cost(COMMON.telekinesisPushEnergyCost::get,
-                            COMMON.telekinesisPushCooldownTicks::get)
-                    .activate(context -> {
-                        TelekinesisService.push(context.player(),
-                                context.abilityLevel());
+                    .cost(COMMON.telekinesisPushEnergyCost::get, COMMON.telekinesisPushCooldownTicks::get)
+                    .activate(c -> {
+                        if (c.modifierHeld() && TelekinesisService.isGripping(c.player()))
+                            return TelekinesisService.slamGripped(c.player());
+                        TelekinesisService.push(c.player(), c.abilityLevel());
                         return true;
-                    })
-                    .build(),
+                    }).build(),
             AbilitySlot.SECONDARY, new GripAction(),
-            AbilitySlot.TERTIARY, SimpleAction.builder("telekinesis_bullet_stop", 3)
-                    .cost(COMMON.telekinesisBulletStopEnergyCost::get,
-                            COMMON.telekinesisBulletStopCooldownTicks::get)
-                    .canUse(context -> !TelekinesisService.hasBulletStop(context.player()))
-                    .activate(context -> {
-                        TelekinesisService.bulletStop(context.player(),
-                                context.abilityLevel());
-                        return true;
-                    })
-                    .deactivate(context -> {
-                        if (!TelekinesisService.hasBulletStop(context.player())) {
-                            return false;
-                        }
-                        TelekinesisService.releaseBulletStop(context.player());
-                        return true;
-                    })
-                    .build(),
+            AbilitySlot.TERTIARY, new BulletAction(),
             AbilitySlot.QUATERNARY, SimpleAction.builder("telekinesis_disarm", 4)
-                    .cost(COMMON.telekinesisDisarmEnergyCost::get,
-                            COMMON.telekinesisDisarmCooldownTicks::get)
-                    .activate(context -> {
-                        TelekinesisService.disarm(context.player(),
-                                context.abilityLevel());
-                        return true;
-                    })
-                    .build(),
-            AbilitySlot.QUINARY, SimpleAction.builder("telekinesis_storm", 5)
-                    .cost(COMMON.telekinesisStormEnergyCost::get,
-                            COMMON.telekinesisStormCooldownTicks::get)
-                    .canUse(context -> !TelekinesisService.hasActiveLift(context.player()))
-                    .activate(context -> {
-                        TelekinesisService.telekineticStorm(context.player(),
-                                context.abilityLevel());
-                        return true;
-                    })
-                    .build()
+                    .cost(COMMON.telekinesisDisarmEnergyCost::get, COMMON.telekinesisDisarmCooldownTicks::get)
+                    .activate(c -> { TelekinesisService.disarm(c.player(), c.abilityLevel()); return true; }).build(),
+            AbilitySlot.QUINARY, new StormAction()
     );
 
-    @Override
-    public AbilityDefinition definition() {
-        return DEFINITION;
+    @Override public AbilityDefinition definition() { return DEFINITION; }
+    @Override public Map<AbilitySlot, AbilityAction> actions() { return ACTIONS; }
+    @Override public boolean canUse(AbilityUseContext context) { return false; }
+    @Override public AbilityActivationResult activate(AbilityUseContext context) { return AbilityActivationResult.REJECTED; }
+    @Override public void tick(AbilityUseContext context) {
+        if (context.gameTime() % 5 == 0) TelekinesisService.drawNearbyItems(context.player());
     }
-
-    @Override
-    public Map<AbilitySlot, AbilityAction> actions() {
-        return ACTIONS;
-    }
-
-    @Override
-    public boolean canUse(AbilityUseContext context) {
-        return false;
-    }
-
-    @Override
-    public AbilityActivationResult activate(AbilityUseContext context) {
-        return AbilityActivationResult.REJECTED;
-    }
-
-    @Override
-    public void tick(AbilityUseContext context) {
-        if (context.gameTime() % 5 == 0) {
-            TelekinesisService.drawNearbyItems(context.player());
-        }
-    }
-
-    @Override
-    public void onRevoked(AbilityUseContext context) {
-        TelekinesisService.stopAll(context.player());
-    }
-
-    @Override
-    public void onAwaken(AbilityUseContext context) {
+    @Override public void onRevoked(AbilityUseContext context) { TelekinesisService.stopAll(context.player()); }
+    @Override public void onAwaken(AbilityUseContext context) {
         com.jayptucker.heroesevolved.intro.PowerIntroService.acquired(context.player(), context.abilityId());
     }
+    @Override public void onOverexerted(AbilityUseContext context) { TelekinesisService.migraine(context.player()); }
 
-    @Override
-    public void onOverexerted(AbilityUseContext context) {
-        TelekinesisService.migraine(context.player());
+    private static AbilityActionDefinition definition(String id, int level) {
+        return new AbilityActionDefinition(ResourceLocation.fromNamespaceAndPath("heroesevolved", id),
+                "action.heroesevolved." + id, level, 0, 0);
     }
 
-    /**
-     * First press seizes, second press throws. Disarm rides along: gripping
-     * a mob that holds a weapon tears it away the moment you seize it.
-     */
+    /** H seizes, H again throws, Shift + H places or gently drops without another cost. */
     private static final class GripAction implements AbilityAction {
-        private static final AbilityActionDefinition DEFINITION =
-                new AbilityActionDefinition(
-                        ResourceLocation.fromNamespaceAndPath(
-                                HeroesEvolved.MOD_ID, "telekinesis_grip"),
-                        "action.heroesevolved.telekinesis_grip",
-                        2,
-                        0,
-                        0
-                );
-
-        @Override
-        public AbilityActionDefinition definition() {
-            return DEFINITION;
+        private static final AbilityActionDefinition DEFINITION = TelekinesisAbility.definition("telekinesis_grip", 2);
+        @Override public AbilityActionDefinition definition() { return DEFINITION; }
+        @Override public int energyCost(int level) { return COMMON.telekinesisGripEnergyCost.get(); }
+        @Override public int cooldownTicks(int level) { return COMMON.telekinesisGripCooldownTicks.get(); }
+        @Override public int energyCost(AbilityUseContext c) {
+            return TelekinesisService.isGripping(c.player()) ? COMMON.telekinesisGripEnergyCost.get() / 3
+                    : COMMON.telekinesisGripEnergyCost.get();
         }
-
-        @Override
-        public int energyCost(AbilityUseContext context) {
-            int cost = COMMON.telekinesisGripEnergyCost.get();
-            return TelekinesisService.isGripping(context.player()) ? cost / 3 : cost;
+        @Override public int cooldownTicks(AbilityUseContext c) {
+            return TelekinesisService.isGripping(c.player()) ? 10 : COMMON.telekinesisGripCooldownTicks.get();
         }
-
-        @Override
-        public int cooldownTicks(AbilityUseContext context) {
-            // Read after activation: a fresh grip only blocks a double-press,
-            // a throw starts the full cooldown.
-            return TelekinesisService.isGripping(context.player())
-                    ? 10
-                    : COMMON.telekinesisGripCooldownTicks.get();
+        @Override public boolean canUse(AbilityUseContext c) {
+            return TelekinesisService.isGripping(c.player()) || !c.player().isPassenger()
+                    && !TelekinesisService.hasActiveLift(c.player()) && TelekinesisService.findGripTarget(c.player()) != null;
         }
-
-        @Override
-        public boolean canUse(AbilityUseContext context) {
-            return TelekinesisService.isGripping(context.player())
-                    || TelekinesisService.findGripTarget(context.player()) != null;
+        @Override public AbilityActivationResult activate(AbilityUseContext c) {
+            boolean used = TelekinesisService.isGripping(c.player()) ? TelekinesisService.throwGripped(c.player())
+                    : TelekinesisService.grip(c.player(), c.abilityLevel());
+            return used ? AbilityActivationResult.SUCCESS : AbilityActivationResult.REJECTED;
         }
+        @Override public boolean deactivate(AbilityUseContext c) { return TelekinesisService.placeGripped(c.player()); }
+    }
 
-        @Override
-        public AbilityActivationResult activate(AbilityUseContext context) {
-            if (TelekinesisService.isGripping(context.player())) {
-                return TelekinesisService.throwGripped(context.player())
-                        ? AbilityActivationResult.SUCCESS
-                        : AbilityActivationResult.REJECTED;
-            }
-
-            return TelekinesisService.grip(context.player(), context.abilityLevel())
-                    ? AbilityActivationResult.SUCCESS
-                    : AbilityActivationResult.REJECTED;
+    /** The recovery begins when the guard ends, so a second press always releases the formation. */
+    private static final class BulletAction implements AbilityAction {
+        private static final AbilityActionDefinition DEFINITION = TelekinesisAbility.definition("telekinesis_bullet_stop", 3);
+        @Override public AbilityActionDefinition definition() { return DEFINITION; }
+        @Override public int energyCost(int level) { return COMMON.telekinesisBulletStopEnergyCost.get(); }
+        @Override public int cooldownTicks(int level) { return COMMON.telekinesisBulletStopCooldownTicks.get(); }
+        @Override public int energyCost(AbilityUseContext c) {
+            return TelekinesisService.hasBulletStop(c.player()) ? 0 : energyCost(c.abilityLevel());
         }
+        @Override public int cooldownTicks(AbilityUseContext c) {
+            return TelekinesisService.hasBulletStop(c.player()) ? 0 : cooldownTicks(c.abilityLevel());
+        }
+        @Override public boolean canUse(AbilityUseContext c) { return !c.player().isPassenger(); }
+        @Override public AbilityActivationResult activate(AbilityUseContext c) {
+            if (TelekinesisService.hasBulletStop(c.player())) TelekinesisService.releaseBulletStop(c.player());
+            else TelekinesisService.bulletStop(c.player(), c.abilityLevel());
+            return AbilityActivationResult.SUCCESS;
+        }
+        @Override public boolean deactivate(AbilityUseContext c) { return TelekinesisService.cancelBulletStop(c.player()); }
+    }
+
+    private static final class StormAction implements AbilityAction {
+        private static final AbilityActionDefinition DEFINITION = TelekinesisAbility.definition("telekinesis_storm", 5);
+        @Override public AbilityActionDefinition definition() { return DEFINITION; }
+        @Override public int energyCost(int level) { return COMMON.telekinesisStormEnergyCost.get(); }
+        @Override public int cooldownTicks(int level) { return COMMON.telekinesisStormCooldownTicks.get(); }
+        @Override public int energyCost(AbilityUseContext c) {
+            return TelekinesisService.hasActiveLift(c.player()) ? 0 : energyCost(c.abilityLevel());
+        }
+        @Override public int cooldownTicks(AbilityUseContext c) {
+            return TelekinesisService.hasActiveLift(c.player()) ? 0 : cooldownTicks(c.abilityLevel());
+        }
+        @Override public boolean canUse(AbilityUseContext c) { return !c.player().isPassenger(); }
+        @Override public AbilityActivationResult activate(AbilityUseContext c) {
+            if (TelekinesisService.hasActiveLift(c.player()))
+                return TelekinesisService.slamStorm(c.player()) ? AbilityActivationResult.SUCCESS : AbilityActivationResult.REJECTED;
+            TelekinesisService.telekineticStorm(c.player(), c.abilityLevel());
+            return AbilityActivationResult.SUCCESS;
+        }
+        @Override public boolean deactivate(AbilityUseContext c) { return TelekinesisService.cancelStorm(c.player()); }
     }
 }

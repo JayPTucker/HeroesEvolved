@@ -27,18 +27,20 @@ import net.minecraft.server.level.ServerPlayer;
 import java.util.Map;
 
 /**
- * Rapid cellular regeneration, inspired by Claire Bennet.
+ * Rapid cellular regeneration, inspired by Claire Bennet: the one who keeps getting back up.
  *
  * <ul>
- *   <li>Passive: heals over time, more at higher levels. From Level 2 it
- *   also purges poison and other toxins.</li>
- *   <li>Level 1, Rapid Mending: an instant burst of healing.</li>
- *   <li>Level 2, Blood Gift: heal the creature in your sights with your
- *   own blood (it burns the undead).</li>
- *   <li>Level 3, Indestructible: no fall damage or knockback, and dulled
- *   pain, for a short time.</li>
- *   <li>Level 5, Resurrection: passive; return from death once per
- *   cooldown.</li>
+ *   <li>Passive: damage you take becomes Regrowth, stored healing your body burns to close wounds
+ *   fast. Falls hurt half as much. From Level 2 toxins are purged. Heavy blades and explosions take
+ *   limbs, which grow back from the bone out. And you cannot be killed: a lethal blow puts you down
+ *   on the ground (90 seconds at Level 1, 12 at Level 5) until your body repairs itself.</li>
+ *   <li>Level 1, Rapid Mending: spend all Regrowth on an instant heal; overflow becomes Absorption.</li>
+ *   <li>Level 2, Blood Gift: heal someone up to twelve blocks away with your blood (it burns the
+ *   undead); the cut feeds Regrowth. Holding an empty syringe bottles it for the Formula.</li>
+ *   <li>Level 3, Indestructible: no falls or knockback, dulled pain, reckless punches, and
+ *   bullets pushed back out.</li>
+ *   <li>Level 4, Blood Bond: friends nearby heal with you and you take a share of their wounds.</li>
+ *   <li>Level 5, Second Life: your blood in a friend saves them from their next death.</li>
  * </ul>
  */
 public final class RegenerationAbility implements Ability {
@@ -49,7 +51,7 @@ public final class RegenerationAbility implements Ability {
         AbilityActivationType.PASSIVE
     );
 
-    /** Level 4: everyone nearby heals with you; the undead burn. */
+    /** Level 4, Blood Bond: friends nearby heal with you and you take a share of their wounds; the undead burn. */
     private static final AbilityAction HEALING_AURA =
         com.jayptucker.heroesevolved.ability.SimpleAction
             .builder("regeneration_healing_aura", 4)
@@ -119,6 +121,7 @@ public final class RegenerationAbility implements Ability {
 
     @Override
     public void tick(AbilityUseContext context) {
+        if (context.gameTime() % 10 == 0) RegenerationService.syncHud(context.player(), context.abilityLevel());
         int intervalTicks = HeroesEvolvedConfig.COMMON.regenerationIntervalTicks.get();
 
         if (context.gameTime() % intervalTicks != 0) {
@@ -141,8 +144,9 @@ public final class RegenerationAbility implements Ability {
             return;
         }
 
+        // Stored Regrowth makes the wound close faster.
         context.player().heal(
-            RegenerationService.passiveHealAmount(context.abilityLevel())
+            RegenerationService.passiveHeal(context.player(), context.abilityLevel())
         );
         spawnHealingParticles(context.player());
         MasteryService.awardEnergySpent(context.player(), energyCost);
@@ -260,14 +264,15 @@ public final class RegenerationAbility implements Ability {
     }
 
     /**
-     * Resurrection is passive. Its slot exists so the HUD can show whether
-     * it is ready; pressing the key only reports its state.
+     * The fifth key is Second Life: give a friend your blood so their next death does not take them.
+     * Resurrection itself stays passive (the HUD shows its timer); with no friend in sight, the key
+     * reports whether it is ready.
      */
     private static final class ResurrectionAction implements AbilityAction {
         private static final AbilityActionDefinition DEFINITION =
                 new AbilityActionDefinition(
-                        RegenerationService.RESURRECTION_ID,
-                        "action.heroesevolved.regeneration_resurrection",
+                        RegenerationService.SECOND_LIFE_ID,
+                        "action.heroesevolved.regeneration_second_life",
                         5,
                         0,
                         0
@@ -278,29 +283,31 @@ public final class RegenerationAbility implements Ability {
             return DEFINITION;
         }
 
-        /** Shown in the skills menu as the time between resurrections. */
+        @Override
+        public int energyCost(int powerLevel) {
+            return 40;
+        }
+
         @Override
         public int cooldownTicks(int powerLevel) {
-            return HeroesEvolvedConfig.COMMON
-                    .regenerationResurrectionCooldownTicks.get();
+            return RegenerationService.SECOND_LIFE_COOLDOWN_TICKS;
         }
 
         @Override
         public boolean canUse(AbilityUseContext context) {
             ServerPlayer player = context.player();
-            long remaining = CooldownService.getRemainingTicks(
-                    player, RegenerationService.RESURRECTION_ID
-            );
-            player.displayClientMessage(Component.literal(remaining > 0
-                    ? "Your body is still recovering from death ("
-                            + (remaining / 20 + 1) + "s)."
-                    : "Resurrection is ready. Death will not hold you."), true);
+            if (RegenerationService.findSecondLifeTarget(player) != null) return true;
+            int down = com.jayptucker.heroesevolved.regeneration.BodyService.recoveryTicks(context.abilityLevel(),
+                    RegenerationService.regrowth(player)) / 20;
+            player.displayClientMessage(Component.literal("Death will not hold you: if you go down, you're up in "
+                    + down + "s. Aim at a friend to give them a Second Life."), true);
             return false;
         }
 
         @Override
         public AbilityActivationResult activate(AbilityUseContext context) {
-            return AbilityActivationResult.REJECTED;
+            return RegenerationService.secondLife(context.player())
+                    ? AbilityActivationResult.SUCCESS : AbilityActivationResult.REJECTED;
         }
     }
 }

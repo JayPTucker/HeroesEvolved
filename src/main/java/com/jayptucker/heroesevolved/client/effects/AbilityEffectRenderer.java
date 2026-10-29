@@ -52,10 +52,15 @@ public final class AbilityEffectRenderer {
             direction = UP;
         }
 
-        if (NuclearEffects.play(level, effect.kind(), origin, size, detail)
+        if (TimeEffects.play(level, effect.kind(), origin, target, size, detail)
+                || RegenerationEffects.play(level, effect.kind(), origin, target, size, detail)
+                || RadiationEffects.play(level, effect.kind(), origin, target, size, detail)
+                || NuclearEffects.play(level, effect.kind(), origin, size, detail)
                 || CryoEffects.play(level, effect.kind(), origin, target, size, detail)
                 || PyroEffects.play(level, effect.kind(), origin, target, size, detail)
                 || ElectroEffects.play(level, effect.kind(), origin, target, size, detail)
+                || FlightEffects.play(level, effect.kind(), origin, target, size, detail)
+                || FlightSkillEffects.play(level, effect.kind(), origin, target, size, detail)
                 || AwakeningEffects.play(level, effect.kind(), origin, size, detail, density)
                 || DetailedAbilityEffects.play(level, effect.kind(), origin, target, size, detail, density)) {
             return;
@@ -186,7 +191,7 @@ public final class AbilityEffectRenderer {
                 FlightEffects.burst(level, origin, direction, size, detail);
             }
             case FLIGHT_CYCLONE -> {
-                FlightEffects.cyclone(level, origin, detail);
+                FlightEffects.cyclone(level, origin, size, detail);
             }
         }
     }

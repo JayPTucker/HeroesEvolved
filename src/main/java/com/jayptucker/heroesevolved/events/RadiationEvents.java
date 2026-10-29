@@ -49,6 +49,8 @@ public final class RadiationEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             RadiationService.stopAll(player);
         }
+        // Whatever dies sick bursts, dosing everything around it: a chain reaction.
+        if (!event.getEntity().level().isClientSide()) com.jayptucker.heroesevolved.radiation.RadiationSickness.chainReaction(event.getEntity());
     }
 
     public static boolean hasAwakenedRadiation(ServerPlayer player) {

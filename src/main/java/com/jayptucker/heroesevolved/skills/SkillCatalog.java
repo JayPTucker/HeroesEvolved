@@ -14,6 +14,8 @@ public final class SkillCatalog {
                        String mechanic, boolean capstone, String icon) {
         public ResourceLocation actionId() { return ResourceLocation.fromNamespaceAndPath("heroesevolved", id); }
         public AbilityAction action() {
+            if (power.equals("flight")) return com.jayptucker.heroesevolved.flight.FlightSkillService.action(this);
+            if (power.equals("telekinesis")) return com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.action(this);
             return SimpleAction.builder(id, level()).cost(() -> energy, () -> cooldown)
                     .canUse(c -> mechanic.isEmpty() ? SkillActionService.canUse(c, branch)
                             : com.jayptucker.heroesevolved.expansion.ExpansionSkills.canUse(c, mechanic))

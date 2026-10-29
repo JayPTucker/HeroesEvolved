@@ -124,78 +124,14 @@ public final class AdvancedTechniques {
         ServerLevel level = p.serverLevel();
         long now = now(p);
         switch (mechanic) {
-            // ---------------- Flight ----------------
-            case "sky_catch" -> {
-                LivingEntity friend = level.getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(16),
-                        t -> t != p && friendly(p, t)).stream().min(Comparator.comparingDouble(t -> t.distanceToSqr(p))).orElse(null);
-                if (friend == null) return false;
-                Vec3 to = SpeedService.swept(p, friend.position().subtract(p.position()).scale(0.9));
-                p.teleportTo(to.x, to.y, to.z);
-                friend.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 160));
-                friend.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 200, 0));
-                if (has(p, "flight_safe_harbor")) friend.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 160, 0));
-                friend.resetFallDistance();
-                AbilityEffects.send(level, Kind.FLIGHT_BURST, p.position(), friend.position(), 1.5);
-            }
-            case "tailwind" -> {
-                double length = has(p, "flight_jetstream") ? 20 : 12;
-                Vec3 start = p.position(), end = start.add(p.getLookAngle().multiply(1, 0, 1).normalize().scale(length));
-                ZONES.add(new Zone("tailwind", p, level, start, end, 2, now + 200));
-                AbilityEffects.send(level, Kind.FLIGHT_CYCLONE, start, end, 2);
-            }
-            case "thunderclap" -> {
-                double radius = has(p, "flight_wider_clap") ? 9 : 6;
-                for (LivingEntity t : enemies(p, p.position(), radius)) {
-                    t.hurt(p.damageSources().playerAttack(p), 4);
-                    t.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 2));
-                    push(t, t.position().subtract(p.position()).normalize().scale(1.2).add(0, .3, 0));
-                }
-                AbilityEffects.send(level, Kind.SONIC_BURST, p.position(), p.getEyePosition(), radius);
-                level.playSound(null, p.blockPosition(), SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.PLAYERS, 0.8F, 1.6F);
-            }
+            // Legacy mechanic aliases resolve through the same authoritative Flight skills.
+            case "sky_catch" -> { return com.jayptucker.heroesevolved.flight.FlightSkillService.activate(p, "flight_sky_catch"); }
+            case "tailwind" -> { return com.jayptucker.heroesevolved.flight.FlightSkillService.activate(p, "flight_tailwind"); }
+            case "thunderclap" -> { return com.jayptucker.heroesevolved.flight.FlightSkillService.activate(p, "flight_thunderclap"); }
             // ---------------- Telekinesis ----------------
-            case "remote_hand" -> {
-                BlockHitResult hit = aimBlock(p, has(p, "telekinesis_long_reach") ? 48 : 24);
-                if (hit.getType() != HitResult.Type.BLOCK || !level.mayInteract(p, hit.getBlockPos())) return false;
-                var state = level.getBlockState(hit.getBlockPos());
-                Block block = state.getBlock();
-                if (has(p, "telekinesis_retrieve") && level.getBlockEntity(hit.getBlockPos()) instanceof Container container
-                        && WorldMutationPolicy.canEdit(p, level, hit.getBlockPos())) {
-                    for (int i = 0; i < container.getContainerSize(); i++) {
-                        ItemStack stack = container.getItem(i);
-                        if (stack.isEmpty()) continue;
-                        ItemStack taken = container.removeItem(i, stack.getCount());
-                        if (!p.getInventory().add(taken)) p.drop(taken, false);
-                        AbilityEffects.send(level, Kind.PSYCHIC_TETHER, Vec3.atCenterOf(hit.getBlockPos()), p.getEyePosition(), 1);
-                        return true;
-                    }
-                }
-                if (!(block instanceof LeverBlock || block instanceof ButtonBlock || block instanceof DoorBlock
-                        || block instanceof TrapDoorBlock || block instanceof FenceGateBlock || block instanceof BellBlock)) {
-                    p.displayClientMessage(Component.translatable("technique.heroesevolved.remote_hand.nothing"), true);
-                    return false;
-                }
-                state.useWithoutItem(level, p, hit);
-                AbilityEffects.send(level, Kind.PSYCHIC_TETHER, p.getEyePosition(), Vec3.atCenterOf(hit.getBlockPos()), 1);
-            }
-            case "kinetic_volley" -> {
-                LivingEntity target = Targeting.livingEntityInSight(p, 32, t -> hostile(p, t));
-                if (target == null) return false;
-                int fragments = has(p, "telekinesis_five_fragments") ? 5 : 3;
-                for (int i = 0; i < fragments; i++) {
-                    target.invulnerableTime = 0;
-                    target.hurt(p.damageSources().playerAttack(p), 4);
-                }
-                if (has(p, "telekinesis_iron_rain")) target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 2));
-                AbilityEffects.send(level, Kind.QUAKE_BEAM, p.getEyePosition(), target.getEyePosition(), 1);
-            }
-            case "force_bubble" -> {
-                boolean bastion = has(p, "telekinesis_bastion");
-                double radius = has(p, "telekinesis_wider_bubble") ? 5 : 3;
-                ZONES.add(new Zone("bubble", p, level, p.position(), p.position(), radius, now + (bastion ? 200 : 120)));
-                if (bastion) for (ServerPlayer ally : allies(p, radius)) ally.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 200, 1));
-                AbilityEffects.send(level, Kind.PSYCHIC_FIELD, p.position(), p.getEyePosition(), radius);
-            }
+            case "remote_hand" -> { return com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.activate(p, "telekinesis_remote_hand", c.modifierHeld()); }
+            case "kinetic_volley" -> { return com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.activate(p, "telekinesis_kinetic_volley", c.modifierHeld()); }
+            case "force_bubble" -> { return com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.activate(p, "telekinesis_force_bubble", c.modifierHeld()); }
             // ---------------- Telepathy ----------------
             case "persuasion" -> {
                 boolean silver = has(p, "telepathy_silver_tongue");
@@ -496,22 +432,6 @@ public final class AdvancedTechniques {
         for (Zone zone : List.copyOf(ZONES)) {
             ServerPlayer p = zone.owner;
             switch (zone.kind) {
-                case "tailwind" -> {
-                    if (now % 5 != 0) break;
-                    boolean jet = has(p, "flight_jetstream"), front = has(p, "flight_pressure_front");
-                    AABB box = new AABB(zone.center, zone.end).inflate(zone.radius);
-                    Vec3 along = zone.end.subtract(zone.center).normalize();
-                    for (LivingEntity t : zone.level.getEntitiesOfClass(LivingEntity.class, box)) {
-                        if (t instanceof ServerPlayer ally && (ally == p || p.isAlliedTo(ally))) {
-                            ally.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 30, jet ? 2 : 1, false, false));
-                            ally.addEffect(new MobEffectInstance(MobEffects.JUMP, 30, 1, false, false));
-                        } else if (hostile(p, t)) {
-                            push(t, along.scale(0.6).add(0, 0.15, 0));
-                            if (front && now % 20 == 0) t.hurt(p.damageSources().playerAttack(p), 2);
-                        }
-                    }
-                    if (now % 20 == 0) AbilityEffects.send(zone.level, Kind.FLIGHT_CYCLONE, zone.center, zone.end, 1.5);
-                }
                 case "bubble" -> {
                     for (Projectile shot : zone.level.getEntitiesOfClass(Projectile.class, new AABB(zone.center, zone.center).inflate(zone.radius),
                             s -> !(s.getOwner() instanceof LivingEntity owner && (owner == p || p.isAlliedTo(owner))))) {
@@ -705,27 +625,6 @@ public final class AdvancedTechniques {
             event.setAmount(event.getAmount() + momentum / (victim instanceof ServerPlayer ? 12F : 4F));
             push(victim, victim.position().subtract(attacker.position()).normalize().scale(2.2).add(0, .5, 0));
             AbilityEffects.at(attacker, Kind.SPEED_IMPACT, 3);
-        }
-    }
-
-    @SubscribeEvent public static void fall(LivingFallEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer faller) || event.getDistance() < 4) return;
-        for (ServerPlayer angel : faller.serverLevel().getEntitiesOfClass(ServerPlayer.class, faller.getBoundingBox().inflate(16),
-                a -> a != faller && a.isAlliedTo(faller) && has(a, "flight_guardian_angel"))) {
-            if (!cooldown(angel.getUUID(), "angel", now(angel), 20 * 60)) continue;
-            event.setDamageMultiplier(0);
-            AbilityEffects.send(angel.serverLevel(), Kind.FLIGHT_BURST, angel.position(), faller.position(), 1.5);
-            return;
-        }
-    }
-
-    /** Sound Barrier: a flyer at full speed buffets enemies they pass. */
-    @SubscribeEvent public static void sonicBoom(ServerTickEvent.Post event) {
-        long now = now(event.getServer());
-        if (now % 10 != 0) return;
-        for (ServerPlayer p : event.getServer().getPlayerList().getPlayers()) {
-            if (p.onGround() || p.getDeltaMovement().length() < 1.0 || !has(p, "flight_sound_barrier")) continue;
-            for (LivingEntity t : enemies(p, p.position(), 3)) t.hurt(p.damageSources().playerAttack(p), 3);
         }
     }
 

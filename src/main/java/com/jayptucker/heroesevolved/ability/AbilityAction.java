@@ -18,6 +18,11 @@ public interface AbilityAction {
         return false;
     }
 
+    /** Opt-in for a normal second press to release a field before cooldown/energy checks. */
+    default boolean deactivateOnPress(AbilityUseContext context) {
+        return false;
+    }
+
     /**
      * Called when the action's key is let go. Held actions (channels) end
      * here; most actions ignore it. Releases are never trusted to happen:

@@ -19,6 +19,11 @@ public final class TimeRewindEntities {
     public record Frame(Map<UUID, State> states, Vec3 center, boolean complete) {}
     private static final Map<UUID, Map<UUID, Long>> BIRTHS = new HashMap<>();
     private static final Map<UUID, Frame> PREVIOUS = new HashMap<>();
+    /**
+     * Entities a rewind un-made that were sitting in unloaded chunks at the time (a death's drops, after
+     * respawning far away). They are refused if their chunk loads them back, so nothing is duplicated.
+     */
+    private static final Map<UUID, Long> UNMADE = new HashMap<>();
     private static boolean restoring;
     private TimeRewindEntities() {}
 
@@ -72,6 +77,7 @@ public final class TimeRewindEntities {
                 if (birth.getValue() > cutoff && !frame.states.containsKey(birth.getKey())) {
                     Entity entity = find(level, birth.getKey());
                     if (entity != null && !(entity instanceof ServerPlayer)) entity.discard();
+                    else if (entity == null) UNMADE.put(birth.getKey(), level.getServer().overworld().getGameTime());
                 }
             }
             Map<UUID, Entity> restored = new HashMap<>();
@@ -136,7 +142,15 @@ public final class TimeRewindEntities {
     }
     public static void prune(long now) {
         for (var births : BIRTHS.values()) births.values().removeIf(time -> now - time > 340);
+        UNMADE.values().removeIf(time -> now - time > 20 * 60 * 10);
+    }
+
+    /** True (once) if this entity was un-made by a rewind while its chunk was unloaded: it must not come back. */
+    public static boolean unmade(Entity entity) {
+        return UNMADE.remove(entity.getUUID()) != null;
     }
     public static void forget(UUID id) { BIRTHS.remove(id); PREVIOUS.remove(id); }
-    public static void clear() { BIRTHS.clear(); PREVIOUS.clear(); restoring = false; }
+    /** For tests and debugging: when this entity was recorded as appearing near this caster, or -1. */
+    public static long birth(UUID caster, UUID entity) { return BIRTHS.getOrDefault(caster, Map.of()).getOrDefault(entity, -1L); }
+    public static void clear() { BIRTHS.clear(); PREVIOUS.clear(); UNMADE.clear(); restoring = false; }
 }

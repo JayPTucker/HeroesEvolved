@@ -11,8 +11,25 @@ These are the default keys; rebinding and the inventory skill tree still work.
 | 1 | G | Fold Space | Blink to a visible surface or into open air. Cancels falling momentum. From level 2, Shift carries one nearby living companion if there is room. Players must be teammates or crouching. |
 | 1 | H | Between Seconds | A slow-time bubble follows you. Entity ticks and projectile motion slow; the server clock keeps running. Shift + H ends it. |
 | 3 | Z | Still World | Freeze entities in a fixed area. Your attacks accumulate and land when time resumes. Shift while starting includes one touching companion; Shift + Z while active resumes time for free. |
-| 4 | X | Rewrite the Moment | Restore the recorded local timeline from fifteen seconds ago, including changed blocks, containers, and recorded entities. Return to your earlier position and recover lost health. |
+| 4 | X | Rewrite the Moment | Restore the recorded local timeline from fifteen seconds ago, including changed blocks, containers, and recorded entities. Return to your earlier position and recover lost health. It costs **130 stamina** (hold Shift to overexert when you're short) and recovers in **4 minutes at Level 4, 2½ minutes at Level 5**. While it's ready, a faint ghost of you, ringed in violet and visible only to you, stands where it would take you. |
 | 5 | V | Walk the Past | Shift + V records an area; V visits the recorded past with nearby companions. V in the past returns without energy cost or an entry-cooldown delay. |
+
+### Rewinding your own death
+
+From Level 4, Rewrite the Moment can undo your death. For **fifteen seconds after you die**:
+
+- The death screen shows **Rewind 15 seconds** with a countdown. Pressing it respawns you and, a tick
+  later, rewinds: you're back where you stood fifteen seconds before you pressed it, alive, with the
+  health, inventory and experience you had then. Or press **Respawn** and then the **Rewind key**
+  while the fifteen seconds last; it does the same, even from another dimension.
+- The longer you wait, the closer to your death you land: you always go back fifteen seconds from now.
+- Everything you dropped when you died is un-made, as are the experience orbs. Drops sitting in a chunk
+  that unloaded while you were away are refused when the chunk loads again, so nothing is duplicated.
+  Nearby blocks, containers and creatures rewind as usual.
+- It needs Rewind off cooldown when you die, and costs what the key does: 130 stamina and the full
+  cooldown. A body just back from the dead rarely has that much stamina, so it overexerts (Weakness,
+  Nausea and some damage) instead of failing. It is not offered during
+  the time-travel story missions, and in hardcore it returns you to Survival.
 
 Configured costs and cooldowns are adjusted by the shared balance multipliers; the HUD shows final values. Still World now lasts at most 6/8/10 seconds by level and stores at most 12 damage per player or 40 per mob. Ranges and level unlocks retain their configuration. Slow and Stop supersede one another. Entity freezing does not freeze redstone, scheduled block ticks, weather, or the entire multiplayer world.
 
@@ -44,7 +61,12 @@ Future missions can query `TemporalStoryService.has(player, milestone)` to branc
 
 ## Effects and multiplayer behavior
 
-- Golden clock-face marks, violet expanding rings, and interlocking arcs distinguish time fields from generic magic bursts. Teleports collapse and reform at their actual endpoints; rewinds retain reverse path ribbons.
+- Time reads as clockwork made of light, drawn in the same glowing style as the lightning so it shows in daylight:
+  - **Fold Space:** the air where you stood pinches shut behind a fading echo of you, a seam of light runs to where you land, and it opens there around a small clock.
+  - **Between Seconds:** an amber clock face spreads under you and its hands crawl round. A ring marks the field's edge, and inside it sand hangs in the air around you, barely falling.
+  - **Still World:** the same clock in cold violet with its hands stopped at ten past ten. Motes hang perfectly still around anyone inside.
+  - **Rewrite the Moment:** violet trails run backwards from now to then, and ghosts of you appear along the path, newest first. You arrive as rings collapse onto you and the hands spin backwards.
+  - **Remember This Moment:** a golden frame snaps out around you with a flash, like a photograph.
 - Geometry is bounded and uses the shared detail setting/particle budget. No new audio files: imported Blink, Slow/Stop, and cinematic recordings are preserved.
 - Time Stop and selective stasis also block movement and interaction packets. Frozen players cannot attack, use items, drop/swap items, or click inventory slots to bypass the effect. Spectators are excluded.
 - Fields stop on death, logout, dimension change, suppression, or power removal. Frozen projectile velocity/gravity are restored; no permanent AI flags are written.

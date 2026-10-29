@@ -27,7 +27,15 @@ See [A Future Unwritten](docs/a-future-unwritten.md) for the first playable expa
 paintings, and the repeatable Hourglass Annex rescue operation. Find a cartographer
 or share a prophetic canvas, then open **J** to read and follow the omen.
 
+See [Flight](docs/flight.md) for the rebuilt aerial kit and all eighteen purchasable skills: Momentum, Skyburst, Meteor Drop, Skyhook, Tempest, plus the Sky Guard, Jetstream and Stormbreaker builds.
+
+See [Regeneration](docs/regeneration.md) for Claire Bennet's reworked kit: she can't be killed (she goes down and gets back up), limbs grow back from the bone out, and Regrowth, Blood Bond and Second Life.
+
+See [Ted Sprague](docs/ted-sprague.md) for the reworked Radiation kit: a Core that makes you stronger as it runs hot, a spreading Radiation Sickness, and a held heat beam.
+
 See [Electrokinesis](docs/electrokinesis.md) for the rebuilt lightning kit: Charge, tap-or-hold Chain Lightning, and the delayed Thunderstrike.
+
+See [Telekinesis](docs/telekinesis.md) for the rebuilt physical force kit and all eighteen skills: orbiting fragments, staggered volleys, Iron Rain, precise grips, projectile catches and aimed force fields. [Power workshop](docs/power-workshop.md) records proposed directions for Phasing, Sonic, Telepathy and Mimicry.
 
 See [Pyrokinesis and Helixite](docs/pyrokinesis.md) for the fire power, its real-fire rules,
 reactions with Cryokinesis, Flight and Superspeed, and the new Helixite crystal ore.
@@ -40,6 +48,8 @@ powers and the techniques added to every original tree.
 See [The Formula](docs/formula.md) for awakening unclaimed powers without waiting for an
 Eclipse: draw Regeneration blood (donated or forced), spin it in a Centrifuge, synthesize
 it in a Synthesis Station built from Helixite, then inject it.
+
+See [Carrying](docs/carrying.md) for carrying mobs and players, safe placement, and the shared movement/visibility rules.
 
 ## Building structures
 

@@ -51,6 +51,11 @@ public final class RadiationVisuals {
                 || world.getGameTime() >= state.chargeEnds) return -1;
         return Math.clamp(1 - (state.chargeEnds - world.getGameTime()) / (float) state.duration, 0, 1);
     }
+    /** The last Core value the server sent for this entity, or -1 if none is current. */
+    public static int stress(int id) {
+        State state = STATES.get(id);
+        return state == null || world == null || world.getGameTime() >= state.expires ? -1 : state.stress;
+    }
     public static float heat(Entity entity) {
         State state = STATES.get(entity.getId());
         if (world == null || entity.level() != world || state == null || !state.uuid.equals(entity.getUUID())

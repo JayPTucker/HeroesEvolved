@@ -237,9 +237,9 @@ public final class RadiationGameTests {
             var ability = new RadiationAbility();
             helper.assertTrue(ability.actions().get(AbilitySlot.TERTIARY).definition().id().getPath().equals("radiation_emp"), "Ted's third skill must be EMP, not power mimicry");
             RadiationService.radiationPulse(player, 2, true);
-            helper.assertTrue(cow.hasEffect(MobEffects.BLINDNESS) && cow.getHealth() == cow.getMaxHealth() && !cow.hasEffect(MobEffects.POISON), "Bright mode must flash rather than irradiate");
+            helper.assertTrue(cow.hasEffect(MobEffects.BLINDNESS) && cow.getHealth() == cow.getMaxHealth() && !cow.hasEffect(com.jayptucker.heroesevolved.registry.ModItems.RADIATION_SICKNESS), "Bright mode must flash rather than irradiate");
             RadiationService.radiationPulse(player, 2, false);
-            helper.assertTrue(cow.getHealth() < cow.getMaxHealth() && cow.hasEffect(MobEffects.POISON), "Toxic mode must damage and sicken");
+            helper.assertTrue(cow.getHealth() < cow.getMaxHealth() && cow.hasEffect(com.jayptucker.heroesevolved.registry.ModItems.RADIATION_SICKNESS), "Toxic mode must damage and sicken");
             RadiationService.beginDetonation(player, 5, true);
             helper.assertTrue(RadiationService.isDetonating(player) && RadiationService.holdItIn(player),
                     "After the awakening, a voluntary charge must remain cancellable");
@@ -423,5 +423,112 @@ public final class RadiationGameTests {
                 helper.succeed();
             } finally { com.jayptucker.heroesevolved.time.TimeRewindBlocks.forget(watcher.getUUID()); remove(source); remove(watcher); }
         });
+    }
+
+    // ------------------------------------------------------------------
+    // The reworked kit
+    // ------------------------------------------------------------------
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 60, batch = "radiation.cone")
+    public static void radiantHeatBurnsACrowdInFrontButNotBehind(GameTestHelper helper) {
+        ServerPlayer player = player(helper, 320, false);
+        player.setYRot(0); player.setXRot(0);
+        Cow front = mob(helper, EntityType.COW, player.position().add(0.6, 0, 4)), side = mob(helper, EntityType.COW, player.position().add(-1.4, 0, 6));
+        Cow behind = mob(helper, EntityType.COW, player.position().add(0, 0, -4));
+        try {
+            helper.assertTrue(RadiationService.radiantTouch(player, 2), "There are creatures in the cone");
+            helper.assertTrue(front.getHealth() < front.getMaxHealth() && side.getHealth() < side.getMaxHealth(), "The cone burns everything in front");
+            helper.assertTrue(RadiationSickness.stage(front) >= 0, "And doses it");
+            helper.assertTrue(behind.getHealth() == behind.getMaxHealth(), "Nothing behind you is touched");
+            helper.succeed();
+        } finally { remove(player, front, side, behind); }
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 60, batch = "radiation.core")
+    public static void aHotterCoreHitsHarder(GameTestHelper helper) {
+        ServerPlayer player = player(helper, 340, false);
+        player.setYRot(0); player.setXRot(0);
+        Cow cold = mob(helper, EntityType.COW, player.position().add(0, 0, 3));
+        try {
+            RadiationService.vent(player, 100);
+            RadiationService.radiantTouch(player, 1);
+            float coldDamage = cold.getMaxHealth() - cold.getHealth();
+            cold.setHealth(cold.getMaxHealth()); cold.invulnerableTime = 0; cold.removeAllEffects();
+            RadiationService.addMass(player, RadiationService.CRITICAL - RadiationService.mass(player));
+            RadiationService.radiantTouch(player, 1);
+            float hotDamage = cold.getMaxHealth() - cold.getHealth();
+            helper.assertTrue(hotDamage > coldDamage * 1.3F, "Critical Core must hit much harder: " + coldDamage + " then " + hotDamage);
+            helper.assertTrue(cold.isOnFire(), "Critical heat sets targets alight");
+            helper.succeed();
+        } finally { remove(player, cold); }
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 60, batch = "radiation.sickness")
+    public static void sicknessStacksSparesTedAndSpreadsFromTheDead(GameTestHelper helper) {
+        ServerPlayer player = player(helper, 360, false);
+        Cow carrier = mob(helper, EntityType.COW, player.position().add(4, 0, 0)), neighbour = mob(helper, EntityType.COW, player.position().add(5.5, 0, 0));
+        try {
+            RadiationSickness.dose(carrier, player, 1, 200);
+            RadiationSickness.dose(carrier, player, 2, 200);
+            helper.assertTrue(RadiationSickness.stage(carrier) == 2, "Doses stack: stage " + RadiationSickness.stage(carrier));
+            helper.assertTrue(!RadiationSickness.dose(player, player, 1, 200), "Ted cannot sicken from his own radiation");
+            float before = neighbour.getHealth();
+            RadiationSickness.chainReaction(carrier);
+            helper.assertTrue(neighbour.getHealth() < before && RadiationSickness.stage(neighbour) >= 0, "A sick creature's death bursts onto its neighbours");
+            helper.succeed();
+        } finally { remove(player, carrier, neighbour); }
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 120, batch = "radiation.zone")
+    public static void contaminationLeavesTheGroundDangerous(GameTestHelper helper) {
+        ServerPlayer player = player(helper, 380, false);
+        try {
+            RadiationService.radiationPulse(player, 2, false);
+            // Someone walks in afterwards.
+            Cow late = mob(helper, EntityType.COW, player.position().add(1.5, 0, 0));
+            helper.runAfterDelay(50, () -> {
+                try {
+                    helper.assertTrue(RadiationSickness.stage(late) >= 0, "Contaminated ground doses whoever stands in it later");
+                    helper.succeed();
+                } finally { remove(player, late); }
+            });
+        } catch (RuntimeException e) { remove(player); throw e; }
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 80, batch = "radiation.emission")
+    public static void controlledEmissionVentsCoreWhileHeld(GameTestHelper helper) {
+        ServerPlayer player = player(helper, 400, false);
+        player.setYRot(0); player.setXRot(0);
+        Cow target = mob(helper, EntityType.COW, player.position().add(0, 0, 10));
+        RadiationService.addMass(player, 70 - RadiationService.mass(player));
+        int before = RadiationService.mass(player);
+        helper.assertTrue(RadiationService.startEmission(player, 4) && RadiationService.isEmitting(player), "The beam starts on the key");
+        helper.runAfterDelay(20, () -> {
+            try {
+                helper.assertTrue(RadiationService.isEmitting(player), "It keeps going while held");
+                helper.assertTrue(RadiationService.mass(player) < before - 10, "Holding vents Core: " + before + " -> " + RadiationService.mass(player));
+                helper.assertTrue(target.getHealth() < target.getMaxHealth(), "The beam hits what is in its line");
+                RadiationService.releaseEmission(player);
+                helper.runAfterDelay(3, () -> {
+                    try {
+                        helper.assertTrue(!RadiationService.isEmitting(player), "Letting go ends it");
+                        helper.succeed();
+                    } finally { remove(player, target); }
+                });
+            } catch (RuntimeException e) { remove(player, target); throw e; }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 60, batch = "radiation.emp_vent")
+    public static void empVentsCoreAndThrowsEnemiesOff(GameTestHelper helper) {
+        ServerPlayer player = player(helper, 420, false);
+        Cow near = mob(helper, EntityType.COW, player.position().add(4, 0, 0));
+        try {
+            RadiationService.addMass(player, 60 - RadiationService.mass(player));
+            RadiationService.emp(player);
+            helper.assertTrue(RadiationService.mass(player) <= 35, "The pulse carries 25 Core out: " + RadiationService.mass(player));
+            helper.assertTrue(near.hasEffect(MobEffects.MOVEMENT_SLOWDOWN) && near.hasEffect(MobEffects.GLOWING), "Enemies nearby are thrown off balance and revealed");
+            helper.succeed();
+        } finally { remove(player, near); }
     }
 }

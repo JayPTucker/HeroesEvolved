@@ -39,9 +39,10 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Rapid cellular regeneration, after Claire Bennet: mending wounds on
- * demand, sharing healing blood, shrugging off harm, and coming back from
- * the dead.
+ * Rapid cellular regeneration, after Claire Bennet: the one who keeps getting back up. Damage she
+ * takes becomes Regrowth (0 to 100), stored healing that her body burns to close wounds fast and
+ * that her powers spend. She mends, shares her blood, turns reckless and unbreakable, takes her
+ * friends' wounds onto herself, gives someone else a second life, and comes back from the dead.
  */
 public final class RegenerationService {
     public static final ResourceLocation RESURRECTION_ID =
@@ -67,7 +68,16 @@ public final class RegenerationService {
             MobEffects.DARKNESS
     );
 
+    public static final int MAX_REGROWTH = 100, SECOND_LIFE_COST = 50;
+    public static final int SECOND_LIFE_COOLDOWN_TICKS = 20 * 90, SECOND_LIFE_TICKS = 20 * 60;
+    public static final ResourceLocation SECOND_LIFE_ID = ResourceLocation.fromNamespaceAndPath(
+            com.jayptucker.heroesevolved.HeroesEvolved.MOD_ID, "regeneration_second_life");
     private static final Map<UUID, Long> INDESTRUCTIBLE_UNTIL = new HashMap<>();
+    private static final Map<UUID, Integer> REGROWTH = new HashMap<>();
+    private static final Map<UUID, Integer> SENT = new HashMap<>();
+    /** Creatures carrying Claire's blood, and when it stops protecting them. */
+    private static final Map<UUID, Long> SECOND_LIFE = new HashMap<>();
+    private static int sharing;
 
     private RegenerationService() {
     }
@@ -75,6 +85,44 @@ public final class RegenerationService {
     // ------------------------------------------------------------------
     // Passive
     // ------------------------------------------------------------------
+
+    public static int regrowth(ServerPlayer player) {
+        return REGROWTH.getOrDefault(player.getUUID(), 0);
+    }
+
+    public static void addRegrowth(ServerPlayer player, int amount) {
+        REGROWTH.put(player.getUUID(), Math.clamp(regrowth(player) + amount, 0, MAX_REGROWTH));
+    }
+
+    /** Spends up to {@code amount} Regrowth; returns how much was spent. */
+    public static int spendRegrowth(ServerPlayer player, int amount) {
+        int spent = Math.min(regrowth(player), Math.max(0, amount));
+        REGROWTH.put(player.getUUID(), regrowth(player) - spent);
+        return spent;
+    }
+
+    /** Every point of real damage becomes two points of Regrowth. */
+    public static void wounded(ServerPlayer player, float damage) {
+        if (damage > 0 && Float.isFinite(damage)) addRegrowth(player, Math.max(1, Math.round(damage * 2)));
+    }
+
+    /** Keeps the owner's HUD current: Regrowth, time left on the ground, and giving up. Only sends changes. */
+    public static void syncHud(ServerPlayer player, int powerLevel) {
+        int downed = BodyService.downedRemaining(player);
+        int recovery = BodyService.recoveryTicks(powerLevel, regrowth(player));
+        int giveUp = BodyService.canGiveUp(player) ? BodyService.giveUpProgress(player) : -1;
+        int key = java.util.Objects.hash(regrowth(player), downed / 20, recovery / 20, giveUp);
+        if (SENT.getOrDefault(player.getUUID(), Integer.MIN_VALUE) == key) return;
+        SENT.put(player.getUUID(), key);
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player,
+                new com.jayptucker.heroesevolved.network.RegenerationStatePayload(regrowth(player), downed, recovery, giveUp));
+    }
+
+    /** Passive healing burns stored Regrowth: up to 10 a tick, each 5 of it one more point of healing. */
+    public static float passiveHeal(ServerPlayer player, int powerLevel) {
+        int burned = spendRegrowth(player, 10);
+        return passiveHealAmount(powerLevel) + burned / 5.0F;
+    }
 
     /** Passive healing grows with level: +25% per level above the first. */
     public static float passiveHealAmount(int powerLevel) {
@@ -92,10 +140,26 @@ public final class RegenerationService {
     // Rapid Mending
     // ------------------------------------------------------------------
 
+    /**
+     * Rapid Mending: the wound closes at once. It spends all stored Regrowth (one more point of healing
+     * per 8), and healing past full health stays on as up to four hearts of Absorption.
+     */
     public static void rapidMending(ServerPlayer player, int powerLevel) {
-        player.heal(4.0F + 2.0F * powerLevel);
+        int spent = spendRegrowth(player, MAX_REGROWTH);
+        float heal = 4.0F + 2.0F * powerLevel + spent / 8.0F;
+        float overflow = Math.max(0, player.getHealth() + heal - player.getMaxHealth());
+        player.heal(heal);
+        if (overflow > 0) {
+            // Absorption hearts need the effect: it raises the cap that a bare absorption value is clamped to.
+            float total = Math.min(8.0F, player.getAbsorptionAmount() + overflow);
+            player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 20 * 30, (int) Math.ceil(total / 4.0F) - 1, false, false, true));
+            player.setAbsorptionAmount(total);
+        }
         boolean purged = purgeToxins(player);
         player.clearFire();
+        // Missing limbs grow back in a second.
+        BodyService.regrowAll(player);
+        AbilityEffects.send(player.serverLevel(), Kind.REGEN_MEND, player.position(), player.position().add(0, 1, 0), 1.0D + spent / 50.0D);
 
         ServerLevel level = player.serverLevel();
         // The successful-action cue builds the healing strands on each client.
@@ -116,7 +180,7 @@ public final class RegenerationService {
     // ------------------------------------------------------------------
 
     public static LivingEntity findBloodGiftTarget(ServerPlayer player) {
-        return Targeting.livingEntityInSight(player, 5.0D,
+        return Targeting.livingEntityInSight(player, 6.0D,
                 target -> !(target instanceof TemporalEchoEntity));
     }
 
@@ -138,7 +202,7 @@ public final class RegenerationService {
         }
 
         ServerLevel level = player.serverLevel();
-        float potency = 6.0F + 2.0F * powerLevel;
+        float potency = 6.0F + 2.0F * powerLevel + regrowth(player) / 10.0F;
         if (target.isInvertedHealAndHarm()) {
             target.hurt(player.damageSources().indirectMagic(player, player),
                     potency);
@@ -176,8 +240,9 @@ public final class RegenerationService {
                 Kind.REGENERATION,
                 target.position(), target.position(), 1.0D);
 
-        // Her own cut, never fatal: she will regrow it in seconds.
+        // Her own cut, never fatal: she will regrow it in seconds, and it feeds her Regrowth.
         player.setHealth(Math.max(1.0F, player.getHealth() - BLOOD_GIFT_SELF_COST));
+        addRegrowth(player, 6);
         MasteryService.markPowerUse(player, ModAbilities.REGENERATION_ID);
         return true;
     }
@@ -201,7 +266,7 @@ public final class RegenerationService {
                 player.getZ(), SoundEvents.ARMOR_EQUIP_NETHERITE.value(),
                 SoundSource.PLAYERS, 1.0F, 0.7F);
         player.displayClientMessage(Component.literal(
-                "You can't feel pain anymore."
+                "You can't feel pain anymore. Hit as hard as you like."
         ).withStyle(ChatFormatting.RED), true);
         MasteryService.markPowerUse(player, ModAbilities.REGENERATION_ID);
     }
@@ -211,61 +276,42 @@ public final class RegenerationService {
         return until != null && player.serverLevel().getGameTime() < until;
     }
 
-    // ------------------------------------------------------------------
-    // Resurrection
-    // ------------------------------------------------------------------
+    /**
+     * Reckless: while Indestructible, Claire punches without caring what breaks. Each blow lands
+     * 3 + level harder and breaks her own hand a little (1 health), which she regrows.
+     *
+     * @return the extra damage for this punch
+     */
+    public static float recklessBlow(ServerPlayer player, LivingEntity target, int powerLevel) {
+        player.setHealth(Math.max(1.0F, player.getHealth() - 1.0F));
+        addRegrowth(player, 2);
+        AbilityEffects.send(player.serverLevel(), Kind.REGEN_RECKLESS, target.getBoundingBox().getCenter(),
+                player.getEyePosition(), 1.0D);
+        player.serverLevel().playSound(null, target.getX(), target.getY(), target.getZ(),
+                SoundEvents.BONE_BLOCK_BREAK, SoundSource.PLAYERS, 1.0F, 0.8F);
+        return 3.0F + powerLevel;
+    }
 
     /**
-     * At Level 5 Claire returns from death. Some deaths cannot be undone:
-     * the void, /kill, and being erased from the timeline.
-     *
-     * @return true if the player was brought back and death was averted
+     * The bullet comes back out. A projectile that hits her while Indestructible does half damage, and
+     * an arrow pushes out of the wound and drops at her feet.
      */
-    public static boolean tryResurrect(
-            ServerPlayer player,
-            int powerLevel,
-            DamageSource source
-    ) {
-        if (powerLevel < RESURRECTION_UNLOCK_LEVEL
-                || CooldownService.isOnCooldown(player, RESURRECTION_ID)
-                || source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)
-                || source.is(DamageTypes.GENERIC_KILL)
-                || source.is(TemporalParadoxService.TEMPORAL_PARADOX_DAMAGE)) {
-            return false;
-        }
-
-        player.setHealth(1.0F);
-        player.clearFire();
-        player.setAirSupply(player.getMaxAirSupply());
-        purgeToxins(player);
-        player.invulnerableTime = 60;
-        player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 20 * 6, 3));
-        player.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 30, 0));
-        player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60, 2));
-
+    public static void ejectProjectile(ServerPlayer player, net.minecraft.world.entity.Entity projectile) {
         ServerLevel level = player.serverLevel();
-        level.sendParticles(BRIGHT_BLOOD, player.getX(), player.getY() + 1.0D,
-                player.getZ(), 60, 0.4D, 0.8D, 0.4D, 0.0D);
-        AbilityEffects.at(player, Kind.REGENERATION, 1.8D);
-        level.sendParticles(ParticleTypes.DAMAGE_INDICATOR, player.getX(),
-                player.getY() + 1.0D, player.getZ(), 12, 0.4D, 0.6D, 0.4D, 0.1D);
-        level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.WARDEN_HEARTBEAT, SoundSource.PLAYERS, 1.5F, 1.0F);
-        level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.ZOMBIE_VILLAGER_CURE, SoundSource.PLAYERS, 0.8F, 1.4F);
-        // Coming back: a crimson flash, then the world swims into focus.
-        ScreenTintPayload.send(player, 0xC0700000, 30, ScreenTintPayload.Style.FLASH);
-        ScreenTintPayload.send(player, 0x80500000, 100,
-                ScreenTintPayload.Style.VIGNETTE);
-        player.sendSystemMessage(Component.literal(
-                "You gasp back to life."
-        ).withStyle(ChatFormatting.DARK_RED));
-
-        CooldownService.startCooldown(player, RESURRECTION_ID,
-                HeroesEvolvedConfig.COMMON.regenerationResurrectionCooldownTicks.get());
-        PlayerPowerSyncService.sync(player);
-        MasteryService.markPowerUse(player, ModAbilities.REGENERATION_ID);
-        return true;
+        net.minecraft.world.item.ItemStack dropped = projectile instanceof net.minecraft.world.entity.projectile.SpectralArrow
+                ? new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.SPECTRAL_ARROW)
+                : projectile instanceof net.minecraft.world.entity.projectile.Arrow
+                ? new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.ARROW) : net.minecraft.world.item.ItemStack.EMPTY;
+        Vec3 wound = player.position().add(0, 1.1, 0);
+        if (!dropped.isEmpty()) {
+            var item = new net.minecraft.world.entity.item.ItemEntity(level, wound.x, wound.y, wound.z, dropped);
+            item.setDeltaMovement(player.getLookAngle().scale(-0.1).add(0, 0.15, 0));
+            item.setPickUpDelay(10);
+            level.addFreshEntity(item);
+            projectile.discard();
+        }
+        AbilityEffects.send(level, Kind.REGEN_EJECT, wound, wound.add(projectile.getDeltaMovement().normalize().scale(-1)), 1.0D);
+        level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.CHAIN_PLACE, SoundSource.PLAYERS, 1.0F, 1.6F);
     }
 
     // ------------------------------------------------------------------
@@ -284,6 +330,7 @@ public final class RegenerationService {
             return false;
         });
 
+        SECOND_LIFE.values().removeIf(until -> gameTime >= until + 20);
         HEALING_AURAS.entrySet().removeIf(entry -> {
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
             if (player == null || gameTime >= entry.getValue().until()) {
@@ -308,8 +355,8 @@ public final class RegenerationService {
     }
 
     /**
-     * Claire's blood in the air: for ten seconds, everyone nearby heals
-     * with her each second, and the undead burn in it.
+     * Blood Bond: for ten seconds, everyone friendly within eight blocks heals with Claire each second,
+     * the undead burn, and 35% of any damage her friends take is drawn onto her instead.
      */
     public static void healingAura(ServerPlayer player, int powerLevel) {
         HEALING_AURAS.put(player.getUUID(), new Aura(
@@ -350,6 +397,97 @@ public final class RegenerationService {
     private record Aura(long until, int powerLevel) {
     }
 
+    /** Is this creature sheltered by someone's Blood Bond? Returns the Claire holding it, or null. */
+    public static ServerPlayer bondHolder(LivingEntity entity) {
+        if (!(entity.level() instanceof ServerLevel level) || sharing > 0) return null;
+        for (UUID id : HEALING_AURAS.keySet()) {
+            ServerPlayer claire = level.getServer().getPlayerList().getPlayer(id);
+            if (claire == null || claire == entity || claire.level() != entity.level() || !claire.isAlive()) continue;
+            if (entity.distanceToSqr(claire) <= AURA_RADIUS * AURA_RADIUS && bonded(claire, entity)) return claire;
+        }
+        return null;
+    }
+
+    /** A friend: no monster or undead, and a player only if Claire is not fighting them (PvP off, or on her team). */
+    private static boolean bonded(ServerPlayer claire, LivingEntity entity) {
+        if (entity == claire || entity instanceof net.minecraft.world.entity.monster.Enemy || entity.isInvertedHealAndHarm()) return false;
+        return !(entity instanceof ServerPlayer other) || claire.isAlliedTo(other)
+                || !com.jayptucker.heroesevolved.expansion.ExpansionSkills.hostile(claire, other);
+    }
+
+    /** Takes {@code share} of a bonded friend's wound onto Claire. */
+    public static void takeShare(ServerPlayer claire, LivingEntity friend, float share) {
+        sharing++;
+        try {
+            claire.hurt(claire.damageSources().magic(), share);
+        } finally {
+            sharing--;
+        }
+        AbilityEffects.send(claire.serverLevel(), Kind.REGEN_BOND, friend.getBoundingBox().getCenter(),
+                claire.position().add(0, 1.1, 0), 1.0D);
+    }
+
+    // ------------------------------------------------------------------
+    // Second Life
+    // ------------------------------------------------------------------
+
+    /** The friend Second Life would reach: in sight within twelve blocks, friendly, alive. */
+    public static LivingEntity findSecondLifeTarget(ServerPlayer player) {
+        return Targeting.livingEntityInSight(player, 6.0D, target -> !(target instanceof TemporalEchoEntity) && bonded(player, target));
+    }
+
+    /**
+     * Second Life: Claire's blood brought Nathan back. Inject it into a friend: they heal to full, and for
+     * a minute the next killing blow leaves them standing. Costs 50 Regrowth and 6 of her own health.
+     */
+    public static boolean secondLife(ServerPlayer player) {
+        LivingEntity target = findSecondLifeTarget(player);
+        if (target == null) return false;
+        if (regrowth(player) < SECOND_LIFE_COST) {
+            player.displayClientMessage(Component.literal("You need " + SECOND_LIFE_COST + " Regrowth to give a second life (you have "
+                    + regrowth(player) + "). Take a few hits first.").withStyle(ChatFormatting.RED), true);
+            return false;
+        }
+        spendRegrowth(player, SECOND_LIFE_COST);
+        target.heal(target.getMaxHealth());
+        purgeToxins(target);
+        SECOND_LIFE.put(target.getUUID(), player.serverLevel().getGameTime() + SECOND_LIFE_TICKS);
+        player.setHealth(Math.max(1.0F, player.getHealth() - 6.0F));
+        ServerLevel level = player.serverLevel();
+        AbilityEffects.send(level, Kind.BLOOD_THREAD, player.position().add(0, 1.1, 0), target.getBoundingBox().getCenter(), 1.4D);
+        AbilityEffects.send(level, Kind.REGEN_SECOND_LIFE, target.position(), target.position().add(0, 1, 0), target.getBbHeight());
+        level.playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.WARDEN_HEARTBEAT, SoundSource.PLAYERS, 1.4F, 1.2F);
+        level.playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.ZOMBIE_VILLAGER_CURE, SoundSource.PLAYERS, 0.6F, 1.8F);
+        if (target instanceof ServerPlayer friend) friend.displayClientMessage(Component.literal(
+                player.getName().getString() + "'s blood is in your veins. Death will not take you this minute.")
+                .withStyle(ChatFormatting.DARK_RED), false);
+        player.displayClientMessage(Component.literal("Your blood will keep them alive.").withStyle(ChatFormatting.RED), true);
+        MasteryService.markPowerUse(player, ModAbilities.REGENERATION_ID);
+        return true;
+    }
+
+    public static boolean hasSecondLife(LivingEntity entity) {
+        Long until = SECOND_LIFE.get(entity.getUUID());
+        return until != null && entity.level().getGameTime() < until;
+    }
+
+    /** A creature with Claire's blood in it would die: it gasps back instead, once. */
+    public static boolean trySecondLife(LivingEntity entity, DamageSource source) {
+        if (!hasSecondLife(entity) || source.is(DamageTypeTags.BYPASSES_INVULNERABILITY) || source.is(DamageTypes.GENERIC_KILL)) return false;
+        SECOND_LIFE.remove(entity.getUUID());
+        entity.setHealth(4.0F);
+        entity.clearFire();
+        entity.invulnerableTime = 40;
+        entity.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 20 * 5, 2));
+        if (entity.level() instanceof ServerLevel level) {
+            AbilityEffects.send(level, Kind.REGEN_REVIVE, entity.position(), entity.position().add(0, 1, 0), entity.getBbHeight());
+            level.playSound(null, entity.getX(), entity.getY(), entity.getZ(), SoundEvents.WARDEN_HEARTBEAT, SoundSource.PLAYERS, 1.5F, 1.0F);
+        }
+        if (entity instanceof ServerPlayer friend) friend.sendSystemMessage(Component.literal("You gasp back to life. Her blood held.")
+                .withStyle(ChatFormatting.DARK_RED));
+        return true;
+    }
+
     /**
      * A regenerator bleeds visibly when hurt, and the wound starts closing
      * at once: a spray of blood, then a few drops drawn back in.
@@ -366,6 +504,12 @@ public final class RegenerationService {
     public static void forget(ServerPlayer player) {
         INDESTRUCTIBLE_UNTIL.remove(player.getUUID());
         HEALING_AURAS.remove(player.getUUID());
+        REGROWTH.remove(player.getUUID());
+        SENT.remove(player.getUUID());
+    }
+
+    public static void clear() {
+        INDESTRUCTIBLE_UNTIL.clear(); HEALING_AURAS.clear(); REGROWTH.clear(); SENT.clear(); SECOND_LIFE.clear();
     }
 
     private static boolean purgeToxins(LivingEntity entity) {

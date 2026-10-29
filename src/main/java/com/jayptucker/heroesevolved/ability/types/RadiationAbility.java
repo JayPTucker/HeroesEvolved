@@ -15,17 +15,19 @@ import java.util.Map;
 import static com.jayptucker.heroesevolved.config.HeroesEvolvedConfig.COMMON;
 
 /**
- * Ted Sprague's induced radioactivity: heat, toxic emissions, EMPs and dangerous stress.
+ * Ted Sprague's induced radioactivity: heat, a spreading sickness, EMPs and a core that runs hotter
+ * the harder he pushes it.
  *
  * <ul>
- *   <li>Level 1, Radiant Touch: white-hot hands burn and irradiate.</li>
- *   <li>Level 2, Radiation Pulse: a wave of radiation sickness around you.</li>
- *   <li>Level 3, EMP: disable nearby redstone electronics temporarily.</li>
- *   <li>Level 4, Controlled Emission: vent stress as a focused heat beam.</li>
+ *   <li>Level 1, Radiant Heat: a white-hot cone from the palms; it also boils, thaws and melts.</li>
+ *   <li>Level 2, Contamination: a pulse of Radiation Sickness that leaves the ground contaminated.
+ *   Shift emits a blinding flash instead.</li>
+ *   <li>Level 3, EMP: kill redstone nearby, throw enemies off balance, and vent 25 Core.</li>
+ *   <li>Level 4, Controlled Emission: hold to pour Core out through a piercing beam.</li>
  *   <li>Level 5, Exploding Man: detonate. Shift holds it in.</li>
- *   <li>Always: every radiation power builds stress. Above 60% you
- *   glow orange and leak radiation; injury also builds stress. At 100% vent
- *   before containment fails. Your own nuclear blast and fallout cannot hurt you.</li>
+ *   <li>Always: Core builds with every power and every injury. Hot (40) hits harder, Glowing (60)
+ *   leaks radiation onto enemies, Critical (80) hits harder still and burns. At 100, vent or
+ *   containment fails. Your own blast, fallout and sickness cannot hurt you.</li>
  * </ul>
  */
 public final class RadiationAbility implements Ability {
@@ -56,13 +58,23 @@ public final class RadiationAbility implements Ability {
                         return true;
                     })
                     .build(),
-            AbilitySlot.QUATERNARY, SimpleAction.builder("radiation_meltdown_beam", 4)
-                    .cost(COMMON.radiationBeamEnergyCost::get,
-                            COMMON.radiationBeamCooldownTicks::get)
-                    .canUse(context -> RadiationService.canVent(context.player()))
-                    .activate(context -> RadiationService.meltdownBeam(
-                            context.player(), context.abilityLevel()))
-                    .build(),
+            AbilitySlot.QUATERNARY, new AbilityAction() {
+                private final com.jayptucker.heroesevolved.ability.AbilityActionDefinition definition =
+                        new com.jayptucker.heroesevolved.ability.AbilityActionDefinition(
+                                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("heroesevolved", "radiation_meltdown_beam"),
+                                "action.heroesevolved.radiation_meltdown_beam", 4, 0, 0);
+                @Override public com.jayptucker.heroesevolved.ability.AbilityActionDefinition definition() { return definition; }
+                @Override public int energyCost(int level) { return COMMON.radiationBeamEnergyCost.get(); }
+                @Override public int cooldownTicks(int level) { return COMMON.radiationBeamCooldownTicks.get(); }
+                @Override public boolean canUse(AbilityUseContext c) { return RadiationService.canVent(c.player()); }
+                // Hold to vent Core through the beam; let go to stop. Shift + key stops at once.
+                @Override public AbilityActivationResult activate(AbilityUseContext c) {
+                    return RadiationService.startEmission(c.player(), c.abilityLevel())
+                            ? AbilityActivationResult.SUCCESS : AbilityActivationResult.REJECTED;
+                }
+                @Override public void release(AbilityUseContext c) { RadiationService.releaseEmission(c.player()); }
+                @Override public boolean deactivate(AbilityUseContext c) { return RadiationService.stopEmission(c.player()); }
+            },
             AbilitySlot.QUINARY, SimpleAction.builder("radiation_exploding_man", 5)
                     .cost(COMMON.radiationDetonationEnergyCost::get,
                             COMMON.radiationDetonationCooldownTicks::get)

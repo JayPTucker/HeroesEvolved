@@ -21,13 +21,13 @@ Percentages below apply to configured base values, before skill discounts. Small
 | Power | Adjustments |
 | --- | --- |
 | Quake | Seismic Slam costs 85% stamina with 80% cooldown; Earthquake costs 85% with 65% cooldown. Sustained blast terrain pressure is retained. |
-| Flight | Dive Bomb costs 80% with 75% cooldown; Cyclone costs 85% with 75% cooldown. |
+| Flight | Meteor Drop costs 80% with 75% cooldown; Tempest costs 85% with 75% cooldown. |
 | Cryokinesis | Ice Wall costs 80% with 80% cooldown; Blizzard costs 80% with 60% cooldown. Players can be frozen for at most three seconds per freeze, followed by two seconds of thaw protection. Refreshing a dome cannot extend an existing player freeze indefinitely. Player shatter bonus is capped at six extra damage; mob freezing retains its stronger effect. |
 | Electrokinesis | Chain Lightning has 120% cooldown. Thunderstrike costs 85% with 80% cooldown; Storm Surge costs 85% with 60% cooldown. |
 | Telekinesis | Push costs 80%; Bullet Stop costs 80% with 70% cooldown; Storm costs 85% with 60% cooldown. |
 | Telepathy | Read Mind costs 70% with 70% cooldown; Mind Link costs 75% with 60% cooldown; Puppet has 115% cooldown; Nightmare costs 80% with 70% cooldown. |
-| Regeneration | Rapid Mending has 125% cooldown; Blood Gift costs 70% with 75% cooldown; Healing Aura costs 80% with 60% cooldown. |
-| Time Manipulation | Between Seconds costs 65% with 60% cooldown; Still World costs 60% with 35% cooldown; Rewrite Moment has 120% cooldown. Still World is capped at 6/8/10 seconds at levels 3/4/5, with at most 12 stored damage per player or 40 per mob. Lower configured durations remain lower. |
+| Regeneration | Rapid Mending has 125% cooldown; Blood Gift costs 70% with 75% cooldown; Blood Bond (formerly Healing Aura) costs 80% with 60% cooldown. Second Life costs 40 with a 90-second cooldown. |
+| Time Manipulation | Between Seconds costs 65% with 60% cooldown; Still World costs 60% with 35% cooldown; Rewrite the Moment costs 130 stamina (overexert with Shift) and recovers in 4 minutes at Level 4, 2½ at Level 5. Still World is capped at 6/8/10 seconds at levels 3/4/5, with at most 12 stored damage per player or 40 per mob. Lower configured durations remain lower. |
 | Radiation | EMP costs 80% with 70% cooldown; Radiation Pulse costs 85% with 80% cooldown; Exploding Man has 75% cooldown. Nuclear blast damage and radius are retained. |
 | Sonic Resonance | Sonic Burst and Sonic Scream cost 80% with 80% cooldown; Echo Sense costs 80% with 75% cooldown. |
 | Superspeed | New base costs/cooldowns: Quickstep 10 / 1s, Flurry 22 / 5s, Whirlwind 30 / 9s, Redline 35 / 20s. Movement, Momentum, and effects changes are described above. |

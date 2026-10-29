@@ -43,6 +43,7 @@ public final class SkillTreeGameTests {
         com.jayptucker.heroesevolved.speed.SpeedService.forget(p);
         com.jayptucker.heroesevolved.time.SpaceTimeService.forget(p);
         com.jayptucker.heroesevolved.flight.FlightService.stopForPowerRemoval(p);
+        com.jayptucker.heroesevolved.flight.FlightSkillService.forget(p);
     }
     private static LivingEntity target(GameTestHelper h, ServerPlayer p) {
         var target = EntityType.PILLAGER.create(h.getLevel());
@@ -150,6 +151,8 @@ public final class SkillTreeGameTests {
     @GameTest(template="rewind_empty", batch="skills.actions")
     public static void allThirtyOptionalSkillsHaveGameplayConsequences(GameTestHelper h) {
         for (String power : POWERS) {
+            // These physical/stateful kits have dedicated travel, field and lifecycle tests.
+            if (power.equals("flight") || power.equals("telekinesis")) continue;
             var p = player(h, power, 5);
             try {
                 for (int branch = 0; branch < 3; branch++) {
@@ -238,6 +241,14 @@ public final class SkillTreeGameTests {
     @GameTest(template="rewind_empty", batch="skills.gravity")
     public static void gravityWellPullsMobsAndExpiresWithItsOwner(GameTestHelper h) {
         var p = player(h, "telekinesis", 5); var victim = target(h, p);
+        victim.setPos(p.position().add(0, 0, 3));
+        p.setData(ModDataAttachments.SKILL_TREES, SkillTreeData.empty().with(id("telekinesis").toString(),
+                new SkillTreeData.Build(5, Set.of("telekinesis_1_1"), Map.of(), 0)));
+        // Anchor at an actual surface beside the caster, rather than implicitly at their feet.
+        BlockPos anchor = p.blockPosition().below();
+        var previous = h.getLevel().getBlockState(anchor);
+        h.getLevel().setBlock(anchor, net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(), 3);
+        p.setXRot(90);
         SkillActionService.activate(new AbilityUseContext(p, id("telekinesis"), 5, false), 1);
         h.runAfterDelay(6, () -> {
             try {
@@ -247,7 +258,7 @@ public final class SkillTreeGameTests {
                 SkillActionService.tick(h.getLevel().getServer());
                 h.assertTrue(victim.getDeltaMovement().lengthSqr() == 0, "Removed field must stop altering its targets");
                 h.succeed();
-            } finally { victim.discard(); cleanup(p); }
+            } finally { h.getLevel().setBlock(anchor, previous, 3); victim.discard(); cleanup(p); }
         });
     }
 }

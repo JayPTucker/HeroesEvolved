@@ -224,7 +224,7 @@ public final class BunkerAndPowersGameTests {
             h.assertTrue(victim.getHealth() < health, "The borrowed fire actually burns");
             h.assertTrue(MimicryService.memory(p).powers().size() == 1, "Memories are kept");
             h.succeed();
-        } finally { victim.discard(); com.jayptucker.heroesevolved.pyro.PyroService.forget(p); }
+        } finally { victim.discard(); MimicryService.forget(p); com.jayptucker.heroesevolved.pyro.PyroService.forget(p); }
     }
 
     /** Every technique in every tree can be cast without error, with an enemy and a friend nearby. */
@@ -232,6 +232,8 @@ public final class BunkerAndPowersGameTests {
     public static void everyTechniqueActivatesSafely(GameTestHelper h) {
         int tried = 0;
         for (var power : AbilityRegistry.ABILITIES.keySet()) {
+            // Flight uses dedicated target/state fixtures in FlightSkillGameTests.
+            if (power.equals(ModAbilities.FLIGHT_ID)) continue;
             for (var node : SkillCatalog.nodes(power.getPath())) {
                 if (!node.active() || node.mechanic().isEmpty()) continue;
                 ServerPlayer p = player(h, power, 5);
@@ -250,7 +252,7 @@ public final class BunkerAndPowersGameTests {
                 }
             }
         }
-        h.assertTrue(tried == 48, "Expected 48 techniques (three per power), tried " + tried);
+        h.assertTrue(tried == 45, "Expected 45 techniques across the other fifteen powers, tried " + tried);
         h.succeed();
     }
 }

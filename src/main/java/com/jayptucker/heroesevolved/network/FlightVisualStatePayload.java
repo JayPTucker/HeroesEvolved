@@ -13,7 +13,8 @@ public record FlightVisualStatePayload(
         boolean flightActive,
         boolean cycloneActive,
         boolean flightEnabled,
-        int speedStep
+        int speedStep,
+        int telemetry
 ) implements CustomPacketPayload {
     public static final Type<FlightVisualStatePayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(
@@ -35,6 +36,8 @@ public record FlightVisualStatePayload(
             FlightVisualStatePayload::flightEnabled,
             ByteBufCodecs.VAR_INT,
             FlightVisualStatePayload::speedStep,
+            ByteBufCodecs.VAR_INT,
+            FlightVisualStatePayload::telemetry,
             FlightVisualStatePayload::new
     );
 
@@ -54,7 +57,8 @@ public record FlightVisualStatePayload(
                 payload.flightActive(),
                 payload.cycloneActive(),
                 payload.flightEnabled(),
-                payload.speedStep()
+                payload.speedStep(),
+                payload.telemetry()
         );
     }
 }

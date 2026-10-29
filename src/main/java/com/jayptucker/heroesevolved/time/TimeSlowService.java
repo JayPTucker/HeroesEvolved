@@ -122,6 +122,9 @@ public final class TimeSlowService {
             } else {
                 field.center = owner.position();
                 if (level.getGameTime() % 10 != 0) continue;
+                // The bubble stays visible while it lasts.
+                com.jayptucker.heroesevolved.effects.AbilityEffects.send(level, com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind.TIME_SLOW_PULSE,
+                        field.center(), field.center().add(0, 1, 0), HeroesEvolvedConfig.COMMON.timeSlowRadius.get());
                 owner.displayClientMessage(net.minecraft.network.chat.Component.translatable("time.heroesevolved.slowed", (field.remainingTicks + 19) / 20), true);
                 // Slowed time takes on a faded, sepia warmth.
                 com.jayptucker.heroesevolved.network.ScreenTintPayload.sendAround(

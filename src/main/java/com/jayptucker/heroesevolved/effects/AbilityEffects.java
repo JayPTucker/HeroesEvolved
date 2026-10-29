@@ -52,24 +52,22 @@ public final class AbilityEffects {
     public static void onAction(ServerPlayer player, ResourceLocation power, String action) {
         switch (power.getPath()) {
             case "time_manipulation" -> {
-                if (action.equals("temporal_snapshot")) at(player, Kind.TEMPORAL_FIELD, 3);
+                if (action.equals("temporal_snapshot")) at(player, Kind.TIME_SNAPSHOT, 4);
             }
             case "flight" -> {
-                if (!action.equals("flight_cyclone") && !action.equals("flight_dive_bomb")) {
+                if (action.equals("flight_toggle")) {
                     at(player, Kind.FLIGHT_BURST, action.equals("flight_launch") ? 3.0D : 1.6D);
                 }
             }
             case "regeneration" -> {
                 // Resurrection's key only reports readiness. Its real VFX run on revival.
-                if (!action.equals("regeneration_resurrection")
+                if (!action.equals("regeneration_second_life")
                         && !action.equals("regeneration_healing_aura")) {
                     at(player, Kind.REGENERATION,
                             action.equals("regeneration_indestructible") ? 1.4D : 1.0D);
                 }
             }
-            case "telekinesis" -> at(player,
-                    action.equals("telekinesis_push") ? Kind.PSYCHIC_PUSH : Kind.PSYCHIC_FIELD,
-                    action.equals("telekinesis_storm") ? 6.0D : 2.5D);
+            // Telekinesis emits its own cues at gather, hold, launch and physical impact.
             // A faint psychic ripple around the telepath; the tether to the
             // target mind is sent by TelepathyService itself.
             case "telepathy" -> at(player, Kind.MIND_PULSE,

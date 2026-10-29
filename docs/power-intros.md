@@ -8,7 +8,7 @@ non-time powers do not suddenly fire destructive intros on login.
 | Power | Charge | Release |
 | --- | --- | --- |
 | Quake | Three seconds of increasing tremor, inward pressure rings, and energy gathering around both hands. | A spherical terrain fracture advances to twelve blocks over two seconds, with three pressure fronts, radial streaks, block fragments, debris, a sonic boom and camera shake. |
-| Flight | One and a half seconds of wind gathering underfoot and spiralling up the body. | The existing real Flight Launch fires through a rising column of wind rings and ribbons. Nearby enemies are pushed back. |
+| Flight | One and a half seconds of wind gathering underfoot and spiralling up the body. | The existing real Flight Skyburst fires through a rising column of wind rings and ribbons. Nearby enemies are pushed back. |
 | Electrokinesis | Two and a half seconds of electrical arcs feeding a rotating blue/white corona. | A central lightning strike, three surrounding follow-up strikes, expanding electrical rings and a discharge that repels and damages nearby enemies. |
 | Telekinesis | Two seconds of inward motes and a concentrating violet field. | Nearby mobs and loose items briefly levitate, cosmetic stones rise from the ground, then the lifted objects are pushed outward. Living targets receive a brief slow-fall effect on release. |
 | Regeneration | Two and a half seconds of wounds healing amid red-to-gold particles. | Full health, harmful-status removal, extinguished fire, and a healing bloom reaching non-hostile living entities within eight blocks. |
@@ -45,7 +45,7 @@ updates, unsupported blocks and flowing fluids can react afterward.
 
 The city and Temporal Snapshot dimensions do not permit this terrain fracture.
 Destruction goes through the normal world block API, so existing Time Rewind
-journals can record it. Intros do not charge a new activation cost; Flight Launch
+journals can record it. Intros do not charge a new activation cost; Flight Skyburst
 enters the existing flight session, with its normal subsequent flight upkeep.
 
 ## Verification
@@ -60,7 +60,7 @@ The isolated server suite includes first-grant and dormant-unlock routing,
 duplicate callback handling, Quake charge timing, actual stone destruction,
 radius limits, bedrock, footing, canceled block breaks, persisted history,
 one-time regrants, interrupted charges, regeneration and nearby healing, real
-Flight Launch, non-burning cinematic lightning, and actual telekinetic item
+Flight Skyburst, non-burning cinematic lightning, and actual telekinetic item
 levitation without item duplication or changed gravity flags. Existing rewind
 and city-trip tests run alongside them. Client geometry checks exercise finite
 mesh output, bounds, UV/color validity, expiry and all effect payload codecs.

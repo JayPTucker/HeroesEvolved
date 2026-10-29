@@ -21,7 +21,12 @@ public final class ClientArmPoseState {
             POSES.remove(entityId);
             return;
         }
-        POSES.put(entityId, new Entry(pose, Util.getMillis() + durationTicks * 50L));
+        long now = Util.getMillis();
+        Entry previous = POSES.get(entityId);
+        boolean continuous = pose == ArmPose.KINETIC_GATHER || pose == ArmPose.KINETIC_HOLD;
+        long began = continuous && previous != null && previous.pose == pose && previous.endMillis > now
+                ? previous.startMillis : now;
+        POSES.put(entityId, new Entry(pose, began, now + durationTicks * 50L));
     }
 
     /** The entity's current pose, or null if it has none. */
@@ -41,6 +46,12 @@ public final class ClientArmPoseState {
         POSES.clear();
     }
 
-    private record Entry(ArmPose pose, long endMillis) {
+    /** Gesture phase survives hold refreshes, so hands do not snap back every server heartbeat. */
+    public static float ageTicks(int entityId) {
+        Entry entry = POSES.get(entityId);
+        return entry == null ? 0 : Math.max(0, (Util.getMillis() - entry.startMillis) / 50F);
+    }
+
+    private record Entry(ArmPose pose, long startMillis, long endMillis) {
     }
 }

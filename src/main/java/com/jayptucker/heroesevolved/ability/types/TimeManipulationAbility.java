@@ -74,18 +74,25 @@ public final class TimeManipulationAbility implements Ability {
     private static final AbilityAction TEMPORAL_SNAPSHOT =
             new TemporalSnapshotAction();
 
-    /** Level 4: restore the recorded local timeline, including blocks and entities. */
-    private static final AbilityAction REWIND =
-            com.jayptucker.heroesevolved.ability.SimpleAction
-                    .builder("time_rewind", 4)
-                    .cost(HeroesEvolvedConfig.COMMON.timeRewindEnergyCost::get,
-                            HeroesEvolvedConfig.COMMON.timeRewindCooldownTicks::get)
-                    .canUse(context -> !context.player().isPassenger()
-                            && com.jayptucker.heroesevolved.time.TimeRewindService
-                            .canRewind(context.player()))
-                    .activate(context -> com.jayptucker.heroesevolved.time
-                            .TimeRewindService.rewind(context.player()))
-                    .build();
+    /**
+     * Level 4: restore the recorded local timeline, including blocks and entities. It costs a full tank
+     * of stamina (Shift overexerts when short) and recovers slowly: four minutes at Level 4, two and a
+     * half at Level 5.
+     */
+    private static final AbilityAction REWIND = new AbilityAction() {
+        private final AbilityActionDefinition definition = new AbilityActionDefinition(
+                com.jayptucker.heroesevolved.time.TimeRewindService.REWIND_ID, "action.heroesevolved.time_rewind", 4, 0, 0);
+        @Override public AbilityActionDefinition definition() { return definition; }
+        @Override public int energyCost(int level) { return HeroesEvolvedConfig.COMMON.timeRewindEnergyCost.get(); }
+        @Override public int cooldownTicks(int level) { return com.jayptucker.heroesevolved.time.TimeRewindService.cooldownTicks(level); }
+        @Override public boolean canUse(AbilityUseContext context) {
+            return !context.player().isPassenger() && com.jayptucker.heroesevolved.time.TimeRewindService.canRewind(context.player());
+        }
+        @Override public AbilityActivationResult activate(AbilityUseContext context) {
+            return com.jayptucker.heroesevolved.time.TimeRewindService.rewind(context.player())
+                    ? AbilityActivationResult.SUCCESS : AbilityActivationResult.REJECTED;
+        }
+    };
 
     private static final Map<AbilitySlot, AbilityAction> ACTIONS = Map.of(
             AbilitySlot.PRIMARY, BLINK,
@@ -243,12 +250,13 @@ public final class TimeManipulationAbility implements Ability {
                             destinationBox
                     );
 
-            spawnAfterimage(level, player.position());
+            Vec3 leftBehind = player.position();
+            com.jayptucker.heroesevolved.network.TimeGhostPayload.echo(player, leftBehind, player.yBodyRot, 16, 0);
             player.teleportTo(destination.x, destination.y, destination.z);
             player.resetFallDistance();
             player.setDeltaMovement(Vec3.ZERO);
             player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket(player));
-            AbilityEffects.send(level, Kind.TEMPORAL_BURST, destination, destination.add(0, 1, 0), 1.5);
+            AbilityEffects.send(level, Kind.TIME_FOLD, leftBehind, destination, 1.0);
             com.jayptucker.heroesevolved.network.ScreenTintPayload.send(
                     player, 0x50FFFFFF, 4,
                     com.jayptucker.heroesevolved.network.ScreenTintPayload.Style.FLASH
@@ -288,24 +296,6 @@ public final class TimeManipulationAbility implements Ability {
             return AbilityActivationResult.SUCCESS;
         }
 
-        /**
-         * A body-shaped shimmer left where the player stood, as if the
-         * light from that moment had not caught up yet.
-         */
-        private static void spawnAfterimage(ServerLevel level, Vec3 feet) {
-            AbilityEffects.send(level,
-                    Kind.TEMPORAL_BURST,
-                    feet, feet, 1.3D);
-            for (double height = 0.1D; height <= 1.8D; height += 0.15D) {
-                // Narrow at the head, wider at the shoulders and body.
-                double width = height > 1.45D ? 0.18D : 0.28D;
-                level.sendParticles(ParticleTypes.END_ROD,
-                        feet.x, feet.y + height, feet.z,
-                        2, width, 0.02D, width, 0.0D);
-            }
-            level.sendParticles(ParticleTypes.REVERSE_PORTAL,
-                    feet.x, feet.y + 1.0D, feet.z, 20, 0.25D, 0.6D, 0.25D, 0.02D);
-        }
 
         private static LivingEntity findBlinkCarryTarget(
                 ServerPlayer player,

@@ -127,6 +127,25 @@ def drained():
     return pixels
 
 
+def radiation():
+    """The radiation trefoil: three blades around a hub, black on a sickly yellow-green disc."""
+    import math
+    pixels = [[list(CLEAR) for _ in range(18)] for _ in range(18)]
+    disc, edge, blade = [196, 232, 72, 255], [92, 140, 30, 255], [28, 30, 22, 255]
+    for y in range(18):
+        for x in range(18):
+            dx, dy = x - 8.5, y - 8.5
+            r = math.hypot(dx, dy)
+            if r > 8.4: continue
+            pixels[y][x] = list(edge if r > 7.4 else disc)
+            angle = math.degrees(math.atan2(dy, dx)) % 360
+            # Three 60-degree blades between radius 2.6 and 6.6, and a hub inside 1.6.
+            in_blade = any(abs(((angle - centre + 180) % 360) - 180) < 30 for centre in (270, 30, 150))
+            if r < 1.6 or (2.6 < r < 6.6 and in_blade):
+                pixels[y][x] = list(blade)
+    return pixels
+
+
 items = textures / "item"
 png(items / "empty_syringe.png", syringe())
 png(items / "regenerative_blood_sample.png", syringe(BLOOD))
@@ -147,6 +166,7 @@ png(blocks / "synthesis_station_front.png", machine_face(copper, copper, "statio
 png(blocks / "synthesis_station_front_on.png", machine_face(copper, copper, "station", True))
 
 png(textures / "mob_effect/drained.png", drained())
+png(textures / "mob_effect/radiation_sickness.png", radiation())
 print("PASS: wrote 6 item, 8 block and 1 effect textures")
 
 

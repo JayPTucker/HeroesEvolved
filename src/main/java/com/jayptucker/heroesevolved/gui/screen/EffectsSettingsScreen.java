@@ -45,10 +45,21 @@ public final class EffectsSettingsScreen extends Screen {
                 })
                 .bounds(x, top + 106, buttonWidth, 20)
                 .build());
+        addRenderableWidget(Button.builder(limbsLabel(), button -> {
+                    ClientVisualSettings.SEVERED_LIMBS.set(!ClientVisualSettings.SEVERED_LIMBS.get());
+                    ClientVisualSettings.SPEC.save();
+                    button.setMessage(limbsLabel());
+                })
+                .bounds(x, top + 130, buttonWidth, 20)
+                .build());
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> onClose())
                 .bounds(left + PANEL_WIDTH / 2 - 40, top + PANEL_HEIGHT - 28, 80, 20)
                 .build());
+    }
+
+    private static Component limbsLabel() {
+        return Component.literal("Severed limbs: " + (ClientVisualSettings.SEVERED_LIMBS.get() ? "Bone and flesh" : "Fade only"));
     }
 
     /** A button that steps a 0-100% setting down through fixed values. */

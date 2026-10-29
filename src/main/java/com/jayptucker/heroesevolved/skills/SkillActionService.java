@@ -40,6 +40,8 @@ public final class SkillActionService {
                 : hostile(player, target));
     }
     public static boolean canUse(AbilityUseContext c, int branch) {
+        if (c.abilityId().getPath().equals("telekinesis")) return com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.canUse(c.player(), "telekinesis_" + branch + "_1");
+        if (c.abilityId().getPath().equals("flight")) return com.jayptucker.heroesevolved.flight.FlightSkillService.canUse(c.player(), "flight_" + branch + "_1");
         if (c.abilityId().getPath().equals("superspeed")) return com.jayptucker.heroesevolved.speed.SpeedService.canUseSkill(c, branch);
         if (c.abilityId().getPath().equals("time_manipulation")) return com.jayptucker.heroesevolved.time.SpaceTimeService.canUse(c, branch);
         if (c.abilityId().getPath().equals("precognition")) return true;
@@ -63,15 +65,7 @@ public final class SkillActionService {
                 }
                 visual(p, target, Kind.QUAKE_PULSE, branch == 1 ? 8 : 3);
             }
-            case "flight" -> {
-                if (branch == 0) { push(p, p.getLookAngle().scale(1.7)); effect(p, MobEffects.SLOW_FALLING, 100, 0); }
-                if (branch == 1) { push(p, Vec3.ZERO); reflect(p, p.position(), 7); field(p, power, 80); }
-                if (branch == 2) {
-                    push(p, p.getDeltaMovement().add(0, 1.2, 0)); effect(p, MobEffects.SLOW_FALLING, 160, 0);
-                    for (var t : nearby(p, 6)) push(t, t.getDeltaMovement().add(0, .85, 0));
-                }
-                visual(p, null, Kind.FLIGHT_BURST, 4);
-            }
+            case "flight" -> { return com.jayptucker.heroesevolved.flight.FlightSkillService.activate(p, "flight_" + branch + "_1"); }
             case "cryokinesis" -> {
                 if (branch == 0) { hit(p, target, 6 + level); CryoService.freezeSolid(target, 80, p); }
                 if (branch == 1) { effect(p, MobEffects.DAMAGE_RESISTANCE, 160, 1); effect(p, MobEffects.FIRE_RESISTANCE, 160, 0); }
@@ -96,10 +90,7 @@ public final class SkillActionService {
                 if (branch != 2) visual(p, target, Kind.ELECTRIC_ARC, 3);
             }
             case "telekinesis" -> {
-                if (branch == 0) { hit(p, target, 6 + level); push(target, p.getLookAngle().scale(2)); }
-                if (branch == 1) field(p, power, 100);
-                if (branch == 2) { effect(p, MobEffects.LEVITATION, 35, 2); effect(p, MobEffects.SLOW_FALLING, 180, 0); }
-                visual(p, target, Kind.PSYCHIC_FIELD, 5);
+                return com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.activate(p, "telekinesis_" + branch + "_1", c.modifierHeld());
             }
             case "telepathy" -> {
                 if (branch == 0) { effect(target, MobEffects.WEAKNESS, 120, 1); effect(target, MobEffects.MOVEMENT_SLOWDOWN, 100, 3); }
@@ -130,7 +121,7 @@ public final class SkillActionService {
                 return com.jayptucker.heroesevolved.time.SpaceTimeService.activate(c, branch);
             }
             case "radiation" -> {
-                if (branch == 0) { hit(p, target, 9 + level); RadiationService.irradiate(target, 120); }
+                if (branch == 0) { hit(p, target, 9 + level); RadiationService.irradiate(target, p, 1, 120); }
                 if (branch == 1) effect(p, MobEffects.DAMAGE_RESISTANCE, 160, 1);
                 if (branch == 2) for (var ally : allies(p, 8)) { cleanse(ally); effect(ally, MobEffects.FIRE_RESISTANCE, 160, 0); }
                 visual(p, target, branch == 0 ? Kind.NUCLEAR_RAY : Kind.NUCLEAR_EMP, 4);
@@ -191,12 +182,17 @@ public final class SkillActionService {
                 || f.owner.position().distanceToSqr(f.center) > 16 * 16);
         if (now % 5 != 0) return;
         for (Field f : FIELDS.values()) {
-            if (f.power.equals("telekinesis")) {
-                for (var t : nearby(f.owner, 10)) push(t, f.center.subtract(t.position()).normalize().scale(.35).add(0, .04, 0));
-                if (now % 10 == 0) AbilityEffects.send(f.owner.serverLevel(), Kind.PSYCHIC_FIELD, f.center, f.center.add(0, 1, 0), 5);
-            } else reflect(f.owner, f.center, 7);
+            reflect(f.owner, f.center, 7);
         }
     }
-    public static void forget(ServerPlayer player) { FIELDS.remove(player.getUUID()); }
-    public static void clear() { FIELDS.clear(); }
+    public static void forget(ServerPlayer player) {
+        FIELDS.remove(player.getUUID());
+        com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.forget(player);
+        com.jayptucker.heroesevolved.telekinesis.TelekineticArsenalService.forget(player);
+    }
+    public static void clear() {
+        FIELDS.clear();
+        com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.clear();
+        com.jayptucker.heroesevolved.telekinesis.TelekineticArsenalService.clear();
+    }
 }

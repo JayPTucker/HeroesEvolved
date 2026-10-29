@@ -13,7 +13,10 @@
   "client": [
     "FlightSprintMixin",
     "PlayerModelMixin",
-    "IntroRenderDistanceMixin"
+    "CarryVisibilityMixin",
+    "IntroRenderDistanceMixin",
+    "SeveredArmorMixin",
+    "SeveredHandItemMixin"
   ],
   "injectors": {
     "defaultRequire": 1

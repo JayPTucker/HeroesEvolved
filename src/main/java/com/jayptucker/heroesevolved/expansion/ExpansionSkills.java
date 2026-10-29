@@ -104,10 +104,10 @@ public final class ExpansionSkills {
             }
             case "rime_loom" -> {
                 Vec3 direction = p.getLookAngle().multiply(1, 0, 1).normalize(); int placed = 0;
-                int length = has(p, "cryo_suspension_stitch") ? 24 : 16, width = has(p, "cryo_double_weave") ? 1 : 0;
+                int length = has(p, "cryokinesis_suspension_stitch") ? 24 : 16, width = has(p, "cryokinesis_double_weave") ? 1 : 0;
                 for (int i = 1; i <= length; i++) for (int side = -width; side <= width; side++) {
                     Vec3 point = p.position().add(direction.scale(i)).add(-direction.z * side, -1, direction.x * side);
-                    if (has(p, "cryo_suspension_stitch") && p.getLookAngle().y > .25) point = point.add(0, i / 4, 0);
+                    if (has(p, "cryokinesis_suspension_stitch") && p.getLookAngle().y > .25) point = point.add(0, i / 4, 0);
                     BlockPos pos = BlockPos.containing(point);
                     if (WorldMutationPolicy.canEdit(p, p.serverLevel(), pos)
                             && TemporaryBlocks.place(p.serverLevel(), pos, Blocks.PACKED_ICE.defaultBlockState(), 240, p)) placed++;
@@ -123,26 +123,26 @@ public final class ExpansionSkills {
                 COCOONS.put(t.getUUID(), new Cocoon(p, t, t.position(), p.serverLevel(), now(p) + (t instanceof ServerPlayer ? 60 : 120)));
                 if (t instanceof Mob mob) { mob.getNavigation().stop(); mob.setTarget(null); }
                 t.clearFire();
-                if (has(p, "cryo_sterile_ice")) for (var effect : t.getActiveEffects().stream().filter(e -> e.getEffect().value().getCategory() == net.minecraft.world.effect.MobEffectCategory.HARMFUL).toList()) t.removeEffect(effect.getEffect());
+                if (has(p, "cryokinesis_sterile_ice")) for (var effect : t.getActiveEffects().stream().filter(e -> e.getEffect().value().getCategory() == net.minecraft.world.effect.MobEffectCategory.HARMFUL).toList()) t.removeEffect(effect.getEffect());
                 AbilityEffects.send(p.serverLevel(), Kind.CRYO_FREEZE, t.position(), t.getEyePosition(), 2);
                 message(p, "Stillheart: shelter now, recovery when the shell opens. Shift casts on yourself.");
             }
             case "brittle_constellation" -> {
                 List<LivingEntity> targets = enemies(p, Vec3.atCenterOf(target), 8).stream().limit(4).toList();
                 if (targets.isEmpty()) return false;
-                STARS.put(p.getUUID(), new Constellation(p, targets, now(p) + (has(p, "cryo_long_winter") ? 200 : 120)));
+                STARS.put(p.getUUID(), new Constellation(p, targets, now(p) + (has(p, "cryokinesis_long_winter") ? 200 : 120)));
                 for (var t : targets) { CryoService.freezeSolid(t, 40, p); AbilityEffects.send(p.serverLevel(), Kind.CRYO_BOLT, p.getEyePosition(), t.getEyePosition(), 1); }
                 FacilityService.technique(p, target, "cold");
             }
             case "circuit_thread" -> {
-                List<BlockPos> circuit = conductorNetwork(p.serverLevel(), target, has(p, "electro_copper_choir"));
+                List<BlockPos> circuit = conductorNetwork(p.serverLevel(), target, has(p, "electrokinesis_copper_choir"));
                 if (circuit.isEmpty()) { message(p, "Aim at iron, copper, a lightning rod, or a chain. Connected conductors carry the thread."); return false; }
                 Set<UUID> struck = new HashSet<>(); Vec3 previous = p.getEyePosition();
                 for (BlockPos pos : circuit) {
                     Vec3 point = Vec3.atCenterOf(pos);
                     AbilityEffects.send(p.serverLevel(), Kind.ELECTRIC_ARC, previous, point, 1); previous = point;
                     FacilityService.technique(p, pos, "current");
-                    for (LivingEntity t : enemies(p, point, has(p, "electro_live_wire") ? 2.5 : 1.5)) if (struck.add(t.getUUID())) {
+                    for (LivingEntity t : enemies(p, point, has(p, "electrokinesis_live_wire") ? 2.5 : 1.5)) if (struck.add(t.getUUID())) {
                         PowerReactions.electric(p, t); t.hurt(p.damageSources().playerAttack(p), 5 + c.abilityLevel());
                     }
                 }
@@ -154,7 +154,7 @@ public final class ExpansionSkills {
                     AbilityEffects.send(p.serverLevel(), Kind.ELECTRIC_NOVA, old.center, old.center.add(0, 3, 0), 6);
                 } else {
                     if (!p.level().getBlockState(target).isFaceSturdy(p.level(), target, Direction.UP)) return false;
-                    SINKS.put(p.getUUID(), new Sink(p, p.serverLevel(), Vec3.atCenterOf(target.above()), now(p) + (has(p, "electro_insulated_roots") ? 240 : 160), new float[]{0}));
+                    SINKS.put(p.getUUID(), new Sink(p, p.serverLevel(), Vec3.atCenterOf(target.above()), now(p) + (has(p, "electrokinesis_insulated_roots") ? 240 : 160), new float[]{0}));
                     message(p, "Ground established. Nearby allies shed projectile energy into it. Cast again to discharge.");
                 }
                 FacilityService.technique(p, target, "current");
@@ -164,7 +164,7 @@ public final class ExpansionSkills {
                 List<Vec3> anchors = old != null && old.level == p.level() && old.until > now(p) ? new ArrayList<>(old.anchors) : new ArrayList<>();
                 if (!anchors.isEmpty() && anchors.getLast().distanceToSqr(point) > 24 * 24) return false;
                 if (anchors.size() == 3) anchors.removeFirst(); anchors.add(point);
-                LATTICES.put(p.getUUID(), new Lattice(p, p.serverLevel(), List.copyOf(anchors), now(p) + (has(p, "electro_closed_circuit") ? 300 : 180), new HashSet<>()));
+                LATTICES.put(p.getUUID(), new Lattice(p, p.serverLevel(), List.copyOf(anchors), now(p) + (has(p, "electrokinesis_closed_circuit") ? 300 : 180), new HashSet<>()));
                 AbilityEffects.send(p.serverLevel(), Kind.ELECTRIC_NOVA, point, point.add(0, 1, 0), 1);
                 FacilityService.technique(p, target, "current");
             }
@@ -221,7 +221,7 @@ public final class ExpansionSkills {
         }
         if (e.getSource().getDirectEntity() instanceof Projectile) for (Sink sink : SINKS.values()) {
             if (sink.level != e.getEntity().level() || !friendly(sink.owner, e.getEntity()) || sink.center.distanceToSqr(e.getEntity().position()) > 36 || !PowerRules.canAct(sink.owner)) continue;
-            float absorbed = e.getAmount() * (has(sink.owner, "electro_faraday_garden") ? .65F : .4F);
+            float absorbed = e.getAmount() * (has(sink.owner, "electrokinesis_faraday_garden") ? .65F : .4F);
             sink.charge[0] = Math.min(16, sink.charge[0] + absorbed); e.setAmount(e.getAmount() - absorbed); break;
         }
         for (var entry : List.copyOf(STARS.entrySet())) {
@@ -231,8 +231,8 @@ public final class ExpansionSkills {
             if (!PowerRules.canAct(stars.owner)) continue;
             for (var t : stars.targets) if (t != e.getEntity() && t.isAlive() && t.level() == stars.owner.level()) {
                 CryoService.releaseEntity(t);
-                t.hurt(stars.owner.damageSources().playerAttack(stars.owner), has(stars.owner, "cryo_shattered_sky") ? 7 : 4);
-                if (has(stars.owner, "cryo_shattered_sky") && t instanceof Mob && t.isAlive()) CryoService.freezeSolid(t, 40, stars.owner);
+                t.hurt(stars.owner.damageSources().playerAttack(stars.owner), has(stars.owner, "cryokinesis_shattered_sky") ? 7 : 4);
+                if (has(stars.owner, "cryokinesis_shattered_sky") && t instanceof Mob && t.isAlive()) CryoService.freezeSolid(t, 40, stars.owner);
                 AbilityEffects.send(stars.owner.serverLevel(), Kind.CRYO_BOLT, e.getEntity().getEyePosition(), t.getEyePosition(), 1.5);
             }
         }
@@ -268,8 +268,8 @@ public final class ExpansionSkills {
             if (time >= c.until || !c.target.isAlive() || c.target.level() != c.level || c.owner.level() != c.level || !PowerRules.canAct(c.owner) && c.target != c.owner) {
                 COCOONS.remove(c.target.getUUID());
                 if (c.target.isAlive() && c.target.level() == c.level) {
-                    c.target.heal(has(c.owner, "cryo_second_spring") ? 6 : 2);
-                    if (has(c.owner, "cryo_second_spring")) for (var ally : c.level.getEntitiesOfClass(LivingEntity.class, c.target.getBoundingBox().inflate(5), t -> t != c.target && friendly(c.owner, t) && c.target.hasLineOfSight(t))) ally.heal(2);
+                    c.target.heal(has(c.owner, "cryokinesis_second_spring") ? 6 : 2);
+                    if (has(c.owner, "cryokinesis_second_spring")) for (var ally : c.level.getEntitiesOfClass(LivingEntity.class, c.target.getBoundingBox().inflate(5), t -> t != c.target && friendly(c.owner, t) && c.target.hasLineOfSight(t))) ally.heal(2);
                 }
                 continue;
             }
@@ -282,13 +282,13 @@ public final class ExpansionSkills {
         LATTICES.values().removeIf(s -> time >= s.until || s.owner.level() != s.level || !PowerRules.canAct(s.owner));
         if (time % 10 != 0) return;
         for (Sink s : SINKS.values()) AbilityEffects.send(s.level, Kind.ELECTRIC_NOVA, s.center, s.center.add(0, 1, 0), 1 + s.charge[0] / 8);
-        for (Lattice l : LATTICES.values()) for (int i = 1; i < l.anchors.size() + (has(l.owner, "electro_storm_geometry") && l.anchors.size() == 3 ? 1 : 0); i++) {
+        for (Lattice l : LATTICES.values()) for (int i = 1; i < l.anchors.size() + (has(l.owner, "electrokinesis_storm_geometry") && l.anchors.size() == 3 ? 1 : 0); i++) {
             Vec3 a = l.anchors.get(i - 1), b = l.anchors.get(i % l.anchors.size()); AbilityEffects.send(l.level, Kind.ELECTRIC_ARC, a, b, 1);
             Vec3 delta = b.subtract(a); double length = delta.lengthSqr();
             for (var t : enemies(l.owner, a.add(b).scale(.5), Math.sqrt(length) / 2 + 2)) {
                 double fraction = length == 0 ? 0 : Math.clamp(t.position().subtract(a).dot(delta) / length, 0, 1);
                 if (t.position().distanceToSqr(a.add(delta.scale(fraction))) > 2.25 || !l.struck.add(t.getUUID())) continue;
-                PowerReactions.electric(l.owner, t); t.hurt(l.owner.damageSources().playerAttack(l.owner), has(l.owner, "electro_storm_geometry") ? 10 : 6);
+                PowerReactions.electric(l.owner, t); t.hurt(l.owner.damageSources().playerAttack(l.owner), has(l.owner, "electrokinesis_storm_geometry") ? 10 : 6);
                 FacilityService.technique(l.owner, t.blockPosition(), "current");
             }
         }

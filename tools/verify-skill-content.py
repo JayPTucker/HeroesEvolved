@@ -60,4 +60,20 @@ for name in ("sonic_cry", "sonic_burst", "sonic_scream"):
         assert 0.5 <= duration <= 2.5
     print(f"PASS: {name}: mono Vorbis, {duration:.2f}s, {len(data):,} bytes")
 assert (assets / "sounds/ability/sonic_credits.txt").is_file()
-print(f"PASS: {nodes} skill nodes, {actives} optional actions, all custom sound files/subtitles and voice provenance.")
+
+# Every skill lookup in the code must name a node that exists, or buying that node silently does nothing.
+import re
+ids = {node.get("id", f'{tree["power"]}_{b}_{i}') for tree in trees for b, lane in enumerate(tree["branches"]) for i, node in enumerate(lane)}
+source = pathlib.Path(__file__).resolve().parents[1] / "src/main/java"
+lookups = 0
+for java in source.rglob("*.java"):
+    text = java.read_text(encoding="utf-8")
+    # Telekinesis's own helper adds its prefix; everything else must use the full id.
+    prefix = "telekinesis_" if java.parent.name == "telekinesis" else ""
+    for match in re.finditer(r'\bhas\(\s*[\w.()]+\s*,\s*"([a-z0-9_]+)"\s*\)', text):
+        key = match.group(1)
+        full = key if key.startswith(prefix) else prefix + key
+        line = text[:match.start()].count("\n") + 1
+        assert full in ids, f"{java.relative_to(source)}:{line} checks skill '{key}', which no skill tree defines"
+        lookups += 1
+print(f"PASS: {nodes} skill nodes, {actives} optional actions, {lookups} skill lookups, all custom sound files/subtitles and voice provenance.")

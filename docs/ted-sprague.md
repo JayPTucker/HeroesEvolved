@@ -8,13 +8,33 @@ mechanics have been removed from this power. The Telepathy future-city storyline
 is unchanged. The numeric ranges, timers and protections below are game design
 choices, including the requested protected first awakening.
 
+## The rework: a reactor you run hot
+
+Core (the stored "stress") still builds as you use your power and as you are hurt, but it is
+now fuel rather than only a danger: the hotter you run, the stronger you are. The HUD shows a
+**Core** bar under your ability list with notches at each threshold, replacing the old action-bar text.
+
+| Core | State | What it does |
+| --- | --- | --- |
+| 0–39 | Stable | Normal strength. |
+| 40–79 | **Hot** | Radiation powers deal **25% more damage**. A Geiger counter starts to crackle around you. |
+| 60+ | **Glowing** | You glow orange, and radiation leaks onto **enemies** within 3 blocks (never allies). |
+| 80–99 | **Critical** | **50% more damage**; Radiant Heat and Contamination give two stages of sickness and set targets alight. |
+| 100 | Meltdown | The existing three-second warning: vent (Controlled Emission, EMP or Exploding Man) or containment fails. |
+
+**Radiation Sickness** replaces the old Poison, Hunger and Weakness. It is a stacking dose in five
+stages: each second it burns for half a heart per stage (armor does not help, and the undead are not
+spared) and saps attack strength. Ted and anyone holding his power are immune. A creature that dies
+while sick **bursts**, damaging and dosing everything around it, so radiation spreads through a crowd
+as a chain reaction.
+
 | Level | Action | Behavior |
 | --- | --- | --- |
-| 1 | Radiant Heat | Burns and irradiates a creature up to ten blocks away. Aiming at terrain boils source water, thaws ice, and melts iron doors, trapdoors or bars. Terrain permissions and protection events apply. |
-| 2 | Radiation Pulse | Nearby creatures suffer radiation sickness and direct damage. Shift uses bright emission instead, blinding without poisoning them. |
-| 3 | Electromagnetic Pulse | Suppresses weak and direct redstone signals within sixteen blocks for ten seconds, then refreshes circuits. Lamps, doors and circuits recover; block entities and inventories are never replaced. |
-| 4 | Controlled Emission | Vents accumulated stress through a focused heat beam, retaining the extended forty-eight-block reach. |
-| 5 | Nuclear Detonation | Three-second voluntary charge. Shift cancels it while control remains. Once an involuntary meltdown begins, Shift cannot cancel it. |
+| 1 | Radiant Heat | A white-hot **cone** from your palms burns and doses up to six enemies within 8 blocks. With nothing in reach, the heat still works on terrain: it boils source water, thaws ice and melts iron doors, trapdoors or bars (permissions and protection events apply). +6 Core. |
+| 2 | Contamination | A pulse of sickness around you (6 + level blocks) that leaves the ground **contaminated for 8 seconds**: anyone who stands in it later keeps getting dosed. **Shift** emits the bright, blinding flash instead. +12 Core. |
+| 3 | Electromagnetic Pulse | Still suppresses redstone within 16 blocks for 10 seconds. It also throws enemies within 10 blocks off balance (slowed, weakened, revealed) and **vents 25 Core**: your panic button. |
+| 4 | Controlled Emission | **Hold** to pour Core out through a piercing heat beam (48-block reach). Each pulse vents 3 Core and hits harder the more is left; it ends when you let go, run cool, or after five seconds. Needs 10 Core to start. **Shift** stops it at once. |
+| 5 | Nuclear Detonation | Unchanged: a three-second voluntary charge that Shift cancels while control remains; an involuntary meltdown cannot be cancelled. |
 
 ## Awakening and stress
 
@@ -30,7 +50,7 @@ change, power removal or Eclipse suppression.
 
 Afterward, actual health damage adds three stress per point, capped at one
 hundred. Actions also raise stress. After five seconds without injury, it cools
-at one point per second. At sixty percent radiation leaks onto nearby creatures.
+at one point per second. At sixty percent radiation leaks onto nearby enemies.
 At one hundred, a three-second warning gives a chance to vent, followed by a
 three-second involuntary meltdown. Stress is serialized with the player;
 disconnecting does not erase it. Full stress rearms the warning when play resumes.
@@ -125,6 +145,13 @@ Radiation's awakening also recognizes the Glowing Man visions for its owner
 and nearby witnesses who have progressed the Telepathy/city storyline.
 
 ## Verification
+
+`RadiationGameTests` also covers the rework: the cone hits in front and not behind, Critical Core
+hits harder and burns, doses stack and Ted is immune, a sick creature's death spreads the sickness,
+contaminated ground doses latecomers, the held beam drains Core and stops on release, and EMP vents
+Core and staggers enemies. Photograph every power with
+`./gradlew runClient --init-script tools/radiation-preview.init.gradle`
+(screenshots in `build/radiation-preview/screenshots/`).
 
 The isolated server suite checks the complete first awakening, lethal damage
 protection and its expiration, uncancellable first charge, harmful radiation

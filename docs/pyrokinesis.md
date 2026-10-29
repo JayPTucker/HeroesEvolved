@@ -61,7 +61,7 @@ started themselves.
 | --- | --- | --- |
 | **Thermal Shock** | Any pyrokinetic hit on an enemy a Cryokinetic has frozen solid | Uses up the freeze. A steam explosion deals 10 damage (4 to players) and blinds anything within 3 blocks. |
 | **Steam Veil** | Flare or Flame Palm hits water, ice or snow, including Cryo's ice walls and paths | A steam cloud for 6 s. Mobs can't target anyone inside it, and mobs inside can't see out. |
-| **Firestorm** | A Flight **Cyclone** or Superspeed **Whirlwind** passes through a Ring of Fire | The vortex catches fire for 5 s, igniting and damaging everything nearby. |
+| **Firestorm** | A Flight **Tempest** or Superspeed **Whirlwind** passes through a Ring of Fire | The vortex catches fire for 5 s, igniting and damaging everything nearby. |
 
 Each reaction gives two training points the first time you discover it, the same as the existing reactions.
 

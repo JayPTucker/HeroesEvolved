@@ -1,22 +1,28 @@
 package com.jayptucker.heroesevolved.telekinesis;
 
 import com.jayptucker.heroesevolved.ability.AbilityRanges;
-
-import com.jayptucker.heroesevolved.effects.AbilityEffects;
-import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
-
+import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.Targeting;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
+import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
+import com.jayptucker.heroesevolved.ability.service.PowerRules;
+import com.jayptucker.heroesevolved.cooldown.CooldownService;
+import com.jayptucker.heroesevolved.effects.AbilityEffects;
+import com.jayptucker.heroesevolved.entity.EntityCarryService;
 import com.jayptucker.heroesevolved.entity.TemporalEchoEntity;
-import com.jayptucker.heroesevolved.events.EclipseService;
+import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
+import com.jayptucker.heroesevolved.network.ArmPosePayload;
 import com.jayptucker.heroesevolved.network.CameraShakePayload;
 import com.jayptucker.heroesevolved.network.ScreenTintPayload;
 import com.jayptucker.heroesevolved.progression.MasteryService;
+import com.jayptucker.heroesevolved.skills.SkillTreeService;
+import com.jayptucker.heroesevolved.speed.SpeedService;
 import com.jayptucker.heroesevolved.time.TemporalEntityEchoService;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -27,588 +33,616 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
-/**
- * Telekinesis, after Sylar: shove, seize, disarm, stop bullets in the air,
- * and hold a whole crowd aloft before dashing them to the ground.
- */
-public final class TelekinesisService {
-    private static final double CONE_COSINE = Math.cos(Math.toRadians(35.0D));
-    private static final double GRIP_DISTANCE = 4.0D;
-    private static final int LIFT_DURATION_TICKS = 60;
+import static com.jayptucker.heroesevolved.config.HeroesEvolvedConfig.COMMON;
 
-    private static final Map<UUID, Impact> IMPACTS = new HashMap<>();
+/** A physical force kit: acquire, hold beside you, redirect, and make the impact count. */
+public final class TelekinesisService {
+    public static final int STORM_GATHER_TICKS = 20;
+    public static final int STORM_LIFT_TICKS = 45;
+    public static final int MAX_CAUGHT_PROJECTILES = 12;
+    private static final int MAX_TARGETS = 64;
     private static final Map<UUID, Grip> GRIPS = new HashMap<>();
     private static final Map<UUID, BulletStop> BULLET_STOPS = new HashMap<>();
     private static final Map<UUID, Lift> LIFTS = new HashMap<>();
+    private static final Map<UUID, Impact> IMPACTS = new HashMap<>();
+    private static final ResourceLocation BULLET_ID = id("telekinesis_bullet_stop");
+    private static final ResourceLocation STORM_ID = id("telekinesis_storm");
 
-    private TelekinesisService() {
-    }
+    private TelekinesisService() {}
 
-    // ------------------------------------------------------------------
-    // Telekinetic Push
-    // ------------------------------------------------------------------
-
-    /** A cone of force. Whatever it throws into a wall takes extra damage. */
+    /** A visible cone of force. Walls stop it; one orbiting object follows an ordinary palm strike. */
     public static void push(ServerPlayer player, int powerLevel) {
-        ServerLevel level = player.serverLevel();
-        Vec3 eye = player.getEyePosition();
-        Vec3 look = player.getLookAngle();
-        double strength = 1.4D + powerLevel * 0.2D;
-        double range = AbilityRanges.ranged(8.0D);
-
-        for (Entity entity : level.getEntities(player,
-                player.getBoundingBox().inflate(range), Entity::isAlive)) {
-            if (entity instanceof TemporalEchoEntity) {
-                continue;
-            }
-            Vec3 toEntity = entity.getBoundingBox().getCenter().subtract(eye);
-            double distance = toEntity.length();
-            if (distance > range || distance < 0.01D
-                    || toEntity.normalize().dot(look) < CONE_COSINE) {
-                continue;
-            }
-
-            double falloff = 1.0D - 0.5D * distance / range;
-            setVelocity(entity, look.scale(strength * falloff).add(0.0D, 0.3D, 0.0D));
+        if (!PowerRules.canAct(player)) return;
+        Vec3 eye = player.getEyePosition(), direction = player.getLookAngle().normalize();
+        double range = AbilityRanges.ranged(8);
+        Vec3 end = clippedEnd(player, eye, direction, range);
+        double reach = end.distanceTo(eye);
+        int affected = 0;
+        for (Entity entity : player.serverLevel().getEntities(player, player.getBoundingBox().inflate(range), Entity::isAlive)
+                .stream().limit(MAX_TARGETS).toList()) {
+            Vec3 delta = entity.getBoundingBox().getCenter().subtract(eye);
+            if (delta.lengthSqr() < .01 || delta.length() > reach + .5
+                    || delta.normalize().dot(direction) < Math.cos(Math.toRadians(35))
+                    || !clearLine(player.serverLevel(), player, eye, entity.getBoundingBox().getCenter())) continue;
             if (entity instanceof LivingEntity living) {
-                if (TemporalEntityEchoService.isReplaying(living)) {
-                    TemporalEntityEchoService.disturb(living, player);
-                }
-                IMPACTS.put(living.getUUID(), new Impact(living, player.getUUID(),
-                        level.getGameTime() + 15, 3.0F + powerLevel, false));
-            }
-            level.sendParticles(ParticleTypes.SMALL_GUST, entity.getX(),
-                    entity.getY() + entity.getBbHeight() / 2, entity.getZ(),
-                    3, 0.2D, 0.2D, 0.2D, 0.0D);
+                if (!hostile(player, living) || isHeld(living)) continue;
+                float damage = 2 + Math.clamp(powerLevel, 1, 5) * .25F;
+                living.hurt(player.damageSources().playerAttack(player), damage);
+                registerImpact(player, living, 3 + powerLevel, false, 24);
+                if (TemporalEntityEchoService.isReplaying(living)) TemporalEntityEchoService.disturb(living, player);
+            } else if (entity instanceof Projectile shot) {
+                if (!hostileProjectile(player, shot)) continue;
+                shot.setOwner(player);
+            } else if (!(entity instanceof ItemEntity) && !(entity instanceof ExperienceOrb)) continue;
+            double falloff = 1 - .45 * Math.min(1, delta.length() / range);
+            setVelocity(entity, direction.scale((1.5 + powerLevel * .17) * falloff).add(0, .22, 0));
+            affected++;
         }
-
-        for (int index = 1; index <= 4; index++) {
-            Vec3 point = eye.add(look.scale(index * 1.8D));
-            level.sendParticles(ParticleTypes.GUST, point.x, point.y, point.z,
-                    1, 0.0D, 0.0D, 0.0D, 0.0D);
-        }
-        level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.WIND_CHARGE_BURST.value(), SoundSource.PLAYERS,
-                0.8F, 0.7F);
+        TelekineticArsenalService.launchOne(player);
+        if (affected > 0) TelekineticArsenalService.salvage(player);
+        AbilityEffects.send(player.serverLevel(), Kind.TK_WAVE, hand(player), end, 2.2);
+        ArmPosePayload.show(player, ArmPose.KINETIC_RELEASE, 10);
+        sound(player, SoundEvents.WIND_CHARGE_BURST.value(), .8F, .85F);
         MasteryService.markPowerUse(player, ModAbilities.TELEKINESIS_ID);
     }
 
-    // ------------------------------------------------------------------
-    // Telekinetic Grip
-    // ------------------------------------------------------------------
-
-    /** True while any telekinetic holds this creature in the air. */
-    public static boolean isHeld(net.minecraft.world.entity.Entity entity) {
-        return GRIPS.values().stream().anyMatch(grip -> grip.target == entity);
+    /** Both ordinary grips and an active storm reserve their targets against competing controllers. */
+    public static boolean isHeld(Entity entity) {
+        return GRIPS.values().stream().anyMatch(grip -> grip.target == entity)
+                || LIFTS.values().stream().anyMatch(lift -> lift.targets.stream().anyMatch(t -> t.entity == entity));
     }
 
-    public static boolean isGripping(ServerPlayer player) {
-        return GRIPS.containsKey(player.getUUID());
+    public static boolean isGripping(ServerPlayer player) { return GRIPS.containsKey(player.getUUID()); }
+
+    /** A launched slam owns its landing damage until its single pending collision is resolved. */
+    public static boolean isSlammed(Entity entity) {
+        Impact impact = IMPACTS.get(entity.getUUID());
+        return impact != null && impact.target == entity && impact.slam && impact.owner.valid()
+                && entity.level() == impact.owner.level && now(impact.owner.player) <= impact.until;
     }
 
     public static LivingEntity findGripTarget(ServerPlayer player) {
-        return Targeting.livingEntityInSight(player, 16.0D,
-                target -> !(target instanceof TemporalEchoEntity)
-                        && !TemporalEntityEchoService.isPastCopy(target));
+        double baseRange = 16 + (TelekinesisSkillService.has(player, "long_reach") ? 4 : 0);
+        return Targeting.livingEntityInSight(player, baseRange, target -> eligibleTarget(player, target)
+                && !isHeld(target) && (friendly(player, target) || hostile(player, target)));
     }
 
-    /** Seize a creature and hold it in the air before you, choking. */
+    /** The held body stays beside the crosshair, and never follows camera pitch through the floor. */
     public static boolean grip(ServerPlayer player, int powerLevel) {
+        if (!PowerRules.canAct(player) || isGripping(player) || hasActiveLift(player)) return false;
         LivingEntity target = findGripTarget(player);
-        if (target == null) {
-            return false;
-        }
-
-        GRIPS.put(player.getUUID(), new Grip(target,
-                player.serverLevel().getGameTime() + 20L * (6 + powerLevel),
-                powerLevel));
-        AbilityEffects.send(player.serverLevel(),
-                Kind.PSYCHIC_BIND,
-                target.position(), target.position(), Math.max(0.5D, target.getBbWidth()));
-        player.serverLevel().playSound(null, target.getX(), target.getY(),
-                target.getZ(), SoundEvents.BREEZE_SHOOT, SoundSource.PLAYERS,
-                0.8F, 0.6F);
-        if (target instanceof ServerPlayer gripped) {
-            gripped.displayClientMessage(Component.literal(
-                    "An invisible force lifts you off your feet!")
-                    .withStyle(ChatFormatting.DARK_PURPLE), true);
-            ScreenTintPayload.send(gripped, 0x40301040, 40,
-                    ScreenTintPayload.Style.VIGNETTE);
-        }
+        if (target == null) return false;
+        GRIPS.put(player.getUUID(), new Grip(new Owner(player), target, powerLevel,
+                now(player) + 20L * (6 + Math.clamp(powerLevel, 1, 5))));
+        AbilityEffects.send(player.serverLevel(), Kind.TK_GRIP, hand(player), target.getBoundingBox().getCenter(),
+                Math.max(.6, target.getBbWidth()));
+        ArmPosePayload.show(player, ArmPose.KINETIC_HOLD, 20);
+        sound(player, SoundEvents.BREEZE_CHARGE, .7F, .75F);
+        if (target instanceof ServerPlayer held)
+            held.displayClientMessage(Component.literal("An invisible force takes hold of you.")
+                    .withStyle(ChatFormatting.LIGHT_PURPLE), true);
         MasteryService.markPowerUse(player, ModAbilities.TELEKINESIS_ID);
         return true;
     }
 
-    /** Let go with a flick: the held creature flies where you look. */
     public static boolean throwGripped(ServerPlayer player) {
-        Grip grip = GRIPS.remove(player.getUUID());
-        if (grip == null || !grip.target.isAlive()) {
-            return false;
+        Grip grip = GRIPS.get(player.getUUID());
+        if (grip == null) return false;
+        if (!grip.owner.valid() || !eligibleTarget(player, grip.target)) return cancelGrip(player);
+        GRIPS.remove(player.getUUID());
+        Vec3 aim = clippedEnd(player, player.getEyePosition(), player.getLookAngle(), AbilityRanges.ranged(20));
+        Vec3 direction = aim.subtract(grip.target.getBoundingBox().getCenter()).normalize();
+        if (direction.lengthSqr() < .01) direction = player.getLookAngle();
+        if (friendly(player, grip.target)) {
+            gentleRelease(player, grip.target);
+            setVelocity(grip.target, direction.scale(1.25).add(0, .15, 0));
+        } else {
+            setVelocity(grip.target, direction.scale(2.7).add(0, .12, 0));
+            registerImpact(player, grip.target, 4 + grip.powerLevel, false, 55);
         }
-
-        setVelocity(grip.target, player.getLookAngle().scale(2.6D)
-                .add(0.0D, 0.2D, 0.0D));
-        IMPACTS.put(grip.target.getUUID(), new Impact(grip.target,
-                player.getUUID(), player.serverLevel().getGameTime() + AbilityRanges.ranged(30),
-                4.0F + grip.powerLevel, false));
-        player.serverLevel().playSound(null, player.getX(), player.getY(),
-                player.getZ(), SoundEvents.WIND_CHARGE_BURST.value(),
-                SoundSource.PLAYERS, 1.0F, 0.5F);
+        AbilityEffects.send(player.serverLevel(), Kind.TK_LAUNCH, grip.target.getBoundingBox().getCenter(),
+                grip.target.getBoundingBox().getCenter().add(direction.scale(6)), 2);
+        ArmPosePayload.show(player, ArmPose.KINETIC_RELEASE, 10);
+        sound(player, SoundEvents.WIND_CHARGE_BURST.value(), .95F, .65F);
         return true;
     }
 
-    // ------------------------------------------------------------------
-    // Disarm
-    // ------------------------------------------------------------------
+    /** Shift + palm converts a held hostile into a downward strike. Friendly grips are released gently. */
+    public static boolean slamGripped(ServerPlayer player) {
+        Grip grip = GRIPS.get(player.getUUID());
+        if (grip == null) return false;
+        if (!grip.owner.valid() || !hostile(player, grip.target)) return placeGripped(player);
+        GRIPS.remove(player.getUUID());
+        registerImpact(player, grip.target, 5 + grip.powerLevel, true, 45);
+        setVelocity(grip.target, new Vec3(0, -2.5, 0));
+        AbilityEffects.send(player.serverLevel(), Kind.TK_LAUNCH, grip.target.getBoundingBox().getCenter(),
+                grip.target.position().add(0, -3, 0), 2.4);
+        ArmPosePayload.show(player, ArmPose.KINETIC_RELEASE, 12);
+        sound(player, SoundEvents.BREEZE_SHOOT, .8F, .6F);
+        return true;
+    }
 
-    /**
-     * Rip the weapon from a creature's hands and draw every loose item and
-     * experience orb nearby to you.
-     */
-    public static void disarm(ServerPlayer player, int powerLevel) {
-        ServerLevel level = player.serverLevel();
-        LivingEntity target = findGripTarget(player);
-        Vec3 hand = player.getEyePosition().add(player.getLookAngle().scale(0.5D))
-                .add(0.0D, -0.3D, 0.0D);
-        if (target != null) {
-            AbilityEffects.send(level, Kind.PSYCHIC_TETHER, hand,
-                    target.getEyePosition(), 0.45D);
-        }
-
-        if (target instanceof Mob mob && !mob.getMainHandItem().isEmpty()) {
-            ItemStack weapon = mob.getMainHandItem().copy();
-            // Taking it from the hand also removes its chance to drop later.
-            mob.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
-            ItemEntity flying = new ItemEntity(level, mob.getX(), mob.getEyeY(),
-                    mob.getZ(), weapon);
-            flying.setDeltaMovement(towards(flying.position(), player, 0.12D));
-            flying.setPickUpDelay(10);
-            level.addFreshEntity(flying);
-            level.playSound(null, mob.getX(), mob.getY(), mob.getZ(),
-                    SoundEvents.ITEM_BREAK, SoundSource.PLAYERS, 0.6F, 1.6F);
-            player.displayClientMessage(Component.literal(
-                    "You tear the " + weapon.getHoverName().getString()
-                            + " from its grip.")
-                    .withStyle(ChatFormatting.DARK_PURPLE), true);
-        } else if (target != null) {
-            // Players keep their items; they are yanked toward you instead.
-            setVelocity(target, towards(target.position(), player, 0.15D)
-                    .add(0.0D, 0.3D, 0.0D));
-        }
-
-        double radius = 8.0D + powerLevel * 2.0D;
-        int visibleTethers = 0;
-        for (Entity loose : level.getEntities(player,
-                player.getBoundingBox().inflate(radius),
-                entity -> entity instanceof ItemEntity
-                        || entity instanceof ExperienceOrb)) {
-            setVelocity(loose, towards(loose.position(), player, 0.1D)
-                    .add(0.0D, 0.25D, 0.0D));
-            if (visibleTethers++ < 8) {
-                AbilityEffects.send(level, Kind.PSYCHIC_TETHER,
-                        hand, loose.position().add(0, 0.2D, 0), 0.2D);
+    /** A free precision release. Only an unobstructed, body-safe surface can reposition the target. */
+    public static boolean placeGripped(ServerPlayer player) {
+        Grip grip = GRIPS.remove(player.getUUID());
+        if (grip == null) return false;
+        LivingEntity target = grip.target;
+        if (eligibleTarget(player, target)) {
+            Vec3 eye = player.getEyePosition();
+            BlockHitResult hit = player.serverLevel().clip(new ClipContext(eye,
+                    eye.add(player.getLookAngle().scale(16)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+            if (hit.getType() == HitResult.Type.BLOCK && hit.getDirection() == Direction.UP) {
+                Vec3 feet = hit.getLocation().add(0, .02, 0);
+                Vec3 reached = SpeedService.swept(target, feet.subtract(target.position()));
+                if (reached.distanceToSqr(feet) < .04 && SpeedService.safe(target, feet)) teleport(target, feet);
             }
+            gentleRelease(player, target);
+            AbilityEffects.send(player.serverLevel(), Kind.TK_GRIP, hand(player), target.getBoundingBox().getCenter(), .6);
         }
+        ArmPosePayload.clear(player);
+        return true;
+    }
+
+    /** Lifecycle cancellation never aims, launches, or teleports an already released target. */
+    public static boolean cancelGrip(ServerPlayer player) {
+        Grip grip = GRIPS.remove(player.getUUID());
+        if (grip == null) return false;
+        if (grip.target.isAlive() && grip.target.level() == grip.owner.level && !grip.target.isPassenger())
+            gentleRelease(player, grip.target);
+        ArmPosePayload.clear(player);
+        return true;
+    }
+
+    public static void disarm(ServerPlayer player, int powerLevel) {
+        if (!PowerRules.canAct(player)) return;
+        Grip grip = GRIPS.get(player.getUUID());
+        LivingEntity target = grip == null ? findGripTarget(player) : grip.target;
+        boolean affected = false;
+        if (target != null && hostile(player, target) && player.hasLineOfSight(target)) {
+            if (target instanceof Mob mob && !mob.getMainHandItem().isEmpty()) {
+                ItemStack weapon = mob.getMainHandItem().copy();
+                mob.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+                ItemEntity item = new ItemEntity(player.serverLevel(), mob.getX(), mob.getEyeY(), mob.getZ(), weapon);
+                item.setDeltaMovement(towards(item.position(), player, .16));
+                item.setPickUpDelay(10);
+                player.serverLevel().addFreshEntity(item);
+                sound(player, SoundEvents.ITEM_BREAK, .6F, 1.4F);
+            } else if (grip == null) {
+                setVelocity(target, safeVelocity(target, towards(target.position(), player, .12).add(0, .18, 0)));
+            }
+            AbilityEffects.send(player.serverLevel(), Kind.TK_GATHER, target.getEyePosition(), hand(player), .8);
+            affected = true;
+        }
+        double radius = 8 + Math.clamp(powerLevel, 1, 5) * 2;
+        for (Entity loose : player.serverLevel().getEntities(player, player.getBoundingBox().inflate(radius),
+                entity -> entity instanceof ItemEntity || entity instanceof ExperienceOrb).stream().limit(32).toList()) {
+            if (loose.distanceToSqr(player) > radius * radius
+                    || !clearLine(player.serverLevel(), player, player.getEyePosition(), loose.position().add(0, .1, 0))) continue;
+            setVelocity(loose, safeVelocity(loose, towards(loose.position(), player, .1).add(0, .18, 0)));
+            AbilityEffects.send(player.serverLevel(), Kind.TK_GATHER, loose.position(), hand(player), .5);
+            affected = true;
+        }
+        if (affected) TelekineticArsenalService.salvage(player);
+        ArmPosePayload.show(player, ArmPose.KINETIC_GATHER, 14);
         MasteryService.markPowerUse(player, ModAbilities.TELEKINESIS_ID);
     }
 
-    // ------------------------------------------------------------------
-    // Bullet Stop
-    // ------------------------------------------------------------------
-
-    public static boolean hasBulletStop(ServerPlayer player) {
-        return BULLET_STOPS.containsKey(player.getUUID());
+    public static boolean hasBulletStop(ServerPlayer player) { return BULLET_STOPS.containsKey(player.getUUID()); }
+    public static int caughtCount(ServerPlayer player) {
+        BulletStop stop = BULLET_STOPS.get(player.getUUID());
+        return stop == null ? 0 : stop.frozen.size();
     }
 
-    /**
-     * Incoming projectiles freeze in the air around you. When it ends
-     * they all fly where you are looking.
-     */
     public static void bulletStop(ServerPlayer player, int powerLevel) {
-        int durationTicks = 20 * (6 + powerLevel);
-        BULLET_STOPS.put(player.getUUID(), new BulletStop(
-                player.serverLevel().getGameTime() + durationTicks));
-        ScreenTintPayload.send(player, 0x30C8B8FF, durationTicks,
-                ScreenTintPayload.Style.PULSE);
-        player.serverLevel().playSound(null, player.getX(), player.getY(),
-                player.getZ(), SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS,
-                0.8F, 0.6F);
+        if (!PowerRules.canAct(player) || hasBulletStop(player)) return;
+        BULLET_STOPS.put(player.getUUID(), new BulletStop(new Owner(player), now(player) + 20L * (5 + Math.clamp(powerLevel, 1, 5))));
+        ArmPosePayload.show(player, ArmPose.KINETIC_HOLD, 20);
+        sound(player, SoundEvents.AMETHYST_BLOCK_RESONATE, .8F, .7F);
+        AbilityEffects.send(player.serverLevel(), Kind.TK_BARRIER, player.position().add(0, 1, 0),
+                player.getEyePosition().add(player.getLookAngle()), 3);
         MasteryService.markPowerUse(player, ModAbilities.TELEKINESIS_ID);
     }
 
-    public static void releaseBulletStop(ServerPlayer player) {
-        BulletStop stop = BULLET_STOPS.remove(player.getUUID());
-        if (stop == null) {
-            return;
-        }
+    /** Press Z again to converge the captured projectiles on the aimed point. */
+    public static void releaseBulletStop(ServerPlayer player) { finishBulletStop(player, true); }
+    public static boolean cancelBulletStop(ServerPlayer player) { return finishBulletStop(player, false); }
 
-        Vec3 look = player.getLookAngle();
+    private static boolean finishBulletStop(ServerPlayer player, boolean launch) {
+        BulletStop stop = BULLET_STOPS.remove(player.getUUID());
+        if (stop == null) return false;
+        launch &= stop.owner.valid();
+        Vec3 aim = clippedEnd(player, player.getEyePosition(), player.getLookAngle(), AbilityRanges.ranged(20));
         for (FrozenProjectile frozen : stop.frozen) {
             Projectile projectile = frozen.projectile;
-            if (projectile.isRemoved()) {
-                continue;
-            }
+            if (projectile.isRemoved()) continue;
             projectile.setNoGravity(frozen.hadNoGravity);
-            projectile.setOwner(player);
-            projectile.setDeltaMovement(look.scale(2.4D));
-            if (projectile.level() instanceof ServerLevel level) {
-                AbilityEffects.send(level, Kind.PSYCHIC_IMPACT, projectile.position(),
-                        projectile.position().add(look), 0.45D);
-                level.getChunkSource().broadcastAndSend(projectile,
-                        new ClientboundSetEntityMotionPacket(projectile));
-            }
+            if (launch && projectile.level() == player.level()) {
+                Vec3 direction = aim.subtract(projectile.position()).normalize();
+                if (direction.lengthSqr() < .01) direction = player.getLookAngle();
+                projectile.setOwner(player);
+                setVelocity(projectile, direction.scale(2.5));
+                AbilityEffects.send(player.serverLevel(), Kind.TK_LAUNCH,
+                        projectile.position(), projectile.position().add(direction.scale(5)), 1.5);
+            } else setVelocity(projectile, Vec3.ZERO);
         }
-        if (!stop.frozen.isEmpty()) {
-            player.serverLevel().playSound(null, player.getX(), player.getY(),
-                    player.getZ(), SoundEvents.WIND_CHARGE_BURST.value(),
-                    SoundSource.PLAYERS, 1.0F, 1.2F);
-        }
+        startRecovery(player, BULLET_ID, COMMON.telekinesisBulletStopCooldownTicks.get());
+        ArmPosePayload.show(player, launch ? ArmPose.KINETIC_RELEASE : ArmPose.KINETIC_GATHER, 10);
+        if (launch && !stop.frozen.isEmpty()) sound(player, SoundEvents.WIND_CHARGE_BURST.value(), 1, 1.3F);
+        return true;
     }
 
-    // ------------------------------------------------------------------
-    // Telekinetic Storm
-    // ------------------------------------------------------------------
+    public static boolean hasActiveLift(ServerPlayer player) { return LIFTS.containsKey(player.getUUID()); }
 
-    public static boolean hasActiveLift(ServerPlayer player) {
-        return LIFTS.containsKey(player.getUUID());
-    }
-
-    /** Everyone nearby rises helplessly into the air, then is dashed down. */
+    /** A readable gathering phase precedes the lift. Press again to slam early; Shift cancels safely. */
     public static void telekineticStorm(ServerPlayer player, int powerLevel) {
-        ServerLevel level = player.serverLevel();
-        List<LivingEntity> targets = level.getEntitiesOfClass(LivingEntity.class,
-                        player.getBoundingBox().inflate(12.0D),
-                        entity -> entity != player && entity.isAlive()
-                                && !(entity instanceof TemporalEchoEntity)
-                                && entity.distanceToSqr(player) <= 144.0D)
-                .stream().limit(20).toList();
-
-        List<Lifted> lifted = new ArrayList<>();
-        for (LivingEntity target : targets) {
-            if (TemporalEntityEchoService.isReplaying(target)) {
-                TemporalEntityEchoService.disturb(target, player);
-            }
-            lifted.add(new Lifted(target, target.getY() + 4.0D
-                    + level.getRandom().nextDouble() * 2.0D));
-        }
-        LIFTS.put(player.getUUID(), new Lift(lifted,
-                level.getGameTime() + LIFT_DURATION_TICKS, powerLevel));
-
-        level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.WARDEN_SONIC_CHARGE, SoundSource.PLAYERS, 1.2F, 0.6F);
-        ScreenTintPayload.send(player, 0x30200830, LIFT_DURATION_TICKS,
-                ScreenTintPayload.Style.VIGNETTE);
+        if (!PowerRules.canAct(player) || hasActiveLift(player)) return;
+        cancelGrip(player);
+        List<Lifted> targets = player.serverLevel().getEntitiesOfClass(LivingEntity.class,
+                player.getBoundingBox().inflate(12), target -> hostile(player, target)
+                        && !isHeld(target) && eligibleTarget(player, target) && target.distanceToSqr(player) <= 144
+                        && player.hasLineOfSight(target)).stream()
+                .sorted(Comparator.comparingDouble(target -> target.distanceToSqr(player))).limit(16)
+                .map(target -> new Lifted(target, target.getY() + 3.5)).toList();
+        LIFTS.put(player.getUUID(), new Lift(new Owner(player), targets, Math.clamp(powerLevel, 1, 5)));
+        AbilityEffects.send(player.serverLevel(), Kind.TK_WELL, player.position(), player.position().add(0, 1, 0), 12);
+        ArmPosePayload.show(player, ArmPose.KINETIC_GATHER, STORM_GATHER_TICKS);
+        sound(player, SoundEvents.WARDEN_SONIC_CHARGE, 1.1F, .7F);
         MasteryService.markPowerUse(player, ModAbilities.TELEKINESIS_ID);
     }
 
-    // ------------------------------------------------------------------
-    // Passives, awakening and overexertion
-    // ------------------------------------------------------------------
+    public static boolean slamStorm(ServerPlayer player) {
+        Lift lift = LIFTS.get(player.getUUID());
+        if (lift == null) return false;
+        if (!lift.owner.valid()) return cancelStorm(player);
+        if (lift.age < STORM_GATHER_TICKS) {
+            player.displayClientMessage(Component.literal("The storm is still gathering.").withStyle(ChatFormatting.LIGHT_PURPLE), true);
+            return false;
+        }
+        LIFTS.remove(player.getUUID());
+        for (Lifted lifted : lift.targets) {
+            LivingEntity target = lifted.entity;
+            if (!target.isAlive() || target.level() != player.level() || !hostile(player, target)
+                    || !player.hasLineOfSight(target)) continue;
+            registerImpact(player, target, 6 + lift.powerLevel, true, 50);
+            setVelocity(target, new Vec3(0, -2.8, 0));
+            AbilityEffects.send(player.serverLevel(), Kind.TK_LAUNCH, target.getBoundingBox().getCenter(),
+                    target.position().add(0, -3, 0), 2.2);
+        }
+        startRecovery(player, STORM_ID, COMMON.telekinesisStormCooldownTicks.get());
+        ArmPosePayload.show(player, ArmPose.KINETIC_RELEASE, 15);
+        sound(player, SoundEvents.WIND_CHARGE_BURST.value(), 1.2F, .55F);
+        CameraShakePayload.sendAround(player.serverLevel(), player.position(), 24, .8F, 10);
+        return true;
+    }
 
-    /** Telekinetic reach: loose items drift toward you on their own. */
+    public static boolean cancelStorm(ServerPlayer player) {
+        Lift lift = LIFTS.remove(player.getUUID());
+        if (lift == null) return false;
+        for (Lifted lifted : lift.targets)
+            if (lifted.entity.isAlive() && lifted.entity.level() == lift.owner.level) gentleRelease(player, lifted.entity);
+        startRecovery(player, STORM_ID, COMMON.telekinesisStormCooldownTicks.get());
+        ArmPosePayload.clear(player);
+        return true;
+    }
+
+    /** Loose objects approach visibly, with fresh drops and solid cover respected. */
     public static void drawNearbyItems(ServerPlayer player) {
-        for (ItemEntity item : player.serverLevel().getEntitiesOfClass(
-                ItemEntity.class, player.getBoundingBox().inflate(6.0D),
-                // Fresh drops are left alone, or you could never drop items.
-                item -> item.getAge() > 40)) {
-            item.setDeltaMovement(item.getDeltaMovement()
-                    .add(towards(item.position(), player, 0.02D)));
+        if (!PowerRules.canAct(player)) return;
+        for (ItemEntity item : player.serverLevel().getEntitiesOfClass(ItemEntity.class,
+                player.getBoundingBox().inflate(6), item -> item.getAge() > 40
+                        && item.distanceToSqr(player) <= 36).stream().limit(24).toList()) {
+            if (clearLine(player.serverLevel(), player, player.getEyePosition(), item.position().add(0, .1, 0)))
+                item.setDeltaMovement(item.getDeltaMovement().add(towards(item.position(), player, .02)));
         }
     }
 
-    /** Awakening: everything loose around you is flung away at once. */
     public static void awaken(ServerPlayer player) {
-        ServerLevel level = player.serverLevel();
-        for (Entity entity : level.getEntities(player,
-                player.getBoundingBox().inflate(6.0D), Entity::isAlive)) {
-            Vec3 away = entity.position().subtract(player.position());
-            if (away.lengthSqr() < 0.01D) {
-                continue;
-            }
-            setVelocity(entity, away.normalize().scale(1.1D).add(0.0D, 0.5D, 0.0D));
-        }
-        level.sendParticles(ParticleTypes.GUST_EMITTER_SMALL, player.getX(),
-                player.getY() + 1.0D, player.getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);
-        level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.WIND_CHARGE_BURST.value(), SoundSource.PLAYERS,
-                1.2F, 0.5F);
-        player.sendSystemMessage(Component.literal(
-                "Everything around you flies away from you... did you do that?")
-                .withStyle(ChatFormatting.DARK_PURPLE));
+        AbilityEffects.send(player.serverLevel(), Kind.TK_WAVE, player.position().add(0, .8, 0),
+                player.getEyePosition().add(player.getLookAngle()), 6);
+        sound(player, SoundEvents.WIND_CHARGE_BURST.value(), 1.1F, .55F);
     }
 
-    /** Overexertion: a splitting migraine. */
     public static void migraine(ServerPlayer player) {
-        player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 160, 0));
-        player.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 120, 0));
-        player.sendSystemMessage(Component.literal(
-                "A splitting migraine blinds you.").withStyle(ChatFormatting.DARK_RED));
+        player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 100));
+        player.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 100));
+        ScreenTintPayload.send(player, 0x503C294C, 40, ScreenTintPayload.Style.EDGE);
+        player.displayClientMessage(Component.literal("Your concentration fractures.").withStyle(ChatFormatting.DARK_RED), true);
     }
 
     public static void stopAll(ServerPlayer player) {
-        GRIPS.remove(player.getUUID());
-        LIFTS.remove(player.getUUID());
-        releaseBulletStop(player);
+        cancelGrip(player);
+        cancelStorm(player);
+        cancelBulletStop(player);
+        IMPACTS.values().removeIf(impact -> impact.owner.player == player);
+        TelekineticArsenalService.forget(player);
+        TelekinesisSkillService.forget(player);
+        ArmPosePayload.clear(player);
     }
 
-    // ------------------------------------------------------------------
-    // Ticking
-    // ------------------------------------------------------------------
+    public static void clear() {
+        Set<ServerPlayer> owners = new HashSet<>();
+        GRIPS.values().forEach(grip -> owners.add(grip.owner.player));
+        LIFTS.values().forEach(lift -> owners.add(lift.owner.player));
+        BULLET_STOPS.values().forEach(stop -> owners.add(stop.owner.player));
+        owners.forEach(TelekinesisService::stopAll);
+        GRIPS.clear(); LIFTS.clear(); BULLET_STOPS.clear(); IMPACTS.clear();
+        TelekineticArsenalService.clear();
+        TelekinesisSkillService.clear();
+    }
 
     public static void tick(MinecraftServer server) {
-        long gameTime = server.overworld().getGameTime();
-        tickGrips(server, gameTime);
-        tickBulletStops(server, gameTime);
-        tickLifts(server, gameTime);
-        tickImpacts(server, gameTime);
+        long time = server.overworld().getGameTime();
+        tickGrips(time);
+        tickBulletStops(time);
+        tickLifts();
+        tickImpacts(time);
     }
 
-    private static void tickGrips(MinecraftServer server, long gameTime) {
-        Iterator<Map.Entry<UUID, Grip>> iterator = GRIPS.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<UUID, Grip> entry = iterator.next();
-            ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
-            Grip grip = entry.getValue();
+    private static void tickGrips(long time) {
+        for (Grip grip : List.copyOf(GRIPS.values())) {
+            ServerPlayer player = grip.owner.player;
             LivingEntity target = grip.target;
-            if (player == null || !target.isAlive() || target.isRemoved()
-                    || target.level() != player.level()
-                    || target.distanceToSqr(player) > Math.pow(AbilityRanges.ranged(24.0D), 2)
-                    || gameTime >= grip.until
-                    || EclipseService.arePowersSuppressed(player)) {
-                iterator.remove();
+            if (!grip.owner.valid() || !eligibleTarget(player, target) || time >= grip.until
+                    || target.distanceToSqr(player) > Math.pow(AbilityRanges.ranged(24), 2)
+                    || !player.hasLineOfSight(target)) {
+                cancelGrip(player);
                 continue;
             }
-
-            Vec3 hold = player.getEyePosition().add(player.getLookAngle()
-                    .scale(GRIP_DISTANCE + target.getBbWidth()))
-                    .subtract(0.0D, target.getBbHeight() / 2.0D, 0.0D);
-            Vec3 pull = hold.subtract(target.position()).scale(0.35D);
-            if (pull.length() > 1.2D) {
-                pull = pull.normalize().scale(1.2D);
-            }
-            setVelocity(target, pull);
+            Vec3 hold = gripPosition(player, target);
+            Vec3 displacement = hold.subtract(target.position());
+            Vec3 velocity = displacement.scale(.28);
+            if (velocity.lengthSqr() > 1.25 * 1.25) velocity = velocity.normalize().scale(1.25);
+            // Gravity is compensated in velocity, never by persisting noGravity/noAI flags.
+            setVelocity(target, safeVelocity(target, velocity.add(0, .08, 0)));
             target.resetFallDistance();
+            if (time % 10 == 0) {
+                target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 15, 4, false, false));
+                ArmPosePayload.show(player, ArmPose.KINETIC_HOLD, 15);
+            }
+            if (time % 5 == 0) AbilityEffects.send(player.serverLevel(), Kind.TK_GRIP,
+                    hand(player), target.getBoundingBox().getCenter(), Math.max(.6, target.getBbWidth()));
+        }
+    }
 
-            if (gameTime % 20 == 0) {
-                // Sylar's grip crushes.
-                target.hurt(player.damageSources().playerAttack(player), 1.0F);
+    private static void tickBulletStops(long time) {
+        for (BulletStop stop : List.copyOf(BULLET_STOPS.values())) {
+            ServerPlayer player = stop.owner.player;
+            if (!stop.owner.valid() || time >= stop.until) {
+                cancelBulletStop(player);
+                continue;
             }
-            if (gameTime % 10 == 0) {
-                // The hand stays outstretched toward whatever it holds.
-                com.jayptucker.heroesevolved.network.ArmPosePayload.show(player,
-                        com.jayptucker.heroesevolved.ability.ArmPose.ONE_HAND, 15);
+            stop.frozen.removeIf(frozen -> frozen.projectile.isRemoved());
+            for (Projectile shot : player.serverLevel().getEntitiesOfClass(Projectile.class,
+                    player.getBoundingBox().inflate(6), shot -> !shot.isRemoved()
+                            && shot.getDeltaMovement().lengthSqr() > .01).stream().limit(MAX_TARGETS).toList()) {
+                if (stop.frozen.size() >= MAX_CAUGHT_PROJECTILES) break;
+                if (!hostileProjectile(player, shot) || stop.frozen.stream().anyMatch(frozen -> frozen.projectile == shot)
+                        || shot.distanceToSqr(player) > 36
+                        || shot.getDeltaMovement().dot(shot.position().subtract(player.getEyePosition())) >= 0
+                        || !clearLine(player.serverLevel(), player, player.getEyePosition(), shot.position())) continue;
+                stop.frozen.add(new FrozenProjectile(shot, shot.isNoGravity()));
+                AbilityEffects.send(player.serverLevel(), Kind.TK_GATHER, shot.position(), hand(player), .5);
+                sound(player, SoundEvents.AMETHYST_BLOCK_HIT, .35F, 1.7F);
             }
-            if (gameTime % 4 == 0 && target.level() instanceof ServerLevel level) {
-                AbilityEffects.send(level,
-                        Kind.PSYCHIC_BIND,
-                        target.position(), target.position(), Math.max(0.5D, target.getBbWidth()));
+            for (int i = 0; i < stop.frozen.size(); i++) {
+                Projectile shot = stop.frozen.get(i).projectile;
+                if (shot.level() != stop.owner.level) continue;
+                Vec3 destination = projectilePosition(player, i);
+                Vec3 safe = SpeedService.swept(shot, destination.subtract(shot.position()));
+                shot.setNoGravity(true);
+                shot.setPos(safe);
+                setVelocity(shot, Vec3.ZERO);
+                if (time % 5 == 0) AbilityEffects.send(player.serverLevel(), Kind.TK_ORBIT,
+                        player.position().add(0, 1, 0), shot.position(), .55);
+            }
+            if (time % 10 == 0) {
+                ArmPosePayload.show(player, ArmPose.KINETIC_HOLD, 15);
+                AbilityEffects.send(player.serverLevel(), Kind.TK_BARRIER, player.position().add(0, .8, 0),
+                        player.getEyePosition().add(player.getLookAngle()), 3);
             }
         }
     }
 
-    private static void tickBulletStops(MinecraftServer server, long gameTime) {
-        for (Map.Entry<UUID, BulletStop> entry : List.copyOf(BULLET_STOPS.entrySet())) {
-            ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
-            BulletStop stop = entry.getValue();
-            if (player == null) {
-                BULLET_STOPS.remove(entry.getKey());
+    private static void tickLifts() {
+        for (Lift lift : List.copyOf(LIFTS.values())) {
+            ServerPlayer player = lift.owner.player;
+            if (!lift.owner.valid() || player.position().distanceToSqr(lift.center) > 24 * 24) {
+                cancelStorm(player);
                 continue;
             }
-            if (gameTime >= stop.until || EclipseService.arePowersSuppressed(player)) {
-                releaseBulletStop(player);
-                continue;
-            }
-
-            ServerLevel level = player.serverLevel();
-            if (gameTime % 12 == 0) {
-                AbilityEffects.at(player,
-                        Kind.PSYCHIC_FIELD, 3.0D);
-            }
-            for (Projectile projectile : level.getEntitiesOfClass(Projectile.class,
-                    player.getBoundingBox().inflate(6.0D),
-                    projectile -> projectile.getOwner() != player
-                            && projectile.getDeltaMovement().lengthSqr() > 0.01D)) {
-                if (stop.frozen.stream().noneMatch(f -> f.projectile == projectile)) {
-                    stop.frozen.add(new FrozenProjectile(projectile,
-                            projectile.isNoGravity()));
-                    AbilityEffects.send(level, Kind.PSYCHIC_IMPACT,
-                            projectile.position(), projectile.position().add(0, 1, 0), 0.3D);
-                    level.playSound(null, projectile.getX(), projectile.getY(),
-                            projectile.getZ(), SoundEvents.AMETHYST_BLOCK_HIT,
-                            SoundSource.PLAYERS, 0.6F, 1.8F);
+            lift.age++;
+            if (lift.age < STORM_GATHER_TICKS) {
+                if (lift.age % 5 == 0) {
+                    AbilityEffects.send(player.serverLevel(), Kind.TK_WELL, lift.center,
+                            lift.center.add(0, 1, 0), 12);
+                    for (Lifted target : lift.targets) if (target.entity.isAlive())
+                        AbilityEffects.send(player.serverLevel(), Kind.TK_GATHER,
+                                target.entity.getBoundingBox().getCenter(), hand(player), .7);
                 }
-            }
-
-            for (FrozenProjectile frozen : stop.frozen) {
-                Projectile projectile = frozen.projectile;
-                if (projectile.isRemoved()) {
-                    continue;
-                }
-                boolean wasMoving = projectile.getDeltaMovement().lengthSqr() > 0.0001D;
-                projectile.setNoGravity(true);
-                projectile.setDeltaMovement(Vec3.ZERO);
-                if (wasMoving) {
-                    level.getChunkSource().broadcastAndSend(projectile,
-                            new ClientboundSetEntityMotionPacket(projectile));
-                }
-            }
-        }
-    }
-
-    private static void tickLifts(MinecraftServer server, long gameTime) {
-        Iterator<Map.Entry<UUID, Lift>> iterator = LIFTS.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<UUID, Lift> entry = iterator.next();
-            ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
-            Lift lift = entry.getValue();
-            if (player == null || EclipseService.arePowersSuppressed(player)) {
-                iterator.remove();
                 continue;
             }
-
-            if (gameTime >= lift.releaseAt) {
-                iterator.remove();
-                slamDown(player, lift, gameTime);
-                continue;
-            }
-
             for (Lifted lifted : lift.targets) {
                 LivingEntity target = lifted.entity;
-                if (!target.isAlive() || target.level() != player.level()) {
-                    continue;
-                }
-                // Hover with a slow, helpless spin around the caster.
-                Vec3 offset = target.position().subtract(player.position());
-                Vec3 swirl = new Vec3(-offset.z, 0.0D, offset.x).normalize().scale(0.06D);
-                double rise = (lifted.hoverY - target.getY()) * 0.25D;
-                setVelocity(target, new Vec3(swirl.x, Math.clamp(rise, -0.3D, 0.6D),
-                        swirl.z));
+                if (!eligibleTarget(player, target) || !hostile(player, target) || !player.hasLineOfSight(target)) continue;
+                Vec3 offset = target.position().subtract(lift.center).multiply(1, 0, 1);
+                Vec3 swirl = offset.lengthSqr() < .01 ? Vec3.ZERO : new Vec3(-offset.z, 0, offset.x).normalize().scale(.08);
+                Vec3 velocity = swirl.add(0, Math.clamp((lifted.hoverY - target.getY()) * .23, -.3, .65) + .08, 0);
+                setVelocity(target, safeVelocity(target, velocity));
                 target.resetFallDistance();
-                if (gameTime % 5 == 0 && target.level() instanceof ServerLevel level) {
-                    AbilityEffects.send(level,
-                            Kind.PSYCHIC_BIND,
-                            target.position(), target.position(), Math.max(0.5D, target.getBbWidth()));
-                }
+                if (lift.age % 5 == 0) AbilityEffects.send(player.serverLevel(), Kind.TK_GRIP,
+                        hand(player), target.getBoundingBox().getCenter(), Math.max(.6, target.getBbWidth()));
             }
+            if (lift.age % 10 == 0) ArmPosePayload.show(player, ArmPose.KINETIC_GATHER, 15);
+            if (lift.age >= STORM_GATHER_TICKS + STORM_LIFT_TICKS) slamStorm(player);
         }
     }
 
-    private static void slamDown(ServerPlayer player, Lift lift, long gameTime) {
-        for (Lifted lifted : lift.targets) {
-            LivingEntity target = lifted.entity;
-            if (!target.isAlive() || target.level() != player.level()) {
-                continue;
-            }
-            setVelocity(target, new Vec3(0.0D, -2.4D, 0.0D));
-            IMPACTS.put(target.getUUID(), new Impact(target, player.getUUID(),
-                    gameTime + 40, 6.0F + lift.powerLevel, true));
-        }
-        player.serverLevel().playSound(null, player.getX(), player.getY(),
-                player.getZ(), SoundEvents.WIND_CHARGE_BURST.value(),
-                SoundSource.PLAYERS, 1.5F, 0.4F);
-        CameraShakePayload.sendAround(player.serverLevel(), player.position(),
-                24.0D, 1.2F, 10);
+    private static void registerImpact(ServerPlayer player, LivingEntity target, float damage, boolean slam, int ticks) {
+        IMPACTS.put(target.getUUID(), new Impact(new Owner(player), target, damage, slam, now(player) + ticks));
     }
 
-    /** Damage for things thrown into walls, or slammed into the ground. */
-    private static void tickImpacts(MinecraftServer server, long gameTime) {
-        Iterator<Impact> iterator = IMPACTS.values().iterator();
-        while (iterator.hasNext()) {
-            Impact impact = iterator.next();
-            LivingEntity entity = impact.entity;
-            if (!entity.isAlive() || gameTime > impact.expires) {
-                iterator.remove();
+    private static void tickImpacts(long time) {
+        for (Impact impact : List.copyOf(IMPACTS.values())) {
+            LivingEntity target = impact.target;
+            if (!impact.owner.valid() || !target.isAlive() || target.level() != impact.owner.level
+                    || time > impact.until || !hostile(impact.owner.player, target)) {
+                IMPACTS.remove(target.getUUID(), impact);
                 continue;
             }
-
-            boolean hit = impact.groundSlam
-                    ? entity.onGround() || entity.isInWater()
-                    : entity.horizontalCollision;
-            if (!hit) {
-                continue;
+            if (!(impact.slam ? target.onGround() || target.verticalCollision || target.isInWater()
+                    : target.horizontalCollision)) continue;
+            IMPACTS.remove(target.getUUID(), impact);
+            ServerPlayer player = impact.owner.player;
+            if (!player.hasLineOfSight(target)) continue;
+            boolean hurt = target.hurt(player.damageSources().playerAttack(player), impact.damage);
+            if (impact.slam) {
+                target.resetFallDistance();
+                // A slam drives the body into the ground: it doesn't skid away on the hit's knockback.
+                setVelocity(target, new Vec3(0, Math.min(0, target.getDeltaMovement().y), 0));
             }
-
-            iterator.remove();
-            ServerPlayer owner = server.getPlayerList().getPlayer(impact.ownerId);
-            entity.hurt(owner == null
-                    ? entity.damageSources().flyIntoWall()
-                    : owner.damageSources().playerAttack(owner), impact.damage);
-            if (impact.groundSlam) {
-                entity.resetFallDistance();
-            }
-            if (entity.level() instanceof ServerLevel level) {
-                Vec3 contact = entity.position().add(0, impact.groundSlam ? 0.1D : 0.7D, 0);
-                Vec3 normal = impact.groundSlam ? new Vec3(0, 1, 0)
-                        : entity.getDeltaMovement().reverse().normalize();
-                AbilityEffects.send(level, Kind.PSYCHIC_IMPACT, contact,
-                        contact.add(normal), impact.groundSlam ? 2.5D : 1.4D);
-                level.playSound(null, entity.getX(), entity.getY(), entity.getZ(),
-                        SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 0.5F, 0.6F);
-            }
+            Vec3 at = impact.slam ? target.position().add(0, .1, 0) : target.getBoundingBox().getCenter();
+            Vec3 normal = impact.slam ? new Vec3(0, 1, 0) : target.getDeltaMovement().reverse().normalize();
+            if (normal.lengthSqr() < .01) normal = player.getLookAngle().reverse();
+            AbilityEffects.send(player.serverLevel(), Kind.TK_IMPACT, at, at.add(normal), impact.slam ? 3 : 1.5);
+            soundAt(player.serverLevel(), at, SoundEvents.ANVIL_LAND, .5F, .8F);
+            if (hurt) TelekinesisSkillService.onImpact(player, target, at, impact.damage, impact.slam);
         }
     }
 
-    // ------------------------------------------------------------------
-
-    private static Vec3 towards(Vec3 from, ServerPlayer player, double scale) {
-        Vec3 delta = player.position().add(0.0D, 1.0D, 0.0D).subtract(from);
-        return delta.scale(scale);
+    private static Vec3 gripPosition(ServerPlayer player, LivingEntity target) {
+        Vec3 forward = Vec3.directionFromRotation(0, player.getYRot());
+        Vec3 side = new Vec3(-forward.z, 0, forward.x).scale(player.getMainArm() == HumanoidArm.RIGHT ? 1 : -1);
+        double width = Math.clamp(target.getBbWidth(), .3, 4);
+        return player.position().add(forward.scale(2.8)).add(side.scale(1.5 + width * .5))
+                .add(0, Math.max(.7, 1.6 - target.getBbHeight() * .35), 0);
     }
 
+    private static Vec3 projectilePosition(ServerPlayer player, int index) {
+        Vec3 forward = Vec3.directionFromRotation(0, player.getYRot());
+        Vec3 side = new Vec3(-forward.z, 0, forward.x);
+        double bank = index % 2 == 0 ? 1 : -1;
+        int row = index / 2;
+        return player.position().add(side.scale(bank * (1.65 + row % 2 * .35)))
+                .add(forward.scale(.5 + row / 2 * .35)).add(0, .75 + row % 3 * .35, 0);
+    }
+
+    private static void gentleRelease(ServerPlayer player, LivingEntity target) {
+        target.resetFallDistance();
+        setVelocity(target, Vec3.ZERO);
+        if (friendly(player, target) && TelekinesisSkillService.has(player, "0_0"))
+            target.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 100, 0));
+    }
+
+    private static boolean eligibleTarget(ServerPlayer player, LivingEntity target) {
+        return target != player && target.isAlive() && !target.isRemoved() && !target.isSpectator()
+                && target.level() == player.level() && !target.noPhysics
+                && !target.isPassenger() && target.getPassengers().isEmpty()
+                && !(target instanceof TemporalEchoEntity) && !TemporalEntityEchoService.isPastCopy(target)
+                && !EntityCarryService.isBeingCarried(target);
+    }
+
+    private static boolean friendly(ServerPlayer player, LivingEntity target) {
+        return target == player || player.isAlliedTo(target) || target.isAlliedTo(player)
+                || target instanceof TamableAnimal pet && player.getUUID().equals(pet.getOwnerUUID());
+    }
+
+    private static boolean hostile(ServerPlayer player, LivingEntity target) {
+        return eligibleTarget(player, target) && !friendly(player, target)
+                && (!(target instanceof ServerPlayer other) || player.getServer().isPvpAllowed() && player.canHarmPlayer(other));
+    }
+
+    private static boolean hostileProjectile(ServerPlayer player, Projectile projectile) {
+        Entity owner = projectile.getOwner();
+        return owner != player && !(owner instanceof LivingEntity living && friendly(player, living));
+    }
+
+    private static Vec3 hand(ServerPlayer player) { return player.getEyePosition().add(player.getLookAngle().scale(.35)).add(0, -.25, 0); }
+    private static Vec3 towards(Vec3 from, ServerPlayer player, double strength) { return player.position().add(0, .8, 0).subtract(from).scale(strength); }
+    private static Vec3 safeVelocity(Entity entity, Vec3 desired) { return SpeedService.swept(entity, desired).subtract(entity.position()); }
+    private static boolean clearLine(ServerLevel level, Entity context, Vec3 from, Vec3 to) {
+        return level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, context))
+                .getType() == HitResult.Type.MISS;
+    }
+    private static Vec3 clippedEnd(ServerPlayer player, Vec3 origin, Vec3 direction, double range) {
+        BlockHitResult hit = player.serverLevel().clip(new ClipContext(origin, origin.add(direction.scale(range)),
+                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+        return hit.getType() == HitResult.Type.BLOCK ? hit.getLocation() : origin.add(direction.scale(range));
+    }
+    private static long now(ServerPlayer player) { return player.getServer().overworld().getGameTime(); }
+    private static ResourceLocation id(String path) { return ResourceLocation.fromNamespaceAndPath("heroesevolved", path); }
+    private static void sound(ServerPlayer player, net.minecraft.sounds.SoundEvent sound, float volume, float pitch) {
+        soundAt(player.serverLevel(), player.position(), sound, volume, pitch);
+    }
+    private static void soundAt(ServerLevel level, Vec3 at, net.minecraft.sounds.SoundEvent sound, float volume, float pitch) {
+        level.playSound(null, at.x, at.y, at.z, sound, SoundSource.PLAYERS, volume, pitch);
+    }
+    private static void teleport(Entity entity, Vec3 at) {
+        if (entity instanceof ServerPlayer player) player.teleportTo(player.serverLevel(), at.x, at.y, at.z, player.getYRot(), player.getXRot());
+        else entity.teleportTo(at.x, at.y, at.z);
+    }
     private static void setVelocity(Entity entity, Vec3 velocity) {
+        boolean changed = entity.getDeltaMovement().distanceToSqr(velocity) > .0001;
         entity.setDeltaMovement(velocity);
-        if (entity instanceof ServerPlayer player) {
+        entity.hurtMarked = true;
+        if (entity instanceof ServerPlayer player && (changed || velocity.lengthSqr() > .0001 || player.tickCount % 5 == 0))
             player.connection.send(new ClientboundSetEntityMotionPacket(player));
-        } else {
-            entity.hurtMarked = true;
-            if (entity instanceof Mob mob) {
-                mob.setOnGround(false);
-            }
-        }
+        else if (entity instanceof Projectile && entity.level() instanceof ServerLevel level && changed)
+            level.getChunkSource().broadcastAndSend(entity, new ClientboundSetEntityMotionPacket(entity));
+        if (entity instanceof Mob) entity.setOnGround(false);
+    }
+    private static void startRecovery(ServerPlayer player, ResourceLocation id, int configured) {
+        int ticks = SkillTreeService.cooldown(player, ModAbilities.TELEKINESIS_ID,
+                com.jayptucker.heroesevolved.ability.PowerBalance.cooldown(id, configured));
+        if (ticks > 0) CooldownService.startCooldown(player, id, ticks);
+    }
+    private static ResourceLocation assigned(ServerPlayer player) {
+        return PlayerAbilityService.getData(player).assignedPower().filter(entry -> entry.getValue().isUnlocked())
+                .map(Map.Entry::getKey).orElse(null);
     }
 
-    private record Impact(
-            LivingEntity entity,
-            UUID ownerId,
-            long expires,
-            float damage,
-            boolean groundSlam
-    ) {
+    private static final class Owner {
+        final ServerPlayer player;
+        final ServerLevel level;
+        final ResourceLocation power;
+        Owner(ServerPlayer player) { this.player = player; this.level = player.serverLevel(); this.power = assigned(player); }
+        boolean valid() { return !player.isRemoved() && player.level() == level && PowerRules.canAct(player)
+                && Objects.equals(power, assigned(player)); }
     }
-
-    private record Grip(LivingEntity target, long until, int powerLevel) {
-    }
-
+    private record Grip(Owner owner, LivingEntity target, int powerLevel, long until) {}
+    private record FrozenProjectile(Projectile projectile, boolean hadNoGravity) {}
     private static final class BulletStop {
-        private final long until;
-        private final List<FrozenProjectile> frozen = new ArrayList<>();
-
-        private BulletStop(long until) {
-            this.until = until;
+        final Owner owner; final long until; final List<FrozenProjectile> frozen = new ArrayList<>();
+        BulletStop(Owner owner, long until) { this.owner = owner; this.until = until; }
+    }
+    private record Lifted(LivingEntity entity, double hoverY) {}
+    private static final class Lift {
+        final Owner owner; final List<Lifted> targets; final int powerLevel; final Vec3 center; int age;
+        Lift(Owner owner, List<Lifted> targets, int powerLevel) {
+            this.owner = owner; this.targets = targets; this.powerLevel = powerLevel; this.center = owner.player.position();
         }
     }
-
-    private record FrozenProjectile(Projectile projectile, boolean hadNoGravity) {
-    }
-
-    private record Lift(List<Lifted> targets, long releaseAt, int powerLevel) {
-    }
-
-    private record Lifted(LivingEntity entity, double hoverY) {
-    }
+    private record Impact(Owner owner, LivingEntity target, float damage, boolean slam, long until) {}
 }

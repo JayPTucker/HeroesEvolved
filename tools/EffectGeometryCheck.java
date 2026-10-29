@@ -63,6 +63,21 @@ public class EffectGeometryCheck {
         public VertexConsumer setNormal(float x,float y,float z) { return this; }
     }
     public static void main(String[] args) throws Exception {
+        for (float yaw : new float[]{0, 45, 90, 135, 180, 225, 270, 315, 720})
+            for (double width : new double[]{.2, .6, 1.4, 4, 16}) for (boolean rightHanded : new boolean[]{false, true}) {
+                Vec3 offset = com.jayptucker.heroesevolved.entity.CarryGeometry.offset(yaw, .6, width, rightHanded);
+                Vec3 direction = Vec3.directionFromRotation(0, yaw);
+                Vec3 right = new Vec3(-direction.z, 0, direction.x);
+                if (!Double.isFinite(offset.lengthSqr()) || Math.signum(offset.dot(right)) != (rightHanded ? 1 : -1))
+                    throw new AssertionError("Carry seat lost its handed side or finite coordinates");
+                AABB cargo = com.jayptucker.heroesevolved.entity.CarryGeometry.box(width, 3, offset);
+                for (float pitch : new float[]{-80, -30, 0, 30, 80}) {
+                    Vec3 eye = new Vec3(0, 1.62, 0);
+                    if (cargo.clip(eye, eye.add(Vec3.directionFromRotation(pitch, yaw).scale(8))).isPresent())
+                        throw new AssertionError("Wide cargo obstructs the forward eye/interaction ray at yaw " + yaw);
+                }
+            }
+        System.out.println("PASS: Carry seats stay handed, finite and clear of the forward view for small, humanoid and wide cargo at every heading.");
         float previousOpacity = 1;
         for (int age = 0; age <= 24; age++) {
             float alpha = com.jayptucker.heroesevolved.client.effects.SpeedAfterimages.opacity(age);
@@ -140,10 +155,40 @@ public class EffectGeometryCheck {
             }
         }
         System.out.println("PASS: Both first-person blast arms and sleeves stay on their own sides, forward of the camera, for wide/slim skins and trembling poses.");
+        for (boolean slim : new boolean[]{false, true}) {
+            var root = LayerDefinition.create(PlayerModel.createMesh(CubeDeformation.NONE, slim), 64, 64).bakeRoot();
+            PlayerModel<AbstractClientPlayer> model = new PlayerModel<>(root, slim);
+            for (var pose : new com.jayptucker.heroesevolved.ability.ArmPose[]{
+                    com.jayptucker.heroesevolved.ability.ArmPose.KINETIC_GATHER,
+                    com.jayptucker.heroesevolved.ability.ArmPose.KINETIC_HOLD,
+                    com.jayptucker.heroesevolved.ability.ArmPose.KINETIC_RELEASE}) {
+                for (var side : net.minecraft.world.entity.HumanoidArm.values()) {
+                    var arm = side == net.minecraft.world.entity.HumanoidArm.RIGHT ? model.rightArm : model.leftArm;
+                    var sleeve = side == net.minecraft.world.entity.HumanoidArm.RIGHT ? model.rightSleeve : model.leftSleeve;
+                    arm.setPos(0, 0, 0); arm.setRotation(0, 0, 0); sleeve.copyFrom(arm);
+                    PoseStack start = new PoseStack();
+                    com.jayptucker.heroesevolved.client.FirstPersonArmGeometry.pose(start, side, pose, 0, 0);
+                    for (float age : new float[]{0, 1.5F, 3, 5, 9, 15, 10000}) {
+                        PoseStack transform = new PoseStack();
+                        com.jayptucker.heroesevolved.client.FirstPersonArmGeometry.pose(transform, side, pose, age, age);
+                        Vertices vertices = new Vertices(); vertices.camera = Vec3.ZERO;
+                        vertices.bounds = side == net.minecraft.world.entity.HumanoidArm.RIGHT
+                                ? new AABB(.08, -.75, -1.3, .9, .05, -.005)
+                                : new AABB(-.9, -.75, -1.3, -.08, .05, -.005);
+                        arm.render(transform, vertices, 0xF000F0, 0);
+                        sleeve.render(transform, vertices, 0xF000F0, 0);
+                        if (vertices.count != 48) throw new AssertionError("Kinetic gesture lost an arm or sleeve");
+                        if (age == 3 && transform.last().pose().equals(start.last().pose(), .00001F))
+                            throw new AssertionError("Kinetic gesture is static instead of animated: " + pose);
+                    }
+                }
+            }
+        }
+        System.out.println("PASS: Gather, hold and release gestures animate while keeping both skin widths, hands and sleeves clear of the crosshair.");
         for (int speed = 0; speed <= 4; speed++) {
             RegistryFriendlyByteBuf flightBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), RegistryAccess.EMPTY);
             try {
-                var source = new com.jayptucker.heroesevolved.network.FlightVisualStatePayload(781, speed > 0, false, true, speed);
+                var source = new com.jayptucker.heroesevolved.network.FlightVisualStatePayload(781, speed > 0, false, true, speed, 100 | 128);
                 com.jayptucker.heroesevolved.network.FlightVisualStatePayload.STREAM_CODEC.encode(flightBuffer, source);
                 if (!source.equals(com.jayptucker.heroesevolved.network.FlightVisualStatePayload.STREAM_CODEC.decode(flightBuffer))
                         || flightBuffer.readableBytes() != 0) throw new AssertionError("Flight speed state did not round-trip");
@@ -155,15 +200,36 @@ public class EffectGeometryCheck {
                 }
             } finally { flightBuffer.release(); }
         }
-        com.jayptucker.heroesevolved.network.ClientFlightVisualState.update(781, true, false, true, 4);
+        com.jayptucker.heroesevolved.network.ClientFlightVisualState.update(781, true, false, true, 4, 100 | 256);
         if (!com.jayptucker.heroesevolved.network.ClientFlightVisualState.isFlightEnabled(781)
-                || com.jayptucker.heroesevolved.network.ClientFlightVisualState.speedStep(781) != 4)
+                || com.jayptucker.heroesevolved.network.ClientFlightVisualState.speedStep(781) != 4
+                || com.jayptucker.heroesevolved.network.ClientFlightVisualState.momentum(781) != 100
+                || !com.jayptucker.heroesevolved.network.ClientFlightVisualState.isDiving(781)
+                || com.jayptucker.heroesevolved.network.ClientFlightVisualState.isCharging(781))
             throw new AssertionError("Client failed to retain selected Flight speed");
+        for (int phase : new int[]{0, 6, 12}) for (int side : new int[]{-1, 1}) {
+            int telemetry = 64 | 512 | (phase << 10) | (side < 0 ? 16384 : 0);
+            RegistryFriendlyByteBuf rollBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), RegistryAccess.EMPTY);
+            try {
+                var source = new com.jayptucker.heroesevolved.network.FlightVisualStatePayload(781, true, false, true, 2, telemetry);
+                com.jayptucker.heroesevolved.network.FlightVisualStatePayload.STREAM_CODEC.encode(rollBuffer, source);
+                if (!source.equals(com.jayptucker.heroesevolved.network.FlightVisualStatePayload.STREAM_CODEC.decode(rollBuffer)))
+                    throw new AssertionError("Barrel Roll direction/phase did not round-trip");
+            } finally { rollBuffer.release(); }
+            com.jayptucker.heroesevolved.network.ClientFlightVisualState.update(781, true, false, true, 2, telemetry);
+            if (!com.jayptucker.heroesevolved.network.ClientFlightVisualState.isRolling(781)
+                    || com.jayptucker.heroesevolved.network.ClientFlightVisualState.rollDirection(781) != side
+                    || Math.abs(com.jayptucker.heroesevolved.network.ClientFlightVisualState.rollProgress(781) - phase / 12.0F) > .001)
+                throw new AssertionError("Client lost Barrel Roll direction or phase");
+        }
         com.jayptucker.heroesevolved.network.ClientFlightVisualState.clear();
         if (com.jayptucker.heroesevolved.network.ClientFlightVisualState.isFlightEnabled(781)
-                || com.jayptucker.heroesevolved.network.ClientFlightVisualState.speedStep(781) != 0)
+                || com.jayptucker.heroesevolved.network.ClientFlightVisualState.speedStep(781) != 0
+                || com.jayptucker.heroesevolved.network.ClientFlightVisualState.momentum(781) != 0
+                || com.jayptucker.heroesevolved.network.ClientFlightVisualState.isDiving(781)
+                || com.jayptucker.heroesevolved.network.ClientFlightVisualState.isRolling(781))
             throw new AssertionError("Flight wheel state leaked across worlds");
-        System.out.println("PASS: Wheel directions, all five Flight speed states, and client world cleanup.");
+        System.out.println("PASS: Wheel directions, all five Flight speed states, Momentum/maneuver telemetry and client world cleanup.");
         for (float radius : new float[]{20, 24}) for (boolean detail : new boolean[]{false, true})
                 for (float time : new float[]{0, 40, 10000}) for (Vec3 viewPosition : new Vec3[]{new Vec3(2, 3, 4), new Vec3(180, 100, -90)}) {
             Vec3 origin = new Vec3(1420, 72, -915);

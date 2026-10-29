@@ -123,7 +123,7 @@ public final class AbilityUseService {
         // A held modifier has a second purpose for persistent abilities:
         // end the effect immediately. This branch is intentionally before
         // cooldown and energy checks, because ending an effect is always free.
-        if (context.modifierHeld() && abilityAction.deactivate(context)) {
+        if ((context.modifierHeld() || abilityAction.deactivateOnPress(context)) && abilityAction.deactivate(context)) {
             PlayerPowerSyncService.sync(player);
             return AbilityUseResult.SUCCESS;
         }

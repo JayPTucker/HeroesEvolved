@@ -202,6 +202,9 @@ public final class TimeStopService {
                 releaseImpacts(server, field.ownerId());
             } else if (level != null && level.getGameTime() % 10 == 0) {
                 owner.displayClientMessage(net.minecraft.network.chat.Component.translatable("time.heroesevolved.stopped", (field.remainingTicks + 19) / 20), true);
+                // The stopped dome stays visible while it lasts.
+                com.jayptucker.heroesevolved.effects.AbilityEffects.send(level, com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind.TIME_STOP_PULSE,
+                        field.center(), field.center().add(0, 1, 0), HeroesEvolvedConfig.COMMON.timeStopRadius.get());
                 // Stopped time looks drained and cold to anyone inside it.
                 com.jayptucker.heroesevolved.network.ScreenTintPayload.sendAround(
                         level, field.center(),

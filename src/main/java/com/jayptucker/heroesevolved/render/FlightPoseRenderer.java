@@ -5,10 +5,13 @@ import com.jayptucker.heroesevolved.flight.FlightVisualGeometry;
 import com.jayptucker.heroesevolved.network.ClientFlightVisualState;
 import com.mojang.math.Axis;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderPlayerEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
 
 import java.util.HashSet;
 import java.util.HashMap;
@@ -23,6 +26,7 @@ public final class FlightPoseRenderer {
     private static final Map<Integer, BodyYaw> BODY_YAWS = new HashMap<>();
     private static final Map<Integer, HeadOrientation> HEAD_ORIENTATIONS =
             new HashMap<>();
+    private static final Map<Integer, FlightAnimation> ANIMATIONS = new HashMap<>();
 
     private FlightPoseRenderer() {
     }
@@ -30,16 +34,44 @@ public final class FlightPoseRenderer {
     @SubscribeEvent
     public static void onRenderPlayerPre(RenderPlayerEvent.Pre event) {
         Player player = event.getEntity();
+        boolean active = shouldUseFlightPose(player);
+        FlightAnimation animation = ANIMATIONS.get(player.getId());
+        if (!active && animation == null) {
+            return;
+        }
 
-        if (!shouldUseFlightPose(player)) {
+        double time = player.level().getGameTime() + event.getPartialTick();
+        if (animation == null) {
+            animation = new FlightAnimation(time - 1, player.getXRot());
+            ANIMATIONS.put(player.getId(), animation);
+        }
+        float elapsed = (float) Math.clamp(time - animation.time, 0, 2);
+        animation.time = time;
+        float blend = 1 - (float) Math.exp(-elapsed * .48F);
+        animation.amount = Mth.lerp(blend, animation.amount, active ? 1 : 0);
+        if (player.onGround() || !player.isAlive()) animation.amount = 0;
+        if (animation.amount < .01F) {
+            if (!active) ANIMATIONS.remove(player.getId());
             return;
         }
 
         float viewYaw = FlightVisualGeometry.yaw(player,
                 ClientFlightVisualState.isCycloneActive(player.getId()), event.getPartialTick());
-        float bodyYaw = viewYaw + 180.0F;
         float viewPitch = player.getXRot();
         float renderPitch = FlightVisualGeometry.pitch(player, event.getPartialTick());
+        Vec3 velocity = player.getDeltaMovement();
+        boolean rolling = ClientFlightVisualState.isRolling(player.getId());
+        if ((ClientFlightVisualState.isDiving(player.getId()) || rolling) && velocity.lengthSqr() > .15) {
+            // Maneuvers follow their real travel; a dive can descend while the pilot looks level.
+            viewYaw = (float) Math.toDegrees(Math.atan2(-velocity.x, velocity.z));
+            renderPitch = (float) Math.toDegrees(Math.atan2(-velocity.y, velocity.horizontalDistance()));
+        }
+        animation.pitch = Mth.lerp(blend, animation.pitch, renderPitch);
+        float turn = Mth.wrapDegrees(player.getYRot() - player.yRotO);
+        float speed = (float) Math.clamp(velocity.length() / 1.8, 0, 1);
+        float bank = Mth.clamp(-turn * 2.4F, -24, 24) * speed;
+        animation.bank = Mth.lerp(blend, animation.bank, bank);
+        float bodyYaw = viewYaw + 180.0F * animation.amount;
 
         // Minecraft's upright player model faces the opposite direction once
         // it is pitched horizontal, so Flight uses the inverted yaw to keep
@@ -53,7 +85,7 @@ public final class FlightPoseRenderer {
 
         // Turn the model face-down into its Flight pose, then let its pitch
         // follow the player's view for climbing and diving.
-        float flightPitch = 90.0F + renderPitch;
+        float flightPitch = (90.0F + animation.pitch) * animation.amount;
 
         // Keep the head aligned with the Flight body. Without this, vanilla
         // applies the look pitch a second time and the head bends unnaturally
@@ -72,8 +104,9 @@ public final class FlightPoseRenderer {
         float headYaw = bodyYaw + 0.0F;
         player.setYHeadRot(headYaw);
         player.yHeadRotO = headYaw;
-        player.setXRot(HEAD_LOOK_UP_DEGREES);
-        player.xRotO = HEAD_LOOK_UP_DEGREES;
+        float headPitch = Mth.lerp(animation.amount, viewPitch, HEAD_LOOK_UP_DEGREES);
+        player.setXRot(headPitch);
+        player.xRotO = headPitch;
 
         // PlayerRenderer applies body yaw after this event. The two yaw
         // rotations make the pitch relative to the direction the player faces,
@@ -83,11 +116,21 @@ public final class FlightPoseRenderer {
         // Rotate the completed horizontal pose toward the player's travel
         // direction. Keeping this separate prevents it from flipping torso
         // orientation back toward the sky.
-        event.getPoseStack().mulPose(Axis.YP.rotationDegrees(180.0F));
+        event.getPoseStack().mulPose(Axis.YP.rotationDegrees(180.0F * animation.amount));
         event.getPoseStack().mulPose(Axis.YP.rotationDegrees(-bodyYaw));
         event.getPoseStack().mulPose(
                 Axis.XP.rotationDegrees(flightPitch)
         );
+        // Bank the body about its own long axis; the camera remains level.
+        float roll = 0;
+        if (rolling) {
+            float progress = Mth.clamp(ClientFlightVisualState.rollProgress(player.getId())
+                    + event.getPartialTick() / 12F, 0, 1);
+            // Ease in and out of one complete turn. Clearing the flag returns from 360 to 0.
+            roll = progress * progress * (3 - 2 * progress) * 360
+                    * ClientFlightVisualState.rollDirection(player.getId());
+        }
+        event.getPoseStack().mulPose(Axis.YP.rotationDegrees(animation.bank * animation.amount + roll));
         event.getPoseStack().mulPose(Axis.YP.rotationDegrees(bodyYaw));
         event.getPoseStack().translate(0.0D, -FlightVisualGeometry.PIVOT_HEIGHT, 0.0D);
 
@@ -138,7 +181,30 @@ public final class FlightPoseRenderer {
 
     private static boolean shouldUseFlightPose(Player player) {
         return ClientFlightVisualState.isFlightActive(player.getId())
+                && !(player.getVehicle() instanceof com.jayptucker.heroesevolved.entity.CarryAnchorEntity)
                 && !player.onGround();
+    }
+
+    @SubscribeEvent
+    public static void unload(LevelEvent.Unload event) {
+        if (!event.getLevel().isClientSide()) return;
+        ANIMATIONS.clear();
+        POSED_ENTITIES.clear();
+        WALK_SPEEDS.clear();
+        BODY_YAWS.clear();
+        HEAD_ORIENTATIONS.clear();
+    }
+
+    private static final class FlightAnimation {
+        private double time;
+        private float amount;
+        private float pitch;
+        private float bank;
+
+        private FlightAnimation(double time, float pitch) {
+            this.time = time;
+            this.pitch = pitch;
+        }
     }
 
     private record BodyYaw(float current, float previous) {

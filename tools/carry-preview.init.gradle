@@ -1,0 +1,23 @@
+// Both carry perspectives and movement photographed in an isolated flat world. Never bundled into the mod JAR.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('carryPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/carry-preview')
+                        programArguments.addAll('--width', '1100', '--height', '800')
+                        systemProperty('heroes.preview.carry', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('carryPreviewClasses')) }
+        }
+    }
+}

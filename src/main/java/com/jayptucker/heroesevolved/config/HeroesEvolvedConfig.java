@@ -153,8 +153,9 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue quakeBlastCooldownTicks;
         public final ModConfigSpec.IntValue flightDiveEnergyCost;
         public final ModConfigSpec.IntValue flightDiveCooldownTicks;
+        /** Rewind is a once-in-a-while power: a full tank of stamina and a long recovery, shorter at Level 5. */
         public final ModConfigSpec.IntValue timeRewindEnergyCost;
-        public final ModConfigSpec.IntValue timeRewindCooldownTicks;
+        public final ModConfigSpec.IntValue timeRewindCooldownLevel4Seconds, timeRewindCooldownLevel5Seconds;
         public final ModConfigSpec.IntValue regenerationAuraEnergyCost;
         public final ModConfigSpec.IntValue regenerationAuraCooldownTicks;
         public final ModConfigSpec.IntValue electroBallEnergyCost;
@@ -414,15 +415,15 @@ public final class HeroesEvolvedConfig {
                 builder.push("flight");
 
                 flightLaunchEnergyCost = builder
-                        .comment("Energy consumed when Launch begins a Flight session.")
-                        .defineInRange("launchEnergyCost", 25, 0, 1_000);
+                        .comment("Stamina consumed when Skyburst begins charging.")
+                        .defineInRange("launchEnergyCost", 18, 0, 1_000);
 
                 flightLaunchCooldownTicks = builder
-                        .comment("Cooldown in ticks after using Flight Launch.")
-                        .defineInRange("launchCooldownTicks", 20 * 8, 0, 20 * 60);
+                        .comment("Cooldown in ticks after beginning Skyburst.")
+                        .defineInRange("launchCooldownTicks", 20 * 3, 0, 20 * 60);
 
                 flightLaunchAscentDurationSeconds = builder
-                        .comment("Seconds spent steadily ascending before Launch boosts forward.")
+                        .comment("Legacy ascent setting retained for config compatibility. Skyburst now uses a short twelve-tick takeoff.")
                         .defineInRange("launchAscentDurationSeconds", 3, 1, 30);
 
                 flightAscentSpeed = builder
@@ -430,8 +431,8 @@ public final class HeroesEvolvedConfig {
                         .defineInRange("ascentSpeed", 0.85D, 0.01D, 4.0D);
 
                 flightForwardSpeed = builder
-                        .comment("Forward burst speed applied after Flight Launch ascends.")
-                        .defineInRange("forwardSpeed", 15.0D, 0.1D, 70.0D);
+                        .comment("Skyburst tap speed. Maneuver velocity is bounded to 3.6 blocks per tick.")
+                        .defineInRange("forwardSpeed", 2.6D, 0.1D, 70.0D);
 
                 flightCruiseSpeed = builder
                         .comment("Maximum wheel-selected forward Flight speed at Level 5. Lower levels unlock progressively faster settings.")
@@ -443,7 +444,7 @@ public final class HeroesEvolvedConfig {
 
                 flightBoostEnergyDrainPerSecond = builder
                         .comment("Energy drained every second while moving forward above normal wheel-selected Flight speed.")
-                        .defineInRange("boostEnergyDrainPerSecond", 15, 0, 1_000);
+                        .defineInRange("boostEnergyDrainPerSecond", 9, 0, 1_000);
 
                 flightSafeLandingSeconds = builder
                         .comment("Slow Falling duration when Flight ends from zero energy.")
@@ -454,11 +455,11 @@ public final class HeroesEvolvedConfig {
                         .defineInRange("trailIntervalTicks", 1, 1, 20);
 
                 flightCycloneEnergyCost = builder
-                        .comment("Energy consumed to begin Flight Cyclone.")
-                        .defineInRange("cycloneEnergyCost", 50, 0, 1_000);
+                        .comment("Stamina consumed to gather Tempest.")
+                        .defineInRange("cycloneEnergyCost", 55, 0, 1_000);
 
                 flightCycloneCooldownTicks = builder
-                        .comment("Cooldown in ticks after using Flight Cyclone.")
+                        .comment("Cooldown in ticks after beginning Tempest.")
                         .defineInRange("cycloneCooldownTicks", 20 * 30, 0, 20 * 60 * 10);
 
                 flightGrabEnergyCost = builder
@@ -470,20 +471,20 @@ public final class HeroesEvolvedConfig {
                         .defineInRange("grabCooldownTicks", 20 * 5, 0, 20 * 60 * 10);
 
                 flightCycloneDurationSeconds = builder
-                        .comment("Seconds Flight Cyclone keeps its targets suspended.")
-                        .defineInRange("cycloneDurationSeconds", 10, 1, 60);
+                        .comment("Active seconds of Tempest after its one-second wind-up.")
+                        .defineInRange("cycloneDurationSeconds", 5, 1, 60);
 
                 flightCycloneRadius = builder
                         .comment("Horizontal radius, in blocks, of Flight Cyclone's pull.")
-                        .defineInRange("cycloneRadius", 12.0D, 1.0D, 32.0D);
+                        .defineInRange("cycloneRadius", 8.0D, 1.0D, 32.0D);
 
                 flightCycloneOrbitRadius = builder
                         .comment("Radius, in blocks, of the Flight user's path around Cyclone.")
-                        .defineInRange("cycloneOrbitRadius", 16.0D, 1.0D, 32.0D);
+                        .defineInRange("cycloneOrbitRadius", 6.5D, 1.0D, 32.0D);
 
                 flightCycloneOrbitSpeed = builder
                         .comment("Radians travelled per tick while circling Flight Cyclone.")
-                        .defineInRange("cycloneOrbitSpeed", 0.40D, 0.01D, 1.0D);
+                        .defineInRange("cycloneOrbitSpeed", 0.16D, 0.01D, 1.0D);
 
                 flightCycloneLaunchSpeed = builder
                         .comment("Horizontal speed applied when Cyclone throws its targets outward.")
@@ -705,8 +706,12 @@ public final class HeroesEvolvedConfig {
                 builder.push("fifthAbilities");
                 flightDiveEnergyCost = energy(builder, "flightDiveBomb", 35);
                 flightDiveCooldownTicks = cooldown(builder, "flightDiveBomb", 20 * 8);
-                timeRewindEnergyCost = energy(builder, "timeRewind", 45);
-                timeRewindCooldownTicks = cooldown(builder, "timeRewind", 20 * 45);
+                // New keys, so existing configs pick up the heavier Rewind instead of keeping 45 stamina / 45 seconds.
+                timeRewindEnergyCost = energy(builder, "rewriteTheMoment", 130);
+                timeRewindCooldownLevel4Seconds = builder.comment("Seconds before Rewind can be used again at Level 4.")
+                        .defineInRange("rewriteTheMomentCooldownLevel4Seconds", 240, 0, 60 * 30);
+                timeRewindCooldownLevel5Seconds = builder.comment("Seconds before Rewind can be used again at Level 5 and above.")
+                        .defineInRange("rewriteTheMomentCooldownLevel5Seconds", 150, 0, 60 * 30);
                 regenerationAuraEnergyCost = energy(builder, "healingAura", 45);
                 regenerationAuraCooldownTicks = cooldown(builder, "healingAura", 20 * 60);
                 electroBallEnergyCost = energy(builder, "ballLightning", 25);

@@ -21,6 +21,7 @@ final class DetailedAbilityEffects {
 
     static boolean play(ClientLevel level, Kind kind, Vec3 origin, Vec3 target,
                         float size, boolean detail, int density) {
+        if (TelekinesisEffects.play(level, kind, origin, target, size, detail)) return true;
         Vec3 delta = target.subtract(origin);
         Vec3 axis = delta.lengthSqr() < 0.0001D ? UP : delta.normalize();
         float phase = (float) (level.getGameTime() * 0.3D);
@@ -218,27 +219,10 @@ final class DetailedAbilityEffects {
                 }
             }
             case DIVE_TRAIL -> {
-                Vec3 right = basis(axis);
-                int trails = detail ? 2 : 1;
-                for (int i = 0; i < trails; i++) {
-                    Vec3 start = origin.add(right.scale(trails == 1 ? 0 : (i == 0 ? -0.16D : 0.16D)));
-                    add(new PowerParticle(level, STREAK, start, start.subtract(axis.scale(2.5D)),
-                            .035F, .1F, 9, 0, 0xE0ECEF, .4F));
-                }
-                if (detail) {
-                    orbit(level, origin.subtract(axis.scale(0.4D)), axis, 0.4F,
-                            6, 0xE8FBFF, 0.28F, Vec3.ZERO);
-                }
+                FlightEffects.diveTrail(level, origin, axis, size, detail);
             }
             case DIVE_IMPACT -> {
-                Vec3 center = origin.add(0, 0.12D, 0);
-                FlightEffects.burst(level, center, UP, size, detail);
-                if (detail) {
-                    for (int i = 0; i < 6; i++)
-                        add(new PowerParticle(level, ARC, center, UP, .4F, size * 1.2F,
-                                18, i % 3, 0xC7D2CE, .3F).arc(i * 1.05F, .02F, .85F, .12F));
-                    burst(level, center, UP, 0xD7E4E6, 10, .12F);
-                }
+                FlightEffects.diveImpact(level, origin, size, detail);
             }
 
             default -> { return false; }

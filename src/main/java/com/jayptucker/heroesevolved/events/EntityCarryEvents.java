@@ -17,8 +17,7 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 /**
- * Lets any player carry one entity at a time. Riding is used instead of
- * client-only movement so the carried entity stays synchronized in multiplayer.
+ * One attached riding graph, with cleanup for both the carrier and the passenger.
  */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class EntityCarryEvents {
@@ -47,7 +46,7 @@ public final class EntityCarryEvents {
             return;
         }
 
-        if (EntityCarryService.pickUp(player, target)) {
+        if (EntityCarryService.pickUp(player, target, 4.0D)) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS);
         }
@@ -73,13 +72,7 @@ public final class EntityCarryEvents {
     }
 
     private static boolean canPickUp(ServerPlayer player, Entity target) {
-        return target != player
-                && !(target instanceof TemporalEchoEntity)
-                && !com.jayptucker.heroesevolved.time.TemporalEntityEchoService
-                        .isPastCopy(target)
-                && !target.isPassenger()
-                && target.getPassengers().isEmpty()
-                && !EntityCarryService.isCarrying(player);
+        return EntityCarryService.canPickUp(player, target, 4.0D);
     }
 
     @SubscribeEvent
@@ -111,9 +104,22 @@ public final class EntityCarryEvents {
     public static void onPlayerDeath(
             net.neoforged.neoforge.event.entity.living.LivingDeathEvent event
     ) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            EntityCarryService.release(player);
-        }
+        EntityCarryService.releaseEntity(event.getEntity());
+    }
+
+    @SubscribeEvent
+    public static void onEntityJoined(net.neoforged.neoforge.event.entity.EntityJoinLevelEvent event) {
+        if (!event.getLevel().isClientSide()) EntityCarryService.recover(event.getEntity());
+    }
+
+    @SubscribeEvent
+    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) EntityCarryService.recover(player);
+    }
+
+    @SubscribeEvent
+    public static void onServerStopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
+        EntityCarryService.releaseAll();
     }
 
     @SubscribeEvent

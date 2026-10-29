@@ -15,5 +15,11 @@ public enum ArmPose {
     /** The main hand pressed to the temple in concentration. */
     TEMPLE,
     /** Both arms driven down toward the ground. */
-    GROUND
+    GROUND,
+    /** Alternating hands draw loose matter into a telekinetic orbit. */
+    KINETIC_GATHER,
+    /** One palm steadies a held object while the other braces its weight. */
+    KINETIC_HOLD,
+    /** A sharp open-handed release of stored force. */
+    KINETIC_RELEASE
 }

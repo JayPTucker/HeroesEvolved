@@ -17,6 +17,13 @@ public final class TelekinesisEvents {
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         TelekinesisService.tick(event.getServer());
+        com.jayptucker.heroesevolved.telekinesis.TelekineticArsenalService.tick(event.getServer());
+        com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.tick(event.getServer());
+    }
+
+    @SubscribeEvent
+    public static void onSlamLanding(net.neoforged.neoforge.event.entity.living.LivingFallEvent event) {
+        if (TelekinesisService.isSlammed(event.getEntity())) event.setDamageMultiplier(0);
     }
 
     @SubscribeEvent
@@ -33,6 +40,11 @@ public final class TelekinesisEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             TelekinesisService.stopAll(player);
         }
+    }
+
+    @SubscribeEvent
+    public static void onServerStopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
+        TelekinesisService.clear();
     }
 
     @SubscribeEvent

@@ -15,9 +15,8 @@ import net.minecraft.util.RandomSource;
  */
 public final class FlightBoostWindSound
         extends AbstractTickableSoundInstance {
-    private static final float TARGET_VOLUME = 0.60F;
-    private static final float FADE_IN_PER_TICK = 0.12F;
-    private static final float FADE_OUT_PER_TICK = 0.10F;
+    private static final float FADE_IN_PER_TICK = 0.06F;
+    private static final float FADE_OUT_PER_TICK = 0.08F;
 
     private static FlightBoostWindSound activeSound;
 
@@ -53,7 +52,13 @@ public final class FlightBoostWindSound
 
     @Override
     public void tick() {
-        float targetVolume = boostActive ? TARGET_VOLUME : 0.0F;
+        var minecraft = Minecraft.getInstance();
+        if (minecraft.player == null || minecraft.level == null) {
+            stop();
+            return;
+        }
+        float speed = (float) Math.clamp(minecraft.player.getDeltaMovement().length() / 2.8, 0, 1);
+        float targetVolume = boostActive ? .22F + speed * .43F : 0.0F;
         float fadeSpeed = boostActive
                 ? FADE_IN_PER_TICK
                 : FADE_OUT_PER_TICK;
@@ -61,8 +66,8 @@ public final class FlightBoostWindSound
         volume = Mth.approach(volume, targetVolume, fadeSpeed);
         pitch = Mth.approach(
                 pitch,
-                boostActive ? 1.15F : 0.90F,
-                0.04F
+                boostActive ? .82F + speed * .55F : .80F,
+                0.025F
         );
 
         // The fade begins immediately on release, but stopping waits until

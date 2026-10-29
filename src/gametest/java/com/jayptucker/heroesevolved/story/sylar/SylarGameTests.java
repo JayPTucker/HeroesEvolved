@@ -271,25 +271,39 @@ public final class SylarGameTests {
         });
     }
 
-    @GameTest(template = "rewind_empty", batch = "sylar.time_stop", timeoutTicks = 185)
+    @GameTest(template = "rewind_empty", batch = "sylar.time_stop", timeoutTicks = 260)
     public static void stoppedTimePausesTheActualHunterChannel(GameTestHelper helper) {
         reset(helper); ServerPlayer quarry = player(helper, ModAbilities.TIME_MANIPULATION_ID, 5, new ArrayList<>());
         SylarEntity hunter = hunter(helper, quarry, 6); hunter.hunt(quarry); int[] progress = {0};
-        helper.runAfterDelay(90, () -> {
-            helper.assertTrue(hunter.extracting(), "Fixture must reach the hold before stopping time");
-            progress[0] = hunter.extractionTicks();
-            com.jayptucker.heroesevolved.time.TimeStopService.start(quarry, 3);
-        });
-        helper.runAfterDelay(120, () -> {
-            helper.assertTrue(hunter.extractionTicks() == progress[0], "Sylar's acquisition must stop with his entity, not run from an independent server timer");
-            com.jayptucker.heroesevolved.time.TimeStopService.stop(quarry);
-        });
-        helper.runAfterDelay(150, () -> {
-            try {
-                helper.assertTrue(hunter.extractionTicks() > progress[0] && !SylarStoryData.get(quarry.getServer()).knows(ModAbilities.TIME_MANIPULATION_ID),
-                        "Time restarting must resume the remaining hold without instant acquisition"); helper.succeed();
-            } finally { com.jayptucker.heroesevolved.time.TimeStopService.stop(quarry); remove(quarry); }
-        });
+        long began = helper.getLevel().getGameTime();
+        boolean[] cleaned = {false};
+        Runnable cleanup = () -> {
+            if (cleaned[0]) return;
+            cleaned[0] = true;
+            com.jayptucker.heroesevolved.time.TimeStopService.stop(quarry); remove(quarry);
+        };
+        helper.startSequence()
+                // Forced chunks become entity-ticking asynchronously; wait for eighty actual hunter ticks.
+                .thenWaitUntil(() -> {
+                    if (!hunter.extracting() && helper.getLevel().getGameTime() - began >= 180) cleanup.run();
+                    helper.assertTrue(hunter.extracting(), "Fixture must reach the hold before stopping time");
+                })
+                .thenExecute(() -> {
+                    progress[0] = hunter.extractionTicks();
+                    com.jayptucker.heroesevolved.time.TimeStopService.start(quarry, 3);
+                })
+                .thenExecuteAfter(30, () -> {
+                    try {
+                        helper.assertTrue(hunter.extractionTicks() == progress[0], "Sylar's acquisition must stop with his entity, not run from an independent server timer");
+                        com.jayptucker.heroesevolved.time.TimeStopService.stop(quarry);
+                    } catch (RuntimeException | Error failure) { cleanup.run(); throw failure; }
+                })
+                .thenExecuteAfter(30, () -> {
+                    try {
+                        helper.assertTrue(hunter.extractionTicks() > progress[0] && !SylarStoryData.get(quarry.getServer()).knows(ModAbilities.TIME_MANIPULATION_ID),
+                                "Time restarting must resume the remaining hold without instant acquisition"); helper.succeed();
+                    } finally { cleanup.run(); }
+                });
     }
 
     @GameTest(template = "rewind_empty", batch = "sylar.mortal")

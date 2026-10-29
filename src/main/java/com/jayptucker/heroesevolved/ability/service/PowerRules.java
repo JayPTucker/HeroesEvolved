@@ -21,7 +21,8 @@ public final class PowerRules {
     public static boolean canAct(ServerPlayer player) {
         return player.isAlive() && !player.isSpectator() && !immobilized(player)
                 && !EclipseService.arePowersSuppressed(player) && !PowerIntroService.isActive(player)
-                && !TimeIntroService.isVisiting(player) && !TimeIntroService.isCity(player.level());
+                && !TimeIntroService.isVisiting(player) && !TimeIntroService.isCity(player.level())
+                && !com.jayptucker.heroesevolved.regeneration.BodyService.isDowned(player);
     }
     public static void rewinding(ServerPlayer player, boolean active) {
         if (active) REWINDING.add(player.getUUID()); else REWINDING.remove(player.getUUID());

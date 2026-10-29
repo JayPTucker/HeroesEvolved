@@ -2,6 +2,7 @@ package com.jayptucker.heroesevolved.skills;
 
 import com.jayptucker.heroesevolved.ability.*;
 import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
+import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.ability.service.*;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.network.*;
@@ -90,6 +91,8 @@ public final class SkillTreeService {
     }
     private static int discounted(int value, double bonus) { return value <= 0 ? 0 : Math.max(1, (int) Math.ceil(value * (1 - bonus))); }
     public static double bonus(ServerPlayer player, ResourceLocation power, int branch) {
+        // These trees unlock specific maneuvers and interactions, rather than blanket stat bonuses.
+        if (power.equals(ModAbilities.FLIGHT_ID) || power.equals(ModAbilities.TELEKINESIS_ID)) return 0;
         var build = build(player, power); String prefix = power.getPath() + "_" + branch + "_";
         return (build.learned().contains(prefix + "0") ? .10 : 0) + (build.learned().contains(prefix + "2") ? .15 : 0);
     }
@@ -109,11 +112,20 @@ public final class SkillTreeService {
         if (assignment.isEmpty() || !assignment.get().getValue().isUnlocked() || !PowerRules.canAct(player)
                 || player.getData(ModDataAttachments.PLAYER_COMBAT).wasDamagedWithin(player.level().getGameTime(), 200)) return false;
         var power = assignment.get().getKey(); var b = build(player, power);
+        if (power.equals(ModAbilities.FLIGHT_ID)) {
+            com.jayptucker.heroesevolved.flight.FlightDynamicsService.cancelSkyburst(player);
+            com.jayptucker.heroesevolved.flight.FlightSkillService.forget(player);
+        }
+        if (power.equals(ModAbilities.TELEKINESIS_ID)) com.jayptucker.heroesevolved.telekinesis.TelekinesisService.stopAll(player);
         for (var action : actions(player, power).values()) {
             var context = new AbilityUseContext(player, power, PlayerProgressionService.getLevel(player), true);
             action.release(context); action.deactivate(context);
         }
         com.jayptucker.heroesevolved.expansion.ExpansionSkills.forget(player);
+        if (power.equals(ModAbilities.FLIGHT_ID)) {
+            com.jayptucker.heroesevolved.flight.FlightSkillService.forget(player);
+            com.jayptucker.heroesevolved.flight.FlightSkillPassives.forget(player);
+        }
         save(player, power, new SkillTreeData.Build(b.highestLevel(), Set.of(), Map.of(), b.training()));
         return true;
     }

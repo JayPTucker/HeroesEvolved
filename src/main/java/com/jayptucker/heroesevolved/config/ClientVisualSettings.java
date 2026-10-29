@@ -14,7 +14,7 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 public final class ClientVisualSettings {
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.DoubleValue SHAKE, FLASH, FOG;
-    public static final ModConfigSpec.BooleanValue REDUCE_FLASHING;
+    public static final ModConfigSpec.BooleanValue REDUCE_FLASHING, SEVERED_LIMBS;
 
     static {
         var b = new ModConfigSpec.Builder();
@@ -24,6 +24,8 @@ public final class ClientVisualSettings {
         REDUCE_FLASHING = b.comment("Photosensitivity: cap full-screen flashes at a soft wash and stop pulsing edges from throbbing. "
                         + "Also enabled automatically by Minecraft's 'Hide Lightning Flashes' accessibility option.")
                 .define("reduceFlashing", false);
+        SEVERED_LIMBS = b.comment("Show Regeneration's severed limbs growing back from the bone. Off: the limb fades out and back in.")
+                .define("showSeveredLimbs", true);
         SPEC = b.build();
     }
 

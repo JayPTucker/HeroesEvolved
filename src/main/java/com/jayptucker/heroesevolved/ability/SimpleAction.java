@@ -23,6 +23,7 @@ public final class SimpleAction implements AbilityAction {
     private final Predicate<AbilityUseContext> canUse;
     private final Activation activation;
     private final Predicate<AbilityUseContext> deactivation;
+    private final Predicate<AbilityUseContext> deactivateOnPress;
 
     private SimpleAction(Builder builder) {
         definition = new AbilityActionDefinition(
@@ -37,6 +38,7 @@ public final class SimpleAction implements AbilityAction {
         canUse = builder.canUse;
         activation = builder.activation;
         deactivation = builder.deactivation;
+        deactivateOnPress = builder.deactivateOnPress;
     }
 
     public static Builder builder(String path, int unlockLevel) {
@@ -69,6 +71,11 @@ public final class SimpleAction implements AbilityAction {
     }
 
     @Override
+    public boolean deactivateOnPress(AbilityUseContext context) {
+        return deactivateOnPress.test(context);
+    }
+
+    @Override
     public AbilityActivationResult activate(AbilityUseContext context) {
         return activation.activate(context)
                 ? AbilityActivationResult.SUCCESS
@@ -83,6 +90,7 @@ public final class SimpleAction implements AbilityAction {
         private Predicate<AbilityUseContext> canUse = context -> true;
         private Activation activation = context -> false;
         private Predicate<AbilityUseContext> deactivation = context -> false;
+        private Predicate<AbilityUseContext> deactivateOnPress = context -> false;
 
         private Builder(String path, int unlockLevel) {
             this.path = path;
@@ -108,6 +116,11 @@ public final class SimpleAction implements AbilityAction {
         /** Shift + key ends the effect for free when this returns true. */
         public Builder deactivate(Predicate<AbilityUseContext> action) {
             deactivation = action;
+            return this;
+        }
+
+        public Builder deactivateOnPress(Predicate<AbilityUseContext> predicate) {
+            deactivateOnPress = predicate;
             return this;
         }
 

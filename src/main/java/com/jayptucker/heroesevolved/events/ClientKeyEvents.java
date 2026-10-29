@@ -178,7 +178,7 @@ public final class ClientKeyEvents {
     private static void handleFlightDoubleTap(Minecraft minecraft) {
         boolean jumpIsDown = minecraft.options.keyJump.isDown();
 
-        if (jumpIsDown && !jumpWasDown && hasAwakenedFlight()) {
+        if (jumpIsDown && !jumpWasDown && hasNativeFlight()) {
             long gameTime = minecraft.level.getGameTime();
 
             if (lastJumpPressGameTime != Long.MIN_VALUE
@@ -202,6 +202,15 @@ public final class ClientKeyEvents {
     }
 
     private static boolean hasAwakenedFlight() {
+        if (hasNativeFlight()) return true;
+        var player = Minecraft.getInstance().player;
+        // The server grants this flag only after a real Flight Echo begins a temporary session.
+        return player != null && ClientFlightVisualState.isFlightEnabled(player.getId())
+                && ClientPowerState.getSnapshot().abilities().stream().anyMatch(
+                        ability -> ability.unlocked() && ability.abilityId().equals(ModAbilities.MIMICRY_ID));
+    }
+
+    private static boolean hasNativeFlight() {
         return ClientPowerState.getSnapshot().abilities().stream().anyMatch(
                 ability -> ability.unlocked()
                         && ability.abilityId().equals(ModAbilities.FLIGHT_ID)

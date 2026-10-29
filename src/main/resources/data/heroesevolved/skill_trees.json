@@ -161,156 +161,192 @@
     "branches": [
       [
         {
-          "name": "Aerodynamic Control",
-          "description": "Reduce activation stamina costs by 10%."
+          "name": "Featherlight",
+          "description": "Falls of up to 10 blocks deal no damage; larger falls deal half damage.",
+          "icon": "minecraft:feather",
+          "level": 1,
+          "mechanic": "featherlight"
         },
         {
-          "name": "Slipstream Dash",
-          "description": "Dash along your aim and gain 5 seconds of Slow Falling.",
-          "energy": 22,
-          "cooldown": 100
+          "name": "Rescue Rush",
+          "description": "Rush to a visible teammate or your tamed pet within 18 blocks, reset their fall and grant 8 seconds of Slow Falling plus two hearts of absorption.",
+          "energy": 20,
+          "cooldown": 120,
+          "icon": "minecraft:lead",
+          "level": 2,
+          "mechanic": "rescue_rush"
         },
         {
-          "name": "Aerodynamic Control Mastery",
-          "description": "Reduce activation stamina costs by another 15% (25% total)."
+          "name": "Tandem Lift",
+          "description": "Rescue Rush lifts both of you on an upward gust and banks 15 Momentum for your next maneuver.",
+          "icon": "minecraft:rabbit_foot",
+          "level": 3,
+          "mechanic": "tandem_lift"
         },
         {
           "id": "flight_sky_catch",
-          "name": "Sky Catch",
-          "description": "Dash to the nearest friend within 16 blocks and wrap them in wind: Slow Falling, a fall reset and two hearts of absorption.",
+          "name": "Wind Sanctuary",
+          "description": "Aim at solid ground within 20 blocks to shelter a 5-block area for 6 seconds. Friends land softly; incoming hostile projectiles slow and turn outward once. Shift + key dismisses it.",
           "active": true,
           "level": 2,
           "cost": 2,
           "requires": "flight_0_0",
-          "mechanic": "sky_catch",
-          "energy": 20,
-          "cooldown": 160
+          "mechanic": "wind_sanctuary",
+          "energy": 28,
+          "cooldown": 240,
+          "icon": "minecraft:glass"
         },
         {
           "id": "flight_safe_harbor",
           "name": "Safe Harbor",
-          "description": "Sky Catch also grants Resistance for eight seconds.",
+          "description": "Wind Sanctuary heals each friend one heart once per cast and grants Resistance I while they remain inside.",
           "active": false,
           "level": 3,
           "cost": 1,
           "requires": "flight_sky_catch",
-          "mechanic": "safe_harbor"
+          "mechanic": "safe_harbor",
+          "icon": "minecraft:glistering_melon_slice"
         },
         {
           "id": "flight_guardian_angel",
-          "name": "Guardian Angel",
-          "description": "Once a minute, a teammate within 16 blocks who would take fall damage lands softly instead.",
+          "name": "Last-Second Save",
+          "description": "Once every 45 seconds, catch yourself or a visible falling teammate within 18 blocks after a fall over 10 blocks. Negate the landing and grant 5 seconds of Slow Falling; bank 25 Momentum if you are flying.",
           "active": false,
           "capstone": true,
           "level": 5,
           "cost": 3,
           "requires": "flight_safe_harbor",
-          "mechanic": "guardian_angel"
+          "mechanic": "last_second_save",
+          "icon": "minecraft:totem_of_undying"
         }
       ],
       [
         {
-          "name": "Wind Pressure",
-          "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
+          "name": "Ram Air",
+          "description": "Build Momentum 30% faster during real forward flight at a faster wheel setting.",
+          "icon": "minecraft:phantom_membrane",
+          "level": 1,
+          "mechanic": "ram_air"
         },
         {
-          "name": "Air Brake",
-          "description": "Stop your momentum and leave a 4-second wind screen that reflects incoming projectiles within 7 blocks.",
-          "energy": 28,
-          "cooldown": 160
+          "name": "Barrel Roll",
+          "description": "While airborne, corkscrew forward and right for 0.6 seconds, deflecting incoming hostile projectiles nearby. Shift + key rolls left. Solid walls stop the roll.",
+          "energy": 18,
+          "cooldown": 100,
+          "icon": "minecraft:elytra",
+          "level": 2,
+          "mechanic": "barrel_roll"
         },
         {
-          "name": "Wind Pressure Mastery",
-          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+          "name": "Vector Control",
+          "description": "Skyburst fully coils in 0.9 seconds instead of 1.5, letting you redirect your airspeed sooner.",
+          "icon": "minecraft:compass",
+          "level": 3,
+          "mechanic": "vector_control"
         },
         {
           "id": "flight_tailwind",
-          "name": "Tailwind",
-          "description": "Leave a twelve-block wind current for ten seconds. Friends in it gain Speed II and Jump Boost; enemies are pushed along it.",
+          "name": "Jetstream",
+          "description": "Lay a 12-block wind lane for 8 seconds. Friends gain Speed II, Jump Boost and Slow Falling; enemies are carried along it. Solid terrain clips its reach. Shift + key dismisses it.",
           "active": true,
           "level": 2,
           "cost": 2,
           "requires": "flight_1_0",
-          "mechanic": "tailwind",
-          "energy": 22,
-          "cooldown": 240
+          "mechanic": "jetstream",
+          "energy": 24,
+          "cooldown": 200,
+          "icon": "minecraft:wind_charge"
         },
         {
           "id": "flight_jetstream",
-          "name": "Jetstream",
-          "description": "The current reaches twenty blocks and gives Speed III.",
+          "name": "Draft Rider",
+          "description": "Jetstream reaches 20 blocks. While you are flying, the first friend other than you to ride a current banks 20 Momentum for you, once per cast.",
           "active": false,
           "level": 3,
           "cost": 1,
           "requires": "flight_tailwind",
-          "mechanic": "jetstream"
+          "mechanic": "draft_rider",
+          "icon": "minecraft:paper"
         },
         {
           "id": "flight_pressure_front",
-          "name": "Pressure Front",
-          "description": "Enemies caught in your current take damage every second.",
+          "name": "Slipstream Echo",
+          "description": "A Skyburst that spends at least 50 Momentum leaves an 8-block wind lane for 4 seconds, letting friends follow your launch.",
           "active": false,
           "capstone": true,
           "level": 5,
           "cost": 3,
           "requires": "flight_jetstream",
-          "mechanic": "pressure_front"
+          "mechanic": "slipstream_echo",
+          "icon": "minecraft:echo_shard"
         }
       ],
       [
         {
-          "name": "Second Wind",
-          "description": "Reduce ability cooldowns by 10%."
+          "name": "Pressure Tap",
+          "description": "A successful airborne melee hit during Flight banks 5 Momentum, at most once every half second. Power damage and friendly hits do not count.",
+          "icon": "minecraft:iron_sword",
+          "level": 1,
+          "mechanic": "pressure_tap"
         },
         {
-          "name": "Updraft",
-          "description": "Launch upward, lift visible enemies within 6 blocks, and gain 8 seconds of Slow Falling.",
-          "energy": 30,
-          "cooldown": 180
+          "name": "Thermal Lance",
+          "description": "Aim at solid ground within 20 blocks. A warning circle gathers for 0.4 seconds, then a 3.5-block updraft damages and lifts enemies. Friends in it land softly. Shift + key cancels the warning.",
+          "energy": 24,
+          "cooldown": 160,
+          "icon": "minecraft:firework_rocket",
+          "level": 2,
+          "mechanic": "thermal_lance"
         },
         {
-          "name": "Second Wind Mastery",
-          "description": "Reduce ability cooldowns by another 15% (25% total)."
+          "name": "Rising Pressure",
+          "description": "Thermal Lance sends a second lifting pulse 0.4 seconds after the first, holding enemies aloft for your follow-up.",
+          "icon": "minecraft:pointed_dripstone",
+          "level": 3,
+          "mechanic": "rising_pressure"
         },
         {
           "id": "flight_thunderclap",
-          "name": "Thunderclap",
-          "description": "Clap the air apart: enemies within six blocks take 4 damage, are thrown back and slowed.",
+          "name": "Vacuum Clap",
+          "description": "Draw visible enemies inward for 0.4 seconds, then clap out a 6-block pressure wave. Spend stored Momentum for a harder burst. Shift + key cancels before release.",
           "active": true,
           "level": 2,
           "cost": 2,
           "requires": "flight_2_0",
-          "mechanic": "thunderclap",
-          "energy": 24,
-          "cooldown": 160
+          "mechanic": "vacuum_clap",
+          "energy": 30,
+          "cooldown": 180,
+          "icon": "minecraft:goat_horn"
         },
         {
           "id": "flight_wider_clap",
-          "name": "Wider Clap",
-          "description": "Thunderclap reaches nine blocks.",
+          "name": "Eye of the Storm",
+          "description": "Vacuum Clap reaches 9 blocks and brakes incoming hostile projectiles during its wind-up.",
           "active": false,
           "level": 3,
           "cost": 1,
           "requires": "flight_thunderclap",
-          "mechanic": "wider_clap"
+          "mechanic": "eye_of_storm",
+          "icon": "minecraft:heart_of_the_sea"
         },
         {
           "id": "flight_sound_barrier",
-          "name": "Sound Barrier",
-          "description": "Flying at full speed buffets every enemy within three blocks you pass.",
+          "name": "Sonic Bloom",
+          "description": "Meteor Drop and Vacuum Clap echo once after 0.6 seconds: a second pressure wave deals half damage within 90% of the original radius.",
           "active": false,
           "capstone": true,
           "level": 5,
           "cost": 3,
           "requires": "flight_wider_clap",
-          "mechanic": "sound_barrier"
+          "mechanic": "sonic_bloom",
+          "icon": "minecraft:sculk_sensor"
         }
       ]
     ],
     "branch_names": [
-      "INTERCEPTOR",
-      "SLIPSTREAM",
-      "PRESSURE FRONT"
+      "SKY GUARD",
+      "JETSTREAM",
+      "STORMBREAKER"
     ]
   },
   {
@@ -632,23 +668,23 @@
     "branches": [
       [
         {
-          "name": "Fine Control",
-          "description": "Reduce activation stamina costs by 10%."
+          "name": "Soft Landing",
+          "description": "Gently placing a gripped creature gives it five seconds of Slow Falling. Shift + Grip places instead of throwing."
         },
         {
-          "name": "Kinetic Lance",
-          "description": "Hit a target up to 40 blocks away for 6 + level damage and launch it along your aim.",
+          "name": "Vector Lance",
+          "description": "Launch a visible stone lance along your crosshair. It travels up to 40 blocks, collides with cover, and deals 8 damage.",
           "energy": 24,
           "cooldown": 100
         },
         {
-          "name": "Fine Control Mastery",
-          "description": "Reduce activation stamina costs by another 15% (25% total)."
+          "name": "Thread the Needle",
+          "description": "Vector Lance pierces its first creature and can hit a second creature behind it."
         },
         {
           "id": "telekinesis_remote_hand",
           "name": "Remote Hand",
-          "description": "Flip a lever, press a button, or open a door, trapdoor or gate up to 24 blocks away.",
+          "description": "Pull a loose item along your sightline or operate a lever, button, door, trapdoor, gate or bell up to 24 blocks away.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -660,7 +696,7 @@
         {
           "id": "telekinesis_long_reach",
           "name": "Long Reach",
-          "description": "Remote Hand reaches 48 blocks.",
+          "description": "Remote Hand reaches 48 blocks, and Grip reaches eight blocks farther.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -670,7 +706,7 @@
         {
           "id": "telekinesis_retrieve",
           "name": "Retrieve",
-          "description": "Remote Hand can pull the first stack out of a chest or other container you could open.",
+          "description": "Remote Hand extracts one stack from an unlocked container you can edit. The actual stack flies back to you and can be intercepted.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -681,23 +717,23 @@
       ],
       [
         {
-          "name": "Crushing Will",
-          "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
+          "name": "Salvage Orbit",
+          "description": "Successful Push and Disarm gather a transient stone fragment beside you, up to three. Your next Push launches an available fragment."
         },
         {
           "name": "Gravity Well",
-          "description": "Leave a 5-second gravity well that pulls visible enemies within 10 blocks toward its center.",
+          "description": "Anchor a five-second pull at your crosshair, gathering nearby enemies. Press again to release them upward; Shift cancels safely.",
           "energy": 35,
           "cooldown": 240
         },
         {
-          "name": "Crushing Will Mastery",
-          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+          "name": "Crossfire",
+          "description": "A thrown enemy hitting a wall or ground flicks an orbiting fragment at another nearby enemy."
         },
         {
           "id": "telekinesis_kinetic_volley",
           "name": "Kinetic Volley",
-          "description": "Hurl three stone fragments at a visible enemy within 32 blocks, 4 damage each.",
+          "description": "Gather three visible fragments and launch them in sequence at your aimed point. Each deals 4 damage and collides with creatures and cover.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -709,7 +745,7 @@
         {
           "id": "telekinesis_five_fragments",
           "name": "Five Fragments",
-          "description": "Kinetic Volley throws five fragments.",
+          "description": "Your orbit holds five fragments and Kinetic Volley launches five shots.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -719,7 +755,7 @@
         {
           "id": "telekinesis_iron_rain",
           "name": "Iron Rain",
-          "description": "Fragments also stagger their target with Slowness III.",
+          "description": "Shift + Kinetic Volley lobs a physical arcing barrage. Landing fragments create small pressure waves; ceilings and cover can stop them.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -730,23 +766,23 @@
       ],
       [
         {
-          "name": "Mental Recovery",
-          "description": "Reduce ability cooldowns by 10%."
+          "name": "Grounding",
+          "description": "Vector Step stores one safe landing for five seconds. The landing consumes the protection."
         },
         {
-          "name": "Levitation Step",
-          "description": "Rise for a brief moment and gain 9 seconds of Slow Falling for precise aerial movement.",
+          "name": "Vector Step",
+          "description": "Press against a temporary force foothold to vault forward and upward. Shift reverses the vault. Movement collides normally with the world.",
           "energy": 22,
           "cooldown": 160
         },
         {
-          "name": "Mental Recovery Mastery",
-          "description": "Reduce ability cooldowns by another 15% (25% total)."
+          "name": "Counterstep",
+          "description": "During the first moment of Vector Step, your moving force foothold deflects incoming hostile projectiles."
         },
         {
           "id": "telekinesis_force_bubble",
           "name": "Force Bubble",
-          "description": "A three-block bubble for six seconds: hostile projectiles bounce off and enemies are pushed out.",
+          "description": "A moving three-block shell deflects incoming hostile projectiles and pushes enemies out for six seconds. Press again for an outward release; Shift cancels.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -757,8 +793,8 @@
         },
         {
           "id": "telekinesis_wider_bubble",
-          "name": "Wider Bubble",
-          "description": "Force Bubble grows to five blocks.",
+          "name": "Forward Bastion",
+          "description": "Your shell grows to four blocks. Shift + Force Bubble anchors it at your crosshair to defend an ally or passage.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -767,8 +803,8 @@
         },
         {
           "id": "telekinesis_bastion",
-          "name": "Bastion",
-          "description": "The bubble lasts ten seconds and gives everyone inside Resistance II.",
+          "name": "Counterbattery",
+          "description": "Force Bubble lasts ten seconds and redirects intercepted hostile projectiles toward your current crosshair.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -1265,7 +1301,7 @@
         },
         {
           "name": "Gamma Lance",
-          "description": "Irradiate a target up to 40 blocks away for 9 + level damage and lingering radiation for 6 seconds.",
+          "description": "Irradiate a target up to 40 blocks away for 9 + level damage and a stage of Radiation Sickness.",
           "energy": 30,
           "cooldown": 120
         },

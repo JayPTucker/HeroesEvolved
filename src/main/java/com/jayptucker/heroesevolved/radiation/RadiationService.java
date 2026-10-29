@@ -50,8 +50,11 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Ted Sprague: induced radioactivity, heat and electromagnetic pulses.
- * Injury and emissions raise stress. Vent the heat, or lose control.
+ * Ted Sprague: induced radioactivity, heat and electromagnetic pulses. Core (the stored "stress")
+ * builds as he uses his power and as he is hurt, and the hotter it runs the stronger he is: Hot at
+ * 40 (+25% damage), Glowing at 60 (radiation leaks onto nearby enemies), Critical at 80 (+50%, and his
+ * heat sets things alight). At 100 he must vent through Controlled Emission, an EMP or the blast
+ * itself, or containment fails. His radiation is a stacking Radiation Sickness that spreads from the dead.
  */
 public final class RadiationService {
     public static final int MAXIMUM_MASS = 100;
@@ -63,6 +66,19 @@ public final class RadiationService {
     private static final DustParticleOptions WHITE_HOT =
             new DustParticleOptions(new Vector3f(1.0F, 1.0F, 0.9F), 1.4F);
 
+    public static final int HOT = 40, CRITICAL = 80;
+    private static final int EMISSION_MIN_TICKS = 8, EMISSION_MAX_TICKS = 100, ZONE_TICKS = 160;
+
+    private static final class Emission {
+        final ServerPlayer player; final int level; final long started; final net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension;
+        boolean released;
+        Emission(ServerPlayer player, int level, long started) {
+            this.player = player; this.level = level; this.started = started; this.dimension = player.level().dimension();
+        }
+    }
+    private record Zone(UUID owner, ServerLevel level, Vec3 center, double radius, long until) {}
+    private static final Map<UUID, Emission> EMISSIONS = new HashMap<>();
+    private static final List<Zone> ZONES = new java.util.ArrayList<>();
     private static final Map<UUID, Long> BREACHES = new HashMap<>();
     private static final Map<UUID, Detonation> DETONATIONS = new HashMap<>();
     private static final Map<UUID, Long> LAST_HURT = new HashMap<>();
@@ -155,34 +171,54 @@ public final class RadiationService {
     // Radiant Touch
     // ------------------------------------------------------------------
 
-    /** Hands that burn white-hot: a scorching close-range blast. */
+    /**
+     * Hands that burn white-hot: a cone of heat and radiation from the palms, up to six creatures
+     * within eight blocks. With nothing in reach, the heat works on what you aim at instead (it boils
+     * water, thaws ice, melts iron doors and bars). Critical Core sets the targets alight.
+     */
     public static boolean radiantTouch(ServerPlayer player, int powerLevel) {
-        LivingEntity target = Targeting.livingEntityInSight(player, 5.0D,
-                entity -> !(entity instanceof TemporalEchoEntity));
-        if (target == null && heatBlock(player)) {
-            addMass(player, 8);
+        ServerLevel level = player.serverLevel();
+        Vec3 eye = player.getEyePosition(), aim = player.getLookAngle().normalize();
+        double reach = 8.0D;
+        List<LivingEntity> targets = level.getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().expandTowards(aim.scale(reach)).inflate(3.0D),
+                        entity -> hostile(player, entity) && player.hasLineOfSight(entity) && inCone(eye, aim, entity, reach, 0.8D))
+                .stream().sorted(java.util.Comparator.comparingDouble(player::distanceToSqr)).limit(6).toList();
+        if (targets.isEmpty() && heatBlock(player)) {
+            addMass(player, 6);
+            AbilityEffects.send(level, Kind.RADIATION_CONE, hand(player), eye.add(aim.scale(5)), 0.6D);
             MasteryService.markPowerUse(player, ModAbilities.RADIATION_ID);
             return true;
         }
-        if (target == null) {
-            player.displayClientMessage(Component.literal(
-                    "Your hands glow, but there's nothing close enough to touch."), true);
+        if (targets.isEmpty()) {
+            player.displayClientMessage(Component.literal("Your hands glow white, but there's nothing close enough to burn."), true);
             return false;
         }
-
-        target.hurt(player.damageSources().playerAttack(player), 4.0F + powerLevel);
-        target.igniteForSeconds(3.0F);
-        irradiate(target, 100 + powerLevel * 20);
-        ServerLevel level = player.serverLevel();
-        level.sendParticles(WHITE_HOT, target.getX(), target.getY() + target.getBbHeight() / 2,
-                target.getZ(), 20, 0.3D, 0.4D, 0.3D, 0.0D);
-        level.sendParticles(ParticleTypes.FLAME, target.getX(), target.getY() + target.getBbHeight() / 2,
-                target.getZ(), 10, 0.3D, 0.4D, 0.3D, 0.02D);
-        level.playSound(null, target.getX(), target.getY(), target.getZ(),
-                SoundEvents.FIRECHARGE_USE, SoundSource.PLAYERS, 0.9F, 0.7F);
-        addMass(player, 8);
+        float multiplier = multiplier(player);
+        boolean critical = mass(player) >= CRITICAL;
+        for (LivingEntity target : targets) {
+            target.hurt(player.damageSources().indirectMagic(player, player), (3.0F + powerLevel) * multiplier);
+            irradiate(target, player, critical ? 2 : 1, 120 + powerLevel * 20);
+            if (critical) target.igniteForSeconds(3.0F);
+            AbilityEffects.send(level, Kind.RADIATION_DOSE, target.getBoundingBox().getCenter(), target.position(), target.getBbWidth());
+        }
+        AbilityEffects.send(level, Kind.RADIATION_CONE, hand(player), eye.add(aim.scale(reach)), critical ? 1.4D : 1.0D);
+        level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.FIRECHARGE_USE, SoundSource.PLAYERS, 0.9F, 0.6F);
+        level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, 0.5F, 0.5F);
+        ArmPosePayload.show(player, ArmPose.TWO_HANDS, 10);
+        addMass(player, 6);
         MasteryService.markPowerUse(player, ModAbilities.RADIATION_ID);
         return true;
+    }
+
+    private static boolean inCone(Vec3 eye, Vec3 aim, LivingEntity entity, double reach, double cosine) {
+        Vec3 to = entity.getBoundingBox().getCenter().subtract(eye);
+        double distance = to.length();
+        return distance <= reach + entity.getBbWidth() && (distance < 1.2D || to.normalize().dot(aim) >= cosine);
+    }
+
+    private static Vec3 hand(ServerPlayer player) {
+        Vec3 look = player.getLookAngle();
+        return player.getEyePosition().add(look.scale(0.6D)).add(0.0D, -0.3D, 0.0D);
     }
 
     /** Ted's close-range heat boils water, thaws ice and melts metal locks. */
@@ -210,11 +246,25 @@ public final class RadiationService {
         return true;
     }
 
-    /** Radiation sickness: poison, hunger and weakness. */
+    /** One stage of Radiation Sickness, kept for at least {@code durationTicks}. */
     public static void irradiate(LivingEntity target, int durationTicks) {
-        target.addEffect(new MobEffectInstance(MobEffects.POISON, durationTicks, 0));
-        target.addEffect(new MobEffectInstance(MobEffects.HUNGER, durationTicks, 1));
-        target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, durationTicks, 0));
+        RadiationSickness.dose(target, null, 1, durationTicks);
+    }
+
+    /** Doses a target on Ted's behalf, so the sickness and any chain reaction are his. */
+    public static void irradiate(LivingEntity target, ServerPlayer caster, int stages, int durationTicks) {
+        RadiationSickness.dose(target, caster, stages, durationTicks);
+    }
+
+    /** How much harder Ted's radiation hits at his current Core. */
+    public static float multiplier(ServerPlayer player) {
+        int core = mass(player);
+        return core >= CRITICAL ? 1.5F : core >= HOT ? 1.25F : 1.0F;
+    }
+
+    private static boolean hostile(ServerPlayer player, LivingEntity target) {
+        return com.jayptucker.heroesevolved.expansion.ExpansionSkills.hostile(player, target)
+                && !(target instanceof TemporalEchoEntity);
     }
 
     // ------------------------------------------------------------------
@@ -229,29 +279,25 @@ public final class RadiationService {
     public static void radiationPulse(ServerPlayer player, int powerLevel, boolean bright) {
         ServerLevel level = player.serverLevel();
         double radius = 6.0D + powerLevel;
+        int stages = mass(player) >= CRITICAL ? 2 : 1;
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
                 player.getBoundingBox().inflate(radius),
-                entity -> entity != player && entity.isAlive()
-                        && entity.distanceToSqr(player) <= radius * radius)) {
+                entity -> hostile(player, entity) && entity.distanceToSqr(player) <= radius * radius)) {
             if (bright) target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 60));
             else {
-                target.hurt(player.damageSources().indirectMagic(player, player), 2.0F);
-                irradiate(target, 120 + powerLevel * 20);
+                target.hurt(player.damageSources().indirectMagic(player, player), 2.0F * multiplier(player));
+                irradiate(target, player, stages, 120 + powerLevel * 20);
             }
         }
-
-        for (int ring = 1; ring <= 3; ring++) {
-            double r = radius * ring / 3.0D;
-            for (int point = 0; point < 24; point++) {
-                double angle = Math.PI * 2.0D * point / 24;
-                level.sendParticles(RADIANCE, player.getX() + Math.cos(angle) * r,
-                        player.getY() + 0.3D, player.getZ() + Math.sin(angle) * r,
-                        1, 0.0D, 0.1D, 0.0D, 0.0D);
-            }
+        if (!bright) {
+            // The ground where you stood stays contaminated for eight seconds.
+            ZONES.removeIf(zone -> zone.owner.equals(player.getUUID()) && ZONES.stream().filter(z -> z.owner.equals(player.getUUID())).count() >= 2);
+            ZONES.add(new Zone(player.getUUID(), level, player.position(), 4.0D, level.getGameTime() + ZONE_TICKS));
         }
         level.playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS, 1.0F, 0.5F);
-        AbilityEffects.at(player, bright ? Kind.NUCLEAR_EMP : Kind.NUCLEAR_CHARGE, bright ? radius : 1);
+        AbilityEffects.send(level, bright ? Kind.NUCLEAR_EMP : Kind.RADIATION_PULSE, player.position(), player.position().add(0, 1, 0), radius);
+        ArmPosePayload.show(player, ArmPose.ARMS_WIDE, 10);
         ScreenTintPayload.sendAround(level, player.position(), radius, bright ? 0x90FFF1C1 : 0x30FF961C, 10,
                 ScreenTintPayload.Style.FLASH);
         addMass(player, bright ? 8 : 15);
@@ -262,67 +308,124 @@ public final class RadiationService {
     // Stress venting
     // ------------------------------------------------------------------
 
-    public static boolean canVent(ServerPlayer player) {
-        return PowerIntroService.radiationChargeRemaining(player) == 0 && mass(player) >= 20;
-    }
-
+    /**
+     * An electromagnetic pulse: redstone within sixteen blocks goes dead for ten seconds, enemies within
+     * ten are thrown off balance and revealed, and the pulse carries 25 Core out of you. Your panic vent.
+     */
     public static void emp(ServerPlayer player) {
         RadiationEmp.pulse(player);
-        addMass(player, 12);
-        player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 1.4F, 0.6F);
+        ServerLevel level = player.serverLevel();
+        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(10.0D),
+                entity -> hostile(player, entity) && entity.distanceToSqr(player) <= 100)) {
+            target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60, 1));
+            target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 60, 0));
+            target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 100, 0));
+            if (target instanceof net.minecraft.world.entity.Mob mob) mob.getNavigation().stop();
+        }
+        int vented = vent(player, 25);
+        if (vented > 0) player.displayClientMessage(Component.literal("The pulse carries " + vented + " Core out of you.")
+                .withStyle(ChatFormatting.AQUA), true);
+        level.playSound(null, player.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 1.4F, 0.6F);
+        level.playSound(null, player.blockPosition(), SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 0.8F, 0.6F);
+        ArmPosePayload.show(player, ArmPose.ARMS_WIDE, 12);
         MasteryService.markPowerUse(player, ModAbilities.RADIATION_ID);
     }
 
-    /** Vent Critical Mass through your hands as a piercing beam. */
-    public static boolean meltdownBeam(ServerPlayer player, int powerLevel) {
+    public static boolean canVent(ServerPlayer player) {
+        return PowerIntroService.radiationChargeRemaining(player) == 0 && mass(player) >= 10 && !isEmitting(player);
+    }
+
+    public static boolean isEmitting(ServerPlayer player) {
+        return EMISSIONS.containsKey(player.getUUID());
+    }
+
+    /** The key went down: start venting Core through a held beam. It runs at least a moment even if tapped. */
+    public static boolean startEmission(ServerPlayer player, int powerLevel) {
         if (PowerIntroService.radiationChargeRemaining(player) > 0) return false;
-        int mass = mass(player);
-        if (mass < 20) {
-            player.displayClientMessage(Component.literal(
-                    "Not enough built up to vent (" + mass + "%)."), true);
+        if (mass(player) < 10) {
+            player.displayClientMessage(Component.literal("Not enough Core built up to vent (" + mass(player) + "%)."), true);
             return false;
         }
+        EMISSIONS.put(player.getUUID(), new Emission(player, powerLevel, player.serverLevel().getGameTime()));
+        ArmPosePayload.show(player, ArmPose.TWO_HANDS, EMISSION_MAX_TICKS + 10);
+        player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.RESPAWN_ANCHOR_CHARGE, SoundSource.PLAYERS, 1.0F, 1.6F);
+        return true;
+    }
 
+    /** The key came up. A tap still lets the beam run its minimum. */
+    public static void releaseEmission(ServerPlayer player) {
+        Emission emission = EMISSIONS.get(player.getUUID());
+        if (emission != null) emission.released = true;
+    }
+
+    /** Shift + key: stop venting at once. */
+    public static boolean stopEmission(ServerPlayer player) {
+        Emission emission = EMISSIONS.remove(player.getUUID());
+        if (emission == null) return false;
+        endEmission(player);
+        return true;
+    }
+
+    private static void endEmission(ServerPlayer player) {
+        ArmPosePayload.clear(player);
+        player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 1.0F, 1.6F);
+    }
+
+    private static void tickEmission(Emission emission, long now) {
+        ServerPlayer player = emission.player;
+        long held = now - emission.started;
+        if (!player.isAlive() || player.isRemoved() || !emission.dimension.equals(player.level().dimension())
+                || EclipseService.arePowersSuppressed(player) || mass(player) <= 0 || held > EMISSION_MAX_TICKS
+                || emission.released && held >= EMISSION_MIN_TICKS) {
+            EMISSIONS.remove(player.getUUID());
+            endEmission(player);
+            if (mass(player) <= 0) player.displayClientMessage(Component.literal("Vented. Your core runs cool.").withStyle(ChatFormatting.GREEN), true);
+            return;
+        }
+        if (now % 2 == 0) meltdownBeam(player, emission.level, now % 4 == 0);
+        if (now % 20 == 0) player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.BEACON_AMBIENT, SoundSource.PLAYERS, 1.5F, 1.4F);
+    }
+
+    /** One pulse of Controlled Emission at full strength. Kept for callers that fire a single burst. */
+    public static boolean meltdownBeam(ServerPlayer player, int powerLevel) {
+        if (PowerIntroService.radiationChargeRemaining(player) > 0 || mass(player) <= 0) return false;
+        meltdownBeam(player, powerLevel, true);
+        return true;
+    }
+
+    /**
+     * Controlled Emission: a piercing beam of heat along your aim. Each damaging pulse vents 3 Core and
+     * hits everything on the line, harder the more Core is still inside you.
+     */
+    private static void meltdownBeam(ServerPlayer player, int powerLevel, boolean damageTick) {
         ServerLevel level = player.serverLevel();
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle();
         BlockHitResult hit = level.clip(new ClipContext(eye, eye.add(look.scale(AbilityRanges.ranged(24.0D))),
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
-        Vec3 end = hit.getType() == HitResult.Type.BLOCK ? hit.getLocation()
-                : eye.add(look.scale(AbilityRanges.ranged(24.0D)));
-        float damage = 4.0F + mass / 7.0F + powerLevel;
-
+        Vec3 end = hit.getType() == HitResult.Type.BLOCK ? hit.getLocation() : eye.add(look.scale(AbilityRanges.ranged(24.0D)));
+        int core = mass(player);
+        AbilityEffects.send(level, Kind.RADIATION_BEAM, hand(player), end, 0.6D + core / 100.0D);
+        if (!damageTick) return;
+        float damage = (1.5F + powerLevel * 0.4F + core / 25.0F) * multiplier(player);
         // It pierces: everything along the line is struck.
-        for (Entity entity : level.getEntities(player, new AABB(eye, end).inflate(1.2D),
-                Entity::isAlive)) {
-            if (!(entity instanceof LivingEntity living)) {
-                continue;
-            }
+        for (Entity entity : level.getEntities(player, new AABB(eye, end).inflate(1.2D), Entity::isAlive)) {
+            if (!(entity instanceof LivingEntity living) || !hostile(player, living)) continue;
             Vec3 toEntity = living.getBoundingBox().getCenter().subtract(eye);
             double along = toEntity.dot(look);
-            if (along < 0.0D || toEntity.subtract(look.scale(along)).length()
-                    > 1.0D + living.getBbWidth() / 2) {
-                continue;
-            }
+            if (along < 0.0D || toEntity.subtract(look.scale(along)).length() > 1.0D + living.getBbWidth() / 2) continue;
+            living.invulnerableTime = 0;
             living.hurt(player.damageSources().indirectMagic(player, player), damage);
-            living.igniteForSeconds(4.0F);
-            irradiate(living, 100);
+            living.igniteForSeconds(3.0F);
+            if (level.getGameTime() % 12 == 0) irradiate(living, player, 1, 100);
         }
-
-        AbilityEffects.send(level, Kind.NUCLEAR_RAY, eye, end, 1.0D);
-        level.sendParticles(ParticleTypes.FLASH, end.x, end.y, end.z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
-        level.sendParticles(ParticleTypes.LAVA, end.x, end.y, end.z, 8, 0.2D, 0.2D, 0.2D, 0.0D);
-        level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 1.2F, 1.6F);
-        level.playSound(null, end.x, end.y, end.z,
-                SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.6F, 1.4F);
-        CameraShakePayload.sendAround(level, player.position(), 8.0D, 0.8F, 8);
-
-        setMass(player, 0);
-        player.displayClientMessage(Component.literal(
-                "Vented " + mass + "% Stress.").withStyle(ChatFormatting.GREEN), true);
+        if (hit.getType() == HitResult.Type.BLOCK && level.getGameTime() % 10 == 0)
+            level.sendParticles(ParticleTypes.LAVA, end.x, end.y, end.z, 3, 0.2D, 0.2D, 0.2D, 0.0D);
+        level.playSound(null, end.x, end.y, end.z, SoundEvents.FIRE_AMBIENT, SoundSource.PLAYERS, 0.8F, 1.4F);
+        CameraShakePayload.sendAround(level, player.position(), 6.0D, 0.25F, 4);
+        setMass(player, core - 3);
+        syncVisuals(player);
         MasteryService.markPowerUse(player, ModAbilities.RADIATION_ID);
-        return true;
     }
 
     // ------------------------------------------------------------------
@@ -459,29 +562,23 @@ public final class RadiationService {
             setMass(player, mass - 1);
         }
 
-        if (gameTime % 10 == 0) {
-            updateGlow(player);
-            if (mass > 0) {
-                ChatFormatting colour = mass >= 80 ? ChatFormatting.RED
-                        : mass >= GLOW_THRESHOLD ? ChatFormatting.GOLD : ChatFormatting.GREEN;
-                int bars = mass / 10;
-                player.displayClientMessage(Component.translatable("message.heroesevolved.radiation_stress")
-                        .append(Component.literal("|".repeat(bars) + ".".repeat(10 - bars))
-                                .withStyle(colour))
-                        .append(Component.literal(" " + mass + "%")), true);
-            }
-        }
-        if (gameTime % 20 == 0) syncVisuals(player);
+        if (gameTime % 10 == 0) updateGlow(player);
+        // The HUD gauge reads this; send it a little more often while Core is changing.
+        if (gameTime % 10 == 0) syncVisuals(player);
+        // A Geiger counter's crackle around a hot reactor, faster the hotter it runs.
+        if (mass >= HOT && player.getRandom().nextInt(100) < mass / 4)
+            player.serverLevel().playSound(null, player.getX(), player.getY() + 1, player.getZ(), SoundEvents.NOTE_BLOCK_HAT.value(),
+                    SoundSource.PLAYERS, 0.25F, 1.7F + player.getRandom().nextFloat() * 0.3F);
 
         if (mass >= GLOW_THRESHOLD && gameTime % 4 == 0) {
             player.serverLevel().sendParticles(RADIANCE, player.getX(), player.getY() + 1.0D,
                     player.getZ(), 2, 0.35D, 0.6D, 0.35D, 0.0D);
         }
         if (mass >= GLOW_THRESHOLD && gameTime % 40 == 0) {
+            // The leak reaches enemies only: your friends are close to you on purpose.
             for (LivingEntity nearby : player.serverLevel().getEntitiesOfClass(LivingEntity.class,
-                    player.getBoundingBox().inflate(3.0D),
-                    entity -> entity != player && entity.isAlive())) {
-                irradiate(nearby, 60);
+                    player.getBoundingBox().inflate(3.0D), entity -> hostile(player, entity))) {
+                RadiationSickness.dose(nearby, player, 1, 80, 1);
             }
         }
     }
@@ -490,6 +587,20 @@ public final class RadiationService {
         long gameTime = server.overworld().getGameTime();
         NuclearFallout.tick(server);
         RadiationEmp.tick(server);
+        for (Emission emission : List.copyOf(EMISSIONS.values())) tickEmission(emission, emission.player.serverLevel().getGameTime());
+        for (Zone zone : List.copyOf(ZONES)) {
+            long now = zone.level.getGameTime();
+            if (now >= zone.until) { ZONES.remove(zone); continue; }
+            if (now % 10 == 0) AbilityEffects.send(zone.level, Kind.RADIATION_FIELD, zone.center, zone.center.add(0, 1, 0), zone.radius);
+            if (now % 40 != 0) continue;
+            ServerPlayer owner = server.getPlayerList().getPlayer(zone.owner);
+            for (LivingEntity target : zone.level.getEntitiesOfClass(LivingEntity.class, new AABB(zone.center, zone.center).inflate(zone.radius, 2, zone.radius),
+                    entity -> (owner == null ? !RadiationSickness.immune(entity) : hostile(owner, entity))
+                            && entity.position().distanceToSqr(zone.center) <= zone.radius * zone.radius + 4)) {
+                RadiationSickness.dose(target, owner, 1, 100, 2);
+            }
+            zone.level.playSound(null, zone.center.x, zone.center.y, zone.center.z, SoundEvents.NOTE_BLOCK_HAT.value(), SoundSource.PLAYERS, 0.3F, 1.9F);
+        }
 
         for (Map.Entry<UUID, Long> entry : List.copyOf(BREACHES.entrySet())) {
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
@@ -550,6 +661,8 @@ public final class RadiationService {
     }
 
     public static void stopAll(ServerPlayer player) {
+        if (EMISSIONS.remove(player.getUUID()) != null) ArmPosePayload.clear(player);
+        ZONES.removeIf(zone -> zone.owner.equals(player.getUUID()));
         RadiationDecay.clear(player);
         player.setData(ModDataAttachments.PLAYER_RADIATION_STRESS, 0);
         BREACHES.remove(player.getUUID());
@@ -564,7 +677,8 @@ public final class RadiationService {
 
     public static void clear() {
         RadiationDecay.clearAll();
-        BREACHES.clear(); DETONATIONS.clear(); LAST_HURT.clear();
+        BREACHES.clear(); DETONATIONS.clear(); LAST_HURT.clear(); EMISSIONS.clear(); ZONES.clear();
+        RadiationSickness.clear();
         NuclearFallout.clear();
         RadiationEmp.clear();
     }

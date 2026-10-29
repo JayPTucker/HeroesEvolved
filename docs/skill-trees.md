@@ -12,6 +12,10 @@ Open your survival inventory and click **Skills** (the eclipse beside the recipe
   ability that was replaced shows **RESTORE** to put it back. **RESPEC** (beside your points) refunds
   everything; it needs ten seconds out of combat.
 
+Flight has a fully redesigned eighteen-node tree: see [Flight](flight.md#purchasable-skills) for Sky Guard, Jetstream and Stormbreaker. Its passives change specific mechanics instead of granting the generic stat bonuses below.
+
+Telekinesis also replaces all eighteen nodes with interaction-based progression. See [Telekinesis](telekinesis.md) for physical fragments, aimed fields, projectile counterattacks and the Fine Manipulation, Kinetic Arsenal and Bastion branches. Its old blanket stat bonuses no longer apply.
+
 Every tree now has eighteen nodes: the original nine below, plus a technique, an
 upgrade and a capstone in each branch (see [the new powers guide](new-powers.md)). See
 [A Future Unwritten](a-future-unwritten.md) for new techniques, capstones, respecialization
@@ -39,10 +43,10 @@ free. Other costs round up to at least one.
 | Power | Control skill | Force skill | Survival skill |
 | --- | --- | --- | --- |
 | Quake | Seismic Lance | Aftershock | Fault Step |
-| Flight | Slipstream Dash | Air Brake | Updraft |
+| Flight | Rescue Rush | Barrel Roll | Thermal Lance |
 | Cryokinesis | Ice Lance | Frost Armor | Cold Snap |
 | Electrokinesis | Arc Lance | Static Screen | Overcharge |
-| Telekinesis | Kinetic Lance | Gravity Well | Levitation Step |
+| Telekinesis | Vector Lance | Gravity Well | Vector Step |
 | Telepathy | Psychic Silence | Shared Focus | Terror Pulse |
 | Regeneration | Cauterize | Adrenal Rush | Transfusion |
 | Space-Time Manipulation | Selective Stasis | Spatial Anchor | Second Chance |

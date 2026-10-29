@@ -129,7 +129,7 @@
     "power": "time_manipulation",
     "action": "time_rewind",
     "energy": 1,
-    "cooldown": 1.2
+    "cooldown": 1.0
   },
   {
     "power": "radiation",

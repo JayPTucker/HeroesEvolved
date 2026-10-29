@@ -21,8 +21,6 @@ public final class ArmPoseActions {
             Map.entry("sonic_echo_sense", new Pose(ArmPose.TEMPLE, 16)),
             Map.entry("sonic_vault", new Pose(ArmPose.TWO_HANDS, 12)),
             Map.entry("sonic_scream", new Pose(ArmPose.ARMS_WIDE, 100)),
-            Map.entry("flight_launch", new Pose(ArmPose.ARMS_RAISED, 25)),
-            Map.entry("flight_cyclone", new Pose(ArmPose.ARMS_WIDE, 100)),
 
             Map.entry("time_blink", new Pose(ArmPose.ONE_HAND, 6)),
             Map.entry("time_slow", new Pose(ArmPose.TEMPLE, 20)),
@@ -55,13 +53,7 @@ public final class ArmPoseActions {
             Map.entry("telepathy_suggestion", new Pose(ArmPose.TEMPLE, 20)),
             Map.entry("telepathy_mind_link", new Pose(ArmPose.TEMPLE, 30)),
             Map.entry("telepathy_puppet", new Pose(ArmPose.ONE_HAND, 20)),
-            Map.entry("telepathy_nightmare", new Pose(ArmPose.ONE_HAND, 25)),
-
-            Map.entry("telekinesis_push", new Pose(ArmPose.ONE_HAND, 8)),
-            Map.entry("telekinesis_grip", new Pose(ArmPose.ONE_HAND, 15)),
-            Map.entry("telekinesis_bullet_stop", new Pose(ArmPose.TWO_HANDS, 20)),
-            Map.entry("telekinesis_disarm", new Pose(ArmPose.ONE_HAND, 10)),
-            Map.entry("telekinesis_storm", new Pose(ArmPose.ARMS_RAISED, 60))
+            Map.entry("telepathy_nightmare", new Pose(ArmPose.ONE_HAND, 25))
     );
 
     private ArmPoseActions() {
