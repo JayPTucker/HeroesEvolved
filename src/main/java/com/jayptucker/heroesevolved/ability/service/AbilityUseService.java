@@ -23,6 +23,9 @@ import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import com.jayptucker.heroesevolved.skills.Loadout;
+import com.jayptucker.heroesevolved.progression.PowerLevels;
 
 public final class AbilityUseService {
     private AbilityUseService() {
@@ -30,27 +33,44 @@ public final class AbilityUseService {
 
     /** Forwards a key release to the assigned power's action in that slot. */
     public static void releaseAssignedAction(ServerPlayer player, AbilitySlot slot) {
-        PlayerAbilityService.getData(player).assignedPower()
-                .filter(entry -> entry.getValue().isUnlocked())
-                .ifPresent(entry -> {
-                    Ability power = AbilityRegistry.ABILITIES.get(entry.getKey());
-                    if (power == null) {
-                        return;
-                    }
-                    Optional.ofNullable(com.jayptucker.heroesevolved.skills.SkillTreeService.actions(player, entry.getKey()).get(slot)).ifPresent(action -> action.release(
-                            new AbilityUseContext(
-                                    player,
-                                    entry.getKey(),
-                                    PlayerProgressionService.getLevel(player),
-                                    false
-                            )
-                    ));
-                });
+        release(player, power -> com.jayptucker.heroesevolved.skills.SkillTreeService.actions(player, power).get(slot));
     }
 
-    public static AbilityUseResult activateAssignedAction(
+    /** A release of ability key {@code key} (1 to 8). */
+    public static void releaseKey(ServerPlayer player, int key) {
+        release(player, power -> Loadout.onKey(player, power, key));
+    }
+
+    /** A release of an action cast from the wheel. */
+    public static void releaseAction(ServerPlayer player, String actionKey) {
+        release(player, power -> Loadout.resolve(player, power, actionKey));
+    }
+
+    private static void release(ServerPlayer player, Function<ResourceLocation, AbilityAction> chooser) {
+        PlayerAbilityService.getData(player).assignedPower()
+                .filter(entry -> entry.getValue().isUnlocked() && AbilityRegistry.ABILITIES.get(entry.getKey()) != null)
+                .ifPresent(entry -> Optional.ofNullable(chooser.apply(entry.getKey())).ifPresent(action -> action.release(
+                        new AbilityUseContext(player, entry.getKey(), PlayerProgressionService.getLevel(player), false))));
+    }
+
+    /** Presses ability key 1 to 5 by its slot. */
+    public static AbilityUseResult activateAssignedAction(ServerPlayer player, AbilitySlot slot, boolean allowOverexertion) {
+        return activate(player, power -> com.jayptucker.heroesevolved.skills.SkillTreeService.actions(player, power).get(slot), allowOverexertion);
+    }
+
+    /** Presses ability key {@code key} (1 to 8): whatever action the player put on it. */
+    public static AbilityUseResult activateKey(ServerPlayer player, int key, boolean allowOverexertion) {
+        return activate(player, power -> Loadout.onKey(player, power, key), allowOverexertion);
+    }
+
+    /** Casts an action by its action key, as the ability wheel does. */
+    public static AbilityUseResult activateAction(ServerPlayer player, String actionKey, boolean allowOverexertion) {
+        return activate(player, power -> Loadout.resolve(player, power, actionKey), allowOverexertion);
+    }
+
+    private static AbilityUseResult activate(
             ServerPlayer player,
-            AbilitySlot slot,
+            Function<ResourceLocation, AbilityAction> chooser,
             boolean allowOverexertion
     ) {
         if (EclipseService.arePowersSuppressed(player)) return AbilityUseResult.POWER_SUPPRESSED;
@@ -93,7 +113,7 @@ public final class AbilityUseService {
             return AbilityUseResult.UNKNOWN_ABILITY;
         }
 
-        Optional<AbilityAction> action = Optional.ofNullable(com.jayptucker.heroesevolved.skills.SkillTreeService.actions(player, powerId).get(slot));
+        Optional<AbilityAction> action = Optional.ofNullable(chooser.apply(powerId));
 
         if (action.isEmpty()) {
             return AbilityUseResult.ACTION_NOT_ASSIGNED;
@@ -108,8 +128,8 @@ public final class AbilityUseService {
 
         if (!abilityAction.definition().isUnlockedAt(powerLevel)) {
             PowerFeedback.explain(player, actionName.copy().append(Component.literal(
-                    " unlocks at Level " + abilityAction.definition().unlockLevel()
-                            + " (you're Level " + powerLevel + ").")));
+                    " unlocks at Level " + PowerLevels.levelForTier(abilityAction.definition().unlockLevel())
+                            + " (you're Level " + PlayerProgressionService.getPowerLevel(player) + ").")));
             return AbilityUseResult.ACTION_LOCKED;
         }
 
@@ -144,7 +164,7 @@ public final class AbilityUseService {
             return AbilityUseResult.CANNOT_USE;
         }
 
-        int energyCost = com.jayptucker.heroesevolved.skills.SkillTreeService.activationCost(player, powerId, com.jayptucker.heroesevolved.ability.PowerBalance.energy(abilityAction.definition().id(), abilityAction.energyCost(context)));
+        int energyCost = AbilityRanks.energy(player, powerId, abilityAction, com.jayptucker.heroesevolved.skills.SkillTreeService.activationCost(player, powerId, com.jayptucker.heroesevolved.ability.PowerBalance.energy(abilityAction.definition().id(), abilityAction.energyCost(context))));
 
         boolean requiresOverexertion =
                 PlayerEnergyService.getEnergy(player) < energyCost;
@@ -182,7 +202,9 @@ public final class AbilityUseService {
         // actions earn more and nothing can be spammed for free progress.
         MasteryService.awardEnergySpent(player, energySpent);
 
-        int cooldownTicks = com.jayptucker.heroesevolved.skills.SkillTreeService.cooldown(player, powerId, com.jayptucker.heroesevolved.ability.PowerBalance.cooldown(abilityAction.definition().id(), abilityAction.cooldownTicks(context)));
+        int cooldownTicks = AbilityRanks.cooldown(player, powerId, abilityAction, com.jayptucker.heroesevolved.skills.SkillTreeService.cooldown(player, powerId, com.jayptucker.heroesevolved.ability.PowerBalance.cooldown(abilityAction.definition().id(), abilityAction.cooldownTicks(context))));
+        // Using an ability is how it ranks up.
+        AbilityRanks.used(player, powerId, abilityAction);
 
         // Zero means this action has no cooldown. Avoid storing a zero-tick
         // entry, because a one-tick client/server timing difference can make

@@ -267,10 +267,10 @@ public final class HeroesEvolvedConfig {
                     );
 
             masteryPerEnergySpent = builder
-                    .comment("Mastery earned per point of energy spent on powers. "
-                            + "This is the main Mastery source; energy regeneration "
-                            + "naturally limits how fast it can be earned.")
-                    .defineInRange("masteryPerEnergySpent", 1.0D, 0.0D, 100.0D);
+                    .comment("Mastery earned per point of energy spent on powers. Using a power "
+                            + "on something (hitting and defeating enemies, saving allies, finding "
+                            + "story notes) earns more; plain stamina spent counts for less.")
+                    .defineInRange("powerUseMasteryPerEnergy", 0.5D, 0.0D, 100.0D);
 
             activeMasteryIntervalTicks = builder
                     .comment("Ticks of active, non-AFK play required for an active-time Mastery award.")

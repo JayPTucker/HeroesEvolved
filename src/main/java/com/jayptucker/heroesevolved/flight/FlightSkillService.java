@@ -311,6 +311,7 @@ public final class FlightSkillService {
         ArmPosePayload.show(player, ArmPose.TWO_HANDS, 8);
         player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.BREEZE_JUMP,
                 SoundSource.PLAYERS, .8F, 1.4F);
+        com.jayptucker.heroesevolved.progression.MasteryService.awardRescue(player, 15);
         return true;
     }
 

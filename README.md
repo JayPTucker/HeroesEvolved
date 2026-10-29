@@ -7,9 +7,12 @@ events and evolving abilities. Build and run with Java 21.
 
 Open the survival inventory and click **Skills**, next to the recipe book.
 Every power has three named branches of six nodes: eighteen per power, 288 in all.
-The Abilities page is also the skill tree: each branch is drawn as its real tree, and you learn skills and put them on keys right there. Earn three points when your power awakens and two more per power level.
-Spend them on your preferred build and equip learned skills to your existing
-five ability keys. Purchases and loadouts persist across death and relogging.
+The Abilities page is also the skill tree: each branch is drawn as its real tree, and you learn skills and put them on keys right there.
+Powers grow from Level 1 to 20 (Manifesting, Controlled, Practiced, Mastered, and Evolved after a
+per-power trial). Levels unlock the core kit and give skill points; story notes hidden in the world
+give more. Put any ability on any of eight keys, or cast anything from the **ability wheel** (hold R).
+Abilities rank up with use. Purchases and loadouts persist across death and relogging. See
+[Power Levels, keys and the ability wheel](docs/progression.md).
 
 All sixteen powers have trees: Quake, Flight, Cryokinesis, Electrokinesis,
 Telekinesis, Telepathy, Regeneration, Time Manipulation, Radiation, Sonic

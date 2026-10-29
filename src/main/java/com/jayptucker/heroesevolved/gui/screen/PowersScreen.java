@@ -5,6 +5,9 @@ import com.jayptucker.heroesevolved.ability.AbilitySlot;
 import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.input.ModKeyMappings;
 import com.jayptucker.heroesevolved.network.*;
+import com.jayptucker.heroesevolved.ability.service.AbilityRanks;
+import com.jayptucker.heroesevolved.progression.PowerLevels;
+import com.jayptucker.heroesevolved.skills.Loadout;
 import com.jayptucker.heroesevolved.skills.SkillCatalog;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
@@ -121,8 +124,7 @@ public final class PowersScreen extends Screen {
         var tree = ClientSkillTreeState.get();
         boolean treeFresh = tree.power().equals(path);
         var learned = treeFresh ? tree.build().learned() : java.util.Set.<String>of();
-        Map<String, String> slots = treeFresh ? tree.build().slots() : Map.of();
-        int points = treeFresh && awake ? SkillCatalog.available(path, tree.build()) : 0;
+        int points = treeFresh && awake ? SkillCatalog.available(path, tree.build(), ClientLoadout.get().storyPoints()) : 0;
 
         cells.add(new Cell("power", powerX(), cellY(0), Kind.POWER, Component.translatable("ability." + power.abilityId().getNamespace() + "." + path),
                 Component.translatable("ability." + power.abilityId().getNamespace() + "." + path + ".passive"),
@@ -137,20 +139,21 @@ public final class PowersScreen extends Screen {
             if (action == null) { row++; continue; }
             String id = action.definition().id().getPath();
             boolean unlocked = awake && level >= action.definition().unlockLevel();
-            AbilityActionSnapshot onKey = sync.actions().stream().filter(a -> a.slot() == slot).findFirst().orElse(null);
-            boolean equipped = onKey != null && onKey.displayNameKey().equals(action.definition().displayNameKey());
-            int energy = equipped ? onKey.energyCost() : action.energyCost(Math.max(1, level));
-            int cooldown = equipped ? (int) onKey.cooldownTicks() : action.cooldownTicks(Math.max(1, level));
+            int unlockLevel = PowerLevels.levelForTier(action.definition().unlockLevel());
+            LoadoutPayload.Entry entry = ClientLoadout.entry(Loadout.base(slot));
+            int energy = entry != null ? entry.energy() : action.energyCost(Math.max(1, level));
+            int cooldown = entry != null ? entry.cooldownTicks() : action.cooldownTicks(Math.max(1, level));
+            int keyOf = ClientLoadout.keyOf(Loadout.base(slot));
             List<Component> facts = new ArrayList<>();
-            facts.add(fact("Key", key(slot)));
+            facts.add(fact("Key", keyOf > 0 ? key(keyOf) : "wheel"));
             facts.add(fact("Stamina", energy <= 0 ? "free" : String.valueOf(energy)));
             facts.add(fact("Cooldown", seconds(cooldown)));
-            facts.add(fact("Unlocks", "Level " + action.definition().unlockLevel()));
+            facts.add(fact("Unlocks", "Level " + unlockLevel));
+            if (entry != null && unlocked) facts.add(fact("Rank", rank(entry)));
             Component status = !awake ? Component.literal("Awakens with your power").withStyle(ChatFormatting.RED)
-                    : !unlocked ? Component.literal("Unlocks at Level " + action.definition().unlockLevel()).withStyle(ChatFormatting.RED)
-                    : equipped ? Component.literal("Ready on " + key(slot)).withStyle(ChatFormatting.GREEN)
-                    : Component.literal("Replaced on " + key(slot) + " by ").append(Component.translatable(onKey.displayNameKey()))
-                            .append(". Restore it below.").withStyle(ChatFormatting.GOLD);
+                    : !unlocked ? Component.literal("Unlocks at Level " + unlockLevel).withStyle(ChatFormatting.RED)
+                    : keyOf > 0 ? onKey(keyOf, "Ready on ")
+                    : Component.literal("On the ability wheel. Put it on a key below.").withStyle(ChatFormatting.GOLD);
             cells.add(new Cell("core:" + slot.name(), powerX(), cellY(row++), Kind.CORE, Component.translatable(action.definition().displayNameKey()),
                     Component.translatable(action.definition().displayNameKey() + ".desc"), PowerIcons.action(path, id),
                     unlocked, unlocked, facts, status, "", "", slot));
@@ -170,15 +173,17 @@ public final class PowersScreen extends Screen {
                 facts.add(fact("Cooldown", seconds(node.cooldown())));
             }
             facts.add(fact("Cost", node.cost() + (node.cost() == 1 ? " point" : " points")));
-            facts.add(fact("Needs", "Level " + node.level() + (node.prerequisite().isEmpty() ? ""
+            LoadoutPayload.Entry entry = has && node.active() ? ClientLoadout.entry(node.id()) : null;
+            if (entry != null) facts.add(fact("Rank", rank(entry)));
+            facts.add(fact("Needs", "Level " + PowerLevels.levelForTier(node.level()) + (node.prerequisite().isEmpty() ? ""
                     : ", " + SkillCatalog.find(path, node.prerequisite()).map(SkillCatalog.Node::name).orElse("parent"))));
-            String keyOf = slots.entrySet().stream().filter(e -> e.getValue().equals(node.id())).map(e -> key(AbilitySlot.valueOf(e.getKey()))).findFirst().orElse(null);
-            Component status = has ? (node.active() ? (keyOf != null ? Component.literal("Learned. Ready on " + keyOf).withStyle(ChatFormatting.GREEN)
-                            : Component.literal("Learned. Put it on a key below.").withStyle(ChatFormatting.GOLD))
+            int boundTo = ClientLoadout.keyOf(node.id());
+            Component status = has ? (node.active() ? (boundTo > 0 ? onKey(boundTo, "Learned. Ready on ")
+                            : Component.literal("Learned. On the ability wheel; put it on a key below.").withStyle(ChatFormatting.GOLD))
                             : Component.literal("Learned").withStyle(ChatFormatting.GREEN))
                     : canLearn ? Component.literal("Ready to learn").withStyle(ChatFormatting.AQUA)
                     : node.capstone() && capstoneTaken ? Component.literal("You already chose a capstone").withStyle(ChatFormatting.RED)
-                    : level < node.level() ? Component.literal("Reach Level " + node.level()).withStyle(ChatFormatting.RED)
+                    : level < node.level() ? Component.literal("Reach Level " + PowerLevels.levelForTier(node.level())).withStyle(ChatFormatting.RED)
                     : !prerequisite ? Component.literal("Learn its parent first").withStyle(ChatFormatting.RED)
                     : Component.literal("Needs " + node.cost() + " points").withStyle(ChatFormatting.RED);
             Kind kind = node.capstone() ? Kind.CAPSTONE : node.active() ? Kind.ACTIVE : Kind.PASSIVE;
@@ -227,15 +232,24 @@ public final class PowersScreen extends Screen {
         return s == Math.floor(s) ? (int) s + "s" : String.format("%.1fs", s);
     }
 
-    private static String key(AbilitySlot slot) {
-        KeyMapping mapping = switch (slot) {
-            case PRIMARY -> ModKeyMappings.ABILITY_1;
-            case SECONDARY -> ModKeyMappings.ABILITY_2;
-            case TERTIARY -> ModKeyMappings.ABILITY_3;
-            case QUATERNARY -> ModKeyMappings.ABILITY_4;
-            case QUINARY -> ModKeyMappings.ABILITY_5;
-        };
-        return mapping.getTranslatedKeyMessage().getString().toUpperCase();
+    /** Ability key {@code index} (1 to 8) as the player has it set in Controls. */
+    private static String key(int index) {
+        KeyMapping mapping = ModKeyMappings.ABILITY_KEYS[index - 1];
+        return mapping.isUnbound() ? "key " + index : mapping.getTranslatedKeyMessage().getString().toUpperCase();
+    }
+
+    /** "Ready on G", or a reminder that the key has no key set in Controls yet. */
+    private static Component onKey(int index, String prefix) {
+        if (ModKeyMappings.ABILITY_KEYS[index - 1].isUnbound())
+            return Component.literal("On ability key " + index + ". Give it a key in Controls to use it.").withStyle(ChatFormatting.GOLD);
+        return Component.literal(prefix + key(index)).withStyle(ChatFormatting.GREEN);
+    }
+
+    private static String rank(LoadoutPayload.Entry entry) {
+        String[] names = {"I", "II", "III"};
+        String rank = names[Math.clamp(entry.rank(), 1, 3) - 1];
+        int next = entry.rank() == 1 ? AbilityRanks.RANK_TWO : entry.rank() == 2 ? AbilityRanks.RANK_THREE : 0;
+        return next > 0 ? rank + " (" + entry.uses() + "/" + next + ")" : rank + " (max)";
     }
 
     // ------------------------------------------------------------------
@@ -383,6 +397,7 @@ public final class PowersScreen extends Screen {
             if (cell.kind == Kind.CORE && text.startsWith("Key") && cell.status.getString().startsWith("Ready")) return text.substring(3).strip();
         }
         if (cell.status.getString().startsWith("Learned. Ready on ")) return cell.status.getString().substring("Learned. Ready on ".length());
+        if (cell.status.getString().startsWith("On ability key ")) return cell.status.getString().substring(15, 16);
         return null;
     }
 
@@ -460,10 +475,13 @@ public final class PowersScreen extends Screen {
         actions.addAll(buttons);
     }
 
-    /** LEARN for a skill you can buy; key chips for a learned active skill; RESTORE for a core ability that was replaced. */
+    /**
+     * LEARN for a skill you can buy; for anything you can cast (a core ability or a learned active
+     * skill), eight key chips: click one to put it on that key, click its lit chip to take it off.
+     */
     private List<Action> cardButtons(Cell cell, int x, int right) {
         List<Action> buttons = new ArrayList<>();
-        int bottom = gridBottom() - 6, h = 16;
+        int bottom = gridBottom() - 6, h = 14;
         var state = ClientSkillTreeState.get();
         SkillCatalog.Node node = cell.nodeId.isEmpty() ? null : SkillCatalog.find(state.power(), cell.nodeId).orElse(null);
         if (node != null && !cell.owned) {
@@ -471,18 +489,26 @@ public final class PowersScreen extends Screen {
                     : "LOCKED").withStyle(ChatFormatting.BOLD);
             buttons.add(new Action(x, bottom - h, right - x, h, label, cell.available, cell.available,
                     () -> send(SkillTreeActionPayload.Operation.BUY, node.id(), AbilitySlot.PRIMARY)));
-        } else if (node != null && node.active()) {
-            int chip = (right - x - 4 * 3) / 5;
-            for (AbilitySlot slot : AbilitySlot.values()) {
-                boolean on = node.id().equals(state.build().slots().get(slot.name()));
-                buttons.add(new Action(x + slot.ordinal() * (chip + 3), bottom - h, chip, h, Component.literal(key(slot)), !on, on,
-                        () -> send(SkillTreeActionPayload.Operation.EQUIP, node.id(), slot)));
-            }
-        } else if (cell.kind == Kind.CORE && cell.slot != null && state.build().slots().containsKey(cell.slot.name())) {
-            buttons.add(new Action(x, bottom - h, right - x, h, Component.literal("RESTORE TO " + key(cell.slot)).withStyle(ChatFormatting.BOLD), true, false,
-                    () -> send(SkillTreeActionPayload.Operation.EQUIP, "", cell.slot)));
+            return buttons;
+        }
+        String actionKey = node != null && node.active() ? node.id()
+                : cell.kind == Kind.CORE && cell.slot != null && cell.owned ? Loadout.base(cell.slot) : null;
+        if (actionKey == null) return buttons;
+        // Two rows of four.
+        int chip = (right - x - 3 * 3) / 4;
+        for (int key = 1; key <= Loadout.KEYS; key++) {
+            int index = key - 1, chosen = key;
+            boolean on = ClientLoadout.onKey(key).equals(actionKey);
+            int bx = x + (index % 4) * (chip + 3), by = bottom - h - (index < 4 ? h + 3 : 0);
+            String label = font.plainSubstrByWidth(key(key), chip - 4);
+            buttons.add(new Action(bx, by, chip, h, Component.literal(label), true, on,
+                    () -> bind(chosen, on ? "" : actionKey)));
         }
         return buttons;
+    }
+
+    private void bind(int key, String actionKey) {
+        if (minecraft.getConnection() != null) PacketDistributor.sendToServer(new BindKeyPayload(key, actionKey));
     }
 
     private void renderActions(GuiGraphics g, int mouseX, int mouseY) {
@@ -502,22 +528,29 @@ public final class PowersScreen extends Screen {
         int x = left() + 8, y = bottomY();
         int barWidth = Math.max(50, cardLeft() - x - 34 - 96);
         if (power != null) {
+            LoadoutPayload loadout = ClientLoadout.get();
+            int powerLevel = power.unlocked() ? loadout.level() : 1;
             g.drawString(font, "Level", x, y, MUTED, false);
-            g.drawString(font, Component.literal(String.valueOf(power.level())).withStyle(ChatFormatting.BOLD), x, y + 11, TEXT, false);
-            float progress = mastery(power);
-            int bx = x + 34;
+            g.drawString(font, Component.literal(powerLevel + "/20").withStyle(ChatFormatting.BOLD), x, y + 11, TEXT, false);
+            int bx = x + 40;
+            barWidth -= 6;
+            float progress = loadout.evolved() ? 1 : loadout.masteryNeeded() <= 0 ? 1
+                    : Mth.clamp(loadout.masteryInto() / (float) loadout.masteryNeeded(), 0, 1);
             g.fill(bx, y + 4, bx + barWidth, y + 7, 0xFF2A2A2A);
-            g.fill(bx, y + 4, bx + (int) (barWidth * progress), y + 7, 0xFF5FA8C8);
+            g.fill(bx, y + 4, bx + (int) (barWidth * progress), y + 7, loadout.evolved() ? 0xFFC77DFF : 0xFF5FA8C8);
+            String stage = PowerLevels.stage(powerLevel).title;
             String mastery = !power.unlocked() ? "Awakens before it can grow"
-                    : power.level() >= power.maximumLevel() ? "Mastered"
-                    : power.mastery() + " / " + power.masteryRequiredForNextLevel() + " Mastery";
-            g.drawString(font, mastery, bx, y + 11, MUTED, false);
+                    : loadout.evolved() ? stage
+                    : powerLevel >= PowerLevels.EVOLVED - 1 && progress >= 1
+                            ? "Evolve: " + loadout.trial() + " " + loadout.trialProgress() + "/" + loadout.trialGoal()
+                    : stage + "  \u00b7  " + loadout.masteryInto() + "/" + loadout.masteryNeeded();
+            g.drawString(font, font.plainSubstrByWidth(mastery, barWidth + 8), bx, y + 11, MUTED, false);
             var tree = ClientSkillTreeState.get();
             if (tree.power().equals(power.abilityId().getPath()) && power.unlocked()) {
-                int points = SkillCatalog.available(tree.power(), tree.build());
+                int points = SkillCatalog.available(tree.power(), tree.build(), loadout.storyPoints());
                 int px = bx + barWidth + 12;
                 g.blitSprite(HEX_POWER, px, y - 2, 18, 21);
-                g.drawCenteredString(font, "↑", px + 9, y + 4, TEXT);
+                g.drawCenteredString(font, "\u2191", px + 9, y + 4, TEXT);
                 g.drawString(font, Component.literal(String.valueOf(points)).withStyle(ChatFormatting.BOLD), px + 22, y + 4, GOLD, false);
                 g.drawString(font, "points", px + 22 + font.width(String.valueOf(points)) + 8, y + 4, MUTED, false);
                 if (!tree.build().learned().isEmpty()) {
@@ -534,12 +567,6 @@ public final class PowersScreen extends Screen {
         g.fill(sx, sy, sx + sw, sy + 3, 0xFF1C2A33);
         g.fill(sx, sy, sx + (int) (sw * fraction), sy + 3, ENERGY);
         g.drawString(font, stamina, sx, sy + 7, ENERGY, false);
-    }
-
-    private static float mastery(AbilitySnapshot power) {
-        if (power.level() >= power.maximumLevel()) return 1;
-        long range = power.masteryRequiredForNextLevel() - power.masteryRequiredForCurrentLevel();
-        return range <= 0 ? 0 : Mth.clamp((power.mastery() - power.masteryRequiredForCurrentLevel()) / (float) range, 0, 1);
     }
 
     @Override public boolean isPauseScreen() { return false; }

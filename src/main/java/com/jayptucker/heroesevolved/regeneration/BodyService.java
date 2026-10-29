@@ -303,6 +303,7 @@ public final class BodyService {
             player.setHealth(Math.max(player.getHealth(), 6.0F));
             player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 20 * 5, 1));
             player.sendSystemMessage(Component.literal("You gasp back to life.").withStyle(ChatFormatting.DARK_RED));
+            com.jayptucker.heroesevolved.progression.EvolutionTrials.advance(player, com.jayptucker.heroesevolved.ability.registry.ModAbilities.REGENERATION_ID);
         }
         player.clearFire();
         player.setAirSupply(player.getMaxAirSupply());

@@ -15,13 +15,21 @@ public final class PlayerPowerSyncEvents {
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            // A new connection has nothing cached, so the loadout must be sent again.
+            PlayerPowerSyncService.forget(player);
             PlayerPowerSyncService.sync(player);
         }
     }
 
     @SubscribeEvent
+    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) PlayerPowerSyncService.forget(player);
+    }
+
+    @SubscribeEvent
     public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            PlayerPowerSyncService.forget(player);
             PlayerPowerSyncService.sync(player);
         }
     }

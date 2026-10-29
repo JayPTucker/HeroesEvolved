@@ -164,13 +164,17 @@ public final class AdminScreen extends Screen {
             int x,
             int y
     ) {
-        int shown = Math.min(5, state.maximumLevel());
-        for (int level = 1; level <= shown; level++) {
-            int chosen = level;
-            Button button = Button.builder(Component.literal(String.valueOf(level)),
+        // Power Level 1 to 20: a step down, the start of each stage, a step up.
+        int max = state.maximumLevel();
+        int[] levels = {target.level() - 1, 1, 10, 15, 20, target.level() + 1};
+        String[] labels = {"-", "1", "10", "15", "20", "+"};
+        int shown = levels.length;
+        for (int i = 0; i < shown; i++) {
+            int chosen = Math.clamp(levels[i], 1, max);
+            Button button = Button.builder(Component.literal(labels[i]),
                             ignored -> send(Action.SET_LEVEL, "", chosen))
-                    .bounds(x + (level - 1) * 24, y, 22, 20).build();
-            button.active = target.level() != level;
+                    .bounds(x + i * 24, y, 22, 20).build();
+            button.active = target.level() != chosen && levels[i] <= max && levels[i] >= 1;
             addRenderableWidget(button);
         }
 

@@ -58,7 +58,26 @@ public final class ModKeyMappings {
             "key.categories.heroesevolved"
     );
 
-    /** Operators only; the server rejects anyone else's request. */
+    // Keys 6 to 8 start unbound: players give them a key in Controls and an
+    // ability in the Powers menu.
+    public static final KeyMapping ABILITY_6 = unbound("key.heroesevolved.ability_6");
+    public static final KeyMapping ABILITY_7 = unbound("key.heroesevolved.ability_7");
+    public static final KeyMapping ABILITY_8 = unbound("key.heroesevolved.ability_8");
+
+    /** Hold to open the ability wheel; tap to recast the last ability. R is unbound in vanilla. */
+    public static final KeyMapping ABILITY_WHEEL = new KeyMapping(
+            "key.heroesevolved.ability_wheel",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_R,
+            "key.categories.heroesevolved"
+    );
+
+    /** The eight ability keys, in order. */
+    public static final KeyMapping[] ABILITY_KEYS = {
+            ABILITY_1, ABILITY_2, ABILITY_3, ABILITY_4,
+            ABILITY_5, ABILITY_6, ABILITY_7, ABILITY_8
+    };
+
     // J is unbound in vanilla.
     public static final KeyMapping OPEN_JOURNAL = new KeyMapping(
             "key.heroesevolved.open_journal",
@@ -67,6 +86,7 @@ public final class ModKeyMappings {
             "key.categories.heroesevolved"
     );
 
+    /** Operators only; the server rejects anyone else's request. */
     public static final KeyMapping OPEN_ADMIN = new KeyMapping(
             "key.heroesevolved.open_admin",
             InputConstants.Type.KEYSYM,
@@ -75,6 +95,11 @@ public final class ModKeyMappings {
     );
 
     private ModKeyMappings() {
+    }
+
+    private static KeyMapping unbound(String name) {
+        return new KeyMapping(name, InputConstants.Type.KEYSYM,
+                InputConstants.UNKNOWN.getValue(), "key.categories.heroesevolved");
     }
 
     @SubscribeEvent
@@ -87,5 +112,9 @@ public final class ModKeyMappings {
         event.register(ABILITY_3);
         event.register(ABILITY_4);
         event.register(ABILITY_5);
+        event.register(ABILITY_6);
+        event.register(ABILITY_7);
+        event.register(ABILITY_8);
+        event.register(ABILITY_WHEEL);
     }
 }

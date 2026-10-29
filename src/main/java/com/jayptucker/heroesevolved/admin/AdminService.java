@@ -6,7 +6,6 @@ import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.ability.data.AbilityProgress;
 import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
-import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
 import com.jayptucker.heroesevolved.cooldown.CooldownService;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.events.EclipseService;
@@ -16,7 +15,7 @@ import com.jayptucker.heroesevolved.network.PlayerPowerSyncService;
 import com.jayptucker.heroesevolved.progression.MasteryService;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionData;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
-import com.jayptucker.heroesevolved.progression.ProgressionCalculator;
+import com.jayptucker.heroesevolved.progression.PowerLevels;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -187,15 +186,15 @@ public final class AdminService {
     }
 
     private static String setLevel(ServerPlayer target, int requestedLevel) {
-        int maximumLevel = HeroesEvolvedConfig.COMMON.maximumLevel.get();
-        int level = Math.clamp(requestedLevel, 1, maximumLevel);
-        int before = PlayerProgressionService.getLevel(target);
-        PlayerProgressionService.setLevel(target, level);
+        int level = Math.clamp(requestedLevel, 1, PowerLevels.maxLevel());
+        int before = PlayerProgressionService.getPowerLevel(target);
+        PlayerProgressionService.setPowerLevel(target, level);
         if (level > before) {
-            MasteryService.celebrateLevelUp(target, level);
+            MasteryService.celebrateLevelUp(target, before, level);
         } else {
             refill(target);
         }
+        com.jayptucker.heroesevolved.skills.SkillTreeService.sync(target);
         PlayerPowerSyncService.sync(target);
         return "Set " + target.getName().getString() + " to Level " + level + ".";
     }
@@ -213,7 +212,7 @@ public final class AdminService {
             return;
         }
 
-        int maximumLevel = HeroesEvolvedConfig.COMMON.maximumLevel.get();
+        int maximumLevel = PowerLevels.maxLevel();
         List<String> powers = AbilityRegistry.ABILITIES.keySet().stream()
                 .map(ResourceLocation::toString)
                 .sorted()
@@ -242,11 +241,11 @@ public final class AdminService {
     ) {
         Optional<Map.Entry<ResourceLocation, AbilityProgress>> assignment =
                 PlayerAbilityService.getData(player).assignedPower();
-        int level = PlayerProgressionService.getLevel(player);
+        int level = PlayerProgressionService.getPowerLevel(player);
         long mastery = PlayerProgressionService.getData(player).mastery();
         long next = level >= maximumLevel
                 ? mastery
-                : ProgressionCalculator.masteryRequiredForLevel(level + 1);
+                : PowerLevels.masteryFor(level + 1);
 
         return new AdminStatePayload.PlayerEntry(
                 player.getUUID(),

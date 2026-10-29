@@ -56,6 +56,7 @@ public final class PlayerPowerSyncService {
                 ))
                 .orElseGet(List::of);
 
+        sendLoadout(player);
         PacketDistributor.sendToPlayer(
                 player,
                 new PlayerPowerSyncPayload(
@@ -66,6 +67,55 @@ public final class PlayerPowerSyncService {
                         actions
                 )
         );
+    }
+
+    private static final java.util.Map<java.util.UUID, LoadoutPayload> SENT_LOADOUTS = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** The wheel, the key bindings and Power Level, sent only when something in them changed. */
+    private static void sendLoadout(ServerPlayer player) {
+        var assignment = PlayerAbilityService.getData(player).assignedPower();
+        LoadoutPayload payload = assignment.filter(e -> e.getValue().isUnlocked()).map(e -> loadout(player, e.getKey()))
+                .orElseGet(() -> new LoadoutPayload(1, 0, 1, false, "", 0, 1, 0, List.of(), List.of()));
+        if (payload.equals(SENT_LOADOUTS.get(player.getUUID()))) return;
+        SENT_LOADOUTS.put(player.getUUID(), payload);
+        PacketDistributor.sendToPlayer(player, payload);
+    }
+
+    public static void forget(ServerPlayer player) { SENT_LOADOUTS.remove(player.getUUID()); }
+
+    private static LoadoutPayload loadout(ServerPlayer player, ResourceLocation power) {
+        int level = PlayerProgressionService.getPowerLevel(player), tier = PlayerProgressionService.getLevel(player);
+        long mastery = PlayerProgressionService.getData(player).mastery();
+        boolean evolved = PlayerProgressionService.evolved(player);
+        long here = com.jayptucker.heroesevolved.progression.PowerLevels.masteryFor(level);
+        long next = level >= com.jayptucker.heroesevolved.progression.PowerLevels.MAX ? here
+                : com.jayptucker.heroesevolved.progression.PowerLevels.masteryFor(level + 1);
+        var trial = com.jayptucker.heroesevolved.progression.EvolutionTrials.trial(power.getPath());
+        AbilityUseContext preview = previewContext(player, false);
+        List<LoadoutPayload.Entry> entries = new java.util.ArrayList<>();
+        for (var entry : com.jayptucker.heroesevolved.skills.Loadout.available(player, power)) {
+            AbilityAction action = entry.action();
+            ResourceLocation id = action.definition().id();
+            int unlockTier = entry.node() != null ? entry.node().level() : action.definition().unlockLevel();
+            int energy = com.jayptucker.heroesevolved.ability.service.AbilityRanks.energy(player, power, action,
+                    com.jayptucker.heroesevolved.skills.SkillTreeService.activationCost(player, power,
+                            com.jayptucker.heroesevolved.ability.PowerBalance.energy(id, action.energyCost(preview))));
+            int cooldown = com.jayptucker.heroesevolved.ability.service.AbilityRanks.cooldown(player, power, action,
+                    com.jayptucker.heroesevolved.skills.SkillTreeService.cooldown(player, power,
+                            com.jayptucker.heroesevolved.ability.PowerBalance.cooldown(id, action.cooldownTicks(preview))));
+            int uses = com.jayptucker.heroesevolved.ability.service.AbilityRanks.uses(player, power, action);
+            entries.add(new LoadoutPayload.Entry(entry.key(), id.getPath(), action.definition().displayNameKey(), tier >= unlockTier,
+                    com.jayptucker.heroesevolved.progression.PowerLevels.levelForTier(unlockTier), energy, cooldown,
+                    CooldownService.getExpirationGameTime(player, action.cooldownId(preview)),
+                    com.jayptucker.heroesevolved.ability.service.AbilityRanks.rank(uses), uses));
+        }
+        var build = com.jayptucker.heroesevolved.skills.SkillTreeService.build(player, power);
+        List<String> keys = new java.util.ArrayList<>();
+        for (int key = 1; key <= com.jayptucker.heroesevolved.skills.Loadout.KEYS; key++)
+            keys.add(com.jayptucker.heroesevolved.skills.Loadout.binding(build, key));
+        return new LoadoutPayload(level, Math.max(0, Math.min(mastery, next) - here), Math.max(0, next - here), evolved, trial.description(),
+                Math.min(trial.goal(), com.jayptucker.heroesevolved.progression.EvolutionTrials.progress(player, power.getPath())), trial.goal(),
+                com.jayptucker.heroesevolved.skills.SkillTreeService.storyPoints(player), List.copyOf(entries), List.copyOf(keys));
     }
 
     private static List<AbilityActionSnapshot> createActionSnapshots(

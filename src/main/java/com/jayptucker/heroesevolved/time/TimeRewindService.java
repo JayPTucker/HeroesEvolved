@@ -281,6 +281,7 @@ public final class TimeRewindService {
                 ? "Time folds back 15 seconds. Your death never happened." : "Time folds back 15 seconds.").withStyle(ChatFormatting.GOLD), true);
         if (undoingDeath) {
             DEATHS.remove(player.getUUID());
+            com.jayptucker.heroesevolved.progression.EvolutionTrials.advance(player, ModAbilities.TIME_MANIPULATION_ID);
             // Coming back from the dead: a hardcore respawn would otherwise leave them spectating.
             if (player.getServer().isHardcore() && player.isSpectator()) player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
         }

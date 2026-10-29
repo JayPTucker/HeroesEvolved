@@ -5,7 +5,10 @@ import com.jayptucker.heroesevolved.ability.AbilitySlot;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.input.ModKeyMappings;
 import com.jayptucker.heroesevolved.network.AbilityActionSnapshot;
+import com.jayptucker.heroesevolved.network.ClientLoadout;
 import com.jayptucker.heroesevolved.network.ClientPowerState;
+import com.jayptucker.heroesevolved.network.LoadoutPayload;
+import com.jayptucker.heroesevolved.skills.Loadout;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -54,23 +57,22 @@ public final class AbilitySlotHudOverlay {
 
         int y = START_Y;
 
-        for (AbilityActionSnapshot action
-                : ClientPowerState.getSnapshot().actions()) {
-            boolean onCooldown = isOnCooldown(action);
-
-            int textColor = getTextColor(action, onCooldown);
-            String text = buildDisplayText(action, onCooldown);
-
-            guiGraphics.drawString(
-                    Minecraft.getInstance().font,
-                    text,
-                    START_X,
-                    y,
-                    textColor,
-                    true
-            );
-
-            y += LINE_HEIGHT;
+        if (ClientLoadout.known()) {
+            y = drawLoadout(guiGraphics, y);
+        } else {
+            for (AbilityActionSnapshot action
+                    : ClientPowerState.getSnapshot().actions()) {
+                boolean onCooldown = isOnCooldown(action);
+                guiGraphics.drawString(
+                        Minecraft.getInstance().font,
+                        buildDisplayText(action, onCooldown),
+                        START_X,
+                        y,
+                        getTextColor(action, onCooldown),
+                        true
+                );
+                y += LINE_HEIGHT;
+            }
         }
 
         if (hasUnlockedGroupTeleport()) {
@@ -80,9 +82,9 @@ public final class AbilitySlotHudOverlay {
                     .getTranslatedKeyMessage()
                     .getString()
                     + " + "
-                    + getKeyMapping(AbilitySlot.PRIMARY)
-                    .getTranslatedKeyMessage()
-                    .getString()
+                    + keyName(ClientLoadout.known()
+                            ? ClientLoadout.keyOf(Loadout.base(AbilitySlot.PRIMARY))
+                            : 1)
                     + "  Group Teleport";
 
             guiGraphics.drawString(
@@ -132,6 +134,49 @@ public final class AbilitySlotHudOverlay {
             if (maneuver != null) guiGraphics.drawString(mc.font,
                     Component.translatable("hud.heroesevolved." + maneuver), START_X, y + 18, 0xFFCBEFF8, true);
         }
+    }
+
+    /**
+     * Each bound key and its ability, then the wheel. Empty keys and keys
+     * with no key set in Controls are left out.
+     */
+    private static int drawLoadout(GuiGraphics guiGraphics, int y) {
+        var mc = Minecraft.getInstance();
+        long now = mc.level == null ? 0 : mc.level.getGameTime();
+        for (int key = 1; key <= ModKeyMappings.ABILITY_KEYS.length; key++) {
+            LoadoutPayload.Entry entry = ClientLoadout.entry(ClientLoadout.onKey(key));
+            if (entry == null || ModKeyMappings.ABILITY_KEYS[key - 1].isUnbound()) continue;
+            String keyName = keyName(key);
+            if (entry.nameKey().equals("hud.heroesevolved.temporal_snapshot_create")) {
+                keyName = mc.options.keyShift.getTranslatedKeyMessage().getString() + " + " + keyName;
+            }
+            String text = keyName + "  " + Component.translatable(entry.nameKey()).getString()
+                    + (entry.rank() > 1 ? " " + "\u2022".repeat(entry.rank() - 1) : "");
+            long left = entry.cooldownEnd() - now;
+            int color = 0xFFFFD7DC;
+            if (!entry.unlocked()) {
+                text += " [Level " + entry.unlockLevel() + "]";
+                color = 0xFF777777;
+            } else if (left > 0) {
+                long seconds = (left + 19) / 20;
+                text += " (" + (seconds >= 60 ? (seconds + 59) / 60 + "m" : seconds + "s") + ")";
+                color = 0xFF777777;
+            }
+            guiGraphics.drawString(mc.font, text, START_X, y, color, true);
+            y += LINE_HEIGHT;
+        }
+        if (!ModKeyMappings.ABILITY_WHEEL.isUnbound()) {
+            guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.ability_wheel",
+                    ModKeyMappings.ABILITY_WHEEL.getTranslatedKeyMessage()), START_X, y, 0xFFB89AA0, true);
+            y += LINE_HEIGHT;
+        }
+        return y;
+    }
+
+    private static String keyName(int key) {
+        return key >= 1 && key <= ModKeyMappings.ABILITY_KEYS.length
+                ? ModKeyMappings.ABILITY_KEYS[key - 1].getTranslatedKeyMessage().getString()
+                : Component.translatable("hud.heroesevolved.wheel_short").getString();
     }
 
     /** Claire Bennet's Regrowth: stored healing from the hits she has taken, and whether Resurrection is ready. */

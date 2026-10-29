@@ -212,8 +212,12 @@ public final class RegenerationService {
             level.playSound(null, target.getX(), target.getY(), target.getZ(),
                     SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 1.0F, 0.6F);
         } else {
+            // Saving someone badly hurt is worth far more than topping them up.
+            boolean dying = target.getHealth() < target.getMaxHealth() * 0.5F;
+            boolean hurt = target.getHealth() < target.getMaxHealth();
             target.heal(potency);
             purgeToxins(target);
+            if (hurt) MasteryService.awardRescue(player, dying ? 10 : 2);
             target.addEffect(new MobEffectInstance(
                     MobEffects.REGENERATION, 20 * 5, 1));
             level.sendParticles(ParticleTypes.HEART, target.getX(),
@@ -423,6 +427,7 @@ public final class RegenerationService {
         } finally {
             sharing--;
         }
+        MasteryService.awardRescue(claire, Math.min(4, Math.round(share)));
         AbilityEffects.send(claire.serverLevel(), Kind.REGEN_BOND, friend.getBoundingBox().getCenter(),
                 claire.position().add(0, 1.1, 0), 1.0D);
     }
@@ -463,6 +468,7 @@ public final class RegenerationService {
                 .withStyle(ChatFormatting.DARK_RED), false);
         player.displayClientMessage(Component.literal("Your blood will keep them alive.").withStyle(ChatFormatting.RED), true);
         MasteryService.markPowerUse(player, ModAbilities.REGENERATION_ID);
+        MasteryService.awardRescue(player, 20);
         return true;
     }
 

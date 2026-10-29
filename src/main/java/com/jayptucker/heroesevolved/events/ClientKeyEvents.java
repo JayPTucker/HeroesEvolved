@@ -6,9 +6,11 @@ import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.client.sound.FlightBoostWindSound;
 import com.jayptucker.heroesevolved.gui.screen.PowersScreen;
 import com.jayptucker.heroesevolved.input.ModKeyMappings;
-import com.jayptucker.heroesevolved.network.ActivateAbilitySlotPayload;
+import com.jayptucker.heroesevolved.gui.screen.AbilityWheelScreen;
+import com.jayptucker.heroesevolved.network.ActionInputPayload;
 import com.jayptucker.heroesevolved.network.AdminActionPayload;
-import com.jayptucker.heroesevolved.network.ReleaseAbilitySlotPayload;
+import com.jayptucker.heroesevolved.network.ClientLoadout;
+import com.jayptucker.heroesevolved.skills.Loadout;
 import com.jayptucker.heroesevolved.network.ClientPowerState;
 import com.jayptucker.heroesevolved.network.ClientFlightVisualState;
 import com.jayptucker.heroesevolved.network.FlightForwardInputPayload;
@@ -26,11 +28,11 @@ import net.neoforged.neoforge.network.PacketDistributor;
         value = Dist.CLIENT
 )
 public final class ClientKeyEvents {
-    private static boolean ability1WasDown;
-    private static boolean ability2WasDown;
-    private static boolean ability3WasDown;
-    private static boolean ability4WasDown;
-    private static boolean ability5WasDown;
+    private static final boolean[] ABILITY_WAS_DOWN = new boolean[ModKeyMappings.ABILITY_KEYS.length];
+    /** Game tick the wheel key went down, or -1 while it is up. */
+    private static long wheelDownSince = -1;
+    // Held longer than this, the wheel key opens the wheel; a shorter tap recasts.
+    private static final long WHEEL_HOLD_TICKS = 4L;
     private static boolean flightForwardWasDown;
     private static boolean jumpWasDown;
     private static double flightScrollRemainder;
@@ -95,40 +97,36 @@ public final class ClientKeyEvents {
         boolean allowOverexertion =
                 minecraft.options.keyShift.isDown();
 
-        ability1WasDown = sendAbilityRequestIfPressed(
-                ModKeyMappings.ABILITY_1,
-                AbilitySlot.PRIMARY,
-                allowOverexertion,
-                ability1WasDown
-        );
+        for (int index = 0; index < ABILITY_WAS_DOWN.length; index++) {
+            ABILITY_WAS_DOWN[index] = sendAbilityRequestIfPressed(
+                    ModKeyMappings.ABILITY_KEYS[index],
+                    index + 1,
+                    allowOverexertion,
+                    ABILITY_WAS_DOWN[index]
+            );
+        }
 
-        ability2WasDown = sendAbilityRequestIfPressed(
-                ModKeyMappings.ABILITY_2,
-                AbilitySlot.SECONDARY,
-                allowOverexertion,
-                ability2WasDown
-        );
+        handleWheelKey(minecraft, allowOverexertion);
+    }
 
-        ability3WasDown = sendAbilityRequestIfPressed(
-                ModKeyMappings.ABILITY_3,
-                AbilitySlot.TERTIARY,
-                allowOverexertion,
-                ability3WasDown
-        );
-
-        ability4WasDown = sendAbilityRequestIfPressed(
-                ModKeyMappings.ABILITY_4,
-                AbilitySlot.QUATERNARY,
-                allowOverexertion,
-                ability4WasDown
-        );
-
-        ability5WasDown = sendAbilityRequestIfPressed(
-                ModKeyMappings.ABILITY_5,
-                AbilitySlot.QUINARY,
-                allowOverexertion,
-                ability5WasDown
-        );
+    /**
+     * The wheel key: held, it opens the ability wheel (which takes over
+     * from there); tapped, it casts the last ability cast from the wheel again.
+     */
+    private static void handleWheelKey(Minecraft minecraft, boolean allowOverexertion) {
+        boolean down = ModKeyMappings.ABILITY_WHEEL.isDown();
+        long now = minecraft.level.getGameTime();
+        if (down && wheelDownSince < 0) {
+            wheelDownSince = now;
+        } else if (down && now - wheelDownSince >= WHEEL_HOLD_TICKS) {
+            wheelDownSince = -1;
+            if (ClientLoadout.known() && !ClientLoadout.get().entries().isEmpty()) {
+                minecraft.setScreen(new AbilityWheelScreen(allowOverexertion));
+            }
+        } else if (!down && wheelDownSince >= 0) {
+            wheelDownSince = -1;
+            AbilityWheelScreen.recast(allowOverexertion);
+        }
     }
 
     @SubscribeEvent
@@ -156,23 +154,16 @@ public final class ClientKeyEvents {
      * (channelled) ability now instead of leaving it running.
      */
     private static void releaseHeldAbilities() {
-        boolean[] held = {
-                ability1WasDown, ability2WasDown, ability3WasDown,
-                ability4WasDown, ability5WasDown
-        };
-        AbilitySlot[] slots = AbilitySlot.values();
-        for (int index = 0; index < held.length; index++) {
-            if (held[index]) {
+        for (int index = 0; index < ABILITY_WAS_DOWN.length; index++) {
+            if (ABILITY_WAS_DOWN[index]) {
                 PacketDistributor.sendToServer(
-                        new ReleaseAbilitySlotPayload(slots[index])
+                        new ActionInputPayload(index + 1, "", false, false)
                 );
             }
+            ABILITY_WAS_DOWN[index] = false;
         }
-        ability1WasDown = false;
-        ability2WasDown = false;
-        ability3WasDown = false;
-        ability4WasDown = false;
-        ability5WasDown = false;
+        // A screen swallows the wheel key's release: that is not a tap.
+        wheelDownSince = -1;
     }
 
     private static void handleFlightDoubleTap(Minecraft minecraft) {
@@ -184,12 +175,11 @@ public final class ClientKeyEvents {
             if (lastJumpPressGameTime != Long.MIN_VALUE
                     && gameTime - lastJumpPressGameTime
                     <= FLIGHT_DOUBLE_TAP_WINDOW_TICKS) {
-                PacketDistributor.sendToServer(
-                        new ActivateAbilitySlotPayload(
-                                AbilitySlot.PRIMARY,
-                                minecraft.options.keyShift.isDown()
-                        )
-                );
+                // Always Flight's own toggle, whatever is on key 1.
+                PacketDistributor.sendToServer(new ActionInputPayload(
+                        0, Loadout.BASE + AbilitySlot.PRIMARY.name(), true,
+                        minecraft.options.keyShift.isDown()
+                ));
 
                 // A completed double tap cannot combine with the next jump.
                 lastJumpPressGameTime = Long.MIN_VALUE;
@@ -219,7 +209,7 @@ public final class ClientKeyEvents {
 
     private static boolean sendAbilityRequestIfPressed(
             net.minecraft.client.KeyMapping keyMapping,
-            AbilitySlot slot,
+            int key,
             boolean allowOverexertion,
             boolean wasDown
     ) {
@@ -229,15 +219,14 @@ public final class ClientKeyEvents {
         // A request is sent only when the key changes from up to down.
         if (isDown && !wasDown) {
             PacketDistributor.sendToServer(
-                    new ActivateAbilitySlotPayload(
-                            slot,
-                            allowOverexertion
-                    )
+                    new ActionInputPayload(key, "", true, allowOverexertion)
             );
         } else if (!isDown && wasDown) {
             // Held abilities (Quake Blast) end when the key is let go.
             // Everything else simply ignores the release.
-            PacketDistributor.sendToServer(new ReleaseAbilitySlotPayload(slot));
+            PacketDistributor.sendToServer(
+                    new ActionInputPayload(key, "", false, false)
+            );
         }
 
         return isDown;

@@ -73,5 +73,9 @@ public final class SkillCatalog {
     public static int spent(String power, SkillTreeData.Build build) {
         return nodes(power).stream().filter(n -> build.learned().contains(n.id)).mapToInt(Node::cost).sum();
     }
-    public static int available(String power, SkillTreeData.Build build) { return Math.max(0, build.earned() - spent(power, build)); }
+    public static int available(String power, SkillTreeData.Build build) { return available(power, build, 0); }
+    /** With {@code storyPoints} from notes the player has found (see PowerJourney). */
+    public static int available(String power, SkillTreeData.Build build, int storyPoints) {
+        return Math.max(0, build.earned() + storyPoints - spent(power, build));
+    }
 }

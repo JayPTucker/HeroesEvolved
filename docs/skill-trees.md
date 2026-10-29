@@ -8,9 +8,10 @@ Open your survival inventory and click **Skills** (the eclipse beside the recipe
   (left) and a technique path (right) that ends in the capstone. Connectors light up as you learn.
 - Click a hex to see what it does in the card on the right. Skills you can learn now pulse; click
   **LEARN** (or click the selected hex again) to spend the points.
-- A learned active skill shows a row of key buttons: click one to put the skill on that key. A core
-  ability that was replaced shows **RESTORE** to put it back. **RESPEC** (beside your points) refunds
-  everything; it needs ten seconds out of combat.
+- Any core ability or learned active skill shows eight key chips: click one to put it on that key,
+  click its lit chip to take it off. Everything is also on the **ability wheel** (hold R). See
+  [Power Levels, keys and the ability wheel](progression.md). **RESPEC** (beside your points)
+  refunds everything; it needs ten seconds out of combat.
 
 Flight has a fully redesigned eighteen-node tree: see [Flight](flight.md#purchasable-skills) for Sky Guard, Jetstream and Stormbreaker. Its passives change specific mechanics instead of granting the generic stat bonuses below.
 
@@ -23,11 +24,11 @@ and discovery points. Every original
 branch contains an opening passive, an optional active skill, and a mastery
 passive. Existing power skills keep their normal level unlocks.
 
-You receive **3 points at awakening**, then **2 per power level**. Existing
-characters receive the points corresponding to their current level. Level five
-provides eleven points; completing every branch would cost fifteen, so the tree
-supports different builds. Purchases and assignments survive death and relogging.
-There is no automatic refund or free reset when changing levels.
+You receive **3 points at awakening**, then **4 every three Power Levels** (21 at Level 15,
+28 Evolved), plus up to 8 from story notes; see [progression](progression.md). Completing every
+branch costs more than that, so the tree supports different builds. Purchases and assignments
+survive death and relogging. The "level" requirements in the table below are tiers: tier 2 is
+Power Level 3, tier 4 is Level 10.
 
 | Branch | Opening node | Active node | Mastery node |
 | --- | --- | --- | --- |
@@ -61,13 +62,10 @@ capstones spiked frames; learned nodes and their connecting lines turn gold, nod
 can afford pulse, and locked nodes are dimmed. Hover a node for its full details.
 A tree can set an optional `"icon"` item id per node in `skill_trees.json`.
 
-Click a node to select it; its description appears below the map.
-Use **Spend points** to learn it. Select a learned active skill, then use an
-**Equip** button to assign it to one of the five existing ability keys. The
-buttons use your actual key bindings. A sub-ability occupies one key at a time.
-Selecting another kind of node changes the buttons to **Reset**, restoring the
-original skill for that key. Moving a skill preserves its cooldown and releases
-the skill it replaces, preventing abandoned held beams or screams.
+Click a node to select it; its description appears in the card. Use **LEARN** to learn it.
+The key chips use your actual key bindings, and an ability occupies one key at a time. Moving an
+ability preserves its cooldown and releases whatever was held on the key, preventing abandoned
+held beams or screams.
 
 The new targeted skills reach up to forty blocks and respect solid cover. Cold
 attacks use the existing real freeze state. Defensive screens reflect incoming
@@ -108,6 +106,6 @@ checks with `python tools/verify-skill-content.py`.
 For actual Minecraft-rendered layout previews, run
 `gradlew.bat runClient --init-script tools/skill-ui-preview.init.gradle`.
 The isolated client saves the Abilities page with nothing learned, with one branch partly learned,
-and with a wider build, at GUI scales two and three, in `build/skill-ui-preview-world/screenshots/`,
-then exits. This
+and with a wider build, at GUI scales two and three, then the eight key chips and the ability wheel,
+in `build/skill-ui-preview-world/screenshots/`, then exits. This
 fixture is excluded from the released JAR.

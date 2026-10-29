@@ -53,7 +53,8 @@ public final class UnwrittenGameTests {
     public static void legacySavesRetainPurchasesAndNewTrainingDefaultsToZero(GameTestHelper h) {
         var json = JsonParser.parseString("{\"heroesevolved:quake\":{\"highest_level\":5,\"learned\":[\"quake_0_0\",\"quake_0_1\"],\"slots\":{\"PRIMARY\":\"quake_0_1\"}}}");
         var data = SkillTreeData.CODEC.parse(JsonOps.INSTANCE, json).getOrThrow(); var b = data.build("heroesevolved:quake");
-        h.assertTrue(b.training() == 0 && b.earned() == 11 && SkillCatalog.spent("quake", b) == 3, "Legacy point history survives without extra grants");
+        h.assertTrue(b.training() == 0 && b.highestLevel() == 15 && b.earned() == com.jayptucker.heroesevolved.progression.PowerLevels.points(15)
+                && SkillCatalog.spent("quake", b) == 3, "A legacy Level 5 is Power Level 15: purchases kept, the new points added");
         h.assertTrue(SkillCatalog.find("quake", b.slots().get("PRIMARY")).orElseThrow().active(), "Legacy equipped ID still resolves");
         h.assertTrue(SkillCatalog.nodes("quake").size() == 18 && SkillCatalog.rows("quake") == 6, "Expanded tree has two pages and stable old IDs"); h.succeed();
     }

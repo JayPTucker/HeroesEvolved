@@ -52,6 +52,10 @@ public final class ModDataAttachments {
     private ModDataAttachments() {
 
     }
+    public static final Supplier<AttachmentType<com.jayptucker.heroesevolved.progression.PowerJourney>> POWER_JOURNEY =
+            ATTACHMENTS.register("power_journey", () -> AttachmentType
+                    .builder(com.jayptucker.heroesevolved.progression.PowerJourney::empty)
+                    .serialize(com.jayptucker.heroesevolved.progression.PowerJourney.CODEC).copyOnDeath().build());
     public static final Supplier<AttachmentType<com.jayptucker.heroesevolved.skills.SkillTreeData>> SKILL_TREES =
             ATTACHMENTS.register("skill_trees", () -> AttachmentType
                     .builder(com.jayptucker.heroesevolved.skills.SkillTreeData::empty)

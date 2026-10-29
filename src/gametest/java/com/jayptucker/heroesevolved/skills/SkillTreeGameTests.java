@@ -140,11 +140,12 @@ public final class SkillTreeGameTests {
     public static void skillBonusesApplyToCostsCooldownsAndAttacks(GameTestHelper h) {
         var p = player(h, "quake", 5); var victim = target(h, p);
         try {
-            for (int branch : new int[]{0,1}) for (int tier = 0; tier < 3; tier++) h.assertTrue(SkillTreeService.purchase(p, "quake_" + branch + "_" + tier), "Build must fit ten of eleven points");
+            for (int branch : new int[]{0,1}) for (int tier = 0; tier < 3; tier++) h.assertTrue(SkillTreeService.purchase(p, "quake_" + branch + "_" + tier), "Build must fit in the points a Level 15 power has");
             h.assertTrue(SkillTreeService.activationCost(p, id("quake"), 40) == 30, "Control mastery should reduce activation stamina by 25%");
             float before = victim.getHealth(); victim.hurt(p.damageSources().playerAttack(p), 4);
             h.assertTrue(before - victim.getHealth() >= 4.9F, "Force mastery should increase outgoing attack damage by 25%");
-            h.assertTrue(SkillCatalog.available("quake", SkillTreeService.build(p, id("quake"))) == 1, "Specializing in two branches leaves one point");
+            h.assertTrue(SkillCatalog.available("quake", SkillTreeService.build(p, id("quake")))
+                    == com.jayptucker.heroesevolved.progression.PowerLevels.points(15) - 10, "Specializing in two branches spends ten points");
             h.succeed();
         } finally { victim.discard(); cleanup(p); }
     }

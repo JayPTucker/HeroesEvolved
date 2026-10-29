@@ -29,8 +29,8 @@ public final class PowerFeedbackGameTests {
         ServerPlayer player = player(helper, ModAbilities.CRYOKINESIS_ID, 1);
         AbilityUseResult result = press(player, AbilitySlot.QUATERNARY, false);
         String message = PowerFeedback.lastMessage(player);
-        helper.assertTrue(result == AbilityUseResult.ACTION_LOCKED, "Glacial Spikes is a Level 4 skill");
-        helper.assertTrue(message != null && message.contains("unlocks at Level 4")
+        helper.assertTrue(result == AbilityUseResult.ACTION_LOCKED, "Glacial Spikes is a tier 4 (Level 10) skill");
+        helper.assertTrue(message != null && message.contains("unlocks at Level 10")
                 && message.contains("Level 1"), "Locked feedback must name both levels: " + message);
         helper.succeed();
     }

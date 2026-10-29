@@ -53,9 +53,32 @@ public final class SkillUiPreview {
         if (mc.screen instanceof PowersScreen screen) screen.select(select);
     }
 
+    /** What the server would send a Level 10 Pyrokinetic: the base kit (Level 15's ability locked), learned skills, keys 1-8. */
+    private static void loadout(Set<String> learned) {
+        var id = com.jayptucker.heroesevolved.ability.registry.ModAbilities.PYROKINESIS_ID;
+        var ability = com.jayptucker.heroesevolved.ability.registry.AbilityRegistry.ABILITIES.get(id);
+        var entries = new java.util.ArrayList<com.jayptucker.heroesevolved.network.LoadoutPayload.Entry>();
+        int rank = 1;
+        for (var slot : com.jayptucker.heroesevolved.ability.AbilitySlot.values()) {
+            var action = ability.actions().get(slot);
+            int tier = action.definition().unlockLevel();
+            entries.add(new com.jayptucker.heroesevolved.network.LoadoutPayload.Entry("base:" + slot.name(), action.definition().id().getPath(),
+                    action.definition().displayNameKey(), tier <= 4, com.jayptucker.heroesevolved.progression.PowerLevels.levelForTier(tier),
+                    action.energyCost(4), action.cooldownTicks(4), 0, Math.min(3, rank++), rank * 20));
+        }
+        for (var node : com.jayptucker.heroesevolved.skills.SkillCatalog.nodes("pyrokinesis"))
+            if (node.active() && learned.contains(node.id()))
+                entries.add(new com.jayptucker.heroesevolved.network.LoadoutPayload.Entry(node.id(), node.id(), node.action().definition().displayNameKey(),
+                        true, com.jayptucker.heroesevolved.progression.PowerLevels.levelForTier(node.level()), node.energy(), node.cooldown(), 0, 1, 3));
+        com.jayptucker.heroesevolved.network.ClientLoadout.update(new com.jayptucker.heroesevolved.network.LoadoutPayload(10, 640, 800, false,
+                "Defeat 60 enemies with your power", 0, 60, 2, entries,
+                java.util.List.of("base:PRIMARY", "base:SECONDARY", "base:TERTIARY", "base:QUATERNARY", "base:QUINARY", "pyrokinesis_blue_lance", "", "")));
+    }
+
     @SubscribeEvent public static void rendered(RenderFrameEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
-        if (!shown || !(mc.screen instanceof PaintingScreen) && !(mc.screen instanceof PowersScreen)) return;
+        if (!shown || !(mc.screen instanceof PaintingScreen) && !(mc.screen instanceof PowersScreen)
+                && !(mc.screen instanceof com.jayptucker.heroesevolved.gui.screen.AbilityWheelScreen)) return;
         frames++;
         if (frames == 5) capture(mc, "unwritten-paintings.png");
         // Nothing learned: the roots of all three branches are ready and pulse.
@@ -70,7 +93,18 @@ public final class SkillUiPreview {
         if (frames == 20) capture(mc, "abilities-scale2.png");
         if (frames == 21) { mc.options.guiScale().set(3); mc.resizeDisplay(); }
         if (frames == 25) capture(mc, "abilities-scale3.png");
-        if (frames == 28) mc.stop();
+        // The ability wheel and the eight key chips, for a Level 10 Pyrokinetic with two learned skills.
+        if (frames == 26) { mc.options.guiScale().set(2); mc.resizeDisplay(); }
+        if (frames == 27) {
+            loadout(Set.of("pyrokinesis_1_0", "pyrokinesis_blue_lance", "pyrokinesis_ember_mine"));
+            abilities(mc, Set.of("pyrokinesis_1_0", "pyrokinesis_blue_lance", "pyrokinesis_ember_mine"), Map.of("KEY6", "pyrokinesis_blue_lance"), "pyrokinesis_blue_lance");
+        }
+        if (frames == 31) capture(mc, "abilities-keys.png");
+        if (frames == 32) mc.setScreen(new com.jayptucker.heroesevolved.gui.screen.AbilityWheelScreen(false).pin("pyrokinesis_blue_lance"));
+        if (frames == 36) capture(mc, "ability-wheel.png");
+        if (frames == 37) mc.setScreen(new com.jayptucker.heroesevolved.gui.screen.AbilityWheelScreen(false).pin(""));
+        if (frames == 41) capture(mc, "ability-wheel-centre.png");
+        if (frames == 44) mc.stop();
     }
 
     private static final class PaintingScreen extends net.minecraft.client.gui.screens.Screen {

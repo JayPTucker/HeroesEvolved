@@ -127,7 +127,7 @@ public final class HeroesEvolvedCommands {
                                                 )
                                                 .then(Commands.argument(
                                                                 "level",
-                                                                IntegerArgumentType.integer(1, 5)
+                                                                IntegerArgumentType.integer(1, 20)
                                                         )
                                                         .executes(context -> setPowerLevel(
                                                                 context.getSource(),
@@ -378,7 +378,12 @@ public final class HeroesEvolvedCommands {
             int level
     ) {
         for (ServerPlayer player : players) {
-            PlayerProgressionService.setLevel(player, level);
+            int before = PlayerProgressionService.getPowerLevel(player);
+            PlayerProgressionService.setPowerLevel(player, level);
+            if (level > before) {
+                com.jayptucker.heroesevolved.progression.MasteryService.celebrateLevelUp(player, before, level);
+            }
+            com.jayptucker.heroesevolved.skills.SkillTreeService.sync(player);
 
             // Level changes affect maximum stamina, so refill to the new cap
             // and immediately update the player's client-side HUD and menu.

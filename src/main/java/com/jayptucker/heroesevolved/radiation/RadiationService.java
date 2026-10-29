@@ -462,6 +462,7 @@ public final class RadiationService {
         if (PowerIntroService.radiationChargeRemaining(player) > 0 || detonation == null || !detonation.voluntary) {
             return false;
         }
+        boolean critical = mass(player) >= CRITICAL;
         DETONATIONS.remove(player.getUUID());
         updateGlow(player);
         RadiationDecay.clear(player);
@@ -471,6 +472,7 @@ public final class RadiationService {
         player.sendSystemMessage(Component.literal(
                 "You hold it in. The light sinks back beneath your skin.")
                 .withStyle(ChatFormatting.GREEN));
+        if (critical) com.jayptucker.heroesevolved.progression.EvolutionTrials.advance(player, ModAbilities.RADIATION_ID);
         return true;
     }
 

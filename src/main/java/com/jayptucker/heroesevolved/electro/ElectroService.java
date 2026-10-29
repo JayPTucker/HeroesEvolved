@@ -138,6 +138,7 @@ public final class ElectroService {
         charge.value = 0;
         announce(player, charge);
         player.displayClientMessage(Component.literal("Overcharged!").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD), true);
+        com.jayptucker.heroesevolved.progression.EvolutionTrials.advance(player, ModAbilities.ELECTROKINESIS_ID);
         return true;
     }
 

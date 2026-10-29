@@ -17,7 +17,7 @@ public final class SkillTreeService {
     public static SkillTreeData.Build build(ServerPlayer player, ResourceLocation power) {
         SkillTreeData data = player.getData(ModDataAttachments.SKILL_TREES);
         var build = data.build(power.toString());
-        int highest = Math.max(build.highestLevel(), PlayerProgressionService.getLevel(player));
+        int highest = Math.max(build.highestLevel(), PlayerProgressionService.getPowerLevel(player));
         if (highest != build.highestLevel()) {
             build = new SkillTreeData.Build(highest, build.learned(), build.slots(), build.training());
             player.setData(ModDataAttachments.SKILL_TREES, data.with(power.toString(), build));
@@ -33,55 +33,66 @@ public final class SkillTreeService {
         var build = build(player, power);
         if (build.learned().contains(node.id()) || PlayerProgressionService.getLevel(player) < node.level()
                 || !node.prerequisite().isEmpty() && !build.learned().contains(node.prerequisite())
-                || SkillCatalog.available(power.getPath(), build) < node.cost()) return false;
+                || SkillCatalog.available(power.getPath(), build, storyPoints(player)) < node.cost()) return false;
         if (node.capstone() && SkillCatalog.nodes(power.getPath()).stream().anyMatch(n -> n.capstone() && build.learned().contains(n.id()))) return false;
         Set<String> learned = new HashSet<>(build.learned()); learned.add(node.id());
         save(player, power, new SkillTreeData.Build(build.highestLevel(), learned, build.slots(), build.training()));
-        player.sendSystemMessage(Component.literal("Learned " + node.name() + (node.active() ? ". Choose a key in your skill tree to equip it." : ".")));
+        player.sendSystemMessage(Component.literal("Learned " + node.name() + (node.active() ? ". It's on your ability wheel; put it on a key from the Abilities page if you like." : ".")));
         return true;
     }
+    /** Keys 1 to 5 by their slot: a skill id puts that skill on the key, "" restores the key's own ability. */
     public static boolean equip(ServerPlayer player, AbilitySlot slot, String actionId) {
+        if (!actionId.isEmpty() && actionId.startsWith(Loadout.BASE)) return false;
+        return bind(player, slot.ordinal() + 1, actionId.isEmpty() ? null : actionId);
+    }
+
+    /**
+     * Puts an action on ability key {@code key} (1 to 8): a base action ({@code base:SLOT}) or a learned
+     * active skill's id. "" leaves the key empty; null restores its default.
+     */
+    public static boolean bind(ServerPlayer player, int key, String actionKey) {
         var assignment = PlayerAbilityService.getData(player).assignedPower();
-        if (assignment.isEmpty() || !assignment.get().getValue().isUnlocked() || !PowerRules.canAct(player)) return false;
-        var power = assignment.get().getKey(); var ability = AbilityRegistry.ABILITIES.get(power);
-        if (ability == null) return false;
+        if (key < 1 || key > Loadout.KEYS || assignment.isEmpty() || !assignment.get().getValue().isUnlocked() || !PowerRules.canAct(player)) return false;
+        var power = assignment.get().getKey();
+        if (AbilityRegistry.ABILITIES.get(power) == null) return false;
         var build = build(player, power);
-        if (!actionId.isEmpty()) {
-            var node = SkillCatalog.find(power.getPath(), actionId).orElse(null);
-            if (node == null || !node.active() || !build.learned().contains(node.id())
-                    || PlayerProgressionService.getLevel(player) < node.level()) return false;
+        if (actionKey != null && !actionKey.isEmpty()) {
+            if (Loadout.resolve(player, power, actionKey) == null) return false;
+            var node = SkillCatalog.find(power.getPath(), actionKey).orElse(null);
+            if (node != null && PlayerProgressionService.getLevel(player) < node.level()) return false;
         }
-        // Release a held action before replacing it, so changing loadout cannot leave a beam running.
-        var previous = actions(player, power);
-        for (var entry : previous.entrySet()) {
-            if (entry.getKey() != slot && !entry.getValue().definition().id().getPath().equals(actionId)) continue;
-            var context = new AbilityUseContext(player, power, PlayerProgressionService.getLevel(player), true);
-            entry.getValue().release(context); entry.getValue().deactivate(context);
+        // Release whatever is held on the key being changed and the action being moved, so a beam can't keep running.
+        var context = new AbilityUseContext(player, power, PlayerProgressionService.getLevel(player), true);
+        for (int other = 1; other <= Loadout.KEYS; other++) {
+            String bound = Loadout.binding(build, other);
+            if (other != key && (actionKey == null || !bound.equals(actionKey))) continue;
+            var action = Loadout.resolve(player, power, bound);
+            if (action != null) { action.release(context); action.deactivate(context); }
         }
-        var slots = new HashMap<>(build.slots());
-        if (actionId.isEmpty()) slots.remove(slot.name());
-        else {
-            slots.values().removeIf(actionId::equals); // A sub-ability occupies one key only.
-            slots.put(slot.name(), actionId);
-        }
-        save(player, power, new SkillTreeData.Build(build.highestLevel(), build.learned(), slots, build.training()));
+        save(player, power, new SkillTreeData.Build(build.highestLevel(), build.learned(), Loadout.rebind(build, key, actionKey), build.training()));
         return true;
     }
+
     private static void save(ServerPlayer player, ResourceLocation power, SkillTreeData.Build build) {
         player.setData(ModDataAttachments.SKILL_TREES, player.getData(ModDataAttachments.SKILL_TREES).with(power.toString(), build));
     }
+    /** What ability keys 1 to 5 hold, by their slot. Keys 6 to 8 and the wheel go through {@link Loadout}. */
     public static Map<AbilitySlot, AbilityAction> actions(ServerPlayer player, ResourceLocation power) {
-        Ability ability = AbilityRegistry.ABILITIES.get(power);
-        if (ability == null) return Map.of();
-        var result = new EnumMap<AbilitySlot, AbilityAction>(AbilitySlot.class); result.putAll(ability.actions());
-        var build = build(player, power);
+        if (AbilityRegistry.ABILITIES.get(power) == null) return Map.of();
+        var result = new EnumMap<AbilitySlot, AbilityAction>(AbilitySlot.class);
         for (var slot : AbilitySlot.values()) {
-            String id = build.slots().get(slot.name());
-            if (id == null) continue;
-            SkillCatalog.find(power.getPath(), id).filter(n -> n.active() && build.learned().contains(n.id()))
-                    .ifPresent(n -> result.put(slot, n.action()));
+            AbilityAction action = Loadout.onKey(player, power, slot.ordinal() + 1);
+            if (action != null) result.put(slot, action);
         }
         return result;
+    }
+
+    /** Everything a player's actions could be holding: what's on all eight keys, for releases and cleanup. */
+    public static java.util.List<AbilityAction> allActions(ServerPlayer player, ResourceLocation power) {
+        return Loadout.available(player, power).stream().map(Loadout.Entry::action).toList();
+    }
+    public static int storyPoints(ServerPlayer player) {
+        return player.getData(ModDataAttachments.POWER_JOURNEY).storyPoints();
     }
     public static int activationCost(ServerPlayer player, ResourceLocation power, int cost) {
         return discounted(cost, bonus(player, power, 0));
@@ -117,7 +128,7 @@ public final class SkillTreeService {
             com.jayptucker.heroesevolved.flight.FlightSkillService.forget(player);
         }
         if (power.equals(ModAbilities.TELEKINESIS_ID)) com.jayptucker.heroesevolved.telekinesis.TelekinesisService.stopAll(player);
-        for (var action : actions(player, power).values()) {
+        for (var action : allActions(player, power)) {
             var context = new AbilityUseContext(player, power, PlayerProgressionService.getLevel(player), true);
             action.release(context); action.deactivate(context);
         }
