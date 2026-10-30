@@ -9,11 +9,19 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
 import java.util.*;
 
-/** The one hunter's knowledge and each player's chapter survive logout and server restarts. */
+/**
+ * The one hunter's knowledge and each player's chapter survive logout and server restarts.
+ *
+ * <p>Chapters, per player: 0 nothing yet, 1 the ticking, 2 a man watching from a distance, 3 he has
+ * spoken, 4 he has hunted you, 5 he is your nemesis (three fights or more).</p>
+ */
 public final class SylarStoryData extends SavedData {
     public static final String NAME = "heroesevolved_sylar";
+    public static final int MAX_CHAPTER = 5;
     public static final class Trail {
         public int chapter, attention;
+        /** Fights with this player; times this player got away; times he fled from this player. */
+        public int hunts, escapes, fled;
         public long nextEncounter;
     }
     private final Map<UUID, Trail> trails = new HashMap<>();
@@ -32,7 +40,8 @@ public final class SylarStoryData extends SavedData {
     }
     public long quietUntil() { return quietUntil; }
     public int defeats() { return defeats; }
-    public void defeated(long now) { defeats++; quietUntil = now + 20L * 60 * 30; setDirty(); }
+    /** Driven off for real: an hour's world-wide quiet. */
+    public void defeated(long now) { defeats++; quietUntil = now + 20L * 60 * 60; setDirty(); }
     public static SylarStoryData load(CompoundTag tag, HolderLookup.Provider registries) {
         var data = new SylarStoryData();
         data.quietUntil = Math.max(0, tag.getLong("quiet_until")); data.defeats = Math.max(0, tag.getInt("defeats"));
@@ -40,7 +49,10 @@ public final class SylarStoryData extends SavedData {
             CompoundTag entry = (CompoundTag) element;
             if (!entry.hasUUID("player")) continue;
             Trail trail = data.trail(entry.getUUID("player"));
-            trail.chapter = Math.clamp(entry.getInt("chapter"), 0, 3);
+            trail.chapter = Math.clamp(entry.getInt("chapter"), 0, MAX_CHAPTER);
+            trail.hunts = Math.max(0, entry.getInt("hunts"));
+            trail.escapes = Math.max(0, entry.getInt("escapes"));
+            trail.fled = Math.max(0, entry.getInt("fled"));
             trail.attention = Math.clamp(entry.getInt("attention"), 0, 12);
             trail.nextEncounter = Math.max(0, entry.getLong("next"));
         }
@@ -55,7 +67,9 @@ public final class SylarStoryData extends SavedData {
         trails.forEach((id, trail) -> {
             CompoundTag entry = new CompoundTag(); entry.putUUID("player", id);
             entry.putInt("chapter", trail.chapter); entry.putInt("attention", trail.attention);
-            entry.putLong("next", trail.nextEncounter); list.add(entry);
+            entry.putLong("next", trail.nextEncounter);
+            entry.putInt("hunts", trail.hunts); entry.putInt("escapes", trail.escapes); entry.putInt("fled", trail.fled);
+            list.add(entry);
         });
         tag.put("trails", list);
         ListTag powers = new ListTag(); learned.forEach(id -> powers.add(net.minecraft.nbt.StringTag.valueOf(id.toString())));

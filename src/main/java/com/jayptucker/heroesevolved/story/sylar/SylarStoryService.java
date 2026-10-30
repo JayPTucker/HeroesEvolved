@@ -28,7 +28,14 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.*;
 import java.util.*;
 
-/** Bounded story director: one real hunter, rare encounters, saved chapters, and no chunk forcing. */
+/**
+ * Bounded story director: one real hunter, rare encounters, saved chapters, and no chunk forcing.
+ *
+ * <p>The story is a slow ladder, one beat per player at a time: a faint ticking; a man watching from
+ * a distance; the sighting where he speaks; then hunts. Early beats are at least ten minutes apart,
+ * hunts at least twenty-five. Everything he says goes through {@link SylarVoice}, so lines arrive one at
+ * a time, eight seconds apart.</p>
+ */
 public final class SylarStoryService {
     private record Step(Vec3 position, long time) {}
     private static final Map<UUID, Deque<Step>> ROUTES = new HashMap<>();
@@ -38,11 +45,11 @@ public final class SylarStoryService {
         final SylarEntity hunter;
         final UUID victim;
         final long began;
-        final boolean ambush;
+        final boolean ambush, speaks;
         int seenTicks;
         boolean announced, footsteps;
-        Encounter(SylarEntity hunter, ServerPlayer player, long now, boolean ambush) {
-            this.hunter = hunter; victim = player.getUUID(); began = now; this.ambush = ambush;
+        Encounter(SylarEntity hunter, ServerPlayer player, long now, boolean ambush, boolean speaks) {
+            this.hunter = hunter; victim = player.getUUID(); began = now; this.ambush = ambush; this.speaks = speaks;
         }
     }
     private SylarStoryService() {}
@@ -70,6 +77,7 @@ public final class SylarStoryService {
     public static void tick(MinecraftServer server) {
         long time = now(server);
         if (!HeroesEvolvedConfig.COMMON.sylarEnabled.get()) { dismiss(server); return; }
+        SylarVoice.tick(server);
         if (time % 20 != 0) return;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) if (eligible(player)) remember(player, time);
         if (active != null) { tickEncounter(server, time); return; }
@@ -91,9 +99,9 @@ public final class SylarStoryService {
         if (chosen == null) return;
         var trail = data.trail(chosen.getUUID());
         if (trail.chapter == 0) {
-            message(chosen, "story.heroesevolved.sylar.watched"); clock(chosen, .16F);
-            trail.chapter = 1; schedule(chosen, false); data.setDirty();
-        } else if (!start(chosen, trail.chapter >= 3)) {
+            SylarVoice.narrate(chosen, "story.heroesevolved.sylar.watched"); clock(chosen, .16F);
+            trail.chapter = 1; scheduleNext(chosen, trail, Beat.SIGHTING); data.setDirty();
+        } else if (!start(chosen, trail.chapter >= 3, trail.chapter == 2)) {
             trail.nextEncounter = time + 20 * 30; data.setDirty();
         }
     }
@@ -107,7 +115,11 @@ public final class SylarStoryService {
         senseNearby(server, hunter, time);
         long age = time - encounter.began;
         double distance = hunter.distanceToSqr(player);
-        if (distance > 112 * 112 || age > 20 * (hunter.hunting() ? 150 : 14)) { end(server, true); return; }
+        if (distance > 112 * 112 || age > 20 * (hunter.hunting() ? 150 : encounter.speaks ? 24 : 14)) {
+            if (hunter.hunting()) SylarVoice.narrate(player, "story.heroesevolved.sylar.lost");
+            end(server, hunter.hunting() ? Outcome.ESCAPED : Outcome.WITHDREW);
+            return;
+        }
         if (hunter.hunting()) {
             if (time % 80 == 0 && distance < 40 * 40) clock(player, .17F);
             return;
@@ -127,30 +139,50 @@ public final class SylarStoryService {
         }
         if (age >= 60 && !encounter.announced) {
             encounter.announced = true;
-            message(player, encounter.ambush ? "story.heroesevolved.sylar.recognized" : "story.heroesevolved.sylar.figure");
+            SylarVoice.narrate(player, encounter.ambush ? "story.heroesevolved.sylar.recognized" : "story.heroesevolved.sylar.figure");
+            // The second sighting is the first time he speaks.
+            if (encounter.speaks) SylarVoice.say(player, "story.heroesevolved.sylar.say.first");
             clock(player, .19F);
         }
         if (encounter.ambush && age >= 120) { hunt(encounter, player); return; }
         Vec3 toward = hunter.getEyePosition().subtract(player.getEyePosition()).normalize();
         boolean looking = player.getLookAngle().dot(toward) > .965 && player.hasLineOfSight(hunter);
         encounter.seenTicks = looking ? encounter.seenTicks + 20 : 0;
-        if (!encounter.ambush && age >= 80 && (encounter.seenTicks >= 60 || distance < 18 * 18)) {
-            message(player, "story.heroesevolved.sylar.gone"); end(server, true);
+        if (!encounter.ambush && age >= (encounter.speaks ? 200 : 80) && (encounter.seenTicks >= 60 || distance < 18 * 18)) {
+            SylarVoice.narrate(player, "story.heroesevolved.sylar.gone"); end(server, Outcome.WITHDREW);
         }
     }
     private static void hunt(Encounter encounter, ServerPlayer player) {
         encounter.hunter.hunt(player); encounter.announced = true;
-        message(player, "story.heroesevolved.sylar.hunt");
+        SylarVoice.narrate(player, "story.heroesevolved.sylar.hunt");
+        SylarVoice.say(player, opener(player));
         ScreenTintPayload.send(player, 0x38201820, 45, ScreenTintPayload.Style.VIGNETTE);
     }
+
+    /** What he says when a hunt begins: he remembers you, or he names what he wants. */
+    static String opener(ServerPlayer player) {
+        var trail = SylarStoryData.get(player.getServer()).trail(player.getUUID());
+        if (trail.fled > 0 && trail.hunts > 0) return "story.heroesevolved.sylar.say.return_fled";
+        if (trail.escapes > 0) return "story.heroesevolved.sylar.say.return_escaped";
+        String power = PlayerAbilityService.getData(player).assignedPower().map(e -> e.getKey().getPath()).orElse("");
+        return OPENERS.contains(power) ? "story.heroesevolved.sylar.say.want." + power : "story.heroesevolved.sylar.say.want";
+    }
+
+    private static final Set<String> OPENERS = Set.of("quake", "flight", "cryokinesis", "electrokinesis", "telekinesis", "telepathy",
+            "regeneration", "time_manipulation", "radiation", "sonic_resonance", "superspeed", "precognition", "pyrokinesis",
+            "invisibility", "phasing", "empathic_mimicry");
     /** Admin preview uses the same loaded, collision-safe spawn rules and singleton as natural encounters. */
-    public static boolean start(ServerPlayer player, boolean ambush) {
+    public static boolean start(ServerPlayer player, boolean ambush) { return start(player, ambush, false); }
+
+    public static boolean start(ServerPlayer player, boolean ambush, boolean speaks) {
         if (active != null || !eligible(player) || !HeroesEvolvedConfig.COMMON.sylarEnabled.get()) return false;
         Vec3 position = findWatchPosition(player);
         if (position == null) return false;
-        return beginAt(player, position, ambush);
+        return beginAt(player, position, ambush, speaks);
     }
-    static boolean beginAt(ServerPlayer player, Vec3 position, boolean ambush) {
+    static boolean beginAt(ServerPlayer player, Vec3 position, boolean ambush) { return beginAt(player, position, ambush, false); }
+
+    static boolean beginAt(ServerPlayer player, Vec3 position, boolean ambush, boolean speaks) {
         if (active != null || !eligible(player)) return false;
         ServerLevel level = player.serverLevel();
         if (!level.hasChunkAt(BlockPos.containing(position)) || !level.getWorldBorder().isWithinBounds(BlockPos.containing(position))) return false;
@@ -160,7 +192,7 @@ public final class SylarStoryService {
         if (!level.noCollision(hunter)) return false;
         hunter.watch(player);
         if (!level.addFreshEntity(hunter)) return false;
-        active = new Encounter(hunter, player, now(player.getServer()), ambush);
+        active = new Encounter(hunter, player, now(player.getServer()), ambush, speaks);
         senseNearby(player.getServer(), hunter, now(player.getServer()));
         return true;
     }
@@ -229,15 +261,16 @@ public final class SylarStoryService {
             var data = SylarStoryData.get(victim.getServer());
             if (!data.learn(entry.getKey())) return;
             // Intuitive aptitude COPIES knowledge. Never reassign a player's exclusive story role.
-            message(victim, "story.heroesevolved.sylar.acquired");
+            SylarVoice.say(victim, "story.heroesevolved.sylar.say.acquired");
+            SylarVoice.narrate(victim, "story.heroesevolved.sylar.acquired");
             for (ServerPlayer witness : victim.serverLevel().players()) {
                 if (witness == victim || witness.distanceToSqr(hunter) > 64 * 64) continue;
-                message(witness, "story.heroesevolved.sylar.witness");
+                SylarVoice.narrate(witness, "story.heroesevolved.sylar.witness");
             }
             if (entry.getKey().equals(ModAbilities.RADIATION_ID)) {
                 for (ServerPlayer witness : victim.getServer().getPlayerList().getPlayers())
                     if (witness.getData(ModDataAttachments.PLAYER_STORY_PROGRESS) >= 4 || witness.getData(ModDataAttachments.PLAYER_SEEN_FUTURE_CITY))
-                        message(witness, "story.heroesevolved.sylar.future");
+                        SylarVoice.narrate(witness, "story.heroesevolved.sylar.future");
             }
         });
     }
@@ -245,24 +278,65 @@ public final class SylarStoryService {
         if (active == null || active.hunter != hunter) return;
         MinecraftServer server = hunter.getServer(); SylarStoryData.get(server).defeated(now(server));
         for (ServerPlayer witness : server.getPlayerList().getPlayers())
-            if (witness.level() == hunter.level() && witness.distanceToSqr(hunter) < 96 * 96) message(witness, "story.heroesevolved.sylar.defeated");
-        end(server, true);
+            if (witness.level() == hunter.level() && witness.distanceToSqr(hunter) < 96 * 96) {
+                if (hunter.hunting()) SylarVoice.say(witness, "story.heroesevolved.sylar.say.defeated");
+                SylarVoice.narrate(witness, "story.heroesevolved.sylar.defeated");
+            }
+        end(server, Outcome.DEFEATED);
     }
-    private static void schedule(ServerPlayer player, boolean escaped) {
-        var data = SylarStoryData.get(player.getServer()); var trail = data.trail(player.getUUID());
-        int seconds = escaped ? 600 : HeroesEvolvedConfig.COMMON.sylarEncounterIntervalSeconds.get();
-        trail.nextEncounter = now(player.getServer()) + seconds * 20L + player.getRandom().nextInt(20 * 120);
-        trail.attention = Math.max(0, trail.attention - 3); data.setDirty();
+
+    /** He got away, wounded: no reprieve, and he will remember who did it. */
+    public static void fled(SylarEntity hunter, ServerPlayer victim) {
+        if (active == null || active.hunter != hunter) return;
+        MinecraftServer server = hunter.getServer();
+        for (ServerPlayer witness : server.getPlayerList().getPlayers())
+            if (witness.level() == hunter.level() && witness.distanceToSqr(hunter) < 96 * 96) {
+                SylarVoice.say(witness, "story.heroesevolved.sylar.say.escape");
+                SylarVoice.narrate(witness, "story.heroesevolved.sylar.fled");
+            }
+        var data = SylarStoryData.get(server);
+        data.trail(victim.getUUID()).fled++;
+        data.setDirty();
+        end(server, Outcome.FLED);
     }
-    private static void end(MinecraftServer server, boolean progressed) {
+    /** How an encounter ended. */
+    enum Outcome { CANCELLED, WITHDREW, ESCAPED, FLED, DEFEATED }
+
+    /** Which beat comes next for a player, and so how long until it. */
+    private enum Beat { SIGHTING, HUNT }
+
+    private static void scheduleNext(ServerPlayer player, SylarStoryData.Trail trail, Beat beat) {
+        var config = HeroesEvolvedConfig.COMMON;
+        long base = beat == Beat.HUNT ? config.sylarHuntIntervalSeconds.get() : config.sylarSightingIntervalSeconds.get();
+        long jitter = beat == Beat.HUNT ? 300 : 240;
+        // A player who keeps using their powers draws him a little sooner (at most a fifth sooner).
+        double interest = 1 - Math.min(12, trail.attention) / 60.0;
+        long seconds = (long) (base * interest) + player.getRandom().nextInt((int) jitter);
+        trail.nextEncounter = now(player.getServer()) + seconds * 20L;
+        trail.attention = Math.max(0, trail.attention - 3);
+    }
+
+    private static void end(MinecraftServer server, boolean progressed) { end(server, progressed ? Outcome.WITHDREW : Outcome.CANCELLED); }
+
+    private static void end(MinecraftServer server, Outcome outcome) {
         if (active == null) return;
         Encounter encounter = active; active = null;
         var data = SylarStoryData.get(server); var trail = data.trail(encounter.victim);
-        if (progressed) trail.chapter = Math.min(3, trail.chapter + 1);
-        trail.nextEncounter = now(server) + 20L * (encounter.hunter.hunting() ? 600 : HeroesEvolvedConfig.COMMON.sylarEncounterIntervalSeconds.get());
-        data.setDirty();
+        boolean hunted = encounter.hunter.hunting();
+        if (outcome != Outcome.CANCELLED) {
+            if (hunted) {
+                trail.hunts++;
+                trail.chapter = Math.max(trail.chapter, trail.hunts >= 3 ? 5 : 4);
+                if (outcome == Outcome.ESCAPED) trail.escapes++;
+            } else {
+                trail.chapter = Math.min(3, trail.chapter + 1);
+            }
+        }
         ServerPlayer victim = server.getPlayerList().getPlayer(encounter.victim);
-        if (victim != null) schedule(victim, encounter.hunter.hunting());
+        if (victim != null) scheduleNext(victim, trail, trail.chapter >= 3 ? Beat.HUNT : Beat.SIGHTING);
+        else trail.nextEncounter = now(server) + 20L * 60 * 10;
+        data.setDirty();
+        encounter.hunter.bar().removeAllPlayers();
         if (encounter.hunter.isAlive() && !encounter.hunter.isRemoved()) {
             ((ServerLevel) encounter.hunter.level()).sendParticles(ParticleTypes.SMOKE, encounter.hunter.getX(), encounter.hunter.getY() + 1,
                     encounter.hunter.getZ(), 8, .2, .5, .2, .01);
@@ -279,7 +353,7 @@ public final class SylarStoryService {
     public static void dismiss(MinecraftServer server) { if (active != null) end(server, false); }
     public static void forget(ServerPlayer player) {
         if (active != null && active.victim.equals(player.getUUID())) end(player.getServer(), false);
-        ROUTES.remove(player.getUUID()); SENSED.remove(player.getUUID());
+        ROUTES.remove(player.getUUID()); SENSED.remove(player.getUUID()); SylarVoice.forget(player.getUUID());
     }
-    public static void clear(MinecraftServer server) { dismiss(server); ROUTES.clear(); SENSED.clear(); }
+    public static void clear(MinecraftServer server) { dismiss(server); ROUTES.clear(); SENSED.clear(); SylarVoice.clear(); }
 }

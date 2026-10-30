@@ -124,11 +124,13 @@ public final class JournalScreen extends Screen {
 
         // Chapter three: the watchmaker.
         heading("The Watchmaker");
-        add(Component.literal(switch (Math.max(0, Math.min(3, journal.sylarChapter()))) {
+        add(Component.literal(switch (Math.max(0, Math.min(5, journal.sylarChapter()))) {
             case 0 -> "Nothing has happened... yet.";
             case 1 -> "You have heard a faint ticking that wasn't there before.";
             case 2 -> "A man in a dark coat has been watching you from a distance.";
-            default -> "He has hunted you. He studies people before he takes what they have.";
+            case 3 -> "He spoke to you. A quiet voice, a watchmaker's patience. His name was Gabriel Gray, once. He calls himself Sylar.";
+            case 4 -> "He has hunted you. He studies people before he takes what they have, and every power he takes, he uses.";
+            default -> "He keeps coming back for you. He remembers how you fight. You are not prey to him any more; you are the one he cannot finish.";
         }), journal.sylarChapter() == 0 ? MUTED : TEXT, wrap);
         if (!journal.sylarLearned().isEmpty()) {
             List<String> names = journal.sylarLearned().stream()

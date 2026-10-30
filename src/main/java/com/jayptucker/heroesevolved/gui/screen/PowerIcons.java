@@ -62,7 +62,7 @@ public final class PowerIcons {
             Map.entry("accelerate", Items.SUGAR), Map.entry("quickstep", Items.RABBIT_FOOT), Map.entry("flurry", Items.GOLDEN_SWORD),
             Map.entry("whirlwind", Items.WIND_CHARGE), Map.entry("redline", Items.REDSTONE), Map.entry("mirage", Items.GLASS_PANE),
             Map.entry("perception", Items.SPYGLASS),
-            Map.entry("premonition", Items.SPYGLASS), Map.entry("paint", Items.PAINTING), Map.entry("sever", Items.SHEARS),
+            Map.entry("blitz", Items.GOLDEN_SWORD), Map.entry("snatch", Items.BUNDLE), Map.entry("cyclone", Items.WIND_CHARGE), Map.entry("lightspeed", Items.GLOWSTONE_DUST), Map.entry("sonic_note", Items.NOTE_BLOCK), Map.entry("sonic_wall", Items.AMETHYST_BLOCK), Map.entry("crescendo", Items.GOAT_HORN), Map.entry("premonition", Items.SPYGLASS), Map.entry("saw_it", Items.ENDER_EYE), Map.entry("future_written", Items.WRITTEN_BOOK), Map.entry("paint", Items.PAINTING), Map.entry("sever", Items.SHEARS),
             Map.entry("fate", Items.STRING), Map.entry("convergence", Items.COMPASS), Map.entry("foresight", Items.ENDER_EYE),
             Map.entry("path", Items.COMPASS), Map.entry("omen", Items.BELL),
             Map.entry("fade", Items.GLASS_PANE), Map.entry("silent", Items.LEATHER_BOOTS), Map.entry("unseen", Items.IRON_SWORD),

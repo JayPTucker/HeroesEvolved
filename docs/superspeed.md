@@ -2,17 +2,43 @@
 
 A new unique ability set (`heroesevolved:superspeed`) combining the movement and reaction theme of [Heroes' Enhanced Speed](https://heroes.fandom.com/wiki/Enhanced_Speed) with Flash-inspired golden lightning, rapid strikes, and a running whirlwind. Enhanced Speed informs the contact rescue, brief wall traversal, and resistance to slowed time while already moving. This is a bounded Minecraft adaptation, not literal intercontinental or faster-than-light travel.
 
-## Core abilities
+## Reworked kit (Daphne Millbrook and the Flash)
 
-| Default key | Unlock | Ability | Behavior | Base cost / cooldown |
+Daphne Millbrook said the world stops when she runs; she was also a thief who could be gone and back
+before you blinked. The kit keeps the Flash's golden lightning and adds her blink.
+
+### Momentum
+
+Running builds **Momentum** (0 to 100), shown as a gold bar under your ability keys, with notches at
+30, 50 and 60.
+
+| Momentum | What happens |
+| --- | --- |
+| 30 | Blitz can spend 30 for harder blows |
+| 50 | Lightning crackles over your body as you run |
+| 60 | You **buffet** enemies you run past: 2 damage, thrown aside, once a second each |
+| 100 | You **break the sound barrier**: a boom, and a cone of white rings behind you |
+
+At 50 or more, your next real punch is still the charged strike. Ability hits never spend it.
+Lightspeed spends all your Momentum.
+
+### Abilities
+
+| Key | Tier (Level) | Ability | What it does | Cost / cooldown |
 | --- | --- | --- | --- | --- |
-| G | Level 1 | Accelerate | Toggle on, then use normal sprint controls to accelerate. Walk or crouch for precision; G again or Shift + G stops it. | Free toggle; 3 stamina per running second |
-| H | Level 1 | Quickstep | Dash horizontally along your gaze, 14 blocks at level 1 through 30 at level 5. Stops before obstructions. | 10 / 1 second |
-| Z | Level 2 | Lightning Flurry | Six rapid strikes over about half a second after a collision-checked rush to a visible enemy within 12 blocks. Each hit deals 2 + floor(level / 2) base damage. Escaping, cover, or incapacitating the attacker interrupts it. | 22 / 5 seconds |
-| X | Level 4 | Whirlwind | Five-second vortex with a 6-block radius; spins and damages enemies and pushes hostile projectiles outward. Leaving its 8-block tether ends it. No terrain damage. | 30 / 9 seconds |
-| V | Level 5 | Redline | Engage Accelerate with an extra burst of speed for twelve seconds, immediately filling Momentum and enabling projectile dodges. Then return to regular Accelerate. Shift + V cancels. | 35 / 20 seconds; 6 stamina per running second during Redline |
+| G | 1 (Level 1) | **Accelerate** | Toggle, then sprint (see below). Walk or crouch for precision; press again to stop. | Free; 3 stamina per running second |
+| H | 1 (Level 1) | **Blitz** | Rush the enemy you look at, up to 12 + 2 per tier blocks, and land four blows in a fraction of a second. **Press again within a moment** and you are already on the next enemy within 10 blocks, up to the tier in extra links (six enemies at tier 5). 30 Momentum makes every blow 2 harder. With no one in sight it is a straight **dash**, the old Quickstep. | 14 / 2 s; chained presses are free |
+| Z | 2 (Level 3) | **Snatch** | In one blink, take every dropped item within reach (up to 16 stacks), pluck enemy shots out of the air (arrows go in your pocket), and take the weapon from the hand you look at. Another player's weapon is knocked to their feet instead. An afterimage holds your place: to anyone watching, you never moved. | 20 / 10 s |
+| X | 4 (Level 10) | **Cyclone** | Run rings around where you stand for three seconds. Afterimages of you circle the ring. The wind drags enemies around and up, flings their shots away and hurts them every half second, then throws them all up and out. | 30 / 12 s |
+| V | 5 (Level 15) | **Lightspeed** | Streak up to 48 blocks forward along a clear path. Everything on the line takes 8 + tier + Momentum / 5, is set alight for two seconds and is thrown aside. You leave a scorched scar and a sonic boom where you stop. Spends all your Momentum. | 50 / 45 s |
 
-Sprint movement uses native synced attributes. The starting movement multiplier ranges from 4x at level 1 to 8x at level 5. Running builds Momentum, adding up to another 2x. Redline adds 3x, for a level-five peak of 13x. At least 50 Momentum empowers the next direct attack, consuming the charge for up to 12 bonus damage against mobs or 4 against players. The flurry deals 60% base damage against players. Other ordinary movement modifiers still apply. Camera expansion is capped at 1.12x to avoid extreme speed-induced distortion. Sprinting adds half a block of step height for ordinary terrain.
+The old Quickstep lives on as Blitz with no target. Lightning Flurry became Blitz's flurry, and
+Whirlwind became Cyclone. Redline is replaced by Lightspeed, and by Momentum itself, which now does
+more on its own.
+
+**Evolved trial:** run 20 km (20,000 blocks) with Accelerate.
+
+Sprint movement uses native synced attributes. The starting movement multiplier ranges from 4x at level 1 to 8x at level 5. Running builds Momentum, adding up to another 2x, for a level-five peak of 10x. At least 50 Momentum empowers the next direct attack, consuming the charge for up to 12 bonus damage against mobs or 4 against players. The flurry deals 60% base damage against players. Other ordinary movement modifiers still apply. Camera expansion is capped at 1.12x to avoid extreme speed-induced distortion. Sprinting adds half a block of step height for ordinary terrain.
 
 At **level 3**, sprinting with Accelerate supports your feet on the water surface using matching client/server collision. This includes flowing water and water plants. Release sprint, crouch, or disable Accelerate to sink normally. It does not lift submerged swimmers, support lava running, or catch long falls. At **level 4**, sprinting into a wall provides up to thirty ticks of upward assistance; it resets after returning to clear ground. Steep falls are not caught. Movement still benefits from in-game feel testing across terrain and server latency.
 
@@ -46,7 +72,7 @@ Running trails send at most ten bounded segment descriptions per second per movi
 
 A whirlwind considers at most 32 affected entities per update. Transient movement modifiers and runtime combat state are removed on cleanup. Existing imported recordings remain unchanged; new speed cues use vanilla wind and sweep sounds.
 
-Both client and server need the updated mod: effect protocol version is now **26**.
+Both client and server need the updated mod.
 
 ## Verification
 

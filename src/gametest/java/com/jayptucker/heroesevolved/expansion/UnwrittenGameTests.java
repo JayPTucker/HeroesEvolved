@@ -8,6 +8,7 @@ import com.jayptucker.heroesevolved.ability.data.PlayerAbilityData;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
+import com.jayptucker.heroesevolved.precog.PrecognitionService;
 import com.jayptucker.heroesevolved.skills.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.*;
@@ -161,10 +162,10 @@ public final class UnwrittenGameTests {
         });
     }
     @GameTest(template="rewind_empty", batch="unwritten.sever")
-    public static void severedIntentCancelsOneCommittedHitButNotTheNext(GameTestHelper h) {
+    public static void redMarginCancelsOneCommittedHitButNotTheNext(GameTestHelper h) {
         var p = player(h, "precognition"); var t = enemy(h, p.position().add(0, 0, 3)); p.setYRot(0); p.setXRot(0);
         try {
-            h.assertTrue(PrecognitionService.activate(context(p, "precognition"), 2), "Visible enemy intention is marked");
+            h.assertTrue(PrecognitionService.skill(context(p, "precognition"), 1), "Red Margin marks a visible enemy's intention");
             float before = p.getHealth(); p.hurt(p.damageSources().mobAttack(t), 4);
             h.assertTrue(p.getHealth() == before, "Marked attack is crossed out");
             p.invulnerableTime = 0; p.hurt(p.damageSources().mobAttack(t), 4);
@@ -175,28 +176,11 @@ public final class UnwrittenGameTests {
     public static void fateThreadCanSaveItsOwnCasterAndCannotImmediatelyRepeat(GameTestHelper h) {
         var p = player(h, "precognition"); p.setShiftKeyDown(true); p.setHealth(3);
         try {
-            h.assertTrue(PrecognitionService.activate(context(p, "precognition"), 3), "Self Fate Thread activates");
+            h.assertTrue(PrecognitionService.fateThread(p), "Self Fate Thread activates");
             p.hurt(p.damageSources().generic(), 100);
             h.assertTrue(p.isAlive() && p.getHealth() == 2, "A lethal hit crosses out the caster's own death and leaves one heart");
-            h.assertTrue(!PrecognitionService.activate(context(p, "precognition"), 3), "The rescued player has a thirty-second repeat guard");
+            h.assertTrue(!PrecognitionService.fateThread(p), "The rescued player has a thirty-second repeat guard");
             h.succeed();
         } finally { clear(p); }
-    }
-    @GameTest(template="rewind_empty", batch="unwritten.convergence", timeoutTicks=30)
-    public static void convergenceBendsHostileProjectilesAndSparesFriendlyShots(GameTestHelper h) {
-        var p = player(h, "precognition"); p.setYRot(0); p.setXRot(0);
-        var hostile = new net.minecraft.world.entity.projectile.Arrow(EntityType.ARROW, h.getLevel());
-        var friendly = new net.minecraft.world.entity.projectile.Arrow(EntityType.ARROW, h.getLevel());
-        hostile.setPos(p.position().add(1, 1, 5)); hostile.setDeltaMovement(-.5, 0, 0);
-        friendly.setPos(p.position().add(-1, 1, 5)); friendly.setOwner(p); friendly.setDeltaMovement(-.5, 0, 0);
-        h.getLevel().addFreshEntity(hostile); h.getLevel().addFreshEntity(friendly);
-        h.assertTrue(PrecognitionService.activate(context(p, "precognition"), 4), "Convergence establishes a predicted impact point");
-        h.runAfterDelay(6, () -> {
-            try {
-                h.assertTrue(hostile.isRemoved() || hostile.getDeltaMovement().z > 0, "Hostile arrow is redirected toward the foretold point or consumed there");
-                h.assertTrue(!friendly.isRemoved() && friendly.getOwner() == p && friendly.getDeltaMovement().x < 0, "A friendly arrow retains its direction and ownership");
-                h.succeed();
-            } finally { hostile.discard(); friendly.discard(); clear(p); }
-        });
     }
 }

@@ -99,6 +99,9 @@ public final class AbilitySlotHudOverlay {
         }
 
         y = drawRadiationCore(guiGraphics, y);
+        y = drawClarity(guiGraphics, y);
+        y = drawResonance(guiGraphics, y);
+        y = drawMomentum(guiGraphics, y);
         y = drawRegrowth(guiGraphics, y);
 
         if (!hasFlightSpeedControl()) {
@@ -177,6 +180,57 @@ public final class AbilitySlotHudOverlay {
         return key >= 1 && key <= ModKeyMappings.ABILITY_KEYS.length
                 ? ModKeyMappings.ABILITY_KEYS[key - 1].getTranslatedKeyMessage().getString()
                 : Component.translatable("hud.heroesevolved.wheel_short").getString();
+    }
+
+    /** Isaac Mendez's Clarity: earned each time a foreseen harm misses, spent on painting and The Future Is Written. */
+    private static int drawClarity(GuiGraphics guiGraphics, int y) {
+        var mc = Minecraft.getInstance();
+        boolean seer = ClientPowerState.getSnapshot().abilities().stream().anyMatch(power -> power.unlocked()
+                && power.abilityId().equals(ModAbilities.PRECOGNITION_ID));
+        if (mc.player == null || !seer) return y;
+        int clarity = com.jayptucker.heroesevolved.network.ClientClarity.get();
+        int color = clarity >= 100 ? 0xFFFFF4E0 : 0xFFF7D88D;
+        guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.clarity", clarity), START_X, y, color, true);
+        guiGraphics.fill(START_X, y + 10, START_X + 100, y + 13, 0x80403418);
+        guiGraphics.fill(START_X, y + 10, START_X + clarity, y + 13, color);
+        // The notch marks the most a painted ending can spend.
+        guiGraphics.fill(START_X + 50, y + 9, START_X + 51, y + 14, 0xC0FFFFFF);
+        return y + LINE_HEIGHT + 6;
+    }
+
+    /** Superspeed's Momentum, with notches where the body crackles, you buffet, and the sound barrier breaks. */
+    private static int drawMomentum(GuiGraphics guiGraphics, int y) {
+        var mc = Minecraft.getInstance();
+        boolean speedster = ClientPowerState.getSnapshot().abilities().stream().anyMatch(power -> power.unlocked()
+                && power.abilityId().equals(ModAbilities.SUPERSPEED_ID));
+        if (mc.player == null || !speedster) return y;
+        int momentum = com.jayptucker.heroesevolved.network.ClientMomentum.get();
+        long time = mc.level == null ? 0 : mc.level.getGameTime();
+        int color = momentum >= 100 ? ((time / 3) % 2 == 0 ? 0xFFFFF6D8 : 0xFFFFC23A) : momentum >= 50 ? 0xFFFFC23A : 0xFFFF8A1E;
+        guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.momentum", momentum), START_X, y, color, true);
+        guiGraphics.fill(START_X, y + 10, START_X + 100, y + 13, 0x80402810);
+        guiGraphics.fill(START_X, y + 10, START_X + momentum, y + 13, color);
+        for (int mark : new int[] {30, 50, 60}) guiGraphics.fill(START_X + mark, y + 9, START_X + mark + 1, y + 14, 0xC0FFFFFF);
+        return y + LINE_HEIGHT + 6;
+    }
+
+    /** Sonic Resonance: built by sonic hits and loud sounds, spent by a harmonic Note and by Crescendo. */
+    private static int drawResonance(GuiGraphics guiGraphics, int y) {
+        var mc = Minecraft.getInstance();
+        boolean singer = ClientPowerState.getSnapshot().abilities().stream().anyMatch(power -> power.unlocked()
+                && power.abilityId().equals(ModAbilities.SONIC_RESONANCE_ID));
+        if (mc.player == null || !singer) return y;
+        int resonance = com.jayptucker.heroesevolved.network.ClientResonance.get();
+        guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.resonance", resonance), START_X, y, 0xFFE0B8FF, true);
+        guiGraphics.fill(START_X, y + 10, START_X + 100, y + 13, 0x80302040);
+        // The bar runs through every colour, the way Emma sees a rising note.
+        long time = mc.level == null ? 0 : mc.level.getGameTime();
+        for (int x = 0; x < resonance; x++)
+            guiGraphics.fill(START_X + x, y + 10, START_X + x + 1, y + 13,
+                    0xFF000000 | net.minecraft.util.Mth.hsvToRgb(((x / 100F) + time / 200F) % 1F, 0.6F, 1F));
+        // The notch marks what a harmonic Note costs.
+        guiGraphics.fill(START_X + 30, y + 9, START_X + 31, y + 14, 0xC0FFFFFF);
+        return y + LINE_HEIGHT + 6;
     }
 
     /** Claire Bennet's Regrowth: stored healing from the hits she has taken, and whether Resurrection is ready. */

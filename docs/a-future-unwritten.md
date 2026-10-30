@@ -52,13 +52,10 @@ Reactions have target limits and a short recovery interval. Secondary reaction h
 
 ## Precognition
 
-| Default key | Unlock | Ability | Behavior |
-| --- | --- | --- | --- |
-| G | Level 1 | Premonition | Eight seconds of private outlines and warnings for nearby mobs that have chosen you as their target. Golden lines show their current facing, not unknowable future player input. |
-| H | Level 1 | Paint the Unfinished Hour | Form the annex painting over three seconds. It is a locked vanilla map with custom artwork; it can be shared or placed in an item frame. |
-| Z | Level 2 | Sever Intent | Mark a visible enemy for five seconds. Cross out its next damaging attack against you or a friendly target. The mark is consumed once. |
-| X | Level 3 | Fate Thread | Protect one consenting friendly player, or yourself with Shift, from a lethal outcome for six seconds. A successful intervention leaves one heart and requires immediate follow-up care. The rescued player's thirty-second protection cooldown persists. |
-| V | Level 5 | Convergence | Foretell a point above an aimed surface. Visible hostile projectiles within eight blocks bend toward it and vanish on arrival for six seconds. Friendly projectiles are spared. |
+Precognition was reworked: see [Precognition](precognition.md) for Danger Sense and Clarity,
+Premonition, Paint the Future, Saw It Coming, Fate Thread and The Future Is Written. Awakening
+still paints the Unfinished Hour, and Paint the Future with no one in view paints it again while the
+Annex is unresolved.
 
 The optional Oracle/Red Margin/Shared Fate branches add **Object Reading**, **Red Margin**, and **Omen Relay**. They reveal the operation and nearby villagers, mark three enemies' intentions, or share threat warnings with scoreboard teammates.
 

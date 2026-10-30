@@ -1,0 +1,23 @@
+// Sonic Resonance effects photographed at night in a flat world. Never bundled into the mod JAR.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('sonicPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/sonic-preview')
+                        programArguments.addAll('--width', '1100', '--height', '800')
+                        systemProperty('heroes.preview.sonic', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('sonicPreviewClasses')) }
+        }
+    }
+}

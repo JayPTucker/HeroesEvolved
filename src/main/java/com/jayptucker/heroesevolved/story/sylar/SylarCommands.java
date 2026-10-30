@@ -30,7 +30,8 @@ public final class SylarCommands {
                     var server = context.getSource().getServer(); var data = SylarStoryData.get(server);
                     var trail = data.trail(EntityArgument.getPlayer(context, "player").getUUID());
                     context.getSource().sendSuccess(() -> Component.literal("Sylar: " + (SylarStoryService.hunter() == null ? "absent" : "active")
-                            + "; chapter " + trail.chapter + "/3; attention " + trail.attention + "/12; next encounter in "
+                            + "; chapter " + trail.chapter + "/" + SylarStoryData.MAX_CHAPTER + "; hunts " + trail.hunts + ", you escaped " + trail.escapes
+                            + ", he fled " + trail.fled + "; attention " + trail.attention + "/12; next encounter in "
                             + Math.max(0, (trail.nextEncounter - server.overworld().getGameTime()) / 20) + "s; defeats "
                             + data.defeats() + "; learned " + data.learned()), false); return 1;
                 })));

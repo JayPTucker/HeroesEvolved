@@ -28,13 +28,13 @@ public final class PowerBalanceGameTests {
         com.jayptucker.heroesevolved.progression.PlayerProgressionService.setLevel(p, 5);
         int before = com.jayptucker.heroesevolved.energy.PlayerEnergyService.getEnergy(p);
         var result = com.jayptucker.heroesevolved.ability.service.AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, false);
-        h.assertTrue(result == AbilityUseResult.SUCCESS && before - com.jayptucker.heroesevolved.energy.PlayerEnergyService.getEnergy(p) == 24, "Actual burst must charge adjusted stamina");
+        h.assertTrue(result == AbilityUseResult.SUCCESS && before - com.jayptucker.heroesevolved.energy.PlayerEnergyService.getEnergy(p) == 16, "Resonant Note must charge adjusted stamina");
         try {
             var method = com.jayptucker.heroesevolved.network.PlayerPowerSyncService.class.getDeclaredMethod("toSnapshots", ServerPlayer.class, AbilitySlot.class, AbilityAction.class);
             method.setAccessible(true);
             var snapshots = (java.util.stream.Stream<com.jayptucker.heroesevolved.network.AbilityActionSnapshot>) method.invoke(null, p, AbilitySlot.SECONDARY, ModAbilities.SONIC_RESONANCE.get().actions().get(AbilitySlot.SECONDARY));
             var shown = snapshots.findFirst().orElseThrow();
-            h.assertTrue(shown.energyCost() == 24 && shown.cooldownTicks() == 96, "HUD must show the same adjusted cost and cooldown");
+            h.assertTrue(shown.energyCost() == 16 && shown.cooldownTicks() == 96, "HUD must show the same adjusted cost and cooldown");
         } catch (ReflectiveOperationException e) { throw new AssertionError(e); }
         h.succeed();
     }

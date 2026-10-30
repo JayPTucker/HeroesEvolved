@@ -28,7 +28,10 @@ public final class EvolutionTrials {
             "regeneration", new Trial("Get back up 5 times after being put down", 5),
             "radiation", new Trial("Hold it in: cancel your own Nuclear Detonation 3 times at Critical Core", 3),
             "time_manipulation", new Trial("Undo your own death with Rewrite the Moment", 1),
-            "electrokinesis", new Trial("Unleash 25 Overcharged powers", 25)
+            "electrokinesis", new Trial("Unleash 25 Overcharged powers", 25),
+            "superspeed", new Trial("Run 20 km (20,000 blocks) with Accelerate", 20000),
+            "sonic_resonance", new Trial("Catch 40 enemies in the burst of a Resonant Note", 40),
+            "precognition", new Trial("Change the future 50 times: let foreseen harm miss you or a friend", 50)
     );
 
     private EvolutionTrials() {}
@@ -45,7 +48,10 @@ public final class EvolutionTrials {
     }
 
     /** One step on the player's own power's trial, if {@code power} is theirs. */
-    public static void advance(ServerPlayer player, ResourceLocation power) {
+    public static void advance(ServerPlayer player, ResourceLocation power) { advance(player, power, 1); }
+
+    /** {@code amount} steps on the player's own power's trial, if {@code power} is theirs. */
+    public static void advance(ServerPlayer player, ResourceLocation power, int amount) {
         var assigned = PlayerAbilityService.getData(player).assignedPower();
         if (assigned.isEmpty() || !assigned.get().getKey().equals(power) || !assigned.get().getValue().isUnlocked()) return;
         String path = power.getPath();
@@ -54,8 +60,8 @@ public final class EvolutionTrials {
         Trial trial = trial(path);
         int before = journey.trial(path);
         if (before >= trial.goal()) return;
-        player.setData(ModDataAttachments.POWER_JOURNEY, journey.advance(path, 1));
-        if (before + 1 >= trial.goal())
+        player.setData(ModDataAttachments.POWER_JOURNEY, journey.advance(path, Math.min(amount, trial.goal() - before)));
+        if (before + amount >= trial.goal())
             player.displayClientMessage(Component.literal("Evolved trial complete: " + trial.description() + ".")
                     .withStyle(ChatFormatting.LIGHT_PURPLE), false);
         check(player);

@@ -17,18 +17,32 @@ Abilities rank up with use. Purchases and loadouts persist across death and relo
 All sixteen powers have trees: Quake, Flight, Cryokinesis, Electrokinesis,
 Telekinesis, Telepathy, Regeneration, Time Manipulation, Radiation, Sonic
 Resonance, Superspeed, Precognition, Pyrokinesis, Invisibility, Phasing and
-Empathic Mimicry. Sonic voice attacks use recorded screams, including a positional
-sustained scream that stops when you release its key.
+Empathic Mimicry. Sonic Resonance's cries are original synthesized sound design, including a
+positional sustained scream that stops when you release its key.
 
 See [the skill guide](docs/skill-trees.md) for the original optional skills,
 point costs, prerequisites and loadout controls.
 
-See [Superspeed](docs/superspeed.md) for sprint controls, progression and the Enhanced Speed / Flash-inspired design.
+See [Sylar](docs/sylar.md) for the watchmaker: a slow story told one beat at a time, and a boss
+fight where every power he has taken is a real, telegraphed move. Three phases, a boss bar, and he
+may run when he is losing.
+
+See [Superspeed](docs/superspeed.md) for the reworked speedster, inspired by Daphne Millbrook and the Flash. Momentum crackles,
+buffets and breaks the sound barrier. Blitz chains from enemy to enemy, Snatch takes everything in a
+blink, Cyclone runs rings, and Lightspeed streaks through everything on the line.
 
 See [A Future Unwritten](docs/a-future-unwritten.md) for the first playable expansion:
 135 skill nodes, 45 optional actions, Precognition, shared reactions, prophetic
 paintings, and the repeatable Hourglass Annex rescue operation. Find a cartographer
 or share a prophetic canvas, then open **J** to read and follow the omen.
+
+See [Sonic Resonance](docs/sonic-resonance.md) for the power of Emma Coolidge and Black Canary.
+Sound Sight shows every sound around you as colour, through walls. A Resonant Note lures enemies in
+and bursts on them, a Wall of Sound turns shots back, and Crescendo builds into one wave.
+
+See [Precognition](docs/precognition.md) for Isaac Mendez's reworked power: Danger Sense paints
+foreseen harm in the world, letting it miss earns Clarity, and you can paint an enemy's ending, read
+the next blow, cross out a friend's death, or live two seconds ahead of everyone.
 
 See [Flight](docs/flight.md) for the rebuilt aerial kit and all eighteen purchasable skills: Momentum, Skyburst, Meteor Drop, Skyhook, Tempest, plus the Sky Guard, Jetstream and Stormbreaker builds.
 

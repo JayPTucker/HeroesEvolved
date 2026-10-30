@@ -7,71 +7,93 @@ antagonist: a patient watchmaker with intuitive aptitude, a hunger for abilities
 and acquired telekinesis. He studies people before attacking. The watch cue,
 dialogue, appearance, timers and encounters are original game adaptations.
 
-## Encounter progression
+## The story, one beat at a time
 
-An awakened Survival or Adventure player in the Overworld becomes eligible.
-The first hint has at least five minutes of grace plus up to two minutes of
-random delay. It is private chat and a faint mechanical ticking sound. It
-does not immediately create an attacker. Early sightings are separated by at
-least three minutes plus up to two minutes of jitter.
+Sylar is a slow ladder per player. Each beat waits for the last, so the story never piles up:
 
-The next encounters reveal a dark-coated human watching from roughly forty to
-sixty-four blocks away. He watches the player's movements, faces them, and
-withdraws when they approach or stare back for three seconds. The director keeps
-only twelve recent route points per online player and can place him near a
-previous part of that trail. A quiet footstep can come from a recently passed
-position. Successful power use raises his interest in that player. Repeated
-failed inputs and cooldown presses do not raise it.
+| Chapter | Beat | Next beat after |
+| --- | --- | --- |
+| 0 → 1 | **The ticking.** A private line and a faint watch, five minutes or more after you awaken. | 10 to 14 minutes |
+| 1 → 2 | **A man watching** from 40 to 64 blocks away. He withdraws if you approach or stare back. | 10 to 14 minutes |
+| 2 → 3 | **He speaks.** The same distant sighting, but this time he says something. The Journal names him: Gabriel Gray, who calls himself Sylar. | 25 to 30 minutes |
+| 3 → 4 | **The hunt.** He watches for six seconds, then attacks. | 25 to 30 minutes |
+| 4 → 5 | **Nemesis.** After three fights he opens by remembering how you fight. | 25 to 30 minutes |
 
-After the introductory warning and two sightings, an encounter can become a
-hunt. He watches for six seconds and gives another chat warning before attacking.
-An encounter ends when the quarry escapes beyond 112 blocks or survives the
-150-second hunt. Escaping gives at least ten minutes before another encounter.
-Characters who have remained still for over a minute do not start new natural
-encounters. Creative, Spectator, unassigned, dormant, sleeping, dead and protected
-intro players are not quarry. Peaceful difficulty, Eclipse suppression, the
-future-city sequence and Temporal Snapshot dimensions prevent hunting.
+A player who keeps using their powers draws him up to a fifth sooner. The pauses come from
+`sightingIntervalSeconds` (default 600) and `huntIntervalSeconds` (default 1500) in the `sylar`
+config section, plus up to four or five minutes of random delay.
 
-There is one active hunter globally, not one per player. Surface placement uses
-at most twelve candidate columns, checks existing chunk availability, safe
-footing, fluids, world borders, body collisions and the initial sightline.
-Candidates in the player's central view are rejected so he can be discovered
-when the player turns, rather than materializing directly under the crosshair.
-It postpones a sighting if no safe spot exists, including underground or enclosed
-areas. It does not force chunks or break the player's base to reach them.
+How a hunt ends sets what happens next:
 
-## Combat and acquisition
+| Outcome | What happens |
+| --- | --- |
+| **You get away** (beyond 112 blocks, or survive 150 seconds) | Counts as a hunt survived. Next time he says so. |
+| **He flees** | No reprieve. He comes back sooner, and he remembers who did it. |
+| **You defeat him** | The whole world gets an **hour** of quiet. |
 
-Sylar has sixty health, light armor and telekinesis. He is mortal from the first
-sighting. His acquisition hold starts only after four seconds of combat, within
-seven blocks and with clear line of sight. A raised hand, a psychic tether,
-ticking, mild Slowness and a private warning telegraph the six-second channel.
+**His voice is paced.** Everything he says, and every line of narration about him, goes through
+one queue per player, at least eight seconds apart; narration gives way to speech when it fills up.
+Warnings you must act on right now go straight to the action bar: the hold, the pin, and his escape.
 
-Hitting him interrupts the channel and gives three seconds of recovery. Moving
-out of range, putting a wall between you, or a telepath's successful suggestion
-can also interrupt it. It never locks player controls or teleports the victim.
-Cryokinesis and Time Stop pause his actual entity ticks and channel progress;
-thawing or resuming time does not cause an instant catch-up hit. Allies can
-damage him to rescue someone.
+He has a line for every power: "Lightning in your hands. I could feel it from across the field." He
+also speaks when the fight changes phase, when he uses your own power against you, when he takes a
+power, when he gets back up, when he flees, and when he falls.
 
-A completed channel must actually deal damage before it can grant knowledge.
-It deals eight health before ordinary reductions. Intuitive aptitude copies
-rather than transferring a player's assignment: a surviving victim keeps their
-ability, progress, and exclusive saved ownership. Sylar's learned knowledge lives
-in a separate NPC story record and persists between encounters and restarts.
+## The fight
 
-Learned abilities produce NPC combat variants: electric arcs, ice attacks,
-shockwaves, searing heat, brief temporal slowing, psychic pressure, regeneration
-and short ascending pursuit. These are adaptations of this mod's roster, not a
-claim that canon Sylar possessed every one of these powers. He cannot trigger
-a player awakening, city-wide nuclear detonation, or rewrite player roles.
-Learning Radiation warns players who know the visions: another person now
-understands the glowing man's heat. The future can still change.
+When he hunts, he is a boss. A **boss bar** shows his health to everyone within 48 blocks. His
+health is 80, plus 12 for every power he has taken (up to 240). He fights in three phases:
 
-Defeating the actual NPC grants a saved thirty-minute world-wide reprieve.
-The encounter entity itself is temporary and is not saved into unloaded chunks;
-quarry logout, death, loss of eligibility, dimension changes and server shutdown
-clean it up. Saved chapters and acquired knowledge remain.
+| Phase | Health | How he fights |
+| --- | --- | --- |
+| **The Watchmaker** (purple) | above half | Measured: a move every two and a half seconds |
+| **Hunger** (red) | below half | Faster, about every second and a half, and a quarter harder |
+| **Unfinished** (white) | below a fifth | Faster still and harder again. If he knows an escape power (Invisibility, Phasing, Superspeed, Time or Flight), he says he will run and does, four seconds later, unless you finish him first. |
+
+Each phase change throws everyone back with a telekinetic shove.
+
+### What he does with what he takes
+
+Every move has a **windup you can read**: a pose (one hand, both hands, arms raised, crouched), a
+telegraph in that power's colours, and a sound. A hit of 5 or more during the windup breaks it.
+
+| Power | Move | Windup | What it does |
+| --- | --- | --- | --- |
+| Telekinesis (always) | Throw | 0.7 s | Lifts and flings you |
+| Telekinesis (always) | **Pin** | 0.5 s | Holds you just off the ground for 2.5 s while he walks up. Hit him to break it. |
+| Electrokinesis | Chain Lightning | 0.6 s | Bolt from his hand, leaping to two more |
+| Electrokinesis | Thunderstrike | 1.5 s | Lands where you stood when he raised his hand; step out of the mark |
+| Cryokinesis | Ice Lance | 0.5 s | Freezes you briefly |
+| Cryokinesis | Cold Snap | 0.8 s | Everything around him slowed and frosted |
+| Pyrokinesis | Fire Stream | 0.5 s | A cone of flame |
+| Radiation | Radiant Heat | 0.9 s | A cone of heat that withers and burns |
+| Quake | Ground Pound | 1.0 s | A shockwave ring that throws everyone up |
+| Superspeed | Blitz | 0.3 s | Rushes you with a flurry |
+| Time Manipulation | Fold | 0.5 s | Appears behind you |
+| Time Manipulation | Slow | 0.6 s | Slows you heavily |
+| Sonic Resonance | Scream | 0.5 s | A cone that shoves |
+| Flight | Dive | 1.0 s | Rises, then slams down on you |
+| Telepathy | Dominate | 0.7 s | Darkness and nausea; nearby monsters turn on you |
+| Invisibility | Vanish | 2.0 s | Gone, then a strike from behind |
+| Phasing | Phase Strike | 0.4 s | A hand through your armour |
+
+He favours what he took from **you**: "Recognise it? Your power. My hands."
+
+### His passive gifts
+
+- **Telekinesis:** shots aimed at him while he is not busy turn aside.
+- **Precognition:** he sidesteps a shot, and sometimes a blow, at most once every four seconds.
+- **Regeneration:** he heals slowly. The first killing blow in a fight puts him down for five
+  seconds instead, then he rises at two-fifths of his health.
+- **Phasing:** a wall between you does not stop him for long. He walks out of it near you.
+- **Empathic Mimicry:** he borrows your power for the fight, even one he has never taken.
+- **Flight:** he rises after you.
+
+### Taking your power
+
+His acquisition hold is unchanged. After four seconds of fighting within seven blocks and in sight,
+a six-second channel begins. Hurt him, break his sightline, or get away to stop it. A finished
+channel deals 8 and copies (never takes) your power.
 
 ## Telepathy and the existing visions
 
@@ -90,7 +112,8 @@ Gray, his watchmaker identity, and why he must not learn the glowing man's heat.
 ## Configuration and previews
 
 The common configuration's `sylar` section provides `enabled`,
-`canAcquirePowers`, `firstEncounterSeconds` and `encounterIntervalSeconds`.
+`canAcquirePowers`, `firstEncounterSeconds`, `sightingIntervalSeconds` and `huntIntervalSeconds`.
+The old `encounterIntervalSeconds` key is ignored.
 Disabling acquisition leaves the stalking and combat story in place.
 
 Operators can use these commands with an eligible awakened player:

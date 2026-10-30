@@ -38,7 +38,7 @@ public final class HeroesEvolvedConfig {
     public static final class Common {
         public final ModConfigSpec.BooleanValue sylarEnabled, sylarCanAcquirePowers;
         public final ModConfigSpec.BooleanValue bunkerEnabled;
-        public final ModConfigSpec.IntValue sylarFirstEncounterSeconds, sylarEncounterIntervalSeconds;
+        public final ModConfigSpec.IntValue sylarFirstEncounterSeconds, sylarSightingIntervalSeconds, sylarHuntIntervalSeconds;
         public final ModConfigSpec.IntValue maximumLevel;
         public final ModConfigSpec.LongValue baseMasteryPerLevel;
         public final ModConfigSpec.LongValue masteryIncreasePerLevel;
@@ -235,8 +235,10 @@ public final class HeroesEvolvedConfig {
                     .define("canAcquirePowers", true);
             sylarFirstEncounterSeconds = builder.comment("Minimum grace after an awakened player becomes eligible, before the first ominous hint.")
                     .defineInRange("firstEncounterSeconds", 300, 60, 86400);
-            sylarEncounterIntervalSeconds = builder.comment("Minimum pause between early story sightings; random delay is added. Escapes grant ten minutes.")
-                    .defineInRange("encounterIntervalSeconds", 180, 60, 86400);
+            sylarSightingIntervalSeconds = builder.comment("Minimum pause between the early story beats (the ticking, the sightings, his first words); up to four minutes of random delay is added.")
+                    .defineInRange("sightingIntervalSeconds", 600, 60, 86400);
+            sylarHuntIntervalSeconds = builder.comment("Minimum pause between hunts once he has started hunting a player; up to five minutes of random delay is added. Defeating him gives the whole world an hour.")
+                    .defineInRange("huntIntervalSeconds", 1500, 120, 86400);
             builder.pop();
             builder.push("progression");
 

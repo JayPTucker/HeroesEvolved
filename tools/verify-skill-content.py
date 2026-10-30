@@ -55,11 +55,12 @@ for name in ("sonic_cry", "sonic_burst", "sonic_scream"):
     assert channels == 1 and sample_rate == 48000, "Positional voices must be mono"
     duration = last_sample / sample_rate
     if name == "sonic_scream":
-        assert 5.5 <= duration <= 6.5, "The held cry must be one continuous recording covering the five-second channel"
+        assert 5.5 <= duration <= 6.5, "The held cry must be one continuous sound covering the five-second channel"
     else:
         assert 0.5 <= duration <= 2.5
     print(f"PASS: {name}: mono Vorbis, {duration:.2f}s, {len(data):,} bytes")
-assert (assets / "sounds/ability/sonic_credits.txt").is_file()
+credits = (assets / "sounds/ability/sonic_credits.txt").read_text(encoding="utf-8")
+assert "No recordings" in credits and "generate-sonic-audio.py" in credits, "Sonic sounds must be the original synthesized set"
 
 # Every skill lookup in the code must name a node that exists, or buying that node silently does nothing.
 import re

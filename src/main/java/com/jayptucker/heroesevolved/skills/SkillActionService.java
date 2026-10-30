@@ -111,7 +111,7 @@ public final class SkillActionService {
                 }
                 visual(p, target, Kind.REGENERATION, 3);
             }
-            case "precognition" -> { return com.jayptucker.heroesevolved.expansion.PrecognitionService.skill(c, branch); }
+            case "precognition" -> { return com.jayptucker.heroesevolved.precog.PrecognitionService.skill(c, branch); }
             case "superspeed" -> { return com.jayptucker.heroesevolved.speed.SpeedService.skill(c, branch); }
             case "pyrokinesis" -> { return com.jayptucker.heroesevolved.pyro.PyroService.skill(c, branch); }
             case "invisibility" -> { return com.jayptucker.heroesevolved.invisibility.InvisibilityService.skill(c, branch); }

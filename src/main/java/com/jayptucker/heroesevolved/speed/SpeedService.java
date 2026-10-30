@@ -31,27 +31,36 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import java.util.*;
 
-/** Native, synced movement attributes for running; bounded swept paths for burst actions. */
+/**
+ * Superspeed's running, after Daphne Millbrook ("when I run, the world stops") with the Flash's
+ * golden lightning. Native, synced movement attributes for running; bounded swept paths for bursts.
+ *
+ * <p>Running builds <b>Momentum</b> (0 to 100). At 50 the body crackles with lightning, at 60 you
+ * buffet whatever you run past, and at 100 you break the sound barrier. Momentum powers Blitz and
+ * Lightspeed (see {@link SpeedKit}) and the charged strike.</p>
+ */
 public final class SpeedService {
+    /** Momentum at which the body crackles, enemies you pass are buffeted, and the sound barrier breaks. */
+    public static final int AURA_MOMENTUM = 50, BUFFET_MOMENTUM = 60, BARRIER_MOMENTUM = 100;
+    private static final Map<UUID, Long> BUFFETED = new HashMap<>();
     public static final ResourceLocation STRIDE = ResourceLocation.fromNamespaceAndPath("heroesevolved", "speed_stride");
     public static final ResourceLocation ACCELERATING = ResourceLocation.fromNamespaceAndPath("heroesevolved", "speed_accelerating");
     public static final ResourceLocation WATER_RUN = ResourceLocation.fromNamespaceAndPath("heroesevolved", "speed_water_run");
     private static final ResourceLocation STEP = ResourceLocation.fromNamespaceAndPath("heroesevolved", "speed_step");
     private static final Map<UUID, Runner> RUNNERS = new HashMap<>();
     private static final Map<UUID, Flurry> FLURRIES = new HashMap<>();
-    private static final Map<UUID, Vortex> VORTICES = new HashMap<>();
     private static final Map<UUID, Long> REFLEX = new HashMap<>(), DODGED = new HashMap<>();
     private static final class Runner {
         final ServerPlayer player;
         final Level level;
         Vec3 previous, trailPrevious;
         long lastMoving = Long.MIN_VALUE, redlineUntil;
-        int activeTicks, wallTicks, momentum;
-        double modifier = -1;
+        int activeTicks, wallTicks, momentum, sentMomentum = -1;
+        boolean barrier;
+        double modifier = -1, distanceBank;
         Runner(ServerPlayer p) { player = p; level = p.level(); previous = p.position(); trailPrevious = previous; }
     }
     private record Flurry(ServerPlayer player, LivingEntity target, int damage, long start) {}
-    private record Vortex(ServerPlayer player, Vec3 center, Level level, long until) {}
     private SpeedService() {}
     private static long now(ServerPlayer p) { return p.getServer().overworld().getGameTime(); }
     public static boolean awakened(ServerPlayer p) {
@@ -67,6 +76,7 @@ public final class SpeedService {
     }
     public static boolean stop(ServerPlayer p) {
         boolean active = RUNNERS.remove(p.getUUID()) != null;
+        if (active) com.jayptucker.heroesevolved.network.MomentumPayload.send(p, 0);
         removeModifiers(p);
         syncMarker(p, ACCELERATING, false); syncMarker(p, WATER_RUN, false);
         return active;
@@ -88,7 +98,7 @@ public final class SpeedService {
                 && now(p) - r.lastMoving <= 2 && awakened(p) && !CryoService.isFrozen(p)
                 && !EclipseService.arePowersSuppressed(p);
     }
-    private static boolean canHit(ServerPlayer p, LivingEntity t) {
+    static boolean canHit(ServerPlayer p, LivingEntity t) {
         return t != p && t.isAlive() && !t.isSpectator() && !p.isAlliedTo(t)
                 && !(t instanceof com.jayptucker.heroesevolved.entity.TemporalEchoEntity)
                 && (!(t instanceof ServerPlayer other) || p.getServer().isPvpAllowed() && p.canHarmPlayer(other));
@@ -105,18 +115,15 @@ public final class SpeedService {
         }
         FLURRIES.put(p.getUUID(), new Flurry(p, t, 2 + level / 2, now(p))); cue(p); return true;
     }
-    public static boolean hasWhirlwind(ServerPlayer p) { return VORTICES.containsKey(p.getUUID()); }
-    public static boolean whirlwind(ServerPlayer p) {
-        VORTICES.put(p.getUUID(), new Vortex(p, p.position(), p.level(), now(p) + 100));
-        AbilityEffects.at(p, Kind.SPEED_VORTEX, 6); cue(p); return true;
-    }
+    /** Cyclone is the whirlwind now. */
+    public static boolean hasWhirlwind(ServerPlayer p) { return SpeedKit.cycloning(p); }
     public static boolean dash(ServerPlayer p, int level) {
         Vec3 direction = horizontal(p.getLookAngle());
         Vec3 destination = swept(p, direction.scale(10 + level * 4));
         if (destination.distanceToSqr(p.position()) < 1) return false;
         move(p, destination); return true;
     }
-    private static Vec3 horizontal(Vec3 direction) { return new Vec3(direction.x, 0, direction.z).normalize(); }
+    static Vec3 horizontal(Vec3 direction) { return new Vec3(direction.x, 0, direction.z).normalize(); }
     /** Quarter-block steps check the entire body's path, not just the final block. */
     public static Vec3 swept(Entity entity, Vec3 displacement) {
         double distance = Math.min(40, displacement.length());
@@ -137,7 +144,7 @@ public final class SpeedService {
             if (!level.hasChunkAt(pos) || level.getFluidState(pos).is(FluidTags.LAVA) || level.getBlockState(pos).is(net.minecraft.tags.BlockTags.FIRE)) return false;
         return level.noCollision(e, box);
     }
-    private static void move(Entity entity, Vec3 point) {
+    static void move(Entity entity, Vec3 point) {
         Vec3 from = entity.position();
         if (entity instanceof ServerPlayer p) p.teleportTo(p.serverLevel(), point.x, point.y, point.z, p.getYRot(), p.getXRot());
         else entity.teleportTo(point.x, point.y, point.z);
@@ -171,7 +178,7 @@ public final class SpeedService {
             Vec3 destination = swept(p, difference.scale(Math.max(0, difference.length() - 1.6) / Math.max(.01, difference.length())));
             if (destination.distanceToSqr(t.position()) > 9) return false;
             move(p, destination);
-            if (canHit(p, t)) t.hurt(p.damageSources().playerAttack(p), 6 + c.abilityLevel());
+            if (canHit(p, t)) hit(p, t, 6 + c.abilityLevel());
             AbilityEffects.send(p.serverLevel(), Kind.SPEED_IMPACT, p.getEyePosition(), t.getEyePosition(), 2);
             return true;
         }
@@ -212,30 +219,12 @@ public final class SpeedService {
             }
             if (age % 2 == 0) {
                 f.target.invulnerableTime = 0;
-                f.target.hurt(f.player.damageSources().playerAttack(f.player), f.damage * (f.target instanceof ServerPlayer ? .6F : 1));
+                hit(f.player, f.target, f.damage * (f.target instanceof ServerPlayer ? .6F : 1));
                 AbilityEffects.send(f.player.serverLevel(), Kind.SPEED_IMPACT, f.player.getEyePosition(), f.target.getEyePosition(), 1);
             }
         }
-        for (Vortex v : List.copyOf(VORTICES.values())) {
-            if (now >= v.until || v.level != v.player.level() || !awakened(v.player) || !PowerRules.canAct(v.player)
-                    || v.player.position().distanceToSqr(v.center) > 64) { VORTICES.remove(v.player.getUUID()); continue; }
-            if (now % 5 != 0) continue;
-            int count = 0;
-            for (Entity e : v.player.serverLevel().getEntities(v.player, new net.minecraft.world.phys.AABB(v.center, v.center).inflate(6),
-                    e -> e instanceof Projectile || e instanceof LivingEntity l && canHit(v.player, l))) {
-                if (e.position().distanceToSqr(v.center) > 36 || !v.player.hasLineOfSight(e)) continue;
-                if (e instanceof Projectile shot && (shot.getOwner() == v.player || shot.getOwner() != null && v.player.isAlliedTo(shot.getOwner()))) continue;
-                if (++count > 32) break;
-                Vec3 radial = horizontal(e.position().subtract(v.center));
-                Vec3 motion = e instanceof Projectile ? radial.scale(1.2).add(0, .1, 0)
-                        : new Vec3(-radial.z, .12, radial.x).scale(.5).add(radial.scale(-.12));
-                if (now % 20 == 0 && e instanceof LivingEntity living)
-                    living.hurt(v.player.damageSources().playerAttack(v.player), living instanceof ServerPlayer ? 1 : 2);
-                e.setDeltaMovement(motion); e.hurtMarked = true;
-                if (e instanceof ServerPlayer other) other.connection.send(new ClientboundSetEntityMotionPacket(other));
-            }
-            if (now % 10 == 0) AbilityEffects.send(v.player.serverLevel(), Kind.SPEED_VORTEX, v.center, v.center.add(0, 2, 0), 6);
-        }
+        SpeedKit.tick(server, now);
+        BUFFETED.values().removeIf(until -> until <= now);
         REFLEX.values().removeIf(until -> until <= now); DODGED.values().removeIf(until -> until <= now);
     }
     public static void tickRunner(ServerPlayer p) {
@@ -249,6 +238,8 @@ public final class SpeedService {
         boolean redline = now(p) < r.redlineUntil;
         if (running && distance > .01 && distance < 64) r.momentum = Math.min(100, r.momentum + 3);
         else r.momentum = Math.max(0, r.momentum - 6);
+        if (running && distance > .01 && distance < 64) runFeats(p, r, Math.sqrt(distance));
+        syncMomentum(p, r);
         // Quantize the modifier to avoid sending attribute packets for every tiny charge change.
         double amount = running ? 2 + level + (r.momentum / 25) * .5 + (redline ? 3 : 0) : 0;
         if (r.modifier != amount) {
@@ -276,9 +267,51 @@ public final class SpeedService {
             p.setDeltaMovement(p.getDeltaMovement().x, .32, p.getDeltaMovement().z);
             p.connection.send(new ClientboundSetEntityMotionPacket(p));
         } else if (p.onGround() && !p.horizontalCollision) r.wallTicks = 0;
-        if (now(p) % 20 == 0 && running) p.displayClientMessage(Component.translatable(redline ? "speed.heroesevolved.redline" : "speed.heroesevolved.running", level, r.momentum), true);
         r.previous = p.position();
     }
+    /** What fast running does on its own: lightning on the body, buffeted bystanders, the sound barrier, the trial. */
+    private static void runFeats(ServerPlayer p, Runner r, double step) {
+        long now = now(p);
+        ServerLevel level = p.serverLevel();
+        if (r.momentum >= AURA_MOMENTUM && now % 3 == 0)
+            AbilityEffects.send(level, Kind.SPEED_AURA, p.position(), p.position().add(p.getDeltaMovement()), r.momentum / 100F);
+        if (r.momentum >= BUFFET_MOMENTUM) {
+            Vec3 heading = horizontal(p.position().subtract(r.previous));
+            for (LivingEntity t : level.getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(1.4), t -> canHit(p, t))) {
+                if (BUFFETED.getOrDefault(t.getUUID(), 0L) > now) continue;
+                BUFFETED.put(t.getUUID(), now + 20);
+                Vec3 away = t.position().subtract(p.position());
+                Vec3 side = new Vec3(-heading.z, 0, heading.x);
+                if (side.dot(away) < 0) side = side.reverse();
+                hit(p, t, t instanceof ServerPlayer ? 1 : 2);
+                t.setDeltaMovement(side.scale(0.9).add(heading.scale(0.4)).add(0, 0.3, 0)); t.hurtMarked = true;
+                if (t instanceof ServerPlayer other) other.connection.send(new ClientboundSetEntityMotionPacket(other));
+                AbilityEffects.send(level, Kind.SPEED_IMPACT, p.getEyePosition(), t.getEyePosition(), 0.8);
+            }
+        }
+        if (r.momentum >= BARRIER_MOMENTUM && !r.barrier) {
+            r.barrier = true;
+            Vec3 heading = horizontal(p.position().subtract(r.previous));
+            AbilityEffects.send(level, Kind.SPEED_BOOM, p.position().add(0, 1, 0), p.position().add(0, 1, 0).add(heading), 1.5);
+            level.playSound(null, p.blockPosition(), SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 0.5F, 1.6F);
+            level.playSound(null, p.blockPosition(), SoundEvents.FIREWORK_ROCKET_LARGE_BLAST, SoundSource.PLAYERS, 0.8F, 0.6F);
+        } else if (r.momentum < 70) r.barrier = false;
+        // Distance toward the Evolved trial, banked so the trial is not touched every tick.
+        r.distanceBank += step;
+        if (r.distanceBank >= 20) {
+            int banked = (int) r.distanceBank;
+            r.distanceBank -= banked;
+            com.jayptucker.heroesevolved.progression.EvolutionTrials.advance(p, ModAbilities.SUPERSPEED_ID, banked);
+        }
+    }
+
+    private static void syncMomentum(ServerPlayer p, Runner r) {
+        if (r.sentMomentum >= 0 && Math.abs(r.momentum - r.sentMomentum) < 4 && r.momentum != 0 && r.momentum != 100) return;
+        if (r.momentum == r.sentMomentum) return;
+        r.sentMomentum = r.momentum;
+        com.jayptucker.heroesevolved.network.MomentumPayload.send(p, r.momentum);
+    }
+
     public static int momentum(ServerPlayer p) { Runner r = RUNNERS.get(p.getUUID()); return r == null ? 0 : r.momentum; }
     /** Spends all Momentum if at least {@code minimum} is banked; returns the amount spent, or 0. */
     public static int spendMomentum(ServerPlayer p, int minimum) {
@@ -288,6 +321,26 @@ public final class SpeedService {
         r.momentum = 0;
         return spent;
     }
+    private static boolean powerHit;
+
+    /** True while one of Superspeed's own abilities is dealing damage: the charged punch is for real punches only. */
+    public static boolean inPowerHit() { return powerHit; }
+
+    /** Damage dealt by a Superspeed ability (not a punch). */
+    public static boolean hit(ServerPlayer p, LivingEntity target, float amount) {
+        powerHit = true;
+        try { return target.hurt(p.damageSources().playerAttack(p), amount); }
+        finally { powerHit = false; }
+    }
+
+    /** Spends exactly {@code amount} Momentum if there is that much; true if it was spent. */
+    public static boolean drainMomentum(ServerPlayer p, int amount) {
+        Runner r = RUNNERS.get(p.getUUID());
+        if (r == null || r.momentum < amount) return false;
+        r.momentum -= amount;
+        return true;
+    }
+
     public static float consumeImpact(ServerPlayer p, boolean pvp) {
         Runner r = RUNNERS.get(p.getUUID());
         if (r == null || r.momentum < 50 || !PowerRules.canAct(p)) return 0;
@@ -306,7 +359,10 @@ public final class SpeedService {
             attribute.addTransientModifier(new AttributeModifier(id, 0, AttributeModifier.Operation.ADD_VALUE));
         else if (!enabled) attribute.removeModifier(id);
     }
-    public static void forget(ServerPlayer p) { stop(p); FLURRIES.remove(p.getUUID()); VORTICES.remove(p.getUUID()); REFLEX.remove(p.getUUID()); DODGED.remove(p.getUUID()); }
-    public static void clear() { for (Runner r : List.copyOf(RUNNERS.values())) stop(r.player); FLURRIES.clear(); VORTICES.clear(); REFLEX.clear(); DODGED.clear(); }
+    public static void forget(ServerPlayer p) {
+        stop(p); FLURRIES.remove(p.getUUID()); REFLEX.remove(p.getUUID()); DODGED.remove(p.getUUID()); SpeedKit.forget(p);
+        com.jayptucker.heroesevolved.network.MomentumPayload.send(p, 0);
+    }
+    public static void clear() { for (Runner r : List.copyOf(RUNNERS.values())) stop(r.player); FLURRIES.clear(); REFLEX.clear(); DODGED.clear(); BUFFETED.clear(); SpeedKit.clear(); }
     private static void cue(ServerPlayer p) { p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, .7F, 1.4F); }
 }

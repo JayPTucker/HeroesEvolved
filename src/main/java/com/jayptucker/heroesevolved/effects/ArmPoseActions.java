@@ -16,11 +16,8 @@ public final class ArmPoseActions {
     }
 
     private static final Map<String, Pose> POSES = Map.ofEntries(
-            Map.entry("sonic_cry", new Pose(ArmPose.ARMS_WIDE, 14)),
-            Map.entry("sonic_burst", new Pose(ArmPose.ARMS_WIDE, 16)),
-            Map.entry("sonic_echo_sense", new Pose(ArmPose.TEMPLE, 16)),
+            // Canary Cry is only a scream: no arms.
             Map.entry("sonic_vault", new Pose(ArmPose.TWO_HANDS, 12)),
-            Map.entry("sonic_scream", new Pose(ArmPose.ARMS_WIDE, 100)),
 
             Map.entry("time_blink", new Pose(ArmPose.ONE_HAND, 6)),
             Map.entry("time_slow", new Pose(ArmPose.TEMPLE, 20)),

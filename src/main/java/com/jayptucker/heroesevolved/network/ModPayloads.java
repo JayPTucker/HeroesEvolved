@@ -17,13 +17,16 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("38")
+        event.registrar("41")
             .playToServer(com.jayptucker.heroesevolved.expansion.IncidentActionPayload.TYPE, com.jayptucker.heroesevolved.expansion.IncidentActionPayload.STREAM_CODEC, com.jayptucker.heroesevolved.expansion.IncidentActionPayload::handle)
             .playToServer(JournalRequestPayload.TYPE, JournalRequestPayload.STREAM_CODEC, JournalRequestPayload::handle)
             .playToClient(StoryJournalPayload.TYPE, StoryJournalPayload.STREAM_CODEC, StoryJournalPayload::handle)
             .playToClient(SonicVoicePayload.TYPE, SonicVoicePayload.STREAM_CODEC, SonicVoicePayload::handle)
             .playToClient(UnseenPayload.TYPE, UnseenPayload.STREAM_CODEC, UnseenPayload::handle)
             .playToClient(RegenerationStatePayload.TYPE, RegenerationStatePayload.STREAM_CODEC, RegenerationStatePayload::handle)
+            .playToClient(ClarityPayload.TYPE, ClarityPayload.STREAM_CODEC, ClarityPayload::handle)
+            .playToClient(ResonancePayload.TYPE, ResonancePayload.STREAM_CODEC, ResonancePayload::handle)
+            .playToClient(MomentumPayload.TYPE, MomentumPayload.STREAM_CODEC, MomentumPayload::handle)
             .playToClient(BodyStatePayload.TYPE, BodyStatePayload.STREAM_CODEC, BodyStatePayload::handle)
             .playToClient(TimeGhostPayload.TYPE, TimeGhostPayload.STREAM_CODEC, TimeGhostPayload::handle)
             .playToClient(LoadoutPayload.TYPE, LoadoutPayload.STREAM_CODEC, LoadoutPayload::handle)

@@ -1,6 +1,7 @@
 package com.jayptucker.heroesevolved.uitest;
 
 import com.jayptucker.heroesevolved.expansion.*;
+import com.jayptucker.heroesevolved.precog.PrecognitionService;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -75,7 +76,7 @@ public final class UnwrittenWorldPreview {
                     var power = com.jayptucker.heroesevolved.ability.registry.ModAbilities.PRECOGNITION_ID;
                     p.setData(com.jayptucker.heroesevolved.data.ModDataAttachments.PLAYER_ABILITIES, com.jayptucker.heroesevolved.ability.data.PlayerAbilityData.empty().assignDormant(power).unlock(power));
                     p.setGameMode(GameType.SURVIVAL); p.setShiftKeyDown(true); p.setHealth(3);
-                    if (!PrecognitionService.activate(new com.jayptucker.heroesevolved.ability.AbilityUseContext(p, power, 5, false), 3)) throw new AssertionError("Fate failed to arm");
+                    if (!PrecognitionService.fateThread(p)) throw new AssertionError("Fate failed to arm");
                     p.hurt(p.damageSources().generic(), 100);
                     if (!p.isAlive() || p.getHealth() != 2) throw new AssertionError("Actual ServerPlayer self rescue failed: health=" + p.getHealth() + ", alive=" + p.isAlive());
                     System.out.println("UNWRITTEN_FATE_SELF_RESCUED");

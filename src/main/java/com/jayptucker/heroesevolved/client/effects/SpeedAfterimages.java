@@ -71,11 +71,44 @@ public final class SpeedAfterimages {
             if (previous == null || now % interval != 0 || attribute == null || !attribute.hasModifier(SpeedService.STRIDE)
                     || p.isInvisible() || p.isSpectator() || !p.isAlive() || p.isPassenger()
                     || p.position().distanceToSqr(previous) < .025 || p.position().distanceToSqr(previous) > 64) continue;
-            capture(p, now);
+            capture(p, now, p.position(), p.yBodyRot);
         }
         PREVIOUS.keySet().retainAll(seen);
     }
-    private static void capture(AbstractClientPlayer p, long now) {
+    /** The runner nearest {@code near} (within three blocks), if any. */
+    private static AbstractClientPlayer runnerNear(Vec3 near) {
+        if (world == null) return null;
+        AbstractClientPlayer best = null;
+        double bestDistance = 9;
+        for (AbstractClientPlayer p : world.players()) {
+            double d = p.position().distanceToSqr(near);
+            if (d < bestDistance && !p.isInvisible() && !p.isSpectator()) { best = p; bestDistance = d; }
+        }
+        return best;
+    }
+
+    /** Afterimages strung along a burst of movement (or one, held in place, when {@code from} equals {@code to}). */
+    public static void along(Vec3 from, Vec3 to, int count) {
+        AbstractClientPlayer p = runnerNear(to);
+        if (p == null || world == null) return;
+        Vec3 delta = to.subtract(from);
+        float yaw = delta.horizontalDistanceSqr() < 1.0E-4 ? p.yBodyRot : (float) (Mth.atan2(delta.z, delta.x) * Mth.RAD_TO_DEG) - 90;
+        for (int i = 0; i < count; i++) capture(p, world.getGameTime(), count == 1 ? from : from.lerp(to, i / (double) count), yaw);
+    }
+
+    /** Afterimages of the runner spaced around a ring, each facing along it, as if caught mid-lap. */
+    public static void ring(Vec3 center, double radius, int count, double phase) {
+        AbstractClientPlayer p = runnerNear(center);
+        if (p == null || world == null) return;
+        for (int i = 0; i < count; i++) {
+            double angle = phase + i * Math.PI * 2 / count;
+            Vec3 at = center.add(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+            float yaw = (float) Math.toDegrees(angle);
+            capture(p, world.getGameTime(), at, yaw);
+        }
+    }
+
+    private static void capture(AbstractClientPlayer p, long now, Vec3 position, float yaw) {
         boolean narrow = p.getSkin().model() == PlayerSkin.Model.SLIM;
         var m = model(narrow);
         m.young = false; m.riding = false; m.crouching = p.isCrouching(); m.attackTime = 0; m.swimAmount = 0;
@@ -87,7 +120,7 @@ public final class SpeedAfterimages {
         int clothes = 0;
         for (PlayerModelPart part : PlayerModelPart.values()) if (p.isModelPartShown(part)) clothes |= part.getMask();
         while (GHOSTS.size() >= MAX_GHOSTS) GHOSTS.removeFirst();
-        GHOSTS.addLast(new Ghost(p.getUUID(), p.position(), p.yBodyRot, p.getSkin().texture(), narrow, poses, clothes, now));
+        GHOSTS.addLast(new Ghost(p.getUUID(), position, yaw, p.getSkin().texture(), narrow, poses, clothes, now));
     }
     public static void draw(PlayerModel<?> model, PoseStack pose, MultiBufferSource source, ResourceLocation skin, float alpha) {
         model.renderToBuffer(pose, source.getBuffer(RenderType.entityTranslucent(skin)), 0xF000F0,
@@ -106,6 +139,10 @@ public final class SpeedAfterimages {
             // Do not put the local player's newest ghost directly across the first-person camera.
             if (mc.options.getCameraType().isFirstPerson() && mc.player != null && g.player.equals(mc.player.getUUID())
                     && g.position.distanceToSqr(mc.player.position()) < 1) continue;
+            // A ghost on top of the camera (trailing a runner seen from behind) would only fill the view.
+            boolean own = mc.player != null && g.player.equals(mc.player.getUUID());
+            double clearance = own ? 3.4 : 1.8;
+            if (g.position.add(0, 1, 0).distanceToSqr(camera) < clearance * clearance) continue;
             float alpha = opacity(world.getGameTime() - g.born + fraction);
             if (alpha <= 0) continue;
             var m = model(g.slim); var parts = parts(m);

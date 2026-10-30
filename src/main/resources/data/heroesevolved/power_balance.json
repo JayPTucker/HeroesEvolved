@@ -151,31 +151,31 @@
   },
   {
     "power": "sonic_resonance",
-    "action": "sonic_burst",
+    "action": "sonic_note",
     "energy": 0.8,
     "cooldown": 0.8
   },
   {
     "power": "sonic_resonance",
-    "action": "sonic_scream",
+    "action": "sonic_crescendo",
     "energy": 0.8,
     "cooldown": 0.8
   },
   {
     "power": "sonic_resonance",
-    "action": "sonic_echo_sense",
+    "action": "sonic_wall",
     "energy": 0.8,
     "cooldown": 0.75
   },
   {
     "power": "superspeed",
-    "action": "speed_quickstep",
+    "action": "speed_blitz",
     "energy": 1,
     "cooldown": 1
   },
   {
     "power": "superspeed",
-    "action": "speed_redline",
+    "action": "speed_lightspeed",
     "energy": 1,
     "cooldown": 1
   },

@@ -84,7 +84,14 @@ public final class SylarGameTests {
         helper.getLevel().getServer().overworld().getDataStorage().set(SylarStoryData.NAME, new SylarStoryData());
     }
     private static SylarEntity hunter(GameTestHelper helper, ServerPlayer quarry, int distance) {
-        helper.assertTrue(SylarStoryService.beginAt(quarry, quarry.position().add(distance, 0, 0), false), "Fixture must create the singleton hunter");
+        boolean begun = SylarStoryService.beginAt(quarry, quarry.position().add(distance, 0, 0), false);
+        helper.assertTrue(begun, "Fixture must create the singleton hunter: eligible=" + SylarStoryService.eligible(quarry)
+                + " active=" + (SylarStoryService.hunter() != null) + " eclipse=" + com.jayptucker.heroesevolved.events.EclipseService.isActive(quarry.getServer())
+                + " intro=" + PowerIntroService.isActive(quarry) + " alive=" + quarry.isAlive() + " dim=" + quarry.level().dimension().location()
+                + " mode=" + quarry.gameMode.getGameModeForPlayer() + " sleeping=" + quarry.isSleeping() + " difficulty=" + quarry.level().getDifficulty()
+                + " timeIntro=" + com.jayptucker.heroesevolved.time.intro.TimeIntroService.isVisiting(quarry)
+                + " suppressed=" + com.jayptucker.heroesevolved.events.EclipseService.arePowersSuppressed(quarry)
+                + " power=" + PlayerAbilityService.getData(quarry).assignedPower().map(e -> e.getKey() + ":" + e.getValue().isUnlocked()).orElse("none"));
         SylarEntity hunter = SylarStoryService.hunter(); hunter.setNoGravity(true); return hunter;
     }
     private static void remove(ServerPlayer... players) {
@@ -347,5 +354,179 @@ public final class SylarGameTests {
                     "The hunter must appear beyond central view, ready to be discovered by turning around");
             helper.succeed();
         } finally { remove(quarry); }
+    }
+
+    // ------------------------------------------------------------------
+    // The reworked fight
+    // ------------------------------------------------------------------
+
+    private static long speech(List<Packet<?>> packets) {
+        return packets.stream().filter(packet -> packet instanceof ClientboundSystemChatPacket chat
+                && chat.content().getString().startsWith("Sylar:")).count();
+    }
+
+    @GameTest(template = "rewind_empty", batch = "sylar.boss", timeoutTicks = 40)
+    public static void aHuntShowsABossBarSizedToWhatHeHasTaken(GameTestHelper helper) {
+        reset(helper); List<Packet<?>> packets = new ArrayList<>();
+        ServerPlayer quarry = player(helper, ModAbilities.QUAKE_ID, 5, packets);
+        var story = SylarStoryData.get(quarry.getServer());
+        story.learn(ModAbilities.ELECTROKINESIS_ID); story.learn(ModAbilities.CRYOKINESIS_ID); story.learn(ModAbilities.FLIGHT_ID);
+        SylarEntity hunter = hunter(helper, quarry, 10); hunter.hunt(quarry);
+        helper.assertTrue(hunter.getMaxHealth() == 80 + 3 * 12 && hunter.getHealth() == hunter.getMaxHealth(), "Health grows with every power he has taken");
+        helper.runAfterDelay(12, () -> {
+            try {
+                helper.assertTrue(hunter.bar().isVisible() && hunter.bar().getPlayers().contains(quarry), "The quarry sees his boss bar");
+                hunter.setHealth(hunter.getMaxHealth() * 0.45F);
+                helper.runAfterDelay(2, () -> {
+                    try {
+                        helper.assertTrue(hunter.phase() == 2, "Below half, the second phase: Hunger");
+                        helper.succeed();
+                    } finally { remove(quarry); }
+                });
+            } catch (RuntimeException | AssertionError error) { remove(quarry); throw error; }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "sylar.moves", timeoutTicks = 40)
+    public static void aPowerHeHasTakenIsARealTelegraphedMove(GameTestHelper helper) {
+        reset(helper); List<Packet<?>> packets = new ArrayList<>();
+        ServerPlayer quarry = player(helper, ModAbilities.QUAKE_ID, 5, packets);
+        SylarStoryData.get(quarry.getServer()).learn(ModAbilities.ELECTROKINESIS_ID);
+        SylarEntity hunter = hunter(helper, quarry, 6); hunter.hunt(quarry);
+        float health = quarry.getHealth();
+        helper.assertTrue(hunter.castNow("chain_lightning") && hunter.casting().equals("chain_lightning"), "He winds up chain lightning");
+        helper.assertTrue(hunter.castPose() == SylarPowers.Pose.ONE_HAND, "With a hand raised, so you can read it");
+        helper.assertTrue(quarry.getHealth() == health, "Nothing lands during the windup");
+        helper.runAfterDelay(16, () -> {
+            try {
+                helper.assertTrue(health - quarry.getHealth() >= 5.9F, "Then the lightning lands: " + (health - quarry.getHealth()));
+                helper.succeed();
+            } finally { remove(quarry); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "sylar.thunder", timeoutTicks = 50)
+    public static void thunderstrikeLandsWhereYouStoodSoYouCanStepOut(GameTestHelper helper) {
+        reset(helper); List<Packet<?>> packets = new ArrayList<>();
+        ServerPlayer quarry = player(helper, ModAbilities.QUAKE_ID, 5, packets);
+        SylarStoryData.get(quarry.getServer()).learn(ModAbilities.ELECTROKINESIS_ID);
+        SylarEntity hunter = hunter(helper, quarry, 8); hunter.hunt(quarry);
+        float health = quarry.getHealth();
+        helper.assertTrue(hunter.castNow("thunderstrike"), "He marks the spot");
+        quarry.setPos(quarry.position().add(0, 0, 5));
+        helper.runAfterDelay(34, () -> {
+            try {
+                helper.assertTrue(quarry.getHealth() == health, "Out of the mark, the strike misses");
+                helper.succeed();
+            } finally { remove(quarry); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "sylar.pin", timeoutTicks = 40)
+    public static void hisPinHoldsYouUntilYouHitHim(GameTestHelper helper) {
+        reset(helper); List<Packet<?>> packets = new ArrayList<>();
+        ServerPlayer quarry = player(helper, ModAbilities.QUAKE_ID, 5, packets);
+        SylarEntity hunter = hunter(helper, quarry, 6); hunter.hunt(quarry);
+        helper.assertTrue(hunter.castNow("tk_pin"), "He raises both hands");
+        helper.runAfterDelay(14, () -> {
+            try {
+                helper.assertTrue(hunter.pinning(), "You are held");
+                hunter.hurt(helper.getLevel().damageSources().playerAttack(quarry), 2);
+                helper.assertTrue(!hunter.pinning(), "Hitting him breaks his hold");
+                helper.succeed();
+            } finally { remove(quarry); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "sylar.stagger", timeoutTicks = 30)
+    public static void aHardHitBreaksAWindup(GameTestHelper helper) {
+        reset(helper); List<Packet<?>> packets = new ArrayList<>();
+        ServerPlayer quarry = player(helper, ModAbilities.QUAKE_ID, 5, packets);
+        SylarStoryData.get(quarry.getServer()).learn(ModAbilities.CRYOKINESIS_ID);
+        SylarEntity hunter = hunter(helper, quarry, 6); hunter.hunt(quarry);
+        float health = quarry.getHealth();
+        helper.assertTrue(hunter.castNow("ice_lance"), "He winds up an ice lance");
+        hunter.hurt(helper.getLevel().damageSources().playerAttack(quarry), 6);
+        helper.assertTrue(hunter.casting().isEmpty() && hunter.castPose() == SylarPowers.Pose.NONE, "A hard hit breaks the windup");
+        helper.runAfterDelay(14, () -> {
+            try {
+                helper.assertTrue(quarry.getHealth() == health, "So the lance never comes");
+                helper.succeed();
+            } finally { remove(quarry); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "sylar.regen", timeoutTicks = 140)
+    public static void withRegenerationHeGetsBackUpOnce(GameTestHelper helper) {
+        reset(helper); List<Packet<?>> packets = new ArrayList<>();
+        ServerPlayer quarry = player(helper, ModAbilities.QUAKE_ID, 5, packets);
+        SylarStoryData.get(quarry.getServer()).learn(ModAbilities.REGENERATION_ID);
+        SylarEntity hunter = hunter(helper, quarry, 10); hunter.hunt(quarry);
+        hunter.hurt(helper.getLevel().damageSources().playerAttack(quarry), 1000);
+        helper.assertTrue(hunter.isAlive() && hunter.downed() && hunter.revived(), "The killing blow puts him down instead");
+        helper.assertTrue(!hunter.hurt(helper.getLevel().damageSources().playerAttack(quarry), 5), "While his wounds close, nothing hurts him");
+        helper.runAfterDelay(105, () -> {
+            try {
+                helper.assertTrue(!hunter.downed() && Math.abs(hunter.getHealth() - hunter.getMaxHealth() * 0.4F) < 2F, "He rises at two-fifths of his health");
+                hunter.hurt(helper.getLevel().damageSources().playerAttack(quarry), 1000);
+                helper.assertTrue(!hunter.isAlive() && SylarStoryData.get(quarry.getServer()).defeats() == 1, "Only once: the second killing blow is final");
+                helper.succeed();
+            } finally { remove(quarry); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "sylar.flee", timeoutTicks = 240)
+    public static void woundedWithAnEscapePowerHeTriesToRun(GameTestHelper helper) {
+        reset(helper); List<Packet<?>> packets = new ArrayList<>();
+        ServerPlayer quarry = player(helper, ModAbilities.QUAKE_ID, 5, packets);
+        SylarStoryData.get(quarry.getServer()).learn(ModAbilities.INVISIBILITY_ID);
+        SylarEntity hunter = hunter(helper, quarry, 10); hunter.hunt(quarry);
+        hunter.setHealth(hunter.getMaxHealth() * 0.15F);
+        long quiet = SylarStoryData.get(quarry.getServer()).quietUntil();
+        helper.runAfterDelay(4, () -> helper.assertTrue(hunter.phase() == 3 && hunter.escapeIn() > 0, "At a fifth of his health he gets ready to run"));
+        // He runs after four seconds of fighting at that health (other tests nearby can pause his ticks, so wait for it).
+        helper.succeedWhen(() -> {
+            var story = SylarStoryData.get(quarry.getServer());
+            helper.assertTrue(hunter.isRemoved() && SylarStoryService.hunter() == null, "Not finished in time: he gets away (in " + hunter.escapeIn() + " ticks)");
+            helper.assertTrue(story.trail(quarry.getUUID()).fled == 1 && story.defeats() == 0 && story.quietUntil() == quiet,
+                    "Fleeing is not a defeat: no reprieve, and he remembers who did it");
+            helper.assertTrue(SylarStoryService.opener(quarry).endsWith("return_fled"), "Next time, he opens with that");
+            remove(quarry);
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "sylar.voice", timeoutTicks = 200)
+    public static void hisLinesArriveOneAtATimeEightSecondsApart(GameTestHelper helper) {
+        reset(helper); List<Packet<?>> packets = new ArrayList<>();
+        ServerPlayer quarry = player(helper, ModAbilities.QUAKE_ID, 5, packets);
+        SylarVoice.say(quarry, "story.heroesevolved.sylar.say.first");
+        SylarVoice.say(quarry, "story.heroesevolved.sylar.say.want.quake");
+        SylarVoice.say(quarry, "story.heroesevolved.sylar.say.phase2");
+        helper.assertTrue(speech(packets) == 1 && SylarVoice.pending(quarry) == 2, "One line now, the rest wait their turn");
+        helper.runAfterDelay(SylarVoice.GAP_TICKS / 2, () -> helper.assertTrue(speech(packets) == 1, "Nothing more for eight seconds"));
+        helper.runAfterDelay(SylarVoice.GAP_TICKS + 25, () -> {
+            try {
+                helper.assertTrue(speech(packets) == 2, "Then the next line: " + speech(packets));
+                helper.assertTrue(SylarStoryService.opener(quarry).equals("story.heroesevolved.sylar.say.want.quake"), "He names what he wants from you");
+                helper.succeed();
+            } finally { remove(quarry); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "sylar.ladder", timeoutTicks = 60)
+    public static void escapingAHuntCountsAndTheNextOneIsFarOff(GameTestHelper helper) {
+        reset(helper); List<Packet<?>> packets = new ArrayList<>();
+        ServerPlayer quarry = player(helper, ModAbilities.QUAKE_ID, 5, packets);
+        SylarEntity hunter = hunter(helper, quarry, 10); hunter.hunt(quarry);
+        quarry.setPos(quarry.position().add(130, 0, 0));
+        helper.runAfterDelay(25, () -> {
+            try {
+                var trail = SylarStoryData.get(quarry.getServer()).trail(quarry.getUUID());
+                helper.assertTrue(SylarStoryService.hunter() == null && trail.hunts == 1 && trail.escapes == 1 && trail.chapter == 4,
+                        "Getting away counts as surviving a hunt: hunts=" + trail.hunts + " escapes=" + trail.escapes + " chapter=" + trail.chapter);
+                helper.assertTrue(trail.nextEncounter > helper.getLevel().getGameTime() + 20L * 1200, "And the next hunt is at least twenty minutes off");
+                helper.succeed();
+            } finally { remove(quarry); }
+        });
     }
 }

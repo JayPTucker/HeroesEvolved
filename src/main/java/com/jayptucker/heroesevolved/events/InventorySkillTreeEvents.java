@@ -60,5 +60,8 @@ public final class InventorySkillTreeEvents {
     @SubscribeEvent public static void logout(ClientPlayerNetworkEvent.LoggingOut event) {
         BUTTONS.clear(); ClientSkillTreeState.clear(); SonicVoiceSound.clear();
         com.jayptucker.heroesevolved.network.ClientLoadout.clear();
+        com.jayptucker.heroesevolved.network.ClientClarity.clear();
+        com.jayptucker.heroesevolved.network.ClientResonance.clear();
+        com.jayptucker.heroesevolved.network.ClientMomentum.clear();
     }
 }

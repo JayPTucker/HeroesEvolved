@@ -60,6 +60,9 @@ Level 20 needs the Mastery **and** a feat:
 | Radiation | Cancel your own Nuclear Detonation 3 times at Critical Core |
 | Time Manipulation | Undo your own death with Rewrite the Moment |
 | Electrokinesis | Unleash 25 Overcharged powers |
+| Precognition | Change the future 50 times (foreseen harm that misses you or a friend) |
+| Sonic Resonance | Catch 40 enemies in the burst of a Resonant Note |
+| Superspeed | Run 20 km (20,000 blocks) with Accelerate |
 | Every other power | Defeat 60 enemies within three seconds of using your power |
 
 Trial progress counts from awakening, in either order: finish the trial early and you Evolve the

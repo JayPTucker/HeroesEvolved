@@ -39,7 +39,7 @@ public final class SkillTreeGameTests {
     }
     private static void cleanup(ServerPlayer p) {
         SkillActionService.forget(p);
-        com.jayptucker.heroesevolved.expansion.PrecognitionService.forget(p); SonicService.stop(p);
+        com.jayptucker.heroesevolved.precog.PrecognitionService.forget(p); SonicService.stop(p);
         com.jayptucker.heroesevolved.speed.SpeedService.forget(p);
         com.jayptucker.heroesevolved.time.SpaceTimeService.forget(p);
         com.jayptucker.heroesevolved.flight.FlightService.stopForPowerRemoval(p);
@@ -203,11 +203,12 @@ public final class SkillTreeGameTests {
     public static void canaryScreamStopsOnReleaseAndIncapacitation(GameTestHelper h) {
         var p = player(h, "sonic_resonance", 5);
         try {
-            var scream = ModAbilities.SONIC_RESONANCE.get().actions().get(AbilitySlot.QUINARY);
+            // The scream is Canary Cry held down.
+            var cry = ModAbilities.SONIC_RESONANCE.get().actions().get(AbilitySlot.PRIMARY);
             var context = new AbilityUseContext(p, id("sonic_resonance"), 5, false);
-            scream.activate(context); h.assertTrue(SonicService.screaming(p), "Canary Scream must create a held channel");
-            scream.release(context); h.assertTrue(!SonicService.screaming(p), "Releasing must stop voice and channel immediately");
-            scream.activate(context); CryoService.freezeSolid(p, 60, null); SonicService.tick(h.getLevel().getServer());
+            cry.activate(context); SonicService.start(p, 5); h.assertTrue(SonicService.screaming(p), "A held Canary Cry must create a held channel");
+            cry.release(context); h.assertTrue(!SonicService.screaming(p), "Releasing must stop voice and channel immediately");
+            cry.activate(context); SonicService.start(p, 5); CryoService.freezeSolid(p, 60, null); SonicService.tick(h.getLevel().getServer());
             h.assertTrue(!SonicService.screaming(p), "Incapacitated players must not continue screaming");
             CryoService.releaseEntity(p); h.succeed();
         } finally { cleanup(p); }
@@ -234,9 +235,9 @@ public final class SkillTreeGameTests {
         var p = player(h, "sonic_resonance", 5);
         SonicService.vault(p);
         h.assertTrue(p.getDeltaMovement().z < -1 && p.getDeltaMovement().y > 0, "Voice propulsion must recoil opposite the player's aim");
-        h.assertTrue(SonicService.cushion(p) && !SonicService.cushion(p), "Landing protection must be consumed once");
+        h.assertTrue(SonicService.cushion(p, 0) && !SonicService.cushion(p, 0), "Landing protection must be consumed once");
         SonicService.vault(p); SonicService.forget(p);
-        h.assertTrue(!SonicService.cushion(p), "Logout and power removal must clear unspent protection");
+        h.assertTrue(!SonicService.cushion(p, 0), "Logout and power removal must clear unspent protection");
         h.succeed(); cleanup(p);
     }
     @GameTest(template="rewind_empty", batch="skills.gravity")
@@ -255,7 +256,7 @@ public final class SkillTreeGameTests {
             try {
                 h.assertTrue(victim.getDeltaMovement().z < 0, "The gravity well must pull a mob toward its anchor over time");
                 SkillActionService.forget(p);
-        com.jayptucker.heroesevolved.expansion.PrecognitionService.forget(p); victim.setDeltaMovement(Vec3.ZERO);
+        com.jayptucker.heroesevolved.precog.PrecognitionService.forget(p); victim.setDeltaMovement(Vec3.ZERO);
                 SkillActionService.tick(h.getLevel().getServer());
                 h.assertTrue(victim.getDeltaMovement().lengthSqr() == 0, "Removed field must stop altering its targets");
                 h.succeed();

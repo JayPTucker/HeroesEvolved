@@ -26,7 +26,7 @@ public final class SpeedEvents {
     @SubscribeEvent(priority = EventPriority.HIGH) public static void hurt(LivingIncomingDamageEvent e) {
         if (e.getEntity() instanceof ServerPlayer p && SpeedService.dodge(p, e.getSource())) { e.setCanceled(true); return; }
         if (e.getSource().getDirectEntity() instanceof ServerPlayer attacker
-                && e.getSource().is(net.minecraft.world.damagesource.DamageTypes.PLAYER_ATTACK))
+                && e.getSource().is(net.minecraft.world.damagesource.DamageTypes.PLAYER_ATTACK) && !SpeedService.inPowerHit())
             e.setAmount(e.getAmount() + SpeedService.consumeImpact(attacker, e.getEntity() instanceof ServerPlayer));
     }
     @SubscribeEvent public static void logout(PlayerEvent.PlayerLoggedOutEvent e) { if (e.getEntity() instanceof ServerPlayer p) SpeedService.forget(p); }

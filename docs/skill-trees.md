@@ -77,24 +77,19 @@ See [Space-Time Manipulation](space-time-manipulation.md) for the redesigned tim
 
 ## Sonic Resonance
 
-The five original actions are fully named and described in the Powers menu:
-Sonic Cry, Resonant Burst, Echo Sense, Sonic Vault and Canary Scream. Voice attacks
-use the short reference cry the user selected around 1:40 in the linked clip.
-Echo Sense keeps its quieter resonance cue. The continuous held scream follows
-the caster and fades out over 100 milliseconds on release; incapacitation, death,
-dimension change, logout or a missing server heartbeat. It lasts at most five
-seconds and drains twelve extra stamina per second.
+Sonic Resonance was reworked around Emma Coolidge and Black Canary. See
+[Sonic Resonance](sonic-resonance.md) for the following:
 
-The user chose the actual [reference cry](https://www.youtube.com/watch?v=UviuiYaAGQA&t=100)
-after rejecting the synthesized version. The held asset is a 5.60-second excerpt
-from 1:40.55 to 1:46.15, and shorter attacks use shorter cuts of that excerpt.
-Only mono conversion, constant gain, short edge fades and Vorbis encoding are
-applied. Pitch and speed are unchanged, and the sound does not loop. The player's
-five-second channel and server heartbeats still control its lifetime. Source
-attribution is included in `sonic_credits.txt`; the previous CC0-vocal attribution
-does not apply to this replacement. Existing imported recordings are preserved.
-Run `python tools/prepare-sonic-reference.py --source FILE` with the locally
-supplied reference and NumPy, SoundFile and FFmpeg (or imageio-ffmpeg).
+- Sound Sight and Resonance.
+- Canary Cry: tap for the cry, hold for the scream.
+- Resonant Note, Wall of Sound, Sonic Vault and Crescendo.
+
+The Cry, the burst and the held scream are original synthesized sounds (no recordings). Each is a
+chorused, formant-shaped shriek over a bowed cello-like drone, with a pressure blast and glassy high
+partials. Rebuild them with `python3 tools/generate-sonic-audio.py` (needs numpy and soundfile in
+`build/audio-tools`). The held scream follows the caster and fades out over 100 milliseconds when it
+ends: on release, incapacitation, death, dimension change, logout or a missing server heartbeat. It
+lasts at most five seconds.
 
 ## Verification
 
