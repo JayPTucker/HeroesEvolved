@@ -397,4 +397,41 @@ public final class EntityCarryGameTests {
             h.succeed();
         } finally { if (restored != null) restored.discard(); cleanup(p, target); }
     }
+
+    @GameTest(template = "rewind_empty", batch = "carry.size")
+    public static void yourArmsCarryThingsYourSizeAndSkyhookLiftsBiggerOverhead(GameTestHelper h) {
+        ServerPlayer p = player(h, origin(h));
+        Mob golem = EntityType.IRON_GOLEM.create(h.getLevel());
+        golem.setPersistenceRequired(); golem.setPos(p.position().add(0, 0, 2.5)); h.getLevel().addFreshEntity(golem);
+        Mob pig = EntityType.PIG.create(h.getLevel());
+        pig.setPersistenceRequired(); pig.setPos(p.position().add(1, 0, 2)); h.getLevel().addFreshEntity(pig);
+        try {
+            h.assertTrue(!EntityCarryService.canPickUp(p, golem, EntityCarryService.ORDINARY_REACH), "An iron golem is far too big for your arms");
+            h.assertTrue(EntityCarryService.canPickUp(p, pig, EntityCarryService.ORDINARY_REACH), "A pig is not");
+            h.assertTrue(EntityCarryService.pickUp(p, pig, EntityCarryService.ORDINARY_REACH), "Picked up");
+            h.assertTrue(anchor(pig).hold() == CarryGeometry.Hold.CRADLE, "A pig is held against the chest");
+            EntityCarryService.release(p);
+            h.assertTrue(EntityCarryService.pickUp(p, golem), "Skyhook's strength lifts the golem");
+            h.assertTrue(anchor(golem).hold() == CarryGeometry.Hold.OVERHEAD && golem.getY() > p.getY() + p.getBbHeight(), "Up over your head");
+            h.succeed();
+        } finally { cleanup(p, golem, pig); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "carry.bridal")
+    public static void aCarriedPersonLiesAcrossYourArmsInFrontOfYou(GameTestHelper h) {
+        ServerPlayer p = player(h, origin(h));
+        ServerPlayer held = player(h, p.position().add(0, 0, 2));
+        try {
+            h.assertTrue(EntityCarryService.pickUp(p, held), "The carry begins");
+            EntityCarryService.tick(p);
+            CarryAnchorEntity anchor = anchor(held);
+            p.positionRider(anchor); anchor.positionRider(held);
+            h.assertTrue(anchor.hold() == CarryGeometry.Hold.ARMS && anchor.shouldRiderSit(), "A person is carried in the arms, sitting in them");
+            Vec3 eye = held.getEyePosition().subtract(p.position());
+            h.assertTrue(eye.z > .3 && eye.x > .3 && eye.y > 1.2 && eye.y < 1.7,
+                    "Their head is in front of you at your left shoulder, not hovering beside you: " + eye);
+            h.assertTrue(!held.isPickable(), "And they don't catch your crosshair");
+            h.succeed();
+        } finally { cleanup(p, held); }
+    }
 }

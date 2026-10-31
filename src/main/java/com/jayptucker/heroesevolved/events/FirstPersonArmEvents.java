@@ -47,7 +47,7 @@ public final class FirstPersonArmEvents {
         }
 
         boolean mainHand = event.getHand() == InteractionHand.MAIN_HAND;
-        boolean oneHanded = pose == ArmPose.ONE_HAND || pose == ArmPose.TEMPLE;
+        boolean oneHanded = pose == ArmPose.ONE_HAND || pose == ArmPose.TEMPLE || pose == ArmPose.REACH;
         if (oneHanded && !mainHand) {
             return;
         }

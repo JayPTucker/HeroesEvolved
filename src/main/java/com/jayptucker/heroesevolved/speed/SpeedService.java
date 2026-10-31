@@ -43,6 +43,9 @@ import java.util.*;
 public final class SpeedService {
     /** Momentum at which the body crackles, enemies you pass are buffeted, and the sound barrier breaks. */
     public static final int AURA_MOMENTUM = 50, BUFFET_MOMENTUM = 60, BARRIER_MOMENTUM = 100;
+    /** Momentum at which you vibrate through walls you run into, and the thickest wall you can pass. */
+    public static final int VIBRATE_MOMENTUM = 80;
+    public static final double VIBRATE_WALL = 3;
     private static final Map<UUID, Long> BUFFETED = new HashMap<>();
     public static final ResourceLocation STRIDE = ResourceLocation.fromNamespaceAndPath("heroesevolved", "speed_stride");
     public static final ResourceLocation ACCELERATING = ResourceLocation.fromNamespaceAndPath("heroesevolved", "speed_accelerating");
@@ -56,7 +59,8 @@ public final class SpeedService {
         final Level level;
         Vec3 previous, trailPrevious;
         long lastMoving = Long.MIN_VALUE, redlineUntil;
-        int activeTicks, wallTicks, momentum, sentMomentum = -1;
+        int activeTicks, wallTicks, momentum, sentMomentum = -1, runMomentum;
+        long vibrateReady;
         boolean barrier;
         double modifier = -1, distanceBank, speed;
         Vec3 heading = Vec3.ZERO;
@@ -278,6 +282,8 @@ public final class SpeedService {
         // Zero-value attribute markers synchronize eligibility without changing movement values.
         // Surface collision runs on both sides instead of repeatedly pushing the client upward.
         syncMarker(p, WATER_RUN, running && level >= 3);
+        if (running && distance > .01) r.runMomentum = r.momentum;
+        if (vibrate(p, r)) { r.previous = p.position(); return; }
         if (running && level >= 4 && p.horizontalCollision && r.wallTicks++ < 30 && p.fallDistance < 3) {
             p.setDeltaMovement(p.getDeltaMovement().x, .32, p.getDeltaMovement().z);
             p.connection.send(new ClientboundSetEntityMotionPacket(p));
@@ -318,6 +324,37 @@ public final class SpeedService {
             r.distanceBank -= banked;
             com.jayptucker.heroesevolved.progression.EvolutionTrials.advance(p, ModAbilities.SUPERSPEED_ID, banked);
         }
+    }
+
+    /**
+     * Vibrate: at 80 Momentum a wall you run into is no wall at all. Your molecules shake through
+     * anything up to three blocks thick and you come out the other side still running. Bedrock,
+     * barriers and protected ground still stop you, and you never end up inside a block.
+     */
+    private static boolean vibrate(ServerPlayer p, Runner r) {
+        long now = now(p);
+        // Hitting a wall stops you dead, and the client stops sprinting, so look at the run you just had.
+        if (r.runMomentum < VIBRATE_MOMENTUM || now - r.lastMoving > 3 || now < r.vibrateReady || p.isShiftKeyDown()) return false;
+        Vec3 heading = r.heading.lengthSqr() > 0 ? r.heading : horizontal(p.getLookAngle());
+        if (!Double.isFinite(heading.x) || !wallAhead(p, heading)) return false;
+        Vec3 from = p.position(), to = com.jayptucker.heroesevolved.phasing.Passage.through(p, heading, VIBRATE_WALL + 1.5);
+        r.vibrateReady = now + 8;
+        if (to == null) return false;
+        p.teleportTo(p.serverLevel(), to.x, to.y, to.z, p.getYRot(), p.getXRot());
+        p.resetFallDistance();
+        // Through the wall with the run intact: Momentum carries on, and so does the heading.
+        r.momentum = r.runMomentum; r.lastMoving = now; r.trailPrevious = to;
+        p.setDeltaMovement(heading.scale(.6)); p.hurtMarked = true;
+        p.connection.send(new ClientboundSetEntityMotionPacket(p));
+        AbilityEffects.send(p.serverLevel(), Kind.SPEED_VIBRATE, from, to, 1);
+        p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, .5F, 2F);
+        p.serverLevel().playSound(null, BlockPos.containing(from), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, .6F, 1.8F);
+        return true;
+    }
+
+    /** A real wall ahead: something solid even after stepping up a block, not just a ledge to climb. */
+    public static boolean wallAhead(Entity e, Vec3 heading) {
+        return !e.level().noCollision(e, e.getBoundingBox().move(heading.scale(.35)).move(0, .6, 0).deflate(.02, 0, .02));
     }
 
     private static void syncMomentum(ServerPlayer p, Runner r) {

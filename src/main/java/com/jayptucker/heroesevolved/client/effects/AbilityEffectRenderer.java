@@ -62,6 +62,7 @@ public final class AbilityEffectRenderer {
                 || PrecogEffects.play(level, effect.kind(), origin, target, size, detail)
                 || SonicEffects.play(level, effect.kind(), origin, target, size, detail)
                 || SpeedEffects.play(level, effect.kind(), origin, target, size, detail)
+                || DensityEffects.play(level, effect.kind(), origin, target, size, detail)
                 || FlightEffects.play(level, effect.kind(), origin, target, size, detail)
                 || FlightSkillEffects.play(level, effect.kind(), origin, target, size, detail)
                 || AwakeningEffects.play(level, effect.kind(), origin, size, detail, density)

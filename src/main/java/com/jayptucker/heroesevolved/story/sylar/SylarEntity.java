@@ -293,8 +293,11 @@ public final class SylarEntity extends PathfinderMob implements Enemy {
         if (unseenTicks < 60 || distanceToSqr(victim) > 16 * 16) return;
         Vec3 near = victim.position().add(SylarPowers.flat(position().subtract(victim.position())).scale(2.5));
         if (!level.noCollision(this, getBoundingBox().move(near.subtract(position())))) return;
-        AbilityEffects.send(level, Kind.MIND_PULSE, position(), getEyePosition(), 1);
+        Vec3 from = position();
         teleportTo(near.x, near.y, near.z);
+        // The wall ripples like water where he went in, and again where he steps out.
+        AbilityEffects.send(level, Kind.DENSITY_RIPPLE, from.add(0, 1, 0), getEyePosition(), 1.1);
+        AbilityEffects.send(level, Kind.DENSITY_RIPPLE, near.add(0, 1, 0), near.add(0, 1, 0).add(victim.position().subtract(near).normalize()), 1.1);
         unseenTicks = 0;
         SylarVoice.narrate(victim, "story.heroesevolved.sylar.narrate.phase");
     }

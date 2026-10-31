@@ -2,6 +2,7 @@ package com.jayptucker.heroesevolved.client;
 
 import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.entity.CarryAnchorEntity;
+import com.jayptucker.heroesevolved.entity.CarryGeometry;
 import com.jayptucker.heroesevolved.network.ClientArmPoseState;
 import com.jayptucker.heroesevolved.network.ClientFlightVisualState;
 import net.minecraft.client.model.PlayerModel;
@@ -33,16 +34,30 @@ public final class PowerArmPoses {
             model.leftPants.copyFrom(model.leftLeg);
         }
         ArmPose pose = ClientArmPoseState.get(entity.getId());
+        if (entity.getVehicle() instanceof CarryAnchorEntity held && held.hold() == CarryGeometry.Hold.ARMS) {
+            carried(model, CarryGeometry.side(held.getVehicle()));
+            return;
+        }
         CarryAnchorEntity carryAnchor = CarryVisuals.anchor(entity);
         if (carryAnchor != null && (pose == null || pose == ArmPose.TWO_HANDS)) {
             // Vanilla's empty-hand renderer also calls setupAnim; leave that arm below the view.
             if (CarryVisuals.isLocalFirstPersonCarrier(entity)) return;
-            // Follow the actual seat if a wall moves cargo to the carrier's other side.
-            int side = CarryVisuals.supportSide(entity, carryAnchor);
-            ModelPart support = side > 0 ? model.rightArm : model.leftArm;
-            ModelPart free = side > 0 ? model.leftArm : model.rightArm;
-            set(support, -.72F, -.08F * side, .72F * side);
-            set(free, flying ? -2.98F : -.08F, 0, (flying ? -.08F : -.04F) * side);
+            switch (carryAnchor.hold()) {
+                case ARMS -> {
+                    // One arm under the shoulders, one under the knees, both reaching forward and a little in.
+                    set(model.rightArm, -1.05F, -.18F, .06F);
+                    set(model.leftArm, -1.05F, .18F, -.06F);
+                }
+                case CRADLE -> {
+                    // Wrapped around something held against the chest.
+                    set(model.rightArm, -.95F, -.42F, .05F);
+                    set(model.leftArm, -.95F, .42F, -.05F);
+                }
+                case OVERHEAD -> {
+                    set(model.rightArm, -2.95F, .05F, .18F);
+                    set(model.leftArm, -2.95F, -.05F, -.18F);
+                }
+            }
             model.rightSleeve.copyFrom(model.rightArm);
             model.leftSleeve.copyFrom(model.leftArm);
             return;
@@ -107,6 +122,16 @@ public final class PowerArmPoses {
                 set(main, aimX + .16F + tension, aimY + inward * .12F, -inward * .12F);
                 set(brace, -.92F - tension, aimY * .35F - inward * .25F, inward * .4F);
             }
+            case REACH -> {
+                // The whole arm driven forward and a little low, the other drawn back for balance.
+                ModelPart brace = rightHanded ? model.leftArm : model.rightArm;
+                set(main, aimX + .2F, aimY + inward * .05F, 0);
+                set(brace, .35F, 0, -inward * .12F);
+            }
+            case SINK -> {
+                set(model.rightArm, -.25F, 0, .55F);
+                set(model.leftArm, -.25F, 0, -.55F);
+            }
             case KINETIC_RELEASE -> {
                 float phase = Mth.clamp(ClientArmPoseState.ageTicks(entity.getId()) / 9F, 0, 1);
                 float thrust = Mth.sin(phase * Mth.PI);
@@ -119,6 +144,22 @@ public final class PowerArmPoses {
         // setupAnim copies arms onto sleeves before we run; copy again.
         model.rightSleeve.copyFrom(model.rightArm);
         model.leftSleeve.copyFrom(model.leftArm);
+    }
+
+    /**
+     * A player carried in someone's arms: the arm on the carrier's side goes up around their neck,
+     * the other rests across the body, and the legs fold over the carrier's arm.
+     */
+    private static void carried(PlayerModel<?> model, int side) {
+        ModelPart hug = side > 0 ? model.rightArm : model.leftArm, rest = side > 0 ? model.leftArm : model.rightArm;
+        set(hug, -2.1F, side * .25F, side * .9F);
+        set(rest, -.55F, side * -.2F, side * .35F);
+        set(model.rightLeg, -1.25F, .12F, .04F);
+        set(model.leftLeg, -1.1F, -.12F, -.04F);
+        model.rightSleeve.copyFrom(model.rightArm);
+        model.leftSleeve.copyFrom(model.leftArm);
+        model.rightPants.copyFrom(model.rightLeg);
+        model.leftPants.copyFrom(model.leftLeg);
     }
 
     private static void set(ModelPart arm, float x, float y, float z) {

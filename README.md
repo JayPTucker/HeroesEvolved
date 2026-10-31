@@ -16,7 +16,7 @@ Abilities rank up with use. Purchases and loadouts persist across death and relo
 
 All sixteen powers have trees: Quake, Flight, Cryokinesis, Electrokinesis,
 Telekinesis, Telepathy, Regeneration, Time Manipulation, Radiation, Sonic
-Resonance, Superspeed, Precognition, Pyrokinesis, Invisibility, Phasing and
+Resonance, Superspeed, Precognition, Pyrokinesis, Invisibility, Density (Phasing) and
 Empathic Mimicry. Sonic Resonance's cries are original synthesized sound design, including a
 positional sustained scream that stops when you release its key.
 
@@ -29,7 +29,15 @@ may run when he is losing.
 
 See [Superspeed](docs/superspeed.md) for the reworked speedster, inspired by Daphne Millbrook and the Flash. Momentum crackles,
 buffets and breaks the sound barrier. Blitz chains from enemy to enemy, Snatch takes everything in a
-blink, Cyclone runs rings, and Lightspeed streaks through everything on the line.
+blink, Cyclone runs rings, and Lightspeed streaks through everything on the line. At 80 Momentum you
+vibrate through walls.
+
+See [Density](docs/density.md) for D.L. Hawkins, reworked from Phasing: a density dial from Full Ghost
+to Full Dense, a hand that reaches inside bodies and chests, enemies left stuck in the floor, and
+travel underground on a single breath.
+
+See [Carrying](docs/carrying.md): sneak + use to pick up anything about your size. People are carried
+in your arms, a bridal carry.
 
 See [A Future Unwritten](docs/a-future-unwritten.md) for the first playable expansion:
 135 skill nodes, 45 optional actions, Precognition, shared reactions, prophetic

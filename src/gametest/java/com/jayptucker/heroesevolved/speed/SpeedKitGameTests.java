@@ -181,4 +181,22 @@ public final class SpeedKitGameTests {
                 "Superspeed evolves by running 20 km");
         h.succeed();
     }
+
+    @GameTest(template = "rewind_empty", batch = "speedkit.vibrate")
+    public static void atEightyMomentumYouVibrateThroughTheWallYouRunInto(GameTestHelper h) {
+        var p = runner(h, 4);
+        for (int y = 2; y <= 4; y++) for (int x = 5; x <= 6; x++)
+            for (int z = 2; z <= 4; z++) h.getLevel().setBlock(h.absolutePos(new BlockPos(x, y, z)), net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(), 3);
+        try {
+            p.setYRot(-90);
+            SpeedService.redline(p); p.setSprinting(true);
+            // One stride east at full Momentum, then straight into the wall.
+            p.setPos(p.position().add(1, 0, 0)); SpeedService.tickRunner(p);
+            double before = p.getX();
+            SpeedService.tickRunner(p);
+            h.assertTrue(p.getX() > h.absolutePos(new BlockPos(7, 2, 3)).getX(), "Through two blocks of stone and out the far side: " + before + " -> " + p.getX());
+            h.assertTrue(SpeedService.momentum(p) >= SpeedService.VIBRATE_MOMENTUM, "Still running: the wall cost no Momentum");
+            h.succeed();
+        } finally { SpeedService.forget(p); }
+    }
 }

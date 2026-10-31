@@ -31,7 +31,8 @@ public final class EvolutionTrials {
             "electrokinesis", new Trial("Unleash 25 Overcharged powers", 25),
             "superspeed", new Trial("Run 20 km (20,000 blocks) with Accelerate", 20000),
             "sonic_resonance", new Trial("Catch 40 enemies in the burst of a Resonant Note", 40),
-            "precognition", new Trial("Change the future 50 times: let foreseen harm miss you or a friend", 50)
+            "precognition", new Trial("Change the future 50 times: let foreseen harm miss you or a friend", 50),
+            "phasing", new Trial("Travel 2,000 blocks through solid matter", 2000)
     );
 
     private EvolutionTrials() {}

@@ -40,7 +40,8 @@ import java.util.UUID;
  * Superspeed's actions, after Daphne Millbrook and the Flash.
  * <ul>
  *   <li>Blitz: rush an enemy and land a flurry; press again in the moment after to chain to the next.
- *   With no one in sight, it is the old Quickstep dash.</li>
+ *   With no one in sight, it is the old Quickstep dash. At 80 Momentum you vibrate through a wall to reach
+ *   an enemy you can see through a window or gap.</li>
  *   <li>Snatch: in one blink, take every dropped item nearby, every enemy shot out of the air, and the
  *   weapon from the hand you are looking at. To everyone else you never moved.</li>
  *   <li>Cyclone: run rings around where you stand; the wind drags enemies in and up, then throws them.</li>
@@ -114,7 +115,16 @@ public final class SpeedKit {
         Vec3 from = p.position();
         if (p.distanceToSqr(target) > 9) {
             Vec3 delta = target.position().subtract(p.position());
-            Vec3 approach = SpeedService.swept(p, delta.normalize().scale(Math.max(0, delta.length() - 1.6)));
+            Vec3 goal = p.position().add(delta.normalize().scale(Math.max(0, delta.length() - 1.6)));
+            Vec3 approach = SpeedService.swept(p, goal.subtract(p.position()));
+            // At 80 Momentum a window or a gap is enough: you vibrate through the wall around it.
+            if (approach.distanceToSqr(target.position()) > 9 && SpeedService.momentum(p) >= SpeedService.VIBRATE_MOMENTUM) {
+                Vec3 through = com.jayptucker.heroesevolved.phasing.Passage.sweep(p, goal, SpeedService.VIBRATE_WALL);
+                if (through.distanceToSqr(target.position()) <= 9) {
+                    AbilityEffects.send(p.serverLevel(), Kind.SPEED_VIBRATE, from, through, 1);
+                    approach = through;
+                }
+            }
             if (approach.distanceToSqr(target.position()) > 9) return false;
             SpeedService.move(p, approach);
         }

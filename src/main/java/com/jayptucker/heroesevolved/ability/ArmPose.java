@@ -21,5 +21,9 @@ public enum ArmPose {
     /** One palm steadies a held object while the other braces its weight. */
     KINETIC_HOLD,
     /** A sharp open-handed release of stored force. */
-    KINETIC_RELEASE
+    KINETIC_RELEASE,
+    /** The main arm pushed straight out and low, the hand sinking into whatever it touches. */
+    REACH,
+    /** Arms held out and down at the sides as the body sinks into the ground. */
+    SINK
 }

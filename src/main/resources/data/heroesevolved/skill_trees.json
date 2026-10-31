@@ -1724,7 +1724,7 @@
         {
           "id": "superspeed_perception",
           "name": "Perception",
-          "description": "For six seconds the world slows for you: projectiles near you crawl at a third of their speed.",
+          "description": "For six seconds the world slows around you: everything within 12 blocks moves at a third of its speed, enemy players are dragged down, and projectiles crawl.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -2243,7 +2243,7 @@
         },
         {
           "name": "Through-Strike",
-          "description": "Reach through a visible enemy up to 40 blocks away: 6 + level damage that ignores armor.",
+          "description": "Reach Through an enemy you can see up to 40 blocks away: the blow ignores armor and stops them healing.",
           "energy": 24,
           "cooldown": 100
         },
@@ -2254,7 +2254,7 @@
         {
           "id": "phasing_phase_carry",
           "name": "Phase Carry",
-          "description": "Phase through the wall ahead with up to three friends.",
+          "description": "Pass through the wall ahead at Full Ghost, bringing up to three friends.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -2266,7 +2266,7 @@
         {
           "id": "phasing_thicker_walls",
           "name": "Thicker Walls",
-          "description": "Phase Step and Phase Carry pass four more blocks.",
+          "description": "At Ghost you walk through walls four blocks thicker.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -2276,7 +2276,7 @@
         {
           "id": "phasing_ghost_network",
           "name": "Ghost Network",
-          "description": "Every Phase Step leaves you intangible for two seconds on arrival.",
+          "description": "Every wall you pass leaves you at Full Ghost, free of upkeep, for two seconds.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -2291,8 +2291,8 @@
           "description": "Increase outgoing attack damage by 10%."
         },
         {
-          "name": "Solidify",
-          "description": "Make yourself dense: Resistance II for six seconds.",
+          "name": "Harden",
+          "description": "Snap to Full Dense, free of upkeep, for six seconds.",
           "energy": 20,
           "cooldown": 300
         },
@@ -2302,8 +2302,8 @@
         },
         {
           "id": "phasing_phase_lock",
-          "name": "Phase Lock",
-          "description": "Sink an enemy within 16 blocks halfway into the ground for three seconds.",
+          "name": "Long Embed",
+          "description": "Embed an enemy up to 16 blocks away.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -2314,8 +2314,8 @@
         },
         {
           "id": "phasing_long_lock",
-          "name": "Long Lock",
-          "description": "Phase Lock holds for five seconds.",
+          "name": "Deep Set",
+          "description": "Embedded enemies stay stuck two seconds longer.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -2325,7 +2325,7 @@
         {
           "id": "phasing_entombed",
           "name": "Entombed",
-          "description": "Locked enemies take damage every second.",
+          "description": "Your embedded enemies take damage every second.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -2341,7 +2341,7 @@
         },
         {
           "name": "Fade Through",
-          "description": "Three seconds of intangibility, free of upkeep.",
+          "description": "Three seconds at Full Ghost, free of upkeep.",
           "energy": 18,
           "cooldown": 240
         },
@@ -2352,7 +2352,7 @@
         {
           "id": "phasing_phase_fall",
           "name": "Phase Fall",
-          "description": "Phase Drop with up to three friends. Shift rises instead.",
+          "description": "Drop through the floor to the open space below with up to three friends. Shift rises instead.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -2374,7 +2374,7 @@
         {
           "id": "phasing_untouchable",
           "name": "Untouchable",
-          "description": "Intangible drains stamina half as fast.",
+          "description": "Holding a Ghost or Dense notch drains stamina half as fast.",
           "active": false,
           "capstone": true,
           "level": 5,

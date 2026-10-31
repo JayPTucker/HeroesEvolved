@@ -18,6 +18,8 @@ support those choices rather than stand in for them.
 
 ## Phasing: choose when to become solid
 
+_Built as [Density](density.md). The notes below are the original proposal._
+
 **Current foundation:** checked wall/floor traversal, temporary intangibility, armor-piercing
 contact, and group phase moves. The proposed redesign would connect these actions through
 visible transitions between solid and intangible states.

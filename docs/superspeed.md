@@ -17,7 +17,14 @@ Running builds **Momentum** (0 to 100), shown as a gold bar under your ability k
 | 30 | Blitz can spend 30 for harder blows |
 | 50 | Lightning crackles over your body as you run |
 | 60 | You **buffet** enemies you run past: 2 damage, thrown aside, once a second each |
+| 80 | You **vibrate through walls**: run into a wall up to 3 blocks thick and you come out the far side, still running |
 | 100 | You **break the sound barrier**: a boom, and a cone of white rings behind you |
+
+**Vibrate** (at 80 Momentum) shakes your molecules through whatever you run into. Hit a wall up to
+3 blocks thick and you pass straight through it: gold ripples on both faces, a blur of you through
+the stone, and your Momentum and heading carry on. Crouch to stop it. Bedrock, barriers and
+protected ground still stop you, and you never end up inside a block. **Blitz** vibrates too: at 80
+Momentum it reaches an enemy you can see through a window or gap by passing through the wall around it.
 
 At 50 or more, your next real punch is still the charged strike. Ability hits never spend it.
 Lightspeed spends all your Momentum.

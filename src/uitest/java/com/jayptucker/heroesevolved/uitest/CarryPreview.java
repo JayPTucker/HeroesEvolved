@@ -167,6 +167,8 @@ public final class CarryPreview {
             case 405 -> pending = "carry-11-recipient-first-person-moving.png";
             case 410 -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
             case 420 -> pending = "carry-12-recipient-third-person-moving.png";
+            case 424 -> mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
+            case 428 -> pending = "carry-12b-recipient-third-person-front.png";
             case 430 -> {
                 mc.options.setCameraType(CameraType.FIRST_PERSON);
                 onServer(mc, p -> {
@@ -176,7 +178,40 @@ public final class CarryPreview {
             case 438 -> pending = "carry-13-recipient-first-person-turned.png";
             case 450 -> onServer(mc, p -> removeOther(p));
             case 465 -> pending = "carry-14-recipient-released.png";
-            case 480 -> mc.stop();
+            case 470 -> {
+                // An onlooker's view: someone else carrying a villager, then a pig.
+                mc.options.setCameraType(CameraType.FIRST_PERSON);
+                onServer(mc, p -> {
+                    p.teleportTo(p.serverLevel(), 299.5, -60, .5, -90, 8);
+                    otherCarrier = new FakePlayer(p.serverLevel(), new GameProfile(UUID.randomUUID(), "Carrier"));
+                    otherCarrier.moveTo(303.5, -60, .5, 0, 0);
+                    otherCarrier.yBodyRot = 0; otherCarrier.yHeadRot = 0;
+                    p.connection.send(ClientboundPlayerInfoUpdatePacket.createPlayerInitializing(List.of(otherCarrier)));
+                    p.serverLevel().addNewPlayer(otherCarrier);
+                    carriedMob = EntityType.VILLAGER.create(p.serverLevel());
+                    carriedMob.setNoAi(true); carriedMob.setPersistenceRequired();
+                    carriedMob.moveTo(303.5, -60, 2.5, 180, 0);
+                    p.serverLevel().addFreshEntity(carriedMob);
+                    if (!EntityCarryService.pickUp(otherCarrier, carriedMob)) throw new IllegalStateException("Preview could not carry villager");
+                    EntityCarryService.tick(otherCarrier);
+                });
+            }
+            case 482 -> pending = "carry-15-onlooker-bridal-side.png";
+            case 486 -> onServer(mc, p -> p.teleportTo(p.serverLevel(), 305.8, -59.6, 3.9, 146, 14));
+            case 494 -> pending = "carry-16-onlooker-bridal-front.png";
+            case 498 -> onServer(mc, p -> {
+                EntityCarryService.release(otherCarrier);
+                carriedMob.discard();
+                carriedMob = EntityType.PIG.create(p.serverLevel());
+                carriedMob.setNoAi(true); carriedMob.setPersistenceRequired();
+                carriedMob.moveTo(303.5, -60, 2, 180, 0);
+                p.serverLevel().addFreshEntity(carriedMob);
+                if (!EntityCarryService.pickUp(otherCarrier, carriedMob)) throw new IllegalStateException("Preview could not carry pig");
+                EntityCarryService.tick(otherCarrier);
+            });
+            case 508 -> pending = "carry-17-onlooker-cradle-pig.png";
+            case 512 -> onServer(mc, p -> { removeOther(p); if (carriedMob != null) carriedMob.discard(); });
+            case 520 -> mc.stop();
             default -> { }
         }
     }

@@ -33,6 +33,7 @@ final class SpeedEffects {
             case SPEED_STREAK -> streak(origin, target, size, random, detail);
             case SPEED_BOLT -> thrown(origin, target, size, random);
             case SPEED_PERCEPTION -> perception(origin, size, random, detail);
+            case SPEED_VIBRATE -> vibrate(origin, target, size, random, detail);
             default -> { return false; }
         }
         return true;
@@ -195,5 +196,26 @@ final class SpeedEffects {
             if (last != null && i % 4 == 0 && last.distanceToSqr(mote) < 25) bolt(last, mote, 0.012F, random, 8, 2);
             last = mote;
         }
+    }
+
+    /**
+     * Vibrate: the wall shivers like water where you go in and where you come out, gold rings on both
+     * faces, a blur of you strung through the stone, and a buzzing jitter of lightning at the exit.
+     */
+    private static void vibrate(Vec3 from, Vec3 to, float size, RandomSource random, boolean detail) {
+        Vec3 dir = to.subtract(from);
+        if (dir.lengthSqr() < 1.0E-4) return;
+        dir = dir.normalize();
+        Vec3 in = from.add(dir.scale(0.6)).add(0, 1, 0), out = to.subtract(dir.scale(0.6)).add(0, 1, 0);
+        DensityEffects.ripple(in, dir, 1.1F * size, GOLD, 16, 0);
+        DensityEffects.ripple(out, dir, 1.1F * size, HOT, 16, 2);
+        LightningRenderer.stroke(List.of(from.add(0, 0.9, 0), to.add(0, 0.9, 0)), 0.16F * size, 0.06F * size, GOLD, 0.45F, 8, 0);
+        // The jitter: a body shaking so fast it smears sideways, at the far face.
+        Vec3 side = new Vec3(-dir.z, 0, dir.x);
+        for (int i = 0; i < 6; i++) {
+            Vec3 a = out.add(side.scale((random.nextDouble() - 0.5) * 0.7)).add(0, (random.nextDouble() - 0.5) * 1.4, 0);
+            bolt(a, a.add(side.scale((random.nextDouble() - 0.5) * 0.6)).add(0, (random.nextDouble() - 0.5) * 0.5, 0), 0.02F, random, 5, 2);
+        }
+        if (detail) SpeedAfterimages.along(from, to, (int) Math.clamp(from.distanceTo(to) / 1.2, 2, 6));
     }
 }

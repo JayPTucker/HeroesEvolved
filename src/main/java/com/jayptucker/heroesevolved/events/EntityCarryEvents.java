@@ -43,10 +43,12 @@ public final class EntityCarryEvents {
             return;
         }
         if (!canPickUp(player, target)) {
+            if (target instanceof net.minecraft.world.entity.LivingEntity && !com.jayptucker.heroesevolved.entity.CarryGeometry.liftable(target, false))
+                player.displayClientMessage(net.minecraft.network.chat.Component.translatable("carry.heroesevolved.too_big"), true);
             return;
         }
 
-        if (EntityCarryService.pickUp(player, target, 4.0D)) {
+        if (EntityCarryService.pickUp(player, target, EntityCarryService.ORDINARY_REACH)) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS);
         }
@@ -72,7 +74,7 @@ public final class EntityCarryEvents {
     }
 
     private static boolean canPickUp(ServerPlayer player, Entity target) {
-        return EntityCarryService.canPickUp(player, target, 4.0D);
+        return EntityCarryService.canPickUp(player, target, EntityCarryService.ORDINARY_REACH);
     }
 
     @SubscribeEvent

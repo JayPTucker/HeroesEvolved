@@ -115,7 +115,7 @@ public final class SkillActionService {
             case "superspeed" -> { return com.jayptucker.heroesevolved.speed.SpeedService.skill(c, branch); }
             case "pyrokinesis" -> { return com.jayptucker.heroesevolved.pyro.PyroService.skill(c, branch); }
             case "invisibility" -> { return com.jayptucker.heroesevolved.invisibility.InvisibilityService.skill(c, branch); }
-            case "phasing" -> { return com.jayptucker.heroesevolved.phasing.PhasingService.skill(c, branch); }
+            case "phasing" -> { return com.jayptucker.heroesevolved.phasing.DensityService.skill(c, branch); }
             case "empathic_mimicry" -> { return com.jayptucker.heroesevolved.mimicry.MimicryService.skill(c, branch); }
             case "time_manipulation" -> {
                 return com.jayptucker.heroesevolved.time.SpaceTimeService.activate(c, branch);

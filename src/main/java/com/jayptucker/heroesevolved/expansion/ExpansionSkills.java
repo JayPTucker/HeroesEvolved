@@ -170,7 +170,7 @@ public final class ExpansionSkills {
             }
             case "ember_mine", "blue_lance", "fire_shepherd" -> { return com.jayptucker.heroesevolved.pyro.PyroService.technique(c, mechanic); }
             case "smoke_and_mirrors", "pickpocket", "cloak_field" -> { return com.jayptucker.heroesevolved.invisibility.InvisibilityService.technique(c, mechanic); }
-            case "phase_carry", "phase_lock", "phase_fall" -> { return com.jayptucker.heroesevolved.phasing.PhasingService.technique(c, mechanic); }
+            case "phase_carry", "phase_lock", "phase_fall" -> { return com.jayptucker.heroesevolved.phasing.DensityService.technique(c, mechanic); }
             case "sense_powers", "overcharge", "absorb_pain" -> { return com.jayptucker.heroesevolved.mimicry.MimicryService.technique(c, mechanic); }
             default -> { return AdvancedTechniques.activate(c, mechanic); }
         }

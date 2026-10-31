@@ -263,7 +263,7 @@ public final class PowerIntroService {
                 com.jayptucker.heroesevolved.pyro.PyroService.awaken(player);
             }
             case "invisibility" -> com.jayptucker.heroesevolved.invisibility.InvisibilityService.awaken(player);
-            case "phasing" -> com.jayptucker.heroesevolved.phasing.PhasingService.awaken(player);
+            case "phasing" -> com.jayptucker.heroesevolved.phasing.DensityService.awaken(player);
             case "empathic_mimicry" -> com.jayptucker.heroesevolved.mimicry.MimicryService.awaken(player);
         }
         SOFT_LANDINGS.put(player.getUUID(), 20 * 30);

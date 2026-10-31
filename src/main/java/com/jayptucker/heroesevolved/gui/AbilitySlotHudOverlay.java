@@ -102,6 +102,7 @@ public final class AbilitySlotHudOverlay {
         y = drawClarity(guiGraphics, y);
         y = drawResonance(guiGraphics, y);
         y = drawMomentum(guiGraphics, y);
+        y = drawDensity(guiGraphics, y);
         y = drawRegrowth(guiGraphics, y);
 
         if (!hasFlightSpeedControl()) {
@@ -212,6 +213,38 @@ public final class AbilitySlotHudOverlay {
         guiGraphics.fill(START_X, y + 10, START_X + momentum, y + 13, color);
         for (int mark : new int[] {30, 50, 60}) guiGraphics.fill(START_X + mark, y + 9, START_X + mark + 1, y + 14, 0xC0FFFFFF);
         return y + LINE_HEIGHT + 6;
+    }
+
+    /**
+     * D.L. Hawkins's Density dial: a two-sided bar, Ghost to the left of centre and Dense to the right,
+     * with a notch at each setting. Underground, Breath runs out beneath it.
+     */
+    private static int drawDensity(GuiGraphics guiGraphics, int y) {
+        var mc = Minecraft.getInstance();
+        boolean phaser = ClientPowerState.getSnapshot().abilities().stream().anyMatch(power -> power.unlocked()
+                && power.abilityId().equals(ModAbilities.PHASING_ID));
+        if (mc.player == null || !phaser) return y;
+        int density = com.jayptucker.heroesevolved.network.ClientDensity.get();
+        int notch = Math.round(density / 50F);
+        int color = density < 0 ? 0xFF7FE8D8 : density > 0 ? 0xFFB4B0A8 : 0xFFE6ECEA;
+        guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.density",
+                Component.translatable("density.heroesevolved.notch." + (notch + 2))), START_X, y, color, true);
+        int mid = START_X + 50;
+        guiGraphics.fill(START_X, y + 10, START_X + 100, y + 13, 0x80283836);
+        if (density < 0) guiGraphics.fill(mid + density / 2, y + 10, mid, y + 13, 0xFF7FE8D8);
+        if (density > 0) guiGraphics.fill(mid, y + 10, mid + density / 2, y + 13, 0xFF9A958C);
+        for (int mark : new int[] {0, 25, 50, 75, 100}) guiGraphics.fill(START_X + mark, y + 9, START_X + mark + 1, y + 14, 0xC0FFFFFF);
+        y += LINE_HEIGHT + 6;
+        int breath = com.jayptucker.heroesevolved.network.ClientDensity.breath();
+        if (breath >= 0) {
+            long time = mc.level == null ? 0 : mc.level.getGameTime();
+            int air = breath > 25 || (time / 4) % 2 == 0 ? 0xFF8FD8FF : 0xFFFF6A6A;
+            guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.breath", breath), START_X, y, air, true);
+            guiGraphics.fill(START_X, y + 10, START_X + 100, y + 13, 0x80203040);
+            guiGraphics.fill(START_X, y + 10, START_X + breath, y + 13, air);
+            y += LINE_HEIGHT + 6;
+        }
+        return y;
     }
 
     /** Sonic Resonance: built by sonic hits and loud sounds, spent by a harmonic Note and by Crescendo. */

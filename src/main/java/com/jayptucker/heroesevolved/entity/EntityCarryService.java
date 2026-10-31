@@ -25,12 +25,24 @@ import java.util.UUID;
 public final class EntityCarryService {
     private static final String RECOVERY_TAG = "heroesevolved_carry_original";
     private static final double MAX_REACH = 7;
+    /** Sneak + use reach; Skyhook passes the longer {@link #MAX_REACH} and with it the overhead lift. */
+    public static final double ORDINARY_REACH = 4;
     private static final Map<UUID, Carry> CARRIES = new HashMap<>();
     private static final Map<UUID, UUID> CARRIERS_BY_CARGO = new HashMap<>();
 
     private EntityCarryService() {}
 
     public static boolean canPickUp(ServerPlayer player, Entity target, double reach) {
+        return canPickUp(player, target, reach, reach > ORDINARY_REACH);
+    }
+
+    /**
+     * Ordinary hands carry anything about your own size or smaller; {@code lift} (Flight's Skyhook)
+     * also raises bigger things overhead. Bosses are never carried.
+     */
+    public static boolean canPickUp(ServerPlayer player, Entity target, double reach, boolean lift) {
+        if (target == null || !CarryGeometry.liftable(target, lift) || target.getType().is(net.neoforged.neoforge.common.Tags.EntityTypes.BOSSES)
+                || target instanceof com.jayptucker.heroesevolved.story.sylar.SylarEntity) return false;
         if (target == null || target == player || !Double.isFinite(reach) || reach <= 0
                 || !player.isAlive() || player.isRemoved() || player.isSpectator() || player.isSleeping()
                 || PowerRules.immobilized(player) || player.isPassenger() || !player.getPassengers().isEmpty()
@@ -54,7 +66,7 @@ public final class EntityCarryService {
         recover(target);
         if (!canPickUp(player, target, reach)) return false;
         Vec3 seat = CarryGeometry.position(player, target);
-        if (!CarryGeometry.clear(player, target.getBbWidth(), target.getBbHeight(), seat)) return false;
+        if (!CarryGeometry.fits(player, target, seat)) return false;
         CarryAnchorEntity anchor = new CarryAnchorEntity(ModEntities.CARRY_ANCHOR.get(), player.serverLevel());
         anchor.setCargo(target);
         anchor.setPos(seat);
@@ -74,7 +86,7 @@ public final class EntityCarryService {
             anchor.discard();
             return false;
         }
-        Carry carry = new Carry(player, target, anchor, original, player.serverLevel(), seat);
+        Carry carry = new Carry(player, target, anchor, original, player.serverLevel(), target.position());
         CARRIES.put(player.getUUID(), carry);
         CARRIERS_BY_CARGO.put(target.getUUID(), player.getUUID());
         position(carry);
@@ -100,14 +112,17 @@ public final class EntityCarryService {
             return;
         }
         Vec3 seat = CarryGeometry.position(player, carry.cargo);
-        if (!CarryGeometry.clear(player, carry.cargo.getBbWidth(), carry.cargo.getBbHeight(), seat)) {
+        if (!CarryGeometry.fits(player, carry.cargo, seat)) {
             // An oversized passenger must not be dragged into a solid ceiling or narrow tunnel.
             releaseCarry(carry, carry.lastSafe, Vec3.ZERO, true);
             return;
         }
         hold(carry.cargo);
         position(carry);
-        carry.lastSafe = carry.cargo.position();
+        // Cargo in the arms is drawn above its real position, so remember a spot it can stand in instead.
+        Vec3 release = CarryGeometry.releasePoint(player, carry.cargo);
+        if (safe(carry.cargo, release)) carry.lastSafe = release;
+        else if (safe(carry.cargo, carry.cargo.position())) carry.lastSafe = carry.cargo.position();
     }
 
     /** Invalid placement does not change either mount link, protection or ownership. */
@@ -202,6 +217,8 @@ public final class EntityCarryService {
             return carry.cargo.position();
         if (carry.carrier.level() == carry.level && carry.cargo.level() == carry.level
                 && !carry.carrier.isRemoved() && carry.carrier.isAlive()) {
+            Vec3 release = CarryGeometry.releasePoint(carry.carrier, carry.cargo);
+            if (safe(carry.cargo, release)) return release;
             Vec3 seat = CarryGeometry.position(carry.carrier, carry.cargo);
             if (safe(carry.cargo, seat)) return seat;
         }

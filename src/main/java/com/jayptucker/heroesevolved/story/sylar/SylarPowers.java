@@ -241,14 +241,26 @@ public final class SylarPowers {
                         hurt(s, t, 8 * p);
                         sound(l, t.position(), SoundEvents.PLAYER_ATTACK_CRIT, 1.0F, 0.7F);
                     }),
-            // ---- Phasing ----
-            new Move("phase_strike", ModAbilities.PHASING_ID, 8, 150, 0, 3.5, false, Pose.ONE_HAND,
-                    (s, l, t, p) -> sound(l, s.position(), SoundEvents.ENDERMAN_TELEPORT, 0.6F, 1.6F),
-                    (s, l, t, p) -> AbilityEffects.send(l, Kind.MIND_PULSE, hand(s), hand(s), 0.5),
+            // ---- Phasing (Density) ----
+            new Move("reach_through", ModAbilities.PHASING_ID, 8, 150, 0, 3.5, false, Pose.ONE_HAND,
+                    (s, l, t, p) -> sound(l, s.position(), SoundEvents.AMETHYST_BLOCK_RESONATE, 0.8F, 0.5F),
+                    (s, l, t, p) -> AbilityEffects.send(l, Kind.DENSITY_GHOST, s.position(), s.position(), 0.5),
                     (s, l, t, p) -> {
-                        // A hand that passes through armour.
+                        // D.L.'s hand, passing through armour and closing inside: and for a while you cannot heal.
                         t.invulnerableTime = 0;
-                        if (t.hurt(s.damageSources().indirectMagic(s, s), 7 * p)) sound(l, t.position(), SoundEvents.WARDEN_HEARTBEAT, 1.0F, 1.4F);
+                        if (t.hurt(s.damageSources().indirectMagic(s, s), 7 * p)) {
+                            com.jayptucker.heroesevolved.phasing.DensityService.seal(t, 80);
+                            sound(l, t.position(), SoundEvents.WARDEN_HEARTBEAT, 1.0F, 1.4F);
+                        }
+                        AbilityEffects.send(l, Kind.DENSITY_REACH, hand(s), t.getBoundingBox().getCenter(), 1);
+                    }),
+            new Move("embed", ModAbilities.PHASING_ID, 16, 320, 0, 8, true, Pose.CROUCH,
+                    (s, l, t, p) -> sound(l, t.position(), SoundEvents.DEEPSLATE_BREAK, 0.8F, 0.5F),
+                    (s, l, t, p) -> AbilityEffects.send(l, Kind.DENSITY_RIPPLE, t.position().add(0, 0.05, 0), t.position().add(0, 1, 0), 1.2),
+                    (s, l, t, p) -> {
+                        // The floor under you goes soft, then solid again with you in it.
+                        if (com.jayptucker.heroesevolved.phasing.DensityService.embed(t, s, 50, false, 0.4) && t instanceof ServerPlayer player)
+                            SylarVoice.warn(player, "story.heroesevolved.sylar.warn.embed");
                     })
     );
 

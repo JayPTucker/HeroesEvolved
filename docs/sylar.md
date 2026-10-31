@@ -48,7 +48,7 @@ health is 80, plus 12 for every power he has taken (up to 240). He fights in thr
 | --- | --- | --- |
 | **The Watchmaker** (purple) | above half | Measured: a move every two and a half seconds |
 | **Hunger** (red) | below half | Faster, about every second and a half, and a quarter harder |
-| **Unfinished** (white) | below a fifth | Faster still and harder again. If he knows an escape power (Invisibility, Phasing, Superspeed, Time or Flight), he says he will run and does, four seconds later, unless you finish him first. |
+| **Unfinished** (white) | below a fifth | Faster still and harder again. If he knows an escape power (Invisibility, Density, Superspeed, Time or Flight), he says he will run and does, four seconds later, unless you finish him first. |
 
 Each phase change throws everyone back with a telekinetic shove.
 
@@ -75,7 +75,8 @@ telegraph in that power's colours, and a sound. A hit of 5 or more during the wi
 | Flight | Dive | 1.0 s | Rises, then slams down on you |
 | Telepathy | Dominate | 0.7 s | Darkness and nausea; nearby monsters turn on you |
 | Invisibility | Vanish | 2.0 s | Gone, then a strike from behind |
-| Phasing | Phase Strike | 0.4 s | A hand through your armour |
+| Density (Phasing) | Reach Through | 0.4 s | A hand through your armour; you can't heal for 4 seconds |
+| Density (Phasing) | Embed | 0.8 s | The floor swallows you to the waist for 2.5 seconds. Moving against it frees you sooner |
 
 He favours what he took from **you**: "Recognise it? Your power. My hands."
 
@@ -85,7 +86,7 @@ He favours what he took from **you**: "Recognise it? Your power. My hands."
 - **Precognition:** he sidesteps a shot, and sometimes a blow, at most once every four seconds.
 - **Regeneration:** he heals slowly. The first killing blow in a fight puts him down for five
   seconds instead, then he rises at two-fifths of his health.
-- **Phasing:** a wall between you does not stop him for long. He walks out of it near you.
+- **Density:** a wall between you does not stop him for long. It ripples like water as he walks out of it near you.
 - **Empathic Mimicry:** he borrows your power for the fight, even one he has never taken.
 - **Flight:** he rises after you.
 

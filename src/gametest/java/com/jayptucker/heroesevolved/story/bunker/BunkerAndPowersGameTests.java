@@ -11,7 +11,7 @@ import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.expansion.ExpansionSkills;
 import com.jayptucker.heroesevolved.invisibility.InvisibilityService;
 import com.jayptucker.heroesevolved.mimicry.MimicryService;
-import com.jayptucker.heroesevolved.phasing.PhasingService;
+import com.jayptucker.heroesevolved.phasing.DensityService;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.registry.ModBlocks;
 import com.jayptucker.heroesevolved.skills.SkillCatalog;
@@ -189,27 +189,6 @@ public final class BunkerAndPowersGameTests {
         } finally { InvisibilityService.forget(p); zombie.discard(); }
     }
 
-    @GameTest(template = "rewind_empty", batch = "phasing")
-    public static void phaseStepCrossesWallsButNeverBedrock(GameTestHelper h) {
-        ServerPlayer p = player(h, ModAbilities.PHASING_ID, 5);
-        for (int z = 4; z <= 5; z++) for (int y = 2; y <= 4; y++) h.getLevel().setBlock(h.absolutePos(new BlockPos(3, y, z)), Blocks.STONE.defaultBlockState(), 3);
-        try {
-            double before = p.getZ();
-            h.assertTrue(PhasingService.phaseStep(p, 5, false), "Phase Step must find the open space past the wall");
-            h.assertTrue(p.getZ() > h.absolutePos(new BlockPos(3, 2, 5)).getZ(), "The phaser lands beyond the wall, not inside it: " + before + " -> " + p.getZ());
-            ServerPlayer blocked = player(h, ModAbilities.PHASING_ID, 5);
-            for (int y = 2; y <= 4; y++) h.getLevel().setBlock(h.absolutePos(new BlockPos(3, y, 4)), Blocks.BEDROCK.defaultBlockState(), 3);
-            h.assertTrue(!PhasingService.phaseStep(blocked, 5, false), "Bedrock cannot be phased through");
-            h.assertTrue(PhasingService.toggleIntangible(blocked), "Intangible toggles on");
-            var zombie = EntityType.ZOMBIE.create(h.getLevel());
-            float health = blocked.getHealth();
-            blocked.hurt(blocked.damageSources().mobAttack(zombie), 6);
-            h.assertTrue(blocked.getHealth() == health, "Blows pass through an intangible player");
-            PhasingService.forget(blocked);
-            h.succeed();
-        } finally { PhasingService.forget(p); }
-    }
-
     @GameTest(template = "rewind_empty", batch = "mimicry")
     public static void mimicRemembersAPowerAndEchoesIt(GameTestHelper h) {
         ServerPlayer p = player(h, ModAbilities.MIMICRY_ID, 3);
@@ -247,7 +226,7 @@ public final class BunkerAndPowersGameTests {
                     victim.discard();
                     ExpansionSkills.forget(p);
                     InvisibilityService.forget(p);
-                    PhasingService.forget(p);
+                    DensityService.forget(p);
                     com.jayptucker.heroesevolved.pyro.PyroService.forget(p);
                 }
             }

@@ -17,6 +17,10 @@ public final class CarryAnchorEntity extends Entity {
             CarryAnchorEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> CARGO_HEIGHT = SynchedEntityData.defineId(
             CarryAnchorEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> CARGO_EYE = SynchedEntityData.defineId(
+            CarryAnchorEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Byte> HOLD = SynchedEntityData.defineId(
+            CarryAnchorEntity.class, EntityDataSerializers.BYTE);
 
     public CarryAnchorEntity(EntityType<? extends CarryAnchorEntity> entityType, Level level) {
         super(entityType, level);
@@ -28,23 +32,33 @@ public final class CarryAnchorEntity extends Entity {
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         builder.define(CARGO_WIDTH, .6F);
         builder.define(CARGO_HEIGHT, 1.8F);
+        builder.define(CARGO_EYE, 1.62F);
+        builder.define(HOLD, (byte) CarryGeometry.Hold.ARMS.ordinal());
     }
 
     public void setCargo(Entity held) {
         entityData.set(CARGO_WIDTH, held.getBbWidth());
         entityData.set(CARGO_HEIGHT, held.getBbHeight());
+        entityData.set(CARGO_EYE, held.getEyeHeight());
+        entityData.set(HOLD, (byte) CarryGeometry.hold(held).ordinal());
+    }
+
+    /** How the cargo is held: decided once on the server at pickup, so every side draws it the same way. */
+    public CarryGeometry.Hold hold() {
+        CarryGeometry.Hold[] holds = CarryGeometry.Hold.values();
+        return holds[Math.floorMod(entityData.get(HOLD), holds.length)];
     }
 
     public Entity carrier() { return getVehicle(); }
 
     public Vec3 seatPosition(Entity carrier) {
         Entity held = getFirstPassenger();
-        Vec3 seat = held == null
-                ? CarryGeometry.position(carrier, entityData.get(CARGO_WIDTH), entityData.get(CARGO_HEIGHT))
-                : CarryGeometry.position(carrier, held);
+        CarryGeometry.Hold hold = hold();
         double width = held == null ? entityData.get(CARGO_WIDTH) : held.getBbWidth();
         double height = held == null ? entityData.get(CARGO_HEIGHT) : held.getBbHeight();
-        return CarryGeometry.clear(carrier, width, height, seat) ? seat : position();
+        double eye = held == null ? entityData.get(CARGO_EYE) : held.getEyeHeight();
+        Vec3 seat = CarryGeometry.position(carrier, hold, width, height, eye);
+        return CarryGeometry.fits(carrier, hold, width, height, seat) ? seat : position();
     }
 
     @Override
@@ -65,8 +79,9 @@ public final class CarryAnchorEntity extends Entity {
     @Override
     public LivingEntity getControllingPassenger() { return null; }
 
+    /** A person carried in the arms sits in them: vanilla folds their legs at the hips. */
     @Override
-    public boolean shouldRiderSit() { return false; }
+    public boolean shouldRiderSit() { return hold() == CarryGeometry.Hold.ARMS; }
 
     @Override
     public Vec3 getDismountLocationForPassenger(LivingEntity passenger) { return position(); }

@@ -28,24 +28,9 @@ grown to 18 nodes; see the end of this page.
 
 ## Phasing (D.L. Hawkins)
 
-| Key | Level | Ability | What it does |
-| --- | --- | --- | --- |
-| G | 1 | **Phase Step** | Walk straight through the wall ahead to the open space beyond (up to 2 + level blocks). Shift brings one friend. |
-| H | 1 | **Intangible** | Toggle: blows, arrows, falls, blasts and falling blocks pass through you. You can't attack. Drains stamina. |
-| Z | 2 | **Phase Strike** | Reach inside an enemy within 6 blocks for 6 + level damage that ignores armor. |
-| X | 3 | **Phase Drop** | Sink through the floor to the next open space, up to 16 blocks. Shift rises through the ceiling instead. |
-| V | 5 | **Phase Walk** | For 8 s, walking into a wall up to 3 blocks thick carries you through it. |
-
-**Safety:**
-- Every phase ends in a checked open space. You never stop inside a block.
-- You can't pass bedrock, barriers, lava or protected ground (spawn protection and claims).
-- You can't suffocate in walls.
-
-| Branch | Active skill | Technique, then upgrade, then capstone |
-| --- | --- | --- |
-| Infiltrator | Through-Strike | **Phase Carry** (phase with up to 3 friends), then Thicker Walls (+4 blocks), then **Ghost Network** (intangible on arrival) |
-| Density | Solidify | **Phase Lock** (sink an enemy into the ground), then Long Lock, then **Entombed** (locked enemies take damage) |
-| Escape Artist | Fade Through | **Phase Fall** (Phase Drop with friends), then Deep Fall (32 blocks), then **Untouchable** (Intangible drains half as fast) |
+Phasing has been reworked as **Density**: a dial from Full Ghost to Full Dense, Reach Through, Embed,
+Sink and Hollow Ground. See [Density](density.md). Walking through walls at speed now belongs to
+Superspeed's Vibrate.
 
 ## Empathic Mimicry (Peter Petrelli)
 

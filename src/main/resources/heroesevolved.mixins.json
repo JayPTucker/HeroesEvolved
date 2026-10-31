@@ -8,7 +8,9 @@
     "EmpSignalMixin",
     "PlayerListSaveAccess",
     "StoppedTimeInputMixin",
-    "SpeedWaterCollisionMixin"
+    "SpeedWaterCollisionMixin",
+    "SunkPlayerMixin",
+    "CarriedPickMixin"
   ],
   "client": [
     "FlightSprintMixin",
