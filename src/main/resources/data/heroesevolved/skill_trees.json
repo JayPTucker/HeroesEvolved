@@ -1736,7 +1736,7 @@
         {
           "id": "superspeed_long_perception",
           "name": "Long Perception",
-          "description": "Perception lasts ten seconds.",
+          "description": "Perception lasts ten seconds and reaches 16 blocks.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -1746,7 +1746,7 @@
         {
           "id": "superspeed_flash_time",
           "name": "Flash Time",
-          "description": "Projectiles near you stop dead in the air while Perception lasts.",
+          "description": "Projectiles near you stop dead in the air, and everything else slows to a sixth, while Perception lasts.",
           "active": false,
           "capstone": true,
           "level": 5,

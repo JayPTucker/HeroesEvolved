@@ -31,6 +31,8 @@ final class SpeedEffects {
             case SPEED_ZIP -> zip(origin, target, size, random, detail);
             case SPEED_CYCLONE -> cyclone(level, origin, target, size, random, detail);
             case SPEED_STREAK -> streak(origin, target, size, random, detail);
+            case SPEED_BOLT -> thrown(origin, target, size, random);
+            case SPEED_PERCEPTION -> perception(origin, size, random, detail);
             default -> { return false; }
         }
         return true;
@@ -162,5 +164,36 @@ final class SpeedEffects {
         // The scar fades slowly: friction burned into the ground.
         LightningRenderer.stroke(List.of(from, to), 0.25F, 0.25F, EMBER, 0.45F, 60, 0);
         if (detail) SpeedAfterimages.along(from, to, 8);
+    }
+
+    /** Lightning Throw: the runner's own gold lightning, hurled. A fat bolt, a forked twin, and a flash where it lands. */
+    private static void thrown(Vec3 from, Vec3 to, float size, RandomSource random) {
+        bolt(from, to, 0.06F * size, random, 10, 0);
+        bolt(from, to, 0.03F * size, random, 7, 1);
+        LightningRenderer.star(to, 0.5F * size, HOT, 1F, 6, 0);
+        for (int i = 0; i < 4; i++) {
+            double angle = random.nextDouble() * Math.PI * 2;
+            bolt(to, to.add(Math.cos(angle) * size * 0.7, (random.nextDouble() - 0.3) * size * 0.6, Math.sin(angle) * size * 0.7), 0.02F, random, 5, 1);
+        }
+    }
+
+    /**
+     * Perception: the world slows around the runner. Gold clock rings ripple out to the edge of the
+     * slowed zone, and motes hang in the air, barely drifting, with thin threads of lightning between them.
+     */
+    private static void perception(Vec3 feet, float radius, RandomSource random, boolean detail) {
+        Vec3 center = feet.add(0, 0.1, 0);
+        for (int i = 0; i < 3; i++)
+            LightningRenderer.stroke(PrecogEffects.circle(center.add(0, i * 0.05, 0), new Vec3(1, 0, 0), new Vec3(0, 0, 1),
+                    radius * (0.35 + i * 0.32), 48), 0.05F, 0.05F, i == 2 ? AMBER : GOLD, 0.5F - i * 0.1F, 14, i * 3);
+        int motes = detail ? 14 : 6;
+        Vec3 last = null;
+        for (int i = 0; i < motes; i++) {
+            double angle = random.nextDouble() * Math.PI * 2, distance = 1.5 + random.nextDouble() * (radius - 1.5);
+            Vec3 mote = center.add(Math.cos(angle) * distance, 0.4 + random.nextDouble() * 2.4, Math.sin(angle) * distance);
+            LightningRenderer.star(mote, 0.08F, i % 3 == 0 ? HOT : GOLD, 0.8F, 20, random.nextInt(6));
+            if (last != null && i % 4 == 0 && last.distanceToSqr(mote) < 25) bolt(last, mote, 0.012F, random, 8, 2);
+            last = mote;
+        }
     }
 }

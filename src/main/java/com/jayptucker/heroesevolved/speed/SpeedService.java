@@ -13,6 +13,7 @@ import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 import com.jayptucker.heroesevolved.progression.MasteryService;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.resources.ResourceLocation;
@@ -57,10 +58,18 @@ public final class SpeedService {
         long lastMoving = Long.MIN_VALUE, redlineUntil;
         int activeTicks, wallTicks, momentum, sentMomentum = -1;
         boolean barrier;
-        double modifier = -1, distanceBank;
+        double modifier = -1, distanceBank, speed;
+        Vec3 heading = Vec3.ZERO;
         Runner(ServerPlayer p) { player = p; level = p.level(); previous = p.position(); trailPrevious = previous; }
     }
     private record Flurry(ServerPlayer player, LivingEntity target, int damage, long start) {}
+    /** A blast queued until the end of the tick, so vanilla knockback cannot halve it; then a window for slamming into a wall. */
+    private record Impact(ServerPlayer attacker, LivingEntity target, Vec3 push, float force, long until) {}
+    private static final List<Impact> PENDING = new ArrayList<>();
+    private static final Map<UUID, Impact> SLAMS = new HashMap<>();
+    /** Target -> tick before which it cannot be impacted again; target -> end of a rapid-punch flurry; runner -> last punch / catch. */
+    private static final Map<UUID, Long> IMPACTED = new HashMap<>(), PUMMELED = new HashMap<>(), LAST_PUNCH = new HashMap<>(), CAUGHT = new HashMap<>();
+    public static final ResourceLocation QUICK_HANDS = ResourceLocation.fromNamespaceAndPath("heroesevolved", "speed_quick_hands");
     private SpeedService() {}
     private static long now(ServerPlayer p) { return p.getServer().overworld().getGameTime(); }
     public static boolean awakened(ServerPlayer p) {
@@ -70,7 +79,7 @@ public final class SpeedService {
     public static boolean toggle(ServerPlayer p) {
         if (active(p)) { stop(p); return true; }
         RUNNERS.put(p.getUUID(), new Runner(p));
-        syncMarker(p, ACCELERATING, true);
+        syncMarker(p, ACCELERATING, true); quickHands(p, true);
         p.displayClientMessage(Component.translatable("speed.heroesevolved.enabled"), true);
         cue(p); return true;
     }
@@ -78,12 +87,12 @@ public final class SpeedService {
         boolean active = RUNNERS.remove(p.getUUID()) != null;
         if (active) com.jayptucker.heroesevolved.network.MomentumPayload.send(p, 0);
         removeModifiers(p);
-        syncMarker(p, ACCELERATING, false); syncMarker(p, WATER_RUN, false);
+        syncMarker(p, ACCELERATING, false); syncMarker(p, WATER_RUN, false); quickHands(p, false);
         return active;
     }
     public static boolean redline(ServerPlayer p) {
         Runner r = RUNNERS.computeIfAbsent(p.getUUID(), id -> new Runner(p));
-        syncMarker(p, ACCELERATING, true);
+        syncMarker(p, ACCELERATING, true); quickHands(p, true);
         r.redlineUntil = now(p) + 240;
         r.momentum = 100;
         REFLEX.put(p.getUUID(), r.redlineUntil);
@@ -223,15 +232,21 @@ public final class SpeedService {
                 AbilityEffects.send(f.player.serverLevel(), Kind.SPEED_IMPACT, f.player.getEyePosition(), f.target.getEyePosition(), 1);
             }
         }
+        applyImpacts(now);
         SpeedKit.tick(server, now);
         BUFFETED.values().removeIf(until -> until <= now);
+        IMPACTED.values().removeIf(until -> until <= now); PUMMELED.values().removeIf(until -> until <= now);
+        LAST_PUNCH.values().removeIf(at -> at + 40 <= now); CAUGHT.values().removeIf(until -> until <= now);
         REFLEX.values().removeIf(until -> until <= now); DODGED.values().removeIf(until -> until <= now);
     }
     public static void tickRunner(ServerPlayer p) {
         Runner r = RUNNERS.get(p.getUUID()); if (r == null) return;
         // Determine motion before asking time fields whether the runner can act.
         double distance = p.position().subtract(r.previous).horizontalDistanceSqr();
-        if (distance > .01 && distance < 25 && p.isSprinting()) r.lastMoving = now(p);
+        if (distance > .01 && distance < 25 && p.isSprinting()) {
+            r.lastMoving = now(p); r.speed = Math.sqrt(distance);
+            r.heading = horizontal(p.position().subtract(r.previous));
+        }
         if (!awakened(p) || !PowerRules.canAct(p) || p.isPassenger() || p.level() != r.level || p.isFallFlying()) { stop(p); return; }
         int level = PlayerProgressionService.getLevel(p);
         boolean running = p.isSprinting() && !p.isShiftKeyDown();
@@ -349,6 +364,146 @@ public final class SpeedService {
         AbilityEffects.at(p, Kind.SPEED_BURST, 2);
         return damage;
     }
+    /** Running speed in blocks per tick that starts to land as an impact, and the speed at which it is full. */
+    static final double IMPACT_SPEED = .6, FULL_IMPACT_SPEED = 2;
+
+    /** How hard a punch lands from actual running speed: 0 below {@link #IMPACT_SPEED}, 1 at full. */
+    public static float impactForce(ServerPlayer p) {
+        Runner r = RUNNERS.get(p.getUUID());
+        if (r == null || r.lastMoving == Long.MIN_VALUE || now(p) - r.lastMoving > 3 || !PowerRules.canAct(p)) return 0;
+        return (float) Math.min(1, Math.max(0, (r.speed - IMPACT_SPEED) / (FULL_IMPACT_SPEED - IMPACT_SPEED)));
+    }
+
+    /**
+     * A punch thrown at speed: extra damage scaled by how fast you were really moving, and the target
+     * blasted along your running line. Returns the bonus damage. Players take less of both.
+     */
+    public static float speedImpact(ServerPlayer p, LivingEntity t) {
+        Runner r = RUNNERS.get(p.getUUID());
+        if (r == null || !canHit(p, t)) return 0;
+        float force = impactForce(p);
+        if (force <= 0) return 0;
+        boolean pvp = t instanceof ServerPlayer;
+        Vec3 toward = horizontal(t.position().subtract(p.position()));
+        Vec3 line = r.heading.lengthSqr() > 0 ? r.heading : horizontal(p.getLookAngle());
+        Vec3 direction = horizontal(line.scale(.65).add(Double.isFinite(toward.x) ? toward.scale(.35) : Vec3.ZERO));
+        if (!Double.isFinite(direction.x)) direction = horizontal(p.getLookAngle());
+        double resist = t.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE) * .85;
+        double scale = (pvp ? .6 : 1) * Math.max(.15, 1 - resist);
+        Vec3 push = direction.scale((.9 + 2.3 * force) * scale).add(0, (.35 + .3 * force) * Math.max(.4, scale), 0);
+        if (IMPACTED.getOrDefault(t.getUUID(), 0L) > now(p)) return 0;
+        IMPACTED.put(t.getUUID(), now(p) + 10);
+        PENDING.removeIf(i -> i.target == t);
+        PENDING.add(new Impact(p, t, push, force, now(p) + 15));
+        // Hitting something solid costs you some of your run.
+        r.momentum = Math.max(0, r.momentum - 15);
+
+        ServerLevel level = p.serverLevel();
+        Vec3 at = t.position().add(0, t.getBbHeight() * .6, 0);
+        AbilityEffects.send(level, Kind.SPEED_IMPACT, p.getEyePosition(), at, 1.4 + force * 1.6);
+        if (force >= .6) AbilityEffects.send(level, Kind.SPEED_BOOM, at, at.add(direction), .8 + force);
+        level.playSound(null, t.blockPosition(), SoundEvents.PLAYER_ATTACK_KNOCKBACK, SoundSource.PLAYERS, 1, .7F);
+        level.playSound(null, t.blockPosition(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, .25F + force * .35F, 1.6F - force * .4F);
+        com.jayptucker.heroesevolved.network.CameraShakePayload.sendAround(level, at, 8, .25F + force * .6F, 6);
+        return pvp ? 1 + 1.5F * force : 2 + 8 * force;
+    }
+
+    /** Applies queued blasts after vanilla's own knockback, and slams flying targets into walls. */
+    static void applyImpacts(long now) {
+        for (Impact i : List.copyOf(PENDING)) {
+            LivingEntity t = i.target;
+            if (!t.isAlive()) continue;
+            t.setDeltaMovement(i.push); t.hurtMarked = true;
+            if (t instanceof ServerPlayer other) other.connection.send(new ClientboundSetEntityMotionPacket(other));
+            else SLAMS.put(t.getUUID(), i);
+        }
+        PENDING.clear();
+        for (Impact i : List.copyOf(SLAMS.values())) {
+            LivingEntity t = i.target;
+            if (!t.isAlive() || now > i.until || t.level() != i.attacker.level()) { SLAMS.remove(t.getUUID()); continue; }
+            if (!t.horizontalCollision) continue;
+            SLAMS.remove(t.getUUID());
+            ServerLevel level = (ServerLevel) t.level();
+            t.invulnerableTime = 0;
+            hit(i.attacker, t, 2 + 4 * i.force);
+            Vec3 at = t.position().add(0, t.getBbHeight() * .5, 0);
+            AbilityEffects.send(level, Kind.SPEED_IMPACT, at, at.add(i.push.normalize()), 2 + i.force);
+            level.playSound(null, t.blockPosition(), SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, .45F, .6F);
+            level.sendParticles(ParticleTypes.EXPLOSION, at.x, at.y, at.z, 1, 0, 0, 0, 0);
+            com.jayptucker.heroesevolved.network.CameraShakePayload.sendAround(level, at, 8, .4F + i.force * .5F, 6);
+        }
+    }
+
+    /** While Accelerate is on, your arms are as fast as your legs: weapons recharge three times faster. */
+    private static void quickHands(ServerPlayer p, boolean enabled) {
+        var attribute = p.getAttribute(Attributes.ATTACK_SPEED);
+        if (attribute == null) return;
+        if (enabled && !attribute.hasModifier(QUICK_HANDS))
+            attribute.addTransientModifier(new AttributeModifier(QUICK_HANDS, 2, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+        else if (!enabled) attribute.removeModifier(QUICK_HANDS);
+    }
+
+    /** Fastest a speedster's punches can land on the same body, in ticks. */
+    static final int PUNCH_INTERVAL = 2;
+
+    /**
+     * Before a punch lands: a speedster's next blow comes faster than a body can flinch, so the
+     * hurt-immunity left by the previous one is waived (at most every {@link #PUNCH_INTERVAL} ticks).
+     */
+    public static void beforePunch(ServerPlayer p, Entity target) {
+        if (!(target instanceof LivingEntity t) || !SpeedMovement.accelerating(p) || !canHit(p, t)) return;
+        long now = now(p);
+        if (LAST_PUNCH.getOrDefault(p.getUUID(), Long.MIN_VALUE / 2) + PUNCH_INTERVAL > now) return;
+        LAST_PUNCH.put(p.getUUID(), now);
+        t.invulnerableTime = 0;
+    }
+
+    /**
+     * A punch's damage. Inside a flurry of rapid punches every blow after the first does half damage
+     * (a third against players); the first carries the Momentum charge and the running impact.
+     */
+    public static float punch(ServerPlayer p, LivingEntity t, float amount) {
+        boolean pvp = t instanceof ServerPlayer;
+        float total = amount + consumeImpact(p, pvp) + speedImpact(p, t);
+        if (!SpeedMovement.accelerating(p)) return total;
+        long now = now(p);
+        boolean followUp = PUMMELED.getOrDefault(t.getUUID(), 0L) > now;
+        PUMMELED.put(t.getUUID(), now + 10);
+        if (!followUp) return total;
+        AbilityEffects.send(p.serverLevel(), Kind.SPEED_IMPACT, p.getEyePosition(), t.getEyePosition(), .7);
+        return total * (pvp ? .35F : .5F);
+    }
+
+    /**
+     * Right-click a shot in flight to pluck it out of the air. Arrows and thrown items you could pick
+     * up go into your pocket; anything else (fireballs, skulls) is simply snuffed out.
+     */
+    public static boolean catchShot(ServerPlayer p, Entity e) {
+        if (!(e instanceof Projectile shot) || shot.isRemoved() || shot.getOwner() == p || !SpeedMovement.accelerating(p)) return false;
+        long now = now(p);
+        if (CAUGHT.getOrDefault(p.getUUID(), 0L) > now || shot.level() != p.level()) return false;
+        Vec3 eye = p.getEyePosition(), to = shot.position().subtract(eye);
+        // Server-side reach and aim check: within 7 blocks and roughly where you are looking, and still flying.
+        if (to.lengthSqr() > 49 || to.lengthSqr() > 1 && to.normalize().dot(p.getLookAngle()) < .8
+                || shot.getDeltaMovement().lengthSqr() < .0025) return false;
+        if (!PlayerEnergyService.tryConsume(p, 2)) return false;
+        CAUGHT.put(p.getUUID(), now + 4);
+        net.minecraft.world.item.ItemStack prize = net.minecraft.world.item.ItemStack.EMPTY;
+        if (shot instanceof net.minecraft.world.entity.projectile.AbstractArrow arrow && arrow.pickup == net.minecraft.world.entity.projectile.AbstractArrow.Pickup.ALLOWED)
+            prize = arrow.getPickupItemStackOrigin().copy();
+        else if (shot instanceof net.minecraft.world.entity.projectile.ThrowableItemProjectile thrown) prize = thrown.getItem().copy();
+        Vec3 at = shot.position();
+        shot.discard();
+        if (!prize.isEmpty() && !p.getInventory().add(prize)) p.drop(prize, false);
+        p.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
+        ServerLevel level = p.serverLevel();
+        AbilityEffects.send(level, Kind.SPEED_IMPACT, eye, at, .8);
+        AbilityEffects.send(level, Kind.SPEED_TRAIL, p.position(), at.subtract(0, .9, 0), .6);
+        level.playSound(null, p.blockPosition(), SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, .6F, 1.6F);
+        level.playSound(null, p.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, .4F, 2F);
+        return true;
+    }
+
     private static void removeModifiers(ServerPlayer p) {
         p.getAttribute(Attributes.MOVEMENT_SPEED).removeModifier(STRIDE);
         p.getAttribute(Attributes.STEP_HEIGHT).removeModifier(STEP);
@@ -363,6 +518,6 @@ public final class SpeedService {
         stop(p); FLURRIES.remove(p.getUUID()); REFLEX.remove(p.getUUID()); DODGED.remove(p.getUUID()); SpeedKit.forget(p);
         com.jayptucker.heroesevolved.network.MomentumPayload.send(p, 0);
     }
-    public static void clear() { for (Runner r : List.copyOf(RUNNERS.values())) stop(r.player); FLURRIES.clear(); REFLEX.clear(); DODGED.clear(); BUFFETED.clear(); SpeedKit.clear(); }
+    public static void clear() { for (Runner r : List.copyOf(RUNNERS.values())) stop(r.player); FLURRIES.clear(); REFLEX.clear(); DODGED.clear(); BUFFETED.clear(); PENDING.clear(); SLAMS.clear(); IMPACTED.clear(); PUMMELED.clear(); LAST_PUNCH.clear(); CAUGHT.clear(); SpeedKit.clear(); }
     private static void cue(ServerPlayer p) { p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, .7F, 1.4F); }
 }

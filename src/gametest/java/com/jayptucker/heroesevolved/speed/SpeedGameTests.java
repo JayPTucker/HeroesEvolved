@@ -159,6 +159,93 @@ public final class SpeedGameTests {
             h.assertTrue(SpeedService.momentum(p) == 100 && SpeedService.consumeImpact(p, false) == 12, "Redline immediately primes a stronger PvE impact"); h.succeed();
         } finally { SpeedService.forget(p); }
     }
+    private static net.minecraft.world.entity.monster.Pillager dummy(GameTestHelper h, Vec3 at) {
+        var enemy = EntityType.PILLAGER.create(h.getLevel()); enemy.setNoAi(true); enemy.setPos(at); h.getLevel().addFreshEntity(enemy); return enemy;
+    }
+    @GameTest(template="rewind_empty", batch="speed.impact")
+    public static void aPunchAtSpeedHitsHarderAndBlastsTheTargetAlongTheRun(GameTestHelper h) {
+        var p = player(h); var still = dummy(h, p.position().add(-2, 0, 0));
+        try {
+            SpeedService.toggle(p);
+            still.hurt(p.damageSources().playerAttack(p), 1);
+            h.assertTrue(still.getMaxHealth() - still.getHealth() == 1, "A standing punch gets no impact");
+            p.setSprinting(true);
+            for (int i = 0; i < 4; i++) { p.setPos(p.position().add(0, 0, 1.5)); SpeedService.tickRunner(p); }
+            h.assertTrue(SpeedService.momentum(p) < SpeedService.AURA_MOMENTUM, "Only the running speed is under test");
+            var enemy = dummy(h, p.position().add(0, 0, 1.5));
+            enemy.hurt(p.damageSources().playerAttack(p), 1);
+            float dealt = enemy.getMaxHealth() - enemy.getHealth();
+            h.assertTrue(dealt > 5, "A running punch must land far harder, dealt " + dealt);
+            SpeedService.applyImpacts(h.getLevel().getGameTime());
+            h.assertTrue(enemy.getDeltaMovement().z > 1 && enemy.getDeltaMovement().y > 0, "The target is blasted along the run");
+            enemy.invulnerableTime = 0; float before = enemy.getHealth();
+            enemy.hurt(p.damageSources().playerAttack(p), 1);
+            h.assertTrue(before - enemy.getHealth() <= 1, "The same body cannot be impacted twice in a breath");
+            enemy.discard(); h.succeed();
+        } finally { still.discard(); SpeedService.forget(p); }
+    }
+    @GameTest(template="rewind_empty", batch="speed.punches")
+    public static void rapidPunchesSkipFlinchingButEachFollowUpIsLighter(GameTestHelper h) {
+        var p = player(h); var enemy = dummy(h, p.position().add(0, 0, 1.5));
+        SpeedService.toggle(p);
+        SpeedService.beforePunch(p, enemy); enemy.hurt(p.damageSources().playerAttack(p), 4);
+        float first = enemy.getMaxHealth() - enemy.getHealth();
+        SpeedService.beforePunch(p, enemy);
+        h.assertTrue(enemy.invulnerableTime > 0, "Punches are rate-limited within the same tick");
+        h.runAfterDelay(SpeedService.PUNCH_INTERVAL + 1, () -> {
+            try {
+                float health = enemy.getHealth();
+                SpeedService.beforePunch(p, enemy); enemy.hurt(p.damageSources().playerAttack(p), 4);
+                float second = health - enemy.getHealth();
+                h.assertTrue(first == 4 && second == 2, "Follow-up punches land at half damage: " + first + ", " + second);
+                SpeedService.stop(p);
+                h.assertTrue(!p.getAttribute(Attributes.ATTACK_SPEED).hasModifier(SpeedService.QUICK_HANDS), "Quick hands end with Accelerate");
+                h.succeed();
+            } finally { enemy.discard(); SpeedService.forget(p); }
+        });
+    }
+    @GameTest(template="rewind_empty", batch="speed.catch")
+    public static void aSpeedsterCatchesAnArrowOutOfTheAir(GameTestHelper h) {
+        var p = player(h);
+        var arrow = new Arrow(EntityType.ARROW, h.getLevel());
+        arrow.setPos(p.getEyePosition().add(0, 0, 3)); arrow.setDeltaMovement(0, 0, -2);
+        arrow.pickup = net.minecraft.world.entity.projectile.AbstractArrow.Pickup.ALLOWED;
+        h.getLevel().addFreshEntity(arrow);
+        try {
+            h.assertTrue(!SpeedService.catchShot(p, arrow), "Catching needs Accelerate");
+            SpeedService.toggle(p);
+            h.assertTrue(SpeedService.catchShot(p, arrow) && arrow.isRemoved(), "The arrow is plucked out of the air");
+            h.assertTrue(p.getInventory().countItem(net.minecraft.world.item.Items.ARROW) == 1, "A caught arrow goes in your pocket");
+            var behind = new Arrow(EntityType.ARROW, h.getLevel());
+            behind.setPos(p.getEyePosition().add(0, 0, -3)); behind.setDeltaMovement(0, 0, -.08); behind.setNoGravity(true); h.getLevel().addFreshEntity(behind);
+            h.runAfterDelay(5, () -> {
+                try { h.assertTrue(!SpeedService.catchShot(p, behind), "You cannot catch what you are not looking at"); h.succeed(); }
+                finally { behind.discard(); SpeedService.forget(p); }
+            });
+        } catch (RuntimeException e) { SpeedService.forget(p); throw e; }
+    }
+    @GameTest(template="rewind_empty", batch="speed.perception")
+    public static void perceptionRunsTheWorldAroundTheRunnerAtAThird(GameTestHelper h) {
+        var p = player(h);
+        var near = dummy(h, p.position().add(0, 0, 4)); var far = dummy(h, p.position().add(0, 0, 30));
+        var villager = EntityType.VILLAGER.create(h.getLevel()); villager.setPos(p.position().add(2, 0, 0)); h.getLevel().addFreshEntity(villager);
+        int[] ran = {0}, villagerRan = {0};
+        com.jayptucker.heroesevolved.expansion.AdvancedTechniques.startPerception(p);
+        for (int tick = 0; tick < 3; tick++) h.runAfterDelay(tick, () -> {
+            if (!com.jayptucker.heroesevolved.expansion.AdvancedTechniques.perceptionSkips(near)) ran[0]++;
+            if (!com.jayptucker.heroesevolved.expansion.AdvancedTechniques.perceptionSkips(villager)) villagerRan[0]++;
+            h.assertTrue(!com.jayptucker.heroesevolved.expansion.AdvancedTechniques.perceptionSkips(far), "Far entities are unaffected");
+            h.assertTrue(!com.jayptucker.heroesevolved.expansion.AdvancedTechniques.perceptionSkips(p), "Players are never tick-skipped");
+        });
+        h.runAfterDelay(4, () -> {
+            try {
+                h.assertTrue(ran[0] == 1 && villagerRan[0] == 1, "Everything nearby runs one tick in three: " + ran[0] + ", " + villagerRan[0]);
+                com.jayptucker.heroesevolved.expansion.AdvancedTechniques.endPerception(p);
+                h.assertTrue(!com.jayptucker.heroesevolved.expansion.AdvancedTechniques.perceptionSkips(near), "Ending Perception restores time");
+                h.succeed();
+            } finally { near.discard(); far.discard(); villager.discard(); com.jayptucker.heroesevolved.expansion.AdvancedTechniques.endPerception(p); }
+        });
+    }
     @GameTest(template="rewind_empty", batch="speed.ownership")
     public static void superspeedUsesTheUniqueOwnershipRule(GameTestHelper h) {
         var data = new PowerOwnershipSavedData(); UUID first = UUID.randomUUID(), second = UUID.randomUUID();

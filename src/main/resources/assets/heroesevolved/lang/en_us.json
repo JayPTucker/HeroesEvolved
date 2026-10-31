@@ -571,7 +571,7 @@
   "action.heroesevolved.superspeed_lightning_throw": "Lightning Throw",
   "action.heroesevolved.superspeed_lightning_throw.desc": "Spend your Momentum (at least 30) to hurl a bolt of your own lightning at an enemy within 32 blocks. It counts as electricity.",
   "action.heroesevolved.superspeed_perception": "Perception",
-  "action.heroesevolved.superspeed_perception.desc": "For six seconds the world slows for you: projectiles near you crawl at a third of their speed.",
+  "action.heroesevolved.superspeed_perception.desc": "For six seconds the world slows around you: everything within 12 blocks moves at a third of its speed, enemy players are dragged down, and projectiles crawl.",
   "action.heroesevolved.precognition_foresight": "Foresight",
   "action.heroesevolved.precognition_foresight.desc": "For ten seconds, sidestep the next three blows you see coming.",
   "action.heroesevolved.precognition_find_the_path": "Find the Path",

@@ -10,6 +10,8 @@ import com.jayptucker.heroesevolved.effects.WorldMutationPolicy;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.invisibility.InvisibilityService;
 import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
+import com.jayptucker.heroesevolved.network.ScreenTintPayload;
+import com.jayptucker.heroesevolved.ability.service.PowerRules;
 import com.jayptucker.heroesevolved.radiation.RadiationService;
 import com.jayptucker.heroesevolved.registry.ModBlocks;
 import com.jayptucker.heroesevolved.skills.SkillTreeService;
@@ -76,7 +78,9 @@ public final class AdvancedTechniques {
     private static final Map<UUID, Long> HIVE = new HashMap<>();         // linked player -> until
     private static final Map<UUID, UUID> HIVE_OWNER = new HashMap<>();
     private static final Map<UUID, Long> MIRAGES = new HashMap<>();
-    private static final Map<UUID, Long> PERCEPTION = new HashMap<>();
+    /** Perception: the world around a runner moves at a fraction of its speed. */
+    private record Perception(ServerPlayer owner, long until, double radius, int interval, boolean stop) {}
+    private static final Map<UUID, Perception> PERCEPTION = new HashMap<>();
     private static final Map<UUID, Integer> DODGES = new HashMap<>();
     private static final Map<UUID, Long> DODGE_UNTIL = new HashMap<>();
     private static final Map<UUID, Long> OMENS = new HashMap<>();
@@ -349,15 +353,12 @@ public final class AdvancedTechniques {
                 Vec3 from = p.getEyePosition();
                 for (LivingEntity t : struck) {
                     if (!PowerReactions.electric(p, t)) t.hurt(p.damageSources().lightningBolt(), 6 + momentum / 10F);
-                    AbilityEffects.send(level, Kind.ELECTRIC_ARC, from, t.getEyePosition(), 1.5);
+                    AbilityEffects.send(level, Kind.SPEED_BOLT, from, t.getEyePosition(), 1.5);
                     from = t.getEyePosition();
                 }
                 level.playSound(null, p.blockPosition(), SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 0.8F, 1.4F);
             }
-            case "perception" -> {
-                PERCEPTION.put(p.getUUID(), now + (has(p, "superspeed_long_perception") ? 200 : 120));
-                AbilityEffects.send(level, Kind.TEMPORAL_FIELD, p.position(), p.getEyePosition(), 4);
-            }
+            case "perception" -> startPerception(p);
             // ---------------- Precognition ----------------
             case "foresight" -> {
                 DODGES.put(p.getUUID(), has(p, "precognition_clear_sight") ? 5 : 3);
@@ -424,6 +425,41 @@ public final class AdvancedTechniques {
     // ------------------------------------------------------------------
     // Tick: fields, persuaded mobs, perception, seals
     // ------------------------------------------------------------------
+
+    /**
+     * Inside a Perception field, everything except players and shots (which are slowed by their own
+     * rule) updates once every few ticks, so mobs, falling blocks and items move at a third of their
+     * speed, a sixth with Flash Time.
+     */
+    public static boolean perceptionSkips(Entity entity) {
+        if (PERCEPTION.isEmpty() || entity instanceof net.minecraft.world.entity.player.Player
+                || entity instanceof Projectile || !(entity.level() instanceof ServerLevel level)) return false;
+        for (Perception field : PERCEPTION.values()) {
+            ServerPlayer p = field.owner;
+            if (p.level() != level || entity.getVehicle() == p || entity.distanceToSqr(p) > field.radius * field.radius
+                    || entity instanceof net.minecraft.world.entity.OwnableEntity pet && pet.getOwner() == p) continue;
+            return Math.floorMod(entity.getId(), field.interval) != Math.floorMod(level.getGameTime(), field.interval);
+        }
+        return false;
+    }
+
+    /** Perception: twelve blocks (sixteen with Long Perception) of the world slowed to a third, a sixth with Flash Time. */
+    public static void startPerception(ServerPlayer p) {
+        ServerLevel level = p.serverLevel();
+        boolean longer = has(p, "superspeed_long_perception"), stop = has(p, "superspeed_flash_time");
+        Perception field = new Perception(p, now(p) + (longer ? 200 : 120), longer ? 16 : 12, stop ? 6 : 3, stop);
+        PERCEPTION.put(p.getUUID(), field);
+        AbilityEffects.send(level, Kind.SPEED_PERCEPTION, p.position(), p.getEyePosition(), (float) field.radius);
+        level.playSound(null, p.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 1F, 0.5F);
+        level.playSound(null, p.blockPosition(), SoundEvents.WARDEN_SONIC_CHARGE, SoundSource.PLAYERS, 0.4F, 2F);
+        ScreenTintPayload.send(p, 0x40FFC23A, 10, ScreenTintPayload.Style.FLASH);
+    }
+
+    /** Ends Perception at once (tests, power loss). */
+    public static void endPerception(ServerPlayer p) { PERCEPTION.remove(p.getUUID()); }
+
+    /** True while {@code p} has Perception up. */
+    public static boolean perceiving(ServerPlayer p) { return PERCEPTION.containsKey(p.getUUID()); }
 
     @SubscribeEvent public static void tick(ServerTickEvent.Post event) {
         MinecraftServer server = event.getServer();
@@ -503,15 +539,29 @@ public final class AdvancedTechniques {
             if (has(p, "superspeed_time_remnant") && now % 20 == 0)
                 for (LivingEntity t : enemies(p, p.position(), 4)) t.hurt(p.damageSources().playerAttack(p), 2);
         }
-        for (var entry : List.copyOf(PERCEPTION.entrySet())) {
-            ServerPlayer p = server.getPlayerList().getPlayer(entry.getKey());
-            if (p == null || now >= entry.getValue()) { PERCEPTION.remove(entry.getKey()); continue; }
-            boolean stop = has(p, "superspeed_flash_time");
-            for (Projectile shot : p.serverLevel().getEntitiesOfClass(Projectile.class, p.getBoundingBox().inflate(8), s -> s.getOwner() != p)) {
-                if (stop) { shot.setDeltaMovement(Vec3.ZERO); shot.setNoGravity(true); }
+        for (Perception field : List.copyOf(PERCEPTION.values())) {
+            ServerPlayer p = field.owner;
+            if (now >= field.until || !p.isAlive() || p.isRemoved() || !PowerRules.canAct(p)) {
+                PERCEPTION.remove(p.getUUID());
+                if (p.isAlive() && !p.isRemoved()) p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.8F, 1.6F);
+                continue;
+            }
+            ServerLevel level = p.serverLevel();
+            for (Projectile shot : level.getEntitiesOfClass(Projectile.class, p.getBoundingBox().inflate(field.radius), s -> s.getOwner() != p)) {
+                if (field.stop) { shot.setDeltaMovement(Vec3.ZERO); shot.setNoGravity(true); }
                 else if (SLOWED.add(shot)) shot.setDeltaMovement(shot.getDeltaMovement().scale(0.3));
                 shot.hurtMarked = true;
             }
+            // Players cannot have their ticks skipped; slow hostile ones down instead.
+            for (ServerPlayer other : level.getEntitiesOfClass(ServerPlayer.class, p.getBoundingBox().inflate(field.radius),
+                    o -> o != p && hostile(p, o)))
+                other.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 15, field.stop ? 3 : 2, false, false));
+            if (now % 10 == 0) {
+                AbilityEffects.send(level, Kind.SPEED_PERCEPTION, p.position(), p.getEyePosition(), (float) field.radius);
+                ScreenTintPayload.send(p, 0x24FFB040, 14, ScreenTintPayload.Style.HOLD);
+            }
+            // A slow heartbeat only the runner hears.
+            if (now % 24 == 0) p.playNotifySound(SoundEvents.WARDEN_HEARTBEAT, SoundSource.PLAYERS, 0.9F, 0.6F);
         }
 
         // Stasis seals hold projectiles until thrown or expired.

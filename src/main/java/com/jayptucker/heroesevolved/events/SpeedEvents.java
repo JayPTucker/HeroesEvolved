@@ -27,7 +27,10 @@ public final class SpeedEvents {
         if (e.getEntity() instanceof ServerPlayer p && SpeedService.dodge(p, e.getSource())) { e.setCanceled(true); return; }
         if (e.getSource().getDirectEntity() instanceof ServerPlayer attacker
                 && e.getSource().is(net.minecraft.world.damagesource.DamageTypes.PLAYER_ATTACK) && !SpeedService.inPowerHit())
-            e.setAmount(e.getAmount() + SpeedService.consumeImpact(attacker, e.getEntity() instanceof ServerPlayer));
+            e.setAmount(SpeedService.punch(attacker, e.getEntity(), e.getAmount()));
+    }
+    @SubscribeEvent public static void attack(net.neoforged.neoforge.event.entity.player.AttackEntityEvent e) {
+        if (e.getEntity() instanceof ServerPlayer p) SpeedService.beforePunch(p, e.getTarget());
     }
     @SubscribeEvent public static void logout(PlayerEvent.PlayerLoggedOutEvent e) { if (e.getEntity() instanceof ServerPlayer p) SpeedService.forget(p); }
     @SubscribeEvent public static void dimension(PlayerEvent.PlayerChangedDimensionEvent e) { if (e.getEntity() instanceof ServerPlayer p) SpeedService.forget(p); }

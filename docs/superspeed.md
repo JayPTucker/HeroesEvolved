@@ -22,6 +22,24 @@ Running builds **Momentum** (0 to 100), shown as a gold bar under your ability k
 At 50 or more, your next real punch is still the charged strike. Ability hits never spend it.
 Lightspeed spends all your Momentum.
 
+
+### Hands at speed (while Accelerate is on)
+
+- **Impact punches.** A real punch thrown while running lands with your actual speed behind it: from
+  about 12 blocks a second up to full force at 40. That's up to 10 bonus damage against mobs (2.5
+  against players), plus a shockwave, a camera jolt, and the target blasted along your running line. A
+  mob that hits a wall while flying takes up to 6 more. Each target can take one impact every
+  half-second, and every impact costs you 15 Momentum. This stacks with the 50-Momentum charged strike.
+- **Rapid punches.** Your weapon recharges three times faster. Hold attack on an enemy to punch every
+  few ticks without waiting out its flinch. Every blow after the first in a flurry does half damage
+  (a third against players).
+- **Catch.** Right-click an arrow or thrown item in flight within 7 blocks to catch it out of the air
+  for 2 stamina. Arrows that could be picked up and thrown items go into your inventory. Fireballs
+  and skulls are snuffed out.
+- **Perception** slows everything within 12 blocks (16 with Long Perception) to a third of its speed,
+  or a sixth with Flash Time. Your own pets are not slowed. Players can't be slowed tick by tick, so
+  hostile players get heavy Slowness instead. It has gold clock rings, hanging sparks and a slow heartbeat.
+- **Lightning Throw** now uses your own gold lightning.
 ### Abilities
 
 | Key | Tier (Level) | Ability | What it does | Cost / cooldown |

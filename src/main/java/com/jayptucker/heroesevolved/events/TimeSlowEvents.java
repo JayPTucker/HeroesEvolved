@@ -21,7 +21,8 @@ public final class TimeSlowEvents {
 
     @SubscribeEvent
     public static void onEntityTick(EntityTickEvent.Pre event) {
-        if (TimeSlowService.shouldSkipEntityTick(event.getEntity())) {
+        if (TimeSlowService.shouldSkipEntityTick(event.getEntity())
+                || com.jayptucker.heroesevolved.expansion.AdvancedTechniques.perceptionSkips(event.getEntity())) {
             event.setCanceled(true);
         }
     }
