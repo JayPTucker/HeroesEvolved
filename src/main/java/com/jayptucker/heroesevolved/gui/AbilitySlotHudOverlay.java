@@ -103,6 +103,7 @@ public final class AbilitySlotHudOverlay {
         y = drawResonance(guiGraphics, y);
         y = drawMomentum(guiGraphics, y);
         y = drawDensity(guiGraphics, y);
+        y = drawStrain(guiGraphics, y);
         y = drawRegrowth(guiGraphics, y);
 
         if (!hasFlightSpeedControl()) {
@@ -212,6 +213,29 @@ public final class AbilitySlotHudOverlay {
         guiGraphics.fill(START_X, y + 10, START_X + 100, y + 13, 0x80402810);
         guiGraphics.fill(START_X, y + 10, START_X + momentum, y + 13, color);
         for (int mark : new int[] {30, 50, 60}) guiGraphics.fill(START_X + mark, y + 9, START_X + mark + 1, y + 14, 0xC0FFFFFF);
+        return y + LINE_HEIGHT + 6;
+    }
+
+    /**
+     * Daisy Johnson's Strain: blue while she has it under control, amber past 50 (pushing it), red and
+     * flickering past 80 (breaking). While her arms are fractured the bar says so instead.
+     */
+    private static int drawStrain(GuiGraphics guiGraphics, int y) {
+        var mc = Minecraft.getInstance();
+        boolean quake = ClientPowerState.getSnapshot().abilities().stream().anyMatch(power -> power.unlocked()
+                && power.abilityId().equals(ModAbilities.QUAKE_ID));
+        if (mc.player == null || !quake) return y;
+        int strain = com.jayptucker.heroesevolved.network.ClientStrain.get();
+        boolean fractured = com.jayptucker.heroesevolved.network.ClientStrain.fractured();
+        long time = mc.level == null ? 0 : mc.level.getGameTime();
+        int color = fractured ? 0xFFFF4040 : strain >= 80 ? ((time / 3) % 2 == 0 ? 0xFFFF5A5A : 0xFFFFB0A0)
+                : strain >= 50 ? 0xFFFFC070 : 0xFF9FD8FF;
+        Component label = fractured ? Component.translatable("hud.heroesevolved.strain_fractured")
+                : Component.translatable("hud.heroesevolved.strain", strain);
+        guiGraphics.drawString(mc.font, label, START_X, y, color, true);
+        guiGraphics.fill(START_X, y + 10, START_X + 100, y + 13, 0x80303848);
+        guiGraphics.fill(START_X, y + 10, START_X + strain, y + 13, color);
+        for (int mark : new int[] {50, 80}) guiGraphics.fill(START_X + mark, y + 9, START_X + mark + 1, y + 14, 0xC0FFFFFF);
         return y + LINE_HEIGHT + 6;
     }
 

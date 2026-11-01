@@ -101,8 +101,10 @@ public final class QuakeService {
         Vec3 origin = player.getEyePosition();
         Vec3 direction = player.getLookAngle().normalize();
         double range = AbilityRanges.ranged(6.0D + powerLevel * 2.0D);
-        float damage = 3.0F + powerLevel * 1.5F;
-        double knockback = 1.0D + powerLevel * 0.3D;
+        // Strain makes everything hit harder, right up until the bones give.
+        float strength = QuakeKit.power(player);
+        float damage = (3.0F + powerLevel * 1.5F) * strength;
+        double knockback = (1.0D + powerLevel * 0.3D) * strength;
 
         BlockHitResult hit = level.clip(new ClipContext(
                 origin, origin.add(direction.scale(range)),
@@ -114,6 +116,8 @@ public final class QuakeService {
         Vec3 end = origin.add(direction.scale(length));
 
         spawnBeamRipples(level, origin, direction, length);
+        AbilityEffects.send(level, Kind.QUAKE_RINGS, origin.add(direction.scale(0.6D)).add(0.0D, -0.25D, 0.0D),
+                end, 1.0D + strength * 0.4D);
         hitEntitiesAlongBeam(player, origin, direction, length, damage, knockback);
         shatterAlongBeam(player, origin, direction, length);
 
@@ -140,6 +144,7 @@ public final class QuakeService {
         // A single Shockwave is thrown from one palm.
         ArmPosePayload.show(player, ArmPose.ONE_HAND, 8);
         MasteryService.markPowerUse(player, ModAbilities.QUAKE_ID);
+        QuakeKit.strain(player, QuakeKit.SHOCKWAVE_STRAIN);
     }
 
     private static void spawnBeamRipples(
@@ -194,8 +199,8 @@ public final class QuakeService {
             }
             // The blast loses some force over distance.
             double falloff = 1.0D - 0.4D * (along / (length + 0.5D));
-            living.hurt(player.damageSources().playerAttack(player),
-                    (float) (damage * falloff));
+            if (living.hurt(player.damageSources().playerAttack(player),
+                    (float) (damage * falloff))) QuakeKit.landed(player, living);
             setVelocity(living, direction.scale(knockback * falloff)
                     .add(0.0D, 0.35D, 0.0D));
         }
@@ -290,6 +295,8 @@ public final class QuakeService {
             }
             MasteryService.awardEnergySpent(player, drain);
             ArmPosePayload.show(player, ArmPose.TWO_HANDS_STRAIN, 15);
+            QuakeKit.strain(player, QuakeKit.BLAST_STRAIN);
+            if (!BLASTS.containsKey(player.getUUID())) return;
             if (player.onGround()) {
                 player.addEffect(new MobEffectInstance(
                         MobEffects.MOVEMENT_SLOWDOWN, 15, 1, false, false));
@@ -312,6 +319,8 @@ public final class QuakeService {
                     .add(0.0D, -0.25D, 0.0D);
             AbilityEffects.send(level, Kind.QUAKE_CHANNEL, palms,
                     origin.add(direction.scale(length)), 0.8D);
+            AbilityEffects.send(level, Kind.QUAKE_RINGS, palms,
+                    origin.add(direction.scale(length)), 0.7D + QuakeKit.power(player) * 0.3D);
             if (hitBlock && blast.ageTicks % 6 == 0) {
                 Vec3 normal = Vec3.atLowerCornerOf(hit.getDirection().getNormal());
                 AbilityEffects.send(level, Kind.QUAKE_CONTACT,
@@ -320,7 +329,7 @@ public final class QuakeService {
         }
         if (blast.ageTicks % 5 == 0) {
             hitEntitiesAlongBeam(player, origin, direction, length,
-                    1.5F + blast.powerLevel * 0.5F, 0.7D);
+                    (1.5F + blast.powerLevel * 0.5F) * QuakeKit.power(player), 0.7D);
         }
         if (blast.ageTicks % 10 == 0) {
             shatterAlongBeam(player, origin, direction, length);
@@ -389,7 +398,7 @@ public final class QuakeService {
         ServerLevel level = player.serverLevel();
         Vec3 center = player.position();
         double radius = (5.0D + powerLevel) * power;
-        float damage = (float) ((4.0D + powerLevel) * power);
+        float damage = (float) ((4.0D + powerLevel) * power) * QuakeKit.power(player);
         double launch = (0.6D + powerLevel * 0.08D) * Math.min(power, 1.4D);
 
         WAVES.add(new SeismicWave(player.getUUID(), level, center, radius,
@@ -418,9 +427,12 @@ public final class QuakeService {
      */
     public static void startTremorSense(ServerPlayer player, int powerLevel) {
         ArmPosePayload.show(player, ArmPose.TEMPLE, 30);
-        int durationTicks = 20 * (8 + 4 * Math.max(0, powerLevel - 3));
-        double radius = 24.0D + 8.0D * Math.max(0, powerLevel - 3);
+        tremorPulse(player, 20 * (8 + 4 * Math.max(0, powerLevel - 3)), 24.0D + 8.0D * Math.max(0, powerLevel - 3));
+        MasteryService.markPowerUse(player, ModAbilities.QUAKE_ID);
+    }
 
+    /** Heartbeats glow through the walls for {@code durationTicks}, for Quake alone. */
+    public static void tremorPulse(ServerPlayer player, int durationTicks, double radius) {
         stopTremorSense(player);
         TREMOR_SENSES.put(player.getUUID(), new TremorSense(
                 player.serverLevel().getGameTime() + durationTicks, radius
@@ -435,7 +447,6 @@ public final class QuakeService {
                 SoundSource.PLAYERS, 1.0F, 1.0F);
         player.playNotifySound(SoundEvents.SCULK_CLICKING,
                 SoundSource.PLAYERS, 0.8F, 0.7F);
-        MasteryService.markPowerUse(player, ModAbilities.QUAKE_ID);
     }
 
     public static boolean hasTremorSense(ServerPlayer player) {
@@ -566,9 +577,10 @@ public final class QuakeService {
                 player,
                 HeroesEvolvedConfig.COMMON.quakeEarthquakeRadius.get(),
                 HeroesEvolvedConfig.COMMON.quakeEarthquakeDurationSeconds.get() * 20,
-                2.0F + powerLevel * 0.5F,
+                (2.0F + powerLevel * 0.5F) * QuakeKit.power(player),
                 HeroesEvolvedConfig.COMMON.quakeShattersFragileBlocks.get()
         );
+        QuakeKit.strain(player, QuakeKit.EARTHQUAKE_STRAIN);
         ArmPosePayload.show(player, ArmPose.ARMS_WIDE,
                 HeroesEvolvedConfig.COMMON.quakeEarthquakeDurationSeconds.get() * 20);
         player.sendSystemMessage(Component.literal(
@@ -658,8 +670,8 @@ public final class QuakeService {
             setVelocity(entity, entity.getDeltaMovement().add(jolt));
 
             if (quake.ageTicks % 20 == 0) {
-                entity.hurt(owner.damageSources().playerAttack(owner),
-                        quake.damage);
+                if (entity.hurt(owner.damageSources().playerAttack(owner),
+                        quake.damage)) QuakeKit.landed(owner, entity);
                 entity.addEffect(new MobEffectInstance(
                         MobEffects.MOVEMENT_SLOWDOWN, 30, 1));
                 if (entity instanceof ServerPlayer) {
@@ -1001,9 +1013,10 @@ public final class QuakeService {
             Vec3 outward = horizontal < 0.01D
                     ? new Vec3(1.0D, 0.0D, 0.0D)
                     : new Vec3(offset.x / horizontal, 0.0D, offset.z / horizontal);
-            entity.hurt(owner == null
+            if (entity.hurt(owner == null
                     ? level.damageSources().magic()
-                    : owner.damageSources().playerAttack(owner), wave.damage);
+                    : owner.damageSources().playerAttack(owner), wave.damage) && owner != null)
+                QuakeKit.landed(owner, entity);
             setVelocity(entity, outward.scale(0.55D).add(0.0D, wave.launch, 0.0D));
         }
     }
@@ -1012,7 +1025,7 @@ public final class QuakeService {
     // Helpers
     // ------------------------------------------------------------------
 
-    private static void burstDebris(
+    static void burstDebris(
             ServerLevel level,
             BlockPos source,
             Vec3 bias,
@@ -1093,7 +1106,7 @@ public final class QuakeService {
     }
 
     /** The topmost solid block near a given height, or null over a void. */
-    private static BlockPos findSurface(
+    static BlockPos findSurface(
             ServerLevel level,
             int x,
             int z,
@@ -1112,7 +1125,7 @@ public final class QuakeService {
         return null;
     }
 
-    private static void setVelocity(Entity entity, Vec3 velocity) {
+    static void setVelocity(Entity entity, Vec3 velocity) {
         entity.setDeltaMovement(velocity);
         if (entity instanceof ServerPlayer player) {
             player.connection.send(new ClientboundSetEntityMotionPacket(player));

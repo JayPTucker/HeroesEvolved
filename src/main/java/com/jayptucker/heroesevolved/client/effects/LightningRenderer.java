@@ -25,9 +25,13 @@ import java.util.List;
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID, value = Dist.CLIENT)
 public final class LightningRenderer {
     private static final int MAX_STROKES = 1200;
-    /** {@code soft} strokes fade from a bright centre line to nothing at their edges: a glow, not a slab. */
+    /**
+     * {@code soft} strokes fade from a bright centre line to nothing at their edges: a glow, not a slab.
+     * {@code dark} strokes (cracks, soot, shadow) can't be drawn additively, where black adds nothing, so
+     * they are blended normally in a second pass.
+     */
     private record Stroke(Vec3[] points, float startWidth, float endWidth, float r, float g, float b, float alpha,
-                          int born, int delay, int life, boolean flicker, boolean soft) {}
+                          int born, int delay, int life, boolean flicker, boolean soft, boolean dark) {}
     private static final List<Stroke> STROKES = new ArrayList<>();
     private static MultiBufferSource.BufferSource buffers;
     private static ClientLevel world;
@@ -42,8 +46,10 @@ public final class LightningRenderer {
 
     static void stroke(List<Vec3> points, float startWidth, float endWidth, int color, float alpha, int life, int delay, boolean soft) {
         if (points.size() < 2 || STROKES.size() >= MAX_STROKES) return;
-        STROKES.add(new Stroke(points.toArray(Vec3[]::new), startWidth, endWidth, ((color >> 16) & 255) / 255F,
-                ((color >> 8) & 255) / 255F, (color & 255) / 255F, alpha, clock, delay, Math.max(1, life), life > 3, soft));
+        float r = ((color >> 16) & 255) / 255F, g = ((color >> 8) & 255) / 255F, b = (color & 255) / 255F;
+        boolean dark = 0.3F * r + 0.59F * g + 0.11F * b < 0.3F;
+        STROKES.add(new Stroke(points.toArray(Vec3[]::new), startWidth, endWidth, r, g, b, alpha, clock, delay, Math.max(1, life),
+                life > 3 && !dark, soft, dark));
     }
 
     /** A four-pointed glint: crossed thin ribbons, for the bright point where current lands or leaves. */
@@ -69,19 +75,23 @@ public final class LightningRenderer {
         if (buffers == null) buffers = MultiBufferSource.immediate(new ByteBufferBuilder(512 * 1024));
         Vec3 camera = event.getCamera().getPosition();
         float partial = event.getPartialTick().getGameTimeDeltaPartialTick(false);
-        VertexConsumer out = buffers.getBuffer(RenderType.lightning());
-        for (Stroke s : STROKES) {
-            float age = clock - s.born - s.delay + partial;
-            if (age < 0) continue;
-            float progress = Math.min(1, age / s.life);
-            float fade = (1 - progress) * (1 - progress * 0.5F);
-            // Long-lived strokes (a held stream) shimmer from frame to frame.
-            if (s.flicker) fade *= 0.75F + 0.25F * (float) Math.abs(Math.sin(age * 7.3 + s.points[0].x * 13));
-            float alpha = s.alpha * fade;
-            if (alpha < 0.01F || s.points[0].distanceToSqr(camera) > 200 * 200 && s.points[s.points.length - 1].distanceToSqr(camera) > 200 * 200) continue;
-            ribbon(out, s, camera, alpha);
+        for (boolean darkPass : new boolean[] {false, true}) {
+            RenderType type = darkPass ? RenderType.debugQuads() : RenderType.lightning();
+            VertexConsumer out = buffers.getBuffer(type);
+            for (Stroke s : STROKES) {
+                if (s.dark != darkPass) continue;
+                float age = clock - s.born - s.delay + partial;
+                if (age < 0) continue;
+                float progress = Math.min(1, age / s.life);
+                float fade = (1 - progress) * (1 - progress * 0.5F);
+                // Long-lived strokes (a held stream) shimmer from frame to frame.
+                if (s.flicker) fade *= 0.75F + 0.25F * (float) Math.abs(Math.sin(age * 7.3 + s.points[0].x * 13));
+                float alpha = s.alpha * fade;
+                if (alpha < 0.01F || s.points[0].distanceToSqr(camera) > 200 * 200 && s.points[s.points.length - 1].distanceToSqr(camera) > 200 * 200) continue;
+                ribbon(out, s, camera, alpha);
+            }
+            buffers.endBatch(type);
         }
-        buffers.endBatch(RenderType.lightning());
     }
 
     private static void ribbon(VertexConsumer out, Stroke s, Vec3 camera, float alpha) {

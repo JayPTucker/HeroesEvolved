@@ -36,6 +36,10 @@ See [Density](docs/density.md) for D.L. Hawkins, reworked from Phasing: a densit
 to Full Dense, a hand that reaches inside bodies and chests, enemies left stuck in the floor, and
 travel underground on a single breath.
 
+See [Quake](docs/quake.md) for Daisy Johnson: Strain makes every quake hit harder until the bones in
+her arms crack. Resonate shakes one enemy apart from the inside, Fault Line tears a crack across the
+ground under every enemy on it, and crouching still lets her feel heartbeats through the walls.
+
 See [Carrying](docs/carrying.md): sneak + use to pick up anything about your size. People are carried
 in your arms, a bridal carry.
 

@@ -64,5 +64,6 @@ public final class InventorySkillTreeEvents {
         com.jayptucker.heroesevolved.network.ClientResonance.clear();
         com.jayptucker.heroesevolved.network.ClientMomentum.clear();
         com.jayptucker.heroesevolved.network.ClientDensity.clear();
+        com.jayptucker.heroesevolved.network.ClientStrain.clear();
     }
 }

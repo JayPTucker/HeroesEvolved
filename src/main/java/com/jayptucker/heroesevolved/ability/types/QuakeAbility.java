@@ -10,29 +10,26 @@ import com.jayptucker.heroesevolved.ability.AbilityDefinition;
 import com.jayptucker.heroesevolved.ability.AbilitySlot;
 import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
+import com.jayptucker.heroesevolved.quake.QuakeKit;
 import com.jayptucker.heroesevolved.quake.QuakeService;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.Map;
 
 /**
- * Vibration manipulation, inspired by Daisy "Quake" Johnson.
+ * Quake, after Daisy Johnson (Agents of S.H.I.E.L.D.): vibration, and what it costs her body.
  *
  * <ul>
- *   <li>Level 1, Shockwave: a palm blast that hurls targets, reflects
- *   projectiles and shatters glass. Jump and fire at any angle to launch
- *   opposite the shot, or aim down to take off.</li>
- *   <li>Level 2, Seismic Slam: a ground punch whose ring of force throws
- *   everything outward. Used in midair, Quake plunges first.</li>
- *   <li>Level 3, Tremor Sense: feel heartbeats; nearby creatures glow
- *   through walls for Quake alone.</li>
- *   <li>Level 4, Quake Blast: hold the key to pour a two-handed beam of
- *   vibration, draining energy every second. Jump to propel opposite the
- *   beam; aiming down lifts Quake.</li>
- *   <li>Level 5, Earthquake: a sustained quake ending in an aftershock.
- *   Shift ends it early.</li>
- *   <li>Passive: vibration-cushioned landings. Overexertion fractures
- *   Quake's arms.</li>
+ *   <li>Level 1, Shockwave: a palm blast that hurls targets, turns arrows back and shatters glass. In
+ *   midair (or aimed down) it launches her the other way.</li>
+ *   <li>Level 2, Resonate: shake one enemy apart from the inside for three seconds: it staggers and
+ *   can't aim, its armour rattles apart and its bones ache.</li>
+ *   <li>Level 3, Fault Line: punch the ground and a crack races out ahead of her, erupting under every
+ *   enemy on its way. Aimed straight down or from the air, it is the Seismic Slam ring.</li>
+ *   <li>Level 4, Quake Blast: hold to pour a two-handed beam. Jump and it carries her: Daisy's flight.</li>
+ *   <li>Level 5, Earthquake: a sustained quake ending in an aftershock.</li>
+ *   <li>Always: Strain builds with every quake and makes her hit harder, until at 100 the bones in her
+ *   arms crack. Crouch still to feel heartbeats through walls. Vibration cushions her landings.</li>
  * </ul>
  */
 public final class QuakeAbility implements Ability {
@@ -41,8 +38,13 @@ public final class QuakeAbility implements Ability {
 
     private static final Map<AbilitySlot, AbilityAction> ACTIONS = Map.of(
             AbilitySlot.PRIMARY, new ShockwaveAction(),
-            AbilitySlot.SECONDARY, new SeismicSlamAction(),
-            AbilitySlot.TERTIARY, new TremorSenseAction(),
+            AbilitySlot.SECONDARY, com.jayptucker.heroesevolved.ability.SimpleAction.builder("quake_resonate", 2).cost(() -> 18, () -> 160)
+                    .canUse(c -> !QuakeKit.fractured(c.player()))
+                    .activate(c -> QuakeKit.resonate(c.player(), c.abilityLevel())).build(),
+            AbilitySlot.TERTIARY, com.jayptucker.heroesevolved.ability.SimpleAction.builder("quake_fault_line", 3)
+                    .cost(() -> HeroesEvolvedConfig.COMMON.quakeSlamEnergyCost.get(), () -> HeroesEvolvedConfig.COMMON.quakeSlamCooldownTicks.get())
+                    .canUse(c -> !c.player().isPassenger() && !QuakeKit.fractured(c.player()))
+                    .activate(c -> QuakeKit.faultLine(c.player(), c.abilityLevel())).build(),
             AbilitySlot.QUATERNARY, new QuakeBlastAction(),
             AbilitySlot.QUINARY, new EarthquakeAction()
     );
@@ -70,6 +72,7 @@ public final class QuakeAbility implements Ability {
     @Override
     public void onRevoked(AbilityUseContext context) {
         QuakeService.stopAll(context.player());
+        QuakeKit.forget(context.player());
     }
 
     @Override
@@ -122,7 +125,8 @@ public final class QuakeAbility implements Ability {
         @Override
         public boolean canUse(AbilityUseContext context) {
             return !context.player().isPassenger()
-                    && !QuakeService.isBlasting(context.player());
+                    && !QuakeService.isBlasting(context.player())
+                    && !QuakeKit.fractured(context.player());
         }
 
         @Override
@@ -177,83 +181,12 @@ public final class QuakeAbility implements Ability {
 
         @Override
         public boolean canUse(AbilityUseContext context) {
-            return !context.player().isPassenger();
+            return !context.player().isPassenger() && !QuakeKit.fractured(context.player());
         }
 
         @Override
         public AbilityActivationResult activate(AbilityUseContext context) {
             QuakeService.shockwave(context.player(), context.abilityLevel());
-            return AbilityActivationResult.SUCCESS;
-        }
-    }
-
-    private static final class SeismicSlamAction implements AbilityAction {
-        private static final AbilityActionDefinition DEFINITION =
-                action("quake_seismic_slam", 2);
-
-        @Override
-        public AbilityActionDefinition definition() {
-            return DEFINITION;
-        }
-
-        @Override
-        public int energyCost(int powerLevel) {
-            return HeroesEvolvedConfig.COMMON.quakeSlamEnergyCost.get();
-        }
-
-        @Override
-        public int cooldownTicks(int powerLevel) {
-            return HeroesEvolvedConfig.COMMON.quakeSlamCooldownTicks.get();
-        }
-
-        @Override
-        public boolean canUse(AbilityUseContext context) {
-            return !context.player().isPassenger();
-        }
-
-        @Override
-        public AbilityActivationResult activate(AbilityUseContext context) {
-            QuakeService.slam(context.player(), context.abilityLevel());
-            return AbilityActivationResult.SUCCESS;
-        }
-    }
-
-    private static final class TremorSenseAction implements AbilityAction {
-        private static final AbilityActionDefinition DEFINITION =
-                action("quake_tremor_sense", 3);
-
-        @Override
-        public AbilityActionDefinition definition() {
-            return DEFINITION;
-        }
-
-        @Override
-        public int energyCost(int powerLevel) {
-            return HeroesEvolvedConfig.COMMON.quakeTremorSenseEnergyCost.get();
-        }
-
-        @Override
-        public int cooldownTicks(int powerLevel) {
-            return HeroesEvolvedConfig.COMMON.quakeTremorSenseCooldownTicks.get();
-        }
-
-        @Override
-        public boolean canUse(AbilityUseContext context) {
-            return !QuakeService.hasTremorSense(context.player());
-        }
-
-        @Override
-        public boolean deactivate(AbilityUseContext context) {
-            if (!QuakeService.hasTremorSense(context.player())) {
-                return false;
-            }
-            QuakeService.stopTremorSense(context.player());
-            return true;
-        }
-
-        @Override
-        public AbilityActivationResult activate(AbilityUseContext context) {
-            QuakeService.startTremorSense(context.player(), context.abilityLevel());
             return AbilityActivationResult.SUCCESS;
         }
     }
@@ -279,7 +212,7 @@ public final class QuakeAbility implements Ability {
 
         @Override
         public boolean canUse(AbilityUseContext context) {
-            return !QuakeService.hasActiveEarthquake(context.player());
+            return !QuakeService.hasActiveEarthquake(context.player()) && !QuakeKit.fractured(context.player());
         }
 
         @Override

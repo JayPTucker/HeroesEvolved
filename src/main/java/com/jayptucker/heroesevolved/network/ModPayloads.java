@@ -17,7 +17,7 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("43")
+        event.registrar("44")
             .playToServer(com.jayptucker.heroesevolved.expansion.IncidentActionPayload.TYPE, com.jayptucker.heroesevolved.expansion.IncidentActionPayload.STREAM_CODEC, com.jayptucker.heroesevolved.expansion.IncidentActionPayload::handle)
             .playToServer(JournalRequestPayload.TYPE, JournalRequestPayload.STREAM_CODEC, JournalRequestPayload::handle)
             .playToServer(SpeedCatchPayload.TYPE, SpeedCatchPayload.STREAM_CODEC, SpeedCatchPayload::handle)
@@ -29,6 +29,7 @@ public final class ModPayloads {
             .playToClient(ResonancePayload.TYPE, ResonancePayload.STREAM_CODEC, ResonancePayload::handle)
             .playToClient(MomentumPayload.TYPE, MomentumPayload.STREAM_CODEC, MomentumPayload::handle)
             .playToClient(DensityPayload.TYPE, DensityPayload.STREAM_CODEC, DensityPayload::handle)
+            .playToClient(StrainPayload.TYPE, StrainPayload.STREAM_CODEC, StrainPayload::handle)
             .playToClient(BodyStatePayload.TYPE, BodyStatePayload.STREAM_CODEC, BodyStatePayload::handle)
             .playToClient(TimeGhostPayload.TYPE, TimeGhostPayload.STREAM_CODEC, TimeGhostPayload::handle)
             .playToClient(LoadoutPayload.TYPE, LoadoutPayload.STREAM_CODEC, LoadoutPayload::handle)

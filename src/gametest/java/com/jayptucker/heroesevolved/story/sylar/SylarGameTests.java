@@ -483,9 +483,12 @@ public final class SylarGameTests {
         SylarEntity hunter = hunter(helper, quarry, 10); hunter.hunt(quarry);
         hunter.setHealth(hunter.getMaxHealth() * 0.15F);
         long quiet = SylarStoryData.get(quarry.getServer()).quietUntil();
-        helper.runAfterDelay(4, () -> helper.assertTrue(hunter.phase() == 3 && hunter.escapeIn() > 0, "At a fifth of his health he gets ready to run"));
-        // He runs after four seconds of fighting at that health (other tests nearby can pause his ticks, so wait for it).
+        // Other tests nearby (a time stop) can pause his ticks, so watch for the warning rather than expecting it on a set tick.
+        boolean[] warned = {false};
+        helper.onEachTick(() -> { if (hunter.phase() == 3 && hunter.escapeIn() > 0) warned[0] = true; });
+        // He runs after four seconds of fighting at that health.
         helper.succeedWhen(() -> {
+            helper.assertTrue(warned[0], "At a fifth of his health he gets ready to run");
             var story = SylarStoryData.get(quarry.getServer());
             helper.assertTrue(hunter.isRemoved() && SylarStoryService.hunter() == null, "Not finished in time: he gets away (in " + hunter.escapeIn() + " ticks)");
             helper.assertTrue(story.trail(quarry.getUUID()).fled == 1 && story.defeats() == 0 && story.quietUntil() == quiet,

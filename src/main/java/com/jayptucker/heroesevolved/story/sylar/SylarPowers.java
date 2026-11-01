@@ -147,7 +147,18 @@ public final class SylarPowers {
                             hurt(s, hit, 7 * p);
                             push(hit, flat(hit.position().subtract(s.position())).scale(0.6).add(0, 0.7, 0));
                         }
+                        AbilityEffects.send(l, Kind.QUAKE_ERUPT, s.position(), s.position().add(0, 1, 0), 2.5);
                         sound(l, s.position(), SoundEvents.GENERIC_EXPLODE.value(), 0.8F, 0.6F);
+                    }),
+            new Move("shockwave", ModAbilities.QUAKE_ID, 10, 140, 3, 14, true, Pose.ONE_HAND,
+                    (s, l, t, p) -> sound(l, s.position(), SoundEvents.WARDEN_SONIC_CHARGE, 0.7F, 1.6F),
+                    (s, l, t, p) -> AbilityEffects.send(l, Kind.QUAKE_RESONATE, hand(s), hand(s), 0.4),
+                    (s, l, t, p) -> {
+                        // Daisy's palm blast, thrown with her own stolen hands.
+                        AbilityEffects.send(l, Kind.QUAKE_RINGS, hand(s), t.getBoundingBox().getCenter(), 1.4);
+                        hurt(s, t, 6 * p);
+                        push(t, flat(t.position().subtract(s.position())).scale(1.6).add(0, 0.45, 0));
+                        sound(l, s.position(), SoundEvents.WARDEN_SONIC_BOOM, 0.6F, 1.6F);
                     }),
             // ---- Superspeed ----
             new Move("blitz", ModAbilities.SUPERSPEED_ID, 6, 150, 4, 20, true, Pose.NONE,

@@ -1,7 +1,7 @@
 [
   {
     "power": "quake",
-    "action": "quake_seismic_slam",
+    "action": "quake_fault_line",
     "energy": 0.85,
     "cooldown": 0.8
   },

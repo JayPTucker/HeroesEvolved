@@ -98,12 +98,17 @@ public final class UnwrittenGameTests {
             h.succeed();
         } finally { first.discard(); second.discard(); clear(p); }
     }
-    @GameTest(template="rewind_empty", batch="unwritten.fault", timeoutTicks=75)
+    @GameTest(template="rewind_empty", batch="unwritten.fault", timeoutTicks=160)
     public static void faultHasARealDelayAndDamagesAnEnemyOnce(GameTestHelper h) {
         var p = player(h, "quake"); p.setYRot(0); var t = enemy(h, p.position().add(0, -1, 4));
         h.assertTrue(ExpansionSkills.activate(context(p, "quake"), "fault_script"), "Fault should find nearby supported ground");
         h.runAfterDelay(20, () -> h.assertTrue(t.getHealth() == 100, "Fault is visibly armed before damage"));
-        h.runAfterDelay(60, () -> { try { h.assertTrue(t.getHealth() == 94, "One wave hits the same enemy once"); h.succeed(); } finally { t.discard(); clear(p); } });
+        // Nearby tests can pause entity ticks (a time stop), so wait for the wave, then make sure it hit only once.
+        h.runAfterDelay(60, () -> h.succeedWhen(() -> {
+            h.assertTrue(t.getHealth() <= 94, "The wave arrives");
+            h.assertTrue(t.getHealth() == 94, "One wave hits the same enemy once");
+            t.discard(); clear(p);
+        }));
     }
     @GameTest(template="rewind_empty", batch="unwritten.cocoon", timeoutTicks=100)
     public static void preservationRestrictsActionsReducesDamageAndReleasesNormally(GameTestHelper h) {

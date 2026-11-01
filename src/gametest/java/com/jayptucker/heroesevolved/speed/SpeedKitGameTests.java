@@ -154,7 +154,10 @@ public final class SpeedKitGameTests {
     public static void runningFastBuffetsWhatYouPassAndCountsTowardTheTrial(GameTestHelper h) {
         var p = runner(h, 5);
         try {
-            run(p, 40, 1.0);
+            // Run back and forth over the same ground, so the runner never leaves this test's space
+            // (a time stop in a neighbouring test would otherwise freeze it).
+            SpeedService.toggle(p); p.setSprinting(true);
+            for (int i = 0; i < 40; i++) { p.setPos(p.position().add(i % 2 == 0 ? 1.0 : -1.0, 0, 0)); SpeedService.tickRunner(p); }
             h.assertTrue(SpeedService.momentum(p) == 100, "Real movement builds Momentum to 100");
             h.assertTrue(EvolutionTrials.progress(p, "superspeed") >= 20, "Distance run counts toward the Evolved trial");
             var bystander = mob(h, EntityType.PILLAGER, p, 1.5, 0);

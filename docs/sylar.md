@@ -68,6 +68,7 @@ telegraph in that power's colours, and a sound. A hit of 5 or more during the wi
 | Pyrokinesis | Fire Stream | 0.5 s | A cone of flame |
 | Radiation | Radiant Heat | 0.9 s | A cone of heat that withers and burns |
 | Quake | Ground Pound | 1.0 s | A shockwave ring that throws everyone up |
+| Quake | Shockwave | 0.5 s | Daisy's palm blast: rings of pressure, and you are thrown back hard |
 | Superspeed | Blitz | 0.3 s | Rushes you with a flurry |
 | Time Manipulation | Fold | 0.5 s | Appears behind you |
 | Time Manipulation | Slow | 0.6 s | Slows you heavily |
