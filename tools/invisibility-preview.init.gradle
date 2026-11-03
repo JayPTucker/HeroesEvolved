@@ -1,0 +1,22 @@
+// Actual optical concealment, refraction dash and public mirages in an isolated survival client.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('invisibilityPreview') {
+                java.srcDir('src/uitest/java')
+                java.include('com/jayptucker/heroesevolved/uitest/InvisibilityPreview.java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs { client {
+                    gameDirectory = project.file('build/invisibility-preview')
+                    programArguments.addAll('--width', '1100', '--height', '800')
+                    systemProperty('heroes.preview.invisibility', 'true')
+                } }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('invisibilityPreviewClasses')) }
+        }
+    }
+}

@@ -172,6 +172,36 @@ public final class MimicryService {
                     || FlightDynamicsService.isCharging(player));
     }
 
+    /** Authorizes fire channels only during an Echo call or its still-current borrowed session. */
+    public static boolean isBorrowingPyrokinesis(ServerPlayer player) {
+        if (player.isRemoved() || !isMimic(player) || !PowerRules.canAct(player)
+                || !ModAbilities.PYROKINESIS_ID.equals(memory(player).current())) return false;
+        if (ModAbilities.PYROKINESIS_ID.equals(INVOKING.get(player.getUUID()))) return true;
+        Borrowing state = BORROWING.get(player.getUUID());
+        return state != null && state.player == player && state.level == player.serverLevel()
+                && state.used.containsKey(ModAbilities.PYROKINESIS_ID);
+    }
+
+    /** Fade can be sustained by the real Echo session without claiming Invisibility ownership. */
+    public static boolean isBorrowingInvisibility(ServerPlayer player) {
+        if (player.isRemoved() || !isMimic(player) || !PowerRules.canAct(player)
+                || !ModAbilities.INVISIBILITY_ID.equals(memory(player).current())) return false;
+        if (ModAbilities.INVISIBILITY_ID.equals(INVOKING.get(player.getUUID()))) return true;
+        Borrowing state = BORROWING.get(player.getUUID());
+        return state != null && state.player == player && state.level == player.serverLevel()
+                && state.used.containsKey(ModAbilities.INVISIBILITY_ID);
+    }
+
+    /** Authorizes a Cryokinesis channel or ride only within its real borrowed Echo session. */
+    public static boolean isBorrowingCryokinesis(ServerPlayer player) {
+        if (player.isRemoved() || !isMimic(player) || !PowerRules.canAct(player)
+                || !ModAbilities.CRYOKINESIS_ID.equals(memory(player).current())) return false;
+        if (ModAbilities.CRYOKINESIS_ID.equals(INVOKING.get(player.getUUID()))) return true;
+        Borrowing state = BORROWING.get(player.getUUID());
+        return state != null && state.player == player && state.level == player.serverLevel()
+                && state.used.containsKey(ModAbilities.CRYOKINESIS_ID);
+    }
+
     private static <T> T invoke(EchoCast cast, Supplier<T> operation) {
         UUID id = cast.context.player().getUUID();
         ResourceLocation previous = INVOKING.put(id, cast.context.abilityId());
@@ -242,6 +272,10 @@ public final class MimicryService {
                 Borrowing state = BORROWING.get(c.player().getUUID());
                 EchoCast cast = state == null ? null : state.pressed.remove(id);
                 if (cast != null) invoke(cast, () -> { cast.action.release(cast.context); return true; });
+            }
+            @Override public boolean followUp(AbilityUseContext c) {
+                EchoCast cast = selected(c, copied);
+                return cast != null && invoke(cast, () -> cast.action.followUp(cast.context));
             }
             @Override public boolean deactivate(AbilityUseContext c) {
                 EchoCast cast = pressed(c.player());

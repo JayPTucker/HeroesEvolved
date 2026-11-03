@@ -15,6 +15,26 @@ public final class FirstPersonArmGeometry {
 
     public static void pose(PoseStack stack, HumanoidArm arm, ArmPose pose, float time, float poseAge) {
         float side = arm == HumanoidArm.RIGHT ? 1 : -1;
+        if (switch (pose) {
+            case CRYO_WEAVE, CRYO_SCULPT, CRYO_PRISON, CRYO_SHATTER, CRYO_WHITEOUT, CRYO_SURF,
+                    CRYO_LANCE, CRYO_GUARD, CRYO_SNAP, CRYO_LOOM, CRYO_SHELTER, CRYO_STARS -> true;
+            default -> false;
+        }) {
+            cryo(stack, side, pose, poseAge);
+            return;
+        }
+        if (pose == ArmPose.OPTICAL_SPLIT || pose == ArmPose.OPTICAL_VEIL || pose == ArmPose.OPTICAL_DISPERSE) {
+            optical(stack, side, pose, poseAge);
+            return;
+        }
+        if (switch (pose) {
+            case FIRE_LASH, FIRE_FORGE, FIRE_RELEASE, FIRE_BREATH, FIRE_SHEPHERD,
+                    FIRE_CAUTERIZE, FIRE_SUN, FIRE_SWEEP -> true;
+            default -> false;
+        }) {
+            fire(stack, side, pose, poseAge);
+            return;
+        }
         if (pose == ArmPose.KINETIC_GATHER || pose == ArmPose.KINETIC_HOLD || pose == ArmPose.KINETIC_RELEASE) {
             kinetic(stack, side, pose, time, poseAge);
             return;
@@ -41,6 +61,175 @@ public final class FirstPersonArmGeometry {
             default -> -90;
         };
         stack.mulPose(Axis.XP.rotationDegrees(pitch));
+    }
+
+    private static void cryo(PoseStack stack, float side, ArmPose pose, float age) {
+        float spread = .46F, height = -.48F, depth = -.42F, pitch = -85, yaw = side * 9, roll = side * 5;
+        switch (pose) {
+            case CRYO_LANCE -> {
+                float draw=smooth(age/10F),release=smooth((age-11)/4F);
+                spread=side>0?.43F+.1F*draw:.29F;
+                height=side>0?-.36F: -.48F;
+                depth=side>0?-.32F+.18F*draw-.37F*release:-.58F;
+                pitch=side>0?-65-20*release:-92;
+                yaw=side*(side>0?20*draw-28*release:-10);roll=side>0?13-19*release:-8;
+            }
+            case CRYO_GUARD -> {
+                float fold=smooth(age/8F),open=smooth((age-8)/8F);
+                spread=.48F-.22F*fold+.14F*open;depth=-.34F-.12F*open;
+                height=-.43F;pitch=-70-13*open;yaw=side*(-28*fold+38*open);roll=side*(16-8*open);
+            }
+            case CRYO_SNAP -> {
+                float pull=smooth(age/4F),snap=smooth((age-4)/4F);
+                spread=.4F+.15F*snap;height=-.32F-.3F*snap;
+                depth=-.32F+.06F*pull-.22F*snap;pitch=-64-66*snap;roll=side*(8+19*snap);
+            }
+            case CRYO_LOOM -> {
+                float weave=(float)Math.sin(age*.45+side*Math.PI/2);
+                spread=.41F+weave*.07F;height=-.48F+weave*.04F;depth=-.46F-weave*.09F;
+                pitch=-111+weave*12;yaw=side*(16+weave*9);roll=side*(10+weave*9);
+            }
+            case CRYO_SHELTER -> {
+                float cradle=smooth(age/12F);spread=.54F-cradle*.19F;height=-.53F+cradle*.1F;
+                depth=-.45F;pitch=-113+cradle*24;yaw=side*(24-cradle*18);roll=side*(18-cradle*8);
+            }
+            case CRYO_STARS -> {
+                float spreadStars=smooth(age/14F);float turn=(float)Math.sin(age*.2)*3;
+                spread=.29F+.31F*spreadStars;height=-.4F+.1F*spreadStars;
+                depth=-.49F;pitch=-80+turn;yaw=side*(-15+45*spreadStars);roll=side*(7+24*spreadStars);
+            }
+            case CRYO_WEAVE -> {
+                float weave = (float)Math.sin(age * .35 + side * 1.5);
+                spread += weave * .025F; depth -= .08F + weave * .025F;
+                pitch -= weave * 3; roll += side * 6;
+            }
+            case CRYO_SCULPT -> {
+                float lift = smooth(age / 18F);
+                height = -.58F + lift * .13F; spread = .35F + lift * .25F;
+                pitch = -120 + lift * 40; yaw = side * (-8 + lift * 30);
+            }
+            case CRYO_PRISON -> {
+                float close = smooth(age / 14F);
+                spread = .58F - close * .18F; depth = -.49F;
+                pitch = -92 + close * 10; yaw = side * (20 - close * 12);
+            }
+            case CRYO_SHATTER -> {
+                float snap = smooth(age / 4F), recover = smooth((age - 5) / 7F);
+                spread = .36F + snap * .28F - recover * .12F;
+                depth -= snap * .12F - recover * .1F; roll = side * (5 + snap * 22 - recover * 16);
+            }
+            case CRYO_WHITEOUT -> {
+                float rise = smooth(age / 35F);
+                spread = .44F + rise * .2F; height += rise * .10F;
+                pitch = -88 + rise * 20; yaw = side * (8 + rise * 15);
+            }
+            case CRYO_SURF -> {
+                height = side > 0 ? -.52F : -.42F; spread = side > 0 ? .4F : .62F;
+                depth = side > 0 ? -.55F : -.35F; pitch = side > 0 ? -112 : -80;
+                roll = side * 20;
+            }
+            default -> { }
+        }
+        stack.translate(side * spread, height, depth);
+        stack.mulPose(Axis.YP.rotationDegrees(yaw));
+        stack.mulPose(Axis.XP.rotationDegrees(pitch));
+        stack.mulPose(Axis.ZP.rotationDegrees(roll));
+    }
+
+    private static void optical(PoseStack stack, float side, ArmPose pose, float age) {
+        float open = smooth(age / (pose == ArmPose.OPTICAL_DISPERSE ? 9F : 16F));
+        float spread = .36F + open * .26F;
+        float height = -.48F + (float) Math.sin(open * Math.PI) * .035F;
+        float yaw = side * (8 + open * 17);
+        if (pose == ArmPose.OPTICAL_VEIL) {
+            spread = .40F + open * .22F;
+            height -= open * .06F;
+        }
+        if (pose == ArmPose.OPTICAL_DISPERSE) {
+            spread = .28F + open * .42F;
+            yaw = side * (-12 + open * 40);
+        }
+        stack.translate(side * spread, height, -.38F);
+        stack.mulPose(Axis.YP.rotationDegrees(yaw));
+        stack.mulPose(Axis.XP.rotationDegrees(-87 + open * 8));
+        stack.mulPose(Axis.ZP.rotationDegrees(side * (4 + open * 12)));
+    }
+
+    private static void fire(PoseStack stack, float side, ArmPose pose, float age) {
+        float spread = .43F, height = -.4F, depth = -.25F, pitch = -82, yaw = side * 5, roll = side * 4;
+        switch (pose) {
+            case FIRE_LASH -> {
+                float wind = smooth(age / 5F), snap = smooth((age - 5) / 3F), recover = smooth((age - 10) / 6F);
+                spread += .16F * wind - .1F * snap;
+                depth += .12F * wind - .35F * snap + .16F * recover;
+                pitch += 24 * wind - 38 * snap + 20 * recover;
+                yaw += side * (26 * wind - 34 * snap + 10 * recover);
+                roll += side * 12 * wind;
+            }
+            case FIRE_FORGE -> {
+                float gather = smooth(age / 12F), pulse = (float) Math.sin(age * .3) * .012F;
+                spread = .4F - gather * .035F;
+                height = -.42F + gather * .04F + pulse;
+                pitch = -65 - gather * 15;
+                yaw = side * 18;
+                roll = side * 12;
+            }
+            case FIRE_RELEASE -> {
+                float thrust = smooth(age / 3F) * (1 - smooth((age - 5) / 7F));
+                depth -= thrust * .28F;
+                pitch = -65 - thrust * 30;
+                spread += thrust * .025F;
+            }
+            case FIRE_BREATH -> {
+                float pressure = (float) Math.sin(age * .85 + side) * .012F;
+                depth -= .08F + pressure;
+                pitch = -90 + pressure * 160;
+                yaw = side * 7;
+            }
+            case FIRE_SHEPHERD -> {
+                float pull = .5F + .5F * (float) Math.sin(age * .3 + (side > 0 ? 0 : Math.PI));
+                spread += .12F * (1 - pull);
+                depth -= .18F * (1 - pull);
+                pitch = -65 - 25 * (1 - pull);
+                yaw = side * (8 + 20 * pull);
+                roll = side * 12;
+            }
+            case FIRE_CAUTERIZE -> {
+                float open = smooth((age - 6) / 14F);
+                spread = .44F + open * .23F;
+                depth = -.4F - open * .03F;
+                height = -.5F + open * .03F;
+                pitch = -88 + open * 8;
+                yaw = side * (6 + open * 12);
+                roll = side * (12 + open * 15);
+            }
+            case FIRE_SUN -> {
+                float lift = smooth(age / 45F);
+                height = -.45F + lift * .35F;
+                spread += lift * .06F;
+                pitch = -75 + lift * 45;
+                yaw = side * 12;
+                roll = side * (10 + lift * 8);
+            }
+            case FIRE_SWEEP -> {
+                float sweep = smooth(age / 12F);
+                spread = .35F + sweep * .25F;
+                height = -.55F + sweep * .16F;
+                depth = -.18F - sweep * .17F;
+                pitch = -125 + sweep * 40;
+                yaw = side * (-15 + sweep * 38);
+            }
+            default -> { }
+        }
+        stack.translate(side * spread, height, depth);
+        stack.mulPose(Axis.YP.rotationDegrees(yaw));
+        stack.mulPose(Axis.XP.rotationDegrees(pitch));
+        stack.mulPose(Axis.ZP.rotationDegrees(roll));
+    }
+
+    private static float smooth(float value) {
+        float t = Math.clamp(value, 0, 1);
+        return t * t * (3 - 2 * t);
     }
 
     private static void kinetic(PoseStack stack, float side, ArmPose pose, float time, float age) {

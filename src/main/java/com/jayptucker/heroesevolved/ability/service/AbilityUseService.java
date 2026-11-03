@@ -74,6 +74,21 @@ public final class AbilityUseService {
             boolean allowOverexertion
     ) {
         if (EclipseService.arePowersSuppressed(player)) return AbilityUseResult.POWER_SUPPRESSED;
+        // A preserved caster can open only their own learned cocoon; other actions stay locked.
+        if (com.jayptucker.heroesevolved.cryo.CryoTechniqueService.canReleaseCocoon(player)) {
+            var assignment = PlayerAbilityService.getData(player).assignedPower();
+            if (assignment.isPresent() && assignment.get().getValue().isUnlocked()
+                    && assignment.get().getKey().equals(com.jayptucker.heroesevolved.ability.registry.ModAbilities.CRYOKINESIS_ID)) {
+                AbilityAction releaseAction = chooser.apply(assignment.get().getKey());
+                int tier = PlayerProgressionService.getLevel(player);
+                if (releaseAction != null && releaseAction.definition().id().getPath().equals("cryokinesis_stillheart")
+                        && releaseAction.definition().isUnlockedAt(tier)
+                        && releaseAction.followUp(new AbilityUseContext(player, assignment.get().getKey(), tier, allowOverexertion))) {
+                    PlayerPowerSyncService.sync(player);
+                    return AbilityUseResult.SUCCESS;
+                }
+            }
+        }
         if (!PowerRules.canAct(player)
                 || com.jayptucker.heroesevolved.cryo.CryoService.isFrozen(player)
                 || com.jayptucker.heroesevolved.intro.PowerIntroService.isActive(player)
@@ -139,6 +154,11 @@ public final class AbilityUseService {
                 powerLevel,
                 allowOverexertion
         );
+
+        if (abilityAction.followUp(context)) {
+            PlayerPowerSyncService.sync(player);
+            return AbilityUseResult.SUCCESS;
+        }
 
         // A held modifier has a second purpose for persistent abilities:
         // end the effect immediately. This branch is intentionally before

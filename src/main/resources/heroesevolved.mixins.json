@@ -10,7 +10,9 @@
     "StoppedTimeInputMixin",
     "SpeedWaterCollisionMixin",
     "SunkPlayerMixin",
-    "CarriedPickMixin"
+    "CarriedPickMixin",
+    "PossessionInputMixin",
+    "PossessionSyncMixin"
   ],
   "client": [
     "FlightSprintMixin",

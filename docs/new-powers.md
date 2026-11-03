@@ -6,25 +6,13 @@ grown to 18 nodes; see the end of this page.
 
 ## Invisibility (Claude Rains)
 
-| Key | Level | Ability | What it does |
-| --- | --- | --- | --- |
-| G | 1 | **Fade** | Toggle complete invisibility. Other players can't see your body, armor, held items or name tag. Drains 2 stamina per second. Press again (or Shift) to reappear. |
-| H | 1 | **Silent Step** | Dash 6 + 2 × level blocks without breaking your invisibility. |
-| Z | 2 | **Unseen Strike** | Your next punch within 10 s gets +3 + level damage and blinds the target. It deals 1.5× damage if you're unseen. |
-| X | 3 | **Shroud** | Make the nearest friend unseen for 15 s, or yourself if no one is near. |
-| V | 5 | **Ghost Protocol** | You and friends within 6 blocks vanish for 8 s. Every mob hunting you loses track, and enemy players nearby get Darkness. |
+Invisibility has been rebuilt around **Exposure**, a physical **Refraction Step**, public optical
+**Mirages**, a moving **Shared Veil**, and **Ghost Protocol**. All eighteen skill nodes now support
+Ghost, Trickster and Infiltrator playstyles, including false trails, prepared counterattacks,
+quiet item lifting and a checked **Hidden Passage** for companions.
 
-**Passive:** mobs notice you less, and while you're unseen they have to be within 2 blocks to target you.
-
-**Counters:**
-- Taking damage flickers you visible for a second.
-- Sonic's **Echo Sense**, Quake's **Tremor Sense** and Telepathy's **Memory Walk** expose you for longer.
-
-| Branch | Active skill | Technique, then upgrade, then capstone |
-| --- | --- | --- |
-| Ambush | Blind Spot | **Smoke and Mirrors** (nearby mobs lose their target and stagger), then Lingering Mirage, then **Assassin** (Unseen Strike from invisibility deals 3×) |
-| Ghost | Vanishing Guard | **Pickpocket** (lift a mob's held item), then Light Fingers, then **Phantom** (30% less damage while unseen) |
-| Escape | Slip Away | **Cloak Field** (a stationary zone that hides friends), then Wider Cloak, then **Claude's Lesson** (Fade drains half as fast) |
+See the [current Invisibility guide](invisibility.md) for controls, concealment counters,
+animations and the complete skill tree.
 
 ## Phasing (D.L. Hawkins)
 

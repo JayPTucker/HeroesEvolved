@@ -18,6 +18,13 @@ public record FlightSpeedInputPayload(int direction) implements CustomPacketPayl
             StreamCodec.composite(ByteBufCodecs.VAR_INT, FlightSpeedInputPayload::direction, FlightSpeedInputPayload::new);
     @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     public static void handle(FlightSpeedInputPayload payload, IPayloadContext context) {
-        if (context.player() instanceof ServerPlayer player) FlightService.changeSpeed(player, payload.direction());
+        if (context.player() instanceof ServerPlayer sender) {
+            ServerPlayer player = com.jayptucker.heroesevolved.telepathy.PossessionService.actionActor(sender);
+            if (player != null) {
+                if (com.jayptucker.heroesevolved.pyro.PyroFlightService.isFlying(player))
+                    com.jayptucker.heroesevolved.pyro.PyroFlightService.changeSpeed(player, payload.direction());
+                else FlightService.changeSpeed(player, payload.direction());
+            }
+        }
     }
 }

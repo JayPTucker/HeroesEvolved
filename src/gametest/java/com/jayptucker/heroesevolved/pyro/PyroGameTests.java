@@ -59,7 +59,7 @@ public final class PyroGameTests {
 
     private static LivingEntity target(GameTestHelper h, ServerPlayer p, double distance) {
         var target = EntityType.PILLAGER.create(h.getLevel());
-        target.setNoAi(true); target.setPersistenceRequired();
+        target.setNoAi(true); target.setNoGravity(true); target.setPersistenceRequired();
         target.moveTo(p.getX(), p.getY(), p.getZ() + distance, 180, 0);
         h.getLevel().addFreshEntity(target);
         return target;
@@ -186,6 +186,514 @@ public final class PyroGameTests {
             victim.discard();
             h.succeed();
         } finally { PyroService.forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.combo")
+    public static void flareDetonatesOnlyWithBurningTargetAndHeat(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        var victim = target(h, p, 4);
+        var nearby = target(h, p, 5);
+        try {
+            victim.igniteForSeconds(10);
+            PyroService.addHeat(p, 20);
+            float before = nearby.getHealth();
+            PyroService.flare(p, 5);
+            h.assertTrue(nearby.getHealth() < before, "Burning targets must splash nearby enemies");
+            h.assertTrue(PyroService.heat(p) == 12, "Detonation spends 20 Heat before generating 12");
+            h.assertTrue(!PyroService.spendHeat(p, 20) && PyroService.heat(p) == 12,
+                    "Insufficient Heat must not be spent");
+            h.succeed();
+        } finally { victim.discard(); nearby.discard(); PyroService.forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.collapse")
+    public static void ringCollapseDamagesAndEndsProtection(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        p.setShiftKeyDown(true);
+        p.setXRot(90);
+        var victim = target(h, p, 2);
+        PyroService.ringOfFire(p, 5);
+        PyroService.addHeat(p, 5);
+        float before = victim.getHealth();
+        h.assertTrue(PyroService.collapseRing(p, 5), "An active ring can collapse");
+        h.assertTrue(!PyroService.hasRing(p), "Collapse immediately trades away ring protection");
+        h.assertTrue(victim.getHealth() == before, "The inward warning must precede the damaging eruption");
+        h.assertTrue(PyroService.heat(p) == 0, "Fueled collapse spends twenty Heat once");
+        h.runAfterDelay(9, () -> {
+            try {
+                h.assertTrue(victim.getHealth() < before, "Collapse damages enemies after the inward warning");
+                h.assertTrue(!PyroService.collapseRing(p, 5), "A ring cannot collapse twice");
+                h.succeed();
+            } finally { victim.discard(); PyroService.forget(p); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.backdraft")
+    public static void heatPowersBackdraftMovementAndBlast(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        p.setShiftKeyDown(true);
+        var victim = target(h, p, 4);
+        try {
+            PyroService.backdraft(p, 5);
+            double ordinarySpeed = p.getDeltaMovement().horizontalDistance();
+            h.assertTrue(victim.getHealth() == victim.getMaxHealth(), "Ordinary launch cannot reach four blocks");
+            PyroService.addHeat(p, 12);
+            PyroService.backdraft(p, 5);
+            h.assertTrue(p.getDeltaMovement().horizontalDistance() > ordinarySpeed,
+                    "Fueled Backdraft must launch farther");
+            h.assertTrue(victim.getHealth() < victim.getMaxHealth(), "Fueled blast reaches four blocks");
+            h.assertTrue(PyroService.heat(p) == 8 && PyroService.cushion(p),
+                    "Launch spends 20, builds 8, and still cushions landing");
+            h.succeed();
+        } finally { victim.discard(); PyroService.forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.release")
+    public static void infernoEarlyReleaseConsumesHeatOnlyOnce(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        p.setShiftKeyDown(true);
+        var near = target(h, p, 3);
+        var far = target(h, p, 11);
+        try {
+            PyroService.addHeat(p, 40);
+            PyroService.startInferno(p, 5);
+            h.assertTrue(PyroService.releaseInferno(p), "Releasing a held Inferno erupts immediately");
+            h.assertTrue(near.getHealth() < near.getMaxHealth(), "Early release damages nearby enemies");
+            h.assertTrue(far.getHealth() == far.getMaxHealth(), "Early release has less reach than full charge");
+            h.assertTrue(PyroService.heat(p) == 0 && !PyroService.isCharging(p), "Release consumes Heat and charge");
+            h.assertTrue(!PyroService.releaseInferno(p), "Repeated releases cannot duplicate the explosion");
+            h.succeed();
+        } finally { near.discard(); far.discard(); PyroService.forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.spear")
+    public static void chargedSpearPiercesEnemiesButStopsAtWalls(GameTestHelper h) {
+        ServerPlayer p = player(h, 3);
+        p.setShiftKeyDown(true);
+        var first = target(h, p, 3);
+        var second = target(h, p, 5);
+        var blocked = target(h, p, 8);
+        BlockPos wall = p.blockPosition().offset(0, 0, 7);
+        h.getLevel().setBlock(wall, Blocks.STONE.defaultBlockState(), 3);
+        h.getLevel().setBlock(wall.above(), Blocks.STONE.defaultBlockState(), 3);
+        h.getLevel().setBlock(wall.above(2), Blocks.STONE.defaultBlockState(), 3);
+        PyroService.startSpear(p, 3);
+        h.runAfterDelay(22, () -> {
+            try {
+                h.assertTrue(first.getHealth() < first.getMaxHealth() && second.getHealth() < second.getMaxHealth(),
+                        "Fully charged Cinder Spear must pierce multiple enemies");
+                h.assertTrue(blocked.getHealth() == blocked.getMaxHealth(), "Spear cannot pass through walls");
+                h.assertTrue(!PyroService.isChargingSpear(p) && !PyroService.releaseSpear(p),
+                        "Automatic release clears charge and cannot fire twice");
+                h.succeed();
+            } finally { first.discard(); second.discard(); blocked.discard(); PyroService.forget(p); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.sunfall")
+    public static void sunfallLocksItsRemoteTargetAndDoesNotFollowCaster(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        p.setShiftKeyDown(true);
+        var remote = target(h, p, 8);
+        try {
+            PyroService.startInferno(p, 5);
+            p.setPos(p.position().add(8, 0, 0));
+            h.assertTrue(PyroService.releaseInferno(p), "Aimed Sunfall releases");
+            h.assertTrue(remote.getHealth() < remote.getMaxHealth(),
+                    "Sunfall strikes the original remote target after caster moves");
+            h.succeed();
+        } finally { remote.discard(); PyroService.forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.vortex")
+    public static void firestormPullsBurningEnemiesTowardItsCenter(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        p.setShiftKeyDown(true);
+        p.setXRot(90);
+        var victim = target(h, p, 3);
+        victim.setNoGravity(true);
+        victim.igniteForSeconds(8);
+        PyroService.ringOfFire(p, 5);
+        Vec3 start = victim.position();
+        h.runAfterDelay(8, () -> {
+            try {
+                h.assertTrue(victim.getZ() < start.z || victim.getDeltaMovement().z < 0,
+                        "Firestorm must draw burning enemies inward");
+                h.succeed();
+            } finally { victim.discard(); PyroService.forget(p); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.cancel_spear")
+    public static void cancellingSpearLeavesTargetsUnharmed(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        var victim = target(h, p, 4);
+        try {
+            PyroService.startSpear(p, 5);
+            h.assertTrue(PyroService.cancelSpear(p) && !PyroService.releaseSpear(p),
+                    "Cancelled spear cannot release later");
+            h.assertTrue(victim.getHealth() == victim.getMaxHealth(), "Cancellation does not attack");
+            h.succeed();
+        } finally { victim.discard(); PyroService.forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.flight")
+    public static void flameFlightSteersBoostsAndRestoresPermissions(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        ServerPlayer cruise = player(h, 5);
+        try {
+            boolean couldFly = p.mayFly();
+            h.assertTrue(PyroFlightService.toggle(p, 5) && PyroFlightService.isFlying(p), "Level five can ignite jets");
+            h.assertTrue(p.mayFly() && p.getAbilities().flying, "Jets must authorize flight on the server");
+            PyroFlightService.toggle(cruise, 5);
+            PyroFlightService.input(cruise, 1, 0, false, false, false);
+            PyroService.addHeat(p, 40);
+            PyroFlightService.input(p, 1, 0, false, false, true);
+            int energy = PlayerEnergyService.getEnergy(p);
+            for (int tick = 0; tick < 20; tick++) {
+                PyroFlightService.tick(p);
+                PyroFlightService.tick(cruise);
+            }
+            h.assertTrue(p.getDeltaMovement().z > cruise.getDeltaMovement().z * 1.15,
+                    "A spooled Heat boost must outrun ordinary cruise");
+            h.assertTrue(PyroService.heat(p) == 32 && PlayerEnergyService.getEnergy(p) == energy - 10,
+                    "Boosting spends Heat and sustained flight stamina");
+            PyroFlightService.input(p, 0, 0, false, false, false);
+            for (int tick = 0; tick < 15; tick++) PyroFlightService.tick(p);
+            h.assertTrue(p.getDeltaMovement().length() < 0.01, "Releasing movement must settle into a hover");
+            PyroFlightService.deactivate(p, false);
+            h.assertTrue(!PyroFlightService.isFlying(p) && p.mayFly() == couldFly && !p.getAbilities().flying,
+                    "Stopping removes only the flight permission granted by jets");
+            h.assertTrue(p.hasEffect(net.minecraft.world.effect.MobEffects.SLOW_FALLING), "Stopping cushions the descent");
+            h.succeed();
+        } finally { PyroService.forget(p); PyroService.forget(cruise); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.flight_gate")
+    public static void flameFlightRejectsNovicesAndStopsOnSuppression(GameTestHelper h) {
+        ServerPlayer novice = player(h, 2);
+        ServerPlayer veteran = player(h, 5);
+        try {
+            h.assertTrue(!PyroFlightService.toggle(novice, 5), "Packet tier cannot bypass the actual level requirement");
+            PyroFlightService.toggle(veteran, 5);
+            com.jayptucker.heroesevolved.ability.service.PowerRules.rewinding(veteran, true);
+            PyroFlightService.tick(veteran);
+            h.assertTrue(!PyroFlightService.isFlying(veteran) && !veteran.mayFly(),
+                    "An immobilized player must lose propulsion and its flight permission");
+            h.succeed();
+        } finally {
+            com.jayptucker.heroesevolved.ability.service.PowerRules.rewinding(veteran, false);
+            PyroService.forget(novice); PyroService.forget(veteran);
+        }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.meteor")
+    public static void meteorDiveCollidesWithGroundAndErupts(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        var victim = target(h, p, 2);
+        h.getLevel().setBlock(p.blockPosition().below(), Blocks.STONE.defaultBlockState(), 3);
+        p.setPos(p.position().add(0, 2, 0));
+        p.setXRot(90);
+        p.setOnGround(false);
+        try {
+            PyroFlightService.toggle(p, 5);
+            PyroService.addHeat(p, 40);
+            h.assertTrue(PyroFlightService.deactivate(p, true) && PyroFlightService.isDiving(p),
+                    "Shift while airborne starts Meteor Dive");
+            for (int tick = 0; tick < 20 && PyroFlightService.isFlying(p); tick++) {
+                PyroFlightService.tick(p);
+                if (PyroFlightService.isFlying(p)) p.move(net.minecraft.world.entity.MoverType.SELF, p.getDeltaMovement());
+            }
+            h.assertTrue(!PyroFlightService.isFlying(p), "Contact must finish the dive");
+            h.assertTrue(p.getY() >= h.absolutePos(new BlockPos(3, 2, 3)).getY(), "Dive cannot tunnel through the ground");
+            h.assertTrue(victim.getHealth() < victim.getMaxHealth(), "Meteor impact burns nearby enemies");
+            h.assertTrue(PyroService.heat(p) == 10, "Meteor impact spends up to thirty Heat");
+            h.succeed();
+        } finally { victim.discard(); PyroService.forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.hover_mastery")
+    public static void hoverGrowsSteadierWithLevel(GameTestHelper h) {
+        ServerPlayer novice = player(h, 3);
+        ServerPlayer master = player(h, 5);
+        try {
+            PyroFlightService.toggle(novice, 3);
+            PyroFlightService.toggle(master, 5);
+            double noviceMotion = 0, masterMotion = 0;
+            for (int tick = 0; tick < 45; tick++) {
+                PyroFlightService.tick(novice);
+                PyroFlightService.tick(master);
+                if (tick > 15) {
+                    noviceMotion += novice.getDeltaMovement().length();
+                    masterMotion += master.getDeltaMovement().length();
+                }
+            }
+            h.assertTrue(noviceMotion > 0.5 && masterMotion < 0.01,
+                    "Level three must bob and sway while level five holds a steady hover");
+            // Raising the same character's level takes effect without restarting flight.
+            PlayerProgressionService.setLevel(novice, 4);
+            PyroFlightService.tick(novice);
+            h.assertTrue(novice.getDeltaMovement().length() < 0.12,
+                    "Intermediate hover instability stays gentle and bounded");
+            PyroFlightService.input(novice, 1, 0, false, false, false);
+            for (int tick = 0; tick < 10; tick++) PyroFlightService.tick(novice);
+            h.assertTrue(novice.getDeltaMovement().z > 0.4,
+                    "Steering must remain responsive despite novice hover instability");
+            h.succeed();
+        } finally { PyroService.forget(novice); PyroService.forget(master); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.flight_speed")
+    public static void flightWheelRespectsRealLevelAndCanBrakeToHover(GameTestHelper h) {
+        ServerPlayer p = player(h, 3);
+        p.setOnGround(false);
+        try {
+            PyroFlightService.toggle(p, 5);
+            for (int notch = 0; notch < 20; notch++) PyroFlightService.changeSpeed(p, 1);
+            h.assertTrue(PyroFlightService.speedStep(p) == 2,
+                    "A supplied tier cannot unlock speeds above the player's real level");
+            PlayerProgressionService.setLevel(p, 5);
+            for (int notch = 0; notch < 20; notch++) PyroFlightService.changeSpeed(p, 1);
+            h.assertTrue(PyroFlightService.speedStep(p) == 4, "Mastery unlocks all Flight speed settings");
+            PyroFlightService.input(p, 1, 0, false, false, false);
+            for (int tick = 0; tick < 20; tick++) PyroFlightService.tick(p);
+            h.assertTrue(p.getDeltaMovement().length() > 1.5, "Top cruise must reach Flight-like speed");
+            for (int notch = 0; notch < 20; notch++) PyroFlightService.changeSpeed(p, -1);
+            PyroFlightService.input(p, 0, 0, false, false, false);
+            for (int tick = 0; tick < 15; tick++) PyroFlightService.tick(p);
+            h.assertTrue(PyroFlightService.speedStep(p) == 0 && p.getDeltaMovement().length() < 0.02,
+                    "Scrolling down must shed cruise speed and settle into a hover");
+            h.assertTrue(!PyroFlightService.visualPoseActive(p), "Hover returns from the streamlined pose");
+            h.succeed();
+        } finally { PyroService.forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.flight_momentum")
+    public static void momentumRequiresTravelAndCruiseFollowsPitchedAim(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        p.setOnGround(false);
+        try {
+            PyroFlightService.toggle(p, 5);
+            PyroFlightService.changeSpeed(p, 1);
+            PyroFlightService.changeSpeed(p, 1);
+            PyroFlightService.input(p, 1, 0, false, false, false);
+            for (int tick = 0; tick < 20; tick++) PyroFlightService.tick(p);
+            h.assertTrue(PyroFlightService.momentum(p) == 0,
+                    "Holding Forward without displacement must not build Momentum");
+            double cruise = p.getDeltaMovement().length();
+            p.setXRot(-30);
+            for (int tick = 0; tick < 16; tick++) {
+                p.setPos(p.position().add(0, 0, 0.2));
+                PyroFlightService.tick(p);
+            }
+            h.assertTrue(PyroFlightService.momentum(p) > 5,
+                    "Real forward travel at cruise speed must build Momentum");
+            h.assertTrue(p.getDeltaMovement().y > 0.3 && PyroFlightService.visualPoseActive(p),
+                    "Looking up must steer cruise into a climb and activate Flight's body pose");
+            h.assertTrue(p.getDeltaMovement().length() <= cruise + 0.3,
+                    "Redirecting cruise must not create an unbounded acceleration");
+            h.succeed();
+        } finally { PyroService.forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.flight_stale")
+    public static void invalidAndLostFlightInputCannotLeaveCruiseRunning(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        p.setOnGround(false);
+        PyroFlightService.toggle(p, 5);
+        PyroFlightService.input(p, Float.NaN, Float.POSITIVE_INFINITY, true, false, true);
+        for (int tick = 0; tick < 10; tick++) PyroFlightService.tick(p);
+        h.assertTrue(p.getDeltaMovement().horizontalDistance() < 0.01,
+                "Non-finite movement input must never enter propulsion");
+        PyroFlightService.input(p, 1, 0, false, false, false);
+        for (int tick = 0; tick < 15; tick++) PyroFlightService.tick(p);
+        double speed = p.getDeltaMovement().length();
+        h.runAfterDelay(14, () -> {
+            try {
+                for (int tick = 0; tick < 15; tick++) PyroFlightService.tick(p);
+                h.assertTrue(p.getDeltaMovement().length() < speed * 0.1 && !PyroFlightService.visualPoseActive(p),
+                        "A lost input stream must brake into a hover rather than continuing to cruise");
+                h.succeed();
+            } finally { PyroService.forget(p); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.flight_nozzles")
+    public static void flameNozzlesFollowThePitchedFlightBody(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        try {
+            p.setYRot(0); p.yRotO = 0;
+            p.setXRot(0); p.xRotO = 0;
+            Vec3 standingFeet = PyroFlightGeometry.feet(p, false);
+            Vec3 cruiseFeet = PyroFlightGeometry.feet(p, true);
+            h.assertTrue(cruiseFeet.distanceTo(standingFeet) > 0.5 && cruiseFeet.z < p.getZ(),
+                    "Cruise foot jets must move behind the torso rather than stay below the upright hitbox");
+            Vec3 left = PyroFlightGeometry.palm(p, true, -1);
+            Vec3 right = PyroFlightGeometry.palm(p, true, 1);
+            h.assertTrue(left.distanceTo(right) > 0.5,
+                    "The two hands must retain distinct flame origins in the streamlined pose");
+            p.setXRot(-60); p.xRotO = -60;
+            Vec3 climbingFeet = PyroFlightGeometry.feet(p, true);
+            h.assertTrue(climbingFeet.y < cruiseFeet.y && climbingFeet.z > cruiseFeet.z,
+                    "Jet anchors must tilt with a climb instead of trailing along a fixed world axis");
+            h.succeed();
+        } finally { PyroService.forget(p); }
+    }
+
+    private static LivingEntity ally(GameTestHelper h, ServerPlayer p, double distance) {
+        var ally = EntityType.VILLAGER.create(h.getLevel());
+        ally.setNoAi(true); ally.setNoGravity(true); ally.setPersistenceRequired();
+        ally.moveTo(p.getX(), p.getY(), p.getZ() + distance, 180, 0);
+        h.getLevel().addFreshEntity(ally);
+        return ally;
+    }
+
+    private static AbilityUseContext skillContext(ServerPlayer p) {
+        return new AbilityUseContext(p, ModAbilities.PYROKINESIS_ID, 5, false);
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.lash_reel")
+    public static void emberLashReelsItsVictimThenEnds(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        var victim = target(h, p, 6);
+        double start = victim.getZ();
+        h.assertTrue(PyroService.skill(skillContext(p), 0), "Ember Lash must find the visible victim");
+        h.runAfterDelay(5, () -> {
+            h.assertTrue(victim.getZ() < start || victim.getDeltaMovement().z < -0.01,
+                    "The lash must physically reel the victim toward its caster");
+        });
+        h.runAfterDelay(12, () -> {
+            try {
+                h.assertTrue(!PyroService.isLashing(p), "The short reel must end without leaving a permanent tether");
+                h.succeed();
+            } finally { victim.discard(); PyroService.forget(p); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.mantle_fuel")
+    public static void heatMantleFeedsOnHostileShotsAndLeavesAlliedShots(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        var friendly = ally(h, p, -2);
+        var board = h.getLevel().getScoreboard();
+        var team = board.addPlayerTeam("pyro" + UUID.randomUUID().toString().substring(0, 8));
+        board.addPlayerToTeam(p.getScoreboardName(), team);
+        board.addPlayerToTeam(friendly.getScoreboardName(), team);
+        var friendlyShot = new Arrow(EntityType.ARROW, h.getLevel());
+        friendlyShot.setOwner(friendly); friendlyShot.setNoGravity(true);
+        friendlyShot.setPos(p.position().add(-1.5, 1, 0));
+        h.getLevel().addFreshEntity(friendlyShot);
+        var hostileShots = new java.util.ArrayList<Arrow>();
+        for (int i = 0; i < 5; i++) {
+            var shot = new Arrow(EntityType.ARROW, h.getLevel());
+            shot.setNoGravity(true); shot.setPos(p.position().add(1.5, 0.8 + i * 0.1, 0));
+            h.getLevel().addFreshEntity(shot); hostileShots.add(shot);
+        }
+        PyroService.skill(skillContext(p), 1);
+        int initialHeat = PyroService.heat(p);
+        h.runAfterDelay(6, () -> {
+            try {
+                h.assertTrue(hostileShots.stream().allMatch(Arrow::isRemoved), "Flame plates must intercept hostile shots");
+                h.assertTrue(!friendlyShot.isRemoved(), "A friendly projectile must pass through the mantle");
+                h.assertTrue(PyroService.heat(p) > initialHeat && PyroService.heat(p) <= initialHeat + 8,
+                        "Intercepted shots feed Heat with a bounded return per pulse");
+                PyroService.forget(p);
+                h.assertTrue(!PyroService.hasMantle(p), "Power cleanup must remove the projectile-catching shell");
+                h.succeed();
+            } finally {
+                hostileShots.forEach(Arrow::discard); friendlyShot.discard(); friendly.discard();
+                board.removePlayerTeam(team); PyroService.forget(p);
+            }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.cauterize_ally")
+    public static void cauterizingFlameCanRescueAFriendUsingStoredHeat(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        var friend = ally(h, p, 4);
+        try {
+            p.setHealth(12); friend.setHealth(5);
+            friend.igniteForSeconds(8);
+            friend.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.POISON, 100));
+            PyroService.addHeat(p, 20);
+            h.assertTrue(PyroService.skill(skillContext(p), 2), "Cauterizing Flame must cast on an aimed friend");
+            h.assertTrue(friend.getHealth() > 5 && !friend.isOnFire()
+                            && !friend.hasEffect(net.minecraft.world.effect.MobEffects.POISON),
+                    "Friendly cauterization heals, extinguishes and cleanses its recipient");
+            h.assertTrue(p.getHealth() == 12, "Aimed rescue must not silently heal only the caster");
+            h.assertTrue(friend.getAbsorptionAmount() >= 4 && PyroService.heat(p) == 0,
+                    "Twenty stored Heat becomes a short protective absorption reserve");
+            h.succeed();
+        } finally { friend.discard(); PyroService.forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.mine_warning")
+    public static void emberMineArmsAndWarnsBeforeItsEruption(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        p.setXRot(90);
+        var victim = target(h, p, 1);
+        p.setShiftKeyDown(true);
+        h.assertTrue(PyroService.technique(skillContext(p), "ember_mine"), "A mine must attach to aimed ground");
+        h.runAfterDelay(5, () -> h.assertTrue(victim.getHealth() == victim.getMaxHealth(),
+                "An unarmed mine cannot instantly erupt beneath its victim"));
+        h.runAfterDelay(22, () -> {
+            try {
+                h.assertTrue(victim.getHealth() < victim.getMaxHealth(), "A victim remaining through the warning must be burned");
+                h.assertTrue(PyroService.mineCount(p) == 0, "One eruption consumes its mine exactly once");
+                h.succeed();
+            } finally { victim.discard(); PyroService.forget(p); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.mine_escape")
+    public static void leavingAnEmberMineWarningAvoidsTheBlast(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        p.setXRot(90); p.setShiftKeyDown(true);
+        var victim = target(h, p, 1);
+        PyroService.technique(skillContext(p), "ember_mine");
+        h.runAfterDelay(10, () -> victim.setPos(p.position().add(4, 0, 0)));
+        h.runAfterDelay(22, () -> {
+            try {
+                h.assertTrue(victim.getHealth() == victim.getMaxHealth(), "The warning must allow a victim to leave the blast radius");
+                h.succeed();
+            } finally { victim.discard(); PyroService.forget(p); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.lance_seam")
+    public static void blueLanceBurnsAnArrivingEnemyThenClearsItsSeam(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        p.setShiftKeyDown(true);
+        var arriving = target(h, p, 4);
+        arriving.setPos(p.position().add(3, 0, 4));
+        h.assertTrue(PyroService.technique(skillContext(p), "blue_lance"), "Blue Lance must fire its fixed drill seam");
+        h.assertTrue(arriving.getHealth() == arriving.getMaxHealth(), "An enemy outside the original line is initially safe");
+        h.runAfterDelay(2, () -> arriving.setPos(p.position().add(0, 0, 4)));
+        h.runAfterDelay(9, () -> h.assertTrue(arriving.getHealth() < arriving.getMaxHealth(),
+                "An enemy entering the short-lived drill seam must take fire damage"));
+        h.runAfterDelay(16, () -> {
+            try {
+                h.assertTrue(!PyroService.isLancing(p), "The drill seam must expire without a held key");
+                h.succeed();
+            } finally { arriving.discard(); PyroService.forget(p); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.shepherd_rescue")
+    public static void fireShepherdRecoversHeatAndExtinguishesFriends(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        var friend = ally(h, p, 3);
+        try {
+            friend.setHealth(8); friend.igniteForSeconds(8);
+            for (int i = -1; i <= 1; i++) {
+                BlockPos fire = p.blockPosition().offset(2, 0, i);
+                h.getLevel().setBlock(fire.below(), Blocks.STONE.defaultBlockState(), 3);
+                h.getLevel().setBlock(fire, Blocks.FIRE.defaultBlockState(), 3);
+            }
+            PyroService.technique(skillContext(p), "fire_shepherd");
+            h.assertTrue(PyroService.heat(p) >= 6, "Absorbed world fire must replenish flight's Heat fuel");
+            h.assertTrue(!friend.isOnFire() && friend.getHealth() >= 10, "The shepherd must rescue nearby burning friends");
+            h.succeed();
+        } finally { friend.discard(); PyroService.forget(p); }
     }
 
     @GameTest(template = "rewind_empty", batch = "helixite")

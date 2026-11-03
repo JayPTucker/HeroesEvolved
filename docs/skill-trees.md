@@ -17,6 +17,10 @@ Flight has a fully redesigned eighteen-node tree: see [Flight](flight.md#purchas
 
 Telekinesis also replaces all eighteen nodes with interaction-based progression. See [Telekinesis](telekinesis.md) for physical fragments, aimed fields, projectile counterattacks and the Fine Manipulation, Kinetic Arsenal and Bastion branches. Its old blanket stat bonuses no longer apply.
 
+Cryokinesis uses Sculptor, Glacier and Winterbinder branches. Its roots and masteries change
+constructed ice, Glacier Ride and Frost/shatter interactions instead of applying the generic
+stat bonuses below. See [Cryokinesis](cryokinesis.md) for the complete connected kit.
+
 Every tree now has eighteen nodes: the original nine below, plus a technique, an
 upgrade and a capstone in each branch (see [the new powers guide](new-powers.md)). See
 [A Future Unwritten](a-future-unwritten.md) for new techniques, capstones, respecialization
@@ -45,7 +49,7 @@ free. Other costs round up to at least one.
 | --- | --- | --- | --- |
 | Quake | Seismic Lance | Aftershock | Fault Step |
 | Flight | Rescue Rush | Barrel Roll | Thermal Lance |
-| Cryokinesis | Ice Lance | Frost Armor | Cold Snap |
+| Cryokinesis | Crystal Lance | Frost Armor | Cold Snap |
 | Electrokinesis | Arc Lance | Static Screen | Overcharge |
 | Telekinesis | Vector Lance | Gravity Well | Vector Step |
 | Telepathy | Psychic Silence | Shared Focus | Terror Pulse |

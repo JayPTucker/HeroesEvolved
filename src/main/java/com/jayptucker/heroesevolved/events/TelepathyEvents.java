@@ -55,6 +55,7 @@ public final class TelepathyEvents {
     public static void onDamaged(LivingDamageEvent.Post event) {
         if (event.getEntity() instanceof ServerPlayer victim && event.getNewDamage() > 0.0F) {
             TelepathyService.onLinkedMemberHurt(victim, event.getNewDamage());
+            com.jayptucker.heroesevolved.telepathy.PossessionService.hurt(victim,event.getNewDamage());
         }
     }
 
@@ -78,6 +79,11 @@ public final class TelepathyEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             TelepathyService.stopAll(player);
         }
+    }
+
+    @SubscribeEvent public static void stopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
+        com.jayptucker.heroesevolved.telepathy.PossessionService.clear();
+        com.jayptucker.heroesevolved.telepathy.IllusionService.clear();
     }
 
     private static boolean hasAwakenedTelepathy(ServerPlayer player) {

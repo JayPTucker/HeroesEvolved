@@ -103,7 +103,8 @@ public final class SkillTreeService {
     private static int discounted(int value, double bonus) { return value <= 0 ? 0 : Math.max(1, (int) Math.ceil(value * (1 - bonus))); }
     public static double bonus(ServerPlayer player, ResourceLocation power, int branch) {
         // These trees unlock specific maneuvers and interactions, rather than blanket stat bonuses.
-        if (power.equals(ModAbilities.FLIGHT_ID) || power.equals(ModAbilities.TELEKINESIS_ID)) return 0;
+        if (power.equals(ModAbilities.FLIGHT_ID) || power.equals(ModAbilities.TELEKINESIS_ID)
+                || power.equals(ModAbilities.INVISIBILITY_ID) || power.equals(ModAbilities.CRYOKINESIS_ID)) return 0;
         var build = build(player, power); String prefix = power.getPath() + "_" + branch + "_";
         return (build.learned().contains(prefix + "0") ? .10 : 0) + (build.learned().contains(prefix + "2") ? .15 : 0);
     }

@@ -60,7 +60,10 @@ public final class CryoEvents {
         if (event.getEntity() instanceof ServerPlayer player) CryoService.stopAll(player);
     }
     @SubscribeEvent public static void onFrozenAttack(AttackEntityEvent event) {
-        if (CryoService.isFrozen(event.getEntity())) event.setCanceled(true);
+        if (CryoService.isFrozen(event.getEntity())) {
+            if (event.getEntity() instanceof ServerPlayer player) CryoService.struggle(player);
+            event.setCanceled(true);
+        }
     }
     @SubscribeEvent public static void onFrozenItem(PlayerInteractEvent.RightClickItem event) {
         if (CryoService.isFrozen(event.getEntity())) event.setCanceled(true);
@@ -70,6 +73,18 @@ public final class CryoEvents {
     }
     @SubscribeEvent public static void onFrozenEntity(PlayerInteractEvent.EntityInteract event) {
         if (CryoService.isFrozen(event.getEntity())) event.setCanceled(true);
+    }
+    @SubscribeEvent public static void onFrozenPreciseEntity(PlayerInteractEvent.EntityInteractSpecific event) {
+        if (CryoService.isFrozen(event.getEntity())) event.setCanceled(true);
+    }
+    @SubscribeEvent public static void onFrozenMining(PlayerInteractEvent.LeftClickBlock event) {
+        if (CryoService.isFrozen(event.getEntity())) {
+            if (event.getEntity() instanceof ServerPlayer player) CryoService.struggle(player);
+            event.setCanceled(true);
+        }
+    }
+    @SubscribeEvent public static void onFrozenBreak(net.neoforged.neoforge.event.level.BlockEvent.BreakEvent event) {
+        if (CryoService.isFrozen(event.getPlayer())) event.setCanceled(true);
     }
 
     @SubscribeEvent(priority = EventPriority.LOW)
@@ -88,6 +103,14 @@ public final class CryoEvents {
             }
         }
 
+        if (event.getEntity() instanceof ServerPlayer frozen && CryoService.isFrozen(frozen)
+                && event.getSource().getEntity() instanceof ServerPlayer helper && helper != frozen
+                && (helper.isAlliedTo(frozen) || frozen.isAlliedTo(helper))) {
+            CryoService.releaseEntity(frozen);
+            event.setCanceled(true);
+            return;
+        }
+
         // Frozen solid: any blow shatters the ice for heavy damage.
         event.setAmount(CryoService.onFrozenHit(event.getEntity(), event.getAmount(),
                 freezing || CryoService.isApplyingColdDamage()));
@@ -96,7 +119,7 @@ public final class CryoEvents {
         if (event.getSource().getEntity() instanceof ServerPlayer attacker
                 && event.getSource().getDirectEntity() == attacker
                 && event.getSource().is(DamageTypes.PLAYER_ATTACK)
-                && !CryoService.isApplyingColdDamage()
+                && !CryoService.isDealingPowerDamage()
                 && hasAwakenedCryokinesis(attacker)
                 && !EclipseService.arePowersSuppressed(attacker)) {
             CryoService.chill(event.getEntity(), 40, attacker);

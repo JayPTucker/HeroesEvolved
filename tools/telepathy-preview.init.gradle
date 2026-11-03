@@ -1,0 +1,21 @@
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('telepathyPreview') {
+                java.srcDir('src/uitest/java')
+                java.include('com/jayptucker/heroesevolved/uitest/TelepathyPreview.java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs { client {
+                    gameDirectory = project.file('build/telepathy-preview')
+                    programArguments.addAll('--width', '1100', '--height', '800')
+                    systemProperty('heroes.preview.telepathy', 'true')
+                } }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('telepathyPreviewClasses')) }
+        }
+    }
+}

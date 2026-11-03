@@ -19,7 +19,14 @@ public final class PowerRules {
                 || com.jayptucker.heroesevolved.story.bunker.CryoChamberService.isInside(player);
     }
     public static boolean canAct(ServerPlayer player) {
-        return player.isAlive() && !player.isSpectator() && !immobilized(player)
+        return !com.jayptucker.heroesevolved.expansion.ExpansionSkills.preserved(player)
+                && canActWithoutPreservation(player);
+    }
+    /** Only the cocoon's explicit release may ignore its own preservation lock. */
+    public static boolean canActWithoutPreservation(ServerPlayer player) {
+        return player.isAlive() && !player.isSpectator() && !CryoService.isFrozen(player)
+                && !TimeStopService.isStopped(player) && !REWINDING.contains(player.getUUID())
+                && !com.jayptucker.heroesevolved.story.bunker.CryoChamberService.isInside(player)
                 && !EclipseService.arePowersSuppressed(player) && !PowerIntroService.isActive(player)
                 && !TimeIntroService.isVisiting(player) && !TimeIntroService.isCity(player.level())
                 && !com.jayptucker.heroesevolved.regeneration.BodyService.isDowned(player);

@@ -52,7 +52,8 @@ public final class AbilityEffectRenderer {
             direction = UP;
         }
 
-        if (TimeEffects.play(level, effect.kind(), origin, target, size, detail)
+        if (InvisibilityEffects.play(level, effect.kind(), origin, target, size, detail)
+                || TimeEffects.play(level, effect.kind(), origin, target, size, detail)
                 || RegenerationEffects.play(level, effect.kind(), origin, target, size, detail)
                 || RadiationEffects.play(level, effect.kind(), origin, target, size, detail)
                 || NuclearEffects.play(level, effect.kind(), origin, size, detail)

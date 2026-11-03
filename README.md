@@ -58,21 +58,30 @@ the next blow, cross out a friend's death, or live two seconds ahead of everyone
 
 See [Flight](docs/flight.md) for the rebuilt aerial kit and all eighteen purchasable skills: Momentum, Skyburst, Meteor Drop, Skyhook, Tempest, plus the Sky Guard, Jetstream and Stormbreaker builds.
 
+See [Cryokinesis](docs/cryokinesis.md) for held Rime Stream, solid sculpted walls and ramps,
+Glacier Ride, breakable Crystal Prisons and Whiteout, with Sculptor, Glacier and Winterbinder progression.
+All six active sub-abilities now have physical projectiles, finite guards, travelling fronts, guided
+paths, pressure-bearing rescue shells or staged crystal networks.
+
 See [Regeneration](docs/regeneration.md) for Claire Bennet's reworked kit: she can't be killed (she goes down and gets back up), limbs grow back from the bone out, and Regrowth, Blood Bond and Second Life.
 
 See [Ted Sprague](docs/ted-sprague.md) for the reworked Radiation kit: a Core that makes you stronger as it runs hot, a spreading Radiation Sickness, and a held heat beam.
 
 See [Electrokinesis](docs/electrokinesis.md) for the rebuilt lightning kit: Charge, tap-or-hold Chain Lightning, and the delayed Thunderstrike.
 
-See [Telekinesis](docs/telekinesis.md) for the rebuilt physical force kit and all eighteen skills: orbiting fragments, staggered volleys, Iron Rain, precise grips, projectile catches and aimed force fields. [Power workshop](docs/power-workshop.md) records proposed directions for Phasing, Sonic, Telepathy and Mimicry.
+See [Telepathy](docs/telepathy.md) for Mind Threads, command suggestions, shared sight, real-body
+Puppet possession with an arrow-key resistance struggle, and private Dreamweaver illusions.
+
+See [Telekinesis](docs/telekinesis.md) for the rebuilt physical force kit and all eighteen skills: orbiting fragments, staggered volleys, Iron Rain, precise grips, projectile catches and aimed force fields. [Power workshop](docs/power-workshop.md) records the original redesign proposals and remaining Mimicry directions.
 
 See [Pyrokinesis and Helixite](docs/pyrokinesis.md) for the fire power, its real-fire rules,
 reactions with Cryokinesis, Flight and Superspeed, and the new Helixite crystal ore.
 New players wake sealed in a Cryochamber in a stasis bunker beneath world spawn,
 where the world's past waits to be read. See [The Past](docs/the-past.md).
 
-See [Invisibility, Phasing and Empathic Mimicry](docs/new-powers.md) for the three newest
-powers and the techniques added to every original tree.
+See [Invisibility](docs/invisibility.md) for Exposure, optical doubles, shared concealment and
+its eighteen redesigned skills. [Phasing and Empathic Mimicry](docs/new-powers.md) records the
+other added powers and the techniques introduced to the original trees.
 
 See [The Formula](docs/formula.md) for awakening unclaimed powers without waiting for an
 Eclipse: draw Regeneration blood (donated or forced), spin it in a Centrifuge, synthesize

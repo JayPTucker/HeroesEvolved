@@ -42,7 +42,9 @@ public record ReleaseAbilitySlotPayload(AbilitySlot slot) implements CustomPacke
             ReleaseAbilitySlotPayload payload,
             IPayloadContext context
     ) {
-        if (context.player() instanceof ServerPlayer player) {
+        if (context.player() instanceof ServerPlayer sender) {
+            ServerPlayer player = com.jayptucker.heroesevolved.telepathy.PossessionService.actionActor(sender);
+            if(player==null)return;
             AbilityUseService.releaseAssignedAction(player, payload.slot());
         }
     }

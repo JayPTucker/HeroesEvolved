@@ -54,9 +54,12 @@ public record ActivateAbilitySlotPayload(
             ActivateAbilitySlotPayload payload,
             IPayloadContext context
     ) {
-        if (!(context.player() instanceof ServerPlayer player)) {
+        if (!(context.player() instanceof ServerPlayer sender)) {
             return;
         }
+
+        ServerPlayer player = com.jayptucker.heroesevolved.telepathy.PossessionService.actionActor(sender);
+        if(player==null)return;
 
         // The server determines the player's assigned power and action.
         // The client is never allowed to provide a power ID directly.

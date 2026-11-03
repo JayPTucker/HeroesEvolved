@@ -36,15 +36,7 @@ public final class ArmPoseActions {
             Map.entry("radiation_emp", new Pose(ArmPose.ARMS_WIDE, 16)),
             Map.entry("radiation_meltdown_beam", new Pose(ArmPose.TWO_HANDS_STRAIN, 15)),
 
-            Map.entry("pyro_flare", new Pose(ArmPose.ONE_HAND, 8)),
-            Map.entry("pyro_ring_of_fire", new Pose(ArmPose.ARMS_WIDE, 16)),
-            Map.entry("pyro_backdraft", new Pose(ArmPose.GROUND, 10)),
 
-            Map.entry("cryo_frost_bolt", new Pose(ArmPose.ONE_HAND, 8)),
-            Map.entry("cryo_flash_freeze", new Pose(ArmPose.ONE_HAND, 12)),
-            Map.entry("cryo_ice_wall", new Pose(ArmPose.ARMS_RAISED, 12)),
-            Map.entry("cryo_glacial_spikes", new Pose(ArmPose.GROUND, 14)),
-            Map.entry("cryo_blizzard", new Pose(ArmPose.ARMS_RAISED, 30)),
 
             Map.entry("telepathy_read_mind", new Pose(ArmPose.TEMPLE, 20)),
             Map.entry("telepathy_suggestion", new Pose(ArmPose.TEMPLE, 20)),

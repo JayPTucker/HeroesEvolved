@@ -9,6 +9,11 @@ public interface AbilityAction {
 
     AbilityActivationResult activate(AbilityUseContext context);
 
+    /** Handles an explicit follow-up press with its own validation and cost; never called during cleanup. */
+    default boolean followUp(AbilityUseContext context) {
+        return false;
+    }
+
     /**
      * Lets toggle-style actions end an existing effect without paying their
      * activation cost or starting a second cooldown. Shift is the shared

@@ -21,6 +21,7 @@ final class DetailedAbilityEffects {
 
     static boolean play(ClientLevel level, Kind kind, Vec3 origin, Vec3 target,
                         float size, boolean detail, int density) {
+        if (TelepathyEffects.play(level, kind, origin, target, size, detail)) return true;
         if (TelekinesisEffects.play(level, kind, origin, target, size, detail)) return true;
         Vec3 delta = target.subtract(origin);
         Vec3 axis = delta.lengthSqr() < 0.0001D ? UP : delta.normalize();

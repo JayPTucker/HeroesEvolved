@@ -71,7 +71,10 @@ public final class CryoService {
     private static final Map<UUID, Frozen> FROZEN = new HashMap<>();
     private static final Map<UUID, Chilled> CHILLED = new HashMap<>();
     private static final ResourceLocation CHILL_SLOW = ResourceLocation.fromNamespaceAndPath("heroesevolved", "cryo_chill");
-    private static int coldDamageDepth;
+    private static int coldDamageDepth, shatterDamageDepth;
+    private static final Map<UUID, Shell> SHELLS = new HashMap<>();
+    private static final class Shell { int attempts; long last; final int required;
+        Shell(int required,long now){this.required=required;last=now-4;} }
     private static final Map<UUID, Blizzard> BLIZZARDS = new HashMap<>();
     private static final List<Delayed> DELAYED = new ArrayList<>();
 
@@ -99,6 +102,7 @@ public final class CryoService {
                 caster == null ? null : caster.getUUID()));
         target.setTicksFrozen(amount);
         slow(target, amount);
+        CryoTechniqueService.shareFrost(caster, target, ticks);
         if (amount >= target.getTicksRequiredToFreeze() && !target.getType().is(Tags.EntityTypes.BOSSES))
             freezeSolid(target, target instanceof ServerPlayer ? 45 : 80, caster);
     }
@@ -120,10 +124,38 @@ public final class CryoService {
     }
 
     public static boolean isApplyingColdDamage() { return coldDamageDepth > 0; }
-    private static void coldHit(ServerPlayer caster, LivingEntity target, float damage) {
+    public static void coldHit(ServerPlayer caster, LivingEntity target, float damage) {
         coldDamageDepth++;
         try { target.hurt(caster.damageSources().playerAttack(caster), damage); }
         finally { coldDamageDepth--; }
+    }
+
+    public static boolean isDealingPowerDamage() { return coldDamageDepth > 0 || shatterDamageDepth > 0; }
+    public static int frostAmount(LivingEntity target) {
+        if (isFrozen(target)) return target.getTicksRequiredToFreeze();
+        Chilled chilled = CHILLED.get(target.getUUID());
+        return chilled == null ? target.getTicksFrozen() : chilled.amount;
+    }
+    public static int frostPercent(LivingEntity target) {
+        return (int) Math.clamp(100.0 * frostAmount(target) / Math.max(1, target.getTicksRequiredToFreeze()), 0, 100);
+    }
+    /** Deliberate fractures keep physical-shatter reactions, without adding Cold Touch a second time. */
+    public static void shatterHit(ServerPlayer caster, LivingEntity target, float damage) {
+        shatterDamageDepth++;
+        try { target.invulnerableTime = 0; target.hurt(caster.damageSources().playerAttack(caster), damage); }
+        finally { shatterDamageDepth--; }
+    }
+    public static boolean struggle(ServerPlayer player) {
+        Shell shell = SHELLS.get(player.getUUID());
+        if (shell == null || !isFrozen(player) || !player.isAlive() || player.isSpectator()) return false;
+        long now = player.level().getGameTime();
+        if (now - shell.last < 4) return false;
+        shell.last = now; shell.attempts++;
+        int progress = Math.min(100, shell.attempts * 100 / shell.required);
+        com.jayptucker.heroesevolved.network.CryoShellStatePayload.send(player, progress, true);
+        player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.GLASS_STEP, SoundSource.PLAYERS, .5F, .8F + progress * .006F);
+        if (shell.attempts >= shell.required) releaseEntity(player);
+        return true;
     }
 
     public static boolean isFrozen(Entity entity) {
@@ -144,7 +176,12 @@ public final class CryoService {
 
     public static void syncTo(ServerPlayer viewer, Entity target) {
         Frozen frozen = FROZEN.get(target.getUUID());
-        if (frozen != null && isFrozen(target)) PacketDistributor.sendToPlayer(viewer, payload(frozen));
+        if (frozen != null && isFrozen(target)) {
+            PacketDistributor.sendToPlayer(viewer, payload(frozen));
+            Shell shell = SHELLS.get(target.getUUID());
+            if (shell != null) PacketDistributor.sendToPlayer(viewer,
+                    new com.jayptucker.heroesevolved.network.CryoShellStatePayload(target.getId(), shell.attempts * 100 / shell.required, true));
+        }
     }
 
     private static FrozenEntityPayload payload(Frozen frozen) {
@@ -177,6 +214,11 @@ public final class CryoService {
                 caster == null ? null : caster.getUUID(), level.dimension());
         FROZEN.put(target.getUUID(), state);
         if (old != null) return true;
+        if (target instanceof ServerPlayer frozenPlayer) {
+            int tier = caster == null ? 1 : com.jayptucker.heroesevolved.progression.PlayerProgressionService.getLevel(caster);
+            SHELLS.put(target.getUUID(), new Shell(4 + Math.clamp(tier, 1, 5), level.getGameTime()));
+            com.jayptucker.heroesevolved.network.CryoShellStatePayload.send(frozenPlayer, 0, true);
+        }
         CHILLED.remove(target.getUUID());
         slow(target, 0);
         if (target instanceof Mob mob) {
@@ -226,6 +268,9 @@ public final class CryoService {
 
     private static void thaw(Frozen frozen, boolean shatter) {
         LivingEntity target = frozen.target;
+        SHELLS.remove(target.getUUID());
+        if (target instanceof ServerPlayer player)
+            com.jayptucker.heroesevolved.network.CryoShellStatePayload.send(player, 0, false);
         target.setTicksFrozen(0);
         slow(target, 0);
         CHILLED.remove(target.getUUID());
@@ -287,7 +332,7 @@ public final class CryoService {
             // Skimming water leaves a small raft of ice behind.
             BlockPos hit = blockHit.getBlockPos();
             for (BlockPos pos : BlockPos.betweenClosed(hit.offset(-1, 0, -1), hit.offset(1, 0, 1))) {
-                TemporaryBlocks.freezeWater(level, pos.immutable());
+                TemporaryBlocks.freezeWater(level, pos.immutable(), player);
             }
         }
 
@@ -516,13 +561,13 @@ public final class CryoService {
 
     /** Rime Walk: still water freezes under Tracy's feet as she walks. */
     public static void rimeWalk(ServerPlayer player) {
-        if (player.isShiftKeyDown() || player.isSpectator()) {
+        if (player.isShiftKeyDown() || player.isSpectator() || CryoRideService.isRiding(player)) {
             return;
         }
         BlockPos feet = player.blockPosition().below();
         for (BlockPos pos : BlockPos.betweenClosed(feet.offset(-2, 0, -2), feet.offset(2, 0, 2))) {
             if (pos.distSqr(feet) <= 5) {
-                TemporaryBlocks.freezeWater(player.serverLevel(), pos.immutable());
+                TemporaryBlocks.freezeWater(player.serverLevel(), pos.immutable(), player);
             }
         }
     }
@@ -539,6 +584,7 @@ public final class CryoService {
     }
 
     public static void stopAll(ServerPlayer player) {
+        CryoKitService.forget(player);
         ColdDomeService.stop(player);
         DELAYED.removeIf(task -> task.owner == player);
         BLIZZARDS.remove(player.getUUID());
@@ -582,6 +628,7 @@ public final class CryoService {
     public static void tick(MinecraftServer server) {
         THAW_GRACE.values().removeIf(until -> until <= server.overworld().getGameTime());
         ColdDomeService.tick(server);
+        CryoKitService.tick(server);
         long gameTime = server.overworld().getGameTime();
 
         Iterator<Delayed> delayed = DELAYED.iterator();
@@ -672,6 +719,7 @@ public final class CryoService {
     }
 
     public static void clear() {
+        CryoKitService.clear();
         ColdDomeService.clear();
         List.copyOf(FROZEN.values()).forEach(entry -> thaw(entry, false));
         FROZEN.clear();
@@ -682,7 +730,8 @@ public final class CryoService {
         CHILLED.clear();
         BLIZZARDS.clear();
         DELAYED.clear();
-        coldDamageDepth = 0;
+        coldDamageDepth = shatterDamageDepth = 0;
+        SHELLS.clear();
         THAW_GRACE.clear();
     }
 

@@ -199,7 +199,8 @@ public final class BunkerAndPowersGameTests {
             var echo = AbilityRegistry.ABILITIES.get(ModAbilities.MIMICRY_ID).actions().get(AbilitySlot.TERTIARY);
             var context = new AbilityUseContext(p, ModAbilities.MIMICRY_ID, 3, false);
             float health = victim.getHealth();
-            h.assertTrue(echo.canUse(context) && echo.activate(context) == AbilityActivationResult.SUCCESS, "Echo I performs the borrowed Flare");
+            h.assertTrue(echo.canUse(context) && echo.activate(context) == AbilityActivationResult.SUCCESS, "Echo I charges the borrowed Cinder Spear");
+            echo.release(context);
             h.assertTrue(victim.getHealth() < health, "The borrowed fire actually burns");
             h.assertTrue(MimicryService.memory(p).powers().size() == 1, "Memories are kept");
             h.succeed();

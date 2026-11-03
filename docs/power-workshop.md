@@ -1,9 +1,14 @@
 # Power workshop
 
-This page records directions for future power redesigns. **The Phasing, Sonic Resonance,
-Telepathy and Empathic Mimicry interactions proposed below are planned experiments, not
-shipped abilities or completed prototypes.** Their current abilities remain described in
-[new powers](new-powers.md) and the skill tree.
+This page records original redesign proposals. Phasing shipped as [Density](density.md),
+Sonic has its own [reworked kit](sonic-resonance.md), and [Telepathy](telepathy.md) now implements
+Mind Threads, command suggestions, possession with resistance, shared sight, and private illusions.
+The detailed proposals below are historical directions; unused experiments remain proposals.
+Empathic Mimicry's redesign remains planned. The [current rework audit](power-rework-status.md)
+separates implemented cores from older optional trees. [Invisibility](invisibility.md) now has
+Exposure, optical doubles and three redesigned skill branches. [Cryokinesis](cryokinesis.md)
+now connects Frost, solid sculpted ice, Glacier Ride, breakable prisons and Whiteout, with
+Sculptor, Glacier and Winterbinder progression. Mimicry retains its original kit.
 
 Telekinesis is the implemented reference in the current build: visible orbiting fragments,
 physical launches with swept collision, a staged lift and slam, caught projectile formations,

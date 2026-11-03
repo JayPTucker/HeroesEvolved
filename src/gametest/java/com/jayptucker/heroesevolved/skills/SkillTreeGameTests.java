@@ -44,6 +44,7 @@ public final class SkillTreeGameTests {
         com.jayptucker.heroesevolved.time.SpaceTimeService.forget(p);
         com.jayptucker.heroesevolved.flight.FlightService.stopForPowerRemoval(p);
         com.jayptucker.heroesevolved.flight.FlightSkillService.forget(p);
+        com.jayptucker.heroesevolved.invisibility.InvisibilityService.forget(p);
     }
     private static LivingEntity target(GameTestHelper h, ServerPlayer p) {
         var target = EntityType.PILLAGER.create(h.getLevel());
@@ -153,7 +154,7 @@ public final class SkillTreeGameTests {
     public static void allThirtyOptionalSkillsHaveGameplayConsequences(GameTestHelper h) {
         for (String power : POWERS) {
             // These physical/stateful kits have dedicated travel, field and lifecycle tests.
-            if (power.equals("flight") || power.equals("telekinesis")) continue;
+            if (power.equals("flight") || power.equals("telekinesis") || power.equals("telepathy") || power.equals("cryokinesis")) continue;
             var p = player(h, power, 5);
             try {
                 for (int branch = 0; branch < 3; branch++) {
@@ -173,15 +174,27 @@ public final class SkillTreeGameTests {
                     }
                     var context = new AbilityUseContext(p, id(power), 5, settingAnchor);
                     h.assertTrue(SkillActionService.canUse(context, branch) && SkillActionService.activate(context, branch), "Optional skill must activate: " + power + "/" + branch);
-                    if (branch == 0 && !power.equals("flight") && !power.equals("regeneration") && !power.equals("telepathy") && !power.equals("time_manipulation") && !power.equals("superspeed") && !power.equals("precognition"))
+                    if (branch == 0 && !power.equals("flight") && !power.equals("regeneration") && !power.equals("telepathy") && !power.equals("time_manipulation") && !power.equals("superspeed") && !power.equals("precognition") && !power.equals("invisibility"))
                         h.assertTrue(victim.getHealth() < before, "Aimed attack must damage its target: " + power);
-                    if (branch == 0 && power.equals("telepathy")) h.assertTrue(victim.hasEffect(MobEffects.WEAKNESS), "Psychic Silence must weaken its target");
+                    if (power.equals("invisibility")) {
+                        h.assertTrue(com.jayptucker.heroesevolved.invisibility.InvisibilityService.isFaded(p),
+                                "Optional optical skills must actually conceal their caster");
+                        if (branch == 0) {
+                            victim.hurt(p.damageSources().playerAttack(p), 1);
+                            float first = before - victim.getHealth();
+                            victim.invulnerableTime = 0;
+                            float afterFirst = victim.getHealth();
+                            victim.hurt(p.damageSources().playerAttack(p), 1);
+                            h.assertTrue(first > afterFirst - victim.getHealth()
+                                            && !com.jayptucker.heroesevolved.invisibility.InvisibilityService.isUnseen(p),
+                                    "Vanishing Counter spends one enhanced melee opening and reveals the attacker");
+                        }
+                    }
                     if (branch == 0 && power.equals("time_manipulation")) h.assertTrue(com.jayptucker.heroesevolved.time.SpaceTimeService.isSuspended(victim), "Selective Stasis must pause its target");
                     if (power.equals("regeneration") && branch < 2) h.assertTrue(p.getHealth() > 10, "Regeneration branch must actually heal");
                     if (power.equals("regeneration") && branch == 2) h.assertTrue(victim.getHealth() > before && victim.hasEffect(MobEffects.ABSORPTION), "Transfusion must heal and shield its recipient");
-                    if (power.equals("cryokinesis") && branch != 1) h.assertTrue(CryoService.isFrozen(victim), "Optional cold attacks must freeze mobs");
                     if (power.equals("flight") && branch != 1) h.assertTrue(p.getDeltaMovement().lengthSqr() > .5, "Flight mobility must move the player");
-                    if (branch == 1 && Set.of("cryokinesis", "radiation", "telepathy").contains(power)) h.assertTrue(p.hasEffect(MobEffects.DAMAGE_RESISTANCE), "Defensive skill must grant Resistance: " + power);
+                    if (branch == 1 && Set.of("radiation", "telepathy").contains(power)) h.assertTrue(p.hasEffect(MobEffects.DAMAGE_RESISTANCE), "Defensive skill must grant Resistance: " + power);
                     if (branch == 2 && power.equals("electrokinesis")) h.assertTrue(p.hasEffect(MobEffects.MOVEMENT_SPEED), "Overcharge must improve movement");
                     if (rescued != null) rescued.discard();
                     CryoService.releaseEntity(victim); victim.discard();

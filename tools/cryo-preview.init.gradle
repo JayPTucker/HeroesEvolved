@@ -1,0 +1,22 @@
+// An isolated survival client for actual three-dimensional ice, skating and counterplay.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('cryoPreview') {
+                java.srcDir('src/uitest/java')
+                java.include('com/jayptucker/heroesevolved/uitest/CryoPreview.java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs { client {
+                    gameDirectory = project.file('build/cryo-preview')
+                    programArguments.addAll('--width', '1100', '--height', '800')
+                    systemProperty('heroes.preview.cryo', 'true')
+                } }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('cryoPreviewClasses')) }
+        }
+    }
+}

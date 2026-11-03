@@ -222,19 +222,22 @@ public final class PowerCompatibilityGameTests {
         p.setXRot(-30);
         for (int i = 1; i <= 24; i++) for (int side = -1; side <= 1; side++)
             h.getLevel().getChunkAt(BlockPos.containing(p.position().add(side, -1 + i / 4, i)));
-        try {
-            h.assertTrue(ExpansionSkills.activate(new AbilityUseContext(p, ModAbilities.CRYOKINESIS_ID, 5, false), "rime_loom"), "The learned loom creates a bridge");
-            BlockPos farRaised = BlockPos.containing(p.position().add(0, 5, 24));
-            h.assertTrue(h.getLevel().getBlockState(farRaised).is(Blocks.PACKED_ICE), "Suspension Stitch reaches twenty-four blocks and rises with upward aim");
-            h.assertTrue(h.getLevel().getBlockState(farRaised.east()).is(Blocks.PACKED_ICE)
-                            && h.getLevel().getBlockState(farRaised.west()).is(Blocks.PACKED_ICE),
-                    "Double Weave creates a real three-block-wide bridge");
-            h.succeed();
-        } finally {
-            for (int i = 1; i <= 24; i++) for (int side = -1; side <= 1; side++)
-                h.getLevel().setBlock(BlockPos.containing(p.position().add(side, -1 + i / 4, i)), Blocks.AIR.defaultBlockState(), 3);
-            cleanup(p);
-        }
+        h.assertTrue(ExpansionSkills.activate(new AbilityUseContext(p, ModAbilities.CRYOKINESIS_ID, 5, false), "rime_loom"), "The learned loom starts growing a bridge");
+        h.assertTrue(com.jayptucker.heroesevolved.cryo.CryoTechniqueService.loomBlocks(p).size() <= 3,
+                "Loom starts with one woven segment rather than materializing its entire length");
+        h.runAfterDelay(80, () -> {
+            try {
+                var cells = com.jayptucker.heroesevolved.cryo.CryoTechniqueService.loomBlocks(p);
+                int farZ = cells.stream().mapToInt(BlockPos::getZ).max().orElseThrow();
+                int low = cells.stream().mapToInt(BlockPos::getY).min().orElseThrow();
+                int high = cells.stream().mapToInt(BlockPos::getY).max().orElseThrow();
+                h.assertTrue(farZ >= p.blockPosition().getZ() + 24 && high > low,
+                        "Suspension Stitch extends the actual growing path and raises bounded stairs");
+                long lastRow = cells.stream().filter(pos -> pos.getZ() == farZ && h.getLevel().getBlockState(pos).is(Blocks.PACKED_ICE)).count();
+                h.assertTrue(lastRow == 3, "Double Weave grows a real three-block-wide endpoint");
+                h.succeed();
+            } finally { cleanup(p); }
+        });
     }
 
     @GameTest(template = "rewind_empty", batch = "compat.cryo_healing", timeoutTicks = 90)
@@ -261,12 +264,17 @@ public final class PowerCompatibilityGameTests {
         h.assertTrue(ExpansionSkills.activate(new AbilityUseContext(p, ModAbilities.CRYOKINESIS_ID, 5, false), "brittle_constellation"), "The constellation records real nearby foes");
         h.runAfterDelay(130, () -> {
             try {
-                CryoService.freezeSolid(first, 40, p); second.invulnerableTime = 0;
+                CryoService.freezeSolid(first, 40, p); CryoService.chill(second, 60, p); second.invulnerableTime = 0;
                 float before = second.getHealth(); first.hurt(p.damageSources().playerAttack(p), 1);
-                h.assertTrue(before - second.getHealth() >= 7 && CryoService.isFrozen(second),
-                        "After the ordinary link would expire, Long Winter still propagates Shattered Sky's stronger hit and refreeze");
-                h.succeed();
-            } finally { cleanup(p, first, second); }
+                h.assertTrue(before == second.getHealth(), "The crystal fracture travels along its link instead of striking every star instantly");
+                h.runAfterDelay(12, () -> {
+                    try {
+                        h.assertTrue(before - second.getHealth() >= 7 && CryoService.isFrozen(second),
+                                "Long Winter retains the network; Shattered Sky's staged hit refreezes a prepared surviving mob");
+                        h.succeed();
+                    } finally { cleanup(p, first, second); }
+                });
+            } catch (RuntimeException | AssertionError ex) { cleanup(p, first, second); throw ex; }
         });
     }
 }

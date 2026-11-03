@@ -23,7 +23,10 @@ public final class ClientArmPoseState {
         }
         long now = Util.getMillis();
         Entry previous = POSES.get(entityId);
-        boolean continuous = pose == ArmPose.KINETIC_GATHER || pose == ArmPose.KINETIC_HOLD;
+        boolean continuous = pose == ArmPose.KINETIC_GATHER || pose == ArmPose.KINETIC_HOLD
+                || pose == ArmPose.FIRE_FORGE || pose == ArmPose.FIRE_BREATH || pose == ArmPose.FIRE_SUN
+                || pose == ArmPose.CRYO_WEAVE || pose == ArmPose.CRYO_WHITEOUT || pose == ArmPose.CRYO_SURF
+                || pose == ArmPose.CRYO_LANCE || pose == ArmPose.CRYO_LOOM || pose == ArmPose.CRYO_SHELTER;
         long began = continuous && previous != null && previous.pose == pose && previous.endMillis > now
                 ? previous.startMillis : now;
         POSES.put(entityId, new Entry(pose, began, now + durationTicks * 50L));

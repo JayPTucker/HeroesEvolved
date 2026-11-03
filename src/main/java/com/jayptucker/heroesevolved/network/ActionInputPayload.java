@@ -25,13 +25,7 @@ public record ActionInputPayload(int key, String actionKey, boolean down, boolea
     public static void handle(ActionInputPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player) || payload.key < 0 || payload.key > 8) return;
-            if (payload.down) {
-                var result = payload.key == 0
-                        ? AbilityUseService.activateAction(player, payload.actionKey, payload.overexert)
-                        : AbilityUseService.activateKey(player, payload.key, payload.overexert);
-                PowerFeedback.report(player, result);
-            } else if (payload.key == 0) AbilityUseService.releaseAction(player, payload.actionKey);
-            else AbilityUseService.releaseKey(player, payload.key);
+            com.jayptucker.heroesevolved.telepathy.PossessionService.action(player, payload);
         });
     }
 }

@@ -1,110 +1,160 @@
-# Cryokinesis effects and ranged reach
+# Cryokinesis — shape the winter
 
-Flash Freeze now applies its contact damage before encasing the target. Cryo
-damage is marked for the duration of the hit so Frost Bolt, spikes and Blizzard
-cannot immediately shatter their own ice or accidentally trigger Cold Touch.
-Physical hits still shatter the shell for bonus damage.
+Cryokinesis connects **Frost buildup**, solid ice construction, Glacier Ride and deliberate
+shatters. Its walls, ramps and skating ribbon are real three-dimensional temporary terrain.
+Branching veins, translucent shells and growing spires show the state of the cold before an
+impact, rather than relying on a cloud of particles to imply an obstacle.
 
-Chill accumulates, slows movement with a transient attribute modifier, and
-reaches a full freeze at the creature's vanilla freezing threshold. Unrefreshed
-chill starts fading after two seconds. Full freezes pause mob simulation,
-including attacks, creeper fuses and animations, without saving a NoAI flag.
-Players are held in place and cannot activate abilities while frozen. Bosses
-only chill; creatures with vanilla cold immunity resist freezing. Fire thaws
-the ice. Expiration, power removal, death, logout and dimension changes clean
-up the state and movement penalty.
+The five base action IDs and all eighteen purchased skill IDs stay compatible with existing
+saves and loadouts. Their displayed names and controls have been redesigned.
 
-The client receives identity-checked shell updates for tracked creatures,
-including when a player starts tracking an already frozen creature. Shells
-use translucent faceted ice with a closed crown and bright fractures. Frost
-Bolt, growing ice, chill, freeze, shatter and the Cryokinesis awakening each
-have dedicated crystal and rime compositions.
+## Frost and counterplay
 
-Blizzard now creates a visible twenty-block-radius cold dome that follows its
-caster. The first awakening releases a larger twenty-four-block-radius dome,
-anchored at its release position for eight seconds. Both immediately freeze
-nearby passive/hostile creatures and eligible players; they refresh freezing
-inside the volume every half second. The caster is excluded, existing cold
-immunities remain, bosses only chill, and creative/spectator players are skipped.
-Mobs thaw within four seconds after leaving the cold; players within two.
-Physical hits still shatter ice, fire can thaw it, and Blizzard's own cold damage
-does not shatter its victims. Frozen mobs retain their original AI flags.
+Cold slows a target before enough accumulated Frost forms a brittle shell. Frost uses the
+existing chill system, including vanilla frost overlay, shivering and a transient movement
+penalty. It starts settling after cold is no longer applied. Bosses chill rather than being
+held indefinitely, and cold-immune creatures resist the freeze.
 
-The cold region is a hemisphere above the caster with six blocks of penetration
-below its base. A translucent frosted shell shows the boundary. Pale blue fog
-reduces visibility to eight blocks inside it, and camera-local wind-driven snow
-keeps the larger volume visibly dense. Graphics settings reduce snow density and
-mesh detail; no graphics or render-distance preferences are changed. The shell
-uses 384 or 1,024 vertices per dome, with a four-visible-dome limit, distance and
-frustum culling. It uses the existing shader view transform exactly once.
+- Rime Stream builds Frost continuously while held and stops when released.
+- Crystal Prison primes an unprepared target with Frost; prepared cold forms a solid shell.
+- Physical hits can shatter frozen targets. The caster can deliberately shatter their own
+  prepared prison with its follow-up key press.
+- Frozen players can press **Jump or Attack** to crack the shell. Accepted presses are rate
+  limited, and stronger casters require more deliberate struggles. An on-screen fracture
+  display and visible cracks show progress.
+- Heat thaws the ice, and a teammate can break a prison with a strike. A short thaw grace
+  prevents a player being immediately locked into another freeze.
+- The caster and allies are excluded from the deliberate hostile shatter burst.
 
-A streaming outward sweep temporarily converts exposed solid surfaces and water
-to ice. Containers, unbreakable/protected/occupied blocks and plant-supporting
-surfaces remain intact. Every changed block remembers its original state and
-properties. A player edit after freezing is preserved during thaw. Repeated
-frosting extends expiry while retaining the first original state. Terrain stays
-icy until roughly four seconds after the cold volume expires; loaded terrain
-then restores in batches. Unloaded chunks are not forced; restoration resumes
-when they load. Server shutdown restores all remaining temporary blocks.
+## Base actions
 
-All domes share a maximum of sixty-four column scans and a soft two-millisecond
-terrain allowance per tick. Thaw shares a ninety-six-write, soft two-millisecond
-allowance and suppresses per-block particle bursts for dome terrain. Temporary
-blocks retain the global four-thousand-block cap. This avoids freezing/thawing
-the whole area in a single expensive tick. The previous server snow/ash spam is
-replaced by client-generated storm ribbons, snow and the hemisphere mesh.
+These are the default keys; optional learned skills can replace them as usual.
 
-## Ranged abilities
+| Key | Level | Action | Behavior |
+| --- | --- | --- | --- |
+| G | 1 | **Rime Stream** | Hold to sweep cold from the hands. Frost branches across surfaces and accumulates on enemies. Release to stop the channel. |
+| H | 2 | **Glacial Sculpt** | Aim at a clear surface to grow a wall of solid ice. **Shift + H** makes a ramp. Aiming at an owned construct reshapes it for eight stamina, with a two-second settling time, even while the new-wall cast is recovering. |
+| Z | 3 | **Glacier Ride** | Toggle skating on a growing ice ribbon. Look and movement keys steer; Space shapes a rising ramp at higher levels, Shift brakes, and Sprint accelerates. Press again to step off safely. |
+| X | 4 | **Crystal Prison** | Concentrate cold around a target within twelve blocks. An unprepared cast adds Frost; prepared Frost forms a prison. Press again to shatter that shell, with a short hostile burst around it. |
+| V | 5 | **Whiteout** | Aim a growing winter field. A one-second wind-up precedes Frost, snow and rising ice spires. **Shift + V** deliberately collapses the prepared ice and frozen enemies after the wind-up. |
 
-`AbilityRanges.ranged` doubles authored base reach. `Targeting` applies it
-centrally to aimed living-entity selection, preserving wall obstruction.
-Beam endpoints and independent projectile limits use the same multiplier.
+Glacier Ride is not unrestricted flight. It begins on a supported surface, crosses limited gaps
+and makes bounded rising ramps. The temporary ribbon stays under the skater and can widen into
+a route for companions. Solid obstructions, exhausted stamina, loss of the power and invalid
+terrain end the ride safely. Ride controls and speed are displayed on screen.
 
-| Ability | Previous reach | New reach |
+A combat sequence is **Rime Stream → Glacial Sculpt → Glacier Ride → Crystal Prison → shatter**.
+Whiteout prepares a larger battlefield: cold links the ice, the field grows, and the final
+collapse spends what has been built.
+
+## Three skill branches
+
+The branches unlock interactions; their roots and masteries no longer silently apply the
+old blanket cost, damage or cooldown bonuses.
+
+| Branch | Opening → active → mastery | Technique → upgrade → capstone |
 | --- | --- | --- |
-| Frost Bolt | 20 | 40 |
-| Flash Freeze | 6 | 12 |
-| Glacial Spikes | 12 + level | 2 × (12 + level) |
-| Quake Shockwave | 6 + 2 × level | 12 + 4 × level |
-| Held Quake Blast | 10 + level | 20 + 2 × level |
-| Chain Lightning / subsequent jumps | 16 / 5 | 32 / 10 |
-| Thunderstrike | 48 | 96 |
-| Ball Lightning at speed 0.55 | 50 ticks / 27.5 blocks | 100 ticks / 55 blocks |
-| Ride the Lightning | 10 + level | 20 + 2 × level |
-| Telekinetic Push / Grip acquisition | 8 / 16 | 16 / 32 |
-| Grip maintenance cutoff | 24 | 48 |
-| Read Mind / Suggestion / Puppet / Nightmare | 24 / 16 / 20 / 20 | 48 / 32 / 40 / 40 |
-| Blood Gift / Radiation Touch / Skyward Grab | 5 / 5 / 6 | 10 / 10 / 12 |
-| Controlled Emission (formerly Meltdown Beam) | 24 | 48 |
-| Time Blink | Configured per-level distance | 2 × configured distance |
+| **Sculptor** | **Architectural Memory:** longer-lived sculpted ice → **Crystal Lance:** forge and launch a physical spear → **Fracture Lines:** collapsing constructed ice spreads Frost | **Rime Loom:** grow and guide a physical path → **Double Weave:** wider path and skating ribbon → **Suspension Stitch:** longer weave with bounded rising stairs |
+| **Glacier** | **Sure Footing:** steadier skating → **Frost Armor:** six consumable plates and a countershot → **Cold Wake:** skating chills nearby enemies | **Stillheart Cocoon:** store impacts in a protective shell → **Sterile Ice:** cleanse harmful effects → **Second Spring:** stronger opening recovery and nearby healing |
+| **Winterbinder** | **Hoarfrost:** faster stream buildup → **Cold Snap:** expanding cold front → **Echoing Fracture:** deliberate prison shatters spread Frost | **Brittle Constellation:** share Frost through crystal stars → **Long Winter:** longer network → **Shattered Sky:** stronger staged fractures that refreeze prepared surviving mobs |
 
-Telekinetic thrown-impact tracking also lasts twice as long. Area radii,
-damage, costs and cooldowns were preserved by the reach adjustment. Quake beam geometry now covers the longer endpoints.
-The subsequent Ted Sprague redesign replaces Radiation's old mimicry and stolen-projectile skills with EMP.
-The Telepathy story fragments and future-city hooks are preserved.
+### Six active sub-abilities
 
-## Verification
+These are separate learned actions on the wheel and can be bound to any ability key. Their
+existing purchase IDs remain compatible with saved characters.
 
-Run the production build, the isolated server suite, and the particle checker:
+- **Crystal Lance:** Forge a faceted spear for 0.6 seconds, adjusting aim during the wind-up.
+  It then flies up to forty blocks with actual swept collision. Its impact builds Frost;
+  prepared targets freeze and frozen targets fracture, splashing cold to nearby visible foes.
+  A wall or another body can intercept the spear after it has been launched.
+- **Frost Armor:** Six thick plates orbit for up to eight seconds. Each catches one hostile
+  projectile or absorbs part of a physical impact, then breaks. Fire melts two plates and
+  receives less protection. Caught impacts store cold. **Press again** to spend the remaining
+  plates as an aimed ten-block shard fan; stored cold strengthens those shots. Exhausted
+  armor leaves no lingering Resistance or Fire Resistance potion shield.
+- **Cold Snap:** A raised ice front expands across seven blocks over 0.6 seconds. Each enemy
+  meets it once. Fresh enemies gain Frost, prepared targets freeze, and frozen targets
+  shatter. The front respects cover, giving its position and timing a real combat role.
+- **Rime Loom:** A temporary path grows one physical segment every three ticks. **Aim and
+  press again while it grows** to bend its remaining course. Double Weave makes it three
+  blocks wide; Suspension Stitch extends it to twenty-four segments and permits bounded
+  rising stairs. Each segment remembers its original terrain and lasts twelve seconds.
+- **Stillheart Cocoon:** Shelter yourself or a friendly/consenting creature in a layered
+  pressure-bearing shell. It catches up to 80% of ordinary damage within a finite reservoir;
+  an exhausted shell opens. **Press again** to open early, recover health and spend stored
+  impacts in a Frost pulse that leaves allies unharmed. Players remain inside for at most
+  three seconds and mobs six. Shift targets the caster. Stored pressure strengthens recovery;
+  Second Spring also heals nearby visible friends. Revocation or invalid cleanup grants no
+  healing. A self-preserved caster can open only this cocoon; other powers stay locked.
+- **Brittle Constellation:** Mark up to four visible enemies with rotating crystal stars.
+  Formation adds a little Frost rather than an instant solid freeze. Further Frost applied
+  to one star shares a bounded amount with its visible partners. Physically shattering a
+  frozen star consumes the network and sends a staged fracture along its links, one hop
+  every four ticks. Cover breaks the travelling chain, and it cannot recursively trigger
+  itself. Long Winter extends the network to ten seconds; Shattered Sky's stronger fractures
+  briefly refreeze prepared surviving mobs.
 
-```powershell
-.\gradlew.bat build
-.\gradlew.bat runGameTestServer --init-script tools/rewind-gametest.init.gradle
-.\tools\verify-effect-geometry.ps1
+Only one capstone may be learned at a time.
+
+## Three-dimensional ice and restoration
+
+Sculpt walls, ramps and the ride ribbon use real collision blocks. Placement does not replace
+containers, permanent obstacles or occupied space, and the caster's build permissions and
+protection hooks apply. Ice is created and removed under bounded work budgets.
+
+Each temporary block remembers its exact original state. Melting restores that state unless a
+player has deliberately changed the block since placement. Repeated frosting extends the expiry
+while preserving the first original state. The chunk stores recovery information, so unloading
+or restarting does not turn a temporary bridge into permanent terrain. Unloaded chunks are not
+forced; recovery resumes when they load. Server shutdown restores loaded temporary ice.
+
+The shared system retains its four-thousand-block cap, ninety-six-write thaw budget and soft
+two-millisecond allowance. Large patches melt gradually rather than restoring every block in a
+single expensive tick.
+
+## Effects and controls
+
+- Hand-driven rime streams trace branching veins and crystallize into layered shells.
+- Sculpted walls and ramps grow in visible stages, with physical depth and collision.
+- Glacier Ride bends a continuous ice ribbon through turns; the body banks and the stance
+  follows the skates. Frost and fragments trail the route.
+- Prison cracks become more pronounced as a trapped player fights the shell.
+- Shattered ice breaks into tumbling fragments that dissolve into snow.
+- Whiteout expands before its cold takes hold, with growing spires, linked Frost veins and a
+  readable collapse. Reduced particle settings retain the important boundaries and growth.
+
+## Compatibility and verification
+
+The underlying freeze, shatter and thaw services remain available for existing story moments,
+awakening, power reactions and borrowed actions. Legacy Blizzard and the larger awakening dome
+still use their bounded terrain sweep and restoration system; the new Whiteout is the base
+ultimate rather than a renaming of that old instant dome.
+
+The isolated Cryo rework tests cover held Frost buildup/release, solid build-permitted
+construction, prepared prison/shatter, player struggle rate limits, heat thaw, Whiteout wind-up
+and collapse, physical skating and its rising ceiling, safe quick-reshape dispatch, gravity
+cleanup, and preserved eighteen-node identities. Dedicated combat/technique tests also cover
+physical lance travel and interception, finite armor and explicit countershots, conditional
+Cold Snap, guided construction, pressure recovery, safe self-cocoon input, shared Frost and
+staged nonrecursive crystal fractures.
+The existing freeze, terrain recovery, reaction, story and compatibility regressions remain.
+
+Run the live visual/control preview with Java 21:
+
+```sh
+./gradlew runClient --offline --init-script tools/cryo-preview.init.gradle
 ```
 
-The server suite checks full-freeze duration, shatter damage, fuse suspension,
-thaw/resume, chill buildup and cleanup, Blizzard damage and boundaries, long
-range hits and wall blocking, long-range Grip maintenance, orb travel and
-frozen-villager story progression, alongside the existing rewind and intro
-regressions. Test sources and their flat-world fixture stay out of the mod jar.
-The particle checker covers finite geometry, culling bounds and packet codecs;
-fog appearance and visual density still need an in-game visual playtest.
+It uses actual survival controls and captures Rime Stream, oblique views of solid walls and
+ramps, the riding ribbon and carve, prison/shatter, the stages of Whiteout, and a trapped
+player breaking free with Jump and Attack. The preview and GameTest code are excluded from
+the release JAR.
 
+The six optional skills have their own live control and mesh preview:
 
-The expanded dome checks cover immediate passive/hostile/boundary freezes, the
-actual first-acquisition sequence at twenty-three blocks, automatic mob and
-terrain thaw, original block properties and water restoration, container contents,
-player edits and gradual restoration of a large patch. The complete server suite
-has sixty-four tests. Mesh checks validate both radii, near/far camera positions,
-geometry budgets and matching cold boundaries. Imported sound files are unchanged.
+```sh
+./gradlew runClient --offline --init-script tools/cryo-skills-preview.init.gradle
+```
+
+It photographs forging and flying lances, armor plate loss/countershots, the travelling cold
+front, a guided rising weave, pressure-bearing cocoon release and the staged crystal network.

@@ -354,23 +354,23 @@
     "branches": [
       [
         {
-          "name": "Cold Discipline",
-          "description": "Reduce activation stamina costs by 10%."
+          "name": "Architectural Memory",
+          "description": "Glacial Sculpt constructs last four seconds longer, preserving their original terrain until they melt."
         },
         {
-          "name": "Ice Lance",
-          "description": "Pierce a visible target up to 40 blocks away for 6 + level damage and freeze it solid for 4 seconds.",
+          "name": "Crystal Lance",
+          "description": "Forge a crystal lance for 0.6 seconds, then launch it up to forty blocks. Its physical impact builds Frost, freezes prepared targets, and shatters frozen enemies. Cover stops its flight.",
           "energy": 26,
           "cooldown": 100
         },
         {
-          "name": "Cold Discipline Mastery",
-          "description": "Reduce activation stamina costs by another 15% (25% total)."
+          "name": "Fracture Lines",
+          "description": "Shattering your sculpted ice spreads Frost to nearby visible enemies, preparing the next freeze."
         },
         {
           "id": "cryokinesis_rime_loom",
           "name": "Rime Loom",
-          "description": "Weave a sixteen-block temporary ice path ahead. It lasts twelve seconds and preserves the original terrain.",
+          "description": "Grow a sixteen-block temporary ice path one segment at a time. Aim and press again while it grows to bend the remaining weave. Each segment lasts twelve seconds and restores its original terrain.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -382,7 +382,7 @@
         {
           "id": "cryokinesis_double_weave",
           "name": "Double Weave",
-          "description": "Rime Loom becomes three blocks wide.",
+          "description": "The growing Rime Loom is three blocks wide, and Glacier Ride lays a wider ribbon for companions.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -392,7 +392,7 @@
         {
           "id": "cryokinesis_suspension_stitch",
           "name": "Suspension Stitch",
-          "description": "Extend the weave to 24 blocks. Looking upward stitches it into ascending stairs.",
+          "description": "Extend the growing weave to twenty-four segments. Guiding it upward stitches bounded ascending stairs into the path.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -403,23 +403,23 @@
       ],
       [
         {
-          "name": "Brittle Edge",
-          "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
+          "name": "Sure Footing",
+          "description": "Glacier Ride responds more steadily to steering and braking, helping you hold a controlled line."
         },
         {
           "name": "Frost Armor",
-          "description": "Coat yourself in frost: Resistance II and Fire Resistance for 8 seconds.",
+          "description": "Raise six orbiting ice plates for eight seconds. Each catches a hostile projectile or absorbs part of an impact; heat melts plates faster. Press again to launch the remaining plates as an aimed shard fan.",
           "energy": 30,
           "cooldown": 260
         },
         {
-          "name": "Brittle Edge Mastery",
-          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+          "name": "Cold Wake",
+          "description": "Actual Glacier Ride movement leaves cold in your wake, building Frost on nearby enemies."
         },
         {
           "id": "cryokinesis_stillheart",
           "name": "Stillheart Cocoon",
-          "description": "Preserve a friendly creature or consenting ally in ice. They cannot act, take 80% less damage, and recover 2 health at release. Players remain inside for three seconds; mobs for six. Shift targets yourself.",
+          "description": "Shelter yourself or a willing friend in a pressure-bearing ice cocoon. Its finite shell absorbs impacts, then opens with recovery and a harmless-to-allies Frost pulse. Press again to open early; Shift targets yourself.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -431,7 +431,7 @@
         {
           "id": "cryokinesis_sterile_ice",
           "name": "Sterile Ice",
-          "description": "A Stillheart Cocoon removes harmful status effects when it forms.",
+          "description": "A Stillheart Cocoon removes harmful status effects when its shell forms.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -441,7 +441,7 @@
         {
           "id": "cryokinesis_second_spring",
           "name": "Second Spring",
-          "description": "A Stillheart Cocoon restores 6 health when it opens instead of 2.",
+          "description": "Opening Stillheart restores six health plus stored-pressure recovery, and also heals nearby visible friends.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -452,23 +452,23 @@
       ],
       [
         {
-          "name": "Winter Rhythm",
-          "description": "Reduce ability cooldowns by 10%."
+          "name": "Hoarfrost",
+          "description": "Rime Stream builds Frost faster, letting sustained cold form a brittle shell sooner."
         },
         {
           "name": "Cold Snap",
-          "description": "Freeze visible enemies within 7 blocks for 3 seconds and deal 2 damage. Leaves terrain intact.",
+          "description": "Send an expanding cold front across seven blocks. Fresh enemies gain Frost, prepared targets freeze, and already frozen enemies shatter. The travelling front strikes each enemy once and stops at cover.",
           "energy": 32,
           "cooldown": 180
         },
         {
-          "name": "Winter Rhythm Mastery",
-          "description": "Reduce ability cooldowns by another 15% (25% total)."
+          "name": "Echoing Fracture",
+          "description": "A deliberate prison shatter spreads a brief Frost pulse to nearby enemies, setting up another frozen opening."
         },
         {
           "id": "cryokinesis_brittle_constellation",
           "name": "Brittle Constellation",
-          "description": "Link up to four visible enemies near your aim with frozen stars. Hitting a linked frozen target releases a 4-damage fracture through the other links.",
+          "description": "Mark up to four visible enemies with crystal stars. Frost applied to one feeds the other visible links. Shattering a frozen star sends a staged fracture chain between them; solid cover breaks the chain.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -480,7 +480,7 @@
         {
           "id": "cryokinesis_long_winter",
           "name": "Long Winter",
-          "description": "Constellation links last ten seconds instead of six.",
+          "description": "The Frost-sharing crystal network lasts ten seconds instead of six.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -490,7 +490,7 @@
         {
           "id": "cryokinesis_shattered_sky",
           "name": "Shattered Sky",
-          "description": "A triggered constellation sends 7 damage through its other links instead of 4.",
+          "description": "Constellation fractures deal seven damage instead of four and briefly refreeze prepared surviving mobs.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -501,9 +501,9 @@
       ]
     ],
     "branch_names": [
-      "RIME ARCHITECT",
-      "PRESERVATION",
-      "CONSTELLATION"
+      "SCULPTOR",
+      "GLACIER",
+      "WINTERBINDER"
     ]
   },
   {
@@ -829,8 +829,8 @@
           "description": "Reduce activation stamina costs by 10%."
         },
         {
-          "name": "Psychic Silence",
-          "description": "Crush a visible mind up to 40 blocks away with Weakness II for 6 seconds and a strong 5-second slow.",
+          "name": "Implanted Command",
+          "description": "Choose a command for a visible mob. Defend Me needs 60 Mind Thread Focus.",
           "energy": 24,
           "cooldown": 120
         },
@@ -878,8 +878,8 @@
           "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
         },
         {
-          "name": "Shared Focus",
-          "description": "Give yourself and teammates within 10 blocks Night Vision for 12 seconds and Resistance for 6 seconds.",
+          "name": "Shared Sight",
+          "description": "Link willing nearby minds; cast again on a linked friend to look through their eyes for five seconds. Esc returns.",
           "energy": 28,
           "cooldown": 220
         },
@@ -927,8 +927,8 @@
           "description": "Reduce ability cooldowns by 10%."
         },
         {
-          "name": "Terror Pulse",
-          "description": "Disorient visible enemies within 8 blocks: blindness, weakness and knockback. Mobs lose their targets.",
+          "name": "Dream Double",
+          "description": "Plant a private illusion in a player\u2019s mind: your clone, an approaching zombie or creeper, a false chest, or a small shelter. Contact or interaction dissolves it.",
           "energy": 32,
           "cooldown": 180
         },
@@ -972,9 +972,9 @@
       ]
     ],
     "branch_names": [
-      "WHISPER",
-      "DREAMWEAVER",
-      "MIND NETWORK"
+      "PUPPET MASTER",
+      "MIND READER",
+      "DREAMWEAVER"
     ]
   },
   {
@@ -1929,7 +1929,7 @@
         },
         {
           "name": "Ember Lash",
-          "description": "Whip a line of fire at a visible target up to 40 blocks away: 6 + level damage, five seconds of burning, and a short pull toward you.",
+          "description": "Lash a visible enemy within 40 blocks for 6 + level damage and five seconds of burning, then reel them toward you for 0.4 seconds. The tether stops at three blocks or when cover breaks the connection.",
           "energy": 22,
           "cooldown": 80
         },
@@ -1940,7 +1940,7 @@
         {
           "id": "pyrokinesis_ember_mine",
           "name": "Ember Mine",
-          "description": "Hide a smouldering ember on aimed ground. It erupts for 6 + level fire damage when an enemy steps near it. Two at a time; each lasts forty seconds and only you can see it.",
+          "description": "Hide an ember on aimed ground. It arms after 0.4 seconds; an enemy approaching triggers a visible 0.4-second warning, then an eruption for 6 + level fire damage. Two mines at once, forty-second lifetime; hidden from others until triggered.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -1978,7 +1978,7 @@
         },
         {
           "name": "Heat Mantle",
-          "description": "Wrap yourself in flame for eight seconds: Resistance, burning anything within 2.5 blocks, and burning up projectiles that come within 3 blocks.",
+          "description": "Raise rotating flame plates for eight seconds: Resistance, a burning aura within 2.5 blocks, and hostile-projectile interception within 3. Each consumed projectile feeds 2 Heat, up to 8 every quarter-second. Allied shots pass through.",
           "energy": 28,
           "cooldown": 240
         },
@@ -1989,7 +1989,7 @@
         {
           "id": "pyrokinesis_blue_lance",
           "name": "Blue Lance",
-          "description": "A piercing jet of blue flame, 24 blocks long. It always burns at blue heat: (8 + level) x 1.5 damage to everything in the line.",
+          "description": "Pierce a 24-block line with blue fire for (8 + level) x 1.5 damage, then leave a fixed drilling seam for 0.6 seconds. The seam pulses for 2.5 damage every four ticks, hitting up to eight enemies per pulse. Solid cover stops it.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -2011,7 +2011,7 @@
         {
           "id": "pyrokinesis_flints_fury",
           "name": "Flint's Fury",
-          "description": "Inferno always burns blue and reaches three blocks farther.",
+          "description": "Sunfall always burns blue and reaches three blocks farther.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -2027,7 +2027,7 @@
         },
         {
           "name": "Cauterizing Flame",
-          "description": "Sear your wounds closed: heal 4 + level, clear harmful effects and put out any flames on you.",
+          "description": "Seal the wounds of an injured or afflicted friend in sight within eight blocks, or yourself: heal 4 + level, clear harmful effects and extinguish flames. Automatically spends 20 Heat, when available, for four health of absorption lasting five seconds.",
           "energy": 24,
           "cooldown": 300
         },
@@ -2038,7 +2038,7 @@
         {
           "id": "pyrokinesis_fire_shepherd",
           "name": "Fire Shepherd",
-          "description": "Draw up to 32 nearby fires into your hands and put them out. Each restores stamina and a little health. The firefighter's technique.",
+          "description": "Draw in up to 32 nearby fires, restoring stamina and health plus 2 Heat per fire, up to 40 Heat. Extinguishes burning friends within five blocks and heals them for 2. Thaw also releases nearby friends from cold.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -2060,7 +2060,7 @@
         {
           "id": "pyrokinesis_pillar_of_flame",
           "name": "Pillar of Flame",
-          "description": "Backdraft launches almost twice as high and lets you drift down slowly for three seconds.",
+          "description": "Flame Flight ascends faster and hovering costs only four stamina per second.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -2081,23 +2081,23 @@
     "branches": [
       [
         {
-          "name": "Quiet Feet",
-          "description": "Reduce activation stamina costs by 10%."
+          "name": "Soft Footfall",
+          "description": "Walking builds less Exposure while concealed."
         },
         {
-          "name": "Blind Spot",
-          "description": "Strike a visible enemy up to 40 blocks away from where they cannot see: 6 + level damage and four seconds of Blindness.",
+          "name": "Vanishing Counter",
+          "description": "Fade for three seconds and prepare one surprise melee strike. Your next hit within ten seconds reveals you as it lands.",
           "energy": 22,
           "cooldown": 100
         },
         {
-          "name": "Quiet Feet Mastery",
-          "description": "Reduce activation stamina costs by another 15% (25% total)."
+          "name": "Clean Break",
+          "description": "Exposure settles faster after nearby hunters lose line of sight."
         },
         {
           "id": "invisibility_smoke_and_mirrors",
-          "name": "Smoke and Mirrors",
-          "description": "Every hostile mob within twelve blocks loses its target and staggers.",
+          "name": "False Footsteps",
+          "description": "Project footsteps and a refracted flicker at aimed ground. Nearby hostile mobs investigate the false trail instead of your hidden position.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -2109,7 +2109,7 @@
         {
           "id": "invisibility_lingering_mirage",
           "name": "Lingering Mirage",
-          "description": "Smoke and Mirrors reaches eighteen blocks and staggers twice as long.",
+          "description": "False Footsteps lasts longer and draws hunters from farther away.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -2119,7 +2119,7 @@
         {
           "id": "invisibility_assassin",
           "name": "Assassin",
-          "description": "Unseen Strike from full invisibility deals triple damage.",
+          "description": "Vanishing Counter from full concealment deals triple surprise damage. The opening is spent after one hit, which reveals you.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -2130,23 +2130,23 @@
       ],
       [
         {
-          "name": "Cold Precision",
-          "description": "Increase outgoing attack damage by 10%."
+          "name": "Double Take",
+          "description": "Mirage lasts one second longer, giving its false route more time to draw attention."
         },
         {
-          "name": "Vanishing Guard",
-          "description": "Fade from sight for six seconds with Resistance.",
+          "name": "Mirror Guard",
+          "description": "Leave an optical double, fade for six seconds and gain Resistance while you reposition.",
           "energy": 24,
           "cooldown": 300
         },
         {
-          "name": "Cold Precision Mastery",
-          "description": "Increase outgoing attack damage by another 15% (25% total)."
+          "name": "Perfect Imitation",
+          "description": "Mirages also imitate an attack gesture, making their false intentions more convincing."
         },
         {
           "id": "invisibility_pickpocket",
-          "name": "Pickpocket",
-          "description": "Lift the held item out of a mob's hand within four blocks.",
+          "name": "Sleight of Hand",
+          "description": "Lift a mob's held item from within four blocks and quietly operate doors or containers while faded.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -2158,7 +2158,7 @@
         {
           "id": "invisibility_light_fingers",
           "name": "Light Fingers",
-          "description": "Pickpocket reaches eight blocks.",
+          "description": "Sleight of Hand reaches eight blocks.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -2168,7 +2168,7 @@
         {
           "id": "invisibility_phantom",
           "name": "Phantom",
-          "description": "While fully unseen you take 30% less damage.",
+          "description": "While fully concealed, incoming damage is reduced by 30%. The hit still exposes you.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -2179,23 +2179,23 @@
       ],
       [
         {
-          "name": "Practiced Exit",
-          "description": "Reduce ability cooldowns by 10%."
+          "name": "Close Formation",
+          "description": "Shared Veil reaches one block farther, helping companions stay together."
         },
         {
-          "name": "Slip Away",
-          "description": "Vanish for five seconds with Speed II; anything hunting you loses the trail.",
+          "name": "Slipstream",
+          "description": "Vanish for five seconds with Speed II and leave hunters searching your last known position.",
           "energy": 20,
           "cooldown": 240
         },
         {
-          "name": "Practiced Exit Mastery",
-          "description": "Reduce ability cooldowns by another 15% (25% total)."
+          "name": "Shared Escape",
+          "description": "Slipstream also briefly conceals nearby consenting friends."
         },
         {
           "id": "invisibility_cloak_field",
-          "name": "Cloak Field",
-          "description": "Leave a four-block cloak in place for fifteen seconds; friends inside stay unseen.",
+          "name": "Hidden Passage",
+          "description": "Lay a twelve-block optical passage for fifteen seconds. Solid walls clip its reach; consenting companions inside remain concealed.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -2206,8 +2206,8 @@
         },
         {
           "id": "invisibility_wider_cloak",
-          "name": "Wider Cloak",
-          "description": "Cloak Field covers six blocks.",
+          "name": "Broad Passage",
+          "description": "Widen Hidden Passage from a two-block radius to three blocks.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -2217,7 +2217,7 @@
         {
           "id": "invisibility_claudes_lesson",
           "name": "Claude's Lesson",
-          "description": "Fade drains stamina half as fast.",
+          "description": "Sustained Fade drains one stamina per second instead of two.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -2228,9 +2228,9 @@
       ]
     ],
     "branch_names": [
-      "AMBUSH",
       "GHOST",
-      "ESCAPE"
+      "TRICKSTER",
+      "INFILTRATOR"
     ]
   },
   {

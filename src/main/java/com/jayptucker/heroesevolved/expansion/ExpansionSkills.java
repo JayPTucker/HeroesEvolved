@@ -32,10 +32,6 @@ public final class ExpansionSkills {
     private static final List<Fault> FAULTS = new ArrayList<>();
     private static final class Brace { final ServerPlayer owner; final long until; float stored; Brace(ServerPlayer p, long n) { owner = p; until = n + 100; } }
     private static final Map<UUID, Brace> BRACES = new HashMap<>();
-    private record Cocoon(ServerPlayer owner, LivingEntity target, Vec3 position, ServerLevel level, long until) {}
-    private static final Map<UUID, Cocoon> COCOONS = new HashMap<>();
-    private record Constellation(ServerPlayer owner, List<LivingEntity> targets, long until) {}
-    private static final Map<UUID, Constellation> STARS = new HashMap<>();
     private record Sink(ServerPlayer owner, ServerLevel level, Vec3 center, long until, float[] charge) {}
     private static final Map<UUID, Sink> SINKS = new HashMap<>();
     private record Lattice(ServerPlayer owner, ServerLevel level, List<Vec3> anchors, long until, Set<UUID> struck) {}
@@ -102,38 +98,7 @@ public final class ExpansionSkills {
                 FacilityService.technique(p, target, "fracture");
                 AbilityEffects.send(p.serverLevel(), Kind.QUAKE_BEAM, p.getEyePosition(), Vec3.atCenterOf(target), 1);
             }
-            case "rime_loom" -> {
-                Vec3 direction = p.getLookAngle().multiply(1, 0, 1).normalize(); int placed = 0;
-                int length = has(p, "cryokinesis_suspension_stitch") ? 24 : 16, width = has(p, "cryokinesis_double_weave") ? 1 : 0;
-                for (int i = 1; i <= length; i++) for (int side = -width; side <= width; side++) {
-                    Vec3 point = p.position().add(direction.scale(i)).add(-direction.z * side, -1, direction.x * side);
-                    if (has(p, "cryokinesis_suspension_stitch") && p.getLookAngle().y > .25) point = point.add(0, i / 4, 0);
-                    BlockPos pos = BlockPos.containing(point);
-                    if (WorldMutationPolicy.canEdit(p, p.serverLevel(), pos)
-                            && TemporaryBlocks.place(p.serverLevel(), pos, Blocks.PACKED_ICE.defaultBlockState(), 240, p)) placed++;
-                }
-                FacilityService.technique(p, target, "cold");
-                if (placed == 0) return false;
-                AbilityEffects.send(p.serverLevel(), Kind.CRYO_BOLT, p.position(), p.position().add(direction.scale(length)), 2);
-            }
-            case "stillheart" -> {
-                LivingEntity t = p.isShiftKeyDown() ? p : Targeting.livingEntityInSight(p, 6, e -> friendly(p, e));
-                if (t == null) t = p;
-                if (COCOONS.containsKey(t.getUUID()) || COCOONS.size() >= 16) return false;
-                COCOONS.put(t.getUUID(), new Cocoon(p, t, t.position(), p.serverLevel(), now(p) + (t instanceof ServerPlayer ? 60 : 120)));
-                if (t instanceof Mob mob) { mob.getNavigation().stop(); mob.setTarget(null); }
-                t.clearFire();
-                if (has(p, "cryokinesis_sterile_ice")) for (var effect : t.getActiveEffects().stream().filter(e -> e.getEffect().value().getCategory() == net.minecraft.world.effect.MobEffectCategory.HARMFUL).toList()) t.removeEffect(effect.getEffect());
-                AbilityEffects.send(p.serverLevel(), Kind.CRYO_FREEZE, t.position(), t.getEyePosition(), 2);
-                message(p, "Stillheart: shelter now, recovery when the shell opens. Shift casts on yourself.");
-            }
-            case "brittle_constellation" -> {
-                List<LivingEntity> targets = enemies(p, Vec3.atCenterOf(target), 8).stream().limit(4).toList();
-                if (targets.isEmpty()) return false;
-                STARS.put(p.getUUID(), new Constellation(p, targets, now(p) + (has(p, "cryokinesis_long_winter") ? 200 : 120)));
-                for (var t : targets) { CryoService.freezeSolid(t, 40, p); AbilityEffects.send(p.serverLevel(), Kind.CRYO_BOLT, p.getEyePosition(), t.getEyePosition(), 1); }
-                FacilityService.technique(p, target, "cold");
-            }
+            case "rime_loom", "stillheart", "brittle_constellation" -> { return CryoTechniqueService.activate(c, mechanic); }
             case "circuit_thread" -> {
                 List<BlockPos> circuit = conductorNetwork(p.serverLevel(), target, has(p, "electrokinesis_copper_choir"));
                 if (circuit.isEmpty()) { message(p, "Aim at iron, copper, a lightning rod, or a chain. Connected conductors carry the thread."); return false; }
@@ -177,8 +142,8 @@ public final class ExpansionSkills {
         return true;
     }
     public static boolean has(ServerPlayer p, String id) { return SkillTreeService.has(p, id); }
-    public static boolean preserved(Entity entity) { return COCOONS.containsKey(entity.getUUID()); }
-    public static int activeFields() { return FAULTS.size() + COCOONS.size() + SINKS.size() + LATTICES.size() + STARS.size(); }
+    public static boolean preserved(Entity entity) { return CryoTechniqueService.preserved(entity); }
+    public static int activeFields() { return FAULTS.size() + SINKS.size() + LATTICES.size() + CryoTechniqueService.activeFields(); }
     public static List<BlockPos> conductorNetwork(ServerLevel level, BlockPos start) {
         return conductorNetwork(level, start, false);
     }
@@ -212,8 +177,7 @@ public final class ExpansionSkills {
     }
     @SubscribeEvent(priority = EventPriority.HIGH) public static void damage(LivingIncomingDamageEvent e) {
         if (e.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) return;
-        Cocoon cocoon = COCOONS.get(e.getEntity().getUUID());
-        if (cocoon != null) { e.setAmount(e.getAmount() * .2F); return; }
+        if (CryoTechniqueService.damage(e)) return;
         Brace b = BRACES.get(e.getEntity().getUUID());
         if (b != null && PowerRules.canAct(b.owner) && now(b.owner) < b.until) {
             float absorbed = e.getAmount() * (has(b.owner, "quake_counter_balance") ? .7F : .5F);
@@ -224,24 +188,13 @@ public final class ExpansionSkills {
             float absorbed = e.getAmount() * (has(sink.owner, "electrokinesis_faraday_garden") ? .65F : .4F);
             sink.charge[0] = Math.min(16, sink.charge[0] + absorbed); e.setAmount(e.getAmount() - absorbed); break;
         }
-        for (var entry : List.copyOf(STARS.entrySet())) {
-            Constellation stars = entry.getValue();
-            if (!stars.targets.contains(e.getEntity()) || !CryoService.isFrozen(e.getEntity())) continue;
-            STARS.remove(entry.getKey());
-            if (!PowerRules.canAct(stars.owner)) continue;
-            for (var t : stars.targets) if (t != e.getEntity() && t.isAlive() && t.level() == stars.owner.level()) {
-                CryoService.releaseEntity(t);
-                t.hurt(stars.owner.damageSources().playerAttack(stars.owner), has(stars.owner, "cryokinesis_shattered_sky") ? 7 : 4);
-                if (has(stars.owner, "cryokinesis_shattered_sky") && t instanceof Mob && t.isAlive()) CryoService.freezeSolid(t, 40, stars.owner);
-                AbilityEffects.send(stars.owner.serverLevel(), Kind.CRYO_BOLT, e.getEntity().getEyePosition(), t.getEyePosition(), 1.5);
-            }
-        }
     }
     @SubscribeEvent public static void pause(EntityTickEvent.Pre e) {
         if (e.getEntity() instanceof Mob && preserved(e.getEntity())) e.setCanceled(true);
     }
     @SubscribeEvent public static void tick(ServerTickEvent.Post e) { tick(e.getServer()); }
     public static void tick(MinecraftServer server) {
+        CryoTechniqueService.tick(server);
         long time = server.overworld().getGameTime();
         for (Fault f : List.copyOf(FAULTS)) {
             if (f.level != f.owner.level() || !PowerRules.canAct(f.owner)) { FAULTS.remove(f); continue; }
@@ -264,20 +217,6 @@ public final class ExpansionSkills {
         for (Brace b : List.copyOf(BRACES.values())) if (time >= b.until || !PowerRules.canAct(b.owner)) {
             BRACES.remove(b.owner.getUUID()); if (b.stored > 0 && PowerRules.canAct(b.owner)) release(b);
         }
-        for (Cocoon c : List.copyOf(COCOONS.values())) {
-            if (time >= c.until || !c.target.isAlive() || c.target.level() != c.level || c.owner.level() != c.level || !PowerRules.canAct(c.owner) && c.target != c.owner) {
-                COCOONS.remove(c.target.getUUID());
-                if (c.target.isAlive() && c.target.level() == c.level) {
-                    c.target.heal(has(c.owner, "cryokinesis_second_spring") ? 6 : 2);
-                    if (has(c.owner, "cryokinesis_second_spring")) for (var ally : c.level.getEntitiesOfClass(LivingEntity.class, c.target.getBoundingBox().inflate(5), t -> t != c.target && friendly(c.owner, t) && c.target.hasLineOfSight(t))) ally.heal(2);
-                }
-                continue;
-            }
-            if (c.target instanceof ServerPlayer p && p.position().distanceToSqr(c.position) > .001) p.connection.teleport(c.position.x, c.position.y, c.position.z, p.getYRot(), p.getXRot());
-            c.target.setPos(c.position); c.target.setDeltaMovement(Vec3.ZERO);
-            if (time % 10 == 0) AbilityEffects.send(c.level, Kind.CRYO_FREEZE, c.position, c.target.getEyePosition(), 1.2);
-        }
-        STARS.values().removeIf(s -> time >= s.until || !PowerRules.canAct(s.owner));
         SINKS.values().removeIf(s -> time >= s.until || s.owner.level() != s.level || !PowerRules.canAct(s.owner));
         LATTICES.values().removeIf(s -> time >= s.until || s.owner.level() != s.level || !PowerRules.canAct(s.owner));
         if (time % 10 != 0) return;
@@ -294,11 +233,11 @@ public final class ExpansionSkills {
         }
     }
     public static void forget(ServerPlayer p) {
-        FAULTS.removeIf(f -> f.owner == p); BRACES.remove(p.getUUID()); STARS.remove(p.getUUID()); SINKS.remove(p.getUUID()); LATTICES.remove(p.getUUID());
-        COCOONS.values().removeIf(c -> c.owner == p || c.target == p);
+        FAULTS.removeIf(f -> f.owner == p); BRACES.remove(p.getUUID()); SINKS.remove(p.getUUID()); LATTICES.remove(p.getUUID());
+        CryoTechniqueService.forget(p);
     }
     @SubscribeEvent public static void logout(PlayerEvent.PlayerLoggedOutEvent e) { if (e.getEntity() instanceof ServerPlayer p) forget(p); }
     @SubscribeEvent public static void dimension(PlayerEvent.PlayerChangedDimensionEvent e) { if (e.getEntity() instanceof ServerPlayer p) forget(p); }
-    @SubscribeEvent public static void stopping(ServerStoppingEvent e) { FAULTS.clear(); BRACES.clear(); COCOONS.clear(); STARS.clear(); SINKS.clear(); LATTICES.clear(); }
+    @SubscribeEvent public static void stopping(ServerStoppingEvent e) { FAULTS.clear(); BRACES.clear(); CryoTechniqueService.clear(); SINKS.clear(); LATTICES.clear(); }
     private static void message(ServerPlayer p, String text) { p.displayClientMessage(net.minecraft.network.chat.Component.literal(text), true); }
 }

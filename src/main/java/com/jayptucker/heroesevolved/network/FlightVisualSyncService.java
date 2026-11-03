@@ -5,6 +5,8 @@ import com.jayptucker.heroesevolved.flight.FlightService;
 import com.jayptucker.heroesevolved.flight.FlightDynamicsService;
 import com.jayptucker.heroesevolved.flight.DiveBombService;
 import com.jayptucker.heroesevolved.flight.FlightSkillService;
+import com.jayptucker.heroesevolved.pyro.PyroFlightService;
+import com.jayptucker.heroesevolved.pyro.PyroService;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -13,42 +15,29 @@ public final class FlightVisualSyncService {
     }
 
     public static void syncToTrackingPlayers(ServerPlayer player) {
-        boolean visualPoseActive = player.getData(
-                ModDataAttachments.PLAYER_FLIGHT.get()
-        ).visualPoseActive();
-
-        PacketDistributor.sendToPlayersTrackingEntityAndSelf(
-                player,
-                new FlightVisualStatePayload(
-                        player.getId(),
-                        visualPoseActive || DiveBombService.isDiving(player) || FlightDynamicsService.isBursting(player) || FlightSkillService.isRolling(player),
-                        FlightService.isCycloneActive(player),
-                        player.getData(ModDataAttachments.PLAYER_FLIGHT.get()).flightEnabled(),
-                        player.getData(ModDataAttachments.PLAYER_FLIGHT.get()).speedStep(),
-                        telemetry(player)
-                )
-        );
+        PacketDistributor.sendToPlayersTrackingEntityAndSelf(player, state(player));
     }
 
-    public static void syncToPlayer(
-            ServerPlayer flyingPlayer,
-            ServerPlayer receivingPlayer
-    ) {
-        boolean visualPoseActive = flyingPlayer.getData(
-                ModDataAttachments.PLAYER_FLIGHT.get()
-        ).visualPoseActive();
+    public static void syncToPlayer(ServerPlayer flyingPlayer, ServerPlayer receivingPlayer) {
+        PacketDistributor.sendToPlayer(receivingPlayer, state(flyingPlayer));
+    }
 
-        PacketDistributor.sendToPlayer(
-                receivingPlayer,
-                new FlightVisualStatePayload(
-                        flyingPlayer.getId(),
-                        visualPoseActive || DiveBombService.isDiving(flyingPlayer) || FlightDynamicsService.isBursting(flyingPlayer) || FlightSkillService.isRolling(flyingPlayer),
-                        FlightService.isCycloneActive(flyingPlayer),
-                        flyingPlayer.getData(ModDataAttachments.PLAYER_FLIGHT.get()).flightEnabled(),
-                        flyingPlayer.getData(ModDataAttachments.PLAYER_FLIGHT.get()).speedStep(),
-                        telemetry(flyingPlayer)
-                )
-        );
+    private static FlightVisualStatePayload state(ServerPlayer player) {
+        if (PyroFlightService.isFlying(player)) {
+            int fireTelemetry = Math.clamp((int) Math.round(PyroFlightService.momentum(player)), 0, 100)
+                    | (PyroFlightService.isChargingBoost(player) ? 128 : 0)
+                    | (PyroFlightService.isDiving(player) ? 256 : 0)
+                    | 32768
+                    | (PyroService.isBlue(player) ? 65536 : 0)
+                    | (PyroFlightService.isBoosting(player) ? 131072 : 0);
+            return new FlightVisualStatePayload(player.getId(), PyroFlightService.visualPoseActive(player),
+                    false, true, PyroFlightService.speedStep(player), fireTelemetry);
+        }
+        var flight = player.getData(ModDataAttachments.PLAYER_FLIGHT.get());
+        return new FlightVisualStatePayload(player.getId(),
+                flight.visualPoseActive() || DiveBombService.isDiving(player)
+                        || FlightDynamicsService.isBursting(player) || FlightSkillService.isRolling(player),
+                FlightService.isCycloneActive(player), flight.flightEnabled(), flight.speedStep(), telemetry(player));
     }
 
     // Seven bits of Momentum, charge/dive/roll flags, then four bits of roll age (0..12).

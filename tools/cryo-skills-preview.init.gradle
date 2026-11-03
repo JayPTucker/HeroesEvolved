@@ -1,0 +1,26 @@
+// Isolated survival controls and three-dimensional meshes for all six optional Cryo skills.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('cryoSkillsPreview') {
+                java.srcDir('src/uitest/java')
+                java.include('com/jayptucker/heroesevolved/uitest/CryoSkillsPreview.java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs { client {
+                    gameDirectory = project.file('build/cryo-skills-preview')
+                    programArguments.addAll('--width', '1100', '--height', '800')
+                    systemProperty('heroes.preview.cryoSkills', 'true')
+                    // Optional local test library; never bundled into the mod or required by players.
+                    if (System.getProperty('heroes.preview.glfw')) {
+                        systemProperty('org.lwjgl.glfw.libname', System.getProperty('heroes.preview.glfw'))
+                    }
+                } }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('cryoSkillsPreviewClasses')) }
+        }
+    }
+}

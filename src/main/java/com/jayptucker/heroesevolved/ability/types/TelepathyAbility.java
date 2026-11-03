@@ -18,13 +18,13 @@ import static com.jayptucker.heroesevolved.config.HeroesEvolvedConfig.COMMON;
  * Telepathy, inspired by Matt Parkman.
  *
  * <ul>
- *   <li>Level 1, Read Mind: hear a creature's thoughts; what it hunts glows.</li>
+ *   <li>Level 1, Read Mind: hold to hear thoughts and establish a Mind Thread.</li>
  *   <li>Level 2, Suggestion: a hostile mob forgets you; a peaceful one
  *   follows you.</li>
  *   <li>Level 3, Mind Link: linked players see each other through walls
  *   and feel it when one is hurt.</li>
- *   <li>Level 4, Puppet: turn a hostile mob on its own kind. Shift ends it.</li>
- *   <li>Level 5, Nightmare: trap a mind in terror; it flees and suffers.</li>
+ *   <li>Level 4, Puppet: possess a deeply read body; players fight back through a mental contest.</li>
+ *   <li>Level 5, Nightmare: connected minds perceive private apparitions and flee in terror.</li>
  *   <li>Passive: hear hostile thoughts when something unseen hunts you.
  *   Overexertion: too many voices at once.</li>
  * </ul>
@@ -34,12 +34,17 @@ public final class TelepathyAbility implements Ability {
             new AbilityDefinition(0, 0, 5, AbilityActivationType.INSTANT);
 
     private static final Map<AbilitySlot, AbilityAction> ACTIONS = Map.of(
-            AbilitySlot.PRIMARY, SimpleAction.builder("telepathy_read_mind", 1)
-                    .cost(COMMON.telepathyReadEnergyCost::get,
-                            COMMON.telepathyReadCooldownTicks::get)
-                    .activate(context -> TelepathyService.readMind(
-                            context.player(), context.abilityLevel()))
-                    .build(),
+            AbilitySlot.PRIMARY, new AbilityAction() {
+                private final com.jayptucker.heroesevolved.ability.AbilityActionDefinition definition = new com.jayptucker.heroesevolved.ability.AbilityActionDefinition(
+                    net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("heroesevolved", "telepathy_read_mind"), "action.heroesevolved.telepathy_read_mind", 1, 0, 0);
+                public com.jayptucker.heroesevolved.ability.AbilityActionDefinition definition() { return definition; }
+                public int energyCost(int level) { return COMMON.telepathyReadEnergyCost.get(); }
+                public int cooldownTicks(int level) { return 20; }
+                public boolean canUse(AbilityUseContext c) { return true; }
+                public AbilityActivationResult activate(AbilityUseContext c) { return com.jayptucker.heroesevolved.telepathy.TelepathyFocus.start(c.player(),c.abilityLevel()) ? AbilityActivationResult.SUCCESS : AbilityActivationResult.REJECTED; }
+                public void release(AbilityUseContext c) { com.jayptucker.heroesevolved.telepathy.TelepathyFocus.stop(c.player()); }
+                public boolean deactivate(AbilityUseContext c) { if(!com.jayptucker.heroesevolved.telepathy.TelepathyFocus.reading(c.player()))return false; release(c); return true; }
+            },
             AbilitySlot.SECONDARY, SimpleAction.builder("telepathy_suggestion", 2)
                     .cost(COMMON.telepathySuggestionEnergyCost::get,
                             COMMON.telepathySuggestionCooldownTicks::get)
@@ -48,8 +53,8 @@ public final class TelepathyAbility implements Ability {
                     .build(),
             AbilitySlot.TERTIARY, SimpleAction.builder("telepathy_mind_link", 3)
                     .cost(COMMON.telepathyLinkEnergyCost::get,
-                            COMMON.telepathyLinkCooldownTicks::get)
-                    .canUse(context -> !TelepathyService.hasLink(context.player()))
+                            () -> 20)
+                    .canUse(context -> true)
                     .activate(context -> TelepathyService.mindLink(
                             context.player(), context.abilityLevel()))
                     .build(),

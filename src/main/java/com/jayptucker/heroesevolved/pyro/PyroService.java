@@ -76,15 +76,24 @@ public final class PyroService {
 
     private static final class Heat { int value; long lastGain; boolean blue; }
     private record Channel(ServerPlayer player, int level, long until, ResourceKey<Level> dimension) {}
-    private record Charge(ServerPlayer player, int level, long releaseAt, ResourceKey<Level> dimension) {}
+    private record Charge(ServerPlayer player, int level, long releaseAt, ResourceKey<Level> dimension, Vec3 center) {}
+    private record Spear(ServerPlayer player, int level, long releaseAt, ResourceKey<Level> dimension) {}
     private record Ring(ServerPlayer owner, ServerLevel level, Vec3 center, double radius, long until) {}
-    private record Mantle(ServerPlayer owner, long until) {}
+    private record Collapse(ServerPlayer owner, ServerLevel level, Vec3 center, double radius, float damage, long releaseAt) {}
+    private record Mantle(ServerPlayer owner, ServerLevel level, long until) {}
+    private record Lash(ServerPlayer owner, LivingEntity target, ServerLevel level, long until) {}
+    private record Lance(ServerPlayer owner, ServerLevel level, Vec3 start, Vec3 end, long until) {}
     private record Mine(ServerPlayer owner, ServerLevel level, Vec3 position, long until) {}
 
     private static final Map<UUID, Heat> HEAT = new HashMap<>();
+    private static final Map<UUID, Spear> SPEARS = new HashMap<>();
     private static final Map<UUID, Channel> PALMS = new HashMap<>();
     private static final Map<UUID, Charge> INFERNOS = new HashMap<>();
+    private static final Map<UUID, Collapse> COLLAPSES = new HashMap<>();
     private static final Map<UUID, Ring> RINGS = new HashMap<>();
+    private static final Map<UUID, Lash> LASHES = new HashMap<>();
+    private static final Map<UUID, Lance> LANCES = new HashMap<>();
+    private static final Map<Mine, Long> WARNINGS = new HashMap<>();
     private static final Map<UUID, Mantle> MANTLES = new HashMap<>();
     private static final Map<UUID, List<Mine>> MINES = new HashMap<>();
     private static final Map<UUID, Long> CUSHIONS = new HashMap<>();
@@ -100,6 +109,11 @@ public final class PyroService {
         return PlayerAbilityService.getData(player).assignedPower()
                 .filter(entry -> entry.getKey().equals(ModAbilities.PYROKINESIS_ID) && entry.getValue().isUnlocked())
                 .isPresent() && !EclipseService.arePowersSuppressed(player);
+    }
+
+    private static boolean canSustainFire(ServerPlayer player) {
+        return isPyrokinetic(player)
+                || com.jayptucker.heroesevolved.mimicry.MimicryService.isBorrowingPyrokinesis(player);
     }
 
     /** True while one of this power's own hits is landing, so passives do not stack on top. */
@@ -119,6 +133,15 @@ public final class PyroService {
         heat.value = Math.min(MAX_HEAT, heat.value + amount);
         heat.lastGain = player.getServer().overworld().getGameTime();
         announce(player, heat);
+    }
+
+    public static boolean spendHeat(ServerPlayer player, int amount) {
+        if (amount < 0 || heat(player) < amount) return false;
+        Heat state = HEAT.get(player.getUUID());
+        if (state == null) return amount == 0;
+        state.value -= amount;
+        announce(player, state);
+        return true;
     }
 
     public static void quench(ServerPlayer player) {
@@ -171,6 +194,11 @@ public final class PyroService {
                 .stream().limit(32).toList();
     }
 
+    private static boolean visibleFrom(ServerLevel level, Vec3 center, LivingEntity target) {
+        return level.clip(new ClipContext(center.add(0, 0.5, 0), target.getBoundingBox().getCenter(),
+                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, target)).getType() == HitResult.Type.MISS;
+    }
+
     private static void sound(ServerPlayer player, SoundEvent sound, float volume, float pitch) {
         player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(), sound, SoundSource.PLAYERS, volume, pitch);
     }
@@ -187,7 +215,7 @@ public final class PyroService {
 
     /** Fire is never placed in story dimensions, which have their own mission-owned terrain. */
     public static boolean worldFireAllowed(ServerPlayer player, ServerLevel level) {
-        return COMMON.pyroWorldFire.get() && !player.isShiftKeyDown() && !TimeIntroService.isCity(level)
+        return COMMON.pyroWorldFire.get() && !PyroFlightService.isContainingFire(player) && !TimeIntroService.isCity(level)
                 && !TemporalSnapshotService.isTemporalDimension(level) && !level.dimension().equals(FacilityService.DIMENSION);
     }
 
@@ -237,7 +265,17 @@ public final class PyroService {
         Vec3 end;
         if (target != null) {
             end = target.getBoundingBox().getCenter();
-            burn(player, target, scaled(player, 4 + powerLevel), 4);
+            boolean detonate = target.isOnFire() && heat(player) >= 20;
+            float damage = scaled(player, 4 + powerLevel);
+            burn(player, target, damage, 4);
+            if (detonate) {
+                spendHeat(player, 20);
+                for (LivingEntity nearby : enemies(player, end, 2.5)) {
+                    if (nearby != target && target.hasLineOfSight(nearby)) burn(player, nearby, damage * 0.6F, 3);
+                }
+                AbilityEffects.send(level, Kind.FIRE_NOVA, end, end.add(0, 1, 0), 2.5);
+                sound(player, SoundEvents.FIRECHARGE_USE, 0.8F, 0.7F);
+            }
         } else {
             var hit = level.clip(new ClipContext(eye, eye.add(player.getLookAngle().scale(32)),
                     ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, player));
@@ -250,6 +288,70 @@ public final class PyroService {
         }
         AbilityEffects.send(level, isBlue(player) ? Kind.BLUE_FLAME : Kind.FIRE_BOLT, eye, end, 1);
         sound(player, SoundEvents.BLAZE_SHOOT, 0.9F, 1.1F);
+        ArmPosePayload.show(player, ArmPose.FIRE_RELEASE, 12);
+        addHeat(player, 12);
+        return true;
+    }
+
+    public static boolean isChargingSpear(ServerPlayer player) { return SPEARS.containsKey(player.getUUID()); }
+
+    public static boolean startSpear(ServerPlayer player, int tier) {
+        if (!PowerRules.canAct(player) || player.isInWaterOrBubble() || isChargingSpear(player)) return false;
+        SPEARS.put(player.getUUID(), new Spear(player, tier,
+                player.getServer().overworld().getGameTime() + 20, player.level().dimension()));
+        ArmPosePayload.show(player, ArmPose.FIRE_FORGE, 20);
+        return true;
+    }
+
+    public static boolean cancelSpear(ServerPlayer player) {
+        if (SPEARS.remove(player.getUUID()) == null) return false;
+        ArmPosePayload.clear(player);
+        return true;
+    }
+
+    /** A tap remains a fast bolt; a deliberate hold pierces a bounded line of enemies. */
+    public static boolean releaseSpear(ServerPlayer player) {
+        Spear spear = SPEARS.remove(player.getUUID());
+        if (spear == null) return false;
+        ArmPosePayload.clear(player);
+        if (!PowerRules.canAct(player) || !canSustainFire(player) || player.isInWaterOrBubble()
+                || !spear.dimension.equals(player.level().dimension())) return false;
+        double progress = Math.clamp((20 - (spear.releaseAt - player.getServer().overworld().getGameTime())) / 20.0, 0, 1);
+        if (progress < 0.25) return flare(player, spear.level);
+        ServerLevel level = player.serverLevel();
+        Vec3 eye = player.getEyePosition(), aim = player.getLookAngle().normalize();
+        var hit = level.clip(new ClipContext(eye, eye.add(aim.scale(32)),
+                ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, player));
+        double reach = eye.distanceTo(hit.getLocation());
+        boolean blue = isBlue(player), fueled = progress >= 0.9 && heat(player) >= 20;
+        float damage = scaled(player, (float) ((4 + spear.level) * (1 + progress) + (fueled ? 4 : 0)));
+        if (fueled) spendHeat(player, 20);
+        int struck = 0;
+        for (LivingEntity target : enemies(player, eye, 33)) {
+            Vec3 delta = target.getBoundingBox().getCenter().subtract(eye);
+            double along = delta.dot(aim);
+            double width = (fueled ? 1.1 : 0.55) + target.getBbWidth() * 0.5;
+            if (along < 0 || along > reach || delta.subtract(aim.scale(along)).lengthSqr() > width * width
+                    || !player.hasLineOfSight(target)) continue;
+            boolean burning = target.isOnFire();
+            burn(player, target, damage, 5);
+            push(target, aim.scale(0.35).add(0, 0.12, 0));
+            if (fueled && burning) {
+                for (LivingEntity nearby : enemies(player, target.position(), 2.5)) {
+                    if (nearby != target && target.hasLineOfSight(nearby)) burn(player, nearby, damage * 0.3F, 3);
+                }
+                AbilityEffects.send(level, blue ? Kind.BLUE_FLAME : Kind.FIRE_NOVA,
+                        target.position(), target.position().add(0, 1, 0), 2.5);
+            }
+            if (++struck >= 8) break;
+        }
+        if (hit.getType() == HitResult.Type.BLOCK) {
+            if (quenching(level, hit.getBlockPos())) steam(player, level, hit.getLocation());
+            else ignite(player, level, hit.getBlockPos().relative(hit.getDirection()));
+        }
+        AbilityEffects.send(level, blue ? Kind.BLUE_FLAME : Kind.FIRE_BOLT, eye, hit.getLocation(), 1.6);
+        sound(player, SoundEvents.BLAZE_SHOOT, 1.3F, 0.65F);
+        ArmPosePayload.show(player, ArmPose.FIRE_RELEASE, 12);
         addHeat(player, 12);
         return true;
     }
@@ -260,7 +362,7 @@ public final class PyroService {
     public static void startPalm(ServerPlayer player, int powerLevel) {
         PALMS.put(player.getUUID(), new Channel(player, powerLevel,
                 player.getServer().overworld().getGameTime() + 100, player.level().dimension()));
-        ArmPosePayload.show(player, ArmPose.TWO_HANDS, 100);
+        ArmPosePayload.show(player, ArmPose.FIRE_BREATH, 100);
         sound(player, SoundEvents.FIRECHARGE_USE, 1, 0.8F);
     }
 
@@ -274,15 +376,17 @@ public final class PyroService {
         ServerPlayer player = channel.player;
         ServerLevel level = player.serverLevel();
         Vec3 eye = player.getEyePosition(), aim = player.getLookAngle().normalize();
-        var hit = level.clip(new ClipContext(eye, eye.add(aim.scale(6)), ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, player));
-        double length = hit.getType() == HitResult.Type.BLOCK ? eye.distanceTo(hit.getLocation()) : 6;
+        double reach = 6 + heat(player) / 25.0;
+        var hit = level.clip(new ClipContext(eye, eye.add(aim.scale(reach)), ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, player));
+        double length = hit.getType() == HitResult.Type.BLOCK ? eye.distanceTo(hit.getLocation()) : reach;
         int affected = 0;
-        for (LivingEntity target : enemies(player, eye, 6.5)) {
+        for (LivingEntity target : enemies(player, eye, reach + 0.5)) {
             Vec3 delta = target.getBoundingBox().getCenter().subtract(eye);
             double along = delta.dot(aim);
             if (along < 0 || along > length + 0.6 || delta.normalize().dot(aim) < 0.82 || !player.hasLineOfSight(target)) continue;
             if (++affected > 12) break;
             burn(player, target, scaled(player, 1.5F + channel.level * 0.3F), 3);
+            push(target, aim.scale(isBlue(player) ? 0.38 : 0.18).add(0, 0.06, 0));
         }
         if (hit.getType() == HitResult.Type.BLOCK && now % 10 == 0) {
             BlockPos pos = hit.getBlockPos();
@@ -296,26 +400,52 @@ public final class PyroService {
 
     public static boolean hasRing(ServerPlayer player) { return RINGS.containsKey(player.getUUID()); }
 
-    /** Level 2: a ring of fire at your feet. Hostile projectiles crossing it burn up. */
+    /** Level 2: an aimed ground ring, falling back to your feet. Hostile projectiles crossing it burn up. */
     public static boolean ringOfFire(ServerPlayer player, int powerLevel) {
-        Vec3 center = player.position();
+        var ground = player.serverLevel().clip(new ClipContext(player.getEyePosition(),
+                player.getEyePosition().add(player.getLookAngle().scale(16)),
+                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+        Vec3 center = ground.getType() == HitResult.Type.BLOCK && ground.getDirection() == Direction.UP
+                ? ground.getLocation() : player.position();
         RINGS.put(player.getUUID(), new Ring(player, player.serverLevel(), center, 4,
                 player.getServer().overworld().getGameTime() + 160));
         igniteCircle(player, center, 4, 24);
-        AbilityEffects.send(player.serverLevel(), Kind.FIRE_RING, center, center.add(0, 1, 0), 4);
+        AbilityEffects.send(player.serverLevel(), Kind.PYRO_FIRESTORM, center, center.add(0, 1, 0), 4);
         sound(player, SoundEvents.FIRECHARGE_USE, 1.2F, 0.6F);
+        ArmPosePayload.show(player, ArmPose.FIRE_SWEEP, 18);
         addHeat(player, 15);
+        return true;
+    }
+
+    /** Shift collapses the existing fire circle, trading its protection for a finishing blast. */
+    public static boolean collapseRing(ServerPlayer player, int tier) {
+        Ring ring = RINGS.remove(player.getUUID());
+        if (ring == null) return false;
+        if (ring.level != player.level() || !PowerRules.canAct(player)) return true;
+        boolean fueled = heat(player) >= 20;
+        float damage = scaled(player, 4 + tier + (fueled ? 4 : 0));
+        if (fueled) spendHeat(player, 20);
+        COLLAPSES.put(player.getUUID(), new Collapse(player, ring.level, ring.center, ring.radius, damage,
+                player.getServer().overworld().getGameTime() + 7));
+        AbilityEffects.send(ring.level, Kind.PYRO_COLLAPSE, ring.center, ring.center.add(0, 1, 0), ring.radius);
+        ArmPosePayload.show(player, ArmPose.FIRE_RELEASE, 12);
+        sound(player, SoundEvents.FIRECHARGE_USE, 1.2F, 0.5F);
         return true;
     }
 
     /** Level 3: a fire-propelled leap. The landing is cushioned; the launch point scorches attackers. */
     public static boolean backdraft(ServerPlayer player, int powerLevel) {
         boolean pillar = SkillTreeService.has(player, "pyrokinesis_pillar_of_flame");
+        boolean fueled = heat(player) >= 20;
         Vec3 look = player.getLookAngle();
-        Vec3 velocity = new Vec3(look.x, 0, look.z).normalize().scale(1.2 + powerLevel * 0.12)
+        Vec3 velocity = new Vec3(look.x, 0, look.z).normalize().scale(1.2 + powerLevel * 0.12 + (fueled ? 0.6 : 0))
                 .add(0, (pillar ? 1.35 : 0.75) + Math.max(0, look.y) * 0.5, 0);
         Vec3 start = player.position();
-        for (LivingEntity target : enemies(player, start, 3)) burn(player, target, scaled(player, 3), 3);
+        for (LivingEntity target : enemies(player, start, fueled ? 5 : 3)) burn(player, target, scaled(player, fueled ? 6 : 3), 3);
+        if (fueled) {
+            spendHeat(player, 20);
+            AbilityEffects.send(player.serverLevel(), Kind.FIRE_NOVA, start, start.add(0, 1, 0), 5);
+        }
         BlockPos launch = surface(player.serverLevel(), player.blockPosition());
         if (launch != null) ignite(player, player.serverLevel(), launch);
         player.setDeltaMovement(velocity);
@@ -339,9 +469,16 @@ public final class PyroService {
 
     /** Level 5: a three-second charge, then a fire nova. Shift cancels while charging. */
     public static boolean startInferno(ServerPlayer player, int powerLevel) {
+        if (isCharging(player) || !PowerRules.canAct(player) || player.isInWaterOrBubble()) return false;
+        LivingEntity target = Targeting.livingEntityInSight(player, 12, t -> hostile(player, t));
+        var ground = player.serverLevel().clip(new ClipContext(player.getEyePosition(),
+                player.getEyePosition().add(player.getLookAngle().scale(24)),
+                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+        Vec3 center = target != null ? target.position()
+                : ground.getType() == HitResult.Type.BLOCK ? ground.getLocation() : player.position();
         INFERNOS.put(player.getUUID(), new Charge(player, powerLevel,
-                player.getServer().overworld().getGameTime() + 60, player.level().dimension()));
-        ArmPosePayload.show(player, ArmPose.TWO_HANDS_STRAIN, 60);
+                player.getServer().overworld().getGameTime() + 60, player.level().dimension(), center));
+        ArmPosePayload.show(player, ArmPose.FIRE_SUN, 60);
         sound(player, SoundEvents.BLAZE_AMBIENT, 1.4F, 0.5F);
         return true;
     }
@@ -353,16 +490,30 @@ public final class PyroService {
         return true;
     }
 
+    public static boolean releaseInferno(ServerPlayer player) {
+        Charge charge = INFERNOS.remove(player.getUUID());
+        if (charge == null) return false;
+        if (!PowerRules.canAct(player) || !charge.dimension.equals(player.level().dimension())
+                || player.isInWaterOrBubble() || !player.isAlive() || !canSustainFire(player)) {
+            ArmPosePayload.clear(player);
+            return false;
+        }
+        releaseInferno(charge);
+        return true;
+    }
+
     private static void releaseInferno(Charge charge) {
         ServerPlayer player = charge.player;
         ServerLevel level = player.serverLevel();
         boolean fury = SkillTreeService.has(player, "pyrokinesis_flints_fury");
         boolean blue = fury || isBlue(player);
-        double radius = 10 + (fury ? 3 : 0);
-        Vec3 center = player.position();
-        float peak = (blue ? 18 : 12) + charge.level * 2;
+        float chargePower = (float) Math.clamp(
+                (60 - (charge.releaseAt - player.getServer().overworld().getGameTime())) / 60.0, 0.25, 1);
+        double radius = 4 + 6 * chargePower + (fury ? 3 : 0);
+        Vec3 center = charge.center;
+        float peak = ((blue ? 18 : 12) + charge.level * 2) * chargePower + heat(player) * 0.05F;
         for (LivingEntity target : enemies(player, center, radius)) {
-            if (!player.hasLineOfSight(target)) continue;
+            if (!visibleFrom(level, center, target)) continue;
             double falloff = 1 - 0.5 * target.position().distanceTo(center) / radius;
             burn(player, target, (float) (peak * falloff), 8);
             push(target, target.position().subtract(center).multiply(1, 0, 1).normalize().scale(blue ? 1.3 : 0.9).add(0, 0.35, 0));
@@ -374,8 +525,8 @@ public final class PyroService {
                 if (pos != null) ignite(player, level, pos);
             }
         }
+        AbilityEffects.send(level, blue ? Kind.BLUE_FLAME : Kind.FIRE_BOLT, center.add(0, 6, 0), center, radius);
         AbilityEffects.send(level, blue ? Kind.BLUE_FLAME : Kind.FIRE_NOVA, center, center.add(0, 1, 0), radius);
-        AbilityEffects.send(level, Kind.FIRE_NOVA, center, center.add(0, 1, 0), radius);
         CameraShakePayload.sendAround(level, center, radius * 3, blue ? 0.8F : 0.55F, 25);
         sound(player, SoundEvents.GENERIC_EXPLODE.value(), 2, blue ? 0.6F : 0.8F);
         sound(player, SoundEvents.BLAZE_SHOOT, 2, 0.5F);
@@ -425,35 +576,50 @@ public final class PyroService {
         int level = context.abilityLevel();
         switch (branch) {
             case 0 -> {
-                LivingEntity target = Targeting.livingEntityInSight(player, 40, t -> hostile(player, t));
+                LivingEntity target = Targeting.livingEntityInSight(player, 20, t -> hostile(player, t));
                 if (target == null) return false;
                 burn(player, target, scaled(player, 6 + level), 5);
                 push(target, player.position().subtract(target.position()).multiply(1, 0, 1).normalize().scale(0.45).add(0, 0.15, 0));
-                AbilityEffects.send(player.serverLevel(), isBlue(player) ? Kind.BLUE_FLAME : Kind.FIRE_BOLT,
+                LASHES.put(player.getUUID(), new Lash(player, target, player.serverLevel(),
+                        player.getServer().overworld().getGameTime() + 8));
+                AbilityEffects.send(player.serverLevel(), Kind.PYRO_LASH,
                         player.getEyePosition(), target.getEyePosition(), 1.2);
+                ArmPosePayload.show(player, ArmPose.FIRE_LASH, 16);
                 sound(player, SoundEvents.FIRECHARGE_USE, 0.9F, 1.4F);
                 addHeat(player, 10);
             }
             case 1 -> {
                 player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 160, 0));
-                MANTLES.put(player.getUUID(), new Mantle(player, player.getServer().overworld().getGameTime() + 160));
-                AbilityEffects.send(player.serverLevel(), Kind.FIRE_RING, player.position(), player.getEyePosition(), 1.6);
+                MANTLES.put(player.getUUID(), new Mantle(player, player.serverLevel(), player.getServer().overworld().getGameTime() + 160));
+                AbilityEffects.send(player.serverLevel(), Kind.PYRO_MANTLE, player.position(), player.getEyePosition(), isBlue(player) ? 2 : 1);
+                ArmPosePayload.show(player, ArmPose.FIRE_SWEEP, 18);
                 sound(player, SoundEvents.FIRECHARGE_USE, 0.9F, 0.7F);
                 addHeat(player, 6);
             }
             case 2 -> {
-                for (MobEffectInstance effect : List.copyOf(player.getActiveEffects()))
-                    if (!effect.getEffect().value().isBeneficial()) player.removeEffect(effect.getEffect());
-                player.heal(4 + level);
-                player.clearFire();
-                AbilityEffects.send(player.serverLevel(), Kind.FIRE_NOVA, player.position(), player.getEyePosition(), 1.4);
+                LivingEntity friend = Targeting.livingEntityInSight(player, 4,
+                        t -> t != player && ExpansionSkills.friendly(player, t)
+                                && (t.getHealth() < t.getMaxHealth() || t.isOnFire()
+                                || t.getActiveEffects().stream().anyMatch(e -> !e.getEffect().value().isBeneficial())));
+                LivingEntity recipient = friend == null ? player : friend;
+                for (MobEffectInstance effect : List.copyOf(recipient.getActiveEffects()))
+                    if (!effect.getEffect().value().isBeneficial()) recipient.removeEffect(effect.getEffect());
+                recipient.heal(4 + level);
+                recipient.clearFire();
+                if (spendHeat(player, 20)) recipient.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 100, 0));
+                AbilityEffects.send(player.serverLevel(), Kind.PYRO_CAUTERIZE, recipient.position(), recipient.getEyePosition(), 1.4);
+                ArmPosePayload.show(player, ArmPose.FIRE_CAUTERIZE, 24);
                 sound(player, SoundEvents.FIRE_EXTINGUISH, 0.8F, 1.3F);
             }
             default -> { return false; }
         }
-        ArmPosePayload.show(player, branch == 0 ? ArmPose.ONE_HAND : ArmPose.ARMS_WIDE, 16);
         return true;
     }
+
+    public static boolean isLashing(ServerPlayer player) { return LASHES.containsKey(player.getUUID()); }
+    public static boolean hasMantle(ServerPlayer player) { return MANTLES.containsKey(player.getUUID()); }
+    public static boolean isLancing(ServerPlayer player) { return LANCES.containsKey(player.getUUID()); }
+    public static int mineCount(ServerPlayer player) { return MINES.getOrDefault(player.getUUID(), List.of()).size(); }
 
     public static boolean technique(AbilityUseContext context, String mechanic) {
         ServerPlayer player = context.player();
@@ -474,11 +640,12 @@ public final class PyroService {
         }
         List<Mine> mines = MINES.computeIfAbsent(player.getUUID(), ignored -> new ArrayList<>());
         int limit = SkillTreeService.has(player, "pyrokinesis_long_fuse") ? 3 : 2;
-        while (mines.size() >= limit) mines.removeFirst();
+        while (mines.size() >= limit) WARNINGS.remove(mines.removeFirst());
         Vec3 position = Vec3.atBottomCenterOf(pos);
         mines.add(new Mine(player, player.serverLevel(), position, player.getServer().overworld().getGameTime() + 20 * 40));
         PacketDistributor.sendToPlayer(player, new com.jayptucker.heroesevolved.network.AbilityEffectPayload(
-                Kind.FIRE_RING, position, position.add(0, 1, 0), 0.6F));
+                Kind.PYRO_MINE_ARM, position, position.add(0, 1, 0), 0.6F));
+        ArmPosePayload.show(player, ArmPose.FIRE_SWEEP, 18);
         sound(player, SoundEvents.FLINTANDSTEEL_USE, 0.7F, 0.8F);
         addHeat(player, 6);
         return true;
@@ -489,8 +656,11 @@ public final class PyroService {
         boolean longFuse = SkillTreeService.has(player, "pyrokinesis_long_fuse");
         double radius = longFuse ? 4 : 2.5;
         int level = com.jayptucker.heroesevolved.progression.PlayerProgressionService.getLevel(player);
-        for (LivingEntity target : enemies(player, mine.position, radius)) burn(player, target, scaled(player, 6 + level), 5);
-        AbilityEffects.send(mine.level, Kind.FIRE_NOVA, mine.position, mine.position.add(0, 1, 0), radius);
+        WARNINGS.remove(mine);
+        for (LivingEntity target : enemies(player, mine.position, radius)) {
+            if (visibleFrom(mine.level, mine.position, target)) burn(player, target, scaled(player, 6 + level), 5);
+        }
+        AbilityEffects.send(mine.level, Kind.PYRO_MINE_ERUPT, mine.position, mine.position.add(0, 1, 0), radius);
         mine.level.playSound(null, mine.position.x, mine.position.y, mine.position.z, SoundEvents.GENERIC_EXPLODE.value(),
                 SoundSource.PLAYERS, 1, 1.3F);
         if (!SkillTreeService.has(player, "pyrokinesis_wildfire") || depth > 2) return;
@@ -517,7 +687,10 @@ public final class PyroService {
             burn(player, target, (8 + powerLevel) * BLUE_MULTIPLIER, 6);
         }
         if (hit.getType() == HitResult.Type.BLOCK) ignite(player, level, hit.getBlockPos().relative(hit.getDirection()));
-        AbilityEffects.send(level, Kind.BLUE_FLAME, eye.add(aim.scale(0.5)), eye.add(aim.scale(length)), 1.4);
+        Vec3 end = eye.add(aim.scale(length));
+        LANCES.put(player.getUUID(), new Lance(player, level, eye, end, player.getServer().overworld().getGameTime() + 13));
+        AbilityEffects.send(level, Kind.PYRO_LANCE, eye.add(aim.scale(0.5)), end, 1.4);
+        ArmPosePayload.show(player, ArmPose.FIRE_RELEASE, 12);
         sound(player, SoundEvents.SOUL_ESCAPE.value(), 1.4F, 0.6F);
         sound(player, SoundEvents.BLAZE_SHOOT, 1, 0.7F);
         addHeat(player, 15);
@@ -534,12 +707,20 @@ public final class PyroService {
             if (!level.getBlockState(pos).is(BlockTags.FIRE) || !WorldMutationPolicy.canEdit(player, level, pos)) continue;
             level.removeBlock(pos, false);
             drawn++;
-            if (drawn % 4 == 1) AbilityEffects.send(level, Kind.FIRE_STREAM, Vec3.atCenterOf(pos), player.getEyePosition(), 0.6);
+            if (drawn % 4 == 1) AbilityEffects.send(level, Kind.PYRO_SHEPHERD, Vec3.atCenterOf(pos), player.getEyePosition(), 0.6);
         }
         if (drawn > 0) {
             PlayerEnergyService.restore(player, Math.min(40, drawn * 2));
             player.heal(drawn * 0.5F);
+            addHeat(player, Math.min(40, drawn * 2));
             sound(player, SoundEvents.FIRE_EXTINGUISH, 1, 0.8F);
+        }
+        for (LivingEntity ally : level.getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(5),
+                ally -> ExpansionSkills.friendly(player, ally) && ally.distanceToSqr(player) <= 25).stream().limit(32).toList()) {
+            if (!ally.isOnFire() || !player.hasLineOfSight(ally)) continue;
+            ally.clearFire();
+            ally.heal(2);
+            AbilityEffects.send(level, Kind.PYRO_CAUTERIZE, ally.position(), ally.getEyePosition(), .6);
         }
         if (SkillTreeService.has(player, "pyrokinesis_thaw")) {
             for (LivingEntity ally : level.getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(5),
@@ -551,7 +732,7 @@ public final class PyroService {
             }
         }
         player.displayClientMessage(Component.translatable("pyro.heroesevolved.shepherd", drawn), true);
-        AbilityEffects.send(level, Kind.FIRE_RING, player.position(), player.getEyePosition(), 2);
+        ArmPosePayload.show(player, ArmPose.FIRE_SHEPHERD, 24);
         return true;
     }
 
@@ -562,10 +743,64 @@ public final class PyroService {
     public static void tick(MinecraftServer server) {
         long now = server.overworld().getGameTime();
 
+        for (Collapse collapse : List.copyOf(COLLAPSES.values())) {
+            ServerPlayer owner = collapse.owner;
+            if (!PowerRules.canAct(owner) || !canSustainFire(owner) || owner.isRemoved() || owner.level() != collapse.level) {
+                COLLAPSES.remove(owner.getUUID());
+                continue;
+            }
+            if (now < collapse.releaseAt) continue;
+            COLLAPSES.remove(owner.getUUID());
+            for (LivingEntity target : enemies(owner, collapse.center, collapse.radius)) {
+                if (!visibleFrom(collapse.level, collapse.center, target)) continue;
+                burn(owner, target, collapse.damage, 5);
+                push(target, target.getDeltaMovement().add(0, .35, 0));
+            }
+        }
+
+        LASHES.values().removeIf(lash -> now >= lash.until || !PowerRules.canAct(lash.owner)
+                || !canSustainFire(lash.owner) || lash.owner.level() != lash.level
+                || lash.target.level() != lash.level || !hostile(lash.owner, lash.target) || !lash.owner.hasLineOfSight(lash.target));
+        for (Lash lash : LASHES.values()) {
+            Vec3 delta = lash.owner.position().subtract(lash.target.position()).multiply(1, 0, 1);
+            if (delta.lengthSqr() > 9) push(lash.target, delta.normalize().scale(.4).add(0, .05, 0));
+        }
+        LANCES.values().removeIf(lance -> now >= lance.until || !PowerRules.canAct(lance.owner)
+                || !canSustainFire(lance.owner) || lance.owner.level() != lance.level || lance.owner.isRemoved());
+        if (now % 4 == 0) for (Lance lance : LANCES.values()) {
+            var contact = lance.level.clip(new ClipContext(lance.start, lance.end, ClipContext.Block.COLLIDER,
+                    ClipContext.Fluid.NONE, lance.owner));
+            Vec3 aim = lance.end.subtract(lance.start).normalize();
+            double reach = lance.start.distanceTo(contact.getLocation());
+            int struck = 0;
+            for (LivingEntity target : enemies(lance.owner, lance.start, reach + 1)) {
+                Vec3 delta = target.getBoundingBox().getCenter().subtract(lance.start);
+                double along = delta.dot(aim);
+                if (along < 0 || along > reach || delta.subtract(aim.scale(along)).lengthSqr() > 1.1) continue;
+                if (!visibleFrom(lance.level, lance.start, target)) continue;
+                burn(lance.owner, target, 2.5F, 3);
+                if (++struck >= 8) break;
+            }
+            AbilityEffects.send(lance.level, Kind.PYRO_LANCE, lance.start, contact.getLocation(), 1);
+        }
+
+        for (Spear spear : List.copyOf(SPEARS.values())) {
+            ServerPlayer player = spear.player;
+            if (!PowerRules.canAct(player) || !canSustainFire(player) || player.isRemoved()
+                    || player.isInWaterOrBubble() || !spear.dimension.equals(player.level().dimension())) {
+                cancelSpear(player);
+                continue;
+            }
+            long remaining = spear.releaseAt - now;
+            if (remaining <= 0) { releaseSpear(player); continue; }
+            if (remaining % 4 == 0) AbilityEffects.send(player.serverLevel(), Kind.PYRO_SPEAR_CHARGE,
+                    player.position(), player.getEyePosition().add(player.getLookAngle()), 1 - remaining / 20.0);
+        }
+
         for (Channel channel : List.copyOf(PALMS.values())) {
             ServerPlayer player = channel.player;
             if (!player.isAlive() || player.isRemoved() || now >= channel.until || !PowerRules.canAct(player)
-                    || !channel.dimension.equals(player.level().dimension()) || !isPyrokinetic(player) || player.isInWaterOrBubble()) {
+                    || !channel.dimension.equals(player.level().dimension()) || !canSustainFire(player) || player.isInWaterOrBubble()) {
                 stopPalm(player);
                 continue;
             }
@@ -577,8 +812,8 @@ public final class PyroService {
 
         for (Charge charge : List.copyOf(INFERNOS.values())) {
             ServerPlayer player = charge.player;
-            if (!player.isAlive() || player.isRemoved() || !PowerRules.canAct(player) || !isPyrokinetic(player)
-                    || !charge.dimension.equals(player.level().dimension())) {
+            if (!player.isAlive() || player.isRemoved() || !PowerRules.canAct(player) || !canSustainFire(player)
+                    || !charge.dimension.equals(player.level().dimension()) || player.isInWaterOrBubble()) {
                 INFERNOS.remove(player.getUUID());
                 ArmPosePayload.clear(player);
                 continue;
@@ -589,20 +824,27 @@ public final class PyroService {
                 releaseInferno(charge);
                 continue;
             }
-            if (remaining % 4 == 0) AbilityEffects.send(player.serverLevel(), Kind.PYRO_AWAKEN_CHARGE,
-                    player.position(), player.getEyePosition(), 1 - remaining / 60.0);
-            player.setDeltaMovement(player.getDeltaMovement().multiply(0.4, 1, 0.4));
+            if (remaining % 4 == 0) AbilityEffects.send(player.serverLevel(), Kind.PYRO_SUN,
+                    charge.center.add(0, 6, 0), charge.center,
+                    (isBlue(player) || SkillTreeService.has(player, "pyrokinesis_flints_fury") ? 2 : 0) + 1 - remaining / 60.0);
             addHeat(player, 1);
         }
 
-        RINGS.values().removeIf(ring -> now >= ring.until || !ring.owner.isAlive() || ring.owner.isRemoved());
+        RINGS.values().removeIf(ring -> now >= ring.until || !PowerRules.canAct(ring.owner)
+                || !canSustainFire(ring.owner) || ring.owner.isRemoved() || ring.owner.level() != ring.level);
         for (Ring ring : RINGS.values()) {
             if (now % 5 != 0) continue;
             ServerPlayer owner = ring.owner;
             for (LivingEntity target : ring.level.getEntitiesOfClass(LivingEntity.class, new AABB(ring.center, ring.center).inflate(ring.radius + 1.2, 3, ring.radius + 1.2),
                     target -> hostile(owner, target))) {
                 double distance = Math.sqrt(target.position().distanceToSqr(ring.center.x, target.getY(), ring.center.z));
+                if (!visibleFrom(ring.level, ring.center, target)) continue;
                 if (Math.abs(distance - ring.radius) <= 1.2 && now % 20 == 0) burn(owner, target, 2, 4);
+                if (target.isOnFire() && distance < ring.radius + 1 && distance > 0.8) {
+                    Vec3 inward = ring.center.subtract(target.position()).multiply(1, 0, 1).normalize();
+                    push(target, inward.scale(0.24).add(0, 0.06, 0));
+                }
+                if (distance < ring.radius && now % 20 == 0) burn(owner, target, 2, 4);
             }
             int burned = 0;
             for (Projectile shot : ring.level.getEntitiesOfClass(Projectile.class, new AABB(ring.center, ring.center).inflate(ring.radius + 1, 4, ring.radius + 1),
@@ -611,43 +853,59 @@ public final class PyroService {
                 ring.level.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE, shot.getX(), shot.getY(), shot.getZ(), 4, .1, .1, .1, .01);
                 shot.discard();
             }
-            if (now % 20 == 0) AbilityEffects.send(ring.level, Kind.FIRE_RING, ring.center, ring.center.add(0, 1, 0), ring.radius);
+            if (now % 10 == 0) AbilityEffects.send(ring.level, Kind.PYRO_FIRESTORM, ring.center, ring.center.add(0, 1, 0), ring.radius);
             com.jayptucker.heroesevolved.expansion.PowerReactions.firestorm(owner, ring.level, ring.center, ring.radius);
         }
 
-        MANTLES.values().removeIf(mantle -> now >= mantle.until || !mantle.owner.isAlive() || mantle.owner.isRemoved());
+        MANTLES.values().removeIf(mantle -> now >= mantle.until || !PowerRules.canAct(mantle.owner)
+                || !canSustainFire(mantle.owner) || mantle.owner.level() != mantle.level || mantle.owner.isRemoved());
         if (now % 5 == 0) {
             for (Mantle mantle : MANTLES.values()) {
                 ServerPlayer owner = mantle.owner;
+                int reclaimed = 0;
                 for (Projectile shot : owner.serverLevel().getEntitiesOfClass(Projectile.class, owner.getBoundingBox().inflate(3),
-                        shot -> shot.getOwner() != owner)) {
+                        shot -> shot.getOwner() != owner && !(shot.getOwner() instanceof LivingEntity shooter && owner.isAlliedTo(shooter)))
+                        .stream().limit(16).toList()) {
+                    if (owner.serverLevel().clip(new ClipContext(owner.getEyePosition(), shot.position(), ClipContext.Block.COLLIDER,
+                            ClipContext.Fluid.NONE, owner)).getType() != HitResult.Type.MISS) continue;
                     owner.serverLevel().sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE, shot.getX(), shot.getY(), shot.getZ(), 4, .1, .1, .1, .01);
                     shot.discard();
+                    reclaimed = Math.min(8, reclaimed + 2);
                 }
+                if (reclaimed > 0) addHeat(owner, reclaimed);
+                AbilityEffects.send(owner.serverLevel(), Kind.PYRO_MANTLE, owner.position(), owner.getEyePosition(), isBlue(owner) ? 2 : 1);
                 if (now % 20 == 0) {
                     for (LivingEntity target : enemies(owner, owner.position(), 2.5)) burn(owner, target, 1.5F, 3);
-                    AbilityEffects.send(owner.serverLevel(), Kind.FIRE_RING, owner.position(), owner.getEyePosition(), 1.2);
                 }
             }
         }
 
         for (var entry : List.copyOf(MINES.entrySet())) {
             List<Mine> mines = entry.getValue();
-            mines.removeIf(mine -> now >= mine.until || !mine.owner.isAlive() || mine.owner.isRemoved());
+            mines.removeIf(mine -> now >= mine.until || !PowerRules.canAct(mine.owner) || !canSustainFire(mine.owner)
+                    || mine.owner.level() != mine.level || mine.owner.isRemoved());
             for (Mine mine : List.copyOf(mines)) {
                 if (!mines.contains(mine)) continue;
+                if (now < mine.until - 20 * 40 + 8) continue;
+                Long warning = WARNINGS.get(mine);
+                if (warning != null) {
+                    if (now >= warning) { mines.remove(mine); erupt(mine, mines, 0); }
+                    continue;
+                }
                 boolean triggered = !mine.level.getEntitiesOfClass(LivingEntity.class, new AABB(mine.position, mine.position).inflate(1.6, 1.5, 1.6),
-                        target -> hostile(mine.owner, target)).isEmpty();
+                        target -> hostile(mine.owner, target) && visibleFrom(mine.level, mine.position, target)).isEmpty();
                 if (triggered) {
-                    mines.remove(mine);
-                    erupt(mine, mines, 0);
+                    WARNINGS.put(mine, now + 8);
+                    AbilityEffects.send(mine.level, Kind.PYRO_MINE_ARM, mine.position, mine.position.add(0, 1, 0), 1);
                 } else if (now % 40 == 0) {
                     PacketDistributor.sendToPlayer(mine.owner, new com.jayptucker.heroesevolved.network.AbilityEffectPayload(
-                            Kind.FIRE_RING, mine.position, mine.position.add(0, 1, 0), 0.5F));
+                            Kind.PYRO_MINE_ARM, mine.position, mine.position.add(0, 1, 0), 0.6F));
                 }
             }
             if (mines.isEmpty()) MINES.remove(entry.getKey());
         }
+
+        WARNINGS.keySet().removeIf(mine -> !MINES.getOrDefault(mine.owner.getUUID(), List.of()).contains(mine));
 
         // Heat cools after three seconds without use: one point every half second.
         if (now % 10 == 0) {
@@ -666,20 +924,32 @@ public final class PyroService {
     public static void forget(ServerPlayer player) {
         UUID id = player.getUUID();
         stopPalm(player);
+        cancelSpear(player);
+        PyroFlightService.forget(player);
         if (INFERNOS.remove(id) != null) ArmPosePayload.clear(player);
         HEAT.remove(id);
         RINGS.remove(id);
+        COLLAPSES.remove(id);
         MANTLES.remove(id);
+        LASHES.remove(id);
+        LANCES.remove(id);
+        WARNINGS.keySet().removeIf(mine -> mine.owner == player);
         MINES.remove(id);
         CUSHIONS.remove(id);
     }
 
     public static void clear() {
+        PyroFlightService.clear();
         HEAT.clear();
+        SPEARS.clear();
         PALMS.clear();
         INFERNOS.clear();
         RINGS.clear();
+        COLLAPSES.clear();
         MANTLES.clear();
+        LASHES.clear();
+        LANCES.clear();
+        WARNINGS.clear();
         MINES.clear();
         CUSHIONS.clear();
         powerDamageDepth = 0;

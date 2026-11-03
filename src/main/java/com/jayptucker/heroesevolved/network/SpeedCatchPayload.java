@@ -24,7 +24,9 @@ public record SpeedCatchPayload(int entityId) implements CustomPacketPayload {
     }
 
     public static void handle(SpeedCatchPayload payload, IPayloadContext context) {
-        if (context.player() instanceof ServerPlayer player) {
+        if (context.player() instanceof ServerPlayer sender) {
+            ServerPlayer player = com.jayptucker.heroesevolved.telepathy.PossessionService.actionActor(sender);
+            if(player==null)return;
             SpeedService.catchShot(player, player.serverLevel().getEntity(payload.entityId()));
         }
     }

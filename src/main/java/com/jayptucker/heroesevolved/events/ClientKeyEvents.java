@@ -88,11 +88,11 @@ public final class ClientKeyEvents {
 
         // Forward flight uses the wheel-selected speed. Sprint/Ctrl is not a boost input.
         boolean movingForward = hasAwakenedFlight()
-                && ClientFlightVisualState.isFlightEnabled(minecraft.player.getId())
+                && ClientFlightVisualState.isFlightEnabled(com.jayptucker.heroesevolved.client.TelepathyClient.bodyId())
                 && minecraft.options.keyUp.isDown();
         syncFlightForwardInput(movingForward);
         FlightBoostWindSound.update(movingForward
-                && ClientFlightVisualState.isFlightActive(minecraft.player.getId()));
+                && ClientFlightVisualState.isFlightActive(com.jayptucker.heroesevolved.client.TelepathyClient.bodyId()));
 
         boolean allowOverexertion =
                 minecraft.options.keyShift.isDown();
@@ -133,7 +133,7 @@ public final class ClientKeyEvents {
     public static void onMouseScroll(InputEvent.MouseScrollingEvent event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.screen != null || mc.isPaused() || !hasAwakenedFlight()
-                || !ClientFlightVisualState.isFlightEnabled(mc.player.getId())
+                || !ClientFlightVisualState.isFlightEnabled(com.jayptucker.heroesevolved.client.TelepathyClient.bodyId())
                 || ClientFlightVisualState.isCycloneActive(mc.player.getId())
                 || mc.player.onGround() || !mc.player.isAlive() || mc.player.isSpectator()) {
             flightScrollRemainder = 0; return;

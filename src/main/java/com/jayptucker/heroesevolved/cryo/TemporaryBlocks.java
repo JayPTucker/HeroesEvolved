@@ -1,5 +1,7 @@
 package com.jayptucker.heroesevolved.cryo;
 
+import com.jayptucker.heroesevolved.effects.WorldMutationPolicy;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
@@ -45,32 +47,62 @@ public final class TemporaryBlocks {
             int durationTicks,
             ServerPlayer player
     ) {
-        if (PLACED.size() >= MAXIMUM_PLACED || !level.isLoaded(pos)
-                || level.isOutsideBuildHeight(pos)) {
-            return false;
-        }
-        if (player != null && (!player.mayBuild() || !level.mayInteract(player, pos))) {
-            return false;
-        }
-
-        BlockState original = level.getBlockState(pos);
-        boolean water = original.getFluidState().is(Fluids.WATER) && original.is(Blocks.WATER);
-        boolean replaceable = original.isAir() || (original.canBeReplaced()
-                && original.getFluidState().isEmpty());
-        if ((!replaceable && !water) || level.getBlockEntity(pos) != null
-                || !level.getEntities(null, new AABB(pos)).isEmpty()) {
-            return false;
-        }
-
         Key key = new Key(level, pos.immutable());
+        if ((PLACED.size() >= MAXIMUM_PLACED && !PLACED.containsKey(key)) || !level.isLoaded(pos)
+                || level.isOutsideBuildHeight(pos) || !level.getWorldBorder().isWithinBounds(pos)) return false;
+        BlockState original = level.getBlockState(pos);
         Placed previous = PLACED.get(key);
         boolean replacingTemporary = previous != null && previous.placed.equals(original);
-        remember(level, new FrostRecovery(pos.immutable(), replacingTemporary ? previous.original : original,
-                state, Math.max(replacingTemporary ? previous.meltAt : 0, level.getGameTime() + durationTicks)));
-        if (!level.setBlock(pos, state, Block.UPDATE_ALL)) return false;
-        PLACED.put(key, new Placed(level, pos.immutable(), replacingTemporary ? previous.original : original, state,
-                Math.max(replacingTemporary ? previous.meltAt : 0, level.getGameTime() + durationTicks), true));
+        if (replacingTemporary && original.equals(state)) return refresh(level, pos, durationTicks, player);
+        boolean water = original.getFluidState().is(Fluids.WATER) && original.is(Blocks.WATER);
+        boolean replaceable = original.isAir() || (original.canBeReplaced() && original.getFluidState().isEmpty());
+        if ((!replaceable && !water && !replacingTemporary) || level.getBlockEntity(pos) != null
+                || !level.getEntities(null, new AABB(pos)).isEmpty()) return false;
+        if (player != null && !WorldMutationPolicy.canEdit(player, level, pos)) return false;
+        BlockState saved = replacingTemporary ? previous.original : original;
+        long expires = Math.max(replacingTemporary ? previous.meltAt : 0, level.getGameTime() + durationTicks);
+        remember(level, new FrostRecovery(pos.immutable(), saved, state, expires));
+        boolean placed = player == null ? level.setBlock(pos, state, Block.UPDATE_ALL)
+                : WorldMutationPolicy.place(player, level, pos, state);
+        if (!placed) {
+            if (replacingTemporary) remember(level, new FrostRecovery(pos.immutable(), previous.original, previous.placed, previous.meltAt));
+            else forgetRecovery(level, pos);
+            return false;
+        }
+        PLACED.put(key, new Placed(level, pos.immutable(), saved, state, expires, true));
         return true;
+    }
+
+    public static boolean isTemporary(ServerLevel level, BlockPos pos) {
+        Placed placed = PLACED.get(new Key(level, pos));
+        return placed != null && level.hasChunkAt(pos) && level.getBlockState(pos).equals(placed.placed);
+    }
+
+    public static boolean refresh(ServerLevel level, BlockPos pos, int duration, ServerPlayer owner) {
+        Key key = new Key(level, pos.immutable());
+        Placed placed = PLACED.get(key);
+        if (placed == null || !level.hasChunkAt(pos) || !level.getBlockState(pos).equals(placed.placed)
+                || owner != null && !WorldMutationPolicy.canEdit(owner, level, pos)) return false;
+        long expires = Math.max(placed.meltAt, level.getGameTime() + Math.max(1, duration));
+        PLACED.put(key, new Placed(level, key.pos, placed.original, placed.placed, expires, placed.effects));
+        remember(level, new FrostRecovery(key.pos, placed.original, placed.placed, expires));
+        return true;
+    }
+
+    /** Reshaping only restores still-owned temporary material; a player's subsequent edits are preserved. */
+    public static boolean restore(ServerLevel level, BlockPos pos, ServerPlayer owner) {
+        Key key = new Key(level, pos.immutable());
+        Placed placed = PLACED.get(key);
+        if (placed == null || !level.hasChunkAt(pos) || owner != null && !WorldMutationPolicy.canEdit(owner, level, pos)) return false;
+        PLACED.remove(key);
+        melt(placed, false);
+        return true;
+    }
+
+    public static boolean freezeWater(ServerLevel level, BlockPos pos, ServerPlayer owner) {
+        BlockState original = level.getBlockState(pos);
+        if (!original.is(Blocks.WATER) || !original.getFluidState().isSource() || !level.getBlockState(pos.above()).isAir()) return false;
+        return place(level, pos, Blocks.FROSTED_ICE.defaultBlockState(), 120, owner);
     }
 
     /**
@@ -116,7 +148,7 @@ public final class TemporaryBlocks {
                 new net.neoforged.neoforge.event.level.BlockEvent.BreakEvent(level, pos.immutable(), original, owner)).isCanceled()) return false;
         BlockState ice = Blocks.PACKED_ICE.defaultBlockState();
         remember(level, new FrostRecovery(pos.immutable(), original, ice, level.getGameTime() + duration));
-        if (!level.setBlock(pos, ice, Block.UPDATE_ALL)) return false;
+        if (!WorldMutationPolicy.place(owner, level, pos, ice)) { forgetRecovery(level, pos); return false; }
         PLACED.put(key, new Placed(level, pos.immutable(), original, ice, level.getGameTime() + duration, false));
         return true;
     }

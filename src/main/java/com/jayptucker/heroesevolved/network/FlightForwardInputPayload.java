@@ -37,7 +37,9 @@ public record FlightForwardInputPayload(
             FlightForwardInputPayload payload,
             IPayloadContext context
     ) {
-        if (context.player() instanceof ServerPlayer player) {
+        if (context.player() instanceof ServerPlayer sender) {
+            ServerPlayer player = com.jayptucker.heroesevolved.telepathy.PossessionService.actionActor(sender);
+            if(player==null)return;
             FlightService.setForwardInput(player, payload.movingForward());
         }
     }

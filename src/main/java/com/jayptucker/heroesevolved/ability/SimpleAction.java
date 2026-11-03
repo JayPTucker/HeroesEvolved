@@ -24,6 +24,7 @@ public final class SimpleAction implements AbilityAction {
     private final Activation activation;
     private final Predicate<AbilityUseContext> deactivation;
     private final Predicate<AbilityUseContext> deactivateOnPress;
+    private final Predicate<AbilityUseContext> followUp;
 
     private SimpleAction(Builder builder) {
         definition = new AbilityActionDefinition(
@@ -39,6 +40,7 @@ public final class SimpleAction implements AbilityAction {
         activation = builder.activation;
         deactivation = builder.deactivation;
         deactivateOnPress = builder.deactivateOnPress;
+        followUp = builder.followUp;
     }
 
     public static Builder builder(String path, int unlockLevel) {
@@ -75,6 +77,8 @@ public final class SimpleAction implements AbilityAction {
         return deactivateOnPress.test(context);
     }
 
+    @Override public boolean followUp(AbilityUseContext context) { return followUp.test(context); }
+
     @Override
     public AbilityActivationResult activate(AbilityUseContext context) {
         return activation.activate(context)
@@ -91,6 +95,7 @@ public final class SimpleAction implements AbilityAction {
         private Activation activation = context -> false;
         private Predicate<AbilityUseContext> deactivation = context -> false;
         private Predicate<AbilityUseContext> deactivateOnPress = context -> false;
+        private Predicate<AbilityUseContext> followUp = context -> false;
 
         private Builder(String path, int unlockLevel) {
             this.path = path;
@@ -121,6 +126,11 @@ public final class SimpleAction implements AbilityAction {
 
         public Builder deactivateOnPress(Predicate<AbilityUseContext> predicate) {
             deactivateOnPress = predicate;
+            return this;
+        }
+
+        public Builder followUp(Predicate<AbilityUseContext> action) {
+            followUp = action;
             return this;
         }
 

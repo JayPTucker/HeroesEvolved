@@ -17,6 +17,10 @@ public final class ClientFlightVisualState {
     public static boolean isCharging(int id) { return (TELEMETRY.getOrDefault(id, 0) & 128) != 0; }
     public static boolean isDiving(int id) { return (TELEMETRY.getOrDefault(id, 0) & 256) != 0; }
 
+    public static boolean isPyroFlight(int id) { return (TELEMETRY.getOrDefault(id, 0) & 32768) != 0; }
+    public static boolean isPyroBlue(int id) { return (TELEMETRY.getOrDefault(id, 0) & 65536) != 0; }
+    public static boolean isPyroBoosting(int id) { return (TELEMETRY.getOrDefault(id, 0) & 131072) != 0; }
+
     public static boolean isRolling(int id) { return (TELEMETRY.getOrDefault(id, 0) & 512) != 0; }
     public static int rollDirection(int id) { return (TELEMETRY.getOrDefault(id, 0) & 16384) != 0 ? -1 : 1; }
     public static float rollProgress(int id) {

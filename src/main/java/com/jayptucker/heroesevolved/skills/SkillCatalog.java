@@ -20,7 +20,10 @@ public final class SkillCatalog {
                     .canUse(c -> mechanic.isEmpty() ? SkillActionService.canUse(c, branch)
                             : com.jayptucker.heroesevolved.expansion.ExpansionSkills.canUse(c, mechanic))
                     .activate(c -> mechanic.isEmpty() ? SkillActionService.activate(c, branch)
-                            : com.jayptucker.heroesevolved.expansion.ExpansionSkills.activate(c, mechanic)).build();
+                            : com.jayptucker.heroesevolved.expansion.ExpansionSkills.activate(c, mechanic))
+                    .followUp(c -> power.equals("cryokinesis") && (mechanic.isEmpty()
+                            ? com.jayptucker.heroesevolved.cryo.CryoCombatSkills.followUp(c, branch)
+                            : com.jayptucker.heroesevolved.cryo.CryoTechniqueService.followUp(c, mechanic))).build();
         }
     }
     private static final Map<String, List<String>> BRANCHES = new HashMap<>();

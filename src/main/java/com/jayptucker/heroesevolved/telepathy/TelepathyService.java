@@ -54,7 +54,6 @@ public final class TelepathyService {
     // Passive creatures charmed into following a player.
     private static final Map<UUID, Suggestion> FOLLOWING = new HashMap<>();
     private static final Map<UUID, Link> LINKS = new HashMap<>();
-    private static final Map<UUID, Puppet> PUPPETS = new HashMap<>();
     private static final Map<UUID, Nightmare> NIGHTMARES = new HashMap<>();
     private static final Map<UUID, Long> LAST_WARNING = new HashMap<>();
 
@@ -151,48 +150,18 @@ public final class TelepathyService {
      * peaceful creature follows you for a while.
      */
     public static boolean suggestion(ServerPlayer player, int powerLevel) {
-        LivingEntity target = mindInSight(player, 16.0D);
-        if (!(target instanceof Mob mob)) {
-            player.displayClientMessage(Component.literal(target instanceof Player
-                    ? "Their mind is too guarded to command."
-                    : "There is no mind there to suggest anything to."), true);
-            return false;
-        }
-
-        long until = player.serverLevel().getGameTime() + 20L * (10 + 4 * powerLevel);
-        if (mob instanceof Enemy || mob.getTarget() == player) {
-            FORGETTING.put(mob.getUUID(), new Suggestion(mob, player.getUUID(), until));
-            if (mob.getTarget() == player) {
-                mob.setTarget(null);
-            }
-            player.displayClientMessage(Component.literal(
-                    "\"You don't see me.\"").withStyle(ChatFormatting.LIGHT_PURPLE), true);
-        } else {
-            FOLLOWING.put(mob.getUUID(), new Suggestion(mob, player.getUUID(), until));
-            player.displayClientMessage(Component.literal(
-                    "\"Come with me.\"").withStyle(ChatFormatting.LIGHT_PURPLE), true);
-        }
-
-        if (TemporalEntityEchoService.isReplaying(mob)) {
-            TemporalEntityEchoService.disturb(mob, player);
-        }
-        AbilityEffects.send(player.serverLevel(), Kind.MIND_LINK,
-                player.getEyePosition(), mob.getEyePosition(), 0.8D);
-        whisper(player, 1.1F);
-        MasteryService.markPowerUse(player, ModAbilities.TELEPATHY_ID);
-        return true;
+        return SuggestionService.open(player);
     }
 
     /** True when a suggestion forbids this mob from targeting this entity. */
     public static boolean isForbiddenTarget(Mob mob, LivingEntity newTarget) {
+        if(SuggestionService.forbidden(mob,newTarget))return true;
         Suggestion suggestion = FORGETTING.get(mob.getUUID());
         if (suggestion != null && newTarget != null
                 && newTarget.getUUID().equals(suggestion.playerId)) {
             return true;
         }
-        // A puppet never turns on players while its strings are held.
-        return PUPPETS.values().stream().anyMatch(puppet -> puppet.mob == mob)
-                && newTarget instanceof Player;
+        return false;
     }
 
     // ------------------------------------------------------------------
@@ -208,10 +177,25 @@ public final class TelepathyService {
      * through walls and feel it when one of them is hurt.
      */
     public static boolean mindLink(ServerPlayer player, int powerLevel) {
+        LivingEntity viewed = mindInSight(player,24);
+        if (hasLink(player) && viewed instanceof ServerPlayer ally && LINKS.get(player.getUUID()).members.contains(ally.getUUID()))
+            return PossessionService.start(player,ally,powerLevel,true);
+        if(hasLink(player)) {
+            Vec3 point = viewed == null ? player.pick(32,0,false).getLocation() : viewed.getEyePosition();
+            for(UUID id:LINKS.get(player.getUUID()).members){
+                ServerPlayer member=player.server.getPlayerList().getPlayer(id);
+                if(member==null||member.level()!=player.level())continue;
+                if(viewed!=null)PrivateGlow.glow(member,viewed,100);
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(member,new com.jayptucker.heroesevolved.network.AbilityEffectPayload(Kind.MIND_LINK,member.getEyePosition(),point,.8f));
+                member.displayClientMessage(Component.literal(player.getName().getString()+" shares a destination with your mind."),true);
+            }
+            return true;
+        }
         List<UUID> members = new ArrayList<>();
         members.add(player.getUUID());
         for (ServerPlayer other : player.serverLevel().players()) {
             if (other != player && !other.isSpectator()
+                    && (player.isAlliedTo(other) || other.isShiftKeyDown())
                     && other.distanceToSqr(player) <= 32.0D * 32.0D) {
                 members.add(other.getUUID());
             }
@@ -269,43 +253,11 @@ public final class TelepathyService {
 
     /** Seize a hostile mob's mind and turn it on its own kind. */
     public static boolean puppet(ServerPlayer player, int powerLevel) {
-        LivingEntity target = mindInSight(player, 20.0D);
-        if (!(target instanceof Mob mob) || !(mob instanceof Enemy)) {
-            player.displayClientMessage(Component.literal(
-                    "You need a hostile mind to take hold of."), true);
-            return false;
-        }
-
-        if (TemporalEntityEchoService.isReplaying(mob)) {
-            TemporalEntityEchoService.disturb(mob, player);
-        }
-        FORGETTING.remove(mob.getUUID());
-        PUPPETS.put(player.getUUID(), new Puppet(mob,
-                player.serverLevel().getGameTime() + 20L * (15 + powerLevel)));
-        if (mob.getTarget() instanceof Player) {
-            mob.setTarget(null);
-        }
-        player.serverLevel().playSound(null, mob.getX(), mob.getY(), mob.getZ(),
-                SoundEvents.EVOKER_PREPARE_ATTACK, SoundSource.PLAYERS, 0.8F, 1.4F);
-        player.displayClientMessage(Component.literal(
-                "Its mind is yours. Point it at your enemies.")
-                .withStyle(ChatFormatting.LIGHT_PURPLE), true);
-        MasteryService.markPowerUse(player, ModAbilities.TELEPATHY_ID);
-        return true;
+        return PossessionService.start(player, mindInSight(player,20),powerLevel,false);
     }
 
-    public static boolean hasPuppet(ServerPlayer player) {
-        return PUPPETS.containsKey(player.getUUID());
-    }
-
-    public static void releasePuppet(ServerPlayer player) {
-        Puppet puppet = PUPPETS.remove(player.getUUID());
-        if (puppet != null && puppet.mob.isAlive()) {
-            puppet.mob.setTarget(null);
-            player.displayClientMessage(Component.literal(
-                    "You let its mind go."), true);
-        }
-    }
+    public static boolean hasPuppet(ServerPlayer player) { return PossessionService.occupied(player); }
+    public static void releasePuppet(ServerPlayer player) { PossessionService.end(player,"You let the mind go."); }
 
     // ------------------------------------------------------------------
     // Nightmare
@@ -323,18 +275,26 @@ public final class TelepathyService {
             return false;
         }
 
+        if(target instanceof ServerPlayer other && (!player.server.isPvpAllowed() || !player.canHarmPlayer(other) || other.isCreative() || other.isSpectator()))return false;
+        for (LivingEntity mind : TelepathyFocus.targets(player)) {
+            if(mind instanceof ServerPlayer victim && victim!=player)
+                IllusionService.create(player,victim,0,victim.position().add(victim.getLookAngle().multiply(1,0,1).normalize().scale(6)),victim.position(),120);
+            else if(mind instanceof Mob mob) {
+                mob.setTarget(null);
+                if(mob instanceof PathfinderMob path){Vec3 away=DefaultRandomPos.getPosAway(path,12,6,player.position());if(away!=null)path.getNavigation().moveTo(away.x,away.y,away.z,1.4);}
+            }
+        }
+        if(target instanceof ServerPlayer victim) IllusionService.create(player,victim,0,victim.position().add(victim.getLookAngle().multiply(1,0,1).normalize().scale(6)),victim.position(),120);
+        TelepathyFocus.strain(player,20);
         int durationTicks = 20 * (6 + powerLevel);
         NIGHTMARES.put(target.getUUID(), new Nightmare(target, player.getUUID(),
                 player.serverLevel().getGameTime() + durationTicks,
                 1.0F + powerLevel * 0.5F));
 
-        target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN,
-                durationTicks, 1));
         if (target instanceof ServerPlayer victim) {
-            victim.addEffect(new MobEffectInstance(MobEffects.DARKNESS, durationTicks, 0));
-            victim.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 40, 0));
-            ScreenTintPayload.send(victim, NIGHTMARE_TINT, durationTicks,
-                    ScreenTintPayload.Style.PULSE);
+
+            ScreenTintPayload.send(victim, 0x40602090, durationTicks,
+                    ScreenTintPayload.Style.VIGNETTE);
             victim.sendSystemMessage(Component.literal(
                     "You are trapped inside your worst nightmare.")
                     .withStyle(ChatFormatting.DARK_PURPLE));
@@ -387,11 +347,15 @@ public final class TelepathyService {
     }
 
     public static void stopAll(ServerPlayer player) {
-        releasePuppet(player);
+        PossessionService.forget(player);
+        TelepathyFocus.forget(player);
+        IllusionService.forget(player);
+        SuggestionService.forget(player);
         LINKS.remove(player.getUUID());
         FORGETTING.values().removeIf(s -> s.playerId.equals(player.getUUID()));
         FOLLOWING.values().removeIf(s -> s.playerId.equals(player.getUUID()));
         LAST_WARNING.remove(player.getUUID());
+        NIGHTMARES.values().removeIf(n -> n.casterId.equals(player.getUUID()) || n.target==player);
         PrivateGlow.clearFor(player);
     }
 
@@ -405,7 +369,10 @@ public final class TelepathyService {
         FORGETTING.values().removeIf(s -> !s.mob.isAlive() || gameTime >= s.until);
         tickFollowers(server, gameTime);
         tickLinks(server, gameTime);
-        tickPuppets(server, gameTime);
+        PossessionService.tick(server);
+        TelepathyFocus.tick(server);
+        IllusionService.tick(server);
+        SuggestionService.tick(server);
         tickNightmares(server, gameTime);
     }
 
@@ -458,53 +425,13 @@ public final class TelepathyService {
         }
     }
 
-    private static void tickPuppets(MinecraftServer server, long gameTime) {
-        Iterator<Map.Entry<UUID, Puppet>> iterator = PUPPETS.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<UUID, Puppet> entry = iterator.next();
-            ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
-            Puppet puppet = entry.getValue();
-            Mob mob = puppet.mob;
-            if (player == null || !mob.isAlive() || mob.level() != player.level()
-                    || gameTime >= puppet.until
-                    || EclipseService.arePowersSuppressed(player)) {
-                iterator.remove();
-                if (mob.isAlive()) {
-                    mob.setTarget(null);
-                }
-                continue;
-            }
-
-            if (gameTime % 10 == 0) {
-                // Turn it on the nearest other hostile creature.
-                LivingEntity enemy = mob.level().getEntitiesOfClass(LivingEntity.class,
-                                mob.getBoundingBox().inflate(16.0D),
-                                other -> other != mob && other.isAlive()
-                                        && other instanceof Enemy)
-                        .stream()
-                        .min((a, b) -> Double.compare(a.distanceToSqr(mob), b.distanceToSqr(mob)))
-                        .orElse(null);
-                if (enemy != null && mob.getTarget() != enemy) {
-                    mob.setTarget(enemy);
-                }
-                PrivateGlow.glow(player, mob, 15);
-                AbilityEffects.send((ServerLevel) mob.level(), Kind.MIND_LINK,
-                        player.getEyePosition(), mob.getEyePosition(), 0.4D);
-            }
-            if (gameTime % 5 == 0) {
-                ((ServerLevel) mob.level()).sendParticles(ParticleTypes.WITCH,
-                        mob.getX(), mob.getEyeY() + 0.3D, mob.getZ(),
-                        2, 0.2D, 0.1D, 0.2D, 0.0D);
-            }
-        }
-    }
-
     private static void tickNightmares(MinecraftServer server, long gameTime) {
         Iterator<Nightmare> iterator = NIGHTMARES.values().iterator();
         while (iterator.hasNext()) {
             Nightmare nightmare = iterator.next();
             LivingEntity target = nightmare.target;
-            if (!target.isAlive() || gameTime >= nightmare.until) {
+            ServerPlayer owner = server.getPlayerList().getPlayer(nightmare.casterId);
+            if (!target.isAlive() || gameTime >= nightmare.until || owner==null || owner.level()!=target.level() || !com.jayptucker.heroesevolved.ability.service.PowerRules.canAct(owner)) {
                 iterator.remove();
                 continue;
             }
@@ -512,10 +439,6 @@ public final class TelepathyService {
             ServerLevel level = (ServerLevel) target.level();
             ServerPlayer caster = server.getPlayerList().getPlayer(nightmare.casterId);
             if (gameTime % 20 == 0) {
-                target.hurt(caster == null
-                        ? level.damageSources().magic()
-                        : level.damageSources().indirectMagic(caster, caster),
-                        nightmare.damagePerSecond);
                 if (target instanceof ServerPlayer victim) {
                     whisper(victim, 0.5F + level.getRandom().nextFloat() * 0.4F);
                 }
@@ -566,9 +489,6 @@ public final class TelepathyService {
     }
 
     private record Link(List<UUID> members, long until) {
-    }
-
-    private record Puppet(Mob mob, long until) {
     }
 
     private record Nightmare(

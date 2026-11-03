@@ -40,11 +40,12 @@ public final class SkillActionService {
                 : hostile(player, target));
     }
     public static boolean canUse(AbilityUseContext c, int branch) {
+        if (c.abilityId().getPath().equals("cryokinesis")) return com.jayptucker.heroesevolved.cryo.CryoCombatSkills.canUse(c, branch);
         if (c.abilityId().getPath().equals("telekinesis")) return com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.canUse(c.player(), "telekinesis_" + branch + "_1");
         if (c.abilityId().getPath().equals("flight")) return com.jayptucker.heroesevolved.flight.FlightSkillService.canUse(c.player(), "flight_" + branch + "_1");
         if (c.abilityId().getPath().equals("superspeed")) return com.jayptucker.heroesevolved.speed.SpeedService.canUseSkill(c, branch);
         if (c.abilityId().getPath().equals("time_manipulation")) return com.jayptucker.heroesevolved.time.SpaceTimeService.canUse(c, branch);
-        if (c.abilityId().getPath().equals("precognition")) return true;
+        if (c.abilityId().getPath().equals("precognition") || c.abilityId().getPath().equals("telepathy") || c.abilityId().getPath().equals("invisibility")) return true;
         if (branch == 0 && !c.abilityId().getPath().equals("flight") && !c.abilityId().getPath().equals("regeneration"))
             return aimed(c.player(), false) != null;
         if (branch == 2 && c.abilityId().getPath().equals("regeneration"))
@@ -66,12 +67,7 @@ public final class SkillActionService {
                 visual(p, target, Kind.QUAKE_PULSE, branch == 1 ? 8 : 3);
             }
             case "flight" -> { return com.jayptucker.heroesevolved.flight.FlightSkillService.activate(p, "flight_" + branch + "_1"); }
-            case "cryokinesis" -> {
-                if (branch == 0) { hit(p, target, 6 + level); CryoService.freezeSolid(target, 80, p); }
-                if (branch == 1) { effect(p, MobEffects.DAMAGE_RESISTANCE, 160, 1); effect(p, MobEffects.FIRE_RESISTANCE, 160, 0); }
-                if (branch == 2) for (var t : nearby(p, 7)) { hit(p, t, 2); CryoService.freezeSolid(t, 60, p); }
-                visual(p, target, branch == 0 ? Kind.CRYO_BOLT : Kind.CRYO_FREEZE, 5);
-            }
+            case "cryokinesis" -> { return com.jayptucker.heroesevolved.cryo.CryoKitService.skill(c, branch); }
             case "electrokinesis" -> {
                 if (branch == 0) {
                     com.jayptucker.heroesevolved.expansion.PowerReactions.electric(p, target);
@@ -93,14 +89,9 @@ public final class SkillActionService {
                 return com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.activate(p, "telekinesis_" + branch + "_1", c.modifierHeld());
             }
             case "telepathy" -> {
-                if (branch == 0) { effect(target, MobEffects.WEAKNESS, 120, 1); effect(target, MobEffects.MOVEMENT_SLOWDOWN, 100, 3); }
-                if (branch == 1) for (var ally : allies(p, 10)) { effect(ally, MobEffects.NIGHT_VISION, 240, 0); effect(ally, MobEffects.DAMAGE_RESISTANCE, 120, 0); }
-                if (branch == 2) for (var t : nearby(p, 8)) {
-                    effect(t, MobEffects.BLINDNESS, 80, 0); effect(t, MobEffects.WEAKNESS, 100, 1);
-                    if (t instanceof Mob mob) { mob.setTarget(null); mob.getNavigation().stop(); }
-                    push(t, t.position().subtract(p.position()).normalize().scale(.8));
-                }
-                visual(p, target, Kind.MIND_PULSE, 6);
+                if(branch==0)return com.jayptucker.heroesevolved.telepathy.SuggestionService.open(p);
+                if(branch==1)return com.jayptucker.heroesevolved.telepathy.TelepathyService.mindLink(p,level);
+                return com.jayptucker.heroesevolved.telepathy.IllusionService.open(p);
             }
             case "regeneration" -> {
                 if (branch == 0) { cleanse(p); p.heal(6); }

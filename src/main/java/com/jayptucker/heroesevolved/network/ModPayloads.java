@@ -17,7 +17,19 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("44")
+        event.registrar("52")
+            .playToServer(CryoRideInputPayload.TYPE, CryoRideInputPayload.STREAM_CODEC, CryoRideInputPayload::handle)
+            .playToClient(CryoRideStatePayload.TYPE, CryoRideStatePayload.STREAM_CODEC, CryoRideStatePayload::handle)
+            .playToServer(CryoShellInputPayload.TYPE, CryoShellInputPayload.STREAM_CODEC, CryoShellInputPayload::handle)
+            .playToClient(CryoShellStatePayload.TYPE, CryoShellStatePayload.STREAM_CODEC, CryoShellStatePayload::handle)
+            .playToClient(OpticalStatePayload.TYPE, OpticalStatePayload.STREAM_CODEC, OpticalStatePayload::handle)
+            .playToClient(OpticalDecoyPayload.TYPE, OpticalDecoyPayload.STREAM_CODEC, OpticalDecoyPayload::handle)
+            .playToServer(DecoyInteractPayload.TYPE, DecoyInteractPayload.STREAM_CODEC, DecoyInteractPayload::handle)
+            .playToClient(PyroStatePayload.TYPE, PyroStatePayload.STREAM_CODEC, PyroStatePayload::handle)
+            .playToServer(PyroFlightInputPayload.TYPE, PyroFlightInputPayload.STREAM_CODEC, PyroFlightInputPayload::handle)
+            .playToClient(IllusionPayload.TYPE, IllusionPayload.STREAM_CODEC, IllusionPayload::handle)
+            .playToClient(MindStatePayload.TYPE, MindStatePayload.STREAM_CODEC, MindStatePayload::handle)
+            .playToServer(MindInputPayload.TYPE, MindInputPayload.STREAM_CODEC, MindInputPayload::handle)
             .playToServer(com.jayptucker.heroesevolved.expansion.IncidentActionPayload.TYPE, com.jayptucker.heroesevolved.expansion.IncidentActionPayload.STREAM_CODEC, com.jayptucker.heroesevolved.expansion.IncidentActionPayload::handle)
             .playToServer(JournalRequestPayload.TYPE, JournalRequestPayload.STREAM_CODEC, JournalRequestPayload::handle)
             .playToServer(SpeedCatchPayload.TYPE, SpeedCatchPayload.STREAM_CODEC, SpeedCatchPayload::handle)
