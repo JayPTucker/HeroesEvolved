@@ -8,11 +8,14 @@ import net.minecraft.world.level.saveddata.SavedData;
 /** World-persistent state for the global Eclipse event. */
 public final class EclipseSavedData extends SavedData {
     private static final String DATA_NAME = "heroesevolved_eclipse";
-    private static final long NO_TIME_SCHEDULED = -1L;
+    private static final long NONE = -1L;
 
     private long eclipseId;
-    private long nextStartGameTime = NO_TIME_SCHEDULED;
-    private long endGameTime = NO_TIME_SCHEDULED;
+    private EclipseTimeline timeline = EclipseTimeline.NONE;
+    /** Day an Eclipse last began, so a day never hosts two and a skipped one is not replayed. */
+    private long lastEclipseDay = NONE;
+    /** Last phase announced, so a restart mid-Eclipse does not repeat broadcasts or rolls. */
+    private EclipseTimeline.Phase announced = EclipseTimeline.Phase.NONE;
 
     public static EclipseSavedData get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(
@@ -27,12 +30,19 @@ public final class EclipseSavedData extends SavedData {
     ) {
         EclipseSavedData data = new EclipseSavedData();
         data.eclipseId = tag.getLong("eclipse_id");
-        data.nextStartGameTime = tag.contains("next_start_game_time")
-                ? tag.getLong("next_start_game_time")
-                : NO_TIME_SCHEDULED;
-        data.endGameTime = tag.contains("end_game_time")
-                ? tag.getLong("end_game_time")
-                : NO_TIME_SCHEDULED;
+        // Worlds saved before the phased Eclipse only stored an end time; they simply resume
+        // on the day-based calendar.
+        if (tag.contains("start_game_time")) {
+            data.timeline = new EclipseTimeline(
+                    tag.getLong("start_game_time"),
+                    tag.getInt("approach_ticks"),
+                    tag.getInt("totality_ticks"),
+                    tag.getInt("departure_ticks")
+            );
+        }
+        data.lastEclipseDay = tag.contains("last_eclipse_day") ? tag.getLong("last_eclipse_day") : NONE;
+        data.announced = EclipseTimeline.Phase.values()[Math.floorMod(
+                tag.getInt("announced_phase"), EclipseTimeline.Phase.values().length)];
         return data;
     }
 
@@ -42,41 +52,64 @@ public final class EclipseSavedData extends SavedData {
             HolderLookup.Provider registries
     ) {
         tag.putLong("eclipse_id", eclipseId);
-        tag.putLong("next_start_game_time", nextStartGameTime);
-        tag.putLong("end_game_time", endGameTime);
+        if (timeline.scheduled()) {
+            tag.putLong("start_game_time", timeline.startGameTime());
+            tag.putInt("approach_ticks", timeline.approachTicks());
+            tag.putInt("totality_ticks", timeline.totalityTicks());
+            tag.putInt("departure_ticks", timeline.departureTicks());
+        }
+        tag.putLong("last_eclipse_day", lastEclipseDay);
+        tag.putInt("announced_phase", announced.ordinal());
         return tag;
     }
 
     public boolean isActive() {
-        return endGameTime != NO_TIME_SCHEDULED;
+        return timeline.scheduled();
     }
 
     public long eclipseId() {
         return eclipseId;
     }
 
-    public long nextStartGameTime() {
-        return nextStartGameTime;
+    public EclipseTimeline timeline() {
+        return timeline;
     }
 
-    public long endGameTime() {
-        return endGameTime;
+    public long lastEclipseDay() {
+        return lastEclipseDay;
     }
 
-    public void scheduleFirstEclipse(long gameTime, long intervalTicks) {
-        if (nextStartGameTime != NO_TIME_SCHEDULED) {
-            return;
+    public EclipseTimeline.Phase announced() {
+        return announced;
+    }
+
+    public void announce(EclipseTimeline.Phase phase) {
+        if (announced != phase) {
+            announced = phase;
+            setDirty();
         }
+    }
 
-        nextStartGameTime = gameTime + intervalTicks;
+    public void begin(EclipseTimeline timeline, long day) {
+        eclipseId++;
+        this.timeline = timeline;
+        lastEclipseDay = day;
+        announced = EclipseTimeline.Phase.NONE;
         setDirty();
     }
 
-    public void begin(long gameTime, long durationTicks, long intervalTicks) {
-        eclipseId++;
-        endGameTime = gameTime + durationTicks;
-        nextStartGameTime = gameTime + intervalTicks;
+    /** Moves the running Eclipse to a new timeline, keeping its id so nobody rolls twice. */
+    public void retime(EclipseTimeline timeline) {
+        this.timeline = timeline;
         setDirty();
+    }
+
+    /** Time was wound back before the last Eclipse day; let the calendar fire again. */
+    public void rewindCalendar(long day) {
+        if (lastEclipseDay > day) {
+            lastEclipseDay = NONE;
+            setDirty();
+        }
     }
 
     public void end() {
@@ -84,7 +117,8 @@ public final class EclipseSavedData extends SavedData {
             return;
         }
 
-        endGameTime = NO_TIME_SCHEDULED;
+        timeline = EclipseTimeline.NONE;
+        announced = EclipseTimeline.Phase.NONE;
         setDirty();
     }
 }

@@ -1,6 +1,8 @@
 package com.jayptucker.heroesevolved.events;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
+import com.jayptucker.heroesevolved.entity.EntityCarryService;
+import com.jayptucker.heroesevolved.story.AvenueService;
 import com.jayptucker.heroesevolved.time.intro.TimeIntroService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
@@ -18,7 +20,11 @@ import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
-/** The city is a vision: players cannot die, loot it, or build an escape portal. */
+/**
+ * The city is a vision: players cannot die, loot it, or build an escape portal. Runners on the avenue
+ * at 6:14 are playing, not watching: they can use people, fight Gray and carry, but still not build,
+ * and lethal harm sends them home instead of killing them.
+ */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class TimeIntroEvents {
     private TimeIntroEvents() {}
@@ -44,11 +50,16 @@ public final class TimeIntroEvents {
         if (event.getEntity() instanceof ServerPlayer player && TimeIntroService.isVisiting(player)) {
             event.setCanceled(true);
             player.setHealth(Math.max(1, player.getHealth()));
+        } else if (event.getEntity() instanceof ServerPlayer player && AvenueService.isRunner(player)) {
+            event.setCanceled(true);
+            player.setHealth(Math.max(1, player.getHealth()));
+            AvenueService.knockOut(player);
         }
     }
     @SubscribeEvent public static void spawn(EntityJoinLevelEvent event) {
         if (TimeIntroService.isCity(event.getLevel()) && event.getEntity() instanceof Mob
-                && !TimeIntroService.isCurrentCrowd(event.getEntity())) event.setCanceled(true);
+                && !TimeIntroService.isCurrentCrowd(event.getEntity())
+                && !(AvenueService.running() && AvenueService.isScene(event.getEntity()))) event.setCanceled(true);
     }
     @SubscribeEvent public static void breaking(BlockEvent.BreakEvent event) {
         if (TimeIntroService.isCity(event.getPlayer().level())) event.setCanceled(true);
@@ -57,6 +68,9 @@ public final class TimeIntroEvents {
         if (event.getEntity() != null && TimeIntroService.isCity(event.getEntity().level())) event.setCanceled(true);
     }
     @SubscribeEvent public static void rightBlock(PlayerInteractEvent.RightClickBlock event) {
+        // A runner may set down someone they are carrying; nobody uses the city's blocks.
+        if (event.getEntity() instanceof ServerPlayer player && AvenueService.isRunner(player)
+                && EntityCarryService.isCarrying(player)) return;
         if (TimeIntroService.isCity(event.getLevel())) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.FAIL);
@@ -69,12 +83,14 @@ public final class TimeIntroEvents {
         }
     }
     @SubscribeEvent public static void interact(PlayerInteractEvent.EntityInteract event) {
+        if (event.getEntity() instanceof ServerPlayer player && AvenueService.isRunner(player)) return;
         if (TimeIntroService.isCity(event.getLevel())) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.FAIL);
         }
     }
     @SubscribeEvent public static void attack(AttackEntityEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player && AvenueService.isRunner(player)) return;
         if (TimeIntroService.isCity(event.getEntity().level())) event.setCanceled(true);
     }
 }

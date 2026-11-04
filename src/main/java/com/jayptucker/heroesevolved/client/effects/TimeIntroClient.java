@@ -41,18 +41,18 @@ public final class TimeIntroClient {
     public static void cue(int stage) {
         Minecraft mc = Minecraft.getInstance();
         if (stage == TimeIntroPayload.CANCEL) { clear(); TimeIntroCaption.clear(); return; }
-        if (stage == TimeIntroPayload.RETURN) {
+        if (stage == TimeIntroPayload.RETURN || stage >= TimeIntroPayload.AVENUE_ALL) {
             clear();
             TimeIntroCaption.show(stage);
             return;
         }
-        if (stage == TimeIntroPayload.ARRIVAL) {
+        if (stage == TimeIntroPayload.ARRIVAL || stage == TimeIntroPayload.AVENUE_ARRIVAL) {
             clear();
             active = true;
             siren = new Siren();
             mc.getSoundManager().play(siren);
             TimeIntroCaption.show(stage);
-        } else if (stage == TimeIntroPayload.DETONATION && mc.level != null) {
+        } else if ((stage == TimeIntroPayload.DETONATION || stage == TimeIntroPayload.AVENUE_LIGHT) && mc.level != null) {
             detonation = mc.level.getGameTime();
             TimeIntroCaption.show(stage);
         } else if (stage == TimeIntroPayload.BLAST_SOUND && active) {

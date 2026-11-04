@@ -84,7 +84,7 @@ public final class BunkerLogs {
                 "Week 6. I've checked behind the lockers, the monitors, under the desk. Everywhere except that ugly red rug, which Bennet told me never to move.\n\nI'm going to move the rug.");
     }
 
-    private static ItemStack book(String title, String author, String... pages) {
+    public static ItemStack book(String title, String author, String... pages) {
         ItemStack stack = new ItemStack(Items.WRITTEN_BOOK);
         List<Filterable<Component>> content = Arrays.stream(pages).map(page -> Filterable.passThrough((Component) Component.literal(page))).toList();
         stack.set(DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(Filterable.passThrough(title), author, 0, content, true));

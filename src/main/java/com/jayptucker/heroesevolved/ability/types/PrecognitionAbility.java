@@ -33,6 +33,6 @@ public final class PrecognitionAbility implements Ability {
     @Override public Map<AbilitySlot, AbilityAction> actions() { return ACTIONS; }
     @Override public boolean canUse(AbilityUseContext c) { return false; }
     @Override public AbilityActivationResult activate(AbilityUseContext c) { return AbilityActivationResult.REJECTED; }
-    @Override public void onAwaken(AbilityUseContext c) { PrecognitionService.awaken(c.player()); }
+    @Override public void onAwaken(AbilityUseContext c) { com.jayptucker.heroesevolved.intro.PowerIntroService.acquired(c.player(), c.abilityId()); }
     @Override public void onRevoked(AbilityUseContext c) { PrecognitionService.forget(c.player()); }
 }

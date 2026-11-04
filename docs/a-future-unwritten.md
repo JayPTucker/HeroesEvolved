@@ -5,14 +5,14 @@ This release adds Precognition, deeper Quake/Cryokinesis/Electrokinesis trees, s
 ## Start playing
 
 1. Open **Skills** in the inventory. Quake, Cryokinesis, and Electrokinesis now have a second page. Use the arrow buttons or mouse wheel to reach it.
-2. A Precognitive's awakening produces **The Unfinished Hour**, a real map painting. Other players can obtain the first canvas by interacting with an adult cartographer. Established telepathic clues or the future-city vision also let you read the omen through the Journal.
+2. A Precognitive's awakening produces **The Unfinished Hour**, a real map painting of the Hourglass Annex at 5:50 PM on Odessa's Last Day (see [The Past](the-past.md#the-storyline-the-last-day)). It already happened, but it isn't finished. Other players can obtain the first canvas by interacting with an adult cartographer. Established telepathic clues or the Time Manipulation vision of the city also let you read the omen through the Journal.
 3. Open the **Journal** with **J**. **Read omen** records the clue and gives the first canvas once. **Follow omen** enters the annex after its short construction finishes. Someone receiving a shared canvas can use it or read it in the Journal to discover the operation.
 4. Open the partition, cool the copper relay, and escort both named captives to the yellow exit. Their cells are beyond the partition. Stay within ten blocks to guide them, and click a captive for instructions.
 5. **Leave annex** in the Journal, or use the exit lever, to return to the saved entry location. Return remains available after the operation ends.
 
 The manual route is **west isolator, east isolator, then the orange relay valve**. Quake techniques can release the partition; electrical techniques can overload its relay connection; cold techniques can stabilize the relay. Powers are alternatives to equipment. No particular power owner is required online.
 
-The operation has two minutes of active visitor time. Its timer pauses when all participants are away and survives restarts. A successful outcome requires both captives rescued and the relay cooled. A casualty or timeout leaves a scarred outcome. Once everyone inside has left, another attempt rebuilds the annex. Offline participants retain their original return tickets across replay. The site accepts at most eight visitors at a time.
+The operation has two minutes of active visitor time. Its timer pauses when all participants are away and survives restarts. A successful outcome requires both captives rescued and the relay cooled, and leaves each participant Hiro's key: the record *The Key*, which opens the finale, [the avenue at 6:14](the-past.md#the-avenue-at-614). After that, **Follow omen** goes to the avenue; hold Shift to walk into the Annex again. A casualty or timeout leaves a scarred outcome. Once everyone inside has left, another attempt rebuilds the annex. Offline participants retain their original return tickets across replay. The site accepts at most eight visitors at a time.
 
 ## Build choices and progression
 
@@ -63,7 +63,7 @@ Precognition participates in normal exclusive ownership and Eclipse assignment. 
 
 ## Paintings and outcomes
 
-The original artwork shows two people behind glass and a dangerous copper heart. Cooling the relay changes the reactor's region on the shared canvas. Rescues revise the holding cells. A completed rescue replaces the painting with its matching prevented-disaster outcome; a failed operation leaves a dark scar. Replays return it to an unresolved future. Copies share the same saved map identity and update with it.
+The original artwork shows two people behind glass and a dangerous copper heart. Cooling the relay changes the reactor's region on the shared canvas. Rescues revise the holding cells. A completed rescue replaces the painting with its matching outcome, Mara and Ivo out of the annex alive (the light still falls at 6:14, but not on them); a failed operation leaves a dark scar. Replays return it to an unresolved hour. Copies share the same saved map identity and update with it.
 
 The two images ship as 128×128 vanilla-map palette data, totaling 32 KiB before compression. Image conversion happens during authoring, not on the server. Artwork sources, prompts, and built-in imagegen provenance are in [artwork notes](artwork/README.md).
 

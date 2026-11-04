@@ -3,8 +3,8 @@
     "icon": {
       "id": "minecraft:clock"
     },
-    "title": "A Future Unwritten",
-    "description": "Witness the future city and escape its destruction.",
+    "title": "The Last Day",
+    "description": "Stand in Odessa at 6:14 PM and escape the light.",
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": false,

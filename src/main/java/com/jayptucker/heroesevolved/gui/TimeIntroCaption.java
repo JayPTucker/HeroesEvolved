@@ -27,6 +27,11 @@ public final class TimeIntroCaption {
             case TimeIntroPayload.ARRIVAL -> "intro.heroesevolved.arrival";
             case TimeIntroPayload.DETONATION -> "intro.heroesevolved.blast";
             case TimeIntroPayload.RETURN -> "intro.heroesevolved.return";
+            case TimeIntroPayload.AVENUE_ARRIVAL -> "intro.heroesevolved.avenue";
+            case TimeIntroPayload.AVENUE_LIGHT -> "intro.heroesevolved.avenue_light";
+            case TimeIntroPayload.AVENUE_ALL -> "intro.heroesevolved.avenue_all";
+            case TimeIntroPayload.AVENUE_SOME -> "intro.heroesevolved.avenue_some";
+            case TimeIntroPayload.AVENUE_NONE -> "intro.heroesevolved.avenue_none";
             default -> null;
         });
     }

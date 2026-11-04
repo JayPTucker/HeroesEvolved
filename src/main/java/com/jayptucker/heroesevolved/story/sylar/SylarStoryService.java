@@ -259,6 +259,12 @@ public final class SylarStoryService {
         if (!HeroesEvolvedConfig.COMMON.sylarCanAcquirePowers.get() || active == null || active.hunter != hunter) return;
         PlayerAbilityService.getData(victim).assignedPower().filter(entry -> entry.getValue().isUnlocked()).ifPresent(entry -> {
             var data = SylarStoryData.get(victim.getServer());
+            // Someone kept him from the light on the Last Day: he never understood Sprague's heat, so he can't take it.
+            if (entry.getKey().equals(ModAbilities.RADIATION_ID)
+                    && com.jayptucker.heroesevolved.story.AvenueData.get(victim.getServer()).grayNeverSaw()) {
+                SylarVoice.narrate(victim, "story.heroesevolved.sylar.no_heat");
+                return;
+            }
             if (!data.learn(entry.getKey())) return;
             // Intuitive aptitude COPIES knowledge. Never reassign a player's exclusive story role.
             SylarVoice.say(victim, "story.heroesevolved.sylar.say.acquired");

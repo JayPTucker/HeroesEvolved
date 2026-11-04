@@ -1,8 +1,10 @@
 # Time Manipulation introduction
 
 The first unlocked Time Manipulation assignment queues a one-time, 17.5-second
-vision. Natural awakening, `/heroes` grants, and admin replacements all enter
-through `PlayerAbilityService`. Dormant assignment alone does not trigger it.
+vision of Odessa at 6:14 PM on the Last Day, which in this world happened
+centuries ago (see [The Past](the-past.md#the-storyline-the-last-day)); the HUD
+reads PAST · ODESSA, THE LAST DAY for everyone there. Natural awakening,
+`/heroes` grants, and admin replacements all enter through `PlayerAbilityService`. Dormant assignment alone does not trigger it.
 An existing unlocked time user who has never seen this introduction gets it on
 their next login. The seen flag survives logout, death, and power replacement.
 
@@ -58,6 +60,11 @@ never changed. Warm haze hides the horizon. World rules stay unchanged.
 The intro messages use normal HUD-sized main text and 85%-sized secondary text
 at 72% of the screen height, with wrapping and fades. They replace the old 4x/2x
 vanilla title display only for this scene; other messages keep their existing size.
+
+The same city hosts the story's finale, [the avenue at 6:14](the-past.md#the-avenue-at-614). The
+two never overlap: a vision waits for an evening on the avenue to end, and the avenue refuses new
+runners while a vision plays. Runners there may use their powers, people and Gray; everyone else is
+held to the vision's rules below.
 
 Visitors can look and move along the viewing avenue. Damage, death, powers,
 mining, placement, item use, and trading are blocked during the visit. Active

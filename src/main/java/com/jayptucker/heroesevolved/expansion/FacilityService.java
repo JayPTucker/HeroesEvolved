@@ -23,7 +23,11 @@ import net.neoforged.neoforge.event.entity.player.*;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import java.util.*;
 
-/** An isolated, bounded mission site: building never overwrites a player's settlement. */
+/**
+ * The Hourglass Annex: the Company's containment rig under Odessa at 5:50 PM on the Last Day,
+ * twenty-four minutes before the light. An isolated, bounded mission site: building never
+ * overwrites a player's settlement.
+ */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class FacilityService {
     public static final ResourceKey<Level> DIMENSION = ResourceKey.create(Registries.DIMENSION, ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "unwritten_annex"));
@@ -45,7 +49,8 @@ public final class FacilityService {
         return p.getServer().getLevel(DIMENSION) != null;
     }
     public static boolean enter(ServerPlayer p) {
-        if (!PowerRules.canAct(p) || p.isPassenger() || p.isSpectator() || atSite(p)) return false;
+        if (!PowerRules.canAct(p) || p.isPassenger() || p.isSpectator() || atSite(p)
+                || com.jayptucker.heroesevolved.time.intro.TimeIntroService.isCity(p.level())) return false;
         var d = FacilityData.get(p.getServer()); var level = p.getServer().getLevel(DIMENSION);
         if (level == null || d.visitors.size() >= 8 || !d.discovered(p.getUUID(), "unfinished_hour")) return false;
         if (d.phase == FacilityData.Phase.SAVED || d.phase == FacilityData.Phase.SCARRED) {
@@ -59,22 +64,28 @@ public final class FacilityService {
         d.setDirty(); // Save a recovery ticket before crossing dimensions.
         p.teleportTo(level, 14.5, 65, 3.5, 0, 0);
         if (d.phase == FacilityData.Phase.READY) { d.phase = FacilityData.Phase.ACTIVE; d.setDirty(); }
-        tell(p, "HOURGLASS ANNEX: the pictured disaster has not happened yet. Open the partition, cool the relay, and escort Mara and Ivo to the yellow exit. You have two minutes while anyone is inside.");
-        tell(p, "Manual route: west switch, east switch; then turn the orange relay valve. Powers offer other routes. Click a captive to call them. The exit button or your Journal returns you home.");
+        tell(p, "HOURGLASS ANNEX, ODESSA. THE LAST DAY, 5:50 PM. The relay holding Sprague's heat is failing. Nobody can stop 6:14, but Mara and Ivo don't have to die down here. Open the partition, cool the relay, and escort them to the yellow exit. You have two minutes while anyone is inside.");
+        tell(p, "Manual route: west switch, east switch; then turn the orange relay valve. Powers offer other routes. Click a captive to call them. The exit button or your Journal returns you to the present.");
         return true;
     }
     public static boolean leave(ServerPlayer p) {
         var d = FacilityData.get(p.getServer()); var point = d.visitors.get(p.getUUID());
         if (point == null && !atSite(p)) return false;
+        returnTo(p, point);
+        d.visitors.remove(p.getUUID()); d.setDirty(); return true;
+    }
+    /** Back to the present: the saved ticket, or world spawn when it is missing, blocked or itself in the past. */
+    public static void returnTo(ServerPlayer p, FacilityData.ReturnPoint point) {
         ServerLevel level = point == null ? p.getServer().overworld() : p.getServer().getLevel(ResourceKey.create(Registries.DIMENSION, point.dimension()));
-        if (level == null || level.dimension().equals(DIMENSION)) level = p.getServer().overworld();
+        boolean past = level != null && (level.dimension().equals(DIMENSION) || level.dimension().equals(com.jayptucker.heroesevolved.time.intro.TimeIntroService.DIMENSION));
+        if (level == null || past) { level = p.getServer().overworld(); point = null; }
         Vec3 dest = point == null ? Vec3.atBottomCenterOf(level.getSharedSpawnPos()) : new Vec3(point.x(), point.y(), point.z());
         if (!level.getWorldBorder().isWithinBounds(BlockPos.containing(dest))) dest = Vec3.atBottomCenterOf(level.getSharedSpawnPos());
         level.getChunk(BlockPos.containing(dest));
         var bounds = p.getBoundingBox().move(dest.subtract(p.position()));
         if (!level.getWorldBorder().isWithinBounds(bounds) || !level.noCollision(p, bounds)) dest = Vec3.atBottomCenterOf(level.getSharedSpawnPos());
         p.teleportTo(level, dest.x, dest.y, dest.z, point == null ? 0 : point.yaw(), point == null ? 0 : point.pitch());
-        d.visitors.remove(p.getUUID()); d.setDirty(); return true;
+        p.setDeltaMovement(Vec3.ZERO); p.fallDistance = 0;
     }
     public static void technique(ServerPlayer p, BlockPos pos, String technique) {
         if (!atSite(p) || !PowerRules.canAct(p)) return;
@@ -124,7 +135,7 @@ public final class FacilityService {
                 && e.getTarget() instanceof Villager v && !v.isBaby() && v.getVillagerData().getProfession() == net.minecraft.world.entity.npc.VillagerProfession.CARTOGRAPHER) {
             plan(p);
             if (FacilityData.get(p.getServer()).discover(p.getUUID(), "canvas_received")) PropheticPainting.give(p);
-            tell(p, "The cartographer: I painted that copper heart before I knew it existed. Read the omen in your Journal. Bring them home.");
+            tell(p, "The cartographer: I painted a copper heart behind a door with an hourglass on it, under a city that burned centuries ago. Read the omen in your Journal. Bring them home.");
         }
     }
     @SubscribeEvent public static void captive(PlayerInteractEvent.EntityInteract e) {
@@ -198,8 +209,13 @@ public final class FacilityService {
             // A rescued captive with a regenerating bloodline leaves one sample per player, once.
             if (saved && d.discover(p.getUUID(), "annex_blood"))
                 com.jayptucker.heroesevolved.formula.FormulaService.giveRescueSample(p);
-            tell(p, saved ? "A FUTURE REVISED: two people live. The painting remembers their escape. The city may still be saved."
-                    : "A SCAR IN THE FUTURE: the operation ended before everyone was safe. Return, study the painting, and attempt another route.");
+            tell(p, saved ? "THE PAST REVISED: Mara and Ivo walk out of the annex alive. The painting remembers their escape. The light still falls at 6:14, but not on them."
+                    : "A SCAR IN THE PAST: the hour ended before everyone was safe. It is still unfinished: study the painting, and walk back in by another route.");
+            // Hiro's key was here all along, behind the cells: the way to the avenue.
+            if (saved && !com.jayptucker.heroesevolved.story.PastRecords.has(p, com.jayptucker.heroesevolved.story.PastRecords.KEY)) {
+                tell(p, "Where Mara's cell stood, a note in unfamiliar handwriting. Hiro's key.");
+                com.jayptucker.heroesevolved.story.PastRecords.give(p, com.jayptucker.heroesevolved.story.PastRecords.key());
+            }
         }
     }
     private static UUID spawn(ServerLevel level, double x, double z, String name) {

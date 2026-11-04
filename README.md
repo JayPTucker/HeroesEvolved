@@ -77,7 +77,11 @@ See [Telekinesis](docs/telekinesis.md) for the rebuilt physical force kit and al
 See [Pyrokinesis and Helixite](docs/pyrokinesis.md) for the fire power, its real-fire rules,
 reactions with Cryokinesis, Flight and Superspeed, and the new Helixite crystal ore.
 New players wake sealed in a Cryochamber in a stasis bunker beneath world spawn,
-where the world's past waits to be read. See [The Past](docs/the-past.md).
+centuries after Odessa burned, where the world's past waits to be read. Press **J** for the
+Journal's next lead and the records found so far. The story ends on the avenue at 6:14: four
+minutes to bring 24 people through Noah Bennet's door before the light, and to keep Gabriel Gray
+from seeing it. What you save is written back into the present. See [The Past](docs/the-past.md)
+for the whole storyline, The Last Day.
 
 See [Invisibility](docs/invisibility.md) for Exposure, optical doubles, shared concealment and
 its eighteen redesigned skills. [Phasing and Empathic Mimicry](docs/new-powers.md) records the

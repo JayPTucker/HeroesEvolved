@@ -73,12 +73,15 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue overexertionNauseaDurationSeconds;
 
         // Eclipse
-        public final ModConfigSpec.LongValue eclipseIntervalTicks;
-        public final ModConfigSpec.LongValue eclipseDurationTicks;
+        public final ModConfigSpec.IntValue eclipseIntervalDays;
+        public final ModConfigSpec.IntValue eclipseApproachTicks;
+        public final ModConfigSpec.IntValue eclipseTotalityTicks;
+        public final ModConfigSpec.IntValue eclipseDepartureTicks;
         public final ModConfigSpec.DoubleValue eclipseDormantAbilityChance;
 
         // Awakening
         public final ModConfigSpec.DoubleValue awakeningHealthThreshold;
+        public final ModConfigSpec.IntValue awakeningCombatWindowSeconds;
 
         // Flight
         public final ModConfigSpec.IntValue flightLaunchEnergyCost;
@@ -392,16 +395,24 @@ public final class HeroesEvolvedConfig {
 
                 builder.push("eclipse");
 
-                eclipseIntervalTicks = builder
-                        .comment("Ticks between Eclipse starts. 144000 ticks is six Minecraft days, or about two real hours.")
-                        .defineInRange("intervalTicks", 144_000L, 20L, Long.MAX_VALUE);
+                eclipseIntervalDays = builder
+                        .comment("An Eclipse falls on every Nth Minecraft day, peaking at noon. The moon is new on Eclipse day. 10 days is about three and a half real hours.")
+                        .defineInRange("intervalDays", 10, 1, 1_000);
 
-                eclipseDurationTicks = builder
-                        .comment("How long an Eclipse remains active. 6000 ticks is about five real minutes.")
-                        .defineInRange("durationTicks", 6_000L, 20L, Long.MAX_VALUE);
+                eclipseApproachTicks = builder
+                        .comment("Partial phase before totality, while the moon slides across the sun. 3600 ticks is three real minutes.")
+                        .defineInRange("approachTicks", 3_600, 20, 12_000);
+
+                eclipseTotalityTicks = builder
+                        .comment("Totality: the shadow falls, dormant powers are handed out, and every power is suppressed. 4200 ticks is three and a half real minutes.")
+                        .defineInRange("totalityTicks", 4_200, 20, 12_000);
+
+                eclipseDepartureTicks = builder
+                        .comment("Partial phase after totality, while the moon slides off the sun.")
+                        .defineInRange("departureTicks", 3_600, 20, 12_000);
 
                 eclipseDormantAbilityChance = builder
-                        .comment("Chance for an eligible player to receive one dormant ability during an Eclipse.")
+                        .comment("Chance for an eligible player to receive one dormant ability at totality.")
                         .defineInRange("dormantAbilityChance", 0.40D, 0.0D, 1.0D);
 
                 builder.pop();
@@ -409,8 +420,12 @@ public final class HeroesEvolvedConfig {
                 builder.push("awakening");
 
                 awakeningHealthThreshold = builder
-                        .comment("A dormant power awakens when health falls strictly below this many health points. Four points equals two hearts.")
+                        .comment("A dormant power awakens in a fight when health falls strictly below this many health points. Four points equals two hearts.")
                         .defineInRange("healthThreshold", 4.0D, 0.1D, 20.0D);
+
+                awakeningCombatWindowSeconds = builder
+                        .comment("Seconds after hitting or being hit by a living attacker that a player still counts as in a fight. Dormant powers only awaken in a fight.")
+                        .defineInRange("combatWindowSeconds", 10, 1, 120);
 
                 builder.pop();
 

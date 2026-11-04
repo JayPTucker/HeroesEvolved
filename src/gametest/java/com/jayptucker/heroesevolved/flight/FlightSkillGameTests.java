@@ -416,7 +416,7 @@ public final class FlightSkillGameTests {
             FlightSkillPassives.handleFall(recovering);
             h.assertTrue(recovering.getDamageMultiplier() == .5F && FlightDynamicsService.momentum(p) == 25,
                     "During cooldown only Featherlight's large-fall reduction remains; the rescue cannot fire twice");
-            EclipseService.start(p.getServer());
+            EclipseService.beginTotality(p.getServer());
             var suppressed = new LivingFallEvent(p, 8, 1);
             FlightSkillPassives.handleFall(suppressed);
             h.assertTrue(suppressed.getDamageMultiplier() == 1, "The Eclipse suppresses learned fall protection too");

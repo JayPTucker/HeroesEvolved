@@ -4,8 +4,8 @@ Design sources: [Ted Sprague](https://heroes.fandom.com/wiki/Ted_Sprague) and
 [Radiation Emission](https://heroes.fandom.com/wiki/Radiation_Emission). The
 adaptation centers on heat, toxic radiation, bright emissions, EMPs, injury-driven
 loss of control and immunity to his own emissions. Peter's borrowed-power
-mechanics have been removed from this power. The Telepathy future-city storyline
-is unchanged. The numeric ranges, timers and protections below are game design
+mechanics have been removed from this power. In the story, whoever owns Radiation
+now carries Sprague's heat, centuries after Odessa (see [The Past](the-past.md)). The numeric ranges, timers and protections below are game design
 choices, including the requested protected first awakening.
 
 ## The rework: a reactor you run hot
@@ -141,8 +141,10 @@ On upgrading an existing world, offline player files are scanned before new
 assignments. Existing ownership records take precedence; otherwise duplicate
 legacy claims are resolved deterministically by player-file UUID order. A
 conflicting player receives an unclaimed dormant role on login if one remains.
-Radiation's awakening also recognizes the Glowing Man visions for its owner
-and nearby witnesses who have progressed the Telepathy/city storyline.
+Radiation's awakening also tells its owner that the heat that burned Odessa has found
+a new body, and tells nearby witnesses who have progressed the Telepathy/city storyline.
+Once any player keeps Gabriel Gray from the light on the avenue at 6:14, Sylar can never copy
+Radiation, and forgets it if he had (see [The Past](the-past.md#the-avenue-at-614)).
 
 ## Verification
 

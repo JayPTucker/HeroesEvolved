@@ -41,7 +41,8 @@ public final class PlayerAbilityTickEvents {
             return;
         }
 
-        AwakeningService.tryAwakenAtCriticalHealth(player);
+        // Dormant powers wait for adrenaline: low health in a fight.
+        AwakeningService.tick(player);
 
         PlayerAbilityData abilityData = PlayerAbilityService.getData(player);
 

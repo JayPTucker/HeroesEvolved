@@ -9,6 +9,7 @@ import com.jayptucker.heroesevolved.network.CameraShakePayload;
 import com.jayptucker.heroesevolved.network.ScreenTintPayload;
 import com.jayptucker.heroesevolved.network.TimeIntroPayload;
 import com.jayptucker.heroesevolved.sounds.ModSounds;
+import com.jayptucker.heroesevolved.story.AvenueService;
 import com.jayptucker.heroesevolved.time.TimeSlowService;
 import com.jayptucker.heroesevolved.time.TimeStopService;
 import net.minecraft.core.BlockPos;
@@ -72,6 +73,22 @@ public final class TimeIntroService {
         return scene != null && scene.crowd.contains(entity);
     }
 
+    /** Waiting for the city after acquiring the power; the awakening shields them meanwhile. */
+    public static boolean isQueued(ServerPlayer player) {
+        return QUEUE.stream().anyMatch(request -> request.owner.equals(player.getUUID()));
+    }
+
+    /** A vision is playing in the city right now. */
+    public static boolean sceneRunning() { return scene != null; }
+
+    /**
+     * The vision is watched, not played: nobody uses a power in the city, except runners on the
+     * avenue at 6:14, which is played with every power.
+     */
+    public static boolean blocksPowers(ServerPlayer player) {
+        return isVisiting(player) || isCity(player.level()) && !AvenueService.isRunner(player);
+    }
+
     /** Called only after an unlocked assignment has actually been saved. */
     public static void acquired(ServerPlayer player, ResourceLocation ability) {
         if (!POWER.equals(ability) || player.getData(ModDataAttachments.TIME_INTRO_SEEN)) return;
@@ -94,7 +111,9 @@ public final class TimeIntroService {
     public static void login(ServerPlayer player) {
         if (player.getData(ModDataAttachments.PLAYER_SEEN_FUTURE_CITY))
             com.jayptucker.heroesevolved.time.TemporalStoryService.reach(player, com.jayptucker.heroesevolved.time.TemporalStoryService.VISION);
-        if (isVisiting(player) || isCity(player.level())) {
+        // An avenue runner goes home by their own ticket, before the vision's fallback below.
+        AvenueService.recover(player);
+        if (isVisiting(player) || isCity(player.level()) && !AvenueService.isRunner(player)) {
             returnHome(player, false);
         }
         PlayerAbilityService.getData(player).ability(POWER)
@@ -115,7 +134,8 @@ public final class TimeIntroService {
         // Prepare while the world is running, so natural awakenings usually jump immediately.
         cityData.tickBuild(city);
         if (scene == null) {
-            if (cityData.ready()) startNext(server, city);
+            // A vision waits for an evening on the avenue to end; they share the city.
+            if (cityData.ready() && !AvenueService.running()) startNext(server, city);
             return;
         }
         Scene current = scene;
@@ -293,17 +313,30 @@ public final class TimeIntroService {
             player.playNotifySound(ModSounds.TIME_BLINK.get(), SoundSource.PLAYERS, 0.9F, 0.85F);
             ScreenTintPayload.send(player, 0x908AB6FF, 25, ScreenTintPayload.Style.FLASH);
             AbilityEffects.at(player, AbilityEffectPayload.Kind.TEMPORAL_BURST, 4);
+            // Awakenings come in a fight: whatever was fighting you is now a heartbeat behind.
+            com.jayptucker.heroesevolved.events.AwakeningService.secondWind(player);
+            for (net.minecraft.world.entity.Mob mob : player.serverLevel().getEntitiesOfClass(
+                    net.minecraft.world.entity.Mob.class, player.getBoundingBox().inflate(12),
+                    mob -> mob instanceof net.minecraft.world.entity.monster.Enemy && mob.isAlive())) {
+                mob.setTarget(null);
+                mob.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                        net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN, 100, 6));
+                mob.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                        net.minecraft.world.effect.MobEffects.WEAKNESS, 100, 1));
+            }
         }
     }
 
     public static void logout(ServerPlayer player) {
         // Return before vanilla writes the departing player's data.
+        AvenueService.logout(player);
         returnHome(player, false);
         if (scene != null) scene.visitors.remove(player.getUUID());
         QUEUE.removeIf(request -> request.owner.equals(player.getUUID()));
     }
 
     public static void shutdown(MinecraftServer server) {
+        AvenueService.shutdown(server);
         ServerLevel city = server.getLevel(DIMENSION);
         if (scene != null && city != null) finish(server, city, false);
         for (ServerPlayer player : List.copyOf(server.getPlayerList().getPlayers())) {
@@ -322,7 +355,7 @@ public final class TimeIntroService {
         scene = null;
     }
 
-    private static void forceCity(ServerLevel city, boolean force) {
+    public static void forceCity(ServerLevel city, boolean force) {
         for (int x = -6; x < 6; x++) for (int z = -6; z < 6; z++) city.setChunkForced(x, z, force);
     }
 

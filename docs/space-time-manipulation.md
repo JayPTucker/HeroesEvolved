@@ -45,17 +45,17 @@ Learn and equip these through the inventory **Skills** button. Existing purchase
 
 The existing passive discounts and damage bonuses still apply. Remembering an anchor uses its normal skill cost/cooldown. Shift retains the mod's existing overexertion behavior when stamina is insufficient.
 
-## Story: A Future Unwritten
+## Story: The Way Back
 
-The acquisition vision is now framed as a preventable future. Its compact captions lead into five durable advancements, visible in the vanilla Advancements screen:
+The acquisition vision is Odessa at 6:14 PM on the Last Day, which already happened centuries ago (see [The Past](the-past.md#the-storyline-the-last-day)). The HUD reads **PAST · ODESSA, THE LAST DAY** there. Its compact captions lead into five durable advancements, visible in the vanilla Advancements screen and in the Journal as **The Way Back**:
 
-1. **A Future Unwritten** — escape the future city's destruction.
+1. **The Last Day** — stand in Odessa at 6:14 PM and escape the light.
 2. **No One Left Behind** — carry a companion through space or share stopped time by touch.
 3. **A Place to Return** — establish a spatial anchor.
 4. **The Butterfly Effect** — successfully rewrite fifteen seconds.
 5. **The Road Not Taken** — enter a recorded past.
 
-Milestones can be earned out of order. Each gives one piece of guidance in chat; flags survive death and relogging. Existing witnesses of the future city receive its milestone on login. This adds a playable progression and persistent hooks, not a finished city-saving campaign.
+Milestones can be earned out of order. Each gives one piece of guidance in chat; flags survive death and relogging. Existing witnesses of the city receive its milestone on login. The last one points to the Hourglass Annex, 5:50 PM on the Last Day; saving it leads to the finale, [the avenue at 6:14](the-past.md#the-avenue-at-614), where a time traveller's blinks, carried companions and stopped time all help bring people to Bennet's door.
 
 Future missions can query `TemporalStoryService.has(player, milestone)` to branch dialogue, gate evidence, or choose a mission stage. Flags are independent from telepathy's existing memory sequence and do not reset it. Suggested continuation: a telepath identifies a survivor's memory, the traveller records the meeting place, and the group revisits that record to discover who triggered the disaster. Existing successful power activations still attract Sylar's attention.
 

@@ -11,6 +11,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 /** Reliable scene cues, independent of particle settings or distant entity tracking. */
 public record TimeIntroPayload(int stage) implements CustomPacketPayload {
     public static final int ARRIVAL = 0, DETONATION = 1, RETURN = 2, BLAST_SOUND = 3, CANCEL = 4;
+    /** The avenue at 6:14: arriving at 6:10, the light, and coming home with everyone, someone or no one. */
+    public static final int AVENUE_ARRIVAL = 5, AVENUE_LIGHT = 6, AVENUE_ALL = 7, AVENUE_SOME = 8, AVENUE_NONE = 9;
     public static final Type<TimeIntroPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(
             HeroesEvolved.MOD_ID, "time_intro"));
     public static final StreamCodec<RegistryFriendlyByteBuf, TimeIntroPayload> STREAM_CODEC =

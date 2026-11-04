@@ -97,6 +97,11 @@ His acquisition hold is unchanged. After four seconds of fighting within seven b
 a six-second channel begins. Hurt him, break his sightline, or get away to stop it. A finished
 channel deals 8 and copies (never takes) your power.
 
+One power can be put out of his reach for good, in the past. If anyone keeps Gabriel Gray from the
+light on the avenue at 6:14 (see [The Past](the-past.md#the-avenue-at-614)), he never saw how
+Sprague's heat works: a finished channel on Radiation's owner copies nothing ("He can't make sense of
+it"), and if he had already taken Radiation, he loses it.
+
 ## Telepathy and the existing visions
 
 Every nearby awakened telepath can sense Sylar within sixty-four blocks,

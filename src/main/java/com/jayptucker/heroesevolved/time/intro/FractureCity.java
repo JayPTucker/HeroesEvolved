@@ -52,7 +52,8 @@ public final class FractureCity extends SavedData {
             default -> new Lot(12, 12, 29, 29, 0, style, hash);
         };
     }
-    static void buildColumn(ServerLevel level, int x, int z) {
+    /** Draws one column of the city; also how a mission puts back whatever it built on the street. */
+    public static void buildColumn(ServerLevel level, int x, int z) {
         // Replace old columns completely so saved cities upgrade and interrupted builds are safe to repeat.
         int oldTop = level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
         for (int y = STREET_Y; y < oldTop; y++) {

@@ -183,6 +183,11 @@ public final class HeroesEvolvedCommands {
                                                 context.getSource()
                                         ))
                                 )
+                                .then(Commands.literal("totality")
+                                        .executes(context -> eclipseTotality(
+                                                context.getSource()
+                                        ))
+                                )
                                 .then(Commands.literal("stop")
                                         .executes(context -> stopEclipse(
                                                 context.getSource()
@@ -223,13 +228,22 @@ public final class HeroesEvolvedCommands {
         return 1;
     }
 
-    private static int eclipseStatus(CommandSourceStack source) {
-        boolean active = EclipseService.isActive(source.getServer());
+    private static int eclipseTotality(CommandSourceStack source) {
+        if (!EclipseService.beginTotality(source.getServer())) {
+            source.sendFailure(Component.literal("The Eclipse is already at totality."));
+            return 0;
+        }
+
         source.sendSuccess(
-                () -> Component.literal(
-                        active ? "An Eclipse is currently active."
-                                : "No Eclipse is currently active."
-                ),
+                () -> Component.literal("Skipped the Eclipse to totality."),
+                true
+        );
+        return 1;
+    }
+
+    private static int eclipseStatus(CommandSourceStack source) {
+        source.sendSuccess(
+                () -> EclipseService.describe(source.getServer()),
                 false
         );
         return 1;

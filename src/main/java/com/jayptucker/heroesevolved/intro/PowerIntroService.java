@@ -11,6 +11,7 @@ import com.jayptucker.heroesevolved.effects.AbilityEffects;
 import com.jayptucker.heroesevolved.effects.PrivateGlow;
 import com.jayptucker.heroesevolved.telepathy.TelepathyService;
 import com.jayptucker.heroesevolved.entity.QuakeDebrisEntity;
+import com.jayptucker.heroesevolved.events.AwakeningService;
 import com.jayptucker.heroesevolved.events.EclipseService;
 import com.jayptucker.heroesevolved.flight.FlightService;
 import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
@@ -67,9 +68,10 @@ public final class PowerIntroService {
             Map.entry("superspeed", new Spec(40, 40, 0xFFBE45, ArmPose.ARMS_WIDE, Kind.SPEED_BURST, Kind.SPEED_VORTEX)),
             Map.entry("regeneration", new Spec(50, 40, 0xFFD89B, ArmPose.ARMS_WIDE, Kind.REGEN_AWAKEN_CHARGE, Kind.REGEN_AWAKEN_RELEASE)),
             Map.entry("pyrokinesis", new Spec(50, 40, 0xFF8A2A, ArmPose.TWO_HANDS_STRAIN, Kind.PYRO_AWAKEN_CHARGE, Kind.PYRO_AWAKEN_RELEASE)),
-            Map.entry("invisibility", new Spec(40, 40, 0xCFD8E0, ArmPose.ARMS_WIDE, Kind.MIND_PULSE, Kind.PSYCHIC_FIELD)),
-            Map.entry("phasing", new Spec(40, 40, 0x9FE3D6, ArmPose.TWO_HANDS, Kind.TEMPORAL_FIELD, Kind.TEMPORAL_BURST)),
-            Map.entry("empathic_mimicry", new Spec(50, 40, 0xE8C27A, ArmPose.TEMPLE, Kind.PROPHECY_THREAD, Kind.PSYCHIC_AWAKEN_RELEASE)));
+            Map.entry("invisibility", new Spec(40, 40, 0xCFD8E0, ArmPose.ARMS_WIDE, Kind.OPTIC_FADE, Kind.OPTIC_BURST)),
+            Map.entry("phasing", new Spec(40, 40, 0x9FE3D6, ArmPose.TWO_HANDS, Kind.DENSITY_GHOST, Kind.DENSITY_RIPPLE)),
+            Map.entry("empathic_mimicry", new Spec(50, 40, 0xE8C27A, ArmPose.TEMPLE, Kind.PROPHECY_THREAD, Kind.PSYCHIC_AWAKEN_RELEASE)),
+            Map.entry("precognition", new Spec(50, 40, 0xF7D88D, ArmPose.TEMPLE, Kind.PRECOG_FUTURE, Kind.PRECOG_RING)));
     private static final Map<UUID, Session> SESSIONS = new HashMap<>();
     private static final Map<UUID, Integer> SOFT_LANDINGS = new HashMap<>();
 
@@ -91,7 +93,6 @@ public final class PowerIntroService {
     private PowerIntroService() {}
 
     public static void acquired(ServerPlayer player, ResourceLocation power) {
-        if (power.getPath().equals("precognition")) { com.jayptucker.heroesevolved.precog.PrecognitionService.awaken(player); return; }
         Session current = SESSIONS.get(player.getUUID());
         if (current != null && !current.power.equals(power)) cancel(player);
         if (power.equals(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "time_manipulation"))) {
@@ -160,6 +161,8 @@ public final class PowerIntroService {
             if (session.power.getPath().equals("telepathy")) chargeTelepathy(session, age);
             if (session.power.getPath().equals("cryokinesis")) chargeCryokinesis(session, age);
             if (session.power.getPath().equals("radiation")) chargeRadiation(session, age);
+            if (session.power.getPath().equals("precognition")) chargePrecognition(session, age);
+            if (session.power.getPath().equals("empathic_mimicry") && age % 10 == 0) chargeMimicry(session);
         }
         if (age == spec.chargeTicks) release(session);
         if (age >= spec.chargeTicks) aftermath(session, age - spec.chargeTicks);
@@ -189,6 +192,10 @@ public final class PowerIntroService {
             case "cryokinesis" -> SoundEvents.PLAYER_HURT_FREEZE;
             case "radiation" -> SoundEvents.BEACON_ACTIVATE;
             case "pyrokinesis" -> SoundEvents.FIRECHARGE_USE;
+            case "precognition" -> SoundEvents.AMETHYST_BLOCK_RESONATE;
+            case "invisibility" -> SoundEvents.ILLUSIONER_PREPARE_MIRROR;
+            case "phasing" -> SoundEvents.RESPAWN_ANCHOR_CHARGE;
+            case "empathic_mimicry" -> SoundEvents.ENCHANTMENT_TABLE_USE;
             default -> SoundEvents.WIND_CHARGE_BURST.value();
         };
         sound(player, sound, 0.9F, 0.7F);
@@ -208,6 +215,9 @@ public final class PowerIntroService {
                             : session.power.getPath().equals("cryokinesis")
                             ? ColdDomeService.AWAKENING_RADIUS : 8);
         ScreenTintPayload.send(player, 0x55000000 | session.spec.color, 18, ScreenTintPayload.Style.FLASH);
+        // Awakenings come at the brink of losing a fight; each release gets its owner back up
+        // and then ends the fight its own way.
+        AwakeningService.secondWind(player);
         switch (session.power.getPath()) {
             case "quake" -> {
                 session.blast = new QuakeIntroBlast(player.blockPosition());
@@ -253,7 +263,12 @@ public final class PowerIntroService {
             case "cryokinesis" -> releaseCryokinesis(session);
             case "superspeed" -> {
                 sound(player, SoundEvents.WIND_CHARGE_BURST.value(), 1.2F, 1.2F);
-                repelEnemies(player, 6, 0, .8);
+                repelEnemies(player, 8, 0, 1.0);
+                // Everything still fighting you is suddenly moving through syrup.
+                for (LivingEntity threat : threats(player, 10)) {
+                    threat.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 2));
+                }
+                player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 200, 2));
                 player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("speed.heroesevolved.awakened"));
             }
             case "sonic_resonance" -> com.jayptucker.heroesevolved.sonic.SonicService.burst(player, 1, true);
@@ -262,9 +277,21 @@ public final class PowerIntroService {
                 ArmPosePayload.show(player, ArmPose.ARMS_WIDE, 30);
                 com.jayptucker.heroesevolved.pyro.PyroService.awaken(player);
             }
-            case "invisibility" -> com.jayptucker.heroesevolved.invisibility.InvisibilityService.awaken(player);
-            case "phasing" -> com.jayptucker.heroesevolved.phasing.DensityService.awaken(player);
-            case "empathic_mimicry" -> com.jayptucker.heroesevolved.mimicry.MimicryService.awaken(player);
+            case "invisibility" -> {
+                com.jayptucker.heroesevolved.invisibility.InvisibilityService.awaken(player);
+                // Whatever was fighting you has nothing left to aim at.
+                for (LivingEntity threat : threats(player, 24)) {
+                    if (threat instanceof Mob mob && mob.getTarget() == player) mob.setTarget(null);
+                }
+                player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 100, 0));
+            }
+            case "phasing" -> {
+                com.jayptucker.heroesevolved.phasing.DensityService.awaken(player);
+                // Blows already in motion pass through, and the ripple shoves their owners away.
+                repelEnemies(player, 6, 0, 1.0);
+            }
+            case "empathic_mimicry" -> releaseMimicry(session);
+            case "precognition" -> releasePrecognition(session);
         }
         SOFT_LANDINGS.put(player.getUUID(), 20 * 30);
     }
@@ -466,6 +493,85 @@ public final class PowerIntroService {
         CameraShakePayload.sendAround(level, player.position(), 20, 0.8F, 14);
     }
 
+    // ------------------------------------------------------------------
+    // Precognition: every attacker's next move, painted in gold, then
+    // stepped around before it happens.
+    // ------------------------------------------------------------------
+
+    private static void chargePrecognition(Session session, int age) {
+        ServerPlayer player = session.player;
+        if (age % 8 != 0) return;
+        for (LivingEntity threat : threats(player, 16)) {
+            // A ghost of where it is about to be: already lunging at you.
+            Vec3 lunge = threat.position().lerp(player.position(), 0.6);
+            AbilityEffects.send(player.serverLevel(), Kind.PRECOG_GHOST, threat.position(), lunge,
+                    Math.max(1, threat.getBbHeight()));
+            PrivateGlow.glow(player, threat, 20);
+        }
+        if (age % 16 == 0) sound(player, SoundEvents.AMETHYST_BLOCK_CHIME, 0.8F, 0.6F + age / 100.0F);
+    }
+
+    private static void releasePrecognition(Session session) {
+        ServerPlayer player = session.player;
+        ArmPosePayload.show(player, ArmPose.ARMS_WIDE, 30);
+        // Every blow they were about to land has already been seen; they stumble into the miss.
+        for (LivingEntity threat : threats(player, 12)) {
+            if (threat instanceof Mob mob) mob.setTarget(null);
+            threat.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 2));
+            threat.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100, 1));
+            PrivateGlow.glow(player, threat, 160);
+            AbilityEffects.send(player.serverLevel(), Kind.PRECOG_CROSS, threat.position(), threat.position(),
+                    Math.max(1, threat.getBbHeight()));
+            Vec3 away = threat.position().subtract(player.position()).multiply(1, 0, 1).normalize();
+            velocity(threat, away.scale(0.6).add(0, 0.25, 0));
+        }
+        sound(player, SoundEvents.BELL_RESONATE, 1.4F, 0.8F);
+        sound(player, SoundEvents.AMETHYST_BLOCK_RESONATE, 1.6F, 0.5F);
+        com.jayptucker.heroesevolved.precog.PrecognitionService.firstVision(player);
+    }
+
+    // ------------------------------------------------------------------
+    // Empathic Mimicry: a thread to every heartbeat nearby, then the
+    // fight's own strength turned around.
+    // ------------------------------------------------------------------
+
+    private static void chargeMimicry(Session session) {
+        ServerPlayer player = session.player;
+        player.serverLevel().getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(12),
+                        other -> other != player && other.isAlive() && other.distanceToSqr(player) <= 144)
+                .stream().limit(8)
+                .forEach(other -> AbilityEffects.send(player.serverLevel(), Kind.PROPHECY_THREAD,
+                        player.getEyePosition(), other.getEyePosition(), 1));
+    }
+
+    private static void releaseMimicry(Session session) {
+        ServerPlayer player = session.player;
+        ArmPosePayload.show(player, ArmPose.ARMS_WIDE, 30);
+        com.jayptucker.heroesevolved.mimicry.MimicryService.awaken(player);
+        // The first thing it learns is the fight itself: their strength drains into you.
+        for (LivingEntity threat : threats(player, 8)) {
+            threat.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 200, 1));
+            AbilityEffects.send(player.serverLevel(), Kind.PROPHECY_THREAD, threat.getEyePosition(),
+                    player.getEyePosition(), 1);
+            Vec3 away = threat.position().subtract(player.position()).multiply(1, 0, 1).normalize();
+            velocity(threat, away.scale(0.8).add(0, 0.3, 0));
+        }
+        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 200, 0));
+        sound(player, SoundEvents.EVOKER_CAST_SPELL, 1.4F, 1.1F);
+    }
+
+    /**
+     * Who the awakening has to save its owner from: monsters, anything targeting them, and
+     * whoever last hurt them (another player included).
+     */
+    private static List<LivingEntity> threats(ServerPlayer player, double radius) {
+        LivingEntity attacker = player.getLastHurtByMob();
+        return player.serverLevel().getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(radius),
+                entity -> entity != player && entity.isAlive() && entity.distanceToSqr(player) <= radius * radius
+                        && (entity instanceof Enemy || entity == attacker
+                        || entity instanceof Mob mob && mob.getTarget() == player));
+    }
+
     private static void debris(ServerPlayer player, double phase) {
         for (int i = 0; i < 5; i++) {
             double angle = phase + Math.PI * 2 * i / 5;
@@ -485,9 +591,7 @@ public final class PowerIntroService {
     }
 
     private static void repelEnemies(ServerPlayer player, double radius, float damage, double force) {
-        for (LivingEntity enemy : player.serverLevel().getEntitiesOfClass(LivingEntity.class,
-                player.getBoundingBox().inflate(radius), entity -> entity instanceof Enemy && entity.isAlive()
-                        && entity.distanceToSqr(player) <= radius * radius)) {
+        for (LivingEntity enemy : threats(player, radius)) {
             Vec3 away = enemy.position().subtract(player.position()).multiply(1, 0, 1).normalize();
             if (damage > 0) enemy.hurt(player.damageSources().playerAttack(player), damage);
             velocity(enemy, away.scale(force).add(0, 0.4, 0));

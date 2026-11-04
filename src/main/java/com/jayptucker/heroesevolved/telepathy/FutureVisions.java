@@ -23,51 +23,56 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * A storyline heard in other minds. Villagers have been dreaming of a city
- * that has not been built yet, and of the blast that destroys it: the
- * future a Time Manipulator glimpses on awakening.
+ * A storyline heard in other minds. Villagers dream of a city none of them
+ * has seen: Odessa on its Last Day, centuries gone. The Eclipse carries the
+ * last memories of the people who died there forward into the living, and a
+ * Time Manipulator stands on that same avenue on awakening.
  *
- * <p>Each adult villager holds one memory, revealed in order across four
+ * <p>Each adult villager holds one memory, revealed in order across five
  * acts, so a telepath pieces the story together by reading many minds.
  * Some other creatures know a piece of it too, in their own way.</p>
  */
 public final class FutureVisions {
-    /** The story, in the order a telepath uncovers it. */
+    /**
+     * The story, in the order a telepath uncovers it. Saved progress is a count into this list,
+     * so its length and act boundaries stay fixed; memories 7 to 10 are the city itself.
+     */
     private static final List<String> FRAGMENTS = List.of(
             // Act I: rumours.
             "Bad dreams again. A city of white stone... and then light. So much light.",
             "Grandmother said when the sun goes black, the special ones wake up. "
                     + "The sun went black. People can fly now.",
-            "The cartographer has painted the same picture for days. A city on fire. "
-                    + "He doesn't remember painting any of it.",
+            "The cartographer has painted the same picture for days. A city on fire, "
+                    + "one no map has shown for centuries. He doesn't remember painting any of it.",
             // Act II: the glowing man.
             "In the painting, a man stands in the middle of the avenue. He's glowing. "
                     + "Everyone else is running.",
-            "The cleric says the glowing man doesn't want it to happen. "
-                    + "He's trying to hold it in. He can't.",
-            "He was ordinary once. Then the Eclipse. Then he started taking "
-                    + "what the others had, one power at a time.",
+            "The cleric says the glowing man didn't want it to happen. "
+                    + "He tried to hold it in. He couldn't.",
+            "His name was Ted. That afternoon he went to the Company for help. They took him "
+                    + "below the city, behind a door with an hourglass on it, and locked it.",
             // Act III: the place.
-            "It isn't a place we know. It hasn't been built yet. Someone is going to build it.",
+            "It isn't a place anyone alive has seen. It burned long before the villages. "
+                    + "Odessa, they called it.",
             "Twelve chunks wide. One long avenue down the middle. "
                     + "I count the streets in my sleep.",
-            "I saw the evacuation. I saw myself in it. I was carrying "
-                    + "my daughter, and I wasn't fast enough.",
-            // Act IV: the way out.
+            "I dream I'm in the evacuation, carrying a daughter I never had. "
+                    + "I'm not fast enough. I never am.",
+            // Act IV: the way back.
             "There's a moment, right before the shockwave, when everything goes silent. "
-                    + "Somebody stops time. Somebody pulls everyone back.",
-            "Find the one who can bend time. Only they reach the city before the light does.",
-            "If you can hear this... it isn't fixed. The future can still change. "
-                    + "Don't let him reach the city.",
+                    + "A stranger on the avenue stops time and pulls people out. Nobody knew who they were.",
+            "Find the one who can bend time. Only they can walk back to the city before the light does.",
+            "If you can hear this... it isn't finished. The light was always going to fall. "
+                    + "The people under it didn't have to.",
             // Act V: the watchmaker. Existing progress continues into this chapter.
             "There is another man in the dreams. A dark coat at the edge of the avenue. "
-                    + "He watches the glowing one as if he has found something he lost.",
+                    + "He watches the glowing one as if he has found something he lost. That night, men in suits took him below.",
             "The watchmaker asked who could do things the others couldn't. "
                     + "I heard a little ticking sound. Then he knew which way to go.",
             "Gabriel Gray. Someone called him Gabriel, but he answered to Sylar. "
                     + "He doesn't want to meet the special ones. He wants to understand what is inside them.",
-            "He can learn what makes you different. If he reaches the man with the heat, "
-                    + "there could be another glowing figure on that avenue. Keep them apart."
+            "He can learn what makes you different. Someone carries the glowing man's heat again. "
+                    + "If the watchmaker learns it, there will be another avenue, and another light. Keep them apart."
     );
 
     // Each villager gives up its memory once; per-session is enough.
@@ -88,12 +93,12 @@ public final class FutureVisions {
     }
 
     public static void radiationAwakening(ServerPlayer source) {
-        source.sendSystemMessage(Component.literal("The visions spoke of one glowing man. Now the heat is inside you.")
+        source.sendSystemMessage(Component.literal("The heat that burned Odessa has found a new body. Yours.")
                 .withStyle(ChatFormatting.GOLD, ChatFormatting.ITALIC));
         for (ServerPlayer witness : source.serverLevel().players()) {
             if (witness == source || witness.distanceToSqr(source) > 300 * 300) continue;
             if (witness.getData(ModDataAttachments.PLAYER_STORY_PROGRESS) >= 4 || hasSeenTheCity(witness))
-                witness.sendSystemMessage(Component.literal("That orange glow... the figure from the visions is here.")
+                witness.sendSystemMessage(Component.literal("That orange glow... the light from the dreams is burning again.")
                         .withStyle(ChatFormatting.GOLD, ChatFormatting.ITALIC));
         }
     }
@@ -133,8 +138,8 @@ public final class FutureVisions {
 
         if (progress + 1 == FRAGMENTS.size()) {
             reader.sendSystemMessage(Component.literal(
-                    "The voices fall quiet. You know where the future breaks... "
-                            + "and who must be there to stop it.")
+                    "The voices fall quiet. You know what happened on the Last Day... "
+                            + "and who could still walk back into it.")
                     .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
             reader.playNotifySound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE,
                     SoundSource.PLAYERS, 0.6F, 0.8F);
@@ -170,7 +175,7 @@ public final class FutureVisions {
 
     /**
      * Some creatures perceive time strangely; reading them sometimes yields
-     * a glimpse of the same future instead of their own thoughts.
+     * a glimpse of the same Last Day instead of their own thoughts.
      */
     private static String otherwordlyThought(LivingEntity mind, ServerPlayer reader) {
         if (mind instanceof com.jayptucker.heroesevolved.story.sylar.SylarEntity sylar) {
@@ -178,16 +183,16 @@ public final class FutureVisions {
                     + "Break his concentration before the ticking stops."
                     : "A watchmaker's patience. A hunger with no end. He has been following the trail your power leaves behind.";
         }
-        // Reading the Glowing Man himself.
+        // Reading whoever carries the glowing man's heat now.
         if (mind instanceof ServerPlayer other && hasRadiation(other)) {
-            return "...hold it in... hold it in... I can't. This is him. "
-                    + "The glowing man. He doesn't know yet.";
+            return "...hold it in... hold it in... This is the heat from the dreams. "
+                    + "The same light that burned Odessa, in a new body.";
         }
-        // Villagers can feel him when he's near.
+        // Villagers can feel the heat when it's near.
         if (mind instanceof Villager villager && !villager.isBaby()
                 && reader.getRandom().nextFloat() < 0.5F
                 && glowingManNear(mind)) {
-            return "He's here. The glowing man is HERE. I can feel the heat on my skin.";
+            return "It's here. The heat from the dreams is HERE. I can feel it on my skin.";
         }
 
         if (reader.getRandom().nextFloat() > 0.6F) {
@@ -205,11 +210,11 @@ public final class FutureVisions {
                     + "We have walked there. We have watched.";
         }
         if (mind instanceof AbstractIllager) {
-            return "The chieftain wants the glowing man for himself. "
-                    + "A weapon that levels cities.";
+            return "The chieftain wants the glowing man's heat for himself. "
+                    + "A weapon that levelled a city once.";
         }
         if (mind instanceof WanderingTrader) {
-            return "I've sold maps to that city... to people who haven't been born yet.";
+            return "I've sold maps to that city... to people who died before my grandfather was born.";
         }
         if (mind instanceof Allay) {
             return "I hum the song the children hummed, just before the light.";

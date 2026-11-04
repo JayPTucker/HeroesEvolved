@@ -12,7 +12,10 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.WrittenBookContent;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * The notes, logs and letters hidden in the world's structures. The first time a player picks one up
@@ -22,25 +25,51 @@ import java.util.Map;
  */
 public final class StoryDiscoveries {
     public static final int MASTERY = 40;
-    /** Title to author, for every story note the mod places. */
-    public static final Map<String, String> NOTES = Map.ofEntries(
-            Map.entry("Stasis Wing: Orientation", "Dr. M. Suresh"),
-            Map.entry("Lockdown Order 7", "N. Bennet"),
-            Map.entry("Day 2,190", "Dr. M. Suresh"),
-            Map.entry("Assay: Helixite", "Pinehearst liaison"),
-            Map.entry("Containment: G. Gray", "Security"),
-            Map.entry("A Note, Folded Small", "H. N."),
-            Map.entry("For Claire", "N. Bennet"),
-            Map.entry("Shift Notes", "Checkpoint B"),
-            Map.entry("Dad", "Claire"),
-            Map.entry("I Painted It", "I. Mendez"),
-            Map.entry("To Whoever Finds This", "A neighbor"),
-            Map.entry("Day 9", "Unsigned"),
-            Map.entry("The Men in Suits", "R.")
+
+    /**
+     * Where a note is placed: the stasis bunker under spawn, the ruined houses on the surface, or the
+     * past: written into the present when a player changes something on the Last Day.
+     */
+    public enum Place { BUNKER, RUINS, PAST }
+
+    public record Note(String title, String author, Place place) {}
+
+    /** Every story note the mod places, in the order the story reads best (the journal's order). */
+    public static final List<Note> ORDER = List.of(
+            new Note("Stasis Wing: Orientation", "Dr. M. Suresh", Place.BUNKER),
+            new Note("Lockdown Order 7", "N. Bennet", Place.BUNKER),
+            new Note("Day 2,190", "Dr. M. Suresh", Place.BUNKER),
+            new Note("I Painted It", "I. Mendez", Place.RUINS),
+            new Note("Dad", "Claire", Place.RUINS),
+            new Note("The Men in Suits", "R.", Place.RUINS),
+            new Note("Day 9", "Unsigned", Place.RUINS),
+            new Note("To Whoever Finds This", "A neighbor", Place.RUINS),
+            new Note("Containment: G. Gray", "Security", Place.BUNKER),
+            new Note("Shift Notes", "Checkpoint B", Place.BUNKER),
+            new Note("For Claire", "N. Bennet", Place.BUNKER),
+            new Note("Assay: Helixite", "Pinehearst liaison", Place.BUNKER),
+            new Note("A Note, Folded Small", "H. N.", Place.BUNKER),
+            new Note("The Key", "H. N.", Place.PAST),
+            new Note("The Door at 6:14", "N. Bennet", Place.PAST),
+            new Note("Addendum: G. Gray", "Security", Place.PAST),
+            new Note("Why You", "H. N.", Place.PAST)
     );
+    /** Title to author, for every story note the mod places. */
+    public static final Map<String, String> NOTES = ORDER.stream()
+            .collect(Collectors.toUnmodifiableMap(Note::title, Note::author));
     private static final int SCAN_INTERVAL = 40;
 
     private StoryDiscoveries() {}
+
+    /** The titles of the notes this player has found, in story order. */
+    public static List<String> recovered(ServerPlayer player) {
+        Set<String> found = player.getData(ModDataAttachments.POWER_JOURNEY).discoveries();
+        return ORDER.stream().map(Note::title).filter(found::contains).toList();
+    }
+
+    public static boolean has(ServerPlayer player, String title) {
+        return player.getData(ModDataAttachments.POWER_JOURNEY).discoveries().contains(title);
+    }
 
     /** Every couple of seconds, checks the player's inventory for notes they have not found yet. */
     public static void tick(ServerPlayer player) {

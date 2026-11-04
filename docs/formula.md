@@ -110,7 +110,7 @@ Hold **The Formula** with an **Empty Syringe** anywhere in your inventory:
 | The roll fails | Rejection: 30 seconds of Nausea and Weakness, plus Poison (never lethal). The vial and syringe are used up. |
 | You already have an awakened power | Your body rejects it: up to 4 damage plus sickness, and the dose is spent. Powers don't stack. |
 | Every power is already claimed | Nothing happens, and **you keep the vial**. |
-| During an Eclipse | Nothing happens: *"The Formula is inert under the black sun."* |
+| During an Eclipse's totality | Nothing happens: *"The Formula is inert under the black sun."* The partial phases before and after do not stop it. |
 
 **Success chance:** 85% for donated blood or 60% for forced, plus 2% for each level the donor had
 above 1. For example, donated blood from a level 5 Regeneration owner has a 93% chance.

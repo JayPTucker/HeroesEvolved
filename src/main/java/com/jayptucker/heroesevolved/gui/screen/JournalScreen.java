@@ -18,9 +18,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The story so far: telepath visions of the future city, the time
- * traveller's milestones, and the watchmaker's hunt. Everything here is
- * the player's own durable progress, fetched from the server on open.
+ * The story so far: the next lead, the records found in the bunker, the
+ * ruins and the past, the Annex and the avenue at 6:14, the dreams of
+ * Odessa's Last Day, the time traveller's way back to it, and the
+ * watchmaker's hunt. Everything here is the player's own durable progress,
+ * fetched from the server on open.
  */
 public final class JournalScreen extends Screen {
     private static final int PANEL_WIDTH = 320;
@@ -31,9 +33,10 @@ public final class JournalScreen extends Screen {
     private static final int HEADING = 0xFFE0B040;
     private static final int TEXT = 0xFFE7C9CE;
     private static final int MUTED = 0xFF8A7075;
+    private static final int LEAD = 0xFF60C8D0;
 
     private static final String[][] MILESTONES = {
-            {"A Future Unwritten", "Escape the future city's destruction."},
+            {"The Last Day", "Stand in Odessa at 6:14 and escape the light."},
             {"No One Left Behind", "Carry a companion through space, or share stopped time."},
             {"A Place to Return", "Establish a spatial anchor."},
             {"The Butterfly Effect", "Successfully rewrite fifteen seconds."},
@@ -70,9 +73,17 @@ public final class JournalScreen extends Screen {
                 .bounds(left + PANEL_WIDTH - 63, top + panelHeight() - 26, 53, 20)
                 .build());
         addRenderableWidget(Button.builder(Component.literal("Read omen"), b -> incident(com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation.READ)).bounds(left + 9, top + panelHeight() - 26, 76, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Follow omen"), b -> incident(com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation.ENTER)).bounds(left + 89, top + panelHeight() - 26, 80, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Leave annex"), b -> incident(com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation.LEAVE)).bounds(left + 173, top + panelHeight() - 26, 80, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("Follow omen"), b -> follow()).bounds(left + 89, top + panelHeight() - 26, 80, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("Leave the past"), b -> incident(com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation.LEAVE)).bounds(left + 173, top + panelHeight() - 26, 80, 20).build());
         buildLines();
+    }
+
+    /** The newest omen: the avenue once Hiro's key is found, the Annex before that (or with Shift held). */
+    private void follow() {
+        StoryJournalPayload journal = ClientJournalState.get();
+        boolean avenue = journal != null && journal.avenueOpen() && !hasShiftDown();
+        incident(avenue ? com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation.AVENUE
+                : com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation.ENTER);
     }
 
     private void incident(com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation operation) {
@@ -87,14 +98,35 @@ public final class JournalScreen extends Screen {
             return;
         }
 
+        heading("Next lead");
+        add(Component.literal(journal.lead()), LEAD, wrap);
+        spacer();
+
+        // The books, logs and letters found in the bunker and the ruins.
+        heading("Recovered records  (" + journal.records().size() + "/" + journal.recordTotal() + ")");
+        for (String record : journal.records()) {
+            add(Component.literal("- " + record), TEXT, wrap);
+        }
+        int unfound = journal.recordTotal() - journal.records().size();
+        if (unfound > 0) {
+            add(Component.literal(unfound + (unfound == 1 ? " record is" : " records are")
+                    + " still out there: in the bunker, in the ruins, or not written yet."), MUTED, wrap);
+        }
+        spacer();
+
         heading("The Unfinished Hour");
         add(Component.literal(journal.incident()), TEXT, wrap);
         spacer();
-        // Chapter one: the visions.
-        heading("Visions of the Future  (" + journal.memories().size() + "/"
+
+        // The finale: the avenue at 6:14.
+        heading("The Avenue at 6:14");
+        add(Component.literal(journal.avenue()), journal.avenueOpen() ? TEXT : MUTED, wrap);
+        spacer();
+        // Chapter one: the dreams.
+        heading("Dreams of the Last Day  (" + journal.memories().size() + "/"
                 + journal.memoryTotal() + ")");
         if (journal.memories().isEmpty()) {
-            add(Component.literal("People have been having strange dreams. A telepath could hear them."),
+            add(Component.literal("Villagers dream of a city none of them has seen. A telepath could hear them."),
                     MUTED, wrap);
         }
         for (int index = 0; index < journal.memoryTotal(); index++) {
@@ -114,7 +146,7 @@ public final class JournalScreen extends Screen {
 
         // Chapter two: the time traveller's path.
         int reached = Integer.bitCount(journal.temporalMilestones() & 31);
-        heading("A Future Unwritten  (" + reached + "/" + MILESTONES.length + ")");
+        heading("The Way Back  (" + reached + "/" + MILESTONES.length + ")");
         for (int index = 0; index < MILESTONES.length; index++) {
             boolean done = (journal.temporalMilestones() & (1 << index)) != 0;
             add(Component.literal((done ? "[x] " : "[ ] ") + MILESTONES[index][0]

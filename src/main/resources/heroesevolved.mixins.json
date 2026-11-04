@@ -12,7 +12,8 @@
     "SunkPlayerMixin",
     "CarriedPickMixin",
     "PossessionInputMixin",
-    "PossessionSyncMixin"
+    "PossessionSyncMixin",
+    "EclipseMoonPhaseMixin"
   ],
   "client": [
     "FlightSprintMixin",
@@ -20,7 +21,8 @@
     "CarryVisibilityMixin",
     "IntroRenderDistanceMixin",
     "SeveredArmorMixin",
-    "SeveredHandItemMixin"
+    "SeveredHandItemMixin",
+    "EclipseSkyMixin"
   ],
   "injectors": {
     "defaultRequire": 1

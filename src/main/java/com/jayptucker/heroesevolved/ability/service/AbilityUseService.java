@@ -92,8 +92,7 @@ public final class AbilityUseService {
         if (!PowerRules.canAct(player)
                 || com.jayptucker.heroesevolved.cryo.CryoService.isFrozen(player)
                 || com.jayptucker.heroesevolved.intro.PowerIntroService.isActive(player)
-                || com.jayptucker.heroesevolved.time.intro.TimeIntroService.isVisiting(player)
-                || com.jayptucker.heroesevolved.time.intro.TimeIntroService.isCity(player.level())) {
+                || com.jayptucker.heroesevolved.time.intro.TimeIntroService.blocksPowers(player)) {
             PowerFeedback.explain(player, Component.literal(
                     com.jayptucker.heroesevolved.cryo.CryoService.isFrozen(player)
                             ? "You're frozen solid and can't move a muscle."

@@ -13,18 +13,26 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
-/** Displays whether the player is currently viewing the present or past. */
+import java.util.Map;
+
+/**
+ * Displays whether the player is in the present or the past, and for the story's past places,
+ * when. The city and the annex are Odessa on the Last Day; a snapshot is the player's own recording.
+ */
 @EventBusSubscriber(
         modid = HeroesEvolved.MOD_ID,
         value = Dist.CLIENT,
         bus = EventBusSubscriber.Bus.MOD
 )
 public final class TemporalStatusHudOverlay {
-    private static final ResourceLocation TEMPORAL_DIMENSION =
-            ResourceLocation.fromNamespaceAndPath(
-                    HeroesEvolved.MOD_ID,
-                    "temporal_snapshot"
-            );
+    private static final Map<ResourceLocation, String> PAST_LABELS = Map.of(
+            ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "temporal_snapshot"),
+            "hud.heroesevolved.past",
+            ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "time_fracture"),
+            "hud.heroesevolved.past_last_day",
+            ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "unwritten_annex"),
+            "hud.heroesevolved.past_annex"
+    );
 
     private TemporalStatusHudOverlay() {
     }
@@ -50,8 +58,8 @@ public final class TemporalStatusHudOverlay {
             return;
         }
 
-        boolean inPast = minecraft.level.dimension().location()
-                .equals(TEMPORAL_DIMENSION);
+        String pastLabel = PAST_LABELS.get(minecraft.level.dimension().location());
+        boolean inPast = pastLabel != null;
         boolean hasTimeManipulation = ClientPowerState.getSnapshot()
                 .abilities()
                 .stream()
@@ -67,7 +75,7 @@ public final class TemporalStatusHudOverlay {
         }
 
         Component label = Component.translatable(inPast
-                ? "hud.heroesevolved.past"
+                ? pastLabel
                 : "hud.heroesevolved.present");
         int width = minecraft.font.width(label);
         int color = inPast ? 0xFFB8D8FF : 0xFFFFD7DC;

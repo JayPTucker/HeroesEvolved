@@ -71,6 +71,8 @@ public final class TemporalSnapshotService {
         return data.ready()
                 && !ACTIVE_BUILDS.containsKey(player.getUUID())
                 && !isTemporalDimension(player.serverLevel())
+                // Already in the past: the Last Day is not a place to record from.
+                && !com.jayptucker.heroesevolved.time.intro.TimeIntroService.isCity(player.level())
                 && server != null
                 && server.getLevel(TEMPORAL_DIMENSION) != null;
     }

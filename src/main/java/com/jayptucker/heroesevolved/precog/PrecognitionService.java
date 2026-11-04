@@ -112,6 +112,11 @@ public final class PrecognitionService {
         var history = p.getData(ModDataAttachments.POWER_INTRO_HISTORY);
         if (history.seen().contains(id)) return;
         p.setData(ModDataAttachments.POWER_INTRO_HISTORY, history.with(id));
+        firstVision(p);
+    }
+
+    /** The awakening's story beat: the first painting and a free Premonition. Played by the intro's release. */
+    public static void firstVision(ServerPlayer p) {
         p.sendSystemMessage(Component.literal("Your hands move before you decide to move them. Two silhouettes. A copper heart. A clock without a next second.")
                 .withStyle(ChatFormatting.GOLD));
         FacilityService.plan(p);
@@ -307,7 +312,7 @@ public final class PrecognitionService {
             FacilityService.plan(p);
             PropheticPainting.give(p);
             FacilityService.discovery(p, "canvas_received");
-            p.sendSystemMessage(Component.literal("The Unfinished Hour: two people behind glass, a copper heart running hot. It has not happened yet.")
+            p.sendSystemMessage(Component.literal("The Unfinished Hour: two people behind glass, a copper heart running hot. Odessa, 5:50 PM on the Last Day. It happened, but it isn't finished.")
                     .withStyle(ChatFormatting.GOLD));
             return;
         }

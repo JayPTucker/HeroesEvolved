@@ -15,6 +15,7 @@ import com.jayptucker.heroesevolved.progression.MasteryService;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.progression.PowerLevels;
 import com.jayptucker.heroesevolved.progression.StoryDiscoveries;
+import com.jayptucker.heroesevolved.story.StoryLead;
 import com.jayptucker.heroesevolved.story.bunker.BunkerLogs;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.core.BlockPos;
@@ -175,6 +176,32 @@ public final class ProgressionReworkGameTests {
         }
         h.assertTrue(SkillTreeService.storyPoints(p) == 8, "Story points stop at eight");
         h.succeed();
+    }
+
+    @GameTest(template = "rewind_empty", batch = "progress.story")
+    public static void journalLeadFollowsTheRecords(GameTestHelper h) {
+        h.assertTrue(StoryDiscoveries.ORDER.size() == StoryDiscoveries.NOTES.size()
+                && StoryDiscoveries.ORDER.stream().allMatch(note -> note.author().equals(StoryDiscoveries.NOTES.get(note.title()))),
+                "Every note appears once in story order, with its author");
+        var p = player(h, ModAbilities.QUAKE_ID, 1);
+        for (var note : StoryDiscoveries.ORDER) {
+            if (note.place() == StoryDiscoveries.Place.BUNKER) discover(p, note.title());
+        }
+        h.assertTrue(StoryLead.next(p).contains("Isaac Mendez"), "With the bunker read, the ruins are next: " + StoryLead.next(p));
+
+        discover(p, "Dad");
+        h.assertTrue(StoryLead.next(p).contains("hourglass"), "Then Hiro's annex: " + StoryLead.next(p));
+        List<String> recovered = StoryDiscoveries.recovered(p);
+        h.assertTrue(recovered.getFirst().equals("Stasis Wing: Orientation") && recovered.get(3).equals("Dad"),
+                "The journal lists records in story order, not the order they were found: " + recovered);
+
+        p.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty().assignDormant(ModAbilities.QUAKE_ID));
+        h.assertTrue(StoryLead.next(p).contains("hasn't woken"), "A sleeper whose power is dormant is told how it wakes: " + StoryLead.next(p));
+        h.succeed();
+    }
+
+    private static void discover(ServerPlayer p, String title) {
+        p.setData(ModDataAttachments.POWER_JOURNEY, p.getData(ModDataAttachments.POWER_JOURNEY).discover(title));
     }
 
     @GameTest(template = "rewind_empty", batch = "progress.mastery")

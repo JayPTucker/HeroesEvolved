@@ -318,7 +318,7 @@ public final class FlightReworkGameTests {
         LivingEntity target = target(h, p.position().add(1, 0, 0));
         try {
             DiveBombService.start(p, 5);
-            EclipseService.start(p.getServer());
+            EclipseService.beginTotality(p.getServer());
             DiveBombService.tick(p);
             h.assertTrue(!DiveBombService.isDiving(p), "Suppression cancels an in-progress plunge");
             h.assertTrue(!DiveBombService.consumeCushion(p), "Suppression cannot leave indefinite Dive fall immunity");

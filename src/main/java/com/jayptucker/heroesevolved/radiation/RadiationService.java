@@ -508,7 +508,7 @@ public final class RadiationService {
         ArmPosePayload.clear(player);
     }
 
-    /** Far-off players see the sky flash; those who've seen the future recognise it. */
+    /** Far-off players see the sky flash; those who've stood in Odessa on the Last Day recognise it. */
     private static void warnDistantWitnesses(ServerPlayer source, Vec3 center) {
         for (ServerPlayer witness : source.serverLevel().players()) {
             double distance = witness.position().distanceTo(center);
@@ -521,7 +521,7 @@ public final class RadiationService {
             ScreenTintPayload.send(witness, 0x50FFFFFF, 12, ScreenTintPayload.Style.FLASH);
             if (witness.getData(ModDataAttachments.PLAYER_SEEN_FUTURE_CITY.get())) {
                 witness.sendSystemMessage(Component.literal(
-                        "You've seen that light before. On an avenue that hasn't been built yet.")
+                        "You've seen that light before. On an avenue in Odessa, at 6:14.")
                         .withStyle(ChatFormatting.DARK_AQUA, ChatFormatting.ITALIC));
             }
         }

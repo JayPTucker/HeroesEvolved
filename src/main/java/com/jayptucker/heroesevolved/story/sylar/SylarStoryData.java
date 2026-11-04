@@ -38,6 +38,11 @@ public final class SylarStoryData extends SavedData {
         if (!learned.add(power)) return false;
         setDirty(); return true;
     }
+    /** The past changed under him: he never learned it. Returns true if he knew it. */
+    public boolean forget(ResourceLocation power) {
+        if (!learned.remove(power)) return false;
+        setDirty(); return true;
+    }
     public long quietUntil() { return quietUntil; }
     public int defeats() { return defeats; }
     /** Driven off for real: an hour's world-wide quiet. */

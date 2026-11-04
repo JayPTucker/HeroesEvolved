@@ -2,6 +2,9 @@ package com.jayptucker.heroesevolved.network;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
+import com.jayptucker.heroesevolved.progression.StoryDiscoveries;
+import com.jayptucker.heroesevolved.story.AvenueService;
+import com.jayptucker.heroesevolved.story.StoryLead;
 import com.jayptucker.heroesevolved.story.sylar.SylarStoryData;
 import com.jayptucker.heroesevolved.telepathy.FutureVisions;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -16,6 +19,9 @@ import java.util.List;
 
 /** One player's story progress, sent when they open the journal. */
 public record StoryJournalPayload(
+        String lead,
+        List<String> records,
+        int recordTotal,
         List<String> memories,
         int memoryTotal,
         boolean seenFutureCity,
@@ -23,7 +29,9 @@ public record StoryJournalPayload(
         int sylarChapter,
         int sylarDefeats,
         List<String> sylarLearned,
-        String incident
+        String incident,
+        boolean avenueOpen,
+        String avenue
 ) implements CustomPacketPayload {
     public static final Type<StoryJournalPayload> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "story_journal"));
@@ -33,6 +41,9 @@ public record StoryJournalPayload(
 
     public static final StreamCodec<RegistryFriendlyByteBuf, StoryJournalPayload> STREAM_CODEC =
             StreamCodec.of((buffer, payload) -> {
+                buffer.writeUtf(payload.lead, 512);
+                STRINGS.encode(buffer, payload.records);
+                buffer.writeVarInt(payload.recordTotal);
                 STRINGS.encode(buffer, payload.memories);
                 buffer.writeVarInt(payload.memoryTotal);
                 buffer.writeBoolean(payload.seenFutureCity);
@@ -41,14 +52,21 @@ public record StoryJournalPayload(
                 buffer.writeVarInt(payload.sylarDefeats);
                 STRINGS.encode(buffer, payload.sylarLearned);
                 buffer.writeUtf(payload.incident, 1024);
-            }, buffer -> new StoryJournalPayload(STRINGS.decode(buffer), buffer.readVarInt(),
+                buffer.writeBoolean(payload.avenueOpen);
+                buffer.writeUtf(payload.avenue, 1024);
+            }, buffer -> new StoryJournalPayload(buffer.readUtf(512), STRINGS.decode(buffer),
+                    buffer.readVarInt(), STRINGS.decode(buffer), buffer.readVarInt(),
                     buffer.readBoolean(), buffer.readVarInt(), buffer.readVarInt(),
-                    buffer.readVarInt(), STRINGS.decode(buffer), buffer.readUtf(1024)));
+                    buffer.readVarInt(), STRINGS.decode(buffer), buffer.readUtf(1024),
+                    buffer.readBoolean(), buffer.readUtf(1024)));
 
     /** Gathers everything the journal shows for this player. */
     public static StoryJournalPayload of(ServerPlayer player) {
         SylarStoryData sylar = SylarStoryData.get(player.getServer());
         return new StoryJournalPayload(
+                StoryLead.next(player),
+                StoryDiscoveries.recovered(player),
+                StoryDiscoveries.ORDER.size(),
                 FutureVisions.heard(player),
                 FutureVisions.fragmentCount(),
                 player.getData(ModDataAttachments.PLAYER_SEEN_FUTURE_CITY.get()),
@@ -56,7 +74,9 @@ public record StoryJournalPayload(
                 sylar.trail(player.getUUID()).chapter,
                 sylar.defeats(),
                 sylar.learned().stream().map(ResourceLocation::toString).sorted().toList(),
-                com.jayptucker.heroesevolved.expansion.FacilityService.journal(player)
+                com.jayptucker.heroesevolved.expansion.FacilityService.journal(player),
+                AvenueService.unlocked(player),
+                AvenueService.journal(player)
         );
     }
 
