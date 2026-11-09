@@ -1,0 +1,25 @@
+// Fixed-camera full/minimal particle previews, isolated from user worlds and the release jar.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('constructPreview') {
+                java.srcDir('src/uitest/java')
+                java.include('**/ConstructPreview.java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/construct-preview')
+                        programArguments.addAll('--width', '1100', '--height', '800')
+                        systemProperty('heroes.preview.construct', 'true')
+                        systemProperty('heroes.preview.construct.weaveOnly', project.hasProperty('constructWeaveOnly').toString())
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('constructPreviewClasses')) }
+        }
+    }
+}

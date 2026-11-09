@@ -1,14 +1,15 @@
 # Power rework status
 
-Audited against the working tree on November 3, 2026. The roster contains **16 powers**;
-Sylar is a separate encounter, not a seventeenth selectable power.
+Audited against the working tree on November 3, 2026. The roster contains **18 powers**;
+Sylar is a separate encounter. [Technopathy](technopathy.md) and [Matter Assembly](matter-assembly.md)
+are new complete kits, each with five core actions and an eighteen-node interaction tree.
 
 **Empathic Mimicry is the remaining original core kit. Cryokinesis now connects Frost,
 solid ice construction, Glacier Ride, Crystal Prison and Whiteout. Invisibility implements
 its Exposure and optical-misdirection kit.** A working power, a bug fix, or an expanded tree
 is not by itself a full redesign.
 
-The other fifteen powers have a substantially redesigned core. That does **not** mean all
+The other fifteen original powers have a substantially redesigned core. That does **not** mean all
 their optional skills have received the same treatment. Flight, Telekinesis, Cryokinesis and Invisibility have complete,
 interaction-based eighteen-node redesigns; several other trees still mix
 new techniques with older attacks, buffs and generic stat nodes.

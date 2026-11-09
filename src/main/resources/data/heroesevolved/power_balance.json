@@ -208,5 +208,17 @@
     "action": "mimicry_empathize",
     "energy": 1,
     "cooldown": 1
+  },
+  {
+    "power": "technopathy",
+    "action": "technopathy_machine_city",
+    "energy": 1,
+    "cooldown": 1
+  },
+  {
+    "power": "matter_assembly",
+    "action": "matter_assembly_cathedral",
+    "energy": 1,
+    "cooldown": 1
   }
 ]

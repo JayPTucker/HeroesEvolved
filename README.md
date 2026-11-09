@@ -6,7 +6,7 @@ events and evolving abilities. Build and run with Java 21.
 ## Skills and progression
 
 Open the survival inventory and click **Skills**, next to the recipe book.
-Every power has three named branches of six nodes: eighteen per power, 288 in all.
+Every power has three named branches of six nodes: eighteen per power, 324 in all.
 The Abilities page is also the skill tree: each branch is drawn as its real tree, and you learn skills and put them on keys right there.
 Powers grow from Level 1 to 20 (Manifesting, Controlled, Practiced, Mastered, and Evolved after a
 per-power trial). Levels unlock the core kit and give skill points; story notes hidden in the world
@@ -14,11 +14,28 @@ give more. Put any ability on any of eight keys, or cast anything from the **abi
 Abilities rank up with use. Purchases and loadouts persist across death and relogging. See
 [Power Levels, keys and the ability wheel](docs/progression.md).
 
-All sixteen powers have trees: Quake, Flight, Cryokinesis, Electrokinesis,
+All eighteen powers have trees: Quake, Flight, Cryokinesis, Electrokinesis,
 Telekinesis, Telepathy, Regeneration, Time Manipulation, Radiation, Sonic
 Resonance, Superspeed, Precognition, Pyrokinesis, Invisibility, Density (Phasing) and
-Empathic Mimicry. Sonic Resonance's cries are original synthesized sound design, including a
+Empathic Mimicry, Technopathy and Matter Assembly. Sonic Resonance's cries are original synthesized sound design, including a
 positional sustained scream that stops when you release its key.
+
+Three powers also have a **signature ability**, a showpiece hung under one branch's Mastery at Level 10:
+[Blackout](docs/electrokinesis.md#signature-blackout) (Electrokinesis drinks every machine around her and
+kills the grid), [Singularity](docs/space-time-manipulation.md#signature-singularity) (a black hole with an
+accretion disk that drags enemies into orbit, swallows shots and collapses in a shockwave) and
+[Phoenix](docs/pyrokinesis.md#signature-phoenix) (a firebird that dives through three enemies and comes home
+to heal you).
+
+Electric powers reach real machines from other mods. EMPs drain and stop anything storing Forge Energy
+(Mekanism, Thermal, Powah, ...) and seize Create's shafts; lightning charges FE machines; Technopathy enrols
+and shuts them down. No other mod is required. See [Powers and machines](docs/machines.md).
+
+See [Technopathy](docs/technopathy.md) for physical relay networks, remote mechanisms,
+prepared traps, stolen projectile trajectories and Machine City. See
+[Matter Assembly](docs/matter-assembly.md) for paid temporary walls, bridges, cages,
+ricocheting Shards, rescue floors and Cathedral Engine. Both have five core actions,
+six optional techniques, a first-awakening sequence and their own Evolved trial.
 
 See [the skill guide](docs/skill-trees.md) for the original optional skills,
 point costs, prerequisites and loadout controls.

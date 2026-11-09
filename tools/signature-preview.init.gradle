@@ -1,0 +1,25 @@
+// Fixed-camera night captures of the signature abilities and machine effects, isolated from user worlds and the release jar.
+// ./gradlew runClient --init-script tools/signature-preview.init.gradle  ->  build/signature-preview/screenshots/
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('signaturePreview') {
+                java.srcDir('src/uitest/java')
+                java.include('**/SignaturePreview.java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/signature-preview')
+                        programArguments.addAll('--width', '1100', '--height', '800')
+                        systemProperty('heroes.preview.signature', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('signaturePreviewClasses')) }
+        }
+    }
+}

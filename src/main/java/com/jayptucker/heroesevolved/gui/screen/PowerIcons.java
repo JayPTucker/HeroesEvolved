@@ -22,10 +22,16 @@ public final class PowerIcons {
             Map.entry("radiation", Items.MAGMA_CREAM), Map.entry("sonic_resonance", Items.BELL),
             Map.entry("superspeed", Items.SUGAR), Map.entry("precognition", Items.PAINTING),
             Map.entry("pyrokinesis", Items.BLAZE_POWDER), Map.entry("invisibility", Items.GLASS_PANE),
-            Map.entry("phasing", Items.CHORUS_FRUIT), Map.entry("empathic_mimicry", Items.AMETHYST_SHARD));
+            Map.entry("phasing", Items.CHORUS_FRUIT), Map.entry("empathic_mimicry", Items.AMETHYST_SHARD),
+            Map.entry("technopathy", Items.COMPARATOR), Map.entry("matter_assembly", Items.STONECUTTER));
 
     /** First keyword found in an ability's id or name picks its picture. Order matters: specific before general. */
     private static final List<Map.Entry<String, Item>> KEYWORDS = List.of(
+            Map.entry("handshake", Items.COMPARATOR), Map.entry("tripwire", Items.TRIPWIRE_HOOK),
+            Map.entry("intercept", Items.IRON_BARS), Map.entry("machine_city", Items.REDSTONE_BLOCK),
+            Map.entry("relay", Items.REPEATER), Map.entry("barricade", Items.STONE_BRICK_WALL),
+            Map.entry("shard_lance", Items.POINTED_DRIPSTONE), Map.entry("causeway", Items.STONE_BRICK_SLAB),
+            Map.entry("cathedral", Items.CHISELED_STONE_BRICKS),
             Map.entry("blue", Items.SOUL_CAMPFIRE), Map.entry("inferno", Items.FIRE_CHARGE), Map.entry("flare", Items.FIRE_CHARGE),
             Map.entry("fire", Items.BLAZE_POWDER), Map.entry("ember", Items.CAMPFIRE), Map.entry("flame", Items.BLAZE_ROD),
             Map.entry("backdraft", Items.FIREWORK_ROCKET), Map.entry("ring", Items.CAMPFIRE),

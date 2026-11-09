@@ -18,7 +18,10 @@ current is the look; her weakness to water is the drawback. Numbers are configur
 - **Water turns on you.** Stepping into water with 20+ Charge dumps all of it at once: it shocks
   enemies in the water around you, and you. Using power while in water also hurts you.
 - **Machines:** a bolt or stream that hits a **lightning rod** makes it give off a redstone pulse, and
-  one that hits a **copper bulb** toggles it, just as a real strike would.
+  one that hits a **copper bulb** toggles it, just as a real strike would. Lightning that lands on anything
+  storing **Forge Energy** (a Mekanism cube, a Thermal cell, any FE/RF machine) charges it: Chain Lightning
+  4,000 FE, Live Current 10,000 FE a second, Thunderstrike 40,000 FE, and Storm Surge arcs 20,000 FE into
+  every machine around you. See [Powers and machines](machines.md).
 
 ## Actions
 
@@ -46,6 +49,21 @@ guardian's whine for Live Current, the respawn anchor for wind-ups and the coppe
 
 The tree is unchanged except **Overcharge** (Storm Geometry), which now also fills your Charge, so
 your next power is empowered.
+
+### Signature: Blackout
+
+Groundkeeper's signature ability hangs under **High Voltage Mastery** (Level 10, 3 points, 45 stamina,
+30 s cooldown). Elle drinks the grid.
+
+1. **The siphon (1 s).** She lifts her arms and every powered thing within 12 blocks throws an arc into her
+   chest: Forge Energy machines, Create machinery, redstone blocks, lit lamps and live wire. The arcs come
+   faster as the pull builds, with motes of light running along them into her.
+2. **The pulse.** A dome of lightning races out to 20 blocks with a band of shadow close behind it: the
+   lights going out. For 12 seconds redstone gives no signal, FE machines are drained and stop, Create's
+   shafts seize, and energy items enemies carry are drained (see [Powers and machines](machines.md)).
+   Enemies within 12 blocks are shocked (5 + level), slowed and plunged into **Darkness**.
+3. **The payoff.** The pulse gives 20 Charge, plus 1 per 2,000 FE drained, plus 3 per machine (up to 10).
+   Drink a big enough grid and you come out of it Overcharged.
 
 ## Previewing
 

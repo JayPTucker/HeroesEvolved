@@ -22,7 +22,18 @@ constructed ice, Glacier Ride and Frost/shatter interactions instead of applying
 stat bonuses below. See [Cryokinesis](cryokinesis.md) for the complete connected kit.
 
 Every tree now has eighteen nodes: the original nine below, plus a technique, an
-upgrade and a capstone in each branch (see [the new powers guide](new-powers.md)). See
+upgrade and a capstone in each branch (see [the new powers guide](new-powers.md)).
+
+**Signature abilities** sit on top of the eighteen: one showpiece active hung under a branch's Mastery
+node, at Level 10 for 3 points. They are not capstones, so taking one never blocks your capstone.
+Mark a node `"signature": true` in `skill_trees.json` (it must be active). There are three so far:
+[Blackout](electrokinesis.md#signature-blackout) (Electrokinesis, Groundkeeper),
+[Singularity](space-time-manipulation.md#signature-singularity) (Time Manipulation, Wayfinder) and
+[Phoenix](pyrokinesis.md#signature-phoenix) (Pyrokinesis, Phoenix). To see their effects (and the machine
+short-out, charge and siphon effects) at night from a fixed camera, run
+`./gradlew runClient --init-script tools/signature-preview.init.gradle`; screenshots land in
+`build/signature-preview/screenshots/`. Gameplay checks are in `SignatureAbilityGameTests` and `GridGameTests`.
+See
 [A Future Unwritten](a-future-unwritten.md) for new techniques, capstones, respecialization
 and discovery points. Every original
 branch contains an opening passive, an optional active skill, and a mastery

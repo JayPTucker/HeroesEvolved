@@ -11,11 +11,18 @@ import java.util.*;
 public final class SkillCatalog {
     public record Node(String id, String power, int branch, int tier, String name, String description,
                        int energy, int cooldown, int cost, int level, boolean active, String prerequisite,
-                       String mechanic, boolean capstone, String icon) {
+                       String mechanic, boolean capstone, String icon, boolean signature) {
         public ResourceLocation actionId() { return ResourceLocation.fromNamespaceAndPath("heroesevolved", id); }
         public AbilityAction action() {
             if (power.equals("flight")) return com.jayptucker.heroesevolved.flight.FlightSkillService.action(this);
             if (power.equals("telekinesis")) return com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.action(this);
+            if (power.equals("technopathy")) return SimpleAction.builder(id, level()).cost(() -> energy, () -> cooldown)
+                    .canUse(com.jayptucker.heroesevolved.technopathy.TechnopathyService::canUse)
+                    .activate(c -> mechanic.isEmpty() ? com.jayptucker.heroesevolved.technopathy.TechnopathyService.skill(c, branch)
+                            : com.jayptucker.heroesevolved.technopathy.TechnopathyService.technique(c, mechanic)).build();
+            if (power.equals("matter_assembly")) return SimpleAction.builder(id, level()).cost(() -> energy, () -> cooldown)
+                    .canUse(c -> com.jayptucker.heroesevolved.assembly.MatterAssemblyService.canUse(c, mechanic.isEmpty() ? id : mechanic))
+                    .activate(c -> com.jayptucker.heroesevolved.assembly.MatterAssemblyService.activate(c, mechanic.isEmpty() ? id : mechanic)).build();
             return SimpleAction.builder(id, level()).cost(() -> energy, () -> cooldown)
                     .canUse(c -> mechanic.isEmpty() ? SkillActionService.canUse(c, branch)
                             : com.jayptucker.heroesevolved.expansion.ExpansionSkills.canUse(c, mechanic))
@@ -55,7 +62,9 @@ public final class SkillCatalog {
                                 active, n.has("requires") ? n.get("requires").getAsString() : parent,
                                 n.has("mechanic") ? n.get("mechanic").getAsString() : "",
                                 n.has("capstone") && n.get("capstone").getAsBoolean(),
-                                n.has("icon") ? n.get("icon").getAsString() : ""));
+                                n.has("icon") ? n.get("icon").getAsString() : "",
+                                // A signature ability is a showpiece beyond the eighteen-node tree: always active, never a capstone.
+                                n.has("signature") && n.get("signature").getAsBoolean()));
                         parent = id; tier++;
                     }
                     if (tier < 1 || tier > 12) throw new IllegalStateException("Invalid branch length");
@@ -63,6 +72,7 @@ public final class SkillCatalog {
                 }
                 if (branch != 3 || nodes.stream().map(Node::id).distinct().count() != nodes.size()
                         || nodes.stream().anyMatch(n -> n.cost < 1 || n.level < 1 || !n.prerequisite.isEmpty() && nodes.stream().noneMatch(parent -> parent.id.equals(n.prerequisite) && parent.tier < n.tier))
+                        || nodes.stream().anyMatch(n -> n.signature && (!n.active || n.capstone))
                         || result.put(power, List.copyOf(nodes)) != null)
                     throw new IllegalStateException("Invalid skill tree: " + power);
             }

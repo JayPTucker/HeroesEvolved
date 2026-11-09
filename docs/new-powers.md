@@ -1,6 +1,8 @@
 # Invisibility, Phasing and Empathic Mimicry
 
-Three new unique powers bring the roster to **16**. Each uses the normal one-owner rule, Eclipse
+This earlier expansion introduced three unique powers, bringing its roster to **16**. The current
+roster is **18**, with [Technopathy](technopathy.md) and [Matter Assembly](matter-assembly.md).
+Each uses the normal one-owner rule, Eclipse
 assignment, awakening intro, mastery and an 18-node skill tree. Every original tree has also
 grown to 18 nodes; see the end of this page.
 

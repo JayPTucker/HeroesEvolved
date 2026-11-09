@@ -45,6 +45,14 @@ Learn and equip these through the inventory **Skills** button. Existing purchase
 
 The existing passive discounts and damage bonuses still apply. Remembering an anchor uses its normal skill cost/cooldown. Shift retains the mod's existing overexertion behavior when stamina is insufficient.
 
+### Signature: Singularity
+
+Wayfinder's signature ability hangs under **Accelerated Force Mastery**, after Spatial Anchor (Level 10, 3 points, 50 stamina, 35 s cooldown). Space folds to a point where you aim (up to 24 blocks, held clear of the surface).
+
+- **For five seconds** a black core with a photon ring and a turning accretion disk (hot gold inside, violet outside) hangs in the air. Every enemy within 10 blocks is dragged into a spiralling orbit, faster the closer it falls; anything within 1.6 blocks of the core takes 3 + half your level every half second and is slowed. Hostile arrows and fireballs bend into it and vanish. Loose items and experience drift in. Dust is torn off the ground below (cosmetic only: no block is ever touched).
+- **Then it collapses:** rings pinch to a point, a flash, and a shockwave throws everything within 8 blocks outward for 8 + level (less at the edge). What it swallowed is set at your feet.
+- Bosses feel 15% of the pull, knockback resistance weakens it, allies feel none, and creatures held in Selective Stasis or a cryo cocoon stay where they are.
+
 ## Story: The Way Back
 
 The acquisition vision is Odessa at 6:14 PM on the Last Day, which already happened centuries ago (see [The Past](the-past.md#the-storyline-the-last-day)). The HUD reads **PAST · ODESSA, THE LAST DAY** there. Its compact captions lead into five durable advancements, visible in the vanilla Advancements screen and in the Journal as **The Way Back**:

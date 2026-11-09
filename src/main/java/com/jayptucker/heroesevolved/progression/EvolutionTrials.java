@@ -24,16 +24,18 @@ public final class EvolutionTrials {
 
     /** The generic feat: enemies defeated within three seconds of using your power. */
     public static final Trial DEFEATS = new Trial("Defeat 60 enemies with your power", 60);
-    private static final Map<String, Trial> TRIALS = Map.of(
-            "regeneration", new Trial("Get back up 5 times after being put down", 5),
-            "radiation", new Trial("Hold it in: cancel your own Nuclear Detonation 3 times at Critical Core", 3),
-            "time_manipulation", new Trial("Undo your own death with Rewrite the Moment", 1),
-            "electrokinesis", new Trial("Unleash 25 Overcharged powers", 25),
-            "superspeed", new Trial("Run 20 km (20,000 blocks) with Accelerate", 20000),
-            "sonic_resonance", new Trial("Catch 40 enemies in the burst of a Resonant Note", 40),
-            "precognition", new Trial("Change the future 50 times: let foreseen harm miss you or a friend", 50),
-            "phasing", new Trial("Travel 2,000 blocks through solid matter", 2000),
-            "quake", new Trial("Push through it: land 40 quake hits while at 80 Strain or more", 40)
+    private static final Map<String, Trial> TRIALS = Map.ofEntries(
+            Map.entry("regeneration", new Trial("Get back up 5 times after being put down", 5)),
+            Map.entry("radiation", new Trial("Hold it in: cancel your own Nuclear Detonation 3 times at Critical Core", 3)),
+            Map.entry("time_manipulation", new Trial("Undo your own death with Rewrite the Moment", 1)),
+            Map.entry("electrokinesis", new Trial("Unleash 25 Overcharged powers", 25)),
+            Map.entry("superspeed", new Trial("Run 20 km (20,000 blocks) with Accelerate", 20000)),
+            Map.entry("sonic_resonance", new Trial("Catch 40 enemies in the burst of a Resonant Note", 40)),
+            Map.entry("precognition", new Trial("Change the future 50 times: let foreseen harm miss you or a friend", 50)),
+            Map.entry("phasing", new Trial("Travel 2,000 blocks through solid matter", 2000)),
+            Map.entry("quake", new Trial("Push through it: land 40 quake hits while at 80 Strain or more", 40)),
+            Map.entry("technopathy", new Trial("Intercept 40 hostile projectiles with your network", 40)),
+            Map.entry("matter_assembly", new Trial("Strike enemies 40 times with assembled Shards", 40))
     );
 
     private EvolutionTrials() {}

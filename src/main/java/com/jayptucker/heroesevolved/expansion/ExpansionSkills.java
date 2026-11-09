@@ -57,9 +57,22 @@ public final class ExpansionSkills {
         return hit.getType() == HitResult.Type.BLOCK ? hit.getBlockPos() : BlockPos.containing(p.position().add(p.getLookAngle().multiply(1, 0, 1).normalize().scale(8))).below();
     }
     public static boolean canUse(AbilityUseContext c, String mechanic) {
-        return !c.player().isPassenger() && PowerRules.canAct(c.player());
+        if (c.player().isPassenger() || !PowerRules.canAct(c.player())) return false;
+        // Signature abilities: one of each at a time.
+        return switch (mechanic) {
+            case "blackout" -> !com.jayptucker.heroesevolved.electro.BlackoutService.winding(c.player());
+            case "singularity" -> !com.jayptucker.heroesevolved.time.SingularityService.active(c.player());
+            case "phoenix" -> !com.jayptucker.heroesevolved.pyro.PhoenixService.active(c.player()) && !c.player().isInWaterOrBubble();
+            default -> true;
+        };
     }
     public static boolean activate(AbilityUseContext c, String mechanic) {
+        switch (mechanic) {
+            case "blackout" -> { return com.jayptucker.heroesevolved.electro.BlackoutService.activate(c.player(), c.abilityLevel()); }
+            case "singularity" -> { return com.jayptucker.heroesevolved.time.SingularityService.activate(c.player(), c.abilityLevel()); }
+            case "phoenix" -> { return com.jayptucker.heroesevolved.pyro.PhoenixService.activate(c.player(), c.abilityLevel()); }
+            default -> { }
+        }
         ServerPlayer p = c.player(); BlockPos target = aim(p);
         switch (mechanic) {
             case "fault_script" -> {

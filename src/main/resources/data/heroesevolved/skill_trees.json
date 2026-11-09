@@ -605,6 +605,20 @@
           "cost": 3,
           "requires": "electrokinesis_insulated_roots",
           "mechanic": "faraday_garden"
+        },
+        {
+          "id": "electrokinesis_blackout",
+          "name": "Blackout",
+          "description": "Drink the grid: for a second every machine and live circuit near you arcs into you, then a 20-block pulse kills redstone, drains and stops Forge Energy machines and seizes Create shafts for 12 seconds. Enemies within 12 blocks are shocked and plunged into darkness. What you drain becomes Charge.",
+          "active": true,
+          "signature": true,
+          "icon": "minecraft:redstone_lamp",
+          "level": 4,
+          "cost": 3,
+          "requires": "electrokinesis_1_2",
+          "mechanic": "blackout",
+          "energy": 45,
+          "cooldown": 600
         }
       ],
       [
@@ -928,7 +942,7 @@
         },
         {
           "name": "Dream Double",
-          "description": "Plant a private illusion in a player\u2019s mind: your clone, an approaching zombie or creeper, a false chest, or a small shelter. Contact or interaction dissolves it.",
+          "description": "Plant a private illusion in a player’s mind: your clone, an approaching zombie or creeper, a false chest, or a small shelter. Contact or interaction dissolves it.",
           "energy": 32,
           "cooldown": 180
         },
@@ -1233,6 +1247,20 @@
           "cost": 3,
           "requires": "time_manipulation_far_fold",
           "mechanic": "wayfinder"
+        },
+        {
+          "id": "time_manipulation_singularity",
+          "name": "Singularity",
+          "description": "Fold space to a point where you aim. For five seconds it drags enemies within 10 blocks into a spiralling orbit, tears at anything at its core, and swallows hostile projectiles and loose items. Then it collapses in a shockwave, and what it swallowed lands at your feet.",
+          "active": true,
+          "signature": true,
+          "icon": "minecraft:heavy_core",
+          "level": 4,
+          "cost": 3,
+          "requires": "time_manipulation_1_2",
+          "mechanic": "singularity",
+          "energy": 50,
+          "cooldown": 700
         }
       ],
       [
@@ -2067,6 +2095,20 @@
           "cost": 3,
           "requires": "pyrokinesis_thaw",
           "mechanic": "pillar_of_flame"
+        },
+        {
+          "id": "pyrokinesis_phoenix",
+          "name": "Phoenix",
+          "description": "Release a firebird. It wheels over you, then dives through up to three enemies in turn (four from Level 15), burning whatever it brushes past and lighting fire where they stood. Then it comes home, healing you for each strike and leaving you fire resistant.",
+          "active": true,
+          "signature": true,
+          "icon": "minecraft:blaze_rod",
+          "level": 4,
+          "cost": 3,
+          "requires": "pyrokinesis_2_2",
+          "mechanic": "phoenix",
+          "energy": 55,
+          "cooldown": 600
         }
       ]
     ],
@@ -2545,6 +2587,371 @@
       "ECHO HUNTER",
       "RESONANCE",
       "EMPATHY"
+    ]
+  },
+  {
+    "power": "technopathy",
+    "branch_names": [
+      "OPERATOR",
+      "SENTINEL",
+      "KINETIC LOGIC"
+    ],
+    "branches": [
+      [
+        {
+          "id": "technopathy_air_gap",
+          "name": "Air Gap",
+          "description": "Handshake can bridge one empty block between physical conductors. The gap must actually be empty; walls cannot become cables.",
+          "active": false,
+          "level": 1,
+          "cost": 1
+        },
+        {
+          "id": "technopathy_batch_instruction",
+          "name": "Batch Instruction",
+          "description": "Send ON / OPEN to up to six linked controls. Hold Shift for OFF / CLOSED. Every real device checks its owner's permission separately.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "mechanic": "tech_batch_instruction",
+          "energy": 16,
+          "cooldown": 80
+        },
+        {
+          "id": "technopathy_safety_interlock",
+          "name": "Safety Interlock",
+          "description": "Remote commands refuse to close doors, gates and trapdoors occupied by any living body. Build an evacuation corridor without closing it on the people using it.",
+          "active": false,
+          "level": 2,
+          "cost": 1
+        },
+        {
+          "id": "technopathy_delayed_instruction",
+          "name": "Delayed Instruction",
+          "description": "Queue the aimed linked control to toggle in three seconds. Shift queues OFF / CLOSED. An intervening manual command cancels your instruction.",
+          "active": true,
+          "level": 3,
+          "cost": 2,
+          "mechanic": "tech_delayed_instruction",
+          "energy": 16,
+          "cooldown": 100
+        },
+        {
+          "id": "technopathy_echo_instruction",
+          "name": "Echo Instruction",
+          "description": "Delayed Instructions return their devices to the previous state two seconds after firing. A later manual command or replacement block is never overwritten.",
+          "active": false,
+          "level": 4,
+          "cost": 2
+        },
+        {
+          "id": "technopathy_clockwork",
+          "name": "Clockwork",
+          "description": "Your Delayed Instruction fans out across six linked controls, firing one every eight ticks. Echo Instruction makes the whole sequence unwind after each step.",
+          "active": false,
+          "level": 5,
+          "cost": 3,
+          "capstone": true
+        }
+      ],
+      [
+        {
+          "id": "technopathy_motion_sensor",
+          "name": "Motion Sensor",
+          "description": "Tripwire reads a moving body's recent path as well as its current position. Fast intruders can no longer simply skip through a thin line between checks.",
+          "active": false,
+          "level": 1,
+          "cost": 1
+        },
+        {
+          "id": "technopathy_sentry_seal",
+          "name": "Sentry Seal",
+          "description": "Prepare a three-block proximity trap above a linked relay for thirty seconds. Its first hostile intruder is slammed back and briefly slowed; incoming arrows are intercepted when it fires.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "mechanic": "tech_sentry_seal",
+          "energy": 18,
+          "cooldown": 100
+        },
+        {
+          "id": "technopathy_interrupt_request",
+          "name": "Interrupt Request",
+          "description": "Triggered relay traps interrupt eating, bow drawing and other held item use, and break an intruder's sprint. They do not suppress an entire ability set.",
+          "active": false,
+          "level": 2,
+          "cost": 1
+        },
+        {
+          "id": "technopathy_kill_switch",
+          "name": "Kill Switch",
+          "description": "Switch an active linked controller OFF / CLOSED for five seconds, then safely restore its original state. The command never resurrects a broken or replaced device.",
+          "active": true,
+          "level": 3,
+          "cost": 2,
+          "mechanic": "tech_kill_switch",
+          "energy": 20,
+          "cooldown": 140
+        },
+        {
+          "id": "technopathy_black_box",
+          "name": "Black Box",
+          "description": "A real hostile arrow interception saves one spare trap charge. Your next Tripwire can stop two different intruders instead of one. The spare cannot be stockpiled.",
+          "active": false,
+          "level": 4,
+          "cost": 2
+        },
+        {
+          "id": "technopathy_airlock",
+          "name": "Airlock",
+          "description": "When a relay trap catches an intruder, nearby enrolled open doors, gates and trapdoors close for three seconds, then return to their original state. Build an actual containment corridor.",
+          "active": false,
+          "level": 5,
+          "cost": 3,
+          "capstone": true
+        }
+      ],
+      [
+        {
+          "id": "technopathy_flywheel",
+          "name": "Flywheel",
+          "description": "Hostile arrow interceptions store up to three packets of momentum. Your next triggered relay trap spends them for a stronger physical recoil instead of adding free damage.",
+          "active": false,
+          "level": 1,
+          "cost": 1
+        },
+        {
+          "id": "technopathy_winchline",
+          "name": "Winchline",
+          "description": "A linked relay winches the nearest visible hostile within seven blocks towards itself for up to three seconds. Cover and collision break the tether.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "mechanic": "tech_winchline",
+          "energy": 20,
+          "cooldown": 100
+        },
+        {
+          "id": "technopathy_counterweight",
+          "name": "Counterweight",
+          "description": "Hold Shift with Winchline to pull yourself towards the aimed relay instead. Vault along a prepared route without teleporting, phasing or leaving flight flags behind.",
+          "active": false,
+          "level": 2,
+          "cost": 1
+        },
+        {
+          "id": "technopathy_domino_engine",
+          "name": "Domino Engine",
+          "description": "Send a fast mechanical recoil through twelve enrolled relays, one every four ticks. Each enemy can be struck only once by the sequence. Prepare a cable-lined corridor before the fight.",
+          "active": true,
+          "level": 3,
+          "cost": 2,
+          "mechanic": "tech_domino_engine",
+          "energy": 32,
+          "cooldown": 180
+        },
+        {
+          "id": "technopathy_recoil_circuit",
+          "name": "Recoil Circuit",
+          "description": "Domino Engine pushes targets along the arriving relay link rather than radially away. Your circuit's physical layout becomes a knockback conveyor.",
+          "active": false,
+          "level": 4,
+          "cost": 2
+        },
+        {
+          "id": "technopathy_return_to_sender",
+          "name": "Return to Sender",
+          "description": "Intercept can send an arrow back at its hostile shooter when the return route is clear. The arrow becomes your shot; damage, cover, friendly fire and server PvP rules still apply.",
+          "active": false,
+          "level": 5,
+          "cost": 3,
+          "capstone": true
+        }
+      ]
+    ]
+  },
+  {
+    "power": "matter_assembly",
+    "branch_names": [
+      "Architecture",
+      "Ballistics",
+      "Refuge"
+    ],
+    "branches": [
+      [
+        {
+          "id": "matter_assembly_load_bearing",
+          "name": "Load-Bearing",
+          "description": "Landing on your own assembled matter absorbs your fall completely.",
+          "active": false,
+          "level": 1,
+          "cost": 1
+        },
+        {
+          "id": "matter_assembly_switchback",
+          "name": "Switchback",
+          "description": "Fold a paid three-wide staircase through a right-angle turn toward your aim. Look up to climb, down to descend.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "energy": 20,
+          "cooldown": 120,
+          "mechanic": "switchback"
+        },
+        {
+          "id": "matter_assembly_buttress",
+          "name": "Buttressed Corners",
+          "description": "Foldwall gains return wings that cover your flanks. Every extra cell still consumes a block.",
+          "active": false,
+          "level": 3,
+          "cost": 2
+        },
+        {
+          "id": "matter_assembly_drawbridge",
+          "name": "Drawbridge",
+          "description": "Project a narrow twenty-block crossing over a gap. Cast again to retract that crossing from its far end.",
+          "active": true,
+          "level": 3,
+          "cost": 2,
+          "energy": 18,
+          "cooldown": 60,
+          "requires": "matter_assembly_load_bearing",
+          "mechanic": "drawbridge"
+        },
+        {
+          "id": "matter_assembly_rails",
+          "name": "Snap Rails",
+          "description": "Causeway and Switchback automatically add paid guard posts to both edges as they grow.",
+          "active": false,
+          "level": 4,
+          "cost": 1
+        },
+        {
+          "id": "matter_assembly_blueprint",
+          "name": "Living Blueprint",
+          "description": "Cathedral remembers its shell. While you remain nearby it repairs an empty broken cell every half-second, spending fresh inventory material each time.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3
+        }
+      ],
+      [
+        {
+          "id": "matter_assembly_bank_shot",
+          "name": "Bank Shot",
+          "description": "Your Shards ricochet once from your own assembled walls instead of stopping, making your cover part of your aim.",
+          "active": false,
+          "level": 1,
+          "cost": 1
+        },
+        {
+          "id": "matter_assembly_scattershot",
+          "name": "Scattershot",
+          "description": "Spend five blocks to launch a fan of five individually colliding Shards. Their travel is real and cover stops them.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "energy": 22,
+          "cooldown": 100,
+          "mechanic": "scattershot"
+        },
+        {
+          "id": "matter_assembly_recall_angle",
+          "name": "Recall Angle",
+          "description": "A banked Shard can turn toward a visible enemy near the reflection point. The wall becomes a controlled firing angle.",
+          "active": false,
+          "level": 3,
+          "cost": 2
+        },
+        {
+          "id": "matter_assembly_faultline",
+          "name": "Faultline",
+          "description": "Paid pillars rise in a travelling line over solid ground. Each cell launches nearby enemies upward without harming allies or replacing terrain.",
+          "active": true,
+          "level": 3,
+          "cost": 2,
+          "energy": 28,
+          "cooldown": 180,
+          "requires": "matter_assembly_bank_shot",
+          "mechanic": "faultline"
+        },
+        {
+          "id": "matter_assembly_unstable_lattice",
+          "name": "Unstable Lattice",
+          "description": "Deliberately dismantling a shape releases up to six of its already-paid cells as outward Shards. It returns no items.",
+          "active": false,
+          "level": 4,
+          "cost": 1
+        },
+        {
+          "id": "matter_assembly_splinter_storm",
+          "name": "Splinter Storm",
+          "description": "A direct Shard hit splits into two smaller fragments aimed at other visible enemies nearby. Fragments cannot split again.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3
+        }
+      ],
+      [
+        {
+          "id": "matter_assembly_threshold",
+          "name": "Secret Threshold",
+          "description": "Empty-hand right-click your own matter to open a two-block doorway. You can escape or change a firing angle without mining.",
+          "active": false,
+          "level": 1,
+          "cost": 1
+        },
+        {
+          "id": "matter_assembly_shelter",
+          "name": "Folded Shelter",
+          "description": "Raise a paid, hollow shelter around yourself with a roof and a rear doorway. Occupied cells are always skipped.",
+          "active": true,
+          "level": 2,
+          "cost": 2,
+          "energy": 22,
+          "cooldown": 160,
+          "mechanic": "shelter"
+        },
+        {
+          "id": "matter_assembly_clean_exit",
+          "name": "Clean Exit",
+          "description": "Shelters have a broad rear exit so your team can leave together; their front and roof remain closed.",
+          "active": false,
+          "level": 3,
+          "cost": 2
+        },
+        {
+          "id": "matter_assembly_cradle",
+          "name": "Rescue Cradle",
+          "description": "Aim at a consenting teammate or use it on yourself. Build a paid safety floor two blocks below them, even over a void.",
+          "active": true,
+          "level": 3,
+          "cost": 2,
+          "energy": 18,
+          "cooldown": 120,
+          "requires": "matter_assembly_threshold",
+          "mechanic": "cradle"
+        },
+        {
+          "id": "matter_assembly_pressure_valve",
+          "name": "Pressure Valve",
+          "description": "A melee attacker striking you beside your own matter is blasted backward. The valve needs two seconds to reset.",
+          "active": false,
+          "level": 4,
+          "cost": 1
+        },
+        {
+          "id": "matter_assembly_second_foundation",
+          "name": "Second Foundation",
+          "description": "Once a minute, a fatal hit can trigger an emergency paid shelter and leave you at one health. It requires twelve spare blocks and space for at least four cells.",
+          "active": false,
+          "capstone": true,
+          "level": 5,
+          "cost": 3
+        }
+      ]
     ]
   }
 ]

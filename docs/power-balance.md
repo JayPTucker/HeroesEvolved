@@ -16,6 +16,12 @@ The afterimages have a shared 48-copy cap, 64-block draw distance, frustum culli
 
 ## Changes across the roster
 
+Technopathy and Matter Assembly are new complete kits with their own costs rather than a
+discount layered over an older design. Technopathy spends its ultimate on a twelve-second
+district of at most eight real relays. Assembly spends both stamina and ordinary inventory
+material; its temporary cells never produce loot. See their [network](technopathy.md) and
+[construction](matter-assembly.md) guides for current costs, limits and counters.
+
 Percentages below apply to configured base values, before skill discounts. Smaller cooldown percentages mean more frequent use.
 
 | Power | Adjustments |

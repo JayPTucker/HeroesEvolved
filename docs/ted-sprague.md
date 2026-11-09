@@ -32,7 +32,7 @@ as a chain reaction.
 | --- | --- | --- |
 | 1 | Radiant Heat | A white-hot **cone** from your palms burns and doses up to six enemies within 8 blocks. With nothing in reach, the heat still works on terrain: it boils source water, thaws ice and melts iron doors, trapdoors or bars (permissions and protection events apply). +6 Core. |
 | 2 | Contamination | A pulse of sickness around you (6 + level blocks) that leaves the ground **contaminated for 8 seconds**: anyone who stands in it later keeps getting dosed. **Shift** emits the bright, blinding flash instead. +12 Core. |
-| 3 | Electromagnetic Pulse | Still suppresses redstone within 16 blocks for 10 seconds. It also throws enemies within 10 blocks off balance (slowed, weakened, revealed) and **vents 25 Core**: your panic button. |
+| 3 | Electromagnetic Pulse | Still suppresses redstone within 16 blocks for 10 seconds, and now kills powered machines too: Forge Energy machines (Mekanism, Thermal...) are drained and stop, and Create's shafts seize (see [Powers and machines](machines.md)). It also throws enemies within 10 blocks off balance (slowed, weakened, revealed) and **vents 25 Core**: your panic button. |
 | 4 | Controlled Emission | **Hold** to pour Core out through a piercing heat beam (48-block reach). Each pulse vents 3 Core and hits harder the more is left; it ends when you let go, run cool, or after five seconds. Needs 10 Core to start. **Shift** stops it at once. |
 | 5 | Nuclear Detonation | Unchanged: a three-second voluntary charge that Shift cancels while control remains; an involuntary meltdown cannot be cancelled. |
 

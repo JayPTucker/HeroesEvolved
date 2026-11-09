@@ -309,12 +309,15 @@ public final class RadiationService {
     // ------------------------------------------------------------------
 
     /**
-     * An electromagnetic pulse: redstone within sixteen blocks goes dead for ten seconds, enemies within
-     * ten are thrown off balance and revealed, and the pulse carries 25 Core out of you. Your panic vent.
+     * An electromagnetic pulse: redstone within sixteen blocks goes dead for ten seconds, and so do powered
+     * machines (Forge Energy machines are drained and stop; Create's shafts seize). Enemies within ten are
+     * thrown off balance and revealed, and the pulse carries 25 Core out of you. Your panic vent.
      */
     public static void emp(ServerPlayer player) {
-        RadiationEmp.pulse(player);
+        var grid = RadiationEmp.pulse(player);
         ServerLevel level = player.serverLevel();
+        if (grid.machines() > 0) player.displayClientMessage(Component.literal(grid.machines() == 1 ? "A machine dies in the pulse."
+                : grid.machines() + " machines die in the pulse.").withStyle(ChatFormatting.AQUA), false);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(10.0D),
                 entity -> hostile(player, entity) && entity.distanceToSqr(player) <= 100)) {
             target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60, 1));
@@ -588,7 +591,6 @@ public final class RadiationService {
     public static void tick(MinecraftServer server) {
         long gameTime = server.overworld().getGameTime();
         NuclearFallout.tick(server);
-        RadiationEmp.tick(server);
         for (Emission emission : List.copyOf(EMISSIONS.values())) tickEmission(emission, emission.player.serverLevel().getGameTime());
         for (Zone zone : List.copyOf(ZONES)) {
             long now = zone.level.getGameTime();

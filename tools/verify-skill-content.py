@@ -11,8 +11,8 @@ lang = json.loads((assets / "lang/en_us.json").read_text(encoding="utf-8"))
 sounds = json.loads((assets / "sounds.json").read_text(encoding="utf-8"))
 expected = {"quake", "flight", "cryokinesis", "electrokinesis", "telekinesis", "telepathy",
             "regeneration", "time_manipulation", "radiation", "sonic_resonance", "superspeed", "precognition", "pyrokinesis",
-            "invisibility", "phasing", "empathic_mimicry"}
-assert {t["power"] for t in trees} == expected and len(trees) == 16
+            "invisibility", "phasing", "empathic_mimicry", "technopathy", "matter_assembly"}
+assert {t["power"] for t in trees} == expected and len(trees) == len(expected)
 nodes = 0
 actives = 0
 for tree in trees:
@@ -69,8 +69,9 @@ source = pathlib.Path(__file__).resolve().parents[1] / "src/main/java"
 lookups = 0
 for java in source.rglob("*.java"):
     text = java.read_text(encoding="utf-8")
-    # Telekinesis's own helper adds its prefix; everything else must use the full id.
-    prefix = "telekinesis_" if java.parent.name == "telekinesis" else ""
+    # These services' local has() helpers add a prefix; direct full ids remain valid too.
+    prefix = {"telekinesis": "telekinesis_", "assembly": "matter_assembly_",
+              "technopathy": "technopathy_"}.get(java.parent.name, "")
     for match in re.finditer(r'\bhas\(\s*[\w.()]+\s*,\s*"([a-z0-9_]+)"\s*\)', text):
         key = match.group(1)
         full = key if key.startswith(prefix) else prefix + key

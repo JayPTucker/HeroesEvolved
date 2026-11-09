@@ -1,6 +1,6 @@
 # First-acquisition power intros
 
-All sixteen powers have a distinct animated introduction when first unlocked.
+All eighteen powers have a distinct animated introduction when first unlocked.
 Grants, admin replacements, the Formula and natural dormant awakenings use the
 same acquisition hook. Assigning a dormant power alone does not run an intro.
 Existing unlocked non-time powers do not suddenly fire destructive intros on login.
@@ -29,6 +29,8 @@ owner, and whoever last hurt them, another player included.
 | Telekinesis | Two seconds of inward motes and a concentrating violet field. | Nearby mobs and loose items briefly levitate, cosmetic stones rise from the ground, then the lifted objects are pushed outward. Living targets receive a brief slow-fall effect on release. |
 | Regeneration | Two and a half seconds of wounds healing amid red-to-gold particles. | Full health, harmful-status removal, extinguished fire, and a healing bloom reaching non-hostile living entities within eight blocks. |
 | Time Manipulation | The existing city vision. The owner is shielded while the city is prepared. | The siren, panicked crowds, nuclear detonation and group escape remain intact; see `time-manipulation-intro.md`. On a completed return home the owner gets the second wind, and nearby monsters lose their target and are left a heartbeat behind (heavily slowed and weakened for five seconds). |
+| Technopathy | Cyan diagnostic routes resolve around the owner while nearby mechanisms begin to make sense. | A circuit scan and brief hostile-projectile rejection pulse; no free network mastery or Evolved trial progress. |
+| Matter Assembly | Amber construction lines and fragments assemble around the owner's hands. | A defensive lattice and a recoil pulse give the owner room to act. Paid construction starts with the actual ability keys. |
 
 Each new composition has its own charge and release particle kinds. Primary
 cues remain visible on Minimal particles; richer filaments, motes and layered

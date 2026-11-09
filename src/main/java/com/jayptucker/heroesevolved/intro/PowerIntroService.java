@@ -71,7 +71,9 @@ public final class PowerIntroService {
             Map.entry("invisibility", new Spec(40, 40, 0xCFD8E0, ArmPose.ARMS_WIDE, Kind.OPTIC_FADE, Kind.OPTIC_BURST)),
             Map.entry("phasing", new Spec(40, 40, 0x9FE3D6, ArmPose.TWO_HANDS, Kind.DENSITY_GHOST, Kind.DENSITY_RIPPLE)),
             Map.entry("empathic_mimicry", new Spec(50, 40, 0xE8C27A, ArmPose.TEMPLE, Kind.PROPHECY_THREAD, Kind.PSYCHIC_AWAKEN_RELEASE)),
-            Map.entry("precognition", new Spec(50, 40, 0xF7D88D, ArmPose.TEMPLE, Kind.PRECOG_FUTURE, Kind.PRECOG_RING)));
+            Map.entry("precognition", new Spec(50, 40, 0xF7D88D, ArmPose.TEMPLE, Kind.PRECOG_FUTURE, Kind.PRECOG_RING)),
+            Map.entry("technopathy", new Spec(50, 40, 0x60E0C1, ArmPose.TEMPLE, Kind.TECH_LINK, Kind.TECH_SCAN)),
+            Map.entry("matter_assembly", new Spec(50, 40, 0xE7B771, ArmPose.TWO_HANDS, Kind.MATTER_WEAVE, Kind.MATTER_SHIELD)));
     private static final Map<UUID, Session> SESSIONS = new HashMap<>();
     private static final Map<UUID, Integer> SOFT_LANDINGS = new HashMap<>();
 
@@ -196,6 +198,8 @@ public final class PowerIntroService {
             case "invisibility" -> SoundEvents.ILLUSIONER_PREPARE_MIRROR;
             case "phasing" -> SoundEvents.RESPAWN_ANCHOR_CHARGE;
             case "empathic_mimicry" -> SoundEvents.ENCHANTMENT_TABLE_USE;
+            case "technopathy" -> SoundEvents.COMPARATOR_CLICK;
+            case "matter_assembly" -> SoundEvents.DEEPSLATE_PLACE;
             default -> SoundEvents.WIND_CHARGE_BURST.value();
         };
         sound(player, sound, 0.9F, 0.7F);
@@ -292,6 +296,8 @@ public final class PowerIntroService {
             }
             case "empathic_mimicry" -> releaseMimicry(session);
             case "precognition" -> releasePrecognition(session);
+            case "technopathy" -> com.jayptucker.heroesevolved.technopathy.TechnopathyService.awaken(player);
+            case "matter_assembly" -> com.jayptucker.heroesevolved.assembly.MatterAssemblyService.awaken(player);
         }
         SOFT_LANDINGS.put(player.getUUID(), 20 * 30);
     }

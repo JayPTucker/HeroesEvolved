@@ -1,6 +1,6 @@
 package com.jayptucker.heroesevolved.mixin;
 
-import com.jayptucker.heroesevolved.radiation.RadiationEmp;
+import com.jayptucker.heroesevolved.grid.GridDisruption;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -15,6 +15,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class EmpSignalMixin {
     @Inject(method = {"getSignal", "getDirectSignal"}, at = @At("HEAD"), cancellable = true)
     private void heroesevolved$emp(BlockGetter world, BlockPos pos, Direction direction, CallbackInfoReturnable<Integer> result) {
-        if (world instanceof ServerLevel level && RadiationEmp.jammed(level, pos)) result.setReturnValue(0);
+        if (world instanceof ServerLevel level && GridDisruption.jammed(level, pos)) result.setReturnValue(0);
     }
 }

@@ -204,6 +204,8 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue electroStormEnergyCost;
         public final ModConfigSpec.IntValue electroStormCooldownTicks;
         public final ModConfigSpec.BooleanValue pyroWorldFire;
+        public final ModConfigSpec.BooleanValue gridAffectMachines, gridAffectCreate, gridAffectCarriedItems;
+        public final ModConfigSpec.IntValue gridMaxDrainPerMachine, gridLightningCharge;
         public final ModConfigSpec.BooleanValue formulaAllowForcedDraws;
         public final ModConfigSpec.IntValue formulaForcedDrawCooldownSeconds;
         public final ModConfigSpec.DoubleValue formulaDonatedSuccess, formulaForcedSuccess;
@@ -825,6 +827,25 @@ public final class HeroesEvolvedConfig {
                 pyroBackdraftCooldownTicks = cooldown(builder, "backdraft", 20 * 5);
                 pyroInfernoEnergyCost = energy(builder, "inferno", 110);
                 pyroInfernoCooldownTicks = cooldown(builder, "inferno", 20 * 120);
+                builder.pop();
+
+                builder.push("grid");
+                gridAffectMachines = builder.comment("Electromagnetic pulses (Radiation's EMP, Electrokinesis's Blackout) reach powered machines:",
+                                "any block exposing Forge Energy (Mekanism, Thermal, Powah, Flux Networks, ...) is drained and stops",
+                                "running for the pulse. Lightning powers charge those machines instead. Claims are respected.")
+                        .define("affectMachines", true);
+                gridAffectCreate = builder.comment("Pulses also seize Create's kinetic blocks: shafts, belts and machines inside stop turning",
+                                "until the pulse ends. Create runs on rotation, not electricity, so this is a separate switch.")
+                        .define("affectCreate", true);
+                gridAffectCarriedItems = builder.comment("Pulses drain energy-holding items (jetpacks, powered armor, energy tools) carried by",
+                                "hostile creatures and by players you could harm under the server's PvP rules.")
+                        .define("affectCarriedItems", true);
+                gridMaxDrainPerMachine = builder.comment("Most Forge Energy one pulse can drain from a single machine or battery. Keeps an EMP from",
+                                "emptying a whole induction matrix; machines still stall for the pulse either way.")
+                        .defineInRange("maxDrainPerMachine", 250_000, 0, Integer.MAX_VALUE);
+                gridLightningCharge = builder.comment("Forge Energy a Chain Lightning bolt pushes into a machine it hits. Live Current, Thunderstrike",
+                                "and Storm Surge scale from this. 0 turns lightning charging off.")
+                        .defineInRange("lightningCharge", 4_000, 0, 10_000_000);
                 builder.pop();
         }
     }

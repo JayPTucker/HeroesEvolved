@@ -8,6 +8,8 @@ import com.jayptucker.heroesevolved.ability.service.PowerRules;
 import com.jayptucker.heroesevolved.effects.AbilityEffects;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.expansion.ExpansionSkills;
+import com.jayptucker.heroesevolved.grid.GridDisruption;
+import static com.jayptucker.heroesevolved.config.HeroesEvolvedConfig.COMMON;
 import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 import com.jayptucker.heroesevolved.network.ArmPosePayload;
 import com.jayptucker.heroesevolved.network.CameraShakePayload;
@@ -250,7 +252,7 @@ public final class ElectroService {
             AbilityEffects.send(level, Kind.ELECTRIC_ARC, hand, hit.getLocation(), 1.0D);
             if (hit.getType() == HitResult.Type.BLOCK) {
                 AbilityEffects.send(level, Kind.ELECTRIC_IMPACT, hit.getLocation(), hit.getLocation(), 1.2D);
-                energize(level, hit.getBlockPos());
+                energize(level, hit.getBlockPos(), player, COMMON.gridLightningCharge.get());
             }
             flashLight(level, hit.getLocation(), 3);
         } else {
@@ -336,8 +338,10 @@ public final class ElectroService {
             RandomSource random = level.getRandom();
             setVelocity(target, target.getDeltaMovement().multiply(0.2, 1, 0.2)
                     .add((random.nextDouble() - 0.5) * 0.12, 0, (random.nextDouble() - 0.5) * 0.12));
-        } else if (hit.getType() == HitResult.Type.BLOCK && level.getGameTime() % 10 == 0) {
-            energize(level, hit.getBlockPos());
+        } else if (hit.getType() == HitResult.Type.BLOCK) {
+            // Held on a machine, Live Current is a charger: half a bolt's worth on every pulse, five a second.
+            GridDisruption.charge(player, level, hit.getBlockPos(), COMMON.gridLightningCharge.get() / 2);
+            if (level.getGameTime() % 10 == 0) energize(level, hit.getBlockPos(), player, 0);
         }
         flashLight(level, end, 3);
         level.playSound(null, end.x, end.y, end.z, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS,
@@ -450,6 +454,10 @@ public final class ElectroService {
             drawArc(level, at, entity.getBoundingBox().getCenter(), level.getRandom());
             shock(owner, entity, 5.0F + orb.powerLevel + (orb.empowered ? 3.0F : 0.0F));
         }
+        // The burst lashes into any machine it pops beside, too.
+        for (BlockPos machine : GridDisruption.chargeArea(owner, level, BlockPos.containing(at), (int) Math.ceil(radius),
+                COMMON.gridLightningCharge.get() * 2, 4))
+            drawArc(level, at, Vec3.atCenterOf(machine), level.getRandom());
         AbilityEffects.send(level, Kind.ELECTRIC_IMPACT, at, at.add(0.0D, 1.0D, 0.0D), radius);
         flashLight(level, at, 4);
         level.playSound(null, at.x, at.y, at.z, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 0.9F, 1.3F);
@@ -542,7 +550,8 @@ public final class ElectroService {
                 shock(owner, entity, damage * 0.6F);
             }
         }
-        energize(level, BlockPos.containing(impact.subtract(0, 0.1, 0)));
+        // A real strike is a lot of current: ten bolts' worth into whatever it lands on.
+        energize(level, BlockPos.containing(impact.subtract(0, 0.1, 0)), owner, COMMON.gridLightningCharge.get() * 10);
         flashLight(level, impact.add(0, 1, 0), 5);
         CameraShakePayload.sendAround(level, impact, 24.0D, 1.4F, 10);
         ScreenTintPayload.sendAround(level, impact, 24.0D, 0x40FFFFFF, 5, ScreenTintPayload.Style.FLASH);
@@ -668,6 +677,10 @@ public final class ElectroService {
             AbilityEffects.send(level, Kind.ELECTRIC_SKY_BOLT, at, at.add(0, 24, 0), 0.8D);
         }
         AbilityEffects.send(level, Kind.ELECTRIC_NOVA, player.position(), player.position().add(0, 1, 0), radius);
+        // A power surge in the literal sense: every machine in reach takes five bolts' worth, and an arc shows it.
+        for (BlockPos machine : GridDisruption.chargeArea(player, level, player.blockPosition(), (int) radius,
+                COMMON.gridLightningCharge.get() * 5, 16))
+            AbilityEffects.send(level, Kind.ELECTRIC_ARC, center, Vec3.atCenterOf(machine), 1.2D);
         flashLight(level, center, 6);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.TRIDENT_THUNDER.value(), SoundSource.PLAYERS, 2.0F, 1.0F);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.PLAYERS, 2.0F, 1.2F);
@@ -859,9 +872,13 @@ public final class ElectroService {
 
     /**
      * Current reaching a machine works it, the way a real strike would: a lightning rod gives off a
-     * redstone pulse and copper bulbs toggle. Nothing is broken or placed.
+     * redstone pulse and copper bulbs toggle, and anything that stores Forge Energy (a Mekanism cube, a
+     * Thermal cell, any FE machine) is charged by {@code fe}. Nothing is broken or placed.
      */
-    private static void energize(ServerLevel level, BlockPos pos) {
+    private static void energize(ServerLevel level, BlockPos pos, ServerPlayer owner, int fe) {
+        for (BlockPos near : new BlockPos[] {pos, pos.above(), pos.below()}) {
+            if (GridDisruption.charge(owner, level, near, fe) > 0) return;
+        }
         for (BlockPos near : new BlockPos[] {pos, pos.above(), pos.below()}) {
             BlockState state = level.getBlockState(near);
             if (state.getBlock() instanceof LightningRodBlock rod) {

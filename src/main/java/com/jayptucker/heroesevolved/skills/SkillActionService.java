@@ -40,6 +40,8 @@ public final class SkillActionService {
                 : hostile(player, target));
     }
     public static boolean canUse(AbilityUseContext c, int branch) {
+        if (c.abilityId().getPath().equals("technopathy")) return com.jayptucker.heroesevolved.technopathy.TechnopathyService.canUse(c);
+        if (c.abilityId().getPath().equals("matter_assembly")) return com.jayptucker.heroesevolved.assembly.MatterAssemblyService.canUse(c, "matter_assembly_" + branch + "_1");
         if (c.abilityId().getPath().equals("cryokinesis")) return com.jayptucker.heroesevolved.cryo.CryoCombatSkills.canUse(c, branch);
         if (c.abilityId().getPath().equals("telekinesis")) return com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.canUse(c.player(), "telekinesis_" + branch + "_1");
         if (c.abilityId().getPath().equals("flight")) return com.jayptucker.heroesevolved.flight.FlightSkillService.canUse(c.player(), "flight_" + branch + "_1");
@@ -57,6 +59,8 @@ public final class SkillActionService {
         LivingEntity target = branch == 0 ? aimed(p, false) : null;
         int level = c.abilityLevel();
         switch (power) {
+            case "technopathy" -> { return com.jayptucker.heroesevolved.technopathy.TechnopathyService.skill(c, branch); }
+            case "matter_assembly" -> { return com.jayptucker.heroesevolved.assembly.MatterAssemblyService.activate(c, "matter_assembly_" + branch + "_1"); }
             case "quake" -> {
                 if (branch == 0) { hit(p, target, 7 + level); push(target, p.getLookAngle().scale(1.5).add(0, .15, 0)); }
                 if (branch == 1) for (var t : nearby(p, 8)) { hit(p, t, 4); effect(t, MobEffects.MOVEMENT_SLOWDOWN, 100, 2); }

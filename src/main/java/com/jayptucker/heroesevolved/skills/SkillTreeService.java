@@ -104,7 +104,8 @@ public final class SkillTreeService {
     public static double bonus(ServerPlayer player, ResourceLocation power, int branch) {
         // These trees unlock specific maneuvers and interactions, rather than blanket stat bonuses.
         if (power.equals(ModAbilities.FLIGHT_ID) || power.equals(ModAbilities.TELEKINESIS_ID)
-                || power.equals(ModAbilities.INVISIBILITY_ID) || power.equals(ModAbilities.CRYOKINESIS_ID)) return 0;
+                || power.equals(ModAbilities.INVISIBILITY_ID) || power.equals(ModAbilities.CRYOKINESIS_ID)
+                || power.equals(ModAbilities.TECHNOPATHY_ID) || power.equals(ModAbilities.MATTER_ASSEMBLY_ID)) return 0;
         var build = build(player, power); String prefix = power.getPath() + "_" + branch + "_";
         return (build.learned().contains(prefix + "0") ? .10 : 0) + (build.learned().contains(prefix + "2") ? .15 : 0);
     }
@@ -134,6 +135,8 @@ public final class SkillTreeService {
             action.release(context); action.deactivate(context);
         }
         com.jayptucker.heroesevolved.expansion.ExpansionSkills.forget(player);
+        if (power.equals(ModAbilities.TECHNOPATHY_ID)) com.jayptucker.heroesevolved.technopathy.TechnopathyService.forget(player);
+        if (power.equals(ModAbilities.MATTER_ASSEMBLY_ID)) com.jayptucker.heroesevolved.assembly.MatterAssemblyService.forget(player);
         if (power.equals(ModAbilities.FLIGHT_ID)) {
             com.jayptucker.heroesevolved.flight.FlightSkillService.forget(player);
             com.jayptucker.heroesevolved.flight.FlightSkillPassives.forget(player);

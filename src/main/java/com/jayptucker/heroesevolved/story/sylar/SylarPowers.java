@@ -272,6 +272,39 @@ public final class SylarPowers {
                         // The floor under you goes soft, then solid again with you in it.
                         if (com.jayptucker.heroesevolved.phasing.DensityService.embed(t, s, 50, false, 0.4) && t instanceof ServerPlayer player)
                             SylarVoice.warn(player, "story.heroesevolved.sylar.warn.embed");
+                    }),
+            new Move("stolen_trajectory", ModAbilities.TECHNOPATHY_ID, 24, 240, 0, 18, true, Pose.RAISED,
+                    (s, l, t, p) -> sound(l, s.position(), SoundEvents.COMPARATOR_CLICK, 1.2F, .6F),
+                    (s, l, t, p) -> AbilityEffects.send(l, Kind.TECH_CAGE, s.position(), s.getBoundingBox().getCenter(), 2),
+                    (s, l, t, p) -> {
+                        // His warning gives a bow user time to stop firing into his interception field.
+                        for (var shot : l.getEntitiesOfClass(net.minecraft.world.entity.projectile.AbstractArrow.class,
+                                s.getBoundingBox().inflate(7), arrow -> arrow.getOwner() instanceof LivingEntity shooter && foe(s, shooter) && !arrow.onGround()
+                                        && arrow.getDeltaMovement().lengthSqr() > .01 && s.hasLineOfSight(arrow))
+                                .stream().limit(6).toList()) {
+                            AbilityEffects.send(l, Kind.TECH_LINK, hand(s), shot.position(), 1);
+                            shot.setOwner(s);
+                            shot.setDeltaMovement(t.getBoundingBox().getCenter().subtract(shot.position()).normalize().scale(1.5));
+                            shot.hurtMarked = true;
+                        }
+                        sound(l, s.position(), SoundEvents.IRON_TRAPDOOR_CLOSE, .8F, 1.4F);
+                    }),
+            new Move("assembled_crossfire", ModAbilities.MATTER_ASSEMBLY_ID, 30, 220, 3, 18, true, Pose.TWO_HANDS,
+                    (s, l, t, p) -> { s.mark(t.position()); sound(l, s.position(), SoundEvents.DEEPSLATE_PLACE, 1, .7F); },
+                    (s, l, t, p) -> AbilityEffects.send(l, Kind.MATTER_WEAVE, hand(s), s.mark().add(0, 1, 0), 1.1),
+                    (s, l, t, p) -> {
+                        // The marked position is fixed at the start: movement and solid cover beat the fan.
+                        Vec3 at = s.mark().add(0, 1, 0);
+                        for (int i = -1; i <= 1; i++) {
+                            Vec3 end = at.add(flat(at.subtract(s.position())).cross(new Vec3(0, 1, 0)).scale(i * 1.3));
+                            AbilityEffects.send(l, Kind.MATTER_SHARD, hand(s), end, 1.4);
+                        }
+                        for (LivingEntity hit : foes(s, s.mark(), 2.7)) if (s.hasLineOfSight(hit)) {
+                            hurt(s, hit, 7 * p);
+                            push(hit, flat(hit.position().subtract(s.position())).scale(.5).add(0, .15, 0));
+                        }
+                        AbilityEffects.send(l, Kind.MATTER_COLLAPSE, at, at, 2);
+                        sound(l, at, SoundEvents.DEEPSLATE_BREAK, 1, .8F);
                     })
     );
 

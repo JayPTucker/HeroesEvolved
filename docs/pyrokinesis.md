@@ -102,6 +102,24 @@ arming/warning pattern, a focused drilling lance and converging fire trails for 
 Fire Shepherd makes the pyrokinetic a firefighter as well as a source of fire: reclaim ground
 flames to refuel the next boost, and draw fire off a burning companion before returning to combat.
 
+### Signature: Phoenix
+
+The Phoenix branch's signature ability hangs under **Warm Blood Mastery** (Level 10, 3 points,
+55 stamina, 30 s cooldown). The fire takes wing.
+
+A firebird tears itself out of your chest and climbs: a white-hot body, wings whose leading edges
+burn brightest with tongues of flame trailing off them as flight feathers, a crest, and three long
+plumes of tail that ripple as it flies, shedding embers. It wheels once over your head, then hunts
+the nearest enemy it can see within 24 blocks. Each dive strikes for 7 + level fire damage, sets the
+target burning for six seconds, throws it along the dive and lights real fire where it stood (subject
+to the same fire rules as the rest of the kit). Anything else it brushes past on the way is singed.
+It pulls up and dives at the next one: three in all, four from Level 15.
+
+When the hunt is over it comes home and folds back into you, healing 2 health plus 2 per strike and
+leaving you **Fire Resistant** for ten seconds. Water smothers it; it cannot be released while you are
+in water, and it burns out if it flies into some. It is a point with a heading drawn on clients from
+one small message a tick, not an entity, and it never breaks blocks.
+
 ## Reactions
 
 | Reaction | How | Result |

@@ -63,21 +63,28 @@ public class EffectGeometryCheck {
         public VertexConsumer setNormal(float x,float y,float z) { return this; }
     }
     public static void main(String[] args) throws Exception {
+        // Carry now distinguishes a reclining person, cradled cargo and an overhead lift.
+        // Check the current seat/pivot contract rather than the retired side-carry offset API.
         for (float yaw : new float[]{0, 45, 90, 135, 180, 225, 270, 315, 720})
-            for (double width : new double[]{.2, .6, 1.4, 4, 16}) for (boolean rightHanded : new boolean[]{false, true}) {
-                Vec3 offset = com.jayptucker.heroesevolved.entity.CarryGeometry.offset(yaw, .6, width, rightHanded);
-                Vec3 direction = Vec3.directionFromRotation(0, yaw);
-                Vec3 right = new Vec3(-direction.z, 0, direction.x);
-                if (!Double.isFinite(offset.lengthSqr()) || Math.signum(offset.dot(right)) != (rightHanded ? 1 : -1))
-                    throw new AssertionError("Carry seat lost its handed side or finite coordinates");
-                AABB cargo = com.jayptucker.heroesevolved.entity.CarryGeometry.box(width, 3, offset);
-                for (float pitch : new float[]{-80, -30, 0, 30, 80}) {
-                    Vec3 eye = new Vec3(0, 1.62, 0);
-                    if (cargo.clip(eye, eye.add(Vec3.directionFromRotation(pitch, yaw).scale(8))).isPresent())
-                        throw new AssertionError("Wide cargo obstructs the forward eye/interaction ray at yaw " + yaw);
+            for (double width : new double[]{.2, .6, 1.4, 4, 16}) for (int side : new int[]{-1, 1})
+                for (var hold : com.jayptucker.heroesevolved.entity.CarryGeometry.Hold.values()) {
+                    Vec3 local = com.jayptucker.heroesevolved.entity.CarryGeometry.seat(hold, .6, 1.8, width, 1.8, 1.62, side);
+                    Vec3 mirror = com.jayptucker.heroesevolved.entity.CarryGeometry.seat(hold, .6, 1.8, width, 1.8, 1.62, -side);
+                    Vec3 offset = com.jayptucker.heroesevolved.entity.CarryGeometry.rotate(local, yaw);
+                    if (!Double.isFinite(offset.lengthSqr()) || Math.abs(offset.lengthSqr() - local.lengthSqr()) > 1e-8
+                            || Math.abs(local.x + mirror.x) > 1e-8 || Math.abs(local.y - mirror.y) > 1e-8
+                            || Math.abs(local.z - mirror.z) > 1e-8)
+                        throw new AssertionError("Carry seat lost its finite, rotational or handed geometry");
+                    if (hold == com.jayptucker.heroesevolved.entity.CarryGeometry.Hold.OVERHEAD && local.y < 1.95 - 1e-8)
+                        throw new AssertionError("Overhead cargo intersects its carrier's head");
+                    if (hold == com.jayptucker.heroesevolved.entity.CarryGeometry.Hold.ARMS) {
+                        Vec3 hip = com.jayptucker.heroesevolved.entity.CarryGeometry.pivot(hold, .6, 1.8, width, 1.8, side);
+                        Vec3 head = hip.add(com.jayptucker.heroesevolved.entity.CarryGeometry.spine(side).scale(1.62 - .75));
+                        if (local.add(0, 1.62, 0).distanceToSqr(head) > 1e-12)
+                            throw new AssertionError("Carried eye position disagrees with the drawn reclining head");
+                    }
                 }
-            }
-        System.out.println("PASS: Carry seats stay handed, finite and clear of the forward view for small, humanoid and wide cargo at every heading.");
+        System.out.println("PASS: Carry seats stay finite, rotate and mirror correctly, and match the reclining head/overhead lift.");
         float previousOpacity = 1;
         for (int age = 0; age <= 24; age++) {
             float alpha = com.jayptucker.heroesevolved.client.effects.SpeedAfterimages.opacity(age);
@@ -245,6 +252,28 @@ public class EffectGeometryCheck {
                 throw new AssertionError("Cold dome volume and visual boundary disagree");
         }
         System.out.println("PASS: 20/24-block cold dome meshes remain world-anchored, bounded and finite, with matching freeze boundaries.");
+        {
+            // The Phoenix in every heading (straight up and straight down included), every wingbeat and dive.
+            Vec3 bird = new Vec3(-812.5, 91.25, 404.75);
+            int poses = 0;
+            Vec3[] headings = {new Vec3(1, 0, 0), new Vec3(0, 1, 0), new Vec3(0, -1, 0), new Vec3(0, 0, 0),
+                    new Vec3(0.3, -0.9, 0.2), new Vec3(-0.7, 0.1, 0.7), new Vec3(1.0E-9, 1, 1.0E-9)};
+            for (Vec3 heading : headings)
+                for (double flap = -0.6; flap <= 0.81; flap += 0.35)
+                    for (double sweep = 0; sweep <= 1.0; sweep += 0.5) {
+                        var pose = com.jayptucker.heroesevolved.client.effects.PhoenixGeometry.pose(bird, heading, flap, sweep, poses * 0.37);
+                        if (pose.feathers().size() != 2 * com.jayptucker.heroesevolved.client.effects.PhoenixGeometry.FEATHERS || pose.tail().size() != 3) throw new AssertionError("Phoenix lost feathers or plumes");
+                        for (var line : pose.all()) {
+                            if (line.size() < 2) throw new AssertionError("Phoenix stroke with fewer than two points");
+                            for (Vec3 point : line)
+                                if (!Double.isFinite(point.x) || !Double.isFinite(point.y) || !Double.isFinite(point.z)
+                                        || point.distanceTo(bird) > com.jayptucker.heroesevolved.client.effects.PhoenixGeometry.REACH)
+                                    throw new AssertionError("Phoenix point out of bounds for heading " + heading + ": " + point);
+                        }
+                        poses++;
+                    }
+            System.out.println("PASS: " + poses + " Phoenix poses stay finite and within " + com.jayptucker.heroesevolved.client.effects.PhoenixGeometry.REACH + " blocks of the bird.");
+        }
         int payloads = 0;
         for (AbilityEffectPayload.Kind kind : AbilityEffectPayload.Kind.values()) {
             RegistryFriendlyByteBuf buffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), RegistryAccess.EMPTY);

@@ -375,7 +375,16 @@ public final class SylarGameTests {
         helper.assertTrue(hunter.getMaxHealth() == 80 + 3 * 12 && hunter.getHealth() == hunter.getMaxHealth(), "Health grows with every power he has taken");
         helper.runAfterDelay(12, () -> {
             try {
-                helper.assertTrue(hunter.bar().isVisible() && hunter.bar().getPlayers().contains(quarry), "The quarry sees his boss bar");
+                helper.assertTrue(hunter.bar().isVisible() && hunter.bar().getPlayers().contains(quarry), "The quarry sees his boss bar (visible="
+                        + hunter.bar().isVisible() + " viewers=" + hunter.bar().getPlayers().size() + " combatTicks=" + hunter.combatTicks()
+                        + " age=" + hunter.tickCount + " eligible=" + SylarStoryService.eligible(quarry) + " distance=" + hunter.distanceTo(quarry)
+                        + " inLevel=" + helper.getLevel().players().contains(quarry)
+                        + " entityTicking=" + helper.getLevel().isPositionEntityTicking(hunter.blockPosition())
+                        + " forced=" + helper.getLevel().getForcedChunks().contains(hunter.chunkPosition().toLong())
+                        + " removed=" + hunter.isRemoved() + " timeStopped=" + com.jayptucker.heroesevolved.time.TimeStopService.isStopped(hunter)
+                        + " frozen=" + com.jayptucker.heroesevolved.cryo.CryoService.isFrozen(hunter)
+                        + " suspended=" + com.jayptucker.heroesevolved.time.SpaceTimeService.isSuspended(hunter)
+                        + " preserved=" + com.jayptucker.heroesevolved.expansion.ExpansionSkills.preserved(hunter) + ")");
                 hunter.setHealth(hunter.getMaxHealth() * 0.45F);
                 helper.runAfterDelay(2, () -> {
                     try {
@@ -467,7 +476,11 @@ public final class SylarGameTests {
         helper.assertTrue(!hunter.hurt(helper.getLevel().damageSources().playerAttack(quarry), 5), "While his wounds close, nothing hurts him");
         helper.runAfterDelay(105, () -> {
             try {
-                helper.assertTrue(!hunter.downed() && Math.abs(hunter.getHealth() - hunter.getMaxHealth() * 0.4F) < 2F, "He rises at two-fifths of his health");
+                helper.assertTrue(!hunter.downed() && Math.abs(hunter.getHealth() - hunter.getMaxHealth() * 0.4F) < 2F, "He rises at two-fifths of his health (downed="
+                        + hunter.downed() + " health=" + hunter.getHealth() + "/" + hunter.getMaxHealth() + " combatTicks=" + hunter.combatTicks()
+                        + " age=" + hunter.tickCount + " entityTicking=" + helper.getLevel().isPositionEntityTicking(hunter.blockPosition())
+                        + " forced=" + helper.getLevel().getForcedChunks().contains(hunter.chunkPosition().toLong())
+                        + " timeStopped=" + com.jayptucker.heroesevolved.time.TimeStopService.isStopped(hunter) + ")");
                 hunter.hurt(helper.getLevel().damageSources().playerAttack(quarry), 1000);
                 helper.assertTrue(!hunter.isAlive() && SylarStoryData.get(quarry.getServer()).defeats() == 1, "Only once: the second killing blow is final");
                 helper.succeed();

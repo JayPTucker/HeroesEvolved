@@ -52,7 +52,11 @@ public final class AbilityEffectRenderer {
             direction = UP;
         }
 
-        if (InvisibilityEffects.play(level, effect.kind(), origin, target, size, detail)
+        if (GridEffects.play(level, effect.kind(), origin, target, size, detail)
+                || SingularityEffects.play(level, effect.kind(), origin, target, size, detail)
+                || PhoenixEffects.play(level, effect.kind(), origin, target, size, detail)
+                || ConstructPowerEffects.play(level, effect.kind(), origin, target, size, detail, density)
+                || InvisibilityEffects.play(level, effect.kind(), origin, target, size, detail)
                 || TimeEffects.play(level, effect.kind(), origin, target, size, detail)
                 || RegenerationEffects.play(level, effect.kind(), origin, target, size, detail)
                 || RadiationEffects.play(level, effect.kind(), origin, target, size, detail)

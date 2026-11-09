@@ -202,6 +202,24 @@ public final class MimicryService {
                 && state.used.containsKey(ModAbilities.CRYOKINESIS_ID);
     }
 
+    public static boolean isBorrowingTechnopathy(ServerPlayer player) {
+        return isBorrowingConstructPower(player, ModAbilities.TECHNOPATHY_ID);
+    }
+
+    public static boolean isBorrowingMatterAssembly(ServerPlayer player) {
+        return isBorrowingConstructPower(player, ModAbilities.MATTER_ASSEMBLY_ID);
+    }
+
+    /** Only a real Echo invocation or its still-selected session authorizes these constructs. */
+    private static boolean isBorrowingConstructPower(ServerPlayer player, ResourceLocation power) {
+        if (player.isRemoved() || !isMimic(player) || !PowerRules.canAct(player)
+                || !power.equals(memory(player).current())) return false;
+        if (power.equals(INVOKING.get(player.getUUID()))) return true;
+        Borrowing state = BORROWING.get(player.getUUID());
+        return state != null && state.player == player && state.level == player.serverLevel()
+                && state.used.containsKey(power);
+    }
+
     private static <T> T invoke(EchoCast cast, Supplier<T> operation) {
         UUID id = cast.context.player().getUUID();
         ResourceLocation previous = INVOKING.put(id, cast.context.abilityId());

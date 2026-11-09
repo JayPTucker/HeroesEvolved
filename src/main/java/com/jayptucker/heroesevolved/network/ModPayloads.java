@@ -17,7 +17,7 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("54")
+        event.registrar("56")
             .playToServer(CryoRideInputPayload.TYPE, CryoRideInputPayload.STREAM_CODEC, CryoRideInputPayload::handle)
             .playToClient(CryoRideStatePayload.TYPE, CryoRideStatePayload.STREAM_CODEC, CryoRideStatePayload::handle)
             .playToServer(CryoShellInputPayload.TYPE, CryoShellInputPayload.STREAM_CODEC, CryoShellInputPayload::handle)
@@ -58,6 +58,7 @@ public final class ModPayloads {
             .playToClient(FrozenEntityPayload.TYPE, FrozenEntityPayload.STREAM_CODEC, FrozenEntityPayload::handle)
             .playToClient(PowerIntroPayload.TYPE, PowerIntroPayload.STREAM_CODEC, PowerIntroPayload::handle)
             .playToClient(TimeIntroPayload.TYPE, TimeIntroPayload.STREAM_CODEC, TimeIntroPayload::handle)
+            .playToClient(GridFieldPayload.TYPE, GridFieldPayload.STREAM_CODEC, GridFieldPayload::handle)
             .playToServer(
                 ReleaseAbilitySlotPayload.TYPE,
                 ReleaseAbilitySlotPayload.STREAM_CODEC,

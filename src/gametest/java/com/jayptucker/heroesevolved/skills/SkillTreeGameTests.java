@@ -29,7 +29,7 @@ import java.util.*;
 public final class SkillTreeGameTests {
     private static final List<String> POWERS = List.of("quake", "flight", "cryokinesis", "electrokinesis", "telekinesis",
             "telepathy", "regeneration", "time_manipulation", "radiation", "sonic_resonance", "superspeed", "precognition", "pyrokinesis",
-            "invisibility", "phasing", "empathic_mimicry");
+            "invisibility", "phasing", "empathic_mimicry", "technopathy", "matter_assembly");
     private static ResourceLocation id(String power) { return ResourceLocation.fromNamespaceAndPath("heroesevolved", power); }
     private static ServerPlayer player(GameTestHelper h, String power, int level) {
         var p = new FakePlayer(h.getLevel(), new GameProfile(UUID.randomUUID(), "skill-test"));
@@ -45,6 +45,8 @@ public final class SkillTreeGameTests {
         com.jayptucker.heroesevolved.flight.FlightService.stopForPowerRemoval(p);
         com.jayptucker.heroesevolved.flight.FlightSkillService.forget(p);
         com.jayptucker.heroesevolved.invisibility.InvisibilityService.forget(p);
+        com.jayptucker.heroesevolved.technopathy.TechnopathyService.forget(p);
+        com.jayptucker.heroesevolved.assembly.MatterAssemblyService.forget(p);
     }
     private static LivingEntity target(GameTestHelper h, ServerPlayer p) {
         var target = EntityType.PILLAGER.create(h.getLevel());
@@ -58,7 +60,10 @@ public final class SkillTreeGameTests {
         for (String power : POWERS) {
             h.assertTrue(AbilityRegistry.ABILITIES.containsKey(id(power)), "Unregistered power in skill catalog");
             var nodes = SkillCatalog.nodes(power);
-            h.assertTrue(nodes.size() == 18 && nodes.stream().filter(SkillCatalog.Node::active).count() == 6, "Missing nodes or sub-abilities: " + power);
+            // Eighteen core nodes and six sub-abilities; signature abilities are showpieces on top of that.
+            var core = nodes.stream().filter(n -> !n.signature()).toList();
+            h.assertTrue(core.size() == 18 && core.stream().filter(SkillCatalog.Node::active).count() == 6, "Missing nodes or sub-abilities: " + power);
+            h.assertTrue(nodes.stream().filter(SkillCatalog.Node::signature).count() <= 1, "At most one signature ability per power: " + power);
             h.assertTrue(nodes.stream().map(SkillCatalog.Node::cost).mapToInt(Integer::intValue).sum() >= 15,
                     "Completing all branches must cost more than the eleven level-five points");
         }
@@ -154,7 +159,7 @@ public final class SkillTreeGameTests {
     public static void allThirtyOptionalSkillsHaveGameplayConsequences(GameTestHelper h) {
         for (String power : POWERS) {
             // These physical/stateful kits have dedicated travel, field and lifecycle tests.
-            if (power.equals("flight") || power.equals("telekinesis") || power.equals("telepathy") || power.equals("cryokinesis")) continue;
+            if (Set.of("flight", "telekinesis", "telepathy", "cryokinesis", "technopathy", "matter_assembly").contains(power)) continue;
             var p = player(h, power, 5);
             try {
                 for (int branch = 0; branch < 3; branch++) {
