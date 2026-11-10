@@ -105,8 +105,8 @@ public final class AvenueGameTests {
         try {
             h.assertTrue(StoryDiscoveries.ORDER.stream().filter(note -> note.place() == StoryDiscoveries.Place.PAST)
                             .map(StoryDiscoveries.Note::title).toList()
-                            .equals(List.of(PastRecords.KEY, PastRecords.DOOR, PastRecords.ADDENDUM, PastRecords.WHY_YOU)),
-                    "The past writes four records, in story order");
+                            .equals(List.of(PastRecords.KEY, PastRecords.DOOR, PastRecords.ADDENDUM, PastRecords.WHY_YOU, PastRecords.POD_FOURTEEN)),
+                    "The past writes five records, in story order");
             h.assertTrue(AvenueService.NAMES.size() == AvenueService.CITIZENS && AvenueService.NAMES.stream().distinct().count() == AvenueService.CITIZENS,
                     "Twenty-four different people stand on the avenue");
 
@@ -142,6 +142,36 @@ public final class AvenueGameTests {
         }
     }
 
+    @GameTest(template = "rewind_empty", batch = "story.avenue.omen")
+    public static void theFirstEveningAnnouncesTheThirdNightOnce(GameTestHelper h) {
+        MinecraftServer server = h.getLevel().getServer();
+        AvenueData data = AvenueData.get(server);
+        data.forgetAll();
+        try {
+            List<String> heard = new java.util.ArrayList<>();
+            ServerPlayer p = new FakePlayer(h.getLevel(), new GameProfile(UUID.randomUUID(), "avenue-omen")) {
+                // FakePlayer drops chat; keep it to see what the runner was told.
+                @Override public void sendSystemMessage(net.minecraft.network.chat.Component message) { heard.add(message.getString()); }
+            };
+            p.setPos(Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(3, 2, 3))));
+            p.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty().assignDormant(ModAbilities.QUAKE_ID).unlock(ModAbilities.QUAKE_ID));
+
+            AvenueService.reward(p, List.of(), false);
+            h.assertTrue(heard.stream().noneMatch(line -> line.contains("Night 3")), "An evening nobody lived through opens nothing: " + heard);
+            heard.clear();
+            AvenueService.reward(p, AvenueService.NAMES.subList(0, 1), false);
+            h.assertTrue(com.jayptucker.heroesevolved.story.night.NightThreeService.unlocked(p)
+                            && heard.stream().anyMatch(line -> line.contains("Night 3") && line.contains("Journal")),
+                    "The first evening someone lived through says the third night is open, and where: " + heard);
+            heard.clear();
+            AvenueService.reward(p, AvenueService.NAMES.subList(0, 2), false);
+            h.assertTrue(heard.stream().noneMatch(line -> line.contains("Night 3")), "It is said once: " + heard);
+            h.succeed();
+        } finally {
+            data.forgetAll();
+        }
+    }
+
     @GameTest(template = "rewind_empty", batch = "story.avenue.lead")
     public static void theLeadWalksFromTheAnnexToTheAvenue(GameTestHelper h) {
         MinecraftServer server = h.getLevel().getServer();
@@ -160,8 +190,15 @@ public final class AvenueGameTests {
             h.assertTrue(StoryLead.next(p).contains("6:10"), "Then Bennet's door: " + StoryLead.next(p));
 
             data.record(p.getUUID(), 5, false);
-            h.assertTrue(StoryLead.next(p).contains("Gray"), "If Gray saw the light, stopping him is next: " + StoryLead.next(p));
+            h.assertTrue(StoryLead.next(p).contains("Gray") && StoryLead.next(p).contains("third night"),
+                    "If Gray saw the light, stopping him is next, and the third night is already open: " + StoryLead.next(p));
+            com.jayptucker.heroesevolved.story.night.NightThreeData.get(server).record(p.getUUID(), true);
+            h.assertTrue(StoryLead.next(p).contains("6:14") && !StoryLead.next(p).contains("third night"),
+                    "With Pod 14 kept, only the avenue is left to point at: " + StoryLead.next(p));
+            com.jayptucker.heroesevolved.story.night.NightThreeData.get(server).forgetAll();
             data.record(p.getUUID(), 5, true);
+            h.assertTrue(StoryLead.next(p).contains("Pod 14"), "Then the third night of the lockdown: " + StoryLead.next(p));
+            com.jayptucker.heroesevolved.story.night.NightThreeData.get(server).record(p.getUUID(), true);
             h.assertTrue(StoryLead.next(p).startsWith("19 people"), "Then everyone left on the street: " + StoryLead.next(p));
             data.record(p.getUUID(), AvenueService.CITIZENS, true);
             h.assertTrue(StoryLead.next(p).startsWith("Everyone on the avenue"), "And at last, nothing left: " + StoryLead.next(p));
@@ -172,6 +209,7 @@ public final class AvenueGameTests {
             h.succeed();
         } finally {
             data.forgetAll();
+            com.jayptucker.heroesevolved.story.night.NightThreeData.get(server).forgetAll();
         }
     }
 

@@ -50,7 +50,8 @@ public final class FacilityService {
     }
     public static boolean enter(ServerPlayer p) {
         if (!PowerRules.canAct(p) || p.isPassenger() || p.isSpectator() || atSite(p)
-                || com.jayptucker.heroesevolved.time.intro.TimeIntroService.isCity(p.level())) return false;
+                || com.jayptucker.heroesevolved.time.intro.TimeIntroService.isCity(p.level())
+                || com.jayptucker.heroesevolved.story.night.NightThreeService.inNight(p)) return false;
         var d = FacilityData.get(p.getServer()); var level = p.getServer().getLevel(DIMENSION);
         if (level == null || d.visitors.size() >= 8 || !d.discovered(p.getUUID(), "unfinished_hour")) return false;
         if (d.phase == FacilityData.Phase.SAVED || d.phase == FacilityData.Phase.SCARRED) {
@@ -66,6 +67,8 @@ public final class FacilityService {
         if (d.phase == FacilityData.Phase.READY) { d.phase = FacilityData.Phase.ACTIVE; d.setDirty(); }
         tell(p, "HOURGLASS ANNEX, ODESSA. THE LAST DAY, 5:50 PM. The relay holding Sprague's heat is failing. Nobody can stop 6:14, but Mara and Ivo don't have to die down here. Open the partition, cool the relay, and escort them to the yellow exit. You have two minutes while anyone is inside.");
         tell(p, "Manual route: west switch, east switch; then turn the orange relay valve. Powers offer other routes. Click a captive to call them. The exit button or your Journal returns you to the present.");
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(p, new com.jayptucker.heroesevolved.network.TimeIntroPayload(
+                com.jayptucker.heroesevolved.network.TimeIntroPayload.ANNEX));
         return true;
     }
     public static boolean leave(ServerPlayer p) {
@@ -77,7 +80,8 @@ public final class FacilityService {
     /** Back to the present: the saved ticket, or world spawn when it is missing, blocked or itself in the past. */
     public static void returnTo(ServerPlayer p, FacilityData.ReturnPoint point) {
         ServerLevel level = point == null ? p.getServer().overworld() : p.getServer().getLevel(ResourceKey.create(Registries.DIMENSION, point.dimension()));
-        boolean past = level != null && (level.dimension().equals(DIMENSION) || level.dimension().equals(com.jayptucker.heroesevolved.time.intro.TimeIntroService.DIMENSION));
+        boolean past = level != null && (level.dimension().equals(DIMENSION) || level.dimension().equals(com.jayptucker.heroesevolved.time.intro.TimeIntroService.DIMENSION)
+                || level.dimension().equals(com.jayptucker.heroesevolved.story.night.NightThreeBunker.DIMENSION));
         if (level == null || past) { level = p.getServer().overworld(); point = null; }
         Vec3 dest = point == null ? Vec3.atBottomCenterOf(level.getSharedSpawnPos()) : new Vec3(point.x(), point.y(), point.z());
         if (!level.getWorldBorder().isWithinBounds(BlockPos.containing(dest))) dest = Vec3.atBottomCenterOf(level.getSharedSpawnPos());

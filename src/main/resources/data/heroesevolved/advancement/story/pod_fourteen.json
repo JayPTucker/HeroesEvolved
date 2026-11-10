@@ -1,0 +1,24 @@
+{
+  "display": {
+    "icon": {
+      "id": "heroesevolved:cryochamber"
+    },
+    "title": "Pod 14 Stays Shut",
+    "description": "Keep Gabriel Gray from Claire Bennet on the third night of the lockdown.",
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "heroesevolved:story/six_fifteen",
+  "criteria": {
+    "granted": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "granted"
+    ]
+  ]
+}

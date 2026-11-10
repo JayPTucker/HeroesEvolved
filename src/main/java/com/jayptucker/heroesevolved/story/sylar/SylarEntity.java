@@ -106,6 +106,8 @@ public final class SylarEntity extends PathfinderMob implements Enemy {
     public int phase() { return phase; }
     public SylarPowers.Pose castPose() { return SylarPowers.Pose.values()[Math.clamp(entityData.get(POSE), 0, SylarPowers.Pose.values().length - 1)]; }
     public String casting() { return casting == null ? "" : casting.id(); }
+    /** For scenes in the past that move him by hand (Night Three): how he holds himself, so a windup reads. */
+    public void scenePose(SylarPowers.Pose pose) { entityData.set(POSE, pose.ordinal()); }
     public boolean downed() { return downedTicks > 0; }
     public boolean revived() { return revived; }
     /** Ticks until he runs (0 or less when he is not about to); and how long this fight has gone on. */

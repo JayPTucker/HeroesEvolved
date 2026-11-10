@@ -89,6 +89,12 @@ public final class ModEntities {
                     com.jayptucker.heroesevolved.story.sylar.SylarEntity::new, MobCategory.MISC)
                     .sized(.6F, 1.8F).noSave().noSummon().clientTrackingRange(96).updateInterval(3).build(id.toString()));
 
+    /** Company agents: guards with tranquilizer rifles, and the Suppressor. Summonable for testing and building scenes. */
+    public static final DeferredHolder<EntityType<?>, EntityType<com.jayptucker.heroesevolved.company.CompanyAgentEntity>> COMPANY_AGENT =
+            ENTITY_TYPES.register("company_agent", id -> EntityType.Builder.<com.jayptucker.heroesevolved.company.CompanyAgentEntity>of(
+                    com.jayptucker.heroesevolved.company.CompanyAgentEntity::new, MobCategory.MISC)
+                    .sized(.6F, 1.8F).clientTrackingRange(64).updateInterval(2).build(id.toString()));
+
     public static void register(IEventBus modEventBus) {
         ENTITY_TYPES.register(modEventBus);
         modEventBus.addListener(ModEntities::registerAttributes);
@@ -97,5 +103,6 @@ public final class ModEntities {
     private static void registerAttributes(EntityAttributeCreationEvent event) {
         event.put(TEMPORAL_ECHO.get(), TemporalEchoEntity.createAttributes().build());
         event.put(SYLAR.get(), com.jayptucker.heroesevolved.story.sylar.SylarEntity.createAttributes().build());
+        event.put(COMPANY_AGENT.get(), com.jayptucker.heroesevolved.company.CompanyAgentEntity.createAttributes().build());
     }
 }

@@ -13,7 +13,8 @@ import java.util.List;
  * you come back from changing something. Original writing; the people named are adapted from Heroes.
  */
 public final class PastRecords {
-    public static final String KEY = "The Key", DOOR = "The Door at 6:14", ADDENDUM = "Addendum: G. Gray", WHY_YOU = "Why You";
+    public static final String KEY = "The Key", DOOR = "The Door at 6:14", ADDENDUM = "Addendum: G. Gray", WHY_YOU = "Why You",
+            POD_FOURTEEN = "Pod 14";
     private static final int NAMES_PER_PAGE = 10;
 
     private PastRecords() {}
@@ -62,6 +63,15 @@ public final class PastRecords {
                 "I didn't choose you. Isaac did. Before the Last Day he painted a sleeper waking in a pod. It hangs in the west gallery: Exhibit 9. Look at the face.",
                 "He painted the avenue, too. People running for a door, and someone in the street bringing them in.\n\nThe same face.",
                 "The light still falls at 6:14. It always will.\n\nBut someone on that street lived to see 6:15, because you were there.\n\nThe future was unwritten once. You wrote it.\n\n- H.");
+    }
+
+    /** Claire's letter, written the morning after the third night, before her father put her back under. */
+    public static ItemStack podFourteen() {
+        return BunkerLogs.book(POD_FOURTEEN, "Claire",
+                "To whoever was in the stasis hall on the third night.\n\nI woke up for about a minute. The glass was fogged, the alarms were going, and a man had both his hands on my pod.",
+                "Then there was you, getting in his way. Again and again, until Dad's men came down the shaft.\n\nDad says nobody else saw you. Dad says a lot of things.",
+                "He's putting me back under. He says it's the only place Gray can't reach me, and that when I wake up it will be a long time from now.",
+                "If you're reading this, it is. I'm still here, in Pod 14. Still me.\n\nThank you for that.\n\n- Claire");
     }
 
     /** Puts a record in the player's hands (or at their feet) and counts it straight away. */

@@ -260,9 +260,9 @@ public final class SylarStoryService {
         PlayerAbilityService.getData(victim).assignedPower().filter(entry -> entry.getValue().isUnlocked()).ifPresent(entry -> {
             var data = SylarStoryData.get(victim.getServer());
             // Someone kept him from the light on the Last Day: he never understood Sprague's heat, so he can't take it.
-            if (entry.getKey().equals(ModAbilities.RADIATION_ID)
-                    && com.jayptucker.heroesevolved.story.AvenueData.get(victim.getServer()).grayNeverSaw()) {
-                SylarVoice.narrate(victim, "story.heroesevolved.sylar.no_heat");
+            String outOfReach = outOfReach(victim.getServer(), entry.getKey());
+            if (outOfReach != null) {
+                SylarVoice.narrate(victim, outOfReach);
                 return;
             }
             if (!data.learn(entry.getKey())) return;
@@ -280,6 +280,19 @@ public final class SylarStoryService {
             }
         });
     }
+    /**
+     * A power the past has put out of his reach, with the line he gets when he tries for it; null if he can take it.
+     * Someone kept him from the light on the Last Day: he never understood Sprague's heat. Someone kept him from
+     * Pod 14 on the third night: he never took Claire's regeneration, and the way it works stays strange to him.
+     */
+    public static String outOfReach(MinecraftServer server, net.minecraft.resources.ResourceLocation power) {
+        if (power.equals(ModAbilities.RADIATION_ID) && com.jayptucker.heroesevolved.story.AvenueData.get(server).grayNeverSaw())
+            return "story.heroesevolved.sylar.no_heat";
+        if (power.equals(ModAbilities.REGENERATION_ID) && com.jayptucker.heroesevolved.story.night.NightThreeData.get(server).podKept())
+            return "story.heroesevolved.sylar.no_regen";
+        return null;
+    }
+
     public static void defeated(SylarEntity hunter, Entity killer) {
         if (active == null || active.hunter != hunter) return;
         MinecraftServer server = hunter.getServer(); SylarStoryData.get(server).defeated(now(server));

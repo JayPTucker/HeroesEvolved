@@ -73,17 +73,56 @@ public final class JournalScreen extends Screen {
                 .bounds(left + PANEL_WIDTH - 63, top + panelHeight() - 26, 53, 20)
                 .build());
         addRenderableWidget(Button.builder(Component.literal("Read omen"), b -> incident(com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation.READ)).bounds(left + 9, top + panelHeight() - 26, 76, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Follow omen"), b -> follow()).bounds(left + 89, top + panelHeight() - 26, 80, 20).build());
+        List<Omen> open = omens();
+        Omen chosen = chosen(open);
+        addRenderableWidget(Button.builder(Component.literal(open.size() > 1 ? "Follow: " + chosen.label : "Follow omen"), b -> follow())
+                .bounds(left + 89, top + panelHeight() - 26, 80, 20)
+                .tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal(open.size() > 1
+                        ? "Go into the past: " + chosen.title + ". Shift-click to choose another omen."
+                        : "Go into the past: " + chosen.title + ".")))
+                .build());
         addRenderableWidget(Button.builder(Component.literal("Leave the past"), b -> incident(com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation.LEAVE)).bounds(left + 173, top + panelHeight() - 26, 80, 20).build());
         buildLines();
     }
 
-    /** The newest omen: the avenue once Hiro's key is found, the Annex before that (or with Shift held). */
-    private void follow() {
+    /** The places in the past an omen leads to, in story order. */
+    private enum Omen {
+        ANNEX("Annex", "the Hourglass Annex, 5:50 PM", com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation.ENTER),
+        AVENUE("Avenue", "the avenue at 6:10 PM", com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation.AVENUE),
+        NIGHT_THREE("Night 3", "Sublevel 4 on the third night, 2:57 AM", com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation.NIGHT_THREE);
+
+        final String label, title;
+        final com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation operation;
+        Omen(String label, String title, com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation operation) {
+            this.label = label; this.title = title; this.operation = operation;
+        }
+    }
+
+    /** The omen Shift-click has picked; null follows the newest. */
+    private Omen picked;
+
+    private List<Omen> omens() {
         StoryJournalPayload journal = ClientJournalState.get();
-        boolean avenue = journal != null && journal.avenueOpen() && !hasShiftDown();
-        incident(avenue ? com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation.AVENUE
-                : com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation.ENTER);
+        List<Omen> open = new java.util.ArrayList<>(List.of(Omen.ANNEX));
+        if (journal != null && journal.avenueOpen()) open.add(Omen.AVENUE);
+        if (journal != null && journal.nightOpen()) open.add(Omen.NIGHT_THREE);
+        return open;
+    }
+
+    private Omen chosen(List<Omen> open) {
+        return picked != null && open.contains(picked) ? picked : open.getLast();
+    }
+
+    /** Goes to the chosen omen: the newest one open, unless Shift-click picked another. */
+    private void follow() {
+        List<Omen> open = omens();
+        Omen current = chosen(open);
+        if (hasShiftDown() && open.size() > 1) {
+            picked = open.get((open.indexOf(current) + 1) % open.size());
+            rebuildWidgets();
+            return;
+        }
+        incident(current.operation);
     }
 
     private void incident(com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation operation) {
@@ -121,6 +160,10 @@ public final class JournalScreen extends Screen {
         // The finale: the avenue at 6:14.
         heading("The Avenue at 6:14");
         add(Component.literal(journal.avenue()), journal.avenueOpen() ? TEXT : MUTED, wrap);
+        spacer();
+        // After the light: the third night of the lockdown.
+        heading("Night Three: Pod 14");
+        add(Component.literal(journal.night()), journal.nightOpen() ? TEXT : MUTED, wrap);
         spacer();
         // Chapter one: the dreams.
         heading("Dreams of the Last Day  (" + journal.memories().size() + "/"

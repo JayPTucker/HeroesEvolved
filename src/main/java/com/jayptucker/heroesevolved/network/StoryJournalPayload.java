@@ -31,7 +31,9 @@ public record StoryJournalPayload(
         List<String> sylarLearned,
         String incident,
         boolean avenueOpen,
-        String avenue
+        String avenue,
+        boolean nightOpen,
+        String night
 ) implements CustomPacketPayload {
     public static final Type<StoryJournalPayload> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "story_journal"));
@@ -54,10 +56,13 @@ public record StoryJournalPayload(
                 buffer.writeUtf(payload.incident, 1024);
                 buffer.writeBoolean(payload.avenueOpen);
                 buffer.writeUtf(payload.avenue, 1024);
+                buffer.writeBoolean(payload.nightOpen);
+                buffer.writeUtf(payload.night, 1024);
             }, buffer -> new StoryJournalPayload(buffer.readUtf(512), STRINGS.decode(buffer),
                     buffer.readVarInt(), STRINGS.decode(buffer), buffer.readVarInt(),
                     buffer.readBoolean(), buffer.readVarInt(), buffer.readVarInt(),
                     buffer.readVarInt(), STRINGS.decode(buffer), buffer.readUtf(1024),
+                    buffer.readBoolean(), buffer.readUtf(1024),
                     buffer.readBoolean(), buffer.readUtf(1024)));
 
     /** Gathers everything the journal shows for this player. */
@@ -76,7 +81,9 @@ public record StoryJournalPayload(
                 sylar.learned().stream().map(ResourceLocation::toString).sorted().toList(),
                 com.jayptucker.heroesevolved.expansion.FacilityService.journal(player),
                 AvenueService.unlocked(player),
-                AvenueService.journal(player)
+                AvenueService.journal(player),
+                com.jayptucker.heroesevolved.story.night.NightThreeService.unlocked(player),
+                com.jayptucker.heroesevolved.story.night.NightThreeService.journal(player)
         );
     }
 

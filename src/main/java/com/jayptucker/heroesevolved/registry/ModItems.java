@@ -40,6 +40,9 @@ public final class ModItems {
     /** Ted Sprague's radiation: a stacking dose that burns from inside. See RadiationSickness. */
     public static final DeferredHolder<MobEffect, MobEffect> RADIATION_SICKNESS = EFFECTS.register("radiation_sickness",
             com.jayptucker.heroesevolved.radiation.RadiationSickness::new);
+    /** A Company tranquilizer dose; three put a player under. See Tranquilizer. */
+    public static final DeferredHolder<MobEffect, MobEffect> TRANQUILIZED = EFFECTS.register("tranquilized",
+            com.jayptucker.heroesevolved.company.Tranquilizer::new);
 
     public static final DeferredItem<Item> HELIXITE_SHARD = ITEMS.registerSimpleItem("helixite_shard",
             new Item.Properties().rarity(Rarity.UNCOMMON));

@@ -13,8 +13,11 @@ import java.util.UUID;
 /** Where the stasis bunker was built, and which sleeper woke in which pod. Built once per world. */
 public final class BunkerData extends SavedData {
     public static final String NAME = "heroesevolved_stasis_bunker";
-    /** Bumped when the layout changes; an older bunker is left in place rather than rebuilt over a player's changes. */
-    public static final int LAYOUT = 1;
+    /**
+     * Bumped when the layout changes. An older bunker is never rebuilt over a player's changes; it only
+     * gets the pieces a later layout added ({@link BunkerBuilder#upgrade}). 2: Exhibit 1, Isaac's explosion.
+     */
+    public static final int LAYOUT = 2;
     public boolean built;
     public BlockPos origin = BlockPos.ZERO;
     public int layout;
@@ -26,10 +29,16 @@ public final class BunkerData extends SavedData {
 
     /** The pod this sleeper wakes in: their own if they have one, otherwise the first unused, then round-robin. */
     public int pod(UUID player, int count) {
+        return pod(player, count, -1);
+    }
+
+    /** As {@link #pod(UUID, int)}, but a new sleeper never gets pod {@code taken} (someone still asleep in it). */
+    public int pod(UUID player, int count, int taken) {
         Integer existing = pods.get(player);
         if (existing != null) return existing;
         int chosen = pods.size() % count;
-        for (int i = 0; i < count; i++) if (!pods.containsValue(i)) { chosen = i; break; }
+        if (chosen == taken) chosen = (chosen + 1) % count;
+        for (int i = 0; i < count; i++) if (i != taken && !pods.containsValue(i)) { chosen = i; break; }
         pods.put(player, chosen);
         setDirty();
         return chosen;

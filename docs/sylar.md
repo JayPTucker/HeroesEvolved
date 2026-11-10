@@ -86,7 +86,8 @@ He favours what he took from **you**: "Recognise it? Your power. My hands."
 - **Telekinesis:** shots aimed at him while he is not busy turn aside.
 - **Precognition:** he sidesteps a shot, and sometimes a blow, at most once every four seconds.
 - **Regeneration:** he heals slowly. The first killing blow in a fight puts him down for five
-  seconds instead, then he rises at two-fifths of his health.
+  seconds instead, then he rises at two-fifths of his health. Not once Pod 14 has been kept shut on
+  Night Three (below).
 - **Density:** a wall between you does not stop him for long. It ripples like water as he walks out of it near you.
 - **Empathic Mimicry:** he borrows your power for the fight, even one he has never taken.
 - **Flight:** he rises after you.
@@ -101,6 +102,12 @@ One power can be put out of his reach for good, in the past. If anyone keeps Gab
 light on the avenue at 6:14 (see [The Past](the-past.md#the-avenue-at-614)), he never saw how
 Sprague's heat works: a finished channel on Radiation's owner copies nothing ("He can't make sense of
 it"), and if he had already taken Radiation, he loses it.
+
+[Night Three](the-past.md#night-three) puts a second power out of his reach. If anyone keeps Gray from
+Pod 14 on the third night of the lockdown, he never took Claire Bennet's regeneration: a finished
+channel on Regeneration's owner copies nothing, and if he had already taken it, he loses it, and with
+it the slow healing and the getting back up below. Borrowing your power for one fight with Empathic
+Mimicry still works; that isn't Claire's gift, it's yours.
 
 ## Telepathy and the existing visions
 

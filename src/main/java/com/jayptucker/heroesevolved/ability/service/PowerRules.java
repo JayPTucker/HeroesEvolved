@@ -29,6 +29,7 @@ public final class PowerRules {
                 && !com.jayptucker.heroesevolved.story.bunker.CryoChamberService.isInside(player)
                 && !EclipseService.arePowersSuppressed(player) && !PowerIntroService.isActive(player)
                 && !TimeIntroService.blocksPowers(player)
+                && !com.jayptucker.heroesevolved.company.SuppressorField.suppresses(player)
                 && !com.jayptucker.heroesevolved.regeneration.BodyService.isDowned(player);
     }
     public static void rewinding(ServerPlayer player, boolean active) {

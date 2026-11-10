@@ -85,6 +85,19 @@
           "biome": "minecraft:plains"
         }
       }
+    },
+    "heroesevolved:night_three": {
+      "type": "heroesevolved:lockdown",
+      "generator": {
+        "type": "minecraft:flat",
+        "settings": {
+          "layers": [],
+          "lakes": false,
+          "features": false,
+          "structure_overrides": [],
+          "biome": "minecraft:the_void"
+        }
+      }
     }
   }
 }

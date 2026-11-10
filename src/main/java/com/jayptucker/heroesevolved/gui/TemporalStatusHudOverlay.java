@@ -31,7 +31,9 @@ public final class TemporalStatusHudOverlay {
             ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "time_fracture"),
             "hud.heroesevolved.past_last_day",
             ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "unwritten_annex"),
-            "hud.heroesevolved.past_annex"
+            "hud.heroesevolved.past_annex",
+            ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "night_three"),
+            "hud.heroesevolved.past_night_three"
     );
 
     private TemporalStatusHudOverlay() {

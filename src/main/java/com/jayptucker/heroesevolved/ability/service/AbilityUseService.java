@@ -98,6 +98,8 @@ public final class AbilityUseService {
                             ? "You're frozen solid and can't move a muscle."
                             : com.jayptucker.heroesevolved.intro.PowerIntroService.isActive(player)
                             ? "Your power is still awakening..."
+                            : com.jayptucker.heroesevolved.company.SuppressorField.suppresses(player)
+                            ? "Your power won't answer. The man in the gray suit is too close."
                             : "You can't use your power right now."));
             return AbilityUseResult.CANNOT_USE;
         }

@@ -5,8 +5,10 @@ import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.network.PowerIntroPayload;
 import com.jayptucker.heroesevolved.network.ScreenTintPayload;
+import com.jayptucker.heroesevolved.network.TimeIntroPayload;
 import com.jayptucker.heroesevolved.registry.ModBlocks;
 import com.jayptucker.heroesevolved.sounds.ModSounds;
+import com.jayptucker.heroesevolved.story.StoryLead;
 import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.BlockPos;
@@ -15,7 +17,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -77,7 +78,10 @@ public final class BunkerService {
         MinecraftServer server = player.getServer();
         BunkerData data = ensureBuilt(server);
         ServerLevel overworld = server.overworld();
-        int index = data.pod(player.getUUID(), BunkerBuilder.PODS);
+        // Once Pod 14 stayed shut on the third night, Claire Bennet is still asleep in it: nobody else wakes there.
+        int index = data.pod(player.getUUID(), BunkerBuilder.PODS,
+                com.jayptucker.heroesevolved.story.night.NightThreeData.get(server).podKept()
+                        ? com.jayptucker.heroesevolved.story.night.NightThreeBunker.CLAIRE : -1);
         BlockPos base = data.origin.offset(BunkerBuilder.podOffset(index));
         if (!overworld.getBlockState(base).is(ModBlocks.CRYOCHAMBER.get())) BunkerBuilder.placePod(overworld, data.origin, index, true);
         if (player.level() != overworld) player.teleportTo(overworld, base.getX() + .5, base.getY(), base.getZ() + .5, 0, 0);
@@ -104,7 +108,7 @@ public final class BunkerService {
                     BunkerData data = ensureBuilt(server);
                     player.setData(ModDataAttachments.BUNKER_AWOKEN, true);
                     player.sendSystemMessage(Component.translatable("bunker.heroesevolved.rumor",
-                            data.origin.getX(), data.origin.getZ()).withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
+                            data.origin.getX(), data.origin.getZ(), StoryLead.journalKey()).withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
                     continue;
                 }
                 begin(player);
@@ -114,6 +118,7 @@ public final class BunkerService {
             if (age > 0) step(player, age);
         }
         if (server.overworld().getGameTime() % 20 == 0 && BunkerData.get(server).built) {
+            BunkerBuilder.upgrade(server.overworld(), BunkerData.get(server));
             BlockPos origin = BunkerData.get(server).origin;
             for (ServerPlayer player : server.overworld().players())
                 if (BunkerBuilder.inCell(origin, player.blockPosition()) && HEARD_TICKING.add(player.getUUID()))
@@ -122,18 +127,17 @@ public final class BunkerService {
     }
 
     private static void step(ServerPlayer player, int age) {
-        ServerLevel level = player.serverLevel();
         if (age == 1) {
             player.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 70, 0, false, false));
             ScreenTintPayload.send(player, 0xFF000000, 50, ScreenTintPayload.Style.HOLD);
             caption(player, "bunker_1");
         }
         if (age == 12) {
-            player.playNotifySound(ModSounds.NUCLEAR_SIREN.get(), SoundSource.AMBIENT, 0.3F, 0.9F);
+            // The power comes back and the pod sounds its alarm; the client plays it (BunkerAlarm), timed to
+            // open with the lid at RELEASE.
+            PacketDistributor.sendToPlayer(player, new TimeIntroPayload(TimeIntroPayload.BUNKER_ALARM));
             ScreenTintPayload.send(player, 0x55FF1010, RELEASE - 10, ScreenTintPayload.Style.PULSE);
         }
-        if (age >= 12 && age < RELEASE && age % 10 == 2)
-            level.playSound(null, player.blockPosition(), SoundEvents.NOTE_BLOCK_BIT.value(), SoundSource.BLOCKS, 1.2F, age % 20 == 2 ? 0.7F : 1.0F);
         if (age == 60) caption(player, "bunker_2");
         if (age == RELEASE) {
             CryoChamberService.release(player);
@@ -143,7 +147,8 @@ public final class BunkerService {
         }
         if (age >= END) {
             SESSIONS.remove(player.getUUID());
-            player.sendSystemMessage(Component.translatable("bunker.heroesevolved.hint").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
+            player.sendSystemMessage(Component.translatable("bunker.heroesevolved.hint", StoryLead.journalKey())
+                    .withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
         }
     }
 

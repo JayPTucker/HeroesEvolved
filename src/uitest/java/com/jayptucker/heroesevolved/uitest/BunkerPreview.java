@@ -74,7 +74,9 @@ public final class BunkerPreview {
             case 555 -> pending = "bunker-13-bennet-office.png";
             case 565 -> visit(mc, -4, 1, 25, 120, 8, false);
             case 590 -> pending = "bunker-14-pods.png";
-            case 610 -> mc.stop();
+            case 600 -> visit(mc, 0, 1, 24, 0, -22, false); // down the hall to the far wall: Exhibit 1 above the dead screen
+            case 625 -> pending = "bunker-15-exhibit-one.png";
+            case 645 -> mc.stop();
             default -> { }
         }
     }
@@ -85,7 +87,7 @@ public final class BunkerPreview {
         try (var image = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
             Path out = mc.gameDirectory.toPath().resolve("screenshots").resolve(pending);
             Files.createDirectories(out.getParent()); image.writeToFile(out);
-            System.out.println("BUNKER_CAPTURE " + pending);
+            System.out.println("BUNKER_CAPTURE " + pending + " " + net.minecraft.client.Minecraft.getInstance().getSoundManager().getDebugString());
         } catch (Exception ex) { throw new RuntimeException(ex); }
         pending = null;
     }

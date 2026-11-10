@@ -21,6 +21,10 @@ public record PowerIntroPayload(ResourceLocation power, int phase) implements Cu
             if (payload.phase < 0) TimeIntroCaption.clear();
             else TimeIntroCaption.showKey("intro.heroesevolved." + payload.power.getPath()
                     + (payload.phase == 0 ? ".charge" : ".release"));
+            // Out of the pod: say what to do first, and where the Journal is.
+            if (payload.power.getPath().equals("bunker_3"))
+                TimeIntroCaption.hint(net.minecraft.network.chat.Component.translatable("hint.heroesevolved.bunker",
+                        net.minecraft.network.chat.Component.keybind("key.heroesevolved.open_journal")), 20 * 40);
         });
     }
 }

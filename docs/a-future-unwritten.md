@@ -12,7 +12,7 @@ This release adds Precognition, deeper Quake/Cryokinesis/Electrokinesis trees, s
 
 The manual route is **west isolator, east isolator, then the orange relay valve**. Quake techniques can release the partition; electrical techniques can overload its relay connection; cold techniques can stabilize the relay. Powers are alternatives to equipment. No particular power owner is required online.
 
-The operation has two minutes of active visitor time. Its timer pauses when all participants are away and survives restarts. A successful outcome requires both captives rescued and the relay cooled, and leaves each participant Hiro's key: the record *The Key*, which opens the finale, [the avenue at 6:14](the-past.md#the-avenue-at-614). After that, **Follow omen** goes to the avenue; hold Shift to walk into the Annex again. A casualty or timeout leaves a scarred outcome. Once everyone inside has left, another attempt rebuilds the annex. Offline participants retain their original return tickets across replay. The site accepts at most eight visitors at a time.
+The operation has two minutes of active visitor time. Its timer pauses when all participants are away and survives restarts. A successful outcome requires both captives rescued and the relay cooled, and leaves each participant Hiro's key: the record *The Key*, which opens the finale, [the avenue at 6:14](the-past.md#the-avenue-at-614). After that, **Follow omen** goes to the avenue; Shift-click it to choose the Annex again. A casualty or timeout leaves a scarred outcome. Once everyone inside has left, another attempt rebuilds the annex. Offline participants retain their original return tickets across replay. The site accepts at most eight visitors at a time.
 
 ## Build choices and progression
 

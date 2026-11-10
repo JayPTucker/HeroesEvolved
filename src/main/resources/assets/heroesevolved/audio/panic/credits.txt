@@ -1,0 +1,4 @@
+scream_01.wav to scream_11.wav are single voices lifted out of "Crowd in panic"
+by IENBA (CC0 1.0), made by tools/prepare-panic-voices.py. They are plain WAV
+because the client mixes them itself (client/sound/PanicSounds.java) rather than
+through sounds.json. Full credits: assets/heroesevolved/sounds/intro/CREDITS.txt

@@ -1,6 +1,7 @@
 # The Odessa stasis hall, Sublevel 4: fourteen sealed Cryochambers under copper galleries and red emergency light.
 # A lush cave broke through the south-east ceiling; its roots and glow berries light that end. Isaac Mendez's
-# painting of a sleeper waking hangs in the west gallery. A trail of blood runs from Claire Bennet's pod to the door.
+# painting of a sleeper waking hangs in the west gallery; his explosion over the city, Exhibit 1, hangs above the
+# dead screen at the far end. A trail of blood runs from Claire Bennet's pod to the door.
 # Placed by BunkerBuilder with its anchor on the bunker floor 18 blocks south of the shaft.
 # Pods and the orientation lectern must stay on their cells: tests and saved pod assignments use them.
 name: bunker_chamber
@@ -92,6 +93,8 @@ palette:
   α = red_stained_glass
   β = glowstone
   γ = dirt
+  δ = air @painting:explosion:north
+  ε = spruce_wall_sign[facing=north] @sign:exhibit1
 signs:
   pod01 light_blue glow = SUBJECT 01 | STASIS SEALED | AWAITING | REVIVAL
   pod02 light_blue glow = SUBJECT 02 | STASIS SEALED | AWAITING | REVIVAL
@@ -109,6 +112,7 @@ signs:
   pod14 red glow = SUBJECT 14 | C. BENNET | BLOOD DRAWN | DAY 3
   wing white glow = STASIS WING | SUBLEVEL 4 | ODESSA SITE | PRIMATECH
   exhibit yellow glow = EXHIBIT 9 | I. MENDEZ | THE SLEEPER | WHO IS THIS?
+  exhibit1 yellow glow = EXHIBIT 1 | I. MENDEZ | THE LAST DAY | IT CAME TRUE
   screen yellow glow = SIGNAL LOST | 2,190 DAYS | SINCE LAST | CONTACT
 
 # floor: the checker runner leads from the door to the console and the display
@@ -338,7 +342,7 @@ IIIIIIIIIIIIIII
 !.........1.Xi!
 !..........6..!
 !...........6i!
-!............i!
+!.........ε..i!
 IIIIIIIIIIIIIII
 
 layer 9:
@@ -363,7 +367,7 @@ IIIIIIIIIIIIIII
 !.........6./.!
 !..........6.i!
 !...........6i!
-!.............!
+!......δ......!
 IIIIIIIIIIIIIII
 
 layer 10:
@@ -414,7 +418,7 @@ I...l....({.X6I
 I...l.....6X/)I
 IAAAAAAAAA{6AXI
 I...l.....l{6.I
-I8..l.....l...I
+I8........l...I
 IIIIIIIIIIIIIII
 
 # ceiling, red emergency glass, the breach
@@ -440,7 +444,7 @@ layer 12:
 ----------GGHG-
 -----------HGG-
 ------------GH-
----------------
+-----α--α------
 ---------------
 
 # lamps behind the glass
@@ -466,5 +470,5 @@ _______β__γγγγ_
 __________γγγγ_
 ___________γγγ_
 ____________γγ_
-_______________
+_____β__β______
 _______________

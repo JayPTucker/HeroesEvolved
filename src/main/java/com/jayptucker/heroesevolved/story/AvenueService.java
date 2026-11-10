@@ -78,8 +78,12 @@ public final class AvenueService {
     public static final int CITIZENS = 24;
     /** 6:10 to 6:14 PM. */
     public static final int LIGHT_TICK = 4 * 60 * 20;
-    /** Everyone is pulled back before the shockwave reaches them, as in the vision. */
-    public static final int RETURN_TICK = LIGHT_TICK + 130;
+    /**
+     * Everyone is pulled back before the shock wave reaches them, as in the vision: each runner when the
+     * front is {@link #PULL_GAP} blocks away, and anyone left (nowhere in the city is further) by this tick.
+     */
+    public static final int RETURN_TICK = LIGHT_TICK + 200;
+    public static final int PULL_GAP = 24;
     /** Hits it takes to turn Gray around; time stopped or pushed back also keeps him away. */
     public static final int GRAY_TURNS = 3;
     public static final String TAG = "heroesevolved_avenue";
@@ -126,7 +130,7 @@ public final class AvenueService {
         final Set<UUID> runners = new LinkedHashSet<>();
         final List<Citizen> citizens = new ArrayList<>();
         final List<String> safe = new ArrayList<>();
-        final Set<UUID> knockedOut = new HashSet<>(), burned = new HashSet<>();
+        final Set<UUID> knockedOut = new HashSet<>(), burned = new HashSet<>(), warned = new HashSet<>();
         Villager bennet, mara, ivo, sprague;
         SylarEntity gray;
         int ticks, turns, lastTurn = -TURN_COOLDOWN, staggeredUntil, goneAt = -1, nextHelper = HELPER_FIRST;
@@ -161,7 +165,8 @@ public final class AvenueService {
         MinecraftServer server = player.getServer();
         ServerLevel city = server.getLevel(TimeIntroService.DIMENSION);
         if (city == null || !PowerRules.canAct(player) || player.isPassenger() || player.isSpectator()
-                || TimeIntroService.isCity(player.level()) || FacilityService.atSite(player)) return false;
+                || TimeIntroService.isCity(player.level()) || FacilityService.atSite(player)
+                || com.jayptucker.heroesevolved.story.night.NightThreeService.inNight(player)) return false;
         if (!unlocked(player)) {
             tell(player, "The avenue isn't open to you yet. Hiro's key is in the Hourglass Annex: bring Mara and Ivo out alive first.");
             return false;
@@ -324,11 +329,26 @@ public final class AvenueService {
             PacketDistributor.sendToPlayer(player, new TimeIntroPayload(TimeIntroPayload.BLAST_SOUND));
             PacketDistributor.sendToPlayer(player, new CameraShakePayload(0.38F, 100));
         });
-        if (current.ticks == RETURN_TICK - 22) forEachRunner(server, current, player -> {
-            player.playNotifySound(ModSounds.TIME_SLOW_STOP.get(), SoundSource.PLAYERS, 0.9F, 1);
-            ScreenTintPayload.send(player, 0x709E80E8, 22, ScreenTintPayload.Style.EDGE);
-            AbilityEffects.at(player, Kind.TEMPORAL_REWIND, 4);
-        });
+        if (current.ticks > LIGHT_TICK) {
+            // Everyone watches the wave come down the streets, and is pulled home a breath before it reaches them.
+            float front = com.jayptucker.heroesevolved.time.intro.IntroBlast.front(current.ticks - LIGHT_TICK);
+            for (UUID id : List.copyOf(current.runners)) {
+                ServerPlayer player = server.getPlayerList().getPlayer(id);
+                if (player == null) continue;
+                double distance = com.jayptucker.heroesevolved.time.intro.IntroBlast.distance(player.getX(), player.getZ());
+                double gap = distance - front;
+                if (gap <= PULL_GAP + 22 * com.jayptucker.heroesevolved.time.intro.IntroBlast.SPEED && current.warned.add(id)) {
+                    player.playNotifySound(ModSounds.TIME_SLOW_STOP.get(), SoundSource.PLAYERS, 0.9F, 1);
+                    ScreenTintPayload.send(player, 0x709E80E8, 22, ScreenTintPayload.Style.EDGE);
+                    AbilityEffects.at(player, Kind.TEMPORAL_REWIND, 4);
+                }
+                if (gap <= PULL_GAP) {
+                    current.runners.remove(id);
+                    home(server, current, player, true);
+                }
+            }
+            if (current.runners.isEmpty()) { finish(server, city, true); return; }
+        }
         if (current.ticks >= RETURN_TICK) finish(server, city, true);
     }
 
@@ -495,27 +515,9 @@ public final class AvenueService {
     private static void finish(MinecraftServer server, ServerLevel city, boolean completed) {
         Run current = run;
         run = null;
-        List<String> saved = List.copyOf(current.safe);
-        // Gray is kept away if he never got close enough to see, however that was done.
-        boolean grayKept = !current.grayWatched;
-        AvenueData data = AvenueData.get(server);
         for (UUID id : List.copyOf(current.runners)) {
             ServerPlayer player = server.getPlayerList().getPlayer(id);
-            if (player == null) continue;
-            FacilityData.ReturnPoint point = data.tickets.remove(id);
-            data.setDirty();
-            EntityCarryService.release(player);
-            if (TimeIntroService.isCity(player.level())) FacilityService.returnTo(player, point);
-            if (!completed) {
-                PacketDistributor.sendToPlayer(player, new TimeIntroPayload(TimeIntroPayload.CANCEL));
-                continue;
-            }
-            PacketDistributor.sendToPlayer(player, new TimeIntroPayload(saved.size() == CITIZENS ? TimeIntroPayload.AVENUE_ALL
-                    : saved.isEmpty() ? TimeIntroPayload.AVENUE_NONE : TimeIntroPayload.AVENUE_SOME));
-            player.playNotifySound(ModSounds.TIME_BLINK.get(), SoundSource.PLAYERS, 0.9F, 0.85F);
-            ScreenTintPayload.send(player, 0x908AB6FF, 25, ScreenTintPayload.Style.FLASH);
-            AbilityEffects.at(player, Kind.TEMPORAL_BURST, 4);
-            reward(player, saved, grayKept);
+            if (player != null) home(server, current, player, completed);
         }
         for (Citizen citizen : current.citizens) EntityCarryService.releaseEntity(citizen.body);
         List<Entity> scene = new ArrayList<>();
@@ -523,6 +525,28 @@ public final class AvenueService {
         scene.forEach(Entity::discard);
         restoreShelter(city);
         TimeIntroService.forceCity(city, false);
+    }
+
+    /** One runner goes home by their ticket, with whatever the evening wrote for them. */
+    private static void home(MinecraftServer server, Run current, ServerPlayer player, boolean completed) {
+        List<String> saved = List.copyOf(current.safe);
+        // Gray is kept away if he never got close enough to see, however that was done.
+        boolean grayKept = !current.grayWatched;
+        AvenueData data = AvenueData.get(server);
+        FacilityData.ReturnPoint point = data.tickets.remove(player.getUUID());
+        data.setDirty();
+        EntityCarryService.release(player);
+        if (TimeIntroService.isCity(player.level())) FacilityService.returnTo(player, point);
+        if (!completed) {
+            PacketDistributor.sendToPlayer(player, new TimeIntroPayload(TimeIntroPayload.CANCEL));
+            return;
+        }
+        PacketDistributor.sendToPlayer(player, new TimeIntroPayload(saved.size() == CITIZENS ? TimeIntroPayload.AVENUE_ALL
+                : saved.isEmpty() ? TimeIntroPayload.AVENUE_NONE : TimeIntroPayload.AVENUE_SOME));
+        player.playNotifySound(ModSounds.TIME_BLINK.get(), SoundSource.PLAYERS, 0.9F, 0.85F);
+        ScreenTintPayload.send(player, 0x908AB6FF, 25, ScreenTintPayload.Style.FLASH);
+        AbilityEffects.at(player, Kind.TEMPORAL_BURST, 4);
+        reward(player, saved, grayKept);
     }
 
     /**
@@ -542,6 +566,11 @@ public final class AvenueService {
             if (!PastRecords.has(player, PastRecords.WHY_YOU)) PastRecords.give(player, PastRecords.whyYou());
             award(player, "story/six_fifteen");
             if (count == CITIZENS) award(player, "story/everyone_home");
+            if (before.saved() == 0) // The first evening anyone lived through opens the third night of the lockdown.
+                player.sendSystemMessage(Component.literal("A new omen has opened in your Journal (")
+                        .append(StoryLead.journalKey())
+                        .append("): Night 3, the third night of the lockdown, when Gray reached Claire Bennet in Pod 14.")
+                        .withStyle(ChatFormatting.AQUA));
         } else {
             tell(player, "6:15 PM. Nobody on the avenue lived to see it. The avenue is still there: you can walk back to 6:10.", ChatFormatting.GRAY);
         }
@@ -650,7 +679,7 @@ public final class AvenueService {
                 + "Bring him everyone you can, and keep the man in the dark coat from the light. Follow omen to go.";
         return "Your best evening: " + best.saved() + "/" + CITIZENS + " reached Bennet's door. "
                 + (best.grayKept() ? "Gray never saw the light. " : "Gray saw the light. ")
-                + "Follow omen to walk it again; hold Shift to walk into the Annex instead.";
+                + "Follow omen to walk it again; Shift-click it to choose another omen.";
     }
 
     // ------------------------------------------------------------------

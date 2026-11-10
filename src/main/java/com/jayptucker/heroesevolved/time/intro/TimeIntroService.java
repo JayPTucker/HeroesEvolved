@@ -12,6 +12,7 @@ import com.jayptucker.heroesevolved.sounds.ModSounds;
 import com.jayptucker.heroesevolved.story.AvenueService;
 import com.jayptucker.heroesevolved.time.TimeSlowService;
 import com.jayptucker.heroesevolved.time.TimeStopService;
+import com.jayptucker.heroesevolved.time.intro.city.CityGrid;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -31,22 +32,36 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-/** One shared cinematic at a time, with durable per-visitor return tickets. */
+/**
+ * The Time Manipulation awakening: a vision of Odessa in the last half-minute before 6:14. Visitors
+ * arrive on the avenue and can walk the southern half of the city while people go about their evening.
+ * Ted Sprague's glow grows at the north end, the sirens start, and the light falls. Everyone watches
+ * the shock wave come down the streets at them; a few blocks away, time stops for them, runs the whole
+ * explosion backwards, and lets them go home. One shared scene at a time, with durable return tickets.
+ */
 public final class TimeIntroService {
     public static final ResourceKey<Level> DIMENSION = ResourceKey.create(Registries.DIMENSION,
             ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "time_fracture"));
     private static final ResourceLocation POWER = ResourceLocation.fromNamespaceAndPath(
             HeroesEvolved.MOD_ID, "time_manipulation");
     public static final Vec3 ARRIVAL = new Vec3(4, 64, 70);
-    public static final Vec3 BLAST = new Vec3(4, 64, -78);
-    public static final int DETONATION_TICK = 220;
-    public static final int RETURN_TICK = 350;
-    public static final int CROWD_SIZE = 24;
+    public static final Vec3 BLAST = IntroBlast.CENTER;
+    /** Sprague's light becomes something you notice; the sirens start; the light falls. */
+    public static final int GLOW_TICK = 200, SIREN_TICK = 400, DETONATION_TICK = 640;
+    /** Where visitors may walk: the southern half of the city, well inside its edges. */
+    public static final int ROAM_X0 = -92, ROAM_X1 = 96, ROAM_Z0 = -4, ROAM_Z1 = 96;
+    /** The last moment anyone can still be here: the farthest corner of the walk, frozen, rewound. */
+    public static final int RETURN_TICK = DETONATION_TICK
+            + IntroBlast.arrival(Math.max(IntroBlast.distance(ROAM_X0, ROAM_Z1), IntroBlast.distance(ROAM_X1, ROAM_Z1)))
+            + IntroBlast.FREEZE_TICKS + IntroBlast.REWIND_TICKS + 10;
+    public static final int CROWD_SIZE = 40;
     private static final String CROWD_TAG = "heroesevolved_time_intro_crowd";
     private static final ArrayDeque<Request> QUEUE = new ArrayDeque<>();
     private static Scene scene;
@@ -56,7 +71,10 @@ public final class TimeIntroService {
     private static final class Scene {
         final UUID owner;
         final Set<UUID> visitors = new LinkedHashSet<>();
-        final List<Villager> crowd = new ArrayList<>();
+        /** When time stopped for each visitor, and where they were standing. */
+        final Map<UUID, Integer> frozenAt = new HashMap<>();
+        final Map<UUID, Vec3> frozenWhere = new HashMap<>();
+        VisionCrowd crowd;
         int ticks;
         int nextCry = 24;
         Scene(UUID owner) { this.owner = owner; }
@@ -70,7 +88,8 @@ public final class TimeIntroService {
     }
 
     public static boolean isCurrentCrowd(Entity entity) {
-        return scene != null && scene.crowd.contains(entity);
+        // By tag: a villager is spawned before it joins the crowd's list.
+        return scene != null && entity.getTags().contains(CROWD_TAG);
     }
 
     /** Waiting for the city after acquiring the power; the awakening shields them meanwhile. */
@@ -80,6 +99,14 @@ public final class TimeIntroService {
 
     /** A vision is playing in the city right now. */
     public static boolean sceneRunning() { return scene != null; }
+
+    /** Ticks into the current vision, or -1. */
+    public static int sceneTicks() { return scene == null ? -1 : scene.ticks; }
+
+    /** Whether time has stopped for this visitor. */
+    public static boolean isFrozen(ServerPlayer player) {
+        return scene != null && scene.frozenAt.containsKey(player.getUUID());
+    }
 
     /**
      * The vision is watched, not played: nobody uses a power in the city, except runners on the
@@ -140,6 +167,7 @@ public final class TimeIntroService {
         }
         Scene current = scene;
         current.ticks++;
+        int afterLight = current.ticks - DETONATION_TICK;
         current.visitors.removeIf(id -> {
             ServerPlayer player = server.getPlayerList().getPlayer(id);
             if (player == null) return true; // Its saved ticket remains for reconnect recovery.
@@ -147,14 +175,22 @@ public final class TimeIntroService {
                 returnHome(player, false);
                 return true;
             }
-            // Keep the group on the avenue and within the blast's safe distance.
-            if (player.getX() < -2 || player.getX() > 10 || player.getZ() < 58
-                    || player.getZ() > 92 || player.getY() < 63 || player.getY() > 80) {
-                player.teleportTo(city, Math.clamp(player.getX(), 0.5, 7.5), 64,
-                        Math.clamp(player.getZ(), 60, 90), player.getYRot(), player.getXRot());
+            Integer frozen = current.frozenAt.get(id);
+            if (frozen != null) {
+                // Time has stopped: nobody moves but the clock running backwards.
+                Vec3 where = current.frozenWhere.get(id);
+                if (player.position().distanceToSqr(where) > 0.01) player.teleportTo(city, where.x, where.y, where.z, player.getYRot(), player.getXRot());
                 player.setDeltaMovement(Vec3.ZERO);
                 player.fallDistance = 0;
+                if (current.ticks - frozen >= IntroBlast.FREEZE_TICKS + IntroBlast.REWIND_TICKS) {
+                    returnHome(player, true);
+                    return true;
+                }
+                return false;
             }
+            keepInside(city, player);
+            if (afterLight >= 0 && IntroBlast.front(afterLight) >= IntroBlast.distance(player.getX(), player.getZ()) - IntroBlast.MARGIN)
+                freeze(current, player);
             return false;
         });
         if (current.visitors.isEmpty()) {
@@ -162,26 +198,44 @@ public final class TimeIntroService {
             return;
         }
         animateCrowd(city, current);
+        if (current.ticks == GLOW_TICK) forEachVisitor(server, player -> cue(player, TimeIntroPayload.GLOW));
+        if (current.ticks == SIREN_TICK) forEachVisitor(server, player -> cue(player, TimeIntroPayload.SIREN));
+        if (current.ticks == DETONATION_TICK - 60) forEachVisitor(server, player ->
+                PacketDistributor.sendToPlayer(player, new CameraShakePayload(0.05F, 60)));
         if (current.ticks == DETONATION_TICK) {
             forEachVisitor(server, player -> {
                 cue(player, TimeIntroPayload.DETONATION);
-                ScreenTintPayload.send(player, 0xB8FFF1D5, 22, ScreenTintPayload.Style.FLASH);
+                ScreenTintPayload.send(player, 0xE8FFF6E6, 26, ScreenTintPayload.Style.FLASH);
             });
         }
-        if (current.ticks == DETONATION_TICK + 10) {
+        if (current.ticks == DETONATION_TICK + 6) {
             forEachVisitor(server, player -> {
                 cue(player, TimeIntroPayload.BLAST_SOUND);
-                PacketDistributor.sendToPlayer(player, new CameraShakePayload(0.38F, 100));
-            });
-        }
-        if (current.ticks == RETURN_TICK - 22) {
-            forEachVisitor(server, player -> {
-                player.playNotifySound(ModSounds.TIME_SLOW_STOP.get(), SoundSource.PLAYERS, 0.9F, 1);
-                ScreenTintPayload.send(player, 0x709E80E8, 22, ScreenTintPayload.Style.EDGE);
-                AbilityEffects.at(player, AbilityEffectPayload.Kind.TEMPORAL_REWIND, 4);
+                PacketDistributor.sendToPlayer(player, new CameraShakePayload(0.22F, 70));
             });
         }
         if (current.ticks >= RETURN_TICK) finish(server, city, true);
+    }
+
+    /** Visitors walk where they like in the southern half of the city, but no further. */
+    private static void keepInside(ServerLevel city, ServerPlayer player) {
+        double x = Math.clamp(player.getX(), ROAM_X0, ROAM_X1), z = Math.clamp(player.getZ(), ROAM_Z0, ROAM_Z1);
+        double y = Math.clamp(player.getY(), CityGrid.STREET_Y - 1, 200);
+        if (x != player.getX() || z != player.getZ() || y != player.getY()) {
+            player.teleportTo(city, x, y, z, player.getYRot(), player.getXRot());
+            player.setDeltaMovement(Vec3.ZERO);
+            player.fallDistance = 0;
+        }
+    }
+
+    /** The wave is a few blocks away. Time stops: for this visitor, everything holds still. */
+    private static void freeze(Scene current, ServerPlayer player) {
+        current.frozenAt.put(player.getUUID(), current.ticks);
+        current.frozenWhere.put(player.getUUID(), player.position());
+        player.setDeltaMovement(Vec3.ZERO);
+        cue(player, TimeIntroPayload.FREEZE);
+        player.playNotifySound(ModSounds.TIME_SLOW_STOP.get(), SoundSource.PLAYERS, 1.0F, 0.7F);
+        ScreenTintPayload.send(player, 0x709E80E8, IntroBlast.FREEZE_TICKS + IntroBlast.REWIND_TICKS, ScreenTintPayload.Style.EDGE);
     }
 
     private static void startNext(MinecraftServer server, ServerLevel city) {
@@ -218,8 +272,8 @@ public final class TimeIntroService {
                 visitor.closeContainer();
                 visitor.stopRiding();
                 visitor.ejectPassengers();
-                visitor.teleportTo(city, 1.2 + (index % 5) * 1.35, 64,
-                        70 + (index / 5 % 12) * 1.5, 180, -5);
+                visitor.teleportTo(city, ARRIVAL.x - 2.4 + (index % 5) * 1.2, ARRIVAL.y,
+                        ARRIVAL.z + (index / 5 % 8) * 1.4, 180, -4);
                 visitor.setDeltaMovement(Vec3.ZERO);
                 visitor.fallDistance = 0;
                 visitor.setPortalCooldown();
@@ -230,7 +284,7 @@ public final class TimeIntroService {
                 ScreenTintPayload.send(visitor, 0x887E58B8, 24, ScreenTintPayload.Style.FLASH);
                 index++;
             }
-            spawnCrowd(city, next);
+            next.crowd = VisionCrowd.spawn(city, CROWD_TAG, CROWD_SIZE);
             return;
         }
     }
@@ -245,48 +299,17 @@ public final class TimeIntroService {
         com.jayptucker.heroesevolved.telekinesis.TelekinesisService.stopAll(player);
     }
 
-    private static void spawnCrowd(ServerLevel city, Scene current) {
-        for (int i = 0; i < CROWD_SIZE; i++) {
-            Villager villager = EntityType.VILLAGER.create(city);
-            if (villager == null) continue;
-            // Most are on the central avenue; others flee along adjoining streets.
-            double x = i < 18 ? 0.9 + i % 3 * 2.1 : -63 + i % 5 * 32;
-            double z = i < 18 ? -25 + i / 3 * 20 + (i % 3) * 2 : 34 + i % 6 * 9;
-            villager.moveTo(x, 64, Math.min(90, z), 0, 0);
-            villager.setVillagerData(villager.getVillagerData().setType(VillagerType.PLAINS)
-                    .setProfession(VillagerProfession.NITWIT));
-            villager.setInvulnerable(true);
-            villager.setSilent(true); // Deliberately timed panic vocals instead of trading chatter.
-            villager.setPersistenceRequired();
-            villager.addTag(CROWD_TAG);
-            current.crowd.add(villager);
-            if (!city.addFreshEntity(villager)) current.crowd.remove(villager);
-        }
-    }
-
     private static void animateCrowd(ServerLevel city, Scene current) {
-        if (current.ticks % 16 != 0) return;
-        for (int i = 0; i < current.crowd.size(); i++) {
-            Villager villager = current.crowd.get(i);
-            if (!villager.isAlive()) continue;
-            // Refresh hurt memory to trigger the vanilla panic behaviour, without doing damage.
-            villager.getBrain().setMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.HURT_BY,
-                    city.damageSources().generic());
-            double destinationZ = villager.getZ() > 86 ? 60 : Math.min(91, villager.getZ() + 18);
-            villager.getNavigation().moveTo(villager.getX() + Math.sin(i + current.ticks * 0.1) * 1.3,
-                    64, destinationZ, 1.65);
+        if (current.crowd == null) return;
+        int afterLight = current.ticks - DETONATION_TICK;
+        // Whoever the dust reaches is gone.
+        if (afterLight >= 0) current.crowd.engulf(IntroBlast.front(afterLight));
+        List<ServerPlayer> watching = new ArrayList<>();
+        for (UUID id : current.visitors) {
+            ServerPlayer player = city.getServer().getPlayerList().getPlayer(id);
+            if (player != null && isCity(player.level())) watching.add(player);
         }
-        if (current.ticks >= current.nextCry) {
-            // Stagger nearby voices and keep the recordings close to their natural pitch.
-            List<Villager> nearby = current.crowd.stream().filter(v -> v.isAlive()
-                    && v.getX() > -8 && v.getX() < 12 && v.getZ() > 25).toList();
-            if (!nearby.isEmpty()) {
-                Villager voice = nearby.get(city.random.nextInt(nearby.size()));
-                city.playSound(null, voice.blockPosition(), ModSounds.CROWD_PANIC.get(),
-                        SoundSource.NEUTRAL, 0.8F, 0.97F + city.random.nextFloat() * 0.06F);
-            }
-            current.nextCry = current.ticks + 38 + city.random.nextInt(27);
-        }
+        current.crowd.tick(city, current.ticks, watching, CROWD_TAG);
     }
 
     public static void returnHome(ServerPlayer player, boolean completed) {
@@ -350,13 +373,14 @@ public final class TimeIntroService {
     private static void finish(MinecraftServer server, ServerLevel city, boolean completed) {
         Scene current = scene;
         forEachVisitor(server, player -> returnHome(player, completed));
-        current.crowd.forEach(Entity::discard);
+        if (current.crowd != null) current.crowd.discard();
         forceCity(city, false);
         scene = null;
     }
 
     public static void forceCity(ServerLevel city, boolean force) {
-        for (int x = -6; x < 6; x++) for (int z = -6; z < 6; z++) city.setChunkForced(x, z, force);
+        int first = FractureCity.MIN >> 4, last = (FractureCity.MIN + FractureCity.WIDTH - 1) >> 4;
+        for (int x = first; x <= last; x++) for (int z = first; z <= last; z++) city.setChunkForced(x, z, force);
     }
 
     private static void forEachVisitor(MinecraftServer server, java.util.function.Consumer<ServerPlayer> action) {
@@ -377,4 +401,8 @@ public final class TimeIntroService {
         }
     }
 
+    /** For previews: jump the running vision to {@code ticks} (e.g. just before the light). */
+    public static void skipTo(int ticks) {
+        if (scene != null && ticks > scene.ticks) scene.ticks = ticks;
+    }
 }

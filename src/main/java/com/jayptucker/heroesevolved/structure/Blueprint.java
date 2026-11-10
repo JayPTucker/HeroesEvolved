@@ -153,6 +153,17 @@ public final class Blueprint {
 
     /** Places layers up to and including {@code topLayer}: a cut-away for looking inside. */
     public Map<String, List<BlockPos>> place(ServerLevel level, BlockPos at, Rotation rotation, int topLayer) {
+        return place(level, at, rotation, topLayer, (layer, state) -> state);
+    }
+
+    /**
+     * Swaps blocks as they are placed: {@code remap} gets each cell's layer and block state and returns
+     * the state to place instead. The same blueprint can then be built as it was at another time (the
+     * bunker on the third night of the lockdown, before the cave broke in). Markers stay on their cells.
+     */
+    public interface Remap { BlockState apply(int layer, BlockState state); }
+
+    public Map<String, List<BlockPos>> place(ServerLevel level, BlockPos at, Rotation rotation, int topLayer, Remap remap) {
         Map<String, List<BlockPos>> marked = new HashMap<>();
         Map<BlockPos, String> paintings = new LinkedHashMap<>();
         for (int y = 0; y < Math.min(layers.size(), topLayer + 1); y++) {
@@ -164,6 +175,7 @@ public final class Blueprint {
                     if (key == '_') continue;
                     BlockState state = key == '.' ? Blocks.AIR.defaultBlockState() : palette.get(key);
                     if (state == null) continue;
+                    state = remap.apply(y, state);
                     BlockPos pos = at.offset(offset(x, y, z, rotation));
                     if (level.isOutsideBuildHeight(pos)) continue;
                     BlockState existing = level.getBlockState(pos);
@@ -173,19 +185,55 @@ public final class Blueprint {
                     if (marker == null) continue;
                     marked.computeIfAbsent(marker, k -> new ArrayList<>()).add(pos.immutable());
                     if (marker.startsWith("painting:")) paintings.put(pos.immutable(), marker.substring(9));
-                    SignLines text = marker.startsWith("sign:") ? signs.get(marker.substring(5)) : null;
-                    if (text != null && level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.SignBlockEntity sign) {
-                        var front = new net.minecraft.world.level.block.entity.SignText().setColor(text.color()).setHasGlowingText(text.glow());
-                        for (int i = 0; i < text.lines().size(); i++) front = front.setMessage(i, net.minecraft.network.chat.Component.literal(text.lines().get(i)));
-                        sign.setText(front, true);
-                        sign.setWaxed(true);
-                    }
+                    writeSign(level, pos, marker);
                 }
             }
         }
         // Paintings last, once the walls they hang on exist.
         paintings.forEach((pos, spec) -> hangPainting(level, pos, spec, rotation));
         return marked;
+    }
+
+    /**
+     * Adds the marked cells that {@code which} accepts to a build that already stands, and nothing
+     * else: a block goes in only where the spot is empty, and a painting only where none hangs yet.
+     * This is how a detail added to a blueprint later reaches a world built before it, without
+     * rebuilding over anything a player changed.
+     */
+    public void addMissing(ServerLevel level, BlockPos at, Rotation rotation, java.util.function.Predicate<String> which) {
+        Map<BlockPos, String> paintings = new LinkedHashMap<>();
+        for (int y = 0; y < layers.size(); y++) {
+            List<String> rows = layers.get(y);
+            for (int z = 0; z < rows.size(); z++) {
+                String row = rows.get(z);
+                for (int x = 0; x < row.length(); x++) {
+                    String marker = markers.get(row.charAt(x));
+                    if (marker == null || !which.test(marker)) continue;
+                    BlockPos pos = at.offset(offset(x, y, z, rotation));
+                    if (level.isOutsideBuildHeight(pos)) continue;
+                    if (marker.startsWith("painting:")) { paintings.put(pos.immutable(), marker.substring(9)); continue; }
+                    BlockState state = palette.get(row.charAt(x));
+                    if (state == null || !level.getBlockState(pos).isAir()) continue;
+                    level.setBlock(pos, state.rotate(rotation), Block.UPDATE_ALL);
+                    writeSign(level, pos, marker);
+                }
+            }
+        }
+        paintings.forEach((pos, spec) -> {
+            boolean hanging = !level.getEntitiesOfClass(net.minecraft.world.entity.decoration.Painting.class,
+                    new net.minecraft.world.phys.AABB(pos).inflate(8), painting -> painting.getPos().equals(pos)).isEmpty();
+            if (!hanging) hangPainting(level, pos, spec, rotation);
+        });
+    }
+
+    /** Writes a {@code @sign:<id>} marker's text on the sign at {@code pos}, waxed so nobody edits it. */
+    private void writeSign(ServerLevel level, BlockPos pos, String marker) {
+        SignLines text = marker.startsWith("sign:") ? signs.get(marker.substring(5)) : null;
+        if (text == null || !(level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.SignBlockEntity sign)) return;
+        var front = new net.minecraft.world.level.block.entity.SignText().setColor(text.color()).setHasGlowingText(text.glow());
+        for (int i = 0; i < text.lines().size(); i++) front = front.setMessage(i, net.minecraft.network.chat.Component.literal(text.lines().get(i)));
+        sign.setText(front, true);
+        sign.setWaxed(true);
     }
 
     /** {@code spec} is {@code <variant>:<facing>}, e.g. {@code explosion:east}; the variant is a heroesevolved painting. */
@@ -199,6 +247,20 @@ public final class Blueprint {
         var bounds = new net.minecraft.world.phys.AABB(pos).inflate(8);
         level.getEntitiesOfClass(net.minecraft.world.entity.decoration.Painting.class, bounds, old -> old.getPos().equals(pos)).forEach(old -> old.discard());
         level.addFreshEntity(new net.minecraft.world.entity.decoration.Painting(level, pos, rotation.rotate(direction), variant.get()));
+    }
+
+    /** Every grid cell whose block matches {@code test}, relative to the anchor, unrotated, in reading order. */
+    public List<BlockPos> cellsMatching(java.util.function.Predicate<BlockState> test) {
+        List<BlockPos> found = new ArrayList<>();
+        for (int y = 0; y < layers.size(); y++)
+            for (int z = 0; z < layers.get(y).size(); z++) {
+                String row = layers.get(y).get(z);
+                for (int x = 0; x < row.length(); x++) {
+                    BlockState state = palette.get(row.charAt(x));
+                    if (state != null && test.test(state)) found.add(offset(x, y, z, Rotation.NONE));
+                }
+            }
+        return found;
     }
 
     /** Every grid cell carrying {@code marker}, relative to the anchor, unrotated, in reading order. */

@@ -28,14 +28,14 @@ owner, and whoever last hurt them, another player included.
 | Electrokinesis | Two and a half seconds of electrical arcs feeding a rotating blue/white corona. | A central lightning strike, three surrounding follow-up strikes, expanding electrical rings and a discharge that repels and damages nearby enemies. |
 | Telekinesis | Two seconds of inward motes and a concentrating violet field. | Nearby mobs and loose items briefly levitate, cosmetic stones rise from the ground, then the lifted objects are pushed outward. Living targets receive a brief slow-fall effect on release. |
 | Regeneration | Two and a half seconds of wounds healing amid red-to-gold particles. | Full health, harmful-status removal, extinguished fire, and a healing bloom reaching non-hostile living entities within eight blocks. |
-| Time Manipulation | The existing city vision. The owner is shielded while the city is prepared. | The siren, panicked crowds, nuclear detonation and group escape remain intact; see `time-manipulation-intro.md`. On a completed return home the owner gets the second wind, and nearby monsters lose their target and are left a heartbeat behind (heavily slowed and weakened for five seconds). |
+| Time Manipulation | A walkable vision of Odessa in its last half-minute. The owner is shielded while the city is prepared. | Sprague's glow, the sirens and the panicking crowd, a 3D fireball and mushroom cloud, and a shock wave that wrecks the streets on its way to you; a few blocks short, time stops and the whole explosion runs backwards. See `time-manipulation-intro.md`. On a completed return home the owner gets the second wind, and nearby monsters lose their target and are left a heartbeat behind (heavily slowed and weakened for five seconds). |
 | Technopathy | Cyan diagnostic routes resolve around the owner while nearby mechanisms begin to make sense. | A circuit scan and brief hostile-projectile rejection pulse; no free network mastery or Evolved trial progress. |
 | Matter Assembly | Amber construction lines and fragments assemble around the owner's hands. | A defensive lattice and a recoil pulse give the owner room to act. Paid construction starts with the actual ability keys. |
 
 Each new composition has its own charge and release particle kinds. Primary
 cues remain visible on Minimal particles; richer filaments, motes and layered
 fronts scale with the particle setting. The shared 768-particle cap remains.
-The existing compact caption layout is reused. Existing flight/time audio and
+The existing compact caption layout is reused. Captions stay up as long as their words take to read (about fourteen characters a second, on a dark band), and one that arrives while another is still being read waits its turn. Existing flight/time audio and
 the city intro assets are unchanged; other intros use vanilla sound cues and
 replay the existing New Beginning cue for their owner.
 

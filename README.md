@@ -100,6 +100,12 @@ minutes to bring 24 people through Noah Bennet's door before the light, and to k
 from seeing it. What you save is written back into the present. See [The Past](docs/the-past.md)
 for the whole storyline, The Last Day.
 
+Then [Night Three](docs/the-past.md#night-three): the bunker on the third night of the lockdown, lights
+on and guards at their posts. Gray unmakes his cage and walks to Pod 14, where Claire Bennet sleeps.
+Keep him from her until 3:00 and Sylar never takes regeneration. The guards are
+[Company agents](docs/company-agents.md), the first human enemies: aimed tranquilizer darts, three to
+put you under, and a Suppressor in whose quiet no power works.
+
 See [Invisibility](docs/invisibility.md) for Exposure, optical doubles, shared concealment and
 its eighteen redesigned skills. [Phasing and Empathic Mimicry](docs/new-powers.md) records the
 other added powers and the techniques introduced to the original trees.

@@ -1,0 +1,23 @@
+// Odessa, the Time vision city, photographed from the street and the air. Never bundled into the mod JAR.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('timeCityPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/time-city-preview')
+                        programArguments.addAll('--width', '1280', '--height', '720')
+                        systemProperty('heroes.preview.timecity', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('timeCityPreviewClasses')) }
+        }
+    }
+}

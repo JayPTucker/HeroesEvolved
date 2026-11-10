@@ -75,7 +75,7 @@ letters to memorable ones, add markers, and continue the loop from step 3.
 
 | Blueprint | Placed by | Notes |
 | --- | --- | --- |
-| `bunker_chamber` | `BunkerBuilder` at bunker (0,0,18), anchor 7 0 0 | 14 `@pod` cells and `@log:orientation` must keep their positions |
+| `bunker_chamber` | `BunkerBuilder` at bunker (0,0,18), anchor 7 0 0 | 14 `@pod` cells and `@log:orientation` must keep their positions. The bunker is built once per world: anything added later reaches old worlds only if `BunkerBuilder.upgrade` adds it (bump `BunkerData.LAYOUT`; layout 2 added Exhibit 1 with `Blueprint.addMissing`) |
 | `bunker_records` | bunker (0,0,1), anchor 5 0 0 | `@log:lockdown`, `@log:quiet_years`, `@loot:records` |
 | `bunker_corridor` | bunker (0,0,11), anchor 2 0 0 | doors at both ends and to the lab and cell |
 | `bunker_lab` | bunker (2,0,11) | `@log:helixite`, `@loot:lab` |
@@ -83,3 +83,5 @@ letters to memorable ones, add markers, and continue the loop from step 3.
 | `bunker_generator`, `bunker_security`, `bunker_entrance` | bunker (5,0,1), (-14,0,1), surface hatch | `@loot:security`, `@sign:*` |
 | `bunker_office` | bunker (-14,-6,3), under security's red rug | `@log:bennet`, `@loot:office`, `@painting:bennets`; skipped on shallow worlds |
 | `ruins_*` | world generation (jigsaw structures) | exported to `structure/ruins/<name>.nbt` with `to-nbt`; `@loot:<table>` becomes the chest's loot table. Preview with `tools/ruins-preview.init.gradle` |
+
+Odessa, the city of the Time vision and the avenue at 6:14, is drawn in Java rather than from blueprints: `time/intro/city/` (`CityPlan` decides what stands where, `Building` draws facades, `Streets` and `Landmarks` the rest). Every write goes through a clipped `CityCanvas`, so `FractureCity.rebuild` can put back any rectangle exactly. Keep the street grid: the avenue on x 0..7 and the roads every 32 blocks are where `AvenueService` puts its people, door and paths. Photograph it with `tools/time-city-preview.init.gradle`.

@@ -57,7 +57,9 @@ public final class TimeIntroEvents {
         }
     }
     @SubscribeEvent public static void spawn(EntityJoinLevelEvent event) {
-        if (TimeIntroService.isCity(event.getLevel()) && event.getEntity() instanceof Mob
+        // Server only. The event also fires as a client receives each entity, and a client knows neither the
+        // scene tags nor the vision's crowd, so it would turn away everyone on the avenue and in the vision.
+        if (!event.getLevel().isClientSide() && TimeIntroService.isCity(event.getLevel()) && event.getEntity() instanceof Mob
                 && !TimeIntroService.isCurrentCrowd(event.getEntity())
                 && !(AvenueService.running() && AvenueService.isScene(event.getEntity()))) event.setCanceled(true);
     }

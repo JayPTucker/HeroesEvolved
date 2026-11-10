@@ -6,13 +6,14 @@ import com.jayptucker.heroesevolved.expansion.FacilityData;
 import com.jayptucker.heroesevolved.progression.StoryDiscoveries;
 import com.jayptucker.heroesevolved.progression.StoryDiscoveries.Place;
 import com.jayptucker.heroesevolved.story.bunker.BunkerData;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
  * The journal's "Next lead": the one thing this player should look for now, so the story can be
  * followed without a guide. Leads only point; nothing is locked behind them. The order is the
  * story's: wake, learn what happened, find who saw it coming, awaken, then walk back to the Last Day:
- * the Annex at 5:50, then the avenue at 6:14, then everyone left behind.
+ * the Annex at 5:50, then the avenue at 6:14, then the third night of the lockdown, then everyone left behind.
  */
 public final class StoryLead {
     private StoryLead() {}
@@ -62,9 +63,17 @@ public final class StoryLead {
             return "Hiro's key opens the avenue. Follow the omen to Odessa at 6:10 PM: Noah Bennet holds the Company's door "
                     + "until 6:14. Bring him everyone you can.";
         }
+        boolean podKept = com.jayptucker.heroesevolved.story.night.NightThreeData.get(player.getServer()).best(player.getUUID()).kept();
         if (!avenue.grayKept()) {
-            return "Gabriel Gray reached the light on the avenue and understood it. Walk the Last Day again, and keep him "
-                    + "from it until 6:14.";
+            return podKept
+                    ? "Gabriel Gray reached the light on the avenue and understood it. Walk the Last Day again, and keep him "
+                    + "from it until 6:14."
+                    : "Gabriel Gray reached the light on the avenue and understood it. Walk the Last Day again and keep him from it, "
+                    + "or follow the newest omen to the third night of the lockdown, when he reached Pod 14.";
+        }
+        if (!podKept) {
+            return "Gray's containment file says he reached Pod 14 on the third night of the lockdown. Follow the omen back to "
+                    + "that night and keep him from Claire Bennet until Noah Bennet comes down the shaft at 3:00.";
         }
         long bunkerLeft = missing(player, Place.BUNKER), ruinsLeft = missing(player, Place.RUINS);
         if (hasBunker && bunkerLeft > 0) {
@@ -79,8 +88,13 @@ public final class StoryLead {
             return lost + (lost == 1 ? " person" : " people") + " on the avenue never reached Bennet's door. "
                     + "The Last Day is still there to walk.";
         }
-        return "Everyone on the avenue lived to see 6:15, and the watchmaker never saw the light. "
+        return "Everyone on the avenue lived to see 6:15, the watchmaker never saw the light, and Pod 14 stayed shut. "
                 + "You have followed every lead the world holds.";
+    }
+
+    /** The key the player has bound to the Journal, shown as their own key on their screen ("J" by default). */
+    public static Component journalKey() {
+        return Component.keybind("key.heroesevolved.open_journal");
     }
 
     private static boolean found(ServerPlayer player, String title) {

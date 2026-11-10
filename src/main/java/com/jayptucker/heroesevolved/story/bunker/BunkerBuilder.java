@@ -40,6 +40,61 @@ public final class BunkerBuilder {
         this.level = level; this.origin = origin; this.surface = surface;
     }
 
+    /** A room blueprint and where its anchor lands, relative to the bunker floor under the shaft. */
+    public record Room(String blueprint, BlockPos at) {}
+
+    /** The rooms on the bunker's main level. Night Three builds the same rooms as they were on the third night. */
+    public static final java.util.List<Room> ROOMS = java.util.List.of(
+            new Room("bunker_records", new BlockPos(0, 0, 1)),
+            new Room("bunker_corridor", new BlockPos(0, 0, 11)),
+            new Room("bunker_lab", new BlockPos(2, 0, 11)),
+            new Room("bunker_cell", new BlockPos(-9, 0, 11)),
+            new Room("bunker_chamber", new BlockPos(0, 0, 18)),
+            new Room("bunker_generator", new BlockPos(5, 0, 1)),
+            new Room("bunker_security", new BlockPos(-14, 0, 1)));
+    /** Sublevel 4-B, Noah Bennet's office, right under the checkpoint's red rug. Not on any plan. */
+    public static final Room OFFICE = new Room("bunker_office", new BlockPos(-14, -6, 3));
+
+    /** Where the stasis hall lands in the bunker. */
+    public static final Room CHAMBER = ROOMS.stream().filter(room -> room.blueprint().equals("bunker_chamber")).findFirst().orElseThrow();
+    /** Exhibit 1: Isaac's explosion over the city, high on the hall's far wall above the dead screen. Added in layout 2. */
+    public static final String EXHIBIT_ONE = "painting:explosion:north";
+    /** The last block of the west ceiling beam, cut back in layout 2 so Exhibit 1 fits under the ceiling. */
+    public static final BlockPos BEAM_END = new BlockPos(4, 11, 21);
+    /** The red ceiling lights over Exhibit 1 (chamber grid cells), with glowstone behind them as elsewhere in the hall. */
+    public static final java.util.List<BlockPos> EXHIBIT_LIGHTS = java.util.List.of(new BlockPos(5, 12, 21), new BlockPos(8, 12, 21));
+
+    /**
+     * Gives a bunker built under an older layout what later layouts added, and nothing else: no room is
+     * rebuilt over a player's changes. Waits until the chamber's entities are loaded (someone is near),
+     * since part of it is a painting. Returns true once the bunker is up to date.
+     */
+    public static boolean upgrade(ServerLevel level, BunkerData data) {
+        if (!data.built || data.layout >= BunkerData.LAYOUT) return true;
+        var chamber = com.jayptucker.heroesevolved.structure.Blueprint.load(CHAMBER.blueprint());
+        BlockPos at = data.origin.offset(CHAMBER.at());
+        BlockPos painting = at.offset(chamber.markerOffsets(EXHIBIT_ONE).getFirst());
+        if (!level.isPositionEntityTicking(painting)) return false;
+        if (data.layout < 2) {
+            // The ceiling beam stops one block short of the wall, where the painting's corner hangs.
+            BlockPos beam = at.offset(chamber.offset(BEAM_END.getX(), BEAM_END.getY(), BEAM_END.getZ(), net.minecraft.world.level.block.Rotation.NONE));
+            if (level.getBlockState(beam).is(Blocks.WAXED_WEATHERED_CUT_COPPER)) level.setBlock(beam, AIR, Block.UPDATE_ALL);
+            // Lights over it, only where the ceiling is still the bunker's own brick.
+            for (BlockPos cell : EXHIBIT_LIGHTS) {
+                BlockPos glass = at.offset(chamber.offset(cell.getX(), cell.getY(), cell.getZ(), net.minecraft.world.level.block.Rotation.NONE));
+                if (!level.getBlockState(glass).is(Blocks.DEEPSLATE_BRICKS)) continue;
+                level.setBlock(glass.above(), Blocks.GLOWSTONE.defaultBlockState(), Block.UPDATE_ALL);
+                level.setBlock(glass, Blocks.RED_STAINED_GLASS.defaultBlockState(), Block.UPDATE_ALL);
+            }
+            chamber.addMissing(level, at, net.minecraft.world.level.block.Rotation.NONE,
+                    marker -> marker.equals(EXHIBIT_ONE) || marker.equals("sign:exhibit1"));
+        }
+        data.layout = BunkerData.LAYOUT;
+        data.setDirty();
+        com.jayptucker.heroesevolved.HeroesEvolved.LOGGER.info("Brought the stasis bunker at {} up to layout {}", data.origin, data.layout);
+        return true;
+    }
+
     /** Pod {@code index}'s base block, relative to the bunker origin. */
     public static BlockPos podOffset(int index) {
         return new BlockPos(index < 7 ? -5 : 5, 1, 20 + 2 * (index % 7));
@@ -136,15 +191,9 @@ public final class BunkerBuilder {
                 .setValue(TrapDoorBlock.FACING, Direction.SOUTH));
 
         // The rooms are blueprints in data/heroesevolved/blueprints; see the minecraft-building skill.
-        room("bunker_records", 0, 0, 1);
-        room("bunker_corridor", 0, 0, 11);
-        room("bunker_lab", 2, 0, 11);
-        room("bunker_cell", -9, 0, 11);
-        room("bunker_chamber", 0, 0, 18);
-        room("bunker_generator", 5, 0, 1);
-        room("bunker_security", -14, 0, 1);
-        // Sublevel 4-B, Noah Bennet's office, right under the checkpoint's red rug. Not on any plan.
-        if (origin.getY() - 6 > level.getMinBuildHeight()) room("bunker_office", -14, -6, 3);
+        for (Room room : ROOMS) room(room.blueprint(), room.at().getX(), room.at().getY(), room.at().getZ());
+        if (origin.getY() + OFFICE.at().getY() > level.getMinBuildHeight())
+            room(OFFICE.blueprint(), OFFICE.at().getX(), OFFICE.at().getY(), OFFICE.at().getZ());
         // A ruined hut marks the hatch on the surface, so the way back down can be found.
         if (top > 2) room("bunker_entrance", 0, top, 0);
     }

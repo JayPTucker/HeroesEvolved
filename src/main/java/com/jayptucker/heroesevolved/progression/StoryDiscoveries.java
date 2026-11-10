@@ -52,7 +52,8 @@ public final class StoryDiscoveries {
             new Note("The Key", "H. N.", Place.PAST),
             new Note("The Door at 6:14", "N. Bennet", Place.PAST),
             new Note("Addendum: G. Gray", "Security", Place.PAST),
-            new Note("Why You", "H. N.", Place.PAST)
+            new Note("Why You", "H. N.", Place.PAST),
+            new Note("Pod 14", "Claire", Place.PAST)
     );
     /** Title to author, for every story note the mod places. */
     public static final Map<String, String> NOTES = ORDER.stream()

@@ -80,7 +80,7 @@ public final class TimeIntroGameTests {
         player.serverLevel().removePlayerImmediately(player, Entity.RemovalReason.DISCARDED);
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 650, batch = "TimeIntroGameTests.fullSceneAudienceReturnAndRecovery")
+    @GameTest(template = "rewind_empty", timeoutTicks = 4000, batch = "TimeIntroGameTests.fullSceneAudienceReturnAndRecovery")
     public static void fullSceneAudienceReturnAndRecovery(GameTestHelper helper) {
         ServerLevel source = helper.getLevel();
         ServerLevel city = source.getServer().getLevel(TimeIntroService.DIMENSION);
@@ -88,8 +88,10 @@ public final class TimeIntroGameTests {
         boolean originalMobRule = source.getGameRules().getBoolean(GameRules.RULE_DOMOBSPAWNING);
         List<ServerPlayer> players = new ArrayList<>();
         boolean[] crowdReady = {false};
+        boolean[] froze = {false};
         // Let the real server tick build the city before acquiring the power.
-        helper.runAfterDelay(160, () -> {
+        helper.startSequence().thenWaitUntil(() -> helper.assertTrue(FractureCity.get(city).ready()
+                && !TimeIntroService.sceneRunning() && !com.jayptucker.heroesevolved.story.AvenueService.running(), "Waiting for the city")).thenExecute(() -> {
             helper.assertTrue(FractureCity.get(city).ready(), "Staged city construction must finish");
             helper.assertTrue(source.getGameRules().getBoolean(GameRules.RULE_DOMOBSPAWNING) == originalMobRule,
                     "Scene must not change the overworld's game rules");
@@ -103,9 +105,18 @@ public final class TimeIntroGameTests {
             // Distant forced chunks become entity-ticking asynchronously; verify the actual
             // audience once loaded, rather than assuming every chunk completes within twelve ticks.
             helper.startSequence().thenWaitUntil(() -> helper.assertTrue(
-                    city.getEntities(EntityType.VILLAGER, TimeIntroService::isCurrentCrowd).size() == 24,
-                    "Scene must load the reduced 24-person crowd"))
+                    city.getEntities(EntityType.VILLAGER, TimeIntroService::isCurrentCrowd).size() == TimeIntroService.CROWD_SIZE,
+                    "Scene must load the whole crowd on the streets"))
                     .thenExecute(() -> crowdReady[0] = true);
+            // A few blocks from the wave, time stops for each visitor before they go home.
+            helper.startSequence().thenWaitUntil(() -> helper.assertTrue(TimeIntroService.isFrozen(owner), "Waiting for the wave"))
+                    .thenExecute(() -> {
+                        double gap = IntroBlast.distance(owner.getX(), owner.getZ())
+                                - IntroBlast.front(TimeIntroService.sceneTicks() - TimeIntroService.DETONATION_TICK);
+                        helper.assertTrue(gap > 0 && gap <= IntroBlast.MARGIN + 2, "Time stops just ahead of the wave: " + gap);
+                        helper.assertTrue(TimeIntroService.isCity(owner.level()), "Frozen visitors are still in the city");
+                        froze[0] = true;
+                    });
             helper.runAfterDelay(12, () -> {
                 helper.assertTrue(TimeIntroService.isCity(owner.level()), "Newly granted power must start intro");
                 helper.assertTrue(owner.position().distanceToSqr(TimeIntroService.ARRIVAL) < 20,
@@ -144,7 +155,8 @@ public final class TimeIntroGameTests {
                     helper.assertTrue(owner.getYRot() == 37 && owner.getXRot() == -12, "Return must restore orientation");
                     helper.assertTrue(!TimeIntroService.isVisiting(owner), "Completed visit must clear its ticket");
                     helper.assertTrue(city.getForcedChunks().isEmpty(), "Scene chunk tickets must be released");
-                    helper.assertTrue(crowdReady[0], "The full reduced crowd must have loaded during the scene");
+                    helper.assertTrue(crowdReady[0], "The full crowd must have loaded during the scene");
+                    helper.assertTrue(froze[0], "Time must have stopped for the owner before the wave reached them");
                     helper.assertTrue(city.getEntities(EntityType.VILLAGER, villager -> true).isEmpty(), "Crowd must be removed");
                     PlayerAbilityService.removeAssignedAbility(owner);
                     PlayerAbilityService.grantAbility(owner, ModAbilities.TIME_MANIPULATION_ID);
@@ -170,18 +182,27 @@ public final class TimeIntroGameTests {
         stale.moveTo(4, 64, 70, 0, 0);
         helper.assertTrue(!city.addFreshEntity(stale), "Saved crowd from an interrupted scene must not respawn");
         FractureCity.buildColumn(city, 4, 70);
-        helper.assertTrue(city.getBlockState(new BlockPos(4, 63, 70)).is(Blocks.GRAY_CONCRETE),
-                "Arrival must have a solid, clear road");
-        helper.assertTrue(city.getBlockState(new BlockPos(4, 64, 70)).isAir(), "Arrival feet must be unobstructed");
-        FractureCity.buildColumn(city, 12, 14);
-        helper.assertTrue(city.getBlockState(new BlockPos(12, 66, 14)).is(Blocks.LIGHT_BLUE_STAINED_GLASS)
-                        || city.getBlockState(new BlockPos(12, 66, 14)).is(Blocks.OCHRE_FROGLIGHT),
-                "Building facades must have actual windows");
-        double seconds = (TimeIntroService.RETURN_TICK - TimeIntroService.DETONATION_TICK) / 20.0;
-        double dustFront = 8 + seconds * 18 + 5;
-        helper.assertTrue(dustFront < 58 - TimeIntroService.BLAST.z,
-                "Closest allowed player must escape before dust reaches them");
-        helper.assertTrue(FractureCity.WIDTH == 12 * 16, "City must occupy twelve chunks across");
+        helper.assertTrue(city.getBlockState(new BlockPos(4, 63, 70)).getBlock().getDescriptionId().endsWith("_concrete"),
+                "Arrival must have a solid, painted road");
+        helper.assertTrue(city.getBlockState(new BlockPos(4, 64, 70)).isAir() && city.getBlockState(new BlockPos(4, 65, 70)).isAir(),
+                "Arrival must be unobstructed");
+        // A downtown tower's north face: glass behind its piers, somewhere up its height.
+        FractureCity.rebuild(city, 11, -21, 28, -20);
+        boolean glass = false;
+        for (int x = 11; x <= 28 && !glass; x++)
+            for (int z = -21; z <= -20 && !glass; z++)
+                for (int y = 70; y < 130 && !glass; y++)
+                    glass = city.getBlockState(new BlockPos(x, y, z)).getSoundType() == net.minecraft.world.level.block.SoundType.GLASS;
+        helper.assertTrue(glass, "Building facades must have actual windows");
+        // Even a visitor at the north edge of the walk sees the wave coming for a second; nobody is left behind.
+        double nearest = IntroBlast.distance(IntroBlast.CENTER.x, TimeIntroService.ROAM_Z0);
+        helper.assertTrue(IntroBlast.arrival(nearest) >= 20, "The closest allowed visitor must see the wave coming: " + IntroBlast.arrival(nearest));
+        double farthest = Math.max(IntroBlast.distance(TimeIntroService.ROAM_X0, TimeIntroService.ROAM_Z1),
+                IntroBlast.distance(TimeIntroService.ROAM_X1, TimeIntroService.ROAM_Z1));
+        helper.assertTrue(TimeIntroService.RETURN_TICK >= TimeIntroService.DETONATION_TICK + IntroBlast.arrival(farthest)
+                + IntroBlast.FREEZE_TICKS + IntroBlast.REWIND_TICKS, "The farthest visitor must be frozen and rewound before the scene ends");
+        helper.assertTrue(TimeIntroService.DETONATION_TICK >= 600, "Visitors get half a minute to walk the city first");
+        helper.assertTrue(FractureCity.WIDTH == 16 * 16, "City must occupy sixteen chunks across");
         helper.succeed();
     }
 
@@ -192,26 +213,28 @@ public final class TimeIntroGameTests {
         city.setBlock(new BlockPos(4, 121, 70), Blocks.BRICKS.defaultBlockState(), 2);
         FractureCity.buildColumn(city, 4, 70);
         helper.assertTrue(city.getBlockState(new BlockPos(4, 121, 70)).isAir(), "Rebuild must remove old roof remnants");
-        // Brick apartment with a labelled shopfront and a genuine two-block entrance.
-        FractureCity.buildColumn(city, -76, -53);
-        var sign = city.getBlockEntity(new BlockPos(-76, 68, -53));
-        helper.assertTrue(sign instanceof net.minecraft.world.level.block.entity.SignBlockEntity,
-                "Shopfront must have a real sign block entity");
-        helper.assertTrue(!((net.minecraft.world.level.block.entity.SignBlockEntity) sign)
-                .getFrontText().getMessage(1, false).getString().isBlank(), "Shop sign must be readable");
-        FractureCity.buildColumn(city, -76, -52);
-        helper.assertTrue(city.getBlockState(new BlockPos(-76, 64, -52)).isAir()
-                && city.getBlockState(new BlockPos(-76, 65, -52)).isAir(), "Apartment doorway must be usable");
-        // A park replaces a building lot; trees and a contained pool add another streetscape.
-        FractureCity.buildColumn(city, -82, 78);
-        helper.assertTrue(city.getBlockState(new BlockPos(-82, 64, 78)).is(Blocks.OAK_LOG), "Park must have trees");
-        FractureCity.buildColumn(city, -76, 84);
-        helper.assertTrue(city.getBlockState(new BlockPos(-76, 66, 84)).is(Blocks.WATER_CAULDRON),
-                "Park fountain must have a contained upper basin");
-        // The office podium and tower above it have different footprints.
-        FractureCity.buildColumn(city, 12, 14);
-        helper.assertTrue(!city.getBlockState(new BlockPos(12, 66, 14)).isAir()
-                && city.getBlockState(new BlockPos(12, 90, 14)).isAir(), "Office tower must step back above its podium");
+        // The avenue is the way to Bennet's door: nothing stands or is parked on it, end to end.
+        FractureCity.rebuild(city, 0, -120, 7, 88);
+        for (int x = 0; x <= 7; x++)
+            for (int z = -120; z <= 88; z++)
+                for (int y = 64; y <= 65; y++)
+                    helper.assertTrue(city.getBlockState(new BlockPos(x, y, z)).isAir(), "The avenue must be clear at " + x + ", " + y + ", " + z
+                            + ": " + city.getBlockState(new BlockPos(x, y, z)));
+        // City hall's colonnade faces the avenue under its name.
+        FractureCity.buildColumn(city, -5, -12);
+        var sign = city.getBlockEntity(new BlockPos(-5, 74, -12));
+        helper.assertTrue(sign instanceof net.minecraft.world.level.block.entity.SignBlockEntity hall
+                && hall.getFrontText().getMessage(1, false).getString().equals("CITY OF ODESSA"), "City hall must be labelled");
+        // A park replaces a building lot: shade trees and a fountain.
+        FractureCity.buildColumn(city, 46, 46);
+        helper.assertTrue(city.getBlockState(new BlockPos(46, 65, 46)).is(net.minecraft.tags.BlockTags.LOGS), "Park must have trees");
+        FractureCity.buildColumn(city, 51, 51);
+        helper.assertTrue(city.getBlockState(new BlockPos(51, 67, 51)).is(Blocks.WATER_CAULDRON), "Park fountain must have a contained upper basin");
+        // The tallest tower downtown carries a spire high over the street.
+        FractureCity.buildColumn(city, 51, -44);
+        boolean spire = false;
+        for (int y = 160; y < 200 && !spire; y++) spire = !city.getBlockState(new BlockPos(51, y, -44)).isAir();
+        helper.assertTrue(spire, "The tallest tower must rise past y 160");
         helper.succeed();
     }
 }

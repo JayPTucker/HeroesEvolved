@@ -16,10 +16,24 @@ Edits for Heroes Evolved: three short excerpts at 2.4-5.4, 12.5-15.5 and
 24.8-28.0 seconds; mono downmix, 44.1 kHz resampling, removal of sub-bass,
 gentle high-frequency rolloff, level normalization, and fades. No synthesized
 voices or changed vocal identities. Output files: crowd_panic.ogg,
-crowd_panic_2.ogg and crowd_panic_3.ogg.
+crowd_panic_2.ogg and crowd_panic_3.ogg. In the Time vision the client also
+layers overlapping pieces of these three files, at slightly different pitches,
+into the crowd heard all around (client/sound/PanicSounds.java).
+
+Single voices from the same recording: tools/prepare-panic-voices.py takes
+eleven excerpts where one voice rises over the crowd (the times are listed in
+the script), follows that voice's pitch and keeps its harmonics while turning
+the rest of the crowd down by 14 dB, then high-passes, levels, fades, and
+resamples them to 32 kHz mono. Output files:
+assets/heroesevolved/audio/panic/scream_01.wav to scream_11.wav. The voices
+are the performers' own; only their pitch is varied in play.
 
 Original procedural assets
 ==========================
 nuclear_siren.ogg and nuclear_blast.ogg were synthesized for this project.
 The blast combines a pressure crack, bass impulse, turbulent roar and echoes.
 Rebuild these assets with tools/generate-intro-audio.py.
+
+The sirens heard in the Time vision and on the avenue, and the stasis bunker's
+alarm, are synthesized live on the client instead (client/sound/CitySiren.java
+and BunkerAlarm.java); nuclear_siren.ogg remains for /playsound.
