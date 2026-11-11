@@ -129,7 +129,7 @@ public final class NightThreeGameTests {
         for (BlockPos pos : BlockPos.betweenClosed(box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ())) {
             BlockState state = night.getBlockState(pos);
             if (later.contains(state.getBlock()) && found.size() < 5) found.add(state + " at " + pos);
-            if (state.is(Blocks.REDSTONE_LAMP) && state.getValue(net.minecraft.world.level.block.RedstoneLampBlock.LIT)) lamps++;
+            if (state.getLightEmission() > 0) lamps++;
         }
         h.assertTrue(found.isEmpty(), "The bunker in the past has nothing that came later: " + found);
         h.assertTrue(lamps > 0, "The lights are on");

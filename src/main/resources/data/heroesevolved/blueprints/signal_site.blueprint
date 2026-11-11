@@ -1,0 +1,1166 @@
+# Primatech Field Relay 07. The surface relay overlooks a buried Company stasis wing.
+# Arrival faces south along the old road. Amber marks the main power feed and blue the coolant and pickup route.
+# The north lane and south pickup terrace meet the surrounding terrain at floor layer 7.
+# The rear stair leads to the pickup terrace through a second bulkhead. Do not move the marked feet, controls, or gate cells.
+name: signal_site
+anchor: 0 0 0
+palette:
+  A = tuff
+  B = tuff_brick_stairs[facing=east]
+  C = deepslate_bricks
+  D = polished_tuff
+  E = stone
+  F = polished_deepslate
+  G = yellow_terracotta
+  H = smooth_stone
+  I = black_concrete
+  J = cyan_concrete
+  K = cracked_deepslate_tiles
+  L = light_blue_concrete
+  M = polished_tuff_wall
+  N = polished_deepslate_stairs[facing=north]
+  O = waxed_weathered_cut_copper @signal:gate
+  P = chiseled_tuff_bricks
+  Q = waxed_oxidized_cut_copper @signal:rear_gate
+  R = spruce_trapdoor[facing=east,half=top,open=true]
+  S = smooth_quartz_slab[type=top]
+  T = smooth_quartz
+  U = spruce_stairs[facing=south]
+  V = waxed_weathered_cut_copper
+  W = polished_deepslate_stairs[facing=south]
+  X = spruce_trapdoor[facing=west,half=top,open=true]
+  Y = air @signal:pod
+  Z = waxed_oxidized_copper_bulb[lit=true]
+  a = heroesevolved:cryochamber[facing=north,half=lower,open=false] @signal:release
+  b = waxed_copper_bulb[lit=true] @signal:hot
+  c = tuff_bricks
+  d = air @signal:gray
+  e = cobbled_deepslate_slab[type=bottom]
+  f = cracked_deepslate_bricks
+  g = barrel[facing=up]
+  h = waxed_weathered_copper_grate
+  i = tinted_glass
+  j = spruce_wall_sign[facing=east] @sign:isolator
+  k = lever[face=wall,facing=east,powered=false] @signal:isolator
+  l = waxed_copper_bulb[lit=true]
+  m = spruce_wall_sign[facing=east] @sign:bus
+  n = spruce_wall_sign[facing=west] @sign:coolant
+  o = waxed_oxidized_cut_copper
+  p = lever[face=wall,facing=west,powered=false] @signal:coolant
+  q = light_blue_stained_glass
+  r = spruce_wall_sign[facing=west] @sign:loop
+  s = end_rod[facing=north]
+  t = brewing_stand
+  u = black_stained_glass
+  v = lever[face=floor,facing=east]
+  w = heavy_weighted_pressure_plate
+  x = cyan_stained_glass
+  y = heroesevolved:cryochamber[facing=north,half=upper,open=false] @signal:release
+  z = sea_lantern
+  0 = shroomlight @signal:hot
+  1 = spruce_wall_sign[facing=north] @sign:vault
+  2 = spruce_wall_sign[facing=north] @sign:interlock
+  3 = heroesevolved:alarm_beacon[facing=north,lit=true]
+  4 = spruce_wall_sign[facing=west] @sign:egress
+  5 = iron_bars
+  6 = chain[axis=y]
+  7 = lightning_rod[facing=up]
+  8 = chain[axis=z]
+  9 = chain[axis=x]
+  ! = spruce_wall_sign[facing=north] @sign:pod_a
+  $ = spruce_wall_sign[facing=north] @sign:pod_b
+  % = spruce_wall_sign[facing=north] @sign:support
+  & = spruce_wall_sign[facing=north] @sign:service
+  * = heroesevolved:alarm_beacon[facing=down,lit=true]
+  + = cobbled_deepslate
+  = = grass_block
+  ? = gray_concrete
+  ^ = mossy_cobblestone
+  ~ = polished_andesite
+  < = deepslate_tiles
+  > = moss_block
+  / = rooted_dirt
+  | = mossy_stone_brick_wall
+  ; = moss_carpet
+  , = air @signal:arrival
+  { = dark_oak_log[axis=y]
+  } = barrel[facing=west]
+  ( = polished_deepslate_wall
+  ) = polished_tuff_slab[type=top]
+  - = air @signal:extract
+  α = spruce_sign[rotation=8] @sign:access
+  β = fern
+  γ = lantern[hanging=true]
+  δ = light_gray_concrete
+  ε = spruce_wall_sign[facing=east] @sign:relay
+  ζ = flower_pot
+  η = polished_andesite_slab[type=top]
+  θ = lever[face=wall,facing=east,powered=false] @signal:relay
+  ι = lever[face=wall,facing=west,powered=false] @signal:exit
+  κ = spruce_wall_sign[facing=west] @sign:beacon
+  λ = light_gray_stained_glass
+  μ = iron_trapdoor[facing=east,open=true,half=bottom]
+  ν = spruce_wall_sign[facing=north] @sign:stasis
+  ξ = azalea_leaves[persistent=true]
+  π = tuff_brick_stairs[facing=west]
+  ρ = tuff_brick_stairs[facing=south]
+  σ = polished_tuff_slab[type=bottom]
+  τ = tuff_brick_stairs[facing=north]
+  υ = flowering_azalea_leaves[persistent=true]
+  φ = waxed_exposed_cut_copper_slab[type=top]
+  χ = spruce_wall_sign[facing=north] @sign:pickup
+  ψ = spruce_wall_sign[facing=north] @sign:facility
+  ω = spruce_wall_sign[facing=north] @sign:relay_id
+  Γ = red_terracotta
+  Δ = vine[west=true]
+  Θ = waxed_oxidized_cut_copper_slab[type=bottom]
+  Λ = tuff_brick_stairs[facing=south,half=top]
+  Ξ = hanging_roots
+  Π = blackstone_slab[type=bottom]
+  Σ = waxed_weathered_cut_copper_stairs[facing=south]
+  Φ = waxed_weathered_cut_copper_stairs[facing=east]
+  Ψ = waxed_weathered_cut_copper_stairs[facing=west]
+  Ω = waxed_weathered_cut_copper_slab[type=top]
+  а = waxed_weathered_cut_copper_stairs[facing=north]
+  б = lantern
+  в = spruce_sign[rotation=8] @sign:upper
+  г = smooth_stone_slab[type=bottom]
+  д = lightning_rod[facing=west]
+  е = lightning_rod[facing=east]
+signs:
+  facility white glow = PRIMATECH | PAPER CO. | — | FIELD SERVICES
+  relay_id yellow glow = RELAY 07 | ODESSA | — | SERVICE ACCESS
+  relay yellow glow = FIELD RELAY | TEST CIRCUIT | — | PULL LEVER
+  stasis white glow = STAIRS DOWN | SUBLEVEL 4B | — | STASIS WING
+  isolator yellow glow = A · ISOLATOR | STASIS FEED | — | PULL LEVER
+  bus yellow glow = AMBER LINE | MAIN BUS | — | KEEP CLEAR
+  coolant light_blue glow = B · COOLANT | SECONDARY LOOP | — | PULL LEVER
+  loop light_blue glow = BLUE LINE | RETURN FEED | — | STASIS WING
+  vault white glow = STASIS WING | SUBLEVEL 4B | — | AUTHORIZED ONLY
+  interlock yellow glow = GATE LOCK | A + B | — | DUAL INTERLOCK
+  pod_a light_blue glow = STASIS A | OCCUPIED | — | TRANSFER BAY
+  pod_b light_blue glow = STASIS B | OCCUPIED | — | TRANSFER BAY
+  support light_blue glow = LIFE SUPPORT | BANK 4B | — | A + B
+  service red glow = SERVICE | SEALED | — | NORTH CONDUIT
+  egress light_blue glow = PICKUP | STAIRS UP | — | BLUE MARKERS
+  pickup light_blue glow = EXTRACTION | CLEAR THE PAD | — | SIGNAL AT DESK
+  beacon light_blue glow = PICKUP BEACON | TRANSMIT | — | PULL LEVER
+  access white glow = FIELD ACCESS | STAIRS DOWN | — | SOUTH SLOPE
+  upper white glow = PRIMATECH | RELAY 07 | — | STAIRS DOWN
+
+# Site foundation
+layer 0:
+_______________________________________________
+_______________________________________________
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAAAABCCCCCCCAAAAAAAAA__
+__AAAAAAAAAAAAAAAAAAAAAAAADDDCCCCCCCAAAAAAAAA__
+__________________________DDDDDDDDDD___________
+
+# Sublevel floor and access routes
+layer 1:
+_______________________________________________
+_______________________________________________
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EAEAEEEEEEEEEEEEEEEEEEEEEAEAEAEAEAEAEAEAEAE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__AEAEAEEEEEEEEEEEEEEEEEEEAEAEAEAEAEAEAEAEAEA__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EAEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEAE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__AEAEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEAEA__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EAEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEAE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEECCCCEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__AEAEAFFFFFFFFCCCCFFFFFFFFFFFFFFFFFFFFFFFAEA__
+__EEEEEFFFFFFFFCCCCFFFFFFFFFFFFFFFFFFFFFFFEEE__
+__EEEEEFFFFFFFFCCCCFFFFFFFFFFFFFFFFFFFFFFFEEE__
+__EAEAEFFFFFFFFCCCCFFFFFFFFFFFFFFFFFFFFFFFEAE__
+__EEEEEFFFFFFFFCCCCFFFFFFFFFFFFFFFFFFFFFFFEEE__
+__EEEEEFFFFFFFGHHHHGFFFFFFFFFFFFFFFFFFFFFFEEE__
+__AEAEAFFFGGGGGHHHHIFFFFFFFFFFFFFFFFFFFFFFAEA__
+__EEEEEFFFFFFFGHHHHGFFFFFFFFFFFFFFFFFFFFFFEEE__
+____EEEFFFFFFFIHHHHJJJJJJJJFFFFFFFFFFFFFFFEEE__
+____EAEFFFFFFFGHHHHGFFFFFFFFFFFFFFFFFFFFFFEAE__
+____EEEFFFFFFFIHHHHIFFFFFFFFFFFFFFFFFFFFFFEEE__
+____EEEFFFFFFFGHHHHGFFFFFFFFFFFFFFFFFFFFFFEEE__
+____AEAFFFFFFFGIGIGIFFFFFFFFFFFFFFFFFFFFFFAEA__
+____EEEFFFFKFFLHHHHLFFFFFFFFFFKFFFFFFFFFFFEEE__
+____EEEFFFFFFFJHHHHJFFFFFFKFFFFFFFFFFFFFFFEEE__
+____EAEFFFFFFFLHHHHLFFKFFFFFFFFFFFFFFFFFFFEAE__
+____EEEFFFFFFFJHHHKJFFFFFFFFFFFFFFFFFFFFFFEEE__
+____EEEFFFFFFLJLJLJLJLJLJLJLJLJLJLJLFFFFFFEEE__
+____AEAFFFKFFFJHHHHJFFFFFFFFFKFFFFFFFFFFFFAEA__
+____EEEFFJJJJJLHHHHLFFJJJJJFFFFFFFFCCCCCCFEEE__
+____EEEFFJJJJJJHHHHJFKJJJJJFFFFFFFFFCCCCFFEEE__
+____EAEFFJHHHJLHHKHLFFJHHHJFFFFFFFFFCCCCFFEAE__
+____EEEFFJHHHJJHHHHJFFJHHHJFFFFFKFFFCCCCFFEEE__
+____EEEFFJHHHJLHHHHLFFJHHHJFKFFFFFFFCCCCFFEEE__
+____EEEFFJHHHJFHHHHFFFJHHHJFFFFFFFFFCCCCFFAEA__
+____EEEFFJJJJJFHHHHFKFJJJJJFFFFFFFFFFFFFFFEEE__
+____EEEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEEE__
+____EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEAE__
+____EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+____EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+____EEAEAEAEAEAEAEAEAEAEAEAEAEAEEEEEEEEEEEEEE__
+____EEEEEEEEEEEEEEEEEEEEEEEEMEEEEEEEEEEEEEEEE__
+____EEEEEEEEEEEEEEEEEEEEEEEE.BCCCCCCEEEEEEEEE__
+__________________________...BCCCCCC___________
+__________________________...DDDDDDD___AAAAAA__
+
+# Stasis floor, two waiting places and Gray’s entrance
+layer 2:
+_______________________________________________
+_______________________________________________
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EAEAEEEEEEEEEEEEEEEEEEEEEAEAEAEAEAEAEAEAEAE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__AEAEAEEEEEEEEEEEEEEEEEEEAEAEAEAEAEAEAEAEAEA__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EAEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEAE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__AEAEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEAEA__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EAEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEAE__
+__EEEEEEEEEEEEE....EEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEDCCCCDEEEEEEEEEEEEEEEEEEEEEEEEE__
+__AEAEACCCCCCCDCCCCDCCCCCCCCCCCCCCCCCCCCCCAEA__
+__EEEEEC......DCCCCD.....................CEEE__
+__EEEEEC......DCCCCD............CCCCCCCCCCEEE__
+__EAEAEC......DCCCCD............C..HHHH.CCEAE__
+__EEEEECDDD...DNNNND............C..HHHH.CCEEE__
+__EEEEECDDD...D....D............CM......CCEEE__
+__AEAEACDDD..............DDDD...C.......CCAEA__
+__EEEEECDDD..............DDDD...CM......CCEEE__
+____EEECDDD..............DDDD...C.......CCEEE__
+____EAEC.................DDDD...CM......CCEAE__
+____EEEC.................DDDD...C.......CCEEE__
+____EEEC.....D......D...........CCCCCCCCCCEEE__
+____AEACCCCCCDCOOOOCDCCCCCCCCCCCCCCCCCCCCCAEA__
+____EEEC.................................CEEE__
+____EEECP........................P.......CEEE__
+____EAEC..........................CCCCCCCCEAE__
+____EEEC.........................Q.......CEEE__
+____EEEC.........................Q.......CEEE__
+____AEACRS..........TTT..........Q.......CAEA__
+____EEECP............U...........PCVWWWWVCEEE__
+____EEEC....RS.............SX.....CCCCCCCCEEE__
+____EAEC..........................CCCCCCCCEAE__
+____EEEC...Y............Y.........CCCCCCCCEEE__
+____EEEC.D...D........D...D.......CCCCCCCCEEE__
+_______CPDZabD.cSSSSc.DZabD.d..e.PCCCCCCCCAEA__
+_______C.DcccD.DDDDDD.DcccDC..eC..C......CEEE__
+_______CCCCCCCCCCCCCCCCCCCCCfIfCCCC......CEEE__
+_____________________________EEEEEC......CEAE__
+_____EEEEEEEEEEEEEEEEEEEEEEEEEEEEECCCCCCCCEEE__
+_____EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+_____EAEAEAEAEAEAEAEAEAEAEAEAEAEEEEEEEEEEEEEE__
+_____EEEEEEEEEEEEEEEEEEEEEEEEMEEEEEEEEEEEEEEE__
+_____EEEEEEEEEEEEEEEEEEEEEEE..BCCCCCEEEEEEEEE__
+__________________________....BCCCCC___________
+__________________________...MDDDDDD___AAAAAA__
+
+# Isolator and coolant controls
+layer 3:
+_______________________________________________
+_______________________________________________
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EAEAEEEEEEEEEEEEEEEEEEEEEAEAEAEAEAEAEAEAEAE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__AEAEAEEEEEEEEEEEEEEEEEEEAEAEAEAEAEAEAEAEAEA__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EAEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEAE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__AEAEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEAEA__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EAEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEAE__
+__EEEEEEEEEEEEE....EEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEDCCCCDEEEEEEEEEEEEEEEEEEEEEEEEE__
+__AEAEACCCCCCCDCCCCDCCCCCCCCCCCCCCCCCCCCCCAEA__
+__EEEEEC......DCCCCD.....................CEEE__
+__EEEEEC......DCCCCD............CCCCCCCCCCEEE__
+__EAEAEC......DNNNND............C...g...CCEAE__
+__EEEEEC......h....h............i.....g.CCEEE__
+__EEEEECVVZj..D....D............i.......CCEEE__
+__AEAEACVVVk....................i.......CCAEA__
+__EEEEECVVlm............nZooo...i.......CCEEE__
+____EEEC................poqqo...i.......CCEEE__
+____EAEC................rZooo...C.g.....CCEAE__
+____EEEC.....s......s...........C.......CCEEE__
+____EEEC.....D......D...........CCCCCCCCCCEEE__
+____AEACCCCCCDCOOOOCDCCCCCCCCCCCCCCCCCCCCCAEA__
+____EEEC.................................CEEE__
+____EEECD........................D.......CEEE__
+____EAEC..........................CCCCCCCCEAE__
+____EEEC.........................Q.......CEEE__
+____EEEC.........................Q.......CEEE__
+____AEAC.t..........Zuv..........Q.......CAEA__
+____EEECD........................DCZ....ZCEEE__
+____EEEC.....w.............w......CVWWWWVCEEE__
+____EAEC..........................CCCCCCCCEAE__
+____EEEC..........................CCCCCCCCEEE__
+____EEEC.D...D........D...D.......CCCCCCCCEEE__
+_______CDDxyxD.ct..wc.DxyxD......DCCCCCCCCAEA__
+_______C.DcccD.DDDDDD.DcccDC...C..C......CEEE__
+_______CCCCCCCCCCCCCCCCCCCCCfIfCCCC......CEEE__
+_____________________________EEEEEC......CEAE__
+_____EEEEEEEEEEEEEEEEEEEEEEEEEEEEECCCCCCCCEEE__
+_____EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+_____EAEAEAEAEAEAEAEAEAEAEAEAEAEEEEEEEEEEEEEE__
+_____EEEEEEEEEEEEEEEEEEEEEEEEEMEEEEEEEEEEEEEE__
+_____EEEEEEEEEEEEEEEEEEEEEEE...BCCCCEEEEEEEEE__
+__________________________.....BCCCC___________
+__________________________..._MDDDDD___AAAAAA__
+
+layer 4:
+_______________________________________________
+_______________________________________________
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EAEAEEEEEEEEEEEEEEEEEEEEEAEAEAEAEAEAEAEAEAE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__AEAEAEEEEEEEEEEEEEEEEEEEAEAEAEAEAEAEAEAEAEA__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EAEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEAE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__AEAEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEAEA__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EAEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEAE__
+__EEEEEEEEEEEEE....EEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEDCCCCDEEEEEEEEEEEEEEEEEEEEEEEEE__
+__AEAEACCCCCCCDCCCCDCCCCCCCCCCCCCCCCCCCCCCAEA__
+__EEEEEC......DCCCCD.....................CEEE__
+__EEEEEC......DNNNND............CCCCCCCCCCEEE__
+__EAEAEC......h....h............C.......CCEAE__
+__EEEEEC........................i...h...CCEEE__
+__EEEEEC......D....D............i...z...CCEEE__
+__AEAEAChhh.....................i...h...CCAEA__
+__EEEEEC........................i.......CCEEE__
+____EEEC..................00V...i...h...CCEEE__
+____EAEC........................C...z...CCEAE__
+____EEEC.....1......2...........C...h...CCEEE__
+____EEEC.....D.3..3.D...........CCCCCCCCCCEEE__
+____AEACCCCCCDCOOOOCDCCCCCCCCCCCCCCCCCCCCCAEA__
+____EEEC.................................CEEE__
+____EEECD........................D.......CEEE__
+____EAEC.Z......................Z.CCCCCCCCEAE__
+____EEEC.........................Q.......CEEE__
+____EEEC.........................Q4D.....CEEE__
+____AEAC.Z......................ZQ.......CAEA__
+____EEECD........................DC......CEEE__
+____EEEC..........................CZ....ZCEEE__
+____EAEC.Z......................Z.CVWWWWVCEAE__
+____EEEC.s...s........s...s.......CCCCCCCCEEE__
+____EEEC.D...D........D...D.......CCCCCCCCEEE__
+_______CDD...D.c....c.D...D5..5..DCCCCCCCCAEA__
+_______C.DcccD.DuZluD.DcccDC...CZ.C......CEEE__
+_______CCCCCCCCCCCCCCCCCCCCCfIfCCCC......CEEE__
+_____________________________EEEEEC......CEAE__
+_____EEEEEEEEEEEEEEEEEEEEEEEEEEEEECCCCCCCCEEE__
+_____EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+_____EAEAEAEAEAEAEAEAEAEAEAEAEAEEEEEEEEEEEEEE__
+_____EEEEEEEEEEEEEEEEEEEEEEEEEEMEEEEEEEEEEEEE__
+_____EEEEEEEEEEEEEEEEEEEEEEE....BCCCEEEEEEEEE__
+__________________________......BCCC___________
+__________________________..._AMDDDD___AAAAAA__
+
+layer 5:
+_______________________________________________
+_______________________________________________
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EAEAEEEEEEEEEEEEEEEEEEEEEAEAEAEAEAEAEAEAEAE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__AEAEAEEEEEEEEEEEEEEEEEEEAEAEAEAEAEAEAEAEAEA__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EAEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEAE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__AEAEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEAEA__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EAEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEAE__
+__EEEEEEEEEEEEE....EEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEDCCCCDEEEEEEEEEEEEEEEEEEEEEEEEE__
+__AEAEACCCCCCCDCCCCDCCCCCCCCCCCCCCCCCCCCCCAEA__
+__EEEEEC......DNNNND.....................CEEE__
+__EEEEEC......h....h............CCCCCCCCCCEEE__
+__EAEAEC......l....l............C.......CCEAE__
+__EEEEEC........................C...6...CCEEE__
+__EEEEEC......h....h............C...V...CCEEE__
+__AEAEAC.7.....hzh..............C...6...CCAEA__
+__EEEEEC.8......................C.......CCEEE__
+____EEEC.8..................V...C...6...CCEEE__
+____EAEC.8.....hzh..........h...C...V...CCEAE__
+____EEEC.99999h.............h...C...6...CCEEE__
+____EEEC.....DDhhhhDD.......h...CCCCCCCCCCEEE__
+____AEACCCCCCDCCCCCCDCCChVVVVCCCCCCCCCCCCCAEA__
+____EEEC................h................CEEE__
+____EEECD...............h........D.......CEEE__
+____EAEC................h.........CCCCCCCCEAE__
+____EEEC................h................CEEE__
+____EEEC................h................CEEE__
+____AEAC................h................CAEA__
+____EEECD...............h........DC......CEEE__
+____EEEC..........................C......CEEE__
+____EAEC..........................CZ....ZCEAE__
+____EEEC...!............$.........CVWWWWVCEEE__
+____EEEC.VVzVV...%....VVzVV.......CCCCCCCCEEE__
+_______CDVVVVV.cVVVVc.VVVVV..&...DCCCCCCCCAEA__
+_______C.DcccD.DDDDDD.DcccDCCCCC..C......CEEE__
+_______CCCCCCCCCCCCCCCCCCCCCCCCCCCC......CEEE__
+_____________________________EEEEEC......CEAE__
+_____EEEEEEEEEEEEEEEEEEEEEEEEEEEEECCCCCCCCEEE__
+_____EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+_____EAEAEAEAEAEAEAEAEAEAEAEAEAEEEEEEEEEEEEEE__
+_____EEEEEEEEEEEEEEEEEEEEEEEEEEEMEEEEEEEEEEEE__
+_____EEEEEEEEEEEEEEEEEEEEEEE.....BCCEEEEEEEEE__
+__________________________.......BCC___________
+__________________________..._AAMDDD___AAAAAA__
+
+layer 6:
+_______________________________________________
+_______________________________________________
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EAEAEEEEEEEEEEEEEEEEEEEEEAEAEAEAEAEAEAEAEAE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__AEAEAEEEEEEEEEEEEEEEEEEEAEAEAEAEAEAEAEAEAEA__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EAEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEAE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__AEAEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEAEA__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EAEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEAE__
+__EEEEEEEEEEEEE....EEEEEEEEEEEEEEEEEEEEEEEEEE__
+__EEEEEEEEEEEEDCCCCDEEEEEEEEEEEEEEEEEEEEEEEEE__
+__AEAEACCCCCCCDNNNNDCCCCCCCCCCCCCCCCCCCCCCAEA__
+__EEEEEC......h....h.....................CEEE__
+__EEEEEC........................CCCCCCCCCCEEE__
+__EAEAEC........................CCCCCCCCCCEAE__
+__EEEEEC........................CCCCVCCCCCEEE__
+__EEEEEC........................CCCCVCCCCCEEE__
+__AEAEAC.......6V6..............CCCCVCCCCCAEA__
+__EEEEEC........................CCCCVCCCCCEEE__
+____EEEC........................CCCCVCCCCCEEE__
+____EAEC.......6V6..............CCCCVCCCCCEAE__
+____EEEC........................CCCCCCCCCCEEE__
+____EEEC........................CCCCCCCCCCEEE__
+____AEACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCAEA__
+____EEEC.................................CEEE__
+____EEECD.h....................h.D.......CEEE__
+____EAEC..z....................z..CCCCCCCCEAE__
+____EEEC..h....................h..C......CEEE__
+____EEEC..h....................h..C......CEEE__
+____AEAC..z....................z..C......CAEA__
+____EEECD.h....................h.DC......CEEE__
+____EEEC..........................C......CEEE__
+____EAEC..h....................h..C......CEAE__
+____EEEC..z....................z..CZ....ZCEEE__
+____EEEC..hhh..........hhh.....h..CVWWWWVCEEE__
+_______CD.hhh..P....P..hhh...*...DCCCCCCCCAEA__
+_______C.ccccc.DDDDDD.cccccCCCCC..C......CEEE__
+_______CCCCCCCCCCCCCCCCCCCCCCCCCCCC......CEEE__
+_____________________________EEEEEC......CEAE__
+_____EEEEEEEEEEEEEEEEEEEEEEEEEEEEECCCCCCCCEEE__
+_____EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE__
+_____EAEAEAEAEAEAEAEAEAEAEAEAEAEEEEEEEEEEEEEE__
+_____EEEEEEEEEEEEEEEEEEEEEEEEEEEEMEEEEEEEEEEE__
+_____EEEEEEEEEEEEEEEEEEEEEEE......BCEEEEEEEEE__
+__________________________........BC___________
+__________________________..._AAAMDD___AAAAAA__
+
+# Surface ground, stasis fixtures and stair heads
+layer 7:
+_____________++HHH++DDDDDDDDDD_________________
+_____________++HHH++BDDDDDDDDD_________________
+__EEEEE======++HHH++BDDDDDDDDDEEEEEEEEEEEEEEE__
+__EEEEE=====???????+DDDDDDDDEEEEEEEEEEEEEEEEE__
+__EAEAE=====^G?HHH?G?+====EAEAEAEAEAEAEAEAEAE__
+__EEEEE=====???~HH????====EEEEEEEEEEEEEEEEEEE__
+__EEEEE=====+G?HHH?G^?====EEEEEEEEEEEEEEEEEEE__
+__AEAEA==^==??+H~H????====AEAEAEAEAEAEAEAEAEA__
+__EEEEE=?????G?HHH?G?^????==============EEEEE__
+__EEEEE=???^???HH~+???^???==============EEEEE__
+__EAEAE=?????G?HHH?G+???^?==============EAEAE__
+__EEEEE=^HHHHHHHHHHHHHHHHHH=============EEEEE__
+__EEEEE=?HHHHHHHHHHHHHHHHHH=============EEEEE__
+__AEAEA==HHHHHHHHHHHHHHHHHH=============AEAEA__
+__EEEEE==HHHHHHHHHHHHHHHHHH=============EEEEE__
+__EEEEE==HHHHHHHHHHHHHHHHHH=============EEEEE__
+__EAEAE==HHHHHHHHHHHHHHHHHH=============EAEAE__
+__EEEEE==HHHHHHHHHHHHHHHHHH=============EEEEE__
+__EEEEE==HHHHHDNNNNDHHHHHHH=============EEEEE__
+__AEAEA<<<<<<<h....h<<<<<<<<<<<<<<<<<<<<<<AEA__
+__EEEEE<<<<<<<l....l<<<<<<<<<<<<<<<<<<<<<<EEE__
+__EEEEE<<<<<<<<....<<<<<<<<<<<<<<<<<<<<<<<EEE__
+__EAEAE<<<<<<<<....<<<<<<<<<<<<<<<<<<<<<<<EAE__
+__EEEEE<<<<<<<<....<<<<<<<<<<<<<<<<<<<<<<<EEE__
+__EEEEE<<<<<<<<....<<<<<<<<<<<<<<<<<<<<<<<EEE__
+__AEAEA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<AEA__
+__EEEEE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<EEE__
+____EEE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<EEE__
+____EAE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<EAE__
+____EEE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<EEE__
+____EEE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<EEE__
+____AEACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCAEA__
+____EEE<..........................<<<<<<<<EEE__
+____EEE<D.6....................6.D<<<<<<<<EEE__
+____EAE<..V....................V..CCCCCCCCEAE__
+____EEE<..6....hzh.............6..C......CEEE__
+____EEE<..6....................6..C......CEEE__
+____AEA<..V....................V..C......CAEA__
+____EEE<D.6....................6.DC......CEEE__
+____EEE<..........................C......CEEE__
+____EAE<..6....................6..C......CEAE__
+____EEE<..V....................V..C......CEEE__
+____EEE<..6....hzh.............6..CZ....ZCEEE__
+_______<D....................VVV.DCVWWWWVCAEA__
+_______<..........................C.HHHH.CEEE__
+_______<<<<<<<<<<<<<<<<<<<<<<<<<<<C.HHHH.CEEE__
+_____________________________EEEEEC.HHHH.CEAE__
+_____EEEEEEEEEEEEEEEEEEEEEEEEEEDD~~~~~~~~DDDE__
+_____EEEEEEEEEEEEEEEEEEEEEEEEEEDD~JLLLJ~~DDDE__
+_____EAEAEAEAEAEAEAEAEAEAEAEAEADD~~LzL~~~DDDE__
+_____EEEEEEEEEEEEEEEEEEEEEEEEEEDD~MLLLJ~~DDDE__
+_____EEEEEEEEEEEEEEEEEEEEEEE.......B~~~~~DDDE__
+__________________________.........B~~~DDDDD___
+__________________________..._AAAAMD~~~AAAAAA__
+
+# Arrival, relay house and extraction terrace
+layer 8:
+_____________.......MDDDDDDDDD_________________
+_____________........BDDDDDDDD_________________
+__EEEEE______........BDDDDDDDDEEE>>>EEEEEEE//__
+__EEEE|||||||.......MDDDDDDD/>EEEEEEEEEEEEE//__
+__EAEA|.....;.............|///EAEAEAEAEAEAE>/__
+__EEEE|.~.......,.......~.|///EEEEEEEEEEEEE>/__
+__EEEE|.{...........;.....|///>EEEEEEEEEEEE>/__
+__AEAE|..;................|///>EAEAEAEAEAEAE/__
+__EEEE|..............;....|_____________EEEE>__
+__>>EE|.....................____________/>EEE__
+__>/>A|.~c....c....c....~.c.____________//EAE__
+__>//>E_.cDDDDc....cDDDDDDc.____________//>EE__
+__////>_.D................D.____________///EE__
+__>////_.DTT............}}D.____________///EA__
+__>////_.DTT..............D.____________///EE__
+__>////_.DTT...........U..D.____________///EE__
+__E////_.DTT..............D.____________///>E__
+__E////_.D....(....(..SSSSD.____________///>E__
+__E>///_.D....(....(......D.____________>//>E__
+__AE>//_.D................D++___________A>>EA__
+__EEE>/_.D................D++___________EEEEE__
+__EEEE>_.D................D++___________EEEEE__
+__EAEAE_.DDDDDDDDDDDDDDDKKK++___________EAEAE__
+__EEEEEED___D__...._D___D___D____D____D_EDEEE__
+__EEEEECCCcCCCC....CcCCCCcCCCCcCCCCcCCCCcCEEE__
+__AEAEAEA_______________________________AEAEA__
+__>EEEEEE_______________________________EEEEE__
+____EEEEE_______________________________EEEEE__
+____EAEAE_______________________________EAEAE__
+____EEEEE_______________________________EEEEE__
+____EEEEE_______________________________EEEEE__
+____AEACCCCCCCCCCCCCCCCCCCCCCCCCCCC_____AEAEA__
+____EEEC..Vh..................hV..C_____EEEEE__
+____EEECP)Vh))))))))))))))))))hV)PC_____E>EEE__
+____EAEC..Vh..................hV..CCCCCCCC>AE__
+____E>>C..Vh...6V6............hV..C......C/>E__
+____>//C..Vh..................hV..hh.....C//>__
+____>//C..Vh..................hV..C......C///__
+____E//CP)Vh))))))))))))))))))hV)PC......C///__
+____E//C..Vh..................hV..C......C///__
+____E//C..Vh..................hV..C......C///__
+____E//C..Vh..................hV..C......C///__
+____E>/C..Vh...6V6............hV..C......C///__
+_______CP)Vh))))))))))))))))))hV)PCZ....ZC>//__
+_______C..Vh..................hV..CD....DCE>/__
+_______CCCCCCCCCCCCCCCCCCCCCCCCCCCCD....DCEE>__
+__________________________________CD....DCEAE__
+_____EEEEEEEEEEEE>////EEEEEEEEEM...........ME__
+_____EEEEEEEEEEEE>////>EEEEEEEEMc........c.ME__
+_____EAEAEAEAEAEAE////>EAEAEAEAM....-...TT.M___
+_____EEEEEEEEEEEEE////>EEEEEEEEM...α....TT.M___
+_____EEEEEEEEEEEEE>////EEEEE............TT.M___
+__________________________............MMMMMM___
+__________________________..._AAA>_M.._>AAAAA__
+
+# Relay and extraction consoles
+layer 9:
+_____________......._MDDDDDDDD_________________
+_____________.........BDDDDDDD_________________
+__EEEE>______.........BDDDDDDD>>>___>EEEEE>____
+__EEEE>______......._MDDDDDD__>>>>>>>>EEEE>_β__
+__EAEA>...................____>>E>>>>>EAEA>____
+__EEEE>.(γ.............γ(._β__>>EEE>>>>EEE>____
+__>EEE>.{................._____>EEE>>>>>>>>____
+__>>AE>...................__β__>AEAE>>>>>>>>___
+__>>>>>...................______________>>>>___
+__β_>>>.....................______________>>>__
+_____>>.(c))).c....c))))).c.______________>>>__
+___β__>_.cδδδδc....cδδδδδδc.__{____________>>__
+________.δ................δ._______________>>__
+____β___.δPPε...........ζηδ.____________β__>>__
+________)δVVθ.............δ._______________>E__
+_____β__)δIZ..............δ._____________β_>>__
+__>_____)δIl..............δ.________________>__
+__>___β_.δ...............wδ.______________β_>__
+__>_____)δ....l....l......δ.________________>__
+__>>____)δ................δ.____________>__>>__
+__>>>___.δ................δ;____________>>>>>__
+__>>>>__.δ................δ.____________E>>>>__
+__>>>>>_.δδδδδδDDDDδδδδδKKK.;___________EA>>>__
+__>>EE>>D___D__...._D___D___D____D____D_EDE>>__
+__>>EEECCCcCCCC....CcCCCCcCCCCcCCCCcCCCCcCEE>__
+__>>AEAE>_______________________________AEAE>__
+___>EEEE>_______________________________EEEE>__
+____EEEE>_______________________________EEEE>__
+____EAEA>_______________________________EAEA>__
+____EEEEE_______________________________EEEE>__
+____EEEEE_______________________________>EEE>__
+____>EACCCCCCCCCCCCCCCCCCCCCCCCCCCC_____>>AE>__
+____>>EC..........................C_____>>>>>__
+____>>>CDDDDDDDDDDDDDDDDDDDDDDDDDDC_____>β>>>__
+____>>>C..........................CCCCCCCC_>>__
+____>_βC..........................C<<<<<<Cβ_>__
+_______C..........................C<<<<<<C_____
+_______C..........................C<<<<<<C_β___
+____>__CDDDDDDDDDDDDDDDDDDDDDDDDDDC<<<<<<C_____
+____>__C..........................C<<<<<<C__β__
+____>__C..........................C<<<<<<C_____
+____>__C..........................C<<<<<<C_____
+____>β_C..........................C<....<C_____
+_______CDDDDDDDDDDDDDDDDDDDDDDDDDDC<....<C_____
+_______C..........................CD....DC>____
+_______CPCCCCCPCCCCCPCCCCCPCCCCCCPCD....DC>>___
+__________________________________CD....DC>>>__
+_____>>>>>>>EEEE>____β>>>>>>>>EE...........E>__
+_____>>>>>>>>EEE>β_____>EE>>>>>Ec........c.EE__
+_____>AEA>>>>EAE>>____β>AEA>>>>>.......ιV..____
+_____>EEEE>>>>>E>>β____>EEEE>>>>.......κV..____
+_____>EEEE>>>>>>>>_____>EEEE............Z}.____
+__________________________.................____
+__________________________..._AA>__...__>>>>>__
+
+layer 10:
+_____________.......__MDDDDDDD_________________
+_____________..........BDDDDDD_________________
+__>>>>_______..........BDDDDDDβ______>>>>>_____
+__>>>>_______.......__MDDDDD_______β__>>>>_____
+__>>>>_..................._____β>_____>>>>_____
+__>>>>_.(9.............9(.______>>>_β__>>>_____
+___>>>_.{.................______>>>______β_____
+____>>_...................______>>>>_β_________
+______β...................____________{___β____
+_______.....................___________________
+_______.(c....c....c...9(.c._______________β___
+________.cλλλδc....cλλλλλδc.__{________________
+________.δ................δ.________________β__
+________.δ................δ.___________________
+________.λ................δ.________________>__
+________.λxx..............δ.___________________
+________.λμ.....ν.........δ.___________________
+________.δ................δ.___________________
+__β_____.λ................δ.___________________
+________.λ................δ._______________β___
+___β____.δ................δ.___________________
+________.δ................δ.____________>___β__
+____β___.δδδδδδDλλDδδδδδKKK.____________>>_____
+____>>__D___D__...._D___D___D____D____D_>D>____
+____>>>CCCcCCCC....CcCCCCcCCCCcCCCCcCCCCcC>>___
+____>>>>________________________________>>>>___
+____>>>>________________________________>>>>___
+____>>>>________________________________>>>>___
+____>>>>________________________________>>>>___
+____>>>>>_______________________________>>>>___
+____>>>>>________________________________>>>β__
+____β>>AccccK<<<<<<<<<<<<<<<<K<<<<<_____β_>>___
+______>cccAc<<<<<<<<<<<<<<K<<<<<<<<____________
+_____β_cAccc<<<<<<<<<<<K<<<<<<<<<<<____________
+_______ccccA<<<<<<<<K<<<<<<<<<<<<<<____________
+_______ccAcc<<<<<K<<<<<<<<<<<<<<<<<____________
+_______Acccc<<K<<<<<<<<<<<<<<<<K<<<____________
+_______cccAc<<<<<<<<<<<<<<<<K<<<<<<____________
+_______cAccccAccccAcc<<<<K<<<<<<<<<____________
+_______ccccAccccAcccc<K<<<<<<<<<<<<____________
+____β__ccAccccAccccAc<<<<<<<<<<<<<<_____β______
+_______AccccAccccAccc<<<<<<<<<<<<K<____________
+_______cccAccccAccccA<<<<<<<<<K<<<<_...._______
+_______cAccccAccccAcc<<<<<<K<<<<<<<_...._______
+_______ccccAccccAcccc<<<K<<<<<<<<<<D....D_β____
+_______cDAccccDccccADK<<<<D<<<<<<D<D....D______
+___________________________________D....D__β___
+____________>>>>______________>>...........>___
+________β____>>>________>>β____>c........c.>>__
+______>>>____>>>________>>>____β...........____
+______>>>>_____>________>>>>____...........____
+_____β>>>>____β________β>>>>...............____
+__________________________.................____
+__________________________..._>>{__...__ξξ_{ξ__
+
+layer 11:
+_____________.......___MDDDDDD_________________
+_____________...........BDDDDD_________________
+___β_________...........BDDDDD_________β_______
+_____________.......___MDDDD___________________
+____β__...................______________β______
+_______.7...............7._____________________
+_____β_.{.................______β______________
+_______..................._____________________
+_______...................____________{________
+_______.....................___________________
+_______.7c....c....c....7.c.___________________
+________.cλλλδc....cλλλλλδc.__{________________
+________.δ................δ.___________________
+________.δ................δ.___________________
+________.λ................δ.___________________
+________.λ................δ.___________________
+________.λ................δ.___________________
+________.δ................δ.___________________
+________.λ................δ.___________________
+________.λ................δ.___________________
+________.δ................δ.___________________
+________.δ................δ.___________________
+________.δδδδδδδδδδδδδδδδπδ.____________β______
+________ρ___ρ_______ρ___ρ___ρ____ρ____ρ__ρ_____
+_____β_σσσσσσσσ____σσσσσσσσσσσσσσσσσσσσσσσ_____
+_______________________________________________
+______β___________________________________β____
+_______________________________________________
+_______β___________________________________β___
+_______________________________________________
+________β______________________________________
+_______>>>>____________________________________
+_______////>___________________________________
+_______////>__________σσσσσσσσ;σσσ_____________
+_______////>__________ccc______________________
+_______////>__________ccc______________________
+_______/////___________________________________
+_______/////___________________________________
+_______////////>>>>___σσσσσσσσσσσσ_____________
+_______////////>>>>_______ccc__________________
+_______////////>>>>_______ccc__________________
+_______////////>>>>____________________________
+_______////////>>>>____ccc__________...._______
+_______////////>>;>___σcccσσσσσσσσ__...._______
+_______////////>>>>________________z....z______
+_______/τ/////τ>>>>_τ_____τ______τ__...._______
+____________________________________...._______
+____________β_________________β_...........____
+________________________________c..hzh...c._β__
+_____________β__________________...........____
+_________β_________________β____...........____
+____________________________...............____
+____________________________...............____
+_______________________________ξ{__..._____{___
+
+layer 12:
+_____________.......____MDDDDD_________________
+_____________............BDDDD_________________
+_____________............BDDDD_________________
+________ξ____.......____MDDD___________________
+_______ξυξ................_____________________
+______ξξξυξ..............._____________________
+_____υξξ{ξυξ.............._____________________
+______υξξξξ..............._____________________
+_______υξξ................____________{________
+_______.......φφφφφφ........___________________
+_______..c....φφφφφφ......c.___________________
+________.cλλλδφφφφφφλλλλλδc.__{________________
+________.δ................δ.___________________
+________.δ................δ.___________________
+________.λ................δ.___________________
+________.λ................δ.___________________
+________.λ................δ.___________________
+________.δ................δ.___________________
+________.λ..................___________________
+________.λ..................___________________
+________.δ..................___________________
+________.δ..................___________________
+________.δδδδδδδδδδδδδδδδ...___________________
+________{______________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_________;_____________________________________
+__________β____________________________________
+_______>>>>____________________________________
+_______>>>>β___________________________________
+_______>>>>___________hhh______________________
+_______>>>>β__________hlh______________________
+_______////>___________________________________
+_______////>_;_________________________________
+_______////>>>>________________________________
+_______////>>>>__β________hhh__________________
+_______////>>>>β__________hlh__________________
+_______////>>>>__β_____________________________
+_______////>>>>β_______hhh__________...._______
+_______////>>>>___β____hlh__________...._______
+_______////>>>>_β___________________...._______
+_______////>>>>___β_________________...._______
+____________________________________...._______
+________________________________....χ......____
+________________________________DDD6V6hDDD.____
+________________________________...........____
+________________________________...........____
+____________________________...............____
+____________________________...............____
+________________________________{__________{___
+
+layer 13:
+_____________......._____MDDDD_________________
+_____________.............BDDD_________________
+_____________.............BDDD_________________
+_______ξξξ___......._____MDD___________________
+______ξυξξξ..............._____________________
+_____ξξξυξξξ.............._____________________
+_____ξξξ{υξξ.............._____________________
+_____υξξξξυξ.............._____________________
+______υξξξξ...............____ξ_______{________
+_______υ........ψω.........._ξυξ_______________
+_______..c....δδδδδδ......c.ξξξυξ______________
+________.cΓΓΓΓcΓΓΓΓcΓΓΓΓΓΓc.ξξ{ξυξ_____________
+________.Γ................Γ.υξξξξ______________
+________.Γ................Γ._υξξ_______________
+________.Γ.h.........h....Γ.__υ________________
+________.Γ.z.........z....Γ.___________________
+________.Γ.h.........h....Γ.___________________
+________.Γ................Δ.___________________
+________.Γ..................___________________
+________.Γ..............ξξ..___________________
+________.Γ..................___________________
+_______ξ.Γ..................___________________
+______ξξ.ΓΓΓΓΓΓΓΓΓΓΓΓΓΓΓΓ...___________________
+_____υξξ{ξυξ___________________________________
+______υξξξξ____________________________________
+_______υξξ_____________________________________
+________υ______________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+________β______________________________________
+_______________________________________________
+_________β____________ΘΘΘ______________________
+_______β______________ΘΘΘ______________________
+_______>>>>____________________________________
+_______>>>>____________________________________
+_______>>>>___β________________________________
+_______>>>>_β_____________ΘΘΘ__________________
+_______>>>>_______________ΘΘΘ__________________
+_______>>>>__β_________________________________
+_______>>>>β___________ΘΘΘ_____________________
+_______>>>>__β_________ΘΘΘ_____________________
+_______>>>>β___________________________________
+_______>>>>___β________________________________
+_______________________________________________
+________________________________...........____
+________________________________...........____
+________________________________...........____
+________________________________ξ..........____
+_______________________________ξυξ.........____
+______________________________ξξξυξ........____
+_____________________________υξξ{ξυξ_______{___
+
+layer 14:
+_____________.......______MDDD_________________
+_____________..............BDD_________________
+_____________..............BDD_________________
+________ξ____.......______MD___________________
+_______ξξξ................_____________________
+______ξυξξξ...............____________ξ________
+_____ξξξυξξξ..............___________ξυξ_______
+______ξξξυξ...............__________ξξξυξ______
+_______ξξξ................___ξξξ___υξξ{ξυξ_____
+_______.....................ξυξξξ___υξξξξ______
+_______..Λ....Λ....Λ......Λ.ξξυξξξ___υξξ_______
+________.TTTTTTTTTTTTTTTTTT.ξξ{υξξ____υ________
+________.T................T.ξξξξυξ_____________
+________.T................T.υξξξξ______________
+________.T.6.........6....T._υξξ_______________
+________.T.V.........V....T.___________________
+________.T.6.........6....T.___________________
+________.T................T.___________________
+________.T..................___________________
+________.T..................___________________
+_______ξ.T..................___________________
+______ξυ.T.............Ξ....___________________
+_____ξξξ.TTTTTTTTTTTTTTΠT...___________________
+_____ξξξ{υξξ___________________________________
+_____υξξξξυξ___________________________________
+______υξξξξ____________________________________
+_______υξξ_____________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_________β_____________________________________
+_______β_______________________________________
+__________β____________________________________
+________β______________________________________
+__________β____________________________________
+________β______________________________________
+_______________________________________________
+_________β_____________________________________
+_______β_______________________________________
+_________β_____________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________ξξξ_________ξ___
+______________________________ξυξξξ_______ξυξ__
+_____________________________ξξξυξξξ_____ξξξυξ_
+_____________________________ξξξ{υξξ____υξξ{ξυξ
+
+# Relay roof, collapsed east corner
+layer 15:
+_____________......._______MDD_________________
+_____________...............DDD________________
+_____________...............DD_________________
+_____________......._______M___________________
+_______..................._____________________
+_______...................___________ξξξ_______
+_______...................__________ξυξξξ______
+_______..................._________ξξξυξξξ_____
+_______...................____ξ____ξξξ{υξξ_____
+_______....................._ξξξ___υξξξξυξ_____
+_______.ΣΣΣΣΣΣΣΣΣΣΣΣΣΣΣΣΣΣΣΣξυξξξ___υξξξξ______
+________Φ.oooooooooooooooo.Ψξξυξξξ___υξξ_______
+________Φ.ΩΩΩΩΩΩΩΩΩΩΩΩΩΩΩΩ.Ψξξξυξ______________
+________Φ.ΩΩΩΩΩΩΩΩΩΩΩΩΩΩΩΩ.Ψ_ξξξ_______________
+________Φ.ΩΩΩΩΩΩΩΩΩΩΩΩΩΩΩΩ.Ψ__ξ________________
+________Φ.ΩΩΩΩΩΩΩΩΩΩΩΩΩΩΩΩ.Ψ___________________
+________Φ.ΩΩΩΩΩΩΩΩΩΩΩΩΩΩΩΩ.Ψ___________________
+________Φ.ΩΩΩΩΩΩΩΩΩΩΩΩΩΩΩΩ.Ψ___________________
+________Φ.ΩΩΩΩΩΩΩΩΩΩΩΩΩΩΩΩ.Ψ___________________
+________Φ.ΩΩΩΩΩΩΩΩΩΩΩ.......___________________
+________Φ.ΩΩΩΩΩΩΩΩΩΩΩ.......___________________
+_______ξΦ.ΩΩΩΩΩΩΩΩΩΩΩ.......___________________
+______ξυааааааааааааа.......___________________
+_____ξξξυξξξ___________________________________
+______ξξξυξ____________________________________
+_______ξξξ_____________________________________
+________ξ______________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+________________________________ξ_________ξξξ__
+_______________________________ξξξ_______ξυξξξ_
+______________________________ξυξξξ_____ξξξυξξξ
+_____________________________ξξξυξξξ____ξξξ{υξξ
+
+layer 16:
+_____________.......________.._________________
+_____________.................б________________
+_____________................в_________________
+_____________.......___________________________
+_______..................._____________________
+_______...................____________ξ________
+_______...................___________ξξξ_______
+_______...................__________ξυξξξ______
+_______..................._________ξξξυξξξ_____
+_______.....................________ξξξυξ______
+_______....................._________ξξξ_______
+________....................__________ξ________
+________..DDD...............___________________
+________..DDD.hhhhh.........___________________
+________..DDD.hhhhh.........___________________
+________....................___________________
+________......ггггг.........___________________
+________......ггггг.........___________________
+________....................___________________
+________....................___________________
+________....................___________________
+________....................___________________
+________....................___________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+___________________________________________ξ___
+__________________________________________ξξξ__
+_________________________________________ξυξξξ_
+________________________________________ξξξυξξξ
+
+# Rooftop aerial
+layer 17:
+_____________.......________.._________________
+_____________................._________________
+_____________................._________________
+_____________.......___________________________
+_______..................._____________________
+_______..................._____________________
+_______..................._____________________
+_______..................._____________________
+_______..................._____________________
+_______.....................___________________
+_______.....................___________________
+________....................___________________
+________....................___________________
+________..д7е...............___________________
+________....................___________________
+________....................___________________
+________....................___________________
+________....................___________________
+________....................___________________
+________....................___________________
+________....................___________________
+________....................___________________
+________....................___________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________
+_______________________________________________

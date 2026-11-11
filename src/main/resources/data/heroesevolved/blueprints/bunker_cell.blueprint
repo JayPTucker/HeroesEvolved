@@ -1,45 +1,49 @@
-# Containment: Gabriel Gray. The bars were not cut; they were unmade. The blood trail ends at his cage.
-# Visitors hear ticking. BunkerBuilder.inCell matches this interior.
+# Infirmary: two cots, medical storage and a screened recovery area. The east opening joins the corridor.
 name: bunker_cell
 anchor: 0 0 0
 palette:
   A = polished_deepslate
   B = cracked_deepslate_bricks
-  C = bone_block[axis=x]
-  D = skeleton_skull[rotation=6]
-  E = iron_bars
+  C = white_bed[facing=east,part=foot]
+  D = white_bed[facing=east,part=head]
+  E = light_blue_stained_glass_pane
   F = gray_bed[facing=south,part=head]
-  G = redstone_wire
   H = gray_bed[facing=south,part=foot]
   I = dark_oak_stairs[facing=south]
   J = spruce_slab[type=top]
-  K = lectern[facing=north] @log:gabriel
-  L = chest[facing=west] @loot:cell
+  K = smooth_quartz
+  L = chest[facing=west]
   M = chiseled_deepslate
-  N = tripwire_hook[facing=north]
-  O = candle[candles=3,lit=false]
+  O = flower_pot
   P = cobweb
   Q = deepslate_bricks
-  R = soul_lantern[hanging=true]
+  R = waxed_weathered_copper_bulb[lit=true]
+  S = air @signal:survivor
+  T = spruce_wall_sign[facing=north] @sign:infirmary
+  U = cyan_terracotta
+  V = sea_lantern
+  W = waxed_copper_bulb[lit=true]
+signs:
+  infirmary white glow = INFIRMARY | RECOVERY COTS | KEEP CLEAR
 
 # floor
 layer 0:
 AAAAAAAA
 AAAAAAAA
 AAAAAAAA
-AAAAAAAA
-AAAAAAAA
+AAAAAAUU
+AAAAAAUU
 AAAAAAAA
 AAAAAAAA
 AAAAAAAA
 
-# the cage, the bench, the trail
+# cots and intake desk
 layer 1:
 BBBBBBBB
 B....CDB
-B.EEEE.B
-B.EF..G.
-B.EHGGG.
+B.EEE..B
+B.EHS...
+B.EFS...
 BIEEEE.B
 BJJ.K.LB
 BBBBBBBB
@@ -47,11 +51,11 @@ BBBBBBBB
 layer 2:
 BBBBBBBB
 B......B
-B.EEEE.B
+B.EEE..B
 M.E.....
 B.E.....
 B.EEEE.B
-BNO....B
+B.O..T.B
 BBBMBBBB
 
 layer 3:
@@ -69,8 +73,8 @@ layer 4:
 QQQQQQQQ
 QRQQQQQQ
 QQQQQQQQ
+QQQQVQQQ
 QQQQQQQQ
 QQQQQQQQ
-QQQQQQQQ
-QQQQQQQQ
+QQQQWQQQ
 QQQQQQQQ

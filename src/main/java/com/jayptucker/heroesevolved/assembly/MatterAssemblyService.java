@@ -39,7 +39,12 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import java.util.*;
 
-/** Inventory becomes real architecture, not free matter. All geometry and swept hits are server-owned. */
+/**
+ * Matter Assembly: the ground itself is the material. Matter is drawn up out of the world (the power costs
+ * stamina, never the player's blocks) into lean constructs: a six-cell shield, plates that catch your every step,
+ * a cage, sentinel turrets that shoot for you. Every cell is leased, gives no loot and vanishes safely. All
+ * geometry and swept hits are server-owned.
+ */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class MatterAssemblyService {
     public static final int CELLS_PER_TICK = 24, GLOBAL_CELL_BUDGET = 96, MAX_JOBS = 32, MAX_SHARDS = 128;
@@ -47,6 +52,16 @@ public final class MatterAssemblyService {
     private static final List<Shard> SHARDS = new ArrayList<>(), NEW_SHARDS = new ArrayList<>();
     private static final Map<UUID, Crossing> CROSSINGS = new HashMap<>();
     private static final Map<UUID, Fortress> FORTRESSES = new HashMap<>();
+    private static final Map<UUID, Skywalk> SKYWALKS = new HashMap<>();
+    /** Skywalk: for this long, matter assembles under every step you take on air; each plate lasts a moment. */
+    public static final int SKYWALK_TICKS = 160, PLATE_TICKS = 50;
+    /** Sentinel Engine: three turrets, for this long, a Shard each every half second or so, this far. */
+    public static final int SENTINELS = 3, SENTINEL_TICKS = 400, SENTINEL_VOLLEYS = 14;
+    public static final double SENTINEL_RANGE = 32;
+    private static final class Skywalk {
+        final ServerPlayer owner; final ServerLevel level; final long until;
+        Skywalk(ServerPlayer p) { owner = p; level = p.serverLevel(); until = level.getGameTime() + SKYWALK_TICKS; }
+    }
     private static final Map<UUID, Long> VALVES = new HashMap<>(), FOUNDATIONS = new HashMap<>();
     private record Crossing(ServerLevel level, List<BlockPos> cells) {}
     private static final class Job {
@@ -57,12 +72,16 @@ public final class MatterAssemblyService {
             this.duration = duration; this.type = type;
         }
     }
+    /** Sentinel Engine's turrets: two-cell pillars, each with a crystal head that finds and shoots enemies. */
     private static final class Fortress {
         final ServerPlayer owner; final ServerLevel level; final Vec3 anchor; final List<BlockPos> blueprint;
-        final long until; int volleys = 4;
-        Fortress(ServerPlayer p, List<BlockPos> shape) {
+        final List<BlockPos> heads; final int[] volleys;
+        final long until;
+        Fortress(ServerPlayer p, List<BlockPos> shape, List<BlockPos> heads) {
             owner = p; level = p.serverLevel(); anchor = p.position(); blueprint = List.copyOf(shape);
-            until = level.getGameTime() + 300;
+            this.heads = List.copyOf(heads); volleys = new int[heads.size()];
+            java.util.Arrays.fill(volleys, SENTINEL_VOLLEYS);
+            until = level.getGameTime() + SENTINEL_TICKS;
         }
     }
     private static final class Shard {
@@ -99,19 +118,19 @@ public final class MatterAssemblyService {
         int tier = switch (action) { case "causeway" -> 2; case "cage" -> 3; case "cathedral" -> 5; default -> 1; };
         if (c.abilityLevel() < tier) return false;
         if (action.equals("drawbridge") && CROSSINGS.containsKey(p.getUUID())) return true;
-        int materials = action.equals("shard_lance") ? 3 : action.equals("scattershot") ? 5 : 1;
+        if (action.equals("causeway") && SKYWALKS.containsKey(p.getUUID())) return false;
         return Set.of("barricade", "shard_lance", "causeway", "cage", "cathedral", "switchback",
                 "drawbridge", "scattershot", "faultline", "shelter", "cradle").contains(action)
-                && AssemblyMaterials.count(p) >= materials && SHARDS.size() + NEW_SHARDS.size() < MAX_SHARDS - 6
+                && SHARDS.size() + NEW_SHARDS.size() < MAX_SHARDS - 6
                 && JOBS.size() < MAX_JOBS && JOBS.stream().filter(j -> j.owner == p).count() < 2;
     }
     public static boolean activate(AbilityUseContext c, String mechanic) {
         String action = canonical(mechanic); ServerPlayer p = c.player();
-        if (!canUse(c, action)) { p.displayClientMessage(Component.literal("Assembly needs plain common building blocks in your inventory."), true); return false; }
+        if (!canUse(c, action)) return false;
         return switch (action) {
             case "barricade" -> begin(p, wall(p), 400, action);
-            case "causeway" -> begin(p, route(p, 12, false, true), 600, action);
-            case "switchback" -> begin(p, route(p, 14, true, true), 600, action);
+            case "causeway" -> skywalk(p);
+            case "switchback" -> begin(p, route(p, 14, true, false), 600, action);
             case "drawbridge" -> drawbridge(p);
             case "shard_lance" -> firePaid(p, 1, 3, 8 + c.abilityLevel() * 1.2F);
             case "scattershot" -> firePaid(p, 5, 5, 5 + c.abilityLevel() * .5F);
@@ -131,12 +150,26 @@ public final class MatterAssemblyService {
         if (job.built.isEmpty()) return false;
         if (!job.pending.isEmpty()) JOBS.add(job);
         if (type.equals("drawbridge")) CROSSINGS.put(p.getUUID(), new Crossing(p.serverLevel(), job.built));
+        rise(p, shape);
         sound(p, SoundEvents.BEACON_ACTIVATE, .6F, 1.7F); return true;
+    }
+
+    /** The ground gives up its matter: plates tear free round the construct and fly up into its shape. */
+    private static void rise(ServerPlayer p, List<BlockPos> shape) {
+        if (shape.isEmpty()) return;
+        double x = 0, y = 0, z = 0;
+        for (BlockPos pos : shape) { x += pos.getX() + .5; y += pos.getY() + .5; z += pos.getZ() + .5; }
+        Vec3 center = new Vec3(x / shape.size(), y / shape.size(), z / shape.size());
+        double size = 0;
+        for (BlockPos pos : shape) size = Math.max(size, Vec3.atCenterOf(pos).distanceTo(center));
+        com.jayptucker.heroesevolved.network.SetPiecePayload.send(p.serverLevel(), com.jayptucker.heroesevolved.styles.Piece.MATTER_RISE,
+                center, p.position(), (float) Math.max(1.5, size + .5), null);
+        sound(p, SoundEvents.GRAVEL_BREAK, .8F, .7F);
     }
     private static int build(Job job, int budget, int attempts) {
         int placed = 0; AssemblyTerrain terrain = AssemblyTerrain.get(job.level);
         while (!job.pending.isEmpty() && placed < budget && attempts-- > 0) {
-            if (AssemblyMaterials.count(job.owner) == 0 || terrain.count(job.owner.getUUID()) >= AssemblyTerrain.OWNER_LIMIT) { job.pending.clear(); break; }
+            if (terrain.count(job.owner.getUUID()) >= AssemblyTerrain.OWNER_LIMIT) { job.pending.clear(); break; }
             BlockPos pos = job.pending.removeFirst();
             if (!terrain.place(job.owner, pos, job.duration)) continue;
             job.built.add(pos); placed++;
@@ -153,13 +186,40 @@ public final class MatterAssemblyService {
                 Vec3.atCenterOf(job.built.getLast()), job.type.equals("cathedral") ? 2 : 1);
         return placed;
     }
+    /** Foldwall: a lean three-wide, two-high shield (six cells); Buttressed Corners folds a wing back on each side. */
     private static List<BlockPos> wall(ServerPlayer p) {
         Direction forward = p.getDirection(), side = forward.getClockWise();
-        BlockPos center = p.blockPosition().relative(forward, 3); List<BlockPos> result = new ArrayList<>();
-        for (int y = 0; y < 3; y++) for (int x = -2; x <= 2; x++) result.add(center.relative(side, x).above(y));
-        if (has(p, "buttress")) for (int sign : new int[]{-1, 1}) for (int z = 1; z <= 2; z++)
-            for (int y = 0; y < 3; y++) result.add(center.relative(side, sign * 2).relative(forward.getOpposite(), z).above(y));
+        BlockPos center = p.blockPosition().relative(forward, 2); List<BlockPos> result = new ArrayList<>();
+        for (int y = 0; y < 2; y++) for (int x = -1; x <= 1; x++) result.add(center.relative(side, x).above(y));
+        if (has(p, "buttress")) for (int sign : new int[]{-1, 1})
+            for (int y = 0; y < 2; y++) result.add(center.relative(side, sign * 2).relative(forward.getOpposite()).above(y));
         return result;
+    }
+
+    /**
+     * Skywalk: for eight seconds, matter assembles under every step you take on air, a three-wide plate across
+     * your path. Jump to climb; crouch to drop through. Each plate crumbles a moment after you leave it.
+     */
+    private static boolean skywalk(ServerPlayer p) {
+        if (SKYWALKS.containsKey(p.getUUID())) return false;
+        SKYWALKS.put(p.getUUID(), new Skywalk(p));
+        step(SKYWALKS.get(p.getUUID()));
+        AbilityEffects.at(p, Kind.MATTER_SHIELD, 2);
+        sound(p, SoundEvents.BEACON_ACTIVATE, .6F, 1.9F);
+        return true;
+    }
+
+    /** One tick of Skywalk: a plate under the feet if they are over air and not falling away on purpose. */
+    private static void step(Skywalk walk) {
+        ServerPlayer p = walk.owner;
+        if (p.isShiftKeyDown() || p.getDeltaMovement().y > 0.05) return;
+        BlockPos below = BlockPos.containing(p.getX(), p.getBoundingBox().minY - 0.2, p.getZ());
+        if (!walk.level.getBlockState(below).isAir()) return;
+        Direction side = p.getDirection().getClockWise();
+        AssemblyTerrain terrain = AssemblyTerrain.get(walk.level);
+        int placed = 0;
+        for (int offset = -1; offset <= 1; offset++) if (terrain.place(p, below.relative(side, offset), PLATE_TICKS)) placed++;
+        if (placed > 0) AbilityEffects.send(walk.level, Kind.MATTER_WEAVE, Vec3.atCenterOf(below).add(0, -1.5, 0), Vec3.atCenterOf(below), .6);
     }
     private static List<BlockPos> route(ServerPlayer p, int length, boolean bend, boolean wide) {
         Direction initial = p.getDirection(), direction = initial; BlockPos at = p.blockPosition().below();
@@ -170,9 +230,11 @@ public final class MatterAssemblyService {
             if (bend && step == length / 2) direction = left ? initial.getCounterClockWise() : initial.getClockWise();
             at = at.relative(direction).above(slope != 0 && step % 2 == 0 ? slope : 0);
             Direction side = direction.getClockWise();
-            for (int offset = wide ? -1 : 0; offset <= (wide ? 1 : 0); offset++) cells.add(at.relative(side, offset));
-            if (wide && has(p, "rails") && step % 2 == 0) {
-                cells.add(at.relative(side, 2).above()); cells.add(at.relative(side, -2).above());
+            int half = wide ? 1 : 0;
+            for (int offset = -half; offset <= half; offset++) cells.add(at.relative(side, offset));
+            // Snap Rails: guard posts along both edges.
+            if (has(p, "rails") && step % 2 == 0) {
+                cells.add(at.relative(side, half + 1).above()); cells.add(at.relative(side, -half - 1).above());
             }
         }
         return cells;
@@ -186,22 +248,26 @@ public final class MatterAssemblyService {
         }
         return begin(p, route(p, 20, false, false), 400, "drawbridge");
     }
+    /** Compression Cage: a tight three-by-three cell round one enemy, two high and roofed (25 cells). */
     private static boolean cage(ServerPlayer p) {
         LivingEntity target = aimEnemy(p, 64);
         if (target == null || target.getBbWidth() > 1.5 || target.getBbHeight() > 2.5) return false;
         BlockPos center = target.blockPosition(); List<BlockPos> shape = new ArrayList<>();
-        for (int y = 0; y <= 3; y++) for (int x = -2; x <= 2; x++) for (int z = -2; z <= 2; z++)
-            if (Math.abs(x) == 2 || Math.abs(z) == 2 || y == 3) shape.add(center.offset(x, y, z));
+        for (int y = 0; y <= 2; y++) for (int x = -1; x <= 1; x++) for (int z = -1; z <= 1; z++)
+            if (Math.abs(x) == 1 || Math.abs(z) == 1 || y == 2) shape.add(center.offset(x, y, z));
         return begin(p, shape, 160, "cage");
     }
+    /** Folded Shelter: a snug three-by-three hut round you, roofed, with a doorway behind (Clean Exit: a wide one). */
     private static List<BlockPos> shelter(ServerPlayer p) {
         BlockPos center = p.blockPosition(); Direction rear = p.getDirection().getOpposite();
         List<BlockPos> shape = new ArrayList<>();
-        for (int y = 0; y <= 3; y++) for (int x = -2; x <= 2; x++) for (int z = -2; z <= 2; z++) {
-            if (Math.abs(x) < 2 && Math.abs(z) < 2 && y < 3) continue;
-            boolean rearFace = rear.getStepX() == 0 ? z == rear.getStepZ() * 2 : x == rear.getStepX() * 2;
+        for (int y = 0; y <= 2; y++) for (int x = -1; x <= 1; x++) for (int z = -1; z <= 1; z++) {
+            if (x == 0 && z == 0 && y < 2) continue;
+            if (y < 2 && Math.abs(x) < 1 && Math.abs(z) < 1) continue;
+            boolean rearFace = rear.getStepX() == 0 ? z == rear.getStepZ() : x == rear.getStepX();
             int across = rear.getStepX() == 0 ? x : z;
             if (y < 2 && rearFace && Math.abs(across) <= (has(p, "clean_exit") ? 1 : 0)) continue;
+            if (y < 2 && Math.abs(x) < 1 && Math.abs(z) < 1) continue;
             shape.add(center.offset(x, y, z));
         }
         return shape;
@@ -214,19 +280,24 @@ public final class MatterAssemblyService {
         for (int x = -1; x <= 1; x++) for (int z = -1; z <= 1; z++) shape.add(center.offset(x, 0, z));
         return begin(p, shape, 300, "cradle");
     }
+    /**
+     * Sentinel Engine: three turrets rise round you, each a two-cell pillar crowned with a turning crystal head.
+     * For twenty seconds each finds the nearest enemy it can see within 32 blocks and shoots Shards at it.
+     */
     private static boolean cathedral(ServerPlayer p) {
-        BlockPos center = p.blockPosition(); Direction entrance = p.getDirection().getOpposite();
-        List<BlockPos> cells = new ArrayList<>();
-        // A polygonal ring with crenellations, four high corner towers, and a walk-through gate.
-        for (int y = 0; y < 4; y++) for (int x = -5; x <= 5; x++) for (int z = -5; z <= 5; z++) {
-            int r = Math.max(Math.abs(x), Math.abs(z));
-            if (r != 5 || y == 3 && (x + z) % 2 != 0) continue;
-            if (y < 2 && (entrance.getStepX() == 0 ? z == entrance.getStepZ() * 5 && Math.abs(x) <= 1
-                    : x == entrance.getStepX() * 5 && Math.abs(z) <= 1)) continue;
-            cells.add(center.offset(x, y, z));
+        BlockPos center = p.blockPosition(); List<BlockPos> cells = new ArrayList<>(), heads = new ArrayList<>();
+        float facing = p.getYRot() * net.minecraft.util.Mth.DEG_TO_RAD;
+        for (int i = 0; i < SENTINELS; i++) {
+            double angle = facing + i * Math.PI * 2 / SENTINELS;
+            BlockPos foot = center.offset((int) Math.round(-Math.sin(angle) * 3), 0, (int) Math.round(Math.cos(angle) * 3));
+            cells.add(foot); cells.add(foot.above()); heads.add(foot.above());
         }
-        if (!begin(p, cells, 300, "cathedral")) return false;
-        FORTRESSES.put(p.getUUID(), new Fortress(p, cells)); return true;
+        if (!begin(p, cells, SENTINEL_TICKS, "cathedral")) return false;
+        FORTRESSES.put(p.getUUID(), new Fortress(p, cells, heads));
+        for (BlockPos head : heads)
+            com.jayptucker.heroesevolved.network.SetPiecePayload.send(p.serverLevel(), com.jayptucker.heroesevolved.styles.Piece.SENTINEL,
+                    Vec3.atCenterOf(head).add(0, .9, 0), p.position(), 1, null);
+        return true;
     }
     private static List<BlockPos> faultline(ServerPlayer p) {
         Vec3 flat = p.getLookAngle().multiply(1, 0, 1).normalize(); List<BlockPos> result = new ArrayList<>();
@@ -244,7 +315,7 @@ public final class MatterAssemblyService {
         return result;
     }
     private static boolean firePaid(ServerPlayer p, int count, int materials, float damage) {
-        if (shardCount(p) + count > 12 || !AssemblyMaterials.spend(p, materials)) return false;
+        if (shardCount(p) + count > 12) return false;
         for (int i = 0; i < count; i++) {
             double angle = (i - (count - 1) / 2.0) * .12;
             Vec3 direction = p.getLookAngle().yRot((float) angle);
@@ -328,7 +399,7 @@ public final class MatterAssemblyService {
     public static boolean dismantle(ServerPlayer p) {
         if (!valid(p, p.serverLevel())) return false;
         List<BlockPos> cells = cells(p); boolean had = !cells.isEmpty() || pendingCells(p) > 0;
-        JOBS.removeIf(j -> j.owner == p); CROSSINGS.remove(p.getUUID()); FORTRESSES.remove(p.getUUID());
+        JOBS.removeIf(j -> j.owner == p); CROSSINGS.remove(p.getUUID()); FORTRESSES.remove(p.getUUID()); SKYWALKS.remove(p.getUUID());
         collapse(p, p.serverLevel(), cells, true); return had;
     }
     private static void collapse(ServerPlayer p, ServerLevel level, List<BlockPos> cells, boolean weaponize) {
@@ -362,21 +433,30 @@ public final class MatterAssemblyService {
             if (budget > 0) budget -= build(job, Math.min(CELLS_PER_TICK, budget), 96);
             if (job.pending.isEmpty()) JOBS.remove(job);
         }
+        for (Skywalk walk : List.copyOf(SKYWALKS.values())) {
+            if (!valid(walk.owner, walk.level) || walk.level.getGameTime() >= walk.until) { SKYWALKS.remove(walk.owner.getUUID()); continue; }
+            step(walk);
+        }
         for (Fortress fort : List.copyOf(FORTRESSES.values())) {
             long now = fort.level.getGameTime();
-            if (!valid(fort.owner, fort.level) || now >= fort.until || fort.owner.distanceToSqr(fort.anchor) > 32 * 32) { FORTRESSES.remove(fort.owner.getUUID()); continue; }
-            List<BlockPos> shell = cells(fort.owner).stream().filter(pos -> pos.distSqr(BlockPos.containing(fort.anchor)) <= 80).toList();
-            if (shell.size() < 8) continue;
-            if (now % 10 == 0) AbilityEffects.send(fort.level, Kind.MATTER_SHIELD, fort.anchor.add(0, 2, 0), fort.anchor.add(0, 2, 1), 5);
+            if (!valid(fort.owner, fort.level) || now >= fort.until || fort.owner.distanceToSqr(fort.anchor) > 48 * 48) { FORTRESSES.remove(fort.owner.getUUID()); continue; }
+            AssemblyTerrain terrain = AssemblyTerrain.get(fort.level);
             if (has(fort.owner, "blueprint") && now % 10 == 0 && budget > 0) {
                 for (BlockPos pos : fort.blueprint) if (fort.level.hasChunkAt(pos) && fort.level.getBlockState(pos).isAir()
-                        && AssemblyTerrain.get(fort.level).place(fort.owner, pos, (int) (fort.until - now))) { budget--; break; }
+                        && terrain.place(fort.owner, pos, (int) (fort.until - now))) { budget--; break; }
             }
-            if (now % 30 == 0 && fort.volleys > 0 && SHARDS.size() + NEW_SHARDS.size() < MAX_SHARDS - 2) {
-                Vec3 muzzle = fort.anchor.add(0, 4.5, 0);
-                for (LivingEntity target : enemies(fort.owner, muzzle, 28)) if (visible(fort.owner, muzzle, target)) {
-                    NEW_SHARDS.add(new Shard(fort.owner, muzzle, target.getBoundingBox().getCenter().subtract(muzzle), 8, false));
-                    fort.volleys--; break;
+            // Each turret whose head still stands takes its turn to fire, staggered round the ring.
+            for (int i = 0; i < fort.heads.size(); i++) {
+                BlockPos head = fort.heads.get(i);
+                if (fort.volleys[i] <= 0 || (now + i * 5) % 14 != 0 || !terrain.owned(fort.level, head, fort.owner.getUUID())
+                        || SHARDS.size() + NEW_SHARDS.size() >= MAX_SHARDS - 2) continue;
+                Vec3 muzzle = Vec3.atCenterOf(head).add(0, 1.0, 0);
+                for (LivingEntity target : enemies(fort.owner, muzzle, SENTINEL_RANGE)) if (visible(fort.owner, muzzle, target)) {
+                    Vec3 aim = target.getBoundingBox().getCenter().subtract(muzzle);
+                    NEW_SHARDS.add(new Shard(fort.owner, muzzle.add(aim.normalize().scale(.6)), aim, 6 + fort.owner.getRandom().nextInt(3), false));
+                    fort.volleys[i]--;
+                    fort.level.playSound(null, muzzle.x, muzzle.y, muzzle.z, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, .7F, 1.6F);
+                    break;
                 }
             }
         }
@@ -422,7 +502,7 @@ public final class MatterAssemblyService {
         long now = p.serverLevel().getGameTime();
         float healthDamage = Math.max(0, event.getNewDamage() - p.getAbsorptionAmount());
         if (healthDamage >= p.getHealth() && has(p, "second_foundation") && p.getHealth() > 1
-                && now >= FOUNDATIONS.getOrDefault(p.getUUID(), Long.MIN_VALUE) && AssemblyMaterials.count(p) >= 12) {
+                && now >= FOUNDATIONS.getOrDefault(p.getUUID(), Long.MIN_VALUE)) {
             Job emergency = new Job(p, shelter(p), 160, "shelter"); build(emergency, 12, 72);
             if (emergency.built.size() >= 4) {
                 event.setNewDamage(Math.max(0, p.getHealth() + p.getAbsorptionAmount() - 1)); FOUNDATIONS.put(p.getUUID(), now + 1200);
@@ -432,7 +512,7 @@ public final class MatterAssemblyService {
     }
     public static void forget(ServerPlayer p) {
         JOBS.removeIf(j -> j.owner == p); SHARDS.removeIf(s -> s.owner == p); NEW_SHARDS.removeIf(s -> s.owner == p);
-        CROSSINGS.remove(p.getUUID()); FORTRESSES.remove(p.getUUID()); VALVES.remove(p.getUUID());
+        CROSSINGS.remove(p.getUUID()); FORTRESSES.remove(p.getUUID()); VALVES.remove(p.getUUID()); SKYWALKS.remove(p.getUUID());
         for (ServerLevel level : p.server.getAllLevels()) AssemblyTerrain.get(level).clearOwner(level, p.getUUID());
     }
     @SubscribeEvent public static void logout(PlayerEvent.PlayerLoggedOutEvent event) { if (event.getEntity() instanceof ServerPlayer p) forget(p); }
@@ -442,7 +522,7 @@ public final class MatterAssemblyService {
     @SubscribeEvent public static void death(LivingDeathEvent event) { if (event.getEntity() instanceof ServerPlayer p) forget(p); }
     @SubscribeEvent public static void stopping(ServerStoppingEvent event) {
         for (ServerPlayer p : List.copyOf(event.getServer().getPlayerList().getPlayers())) forget(p);
-        JOBS.clear(); SHARDS.clear(); NEW_SHARDS.clear(); CROSSINGS.clear(); FORTRESSES.clear(); VALVES.clear(); FOUNDATIONS.clear();
+        JOBS.clear(); SHARDS.clear(); NEW_SHARDS.clear(); CROSSINGS.clear(); FORTRESSES.clear(); VALVES.clear(); FOUNDATIONS.clear(); SKYWALKS.clear();
     }
     private static void sound(ServerPlayer p, net.minecraft.sounds.SoundEvent sound, float volume, float pitch) {
         p.serverLevel().playSound(null, p.blockPosition(), sound, SoundSource.PLAYERS, volume, pitch);

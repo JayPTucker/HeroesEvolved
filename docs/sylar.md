@@ -9,6 +9,8 @@ dialogue, appearance, timers and encounters are original game adaptations.
 
 ## The story, one beat at a time
 
+[The Last Signal](the-past.md) brings Gray to the relay as Mara and Ivo wake. After the rescue, his stalking and hunts in the Overworld follow their own progression.
+
 Sylar is a slow ladder per player. Each beat waits for the last, so the story never piles up:
 
 | Chapter | Beat | Next beat after |
@@ -86,8 +88,7 @@ He favours what he took from **you**: "Recognise it? Your power. My hands."
 - **Telekinesis:** shots aimed at him while he is not busy turn aside.
 - **Precognition:** he sidesteps a shot, and sometimes a blow, at most once every four seconds.
 - **Regeneration:** he heals slowly. The first killing blow in a fight puts him down for five
-  seconds instead, then he rises at two-fifths of his health. Not once Pod 14 has been kept shut on
-  Night Three (below).
+  seconds instead, then he rises at two-fifths of his health.
 - **Density:** a wall between you does not stop him for long. It ripples like water as he walks out of it near you.
 - **Empathic Mimicry:** he borrows your power for the fight, even one he has never taken.
 - **Flight:** he rises after you.
@@ -98,16 +99,9 @@ His acquisition hold is unchanged. After four seconds of fighting within seven b
 a six-second channel begins. Hurt him, break his sightline, or get away to stop it. A finished
 channel deals 8 and copies (never takes) your power.
 
-One power can be put out of his reach for good, in the past. If anyone keeps Gabriel Gray from the
-light on the avenue at 6:14 (see [The Past](the-past.md#the-avenue-at-614)), he never saw how
-Sprague's heat works: a finished channel on Radiation's owner copies nothing ("He can't make sense of
-it"), and if he had already taken Radiation, he loses it.
-
-[Night Three](the-past.md#night-three) puts a second power out of his reach. If anyone keeps Gray from
-Pod 14 on the third night of the lockdown, he never took Claire Bennet's regeneration: a finished
-channel on Regeneration's owner copies nothing, and if he had already taken it, he loses it, and with
-it the slow healing and the getting back up below. Borrowing your power for one fight with Empathic
-Mimicry still works; that isn't Claire's gift, it's yours.
+Worlds that already kept Gray from the light on the Avenue or protected Pod 14 on Night Three
+retain those outcomes. The affected power, Radiation or Regeneration, stays out of reach of his
+copying channel. His borrowed power from Empathic Mimicry still follows its own rules.
 
 ## Telepathy and the existing visions
 

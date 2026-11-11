@@ -17,7 +17,7 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("56")
+        event.registrar("57")
             .playToServer(CryoRideInputPayload.TYPE, CryoRideInputPayload.STREAM_CODEC, CryoRideInputPayload::handle)
             .playToClient(CryoRideStatePayload.TYPE, CryoRideStatePayload.STREAM_CODEC, CryoRideStatePayload::handle)
             .playToServer(CryoShellInputPayload.TYPE, CryoShellInputPayload.STREAM_CODEC, CryoShellInputPayload::handle)
@@ -30,7 +30,7 @@ public final class ModPayloads {
             .playToClient(IllusionPayload.TYPE, IllusionPayload.STREAM_CODEC, IllusionPayload::handle)
             .playToClient(MindStatePayload.TYPE, MindStatePayload.STREAM_CODEC, MindStatePayload::handle)
             .playToServer(MindInputPayload.TYPE, MindInputPayload.STREAM_CODEC, MindInputPayload::handle)
-            .playToServer(com.jayptucker.heroesevolved.expansion.IncidentActionPayload.TYPE, com.jayptucker.heroesevolved.expansion.IncidentActionPayload.STREAM_CODEC, com.jayptucker.heroesevolved.expansion.IncidentActionPayload::handle)
+            .playBidirectional(MindTypingPayload.TYPE, MindTypingPayload.STREAM_CODEC, MindTypingPayload::handle)
             .playToServer(JournalRequestPayload.TYPE, JournalRequestPayload.STREAM_CODEC, JournalRequestPayload::handle)
             .playToServer(SpeedCatchPayload.TYPE, SpeedCatchPayload.STREAM_CODEC, SpeedCatchPayload::handle)
             .playToClient(StoryJournalPayload.TYPE, StoryJournalPayload.STREAM_CODEC, StoryJournalPayload::handle)
@@ -94,6 +94,11 @@ public final class ModPayloads {
                 CameraShakePayload.STREAM_CODEC,
                 CameraShakePayload::handle
             )
+            .playToClient(SetPiecePayload.TYPE, SetPiecePayload.STREAM_CODEC, SetPiecePayload::handle)
+            .playToClient(SpeedCyclonePayload.TYPE, SpeedCyclonePayload.STREAM_CODEC, SpeedCyclonePayload::handle)
+            .playToClient(OverrunPayload.TYPE, OverrunPayload.STREAM_CODEC, OverrunPayload::handle)
+            .playToClient(OverrunStatusPayload.TYPE, OverrunStatusPayload.STREAM_CODEC, OverrunStatusPayload::handle)
+            .playToClient(RewindTravelPayload.TYPE, RewindTravelPayload.STREAM_CODEC, RewindTravelPayload::handle)
             .playToClient(
                 PlayerPowerSyncPayload.TYPE,
                 PlayerPowerSyncPayload.STREAM_CODEC,

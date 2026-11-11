@@ -76,6 +76,11 @@ public final class QuakeService {
     private static final Map<UUID, Plunge> PLUNGES = new HashMap<>();
     private static final Map<UUID, Blast> BLASTS = new HashMap<>();
     private static final int BLAST_MAXIMUM_TICKS = 20 * 15;
+    private static final int FISSURE_LINES = 3;
+    private static final double FISSURE_START = 3.0D;
+    private static final double FISSURE_REACH = 12.0D;
+    /** Fissure ground takes this share of full-strength work each tick: grass gives in about three seconds. */
+    private static final double FISSURE_STRENGTH = 0.6D;
     public static final net.minecraft.resources.ResourceLocation QUAKE_BLAST_ID =
             net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
                     com.jayptucker.heroesevolved.HeroesEvolved.MOD_ID, "quake_blast");
@@ -249,13 +254,13 @@ public final class QuakeService {
         MasteryService.markPowerUse(player, ModAbilities.QUAKE_ID);
     }
 
-    /** Ends the beam: on release, exhaustion, or its time limit. */
+    /** Ends the beam: on release, exhaustion, or its time limit. Its cracks stop growing and fade. */
     public static void stopQuakeBlast(ServerPlayer player, boolean exhausted) {
-        QuakeBlockPressure.clear(player);
         if (BLASTS.remove(player.getUUID()) == null) {
             return;
         }
 
+        QuakeBlockPressure.release(player);
         ArmPosePayload.clear(player);
         Vec3 palms = player.getEyePosition().add(player.getLookAngle().scale(0.6D))
                 .add(0.0D, -0.25D, 0.0D);
@@ -280,7 +285,7 @@ public final class QuakeService {
         ServerLevel level = player.serverLevel();
         blast.ageTicks++;
         if (!com.jayptucker.heroesevolved.ability.service.PowerRules.canAct(player)) {
-            QuakeBlockPressure.clear(player);
+            // Nothing is worked while she can't act, so the cracks fade on their own.
             blast.ageTicks--;
             return;
         }
@@ -312,7 +317,10 @@ public final class QuakeService {
         ));
         boolean hitBlock = hit.getType() == HitResult.Type.BLOCK;
         double length = hitBlock ? hit.getLocation().distanceTo(origin) : range;
-        QuakeBlockPressure.tick(player, hitBlock ? hit.getBlockPos() : null);
+        if (hitBlock) {
+            // Held on a wall, the beam grinds it down: cracks, then a hole that slowly widens.
+            QuakeBlockPressure.beam(player, hit.getLocation(), hit.getBlockPos(), QuakeKit.power(player));
+        }
 
         if (blast.ageTicks % 3 == 0) {
             Vec3 palms = origin.add(direction.scale(Math.min(0.6D, length * 0.5D)))
@@ -578,7 +586,8 @@ public final class QuakeService {
                 HeroesEvolvedConfig.COMMON.quakeEarthquakeRadius.get(),
                 HeroesEvolvedConfig.COMMON.quakeEarthquakeDurationSeconds.get() * 20,
                 (2.0F + powerLevel * 0.5F) * QuakeKit.power(player),
-                HeroesEvolvedConfig.COMMON.quakeShattersFragileBlocks.get()
+                HeroesEvolvedConfig.COMMON.quakeShattersFragileBlocks.get(),
+                true
         );
         QuakeKit.strain(player, QuakeKit.EARTHQUAKE_STRAIN);
         ArmPosePayload.show(player, ArmPose.ARMS_WIDE,
@@ -594,7 +603,7 @@ public final class QuakeService {
      * involuntary tremor that cannot break anything.
      */
     public static void awaken(ServerPlayer player) {
-        startEarthquake(player, 8.0D, 20 * 3, 1.0F, false);
+        startEarthquake(player, 8.0D, 20 * 3, 1.0F, false, false);
         impact(player, 1, 0.8D, false);
         player.sendSystemMessage(Component.literal(
                 "Everything around you is shaking... or is it you?"
@@ -618,7 +627,8 @@ public final class QuakeService {
             double radius,
             int durationTicks,
             float damage,
-            boolean shatter
+            boolean shatter,
+            boolean fissures
     ) {
         ServerLevel level = player.serverLevel();
         Earthquake quake = new Earthquake(level, player.position(), radius,
@@ -626,6 +636,9 @@ public final class QuakeService {
         if (shatter && !TemporalSnapshotService.isTemporalDimension(level)) {
             quake.fragileBlocks.addAll(findFragileBlocks(level,
                     BlockPos.containing(player.position()), (int) radius));
+        }
+        if (fissures) {
+            traceFissures(level, quake, level.getRandom());
         }
         EARTHQUAKES.put(player.getUUID(), quake);
         AbilityEffects.send(level, Kind.QUAKE_PULSE, quake.center, quake.center, radius);
@@ -720,6 +733,7 @@ public final class QuakeService {
         }
 
         shatterSomeFragileBlocks(owner, quake, random);
+        workFissures(owner, quake, strength);
 
         if (quake.ageTicks >= quake.durationTicks) {
             EARTHQUAKES.remove(owner.getUUID());
@@ -727,13 +741,59 @@ public final class QuakeService {
         }
     }
 
-    /** A crack of churned earth racing outward from the epicenter. */
+    /**
+     * Picks the quake's fissures: a few lines of ground radiating from the epicenter, starting a few
+     * blocks out so her own footing holds. While the quake runs they crack, nearest first, and the
+     * softer ground along them gives way.
+     */
+    private static void traceFissures(ServerLevel level, Earthquake quake, RandomSource random) {
+        double reach = Math.min(quake.radius * 0.75D, FISSURE_REACH);
+        double start = Math.min(FISSURE_START, reach * 0.5D);
+        double base = random.nextDouble() * Math.PI * 2.0D;
+        Set<BlockPos> seen = new HashSet<>();
+        for (int line = 0; line < FISSURE_LINES; line++) {
+            double angle = base + line * Math.PI * 2.0D / FISSURE_LINES
+                    + (random.nextDouble() - 0.5D) * 0.6D;
+            quake.fissureAngles.add(angle);
+            for (double distance = start; distance <= reach; distance += 1.0D) {
+                double bend = angle + Math.sin(distance * 0.8D + line) * 0.12D;
+                int x = (int) Math.floor(quake.center.x + Math.cos(bend) * distance);
+                int z = (int) Math.floor(quake.center.z + Math.sin(bend) * distance);
+                BlockPos surface = findSurface(level, x, z, (int) Math.floor(quake.center.y), 6);
+                if (surface != null && seen.add(surface)) {
+                    quake.fissure.add(new Fissure(surface, distance));
+                }
+            }
+        }
+    }
+
+    /** The cracks spread outward along the fissures over the first half of the quake. */
+    private static void workFissures(ServerPlayer owner, Earthquake quake, double strength) {
+        if (quake.fissure.isEmpty()) {
+            return;
+        }
+        double front = quake.radius * Math.min(1.0D, quake.ageTicks / (quake.durationTicks * 0.5D));
+        float work = (float) (FISSURE_STRENGTH * strength) * QuakeKit.power(owner);
+        for (Fissure fissure : quake.fissure) {
+            BlockPos pos = fissure.pos();
+            // The ground she is standing on holds.
+            if (fissure.distance() > front || (Math.abs(pos.getX() - owner.getBlockX()) <= 1
+                    && Math.abs(pos.getZ() - owner.getBlockZ()) <= 1 && pos.getY() < owner.getY())) {
+                continue;
+            }
+            QuakeBlockPressure.work(owner, pos, work);
+        }
+    }
+
+    /** A crack of churned earth racing outward from the epicenter, along one of its fissures. */
     private static void drawFaultLine(
             ServerLevel level,
             Earthquake quake,
             RandomSource random
     ) {
-        double angle = random.nextDouble() * Math.PI * 2.0D;
+        double angle = quake.fissureAngles.isEmpty()
+                ? random.nextDouble() * Math.PI * 2.0D
+                : quake.fissureAngles.get(random.nextInt(quake.fissureAngles.size()));
         for (double distance = 1.0D; distance <= quake.radius; distance += 0.7D) {
             double wobble = Math.sin(distance * 0.9D) * 0.35D;
             int x = (int) Math.floor(quake.center.x
@@ -863,6 +923,7 @@ public final class QuakeService {
         PLUNGES.remove(player.getUUID());
         CUSHIONED_LANDINGS.remove(player.getUUID());
         stopTremorSense(player);
+        QuakeBlockPressure.clear(player);
     }
 
     // ------------------------------------------------------------------
@@ -936,6 +997,8 @@ public final class QuakeService {
         }
 
         tickWaves(server);
+        // After every power above has worked its blocks for this tick.
+        QuakeBlockPressure.tick();
     }
 
     private static void tickWaves(MinecraftServer server) {
@@ -1177,6 +1240,8 @@ public final class QuakeService {
         private final float damage;
         private final boolean shatter;
         private final List<BlockPos> fragileBlocks = new ArrayList<>();
+        private final List<Fissure> fissure = new ArrayList<>();
+        private final List<Double> fissureAngles = new ArrayList<>();
         private int ageTicks;
 
         private Earthquake(
@@ -1208,6 +1273,10 @@ public final class QuakeService {
     }
 
     private record Plunge(int powerLevel, long startedAt) {
+    }
+
+    /** One block of ground on a fissure line, and how far out from the epicenter it lies. */
+    private record Fissure(BlockPos pos, double distance) {
     }
 
     private static final class Blast {

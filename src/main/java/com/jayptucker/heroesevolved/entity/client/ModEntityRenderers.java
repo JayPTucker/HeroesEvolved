@@ -19,6 +19,8 @@ public final class ModEntityRenderers {
 
     @SubscribeEvent
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(com.jayptucker.heroesevolved.registry.ModBlocks.ALARM_BEACON_ENTITY.get(),
+                com.jayptucker.heroesevolved.client.block.AlarmBeaconRenderer::new);
         event.registerEntityRenderer(ModEntities.SYLAR.get(), SylarRenderer::new);
         event.registerEntityRenderer(ModEntities.COMPANY_AGENT.get(), CompanyAgentRenderer::new);
         event.registerEntityRenderer(

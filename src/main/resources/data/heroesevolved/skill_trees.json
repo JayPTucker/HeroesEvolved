@@ -154,6 +154,44 @@
       "FAULTWRIGHT",
       "COUNTERFORCE",
       "SEAMFINDER"
+    ],
+    "styles": [
+      {
+        "id": "quake_fissure_maw",
+        "role": "offense",
+        "name": "Fissure Maw",
+        "description": "Split the ground in a line 14 blocks long in front of you. Slabs heave up either side of a glowing crack, and foes along it take 10 + 2 per tier and are hurled into the air.",
+        "energy": 35,
+        "cooldown": 360,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "fissure_maw",
+        "icon": "minecraft:cracked_stone_bricks"
+      },
+      {
+        "id": "quake_stone_rampart",
+        "role": "defense",
+        "name": "Stone Rampart",
+        "description": "Slabs of rock burst up in an arc in front of you for 10 seconds. They stop projectiles from that side and push back anyone who comes at you through them.",
+        "energy": 25,
+        "cooldown": 440,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "stone_rampart",
+        "icon": "minecraft:stone_bricks"
+      },
+      {
+        "id": "quake_bedrock_stance",
+        "role": "support",
+        "name": "Bedrock Stance",
+        "description": "The ground ripples outward from you. You and friends within 10 blocks cannot be knocked back and take less damage for 8 seconds.",
+        "energy": 25,
+        "cooldown": 480,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "bedrock_stance",
+        "icon": "minecraft:anvil"
+      }
     ]
   },
   {
@@ -347,6 +385,44 @@
       "SKY GUARD",
       "JETSTREAM",
       "STORMBREAKER"
+    ],
+    "styles": [
+      {
+        "id": "flight_tempest_drill",
+        "role": "offense",
+        "name": "Tempest Drill",
+        "description": "Corkscrew forward 18 blocks in half a second inside a tunnel of wind. Foes you pass through take 9 + 2 per tier and are flung aside.",
+        "energy": 30,
+        "cooldown": 300,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "tempest_drill",
+        "icon": "minecraft:wind_charge"
+      },
+      {
+        "id": "flight_gale_wall",
+        "role": "defense",
+        "name": "Gale Wall",
+        "description": "A wall of wind wheels around you for 8 seconds, throwing projectiles back the way they came and pushing anyone close out of it.",
+        "energy": 25,
+        "cooldown": 440,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "gale_wall",
+        "icon": "minecraft:feather"
+      },
+      {
+        "id": "flight_formation_flight",
+        "role": "support",
+        "name": "Formation Flight",
+        "description": "Lift everyone near you. You and friends within 12 blocks get a burst upward, fall gently, run faster and jump higher for 10 seconds.",
+        "energy": 25,
+        "cooldown": 480,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "formation_flight",
+        "icon": "minecraft:elytra"
+      }
     ]
   },
   {
@@ -504,6 +580,44 @@
       "SCULPTOR",
       "GLACIER",
       "WINTERBINDER"
+    ],
+    "styles": [
+      {
+        "id": "cryokinesis_hailstorm",
+        "role": "offense",
+        "name": "Hailstorm",
+        "description": "A storm cloud gathers over a point up to 30 blocks away and hammers it with hail for four seconds. Foes within 5 blocks are struck again and again, slowed and chilled.",
+        "energy": 35,
+        "cooldown": 400,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "hailstorm",
+        "icon": "minecraft:blue_ice"
+      },
+      {
+        "id": "cryokinesis_crystal_bastion",
+        "role": "defense",
+        "name": "Crystal Bastion",
+        "description": "Crystal pillars burst up in a ring around you for 8 seconds. They shatter incoming projectiles, push foes back out of the ring, and you resist damage while they stand.",
+        "energy": 30,
+        "cooldown": 480,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "crystal_bastion",
+        "icon": "minecraft:packed_ice"
+      },
+      {
+        "id": "cryokinesis_aurora_veil",
+        "role": "support",
+        "name": "Aurora Veil",
+        "description": "Curtains of aurora hang over you for 10 seconds. Friends beneath them, within 8 blocks, regenerate and cannot burn; foes there are slowed.",
+        "energy": 25,
+        "cooldown": 520,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "aurora_veil",
+        "icon": "minecraft:prismarine_crystals"
+      }
     ]
   },
   {
@@ -675,6 +789,44 @@
       "CONDUCTOR",
       "GROUNDKEEPER",
       "STORM GEOMETRY"
+    ],
+    "styles": [
+      {
+        "id": "electrokinesis_tesla_spire",
+        "role": "offense",
+        "name": "Tesla Spire",
+        "description": "Raise a coil on a mast up to 20 blocks away. For 6 seconds it strikes the three nearest foes within 9 blocks twice a second, for 4 damage each and a moment's slowness.",
+        "energy": 35,
+        "cooldown": 400,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "tesla_spire",
+        "icon": "minecraft:lightning_rod"
+      },
+      {
+        "id": "electrokinesis_faraday_cage",
+        "role": "defense",
+        "name": "Faraday Cage",
+        "description": "A cage of lightning closes around you for 6 seconds. It burns projectiles out of the air, and anyone who strikes you is shocked for 4 and slowed.",
+        "energy": 25,
+        "cooldown": 440,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "faraday_cage",
+        "icon": "minecraft:copper_grate"
+      },
+      {
+        "id": "electrokinesis_jumpstart",
+        "role": "support",
+        "name": "Jumpstart",
+        "description": "Current leaps from you through up to five friends within reach. Each heals 6, is freed of slowness and weakness and gains speed for 6 seconds; you heal 4.",
+        "energy": 20,
+        "cooldown": 360,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "jumpstart",
+        "icon": "minecraft:redstone"
+      }
     ]
   },
   {
@@ -832,6 +984,44 @@
       "FINE MANIPULATION",
       "KINETIC ARSENAL",
       "BASTION"
+    ],
+    "styles": [
+      {
+        "id": "telekinesis_implosion",
+        "role": "offense",
+        "name": "Implosion",
+        "description": "Fold space in on a point up to 24 blocks away. For a second foes within 6 blocks are dragged in with the rubble, then everything near the centre is crushed for 12 + 2 per tier and slammed down.",
+        "energy": 35,
+        "cooldown": 400,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "implosion",
+        "icon": "minecraft:heavy_core"
+      },
+      {
+        "id": "telekinesis_debris_halo",
+        "role": "defense",
+        "name": "Debris Halo",
+        "description": "Two rings of rubble whirl around you for 8 seconds. They catch projectiles and batter anyone who comes close.",
+        "energy": 25,
+        "cooldown": 440,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "debris_halo",
+        "icon": "minecraft:cobblestone"
+      },
+      {
+        "id": "telekinesis_gathering_hand",
+        "role": "support",
+        "name": "Gathering Hand",
+        "description": "Haul every friend within 16 blocks to your side and close a bubble of force around each of you: strong damage resistance for 5 seconds.",
+        "energy": 25,
+        "cooldown": 400,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "gathering_hand",
+        "icon": "minecraft:lead"
+      }
     ]
   },
   {
@@ -989,6 +1179,44 @@
       "PUPPET MASTER",
       "MIND READER",
       "DREAMWEAVER"
+    ],
+    "styles": [
+      {
+        "id": "telepathy_psychic_storm",
+        "role": "offense",
+        "name": "Psychic Storm",
+        "description": "A storm of thought wheels over a point up to 24 blocks away for 6 seconds. Foes within 6 blocks take psychic damage, reel, and turn on one another.",
+        "energy": 35,
+        "cooldown": 440,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "psychic_storm",
+        "icon": "minecraft:echo_shard"
+      },
+      {
+        "id": "telepathy_blind_spot",
+        "role": "defense",
+        "name": "Blind Spot",
+        "description": "Slip out of every mind around you. Anything hunting you within 16 blocks loses you, and nothing can pick you out for 5 seconds.",
+        "energy": 20,
+        "cooldown": 400,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "blind_spot",
+        "icon": "minecraft:ender_eye"
+      },
+      {
+        "id": "telepathy_hive_mind",
+        "role": "support",
+        "name": "Hive Mind",
+        "description": "Link up to six of you within 14 blocks for 10 seconds. Damage any of you takes is shared out evenly among the others.",
+        "energy": 25,
+        "cooldown": 520,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "hive_mind",
+        "icon": "minecraft:sculk_sensor"
+      }
     ]
   },
   {
@@ -1146,6 +1374,44 @@
       "MARTYR",
       "ADAPTATION",
       "RECOVERY"
+    ],
+    "styles": [
+      {
+        "id": "regeneration_vital_burst",
+        "role": "offense",
+        "name": "Vital Burst",
+        "description": "Spend 4 of your own health in a double heartbeat of light. Foes within 6 blocks take 10 + 2 per tier, and you heal 2 for each one hit.",
+        "energy": 25,
+        "cooldown": 300,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "vital_burst",
+        "icon": "minecraft:redstone_block"
+      },
+      {
+        "id": "regeneration_undying",
+        "role": "defense",
+        "name": "Undying",
+        "description": "For 6 seconds nothing can take your last heart. When it ends you heal 30% of your health.",
+        "energy": 30,
+        "cooldown": 900,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "undying",
+        "icon": "minecraft:totem_of_undying"
+      },
+      {
+        "id": "regeneration_lifebloom",
+        "role": "support",
+        "name": "Lifebloom",
+        "description": "A tree of light grows where you stand for 12 seconds. Friends within 7 blocks heal steadily and are cured of poison and wither.",
+        "energy": 25,
+        "cooldown": 520,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "lifebloom",
+        "icon": "minecraft:flowering_azalea"
+      }
     ]
   },
   {
@@ -1317,6 +1583,44 @@
       "STILLNESS",
       "WAYFINDER",
       "HISTORIAN"
+    ],
+    "styles": [
+      {
+        "id": "time_manipulation_hour_hand",
+        "role": "offense",
+        "name": "Hour Hand",
+        "description": "A clock face opens around you and its hour hand, a blade of gold light 7 blocks long, sweeps once all the way round. Every foe it passes takes 9 + 2 per tier and is slowed.",
+        "energy": 30,
+        "cooldown": 300,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "hour_hand",
+        "icon": "minecraft:clock"
+      },
+      {
+        "id": "time_manipulation_time_loop",
+        "role": "defense",
+        "name": "Time Loop",
+        "description": "Mark this moment for 6 seconds. When the loop closes you return to the health you had when it opened, with harmful effects undone. A blow that would kill you closes it early instead.",
+        "energy": 30,
+        "cooldown": 600,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "time_loop",
+        "icon": "minecraft:recovery_compass"
+      },
+      {
+        "id": "time_manipulation_borrowed_time",
+        "role": "support",
+        "name": "Borrowed Time",
+        "description": "Lend time to everyone near you. You and friends within 10 blocks move and work much faster for 8 seconds and regain 15 stamina.",
+        "energy": 25,
+        "cooldown": 480,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "borrowed_time",
+        "icon": "minecraft:amethyst_shard"
+      }
     ]
   },
   {
@@ -1474,6 +1778,44 @@
       "CONTAINMENT",
       "REACTOR",
       "CATASTROPHE"
+    ],
+    "styles": [
+      {
+        "id": "radiation_ground_zero",
+        "role": "offense",
+        "name": "Ground Zero",
+        "description": "Throw a mote of your core up to 32 blocks. It hangs there glowing for a second and a half, then goes off: the Odessa blast in small, with its flash, fireball and mushroom cloud. Foes within 9 blocks take 10 + 2 per tier, plus up to 12 more near the centre, are irradiated and thrown. No blocks are broken.",
+        "energy": 40,
+        "cooldown": 440,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "ground_zero",
+        "icon": "minecraft:tnt"
+      },
+      {
+        "id": "radiation_containment_dome",
+        "role": "defense",
+        "name": "Containment Dome",
+        "description": "Lead-glass panels lock into a dome 5 blocks across around where you stand for 8 seconds. Hostile projectiles that reach it are swallowed, you and your friends inside take 35% less damage, and foes inside are slowly irradiated.",
+        "energy": 30,
+        "cooldown": 480,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "containment_dome",
+        "icon": "minecraft:green_stained_glass"
+      },
+      {
+        "id": "radiation_reactor_hearth",
+        "role": "support",
+        "name": "Reactor Hearth",
+        "description": "Raise a reactor's glowing heart at your feet for 10 seconds. Friends within 7 blocks gain absorption, and while they stay near it they regenerate quickly, dig faster and regain stamina.",
+        "energy": 30,
+        "cooldown": 520,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "reactor_hearth",
+        "icon": "minecraft:conduit"
+      }
     ]
   },
   {
@@ -1631,6 +1973,44 @@
       "RESONANT BREAKER",
       "ECHO CARTOGRAPHER",
       "HARMONIST"
+    ],
+    "styles": [
+      {
+        "id": "sonic_resonance_resonance_cascade",
+        "role": "offense",
+        "name": "Resonance Cascade",
+        "description": "Stack standing waves over a point up to 24 blocks away until they fold in on themselves: foes within 4.5 blocks take 12 + 2 per tier and are left staggered and weak.",
+        "energy": 35,
+        "cooldown": 360,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "resonance_cascade",
+        "icon": "minecraft:note_block"
+      },
+      {
+        "id": "sonic_resonance_silence_dome",
+        "role": "defense",
+        "name": "Silence Dome",
+        "description": "A dome of dead air 5 blocks across stands where you are for 8 seconds. Projectiles inside lose their speed and drop; foes inside are weakened.",
+        "energy": 25,
+        "cooldown": 440,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "silence_dome",
+        "icon": "minecraft:sculk_shrieker"
+      },
+      {
+        "id": "sonic_resonance_battle_hymn",
+        "role": "support",
+        "name": "Battle Hymn",
+        "description": "A five-line staff of light circles you. You and friends within 12 blocks gain strength and speed for 10 seconds.",
+        "energy": 25,
+        "cooldown": 480,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "battle_hymn",
+        "icon": "minecraft:jukebox"
+      }
     ]
   },
   {
@@ -1788,6 +2168,44 @@
       "COURIER",
       "MOMENTUM FIGHTER",
       "PERCEPTION"
+    ],
+    "styles": [
+      {
+        "id": "superspeed_lightning_flurry",
+        "role": "offense",
+        "name": "Lightning Flurry",
+        "description": "Strike up to six foes within 12 blocks one after another, faster than they can see, for 5 + tier each, then stand where you started.",
+        "energy": 30,
+        "cooldown": 300,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "lightning_flurry",
+        "icon": "minecraft:golden_sword"
+      },
+      {
+        "id": "superspeed_phase_blur",
+        "role": "defense",
+        "name": "Phase Blur",
+        "description": "Vibrate too fast to hit for 6 seconds: each blow has a 60% chance to pass straight through you.",
+        "energy": 25,
+        "cooldown": 480,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "phase_blur",
+        "icon": "minecraft:glowstone_dust"
+      },
+      {
+        "id": "superspeed_relay_run",
+        "role": "support",
+        "name": "Relay Run",
+        "description": "Run to every friend within 24 blocks and bring them back to your side in an instant. All of you are faster for 6 seconds.",
+        "energy": 25,
+        "cooldown": 400,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "relay_run",
+        "icon": "minecraft:leather_boots"
+      }
     ]
   },
   {
@@ -1805,7 +2223,7 @@
         },
         {
           "name": "Object Reading",
-          "description": "Read the annex incident and briefly outline nearby villagers, including captives through walls.",
+          "description": "Read the next lead for The Last Signal and briefly outline nearby villagers, including sleepers through walls.",
           "energy": 14,
           "cooldown": 120
         },
@@ -1945,6 +2363,44 @@
           "mechanic": "isaacs_gift"
         }
       ]
+    ],
+    "styles": [
+      {
+        "id": "precognition_foretold_strike",
+        "role": "offense",
+        "name": "Foretold Strike",
+        "description": "Paint a circle 3 blocks across on the ground up to 24 blocks away and cross it out. Two seconds later the painting comes true: whoever is still inside takes 16 + 3 per tier.",
+        "energy": 30,
+        "cooldown": 320,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "foretold_strike",
+        "icon": "minecraft:red_dye"
+      },
+      {
+        "id": "precognition_branching_paths",
+        "role": "defense",
+        "name": "Branching Paths",
+        "description": "See three futures of yourself for 6 seconds. The first blow that would land misses: you are already standing in the safest of them.",
+        "energy": 25,
+        "cooldown": 480,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "branching_paths",
+        "icon": "minecraft:spyglass"
+      },
+      {
+        "id": "precognition_prophecy_canvas",
+        "role": "support",
+        "name": "Prophecy Canvas",
+        "description": "Paint the next fifteen seconds for everyone near you. Friends within 12 blocks are lucky, and a blow that would kill one of them leaves them on their last heart instead.",
+        "energy": 30,
+        "cooldown": 900,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "prophecy_canvas",
+        "icon": "minecraft:painting"
+      }
     ]
   },
   {
@@ -2116,6 +2572,44 @@
       "KINDLER",
       "BLUE FLAME",
       "PHOENIX"
+    ],
+    "styles": [
+      {
+        "id": "pyrokinesis_sunfall",
+        "role": "offense",
+        "name": "Starfall",
+        "description": "A star falls from high in the sky, trailing a long burning tail, onto a point up to 48 blocks away. Foes within 5 blocks of where it lands take 12 + 2 per tier, burn and are thrown. A pillar of fire stands there a moment after.",
+        "energy": 35,
+        "cooldown": 360,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "sunfall",
+        "icon": "minecraft:fire_charge"
+      },
+      {
+        "id": "pyrokinesis_ember_shroud",
+        "role": "defense",
+        "name": "Ember Shroud",
+        "description": "Wrap yourself in turning flame for 8 seconds: arrows and other projectiles burn up before they reach you, anyone who strikes you is set alight, and fire cannot hurt you.",
+        "energy": 25,
+        "cooldown": 480,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "ember_shroud",
+        "icon": "minecraft:blaze_powder"
+      },
+      {
+        "id": "pyrokinesis_hearthfire",
+        "role": "support",
+        "name": "Hearthfire",
+        "description": "Light a hearth at your feet for 12 seconds. Friends within 6 blocks heal steadily, are thawed and cannot burn.",
+        "energy": 25,
+        "cooldown": 520,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "hearthfire",
+        "icon": "minecraft:campfire"
+      }
     ]
   },
   {
@@ -2273,6 +2767,44 @@
       "GHOST",
       "TRICKSTER",
       "INFILTRATOR"
+    ],
+    "styles": [
+      {
+        "id": "invisibility_shadow_strike",
+        "role": "offense",
+        "name": "Shadow Strike",
+        "description": "Vanish and strike up to three foes within 10 blocks from behind, one after another, for half again as much as usual. You stay unseen for 3 seconds afterwards.",
+        "energy": 30,
+        "cooldown": 320,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "shadow_strike",
+        "icon": "minecraft:iron_sword"
+      },
+      {
+        "id": "invisibility_refraction_cloak",
+        "role": "defense",
+        "name": "Refraction Cloak",
+        "description": "Bend light around yourself for 6 seconds: you are invisible and projectiles curve away from you.",
+        "energy": 25,
+        "cooldown": 440,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "refraction_cloak",
+        "icon": "minecraft:glass"
+      },
+      {
+        "id": "invisibility_prism_haze",
+        "role": "support",
+        "name": "Prism Haze",
+        "description": "A haze of broken light settles 6 blocks around you for 10 seconds. Friends inside are unseen and regenerate; foes inside are blinded.",
+        "energy": 25,
+        "cooldown": 520,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "prism_haze",
+        "icon": "minecraft:white_stained_glass"
+      }
     ]
   },
   {
@@ -2430,6 +2962,44 @@
       "INFILTRATOR",
       "DENSITY",
       "ESCAPE ARTIST"
+    ],
+    "styles": [
+      {
+        "id": "phasing_phase_eruption",
+        "role": "offense",
+        "name": "Phase Eruption",
+        "description": "Sink into the ground and erupt beneath a point up to 20 blocks away. Foes within 3.5 blocks take 10 + 2 per tier and are thrown into the air.",
+        "energy": 30,
+        "cooldown": 320,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "phase_eruption",
+        "icon": "minecraft:mud"
+      },
+      {
+        "id": "phasing_dense_bulwark",
+        "role": "defense",
+        "name": "Dense Bulwark",
+        "description": "Make yourself unbelievably dense for 8 seconds: you take far less damage and cannot be moved, but you are slow.",
+        "energy": 25,
+        "cooldown": 480,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "dense_bulwark",
+        "icon": "minecraft:obsidian"
+      },
+      {
+        "id": "phasing_phase_field",
+        "role": "support",
+        "name": "Phase Field",
+        "description": "Loosen everyone near you. For 8 seconds, projectiles pass straight through you and friends within 8 blocks, and other damage is reduced.",
+        "energy": 25,
+        "cooldown": 480,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "phase_field",
+        "icon": "minecraft:phantom_membrane"
+      }
     ]
   },
   {
@@ -2587,6 +3157,44 @@
       "ECHO HUNTER",
       "RESONANCE",
       "EMPATHY"
+    ],
+    "styles": [
+      {
+        "id": "empathic_mimicry_prismatic_overflow",
+        "role": "offense",
+        "name": "Prismatic Overflow",
+        "description": "Let every power you remember out at once. Foes within 7 blocks take 8 + 2 per remembered power + tier, burn, slow and glow.",
+        "energy": 35,
+        "cooldown": 360,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "prismatic_overflow",
+        "icon": "minecraft:nether_star"
+      },
+      {
+        "id": "empathic_mimicry_empathic_ward",
+        "role": "defense",
+        "name": "Empathic Ward",
+        "description": "Three sigils of borrowed colour circle you for 8 seconds. Each one catches a blow that would have landed, and gives you 5 stamina.",
+        "energy": 25,
+        "cooldown": 480,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "empathic_ward",
+        "icon": "minecraft:heart_of_the_sea"
+      },
+      {
+        "id": "empathic_mimicry_kindred_light",
+        "role": "support",
+        "name": "Kindred Light",
+        "description": "You and friends within 12 blocks heal 4 plus one per remembered power, and are cleansed of harmful effects.",
+        "energy": 25,
+        "cooldown": 400,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "kindred_light",
+        "icon": "minecraft:glow_berries"
+      }
     ]
   },
   {
@@ -2768,6 +3376,44 @@
           "capstone": true
         }
       ]
+    ],
+    "styles": [
+      {
+        "id": "technopathy_drone_swarm",
+        "role": "offense",
+        "name": "Drone Swarm",
+        "description": "Six drones of light circle you for 8 seconds, shooting the three nearest foes in sight within 12 blocks every three quarters of a second.",
+        "energy": 30,
+        "cooldown": 480,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "drone_swarm",
+        "icon": "minecraft:observer"
+      },
+      {
+        "id": "technopathy_firewall",
+        "role": "defense",
+        "name": "Firewall",
+        "description": "Raise a hologram wall 5 blocks wide in front of you for 10 seconds. It deletes projectiles that cross it and burns and throws back anyone who tries.",
+        "energy": 25,
+        "cooldown": 440,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "firewall",
+        "icon": "minecraft:target"
+      },
+      {
+        "id": "technopathy_overclock",
+        "role": "support",
+        "name": "Overclock",
+        "description": "Overclock everyone near you: you and friends within 12 blocks work much faster and move faster for 10 seconds, and regain 10 stamina.",
+        "energy": 25,
+        "cooldown": 480,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "overclock",
+        "icon": "minecraft:comparator"
+      }
     ]
   },
   {
@@ -2790,7 +3436,7 @@
         {
           "id": "matter_assembly_switchback",
           "name": "Switchback",
-          "description": "Fold a paid three-wide staircase through a right-angle turn toward your aim. Look up to climb, down to descend.",
+          "description": "Fold a narrow staircase of matter through a right-angle turn toward your aim. Look up to climb, down to descend.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -2801,7 +3447,7 @@
         {
           "id": "matter_assembly_buttress",
           "name": "Buttressed Corners",
-          "description": "Foldwall gains return wings that cover your flanks. Every extra cell still consumes a block.",
+          "description": "Foldwall gains a wing folded back at each side to cover your flanks.",
           "active": false,
           "level": 3,
           "cost": 2
@@ -2821,7 +3467,7 @@
         {
           "id": "matter_assembly_rails",
           "name": "Snap Rails",
-          "description": "Causeway and Switchback automatically add paid guard posts to both edges as they grow.",
+          "description": "Switchback and Drawbridge grow guard posts along both edges as they reach out.",
           "active": false,
           "level": 4,
           "cost": 1
@@ -2829,7 +3475,7 @@
         {
           "id": "matter_assembly_blueprint",
           "name": "Living Blueprint",
-          "description": "Cathedral remembers its shell. While you remain nearby it repairs an empty broken cell every half-second, spending fresh inventory material each time.",
+          "description": "Sentinel Engine remembers its turrets. While you stay near, it rebuilds a broken turret cell every half-second.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -2848,7 +3494,7 @@
         {
           "id": "matter_assembly_scattershot",
           "name": "Scattershot",
-          "description": "Spend five blocks to launch a fan of five individually colliding Shards. Their travel is real and cover stops them.",
+          "description": "Tear five Shards from the ground and launch them in a fan. Each flies and collides on its own, and cover stops them.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -2867,7 +3513,7 @@
         {
           "id": "matter_assembly_faultline",
           "name": "Faultline",
-          "description": "Paid pillars rise in a travelling line over solid ground. Each cell launches nearby enemies upward without harming allies or replacing terrain.",
+          "description": "Pillars of matter burst up in a travelling line over solid ground, launching nearby enemies upward without harming allies or replacing terrain.",
           "active": true,
           "level": 3,
           "cost": 2,
@@ -2879,7 +3525,7 @@
         {
           "id": "matter_assembly_unstable_lattice",
           "name": "Unstable Lattice",
-          "description": "Deliberately dismantling a shape releases up to six of its already-paid cells as outward Shards. It returns no items.",
+          "description": "Deliberately dismantling a shape releases up to six of its cells as outward Shards. It returns no items.",
           "active": false,
           "level": 4,
           "cost": 1
@@ -2906,7 +3552,7 @@
         {
           "id": "matter_assembly_shelter",
           "name": "Folded Shelter",
-          "description": "Raise a paid, hollow shelter around yourself with a roof and a rear doorway. Occupied cells are always skipped.",
+          "description": "Raise a snug, roofed hut of matter round yourself with a doorway behind you. Occupied cells are always skipped.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -2925,7 +3571,7 @@
         {
           "id": "matter_assembly_cradle",
           "name": "Rescue Cradle",
-          "description": "Aim at a consenting teammate or use it on yourself. Build a paid safety floor two blocks below them, even over a void.",
+          "description": "Aim at a consenting teammate or use it on yourself. Build a safety floor two blocks below them, even over a void.",
           "active": true,
           "level": 3,
           "cost": 2,
@@ -2945,13 +3591,51 @@
         {
           "id": "matter_assembly_second_foundation",
           "name": "Second Foundation",
-          "description": "Once a minute, a fatal hit can trigger an emergency paid shelter and leave you at one health. It requires twelve spare blocks and space for at least four cells.",
+          "description": "Once a minute, a fatal hit raises an emergency shelter round you and leaves you at one health. It needs space for at least four cells.",
           "active": false,
           "capstone": true,
           "level": 5,
           "cost": 3
         }
       ]
+    ],
+    "styles": [
+      {
+        "id": "matter_assembly_forge_cannon",
+        "role": "offense",
+        "name": "Forge Cannon",
+        "description": "Assemble a cannon of crystal over your shoulder and fire five slugs at what you are looking at, each for 5 + tier.",
+        "energy": 30,
+        "cooldown": 360,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "forge_cannon",
+        "icon": "minecraft:amethyst_cluster"
+      },
+      {
+        "id": "matter_assembly_bulwark_lattice",
+        "role": "defense",
+        "name": "Bulwark Lattice",
+        "description": "Crystal panels lock into a shell around you for 8 seconds: extra absorption hearts, and projectiles shatter against it.",
+        "energy": 25,
+        "cooldown": 480,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "bulwark_lattice",
+        "icon": "minecraft:amethyst_block"
+      },
+      {
+        "id": "matter_assembly_mending_lattice",
+        "role": "support",
+        "name": "Mending Lattice",
+        "description": "Crystal lace winds around you and friends within 10 blocks, giving absorption and regeneration for 8 seconds.",
+        "energy": 25,
+        "cooldown": 440,
+        "cost": 3,
+        "level": 3,
+        "mechanic": "mending_lattice",
+        "icon": "minecraft:budding_amethyst"
+      }
     ]
   }
 ]

@@ -1,5 +1,6 @@
 package com.jayptucker.heroesevolved.expansion;
 
+import com.jayptucker.heroesevolved.story.LastSignalService;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -35,10 +36,40 @@ public final class PropheticPainting {
         ItemStack stack = canvas(p);
         if (!p.getInventory().add(stack)) p.drop(stack, false);
     }
+
+    /** The current vision uses its own locked map, independent of archived Annex canvases. */
+    public static void giveSignal(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        var level = server.overworld();
+        var data = FacilityData.get(server);
+        MapId id = data.signalMapId < 0 ? null : new MapId(data.signalMapId);
+        if (id == null || level.getMapData(id) == null) {
+            id = MapItem.create(level, 0, 0, (byte) 0, false, false).get(DataComponents.MAP_ID);
+            level.setMapData(id, level.getMapData(id).locked());
+            data.signalMapId = id.id();
+            data.setDirty();
+        }
+        refreshSignal(server);
+        ItemStack stack = new ItemStack(Items.FILLED_MAP);
+        stack.set(DataComponents.MAP_ID, id);
+        stack.set(DataComponents.CUSTOM_NAME, Component.literal("The Last Signal"));
+        if (!player.getInventory().add(stack)) player.drop(stack, false);
+    }
+
+    public static void refreshSignal(MinecraftServer server) {
+        int id = FacilityData.get(server).signalMapId;
+        if (id < 0) return;
+        var map = server.overworld().getMapData(new MapId(id));
+        if (map != null) applyImage(map, LastSignalService.completed(server) ? REVISED : FORETOLD);
+    }
+
     public static void refresh(MinecraftServer server) {
         var d = FacilityData.get(server); if (d.mapId < 0) return;
         var map = server.overworld().getMapData(new MapId(d.mapId)); if (map == null) return;
-        byte[] image = pixels(d.phase, d.stable, d.rescued);
+        applyImage(map, pixels(d.phase, d.stable, d.rescued));
+    }
+
+    private static void applyImage(MapItemSavedData map, byte[] image) {
         for (int y = 0; y < 128; y++) for (int x = 0; x < 128; x++) if (map.colors[x + y * 128] != image[x + y * 128]) map.setColor(x, y, image[x + y * 128]);
     }
     public static byte[] pixels(FacilityData.Phase phase, boolean stable, int rescued) {

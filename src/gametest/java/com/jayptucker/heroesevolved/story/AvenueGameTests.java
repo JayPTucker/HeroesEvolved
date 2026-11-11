@@ -39,7 +39,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/** The finale: Hiro's key, the avenue at 6:14, and what the present remembers of it. */
+/** The retired avenue episode, including records and outcomes carried forward into existing saves. */
 @GameTestHolder("heroesevolved")
 @PrefixGameTestTemplate(false)
 public final class AvenueGameTests {
@@ -89,10 +89,6 @@ public final class AvenueGameTests {
         p.setPos(Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(3, 2, 3))));
         p.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty().assignDormant(ModAbilities.QUAKE_ID).unlock(ModAbilities.QUAKE_ID));
         return p;
-    }
-
-    private static void discover(ServerPlayer p, String title) {
-        p.setData(ModDataAttachments.POWER_JOURNEY, p.getData(ModDataAttachments.POWER_JOURNEY).discover(title));
     }
 
     @GameTest(template = "rewind_empty", batch = "story.avenue.rewards")
@@ -173,43 +169,31 @@ public final class AvenueGameTests {
     }
 
     @GameTest(template = "rewind_empty", batch = "story.avenue.lead")
-    public static void theLeadWalksFromTheAnnexToTheAvenue(GameTestHelper h) {
+    public static void legacyProgressLeavesTheSignalLeadInPlace(GameTestHelper h) {
         MinecraftServer server = h.getLevel().getServer();
         AvenueData data = AvenueData.get(server);
         data.forgetAll();
         try {
             ServerPlayer p = awakened(h);
-            for (var note : StoryDiscoveries.ORDER) if (note.place() != StoryDiscoveries.Place.PAST) discover(p, note.title());
+            String lead = StoryLead.next(p);
+            int recordTotal = StoryDiscoveries.journalTotal(p);
             FacilityData annex = FacilityData.get(server);
             annex.discover(p.getUUID(), "unfinished_hour");
-            h.assertTrue(StoryLead.next(p).contains("Annex"), "Before the key, the Annex: " + StoryLead.next(p));
-            h.assertTrue(!AvenueService.unlocked(p) && AvenueService.journal(p).startsWith("Locked"), "The avenue waits for Hiro's key");
-
             annex.discover(p.getUUID(), "annex_saved");
-            h.assertTrue(AvenueService.unlocked(p), "Saving the Annex opens the avenue");
-            h.assertTrue(StoryLead.next(p).contains("6:10"), "Then Bennet's door: " + StoryLead.next(p));
-
-            data.record(p.getUUID(), 5, false);
-            h.assertTrue(StoryLead.next(p).contains("Gray") && StoryLead.next(p).contains("third night"),
-                    "If Gray saw the light, stopping him is next, and the third night is already open: " + StoryLead.next(p));
-            com.jayptucker.heroesevolved.story.night.NightThreeData.get(server).record(p.getUUID(), true);
-            h.assertTrue(StoryLead.next(p).contains("6:14") && !StoryLead.next(p).contains("third night"),
-                    "With Pod 14 kept, only the avenue is left to point at: " + StoryLead.next(p));
-            com.jayptucker.heroesevolved.story.night.NightThreeData.get(server).forgetAll();
-            data.record(p.getUUID(), 5, true);
-            h.assertTrue(StoryLead.next(p).contains("Pod 14"), "Then the third night of the lockdown: " + StoryLead.next(p));
-            com.jayptucker.heroesevolved.story.night.NightThreeData.get(server).record(p.getUUID(), true);
-            h.assertTrue(StoryLead.next(p).startsWith("19 people"), "Then everyone left on the street: " + StoryLead.next(p));
             data.record(p.getUUID(), AvenueService.CITIZENS, true);
-            h.assertTrue(StoryLead.next(p).startsWith("Everyone on the avenue"), "And at last, nothing left: " + StoryLead.next(p));
-            h.assertTrue(AvenueService.journal(p).contains("24/24"), "The journal shows the best evening: " + AvenueService.journal(p));
+            h.assertTrue(data.best(p.getUUID()).saved() == AvenueService.CITIZENS && data.grayNeverSaw(),
+                    "The world remembers the Avenue outcome");
+            h.assertTrue(StoryLead.next(p).equals(lead), "Archived outcomes do not replace the relay objective");
 
             AvenueService.recover(p);
-            h.assertTrue(PastRecords.has(p, PastRecords.KEY), "Anyone who saved the Annex before the key existed is given it");
+            h.assertTrue(!PastRecords.has(p, PastRecords.KEY), "Login recovery does not hand out a retired travel key");
+            PastRecords.give(p, PastRecords.key());
+            h.assertTrue(StoryDiscoveries.recovered(p).contains(PastRecords.KEY)
+                            && StoryDiscoveries.journalTotal(p) == recordTotal + 1,
+                    "An existing copy of the key still counts as an archived discovery");
             h.succeed();
         } finally {
             data.forgetAll();
-            com.jayptucker.heroesevolved.story.night.NightThreeData.get(server).forgetAll();
         }
     }
 

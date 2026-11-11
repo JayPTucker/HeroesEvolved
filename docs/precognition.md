@@ -39,10 +39,10 @@ while), and the Foresight, Find the Path and Shared Omen techniques all still wo
 
 ## The story
 
-- **Awakening** still paints *The Unfinished Hour*, the canvas that opens the Hourglass Annex
-  rescue.
+- **Awakening** paints *The Last Signal*, a shareable canvas of two sleepers behind glass and a
+  failing relay. The painting changes when the sleepers are safe.
 - **Paint the Future with no one in view** paints the most pressing future:
-  1. The Annex, while it is unresolved: a new copy of the canvas.
+  1. The relay, while the rescue is unresolved. You receive a copy of the canvas.
   2. Otherwise, **Sylar**, if he is due to find you within twenty minutes. You learn roughly when
      he will come. When he does, his first strike on you misses, because you painted it.
   3. Otherwise, *what is near*: sixteen seconds of Premonition.
@@ -54,8 +54,7 @@ read by Saw It Coming, a Red Margin cross-out, a Fate Thread rescue.
 
 ## What changed from the old kit
 
-- *Paint the Unfinished Hour* became **Paint the Future**. It still paints the Annex canvas, and
-  now also paints enemies' endings and foretells Sylar.
+- **Paint the Future** paints the current campaign canvas, paints enemies' endings, or foretells Sylar.
 - *Sever Intent* is gone from the base kit. Its effect lives on in the Red Margin skill.
 - *Convergence* (bending projectiles to a point) is replaced by **The Future Is Written**.
 - New: **Saw It Coming**, Danger Sense, Clarity, Exposed, the painted-ending execute, and the HUD

@@ -220,10 +220,9 @@ public final class AvenueService {
         return true;
     }
 
-    /** On login (and respawn): nobody wakes up stranded on the avenue, and Hiro's key reaches whoever earned it. */
+    /** On login and respawn, recover saved returns from the retired Avenue mission. */
     public static void recover(ServerPlayer player) {
         if (!(run != null && isRunner(player)) && AvenueData.get(player.getServer()).tickets.containsKey(player.getUUID())) leave(player);
-        if (unlocked(player) && !PastRecords.has(player, PastRecords.KEY)) PastRecords.give(player, PastRecords.key());
     }
 
     public static void logout(ServerPlayer player) {

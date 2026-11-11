@@ -75,7 +75,7 @@ public final class AbilityWheelScreen extends Screen {
         graphics.fillGradient(0, 0, width, height, 0x30000000, 0x50000000);
     }
 
-    private int outer() { return Math.max(OUTER_MIN, entries.size() * 11); }
+    private int outer() { return Math.max(INNER + 40, Math.min(Math.max(OUTER_MIN, entries.size() * 11), Math.min(width, height) / 2 - 18)); }
 
     /** The entry under the cursor, or -1 in the middle. */
     private int hovered(double mouseX, double mouseY) {

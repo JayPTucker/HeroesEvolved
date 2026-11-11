@@ -60,7 +60,9 @@ public final class SpeedService {
         Vec3 previous, trailPrevious;
         long lastMoving = Long.MIN_VALUE, redlineUntil;
         int activeTicks, wallTicks, momentum, sentMomentum = -1, runMomentum;
-        long vibrateReady;
+        long vibrateReady, gustReady;
+        /** The fastest step of the last few ticks, fading: a sudden stop is measured against it. */
+        double peak, lastStep;
         boolean barrier;
         double modifier = -1, distanceBank, speed;
         Vec3 heading = Vec3.ZERO;
@@ -163,7 +165,12 @@ public final class SpeedService {
         else entity.teleportTo(point.x, point.y, point.z);
         // Horizontal speed is arrested; a burst does not erase an existing lethal fall.
         entity.setDeltaMovement(0, entity.getDeltaMovement().y, 0); entity.hurtMarked = true;
-        if (entity instanceof ServerPlayer p) { p.connection.send(new ClientboundSetEntityMotionPacket(p)); cue(p); }
+        if (entity instanceof ServerPlayer p) {
+            p.connection.send(new ClientboundSetEntityMotionPacket(p)); cue(p);
+            // A burst ends where it ends: that is not a runner skidding to a stop.
+            Runner r = RUNNERS.get(p.getUUID());
+            if (r != null) { r.peak = 0; r.gustReady = now(p) + 10; }
+        }
         AbilityEffects.send((ServerLevel) entity.level(), Kind.SPEED_TRAIL, from, point, 1.5);
         AbilityEffects.send((ServerLevel) entity.level(), Kind.SPEED_BURST, point, point.add(0, 1, 0), 1.5);
     }
@@ -238,6 +245,7 @@ public final class SpeedService {
         }
         applyImpacts(now);
         SpeedKit.tick(server, now);
+        SpeedOverrun.tick(server, now);
         BUFFETED.values().removeIf(until -> until <= now);
         IMPACTED.values().removeIf(until -> until <= now); PUMMELED.values().removeIf(until -> until <= now);
         LAST_PUNCH.values().removeIf(at -> at + 40 <= now); CAUGHT.values().removeIf(until -> until <= now);
@@ -256,8 +264,11 @@ public final class SpeedService {
         boolean running = p.isSprinting() && !p.isShiftKeyDown();
         boolean redline = now(p) < r.redlineUntil;
         if (running && distance > .01 && distance < 64) r.momentum = Math.min(100, r.momentum + 3);
-        else r.momentum = Math.max(0, r.momentum - 6);
+        // A tick with no step while still running is usually only the client's moves arriving unevenly
+        // (two in one server tick, none in the next): Momentum fades only once you have really stopped.
+        else if (!running || now(p) - r.lastMoving > 2) r.momentum = Math.max(0, r.momentum - 6);
         if (running && distance > .01 && distance < 64) runFeats(p, r, Math.sqrt(distance));
+        if (running && distance > .01 && distance < 64) easeHunger(p, Math.sqrt(distance));
         syncMomentum(p, r);
         // Quantize the modifier to avoid sending attribute packets for every tiny charge change.
         double amount = running ? 2 + level + (r.momentum / 25) * .5 + (redline ? 3 : 0) : 0;
@@ -284,6 +295,7 @@ public final class SpeedService {
         syncMarker(p, WATER_RUN, running && level >= 3);
         if (running && distance > .01) r.runMomentum = r.momentum;
         if (vibrate(p, r)) { r.previous = p.position(); return; }
+        stopping(p, r, distance);
         if (running && level >= 4 && p.horizontalCollision && r.wallTicks++ < 30 && p.fallDistance < 3) {
             p.setDeltaMovement(p.getDeltaMovement().x, .32, p.getDeltaMovement().z);
             p.connection.send(new ClientboundSetEntityMotionPacket(p));
@@ -350,6 +362,101 @@ public final class SpeedService {
         p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, .5F, 2F);
         p.serverLevel().playSound(null, BlockPos.containing(from), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, .6F, 1.8F);
         return true;
+    }
+
+    /** The share of vanilla's sprinting hunger (0.1 a block) a runner pays with Accelerate on: at Power Level 1, and at 20. */
+    public static final float RUN_HUNGER_START = .6F, RUN_HUNGER_MASTERED = .15F;
+
+    /**
+     * The share of sprinting hunger this runner pays: the more they have grown into the power, the less running
+     * costs their body. 60% at Power Level 1, falling evenly to 15% at Power Level 20 (about 27% at 15, where
+     * Overrun opens: the twenty-odd seconds flat out it takes then cost under half a bar).
+     */
+    public static float runHunger(ServerPlayer p) {
+        float k = Math.clamp((PlayerProgressionService.getPowerLevel(p) - 1) / 19F, 0, 1);
+        return RUN_HUNGER_START + (RUN_HUNGER_MASTERED - RUN_HUNGER_START) * k;
+    }
+
+    /**
+     * At fifty blocks a second vanilla's sprint hunger would empty a full bar in about twelve seconds; Accelerate
+     * is paid for in stamina, so a runner's body pays only {@link #runHunger} of it. This refunds the rest of
+     * what the step just cost (it was charged when the move arrived, earlier in the tick).
+     */
+    private static void easeHunger(ServerPlayer p, double step) {
+        var food = p.getFoodData();
+        food.setExhaustion(Math.max(0, food.getExhaustionLevel() - (float) (.1 * step * (1 - runHunger(p)))));
+    }
+
+    /** Speed (blocks a tick) a stop must come down from to throw a gust; Momentum it needs; how far the gust reaches. */
+    public static final double GUST_SPEED = .9, GUST_REACH = 4.5;
+    public static final int GUST_MOMENTUM = 40;
+
+    /** Watches for a sudden stop: the step falling to a third of the recent pace in a tick or two. */
+    private static void stopping(ServerPlayer p, Runner r, double distanceSqr) {
+        // A jump of five blocks or more in a tick is a burst or a teleport, not running.
+        if (distanceSqr >= 25) { r.peak = 0; return; }
+        double step = Math.sqrt(distanceSqr);
+        // Moves can arrive unevenly (two in one server tick, none in the next), so the pace is the mean of
+        // two ticks, and a stop must show in both the pace and the latest step.
+        double pace = (step + r.lastStep) / 2;
+        r.lastStep = step;
+        if (r.peak >= GUST_SPEED && pace < r.peak * .35 && step < r.peak * .35 && r.runMomentum >= GUST_MOMENTUM && now(p) >= r.gustReady) {
+            gust(p, r, r.peak);
+            r.peak = 0;
+            return;
+        }
+        r.peak = Math.max(pace, r.peak * .88);
+    }
+
+    /**
+     * A sudden stop at speed: the air you were dragging along keeps going. It rolls on past you and shoves
+     * back whatever is close, hardest straight ahead; it does no harm.
+     */
+    static void gust(ServerPlayer p, Runner r, double peak) {
+        ServerLevel level = p.serverLevel();
+        r.gustReady = now(p) + 20;
+        Vec3 heading = r.heading.lengthSqr() > 0 ? r.heading : horizontal(p.getLookAngle());
+        float strength = (float) Math.clamp((peak - GUST_SPEED) / 1.6 + .3, .3, 1);
+        for (Entity e : level.getEntities(p, p.getBoundingBox().inflate(GUST_REACH, 1.5, GUST_REACH),
+                e -> e instanceof net.minecraft.world.entity.item.ItemEntity || e instanceof LivingEntity l && canHit(p, l))) {
+            Vec3 rel = e.position().subtract(p.position()).multiply(1, 0, 1);
+            double d = rel.length();
+            if (d > GUST_REACH) continue;
+            Vec3 away = d < 1e-3 ? heading : rel.scale(1 / d);
+            double ahead = away.dot(heading);
+            double k = (1 - d / GUST_REACH) * (ahead > 0 ? .6 + .4 * ahead : .45) * strength;
+            Vec3 direction = horizontal(away.add(heading.scale(Math.max(0, ahead))));
+            if (!Double.isFinite(direction.x)) direction = heading;
+            double resist = e instanceof LivingEntity l ? Math.max(.2, 1 - l.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE)) : 1;
+            Vec3 shove = direction.scale((.3 + .6 * k) * resist).add(0, (.18 + .15 * k) * resist, 0);
+            e.setDeltaMovement(shove); e.hurtMarked = true;
+            if (e instanceof ServerPlayer other) other.connection.send(new ClientboundSetEntityMotionPacket(other));
+        }
+        com.jayptucker.heroesevolved.network.SetPiecePayload.send(level, com.jayptucker.heroesevolved.styles.Piece.SPEED_GUST,
+                p.position(), p.position().add(heading), strength, null);
+        level.playSound(null, p.blockPosition(), SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), SoundSource.PLAYERS, .6F + .5F * strength, 1.35F);
+        level.playSound(null, p.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, .6F, .7F);
+    }
+
+    /** Test hook: a stop from {@code peak} blocks a tick, as if the runner had just skidded to a halt. */
+    public static void gustForTest(ServerPlayer p, double peak) {
+        Runner r = RUNNERS.computeIfAbsent(p.getUUID(), id -> new Runner(p));
+        gust(p, r, peak);
+    }
+
+    /** Running flat out: Accelerate on, sprinting, at least {@code momentum} Momentum, really covering {@code speed} blocks a tick. */
+    public static boolean flatOut(ServerPlayer p, double speed, int momentum) {
+        Runner r = RUNNERS.get(p.getUUID());
+        return r != null && r.lastMoving != Long.MIN_VALUE && now(p) - r.lastMoving <= 2 && r.speed >= speed
+                && r.momentum >= momentum && p.isSprinting() && !p.isShiftKeyDown();
+    }
+
+    /** After a jump through time: the run is spent, and the next step is measured from where you are now. */
+    static void landed(ServerPlayer p) {
+        Runner r = RUNNERS.get(p.getUUID());
+        if (r == null) return;
+        r.momentum = 0; r.runMomentum = 0; r.peak = 0; r.previous = p.position(); r.trailPrevious = p.position();
+        r.lastMoving = Long.MIN_VALUE; r.gustReady = now(p) + 20;
     }
 
     /** A real wall ahead: something solid even after stepping up a block, not just a ledge to climb. */
@@ -552,9 +659,18 @@ public final class SpeedService {
         else if (!enabled) attribute.removeModifier(id);
     }
     public static void forget(ServerPlayer p) {
-        stop(p); FLURRIES.remove(p.getUUID()); REFLEX.remove(p.getUUID()); DODGED.remove(p.getUUID()); SpeedKit.forget(p);
+        stop(p); FLURRIES.remove(p.getUUID()); REFLEX.remove(p.getUUID()); DODGED.remove(p.getUUID()); SpeedKit.forget(p); SpeedOverrun.forget(p);
         com.jayptucker.heroesevolved.network.MomentumPayload.send(p, 0);
     }
-    public static void clear() { for (Runner r : List.copyOf(RUNNERS.values())) stop(r.player); FLURRIES.clear(); REFLEX.clear(); DODGED.clear(); BUFFETED.clear(); PENDING.clear(); SLAMS.clear(); IMPACTED.clear(); PUMMELED.clear(); LAST_PUNCH.clear(); CAUGHT.clear(); SpeedKit.clear(); }
+
+    /**
+     * A death or a change of world: the run ends as {@link #forget} ends it, but the last minute is kept, so a
+     * fast enough runner can still go back into it (undoing the death, or back through the portal).
+     */
+    public static void interrupt(ServerPlayer p) {
+        stop(p); FLURRIES.remove(p.getUUID()); REFLEX.remove(p.getUUID()); DODGED.remove(p.getUUID()); SpeedKit.forget(p); SpeedOverrun.interrupt(p);
+        com.jayptucker.heroesevolved.network.MomentumPayload.send(p, 0);
+    }
+    public static void clear() { for (Runner r : List.copyOf(RUNNERS.values())) stop(r.player); FLURRIES.clear(); REFLEX.clear(); DODGED.clear(); BUFFETED.clear(); PENDING.clear(); SLAMS.clear(); IMPACTED.clear(); PUMMELED.clear(); LAST_PUNCH.clear(); CAUGHT.clear(); SpeedKit.clear(); SpeedOverrun.clear(); }
     private static void cue(ServerPlayer p) { p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, .7F, 1.4F); }
 }

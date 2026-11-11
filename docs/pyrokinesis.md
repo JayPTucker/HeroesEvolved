@@ -72,7 +72,7 @@ Pyrokinetic fire is ordinary vanilla fire. It spreads, burns wood and can burn d
 - Every fire block goes through the same checks as a normal block placement: build permission,
   spawn protection, claim and protection mods, world border, and loaded chunks.
 - Whether fire spreads is still decided by the vanilla `doFireTick` gamerule.
-- No fire is placed in the future city, a Temporal Snapshot or the Hourglass Annex.
+- The Odessa vision and Temporal Snapshot protect their terrain from placed fire.
 - **Rewrite the Moment** records the burned blocks, so a time traveller can undo a fire.
 - Server owners can make all pyrokinetic fire cosmetic with `pyrokinesis.worldFire = false` in the
   common config. Creatures still burn, but no blocks catch.

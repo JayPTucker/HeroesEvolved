@@ -151,6 +151,7 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue quakeEarthquakeDurationSeconds;
         public final ModConfigSpec.DoubleValue quakeEarthquakeRadius;
         public final ModConfigSpec.BooleanValue quakeShattersFragileBlocks;
+        public final ModConfigSpec.BooleanValue quakeBreaksBlocks;
         public final ModConfigSpec.IntValue quakeBlastEnergyCost;
         public final ModConfigSpec.IntValue quakeBlastDrainPerSecond;
         public final ModConfigSpec.IntValue quakeBlastCooldownTicks;
@@ -713,6 +714,10 @@ public final class HeroesEvolvedConfig {
                 quakeShattersFragileBlocks = builder
                         .comment("Whether Quake powers shatter glass, glass panes and ice. Respects claim/protection mods.")
                         .define("shattersFragileBlocks", true);
+
+                quakeBreaksBlocks = builder
+                        .comment("Whether held Quake powers (Quake Blast, and Earthquake's fissures) slowly crack and break the blocks they work on. Never bedrock or other unbreakable blocks; respects claim/protection mods and spawn protection.")
+                        .define("breaksBlocks", true);
 
                 quakeBlastEnergyCost = energy(builder, "quakeBlast", 10);
                 quakeBlastDrainPerSecond = builder

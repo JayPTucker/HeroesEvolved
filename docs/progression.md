@@ -80,8 +80,10 @@ There are **eight ability keys**. Keys 1 to 5 start on G, H, Z, X and V with you
 abilities; keys 6 to 8 start unbound (set them in Options > Controls under Heroes Evolved). Any
 ability you can cast, core or learned, can go on any key, or on none.
 
-On the Abilities page, select an ability and use the eight key chips at the bottom of its card:
-click a chip to put the ability on that key, click its lit chip to take it off. An ability is on one
+On the **Loadout** page of the hero menu, everything you can cast is listed with a tag for what it is
+for (Offense, Defense, Support or Utility) and the key it is on. Select an ability, then click one of
+the eight key slots beside the list to put it there; click its slot again, or right-click a slot, to
+empty it. Your class ability (see [Classes](classes.md)) is bound the same way. An ability is on one
 key at most; moving it puts the key it left back to its default, or leaves it empty if that default
 is already somewhere else. Flight's double-jump always toggles flight, whatever is on key 1.
 

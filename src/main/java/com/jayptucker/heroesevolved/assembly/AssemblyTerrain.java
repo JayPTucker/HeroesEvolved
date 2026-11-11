@@ -64,15 +64,14 @@ public final class AssemblyTerrain extends SavedData {
                 && level.getBlockState(pos).isAir() && level.getBlockEntity(pos) == null
                 && level.getEntities((net.minecraft.world.entity.Entity) null, new AABB(pos), e -> !e.isSpectator() && e.isAlive()).isEmpty();
     }
-    /** Inventory is reserved before permission callbacks, and returned only if no shape was placed. */
+    /**
+     * Assembles one cell of matter drawn from the world (the power is paid for in stamina, never in the player's
+     * blocks). Permission callbacks and claims still apply to every cell.
+     */
     public boolean place(ServerPlayer player, BlockPos position, int duration) {
         BlockPos pos = position.immutable(); ServerLevel level = player.serverLevel();
         if (!available(player, pos)) return false;
-        var payment = AssemblyMaterials.take(player);
-        if (payment.isEmpty()) return false;
-        if (!WorldMutationPolicy.place(player, level, pos, AssemblyBlocks.MATTER.get().defaultBlockState())) {
-            AssemblyMaterials.refund(player, payment); return false;
-        }
+        if (!WorldMutationPolicy.place(player, level, pos, AssemblyBlocks.MATTER.get().defaultBlockState())) return false;
         Cell previous = cells.put(pos, new Cell(pos, player.getUUID(), level.getGameTime() + Math.max(1, duration)));
         if (previous != null) ownerCounts.computeIfPresent(previous.owner, (id, count) -> count <= 1 ? null : count - 1);
         ownerCounts.merge(player.getUUID(), 1, Integer::sum);

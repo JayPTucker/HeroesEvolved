@@ -42,28 +42,29 @@ public final class FutureVisions {
             "Bad dreams again. A city of white stone... and then light. So much light.",
             "Grandmother said when the sun goes black, the special ones wake up. "
                     + "The sun went black. People can fly now.",
-            "The cartographer has painted the same picture for days. A city on fire, "
-                    + "one no map has shown for centuries. He doesn't remember painting any of it.",
+            "The cartographer keeps drawing a city on fire. There's a relay tower past the city line. "
+                    + "He marks it on every copy.",
             // Act II: the glowing man.
             "In the painting, a man stands in the middle of the avenue. He's glowing. "
                     + "Everyone else is running.",
             "The cleric says the glowing man didn't want it to happen. "
                     + "He tried to hold it in. He couldn't.",
-            "His name was Ted. That afternoon he went to the Company for help. They took him "
-                    + "below the city, behind a door with an hourglass on it, and locked it.",
+            "His name was Ted. That afternoon he went to the Company for help. "
+                    + "They sealed him below the city. By evening he was on the avenue again.",
             // Act III: the place.
             "It isn't a place anyone alive has seen. It burned long before the villages. "
                     + "Odessa, they called it.",
-            "Twelve chunks wide. One long avenue down the middle. "
-                    + "I count the streets in my sleep.",
+            "One long avenue down the middle, with a clock tower near the plaza. "
+                    + "In the dream the clock always stops at 6:14.",
             "I dream I'm in the evacuation, carrying a daughter I never had. "
                     + "I'm not fast enough. I never am.",
-            // Act IV: the way back.
+            // Act IV: the last signal.
             "There's a moment, right before the shockwave, when everything goes silent. "
-                    + "A stranger on the avenue stops time and pulls people out. Nobody knew who they were.",
-            "Find the one who can bend time. Only they can walk back to the city before the light does.",
-            "If you can hear this... it isn't finished. The light was always going to fall. "
-                    + "The people under it didn't have to.",
+                    + "A stranger on the avenue stands there as the whole street runs backwards.",
+            "In one dream the Company sends two people to the relay. Their names are Mara and Ivo. "
+                    + "They get there before the sirens.",
+            "After the flash there is only static. Then a call sign, over and over. "
+                    + "I swear I've heard it while I was awake.",
             // Act V: the watchmaker. Existing progress continues into this chapter.
             "There is another man in the dreams. A dark coat at the edge of the avenue. "
                     + "He watches the glowing one as if he has found something he lost. That night, men in suits took him below.",
@@ -71,8 +72,8 @@ public final class FutureVisions {
                     + "I heard a little ticking sound. Then he knew which way to go.",
             "Gabriel Gray. Someone called him Gabriel, but he answered to Sylar. "
                     + "He doesn't want to meet the special ones. He wants to understand what is inside them.",
-            "He can learn what makes you different. Someone carries the glowing man's heat again. "
-                    + "If the watchmaker learns it, there will be another avenue, and another light. Keep them apart."
+            "He can learn what makes you different. In the dream he has a radio. "
+                    + "When the relay starts calling, he hears it too."
     );
 
     // Each villager gives up its memory once; per-session is enough.
@@ -122,9 +123,9 @@ public final class FutureVisions {
         int progress = reader.getData(ModDataAttachments.PLAYER_STORY_PROGRESS.get());
         Set<UUID> read = MINDS_READ.computeIfAbsent(reader.getUUID(), ignored -> new HashSet<>());
         if (progress >= FRAGMENTS.size()) {
-            // The story is complete; the dreams have not stopped.
+            // All fragments have been heard; villagers still recognize the dream.
             if (reader.getRandom().nextFloat() < 0.35F) {
-                reveal(reader, mind, "Have you stopped him yet? The dreams are getting louder.", null);
+                reveal(reader, mind, "Sometimes I can still hear the call sign in the rain.", null);
                 return true;
             }
             return false;
@@ -138,8 +139,7 @@ public final class FutureVisions {
 
         if (progress + 1 == FRAGMENTS.size()) {
             reader.sendSystemMessage(Component.literal(
-                    "The voices fall quiet. You know what happened on the Last Day... "
-                            + "and who could still walk back into it.")
+                    "The voices fall quiet. Odessa burned at 6:14. The call from the relay carried on.")
                     .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
             reader.playNotifySound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE,
                     SoundSource.PLAYERS, 0.6F, 0.8F);

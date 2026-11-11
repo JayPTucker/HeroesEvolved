@@ -46,6 +46,11 @@ public final class IntroDirector {
     private IntroDirector() {}
 
     public static void cue(int stage) {
+        cue(stage, java.util.List.of());
+    }
+
+    /** {@code players}: with FREEZE, the entity ids of the visitors whose power stops time, drawn on them as it runs back. */
+    public static void cue(int stage, java.util.List<Integer> players) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
         long now = mc.level.getGameTime();
@@ -60,7 +65,10 @@ public final class IntroDirector {
             }
             case TimeIntroPayload.NIGHT_THREE -> instruct("night_three", -1);
             case TimeIntroPayload.ANNEX -> instruct("annex", -1);
-            case TimeIntroPayload.BUNKER_ALARM -> BunkerAlarm.play();
+            case TimeIntroPayload.BUNKER_ALARM -> BunkerAlarm.play(true);
+            case TimeIntroPayload.BUNKER_HALL_ALARM -> BunkerAlarm.play(false);
+            case TimeIntroPayload.BUNKER_POWER -> BunkerAlarm.stop(true);
+            case TimeIntroPayload.BUNKER_QUIET -> BunkerAlarm.stop(false);
             case TimeIntroPayload.ARRIVAL, TimeIntroPayload.AVENUE_ARRIVAL -> {
                 clear();
                 IntroScene.active = true;
@@ -100,16 +108,20 @@ public final class IntroDirector {
                     blast.once();
                 }
             }
-            case TimeIntroPayload.FREEZE -> freeze(now);
+            case TimeIntroPayload.FREEZE -> freeze(now, players);
             default -> { }
         }
     }
 
-    /** Time stops. Everything held: the wave, the dust, the pieces in the air, the sound. */
-    private static void freeze(long now) {
+    /**
+     * Time stops. Everything held: the wave, the dust, the pieces in the air, the sound. Only the clockwork
+     * of the power under whoever's power it is still moves ({@link RewindSigil}).
+     */
+    private static void freeze(long now, java.util.List<Integer> players) {
         if (!IntroScene.active || IntroScene.detonation < 0) return;
         IntroScene.frozenAt = IntroScene.t(0);
         IntroScene.freeze = now;
+        RewindSigil.begin(players);
         rewindHeard = false;
         stop(roar); roar = null;
         stop(blast); blast = null;
@@ -140,6 +152,8 @@ public final class IntroDirector {
         hum = roar = blast = null;
         PanicSounds.stop();
         CityShatter.reset();
+        RewindSigil.reset();
+        CrowdRewind.reset();
         IntroScene.reset();
     }
 
@@ -154,7 +168,11 @@ public final class IntroDirector {
         if (mc.level == null || !TimeIntroService.isCity(mc.level)) { clear(); return; }
         float t = IntroScene.t(0);
         CityShatter.tick(t);
-        if (IntroScene.vision) PanicSounds.tick(mc);
+        if (IntroScene.vision) {
+            PanicSounds.tick(mc);
+            CrowdRewind.record(mc);
+            CrowdRewind.tick(mc);
+        }
         if (hum != null) {
             float g = BlastRenderer.glowStrength(t);
             hum.set(0.08F + 0.55F * g, 0.55F + 0.5F * g);
@@ -209,9 +227,12 @@ public final class IntroDirector {
         if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_ENTITIES) {
             BlastRenderer.opaque(camera, t, event.getFrustum());
             CityShatter.render(camera, t, mc.renderBuffers().bufferSource());
+            CrowdRewind.render(camera, partial, event.getPoseStack(), mc.renderBuffers().bufferSource());
         } else if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_PARTICLES) {
             BlastRenderer.veil(camera, t, event.getCamera().rotation());
             BlastRenderer.glowing(camera, t);
+            RewindSigil.render(camera, partial);
+            CrowdRewind.trails(camera, partial);
         }
     }
 

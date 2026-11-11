@@ -2,7 +2,7 @@
 
 Flight is an aerial momentum kit. Build airspeed in cruise, brake and redirect it with
 Skyburst, catch someone with Skyhook, or spend your speed on a Meteor Drop or Tempest.
-The existing double-tap Jump and mouse-wheel controls remain.
+The existing double-tap Jump and mouse-wheel controls remain. Every wheel setting is half again as fast as it used to be: the top one cruises at one and a half times the configured cruise speed (3 blocks a tick at the default).
 
 ## Momentum
 
@@ -27,7 +27,7 @@ Keys below are the default slots; learned optional skills can replace them as be
 | H | 1 | **Skyburst** | **Tap:** a short 0.6-second rising takeoff on the ground, or an immediate aerial dash. **Hold:** brake in the air as wind coils around you, then release along your new aim. Fully coils in 1.5 seconds; automatically releases at 2 seconds if a key release is lost. Momentum increases the burst. **Shift + H** cancels without spending Momentum. |
 | Z | 3 | **Meteor Drop** | Requires being airborne. Hang inside a collapsing wind disc for 0.5 seconds, then accelerate downward. Aim to curve your descent. Hitting solid ground or a wall releases a pressure wave. More Momentum means a wider, harder impact. **Shift + Z** aborts. |
 | X | 4 | **Skyhook** | Seize someone in sight within 7 blocks; grabbing from the ground starts a quick takeoff. Press again to hurl them along your aim, faster with Momentum. Allied throws receive Slow Falling. **Shift + X** releases them gently with Slow Falling, for free. |
-| V | 5 | **Tempest** | A visible boundary and inward wind warn of the vortex for one second. Then you orbit its eye, lifting and spiralling enemies before the final outward burst. Aim to drift the eye across the battlefield. Momentum strengthens the pull and finale. **Shift + V** cancels without a damaging finale. |
+| V | 5 | **Tempest** | A tornado touches down on the ground ahead of you, however high you are flying, and rises over a second. Then you whip round it partway up its funnel at about three and a half blocks a tick, a lap in well under a second. It draws in everything within 20 blocks, carries it up its wall and hurts it, then throws its captives clear in a final burst. Look to steer it across the ground (it follows the ground's height). While it stands, your view steps well back from it and holds still, so you can see the whole storm and yourself circling it. Momentum strengthens the pull and finale. **Shift + V** cancels without a damaging finale. |
 
 A useful sequence: **Free Flight → wheel up → Forward → hold Skyburst → turn and release →
 Skyhook → hurl → Meteor Drop.** For crowd control, bank Momentum, then steer a Tempest

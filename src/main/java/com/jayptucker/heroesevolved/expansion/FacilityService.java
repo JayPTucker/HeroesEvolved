@@ -2,6 +2,7 @@ package com.jayptucker.heroesevolved.expansion;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
+import com.jayptucker.heroesevolved.story.LastSignalService;
 import com.jayptucker.heroesevolved.effects.AbilityEffects;
 import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 import com.jayptucker.heroesevolved.skills.SkillTreeService;
@@ -92,13 +93,17 @@ public final class FacilityService {
         p.setDeltaMovement(Vec3.ZERO); p.fallDistance = 0;
     }
     public static void technique(ServerPlayer p, BlockPos pos, String technique) {
+        if (LastSignalService.atSite(p)) {
+            LastSignalService.technique(p, pos, technique);
+            return;
+        }
         if (!atSite(p) || !PowerRules.canAct(p)) return;
         var d = FacilityData.get(p.getServer()); if (d.phase != FacilityData.Phase.ACTIVE) return;
         if (technique.equals("fracture") && pos.distSqr(GATE) <= 36 || technique.equals("current") && pos.distSqr(CORE) <= 36) openGate(p.serverLevel(), d);
         if (technique.equals("cold") && pos.distSqr(CORE) <= 64) stabilize(p, d);
     }
     public static void onPowerUse(ServerPlayer p, String action) {
-        if (!atSite(p)) return;
+        if (!atSite(p) && !LastSignalService.atSite(p)) return;
         String technique = action.startsWith("cryo_") ? "cold" : action.startsWith("electro_") ? "current" : action.startsWith("quake_") ? "fracture" : "";
         if (!technique.isEmpty()) technique(p, ExpansionSkills.aim(p), technique);
     }
@@ -130,16 +135,8 @@ public final class FacilityService {
         if (e.getHand() == InteractionHand.MAIN_HAND && e.getEntity() instanceof ServerPlayer p && atSite(p)) interact(p, e.getPos());
     }
     @SubscribeEvent public static void readCanvas(PlayerInteractEvent.RightClickItem e) {
-        if (e.getHand() == InteractionHand.MAIN_HAND && e.getEntity() instanceof ServerPlayer p && PropheticPainting.isCanvas(e.getItemStack()) && PowerRules.canAct(p)) {
-            plan(p); tell(p, journal(p));
-        }
-    }
-    @SubscribeEvent public static void cartographer(PlayerInteractEvent.EntityInteract e) {
-        if (e.getHand() == InteractionHand.MAIN_HAND && e.getEntity() instanceof ServerPlayer p && !atSite(p) && PowerRules.canAct(p)
-                && e.getTarget() instanceof Villager v && !v.isBaby() && v.getVillagerData().getProfession() == net.minecraft.world.entity.npc.VillagerProfession.CARTOGRAPHER) {
-            plan(p);
-            if (FacilityData.get(p.getServer()).discover(p.getUUID(), "canvas_received")) PropheticPainting.give(p);
-            tell(p, "The cartographer: I painted a copper heart behind a door with an hourglass on it, under a city that burned centuries ago. Read the omen in your Journal. Bring them home.");
+        if (e.getHand() == InteractionHand.MAIN_HAND && e.getEntity() instanceof ServerPlayer p && PropheticPainting.isCanvas(e.getItemStack())) {
+            tell(p, "The Unfinished Hour is an archived painting of Odessa. The bunker receiver has the current lead.");
         }
     }
     @SubscribeEvent public static void captive(PlayerInteractEvent.EntityInteract e) {
@@ -152,7 +149,9 @@ public final class FacilityService {
         }
     }
     @SubscribeEvent public static void login(PlayerEvent.PlayerLoggedInEvent e) {
-        if (e.getEntity() instanceof ServerPlayer p && !atSite(p) && FacilityData.get(p.getServer()).visitors.remove(p.getUUID()) != null) FacilityData.get(p.getServer()).setDirty();
+        if (!(e.getEntity() instanceof ServerPlayer p)) return;
+        if (atSite(p)) leave(p);
+        else if (FacilityData.get(p.getServer()).visitors.remove(p.getUUID()) != null) FacilityData.get(p.getServer()).setDirty();
     }
     @SubscribeEvent(priority=net.neoforged.bus.api.EventPriority.LOWEST) public static void casualty(net.neoforged.neoforge.event.entity.living.LivingDeathEvent e) {
         if (!(e.getEntity().level() instanceof ServerLevel level) || !level.dimension().equals(DIMENSION)) return;

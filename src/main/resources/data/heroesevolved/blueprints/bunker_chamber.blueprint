@@ -1,7 +1,7 @@
 # The Odessa stasis hall, Sublevel 4: fourteen sealed Cryochambers under copper galleries and red emergency light.
 # A lush cave broke through the south-east ceiling; its roots and glow berries light that end. Isaac Mendez's
-# painting of a sleeper waking hangs in the west gallery; his explosion over the city, Exhibit 1, hangs above the
-# dead screen at the far end. A trail of blood runs from Claire Bennet's pod to the door.
+# painting of a sleeper waking hangs in the west gallery; his explosion over the city, Exhibit 1, hangs on the far
+# wall above the analysts' desk.
 # Placed by BunkerBuilder with its anchor on the bunker floor 18 blocks south of the shaft.
 # Pods and the orientation lectern must stay on their cells: tests and saved pod assignments use them.
 name: bunker_chamber
@@ -20,7 +20,6 @@ palette:
   K = barrel[facing=up]
   L = iron_block
   M = heroesevolved:cryochamber[facing=east,half=lower,open=false] @pod
-  N = redstone_wire
   O = heroesevolved:cryochamber[facing=west,half=lower,open=false] @pod
   P = smooth_quartz_slab[type=top]
   Q = dark_oak_stairs[facing=west]
@@ -43,7 +42,7 @@ palette:
   h = lever[face=floor,facing=west]
   i = glow_lichen[east=true]
   j = polished_deepslate_slab[type=bottom]
-  k = redstone_lamp[lit=false]
+  k = waxed_weathered_copper_bulb[lit=true]
   l = waxed_weathered_cut_copper
   m = spruce_wall_sign[facing=east] @sign:pod01
   n = spruce_wall_sign[facing=west] @sign:pod08
@@ -61,14 +60,12 @@ palette:
   z = spruce_wall_sign[facing=west] @sign:pod14
   0 = lightning_rod[facing=north]
   1 = cave_vines[age=25,berries=true]
-  2 = orange_concrete
   3 = polished_deepslate_stairs[facing=west,half=top]
   4 = polished_deepslate_stairs[facing=east,half=top]
   5 = waxed_weathered_cut_copper_slab[type=top]
   6 = cave_vines_plant[berries=true]
   7 = spruce_wall_sign[facing=south] @sign:wing
   8 = cobweb
-  9 = spruce_wall_sign[facing=north] @sign:screen
   ! = tuff_bricks
   $ = iron_trapdoor[facing=north,open=true,half=bottom]
   % = iron_trapdoor[facing=west,open=true,half=bottom]
@@ -76,8 +73,6 @@ palette:
   * = iron_trapdoor[facing=east,open=true,half=bottom]
   + = iron_trapdoor[facing=south,open=true,half=bottom]
   = = waxed_copper_bulb[lit=true]
-  ? = spruce_wall_sign[facing=east] @sign:exhibit
-  ^ = air @painting:sleeper:east
   ~ = waxed_exposed_copper_bulb[lit=true]
   < = chiseled_tuff_bricks
   > = chain[axis=y]
@@ -95,6 +90,8 @@ palette:
   γ = dirt
   δ = air @painting:explosion:north
   ε = spruce_wall_sign[facing=north] @sign:exhibit1
+  ζ = heroesevolved:alarm_beacon[facing=down,lit=true] @beacon
+  ι = heroesevolved:alarm_beacon[facing=south,lit=true] @beacon
 signs:
   pod01 light_blue glow = SUBJECT 01 | STASIS SEALED | AWAITING | REVIVAL
   pod02 light_blue glow = SUBJECT 02 | STASIS SEALED | AWAITING | REVIVAL
@@ -107,15 +104,13 @@ signs:
   pod09 light_blue glow = SUBJECT 09 | STASIS SEALED | AWAITING | REVIVAL
   pod10 light_blue glow = SUBJECT 10 | STASIS SEALED | AWAITING | REVIVAL
   pod11 light_blue glow = SUBJECT 11 | STASIS SEALED | AWAITING | REVIVAL
-  pod12 red glow = SUBJECT 12 | T. SPRAGUE | TRANSFERRED | KIRBY PLAZA
-  pod13 red glow = SUBJECT 13 | P. PETRELLI | STATUS: | MISSING
-  pod14 red glow = SUBJECT 14 | C. BENNET | BLOOD DRAWN | DAY 3
+  pod12 light_blue glow = SUBJECT 12 | STASIS SEALED | AWAITING | REVIVAL
+  pod13 light_blue glow = SUBJECT 13 | STASIS SEALED | AWAITING | REVIVAL
+  pod14 light_blue glow = SUBJECT 14 | STASIS SEALED | AWAITING | REVIVAL
   wing white glow = STASIS WING | SUBLEVEL 4 | ODESSA SITE | PRIMATECH
-  exhibit yellow glow = EXHIBIT 9 | I. MENDEZ | THE SLEEPER | WHO IS THIS?
-  exhibit1 yellow glow = EXHIBIT 1 | I. MENDEZ | THE LAST DAY | IT CAME TRUE
-  screen yellow glow = SIGNAL LOST | 2,190 DAYS | SINCE LAST | CONTACT
+  exhibit1 yellow glow = EXHIBIT 1 | I. MENDEZ | ODESSA | RECOVERED ART
 
-# floor: the checker runner leads from the door to the console and the display
+# floor: the checker runner leads from the door to the console and Exhibit 1
 layer 0:
 AAAAAAAAAAAAAAA
 AAAAABCBCBAAAAA
@@ -145,18 +140,18 @@ AAAAAAAAAAAAAAA
 layer 1:
 IIIIIA...AIIIII
 IAJK.......KJAI
-ILM.....N...OLI
-IAJ......N..JAI
 ILM.........OLI
-IAJ.......N.JAI
+IAJ.........JAI
 ILM.........OLI
-IAJ..P...PN.JAI
+IAJ.........JAI
+ILM.........OLI
+IAJ..P...P..JAI
 ILM.QP.R.PS.OLI
 IAJ..P...P..JAI
-ILM...T....NOLI
-IAJ.......N.JAI
+ILM...T.....OLI
+IAJ.........JAI
 ILM.........OLI
-IAJ.......N.JAI
+IAJ.........JAI
 ILM........UOLI
 IAJ.......V.UAI
 I..........W.WI
@@ -165,7 +160,7 @@ I.II......W.XXI
 I.II......Z.X.I
 I.IK.a.a.a.Y.WI
 IAbb.PPPPP.W.cI
-IIIIAAAAAAAIIII
+IIIAAAAAAAAIIII
 
 layer 2:
 IIIIIA...AIIIII
@@ -190,7 +185,7 @@ I.IIV......XXiI
 I.II..........I
 IAbb.........iI
 I....f.f.f...iI
-IIIIABBBBBAIIII
+IIIAAAAAAAAIIII
 
 # pod caps and nameplates
 layer 3:
@@ -215,8 +210,8 @@ I.IIV........iI
 I.II........X.I
 IAbb.........XI
 I............iI
-I.............I
-IIIIACBCBCAIIII
+I..........ε..I
+IIIAAAAAAAAIIII
 
 layer 4:
 IIIIIAjjjAIIIII
@@ -240,12 +235,12 @@ I.IIV.........I
 IAbb........X.I
 I..........1..I
 I.............I
-I.............I
-IIIIACC2CCAIIII
+I......δ......I
+IIIAAAAAAAAIIII
 
 layer 5:
 IIIIIIIIIIIIIII
-IA3.........4AI
+IA3....ι....4AI
 I.5.........5.I
 IA3.........4AI
 I.5.........5.I
@@ -266,7 +261,7 @@ I...........XiI
 I..........6..I
 I............iI
 I............iI
-IIIIAC222CAIIII
+IIIAAAAAAAAIIII
 
 # gallery decks and the bridge
 layer 6:
@@ -292,9 +287,9 @@ I...........X.I
 I..........6.iI
 I...........1iI
 I.............I
-IIIIABBBBBAIIII
+IIIAAAAAAAAIIII
 
-# railings and the painting
+# railings
 layer 7:
 IIIIIIIIIIIIIII
 I..8V.....V...I
@@ -317,8 +312,8 @@ I............6I
 I...........X.I
 I..........6..I
 I...........6.I
-I......9......I
-IIIIAAAAAAAIIII
+I.............I
+IIIAAAAAAAAIIII
 
 layer 8:
 IIIIIIIIIIIIIII
@@ -330,10 +325,10 @@ IIIIIIIIIIIIIII
 !.............!
 !......$......!
 !.....%=*.....!
-!A?....+.....A!
+!A.....+.....A!
 !.............!
 !.............!
-!^.....$......!
+!......$......!
 !.....%~*.....!
 !A.....+......!
 !............i!
@@ -342,7 +337,7 @@ IIIIIIIIIIIIIII
 !.........1.Xi!
 !..........6..!
 !...........6i!
-!.........ε..i!
+!............i!
 IIIIIIIIIIIIIII
 
 layer 9:
@@ -367,7 +362,7 @@ IIIIIIIIIIIIIII
 !.........6./.!
 !..........6.i!
 !...........6i!
-!......δ......!
+!.............!
 IIIIIIIIIIIIIII
 
 layer 10:
@@ -385,7 +380,7 @@ IIIIIIIIIIIIIII
 !.............!
 !.............!
 !......>......!
-!A|...........!
+!A|.......ζ...!
 !........;....!
 !..........6.6!
 !..........X.6!
@@ -418,7 +413,7 @@ I...l....({.X6I
 I...l.....6X/)I
 IAAAAAAAAA{6AXI
 I...l.....l{6.I
-I8........l...I
+I8..l.....l...I
 IIIIIIIIIIIIIII
 
 # ceiling, red emergency glass, the breach

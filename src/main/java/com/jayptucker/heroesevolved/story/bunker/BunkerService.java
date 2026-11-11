@@ -7,7 +7,6 @@ import com.jayptucker.heroesevolved.network.PowerIntroPayload;
 import com.jayptucker.heroesevolved.network.ScreenTintPayload;
 import com.jayptucker.heroesevolved.network.TimeIntroPayload;
 import com.jayptucker.heroesevolved.registry.ModBlocks;
-import com.jayptucker.heroesevolved.sounds.ModSounds;
 import com.jayptucker.heroesevolved.story.StoryLead;
 import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.AdvancementHolder;
@@ -17,7 +16,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -47,7 +45,14 @@ public final class BunkerService {
     /** Anyone who has played this long already found their own way into the world. */
     private static final int VETERAN_PLAY_TICKS = 20 * 120;
     private static final Map<UUID, Integer> SESSIONS = new HashMap<>();
-    private static final Set<UUID> HEARD_TICKING = new HashSet<>();
+    /** Sleepers whose pod has opened and who have walked out of it. */
+    private static final Set<UUID> STEPPED_OUT = new HashSet<>();
+    /** Players in the bunker who are hearing the alarm, other than sleepers still in their pods. */
+    private static final Set<UUID> HEARING = new HashSet<>();
+    /** The red pulse at the screen's edges while the alarm sounds. */
+    private static final int ALARM_RED = 0x55FF1010;
+    /** True from a sleeper's alarm until the last sleeper waking with them is out of their pod. */
+    private static boolean alarmed;
 
     private BunkerService() {}
 
@@ -60,6 +65,7 @@ public final class BunkerService {
             data.origin = BunkerBuilder.build(server.overworld());
             data.built = true;
             data.layout = BunkerData.LAYOUT;
+            data.powered = false;
             data.setDirty();
             HeroesEvolved.LOGGER.info("Built the stasis bunker at {}", data.origin);
         }
@@ -86,6 +92,7 @@ public final class BunkerService {
         if (!overworld.getBlockState(base).is(ModBlocks.CRYOCHAMBER.get())) BunkerBuilder.placePod(overworld, data.origin, index, true);
         if (player.level() != overworld) player.teleportTo(overworld, base.getX() + .5, base.getY(), base.getZ() + .5, 0, 0);
         CryoChamberService.enter(player, base, RELEASE + 5);
+        BunkerBuilder.labelPod(overworld, data.origin, index, player.getGameProfile().getName(), false);
         SESSIONS.put(player.getUUID(), 0);
         return true;
     }
@@ -117,12 +124,22 @@ public final class BunkerService {
             }
             if (age > 0) step(player, age);
         }
-        if (server.overworld().getGameTime() % 20 == 0 && BunkerData.get(server).built) {
-            BunkerBuilder.upgrade(server.overworld(), BunkerData.get(server));
-            BlockPos origin = BunkerData.get(server).origin;
-            for (ServerPlayer player : server.overworld().players())
-                if (BunkerBuilder.inCell(origin, player.blockPosition()) && HEARD_TICKING.add(player.getUUID()))
-                    player.playNotifySound(ModSounds.SYLAR_WATCH.get(), SoundSource.AMBIENT, 0.5F, 1);
+        BunkerData bunker = BunkerData.get(server);
+        if (!bunker.built) return;
+        emergency(server, bunker);
+        BunkerPower.tick(server.overworld(), bunker);
+        if (server.overworld().getGameTime() % 20 == 0) {
+            BunkerBuilder.upgrade(server.overworld(), bunker);
+            // Nobody waking or about to (a server restarted mid-waking, or a veteran only told where the
+            // bunker is): the power comes back.
+            if (!bunker.powered && !BunkerPower.switching() && !alarmed && SESSIONS.keySet().stream().allMatch(STEPPED_OUT::contains))
+                BunkerPower.start(server.overworld(), bunker);
+            // Every sleeper's name over their pod, including those who woke before the nameplates did this.
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                Integer pod = bunker.pods.get(player.getUUID());
+                if (pod != null) BunkerBuilder.labelPod(server.overworld(), bunker.origin, pod, player.getGameProfile().getName(),
+                        !SESSIONS.containsKey(player.getUUID()) || STEPPED_OUT.contains(player.getUUID()));
+            }
         }
     }
 
@@ -133,11 +150,16 @@ public final class BunkerService {
             caption(player, "bunker_1");
         }
         if (age == 12) {
-            // The power comes back and the pod sounds its alarm; the client plays it (BunkerAlarm), timed to
-            // open with the lid at RELEASE.
-            PacketDistributor.sendToPlayer(player, new TimeIntroPayload(TimeIntroPayload.BUNKER_ALARM));
-            ScreenTintPayload.send(player, 0x55FF1010, RELEASE - 10, ScreenTintPayload.Style.PULSE);
+            // Every waking starts the same way: the main power fails, the bunker drops to emergency power
+            // with only its beacons turning, and the alarm sounds for everyone inside (emergency()). The
+            // sleeper hears it from the pod (BunkerAlarm), timed to open with the lid at RELEASE, until
+            // they step out.
+            BunkerPower.cut(player.getServer().overworld(), BunkerData.get(player.getServer()));
+            cue(player, TimeIntroPayload.BUNKER_ALARM);
         }
+        boolean out = STEPPED_OUT.contains(player.getUUID());
+        // The red pulse lasts as long as the alarm. Re-sent every second, so it also ends by itself if the session does.
+        if (age >= 12 && !out && age % 20 == 12) ScreenTintPayload.send(player, ALARM_RED, 40, ScreenTintPayload.Style.PULSE);
         if (age == 60) caption(player, "bunker_2");
         if (age == RELEASE) {
             CryoChamberService.release(player);
@@ -145,11 +167,74 @@ public final class BunkerService {
             caption(player, "bunker_3");
             award(player);
         }
-        if (age >= END) {
-            SESSIONS.remove(player.getUUID());
-            player.sendSystemMessage(Component.translatable("bunker.heroesevolved.hint", StoryLead.journalKey())
-                    .withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
+        if (age > RELEASE && !out && outOfPod(player)) {
+            stepOut(player);
+            out = true;
         }
+        if (age >= END && out) {
+            SESSIONS.remove(player.getUUID());
+            STEPPED_OUT.remove(player.getUUID());
+        }
+    }
+
+    /** Whether the sleeper has left the pod they woke in (or the overworld). */
+    private static boolean outOfPod(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        BunkerData data = BunkerData.get(server);
+        Integer index = data.pods.get(player.getUUID());
+        if (index == null || player.level() != server.overworld()) return true;
+        return !CryoChamberService.isInside(player) && !player.blockPosition().equals(data.origin.offset(BunkerBuilder.podOffset(index)));
+    }
+
+    /**
+     * Out of the pod: the red light leaves the screen and the nameplate says revived. The alarm the sleeper
+     * hears goes on with everyone else's until the last sleeper waking with them is out (emergency()).
+     */
+    private static void stepOut(ServerPlayer player) {
+        STEPPED_OUT.add(player.getUUID());
+        HEARING.add(player.getUUID());
+        ScreenTintPayload.send(player, ALARM_RED, 0, ScreenTintPayload.Style.PULSE);
+        BunkerData data = BunkerData.get(player.getServer());
+        Integer pod = data.pods.get(player.getUUID());
+        if (pod != null) BunkerBuilder.labelPod(player.getServer().overworld(), data.origin, pod, player.getGameProfile().getName(), true);
+    }
+
+    /**
+     * The alarm is the bunker's, not just the sleeper's: while anyone is waking, everyone inside hears it, and
+     * whoever leaves stops hearing it. When the last sleeper is out of their pod (or gone), it stops for all
+     * and the main breaker closes: the lights come back on (BunkerPower) and everyone inside hears it happen.
+     */
+    private static void emergency(MinecraftServer server, BunkerData data) {
+        boolean waking = SESSIONS.entrySet().stream().anyMatch(e -> e.getValue() >= 12 && !STEPPED_OUT.contains(e.getKey()));
+        if (waking) {
+            alarmed = true;
+            for (ServerPlayer listener : server.overworld().players()) {
+                UUID id = listener.getUUID();
+                boolean inPod = SESSIONS.containsKey(id) && !STEPPED_OUT.contains(id);
+                if (inPod || HEARING.contains(id) || !BunkerBuilder.inside(data.origin, listener.blockPosition())) continue;
+                HEARING.add(id);
+                cue(listener, TimeIntroPayload.BUNKER_HALL_ALARM);
+            }
+        }
+        for (UUID id : List.copyOf(HEARING)) {
+            ServerPlayer listener = server.getPlayerList().getPlayer(id);
+            if (listener != null && listener.level() == server.overworld() && BunkerBuilder.inside(data.origin, listener.blockPosition())) continue;
+            HEARING.remove(id);
+            if (listener != null) cue(listener, TimeIntroPayload.BUNKER_QUIET);
+        }
+        if (alarmed && !waking) {
+            alarmed = false;
+            boolean power = BunkerPower.start(server.overworld(), data);
+            for (UUID id : HEARING) {
+                ServerPlayer listener = server.getPlayerList().getPlayer(id);
+                if (listener != null) cue(listener, power ? TimeIntroPayload.BUNKER_POWER : TimeIntroPayload.BUNKER_QUIET);
+            }
+            HEARING.clear();
+        }
+    }
+
+    private static void cue(ServerPlayer player, int stage) {
+        PacketDistributor.sendToPlayer(player, new TimeIntroPayload(stage));
     }
 
     private static void caption(ServerPlayer player, String stage) {
@@ -164,8 +249,15 @@ public final class BunkerService {
 
     @SubscribeEvent public static void logout(PlayerEvent.PlayerLoggedOutEvent event) {
         SESSIONS.remove(event.getEntity().getUUID());
-        HEARD_TICKING.remove(event.getEntity().getUUID());
+        STEPPED_OUT.remove(event.getEntity().getUUID());
+        HEARING.remove(event.getEntity().getUUID());
     }
 
-    @SubscribeEvent public static void stopping(ServerStoppingEvent event) { SESSIONS.clear(); HEARD_TICKING.clear(); }
+    @SubscribeEvent public static void stopping(ServerStoppingEvent event) {
+        SESSIONS.clear();
+        STEPPED_OUT.clear();
+        HEARING.clear();
+        alarmed = false;
+        BunkerPower.reset();
+    }
 }

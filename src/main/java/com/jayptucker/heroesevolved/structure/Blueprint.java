@@ -263,6 +263,20 @@ public final class Blueprint {
         return found;
     }
 
+    /** As {@link #cellsMatching}, with each cell's block. */
+    public Map<BlockPos, BlockState> statesMatching(java.util.function.Predicate<BlockState> test) {
+        Map<BlockPos, BlockState> found = new LinkedHashMap<>();
+        for (int y = 0; y < layers.size(); y++)
+            for (int z = 0; z < layers.get(y).size(); z++) {
+                String row = layers.get(y).get(z);
+                for (int x = 0; x < row.length(); x++) {
+                    BlockState state = palette.get(row.charAt(x));
+                    if (state != null && test.test(state)) found.put(offset(x, y, z, Rotation.NONE), state);
+                }
+            }
+        return found;
+    }
+
     /** Every grid cell carrying {@code marker}, relative to the anchor, unrotated, in reading order. */
     public List<BlockPos> markerOffsets(String marker) {
         List<BlockPos> found = new ArrayList<>();

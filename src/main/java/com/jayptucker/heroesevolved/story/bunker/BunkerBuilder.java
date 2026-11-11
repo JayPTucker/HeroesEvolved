@@ -2,6 +2,7 @@ package com.jayptucker.heroesevolved.story.bunker;
 
 import com.jayptucker.heroesevolved.registry.ModBlocks;
 import com.jayptucker.heroesevolved.registry.ModItems;
+import com.jayptucker.heroesevolved.structure.Blueprint;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -11,6 +12,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LadderBlock;
 import net.minecraft.world.level.block.LecternBlock;
+import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.TrapDoorBlock;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.entity.LecternBlockEntity;
@@ -18,10 +20,12 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Half;
 import net.minecraft.world.level.levelgen.Heightmap;
 
+import java.util.List;
+
 /**
  * Builds the Odessa stasis bunker once, under world spawn: a ladder shaft from the surface,
- * then room blueprints: records (with the generator room east and security west, and Noah Bennet's
- * hidden office under security), a corridor with a lab and a breached cell off it, the stasis hall
+ * then room blueprints: records (with the generator room east and security west, and maintenance
+ * under security), a corridor with a lab and an infirmary off it, the stasis hall
  * with fourteen Cryochambers, and a ruined hut
  * marking the hatch on the surface. Coordinates are relative to the bunker floor
  * directly below spawn, with +Z running away from the shaft.
@@ -43,56 +47,182 @@ public final class BunkerBuilder {
     /** A room blueprint and where its anchor lands, relative to the bunker floor under the shaft. */
     public record Room(String blueprint, BlockPos at) {}
 
-    /** The rooms on the bunker's main level. Night Three builds the same rooms as they were on the third night. */
-    public static final java.util.List<Room> ROOMS = java.util.List.of(
-            new Room("bunker_records", new BlockPos(0, 0, 1)),
-            new Room("bunker_corridor", new BlockPos(0, 0, 11)),
-            new Room("bunker_lab", new BlockPos(2, 0, 11)),
-            new Room("bunker_cell", new BlockPos(-9, 0, 11)),
-            new Room("bunker_chamber", new BlockPos(0, 0, 18)),
+    static final Room RECORDS = new Room("bunker_records", new BlockPos(0, 0, 1));
+    static final Room CORRIDOR = new Room("bunker_corridor", new BlockPos(0, 0, 11));
+    static final Room LAB = new Room("bunker_lab", new BlockPos(2, 0, 11));
+    static final Room INFIRMARY = new Room("bunker_cell", new BlockPos(-9, 0, 11));
+    public static final Room CHAMBER = new Room("bunker_chamber", new BlockPos(0, 0, 18));
+    static final Room SECURITY = new Room("bunker_security", new BlockPos(-14, 0, 1));
+
+    /** The rooms on the bunker's main level. */
+    public static final List<Room> ROOMS = List.of(RECORDS, CORRIDOR, LAB, INFIRMARY, CHAMBER,
             new Room("bunker_generator", new BlockPos(5, 0, 1)),
-            new Room("bunker_security", new BlockPos(-14, 0, 1)));
-    /** Sublevel 4-B, Noah Bennet's office, right under the checkpoint's red rug. Not on any plan. */
+            SECURITY);
+    /** Maintenance under the security checkpoint. */
     public static final Room OFFICE = new Room("bunker_office", new BlockPos(-14, -6, 3));
 
-    /** Where the stasis hall lands in the bunker. */
-    public static final Room CHAMBER = ROOMS.stream().filter(room -> room.blueprint().equals("bunker_chamber")).findFirst().orElseThrow();
-    /** Exhibit 1: Isaac's explosion over the city, high on the hall's far wall above the dead screen. Added in layout 2. */
+    public static BlockPos receiverPos(BlockPos origin) {
+        return markerPositions(origin, RECORDS, "signal:receiver").getFirst();
+    }
+
+    public static List<BlockPos> survivorPositions(BlockPos origin) {
+        return markerPositions(origin, INFIRMARY, "signal:survivor");
+    }
+
+    private static List<BlockPos> markerPositions(BlockPos origin, Room room, String marker) {
+        BlockPos at = origin.offset(room.at());
+        return Blueprint.load(room.blueprint()).markerOffsets(marker).stream().map(at::offset).toList();
+    }
+    /**
+     * Exhibit 1: Isaac's explosion over the city, on the hall's far wall above the analysts' desk.
+     * Added in layout 2, high on the wall over a dead screen; layout 3 hangs it in the screen's place.
+     */
     public static final String EXHIBIT_ONE = "painting:explosion:north";
-    /** The last block of the west ceiling beam, cut back in layout 2 so Exhibit 1 fits under the ceiling. */
+    /** Marks the alarm beacons in the room blueprints, so a bunker built before them gets them (layout 4). */
+    public static final String BEACON = "beacon";
+    /** Where layout 2 hung Exhibit 1 (the painting's anchor, as a chamber grid cell). */
+    public static final BlockPos FIRST_EXHIBIT = new BlockPos(7, 9, 21);
+    /** Layout 2's signs on the far wall: Exhibit 1's label and the dead screen's "SIGNAL LOST". */
+    public static final java.util.List<BlockPos> FIRST_SIGNS = java.util.List.of(new BlockPos(10, 8, 21), new BlockPos(7, 7, 21));
+    static final List<String> OLD_EXHIBIT_LABEL = List.of("EXHIBIT 1", "I. MENDEZ", "THE LAST DAY", "IT CAME TRUE");
+    static final List<String> OLD_SCREEN_LABEL = List.of("SIGNAL LOST", "2,190 DAYS", "SINCE LAST", "CONTACT");
+    /** The dead screen and its frame (chamber grid), one polished panel behind Exhibit 1 from layout 3. */
+    public static final net.minecraft.world.level.levelgen.structure.BoundingBox SCREEN =
+            new net.minecraft.world.level.levelgen.structure.BoundingBox(3, 1, 22, 10, 7, 22);
+    private static final List<String> OLD_SCREEN = List.of(
+            "DPPPPPPP", "DPYYYYYP", "DPBYBYBP", "DPBBOBBP", "DPBOOOBP", "DPYYYYYP", "DPPPPPPP");
+    /** The last block of the west ceiling beam: cut back in layout 2 for Exhibit 1's corner, whole again in 3. */
     public static final BlockPos BEAM_END = new BlockPos(4, 11, 21);
-    /** The red ceiling lights over Exhibit 1 (chamber grid cells), with glowstone behind them as elsewhere in the hall. */
+    /** The red ceiling lights over the far wall (chamber grid cells), with glowstone behind them as elsewhere in the hall. */
     public static final java.util.List<BlockPos> EXHIBIT_LIGHTS = java.util.List.of(new BlockPos(5, 12, 21), new BlockPos(8, 12, 21));
 
     /**
-     * Gives a bunker built under an older layout what later layouts added, and nothing else: no room is
-     * rebuilt over a player's changes. Waits until the chamber's entities are loaded (someone is near),
+     * Updates the original fixtures in a bunker built under an older layout, where they still match.
+     * Waits until the rooms and their entities are loaded (someone is near),
      * since part of it is a painting. Returns true once the bunker is up to date.
      */
     public static boolean upgrade(ServerLevel level, BunkerData data) {
         if (!data.built || data.layout >= BunkerData.LAYOUT) return true;
-        var chamber = com.jayptucker.heroesevolved.structure.Blueprint.load(CHAMBER.blueprint());
+        var chamber = Blueprint.load(CHAMBER.blueprint());
         BlockPos at = data.origin.offset(CHAMBER.at());
         BlockPos painting = at.offset(chamber.markerOffsets(EXHIBIT_ONE).getFirst());
-        if (!level.isPositionEntityTicking(painting)) return false;
+        if (!level.isPositionEntityTicking(painting) || !level.isPositionEntityTicking(at.offset(cell(chamber, FIRST_EXHIBIT)))
+                || !BunkerLayoutUpgrade.ready(level, data.origin)) return false;
         if (data.layout < 2) {
-            // The ceiling beam stops one block short of the wall, where the painting's corner hangs.
-            BlockPos beam = at.offset(chamber.offset(BEAM_END.getX(), BEAM_END.getY(), BEAM_END.getZ(), net.minecraft.world.level.block.Rotation.NONE));
-            if (level.getBlockState(beam).is(Blocks.WAXED_WEATHERED_CUT_COPPER)) level.setBlock(beam, AIR, Block.UPDATE_ALL);
-            // Lights over it, only where the ceiling is still the bunker's own brick.
-            for (BlockPos cell : EXHIBIT_LIGHTS) {
-                BlockPos glass = at.offset(chamber.offset(cell.getX(), cell.getY(), cell.getZ(), net.minecraft.world.level.block.Rotation.NONE));
-                if (!level.getBlockState(glass).is(Blocks.DEEPSLATE_BRICKS)) continue;
-                level.setBlock(glass.above(), Blocks.GLOWSTONE.defaultBlockState(), Block.UPDATE_ALL);
+            // Lights over the far wall, only where the ceiling is still the bunker's own brick.
+            for (BlockPos light : EXHIBIT_LIGHTS) {
+                BlockPos glass = at.offset(cell(chamber, light));
+                if (!level.getBlockState(glass).is(Blocks.DEEPSLATE_BRICKS)
+                        || !level.getBlockState(glass.above()).is(Blocks.DEEPSLATE_BRICKS)) continue;
+                BlockState glow = Blocks.GLOWSTONE.defaultBlockState();
+                level.setBlock(glass.above(), data.powered ? glow : BunkerPower.unpowered(0, glow), Block.UPDATE_ALL);
                 level.setBlock(glass, Blocks.RED_STAINED_GLASS.defaultBlockState(), Block.UPDATE_ALL);
             }
-            chamber.addMissing(level, at, net.minecraft.world.level.block.Rotation.NONE,
-                    marker -> marker.equals(EXHIBIT_ONE) || marker.equals("sign:exhibit1"));
         }
+        if (data.layout < 3) {
+            // Exhibit 1 comes down from high on the wall, with its label and the screen's sign.
+            retireFirstExhibit(level, at);
+            BlockPos oldExhibit = at.offset(cell(chamber, FIRST_SIGNS.getFirst()));
+            BlockPos oldScreen = at.offset(cell(chamber, FIRST_SIGNS.getLast()));
+            if (BunkerLayoutUpgrade.originalSign(level, oldExhibit, OLD_EXHIBIT_LABEL) != null)
+                level.setBlock(oldExhibit, AIR, Block.UPDATE_ALL);
+            if (BunkerLayoutUpgrade.originalSign(level, oldScreen, OLD_SCREEN_LABEL) != null)
+                level.setBlock(oldScreen, AIR, Block.UPDATE_ALL);
+            BlockPos beam = at.offset(cell(chamber, BEAM_END));
+            if (level.getBlockState(beam).isAir()) level.setBlock(beam, Blocks.WAXED_WEATHERED_CUT_COPPER.defaultBlockState(), Block.UPDATE_ALL);
+            // The screen's warning blocks and the wall beside it become one panel, where they are still the bunker's own.
+            BlockState panel = Blocks.POLISHED_DEEPSLATE.defaultBlockState();
+            for (BlockPos grid : BlockPos.betweenClosed(SCREEN.minX(), SCREEN.minY(), SCREEN.minZ(), SCREEN.maxX(), SCREEN.maxY(), SCREEN.maxZ())) {
+                BlockPos pos = at.offset(cell(chamber, grid));
+                if (level.getBlockState(pos).equals(oldScreenBlock(grid)))
+                    level.setBlock(pos, panel, Block.UPDATE_ALL);
+            }
+        }
+        // Exhibit 1 and its label where the blueprint has them now, unless something already stands there.
+        if (data.layout < 4) {
+            chamber.addMissing(level, at, Rotation.NONE, marker -> marker.equals(EXHIBIT_ONE) || marker.equals("sign:exhibit1"));
+            // The alarm beacons, in every room that has them, wherever their spot is still empty.
+            for (Room room : ROOMS)
+                Blueprint.load(room.blueprint()).addMissing(level, data.origin.offset(room.at()), Rotation.NONE, BEACON::equals);
+        }
+        BunkerLayoutUpgrade.apply(level, data);
         data.layout = BunkerData.LAYOUT;
         data.setDirty();
         com.jayptucker.heroesevolved.HeroesEvolved.LOGGER.info("Brought the stasis bunker at {} up to layout {}", data.origin, data.layout);
         return true;
+    }
+
+    static BlockState oldScreenBlock(BlockPos grid) {
+        return switch (OLD_SCREEN.get(grid.getY() - SCREEN.minY()).charAt(grid.getX() - SCREEN.minX())) {
+            case 'D' -> Blocks.DEEPSLATE_TILES.defaultBlockState();
+            case 'Y' -> Blocks.YELLOW_CONCRETE.defaultBlockState();
+            case 'B' -> Blocks.BLACK_CONCRETE.defaultBlockState();
+            case 'O' -> Blocks.ORANGE_CONCRETE.defaultBlockState();
+            default -> Blocks.POLISHED_DEEPSLATE.defaultBlockState();
+        };
+    }
+
+    /**
+     * Takes Exhibit 1 down from where layout 2 hung it, if it still hangs there. {@code at} is where the
+     * chamber's anchor is in this level; the Night Three bunker uses this too, since it rebuilds its rooms.
+     */
+    public static void retireFirstExhibit(ServerLevel level, BlockPos at) {
+        BlockPos old = at.offset(cell(com.jayptucker.heroesevolved.structure.Blueprint.load(CHAMBER.blueprint()), FIRST_EXHIBIT));
+        var explosion = net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(com.jayptucker.heroesevolved.HeroesEvolved.MOD_ID, "explosion");
+        level.getEntitiesOfClass(net.minecraft.world.entity.decoration.Painting.class, new net.minecraft.world.phys.AABB(old).inflate(4),
+                        painting -> painting.getPos().equals(old) && painting.getVariant().is(explosion))
+                .forEach(net.minecraft.world.entity.Entity::discard);
+    }
+
+    /** A chamber grid cell, relative to the chamber's anchor. */
+    private static BlockPos cell(com.jayptucker.heroesevolved.structure.Blueprint chamber, BlockPos grid) {
+        return chamber.offset(grid.getX(), grid.getY(), grid.getZ(), net.minecraft.world.level.block.Rotation.NONE);
+    }
+
+    /**
+     * Puts a sleeper's name on the nameplate over their pod: revival in progress while they wake, revived
+     * once they are out. Only touches a loaded sign, and only when its words change.
+     */
+    public static void labelPod(ServerLevel level, BlockPos origin, int index, String name, boolean revived) {
+        var cells = com.jayptucker.heroesevolved.structure.Blueprint.load(CHAMBER.blueprint())
+                .markerOffsets(String.format("sign:pod%02d", index + 1));
+        if (cells.isEmpty()) return;
+        BlockPos pos = origin.offset(CHAMBER.at()).offset(cells.getFirst());
+        if (!level.isLoaded(pos) || !level.getBlockState(pos).is(Blocks.SPRUCE_WALL_SIGN)
+                || !(level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.SignBlockEntity sign)
+                || !sign.isWaxed()) return;
+        String subject = String.format("SUBJECT %02d", index + 1);
+        String[] lines = {subject, name, revived ? "REVIVED" : "REVIVAL", revived ? "" : "IN PROGRESS"};
+        var text = sign.getFrontText();
+        if (!text.getMessage(0, false).getString().equals(subject)) return;
+        if (text.getMessage(2, false).getString().equals("STILL ASLEEP")
+                && text.getMessage(3, false).getString().equals("DO NOT OPEN")) return;
+        boolean same = true;
+        for (int i = 0; i < lines.length; i++) same &= text.getMessage(i, false).getString().equals(lines[i]);
+        if (same) return;
+        for (int i = 0; i < lines.length; i++) text = text.setMessage(i, net.minecraft.network.chat.Component.literal(lines[i]));
+        sign.setText(text, true);
+        sign.setWaxed(true);
+    }
+
+    /** The space the bunker's rooms take up, relative to its origin (the floor under the shaft). */
+    private static net.minecraft.world.level.levelgen.structure.BoundingBox bounds;
+
+    /** Whether {@code pos} is inside the bunker whose origin is {@code origin}. */
+    public static boolean inside(BlockPos origin, BlockPos pos) {
+        if (bounds == null) {
+            var box = new net.minecraft.world.level.levelgen.structure.BoundingBox(BlockPos.ZERO);
+            var rooms = new java.util.ArrayList<>(ROOMS);
+            rooms.add(OFFICE);
+            for (Room room : rooms) {
+                var blueprint = com.jayptucker.heroesevolved.structure.Blueprint.load(room.blueprint());
+                box.encapsulate(room.at().offset(blueprint.offset(0, 0, 0, net.minecraft.world.level.block.Rotation.NONE)));
+                box.encapsulate(room.at().offset(blueprint.offset(blueprint.width() - 1, blueprint.height() - 1, blueprint.depth() - 1,
+                        net.minecraft.world.level.block.Rotation.NONE)));
+            }
+            bounds = box;
+        }
+        return bounds.isInside(pos.subtract(origin));
     }
 
     /** Pod {@code index}'s base block, relative to the bunker origin. */
@@ -123,10 +253,13 @@ public final class BunkerBuilder {
         level.setBlock(pos, state, Block.UPDATE_CLIENTS);
     }
 
-    /** Places a room blueprint with its anchor at the given bunker-relative position, then finishes its markers. */
+    /**
+     * Places a room blueprint with its anchor at the given bunker-relative position, then finishes its markers.
+     * A new bunker is on emergency power, so its lights go in dark ({@link BunkerPower}).
+     */
     private void room(String blueprint, int x, int y, int z) {
         var marked = com.jayptucker.heroesevolved.structure.Blueprint.load(blueprint)
-                .place(level, origin.offset(x, y, z), net.minecraft.world.level.block.Rotation.NONE);
+                .place(level, origin.offset(x, y, z), net.minecraft.world.level.block.Rotation.NONE, Integer.MAX_VALUE - 1, BunkerPower::unpowered);
         marked.forEach((marker, positions) -> positions.forEach(pos -> finish(marker, pos)));
     }
 
@@ -136,10 +269,7 @@ public final class BunkerBuilder {
             ItemStack book = switch (marker.substring(4)) {
                 case "orientation" -> BunkerLogs.orientation();
                 case "lockdown" -> BunkerLogs.lockdown();
-                case "quiet_years" -> BunkerLogs.quietYears();
                 case "helixite" -> BunkerLogs.helixite();
-                case "gabriel" -> BunkerLogs.gabrielGray();
-                case "bennet" -> BunkerLogs.bennet();
                 default -> ItemStack.EMPTY;
             };
             level.setBlock(pos, level.getBlockState(pos).setValue(LecternBlock.HAS_BOOK, true), Block.UPDATE_CLIENTS);
@@ -147,25 +277,22 @@ public final class BunkerBuilder {
         }
         if (marker.startsWith("loot:") && level.getBlockEntity(pos) instanceof ChestBlockEntity chest) {
             ItemStack[] items = switch (marker.substring(5)) {
-                case "records" -> new ItemStack[] {BunkerLogs.unfamiliarHand(), new ItemStack(Items.BREAD, 8),
+                case "records" -> new ItemStack[] {ItemStack.EMPTY, new ItemStack(Items.BREAD, 8),
                         new ItemStack(Items.TORCH, 16), new ItemStack(Items.APPLE, 4)};
                 case "lab" -> new ItemStack[] {new ItemStack(ModItems.HELIXITE_SHARD.get()),
-                        new ItemStack(ModItems.EMPTY_SYRINGE.get(), 2), new ItemStack(Items.GLASS_BOTTLE, 3)};
-                case "cell" -> new ItemStack[] {new ItemStack(Items.CLOCK)};
+                        new ItemStack(ModItems.EMPTY_SYRINGE.get(), 2), new ItemStack(Items.GLASS_BOTTLE, 3), donatedSample()};
                 case "security" -> new ItemStack[] {new ItemStack(Items.IRON_SWORD), new ItemStack(Items.LEATHER_CHESTPLATE),
-                        new ItemStack(Items.SHIELD), new ItemStack(Items.COOKED_BEEF, 6), new ItemStack(Items.COMPASS), BunkerLogs.shiftNotes()};
-                case "office" -> new ItemStack[] {claireSample(), new ItemStack(ModItems.HELIXITE_SHARD.get(), 2),
-                        new ItemStack(ModItems.EMPTY_SYRINGE.get()), new ItemStack(Items.SPYGLASS)};
+                        new ItemStack(Items.SHIELD), new ItemStack(Items.COOKED_BEEF, 6), new ItemStack(Items.COMPASS)};
                 default -> new ItemStack[0];
             };
             for (int i = 0; i < items.length; i++) chest.setItem(i * 2, items[i]);
         }
     }
 
-    /** Claire Bennet's blood, donated and kept cold: a strong catalyst for the Formula. */
-    public static ItemStack claireSample() {
+    /** A recorded donation kept in the lab's reagent chest. */
+    static ItemStack donatedSample() {
         ItemStack sample = new ItemStack(ModItems.BLOOD_SAMPLE.get());
-        sample.set(ModItems.BLOOD_PURITY.get(), new com.jayptucker.heroesevolved.formula.BloodPurity(true, 3, "Claire Bennet"));
+        sample.set(ModItems.BLOOD_PURITY.get(), new com.jayptucker.heroesevolved.formula.BloodPurity(true, 3, "Stasis volunteer"));
         return sample;
     }
 
@@ -198,9 +325,4 @@ public final class BunkerBuilder {
         if (top > 2) room("bunker_entrance", 0, top, 0);
     }
 
-    /** The cell's interior, for the ticking a visitor hears inside it. */
-    public static boolean inCell(BlockPos origin, BlockPos pos) {
-        int x = pos.getX() - origin.getX(), y = pos.getY() - origin.getY(), z = pos.getZ() - origin.getZ();
-        return x >= -8 && x <= -3 && z >= 12 && z <= 17 && y >= 0 && y <= 4;
-    }
 }

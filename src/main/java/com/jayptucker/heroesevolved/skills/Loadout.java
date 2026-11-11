@@ -61,7 +61,7 @@ public final class Loadout {
             if (action != null) entries.add(new Entry(base(slot), action, slot, null));
         }
         var build = SkillTreeService.build(player, power);
-        for (SkillCatalog.Node node : SkillCatalog.nodes(power.getPath()))
+        for (SkillCatalog.Node node : SkillCatalog.all(power.getPath()))
             if (node.active() && build.learned().contains(node.id())) entries.add(new Entry(node.id(), node.action(), null, node));
         return entries;
     }

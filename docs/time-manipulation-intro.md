@@ -2,8 +2,8 @@
 
 The first unlocked Time Manipulation assignment queues a one-time vision of
 Odessa in the last half-minute before 6:14 PM on the Last Day, which in this
-world happened centuries ago (see [The Past](the-past.md#the-storyline-the-last-day));
-the HUD reads PAST · ODESSA, THE LAST DAY for everyone there. Natural awakening,
+world happened centuries before [The Last Signal](the-past.md).
+The HUD reads PAST · ODESSA, THE LAST DAY for everyone there. Natural awakening,
 `/heroes` grants, and admin replacements all enter through `PlayerAbilityService`.
 Dormant assignment alone does not trigger it. An existing unlocked time user who
 has never seen this introduction gets it on their next login. The seen flag
@@ -34,7 +34,7 @@ suits at Primatech: the first hints of what is coming.
 | 29 s | The ground starts to tremble. |
 | 32 s | **6:14.** The flash whites out the sky. A fireball swells over the north end, the blast lands half a second later, and a pale dome of condensed air races out with the shock. |
 | after | The fireball rises and rolls over into a mushroom cap on a stem of dust, lit from below by its own fire and from the west by the low sun. A wall of dust and debris, a ring around ground zero with billows rolling along its crest, comes down every street at about 23 blocks a second. Ahead of it windows burst, awnings, leaves and street furniture tear away, cars and pieces of facades are flung toward you, and the heat of the flash has already set roofs and trees alight. Its roar grows as it gets closer. People it reaches are gone. |
-| 20 blocks away | **Time stops.** The wave, the dust, the debris in the air and the sound hold still for two and a half seconds. Then it all runs backwards: the debris flies home, every window and car goes back where it was, the fires go out, the cloud shrinks into the fireball and the fireball into the man, back to a second before the flash. Then you are home. |
+| 20 blocks away | **Time stops.** The wave, the dust, the debris in the air and the sound hold still for two and a half seconds. Then it all runs backwards: the debris flies home, every window and car goes back where it was, the fires go out, the cloud shrinks into the fireball and the fireball into the man, back to a second before the flash. Then time stays stopped for three seconds more, the city whole and everyone back where they stood, so you can take in what you undid, and then you are home. It is your power doing it: a clock of gold light snaps open under your feet with its hands at 6:14, inside a bezel and outer arcs, a thread of light rising from each hour and bands circling you. While time holds, only its second hand moves, straining to tick. As time runs back the whole clock turns backwards with it, rings of light close in on you like the wave going home, and motes stream into you; at the end it all draws into a column of light where you stand. Everyone in the vision sees it on whoever has the power. The people of Odessa run back too: they hold mid-stride while time is stopped, then run backwards along the very paths they took, violet trails behind them, past the sirens to where they stood talking, browsing and walking before anyone screamed or ran. Those the dust took come back out of it as it passes them. |
 
 ### On screen
 
@@ -44,11 +44,6 @@ stops.* at the freeze, *You were there.* at home), each up as long as it takes t
 **instruction** sits just above them: *Look around. Find out where you are.* on arrival, *Look north,
 up the avenue.* when the glow starts, nothing from the flash on, and *Press J for your Journal* at
 home (using whatever key the Journal is bound to).
-
-The other trips into the past get one short instruction each: *Bring people to Bennet's door, behind
-you* on the avenue, then *Look at what you're holding*; *Keep Gray from Pod 14 until 3:00* on Night
-Three; *Get Mara and Ivo to the yellow exit* in the Hourglass Annex; and *Look around. Find out where
-you are.* on waking in the stasis bunker.
 
 How long the wave takes to reach you depends on where you stand when the light
 falls: about five seconds from the arrival point, a little over one from the
@@ -61,7 +56,7 @@ The model of the blast is shared: `IntroBlast` gives the front's radius at any
 moment, the server decides from it when time stops for each visitor, and the
 client draws the wall exactly there. The destruction happens on each viewer's
 own client only. The server's city is never touched, so there is nothing to
-rebuild afterwards and the avenue mission always finds the city whole. Every
+rebuild afterwards. Every
 destroyed block is logged with the moment it broke, which is how the rewind
 puts them back. The flight of each piece of debris is a closed formula of time,
 so it plays backwards without being simulated twice.
@@ -81,9 +76,7 @@ does not change inventories or game modes.
 `FractureCity` draws Odessa from `CityPlan`: 256 by 256 blocks (sixteen chunks
 across), eight by eight city blocks of 32 on a grid of eight-wide roads. The
 avenue runs north-south along x 0..7 and ends in a T in front of Primatech
-Paper at the south edge. Nothing is parked or stands on the avenue: it is the
-way to Bennet's door in the [avenue at 6:14](the-past.md#the-avenue-at-614),
-which shares this city and its street grid.
+Paper at the south edge. Parked cars and other street furniture leave the avenue clear.
 
 - **Districts.** Downtown towers crowd the north end around Kirby Plaza, where
   the light falls: glass curtain walls with setbacks and masts, and art deco
@@ -109,8 +102,7 @@ The city is built while the server runs, a chunk at a time, never more than
 about twelve milliseconds a tick, and reused afterwards. Its version is saved
 with it: a city from an older version is rebuilt over, column by column, the
 first time the server starts. Any rectangle can be put back exactly as the plan
-draws it (`FractureCity.rebuild`), which is how the avenue clears Bennet's door
-away. Requests wait for construction to finish, and simultaneous groups queue
+draws it (`FractureCity.rebuild`). Requests wait for construction to finish, and simultaneous groups queue
 one scene at a time.
 
 The client caps effective rendering at twelve chunks only while in this
@@ -161,8 +153,7 @@ photographs the city from the street and the air into
 The sirens are made live on the client (`CitySiren`), the way a mechanical siren
 makes its sound: a rotor whose speed is its pitch, its motor switched on and off
 for the wail, a horn turning on its mast, distance, wind, and the echoes of the
-streets. They never loop, which matters on the avenue, where they sound for
-minutes.
+streets. Each siren plays once as the crowd starts running.
 
 The panic is two layers (`PanicSounds`). All around, the crowd: overlapping
 pieces of the CC0 crowd recording, each at its own pitch, distance and direction.

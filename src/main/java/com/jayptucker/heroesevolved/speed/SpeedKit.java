@@ -3,6 +3,8 @@ package com.jayptucker.heroesevolved.speed;
 import com.jayptucker.heroesevolved.ability.Targeting;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
 import com.jayptucker.heroesevolved.effects.AbilityEffects;
+import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
+import com.jayptucker.heroesevolved.network.SpeedCyclonePayload;
 import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -44,20 +46,38 @@ import java.util.UUID;
  *   an enemy you can see through a window or gap.</li>
  *   <li>Snatch: in one blink, take every dropped item nearby, every enemy shot out of the air, and the
  *   weapon from the hand you are looking at. To everyone else you never moved.</li>
- *   <li>Cyclone: run rings around where you stand; the wind drags enemies in and up, then throws them.</li>
+ *   <li>Cyclone: run rings around where you stand; the wind drags enemies in and up, then throws them. Hold the
+ *   key and the ring rises into a tornado that draws in everything for 24 blocks, carries it high up its funnel
+ *   and leaves it no air. Hold on three seconds more and it stands on its own for thirty.</li>
  *   <li>Lightspeed: one streak forward through everything on the line, ending in a sonic boom.</li>
  * </ul>
  */
 public final class SpeedKit {
     public static final int CHAIN_WINDOW = 30, FLURRY_HITS = 4, CYCLONE_TICKS = 60, LIGHTSPEED_RANGE = 48, BLITZ_MOMENTUM = 30;
-    private static final double CYCLONE_RADIUS = 6.5;
+    public static final double CYCLONE_RADIUS = 6.5;
+    /**
+     * Hold Cyclone this long and the ring rises into a tornado. Keep holding while it stands for {@code TORNADO_ANCHOR}
+     * ticks (stamina each second) and it is anchored: let go and it stands on its own, without you, until
+     * {@code TORNADO_STAND} ticks after it rose. Let go before that and it comes down at once.
+     */
+    public static final int TORNADO_HOLD = 30, TORNADO_ANCHOR = 60, TORNADO_STAND = 600, TORNADO_ENERGY = 4;
+    /** How far the tornado draws things in, in blocks. */
+    public static final double TORNADO_PULL = 24;
 
     private static final class Chain {
         final int tier; int left; long until; final Set<UUID> struck = new HashSet<>();
         Chain(int tier, int left, long until) { this.tier = tier; this.left = left; this.until = until; }
     }
     private record Hits(ServerPlayer player, LivingEntity target, float damage, int left, long next) {}
-    private record Cyclone(ServerPlayer player, ServerLevel level, Vec3 center, long start, int tier, Set<UUID> caught) {}
+    private static final class Cyclone {
+        final ServerPlayer player; final ServerLevel level; final Vec3 center; final long start; final int tier;
+        final Set<UUID> caught = new HashSet<>();
+        /** The key is still down; the tick its tornado began to rise, or -1; the runner has left it standing alone. */
+        boolean held, free; long tornado = -1;
+        Cyclone(ServerPlayer player, ServerLevel level, Vec3 center, long start, int tier) {
+            this.player = player; this.level = level; this.center = center; this.start = start; this.tier = tier;
+        }
+    }
 
     private static final Map<UUID, Chain> CHAINS = new HashMap<>();
     private static final Map<UUID, Hits> HITS = new HashMap<>();
@@ -219,12 +239,53 @@ public final class SpeedKit {
 
     public static boolean cycloning(ServerPlayer p) { return CYCLONES.containsKey(p.getUUID()); }
 
-    /** Run rings around where you stand for three seconds. */
-    public static boolean cyclone(ServerPlayer p, int tier) {
+    /** True once the key has been held long enough for the ring to rise into a tornado. */
+    public static boolean tornado(ServerPlayer p) { Cyclone c = CYCLONES.get(p.getUUID()); return c != null && c.tornado >= 0; }
+
+    /** Run rings around where you stand for three seconds (a tap: it never rises into a tornado). */
+    public static boolean cyclone(ServerPlayer p, int tier) { return cyclone(p, tier, false); }
+
+    /**
+     * Run rings around where you stand. While {@code held}, keeping the key down for {@link #TORNADO_HOLD} ticks
+     * raises the ring into a tornado that stands as long as the key is held (up to {@link #TORNADO_TICKS}).
+     */
+    public static boolean cyclone(ServerPlayer p, int tier, boolean held) {
         if (cycloning(p)) return false;
-        CYCLONES.put(p.getUUID(), new Cyclone(p, p.serverLevel(), p.position(), now(p), tier, new HashSet<>()));
+        Cyclone c = new Cyclone(p, p.serverLevel(), p.position(), now(p), tier);
+        c.held = held;
+        CYCLONES.put(p.getUUID(), c);
         p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), SoundSource.PLAYERS, 1.0F, 0.7F);
+        sync(c, now(p), false);
         return true;
+    }
+
+    /** True once the tornado stands on its own and its runner has gone. */
+    public static boolean standing(ServerPlayer p) { Cyclone c = CYCLONES.get(p.getUUID()); return c != null && c.free; }
+
+    /**
+     * The key was let go: a ring runs out its three seconds; a tornado not yet anchored breaks now; an anchored
+     * one stands on without its runner.
+     */
+    public static void releaseCyclone(ServerPlayer p) {
+        Cyclone c = CYCLONES.get(p.getUUID());
+        if (c == null) return;
+        c.held = false;
+        if (c.tornado < 0 || c.free) return;
+        long now = now(p);
+        if (now - c.tornado >= TORNADO_ANCHOR) letGo(c, now);
+        else { CYCLONES.remove(p.getUUID()); release(c, now); }
+    }
+
+    /** The runner steps out of their tornado; it keeps turning where it stands. */
+    private static void letGo(Cyclone c, long now) {
+        c.free = true;
+        c.player.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
+        sync(c, now, false);
+    }
+
+    private static void sync(Cyclone c, long now, boolean ended) {
+        SpeedCyclonePayload.send(c.level, c.player, c.center, (float) CYCLONE_RADIUS, (int) (now - c.start),
+                c.tornado < 0 ? -1 : (int) (now - c.tornado), ended, c.free, SpeedCyclonePayload.SPEED);
     }
 
     private static void tickCyclones(long now) {
@@ -232,45 +293,107 @@ public final class SpeedKit {
             Cyclone c = entry.getValue();
             ServerPlayer p = c.player;
             long age = now - c.start;
-            if (!PowerRules.canAct(p) || p.level() != c.level || p.isRemoved()) { CYCLONES.remove(entry.getKey()); continue; }
-            if (age >= CYCLONE_TICKS) { CYCLONES.remove(entry.getKey()); release(c); continue; }
-            // You are the wind, running the ring: you stay on the spot.
-            p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 3, 6, false, false, false));
-            for (Entity e : c.level.getEntities(p, new AABB(c.center, c.center).inflate(CYCLONE_RADIUS + 1),
-                    e -> e instanceof Projectile || e instanceof LivingEntity l && SpeedService.canHit(p, l))) {
-                Vec3 radial = e.position().subtract(c.center).multiply(1, 0, 1);
-                double distance = radial.length();
-                if (distance > CYCLONE_RADIUS + 1) continue;
-                Vec3 out = distance < 1.0E-3 ? new Vec3(1, 0, 0) : radial.scale(1 / distance);
-                if (e instanceof Projectile shot) {
-                    if (shot.getOwner() == p || shot.getOwner() != null && p.isAlliedTo(shot.getOwner())) continue;
-                    push(shot, out.scale(1.2).add(0, 0.15, 0));
-                    continue;
-                }
-                LivingEntity living = (LivingEntity) e;
-                c.caught.add(living.getUUID());
-                Vec3 around = new Vec3(-out.z, 0, out.x);
-                double pull = distance > 2.5 ? -0.14 : 0.06;
-                double lift = Math.min(0.12, 0.04 + age * 0.0015);
-                push(living, around.scale(0.6).add(out.scale(pull)).add(0, living.getY() - c.center.y < 3.5 ? lift : 0, 0));
-                living.fallDistance = 0;
-                if (age % 10 == 0) SpeedService.hit(p, living, (2 + c.tier * 0.5F) * (living instanceof ServerPlayer ? 0.6F : 1));
+            long built = c.tornado < 0 ? -1 : now - c.tornado;
+            if (!c.free && (!PowerRules.canAct(p) || p.level() != c.level || p.isRemoved() || !p.isAlive())) {
+                // An anchored tornado outlasts its runner; anything else ends with them.
+                if (built >= TORNADO_ANCHOR && !p.isRemoved()) letGo(c, now);
+                else { CYCLONES.remove(entry.getKey()); sync(c, now, true); continue; }
             }
-            if (age % 3 == 0) AbilityEffects.send(c.level, Kind.SPEED_CYCLONE, c.center, c.center.add(0, age / (double) CYCLONE_TICKS, 0), CYCLONE_RADIUS);
-            if (age % 8 == 0) c.level.playSound(null, c.center.x, c.center.y, c.center.z, SoundEvents.BREEZE_IDLE_AIR, SoundSource.PLAYERS, 0.9F, 1.4F);
+            if (c.tornado < 0 && c.held && age >= TORNADO_HOLD) { rise(c, now); built = 0; }
+            if (c.tornado < 0 && age >= CYCLONE_TICKS) { CYCLONES.remove(entry.getKey()); release(c, now); continue; }
+            if (built >= TORNADO_STAND) { CYCLONES.remove(entry.getKey()); release(c, now); continue; }
+            if (built >= 0 && built < TORNADO_ANCHOR) {
+                // The key is never trusted to come back up, and holding the wind up costs stamina until it is anchored.
+                if (built > 0 && built % 20 == 0 && !PlayerEnergyService.tryConsume(p, TORNADO_ENERGY)) {
+                    CYCLONES.remove(entry.getKey()); release(c, now); continue;
+                }
+            }
+            if (built == TORNADO_ANCHOR) anchor(c);
+            if (!c.free) {
+                // You are the wind, running the ring: your body stays at its eye.
+                p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 3, 6, false, false, false));
+                p.fallDistance = 0;
+            }
+            if (c.tornado >= 0) twister(c, now); else ring(c, age);
+            if (age % 20 == 0 && age > 0) sync(c, now, false);
+            if (age % 8 == 0) c.level.playSound(null, c.center.x, c.center.y, c.center.z, SoundEvents.BREEZE_IDLE_AIR, SoundSource.PLAYERS,
+                    c.tornado >= 0 ? 1.6F : 0.9F, c.tornado >= 0 ? 0.7F : 1.4F);
         }
     }
 
-    /** The ring breaks: everything it carried is thrown up and out. */
-    private static void release(Cyclone c) {
+    /** The ring: three seconds of wind dragging enemies round and up, flinging their shots away. */
+    private static void ring(Cyclone c, long age) {
+        ServerPlayer p = c.player;
+        for (Entity e : c.level.getEntities(p, new AABB(c.center, c.center).inflate(CYCLONE_RADIUS + 1),
+                e -> e instanceof Projectile || e instanceof LivingEntity l && SpeedService.canHit(p, l))) {
+            Vec3 radial = e.position().subtract(c.center).multiply(1, 0, 1);
+            double distance = radial.length();
+            if (distance > CYCLONE_RADIUS + 1) continue;
+            Vec3 out = distance < 1.0E-3 ? new Vec3(1, 0, 0) : radial.scale(1 / distance);
+            if (e instanceof Projectile shot) { fling(p, shot, out); continue; }
+            LivingEntity living = (LivingEntity) e;
+            c.caught.add(living.getUUID());
+            Vec3 around = new Vec3(-out.z, 0, out.x);
+            double pull = distance > 2.5 ? -0.14 : 0.06;
+            double lift = Math.min(0.12, 0.04 + age * 0.0015);
+            push(living, around.scale(0.6).add(out.scale(pull)).add(0, living.getY() - c.center.y < 3.5 ? lift : 0, 0));
+            living.fallDistance = 0;
+            if (age % 10 == 0) SpeedService.hit(p, living, (2 + c.tier * 0.5F) * (living instanceof ServerPlayer ? 0.6F : 1));
+        }
+    }
+
+    private static void fling(ServerPlayer p, Projectile shot, Vec3 out) {
+        if (shot.getOwner() == p || shot.getOwner() != null && p.isAlliedTo(shot.getOwner())) return;
+        push(shot, out.scale(1.2).add(0, 0.15, 0));
+    }
+
+    /** Held long enough, the ring rises: the wind climbs into a funnel over the runner. */
+    private static void rise(Cyclone c, long now) {
+        c.tornado = now;
+        sync(c, now, false);
+        Vec3 o = c.center;
+        c.level.playSound(null, o.x, o.y, o.z, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), SoundSource.PLAYERS, 1.6F, 0.45F);
+        c.level.playSound(null, o.x, o.y, o.z, SoundEvents.ELYTRA_FLYING, SoundSource.PLAYERS, 1.4F, 0.6F);
+        com.jayptucker.heroesevolved.network.CameraShakePayload.sendAround(c.level, o, 24, 0.35F, 30);
+    }
+
+    /** Held long enough, the tornado is anchored: it will stand on its own now, and holding it costs nothing more. */
+    private static void anchor(Cyclone c) {
+        Vec3 o = c.center;
+        c.level.playSound(null, o.x, o.y + 6, o.z, SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.PLAYERS, 0.9F, 0.7F);
+        c.level.playSound(null, o.x, o.y, o.z, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), SoundSource.PLAYERS, 1.4F, 0.5F);
+        com.jayptucker.heroesevolved.network.CameraShakePayload.sendAround(c.level, o, 28, 0.3F, 16);
+    }
+
+    /**
+     * The tornado: it draws in everything for {@link #TORNADO_PULL} blocks, whirls what reaches it round the
+     * funnel's wall and carries it up, hurts it every half second and leaves it no air (see {@link TornadoWind}).
+     */
+    private static void twister(Cyclone c, long now) {
+        ServerPlayer p = c.player;
+        float built = now - c.tornado, height = TornadoShape.height(built);
+        TornadoWind.blow(p, c.level, c.center, built, (float) CYCLONE_RADIUS, TORNADO_PULL, 2.5F + c.tier * 0.5F, true, c.caught, now);
+        if ((now - c.tornado) % 37 == 11) {
+            Vec3 o = c.center;
+            c.level.playSound(null, o.x, o.y + height * 0.6, o.z, SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.PLAYERS, 0.45F, 1.5F);
+        }
+    }
+
+    /** The ring breaks (or the tornado comes down): everything it carried is thrown up and out. */
+    private static void release(Cyclone c, long now) {
+        boolean tornado = c.tornado >= 0;
         for (UUID id : c.caught) {
-            if (!(c.level.getEntity(id) instanceof LivingEntity living) || !living.isAlive() || living.distanceToSqr(c.center) > 12 * 12) continue;
+            if (!(c.level.getEntity(id) instanceof LivingEntity living) || !living.isAlive()
+                    || living.distanceToSqr(c.center) > (tornado ? 40 * 40 : 12 * 12)) continue;
             Vec3 out = living.position().subtract(c.center).multiply(1, 0, 1);
             out = out.lengthSqr() < 1.0E-4 ? new Vec3(1, 0, 0) : out.normalize();
-            push(living, out.scale(1.1).add(0, 0.9, 0));
+            push(living, tornado ? out.scale(1.4).add(0, 0.5, 0) : out.scale(1.1).add(0, 0.9, 0));
         }
-        AbilityEffects.send(c.level, Kind.SPEED_BOOM, c.center.add(0, 1, 0), c.center.add(0, 2, 0), 2);
-        c.level.playSound(null, c.center.x, c.center.y, c.center.z, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), SoundSource.PLAYERS, 1.3F, 0.6F);
+        sync(c, now, true);
+        AbilityEffects.send(c.level, Kind.SPEED_BOOM, c.center.add(0, 1, 0), c.center.add(0, 2, 0), tornado ? 3 : 2);
+        c.level.playSound(null, c.center.x, c.center.y, c.center.z, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), SoundSource.PLAYERS,
+                tornado ? 1.8F : 1.3F, tornado ? 0.45F : 0.6F);
+        if (tornado) com.jayptucker.heroesevolved.network.CameraShakePayload.sendAround(c.level, c.center, 32, 0.6F, 14);
     }
 
     // ------------------------------------------------------------------
@@ -324,7 +447,11 @@ public final class SpeedKit {
         CHAINS.entrySet().removeIf(e -> now >= e.getValue().until + 20);
     }
 
-    static void forget(ServerPlayer p) { CHAINS.remove(p.getUUID()); HITS.remove(p.getUUID()); CYCLONES.remove(p.getUUID()); }
+    static void forget(ServerPlayer p) {
+        CHAINS.remove(p.getUUID()); HITS.remove(p.getUUID());
+        Cyclone c = CYCLONES.remove(p.getUUID());
+        if (c != null) sync(c, now(p), true);
+    }
 
     static void clear() { CHAINS.clear(); HITS.clear(); CYCLONES.clear(); }
 }

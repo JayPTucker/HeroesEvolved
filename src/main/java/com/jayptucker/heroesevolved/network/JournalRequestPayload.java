@@ -6,7 +6,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /** The journal asks for the latest story progress when it opens. */
@@ -24,7 +23,7 @@ public record JournalRequestPayload() implements CustomPacketPayload {
 
     public static void handle(JournalRequestPayload payload, IPayloadContext context) {
         if (context.player() instanceof ServerPlayer player) {
-            PacketDistributor.sendToPlayer(player, StoryJournalPayload.of(player));
+            StoryJournalPayload.send(player);
         }
     }
 }

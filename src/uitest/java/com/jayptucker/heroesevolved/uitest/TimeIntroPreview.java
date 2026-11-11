@@ -3,7 +3,9 @@ package com.jayptucker.heroesevolved.uitest;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.time.intro.FractureCity;
+import com.jayptucker.heroesevolved.time.intro.IntroBlast;
 import com.jayptucker.heroesevolved.time.intro.TimeIntroService;
+import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.core.registries.Registries;
@@ -28,6 +30,9 @@ public final class TimeIntroPreview {
     private static String pending, shot;
     private static int shotAt = -1;
 
+    /** When time stops for someone standing in the street where the wave shots are taken. */
+    private static final int FROZEN = TimeIntroService.DETONATION_TICK + IntroBlast.arrival(IntroBlast.distance(4.5, 72.5));
+
     /** Scene tick, then what to do: a position to stand (x, z, yaw, pitch) and/or a photograph. */
     private static final Object[][] STEPS = {
             {40, 4.5, 72.5, 180f, -6f, "1-arrival"},
@@ -48,8 +53,21 @@ public final class TimeIntroPreview {
             {TimeIntroService.DETONATION_TICK + 56, 4.5, 72.5, 180f, -10f, null},
             {TimeIntroService.DETONATION_TICK + 66, null, null, null, -10f, "10-wave"},
             {TimeIntroService.DETONATION_TICK + 80, null, null, null, -12f, "11-wave-close"},
-            {TimeIntroService.DETONATION_TICK + 104, null, null, null, -16f, "12-frozen"},
-            {TimeIntroService.DETONATION_TICK + 160, null, null, null, -14f, "13-rewinding"},
+            // Time stops: the clock of the power opens under them, holds, then runs back. Optional 7th: the camera.
+            {FROZEN + 1, null, null, null, 55f, "12-frozen-dial"},
+            {FROZEN + 16, null, null, null, 32f, "12b-frozen-behind", CameraType.THIRD_PERSON_BACK},
+            {FROZEN + 28, null, null, null, 6f, "12c-frozen-ahead", CameraType.FIRST_PERSON},
+            {FROZEN + 40, null, null, null, 18f, "12d-frozen-wave", CameraType.THIRD_PERSON_BACK},
+            // The crowd, down the street behind them: held mid-run, running back, and home before the sirens.
+            {FROZEN + 46, null, null, null, 4f, "12e-crowd-frozen", CameraType.THIRD_PERSON_FRONT},
+            {FROZEN + IntroBlast.FREEZE_TICKS + 9, null, null, null, 30f, "13-rewinding", CameraType.THIRD_PERSON_BACK},
+            {FROZEN + IntroBlast.FREEZE_TICKS + 21, null, null, null, 62f, "13b-rewinding-dial", CameraType.FIRST_PERSON},
+            {FROZEN + IntroBlast.FREEZE_TICKS + 28, null, null, null, 22f, "13c-rewinding-front", CameraType.THIRD_PERSON_FRONT},
+            {FROZEN + IntroBlast.FREEZE_TICKS + 33, null, null, null, 4f, "13e-crowd-running-back", CameraType.THIRD_PERSON_FRONT},
+            {FROZEN + IntroBlast.FREEZE_TICKS + 38, null, null, null, 26f, "13d-closing", CameraType.THIRD_PERSON_BACK},
+            {FROZEN + IntroBlast.FREEZE_TICKS + 41, null, null, null, 4f, "13f-crowd-home", CameraType.THIRD_PERSON_FRONT},
+            // Time holds a few seconds more after the rewind, everyone back where they stood.
+            {FROZEN + IntroBlast.FREEZE_TICKS + IntroBlast.REWIND_TICKS + 30, null, null, null, 4f, "13g-held", CameraType.THIRD_PERSON_FRONT},
     };
 
     private static void onServer(Minecraft mc, Consumer<ServerPlayer> action) {
@@ -91,7 +109,7 @@ public final class TimeIntroPreview {
         int scene = TimeIntroService.sceneTicks();
         if (shot != null && scene >= shotAt) { pending = shot; shot = null; }
         if (scene < 0 && step > 0) {
-            if (!home) { home = true; homeTicks = 0; System.out.println("INTRO_HOME"); }
+            if (!home) { home = true; homeTicks = 0; mc.options.setCameraType(CameraType.FIRST_PERSON); System.out.println("INTRO_HOME"); }
             if (++homeTicks == 30) pending = "intro-14-home.png";
             if (homeTicks > 50) mc.stop();
             return;
@@ -112,6 +130,7 @@ public final class TimeIntroPreview {
             float pitch = (float) s[4];
             onServer(mc, p -> p.teleportTo(p.serverLevel(), p.getX(), p.getY(), p.getZ(), p.getYRot(), pitch));
         }
+        if (s.length > 6) mc.options.setCameraType((CameraType) s[6]);
         if (s[5] != null) { shotAt = scene + 3; shot = "intro-" + s[5] + ".png"; }
         System.out.println("INTRO_STEP " + step + " at scene " + scene);
     }

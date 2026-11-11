@@ -1,9 +1,7 @@
 # Company agents
 
-The Company's men in dark suits: the first human enemies in Heroes Evolved. They stand watch in
-[Night Three](the-past.md#night-three), and they are an ordinary entity (`heroesevolved:company_agent`)
-that any later scene can put somewhere. The look, the lines and the numbers are original game
-adaptations.
+The Company's agents first appeared in the earlier Night Three mission. They remain available as
+`heroesevolved:company_agent` entities. The look, lines and numbers are original game adaptations.
 
 ## Guards
 
@@ -28,8 +26,8 @@ Another dart before it wears off deepens it. The **third dose puts you under**:
 | In the past (Night Three) | You are thrown back to the present, as lethal harm would. |
 | Anywhere else | Blind and barely able to move for six seconds, weak for twelve. Agents leave you alone for ten seconds afterwards. |
 
-Nobody dies of a dart. Gabriel Gray can be darted too, but his telekinesis turns darts aside unless
-something has him busy (Night Three says what).
+Nobody dies of a dart. In the original Night Three encounter, Gray's telekinesis deflects darts
+unless he is staggered, busy opening a pod, or inside the Suppressor's field.
 
 ## The Suppressor
 

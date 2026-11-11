@@ -66,18 +66,19 @@ public final class SkillUiPreview {
                     action.definition().displayNameKey(), tier <= 4, com.jayptucker.heroesevolved.progression.PowerLevels.levelForTier(tier),
                     action.energyCost(4), action.cooldownTicks(4), 0, Math.min(3, rank++), rank * 20));
         }
-        for (var node : com.jayptucker.heroesevolved.skills.SkillCatalog.nodes("pyrokinesis"))
+        for (var node : com.jayptucker.heroesevolved.skills.SkillCatalog.all("pyrokinesis"))
             if (node.active() && learned.contains(node.id()))
                 entries.add(new com.jayptucker.heroesevolved.network.LoadoutPayload.Entry(node.id(), node.id(), node.action().definition().displayNameKey(),
                         true, com.jayptucker.heroesevolved.progression.PowerLevels.levelForTier(node.level()), node.energy(), node.cooldown(), 0, 1, 3));
         com.jayptucker.heroesevolved.network.ClientLoadout.update(new com.jayptucker.heroesevolved.network.LoadoutPayload(10, 640, 800, false,
                 "Defeat 60 enemies with your power", 0, 60, 2, entries,
-                java.util.List.of("base:PRIMARY", "base:SECONDARY", "base:TERTIARY", "base:QUATERNARY", "base:QUINARY", "pyrokinesis_blue_lance", "", "")));
+                java.util.List.of("base:PRIMARY", "base:SECONDARY", "base:TERTIARY", "base:QUATERNARY", "base:QUINARY", "pyrokinesis_blue_lance", "pyrokinesis_sunfall", ""))); 
     }
 
     @SubscribeEvent public static void rendered(RenderFrameEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         if (!shown || !(mc.screen instanceof PaintingScreen) && !(mc.screen instanceof PowersScreen)
+                && !(mc.screen instanceof com.jayptucker.heroesevolved.gui.screen.JournalScreen)
                 && !(mc.screen instanceof com.jayptucker.heroesevolved.gui.screen.AbilityWheelScreen)) return;
         frames++;
         if (frames == 5) capture(mc, "unwritten-paintings.png");
@@ -104,7 +105,42 @@ public final class SkillUiPreview {
         if (frames == 36) capture(mc, "ability-wheel.png");
         if (frames == 37) mc.setScreen(new com.jayptucker.heroesevolved.gui.screen.AbilityWheelScreen(false).pin(""));
         if (frames == 41) capture(mc, "ability-wheel-centre.png");
-        if (frames == 44) mc.stop();
+        // The Loadout and Class pages for a Level 10 Pyrokinetic who chose Offense (Sunfall) and put it on key 7.
+        Set<String> chose = Set.of("pyrokinesis_1_0", "pyrokinesis_blue_lance", "pyrokinesis_ember_mine", "pyrokinesis_sunfall");
+        if (frames == 42) {
+            loadout(chose);
+            mc.setScreen(new PowersScreen());
+            abilities(mc, chose, Map.of("KEY6", "pyrokinesis_blue_lance", "KEY7", "pyrokinesis_sunfall"), "core:PRIMARY");
+        }
+        if (frames == 46) capture(mc, "hero-loadout.png");
+        if (frames == 47) abilities(mc, chose, Map.of("KEY6", "pyrokinesis_blue_lance", "KEY7", "pyrokinesis_sunfall"), "pyrokinesis_sunfall");
+        if (frames == 51) capture(mc, "hero-class.png");
+        if (frames == 52) { mc.options.guiScale().set(3); mc.resizeDisplay(); }
+        if (frames == 56) capture(mc, "hero-class-scale3.png");
+        if (frames == 57) abilities(mc, chose, Map.of("KEY6", "pyrokinesis_blue_lance", "KEY7", "pyrokinesis_sunfall"), "core:PRIMARY");
+        if (frames == 61) capture(mc, "hero-loadout-scale3.png");
+        if (frames == 62) abilities(mc, chose, Map.of("KEY6", "pyrokinesis_blue_lance", "KEY7", "pyrokinesis_sunfall"), "pyrokinesis_1_1");
+        if (frames == 66) capture(mc, "hero-tree-scale3.png");
+        if (frames == 67) {
+            mc.options.guiScale().set(2); mc.resizeDisplay();
+            com.jayptucker.heroesevolved.network.ClientJournalState.update(new com.jayptucker.heroesevolved.network.StoryJournalPayload(
+                    "Two occupied pods are calling from an old Company site. Find the relay ruins in the Overworld.",
+                    java.util.List.of("Stasis Wing: Orientation", "Lockdown Order 7", "Assay: Helixite"), 9,
+                    java.util.List.of("A man was glowing in the street. Like the sun had come down.", "Everyone ran south."), 5, true, 0b00011, 3, 1,
+                    java.util.List.of("heroesevolved:telekinesis"),
+                    com.jayptucker.heroesevolved.story.LastSignalService.Phase.RECEIVED,
+                    new net.minecraft.core.BlockPos(1742, 72, -930), 0));
+            com.jayptucker.heroesevolved.gui.screen.JournalScreen.openAt(0);
+            com.jayptucker.heroesevolved.gui.screen.JournalScreen.open(null);
+        }
+        if (frames == 71) capture(mc, "journal-signal.png");
+        if (frames == 72) { com.jayptucker.heroesevolved.gui.screen.JournalScreen.openAt(1); com.jayptucker.heroesevolved.gui.screen.JournalScreen.open(null); }
+        if (frames == 76) capture(mc, "journal-records.png");
+        if (frames == 77) { com.jayptucker.heroesevolved.gui.screen.JournalScreen.openAt(3); com.jayptucker.heroesevolved.gui.screen.JournalScreen.open(null); }
+        if (frames == 81) capture(mc, "journal-way-back.png");
+        if (frames == 82) { mc.options.guiScale().set(3); mc.resizeDisplay(); com.jayptucker.heroesevolved.gui.screen.JournalScreen.openAt(0); com.jayptucker.heroesevolved.gui.screen.JournalScreen.open(null); }
+        if (frames == 86) capture(mc, "journal-signal-scale3.png");
+        if (frames == 89) mc.stop();
     }
 
     private static final class PaintingScreen extends net.minecraft.client.gui.screens.Screen {

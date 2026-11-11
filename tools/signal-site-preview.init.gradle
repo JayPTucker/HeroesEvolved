@@ -1,0 +1,24 @@
+// Photograph the present-day Last Signal build. The preview is excluded from the mod JAR.
+// gradlew runClient --init-script tools/signal-site-preview.init.gradle
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('signalSitePreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/signal-site-preview')
+                        programArguments.addAll('--width', '1280', '--height', '800')
+                        systemProperty('heroes.preview.signalSite', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('signalSitePreviewClasses')) }
+        }
+    }
+}

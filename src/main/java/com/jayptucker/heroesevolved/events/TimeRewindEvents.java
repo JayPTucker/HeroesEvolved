@@ -14,7 +14,11 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 
-/** A personal timeline cannot carry across a world change, nor a new life once its death can no longer be rewound. */
+/**
+ * Keeping the timeline: births, drops, deaths and their spoils are recorded for rewinds; a timeline carries
+ * across a world change (a rewind takes you back across it) but not into a new life once its death can no
+ * longer be rewound; and anyone travelling back through their past cannot be hurt, and lands before they leave.
+ */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class TimeRewindEvents {
     @SubscribeEvent public static void entityBorn(net.neoforged.neoforge.event.entity.EntityJoinLevelEvent event) {
@@ -51,6 +55,8 @@ public final class TimeRewindEvents {
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            // A trip back through the past lands before its traveller leaves, so they are saved as they were.
+            com.jayptucker.heroesevolved.time.RewindTravel.finish(player.getServer(), player.getUUID());
             com.jayptucker.heroesevolved.time.SpaceTimeService.forget(player);
             com.jayptucker.heroesevolved.time.TimeStopService.stop(player);
             com.jayptucker.heroesevolved.time.TimeSlowService.stop(player);
@@ -72,7 +78,28 @@ public final class TimeRewindEvents {
     /** Last in line, so only a death that really happens is offered a rewind. */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onDeath(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) TimeRewindService.died(player);
+        if (event.getEntity() instanceof ServerPlayer player) {
+            TimeRewindService.died(player);
+            com.jayptucker.heroesevolved.time.TimeRewindPlayers.died(player, player.getServer().overworld().getGameTime());
+        }
+    }
+
+    /** What a dying player drops, so undoing the death takes it back. */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onDrops(net.neoforged.neoforge.event.entity.living.LivingDropsEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player)
+            com.jayptucker.heroesevolved.time.TimeRewindPlayers.dropped(player, event.getDrops());
+    }
+
+    /** Nothing reaches someone travelling back through their past. */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onHurt(net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent event) {
+        if (com.jayptucker.heroesevolved.time.RewindTravel.travelling(event.getEntity())) event.setCanceled(true);
+    }
+
+    @SubscribeEvent
+    public static void onServerStopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
+        com.jayptucker.heroesevolved.time.RewindTravel.finishAll(event.getServer());
     }
 
     @SubscribeEvent
@@ -81,7 +108,7 @@ public final class TimeRewindEvents {
             com.jayptucker.heroesevolved.time.SpaceTimeService.forget(player);
             com.jayptucker.heroesevolved.time.TimeStopService.stop(player);
             com.jayptucker.heroesevolved.time.TimeSlowService.stop(player);
-            TimeRewindService.forget(player);
+            // The timeline carries across: a rewind takes you back into the world you were in then.
         }
     }
 

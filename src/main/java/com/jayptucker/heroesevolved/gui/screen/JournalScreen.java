@@ -3,37 +3,29 @@ package com.jayptucker.heroesevolved.gui.screen;
 import com.jayptucker.heroesevolved.network.ClientJournalState;
 import com.jayptucker.heroesevolved.network.JournalRequestPayload;
 import com.jayptucker.heroesevolved.network.StoryJournalPayload;
+import com.jayptucker.heroesevolved.story.LastSignalService.Phase;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.Mth;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * The story so far: the next lead, the records found in the bunker, the
- * ruins and the past, the Annex and the avenue at 6:14, the dreams of
- * Odessa's Last Day, the time traveller's way back to it, and the
- * watchmaker's hunt. Everything here is the player's own durable progress,
- * fetched from the server on open.
- */
-public final class JournalScreen extends Screen {
-    private static final int PANEL_WIDTH = 320;
-    private static final int MAXIMUM_PANEL_HEIGHT = 250;
-    private static final int LINE_HEIGHT = 10;
+/** The current signal objective, optional discoveries, and the player's story milestones. */
+public final class JournalScreen extends HeroScreen {
+    private static final int LEAD = 0xFF60C8D0, HEADING = 0xFFE0B040, BAD = 0xFFE06060;
 
-    private static final int TITLE = 0xFFFFD7DC;
-    private static final int HEADING = 0xFFE0B040;
-    private static final int TEXT = 0xFFE7C9CE;
-    private static final int MUTED = 0xFF8A7075;
-    private static final int LEAD = 0xFF60C8D0;
+    private enum Chapter {
+        SIGNAL("The Last Signal"), RECORDS("Records"), DREAMS("Dreams"), WAY_BACK("The way back"), WATCHMAKER("The watchmaker");
+        final String title;
+        Chapter(String title) { this.title = title; }
+    }
 
     private static final String[][] MILESTONES = {
             {"The Last Day", "Stand in Odessa at 6:14 and escape the light."},
@@ -43,255 +35,162 @@ public final class JournalScreen extends Screen {
             {"The Road Not Taken", "Enter a recorded past."}
     };
 
-    private final Screen parent;
-    private final List<Line> lines = new ArrayList<>();
+    private static Chapter last = Chapter.SIGNAL;
+    private Chapter chapter = last;
     private int scroll;
 
-    private JournalScreen(Screen parent) {
-        super(Component.literal("Journal"));
-        this.parent = parent;
-    }
+    private JournalScreen(Screen parent) { super(Component.literal("Journal"), parent); }
 
     public static void open(Screen parent) {
-        PacketDistributor.sendToServer(new JournalRequestPayload());
+        if (Minecraft.getInstance().getConnection() != null) PacketDistributor.sendToServer(new JournalRequestPayload());
         Minecraft.getInstance().setScreen(new JournalScreen(parent));
     }
 
-    public void onContentsUpdated() {
-        rebuildWidgets();
-    }
+    /** Chooses the chapter to open in the UI preview. */
+    public static void openAt(int chapter) { last = Chapter.values()[Math.clamp(chapter, 0, Chapter.values().length - 1)]; }
 
-    private int panelHeight() {
-        return Math.min(MAXIMUM_PANEL_HEIGHT, height - 8);
-    }
+    /** New story progress arrived; the page reads it as it draws. */
+    public void onContentsUpdated() { }
 
-    @Override
-    protected void init() {
-        int left = (width - PANEL_WIDTH) / 2;
-        int top = (height - panelHeight()) / 2;
-        addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> onClose())
-                .bounds(left + PANEL_WIDTH - 63, top + panelHeight() - 26, 53, 20)
-                .build());
-        addRenderableWidget(Button.builder(Component.literal("Read omen"), b -> incident(com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation.READ)).bounds(left + 9, top + panelHeight() - 26, 76, 20).build());
-        List<Omen> open = omens();
-        Omen chosen = chosen(open);
-        addRenderableWidget(Button.builder(Component.literal(open.size() > 1 ? "Follow: " + chosen.label : "Follow omen"), b -> follow())
-                .bounds(left + 89, top + panelHeight() - 26, 80, 20)
-                .tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal(open.size() > 1
-                        ? "Go into the past: " + chosen.title + ". Shift-click to choose another omen."
-                        : "Go into the past: " + chosen.title + ".")))
-                .build());
-        addRenderableWidget(Button.builder(Component.literal("Leave the past"), b -> incident(com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation.LEAVE)).bounds(left + 173, top + panelHeight() - 26, 80, 20).build());
-        buildLines();
-    }
+    @Override protected Tab tab() { return Tab.JOURNAL; }
 
-    /** The places in the past an omen leads to, in story order. */
-    private enum Omen {
-        ANNEX("Annex", "the Hourglass Annex, 5:50 PM", com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation.ENTER),
-        AVENUE("Avenue", "the avenue at 6:10 PM", com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation.AVENUE),
-        NIGHT_THREE("Night 3", "Sublevel 4 on the third night, 2:57 AM", com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation.NIGHT_THREE);
+    // ------------------------------------------------------------------
 
-        final String label, title;
-        final com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation operation;
-        Omen(String label, String title, com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation operation) {
-            this.label = label; this.title = title; this.operation = operation;
-        }
-    }
-
-    /** The omen Shift-click has picked; null follows the newest. */
-    private Omen picked;
-
-    private List<Omen> omens() {
+    @Override protected void renderPage(GuiGraphics g, int mouseX, int mouseY, float partial) {
         StoryJournalPayload journal = ClientJournalState.get();
-        List<Omen> open = new java.util.ArrayList<>(List.of(Omen.ANNEX));
-        if (journal != null && journal.avenueOpen()) open.add(Omen.AVENUE);
-        if (journal != null && journal.nightOpen()) open.add(Omen.NIGHT_THREE);
-        return open;
-    }
-
-    private Omen chosen(List<Omen> open) {
-        return picked != null && open.contains(picked) ? picked : open.getLast();
-    }
-
-    /** Goes to the chosen omen: the newest one open, unless Shift-click picked another. */
-    private void follow() {
-        List<Omen> open = omens();
-        Omen current = chosen(open);
-        if (hasShiftDown() && open.size() > 1) {
-            picked = open.get((open.indexOf(current) + 1) % open.size());
-            rebuildWidgets();
-            return;
+        int x = contentLeft(), top = contentTop(), bottom = contentBottom() - 4;
+        int sideW = Mth.clamp(contentWidth() / 4, 100, 140);
+        // The chapters.
+        for (int i = 0; i < Chapter.values().length; i++) {
+            Chapter c = Chapter.values()[i];
+            int y = top + i * 22;
+            boolean active = c == chapter, over = mouseX >= x && mouseX < x + sideW && mouseY >= y && mouseY < y + 20;
+            g.fill(x, y, x + sideW, y + 20, active ? 0x996A4A14 : over ? 0x66403020 : 0x44000000);
+            if (active) g.fill(x, y, x + 2, y + 20, GOLD);
+            g.drawString(font, font.plainSubstrByWidth(c.title, sideW - 10), x + 7, y + 3, active ? GOLD : TEXT, false);
+            String progress = progress(c, journal);
+            if (!progress.isEmpty()) g.drawString(font, font.plainSubstrByWidth(progress, sideW - 10), x + 7, y + 11, MUTED, false);
+            hits.add(new Hit(x, y, sideW, 20, () -> { chapter = c; last = c; scroll = 0; }, null));
         }
-        incident(current.operation);
-    }
-
-    private void incident(com.jayptucker.heroesevolved.expansion.IncidentActionPayload.Operation operation) {
-        PacketDistributor.sendToServer(new com.jayptucker.heroesevolved.expansion.IncidentActionPayload(operation));
-    }
-    private void buildLines() {
-        lines.clear();
-        StoryJournalPayload journal = ClientJournalState.get();
-        int wrap = PANEL_WIDTH - 28;
+        int px = x + sideW + 8, pw = contentRight() - px;
+        panel(g, px, top, pw, bottom - top);
         if (journal == null) {
-            add(Component.literal("Gathering your memories..."), MUTED, wrap);
+            g.drawString(font, "Gathering your memories...", px + 8, top + 8, MUTED, false);
             return;
         }
-
-        heading("Next lead");
-        add(Component.literal(journal.lead()), LEAD, wrap);
-        spacer();
-
-        // The books, logs and letters found in the bunker and the ruins.
-        heading("Recovered records  (" + journal.records().size() + "/" + journal.recordTotal() + ")");
-        for (String record : journal.records()) {
-            add(Component.literal("- " + record), TEXT, wrap);
+        g.drawString(font, Component.literal(chapter.title.toUpperCase()).withStyle(ChatFormatting.BOLD), px + 8, top + 6, HEADING, false);
+        List<Line> lines = lines(journal, pw - 16);
+        int areaTop = top + 18, visible = Math.max(0, (bottom - areaTop - 4) / 10);
+        scroll = Mth.clamp(scroll, 0, Math.max(0, lines.size() - visible));
+        g.enableScissor(px, areaTop, px + pw, bottom);
+        for (int i = scroll; i < Math.min(lines.size(), scroll + visible); i++) {
+            Line line = lines.get(i);
+            g.drawString(font, line.text, px + 8 + line.indent, areaTop + (i - scroll) * 10, line.color, false);
         }
-        int unfound = journal.recordTotal() - journal.records().size();
-        if (unfound > 0) {
-            add(Component.literal(unfound + (unfound == 1 ? " record is" : " records are")
-                    + " still out there: in the bunker, in the ruins, or not written yet."), MUTED, wrap);
+        g.disableScissor();
+        if (lines.size() > visible) {
+            int barH = bottom - areaTop - 4, thumb = Math.max(10, barH * visible / lines.size());
+            int y = areaTop + (barH - thumb) * scroll / Math.max(1, lines.size() - visible);
+            g.fill(px + pw - 3, areaTop, px + pw - 1, areaTop + barH, 0x33FFFFFF);
+            g.fill(px + pw - 3, y, px + pw - 1, y + thumb, GOLD);
         }
-        spacer();
+    }
 
-        heading("The Unfinished Hour");
-        add(Component.literal(journal.incident()), TEXT, wrap);
-        spacer();
+    private static String progress(Chapter c, StoryJournalPayload j) {
+        if (j == null) return "";
+        return switch (c) {
+            case SIGNAL -> switch (j.signalPhase()) {
+                case UNHEARD -> "search for the relay";
+                case RECEIVED, SEARCHING -> "relay ruins";
+                case ISOLATE, COOL -> "stasis annex";
+                case RESCUE -> "extraction";
+                case COMPLETE -> "both sleepers safe";
+            };
+            case RECORDS -> j.records().size() + " of " + j.recordTotal() + " found";
+            case DREAMS -> j.memories().size() + " of " + j.memoryTotal() + " heard";
+            case WAY_BACK -> Integer.bitCount(j.temporalMilestones() & 31) + " of " + MILESTONES.length;
+            case WATCHMAKER -> j.sylarChapter() == 0 ? "nothing yet" : "chapter " + Math.min(5, j.sylarChapter());
+        };
+    }
 
-        // The finale: the avenue at 6:14.
-        heading("The Avenue at 6:14");
-        add(Component.literal(journal.avenue()), journal.avenueOpen() ? TEXT : MUTED, wrap);
-        spacer();
-        // After the light: the third night of the lockdown.
-        heading("Night Three: Pod 14");
-        add(Component.literal(journal.night()), journal.nightOpen() ? TEXT : MUTED, wrap);
-        spacer();
-        // Chapter one: the dreams.
-        heading("Dreams of the Last Day  (" + journal.memories().size() + "/"
-                + journal.memoryTotal() + ")");
-        if (journal.memories().isEmpty()) {
-            add(Component.literal("Villagers dream of a city none of them has seen. A telepath could hear them."),
-                    MUTED, wrap);
-        }
-        for (int index = 0; index < journal.memoryTotal(); index++) {
-            if (index < journal.memories().size()) {
-                add(Component.literal((index + 1) + ". \"" + journal.memories().get(index) + "\""),
-                        TEXT, wrap);
-            } else if (index == journal.memories().size()) {
-                add(Component.literal((index + 1) + ". ???  Another mind holds the next piece."),
-                        MUTED, wrap);
+    private record Line(FormattedCharSequence text, int color, int indent) {}
+
+    private List<Line> lines(StoryJournalPayload j, int wrap) {
+        List<Line> out = new ArrayList<>();
+        switch (chapter) {
+            case SIGNAL -> {
+                add(out, Component.literal(j.lead()), LEAD, wrap, 0);
+                if (j.signalLocation() != null && j.signalPhase() != Phase.COMPLETE) {
+                    gap(out);
+                    add(out, Component.literal("Relay ruins  ·  X " + j.signalLocation().getX() + "  Z " + j.signalLocation().getZ()), TEXT, wrap, 0);
+                }
+                if (j.signalPhase() == Phase.RESCUE || j.signalPhase() == Phase.COMPLETE) {
+                    gap(out);
+                    add(out, Component.literal(j.signalRescued() + " of 2 sleepers safe"), TEXT, wrap, 0);
+                }
+            }
+            case RECORDS -> {
+                if (j.records().isEmpty()) add(out, Component.literal("Nothing found yet."), MUTED, wrap, 0);
+                for (String record : j.records()) add(out, Component.literal("• " + record), TEXT, wrap, 4);
+                int unfound = j.recordTotal() - j.records().size();
+                if (unfound > 0) {
+                    gap(out);
+                    add(out, Component.literal(unfound + (unfound == 1 ? " record is" : " records are")
+                            + " still to find in the bunker and ruins."), MUTED, wrap, 0);
+                }
+            }
+            case DREAMS -> {
+                if (j.memories().isEmpty()) add(out, Component.literal("Villagers dream of a city none of them has seen. A telepath could hear them."), MUTED, wrap, 0);
+                for (int i = 0; i < j.memoryTotal(); i++) {
+                    if (i < j.memories().size()) { add(out, Component.literal((i + 1) + ".  “" + j.memories().get(i) + "”"), TEXT, wrap, 0); gap(out); }
+                    else if (i == j.memories().size()) add(out, Component.literal((i + 1) + ".  ???  Another mind holds the next piece."), MUTED, wrap, 0);
+                }
+                if (j.seenFutureCity()) { gap(out); add(out, Component.literal("You have stood in the city they dream of.").withStyle(ChatFormatting.ITALIC), LEAD, wrap, 0); }
+            }
+            case WAY_BACK -> {
+                for (int i = 0; i < MILESTONES.length; i++) {
+                    boolean done = (j.temporalMilestones() & (1 << i)) != 0;
+                    add(out, Component.literal((done ? "✔  " : "○  ") + MILESTONES[i][0]).withStyle(ChatFormatting.BOLD), done ? GREEN : TEXT, wrap, 0);
+                    add(out, Component.literal(MILESTONES[i][1]), done ? MUTED : TEXT, wrap, 14);
+                    gap(out);
+                }
+            }
+            case WATCHMAKER -> {
+                add(out, Component.literal(switch (Math.max(0, Math.min(5, j.sylarChapter()))) {
+                    case 0 -> "Nothing has happened... yet.";
+                    case 1 -> "You have heard a faint ticking that wasn't there before.";
+                    case 2 -> "A man in a dark coat has been watching you from a distance.";
+                    case 3 -> "He spoke to you. A quiet voice, a watchmaker's patience. His name was Gabriel Gray, once. He calls himself Sylar.";
+                    case 4 -> "He has hunted you. He studies people before he takes what they have, and every power he takes, he uses.";
+                    default -> "He keeps coming back for you. He remembers how you fight. You are not prey to him any more; you are the one he cannot finish.";
+                }), j.sylarChapter() == 0 ? MUTED : TEXT, wrap, 0);
+                if (!j.sylarLearned().isEmpty()) {
+                    gap(out);
+                    heading(out, "POWERS HE HAS TAKEN");
+                    for (String id : j.sylarLearned()) {
+                        ResourceLocation power = ResourceLocation.tryParse(id);
+                        add(out, Component.literal("• " + (power == null ? id : Component.translatable("ability." + power.getNamespace() + "." + power.getPath()).getString())), BAD, wrap, 4);
+                    }
+                }
+                if (j.sylarDefeats() > 0) {
+                    gap(out);
+                    add(out, Component.literal("He has been driven off " + j.sylarDefeats() + (j.sylarDefeats() == 1 ? " time." : " times.")), TEXT, wrap, 0);
+                }
             }
         }
-        if (journal.seenFutureCity()) {
-            add(Component.literal("You have stood in the city they dream of.")
-                    .withStyle(ChatFormatting.ITALIC), 0xFF60C8D0, wrap);
-        }
-        spacer();
-
-        // Chapter two: the time traveller's path.
-        int reached = Integer.bitCount(journal.temporalMilestones() & 31);
-        heading("The Way Back  (" + reached + "/" + MILESTONES.length + ")");
-        for (int index = 0; index < MILESTONES.length; index++) {
-            boolean done = (journal.temporalMilestones() & (1 << index)) != 0;
-            add(Component.literal((done ? "[x] " : "[ ] ") + MILESTONES[index][0]
-                    + (done ? "" : " - " + MILESTONES[index][1])), done ? TEXT : MUTED, wrap);
-        }
-        spacer();
-
-        // Chapter three: the watchmaker.
-        heading("The Watchmaker");
-        add(Component.literal(switch (Math.max(0, Math.min(5, journal.sylarChapter()))) {
-            case 0 -> "Nothing has happened... yet.";
-            case 1 -> "You have heard a faint ticking that wasn't there before.";
-            case 2 -> "A man in a dark coat has been watching you from a distance.";
-            case 3 -> "He spoke to you. A quiet voice, a watchmaker's patience. His name was Gabriel Gray, once. He calls himself Sylar.";
-            case 4 -> "He has hunted you. He studies people before he takes what they have, and every power he takes, he uses.";
-            default -> "He keeps coming back for you. He remembers how you fight. You are not prey to him any more; you are the one he cannot finish.";
-        }), journal.sylarChapter() == 0 ? MUTED : TEXT, wrap);
-        if (!journal.sylarLearned().isEmpty()) {
-            List<String> names = journal.sylarLearned().stream()
-                    .map(id -> {
-                        ResourceLocation power = ResourceLocation.tryParse(id);
-                        return power == null ? id : Component.translatable(
-                                "ability." + power.getNamespace() + "." + power.getPath()).getString();
-                    })
-                    .toList();
-            add(Component.literal("Powers he has taken: " + String.join(", ", names)),
-                    0xFFE06060, wrap);
-        }
-        if (journal.sylarDefeats() > 0) {
-            add(Component.literal("He has been driven off " + journal.sylarDefeats()
-                    + (journal.sylarDefeats() == 1 ? " time." : " times.")), TEXT, wrap);
-        }
+        return out;
     }
 
-    private void heading(String text) {
-        lines.add(new Line(Component.literal(text).getVisualOrderText(), HEADING));
-        lines.add(new Line(FormattedCharSequence.EMPTY, 0));
+    private void heading(List<Line> out, String text) { out.add(new Line(Component.literal(text).withStyle(ChatFormatting.BOLD).getVisualOrderText(), HEADING, 0)); }
+
+    private void add(List<Line> out, Component text, int color, int wrap, int indent) {
+        for (FormattedCharSequence line : font.split(text, wrap - indent)) out.add(new Line(line, color, indent));
     }
 
-    private void add(Component text, int colour, int wrap) {
-        for (FormattedCharSequence line : font.split(text, wrap)) {
-            lines.add(new Line(line, colour));
-        }
-    }
+    private void gap(List<Line> out) { out.add(new Line(FormattedCharSequence.EMPTY, 0, 0)); }
 
-    private void spacer() {
-        lines.add(new Line(FormattedCharSequence.EMPTY, 0));
-    }
-
-    @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        graphics.fill(0, 0, width, height, 0x60000000);
-        int left = (width - PANEL_WIDTH) / 2;
-        int top = (height - panelHeight()) / 2;
-        graphics.fill(left - 1, top - 1, left + PANEL_WIDTH + 1, top + panelHeight() + 1, 0xFF6B101D);
-        graphics.fill(left, top, left + PANEL_WIDTH, top + panelHeight(), 0xFF16090D);
-        graphics.drawString(font, title, left + 12, top + 10, TITLE, true);
-
-        int areaTop = top + 28;
-        int areaBottom = top + panelHeight() - 32;
-        int visible = (areaBottom - areaTop) / LINE_HEIGHT;
-        scroll = Math.clamp(scroll, 0, Math.max(0, lines.size() - visible));
-
-        graphics.enableScissor(left, areaTop, left + PANEL_WIDTH, areaBottom);
-        for (int index = scroll; index < lines.size() && index < scroll + visible; index++) {
-            Line line = lines.get(index);
-            graphics.drawString(font, line.text, left + 14,
-                    areaTop + (index - scroll) * LINE_HEIGHT, line.colour, false);
-        }
-        graphics.disableScissor();
-
-        if (lines.size() > visible) {
-            String hint = scroll + visible < lines.size() ? "scroll for more" : "end";
-            graphics.drawString(font, hint, left + PANEL_WIDTH - 12 - font.width(hint),
-                    top + 10, MUTED, false);
-        }
-        super.render(graphics, mouseX, mouseY, partialTick);
-    }
-
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    @Override public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         scroll -= (int) Math.signum(scrollY) * 3;
         return true;
-    }
-
-    @Override
-    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // The panel draws its own backdrop.
-    }
-
-    @Override
-    public void onClose() {
-        if (minecraft != null) {
-            minecraft.setScreen(parent);
-        }
-    }
-
-    @Override
-    public boolean isPauseScreen() {
-        return false;
-    }
-
-    private record Line(FormattedCharSequence text, int colour) {
     }
 }

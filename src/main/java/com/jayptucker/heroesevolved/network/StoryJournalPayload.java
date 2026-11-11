@@ -3,16 +3,19 @@ package com.jayptucker.heroesevolved.network;
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.progression.StoryDiscoveries;
-import com.jayptucker.heroesevolved.story.AvenueService;
+import com.jayptucker.heroesevolved.story.LastSignalService;
+import com.jayptucker.heroesevolved.story.LastSignalService.Phase;
 import com.jayptucker.heroesevolved.story.StoryLead;
 import com.jayptucker.heroesevolved.story.sylar.SylarStoryData;
 import com.jayptucker.heroesevolved.telepathy.FutureVisions;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.List;
@@ -29,11 +32,9 @@ public record StoryJournalPayload(
         int sylarChapter,
         int sylarDefeats,
         List<String> sylarLearned,
-        String incident,
-        boolean avenueOpen,
-        String avenue,
-        boolean nightOpen,
-        String night
+        Phase signalPhase,
+        BlockPos signalLocation,
+        int signalRescued
 ) implements CustomPacketPayload {
     public static final Type<StoryJournalPayload> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "story_journal"));
@@ -53,17 +54,15 @@ public record StoryJournalPayload(
                 buffer.writeVarInt(payload.sylarChapter);
                 buffer.writeVarInt(payload.sylarDefeats);
                 STRINGS.encode(buffer, payload.sylarLearned);
-                buffer.writeUtf(payload.incident, 1024);
-                buffer.writeBoolean(payload.avenueOpen);
-                buffer.writeUtf(payload.avenue, 1024);
-                buffer.writeBoolean(payload.nightOpen);
-                buffer.writeUtf(payload.night, 1024);
+                buffer.writeEnum(payload.signalPhase);
+                buffer.writeBoolean(payload.signalLocation != null);
+                if (payload.signalLocation != null) buffer.writeBlockPos(payload.signalLocation);
+                buffer.writeVarInt(payload.signalRescued);
             }, buffer -> new StoryJournalPayload(buffer.readUtf(512), STRINGS.decode(buffer),
                     buffer.readVarInt(), STRINGS.decode(buffer), buffer.readVarInt(),
                     buffer.readBoolean(), buffer.readVarInt(), buffer.readVarInt(),
-                    buffer.readVarInt(), STRINGS.decode(buffer), buffer.readUtf(1024),
-                    buffer.readBoolean(), buffer.readUtf(1024),
-                    buffer.readBoolean(), buffer.readUtf(1024)));
+                    buffer.readVarInt(), STRINGS.decode(buffer), buffer.readEnum(Phase.class),
+                    buffer.readBoolean() ? buffer.readBlockPos() : null, buffer.readVarInt()));
 
     /** Gathers everything the journal shows for this player. */
     public static StoryJournalPayload of(ServerPlayer player) {
@@ -71,7 +70,7 @@ public record StoryJournalPayload(
         return new StoryJournalPayload(
                 StoryLead.next(player),
                 StoryDiscoveries.recovered(player),
-                StoryDiscoveries.ORDER.size(),
+                StoryDiscoveries.journalTotal(player),
                 FutureVisions.heard(player),
                 FutureVisions.fragmentCount(),
                 player.getData(ModDataAttachments.PLAYER_SEEN_FUTURE_CITY.get()),
@@ -79,12 +78,14 @@ public record StoryJournalPayload(
                 sylar.trail(player.getUUID()).chapter,
                 sylar.defeats(),
                 sylar.learned().stream().map(ResourceLocation::toString).sorted().toList(),
-                com.jayptucker.heroesevolved.expansion.FacilityService.journal(player),
-                AvenueService.unlocked(player),
-                AvenueService.journal(player),
-                com.jayptucker.heroesevolved.story.night.NightThreeService.unlocked(player),
-                com.jayptucker.heroesevolved.story.night.NightThreeService.journal(player)
+                LastSignalService.phase(player),
+                LastSignalService.location(player),
+                LastSignalService.rescued(player)
         );
+    }
+
+    public static void send(ServerPlayer player) {
+        PacketDistributor.sendToPlayer(player, of(player));
     }
 
     @Override

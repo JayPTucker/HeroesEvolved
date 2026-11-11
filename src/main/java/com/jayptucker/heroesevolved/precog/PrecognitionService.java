@@ -14,7 +14,6 @@ import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.entity.TemporalEchoEntity;
 import com.jayptucker.heroesevolved.events.EclipseService;
 import com.jayptucker.heroesevolved.expansion.ExpansionSkills;
-import com.jayptucker.heroesevolved.expansion.FacilityData;
 import com.jayptucker.heroesevolved.expansion.FacilityService;
 import com.jayptucker.heroesevolved.expansion.PropheticPainting;
 import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
@@ -22,6 +21,8 @@ import com.jayptucker.heroesevolved.network.ArmPosePayload;
 import com.jayptucker.heroesevolved.network.ScreenTintPayload;
 import com.jayptucker.heroesevolved.progression.EvolutionTrials;
 import com.jayptucker.heroesevolved.progression.MasteryService;
+import com.jayptucker.heroesevolved.story.LastSignalService;
+import com.jayptucker.heroesevolved.story.StoryLead;
 import com.jayptucker.heroesevolved.story.sylar.SylarEntity;
 import com.jayptucker.heroesevolved.story.sylar.SylarStoryData;
 import net.minecraft.ChatFormatting;
@@ -65,7 +66,7 @@ import java.util.UUID;
  *   where it is about to be, and the unseen are revealed.</li>
  *   <li>Paint the Future: a short trance. Paint an enemy's ending and it comes true once they are
  *   hurt badly enough; paint with no one in view and the canvas shows what is coming for you
- *   (the Hourglass Annex, Sylar, or what is near).</li>
+ *   (the sleepers at the relay, Sylar, or what is near).</li>
  *   <li>Saw It Coming: for a moment, the next blow misses. You are already somewhere else, and
  *   the attacker is Exposed.</li>
  *   <li>Fate Thread: cross out one lethal outcome for a friend, or yourself.</li>
@@ -81,7 +82,7 @@ public final class PrecognitionService {
     private static final ResourceLocation SPARED_COOLDOWN = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "precog_spared");
 
     private record Timed(ServerPlayer owner, long until) {}
-    private record Painting(ServerPlayer owner, UUID target, long start, long done) {}
+    private record Painting(ServerPlayer owner, UUID target, long start, long done, boolean awakening) {}
     private record Ending(ServerPlayer owner, long until, float threshold) {}
 
     /** Premonition, and teammates lent the sight by Omen Relay. */
@@ -117,10 +118,9 @@ public final class PrecognitionService {
 
     /** The awakening's story beat: the first painting and a free Premonition. Played by the intro's release. */
     public static void firstVision(ServerPlayer p) {
-        p.sendSystemMessage(Component.literal("Your hands move before you decide to move them. Two silhouettes. A copper heart. A clock without a next second.")
+        p.sendSystemMessage(Component.literal("Your hands move before you decide to move them. Two sleepers behind glass. A copper heart running hot.")
                 .withStyle(ChatFormatting.GOLD));
-        FacilityService.plan(p);
-        PAINTINGS.put(p.getUUID(), new Painting(p, null, now(p), now(p) + STORY_PAINT_TICKS));
+        PAINTINGS.put(p.getUUID(), new Painting(p, null, now(p), now(p) + STORY_PAINT_TICKS, true));
         SENSE.put(p.getUUID(), new Timed(p, now(p) + PREMONITION_TICKS));
     }
 
@@ -197,7 +197,7 @@ public final class PrecognitionService {
         if (painting(p)) return false;
         LivingEntity target = Targeting.livingEntityInSight(p, 32, t -> enemy(p, t));
         int ticks = target == null ? STORY_PAINT_TICKS : COMBAT_PAINT_TICKS;
-        PAINTINGS.put(p.getUUID(), new Painting(p, target == null ? null : target.getUUID(), now(p), now(p) + ticks));
+        PAINTINGS.put(p.getUUID(), new Painting(p, target == null ? null : target.getUUID(), now(p), now(p) + ticks, false));
         ArmPosePayload.show(p, ArmPose.ONE_HAND, ticks);
         p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.BRUSH_GENERIC, SoundSource.PLAYERS, 1.0F, 0.8F);
         if (target != null) {
@@ -225,7 +225,7 @@ public final class PrecognitionService {
             if (now < painting.done) continue;
             PAINTINGS.remove(entry.getKey());
             ArmPosePayload.clear(p);
-            if (painting.target == null) { vision(p); continue; }
+            if (painting.target == null) { vision(p, painting.awakening); continue; }
             Entity found = p.serverLevel().getEntity(painting.target);
             if (found instanceof LivingEntity target && target.isAlive() && target.distanceToSqr(p) < 40 * 40 && p.hasLineOfSight(target)) {
                 paintEnding(p, target);
@@ -301,18 +301,17 @@ public final class PrecognitionService {
     }
 
     /**
-     * A canvas painted with no one in view shows what is coming for you: the Hourglass Annex while it
-     * is unresolved, otherwise Sylar if he is due to find you, otherwise what is near.
+     * A canvas painted with no one in view shows the relay until the sleepers are safe.
+     * Later visions warn of Sylar when he is due or reveal nearby threats.
      */
-    private static void vision(ServerPlayer p) {
+    private static void vision(ServerPlayer p, boolean awakening) {
         MinecraftServer server = p.getServer();
-        FacilityData annex = FacilityData.get(server);
-        boolean unresolved = annex.phase != FacilityData.Phase.SAVED && annex.phase != FacilityData.Phase.SCARRED;
-        if (unresolved || !annex.discovered(p.getUUID(), "unfinished_hour")) {
-            FacilityService.plan(p);
-            PropheticPainting.give(p);
-            FacilityService.discovery(p, "canvas_received");
-            p.sendSystemMessage(Component.literal("The Unfinished Hour: two people behind glass, a copper heart running hot. Odessa, 5:50 PM on the Last Day. It happened, but it isn't finished.")
+        boolean safe = LastSignalService.completed(server);
+        if (awakening || !safe) {
+            PropheticPainting.giveSignal(p);
+            p.sendSystemMessage(Component.literal(safe
+                            ? "The Last Signal: the copper heart has cooled. Two people walk out together."
+                            : "The Last Signal: two people still breathing behind glass. Somewhere, a receiver is picking up their call.")
                     .withStyle(ChatFormatting.GOLD));
             return;
         }
@@ -417,8 +416,7 @@ public final class PrecognitionService {
     public static boolean skill(AbilityUseContext c, int branch) {
         ServerPlayer p = c.player();
         if (branch == 0) {
-            FacilityService.plan(p);
-            p.sendSystemMessage(Component.literal("Object Reading: " + FacilityService.journal(p)));
+            p.sendSystemMessage(Component.literal("Object Reading. " + StoryLead.next(p)));
             for (var t : p.serverLevel().getEntitiesOfClass(net.minecraft.world.entity.npc.Villager.class, p.getBoundingBox().inflate(32))) PrivateGlow.glow(p, t, 100);
         } else if (branch == 1) {
             var targets = ExpansionSkills.enemies(p, p.position(), 12).stream().limit(3).toList();

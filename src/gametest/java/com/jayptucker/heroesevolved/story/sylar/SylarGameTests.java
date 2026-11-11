@@ -252,6 +252,7 @@ public final class SylarGameTests {
     public static void naturalStoryStartsWithGraceAndOneHintRatherThanAnAmbush(GameTestHelper helper) {
         reset(helper); List<Packet<?>> packets = new ArrayList<>();
         ServerPlayer quarry = player(helper, ModAbilities.QUAKE_ID, 5, packets);
+        boolean complete = com.jayptucker.heroesevolved.story.LastSignalGameTests.swapCompleted(quarry.getServer(), true);
         // Other fixtures also build distant platforms. Keep this no-surface test above their height band.
         quarry.setPos(quarry.position().add(0, 80, 0));
         SylarStoryService.notice(quarry);
@@ -274,7 +275,10 @@ public final class SylarGameTests {
                 helper.assertTrue(SylarStoryService.hunter() == null && SylarStoryData.get(quarry.getServer()).trail(quarry.getUUID()).nextEncounter > helper.getLevel().getGameTime(),
                         "With no safe loaded ground near this floating fixture, the director must postpone instead of spawning inside terrain");
                 helper.succeed();
-            } finally { remove(quarry); }
+            } finally {
+                com.jayptucker.heroesevolved.story.LastSignalGameTests.swapCompleted(quarry.getServer(), complete);
+                remove(quarry);
+            }
         });
     }
 

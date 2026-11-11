@@ -28,21 +28,22 @@ import org.joml.Matrix4f;
 /**
  * Draws the new moon crossing the vanilla Overworld sun. Everything is placed in the sun's own
  * frame (the same rotation vanilla uses), so the moon tracks the sun as it moves across the sky.
- * At totality the black disc is ringed by a pearly corona and pink prominences, with a
- * "diamond ring" flare as the last and first sliver of sun disappears and returns.
+ * Like vanilla's sun and moon, the moon is a square, and so is the light around it: at totality
+ * the black square is framed by a pearly corona and pink prominences, with a "diamond ring"
+ * flare as the last and first sliver of sun disappears and returns.
  */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID, value = Dist.CLIENT)
 public final class EclipseSkyRenderer {
     /** Vanilla's sun quad sits 100 blocks out with a bright core 7.5 units from centre to edge. */
     private static final float SKY_DISTANCE = 100.0F;
     private static final float SUN_CORE_HALF_SIZE = 7.5F;
-    /** Large enough to hide the corners of the square core: a total, not annular, eclipse. */
-    private static final float MOON_RADIUS = 11.0F;
-    /** Centre-to-centre distance at first and last contact. */
-    private static final float CONTACT_DISTANCE = MOON_RADIUS + SUN_CORE_HALF_SIZE;
+    /** A little larger than the sun's square core, so it hides all of it: a total, not annular, eclipse. */
+    private static final float MOON_HALF_SIZE = 9.0F;
     /** The moon's path across the sun, a shallow diagonal. */
     private static final float PATH_X = 0.8F;
     private static final float PATH_Z = 0.6F;
+    /** Centre-to-centre distance at first and last contact, when the leading edges of the two squares meet. */
+    private static final float CONTACT_DISTANCE = (MOON_HALF_SIZE + SUN_CORE_HALF_SIZE) / Math.max(PATH_X, PATH_Z);
     private static final int SEGMENTS = 48;
     private static final int STREAMERS = 14;
     private static final float FOG_AT_TOTALITY = 0.12F;
@@ -91,17 +92,17 @@ public final class EclipseSkyRenderer {
         float corona = (totality ? 1.0F : (float) Math.pow(coverage, 16) * 0.5F) * visibility;
         if (corona > 0.01F) {
             additive();
-            ring(matrix, moonX, moonZ, MOON_RADIUS * 0.98F, MOON_RADIUS * 2.7F,
+            ring(matrix, moonX, moonZ, MOON_HALF_SIZE * 0.98F, MOON_HALF_SIZE * 2.7F,
                     0.92F, 0.95F, 1.0F, 0.55F * corona);
             streamers(matrix, moonX, moonZ, (float) now, 0.35F * corona);
-            ring(matrix, moonX, moonZ, MOON_RADIUS * 0.98F, MOON_RADIUS * 1.08F,
+            ring(matrix, moonX, moonZ, MOON_HALF_SIZE * 0.98F, MOON_HALF_SIZE * 1.1F,
                     1.0F, 0.35F, 0.45F, (0.3F + 0.4F * timeline.diamondRing(now)) * corona);
         }
 
         // The moon itself: slate grey against the blue sky while far off, true black at totality.
         RenderSystem.defaultBlendFunc();
         float shade = 1.0F - coverage;
-        disc(matrix, moonX, moonZ, MOON_RADIUS,
+        square(matrix, moonX, moonZ, MOON_HALF_SIZE,
                 0.1F * shade, 0.12F * shade, 0.01F + 0.15F * shade,
                 Mth.lerp(coverage, 0.9F, 1.0F) * visibility);
 
@@ -141,31 +142,35 @@ public final class EclipseSkyRenderer {
         RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
     }
 
-    private static void disc(Matrix4f matrix, float x, float z, float radius,
-                             float red, float green, float blue, float alpha) {
+    /** A flat square, axis-aligned with the sun's own square. */
+    private static void square(Matrix4f matrix, float x, float z, float halfSize,
+                               float red, float green, float blue, float alpha) {
         BufferBuilder buffer = Tesselator.getInstance().begin(
-                VertexFormat.Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
-        buffer.addVertex(matrix, x, SKY_DISTANCE, z).setColor(red, green, blue, alpha);
-
-        for (int segment = 0; segment <= SEGMENTS; segment++) {
-            float angle = segment * Mth.TWO_PI / SEGMENTS;
-            buffer.addVertex(matrix, x + Mth.cos(angle) * radius, SKY_DISTANCE, z + Mth.sin(angle) * radius)
-                    .setColor(red, green, blue, alpha);
-        }
-
+                VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        buffer.addVertex(matrix, x - halfSize, SKY_DISTANCE, z - halfSize).setColor(red, green, blue, alpha);
+        buffer.addVertex(matrix, x + halfSize, SKY_DISTANCE, z - halfSize).setColor(red, green, blue, alpha);
+        buffer.addVertex(matrix, x + halfSize, SKY_DISTANCE, z + halfSize).setColor(red, green, blue, alpha);
+        buffer.addVertex(matrix, x - halfSize, SKY_DISTANCE, z + halfSize).setColor(red, green, blue, alpha);
         BufferUploader.drawWithShader(buffer.buildOrThrow());
     }
 
-    /** A soft band fading from {@code alpha} at the inner edge to nothing at the outer edge. */
+    /** Distance from the centre of a square of half-size 1 to its edge, in the direction of {@code angle}. */
+    private static float squareEdge(float angle) {
+        return 1.0F / Math.max(Math.abs(Mth.cos(angle)), Math.abs(Mth.sin(angle)));
+    }
+
+    /** A soft square frame fading from {@code alpha} at the inner edge to nothing at the outer edge. */
     private static void ring(Matrix4f matrix, float x, float z, float inner, float outer,
                              float red, float green, float blue, float alpha) {
         BufferBuilder buffer = Tesselator.getInstance().begin(
                 VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
 
+        // SEGMENTS is a multiple of 8, so a vertex lands exactly on every corner.
         for (int segment = 0; segment <= SEGMENTS; segment++) {
             float angle = segment * Mth.TWO_PI / SEGMENTS;
-            float cos = Mth.cos(angle);
-            float sin = Mth.sin(angle);
+            float edge = squareEdge(angle);
+            float cos = Mth.cos(angle) * edge;
+            float sin = Mth.sin(angle) * edge;
             buffer.addVertex(matrix, x + cos * inner, SKY_DISTANCE, z + sin * inner)
                     .setColor(red, green, blue, alpha);
             buffer.addVertex(matrix, x + cos * outer, SKY_DISTANCE, z + sin * outer)
@@ -186,11 +191,13 @@ public final class EclipseSkyRenderer {
             float hash = Mth.frac(Mth.sin(streamer * 12.9898F) * 43758.547F);
             float angle = streamer * Mth.TWO_PI / STREAMERS + turn + hash * 0.4F;
             float half = 0.07F + hash * 0.08F;
-            float length = MOON_RADIUS * (1.7F + 1.8F * hash);
-            float base = MOON_RADIUS * 0.98F;
-            buffer.addVertex(matrix, x + Mth.cos(angle - half) * base, SKY_DISTANCE, z + Mth.sin(angle - half) * base)
+            // Each streamer rises from the square's edge, so the ones off the corners reach furthest.
+            float length = MOON_HALF_SIZE * squareEdge(angle) * (1.7F + 1.8F * hash);
+            float before = MOON_HALF_SIZE * 0.98F * squareEdge(angle - half);
+            float after = MOON_HALF_SIZE * 0.98F * squareEdge(angle + half);
+            buffer.addVertex(matrix, x + Mth.cos(angle - half) * before, SKY_DISTANCE, z + Mth.sin(angle - half) * before)
                     .setColor(0.9F, 0.93F, 1.0F, alpha);
-            buffer.addVertex(matrix, x + Mth.cos(angle + half) * base, SKY_DISTANCE, z + Mth.sin(angle + half) * base)
+            buffer.addVertex(matrix, x + Mth.cos(angle + half) * after, SKY_DISTANCE, z + Mth.sin(angle + half) * after)
                     .setColor(0.9F, 0.93F, 1.0F, alpha);
             buffer.addVertex(matrix, x + Mth.cos(angle) * length, SKY_DISTANCE, z + Mth.sin(angle) * length)
                     .setColor(0.9F, 0.93F, 1.0F, 0.0F);
@@ -199,17 +206,18 @@ public final class EclipseSkyRenderer {
         BufferUploader.drawWithShader(buffer.buildOrThrow());
     }
 
-    /** One blazing bead on the moon's rim where the sun is about to vanish, or just returned. */
+    /**
+     * One blazing bead on the moon's rim where the sun is about to vanish, or just returned: the
+     * middle of the moon's edge nearest the sun's centre, where the last strip of the square sun shows.
+     */
     private static void diamondRing(Matrix4f matrix, float moonX, float moonZ, float strength) {
-        float length = Mth.sqrt(moonX * moonX + moonZ * moonZ);
-        // The sun sits opposite the moon's offset; mid-totality never reaches here.
-        float towardsSunX = length > 0.001F ? -moonX / length : PATH_X;
-        float towardsSunZ = length > 0.001F ? -moonZ / length : PATH_Z;
-        float beadX = moonX + towardsSunX * MOON_RADIUS;
-        float beadZ = moonZ + towardsSunZ * MOON_RADIUS;
+        // The sun's centre is the origin. Mid-totality, where the offset is zero, never reaches here.
+        float side = moonX == 0.0F ? -1.0F : Math.signum(moonX);
+        float beadX = moonX - side * MOON_HALF_SIZE;
+        float beadZ = 0.0F;
 
-        ring(matrix, beadX, beadZ, 0.0F, 7.0F, 1.0F, 0.98F, 0.9F, strength);
-        disc(matrix, beadX, beadZ, 1.4F, 1.0F, 1.0F, 0.95F, strength);
+        ring(matrix, beadX, beadZ, 0.0F, 6.0F, 1.0F, 0.98F, 0.9F, strength);
+        square(matrix, beadX, beadZ, 1.2F, 1.0F, 1.0F, 0.95F, strength);
 
         BufferBuilder buffer = Tesselator.getInstance().begin(
                 VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);

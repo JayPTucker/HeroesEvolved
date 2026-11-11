@@ -23,6 +23,12 @@ public final class QuakeEvents {
         QuakeService.tick(event.getServer());
     }
 
+    /** Cracks hold the world and its players; none may outlive the server. */
+    @SubscribeEvent
+    public static void onServerStopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
+        com.jayptucker.heroesevolved.quake.QuakeBlockPressure.clearAll();
+    }
+
     /** Vibration Cushion: Quake absorbs her landings. */
     @SubscribeEvent
     public static void onFall(LivingFallEvent event) {

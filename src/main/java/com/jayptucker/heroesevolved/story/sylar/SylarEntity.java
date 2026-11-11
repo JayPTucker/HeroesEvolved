@@ -100,6 +100,14 @@ public final class SylarEntity extends PathfinderMob implements Enemy {
     }
 
     public UUID quarry() { return quarry; }
+
+    /** Continue the same fight when the original quarry leaves an expedition. */
+    public void retarget(ServerPlayer player) {
+        interrupt();
+        quarry = player.getUUID();
+        setTarget(player);
+    }
+
     public boolean hunting() { return hunting; }
     public boolean extracting() { return entityData.get(EXTRACTING); }
     public int extractionTicks() { return extractionTicks; }
@@ -161,7 +169,8 @@ public final class SylarEntity extends PathfinderMob implements Enemy {
         super.customServerAiStep();
         if (!(level() instanceof ServerLevel serverLevel) || quarry == null) return;
         ServerPlayer victim = serverLevel.getServer().getPlayerList().getPlayer(quarry);
-        if (victim == null || !SylarStoryService.eligible(victim) || victim.level() != level()) {
+        if (victim == null || victim.level() != level() || !(SylarStoryService.eligible(victim)
+                || com.jayptucker.heroesevolved.story.LastSignalService.targetable(victim))) {
             interrupt(); setTarget(null); return;
         }
         getLookControl().setLookAt(victim, 30, 30);

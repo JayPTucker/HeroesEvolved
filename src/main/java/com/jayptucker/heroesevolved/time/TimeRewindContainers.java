@@ -29,7 +29,10 @@ public final class TimeRewindContainers {
         return new Frame(Map.copyOf(cells), true);
     }
     public static void restore(ServerPlayer player, Frame frame) {
-        var level = player.serverLevel();
+        restore(player, player.serverLevel(), frame);
+    }
+    /** Puts the recorded contents back in {@code level} (the world the frame was taken in). */
+    public static void restore(ServerPlayer player, net.minecraft.server.level.ServerLevel level, Frame frame) {
         for (var entry : frame.cells.entrySet()) {
             var entity = level.getBlockEntity(entry.getKey());
             if (entity != null && level.getBlockState(entry.getKey()).getBlock() == entry.getValue().state.getBlock()

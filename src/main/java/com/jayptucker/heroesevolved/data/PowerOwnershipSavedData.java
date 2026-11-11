@@ -40,6 +40,8 @@ public final class PowerOwnershipSavedData extends SavedData {
         tag.put("owners", entries); return tag;
     }
     public Optional<UUID> owner(ResourceLocation power) { return Optional.ofNullable(owners.get(power)); }
+    /** True while no power in this world has ever had an owner. */
+    public boolean noneClaimed() { return owners.isEmpty(); }
     public boolean available(ResourceLocation power, UUID player) { return !owners.containsKey(power) || owners.get(power).equals(player); }
     public boolean claim(ResourceLocation power, UUID player) {
         if (!available(power, player)) return false;

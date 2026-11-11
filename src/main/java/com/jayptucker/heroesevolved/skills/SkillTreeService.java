@@ -31,6 +31,7 @@ public final class SkillTreeService {
         var node = SkillCatalog.find(power.getPath(), nodeId).orElse(null);
         if (node == null) return false;
         var build = build(player, power);
+        if (node.style()) return chooseStyle(player, power, node, build);
         if (build.learned().contains(node.id()) || PlayerProgressionService.getLevel(player) < node.level()
                 || !node.prerequisite().isEmpty() && !build.learned().contains(node.prerequisite())
                 || SkillCatalog.available(power.getPath(), build, storyPoints(player)) < node.cost()) return false;
@@ -40,6 +41,38 @@ public final class SkillTreeService {
         player.sendSystemMessage(Component.literal("Learned " + node.name() + (node.active() ? ". It's on your ability wheel; put it on a key from the Abilities page if you like." : ".")));
         return true;
     }
+    /**
+     * Chooses a class for this power: its Offense, Defense or Support ability. A build keeps one class at a
+     * time; choosing another gives back the old one's points (it needs ten seconds out of combat) and puts the
+     * new ability on whatever key the old one was on.
+     */
+    private static boolean chooseStyle(ServerPlayer player, ResourceLocation power, SkillCatalog.Node node, SkillTreeData.Build build) {
+        if (build.learned().contains(node.id()) || PlayerProgressionService.getLevel(player) < node.level()) return false;
+        var current = SkillCatalog.chosenStyle(power.getPath(), build).orElse(null);
+        int refund = current == null ? 0 : current.cost();
+        if (SkillCatalog.available(power.getPath(), build, storyPoints(player)) + refund < node.cost()) return false;
+        if (current != null && player.getData(ModDataAttachments.PLAYER_COMBAT).wasDamagedWithin(player.level().getGameTime(), 200)) {
+            player.sendSystemMessage(Component.literal("You can change class only after ten seconds out of combat."));
+            return false;
+        }
+        Set<String> learned = new HashSet<>(build.learned());
+        Map<String, String> slots = new HashMap<>(build.slots());
+        if (current != null) {
+            learned.remove(current.id());
+            var context = new AbilityUseContext(player, power, PlayerProgressionService.getLevel(player), true);
+            var old = current.action();
+            old.release(context);
+            old.deactivate(context);
+            slots.replaceAll((key, bound) -> bound.equals(current.id()) ? node.id() : bound);
+        }
+        learned.add(node.id());
+        save(player, power, new SkillTreeData.Build(build.highestLevel(), learned, slots, build.training()));
+        String role = node.role().substring(0, 1).toUpperCase() + node.role().substring(1);
+        player.sendSystemMessage(Component.literal("Your class is now " + role + ": " + node.name()
+                + (current == null ? ". It's on your ability wheel; put it on a key from the Abilities page if you like." : ".")));
+        return true;
+    }
+
     /** Keys 1 to 5 by their slot: a skill id puts that skill on the key, "" restores the key's own ability. */
     public static boolean equip(ServerPlayer player, AbilitySlot slot, String actionId) {
         if (!actionId.isEmpty() && actionId.startsWith(Loadout.BASE)) return false;

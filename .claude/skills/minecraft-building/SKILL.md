@@ -75,7 +75,7 @@ letters to memorable ones, add markers, and continue the loop from step 3.
 
 | Blueprint | Placed by | Notes |
 | --- | --- | --- |
-| `bunker_chamber` | `BunkerBuilder` at bunker (0,0,18), anchor 7 0 0 | 14 `@pod` cells and `@log:orientation` must keep their positions. The bunker is built once per world: anything added later reaches old worlds only if `BunkerBuilder.upgrade` adds it (bump `BunkerData.LAYOUT`; layout 2 added Exhibit 1 with `Blueprint.addMissing`) |
+| `bunker_chamber` | `BunkerBuilder` at bunker (0,0,18), anchor 7 0 0 | 14 `@pod` cells and `@log:orientation` must keep their positions. The bunker is built once per world: anything added later reaches old worlds only if `BunkerBuilder.upgrade` adds it (bump `BunkerData.LAYOUT`; layout 2 added Exhibit 1 with `Blueprint.addMissing`, layout 4 the `@beacon` alarm beacons). A new bunker is built with its lights dark (`BunkerPower.off`) until its first sleeper steps out of a pod, so a light added to a room should be one `BunkerPower.off` knows |
 | `bunker_records` | bunker (0,0,1), anchor 5 0 0 | `@log:lockdown`, `@log:quiet_years`, `@loot:records` |
 | `bunker_corridor` | bunker (0,0,11), anchor 2 0 0 | doors at both ends and to the lab and cell |
 | `bunker_lab` | bunker (2,0,11) | `@log:helixite`, `@loot:lab` |

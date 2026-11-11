@@ -37,11 +37,7 @@ public final class TimeRewindEntities {
         Map<UUID, State> states = new HashMap<>();
         Frame previous = PREVIOUS.get(caster.getUUID());
         for (Entity entity : entities) {
-            CompoundTag tag = entity.saveWithoutId(new CompoundTag());
-            tag.putString("id", EntityType.getKey(entity.getType()).toString());
-            tag.remove("Passengers");
-            if (entity instanceof ServerPlayer player)
-                tag.putInt("HeroesRadiationStress", player.getData(ModDataAttachments.PLAYER_RADIATION_STRESS));
+            CompoundTag tag = tag(entity);
             State last = previous == null ? null : previous.states.get(entity.getUUID());
             if (last != null && last.tag.equals(tag)) tag = last.tag; // Stationary entities share immutable NBT between frames.
             states.put(entity.getUUID(), new State(entity.getUUID(), tag, entity.position(),
@@ -55,40 +51,71 @@ public final class TimeRewindEntities {
     public static void born(Entity entity, boolean loadedFromDisk) {
         if (restoring || loadedFromDisk || entity instanceof ServerPlayer || !(entity.level() instanceof ServerLevel level)) return;
         long now = level.getServer().overworld().getGameTime();
-        for (ServerPlayer caster : level.players()) {
-            Map<UUID, Long> births = BIRTHS.get(caster.getUUID());
-            if (births != null && entity.distanceToSqr(caster) <= TimeRewindBlocks.RECORDING_RADIUS * TimeRewindBlocks.RECORDING_RADIUS)
-                births.put(entity.getUUID(), now);
+        TimeRewindPlayers.born(entity, now);
+        double radius = TimeRewindBlocks.RECORDING_RADIUS;
+        for (var entry : BIRTHS.entrySet()) {
+            // Near the time user now, or near anywhere they have been recently.
+            Entity caster = level.getPlayerByUUID(entry.getKey());
+            if (caster != null && entity.distanceToSqr(caster) <= radius * radius
+                    || TimeRewindBlocks.covers(entry.getKey(), level.dimension(), entity.position()))
+                entry.getValue().put(entity.getUUID(), now);
         }
     }
-    private static Entity find(ServerLevel level, UUID id) {
+
+    /** What a rewind keeps of an entity: everything but its passengers (and a player's radiation stress). */
+    static CompoundTag tag(Entity entity) {
+        CompoundTag tag = entity.saveWithoutId(new CompoundTag());
+        tag.putString("id", EntityType.getKey(entity.getType()).toString());
+        tag.remove("Passengers");
+        if (entity instanceof ServerPlayer player)
+            tag.putInt("HeroesRadiationStress", player.getData(ModDataAttachments.PLAYER_RADIATION_STRESS));
+        return tag;
+    }
+
+    /** Takes back something a rewind un-made: gone now, or refused when its chunk loads it again. */
+    static void unmake(ServerLevel level, UUID id) {
+        Entity entity = find(level, id);
+        if (entity != null && !(entity instanceof ServerPlayer)) entity.discard();
+        else if (entity == null) UNMADE.put(id, level.getServer().overworld().getGameTime());
+    }
+    static Entity find(ServerLevel level, UUID id) {
         for (ServerLevel world : level.getServer().getAllLevels()) {
             Entity entity = world.getEntity(id); if (entity != null) return entity;
         }
         return level.getServer().getPlayerList().getPlayer(id);
     }
-    public static void restore(ServerPlayer caster, Frame frame, long cutoff) {
+    /** How a player the rewind reaches is put back: at once, or after travelling back through their own past. */
+    @FunctionalInterface
+    public interface Landing { void land(ServerPlayer player, ServerLevel level, CompoundTag state); }
+
+    /** Puts players straight back. */
+    public static final Landing AT_ONCE = TimeRewindEntities::restorePlayer;
+
+    public static java.util.Set<UUID> restore(ServerPlayer caster, Frame frame, long cutoff) {
+        return restore(caster, caster.serverLevel(), frame, cutoff, AT_ONCE);
+    }
+
+    /**
+     * Puts back what the frame recorded in {@code level} (the world it was taken in), players through
+     * {@code landing}; returns the ids of the entities (and players) it put back.
+     */
+    public static java.util.Set<UUID> restore(ServerPlayer caster, ServerLevel level, Frame frame, long cutoff, Landing landing) {
         if (!frame.complete) throw new IllegalStateException("Entity history is incomplete");
-        ServerLevel level = caster.serverLevel();
         double radius = TimeRewindBlocks.RECORDING_RADIUS, radiusSqr = radius * radius;
         restoring = true;
         try {
             for (var birth : BIRTHS.getOrDefault(caster.getUUID(), Map.of()).entrySet()) {
-                if (birth.getValue() > cutoff && !frame.states.containsKey(birth.getKey())) {
-                    Entity entity = find(level, birth.getKey());
-                    if (entity != null && !(entity instanceof ServerPlayer)) entity.discard();
-                    else if (entity == null) UNMADE.put(birth.getKey(), level.getServer().overworld().getGameTime());
-                }
+                if (birth.getValue() > cutoff && !frame.states.containsKey(birth.getKey())) unmake(level, birth.getKey());
             }
             Map<UUID, Entity> restored = new HashMap<>();
             for (State state : frame.states.values()) {
                 Entity current = state.id.equals(caster.getUUID()) ? caster : find(level, state.id);
                 boolean inside = state.position.distanceToSqr(frame.center) <= radiusSqr
-                        || current != null && current.level() == level && current.position().distanceToSqr(caster.position()) <= radiusSqr;
+                        || current != null && current.level() == caster.level() && current.position().distanceToSqr(caster.position()) <= radiusSqr;
                 if (!inside) continue;
                 if (current instanceof ServerPlayer player) {
                     if (!player.isAlive()) player = level.getServer().getPlayerList().respawn(player, false, Entity.RemovalReason.KILLED);
-                    restorePlayer(player, level, state.tag);
+                    landing.land(player, level, state.tag);
                     restored.put(state.id, player); continue;
                 }
                 // Offline players cannot be recreated as NPCs or have their account duplicated.
@@ -115,6 +142,7 @@ public final class TimeRewindEntities {
                 Entity rider = restored.get(state.id), vehicle = state.vehicle == null ? null : restored.get(state.vehicle);
                 if (rider != null && vehicle != null) rider.startRiding(vehicle, true);
             }
+            return java.util.Set.copyOf(restored.keySet());
         } finally { restoring = false; }
     }
     public static void restorePlayer(ServerPlayer player, ServerLevel level, CompoundTag tag) {
@@ -141,7 +169,8 @@ public final class TimeRewindEntities {
         player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetExperiencePacket(player.experienceProgress, player.totalExperience, player.experienceLevel));
     }
     public static void prune(long now) {
-        for (var births : BIRTHS.values()) births.values().removeIf(time -> now - time > 340);
+        // Long enough for the longest rewind (a speedster's minute); shorter ones ignore births before their cutoff.
+        for (var births : BIRTHS.values()) births.values().removeIf(time -> now - time > TimeRewindBlocks.LONGEST_RETENTION_TICKS + 40);
         UNMADE.values().removeIf(time -> now - time > 20 * 60 * 10);
     }
 

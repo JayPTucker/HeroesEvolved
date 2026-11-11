@@ -1,0 +1,13 @@
+{
+  "structures": [
+    { "structure": "heroesevolved:signal_site", "weight": 1 }
+  ],
+  "placement": {
+    "type": "minecraft:concentric_rings",
+    "salt": 310241,
+    "distance": 36,
+    "spread": 3,
+    "count": 48,
+    "preferred_biomes": "#heroesevolved:has_signal_site"
+  }
+}

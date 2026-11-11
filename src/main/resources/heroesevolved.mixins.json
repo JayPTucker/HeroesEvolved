@@ -15,6 +15,7 @@
     "CarriedPickMixin",
     "PossessionInputMixin",
     "PossessionSyncMixin",
+    "PossessionPermissionMixin",
     "EclipseMoonPhaseMixin"
   ],
   "client": [
@@ -24,7 +25,8 @@
     "IntroRenderDistanceMixin",
     "SeveredArmorMixin",
     "SeveredHandItemMixin",
-    "EclipseSkyMixin"
+    "EclipseSkyMixin",
+    "TornadoCameraMixin"
   ],
   "injectors": {
     "defaultRequire": 1

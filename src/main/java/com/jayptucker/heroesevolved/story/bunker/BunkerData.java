@@ -14,13 +14,15 @@ import java.util.UUID;
 public final class BunkerData extends SavedData {
     public static final String NAME = "heroesevolved_stasis_bunker";
     /**
-     * Bumped when the layout changes. An older bunker is never rebuilt over a player's changes; it only
-     * gets the pieces a later layout added ({@link BunkerBuilder#upgrade}). 2: Exhibit 1, Isaac's explosion.
+     * Bumped when the layout changes. Older bunkers receive targeted updates ({@link BunkerBuilder#upgrade}).
+     * 2 and 3: Exhibit 1. 4: alarm beacons. 5: the signal receiver and recovery rooms.
      */
-    public static final int LAYOUT = 2;
+    public static final int LAYOUT = 5;
     public boolean built;
     public BlockPos origin = BlockPos.ZERO;
     public int layout;
+    /** The main power: off in a new bunker until its first sleeper steps out of a pod (see {@link BunkerPower}). */
+    public boolean powered;
     public final Map<UUID, Integer> pods = new HashMap<>();
 
     public static BunkerData get(MinecraftServer server) {
@@ -49,6 +51,7 @@ public final class BunkerData extends SavedData {
         tag.putBoolean("built", built);
         tag.putLong("origin", origin.asLong());
         tag.putInt("layout", layout);
+        tag.putBoolean("powered", powered);
         CompoundTag assigned = new CompoundTag();
         pods.forEach((id, pod) -> assigned.putInt(id.toString(), pod));
         tag.put("pods", assigned);
@@ -60,6 +63,8 @@ public final class BunkerData extends SavedData {
         data.built = tag.getBoolean("built");
         data.origin = BlockPos.of(tag.getLong("origin"));
         data.layout = tag.getInt("layout");
+        // Bunkers saved before the power could be out were built with their lights on.
+        data.powered = !tag.contains("powered") || tag.getBoolean("powered");
         CompoundTag assigned = tag.getCompound("pods");
         for (String key : assigned.getAllKeys()) data.pods.put(UUID.fromString(key), assigned.getInt(key));
         return data;

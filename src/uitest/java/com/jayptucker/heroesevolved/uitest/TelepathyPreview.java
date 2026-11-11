@@ -42,6 +42,8 @@ public final class TelepathyPreview {
         if(world==310){IllusionClient.accept(new IllusionPayload(2,-1,0,Vec3.ZERO,Vec3.ZERO,0));IllusionClient.accept(new IllusionPayload(3,4,0,new Vec3(200.5,-60,206),Vec3.ZERO,120));}
         if(world==330)pending="telepathy-shelter.png";
         if(world>=350&&world<=380)TelepathyClient.update(new MindStatePayload(3,0,96,48,1,1,1,0));
+        // The possessor is typing as you: their half-written line shows where your chat box would be.
+        if(world==350)TelepathyClient.typed("meet me by the old water tow");
         if(world==365)pending="telepathy-resistance.png";
         if(world==395){TelepathyClient.update(new MindStatePayload(0,-1,0,0,0,0,0,0));TelepathyClient.update(new MindStatePayload(6,0,0,0,0,0,0,0));}
         if(world==405)pending="telepathy-choices.png";

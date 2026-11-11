@@ -81,6 +81,8 @@ public final class SylarStoryService {
         if (time % 20 != 0) return;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) if (eligible(player)) remember(player, time);
         if (active != null) { tickEncounter(server, time); return; }
+        // Gray is introduced at the relay station. Free-roaming hunts come after the rescue.
+        if (!com.jayptucker.heroesevolved.story.LastSignalService.completed(server)) return;
         var data = SylarStoryData.get(server);
         if (time < data.quietUntil()) return;
         ServerPlayer chosen = null; int best = -1;

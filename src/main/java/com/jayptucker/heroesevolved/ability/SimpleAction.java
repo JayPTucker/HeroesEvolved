@@ -25,6 +25,7 @@ public final class SimpleAction implements AbilityAction {
     private final Predicate<AbilityUseContext> deactivation;
     private final Predicate<AbilityUseContext> deactivateOnPress;
     private final Predicate<AbilityUseContext> followUp;
+    private final java.util.function.Consumer<AbilityUseContext> release;
 
     private SimpleAction(Builder builder) {
         definition = new AbilityActionDefinition(
@@ -41,6 +42,7 @@ public final class SimpleAction implements AbilityAction {
         deactivation = builder.deactivation;
         deactivateOnPress = builder.deactivateOnPress;
         followUp = builder.followUp;
+        release = builder.release;
     }
 
     public static Builder builder(String path, int unlockLevel) {
@@ -79,6 +81,8 @@ public final class SimpleAction implements AbilityAction {
 
     @Override public boolean followUp(AbilityUseContext context) { return followUp.test(context); }
 
+    @Override public void release(AbilityUseContext context) { release.accept(context); }
+
     @Override
     public AbilityActivationResult activate(AbilityUseContext context) {
         return activation.activate(context)
@@ -96,6 +100,7 @@ public final class SimpleAction implements AbilityAction {
         private Predicate<AbilityUseContext> deactivation = context -> false;
         private Predicate<AbilityUseContext> deactivateOnPress = context -> false;
         private Predicate<AbilityUseContext> followUp = context -> false;
+        private java.util.function.Consumer<AbilityUseContext> release = context -> {};
 
         private Builder(String path, int unlockLevel) {
             this.path = path;
@@ -131,6 +136,12 @@ public final class SimpleAction implements AbilityAction {
 
         public Builder followUp(Predicate<AbilityUseContext> action) {
             followUp = action;
+            return this;
+        }
+
+        /** Called when the key is let go: for actions that do more the longer the key is held. */
+        public Builder release(java.util.function.Consumer<AbilityUseContext> action) {
+            release = action;
             return this;
         }
 

@@ -26,17 +26,19 @@ import java.util.*;
 @PrefixGameTestTemplate(false)
 public final class TelepathyGameTests {
     private record Actor(ServerPlayer player,List<Packet<?>> packets,boolean previousPvp){}
-    private static Actor player(GameTestHelper h,int z){
+    private static Actor player(GameTestHelper h,int z){return player(h,z,"mind-test");}
+    private static Actor player(GameTestHelper h,int z,String name){
         boolean previousPvp=h.getLevel().getServer().isPvpAllowed();
         h.getLevel().getServer().setPvpAllowed(true);
         List<Packet<?>> packets=new ArrayList<>();
-        var p=new FakePlayer(h.getLevel(),new GameProfile(UUID.randomUUID(),"mind-test")){
+        var p=new FakePlayer(h.getLevel(),new GameProfile(UUID.randomUUID(),name)){
             @Override public boolean canHarmPlayer(net.minecraft.world.entity.player.Player other){return !isAlliedTo(other);}
         };
         try {
             Connection connection=p.connection.getConnection();var f=Connection.class.getDeclaredField("channel");f.setAccessible(true);if(connection.channel()==null)f.set(connection,new EmbeddedChannel());
             p.connection=new ServerGamePacketListenerImpl(p.server,connection,p,CommonListenerCookie.createInitial(p.getGameProfile(),false)){
                 @Override public void send(Packet<?> packet){packets.add(packet);}
+                @Override public void send(Packet<?> packet,net.minecraft.network.PacketSendListener listener){packets.add(packet);}
             };
         }catch(ReflectiveOperationException e){throw new AssertionError(e);}
         p.setPos(Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(3,35,z))));p.setNoGravity(true);p.setYRot(0);p.setXRot(0);p.setGameMode(GameType.SURVIVAL);
@@ -201,5 +203,85 @@ public final class TelepathyGameTests {
             IllusionService.dissolve(observer.player,payloads.getFirst().id());h.assertTrue(b.packets.stream().filter(p->p instanceof ClientboundCustomPayloadPacket c&&c.payload() instanceof IllusionPayload).count()==1,"A bystander cannot dissolve another mind's vision");
             IllusionService.forget(b.player);h.assertTrue(b.packets.stream().anyMatch(p->p instanceof ClientboundCustomPayloadPacket c&&c.payload() instanceof IllusionPayload i&&i.kind()==-1),"Cleanup explicitly dissolves the private vision");h.succeed();
         }finally{clean(a,b,observer);}
+    }
+
+    /** The server's real player list, so chat broadcasts reach both test players' connections. */
+    @SuppressWarnings("unchecked")
+    private static List<ServerPlayer> listed(GameTestHelper h){
+        try{var f=net.minecraft.server.players.PlayerList.class.getDeclaredField("players");f.setAccessible(true);return (List<ServerPlayer>)f.get(h.getLevel().getServer().getPlayerList());}
+        catch(ReflectiveOperationException e){throw new AssertionError(e);}
+    }
+    private static List<MindTypingPayload> typing(Actor a){return a.packets.stream().filter(p->p instanceof ClientboundCustomPayloadPacket c&&c.payload() instanceof MindTypingPayload).map(p->(MindTypingPayload)((ClientboundCustomPayloadPacket)p).payload()).toList();}
+    private static String typed(Actor a){List<MindTypingPayload> lines=typing(a);return lines.isEmpty()?"":lines.getLast().text();}
+    private static List<net.minecraft.network.protocol.game.ClientboundDisguisedChatPacket> disguised(Actor a){return a.packets.stream().filter(net.minecraft.network.protocol.game.ClientboundDisguisedChatPacket.class::isInstance).map(net.minecraft.network.protocol.game.ClientboundDisguisedChatPacket.class::cast).toList();}
+    private static List<net.minecraft.network.protocol.game.ClientboundPlayerChatPacket> signedChat(Actor a){return a.packets.stream().filter(net.minecraft.network.protocol.game.ClientboundPlayerChatPacket.class::isInstance).map(net.minecraft.network.protocol.game.ClientboundPlayerChatPacket.class::cast).toList();}
+    private static net.minecraft.network.chat.LastSeenMessages.Update nothingSeen(){return new net.minecraft.network.chat.LastSeenMessages.Update(0,new BitSet());}
+    /** A chat line exactly as a client sends it: through the real packet handler. */
+    private static void say(Actor a,String text){a.player.connection.handleChat(new net.minecraft.network.protocol.game.ServerboundChatPacket(text,java.time.Instant.now(),0L,null,nothingSeen()));}
+    private static void run(Actor a,String command){a.player.connection.handleChatCommand(new net.minecraft.network.protocol.game.ServerboundChatCommandPacket(command));}
+    private static void op(Actor a,int level){a.player.server.getPlayerList().getOps().add(new net.minecraft.server.players.ServerOpListEntry(a.player.getGameProfile(),level,false));}
+    private static void deop(Actor a){a.player.server.getPlayerList().getOps().remove(a.player.getGameProfile());}
+
+    @GameTest(template="rewind_empty",batch="telepathy.voice",timeoutTicks=100)
+    public static void possessorChatIsSaidByThePossessedPlayer(GameTestHelper h){
+        Actor a=player(h,3,"possessor"),b=player(h,7,"possessed");focus(h,a,b);h.assertTrue(PossessionService.start(a.player,b.player,5,false),"Takeover starts");
+        h.runAfterDelay(35,()->{List<ServerPlayer> online=listed(h);try{
+            h.assertTrue(PossessionService.controlling(a.player),"Windup becomes possession");
+            online.add(a.player);online.add(b.player);
+            PossessionService.typed(a.player,"I am f");
+            h.assertTrue(typed(b).equals("I am f"),"The possessed player sees the possessor's half-typed line live");
+            h.assertTrue(typing(a).isEmpty(),"The possessor's own screen shows nothing extra");
+            PossessionService.typed(b.player,"help");
+            h.assertTrue(typed(b).equals("I am f")&&typing(a).isEmpty(),"The possessed player cannot push a line of their own");
+            say(a,"I am fine");
+            for(Actor x:List.of(a,b)){
+                var said=disguised(x);
+                h.assertTrue(said.size()==1&&said.getFirst().message().getString().equals("I am fine")&&said.getFirst().chatType().name().getString().equals("possessed"),
+                    "Both players see the line said by the possessed player");
+                h.assertTrue(signedChat(x).isEmpty(),"Nothing goes out under the possessor's name");
+            }
+            h.assertTrue(typed(b).isEmpty(),"Sending clears the typed line");
+            PossessionService.typed(a.player,"wai");PossessionService.typed(a.player,"");
+            h.assertTrue(typing(b).size()==4&&typed(b).isEmpty(),"Closing the chat box unsent clears it too");
+            new java.util.ArrayList<>(List.of(a,b)).forEach(x->x.packets.clear());
+            a.player.connection.handleSignedChatCommand(new net.minecraft.network.protocol.game.ServerboundChatCommandSignedPacket("me waves",java.time.Instant.now(),0L,net.minecraft.commands.arguments.ArgumentSignatures.EMPTY,nothingSeen()));
+            h.assertTrue(signedChat(b).stream().anyMatch(c->c.chatType().name().getString().equals("possessed")&&c.body().content().equals("waves")),
+                "Signed commands like /me are performed by the possessed player too");
+            PossessionService.typed(a.player,"x");
+            PossessionService.end(a.player,"Release");
+            h.assertTrue(typed(b).isEmpty(),"Release clears any half-typed line");
+            a.packets.clear();b.packets.clear();
+            say(a,"me again");
+            h.assertTrue(disguised(b).isEmpty()&&signedChat(b).stream().anyMatch(c->c.sender().equals(a.player.getUUID())&&c.chatType().name().getString().equals("possessor")),
+                "Released, the possessor speaks as themself again");
+            h.succeed();
+        }finally{online.remove(a.player);online.remove(b.player);clean(a,b);}});
+    }
+
+    @GameTest(template="rewind_empty",batch="telepathy.command_cap",timeoutTicks=100)
+    public static void possessedCommandsRunAsTheBodyAtTheLowerPermissionLevel(GameTestHelper h){
+        Actor a=player(h,3,"possessor"),b=player(h,7,"possessed");focus(h,a,b);h.assertTrue(PossessionService.start(a.player,b.player,5,false),"Takeover starts");
+        h.runAfterDelay(35,()->{try{
+            h.assertTrue(PossessionService.controlling(a.player),"Windup becomes possession");
+            op(a,4);op(b,4);a.packets.clear();
+            run(a,"effect give @s minecraft:glowing 30 0 true");
+            h.assertTrue(b.player.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING)&&!a.player.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING),
+                "Two ops: the command runs as the possessed player");
+            h.assertTrue(a.packets.stream().anyMatch(p->p instanceof net.minecraft.network.protocol.game.ClientboundSystemChatPacket s&&!s.overlay()&&s.content().getString().contains("possessed")),
+                "The possessor sees the command's feedback");
+            deop(a);
+            run(a,"effect give @s minecraft:slowness 30 0 true");
+            h.assertTrue(!b.player.hasEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN),"Possessing an op never grants op");
+            op(a,4);deop(b);
+            run(a,"effect give @s minecraft:weakness 30 0 true");
+            h.assertTrue(!b.player.hasEffect(net.minecraft.world.effect.MobEffects.WEAKNESS)&&!a.player.hasEffect(net.minecraft.world.effect.MobEffects.WEAKNESS),
+                "An op possessor is held to the possessed player's level");
+            h.assertTrue(PossessionService.permissionLevel(b.player,4)==4,"The cap only applies while a possessed command runs");
+            PossessionService.end(a.player,"Release");
+            run(a,"effect give @s minecraft:speed 30 0 true");
+            h.assertTrue(a.player.hasEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED)&&!b.player.hasEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED),
+                "Released, commands are the possessor's own again");
+            h.succeed();
+        }finally{deop(a);deop(b);clean(a,b);}});
     }
 }

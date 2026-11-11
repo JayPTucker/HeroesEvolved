@@ -200,7 +200,7 @@ public final class TimeIntroGameTests {
         double farthest = Math.max(IntroBlast.distance(TimeIntroService.ROAM_X0, TimeIntroService.ROAM_Z1),
                 IntroBlast.distance(TimeIntroService.ROAM_X1, TimeIntroService.ROAM_Z1));
         helper.assertTrue(TimeIntroService.RETURN_TICK >= TimeIntroService.DETONATION_TICK + IntroBlast.arrival(farthest)
-                + IntroBlast.FREEZE_TICKS + IntroBlast.REWIND_TICKS, "The farthest visitor must be frozen and rewound before the scene ends");
+                + IntroBlast.STOPPED_TICKS, "The farthest visitor must be frozen, rewound and held before the scene ends");
         helper.assertTrue(TimeIntroService.DETONATION_TICK >= 600, "Visitors get half a minute to walk the city first");
         helper.assertTrue(FractureCity.WIDTH == 16 * 16, "City must occupy sixteen chunks across");
         helper.succeed();

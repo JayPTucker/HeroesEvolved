@@ -53,10 +53,20 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops().sound(SoundType.METAL).noOcclusion().lightLevel(state -> 7)
                     .isSuffocating((state, level, pos) -> false).isViewBlocking((state, level, pos) -> false)));
 
+    /** A rotating red alarm light. The stasis bunker's turn from the moment a sleeper wakes. */
+    public static final DeferredBlock<com.jayptucker.heroesevolved.story.bunker.AlarmBeaconBlock> ALARM_BEACON = BLOCKS.register("alarm_beacon",
+            () -> new com.jayptucker.heroesevolved.story.bunker.AlarmBeaconBlock(BlockBehaviour.Properties.of().strength(1.5F, 3F)
+                    .sound(SoundType.LANTERN).noOcclusion()
+                    .lightLevel(state -> state.getValue(com.jayptucker.heroesevolved.story.bunker.AlarmBeaconBlock.LIT)
+                            ? com.jayptucker.heroesevolved.story.bunker.AlarmBeaconBlock.LIGHT : 0)));
+
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CentrifugeBlockEntity>> CENTRIFUGE_ENTITY =
             BLOCK_ENTITIES.register("centrifuge", () -> BlockEntityType.Builder.of(CentrifugeBlockEntity::new, CENTRIFUGE.get()).build(null));
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SynthesisStationBlockEntity>> SYNTHESIS_STATION_ENTITY =
             BLOCK_ENTITIES.register("synthesis_station", () -> BlockEntityType.Builder.of(SynthesisStationBlockEntity::new, SYNTHESIS_STATION.get()).build(null));
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.jayptucker.heroesevolved.story.bunker.AlarmBeaconBlockEntity>> ALARM_BEACON_ENTITY =
+            BLOCK_ENTITIES.register("alarm_beacon", () -> BlockEntityType.Builder.of(
+                    com.jayptucker.heroesevolved.story.bunker.AlarmBeaconBlockEntity::new, ALARM_BEACON.get()).build(null));
 
     private ModBlocks() {}
 

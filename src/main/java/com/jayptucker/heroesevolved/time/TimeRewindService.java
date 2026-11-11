@@ -60,6 +60,8 @@ public final class TimeRewindService {
     /** Records recent states for every awakened Time Manipulation user. */
     public static void tick(MinecraftServer server) {
         long gameTime = server.overworld().getGameTime();
+        RewindTravel.tick(server);
+        TimeRewindPlayers.tick(server, gameTime);
         // The death screen's Rewind runs on the tick after the respawn it asked for.
         for (UUID id : List.copyOf(PENDING_DEATH_REWINDS)) {
             ServerPlayer player = server.getPlayerList().getPlayer(id);
@@ -81,13 +83,15 @@ public final class TimeRewindService {
 
     static void record(ServerPlayer player, long gameTime) {
         if (!hasAwakenedTimeManipulation(player)) {
-            forget(player);
+            // Only drop what Rewind kept: the shared journals may be a speedster's (see SpeedOverrun).
+            if (HISTORY.containsKey(player.getUUID()) || DEATHS.containsKey(player.getUUID())) forget(player);
             return;
         }
         // A dead body records nothing, but its history is kept: the death can still be rewound.
         if (!player.isAlive()) return;
         Deque<Sample> samples = HISTORY.computeIfAbsent(player.getUUID(), ignored -> new ArrayDeque<>());
         long blockRevision = TimeRewindBlocks.track(player);
+        TimeRewindBlocks.anchor(player, gameTime);
         samples.addLast(new Sample(gameTime, player.level().dimension(), player.position(),
                 player.getYRot(), player.getXRot(), player.getHealth(), player.isOnFire(), blockRevision,
                 TimeRewindEntities.capture(player), TimeRewindContainers.capture(player)));
@@ -98,10 +102,8 @@ public final class TimeRewindService {
 
     public static boolean canRewind(ServerPlayer player) {
         Sample target = target(player);
-        if (target != null && acrossDeath(player, target) && !target.dimension.equals(player.level().dimension()))
-            return target.entities.complete() && target.containers.complete();
         return target != null && target.entities.complete() && target.containers.complete()
-                && TimeRewindBlocks.plan(player, target.blockRevision) != null;
+                && TimeRewindBlocks.plan(player, target.blockRevision, target.dimension) != null;
     }
 
     // ------------------------------------------------------------------
@@ -167,7 +169,8 @@ public final class TimeRewindService {
     /** A new life. Keep the old history while its death can still be rewound; otherwise start fresh. */
     public static void respawned(ServerPlayer player) {
         Death death = DEATHS.get(player.getUUID());
-        if (death == null) { forget(player); return; }
+        // Only a time user's own history ends with an unrewindable death; the shared journals may be a speedster's.
+        if (death == null) { if (HISTORY.containsKey(player.getUUID())) forget(player); return; }
         if (death.requested) PENDING_DEATH_REWINDS.add(player.getUUID());
     }
 
@@ -183,30 +186,18 @@ public final class TimeRewindService {
 
     public static boolean rewind(ServerPlayer player) {
         Sample target = target(player);
-        // Undoing a death can cross dimensions: go back to the world you died in first.
-        if (target != null && acrossDeath(player, target) && !target.dimension.equals(player.level().dimension())) {
-            ServerLevel destination = player.getServer().getLevel(target.dimension);
-            if (destination == null) target = null;
-            else {
-                crossingForRewind = true;
-                try {
-                    player.teleportTo(destination, target.position.x, target.position.y, target.position.z, target.yaw, target.pitch);
-                } finally { crossingForRewind = false; }
-            }
-        }
-        boolean undoingDeath = target != null && acrossDeath(player, target);
         if (target == null) {
-            player.displayClientMessage(Component.literal(
-                    "Record 15 seconds in this dimension before rewinding."), true);
+            player.displayClientMessage(Component.literal("Record 15 seconds before rewinding."), true);
             return false;
         }
-
-        ServerLevel level = player.serverLevel();
-        if (!target.entities.complete() || !target.containers.complete()) {
+        boolean undoingDeath = acrossDeath(player, target);
+        // History crosses worlds: fifteen seconds ago may have been somewhere else.
+        ServerLevel home = player.getServer().getLevel(target.dimension);
+        if (home == null || !target.entities.complete() || !target.containers.complete()) {
             player.displayClientMessage(Component.literal("There were too many entities to record a complete rewind. Wait for a complete history."), true);
             return false;
         }
-        TimeRewindBlocks.Plan blocks = TimeRewindBlocks.plan(player, target.blockRevision);
+        TimeRewindBlocks.Plan blocks = TimeRewindBlocks.plan(player, target.blockRevision, target.dimension);
         if (blocks == null) {
             player.displayClientMessage(Component.literal(
                     "The recent timeline is still being recorded. Wait 15 seconds."), true);
@@ -219,75 +210,38 @@ public final class TimeRewindService {
             return false;
         }
         Deque<Sample> samples = HISTORY.get(player.getUUID());
-        Vec3 from = player.position();
-        long gameTime = level.getServer().overworld().getGameTime();
-
-        // Trace the path being unwound, newest moments first.
-        List<Sample> path = new ArrayList<>(samples);
-        Vec3 previous = from;
-        for (int index = path.size() - 1; index >= 0; index--) {
-            Sample sample = path.get(index);
-            if (sample.gameTime < target.gameTime) {
-                break;
-            }
-            // History may cross dimensions; never draw another world's positions here.
-            if (!sample.dimension.equals(level.dimension())) {
-                previous = null;
-                continue;
-            }
-            if (previous != null && previous.distanceToSqr(sample.position) > 0.01D) {
-                AbilityEffects.send(level, Kind.TEMPORAL_REWIND, previous, sample.position,
-                        (gameTime - sample.gameTime) * 20.0D / REWIND_TICKS);
-            }
-            previous = sample.position;
-        }
-        AbilityEffects.send(level, Kind.TEMPORAL_BURST, from, from.add(0.0D, 1.0D, 0.0D), 2.0D);
-        // Ghosts of you along the way, appearing newest first: you watch yourself run backwards.
-        List<Sample> walked = new ArrayList<>();
-        for (int index = path.size() - 1; index >= 0; index--) {
-            Sample sample = path.get(index);
-            if (sample.gameTime < target.gameTime) break;
-            if (sample.dimension.equals(level.dimension())) walked.add(sample);
-        }
-        int echoes = Math.min(6, walked.size());
-        for (int i = 0; i < echoes; i++) {
-            Sample sample = walked.get(i * walked.size() / Math.max(1, echoes));
-            if (sample.position.distanceToSqr(from) < 1.0D) continue;
-            com.jayptucker.heroesevolved.network.TimeGhostPayload.echo(player, sample.position, sample.yaw, 18, i * 2);
-        }
 
         TimeStopService.stop(player);
         TimeSlowService.stop(player);
         SpaceTimeService.forget(player);
+        // The world snaps back at once; everyone it reaches is carried back through their own past (RewindTravel)
+        // and lands in it as they were. The one rewinding lands exactly where they stood.
+        UUID caster = player.getUUID();
+        Sample landingAt = target;
+        TimeRewindEntities.Landing landing = RewindTravel.landing(target.gameTime, RewindTravel.MOMENT_TICKS, current -> {
+            if (!current.getUUID().equals(caster)) return;
+            ServerLevel level = current.getServer().getLevel(landingAt.dimension);
+            if (level != null) current.teleportTo(level, landingAt.position.x, landingAt.position.y, landingAt.position.z, landingAt.yaw, landingAt.pitch);
+            current.resetFallDistance();
+            if (landingAt.health > current.getHealth()) current.setHealth(Math.min(current.getMaxHealth(), landingAt.health));
+            if (!landingAt.onFire) current.clearFire();
+            // Coming back from the dead: a hardcore respawn would otherwise leave them spectating.
+            if (undoingDeath && current.getServer().isHardcore() && current.isSpectator()) current.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+            current.displayClientMessage(Component.literal(undoingDeath
+                    ? "Time folds back 15 seconds. Your death never happened." : "Time folds back 15 seconds.").withStyle(ChatFormatting.GOLD), true);
+        });
         TimeRewindBlocks.restore(player, blocks);
-        TimeRewindContainers.restore(player, target.containers);
-        TimeRewindEntities.restore(player, target.entities, target.gameTime);
-        player.teleportTo(level, target.position.x, target.position.y,
-                target.position.z, target.yaw, target.pitch);
-        player.resetFallDistance();
-        if (target.health > player.getHealth()) {
-            player.setHealth(Math.min(player.getMaxHealth(), target.health));
-        }
-        if (!target.onFire) {
-            player.clearFire();
-        }
-
-        Vec3 to = player.position();
-        AbilityEffects.send(level, Kind.TIME_REWIND_ARRIVE, to, to.add(0.0D, 1.0D, 0.0D), 2.5D);
-        level.playSound(null, to.x, to.y, to.z, ModSounds.TIME_UNSLOW.get(),
-                SoundSource.PLAYERS, 0.9F, 0.8F);
-        ScreenTintPayload.send(player, 0x60C0A060, 10, ScreenTintPayload.Style.FLASH);
-        player.displayClientMessage(Component.literal(undoingDeath
-                ? "Time folds back 15 seconds. Your death never happened." : "Time folds back 15 seconds.").withStyle(ChatFormatting.GOLD), true);
+        TimeRewindContainers.restore(player, home, target.containers);
+        java.util.Set<UUID> restored = TimeRewindEntities.restore(player, home, target.entities, target.gameTime, landing);
+        // Anyone else who died in reach since then lives again (the rewind's own frame may not have held them).
+        TimeRewindPlayers.undoDeaths(player, target.gameTime, target.dimension, target.position, restored, landing);
         if (undoingDeath) {
             DEATHS.remove(player.getUUID());
             com.jayptucker.heroesevolved.progression.EvolutionTrials.advance(player, ModAbilities.TIME_MANIPULATION_ID);
-            // Coming back from the dead: a hardcore respawn would otherwise leave them spectating.
-            if (player.getServer().isHardcore() && player.isSpectator()) player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
         }
 
         // The rewound seconds no longer happened; you cannot rewind into them.
-        samples.clear();
+        if (samples != null) samples.clear();
         TimeRewindBlocks.forget(player.getUUID());
         TimeRewindEntities.forget(player.getUUID());
         MasteryService.markPowerUse(player, ModAbilities.TIME_MANIPULATION_ID);
@@ -305,6 +259,8 @@ public final class TimeRewindService {
     }
 
     public static void clear() {
+        RewindTravel.clear();
+        TimeRewindPlayers.clear();
         HISTORY.clear();
         DEATHS.clear();
         PENDING_DEATH_REWINDS.clear();
@@ -323,7 +279,8 @@ public final class TimeRewindService {
             Sample before = findTarget(samples, now, null, true);
             if (before != null && before.gameTime <= death.time) return before;
         }
-        return findTarget(samples, now, player.level().dimension(), false);
+        // Fifteen seconds ago may have been in another world: the rewind takes you back across.
+        return findTarget(samples, now, null, false);
     }
 
     /** The last recorded state at or before the full fifteen-second cutoff. */

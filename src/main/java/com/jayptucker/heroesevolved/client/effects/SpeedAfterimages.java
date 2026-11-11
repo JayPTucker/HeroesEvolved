@@ -45,13 +45,13 @@ public final class SpeedAfterimages {
     private SpeedAfterimages() {}
 
     public static float opacity(float age) { return .42F * Math.clamp(1 - age / LIFETIME, 0, 1); }
-    private static PlayerModel<AbstractClientPlayer> model(boolean narrow) {
+    static PlayerModel<AbstractClientPlayer> model(boolean narrow) {
         Minecraft mc = Minecraft.getInstance();
         if (wide == null) wide = new PlayerModel<>(mc.getEntityModels().bakeLayer(ModelLayers.PLAYER), false);
         if (slim == null) slim = new PlayerModel<>(mc.getEntityModels().bakeLayer(ModelLayers.PLAYER_SLIM), true);
         return narrow ? slim : wide;
     }
-    private static ModelPart[] parts(PlayerModel<?> m) {
+    static ModelPart[] parts(PlayerModel<?> m) {
         return new ModelPart[]{m.head, m.hat, m.body, m.leftArm, m.rightArm, m.leftLeg, m.rightLeg,
                 m.jacket, m.leftSleeve, m.rightSleeve, m.leftPants, m.rightPants};
     }

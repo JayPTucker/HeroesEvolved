@@ -16,15 +16,15 @@ import java.util.Map;
  * normals that follow the bumps, so a puff of smoke is lit like a lumpy three-dimensional mass and
  * not a flat sprite or a polished ball. Three levels of detail; the caller picks by size on screen.
  */
-final class CloudMesh {
+public final class CloudMesh {
     /** A sphere: unit vertex directions, triangles, and per variant a bump and a normal for each vertex. */
-    record Sphere(float[] v, int[] tris, float[][] bumps, float[][] normals) {}
+    public record Sphere(float[] v, int[] tris, float[][] bumps, float[][] normals) {}
 
-    static final int VARIANTS = 12;
-    static final Sphere SUPER = build(4), ULTRA = build(3), FINE = build(2), COARSE = build(1);
+    public static final int VARIANTS = 12;
+    public static final Sphere SUPER = build(4), ULTRA = build(3), FINE = build(2), COARSE = build(1);
 
     /** Shade for one vertex: n is the outward unit normal, bump the displacement, world the vertex position. */
-    interface Shade { void color(float nx, float ny, float nz, float bump, float wx, float wy, float wz, float[] rgb); }
+    public interface Shade { void color(float nx, float ny, float nz, float bump, float wx, float wy, float wz, float[] rgb); }
 
     /** Scratch space for one billow at a time; drawing happens on the render thread only. */
     private static final int MOST = 2562;
@@ -34,7 +34,7 @@ final class CloudMesh {
     private CloudMesh() {}
 
     /** The level of detail for a billow of {@code radius} seen from {@code distance}. */
-    static Sphere detail(float radius, double distance) {
+    public static Sphere detail(float radius, double distance) {
         double size = radius / Math.max(distance, 1);
         return size > 0.5 ? SUPER : size > 0.22 ? ULTRA : size > 0.06 ? FINE : COARSE;
     }
@@ -114,7 +114,7 @@ final class CloudMesh {
      * One billow. Centre and radii are relative to the camera; {@code wx, wy, wz} is the centre in the
      * world, for the shader. {@code spin} turns the lumps about the vertical so a billow seems to roll.
      */
-    static void puff(VertexConsumer out, Matrix4f matrix, Sphere sphere, float cx, float cy, float cz, float rx, float ry, float rz,
+    public static void puff(VertexConsumer out, Matrix4f matrix, Sphere sphere, float cx, float cy, float cz, float rx, float ry, float rz,
                      int variant, float spin, float bumpScale, float alpha, float wx, float wy, float wz, Shade shade) {
         float[] v = sphere.v;
         int k = Math.floorMod(variant, VARIANTS);

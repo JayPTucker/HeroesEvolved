@@ -42,7 +42,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-/** Quake: Shockwave rings, Resonate, Fault Line, Strain and the fracture, heartbeats, and Quake Blast flight. */
+/**
+ * Quake: Shockwave rings, Resonate, Fault Line, Strain and the fracture, heartbeats, Quake Blast flight,
+ * Quake Blast grinding through a stone wall, and an Earthquake's fissures.
+ */
 @EventBusSubscriber(modid = "heroesevolved", value = Dist.CLIENT)
 public final class QuakePreview {
     private static boolean started;
@@ -171,7 +174,43 @@ public final class QuakePreview {
             });
             case 410 -> pending = "quake-8-quake-blast-flight.png";
             case 415 -> onServer(mc, p -> QuakeService.stopQuakeBlast(p, false));
-            case 430 -> mc.stop();
+            // Held on a stone wall, the beam cracks it; let go early and the cracks fade with nothing broken.
+            case 430 -> onServer(mc, p -> {
+                QuakeKit.forget(p);
+                power(p, ModAbilities.QUAKE_ID);
+                mc.options.setCameraType(CameraType.FIRST_PERSON);
+                at(p, 120.5, .5, 0, 0);
+                for (int x = 117; x <= 124; x++) for (int y = 0; y < 5; y++) for (int z = 4; z <= 7; z++)
+                    p.serverLevel().setBlock(new BlockPos(x + OX, (int) GROUND + y, z), Blocks.STONE.defaultBlockState(), 3);
+            });
+            // A moment later, once she is standing on the ground (aimed level, the beam then braces her).
+            case 440 -> onServer(mc, p -> QuakeService.startQuakeBlast(p, 5));
+            case 470 -> pending = "quake-9-blast-cracking.png";
+            case 500 -> pending = "quake-10-blast-cracked.png";
+            case 502 -> onServer(mc, p -> QuakeService.stopQuakeBlast(p, false));
+            case 514 -> pending = "quake-11-released-fading.png";
+            case 548 -> pending = "quake-12-faded.png";
+            // Held again, and long enough: the stone breaks, and the hole slowly widens.
+            case 550 -> onServer(mc, p -> QuakeService.startQuakeBlast(p, 5));
+            case 640 -> pending = "quake-13-blast-broken.png";
+            case 720 -> pending = "quake-14-blast-widening.png";
+            case 725 -> onServer(mc, p -> QuakeService.stopQuakeBlast(p, false));
+            // Earthquake: three fissures crack outward, and the grass along them gives way.
+            case 740 -> onServer(mc, p -> {
+                QuakeKit.forget(p);
+                power(p, ModAbilities.QUAKE_ID);
+                at(p, 160.5, .5, 0, 0);
+            });
+            case 750 -> onServer(mc, p -> {
+                QuakeService.startEarthquake(p, 5);
+                // Hover above the epicenter to watch.
+                p.getAbilities().mayfly = true; p.getAbilities().flying = true; p.onUpdateAbilities();
+                p.teleportTo(p.serverLevel(), 160.5 + OX, GROUND + 13, -7.5, 0, 58);
+            });
+            case 800 -> pending = "quake-15-earthquake-cracking.png";
+            case 895 -> pending = "quake-16-earthquake-fissures.png";
+            case 940 -> pending = "quake-17-earthquake-after.png";
+            case 955 -> mc.stop();
             default -> { }
         }
     }

@@ -117,6 +117,7 @@ public final class NightThreeBunker {
     static void rooms(ServerLevel level) {
         for (Room room : BunkerBuilder.ROOMS) place(level, room);
         place(level, BunkerBuilder.OFFICE);
+        BunkerBuilder.retireFirstExhibit(level, ORIGIN.offset(BunkerBuilder.CHAMBER.at()));
         shaft(level);
         repairChamber(level);
         BlockState bars = Blocks.IRON_BARS.defaultBlockState();

@@ -12,7 +12,8 @@ import java.util.Map;
  *   you buffet what you pass, at 100 you break the sound barrier.</li>
  *   <li>Level 1, Blitz: rush an enemy with a flurry; press again to chain to the next. No target: a dash.</li>
  *   <li>Level 2, Snatch: take every dropped item nearby, every enemy shot in the air, and the weapon you look at.</li>
- *   <li>Level 4, Cyclone: run rings around yourself; the wind lifts enemies, then throws them.</li>
+ *   <li>Level 4, Cyclone: run rings around yourself; the wind lifts enemies, then throws them. Hold the key
+ *   to raise the ring into a tornado.</li>
  *   <li>Level 5, Lightspeed: one 48-block streak through everything on the line, ending in a sonic boom.</li>
  * </ul>
  */
@@ -31,7 +32,8 @@ public final class SuperspeedAbility implements Ability {
                     .activate(c -> SpeedKit.snatch(c.player(), c.abilityLevel()) > 0).build(),
             AbilitySlot.QUATERNARY, SimpleAction.builder("speed_cyclone", 4).cost(() -> 30, () -> 240)
                     .canUse(c -> !SpeedKit.cycloning(c.player()))
-                    .activate(c -> SpeedKit.cyclone(c.player(), c.abilityLevel())).build(),
+                    .activate(c -> SpeedKit.cyclone(c.player(), c.abilityLevel(), true))
+                    .release(c -> SpeedKit.releaseCyclone(c.player())).build(),
             AbilitySlot.QUINARY, SimpleAction.builder("speed_lightspeed", 5).cost(() -> 50, () -> 900)
                     .canUse(c -> !c.player().isPassenger())
                     .activate(c -> SpeedKit.lightspeed(c.player(), c.abilityLevel()) >= 0).build());

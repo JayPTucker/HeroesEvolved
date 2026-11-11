@@ -179,24 +179,32 @@ public final class ProgressionReworkGameTests {
     }
 
     @GameTest(template = "rewind_empty", batch = "progress.story")
-    public static void journalLeadFollowsTheRecords(GameTestHelper h) {
+    public static void journalTracksTheSignalSeparatelyFromRecords(GameTestHelper h) {
         h.assertTrue(StoryDiscoveries.ORDER.size() == StoryDiscoveries.NOTES.size()
                 && StoryDiscoveries.ORDER.stream().allMatch(note -> note.author().equals(StoryDiscoveries.NOTES.get(note.title()))),
                 "Every note appears once in story order, with its author");
         var p = player(h, ModAbilities.QUAKE_ID, 1);
+        int currentRecords = StoryDiscoveries.journalTotal(p);
+        h.assertTrue(currentRecords == 9, "A new Journal counts three bunker logs, five ruin notes, and testimony");
         for (var note : StoryDiscoveries.ORDER) {
             if (note.place() == StoryDiscoveries.Place.BUNKER) discover(p, note.title());
         }
-        h.assertTrue(StoryLead.next(p).contains("Isaac Mendez"), "With the bunker read, the ruins are next: " + StoryLead.next(p));
+        String lead = StoryLead.next(p);
+        h.assertTrue(lead.contains("receiver") || lead.contains("relay ruins"), "The signal is the campaign lead: " + lead);
 
         discover(p, "Dad");
-        h.assertTrue(StoryLead.next(p).contains("hourglass"), "Then Hiro's annex: " + StoryLead.next(p));
+        h.assertTrue(StoryLead.next(p).equals(lead), "Finding a ruin record leaves the current objective in place");
         List<String> recovered = StoryDiscoveries.recovered(p);
-        h.assertTrue(recovered.getFirst().equals("Stasis Wing: Orientation") && recovered.get(3).equals("Dad"),
+        h.assertTrue(recovered.equals(List.of("Stasis Wing: Orientation", "Lockdown Order 7", "Dad",
+                        "Assay: Helixite", StoryDiscoveries.SIGNAL_TESTIMONY)),
                 "The journal lists records in story order, not the order they were found: " + recovered);
+        discover(p, "For Claire");
+        h.assertTrue(StoryDiscoveries.journalTotal(p) == currentRecords + 1
+                        && StoryDiscoveries.recovered(p).contains("For Claire"),
+                "An archived bunker record remains discoverable and adds to the player's Journal total");
 
         p.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty().assignDormant(ModAbilities.QUAKE_ID));
-        h.assertTrue(StoryLead.next(p).contains("hasn't woken"), "A sleeper whose power is dormant is told how it wakes: " + StoryLead.next(p));
+        h.assertTrue(StoryLead.next(p).equals(lead), "The rescue is available before a power awakens");
         h.succeed();
     }
 

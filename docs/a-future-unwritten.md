@@ -1,18 +1,6 @@
-# A Future Unwritten — first playable expansion
+# A Future Unwritten
 
-This release adds Precognition, deeper Quake/Cryokinesis/Electrokinesis trees, shared power reactions, and the Hourglass Annex rescue operation. The complete roster now contains twelve unique powers, 135 skill nodes, and 45 optional active skills. The larger campaign and the other proposed new powers remain future roadmap work.
-
-## Start playing
-
-1. Open **Skills** in the inventory. Quake, Cryokinesis, and Electrokinesis now have a second page. Use the arrow buttons or mouse wheel to reach it.
-2. A Precognitive's awakening produces **The Unfinished Hour**, a real map painting of the Hourglass Annex at 5:50 PM on Odessa's Last Day (see [The Past](the-past.md#the-storyline-the-last-day)). It already happened, but it isn't finished. Other players can obtain the first canvas by interacting with an adult cartographer. Established telepathic clues or the Time Manipulation vision of the city also let you read the omen through the Journal.
-3. Open the **Journal** with **J**. **Read omen** records the clue and gives the first canvas once. **Follow omen** enters the annex after its short construction finishes. Someone receiving a shared canvas can use it or read it in the Journal to discover the operation.
-4. Open the partition, cool the copper relay, and escort both named captives to the yellow exit. Their cells are beyond the partition. Stay within ten blocks to guide them, and click a captive for instructions.
-5. **Leave annex** in the Journal, or use the exit lever, to return to the saved entry location. Return remains available after the operation ends.
-
-The manual route is **west isolator, east isolator, then the orange relay valve**. Quake techniques can release the partition; electrical techniques can overload its relay connection; cold techniques can stabilize the relay. Powers are alternatives to equipment. No particular power owner is required online.
-
-The operation has two minutes of active visitor time. Its timer pauses when all participants are away and survives restarts. A successful outcome requires both captives rescued and the relay cooled, and leaves each participant Hiro's key: the record *The Key*, which opens the finale, [the avenue at 6:14](the-past.md#the-avenue-at-614). After that, **Follow omen** goes to the avenue; Shift-click it to choose the Annex again. A casualty or timeout leaves a scarred outcome. Once everyone inside has left, another attempt rebuilds the annex. Offline participants retain their original return tickets across replay. The site accepts at most eight visitors at a time.
+This expansion introduced Precognition, deeper Quake, Cryokinesis and Electrokinesis trees, shared power reactions, and the original Hourglass Annex rescue. [The Last Signal](the-past.md) is the current campaign. The skill techniques and reactions below are still playable.
 
 ## Build choices and progression
 
@@ -20,7 +8,7 @@ Existing node IDs, point history, and loadouts remain valid. Each expanded tree 
 
 Only one capstone can be learned in a power's build. **Respecialize** refunds all purchases and restores the original actions, while retaining earned points and action cooldowns. Taking or dealing damage prevents immediate respecialization; wait ten seconds after combat. The screen shows the server's purchase result rather than assuming a click succeeded.
 
-Discovering each shared reaction for the first time, or saving the annex for the first time, grants two training points to the current power. Training is capped at six extra points per power. Discovery flags persist across restart and replay, so repeating an operation or changing a build cannot farm the same reward.
+Discovering each shared reaction for the first time grants two training points to the current power. Training is capped at six extra points per power. Discovery flags persist across restart and replay, so repeating an operation or changing a build cannot farm the same reward.
 
 ## Expanded trees
 
@@ -50,44 +38,22 @@ Discovering each shared reaction for the first time, or saving the annex for the
 
 Reactions have target limits and a short recovery interval. Secondary reaction hits cannot trigger another reaction recursively. Ordinary PvP, team, and cover rules still apply to the damaging searches.
 
-## Precognition
+## Precognition and the paintings
 
-Precognition was reworked: see [Precognition](precognition.md) for Danger Sense and Clarity,
-Premonition, Paint the Future, Saw It Coming, Fate Thread and The Future Is Written. Awakening
-still paints the Unfinished Hour, and Paint the Future with no one in view paints it again while the
-Annex is unresolved.
-
-The optional Oracle/Red Margin/Shared Fate branches add **Object Reading**, **Red Margin**, and **Omen Relay**. They reveal the operation and nearby villagers, mark three enemies' intentions, or share threat warnings with scoreboard teammates.
-
-Precognition participates in normal exclusive ownership and Eclipse assignment. Its vision observes a planned incident and existing combat intentions. The mod does not calculate arbitrary future decisions by players. Sylar can learn it; copied foresight gives him an occasional collision-checked projectile dodge.
-
-## Paintings and outcomes
-
-The original artwork shows two people behind glass and a dangerous copper heart. Cooling the relay changes the reactor's region on the shared canvas. Rescues revise the holding cells. A completed rescue replaces the painting with its matching outcome, Mara and Ivo out of the annex alive (the light still falls at 6:14, but not on them); a failed operation leaves a dark scar. Replays return it to an unresolved hour. Copies share the same saved map identity and update with it.
-
-The two images ship as 128×128 vanilla-map palette data, totaling 32 KiB before compression. Image conversion happens during authoring, not on the server. Artwork sources, prompts, and built-in imagegen provenance are in [artwork notes](artwork/README.md).
-
-## Performance and boundaries
-
-The annex is an isolated dimension with a fixed footprint. Construction changes at most 256 blocks per server tick and never overwrites a player settlement. It waits for the captive chunks' entities to load before starting the rescue clock. It does not force distant Overworld chunks. Temporary routes use the existing ice recovery system. The reactor and door edits are small mission-owned changes.
-
-Technique fields have bounded lifetimes and searches. Reactions consume their setup and cannot recurse. Cosmetic geometry uses the existing client budgets. The expansion adds no imported sound replacements.
-
-The annex records story outcomes and discoveries independently of combat rewind. Rewinding a local fight does not refund a completed discovery reward or reset the operation's durable outcome. This release does not implement the whole city-saving campaign, factions, Technopathy, Density Manipulation, Shapeshifting, or Matter Assembly. Those remain in [the expansion roadmap](expansion-roadmap.md).
+See the [current Precognition guide](precognition.md) for its kit, training and shareable canvas. The artwork for the original Annex vision now also depicts the sleepers and hot copper relay of The Last Signal. Copies of the current painting share an identity and update when the sleepers are safe. Older *Unfinished Hour* canvases keep their own map identity. Artwork sources and provenance are in the [artwork notes](artwork/README.md).
 
 ## Verification
 
-The gameplay suite covers legacy saves, expanded prerequisites, capstone exclusivity, respecialization, bounded circuits, consumed reactions, delayed damage, cocoon restrictions, locked paintings, incident persistence, the full manual rescue route, safe return, and one-use intention cancellation, alongside existing regressions. Native client fixtures render the expanded tree pages and both map-palette artworks. A separate integrated-world fixture verifies ordinary world loading, real-player entry, reactor cooling, and return.
+The gameplay suite covers expanded prerequisites, capstone exclusivity, respecialization, bounded circuits, consumed reactions, delayed damage, cocoon restrictions, locked paintings and one-use intention cancellation. The Annex fixture checks the historical mission in isolation.
 
 Useful commands:
 
 ```powershell
 .\gradlew.bat runGameTestServer --init-script tools/rewind-gametest.init.gradle
 .\gradlew.bat runClient --init-script tools/skill-ui-preview.init.gradle
-.\gradlew.bat runClient --init-script tools/unwritten-world-preview.init.gradle
 .\tools\verify-effect-geometry.ps1
 python tools/verify-skill-content.py
 .\gradlew.bat build
 ```
 
-The preview fixtures and high-resolution artwork sources are excluded from the mod JAR. Both clients and server must use the updated mod; the network protocol is 26. Live multiplayer testing is still needed for subjective balance, mission pacing, and performance under concurrent large powers.
+The preview fixtures and high-resolution artwork sources are excluded from the mod JAR.

@@ -14,6 +14,7 @@ import com.jayptucker.heroesevolved.mimicry.MimicryService;
 import com.jayptucker.heroesevolved.phasing.DensityService;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.registry.ModBlocks;
+import com.jayptucker.heroesevolved.registry.ModItems;
 import com.jayptucker.heroesevolved.skills.SkillCatalog;
 import com.mojang.authlib.GameProfile;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -22,13 +23,19 @@ import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.Connection;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.entity.LecternBlockEntity;
+import net.minecraft.world.level.block.entity.SignBlockEntity;
+import net.minecraft.world.level.block.state.properties.BedPart;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.util.FakePlayer;
@@ -111,21 +118,31 @@ public final class BunkerAndPowersGameTests {
         h.assertTrue(overworld.getBlockEntity(data.origin.offset(0, 1, 26)) instanceof LecternBlockEntity lectern && lectern.hasBook(),
                 "The orientation log waits on the chamber lectern");
         h.assertTrue(BunkerData.get(server).built && BunkerService.ensureBuilt(server).origin.equals(data.origin), "The bunker is built only once");
-        // The secret: a trapdoor under the red rug in security, a ladder down, and Bennet's letter in Sublevel 4-B.
+        BlockPos receiver = BunkerBuilder.receiverPos(data.origin);
+        h.assertTrue(overworld.getBlockState(receiver).is(Blocks.WAXED_WEATHERED_CUT_COPPER), "The receiver stands on the records desk");
+        h.assertTrue(BunkerBuilder.survivorPositions(data.origin).size() == 2
+                        && BunkerBuilder.survivorPositions(data.origin).stream().allMatch(pos ->
+                                overworld.getBlockState(pos).isAir() && overworld.getBlockState(pos.above()).isAir()),
+                "Both recovery spots have room to stand");
+        BlockPos grayCot = data.origin.offset(-6, 1, 14);
+        h.assertTrue(overworld.getBlockState(grayCot).is(Blocks.GRAY_BED)
+                        && overworld.getBlockState(grayCot).getValue(BlockStateProperties.BED_PART) == BedPart.FOOT
+                        && overworld.getBlockState(grayCot.south()).is(Blocks.GRAY_BED)
+                        && overworld.getBlockState(grayCot.south()).getValue(BlockStateProperties.BED_PART) == BedPart.HEAD,
+                "The original cot has a connected foot and head");
+        h.assertTrue(overworld.getBlockEntity(data.origin.offset(8, 1, 14)) instanceof ChestBlockEntity lab
+                        && lab.getItem(6).is(ModItems.BLOOD_SAMPLE.get())
+                        && lab.getItem(6).getOrDefault(ModItems.BLOOD_PURITY.get(),
+                                new com.jayptucker.heroesevolved.formula.BloodPurity(false, 1, "")).donated(),
+                "The lab offers a donated Formula sample");
         h.assertTrue(overworld.getBlockState(data.origin.offset(-12, 0, 9)).getBlock() instanceof net.minecraft.world.level.block.TrapDoorBlock,
-                "The trapdoor under the rug leads to Sublevel 4-B");
+                "The maintenance hatch is still in the security room");
+        h.assertTrue(overworld.getBlockState(data.origin.offset(-12, 1, 9)).isAir(), "The hatch is marked and exposed");
         boolean deepEnough = data.origin.getY() - 6 > overworld.getMinBuildHeight();   // shallow worlds have no room below
         if (deepEnough) {
-            h.assertTrue(overworld.getBlockState(data.origin.offset(-12, -1, 9)).is(net.minecraft.world.level.block.Blocks.LADDER), "A ladder goes down from the trapdoor");
-            h.assertTrue(overworld.getBlockEntity(data.origin.offset(-7, -5, 7)) instanceof LecternBlockEntity letter && letter.hasBook(),
-                    "Bennet's letter waits on his lectern");
+            h.assertTrue(overworld.getBlockState(data.origin.offset(-12, -1, 9)).is(Blocks.LADDER), "A ladder goes down from the hatch");
+            h.assertTrue(overworld.getBlockState(data.origin.offset(-7, -5, 7)).is(Blocks.CRAFTING_TABLE), "The maintenance bay has a workbench");
         }
-        var paintings = overworld.getEntitiesOfClass(net.minecraft.world.entity.decoration.Painting.class,
-                new net.minecraft.world.phys.AABB(data.origin).inflate(20, 14, 45));
-        h.assertTrue(paintings.stream().anyMatch(p -> p.getVariant().is(ResourceLocation.fromNamespaceAndPath("heroesevolved", "sleeper"))),
-                "Isaac's painting of the sleeper hangs in the stasis hall gallery");
-        h.assertTrue(!deepEnough || paintings.stream().anyMatch(p -> p.getVariant().is(ResourceLocation.fromNamespaceAndPath("heroesevolved", "bennets"))),
-                "The family photo hangs in Bennet's office");
         h.assertTrue(explosions(overworld, data.origin).size() == 1 && explosions(overworld, data.origin).getFirst().survives(),
                 "Isaac's explosion, Exhibit 1, hangs whole above the dead screen: " + explosions(overworld, data.origin));
         h.assertTrue(exhibitOne(overworld, data).equals("EXHIBIT 1"), "Its label reads EXHIBIT 1: " + exhibitOne(overworld, data));
@@ -149,47 +166,173 @@ public final class BunkerAndPowersGameTests {
                 ? label.getFrontText().getMessage(0, false).getString() : level.getBlockState(sign).toString();
     }
 
-    /** A bunker built before Exhibit 1 existed gets the painting and its label once someone is near, and nothing is rebuilt. */
+    /**
+     * A bunker built under layout 2 takes Exhibit 1 down from high on the far wall and hangs it in the dead
+     * screen's place once someone is near, and nothing else is rebuilt.
+     */
     @GameTest(template = "rewind_empty", batch = "bunker.upgrade", timeoutTicks = 400)
-    public static void anOlderBunkerGetsExhibitOne(GameTestHelper h) {
+    public static void anOlderBunkerHangsExhibitOneInTheScreensPlace(GameTestHelper h) {
         var server = h.getLevel().getServer();
         BunkerData data = BunkerService.ensureBuilt(server);
         var overworld = server.overworld();
         var chamber = com.jayptucker.heroesevolved.structure.Blueprint.load(BunkerBuilder.CHAMBER.blueprint());
-        BlockPos end = BunkerBuilder.BEAM_END;
-        BlockPos beam = data.origin.offset(BunkerBuilder.CHAMBER.at()).offset(chamber.offset(end.getX(), end.getY(), end.getZ(), net.minecraft.world.level.block.Rotation.NONE));
+        BlockPos at = data.origin.offset(BunkerBuilder.CHAMBER.at());
+        java.util.function.Function<BlockPos, BlockPos> cell = grid ->
+                at.offset(chamber.offset(grid.getX(), grid.getY(), grid.getZ(), net.minecraft.world.level.block.Rotation.NONE));
+        BlockPos beam = cell.apply(BunkerBuilder.BEAM_END);
         BlockPos lectern = data.origin.offset(0, 1, 26);
-        // As the chamber stood under layout 1: no painting, no label, and the ceiling beam running all the way to the wall.
+        var screen = BunkerBuilder.SCREEN;
+        var screenGrid = BlockPos.betweenClosedStream(screen.minX(), screen.minY(), screen.minZ(), screen.maxX(), screen.maxY(), screen.maxZ())
+                .map(BlockPos::immutable).toList();
+        var screenCells = screenGrid.stream().map(cell).toList();
+        var oldSigns = BunkerBuilder.FIRST_SIGNS.stream().map(cell).toList();
+        for (BlockPos light : BunkerBuilder.EXHIBIT_LIGHTS.stream().map(cell).toList())
+            h.assertTrue(overworld.getBlockState(light).is(Blocks.RED_STAINED_GLASS) && (overworld.getBlockState(light.above()).is(Blocks.GLOWSTONE)
+                            || overworld.getBlockState(light.above()) == BunkerPower.off(Blocks.GLOWSTONE.defaultBlockState())),
+                    "A new bunker has the lights over the far wall where BunkerBuilder.EXHIBIT_LIGHTS says: " + light);
+        h.assertTrue(screenCells.stream().allMatch(pos -> overworld.getBlockState(pos).is(Blocks.POLISHED_DEEPSLATE)),
+                "A new bunker has the panel behind Exhibit 1 where BunkerBuilder.SCREEN says");
+        // As the chamber stood under layout 2: the screen, its sign, and Exhibit 1 high above it with its label beside it.
         explosions(overworld, data.origin).forEach(net.minecraft.world.entity.Entity::discard);
-        overworld.setBlock(chamberCell(data, "sign:exhibit1"), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3);
-        overworld.setBlock(beam, net.minecraft.world.level.block.Blocks.WAXED_WEATHERED_CUT_COPPER.defaultBlockState(), 3);
-        var lights = BunkerBuilder.EXHIBIT_LIGHTS.stream().map(cell -> data.origin.offset(BunkerBuilder.CHAMBER.at())
-                .offset(chamber.offset(cell.getX(), cell.getY(), cell.getZ(), net.minecraft.world.level.block.Rotation.NONE))).toList();
-        for (BlockPos light : lights) {
-            h.assertTrue(overworld.getBlockState(light).is(net.minecraft.world.level.block.Blocks.RED_STAINED_GLASS)
-                    && overworld.getBlockState(light.above()).is(net.minecraft.world.level.block.Blocks.GLOWSTONE),
-                    "A new bunker has the lights over Exhibit 1 where BunkerBuilder.EXHIBIT_LIGHTS says: " + light);
-            overworld.setBlock(light, net.minecraft.world.level.block.Blocks.DEEPSLATE_BRICKS.defaultBlockState(), 3);
+        overworld.setBlock(chamberCell(data, "sign:exhibit1"), Blocks.AIR.defaultBlockState(), 3);
+        overworld.setBlock(beam, Blocks.AIR.defaultBlockState(), 3);
+        for (BlockPos pos : screenGrid) overworld.setBlock(cell.apply(pos), BunkerBuilder.oldScreenBlock(pos), 3);
+        for (int i = 0; i < oldSigns.size(); i++) {
+            BlockPos pos = oldSigns.get(i);
+            overworld.setBlock(pos, Blocks.SPRUCE_WALL_SIGN.defaultBlockState(), 3);
+            if (overworld.getBlockEntity(pos) instanceof SignBlockEntity sign) {
+                var text = sign.getFrontText();
+                var lines = i == 0 ? BunkerBuilder.OLD_EXHIBIT_LABEL : BunkerBuilder.OLD_SCREEN_LABEL;
+                for (int line = 0; line < lines.size(); line++) text = text.setMessage(line, Component.literal(lines.get(line)));
+                sign.setText(text, true);
+                sign.setWaxed(true);
+            }
         }
+        var explosion = overworld.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.PAINTING_VARIANT)
+                .getHolder(ResourceLocation.fromNamespaceAndPath("heroesevolved", "explosion")).orElseThrow();
+        BlockPos high = cell.apply(BunkerBuilder.FIRST_EXHIBIT);
+        overworld.addFreshEntity(new net.minecraft.world.entity.decoration.Painting(overworld, high, Direction.NORTH, explosion));
+        h.assertTrue(explosions(overworld, data.origin).size() == 1, "Exhibit 1 hangs where layout 2 put it");
         // A player's change elsewhere in the chamber must survive the upgrade.
-        overworld.setBlock(lectern.above(), net.minecraft.world.level.block.Blocks.GLASS.defaultBlockState(), 3);
-        data.layout = 1;
-        var chunk = new net.minecraft.world.level.ChunkPos(chamberCell(data, BunkerBuilder.EXHIBIT_ONE));
-        overworld.setChunkForced(chunk.x, chunk.z, true);
+        overworld.setBlock(lectern.above(), Blocks.GLASS.defaultBlockState(), 3);
+        BlockPos alteredPanel = screenCells.getFirst();
+        overworld.setBlock(alteredPanel, Blocks.ORANGE_CONCRETE.defaultBlockState(), 3);
+        BlockPos oldBeacon = cell.apply(new BlockPos(4, 10, 4));
+        overworld.setBlock(oldBeacon, ModBlocks.ALARM_BEACON.get().defaultBlockState(), 3);
+        BlockPos oldLamp = cell.apply(BunkerBuilder.EXHIBIT_LIGHTS.getFirst()).above();
+        overworld.setBlock(oldLamp, Blocks.REDSTONE_LAMP.defaultBlockState(), 3);
+        BlockPos receiver = BunkerBuilder.receiverPos(data.origin);
+        overworld.setBlock(receiver, Blocks.BLACK_STAINED_GLASS_PANE.defaultBlockState(), 3);
+        data.layout = 2;
+        var min = new ChunkPos(data.origin.offset(-14, 0, 0));
+        var max = new ChunkPos(data.origin.offset(15, 0, 40));
+        var forced = new java.util.ArrayList<ChunkPos>();
+        for (int x = min.x; x <= max.x; x++)
+            for (int z = min.z; z <= max.z; z++)
+                if (overworld.setChunkForced(x, z, true)) forced.add(new ChunkPos(x, z));
         h.succeedWhen(() -> {
-            h.assertTrue(BunkerBuilder.upgrade(overworld, data), "The upgrade waits for the chamber to load");
+            h.assertTrue(BunkerBuilder.upgrade(overworld, data), "The upgrade waits for the rooms to load");
             h.assertTrue(data.layout == BunkerData.LAYOUT, "The bunker is up to date: layout " + data.layout);
-            h.assertTrue(explosions(overworld, data.origin).size() == 1 && explosions(overworld, data.origin).getFirst().survives(),
-                    "Exhibit 1 hangs whole: " + explosions(overworld, data.origin));
-            h.assertTrue(exhibitOne(overworld, data).equals("EXHIBIT 1"), "Its label is back: " + exhibitOne(overworld, data));
-            h.assertTrue(overworld.getBlockState(beam).isAir(), "The ceiling beam was cut back to make room");
-            h.assertTrue(lights.stream().allMatch(light -> overworld.getBlockState(light).is(net.minecraft.world.level.block.Blocks.RED_STAINED_GLASS)),
-                    "The lights over it are put in");
-            h.assertTrue(overworld.getBlockState(lectern.above()).is(net.minecraft.world.level.block.Blocks.GLASS), "Nothing else was rebuilt");
+            var hanging = explosions(overworld, data.origin);
+            h.assertTrue(hanging.size() == 1 && hanging.getFirst().getPos().equals(chamberCell(data, BunkerBuilder.EXHIBIT_ONE))
+                    && hanging.getFirst().survives(), "Exhibit 1 hangs whole, in the screen's place: " + hanging);
+            h.assertTrue(exhibitOne(overworld, data).equals("EXHIBIT 1"), "Its label moved with it: " + exhibitOne(overworld, data));
+            h.assertTrue(oldSigns.stream().allMatch(pos -> overworld.getBlockState(pos).isAir()), "The old label and the screen's sign are gone");
+            h.assertTrue(screenCells.stream().filter(pos -> !pos.equals(alteredPanel))
+                    .allMatch(pos -> overworld.getBlockState(pos).is(Blocks.POLISHED_DEEPSLATE)), "The original screen became the panel");
+            h.assertTrue(overworld.getBlockState(alteredPanel).is(Blocks.ORANGE_CONCRETE), "A changed panel block keeps its own color");
+            h.assertTrue(overworld.getBlockState(beam).is(Blocks.WAXED_WEATHERED_CUT_COPPER), "The ceiling beam is whole again");
+            h.assertTrue(overworld.getBlockState(lectern.above()).is(Blocks.GLASS), "Nothing else was rebuilt");
+            h.assertTrue(overworld.getBlockState(oldBeacon).isAir(), "The excess old beacon was removed");
+            h.assertTrue(overworld.getBlockState(oldLamp).equals(data.powered ? Blocks.GLOWSTONE.defaultBlockState()
+                    : BunkerPower.off(Blocks.GLOWSTONE.defaultBlockState())), "The first-exhibit light uses the new dark state");
+            h.assertTrue(overworld.getBlockState(receiver).is(Blocks.WAXED_WEATHERED_CUT_COPPER),
+                    "The receiver replaced the old display pane");
             h.assertTrue(BunkerBuilder.upgrade(overworld, data) && explosions(overworld, data.origin).size() == 1, "A second upgrade adds nothing");
-            overworld.setBlock(lectern.above(), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3);
-            overworld.setChunkForced(chunk.x, chunk.z, false);
+            overworld.setBlock(lectern.above(), Blocks.AIR.defaultBlockState(), 3);
+            overworld.setBlock(alteredPanel, Blocks.POLISHED_DEEPSLATE.defaultBlockState(), 3);
+            forced.forEach(chunk -> overworld.setChunkForced(chunk.x, chunk.z, false));
         });
+    }
+
+    /** Every light the bunker's rooms have, as world positions with the state it has when the power is on. */
+    private static java.util.Map<BlockPos, net.minecraft.world.level.block.state.BlockState> bunkerLights(net.minecraft.server.level.ServerLevel level, BunkerData data) {
+        java.util.Map<BlockPos, net.minecraft.world.level.block.state.BlockState> lights = new java.util.LinkedHashMap<>();
+        var rooms = new java.util.ArrayList<>(BunkerBuilder.ROOMS);
+        // On a shallow world there is no room for the office.
+        if (data.origin.getY() + BunkerBuilder.OFFICE.at().getY() > level.getMinBuildHeight()) rooms.add(BunkerBuilder.OFFICE);
+        for (var room : rooms)
+            com.jayptucker.heroesevolved.structure.Blueprint.load(room.blueprint()).statesMatching(state -> BunkerPower.off(state) != null)
+                    .forEach((cell, on) -> lights.put(data.origin.offset(room.at()).offset(cell), on));
+        return lights;
+    }
+
+    /**
+     * A new bunker wakes on emergency power: every light dark, only the alarm beacons turning. When the main
+     * breaker closes the lights come on, each as the blueprint has it, and the beacons stay lit.
+     */
+    @GameTest(template = "rewind_empty", batch = "bunker.power", timeoutTicks = 200)
+    public static void aNewBunkerWakesDarkAndThePowerComesBack(GameTestHelper h) {
+        var server = h.getLevel().getServer();
+        BunkerData data = BunkerService.ensureBuilt(server);
+        var overworld = server.overworld();
+        var lights = bunkerLights(overworld, data);
+        h.assertTrue(lights.size() > 20, "The bunker's lights are found from its blueprints: " + lights.size());
+        var beacons = new java.util.ArrayList<BlockPos>();
+        for (var room : BunkerBuilder.ROOMS)
+            com.jayptucker.heroesevolved.structure.Blueprint.load(room.blueprint()).markerOffsets(BunkerBuilder.BEACON)
+                    .forEach(cell -> beacons.add(data.origin.offset(room.at()).offset(cell)));
+        h.assertTrue(beacons.size() == 3, "Three alarm beacons: " + beacons.size());
+        for (BlockPos beacon : beacons) {
+            var state = overworld.getBlockState(beacon);
+            h.assertTrue(state.is(ModBlocks.ALARM_BEACON.get()) && state.getValue(com.jayptucker.heroesevolved.story.bunker.AlarmBeaconBlock.LIT)
+                    && overworld.getBlockEntity(beacon) instanceof com.jayptucker.heroesevolved.story.bunker.AlarmBeaconBlockEntity
+                    && state.canSurvive(overworld, beacon), "A lit alarm beacon, mounted on a wall or ceiling, at " + beacon + ": " + state);
+        }
+        Runnable dark = () -> lights.forEach((pos, on) -> {
+            var state = overworld.getBlockState(pos);
+            h.assertTrue(state == BunkerPower.off(on) && !state.is(Blocks.REDSTONE_LAMP),
+                    "Dark on emergency power: " + pos + " is " + state + ", " + on + " when lit");
+        });
+        Runnable lit = () -> {
+            h.assertTrue(data.powered && !BunkerPower.switching(), "The power is back");
+            lights.forEach((pos, on) -> h.assertTrue(overworld.getBlockState(pos) == on,
+                    "Lit: " + pos + " is " + overworld.getBlockState(pos) + ", not " + on));
+            for (BlockPos beacon : beacons)
+                h.assertTrue(overworld.getBlockState(beacon).getValue(com.jayptucker.heroesevolved.story.bunker.AlarmBeaconBlock.LIT), "The beacons still turn");
+        };
+        // A bunker some earlier test already lit goes dark the way it does for each new sleeper.
+        if (data.powered || BunkerPower.switching()) BunkerPower.cut(overworld, data);
+        dark.run();
+        h.assertTrue(BunkerPower.start(overworld, data) && !BunkerPower.start(overworld, data), "The breaker closes once");
+        h.startSequence()
+                .thenWaitUntil(lit)
+                .thenExecute(() -> {
+                    // The next sleeper wakes: the power fails again, every light at once, and comes back the same way.
+                    BunkerPower.cut(overworld, data);
+                    h.assertTrue(!data.powered, "Back on emergency power");
+                    dark.run();
+                    h.assertTrue(BunkerPower.start(overworld, data), "The breaker closes again");
+                })
+                .thenWaitUntil(lit)
+                .thenSucceed();
+    }
+
+    /** A sleeper's name goes on the nameplate over their pod: revival in progress, then revived. */
+    @GameTest(template = "rewind_empty", batch = "bunker.signs")
+    public static void aSleepersNameGoesOverTheirPod(GameTestHelper h) {
+        var server = h.getLevel().getServer();
+        BunkerData data = BunkerService.ensureBuilt(server);
+        var overworld = server.overworld();
+        BlockPos plate = chamberCell(data, "sign:pod05");
+        java.util.function.Supplier<String> words = () -> overworld.getBlockEntity(plate) instanceof net.minecraft.world.level.block.entity.SignBlockEntity sign
+                ? java.util.stream.IntStream.range(0, 4).mapToObj(i -> sign.getFrontText().getMessage(i, false).getString())
+                        .collect(java.util.stream.Collectors.joining("|")) : overworld.getBlockState(plate).toString();
+        BunkerBuilder.labelPod(overworld, data.origin, 4, "Tester", false);
+        h.assertTrue(words.get().equals("SUBJECT 05|Tester|REVIVAL|IN PROGRESS"), "While Tester wakes: " + words.get());
+        BunkerBuilder.labelPod(overworld, data.origin, 4, "Tester", true);
+        h.assertTrue(words.get().equals("SUBJECT 05|Tester|REVIVED|"), "Once Tester is out: " + words.get());
+        h.succeed();
     }
 
     /** Every shipped blueprint parses against the real block registry, and the bunker's markers are all there. */

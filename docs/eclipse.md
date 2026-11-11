@@ -19,8 +19,8 @@ time back with `/time set` lets an earlier Eclipse day fire again; a day never h
 
 | Phase | Default length | What happens |
 | --- | --- | --- |
-| Approach | 3 min (`approachTicks`) | A dark moon slides steadily onto the sun. Daylight barely changes until the last sliver. |
-| Totality | 3.5 min (`totalityTicks`) | The umbra sweeps over everyone outside, the sky goes near-night and the stars come out. A pearly corona and pink prominences ring the black disc, with a diamond-ring flare at each end. **Dormant powers are handed out, and every power is suppressed.** |
+| Approach | 3 min (`approachTicks`) | A dark square moon slides steadily onto the square sun. Daylight barely changes until the last sliver. |
+| Totality | 3.5 min (`totalityTicks`) | The umbra sweeps over everyone outside, the sky goes near-night and the stars come out. Like vanilla's sun and moon, the moon is square: a pearly square corona and pink prominences frame it, with a diamond-ring flare at each end. **Dormant powers are handed out, and every power is suppressed.** |
 | Departure | 3 min (`departureTicks`) | The moon slides off the other side and daylight returns. Powers work again. |
 
 The shadow works through the lightmap: anything lit by the sky darkens, while torch-lit
@@ -30,10 +30,18 @@ so the horizon does not glow. Rain hides the moon along with the sun, as vanilla
 
 ## Who gets a power
 
-At the start of totality every online player without a power gets one roll
-(`dormantAbilityChance`, default 40%) for a random unclaimed power. A player who joins during
-totality rolls on login. Each Eclipse allows one roll per player, even across reconnects. The
-chosen are told only that "something in your blood answers the dark."
+The first power a world ever sees is always **Space-Time Manipulation**. At the first totality
+with anyone online (strictly: while no power in the world has an owner yet, so a power an admin grants earlier
+takes its place), one online player
+without a power is chosen at random and given Space-Time, dormant, with no chance roll. If nobody
+is online, the first player to join during that totality is the one. Like any first Space-Time
+unlock, its awakening later brings the Odessa vision.
+
+After that, every power is random. At the start of totality every online player without a power
+gets one roll (`dormantAbilityChance`, default 40%) for a random unclaimed power, and the first
+power's owner never rolls again because they already have one. A player who joins during totality
+rolls on login. Each Eclipse allows one roll per player, even across reconnects. Each power still
+has exactly one owner. The chosen are told only that "something in your blood answers the dark."
 
 ## Adrenaline: when a dormant power wakes
 

@@ -14,8 +14,16 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.PlayerChatMessage;
+import net.minecraft.commands.CommandSource;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import com.mojang.brigadier.ParseResults;
+import com.jayptucker.heroesevolved.HeroesEvolved;
 import net.neoforged.neoforge.network.PacketDistributor;
 import java.util.*;
+import java.util.function.Consumer;
 
 /** Real-body possession. Inventory and interactions execute through the victim's normal server handler. */
 public final class PossessionService {
@@ -26,7 +34,7 @@ public final class PossessionService {
         final ServerPlayer owner; final LivingEntity body; final int tier; final long started; final Vec3 anchor;
         final boolean sight; final boolean noAi;
         int resistance, cue, nonce; long lastPress = -100, lastInput, lastAttack = -100; boolean active;
-        float forward, strafe; boolean jump, sneak;
+        float forward, strafe; boolean jump, sneak; String typed="";
         final Set<Integer> heldKeys = new HashSet<>(); final Set<String> heldActions = new HashSet<>();
         Session(ServerPlayer p, LivingEntity b, int t, boolean sight) {
             owner=p; body=b; tier=t; this.sight=sight; started=now(p); anchor=p.position();
@@ -162,6 +170,7 @@ public final class PossessionService {
                 s.heldKeys.forEach(k->AbilityUseService.releaseKey(p,k)); s.heldActions.forEach(k->AbilityUseService.releaseAction(p,k));
                 com.jayptucker.heroesevolved.flight.FlightService.setForwardInput(p,false);
                 p.stopUsingItem(); p.closeContainer(); RESISTANT.put(p.getUUID(),now(owner)+400);
+                if(!s.typed.isEmpty()) PacketDistributor.sendToPlayer(p,new MindTypingPayload(""));
                 PacketDistributor.sendToPlayer(p,new MindStatePayload(0,-1,0,0,0,0,0,0));
                 p.displayClientMessage(Component.literal(reason),true); p.inventoryMenu.sendAllDataToRemote();
             }
@@ -182,7 +191,10 @@ public final class PossessionService {
         if(p.down()) PowerFeedback.report(actor,p.key()==0?AbilityUseService.activateAction(actor,p.actionKey(),p.overexert()):AbilityUseService.activateKey(actor,p.key(),p.overexert()));
         else if(p.key()==0) AbilityUseService.releaseAction(actor,p.actionKey()); else AbilityUseService.releaseKey(actor,p.key());
     }
-    /** Whitelisted gameplay packets only. Chat, commands, creative slots and permissions never transfer. */
+    /**
+     * Whitelisted gameplay packets only. Creative slots and permissions never transfer; chat and
+     * commands go through {@link #speak} and {@link #command} instead.
+     */
     public static boolean route(ServerPlayer sender, Packet<ServerGamePacketListener> packet) {
         if(forwarding || !sender.server.isSameThread())return false;
         Session s=SESSIONS.get(sender.getUUID());
@@ -207,5 +219,63 @@ public final class PossessionService {
         return false;
     }
     private static void mirrorInventory(ServerPlayer p) { p.inventoryMenu.sendAllDataToRemote(); p.connection.send(new ClientboundSetCarriedItemPacket(p.getInventory().selected)); p.connection.send(new ClientboundSetHealthPacket(p.getHealth(),p.getFoodData().getFoodLevel(),p.getFoodData().getSaturationLevel())); }
+    /** The player whose body {@code p} drives right now, or null. Mobs and shared sight have no voice to borrow. */
+    private static ServerPlayer voice(ServerPlayer p) {
+        Session s=SESSIONS.get(p.getUUID());
+        return s!=null && s.active && !s.sight && s.body instanceof ServerPlayer b ? b : null;
+    }
+    /**
+     * A possessor's chat line is said by the body. The possessor's signature only vouches for the
+     * possessor, so the line goes out unsigned, as the body's ordinary-looking chat; the log keeps
+     * the real author. Returns false when the sender speaks for themself.
+     */
+    public static boolean speak(ServerPlayer sender, PlayerChatMessage message) {
+        ServerPlayer body=voice(sender); if(body==null) return false;
+        HeroesEvolved.LOGGER.info("[Possession] {} speaks through {}: {}",sender.getGameProfile().getName(),body.getGameProfile().getName(),message.signedContent());
+        typed(sender,"");
+        PlayerChatMessage spoken=PlayerChatMessage.system(message.signedContent()).withUnsignedContent(message.decoratedContent());
+        sender.server.getPlayerList().broadcastChatMessage(spoken,body,ChatType.bind(ChatType.CHAT,body));
+        return true;
+    }
+    /** The body running a possessor's command right now, and the permission level it may not exceed. */
+    private static ServerPlayer commandBody; private static int commandLevel;
+    /**
+     * Runs a possessor's command as the body, at no more than the lower of the two players'
+     * permission levels. The command is parsed again with the body as its source so every
+     * permission check sees the capped level; signed arguments keep the possessor's signatures.
+     * Returns false when the sender is not possessing a player.
+     */
+    public static boolean command(ServerPlayer sender, ParseResults<CommandSourceStack> parsed, String command, Consumer<ParseResults<CommandSourceStack>> perform) {
+        ServerPlayer body=voice(sender); if(body==null) return false;
+        int level=Math.min(sender.server.getProfilePermissions(sender.getGameProfile()),sender.server.getProfilePermissions(body.getGameProfile()));
+        CommandSourceStack own=parsed.getContext().getSource();
+        CommandSourceStack source=body.createCommandSourceStack().withSource(new Voice(body,sender)).withPermission(level);
+        ParseResults<CommandSourceStack> asBody=Commands.mapSource(sender.server.getCommands().getDispatcher().parse(command,source),
+            s->s.withSigningContext(own.getSigningContext(),own.getChatMessageChainer()));
+        HeroesEvolved.LOGGER.info("[Possession] {} runs /{} as {} at permission level {}",sender.getGameProfile().getName(),command,body.getGameProfile().getName(),level);
+        typed(sender,"");
+        ServerPlayer previousBody=commandBody; int previousLevel=commandLevel;
+        commandBody=body; commandLevel=level;
+        try {perform.accept(asBody);} finally {commandBody=previousBody; commandLevel=previousLevel;}
+        return true;
+    }
+    /** The body's own permission checks stay capped while it runs a possessor's command. */
+    public static int permissionLevel(ServerPlayer player, int level) { return player==commandBody ? Math.min(level,commandLevel) : level; }
+    /** Feedback from a possessed command reaches both minds. */
+    private record Voice(ServerPlayer body, ServerPlayer owner) implements CommandSource {
+        @Override public void sendSystemMessage(Component message) { body.sendSystemMessage(message); owner.sendSystemMessage(message); }
+        @Override public boolean acceptsSuccess() { return body.acceptsSuccess(); }
+        @Override public boolean acceptsFailure() { return true; }
+        @Override public boolean shouldInformAdmins() { return body.shouldInformAdmins(); }
+    }
+    /** What the possessor's chat box holds right now, shown live on the possessed player's screen. Empty clears it. */
+    public static void typed(ServerPlayer sender, String text) {
+        Session s=SESSIONS.get(sender.getUUID());
+        if(s==null || !(s.body instanceof ServerPlayer body)) return;
+        String line=voice(sender)==null ? "" : net.minecraft.util.StringUtil.filterText(text.length()>MindTypingPayload.MAX_LENGTH ? text.substring(0,MindTypingPayload.MAX_LENGTH) : text);
+        if(line.equals(s.typed)) return;
+        s.typed=line;
+        PacketDistributor.sendToPlayer(body,new MindTypingPayload(line));
+    }
     private PossessionService(){}
 }

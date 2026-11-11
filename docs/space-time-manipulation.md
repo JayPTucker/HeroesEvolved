@@ -2,6 +2,9 @@
 
 Inspired by [Hiro Nakamura's powers](https://heroes.fandom.com/wiki/Hiro_Nakamura#Powers): spatial travel, carrying someone by touch, relative time, stopped time, reversal, and travel into the past. This is a gameplay adaptation; it does not simulate every possible past or future.
 
+Space-Time is always the first power a world sees: the first Eclipse gives it, dormant, to a random
+player online at totality (see [Who gets a power](eclipse.md#who-gets-a-power)).
+
 ## Default controls
 
 These are the default keys; rebinding and the inventory skill tree still work.
@@ -11,8 +14,30 @@ These are the default keys; rebinding and the inventory skill tree still work.
 | 1 | G | Fold Space | Blink to a visible surface or into open air. Cancels falling momentum. From level 2, Shift carries one nearby living companion if there is room. Players must be teammates or crouching. |
 | 1 | H | Between Seconds | A slow-time bubble follows you. Entity ticks and projectile motion slow; the server clock keeps running. Shift + H ends it. |
 | 3 | Z | Still World | Freeze entities in a fixed area. Your attacks accumulate and land when time resumes. Shift while starting includes one touching companion; Shift + Z while active resumes time for free. |
-| 4 | X | Rewrite the Moment | Restore the recorded local timeline from fifteen seconds ago, including changed blocks, containers, and recorded entities. Return to your earlier position and recover lost health. It costs **130 stamina** (hold Shift to overexert when you're short) and recovers in **4 minutes at Level 4, 2½ minutes at Level 5**. While it's ready, a faint ghost of you, ringed in violet and visible only to you, stands where it would take you. |
+| 4 | X | Rewrite the Moment | Restore the recorded timeline from fifteen seconds ago, including changed blocks, containers, and recorded entities, everywhere you have been in those seconds. Anyone who died in reach lives again. Everyone it reaches is carried back through their own fifteen seconds (see [Going back](#going-back)), even across a portal, and lands where they were. You recover lost health. It costs **130 stamina** (hold Shift to overexert when you're short) and recovers in **4 minutes at Level 4, 2½ minutes at Level 5**. While it's ready, a faint ghost of you, ringed in violet and visible only to you, stands where it would take you. |
 | 5 | V | Walk the Past | Shift + V records an area; V visits the recorded past with nearby companions. V in the past returns without energy cost or an entry-cooldown delay. |
+
+### Going back
+
+A rewind (Rewrite the Moment, or a speedster's [Overrun](superspeed.md#overrun-outrunning-the-last-minute))
+puts the world back at once, then sends back everyone it reaches, one by one:
+
+- **Everywhere you have been.** Block changes, creatures that turned up, and items dropped are recorded
+  within 64 blocks of where you are and of everywhere you have been in the time it reaches back. A block
+  someone placed where you stood, after you had left, is taken away again.
+- **Deaths are undone.** Your own (see below), and anyone else's that happened in reach: where you were
+  then, where you are now, or anywhere along your way. They come back alive as they were at that moment,
+  with what they carried, and what their death dropped (items and experience) is gone again. A player who
+  is offline is put back when they next log in. In hardcore they play again instead of spectating.
+- **The trip back.** Everyone the rewind reaches (you, anyone near where you are going back to, anyone
+  whose death it undoes) is carried backward along the path they actually took, for up to one and a half
+  seconds (three for Overrun), at most 6 blocks a tick. If that is not enough for the whole path, what is
+  left is crossed in one cut at the end. Their view glides back along it under a violet edge, their
+  controls do nothing, nothing can hurt them, and a violet trail streams along the way they came. Echoes
+  of them appear along the path, newest first. Then they land as they were, with the flash and sound
+  Rewind has always ended with.
+- **Across worlds.** History is kept through portals. If the path went through one, the trip goes back
+  through it into the other world and on to where they were. Someone who logs out mid-trip lands first.
 
 ### Rewinding your own death
 
@@ -55,7 +80,7 @@ Wayfinder's signature ability hangs under **Accelerated Force Mastery**, after S
 
 ## Story: The Way Back
 
-The acquisition vision is Odessa at 6:14 PM on the Last Day, which already happened centuries ago (see [The Past](the-past.md#the-storyline-the-last-day)). The HUD reads **PAST · ODESSA, THE LAST DAY** there. Its compact captions lead into five durable advancements, visible in the vanilla Advancements screen and in the Journal as **The Way Back**:
+The acquisition vision is Odessa at 6:14 PM on the Last Day, centuries before [The Last Signal](the-past.md). The HUD reads **PAST · ODESSA, THE LAST DAY** there. Five durable advancements appear in the vanilla Advancements screen and in the Journal as **The Way Back**.
 
 1. **The Last Day** — stand in Odessa at 6:14 PM and escape the light.
 2. **No One Left Behind** — carry a companion through space or share stopped time by touch.
@@ -63,7 +88,7 @@ The acquisition vision is Odessa at 6:14 PM on the Last Day, which already happe
 4. **The Butterfly Effect** — successfully rewrite fifteen seconds.
 5. **The Road Not Taken** — enter a recorded past.
 
-Milestones can be earned out of order. Each gives one piece of guidance in chat; flags survive death and relogging. Existing witnesses of the city receive its milestone on login. The last one points to the Hourglass Annex, 5:50 PM on the Last Day; saving it leads to the finale, [the avenue at 6:14](the-past.md#the-avenue-at-614), where a time traveller's blinks, carried companions and stopped time all help bring people to Bennet's door.
+Milestones can be earned out of order and survive death and relogging. Existing witnesses of the city receive its milestone on login. The bunker receiver offers directions to the Overworld relay ruins.
 
 Future missions can query `TemporalStoryService.has(player, milestone)` to branch dialogue, gate evidence, or choose a mission stage. Flags are independent from telepathy's existing memory sequence and do not reset it. Suggested continuation: a telepath identifies a survivor's memory, the traveller records the meeting place, and the group revisits that record to discover who triggered the disaster. Existing successful power activations still attract Sylar's attention.
 

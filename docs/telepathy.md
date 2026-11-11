@@ -50,9 +50,25 @@ remain changed. Inventory contents are never copied between players on the serve
 are returned through the normal menu-close behavior when possession ends.
 
 Held ability inputs are released on exit, and forward-flight input is cleared. Persistent toggles
-retain their normal native behavior. Server commands, chat, creative permissions, and account
-settings do not transfer. Mounted targets are excluded at entry. Mobs can be moved and made to
+retain their normal native behavior. Creative permissions and account settings do not transfer.
+Mounted targets are excluded at entry. Mobs can be moved and made to
 perform their native melee attack; they do not gain a player inventory or player power loadout.
+
+## Speaking through a possessed player
+
+While a telepath controls another player's body, the controller's chat is said by the body: everyone
+sees it under the possessed player's name. The line goes out unsigned (the controller's
+secure-chat signature only vouches for the controller), and the server log records the real author.
+
+Commands run as the possessed player, from their position, at no more than the lower of the two
+players' permission levels, so possessing an op never grants op, and an op controller is held to
+the victim's level. Command feedback reaches both players. Signed commands such as `/me` and
+`/msg` keep the controller's signature but show the possessed player's name.
+
+The possessed player watches their own chat box fill: a small lilac line where their chat input
+would be shows exactly what the controller is typing, live, and clears when the line is sent, the
+chat box is closed, or control ends. Mobs have no voice, so chat and commands from a telepath
+possessing a mob stay the telepath's own.
 
 ## Private illusions
 

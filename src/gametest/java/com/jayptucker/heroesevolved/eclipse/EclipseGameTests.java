@@ -27,6 +27,15 @@ import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
+import com.jayptucker.heroesevolved.ability.data.PlayerAbilityData;
+import com.jayptucker.heroesevolved.data.PowerOwnershipSavedData;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @GameTestHolder("heroesevolved")
@@ -125,6 +134,68 @@ public final class EclipseGameTests {
             EclipseService.end(player.getServer());
             remove(player);
         }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "eclipse.first_power")
+    public static void firstEclipsePicksSomeoneOnlineAndGivesThemSpaceTime(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        CompoundTag owners = PowerOwnershipSavedData.get(server).save(new CompoundTag(), server.registryAccess());
+        List<ServerPlayer> online = List.of(player(helper), player(helper), player(helper));
+        ServerPlayer offline = player(helper);
+        double chance = HeroesEvolvedConfig.COMMON.eclipseDormantAbilityChance.get();
+        Set<ServerPlayer> chosen = new HashSet<>();
+        try {
+            // With the usual roll switched off, only the guaranteed first power can appear.
+            HeroesEvolvedConfig.COMMON.eclipseDormantAbilityChance.set(0.0D);
+            helper.assertTrue(EclipseService.beginTotality(server), "The first Eclipse reaches totality");
+
+            for (int world = 0; world < 12; world++) {
+                // A fresh world: nobody has ever had a power.
+                PowerOwnershipTestSupport.replace(server, new PowerOwnershipSavedData());
+                for (ServerPlayer player : online) forgetPowers(player);
+                forgetPowers(offline);
+                helper.assertTrue(EclipseService.firstPowerPending(server), "A world without powers is waiting for its first");
+
+                EclipseService.handOutPowers(server, online);
+
+                List<ServerPlayer> spaceTime = online.stream().filter(player -> PlayerAbilityService.getData(player)
+                        .assignedPower().filter(power -> power.getKey().equals(ModAbilities.TIME_MANIPULATION_ID)).isPresent()).toList();
+                helper.assertTrue(spaceTime.size() == 1, "Exactly one player online receives Space-Time Manipulation");
+                helper.assertTrue(!PlayerAbilityService.getData(spaceTime.getFirst()).assignedPower().orElseThrow().getValue().isUnlocked(),
+                        "Space-Time waits dormant, like every Eclipse power");
+                helper.assertTrue(online.stream().filter(player -> player != spaceTime.getFirst())
+                        .noneMatch(player -> PlayerAbilityService.getData(player).hasAssignedPower()), "Everyone else rolls as usual");
+                helper.assertTrue(!PlayerAbilityService.getData(offline).hasAssignedPower(), "Nobody offline is chosen");
+                helper.assertTrue(!EclipseService.firstPowerPending(server), "Only the first power is guaranteed");
+                chosen.add(spaceTime.getFirst());
+            }
+            helper.assertTrue(chosen.size() > 1, "The first power goes to a random player, not the first in line");
+
+            // A later Eclipse hands out powers at random, and Space-Time keeps its one owner.
+            HeroesEvolvedConfig.COMMON.eclipseDormantAbilityChance.set(1.0D);
+            EclipseService.end(server);
+            helper.assertTrue(EclipseService.beginTotality(server), "A second Eclipse reaches totality");
+            EclipseService.handOutPowers(server, online);
+            Set<ResourceLocation> powers = new HashSet<>();
+            for (ServerPlayer player : online) {
+                var power = PlayerAbilityService.getData(player).assignedPower();
+                helper.assertTrue(power.isPresent(), "A later Eclipse still hands out powers");
+                helper.assertTrue(powers.add(power.get().getKey()), "Every power still has one owner");
+            }
+            helper.assertTrue(powers.contains(ModAbilities.TIME_MANIPULATION_ID), "Space-Time stays with its first owner");
+            helper.succeed();
+        } finally {
+            HeroesEvolvedConfig.COMMON.eclipseDormantAbilityChance.set(chance);
+            EclipseService.end(server);
+            for (ServerPlayer player : online) remove(player);
+            remove(offline);
+            PowerOwnershipTestSupport.replace(server, PowerOwnershipSavedData.load(owners, server.registryAccess()));
+        }
+    }
+
+    private static void forgetPowers(ServerPlayer player) {
+        player.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty());
+        player.setData(ModDataAttachments.PLAYER_LAST_ECLIPSE_ROLL.get(), -1L);
     }
 
     @GameTest(template = "rewind_empty", batch = "eclipse.adrenaline_calm", timeoutTicks = 60)

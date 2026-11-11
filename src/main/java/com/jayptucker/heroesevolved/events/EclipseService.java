@@ -2,6 +2,7 @@ package com.jayptucker.heroesevolved.events;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
+import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
 import com.jayptucker.heroesevolved.data.EclipseCalendar;
@@ -9,6 +10,7 @@ import com.jayptucker.heroesevolved.data.EclipseSavedData;
 import com.jayptucker.heroesevolved.data.EclipseTimeline;
 import com.jayptucker.heroesevolved.data.EclipseTimeline.Phase;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
+import com.jayptucker.heroesevolved.data.PowerOwnershipSavedData;
 import com.jayptucker.heroesevolved.network.EclipseVisualSyncService;
 import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.AdvancementHolder;
@@ -29,7 +31,8 @@ import java.util.List;
  * <p>An Eclipse falls on every {@link EclipseCalendar#intervalDays() Nth} day with its peak at
  * noon. The moon slides onto the sun (approach), covers it completely (totality), then slides
  * off (departure). Dormant powers are handed out at totality, and only totality suppresses
- * powers.
+ * powers. The first power a world ever sees is always Space-Time Manipulation, given to one
+ * player chosen at random from everyone online at that totality; every later power is random.
  */
 public final class EclipseService {
     private static final ResourceLocation SOMETHING_FEELS_DIFFERENT_ADVANCEMENT =
@@ -167,52 +170,80 @@ public final class EclipseService {
         };
     }
 
+    /**
+     * True until the world's first power is handed out. That one is always Space-Time
+     * Manipulation, and it skips the usual chance roll.
+     */
+    public static boolean firstPowerPending(MinecraftServer server) {
+        return PowerOwnershipSavedData.get(server).noneClaimed();
+    }
+
+    /**
+     * Totality's hand-out. While the world has no power yet, one player chosen at random from
+     * {@code online} receives Space-Time Manipulation first; then everyone gets their usual roll.
+     */
+    public static void handOutPowers(MinecraftServer server, List<ServerPlayer> online) {
+        if (firstPowerPending(server)) {
+            List<ServerPlayer> eligible = online.stream().filter(player -> canRoll(server, player)).toList();
+
+            if (!eligible.isEmpty()) {
+                tryAssignDormantAbility(eligible.get(server.overworld().getRandom().nextInt(eligible.size())));
+            }
+        }
+
+        for (ServerPlayer player : online) {
+            tryAssignDormantAbility(player);
+        }
+    }
+
+    /** Powerless, and has not rolled during this Eclipse yet. */
+    private static boolean canRoll(MinecraftServer server, ServerPlayer player) {
+        return !PlayerAbilityService.getData(player).hasAssignedPower()
+                && player.getData(ModDataAttachments.PLAYER_LAST_ECLIPSE_ROLL.get())
+                != EclipseSavedData.get(server.overworld()).eclipseId();
+    }
+
     /** Gives an eligible player one roll for the current totality. */
     public static boolean tryAssignDormantAbility(ServerPlayer player) {
         MinecraftServer server = player.getServer();
 
-        if (server == null || !isTotality(server)) {
-            return false;
-        }
-
-        if (PlayerAbilityService.getData(player).hasAssignedPower()) {
-            return false;
-        }
-
-        EclipseSavedData eclipseData = EclipseSavedData.get(server.overworld());
-
-        if (player.getData(ModDataAttachments.PLAYER_LAST_ECLIPSE_ROLL.get())
-                == eclipseData.eclipseId()) {
+        if (server == null || !isTotality(server) || !canRoll(server, player)) {
             return false;
         }
 
         // Record the attempt before rolling so reconnecting cannot reroll.
         player.setData(
                 ModDataAttachments.PLAYER_LAST_ECLIPSE_ROLL.get(),
-                eclipseData.eclipseId()
+                EclipseSavedData.get(server.overworld()).eclipseId()
         );
 
-        if (server.overworld().getRandom().nextDouble()
-                >= HeroesEvolvedConfig.COMMON.eclipseDormantAbilityChance.get()) {
-            return false;
-        }
+        ResourceLocation abilityId;
 
-        List<ResourceLocation> abilityIds = AbilityRegistry.ABILITIES.keySet()
-                .stream()
-                .filter(power -> PlayerAbilityService.availableTo(player, power))
-                .sorted(Comparator.comparing(ResourceLocation::toString))
-                .toList();
+        if (firstPowerPending(server)) {
+            abilityId = ModAbilities.TIME_MANIPULATION_ID;
+        } else {
+            if (server.overworld().getRandom().nextDouble()
+                    >= HeroesEvolvedConfig.COMMON.eclipseDormantAbilityChance.get()) {
+                return false;
+            }
 
-        if (abilityIds.isEmpty()) {
-            HeroesEvolved.LOGGER.warn(
-                    "Skipped Eclipse ability assignment because no unclaimed abilities remain."
+            List<ResourceLocation> abilityIds = AbilityRegistry.ABILITIES.keySet()
+                    .stream()
+                    .filter(power -> PlayerAbilityService.availableTo(player, power))
+                    .sorted(Comparator.comparing(ResourceLocation::toString))
+                    .toList();
+
+            if (abilityIds.isEmpty()) {
+                HeroesEvolved.LOGGER.warn(
+                        "Skipped Eclipse ability assignment because no unclaimed abilities remain."
+                );
+                return false;
+            }
+
+            abilityId = abilityIds.get(
+                    server.overworld().getRandom().nextInt(abilityIds.size())
             );
-            return false;
         }
-
-        ResourceLocation abilityId = abilityIds.get(
-                server.overworld().getRandom().nextInt(abilityIds.size())
-        );
 
         if (!PlayerAbilityService.assignDormantAbility(player, abilityId)) {
             return false;
@@ -262,8 +293,9 @@ public final class EclipseService {
 
                 for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                     player.playNotifySound(SoundEvents.BEACON_DEACTIVATE, SoundSource.AMBIENT, 1.0F, 0.5F);
-                    tryAssignDormantAbility(player);
                 }
+
+                handOutPowers(server, List.copyOf(server.getPlayerList().getPlayers()));
             }
             case DEPARTURE -> {
                 server.getPlayerList().broadcastSystemMessage(

@@ -112,16 +112,16 @@ blocks, and clears its crack animations on cancellation and cleanup.
 All players in the same dimension within three hundred blocks receive ground
 shake, including those exactly on the boundary. It lasts six seconds for the
 awakening and four seconds for later detonations, with distance falloff.
-The mushroom cloud has an incandescent core, a connected rising stem and a
-broad cap of billowing smoke. A custom soft smoke texture replaces the old
-overlapping sphere meshes, using at most 256 vertices per cloud, fewer at a
-distance or on Minimal particles. Up to four clouds can render at once. The
-awakening cloud is scaled to 1.6 times the normal cloud's size. Its origin stays
-1.5 blocks above the exact original detonation position, even when the owner
-moves. The duplicate particle column and sphere-based dust pass are removed;
-the fast ground shockwave remains. The Time Manipulation cinematic retains its
-existing cloud geometry. Rebuild the smoke sprite with
-`tools/generate-nuclear-smoke.py`. Independent packets
+The explosion is drawn as the Odessa blast from the Time Manipulation vision,
+scaled to the detonation (`MiniBlast`, see [Classes](classes.md#how-they-are-drawn)):
+the white flash, the fireball rolling up into a mushroom cap on a stem of dust,
+the dust thrown up at its foot, a pale condensation dome racing out with the
+shock and a ring of dust rolling past the blast radius and settling. The billows
+are real geometry lit by the sun and their own heat; the cloud thins away over
+its last five seconds. The awakening blast (radius 48) is twice the size of a
+later one (radius 24). Anyone arriving late sees it at the age it has reached.
+The fast ground shockwave remains. Radiation's Offense class ability,
+**Ground Zero**, throws a small version of the same blast. Independent packets
 reach observers within four hundred blocks, refresh their age, and initialize
 players entering the area. Clouds cool into smoke, last thirty seconds and
 fade over their final five seconds. Rendering remains visible on Minimal
@@ -143,8 +143,8 @@ legacy claims are resolved deterministically by player-file UUID order. A
 conflicting player receives an unclaimed dormant role on login if one remains.
 Radiation's awakening also tells its owner that the heat that burned Odessa has found
 a new body, and tells nearby witnesses who have progressed the Telepathy/city storyline.
-Once any player keeps Gabriel Gray from the light on the avenue at 6:14, Sylar can never copy
-Radiation, and forgets it if he had (see [The Past](the-past.md#the-avenue-at-614)).
+Worlds that already kept Gabriel Gray from the light in the earlier Avenue episode retain that
+outcome. Sylar cannot copy Radiation in those worlds. See [Sylar](sylar.md#taking-your-power).
 
 ## Verification
 

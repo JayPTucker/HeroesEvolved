@@ -33,7 +33,8 @@ public final class SpeedEvents {
         if (e.getEntity() instanceof ServerPlayer p) SpeedService.beforePunch(p, e.getTarget());
     }
     @SubscribeEvent public static void logout(PlayerEvent.PlayerLoggedOutEvent e) { if (e.getEntity() instanceof ServerPlayer p) SpeedService.forget(p); }
-    @SubscribeEvent public static void dimension(PlayerEvent.PlayerChangedDimensionEvent e) { if (e.getEntity() instanceof ServerPlayer p) SpeedService.forget(p); }
-    @SubscribeEvent public static void death(LivingDeathEvent e) { if (e.getEntity() instanceof ServerPlayer p) SpeedService.forget(p); }
+    // A death or a portal ends the run but not the minute behind it: Overrun can still go back into it.
+    @SubscribeEvent public static void dimension(PlayerEvent.PlayerChangedDimensionEvent e) { if (e.getEntity() instanceof ServerPlayer p) SpeedService.interrupt(p); }
+    @SubscribeEvent public static void death(LivingDeathEvent e) { if (e.getEntity() instanceof ServerPlayer p) SpeedService.interrupt(p); }
     @SubscribeEvent public static void stop(ServerStoppingEvent e) { SpeedService.clear(); }
 }

@@ -1,5 +1,4 @@
-# Security checkpoint: a barrier with a gate, a guard post under the monitor wall, lockers, Company-issue gear,
-# and a red rug over the trapdoor to Sublevel 4-B (bunker_office). Placed west of the records room.
+# Security checkpoint with lockers, emergency supplies and a marked maintenance hatch.
 name: bunker_security
 anchor: 0 0 0
 palette:
@@ -11,7 +10,6 @@ palette:
   F = iron_bars
   G = smooth_quartz_slab[type=top]
   H = dark_oak_stairs[facing=west]
-  I = red_carpet
   J = barrel[facing=north]
   K = chest[facing=north] @loot:security
   L = barrel[facing=up]
@@ -31,10 +29,12 @@ palette:
   Z = deepslate_bricks
   a = red_stained_glass
   b = waxed_copper_bulb[lit=true]
+  d = spruce_wall_sign[facing=north] @sign:maintenance_hatch
 signs:
-  checkpoint white glow = CHECKPOINT | ALL STAFF | SHOW ID | 
+  checkpoint white glow = CHECKPOINT | EMERGENCY | SUPPLIES
+  maintenance_hatch white glow = MAINTENANCE | ACCESS HATCH | DOWN
 
-# floor; the trapdoor under the rug
+# floor and maintenance hatch
 layer 0:
 AAAAAAAAAA
 AAAAABAAAA
@@ -57,8 +57,8 @@ E.GH.F...E
 E.G..F...E
 E........E
 E....F...E
-E.II.F...E
-E.II.F...E
+E....F...E
+E....F...E
 EJJJJF.KLE
 EEEEEEEEEE
 
@@ -71,7 +71,7 @@ MN...F...M
 M........M
 E....F...E
 M....F...M
-M....F...M
+M.d..F...M
 EJJJJF..LE
 MMMEMMEMMM
 

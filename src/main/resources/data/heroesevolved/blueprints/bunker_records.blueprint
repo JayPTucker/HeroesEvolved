@@ -1,5 +1,4 @@
-# Records room: the lockdown order, the last researcher's log, Hiro's note in the supply chest, and Exhibit 4,
-# Isaac Mendez's black sun, recovered by the Company. Placed with its anchor one block south of the shaft.
+# Records and communications. The receiver sits on the east desk, visible from the stasis corridor.
 name: bunker_records
 anchor: 5 0 0
 palette:
@@ -16,15 +15,11 @@ palette:
   K = dark_oak_stairs[facing=north]
   L = chiseled_bookshelf[facing=west,slot_0_occupied=true,slot_2_occupied=true,slot_4_occupied=true]
   M = lectern[facing=south] @log:lockdown
-  N = lectern[facing=south] @log:quiet_years
   O = barrel[facing=up]
   P = chest[facing=north] @loot:records
   Q = tuff_bricks
-  R = air @painting:eclipse:south
-  S = black_stained_glass_pane
   T = lantern[hanging=false]
   U = barrel[facing=up,open=true]
-  V = spruce_wall_sign[facing=south] @sign:exhibit4
   W = cobweb
   X = iron_trapdoor[facing=east,half=bottom,open=false]
   Y = iron_trapdoor[facing=north,open=true,half=bottom]
@@ -34,8 +29,13 @@ palette:
   c = iron_trapdoor[facing=south,open=true,half=bottom]
   d = deepslate_bricks
   e = red_stained_glass
+  f = waxed_weathered_cut_copper @signal:receiver
+  g = tinted_glass @signal:display
+  h = lightning_rod[facing=up] @signal:antenna
+  i = waxed_weathered_copper_bulb[lit=true] @signal:indicator
+  j = spruce_wall_sign[facing=south] @sign:receiver
 signs:
-  exhibit4 yellow glow = EXHIBIT 4 | I. MENDEZ | THE BLACK SUN | 
+  receiver light_blue glow = SIGNAL RECEIVER | USE CONSOLE | SURFACE RELAY
 
 # floor: the runner from the shaft to the corridor
 layer 0:
@@ -58,7 +58,7 @@ EEEEE.EEEEE
 E.....GGG.E
 EH....I.GJE
 EH.K...K.LE
-EH.M...N.JE
+EH.M.....JE
 E...I....LE
 EH.......JE
 EH.O.P.O.LE
@@ -67,8 +67,8 @@ EEEE...EEEE
 
 layer 2:
 EQQEQ.EQQEQ
-...R.......
-Q......S..Q
+...........
+Q.....hfi.Q
 EH......TLE
 QH.......JQ
 QH.......LQ
@@ -80,9 +80,9 @@ QQQE...QQEQ
 
 layer 3:
 EQQEQQEQQEQ
-Q....V....Q
 Q.........Q
-EH.......JE
+Q......g..Q
+EH.....j.JE
 QH.......LQ
 QH.......JQ
 EH.......LE
@@ -108,7 +108,7 @@ EEEEEEEEEEE
 layer 5:
 ddddddddddd
 ddddddddddd
-ddedddddddd
+ddeddddaddd
 ddddddddddd
 ddddddddddd
 ddddddddddd

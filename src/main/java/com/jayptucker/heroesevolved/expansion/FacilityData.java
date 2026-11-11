@@ -13,6 +13,7 @@ public final class FacilityData extends SavedData {
     public record ReturnPoint(ResourceLocation dimension, double x, double y, double z, float yaw, float pitch) {}
     public Phase phase = Phase.PLANNED;
     public int run = 1, cursor, elapsed, rescued, casualties, manual, mapId = -1;
+    int signalMapId = -1;
     public boolean gate, stable, spawned;
     public UUID first, second;
     public final Map<UUID, ReturnPoint> visitors = new HashMap<>();
@@ -33,6 +34,7 @@ public final class FacilityData extends SavedData {
     @Override public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putString("phase", phase.name()); tag.putInt("run", run); tag.putInt("cursor", cursor); tag.putInt("elapsed", elapsed);
         tag.putInt("rescued", rescued); tag.putInt("casualties", casualties); tag.putInt("manual", manual); tag.putInt("map", mapId);
+        tag.putInt("signal_map", signalMapId);
         tag.putBoolean("gate", gate); tag.putBoolean("stable", stable); tag.putBoolean("spawned", spawned);
         if (first != null) tag.putUUID("first", first); if (second != null) tag.putUUID("second", second);
         ListTag tickets = new ListTag(); visitors.forEach((id, p) -> {
@@ -50,6 +52,7 @@ public final class FacilityData extends SavedData {
         d.run = Math.max(1, tag.getInt("run")); d.cursor = Math.clamp(tag.getInt("cursor"), 0, FacilityService.BUILD_VOLUME);
         d.elapsed = Math.clamp(tag.getInt("elapsed"), 0, 2400); d.rescued = tag.getInt("rescued") & 3; d.casualties = tag.getInt("casualties") & 3;
         d.manual = Math.clamp(tag.getInt("manual"), 0, 2); d.mapId = tag.contains("map") ? tag.getInt("map") : -1;
+        d.signalMapId = tag.contains("signal_map") ? tag.getInt("signal_map") : -1;
         d.gate = tag.getBoolean("gate"); d.stable = tag.getBoolean("stable"); d.spawned = tag.getBoolean("spawned");
         if (tag.hasUUID("first")) d.first = tag.getUUID("first"); if (tag.hasUUID("second")) d.second = tag.getUUID("second");
         for (Tag value : tag.getList("visitors", Tag.TAG_COMPOUND)) {

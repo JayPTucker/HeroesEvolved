@@ -53,6 +53,7 @@ public final class ModItems {
     public static final DeferredItem<?> SYNTHESIS_STATION = ITEMS.registerSimpleBlockItem(ModBlocks.SYNTHESIS_STATION);
     public static final DeferredItem<net.minecraft.world.item.DoubleHighBlockItem> CRYOCHAMBER = ITEMS.register("cryochamber",
             () -> new net.minecraft.world.item.DoubleHighBlockItem(ModBlocks.CRYOCHAMBER.get(), new Item.Properties().stacksTo(16)));
+    public static final DeferredItem<?> ALARM_BEACON = ITEMS.registerSimpleBlockItem(ModBlocks.ALARM_BEACON);
 
     public static final DeferredItem<SyringeItem> EMPTY_SYRINGE = ITEMS.register("empty_syringe",
             () -> new SyringeItem(new Item.Properties().stacksTo(16)));
@@ -81,6 +82,7 @@ public final class ModItems {
                         output.accept(CENTRIFUGE.get());
                         output.accept(SYNTHESIS_STATION.get());
                         output.accept(CRYOCHAMBER.get());
+                        output.accept(ALARM_BEACON.get());
                         output.accept(EMPTY_SYRINGE.get());
                         output.accept(BUFFERED_SALINE.get());
                         output.accept(UNSTABLE_COMPOUND.get());

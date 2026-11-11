@@ -11,9 +11,12 @@ import java.util.*;
 public final class SkillCatalog {
     public record Node(String id, String power, int branch, int tier, String name, String description,
                        int energy, int cooldown, int cost, int level, boolean active, String prerequisite,
-                       String mechanic, boolean capstone, String icon, boolean signature) {
+                       String mechanic, boolean capstone, String icon, boolean signature, String role, boolean style) {
+        /** Branch index of the class abilities, which sit beside the three branches. */
+        public static final int STYLE_BRANCH = 3;
         public ResourceLocation actionId() { return ResourceLocation.fromNamespaceAndPath("heroesevolved", id); }
         public AbilityAction action() {
+            if (style) return com.jayptucker.heroesevolved.styles.StyleSkills.action(this);
             if (power.equals("flight")) return com.jayptucker.heroesevolved.flight.FlightSkillService.action(this);
             if (power.equals("telekinesis")) return com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.action(this);
             if (power.equals("technopathy")) return SimpleAction.builder(id, level()).cost(() -> energy, () -> cooldown)
@@ -34,6 +37,9 @@ public final class SkillCatalog {
         }
     }
     private static final Map<String, List<String>> BRANCHES = new HashMap<>();
+    /** The roles a class ability can play. */
+    public static final List<String> ROLES = List.of("offense", "defense", "support");
+    private static final Map<String, List<Node>> STYLES = new HashMap<>();
     public static String branchName(String power, int branch) {
         return BRANCHES.getOrDefault(power, List.of("Control", "Force", "Survival")).get(branch);
     }
@@ -64,12 +70,30 @@ public final class SkillCatalog {
                                 n.has("capstone") && n.get("capstone").getAsBoolean(),
                                 n.has("icon") ? n.get("icon").getAsString() : "",
                                 // A signature ability is a showpiece beyond the eighteen-node tree: always active, never a capstone.
-                                n.has("signature") && n.get("signature").getAsBoolean()));
+                                n.has("signature") && n.get("signature").getAsBoolean(),
+                                n.has("role") ? n.get("role").getAsString() : "", false));
                         parent = id; tier++;
                     }
                     if (tier < 1 || tier > 12) throw new IllegalStateException("Invalid branch length");
                     branch++;
                 }
+                // The class abilities: one Offense, one Defense and one Support, of which a build keeps one.
+                List<Node> styles = new ArrayList<>();
+                if (object.has("styles")) {
+                    int index = 0;
+                    for (var item : object.getAsJsonArray("styles")) {
+                        var n = item.getAsJsonObject();
+                        styles.add(new Node(n.get("id").getAsString(), power, Node.STYLE_BRANCH, index++, n.get("name").getAsString(),
+                                n.get("description").getAsString(), n.get("energy").getAsInt(), n.get("cooldown").getAsInt(),
+                                n.has("cost") ? n.get("cost").getAsInt() : 3, n.has("level") ? n.get("level").getAsInt() : 3, true, "",
+                                n.get("mechanic").getAsString(), false, n.has("icon") ? n.get("icon").getAsString() : "", false,
+                                n.get("role").getAsString(), true));
+                    }
+                }
+                if (styles.stream().anyMatch(n -> !ROLES.contains(n.role)) || styles.stream().map(Node::role).distinct().count() != styles.size()
+                        || styles.stream().anyMatch(sn -> nodes.stream().anyMatch(n -> n.id.equals(sn.id))))
+                    throw new IllegalStateException("Invalid class abilities: " + power);
+                STYLES.put(power, List.copyOf(styles));
                 if (branch != 3 || nodes.stream().map(Node::id).distinct().count() != nodes.size()
                         || nodes.stream().anyMatch(n -> n.cost < 1 || n.level < 1 || !n.prerequisite.isEmpty() && nodes.stream().noneMatch(parent -> parent.id.equals(n.prerequisite) && parent.tier < n.tier))
                         || nodes.stream().anyMatch(n -> n.signature && (!n.active || n.capstone))
@@ -79,12 +103,25 @@ public final class SkillCatalog {
             return Map.copyOf(result);
         } catch (IOException error) { throw new ExceptionInInitializerError(error); }
     }
+    /** The eighteen-node tree (and any signature ability). */
     public static List<Node> nodes(String power) { return TREES.getOrDefault(power, List.of()); }
+    /** The class abilities, in role order: Offense, Defense, Support. A build keeps one at a time. */
+    public static List<Node> styles(String power) { return STYLES.getOrDefault(power, List.of()); }
+    /** Everything that can be learned: the tree, then the class abilities. */
+    public static List<Node> all(String power) {
+        List<Node> all = new ArrayList<>(nodes(power));
+        all.addAll(styles(power));
+        return all;
+    }
+    /** The class ability this build has chosen, if any. */
+    public static Optional<Node> chosenStyle(String power, SkillTreeData.Build build) {
+        return styles(power).stream().filter(n -> build.learned().contains(n.id)).findFirst();
+    }
     public static Optional<Node> find(String power, String id) {
-        return nodes(power).stream().filter(n -> n.id.equals(id)).findFirst();
+        return all(power).stream().filter(n -> n.id.equals(id)).findFirst();
     }
     public static int spent(String power, SkillTreeData.Build build) {
-        return nodes(power).stream().filter(n -> build.learned().contains(n.id)).mapToInt(Node::cost).sum();
+        return all(power).stream().filter(n -> build.learned().contains(n.id)).mapToInt(Node::cost).sum();
     }
     public static int available(String power, SkillTreeData.Build build) { return available(power, build, 0); }
     /** With {@code storyPoints} from notes the player has found (see PowerJourney). */

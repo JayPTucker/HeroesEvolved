@@ -34,7 +34,7 @@ Helixite is about a quarter as common as diamonds; see [Pyrokinesis and Helixite
 
 ## Getting blood
 
-Only the **Regeneration** owner's blood works. This is the moral choice at the heart of the system.
+The Formula requires a regenerative blood sample. A **Regeneration** owner can provide one.
 
 **Donated (85% success):**
 
@@ -62,8 +62,8 @@ passive regeneration stops. They're told who did it. While Drained, the Regenera
 - Forced draws follow the server's PvP setting and scoreboard teams.
 - Server owners can turn them off entirely with `formula.allowForcedDraws = false`.
 
-**Other sources:** saving the Hourglass Annex gives each rescuer one donated sample, the first time
-only. That keeps a path open on servers where no one owns Regeneration.
+**Other sources.** The stasis bunker's lab keeps a donated sample for a world where no one owns
+Regeneration. Older bunkers may still contain Noah Bennet's sample in his former office.
 
 A blood sample can also be injected directly (use it) for 6 health and 10 seconds of Regeneration II.
 That spends it, though.

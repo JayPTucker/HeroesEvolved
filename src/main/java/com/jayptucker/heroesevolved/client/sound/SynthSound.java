@@ -57,6 +57,14 @@ public class SynthSound extends AbstractTickableSoundInstance {
 
     public void end() { stop(); }
 
+    /**
+     * Fades to silence over {@code ticks}, then stops. A stream renders seconds ahead of what is heard,
+     * so changing the sound itself would come late; the channel's volume changes at once.
+     */
+    public void fadeOut(int ticks) { fadeStep = volume / Math.max(1, ticks); }
+
+    private float fadeStep;
+
     @Override public WeighedSoundEvents resolve(SoundManager manager) {
         sound = new Sound(getLocation(), ConstantFloat.of(1), ConstantFloat.of(1), 1, Sound.Type.FILE, true, false, 16);
         return new WeighedSoundEvents(getLocation(), subtitle);
@@ -71,5 +79,9 @@ public class SynthSound extends AbstractTickableSoundInstance {
 
     @Override public void tick() {
         if (!alive.getAsBoolean()) stop();
+        if (fadeStep > 0) {
+            volume = Math.max(0, volume - fadeStep);
+            if (volume <= 0) stop();
+        }
     }
 }

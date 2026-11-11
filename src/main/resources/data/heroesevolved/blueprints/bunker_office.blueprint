@@ -1,5 +1,4 @@
-# Sublevel 4-B: Noah Bennet's office, on no plan. Reached by the trapdoor under the red rug in security.
-# His letter to Claire is on the lectern; her blood, kept cold, is in the chest. The family photo hangs over the desk.
+# Maintenance bay. The hatch in security leads to a workbench, map desk, cot and spare storage.
 name: bunker_office
 anchor: 0 0 0
 palette:
@@ -8,13 +7,13 @@ palette:
   C = deepslate_tiles
   D = stripped_dark_oak_wood
   E = dark_oak_log[axis=y]
-  F = chest[facing=south] @loot:office
+  F = chest[facing=south]
   G = gray_bed[facing=north,part=head]
   H = dark_oak_slab[type=top]
   I = gray_bed[facing=north,part=foot]
   J = dark_oak_stairs[facing=south]
   K = gray_carpet
-  L = lectern[facing=west] @log:bennet
+  L = crafting_table
   M = cartography_table
   N = barrel[facing=up]
   O = ladder[facing=north]
@@ -24,13 +23,12 @@ palette:
   S = flower_pot
   T = candle[candles=2,lit=false]
   U = chiseled_bookshelf[facing=west,slot_1_occupied=true,slot_3_occupied=true]
-  V = air @painting:bennets:south
   W = spruce_wall_sign[facing=north] @sign:office
   X = cobweb
   Y = waxed_copper_bulb[lit=true]
   Z = deepslate_bricks
 signs:
-  office black = SUBLEVEL 4-B | N. BENNET | NOT ON THE | PLANS
+  office white glow = MAINTENANCE | WORKBENCH | SPARE STORAGE
 
 # floor
 layer 0:
@@ -43,7 +41,7 @@ AAABAAABA
 AABAAABAA
 AAAAAAAAA
 
-# desk, cot, lectern
+# desk, cot and workbench
 layer 1:
 CDDEDDEDC
 D......FD
@@ -66,7 +64,7 @@ CDDEDDEDC
 
 layer 3:
 CDDEDDEDC
-D...V...D
+D.......D
 D.......D
 E.......E
 D.......D

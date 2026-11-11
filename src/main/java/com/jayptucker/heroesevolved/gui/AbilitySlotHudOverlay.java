@@ -213,7 +213,47 @@ public final class AbilitySlotHudOverlay {
         guiGraphics.fill(START_X, y + 10, START_X + 100, y + 13, 0x80402810);
         guiGraphics.fill(START_X, y + 10, START_X + momentum, y + 13, color);
         for (int mark : new int[] {30, 50, 60}) guiGraphics.fill(START_X + mark, y + 9, START_X + mark + 1, y + 14, 0xC0FFFFFF);
-        return y + LINE_HEIGHT + 6;
+        return drawOverrun(guiGraphics, y + LINE_HEIGHT + 6, momentum, time);
+    }
+
+    /**
+     * Overrun, under Momentum: how long until it can be done again (its minute of history, or its cooldown), or
+     * the charge filling as you run flat out, pulsing once the breach is open. Below Power Level 15 it only says
+     * so, and only while you run flat out.
+     */
+    private static int drawOverrun(GuiGraphics guiGraphics, int y, int momentum, long time) {
+        var mc = Minecraft.getInstance();
+        int state = com.jayptucker.heroesevolved.network.ClientOverrun.state();
+        int value = com.jayptucker.heroesevolved.network.ClientOverrun.value();
+        switch (state) {
+            case com.jayptucker.heroesevolved.network.OverrunStatusPayload.LOCKED -> {
+                if (momentum < 90) return y;
+                guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.overrun_locked"), START_X, y, 0xFF8C8CA0, true);
+                return y + LINE_HEIGHT;
+            }
+            case com.jayptucker.heroesevolved.network.OverrunStatusPayload.GATHERING,
+                 com.jayptucker.heroesevolved.network.OverrunStatusPayload.COOLDOWN -> {
+                int left = com.jayptucker.heroesevolved.network.ClientOverrun.secondsLeft();
+                String clock = left / 60 + ":" + String.format("%02d", left % 60);
+                guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.overrun_wait", clock), START_X, y, 0xFF9C8CD8, true);
+                return y + LINE_HEIGHT;
+            }
+            case com.jayptucker.heroesevolved.network.OverrunStatusPayload.READY,
+                 com.jayptucker.heroesevolved.network.OverrunStatusPayload.BREACH -> {
+                boolean breach = state == com.jayptucker.heroesevolved.network.OverrunStatusPayload.BREACH;
+                int fill = breach ? 100 : value / 10;
+                int color = breach ? ((time / 3) % 2 == 0 ? 0xFFF4EEFF : 0xFFB49CFF) : 0xFFB49CFF;
+                guiGraphics.drawString(mc.font, Component.translatable(fill > 0 ? "hud.heroesevolved.overrun" : "hud.heroesevolved.overrun_ready"),
+                        START_X, y, color, true);
+                if (fill > 0) {
+                    guiGraphics.fill(START_X, y + 10, START_X + 100, y + 13, 0x80302050);
+                    guiGraphics.fill(START_X, y + 10, START_X + fill, y + 13, color);
+                    return y + LINE_HEIGHT + 6;
+                }
+                return y + LINE_HEIGHT;
+            }
+            default -> { return y; }
+        }
     }
 
     /**

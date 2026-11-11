@@ -60,7 +60,7 @@ public final class TimeIntroService {
     /** The last moment anyone can still be here: the farthest corner of the walk, frozen, rewound. */
     public static final int RETURN_TICK = DETONATION_TICK
             + IntroBlast.arrival(Math.max(IntroBlast.distance(ROAM_X0, ROAM_Z1), IntroBlast.distance(ROAM_X1, ROAM_Z1)))
-            + IntroBlast.FREEZE_TICKS + IntroBlast.REWIND_TICKS + 10;
+            + IntroBlast.STOPPED_TICKS + 10;
     public static final int CROWD_SIZE = 40;
     private static final String CROWD_TAG = "heroesevolved_time_intro_crowd";
     private static final ArrayDeque<Request> QUEUE = new ArrayDeque<>();
@@ -182,7 +182,7 @@ public final class TimeIntroService {
                 if (player.position().distanceToSqr(where) > 0.01) player.teleportTo(city, where.x, where.y, where.z, player.getYRot(), player.getXRot());
                 player.setDeltaMovement(Vec3.ZERO);
                 player.fallDistance = 0;
-                if (current.ticks - frozen >= IntroBlast.FREEZE_TICKS + IntroBlast.REWIND_TICKS) {
+                if (current.ticks - frozen >= IntroBlast.STOPPED_TICKS) {
                     returnHome(player, true);
                     return true;
                 }
@@ -228,14 +228,29 @@ public final class TimeIntroService {
         }
     }
 
-    /** The wave is a few blocks away. Time stops: for this visitor, everything holds still. */
+    /**
+     * The wave is a few blocks away. Time stops: for this visitor, everything holds still. The cue names the
+     * visitors whose power it is, so the clockwork of their power is drawn under and around them.
+     */
     private static void freeze(Scene current, ServerPlayer player) {
         current.frozenAt.put(player.getUUID(), current.ticks);
         current.frozenWhere.put(player.getUUID(), player.position());
         player.setDeltaMovement(Vec3.ZERO);
-        cue(player, TimeIntroPayload.FREEZE);
+        PacketDistributor.sendToPlayer(player, new TimeIntroPayload(TimeIntroPayload.FREEZE, rewinders(player.server, current)));
         player.playNotifySound(ModSounds.TIME_SLOW_STOP.get(), SoundSource.PLAYERS, 1.0F, 0.7F);
-        ScreenTintPayload.send(player, 0x709E80E8, IntroBlast.FREEZE_TICKS + IntroBlast.REWIND_TICKS, ScreenTintPayload.Style.EDGE);
+        ScreenTintPayload.send(player, 0x709E80E8, IntroBlast.STOPPED_TICKS, ScreenTintPayload.Style.EDGE);
+    }
+
+    /** The entity ids of the visitors in the city who have the power: the one who woke it, and anyone else who has it. */
+    private static List<Integer> rewinders(MinecraftServer server, Scene current) {
+        List<Integer> ids = new ArrayList<>();
+        for (UUID id : current.visitors) {
+            ServerPlayer visitor = server.getPlayerList().getPlayer(id);
+            if (visitor == null || !isCity(visitor.level())) continue;
+            if (id.equals(current.owner) || PlayerAbilityService.getData(visitor).ability(POWER)
+                    .filter(progress -> progress.isUnlocked()).isPresent()) ids.add(visitor.getId());
+        }
+        return List.copyOf(ids);
     }
 
     private static void startNext(MinecraftServer server, ServerLevel city) {

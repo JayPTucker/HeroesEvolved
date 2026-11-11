@@ -60,10 +60,8 @@ ground under every enemy on it, and crouching still lets her feel heartbeats thr
 See [Carrying](docs/carrying.md): sneak + use to pick up anything about your size. People are carried
 in your arms, a bridal carry.
 
-See [A Future Unwritten](docs/a-future-unwritten.md) for the first playable expansion:
-135 skill nodes, 45 optional actions, Precognition, shared reactions, prophetic
-paintings, and the repeatable Hourglass Annex rescue operation. Find a cartographer
-or share a prophetic canvas, then open **J** to read and follow the omen.
+See [A Future Unwritten](docs/a-future-unwritten.md) for the expansion that introduced
+Precognition, prophetic paintings, and shared reactions between powers.
 
 See [Sonic Resonance](docs/sonic-resonance.md) for the power of Emma Coolidge and Black Canary.
 Sound Sight shows every sound around you as colour, through walls. A Resonant Note lures enemies in
@@ -94,17 +92,13 @@ See [Telekinesis](docs/telekinesis.md) for the rebuilt physical force kit and al
 See [Pyrokinesis and Helixite](docs/pyrokinesis.md) for the fire power, its real-fire rules,
 reactions with Cryokinesis, Flight and Superspeed, and the new Helixite crystal ore.
 New players wake sealed in a Cryochamber in a stasis bunker beneath world spawn,
-centuries after Odessa burned, where the world's past waits to be read. Press **J** for the
-Journal's next lead and the records found so far. The story ends on the avenue at 6:14: four
-minutes to bring 24 people through Noah Bennet's door before the light, and to keep Gabriel Gray
-from seeing it. What you save is written back into the present. See [The Past](docs/the-past.md)
-for the whole storyline, The Last Day.
+centuries after Odessa burned. Search the Overworld for the rare Company relay ruins. The bunker
+receiver can give you coordinates, recorded in the Journal (**J**). Restore life support and escort
+Mara and Ivo out of the annex while Gabriel Gray approaches. The survivors have an account to
+share back at the bunker. See [The Last Signal](docs/the-past.md).
 
-Then [Night Three](docs/the-past.md#night-three): the bunker on the third night of the lockdown, lights
-on and guards at their posts. Gray unmakes his cage and walks to Pod 14, where Claire Bennet sleeps.
-Keep him from her until 3:00 and Sylar never takes regeneration. The guards are
-[Company agents](docs/company-agents.md), the first human enemies: aimed tranquilizer darts, three to
-put you under, and a Suppressor in whose quiet no power works.
+Space-Time Manipulation's [first awakening](docs/time-manipulation-intro.md) takes you and nearby
+companions to Odessa at 6:14 to witness the explosion and watch the city run backwards.
 
 See [Invisibility](docs/invisibility.md) for Exposure, optical doubles, shared concealment and
 its eighteen redesigned skills. [Phasing and Empathic Mimicry](docs/new-powers.md) records the

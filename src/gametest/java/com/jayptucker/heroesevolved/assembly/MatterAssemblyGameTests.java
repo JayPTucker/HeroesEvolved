@@ -74,41 +74,42 @@ public final class MatterAssemblyGameTests {
         mob.setPos(p.position().add(0, 0, z)); mob.getAttribute(Attributes.MAX_HEALTH).setBaseValue(100); mob.setHealth(100); h.getLevel().addFreshEntity(mob); return mob;
     }
     @GameTest(template="cryo_rework_arena", batch="matter.no_material")
-    public static void missingMaterialsRejectsRealActionWithoutSpendingEnergyOrCooldown(GameTestHelper h) {
+    public static void anEmptyInventoryStillBuildsAndPaysInStamina(GameTestHelper h) {
         ServerPlayer p = player(h, 0);
         try {
             int energy = PlayerEnergyService.getEnergy(p);
-            h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.PRIMARY, false) != AbilityUseResult.SUCCESS, "An unfunded shape rejects");
-            h.assertTrue(PlayerEnergyService.getEnergy(p) == energy && !CooldownService.isOnCooldown(p, id("matter_assembly_barricade")), "Rejected shape spends neither energy nor cooldown");
-            h.assertTrue(MatterAssemblyService.cells(p).isEmpty() && MatterAssemblyService.pendingCells(p) == 0, "No delayed free construction remains"); h.succeed();
+            h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.PRIMARY, false) == AbilityUseResult.SUCCESS, "Matter comes from the ground: no blocks needed");
+            h.assertTrue(PlayerEnergyService.getEnergy(p) < energy && CooldownService.isOnCooldown(p, id("matter_assembly_barricade")), "It is paid for in stamina and cooldown");
+            h.assertTrue(!MatterAssemblyService.cells(p).isEmpty(), "The shield is real"); h.succeed();
         } finally { cleanup(p); }
     }
     @GameTest(template="cryo_rework_arena", batch="matter.material")
-    public static void valuableContainersAndComponentBearingStacksCannotBecomeMatter(GameTestHelper h) {
+    public static void assemblyNeverTouchesTheInventory(GameTestHelper h) {
         ServerPlayer p = player(h, 0);
         try {
             p.getInventory().setItem(0, new ItemStack(Items.DIAMOND_BLOCK, 64));
-            p.getInventory().setItem(1, new ItemStack(Items.CHEST, 64));
+            p.getInventory().setItem(1, new ItemStack(Items.COBBLESTONE, 64));
             ItemStack named = new ItemStack(Items.STONE, 64); named.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, net.minecraft.network.chat.Component.literal("keep me"));
             p.getInventory().setItem(2, named);
-            h.assertTrue(AssemblyMaterials.count(p) == 0 && !MatterAssemblyService.activate(context(p), "shard_lance"), "Only closed-whitelist plain ordinary stacks are accepted");
-            h.assertTrue(p.getInventory().getItem(0).getCount() == 64 && named.getCount() == 64, "Valuable and personalized matter is untouched"); h.succeed();
+            h.assertTrue(MatterAssemblyService.activate(context(p), "shard_lance") && MatterAssemblyService.activate(context(p), "barricade"), "Shards and shapes are drawn from the world");
+            h.assertTrue(p.getInventory().getItem(0).getCount() == 64 && p.getInventory().getItem(1).getCount() == 64 && named.getCount() == 64,
+                    "Not one block is taken from the inventory"); h.succeed();
         } finally { cleanup(p); }
     }
     @GameTest(template="cryo_rework_arena", batch="matter.cover")
-    public static void wallGrowsWithCollisionPaysForEveryCellAndNeverReturnsLoot(GameTestHelper h) {
+    public static void wallGrowsWithCollisionFromSixCellsAndNeverReturnsLoot(GameTestHelper h) {
         ServerPlayer p = player(h, 40);
-        h.assertTrue(MatterAssemblyService.activate(context(p), "barricade"), "A funded wall starts");
+        h.assertTrue(MatterAssemblyService.activate(context(p), "barricade"), "A wall starts");
         h.assertTrue(MatterAssemblyService.cells(p).size() == 4 && MatterAssemblyService.pendingCells(p) > 0, "The initial batch is bounded");
         h.runAfterDelay(4, () -> {
             try {
-                var cells = MatterAssemblyService.cells(p); h.assertTrue(cells.size() == 15 && AssemblyMaterials.count(p) == 25, "Fifteen real cells cost fifteen input blocks");
+                var cells = MatterAssemblyService.cells(p); h.assertTrue(cells.size() == 6 && AssemblyMaterials.count(p) == 40, "A lean six-cell shield, and no input blocks spent");
                 BlockPos cell = cells.getFirst(); h.assertTrue(!h.getLevel().getBlockState(cell).getCollisionShape(h.getLevel(), cell).isEmpty(), "The wall has real collision");
                 int drops = h.getLevel().getEntitiesOfClass(ItemEntity.class, new AABB(cell).inflate(3)).size();
                 h.getLevel().destroyBlock(cell, true, p);
                 h.assertTrue(h.getLevel().getEntitiesOfClass(ItemEntity.class, new AABB(cell).inflate(3)).size() == drops, "Mining a construct has no loot table");
                 MatterAssemblyService.dismantle(p);
-                h.assertTrue(cells.stream().allMatch(pos -> h.getLevel().getBlockState(pos).isAir()) && AssemblyMaterials.count(p) == 25, "Dismantling restores air without refunding consumed inputs"); h.succeed();
+                h.assertTrue(cells.stream().allMatch(pos -> h.getLevel().getBlockState(pos).isAir()) && AssemblyMaterials.count(p) == 40, "Dismantling restores air and makes no items"); h.succeed();
             } finally { cleanup(p); }
         });
     }
@@ -119,7 +120,7 @@ public final class MatterAssemblyGameTests {
         NeoForge.EVENT_BUS.addListener(deny);
         try {
             h.assertTrue(!AssemblyTerrain.get(h.getLevel()).place(p, pos, 100), "Claims can veto a construction placement");
-            h.assertTrue(h.getLevel().getBlockState(pos).isAir() && AssemblyMaterials.count(p) == 10 && !AssemblyTerrain.get(h.getLevel()).valid(h.getLevel(), pos), "Cancelled placement leaves no cell or lease and returns just the reserved input"); h.succeed();
+            h.assertTrue(h.getLevel().getBlockState(pos).isAir() && AssemblyMaterials.count(p) == 10 && !AssemblyTerrain.get(h.getLevel()).valid(h.getLevel(), pos), "Cancelled placement leaves no cell or lease, and the inventory untouched"); h.succeed();
         } finally { NeoForge.EVENT_BUS.unregister(deny); cleanup(p); }
     }
     @GameTest(template="cryo_rework_arena", batch="matter.adventure")
@@ -135,7 +136,7 @@ public final class MatterAssemblyGameTests {
     @GameTest(template="cryo_rework_arena", batch="matter.recovery")
     public static void leasesRoundTripExpireAndRewindResurrectedOrphansSelfDelete(GameTestHelper h) {
         ServerPlayer p = player(h, 5); BlockPos pos = p.blockPosition().offset(3, 0, 0); AssemblyTerrain data = AssemblyTerrain.get(h.getLevel());
-        h.assertTrue(data.place(p, pos, 2), "A short paid lease places");
+        h.assertTrue(data.place(p, pos, 2), "A short lease places");
         AssemblyTerrain loaded = AssemblyTerrain.load(data.save(new CompoundTag(), h.getLevel().registryAccess()), h.getLevel().registryAccess());
         h.assertTrue(loaded.owned(h.getLevel(), pos, p.getUUID()) && loaded.count(p.getUUID()) == 1, "Expiry and owner survive serialization");
         h.runAfterDelay(4, () -> {
@@ -143,7 +144,7 @@ public final class MatterAssemblyGameTests {
             h.getLevel().setBlock(pos, AssemblyBlocks.MATTER.get().defaultBlockState(), 3);
         });
         h.runAfterDelay(18, () -> {
-            try { h.assertTrue(h.getLevel().getBlockState(pos).isAir() && AssemblyMaterials.count(p) == 4, "A rewound construct without a live lease self-deletes without resource output"); h.succeed(); }
+            try { h.assertTrue(h.getLevel().getBlockState(pos).isAir() && AssemblyMaterials.count(p) == 5, "A rewound construct without a live lease self-deletes without resource output"); h.succeed(); }
             finally { cleanup(p); }
         });
     }
@@ -168,7 +169,7 @@ public final class MatterAssemblyGameTests {
             try {
                 var cells = MatterAssemblyService.cells(p);
                 h.assertTrue(cells.stream().anyMatch(pos -> Math.abs(pos.getX() - start.x) > 3) && cells.stream().anyMatch(pos -> pos.getZ() > start.z + 3), "The route bends through a right angle");
-                h.assertTrue(128 - AssemblyMaterials.count(p) == cells.size(), "Every bent route cell is funded exactly once"); h.succeed();
+                h.assertTrue(AssemblyMaterials.count(p) == 128, "The route spends no blocks from the inventory"); h.succeed();
             } finally { cleanup(p); }
         });
     }
@@ -176,7 +177,7 @@ public final class MatterAssemblyGameTests {
     public static void paidShardTravelsFortyBlocksAndHitsARealEnemy(GameTestHelper h) {
         ServerPlayer p = player(h, 9); Mob enemy = target(h, p, 40);
         h.runAfterDelay(2, () -> {
-            h.assertTrue(MatterAssemblyService.activate(context(p), "shard_lance") && AssemblyMaterials.count(p) == 6, "Lance consumes exactly three inputs");
+            h.assertTrue(MatterAssemblyService.activate(context(p), "shard_lance") && AssemblyMaterials.count(p) == 9, "The lance tears its Shard from the ground, not the inventory");
             h.assertTrue(enemy.getHealth() == 100, "Ranged damage is not instantaneous");
         });
         h.runAfterDelay(24, () -> {
@@ -248,9 +249,9 @@ public final class MatterAssemblyGameTests {
         h.assertTrue(MatterAssemblyService.activate(context(p), "drawbridge"), "A twenty-block crossing begins");
         h.runAfterDelay(3, () -> {
             try {
-                var cells = MatterAssemblyService.cells(p); h.assertTrue(cells.size() == 20 && AssemblyMaterials.count(p) == 44, "Crossing has twenty funded cells");
+                var cells = MatterAssemblyService.cells(p); h.assertTrue(cells.size() == 20 && AssemblyMaterials.count(p) == 64, "Crossing has twenty cells, drawn from the ground");
                 h.assertTrue(MatterAssemblyService.activate(context(p), "drawbridge"), "Second activation retracts its own crossing");
-                h.assertTrue(cells.stream().allMatch(pos -> h.getLevel().getBlockState(pos).isAir()) && AssemblyMaterials.count(p) == 44, "Retraction produces no refund or permanent items"); h.succeed();
+                h.assertTrue(cells.stream().allMatch(pos -> h.getLevel().getBlockState(pos).isAir()) && AssemblyMaterials.count(p) == 64, "Retraction produces no permanent items"); h.succeed();
             } finally { cleanup(p); }
         });
     }
@@ -276,10 +277,36 @@ public final class MatterAssemblyGameTests {
         h.runAfterDelay(2, () -> {
             try {
                 h.assertTrue(p.hurt(p.damageSources().mobAttack(enemy), 12), "A genuinely fatal hit is processed");
-                h.assertTrue(p.isAlive() && Math.abs(p.getHealth() - 1) < .001 && MatterAssemblyService.cells(p).size() >= 4, "Paid emergency geometry leaves exactly one health");
-                int material = AssemblyMaterials.count(p); h.assertTrue(material < 64 && material >= 52, "The rescue spends only successfully placed cells, at most twelve");
+                h.assertTrue(p.isAlive() && Math.abs(p.getHealth() - 1) < .001 && MatterAssemblyService.cells(p).size() >= 4, "Emergency geometry leaves exactly one health");
+                h.assertTrue(AssemblyMaterials.count(p) == 64, "The rescue spends no blocks from the inventory");
                 p.invulnerableTime = 0; p.setHealth(6); p.hurt(p.damageSources().mobAttack(enemy), 13);
-                h.assertTrue(AssemblyMaterials.count(p) == material, "The one-minute capstone cooldown prevents a second paid rescue"); h.succeed();
+                h.assertTrue(p.isDeadOrDying(), "The one-minute capstone cooldown prevents a second rescue: the next fatal hit lands"); h.succeed();
+            } finally { enemy.discard(); cleanup(p); }
+        });
+    }
+
+    @GameTest(template="cryo_rework_arena", batch="matter.skywalk", timeoutTicks=40)
+    public static void skywalkCatchesAStepOnAir(GameTestHelper h) {
+        ServerPlayer p = player(h, 0);
+        try {
+            // High over the arena, nothing underfoot.
+            p.setPos(p.position().add(0, 12, 0));
+            BlockPos below = BlockPos.containing(p.getX(), p.getBoundingBox().minY - 0.2, p.getZ());
+            h.assertTrue(h.getLevel().getBlockState(below).isAir(), "There is air underfoot");
+            h.assertTrue(MatterAssemblyService.activate(context(p), "causeway"), "Skywalk starts");
+            h.assertTrue(h.getLevel().getBlockState(below).is(AssemblyBlocks.MATTER.get()), "Matter catches the step at once");
+            h.assertTrue(MatterAssemblyService.cells(p).size() == 3, "A three-wide plate across the path, nothing more: " + MatterAssemblyService.cells(p).size());
+            h.assertTrue(!MatterAssemblyService.activate(context(p), "causeway"), "One Skywalk at a time"); h.succeed();
+        } finally { cleanup(p); }
+    }
+    @GameTest(template="cryo_rework_arena", batch="matter.sentinels", timeoutTicks=80)
+    public static void sentinelEngineRaisesThreeTurretsThatShootEnemies(GameTestHelper h) {
+        ServerPlayer p = player(h, 0); Mob enemy = target(h, p, 10);
+        h.runAfterDelay(2, () -> h.assertTrue(MatterAssemblyService.activate(context(p), "cathedral"), "Sentinel Engine starts"));
+        h.runAfterDelay(50, () -> {
+            try {
+                h.assertTrue(MatterAssemblyService.cells(p).size() == 6, "Three two-cell turrets, not a fortress: " + MatterAssemblyService.cells(p).size());
+                h.assertTrue(enemy.getHealth() < 100, "The turrets found the enemy and shot it"); h.succeed();
             } finally { enemy.discard(); cleanup(p); }
         });
     }

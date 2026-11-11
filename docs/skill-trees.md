@@ -1,17 +1,22 @@
 # Skill trees and Sonic Resonance
 
 Open your survival inventory and click **Skills** (the eclipse beside the recipe book), or press
-**P**. Both open the **Abilities** page, which is also the skill tree:
+**P**. Both open the **hero menu**. Your power, level and unspent points sit along the top, your
+Mastery and stamina along the bottom, and five tabs run under the title (Tab and Shift+Tab switch
+between the first three):
 
-- The left column is your power: its passive and its five core abilities, with the key each is on.
-- Each of the three branches is drawn as its real tree: the root on top forks into an upgrade path
-  (left) and a technique path (right) that ends in the capstone. Connectors light up as you learn.
-- Click a hex to see what it does in the card on the right. Skills you can learn now pulse; click
-  **LEARN** (or click the selected hex again) to spend the points.
-- Any core ability or learned active skill shows eight key chips: click one to put it on that key,
-  click its lit chip to take it off. Everything is also on the **ability wheel** (hold R). See
-  [Power Levels, keys and the ability wheel](progression.md). **RESPEC** (beside your points)
-  refunds everything; it needs ten seconds out of combat.
+- **Loadout**: everything you can cast (your five core abilities, your class ability and the skills
+  you've learned), each tagged Offense, Defense, Support or Utility, beside your eight ability keys.
+  Select an ability, then click a key slot to put it there; right-click a slot to empty it.
+  Everything is also on the **ability wheel** (hold R). See
+  [Power Levels, keys and the ability wheel](progression.md).
+- **Skill Tree**: the three branches, each drawn as its real tree: the root on top forks into an
+  upgrade path and a technique path that ends in the capstone. Connectors light up as you learn.
+  Click a hex to see it in the card on the right; skills you can learn now pulse. Click **LEARN**
+  (or click the selected hex again) to spend the points. **RESPEC** refunds everything; it needs
+  ten seconds out of combat.
+- **Class**: choose how you play your power, Offense, Defense or Support. See [Classes](classes.md).
+- **Journal** and **Settings** open the story journal and the effects settings.
 
 Flight has a fully redesigned eighteen-node tree: see [Flight](flight.md#purchasable-skills) for Sky Guard, Jetstream and Stormbreaker. Its passives change specific mechanics instead of granting the generic stat bonuses below.
 

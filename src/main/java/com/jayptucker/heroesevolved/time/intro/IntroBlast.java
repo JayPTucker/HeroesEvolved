@@ -16,6 +16,13 @@ public final class IntroBlast {
     public static final double MARGIN = 20;
     /** Everything held still, then everything running backwards to the moment before the light. */
     public static final int FREEZE_TICKS = 50, REWIND_TICKS = 46;
+    /**
+     * Once it has all run back, time stays stopped a few seconds more, everyone back where they stood before
+     * the sirens, so the visitor can see what they have undone before they go home.
+     */
+    public static final int HOLD_TICKS = 60;
+    /** From time stopping to going home. */
+    public static final int STOPPED_TICKS = FREEZE_TICKS + REWIND_TICKS + HOLD_TICKS;
     /** The fireball's full radius. */
     public static final float FIREBALL = 42;
 

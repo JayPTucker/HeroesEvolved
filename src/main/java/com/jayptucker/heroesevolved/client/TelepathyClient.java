@@ -18,6 +18,9 @@ import org.lwjgl.glfw.GLFW;
 public final class TelepathyClient {
     private static MindStatePayload state=new MindStatePayload(0,-1,0,0,0,0,0,0);
     private static long seen; private static Entity previous; private static int previousRole;
+    /** The possessor's half-typed line as the possessed player sees it, and the last line this possessor sent. */
+    private static String typing="", sentTyping="";
+    public static void typed(String text){typing=text;}
     public static int bodyId(){return role()==2?state.entity():Minecraft.getInstance().player.getId();}
     public static int role(){return state.role();}
     public static boolean immobilized(){return role()==1||role()==2||role()==4||role()==3&&state.focus()==1;}
@@ -25,6 +28,7 @@ public final class TelepathyClient {
         Minecraft mc=Minecraft.getInstance();
         if(p.role()==5||p.role()==6){mc.setScreen(new Choice(p.role()==6));return;}
         previousRole=role();state=p;seen=mc.level==null?0:mc.level.getGameTime();
+        if(p.role()!=3)typing="";
         if(p.role()==0 && previousRole!=0){if(mc.player!=null)mc.setCameraEntity(previous==null||previous.level()!=mc.level?mc.player:previous);previous=null;mc.setScreen(null);ClientMomentum.clear();ClientResonance.clear();ClientClarity.clear();ClientStrain.clear();ClientDensity.clear();ClientRegenerationState.clear();}
         if((p.role()==2||p.role()==4)&&mc.player!=null&&mc.level!=null){
             Entity target=mc.level.getEntity(p.entity());
@@ -39,7 +43,14 @@ public final class TelepathyClient {
             Entity body=mc.level.getEntity(state.entity());if(body!=null){body.setYRot(mc.player.getYRot());body.setXRot(mc.player.getXRot());}
             boolean input=mc.screen==null;
             PacketDistributor.sendToServer(new MindInputPayload(0,mc.options.keySprint.isDown()?1:0,0,input?axis(mc.options.keyUp.isDown(),mc.options.keyDown.isDown()):0,input?axis(mc.options.keyLeft.isDown(),mc.options.keyRight.isDown()):0,mc.player.getYRot(),mc.player.getXRot(),input&&mc.options.keyJump.isDown(),input&&mc.options.keyShift.isDown()));
-        }
+            // A possessed player watches their own chat box fill with words they did not type.
+            String line=body instanceof net.minecraft.world.entity.player.Player&&mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen chat?chatLine(chat):"";
+            if(!line.equals(sentTyping)){sentTyping=line;PacketDistributor.sendToServer(new MindTypingPayload(line));}
+        }else sentTyping="";
+    }
+    private static String chatLine(Screen chat){
+        String line=chat.children().stream().filter(net.minecraft.client.gui.components.EditBox.class::isInstance).map(box->((net.minecraft.client.gui.components.EditBox)box).getValue()).findFirst().orElse("");
+        return line.length()>MindTypingPayload.MAX_LENGTH?line.substring(0,MindTypingPayload.MAX_LENGTH):line;
     }
     private static float axis(boolean a,boolean b){return (a?1:0)-(b?1:0);}
     @SubscribeEvent public static void movement(MovementInputUpdateEvent e){if(immobilized()){e.getInput().forwardImpulse=0;e.getInput().leftImpulse=0;e.getInput().jumping=false;e.getInput().shiftKeyDown=false;}}
@@ -72,6 +83,13 @@ public final class TelepathyClient {
                 g.fill(cx-85,h/2+48,cx+85,h/2+55,0xFF382342);g.fill(cx-85,h/2+48,cx-85+(170*state.resistance()/100),h/2+55,0xFFDBB4FF);
                 g.drawCenteredString(mc.font,"Break free: "+state.resistance()+"%",cx,h/2+64,0xDCBDEF);
             }else g.drawCenteredString(mc.font,"Esc · return to yourself",cx,60,0xB59CCB);
+            if(role()==3&&!typing.isEmpty()){
+                // Where their own chat box would be; above it when they have it open themselves.
+                int y=h-(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen?26:12);
+                String shown=mc.font.plainSubstrByWidth(typing,w-16,true)+(net.minecraft.Util.getMillis()/400%2==0?"_":"");
+                g.fill(2,y-2,Math.min(w-2,mc.font.width(shown)+8),y+10,0x90180C28);
+                g.drawString(mc.font,shown,4,y,0xEDCBFF);
+            }
         }else if(state.focus()>0||state.strain()>0)g.drawCenteredString(mc.font,"Mind Thread "+state.focus()+"  ·  Strain "+state.strain(),cx,h-76,0xDCBDEF);
     }
     private static final class Choice extends Screen {
