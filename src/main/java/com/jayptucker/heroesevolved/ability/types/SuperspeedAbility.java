@@ -3,6 +3,7 @@ package com.jayptucker.heroesevolved.ability.types;
 import com.jayptucker.heroesevolved.ability.*;
 import com.jayptucker.heroesevolved.speed.SpeedKit;
 import com.jayptucker.heroesevolved.speed.SpeedService;
+import com.jayptucker.heroesevolved.speed.SpeedWindArms;
 import java.util.Map;
 
 /**
@@ -14,6 +15,8 @@ import java.util.Map;
  *   <li>Level 2, Snatch: take every dropped item nearby, every enemy shot in the air, and the weapon you look at.</li>
  *   <li>Level 4, Cyclone: run rings around yourself; the wind lifts enemies, then throws them. Hold the key
  *   to raise the ring into a tornado.</li>
+ *   <li>Level 4, Wind Arms (Shift + the Cyclone key): spin your arms into two funnels of wind while held; look
+ *   ahead to blow enemies away, look down to lift yourself off the ground.</li>
  *   <li>Level 5, Lightspeed: one 48-block streak through everything on the line, ending in a sonic boom.</li>
  * </ul>
  */
@@ -30,13 +33,33 @@ public final class SuperspeedAbility implements Ability {
                     .activate(c -> SpeedKit.blitz(c.player(), c.abilityLevel())).build(),
             AbilitySlot.TERTIARY, SimpleAction.builder("speed_snatch", 2).cost(() -> 20, () -> 200)
                     .activate(c -> SpeedKit.snatch(c.player(), c.abilityLevel()) > 0).build(),
-            AbilitySlot.QUATERNARY, SimpleAction.builder("speed_cyclone", 4).cost(() -> 30, () -> 240)
+            AbilitySlot.QUATERNARY, new CycloneOrArms(SimpleAction.builder("speed_cyclone", 4).cost(() -> 30, () -> 240)
                     .canUse(c -> !SpeedKit.cycloning(c.player()))
                     .activate(c -> SpeedKit.cyclone(c.player(), c.abilityLevel(), true))
-                    .release(c -> SpeedKit.releaseCyclone(c.player())).build(),
+                    .release(c -> SpeedKit.releaseCyclone(c.player())).build()),
             AbilitySlot.QUINARY, SimpleAction.builder("speed_lightspeed", 5).cost(() -> 50, () -> 900)
                     .canUse(c -> !c.player().isPassenger())
                     .activate(c -> SpeedKit.lightspeed(c.player(), c.abilityLevel()) >= 0).build());
+    /** The Cyclone key: Cyclone, or with Shift held, Wind Arms, which keeps its own price and cooldown. */
+    private record CycloneOrArms(AbilityAction cyclone) implements AbilityAction {
+        static final net.minecraft.resources.ResourceLocation ARMS_COOLDOWN =
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(com.jayptucker.heroesevolved.HeroesEvolved.MOD_ID, "speed_wind_arms");
+        @Override public AbilityActionDefinition definition() { return cyclone.definition(); }
+        @Override public boolean canUse(AbilityUseContext c) {
+            return c.modifierHeld() ? !SpeedWindArms.active(c.player()) && !c.player().isPassenger() && !c.player().isSpectator() : cyclone.canUse(c);
+        }
+        @Override public AbilityActivationResult activate(AbilityUseContext c) {
+            if (!c.modifierHeld()) return cyclone.activate(c);
+            return SpeedWindArms.start(c.player()) ? AbilityActivationResult.SUCCESS : AbilityActivationResult.REJECTED;
+        }
+        @Override public void release(AbilityUseContext c) {
+            if (!SpeedWindArms.stop(c.player())) cyclone.release(c);
+        }
+        @Override public int energyCost(AbilityUseContext c) { return c.modifierHeld() ? SpeedWindArms.ENERGY : cyclone.energyCost(c); }
+        @Override public int cooldownTicks(AbilityUseContext c) { return c.modifierHeld() ? SpeedWindArms.COOLDOWN : cyclone.cooldownTicks(c); }
+        @Override public net.minecraft.resources.ResourceLocation cooldownId(AbilityUseContext c) { return c.modifierHeld() ? ARMS_COOLDOWN : cyclone.cooldownId(c); }
+    }
+
     @Override public AbilityDefinition definition() { return DEFINITION; }
     @Override public Map<AbilitySlot, AbilityAction> actions() { return ACTIONS; }
     @Override public boolean canUse(AbilityUseContext c) { return false; }

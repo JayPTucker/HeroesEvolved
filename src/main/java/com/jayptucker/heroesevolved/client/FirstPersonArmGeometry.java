@@ -3,6 +3,7 @@ package com.jayptucker.heroesevolved.client;
 import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.HumanoidArm;
 
 /** Camera-space shoulder anchors. Each arm remains on its own side of the crosshair. */
@@ -37,6 +38,14 @@ public final class FirstPersonArmGeometry {
         }
         if (pose == ArmPose.KINETIC_GATHER || pose == ArmPose.KINETIC_HOLD || pose == ArmPose.KINETIC_RELEASE) {
             kinetic(stack, side, pose, time, poseAge);
+            return;
+        }
+        if (pose == ArmPose.WIND_ARMS) {
+            // Out in front, each hand circling fast and tight, the two turning opposite ways.
+            float spin = time * 1.9F * side;
+            stack.translate(side * .36F + Mth.cos(spin) * .07F, -.36F + Mth.sin(spin) * .07F, -.3F);
+            stack.mulPose(Axis.YP.rotationDegrees(side * 4));
+            stack.mulPose(Axis.XP.rotationDegrees(-90 + Mth.sin(spin) * 9));
             return;
         }
         float shake = pose == ArmPose.TWO_HANDS_STRAIN ? (float) Math.sin(time * 2.7) * .008F : 0;

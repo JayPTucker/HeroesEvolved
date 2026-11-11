@@ -71,5 +71,7 @@ public enum ArmPose {
     /** Cradle a protective shell between open palms. */
     CRYO_SHELTER,
     /** Spread and turn the hands to set a constellation of linked crystals. */
-    CRYO_STARS
+    CRYO_STARS,
+    /** Both arms windmilling too fast to see, out of step, into two funnels of wind. */
+    WIND_ARMS
 }

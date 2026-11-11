@@ -19,6 +19,23 @@ public final class SpeedMovement {
     }
     private SpeedMovement() {}
 
+    /** The deepest drop a runner goes straight down instead of falling. */
+    public static final double SNAP_DROP = 2.6;
+
+    /**
+     * How far a runner who has just run off an edge drops straight onto the ground below, or 0 when there is no
+     * ground within {@link #SNAP_DROP} blocks (a real fall) or it is only a slab's lip (just walked).
+     */
+    public static double ledge(Player player) {
+        var box = player.getBoundingBox();
+        double free = 0;
+        for (double d = .05; d <= SNAP_DROP; d += .05) {
+            if (!player.level().noCollision(player, box.move(0, -d, 0))) return free < .5 ? 0 : free;
+            free = d;
+        }
+        return 0;
+    }
+
     public static boolean accelerating(Player player) {
         var attribute = player.getAttribute(Attributes.MOVEMENT_SPEED);
         return player.isAlive() && !player.isSpectator() && !player.isPassenger() && !player.isFallFlying()

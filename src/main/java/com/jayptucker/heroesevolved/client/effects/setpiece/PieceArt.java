@@ -66,6 +66,7 @@ final class PieceArt {
             case MENDING_LATTICE -> MindArt.mending(c, a, t);
             case EXPLODING_MAN -> MiniBlast.draw(c, a.origin(), a.scale() / 80F, a.scale() * 1.15F, t, a.piece().ticks);
             case SPEED_GUST -> SpeedArt.gust(c, a, t);
+            case SPEED_ARMS -> SpeedArt.arms(c, a, t);
             case OVERRUN_DEPART -> SpeedArt.depart(c, a, t);
             case OVERRUN_ARRIVE -> SpeedArt.arrive(c, a, t);
             case MATTER_RISE -> AssemblyArt.rise(c, a, t);

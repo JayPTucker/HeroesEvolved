@@ -239,6 +239,13 @@ public final class PowerArmPoses {
                 set(model.rightArm, aimX + tremble, aimY - 0.15F, tremble);
                 set(model.leftArm, aimX - tremble, aimY + 0.15F, -tremble);
             }
+            case WIND_ARMS -> {
+                // Both arms straight out along the aim, each hand whipping round a tight circle (the two turning
+                // opposite ways), so a funnel of wind spins off each palm.
+                float spin = ageInTicks * 1.9F, r = .3F;
+                set(model.rightArm, aimX + Mth.sin(spin) * r, aimY - .06F + Mth.cos(spin) * r, 0);
+                set(model.leftArm, aimX + Mth.sin(-spin) * r, aimY + .06F + Mth.cos(-spin) * -r, 0);
+            }
             case ARMS_RAISED -> {
                 set(model.rightArm, -2.9F, 0.0F, 0.25F);
                 set(model.leftArm, -2.9F, 0.0F, -0.25F);

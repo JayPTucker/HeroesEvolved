@@ -315,6 +315,77 @@ final class SpeedArt {
         }
     }
 
+    /**
+     * Wind Arms: a blurred disc at each hand where it circles too fast to see, and off each palm a funnel of wind
+     * spiralling out along the look (or down into the ground, lifting). It follows the player; the server sends
+     * a fresh one every ten ticks, each fading in and out over two, so they hand over without a seam.
+     */
+    static void arms(Canvas c, Active a, float t) {
+        Entity e = a.bound(c);
+        if (e == null) return;
+        float life = a.piece().ticks, f = Mth.clamp(Math.min(t / 2F, (life - t) / 2F), 0, 1);
+        if (f <= 0) return;
+        float now = c.level == null ? t : (c.level.getGameTime() % 24000L) + c.partial;
+        Vec3 pos = e.getPosition(c.partial), look = e.getViewVector(c.partial);
+        // The arms hang off the body, which turns with the body's yaw, not the head's.
+        float bodyYaw = (e instanceof net.minecraft.world.entity.LivingEntity l ? Mth.rotLerp(c.partial, l.yBodyRotO, l.yBodyRot) : e.getViewYRot(c.partial)) * Mth.DEG_TO_RAD;
+        Vec3 side = new Vec3(-cos(bodyYaw), 0, -sin(bodyYaw));
+        boolean down = look.y < -0.7;
+        Vec3 dir = look;
+        float length = down ? 3.5F : 8;
+        Vec3[] basis = basis(dir);
+        double shoulderY = e.isCrouching() ? 1.17 : 1.375;
+        for (int hand = -1; hand <= 1; hand += 2) {
+            // Shoulder joints sit five pixels out from the middle; an arm is twelve pixels long.
+            Vec3 shoulder = pos.add(0, shoulderY, 0).add(side.scale(hand * 0.3125));
+            Vec3 palm = shoulder.add(dir.scale(0.72));
+            float turn = now * 0.9F * hand;
+            if (c.soft()) {
+                // The hand circling too fast to see: a pale blurred disc across the arm's end.
+                c.disc(palm.subtract(dir.scale(0.1)), dir, 0.34F, WIND, 0.38F * f, 0.05F * f);
+                for (int s = 0; s < 4; s++) {
+                    int n = 22;
+                    Vec3[] p = new Vec3[n + 1];
+                    for (int k = 0; k <= n; k++) {
+                        float d = length * k / n, r = 0.16F + d * 0.26F, ang = turn + s * TWO_PI / 4 + d * 1.4F;
+                        p[k] = palm.add(dir.scale(d)).add(basis[0].scale(cos(ang) * r)).add(basis[1].scale(sin(ang) * r));
+                    }
+                    c.ribbon(p, 0.09F, WIND, 0.7F * f, 0.05F * f);
+                }
+                for (int i = 0; i < 5; i++) {
+                    float d = (now * 0.8F + i * length / 5F) % length, r = 0.16F + d * 0.26F, fade = 1 - d / length;
+                    float gap = turn + i * 1.7F;
+                    c.ring(palm.add(dir.scale(d)), dir, r, 0.07F + d * 0.015F, gap, gap + 4.8F, WIND, 0.6F * f * fade);
+                }
+            }
+            if (c.glow()) {
+                for (int s = 0; s < 2; s++) {
+                    int n = 10;
+                    Vec3[] p = new Vec3[n + 1];
+                    for (int k = 0; k <= n; k++) {
+                        float d = length * 0.6F * k / n, r = 0.1F + d * 0.22F, ang = turn * 1.3F + s * PI + d * 1.8F;
+                        p[k] = palm.add(dir.scale(d)).add(basis[0].scale(cos(ang) * r)).add(basis[1].scale(sin(ang) * r));
+                    }
+                    c.ribbon(p, 0.03F, GOLD, 0.5F * f, 0);
+                }
+            }
+        }
+        if (down && c.soft()) {
+            // Dust kicked out in a ring where the funnels hit the ground.
+            Vec3 foot = pos.add(0, -Math.min(com.jayptucker.heroesevolved.speed.SpeedWindArms.heightAboveGround(e), 8) + 0.1, 0);
+            for (int i = 0; i < 8; i++) {
+                float ang = now * 0.3F + i * TWO_PI / 8, r = 0.6F + ((now * 0.08F + i * 0.13F) % 1) * 1.8F;
+                c.cloud(foot.add(cos(ang) * r, 0.15, sin(ang) * r), 0.4F, 0.2F, 0.4F, i, ang, 0.3F * f * (1 - r / 2.6F), Shades.smoke(c, DUST, 0));
+            }
+        }
+    }
+
+    private static Vec3[] basis(Vec3 axis) {
+        Vec3 ref = Math.abs(axis.y) > 0.9 ? new Vec3(1, 0, 0) : UP;
+        Vec3 u = axis.cross(ref).normalize();
+        return new Vec3[] {u, axis.cross(u).normalize()};
+    }
+
     /** One streak of the air rushing on: it runs ahead, spreads and fades. */
     private static void streak(Canvas c, Vec3 o, Vec3 dir, Vec3 side, int seed, int i, float t, float s, float life, float[] col, float alpha) {
         float lat = (hash(seed, i + 200) - 0.5F) * 2.4F, h = 0.2F + hash(seed, i + 220) * 1.9F, pace = 0.8F + hash(seed, i + 240) * 0.5F;

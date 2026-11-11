@@ -136,6 +136,83 @@ public final class SpeedRunGameTests {
         });
     }
 
+    @GameTest(template = "rewind_empty", batch = "speedrun.ledge")
+    public static void aRunnerStepsUpBlocksDropsStraightDownLedgesAndNeverTakesFallDamage(GameTestHelper h) {
+        var p = runner(h, 1, false);
+        try {
+            SpeedService.toggle(p);
+            SpeedService.tickRunner(p);
+            h.assertTrue(p.getAttributeValue(Attributes.STEP_HEIGHT) >= 1.5, "Accelerate steps up a full block even between sprints: " + p.getAttributeValue(Attributes.STEP_HEIGHT));
+            // Off an edge with the ground two blocks below: straight down onto it.
+            double ground = p.getY();
+            p.setPos(p.getX(), ground + 2, p.getZ());
+            double drop = SpeedMovement.ledge(p);
+            h.assertTrue(Math.abs(drop - 2) < .06, "A two-block drop goes straight down onto the lower ground: " + drop);
+            p.setPos(p.getX(), ground + 6, p.getZ());
+            h.assertTrue(SpeedMovement.ledge(p) == 0, "A real fall is left to fall");
+            p.setPos(p.getX(), ground + .25, p.getZ());
+            h.assertTrue(SpeedMovement.ledge(p) == 0, "A slab's lip is just walked");
+            p.setPos(p.getX(), ground, p.getZ());
+            var fall = new net.neoforged.neoforge.event.entity.living.LivingFallEvent(p, 40, 1);
+            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(fall);
+            h.assertTrue(fall.getDistance() == 0 && fall.getDamageMultiplier() == 0, "No fall hurts a speedster under Accelerate");
+            SpeedService.toggle(p);
+            h.assertTrue(p.getAttributeValue(Attributes.STEP_HEIGHT) < 1, "The step goes with Accelerate");
+            h.succeed();
+        } finally { done(p, false); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "speedrun.fire")
+    public static void runningFlatOutPutsOutTheFlames(GameTestHelper h) {
+        var p = runner(h, 2, false);
+        try {
+            p.setRemainingFireTicks(200);
+            for (int i = 0; i < 20; i++) SpeedService.smotherForTest(p, .3);
+            h.assertTrue(p.isOnFire(), "A jog does not put it out");
+            for (int i = 0; i < 9; i++) SpeedService.smotherForTest(p, 1.2);
+            h.assertTrue(p.isOnFire(), "It takes half a second of real running");
+            SpeedService.smotherForTest(p, 1.2);
+            h.assertFalse(p.isOnFire(), "Half a second flat out and the flames are out");
+            h.succeed();
+        } finally { done(p, false); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "speedrun.arms.push", timeoutTicks = 60)
+    public static void windArmsBlowWhatIsAheadAwayAndNothingBehind(GameTestHelper h) {
+        var p = runner(h, 4, true);
+        p.setYRot(0); p.setXRot(0); p.setYHeadRot(0);
+        var ahead = mob(h, EntityType.PILLAGER, p, 0, 5);
+        var behind = mob(h, EntityType.PILLAGER, p, 0, -5);
+        ahead.setRemainingFireTicks(200);
+        h.assertTrue(SpeedWindArms.start(p), "The arms start spinning");
+        h.runAfterDelay(4, () -> {
+            try {
+                h.assertTrue(ahead.getDeltaMovement().z > .2, "What is ahead is blown away along the look: " + ahead.getDeltaMovement());
+                h.assertTrue(Math.abs(behind.getDeltaMovement().z) < .1, "Nothing behind is touched: " + behind.getDeltaMovement());
+                h.assertTrue(ahead.getHealth() == 100, "The wind does no harm");
+                h.assertFalse(ahead.isOnFire(), "And it blows out flames");
+                h.assertTrue(SpeedWindArms.stop(p), "Letting go stops the arms");
+                h.assertFalse(SpeedWindArms.active(p), "They are stopped");
+                h.succeed();
+            } finally { ahead.discard(); behind.discard(); done(p, true); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "speedrun.arms.lift", timeoutTicks = 60)
+    public static void windArmsPointedDownLiftYouAndLetYouFloatDown(GameTestHelper h) {
+        var p = runner(h, 4, true);
+        p.setXRot(85);
+        h.assertTrue(SpeedWindArms.start(p), "The arms start spinning");
+        h.assertTrue(p.getDeltaMovement().y > .3, "Funnels into the ground lift you: " + p.getDeltaMovement());
+        h.assertTrue(p.fallDistance == 0, "No fall builds while lifted");
+        h.assertTrue(SpeedWindArms.stop(p), "Letting go stops the arms");
+        h.runAfterDelay(1, () -> {
+            try {
+                h.succeed();
+            } finally { done(p, true); }
+        });
+    }
+
     @GameTest(template = "rewind_empty", batch = "speedrun.gust")
     public static void aSuddenStopThrowsAGustThatPushesCloseThingsBack(GameTestHelper h) {
         var p = runner(h, 3, false);

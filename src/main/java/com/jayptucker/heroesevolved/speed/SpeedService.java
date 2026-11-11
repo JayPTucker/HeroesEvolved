@@ -59,7 +59,7 @@ public final class SpeedService {
         final Level level;
         Vec3 previous, trailPrevious;
         long lastMoving = Long.MIN_VALUE, redlineUntil;
-        int activeTicks, wallTicks, momentum, sentMomentum = -1, runMomentum;
+        int activeTicks, wallTicks, momentum, sentMomentum = -1, runMomentum, smother;
         long vibrateReady, gustReady;
         /** The fastest step of the last few ticks, fading: a sudden stop is measured against it. */
         double peak, lastStep;
@@ -269,6 +269,7 @@ public final class SpeedService {
         else if (!running || now(p) - r.lastMoving > 2) r.momentum = Math.max(0, r.momentum - 6);
         if (running && distance > .01 && distance < 64) runFeats(p, r, Math.sqrt(distance));
         if (running && distance > .01 && distance < 64) easeHunger(p, Math.sqrt(distance));
+        smother(p, r, running && distance < 64 ? Math.sqrt(distance) : 0);
         syncMomentum(p, r);
         // Quantize the modifier to avoid sending attribute packets for every tiny charge change.
         double amount = running ? 2 + level + (r.momentum / 25) * .5 + (redline ? 3 : 0) : 0;
@@ -276,10 +277,13 @@ public final class SpeedService {
             removeModifiers(p);
             if (amount > 0) {
                 p.getAttribute(Attributes.MOVEMENT_SPEED).addTransientModifier(new AttributeModifier(STRIDE, amount, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
-                p.getAttribute(Attributes.STEP_HEIGHT).addTransientModifier(new AttributeModifier(STEP, .5, AttributeModifier.Operation.ADD_VALUE));
             }
             r.modifier = amount;
         }
+        // Step height belongs to Accelerate, not to the sprint flag: hitting a block's edge drops the sprint for a
+        // tick, and the runner must still go straight up and over it (a full block, or a block and a slab).
+        var step = p.getAttribute(Attributes.STEP_HEIGHT);
+        if (step != null && !step.hasModifier(STEP)) step.addTransientModifier(new AttributeModifier(STEP, STEP_UP, AttributeModifier.Operation.ADD_VALUE));
         if (running && r.activeTicks++ % 20 == 0) {
             int cost = redline ? 6 : 3, before = PlayerEnergyService.getEnergy(p);
             if (!PlayerEnergyService.tryConsume(p, cost)) { stop(p); p.displayClientMessage(Component.translatable("speed.heroesevolved.exhausted"), true); return; }
@@ -302,6 +306,30 @@ public final class SpeedService {
         } else if (p.onGround() && !p.horizontalCollision) r.wallTicks = 0;
         r.previous = p.position();
     }
+
+    /** Running this fast (blocks a tick) fans the flames out. */
+    static final double SMOTHER_SPEED = .6;
+    /** Ticks of running that fast it takes to put yourself out. */
+    static final int SMOTHER_TICKS = 10;
+
+    /** On fire and running flat out: half a second of it and the rush of air puts the flames out. Not in lava. */
+    static void smother(ServerPlayer p, Runner r, double step) {
+        if (!p.isOnFire() || p.isInLava() || step < SMOTHER_SPEED) { r.smother = 0; return; }
+        if (++r.smother < SMOTHER_TICKS) return;
+        r.smother = 0;
+        p.clearFire();
+        ServerLevel level = p.serverLevel();
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE, p.getX(), p.getY() + 1, p.getZ(), 8, .3, .5, .3, .02);
+        level.playSound(null, p.blockPosition(), SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, .7F, 1.6F);
+    }
+
+    /** Test hook: one tick of running at {@code step} blocks a tick, for the fire check. */
+    public static void smotherForTest(ServerPlayer p, double step) {
+        smother(p, RUNNERS.computeIfAbsent(p.getUUID(), id -> new Runner(p)), step);
+    }
+
+    /** Extra step height while Accelerate is on (on top of vanilla's 0.6). */
+    static final double STEP_UP = 1.0;
     /** What fast running does on its own: lightning on the body, buffeted bystanders, the sound barrier, the trial. */
     private static void runFeats(ServerPlayer p, Runner r, double step) {
         long now = now(p);

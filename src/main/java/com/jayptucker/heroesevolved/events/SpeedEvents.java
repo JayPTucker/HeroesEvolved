@@ -29,6 +29,10 @@ public final class SpeedEvents {
                 && e.getSource().is(net.minecraft.world.damagesource.DamageTypes.PLAYER_ATTACK) && !SpeedService.inPowerHit())
             e.setAmount(SpeedService.punch(attacker, e.getEntity(), e.getAmount()));
     }
+    // A speedster under Accelerate lands on their feet from any height.
+    @SubscribeEvent public static void fall(LivingFallEvent e) {
+        if (e.getEntity() instanceof ServerPlayer p && SpeedService.active(p)) { e.setDistance(0); e.setDamageMultiplier(0); }
+    }
     @SubscribeEvent public static void attack(net.neoforged.neoforge.event.entity.player.AttackEntityEvent e) {
         if (e.getEntity() instanceof ServerPlayer p) SpeedService.beforePunch(p, e.getTarget());
     }

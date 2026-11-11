@@ -47,7 +47,9 @@ public enum Piece {
     // Superspeed's own: the wind a sudden stop throws ahead, and outrunning the last minute (leaving, arriving)
     SPEED_GUST(34), OVERRUN_DEPART(44), OVERRUN_ARRIVE(110),
     // Matter Assembly: matter torn up out of the ground into a construct; a sentinel turret's crystal head
-    MATTER_RISE(30), SENTINEL(400);
+    MATTER_RISE(30), SENTINEL(400),
+    // Wind Arms: a funnel of wind off each circling hand, re-sent while held
+    SPEED_ARMS(12);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;
