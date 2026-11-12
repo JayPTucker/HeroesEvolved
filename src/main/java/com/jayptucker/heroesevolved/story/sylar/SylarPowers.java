@@ -31,7 +31,7 @@ import java.util.Set;
  */
 public final class SylarPowers {
     /** How he holds himself while winding a move up: drawn by the renderer. */
-    public enum Pose { NONE, ONE_HAND, TWO_HANDS, RAISED, CROUCH }
+    public enum Pose { NONE, ONE_HAND, TWO_HANDS, RAISED, CROUCH, STAGGER }
 
     interface Action { void run(SylarEntity sylar, ServerLevel level, LivingEntity target, float power); }
 

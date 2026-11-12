@@ -75,7 +75,21 @@ public enum Piece {
     SPEED_DISINTEGRATE(104),
     // A shield-maker's shield holding against a nuclear blast, then keeping the fallout off
     SHIELD_BRACE(200),
-    CRYO_BLAST(6), CRYO_QUENCH(17), CRYO_CAST(14);
+    CRYO_BLAST(6), CRYO_QUENCH(17), CRYO_CAST(14),
+    // A villager in meltdown (re-sent every ten ticks; scale is how far gone, +2 while held) and his village's safe point
+    VILLAGE_MELTDOWN(12), VILLAGE_SAFE(12),
+    // Sylar's shop, the Watchmaker's arena: its clocks (re-sent every second; scale is the phase, +10 while he runs), the
+    // glint of his exposed watch and its cracking, his telegraphs (each a dial whose hand reaches twelve as it lands) and
+    // what they do, his grab, the rings of stopped time, the doors locking, the pull into and out of the shop, the drop
+    WATCH_ARENA(24), WATCH_EXPOSED(12), WATCH_CRACK(40), WATCH_SLAM_MARK(30), WATCH_SLAM(30), WATCH_ICE_MARK(30),
+    WATCH_ICE_WALL(24), WATCH_RAIL_MARK(24), WATCH_RAIL_ARC(16), WATCH_GRAB_MARK(16), WATCH_HOLD(12), WATCH_TAKE(36),
+    WATCH_RINGS_MARK(36), WATCH_RINGS(32), WATCH_DOORS(30), WATCH_PULL(30), WATCH_DROP(40),
+    // Elle Bishop on Primatech's test floor: the room's live grid (re-sent every second, bound to her), her charge and
+    // shield (re-sent every ten ticks), each telegraph and what it does, a bank shorting, a siphon and its backfire,
+    // the conduits, her reboot, the storm, the phase changes, her arrival in the dark, the omens, the drop
+    ELLE_ARENA(24), ELLE_AURA(12), ELLE_AIM(16), ELLE_BOLT(10), ELLE_RING_MARK(24), ELLE_RING(14), ELLE_SIPHON(60),
+    ELLE_BACKFIRE(36), ELLE_CONDUIT_MARK(24), ELLE_CONDUIT(12), ELLE_REBOOT(60), ELLE_STRIKE_MARK(30), ELLE_STRIKE(14),
+    ELLE_ORB(48), ELLE_SHORT(20), ELLE_PHASE(30), ELLE_ARRIVE(60), ELLE_OMEN(16), ELLE_DROP(40);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

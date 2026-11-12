@@ -1,7 +1,9 @@
 package com.jayptucker.heroesevolved.client.effects.setpiece;
 
 import com.jayptucker.heroesevolved.client.effects.setpiece.SetPieceClient.Active;
+import com.jayptucker.heroesevolved.client.effects.RadiationVisuals;
 import com.jayptucker.heroesevolved.client.effects.intro.CloudMesh;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
@@ -334,12 +336,22 @@ final class RadiationArt {
      * The moment before: the caster swells with light as they rise, rings of heat collapse in on them faster and
      * faster, and the ground under them cracks and glows.
      */
+    /** Full detonation pieces follow the synced countdown, including pauses from outside containment. */
+    static float reactorCharge(Active a, ClientLevel level) {
+        if (a.scale() < 30 || a.entity() < 0) return -1;
+        Entity entity = level.getEntity(a.entity());
+        return entity == null ? -1 : RadiationVisuals.charge(entity.getId(), entity.getUUID());
+    }
+
     private static void charge(Canvas c, Active a, float t) {
-        float span = Math.max(1, a.scale()), k = Mth.clamp(t / span, 0, 1);
-        if (t > span + 2) return;
+        float span = Math.max(1, a.scale());
+        float k = Mth.clamp(t / span, 0, 1);
         Entity e = a.bound(c);
-        // A blast's charge ends when the charge does: cancelled, broken, or held in and defused by a speedster.
-        if (span >= 30 && t > 6 && e != null && com.jayptucker.heroesevolved.client.effects.RadiationVisuals.charge(e.getId(), e.getUUID()) < 0) return;
+        if (span >= 30 && e != null) {
+            float progress = reactorCharge(a, c.level);
+            if (progress < 0 && t > 6) return;
+            k = Math.max(0, progress);
+        } else if (t > span + 2) return;
         Vec3 body = (e != null ? e.getPosition(c.partial) : a.origin()).add(0, 1.0, 0);
         Vec3 ground = a.origin().add(0, 0.06, 0);
         int seed = a.seed();

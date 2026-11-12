@@ -153,34 +153,39 @@ public final class RadiationGameTests {
         });
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 1460, batch = "RadiationGameTests.injuryBuildsStressLosesControlAndLeavesTemporaryFallout")
+    @GameTest(template = "rewind_empty", timeoutTicks = 1810, batch = "RadiationGameTests.injuryBuildsStressLosesControlAndLeavesTemporaryFallout")
     public static void injuryBuildsStressLosesControlAndLeavesTemporaryFallout(GameTestHelper helper) {
         ServerPlayer player = player(helper, 140, false);
         player.hurt(player.damageSources().generic(), 4);
         helper.assertTrue(RadiationService.mass(player) == 12, "Actual injury must add three stress per point of damage");
         float health = player.getHealth();
         RadiationService.addMass(player, 88);
-        helper.runAfterDelay(70, () -> {
-            helper.assertTrue(RadiationService.isDetonating(player), "Maximum stress must escalate from breach warning into lost control");
-            helper.assertTrue(!RadiationService.holdItIn(player), "An involuntary meltdown cannot be canceled like a voluntary charge");
+        helper.runAfterDelay(495, () -> {
+            try {
+                helper.assertTrue(RadiationService.isDetonating(player), "An involuntary charge must last until the end of the 25-second countdown");
+                helper.assertTrue(!RadiationService.holdItIn(player), "An involuntary meltdown cannot be canceled like a voluntary charge");
+            } catch (RuntimeException e) { remove(player); throw e; }
         });
         Cow[] entering = new Cow[1], outside = new Cow[1];
-        helper.runAfterDelay(150, () -> {
-            helper.assertTrue(!RadiationService.isDetonating(player) && RadiationService.mass(player) == 0, "Detonation must release accumulated stress");
-            helper.assertTrue(player.getHealth() == health, "The caster must not be reduced to one health by their own explosion");
-            entering[0] = mob(helper, EntityType.COW, player.position().add(18, 0, 0));
-            outside[0] = mob(helper, EntityType.COW, player.position().add(26, 0, 0));
+        helper.runAfterDelay(505, () -> {
+            try {
+                helper.assertTrue(!RadiationService.isDetonating(player) && RadiationService.mass(player) == 0,
+                        "Detonation must release accumulated stress at 25 seconds");
+                helper.assertTrue(player.getHealth() == health, "The caster must not be reduced to one health by their own explosion");
+                entering[0] = mob(helper, EntityType.COW, player.position().add(18, 0, 0));
+                outside[0] = mob(helper, EntityType.COW, player.position().add(26, 0, 0));
+            } catch (RuntimeException e) { remove(player); throw e; }
         });
-        helper.runAfterDelay(180, () -> {
+        helper.runAfterDelay(540, () -> {
             helper.assertTrue(entering[0].getHealth() < entering[0].getMaxHealth(), "Entering the crater after the shockwave must still cause radiation damage");
             helper.assertTrue(outside[0].getHealth() == outside[0].getMaxHealth(), "Fallout must stay within its radius");
             entering[0].discard();
         });
-        helper.runAfterDelay(1360, () -> {
+        helper.runAfterDelay(1720, () -> {
             outside[0].setPos(player.position().add(18, 0, 0));
             outside[0].removeAllEffects();
         });
-        helper.runAfterDelay(1400, () -> {
+        helper.runAfterDelay(1760, () -> {
             try {
                 helper.assertTrue(outside[0].getHealth() == outside[0].getMaxHealth(), "Fallout must expire after one minute");
                 helper.succeed();
@@ -299,7 +304,7 @@ public final class RadiationGameTests {
             helper.succeed();
         } finally { remove(source); remove(near); remove(edge); remove(outside); }
     }
-    @GameTest(template = "rewind_empty", batch = "radiation.charge_decay", timeoutTicks = 100)
+    @GameTest(template = "rewind_empty", batch = "radiation.charge_decay", timeoutTicks = 540)
     public static void chargingDecaysTerrainBeforeDetonationAndCancellationStopsIt(GameTestHelper helper) {
         ServerPlayer source = player(helper, 180, false);
         List<BlockPos> stones = new ArrayList<>();
@@ -310,14 +315,14 @@ public final class RadiationGameTests {
         RadiationService.beginDetonation(source, 5, true);
         long[] remaining = {0};
         // A failed check still cleans up, or the test player would detonate for real among the other tests.
-        helper.runAfterDelay(27, () -> {
+        helper.runAfterDelay(470, () -> {
             try {
                 remaining[0] = stones.stream().filter(pos -> helper.getLevel().getBlockState(pos).is(Blocks.STONE)).count();
                 helper.assertTrue(remaining[0] < stones.size() && RadiationService.isDetonating(source), "Terrain must crumble during the charge, before the explosion");
                 helper.assertTrue(RadiationService.holdItIn(source), "Voluntary detonation can still be canceled");
             } catch (RuntimeException e) { remove(source); throw e; }
         });
-        helper.runAfterDelay(55, () -> {
+        helper.runAfterDelay(505, () -> {
             try {
                 helper.assertTrue(stones.stream().filter(pos -> helper.getLevel().getBlockState(pos).is(Blocks.STONE)).count() == remaining[0],
                         "Canceling must clear cracks and stop further decay");

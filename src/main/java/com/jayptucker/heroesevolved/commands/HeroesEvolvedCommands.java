@@ -32,6 +32,7 @@ public final class HeroesEvolvedCommands {
                 Commands.literal(HeroesEvolved.MOD_ID)
                         .requires(source -> source.hasPermission(2))
                         .then(com.jayptucker.heroesevolved.story.sylar.SylarCommands.branch())
+                        .then(com.jayptucker.heroesevolved.story.elle.ElleEvents.branch())
                         .then(com.jayptucker.heroesevolved.structure.BlueprintCommands.branch())
                         .then(Commands.literal("admin")
                                 .executes(context -> {
@@ -198,8 +199,31 @@ public final class HeroesEvolvedCommands {
                                                 context.getSource()
                                         ))
                                 )
+                                .then(Commands.literal("meltdown")
+                                        .executes(context -> meltdown(context.getSource(),
+                                                com.jayptucker.heroesevolved.config.HeroesEvolvedConfig.COMMON.villagerMeltdownFuseTicks.get()))
+                                        .then(Commands.argument("seconds", com.mojang.brigadier.arguments.IntegerArgumentType.integer(5, 600))
+                                                .executes(context -> meltdown(context.getSource(),
+                                                        20 * com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "seconds"))))
+                                )
                         )
         );
+    }
+
+    /** Wakes the Eclipse's power in the nearest grown villager (within 64 blocks): his village has {@code fuse} ticks. */
+    private static int meltdown(CommandSourceStack source, int fuse) {
+        var level = source.getLevel();
+        var at = source.getPosition();
+        var villager = level.getEntitiesOfClass(net.minecraft.world.entity.npc.Villager.class,
+                        new net.minecraft.world.phys.AABB(at, at).inflate(64), v -> v.isAlive() && !v.isBaby()
+                                && !com.jayptucker.heroesevolved.village.VillagerMeltdown.critical(v))
+                .stream().min(java.util.Comparator.comparingDouble(v -> v.distanceToSqr(at))).orElse(null);
+        if (villager == null || com.jayptucker.heroesevolved.village.VillagerMeltdown.start(villager, fuse) == null) {
+            source.sendFailure(Component.literal("No grown villager within 64 blocks."));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal("Meltdown started: " + fuse / 20 + " seconds."), true);
+        return 1;
     }
 
     private static int startEclipse(CommandSourceStack source) {

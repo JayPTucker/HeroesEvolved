@@ -116,10 +116,15 @@ public final class RewindTravel {
 
     /** Carries this player back along their path since {@code cutoff}, then runs {@code land} (with them, or null if they left). */
     public static void send(ServerPlayer player, long cutoff, int ticks, Consumer<ServerPlayer> land) {
+        send(player, TimeRewindPlayers.path(player.getUUID(), cutoff), ticks, land);
+    }
+
+    /** Carries this player back along {@code past} (newest first, as {@link TimeRewindPlayers#path} gives it), then runs {@code land}. */
+    public static void send(ServerPlayer player, List<TimeRewindPlayers.Point> past, int ticks, Consumer<ServerPlayer> land) {
         finish(player.getServer(), player.getUUID());
         if (player instanceof FakePlayer) { land.accept(player); return; }
         long now = player.getServer().overworld().getGameTime();
-        List<TimeRewindPlayers.Point> path = new ArrayList<>(TimeRewindPlayers.path(player.getUUID(), cutoff));
+        List<TimeRewindPlayers.Point> path = new ArrayList<>(past);
         path.add(0, new TimeRewindPlayers.Point(now, player.level().dimension(), player.position(), player.getYRot(), player.getXRot()));
         List<Stop> stops = plan(path, ticks);
         if (stops.size() < 2) { land.accept(player); return; }

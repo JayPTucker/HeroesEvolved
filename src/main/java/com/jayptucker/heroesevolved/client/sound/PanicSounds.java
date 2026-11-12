@@ -118,23 +118,41 @@ public final class PanicSounds {
         bed.set(bed.volume() + Mth.clamp(target - bed.volume(), -0.02F, 0.04F), 1);
 
         VOICES.removeIf(voice -> !mc.getSoundManager().isActive(voice));
-        if (!detonated && VOICES.size() < MAX_VOICES && now >= nextVoice && !ready.screams.isEmpty()) {
-            Villager runner = runner(mc, now);
-            if (runner != null) {
-                LAST_VOICED.put(runner.getId(), now);
-                float person = 0.86F + RANDOM.nextFloat() * 0.26F;
-                long seed = RANDOM.nextLong();
-                RunnerVoice voice = new RunnerVoice(runner, person, () -> new Voice(ready.screams, ready.screamRate, new Random(seed)));
-                VOICES.add(voice);
-                mc.getSoundManager().play(voice);
-            }
-            nextVoice = now + 12 + RANDOM.nextInt(22);
-        }
+        if (!detonated) voice(mc, ready, now, mc.player.getBoundingBox().inflate(28, 10, 28));
     }
 
-    /** Someone running nearby who has not screamed for a while, among the closest few. */
-    private static Villager runner(Minecraft mc, long now) {
-        List<Villager> near = mc.level.getEntitiesOfClass(Villager.class, mc.player.getBoundingBox().inflate(28, 10, 28),
+    /**
+     * A village running from a meltdown: the same single voices as Odessa's streets, riding villagers who run near
+     * {@code from}, but no crowd all around (a village is a few people, not a city). Called every client tick while a
+     * meltdown is near.
+     */
+    public static void village(Minecraft mc, Vec3 from) {
+        if (panicking || mc.level == null || mc.player == null) return;
+        preload();
+        Clips ready = clips;
+        if (ready == null) return;
+        voice(mc, ready, mc.level.getGameTime(), new net.minecraft.world.phys.AABB(from, from).inflate(24, 10, 24));
+    }
+
+    /** One more runner screaming, if there is room and it is time. */
+    private static void voice(Minecraft mc, Clips ready, long now, net.minecraft.world.phys.AABB where) {
+        VOICES.removeIf(voice -> !mc.getSoundManager().isActive(voice));
+        if (VOICES.size() >= MAX_VOICES || now < nextVoice || ready.screams.isEmpty()) return;
+        Villager runner = runner(mc, now, where);
+        if (runner != null) {
+            LAST_VOICED.put(runner.getId(), now);
+            float person = 0.86F + RANDOM.nextFloat() * 0.26F;
+            long seed = RANDOM.nextLong();
+            RunnerVoice voice = new RunnerVoice(runner, person, () -> new Voice(ready.screams, ready.screamRate, new Random(seed)));
+            VOICES.add(voice);
+            mc.getSoundManager().play(voice);
+        }
+        nextVoice = now + 12 + RANDOM.nextInt(22);
+    }
+
+    /** Someone running in {@code where} who has not screamed for a while, among the few closest to you. */
+    private static Villager runner(Minecraft mc, long now, net.minecraft.world.phys.AABB where) {
+        List<Villager> near = mc.level.getEntitiesOfClass(Villager.class, where,
                 v -> v.isAlive() && v.position().subtract(v.xo, v.yo, v.zo).horizontalDistanceSqr() > 0.05 * 0.05
                         && now - LAST_VOICED.getOrDefault(v.getId(), -1000L) > 120
                         && VOICES.stream().noneMatch(voice -> voice.runner == v));

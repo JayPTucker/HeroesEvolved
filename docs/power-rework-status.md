@@ -1,7 +1,8 @@
 # Power rework status
 
 Audited against the working tree on November 3, 2026. The roster contains **18 powers**;
-Sylar is a separate encounter. [Technopathy](technopathy.md) and [Matter Assembly](matter-assembly.md)
+Sylar is a separate encounter, and so is [Elle Bishop](elle-bishop.md), the Company's boss on Primatech's
+test floor (omens the day before, three phases, banks you short out). [Technopathy](technopathy.md) and [Matter Assembly](matter-assembly.md)
 are new complete kits, each with five core actions and an eighteen-node interaction tree.
 
 **Empathic Mimicry is the remaining original core kit. Cryokinesis now connects Frost,

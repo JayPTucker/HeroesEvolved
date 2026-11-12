@@ -61,6 +61,13 @@ default 10) **and** below `awakening.healthThreshold` (default 4 health, two hea
 
 The Formula and admin awakenings skip the adrenaline requirement.
 
+## A villager's meltdown
+
+Rarely, an Eclipse also wakes a power in a villager. As it leaves, there is a 20% chance
+(`villagerMeltdownChance`) that a villager near a player starts to glow 20 to 80 seconds after the sun returns. A
+minute later he goes off like a radioactive player's Critical Mass, unless players stop him or get his village out.
+His village calls for help on 101.10 FM. See [The emergency band](emergency-band.md).
+
 ## Commands
 
 ```text
@@ -68,6 +75,7 @@ The Formula and admin awakenings skip the adrenaline requirement.
 /heroesevolved eclipse totality   # skip straight to totality
 /heroesevolved eclipse stop
 /heroesevolved eclipse status     # current phase and time left, or the next Eclipse day
+/heroesevolved eclipse meltdown [seconds]   # the nearest grown villager starts to glow
 ```
 
 The admin screen's Start Eclipse button starts a full Eclipse. A manual Eclipse started at

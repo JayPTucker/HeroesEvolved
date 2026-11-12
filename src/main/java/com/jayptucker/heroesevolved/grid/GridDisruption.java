@@ -243,12 +243,26 @@ public final class GridDisruption {
         return new Pulse(field.machines.size(), field.kinetic.size(), field.drained, items, shown);
     }
 
-    /** Shuts one machine down for {@code ticks} (Technopathy's Kill Switch). False if it is not a machine. */
-    public static boolean stall(ServerPlayer source, ServerLevel level, BlockPos pos, int ticks) {
+    /**
+     * Redstone alone dies inside {@code radius} for {@code ticks}: lamps blink out, doors and pistons drop, circuits stop,
+     * and wake as they were. Nothing is drained and no machine stalls. The Company's omens use it for a misfire.
+     */
+    public static void jam(ServerLevel level, BlockPos center, int radius, int ticks) {
+        if (FIELDS.size() >= MAX_FIELDS) release(FIELDS.removeFirst());
+        Field field = new Field(level, center, radius, level.getGameTime() + ticks, null);
+        FIELDS.add(field);
+        refreshRedstone(field);
+    }
+
+    /**
+     * Shuts one machine down for {@code ticks} (Technopathy's Kill Switch; the Company's omens with no source).
+     * False if it is not a machine.
+     */
+    public static boolean stall(@Nullable ServerPlayer source, ServerLevel level, BlockPos pos, int ticks) {
         BlockEntity entity = level.getBlockEntity(pos);
         boolean kinetic = COMMON.gridAffectCreate.get() && isKinetic(entity);
         boolean powered = COMMON.gridAffectMachines.get() && !storages(level, pos, null, entity).isEmpty();
-        if (!kinetic && !powered || !WorldMutationPolicy.canEdit(source, level, pos)) return false;
+        if (!kinetic && !powered || source != null && !WorldMutationPolicy.canEdit(source, level, pos)) return false;
         Map<BlockPos, Long> stalls = STALLS.computeIfAbsent(level, ignored -> new HashMap<>());
         if (stalls.size() >= MAX_STALLS && !stalls.containsKey(pos)) return false;
         stalls.put(pos.immutable(), level.getGameTime() + ticks);

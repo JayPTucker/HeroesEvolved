@@ -15,7 +15,8 @@ public final class SylarEvents {
         if (event.getEntity() instanceof ServerPlayer player) SylarStoryService.forget(player);
     }
     @SubscribeEvent public static void dimension(PlayerEvent.PlayerChangedDimensionEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) SylarStoryService.forget(player);
+        // Being taken into his shop (or sent home from it) is part of the fight, not leaving it.
+        if (event.getEntity() instanceof ServerPlayer player && !WatchmakerArena.moving(player)) SylarStoryService.forget(player);
     }
     @SubscribeEvent public static void stop(ServerStoppingEvent event) { SylarStoryService.clear(event.getServer()); }
 }

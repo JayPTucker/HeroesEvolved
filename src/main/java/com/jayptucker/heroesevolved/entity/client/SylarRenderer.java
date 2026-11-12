@@ -21,6 +21,12 @@ public final class SylarRenderer extends HumanoidMobRenderer<SylarEntity, Player
                     case TWO_HANDS -> { rightArm.xRot = -1.45F; leftArm.xRot = -1.45F; rightArm.yRot = -.25F; leftArm.yRot = .25F; }
                     case RAISED -> { rightArm.xRot = -2.9F; leftArm.xRot = -2.9F; rightArm.zRot = .25F; leftArm.zRot = -.25F; }
                     case CROUCH -> { rightArm.xRot = -.4F; leftArm.xRot = -.4F; rightArm.zRot = .6F; leftArm.zRot = -.6F; body.xRot = .45F; head.y = 3; }
+                    // His watch cracked: he reels back, clutching the wrist that wore it.
+                    case STAGGER -> {
+                        float sway = net.minecraft.util.Mth.sin(age * .45F) * .12F;
+                        leftArm.xRot = -1.1F; leftArm.yRot = .55F; rightArm.xRot = -.9F; rightArm.yRot = -.75F;
+                        body.xRot = -.18F + sway * .5F; head.xRot = -.35F; head.zRot = sway;
+                    }
                     default -> { return; }
                 }
                 rightSleeve.copyFrom(rightArm); leftSleeve.copyFrom(leftArm); jacket.copyFrom(body); hat.copyFrom(head);

@@ -42,12 +42,13 @@ public final class SylarStoryService {
     private static final Map<UUID, Long> SENSED = new HashMap<>();
     private static Encounter active;
     private static final class Encounter {
-        final SylarEntity hunter;
+        SylarEntity hunter;
         final UUID victim;
         final long began;
         final boolean ambush, speaks;
         int seenTicks;
-        boolean announced, footsteps;
+        /** The fight moved into his shop. */
+        boolean announced, footsteps, arena;
         Encounter(SylarEntity hunter, ServerPlayer player, long now, boolean ambush, boolean speaks) {
             this.hunter = hunter; victim = player.getUUID(); began = now; this.ambush = ambush; this.speaks = speaks;
         }
@@ -56,7 +57,8 @@ public final class SylarStoryService {
     private static long now(MinecraftServer server) { return server.overworld().getGameTime(); }
     public static boolean eligible(ServerPlayer player) {
         return player.isAlive() && !player.isCreative() && !player.isSpectator() && !player.isSleeping()
-                && player.level().dimension().equals(Level.OVERWORLD) && player.level().getDifficulty() != Difficulty.PEACEFUL
+                && (player.level().dimension().equals(Level.OVERWORLD) || WatchmakerArena.inShop(player))
+                && player.level().getDifficulty() != Difficulty.PEACEFUL
                 && !PowerIntroService.isActive(player) && !TimeIntroService.isVisiting(player)
                 && !TemporalSnapshotService.isTemporalDimension(player.serverLevel())
                 && !EclipseService.arePowersSuppressed(player)
@@ -78,6 +80,7 @@ public final class SylarStoryService {
         long time = now(server);
         if (!HeroesEvolvedConfig.COMMON.sylarEnabled.get()) { dismiss(server); return; }
         SylarVoice.tick(server);
+        WatchmakerArena.tick(server);
         if (time % 20 != 0) return;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) if (eligible(player)) remember(player, time);
         if (active != null) { tickEncounter(server, time); return; }
@@ -117,7 +120,8 @@ public final class SylarStoryService {
         senseNearby(server, hunter, time);
         long age = time - encounter.began;
         double distance = hunter.distanceToSqr(player);
-        if (distance > 112 * 112 || age > 20 * (hunter.hunting() ? 150 : encounter.speaks ? 24 : 14)) {
+        // In his shop there is nowhere to run but the street, and the fight may take a while.
+        if (distance > 112 * 112 || age > 20 * (hunter.hunting() ? (encounter.arena ? 600 : 150) : encounter.speaks ? 24 : 14)) {
             if (hunter.hunting()) SylarVoice.narrate(player, "story.heroesevolved.sylar.lost");
             end(server, hunter.hunting() ? Outcome.ESCAPED : Outcome.WITHDREW);
             return;
@@ -155,6 +159,16 @@ public final class SylarStoryService {
         }
     }
     private static void hunt(Encounter encounter, ServerPlayer player) {
+        // He takes you to his shop: the fight happens there, where he keeps what he has taken.
+        SylarEntity inShop = WatchmakerArena.enter(encounter.hunter, player);
+        if (inShop != null) {
+            encounter.hunter = inShop; encounter.arena = true;
+            for (ServerPlayer guest : ((ServerLevel) inShop.level()).players()) {
+                SylarVoice.narrate(guest, "story.heroesevolved.sylar.narrate.shop");
+                if (guest != player) inShop.bar().addPlayer(guest);
+            }
+            SylarVoice.warn(player, "story.heroesevolved.sylar.warn.street");
+        }
         encounter.hunter.hunt(player); encounter.announced = true;
         SylarVoice.narrate(player, "story.heroesevolved.sylar.hunt");
         SylarVoice.say(player, opener(player));
@@ -298,6 +312,14 @@ public final class SylarStoryService {
     public static void defeated(SylarEntity hunter, Entity killer) {
         if (active == null || active.hunter != hunter) return;
         MinecraftServer server = hunter.getServer(); SylarStoryData.get(server).defeated(now(server));
+        // What he leaves behind: his watch, to whoever finished him (or the one he hunted).
+        ServerPlayer finder = killer instanceof ServerPlayer player ? player : server.getPlayerList().getPlayer(active.victim);
+        if (hunter.hunting() && finder != null && finder.level() == hunter.level()) {
+            com.jayptucker.heroesevolved.network.SetPiecePayload.send((ServerLevel) hunter.level(), com.jayptucker.heroesevolved.styles.Piece.WATCH_DROP,
+                    hunter.getBoundingBox().getCenter(), finder.getEyePosition(), 1, finder);
+            WatchmakerArena.gift(finder, new net.minecraft.world.item.ItemStack(com.jayptucker.heroesevolved.registry.ModItems.SYLARS_WATCH.get()));
+            SylarVoice.narrate(finder, "story.heroesevolved.sylar.narrate.watch");
+        }
         for (ServerPlayer witness : server.getPlayerList().getPlayers())
             if (witness.level() == hunter.level() && witness.distanceToSqr(hunter) < 96 * 96) {
                 if (hunter.hunting()) SylarVoice.say(witness, "story.heroesevolved.sylar.say.defeated");
@@ -357,6 +379,8 @@ public final class SylarStoryService {
         if (victim != null) scheduleNext(victim, trail, trail.chapter >= 3 ? Beat.HUNT : Beat.SIGHTING);
         else trail.nextEncounter = now(server) + 20L * 60 * 10;
         data.setDirty();
+        // Out of his shop: powers come back now, and everyone goes home a moment later.
+        if (encounter.arena) WatchmakerArena.close(server, outcome == Outcome.DEFEATED ? 100 : 40);
         encounter.hunter.bar().removeAllPlayers();
         if (encounter.hunter.isAlive() && !encounter.hunter.isRemoved()) {
             ((ServerLevel) encounter.hunter.level()).sendParticles(ParticleTypes.SMOKE, encounter.hunter.getX(), encounter.hunter.getY() + 1,
@@ -371,10 +395,27 @@ public final class SylarStoryService {
         player.playNotifySound(com.jayptucker.heroesevolved.sounds.ModSounds.SYLAR_WATCH.get(), SoundSource.HOSTILE, volume, 1);
     }
     public static SylarEntity hunter() { return active == null ? null : active.hunter; }
+
+    /** Someone walked out of the shop's front door while it stood open. For the one he hunts, that is getting away. */
+    static void leftShop(ServerPlayer player) {
+        if (active != null && active.arena && active.victim.equals(player.getUUID())) {
+            SylarVoice.narrate(player, "story.heroesevolved.sylar.lost");
+            end(player.getServer(), Outcome.ESCAPED);
+        } else WatchmakerArena.sendHome(player);
+    }
+
+    /** For tests and previews: start the fight now, in his shop if it is there. */
+    public static boolean huntNow(ServerPlayer player) {
+        if (active == null || active.hunter.hunting()) return false;
+        hunt(active, player);
+        return true;
+    }
     public static void dismiss(MinecraftServer server) { if (active != null) end(server, false); }
     public static void forget(ServerPlayer player) {
         if (active != null && active.victim.equals(player.getUUID())) end(player.getServer(), false);
         ROUTES.remove(player.getUUID()); SENSED.remove(player.getUUID()); SylarVoice.forget(player.getUUID());
     }
-    public static void clear(MinecraftServer server) { dismiss(server); ROUTES.clear(); SENSED.clear(); SylarVoice.clear(); }
+    public static void clear(MinecraftServer server) {
+        dismiss(server); ROUTES.clear(); SENSED.clear(); SylarVoice.clear(); WatchmakerArena.reset(server);
+    }
 }

@@ -95,6 +95,12 @@ public final class ModEntities {
                     com.jayptucker.heroesevolved.company.CompanyAgentEntity::new, MobCategory.MISC)
                     .sized(.6F, 1.8F).clientTrackingRange(64).updateInterval(2).build(id.toString()));
 
+    /** Elle Bishop, sent by the Company: the boss of Primatech's test floor (story/elle). */
+    public static final DeferredHolder<EntityType<?>, EntityType<com.jayptucker.heroesevolved.story.elle.ElleEntity>> ELLE =
+            ENTITY_TYPES.register("elle_bishop", id -> EntityType.Builder.<com.jayptucker.heroesevolved.story.elle.ElleEntity>of(
+                    com.jayptucker.heroesevolved.story.elle.ElleEntity::new, MobCategory.MISC)
+                    .sized(.6F, 1.8F).noSave().noSummon().clientTrackingRange(96).updateInterval(2).build(id.toString()));
+
     public static void register(IEventBus modEventBus) {
         ENTITY_TYPES.register(modEventBus);
         modEventBus.addListener(ModEntities::registerAttributes);
@@ -104,5 +110,6 @@ public final class ModEntities {
         event.put(TEMPORAL_ECHO.get(), TemporalEchoEntity.createAttributes().build());
         event.put(SYLAR.get(), com.jayptucker.heroesevolved.story.sylar.SylarEntity.createAttributes().build());
         event.put(COMPANY_AGENT.get(), com.jayptucker.heroesevolved.company.CompanyAgentEntity.createAttributes().build());
+        event.put(ELLE.get(), com.jayptucker.heroesevolved.story.elle.ElleEntity.createAttributes().build());
     }
 }

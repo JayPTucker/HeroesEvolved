@@ -292,35 +292,9 @@ final class VisionCrowd {
     private void say(ServerLevel city, Villager speaker, String text, boolean shout, int ticks, String tag) {
         for (Bubble b : bubbles) if (b.speaker == speaker) { b.display.discard(); }
         bubbles.removeIf(b -> b.speaker == speaker);
-        Display.TextDisplay display = EntityType.TEXT_DISPLAY.create(city);
+        Display.TextDisplay display = com.jayptucker.heroesevolved.effects.SpeechBubble.show(city, speaker, text, shout, tag);
         if (display == null) return;
-        Component words = Component.literal(text).withStyle(shout ? ChatFormatting.RED : ChatFormatting.WHITE);
-        if (shout) words = words.copy().withStyle(ChatFormatting.BOLD);
-        CompoundTag nbt = new CompoundTag();
-        nbt.putString("text", Component.Serializer.toJson(words, city.registryAccess()));
-        nbt.putString("billboard", "center");
-        // Vanilla reads alignment even when absent and logs an error without it.
-        nbt.putString("alignment", "center");
-        nbt.putInt("background", 0xA0101418);
-        nbt.putInt("line_width", 150);
-        CompoundTag transformation = new CompoundTag();
-        transformation.put("left_rotation", floats(0, 0, 0, 1));
-        transformation.put("right_rotation", floats(0, 0, 0, 1));
-        transformation.put("translation", floats(0, 0.35F, 0));
-        transformation.put("scale", floats(0.6F, 0.6F, 0.6F));
-        nbt.put("transformation", transformation);
-        display.load(nbt);
-        display.moveTo(speaker.getX(), speaker.getY() + speaker.getBbHeight(), speaker.getZ());
-        display.addTag(tag);
-        if (!city.addFreshEntity(display)) return;
-        display.startRiding(speaker, true);
         bubbles.add(new Bubble(display, speaker, TimeIntroService.sceneTicks() + ticks));
-    }
-
-    private static ListTag floats(float... values) {
-        ListTag list = new ListTag();
-        for (float v : values) list.add(FloatTag.valueOf(v));
-        return list;
     }
 
     /** People the dust has reached are gone, and so are their words. */

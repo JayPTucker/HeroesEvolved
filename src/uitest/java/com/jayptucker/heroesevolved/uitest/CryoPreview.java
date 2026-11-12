@@ -62,7 +62,7 @@ public final class CryoPreview {
     private static String pending;
     private static Mob victim;
     private static ServerPlayer subject;
-    private static Vec3 rideStart;
+    private static Vec3 rideStart, ridePeak;
     private CryoPreview() {}
     private static void server(Minecraft mc, Consumer<ServerPlayer> action) {
         var server = mc.getSingleplayerServer();
@@ -207,12 +207,24 @@ public final class CryoPreview {
             case 370 -> pending="cryo-5-glacier-carve.png";
             case 375 -> {mc.options.keyJump.setDown(true);mc.player.setXRot(-12);}
             case 382 -> pending="cryo-6-rising-ice-ramp.png";
-            case 385 -> {mc.options.keyUp.setDown(false);mc.options.keyJump.setDown(false);}
-            case 392 -> server(mc,p->{
-                if(p.position().distanceTo(rideStart)<2)throw new AssertionError("Real Glacier Ride controls must move the skater");
-                System.out.println("CRYO_CLIENT_RIDE PASS moved="+p.position().distanceTo(rideStart));
-                CryoRideService.stop(p,true);
-            });
+            case 387 -> {
+                mc.options.keyUp.setDown(false);mc.options.keyJump.setDown(false);mc.options.keyShift.setDown(true);
+                server(mc,p->{
+                    ridePeak=p.position();
+                    if(ridePeak.y < rideStart.y+1)throw new AssertionError("Space must lift the moving skater: "+ridePeak);
+                });
+            }
+            case 401 -> pending="cryo-6b-descending-ice-ramp.png";
+            case 406 -> {
+                mc.options.keyShift.setDown(false);
+                server(mc,p->{
+                    double forward=p.position().subtract(ridePeak).horizontalDistance();
+                    if(!CryoRideService.isRiding(p) || p.getY()>ridePeak.y-.75 || forward<5)
+                        throw new AssertionError("Shift alone must descend and keep skating: peak="+ridePeak+", end="+p.position());
+                    System.out.println("CRYO_CLIENT_RIDE PASS climb="+(ridePeak.y-rideStart.y)+" descent="+(ridePeak.y-p.getY())+" forward="+forward);
+                    CryoRideService.stop(p,true);
+                });
+            }
             case 410 -> {mc.options.setCameraType(CameraType.FIRST_PERSON);mc.options.hideGui=false;server(mc,p->{scene(p,1000.5,0,0);victim=target(p,1000.5,5.5);CryoService.chill(victim,60,p);view(p,victim.getBoundingBox().getCenter());});}
             case 420 -> ModKeyMappings.ABILITY_4.setDown(true);
             case 421 -> ModKeyMappings.ABILITY_4.setDown(false);
@@ -276,35 +288,35 @@ public final class CryoPreview {
                 });
             }
             case 655 -> ModKeyMappings.ABILITY_1.setDown(true);
-            case 669 -> pending="cryo-14-reactor-cooling.png";
-            case 686 -> pending="cryo-15-reactor-stabilized.png";
-            case 688 -> ModKeyMappings.ABILITY_1.setDown(false);
-            case 695 -> server(mc,p->{
+            case 735 -> pending="cryo-14-reactor-cooling.png";
+            case 903 -> pending="cryo-15-reactor-stabilized.png";
+            case 907 -> ModKeyMappings.ABILITY_1.setDown(false);
+            case 916 -> server(mc,p->{
                 boolean stable = !RadiationService.critical(subject) && RadiationService.mass(subject) <= 30;
                 removeSubject();
                 if (!stable) throw new AssertionError("Held Ice Blast must defuse the reactor");
                 System.out.println("CRYO_CLIENT_REACTOR PASS");
             });
-            case 710 -> server(mc,p->{
+            case 931 -> server(mc,p->{
                 scene(p,1800.5,0,0);
                 p.serverLevel().setDayTime(13000);
                 stageSubject(p, ModAbilities.PYROKINESIS_ID, "Pyro");
                 PyroService.addHeat(subject, 75);
                 if (!PyroService.startPalm(subject, 5)) throw new AssertionError("The Pyro stand-in must breathe fire");
             });
-            case 719 -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
-            case 720 -> pending="cryo-16-pyro-before.png";
-            case 724 -> ModKeyMappings.ABILITY_1.setDown(true);
-            case 733 -> pending="cryo-17-pyro-quenched.png";
-            case 735 -> mc.options.setCameraType(CameraType.FIRST_PERSON);
-            case 740 -> ModKeyMappings.ABILITY_1.setDown(false);
-            case 748 -> server(mc,p->{
+            case 940 -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+            case 941 -> pending="cryo-16-pyro-before.png";
+            case 945 -> ModKeyMappings.ABILITY_1.setDown(true);
+            case 954 -> pending="cryo-17-pyro-quenched.png";
+            case 956 -> mc.options.setCameraType(CameraType.FIRST_PERSON);
+            case 961 -> ModKeyMappings.ABILITY_1.setDown(false);
+            case 969 -> server(mc,p->{
                 boolean extinguished = PyroService.heat(subject) == 0 && !PyroService.stopPalm(subject);
                 removeSubject();
                 if (!extinguished) throw new AssertionError("Ice Blast must quench the fire channel and drain Heat");
                 System.out.println("CRYO_CLIENT_PYRO PASS");
             });
-            case 762 -> {
+            case 983 -> {
                 mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
                 mc.options.hideGui=true;
                 server(mc,p->{
@@ -312,41 +324,41 @@ public final class CryoPreview {
                     scene(p,2000.5,0,34);
                 });
             }
-            case 777 -> server(mc,p->{
+            case 998 -> server(mc,p->{
                 if (!CryoKitService.sculpt(p,5,true)) throw new AssertionError("Walkable stair preview could not place its first step");
             });
-            case 802 -> mc.options.keyUp.setDown(true);
-            case 830 -> pending="cryo-18-walking-ice-steps.png";
-            case 834 -> {
+            case 1023 -> mc.options.keyUp.setDown(true);
+            case 1051 -> pending="cryo-18-walking-ice-steps.png";
+            case 1055 -> {
                 mc.options.keyUp.setDown(false);
                 server(mc,p->{
                     if (p.getY() < -58.5) throw new AssertionError("The player must walk up the real ice steps without jumping");
                     System.out.println("CRYO_CLIENT_RAMP_WALK PASS height="+p.getY());
                 });
             }
-            case 850 -> server(mc,p->{
+            case 1071 -> server(mc,p->{
                 scene(p,2200.5,0,5);
                 p.setData(ModDataAttachments.SKILL_TREES, SkillTreeData.empty().with(ModAbilities.CRYOKINESIS_ID.toString(),
                         new SkillTreeData.Build(15, Set.of("cryokinesis_double_weave"), Map.of())));
                 for (int x=-3;x<=3;x++) for (int z=2;z<=10;z++) for (int y=-62;y<=-61;y++)
                     p.serverLevel().setBlock(new BlockPos(2200+x,y,z),Blocks.AIR.defaultBlockState(),3);
             });
-            case 865 -> server(mc,p->{
+            case 1086 -> server(mc,p->{
                 if (!CryoTechniqueService.activate(new AbilityUseContext(p,ModAbilities.CRYOKINESIS_ID,5,false),"rime_loom"))
                     throw new AssertionError("Rime Loom must start a deck over the gap");
             });
-            case 874 -> pending="cryo-19a-loom-frost.png";
-            case 896 -> pending="cryo-19-frost-bridge-growing.png";
-            case 921 -> mc.options.keyUp.setDown(true);
-            case 953 -> pending="cryo-20-crossing-frost-bridge.png";
-            case 957 -> {
+            case 1095 -> pending="cryo-19a-loom-frost.png";
+            case 1117 -> pending="cryo-19-frost-bridge-growing.png";
+            case 1142 -> mc.options.keyUp.setDown(true);
+            case 1174 -> pending="cryo-20-crossing-frost-bridge.png";
+            case 1178 -> {
                 mc.options.keyUp.setDown(false);
                 server(mc,p->{
                     if (p.getZ() < 5 || p.getY() < -60.15) throw new AssertionError("The woven deck must support a walking player over the gap");
                     System.out.println("CRYO_CLIENT_LOOM_WALK PASS at="+p.position());
                 });
             }
-            case 969 -> mc.stop();
+            case 1190 -> mc.stop();
             default -> { }
         }
     }

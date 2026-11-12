@@ -32,7 +32,8 @@ public final class NuclearFallout {
     private NuclearFallout() {}
     private static final class Blast {
         final ServerLevel level;
-        final ServerPlayer owner;
+        /** A radioactive player, or a villager the Eclipse woke a power in. */
+        final LivingEntity owner;
         final Vec3 center;
         final BlockPos block;
         final long began;
@@ -43,15 +44,15 @@ public final class NuclearFallout {
         final BlockPos.MutableBlockPos offset = new BlockPos.MutableBlockPos();
         final BlockPos.MutableBlockPos position = new BlockPos.MutableBlockPos();
         boolean terrainFinished;
-        Blast(ServerPlayer owner, boolean awakening) {
-            this.owner = owner; level = owner.serverLevel(); center = groundUnder(owner);
+        Blast(LivingEntity owner, boolean awakening) {
+            this.owner = owner; level = (ServerLevel) owner.level(); center = groundUnder(owner);
             block = BlockPos.containing(center); began = level.getGameTime();
             radius = awakening ? AWAKENING_RADIUS : RADIUS;
             cursor = new NuclearTerrainCursor(radius);
         }
     }
     /** The ground under a caster who has risen a few blocks while charging, or where they are. */
-    static Vec3 groundUnder(ServerPlayer owner) {
+    static Vec3 groundUnder(LivingEntity owner) {
         Vec3 from = owner.position();
         var hit = owner.level().clip(new net.minecraft.world.level.ClipContext(from, from.add(0, -6, 0),
                 net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.ANY, owner));
@@ -61,15 +62,17 @@ public final class NuclearFallout {
     public static void begin(ServerPlayer owner) {
         begin(owner, false);
     }
-    public static void begin(ServerPlayer owner, boolean awakening) {
-        if (TimeIntroService.isCity(owner.level()) || TemporalSnapshotService.isTemporalDimension(owner.serverLevel())) return;
+    public static void begin(LivingEntity owner, boolean awakening) {
+        if (!(owner.level() instanceof ServerLevel level)) return;
+        if (TimeIntroService.isCity(level) || TemporalSnapshotService.isTemporalDimension(level)) return;
         // Overlapping detonations refresh their own area rather than growing an unbounded work queue.
         BLASTS.removeIf(blast -> blast.owner.getUUID().equals(owner.getUUID()));
         if (BLASTS.size() >= 32) BLASTS.removeFirst();
         Blast blast = new Blast(owner, awakening);
         BLASTS.add(blast);
         cloud(blast, 0);
-        AbilityEffects.at(owner, Kind.NUCLEAR_SHOCKWAVE, blast.radius);
+        if (owner instanceof ServerPlayer player) AbilityEffects.at(player, Kind.NUCLEAR_SHOCKWAVE, blast.radius);
+        else AbilityEffects.send(level, Kind.NUCLEAR_SHOCKWAVE, owner.position(), owner.position().add(0, 1, 0), blast.radius);
     }
     public static void tick(MinecraftServer server) {
         for (Blast blast : List.copyOf(BLASTS)) {
@@ -117,17 +120,21 @@ public final class NuclearFallout {
         }
     }
     private static boolean terrainStep(Blast blast) {
-        ServerPlayer owner = blast.owner;
+        LivingEntity owner = blast.owner;
         ServerLevel level = blast.level;
-        if (!owner.mayBuild() || owner.level() != level) { blast.terrainFinished = true; return false; }
+        ServerPlayer player = owner instanceof ServerPlayer p ? p : null;
+        // A player's blast breaks what they could break; anyone else's follows the mobGriefing rule, like a creeper's.
+        boolean mayBreak = player != null ? player.mayBuild()
+                : level.getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_MOBGRIEFING);
+        if (!mayBreak || owner.level() != level) { blast.terrainFinished = true; return false; }
         if (!blast.cursor.next(blast.offset)) { blast.terrainFinished = true; return false; }
         BlockPos offset = blast.offset;
         if (offset.getY() < 0 && offset.getX() * offset.getX() + offset.getZ() * offset.getZ() <= 2) return false;
         BlockPos pos = blast.position.setWithOffset(blast.block, offset);
-        if (!level.hasChunkAt(pos) || !level.getWorldBorder().isWithinBounds(pos) || !level.mayInteract(owner, pos)) return false;
+        if (!level.hasChunkAt(pos) || !level.getWorldBorder().isWithinBounds(pos) || player != null && !level.mayInteract(player, pos)) return false;
         BlockState state = level.getBlockState(pos);
         if (state.isAir() || !state.getFluidState().isEmpty() || state.getDestroySpeed(level, pos) < 0) return false;
-        if (NeoForge.EVENT_BUS.post(new BlockEvent.BreakEvent(level, pos.immutable(), state, owner)).isCanceled()) return false;
+        if (player != null && NeoForge.EVENT_BUS.post(new BlockEvent.BreakEvent(level, pos.immutable(), state, player)).isCanceled()) return false;
         // Avoid a sound/particle event for every voxel. Normal removal still handles container
         // contents, neighbors, lighting and the Time Rewind journal; chunk updates remain batched.
         return level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);

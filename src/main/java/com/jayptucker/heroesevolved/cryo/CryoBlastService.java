@@ -39,7 +39,9 @@ import java.util.UUID;
 /** The held ice blast and the heat it steals from flames and unstable reactors. */
 public final class CryoBlastService {
     private static final int PULSE_TICKS = 4, PULSE_COST = 2, MAX_TICKS = 160;
-    private static final int STABILIZE_TICKS = 20, SAFE_CORE = 30, CORE_PER_PULSE = 10;
+    private static final int STABILIZE_TICKS = 12 * 20, RESCUE_MAX_TICKS = MAX_TICKS + STABILIZE_TICKS;
+    private static final int SAFE_CORE = 30, CORE_PER_PULSE = 10;
+    private static final int RESCUE_HEAT = RadiationService.MAXIMUM_MASS - SAFE_CORE;
     private static final int HEAT_FOR_CHARGE = 16, CHARGE_TICKS = 240;
     private static final Map<UUID, Stream> STREAMS = new HashMap<>();
     private static final Map<UUID, Long> CHARGES = new HashMap<>();
@@ -70,7 +72,7 @@ public final class CryoBlastService {
     public static boolean start(ServerPlayer player, int tier) {
         if (!PowerRules.canAct(player) || !CryoKitService.authorized(player) || isStreaming(player)) return false;
         STREAMS.put(player.getUUID(), new Stream(player, tier));
-        ArmPosePayload.show(player, ArmPose.CRYO_WEAVE, MAX_TICKS);
+        ArmPosePayload.show(player, ArmPose.CRYO_WEAVE, RESCUE_MAX_TICKS);
         player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.POWDER_SNOW_BREAK,
                 SoundSource.PLAYERS, .7F, .85F);
         return true;
@@ -92,20 +94,28 @@ public final class CryoBlastService {
         for (Stream stream : List.copyOf(STREAMS.values())) {
             ServerPlayer player = stream.owner;
             long age = stream.level.getGameTime() - stream.began;
-            if (age >= MAX_TICKS || player.level() != stream.level || player.isRemoved()
+            if (age >= RESCUE_MAX_TICKS || player.level() != stream.level || player.isRemoved()
                     || !PowerRules.canAct(player) || !CryoKitService.authorized(player)) {
                 stop(player);
                 continue;
             }
             if (age < 2) continue;
-            boolean pulse = (age - 2) % PULSE_TICKS == 0;
-            if (pulse && !PlayerEnergyService.tryConsume(player, PULSE_COST)) {
+            Contact contact = trace(player, stream.level);
+            ServerPlayer reactor = reactorAt(contact.target);
+            boolean critical = reactor != null && RadiationService.critical(reactor);
+            if (age >= MAX_TICKS && (reactor == null || reactor != stream.reactor
+                    || !stream.rescued && (!critical || stream.contactTicks == 0))) {
                 stop(player);
                 continue;
             }
-            if (pulse) MasteryService.awardEnergySpent(player, PULSE_COST);
-            Contact contact = trace(player, stream.level);
-            boolean cooling = coolReactor(stream, contact.target, pulse);
+            boolean pulse = (age - 2) % PULSE_TICKS == 0;
+            int cost = critical ? 1 : PULSE_COST;
+            if (pulse && !PlayerEnergyService.tryConsume(player, cost)) {
+                stop(player);
+                continue;
+            }
+            if (pulse) MasteryService.awardEnergySpent(player, cost);
+            boolean cooling = coolReactor(stream, reactor, critical, pulse);
             if (pulse) applyPulse(stream, contact, cooling);
             if ((age - 2) % 3 == 0) {
                 float style = cooling ? 2 : contact.target != null || contact.block.getType() == HitResult.Type.BLOCK ? 1 : .5F;
@@ -132,27 +142,35 @@ public final class CryoBlastService {
         return new Contact(end, first, block);
     }
 
+    private static ServerPlayer reactorAt(LivingEntity contact) {
+        return contact instanceof ServerPlayer player && RadiationEvents.hasAwakenedRadiation(player)
+                && !EclipseService.arePowersSuppressed(player) && PowerIntroService.radiationChargeRemaining(player) == 0
+                ? player : null;
+    }
+
     /** Emergency cooling is safe in co-op. Once latched, the same beam cannot hurt the person it just rescued. */
-    private static boolean coolReactor(Stream stream, LivingEntity contact, boolean pulse) {
-        if (stream.reactor != contact) {
+    private static boolean coolReactor(Stream stream, ServerPlayer target, boolean critical, boolean pulse) {
+        if (stream.reactor != target) {
             stream.reactor = null;
             stream.contactTicks = 0;
             stream.rescued = false;
         }
-        if (!(contact instanceof ServerPlayer target) || !RadiationEvents.hasAwakenedRadiation(target)
-                || EclipseService.arePowersSuppressed(target) || PowerIntroService.radiationChargeRemaining(target) > 0) return false;
-        boolean critical = RadiationService.critical(target);
+        if (target == null) return false;
         if (stream.reactor == null && !critical && (RadiationService.mass(target) < RadiationService.HOT
                 || !target.isShiftKeyDown() && !FlightSkillService.isFriend(stream.owner, target)
                         && !FlightSkillService.hostile(stream.owner, target))) return false;
         stream.reactor = target;
         if (stream.rescued) return true;
+        int draw = pulse ? CORE_PER_PULSE : 0;
         if (critical) {
             RadiationService.hold(target);
+            int removedSoFar = stream.contactTicks * RESCUE_HEAT / STABILIZE_TICKS;
             stream.contactTicks++;
+            // Draw one point whenever the next fraction of the rescue has elapsed.
+            draw = stream.contactTicks * RESCUE_HEAT / STABILIZE_TICKS - removedSoFar;
         } else stream.contactTicks = 0;
-        if (pulse && RadiationService.mass(target) > SAFE_CORE) {
-            int removed = RadiationService.vent(target, Math.clamp(RadiationService.mass(target) - SAFE_CORE, 0, CORE_PER_PULSE));
+        if (draw > 0 && RadiationService.mass(target) > SAFE_CORE) {
+            int removed = RadiationService.vent(target, Math.min(RadiationService.mass(target) - SAFE_CORE, draw));
             absorb(stream, removed);
         }
         if (critical && stream.contactTicks >= STABILIZE_TICKS && RadiationService.mass(target) <= SAFE_CORE) {
@@ -164,7 +182,8 @@ public final class CryoBlastService {
                     target.getDisplayName()), true);
         } else if (critical && pulse) {
             stream.owner.displayClientMessage(Component.translatable("cryo.heroesevolved.reactor_cooling",
-                    target.getDisplayName(), RadiationService.mass(target)), true);
+                    target.getDisplayName(), Math.min(100, stream.contactTicks * 100 / STABILIZE_TICKS),
+                    RadiationService.mass(target)), true);
         }
         return true;
     }

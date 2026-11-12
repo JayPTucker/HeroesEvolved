@@ -23,6 +23,7 @@ public final class ModEntityRenderers {
                 com.jayptucker.heroesevolved.client.block.AlarmBeaconRenderer::new);
         event.registerEntityRenderer(ModEntities.SYLAR.get(), SylarRenderer::new);
         event.registerEntityRenderer(ModEntities.COMPANY_AGENT.get(), CompanyAgentRenderer::new);
+        event.registerEntityRenderer(ModEntities.ELLE.get(), ElleRenderer::new);
         event.registerEntityRenderer(
                 ModEntities.TEMPORAL_ECHO.get(),
                 TemporalEchoRenderer::new

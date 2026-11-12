@@ -55,6 +55,8 @@ returns an agent at his post that hasn't been added to the world yet, so a scene
 Agents fire on any Sylar tagged `heroesevolved_loose`. `Tranquilizer.onGoingUnder` lets a place decide
 what going under means there, and `Tranquilizer.onDeflect` lets a target turn darts aside.
 
+The Company also sends [Elle Bishop](elle-bishop.md) for awakened players, with a day of omens before she comes.
+
 The skins and the effect icon are drawn by `tools/GenerateCompanyTextures.java`:
 
 ```bash

@@ -295,3 +295,129 @@ Invisibility (`invisibility/`, art in `client/effects/setpiece/ForceArt`) became
   creatures are cancelled by `UnseenClient`'s render hook and everything else by `mixin/UnseenObjectMixin`.
 - **Test gotchas.** No-AI mobs ignore velocity (assert on `getDeltaMovement`, or use a mob with AI such as a pig),
   and the `rewind_empty` arena is 12 blocks across: entities placed beyond it sit in unloaded or solid ground.
+
+## Reusable patterns from village distress calls (radio and meltdowns)
+
+Villages call for help over Simple Radio, and the first event that calls is a villager's meltdown (`radio/`,
+`village/VillagerMeltdown`, art in `client/effects/setpiece/VillageArt`). What the player sees is in
+[docs/emergency-band.md](docs/emergency-band.md). Use these patterns for the next village event (a raid, a boss).
+
+- **Required mods, fetched by Gradle.** Simple Voice Chat comes from `maven.maxhenkel.de` (its API is `compileOnly`).
+  Simple Radio and Lexiconfig come from the Modrinth maven (`maven.modrinth:<slug>:<version id>`), all `localRuntime`.
+  Pin Modrinth jars by **version ID** (`L8SiUelt`), not version number: a number shared between loaders resolves
+  to the Fabric jar. `neoforge.mods.toml` lists `voicechat` and `simpleradio` as required on both sides.
+- **One class touches the other mod.** Simple Radio has no published API, so only `radio/RadioLink` imports it.
+  - A call is a `Transmitter` on a frequency, added with `frequencies().getOrCreate("101.10", FREQUENCY)`; it takes
+    48 kHz mono `short[]` audio through `push`.
+  - Every call is wrapped in try/catch and sets a `broken` flag. If the mod changes, calls fall back to subtitles
+    for players within 96 blocks, and nothing crashes.
+- **A call is one line.** `EmergencyBand.call(level, at, words, ticks)` puts a call on 101.10 FM and returns a
+  `Call`. Use `call.say(words)` to update it (a countdown) and `EmergencyBand.end(call)` to stop it.
+  - The audio is synthesised each tick: low-passed static that drifts, plus a keyed SOS tone.
+  - Listeners get a subtitle every 60 ticks with the bearing and distance to the call.
+  - Don't ship sound files for calls: there is no OGG encoder here (see the intro audio notes).
+- **State lives on the entity.** A meltdown saves its countdown, bell and safe point in the villager's
+  `getPersistentData()` every ten ticks. `EntityJoinLevelEvent` queues the villager, and the next server tick
+  resumes the meltdown; don't do the work inside the join event, while the chunk is still loading. An unloaded
+  villager pauses: the call and the bar stop, and they resume when he loads again.
+- **An event the Eclipse rolls.** `VillagerMeltdown.eclipse(server)` watches `EclipseService.phase` change. On
+  `DEPARTURE` it rolls a config chance and schedules the awakening for a random moment later. If no village is near
+  a player, it retries every ten seconds, up to twelve times. Give every rare event an admin command too
+  (`/heroesevolved eclipse meltdown [seconds]`).
+- **Countdown UI.** A `ServerBossEvent` shown to players near the event is the countdown (`Meltdown 0:42  Safe 3/9`);
+  the radio carries the words. A world marker that must be found from afar (the safe point) is a re-sent set
+  piece: a tall column of light plus a ground ring.
+- **Powers that answer an NPC.** The event exposes the same small API as a radioactive player: `critical(entity)`,
+  `hold(entity)` (the countdown skips a tick) and `defuse(entity, by)`.
+  - `SpeedContainment` targets any `LivingEntity` and picks the player or villager version in three small
+    helpers, so the containment run works on both without a second copy.
+  - Freeze and time stop are read with `CryoService.isFrozen` / `TimeStopService.isStopped`.
+  - Carrying uses the existing sneak + use carry, which works on any villager.
+- **A blast from something that isn't a player.** `NuclearFallout.begin(LivingEntity, …)` accepts any owner.
+  - With no player, terrain follows `mobGriefing`, like a creeper.
+  - It skips `BreakEvent` and `mayInteract`, which need a player.
+  - It sends the shockwave with `AbilityEffects.send` instead of `at(player)`.
+- **A crowd running from something looks like Odessa's.** Copy `time/intro/VisionCrowd` for any crowd that flees
+  (the meltdown's `VillagerMeltdown.flee` does).
+  - **Running:** every five ticks, set the brain's `WALK_TARGET` to a point out of reach at speed 0.95, and erase
+    `LOOK_TARGET`. Don't call `getNavigation()` directly: the brain overwrites it.
+  - **Shouting:** `effects/SpeechBubble.show(...)` puts bold red words in a text display that rides the speaker.
+    Have one runner near a player shout every 26 ticks, and keep each bubble up 50 ticks.
+  - **Screaming:** the recorded voices on the client (`PanicSounds`) ride the runners: `PanicSounds.village(mc,
+    center)` plays them without the city's crowd sound underneath. `client/sound/VillagePanic` finds the center from
+    the active set piece with `SetPieceClient.where(piece)`.
+  - **Bubbles left behind:** a bubble rides its speaker, so an unloaded chunk saves it with them. Record each one's
+    UUID before it is added (`show`'s `beforeAdd`), and turn away any bubble-tagged display that loads without one.
+- **Make "just kill it" the wrong answer.** The meltdown villager cancels incoming damage (except
+  `BYPASSES_INVULNERABILITY`, so `/kill` still works), and each hit takes ten seconds off the countdown. His death
+  sets him off at once.
+- **Time fields start at a safe sentinel.** `now - Long.MIN_VALUE` overflows to a negative number, so a "last hit"
+  check of `now - hitAt < 20` with `hitAt = Long.MIN_VALUE` is always true. Start such fields at `-1000`.
+
+## Reusable patterns from the Watchmaker (Sylar's boss fight)
+
+Sylar's fight became a boss fight in his own arena in November 2026 (`story/sylar/WatchmakerArena`, `WatchmakerMoves`,
+art in `client/effects/setpiece/WatchmakerArt`). What the player sees is in [docs/sylar.md](docs/sylar.md). Use these
+for the next boss.
+
+- **An arena is a pocket dimension rebuilt every fight.** `WatchmakerArena.enter` builds the `sylar_shop` blueprint
+  in `heroesevolved:watchmaker_shop`, saves each player's way home, moves them in, and spawns a new boss there (a mob
+  changing dimension becomes a new entity, so make a fresh one and update whoever holds the old reference).
+  `close(server, delay)` sends everyone home. Whatever the fight broke (ripped floor, shattered cases, barred doors)
+  is whole again next time.
+- **Moving players in and out must not end the encounter.** `PlayerChangedDimensionEvent` normally ends a Sylar
+  encounter; `WatchmakerArena.moving(player)` marks the fight's own teleports so the handler skips them.
+- **Keep an arena's chunks force-loaded once built.** A freshly loaded chunk in a pocket dimension takes about three
+  seconds before its entities tick, so a boss spawned there stands frozen. The shop's chunks stay forced from the first
+  build on (the game saves that).
+- **The game-test world lists its dimensions by hand.** `src/gametest/resources/data/minecraft/worldgen/world_preset/flat.json`
+  defines every dimension the test server has; add a new one there or `server.getLevel(...)` returns null in tests.
+- **Phases from health thresholds, each changing the room.** `SylarEntity.PHASE_TWO`/`PHASE_THREE`/`CHASE_AT`. A phase
+  changes the arena, not just numbers: the doors bar, the clocks speed up, and at a tenth he runs down an alley.
+- **Every telegraph is the same shape.** A dial whose hand reaches twelve when the move lands; each move's windup is
+  its marker piece's `ticks`. Store anything a move needs later (a ring's centre) in its own field: his next move's
+  `mark()` overwrote the rings' centre once and dragged them across the room.
+- **No fists during a windup.** `tickCast` clears the melee target, or `MeleeAttackGoal` keeps punching while the
+  telegraph runs.
+- **A counterplay window.** He is `exposed()` while winding up or holding someone. A charged hit (a full attack meter,
+  read in `AttackEntityEvent` before the swing resets it; a crit arrow; or 8+ damage) then cracks his watch and
+  staggers him. Read the swing record on every hit, or one swing carries over to the next.
+- **Taking a power for a fight.** `WatchmakerArena.stolen(player)` is checked in `PowerRules.canActWithoutPreservation`;
+  `close` clears it, so the power always comes back.
+- **Walls rise after the shove.** `TemporaryBlocks.place` skips cells with an entity in them, so the ice wall rises
+  two ticks after it pushes people off its line (`SylarEntity.raiseWall`), or it has a hole where the target stood.
+- **Test gotchas.** `FakePlayer` ignores `awardStat` (set stats with `getStats().setValue`). Wrap every sequence step in
+  a guard that removes the test's players on failure: a test that dies mid-sequence leaves its players owning their
+  powers, and every later test that grants those powers fails (34 failures once).
+
+## Reusable patterns from Elle Bishop (the Company's boss)
+
+Elle's fight (`story/elle/`, art in `client/effects/setpiece/ElleArt`) added foreshadowing before a boss and an arena
+whose machines are the counterplay. What the player sees is in [docs/elle-bishop.md](docs/elle-bishop.md).
+
+- **Foreshadowing that puts everything back.** `CompanyOmens` changes only block states that it can restore (lamp and
+  bulb `LIT`, furnace `LIT`, door and trapdoor `OPEN`) and queues each restoration as a timed step. A restoration runs
+  only if the block is still the same kind of block, and `settle()` restores everything on server stop.
+- **Never probe with `WorldMutationPolicy.canEdit` for something that breaks nothing.** It posts a `BreakEvent`, which
+  records temporal echoes and mirrors breaks into snapshots. The omens use a side-effect-free check
+  (`mayBuild`, world border, `mayInteract`) and call `GridDisruption.stall` with a null source.
+- **Grid helpers for story events.** `GridDisruption.jam(level, center, radius, ticks)` is a redstone-only field:
+  nothing is drained and nothing stalls. A misfire uses it for a second, and the arrival uses it to put out every light
+  around the player. `stall(null, ...)` stops a machine with no actor.
+- **Poll the arena's switches; don't listen for clicks.** Each tick, `PrimatechArena.pollBanks` reads every breaker
+  lever and `GridDisruption.jammed`. So a lever pulled by hand, a broken lever, or a player's Blackout or EMP over a
+  bank all count the same. A boss reads the result (a bit mask); it never handles the input itself.
+- **One geometry class, checked against the blueprint.** `PrimatechGeometry` holds bank, conduit and mat positions for
+  the fight and the drawing. The blueprint is drafted to the same numbers, and a game test compares its `@breaker:N`,
+  `@conduit:N` and `@mat` markers with the class.
+- **Send state for drawing through synced entity data, not `scale`.** The client clamps a set piece's `scale` to 64.
+  The arena piece is bound to Elle and reads her synced `BANKS` mask and phase instead.
+- **Cut a travelling piece short with `superseded`.** Ball lightning's `ELLE_ORB` stops drawing when an `ELLE_RING`
+  bound to the same entity arrives (the burst), so a ball that hits someone early doesn't roll on.
+- **A scene stand-in.** The arrival spawns an `ElleEntity` with `scene(true)` and no AI: no bar, no fight, invulnerable.
+  It is discarded when the player is taken.
+- **Freshly forced pocket chunks hide their entities.** For a few seconds after the arena is first built, a player
+  standing in a chunk that isn't entity-ticking yet is invisible to `getEntitiesOfClass`. Hazards miss them, and so
+  do tests. Tests wait for every corner of the room (`ElleGameTests.ready`), not just the boss's chunk.
+- **A move's end mustn't shorten a longer hold-off.** `finish()` uses `Math.max` on the global cooldown, so a
+  preview's or test's `holdOff` survives the moves it triggers.

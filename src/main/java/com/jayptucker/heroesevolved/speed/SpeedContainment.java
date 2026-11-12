@@ -22,6 +22,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
+import com.jayptucker.heroesevolved.village.VillagerMeltdown;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -64,14 +66,16 @@ public final class SpeedContainment {
             ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "disintegrated"));
 
     private static final class Run {
-        final ServerPlayer runner, target;
+        final ServerPlayer runner;
+        /** A radioactive player, or a villager the Eclipse woke a power in (always about to blow). */
+        final LivingEntity target;
         final int tier;
         final long start;
         long containedFrom = -1;
         /** When the heat beat them: they stop, stand, burn away, and die at {@link #DEATH_TICKS} after it. */
         long failedAt = -1;
         float debt;
-        Run(ServerPlayer runner, ServerPlayer target, int tier, long start) {
+        Run(ServerPlayer runner, LivingEntity target, int tier, long start) {
             this.runner = runner; this.target = target; this.tier = tier; this.start = start;
         }
     }
@@ -92,13 +96,29 @@ public final class SpeedContainment {
     public static float staminaPerHeat(int tier) { return tier >= 5 ? 1.0F : 1.8F; }
     public static float healthPerHeat(int tier) { return tier >= 5 ? 0.15F : 0.4F; }
 
-    /** The nearest radioactive player in reach running hot (Core 40+) or about to blow, if any. */
-    static ServerPlayer hotNeighbour(ServerPlayer runner) {
-        return runner.serverLevel().getEntitiesOfClass(ServerPlayer.class, runner.getBoundingBox().inflate(REACH),
-                        p -> p != runner && p.isAlive() && !p.isSpectator() && radioactive(p)
-                                && (RadiationService.critical(p) || RadiationService.mass(p) >= RadiationService.HOT)
-                                && p.distanceToSqr(runner) <= REACH * REACH && runner.hasLineOfSight(p))
+    /**
+     * The nearest radioactive player in reach running hot (Core 40+) or about to blow, or a villager in meltdown, if
+     * any.
+     */
+    static LivingEntity hotNeighbour(ServerPlayer runner) {
+        return runner.serverLevel().getEntitiesOfClass(LivingEntity.class, runner.getBoundingBox().inflate(REACH),
+                        e -> e != runner && e.isAlive() && !e.isSpectator()
+                                && (e instanceof ServerPlayer p ? radioactive(p)
+                                        && (RadiationService.critical(p) || RadiationService.mass(p) >= RadiationService.HOT)
+                                        : VillagerMeltdown.critical(e))
+                                && e.distanceToSqr(runner) <= REACH * REACH && runner.hasLineOfSight(e))
                 .stream().min(Comparator.comparingDouble(runner::distanceToSqr)).orElse(null);
+    }
+
+    // What the run asks of the one it runs round: a player's radiation, or a villager's meltdown.
+    private static boolean critical(LivingEntity t) {
+        return t instanceof ServerPlayer p ? RadiationService.critical(p) : VillagerMeltdown.critical(t);
+    }
+    private static void hold(LivingEntity t) {
+        if (t instanceof ServerPlayer p) RadiationService.hold(p); else VillagerMeltdown.hold(t);
+    }
+    private static void defuse(LivingEntity t, int core, ServerPlayer runner) {
+        if (t instanceof ServerPlayer p) RadiationService.defuse(p, core); else VillagerMeltdown.defuse(t, runner);
     }
 
     private static boolean radioactive(ServerPlayer p) {
@@ -109,17 +129,17 @@ public final class SpeedContainment {
     /** The Cyclone key: run round a hot radioactive player if one is in reach. False if there is none. */
     public static boolean start(ServerPlayer runner, int tier) {
         if (running(runner) || SpeedKit.cycloning(runner)) return false;
-        ServerPlayer target = hotNeighbour(runner);
+        LivingEntity target = hotNeighbour(runner);
         if (target == null || RUNS.values().stream().anyMatch(r -> r.target == target)) return false;
         Run r = new Run(runner, target, tier, now(runner));
         RUNS.put(runner.getUUID(), r);
         ServerLevel level = runner.serverLevel();
         level.playSound(null, target.blockPosition(), SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), SoundSource.PLAYERS, 1.2F, 0.9F);
-        runner.displayClientMessage(Component.literal(RadiationService.critical(target)
+        runner.displayClientMessage(Component.literal(critical(target)
                 ? "You run rings round " + target.getName().getString() + " to hold it in."
                 : "You run rings round " + target.getName().getString() + " to draw the heat off.").withStyle(ChatFormatting.GOLD), true);
-        target.displayClientMessage(Component.literal(runner.getName().getString() + " is running the heat out of you.")
-                .withStyle(ChatFormatting.AQUA), true);
+        if (target instanceof ServerPlayer held) held.displayClientMessage(Component.literal(runner.getName().getString()
+                + " is running the heat out of you.").withStyle(ChatFormatting.AQUA), true);
         sync(r, false);
         return true;
     }
@@ -132,7 +152,8 @@ public final class SpeedContainment {
 
     static void tick(long now) {
         for (Run r : List.copyOf(RUNS.values())) {
-            ServerPlayer p = r.runner, t = r.target;
+            ServerPlayer p = r.runner;
+            LivingEntity t = r.target;
             if (r.failedAt >= 0) { burning(r); continue; }
             if (p.isRemoved() || !p.isAlive() || !PowerRules.canAct(p) || t.isRemoved() || !t.isAlive()
                     || t.level() != p.level() || t.distanceToSqr(p) > REACH * REACH * 4) {
@@ -143,17 +164,17 @@ public final class SpeedContainment {
             // You are out on the ring: your body stays where it is, and nobody sees it.
             p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 3, 6, false, false, false));
             p.fallDistance = 0;
-            if (RadiationService.critical(t) && r.containedFrom < 0) {
+            if (critical(t) && r.containedFrom < 0) {
                 r.containedFrom = now(p);
                 p.displayClientMessage(Component.literal("It's going to blow. Hold it in!").withStyle(ChatFormatting.RED, ChatFormatting.BOLD), true);
                 sync(r, false);
             }
             if (r.containedFrom >= 0) {
-                RadiationService.hold(t);
+                hold(t);
                 if (!strain(r, CONTAIN_HEAT)) continue;
                 long held = now(p) - r.containedFrom;
                 if (held >= DEFUSE_TICKS) {
-                    RadiationService.defuse(t, DEFUSED_CORE);
+                    defuse(t, DEFUSED_CORE, p);
                     // The heat goes out of them all at once: a cold shock rolls out over the ground.
                     SetPiecePayload.send(p.serverLevel(), Piece.RAD_EMP, t.position(), t.position().add(0, 1, 0), (float) (CONTAIN_RING + 3), null);
                     p.serverLevel().playSound(null, t.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 2.0F, 0.5F);
@@ -168,9 +189,11 @@ public final class SpeedContainment {
                 if (age % 4 == 0) CameraShakePayload.sendAround(p.serverLevel(), t.position(), 18, 0.3F + 1.1F * k, 6);
                 if (age % 5 == 0) p.serverLevel().playSound(null, t.blockPosition(), SoundEvents.BEACON_AMBIENT, SoundSource.PLAYERS, 1.2F + k, 0.6F + 1.2F * k);
             } else {
-                RadiationService.vent(t, COOL_PER_TICK);
+                // Only a player is ever merely hot; a villager whose meltdown was stopped has nothing left to cool.
+                if (!(t instanceof ServerPlayer hot)) { end(r, true); continue; }
+                RadiationService.vent(hot, COOL_PER_TICK);
                 if (!strain(r, COOL_HEAT)) continue;
-                if (RadiationService.mass(t) <= COOL_FLOOR || age >= COOL_MAX_TICKS) {
+                if (RadiationService.mass(hot) <= COOL_FLOOR || age >= COOL_MAX_TICKS) {
                     p.displayClientMessage(Component.literal("They run cool again.").withStyle(ChatFormatting.GREEN), true);
                     end(r, true);
                     continue;
@@ -212,13 +235,14 @@ public final class SpeedContainment {
      * else can hurt them meanwhile.
      */
     private static void disintegrate(Run r) {
-        ServerPlayer p = r.runner, t = r.target;
+        ServerPlayer p = r.runner;
+        LivingEntity t = r.target;
         ServerLevel level = p.serverLevel();
         r.failedAt = now(p);
         p.setInvulnerable(true);
         p.setHealth(Math.max(1, Math.min(p.getHealth(), 1)));
-        RadiationService.defuse(t, 0);
-        t.sendSystemMessage(Component.literal(p.getName().getString() + " burned away holding your blast in.")
+        defuse(t, 0, p);
+        if (t instanceof ServerPlayer saved) saved.sendSystemMessage(Component.literal(p.getName().getString() + " burned away holding your blast in.")
                 .withStyle(ChatFormatting.GOLD));
         sync(r, false);
         // The burning starts once they have stopped and stood a moment; the client finds where they stopped on the
@@ -265,7 +289,7 @@ public final class SpeedContainment {
 
     /** The ring is drawn round the target's feet (on the ground under them while they hang in the air charging). */
     private static void sync(Run r, boolean ended) {
-        ServerPlayer t = r.target;
+        LivingEntity t = r.target;
         Vec3 from = t.position();
         var hit = t.level().clip(new ClipContext(from, from.add(0, -6, 0), ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, t));
         Vec3 center = hit.getType() == HitResult.Type.BLOCK ? hit.getLocation() : from;

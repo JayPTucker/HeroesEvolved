@@ -107,12 +107,30 @@ public final class SetPieceClient {
         return null;
     }
 
+    /** Where each running copy of {@code piece} is now: on its entity if it rides one, else where it was cast. */
+    public static List<Vec3> where(Piece piece) {
+        List<Vec3> out = new ArrayList<>();
+        if (world == null || Minecraft.getInstance().level != world) return out;
+        long now = world.getGameTime();
+        for (Active a : ACTIVE) {
+            if (a.piece != piece || now < a.start) continue;
+            Entity e = a.entity >= 0 ? world.getEntity(a.entity) : null;
+            out.add(e != null ? e.position() : a.origin);
+        }
+        return out;
+    }
+
     @SubscribeEvent public static void logout(ClientPlayerNetworkEvent.LoggingOut event) { ACTIVE.clear(); world = null; }
 
     @SubscribeEvent public static void tick(ClientTickEvent.Post event) {
         ClientLevel level = Minecraft.getInstance().level;
         if (world != level) { ACTIVE.clear(); world = level; }
-        if (level != null) ACTIVE.removeIf(a -> level.getGameTime() - a.start > a.piece.ticks);
+        if (level != null) ACTIVE.removeIf(a -> expired(a, level, level.getGameTime() - a.start));
+    }
+
+    private static boolean expired(Active a, ClientLevel level, float age) {
+        if (age <= a.piece.ticks) return false;
+        return a.piece != Piece.RAD_CHARGE || RadiationArt.reactorCharge(a, level) < 0;
     }
 
     @SubscribeEvent public static void render(RenderLevelStageEvent event) {
@@ -158,7 +176,7 @@ public final class SetPieceClient {
         long now = c.level.getGameTime();
         for (Active a : ACTIVE) {
             float age = now - a.start + c.partial;
-            if (age < 0 || age > a.piece.ticks) continue;
+            if (age < 0 || expired(a, c.level, age)) continue;
             if (a.origin.distanceToSqr(c.cx, c.cy, c.cz) > 224 * 224 && a.target.distanceToSqr(c.cx, c.cy, c.cz) > 224 * 224) continue;
             try {
                 PieceArt.draw(c, a, age);

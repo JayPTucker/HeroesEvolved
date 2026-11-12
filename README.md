@@ -3,6 +3,10 @@
 A Minecraft 1.21.1 NeoForge mod with unique player powers, shared-world story
 events and evolving abilities. Build and run with Java 21.
 
+Requires [Simple Voice Chat](https://www.curseforge.com/minecraft/mc-mods/simple-voice-chat) and
+[Simple Voice Radio](https://www.curseforge.com/minecraft/mc-mods/simple-voice-radio) (with Lexiconfig) on the client
+and the server: villages call for help over the radio. See [The emergency band](docs/emergency-band.md).
+
 ## Skills and progression
 
 Open the survival inventory and click **Skills**, next to the recipe book.
@@ -29,7 +33,7 @@ to heal you).
 
 Electric powers reach real machines from other mods. EMPs drain and stop anything storing Forge Energy
 (Mekanism, Thermal, Powah, ...) and seize Create's shafts; lightning charges FE machines; Technopathy enrols
-and shuts them down. No other mod is required. See [Powers and machines](docs/machines.md).
+and shuts them down. No machine mod is required. See [Powers and machines](docs/machines.md).
 
 See [Technopathy](docs/technopathy.md) for physical relay networks, remote mechanisms,
 prepared traps, stolen projectile trajectories and Machine City. See
@@ -43,6 +47,10 @@ point costs, prerequisites and loadout controls.
 See [Sylar](docs/sylar.md) for the watchmaker: a slow story told one beat at a time, and a boss
 fight where every power he has taken is a real, telegraphed move. Three phases, a boss bar, and he
 may run when he is losing.
+
+See [Elle Bishop](docs/elle-bishop.md) for the Company's boss: the day before she comes, lights flicker, redstone
+misfires and machines switch themselves on and off around you. Then she fights you on Primatech's test floor,
+where every capacitor bank you short out thins her shield, and pulling one she is drinking from backfires into her.
 
 See [Superspeed](docs/superspeed.md) for the reworked speedster, inspired by Daphne Millbrook and the Flash. Momentum crackles,
 buffets and breaks the sound barrier. Blitz chains from enemy to enemy, Snatch takes everything in a

@@ -28,8 +28,9 @@ held indefinitely, and cold-immune creatures resist the freeze.
 ## Heat absorption
 
 - **Reactor rescue.** Aim Ice Blast directly at a radioactive player during their warning or
-  charge. Keep it on them for roughly one to one-and-a-half seconds to pause the countdown,
-  drain Core to 30 or below, and cancel the detonation. Losing sight lets the countdown resume.
+  charge. Ice Blast pauses the countdown while it stays on target. Keep it there for 12 seconds
+  to drain Core to 30 or below and cancel the detonation. Losing contact resumes the countdown
+  and resets stabilization progress.
   This works with PvP disabled and leaves the reactor unharmed. Allies and crouching players
   can also be cooled before they go critical. With PvP enabled, the blast can drain a hostile
   reactor that is already running hot.
@@ -48,12 +49,12 @@ These are the default keys; optional learned skills can replace them as usual.
 | --- | --- | --- | --- |
 | G | 1 | **Ice Blast** | Hold to aim a two-handed, 12-block stream of ice. It uses stamina while held and lasts up to eight seconds per cast. |
 | H | 2 | **Glacial Sculpt** | Aim at a clear surface to grow a faceted frost wall. **Shift + H** makes a three-block-wide staircase you can walk up. Aiming at an owned construct reshapes it for eight stamina, with a two-second settling time, even while the new-wall cast is recovering. |
-| Z | 3 | **Glacier Ride** | Toggle skating on a growing ice ribbon. Look and movement keys steer; Space shapes a rising ramp at higher levels, Shift brakes, and Sprint accelerates. Press again to step off safely. |
+| Z | 3 | **Glacier Ride** | Toggle skating on a growing ice ribbon. Look and movement keys steer. Hold **Space** to climb or **Shift** to descend at your current speed. **S** brakes and Sprint accelerates. Press Z again to step off safely. |
 | X | 4 | **Crystal Prison** | Concentrate cold around a target within twelve blocks. An unprepared cast adds Frost; prepared Frost forms a prison. Press again to shatter that shell, with a short hostile burst around it. |
 | V | 5 | **Whiteout** | Aim a growing winter field. A one-second wind-up precedes Frost, snow and rising ice spires. **Shift + V** deliberately collapses the prepared ice and frozen enemies after the wind-up. |
 
-Glacier Ride begins on a supported surface, crosses limited gaps and climbs in half-block
-steps. The ribbon follows the skater's actual momentum through turns and can widen into
+Glacier Ride begins on a supported surface and crosses limited gaps. The ribbon forms
+half-block steps ahead of the skater on climbs and descents. It follows their momentum through turns and can widen into
 a route for companions. Solid obstructions, exhausted stamina, loss of the power and invalid
 terrain end the ride safely. Ride controls and speed are displayed on screen.
 

@@ -23,7 +23,7 @@ public final class RadiationDecay {
             clear(player); return;
         }
         var blocks = ACTIVE.computeIfAbsent(player.getUUID(), ignored -> new LinkedHashMap<>());
-        // A Critical Mass charge lasts only a second and a half: its cracks start wider and crumble faster.
+        // Critical Mass only crumbles blocks in its final buildup, so its cracks spread faster.
         int radius = (int) ((awakening ? 2 : 3) + Math.clamp(progress, 0, 1) * (awakening ? 6 : 3));
         // Sampling and active cracks are bounded, regardless of the final blast's radius.
         for (int sample = 0; sample < 16 && blocks.size() < 24; sample++) {

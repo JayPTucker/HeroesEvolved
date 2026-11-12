@@ -163,7 +163,7 @@ public final class CryoReworkGameTests {
         });
     }
 
-    @GameTest(template="rewind_empty", batch="cryo.rework_reactor", timeoutTicks=120)
+    @GameTest(template="rewind_empty", batch="cryo.rework_reactor", timeoutTicks=740)
     public static void iceBlastPausesAndDefusesALateInvoluntaryDetonation(GameTestHelper h) {
         ServerPlayer caster = player(h, 3, true), reactor = player(h, 3, false);
         reactor.setPos(caster.position().add(0, 0, 4));
@@ -171,30 +171,33 @@ public final class CryoReworkGameTests {
         registerReactor(reactor, true);
         RadiationService.addMass(reactor, RadiationService.MAXIMUM_MASS);
         RadiationService.beginDetonation(reactor, 5, false);
+        int start = RadiationService.visualState(reactor).remaining() - 12;
         float health = reactor.getHealth();
         aim(caster, reactor.getBoundingBox().getCenter());
-        h.runAfterDelay(48, () -> {
+        PlayerProgressionService.setLevel(caster, 1);
+        h.runAfterDelay(start, () -> {
             try {
                 h.assertTrue(RadiationService.isDetonating(reactor), "The involuntary charge must be approaching detonation");
-                h.assertTrue(CryoBlastService.start(caster, 5), "Ice Blast must start");
+                h.assertTrue(AbilityUseService.activateAssignedAction(caster, AbilitySlot.PRIMARY, false) == AbilityUseResult.SUCCESS,
+                        "A tier-one Ice Blast must be able to start the rescue");
             } catch (RuntimeException | AssertionError e) {
                 cleanReactor(caster, reactor);
                 throw e;
             }
         });
-        h.runAfterDelay(65, () -> {
+        h.runAfterDelay(start + 210, () -> {
             try {
                 h.assertTrue(RadiationService.isDetonating(reactor) && RadiationService.mass(reactor) < 100,
-                        "The aimed beam must keep the live charge on hold past its original deadline while drawing Core");
+                        "The aimed beam must keep the live charge on hold and still be cooling after ten seconds");
             } catch (RuntimeException | AssertionError e) {
                 cleanReactor(caster, reactor);
                 throw e;
             }
         });
-        h.runAfterDelay(86, () -> {
+        h.runAfterDelay(start + 248, () -> {
             try {
                 h.assertTrue(!RadiationService.critical(reactor) && RadiationService.mass(reactor) <= 30,
-                        "Holding the beam on the reactor must end the detonation and lower its Core");
+                        "Twelve seconds of continuous contact must end the detonation and lower its Core");
                 h.assertTrue(reactor.getHealth() == health && !CryoService.isFrozen(reactor),
                         "Cooling a reactor must be safe even in co-op");
                 h.assertTrue(CryoBlastService.spendCharge(caster) && !CryoBlastService.spendCharge(caster),
@@ -248,9 +251,13 @@ public final class CryoReworkGameTests {
 
     @GameTest(template="rewind_empty", batch="cryo.rework_sculpt")
     public static void glacialSculptGrowsSolidCoverWithoutOccupyingItsCaster(GameTestHelper h) {
-        ServerPlayer p = player(h, 3, true);
+        List<SetPiecePayload> sprays = new ArrayList<>();
+        ServerPlayer p = player(h, 3, true, packet -> {
+            if (packet instanceof ClientboundCustomPayloadPacket custom
+                    && custom.payload() instanceof SetPiecePayload effect
+                    && effect.piece() == Piece.CRYO_CAST.ordinal()) sprays.add(effect);
+        });
         p.setXRot(42);
-        h.assertTrue(CryoKitService.sculpt(p, 3, false), "Sculpt must accept a clear aimed foundation");
         h.runAfterDelay(15, () -> {
             try {
                 var blocks = CryoKitService.constructBlocks(p);
@@ -258,9 +265,20 @@ public final class CryoReworkGameTests {
                         "Sculpt creates actual temporary solid ice, not only particles");
                 h.assertTrue(blocks.stream().noneMatch(pos -> p.getBoundingBox().intersects(new net.minecraft.world.phys.AABB(pos))),
                         "Growing cover must leave the caster's body clear");
+                h.assertTrue(sprays.size() > 1 && sprays.stream().allMatch(spray -> spray.entity() == p.getId()),
+                        "The wall cast and its growing rows must send frost from the caster");
+                SetPiecePayload first = sprays.getFirst();
+                h.assertTrue(first.origin().distanceToSqr(p.getEyePosition()) < .01 && first.target().z > first.origin().z,
+                        "The first frost spray must travel from the caster toward the aimed wall");
+                h.assertTrue(sprays.stream().skip(1).anyMatch(spray -> spray.target().y > first.target().y),
+                        "The frost spray must follow the ice up as the wall grows");
                 h.succeed();
             } finally { clean(p); }
         });
+        if (!CryoKitService.sculpt(p, 3, false)) {
+            clean(p);
+            h.fail("Sculpt must accept a clear aimed foundation");
+        }
     }
 
     @GameTest(template="rewind_empty", batch="cryo.rework_build_permission")
@@ -504,6 +522,42 @@ public final class CryoReworkGameTests {
                         "The moving skater has actual solid ice beneath their feet");
                 CryoRideService.stop(p, true);
                 h.assertTrue(!CryoRideService.isRiding(p) && !p.isNoGravity(), "Stopping restores the original gravity flag");
+                h.succeed();
+            } finally { clean(p); }
+        });
+    }
+
+    @GameTest(template="cryo_rework_arena", timeoutTicks=65, batch="cryo.rework_ride_slopes")
+    public static void glacierRideKeepsMovingFromClimbToDescent(GameTestHelper h) {
+        ServerPlayer p = player(h, 3, true);
+        PlayerProgressionService.setLevel(p, 3);
+        Vec3 start = p.position();
+        h.assertTrue(CryoRideService.toggle(p, 3), "Glacier Ride must start at its unlock level");
+        double[] minTravel = {Double.POSITIVE_INFINITY};
+        double[] peak = {start.y};
+        h.onEachTick(() -> {
+            long tick = h.getTick();
+            Vec3 before = p.position();
+            // Space and Shift alone carry the rider through the slope change.
+            CryoRideService.input(p, 0, 0, tick <= 20, tick > 20, false);
+            CryoRideService.tick(p);
+            p.move(MoverType.SELF, p.getDeltaMovement());
+            if (tick > 8) minTravel[0] = Math.min(minTravel[0], p.getZ() - before.z);
+            peak[0] = Math.max(peak[0], p.getY());
+        });
+        h.runAfterDelay(43, () -> {
+            try {
+                h.assertTrue(peak[0] >= start.y + 2 && p.getY() < peak[0] - 1.5,
+                        "Space must climb and Shift must descend at tier three, peak=" + peak[0] + ", end=" + p.getY());
+                h.assertTrue(CryoRideService.isRiding(p) && minTravel[0] >= .4,
+                        "Every tick after acceleration must retain forward progress, minimum=" + minTravel[0]);
+                BlockPos feet = BlockPos.containing(p.position().add(0,-.08,0));
+                h.assertTrue(List.of(feet, feet.below()).stream().anyMatch(pos -> {
+                    var state = h.getLevel().getBlockState(pos);
+                    if (!FrostConstructBlock.isFrost(state)) return false;
+                    double clearance = p.getY() - (pos.getY() + state.getValue(FrostConstructBlock.FORM).top);
+                    return clearance >= -.001 && clearance <= .55;
+                }), "A physical ice tread must be within a half step of the descending skater at " + p.position());
                 h.succeed();
             } finally { clean(p); }
         });

@@ -16,10 +16,10 @@ The HUD shows a **Core** bar under your ability list, with notches at each thres
 | 40–79 | **Hot** | Radiation powers deal **25% more damage**, and Radiant Heat sets what it hits alight. A Geiger counter crackles around you. |
 | 60+ | **Glowing** | You glow orange, and radiation leaks onto **enemies** within 3 blocks (never allies). |
 | 80–99 | **Critical** | **50% more damage**; Radiant Heat and a Fission Leap slam give two stages of sickness, and the heat burns longer. |
-| 100 | Meltdown | A three-second warning: vent (Meltdown Beam, EMP or Critical Mass) or containment fails. |
+| 100 | Meltdown | A 25-second countdown begins with a three-second warning to vent Core before you lose control. |
 
-A Cryokinetic player can hold Ice Blast on you to pause a meltdown and draw out Core. Continuous
-contact brings you down to 30 Core or less and ends the charge, including an involuntary detonation.
+A Cryokinetic player can hold Ice Blast on you to pause a meltdown and draw out Core. Twelve seconds
+of continuous contact brings you down to 30 Core or less and ends the charge, including an involuntary detonation.
 
 **Radiation Sickness** is a stacking dose in five stages: each second it burns for half a heart per stage
 (armor does not help, and the undead are not spared) and saps attack strength. Whoever holds Induced
@@ -34,7 +34,7 @@ around it, so radiation spreads through a crowd as a chain reaction.
 | H | 2 | **Fission Leap** | A blast under your feet **launches you** about ten blocks up and forward; the shock where you left throws and doses enemies within 3.5 blocks. **Press again in the air to slam** down along your aim (always at least a steep dive): you land in a bigger blast (4 + level / 2 blocks) that throws and doses everything around and leaves the ground **contaminated for 8 seconds**, so anyone who walks in later keeps getting dosed. The second press is free. You take no fall damage from a leap. +8 Core for each blast. |
 | Z | 3 | **EMP** | Kills redstone within 16 blocks for 10 seconds and powered machines too: Forge Energy machines (Mekanism, Thermal...) are drained and stop, and Create's shafts seize (see [Powers and machines](machines.md)). Its front **shoves enemies within 10 blocks away**, slowed, weakened and revealed. It **vents 25 Core**: your panic button. |
 | X | 4 | **Meltdown Beam** | **Hold** to pour Core out through a thick, piercing heat beam (48-block reach) that you sweep with your aim. Each pulse vents 3 Core and hits everything on the line harder the more Core is left; it ends when you let go, run cool, or after five seconds. Needs 10 Core to start. **Shift** stops it at once. |
-| V | 5 | **Critical Mass** | You **rise off the ground**, glowing brighter, for **three seconds**, then detonate: the nuclear blast below. The charge is long on purpose, so others can stop you: Shift cancels it, and **taking 8 damage while charging breaks it**. An involuntary meltdown cannot be cancelled or broken. |
+| V | 5 | **Critical Mass** | You **rise off the ground** and glow brighter for **25 seconds** before you detonate. Shift or **8 damage** interrupts a voluntary charge. External containment can stop either kind of detonation. |
 
 A good sequence: **Radiant Heat to build Core → Fission Leap into a crowd → Meltdown Beam from the air →
 slam → EMP to vent** (or let the Core climb and finish with Critical Mass).
@@ -117,7 +117,7 @@ Afterward, actual health damage adds three stress per point, capped at one
 hundred. Actions also raise stress. After five seconds without injury, it cools
 at one point per second. At sixty percent radiation leaks onto nearby enemies.
 At one hundred, a three-second warning gives a chance to vent, followed by a
-three-second involuntary meltdown. Stress is serialized with the player;
+22-second involuntary charge. Stress is serialized with the player;
 disconnecting does not erase it. Full stress rearms the warning when play resumes.
 Death or power removal resets it. The first-intro protection expires normally:
 ordinary attacks can kill an experienced user.
@@ -167,8 +167,8 @@ their own wave and fallout, without the old one-health penalty. Fallout from
 other sources is still dangerous. Blast/EMP work queues are bounded and cleared
 on server shutdown; fallout does not move with a departing owner.
 
-During both the thirty-second awakening and later three-second detonation
-charges, nearby ordinary blocks crack, emit smoke, and eventually crumble.
+During the thirty-second awakening and the final three seconds of later charges,
+nearby ordinary blocks crack, emit smoke, and eventually crumble.
 The decay footprint expands with the charge, up to eight blocks for awakening
 and six for later charges. At most twenty-four block cracks are active per
 owner. It retains the footing, skips containers and fluids, respects protected

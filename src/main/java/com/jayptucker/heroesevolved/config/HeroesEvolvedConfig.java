@@ -39,6 +39,8 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.BooleanValue sylarEnabled, sylarCanAcquirePowers;
         public final ModConfigSpec.BooleanValue bunkerEnabled;
         public final ModConfigSpec.IntValue sylarFirstEncounterSeconds, sylarSightingIntervalSeconds, sylarHuntIntervalSeconds;
+        public final ModConfigSpec.BooleanValue elleEnabled;
+        public final ModConfigSpec.IntValue elleFirstVisitDays, elleOmenTicks, elleRevisitDays;
         public final ModConfigSpec.IntValue maximumLevel;
         public final ModConfigSpec.LongValue baseMasteryPerLevel;
         public final ModConfigSpec.LongValue masteryIncreasePerLevel;
@@ -78,6 +80,8 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue eclipseTotalityTicks;
         public final ModConfigSpec.IntValue eclipseDepartureTicks;
         public final ModConfigSpec.DoubleValue eclipseDormantAbilityChance;
+        public final ModConfigSpec.DoubleValue villagerMeltdownChance;
+        public final ModConfigSpec.IntValue villagerMeltdownFuseTicks;
 
         // Awakening
         public final ModConfigSpec.DoubleValue awakeningHealthThreshold;
@@ -245,6 +249,16 @@ public final class HeroesEvolvedConfig {
                     .defineInRange("sightingIntervalSeconds", 600, 60, 86400);
             sylarHuntIntervalSeconds = builder.comment("Minimum pause between hunts once he has started hunting a player; up to five minutes of random delay is added. Defeating him gives the whole world an hour.")
                     .defineInRange("huntIntervalSeconds", 1500, 120, 86400);
+            builder.pop();
+            builder.push("elle");
+            elleEnabled = builder.comment("The Company sends Elle Bishop for awakened players. The day before she comes, lights flicker,",
+                            "redstone misfires and machines switch themselves on and off around them.").define("enabled", true);
+            elleFirstVisitDays = builder.comment("Minecraft days a player has had a power (after the relay rescue) before her first visit; the last of them is the day of omens.")
+                    .defineInRange("firstVisitDays", 3, 1, 1000);
+            elleOmenTicks = builder.comment("How long the omens run before she arrives, in ticks (24000 is one Minecraft day).")
+                    .defineInRange("omenTicks", 24000, 200, 2_400_000);
+            elleRevisitDays = builder.comment("Minecraft days after she is beaten before the Company tries again (two days after a lost fight).")
+                    .defineInRange("revisitDays", 7, 1, 1000);
             builder.pop();
             builder.push("progression");
 
@@ -417,6 +431,14 @@ public final class HeroesEvolvedConfig {
                 eclipseDormantAbilityChance = builder
                         .comment("Chance for an eligible player to receive one dormant ability at totality.")
                         .defineInRange("dormantAbilityChance", 0.40D, 0.0D, 1.0D);
+
+                villagerMeltdownChance = builder
+                        .comment("Chance, each Eclipse, that its light wakes a power in one villager near a player: as the sun returns he starts to glow, and his village calls for help on the emergency band (101.10 FM).")
+                        .defineInRange("villagerMeltdownChance", 0.20D, 0.0D, 1.0D);
+
+                villagerMeltdownFuseTicks = builder
+                        .comment("Ticks from a radioactive villager's first glow to his blast. 1200 is one minute.")
+                        .defineInRange("villagerMeltdownFuseTicks", 1_200, 200, 12_000);
 
                 builder.pop();
 

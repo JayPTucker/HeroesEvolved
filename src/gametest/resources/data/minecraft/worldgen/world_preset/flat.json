@@ -98,6 +98,32 @@
           "biome": "minecraft:the_void"
         }
       }
+    },
+    "heroesevolved:watchmaker_shop": {
+      "type": "heroesevolved:lockdown",
+      "generator": {
+        "type": "minecraft:flat",
+        "settings": {
+          "biome": "minecraft:the_void",
+          "layers": [],
+          "lakes": false,
+          "features": false,
+          "structure_overrides": []
+        }
+      }
+    },
+    "heroesevolved:primatech_substation": {
+      "type": "heroesevolved:lockdown",
+      "generator": {
+        "type": "minecraft:flat",
+        "settings": {
+          "biome": "minecraft:the_void",
+          "layers": [],
+          "lakes": false,
+          "features": false,
+          "structure_overrides": []
+        }
+      }
     }
   }
 }

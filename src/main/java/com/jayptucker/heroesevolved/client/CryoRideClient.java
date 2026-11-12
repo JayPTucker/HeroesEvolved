@@ -51,7 +51,7 @@ public final class CryoRideClient {
         PacketDistributor.sendToServer(new CryoRideInputPayload(
                 allowed ? axis(mc.options.keyUp.isDown(), mc.options.keyDown.isDown()) : 0,
                 allowed ? axis(mc.options.keyLeft.isDown(), mc.options.keyRight.isDown()) : 0,
-                allowed && mc.options.keyJump.isDown(), !allowed || mc.options.keyShift.isDown(),
+                allowed && mc.options.keyJump.isDown(), allowed && mc.options.keyShift.isDown(),
                 allowed && mc.options.keySprint.isDown(), 0));
     }
     private static float axis(boolean positive, boolean negative) { return (positive ? 1 : 0) - (negative ? 1 : 0); }
@@ -69,7 +69,7 @@ public final class CryoRideClient {
         if (Math.signum(delta) != Math.signum(scroll)) scroll = 0;
         scroll += delta;
         int notches = Math.min(3, (int) Math.abs(scroll));
-        for (int i = 0; i < notches; i++) PacketDistributor.sendToServer(new CryoRideInputPayload(0, 0, false, true, false, delta > 0 ? 1 : -1));
+        for (int i = 0; i < notches; i++) PacketDistributor.sendToServer(new CryoRideInputPayload(0, 0, false, false, false, delta > 0 ? 1 : -1));
         scroll = Math.copySign(Math.abs(scroll) % 1, delta);
     }
     @EventBusSubscriber(modid = HeroesEvolved.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
@@ -79,8 +79,8 @@ public final class CryoRideClient {
                 var mc = Minecraft.getInstance();
                 if (!active() || mc.options.hideGui) return;
                 View view = RIDERS.get(TelepathyClient.bodyId());
-                gui.drawCenteredString(mc.font, Component.literal("GLACIER RIDE  ·  WASD steer  ·  Space rise  ·  Shift brake"), gui.guiWidth() / 2, 34, 0xC1EEFF);
-                gui.drawCenteredString(mc.font, Component.literal("Scroll speed: " + view.step + "  ·  Sprint carve  ·  Ride key: stop"), gui.guiWidth() / 2, 46, 0xAACDDF);
+                gui.drawCenteredString(mc.font, Component.literal("GLACIER RIDE  ·  Space rise  ·  Shift descend  ·  S brake"), gui.guiWidth() / 2, 34, 0xC1EEFF);
+                gui.drawCenteredString(mc.font, Component.literal("Scroll speed: " + view.step + "  ·  Sprint accelerate  ·  Ride key: stop"), gui.guiWidth() / 2, 46, 0xAACDDF);
             });
         }
     }

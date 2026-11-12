@@ -29,9 +29,9 @@ How a hunt ends sets what happens next:
 
 | Outcome | What happens |
 | --- | --- |
-| **You get away** (beyond 112 blocks, or survive 150 seconds) | Counts as a hunt survived. Next time he says so. |
-| **He flees** | No reprieve. He comes back sooner, and he remembers who did it. |
-| **You defeat him** | The whole world gets an **hour** of quiet. |
+| **You get away** (beyond 112 blocks, or survive 150 seconds; in his shop, walk out the open front door or outlast ten minutes) | Counts as a hunt survived. Next time he says so. |
+| **He flees** (in his shop: he reaches the end of the alley) | No reprieve. He comes back sooner, and he remembers who did it. |
+| **You defeat him** | The whole world gets an **hour** of quiet, and you get his watch. |
 
 **His voice is paced.** Everything he says, and every line of narration about him, goes through
 one queue per player, at least eight seconds apart; narration gives way to speech when it fills up.
@@ -41,18 +41,87 @@ He has a line for every power: "Lightning in your hands. I could feel it from ac
 also speaks when the fight changes phase, when he uses your own power against you, when he takes a
 power, when he gets back up, when he flees, and when he falls.
 
-## The fight
+## The fight: the Watchmaker
 
-When he hunts, he is a boss. A **boss bar** shows his health to everyone within 48 blocks. His
-health is 80, plus 12 for every power he has taken (up to 240). He fights in three phases:
+When a hunt turns into a fight, he takes it home. His hand closes on the air, a clock face opens behind
+you, and you are standing in **Gray & Sons**, his clock shop. Anyone fighting beside you (within 16 blocks)
+comes too. When the fight ends, the shop folds away and everyone is put back exactly where they stood. Any power he
+took comes back at the same moment.
 
-| Phase | Health | How he fights |
+### The shop
+
+The shop is a pocket dimension of its own (`heroesevolved:watchmaker_shop`), rebuilt from the `sylar_shop` blueprint
+before every fight, so whatever the last fight broke is whole again:
+
+- **The floor is a clock face**: a pale dial nineteen blocks across, ringed in copper, with twelve hour marks.
+- **Two copper gear rails** cross the floor east to west, each between two geared posts with a lightning rod on top.
+- **Glass display cases** line both side walls, with a clock over every other one. His slam shatters them.
+- **The great clock** hangs over the north wall, its pendulum swinging in a case beneath. Its hands run faster with
+  every phase.
+- **Four columns** hold up the ceiling. They are the only cover in the room.
+- **The front door** opens onto a dark street. The **boarded back door** opens onto an alley.
+
+A **boss bar** shows his health to everyone within 48 blocks: 80, plus 12 for every power he has taken (up to 240).
+
+### Three phases
+
+| Phase | Health | What changes |
 | --- | --- | --- |
-| **The Watchmaker** (purple) | above half | Measured: a move every two and a half seconds |
-| **Hunger** (red) | below half | Faster, about every second and a half, and a quarter harder |
-| **Unfinished** (white) | below a fifth | Faster still and harder again. If he knows an escape power (Invisibility, Density, Superspeed, Time or Flight), he says he will run and does, four seconds later, unless you finish him first. |
+| **Taking Inventory** (purple) | 100–60% | Stolen-power attacks from people he has hunted, each telegraphed. **The front door stands open**: walk out into the street and you get away (it counts as escaping the hunt). |
+| **The Hunger** (red) | 60–30% | **The doors slam and bar.** Every clock in the shop runs four times fast, he moves a fifth faster and rests less between moves. He starts **lunging to grab you**. |
+| **Clockwork** (white) | 30–0% | The clock face lights violet: **rings of stopped time** close in, and **only the gap in the clock face is safe**. The clocks run a dozen times fast. |
+| **Running** | 10% | He runs: the back door bursts and he makes for the end of the alley. **Catch him** before he reaches it, or he gets away (he "flees": no reprieve, and he remembers you). |
 
-Each phase change throws everyone back with a telekinetic shove.
+Each phase change throws everyone near him back with a telekinetic shove.
+
+Outside his shop (a fight that never got there), the old rules hold: the same phase thresholds, and at Clockwork
+he tries to run if he knows an escape power (Invisibility, Density, Superspeed, Time or Flight).
+
+### Every telegraph is a clock running down
+
+Each of his shop moves draws a **brass dial** before it lands. A hand sweeps round from twelve, the part it has
+passed fills with the stolen power's colour, and the move lands **when the hand reaches twelve**. The windup is
+exactly the dial's length. While he winds up he stands still and throws no punches.
+
+| Move | Phase | Telegraph | What it does | How to answer it |
+| --- | --- | --- | --- | --- |
+| **Floor slam** (telekinesis) | all | 1.5 s: a lavender dial round where you stood, cracks spreading from its middle | Within 3.5 blocks: 7 damage and you're thrown up. The boards tear out of the floor and nearby glass cases shatter | Step out of the dial |
+| **Ice wall** (cryokinesis) | all | 1.5 s: a frost line from wall to wall through you, square to him, its ticks lighting from both ends to the middle | Anyone on the line: 6 damage, slowed, frozen and shoved to the far side. A wall of packed ice three high stands for eight seconds, cutting the shop in two | Step off the line, and pick your side |
+| **Rail lightning** (electrokinesis) | all | 1.2 s: light creeps along the gear rail nearest you from both posts; little dials over the posts count down | Everyone within 1.8 blocks of that rail: 8 damage and slowed | Get off the rail |
+| **The grab** (his hunger) | Hunger on | 0.8 s: a red lane on the floor from his feet toward you, its chevrons lighting | He lunges down the lane (up to 10 blocks). Whoever he reaches first is **held** | Leave the lane. A miss makes him stumble for a second |
+| **Rings of stopped time** | Clockwork | 1.8 s: the clock face lights violet, except a two-hour **gap** blazing gilt; the ring gathers beyond the walls | A fence of stopped time sweeps in from the walls to the middle over 1.6 s, open only at the gap. Caught: 7 damage and **held still for two seconds** | Stand in the gap |
+
+He still uses everything he has taken from players (the table below), mixed in with these.
+
+### The grab and breaking free
+
+Held in his grip, you have **three seconds**. Red bands close round you, and a gilt arc round your chest fills as you
+struggle. **Sneak again and again**, or **hit him** (your hits and your friends' count half their damage). Six points
+tears you free, and he reels for a second and a half.
+
+Too slow, and **he takes your power until the fight ends**. You can't use it, and he can: its moves join his. He
+also learns it, the way his old acquisition channel did, which counts toward his health in later hunts. It is a copy:
+your power is still yours, and comes back the moment the fight ends, however it ends. (In his shop the grab replaces
+the slow six-second channel.)
+
+### The counterplay: crack his watch
+
+His **watch shows on his left wrist** whenever he winds up a move or holds someone. It is a small brass dial with a
+pulsing gilt glint you can see across the shop. A **charged hit** while it shows **cracks it**:
+
+- a charged hit is a fully charged melee swing (the attack meter full), a critical arrow, or any single hit of 8 or more;
+- the glass bursts, gears and a spring tumble out, and **he staggers for three seconds**;
+- whatever he was winding up is gone, anyone he held is free, and **every hit on him does a quarter more** while he
+  reels.
+
+An ordinary hit of 5 or more during a windup still breaks it, without the stagger.
+
+### What he leaves: Sylar's Watch
+
+Whoever finishes him (or, failing that, the one he hunted) gets **Sylar's Watch**. Its glass is cracked and it is
+still ticking. Use it to **go back five seconds**: you are carried back along your own path, as Rewrite the Moment
+shows it, and arrive with the health you had then (and no fire). It works **once a life**: it winds again only after
+you die. While you carry it, it remembers the last five seconds of you.
 
 ### What he does with what he takes
 
@@ -95,7 +164,7 @@ He favours what he took from **you**: "Recognise it? Your power. My hands."
 
 ### Taking your power
 
-His acquisition hold is unchanged. After four seconds of fighting within seven blocks and in sight,
+Outside his shop, his acquisition hold is unchanged. After four seconds of fighting within seven blocks and in sight,
 a six-second channel begins. Hurt him, break his sightline, or get away to stop it. A finished
 channel deals 8 and copies (never takes) your power.
 
@@ -138,11 +207,26 @@ the ambush. Previews respect the singleton, eligibility, safe loaded placement
 and the enabled setting. Try an open surface area if there is no safe sightline.
 The hunt preview intentionally bypasses the saved chapter and cooldown waits.
 
+`./gradlew runClient --init-script tools/watchmaker-preview.init.gradle` photographs the Watchmaker phase by phase
+(a real hunt 300 blocks from spawn, then every move in his shop) into `build/watchmaker-preview/screenshots/`.
+`tools/generate-sylars-watch-icon.py` draws the watch's item icon.
+
 The original 64x64 skin and mechanical watch audio are reproducible with
 `tools/generate-sylar-skin.py` and `tools/generate-sylar-watch.py`. Existing power
 and cinematic audio assets are preserved.
 
 ## Verification
+
+`WatchmakerGameTests` covers the shop:
+
+- he takes the quarry and an ally into it, and walking out of the open door is getting away and sends everyone home;
+- the phases turn at three-fifths and three-tenths, and the doors bar; at a tenth he runs, the back door bursts, and
+  reaching the alley's end counts as fleeing;
+- his grab holds you until you struggle free, or takes your power until the fight ends (and it comes back);
+- a charged hit cracks his watch only while it shows, and staggers him;
+- the rings of stopped time catch you outside the gap and pass you by inside it;
+- the rail lightning and the floor slam land only after their telegraphs, and the slam rips up the floor;
+- defeat hands over his watch, which rewinds once a life.
 
 The server fixtures cover quiet sensing through a real wall, private delivery
 and cooldowns, the sixty-four-block boundary, dormant powers, player-role

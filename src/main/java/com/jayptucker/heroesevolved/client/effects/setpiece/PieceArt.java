@@ -70,6 +70,7 @@ final class PieceArt {
             case SPEED_ARMS -> SpeedArt.arms(c, a, t);
             case SPEED_DISINTEGRATE -> SpeedArt.disintegrate(c, a, t);
             case SHIELD_BRACE -> ShieldArt.draw(c, a, t);
+            case VILLAGE_MELTDOWN, VILLAGE_SAFE -> VillageArt.draw(c, a, t);
             case CRYO_BLAST, CRYO_QUENCH, CRYO_CAST -> CryoBlastArt.draw(c, a, t);
             case RAD_HEAT, RAD_LEAP, RAD_SLAM, RAD_ZONE, RAD_EMP, RAD_BEAM, RAD_CHARGE, RAD_LANCE -> RadiationArt.draw(c, a, t);
             case FORCE_SHIELD, FORCE_PUSH, FORCE_FORM, FORCE_BRIDGE, FORCE_WALL, FORCE_BUBBLE, FORCE_CRUSH, FORCE_BEAD,
@@ -78,6 +79,12 @@ final class PieceArt {
             case OVERRUN_ARRIVE -> SpeedArt.arrive(c, a, t);
             case MATTER_RISE -> AssemblyArt.rise(c, a, t);
             case SENTINEL -> AssemblyArt.sentinel(c, a, t);
+            case WATCH_ARENA, WATCH_EXPOSED, WATCH_CRACK, WATCH_SLAM_MARK, WATCH_SLAM, WATCH_ICE_MARK, WATCH_ICE_WALL,
+                    WATCH_RAIL_MARK, WATCH_RAIL_ARC, WATCH_GRAB_MARK, WATCH_HOLD, WATCH_TAKE, WATCH_RINGS_MARK, WATCH_RINGS,
+                    WATCH_DOORS, WATCH_PULL, WATCH_DROP -> WatchmakerArt.draw(c, a, t);
+            case ELLE_ARENA, ELLE_AURA, ELLE_AIM, ELLE_BOLT, ELLE_RING_MARK, ELLE_RING, ELLE_SIPHON, ELLE_BACKFIRE,
+                    ELLE_CONDUIT_MARK, ELLE_CONDUIT, ELLE_REBOOT, ELLE_STRIKE_MARK, ELLE_STRIKE, ELLE_ORB, ELLE_SHORT,
+                    ELLE_PHASE, ELLE_ARRIVE, ELLE_OMEN, ELLE_DROP -> ElleArt.draw(c, a, t);
         }
     }
 }

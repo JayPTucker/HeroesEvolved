@@ -90,7 +90,7 @@ public final class RadiationPreview {
         }
         if (mc.player == null || mc.level == null) return;
         if (mc.screen instanceof net.minecraft.client.gui.screens.PauseScreen) mc.setScreen(null);
-        if (worldTicks >= 453 && worldTicks <= 488 && worldTicks % 2 == 1) pending = String.format("radiation-8-blast-%02d.png", worldTicks - 453);
+        if (worldTicks >= 893 && worldTicks <= 928 && worldTicks % 2 == 1) pending = String.format("radiation-8-blast-%02d.png", worldTicks - 893);
         switch (++worldTicks) {
             case 200 -> onServer(mc, p -> {
                 p.serverLevel().setDayTime(13300);
@@ -149,12 +149,12 @@ public final class RadiationPreview {
             case 395 -> onServer(mc, p -> { place(p, 360, 0, 180, 10); stand(p, 360.5, -50, 55.5, 180, 12);
                 RadiationService.addMass(p, 100 - RadiationService.mass(p) - 1); RadiationService.beginDetonation(p, 5, true); });
             case 410 -> pending = "radiation-7-charge-a.png";
-            case 440 -> pending = "radiation-7-charge-b.png";
-            case 451 -> look(mc);
-            case 500 -> pending = "radiation-7-cloud-a.png";
-            case 550 -> pending = "radiation-7-cloud-b.png";
-            case 630 -> pending = "radiation-7-cloud-c.png";
-            case 670 -> mc.stop();
+            case 880 -> pending = "radiation-7-charge-b.png";
+            case 891 -> look(mc);
+            case 940 -> pending = "radiation-7-cloud-a.png";
+            case 990 -> pending = "radiation-7-cloud-b.png";
+            case 1070 -> pending = "radiation-7-cloud-c.png";
+            case 1110 -> mc.stop();
             default -> { }
         }
     }

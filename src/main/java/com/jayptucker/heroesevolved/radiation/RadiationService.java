@@ -61,8 +61,10 @@ import java.util.UUID;
 public final class RadiationService {
     public static final int MAXIMUM_MASS = 100;
     private static final int GLOW_THRESHOLD = 60;
-    private static final int BREACH_COUNTDOWN_TICKS = 60;
-    public static final int DETONATION_CHARGE_TICKS = 60;
+    public static final int BREACH_COUNTDOWN_TICKS = 3 * 20;
+    public static final int DETONATION_COUNTDOWN_TICKS = 25 * 20;
+    private static final int FINAL_BUILDUP_TICKS = 3 * 20;
+    private static final int BREACH_TINT = 0x80FFFF60, DETONATION_TINT = 0x30FFFFE0;
     /** Damage taken during a voluntary charge that knocks it out of you. */
     public static final float CHARGE_BREAK_DAMAGE = 8;
     /** Damage taken so far by each caster during a voluntary charge. */
@@ -124,7 +126,7 @@ public final class RadiationService {
             player.sendSystemMessage(Component.literal(
                     "You're losing control! Vent it NOW, or it all comes out at once.")
                     .withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
-            ScreenTintPayload.send(player, 0x80FFFF60, BREACH_COUNTDOWN_TICKS,
+            ScreenTintPayload.send(player, BREACH_TINT, BREACH_COUNTDOWN_TICKS,
                     ScreenTintPayload.Style.PULSE);
             player.playNotifySound(SoundEvents.WARDEN_HEARTBEAT, SoundSource.PLAYERS, 1.5F, 1.4F);
         }
@@ -132,8 +134,8 @@ public final class RadiationService {
 
     private static void setMass(ServerPlayer player, int mass) {
         player.setData(ModDataAttachments.PLAYER_RADIATION_STRESS, Math.clamp(mass, 0, MAXIMUM_MASS));
-        if (mass < MAXIMUM_MASS) {
-            BREACHES.remove(player.getUUID());
+        if (mass < MAXIMUM_MASS && BREACHES.remove(player.getUUID()) != null) {
+            ScreenTintPayload.send(player, BREACH_TINT, 0, ScreenTintPayload.Style.PULSE);
         }
     }
 
@@ -156,7 +158,7 @@ public final class RadiationService {
         Detonation detonation = DETONATIONS.get(player.getUUID());
         if (remaining <= 0 && detonation != null) {
             remaining = (int) Math.max(0, detonation.at - player.serverLevel().getGameTime());
-            duration = DETONATION_CHARGE_TICKS;
+            duration = detonation.duration;
         }
         return new RadiationStatePayload(player.getId(), player.getUUID(), mass(player), remaining, duration, RadiationSkills.overdriven(player));
     }
@@ -474,22 +476,22 @@ public final class RadiationService {
     }
 
     /**
-     * Let it all out. Three seconds to change your mind (Shift), rising off the ground as it builds: long enough
-     * for others to stop you. A voluntary charge breaks if you take {@link #CHARGE_BREAK_DAMAGE} damage during it.
+     * Let it all out. Both routes take 25 seconds, including the breach warning for an involuntary charge.
+     * Shift or {@link #CHARGE_BREAK_DAMAGE} damage can interrupt a voluntary charge.
      */
     public static void beginDetonation(ServerPlayer player, int powerLevel, boolean voluntary) {
         if (PowerIntroService.radiationChargeRemaining(player) > 0 || isDetonating(player)) return;
         CHARGE_DAMAGE.remove(player.getUUID());
+        int duration = DETONATION_COUNTDOWN_TICKS - (voluntary ? 0 : BREACH_COUNTDOWN_TICKS);
         DETONATIONS.put(player.getUUID(), new Detonation(
-                player.serverLevel().getGameTime() + DETONATION_CHARGE_TICKS,
-                voluntary));
-        BREACHES.remove(player.getUUID());
+                player.serverLevel().getGameTime() + duration, duration, voluntary));
+        if (BREACHES.remove(player.getUUID()) != null) {
+            ScreenTintPayload.send(player, BREACH_TINT, 0, ScreenTintPayload.Style.PULSE);
+        }
         player.setGlowingTag(true);
-        ArmPosePayload.show(player, ArmPose.ARMS_WIDE, DETONATION_CHARGE_TICKS + 10);
+        showDetonationEffects(player);
         SetPiecePayload.send(player.serverLevel(), Piece.RAD_CHARGE, player.position(), player.position().add(0, 1, 0),
-                DETONATION_CHARGE_TICKS, player);
-        ScreenTintPayload.send(player, 0x30FFFFE0, DETONATION_CHARGE_TICKS,
-                ScreenTintPayload.Style.HOLD);
+                60, player);
         player.sendSystemMessage(Component.literal(voluntary
                 ? "You stop holding it in. (Shift + key to stop it.)"
                 : "Containment fails!").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD));
@@ -497,6 +499,16 @@ public final class RadiationService {
             MasteryService.markPowerUse(player, ModAbilities.RADIATION_ID);
         }
         syncVisuals(player);
+    }
+
+    private static void showDetonationEffects(ServerPlayer player) {
+        ArmPosePayload.show(player, ArmPose.ARMS_WIDE, 40);
+        ScreenTintPayload.send(player, DETONATION_TINT, 40, ScreenTintPayload.Style.HOLD);
+    }
+
+    private static void clearDetonationEffects(ServerPlayer player) {
+        ScreenTintPayload.send(player, DETONATION_TINT, 0, ScreenTintPayload.Style.HOLD);
+        ArmPosePayload.clearIf(player, ArmPose.ARMS_WIDE);
     }
 
     // ------------------------------------------------------------------
@@ -516,7 +528,7 @@ public final class RadiationService {
         Long previous = LAST_HELD.put(id, now);
         if (previous != null && previous == now) return;
         BREACHES.computeIfPresent(id, (key, at) -> at + 1);
-        DETONATIONS.computeIfPresent(id, (key, d) -> new Detonation(d.at + 1, d.voluntary));
+        DETONATIONS.computeIfPresent(id, (key, d) -> new Detonation(d.at + 1, d.duration, d.voluntary));
     }
 
     /**
@@ -525,14 +537,14 @@ public final class RadiationService {
      */
     public static void defuse(ServerPlayer player, int core) {
         boolean was = critical(player);
-        BREACHES.remove(player.getUUID());
-        DETONATIONS.remove(player.getUUID());
+        if (BREACHES.remove(player.getUUID()) != null) {
+            ScreenTintPayload.send(player, BREACH_TINT, 0, ScreenTintPayload.Style.PULSE);
+        }
+        if (DETONATIONS.remove(player.getUUID()) != null) clearDetonationEffects(player);
         LAST_HELD.remove(player.getUUID());
         CHARGE_DAMAGE.remove(player.getUUID());
         RadiationDecay.clear(player);
         setMass(player, Math.min(mass(player), core));
-        ScreenTintPayload.send(player, 0x50FFFFE0, 0, ScreenTintPayload.Style.HOLD);
-        ArmPosePayload.clear(player);
         refreshGlow(player);
         if (was) player.sendSystemMessage(Component.literal("Something tore the heat out of you. The light is gone.")
                 .withStyle(ChatFormatting.AQUA));
@@ -546,8 +558,7 @@ public final class RadiationService {
         CHARGE_DAMAGE.remove(player.getUUID());
         updateGlow(player);
         RadiationDecay.clear(player);
-        ScreenTintPayload.send(player, 0x50FFFFE0, 0, ScreenTintPayload.Style.HOLD);
-        ArmPosePayload.clear(player);
+        clearDetonationEffects(player);
         syncVisuals(player);
         player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 1.5F, 0.5F);
         player.sendSystemMessage(Component.literal("The blow knocks the light back into you. The charge is broken.")
@@ -565,8 +576,7 @@ public final class RadiationService {
         DETONATIONS.remove(player.getUUID());
         updateGlow(player);
         RadiationDecay.clear(player);
-        ScreenTintPayload.send(player, 0xA0FFFFE0, 0, ScreenTintPayload.Style.HOLD);
-        ArmPosePayload.clear(player);
+        clearDetonationEffects(player);
         syncVisuals(player);
         player.sendSystemMessage(Component.literal(
                 "You hold it in. The light sinks back beneath your skin.")
@@ -604,7 +614,7 @@ public final class RadiationService {
         // The caster is immune to their own emissions; ordinary attacks remain dangerous after the intro.
         setMass(player, 0);
         refreshGlow(player);
-        ArmPosePayload.clear(player);
+        clearDetonationEffects(player);
     }
 
     /** Far-off players see the sky flash; those who've stood in Odessa on the Last Day recognise it. */
@@ -711,6 +721,7 @@ public final class RadiationService {
                 BREACHES.remove(entry.getKey());
             } else if (EclipseService.arePowersSuppressed(player)) {
                 BREACHES.remove(entry.getKey());
+                ScreenTintPayload.send(player, BREACH_TINT, 0, ScreenTintPayload.Style.PULSE);
                 refreshGlow(player);
             } else if (gameTime >= entry.getValue()) {
                 // Too late to vent: it all comes out.
@@ -726,7 +737,10 @@ public final class RadiationService {
             Detonation detonation = entry.getValue();
             if (player == null || !player.isAlive()) {
                 DETONATIONS.remove(entry.getKey());
-                if (player != null) RadiationDecay.clear(player);
+                if (player != null) {
+                    RadiationDecay.clear(player);
+                    clearDetonationEffects(player);
+                }
                 continue;
             }
             long remaining = detonation.at - gameTime;
@@ -737,29 +751,34 @@ public final class RadiationService {
                 } else {
                     refreshGlow(player);
                     RadiationDecay.clear(player);
-                    ArmPosePayload.clear(player);
+                    clearDetonationEffects(player);
                 }
                 continue;
             }
 
             // The caster rises off the ground as it builds, then hangs there at the moment it goes.
-            boolean rising = DETONATION_CHARGE_TICKS - remaining < CHARGE_RISE_TICKS;
+            boolean held = LAST_HELD.getOrDefault(player.getUUID(), Long.MIN_VALUE) == gameTime;
+            boolean rising = !held && detonation.duration - remaining < CHARGE_RISE_TICKS;
             player.setDeltaMovement(player.getDeltaMovement().multiply(0.2D, 0.0D, 0.2D)
                     .add(0.0D, rising ? 0.16D : 0.0D, 0.0D));
             player.connection.send(new ClientboundSetEntityMotionPacket(player));
             player.resetFallDistance();
             ServerLevel level = player.serverLevel();
-            double intensity = 1.0D - (double) remaining / DETONATION_CHARGE_TICKS;
-            if (gameTime % 4 == 0) RadiationDecay.tick(player, (float) intensity, false);
+            float intensity = Math.clamp(1 - remaining / (float) detonation.duration, 0, 1);
+            boolean finalBuildup = remaining <= FINAL_BUILDUP_TICKS;
+            if (!held && finalBuildup && gameTime % 4 == 0) RadiationDecay.tick(player, intensity, false);
             if (gameTime % 3 == 0) level.sendParticles(WHITE_HOT, player.getX(), player.getY() + 1.0D, player.getZ(),
                     2, 0.4D, 0.6D, 0.4D, 0.0D);
-            if (gameTime % 8 == 0) {
+            if (gameTime % (finalBuildup && !held ? 8 : 20) == 0) {
                 level.playSound(null, player.blockPosition(), SoundEvents.BEACON_AMBIENT,
-                        SoundSource.PLAYERS, 2.0F, 0.6F + (float) intensity);
+                        SoundSource.PLAYERS, 2.0F, 0.6F + intensity);
                 CameraShakePayload.sendAround(level, player.position(), 32.0D,
-                        (float) (0.4D + intensity * 1.6D), 10);
+                        (held ? .2F : .4F) + intensity * intensity * (held ? .4F : 1.6F), 10);
             }
-            if (gameTime % 20 == 0) syncVisuals(player);
+            if (gameTime % 20 == 0) {
+                showDetonationEffects(player);
+                syncVisuals(player);
+            }
         }
     }
 
@@ -770,8 +789,10 @@ public final class RadiationService {
         ZONES.removeIf(zone -> zone.owner.equals(player.getUUID()));
         RadiationDecay.clear(player);
         player.setData(ModDataAttachments.PLAYER_RADIATION_STRESS, 0);
-        BREACHES.remove(player.getUUID());
-        DETONATIONS.remove(player.getUUID());
+        if (BREACHES.remove(player.getUUID()) != null) {
+            ScreenTintPayload.send(player, BREACH_TINT, 0, ScreenTintPayload.Style.PULSE);
+        }
+        if (DETONATIONS.remove(player.getUUID()) != null) clearDetonationEffects(player);
         CHARGE_DAMAGE.remove(player.getUUID());
         LAST_HURT.remove(player.getUUID());
         LAST_HELD.remove(player.getUUID());
@@ -801,6 +822,6 @@ public final class RadiationService {
 
     // ------------------------------------------------------------------
 
-    private record Detonation(long at, boolean voluntary) {
+    private record Detonation(long at, int duration, boolean voluntary) {
     }
 }

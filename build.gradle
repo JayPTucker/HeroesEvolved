@@ -27,7 +27,13 @@ sourceSets.main.resources {
 }
 
 repositories {
-    // Add here additional repositories if required by some of the dependencies below.
+    // Simple Voice Chat's API (henkelmax).
+    maven { url = "https://maven.maxhenkel.de/repository/public" }
+    // The two required mods themselves, from Modrinth, for development runs and for reading Simple Radio's radios.
+    exclusiveContent {
+        forRepository { maven { url = "https://api.modrinth.com/maven" } }
+        filter { includeGroup "maven.modrinth" }
+    }
 }
 
 base {
@@ -118,6 +124,15 @@ configurations {
 }
 
 dependencies {
+    // Required mods: Simple Voice Chat (henkelmax) and Simple Radio (CodinGlitch). Distress calls go out over the
+    // voice chat API and are heard on Simple Radio radios tuned to the emergency band.
+    compileOnly "de.maxhenkel.voicechat:voicechat-api:${voicechat_api_version}"
+    compileOnly "maven.modrinth:simple-radio:${simple_radio_version}"
+    localRuntime "maven.modrinth:simple-voice-chat:${simple_voice_chat_version}"
+    localRuntime "maven.modrinth:simple-radio:${simple_radio_version}"
+    // Simple Radio needs lexiconfig at runtime.
+    localRuntime "maven.modrinth:lexiconfig:${lexiconfig_version}"
+
     // Example optional mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
     // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"

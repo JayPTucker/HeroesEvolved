@@ -68,6 +68,14 @@ public final class ModItems {
     public static final DeferredItem<FormulaVialItem> FORMULA_VIAL = ITEMS.register("formula_vial",
             () -> new FormulaVialItem(new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
 
+    /** What Sylar leaves when he falls: once a life, five seconds back. */
+    public static final DeferredItem<com.jayptucker.heroesevolved.story.sylar.SylarsWatchItem> SYLARS_WATCH = ITEMS.register("sylars_watch",
+            () -> new com.jayptucker.heroesevolved.story.sylar.SylarsWatchItem(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC).fireResistant()));
+
+    /** What Elle Bishop leaves when she is beaten: three charges of stored lightning, refilled from machines. */
+    public static final DeferredItem<com.jayptucker.heroesevolved.story.elle.ElleCapacitorItem> ELLES_CAPACITOR = ITEMS.register("elles_capacitor",
+            () -> new com.jayptucker.heroesevolved.story.elle.ElleCapacitorItem(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC)));
+
     /** The mod's emblem: the black sun. Used as the creative tab icon; not obtainable in survival. */
     public static final DeferredItem<Item> ECLIPSE_EMBLEM = ITEMS.registerSimpleItem("eclipse_emblem", new Item.Properties());
 
@@ -86,6 +94,8 @@ public final class ModItems {
                         output.accept(EMPTY_SYRINGE.get());
                         output.accept(BUFFERED_SALINE.get());
                         output.accept(UNSTABLE_COMPOUND.get());
+                        output.accept(SYLARS_WATCH.get());
+                        output.accept(com.jayptucker.heroesevolved.story.elle.ElleCapacitorItem.charged(new ItemStack(ELLES_CAPACITOR.get()), 3));
                         for (boolean donated : new boolean[] {true, false}) {
                             BloodPurity purity = new BloodPurity(donated, 3, "Creative");
                             for (Item item : new Item[] {BLOOD_SAMPLE.get(), ISOLATED_CATALYST.get(), FORMULA_VIAL.get()}) {
