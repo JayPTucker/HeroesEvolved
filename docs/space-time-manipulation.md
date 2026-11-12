@@ -12,15 +12,16 @@ These are the default keys; rebinding and the inventory skill tree still work.
 | Level | Key | Ability | Use |
 | --- | --- | --- | --- |
 | 1 | G | Fold Space | Blink to a visible surface or into open air. Cancels falling momentum. From level 2, Shift carries one nearby living companion if there is room. Players must be teammates or crouching. |
-| 1 | H | Between Seconds | A slow-time bubble follows you. Entity ticks and projectile motion slow; the server clock keeps running. Shift + H ends it. |
+| 1 | H | Between Seconds | Other players move and recharge attacks more slowly across the server. A bubble follows you and slows nearby mobs and projectiles. Shift + H ends it. |
 | 3 | Z | Still World | Freeze entities in a fixed area. Your attacks accumulate and land when time resumes. Shift while starting includes one touching companion; Shift + Z while active resumes time for free. |
 | 4 | X | Rewrite the Moment | Restore the recorded timeline from fifteen seconds ago, including changed blocks, containers, and recorded entities, everywhere you have been in those seconds. Anyone who died in reach lives again. Everyone it reaches is carried back through their own fifteen seconds (see [Going back](#going-back)), even across a portal, and lands where they were. You recover lost health. It costs **130 stamina** (hold Shift to overexert when you're short) and recovers in **4 minutes at Level 4, 2½ minutes at Level 5**. While it's ready, a faint ghost of you, ringed in violet and visible only to you, stands where it would take you. |
 | 5 | V | Walk the Past | Shift + V records an area; V visits the recorded past with nearby companions. V in the past returns without energy cost or an entry-cooldown delay. |
 
 While **Between Seconds** or **Still World** is active, aim at a projectile affected by your field and
 right-click within 7 blocks to catch it for 2 stamina. Pickupable arrows and thrown items go into your
-inventory. TACZ bullets show a bright mark in slowed time so you can see where to aim. Catching one
-removes it from the air. Any shot you leave alone resumes when time returns to normal.
+inventory. TACZ bullets glow and keep moving in Between Seconds. Catching one recovers a matching
+round of ammunition. A shotgun blast yields one shell. Shots still in flight resume their normal speed
+when the field ends.
 
 ### Going back
 

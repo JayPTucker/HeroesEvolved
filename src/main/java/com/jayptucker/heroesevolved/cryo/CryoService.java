@@ -56,8 +56,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Cryokinesis, after Tracy Strauss: chilling bolts, a freezing touch,
- * walls and spikes of ice, and a blizzard of her own. Chill uses
+ * Shared frost buildup, freezing touch, solid shells and shatter reactions. Chill uses
  * Minecraft's own powder-snow freezing, so frozen players see the frost
  * overlay and frozen mobs shiver. Anything frozen solid shatters when hit.
  */
@@ -229,6 +228,8 @@ public final class CryoService {
         target.setTicksFrozen(Math.max(160, target.getTicksRequiredToFreeze()));
         target.invulnerableTime = 0;
         target.setDeltaMovement(Vec3.ZERO);
+        if (target instanceof ServerPlayer frozenPlayer)
+            com.jayptucker.heroesevolved.pyro.PyroService.freezeFlames(frozenPlayer);
         PacketDistributor.sendToPlayersTrackingEntityAndSelf(target, payload(state));
         AbilityEffects.send(level, Kind.CRYO_FREEZE, target.position(),
                 target.position().add(0, target.getBbHeight(), 0), target.getBbWidth());
@@ -318,7 +319,7 @@ public final class CryoService {
         Vec3 end = target != null ? target.getBoundingBox().getCenter()
                 : blockHit.getLocation();
 
-        AbilityEffects.send(level, Kind.CRYO_BOLT, eye.add(0, -0.15, 0), end, 1);
+        CryoCastEffects.spray(player, end, .75F);
 
         if (target != null) {
             if (TemporalEntityEchoService.isReplaying(target)) {
@@ -364,7 +365,8 @@ public final class CryoService {
                 : 60 + powerLevel * 10;
         // Apply the contact hit before installing the shell. It must not shatter its own freeze.
         coldHit(player, target, 2.0F);
-        freezeSolid(target, duration, player);
+        if (freezeSolid(target, duration, player))
+            CryoCastEffects.burst(player, target.getBoundingBox().getCenter(), .8F);
         MasteryService.markPowerUse(player, ModAbilities.CRYOKINESIS_ID);
         return true;
     }
@@ -410,6 +412,7 @@ public final class CryoService {
             return false;
         }
 
+        CryoCastEffects.burst(player, base.add(0, .65, 0), 1.1F);
         level.playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.GLASS_PLACE, SoundSource.PLAYERS, 1.2F, 0.6F);
         level.playSound(null, player.getX(), player.getY(), player.getZ(),
@@ -441,6 +444,7 @@ public final class CryoService {
                     eruptSpike(player, point, height, damage)));
         }
 
+        CryoCastEffects.spray(player, player.position().add(flat.scale(3)).add(0, .2, 0), .95F);
         level.playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.POWDER_SNOW_BREAK, SoundSource.PLAYERS, 1.2F, 0.5F);
         MasteryService.markPowerUse(player, ModAbilities.CRYOKINESIS_ID);
@@ -501,6 +505,7 @@ public final class CryoService {
         BLIZZARDS.put(player.getUUID(), new Blizzard(
                 player.serverLevel().getGameTime() + duration, powerLevel));
         ColdDomeService.start(player, (int) BLIZZARD_RADIUS, duration, true);
+        CryoCastEffects.burst(player, CryoCastEffects.localFrost(player, 2, .45), 1.3F);
         player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.ELDER_GUARDIAN_CURSE, SoundSource.PLAYERS, 0.5F, 1.6F);
         player.displayClientMessage(Component.literal(

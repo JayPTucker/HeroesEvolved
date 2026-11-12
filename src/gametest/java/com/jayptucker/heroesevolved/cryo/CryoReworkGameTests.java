@@ -8,10 +8,14 @@ import com.jayptucker.heroesevolved.ability.service.AbilityUseService;
 import com.jayptucker.heroesevolved.cooldown.CooldownService;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
+import com.jayptucker.heroesevolved.network.SetPiecePayload;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
+import com.jayptucker.heroesevolved.pyro.PyroService;
+import com.jayptucker.heroesevolved.radiation.RadiationService;
 import com.jayptucker.heroesevolved.skills.SkillCatalog;
 import com.jayptucker.heroesevolved.skills.SkillTreeData;
 import com.jayptucker.heroesevolved.skills.SkillTreeService;
+import com.jayptucker.heroesevolved.styles.Piece;
 import com.mojang.authlib.GameProfile;
 import io.netty.channel.embedded.EmbeddedChannel;
 import net.minecraft.core.BlockPos;
@@ -19,9 +23,12 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.CommonListenerCookie;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.server.players.PlayerList;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
@@ -34,15 +41,22 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /** The ice is real terrain; its control, counterplay and recovery remain server-owned. */
 @GameTestHolder("heroesevolved")
 @PrefixGameTestTemplate(false)
 public final class CryoReworkGameTests {
     private static ServerPlayer player(GameTestHelper h, int x, boolean cryo) {
+        return player(h, x, cryo, packet -> {});
+    }
+
+    private static ServerPlayer player(GameTestHelper h, int x, boolean cryo, Consumer<Packet<?>> packets) {
         for (BlockPos pos : BlockPos.betweenClosed(h.absolutePos(new BlockPos(0, 1, 0)),
                 h.absolutePos(new BlockPos(11, 1, 11)))) h.getLevel().setBlock(pos, Blocks.STONE.defaultBlockState(), 3);
         var p = new FakePlayer(h.getLevel(), new GameProfile(UUID.randomUUID(), "ice-test")) {
@@ -55,7 +69,7 @@ public final class CryoReworkGameTests {
             if (c.channel() == null) channel.set(c, new EmbeddedChannel());
             p.connection = new ServerGamePacketListenerImpl(p.server, c, p,
                     CommonListenerCookie.createInitial(p.getGameProfile(), false)) {
-                @Override public void send(Packet<?> packet) { }
+                @Override public void send(Packet<?> packet) { packets.accept(packet); }
             };
             Field grace = ServerPlayer.class.getDeclaredField("spawnInvulnerableTime");
             grace.setAccessible(true); grace.setInt(p, 0);
@@ -86,6 +100,40 @@ public final class CryoReworkGameTests {
     private static void clean(ServerPlayer... players) {
         for (ServerPlayer p : players) { CryoService.stopAll(p); p.discard(); }
     }
+
+    private static void assign(ServerPlayer player, ResourceLocation power) {
+        player.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty().assignDormant(power).unlock(power));
+        player.setData(ModDataAttachments.POWER_INTRO_HISTORY,
+                player.getData(ModDataAttachments.POWER_INTRO_HISTORY).with(power));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void registerReactor(ServerPlayer player, boolean register) {
+        try {
+            PlayerList list = player.server.getPlayerList();
+            Field players = PlayerList.class.getDeclaredField("players");
+            Field byId = PlayerList.class.getDeclaredField("playersByUUID");
+            players.setAccessible(true);
+            byId.setAccessible(true);
+            var connected = (List<ServerPlayer>) players.get(list);
+            var indexed = (Map<UUID, ServerPlayer>) byId.get(list);
+            if (register) {
+                connected.add(player);
+                indexed.put(player.getUUID(), player);
+            } else {
+                connected.remove(player);
+                indexed.remove(player.getUUID());
+            }
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    private static void cleanReactor(ServerPlayer caster, ServerPlayer reactor) {
+        RadiationService.stopAll(reactor);
+        registerReactor(reactor, false);
+        clean(caster, reactor);
+    }
     private static String ownerState(ServerPlayer p) {
         return " alive=" + p.isAlive() + " removed=" + p.isRemoved()
                 + " canAct=" + com.jayptucker.heroesevolved.ability.service.PowerRules.canAct(p)
@@ -95,22 +143,106 @@ public final class CryoReworkGameTests {
     }
 
     @GameTest(template="rewind_empty", batch="cryo.rework_stream")
-    public static void heldRimeBuildsFrostAndReleaseStopsFeedingIt(GameTestHelper h) {
+    public static void heldIceBlastBuildsFrostAndReleaseStopsFeedingIt(GameTestHelper h) {
         ServerPlayer p = player(h, 3, true); Mob t = enemy(h, p, 4);
         aim(p, t.getBoundingBox().getCenter());
-        h.assertTrue(CryoKitService.startStream(p, 1), "Held Rime Stream must start");
+        h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.PRIMARY, false) == AbilityUseResult.SUCCESS,
+                "The primary key must start Ice Blast");
         int initial = CryoService.frostAmount(t);
         h.runAfterDelay(12, () -> {
             h.assertTrue(CryoService.frostAmount(t) > initial, "Holding swept cold must keep building real Frost after its first pulse");
-            CryoKitService.stopStream(p);
+            AbilityUseService.releaseAssignedAction(p, AbilitySlot.PRIMARY);
             int before = CryoService.frostAmount(t);
             h.runAfterDelay(8, () -> {
                 try {
-                    h.assertTrue(!CryoKitService.isStreaming(p) && CryoService.frostAmount(t) <= before,
+                    h.assertTrue(!CryoBlastService.isStreaming(p) && CryoService.frostAmount(t) <= before,
                             "Releasing the key ends the stream and its Frost application");
                     h.succeed();
                 } finally { t.discard(); clean(p); }
             });
+        });
+    }
+
+    @GameTest(template="rewind_empty", batch="cryo.rework_reactor", timeoutTicks=120)
+    public static void iceBlastPausesAndDefusesALateInvoluntaryDetonation(GameTestHelper h) {
+        ServerPlayer caster = player(h, 3, true), reactor = player(h, 3, false);
+        reactor.setPos(caster.position().add(0, 0, 4));
+        assign(reactor, ModAbilities.RADIATION_ID);
+        registerReactor(reactor, true);
+        RadiationService.addMass(reactor, RadiationService.MAXIMUM_MASS);
+        RadiationService.beginDetonation(reactor, 5, false);
+        float health = reactor.getHealth();
+        aim(caster, reactor.getBoundingBox().getCenter());
+        h.runAfterDelay(48, () -> {
+            try {
+                h.assertTrue(RadiationService.isDetonating(reactor), "The involuntary charge must be approaching detonation");
+                h.assertTrue(CryoBlastService.start(caster, 5), "Ice Blast must start");
+            } catch (RuntimeException | AssertionError e) {
+                cleanReactor(caster, reactor);
+                throw e;
+            }
+        });
+        h.runAfterDelay(65, () -> {
+            try {
+                h.assertTrue(RadiationService.isDetonating(reactor) && RadiationService.mass(reactor) < 100,
+                        "The aimed beam must keep the live charge on hold past its original deadline while drawing Core");
+            } catch (RuntimeException | AssertionError e) {
+                cleanReactor(caster, reactor);
+                throw e;
+            }
+        });
+        h.runAfterDelay(86, () -> {
+            try {
+                h.assertTrue(!RadiationService.critical(reactor) && RadiationService.mass(reactor) <= 30,
+                        "Holding the beam on the reactor must end the detonation and lower its Core");
+                h.assertTrue(reactor.getHealth() == health && !CryoService.isFrozen(reactor),
+                        "Cooling a reactor must be safe even in co-op");
+                h.assertTrue(CryoBlastService.spendCharge(caster) && !CryoBlastService.spendCharge(caster),
+                        "Absorbed Core must prime exactly one enhanced shatter");
+                h.succeed();
+            } finally { cleanReactor(caster, reactor); }
+        });
+    }
+
+    @GameTest(template="rewind_empty", batch="cryo.rework_pyro_quench")
+    public static void solidFreezeCancelsPyroChannelsAndHeat(GameTestHelper h) {
+        ServerPlayer caster = player(h, 3, true), pyro = player(h, 5, false);
+        try {
+            assign(pyro, ModAbilities.PYROKINESIS_ID);
+            h.assertTrue(PyroService.ringOfFire(pyro, 5) && PyroService.startPalm(pyro, 5),
+                    "A Pyro user must be able to maintain a storm and a breath channel");
+            PyroService.addHeat(pyro, 85);
+            h.assertTrue(CryoService.freezeSolid(pyro, 45, caster), "The Cryo shell must form around the Pyro user");
+            h.assertTrue(PyroService.heat(pyro) == 0 && !PyroService.stopPalm(pyro)
+                            && !PyroService.collapseRing(pyro, 5) && !PyroService.startPalm(pyro, 5),
+                    "Freezing must immediately quench Heat and cancel active flames");
+            h.succeed();
+        } finally {
+            PyroService.forget(pyro);
+            clean(caster, pyro);
+        }
+    }
+
+    @GameTest(template="rewind_empty", batch="cryo.rework_fire_cover")
+    public static void iceBlastExtinguishesExposedFireButRespectsCover(GameTestHelper h) {
+        ServerPlayer caster = player(h, 3, true);
+        BlockPos near = h.absolutePos(new BlockPos(3, 3, 5));
+        BlockPos far = h.absolutePos(new BlockPos(3, 3, 8));
+        var level = h.getLevel();
+        level.setBlock(near.below(), Blocks.STONE.defaultBlockState(), 3);
+        level.setBlock(far.below(), Blocks.STONE.defaultBlockState(), 3);
+        level.setBlock(near.south(), Blocks.STONE.defaultBlockState(), 3);
+        level.setBlock(near, Blocks.FIRE.defaultBlockState(), 3);
+        level.setBlock(far, Blocks.SOUL_FIRE.defaultBlockState(), 3);
+        level.setBlock(far.below(), Blocks.SOUL_SOIL.defaultBlockState(), 3);
+        aim(caster, Vec3.atCenterOf(near));
+        CryoBlastService.start(caster, 1);
+        h.runAfterDelay(10, () -> {
+            try {
+                h.assertTrue(!level.getBlockState(near).is(Blocks.FIRE) && level.getBlockState(far).is(Blocks.SOUL_FIRE),
+                        "Ice Blast must put out exposed fire and stop at cover");
+                h.succeed();
+            } finally { clean(caster); }
         });
     }
 
@@ -122,7 +254,7 @@ public final class CryoReworkGameTests {
         h.runAfterDelay(15, () -> {
             try {
                 var blocks = CryoKitService.constructBlocks(p);
-                h.assertTrue(blocks.size() > 1 && blocks.stream().allMatch(pos -> h.getLevel().getBlockState(pos).is(Blocks.PACKED_ICE)),
+                h.assertTrue(blocks.size() > 1 && blocks.stream().allMatch(pos -> FrostConstructBlock.isFrost(h.getLevel().getBlockState(pos))),
                         "Sculpt creates actual temporary solid ice, not only particles");
                 h.assertTrue(blocks.stream().noneMatch(pos -> p.getBoundingBox().intersects(new net.minecraft.world.phys.AABB(pos))),
                         "Growing cover must leave the caster's body clear");
@@ -138,7 +270,7 @@ public final class CryoReworkGameTests {
         CryoKitService.sculpt(p, 3, false);
         h.runAfterDelay(12, () -> {
             try {
-                h.assertTrue(CryoKitService.constructBlocks(p).stream().noneMatch(pos -> h.getLevel().getBlockState(pos).is(Blocks.PACKED_ICE)),
+                h.assertTrue(CryoKitService.constructBlocks(p).stream().noneMatch(pos -> FrostConstructBlock.isFrost(h.getLevel().getBlockState(pos))),
                         "A player without build permission cannot grow terrain through Sculpt");
                 h.succeed();
             } finally { clean(p); }
@@ -162,7 +294,7 @@ public final class CryoReworkGameTests {
             p.setGameMode(GameType.ADVENTURE);
             h.assertTrue(!CryoKitService.sculpt(p, 3, true)
                             && CryoKitService.constructCount(p) == 1
-                            && wall.stream().allMatch(pos -> h.getLevel().getBlockState(pos).is(Blocks.PACKED_ICE)),
+                            && wall.stream().allMatch(pos -> FrostConstructBlock.isFrost(h.getLevel().getBlockState(pos))),
                     "A denied reshape must leave the existing owned cover intact");
             p.setGameMode(GameType.SURVIVAL);
             h.assertTrue(CryoKitService.sculpt(p, 3, true), "Aiming at owned ice can reshape it into a ramp");
@@ -337,7 +469,7 @@ public final class CryoReworkGameTests {
                 var spires = new java.util.ArrayList<BlockPos>();
                 for (BlockPos pos : BlockPos.betweenClosed(p.blockPosition().offset(-13, 0, -13),
                         p.blockPosition().offset(13, 4, 18))) {
-                    if (h.getLevel().getBlockState(pos).is(Blocks.BLUE_ICE) && TemporaryBlocks.isTemporary(h.getLevel(), pos))
+                    if (FrostConstructBlock.isFrost(h.getLevel().getBlockState(pos)) && TemporaryBlocks.isTemporary(h.getLevel(), pos))
                         spires.add(pos.immutable());
                 }
                 h.assertTrue(!spires.isEmpty(), "A mature Whiteout must grow real owned ice spires: active="
@@ -365,13 +497,37 @@ public final class CryoReworkGameTests {
         });
         h.runAfterDelay(16, () -> {
             try {
-                h.assertTrue(p.position().distanceTo(start) > 1 && p.getY() < start.y + 2,
+                h.assertTrue(p.position().distanceTo(start) > 1 && p.position().distanceTo(start) < 16 && p.getY() < start.y + 2,
                         "Skating produces movement along an actual ribbon without becoming free flight");
                 h.assertTrue(CryoRideService.ribbonCells(p) > 1
-                                && h.getLevel().getBlockState(p.blockPosition().below()).is(net.minecraft.tags.BlockTags.ICE),
+                                && FrostConstructBlock.isFrost(h.getLevel().getBlockState(BlockPos.containing(p.position().add(0,-.08,0)))),
                         "The moving skater has actual solid ice beneath their feet");
                 CryoRideService.stop(p, true);
                 h.assertTrue(!CryoRideService.isRiding(p) && !p.isNoGravity(), "Stopping restores the original gravity flag");
+                h.succeed();
+            } finally { clean(p); }
+        });
+    }
+
+    @GameTest(template="cryo_rework_arena", batch="cryo.rework_walkable_ramp")
+    public static void sculptRampCanBeWalkedWithoutJumping(GameTestHelper h) {
+        ServerPlayer p = player(h, 3, true);
+        double startY = p.getY();
+        p.setXRot(36);
+        h.assertTrue(CryoKitService.sculpt(p, 5, true), "Sculpt must place the first ramp tread");
+        h.runAfterDelay(25, () -> {
+            try {
+                var blocks = CryoKitService.constructBlocks(p);
+                h.assertTrue(blocks.stream().anyMatch(pos -> h.getLevel().getBlockState(pos)
+                                .getValue(FrostConstructBlock.FORM) == FrostConstructBlock.Form.LOW),
+                        "The route must use real half-height steps");
+                double highest = startY;
+                p.setOnGround(true);
+                for (int i = 0; i < 36; i++) {
+                    p.move(MoverType.SELF, new Vec3(0, -.08, .22));
+                    highest = Math.max(highest, p.getY());
+                }
+                h.assertTrue(highest >= startY + 2.5, "A player must be able to walk up the ramp without jumping");
                 h.succeed();
             } finally { clean(p); }
         });
@@ -394,7 +550,7 @@ public final class CryoReworkGameTests {
                 h.assertTrue(p.getY() > groundHeight + 3 && p.getY() <= groundHeight + 6.3,
                         "Held rise must create a useful ramp while respecting its six-block ceiling");
                 h.assertTrue(CryoRideService.isRiding(p)
-                                && h.getLevel().getBlockState(p.blockPosition().below()).is(net.minecraft.tags.BlockTags.ICE),
+                                && FrostConstructBlock.isFrost(h.getLevel().getBlockState(BlockPos.containing(p.position().add(0,-.08,0)))),
                         "The bounded rising path continues to support the rider with real ice");
                 CryoRideService.stop(p, true);
                 h.assertTrue(!p.isNoGravity(), "Leaving the raised ribbon restores ordinary gravity");

@@ -214,9 +214,14 @@ public final class FirstPersonArmGeometry {
                 depth=-.49F;pitch=-80+turn;yaw=side*(-15+45*spreadStars);roll=side*(7+24*spreadStars);
             }
             case CRYO_WEAVE -> {
-                float weave = (float)Math.sin(age * .35 + side * 1.5);
-                spread += weave * .025F; depth -= .08F + weave * .025F;
-                pitch -= weave * 3; roll += side * 6;
+                float brace = smooth(age / 3F);
+                float tremor = (float) Math.sin(age * .72 + side * 1.5);
+                spread = .43F - brace * .03F;
+                height = -.49F + brace * .10F + tremor * .01F;
+                depth = -.39F - brace * .15F;
+                pitch = -101 + brace * 11 + tremor * 1.5F;
+                yaw = side * 5;
+                roll = side * 8;
             }
             case CRYO_SCULPT -> {
                 float lift = smooth(age / 18F);

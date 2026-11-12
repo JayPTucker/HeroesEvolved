@@ -34,6 +34,7 @@ public final class HeroesEvolved {
         ModParticles.register(modEventBus);
         ModEntities.register(modEventBus);
         com.jayptucker.heroesevolved.registry.ModItems.register(modEventBus);
+        modEventBus.addListener(com.jayptucker.heroesevolved.time.TaczAmmoRecovery::setup);
 
         LOGGER.info("Heroes Evolved initialized.");
     }

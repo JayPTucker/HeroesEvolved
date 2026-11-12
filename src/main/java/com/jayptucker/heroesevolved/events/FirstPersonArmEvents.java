@@ -5,6 +5,7 @@ import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.client.FirstPersonArmGeometry;
 import com.jayptucker.heroesevolved.client.CarryVisuals;
 import com.jayptucker.heroesevolved.client.effects.RadiationVisuals;
+import com.jayptucker.heroesevolved.client.effects.setpiece.SetPieceClient;
 import com.jayptucker.heroesevolved.network.ClientArmPoseState;
 import com.jayptucker.heroesevolved.render.RadiationGlowLayer;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -41,6 +42,7 @@ public final class FirstPersonArmEvents {
         }
 
         ArmPose pose = ClientArmPoseState.get(player.getId());
+        if (SetPieceClient.cryoCastTarget(player.getId()) != null) pose = ArmPose.CRYO_WEAVE;
         if (pose == null || (pose == ArmPose.TWO_HANDS && CarryVisuals.isCarrying(player))) {
             // Carrying leaves the normal low hands/items available; cargo is beside the shoulder.
             return;

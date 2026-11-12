@@ -111,17 +111,20 @@ public final class CryoCombatSkills {
                 FORGES.put(p.getUUID(), forge);
                 ArmPosePayload.show(p, ArmPose.CRYO_LANCE, 24);
                 forgeEffect(forge, .05F);
+                CryoCastEffects.spray(p, palm(p).add(p.getLookAngle().scale(.65)), .53F);
                 p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, .8F, .65F);
             }
             case 1 -> {
                 Guard guard = new Guard(p); GUARDS.put(p.getUUID(), guard); armorEffect(guard);
                 ArmPosePayload.show(p, ArmPose.CRYO_GUARD, 20);
+                CryoCastEffects.spray(p, CryoCastEffects.localFrost(p, 1.0, .85), .78F);
                 p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.GLASS_PLACE, SoundSource.PLAYERS, 1, .65F);
             }
             case 2 -> {
                 Snap snap = new Snap(p); SNAPS.put(p.getUUID(), snap);
                 AbilityEffects.send(snap.level, Kind.CRYO_SNAP, snap.center, snap.center.add(0, 1, 0), .15);
                 ArmPosePayload.show(p, ArmPose.CRYO_SNAP, 18);
+                CryoCastEffects.spray(p, CryoCastEffects.localFrost(p, 1.65, .2), 1.1F);
                 p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.POWDER_SNOW_BREAK, SoundSource.PLAYERS, 1.3F, .55F);
             }
             default -> { return false; }

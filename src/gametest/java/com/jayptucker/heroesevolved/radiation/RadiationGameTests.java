@@ -666,4 +666,142 @@ public final class RadiationGameTests {
             helper.succeed();
         } finally { remove(player, dead, near); }
     }
+
+    // ------------------------------------------------------------------
+    // A speedster running the heat out
+    // ------------------------------------------------------------------
+
+    /** A tier-{@code tier} speedster beside the radioactive player, with stamina and health to spare (or not). */
+    private static ServerPlayer speedster(GameTestHelper helper, ServerPlayer target, int tier) {
+        return holder(helper, target.position().add(4, 0, 0), ModAbilities.SUPERSPEED_ID, tier);
+    }
+
+    /** A test player holding {@code power} at {@code tier}, at {@code at}, who can be hurt. */
+    private static ServerPlayer holder(GameTestHelper helper, Vec3 at, net.minecraft.resources.ResourceLocation power, int tier) {
+        ServerPlayer runner = new FakePlayer(helper.getLevel(), new GameProfile(UUID.randomUUID(), "power-holder")) {
+            @Override public boolean isInvulnerableTo(DamageSource damage) { return false; }
+        };
+        try {
+            // FakePlayer never ticks down the normal login damage grace period.
+            Field grace = ServerPlayer.class.getDeclaredField("spawnInvulnerableTime");
+            grace.setAccessible(true); grace.setInt(runner, 0);
+        } catch (ReflectiveOperationException e) { throw new AssertionError(e); }
+        runner.setPos(at);
+        runner.setNoGravity(true);
+        runner.setGameMode(GameType.SURVIVAL);
+        runner.setData(ModDataAttachments.PLAYER_ABILITIES, com.jayptucker.heroesevolved.ability.data.PlayerAbilityData.empty()
+                .assignDormant(power).unlock(power));
+        com.jayptucker.heroesevolved.progression.PlayerProgressionService.setLevel(runner, tier);
+        com.jayptucker.heroesevolved.energy.PlayerEnergyService.restore(runner, 999);
+        helper.getLevel().addNewPlayer(runner);
+        return runner;
+    }
+
+    private static void dropRunner(ServerPlayer runner) {
+        com.jayptucker.heroesevolved.speed.SpeedService.forget(runner);
+        runner.serverLevel().removePlayerImmediately(runner, Entity.RemovalReason.DISCARDED);
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 80, batch = "radiation.contain.cool")
+    public static void aSpeedsterRunsTheHeatOutOfAHotPlayer(GameTestHelper helper) {
+        ServerPlayer target = player(helper, 350, false);
+        ServerPlayer runner = speedster(helper, target, 5);
+        try {
+            RadiationService.addMass(target, 70 - RadiationService.mass(target));
+            int stamina = com.jayptucker.heroesevolved.energy.PlayerEnergyService.getEnergy(runner);
+            helper.assertTrue(com.jayptucker.heroesevolved.speed.SpeedContainment.start(runner, 5), "A hot radioactive player in reach is run round");
+        } catch (RuntimeException e) { dropRunner(runner); remove(target); throw e; }
+        helper.runAfterDelay(40, () -> {
+            try {
+                helper.assertTrue(RadiationService.mass(target) <= 40, "The run drags the Core out: " + RadiationService.mass(target));
+                helper.assertTrue(com.jayptucker.heroesevolved.energy.PlayerEnergyService.getEnergy(runner)
+                        < com.jayptucker.heroesevolved.energy.PlayerEnergyService.getMaximumEnergy(runner), "And costs the runner stamina");
+                com.jayptucker.heroesevolved.speed.SpeedContainment.release(runner);
+                helper.assertTrue(!com.jayptucker.heroesevolved.speed.SpeedContainment.running(runner), "Letting go of a cooling run stops it");
+                helper.succeed();
+            } finally { dropRunner(runner); remove(target); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 180, batch = "radiation.contain.hold")
+    public static void aTopSpeedsterHoldsInABlastAndLives(GameTestHelper helper) {
+        ServerPlayer target = player(helper, 365, false);
+        ServerPlayer runner = speedster(helper, target, 5);
+        try {
+            RadiationService.beginDetonation(target, 5, true);
+            helper.assertTrue(com.jayptucker.heroesevolved.speed.SpeedContainment.start(runner, 5), "A player about to blow is run round");
+        } catch (RuntimeException e) { dropRunner(runner); remove(target); throw e; }
+        helper.runAfterDelay(50, () -> {
+            try {
+                helper.assertTrue(RadiationService.isDetonating(target), "While the run holds it, the charge never runs out");
+                com.jayptucker.heroesevolved.speed.SpeedContainment.release(runner);
+                helper.assertTrue(com.jayptucker.heroesevolved.speed.SpeedContainment.running(runner), "A blast being contained cannot be let go");
+            } catch (RuntimeException e) { dropRunner(runner); remove(target); throw e; }
+        });
+        helper.runAfterDelay(90, () -> {
+            try {
+                helper.assertTrue(RadiationService.isDetonating(target), "Defusing takes five seconds of holding");
+            } catch (RuntimeException e) { dropRunner(runner); remove(target); throw e; }
+        });
+        helper.runAfterDelay(120, () -> {
+            try {
+                helper.assertTrue(!RadiationService.critical(target), "Held for five seconds, the blast is defused");
+                helper.assertTrue(RadiationService.mass(target) <= 30, "And the Core settles: " + RadiationService.mass(target));
+                helper.assertTrue(runner.getHealth() > 0, "A tier-5 runner with stamina to spare lives: " + runner.getHealth());
+                helper.succeed();
+            } finally { dropRunner(runner); remove(target); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 200, batch = "radiation.contain.burn")
+    public static void anExhaustedRunnerBurnsAwayButTheBlastStops(GameTestHelper helper) {
+        ServerPlayer target = player(helper, 395, false);
+        ServerPlayer runner = speedster(helper, target, 4);
+        try {
+            com.jayptucker.heroesevolved.energy.PlayerEnergyService.tryConsume(runner, com.jayptucker.heroesevolved.energy.PlayerEnergyService.getEnergy(runner));
+            runner.setHealth(4);
+            RadiationService.beginDetonation(target, 5, true);
+            helper.assertTrue(com.jayptucker.heroesevolved.speed.SpeedContainment.start(runner, 4), "The run starts");
+        } catch (RuntimeException e) { dropRunner(runner); remove(target); throw e; }
+        helper.runAfterDelay(40, () -> {
+            try {
+                helper.assertTrue(com.jayptucker.heroesevolved.speed.SpeedContainment.burningAway(runner), "With nothing left, the heat beats the runner");
+                helper.assertTrue(!RadiationService.critical(target), "But it takes the blast with it, at once");
+                helper.assertTrue(runner.getHealth() > 0, "They stand on the ring and burn away before they die");
+                com.jayptucker.heroesevolved.speed.SpeedContainment.release(runner);
+                helper.assertTrue(com.jayptucker.heroesevolved.speed.SpeedContainment.running(runner), "Letting go can't save them now");
+            } catch (RuntimeException e) { dropRunner(runner); remove(target); throw e; }
+        });
+        helper.runAfterDelay(170, () -> {
+            try {
+                helper.assertTrue(runner.getHealth() <= 0 || runner.isDeadOrDying(), "When the burning is done, they are gone: " + runner.getHealth());
+                helper.assertTrue(!com.jayptucker.heroesevolved.speed.SpeedContainment.running(runner), "The run is over");
+                helper.succeed();
+            } finally { dropRunner(runner); remove(target); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 40, batch = "radiation.shields")
+    public static void shieldMakersHighEnoughSurviveTheBlast(GameTestHelper helper) {
+        // The test server keeps PvP off, so a player's blast can't hurt test players here: ask the shield directly what
+        // it lets through of a hit the wave would deal ten blocks out (55 health).
+        ServerPlayer source = player(helper, 410, false);
+        ServerPlayer strong = holder(helper, source.position().add(10, 0, 0), ModAbilities.INVISIBILITY_ID, 5);
+        ServerPlayer able = holder(helper, source.position().add(-10, 0, 0), ModAbilities.TELEKINESIS_ID, 4);
+        ServerPlayer young = holder(helper, source.position().add(0, 0, 10), ModAbilities.INVISIBILITY_ID, 3);
+        ServerPlayer bare = holder(helper, source.position().add(0, 0, -10), ModAbilities.SUPERSPEED_ID, 5);
+        try {
+            float five = com.jayptucker.heroesevolved.radiation.NuclearShields.brace(strong, source.position(), 55);
+            float four = com.jayptucker.heroesevolved.radiation.NuclearShields.brace(able, source.position(), 55);
+            helper.assertTrue(five < strong.getHealth() && four < able.getHealth(), "A tier 4 or 5 shield holds the blast: " + five + ", " + four);
+            helper.assertTrue(five < four, "A tier-5 shield lets less through: " + five + " vs " + four);
+            helper.assertTrue(com.jayptucker.heroesevolved.radiation.NuclearShields.brace(able, source.position(), 500) <= able.getHealth() - 2,
+                    "However big the blast, a shield never lets through enough to kill");
+            helper.assertTrue(com.jayptucker.heroesevolved.radiation.NuclearShields.brace(young, source.position(), 55) == 55, "Below tier 4 the shield can't hold it");
+            helper.assertTrue(com.jayptucker.heroesevolved.radiation.NuclearShields.brace(bare, source.position(), 55) == 55, "Without a shield there is nothing to hold it");
+            helper.assertTrue(com.jayptucker.heroesevolved.radiation.NuclearShields.shielded(strong)
+                    && !com.jayptucker.heroesevolved.radiation.NuclearShields.shielded(young), "The shield stays up against the fallout");
+            helper.succeed();
+        } finally { dropRunner(strong); dropRunner(able); dropRunner(young); dropRunner(bare); remove(source); }
+    }
 }

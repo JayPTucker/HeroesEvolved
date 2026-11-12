@@ -6,6 +6,7 @@ import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
+import com.jayptucker.heroesevolved.expansion.AdvancedTechniques;
 import com.jayptucker.heroesevolved.speed.SpeedService;
 import com.mojang.authlib.GameProfile;
 import com.mojang.serialization.JsonOps;
@@ -15,8 +16,11 @@ import net.minecraft.gametest.framework.*;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.projectile.Arrow;
 import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.util.FakePlayer;
@@ -126,6 +130,57 @@ public final class SpaceTimeGameTests {
             h.assertTrue(p.getInventory().countItem(net.minecraft.world.item.Items.ARROW) == 1, "Pickupable arrows are recovered once");
             h.succeed();
         } finally { arrow.discard(); clear(p); }
+    }
+
+    @GameTest(template="rewind_empty", batch="time.player_slow")
+    public static void slowTimeReachesOtherPlayersAndRestoresTheirSpeed(GameTestHelper h) {
+        var traveler = player(h);
+        var runner = player(h);
+        runner.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty()
+                .assignDormant(ModAbilities.SUPERSPEED_ID).unlock(ModAbilities.SUPERSPEED_ID));
+        var target = new FakePlayer(h.getLevel(), new GameProfile(UUID.randomUUID(), "slow-target"));
+        var remote = new FakePlayer(h.getLevel().getServer().getLevel(Level.NETHER), new GameProfile(UUID.randomUUID(), "slow-remote"));
+        target.setPos(traveler.position().add(0, 2, 200));
+        var scoreboard = h.getLevel().getScoreboard();
+        var team = scoreboard.addPlayerTeam("slow-time-test");
+        scoreboard.addPlayerToTeam(traveler.getScoreboardName(), team);
+        scoreboard.addPlayerToTeam(target.getScoreboardName(), team);
+        double walk = target.getAttributeValue(Attributes.MOVEMENT_SPEED);
+        double attack = target.getAttributeValue(Attributes.ATTACK_SPEED);
+        try {
+            TimeSlowService.start(traveler, 5);
+            AdvancedTechniques.startPerception(runner);
+            PlayerTimeSlow.update(traveler);
+            PlayerTimeSlow.update(target);
+            PlayerTimeSlow.update(remote);
+            double slowest = PlayerTimeSlow.movementScale(target);
+            h.assertTrue(Math.abs(PlayerTimeSlow.movementScale(traveler) - 1D / 3) < 1e-6,
+                    "The traveler ignores their own field and still feels the speedster's field");
+            h.assertTrue(slowest > 0 && slowest < 1D / 3 && !TimeSlowService.shouldSkipEntityTick(target),
+                    "Distant teammates are slowed without skipping their input ticks");
+            h.assertTrue(PlayerTimeSlow.movementScale(remote) == slowest, "Players in another dimension are slowed too");
+            h.assertTrue(Math.abs(target.getAttributeValue(Attributes.MOVEMENT_SPEED) - walk * slowest) < 1e-6
+                    && Math.abs(target.getAttributeValue(Attributes.ATTACK_SPEED) - attack * slowest) < 1e-6,
+                    "The stronger field reduces movement and attack speed without stacking");
+            target.getAbilities().flying = true;
+            target.noPhysics = true;
+            double altitude = target.getY();
+            target.move(MoverType.SELF, new Vec3(0, 1, 0));
+            h.assertTrue(Math.abs(target.getY() - altitude - slowest) < 1e-6, "Flight is slowed as well");
+            TimeSlowService.stop(traveler);
+            PlayerTimeSlow.update(target);
+            h.assertTrue(Math.abs(PlayerTimeSlow.movementScale(target) - 1D / 3) < 1e-6,
+                    "Perception remains active after Between Seconds ends");
+            AdvancedTechniques.endPerception(runner);
+            PlayerTimeSlow.update(target);
+            h.assertTrue(target.getAttributeValue(Attributes.MOVEMENT_SPEED) == walk
+                    && target.getAttributeValue(Attributes.ATTACK_SPEED) == attack, "Ending both fields restores normal attributes");
+            h.succeed();
+        } finally {
+            AdvancedTechniques.endPerception(runner);
+            scoreboard.removePlayerTeam(team);
+            clear(traveler);
+        }
     }
 
     @GameTest(template="rewind_empty", batch="time.tacz_compat")

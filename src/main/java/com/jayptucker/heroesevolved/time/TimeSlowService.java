@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -36,6 +37,14 @@ public final class TimeSlowService {
 
     public static boolean hasActiveField(ServerPlayer player) {
         return ACTIVE_FIELDS.containsKey(player.getUUID());
+    }
+
+    static int playerSlowInterval(ServerPlayer target) {
+        int interval = 1;
+        for (TimeSlowField field : ACTIVE_FIELDS.values())
+            if (!field.ownerId().equals(target.getUUID()) && !field.hasEnded())
+                interval = Math.max(interval, field.tickInterval());
+        return interval;
     }
 
     public static void stop(ServerPlayer player) {
@@ -135,7 +144,7 @@ public final class TimeSlowService {
      * and other non-projectile entities at the field's current mastery level.
      */
     public static boolean shouldSkipEntityTick(Entity entity) {
-        if (entity instanceof Projectile || !(entity.level() instanceof ServerLevel level)) {
+        if (entity instanceof Player || entity instanceof Projectile || !(entity.level() instanceof ServerLevel level)) {
             return false;
         }
 

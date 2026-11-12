@@ -16,7 +16,8 @@ awakening, mastery and skill points.
 - **Heat (0–100):** using fire builds Heat. It starts cooling three seconds after you stop.
   At **80 Heat** your flames turn **blue** and deal 50% more damage. Water and rain reset Heat to zero.
 - **Fuel and weakness:** standing in fire or lava restores 3 stamina per second. Water and rain cost
-  2 stamina per second. Cold damage, including Cryokinesis, hurts you 50% more.
+  2 stamina per second. Cold damage, including Cryokinesis, hurts you 50% more. A hostile
+  Ice Blast or a solid freeze also drains your Heat and snuffs active flame attacks and jets.
 - **Contained fire:** crouch while casting and creatures still burn, but no fire blocks are placed.
 
 ## Actions

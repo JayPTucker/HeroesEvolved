@@ -445,14 +445,15 @@ public final class SpeedKit {
         tickHits(now);
         tickCyclones(now);
         SpeedWindArms.tick(now);
+        SpeedContainment.tick(now);
         CHAINS.entrySet().removeIf(e -> now >= e.getValue().until + 20);
     }
 
     static void forget(ServerPlayer p) {
-        CHAINS.remove(p.getUUID()); HITS.remove(p.getUUID()); SpeedWindArms.forget(p);
+        CHAINS.remove(p.getUUID()); HITS.remove(p.getUUID()); SpeedWindArms.forget(p); SpeedContainment.forget(p);
         Cyclone c = CYCLONES.remove(p.getUUID());
         if (c != null) sync(c, now(p), true);
     }
 
-    static void clear() { CHAINS.clear(); HITS.clear(); CYCLONES.clear(); SpeedWindArms.clear(); }
+    static void clear() { CHAINS.clear(); HITS.clear(); CYCLONES.clear(); SpeedWindArms.clear(); SpeedContainment.clear(); }
 }

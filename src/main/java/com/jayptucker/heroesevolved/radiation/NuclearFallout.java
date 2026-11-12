@@ -106,10 +106,13 @@ public final class NuclearFallout {
             if (distance > front || !blast.struck.add(target.getUUID())) continue;
             float damage = (float) ((blast.radius == AWAKENING_RADIUS ? 32 : 20)
                     + (blast.radius == AWAKENING_RADIUS ? 88 : 60) * (1 - distance / blast.radius));
-            target.hurt(blast.level.damageSources().explosion(blast.owner, blast.owner), damage);
-            RadiationService.irradiate(target, 160);
+            // A high enough shield-maker's shield goes up and holds: far less gets through, and never enough to kill.
+            float dealt = NuclearShields.brace(target, blast.center, damage);
+            boolean held = dealt < damage;
+            if (dealt > 0) target.hurt(blast.level.damageSources().explosion(blast.owner, blast.owner), dealt);
+            if (!held) RadiationService.irradiate(target, 160);
             Vec3 away = target.position().subtract(blast.center).multiply(1, 0, 1).normalize();
-            target.setDeltaMovement(away.scale(1.7).add(0, 0.5, 0));
+            target.setDeltaMovement(away.scale(held ? 0.6 : 1.7).add(0, held ? 0.2 : 0.5, 0));
             target.hurtMarked = true;
         }
     }
@@ -133,7 +136,7 @@ public final class NuclearFallout {
         AbilityEffects.send(blast.level, Kind.NUCLEAR_FALLOUT, blast.center, blast.center, blast.radius);
         for (LivingEntity target : blast.level.getEntitiesOfClass(LivingEntity.class,
                 new AABB(blast.center, blast.center).inflate(blast.radius), target -> vulnerable(blast, target))) {
-            if (target.position().distanceToSqr(blast.center) > blast.radius * blast.radius) continue;
+            if (target.position().distanceToSqr(blast.center) > blast.radius * blast.radius || NuclearShields.shielded(target)) continue;
             RadiationService.irradiate(target, 60);
             target.hurt(blast.level.damageSources().indirectMagic(blast.owner, blast.owner), 2);
         }
@@ -144,5 +147,5 @@ public final class NuclearFallout {
         for (ServerPlayer viewer : blast.level.players())
             if (viewer.position().distanceToSqr(blast.center) <= 400 * 400) PacketDistributor.sendToPlayer(viewer, payload);
     }
-    public static void clear() { BLASTS.clear(); roundRobin = 0; }
+    public static void clear() { BLASTS.clear(); roundRobin = 0; NuclearShields.clear(); }
 }

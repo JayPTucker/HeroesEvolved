@@ -1,6 +1,8 @@
 package com.jayptucker.heroesevolved.client;
 
 import com.jayptucker.heroesevolved.ability.ArmPose;
+import com.jayptucker.heroesevolved.client.effects.setpiece.SetPieceClient;
+import com.jayptucker.heroesevolved.cryo.CryoBlastGeometry;
 import com.jayptucker.heroesevolved.entity.CarryAnchorEntity;
 import com.jayptucker.heroesevolved.entity.CarryGeometry;
 import com.jayptucker.heroesevolved.network.ClientArmPoseState;
@@ -11,6 +13,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Applies power arm poses to the player model. Called from a mixin at the
@@ -76,6 +79,17 @@ public final class PowerArmPoses {
             set(model.rightLeg, .4F, -.12F, .10F + bank);
             set(model.leftLeg, .55F, .12F, -.10F + bank);
             model.rightPants.copyFrom(model.rightLeg); model.leftPants.copyFrom(model.leftLeg);
+        }
+        if (entity instanceof Player player) {
+            Vec3 frostTarget = SetPieceClient.cryoCastTarget(id);
+            if (frostTarget != null) {
+                float partial = Mth.clamp(ageInTicks - player.tickCount, 0, 1);
+                frostArm(model.rightArm, player, partial, frostTarget, 1);
+                frostArm(model.leftArm, player, partial, frostTarget, -1);
+                model.rightSleeve.copyFrom(model.rightArm);
+                model.leftSleeve.copyFrom(model.leftArm);
+                return;
+            }
         }
         if (pose == null) {
             if (iceRide) {
@@ -213,9 +227,10 @@ public final class PowerArmPoses {
                 set(model.leftArm,aimX+.12F,aimY+.08F+open*.3F,-.06F-open*.65F);
             }
             case CRYO_WEAVE -> {
-                float weave = Mth.sin(ClientArmPoseState.ageTicks(entity.getId()) * .35F) * .07F;
-                set(model.rightArm, aimX + .08F + weave, aimY - .12F, .06F);
-                set(model.leftArm, aimX + .08F - weave, aimY + .12F, -.06F);
+                float age = ClientArmPoseState.ageTicks(entity.getId());
+                float brace = smooth(age / 3F), tremor = Mth.sin(age * .72F) * .025F;
+                set(model.rightArm, aimX + (1 - brace) * .42F + tremor, aimY + .06F, .04F);
+                set(model.leftArm, aimX + (1 - brace) * .42F - tremor, aimY - .06F, -.04F);
             }
             case CRYO_SCULPT -> {
                 float lift = smooth(ClientArmPoseState.ageTicks(entity.getId()) / 18F);
@@ -424,6 +439,14 @@ public final class PowerArmPoses {
     private static float smooth(float value) {
         float t = Mth.clamp(value, 0, 1);
         return t * t * (3 - 2 * t);
+    }
+
+    private static void frostArm(ModelPart arm, Player player, float partial, Vec3 target, int side) {
+        Vec3 aim = target.subtract(CryoBlastGeometry.shoulder(player, partial, side));
+        float pitch = (float) -Math.atan2(aim.y, aim.horizontalDistance());
+        float yaw = (float) Math.atan2(-aim.x, aim.z);
+        float body = Mth.rotLerp(partial, player.yBodyRotO, player.yBodyRot) * Mth.DEG_TO_RAD;
+        set(arm, -Mth.HALF_PI + pitch, yaw - body, 0);
     }
 
     private static void set(ModelPart arm, float x, float y, float z) {

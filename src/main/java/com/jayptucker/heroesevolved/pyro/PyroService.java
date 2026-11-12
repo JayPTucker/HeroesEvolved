@@ -178,6 +178,16 @@ public final class PyroService {
         announce(player, heat);
     }
 
+    /** Frost puts out active flames and returns the Heat the caster had stored. */
+    public static int freezeFlames(ServerPlayer player) {
+        if (!canSustainFire(player)) return 0;
+        int absorbed = heat(player);
+        quench(player);
+        stopFlames(player, true);
+        if (absorbed > 0) PyroFlightService.sync(player);
+        return absorbed;
+    }
+
     private static void announce(ServerPlayer player, Heat heat) {
         boolean blue = isBlue(player);
         if (blue == heat.blue) return;
@@ -1093,20 +1103,25 @@ public final class PyroService {
         return burned;
     }
 
-    public static void forget(ServerPlayer player) {
+    private static void stopFlames(ServerPlayer player, boolean safeLanding) {
         UUID id = player.getUUID();
         stopPalm(player);
         cancelSpear(player);
         PhoenixService.forget(player);
-        PyroFlightService.forget(player);
+        PyroFlightService.stop(player, safeLanding);
         if (INFERNOS.remove(id) != null) ArmPosePayload.clear(player);
         SUNS.remove(id);
-        HEAT.remove(id);
         RINGS.remove(id);
         COLLAPSES.remove(id);
         MANTLES.remove(id);
         LASHES.remove(id);
         LANCES.remove(id);
+    }
+
+    public static void forget(ServerPlayer player) {
+        UUID id = player.getUUID();
+        stopFlames(player, false);
+        HEAT.remove(id);
         WARNINGS.keySet().removeIf(mine -> mine.owner == player);
         MINES.remove(id);
         CUSHIONS.remove(id);

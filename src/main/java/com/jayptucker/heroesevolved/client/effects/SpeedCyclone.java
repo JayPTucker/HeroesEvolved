@@ -45,6 +45,8 @@ public final class SpeedCyclone {
     public static final int RING_FADE = 10, TORNADO_FADE = 26;
     /** Radians a tick round the ring once up to speed (a lap in about fifteen ticks), and ticks to reach it. */
     public static final float LAP_SPEED = 0.42F, SPIN_UP = 6;
+    /** Ticks a beaten containment runner takes to slow to a stop: they keep running while they burn away. */
+    public static final float STOP_TICKS = 80;
     private static final int GHOSTS = 6;
     private static final float GHOST_GAP = 0.2F;
 
@@ -60,6 +62,14 @@ public final class SpeedCyclone {
         public int style;
         /** When it started, when its tornado began to rise (or MIN), when it ended (or MAX), and when last heard of. */
         public long start, tornado = Long.MIN_VALUE, end = Long.MAX_VALUE, heard;
+        /** A containment run: when it began holding a blast in (MIN while only cooling). */
+        public long held = Long.MIN_VALUE;
+        /** A failed containment run: when the runner began to stop (MIN while running). */
+        public long failAt = Long.MIN_VALUE;
+        /** 0 while running flat out, rising to 1 as a failed runner comes to a stop and stands. */
+        public float stillness(long now, float partial) {
+            return failAt == Long.MIN_VALUE ? 0 : Mth.clamp((now - failAt + partial) / STOP_TICKS, 0, 1);
+        }
         Puppet puppet;
         View(int entity) { this.entity = entity; }
 
@@ -74,8 +84,21 @@ public final class SpeedCyclone {
         /** Where it is between ticks. */
         public Vec3 at(float partial) { return previous.lerp(center, partial); }
         public float angle(float age) {
-            float spun = age < SPIN_UP ? LAP_SPEED * age * age / (2 * SPIN_UP) : LAP_SPEED * (age - SPIN_UP / 2);
-            return phase + spun;
+            // A containment run goes round about twice as fast as any Cyclone.
+            boolean contain = style == SpeedCyclonePayload.CONTAIN || style == SpeedCyclonePayload.CONTAIN_FAIL;
+            float lap = contain ? LAP_SPEED * 2.1F : LAP_SPEED;
+            if (failAt != Long.MIN_VALUE) {
+                // Beaten: from the moment it failed, the runner slows to a stop over STOP_TICKS and stays there.
+                float failAge = failAt - start;
+                if (age > failAge) {
+                    float dt = Math.min(age - failAge, STOP_TICKS);
+                    return spun(lap, failAge) + lap * (dt - dt * dt / (2 * STOP_TICKS));
+                }
+            }
+            return spun(lap, age);
+        }
+        private float spun(float lap, float age) {
+            return phase + (age < SPIN_UP ? lap * age * age / (2 * SPIN_UP) : lap * (age - SPIN_UP / 2));
         }
         /** Where the runner is on the ring at this age. */
         public Vec3 runner(float age) {
@@ -124,7 +147,12 @@ public final class SpeedCyclone {
         v.free = p.free();
         v.style = p.style();
         v.radius = Math.clamp(p.radius(), 1, 16);
-        if (p.tornadoAge() >= 0 && (!v.rose() || Math.abs(now - p.tornadoAge() - v.tornado) > 3)) v.tornado = now - p.tornadoAge();
+        if (p.style() == SpeedCyclonePayload.CONTAIN_FAIL && v.failAt == Long.MIN_VALUE) v.failAt = now;
+        if (p.style() == SpeedCyclonePayload.CONTAIN) {
+            // For a containment run the "tornado age" is how long it has held a blast in.
+            if (p.tornadoAge() < 0) v.held = Long.MIN_VALUE;
+            else if (v.held == Long.MIN_VALUE || Math.abs(now - p.tornadoAge() - v.held) > 3) v.held = now - p.tornadoAge();
+        } else if (p.tornadoAge() >= 0 && (!v.rose() || Math.abs(now - p.tornadoAge() - v.tornado) > 3)) v.tornado = now - p.tornadoAge();
         v.heard = now;
     }
 
@@ -149,13 +177,14 @@ public final class SpeedCyclone {
             v.previous = v.center;
             v.center = v.center.lerp(v.goal, 0.35);
             // Legs going as fast as they can carry a body round the ring.
-            if (v.puppet != null && !v.ended() && !v.free) v.puppet.walkAnimation.update(2.2F, 1);
+            if (v.puppet != null && !v.ended() && !v.free) v.puppet.walkAnimation.update(2.2F * (1 - v.stillness(now, 0)), 1);
         }
     }
 
     /** The body at the eye is not drawn: the runner is out on the ring. */
     @SubscribeEvent public static void hide(RenderPlayerEvent.Pre event) {
-        if (!drawing && running(event.getEntity().getId())) event.setCanceled(true);
+        if (!drawing && (running(event.getEntity().getId())
+                || com.jayptucker.heroesevolved.client.effects.setpiece.SpeedArt.disintegrating(event.getEntity().getId()))) event.setCanceled(true);
     }
 
     /** No arms in front of the camera either: you are out there running. */
@@ -201,6 +230,8 @@ public final class SpeedCyclone {
             for (View v : VIEWS.values()) {
                 if (v.ended() || v.free || !(mc.level.getEntity(v.entity) instanceof AbstractClientPlayer owner)) continue;
                 if (v.center.distanceToSqr(camera) > 160 * 160) continue;
+                // Once they start to burn away, the burning is all there is of them.
+                if (com.jayptucker.heroesevolved.client.effects.setpiece.SpeedArt.consumed(v.entity)) continue;
                 if (v.puppet == null) v.puppet = new Puppet(mc.level, owner.getGameProfile());
                 Puppet puppet = v.puppet;
                 puppet.dress(owner);
@@ -209,7 +240,8 @@ public final class SpeedCyclone {
                 place(puppet, at, yaw);
                 pose.pushPose();
                 pose.translate(at.x - camera.x, at.y - camera.y, at.z - camera.z);
-                pose.mulPose(lean(angle));
+                // A runner who has stopped straightens up and stands.
+                pose.mulPose(lean(angle).slerp(new Quaternionf(), v.stillness(now, partial)));
                 dispatcher.render(puppet, 0, 0, 0, yaw, partial, pose, buffers, dispatcher.getPackedLightCoords(puppet, partial));
                 pose.popPose();
             }
@@ -237,6 +269,9 @@ public final class SpeedCyclone {
         if (ghostBuffers == null) ghostBuffers = MultiBufferSource.immediate(new ByteBufferBuilder(256 * 1024));
         for (View v : VIEWS.values()) {
             if (v.ended() || v.free || v.puppet == null || v.center.distanceToSqr(camera) > 96 * 96) continue;
+            // The blur thins out as a beaten runner slows, and goes with their body.
+            if (v.stillness(now, partial) > 0.4F
+                    || com.jayptucker.heroesevolved.client.effects.setpiece.SpeedArt.consumed(v.entity)) continue;
             Puppet puppet = v.puppet;
             boolean narrow = puppet.getSkin().model() == PlayerSkin.Model.SLIM;
             var m = SpeedAfterimages.model(narrow);

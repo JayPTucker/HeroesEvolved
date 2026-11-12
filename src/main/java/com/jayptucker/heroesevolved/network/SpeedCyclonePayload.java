@@ -20,7 +20,10 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  */
 public record SpeedCyclonePayload(int entity, Vec3 center, float radius, int age, int tornadoAge, boolean ended, boolean free, int style)
         implements CustomPacketPayload {
-    public static final int SPEED = 0, FLIGHT = 1;
+    /** A speedster's Cyclone, Flight's Tempest, and a speedster running the heat out of a radioactive player. */
+    public static final int SPEED = 0, FLIGHT = 1, CONTAIN = 2;
+    /** A containment run the heat has beaten: the runner slows to a stop on the ring and stands there. */
+    public static final int CONTAIN_FAIL = 3;
     public static final Type<SpeedCyclonePayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "speed_cyclone"));
     public static final StreamCodec<RegistryFriendlyByteBuf, SpeedCyclonePayload> STREAM_CODEC = StreamCodec.of((buf, p) -> {
         buf.writeVarInt(p.entity);

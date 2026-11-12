@@ -97,6 +97,16 @@ public final class SetPieceClient {
     /** Stops everything playing, for previews. */
     public static void clear() { ACTIVE.clear(); }
 
+    /** The newest forming-ice spray also steers the caster's arms. */
+    public static Vec3 cryoCastTarget(int entityId) {
+        if (world == null || Minecraft.getInstance().level != world) return null;
+        long now = world.getGameTime();
+        for (Active a : ACTIVE.reversed())
+            if (a.piece == Piece.CRYO_CAST && a.entity == entityId && now >= a.start && now - a.start <= 8)
+                return a.target;
+        return null;
+    }
+
     @SubscribeEvent public static void logout(ClientPlayerNetworkEvent.LoggingOut event) { ACTIVE.clear(); world = null; }
 
     @SubscribeEvent public static void tick(ClientTickEvent.Post event) {
@@ -110,7 +120,7 @@ public final class SetPieceClient {
         if (!solid && event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || ACTIVE.isEmpty() && !SpeedArt.live() && !RewindArt.live() && !FlightArt.live()
-                && !PyroArt.live() && !ClientProjectileTime.hasControlledShots()) return;
+                && !PyroArt.live() && !CryoConstructArt.live(mc.level) && !ClientProjectileTime.hasControlledShots()) return;
         if (world != mc.level) { ACTIVE.clear(); world = mc.level; }
         Vec3 camera = event.getCamera().getPosition();
         Canvas c = CANVAS;
@@ -164,6 +174,7 @@ public final class SetPieceClient {
             RewindArt.drawLive(c);
             FlightArt.drawLive(c);
             PyroArt.drawLive(c);
+            CryoConstructArt.draw(c);
             TemporalProjectileArt.draw(c);
         } catch (RuntimeException broken) {
             HeroesEvolved.LOGGER.warn("Live power effects failed to draw", broken);

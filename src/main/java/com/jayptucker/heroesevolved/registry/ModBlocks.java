@@ -1,6 +1,7 @@
 package com.jayptucker.heroesevolved.registry;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
+import com.jayptucker.heroesevolved.cryo.FrostConstructBlock;
 import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DropExperienceBlock;
@@ -27,6 +28,10 @@ public final class ModBlocks {
     static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(HeroesEvolved.MOD_ID);
     private static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, HeroesEvolved.MOD_ID);
+
+    public static final DeferredBlock<FrostConstructBlock> FROST_CONSTRUCT = BLOCKS.register("frost_construct",
+            () -> new FrostConstructBlock(BlockBehaviour.Properties.of().strength(.8F).sound(SoundType.GLASS)
+                    .noOcclusion().noLootTable()));
 
     /** Veins form between Y -64 and 0, so most generate in deepslate; the stone variant appears near Y 0. */
     public static final DeferredBlock<DropExperienceBlock> HELIXITE_ORE = BLOCKS.register("helixite_ore",

@@ -10,6 +10,7 @@
     "CreateKineticSeizeMixin",
     "PlayerListSaveAccess",
     "StoppedTimeInputMixin",
+    "SlowedFlightMovementMixin",
     "SpeedWaterCollisionMixin",
     "SunkPlayerMixin",
     "CarriedPickMixin",
@@ -28,7 +29,8 @@
     "SeveredHandItemMixin",
     "EclipseSkyMixin",
     "TornadoCameraMixin",
-    "UnseenObjectMixin"
+    "UnseenObjectMixin",
+    "CryoConstructClientMixin"
   ],
   "injectors": {
     "defaultRequire": 1

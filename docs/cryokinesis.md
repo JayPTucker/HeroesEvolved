@@ -1,9 +1,8 @@
-# Cryokinesis — shape the winter
+# Cryokinesis
 
-Cryokinesis connects **Frost buildup**, solid ice construction, Glacier Ride and deliberate
-shatters. Its walls, ramps and skating ribbon are real three-dimensional temporary terrain.
-Branching veins, translucent shells and growing spires show the state of the cold before an
-impact, rather than relying on a cloud of particles to imply an obstacle.
+Cryokinesis draws on Killer Frost's heat absorption. Ice Blast builds **Frost** while it draws
+energy out of flames and unstable reactors. Solid ice construction, Glacier Ride and deliberate
+shatters let you turn that cold into cover, movement and burst damage.
 
 The five base action IDs and all eighteen purchased skill IDs stay compatible with existing
 saves and loadouts. Their displayed names and controls have been redesigned.
@@ -15,7 +14,7 @@ existing chill system, including vanilla frost overlay, shivering and a transien
 penalty. It starts settling after cold is no longer applied. Bosses chill rather than being
 held indefinitely, and cold-immune creatures resist the freeze.
 
-- Rime Stream builds Frost continuously while held and stops when released.
+- Ice Blast builds Frost on the first enemy in its path. Release to stop the blast.
 - Crystal Prison primes an unprepared target with Frost; prepared cold forms a solid shell.
 - Physical hits can shatter frozen targets. The caster can deliberately shatter their own
   prepared prison with its follow-up key press.
@@ -26,24 +25,39 @@ held indefinitely, and cold-immune creatures resist the freeze.
   prevents a player being immediately locked into another freeze.
 - The caster and allies are excluded from the deliberate hostile shatter burst.
 
+## Heat absorption
+
+- **Reactor rescue.** Aim Ice Blast directly at a radioactive player during their warning or
+  charge. Keep it on them for roughly one to one-and-a-half seconds to pause the countdown,
+  drain Core to 30 or below, and cancel the detonation. Losing sight lets the countdown resume.
+  This works with PvP disabled and leaves the reactor unharmed. Allies and crouching players
+  can also be cooled before they go critical. With PvP enabled, the blast can drain a hostile
+  reactor that is already running hot.
+- **Pyrokinesis.** Ice Blast on a hostile Pyro user or a solid freeze snuffs their active
+  Breath, flight jets, and ongoing fire attacks. Ice Blast also puts out exposed fire and
+  soul fire in its path where you can edit blocks.
+- **Shatter payoff.** Stealing heat refunds some stamina. Absorb enough in one cast or finish
+  a reactor rescue to empower your next Crystal Prison shatter for 12 seconds. The burst
+  reaches 4.5 blocks and deals 12 base damage, up from 3 blocks and 8 base damage.
+
 ## Base actions
 
 These are the default keys; optional learned skills can replace them as usual.
 
 | Key | Level | Action | Behavior |
 | --- | --- | --- | --- |
-| G | 1 | **Rime Stream** | Hold to sweep cold from the hands. Frost branches across surfaces and accumulates on enemies. Release to stop the channel. |
-| H | 2 | **Glacial Sculpt** | Aim at a clear surface to grow a wall of solid ice. **Shift + H** makes a ramp. Aiming at an owned construct reshapes it for eight stamina, with a two-second settling time, even while the new-wall cast is recovering. |
+| G | 1 | **Ice Blast** | Hold to aim a two-handed, 12-block stream of ice. It uses stamina while held and lasts up to eight seconds per cast. |
+| H | 2 | **Glacial Sculpt** | Aim at a clear surface to grow a faceted frost wall. **Shift + H** makes a three-block-wide staircase you can walk up. Aiming at an owned construct reshapes it for eight stamina, with a two-second settling time, even while the new-wall cast is recovering. |
 | Z | 3 | **Glacier Ride** | Toggle skating on a growing ice ribbon. Look and movement keys steer; Space shapes a rising ramp at higher levels, Shift brakes, and Sprint accelerates. Press again to step off safely. |
 | X | 4 | **Crystal Prison** | Concentrate cold around a target within twelve blocks. An unprepared cast adds Frost; prepared Frost forms a prison. Press again to shatter that shell, with a short hostile burst around it. |
 | V | 5 | **Whiteout** | Aim a growing winter field. A one-second wind-up precedes Frost, snow and rising ice spires. **Shift + V** deliberately collapses the prepared ice and frozen enemies after the wind-up. |
 
-Glacier Ride is not unrestricted flight. It begins on a supported surface, crosses limited gaps
-and makes bounded rising ramps. The temporary ribbon stays under the skater and can widen into
+Glacier Ride begins on a supported surface, crosses limited gaps and climbs in half-block
+steps. The ribbon follows the skater's actual momentum through turns and can widen into
 a route for companions. Solid obstructions, exhausted stamina, loss of the power and invalid
 terrain end the ride safely. Ride controls and speed are displayed on screen.
 
-A combat sequence is **Rime Stream → Glacial Sculpt → Glacier Ride → Crystal Prison → shatter**.
+A combat sequence is **Ice Blast → Glacial Sculpt → Glacier Ride → Crystal Prison → shatter**.
 Whiteout prepares a larger battlefield: cold links the ice, the field grows, and the final
 collapse spends what has been built.
 
@@ -75,10 +89,11 @@ existing purchase IDs remain compatible with saved characters.
 - **Cold Snap:** A raised ice front expands across seven blocks over 0.6 seconds. Each enemy
   meets it once. Fresh enemies gain Frost, prepared targets freeze, and frozen targets
   shatter. The front respects cover, giving its position and timing a real combat role.
-- **Rime Loom:** A temporary path grows one physical segment every three ticks. **Aim and
+- **Rime Loom:** A temporary path grows one physical segment every three ticks, filling inside
+  corners so its turns stay walkable. **Aim and
   press again while it grows** to bend its remaining course. Double Weave makes it three
   blocks wide; Suspension Stitch extends it to twenty-four segments and permits bounded
-  rising stairs. Each segment remembers its original terrain and lasts twelve seconds.
+  half-block stairs. Each segment remembers its original terrain and lasts twelve seconds.
 - **Stillheart Cocoon:** Shelter yourself or a friendly/consenting creature in a layered
   pressure-bearing shell. It catches up to 80% of ordinary damage within a finite reservoir;
   an exhausted shell opens. **Press again** to open early, recover health and spend stored
@@ -98,7 +113,9 @@ Only one capstone may be learned at a time.
 
 ## Three-dimensional ice and restoration
 
-Sculpt walls, ramps and the ride ribbon use real collision blocks. Placement does not replace
+Sculpt walls, stairs and bridges draw faceted frost meshes over their temporary collision
+shapes. Adjacent sections share an edge, and players can walk up the half-block stairs.
+Placement does not replace
 containers, permanent obstacles or occupied space, and the caster's build permissions and
 protection hooks apply. Ice is created and removed under bounded work budgets.
 
@@ -114,8 +131,15 @@ single expensive tick.
 
 ## Effects and controls
 
-- Hand-driven rime streams trace branching veins and crystallize into layered shells.
-- Sculpted walls and ramps grow in visible stages, with physical depth and collision.
+- Both palms brace and spray rolling frost clouds full of tumbling ice chips. The spray widens
+  as it travels, then disperses into powder at impact. Amber flecks drift back toward the
+  caster while cooling a reactor. Snuffed fire breaks into ice chips and fades into mist.
+- When Glacial Sculpt builds or reshapes a wall or ramp, the caster sprays frost from both
+  hands across the growing ice. Rime Loom and Glacier Ride direct the spray at new sections
+  of the deck. The deck stays pale and clear so players can see where to step.
+- Short palm bursts form Crystal Prison, the lance, armor, Cold Snap, the Stillheart shell,
+  and the first star in Brittle Constellation. Whiteout casts frost into the storm and feeds
+  its growing spires. Hailstorm and Crystal Bastion open with the same frost spray.
 - Glacier Ride bends a continuous ice ribbon through turns; the body banks and the stance
   follows the skates. Frost and fragments trail the route.
 - Prison cracks become more pronounced as a trapped player fights the shell.
@@ -130,8 +154,9 @@ awakening, power reactions and borrowed actions. Legacy Blizzard and the larger 
 still use their bounded terrain sweep and restoration system; the new Whiteout is the base
 ultimate rather than a renaming of that old instant dome.
 
-The isolated Cryo rework tests cover held Frost buildup/release, solid build-permitted
-construction, prepared prison/shatter, player struggle rate limits, heat thaw, Whiteout wind-up
+The isolated Cryo rework tests cover held Frost buildup and release, emergency reactor cooling,
+Pyro cancellation, extinguishing fire without reaching through cover, solid build-permitted
+construction, walking up a ramp without jumping, prepared prison/shatter, player struggle rate limits, heat thaw, Whiteout wind-up
 and collapse, physical skating and its rising ceiling, safe quick-reshape dispatch, gravity
 cleanup, and preserved eighteen-node identities. Dedicated combat/technique tests also cover
 physical lance travel and interception, finite armor and explicit countershots, conditional
@@ -145,10 +170,10 @@ Run the live visual/control preview with Java 21:
 ./gradlew runClient --offline --init-script tools/cryo-preview.init.gradle
 ```
 
-It uses actual survival controls and captures Rime Stream, oblique views of solid walls and
-ramps, the riding ribbon and carve, prison/shatter, the stages of Whiteout, and a trapped
-player breaking free with Jump and Attack. The preview and GameTest code are excluded from
-the release JAR.
+It uses actual survival controls and captures Ice Blast, solid walls and ramps, the riding
+ribbon and carve, prison/shatter, and the stages of Whiteout. It also plays through a
+reactor rescue, a Pyro quench, and walking up the ramp and across a woven bridge. The preview
+and GameTest code are excluded from the release JAR.
 
 The six optional skills have their own live control and mesh preview:
 

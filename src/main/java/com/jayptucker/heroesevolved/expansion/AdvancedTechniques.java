@@ -79,7 +79,7 @@ public final class AdvancedTechniques {
     private static final Map<UUID, UUID> HIVE_OWNER = new HashMap<>();
     private static final Map<UUID, Long> MIRAGES = new HashMap<>();
     /** Perception: the world around a runner moves at a fraction of its speed. */
-    private record Perception(ServerPlayer owner, long until, double radius, int interval, boolean stop) {}
+    private record Perception(ServerPlayer owner, long until, double radius, int interval) {}
     private static final Map<UUID, Perception> PERCEPTION = new HashMap<>();
     private static final Map<UUID, Integer> DODGES = new HashMap<>();
     private static final Map<UUID, Long> DODGE_UNTIL = new HashMap<>();
@@ -412,7 +412,7 @@ public final class AdvancedTechniques {
         for (Perception field : PERCEPTION.values()) {
             ServerPlayer p = field.owner;
             if (p.level() != level || entity.getVehicle() == p || entity.distanceToSqr(p) > field.radius * field.radius
-                    || entity instanceof net.minecraft.world.entity.OwnableEntity pet && pet.getOwner() == p) continue;
+                    || entity instanceof net.minecraft.world.entity.OwnableEntity pet && pet.getOwner() == p || !active(field)) continue;
             return Math.floorMod(entity.getId(), field.interval) != Math.floorMod(level.getGameTime(), field.interval);
         }
         return false;
@@ -421,8 +421,8 @@ public final class AdvancedTechniques {
     /** Perception: twelve blocks (sixteen with Long Perception) of the world slowed to a third, a sixth with Flash Time. */
     public static void startPerception(ServerPlayer p) {
         ServerLevel level = p.serverLevel();
-        boolean longer = has(p, "superspeed_long_perception"), stop = has(p, "superspeed_flash_time");
-        Perception field = new Perception(p, now(p) + (longer ? 200 : 120), longer ? 16 : 12, stop ? 6 : 3, stop);
+        boolean longer = has(p, "superspeed_long_perception"), flashTime = has(p, "superspeed_flash_time");
+        Perception field = new Perception(p, now(p) + (longer ? 200 : 120), longer ? 16 : 12, flashTime ? 6 : 3);
         PERCEPTION.put(p.getUUID(), field);
         AbilityEffects.send(level, Kind.SPEED_PERCEPTION, p.position(), p.getEyePosition(), (float) field.radius);
         level.playSound(null, p.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 1F, 0.5F);
@@ -439,11 +439,18 @@ public final class AdvancedTechniques {
     /** True while {@code p} has Perception up. */
     public static boolean perceiving(ServerPlayer p) { return PERCEPTION.containsKey(p.getUUID()); }
 
+    public static int playerSlowInterval(ServerPlayer target) {
+        int interval = 1;
+        for (Perception field : PERCEPTION.values())
+            if (!field.owner.getUUID().equals(target.getUUID()) && active(field))
+                interval = Math.max(interval, field.interval);
+        return interval;
+    }
+
     public static int projectileInterval(Projectile shot, Vec3 end) {
         int interval = 0;
         for (Perception field : PERCEPTION.values()) {
             if (!affectsShot(field, shot, end)) continue;
-            if (field.stop) return com.jayptucker.heroesevolved.time.ProjectileTimeService.STOPPED;
             interval = Math.max(interval, field.interval);
         }
         return interval;
@@ -456,9 +463,14 @@ public final class AdvancedTechniques {
 
     private static boolean affectsShot(Perception field, Projectile shot, Vec3 end) {
         ServerPlayer owner = field.owner;
-        return owner.level() == shot.level() && shot.getOwner() != owner && now(owner) < field.until
-                && PowerRules.canAct(owner) && com.jayptucker.heroesevolved.time.ProjectileTimeService
+        return owner.level() == shot.level() && shot.getOwner() != owner && active(field)
+                && com.jayptucker.heroesevolved.time.ProjectileTimeService
                 .reachesField(shot.position(), end, owner.position(), field.radius);
+    }
+
+    private static boolean active(Perception field) {
+        return !field.owner.isRemoved() && now(field.owner) < field.until
+                && SpeedService.awakened(field.owner) && PowerRules.canAct(field.owner);
     }
 
     @SubscribeEvent public static void tick(ServerTickEvent.Post event) {
@@ -541,16 +553,12 @@ public final class AdvancedTechniques {
         }
         for (Perception field : List.copyOf(PERCEPTION.values())) {
             ServerPlayer p = field.owner;
-            if (now >= field.until || !p.isAlive() || p.isRemoved() || !PowerRules.canAct(p)) {
+            if (!active(field)) {
                 endPerception(p);
                 if (p.isAlive() && !p.isRemoved()) p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.8F, 1.6F);
                 continue;
             }
             ServerLevel level = p.serverLevel();
-            // Players cannot have their ticks skipped; slow hostile ones down instead.
-            for (ServerPlayer other : level.getEntitiesOfClass(ServerPlayer.class, p.getBoundingBox().inflate(field.radius),
-                    o -> o != p && hostile(p, o)))
-                other.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 15, field.stop ? 3 : 2, false, false));
             if (now % 10 == 0) {
                 AbilityEffects.send(level, Kind.SPEED_PERCEPTION, p.position(), p.getEyePosition(), (float) field.radius);
                 ScreenTintPayload.send(p, 0x24FFB040, 14, ScreenTintPayload.Style.HOLD);

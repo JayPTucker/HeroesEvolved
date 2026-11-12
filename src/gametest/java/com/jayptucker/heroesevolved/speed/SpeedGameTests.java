@@ -8,6 +8,7 @@ import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.data.PowerOwnershipSavedData;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
+import com.jayptucker.heroesevolved.skills.SkillTreeData;
 import com.jayptucker.heroesevolved.time.TimeStopService;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.core.BlockPos;
@@ -21,6 +22,8 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.neoforge.gametest.*;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @GameTestHolder("heroesevolved")
@@ -263,6 +266,25 @@ public final class SpeedGameTests {
             shot.discard();
             com.jayptucker.heroesevolved.expansion.AdvancedTechniques.endPerception(p);
             SpeedService.forget(p);
+        }
+    }
+
+    @GameTest(template="rewind_empty", batch="speed.flash_time_projectiles")
+    public static void flashTimeSlowsProjectilesWithoutFreezingThem(GameTestHelper h) {
+        var p = player(h);
+        p.setData(ModDataAttachments.SKILL_TREES, SkillTreeData.empty().with(ModAbilities.SUPERSPEED_ID.toString(),
+                new SkillTreeData.Build(15, Set.of("superspeed_flash_time"), Map.of())));
+        var shot = new Arrow(EntityType.ARROW, h.getLevel());
+        shot.setPos(p.getEyePosition().add(0, 0, 4));
+        shot.setDeltaMovement(0, 0, -1.2);
+        try {
+            com.jayptucker.heroesevolved.expansion.AdvancedTechniques.startPerception(p);
+            h.assertTrue(!TimeStopService.shouldStopEntityTick(shot) && Math.abs(shot.getDeltaMovement().z + .2) < 1e-6,
+                    "Flash Time moves incoming shots at a sixth of their original speed");
+            h.succeed();
+        } finally {
+            shot.discard();
+            com.jayptucker.heroesevolved.expansion.AdvancedTechniques.endPerception(p);
         }
     }
     @GameTest(template="rewind_empty", batch="speed.ownership")

@@ -56,8 +56,9 @@ public final class TemporaryBlocks {
         if (replacingTemporary && original.equals(state)) return refresh(level, pos, durationTicks, player);
         boolean water = original.getFluidState().is(Fluids.WATER) && original.is(Blocks.WATER);
         boolean replaceable = original.isAir() || (original.canBeReplaced() && original.getFluidState().isEmpty());
+        AABB occupied = FrostConstructBlock.isFrost(state) ? state.getCollisionShape(level, pos).bounds().move(pos) : new AABB(pos);
         if ((!replaceable && !water && !replacingTemporary) || level.getBlockEntity(pos) != null
-                || !level.getEntities(null, new AABB(pos)).isEmpty()) return false;
+                || !level.getEntities(null, occupied).isEmpty()) return false;
         if (player != null && !WorldMutationPolicy.canEdit(player, level, pos)) return false;
         BlockState saved = replacingTemporary ? previous.original : original;
         long expires = Math.max(replacingTemporary ? previous.meltAt : 0, level.getGameTime() + durationTicks);
@@ -123,6 +124,10 @@ public final class TemporaryBlocks {
 
     /** Coat exposed terrain in reversible ice; containers and player changes remain intact. */
     public static boolean frostSurface(ServerLevel level, BlockPos pos, int duration, ServerPlayer owner) {
+        return frostSurface(level, pos, duration, owner, Blocks.PACKED_ICE.defaultBlockState());
+    }
+
+    static boolean frostSurface(ServerLevel level, BlockPos pos, int duration, ServerPlayer owner, BlockState ice) {
         if (!level.hasChunkAt(pos) || level.isOutsideBuildHeight(pos) || !level.getWorldBorder().isWithinBounds(pos)
                 || !owner.mayBuild() || !level.mayInteract(owner, pos)) return false;
         Key key = new Key(level, pos.immutable());
@@ -146,7 +151,6 @@ public final class TemporaryBlocks {
         if (!above.isAir()) return false;
         if (net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(
                 new net.neoforged.neoforge.event.level.BlockEvent.BreakEvent(level, pos.immutable(), original, owner)).isCanceled()) return false;
-        BlockState ice = Blocks.PACKED_ICE.defaultBlockState();
         remember(level, new FrostRecovery(pos.immutable(), original, ice, level.getGameTime() + duration));
         if (!WorldMutationPolicy.place(owner, level, pos, ice)) { forgetRecovery(level, pos); return false; }
         PLACED.put(key, new Placed(level, pos.immutable(), original, ice, level.getGameTime() + duration, false));

@@ -132,7 +132,7 @@ public final class MiniBlast {
     public static void charge(Canvas c, Vec3 at, float k, float age, float size) {
         if (!c.glow()) return;
         float pulse = 1 + 0.18F * Mth.sin(age * 0.9F);
-        c.glow(at, (1.5F + 7 * k * k) * size * pulse, new float[] {1, 0.9F, 0.7F}, 0.55F * k + 0.15F);
+        c.glow(at, (1.5F + 4.5F * k * k) * size * pulse, new float[] {1, 0.9F, 0.7F}, 0.35F * k + 0.12F);
         c.glow(at, (0.6F + 2.4F * k) * size * pulse, new float[] {1, 0.98F, 0.9F}, 0.9F);
         c.line(at.add(0, -1, 0), at.add(0, 6 + 30 * k * size, 0), (0.2F + 1.2F * k) * size, new float[] {1, 0.92F, 0.75F}, 0.5F * k * k, 0);
     }

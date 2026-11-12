@@ -12,6 +12,7 @@ import com.jayptucker.heroesevolved.events.EclipseService;
 import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 import com.jayptucker.heroesevolved.progression.MasteryService;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
+import com.jayptucker.heroesevolved.time.TaczAmmoRecovery;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -680,10 +681,11 @@ public final class SpeedService {
         Vec3 eye = p.getEyePosition();
         if (!PlayerEnergyService.tryConsume(p, 2)) return false;
         CAUGHT.put(p.getUUID(), now + 4);
-        net.minecraft.world.item.ItemStack prize = net.minecraft.world.item.ItemStack.EMPTY;
+        net.minecraft.world.item.ItemStack prize;
         if (shot instanceof net.minecraft.world.entity.projectile.AbstractArrow arrow && arrow.pickup == net.minecraft.world.entity.projectile.AbstractArrow.Pickup.ALLOWED)
             prize = arrow.getPickupItemStackOrigin().copy();
         else if (shot instanceof net.minecraft.world.entity.projectile.ThrowableItemProjectile thrown) prize = thrown.getItem().copy();
+        else prize = TaczAmmoRecovery.recover(shot);
         Vec3 at = shot.position();
         shot.discard();
         if (!prize.isEmpty() && !p.getInventory().add(prize)) p.drop(prize, false);

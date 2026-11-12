@@ -233,7 +233,8 @@ public final class PowerCompatibilityGameTests {
                 int high = cells.stream().mapToInt(BlockPos::getY).max().orElseThrow();
                 h.assertTrue(farZ >= p.blockPosition().getZ() + 24 && high > low,
                         "Suspension Stitch extends the actual growing path and raises bounded stairs");
-                long lastRow = cells.stream().filter(pos -> pos.getZ() == farZ && h.getLevel().getBlockState(pos).is(Blocks.PACKED_ICE)).count();
+                long lastRow = cells.stream().filter(pos -> pos.getZ() == farZ
+                        && com.jayptucker.heroesevolved.cryo.FrostConstructBlock.isFrost(h.getLevel().getBlockState(pos))).count();
                 h.assertTrue(lastRow == 3, "Double Weave grows a real three-block-wide endpoint");
                 h.succeed();
             } finally { cleanup(p); }

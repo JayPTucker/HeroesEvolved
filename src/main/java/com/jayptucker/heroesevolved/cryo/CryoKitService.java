@@ -30,11 +30,11 @@ import java.util.*;
 
 /** Cryokinesis's connected kit: laid ice, accumulating Frost, controlled prisons and a prepared shatter. */
 public final class CryoKitService {
-    private record Stream(ServerPlayer owner, ServerLevel level, int tier, long until) {}
-    private record Cell(BlockPos pos, long at) {}
+    private record Cell(BlockPos pos, FrostConstructBlock.Form form, long at) {}
     private static final class Construct {
         final ServerPlayer owner; final ServerLevel level; final Vec3 base; final String shape; final long until;
         final Deque<Cell> pending; final Set<BlockPos> blocks = new LinkedHashSet<>();
+        long nextSpray;
         Construct(ServerPlayer owner, Vec3 base, String shape, List<Cell> cells, long until) {
             this.owner=owner;this.level=owner.serverLevel();this.base=base;this.shape=shape;this.until=until;
             cells.sort(Comparator.comparingLong(Cell::at));pending=new ArrayDeque<>(cells);
@@ -46,7 +46,6 @@ public final class CryoKitService {
         final Set<BlockPos> spires = new LinkedHashSet<>();
         Storm(ServerPlayer p,Vec3 center,int tier) {owner=p;level=p.serverLevel();this.center=center;this.tier=tier;began=level.getGameTime();until=began+220;}
     }
-    private static final Map<UUID,Stream> STREAMS=new HashMap<>();
     private static final Map<UUID,List<Construct>> CONSTRUCTS=new HashMap<>();
     private static final Map<UUID,Long> RESHAPE_READY=new HashMap<>();
     private static final Map<UUID,Prison> PRISONS=new HashMap<>();
@@ -76,35 +75,6 @@ public final class CryoKitService {
         }
         return null;
     }
-    public static boolean isStreaming(ServerPlayer p) {return STREAMS.containsKey(p.getUUID());}
-    public static boolean startStream(ServerPlayer p,int tier) {
-        if(!PowerRules.canAct(p)||isStreaming(p))return false;
-        STREAMS.put(p.getUUID(),new Stream(p,p.serverLevel(),Math.clamp(tier,1,5),p.serverLevel().getGameTime()+100));
-        ArmPosePayload.show(p,ArmPose.CRYO_WEAVE,100);pulse(STREAMS.get(p.getUUID()));return true;
-    }
-    public static boolean stopStream(ServerPlayer p) {
-        if(STREAMS.remove(p.getUUID())==null)return false;ArmPosePayload.clear(p);return true;
-    }
-    private static void pulse(Stream s) {
-        var p=s.owner;var level=s.level;Vec3 eye=p.getEyePosition(),aim=p.getLookAngle();
-        var hit=level.clip(new ClipContext(eye,eye.add(aim.scale(12)),ClipContext.Block.COLLIDER,ClipContext.Fluid.ANY,p));
-        double length=eye.distanceTo(hit.getLocation());
-        for(LivingEntity target:enemies(p,eye,13)) {
-            Vec3 delta=target.getBoundingBox().getCenter().subtract(eye);double along=delta.dot(aim);
-            if(along<0||along>length+.3||delta.subtract(aim.scale(along)).lengthSqr()>.65+target.getBbWidth()*.5||!p.hasLineOfSight(target))continue;
-            CryoService.coldHit(p,target,.8F+s.tier*.15F);
-            CryoService.chill(target,18+(SkillTreeService.has(p,"cryokinesis_2_0")?8:0),p);
-            AbilityEffects.send(level,Kind.CRYO_PRISON,target.position(),target.getEyePosition(),Math.max(.1,CryoService.frostPercent(target)/100.0));
-        }
-        if(hit.getType()==HitResult.Type.BLOCK) {
-            BlockPos pos=hit.getBlockPos();
-            if(level.getBlockState(pos).is(Blocks.WATER))TemporaryBlocks.freezeWater(level,pos,p);
-            else if(level.getBlockState(pos.above()).isAir())TemporaryBlocks.frostSurface(level,pos,100,p);
-        }
-        Vec3 palm=eye.add(aim.scale(.65)).add(new Vec3(-aim.z,0,aim.x).scale(.24)).add(0,-.38,0);
-        AbilityEffects.send(level,Kind.CRYO_RIME_STREAM,palm,hit.getLocation(),1);
-        if(level.getGameTime()%10==0)level.playSound(null,p.blockPosition(),SoundEvents.POWDER_SNOW_BREAK,SoundSource.PLAYERS,.65F,1.45F);
-    }
     public static int constructCount(ServerPlayer p) {return CONSTRUCTS.getOrDefault(p.getUUID(),List.of()).size();}
     public static List<BlockPos> constructBlocks(ServerPlayer p) {return CONSTRUCTS.getOrDefault(p.getUUID(),List.of()).stream().flatMap(c->c.blocks.stream()).toList();}
     public static boolean isAimingConstruct(ServerPlayer p) {
@@ -132,7 +102,9 @@ public final class CryoKitService {
         var level=p.serverLevel();var hit=level.clip(new ClipContext(p.getEyePosition(),p.getEyePosition().add(p.getLookAngle().scale(16)),ClipContext.Block.COLLIDER,ClipContext.Fluid.NONE,p));
         var list=CONSTRUCTS.computeIfAbsent(p.getUUID(),id->new ArrayList<>());
         Construct existing=list.stream().filter(c->c.level==level&&c.blocks.contains(hit.getBlockPos())).findFirst().orElse(null);
-        Vec3 forward=flat(p),right=new Vec3(-forward.z,0,forward.x);
+        Vec3 aim=flat(p);
+        Vec3 forward=Math.abs(aim.x)>Math.abs(aim.z)?new Vec3(Math.signum(aim.x),0,0):new Vec3(0,0,Math.signum(aim.z));
+        Vec3 right=new Vec3(-forward.z,0,forward.x);
         String shape=ramp?"ramp":existing==null?"wall":existing.shape.equals("wall")?"curve":existing.shape.equals("curve")?"ramp":"wall";
         Vec3 proposed=hit.getType()==HitResult.Type.BLOCK?hit.getLocation():p.position().add(forward.scale(4));
         BlockPos ground=surfaceBelow(level,BlockPos.containing(proposed),5);
@@ -141,13 +113,22 @@ public final class CryoKitService {
         else {p.displayClientMessage(Component.literal("Aim at ground or one of your ice constructs."),true);return false;}
         if(proposed.distanceToSqr(p.position())>18*18)return false;
         long now=level.getGameTime();List<Cell> cells=new ArrayList<>();
-        int half=shape.equals("ramp")?1:tier>=5?3:2;
-        for(int step=0;step<(shape.equals("ramp")?6:3);step++)for(int col=-half;col<=half;col++) {
-            Vec3 point=shape.equals("ramp")?proposed.add(forward.scale(step)).add(right.scale(col)).add(0,step/2,0)
-                    :proposed.add(right.scale(col)).add(forward.scale(shape.equals("curve")?col*col*.16:0)).add(0,step,0);
-            BlockPos pos=BlockPos.containing(point);
-            if(new AABB(pos).intersects(p.getBoundingBox()))continue;
-            cells.add(new Cell(pos,now+step*3L+Math.abs(col)));
+        boolean stairs=shape.equals("ramp");
+        int half=stairs?1:tier>=5?3:2;
+        for(int row=0;row<(stairs?7:3);row++)for(int col=-half;col<=half;col++) {
+            if(!stairs&&row==2&&Math.abs(col)==half&&tier<5)continue;
+            boolean folded=shape.equals("curve")&&Math.abs(col)>=2;
+            Vec3 point=proposed.add(right.scale(col)).add(forward.scale(stairs?row:folded?1:0));
+            BlockPos base=BlockPos.containing(point);
+            int height=stairs?base.getY()*2+row+1:0;
+            BlockPos pos=stairs?CryoBridge.atHeight(base,height):base.above(row);
+            var form=stairs?CryoBridge.form(height):row==2&&col!=0?FrostConstructBlock.Form.CROWN:FrostConstructBlock.Form.WALL;
+            long at=now+row*3L+Math.abs(col);
+            if(!new AABB(pos).intersects(p.getBoundingBox()))cells.add(new Cell(pos,form,at));
+            if(folded&&Math.abs(col)==2&&row<2) {
+                BlockPos returnCell=pos.offset(-(int)forward.x,0,-(int)forward.z);
+                if(!new AABB(returnCell).intersects(p.getBoundingBox()))cells.add(new Cell(returnCell,form,at));
+            }
         }
         if(cells.isEmpty())return false;
         int total=CONSTRUCTS.values().stream().mapToInt(List::size).sum();
@@ -155,16 +136,16 @@ public final class CryoKitService {
         long duration=(12+Math.clamp(tier,1,5)*2+(SkillTreeService.has(p,"cryokinesis_0_0")?4:0))*20L;
         // Fail a denied placement before consuming the cast, then let the remaining cells grow in order.
         Cell first=cells.getFirst();
-        if(!TemporaryBlocks.place(level,first.pos,Blocks.PACKED_ICE.defaultBlockState(),(int)duration,p))return false;
+        if(!TemporaryBlocks.place(level,first.pos,CryoBridge.state(first.form),(int)duration,p))return false;
         // Keep existing cover until the replacement has passed the real placement hooks.
         if(existing!=null){restoreExcept(existing,first.pos);list.remove(existing);}
         while(list.size()>=3)restoreExcept(list.removeFirst(),first.pos);
         Construct c=new Construct(p,proposed,shape,cells,now+duration);c.blocks.add(first.pos);c.pending.removeIf(cell->cell.pos.equals(first.pos));list.add(c);
         RESHAPE_READY.put(p.getUUID(),now+40);
+        CryoBlastService.stop(p);
         ArmPosePayload.show(p,ArmPose.CRYO_SCULPT,20);
-        AbilityEffects.send(level,Kind.CRYO_SCULPT,proposed,proposed.add(0,3,0),1);
-        Vec3 firstBase=Vec3.atBottomCenterOf(first.pos);
-        AbilityEffects.send(level,Kind.CRYO_SCULPT,firstBase,firstBase.add(0,1,0),.6);
+        CryoCastEffects.burst(p, proposed.add(0, stairs ? .45 : .7, 0), stairs ? .82F : 1.15F);
+        c.nextSpray=now+4;
         level.playSound(null,p.blockPosition(),SoundEvents.GLASS_PLACE,SoundSource.PLAYERS,1,.7F);return true;
     }
     private static void restore(Construct c) {for(BlockPos pos:c.blocks)TemporaryBlocks.restore(c.level,pos,c.owner);c.pending.clear();}
@@ -175,17 +156,24 @@ public final class CryoKitService {
         if(target==null)return false;
         if(CryoService.frostAmount(target)<40&&!CryoService.isFrozen(target)) {
             CryoService.chill(target,40,p);
-            p.displayClientMessage(Component.literal("Frost takes hold. Use Rime Stream, then seal the prison."),true);
-            return CryoService.frostAmount(target)>0;
+            p.displayClientMessage(Component.translatable("cryo.heroesevolved.prison_prime"),true);
+            if(CryoService.frostAmount(target)<=0)return false;
+            CryoCastEffects.burst(p,target.getBoundingBox().getCenter(),.65F);
+            return true;
         }
         if(!CryoService.freezeSolid(target,target instanceof ServerPlayer?60:80+tier*8,p))return false;
         PRISONS.put(p.getUUID(),new Prison(p,target,p.serverLevel()));
+        CryoBlastService.stop(p);
+        CryoCastEffects.burst(p,target.getBoundingBox().getCenter(),.95F);
         ArmPosePayload.show(p,ArmPose.CRYO_PRISON,18);AbilityEffects.send(p.serverLevel(),Kind.CRYO_PRISON,target.position(),target.getEyePosition(),1);return true;
     }
     public static boolean shatterPrison(ServerPlayer p) {
         Prison prison=PRISONS.remove(p.getUUID());if(prison==null)return false;
         if(!valid(p,prison.level)||!CryoService.isFrozen(prison.target)||p.distanceToSqr(prison.target)>16*16||!p.hasLineOfSight(prison.target))return true;
-        fracture(p,prison.target.position(),3,8);ArmPosePayload.show(p,ArmPose.CRYO_SHATTER,12);return true;
+        boolean charged = CryoBlastService.spendCharge(p);
+        CryoBlastService.stop(p);
+        fracture(p,prison.target.position(),charged ? 4.5 : 3,charged ? 12 : 8);
+        ArmPosePayload.show(p,ArmPose.CRYO_SHATTER,12);return true;
     }
     private static void fracture(ServerPlayer p,Vec3 center,double radius,float damage) {
         for(LivingEntity target:enemies(p,center,radius)) {
@@ -204,7 +192,10 @@ public final class CryoKitService {
         Vec3 center=hit.getType()==HitResult.Type.BLOCK?hit.getLocation():p.position().add(flat(p).scale(6));
         BlockPos ground=surfaceBelow(p.serverLevel(),BlockPos.containing(center),6);
         if(ground!=null)center=Vec3.atBottomCenterOf(ground.above());
-        STORMS.put(p.getUUID(),new Storm(p,center,tier));ArmPosePayload.show(p,ArmPose.CRYO_WHITEOUT,60);
+        STORMS.put(p.getUUID(),new Storm(p,center,tier));
+        CryoBlastService.stop(p);
+        ArmPosePayload.show(p,ArmPose.CRYO_WHITEOUT,60);
+        CryoCastEffects.burst(p,center.add(0,.3,0),1.45F);
         AbilityEffects.send(p.serverLevel(),Kind.CRYO_WHITEOUT,center,center.add(0,1,0),1);return true;
     }
     private static void stormSync(Storm s,int radius) {
@@ -236,21 +227,24 @@ public final class CryoKitService {
     }
     public static void tick(MinecraftServer server) {
         CryoCombatSkills.tick(server);
-        for(Stream s:List.copyOf(STREAMS.values())) {
-            long now=s.level.getGameTime();if(!valid(s.owner,s.level)||now>=s.until){stopStream(s.owner);continue;}
-            if(now%5==0){if(!PlayerEnergyService.tryConsume(s.owner,2)){stopStream(s.owner);continue;}MasteryService.awardEnergySpent(s.owner,2);pulse(s);}
-        }
+        CryoBlastService.tick(server.overworld().getGameTime());
         int budget=64;
         for(var entry:List.copyOf(CONSTRUCTS.entrySet())) {
             var list=entry.getValue();
             for(Construct c:List.copyOf(list)) {
                 long now=c.level.getGameTime();if(!valid(c.owner,c.level)||now>=c.until){restore(c);list.remove(c);continue;}
+                Vec3 freshIce=Vec3.ZERO;
+                int grown=0;
                 while(budget>0&&!c.pending.isEmpty()&&c.pending.peekFirst().at<=now) {
                     Cell cell=c.pending.removeFirst();budget--;
-                    if(TemporaryBlocks.place(c.level,cell.pos,Blocks.PACKED_ICE.defaultBlockState(),(int)Math.max(1,c.until-now),c.owner)) {
-                        c.blocks.add(cell.pos);Vec3 from=Vec3.atBottomCenterOf(cell.pos);
-                        AbilityEffects.send(c.level,Kind.CRYO_SCULPT,from,from.add(0,1,0),.6);
+                    if(TemporaryBlocks.place(c.level,cell.pos,CryoBridge.state(cell.form),(int)Math.max(1,c.until-now),c.owner)) {
+                        c.blocks.add(cell.pos);
+                        freshIce=freshIce.add(Vec3.atCenterOf(cell.pos));grown++;
                     }
+                }
+                if(grown>0&&now>=c.nextSpray) {
+                    CryoCastEffects.spray(c.owner,freshIce.scale(1.0/grown),.92F);
+                    c.nextSpray=now+4;
                 }
             }
             if(list.isEmpty())CONSTRUCTS.remove(entry.getKey());
@@ -270,13 +264,15 @@ public final class CryoKitService {
                 double angle=age*.17;Vec3 point=s.center.add(Math.cos(angle)*7,0,Math.sin(angle)*7);
                 BlockPos ground=surfaceBelow(s.level,BlockPos.containing(point),4);
                 if(ground!=null) {
-                    TemporaryBlocks.frostSurface(s.level,ground,140,s.owner);
+                    boolean grew=TemporaryBlocks.frostSurface(s.level,ground,140,s.owner);
                     if(s.spires.size()<32)for(int height=1;height<=2;height++) {
-                        BlockPos pos=ground.above(height);if(TemporaryBlocks.place(s.level,pos,Blocks.BLUE_ICE.defaultBlockState(),140,s.owner)) {
-                            s.spires.add(pos);Vec3 base=Vec3.atBottomCenterOf(pos);
-                            AbilityEffects.send(s.level,Kind.CRYO_SCULPT,base,base.add(0,1,0),.8);
+                        BlockPos pos=ground.above(height);
+                        var form=height==1?FrostConstructBlock.Form.WALL:FrostConstructBlock.Form.CROWN;
+                        if(TemporaryBlocks.place(s.level,pos,CryoBridge.state(form),140,s.owner)) {
+                            s.spires.add(pos);grew=true;
                         }
                     }
+                    if(grew)CryoCastEffects.spray(s.owner,Vec3.atBottomCenterOf(ground.above()).add(0,.45,0),1.05F);
                 }
                 for(Construct c:CONSTRUCTS.getOrDefault(s.owner.getUUID(),List.of()))if(c.base.distanceToSqr(s.center)<=144)
                     AbilityEffects.send(s.level,Kind.CRYO_BRANCH,s.center,c.base,1);
@@ -284,14 +280,15 @@ public final class CryoKitService {
         }
     }
     public static void forget(ServerPlayer p) {
-        stopStream(p);CryoRideService.forget(p);CryoCombatSkills.forget(p);CryoTechniqueService.forget(p);PRISONS.remove(p.getUUID());RESHAPE_READY.remove(p.getUUID());
+        CryoBlastService.forget(p);CryoRideService.forget(p);CryoCombatSkills.forget(p);CryoTechniqueService.forget(p);PRISONS.remove(p.getUUID());RESHAPE_READY.remove(p.getUUID());
         Storm storm=STORMS.get(p.getUUID());if(storm!=null){for(BlockPos pos:storm.spires)TemporaryBlocks.restore(storm.level,pos,p);endWhiteout(p,false);}
         var constructs=CONSTRUCTS.remove(p.getUUID());if(constructs!=null)constructs.forEach(CryoKitService::restore);
     }
     public static void clear() {
-        Set<ServerPlayer> owners=new HashSet<>();STREAMS.values().forEach(s->owners.add(s.owner));
+        CryoBlastService.clear();
+        Set<ServerPlayer> owners=new HashSet<>();
         CONSTRUCTS.values().forEach(l->l.forEach(c->owners.add(c.owner)));STORMS.values().forEach(s->owners.add(s.owner));
         PRISONS.values().forEach(p->owners.add(p.owner));owners.forEach(CryoKitService::forget);
-        STREAMS.clear();CONSTRUCTS.clear();RESHAPE_READY.clear();PRISONS.clear();STORMS.clear();CryoCombatSkills.clear();CryoTechniqueService.clear();CryoRideService.clear();
+        CONSTRUCTS.clear();RESHAPE_READY.clear();PRISONS.clear();STORMS.clear();CryoCombatSkills.clear();CryoTechniqueService.clear();CryoRideService.clear();
     }
 }

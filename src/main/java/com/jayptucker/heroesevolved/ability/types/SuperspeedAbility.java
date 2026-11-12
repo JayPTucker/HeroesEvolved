@@ -46,13 +46,21 @@ public final class SuperspeedAbility implements Ability {
                 net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(com.jayptucker.heroesevolved.HeroesEvolved.MOD_ID, "speed_wind_arms");
         @Override public AbilityActionDefinition definition() { return cyclone.definition(); }
         @Override public boolean canUse(AbilityUseContext c) {
-            return c.modifierHeld() ? !SpeedWindArms.active(c.player()) && !c.player().isPassenger() && !c.player().isSpectator() : cyclone.canUse(c);
+            return c.modifierHeld() ? !SpeedWindArms.active(c.player()) && !c.player().isPassenger() && !c.player().isSpectator()
+                    : !com.jayptucker.heroesevolved.speed.SpeedContainment.running(c.player()) && cyclone.canUse(c);
         }
         @Override public AbilityActivationResult activate(AbilityUseContext c) {
+            // A hot radioactive player in reach: run the heat out of them instead of a Cyclone.
+            if (!c.modifierHeld() && com.jayptucker.heroesevolved.speed.SpeedContainment.start(c.player(), c.abilityLevel()))
+                return AbilityActivationResult.SUCCESS;
             if (!c.modifierHeld()) return cyclone.activate(c);
             return SpeedWindArms.start(c.player()) ? AbilityActivationResult.SUCCESS : AbilityActivationResult.REJECTED;
         }
         @Override public void release(AbilityUseContext c) {
+            if (com.jayptucker.heroesevolved.speed.SpeedContainment.running(c.player())) {
+                com.jayptucker.heroesevolved.speed.SpeedContainment.release(c.player());
+                return;
+            }
             if (!SpeedWindArms.stop(c.player())) cyclone.release(c);
         }
         @Override public int energyCost(AbilityUseContext c) { return c.modifierHeld() ? SpeedWindArms.ENERGY : cyclone.energyCost(c); }

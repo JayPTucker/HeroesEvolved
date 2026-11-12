@@ -4,7 +4,6 @@ import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
 import com.jayptucker.heroesevolved.effects.AbilityEffects;
-import com.jayptucker.heroesevolved.effects.WorldMutationPolicy;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.expansion.ExpansionSkills;
 import com.jayptucker.heroesevolved.mimicry.MimicryService;
@@ -13,6 +12,7 @@ import com.jayptucker.heroesevolved.network.CryoRideStatePayload;
 import com.jayptucker.heroesevolved.progression.MasteryService;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.skills.SkillTreeService;
+import com.jayptucker.heroesevolved.speed.SpeedService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
@@ -44,16 +44,17 @@ public final class CryoRideService {
         final boolean priorNoGravity;
         final LinkedHashSet<BlockPos> cells = new LinkedHashSet<>();
         final Set<BlockPos> foundations = new java.util.HashSet<>();
-        Vec3 direction, previous, effectPoint;
+        Vec3 direction, previous, freshIce;
         float forward, strafe;
         boolean rise, brake, sprint;
-        int age, speedStep = 1, floor;
+        int age, speedStep = 1, surface, lowerSurface;
         double groundTop, unsupported;
         long inputAt;
-        Ride(ServerPlayer p, BlockPos support) {
+        Ride(ServerPlayer p, int supportHeight) {
             player = p; level = p.serverLevel(); priorNoGravity = p.isNoGravity();
-            direction = horizontal(p); previous = effectPoint = p.position();
-            floor = support.getY(); groundTop = floor + 1;
+            direction = horizontal(p); previous = p.position();
+            surface = lowerSurface = supportHeight;
+            groundTop = surface * .5;
             inputAt = level.getGameTime();
         }
     }
@@ -73,11 +74,20 @@ public final class CryoRideService {
     public static boolean toggle(ServerPlayer p, int level) {
         if (isRiding(p)) { stop(p, true); return true; }
         if (!canStart(p)) return false;
-        BlockPos support = ground(p.serverLevel(), p.position(), 2, Set.of());
-        if (support == null || p.getY() - support.getY() - 1 > 1.25) return false;
-        Ride ride = new Ride(p, support);
-        if (!platform(ride, p.position(), ride.floor)) return false;
+        BlockPos foot = BlockPos.containing(p.position().add(0,-.06,0));
+        var atFoot = p.level().getBlockState(foot);
+        int supportHeight;
+        if (FrostConstructBlock.isFrost(atFoot)) {
+            supportHeight = foot.getY()*2 + (int)(atFoot.getValue(FrostConstructBlock.FORM).top*2);
+        } else {
+            BlockPos support = ground(p.serverLevel(), p.position(), 2, Set.of());
+            if (support == null || p.getY() - support.getY() - 1 > 1.25) return false;
+            supportHeight = (support.getY()+1)*2;
+        }
+        Ride ride = new Ride(p, supportHeight);
+        if (!platform(ride, BlockPos.containing(p.position()).atY(0), ride.surface)) return false;
         RIDES.put(p.getUUID(), ride);
+        CryoCastEffects.spray(p, p.position().add(ride.direction.scale(.85)).add(0, -.06, 0), .62F);
         p.setNoGravity(true); p.resetFallDistance();
         p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.GLASS_PLACE, SoundSource.PLAYERS, .8F, 1.1F);
         sync(p);
@@ -115,25 +125,16 @@ public final class CryoRideService {
         }
         return null;
     }
-    private static boolean cell(Ride r, BlockPos pos) {
+    private static boolean cell(Ride r, BlockPos pos, int surface) {
         if (!r.level.hasChunkAt(pos) || r.level.isOutsideBuildHeight(pos)) return false;
-        if (!TemporaryBlocks.isTemporary(r.level, pos) && r.level.getBlockState(pos).is(net.minecraft.tags.BlockTags.ICE))
-            return WorldMutationPolicy.canEdit(r.player, r.level, pos);
         boolean wasTemporary = TemporaryBlocks.isTemporary(r.level, pos);
         var original = r.level.getBlockState(pos);
-        if (wasTemporary && !original.is(net.minecraft.tags.BlockTags.ICE)) return false;
         boolean foundation = !wasTemporary && (original.is(Blocks.WATER) || original.isFaceSturdy(r.level, pos, Direction.UP));
-        boolean placed;
-        if (wasTemporary) placed = TemporaryBlocks.refresh(r.level, pos, TAIL_TICKS, r.player);
-        else {
-            var state = r.level.getBlockState(pos);
-            placed = state.isFaceSturdy(r.level, pos, Direction.UP) && !state.is(Blocks.WATER)
-                    ? TemporaryBlocks.frostSurface(r.level, pos, TAIL_TICKS, r.player)
-                    : TemporaryBlocks.place(r.level, pos, Blocks.PACKED_ICE.defaultBlockState(), TAIL_TICKS, r.player);
-        }
-        if (!placed) return false;
-        // Riding someone else's ice may refresh support, but never takes ownership of their construct.
-        if (wasTemporary && !r.cells.contains(pos)) return true;
+        if (!CryoBridge.lay(r.player, pos, surface, TAIL_TICKS, r.cells.contains(pos))) return false;
+        // Riding existing ice never takes ownership of it.
+        if (!TemporaryBlocks.isTemporary(r.level, pos) || wasTemporary && !r.cells.contains(pos)) return true;
+        if (!original.equals(r.level.getBlockState(pos)))
+            r.freshIce = new Vec3(pos.getX()+.5, surface*.5+.05, pos.getZ()+.5);
         r.cells.remove(pos); r.cells.add(pos.immutable());
         if (foundation) r.foundations.add(pos.immutable());
         else if (!wasTemporary) r.foundations.remove(pos);
@@ -143,26 +144,30 @@ public final class CryoRideService {
         }
         return true;
     }
-    private static boolean platform(Ride r, Vec3 at, int floor) {
-        BlockPos center = new BlockPos(net.minecraft.util.Mth.floor(at.x), floor, net.minecraft.util.Mth.floor(at.z));
-        if (!cell(r, center)) return false;
-        boolean wide = SkillTreeService.has(r.player, "cryokinesis_double_weave");
-        if (wide) {
-            Vec3 side = new Vec3(r.direction.z, 0, -r.direction.x);
-            for (int sign : new int[]{-1, 1}) cell(r, BlockPos.containing(at.add(side.scale(sign))).atY(floor));
+    private static boolean platform(Ride r, BlockPos flat, int surface) {
+        BlockPos center = CryoBridge.atHeight(flat, surface);
+        if (!cell(r, center, surface)) return false;
+        if (SkillTreeService.has(r.player, "cryokinesis_double_weave")) {
+            Vec3 centerSpray = r.freshIce;
+            Direction side = CryoBridge.side(r.direction);
+            cell(r, center.relative(side), surface);
+            cell(r, center.relative(side.getOpposite()), surface);
+            if (centerSpray != null) r.freshIce = centerSpray;
         }
         return true;
     }
-    /** Fill every crossed cell so the fastest carve remains a connected, collidable ribbon. */
+
     private static boolean ribbon(Ride r, Vec3 from, Vec3 to) {
-        int samples = Math.max(1, (int) Math.ceil(from.distanceTo(to) / .45));
-        LinkedHashSet<BlockPos> centers = new LinkedHashSet<>();
-        for (int i = 0; i <= samples; i++) centers.add(BlockPos.containing(from.lerp(to, (double) i / samples)).atY(r.floor));
+        BlockPos under = BlockPos.containing(from).atY(0);
         boolean prepared = false;
-        for (BlockPos center : centers) {
-            // A new stair's first cell must wait until the rider's feet have cleared its top.
-            if (new AABB(center).intersects(r.player.getBoundingBox())) continue;
-            if (!platform(r, Vec3.atCenterOf(center), r.floor)) return false;
+        for (BlockPos flat : CryoBridge.route(from, to)) {
+            int height = r.surface;
+            BlockPos upper = CryoBridge.atHeight(flat, height);
+            if (height != r.lowerSurface && flat.equals(under)
+                    && r.player.getY() < height * .5 + .005) height = r.lowerSurface;
+            else if (height != r.lowerSurface && r.player.getY() < height * .5
+                    && new AABB(upper).intersects(r.player.getBoundingBox())) continue;
+            if (!platform(r, flat, height)) return false;
             prepared = true;
         }
         return prepared;
@@ -193,31 +198,34 @@ public final class CryoRideService {
         else if (travel > .04) r.unsupported += Math.min(2, travel);
         if (r.unsupported > 6 || p.getY() > r.groundTop + 6.25) { stop(p, true); return; }
         boolean rising = r.rise && level >= 4 && speed > .05;
-        if (r.age % 8 == 0) {
-            if (rising && p.getY() >= r.floor + .99 && r.floor + 2 <= r.groundTop + 6) r.floor++;
-            if (r.brake && r.floor + 1 > r.groundTop) r.floor--;
+        if (rising && r.age % 5 == 0 && p.getY() >= r.surface * .5 - .02 && (r.surface + 1) * .5 <= r.groundTop + 6) {
+            r.lowerSurface = r.surface;
+            r.surface++;
         }
-        if (actual != null) r.floor = Math.max(r.floor, actual.getY());
-        Vec3 ahead = p.position().add(r.direction.scale(Math.max(.8, speed * 2)));
+        if (actual != null && r.surface < (actual.getY() + 1) * 2)
+            r.lowerSurface = r.surface = (actual.getY() + 1) * 2;
+        double top = r.surface * .5;
+        double vertical = Math.clamp((top + .015 - p.getY()) * .55, -.30, .24);
+        double forwardSpeed = p.getY() < top - .08 ? Math.min(.18, speed) : speed;
+        Vec3 desired = r.direction.scale(forwardSpeed);
+        Vec3 velocity = p.getDeltaMovement().multiply(1,0,1).lerp(desired, r.brake || throttle == 0 ? steady ? .56 : .45 : .36);
+        Vec3 travelDirection = velocity.horizontalDistanceSqr() > .01 ? velocity.normalize() : r.direction;
+        Vec3 ahead = p.position().add(travelDirection.scale(Math.max(.9, velocity.horizontalDistance() * 1.65)));
         if (!ribbon(r, p.position(), ahead)) { stop(p, true); return; }
-        double vertical = Math.clamp((r.floor + 1.02 - p.getY()) * .45, -.3, .32);
-        double forwardSpeed = p.getY() < r.floor + .92 ? Math.min(.12, speed) : speed;
-        Vec3 desired = r.direction.scale(forwardSpeed).add(0, vertical, 0);
-        Vec3 velocity = p.getDeltaMovement().lerp(desired, r.brake || throttle == 0 ? steady ? .5 : .35 : .22);
-        if (!r.level.noCollision(p, p.getBoundingBox().move(velocity.multiply(1, 0, 1)))) {
-            if (p.getY() < r.floor + 1 && vertical > 0
-                    && r.level.noCollision(p, p.getBoundingBox().move(0, vertical, 0))) velocity = new Vec3(0, vertical, 0);
-            else { stop(p, true); return; }
+        Vec3 move = velocity.add(0, vertical, 0);
+        velocity = SpeedService.swept(p, move).subtract(p.position());
+        if (velocity.lengthSqr() < 1e-5) {
+            if (p.getY() < top && vertical > 0) velocity = SpeedService.swept(p, new Vec3(0, vertical, 0)).subtract(p.position());
+            if (velocity.lengthSqr() < 1e-5 && move.horizontalDistanceSqr() >= .01) { stop(p, true); return; }
         }
         p.setDeltaMovement(velocity); p.hurtMarked = true; p.resetFallDistance();
         p.connection.send(new ClientboundSetEntityMotionPacket(p));
         if (r.age % 3 == 0) {
             AbilityEffects.send(r.level, Kind.CRYO_RIDE, p.position(), p.position().add(velocity), 1);
-            if (r.effectPoint.distanceToSqr(p.position()) > .04) {
-                AbilityEffects.send(r.level, Kind.CRYO_RIBBON, r.effectPoint.add(0, -.02, 0), p.position().add(0, -.02, 0),
-                        SkillTreeService.has(p, "cryokinesis_double_weave") ? 3 : 1);
-                r.effectPoint = p.position();
-            }
+        }
+        if (r.age % 4 == 0 && r.freshIce != null) {
+            CryoCastEffects.spray(p, r.freshIce, .72F);
+            r.freshIce = null;
         }
         if (r.age % 10 == 0 && travel > .08 && SkillTreeService.has(p, "cryokinesis_1_2")) {
             for (LivingEntity enemy : r.level.getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(2.5),

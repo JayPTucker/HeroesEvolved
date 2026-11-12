@@ -27,7 +27,7 @@ import static net.minecraft.util.Mth.sin;
  * Superspeed drawn as geometry: Cyclone's wind round the runner's ring and the tornado it rises into, the gust
  * a sudden stop throws ahead, and outrunning the last minute (the wake, the breach, leaving and arriving).
  */
-final class SpeedArt {
+public final class SpeedArt {
     private static final float[] GOLD = rgb(0xFFC640), HOT = rgb(0xFFF4C8), AMBER = rgb(0xFF8C1E),
             WIND = {0.86F, 0.9F, 0.96F}, DUST = {0.84F, 0.79F, 0.7F}, DUST_DARK = {0.66F, 0.63F, 0.6F},
             CLOUD = {0.86F, 0.86F, 0.89F}, FUNNEL = {0.8F, 0.8F, 0.84F}, STORM = {0.52F, 0.53F, 0.58F}, SOOT = {0.1F, 0.08F, 0.07F},
@@ -51,6 +51,7 @@ final class SpeedArt {
             if (v.center.distanceToSqr(eye) > 200 * 200) continue;
             if (v.rose()) tornado(c, v, now);
             ring(c, v, now);
+            if (v.style == com.jayptucker.heroesevolved.network.SpeedCyclonePayload.CONTAIN && !v.ended()) containment(c, v, now);
         }
         for (SpeedOverrunClient.State s : SpeedOverrunClient.states()) overrun(c, s, now);
     }
@@ -107,6 +108,8 @@ final class SpeedArt {
         float age = v.age(now, c.partial), gone = v.gone(now, c.partial);
         float fade = gone < 0 ? 1 : 1 - gone / (v.rose() ? SpeedCyclone.TORNADO_FADE : SpeedCyclone.RING_FADE);
         float f = Mth.clamp(age / 6, 0, 1) * Mth.clamp(fade, 0, 1);
+        // A beaten runner's trail fades as they slow to a stop.
+        f *= 1 - 0.8F * v.stillness(now, c.partial);
         if (f <= 0.003F) return;
         Vec3 o = v.center;
         float r = v.radius, theta = v.angle(age);
@@ -389,6 +392,205 @@ final class SpeedArt {
         Vec3 ref = Math.abs(axis.y) > 0.9 ? new Vec3(1, 0, 0) : UP;
         Vec3 u = axis.cross(ref).normalize();
         return new Vec3[] {u, axis.cross(u).normalize()};
+    }
+
+    // ------------------------------------------------------------------
+    // Running the heat out of a radioactive player
+    // ------------------------------------------------------------------
+
+    private static final float[] RAD_GREEN = rgb(0xC4F23C), EMBER = rgb(0xFF4A0C), ASH = {0.36F, 0.34F, 0.33F};
+
+    /**
+     * A containment run: the runner's trail is wound into a spinning wall of light round the radioactive player, and
+     * their heat is dragged out of them on the wind: orange streams spiralling out to the wall, green motes pulled
+     * after them.
+     */
+    private static void containment(Canvas c, SpeedCyclone.View v, long now) {
+        float age = v.age(now, c.partial), f = Mth.clamp(age / 8, 0, 1);
+        Vec3 o = v.center;
+        float r = v.radius, theta = v.angle(age);
+        int seed = v.entity * 17;
+        // Holding a blast in builds over five seconds: everything grows denser, taller and brighter.
+        float hold = v.held == Long.MIN_VALUE ? 0 : Mth.clamp((now - v.held + c.partial) / 100F, 0, 1);
+        if (c.glow()) {
+            // The wall: the runner's light laid down lap over lap at every height, more of it the longer it holds.
+            int layers = 4 + (int) (hold * 4);
+            for (int k = 0; k < layers; k++) {
+                float h = 0.4F + k * (0.62F + hold * 0.1F);
+                trail(c, o, r, theta - k * 0.35F, h, 4.2F + hold * 1.5F, 0.16F + hold * 0.08F, k % 2 == 0 ? GOLD : HOT, (0.55F + 0.3F * hold) * f);
+            }
+            c.ring(o.add(0, 2.6 + hold * 2.6, 0), UP, r, 0.12F + hold * 0.1F, 0, TWO_PI, GOLD, (0.35F + 0.4F * hold) * f);
+            if (hold > 0) {
+                Vec3 core = o.add(0, 1.6, 0);
+                // Rings of pressure closing in on them, faster and faster.
+                for (int k = 0; k < 3; k++) {
+                    float phase = (age * (0.03F + 0.09F * hold) + k / 3F) % 1;
+                    c.ring(core, UP, (r - 0.6F) * (1 - phase) + 0.6F, 0.1F + 0.1F * hold, 0, TWO_PI, k == 0 ? HOT : GOLD,
+                            0.75F * phase * (0.4F + 0.6F * hold) * f);
+                }
+                // Gold lightning leaping from the wall to the one being held, more often as it comes.
+                int bolts = (int) (1 + hold * 5);
+                for (int k = 0; k < bolts; k++) {
+                    int flick = (int) (age / 2) + k * 13;
+                    if (hash(seed + flick, k) > 0.35F + 0.5F * hold) continue;
+                    float a0 = theta - hash(seed + flick, k + 3) * TWO_PI;
+                    Vec3 wall = o.add(cos(a0) * r, 0.5 + hash(seed + flick, k + 7) * 2.2, sin(a0) * r);
+                    c.bolt(wall, core.add(0, (hash(seed + flick, k + 9) - 0.5) * 0.8, 0), seed + flick, 0.35F, 0.04F + 0.03F * hold, HOT, 0.85F * f);
+                }
+                c.glow(core, 1.2F + 2.5F * hold, AMBER, 0.15F + 0.35F * hold);
+            }
+            // The heat dragged out: streams spiralling from the body out to the wall, behind the runner.
+            for (int s = 0; s < 5; s++) {
+                int n = 14;
+                Vec3[] p = new Vec3[n + 1];
+                float base = theta - 0.6F - s * TWO_PI / 5, h0 = 0.8F + hash(seed, s) * 1.2F;
+                for (int k = 0; k <= n; k++) {
+                    float u = k / (float) n, a = base - u * 1.6F, rr = 0.35F + u * (r - 0.35F);
+                    p[k] = o.add(cos(a) * rr, h0 + Mth.sin(u * Mth.PI) * 0.4F, sin(a) * rr);
+                }
+                c.ribbon(p, 0.12F, s % 2 == 0 ? EMBER : AMBER, 0.75F * f, 0.1F * f);
+            }
+            // Motes of radiation pulled out after the heat.
+            for (int m = 0; m < 10; m++) {
+                float cycle = (age * 0.09F + hash(seed, m + 20)) % 1;
+                float a = theta - 0.4F - cycle * 2.2F - m * 0.63F, rr = 0.3F + cycle * (r - 0.3F);
+                c.glow(o.add(cos(a) * rr, 0.9 + hash(seed, m + 30) * 1.3, sin(a) * rr), 0.14F, RAD_GREEN, 0.8F * f * Mth.sin(cycle * Mth.PI));
+            }
+        }
+        if (c.soft()) {
+            for (int b = 0; b < 3; b++)
+                arc(c, o, r * 0.94F, 0.6 + b * 0.8, theta - 2.6F + b, theta + b * 0.2F, 0.3F, WIND, 0.35F * f);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Burning away
+    // ------------------------------------------------------------------
+
+    private static final java.util.Map<Integer, Long> DISSOLVING = new java.util.HashMap<>();
+
+    /** Is this player burning away right now (so their body, or their corpse, is not drawn)? */
+    public static boolean disintegrating(int entity) {
+        Long until = DISSOLVING.get(entity);
+        var level = net.minecraft.client.Minecraft.getInstance().level;
+        if (until == null || level == null) return false;
+        if (level.getGameTime() > until) { DISSOLVING.remove(entity); return false; }
+        return true;
+    }
+
+    /** The body's parts, in blocks (width, height, depth, and the centre's x and y), facing +z. */
+    private static final float[][] PARTS = {
+            {0.5F, 0.5F, 0.5F, 0, 1.75F},           // head
+            {0.5F, 0.75F, 0.25F, 0, 1.125F},        // body
+            {0.25F, 0.75F, 0.25F, 0.375F, 1.125F},  // arms
+            {0.25F, 0.75F, 0.25F, -0.375F, 1.125F},
+            {0.25F, 0.75F, 0.25F, 0.125F, 0.375F},  // legs
+            {0.25F, 0.75F, 0.25F, -0.125F, 0.375F}};
+    private static final float CUBE = 0.125F;
+
+    /** When the burning has eaten enough of a runner that their running body is gone and only cubes are left. */
+    static final float CONSUMED = 50;
+
+    /** Is this runner's running body burnt up (so only the cubes of them are drawn, not the body)? */
+    public static boolean consumed(int entity) {
+        Long at = CONSUMED_AT.get(entity);
+        var level = net.minecraft.client.Minecraft.getInstance().level;
+        return at != null && level != null && level.getGameTime() >= at && disintegrating(entity);
+    }
+    private static final java.util.Map<Integer, Long> CONSUMED_AT = new java.util.HashMap<>();
+
+    /**
+     * A runner burning away, still running. Their body glows white-hot and cracks with gold light while their legs keep
+     * going round the ring; then it comes apart from the head down, each glowing cube left behind on the ring where it
+     * broke off, drifting up on the heat and cooling to ash. The runner slows as they burn, and the last of them, their
+     * legs, crumbles where they come to a stop.
+     */
+    static void disintegrate(Canvas c, Active a, float t) {
+        if (a.entity() >= 0 && c.level != null) {
+            DISSOLVING.put(a.entity(), Math.max(DISSOLVING.getOrDefault(a.entity(), 0L), a.start() + a.piece().ticks + 40));
+            CONSUMED_AT.putIfAbsent(a.entity(), a.start() + (long) CONSUMED);
+            if (CONSUMED_AT.size() > 64) CONSUMED_AT.clear();
+        }
+        // The runner on the ring at any moment of the burning (or, if the ring is gone, where the server last saw them).
+        SpeedCyclone.View view = null;
+        for (SpeedCyclone.View v : SpeedCyclone.views())
+            if (v.entity == a.entity() && v.failAt != Long.MIN_VALUE) { view = v; break; }
+        final SpeedCyclone.View ring = view;
+        Vec3 fallback = a.origin(), fallbackDir = a.facing();
+        java.util.function.Function<Float, Vec3[]> runnerAt = u -> {
+            if (ring == null) return new Vec3[] {fallback, fallbackDir};
+            float age = a.start() + u - ring.start;
+            float angle = ring.angle(age);
+            return new Vec3[] {ring.runner(age), new Vec3(-sin(angle), 0, cos(angle))};
+        };
+        Vec3[] now = runnerAt.apply(t);
+        Vec3 o = now[0], dir = now[1], side = new Vec3(dir.z, 0, -dir.x);
+        int seed = a.seed();
+        float life = a.piece().ticks;
+        int i = 0;
+        for (float[] part : PARTS) {
+            int nx = Math.round(part[0] / CUBE), ny = Math.round(part[1] / CUBE), nz = Math.round(part[2] / CUBE);
+            for (int x = 0; x < nx; x++) for (int y = 0; y < ny; y++) for (int z = 0; z < nz; z++, i++) {
+                float lx = part[3] - part[0] / 2 + (x + 0.5F) * CUBE, ly = part[4] - part[1] / 2 + (y + 0.5F) * CUBE, lz = -part[2] / 2 + (z + 0.5F) * CUBE;
+                // Top first: the head goes, then the body, the legs last of all.
+                float release = 20 + (2.0F - ly) * 22 + hash(seed, i) * 10;
+                float flown = t - release;
+                Vec3 at;
+                float heat, size;
+                if (flown < 0) {
+                    // Still part of them. While their body still runs, the body itself is drawn; after, these cubes are.
+                    if (t < CONSUMED) continue;
+                    at = o.add(side.scale(lx)).add(0, ly, 0).add(dir.scale(lz));
+                    heat = 1;
+                    size = CUBE;
+                } else {
+                    // Left behind on the ring where it broke off, drifting up and cooling.
+                    Vec3[] then = runnerAt.apply(release);
+                    Vec3 d0 = then[1], s0 = new Vec3(d0.z, 0, -d0.x);
+                    Vec3 home = then[0].add(s0.scale(lx)).add(0, ly, 0).add(d0.scale(lz));
+                    Vec3 out = new Vec3(lx, 0, lz).lengthSqr() < 1e-4 ? s0 : s0.scale(lx).add(d0.scale(lz)).normalize();
+                    float swirl = flown * 0.08F + hash(seed, i + 300) * TWO_PI;
+                    at = home.add(out.scale(flown * (0.02 + 0.02 * hash(seed, i + 100))))
+                            .add(cos(swirl) * flown * 0.009, flown * (0.03 + 0.03 * hash(seed, i + 200)), sin(swirl) * flown * 0.009);
+                    heat = 1 - Mth.clamp(flown / 34, 0, 1);
+                    size = CUBE * (1 - Mth.clamp(flown / 44, 0, 1)) * 0.9F;
+                }
+                if (size <= 0.004F) continue;
+                if (c.solid()) {
+                    float[] col = Canvas.mix(ASH, mix(EMBER, HOT, heat), heat);
+                    c.box(at, size, size, size, Math.max(0, flown) * 0.2F + i, Math.max(0, flown) * 0.15F, i, col, 1);
+                }
+                if (c.glow() && heat > 0.05F && (i % 2 == 0 || flown < 0))
+                    c.glow(at, size * 2.4F, flown > 0 ? AMBER : HOT, 0.5F * heat);
+            }
+        }
+        Vec3 body = o.add(0, 1.1, 0);
+        if (c.glow()) {
+            // The running body burning: a halo that follows them, gold cracks over them, a flash as they start to go.
+            float burning = Mth.clamp(t / 10, 0, 1) * (1 - Canvas.smooth(CONSUMED, CONSUMED + 30, t));
+            c.glow(body, 1.3F, AMBER, 0.45F * burning);
+            float crack = 1 - Canvas.smooth(CONSUMED - 10, CONSUMED + 10, t);
+            for (int k = 0; k < 6 && crack > 0; k++) {
+                if (t < k * 3) continue;
+                Vec3 p0 = o.add(side.scale((hash(seed, k + 400) - 0.5) * 0.5)).add(0, 0.2 + hash(seed, k + 410) * 1.7, 0);
+                Vec3 p1 = p0.add(side.scale((hash(seed, k + 420) - 0.5) * 0.6)).add(0, (hash(seed, k + 430) - 0.5) * 0.8, 0);
+                c.bolt(p0, p1, seed + k + (int) (t / 2), 0.2F, 0.03F, GOLD, 0.9F * crack * Mth.clamp((t - k * 3) / 4, 0, 1));
+            }
+            float flash = Canvas.smooth(16, 22, t) * (1 - Canvas.smooth(22, 32, t));
+            if (flash > 0) c.glow(body, 2.5F, HOT, 0.8F * flash);
+        }
+        if (c.soft()) {
+            // Ash smoke left hanging along the ring behind them.
+            CloudMesh.Shade ash = Shades.smoke(c, ASH, 0);
+            for (int k = 0; k < 9; k++) {
+                float start = 24 + k * 6;
+                if (t < start) continue;
+                float age = t - start, k2 = Mth.clamp(age / 30, 0, 1);
+                Vec3 left = runnerAt.apply(start)[0].add(0, 1.1, 0);
+                Vec3 at = left.add((hash(seed, k + 500) - 0.5) * 0.8, age * 0.06 + hash(seed, k + 510) * 0.6, (hash(seed, k + 520) - 0.5) * 0.8);
+                c.cloud(at, 0.3F + k2 * 0.7F, 0.25F + k2 * 0.5F, 0.3F + k2 * 0.7F, k, age * 0.03F, 0.45F * (1 - k2) * Mth.clamp((life - t) / 10, 0, 1), ash);
+            }
+        }
     }
 
     /** One streak of the air rushing on: it runs ahead, spreads and fades. */

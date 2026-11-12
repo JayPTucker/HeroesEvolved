@@ -107,9 +107,7 @@ public final class ProjectileTimeService {
     private static int interval(Projectile shot, Vec3 velocity) {
         Vec3 end = shot.position().add(velocity);
         if (TimeStopService.stopsProjectile(shot, end)) return STOPPED;
-        int perception = AdvancedTechniques.projectileInterval(shot, end);
-        if (perception == STOPPED) return STOPPED;
-        return Math.max(perception, TimeSlowService.projectileInterval(shot, end));
+        return Math.max(AdvancedTechniques.projectileInterval(shot, end), TimeSlowService.projectileInterval(shot, end));
     }
 
     /** A fast shot must also slow if its next normal step would cross a field. */

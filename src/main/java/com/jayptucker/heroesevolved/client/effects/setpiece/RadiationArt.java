@@ -338,6 +338,8 @@ final class RadiationArt {
         float span = Math.max(1, a.scale()), k = Mth.clamp(t / span, 0, 1);
         if (t > span + 2) return;
         Entity e = a.bound(c);
+        // A blast's charge ends when the charge does: cancelled, broken, or held in and defused by a speedster.
+        if (span >= 30 && t > 6 && e != null && com.jayptucker.heroesevolved.client.effects.RadiationVisuals.charge(e.getId(), e.getUUID()) < 0) return;
         Vec3 body = (e != null ? e.getPosition(c.partial) : a.origin()).add(0, 1.0, 0);
         Vec3 ground = a.origin().add(0, 0.06, 0);
         int seed = a.seed();

@@ -18,6 +18,9 @@ The HUD shows a **Core** bar under your ability list, with notches at each thres
 | 80–99 | **Critical** | **50% more damage**; Radiant Heat and a Fission Leap slam give two stages of sickness, and the heat burns longer. |
 | 100 | Meltdown | A three-second warning: vent (Meltdown Beam, EMP or Critical Mass) or containment fails. |
 
+A Cryokinetic player can hold Ice Blast on you to pause a meltdown and draw out Core. Continuous
+contact brings you down to 30 Core or less and ends the charge, including an involuntary detonation.
+
 **Radiation Sickness** is a stacking dose in five stages: each second it burns for half a heart per stage
 (armor does not help, and the undead are not spared) and saps attack strength. Whoever holds Induced
 Radioactivity is immune to it. A creature that dies while sick **bursts**, damaging and dosing everything
@@ -38,6 +41,29 @@ slam → EMP to vent** (or let the Core climb and finish with Critical Mass).
 
 Action IDs are unchanged (`radiation_pulse` is Fission Leap, `radiation_meltdown_beam` the beam,
 `radiation_exploding_man` Critical Mass), so saved loadouts, balance and config entries still apply.
+
+## Speedsters can hold it in
+
+A speedster (tier 4 and up) can run rings round you when you are Hot or about to blow: the run drains your Core,
+and if you are about to detonate (voluntarily or not) it holds the blast in and defuses it after five seconds.
+It can kill the speedster: if the heat would, they burn away to ash on the ring, and the blast still stops. See
+[Superspeed](superspeed.md#running-the-heat-out-of-a-radioactive-player).
+
+## Shields can hold the blast
+
+Players whose power raises shields survive a nuclear blast (Critical Mass or the awakening) if they are tier 4
+(Power Level 10) or higher. As the wave reaches them, a shield flares up round them in their power's own look:
+a force-field lattice (Invisibility), a shimmering kinetic shell (Telekinesis), plates of assembled matter
+(Matter Assembly), a crown of ice (Cryokinesis) or rings of sound (Sonic Resonance), with ripples running across
+the face turned to the blast.
+
+- The wave hurts them far less (half at tier 4, a quarter at tier 5), throws them a third as far and doesn't dose
+  them, and it can never take them below one heart.
+- The shield then stands, faint and flickering, for ten seconds: the fallout can't touch them while they get clear.
+- Below tier 4, or without a shield power, the blast hits as hard as ever.
+
+A blast only hurts other players where PvP is on (the server's `pvp` setting); with PvP off it never did.
+The logic is in `radiation/NuclearShields`; the art in `client/effects/setpiece/ShieldArt`.
 
 ## Skill tree
 

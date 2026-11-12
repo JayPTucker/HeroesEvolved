@@ -1,0 +1,23 @@
+// A speedster running the heat out of a radioactive player, holding in a blast, and burning away. Never bundled into the mod JAR.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('containPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/contain-preview')
+                        programArguments.addAll('--width', '1100', '--height', '800')
+                        systemProperty('heroes.preview.contain', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('containPreviewClasses')) }
+        }
+    }
+}

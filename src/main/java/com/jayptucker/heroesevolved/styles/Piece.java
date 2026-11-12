@@ -70,7 +70,12 @@ public enum Piece {
     // the disc are re-sent every ten ticks while they last.
     FORCE_SHIELD(12), FORCE_PUSH(14), FORCE_FORM(10), FORCE_BRIDGE(12), FORCE_WALL(12), FORCE_BUBBLE(12), FORCE_CRUSH(10),
     FORCE_BEAD(9), FORCE_NOVA_CHARGE(22), FORCE_NOVA(30), FORCE_DISC(12), FORCE_VANISH(18), FORCE_NET(16),
-    FORCE_SHATTER(18), FORCE_RIPPLE(8);
+    FORCE_SHATTER(18), FORCE_RIPPLE(8),
+    // A speedster burning away on a containment run
+    SPEED_DISINTEGRATE(104),
+    // A shield-maker's shield holding against a nuclear blast, then keeping the fallout off
+    SHIELD_BRACE(200),
+    CRYO_BLAST(6), CRYO_QUENCH(17), CRYO_CAST(14);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

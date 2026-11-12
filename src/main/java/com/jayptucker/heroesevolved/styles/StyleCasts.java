@@ -2,6 +2,7 @@ package com.jayptucker.heroesevolved.styles;
 
 import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.ability.Targeting;
+import com.jayptucker.heroesevolved.cryo.CryoCastEffects;
 import com.jayptucker.heroesevolved.network.CameraShakePayload;
 import com.jayptucker.heroesevolved.network.ScreenTintPayload;
 import com.jayptucker.heroesevolved.radiation.RadiationService;
@@ -189,6 +190,7 @@ public final class StyleCasts {
             case "hailstorm" -> {
                 Vec3 point = aim(p, 30);
                 float radius = 5;
+                CryoCastEffects.burst(p, point.add(0, 10, 0), 1.35F);
                 piece(p, Piece.HAILSTORM, at, point, radius, null);
                 sound(level, point.add(0, 10, 0), SoundEvents.LIGHTNING_BOLT_THUNDER, 0.4F, 1.6F);
                 StyleRuntime.run(p, 84, age -> {
@@ -203,6 +205,7 @@ public final class StyleCasts {
             }
             case "crystal_bastion" -> {
                 float radius = 3;
+                CryoCastEffects.burst(p, CryoCastEffects.localFrost(p, radius, .45), 1.35F);
                 piece(p, Piece.CRYSTAL_BASTION, at, at, radius, null);
                 effect(p, MobEffects.DAMAGE_RESISTANCE, 160, 0);
                 sound(level, at, SoundEvents.AMETHYST_BLOCK_PLACE, 1.5F, 0.6F);

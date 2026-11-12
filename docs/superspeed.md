@@ -51,10 +51,10 @@ Lightspeed spends all your Momentum.
 - **Catch.** Right-click an arrow or thrown item in flight within 7 blocks to catch it out of the air
   for 2 stamina. Arrows that could be picked up and thrown items go into your inventory. Fireballs
   and skulls are snuffed out. Perception also lets you catch shots it slows, including TACZ bullets,
-  while Accelerate is off. Slowed bullets glow so you can see where to aim.
+  while Accelerate is off. Slowed bullets glow and return matching ammo when caught.
 - **Perception** slows everything within 12 blocks (16 with Long Perception) to a third of its speed,
-  or a sixth with Flash Time. Your own pets are not slowed. Players can't be slowed tick by tick, so
-  hostile players get heavy Slowness instead. It has gold clock rings, hanging sparks and a slow heartbeat.
+  or a sixth with Flash Time. Other players move and recharge attacks more slowly across the server.
+  Projectiles keep moving even with Flash Time. Perception has gold clock rings, hanging sparks and a slow heartbeat.
 - **Lightning Throw** now uses your own gold lightning.
 ### Abilities
 
@@ -101,6 +101,32 @@ Keep the key held for 30 ticks and the ring **rises into a tornado**:
 
 A quick press is still the three-second ring. The server's wind and the drawing share one shape
 (`TornadoShape`) and one wind (`TornadoWind`), and Flight's Tempest uses the same tornado in the sky's colours.
+
+### Running the heat out of a radioactive player
+
+Press the Cyclone key (X, tier 4 and up) with a radioactive player within 10 blocks who is running **Hot**
+(40+ Core) or about to blow, and instead of a Cyclone you run rings round *them*, about twice as fast as a
+Cyclone, 4.5 blocks out (6.5 while holding a blast in, to keep clear of it). Your runner circles them inside a spinning wall of gold light, and their heat is dragged out on the wind:
+orange streams spiral out of their body to the wall, with green motes pulled after them.
+
+- **Cooling.** While they are only Hot, every tick of running carries a point of Core out of them, until they are
+  cool (10 Core) or ten seconds pass. Let go of the key and you stop.
+- **Containment.** If their containment is failing, or the blast is already charging (theirs or an involuntary
+  meltdown), the run **holds it in**: neither the warning nor the charge runs down while you run. Hold it for **five seconds**, while it builds (the wall of light
+  grows denser and taller, rings of pressure close in on them faster and faster, gold lightning leaps from the wall to
+  them, the ground shakes harder and the wind climbs), and it is **defused** with a cold shock rolling out over the
+  ground; their Core settles at 30. Once you are containing a blast you can't let go.
+- **The cost.** The heat you carry is paid in stamina: 1 stamina a unit at tier 5, 1.8 below it. When your stamina
+  runs out you overexert and the heat burns you instead (0.15 health a unit at tier 5, 0.4 below it). A full
+  containment carries 120 units (1.2 a tick): a tier-5 runner with stamina to spare comes out unhurt; a tier-4 runner at full
+  health and stamina barely lives; one already drained does not.
+- **Burning away.** If the heat would kill you, it has beaten you, but you take the rest of it with you: **the
+  blast stops at once**, and their Core drops to nothing. Your runner keeps running the ring as they burn: their body
+  glows white-hot and cracks with gold light, then comes apart from the head down, each glowing cube left behind on
+  the ring where it broke off, drifting up on the heat and cooling to ash. They slow as they go, and the last of them,
+  their legs, crumbles where they come to a stop. Nothing can hurt you while you burn, and you die only when it is
+  done, about five seconds after the heat beat you. The death message reads that you burned away holding back a
+  meltdown.
 
 ### Overrun: outrunning the last minute
 

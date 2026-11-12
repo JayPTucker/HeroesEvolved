@@ -32,13 +32,13 @@ import java.util.*;
 /** Guided construction, pressure-bearing rescue ice and Frost-sharing fracture networks. */
 public final class CryoTechniqueService {
     private static final class Loom {
-        final ServerPlayer owner; final ServerLevel level; final int length, width, baseFloor;
+        final ServerPlayer owner; final ServerLevel level; final int length, width, baseSurface;
         final long expires; final Set<BlockPos> cells = new LinkedHashSet<>();
-        Vec3 cursor, direction, desired; int steps, floor; long next, guideAt; boolean rise;
+        Vec3 cursor, direction, desired; int steps, surface; long next, guideAt; boolean rise;
         Loom(ServerPlayer p) {
             owner=p;level=p.serverLevel();length=has(p,"cryokinesis_suspension_stitch")?24:16;
             width=has(p,"cryokinesis_double_weave")?3:1;
-            cursor=p.position().add(0,-1,0);direction=desired=flat(p);floor=baseFloor=BlockPos.containing(cursor).getY();
+            cursor=p.position();direction=desired=flat(p);surface=baseSurface=(int)Math.round(cursor.y*2);
             rise=has(p,"cryokinesis_suspension_stitch")&&p.getLookAngle().y>.25;
             next=level.getGameTime();expires=next+240+length*3L;
         }
@@ -112,39 +112,43 @@ public final class CryoTechniqueService {
         LOOMS.put(p.getUUID(),loom);ArmPosePayload.show(p,ArmPose.CRYO_LOOM,30);
         message(p,"Rime Loom is growing. Aim and press again to bend the remaining weave.");return true;
     }
-    private static boolean cell(Loom loom,BlockPos pos) {
-        ServerLevel level=loom.level;
-        if(!level.hasChunkAt(pos)||level.isOutsideBuildHeight(pos)||!level.getWorldBorder().isWithinBounds(pos))return false;
-        var state=level.getBlockState(pos);boolean temporary=TemporaryBlocks.isTemporary(level,pos);
-        // Existing ice is a usable foundation, never a new owned temporary block.
-        if(!temporary&&state.is(net.minecraft.tags.BlockTags.ICE))
-            return com.jayptucker.heroesevolved.effects.WorldMutationPolicy.canEdit(loom.owner,level,pos);
-        boolean placed=temporary?state.is(net.minecraft.tags.BlockTags.ICE)&&TemporaryBlocks.refresh(level,pos,240,loom.owner)
-                :state.isFaceSturdy(level,pos,Direction.UP)&&!state.is(Blocks.WATER)
-                ?TemporaryBlocks.frostSurface(level,pos,240,loom.owner)
-                :TemporaryBlocks.place(level,pos,Blocks.PACKED_ICE.defaultBlockState(),240,loom.owner);
-        if(placed&&(!temporary||loom.cells.contains(pos)))loom.cells.add(pos.immutable());
-        if(placed){Vec3 base=Vec3.atBottomCenterOf(pos);AbilityEffects.send(level,Kind.CRYO_SCULPT,base,base.add(0,1,0),.6);}
-        return placed;
+    private static boolean cell(Loom loom,BlockPos pos,int surface) {
+        boolean temporary=TemporaryBlocks.isTemporary(loom.level,pos);
+        if(!CryoBridge.lay(loom.owner,pos,surface,240))return false;
+        if(!temporary&&TemporaryBlocks.isTemporary(loom.level,pos))loom.cells.add(pos.immutable());
+        return true;
     }
     private static boolean lay(Loom loom) {
+        int before=loom.cells.size();
         Vec3 prior=loom.cursor;
         double heading=Math.atan2(loom.direction.z,loom.direction.x),wanted=Math.atan2(loom.desired.z,loom.desired.x);
         double turn=Math.atan2(Math.sin(wanted-heading),Math.cos(wanted-heading));
         heading+=Math.clamp(turn,-Math.PI/6,Math.PI/6);loom.direction=new Vec3(Math.cos(heading),0,Math.sin(heading));
         Vec3 next=prior.add(loom.direction);
-        if(loom.rise&&loom.steps>0&&loom.steps%4==0&&loom.floor<loom.baseFloor+6)loom.floor++;
-        BlockPos center=BlockPos.containing(next).atY(loom.floor);
-        if(!cell(loom,center))return false;
-        // A diagonal weave fills every crossed cell, keeping collision continuous through its bend.
-        BlockPos middle=BlockPos.containing(prior.lerp(next,.5)).atY(loom.floor);
-        if(!middle.equals(center)&&!middle.equals(BlockPos.containing(prior).atY(loom.floor)))cell(loom,middle);
-        if(loom.width==3) {
-            Vec3 side=new Vec3(-loom.direction.z,0,loom.direction.x);
-            for(int sign:new int[]{-1,1})cell(loom,BlockPos.containing(next.add(side.scale(sign))).atY(loom.floor));
+        BlockPos start=BlockPos.containing(prior).atY(0);
+        if(BlockPos.containing(next).atY(0).equals(start))next=next.add(loom.direction.scale(.45));
+        int surface=loom.surface;
+        if(loom.rise&&loom.steps>0&&loom.steps%2==0&&surface<loom.baseSurface+12)surface++;
+        for(BlockPos flat:CryoBridge.route(prior,next)) {
+            if(flat.equals(start))continue;
+            BlockPos center=CryoBridge.atHeight(flat,surface);
+            var headroom=new AABB(center.getX()+.12,surface*.5+.01,center.getZ()+.12,
+                    center.getX()+.88,surface*.5+1.82,center.getZ()+.88);
+            if(!loom.level.noCollision(loom.owner,headroom)||!cell(loom,center,surface))return false;
+            if(loom.width==3) {
+                Direction side=CryoBridge.side(loom.direction);
+                cell(loom,center.relative(side),surface);
+                cell(loom,center.relative(side.getOpposite()),surface);
+            }
         }
-        loom.cursor=new Vec3(next.x,loom.floor,next.z);loom.steps++;loom.next=loom.level.getGameTime()+3;
-        AbilityEffects.send(loom.level,Kind.CRYO_LOOM,prior.add(0,1.02,0),loom.cursor.add(0,1.02,0),loom.width);
+        loom.surface=surface;loom.cursor=new Vec3(next.x,surface*.5,next.z);
+        if(loom.cells.size()>before) {
+            Vec3 tip=loom.cursor.add(0,.12,0);
+            float width=loom.width==3?.95F:.7F;
+            if(loom.steps==0)CryoCastEffects.burst(loom.owner,tip,width);
+            else if(loom.steps%2==0||loom.steps+1==loom.length)CryoCastEffects.spray(loom.owner,tip,width);
+        }
+        loom.steps++;loom.next=loom.level.getGameTime()+3;
         return true;
     }
     private static boolean startCocoon(AbilityUseContext c) {
@@ -157,6 +161,8 @@ public final class CryoTechniqueService {
         if(has(p,"cryokinesis_sterile_ice"))for(var effect:List.copyOf(target.getActiveEffects()))
             if(effect.getEffect().value().getCategory()==net.minecraft.world.effect.MobEffectCategory.HARMFUL)target.removeEffect(effect.getEffect());
         ArmPosePayload.show(p,ArmPose.CRYO_SHELTER,20);shell(cocoon);
+        Vec3 frostTarget=target==p?CryoCastEffects.localFrost(p,.95,.83):target.getBoundingBox().getCenter();
+        CryoCastEffects.burst(p,frostTarget,.86F);
         message(p,"Stillheart catches impacts in its shell. Press again to open it and release the stored cold.");return true;
     }
     private static boolean ownerOfCocoonValid(Cocoon c) {
@@ -202,7 +208,9 @@ public final class CryoTechniqueService {
         Stars stars=new Stars(p,targets);STARS.put(p.getUUID(),stars);
         sharing=true;
         try{for(LivingEntity target:targets)CryoService.chill(target,30,p);}finally{sharing=false;}
-        ArmPosePayload.show(p,ArmPose.CRYO_STARS,24);starVisuals(stars);return true;
+        ArmPosePayload.show(p,ArmPose.CRYO_STARS,24);
+        CryoCastEffects.burst(p,targets.getFirst().getEyePosition(),.72F);
+        starVisuals(stars);return true;
     }
     public static void shareFrost(ServerPlayer caster,LivingEntity origin,int amount) {
         if(sharing||caster==null||amount<=0)return;

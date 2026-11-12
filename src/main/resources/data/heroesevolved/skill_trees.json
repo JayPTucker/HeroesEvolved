@@ -529,7 +529,7 @@
       [
         {
           "name": "Hoarfrost",
-          "description": "Rime Stream builds Frost faster, letting sustained cold form a brittle shell sooner."
+          "description": "Ice Blast builds Frost faster, letting sustained cold form a brittle shell sooner."
         },
         {
           "name": "Cold Snap",
@@ -2147,7 +2147,7 @@
         {
           "id": "superspeed_perception",
           "name": "Perception",
-          "description": "For six seconds the world slows around you: everything within 12 blocks moves at a third of its speed, enemy players are dragged down, and projectiles crawl.",
+          "description": "For six seconds, other players across the server and entities within 12 blocks move at a third of their speed. Incoming shots slow enough to catch.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -2159,7 +2159,7 @@
         {
           "id": "superspeed_long_perception",
           "name": "Long Perception",
-          "description": "Perception lasts ten seconds and reaches 16 blocks.",
+          "description": "Perception lasts ten seconds and reaches entities and projectiles within 16 blocks.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -2169,7 +2169,7 @@
         {
           "id": "superspeed_flash_time",
           "name": "Flash Time",
-          "description": "Projectiles near you stop dead in the air, and everything else slows to a sixth, while Perception lasts.",
+          "description": "Other players and nearby entities slow to a sixth while Perception lasts. Incoming shots keep moving so you can catch them.",
           "active": false,
           "capstone": true,
           "level": 5,

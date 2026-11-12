@@ -17,7 +17,11 @@ public final class ClientArmPoseState {
     }
 
     public static void set(int entityId, ArmPose pose, int durationTicks) {
-        if (durationTicks <= 0) {
+        if (durationTicks < 0) {
+            POSES.computeIfPresent(entityId, (id, entry) -> entry.pose == pose ? null : entry);
+            return;
+        }
+        if (durationTicks == 0) {
             POSES.remove(entityId);
             return;
         }

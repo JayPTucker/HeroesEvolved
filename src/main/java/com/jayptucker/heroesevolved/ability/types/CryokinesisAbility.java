@@ -2,6 +2,7 @@ package com.jayptucker.heroesevolved.ability.types;
 
 import com.jayptucker.heroesevolved.ability.*;
 import com.jayptucker.heroesevolved.cryo.CryoService;
+import com.jayptucker.heroesevolved.cryo.CryoBlastService;
 import com.jayptucker.heroesevolved.cryo.CryoKitService;
 import com.jayptucker.heroesevolved.cryo.CryoRideService;
 import net.minecraft.resources.ResourceLocation;
@@ -18,10 +19,10 @@ public final class CryokinesisAbility implements Ability {
                 @Override public AbilityActionDefinition definition(){return definition;}
                 @Override public int energyCost(int level){return COMMON.cryoBoltEnergyCost.get();}
                 @Override public int cooldownTicks(int level){return COMMON.cryoBoltCooldownTicks.get();}
-                @Override public boolean canUse(AbilityUseContext c){return !CryoKitService.isStreaming(c.player());}
-                @Override public AbilityActivationResult activate(AbilityUseContext c){return CryoKitService.startStream(c.player(),c.abilityLevel())?AbilityActivationResult.SUCCESS:AbilityActivationResult.REJECTED;}
-                @Override public void release(AbilityUseContext c){CryoKitService.stopStream(c.player());}
-                @Override public boolean deactivate(AbilityUseContext c){return CryoKitService.stopStream(c.player());}
+                @Override public boolean canUse(AbilityUseContext c){return !CryoBlastService.isStreaming(c.player());}
+                @Override public AbilityActivationResult activate(AbilityUseContext c){return CryoBlastService.start(c.player(),c.abilityLevel())?AbilityActivationResult.SUCCESS:AbilityActivationResult.REJECTED;}
+                @Override public void release(AbilityUseContext c){CryoBlastService.stop(c.player());}
+                @Override public boolean deactivate(AbilityUseContext c){return CryoBlastService.stop(c.player());}
             },
             AbilitySlot.SECONDARY, SimpleAction.builder("cryo_flash_freeze",2)
                     .cost(COMMON.cryoWallEnergyCost::get,COMMON.cryoWallCooldownTicks::get)

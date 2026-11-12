@@ -31,7 +31,7 @@ public final class CryoEvents {
     private CryoEvents() {
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onServerTick(ServerTickEvent.Post event) {
         CryoService.tick(event.getServer());
         TemporaryBlocks.tick(event.getServer());

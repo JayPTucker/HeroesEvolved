@@ -68,4 +68,9 @@ public record ArmPosePayload(
     public static void clear(ServerPlayer player) {
         show(player, ArmPose.ONE_HAND, 0);
     }
+
+    /** Ends one gesture without dropping a newer pose started by a different action. */
+    public static void clearIf(ServerPlayer player, ArmPose pose) {
+        show(player, pose, -1);
+    }
 }

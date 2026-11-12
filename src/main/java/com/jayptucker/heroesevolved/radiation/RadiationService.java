@@ -89,6 +89,7 @@ public final class RadiationService {
     private static final List<Zone> ZONES = new java.util.ArrayList<>();
     private static final Map<UUID, Long> BREACHES = new HashMap<>();
     private static final Map<UUID, Detonation> DETONATIONS = new HashMap<>();
+    private static final Map<UUID, Long> LAST_HELD = new HashMap<>();
     private static final Map<UUID, Long> LAST_HURT = new HashMap<>();
 
     private RadiationService() {
@@ -487,7 +488,7 @@ public final class RadiationService {
         ArmPosePayload.show(player, ArmPose.ARMS_WIDE, DETONATION_CHARGE_TICKS + 10);
         SetPiecePayload.send(player.serverLevel(), Piece.RAD_CHARGE, player.position(), player.position().add(0, 1, 0),
                 DETONATION_CHARGE_TICKS, player);
-        ScreenTintPayload.send(player, 0x50FFFFE0, DETONATION_CHARGE_TICKS,
+        ScreenTintPayload.send(player, 0x30FFFFE0, DETONATION_CHARGE_TICKS,
                 ScreenTintPayload.Style.HOLD);
         player.sendSystemMessage(Component.literal(voluntary
                 ? "You stop holding it in. (Shift + key to stop it.)"
@@ -496,6 +497,45 @@ public final class RadiationService {
             MasteryService.markPowerUse(player, ModAbilities.RADIATION_ID);
         }
         syncVisuals(player);
+    }
+
+    // ------------------------------------------------------------------
+    // Containment from outside
+    // ------------------------------------------------------------------
+
+    /** About to blow: containment is failing (the warning) or the blast is already charging. */
+    public static boolean critical(ServerPlayer player) {
+        return BREACHES.containsKey(player.getUUID()) || DETONATIONS.containsKey(player.getUUID());
+    }
+
+    /** One more tick held back: neither the warning nor the charge runs down while something outside contains it. */
+    public static void hold(ServerPlayer player) {
+        UUID id = player.getUUID();
+        if (!critical(player)) return;
+        long now = player.serverLevel().getGameTime();
+        Long previous = LAST_HELD.put(id, now);
+        if (previous != null && previous == now) return;
+        BREACHES.computeIfPresent(id, (key, at) -> at + 1);
+        DETONATIONS.computeIfPresent(id, (key, d) -> new Detonation(d.at + 1, d.voluntary));
+    }
+
+    /**
+     * The blast is defused from outside: the warning and any charge, voluntary or not, end, and Core settles at
+     * {@code core}.
+     */
+    public static void defuse(ServerPlayer player, int core) {
+        boolean was = critical(player);
+        BREACHES.remove(player.getUUID());
+        DETONATIONS.remove(player.getUUID());
+        LAST_HELD.remove(player.getUUID());
+        CHARGE_DAMAGE.remove(player.getUUID());
+        RadiationDecay.clear(player);
+        setMass(player, Math.min(mass(player), core));
+        ScreenTintPayload.send(player, 0x50FFFFE0, 0, ScreenTintPayload.Style.HOLD);
+        ArmPosePayload.clear(player);
+        refreshGlow(player);
+        if (was) player.sendSystemMessage(Component.literal("Something tore the heat out of you. The light is gone.")
+                .withStyle(ChatFormatting.AQUA));
     }
 
     /** Hit hard enough while charging: the light is knocked back in. Only a voluntary charge can be broken. */
@@ -734,6 +774,7 @@ public final class RadiationService {
         DETONATIONS.remove(player.getUUID());
         CHARGE_DAMAGE.remove(player.getUUID());
         LAST_HURT.remove(player.getUUID());
+        LAST_HELD.remove(player.getUUID());
         PacketDistributor.sendToPlayersTrackingEntityAndSelf(player,
                 new RadiationStatePayload(player.getId(), player.getUUID(), 0, 0, 1));
         if (player.hasGlowingTag()) {
@@ -744,6 +785,7 @@ public final class RadiationService {
     public static void clear() {
         RadiationDecay.clearAll();
         BREACHES.clear(); DETONATIONS.clear(); LAST_HURT.clear(); EMISSIONS.clear(); ZONES.clear(); CHARGE_DAMAGE.clear();
+        LAST_HELD.clear();
         RadiationSickness.clear();
         RadiationLeap.clear();
         RadiationSkills.clear();
