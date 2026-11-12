@@ -1,44 +1,67 @@
-# Ted Sprague: induced radioactivity
+# Induced Radioactivity
 
-Design sources: [Ted Sprague](https://heroes.fandom.com/wiki/Ted_Sprague) and
-[Radiation Emission](https://heroes.fandom.com/wiki/Radiation_Emission). The
-adaptation centers on heat, toxic radiation, bright emissions, EMPs, injury-driven
-loss of control and immunity to his own emissions. Peter's borrowed-power
-mechanics have been removed from this power. In the story, whoever owns Radiation
-now carries Sprague's heat, centuries after Odessa (see [The Past](the-past.md)). The numeric ranges, timers and protections below are game design
-choices, including the requested protected first awakening.
+A reactor you run hot. Induced Radioactivity is heat, a radiation sickness that spreads through a crowd,
+electromagnetic pulses and, at the top, a nuclear blast. Design source:
+[Radiation Emission](https://heroes.fandom.com/wiki/Radiation_Emission). The numbers below are game design
+choices.
 
-## The rework: a reactor you run hot
+## Core: the hotter you run, the stronger you are
 
-Core (the stored "stress") still builds as you use your power and as you are hurt, but it is
-now fuel rather than only a danger: the hotter you run, the stronger you are. The HUD shows a
-**Core** bar under your ability list with notches at each threshold, replacing the old action-bar text.
+Core (the stored "stress") builds as you use your power and as you are hurt. It is fuel as well as a danger.
+The HUD shows a **Core** bar under your ability list, with notches at each threshold.
 
 | Core | State | What it does |
 | --- | --- | --- |
 | 0–39 | Stable | Normal strength. |
-| 40–79 | **Hot** | Radiation powers deal **25% more damage**. A Geiger counter starts to crackle around you. |
+| 40–79 | **Hot** | Radiation powers deal **25% more damage**, and Radiant Heat sets what it hits alight. A Geiger counter crackles around you. |
 | 60+ | **Glowing** | You glow orange, and radiation leaks onto **enemies** within 3 blocks (never allies). |
-| 80–99 | **Critical** | **50% more damage**; Radiant Heat and Contamination give two stages of sickness and set targets alight. |
-| 100 | Meltdown | The existing three-second warning: vent (Controlled Emission, EMP or Exploding Man) or containment fails. |
+| 80–99 | **Critical** | **50% more damage**; Radiant Heat and a Fission Leap slam give two stages of sickness, and the heat burns longer. |
+| 100 | Meltdown | A three-second warning: vent (Meltdown Beam, EMP or Critical Mass) or containment fails. |
 
-**Radiation Sickness** replaces the old Poison, Hunger and Weakness. It is a stacking dose in five
-stages: each second it burns for half a heart per stage (armor does not help, and the undead are not
-spared) and saps attack strength. Ted and anyone holding his power are immune. A creature that dies
-while sick **bursts**, damaging and dosing everything around it, so radiation spreads through a crowd
-as a chain reaction.
+**Radiation Sickness** is a stacking dose in five stages: each second it burns for half a heart per stage
+(armor does not help, and the undead are not spared) and saps attack strength. Whoever holds Induced
+Radioactivity is immune to it. A creature that dies while sick **bursts**, damaging and dosing everything
+around it, so radiation spreads through a crowd as a chain reaction.
 
-| Level | Action | Behavior |
-| --- | --- | --- |
-| 1 | Radiant Heat | A white-hot **cone** from your palms burns and doses up to six enemies within 8 blocks. With nothing in reach, the heat still works on terrain: it boils source water, thaws ice and melts iron doors, trapdoors or bars (permissions and protection events apply). +6 Core. |
-| 2 | Contamination | A pulse of sickness around you (6 + level blocks) that leaves the ground **contaminated for 8 seconds**: anyone who stands in it later keeps getting dosed. **Shift** emits the bright, blinding flash instead. +12 Core. |
-| 3 | Electromagnetic Pulse | Still suppresses redstone within 16 blocks for 10 seconds, and now kills powered machines too: Forge Energy machines (Mekanism, Thermal...) are drained and stop, and Create's shafts seize (see [Powers and machines](machines.md)). It also throws enemies within 10 blocks off balance (slowed, weakened, revealed) and **vents 25 Core**: your panic button. |
-| 4 | Controlled Emission | **Hold** to pour Core out through a piercing heat beam (48-block reach). Each pulse vents 3 Core and hits harder the more is left; it ends when you let go, run cool, or after five seconds. Needs 10 Core to start. **Shift** stops it at once. |
-| 5 | Nuclear Detonation | Unchanged: a three-second voluntary charge that Shift cancels while control remains; an involuntary meltdown cannot be cancelled. |
+## Abilities
+
+| Key | Level | Action | What it does |
+| --- | --- | --- | --- |
+| G | 1 | **Radiant Heat** | A white-hot **cone** from your palms burns, doses and **throws back** up to six enemies within 8 blocks, harder the closer they stand. Once you run Hot it sets them alight (longer when Critical). With nothing in reach, the heat works on terrain: it boils source water, thaws ice and melts iron doors, trapdoors or bars (permissions and protection events apply). +6 Core. |
+| H | 2 | **Fission Leap** | A blast under your feet **launches you** about ten blocks up and forward; the shock where you left throws and doses enemies within 3.5 blocks. **Press again in the air to slam** down along your aim (always at least a steep dive): you land in a bigger blast (4 + level / 2 blocks) that throws and doses everything around and leaves the ground **contaminated for 8 seconds**, so anyone who walks in later keeps getting dosed. The second press is free. You take no fall damage from a leap. +8 Core for each blast. |
+| Z | 3 | **EMP** | Kills redstone within 16 blocks for 10 seconds and powered machines too: Forge Energy machines (Mekanism, Thermal...) are drained and stop, and Create's shafts seize (see [Powers and machines](machines.md)). Its front **shoves enemies within 10 blocks away**, slowed, weakened and revealed. It **vents 25 Core**: your panic button. |
+| X | 4 | **Meltdown Beam** | **Hold** to pour Core out through a thick, piercing heat beam (48-block reach) that you sweep with your aim. Each pulse vents 3 Core and hits everything on the line harder the more Core is left; it ends when you let go, run cool, or after five seconds. Needs 10 Core to start. **Shift** stops it at once. |
+| V | 5 | **Critical Mass** | You **rise off the ground**, glowing brighter, for **three seconds**, then detonate: the nuclear blast below. The charge is long on purpose, so others can stop you: Shift cancels it, and **taking 8 damage while charging breaks it**. An involuntary meltdown cannot be cancelled or broken. |
+
+A good sequence: **Radiant Heat to build Core → Fission Leap into a crowd → Meltdown Beam from the air →
+slam → EMP to vent** (or let the Core climb and finish with Critical Mass).
+
+Action IDs are unchanged (`radiation_pulse` is Fission Leap, `radiation_meltdown_beam` the beam,
+`radiation_exploding_man` Critical Mass), so saved loadouts, balance and config entries still apply.
+
+## Look and feel
+
+Every move is drawn in 3D on every nearby client (`client/effects/setpiece/RadiationArt`), in three colours:
+**heat** is orange going white-hot, **sickness** is a sickly yellow-green, and the **EMP** is a cold electric blue.
+
+- **Radiant Heat:** the palms flare white, rings of heat race out and widen into the cone one after another,
+  rays of white heat flicker along it, embers are carried on, and thin haze peels off its end.
+- **Fission Leap:** each blast is the same shape at two sizes: a white flash, a hot shock ring racing over the
+  ground with a green ring of sickness behind it, heat cracks running out, a ball of fire boiling up into smoke,
+  dust rolling out and stones thrown. The launch adds a column of thrust up your path; the slam adds a pillar of
+  light where you struck and a green pool where the ground is contaminated.
+- **Contaminated ground:** a sickly glow with a slowly turning edge, motes rising out of it and bubbles of light
+  popping on it.
+- **EMP:** a pale blue shell bursts out of you, a ring races over the ground to the pulse's edge with current
+  crackling along it, and arcs reach up from you in the first moments.
+- **Meltdown Beam:** a wide orange glow, a hot body and a white core, rings of heat running along it, and
+  smoke where it lands.
+- **Critical Mass:** you swell with light as you rise, rings of heat collapse in on you faster and faster, the
+  ground under you cracks and glows, and dust lifts off it. Then the blast below.
 
 ## Awakening and stress
 
-The first unlocked Radiation acquisition starts a thirty-second uncontrolled
+The first unlocked acquisition of the power starts a thirty-second uncontrolled
 charge. Ability inputs and direct attempts to vent or calm down cannot stop it.
 Damage and death protection last through the intro's release. Every half-second,
 creatures within eight blocks receive radiation sickness and direct radiation
@@ -80,7 +103,7 @@ The first awakening creates a forty-eight-block spherical blast (ninety-six
 blocks across). Later detonations retain a twenty-four-block radius. The first
 wave deals 120 health damage at its center, tapering to 32 at its boundary;
 later waves deal 80 down to 20, before armor and other normal reductions.
-The damage/visual front reaches its radius in eight ticks; terrain work begins
+The damage/visual front reaches its radius in five ticks; terrain work begins
 after that front and catches up independently. All blasts share a server-wide
 limit of 512 block removals and 8,192 scanned positions per tick, with a soft
 four-millisecond terrain budget. Expensive individual block callbacks can exceed
@@ -112,8 +135,11 @@ blocks, and clears its crack animations on cancellation and cleanup.
 All players in the same dimension within three hundred blocks receive ground
 shake, including those exactly on the boundary. It lasts six seconds for the
 awakening and four seconds for later detonations, with distance falloff.
+A blast is centred on the ground under the caster, who has risen a few blocks while charging.
 The explosion is drawn as the Odessa blast from the Time Manipulation vision,
-scaled to the detonation (`MiniBlast`, see [Classes](classes.md#how-they-are-drawn)):
+scaled to the detonation (`MiniBlast`, see [Classes](classes.md#how-they-are-drawn)). It plays fast: the
+flash and fireball snap out in a few ticks and the shock and its dust race out at once, while the mushroom
+cloud still rises and rolls over at its own pace:
 the white flash, the fireball rolling up into a mushroom cap on a stem of dust,
 the dust thrown up at its foot, a pale condensation dome racing out with the
 shock and a ring of dust rolling past the blast radius and settling. The billows
@@ -141,26 +167,28 @@ On upgrading an existing world, offline player files are scanned before new
 assignments. Existing ownership records take precedence; otherwise duplicate
 legacy claims are resolved deterministically by player-file UUID order. A
 conflicting player receives an unclaimed dormant role on login if one remains.
-Radiation's awakening also tells its owner that the heat that burned Odessa has found
+The awakening also tells its owner that the heat that burned Odessa has found
 a new body, and tells nearby witnesses who have progressed the Telepathy/city storyline.
 Worlds that already kept Gabriel Gray from the light in the earlier Avenue episode retain that
-outcome. Sylar cannot copy Radiation in those worlds. See [Sylar](sylar.md#taking-your-power).
+outcome. Sylar cannot copy Induced Radioactivity in those worlds. See [Sylar](sylar.md#taking-your-power).
 
 ## Verification
 
-`RadiationGameTests` also covers the rework: the cone hits in front and not behind, Critical Core
-hits harder and burns, doses stack and Ted is immune, a sick creature's death spreads the sickness,
-contaminated ground doses latecomers, the held beam drains Core and stops on release, and EMP vents
-Core and staggers enemies. Photograph every power with
+`RadiationGameTests` also covers the kit: the cone hits and throws what is in front and not behind,
+Critical Core hits harder and burns, doses stack and the caster is immune, a sick creature's death spreads
+the sickness, Fission Leap's launch throws and doses what is close and cushions the caster, a slam lands
+in a blast that leaves contaminated ground dosing latecomers, the held beam drains Core and stops on
+release, a hard enough hit breaks a voluntary charge, and EMP vents Core, staggers enemies and shoves them away. Photograph every power with
 `./gradlew runClient --init-script tools/radiation-preview.init.gradle`
-(screenshots in `build/radiation-preview/screenshots/`).
+(screenshots in `build/radiation-preview/screenshots/`, including the blast frame by frame as
+`radiation-8-blast-*.png`).
 
 The isolated server suite checks the complete first awakening, lethal damage
 protection and its expiration, uncancellable first charge, harmful radiation
 against undead, a real forty-block terrain hit, protected blocks and bedrock,
 injury stress, involuntary meltdown, self-immunity, fallout entry/boundary/expiry,
-redstone shutdown/recovery, water/ice/metal heat interactions, bright versus
-toxic emissions, voluntary cancellation and retained stress on disconnect.
+redstone shutdown/recovery, water/ice/metal heat interactions, voluntary
+cancellation and retained stress on disconnect.
 Existing Cryokinesis, ranged reach, rewind and storyline tests remain included.
 Additional checks cover charge decay and cancellation, heavy wave damage,
 actual shake delivery at 250 and 300 blocks, exclusion at 300.01, independent

@@ -29,14 +29,17 @@ public final class FlightVisualSyncService {
                     | (PyroFlightService.isDiving(player) ? 256 : 0)
                     | 32768
                     | (PyroService.isBlue(player) ? 65536 : 0)
-                    | (PyroFlightService.isBoosting(player) ? 131072 : 0);
+                    | (PyroFlightService.isBoosting(player) ? 131072 : 0)
+                    | (PyroFlightService.isTakingOff(player) ? FlightVisualStatePayload.TAKEOFF : 0)
+                    | (PyroFlightService.isPlunging(player) ? FlightVisualStatePayload.DIVE_RELEASED : 0);
             return new FlightVisualStatePayload(player.getId(), PyroFlightService.visualPoseActive(player),
                     false, true, PyroFlightService.speedStep(player), fireTelemetry);
         }
         var flight = player.getData(ModDataAttachments.PLAYER_FLIGHT.get());
         return new FlightVisualStatePayload(player.getId(),
                 flight.visualPoseActive() || DiveBombService.isDiving(player)
-                        || FlightDynamicsService.isBursting(player) || FlightSkillService.isRolling(player),
+                || FlightDynamicsService.isBursting(player) || FlightSkillService.isRolling(player)
+                || flight.launchTicksRemaining() > 0,
                 FlightService.isCycloneActive(player), flight.flightEnabled(), flight.speedStep(), telemetry(player));
     }
 
@@ -47,6 +50,11 @@ public final class FlightVisualSyncService {
                 | (DiveBombService.isDiving(player) ? 256 : 0)
                 | (FlightSkillService.isRolling(player) ? 512 : 0)
                 | (Math.clamp((int) Math.round(FlightSkillService.rollProgress(player) * 12), 0, 12) << 10)
-                | (FlightSkillService.isRolling(player) && FlightSkillService.rollDirection(player) < 0 ? 16384 : 0);
+                | (FlightSkillService.isRolling(player) && FlightSkillService.rollDirection(player) < 0 ? 16384 : 0)
+                | (player.getData(ModDataAttachments.PLAYER_FLIGHT.get()).launchTicksRemaining() > 0 ? FlightVisualStatePayload.TAKEOFF : 0)
+                | (FlightDynamicsService.isBursting(player) ? FlightVisualStatePayload.BURST : 0)
+                | (DiveBombService.isPlunging(player) ? FlightVisualStatePayload.DIVE_RELEASED : 0)
+                | (FlightSkillService.isChanneling(player) ? FlightVisualStatePayload.VACUUM : 0)
+                | (FlightSkillService.hasWideVacuum(player) ? FlightVisualStatePayload.WIDE_VACUUM : 0);
     }
 }

@@ -141,22 +141,41 @@ public final class SpeedService {
     static Vec3 horizontal(Vec3 direction) { return new Vec3(direction.x, 0, direction.z).normalize(); }
     /** Quarter-block steps check the entire body's path, not just the final block. */
     public static Vec3 swept(Entity entity, Vec3 displacement) {
+        return swept(entity, displacement, point -> true);
+    }
+
+    public static Vec3 swept(Entity entity, Vec3 displacement, java.util.function.Predicate<Vec3> clearance) {
+        return swept(entity, displacement, clearance, true);
+    }
+
+    public static Vec3 swept(Entity entity, Vec3 displacement, java.util.function.Predicate<Vec3> clearance, boolean avoidFire) {
+        return sweptFrom(entity, entity.position(), displacement, clearance, avoidFire);
+    }
+
+    /** Checks a leg of a planned route without moving the entity while planning it. */
+    public static Vec3 sweptFrom(Entity entity, Vec3 start, Vec3 displacement, java.util.function.Predicate<Vec3> clearance,
+                                 boolean avoidFire) {
         double distance = Math.min(40, displacement.length());
-        Vec3 direction = displacement.normalize(), start = entity.position(), last = start;
+        Vec3 direction = displacement.normalize(), last = start;
         int steps = (int) Math.ceil(distance * 4);
         for (int i = 1; i <= steps; i++) {
             Vec3 candidate = start.add(direction.scale(Math.min(distance, i * .25)));
-            if (!safe(entity, candidate)) break;
+            if (!safe(entity, candidate, avoidFire) || !clearance.test(candidate)) break;
             last = candidate;
         }
         return last;
     }
     public static boolean safe(Entity e, Vec3 point) {
+        return safe(e, point, true);
+    }
+
+    private static boolean safe(Entity e, Vec3 point, boolean avoidFire) {
         if (!(e.level() instanceof ServerLevel level) || !Double.isFinite(point.lengthSqr())) return false;
         var box = e.getBoundingBox().move(point.subtract(e.position()));
         if (box.minY < level.getMinBuildHeight() || box.maxY >= level.getMaxBuildHeight() || !level.getWorldBorder().isWithinBounds(box)) return false;
         for (BlockPos pos : BlockPos.betweenClosed(BlockPos.containing(box.minX, box.minY, box.minZ), BlockPos.containing(box.maxX, box.maxY, box.maxZ)))
-            if (!level.hasChunkAt(pos) || level.getFluidState(pos).is(FluidTags.LAVA) || level.getBlockState(pos).is(net.minecraft.tags.BlockTags.FIRE)) return false;
+            if (!level.hasChunkAt(pos) || avoidFire && (level.getFluidState(pos).is(FluidTags.LAVA)
+                    || level.getBlockState(pos).is(net.minecraft.tags.BlockTags.FIRE))) return false;
         return level.noCollision(e, box);
     }
     static void move(Entity entity, Vec3 point) {

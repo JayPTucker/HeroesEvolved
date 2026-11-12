@@ -57,7 +57,7 @@ public final class PowerIntroService {
     private record Spec(int chargeTicks, int releaseTicks, int color, ArmPose pose, Kind charge, Kind release) {}
     private static final Map<String, Spec> SPECS = Map.ofEntries(
             Map.entry("quake", new Spec(60, 40, 0xB1E9FA, ArmPose.TWO_HANDS_STRAIN, Kind.QUAKE_AWAKEN_CHARGE, Kind.QUAKE_AWAKEN_RELEASE)),
-            Map.entry("flight", new Spec(30, 60, 0xD7F1FF, ArmPose.GROUND, Kind.FLIGHT_AWAKEN_CHARGE, Kind.FLIGHT_AWAKEN_RELEASE)),
+            Map.entry("flight", new Spec(30, 60, 0xF6F4EC, ArmPose.GROUND, Kind.FLIGHT_AWAKEN_CHARGE, Kind.FLIGHT_AWAKEN_RELEASE)),
             Map.entry("electrokinesis", new Spec(50, 40, 0x60B5FF, ArmPose.ARMS_WIDE, Kind.ELECTRIC_AWAKEN_CHARGE, Kind.ELECTRIC_AWAKEN_RELEASE)),
             Map.entry("telekinesis", new Spec(40, 50, 0xBC86F5, ArmPose.TEMPLE, Kind.PSYCHIC_AWAKEN_CHARGE, Kind.PSYCHIC_AWAKEN_RELEASE)),
             // Telepathy shares the psychic visuals, tinted toward a softer violet.

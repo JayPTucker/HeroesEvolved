@@ -1,9 +1,15 @@
 package com.jayptucker.heroesevolved.uitest;
 
+import com.jayptucker.heroesevolved.ability.AbilitySlot;
+import com.jayptucker.heroesevolved.ability.AbilityUseResult;
 import com.jayptucker.heroesevolved.ability.data.PlayerAbilityData;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
+import com.jayptucker.heroesevolved.ability.service.AbilityUseService;
+import com.jayptucker.heroesevolved.client.CarryVisuals;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
+import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.entity.EntityCarryService;
+import com.jayptucker.heroesevolved.flight.FlightDynamicsService;
 import com.jayptucker.heroesevolved.flight.FlightService;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.mojang.authlib.GameProfile;
@@ -211,7 +217,57 @@ public final class CarryPreview {
             });
             case 508 -> pending = "carry-17-onlooker-cradle-pig.png";
             case 512 -> onServer(mc, p -> { removeOther(p); if (carriedMob != null) carriedMob.discard(); });
-            case 520 -> mc.stop();
+            case 520 -> {
+                mc.options.hideGui = true;
+                mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
+                onServer(mc, p -> {
+                    reset(p, -46, 0);
+                    PlayerEnergyService.restore(p, PlayerEnergyService.getMaximumEnergy(p));
+                    FlightService.toggleFlight(p);
+                    carriedMob = EntityType.PILLAGER.create(p.serverLevel());
+                    carriedMob.setNoAi(true);
+                    carriedMob.setNoGravity(true);
+                    carriedMob.setPos(p.position().add(0, 0, 4));
+                    p.serverLevel().addFreshEntity(carriedMob);
+                });
+            }
+            case 530 -> onServer(mc, p -> {
+                AbilityUseResult result = AbilityUseService.activateAssignedAction(p, AbilitySlot.QUATERNARY, false);
+                if (result != AbilityUseResult.SUCCESS || carriedMob.getRootVehicle() != p)
+                    throw new IllegalStateException("Skyhook pickup failed: " + result);
+                System.out.println("SKYHOOK_PREVIEW server attached");
+            });
+            case 538 -> {
+                if (!CarryVisuals.isCarrying(mc.player)) throw new IllegalStateException("Skyhook client attachment missing");
+                pending = "skyhook-attached.png";
+            }
+            // Simulate a missed passenger link. The tracked anchor should reattach it without another packet.
+            case 539 -> CarryVisuals.anchor(mc.player).getFirstPassenger().stopRiding();
+            case 540 -> onServer(mc, p -> {
+                FlightDynamicsService.pressSkyburst(p);
+                FlightDynamicsService.releaseSkyburst(p);
+            });
+            case 546 -> {
+                var anchor = CarryVisuals.anchor(mc.player);
+                if (anchor == null || anchor.getFirstPassenger().distanceTo(mc.player) > 2)
+                    throw new IllegalStateException("Skyhook cargo detached during Skyburst");
+                System.out.println("SKYHOOK_PREVIEW client attached through Skyburst");
+                pending = "skyhook-at-speed.png";
+            }
+            case 548 -> mc.player.setYRot(55);
+            case 550 -> pending = "skyhook-turning-at-speed.png";
+            case 565 -> mc.player.setYRot(0);
+            case 568 -> onServer(mc, p -> {
+                AbilityUseResult result = AbilityUseService.activateAssignedAction(p, AbilitySlot.QUATERNARY, false);
+                if (result != AbilityUseResult.SUCCESS || carriedMob.isPassenger())
+                    throw new IllegalStateException("Skyhook hurl failed: " + result);
+                System.out.println("SKYHOOK_PREVIEW server detached on hurl");
+            });
+            case 574 -> {
+                if (CarryVisuals.isCarrying(mc.player)) throw new IllegalStateException("Skyhook client retained released cargo");
+                pending = "skyhook-released.png";
+            }
+            case 580 -> mc.stop();
             default -> { }
         }
     }

@@ -21,6 +21,10 @@ public final class CarryAnchorEntity extends Entity {
             CarryAnchorEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Byte> HOLD = SynchedEntityData.defineId(
             CarryAnchorEntity.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Integer> CARRIER_ID = SynchedEntityData.defineId(
+            CarryAnchorEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> CARGO_ID = SynchedEntityData.defineId(
+            CarryAnchorEntity.class, EntityDataSerializers.INT);
 
     public CarryAnchorEntity(EntityType<? extends CarryAnchorEntity> entityType, Level level) {
         super(entityType, level);
@@ -34,9 +38,13 @@ public final class CarryAnchorEntity extends Entity {
         builder.define(CARGO_HEIGHT, 1.8F);
         builder.define(CARGO_EYE, 1.62F);
         builder.define(HOLD, (byte) CarryGeometry.Hold.ARMS.ordinal());
+        builder.define(CARRIER_ID, -1);
+        builder.define(CARGO_ID, -1);
     }
 
-    public void setCargo(Entity held) {
+    public void bind(Entity carrier, Entity held) {
+        entityData.set(CARRIER_ID, carrier.getId());
+        entityData.set(CARGO_ID, held.getId());
         entityData.set(CARGO_WIDTH, held.getBbWidth());
         entityData.set(CARGO_HEIGHT, held.getBbHeight());
         entityData.set(CARGO_EYE, held.getEyeHeight());
@@ -57,8 +65,7 @@ public final class CarryAnchorEntity extends Entity {
         double width = held == null ? entityData.get(CARGO_WIDTH) : held.getBbWidth();
         double height = held == null ? entityData.get(CARGO_HEIGHT) : held.getBbHeight();
         double eye = held == null ? entityData.get(CARGO_EYE) : held.getEyeHeight();
-        Vec3 seat = CarryGeometry.position(carrier, hold, width, height, eye);
-        return CarryGeometry.fits(carrier, hold, width, height, seat) ? seat : position();
+        return CarryGeometry.position(carrier, hold, width, height, eye);
     }
 
     @Override
@@ -90,6 +97,7 @@ public final class CarryAnchorEntity extends Entity {
     public void tick() {
         super.tick();
         setDeltaMovement(Vec3.ZERO);
+        if (level().isClientSide) restoreClientLinks();
         Entity owner = carrier();
         if (owner != null) setYRot(owner.getYRot());
         // Pickup constructs both links in one server tick. A short grace also
@@ -97,6 +105,19 @@ public final class CarryAnchorEntity extends Entity {
         if (!level().isClientSide && tickCount > 2
                 && (!(owner instanceof ServerPlayer) || !owner.isAlive() || owner.isRemoved()
                     || owner.level() != level() || getPassengers().isEmpty())) discard();
+    }
+
+    private void restoreClientLinks() {
+        // Passenger packets can precede either entity's spawn. Retry from the anchor's tracked IDs
+        // once both endpoints exist instead of waiting for another mount change on the server.
+        Entity owner = level().getEntity(entityData.get(CARRIER_ID));
+        Entity held = level().getEntity(entityData.get(CARGO_ID));
+        if (owner == null || held == null || owner.isRemoved() || held.isRemoved()) return;
+        if (getVehicle() == null) startRiding(owner, true);
+        if (getVehicle() != owner) return;
+        if (held.getVehicle() == null) held.startRiding(this, true);
+        owner.positionRider(this);
+        positionRider(held);
     }
 
     @Override

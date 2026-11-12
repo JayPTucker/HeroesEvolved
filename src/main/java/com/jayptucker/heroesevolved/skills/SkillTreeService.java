@@ -137,6 +137,7 @@ public final class SkillTreeService {
     public static double bonus(ServerPlayer player, ResourceLocation power, int branch) {
         // These trees unlock specific maneuvers and interactions, rather than blanket stat bonuses.
         if (power.equals(ModAbilities.FLIGHT_ID) || power.equals(ModAbilities.TELEKINESIS_ID)
+                || power.equals(ModAbilities.PYROKINESIS_ID)
                 || power.equals(ModAbilities.INVISIBILITY_ID) || power.equals(ModAbilities.CRYOKINESIS_ID)
                 || power.equals(ModAbilities.TECHNOPATHY_ID) || power.equals(ModAbilities.MATTER_ASSEMBLY_ID)) return 0;
         var build = build(player, power); String prefix = power.getPath() + "_" + branch + "_";
@@ -162,6 +163,7 @@ public final class SkillTreeService {
             com.jayptucker.heroesevolved.flight.FlightDynamicsService.cancelSkyburst(player);
             com.jayptucker.heroesevolved.flight.FlightSkillService.forget(player);
         }
+        if (power.equals(ModAbilities.PYROKINESIS_ID)) com.jayptucker.heroesevolved.pyro.PyroService.forget(player);
         if (power.equals(ModAbilities.TELEKINESIS_ID)) com.jayptucker.heroesevolved.telekinesis.TelekinesisService.stopAll(player);
         for (var action : allActions(player, power)) {
             var context = new AbilityUseContext(player, power, PlayerProgressionService.getLevel(player), true);

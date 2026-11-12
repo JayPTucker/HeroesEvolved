@@ -17,6 +17,8 @@ import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -34,6 +36,7 @@ import java.util.Set;
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID, value = Dist.CLIENT)
 public final class EntityCarryPoseRenderer {
     private static final Set<Integer> TRANSFORMED_ENTITIES = new HashSet<>();
+    private static final Map<Integer, BodyYaw> CARRIER_YAWS = new HashMap<>();
 
     private EntityCarryPoseRenderer() {}
 
@@ -42,6 +45,7 @@ public final class EntityCarryPoseRenderer {
         LivingEntity entity = event.getEntity();
         // A carrier faces what it is holding: its body turns with its head.
         if (CarryVisuals.isCarrying(entity)) {
+            CARRIER_YAWS.put(entity.getId(), new BodyYaw(entity.yBodyRot, entity.yBodyRotO));
             entity.yBodyRot = entity.getYRot();
             entity.yBodyRotO = entity.yRotO;
         }
@@ -50,7 +54,13 @@ public final class EntityCarryPoseRenderer {
 
     @SubscribeEvent
     public static void onRenderLivingPost(RenderLivingEvent.Post<?, ?> event) {
-        if (TRANSFORMED_ENTITIES.remove(event.getEntity().getId())) event.getPoseStack().popPose();
+        LivingEntity entity = event.getEntity();
+        if (TRANSFORMED_ENTITIES.remove(entity.getId())) event.getPoseStack().popPose();
+        BodyYaw yaw = CARRIER_YAWS.remove(entity.getId());
+        if (yaw != null) {
+            entity.yBodyRot = yaw.current;
+            entity.yBodyRotO = yaw.previous;
+        }
     }
 
     private static Vec3 renderPosition(Entity entity, float partialTick) {
@@ -67,6 +77,9 @@ public final class EntityCarryPoseRenderer {
         CarryGeometry.Hold hold = anchor.hold();
         int side = CarryGeometry.side(carrier);
         Vec3 local = CarryGeometry.pivot(hold, carrier.getBbWidth(), carrier.getBbHeight(), entity.getBbWidth(), entity.getBbHeight(), side);
+        // In the carrier's own view, keep the hold below the crosshair like the first-person hands.
+        if (hold != CarryGeometry.Hold.OVERHEAD && CarryVisuals.isLocalFirstPersonCarrier(carrier))
+            local = local.add(0, -.24, .31);
         Vec3 pivot = renderPosition(carrier, partialTick).add(CarryGeometry.rotate(local, carrierYaw));
         Vec3 offset = pivot.subtract(renderPosition(entity, partialTick));
 
@@ -95,6 +108,10 @@ public final class EntityCarryPoseRenderer {
 
     @SubscribeEvent
     public static void unload(LevelEvent.Unload event) {
-        if (event.getLevel().isClientSide()) TRANSFORMED_ENTITIES.clear();
+        if (!event.getLevel().isClientSide()) return;
+        TRANSFORMED_ENTITIES.clear();
+        CARRIER_YAWS.clear();
     }
+
+    private record BodyYaw(float current, float previous) {}
 }

@@ -250,6 +250,8 @@ public final class FlightSkillGameTests {
             h.assertTrue(hostile.getDeltaMovement().z > 0,
                     "The roll deflects an incoming hostile shot");
             h.assertTrue(friendly.getDeltaMovement().z == -1, "The roll must leave the caster's own shots alone");
+            h.assertTrue(FlightDynamicsService.momentum(p) == 15,
+                    "The first real projectile deflection rewards the pilot");
             tick(p, 16);
             h.assertTrue(!FlightSkillService.isRolling(p), "The roll must end instead of retaining forced movement indefinitely");
             p.setShiftKeyDown(true);
@@ -321,20 +323,43 @@ public final class FlightSkillGameTests {
         } finally { clearGround(h, center); cleanup(p, enemy); }
     }
 
+    @GameTest(template = "rewind_empty", batch = "flight.thermal_ride")
+    public static void flyingCasterCanRideThermalOncePerCast(GameTestHelper h) {
+        ServerPlayer p = player(h); learn(p, "flight_2_2");
+        Vec3 center = ground(h, p);
+        try {
+            FlightService.toggleFlight(p);
+            cast(h, p, LANCE);
+            p.setPos(center.add(0, 2, 0));
+            tick(p, 8);
+            h.assertTrue(p.getDeltaMovement().y > .8 && FlightDynamicsService.momentum(p) == 20,
+                    "A pilot inside their own column should lift and bank Momentum");
+            p.setDeltaMovement(Vec3.ZERO);
+            tick(p, 8);
+            h.assertTrue(p.getDeltaMovement().equals(Vec3.ZERO) && FlightDynamicsService.momentum(p) == 20,
+                    "Rising Pressure cannot repeatedly boost the caster or award extra Momentum");
+            h.succeed();
+        } finally { clearGround(h, center); cleanup(p); }
+    }
+
     @GameTest(template = "rewind_empty", batch = "flight.vacuum")
     public static void vacuumClapPullsBeforeItsBurstAndShiftCancelsIt(GameTestHelper h) {
         ServerPlayer p = player(h); learn(p, "flight_wider_clap");
         LivingEntity enemy = target(h, p.position().add(0, 0, 7.5));
         Arrow shot = arrow(h, enemy, p.position().add(0, 1, 2), new Vec3(0, 0, -1));
         try {
+            FlightService.toggleFlight(p);
+            FlightDynamicsService.addMomentum(p, 55);
             cast(h, p, CLAP); tick(p, 3);
             h.assertTrue(enemy.getHealth() == enemy.getMaxHealth() && enemy.getDeltaMovement().z < 0,
                     "Eye of Storm extends Vacuum Clap's gathering pull without dealing its burst early");
             h.assertTrue(shot.getDeltaMovement().length() < 1, "Eye of Storm brakes incoming hostile projectiles during the gather");
             h.assertTrue(action(CLAP).deactivate(context(p)), "Shift + Vacuum Clap can cancel its wind-up");
+            h.assertTrue(FlightDynamicsService.momentum(p) == 55, "An aborted gather keeps the reserve");
             enemy.setDeltaMovement(Vec3.ZERO); tick(p, 12);
             h.assertTrue(enemy.getHealth() == enemy.getMaxHealth(), "A canceled clap never executes its delayed burst");
             cast(h, p, CLAP); tick(p, 10);
+            h.assertTrue(FlightDynamicsService.momentum(p) == 0, "The committed pressure wave spends the reserve");
             h.assertTrue(enemy.getHealth() < enemy.getMaxHealth() && enemy.getDeltaMovement().z > 0,
                     "Finishing the gather changes the pull into a damaging outward pressure wave");
             h.succeed();
@@ -386,6 +411,9 @@ public final class FlightSkillGameTests {
             h.assertTrue(FlightDynamicsService.momentum(upgraded) > FlightDynamicsService.momentum(baseline) * 1.25,
                     "Ram Air must improve Momentum earned from the same actual flight, rather than a generic damage bonus");
             FlightDynamicsService.consumeMomentum(baseline); FlightDynamicsService.consumeMomentum(upgraded);
+            // The simulated cruise moves both fake players beyond the template's loaded chunks.
+            h.getLevel().getChunkAt(baseline.blockPosition());
+            h.getLevel().getChunkAt(baseline.blockPosition().south(12));
             for (ServerPlayer p : new ServerPlayer[]{baseline, upgraded}) {
                 FlightDynamicsService.pressSkyburst(p);
                 for (int i = 0; i < 18; i++) FlightDynamicsService.tick(p);
@@ -398,30 +426,42 @@ public final class FlightSkillGameTests {
     }
 
     @GameTest(template = "rewind_empty", batch = "flight.fall_upgrades")
-    public static void featherlightAndLastSecondSaveHaveDifferentFallRulesAndSuppression(GameTestHelper h) {
+    public static void featherlightAndLastSecondSaveProtectTeammates(GameTestHelper h) {
         ServerPlayer p = player(h); learn(p, "flight_0_0", "flight_guardian_angel"); FlightService.toggleFlight(p);
+        ServerPlayer teammate = new FakePlayer(h.getLevel(), new GameProfile(UUID.randomUUID(), "falling-teammate"));
+        teammate.setPos(p.position().add(0, 0, 3));
+        h.getLevel().addNewPlayer(p);
+        var team = team(p, teammate);
         try {
-            var shortFall = new LivingFallEvent(p, 8, 1);
+            FlightSkillPassives.handleFall(new LivingFallEvent(p, 25, 1));
+            h.assertTrue(!CooldownService.isOnCooldown(p, FlightSkillPassives.LAST_SECOND_SAVE),
+                    "An immune flier's own landing cannot spend the rescue cooldown");
+            var shortFall = new LivingFallEvent(teammate, 8, 1);
             FlightSkillPassives.handleFall(shortFall);
             h.assertTrue(shortFall.getDamageMultiplier() == 0, "Featherlight absorbs a short fall without using the emergency rescue");
             h.assertTrue(!CooldownService.isOnCooldown(p, FlightSkillPassives.LAST_SECOND_SAVE),
                     "A short landing must not consume Last Second Save's cooldown");
-            var emergency = new LivingFallEvent(p, 25, 1);
+            var emergency = new LivingFallEvent(teammate, 25, 1);
             FlightSkillPassives.handleFall(emergency);
-            h.assertTrue(emergency.getDamageMultiplier() == 0 && p.hasEffect(MobEffects.SLOW_FALLING)
+            h.assertTrue(emergency.getDamageMultiplier() == 0 && teammate.hasEffect(MobEffects.SLOW_FALLING)
                             && FlightDynamicsService.momentum(p) == 25,
                     "Last Second Save prevents a heavy fall and banks its one-time rescue Momentum");
             h.assertTrue(CooldownService.isOnCooldown(p, FlightSkillPassives.LAST_SECOND_SAVE), "The rescue starts its real cooldown");
-            var recovering = new LivingFallEvent(p, 25, 1);
+            var recovering = new LivingFallEvent(teammate, 25, 1);
             FlightSkillPassives.handleFall(recovering);
             h.assertTrue(recovering.getDamageMultiplier() == .5F && FlightDynamicsService.momentum(p) == 25,
                     "During cooldown only Featherlight's large-fall reduction remains; the rescue cannot fire twice");
             EclipseService.beginTotality(p.getServer());
-            var suppressed = new LivingFallEvent(p, 8, 1);
+            var suppressed = new LivingFallEvent(teammate, 8, 1);
             FlightSkillPassives.handleFall(suppressed);
             h.assertTrue(suppressed.getDamageMultiplier() == 1, "The Eclipse suppresses learned fall protection too");
             h.succeed();
-        } finally { EclipseService.end(p.getServer()); cleanup(p); }
+        } finally {
+            EclipseService.end(p.getServer());
+            p.getScoreboard().removePlayerTeam(team);
+            cleanup(p);
+            h.getLevel().removePlayerImmediately(p, Entity.RemovalReason.DISCARDED);
+        }
     }
 
     @GameTest(template = "rewind_empty", batch = "flight.pressure_tap")

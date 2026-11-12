@@ -3,6 +3,7 @@ package com.jayptucker.heroesevolved.electro;
 import com.jayptucker.heroesevolved.ability.data.PlayerAbilityData;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
+import com.jayptucker.heroesevolved.electro.ElectroGeometry;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.mojang.authlib.GameProfile;
@@ -168,6 +169,38 @@ public final class ElectroGameTests {
         });
     }
 
+    @GameTest(template = "rewind_empty", batch = "electro.orb_relay", timeoutTicks = 40)
+    public static void chainLightningPrimesABallForAWiderBurst(GameTestHelper h) {
+        ServerPlayer p = player(h, 3);
+        register(p);
+        LivingEntity atEdge = target(h, p.position().add(3.5, 0, 1));
+        atEdge.setNoGravity(true);
+        ElectroService.ballLightning(p, 3);
+        ElectroService.chainLightning(p, 3);
+        h.assertTrue(ElectroService.hasOrb(p) && !hurt(atEdge), "The orb warns before it bursts");
+        h.runAfterDelay(ElectroGeometry.ORB_PRIME + 2, () -> {
+            try {
+                h.assertTrue(!ElectroService.hasOrb(p) && hurt(atEdge), "The primed burst reaches beyond a regular orb");
+                h.succeed();
+            } finally { unregister(p, atEdge); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "electro.orb_cover")
+    public static void ballLightningBurstRespectsSolidCover(GameTestHelper h) {
+        ServerPlayer p = player(h, 3);
+        LivingEntity exposed = target(h, p.position().add(-1.8, 0, 1));
+        LivingEntity sheltered = target(h, p.position().add(2, 0, 1));
+        try {
+            for (BlockPos pos : BlockPos.betweenClosed(p.blockPosition().offset(1, -1, -1), p.blockPosition().offset(1, 2, 2)))
+                h.getLevel().setBlockAndUpdate(pos, Blocks.STONE.defaultBlockState());
+            ElectroService.ballLightning(p, 3);
+            ElectroService.detonate(p);
+            h.assertTrue(hurt(exposed) && !hurt(sheltered), "An orb hits an exposed target and leaves cover intact");
+            h.succeed();
+        } finally { ElectroService.forget(p); exposed.discard(); sheltered.discard(); }
+    }
+
     @GameTest(template = "rewind_empty", batch = "electro.ride", timeoutTicks = 40)
     public static void rideTheLightningLeavesALiveScar(GameTestHelper h) {
         ServerPlayer p = player(h, 4);
@@ -197,6 +230,19 @@ public final class ElectroGameTests {
             h.assertTrue(p.position().distanceTo(start) > 5, "The ride follows the ground instead of stopping, moved " + p.position().distanceTo(start));
             h.succeed();
         } finally { ElectroService.forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "electro.ride_corridor")
+    public static void rideOnlyShocksAlongTheTravelledCorridor(GameTestHelper h) {
+        ServerPlayer p = player(h, 4);
+        p.setYRot(-45);
+        LivingEntity along = target(h, p.position().add(3, 0, 3));
+        LivingEntity beside = target(h, p.position().add(1, 0, 5));
+        try {
+            h.assertTrue(ElectroService.rideTheLightning(p, 4), "The diagonal route is open");
+            h.assertTrue(hurt(along) && !hurt(beside), "Only the target near the traveled line is shocked");
+            h.succeed();
+        } finally { ElectroService.forget(p); along.discard(); beside.discard(); }
     }
 
     @GameTest(template = "rewind_empty", batch = "electro.surge", timeoutTicks = 80)

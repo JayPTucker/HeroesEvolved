@@ -4,13 +4,18 @@ import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
+import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
-import com.jayptucker.heroesevolved.effects.AbilityEffects;
-import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
+import com.jayptucker.heroesevolved.entity.EntityCarryService;
 import com.jayptucker.heroesevolved.network.ArmPosePayload;
+import com.jayptucker.heroesevolved.network.CameraShakePayload;
 import com.jayptucker.heroesevolved.network.FlightVisualSyncService;
+import com.jayptucker.heroesevolved.network.SetPiecePayload;
+import com.jayptucker.heroesevolved.network.SkyburstMotionPayload;
 import com.jayptucker.heroesevolved.progression.MasteryService;
 import com.jayptucker.heroesevolved.sounds.ModSounds;
+import com.jayptucker.heroesevolved.speed.SpeedService;
+import com.jayptucker.heroesevolved.styles.Piece;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
@@ -20,6 +25,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,6 +37,8 @@ public final class FlightDynamicsService {
     public static final int SKYBURST_TAP_TICKS = 6;
     public static final int SKYBURST_FULL_CHARGE_TICKS = 30;
     public static final int SKYBURST_AUTO_RELEASE_TICKS = 40;
+    private static final double SKYBURST_MAX_SPEED = 10;
+    private static final double SKYBURST_EXIT_SPEED = 1.25;
     private static final Map<UUID, Dynamics> STATES = new HashMap<>();
 
     private FlightDynamicsService() {}
@@ -73,10 +81,11 @@ public final class FlightDynamicsService {
         return dynamics != null && dynamics.burstTicks > 0;
     }
 
-    /** A brief horizontal flight pose also preserves the released burst's direction. */
+    /** Gives other flight maneuvers the burst pose while their own movement takes over. */
     public static void beginBurst(ServerPlayer player, int ticks) {
         if (ticks <= 0 || !FlightService.hasActiveSession(player)) return;
         Dynamics dynamics = state(player);
+        dynamics.skyburst = null;
         dynamics.burstTicks = Math.clamp(ticks, 1, 40);
         FlightVisualSyncService.syncToTrackingPlayers(player);
     }
@@ -86,6 +95,8 @@ public final class FlightDynamicsService {
                 || DiveBombService.isDiving(player) || FlightSkillService.isRolling(player)
                 || FlightSkillService.isChanneling(player)) return;
         Dynamics dynamics = state(player);
+        if (dynamics.skyburst != null) push(player, Vec3.ZERO);
+        dynamics.skyburst = null;
         dynamics.charging = true;
         dynamics.heldTicks = 0;
         dynamics.burstTicks = 0;
@@ -110,28 +121,29 @@ public final class FlightDynamicsService {
         }
         Vec3 burstStart = player.position();
         double spent = consumeMomentum(player);
-        if (dynamics.heldTicks < SKYBURST_TAP_TICKS) {
-            FlightService.launch(player);
-            // A tap remains an immediate takeoff; banked speed adds punch to an aerial dash.
-            if (!player.onGround() && spent > 0)
-                push(player, player.getDeltaMovement().scale(1.0D + spent / 250.0D));
-            FlightSkillService.onSkyburst(player, burstStart, player.getLookAngle(), spent);
-            return;
-        }
-        double charge = Math.clamp(dynamics.heldTicks / (double) skyburstChargeTicks(player), 0, 1);
-        Vec3 look = player.getLookAngle().normalize();
-        // Clear the ground when released level or downward; airborne bursts follow the full gaze.
-        Vec3 direction = player.onGround() ? new Vec3(look.x, Math.max(0.5D, look.y), look.z).normalize() : look;
-        double speed = 1.4D + charge * 1.5D + spent * 0.007D;
-        push(player, direction.scale(speed));
-        beginBurst(player, 12);
-        player.resetFallDistance();
-        Vec3 center = FlightVisualGeometry.bodyCenter(player.position());
-        AbilityEffects.send(player.serverLevel(), Kind.FLIGHT_SKYBURST,
-                center, center.add(direction), 1.4D + charge + spent / 100.0D);
-        ArmPosePayload.show(player, ArmPose.TWO_HANDS, 12);
-        player.serverLevel().playSound(null, player.blockPosition(), ModSounds.FLIGHT_BOOST.get(),
-                SoundSource.PLAYERS, 0.9F, (float) (1.35D - charge * 0.35D));
+        double charge = dynamics.heldTicks < SKYBURST_TAP_TICKS ? 0
+                : Math.min(1, dynamics.heldTicks / (double) skyburstChargeTicks(player));
+        double reserve = spent / MAX_MOMENTUM;
+        Vec3 direction = player.getLookAngle().normalize();
+        // A low or downward aim on the ground lifts off along the player's heading immediately.
+        if (player.onGround() && direction.y < .2) direction = Vec3.directionFromRotation(-12, player.getYRot());
+        double peak = Math.min(SKYBURST_MAX_SPEED,
+                HeroesEvolvedConfig.COMMON.flightForwardSpeed.get() * 2.5 + charge * 2.25 + reserve * 1.25);
+        int ticks = 20 + (int) Math.round(charge * 6 + reserve * 3);
+        dynamics.skyburst = new Skyburst(direction, peak, ticks);
+        dynamics.burstTicks = ticks;
+        applySkyburst(player, dynamics);
+        FlightVisualSyncService.syncToTrackingPlayers(player);
+
+        Vec3 center = FlightVisualGeometry.bodyCenter(burstStart);
+        float strength = (float) (4.6 + charge * 2.2 + reserve * 1.2);
+        SetPiecePayload.send(player.serverLevel(), Piece.FLIGHT_SKYBURST, center, center.add(direction), strength, null);
+        ArmPosePayload.show(player, ArmPose.FLIGHT_BRACE, 10);
+        player.serverLevel().playSound(null, center.x, center.y, center.z, ModSounds.SKYBURST_BOOM.get(),
+                SoundSource.PLAYERS, (float) (.82 + charge * .12 + reserve * .06), (float) (.92 - charge * .18));
+        player.serverLevel().playSound(null, center.x, center.y, center.z, ModSounds.FLIGHT_BOOST.get(),
+                SoundSource.PLAYERS, 1.15F, 1.12F);
+        CameraShakePayload.sendAround(player.serverLevel(), center, 64, (float) (.42 + charge * .16 + reserve * .07), 9);
         MasteryService.markPowerUse(player, ModAbilities.FLIGHT_ID);
         FlightSkillService.onSkyburst(player, burstStart, direction, spent);
     }
@@ -163,6 +175,7 @@ public final class FlightDynamicsService {
         if (DiveBombService.isDiving(player) || FlightService.isCycloneActive(player)
                 || FlightSkillService.isRolling(player) || FlightSkillService.isChanneling(player)) {
             if (dynamics.burstTicks > 0) {
+                dynamics.skyburst = null;
                 dynamics.burstTicks = 0;
                 FlightVisualSyncService.syncToTrackingPlayers(player);
             }
@@ -170,7 +183,12 @@ public final class FlightDynamicsService {
             return;
         }
         if (dynamics.burstTicks > 0) {
-            if (--dynamics.burstTicks == 0) FlightVisualSyncService.syncToTrackingPlayers(player);
+            if (--dynamics.burstTicks == 0) {
+                dynamics.skyburst = null;
+                FlightVisualSyncService.syncToTrackingPlayers(player);
+            } else if (dynamics.skyburst != null && !applySkyburst(player, dynamics)) {
+                FlightVisualSyncService.syncToTrackingPlayers(player);
+            }
             dynamics.lastPosition = player.position();
             return;
         }
@@ -179,14 +197,8 @@ public final class FlightDynamicsService {
             push(player, Vec3.ZERO);
             player.resetFallDistance();
             if (dynamics.heldTicks >= SKYBURST_TAP_TICKS) {
-                double charge = Math.clamp(dynamics.heldTicks / (double) skyburstChargeTicks(player), 0, 1);
-                if (dynamics.heldTicks % 3 == 0) {
-                    Vec3 center = FlightVisualGeometry.bodyCenter(player.position());
-                    AbilityEffects.send(player.serverLevel(), Kind.FLIGHT_CHARGE,
-                            center, center.add(player.getLookAngle()), charge);
-                }
                 if (dynamics.heldTicks == SKYBURST_TAP_TICKS) {
-                    ArmPosePayload.show(player, ArmPose.TWO_HANDS, SKYBURST_AUTO_RELEASE_TICKS);
+                    ArmPosePayload.show(player, ArmPose.FLIGHT_COIL, SKYBURST_AUTO_RELEASE_TICKS);
                     player.serverLevel().playSound(null, player.blockPosition(),
                             SoundEvents.BREEZE_CHARGE, SoundSource.PLAYERS, 0.7F, 1.5F);
                 }
@@ -205,18 +217,15 @@ public final class FlightDynamicsService {
                     * (com.jayptucker.heroesevolved.skills.SkillTreeService.has(player, "flight_1_0") ? 1.3D : 1.0D);
             dynamics.momentum = Math.clamp(dynamics.momentum + (gaining ? gain : -0.20D), 0, MAX_MOMENTUM);
             announce(player, dynamics);
-            if (dynamics.momentum >= 50 && player.tickCount % 10 == 0) {
-                Vec3 center = FlightVisualGeometry.bodyCenter(player.position());
-                AbilityEffects.send(player.serverLevel(), Kind.FLIGHT_MOMENTUM,
-                        center, center.add(player.getLookAngle()), 1);
-            }
         }
         dynamics.lastPosition = player.position();
     }
 
     public static void forget(ServerPlayer player) {
         Dynamics dynamics = STATES.remove(player.getUUID());
-        if (dynamics != null && dynamics.charging) ArmPosePayload.clear(player);
+        if (dynamics == null) return;
+        if (dynamics.skyburst != null) push(player, Vec3.ZERO);
+        if (dynamics.charging || dynamics.skyburst != null) ArmPosePayload.clear(player);
     }
 
     public static void clear() { STATES.clear(); }
@@ -246,13 +255,34 @@ public final class FlightDynamicsService {
     }
 
     private static void push(ServerPlayer player, Vec3 velocity) {
-        if (velocity.lengthSqr() > 3.6D * 3.6D) velocity = velocity.normalize().scale(3.6D);
         boolean changed = player.getDeltaMovement().distanceToSqr(velocity) > 0.0001D;
         player.setDeltaMovement(velocity);
         // Reassure the client periodically while hovering; avoid sending identical zero packets every tick.
         if (changed || velocity.lengthSqr() > 0.0001D || player.tickCount % 4 == 0)
             player.connection.send(new ClientboundSetEntityMotionPacket(player));
     }
+
+    private static boolean applySkyburst(ServerPlayer player, Dynamics dynamics) {
+        Skyburst burst = dynamics.skyburst;
+        double age = (burst.ticks - dynamics.burstTicks) / (double) (burst.ticks - 1);
+        double exit = Math.min(SKYBURST_EXIT_SPEED, burst.peak);
+        double speed = burst.peak + (exit - burst.peak) * age * age;
+        Vec3 start = player.position();
+        Vec3 velocity = SpeedService.swept(player, burst.direction.scale(speed),
+                point -> EntityCarryService.canTravelTo(player, point)).subtract(start);
+        player.resetFallDistance();
+        if (velocity.lengthSqr() < .0001) {
+            dynamics.burstTicks = 0;
+            dynamics.skyburst = null;
+            push(player, Vec3.ZERO);
+            return false;
+        }
+        player.setDeltaMovement(velocity);
+        PacketDistributor.sendToPlayer(player, new SkyburstMotionPayload(velocity));
+        return true;
+    }
+
+    private record Skyburst(Vec3 direction, double peak, int ticks) {}
 
     private static final class Dynamics {
         final ResourceKey<Level> dimension;
@@ -262,6 +292,7 @@ public final class FlightDynamicsService {
         boolean charging;
         int heldTicks;
         int burstTicks;
+        Skyburst skyburst;
         Dynamics(ResourceKey<Level> dimension, Vec3 position) {
             this.dimension = dimension;
             this.lastPosition = position;

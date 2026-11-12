@@ -16,7 +16,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Ted Sprague's detonation, drawn as the vision's explosion over Odessa in small: the flash, the fireball
+ * Critical Mass, drawn as the vision's explosion over Odessa in small: the flash, the fireball
  * rolling up into a mushroom cloud, the condensation dome and the ring of dust (see {@code MiniBlast}). The
  * server repeats its cloud every couple of seconds for anyone arriving late; each one is started once, at
  * the age the server says it has reached.

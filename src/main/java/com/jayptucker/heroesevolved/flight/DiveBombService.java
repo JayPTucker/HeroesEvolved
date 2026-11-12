@@ -4,11 +4,11 @@ import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
-import com.jayptucker.heroesevolved.effects.AbilityEffects;
-import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 import com.jayptucker.heroesevolved.network.ArmPosePayload;
 import com.jayptucker.heroesevolved.network.CameraShakePayload;
 import com.jayptucker.heroesevolved.network.FlightVisualSyncService;
+import com.jayptucker.heroesevolved.network.SetPiecePayload;
+import com.jayptucker.heroesevolved.styles.Piece;
 import com.jayptucker.heroesevolved.progression.MasteryService;
 import com.jayptucker.heroesevolved.sounds.ModSounds;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
@@ -41,6 +41,11 @@ public final class DiveBombService {
         return DIVES.containsKey(player.getUUID());
     }
 
+    public static boolean isPlunging(ServerPlayer player) {
+        Dive dive = DIVES.get(player.getUUID());
+        return dive != null && dive.ageTicks > WINDUP_TICKS;
+    }
+
     public static boolean canStart(ServerPlayer player) {
         return PowerRules.canAct(player) && !player.onGround() && !player.isPassenger()
                 && !player.isInWaterOrBubble() && !player.isFallFlying()
@@ -52,13 +57,12 @@ public final class DiveBombService {
 
     public static void start(ServerPlayer player, int powerLevel) {
         if (!canStart(player)) return;
-        double momentum = FlightDynamicsService.consumeMomentum(player);
         DIVES.put(player.getUUID(), new Dive(player.serverLevel(), diveDirection(player),
-                Math.clamp(powerLevel, 1, 5), momentum));
+                Math.clamp(powerLevel, 1, 5)));
         cushion(player, MAXIMUM_DIVE_TICKS + 40);
         push(player, Vec3.ZERO);
         player.resetFallDistance();
-        ArmPosePayload.show(player, ArmPose.TWO_HANDS, MAXIMUM_DIVE_TICKS);
+        ArmPosePayload.show(player, ArmPose.FLIGHT_BRACE, MAXIMUM_DIVE_TICKS);
         player.serverLevel().playSound(null, player.blockPosition(),
                 SoundEvents.BREEZE_CHARGE, SoundSource.PLAYERS, .8F, .65F);
         FlightVisualSyncService.syncToTrackingPlayers(player);
@@ -84,16 +88,13 @@ public final class DiveBombService {
         player.resetFallDistance();
         if (dive.ageTicks <= WINDUP_TICKS) {
             push(player, Vec3.ZERO);
-            if (dive.ageTicks % 2 == 0) {
-                Vec3 center = FlightVisualGeometry.bodyCenter(player.position());
-                AbilityEffects.send(dive.level, Kind.FLIGHT_DIVE_CHARGE, center,
-                        center.add(dive.direction), dive.ageTicks / (double) WINDUP_TICKS);
-            }
             return;
         }
         if (dive.ageTicks == WINDUP_TICKS + 1) {
+            dive.momentum = FlightDynamicsService.consumeMomentum(player);
             Vec3 center = FlightVisualGeometry.bodyCenter(player.position());
-            AbilityEffects.send(dive.level, Kind.FLIGHT_SKYBURST, center, center.add(dive.direction), 1.5);
+            FlightService.showRelease(dive.level, center, dive.direction, (float) (1.5 + dive.momentum * .008));
+            FlightVisualSyncService.syncToTrackingPlayers(player);
             dive.level.playSound(null, player.blockPosition(), ModSounds.FLIGHT_BOOST.get(),
                     SoundSource.PLAYERS, .8F, 1.2F);
         }
@@ -114,16 +115,11 @@ public final class DiveBombService {
                 player.move(MoverType.SELF, velocity);
                 player.connection.teleport(player.getX(), player.getY(), player.getZ(), player.getYRot(), player.getXRot());
             }
-            impact(player, dive);
+            impact(player, dive, contact);
             FlightVisualSyncService.syncToTrackingPlayers(player);
             return;
         }
         push(player, velocity);
-        if (dive.ageTicks % 2 == 0) {
-            Vec3 center = FlightVisualGeometry.bodyCenter(player.position());
-            AbilityEffects.send(dive.level, Kind.DIVE_TRAIL, center,
-                    center.add(velocity), 1 + dive.momentum * .01);
-        }
     }
 
     /** Sample the leading face as well as the center so a fast dive cannot tunnel through a ledge. */
@@ -151,15 +147,13 @@ public final class DiveBombService {
         return new Vec3(look.x, Math.min(look.y, -.55), look.z).normalize();
     }
 
-    private static void impact(ServerPlayer player, Dive dive) {
+    private static void impact(ServerPlayer player, Dive dive, BlockHitResult contact) {
         ServerLevel level = player.serverLevel();
         Vec3 center = player.position();
         double radius = 3.5 + dive.powerLevel * .3 + dive.momentum * .018;
         float damage = (float) (5 + dive.powerLevel + dive.momentum * .06);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
-                player.getBoundingBox().inflate(radius), entity -> entity != player && entity.isAlive()
-                        && !entity.isSpectator() && !player.isAlliedTo(entity)
-                        && !com.jayptucker.heroesevolved.entity.EntityCarryService.isBeingCarried(entity)
+                player.getBoundingBox().inflate(radius), entity -> FlightSkillService.hostile(player, entity)
                         && entity.distanceToSqr(player) <= radius * radius && player.hasLineOfSight(entity))) {
             target.hurt(player.damageSources().playerAttack(player), damage);
             Vec3 away = target.position().subtract(center).multiply(1, 0, 1);
@@ -170,7 +164,9 @@ public final class DiveBombService {
         player.resetFallDistance();
         cushion(player, 40);
         ArmPosePayload.show(player, ArmPose.GROUND, 10);
-        AbilityEffects.send(level, Kind.DIVE_IMPACT, center, center.add(0, 1, 0), radius);
+        Vec3 normal = contact == null ? new Vec3(0, 1, 0) : Vec3.atLowerCornerOf(contact.getDirection().getNormal());
+        Vec3 surface = (contact == null ? center : contact.getLocation()).add(normal.scale(.09));
+        SetPiecePayload.send(level, Piece.FLIGHT_IMPACT, surface, surface.add(normal), (float) radius, null);
         level.playSound(null, player.blockPosition(), SoundEvents.WIND_CHARGE_BURST.value(),
                 SoundSource.PLAYERS, 1.3F, .65F);
         CameraShakePayload.sendAround(level, center, radius * 4, 1.2F, 12);
@@ -220,14 +216,13 @@ public final class DiveBombService {
     private static final class Dive {
         final ServerLevel level;
         final int powerLevel;
-        final double momentum;
+        double momentum;
         Vec3 direction;
         int ageTicks;
-        Dive(ServerLevel level, Vec3 direction, int powerLevel, double momentum) {
+        Dive(ServerLevel level, Vec3 direction, int powerLevel) {
             this.level = level;
             this.direction = direction;
             this.powerLevel = powerLevel;
-            this.momentum = momentum;
         }
     }
 }

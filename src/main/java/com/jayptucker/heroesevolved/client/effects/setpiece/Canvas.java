@@ -137,14 +137,21 @@ public final class Canvas {
     /** A ribbon of even width through points, its alpha from {@code from} at the start to {@code to} at the end. */
     public void ribbon(Vec3[] points, float width, float[] c, float from, float to) {
         int n = points.length;
-        double[] x = new double[n], y = new double[n], z = new double[n];
         float[] a = new float[n], w = new float[n];
         for (int i = 0; i < n; i++) {
-            x[i] = points[i].x; y[i] = points[i].y; z[i] = points[i].z;
             a[i] = Mth.lerp(n == 1 ? 0 : i / (float) (n - 1), from, to);
             w[i] = width;
         }
-        ribbon(x, y, z, a, w, c);
+        ribbon(points, w, c, a);
+    }
+
+    public void ribbon(Vec3[] points, float[] width, float[] c, float[] alpha) {
+        int n = points.length;
+        double[] x = new double[n], y = new double[n], z = new double[n];
+        for (int i = 0; i < n; i++) {
+            x[i] = points[i].x; y[i] = points[i].y; z[i] = points[i].z;
+        }
+        ribbon(x, y, z, alpha, width, c);
     }
 
     public void line(Vec3 a, Vec3 b, float width, float[] c, float alphaA, float alphaB) {

@@ -3,13 +3,11 @@ package com.jayptucker.heroesevolved.electro;
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
-import com.jayptucker.heroesevolved.effects.AbilityEffects;
-import com.jayptucker.heroesevolved.expansion.ExpansionSkills;
 import com.jayptucker.heroesevolved.grid.GridDisruption;
-import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 import com.jayptucker.heroesevolved.network.ArmPosePayload;
 import com.jayptucker.heroesevolved.network.CameraShakePayload;
 import com.jayptucker.heroesevolved.network.ScreenTintPayload;
+import com.jayptucker.heroesevolved.styles.Piece;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -40,6 +38,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.jayptucker.heroesevolved.electro.ElectroGeometry.chest;
+import static com.jayptucker.heroesevolved.electro.ElectroGeometry.show;
+
 /**
  * Blackout (Electrokinesis, Groundkeeper signature). Elle drinks the grid.
  *
@@ -62,11 +63,12 @@ public final class BlackoutService {
     public static boolean winding(ServerPlayer player) { return SIPHONS.containsKey(player.getUUID()); }
 
     public static boolean activate(ServerPlayer player, int powerLevel) {
-        if (SIPHONS.containsKey(player.getUUID()) || !PowerRules.canAct(player)) return false;
+        if (!ElectroService.canStartCast(player)) return false;
         ServerLevel level = player.serverLevel();
         List<BlockPos> sources = sources(level, player.blockPosition());
         SIPHONS.put(player.getUUID(), new Siphon(player, level, level.getGameTime() + WIND_UP, powerLevel, sources));
-        ArmPosePayload.show(player, ArmPose.ARMS_RAISED, WIND_UP + 6);
+        ArmPosePayload.show(player, ArmPose.ELECTRO_COIL, WIND_UP + 2);
+        show(level, Piece.ELECTRO_COIL, player.position(), player.position(), .2, player);
         level.playSound(null, player.blockPosition(), SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS, 1.2F, 0.5F);
         level.playSound(null, player.blockPosition(), SoundEvents.RESPAWN_ANCHOR_CHARGE, SoundSource.PLAYERS, 1.0F, 0.6F);
         player.displayClientMessage(Component.literal(sources.isEmpty() ? "You pull at the dark. There is nothing here to drink."
@@ -100,20 +102,22 @@ public final class BlackoutService {
             ServerPlayer player = siphon.player;
             if (player.getServer() != server) continue;
             if (!player.isAlive() || player.isRemoved() || player.serverLevel() != siphon.level || !PowerRules.canAct(player)) {
-                SIPHONS.remove(player.getUUID());
+                forget(player);
                 continue;
             }
             long now = siphon.level.getGameTime(), left = siphon.releaseAt - now;
-            Vec3 chest = player.position().add(0, 1.2, 0);
+            Vec3 chest = chest(player.position());
             if (left > 0) {
                 // The arcs come faster as the pull builds, a few more each pair of ticks.
-                if (left % 2 == 0) {
-                    int arcs = Math.min(siphon.sources.size(), 2 + (int) ((WIND_UP - left) / 4));
+                if (left % 4 == 0) {
+                    int age = (int) (WIND_UP - left);
+                    int arcs = Math.min(siphon.sources.size(), 2 + age / 5);
                     for (int i = 0; i < arcs; i++) {
-                        BlockPos from = siphon.sources.get(siphon.level.getRandom().nextInt(siphon.sources.size()));
-                        AbilityEffects.send(siphon.level, Kind.GRID_SIPHON, Vec3.atCenterOf(from), chest, 1 - left / (double) WIND_UP);
+                        BlockPos from = siphon.sources.get((age + i) % siphon.sources.size());
+                        show(siphon.level, Piece.ELECTRO_SIPHON, Vec3.atCenterOf(from).add(0, .52, 0), chest,
+                                .25 + age / (double) WIND_UP, player, i % 2);
                     }
-                    AbilityEffects.send(siphon.level, Kind.ELECTRIC_SURGE_CHARGE, player.position(), chest, 1 - left / (double) WIND_UP);
+                    show(siphon.level, Piece.ELECTRO_COIL, player.position(), player.position(), .25 + age / (double) WIND_UP, player);
                 }
                 if (left % 5 == 0) siphon.level.playSound(null, player.blockPosition(), SoundEvents.GUARDIAN_ATTACK, SoundSource.PLAYERS,
                         0.5F, 0.6F + (WIND_UP - left) / (float) WIND_UP);
@@ -127,14 +131,15 @@ public final class BlackoutService {
     /** The pulse itself. Public for tests. */
     public static GridDisruption.Pulse release(ServerPlayer player, int powerLevel) {
         ServerLevel level = player.serverLevel();
-        Vec3 chest = player.position().add(0, 1.2, 0);
+        Vec3 chest = chest(player.position());
         GridDisruption.Pulse pulse = GridDisruption.emp(player, level, player.blockPosition(), RADIUS, FIELD_TICKS);
-        for (BlockPos machine : pulse.shown()) AbilityEffects.send(level, Kind.GRID_SIPHON, Vec3.atCenterOf(machine), chest, 1.0);
+        for (BlockPos machine : pulse.shown())
+            show(level, Piece.ELECTRO_SIPHON, Vec3.atCenterOf(machine).add(0, .52, 0), chest, 1, player);
 
         int struck = 0;
         float damage = 5.0F + powerLevel;
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(ENEMY_RADIUS),
-                target -> ExpansionSkills.hostile(player, target) && target.distanceToSqr(player) <= ENEMY_RADIUS * ENEMY_RADIUS
+                target -> ElectroService.hostile(player, target) && target.distanceToSqr(player) <= ENEMY_RADIUS * ENEMY_RADIUS
                         && player.hasLineOfSight(target))) {
             if (struck++ >= 24) break;
             com.jayptucker.heroesevolved.expansion.PowerReactions.electric(player, target);
@@ -142,14 +147,14 @@ public final class BlackoutService {
             target.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 140, 0));
             target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 80, 1));
             if (target instanceof Mob mob) mob.getNavigation().stop();
-            AbilityEffects.send(level, Kind.ELECTRIC_ARC, chest, target.getBoundingBox().getCenter(), 1.2);
+            show(level, Piece.ELECTRO_ARC, chest, target.getBoundingBox().getCenter(), 1.2, null);
         }
 
         // Charge: a base surge, then whatever the grid gave her.
         int gained = Math.min(ElectroService.MAX_CHARGE, 20 + pulse.charge() + 3 * Math.min(10, pulse.machines()));
         ElectroService.addCharge(player, gained);
 
-        AbilityEffects.send(level, Kind.ELECTRIC_BLACKOUT, player.position(), chest, RADIUS);
+        show(level, Piece.ELECTRO_BLACKOUT, player.position(), chest, RADIUS, null);
         CameraShakePayload.sendAround(level, chest, RADIUS * 1.5, 1.6F, 14);
         // The lights go out: everyone caught in it sees the edges of the world close in.
         ScreenTintPayload.sendAround(level, chest, RADIUS, 0xC0000008, 50, ScreenTintPayload.Style.VIGNETTE);
@@ -157,7 +162,7 @@ public final class BlackoutService {
         level.playSound(null, player.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 2.0F, 0.5F);
         level.playSound(null, player.blockPosition(), SoundEvents.CONDUIT_DEACTIVATE, SoundSource.PLAYERS, 2.0F, 0.6F);
         level.playSound(null, player.blockPosition(), SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 1.4F, 0.5F);
-        ArmPosePayload.show(player, ArmPose.ARMS_WIDE, 14);
+        ArmPosePayload.show(player, ArmPose.ELECTRO_RELEASE, 14);
 
         List<String> parts = new ArrayList<>();
         if (pulse.machines() > 0) parts.add(pulse.machines() + (pulse.machines() == 1 ? " machine" : " machines"));
@@ -167,7 +172,9 @@ public final class BlackoutService {
         return pulse;
     }
 
-    public static void forget(ServerPlayer player) { SIPHONS.remove(player.getUUID()); }
+    public static void forget(ServerPlayer player) {
+        if (SIPHONS.remove(player.getUUID()) != null) ArmPosePayload.clear(player);
+    }
 
     @SubscribeEvent public static void logout(PlayerEvent.PlayerLoggedOutEvent event) { if (event.getEntity() instanceof ServerPlayer p) forget(p); }
     @SubscribeEvent public static void dimension(PlayerEvent.PlayerChangedDimensionEvent event) { if (event.getEntity() instanceof ServerPlayer p) forget(p); }

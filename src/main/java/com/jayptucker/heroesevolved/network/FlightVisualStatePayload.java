@@ -16,6 +16,12 @@ public record FlightVisualStatePayload(
         int speedStep,
         int telemetry
 ) implements CustomPacketPayload {
+    public static final int TAKEOFF = 1 << 18;
+    public static final int BURST = 1 << 19;
+    public static final int DIVE_RELEASED = 1 << 20;
+    public static final int VACUUM = 1 << 21;
+    public static final int WIDE_VACUUM = 1 << 22;
+
     public static final Type<FlightVisualStatePayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(
                     HeroesEvolved.MOD_ID,

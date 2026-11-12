@@ -54,11 +54,6 @@ public final class AbilityEffects {
             case "time_manipulation" -> {
                 if (action.equals("temporal_snapshot")) at(player, Kind.TIME_SNAPSHOT, 4);
             }
-            case "flight" -> {
-                if (action.equals("flight_toggle")) {
-                    at(player, Kind.FLIGHT_BURST, action.equals("flight_launch") ? 3.0D : 1.6D);
-                }
-            }
             case "regeneration" -> {
                 // Resurrection's key only reports readiness. Its real VFX run on revival.
                 if (!action.equals("regeneration_second_life")

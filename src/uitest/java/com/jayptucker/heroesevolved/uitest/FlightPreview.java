@@ -53,6 +53,7 @@ public final class FlightPreview {
     private static boolean started;
     private static int ticks, worldTicks;
     private static String pending;
+    private static Vec3 burstOrigin;
     private static final List<Entity> SKILL_PROPS = new ArrayList<>();
     private static PlayerTeam skillTeam;
 
@@ -112,6 +113,20 @@ public final class FlightPreview {
         SkillCatalog.find("flight", id).orElseThrow().action().activate(new AbilityUseContext(p, ModAbilities.FLIGHT_ID, 5, false));
     }
 
+    private static void releaseBurst(ServerPlayer player, String scene) {
+        burstOrigin = player.position();
+        FlightDynamicsService.releaseSkyburst(player);
+        System.out.printf(java.util.Locale.ROOT, "SKYBURST %s release speed %.2f%n",
+                scene, player.getDeltaMovement().length());
+    }
+
+    private static void reportBurst(Minecraft mc, String scene) {
+        Vec3 client = mc.player.position();
+        onServer(mc, p -> System.out.printf(java.util.Locale.ROOT,
+                "SKYBURST %s server distance %.2f, client distance %.2f, active %b%n", scene,
+                p.position().distanceTo(burstOrigin), client.distanceTo(burstOrigin), FlightDynamicsService.isBursting(p)));
+    }
+
     @SubscribeEvent public static void tick(ClientTickEvent.Post event) {
         if (!Boolean.getBoolean("heroes.preview.flight")) return;
         var mc = Minecraft.getInstance();
@@ -119,6 +134,7 @@ public final class FlightPreview {
         if (!started && ticks > 40 && mc.screen != null && mc.getOverlay() == null) {
             started = true;
             mc.options.hideGui = false;
+            mc.options.tutorialStep = net.minecraft.client.tutorial.TutorialSteps.NONE;
             mc.options.guiScale().set(2);
             mc.resizeDisplay();
             mc.options.pauseOnLostFocus = false;
@@ -134,6 +150,7 @@ public final class FlightPreview {
         if (mc.screen instanceof net.minecraft.client.gui.screens.PauseScreen) mc.setScreen(null);
         switch (++worldTicks) {
             case 200 -> {
+                mc.options.hideGui = true;
                 mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
                 onServer(mc, p -> {
                     p.serverLevel().setDayTime(1000);
@@ -149,17 +166,24 @@ public final class FlightPreview {
                     }
                 });
             }
-            // Tap Skyburst: compact takeoff followed immediately by forward travel.
-            case 230 -> onServer(mc, p -> { FlightDynamicsService.pressSkyburst(p); FlightDynamicsService.releaseSkyburst(p); });
+            // Ground tap: the player's front camera sees the wave open behind the actual moving flier.
+            case 230 -> {
+                mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
+                onServer(mc, p -> { FlightDynamicsService.pressSkyburst(p); releaseBurst(p, "ground tap"); });
+            }
             case 232 -> pending = "flight-1-skyburst-takeoff.png";
-            case 240 -> pending = "flight-1-skyburst-wake.png";
+            case 235 -> pending = "flight-1-skyburst-wake.png";
+            case 255 -> reportBurst(mc, "ground tap");
             // Hold Skyburst in the air: brake and coil, then change direction on release.
             case 265 -> {
                 mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
                 onServer(mc, p -> { place(p, 300, -48, 0, 0, 0); FlightService.toggleFlight(p); FlightDynamicsService.pressSkyburst(p); });
             }
             case 285 -> pending = "flight-2-skyburst-charge.png";
-            case 291 -> onServer(mc, p -> { p.setYRot(-40); FlightDynamicsService.releaseSkyburst(p); });
+            case 291 -> {
+                mc.player.setYRot(-40);
+                onServer(mc, p -> { p.setYRot(-40); releaseBurst(p, "aerial hold"); });
+            }
             case 293 -> pending = "flight-2-skyburst-release.png";
             // Build airspeed in sustained flight. Two frames show the bank and the trail.
             case 315 -> {
@@ -173,7 +197,10 @@ public final class FlightPreview {
                 });
             }
             case 355 -> pending = "flight-3-cruise-vapor.png";
-            case 360 -> onServer(mc, p -> p.setYRot(35));
+            case 360 -> {
+                mc.player.setYRot(55);
+                onServer(mc, p -> p.setYRot(55));
+            }
             case 364 -> pending = "flight-3-banked-turn.png";
             // Dive: visible compression, then the plunge and ground-level pressure front.
             case 390 -> {
@@ -183,6 +210,7 @@ public final class FlightPreview {
             case 396 -> pending = "flight-4-dive-charge.png";
             case 402 -> pending = "flight-4-dive-plunge.png";
             case 410 -> pending = "flight-4-dive-impact.png";
+            case 417 -> pending = "flight-4-dive-pressure-front.png";
             // Grab and throw at close range.
             case 440 -> onServer(mc, p -> {
                 place(p, 300, -60, -16, 0, 0);
@@ -198,8 +226,9 @@ public final class FlightPreview {
             case 497 -> pending = "flight-6-tempest-charge.png";
             case 525 -> pending = "flight-6-tempest-funnel.png";
             case 565 -> pending = "flight-6-tempest-steered.png";
-            case 607 -> pending = "flight-6-tempest-finale.png";
+            case 612 -> pending = "flight-6-tempest-finale.png";
             case 620 -> {
+                mc.options.hideGui = false;
                 mc.options.setCameraType(CameraType.FIRST_PERSON);
                 onServer(mc, p -> { place(p, 300, -40, 0, 0, 0); FlightService.toggleFlight(p); FlightDynamicsService.pressSkyburst(p); });
             }
@@ -208,6 +237,7 @@ public final class FlightPreview {
             case 663 -> pending = "flight-7-first-person-dive.png";
             // Purchasable skills: use actual learned Node actions, with visible friends and hostile shots.
             case 680 -> {
+                mc.options.hideGui = true;
                 mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
                 onServer(mc, p -> {
                     skillStage(p, "flight_0_1", -60, -10);
@@ -264,13 +294,45 @@ public final class FlightPreview {
             case 929 -> pending = "flight-skill-6-vacuum-gather.png";
             case 935 -> pending = "flight-skill-6-vacuum-clap.png";
             case 947 -> pending = "flight-skill-6-sonic-bloom.png";
+            case 952 -> onServer(mc, p -> p.serverLevel().setDayTime(16000));
+            case 960 -> {
+                mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
+                onServer(mc, p -> {
+                    place(p, 400, -52, 0, 0, 0);
+                    FlightService.toggleFlight(p);
+                    FlightDynamicsService.pressSkyburst(p);
+                });
+            }
+            case 977 -> pending = "flight-8-skyburst-night.png";
             // Capture the resulting loadout HUD, then close the isolated preview.
             case 980 -> {
+                mc.options.hideGui = false;
                 mc.options.setCameraType(CameraType.FIRST_PERSON);
                 onServer(mc, p -> { FlightSkillService.forget(p); FlightService.stopForPowerRemoval(p); });
             }
             case 1000 -> pending = "flight-skill-7-loadout-hud.png";
-            case 1020 -> mc.stop();
+            case 1020 -> {
+                mc.options.hideGui = true;
+                mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
+                onServer(mc, p -> {
+                    p.serverLevel().setDayTime(1000);
+                    place(p, 400, -45, 0, 0, 0);
+                    FlightService.toggleFlight(p);
+                    FlightDynamicsService.addMomentum(p, 100);
+                    FlightDynamicsService.pressSkyburst(p);
+                });
+            }
+            case 1053 -> onServer(mc, p -> releaseBurst(p, "full charge + Momentum"));
+            case 1056 -> pending = "flight-skyburst-sonic-boom.png";
+            case 1060 -> pending = "flight-skyburst-full-wake.png";
+            case 1085 -> reportBurst(mc, "full charge + Momentum");
+            case 1090 -> {
+                mc.options.setCameraType(CameraType.FIRST_PERSON);
+                onServer(mc, p -> { p.serverLevel().setDayTime(16000); place(p, 400, -44, 0, 0, 0); });
+            }
+            case 1100 -> onServer(mc, p -> { FlightDynamicsService.pressSkyburst(p); releaseBurst(p, "night tap"); });
+            case 1104 -> pending = "flight-skyburst-first-person-release.png";
+            case 1120 -> mc.stop();
             default -> { }
         }
     }

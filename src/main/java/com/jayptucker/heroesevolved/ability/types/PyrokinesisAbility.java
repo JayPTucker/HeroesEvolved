@@ -33,7 +33,7 @@ public final class PyrokinesisAbility implements Ability {
                 @Override public int energyCost(int level) { return COMMON.pyroFlareEnergyCost.get(); }
                 @Override public int cooldownTicks(int level) { return COMMON.pyroFlareCooldownTicks.get(); }
                 @Override public boolean canUse(AbilityUseContext c) {
-                    return !PyroService.isChargingSpear(c.player()) && !c.player().isInWaterOrBubble();
+                    return PyroService.canStartCast(c.player());
                 }
                 @Override public AbilityActivationResult activate(AbilityUseContext c) {
                     return PyroService.startSpear(c.player(), c.abilityLevel())
@@ -49,17 +49,18 @@ public final class PyrokinesisAbility implements Ability {
                 @Override public int energyCost(int level) { return COMMON.pyroPalmEnergyCost.get(); }
                 @Override public int cooldownTicks(int level) { return COMMON.pyroPalmCooldownTicks.get(); }
                 @Override public boolean canUse(AbilityUseContext c) {
-                    return !PyroService.isChanneling(c.player()) && !c.player().isInWaterOrBubble();
+                    return PyroService.canStartCast(c.player());
                 }
                 @Override public AbilityActivationResult activate(AbilityUseContext c) {
-                    PyroService.startPalm(c.player(), c.abilityLevel());
-                    return AbilityActivationResult.SUCCESS;
+                    return PyroService.startPalm(c.player(), c.abilityLevel())
+                            ? AbilityActivationResult.SUCCESS : AbilityActivationResult.REJECTED;
                 }
                 @Override public void release(AbilityUseContext c) { PyroService.stopPalm(c.player()); }
                 @Override public boolean deactivate(AbilityUseContext c) { return PyroService.stopPalm(c.player()); }
             },
             AbilitySlot.TERTIARY, SimpleAction.builder("pyro_ring_of_fire", 2)
                     .cost(COMMON.pyroRingEnergyCost::get, COMMON.pyroRingCooldownTicks::get)
+                    .canUse(c -> PyroService.canStartCast(c.player()))
                     .activate(c -> PyroService.ringOfFire(c.player(), c.abilityLevel()))
                     .deactivate(c -> PyroService.collapseRing(c.player(), c.abilityLevel()))
                     .build(),
@@ -88,7 +89,7 @@ public final class PyrokinesisAbility implements Ability {
                 @Override public int energyCost(int level) { return COMMON.pyroInfernoEnergyCost.get(); }
                 @Override public int cooldownTicks(int level) { return COMMON.pyroInfernoCooldownTicks.get(); }
                 @Override public boolean canUse(AbilityUseContext c) {
-                    return !PyroService.isCharging(c.player()) && !c.player().isInWaterOrBubble();
+                    return PyroService.canStartCast(c.player());
                 }
                 @Override public AbilityActivationResult activate(AbilityUseContext c) {
                     return PyroService.startInferno(c.player(), c.abilityLevel())

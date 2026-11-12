@@ -5,9 +5,13 @@ import com.jayptucker.heroesevolved.ability.*;
 import com.jayptucker.heroesevolved.ability.Targeting;
 import com.jayptucker.heroesevolved.ability.service.*;
 import com.jayptucker.heroesevolved.cryo.*;
+import com.jayptucker.heroesevolved.electro.ElectroGeometry;
+import com.jayptucker.heroesevolved.electro.ElectroService;
 import com.jayptucker.heroesevolved.effects.*;
 import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
+import com.jayptucker.heroesevolved.network.ArmPosePayload;
 import com.jayptucker.heroesevolved.skills.SkillTreeService;
+import com.jayptucker.heroesevolved.styles.Piece;
 import net.minecraft.core.*;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.*;
@@ -60,7 +64,7 @@ public final class ExpansionSkills {
         if (c.player().isPassenger() || !PowerRules.canAct(c.player())) return false;
         // Signature abilities: one of each at a time.
         return switch (mechanic) {
-            case "blackout" -> !com.jayptucker.heroesevolved.electro.BlackoutService.winding(c.player());
+            case "blackout", "circuit_thread", "ground_sink", "arc_lattice" -> ElectroService.canStartCast(c.player());
             case "singularity" -> !com.jayptucker.heroesevolved.time.SingularityService.active(c.player());
             case "phoenix" -> !com.jayptucker.heroesevolved.pyro.PhoenixService.active(c.player()) && !c.player().isInWaterOrBubble();
             default -> true;
@@ -115,21 +119,27 @@ public final class ExpansionSkills {
             case "circuit_thread" -> {
                 List<BlockPos> circuit = conductorNetwork(p.serverLevel(), target, has(p, "electrokinesis_copper_choir"));
                 if (circuit.isEmpty()) { message(p, "Aim at iron, copper, a lightning rod, or a chain. Connected conductors carry the thread."); return false; }
-                Set<UUID> struck = new HashSet<>(); Vec3 previous = p.getEyePosition();
+                Set<UUID> struck = new HashSet<>(); Vec3 previous = ElectroGeometry.hand(p, 1, .68);
+                int link = 0;
                 for (BlockPos pos : circuit) {
-                    Vec3 point = Vec3.atCenterOf(pos);
-                    AbilityEffects.send(p.serverLevel(), Kind.ELECTRIC_ARC, previous, point, 1); previous = point;
+                    Vec3 point = Vec3.atCenterOf(pos), contact = point.add(0, .53, 0);
+                    ElectroGeometry.show(p.serverLevel(), Piece.ELECTRO_ARC, previous, contact, .8,
+                            link == 0 ? p : null, Math.min(14, link++ / 2));
+                    previous = contact;
                     FacilityService.technique(p, pos, "current");
-                    for (LivingEntity t : enemies(p, point, has(p, "electrokinesis_live_wire") ? 2.5 : 1.5)) if (struck.add(t.getUUID())) {
+                    for (LivingEntity t : enemies(p, point, has(p, "electrokinesis_live_wire") ? 2.5 : 1.5))
+                        if (ElectroService.hostile(p, t) && struck.add(t.getUUID())) {
                         PowerReactions.electric(p, t); t.hurt(p.damageSources().playerAttack(p), 5 + c.abilityLevel());
                     }
                 }
+                ArmPosePayload.show(p, ArmPose.ELECTRO_CAST, 12);
             }
             case "ground_sink" -> {
                 Sink old = SINKS.remove(p.getUUID());
                 if (old != null) {
-                    for (var t : enemies(p, old.center, 7)) t.hurt(p.damageSources().playerAttack(p), Math.min(16, old.charge[0]) + 2);
-                    AbilityEffects.send(p.serverLevel(), Kind.ELECTRIC_NOVA, old.center, old.center.add(0, 3, 0), 6);
+                    for (var t : enemies(p, old.center, 7)) if (ElectroService.hostile(p, t))
+                        t.hurt(p.damageSources().playerAttack(p), Math.min(16, old.charge[0]) + 2);
+                    ElectroGeometry.show(p.serverLevel(), Piece.ELECTRO_PULSE, old.center, old.center, 7, null);
                 } else {
                     if (!p.level().getBlockState(target).isFaceSturdy(p.level(), target, Direction.UP)) return false;
                     SINKS.put(p.getUUID(), new Sink(p, p.serverLevel(), Vec3.atCenterOf(target.above()), now(p) + (has(p, "electrokinesis_insulated_roots") ? 240 : 160), new float[]{0}));
@@ -143,7 +153,7 @@ public final class ExpansionSkills {
                 if (!anchors.isEmpty() && anchors.getLast().distanceToSqr(point) > 24 * 24) return false;
                 if (anchors.size() == 3) anchors.removeFirst(); anchors.add(point);
                 LATTICES.put(p.getUUID(), new Lattice(p, p.serverLevel(), List.copyOf(anchors), now(p) + (has(p, "electrokinesis_closed_circuit") ? 300 : 180), new HashSet<>()));
-                AbilityEffects.send(p.serverLevel(), Kind.ELECTRIC_NOVA, point, point.add(0, 1, 0), 1);
+                ElectroGeometry.show(p.serverLevel(), Piece.ELECTRO_PRIME, point, point, .61, null);
                 FacilityService.technique(p, target, "current");
             }
             case "ember_mine", "blue_lance", "fire_shepherd" -> { return com.jayptucker.heroesevolved.pyro.PyroService.technique(c, mechanic); }
@@ -233,13 +243,15 @@ public final class ExpansionSkills {
         SINKS.values().removeIf(s -> time >= s.until || s.owner.level() != s.level || !PowerRules.canAct(s.owner));
         LATTICES.values().removeIf(s -> time >= s.until || s.owner.level() != s.level || !PowerRules.canAct(s.owner));
         if (time % 10 != 0) return;
-        for (Sink s : SINKS.values()) AbilityEffects.send(s.level, Kind.ELECTRIC_NOVA, s.center, s.center.add(0, 1, 0), 1 + s.charge[0] / 8);
+        for (Sink s : SINKS.values()) ElectroGeometry.show(s.level, Piece.ELECTRO_PRIME, s.center, s.center, .61 + s.charge[0] / 24, null);
         for (Lattice l : LATTICES.values()) for (int i = 1; i < l.anchors.size() + (has(l.owner, "electrokinesis_storm_geometry") && l.anchors.size() == 3 ? 1 : 0); i++) {
-            Vec3 a = l.anchors.get(i - 1), b = l.anchors.get(i % l.anchors.size()); AbilityEffects.send(l.level, Kind.ELECTRIC_ARC, a, b, 1);
+            Vec3 a = l.anchors.get(i - 1), b = l.anchors.get(i % l.anchors.size());
+            ElectroGeometry.show(l.level, Piece.ELECTRO_ARC, a, b, .95, null);
             Vec3 delta = b.subtract(a); double length = delta.lengthSqr();
             for (var t : enemies(l.owner, a.add(b).scale(.5), Math.sqrt(length) / 2 + 2)) {
                 double fraction = length == 0 ? 0 : Math.clamp(t.position().subtract(a).dot(delta) / length, 0, 1);
-                if (t.position().distanceToSqr(a.add(delta.scale(fraction))) > 2.25 || !l.struck.add(t.getUUID())) continue;
+                if (!ElectroService.hostile(l.owner, t) || t.position().distanceToSqr(a.add(delta.scale(fraction))) > 2.25
+                        || !l.struck.add(t.getUUID())) continue;
                 PowerReactions.electric(l.owner, t); t.hurt(l.owner.damageSources().playerAttack(l.owner), has(l.owner, "electrokinesis_storm_geometry") ? 10 : 6);
                 FacilityService.technique(l.owner, t.blockPosition(), "current");
             }

@@ -28,11 +28,16 @@ public final class PowerArmPoses {
         boolean flameFlight = entity instanceof Player flamePlayer && !flamePlayer.onGround()
                 && ClientFlightVisualState.isPyroFlight(flamePlayer.getId())
                 && ClientFlightVisualState.isFlightEnabled(flamePlayer.getId());
-        if (flying || flameFlight) {
+        int id = entity.getId();
+        boolean hover = entity instanceof Player && !entity.onGround() && !flying && !flameFlight
+                && !entity.isPassenger() && ClientFlightVisualState.isFlightEnabled(id);
+        if (flying || flameFlight || hover) {
             float flutter = Mth.sin(ageInTicks * .22F) * .025F;
-            float spread = ClientFlightVisualState.isDiving(entity.getId()) ? .045F : .08F;
-            set(model.rightLeg, .035F + flutter, 0, spread);
-            set(model.leftLeg, -.035F - flutter, 0, -spread);
+            float spread = ClientFlightVisualState.isDiving(id) ? .045F : .08F;
+            float stagger = flameFlight ? .035F : hover ? .14F : .09F;
+            if (ClientFlightVisualState.isRolling(id)) stagger = .22F;
+            set(model.rightLeg, stagger + flutter, 0, spread);
+            set(model.leftLeg, -stagger - flutter, 0, -spread);
             model.rightPants.copyFrom(model.rightLeg);
             model.leftPants.copyFrom(model.leftLeg);
         }
@@ -42,7 +47,7 @@ public final class PowerArmPoses {
             return;
         }
         CarryAnchorEntity carryAnchor = CarryVisuals.anchor(entity);
-        if (carryAnchor != null && (pose == null || pose == ArmPose.TWO_HANDS)) {
+        if (carryAnchor != null) {
             // Vanilla's empty-hand renderer also calls setupAnim; leave that arm below the view.
             if (CarryVisuals.isLocalFirstPersonCarrier(entity)) return;
             switch (carryAnchor.hold()) {
@@ -84,6 +89,12 @@ public final class PowerArmPoses {
                 set(model.leftArm, .04F - breath, .025F, -.08F);
                 model.rightSleeve.copyFrom(model.rightArm);
                 model.leftSleeve.copyFrom(model.leftArm);
+            } else if (hover) {
+                float sway = Mth.sin(ageInTicks * .14F) * .055F;
+                set(model.rightArm, -.16F + sway, -.04F, .22F);
+                set(model.leftArm, -.16F - sway, .04F, -.22F);
+                model.rightSleeve.copyFrom(model.rightArm);
+                model.leftSleeve.copyFrom(model.leftArm);
             } else if (flying) {
                 // A leading fist and a trailing stabilizer give cruising a readable silhouette.
                 float speed = (float) Math.clamp(entity.getDeltaMovement().length() / 2.8, 0, 1);
@@ -93,11 +104,12 @@ public final class PowerArmPoses {
                 ModelPart leading = rightHanded ? model.rightArm : model.leftArm;
                 ModelPart trailing = rightHanded ? model.leftArm : model.rightArm;
                 float side = rightHanded ? 1 : -1;
-                set(leading, -2.98F + breath, side * -.07F, side * (.08F + turn));
-                if (ClientFlightVisualState.isDiving(entity.getId()))
+                boolean takeoff = ClientFlightVisualState.isTakingOff(id);
+                set(leading, (takeoff ? -2.32F : -2.98F) + breath, side * -.07F, side * (.08F + turn));
+                if (ClientFlightVisualState.isPlunging(id))
                     set(trailing, -2.98F - breath, side * .07F, side * (-.08F + turn));
                 else
-                    set(trailing, .12F - speed * .15F - breath, 0, side * (-.16F + turn));
+                    set(trailing, .12F - speed * .15F - breath, 0, side * (-.29F + turn));
                 model.rightSleeve.copyFrom(model.rightArm);
                 model.leftSleeve.copyFrom(model.leftArm);
             }
@@ -112,6 +124,63 @@ public final class PowerArmPoses {
         float inward = rightHanded ? -1.0F : 1.0F;
 
         switch (pose) {
+            case ELECTRO_DRAW -> {
+                float load = smooth(ClientArmPoseState.ageTicks(id) / 5F);
+                set(main, aimX + .72F * load, aimY + inward * .30F * load, -.18F * inward);
+                set(rightHanded ? model.leftArm : model.rightArm, -.83F, -inward * .32F, .17F * inward);
+            }
+            case ELECTRO_CAST -> {
+                float recover = smooth((ClientArmPoseState.ageTicks(id) - 3F) / 8F);
+                set(main, aimX - .14F + .65F * recover, aimY, -.12F * inward);
+                set(rightHanded ? model.leftArm : model.rightArm, -.62F, -inward * .27F, .28F * inward);
+            }
+            case ELECTRO_STREAM -> {
+                float twitch = Mth.sin(ageInTicks * 2.4F) * .039F;
+                set(main, aimX + twitch, aimY, -.06F * inward);
+                set(rightHanded ? model.leftArm : model.rightArm, aimX + .55F - twitch, aimY - inward * .36F, .14F * inward);
+            }
+            case ELECTRO_CALL -> {
+                float lift = smooth(ClientArmPoseState.ageTicks(id) / 9F);
+                set(main, aimX - 1.15F * lift, aimY, -.22F * inward);
+                set(rightHanded ? model.leftArm : model.rightArm, -.7F - lift, -inward * .21F, .38F * inward);
+            }
+            case ELECTRO_COIL -> {
+                float gather = smooth(ClientArmPoseState.ageTicks(id) / 18F);
+                set(model.rightArm, -.95F - .42F * gather, -.68F + .27F * gather, .15F);
+                set(model.leftArm, -.95F - .42F * gather, .68F - .27F * gather, -.15F);
+            }
+            case ELECTRO_RELEASE -> {
+                float spread = 1 - smooth((ClientArmPoseState.ageTicks(id) - 3F) / 9F);
+                set(model.rightArm, -.97F + .68F * (1 - spread), .39F * spread, .81F * spread);
+                set(model.leftArm, -.97F + .68F * (1 - spread), -.39F * spread, -.81F * spread);
+            }
+            case FLIGHT_COIL -> {
+                float gather = smooth(ClientArmPoseState.ageTicks(id) / 17F);
+                float reach = -1.17F + .49F * gather;
+                set(model.rightArm, reach, -.16F - .39F * gather, .38F - .17F * gather);
+                set(model.leftArm, reach, .16F + .39F * gather, -.38F + .17F * gather);
+            }
+            case FLIGHT_BRACE -> {
+                boolean travel = ClientFlightVisualState.isPlunging(id) || ClientFlightVisualState.isBursting(id);
+                float pitch = travel ? -2.95F : -1.12F;
+                set(model.rightArm, pitch, -.08F, .11F);
+                set(model.leftArm, pitch, .08F, -.11F);
+            }
+            case FLIGHT_ROLL -> {
+                float tuck = Mth.sin(ClientFlightVisualState.rollProgress(id) * Mth.PI);
+                set(model.rightArm, -.26F - .65F * tuck, -.09F - .35F * tuck, .48F - .34F * tuck);
+                set(model.leftArm, -.26F - .65F * tuck, .09F + .35F * tuck, -.48F + .34F * tuck);
+            }
+            case FLIGHT_CLAP -> {
+                float close = smooth(ClientArmPoseState.ageTicks(id) / 8F);
+                set(model.rightArm, -.92F - .28F * close, -.52F * close, .95F - .84F * close);
+                set(model.leftArm, -.92F - .28F * close, .52F * close, -.95F + .84F * close);
+            }
+            case FLIGHT_CAST -> {
+                float sweep = Mth.sin(Mth.PI * Mth.clamp(ClientArmPoseState.ageTicks(id) / 10F, 0, 1));
+                set(main, aimX + .35F - .55F * sweep, aimY, -.20F * inward);
+                set(rightHanded ? model.leftArm : model.rightArm, -.52F, -inward * .24F, .34F * inward);
+            }
             case CRYO_LANCE -> {
                 float age=ClientArmPoseState.ageTicks(entity.getId()),draw=smooth(age/10F),release=smooth((age-11)/4F);
                 ModelPart brace=rightHanded?model.leftArm:model.rightArm;
@@ -198,15 +267,16 @@ public final class PowerArmPoses {
             }
             case FIRE_RELEASE -> {
                 float age = ClientArmPoseState.ageTicks(entity.getId());
-                float thrust = smooth(age / 3F) * (1 - smooth((age - 5) / 7F));
-                set(model.rightArm, aimX + .65F - thrust * .8F, aimY - .16F, .08F);
-                set(model.leftArm, aimX + .65F - thrust * .8F, aimY + .16F, -.08F);
+                float thrust = 1 - smooth((age - 4) / 8F);
+                ModelPart brace = rightHanded ? model.leftArm : model.rightArm;
+                set(main, aimX + .82F * (1 - thrust), aimY + inward * .08F, -inward * .12F);
+                set(brace, -.62F - .25F * thrust, -inward * .31F, inward * .33F);
             }
             case FIRE_BREATH -> {
                 float age = ClientArmPoseState.ageTicks(entity.getId());
-                float pressure = Mth.sin(age * .85F) * .045F;
-                set(model.rightArm, aimX + .08F + pressure, aimY - .12F, .07F);
-                set(model.leftArm, aimX + .08F - pressure, aimY + .12F, -.07F);
+                float pressure = Mth.sin(age * .60F) * .09F;
+                set(model.rightArm, aimX + .48F + pressure, aimY - .31F, .13F);
+                set(model.leftArm, aimX + .48F - pressure, aimY + .31F, -.13F);
             }
             case FIRE_SHEPHERD -> {
                 float age = ClientArmPoseState.ageTicks(entity.getId());
@@ -231,6 +301,12 @@ public final class PowerArmPoses {
                 float sweep = smooth(age / 12F);
                 set(model.rightArm, -.5F - sweep * .7F, -.5F + sweep * .65F, .2F + sweep * .45F);
                 set(model.leftArm, -.5F - sweep * .7F, .5F - sweep * .65F, -.2F - sweep * .45F);
+            }
+            case FIRE_DIVE -> {
+                float age = ClientArmPoseState.ageTicks(entity.getId());
+                float tuck = smooth(age / 5F), plunge = smooth((age - 6) / 4F);
+                set(model.rightArm, -.85F - tuck * .28F + plunge * 1.65F, -.35F + plunge * .26F, .21F);
+                set(model.leftArm, -.85F - tuck * .28F + plunge * 1.65F, .35F - plunge * .26F, -.21F);
             }
             case ONE_HAND -> set(main, aimX, aimY + inward * 0.1F, 0.0F);
             case TWO_HANDS, TWO_HANDS_STRAIN -> {

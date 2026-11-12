@@ -443,7 +443,7 @@ public final class HeroesEvolvedConfig {
                         .defineInRange("launchCooldownTicks", 20 * 3, 0, 20 * 60);
 
                 flightLaunchAscentDurationSeconds = builder
-                        .comment("Legacy ascent setting retained for config compatibility. Skyburst now uses a short twelve-tick takeoff.")
+                        .comment("Legacy ascent setting retained for config compatibility.")
                         .defineInRange("launchAscentDurationSeconds", 3, 1, 30);
 
                 flightAscentSpeed = builder
@@ -451,7 +451,7 @@ public final class HeroesEvolvedConfig {
                         .defineInRange("ascentSpeed", 0.85D, 0.01D, 4.0D);
 
                 flightForwardSpeed = builder
-                        .comment("Skyburst tap speed. Maneuver velocity is bounded to 3.6 blocks per tick.")
+                        .comment("Base forward launch speed. Skyburst starts at 2.5 times this speed before charge and Momentum bonuses, capped at 10 blocks per tick.")
                         .defineInRange("forwardSpeed", 2.6D, 0.1D, 70.0D);
 
                 flightCruiseSpeed = builder
@@ -830,8 +830,8 @@ public final class HeroesEvolvedConfig {
                 pyroRingCooldownTicks = cooldown(builder, "ringOfFire", 20 * 15);
                 pyroBackdraftEnergyCost = energy(builder, "backdraft", 25);
                 pyroBackdraftCooldownTicks = cooldown(builder, "backdraft", 20 * 5);
-                pyroInfernoEnergyCost = energy(builder, "inferno", 110);
-                pyroInfernoCooldownTicks = cooldown(builder, "inferno", 20 * 120);
+                pyroInfernoEnergyCost = energy(builder, "inferno", 94);
+                pyroInfernoCooldownTicks = cooldown(builder, "inferno", 20 * 80);
                 builder.pop();
 
                 builder.push("grid");

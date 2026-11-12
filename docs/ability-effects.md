@@ -167,7 +167,7 @@ sound registrations and playback timing are preserved.
 
 | Power | Updated appearance |
 | --- | --- |
-| Radiation | Reworked: white-hot rays fanning from the palms, a sickly green contamination wave and lingering patch, a held heat beam with travelling heat rings, a blue-white EMP shell, green chain-reaction bursts; the detonation keeps its fireball, shockwave and mushroom cloud. See [Ted Sprague](ted-sprague.md). |
+| Induced Radioactivity | Set pieces in 3D (`RadiationArt`): a cone of heat rings and white rays from the palms, Fission Leap's launch and slam blasts (flash, hot shock ring, green ring, fireball, dust and stones), a glowing contaminated patch, a blue EMP shell and crackling ring, a thick three-layer heat beam, and Critical Mass's imploding rings; the detonation keeps its fireball, shockwave and mushroom cloud, now faster. See [Induced Radioactivity](induced-radioactivity.md). |
 | Flight | Entirely new twin boot vortices following the pitched body, broad soft wakes at speed, curved sonic-pressure fronts, layered cyclone wind ribbons and vapor-based dive impacts/awakening. |
 | Quake | Broken widening compression arcs, sharp pressure fronts and delayed jagged ground fissure highlights. Highlights are cosmetic and may be occluded on uneven terrain. |
 | Electrokinesis | Rebuilt: branched fractal bolts drawn like vanilla lightning, a held Live Current stream, a plasma-knot orb, a telegraphed sky strike that lights the sky, a crackling body aura when Charged, and short-lived light blocks for real flashes. |

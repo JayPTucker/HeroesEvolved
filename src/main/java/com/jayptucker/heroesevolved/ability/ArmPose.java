@@ -73,5 +73,8 @@ public enum ArmPose {
     /** Spread and turn the hands to set a constellation of linked crystals. */
     CRYO_STARS,
     /** Both arms windmilling too fast to see, out of step, into two funnels of wind. */
-    WIND_ARMS
+    WIND_ARMS,
+    FLIGHT_COIL, FLIGHT_BRACE, FLIGHT_ROLL, FLIGHT_CLAP, FLIGHT_CAST,
+    FIRE_DIVE,
+    ELECTRO_DRAW, ELECTRO_CAST, ELECTRO_STREAM, ELECTRO_CALL, ELECTRO_COIL, ELECTRO_RELEASE
 }

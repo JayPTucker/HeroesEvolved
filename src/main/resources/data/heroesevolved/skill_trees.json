@@ -200,7 +200,7 @@
       [
         {
           "name": "Featherlight",
-          "description": "Falls of up to 10 blocks deal no damage; larger falls deal half damage.",
+          "description": "Cushion visible teammates within 18 blocks. Falls of up to 10 blocks deal no damage; larger falls deal half damage.",
           "icon": "minecraft:feather",
           "level": 1,
           "mechanic": "featherlight"
@@ -248,7 +248,7 @@
         {
           "id": "flight_guardian_angel",
           "name": "Last-Second Save",
-          "description": "Once every 45 seconds, catch yourself or a visible falling teammate within 18 blocks after a fall over 10 blocks. Negate the landing and grant 5 seconds of Slow Falling; bank 25 Momentum if you are flying.",
+          "description": "Once every 45 seconds, catch a visible teammate within 18 blocks after a fall over 10 blocks. Negate their landing damage and grant 5 seconds of Slow Falling. Bank 25 Momentum if you are flying.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -268,7 +268,7 @@
         },
         {
           "name": "Barrel Roll",
-          "description": "While airborne, corkscrew forward and right for 0.6 seconds, deflecting incoming hostile projectiles nearby. Shift + key rolls left. Solid walls stop the roll.",
+          "description": "Corkscrew for 0.6 seconds, carrying your entry speed. Deflect a hostile projectile to bank 15 Momentum once per roll. Shift + key rolls left. Solid walls stop the roll.",
           "energy": 18,
           "cooldown": 100,
           "icon": "minecraft:elytra",
@@ -329,7 +329,7 @@
         },
         {
           "name": "Thermal Lance",
-          "description": "Aim at solid ground within 20 blocks. A warning circle gathers for 0.4 seconds, then a 3.5-block updraft damages and lifts enemies. Friends in it land softly. Shift + key cancels the warning.",
+          "description": "Aim at solid ground within 20 blocks. After 0.4 seconds, a 3.5-block-radius updraft lifts and damages enemies and cushions allies. Fly into your own column to gain a lift and 20 Momentum once per cast. Shift + key cancels the warning.",
           "energy": 24,
           "cooldown": 160,
           "icon": "minecraft:firework_rocket",
@@ -346,7 +346,7 @@
         {
           "id": "flight_thunderclap",
           "name": "Vacuum Clap",
-          "description": "Draw visible enemies inward for 0.4 seconds, then clap out a 6-block pressure wave. Spend stored Momentum for a harder burst. Shift + key cancels before release.",
+          "description": "Draw visible enemies inward for 0.4 seconds, then clap out a 6-block pressure wave. Release spends Momentum for a harder burst. Shift + key cancels before release and keeps Momentum.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -2408,8 +2408,8 @@
     "branches": [
       [
         {
-          "name": "Steady Hands",
-          "description": "Reduce activation stamina costs by 10%."
+          "name": "Kindling",
+          "description": "Direct Cinder Spear hits build 4 extra Heat per cast."
         },
         {
           "name": "Ember Lash",
@@ -2418,13 +2418,13 @@
           "cooldown": 80
         },
         {
-          "name": "Steady Hands Mastery",
-          "description": "Reduce activation stamina costs by another 15% (25% total)."
+          "name": "Flashpoint",
+          "description": "Detonating a burning enemy with Cinder Spear refunds 8 Heat per cast."
         },
         {
           "id": "pyrokinesis_ember_mine",
           "name": "Ember Mine",
-          "description": "Hide an ember on aimed ground. It arms after 0.4 seconds; an enemy approaching triggers a visible 0.4-second warning, then an eruption for 6 + level fire damage. Two mines at once, forty-second lifetime; hidden from others until triggered.",
+          "description": "Hide up to two embers for 40 seconds. Enemies, a fully charged Cinder Spear, or Blue Lance can trigger an armed ember. It gives a visible warning for 0.4 seconds before erupting for 6 + level fire damage.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -2446,7 +2446,7 @@
         {
           "id": "pyrokinesis_wildfire",
           "name": "Wildfire",
-          "description": "Erupting mines leave a ring of real fire and set off your other mines within eight blocks.",
+          "description": "Mine eruptions leave a ring of real fire and prime your other armed mines within eight blocks and in sight. Each gets its own warning.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -2458,7 +2458,7 @@
       [
         {
           "name": "Stoke",
-          "description": "Increase outgoing attack damage by 10%."
+          "description": "Dragon's Breath builds 2 extra Heat per pulse that hits an enemy."
         },
         {
           "name": "Heat Mantle",
@@ -2467,13 +2467,13 @@
           "cooldown": 240
         },
         {
-          "name": "Stoke Mastery",
-          "description": "Increase outgoing attack damage by another 15% (25% total)."
+          "name": "Furnace",
+          "description": "Blue Dragon's Breath keeps a Firestorm fanned for 2.4 seconds instead of 1.2."
         },
         {
           "id": "pyrokinesis_blue_lance",
           "name": "Blue Lance",
-          "description": "Pierce a 24-block line with blue fire for (8 + level) x 1.5 damage, then leave a fixed drilling seam for 0.6 seconds. The seam pulses for 2.5 damage every four ticks, hitting up to eight enemies per pulse. Solid cover stops it.",
+          "description": "Pierce 24 blocks for (8 + level) x 1.5 blue fire damage. The seam stays for 0.6 seconds and pulses for 2.5 damage every four ticks. It primes armed Ember Mines in its path. Solid cover and water stop it.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -2507,7 +2507,7 @@
       [
         {
           "name": "Warm Blood",
-          "description": "Reduce ability cooldowns by 10%."
+          "description": "Standing in fire or lava builds 5 Heat per second in addition to restoring stamina."
         },
         {
           "name": "Cauterizing Flame",
@@ -2516,8 +2516,8 @@
           "cooldown": 300
         },
         {
-          "name": "Warm Blood Mastery",
-          "description": "Reduce ability cooldowns by another 15% (25% total)."
+          "name": "Hearthkeeper",
+          "description": "Cauterizing Flame spends 10 Heat for absorption. Fire Shepherd recovers 6 Heat per burning friend rescued, up to 18."
         },
         {
           "id": "pyrokinesis_fire_shepherd",
@@ -2555,7 +2555,7 @@
         {
           "id": "pyrokinesis_phoenix",
           "name": "Phoenix",
-          "description": "Release a firebird. It wheels over you, then dives through up to three enemies in turn (four from Level 15), burning whatever it brushes past and lighting fire where they stood. Then it comes home, healing you for each strike and leaving you fire resistant.",
+          "description": "Release a firebird that favors burning enemies. It dives through up to three foes, or four from tier 5, then returns to heal you and restore Heat for each strike. A Phoenix cast at blue Heat burns hotter.",
           "active": true,
           "signature": true,
           "icon": "minecraft:blaze_rod",

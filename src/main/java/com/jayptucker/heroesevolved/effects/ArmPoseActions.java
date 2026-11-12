@@ -32,7 +32,7 @@ public final class ArmPoseActions {
             Map.entry("electro_ball_lightning", new Pose(ArmPose.TWO_HANDS, 10)),
 
             Map.entry("radiation_radiant_touch", new Pose(ArmPose.ONE_HAND, 8)),
-            Map.entry("radiation_pulse", new Pose(ArmPose.ARMS_WIDE, 15)),
+            Map.entry("radiation_pulse", new Pose(ArmPose.GROUND, 8)),
             Map.entry("radiation_emp", new Pose(ArmPose.ARMS_WIDE, 16)),
             Map.entry("radiation_meltdown_beam", new Pose(ArmPose.TWO_HANDS_STRAIN, 15)),
 

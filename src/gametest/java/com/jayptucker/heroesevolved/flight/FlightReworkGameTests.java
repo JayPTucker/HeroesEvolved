@@ -13,15 +13,24 @@ import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.entity.EntityCarryService;
 import com.jayptucker.heroesevolved.events.EclipseService;
+import com.jayptucker.heroesevolved.network.CameraShakePayload;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
+import com.jayptucker.heroesevolved.sounds.ModSounds;
 import com.mojang.authlib.GameProfile;
 import io.netty.channel.embedded.EmbeddedChannel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
+import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.CommonListenerCookie;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.server.players.PlayerList;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -33,6 +42,8 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /** Server behavior for the airspeed loop, release-controlled launch and telegraphed combat moves. */
@@ -40,13 +51,11 @@ import java.util.UUID;
 @PrefixGameTestTemplate(false)
 public final class FlightReworkGameTests {
     private static ServerPlayer player(GameTestHelper h) {
-        ServerPlayer p = new FakePlayer(h.getLevel(), new GameProfile(UUID.randomUUID(), "flight-rework"));
-        try {
-            Connection connection = p.connection.getConnection();
-            Field channel = Connection.class.getDeclaredField("channel");
-            channel.setAccessible(true);
-            if (connection.channel() == null) channel.set(connection, new EmbeddedChannel());
-        } catch (ReflectiveOperationException e) { throw new AssertionError(e); }
+        return setupPlayer(h, new FakePlayer(h.getLevel(), new GameProfile(UUID.randomUUID(), "flight-rework")));
+    }
+
+    private static ServerPlayer setupPlayer(GameTestHelper h, ServerPlayer p) {
+        attachChannel(p);
         p.setPos(Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(3, 40, 3))));
         p.setYRot(0); p.setXRot(0); p.setOnGround(false);
         p.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty()
@@ -55,6 +64,15 @@ public final class FlightReworkGameTests {
         PlayerEnergyService.restore(p, PlayerEnergyService.getMaximumEnergy(p));
         FlightService.toggleFlight(p);
         return p;
+    }
+
+    private static void attachChannel(ServerPlayer player) {
+        try {
+            Connection connection = player.connection.getConnection();
+            Field channel = Connection.class.getDeclaredField("channel");
+            channel.setAccessible(true);
+            if (connection.channel() == null) channel.set(connection, new EmbeddedChannel());
+        } catch (ReflectiveOperationException e) { throw new AssertionError(e); }
     }
 
     private static void forget(ServerPlayer p) {
@@ -114,6 +132,28 @@ public final class FlightReworkGameTests {
         } finally { forget(p); }
     }
 
+    @GameTest(template = "rewind_empty", batch = "flight.burst_cruise")
+    public static void tappingSkyburstKeepsCruiseSettingsAndForwardReleaseBrakes(GameTestHelper h) {
+        ServerPlayer p = player(h);
+        try {
+            flyFast(p, 5);
+            FlightDynamicsService.pressSkyburst(p);
+            FlightDynamicsService.releaseSkyburst(p);
+            PlayerFlightData flight = p.getData(ModDataAttachments.PLAYER_FLIGHT.get());
+            h.assertTrue(flight.speedStep() == 4 && flight.movingForward(),
+                    "Tap Skyburst must preserve the selected speed and held Forward input");
+            for (int i = 0; i < 32 && FlightDynamicsService.isBursting(p); i++) FlightDynamicsService.tick(p);
+            FlightService.tick(p);
+            double speed = p.getDeltaMovement().length();
+            h.assertTrue(speed > 1 && p.getData(ModDataAttachments.PLAYER_FLIGHT.get()).visualPoseActive(),
+                    "Cruise resumes when the burst ends");
+            FlightService.setForwardInput(p, false);
+            h.assertTrue(p.getDeltaMovement().length() < speed * .5,
+                    "Releasing Forward must brake even at the highest selected speed");
+            h.succeed();
+        } finally { forget(p); }
+    }
+
     @GameTest(template = "rewind_empty", batch = "flight.skyburst_dispatch")
     public static void skyburstKeyDispatchPaysOnceAndCancelBypassesCooldown(GameTestHelper h) {
         ServerPlayer p = player(h);
@@ -160,6 +200,182 @@ public final class FlightReworkGameTests {
                     "The maximum hold releases automatically so a lost release packet cannot strand a hovering player");
             h.succeed();
         } finally { forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "flight.skyburst_travel")
+    public static void skyburstSustainsThrustAndStopsAtWalls(GameTestHelper h) {
+        ServerPlayer p = player(h);
+        Vec3 start = p.position();
+        BlockPos wall = BlockPos.containing(start).south(4);
+        try {
+            for (int z = 0; z <= 224; z += 16) h.getLevel().getChunkAt(BlockPos.containing(start).south(z));
+            FlightDynamicsService.pressSkyburst(p);
+            FlightDynamicsService.releaseSkyburst(p);
+            double tapSpeed = p.getDeltaMovement().length();
+            double tapRange = travelSkyburst(p);
+            h.assertTrue(tapSpeed > 6 && tapRange > 85, "A tap must sustain its high-speed launch in clear air");
+
+            p.setPos(start);
+            FlightDynamicsService.addMomentum(p, 100);
+            FlightDynamicsService.pressSkyburst(p);
+            for (int i = 0; i < FlightDynamicsService.SKYBURST_FULL_CHARGE_TICKS; i++) FlightDynamicsService.tick(p);
+            FlightDynamicsService.releaseSkyburst(p);
+            h.assertTrue(p.getDeltaMovement().length() > tapSpeed * 1.4,
+                    "Full charge and Momentum must give a much faster launch");
+            h.assertTrue(travelSkyburst(p) > tapRange * 1.7, "A fully powered launch must carry much farther");
+
+            p.setPos(start);
+            h.getLevel().setBlockAndUpdate(wall, Blocks.STONE.defaultBlockState());
+            h.getLevel().setBlockAndUpdate(wall.above(), Blocks.STONE.defaultBlockState());
+            FlightDynamicsService.pressSkyburst(p);
+            FlightDynamicsService.releaseSkyburst(p);
+            double blockedRange = travelSkyburst(p);
+            h.assertTrue(blockedRange > 2 && p.getBoundingBox().maxZ <= wall.getZ(),
+                    "The high-speed sweep must stop the whole player at a wall within the first impulse");
+            h.succeed();
+        } finally {
+            h.getLevel().removeBlock(wall, false);
+            h.getLevel().removeBlock(wall.above(), false);
+            forget(p);
+        }
+    }
+
+    private static double travelSkyburst(ServerPlayer p) {
+        Vec3 start = p.position();
+        for (int i = 0; i < 32 && FlightDynamicsService.isBursting(p); i++) {
+            p.move(MoverType.SELF, p.getDeltaMovement());
+            FlightDynamicsService.tick(p);
+        }
+        return p.position().distanceTo(start);
+    }
+
+    @GameTest(template = "rewind_empty", batch = "flight.skyburst_witnesses")
+    public static void skyburstBoomCarriesFartherThanItsTremor(GameTestHelper h) {
+        ServerPlayer source = player(h);
+        List<ServerPlayer> online = onlinePlayers(source.getServer().getPlayerList());
+        var close = witness(h, source.position().add(8, 0, 0), online);
+        var nearby = witness(h, source.position().add(48, 0, 0), online);
+        var distant = witness(h, source.position().add(155, 0, 0), online);
+        var outside = witness(h, source.position().add(193, 0, 0), online);
+        try {
+            FlightDynamicsService.pressSkyburst(source);
+            FlightDynamicsService.releaseSkyburst(source);
+            FlightDynamicsService.releaseSkyburst(source);
+            h.assertTrue(close.booms() == 1 && nearby.booms() == 1 && distant.booms() == 1 && outside.booms() == 0,
+                    "Skyburst's positional boom must reach distant players once, with a 192-block cutoff");
+            h.assertTrue(close.shake() > nearby.shake() && nearby.shake() > 0,
+                    "All players in range receive a tremor that gets weaker farther from the launch");
+            h.assertTrue(distant.shake() == 0 && outside.shake() == 0,
+                    "The tremor must stay local even when the sound can still be heard");
+            h.succeed();
+        } finally {
+            for (var witness : List.of(close, nearby, distant, outside)) {
+                online.remove(witness.player);
+                h.getLevel().removePlayerImmediately(witness.player, Entity.RemovalReason.DISCARDED);
+            }
+            forget(source);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<ServerPlayer> onlinePlayers(PlayerList list) {
+        try {
+            Field players = PlayerList.class.getDeclaredField("players");
+            players.setAccessible(true);
+            return (List<ServerPlayer>) players.get(list);
+        } catch (ReflectiveOperationException e) { throw new AssertionError(e); }
+    }
+
+    private static BurstWitness witness(GameTestHelper h, Vec3 position, List<ServerPlayer> online) {
+        var player = new FakePlayer(h.getLevel(), new GameProfile(UUID.randomUUID(), "burst-witness"));
+        attachChannel(player);
+        List<Packet<?>> packets = new ArrayList<>();
+        player.connection = new ServerGamePacketListenerImpl(player.getServer(), player.connection.getConnection(), player,
+                CommonListenerCookie.createInitial(player.getGameProfile(), false)) {
+            @Override public void send(Packet<?> packet) { packets.add(packet); }
+        };
+        player.setPos(position);
+        h.getLevel().addNewPlayer(player);
+        online.add(player);
+        return new BurstWitness(player, packets);
+    }
+
+    private record BurstWitness(ServerPlayer player, List<Packet<?>> packets) {
+        long booms() {
+            return packets.stream().filter(packet -> packet instanceof ClientboundSoundPacket sound
+                    && sound.getSound().value() == ModSounds.SKYBURST_BOOM.get()).count();
+        }
+
+        double shake() {
+            return packets.stream().filter(packet -> packet instanceof ClientboundCustomPayloadPacket custom
+                            && custom.payload() instanceof CameraShakePayload)
+                    .mapToDouble(packet -> ((CameraShakePayload) ((ClientboundCustomPayloadPacket) packet).payload()).intensity())
+                    .max().orElse(0);
+        }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "flight.fall_immunity")
+    public static void unlockedFlightPreventsFallDamageWithoutAnActiveSession(GameTestHelper h) {
+        ServerPlayer p = setupPlayer(h, new FakePlayer(h.getLevel(), new GameProfile(UUID.randomUUID(), "flight-landing")) {
+            @Override public boolean isInvulnerableTo(DamageSource source) { return false; }
+        });
+        try {
+            Field spawnProtection = ServerPlayer.class.getDeclaredField("spawnInvulnerableTime");
+            spawnProtection.setAccessible(true);
+            spawnProtection.setInt(p, 0);
+            FlightService.toggleFlight(p);
+            h.assertTrue(!FlightService.hasActiveSession(p), "The landing fixture must have flying switched off");
+            float health = p.getHealth();
+            p.causeFallDamage(30, 1, p.damageSources().fall());
+            h.assertTrue(p.getHealth() == health, "An unlocked flier must survive a normal landing at full health");
+            EclipseService.beginTotality(p.getServer());
+            p.hurt(p.damageSources().stalagmite(), 8);
+            h.assertTrue(p.getHealth() == health, "Direct fall-tag damage must be blocked even during an Eclipse");
+            p.hurt(p.damageSources().generic(), 2);
+            h.assertTrue(p.getHealth() < health, "Flight must still allow ordinary damage");
+
+            p.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty().assignDormant(ModAbilities.FLIGHT_ID));
+            p.setHealth(health);
+            p.invulnerableTime = 0;
+            p.causeFallDamage(8, 1, p.damageSources().fall());
+            h.assertTrue(p.getHealth() < health, "A dormant Flight assignment must not grant immunity");
+            h.succeed();
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        } finally { EclipseService.end(p.getServer()); forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "flight.skyhook_attachment")
+    public static void skyhookGrabsFromTheSlotAndKeepsItsCargoThroughSkyburst(GameTestHelper h) {
+        ServerPlayer p = player(h);
+        LivingEntity target = target(h, p.position().add(0, 0, 4));
+        try {
+            h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.QUATERNARY, false) == AbilityUseResult.SUCCESS,
+                    "The assigned Skyhook slot attaches the living entity in the crosshair");
+            Vec3 seatOffset = target.position().subtract(p.position());
+            h.assertTrue(target.getRootVehicle() == p && EntityCarryService.isBeingCarried(target),
+                    "Skyhook must create a real attachment before returning success");
+            FlightDynamicsService.pressSkyburst(p);
+            FlightDynamicsService.releaseSkyburst(p);
+            for (int i = 0; i < 4; i++) {
+                p.move(MoverType.SELF, p.getDeltaMovement());
+                FlightDynamicsService.tick(p);
+                EntityCarryService.tick(p);
+                h.assertTrue(target.getRootVehicle() == p && target.position().subtract(p.position()).distanceTo(seatOffset) < .01,
+                        "The attachment must follow the carrier immediately through a high-speed move");
+            }
+            CooldownService.clearAll(p);
+            h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.QUATERNARY, false) == AbilityUseResult.SUCCESS,
+                    "Pressing Skyhook again throws the attached cargo");
+            h.assertTrue(!target.isPassenger() && !EntityCarryService.isBeingCarried(target)
+                            && target.getDeltaMovement().z > 1,
+                    "The throw must detach cargo and restore its physics before applying the impulse");
+            h.succeed();
+        } finally {
+            EntityCarryService.release(p);
+            target.discard();
+            forget(p);
+        }
     }
 
     @GameTest(template = "rewind_empty", batch = "flight.boost_protection")
@@ -272,6 +488,7 @@ public final class FlightReworkGameTests {
             h.assertTrue(!DiveBombService.canStart(p), "Dive cannot be used as a grounded instant area attack");
             p.setOnGround(false);
             p.setXRot(65);
+            FlightDynamicsService.addMomentum(p, 60);
             DiveBombService.start(p, 5);
             h.assertTrue(DiveBombService.isDiving(p), "An airborne flier can begin the dive");
             h.assertTrue(!new FlightAbility().actions().get(AbilitySlot.SECONDARY)
@@ -281,6 +498,8 @@ public final class FlightReworkGameTests {
             h.assertTrue(target.getHealth() == target.getMaxHealth(), "Dive preparation never damages nearby foes");
             h.assertTrue(p.getDeltaMovement().length() < .2, "The preparation hangs visibly in the air");
             h.assertTrue(DiveBombService.cancel(p) && !DiveBombService.isDiving(p), "Shift + Dive cancels the preparation");
+            h.assertTrue(FlightDynamicsService.momentum(p) == 60,
+                    "Canceling Meteor Drop before the plunge keeps the banked airspeed");
             for (int i = 0; i < 16; i++) DiveBombService.tick(p);
             h.assertTrue(target.getHealth() == target.getMaxHealth(), "A canceled dive cannot detonate later");
             h.succeed();
@@ -350,6 +569,7 @@ public final class FlightReworkGameTests {
             for (int i = 0; i < 10; i++) FlightService.tick(p);
             h.assertTrue(FlightService.isCycloneActive(p), "Tempest gathers before the active orbit");
             h.assertTrue(target.getHealth() == target.getMaxHealth(), "Its wind-up must give targets a chance to escape");
+            h.assertTrue(target.getDeltaMovement().equals(Vec3.ZERO), "A warning funnel cannot start pulling early");
             h.assertTrue(FlightService.cancelCyclone(p) && !FlightService.isCycloneActive(p), "Shift + Tempest ends the effect immediately");
             for (int i = 0; i < 130; i++) FlightService.tick(p);
             h.assertTrue(target.getHealth() == target.getMaxHealth(), "Canceling Tempest must never execute its damaging finale");

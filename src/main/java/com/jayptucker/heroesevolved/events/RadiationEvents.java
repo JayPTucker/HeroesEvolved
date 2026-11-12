@@ -28,6 +28,12 @@ public final class RadiationEvents {
         if (event.getEntity() instanceof ServerPlayer player && hasAwakenedRadiation(player)
                 && !EclipseService.arePowersSuppressed(player)) RadiationService.hurtStress(player, event.getNewDamage());
     }
+    @SubscribeEvent public static void onFall(net.neoforged.neoforge.event.entity.living.LivingFallEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player && com.jayptucker.heroesevolved.radiation.RadiationLeap.cushioned(player)) {
+            event.setDistance(0);
+            event.setDamageMultiplier(0);
+        }
+    }
     @SubscribeEvent public static void onTracking(PlayerEvent.StartTracking event) {
         if (event.getEntity() instanceof ServerPlayer viewer && event.getTarget() instanceof ServerPlayer source)
             PacketDistributor.sendToPlayer(viewer, RadiationService.visualState(source));

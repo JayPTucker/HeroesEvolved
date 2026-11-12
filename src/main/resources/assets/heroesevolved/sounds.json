@@ -118,6 +118,15 @@
       }
     ]
   },
+  "skyburst_boom": {
+    "subtitle": "subtitles.heroesevolved.skyburst_boom",
+    "sounds": [
+      { "name": "minecraft:mob/warden/sonic_boom1", "attenuation_distance": 192 },
+      { "name": "minecraft:mob/warden/sonic_boom2", "attenuation_distance": 192 },
+      { "name": "minecraft:mob/warden/sonic_boom3", "attenuation_distance": 192 },
+      { "name": "minecraft:mob/warden/sonic_boom4", "attenuation_distance": 192 }
+    ]
+  },
   "sonic_cry": {
     "subtitle": "subtitles.heroesevolved.sonic_cry",
     "sounds": [

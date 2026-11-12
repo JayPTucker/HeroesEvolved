@@ -1,6 +1,7 @@
 package com.jayptucker.heroesevolved.render;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
+import com.jayptucker.heroesevolved.client.CarryVisuals;
 import com.jayptucker.heroesevolved.flight.FlightVisualGeometry;
 import com.jayptucker.heroesevolved.network.ClientFlightVisualState;
 import com.mojang.math.Axis;
@@ -34,6 +35,11 @@ public final class FlightPoseRenderer {
     @SubscribeEvent
     public static void onRenderPlayerPre(RenderPlayerEvent.Pre event) {
         Player player = event.getEntity();
+        // Both arms and their load use the upright carry frame, even during a dash.
+        if (CarryVisuals.isCarrying(player)) {
+            ANIMATIONS.remove(player.getId());
+            return;
+        }
         boolean active = shouldUseFlightPose(player);
         FlightAnimation animation = ANIMATIONS.get(player.getId());
         if (!active && animation == null) {
@@ -59,17 +65,22 @@ public final class FlightPoseRenderer {
                 ClientFlightVisualState.isCycloneActive(player.getId()), event.getPartialTick());
         float viewPitch = player.getXRot();
         float renderPitch = FlightVisualGeometry.pitch(player, event.getPartialTick());
-        Vec3 velocity = player.getDeltaMovement();
-        boolean rolling = ClientFlightVisualState.isRolling(player.getId());
-        if ((ClientFlightVisualState.isDiving(player.getId()) || rolling) && velocity.lengthSqr() > .15) {
-            // Maneuvers follow their real travel; a dive can descend while the pilot looks level.
-            viewYaw = (float) Math.toDegrees(Math.atan2(-velocity.x, velocity.z));
+        int id = player.getId();
+        boolean pyro = ClientFlightVisualState.isPyroFlight(id);
+        boolean rolling = ClientFlightVisualState.isRolling(id);
+        Vec3 velocity = FlightVisualGeometry.travel(player);
+        if (velocity.lengthSqr() > .15) {
+            if (velocity.horizontalDistanceSqr() > .02)
+                viewYaw = (float) Math.toDegrees(Math.atan2(-velocity.x, velocity.z));
             renderPitch = (float) Math.toDegrees(Math.atan2(-velocity.y, velocity.horizontalDistance()));
         }
         animation.pitch = Mth.lerp(blend, animation.pitch, renderPitch);
         float turn = Mth.wrapDegrees(player.getYRot() - player.yRotO);
         float speed = (float) Math.clamp(velocity.length() / 1.8, 0, 1);
-        float bank = Mth.clamp(-turn * 2.4F, -24, 24) * speed;
+        float headingError = pyro ? 0 : Mth.wrapDegrees(player.getYRot() - viewYaw);
+        float bank = Mth.clamp(-turn * 2.4F - headingError * .4F, -35, 35) * speed;
+        if (ClientFlightVisualState.isCycloneActive(id) && speed > .2F) bank = -32;
+        if (rolling || ClientFlightVisualState.isPlunging(id)) bank = 0;
         animation.bank = Mth.lerp(blend, animation.bank, bank);
         float bodyYaw = viewYaw + 180.0F * animation.amount;
 
@@ -180,7 +191,10 @@ public final class FlightPoseRenderer {
     }
 
     private static boolean shouldUseFlightPose(Player player) {
-        return ClientFlightVisualState.isFlightActive(player.getId())
+        int id = player.getId();
+        return ClientFlightVisualState.isFlightActive(id)
+                && (!ClientFlightVisualState.isDiving(id) || ClientFlightVisualState.isPyroFlight(id)
+                    || ClientFlightVisualState.isPlunging(id))
                 && !(player.getVehicle() instanceof com.jayptucker.heroesevolved.entity.CarryAnchorEntity)
                 && !player.onGround();
     }

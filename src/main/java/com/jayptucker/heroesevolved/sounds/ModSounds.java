@@ -85,6 +85,10 @@ public final class ModSounds {
                         )
         );
 
+    // Keep the server's delivery radius aligned with the sample's attenuation distance in sounds.json.
+    public static final Supplier<SoundEvent> SKYBURST_BOOM = SOUND_EVENTS.register("skyburst_boom", () ->
+            SoundEvent.createFixedRangeEvent(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "skyburst_boom"), 192));
+
     private ModSounds() {
     }
     public static final Supplier<SoundEvent> SONIC_CRY = SOUND_EVENTS.register("sonic_cry", () ->

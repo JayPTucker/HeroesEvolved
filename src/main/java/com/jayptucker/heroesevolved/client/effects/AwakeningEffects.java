@@ -11,6 +11,7 @@ final class AwakeningEffects {
     private static final Vec3 UP = new Vec3(0, 1, 0);
     private static final int CYAN = 0xB8EAFF, BLUE = 0x5AABFF, VIOLET = 0xBE8BFF;
     private static final int WHITE = 0xECF9FF, RED = 0xF76B87, GOLD = 0xFFE1A4;
+    private static final int VAPOR = 0xDCDDD5, WIND_CORE = 0xF6F4EC;
     private AwakeningEffects() {}
 
     static boolean play(ClientLevel level, Kind kind, Vec3 feet, float size, boolean detail, int density) {
@@ -34,19 +35,19 @@ final class AwakeningEffects {
                 if (detail) burst(level, chest, UP, WHITE, density * 2, 0.3F);
             }
             case FLIGHT_AWAKEN_CHARGE -> {
-                ring(level, feet.add(0, 0.05, 0), UP, 1.2F + size, 0.4F, 12, 0, WHITE, 0.55F);
-                helix(level, feet, 0.8F + size * 0.6F, 2.5F + size * 2, CYAN, detail ? 18 : 6, 14);
-                if (detail) inward(level, feet.add(0, 0.4, 0), 2.2F, WHITE, 12);
+                ring(level, feet.add(0, 0.05, 0), UP, 1.2F + size, 0.4F, 12, 0, WIND_CORE, 0.55F);
+                helix(level, feet, 0.8F + size * 0.6F, 2.5F + size * 2, VAPOR, detail ? 18 : 6, 14);
+                if (detail) inward(level, feet.add(0, 0.4, 0), 2.2F, WIND_CORE, 12);
             }
             case FLIGHT_AWAKEN_RELEASE -> {
-                ring(level, feet.add(0, 0.15, 0), UP, 0.4F, size, 25, 0, WHITE, 0.8F);
+                ring(level, feet.add(0, 0.15, 0), UP, 0.4F, size, 25, 0, WIND_CORE, 0.8F);
                 FlightEffects.burst(level, chest, UP, size * .7F, detail);
                 for (int i = 0; i < (detail ? 5 : 2); i++)
                     add(new PowerParticle(level, PowerParticle.Shape.ARC, feet.add(0, i * 2.2, 0), UP,
-                            .5F + i * .2F, 1.4F + i * .3F, 20, i * 2, WHITE, .3F)
+                            .5F + i * .2F, 1.4F + i * .3F, 20, i * 2, VAPOR, .3F)
                             .arc(i * 2.4F, .14F, 2.4F, .06F));
-                helix(level, feet, 1.5F, 13, WHITE, detail ? 48 : 12, 35);
-                if (detail) spokes(level, chest, 7, 18, WHITE, 22);
+                helix(level, feet, 1.5F, 13, WIND_CORE, detail ? 48 : 12, 35);
+                if (detail) spokes(level, chest, 7, 18, VAPOR, 22);
             }
             case ELECTRIC_AWAKEN_CHARGE -> {
                 orbit(level, chest, UP, 0.55F + size, 10, BLUE, 0.35F, Vec3.ZERO);

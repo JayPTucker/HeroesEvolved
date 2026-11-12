@@ -27,28 +27,31 @@ current is the look; her weakness to water is the drawback. Numbers are configur
 
 | Key | Level | Action | Behavior | Overcharged | Base stamina / cooldown |
 | --- | --- | --- | --- | --- | --- |
-| G | 1 | Chain Lightning | **Tap:** a forked bolt that leaps between foes, one more leap per level. **Hold:** Live Current, a continuous stream (up to 4 s, 15 stamina a second) that locks its target in place. | Two extra leaps, 40% more damage | 18 / 1.25 s |
-| H | 2 | Ball Lightning | A crackling orb that curves toward foes, lashes the nearest one every few ticks and bursts on contact. **Shift + H** bursts it early. | Lashes two foes; a bigger, harder burst | 25 / 3 s |
-| Z | 3 | Thunderstrike | Mark the spot you aim at: a warning ring and rising streamers, then lightning strikes 0.8 s later. Creepers charge, pigs turn, as with real lightning, but nothing catches fire. Striking water shocks everyone in it within 8 blocks. | Three strikes | 45 / 10 s |
-| X | 4 | Ride the Lightning | Become a bolt and reappear down the line, following the ground, shocking what you pass. The path stays live for 3 s and shocks foes who step on it. | 60% farther | 30 / 5 s |
-| V | 5 | Storm Surge | Gather the storm for 1.5 s (you lift off your feet), then strike everything within 10 blocks (16 in a storm) and knock it back. Spends all your Charge: +1 damage per 10. **Shift + V** cancels the wind-up. | (always spends the Charge) | 110 / 120 s |
+| G | 1 | Chain Lightning | **Tap** to fork a bolt through foes or prime your own Ball Lightning. **Hold** to use Live Current for up to 4 seconds at 15 stamina per second, locking the target in place. | Two extra leaps and 40% more damage on a tap. Live Current deals 25% more damage. | 18 / 1.25 s |
+| H | 2 | Ball Lightning | Send an orb that curves toward exposed foes, lashes them in flight and bursts on contact. **Shift + H** bursts it early. Hit it with Chain Lightning to stop it in place and trigger a wider burst after a brief warning. | Lashes two foes and deals a larger burst. | 25 / 3 s |
+| Z | 3 | Thunderstrike | Mark an impact with a warning ring and rising streamers for 0.8 seconds. Creepers charge and pigs transform on exposed impacts. Striking water shocks exposed foes in water within 8 blocks. | Three separately marked strikes. | 45 / 10 s |
+| X | 4 | Ride the Lightning | Blink in the direction you face, clear short ledges and shock foes close to the route. The ground you crossed stays live for 3 seconds. | 60% farther. | 30 / 5 s |
+| V | 5 | Storm Surge | Lift off and gather charge for 1.5 seconds inside a marked perimeter, then release through exposed foes within 10 blocks or 16 in a thunderstorm. Spending 10 Charge adds 1 damage. **Shift + V** cancels the wind-up. | Spends all Charge on release. | 110 / 120 s |
 
-Overexerting (casting without enough stamina) loses control: the current lashes everyone around you
-and leaves you slowed.
+Overexerting leaves you slowed and lashes exposed foes nearby. Solid cover blocks combat arcs.
 
 ## Look and sound
 
-Bolts are built fresh every time from a fractal path with forks that taper away. They are drawn
-the way vanilla lightning is (additive, untextured): a soft blue glow, a bright body and a white-hot
-core, struck two or three times in a row so they flicker. Strikes and bursts briefly place an
-invisible light block, so lightning really lights up a dark cave or the bunker; it is removed a few
-ticks later and never replaces a block. The sounds are vanilla: the lightning crack, thunder, the
-guardian's whine for Live Current, the respawn anchor for wind-ups and the copper bulb's snap.
+Indigo outlines frame blue channels with pale centers. A tap gathers at your palm before the forks
+run from target to target. Live Current braids around the main arc, and Ball Lightning carries three
+rotating arcs around its core. Rising streamers converge at each Thunderstrike marker before the
+bolt drops. Ride the Lightning leaves a dim ground trace that flickers until it cools. Storm Surge
+coils around your chest as you rise, then a pulse spreads out under successive thunderbolts.
+
+Strikes and bursts briefly light nearby blocks. Wind-ups use an anchor hum, Live Current has a sharp
+electrical buzz, and impacts use a lightning crack with distant thunder on larger strikes.
 
 ## Skill tree
 
-The tree is unchanged except **Overcharge** (Storm Geometry), which now also fills your Charge, so
-your next power is empowered.
+**Arc Lance** reaches its listed 40-block range and forks to up to two exposed foes near its target.
+**Static Screen** marks the area where it reflects projectiles. **Overcharge** fills Charge as well
+as granting Speed II and Haste II. Circuit Thread, Ground Sink and Arc Lattice use the same blue
+channels and brief pulses to show their conductors, discharge and crossing points.
 
 ### Signature: Blackout
 
@@ -58,8 +61,8 @@ Groundkeeper's signature ability hangs under **High Voltage Mastery** (Level 10,
 1. **The siphon (1 s).** She lifts her arms and every powered thing within 12 blocks throws an arc into her
    chest: Forge Energy machines, Create machinery, redstone blocks, lit lamps and live wire. The arcs come
    faster as the pull builds, with motes of light running along them into her.
-2. **The pulse.** A dome of lightning races out to 20 blocks with a band of shadow close behind it: the
-   lights going out. For 12 seconds redstone gives no signal, FE machines are drained and stop, Create's
+2. **The pulse.** Forks race along a blue ring out to 20 blocks with a band of shadow close behind it.
+   For 12 seconds redstone gives no signal, FE machines are drained and stop, Create's
    shafts seize, and energy items enemies carry are drained (see [Powers and machines](machines.md)).
    Enemies within 12 blocks are shocked (5 + level), slowed and plunged into **Darkness**.
 3. **The payoff.** The pulse gives 20 Charge, plus 1 per 2,000 FE drained, plus 3 per machine (up to 10).
@@ -71,6 +74,6 @@ Groundkeeper's signature ability hangs under **High Voltage Mastery** (Level 10,
 ./gradlew runClient --init-script tools/electro-preview.init.gradle
 ```
 
-casts every power at dusk against still targets and saves screenshots in
+casts the base powers, the Ball Lightning combo, Blackout and Static Screen, and saves screenshots in
 `build/electro-preview/screenshots/`. The gameplay checks are in
 `src/gametest/java/com/jayptucker/heroesevolved/electro/ElectroGameTests.java`.

@@ -29,14 +29,4 @@ public final class CarryVisuals {
                 && carrier == minecraft.player && minecraft.getCameraEntity() == carrier
                 && minecraft.options.getCameraType().isFirstPerson();
     }
-
-    /** Cargo remains visible in third person and to everybody beside its local carrier. */
-    public static boolean hideInFirstPerson(Entity entity) {
-        Minecraft minecraft = Minecraft.getInstance();
-        if (entity == null || minecraft == null || minecraft.player == null) return false;
-        Entity camera = minecraft.getCameraEntity();
-        if (!isLocalFirstPersonCarrier(camera) || entity == camera
-                || !(entity.getVehicle() instanceof CarryAnchorEntity anchor)) return false;
-        return !anchor.isRemoved() && anchor.getVehicle() == camera;
-    }
 }

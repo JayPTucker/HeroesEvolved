@@ -23,7 +23,8 @@ public final class RadiationDecay {
             clear(player); return;
         }
         var blocks = ACTIVE.computeIfAbsent(player.getUUID(), ignored -> new LinkedHashMap<>());
-        int radius = (int) (2 + Math.clamp(progress, 0, 1) * (awakening ? 6 : 4));
+        // A Critical Mass charge lasts only a second and a half: its cracks start wider and crumble faster.
+        int radius = (int) ((awakening ? 2 : 3) + Math.clamp(progress, 0, 1) * (awakening ? 6 : 3));
         // Sampling and active cracks are bounded, regardless of the final blast's radius.
         for (int sample = 0; sample < 16 && blocks.size() < 24; sample++) {
             BlockPos pos = player.blockPosition().offset(level.random.nextInt(radius * 2 + 1) - radius,
@@ -44,7 +45,7 @@ public final class RadiationDecay {
                     || !level.getBlockState(entry.pos).equals(entry.original) || !allowed(player, level, entry.pos)) {
                 entry.level.destroyBlockProgress(entry.animation, entry.pos, -1); continue;
             }
-            int stage = entry.stage + 2;
+            int stage = entry.stage + (awakening ? 2 : 4);
             level.sendParticles(ParticleTypes.SMOKE, entry.pos.getX() + .5, entry.pos.getY() + .8,
                     entry.pos.getZ() + .5, 1, .15, .1, .15, .015);
             if (stage >= 10) {

@@ -2,17 +2,15 @@ package com.jayptucker.heroesevolved.client.effects.setpiece;
 
 import com.jayptucker.heroesevolved.client.effects.setpiece.SetPieceClient.Active;
 import net.minecraft.util.Mth;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 
 import static com.jayptucker.heroesevolved.client.effects.setpiece.Canvas.*;
 
-/** Time, flight, telekinesis, speed, density and invisibility. */
+/** Time, telekinesis, speed, density and invisibility. */
 final class MotionArt {
     private MotionArt() {}
 
     private static final float[] GOLD = rgb(0xFFD27A), VIOLET = rgb(0x9A7CFF), DEEP = rgb(0x5B3FD1), PALE = rgb(0xF4EBFF), AMBER = rgb(0xE8A43C);
-    private static final float[] SKY = rgb(0xCFE8FF), WIND = rgb(0xF2F8FF), LEAF = rgb(0x6FA84A);
     private static final float[] PSI = rgb(0xB48CFF), PSI_DEEP = rgb(0x6A3FD8), ROCK = rgb(0x7D7268), ROCK_DARK = rgb(0x5A5048);
     private static final float[] BOLT = rgb(0xFFE14A), BOLT_RED = rgb(0xFF5A2A), WHITE = {1, 1, 1};
     private static final float[] GHOST = rgb(0x7FF4FF), DENSE = rgb(0x2C3E5A), DENSE_RIM = rgb(0x8FB4E8);
@@ -98,75 +96,6 @@ final class MotionArt {
         float spin = t * 0.08F;
         c.ring(o.add(0, 0.05, 0), UP, 0.9F, 0.05F, spin, spin + Mth.PI * 1.4F, AMBER, 0.8F * f);
         for (int i = 0; i < 12; i++) c.spoke(o.add(0, 0.05, 0), UP, i * Mth.TWO_PI / 12 + spin, 0.95F, 1.1F, 0.03F, GOLD, 0.7F * f);
-    }
-
-    // ------------------------------------------------------------------
-    // Flight
-    // ------------------------------------------------------------------
-
-    /** A tunnel of wind corkscrews along their dash, a cone of vapour bursting off where they set out. */
-    static void tempestDrill(Canvas c, Active a, float t) {
-        if (!c.glow()) return;
-        float life = a.piece().ticks, f = Mth.clamp((life - t) / 18, 0, 1);
-        Vec3 from = a.origin().add(0, 1, 0), to = a.target().add(0, 1, 0), d = to.subtract(from);
-        double length = d.length();
-        if (length < 0.5) return;
-        Vec3 dir = d.normalize();
-        Vec3 side = dir.cross(UP);
-        if (side.lengthSqr() < 1e-4) side = new Vec3(1, 0, 0);
-        side = side.normalize();
-        Vec3 up = side.cross(dir).normalize();
-        float reach = Mth.clamp(t / 10, 0, 1);
-        for (int k = 0; k < 3; k++) {
-            int steps = (int) (length * 4);
-            Vec3[] p = new Vec3[steps + 1];
-            for (int i = 0; i <= steps; i++) {
-                float u = i / (float) steps * reach, ang = (float) (u * length * 1.6) + k * Mth.TWO_PI / 3 - t * 0.5F;
-                float rr = 1.1F + 0.2F * Mth.sin(u * 20);
-                p[i] = from.add(d.scale(u)).add(side.scale(Mth.cos(ang) * rr)).add(up.scale(Mth.sin(ang) * rr));
-            }
-            c.ribbon(p, 0.08F, k == 0 ? WHITE : SKY, 0.15F * f, 0.8F * f);
-        }
-        if (t < 10) for (int k = 0; k < 4; k++) {
-            float p = Mth.clamp((t - k) / 8, 0, 1);
-            c.ring(from.add(dir.scale(0.5 + p * 2)), dir, 0.4F + p * (1.6F + k * 0.4F), 0.15F, 0, Mth.TWO_PI, WIND, 0.6F * (1 - p));
-        }
-    }
-
-    /** A wall of wind wheeling round them: streaks climbing as they circle, leaves caught in it. */
-    static void galeWall(Canvas c, Active a, float t) {
-        float f = fade(t, a.piece().ticks, 8, 16), r = a.scale();
-        Vec3 o = a.at(c);
-        if (c.solid()) for (int i = 0; i < 14; i++) {
-            float ang = hash(a.seed(), i) * Mth.TWO_PI + t * 0.25F, h = 0.3F + ((t * 0.04F + hash(a.seed(), i + 20)) % 1) * 2.6F;
-            c.box(o.add(Mth.cos(ang) * r * 0.95, h, Mth.sin(ang) * r * 0.95), 0.08F, 0.02F, 0.06F, ang * 2, t * 0.3F + i, i, LEAF, 1);
-        }
-        if (!c.glow()) return;
-        for (int i = 0; i < 18; i++) {
-            float start = hash(a.seed(), i + 40) * Mth.TWO_PI + t * 0.3F, h = hash(a.seed(), i + 60) * 2.4F;
-            Vec3[] p = new Vec3[9];
-            for (int k = 0; k <= 8; k++) {
-                float ang = start + k * 0.12F;
-                p[k] = o.add(Mth.cos(ang) * r, h + k * 0.05, Mth.sin(ang) * r);
-            }
-            c.ribbon(p, 0.06F, WIND, 0, 0.45F * f);
-        }
-        c.ring(o.add(0, 0.06, 0), r, 0.25F, SKY, 0.3F * f);
-    }
-
-    /** A chevron of light over a friend's head and wind spiralling round their feet. */
-    static void formation(Canvas c, Active a, float t) {
-        if (!c.glow()) return;
-        float f = fade(t, a.piece().ticks, 6, 16);
-        Entity e = a.bound(c);
-        Vec3 o = a.at(c);
-        float yaw = e == null ? 0 : e.getViewYRot(c.partial) * Mth.DEG_TO_RAD;
-        Vec3 fwd = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw)), right = new Vec3(-fwd.z, 0, fwd.x);
-        Vec3 tip = o.add(0, 2.5, 0).add(fwd.scale(0.25));
-        c.ribbon(new Vec3[] {tip.add(right.scale(-0.45)).subtract(fwd.scale(0.35)), tip, tip.add(right.scale(0.45)).subtract(fwd.scale(0.35))}, 0.06F, SKY, 0.9F * f, 0.9F * f);
-        c.glow(tip, 0.4F, SKY, 0.5F * f);
-        for (int k = 0; k < 2; k++) c.helix(o, 0.9F, 0.7F, 0.4F, 1.2F, k * Mth.PI + t * 0.3F, 0.06F, WIND, 0.6F * f, 16);
-        c.line(o.add(0, 0.9, 0).subtract(fwd.scale(0.3)), o.add(0, 0.9, 0).subtract(fwd.scale(2.5)), 0.25F, WIND, 0.3F * f, 0);
     }
 
     // ------------------------------------------------------------------

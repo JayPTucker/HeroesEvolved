@@ -16,12 +16,13 @@
     "PossessionInputMixin",
     "PossessionSyncMixin",
     "PossessionPermissionMixin",
-    "EclipseMoonPhaseMixin"
+    "EclipseMoonPhaseMixin",
+    "SoulFireBlockMixin"
   ],
   "client": [
     "FlightSprintMixin",
+    "FlightRenderBoundsMixin",
     "PlayerModelMixin",
-    "CarryVisibilityMixin",
     "IntroRenderDistanceMixin",
     "SeveredArmorMixin",
     "SeveredHandItemMixin",

@@ -35,7 +35,7 @@ public final class ElectrokinesisAbility implements Ability {
                 @Override public AbilityActionDefinition definition() { return definition; }
                 @Override public int energyCost(int level) { return COMMON.electroChainEnergyCost.get(); }
                 @Override public int cooldownTicks(int level) { return COMMON.electroChainCooldownTicks.get(); }
-                @Override public boolean canUse(AbilityUseContext c) { return !ElectroService.isHolding(c.player()); }
+                @Override public boolean canUse(AbilityUseContext c) { return ElectroService.canStartCast(c.player()); }
                 @Override public AbilityActivationResult activate(AbilityUseContext c) {
                     // The key is down: a quick release fires Chain Lightning, holding becomes Live Current.
                     ElectroService.press(c.player(), c.abilityLevel());
@@ -46,21 +46,23 @@ public final class ElectrokinesisAbility implements Ability {
             },
             AbilitySlot.SECONDARY, SimpleAction.builder("electro_ball_lightning", 2)
                     .cost(COMMON.electroBallEnergyCost::get, COMMON.electroBallCooldownTicks::get)
-                    .activate(c -> { ElectroService.ballLightning(c.player(), c.abilityLevel()); return true; })
+                    .canUse(c -> ElectroService.canStartCast(c.player()))
+                    .activate(c -> ElectroService.ballLightning(c.player(), c.abilityLevel()))
                     .deactivate(c -> ElectroService.detonate(c.player()))
                     .build(),
             AbilitySlot.TERTIARY, SimpleAction.builder("electro_thunderstrike", 3)
                     .cost(COMMON.electroThunderstrikeEnergyCost::get, COMMON.electroThunderstrikeCooldownTicks::get)
+                    .canUse(c -> ElectroService.canStartCast(c.player()))
                     .activate(c -> ElectroService.thunderstrike(c.player(), c.abilityLevel()))
                     .build(),
             AbilitySlot.QUATERNARY, SimpleAction.builder("electro_ride_the_lightning", 4)
                     .cost(COMMON.electroRideEnergyCost::get, COMMON.electroRideCooldownTicks::get)
-                    .canUse(c -> !c.player().isPassenger())
-                    .activate(c -> { ElectroService.rideTheLightning(c.player(), c.abilityLevel()); return true; })
+                    .canUse(c -> !c.player().isPassenger() && ElectroService.canStartCast(c.player()))
+                    .activate(c -> ElectroService.rideTheLightning(c.player(), c.abilityLevel()))
                     .build(),
             AbilitySlot.QUINARY, SimpleAction.builder("electro_storm_surge", 5)
                     .cost(COMMON.electroStormEnergyCost::get, COMMON.electroStormCooldownTicks::get)
-                    .canUse(c -> !ElectroService.isSurging(c.player()))
+                    .canUse(c -> ElectroService.canStartCast(c.player()))
                     .activate(c -> ElectroService.startSurge(c.player(), c.abilityLevel()))
                     .deactivate(c -> ElectroService.cancelSurge(c.player()))
                     .build()

@@ -21,17 +21,17 @@ awakening, mastery and skill points.
 
 ## Actions
 
-The base kit combines sustained flight, aimed fire constructs and Heat-powered attacks. Action IDs
-and skill unlocks remain compatible with existing loadouts; their displayed names have changed.
+The base kit combines sustained flight, aimed fire constructs and Heat-powered attacks. Action IDs,
+skill purchases and equipped loadouts carry over.
 These are the default keys, and each action can also be selected from the ability wheel.
 
 | Key | Level | Action | Behavior | Base stamina / cooldown |
 | --- | --- | --- | --- | --- |
-| G | 1 | **Cinder Spear** | Tap for a 32-block fire bolt; hold up to 1 s for a piercing spear. A full charge can spend 20 Heat for a wider strike. Hitting burning enemies can detonate them and scorch nearby enemies. Quick bolts build 12 Heat and deal 4 + level damage. Water, ice and snow produce steam. | 14 / 1.25 s |
-| H | 1 | **Dragon's Breath** | Hold a sweeping flame cone for up to 5 s, pushing enemies back. Heat extends its reach from 6 to 10 blocks. Builds Heat and drains stamina while held; works during Flame Flight. | 12 / 4 s, then 3 stamina every 5 ticks |
-| Z | 2 | **Firestorm** | Aim at ground within 16 blocks to place an 8 s, radius-4 fire circle; otherwise it forms at your feet. Burning enemies inside are drawn inward, and hostile projectiles burn up. Shift + Z begins a brief wind-up, then collapses it for 4 + level damage, spending 20 Heat for 4 extra damage. | 35 / 15 s |
+| G | 1 | **Cinder Spear** | Tap for a 32-block fire bolt or hold up to 1 s for a piercing spear. A full charge can spend 20 Heat to widen the strike. Burning enemies can detonate and scorch others nearby. A fully charged spear also primes armed Ember Mines along its path. | 14 / 1.25 s |
+| H | 1 | **Dragon's Breath** | Hold a sweeping flame cone for up to 5 s. It pushes enemies back and builds Heat, extending its reach from 6 to 10 blocks. Aim at your Firestorm to feed it. Works during Flame Flight. | 12 / 4 s, then 3 stamina every 5 ticks |
+| Z | 2 | **Firestorm** | Mark the ground for 0.6 s, then raise a radius-4 fire circle for 8 s. It draws in burning foes and consumes exposed hostile shots. Breath widens it to 5.5 blocks and makes it burn faster. Shift + Z collapses the circle after a short warning. Heat and a fanned circle strengthen the blast. | 35 / 15 s |
 | X | 3 | **Flame Flight** | Toggle flight with this key or double-tap Jump. Scroll for throttle, then hold Forward to cruise in a streamlined flying pose with banking. Release to brake into a hover; toggle again for a soft landing. While airborne, Shift + X spends 16 stamina to dive into a fiery impact. | 25 / 5 s to start; 6 stamina/s hovering, 10 stamina/s moving or boosting |
-| V | 5 | **Sunfall** | Aim within 24 blocks and hold up to 3 s to form a miniature sun above the chosen spot. Release early for a smaller eruption, or let it erupt at full charge with a 10-block radius. All stored Heat fuels the blast. Blue Heat makes a hotter **Blue Sunfall**. Shift + V cancels. | 88 / 72 s |
+| V | 5 | **Sunfall** | Hold up to 3 s to grow a miniature sun above the locked target. Release to drop it onto the marked area. Longer charges widen the impact up to 10 blocks. Stored Heat fuels the blast, and blue Heat makes it hotter. Shift + V cancels the charge. | 75 / 48 s with default config and shared balance |
 
 ## Flame Flight and Heat
 
@@ -47,31 +47,47 @@ These are the default keys, and each action can also be selected from the abilit
 - **Hover control improves with level:** level 3 gently sways and bobs, level 4 has less drift,
   and level 5 holds steady. The drift is smooth and fades while steering.
 - **Sprint while holding Forward** ignites the afterburner, paying **8 Heat up front** for each
-  second of boost. The flame jets spool up over 8 ticks before reaching full thrust. Attacks build
+  second of boost. It reaches full thrust in 5 ticks and can approach 5.8 blocks per tick at maximum
+  throttle with banked Momentum. Attacks build
   Heat, so fighting replenishes fuel for another burst of speed. Moving or boosting costs 10
   stamina per second; hovering costs 6.
 - **Momentum (0–100)** builds from real forward travel at a cruise throttle. Faster settings and
   boosting build it faster; hovering lets it bleed away. Pushing into a wall does not build it.
   Momentum adds to afterburner speed and is spent on a wider, harder Meteor Dive.
-- **X** ends flight; **Shift + X** while airborne starts **Meteor Dive**. Steer the descent toward
-  enemies, then erupt on contact with terrain. The impact damages and ignites enemies without
-  breaking terrain.
+- **X** ends flight. **Shift + X** while airborne starts **Meteor Dive**. Hang for 0.4 s as flame folds
+  inward, then steer the accelerating plunge. On contact, flame washes out in a circle and nearby
+  players feel the impact. Exposed enemies burn and get thrown clear.
 - Stopping flight, running out of stamina, or being quenched by water or rain gives **6 seconds
   of Slow Falling**. Death, logout, dimension changes and loss of the power clear flight state.
 - **Pillar of Flame** reduces hover drain to 4 stamina per second and strengthens vertical thrust.
 
-Open with Dragon's Breath to ignite a group and build Heat. Place Firestorm to draw the burning
-enemies together, rise on Flame Flight, then pierce the group with Cinder Spear. Spend Heat to boost
-into a new angle, finish the gathered enemies with Meteor Dive, or cast Sunfall over the chosen spot.
-The Heat meter and flight controls appear on screen while using the power.
+Place Firestorm, then feed it with Dragon's Breath to gather a wider group. Collapse the fed circle
+or take off, afterburn around the group and dive back into it. For a ranged setup, plant Ember Mines
+along a route and light them from a distance with Blue Lance or a fully charged Cinder Spear.
+
+## Feel and effects
+
+- Orange fire rolls through red, orange and gold. At blue Heat the same tongues have indigo edges
+  and lighter blue centers. Cinder Spear gathers at the casting hand, then a fireball pulls a curling
+  trail out along the aim. Dragon's Breath rolls outward in overlapping tongues of flame.
+- Firestorm marks its footprint before raising a turning wall of fire. Collapse folds the wall inward,
+  then throws flame back across its footprint. Sunfall burns above the warning ring, accelerates
+  into it, then sends a column and a wave across the marked area.
+- In flight the flame streams follow your palms and boots as you bank. The afterburner opens a longer
+  exhaust and leaves a fading wake along your path. Meteor Dive gathers a collar of flame before it
+  releases. The flight camera stays level.
+- Ember Lash curls from hand to target as it reels. The Mantle turns around the caster, and mines mark
+  their blast radius when triggered. Cauterizing Flame climbs around its recipient. Fire Shepherd draws
+  streams from fires and rescued allies into the caster's palm. The Phoenix folds its wings on a dive.
 
 ## Real fire
 
-Pyrokinetic fire is ordinary vanilla fire. It spreads, burns wood and can burn down a base.
+Orange flames use normal Minecraft fire placement. Blue flames leave vanilla Soul Fire wherever
+regular fire could stay. Soul Fire deals twice the contact damage of regular fire and does not spread.
 
 - Every fire block goes through the same checks as a normal block placement: build permission,
   spawn protection, claim and protection mods, world border, and loaded chunks.
-- Whether fire spreads is still decided by the vanilla `doFireTick` gamerule.
+- Regular fire can spread and burn wood according to the vanilla `doFireTick` gamerule.
 - The Odessa vision and Temporal Snapshot protect their terrain from placed fire.
 - **Rewrite the Moment** records the burned blocks, so a time traveller can undo a fire.
 - Server owners can make all pyrokinetic fire cosmetic with `pyrokinesis.worldFire = false` in the
@@ -79,46 +95,35 @@ Pyrokinetic fire is ordinary vanilla fire. It spreads, burns wood and can burn d
 
 ## Skill tree (18 nodes)
 
-The six active sub-abilities now have distinct gestures and fire compositions, plus mechanical
-follow-through that makes them useful beside flight and the base kit. Existing purchases, point
-costs and key assignments are preserved. The opening and mastery nodes still grant their original
-stat bonuses; this refresh does not replace all eighteen nodes with new interactions. Only one
-capstone can be learned at a time.
+The six active techniques use distinct gestures and interact with Heat and the base kit. The opening
+and mastery nodes now improve specific maneuvers. Only one capstone can be learned at a time.
 
 | Branch | Active skill | Technique → upgrade → capstone |
 | --- | --- | --- |
-| **Kindler** (−10% / −25% stamina) | **Ember Lash**: a tether lashes a visible enemy within 40 blocks for 6 + level damage and five seconds of burning, then reels them toward you for 0.4 s. It releases at three blocks or when cover breaks the connection. | **Ember Mine**: hide up to two embers on aimed ground for 40 s. Each takes 0.4 s to arm; an approaching enemy triggers a public 0.4 s warning before the eruption → **Long Fuse**: three mines, radius 4 instead of 2.5 → **Wildfire**: eruptions leave real fire and set off nearby mines. |
-| **Blue Flame** (+10% / +25% damage) | **Heat Mantle**: rotating flame plates surround you for 8 s, granting Resistance and a burning aura. They consume hostile projectiles within three blocks, feeding 2 Heat per projectile, capped at 8 per quarter-second. Allied shots pass through. | **Blue Lance**: the initial 24-block piercing jet deals blue damage, then leaves a fixed drilling seam for 0.6 s. Its pulses deal 2.5 damage every four ticks, to up to eight enemies per pulse; solid cover stops it → **White Heat**: blue starts at 60 Heat → **Flint's Fury**: Sunfall is always blue and three blocks wider. |
-| **Phoenix** (−10% / −25% cooldowns) | **Cauterizing Flame**: seal an injured or afflicted friend's wounds in sight within eight blocks, or your own. Heal 4 + level, clear harmful effects and extinguish flames. With 20 Heat available, spend it for four absorption health lasting 5 s. | **Fire Shepherd**: draw in up to 32 nearby fires, restoring stamina and health plus 2 Heat per fire, capped at 40 Heat. Extinguish burning friends within five blocks and heal them for 2 → **Thaw**: also unfreeze and clear chill from nearby friends → **Pillar of Flame**: stronger vertical flight thrust and reduced hover drain. |
+| **Kindler** | **Ember Lash** sets a foe burning and reels them toward you until they reach three blocks or break cover. **Kindling** grants 4 extra Heat when a Cinder Spear hits. **Flashpoint** refunds 8 Heat per cast that detonates a burning enemy. | **Ember Mine** hides two embers. Foes, charged Cinder Spear and Blue Lance can prime them. **Long Fuse** raises the limit to three and radius to four. **Wildfire** leaves real fire and primes nearby mines in sight, each with its own warning. |
+| **Blue Flame** | **Heat Mantle** grants Resistance and burns exposed foes and hostile projectiles. Each consumed shot feeds 2 Heat, capped at 8 per pulse. **Stoke** grants 2 extra Heat per successful Breath pulse. **Furnace** doubles the time a blue Breath keeps Firestorm fanned. | **Blue Lance** pierces 24 blocks and leaves a brief damaging seam. It primes armed mines along its path. **White Heat** lowers the blue threshold to 60. **Flint's Fury** makes Sunfall blue and three blocks wider. |
+| **Phoenix** | **Cauterizing Flame** heals, cleanses and extinguishes a friend in sight or yourself. Spend Heat for absorption. **Warm Blood** generates 5 Heat per second in fire or lava. **Hearthkeeper** halves the absorption cost and banks Heat when Fire Shepherd rescues burning friends. | **Fire Shepherd** extinguishes nearby fires for stamina, health and Heat, and helps burning friends. **Thaw** clears nearby friends' cold effects. **Pillar of Flame** strengthens vertical flight thrust and reduces hover drain. |
 
 Mines remain private while dormant; their warning and eruption become visible to everyone when
 triggered. Blue Lance's drilling seam stays on its original line rather than following a changing
 aim. Ember Lash visibly reels its target instead of ending with a single shove.
 
-The animation pass gives the base attacks deliberate gather, sweep, release and recovery gestures.
-The sub-abilities use a curling lash, rotating mantle plates, a warm cauterizing spiral, an ember
-arming/warning pattern, a focused drilling lance and converging fire trails for Fire Shepherd.
-
-Fire Shepherd makes the pyrokinetic a firefighter as well as a source of fire: reclaim ground
-flames to refuel the next boost, and draw fire off a burning companion before returning to combat.
-
 ### Signature: Phoenix
 
-The Phoenix branch's signature ability hangs under **Warm Blood Mastery** (Level 10, 3 points,
+The Phoenix branch's signature ability hangs under **Hearthkeeper** (3 points,
 55 stamina, 30 s cooldown). The fire takes wing.
 
 A firebird tears itself out of your chest and climbs: a white-hot body, wings whose leading edges
 burn brightest with tongues of flame trailing off them as flight feathers, a crest, and three long
 plumes of tail that ripple as it flies, shedding embers. It wheels once over your head, then hunts
-the nearest enemy it can see within 24 blocks. Each dive strikes for 7 + level fire damage, sets the
+enemies it can see within 24 blocks, favoring burning targets. Each dive strikes for 7 + level fire damage, sets the
 target burning for six seconds, throws it along the dive and lights real fire where it stood (subject
 to the same fire rules as the rest of the kit). Anything else it brushes past on the way is singed.
-It pulls up and dives at the next one: three in all, four from Level 15.
+It pulls up and dives at the next one: three in all, or four at tier 5. Cast at blue Heat for blue
+wings and stronger dives.
 
-When the hunt is over it comes home and folds back into you, healing 2 health plus 2 per strike and
-leaving you **Fire Resistant** for ten seconds. Water smothers it; it cannot be released while you are
-in water, and it burns out if it flies into some. It is a point with a heading drawn on clients from
-one small message a tick, not an entity, and it never breaks blocks.
+When it returns, it heals 2 health plus 2 per strike, gives 5 Heat plus 5 per strike and grants
+ten seconds of Fire Resistance. Water smothers it and solid cover can interrupt its hunt.
 
 ## Reactions
 
@@ -160,12 +165,9 @@ Regenerate the textures with `python3 tools/generate-helixite-textures.py`.
 
 ## Verification
 
-The full game-test suite passes all **335 required tests**, including charged-spearing through
-enemies while stopping at walls, remote Sunfall targeting, Firestorm attraction, flight steering,
-boost costs, hover braking and level-dependent instability, permission cleanup, level and immobilization gates, and Meteor Dive
-collision and impact. Mimicry's borrowed Cinder Spear follows press-and-release input. Additional tests cover Ember
-Lash reeling, Heat Mantle fuel and allied projectiles, friendly cauterization and Heat shields,
-Ember Mine warning and escape, Blue Lance's lingering seam, and Fire Shepherd rescues.
+Game tests cover aimed casts, charge cancellation, the Firestorm warning and Breath interaction,
+Sunfall's locked impact, and the collision sweep for Meteor Dive. They also check flight permissions,
+fuel, input expiry, braking, support effects and the mine warning.
 
 The isolated live-client preview checks the real flight key, wheel-selected cruise, pitched
 climbing, banking, real-travel Momentum, wheel braking, steady level-five hover and gentle

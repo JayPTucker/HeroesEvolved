@@ -3,11 +3,9 @@ package com.jayptucker.heroesevolved.pyro;
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
-import com.jayptucker.heroesevolved.effects.AbilityEffects;
-import com.jayptucker.heroesevolved.expansion.ExpansionSkills;
-import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 import com.jayptucker.heroesevolved.network.ArmPosePayload;
 import com.jayptucker.heroesevolved.network.CameraShakePayload;
+import com.jayptucker.heroesevolved.styles.Piece;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -17,6 +15,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
@@ -43,7 +42,7 @@ import java.util.UUID;
  * Phoenix (Pyrokinesis, Phoenix signature). The fire takes wing.
  *
  * <p>A firebird tears itself out of the pyrokinetic's chest and climbs, wings spread. It wheels once over
- * their head, then hunts: it dives through up to three enemies in turn (and burns whatever else it
+ * their head, then hunts: it dives through up to four enemies in turn (and burns whatever else it
  * passes on the way), lighting real fire where each one stood. When the hunt is over it comes home and
  * folds back into the one who made it, closing their wounds and leaving them fireproof for a while.
  *
@@ -61,6 +60,7 @@ public final class PhoenixService {
         final ServerPlayer owner;
         final ServerLevel level;
         final int powerLevel, strikes;
+        final boolean blue, contained;
         final long born;
         final Set<UUID> struck = new HashSet<>(), grazed = new HashSet<>();
         Vec3 position, velocity;
@@ -70,6 +70,8 @@ public final class PhoenixService {
         Bird(ServerPlayer owner, int powerLevel) {
             this.owner = owner; this.level = owner.serverLevel(); this.powerLevel = powerLevel;
             this.strikes = powerLevel >= 5 ? 4 : 3;
+            this.blue = PyroService.isBlue(owner);
+            this.contained = PyroFlightService.isContainingFire(owner);
             this.born = level.getGameTime();
             this.position = owner.position().add(0, 1.2, 0);
             Vec3 look = owner.getLookAngle().multiply(1, 0, 1);
@@ -85,7 +87,7 @@ public final class PhoenixService {
     public static int count() { return BIRDS.size(); }
 
     public static boolean activate(ServerPlayer player, int powerLevel) {
-        if (BIRDS.containsKey(player.getUUID()) || BIRDS.size() >= MAX_ACTIVE || !PowerRules.canAct(player)) return false;
+        if (BIRDS.containsKey(player.getUUID()) || BIRDS.size() >= MAX_ACTIVE || !PyroService.canStartCast(player)) return false;
         if (player.isInWaterOrBubble()) {
             player.displayClientMessage(Component.literal("The water smothers it before it can take wing.").withStyle(ChatFormatting.GRAY), true);
             return false;
@@ -93,7 +95,7 @@ public final class PhoenixService {
         Bird bird = new Bird(player, powerLevel);
         BIRDS.put(player.getUUID(), bird);
         ServerLevel level = bird.level;
-        AbilityEffects.send(level, Kind.PYRO_PHOENIX_STRIKE, bird.position, bird.position.add(0, 1, 0), 1.4);
+        PyroGeometry.show(level, Piece.PYRO_BURST, bird.position, bird.position, 1.6, bird.blue, null);
         level.playSound(null, player.blockPosition(), SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, 1.2F, 0.6F);
         level.playSound(null, player.blockPosition(), SoundEvents.ENDER_DRAGON_FLAP, SoundSource.PLAYERS, 1.0F, 1.5F);
         level.playSound(null, player.blockPosition(), SoundEvents.PHANTOM_SWOOP, SoundSource.PLAYERS, 0.9F, 1.6F);
@@ -109,8 +111,9 @@ public final class PhoenixService {
             if (bird.level.getServer() != server) continue;
             ServerPlayer owner = bird.owner;
             if (owner.isRemoved() || !owner.isAlive() || owner.serverLevel() != bird.level || !PowerRules.canAct(owner)
+                    || !PyroService.isPyrokinetic(owner)
                     || bird.age() >= LIFETIME || !bird.level.isLoaded(BlockPos.containing(bird.position))
-                    || bird.level.getFluidState(BlockPos.containing(bird.position)).is(net.minecraft.tags.FluidTags.WATER)) {
+                    || bird.level.getFluidState(BlockPos.containing(bird.position)).is(FluidTags.WATER)) {
                 BIRDS.remove(owner.getUUID());
                 dissolve(bird, false);
                 continue;
@@ -119,8 +122,8 @@ public final class PhoenixService {
             if (bird.phase == null) { BIRDS.remove(owner.getUUID()); continue; }
             // One small description a tick: where it is, which way it faces, and how hard it is diving.
             double dive = bird.phase == Phase.HUNTING ? 1.4 : bird.phase == Phase.RETURNING ? 1.15 : 1.0;
-            Vec3 heading = bird.velocity.lengthSqr() < 1.0E-4 ? new Vec3(1, 0, 0) : bird.velocity.normalize();
-            AbilityEffects.send(bird.level, Kind.PYRO_PHOENIX, bird.position, bird.position.add(heading), dive);
+            Vec3 travel = bird.velocity.lengthSqr() < 1.0E-4 ? new Vec3(.02, 0, 0) : bird.velocity;
+            PyroGeometry.show(bird.level, Piece.PYRO_PHOENIX, bird.position, bird.position.add(travel), dive, bird.blue, null);
             if (bird.age() % 8 == 0) bird.level.playSound(null, bird.position.x, bird.position.y, bird.position.z,
                     SoundEvents.ENDER_DRAGON_FLAP, SoundSource.PLAYERS, 0.5F, 1.6F + bird.level.getRandom().nextFloat() * 0.3F);
             if (bird.age() % 5 == 0) bird.level.playSound(null, bird.position.x, bird.position.y, bird.position.z,
@@ -140,7 +143,7 @@ public final class PhoenixService {
             case CIRCLING -> {
                 // Wheel above their head, looking for prey.
                 double angle = bird.phaseTicks * 0.22;
-                Vec3 orbit = owner.position().add(Math.cos(angle) * 3.2, 4.2, Math.sin(angle) * 3.2);
+                Vec3 orbit = owner.position().add(Math.cos(angle) * 3.2, 3.1, Math.sin(angle) * 3.2);
                 steer(bird, orbit, 0.7, 0.3);
                 if (bird.phaseTicks % 4 == 0) {
                     LivingEntity prey = prey(bird);
@@ -150,7 +153,8 @@ public final class PhoenixService {
             }
             case HUNTING -> {
                 LivingEntity target = bird.target;
-                if (target == null || !target.isAlive() || target.level() != bird.level || bird.phaseTicks > 50) {
+                if (target == null || target.level() != bird.level || bird.phaseTicks > 50
+                        || !PyroService.hostile(owner, target) || !sees(bird, target)) {
                     bird.target = null; enter(bird, Phase.CIRCLING); break;
                 }
                 Vec3 aim = target.getBoundingBox().getCenter();
@@ -163,7 +167,29 @@ public final class PhoenixService {
                 if (bird.position.distanceTo(home) <= 1.4) { dissolve(bird, true); bird.phase = null; return; }
             }
         }
-        bird.position = bird.position.add(bird.velocity);
+        Vec3 next = bird.position.add(bird.velocity);
+        var contact = bird.level.clip(new ClipContext(bird.position, next, ClipContext.Block.COLLIDER,
+                ClipContext.Fluid.ANY, owner));
+        if (contact.getType() == HitResult.Type.MISS) {
+            bird.position = next;
+            return;
+        }
+        if (bird.level.getFluidState(contact.getBlockPos()).is(FluidTags.WATER)) {
+            dissolve(bird, false);
+            bird.phase = null;
+            return;
+        }
+        // Shed the banking momentum when it would carry the bird into a roof or wall.
+        bird.velocity = Vec3.ZERO;
+        if (bird.phase == Phase.RISING || bird.phase == Phase.HUNTING) {
+            bird.target = null;
+            enter(bird, Phase.CIRCLING);
+        } else if (bird.phase == Phase.RETURNING) {
+            Vec3 direct = bird.position.add(home.subtract(bird.position).normalize().scale(.6));
+            if (bird.level.clip(new ClipContext(bird.position, direct, ClipContext.Block.COLLIDER,
+                    ClipContext.Fluid.ANY, owner)).getType() == HitResult.Type.MISS) bird.position = direct;
+            else { dissolve(bird, false); bird.phase = null; }
+        }
     }
 
     private static void enter(Bird bird, Phase phase) { bird.phase = phase; bird.phaseTicks = 0; }
@@ -179,14 +205,15 @@ public final class PhoenixService {
     private static LivingEntity prey(Bird bird) {
         if (bird.struck.size() >= bird.strikes) return null;
         return bird.level.getEntitiesOfClass(LivingEntity.class, new AABB(bird.position, bird.position).inflate(SEEK_RANGE),
-                        target -> ExpansionSkills.hostile(bird.owner, target) && !bird.struck.contains(target.getUUID())
+                        target -> PyroService.hostile(bird.owner, target) && !bird.struck.contains(target.getUUID())
                                 && !target.fireImmune() && target.distanceToSqr(bird.owner) <= SEEK_RANGE * SEEK_RANGE && sees(bird, target))
-                .stream().min(Comparator.comparingDouble(target -> target.distanceToSqr(bird.position))).orElse(null);
+                .stream().min(Comparator.comparingDouble(target -> target.distanceToSqr(bird.position)
+                        * (target.isOnFire() ? .55 : 1))).orElse(null);
     }
 
     private static boolean sees(Bird bird, LivingEntity target) {
         return bird.level.clip(new ClipContext(bird.position, target.getBoundingBox().getCenter(), ClipContext.Block.COLLIDER,
-                ClipContext.Fluid.NONE, bird.owner)).getType() == HitResult.Type.MISS;
+                ClipContext.Fluid.ANY, bird.owner)).getType() == HitResult.Type.MISS;
     }
 
     private static void swoop(Bird bird) {
@@ -196,7 +223,8 @@ public final class PhoenixService {
     /** Anything else it brushes past on a dive gets singed, once. */
     private static void graze(Bird bird) {
         for (LivingEntity passed : bird.level.getEntitiesOfClass(LivingEntity.class, new AABB(bird.position, bird.position).inflate(GRAZE_REACH),
-                target -> target != bird.target && ExpansionSkills.hostile(bird.owner, target) && !bird.grazed.contains(target.getUUID()))) {
+                target -> target != bird.target && PyroService.hostile(bird.owner, target)
+                        && !bird.grazed.contains(target.getUUID()) && sees(bird, target))) {
             bird.grazed.add(passed.getUUID());
             PyroService.burn(bird.owner, passed, 3.0F, 3);
         }
@@ -205,16 +233,16 @@ public final class PhoenixService {
     private static void strike(Bird bird, LivingEntity target) {
         bird.struck.add(target.getUUID());
         bird.hits++;
-        PyroService.burn(bird.owner, target, 7.0F + bird.powerLevel, 6);
+        PyroService.burn(bird.owner, target, (7.0F + bird.powerLevel) * (bird.blue ? 1.25F : 1), 6);
         Vec3 shove = bird.velocity.multiply(1, 0, 1);
         if (shove.lengthSqr() > 1.0E-4 && target.isAlive()) {
             target.setDeltaMovement(target.getDeltaMovement().add(shove.normalize().scale(0.8)).add(0, 0.35, 0));
             target.hurtMarked = true;
             if (target instanceof ServerPlayer other) other.connection.send(new ClientboundSetEntityMotionPacket(other));
         }
-        PyroService.ignite(bird.owner, bird.level, target.blockPosition());
+        if (!bird.contained) PyroService.ignite(bird.owner, bird.level, target.blockPosition(), bird.blue);
         Vec3 at = target.getBoundingBox().getCenter();
-        AbilityEffects.send(bird.level, Kind.PYRO_PHOENIX_STRIKE, at, at.add(bird.velocity), 2.2);
+        PyroGeometry.show(bird.level, Piece.PYRO_BURST, target.position(), target.position(), 2.2, bird.blue, null);
         CameraShakePayload.sendAround(bird.level, at, 12, 0.7F, 6);
         bird.level.playSound(null, at.x, at.y, at.z, SoundEvents.FIRECHARGE_USE, SoundSource.PLAYERS, 1.2F, 0.8F);
         bird.level.playSound(null, at.x, at.y, at.z, SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, 1.0F, 1.4F);
@@ -229,11 +257,12 @@ public final class PhoenixService {
     /** It folds back into its maker (or, cut short, just burns out where it is). */
     private static void dissolve(Bird bird, boolean home) {
         ServerPlayer owner = bird.owner;
-        AbilityEffects.send(bird.level, Kind.PYRO_PHOENIX_STRIKE, bird.position, bird.position.add(0, 1, 0), home ? 1.6 : 1.0);
+        PyroGeometry.show(bird.level, Piece.PYRO_BURST, bird.position, bird.position, home ? 1.6 : 1, bird.blue, null);
         bird.level.playSound(null, bird.position.x, bird.position.y, bird.position.z, SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.8F, 0.7F);
         if (!home || !owner.isAlive()) return;
         float healed = 2.0F + 2.0F * bird.hits;
         owner.heal(healed);
+        PyroService.addHeat(owner, 5 + bird.hits * 5);
         owner.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 200, 0));
         owner.clearFire();
         bird.level.playSound(null, owner.blockPosition(), SoundEvents.BLAZE_AMBIENT, SoundSource.PLAYERS, 0.8F, 1.6F);

@@ -31,7 +31,9 @@ final class SpeedArt {
     private static final float[] GOLD = rgb(0xFFC640), HOT = rgb(0xFFF4C8), AMBER = rgb(0xFF8C1E),
             WIND = {0.86F, 0.9F, 0.96F}, DUST = {0.84F, 0.79F, 0.7F}, DUST_DARK = {0.66F, 0.63F, 0.6F},
             CLOUD = {0.86F, 0.86F, 0.89F}, FUNNEL = {0.8F, 0.8F, 0.84F}, STORM = {0.52F, 0.53F, 0.58F}, SOOT = {0.1F, 0.08F, 0.07F},
-            STORM_LIT = {0.7F, 0.71F, 0.76F}, VIOLET = {0.6F, 0.49F, 1}, DEEP = {0.36F, 0.25F, 0.82F}, PALE = {0.96F, 0.92F, 1}, CYAN = {0.55F, 0.85F, 1};
+            STORM_LIT = {0.7F, 0.71F, 0.76F}, VIOLET = {0.6F, 0.49F, 1}, DEEP = {0.36F, 0.25F, 0.82F},
+            PALE = {0.96F, 0.92F, 1}, CYAN = {0.55F, 0.85F, 1},
+            TEMPEST_CLOUD = rgb(0xDBDBD2), TEMPEST_WIND = rgb(0xEEEDE3);
     private static final float[][] DEBRIS = {{0.42F, 0.3F, 0.2F}, {0.5F, 0.5F, 0.5F}, {0.36F, 0.52F, 0.2F}, {0.55F, 0.4F, 0.25F}, {0.3F, 0.28F, 0.26F}};
 
     private SpeedArt() {}
@@ -166,14 +168,15 @@ final class SpeedArt {
         Vec3 o = v.at(c.partial);
         float ring = v.radius;
         int seed = v.entity * 17;
-        // A speedster's tornado has their gold lightning wound up in it; a flyer's, the sky's.
+        // A speedster winds lightning through the funnel. A flyer winds strips of condensation.
         boolean sky = v.style == com.jayptucker.heroesevolved.network.SpeedCyclonePayload.FLIGHT;
-        float[] bolt = sky ? CYAN : HOT, strand = sky ? PALE : GOLD;
+        float[] strand = sky ? TEMPEST_WIND : GOLD;
+        if (sky) FlightArt.tempest(c, o, built, f);
         if (c.soft()) {
             // The funnel's skin: see-through, streaked in spirals that wind up it as it turns.
             final float h0 = height, cut = collapse;
             float twist = built * 0.35F;
-            c.revolve(o, height, u -> TornadoShape.radius(u * h0, h0, ring), FUNNEL, 0.55F * f,
+            c.revolve(o, height, u -> TornadoShape.radius(u * h0, h0, ring), sky ? TEMPEST_CLOUD : FUNNEL, (sky ? .38F : .55F) * f,
                     (theta, u) -> smooth(cut * 1.15F - 0.1F, cut * 1.15F + 0.05F, u)
                             * (0.45F + 0.55F * Mth.abs(sin(theta * 3 - u * 9 + twist))) * (0.6F + 0.4F * u));
             int layers = 16;
@@ -185,13 +188,14 @@ final class SpeedArt {
                 float wall = TornadoShape.radius(h, height, ring);
                 int n = 6 + (int) (wall * 1.4F);
                 float spin = built * (0.5F - 0.32F * u) + i * 0.7F;
-                CloudMesh.Shade shade = Shades.smoke(c, mix(DUST_DARK, CLOUD, Mth.clamp(u * 1.3F, 0, 1)), 0);
+                CloudMesh.Shade shade = Shades.smoke(c, mix(DUST_DARK, sky ? TEMPEST_CLOUD : CLOUD, Mth.clamp(u * 1.3F, 0, 1)), 0);
                 for (int j = 0; j < n; j++) {
                     float ang = j * TWO_PI / n + spin + hash(seed + i, j) * 0.5F;
                     float s = (0.5F + wall * 0.2F) * (0.8F + hash(seed + i, j + 20) * 0.45F);
                     float rr = wall + (hash(seed + i, j + 40) - 0.3F) * s * 0.6F;
                     float y = h + (hash(seed + i, j + 60) - 0.5F) * height / layers * 1.1F;
-                    c.cloud(o.add(cos(ang) * rr, y, sin(ang) * rr), s * 1.15F, s * 0.6F, s * 1.15F, i * 7 + j, ang, alpha, shade);
+                    c.cloud(o.add(cos(ang) * rr, y, sin(ang) * rr), s * 1.15F, s * 0.6F, s * 1.15F, i * 7 + j, ang,
+                            sky ? alpha * .72F : alpha, shade);
                 }
             }
             for (int k = 0; k < 16; k++) wallStreak(c, o, height, ring, built, seed, k, 0.3F * f, collapse);
@@ -203,7 +207,7 @@ final class SpeedArt {
                     c.cloud(o.add(cos(ang) * rr, s * 0.25, sin(ang) * rr), s * 1.4F, s * 0.38F, s * 1.4F, j + 3, ang, 0.22F * f * (1 - collapse * 2), dust);
                 }
             }
-            CloudMesh.Shade storm = Shades.smoke(c, STORM_LIT, 0);
+            CloudMesh.Shade storm = Shades.smoke(c, sky ? TEMPEST_CLOUD : STORM_LIT, 0);
             for (int j = 0; j < 14; j++) {
                 float ang = j * TWO_PI / 14 + built * 0.08F + hash(seed, j + 400);
                 float rr = TornadoShape.TOP * (0.5F + hash(seed, j + 420) * 0.55F) * grow, s = 1.8F + hash(seed, j + 440) * 1.2F;
@@ -211,13 +215,14 @@ final class SpeedArt {
             }
         }
         if (c.glow()) {
-            for (int k = 0; k < 3; k++) innerHelix(c, o, height, ring, built, k, k == 0 ? bolt : strand, 0.55F * f, collapse);
+            for (int k = 0; k < 3; k++) innerHelix(c, o, height, ring, built, k, !sky && k == 0 ? HOT : strand,
+                    (sky ? .22F : .55F) * f, collapse);
             int flick = (int) (built / 3);
-            if (hash(seed, flick) < 0.45F && collapse < 0.6F) {
+            if (!sky && hash(seed, flick) < 0.45F && collapse < 0.6F) {
                 float h0 = hash(seed, flick + 1) * height * 0.75F, h1 = h0 + 2 + hash(seed, flick + 2) * 5;
                 float a0 = hash(seed, flick + 3) * TWO_PI, a1 = a0 + 0.8F + hash(seed, flick + 4) * 1.5F;
                 float r0 = TornadoShape.radius(h0, height, ring) * 0.75F, r1 = TornadoShape.radius(h1, height, ring) * 0.75F;
-                c.bolt(o.add(cos(a0) * r0, h0, sin(a0) * r0), o.add(cos(a1) * r1, h1, sin(a1) * r1), seed + flick, 0.6F, 0.06F, bolt, 0.9F * f);
+                c.bolt(o.add(cos(a0) * r0, h0, sin(a0) * r0), o.add(cos(a1) * r1, h1, sin(a1) * r1), seed + flick, 0.6F, 0.06F, HOT, 0.9F * f);
             }
             c.glow(o.add(0, height * 0.5, 0), height * 0.35F, strand, 0.05F * f);
         }

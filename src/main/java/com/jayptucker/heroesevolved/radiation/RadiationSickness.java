@@ -28,7 +28,7 @@ import java.util.UUID;
 /**
  * Radiation Sickness: a dose that stacks in five stages. Each second it burns from the inside for
  * half a heart per stage (armor does not help, and the undead are not spared), and it saps strength.
- * Ted Sprague and anyone holding his power are immune. A creature that dies while sick bursts,
+ * Whoever holds Induced Radioactivity is immune. A creature that dies while sick bursts,
  * dosing everything around it: radiation spreads through a crowd as a chain reaction.
  */
 public final class RadiationSickness extends MobEffect {

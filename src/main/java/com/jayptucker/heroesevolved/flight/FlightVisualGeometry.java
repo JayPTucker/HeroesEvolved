@@ -29,6 +29,15 @@ public final class FlightVisualGeometry {
                 yaw(player, cycloneActive, partialTick));
     }
 
+    /** Tracked players may have interpolated positions but no useful local velocity. */
+    public static Vec3 travel(Player player) {
+        Vec3 velocity = player.getDeltaMovement();
+        if (velocity.lengthSqr() >= .03) return velocity;
+        Vec3 displacement = player.position().subtract(new Vec3(player.xOld, player.yOld, player.zOld));
+        // A teleport or newly tracked player can be far from the previous render position.
+        return displacement.lengthSqr() <= 16 * 16 ? displacement : Vec3.ZERO;
+    }
+
     public static Vec3 bodyCenter(Vec3 position) {
         return position.add(0.0D, PIVOT_HEIGHT, 0.0D);
     }

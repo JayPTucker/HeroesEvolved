@@ -17,7 +17,8 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("58")
+        event.registrar("63")
+            .playToClient(SkyburstMotionPayload.TYPE, SkyburstMotionPayload.STREAM_CODEC, SkyburstMotionPayload::handle)
             .playToServer(CryoRideInputPayload.TYPE, CryoRideInputPayload.STREAM_CODEC, CryoRideInputPayload::handle)
             .playToClient(CryoRideStatePayload.TYPE, CryoRideStatePayload.STREAM_CODEC, CryoRideStatePayload::handle)
             .playToServer(CryoShellInputPayload.TYPE, CryoShellInputPayload.STREAM_CODEC, CryoShellInputPayload::handle)

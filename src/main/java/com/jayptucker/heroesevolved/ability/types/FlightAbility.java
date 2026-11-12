@@ -2,16 +2,14 @@ package com.jayptucker.heroesevolved.ability.types;
 
 import com.jayptucker.heroesevolved.ability.*;
 import com.jayptucker.heroesevolved.entity.EntityCarryService;
-import com.jayptucker.heroesevolved.entity.TemporalEchoEntity;
 import com.jayptucker.heroesevolved.flight.DiveBombService;
 import com.jayptucker.heroesevolved.flight.FlightDynamicsService;
 import com.jayptucker.heroesevolved.flight.FlightService;
 import com.jayptucker.heroesevolved.flight.FlightSkillService;
-import com.jayptucker.heroesevolved.effects.AbilityEffects;
-import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 import com.jayptucker.heroesevolved.network.ArmPosePayload;
+import com.jayptucker.heroesevolved.network.SetPiecePayload;
 import com.jayptucker.heroesevolved.progression.MasteryService;
-import com.jayptucker.heroesevolved.time.TemporalEntityEchoService;
+import com.jayptucker.heroesevolved.styles.Piece;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -121,28 +119,34 @@ public final class FlightAbility implements Ability {
                 Entity thrown = EntityCarryService.hurl(player, player.getLookAngle()
                         .scale(1.8 + momentum * .012).add(0, .25, 0));
                 if (thrown == null) return AbilityActivationResult.REJECTED;
-                if (player.isAlliedTo(thrown) && thrown instanceof LivingEntity friend) {
+                if (thrown instanceof LivingEntity friend && FlightSkillService.isFriend(player, friend)) {
                     friend.resetFallDistance();
                     friend.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 160, 0));
                 }
-                AbilityEffects.send(player.serverLevel(), Kind.FLIGHT_SKYBURST, thrown.position(),
-                        thrown.position().add(player.getLookAngle()), 1.2 + momentum * .01);
+                FlightService.showRelease(player.serverLevel(), thrown.getBoundingBox().getCenter(),
+                        thrown.getDeltaMovement().normalize(), (float) (1.2 + momentum * .01));
                 player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP,
                         SoundSource.PLAYERS, 1, .6F);
-                ArmPosePayload.show(player, ArmPose.TWO_HANDS, 8);
+                ArmPosePayload.show(player, ArmPose.FLIGHT_CAST, 8);
                 return AbilityActivationResult.SUCCESS;
             }
             LivingEntity target = target(player);
-            if (target == null || !EntityCarryService.pickUp(player, target)) return AbilityActivationResult.REJECTED;
-            if (!FlightService.hasActiveSession(player)) FlightService.launch(player);
+            if (target == null) return AbilityActivationResult.REJECTED;
+            Vec3 catchAt = target.getBoundingBox().getCenter();
+            if (!EntityCarryService.pickUp(player, target)) return AbilityActivationResult.REJECTED;
+            Vec3 heldAt = target.getBoundingBox().getCenter();
+            SetPiecePayload.send(player.serverLevel(), Piece.FLIGHT_RESCUE, catchAt, heldAt, .6F, null);
+            player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.BREEZE_WHIRL,
+                    SoundSource.PLAYERS, .7F, 1.55F);
+            if (player.onGround() || !FlightService.hasActiveSession(player)) FlightService.launch(player);
             ArmPosePayload.show(player, ArmPose.TWO_HANDS, 20);
             MasteryService.markPowerUse(player, c.abilityId());
             return AbilityActivationResult.SUCCESS;
         }
         private static LivingEntity target(ServerPlayer player) {
-            return Targeting.livingEntityInSight(player, 7, entity -> !(entity instanceof TemporalEchoEntity)
-                    && !TemporalEntityEchoService.isPastCopy(entity) && !entity.isPassenger()
-                    && entity.getPassengers().isEmpty());
+            return Targeting.livingEntityInSight(player, 7, entity ->
+                    (FlightSkillService.isFriend(player, entity) || FlightSkillService.hostile(player, entity))
+                    && EntityCarryService.canPickUp(player, entity, 7));
         }
     }
 }

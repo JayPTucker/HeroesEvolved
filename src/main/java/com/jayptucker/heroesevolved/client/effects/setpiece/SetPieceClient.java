@@ -96,7 +96,7 @@ public final class SetPieceClient {
         boolean solid = event.getStage() == RenderLevelStageEvent.Stage.AFTER_ENTITIES;
         if (!solid && event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null || ACTIVE.isEmpty() && !SpeedArt.live() && !RewindArt.live()) return;
+        if (mc.level == null || ACTIVE.isEmpty() && !SpeedArt.live() && !RewindArt.live() && !FlightArt.live() && !PyroArt.live()) return;
         if (world != mc.level) { ACTIVE.clear(); world = mc.level; }
         Vec3 camera = event.getCamera().getPosition();
         Canvas c = CANVAS;
@@ -148,8 +148,10 @@ public final class SetPieceClient {
         try {
             SpeedArt.drawLive(c);
             RewindArt.drawLive(c);
+            FlightArt.drawLive(c);
+            PyroArt.drawLive(c);
         } catch (RuntimeException broken) {
-            HeroesEvolved.LOGGER.warn("Superspeed effects failed to draw", broken);
+            HeroesEvolved.LOGGER.warn("Live power effects failed to draw", broken);
         }
         MeshData mesh = c.out.build();
         if (mesh != null) BufferUploader.drawWithShader(mesh);

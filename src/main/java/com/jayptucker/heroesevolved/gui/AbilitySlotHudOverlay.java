@@ -51,7 +51,7 @@ public final class AbilitySlotHudOverlay {
     ) {
         // Dormant powers are intentionally unknown to the player. Do not
         // reveal their actions or controls until the awakening occurs.
-        if (!hasUnlockedAbility()) {
+        if (Minecraft.getInstance().options.hideGui || !hasUnlockedAbility()) {
             return;
         }
 
@@ -369,7 +369,7 @@ public final class AbilitySlotHudOverlay {
         return seconds / 60 + ":" + String.format("%02d", seconds % 60);
     }
 
-    /** Ted Sprague's Core: a bar that turns orange when Hot, red when Critical, and flashes at 100. */
+    /** Induced Radioactivity's Core: a bar that turns orange when Hot, red when Critical, and flashes at 100. */
     private static int drawRadiationCore(GuiGraphics guiGraphics, int y) {
         var mc = Minecraft.getInstance();
         boolean ted = ClientPowerState.getSnapshot().abilities().stream().anyMatch(power -> power.unlocked()

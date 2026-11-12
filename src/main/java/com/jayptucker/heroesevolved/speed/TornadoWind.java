@@ -10,7 +10,10 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.ClipContext;
+import com.jayptucker.heroesevolved.flight.FlightSkillService;
 
 import java.util.Set;
 import java.util.UUID;
@@ -36,12 +39,24 @@ public final class TornadoWind {
      */
     public static void blow(ServerPlayer owner, ServerLevel level, Vec3 center, float built, float ring, double pull,
                             float damage, boolean suffocate, Set<UUID> caught, long now) {
+        blow(owner, level, center, built, ring, pull, damage, suffocate, caught, now, false);
+    }
+
+    public static void blowTempest(ServerPlayer owner, ServerLevel level, Vec3 center, float built, float ring, double pull,
+                                   float damage, boolean suffocate, Set<UUID> caught, long now) {
+        blow(owner, level, center, built, ring, pull, damage, suffocate, caught, now, true);
+    }
+
+    private static void blow(ServerPlayer owner, ServerLevel level, Vec3 center, float built, float ring, double pull,
+                             float damage, boolean suffocate, Set<UUID> caught, long now, boolean tempest) {
         float height = TornadoShape.height(built), lift = TornadoShape.lift(built);
         AABB reach = new AABB(center, center).inflate(pull, 0, pull).expandTowards(0, height + 4, 0).move(0, -4, 0);
         for (Entity e : level.getEntities(owner, reach, e -> target(owner, e))) {
             Vec3 radial = e.position().subtract(center).multiply(1, 0, 1);
             double distance = radial.length();
             if (distance > pull) continue;
+            if (tempest && (!exposed(owner, center, e)
+                    || e instanceof LivingEntity living && !FlightSkillService.hostile(owner, living))) continue;
             float h = (float) (e.getY() - center.y), up = Math.max(0, h);
             float wall = TornadoShape.radius(up, height, ring);
             Vec3 out = distance < 1.0E-3 ? new Vec3(1, 0, 0) : radial.scale(1 / distance);
@@ -49,7 +64,8 @@ public final class TornadoWind {
             // It reaches a little past its wall, more at the ground where it feeds.
             boolean held = distance <= wall + (up < 3 ? 4 : 2.5) && h > -3 && h < height + 2;
             if (e instanceof Projectile shot) {
-                if (held && shot.getOwner() != owner && (shot.getOwner() == null || !owner.isAlliedTo(shot.getOwner())))
+                if (held && shot.getOwner() != owner && (shot.getOwner() == null || !owner.isAlliedTo(shot.getOwner()))
+                        && !(tempest && shot.getOwner() instanceof LivingEntity shooter && FlightSkillService.isFriend(owner, shooter)))
                     push(shot, out.scale(1.2).add(0, 0.15, 0));
                 continue;
             }
@@ -72,6 +88,13 @@ public final class TornadoWind {
                 if (suffocate) choke(living, now);
             }
         }
+    }
+
+    public static boolean exposed(ServerPlayer owner, Vec3 center, Entity target) {
+        Vec3 body = target.getBoundingBox().getCenter();
+        Vec3 eye = new Vec3(center.x, Math.max(center.y + .3, body.y), center.z);
+        return owner.serverLevel().clip(new ClipContext(eye, body, ClipContext.Block.COLLIDER,
+                ClipContext.Fluid.NONE, owner)).getType() == HitResult.Type.MISS;
     }
 
     /** Living things the owner may hurt, loose items, and shots in flight. */

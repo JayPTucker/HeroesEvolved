@@ -8,28 +8,29 @@ final class PieceArt {
 
     static void draw(Canvas c, Active a, float t) {
         switch (a.piece()) {
+            case FLIGHT_RELEASE, FLIGHT_SKYBURST, FLIGHT_IMPACT, FLIGHT_RESCUE, FLIGHT_SHELTER,
+                    FLIGHT_CURRENT, FLIGHT_THERMAL_MARK, FLIGHT_THERMAL_RISE, FLIGHT_INTERCEPT,
+                    TEMPEST_DRILL, GALE_WALL, FORMATION_FLIGHT -> FlightArt.draw(c, a, t);
+            case PYRO_FORGE, PYRO_SPEAR, PYRO_BREATH, PYRO_FIRESTORM_PRIME, PYRO_FIRESTORM,
+                    PYRO_COLLAPSE, PYRO_BURST, PYRO_SUN_CHARGE, PYRO_SUN_DROP, PYRO_LASH, PYRO_MANTLE,
+                    PYRO_CAUTERIZE, PYRO_MINE_ARM, PYRO_MINE_WARN, PYRO_LANCE, PYRO_SHEPHERD, PYRO_TAKEOFF, PYRO_PHOENIX, PYRO_WAKE,
+                    SUNFALL, EMBER_SHROUD, HEARTHFIRE -> PyroArt.draw(c, a, t);
+            case ELECTRO_DRAW, ELECTRO_ARC, ELECTRO_CURRENT, ELECTRO_ORB, ELECTRO_PRIME, ELECTRO_WARN,
+                    ELECTRO_STRIKE, ELECTRO_PULSE, ELECTRO_RIDE, ELECTRO_SCAR, ELECTRO_COIL, ELECTRO_SIPHON,
+                    ELECTRO_BLACKOUT, ELECTRO_AURA, ELECTRO_FIELD, ELECTRO_SCREEN,
+                    TESLA_SPIRE, TESLA_ZAP, FARADAY_CAGE, JUMPSTART -> ElectroArt.draw(c, a, t);
             case GROUND_ZERO -> ElementArt.groundZero(c, a, t);
             case CONTAINMENT_DOME -> ElementArt.containment(c, a, t);
             case REACTOR_HEARTH -> ElementArt.reactor(c, a, t);
             case HOUR_HAND -> MotionArt.hourHand(c, a, t);
             case TIME_LOOP -> MotionArt.timeLoop(c, a, t);
             case BORROWED_TIME -> MotionArt.borrowedTime(c, a, t);
-            case SUNFALL -> ElementArt.sunfall(c, a, t);
-            case EMBER_SHROUD -> ElementArt.emberShroud(c, a, t);
-            case HEARTHFIRE -> ElementArt.hearthfire(c, a, t);
             case HAILSTORM -> ElementArt.hailstorm(c, a, t);
             case CRYSTAL_BASTION -> ElementArt.bastion(c, a, t);
             case AURORA_VEIL -> ElementArt.aurora(c, a, t);
-            case TESLA_SPIRE -> ElementArt.tesla(c, a, t);
-            case TESLA_ZAP -> ElementArt.teslaZap(c, a, t);
-            case FARADAY_CAGE -> ElementArt.faraday(c, a, t);
-            case JUMPSTART -> ElementArt.jumpstart(c, a, t);
             case FISSURE_MAW -> ElementArt.fissure(c, a, t);
             case STONE_RAMPART -> ElementArt.rampart(c, a, t);
             case BEDROCK_STANCE -> ElementArt.bedrock(c, a, t);
-            case TEMPEST_DRILL -> MotionArt.tempestDrill(c, a, t);
-            case GALE_WALL -> MotionArt.galeWall(c, a, t);
-            case FORMATION_FLIGHT -> MotionArt.formation(c, a, t);
             case IMPLOSION -> MotionArt.implosion(c, a, t);
             case DEBRIS_HALO -> MotionArt.debrisHalo(c, a, t);
             case GATHERING_HAND -> MotionArt.gathering(c, a, t);
@@ -67,6 +68,7 @@ final class PieceArt {
             case EXPLODING_MAN -> MiniBlast.draw(c, a.origin(), a.scale() / 80F, a.scale() * 1.15F, t, a.piece().ticks);
             case SPEED_GUST -> SpeedArt.gust(c, a, t);
             case SPEED_ARMS -> SpeedArt.arms(c, a, t);
+            case RAD_HEAT, RAD_LEAP, RAD_SLAM, RAD_ZONE, RAD_EMP, RAD_BEAM, RAD_CHARGE -> RadiationArt.draw(c, a, t);
             case OVERRUN_DEPART -> SpeedArt.depart(c, a, t);
             case OVERRUN_ARRIVE -> SpeedArt.arrive(c, a, t);
             case MATTER_RISE -> AssemblyArt.rise(c, a, t);

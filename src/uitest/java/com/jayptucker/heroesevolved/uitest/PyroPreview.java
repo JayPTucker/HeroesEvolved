@@ -12,9 +12,11 @@ import com.jayptucker.heroesevolved.input.ModKeyMappings;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.pyro.PyroFlightService;
 import com.jayptucker.heroesevolved.pyro.PyroService;
+import com.jayptucker.heroesevolved.pyro.PhoenixService;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Difficulty;
@@ -24,6 +26,7 @@ import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.WorldOptions;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
 import net.minecraft.world.phys.Vec3;
@@ -56,6 +59,7 @@ public final class PyroPreview {
 
     private static void place(ServerPlayer p, double y, float pitch) {
         PyroFlightService.stop(p, false);
+        PyroService.stopPalm(p);
         PyroService.cancelInferno(p);
         PyroService.cancelSpear(p);
         p.connection.teleport(300.5, y, 0.5, 0, pitch);
@@ -109,7 +113,7 @@ public final class PyroPreview {
         ++world;
         if (world == 211 && Boolean.getBoolean("heroes.preview.pyro.skillsOnly")) world = 544;
         // A gradual real view turn exercises Flight's bank while the camera remains level.
-        if (world >= 252 && world <= 262) mc.player.setYRot(mc.player.getYRot() + 3);
+        if (world >= 252 && world <= 262) mc.player.setYRot(mc.player.getYRot() + 5);
         switch (world) {
             case 180 -> {
                 mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
@@ -136,6 +140,7 @@ public final class PyroPreview {
                 System.out.println("PYRO_CLIENT_TOGGLE PASS");
             });
             case 220 -> {
+                mc.options.hideGui = true;
                 mc.gui.getChat().clearMessages(true);
                 mc.getToasts().clear();
                 pending = "pyro-1-hover-jets.png";
@@ -143,23 +148,39 @@ public final class PyroPreview {
             case 225 -> {
                 PacketDistributor.sendToServer(new FlightSpeedInputPayload(1));
                 PacketDistributor.sendToServer(new FlightSpeedInputPayload(1));
+                PacketDistributor.sendToServer(new FlightSpeedInputPayload(1));
             }
             case 230 -> {
                 onServer(mc, p -> cruiseStart = p.position());
                 mc.options.keyUp.setDown(true);
             }
-            case 240 -> mc.player.setXRot(-12);
+            case 237 -> pending = "pyro-2-flame-cruise.png";
+            case 238 -> mc.options.keySprint.setDown(true);
+            case 240 -> {
+                mc.player.setXRot(-12);
+                mc.options.keyRight.setDown(true);
+            }
             case 250 -> {
                 if (!ClientFlightVisualState.isFlightActive(mc.player.getId()))
                     throw new AssertionError("Pyro cruise is not using Flight's shared horizontal pose");
-                pending = "pyro-2-flame-cruise.png";
+                pending = "pyro-2a-afterburner.png";
             }
-            case 258 -> pending = "pyro-2b-banked-turn.png";
+            case 253 -> onServer(mc, p -> {
+                double speed = p.getDeltaMovement().length();
+                if (!PyroFlightService.isBoosting(p) || speed <= 3.9)
+                    throw new AssertionError("Afterburner did not reach full thrust: " + speed);
+                System.out.println("PYRO_CLIENT_AFTERBURNER PASS speed=" + speed);
+            });
+            case 258 -> {
+                pending = "pyro-2b-banked-turn.png";
+                mc.options.keySprint.setDown(false);
+            }
             case 270 -> {
                 mc.options.keyUp.setDown(false);
+                mc.options.keyRight.setDown(false);
                 onServer(mc, p -> {
                     double moved = p.position().distanceTo(cruiseStart);
-                    if (!PyroFlightService.isFlying(p) || moved < 12 || PyroFlightService.speedStep(p) != 3
+                    if (!PyroFlightService.isFlying(p) || moved < 12 || PyroFlightService.speedStep(p) != 4
                             || p.getY() - cruiseStart.y < 1 || PyroFlightService.momentum(p) <= 5)
                         throw new AssertionError("Real client flame cruise failed: moved=" + moved
                                 + " speed=" + PyroFlightService.speedStep(p) + " momentum=" + PyroFlightService.momentum(p));
@@ -167,7 +188,7 @@ public final class PyroPreview {
                 });
             }
             case 275 -> {
-                for (int notch = 0; notch < 3; notch++)
+                for (int notch = 0; notch < 4; notch++)
                     PacketDistributor.sendToServer(new FlightSpeedInputPayload(-1));
             }
             case 285 -> onServer(mc, p -> {
@@ -181,9 +202,10 @@ public final class PyroPreview {
                 if (!PyroFlightService.isFlying(p) || drift > 1)
                     throw new AssertionError("Real client flame hover failed: drift=" + drift);
                 System.out.println("PYRO_CLIENT_HOVER PASS drift=" + drift);
-                PyroService.addHeat(p, 80);
+                PyroService.addHeat(p, 100);
+                PyroFlightService.sync(p);
             });
-            case 315 -> pending = "pyro-3-blue-hover.png";
+            case 318 -> pending = "pyro-3-blue-hover.png";
             case 320 -> onServer(mc, p -> {
                 noviceHoverStart = p.position();
                 PlayerProgressionService.setLevel(p, 3);
@@ -209,7 +231,7 @@ public final class PyroPreview {
             }
             case 354 -> pending = "pyro-4-cinder-spear-charge.png";
             case 357 -> onServer(mc, p -> PyroService.releaseSpear(p));
-            case 358 -> pending = "pyro-5-cinder-spear-release.png";
+            case 361 -> pending = "pyro-5-cinder-spear-release.png";
             case 375 -> onServer(mc, p -> {
                 if (spearTarget.getHealth() >= spearTarget.getMaxHealth())
                     throw new AssertionError("Preview Cinder Spear did not hit target");
@@ -219,19 +241,19 @@ public final class PyroPreview {
                 mc.options.setCameraType(CameraType.FIRST_PERSON);
                 onServer(mc, p -> {
                     place(p, -53, 27);
-                    PyroService.addHeat(p, 65);
+                    PyroService.addHeat(p, 100);
                     if (!PyroFlightService.toggle(p, 5)) throw new AssertionError("Cannot hover for Sunfall preview");
                     PyroService.startInferno(p, 5);
                 });
             }
             case 440 -> pending = "pyro-6-sunfall-charge.png";
-            case 454 -> pending = "pyro-7-sunfall-corona.png";
-            case 462 -> pending = "pyro-8-sunfall-impact.png";
+            case 465 -> pending = "pyro-7-sunfall-drop.png";
+            case 475 -> pending = "pyro-8-sunfall-impact.png";
             case 480 -> {
                 mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
                 onServer(mc, p -> {
                     place(p, -48, 80);
-                    // Separate ground avoids Sunfall's lingering ordinary fire affecting the check.
+                    // Separate ground keeps Sunfall's lingering fire out of the dive check.
                     p.connection.teleport(600.5, -48, 0.5, 0, 80);
                     PyroService.addHeat(p, 80);
                     meteorTarget = target(p, 600.5, 3.5);
@@ -257,8 +279,9 @@ public final class PyroPreview {
                 if (!PyroFlightService.isDiving(p)) throw new AssertionError("Real Shift + X did not start Meteor Dive");
                 System.out.println("PYRO_CLIENT_METEOR_INPUT PASS");
             });
-            case 503 -> pending = "pyro-9-meteor-comet.png";
-            case 512 -> pending = "pyro-10-meteor-impact.png";
+            case 501 -> pending = "pyro-9-meteor-windup.png";
+            case 508 -> pending = "pyro-9b-meteor-comet.png";
+            case 516 -> pending = "pyro-10-meteor-impact.png";
             case 525 -> onServer(mc, p -> {
                 if (PyroFlightService.isFlying(p) || meteorTarget.getHealth() >= meteorTarget.getMaxHealth())
                     throw new AssertionError("Real Meteor Dive did not end with damaging impact: flying="
@@ -361,14 +384,61 @@ public final class PyroPreview {
                 if (PyroService.heat(p) < 10) throw new AssertionError("Fire Shepherd must turn drawn fire into Heat");
                 System.out.println("PYRO_CLIENT_SHEPHERD PASS");
             });
-            case 825 -> onServer(mc, p -> {
-                skillScene(p, 1800.5, 40);
-                PyroService.ringOfFire(p, 5);
-            });
-            case 831 -> pending = "pyro-19-firestorm-vortex.png";
-            case 837 -> onServer(mc, p -> PyroService.collapseRing(p, 5));
-            case 847 -> pending = "pyro-20-firestorm-collapse.png";
-            case 855 -> mc.stop();
+            case 825 -> {
+                mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+                onServer(mc, p -> {
+                    p.serverLevel().setDayTime(1000);
+                    skillScene(p, 1800.5, 18);
+                    p.setShiftKeyDown(true);
+                    PyroService.ringOfFire(p, 5);
+                    p.setShiftKeyDown(false);
+                });
+            }
+            case 831 -> pending = "pyro-19a-firestorm-warning.png";
+            case 842 -> pending = "pyro-19b-firestorm-vortex.png";
+            case 845 -> onServer(mc, p -> PyroService.startPalm(p, 5));
+            case 854 -> pending = "pyro-19c-dragon-breath.png";
+            case 855 -> mc.options.setCameraType(CameraType.FIRST_PERSON);
+            case 858 -> pending = "pyro-19d-dragon-breath-first-person.png";
+            case 862 -> {
+                mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+                onServer(mc, p -> { PyroService.stopPalm(p); PyroService.collapseRing(p, 5); });
+            }
+            case 875 -> pending = "pyro-20-firestorm-collapse.png";
+            case 902 -> {
+                mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+                onServer(mc, p -> {
+                    p.serverLevel().setDayTime(16000);
+                    skillScene(p, 1950.5, -15);
+                    target(p, 1951.5, 12.5).igniteForSeconds(6);
+                    target(p, 1948.5, 14.5);
+                    PhoenixService.activate(p, 5);
+                });
+            }
+            case 921 -> pending = "pyro-21a-phoenix-rise.png";
+            case 926 -> pending = "pyro-21-phoenix-wings.png";
+            case 935 -> pending = "pyro-21b-phoenix-swoop.png";
+            case 948 -> pending = "pyro-22-phoenix-hunt.png";
+            case 970 -> {
+                if (Boolean.getBoolean("heroes.preview.pyro.skillsOnly")) {
+                    mc.stop();
+                    break;
+                }
+                mc.options.setCameraType(CameraType.FIRST_PERSON);
+                onServer(mc, p -> {
+                    p.serverLevel().setDayTime(1000);
+                    place(p, -51, 38);
+                    if (!PyroFlightService.toggle(p, 5)) throw new AssertionError("Cannot hover over Sunfall's aftermath");
+                });
+            }
+            case 997 -> {
+                long flames = BlockPos.betweenClosedStream(new BlockPos(290, -60, 5), new BlockPos(310, -59, 29))
+                        .filter(pos -> mc.level.getBlockState(pos).is(Blocks.SOUL_FIRE)).count();
+                if (flames == 0) throw new AssertionError("Sunfall must leave visible Soul Fire on the grass");
+                System.out.println("PYRO_CLIENT_SOUL_FIRE PASS blocks=" + flames);
+                pending = "pyro-23-soul-fire-aftermath.png";
+            }
+            case 1005 -> mc.stop();
             default -> { }
         }
     }

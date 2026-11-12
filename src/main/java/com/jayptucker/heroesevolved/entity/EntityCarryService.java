@@ -43,7 +43,7 @@ public final class EntityCarryService {
     public static boolean canPickUp(ServerPlayer player, Entity target, double reach, boolean lift) {
         if (target == null || !CarryGeometry.liftable(target, lift) || target.getType().is(net.neoforged.neoforge.common.Tags.EntityTypes.BOSSES)
                 || target instanceof com.jayptucker.heroesevolved.story.sylar.SylarEntity) return false;
-        if (target == null || target == player || !Double.isFinite(reach) || reach <= 0
+        if (target == player || !Double.isFinite(reach) || reach <= 0
                 || !player.isAlive() || player.isRemoved() || player.isSpectator() || player.isSleeping()
                 || PowerRules.immobilized(player) || player.isPassenger() || !player.getPassengers().isEmpty()
                 || target.level() != player.level() || !target.isAlive() || target.isRemoved() || target.isSpectator()
@@ -54,7 +54,8 @@ public final class EntityCarryService {
         Vec3 center = target.getBoundingBox().getCenter();
         double range = Math.min(reach, MAX_REACH);
         if (player.getEyePosition().distanceToSqr(center) > range * range) return false;
-        return player.serverLevel().clip(new ClipContext(player.getEyePosition(), center,
+        return CarryGeometry.fits(player, target, CarryGeometry.position(player, target))
+                && player.serverLevel().clip(new ClipContext(player.getEyePosition(), center,
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player)).getType() == HitResult.Type.MISS;
     }
 
@@ -66,9 +67,8 @@ public final class EntityCarryService {
         recover(target);
         if (!canPickUp(player, target, reach)) return false;
         Vec3 seat = CarryGeometry.position(player, target);
-        if (!CarryGeometry.fits(player, target, seat)) return false;
         CarryAnchorEntity anchor = new CarryAnchorEntity(ModEntities.CARRY_ANCHOR.get(), player.serverLevel());
-        anchor.setCargo(target);
+        anchor.bind(player, target);
         anchor.setPos(seat);
         anchor.setYRot(player.getYRot());
         if (!player.serverLevel().addFreshEntity(anchor)) return false;
@@ -111,8 +111,8 @@ public final class EntityCarryService {
             releaseCarry(carry, carry.lastSafe, Vec3.ZERO, true);
             return;
         }
-        Vec3 seat = CarryGeometry.position(player, carry.cargo);
-        if (!CarryGeometry.fits(player, carry.cargo, seat)) {
+        Vec3 seat = carry.anchor.seatPosition(player);
+        if (!CarryGeometry.fits(player, carry.anchor.hold(), carry.cargo.getBbWidth(), carry.cargo.getBbHeight(), seat)) {
             // An oversized passenger must not be dragged into a solid ceiling or narrow tunnel.
             releaseCarry(carry, carry.lastSafe, Vec3.ZERO, true);
             return;
@@ -123,6 +123,14 @@ public final class EntityCarryService {
         Vec3 release = CarryGeometry.releasePoint(player, carry.cargo);
         if (safe(carry.cargo, release)) carry.lastSafe = release;
         else if (safe(carry.cargo, carry.cargo.position())) carry.lastSafe = carry.cargo.position();
+    }
+
+    /** A high-speed move has to clear the entire overhead load as well as the carrier. */
+    public static boolean canTravelTo(ServerPlayer player, Vec3 destination) {
+        Carry carry = CARRIES.get(player.getUUID());
+        if (carry == null || carry.anchor.hold() != CarryGeometry.Hold.OVERHEAD || !valid(carry)) return true;
+        Vec3 seat = carry.anchor.seatPosition(player).add(destination.subtract(player.position()));
+        return safe(carry.cargo, seat);
     }
 
     /** Invalid placement does not change either mount link, protection or ownership. */
@@ -156,7 +164,9 @@ public final class EntityCarryService {
         if (carry == null || !finite(velocity)) return null;
         Entity cargo = carry.cargo;
         Vec3 bounded = velocity.lengthSqr() > 3.8 * 3.8 ? velocity.normalize().scale(3.8) : velocity;
-        releaseCarry(carry, currentSeat(carry), bounded, false);
+        Vec3 origin = bounded.lengthSqr() > 0 && carry.anchor.hold() == CarryGeometry.Hold.OVERHEAD
+                ? carry.anchor.seatPosition(player) : currentSeat(carry);
+        releaseCarry(carry, origin, bounded, false);
         return cargo;
     }
 
@@ -219,7 +229,7 @@ public final class EntityCarryService {
                 && !carry.carrier.isRemoved() && carry.carrier.isAlive()) {
             Vec3 release = CarryGeometry.releasePoint(carry.carrier, carry.cargo);
             if (safe(carry.cargo, release)) return release;
-            Vec3 seat = CarryGeometry.position(carry.carrier, carry.cargo);
+            Vec3 seat = carry.anchor.seatPosition(carry.carrier);
             if (safe(carry.cargo, seat)) return seat;
         }
         return carry.cargo.level() == carry.level ? carry.lastSafe : carry.cargo.position();

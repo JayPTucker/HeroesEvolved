@@ -3,9 +3,9 @@ package com.jayptucker.heroesevolved.flight;
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
 import com.jayptucker.heroesevolved.cooldown.CooldownService;
-import com.jayptucker.heroesevolved.effects.AbilityEffects;
-import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
+import com.jayptucker.heroesevolved.network.SetPiecePayload;
 import com.jayptucker.heroesevolved.skills.SkillTreeService;
+import com.jayptucker.heroesevolved.styles.Piece;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -13,6 +13,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
@@ -20,7 +21,6 @@ import net.neoforged.neoforge.event.entity.living.LivingFallEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.UUID;
 
@@ -29,6 +29,7 @@ import java.util.UUID;
 public final class FlightSkillPassives {
     public static final ResourceLocation LAST_SECOND_SAVE = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "flight_last_second_save");
     private static final ResourceLocation PRESSURE_TAP = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "flight_pressure_tap");
+    private static final double RESCUE_RANGE = 18;
     private static final Map<UUID, Punch> PUNCHES = new HashMap<>();
 
     private FlightSkillPassives() {}
@@ -36,32 +37,33 @@ public final class FlightSkillPassives {
     @SubscribeEvent
     public static void handleFall(LivingFallEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer faller) || event.getDamageMultiplier() <= 0
-                || DiveBombService.isDiving(faller)) return;
-        if (event.getDistance() > 10) {
-            // Include the faller even when a test or another mod does not register it in the world's player list.
-            var candidates = new LinkedHashSet<ServerPlayer>();
-            candidates.add(faller);
-            candidates.addAll(faller.serverLevel().getEntitiesOfClass(ServerPlayer.class,
-                    faller.getBoundingBox().inflate(18), guardian -> guardian != faller));
-            for (ServerPlayer guardian : candidates) {
-                if (!PowerRules.canAct(guardian) || !SkillTreeService.has(guardian, "flight_guardian_angel")
-                        || !FlightSkillService.isFriend(guardian, faller) || !guardian.hasLineOfSight(faller)
-                        || guardian.distanceToSqr(faller) > 18 * 18
-                        || CooldownService.isOnCooldown(guardian, LAST_SECOND_SAVE)) continue;
-                CooldownService.startCooldown(guardian, LAST_SECOND_SAVE, 20 * 45);
-                event.setDamageMultiplier(0);
-                faller.resetFallDistance();
-                faller.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 100, 0));
-                FlightDynamicsService.addMomentum(guardian, 25);
-                AbilityEffects.send(guardian.serverLevel(), Kind.FLIGHT_RESCUE,
-                        guardian.getEyePosition(), faller.getBoundingBox().getCenter(), 1.4);
-                guardian.serverLevel().playSound(null, faller.blockPosition(), SoundEvents.BREEZE_WHIRL,
-                        SoundSource.PLAYERS, .8F, 1.6F);
-                return;
-            }
+                || event.getDistance() <= faller.getAttributeValue(Attributes.SAFE_FALL_DISTANCE)
+                || FlightService.isFlightAuthorized(faller) || DiveBombService.isDiving(faller)) return;
+        boolean heavyFall = event.getDistance() > 10;
+        boolean featherlight = false;
+        for (ServerPlayer guardian : faller.serverLevel().getEntitiesOfClass(ServerPlayer.class,
+                faller.getBoundingBox().inflate(RESCUE_RANGE), player -> player != faller)) {
+            if (guardian.distanceToSqr(faller) > RESCUE_RANGE * RESCUE_RANGE
+                    || !FlightSkillService.isFriend(guardian, faller) || !PowerRules.canAct(guardian)) continue;
+            boolean canCushion = SkillTreeService.has(guardian, "flight_0_0");
+            boolean canSave = heavyFall && SkillTreeService.has(guardian, "flight_guardian_angel")
+                    && !CooldownService.isOnCooldown(guardian, LAST_SECOND_SAVE);
+            if (!(canCushion || canSave) || !guardian.hasLineOfSight(faller)) continue;
+            featherlight |= canCushion;
+            if (!canSave) continue;
+
+            CooldownService.startCooldown(guardian, LAST_SECOND_SAVE, 20 * 45);
+            event.setDamageMultiplier(0);
+            faller.resetFallDistance();
+            faller.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 100, 0));
+            FlightDynamicsService.addMomentum(guardian, 25);
+            SetPiecePayload.send(guardian.serverLevel(), Piece.FLIGHT_RESCUE,
+                    guardian.getEyePosition(), faller.getBoundingBox().getCenter(), 1.4F, null);
+            guardian.serverLevel().playSound(null, faller.blockPosition(), SoundEvents.BREEZE_WHIRL,
+                    SoundSource.PLAYERS, .8F, 1.6F);
+            return;
         }
-        if (PowerRules.canAct(faller) && SkillTreeService.has(faller, "flight_0_0"))
-            event.setDamageMultiplier(event.getDistance() <= 10 ? 0 : event.getDamageMultiplier() * .5F);
+        if (featherlight) event.setDamageMultiplier(heavyFall ? event.getDamageMultiplier() * .5F : 0);
     }
 
     @SubscribeEvent

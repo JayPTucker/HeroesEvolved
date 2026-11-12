@@ -17,6 +17,20 @@ public final class FirstPersonArmGeometry {
     public static void pose(PoseStack stack, HumanoidArm arm, ArmPose pose, float time, float poseAge) {
         float side = arm == HumanoidArm.RIGHT ? 1 : -1;
         if (switch (pose) {
+            case ELECTRO_DRAW, ELECTRO_CAST, ELECTRO_STREAM, ELECTRO_CALL, ELECTRO_COIL, ELECTRO_RELEASE -> true;
+            default -> false;
+        }) {
+            electro(stack, side, pose, poseAge);
+            return;
+        }
+        if (switch (pose) {
+            case FLIGHT_COIL, FLIGHT_BRACE, FLIGHT_ROLL, FLIGHT_CLAP, FLIGHT_CAST -> true;
+            default -> false;
+        }) {
+            flight(stack, side, pose, poseAge);
+            return;
+        }
+        if (switch (pose) {
             case CRYO_WEAVE, CRYO_SCULPT, CRYO_PRISON, CRYO_SHATTER, CRYO_WHITEOUT, CRYO_SURF,
                     CRYO_LANCE, CRYO_GUARD, CRYO_SNAP, CRYO_LOOM, CRYO_SHELTER, CRYO_STARS -> true;
             default -> false;
@@ -30,7 +44,7 @@ public final class FirstPersonArmGeometry {
         }
         if (switch (pose) {
             case FIRE_LASH, FIRE_FORGE, FIRE_RELEASE, FIRE_BREATH, FIRE_SHEPHERD,
-                    FIRE_CAUTERIZE, FIRE_SUN, FIRE_SWEEP -> true;
+                    FIRE_CAUTERIZE, FIRE_SUN, FIRE_SWEEP, FIRE_DIVE -> true;
             default -> false;
         }) {
             fire(stack, side, pose, poseAge);
@@ -70,6 +84,91 @@ public final class FirstPersonArmGeometry {
             default -> -90;
         };
         stack.mulPose(Axis.XP.rotationDegrees(pitch));
+    }
+
+    private static void electro(PoseStack stack, float side, ArmPose pose, float age) {
+        float spread = .38F, height = -.43F, depth = -.43F, pitch = -90, yaw = 0;
+        switch (pose) {
+            case ELECTRO_DRAW -> {
+                float draw = smooth(age / 5);
+                spread -= .13F * draw;
+                depth += .13F * draw;
+                pitch += 27 * draw;
+                yaw = -17 * draw;
+            }
+            case ELECTRO_CAST -> {
+                float recover = smooth((age - 3) / 8);
+                depth -= .13F * (1 - recover);
+                pitch += 21 * recover;
+            }
+            case ELECTRO_STREAM -> {
+                height += .016F * Mth.sin(age * 2.4F);
+                yaw = -9;
+            }
+            case ELECTRO_CALL -> {
+                float lift = smooth(age / 9);
+                height += .22F * lift;
+                pitch += 41 * lift;
+            }
+            case ELECTRO_COIL -> {
+                float gather = smooth(age / 18);
+                spread -= .16F * gather;
+                height += .10F * gather;
+                yaw = -30;
+                pitch += 28 * gather;
+            }
+            case ELECTRO_RELEASE -> {
+                float spreadOut = 1 - smooth((age - 3) / 9);
+                spread += .29F * spreadOut;
+                yaw = 37 * spreadOut;
+            }
+            default -> { }
+        }
+        stack.translate(side * spread, height, depth);
+        stack.mulPose(Axis.YP.rotationDegrees(side * yaw));
+        stack.mulPose(Axis.XP.rotationDegrees(pitch));
+    }
+
+    private static void flight(PoseStack stack, float side, ArmPose pose, float age) {
+        float spread = .42F, height = -.42F, depth = -.42F, pitch = -91, yaw = 5, roll = 6;
+        switch (pose) {
+            case FLIGHT_COIL -> {
+                float draw = smooth(age / 17);
+                spread = .46F - draw * .17F;
+                depth += .14F * draw;
+                pitch += 28 * draw;
+                yaw -= 26 * draw;
+                roll += 18 * draw;
+            }
+            case FLIGHT_BRACE -> {
+                float thrust = smooth(age / 3);
+                depth -= .21F * thrust;
+                height += .07F * thrust;
+            }
+            case FLIGHT_ROLL -> {
+                float tuck = Mth.sin(Mth.PI * Mth.clamp(age / 12, 0, 1));
+                spread -= .12F * tuck;
+                depth += .12F * tuck;
+                yaw -= 32 * tuck;
+                roll += 22 * tuck;
+            }
+            case FLIGHT_CLAP -> {
+                float close = smooth(age / 8);
+                spread = .63F - .34F * close;
+                depth -= .13F * close;
+                yaw = 25 - 48 * close;
+            }
+            case FLIGHT_CAST -> {
+                float sweep = Mth.sin(Mth.PI * Mth.clamp(age / 10, 0, 1));
+                depth -= .19F * sweep;
+                yaw = 24 - 31 * sweep;
+            }
+            default -> { }
+        }
+        stack.translate(side * spread, height, depth);
+        stack.mulPose(Axis.YP.rotationDegrees(side * yaw));
+        stack.mulPose(Axis.XP.rotationDegrees(pitch));
+        stack.mulPose(Axis.ZP.rotationDegrees(side * roll));
     }
 
     private static void cryo(PoseStack stack, float side, ArmPose pose, float age) {
@@ -184,16 +283,17 @@ public final class FirstPersonArmGeometry {
                 roll = side * 12;
             }
             case FIRE_RELEASE -> {
-                float thrust = smooth(age / 3F) * (1 - smooth((age - 5) / 7F));
-                depth -= thrust * .28F;
-                pitch = -65 - thrust * 30;
-                spread += thrust * .025F;
+                float thrust = 1 - smooth((age - 4) / 8F);
+                depth -= thrust * .31F;
+                pitch = -58 - thrust * 36;
+                spread -= thrust * .055F;
             }
             case FIRE_BREATH -> {
                 float pressure = (float) Math.sin(age * .85 + side) * .012F;
-                depth -= .08F + pressure;
-                pitch = -90 + pressure * 160;
-                yaw = side * 7;
+                depth -= .03F + pressure;
+                height -= .04F;
+                pitch = -65 + pressure * 160;
+                yaw = side * 13;
             }
             case FIRE_SHEPHERD -> {
                 float pull = .5F + .5F * (float) Math.sin(age * .3 + (side > 0 ? 0 : Math.PI));
@@ -227,6 +327,14 @@ public final class FirstPersonArmGeometry {
                 depth = -.18F - sweep * .17F;
                 pitch = -125 + sweep * 40;
                 yaw = side * (-15 + sweep * 38);
+            }
+            case FIRE_DIVE -> {
+                float tuck = smooth(age / 5F), plunge = smooth((age - 6) / 4F);
+                spread = .44F - tuck * .15F + plunge * .22F;
+                height = -.42F + tuck * .08F - plunge * .12F;
+                depth = -.27F - tuck * .08F + plunge * .19F;
+                pitch = -74 - tuck * 15 - plunge * 27;
+                yaw = side * (9 + tuck * 18 - plunge * 22);
             }
             default -> { }
         }

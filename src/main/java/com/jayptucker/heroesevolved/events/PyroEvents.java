@@ -55,6 +55,7 @@ public final class PyroEvents {
                 && PyroService.isPyrokinetic(attacker)
                 && PlayerProgressionService.getLevel(attacker) >= BURNING_TOUCH_LEVEL) {
             LivingEntity target = event.getEntity();
+            if (!PyroService.hostile(attacker, target)) return;
             target.igniteForSeconds(PyroService.isBlue(attacker) ? 5 : 3);
             PyroService.addHeat(attacker, 4);
         }
@@ -67,7 +68,10 @@ public final class PyroEvents {
         // Standing in fire or lava refuels; rain and water quench and tire.
         boolean inFire = player.isInLava() || player.level().getBlockStates(player.getBoundingBox().deflate(0.001))
                 .anyMatch(state -> state.is(BlockTags.FIRE));
-        if (inFire) PlayerEnergyService.restore(player, 3);
+        if (inFire) {
+            PlayerEnergyService.restore(player, 3);
+            if (com.jayptucker.heroesevolved.skills.SkillTreeService.has(player, "pyrokinesis_2_0")) PyroService.addHeat(player, 5);
+        }
         if (player.isInWaterRainOrBubble()) {
             PyroService.quench(player);
             PlayerEnergyService.consumeUpTo(player, 2);

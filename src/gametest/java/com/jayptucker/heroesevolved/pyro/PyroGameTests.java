@@ -105,6 +105,64 @@ public final class PyroGameTests {
         } finally { PyroService.forget(p); }
     }
 
+    @GameTest(template = "rewind_empty", batch = "pyro.soul_fire")
+    public static void blueFlarePlacesVanillaSoulFireOnStone(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        var level = h.getLevel();
+        BlockPos at = p.blockPosition(), support = at.below();
+        level.setBlockAndUpdate(support, Blocks.STONE.defaultBlockState());
+        p.setXRot(90);
+        LivingEntity victim = target(h, p, 3);
+        try {
+            PyroService.flare(p, 5);
+            var regular = level.getBlockState(at);
+            h.assertTrue(regular.is(Blocks.FIRE), "An orange flare lights regular fire on stone");
+            regular.entityInside(level, at, victim);
+            float regularDamage = victim.getMaxHealth() - victim.getHealth();
+            level.removeBlock(at, false);
+
+            PyroService.addHeat(p, 100);
+            p.setShiftKeyDown(true);
+            PyroService.flare(p, 5);
+            h.assertTrue(level.getBlockState(at).isAir(), "A contained blue flare leaves the stone clear");
+            p.setShiftKeyDown(false);
+            PyroService.flare(p, 5);
+            level.setBlockAndUpdate(at.east(), Blocks.STONE.defaultBlockState());
+            var soul = level.getBlockState(at);
+            h.assertTrue(soul.is(Blocks.SOUL_FIRE), "Blue fire on stone survives a neighbor update as vanilla Soul Fire");
+
+            victim.invulnerableTime = 0;
+            victim.setHealth(victim.getMaxHealth());
+            soul.entityInside(level, at, victim);
+            h.assertTrue(regularDamage > 0 && victim.getMaxHealth() - victim.getHealth() == regularDamage * 2,
+                    "The placed block does twice the contact damage of regular fire");
+
+            level.removeBlock(support, false);
+            h.assertTrue(level.getBlockState(at).isAir(), "Soul Fire extinguishes when its support is removed");
+            h.succeed();
+        } finally { victim.discard(); PyroService.forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "pyro.soul_sunfall")
+    public static void blueSunfallStillPlacesSoulFireAfterSpendingHeat(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        p.setPos(Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(6, 2, 6))));
+        p.setXRot(90);
+        PyroService.addHeat(p, 100);
+        h.assertTrue(PyroService.startInferno(p, 5) && PyroService.releaseInferno(p), "A blue Sunfall can drop");
+        h.assertTrue(!PyroService.isBlue(p), "The caster spends their blue Heat before the sun lands");
+        h.runAfterDelay(PyroGeometry.SUN_FLIGHT + 2, () -> {
+            try {
+                var fires = BlockPos.betweenClosedStream(h.absolutePos(new BlockPos(0, 1, 0)),
+                                h.absolutePos(new BlockPos(11, 3, 11))).map(h.getLevel()::getBlockState)
+                        .filter(state -> state.is(BlockTags.FIRE)).toList();
+                h.assertTrue(!fires.isEmpty() && fires.stream().allMatch(state -> state.is(Blocks.SOUL_FIRE)),
+                        "A blue Sunfall leaves Soul Fire even after it uses up the caster's Heat");
+                h.succeed();
+            } finally { PyroService.forget(p); }
+        });
+    }
+
     @GameTest(template = "rewind_empty", batch = "pyro.heat")
     public static void heatTurnsFlamesBlueAndWaterQuenchesIt(GameTestHelper h) {
         ServerPlayer p = player(h, 5);
@@ -132,7 +190,8 @@ public final class PyroGameTests {
         arrow.setDeltaMovement(-0.01, 0, 0);
         arrow.setNoGravity(true);
         h.getLevel().addFreshEntity(arrow);
-        h.runAfterDelay(12, () -> {
+        h.runAfterDelay(6, () -> h.assertTrue(!arrow.isRemoved(), "Firestorm gives a warning before it intercepts"));
+        h.runAfterDelay(17, () -> {
             try {
                 h.assertTrue(arrow.isRemoved(), "Projectiles inside the ring must burn up");
                 h.succeed();
@@ -254,16 +313,19 @@ public final class PyroGameTests {
         p.setShiftKeyDown(true);
         var near = target(h, p, 3);
         var far = target(h, p, 11);
-        try {
-            PyroService.addHeat(p, 40);
-            PyroService.startInferno(p, 5);
-            h.assertTrue(PyroService.releaseInferno(p), "Releasing a held Inferno erupts immediately");
-            h.assertTrue(near.getHealth() < near.getMaxHealth(), "Early release damages nearby enemies");
-            h.assertTrue(far.getHealth() == far.getMaxHealth(), "Early release has less reach than full charge");
-            h.assertTrue(PyroService.heat(p) == 0 && !PyroService.isCharging(p), "Release consumes Heat and charge");
-            h.assertTrue(!PyroService.releaseInferno(p), "Repeated releases cannot duplicate the explosion");
-            h.succeed();
-        } finally { near.discard(); far.discard(); PyroService.forget(p); }
+        PyroService.addHeat(p, 40);
+        PyroService.startInferno(p, 5);
+        h.assertTrue(PyroService.releaseInferno(p), "Releasing a held Sunfall drops the sun");
+        h.assertTrue(near.getHealth() == near.getMaxHealth(), "Enemies can move before the falling sun reaches the ground");
+        h.assertTrue(PyroService.heat(p) == 0 && !PyroService.isCharging(p), "Release consumes Heat and charge");
+        h.assertTrue(!PyroService.releaseInferno(p), "Repeated releases cannot duplicate the explosion");
+        h.runAfterDelay(PyroGeometry.SUN_FLIGHT + 2, () -> {
+            try {
+                h.assertTrue(near.getHealth() < near.getMaxHealth(), "The early sun damages nearby enemies when it lands");
+                h.assertTrue(far.getHealth() == far.getMaxHealth(), "Early release has less reach than full charge");
+                h.succeed();
+            } finally { near.discard(); far.discard(); PyroService.forget(p); }
+        });
     }
 
     @GameTest(template = "rewind_empty", batch = "pyro.spear")
@@ -295,14 +357,16 @@ public final class PyroGameTests {
         ServerPlayer p = player(h, 5);
         p.setShiftKeyDown(true);
         var remote = target(h, p, 8);
-        try {
-            PyroService.startInferno(p, 5);
-            p.setPos(p.position().add(8, 0, 0));
-            h.assertTrue(PyroService.releaseInferno(p), "Aimed Sunfall releases");
-            h.assertTrue(remote.getHealth() < remote.getMaxHealth(),
-                    "Sunfall strikes the original remote target after caster moves");
-            h.succeed();
-        } finally { remote.discard(); PyroService.forget(p); }
+        PyroService.startInferno(p, 5);
+        p.setPos(p.position().add(8, 0, 0));
+        h.assertTrue(PyroService.releaseInferno(p), "Aimed Sunfall releases");
+        h.runAfterDelay(PyroGeometry.SUN_FLIGHT + 2, () -> {
+            try {
+                h.assertTrue(remote.getHealth() < remote.getMaxHealth(),
+                        "Sunfall strikes the original remote target after caster moves");
+                h.succeed();
+            } finally { remote.discard(); PyroService.forget(p); }
+        });
     }
 
     @GameTest(template = "rewind_empty", batch = "pyro.vortex")
@@ -315,7 +379,7 @@ public final class PyroGameTests {
         victim.igniteForSeconds(8);
         PyroService.ringOfFire(p, 5);
         Vec3 start = victim.position();
-        h.runAfterDelay(8, () -> {
+        h.runAfterDelay(16, () -> {
             try {
                 h.assertTrue(victim.getZ() < start.z || victim.getDeltaMovement().z < 0,
                         "Firestorm must draw burning enemies inward");
@@ -337,6 +401,30 @@ public final class PyroGameTests {
         } finally { victim.discard(); PyroService.forget(p); }
     }
 
+    @GameTest(template = "rewind_empty", batch = "pyro.fanned_storm")
+    public static void breathWidensTheStormAndCannotOverwriteAHeldCast(GameTestHelper h) {
+        ServerPlayer p = player(h, 5);
+        p.setPos(p.position().add(0, 0, 3));
+        var outside = target(h, p, 4.8);
+        p.setShiftKeyDown(true);
+        p.setXRot(90);
+        h.assertTrue(PyroService.ringOfFire(p, 5), "Set a contained Firestorm at the test point");
+        p.setPos(p.position().add(0, 0, -3));
+        p.setXRot(10);
+        h.runAfterDelay(PyroGeometry.STORM_WARNING + 1, () -> {
+            h.assertTrue(outside.getHealth() == outside.getMaxHealth(), "An enemy beyond the normal fire ring is safe");
+            h.assertTrue(PyroService.startPalm(p, 5), "Breath can fan the placed ring");
+            h.assertTrue(!PyroService.startSpear(p, 5) && !PyroService.startInferno(p, 5),
+                    "A held Breath must keep ownership of the cast until it ends");
+        });
+        h.runAfterDelay(PyroGeometry.STORM_WARNING + 23, () -> {
+            try {
+                h.assertTrue(outside.getHealth() < outside.getMaxHealth(), "Fanning widens the ring beyond four blocks");
+                h.succeed();
+            } finally { outside.discard(); PyroService.forget(p); }
+        });
+    }
+
     @GameTest(template = "rewind_empty", batch = "pyro.flight")
     public static void flameFlightSteersBoostsAndRestoresPermissions(GameTestHelper h) {
         ServerPlayer p = player(h, 5);
@@ -346,6 +434,11 @@ public final class PyroGameTests {
             h.assertTrue(PyroFlightService.toggle(p, 5) && PyroFlightService.isFlying(p), "Level five can ignite jets");
             h.assertTrue(p.mayFly() && p.getAbilities().flying, "Jets must authorize flight on the server");
             PyroFlightService.toggle(cruise, 5);
+            h.getLevel().getChunkAt(p.blockPosition().south(8));
+            for (int step = 0; step < 3; step++) {
+                PyroFlightService.changeSpeed(p, 1);
+                PyroFlightService.changeSpeed(cruise, 1);
+            }
             PyroFlightService.input(cruise, 1, 0, false, false, false);
             PyroService.addHeat(p, 40);
             PyroFlightService.input(p, 1, 0, false, false, true);
@@ -356,6 +449,7 @@ public final class PyroGameTests {
             }
             h.assertTrue(p.getDeltaMovement().z > cruise.getDeltaMovement().z * 1.15,
                     "A spooled Heat boost must outrun ordinary cruise");
+            h.assertTrue(p.getDeltaMovement().z > 3.9, "Top afterburner must exceed the vanilla motion packet's limit");
             h.assertTrue(PyroService.heat(p) == 32 && PlayerEnergyService.getEnergy(p) == energy - 10,
                     "Boosting spends Heat and sustained flight stamina");
             PyroFlightService.input(p, 0, 0, false, false, false);
@@ -400,6 +494,9 @@ public final class PyroGameTests {
             PyroService.addHeat(p, 40);
             h.assertTrue(PyroFlightService.deactivate(p, true) && PyroFlightService.isDiving(p),
                     "Shift while airborne starts Meteor Dive");
+            PyroFlightService.tick(p);
+            h.assertTrue(!PyroFlightService.isPlunging(p) && p.getDeltaMovement().equals(Vec3.ZERO)
+                    && victim.getHealth() == victim.getMaxHealth(), "Meteor Dive gathers flame before starting the plunge");
             for (int tick = 0; tick < 20 && PyroFlightService.isFlying(p); tick++) {
                 PyroFlightService.tick(p);
                 if (PyroFlightService.isFlying(p)) p.move(net.minecraft.world.entity.MoverType.SELF, p.getDeltaMovement());

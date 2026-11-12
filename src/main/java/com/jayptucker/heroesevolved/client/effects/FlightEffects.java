@@ -11,8 +11,8 @@ import static com.jayptucker.heroesevolved.client.effects.PowerParticle.Shape.*;
 /** Wind has a direction: inward coils, a released pressure wake, then spreading fronts. */
 final class FlightEffects {
     private static final Vec3 UP = new Vec3(0, 1, 0);
-    private static final int WIND = 0xDDEFF2;
-    private static final int CORE = 0xF1FAFA;
+    private static final int WIND = 0xDCDDD5;
+    private static final int CORE = 0xF6F4EC;
 
     private FlightEffects() {}
 
@@ -57,10 +57,10 @@ final class FlightEffects {
             float radius = .8F + i * .18F + progress * .5F;
             Vec3 at = center.add(axis.scale((i - (coils - 1) * .5) * .35));
             boolean core = i % 2 == 0;
-            // Broad blue-gray wisps support bright bands without becoming a solid shell.
+            // Broad gray wisps support pale bands.
             float width = core ? .105F + progress * .055F : .19F + progress * .07F;
             add(new PowerParticle(level, ARC, at, axis, radius, .3F + progress * .15F,
-                    9, 0, core ? CORE : 0xA9CCD5, core ? .52F + progress * .1F : .34F + progress * .08F)
+                    9, 0, core ? CORE : WIND, core ? .52F + progress * .1F : .34F + progress * .08F)
                     .arc(phase + i * 1.7F, dive ? -.22F : .18F, 3.2F, width));
         }
         // The groundward disc makes the suspended dive direction readable from the side.
@@ -106,7 +106,7 @@ final class FlightEffects {
         for (int i = 0; i < strands; i++) {
             float phase = level.getGameTime() * .16F + i * Mth.TWO_PI / strands;
             add(new PowerParticle(level, ARC, floor.add(0, i * .12, 0), UP,
-                    radius * .92F, radius * .25F, 14, 0, i % 2 == 0 ? WIND : 0xA9C3CC, .5F)
+                    radius * .92F, radius * .25F, 14, 0, i % 2 == 0 ? CORE : WIND, .5F)
                     .arc(phase, .19F, 1.7F, i % 2 == 0 ? .17F : .25F).moving(new Vec3(0, .045, 0)));
         }
     }

@@ -8,7 +8,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Ted's electromagnetic pulse. Redstone within sixteen blocks goes dead for ten seconds, as it always
+ * The electromagnetic pulse. Redstone within sixteen blocks goes dead for ten seconds, as it always
  * has; through {@link GridDisruption} the same field now drains and stops Forge Energy machines and
  * seizes Create's shafts. Nothing is replaced and no block entity loses data.
  */
@@ -18,7 +18,7 @@ public final class RadiationEmp {
     public static boolean jammed(ServerLevel level, BlockPos pos) { return GridDisruption.jammed(level, pos); }
     public static GridDisruption.Pulse pulse(ServerPlayer player) {
         GridDisruption.Pulse pulse = GridDisruption.emp(player, player.serverLevel(), player.blockPosition(), RADIUS, DURATION);
-        AbilityEffects.at(player, Kind.NUCLEAR_EMP, RADIUS);
+        // Drawn by RadiationService's RAD_EMP set piece.
         return pulse;
     }
     public static void clear() { GridDisruption.clear(); }

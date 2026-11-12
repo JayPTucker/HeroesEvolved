@@ -167,7 +167,7 @@ public final class RadiationGameTests {
         Cow[] entering = new Cow[1], outside = new Cow[1];
         helper.runAfterDelay(150, () -> {
             helper.assertTrue(!RadiationService.isDetonating(player) && RadiationService.mass(player) == 0, "Detonation must release accumulated stress");
-            helper.assertTrue(player.getHealth() == health, "Ted must not be reduced to one health by his own explosion");
+            helper.assertTrue(player.getHealth() == health, "The caster must not be reduced to one health by their own explosion");
             entering[0] = mob(helper, EntityType.COW, player.position().add(18, 0, 0));
             outside[0] = mob(helper, EntityType.COW, player.position().add(26, 0, 0));
         });
@@ -229,22 +229,33 @@ public final class RadiationGameTests {
         } finally { player.getAbilities().mayBuild = true; remove(player); }
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 80, batch = "RadiationGameTests.brightAndToxicEmissionsHaveDifferentEffectsAndStressPersists")
-    public static void brightAndToxicEmissionsHaveDifferentEffectsAndStressPersists(GameTestHelper helper) {
+    @GameTest(template = "rewind_empty", timeoutTicks = 80, batch = "RadiationGameTests.fissionLeapThrowsAndDosesAndStressPersists")
+    public static void fissionLeapThrowsAndDosesAndStressPersists(GameTestHelper helper) {
         ServerPlayer player = player(helper, 260, false);
-        Cow cow = mob(helper, EntityType.COW, player.position().add(3, 0, 0));
+        Cow cow = mob(helper, EntityType.COW, player.position().add(2.5, 0, 0));
         try {
             var ability = new RadiationAbility();
-            helper.assertTrue(ability.actions().get(AbilitySlot.TERTIARY).definition().id().getPath().equals("radiation_emp"), "Ted's third skill must be EMP, not power mimicry");
-            RadiationService.radiationPulse(player, 2, true);
-            helper.assertTrue(cow.hasEffect(MobEffects.BLINDNESS) && cow.getHealth() == cow.getMaxHealth() && !cow.hasEffect(com.jayptucker.heroesevolved.registry.ModItems.RADIATION_SICKNESS), "Bright mode must flash rather than irradiate");
-            RadiationService.radiationPulse(player, 2, false);
-            helper.assertTrue(cow.getHealth() < cow.getMaxHealth() && cow.hasEffect(com.jayptucker.heroesevolved.registry.ModItems.RADIATION_SICKNESS), "Toxic mode must damage and sicken");
+            helper.assertTrue(ability.actions().get(AbilitySlot.TERTIARY).definition().id().getPath().equals("radiation_emp"), "The third skill must be EMP, not power mimicry");
+            int core = RadiationService.mass(player);
+            helper.assertTrue(com.jayptucker.heroesevolved.radiation.RadiationLeap.launch(player, 2), "The leap launches");
+            helper.assertTrue(player.getDeltaMovement().y > 1, "The blast throws the caster up: " + player.getDeltaMovement());
+            helper.assertTrue(cow.getHealth() < cow.getMaxHealth() && cow.hasEffect(com.jayptucker.heroesevolved.registry.ModItems.RADIATION_SICKNESS),
+                    "The blast under your feet hurts and sickens what is close");
+            helper.assertTrue(cow.getDeltaMovement().x > 0.3, "And throws it away from the blast: " + cow.getDeltaMovement());
+            helper.assertTrue(RadiationService.mass(player) > core, "Leaping builds Core");
+            helper.assertTrue(com.jayptucker.heroesevolved.radiation.RadiationLeap.cushioned(player), "No fall damage while leaping");
+            helper.assertTrue(!com.jayptucker.heroesevolved.radiation.RadiationLeap.launch(player, 2), "No second launch while still in the air");
+            com.jayptucker.heroesevolved.radiation.RadiationLeap.forget(player);
             RadiationService.beginDetonation(player, 5, true);
             helper.assertTrue(RadiationService.isDetonating(player) && RadiationService.holdItIn(player),
                     "After the awakening, a voluntary charge must remain cancellable");
             helper.assertTrue(RadiationService.visualState(player).remaining() == 0,
                     "Canceling a voluntary charge must stop its sound immediately");
+            RadiationService.beginDetonation(player, 5, true);
+            RadiationService.hurtStress(player, 5);
+            helper.assertTrue(RadiationService.isDetonating(player), "A light hit does not break a charge");
+            RadiationService.hurtStress(player, 4);
+            helper.assertTrue(!RadiationService.isDetonating(player), "Hit hard enough, a voluntary charge is broken");
             int stress = RadiationService.mass(player);
             RadiationService.disconnect(player);
             helper.assertTrue(RadiationService.mass(player) == stress && stress > 0, "Logout must preserve accumulated stress");
@@ -298,12 +309,15 @@ public final class RadiationGameTests {
         }
         RadiationService.beginDetonation(source, 5, true);
         long[] remaining = {0};
-        helper.runAfterDelay(50, () -> {
-            remaining[0] = stones.stream().filter(pos -> helper.getLevel().getBlockState(pos).is(Blocks.STONE)).count();
-            helper.assertTrue(remaining[0] < stones.size() && RadiationService.isDetonating(source), "Terrain must crumble during the charge, before the explosion");
-            helper.assertTrue(RadiationService.holdItIn(source), "Voluntary detonation can still be canceled");
+        // A failed check still cleans up, or the test player would detonate for real among the other tests.
+        helper.runAfterDelay(27, () -> {
+            try {
+                remaining[0] = stones.stream().filter(pos -> helper.getLevel().getBlockState(pos).is(Blocks.STONE)).count();
+                helper.assertTrue(remaining[0] < stones.size() && RadiationService.isDetonating(source), "Terrain must crumble during the charge, before the explosion");
+                helper.assertTrue(RadiationService.holdItIn(source), "Voluntary detonation can still be canceled");
+            } catch (RuntimeException e) { remove(source); throw e; }
         });
-        helper.runAfterDelay(75, () -> {
+        helper.runAfterDelay(55, () -> {
             try {
                 helper.assertTrue(stones.stream().filter(pos -> helper.getLevel().getBlockState(pos).is(Blocks.STONE)).count() == remaining[0],
                         "Canceling must clear cracks and stop further decay");
@@ -440,6 +454,7 @@ public final class RadiationGameTests {
             helper.assertTrue(front.getHealth() < front.getMaxHealth() && side.getHealth() < side.getMaxHealth(), "The cone burns everything in front");
             helper.assertTrue(RadiationSickness.stage(front) >= 0, "And doses it");
             helper.assertTrue(behind.getHealth() == behind.getMaxHealth(), "Nothing behind you is touched");
+            helper.assertTrue(front.getDeltaMovement().z > 0.2, "The heat throws them back: " + front.getDeltaMovement());
             helper.succeed();
         } finally { remove(player, front, side, behind); }
     }
@@ -464,14 +479,14 @@ public final class RadiationGameTests {
     }
 
     @GameTest(template = "rewind_empty", timeoutTicks = 60, batch = "radiation.sickness")
-    public static void sicknessStacksSparesTedAndSpreadsFromTheDead(GameTestHelper helper) {
+    public static void sicknessStacksSparesTheCasterAndSpreadsFromTheDead(GameTestHelper helper) {
         ServerPlayer player = player(helper, 360, false);
         Cow carrier = mob(helper, EntityType.COW, player.position().add(4, 0, 0)), neighbour = mob(helper, EntityType.COW, player.position().add(5.5, 0, 0));
         try {
             RadiationSickness.dose(carrier, player, 1, 200);
             RadiationSickness.dose(carrier, player, 2, 200);
             helper.assertTrue(RadiationSickness.stage(carrier) == 2, "Doses stack: stage " + RadiationSickness.stage(carrier));
-            helper.assertTrue(!RadiationSickness.dose(player, player, 1, 200), "Ted cannot sicken from his own radiation");
+            helper.assertTrue(!RadiationSickness.dose(player, player, 1, 200), "The caster cannot sicken from their own radiation");
             float before = neighbour.getHealth();
             RadiationSickness.chainReaction(carrier);
             helper.assertTrue(neighbour.getHealth() < before && RadiationSickness.stage(neighbour) >= 0, "A sick creature's death bursts onto its neighbours");
@@ -479,18 +494,30 @@ public final class RadiationGameTests {
         } finally { remove(player, carrier, neighbour); }
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 120, batch = "radiation.zone")
-    public static void contaminationLeavesTheGroundDangerous(GameTestHelper helper) {
+    @GameTest(template = "rewind_empty", timeoutTicks = 160, batch = "radiation.zone")
+    public static void aSlamLandsInABlastThatLeavesTheGroundContaminated(GameTestHelper helper) {
         ServerPlayer player = player(helper, 380, false);
         try {
-            RadiationService.radiationPulse(player, 2, false);
-            // Someone walks in afterwards.
-            Cow late = mob(helper, EntityType.COW, player.position().add(1.5, 0, 0));
-            helper.runAfterDelay(50, () -> {
+            helper.assertTrue(com.jayptucker.heroesevolved.radiation.RadiationLeap.launch(player, 2), "The leap launches");
+            helper.assertTrue(!com.jayptucker.heroesevolved.radiation.RadiationLeap.slam(player), "Too soon to slam on the launch tick");
+            helper.runAfterDelay(5, () -> {
                 try {
-                    helper.assertTrue(RadiationSickness.stage(late) >= 0, "Contaminated ground doses whoever stands in it later");
+                    helper.assertTrue(com.jayptucker.heroesevolved.radiation.RadiationLeap.slam(player), "In the air, the second press slams");
+                    helper.assertTrue(player.getDeltaMovement().y < -1, "Driving down: " + player.getDeltaMovement());
+                } catch (RuntimeException e) { remove(player); throw e; }
+            });
+            // A test player never reaches the ground, so the slam lands when its time runs out.
+            Cow[] late = new Cow[1];
+            helper.runAfterDelay(50, () -> {
+                helper.assertTrue(!com.jayptucker.heroesevolved.radiation.RadiationLeap.leaping(player), "The slam has landed");
+                // Someone walks in afterwards.
+                late[0] = mob(helper, EntityType.COW, player.position().add(1.5, 0, 0));
+            });
+            helper.runAfterDelay(100, () -> {
+                try {
+                    helper.assertTrue(RadiationSickness.stage(late[0]) >= 0, "Contaminated ground doses whoever stands in it later");
                     helper.succeed();
-                } finally { remove(player, late); }
+                } finally { remove(player, late[0]); }
             });
         } catch (RuntimeException e) { remove(player); throw e; }
     }
@@ -528,6 +555,7 @@ public final class RadiationGameTests {
             RadiationService.emp(player);
             helper.assertTrue(RadiationService.mass(player) <= 35, "The pulse carries 25 Core out: " + RadiationService.mass(player));
             helper.assertTrue(near.hasEffect(MobEffects.MOVEMENT_SLOWDOWN) && near.hasEffect(MobEffects.GLOWING), "Enemies nearby are thrown off balance and revealed");
+            helper.assertTrue(near.getDeltaMovement().x > 0.3, "And shoved away from the pulse: " + near.getDeltaMovement());
             helper.succeed();
         } finally { remove(player, near); }
     }

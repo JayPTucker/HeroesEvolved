@@ -17,18 +17,17 @@ What you carry is held in front of you, in your arms, and is drawn where your ar
 Your own hands can't pick up anything bigger than you, and you get a "Too big to carry" message
 when you try. Bosses, Sylar included, can't be carried at all. Left-handed carriers are mirrored.
 
-While you carry something your body turns with your view, so your arms never point away from what
-they hold. The model is placed from your own position and facing every frame, not from the cargo's,
-so it stays in your arms while you walk, sprint and turn. Cargo doesn't catch your crosshair: you
-can still click the ground to set it down, mine and use items. It is hidden in first person.
+While you carry something your body turns with your view. The cargo model follows your position and
+facing every frame, including during flight. You can look down to see cargo in your arms in first person.
+You can still click the ground to set it down, mine and use items.
 
 A carried player's camera is where their head is drawn, in front of your left shoulder.
 
 ## Rules
 
 The carrier, an invisible anchor and the cargo form one vanilla passenger chain. Clients work out
-the seat from their local copy of the carrier, and the anchor syncs how the cargo is held, so every
-side draws it the same way. A carried player keeps their view direction and can't steer.
+the seat from their local copy of the carrier. The anchor syncs both endpoints and the hold so clients
+can attach cargo as soon as both entities are in view. A carried player keeps their view direction and can't steer.
 
 - **Pickup** checks reach, solid cover, size and ownership on the server. Ordinary pickup reaches 4
   blocks; Skyhook reaches 7.

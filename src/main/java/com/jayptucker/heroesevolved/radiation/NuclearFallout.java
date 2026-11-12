@@ -22,7 +22,7 @@ import java.util.*;
 
 /** Fast damage front, bounded terrain processing, and a temporary radioactive aftermath. */
 public final class NuclearFallout {
-    public static final int RADIUS = 24, WAVE_TICKS = 8, FALLOUT_TICKS = 20 * 60;
+    public static final int RADIUS = 24, WAVE_TICKS = 5, FALLOUT_TICKS = 20 * 60;
     public static final int AWAKENING_RADIUS = 48, CLOUD_TICKS = 600;
     private static final List<Blast> BLASTS = new ArrayList<>();
     public static final int MAX_SCANS_PER_TICK = 8192, MAX_BREAKS_PER_TICK = 512;
@@ -44,12 +44,20 @@ public final class NuclearFallout {
         final BlockPos.MutableBlockPos position = new BlockPos.MutableBlockPos();
         boolean terrainFinished;
         Blast(ServerPlayer owner, boolean awakening) {
-            this.owner = owner; level = owner.serverLevel(); center = owner.position();
+            this.owner = owner; level = owner.serverLevel(); center = groundUnder(owner);
             block = BlockPos.containing(center); began = level.getGameTime();
             radius = awakening ? AWAKENING_RADIUS : RADIUS;
             cursor = new NuclearTerrainCursor(radius);
         }
     }
+    /** The ground under a caster who has risen a few blocks while charging, or where they are. */
+    static Vec3 groundUnder(ServerPlayer owner) {
+        Vec3 from = owner.position();
+        var hit = owner.level().clip(new net.minecraft.world.level.ClipContext(from, from.add(0, -6, 0),
+                net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.ANY, owner));
+        return hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK ? hit.getLocation() : from;
+    }
+
     public static void begin(ServerPlayer owner) {
         begin(owner, false);
     }

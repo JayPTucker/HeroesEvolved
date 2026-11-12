@@ -14,7 +14,7 @@ import java.util.List;
 import static com.jayptucker.heroesevolved.client.effects.AbilityEffectRenderer.ring;
 
 /**
- * Ted Sprague's radiation, in two colours: heat (Radiant Heat and the beam) is orange going white-hot;
+ * Induced Radioactivity, in two colours: heat (Radiant Heat and the beam) is orange going white-hot;
  * contamination and sickness are a sickly yellow-green. Glows use the additive ribbons the lightning
  * uses, so they read in daylight; embers, ash and motes are vanilla particles.
  */

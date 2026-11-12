@@ -2,10 +2,13 @@ package com.jayptucker.heroesevolved.flight;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.DamageTypeTags;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.entity.living.LivingFallEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.living.LivingFallEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
@@ -29,13 +32,20 @@ public final class FlightEvents {
         }
     }
 
-    /** A Dive Bomb's landing is the attack, not a fall. */
-    @SubscribeEvent
+    /** Flight protects ordinary landings before any learned rescue can spend its cooldown. */
+    @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onFall(LivingFallEvent event) {
         if (event.getEntity() instanceof ServerPlayer player
-                && DiveBombService.consumeCushion(player)) {
+                && (DiveBombService.consumeCushion(player) || FlightService.isFlightAuthorized(player))) {
             event.setDamageMultiplier(0.0F);
         }
+    }
+
+    /** Also covers fall damage applied directly, such as landing on pointed dripstone. */
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public static void onFallDamage(LivingIncomingDamageEvent event) {
+        if (event.getSource().is(DamageTypeTags.IS_FALL) && event.getEntity() instanceof ServerPlayer player
+                && FlightService.isFlightAuthorized(player)) event.setCanceled(true);
     }
 
     @SubscribeEvent

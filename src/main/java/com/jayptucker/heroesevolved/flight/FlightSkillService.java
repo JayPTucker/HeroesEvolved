@@ -8,13 +8,13 @@ import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
-import com.jayptucker.heroesevolved.effects.AbilityEffects;
-import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 import com.jayptucker.heroesevolved.network.ArmPosePayload;
 import com.jayptucker.heroesevolved.network.FlightVisualSyncService;
+import com.jayptucker.heroesevolved.network.SetPiecePayload;
 import com.jayptucker.heroesevolved.skills.SkillCatalog;
 import com.jayptucker.heroesevolved.skills.SkillTreeService;
 import com.jayptucker.heroesevolved.speed.SpeedService;
+import com.jayptucker.heroesevolved.styles.Piece;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -49,6 +49,8 @@ public final class FlightSkillService {
     private static final int VACUUM_TICKS = 8;
     private static final double SANCTUARY_RADIUS = 5;
     private static final double THERMAL_RADIUS = 3.5;
+    public static final double THERMAL_HEIGHT = 9;
+    private static final double LANE_RADIUS = 2;
     private static final Map<UUID, State> STATES = new HashMap<>();
 
     private FlightSkillService() {}
@@ -121,6 +123,7 @@ public final class FlightSkillService {
                     push(player, Vec3.ZERO);
                     player.resetFallDistance();
                     ArmPosePayload.clear(player);
+                    FlightVisualSyncService.syncToTrackingPlayers(player);
                 }
                 yield active;
             }
@@ -151,6 +154,11 @@ public final class FlightSkillService {
     public static boolean isChanneling(ServerPlayer player) {
         State state = STATES.get(player.getUUID());
         return state != null && state.vacuum != null;
+    }
+
+    public static boolean hasWideVacuum(ServerPlayer player) {
+        State state = STATES.get(player.getUUID());
+        return state != null && state.vacuum != null && state.vacuum.radius == 9;
     }
 
     public static float rollProgress(ServerPlayer player) {
@@ -293,7 +301,7 @@ public final class FlightSkillService {
         if (friend == null) return false;
         Vec3 start = player.position();
         Vec3 destination = rescueDestination(player, friend);
-        if (!FlightService.hasActiveSession(player)) FlightService.toggleFlight(player);
+        if (!FlightService.hasActiveSession(player)) FlightService.startFlightSession(player, 0);
         player.teleportTo(player.serverLevel(), destination.x, destination.y, destination.z,
                 player.getYRot(), player.getXRot());
         push(player, Vec3.ZERO);
@@ -307,8 +315,9 @@ public final class FlightSkillService {
             player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 160, 0));
             FlightDynamicsService.addMomentum(player, 15);
         }
-        AbilityEffects.send(player.serverLevel(), Kind.FLIGHT_RESCUE, start, friend.position(), 1);
-        ArmPosePayload.show(player, ArmPose.TWO_HANDS, 8);
+        SetPiecePayload.send(player.serverLevel(), Piece.FLIGHT_RESCUE, FlightVisualGeometry.bodyCenter(start),
+                friend.getBoundingBox().getCenter(), 1, null);
+        ArmPosePayload.show(player, ArmPose.FLIGHT_CAST, 9);
         player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.BREEZE_JUMP,
                 SoundSource.PLAYERS, .8F, 1.4F);
         com.jayptucker.heroesevolved.progression.MasteryService.awardRescue(player, 15);
@@ -322,6 +331,8 @@ public final class FlightSkillService {
         state.sanctuary = new Sanctuary(center, state.age + 120);
         tickSanctuary(player, state.sanctuary);
         ArmPosePayload.show(player, ArmPose.ARMS_WIDE, 12);
+        player.serverLevel().playSound(null, center.x, center.y, center.z,
+                SoundEvents.BREEZE_WHIRL, SoundSource.PLAYERS, .85F, 1.2F);
         return true;
     }
 
@@ -343,16 +354,18 @@ public final class FlightSkillService {
             if (velocity.dot(outward) >= 0) continue;
             sanctuary.bent.add(shot.getUUID());
             push(shot, outward.scale(Math.max(.08, velocity.length() * .35)));
+            intercept(player, shot.position(), outward);
         }
-        AbilityEffects.send(player.serverLevel(), Kind.FLIGHT_SANCTUARY,
-                sanctuary.center, sanctuary.center, SANCTUARY_RADIUS);
+        SetPiecePayload.send(player.serverLevel(), Piece.FLIGHT_SHELTER,
+                sanctuary.center, sanctuary.center, (float) SANCTUARY_RADIUS, null);
     }
 
     private static boolean roll(ServerPlayer player) {
-        if (!FlightService.hasActiveSession(player)) FlightService.toggleFlight(player);
+        if (!FlightService.hasActiveSession(player)) FlightService.startFlightSession(player, 0);
         State state = state(player);
-        state.roll = new Roll(horizontal(player), player.isShiftKeyDown() ? -1 : 1);
-        ArmPosePayload.show(player, ArmPose.TWO_HANDS, ROLL_TICKS);
+        double speed = Math.clamp(player.getDeltaMovement().length(), 1.65, 2.7);
+        state.roll = new Roll(horizontal(player), player.isShiftKeyDown() ? -1 : 1, speed);
+        ArmPosePayload.show(player, ArmPose.FLIGHT_ROLL, ROLL_TICKS);
         FlightVisualSyncService.syncToTrackingPlayers(player);
         player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.BREEZE_JUMP,
                 SoundSource.PLAYERS, .8F, 1.7F);
@@ -371,7 +384,7 @@ public final class FlightSkillService {
         Vec3 side = new Vec3(-roll.forward.z, 0, roll.forward.x).scale(roll.side);
         Vec3 direction = roll.forward.scale(.8).add(side.scale(.85 * Math.sin(Math.PI * progress)))
                 .add(0, .1 * Math.sin(progress * Math.PI * 2), 0).normalize();
-        Vec3 velocity = direction.scale(1.8);
+        Vec3 velocity = direction.scale(roll.speed);
         Vec3 safe = SpeedService.swept(player, velocity);
         Vec3 actual = safe.subtract(player.position());
         if (actual.lengthSqr() < .04) {
@@ -386,16 +399,14 @@ public final class FlightSkillService {
                     || roll.deflected.size() >= TARGET_LIMIT) continue;
             Vec3 outward = away(shot.position(), body(player), side);
             if (shot.getDeltaMovement().dot(outward) >= 0) continue;
+            if (roll.deflected.isEmpty()) FlightDynamicsService.addMomentum(player, 15);
             roll.deflected.add(shot.getUUID());
-            push(shot, outward.add(side.scale(.5)).normalize()
+            Vec3 deflection = outward.add(side.scale(.5)).normalize();
+            push(shot, deflection
                     .scale(Math.max(.8, shot.getDeltaMovement().length())));
+            intercept(player, shot.position(), deflection);
         }
-        if (roll.age % 3 == 0) {
-            Vec3 center = body(player);
-            AbilityEffects.send(player.serverLevel(), Kind.FLIGHT_ROLL, center,
-                    center.add(direction), Math.max(.1, progress));
-            FlightVisualSyncService.syncToTrackingPlayers(player);
-        }
+        if (roll.age % 3 == 0) FlightVisualSyncService.syncToTrackingPlayers(player);
         if (++roll.age >= ROLL_TICKS) finishRoll(player, state);
     }
 
@@ -413,19 +424,21 @@ public final class FlightSkillService {
         if (to.distanceToSqr(from) < 1) return false;
         state.lane = new Lane(from, to, state.age + 160, true);
         tickLane(player, state.lane);
-        ArmPosePayload.show(player, ArmPose.TWO_HANDS, 10);
+        ArmPosePayload.show(player, ArmPose.FLIGHT_CAST, 10);
+        player.serverLevel().playSound(null, player.blockPosition(),
+                SoundEvents.BREEZE_SHOOT, SoundSource.PLAYERS, .8F, 1.3F);
         return true;
     }
 
     private static void tickLane(ServerPlayer player, Lane lane) {
         Vec3 axis = lane.end.subtract(lane.start).normalize();
-        AABB bounds = new AABB(lane.start, lane.end).inflate(2);
+        AABB bounds = new AABB(lane.start, lane.end).inflate(LANE_RADIUS);
         List<LivingEntity> targets = player.serverLevel().getEntitiesOfClass(LivingEntity.class, bounds,
                 entity -> entity.isAlive() && !entity.isSpectator()).stream().limit(TARGET_LIMIT).toList();
         for (LivingEntity target : targets) {
             Vec3 center = target.getBoundingBox().getCenter();
             Vec3 nearest = closestPoint(lane.start, lane.end, center);
-            if (nearest.distanceToSqr(center) > 4 || !visibleFrom(player, nearest, target)) continue;
+            if (nearest.distanceToSqr(center) > LANE_RADIUS * LANE_RADIUS || !visibleFrom(player, nearest, target)) continue;
             if (isFriend(player, target)) {
                 target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 30, 1));
                 target.addEffect(new MobEffectInstance(MobEffects.JUMP, 30, 0));
@@ -441,7 +454,7 @@ public final class FlightSkillService {
                 push(target, target.getDeltaMovement().scale(.5).add(axis.scale(.35)).add(0, .06, 0));
             }
         }
-        AbilityEffects.send(player.serverLevel(), Kind.FLIGHT_JETSTREAM, lane.start, lane.end, 2);
+        SetPiecePayload.send(player.serverLevel(), Piece.FLIGHT_CURRENT, lane.start, lane.end, (float) LANE_RADIUS, null);
     }
 
     private static boolean thermal(ServerPlayer player) {
@@ -450,7 +463,7 @@ public final class FlightSkillService {
         State state = state(player);
         state.thermal = new Thermal(center, state.age + 8,
                 SkillTreeService.has(player, "flight_2_2") ? 2 : 1);
-        AbilityEffects.send(player.serverLevel(), Kind.FLIGHT_THERMAL_MARK, center, center, THERMAL_RADIUS);
+        markThermal(player, center);
         ArmPosePayload.show(player, ArmPose.ARMS_RAISED, 8);
         return true;
     }
@@ -458,21 +471,24 @@ public final class FlightSkillService {
     private static void tickThermal(ServerPlayer player, State state) {
         Thermal thermal = state.thermal;
         if (thermal == null) return;
-        if (state.age < thermal.due) {
-            if (state.age % 4 == 0) AbilityEffects.send(player.serverLevel(), Kind.FLIGHT_THERMAL_MARK,
-                    thermal.center, thermal.center, THERMAL_RADIUS);
-            return;
-        }
+        if (state.age < thermal.due) return;
         // The updraft is a column: the second pulse must still reach foes lifted by the first.
         AABB column = new AABB(thermal.center.add(-THERMAL_RADIUS, -.5, -THERMAL_RADIUS),
-                thermal.center.add(THERMAL_RADIUS, 9, THERMAL_RADIUS));
-        List<LivingEntity> targets = player.serverLevel().getEntitiesOfClass(LivingEntity.class, column, entity -> {
-            Vec3 delta = entity.getBoundingBox().getCenter().subtract(thermal.center);
-            return entity.isAlive() && !entity.isSpectator() && delta.y >= -.5 && delta.y <= 9
-                    && delta.x * delta.x + delta.z * delta.z <= THERMAL_RADIUS * THERMAL_RADIUS;
-        }).stream().limit(TARGET_LIMIT).toList();
+                thermal.center.add(THERMAL_RADIUS, THERMAL_HEIGHT, THERMAL_RADIUS));
+        Vec3 inlet = thermal.center.add(0, .3, 0);
+        if (!thermal.ridden && FlightService.hasActiveSession(player) && freeToManeuver(player)
+                && !isLaunching(player) && inThermal(player, thermal.center) && visibleFrom(player, inlet, player)) {
+            thermal.ridden = true;
+            player.resetFallDistance();
+            push(player, player.getDeltaMovement().multiply(.35, 0, .35).add(0, .9, 0));
+            FlightDynamicsService.beginBurst(player, 7);
+            FlightDynamicsService.addMomentum(player, 20);
+        }
+        List<LivingEntity> targets = player.serverLevel().getEntitiesOfClass(LivingEntity.class, column,
+                entity -> entity.isAlive() && !entity.isSpectator() && inThermal(entity, thermal.center))
+                .stream().limit(TARGET_LIMIT).toList();
         for (LivingEntity target : targets) {
-            if (!visibleFrom(player, thermal.center.add(0, .3, 0), target)) continue;
+            if (!visibleFrom(player, inlet, target)) continue;
             if (isFriend(player, target)) {
                 target.resetFallDistance();
                 target.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 80, 0));
@@ -481,23 +497,40 @@ public final class FlightSkillService {
                 push(target, target.getDeltaMovement().multiply(.2, 0, .2).add(0, 1.05, 0));
             }
         }
-        AbilityEffects.send(player.serverLevel(), Kind.FLIGHT_THERMAL,
-                thermal.center, thermal.center, THERMAL_RADIUS);
+        SetPiecePayload.send(player.serverLevel(), Piece.FLIGHT_THERMAL_RISE, thermal.center,
+                thermal.center.add(0, THERMAL_HEIGHT, 0), (float) THERMAL_RADIUS, null);
         player.serverLevel().playSound(null, thermal.center.x, thermal.center.y, thermal.center.z,
                 SoundEvents.BREEZE_JUMP, SoundSource.PLAYERS, .9F, .8F);
         if (--thermal.pulses <= 0) state.thermal = null;
-        else thermal.due = state.age + 8;
+        else {
+            thermal.due = state.age + 8;
+            markThermal(player, thermal.center);
+        }
+    }
+
+    private static boolean inThermal(LivingEntity target, Vec3 center) {
+        Vec3 delta = target.getBoundingBox().getCenter().subtract(center);
+        return delta.y >= -.5 && delta.y <= THERMAL_HEIGHT
+                && delta.horizontalDistanceSqr() <= THERMAL_RADIUS * THERMAL_RADIUS;
+    }
+
+    private static void markThermal(ServerPlayer player, Vec3 center) {
+        SetPiecePayload.send(player.serverLevel(), Piece.FLIGHT_THERMAL_MARK, center, center, (float) THERMAL_RADIUS, null);
+        player.serverLevel().playSound(null, center.x, center.y, center.z,
+                SoundEvents.BREEZE_CHARGE, SoundSource.PLAYERS, .6F, 1.5F);
+    }
+
+    private static void intercept(ServerPlayer player, Vec3 at, Vec3 outward) {
+        SetPiecePayload.send(player.serverLevel(), Piece.FLIGHT_INTERCEPT, at, at.add(outward), .8F, null);
     }
 
     private static boolean vacuum(ServerPlayer player) {
         State state = state(player);
         state.vacuum = new Vacuum(state.age + VACUUM_TICKS,
-                SkillTreeService.has(player, "flight_wider_clap") ? 9 : 6,
-                FlightDynamicsService.consumeMomentum(player));
+                SkillTreeService.has(player, "flight_wider_clap") ? 9 : 6);
         push(player, Vec3.ZERO);
-        ArmPosePayload.show(player, ArmPose.ARMS_WIDE, VACUUM_TICKS);
-        AbilityEffects.send(player.serverLevel(), Kind.FLIGHT_VACUUM, body(player),
-                body(player).add(player.getLookAngle()), state.vacuum.radius);
+        ArmPosePayload.show(player, ArmPose.FLIGHT_CLAP, VACUUM_TICKS);
+        FlightVisualSyncService.syncToTrackingPlayers(player);
         player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.BREEZE_CHARGE,
                 SoundSource.PLAYERS, 1, .7F);
         return true;
@@ -525,16 +558,16 @@ public final class FlightSkillService {
                     push(shot, shot.getDeltaMovement().scale(.15));
                 }
             }
-            if (state.age % 2 == 0) AbilityEffects.send(player.serverLevel(), Kind.FLIGHT_VACUUM,
-                    center, center.add(player.getLookAngle()), vacuum.radius);
             return;
         }
         state.vacuum = null;
-        float damage = (float) (4 + vacuum.momentum * .05);
-        pressureWave(player, center, vacuum.radius, damage, 1 + vacuum.momentum * .005);
+        double momentum = FlightDynamicsService.consumeMomentum(player);
+        float damage = (float) (4 + momentum * .05);
+        pressureWave(player, center, vacuum.radius, damage, 1 + momentum * .005);
         if (SkillTreeService.has(player, "flight_sound_barrier"))
             scheduleBloom(state, center, vacuum.radius, damage);
-        ArmPosePayload.show(player, ArmPose.TWO_HANDS, 6);
+        ArmPosePayload.show(player, ArmPose.FLIGHT_BRACE, 6);
+        FlightVisualSyncService.syncToTrackingPlayers(player);
     }
 
     private static void scheduleBloom(State state, Vec3 center, double radius, float damage) {
@@ -549,7 +582,7 @@ public final class FlightSkillService {
             push(target, away(target.position(), center, player.getLookAngle()).multiply(1, 0, 1)
                     .normalize().scale(strength).add(0, .35, 0));
         }
-        AbilityEffects.send(player.serverLevel(), Kind.FLIGHT_PRESSURE_WAVE, center, center.add(0, 1, 0), radius);
+        SetPiecePayload.send(player.serverLevel(), Piece.FLIGHT_IMPACT, center, center.add(0, 1, 0), (float) radius, null);
         player.serverLevel().playSound(null, center.x, center.y, center.z,
                 SoundEvents.WIND_CHARGE_BURST.value(), SoundSource.PLAYERS, 1, .8F);
     }
@@ -607,9 +640,10 @@ public final class FlightSkillService {
                 .stream().limit(TARGET_LIMIT).toList();
     }
 
-    private static boolean hostile(ServerPlayer player, LivingEntity target) {
+    public static boolean hostile(ServerPlayer player, LivingEntity target) {
         return !isFriend(player, target) && target.isAlive() && !target.isSpectator()
                 && !com.jayptucker.heroesevolved.entity.EntityCarryService.isBeingCarried(target)
+                && !(target instanceof com.jayptucker.heroesevolved.entity.TemporalEchoEntity)
                 && (!(target instanceof ServerPlayer other)
                     || player.getServer().isPvpAllowed() && player.canHarmPlayer(other));
     }
@@ -670,21 +704,25 @@ public final class FlightSkillService {
     private static final class Roll {
         final Vec3 forward;
         final int side;
+        final double speed;
         int age;
         final Set<UUID> deflected = new HashSet<>();
-        Roll(Vec3 forward, int side) { this.forward = forward; this.side = side; }
+        Roll(Vec3 forward, int side, double speed) {
+            this.forward = forward; this.side = side; this.speed = speed;
+        }
     }
     private static final class Thermal {
         final Vec3 center;
         int due, pulses;
+        boolean ridden;
         Thermal(Vec3 center, int due, int pulses) { this.center = center; this.due = due; this.pulses = pulses; }
     }
     private static final class Vacuum {
         final int releaseAt;
-        final double radius, momentum;
+        final double radius;
         final Set<UUID> braked = new HashSet<>();
-        Vacuum(int releaseAt, double radius, double momentum) {
-            this.releaseAt = releaseAt; this.radius = radius; this.momentum = momentum;
+        Vacuum(int releaseAt, double radius) {
+            this.releaseAt = releaseAt; this.radius = radius;
         }
     }
     private record Bloom(Vec3 center, double radius, float damage, int due) {}

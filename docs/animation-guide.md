@@ -88,6 +88,11 @@ what is happening (slow, stopped, backwards) without any text.
    | Quake | `CFE6FF` wave, `FFFFFF` core, `7FA8D8` deep strand, `A8946E` dust, `2A2622` crack, `FF5A5A` strain/heart |
    | Superspeed | `FFC640` gold, `FFF4C8` hot core, `FF8C1E` amber, pale `DBE6F5` wind, warm dust, soot |
    | Space-Time | `FFD27A` gold, `E8A43C` amber (slowed), `9A7CFF` violet, `5B3FD1` deep, `F4EBFF` pale core, `C9C2FF` ice (stopped) |
+   | Flight | `535A5A` shadow, `D2D4CE` vapor, `DCDDD5` condensation, `F6F4EC` core (all in `FlightArt`; Tempest's storm uses `DBDBD2` cloud and `EEEDE3` wind) |
+
+   Flight is also a good model of a whole power built from one shape language: every Flight set piece is drawn
+   by `FlightArt` from three shared primitives (a translucent `arc` sheet with a turning lip, a broken tapered
+   `crest`, and a `spiral`). See the Flight section of [AGENTS.md](../AGENTS.md).
 
 2. **Layer every glowing line in three.** Draw a wide, faint halo, then the coloured body, then a thin bright
    core. Rewind's path is exactly this: deep violet at 0.22 wide and 0.4 alpha, violet at 0.07 and 0.85, and a
@@ -105,7 +110,10 @@ what is happening (slow, stopped, backwards) without any text.
    shadows must use normal blending. `LightningRenderer` does this automatically for dark colours; on a
    Canvas, draw them in the SOFT or SOLID pass, not GLOW.
 8. **Respect the world.** Rings lie on their physical plane (the ground, or across the blast), not facing the
-   camera. Things follow the terrain (the Tempest follows the ground's height). Fade a trail where it passes
+   camera. Things follow the terrain (the Tempest follows the ground's height). Face the way a body is really
+   travelling, not where it looks: `FlightVisualGeometry.travel(player)` works for other players too. A body
+   moving several blocks a tick needs its culling widened along its travel (`FlightRenderBoundsMixin`), or it
+   vanishes at the frame's edge. Fade a trail where it passes
    the camera, so a player's own view isn't striped by it (`RewindArt`'s `clear`).
 9. **Be deterministic.** A set piece is a pure function of its age and seed. Use `Canvas.hash(seed, i)`, never
    `Random`, so every viewer (and a player arriving late) sees the same thing.
@@ -122,8 +130,9 @@ what is happening (slow, stopped, backwards) without any text.
 | --- | --- | --- |
 | A quick strike, ring, bolt or crack (under about a second) | `AbilityEffects.send(level, Kind, origin, target, scale)` → a case in the power's `*Effects.play` → `LightningRenderer.stroke` / `star` | Quake's rings, time's clock, speed trail |
 | A staged animation with a fixed length (a few seconds) | **Set piece**: `Piece` + `SetPiecePayload.send` → `PieceArt` → a method in a `*Art` class drawing on `Canvas` | stop gust, Overrun depart/arrive, Matter rise, Starfall |
-| Something with no fixed length that follows state | A client state mirror (fed by its own payload) drawn every frame from `drawLive(Canvas)` | Cyclone and tornado, Overrun wake, rewind trail |
-| The player's body | `ArmPose` + `PowerArmPoses` (third person) + `FirstPersonArmGeometry` (first person), sent with `ArmPosePayload.show` | Wind Arms, Quake strain, cryo lance |
+| Something with no fixed length that follows state | A client state mirror (fed by its own payload) drawn every frame from `drawLive(Canvas)` | Cyclone and tornado, Overrun wake, rewind trail, Flight's wind round charging and diving flyers (`FlightArt.drawLive`) |
+| An animation timed by a state change | Bit flags in the power's visual-state payload; the client stamps the time a flag changes and animations read the phase's age | Flight's `FlightVisualStatePayload` flags and `ClientFlightVisualState.phaseAge` |
+| The player's body | `ArmPose` + `PowerArmPoses` (third person) + `FirstPersonArmGeometry` (first person), sent with `ArmPosePayload.show` | Wind Arms, Flight's coil, brace, roll, clap and cast, Quake strain, cryo lance |
 | The player seen elsewhere | A stand-in or afterimage rendering the real player model | Cyclone runner, afterimages, `TimeGhosts` |
 | The view | A camera mixin (`TornadoCameraMixin` + `TempestCamera`) | tornado's pulled-back camera |
 

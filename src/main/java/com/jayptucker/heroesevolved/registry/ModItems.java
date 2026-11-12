@@ -37,7 +37,7 @@ public final class ModItems {
     /** After a forced draw: weakened, and a regenerating body cannot regrow until it wears off. */
     public static final DeferredHolder<MobEffect, MobEffect> DRAINED = EFFECTS.register("drained",
             () -> new MobEffect(MobEffectCategory.HARMFUL, 0x7A1020) {});
-    /** Ted Sprague's radiation: a stacking dose that burns from inside. See RadiationSickness. */
+    /** Induced Radioactivity's radiation: a stacking dose that burns from inside. See RadiationSickness. */
     public static final DeferredHolder<MobEffect, MobEffect> RADIATION_SICKNESS = EFFECTS.register("radiation_sickness",
             com.jayptucker.heroesevolved.radiation.RadiationSickness::new);
     /** A Company tranquilizer dose; three put a player under. See Tranquilizer. */

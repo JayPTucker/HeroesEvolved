@@ -44,6 +44,7 @@ public final class EnergyHudOverlay {
             GuiGraphics guiGraphics,
             DeltaTracker deltaTracker
     ) {
+        if (Minecraft.getInstance().options.hideGui) return;
         renderOverexertionBorder(guiGraphics);
         PlayerPowerSyncPayload snapshot = ClientPowerState.getSnapshot();
 

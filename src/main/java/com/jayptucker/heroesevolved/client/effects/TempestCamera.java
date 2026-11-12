@@ -5,6 +5,8 @@ import com.jayptucker.heroesevolved.network.SpeedCyclonePayload;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -37,8 +39,9 @@ public final class TempestCamera {
     private static SpeedCyclone.View mine(Minecraft mc) {
         if (mc.player == null) return null;
         for (SpeedCyclone.View v : SpeedCyclone.views()) {
-            if (v.entity != mc.player.getId() || v.ended()) continue;
-            if (v.style == SpeedCyclonePayload.FLIGHT) return v;
+            if (v.entity != mc.player.getId()) continue;
+            if (v.style == SpeedCyclonePayload.FLIGHT && v.gone(mc.level.getGameTime(), 0) < 11) return v;
+            if (v.ended()) continue;
             // A speedster's: once it has risen, for as long as they are running it.
             if (v.style == SpeedCyclonePayload.SPEED && v.rose() && !v.free) return v;
         }
@@ -60,7 +63,14 @@ public final class TempestCamera {
         if (tornado == null || RewindTravelClient.travelling()) { release(mc); return; }
         float yaw = mc.player.getYRot() * Mth.DEG_TO_RAD;
         Vec3 look = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw));
-        Vec3 goal = tornado.center.subtract(look.scale(BACK)).add(0, UP, 0), aim = tornado.center.add(0, LOOK_AT, 0);
+        boolean flight = tornado.style == SpeedCyclonePayload.FLIGHT;
+        Vec3 aim = tornado.center.add(0, flight ? 11 : LOOK_AT, 0);
+        Vec3 goal = tornado.center.subtract(look.scale(flight ? 34 : BACK)).add(0, flight ? 15 : UP, 0);
+        if (flight) {
+            var hit = mc.level.clip(new ClipContext(aim, goal, ClipContext.Block.COLLIDER,
+                    ClipContext.Fluid.NONE, mc.player));
+            if (hit.getType() == HitResult.Type.BLOCK) goal = hit.getLocation().add(aim.subtract(goal).normalize().scale(.3));
+        }
         if (spot == null) { spot = goal; spotOld = goal; focus = aim; focusOld = aim; }
         spotOld = spot; focusOld = focus;
         spot = spot.lerp(goal, 0.2);

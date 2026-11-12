@@ -15,16 +15,16 @@ import java.util.Map;
 import static com.jayptucker.heroesevolved.config.HeroesEvolvedConfig.COMMON;
 
 /**
- * Ted Sprague's induced radioactivity: heat, a spreading sickness, EMPs and a core that runs hotter
- * the harder he pushes it.
+ * Induced radioactivity: heat, a spreading sickness, EMPs and a core that runs hotter the harder you
+ * push it.
  *
  * <ul>
- *   <li>Level 1, Radiant Heat: a white-hot cone from the palms; it also boils, thaws and melts.</li>
- *   <li>Level 2, Contamination: a pulse of Radiation Sickness that leaves the ground contaminated.
- *   Shift emits a blinding flash instead.</li>
- *   <li>Level 3, EMP: kill redstone nearby, throw enemies off balance, and vent 25 Core.</li>
- *   <li>Level 4, Controlled Emission: hold to pour Core out through a piercing beam.</li>
- *   <li>Level 5, Exploding Man: detonate. Shift holds it in.</li>
+ *   <li>Level 1, Radiant Heat: a white-hot cone from the palms that throws and doses; it also boils, thaws and melts.</li>
+ *   <li>Level 2, Fission Leap: a blast under your feet launches you; press again in the air to slam down into
+ *   a bigger blast that leaves the ground contaminated.</li>
+ *   <li>Level 3, EMP: kill redstone and machines nearby, shove enemies away, and vent 25 Core.</li>
+ *   <li>Level 4, Meltdown Beam: hold to pour Core out through a piercing beam.</li>
+ *   <li>Level 5, Critical Mass: rise and detonate. Shift holds it in.</li>
  *   <li>Always: Core builds with every power and every injury. Hot (40) hits harder, Glowing (60)
  *   leaks radiation onto enemies, Critical (80) hits harder still and burns. At 100, vent or
  *   containment fails. Your own blast, fallout and sickness cannot hurt you.</li>
@@ -41,14 +41,14 @@ public final class RadiationAbility implements Ability {
                     .activate(context -> RadiationService.radiantTouch(
                             context.player(), context.abilityLevel()))
                     .build(),
+            // Fission Leap keeps the old "radiation_pulse" id so saves, balance and config still match.
             AbilitySlot.SECONDARY, SimpleAction.builder("radiation_pulse", 2)
                     .cost(COMMON.radiationPulseEnergyCost::get,
                             COMMON.radiationPulseCooldownTicks::get)
-                    .activate(context -> {
-                        RadiationService.radiationPulse(context.player(),
-                                context.abilityLevel(), context.modifierHeld());
-                        return true;
-                    })
+                    // The second press, in the air, slams: free, before cost and cooldown.
+                    .followUp(context -> com.jayptucker.heroesevolved.radiation.RadiationLeap.slam(context.player()))
+                    .activate(context -> com.jayptucker.heroesevolved.radiation.RadiationLeap.launch(
+                            context.player(), context.abilityLevel()))
                     .build(),
             AbilitySlot.TERTIARY, SimpleAction.builder("radiation_emp", 3)
                     .cost(COMMON.radiationEmpEnergyCost::get,

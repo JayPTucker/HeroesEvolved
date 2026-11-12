@@ -6,16 +6,15 @@ import net.minecraft.world.phys.Vec3;
 
 import static com.jayptucker.heroesevolved.client.effects.setpiece.Canvas.*;
 
-/** Radiation, fire, ice, lightning, stone and sound. */
+/** Radiation, ice, lightning, stone and sound. */
 final class ElementArt {
     private ElementArt() {}
 
     private static final float[] RAD = rgb(0x7CFF6A), RAD_DEEP = rgb(0x2E8F2A), CHERENKOV = rgb(0x3FA8FF), CHERENKOV_PALE = rgb(0xBFE6FF),
             STEEL = rgb(0x4A5057), WHITE = {1, 1, 1};
-    private static final float[] FIRE = rgb(0xFF7A1A), FLAME = rgb(0xFFC14A), EMBER = rgb(0xFF4A12), SOOT = rgb(0x3A332E);
     private static final float[] ICE = rgb(0xBFEFFF), ICE_DEEP = rgb(0x6FC8F0), FROST = rgb(0xE8FBFF), STORM = rgb(0x7C8699),
             AURORA_GREEN = rgb(0x5CFFB0), AURORA_VIOLET = rgb(0xB070FF);
-    private static final float[] VOLT = rgb(0x9FD8FF), VOLT_CORE = rgb(0xE6F6FF), COPPER = rgb(0xB8733A);
+    private static final float[] COPPER = rgb(0xB8733A);
     private static final float[] STONE = rgb(0x8A7F72), STONE_DARK = rgb(0x5E554C), MAGMA = rgb(0xFF8A2A), EARTH = rgb(0x9C8A70);
     private static final float[] SOUND = rgb(0xE6E0FF), SOUND_GLOW = rgb(0x8FD8FF), HYMN = rgb(0xFFD27A);
 
@@ -77,120 +76,6 @@ final class ElementArt {
                 float p = ((t + k * 20) % 40) / 40;
                 c.ring(o.add(0, 0.08, 0), r * p, 0.14F, CHERENKOV_PALE, 0.6F * f * (1 - p));
             }
-        }
-    }
-
-    // ------------------------------------------------------------------
-    // Fire
-    // ------------------------------------------------------------------
-
-    /** A small sun falls out of the sky onto the point, and a pillar of fire stands where it lands. */
-    /** Where Starfall's star is {@code k} of the way down (0 high in the sky, 1 at the ground), falling faster and faster. */
-    private static Vec3 star(Active a, float k) {
-        Vec3 ground = a.target().add(0, 1.2, 0);
-        Vec3 sky = a.target().add(-a.facing().x * 30, 80, -a.facing().z * 30);
-        return sky.lerp(ground, k * k);
-    }
-
-    static void sunfall(Canvas c, Active a, float t) {
-        float fall = com.jayptucker.heroesevolved.styles.StyleCasts.STARFALL_FALL, r = a.scale();
-        Vec3 ground = a.target();
-        if (t < fall) {
-            float k = t / fall;
-            Vec3 sun = star(a, k), dir = star(a, Math.min(1, k + 0.02F)).subtract(sun);
-            dir = dir.lengthSqr() < 1e-6 ? new Vec3(0, -1, 0) : dir.normalize();
-            if (c.solid()) {
-                c.cloud(sun, 1.6F, 1.6F, 1.6F, a.seed(), t * 0.2F, 1, Shades.fire(1));
-                // The tail: burning billows strung back up the way it came, cooling into smoke.
-                for (int i = 1; i <= 12; i++) {
-                    float kk = Math.max(0, k - i * 0.022F);
-                    Vec3 p = star(a, kk);
-                    float size = 1.4F - i * 0.08F;
-                    c.cloud(p, size, size, size, a.seed() + i, t * 0.1F + i, 1, i < 7 ? Shades.fire(1 - i * 0.1F) : Shades.smoke(c, SOOT, 0.35F));
-                }
-            }
-            if (c.glow()) {
-                c.glow(sun, 3.2F, FLAME, 0.95F);
-                c.glow(sun, 9, FIRE, 0.5F);
-                // A streak of light behind it, all the way up.
-                Vec3 tail = star(a, Math.max(0, k - 0.35F));
-                c.line(tail, sun, 1.6F, FIRE, 0, 0.55F);
-                c.line(tail, sun, 0.4F, FLAME, 0, 0.9F);
-                for (int i = 0; i < 8; i++) {
-                    float ang = i * Mth.TWO_PI / 8 + t * 0.15F;
-                    c.line(sun, sun.add(Mth.cos(ang) * 3.2, Mth.sin(ang) * 3.2, Mth.sin(ang * 1.7F) * 1.2).subtract(dir.scale(2)), 0.22F, FLAME, 0.7F, 0);
-                }
-                // The ground below it warms and glows as it comes.
-                c.ring(ground.add(0, 0.06, 0), r * (0.4F + 0.6F * k), 0.12F, FIRE, 0.6F * k);
-                c.disc(ground.add(0, 0.05, 0), Canvas.UP, r * 0.9F, FIRE, 0.35F * k * k, 0);
-            }
-            return;
-        }
-        float s = t - fall, life = a.piece().ticks - fall;
-        float end = Mth.clamp((life - s) / 25, 0, 1);
-        if (c.solid() && end >= 1 || c.soft() && end < 1) {
-            float alpha = end >= 1 ? 1 : end;
-            for (int i = 0; i < 9; i++) {
-                float rise = s * (0.25F + 0.05F * i), size = (1.6F - i * 0.08F) * (0.6F + 0.4F * smooth(0, 6, s));
-                float heat = Mth.clamp(1 - s / 40 - i * 0.05F, 0.1F, 1);
-                c.cloud(ground.add(Mth.sin(i * 2.1F) * 0.4, 0.8 + i * 0.9 + rise * 0.3, Mth.cos(i * 2.1F) * 0.4), size, size * 1.2F, size,
-                        a.seed() + i, s * 0.05F + i, alpha, heat > 0.3F ? Shades.fire(heat) : Shades.smoke(c, SOOT, heat));
-            }
-            for (int i = 0; i < 14; i++) {
-                float ang = i * Mth.TWO_PI / 14, rr = r * (1 - (float) Math.exp(-s / 4)) * (0.85F + 0.15F * hash(a.seed(), i));
-                float size = 0.7F + 0.4F * hash(a.seed(), i + 30);
-                c.cloud(ground.add(Mth.cos(ang) * rr, size * 0.5, Mth.sin(ang) * rr), size, size * 0.8F, size, a.seed() + 40 + i, s * 0.08F,
-                        alpha, Shades.fire(Mth.clamp(0.9F - s / 50, 0.25F, 0.9F)));
-            }
-        }
-        if (c.glow()) {
-            if (s < 5) c.glow(ground.add(0, 2, 0), 10 + s * 4, WHITE, 1 - s / 5);
-            c.glow(ground.add(0, 2.5, 0), 6, FIRE, 0.6F * end);
-            c.disc(ground.add(0, 0.06, 0), UP, r * 1.1F, EMBER, 0.45F * end, 0);
-            c.ring(ground.add(0, 0.06, 0), r * (1 - (float) Math.exp(-s / 4)), 0.3F, FLAME, 0.8F * end);
-        }
-    }
-
-    /** Flame wound round them in three turning strands, embers lifting off it. */
-    static void emberShroud(Canvas c, Active a, float t) {
-        if (!c.glow()) return;
-        float f = fade(t, a.piece().ticks, 8, 16);
-        Vec3 o = a.at(c);
-        for (int k = 0; k < 3; k++) {
-            float phase = k * Mth.TWO_PI / 3 + t * 0.22F;
-            c.helix(o, 2.3F, 0.95F, 0.55F, 1.3F, phase, 0.22F, k == 1 ? FLAME : FIRE, 0.85F * f, 28);
-            c.helix(o, 2.3F, 0.95F, 0.55F, 1.3F, phase, 0.08F, WHITE, 0.4F * f, 28);
-        }
-        c.glow(o.add(0, 1, 0), 2.2F, FIRE, 0.35F * f);
-        for (int i = 0; i < 14; i++) {
-            float k = ((t * 0.03F + hash(a.seed(), i)) % 1);
-            float ang = hash(a.seed(), i + 20) * Mth.TWO_PI + k * 2;
-            c.glow(o.add(Mth.cos(ang) * 0.9, 0.2 + k * 3, Mth.sin(ang) * 0.9), 0.12F, FLAME, f * (1 - k));
-        }
-    }
-
-    /** A hearth: glowing coals in a ring and a tall twisting flame, embers rising and a warm light around it. */
-    static void hearthfire(Canvas c, Active a, float t) {
-        float life = a.piece().ticks, f = fade(t, life, 12, 24), r = a.scale();
-        Vec3 o = a.origin();
-        if (c.solid()) for (int i = 0; i < 10; i++) {
-            float ang = i * Mth.TWO_PI / 10;
-            c.cloud(o.add(Mth.cos(ang) * 0.75, 0.15, Mth.sin(ang) * 0.75), 0.28F, 0.18F, 0.28F, a.seed() + i, i, 1,
-                    Shades.fire(0.35F + 0.15F * Mth.sin(t * 0.2F + i)));
-        }
-        if (!c.glow()) return;
-        float height = 3.2F * smooth(0, 14, t) * (0.9F + 0.1F * Mth.sin(t * 0.5F));
-        for (int k = 0; k < 5; k++) {
-            float phase = k * Mth.TWO_PI / 5 + t * 0.18F;
-            c.helix(o.add(0, 0.1, 0), height * (0.7F + 0.06F * k), 0.6F, 0.05F, 0.6F, phase, 0.32F - k * 0.03F, k < 2 ? FIRE : FLAME, 0.75F * f, 18);
-        }
-        c.glow(o.add(0, 1.0, 0), 1.6F, WHITE, 0.4F * f);
-        c.glow(o.add(0, 1.2, 0), 4.5F, FIRE, 0.45F * f);
-        c.disc(o.add(0, 0.05, 0), UP, r, FLAME, 0.22F * f, 0);
-        c.ring(o.add(0, 0.06, 0), r, 0.1F, FLAME, 0.4F * f);
-        for (int i = 0; i < 20; i++) {
-            float k = (t * 0.025F + hash(a.seed(), i)) % 1, ang = hash(a.seed(), i + 40) * Mth.TWO_PI;
-            c.glow(o.add(Mth.cos(ang) * 0.5 * (1 + k), 0.5 + k * 5, Mth.sin(ang) * 0.5 * (1 + k)), 0.1F, FLAME, f * (1 - k));
         }
     }
 
@@ -289,74 +174,16 @@ final class ElementArt {
     // Lightning
     // ------------------------------------------------------------------
 
-    /** A coil on a mast, its crown crackling with idle arcs. */
-    static void tesla(Canvas c, Active a, float t) {
-        float life = a.piece().ticks, f = fade(t, life, 6, 14), grow = smooth(0, 10, t);
-        Vec3 o = a.target(), crown = o.add(0, 3.2 * grow, 0);
-        if (c.solid()) {
-            c.box(o.add(0, 0.25, 0), 0.55F, 0.25F, 0.55F, 0, 0, 0, STEEL, 1);
-            c.box(o.add(0, 1.6 * grow + 0.4, 0), 0.14F, 1.6F * grow, 0.14F, 0, 0, 0, COPPER, 1);
-            for (int i = 0; i < 12; i++) {
-                float ang = i * Mth.TWO_PI / 12;
-                c.box(crown.add(Mth.cos(ang) * 0.6, 0, Mth.sin(ang) * 0.6), 0.2F, 0.16F, 0.2F, -ang, 0, 0, STEEL, 1);
-            }
-        }
-        if (c.glow()) {
-            c.glow(crown, 1.4F, VOLT, 0.7F * f);
-            int flick = (int) (t / 2);
-            for (int k = 0; k < 4; k++) {
-                float ang = hash(a.seed() + flick, k) * Mth.TWO_PI, len = 1.5F + 2 * hash(a.seed() + flick, k + 7);
-                Vec3 end = crown.add(Mth.cos(ang) * len, (hash(a.seed() + flick, k + 3) - 0.6) * 2, Mth.sin(ang) * len);
-                c.bolt(crown, end, a.seed() + flick * 13 + k, 0.35F, 0.05F, VOLT, 0.8F * f);
-            }
-            c.ring(o.add(0, 0.06, 0), a.scale(), 0.08F, VOLT, 0.3F * f);
-        }
-    }
-
-    /** One strike from the coil's crown to whoever it chose, flickering. */
-    static void teslaZap(Canvas c, Active a, float t) {
-        if (!c.glow()) return;
-        float f = 1 - t / a.piece().ticks;
-        c.bolt(a.origin(), a.target(), a.seed() + (int) t, 0.45F, 0.09F, VOLT, f);
-        c.glow(a.target(), 1.2F, VOLT_CORE, 0.8F * f);
-    }
-
-    /** A cage of lightning round them, its bars the edges of a twenty-sided shell, flickering as current runs. */
-    static void faraday(Canvas c, Active a, float t) {
-        if (!c.glow()) return;
-        float f = fade(t, a.piece().ticks, 6, 14);
-        Vec3 o = a.at(c).add(0, 1, 0);
-        float r = a.scale(), g = (1 + Mth.sqrt(5)) / 2;
-        float[][] base = {{-1, g, 0}, {1, g, 0}, {-1, -g, 0}, {1, -g, 0}, {0, -1, g}, {0, 1, g}, {0, -1, -g}, {0, 1, -g},
-                {g, 0, -1}, {g, 0, 1}, {-g, 0, -1}, {-g, 0, 1}};
-        Vec3[] v = new Vec3[12];
-        float spin = t * 0.04F, cs = Mth.cos(spin), sn = Mth.sin(spin);
+    /** The solid copper and steel mast under the Tesla Spire's electrical crown. */
+    static void teslaMast(Canvas c, Active a, float t) {
+        float grow = smooth(0, 10, t);
+        Vec3 base = a.target(), crown = base.add(0, 3.2 * grow, 0);
+        c.box(base.add(0, .25, 0), .55F, .25F, .55F, 0, 0, 0, STEEL, 1);
+        c.box(base.add(0, 1.6 * grow + .4, 0), .14F, 1.6F * grow, .14F, 0, 0, 0, COPPER, 1);
         for (int i = 0; i < 12; i++) {
-            float l = Mth.sqrt(base[i][0] * base[i][0] + base[i][1] * base[i][1] + base[i][2] * base[i][2]);
-            float x = base[i][0] / l, z = base[i][2] / l;
-            v[i] = o.add((x * cs - z * sn) * r, base[i][1] / l * r, (x * sn + z * cs) * r);
+            float angle = i * Mth.TWO_PI / 12;
+            c.box(crown.add(Mth.cos(angle) * .6, 0, Mth.sin(angle) * .6), .2F, .16F, .2F, -angle, 0, 0, STEEL, 1);
         }
-        int flick = (int) (t / 2), edge = 0;
-        for (int i = 0; i < 12; i++)
-            for (int j = i + 1; j < 12; j++) {
-                if (Math.abs(v[i].distanceTo(v[j]) - r * 1.0515) > r * 0.1) continue;
-                float on = hash(a.seed() + flick, edge++) > 0.25F ? 1 : 0.3F;
-                c.bolt(v[i], v[j], a.seed() + flick * 31 + edge, 0.12F * r, 0.035F, VOLT, 0.75F * f * on);
-            }
-        for (Vec3 p : v) c.glow(p, 0.25F, VOLT_CORE, 0.8F * f);
-    }
-
-    /** Current leaps from one friend to the next, and each one's heart takes it with a pulse of light. */
-    static void jumpstart(Canvas c, Active a, float t) {
-        if (!c.glow()) return;
-        float f = 1 - t / a.piece().ticks;
-        if (t < 6) c.bolt(a.origin().add(0, 1.2, 0), a.target().add(0, 1.2, 0), a.seed() + (int) t, 0.5F, 0.08F, VOLT, 1);
-        Vec3 heart = a.target().add(0, 1.2, 0);
-        for (int k = 0; k < 2; k++) {
-            float p = Mth.clamp((t - k * 4) / 10, 0, 1);
-            c.ring(heart, UP, 0.3F + p * 1.6F, 0.1F, 0, Mth.TWO_PI, VOLT_CORE, 0.9F * (1 - p) * (p > 0 ? 1 : 0));
-        }
-        c.glow(heart, 1.2F, VOLT, 0.8F * f);
     }
 
     // ------------------------------------------------------------------
