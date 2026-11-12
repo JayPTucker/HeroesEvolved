@@ -17,15 +17,15 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("63")
+        event.registrar("66")
+            .playToClient(TemporalProjectilePayload.TYPE, TemporalProjectilePayload.STREAM_CODEC, TemporalProjectilePayload::handle)
+            .playToClient(TemporalCatchStatePayload.TYPE, TemporalCatchStatePayload.STREAM_CODEC, TemporalCatchStatePayload::handle)
             .playToClient(SkyburstMotionPayload.TYPE, SkyburstMotionPayload.STREAM_CODEC, SkyburstMotionPayload::handle)
             .playToServer(CryoRideInputPayload.TYPE, CryoRideInputPayload.STREAM_CODEC, CryoRideInputPayload::handle)
             .playToClient(CryoRideStatePayload.TYPE, CryoRideStatePayload.STREAM_CODEC, CryoRideStatePayload::handle)
             .playToServer(CryoShellInputPayload.TYPE, CryoShellInputPayload.STREAM_CODEC, CryoShellInputPayload::handle)
             .playToClient(CryoShellStatePayload.TYPE, CryoShellStatePayload.STREAM_CODEC, CryoShellStatePayload::handle)
             .playToClient(OpticalStatePayload.TYPE, OpticalStatePayload.STREAM_CODEC, OpticalStatePayload::handle)
-            .playToClient(OpticalDecoyPayload.TYPE, OpticalDecoyPayload.STREAM_CODEC, OpticalDecoyPayload::handle)
-            .playToServer(DecoyInteractPayload.TYPE, DecoyInteractPayload.STREAM_CODEC, DecoyInteractPayload::handle)
             .playToClient(PyroStatePayload.TYPE, PyroStatePayload.STREAM_CODEC, PyroStatePayload::handle)
             .playToServer(PyroFlightInputPayload.TYPE, PyroFlightInputPayload.STREAM_CODEC, PyroFlightInputPayload::handle)
             .playToClient(IllusionPayload.TYPE, IllusionPayload.STREAM_CODEC, IllusionPayload::handle)

@@ -670,13 +670,14 @@ public final class SpeedService {
      * up go into your pocket; anything else (fireballs, skulls) is simply snuffed out.
      */
     public static boolean catchShot(ServerPlayer p, Entity e) {
-        if (!(e instanceof Projectile shot) || shot.isRemoved() || shot.getOwner() == p || !SpeedMovement.accelerating(p)) return false;
+        if (!(e instanceof Projectile shot) || shot.isRemoved() || shot.getOwner() == p || !PowerRules.canAct(p)
+                || shot.getOwner() instanceof LivingEntity owner && com.jayptucker.heroesevolved.flight.FlightSkillService.isFriend(p, owner)) return false;
         long now = now(p);
         if (CAUGHT.getOrDefault(p.getUUID(), 0L) > now || shot.level() != p.level()) return false;
-        Vec3 eye = p.getEyePosition(), to = shot.position().subtract(eye);
-        // Server-side reach and aim check: within 7 blocks and roughly where you are looking, and still flying.
-        if (to.lengthSqr() > 49 || to.lengthSqr() > 1 && to.normalize().dot(p.getLookAngle()) < .8
-                || shot.getDeltaMovement().lengthSqr() < .0025) return false;
+        boolean timeCatch = com.jayptucker.heroesevolved.time.ProjectileTimeService.canCatch(p, shot);
+        if (!(timeCatch || SpeedMovement.accelerating(p) && com.jayptucker.heroesevolved.time.ProjectileTimeService.isInFlight(shot))
+                || !Double.isFinite(com.jayptucker.heroesevolved.time.ProjectileCatchGeometry.hitDistanceSquared(p, shot))) return false;
+        Vec3 eye = p.getEyePosition();
         if (!PlayerEnergyService.tryConsume(p, 2)) return false;
         CAUGHT.put(p.getUUID(), now + 4);
         net.minecraft.world.item.ItemStack prize = net.minecraft.world.item.ItemStack.EMPTY;
@@ -688,8 +689,11 @@ public final class SpeedService {
         if (!prize.isEmpty() && !p.getInventory().add(prize)) p.drop(prize, false);
         p.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
         ServerLevel level = p.serverLevel();
-        AbilityEffects.send(level, Kind.SPEED_IMPACT, eye, at, .8);
-        AbilityEffects.send(level, Kind.SPEED_TRAIL, p.position(), at.subtract(0, .9, 0), .6);
+        if (timeCatch && !SpeedMovement.accelerating(p)) AbilityEffects.send(level, Kind.TIME_FOLD, at, eye, .6);
+        else {
+            AbilityEffects.send(level, Kind.SPEED_IMPACT, eye, at, .8);
+            AbilityEffects.send(level, Kind.SPEED_TRAIL, p.position(), at.subtract(0, .9, 0), .6);
+        }
         level.playSound(null, p.blockPosition(), SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, .6F, 1.6F);
         level.playSound(null, p.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, .4F, 2F);
         return true;

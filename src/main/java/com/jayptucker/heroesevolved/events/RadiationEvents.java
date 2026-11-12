@@ -26,7 +26,10 @@ public final class RadiationEvents {
 
     @SubscribeEvent public static void onHurt(LivingDamageEvent.Post event) {
         if (event.getEntity() instanceof ServerPlayer player && hasAwakenedRadiation(player)
-                && !EclipseService.arePowersSuppressed(player)) RadiationService.hurtStress(player, event.getNewDamage());
+                && !EclipseService.arePowersSuppressed(player)) {
+            RadiationService.hurtStress(player, event.getNewDamage());
+            com.jayptucker.heroesevolved.radiation.RadiationSkills.onHurt(player, event.getSource());
+        }
     }
     @SubscribeEvent public static void onFall(net.neoforged.neoforge.event.entity.living.LivingFallEvent event) {
         if (event.getEntity() instanceof ServerPlayer player && com.jayptucker.heroesevolved.radiation.RadiationLeap.cushioned(player)) {
@@ -55,6 +58,8 @@ public final class RadiationEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             RadiationService.stopAll(player);
         }
+        if (event.getSource().getEntity() instanceof ServerPlayer killer && killer != event.getEntity() && hasAwakenedRadiation(killer))
+            com.jayptucker.heroesevolved.radiation.RadiationSkills.onKill(killer, event.getEntity());
         // Whatever dies sick bursts, dosing everything around it: a chain reaction.
         if (!event.getEntity().level().isClientSide()) com.jayptucker.heroesevolved.radiation.RadiationSickness.chainReaction(event.getEntity());
     }

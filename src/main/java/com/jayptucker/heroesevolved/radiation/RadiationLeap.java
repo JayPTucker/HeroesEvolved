@@ -41,7 +41,7 @@ public final class RadiationLeap {
         final ServerPlayer player;
         final int tier;
         final long start;
-        boolean slamming;
+        boolean slamming, relaunched;
         long slamStart, landed = -1;
         Vec3 dive = Vec3.ZERO;
         Leap(ServerPlayer player, int tier, long start) { this.player = player; this.tier = tier; this.start = start; }
@@ -76,7 +76,8 @@ public final class RadiationLeap {
 
     /** The blast under your feet. Refused while a leap is still in the air. */
     public static boolean launch(ServerPlayer p, int tier) {
-        if (leaping(p) || p.isPassenger() || p.isSpectator()) return false;
+        if (p.isPassenger() || p.isSpectator()) return false;
+        if (leaping(p)) return relaunch(p);
         ServerLevel level = p.serverLevel();
         Vec3 feet = p.position();
         Vec3 look = p.getLookAngle();
@@ -91,8 +92,24 @@ public final class RadiationLeap {
         CameraShakePayload.sendAround(level, feet, 16, 0.6F, 8);
         ArmPosePayload.show(p, ArmPose.GROUND, 8);
         LEAPS.put(p.getUUID(), new Leap(p, tier, now(p)));
+        // Fallout Boots: the ground you left stays contaminated for a while.
+        if (RadiationSkills.has(p, RadiationSkills.FALLOUT_BOOTS)) RadiationService.contaminate(p, feet, 3, RadiationSkills.zoneTicks(p, 100));
         RadiationService.addMass(p, CORE);
         MasteryService.markPowerUse(p, ModAbilities.RADIATION_ID);
+        return true;
+    }
+
+    /** Second Leap: one more launch from mid-air, before any slam. */
+    private static boolean relaunch(ServerPlayer p) {
+        Leap l = LEAPS.get(p.getUUID());
+        if (l == null || l.relaunched || l.slamming || !RadiationSkills.has(p, RadiationSkills.SECOND_LEAP)) return false;
+        l.relaunched = true;
+        Vec3 look = p.getLookAngle(), forward = new Vec3(look.x, 0, look.z);
+        forward = forward.lengthSqr() < 1e-4 ? Vec3.ZERO : forward.normalize();
+        push(p, forward.scale(LAUNCH_FORWARD).add(0, LAUNCH_UP * 0.85, 0));
+        SetPiecePayload.send(p.serverLevel(), Piece.RAD_LEAP, p.position(), p.position().add(0, 4, 0), 2.0F, null);
+        p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.8F, 1.7F);
+        RadiationService.addMass(p, CORE / 2);
         return true;
     }
 
@@ -138,8 +155,10 @@ public final class RadiationLeap {
         Vec3 at = p.position();
         double radius = 4.0 + l.tier * 0.5;
         boolean critical = RadiationService.mass(p) >= RadiationService.CRITICAL;
-        blast(p, at, radius, (4.0F + l.tier * 1.5F) * RadiationService.multiplier(p), critical ? 2 : 1, 1.3);
-        RadiationService.contaminate(p, at, radius * 0.8, ZONE_TICKS);
+        boolean catastrophe = RadiationSkills.has(p, RadiationSkills.CATASTROPHE) && RadiationService.inOwnZone(p, at);
+        if (catastrophe) radius *= 1.6;
+        blast(p, at, radius, (4.0F + l.tier * 1.5F) * RadiationService.multiplier(p) * (catastrophe ? 1.5F : 1.0F), critical || catastrophe ? 2 : 1, 1.3);
+        RadiationService.contaminate(p, at, radius * (catastrophe ? 1.2 : 0.8), RadiationSkills.zoneTicks(p, ZONE_TICKS));
         SetPiecePayload.send(level, Piece.RAD_SLAM, at, at.add(0, 1, 0), (float) radius, null);
         level.playSound(null, at.x, at.y, at.z, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 1.6F, 0.75F);
         level.playSound(null, at.x, at.y, at.z, SoundEvents.RESPAWN_ANCHOR_DEPLETE.value(), SoundSource.PLAYERS, 1.0F, 0.7F);

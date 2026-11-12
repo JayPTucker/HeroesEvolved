@@ -39,6 +39,22 @@ slam → EMP to vent** (or let the Core climb and finish with Critical Mass).
 Action IDs are unchanged (`radiation_pulse` is Fission Leap, `radiation_meltdown_beam` the beam,
 `radiation_exploding_man` Critical Mass), so saved loadouts, balance and config entries still apply.
 
+## Skill tree
+
+Three branches of six, built around the kit: every node changes how a move plays or ties two moves
+together, and none is a flat stat bonus. Purchases from the older tree carry over (the node IDs are
+unchanged). Only one capstone can be learned at a time.
+
+| Branch | Passive | Active | Passive | Technique | Upgrade | Capstone |
+| --- | --- | --- | --- | --- | --- | --- |
+| **Meltdown** (heat and the beam) | **Searing Palms**: Radiant Heat reaches 11 blocks and throws harder; three or more enemies in one cone build twice the Core. | **Gamma Lance**: a lance pierces everything on a line up to 40 blocks for 8 + level and a stage of sickness. With 15 Core it spends it and hits twice as hard with two stages. | **Focused Beam**: Meltdown Beam deals 30% more damage. | **Heat Vent**: dump up to 30 Core into a roaring 9-block cone that burns harder the more you vent, ignites and throws. | **Chain Vent**: every sick enemy Heat Vent hits bursts as if it had died, spreading the sickness. | **Supercritical**: while Critical, every enemy you kill bursts in a small blast and feeds you 5 Core. |
+| **Reactor** (running Core) | **Hot Start**: Core cools half as fast while you rest. | **Lead Skin**: Resistance II for 8 seconds, and melee attackers are dosed. | **Safe Venting**: EMP vents 40 Core and turns half into stamina; each Meltdown Beam pulse restores a point of stamina. | **Reactor Core**: turn up to 20 Core into stamina and give friends within 6 blocks a burst. | **Power Transfer**: up to 40 Core, and friends you power dig faster. | **Breeder Reactor**: once a minute, reaching 100 Core gives ten seconds of **Overdrive** (radiation hits twice as hard) instead of failing. Vent before it ends. |
+| **Fallout** (the leap and contaminated ground) | **Fallout Boots**: Fission Leap's launch contaminates the ground you left for 5 seconds. | **Decontaminate**: purge harmful effects and flames from you and friends within 8 blocks, then Fire Resistance. | **Second Leap**: Fission Leap can launch once more in mid-air before you slam. | **Glowing Path**: for 8 seconds you leave contaminated ground wherever you walk. | **Half-Life**: your contaminated ground lasts twice as long and doses two stages at a time. | **Catastrophe**: a slam into ground you contaminated sets it off, 60% wider and half again as strong, leaving a bigger patch. |
+
+Builds to try: **Fallout** for a leap-and-slam brawler (Fallout Boots → Second Leap → slam into your own
+patch for a Catastrophe); **Meltdown** for running Critical and chaining kills (Heat Vent the sick, then
+Supercritical bursts); **Reactor** to live at 100 Core in Overdrive and vent it into stamina.
+
 ## Look and feel
 
 Every move is drawn in 3D on every nearby client (`client/effects/setpiece/RadiationArt`), in three colours:
@@ -178,7 +194,9 @@ outcome. Sylar cannot copy Induced Radioactivity in those worlds. See [Sylar](sy
 Critical Core hits harder and burns, doses stack and the caster is immune, a sick creature's death spreads
 the sickness, Fission Leap's launch throws and doses what is close and cushions the caster, a slam lands
 in a blast that leaves contaminated ground dosing latecomers, the held beam drains Core and stops on
-release, a hard enough hit breaks a voluntary charge, and EMP vents Core, staggers enemies and shoves them away. Photograph every power with
+release, a hard enough hit breaks a voluntary charge, and the tree: Gamma Lance pierces a line and hits twice as hard
+with Core to spend, Chain Vent bursts the sick, Fallout Boots, Second Leap and Catastrophe change the leap,
+Breeder Reactor runs in Overdrive instead of melting down, and Supercritical kills burst and feed Core, and EMP vents Core, staggers enemies and shoves them away. Photograph every power with
 `./gradlew runClient --init-script tools/radiation-preview.init.gradle`
 (screenshots in `build/radiation-preview/screenshots/`, including the blast frame by frame as
 `radiation-8-blast-*.png`).

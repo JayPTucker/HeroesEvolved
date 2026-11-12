@@ -5,12 +5,12 @@ Sylar is a separate encounter. [Technopathy](technopathy.md) and [Matter Assembl
 are new complete kits, each with five core actions and an eighteen-node interaction tree.
 
 **Empathic Mimicry is the remaining original core kit. Cryokinesis now connects Frost,
-solid ice construction, Glacier Ride, Crystal Prison and Whiteout. Invisibility implements
-its Exposure and optical-misdirection kit.** A working power, a bug fix, or an expanded tree
+solid ice construction, Glacier Ride, Crystal Prison and Whiteout. Invisibility is now
+a force-field kit: Fade for you and your friends, Lens Shield and Force Push, Force Bridge, Bubble and Crush, and Force Nova.** A working power, a bug fix, or an expanded tree
 is not by itself a full redesign.
 
 The other fifteen original powers have a substantially redesigned core. That does **not** mean all
-their optional skills have received the same treatment. Flight, Telekinesis, Cryokinesis and Invisibility have complete,
+their optional skills have received the same treatment. Flight, Telekinesis, Cryokinesis, Invisibility and Induced Radioactivity have complete,
 interaction-based eighteen-node redesigns; several other trees still mix
 new techniques with older attacks, buffs and generic stat nodes.
 
@@ -31,14 +31,14 @@ new techniques with older attacks, buffs and generic stat nodes.
 | **Quake** | [Strain, Resonance, directed blasts, fault lines and staged terrain effects](quake.md). | Fault Script, Counterforce and Surgical Fracture add choices; several older targeted attacks/buffs and stat nodes remain. |
 | **Regeneration** | [Regrowth, downed bodies, staged limb regrowth, blood bonds and Second Life](regeneration.md). | Older Cauterize/Adrenal Rush/Transfusion and expanded techniques remain alongside the redesigned core. |
 | **Space-Time Manipulation** | [Fold Space, shared time, local/entity/death rewind and recorded past travel](space-time-manipulation.md). | Selective Stasis, Spatial Anchor and Second Chance have real mechanics; the tree still retains generic passives and older techniques. |
-| **Radiation** | [Core heat states, stacking Radiation Sickness, Fission Leap, EMP venting, the held Meltdown Beam and Critical Mass](induced-radioactivity.md). | Heat Vent/Reactor Core/Glowing Path work, but much of the optional tree is inherited. Radiation is **already reworked**, not a remaining original kit. |
+| **Radiation** | [Core heat states, stacking Radiation Sickness, Fission Leap, EMP venting, the held Meltdown Beam and Critical Mass](induced-radioactivity.md). | All eighteen nodes were redesigned around the new kit (Meltdown, Reactor and Fallout branches); no generic stat nodes remain. |
 | **Sonic Resonance** | [Sound Sight, Resonance, tap/held Cry, lure Note, reflecting Wall, Vault and Crescendo](sonic-resonance.md). | Its guide explicitly says the optional tree is unchanged: Shatter Note, Echo Map, Quiet Zone and the older optional attacks/guards still need a matching pass. |
 | **Superspeed** | [Momentum, speed controls, physical rush/carry, lightning and Vibrate](superspeed.md). | Reflex Focus, Momentum Strike and Slipstream Rescue were updated; older Mirage/Lightning Throw/Perception paths and generic passives remain. |
 | **Precognition** | [Danger Sense, Clarity, foreseen ghosts, painted outcomes and Fate Thread](precognition.md). | Object Reading, Red Margin and Omen Relay are updated; older Foresight/Find the Path/Shared Omen paths and generic stat nodes remain. |
 | **Density** (`phasing`) | [Five density notches, Reach Through, Embed, underground Sink and Hollow Ground](density.md). | Optional actions were adapted to the new density states; its generic stat roots/masteries remain. The old Phasing kit is **already replaced**. |
 | **Telepathy** | [Mind Threads, command choices, player/mob possession with resistance and private illusions](telepathy.md). | Implanted Command, Shared Sight and Dream Double were updated. Persuasion, Memory Walk and Hive Link retain older mechanics/upgrades. |
 | **Pyrokinesis** | [Cinder Spear, Dragon's Breath, Firestorm, Flight-style propulsion, Meteor Dive and Sunfall](pyrokinesis.md). | Core and Flight-style movement reworks are implemented. All six active sub-abilities now have a targeted mechanical and animation refresh; original stat roots/masteries remain, so this is not a complete eighteen-node interaction redesign. |
-| **Invisibility** | [Exposure, physical Refraction Step, public Mirage routes, moving Shared Veil and Ghost Protocol](invisibility.md). | All eighteen nodes now form Ghost, Trickster and Infiltrator branches: quieter movement, prepared ambushes, optical guards, false clues, quiet item lifting, shared escapes and a wall-clipped Hidden Passage. |
+| **Invisibility** | [Fade shared with nearby friends, Lens Shield → Force Push, walkable Force Bridges, Bubble → Crush (or a shelter for friends) and the telegraphed Force Nova](invisibility.md), reworked in November 2026 around invisibility for yourself, allies and objects plus strong force fields. | All eighteen nodes form Veil, Aegis and Pressure branches: hiding friends, pets and objects, unseen constructs, barriers, a riding disc, a safety net, rebounding projectiles, Pinpoint, multi-target bubbles, chain bursts and an imploding Nova. No generic stat nodes remain. |
 
 The optional-skill findings come from the actual
 [eighteen-node definitions](../src/main/resources/data/heroesevolved/skill_trees.json),

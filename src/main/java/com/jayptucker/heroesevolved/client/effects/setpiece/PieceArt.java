@@ -68,7 +68,9 @@ final class PieceArt {
             case EXPLODING_MAN -> MiniBlast.draw(c, a.origin(), a.scale() / 80F, a.scale() * 1.15F, t, a.piece().ticks);
             case SPEED_GUST -> SpeedArt.gust(c, a, t);
             case SPEED_ARMS -> SpeedArt.arms(c, a, t);
-            case RAD_HEAT, RAD_LEAP, RAD_SLAM, RAD_ZONE, RAD_EMP, RAD_BEAM, RAD_CHARGE -> RadiationArt.draw(c, a, t);
+            case RAD_HEAT, RAD_LEAP, RAD_SLAM, RAD_ZONE, RAD_EMP, RAD_BEAM, RAD_CHARGE, RAD_LANCE -> RadiationArt.draw(c, a, t);
+            case FORCE_SHIELD, FORCE_PUSH, FORCE_FORM, FORCE_BRIDGE, FORCE_WALL, FORCE_BUBBLE, FORCE_CRUSH, FORCE_BEAD,
+                    FORCE_NOVA_CHARGE, FORCE_NOVA, FORCE_DISC, FORCE_VANISH, FORCE_NET, FORCE_SHATTER, FORCE_RIPPLE -> ForceArt.draw(c, a, t);
             case OVERRUN_DEPART -> SpeedArt.depart(c, a, t);
             case OVERRUN_ARRIVE -> SpeedArt.arrive(c, a, t);
             case MATTER_RISE -> AssemblyArt.rise(c, a, t);

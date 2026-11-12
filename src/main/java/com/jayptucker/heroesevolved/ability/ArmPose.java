@@ -76,5 +76,8 @@ public enum ArmPose {
     WIND_ARMS,
     FLIGHT_COIL, FLIGHT_BRACE, FLIGHT_ROLL, FLIGHT_CLAP, FLIGHT_CAST,
     FIRE_DIVE,
-    ELECTRO_DRAW, ELECTRO_CAST, ELECTRO_STREAM, ELECTRO_CALL, ELECTRO_COIL, ELECTRO_RELEASE
+    ELECTRO_DRAW, ELECTRO_CAST, ELECTRO_STREAM, ELECTRO_CALL, ELECTRO_COIL, ELECTRO_RELEASE,
+    /** Invisibility's force fields: palms up behind a lens, a two-handed thrust, a low sweep that lays a span,
+     *  an open hand sealing a bubble, a closing fist, and arms gathering then flung wide for Force Nova. */
+    FORCE_SHIELD, FORCE_PUSH, FORCE_BUILD, FORCE_BUBBLE, FORCE_CRUSH, FORCE_NOVA
 }

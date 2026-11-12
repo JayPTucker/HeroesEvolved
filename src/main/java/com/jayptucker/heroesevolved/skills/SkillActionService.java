@@ -53,7 +53,9 @@ public final class SkillActionService {
         if (c.abilityId().getPath().equals("flight")) return com.jayptucker.heroesevolved.flight.FlightSkillService.canUse(c.player(), "flight_" + branch + "_1");
         if (c.abilityId().getPath().equals("superspeed")) return com.jayptucker.heroesevolved.speed.SpeedService.canUseSkill(c, branch);
         if (c.abilityId().getPath().equals("time_manipulation")) return com.jayptucker.heroesevolved.time.SpaceTimeService.canUse(c, branch);
-        if (c.abilityId().getPath().equals("precognition") || c.abilityId().getPath().equals("telepathy") || c.abilityId().getPath().equals("invisibility")) return true;
+        if (c.abilityId().getPath().equals("radiation")) return com.jayptucker.heroesevolved.radiation.RadiationSkills.canUse(c, branch);
+        if (c.abilityId().getPath().equals("invisibility")) return com.jayptucker.heroesevolved.invisibility.InvisibilitySkills.canUse(c, branch);
+        if (c.abilityId().getPath().equals("precognition") || c.abilityId().getPath().equals("telepathy")) return true;
         if (branch == 0 && !c.abilityId().getPath().equals("flight") && !c.abilityId().getPath().equals("regeneration"))
             return aimed(c.player(), false) != null;
         if (branch == 2 && c.abilityId().getPath().equals("regeneration"))
@@ -130,17 +132,14 @@ public final class SkillActionService {
             case "precognition" -> { return com.jayptucker.heroesevolved.precog.PrecognitionService.skill(c, branch); }
             case "superspeed" -> { return com.jayptucker.heroesevolved.speed.SpeedService.skill(c, branch); }
             case "pyrokinesis" -> { return com.jayptucker.heroesevolved.pyro.PyroService.skill(c, branch); }
-            case "invisibility" -> { return com.jayptucker.heroesevolved.invisibility.InvisibilityService.skill(c, branch); }
+            case "invisibility" -> { return com.jayptucker.heroesevolved.invisibility.InvisibilitySkills.skill(c, branch); }
             case "phasing" -> { return com.jayptucker.heroesevolved.phasing.DensityService.skill(c, branch); }
             case "empathic_mimicry" -> { return com.jayptucker.heroesevolved.mimicry.MimicryService.skill(c, branch); }
             case "time_manipulation" -> {
                 return com.jayptucker.heroesevolved.time.SpaceTimeService.activate(c, branch);
             }
             case "radiation" -> {
-                if (branch == 0) { hit(p, target, 9 + level); RadiationService.irradiate(target, p, 1, 120); }
-                if (branch == 1) effect(p, MobEffects.DAMAGE_RESISTANCE, 160, 1);
-                if (branch == 2) for (var ally : allies(p, 8)) { cleanse(ally); effect(ally, MobEffects.FIRE_RESISTANCE, 160, 0); }
-                visual(p, target, branch == 0 ? Kind.NUCLEAR_RAY : Kind.NUCLEAR_EMP, 4);
+                return com.jayptucker.heroesevolved.radiation.RadiationSkills.skill(c, branch);
             }
             case "sonic_resonance" -> {
                 if (branch == 0) { hit(p, target, 9 + level); push(target, p.getLookAngle().scale(1.1)); SonicService.voice(p, false); }

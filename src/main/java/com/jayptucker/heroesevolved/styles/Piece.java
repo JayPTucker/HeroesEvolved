@@ -63,7 +63,14 @@ public enum Piece {
     RAD_HEAT(14), RAD_LEAP(26), RAD_SLAM(34), RAD_ZONE(12), RAD_EMP(22), RAD_BEAM(4), RAD_CHARGE(64),
     ELECTRO_DRAW(9), ELECTRO_ARC(13), ELECTRO_CURRENT(6), ELECTRO_ORB(5), ELECTRO_PRIME(8),
     ELECTRO_WARN(16), ELECTRO_STRIKE(23), ELECTRO_PULSE(26), ELECTRO_RIDE(15), ELECTRO_SCAR(60),
-    ELECTRO_COIL(8), ELECTRO_SIPHON(9), ELECTRO_BLACKOUT(32), ELECTRO_AURA(10), ELECTRO_FIELD(30), ELECTRO_SCREEN(120);
+    ELECTRO_COIL(8), ELECTRO_SIPHON(9), ELECTRO_BLACKOUT(32), ELECTRO_AURA(10), ELECTRO_FIELD(30), ELECTRO_SCREEN(120),
+    // Induced Radioactivity's Gamma Lance: a bolt of gamma light down its line
+    RAD_LANCE(12),
+    // Invisibility's force fields: lens shells with a bright rim and hexagonal facets. Constructs, bubbles, the shield and
+    // the disc are re-sent every ten ticks while they last.
+    FORCE_SHIELD(12), FORCE_PUSH(14), FORCE_FORM(10), FORCE_BRIDGE(12), FORCE_WALL(12), FORCE_BUBBLE(12), FORCE_CRUSH(10),
+    FORCE_BEAD(9), FORCE_NOVA_CHARGE(22), FORCE_NOVA(30), FORCE_DISC(12), FORCE_VANISH(18), FORCE_NET(16),
+    FORCE_SHATTER(18), FORCE_RIPPLE(8);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

@@ -5,13 +5,18 @@ import com.jayptucker.heroesevolved.ability.data.PlayerAbilityData;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
+import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
+import com.jayptucker.heroesevolved.speed.SpeedService;
 import com.mojang.authlib.GameProfile;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.*;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.projectile.Arrow;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.util.FakePlayer;
@@ -96,6 +101,72 @@ public final class SpaceTimeGameTests {
             TimeStopService.stop(p);
             h.assertTrue(shot.getDeltaMovement().z == -1 && !shot.isNoGravity(), "Release must restore original velocity and gravity"); h.succeed();
         } finally { companion.discard(); enemy.discard(); shot.discard(); clear(p); }
+    }
+
+    @GameTest(template="rewind_empty", batch="time.projectile_catch")
+    public static void aTravellerCanCatchOnlyAVisibleShotWhileControllingTime(GameTestHelper h) {
+        var p = player(h);
+        p.setYRot(0);
+        p.setXRot(0);
+        PlayerEnergyService.restore(p, 999);
+        var arrow = new Arrow(EntityType.ARROW, h.getLevel());
+        arrow.setPos(p.getEyePosition().add(0, 0, 4));
+        arrow.setDeltaMovement(0, 0, -.1);
+        arrow.pickup = net.minecraft.world.entity.projectile.AbstractArrow.Pickup.ALLOWED;
+        BlockPos cover = BlockPos.containing(p.getEyePosition().add(0, 0, 2));
+        try {
+            h.assertTrue(!SpeedService.catchShot(p, arrow), "Ordinary time does not grant a catch");
+            TimeSlowService.start(p, 5);
+            h.assertTrue(!TimeStopService.shouldStopEntityTick(arrow) && arrow.getDeltaMovement().length() < .05,
+                    "Slow arrows remain catchable even below the normal speed threshold");
+            h.getLevel().setBlockAndUpdate(cover, Blocks.STONE.defaultBlockState());
+            h.assertTrue(!SpeedService.catchShot(p, arrow), "Solid cover blocks the catch");
+            h.getLevel().removeBlock(cover, false);
+            h.assertTrue(SpeedService.catchShot(p, arrow) && arrow.isRemoved(), "A visible slowed arrow can be caught");
+            h.assertTrue(p.getInventory().countItem(net.minecraft.world.item.Items.ARROW) == 1, "Pickupable arrows are recovered once");
+            h.succeed();
+        } finally { arrow.discard(); clear(p); }
+    }
+
+    @GameTest(template="rewind_empty", batch="time.tacz_compat")
+    public static void aTaczRoundSlowsBeforeItsCollisionTraceAndResumesAtFullSpeed(GameTestHelper h) {
+        var type = BuiltInRegistries.ENTITY_TYPE.getOptional(ResourceLocation.fromNamespaceAndPath("tacz", "bullet"));
+        if (type.isEmpty()) { h.succeed(); return; }
+        var p = player(h);
+        p.setYRot(0);
+        p.setXRot(0);
+        PlayerEnergyService.restore(p, 999);
+        var bullet = (Projectile) type.get().create(h.getLevel());
+        Vec3 fullSpeed = new Vec3(0, 0, -60);
+        Vec3 near = p.getEyePosition().add(0, 0, 5);
+        double radius = com.jayptucker.heroesevolved.config.HeroesEvolvedConfig.COMMON.timeSlowRadius.get();
+        bullet.setPos(p.getEyePosition().add(0, 0, radius + 4));
+        bullet.setDeltaMovement(fullSpeed);
+        try {
+            TimeSlowService.start(p, 1);
+            h.assertTrue(!TimeStopService.shouldStopEntityTick(bullet) && bullet.getDeltaMovement().length() <= .401,
+                    "A round that could cross the field in one tick is slowed before its trace");
+            bullet.setPos(near);
+            h.getLevel().addFreshEntity(bullet);
+            TimeStopService.shouldStopEntityTick(bullet);
+            bullet.tick();
+            ProjectileTimeService.afterTick(bullet);
+            h.assertTrue(!bullet.isRemoved() && Math.abs(bullet.position().distanceTo(near) - .4) < .01,
+                    "The TACZ projectile itself must travel at the catchable speed");
+            TimeStopService.start(p, 5);
+            h.assertTrue(TimeStopService.shouldStopEntityTick(bullet) && bullet.getDeltaMovement().equals(Vec3.ZERO),
+                    "Still World suspends an already slowed bullet");
+            TimeStopService.stop(p);
+            h.assertTrue(!TimeStopService.shouldStopEntityTick(bullet) && bullet.getDeltaMovement().length() <= .401,
+                    "Releasing Still World must preserve the overlapping slow field");
+            TimeSlowService.stop(p);
+            h.assertTrue(bullet.getDeltaMovement().equals(fullSpeed) && !bullet.isNoGravity(),
+                    "Leaving all fields restores full precision speed and original gravity");
+            TimeSlowService.start(p, 1);
+            TimeStopService.shouldStopEntityTick(bullet);
+            h.assertTrue(SpeedService.catchShot(p, bullet) && bullet.isRemoved(), "The shared catch takes the TACZ round out of flight");
+            h.succeed();
+        } finally { bullet.discard(); clear(p); }
     }
     @GameTest(template="rewind_empty", batch="time.redesign.blink")
     public static void blinkWorksInOpenAirAndResetsFallMomentum(GameTestHelper h) {

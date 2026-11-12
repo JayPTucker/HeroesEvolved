@@ -10,14 +10,17 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import java.util.UUID;
 
 /** Tracking-scoped body heat and positional charging sound. Zero values clear both. */
-public record RadiationStatePayload(int entityId, UUID uuid, int stress, int remaining, int duration)
+public record RadiationStatePayload(int entityId, UUID uuid, int stress, int remaining, int duration, boolean overdrive)
         implements CustomPacketPayload {
+    public RadiationStatePayload(int entityId, UUID uuid, int stress, int remaining, int duration) {
+        this(entityId, uuid, stress, remaining, duration, false);
+    }
     public static final Type<RadiationStatePayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(
             HeroesEvolved.MOD_ID, "radiation_state"));
     public static final StreamCodec<RegistryFriendlyByteBuf, RadiationStatePayload> STREAM_CODEC = StreamCodec.of(
             (b, v) -> { b.writeVarInt(v.entityId); b.writeUUID(v.uuid); b.writeVarInt(v.stress);
-                b.writeVarInt(v.remaining); b.writeVarInt(v.duration); },
-            b -> new RadiationStatePayload(b.readVarInt(), b.readUUID(), b.readVarInt(), b.readVarInt(), b.readVarInt()));
+                b.writeVarInt(v.remaining); b.writeVarInt(v.duration); b.writeBoolean(v.overdrive); },
+            b -> new RadiationStatePayload(b.readVarInt(), b.readUUID(), b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readBoolean()));
     @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     public static void handle(RadiationStatePayload payload, IPayloadContext context) {
         context.enqueueWork(() -> RadiationVisuals.update(payload));

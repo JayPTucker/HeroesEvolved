@@ -85,7 +85,6 @@ public final class AdvancedTechniques {
     private static final Map<UUID, Long> DODGE_UNTIL = new HashMap<>();
     private static final Map<UUID, Long> OMENS = new HashMap<>();
     private static final Map<UUID, Long> COOLDOWNS = new HashMap<>();
-    private static final Set<Projectile> SLOWED = Collections.newSetFromMap(new WeakHashMap<>());
     private static int sharing;
 
     private AdvancedTechniques() {}
@@ -263,33 +262,9 @@ public final class AdvancedTechniques {
                 AbilityEffects.send(level, Kind.TEMPORAL_FIELD, p.position(), p.getEyePosition(), radius);
             }
             // ---------------- Radiation ----------------
-            case "heat_vent" -> {
-                boolean clean = has(p, "radiation_clean_vent");
-                int vented = RadiationService.vent(p, clean ? 50 : 30);
-                Vec3 aim = p.getLookAngle().normalize();
-                for (LivingEntity t : enemies(p, p.position(), 7)) {
-                    Vec3 delta = t.position().subtract(p.position());
-                    if (delta.normalize().dot(aim) < 0.6) continue;
-                    t.hurt(p.damageSources().inFire(), 3 + vented / 6F);
-                    if (!clean) t.igniteForSeconds(4);
-                }
-                if (has(p, "radiation_containment")) { p.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 200)); p.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 200)); }
-                AbilityEffects.send(level, Kind.NUCLEAR_RAY, p.getEyePosition(), p.getEyePosition().add(aim.scale(7)), 1.5);
-            }
-            case "reactor_core" -> {
-                int vented = RadiationService.vent(p, has(p, "radiation_power_transfer") ? 40 : 20);
-                PlayerEnergyService.restore(p, vented);
-                for (ServerPlayer ally : allies(p, 6)) {
-                    if (ally != p) PlayerEnergyService.restore(ally, 10);
-                    if (has(p, "radiation_reactor")) { ally.addEffect(new MobEffectInstance(MobEffects.DIG_SPEED, 200, 1)); ally.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 200)); }
-                }
-                AbilityEffects.send(level, Kind.NUCLEAR_EMP, p.position(), p.getEyePosition(), 3);
-            }
-            case "glowing_path" -> {
-                boolean catastrophe = has(p, "radiation_catastrophe");
-                ZONES.add(new Zone("contamination", p, level, p.position(), p.position(), has(p, "radiation_wider_path") ? 9 : 6,
-                        now + (catastrophe ? 400 : 200)));
-                AbilityEffects.send(level, Kind.NUCLEAR_FALLOUT, p.position(), p.getEyePosition(), 6);
+            // Induced Radioactivity's techniques live with the power.
+            case "heat_vent", "reactor_core", "glowing_path" -> {
+                return com.jayptucker.heroesevolved.radiation.RadiationSkills.technique(p, mechanic);
             }
             // ---------------- Sonic Resonance ----------------
             case "shatter_note" -> {
@@ -456,10 +431,35 @@ public final class AdvancedTechniques {
     }
 
     /** Ends Perception at once (tests, power loss). */
-    public static void endPerception(ServerPlayer p) { PERCEPTION.remove(p.getUUID()); }
+    public static void endPerception(ServerPlayer p) {
+        if (PERCEPTION.remove(p.getUUID()) != null)
+            com.jayptucker.heroesevolved.time.ProjectileTimeService.releaseInactive();
+    }
 
     /** True while {@code p} has Perception up. */
     public static boolean perceiving(ServerPlayer p) { return PERCEPTION.containsKey(p.getUUID()); }
+
+    public static int projectileInterval(Projectile shot, Vec3 end) {
+        int interval = 0;
+        for (Perception field : PERCEPTION.values()) {
+            if (!affectsShot(field, shot, end)) continue;
+            if (field.stop) return com.jayptucker.heroesevolved.time.ProjectileTimeService.STOPPED;
+            interval = Math.max(interval, field.interval);
+        }
+        return interval;
+    }
+
+    public static boolean controlsShot(ServerPlayer player, Projectile shot, Vec3 end) {
+        Perception field = PERCEPTION.get(player.getUUID());
+        return field != null && affectsShot(field, shot, end);
+    }
+
+    private static boolean affectsShot(Perception field, Projectile shot, Vec3 end) {
+        ServerPlayer owner = field.owner;
+        return owner.level() == shot.level() && shot.getOwner() != owner && now(owner) < field.until
+                && PowerRules.canAct(owner) && com.jayptucker.heroesevolved.time.ProjectileTimeService
+                .reachesField(shot.position(), end, owner.position(), field.radius);
+    }
 
     @SubscribeEvent public static void tick(ServerTickEvent.Post event) {
         MinecraftServer server = event.getServer();
@@ -542,16 +542,11 @@ public final class AdvancedTechniques {
         for (Perception field : List.copyOf(PERCEPTION.values())) {
             ServerPlayer p = field.owner;
             if (now >= field.until || !p.isAlive() || p.isRemoved() || !PowerRules.canAct(p)) {
-                PERCEPTION.remove(p.getUUID());
+                endPerception(p);
                 if (p.isAlive() && !p.isRemoved()) p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.8F, 1.6F);
                 continue;
             }
             ServerLevel level = p.serverLevel();
-            for (Projectile shot : level.getEntitiesOfClass(Projectile.class, p.getBoundingBox().inflate(field.radius), s -> s.getOwner() != p)) {
-                if (field.stop) { shot.setDeltaMovement(Vec3.ZERO); shot.setNoGravity(true); }
-                else if (SLOWED.add(shot)) shot.setDeltaMovement(shot.getDeltaMovement().scale(0.3));
-                shot.hurtMarked = true;
-            }
             // Players cannot have their ticks skipped; slow hostile ones down instead.
             for (ServerPlayer other : level.getEntitiesOfClass(ServerPlayer.class, p.getBoundingBox().inflate(field.radius),
                     o -> o != p && hostile(p, o)))
@@ -681,6 +676,6 @@ public final class AdvancedTechniques {
     @SubscribeEvent public static void stopping(ServerStoppingEvent event) {
         ZONES.clear(); SEALS.clear(); PERSUADED.clear(); COMPELLED.clear(); COMPELLER.clear(); ADAPTING.clear(); ADAPTED_TO.clear();
         HIVE.clear(); HIVE_OWNER.clear(); MIRAGES.clear(); PERCEPTION.clear(); DODGES.clear(); DODGE_UNTIL.clear(); OMENS.clear();
-        COOLDOWNS.clear(); SLOWED.clear(); sharing = 0;
+        COOLDOWNS.clear(); sharing = 0;
     }
 }

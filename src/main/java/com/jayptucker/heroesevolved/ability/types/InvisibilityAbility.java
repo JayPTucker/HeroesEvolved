@@ -1,19 +1,20 @@
 package com.jayptucker.heroesevolved.ability.types;
 
 import com.jayptucker.heroesevolved.ability.*;
+import com.jayptucker.heroesevolved.invisibility.ForceFieldService;
 import com.jayptucker.heroesevolved.invisibility.InvisibilityService;
 import java.util.Map;
 
 /**
- * Invisibility, inspired by Claude Rains.
+ * Invisibility: light bent round you, your friends and the things you touch, and light made solid as force fields.
  * <ul>
- *   <li>Level 1, Fade: toggle full invisibility; drains stamina while it lasts.</li>
- *   <li>Level 1, Refraction Step: physical movement leaves a refracted echo.</li>
- *   <li>Level 2, Mirage: a public optical double follows a checked route.</li>
- *   <li>Level 3, Shared Veil: a moving field conceals consenting companions.</li>
- *   <li>Level 5, Ghost Protocol: deep concealment and diverging optical echoes.</li>
- *   <li>Always: harder to notice; damage flickers you visible; sensing powers can reveal you.</li>
+ *   <li>Level 1, Fade: toggle invisibility; friends within three blocks fade with you.</li>
+ *   <li>Level 1, Lens Shield: a curved shield follows your aim; press again for Force Push.</li>
+ *   <li>Level 2, Force Bridge: a walkable span of force along your aim.</li>
+ *   <li>Level 3, Bubble: hold a foe in a sphere (press again to crush it) or shelter your friends.</li>
+ *   <li>Level 5, Force Nova: a telegraphed burst that breaks your constructs into shards, then you vanish.</li>
  * </ul>
+ * Action ids are kept from the older kits, so loadouts, balance and config keys carry over.
  */
 public final class InvisibilityAbility implements Ability {
     private static final Map<AbilitySlot, AbilityAction> ACTIONS = Map.of(
@@ -21,16 +22,16 @@ public final class InvisibilityAbility implements Ability {
                     .activate(c -> InvisibilityService.toggleFade(c.player()))
                     .deactivate(c -> InvisibilityService.unfade(c.player()))
                     .deactivateOnPress(c -> true).build(),
-            AbilitySlot.SECONDARY, SimpleAction.builder("invisibility_silent_step", 1).cost(() -> 12, () -> 30)
-                    .canUse(c -> !c.player().isPassenger())
-                    .activate(c -> InvisibilityService.silentStep(c.player(), c.abilityLevel())).build(),
-            AbilitySlot.TERTIARY, SimpleAction.builder("invisibility_unseen_strike", 2).cost(() -> 16, () -> 120)
-                    .activate(c -> InvisibilityService.mirage(c.player(), c.abilityLevel())).build(),
-            AbilitySlot.QUATERNARY, SimpleAction.builder("invisibility_shroud", 3).cost(() -> 25, () -> 300)
-                    .activate(c -> InvisibilityService.shroud(c.player()))
-                    .deactivate(c -> InvisibilityService.endVeil(c.player())).build(),
+            AbilitySlot.SECONDARY, SimpleAction.builder("invisibility_silent_step", 1).cost(() -> 14, () -> 80)
+                    .activate(c -> ForceFieldService.raiseShield(c.player()))
+                    .followUp(c -> ForceFieldService.push(c.player())).build(),
+            AbilitySlot.TERTIARY, SimpleAction.builder("invisibility_unseen_strike", 2).cost(() -> 16, () -> 80)
+                    .activate(c -> ForceFieldService.bridge(c.player())).build(),
+            AbilitySlot.QUATERNARY, SimpleAction.builder("invisibility_shroud", 3).cost(() -> 25, () -> 200)
+                    .activate(c -> ForceFieldService.bubble(c.player()))
+                    .followUp(c -> ForceFieldService.crush(c.player())).build(),
             AbilitySlot.QUINARY, SimpleAction.builder("invisibility_ghost_protocol", 5).cost(() -> 90, () -> 20 * 90)
-                    .activate(c -> InvisibilityService.ghostProtocol(c.player())).build());
+                    .activate(c -> ForceFieldService.nova(c.player())).build());
     @Override public AbilityDefinition definition() { return new AbilityDefinition(0, 0, 5, AbilityActivationType.INSTANT); }
     @Override public Map<AbilitySlot, AbilityAction> actions() { return ACTIONS; }
     @Override public boolean canUse(AbilityUseContext c) { return false; }

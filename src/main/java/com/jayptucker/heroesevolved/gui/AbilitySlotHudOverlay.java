@@ -376,8 +376,10 @@ public final class AbilitySlotHudOverlay {
                 && power.abilityId().equals(com.jayptucker.heroesevolved.ability.registry.ModAbilities.RADIATION_ID));
         if (mc.player == null || !ted) return y;
         int core = Math.max(0, com.jayptucker.heroesevolved.client.effects.RadiationVisuals.stress(mc.player.getId()));
-        String tier = core >= 100 ? "meltdown" : core >= 80 ? "critical" : core >= 60 ? "glowing" : core >= 40 ? "hot" : "stable";
-        int color = core >= 100 ? ((mc.level.getGameTime() / 4) % 2 == 0 ? 0xFFFFFFFF : 0xFFFF4040)
+        boolean overdrive = com.jayptucker.heroesevolved.client.effects.RadiationVisuals.overdrive(mc.player.getId());
+        String tier = overdrive ? "overdrive" : core >= 100 ? "meltdown" : core >= 80 ? "critical" : core >= 60 ? "glowing" : core >= 40 ? "hot" : "stable";
+        int color = overdrive ? ((mc.level.getGameTime() / 6) % 2 == 0 ? 0xFFFFD040 : 0xFFFFF0A0)
+                : core >= 100 ? ((mc.level.getGameTime() / 4) % 2 == 0 ? 0xFFFFFFFF : 0xFFFF4040)
                 : core >= 80 ? 0xFFFF5A3A : core >= 40 ? 0xFFFFA040 : 0xFFB8E04A;
         guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.radiation_core", core,
                 Component.translatable("hud.heroesevolved.radiation_" + tier)), START_X, y, color, true);

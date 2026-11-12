@@ -3,11 +3,11 @@ package com.jayptucker.heroesevolved.client;
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.network.SpeedCatchPayload;
 import com.jayptucker.heroesevolved.speed.SpeedMovement;
+import com.jayptucker.heroesevolved.time.ProjectileCatchGeometry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.phys.EntityHitResult;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -45,16 +45,15 @@ public final class SpeedHands {
     public static void use(InputEvent.InteractionKeyMappingTriggered event) {
         Minecraft mc = Minecraft.getInstance();
         var player = mc.player;
-        if (!event.isUseItem() || player == null || mc.level == null || !SpeedMovement.accelerating(player)) return;
-        Vec3 eye = player.getEyePosition(), reach = eye.add(player.getLookAngle().scale(7));
+        if (!event.isUseItem() || event.getHand() != InteractionHand.MAIN_HAND || player == null || mc.level == null) return;
+        boolean accelerating = SpeedMovement.accelerating(player), timeCatch = ClientProjectileTime.canCatch();
+        if (!accelerating && !timeCatch) return;
         Projectile best = null;
         double bestDistance = Double.MAX_VALUE;
         // Shots are not pickable, so the crosshair never lands on them: trace a generous box instead.
-        for (Projectile shot : mc.level.getEntitiesOfClass(Projectile.class, player.getBoundingBox().inflate(8),
-                s -> s.isAlive() && s.getOwner() != player && s.getDeltaMovement().lengthSqr() > .0025)) {
-            var clip = shot.getBoundingBox().inflate(.6).clip(eye, reach);
-            if (clip.isEmpty()) continue;
-            double distance = clip.get().distanceToSqr(eye);
+        for (Projectile shot : mc.level.getEntitiesOfClass(Projectile.class, player.getBoundingBox().inflate(ProjectileCatchGeometry.REACH),
+                s -> s.isAlive() && (ClientProjectileTime.controls(s) || accelerating && s.getDeltaMovement().lengthSqr() > .0025))) {
+            double distance = ProjectileCatchGeometry.hitDistanceSquared(player, shot);
             if (distance < bestDistance) { bestDistance = distance; best = shot; }
         }
         if (best == null) return;

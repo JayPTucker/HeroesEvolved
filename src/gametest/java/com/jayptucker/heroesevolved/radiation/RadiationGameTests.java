@@ -559,4 +559,111 @@ public final class RadiationGameTests {
             helper.succeed();
         } finally { remove(player, near); }
     }
+
+    // ------------------------------------------------------------------
+    // The skill tree
+    // ------------------------------------------------------------------
+
+    private static void learn(ServerPlayer player, String... ids) {
+        player.setData(ModDataAttachments.SKILL_TREES, com.jayptucker.heroesevolved.skills.SkillTreeData.empty().with(ModAbilities.RADIATION_ID.toString(),
+                new com.jayptucker.heroesevolved.skills.SkillTreeData.Build(15, Set.of(ids), Map.of())));
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 60, batch = "radiation.tree.lance")
+    public static void gammaLancePiercesALineAndSpendsCoreToHitHarder(GameTestHelper helper) {
+        ServerPlayer player = player(helper, 230, false);
+        player.setYRot(0); player.setXRot(0);
+        var near = mob(helper, EntityType.IRON_GOLEM, player.position().add(0, 0, 5)); Cow far = mob(helper, EntityType.COW, player.position().add(0, 0, 11));
+        try {
+            RadiationService.vent(player, 100);
+            helper.assertTrue(com.jayptucker.heroesevolved.radiation.RadiationSkills.gammaLanceForTest(player, 3), "The lance fires");
+            float cold = near.getMaxHealth() - near.getHealth();
+            helper.assertTrue(cold > 0 && far.getHealth() < far.getMaxHealth(), "It pierces everything on the line");
+            near.setHealth(near.getMaxHealth()); near.invulnerableTime = 0;
+            RadiationService.addMass(player, 30 - RadiationService.mass(player));
+            com.jayptucker.heroesevolved.radiation.RadiationSkills.gammaLanceForTest(player, 3);
+            float hot = near.getMaxHealth() - near.getHealth();
+            helper.assertTrue(hot >= cold * 1.8F, "With Core to spend it strikes twice as hard: " + cold + " then " + hot);
+            helper.assertTrue(RadiationService.mass(player) == 15, "And spends 15 Core: " + RadiationService.mass(player));
+            helper.succeed();
+        } finally { remove(player, near, far); }
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 60, batch = "radiation.tree.vent")
+    public static void chainVentBurstsTheSickItHits(GameTestHelper helper) {
+        ServerPlayer player = player(helper, 245, false);
+        player.setYRot(0); player.setXRot(0);
+        learn(player, "radiation_heat_vent", "radiation_clean_vent");
+        Cow carrier = mob(helper, EntityType.COW, player.position().add(0, 0, 4));
+        Cow neighbour = mob(helper, EntityType.COW, player.position().add(3.5, 0, 1.5));
+        try {
+            RadiationSickness.dose(carrier, player, 3, 200);
+            RadiationService.addMass(player, 30 - RadiationService.mass(player));
+            helper.assertTrue(com.jayptucker.heroesevolved.radiation.RadiationSkills.technique(player, "heat_vent"), "Heat Vent fires");
+            helper.assertTrue(RadiationService.mass(player) == 0, "It vents the Core");
+            helper.assertTrue(carrier.getHealth() < carrier.getMaxHealth() && carrier.getDeltaMovement().z > 0.3, "The cone burns and throws what is in front");
+            helper.assertTrue(neighbour.getHealth() < neighbour.getMaxHealth() && RadiationSickness.stage(neighbour) >= 0,
+                    "The sick enemy bursts onto its neighbour, outside the cone");
+            helper.succeed();
+        } finally { remove(player, carrier, neighbour); }
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 120, batch = "radiation.tree.leap")
+    public static void falloutUpgradesChangeTheLeap(GameTestHelper helper) {
+        ServerPlayer player = player(helper, 290, false);
+        learn(player, "radiation_2_0", "radiation_2_2", "radiation_glowing_path", "radiation_wider_path", "radiation_catastrophe");
+        // Out of reach of an ordinary slam (5 blocks at tier 2), inside a Catastrophe (8).
+        Cow outer = mob(helper, EntityType.COW, player.position().add(7, 0, 0));
+        try {
+            helper.assertTrue(com.jayptucker.heroesevolved.radiation.RadiationLeap.launch(player, 2), "The leap launches");
+            helper.assertTrue(RadiationService.inOwnZone(player, player.position()), "Fallout Boots leave the ground contaminated");
+            helper.assertTrue(com.jayptucker.heroesevolved.radiation.RadiationLeap.launch(player, 2), "Second Leap launches once more in the air");
+            helper.assertTrue(!com.jayptucker.heroesevolved.radiation.RadiationLeap.launch(player, 2), "But only once");
+            helper.runAfterDelay(5, () -> {
+                try {
+                    helper.assertTrue(com.jayptucker.heroesevolved.radiation.RadiationLeap.slam(player), "The slam starts");
+                } catch (RuntimeException e) { remove(player, outer); throw e; }
+            });
+            helper.runAfterDelay(55, () -> {
+                try {
+                    helper.assertTrue(outer.getHealth() < outer.getMaxHealth(), "Slamming into your own contaminated ground sets it off, wider");
+                    helper.succeed();
+                } finally { remove(player, outer); }
+            });
+        } catch (RuntimeException e) { remove(player, outer); throw e; }
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 120, batch = "radiation.tree.breeder")
+    public static void breederReactorRunsHotInsteadOfFailing(GameTestHelper helper) {
+        ServerPlayer player = player(helper, 305, false);
+        learn(player, "radiation_reactor_core", "radiation_power_transfer", "radiation_reactor");
+        try {
+            RadiationService.addMass(player, 100);
+            helper.assertTrue(RadiationService.multiplier(player) == 2.0F, "Overdrive doubles radiation damage");
+        } catch (RuntimeException e) { remove(player); throw e; }
+        helper.runAfterDelay(75, () -> {
+            try {
+                helper.assertTrue(!RadiationService.isDetonating(player), "No meltdown while running in Overdrive");
+                helper.succeed();
+            } finally { remove(player); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 60, batch = "radiation.tree.supercritical")
+    public static void supercriticalKillsBurstAndFeedTheCore(GameTestHelper helper) {
+        ServerPlayer player = player(helper, 330, false);
+        learn(player, "radiation_heat_vent", "radiation_clean_vent", "radiation_containment");
+        Cow dead = mob(helper, EntityType.COW, player.position().add(4, 0, 0)), near = mob(helper, EntityType.COW, player.position().add(6, 0, 0));
+        try {
+            RadiationService.addMass(player, 85 - RadiationService.mass(player));
+            com.jayptucker.heroesevolved.radiation.RadiationSkills.onKill(player, dead);
+            helper.assertTrue(near.getHealth() < near.getMaxHealth(), "A kill while Critical bursts onto what is near");
+            helper.assertTrue(RadiationService.mass(player) == 90, "And feeds 5 Core: " + RadiationService.mass(player));
+            RadiationService.vent(player, 100);
+            float before = near.getHealth();
+            com.jayptucker.heroesevolved.radiation.RadiationSkills.onKill(player, dead);
+            helper.assertTrue(near.getHealth() == before, "Below Critical nothing bursts");
+            helper.succeed();
+        } finally { remove(player, dead, near); }
+    }
 }

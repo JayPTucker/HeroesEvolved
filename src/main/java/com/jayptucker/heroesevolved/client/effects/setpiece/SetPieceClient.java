@@ -1,6 +1,7 @@
 package com.jayptucker.heroesevolved.client.effects.setpiece;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
+import com.jayptucker.heroesevolved.client.ClientProjectileTime;
 import com.jayptucker.heroesevolved.network.SetPiecePayload;
 import com.jayptucker.heroesevolved.styles.Piece;
 import com.mojang.blaze3d.platform.GlStateManager;
@@ -81,6 +82,18 @@ public final class SetPieceClient {
         add(new SetPiecePayload(piece.ordinal(), origin, target, scale, entity, seed, 0));
     }
 
+    /**
+     * Whether a later piece of one of {@code by} has started on the same entity (or, unbound, at the same place) and
+     * so replaces {@code a}: a held field that was crushed, popped or thrown stops drawing at once. A newer copy of the
+     * same piece only replaces it once it has faded in.
+     */
+    public static boolean superseded(Active a, java.util.Set<Piece> by, long now) {
+        for (Active o : ACTIVE)
+            if (o != a && o.start >= a.start && by.contains(o.piece) && (o.piece != a.piece || now - o.start >= 2)
+                    && (a.entity >= 0 ? o.entity == a.entity : o.origin.equals(a.origin) && o.target.equals(a.target))) return true;
+        return false;
+    }
+
     /** Stops everything playing, for previews. */
     public static void clear() { ACTIVE.clear(); }
 
@@ -96,7 +109,8 @@ public final class SetPieceClient {
         boolean solid = event.getStage() == RenderLevelStageEvent.Stage.AFTER_ENTITIES;
         if (!solid && event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null || ACTIVE.isEmpty() && !SpeedArt.live() && !RewindArt.live() && !FlightArt.live() && !PyroArt.live()) return;
+        if (mc.level == null || ACTIVE.isEmpty() && !SpeedArt.live() && !RewindArt.live() && !FlightArt.live()
+                && !PyroArt.live() && !ClientProjectileTime.hasControlledShots()) return;
         if (world != mc.level) { ACTIVE.clear(); world = mc.level; }
         Vec3 camera = event.getCamera().getPosition();
         Canvas c = CANVAS;
@@ -150,6 +164,7 @@ public final class SetPieceClient {
             RewindArt.drawLive(c);
             FlightArt.drawLive(c);
             PyroArt.drawLive(c);
+            TemporalProjectileArt.draw(c);
         } catch (RuntimeException broken) {
             HeroesEvolved.LOGGER.warn("Live power effects failed to draw", broken);
         }

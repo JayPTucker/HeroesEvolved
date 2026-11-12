@@ -50,7 +50,8 @@ Lightspeed spends all your Momentum.
   (a third against players).
 - **Catch.** Right-click an arrow or thrown item in flight within 7 blocks to catch it out of the air
   for 2 stamina. Arrows that could be picked up and thrown items go into your inventory. Fireballs
-  and skulls are snuffed out.
+  and skulls are snuffed out. Perception also lets you catch shots it slows, including TACZ bullets,
+  while Accelerate is off. Slowed bullets glow so you can see where to aim.
 - **Perception** slows everything within 12 blocks (16 with Long Perception) to a third of its speed,
   or a sixth with Flash Time. Your own pets are not slowed. Players can't be slowed tick by tick, so
   hostile players get heavy Slowness instead. It has gold clock rings, hanging sparks and a slow heartbeat.

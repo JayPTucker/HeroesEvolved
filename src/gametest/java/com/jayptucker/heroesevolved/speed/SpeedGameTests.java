@@ -246,6 +246,25 @@ public final class SpeedGameTests {
             } finally { near.discard(); far.discard(); villager.discard(); com.jayptucker.heroesevolved.expansion.AdvancedTechniques.endPerception(p); }
         });
     }
+
+    @GameTest(template="rewind_empty", batch="speed.perception_catch")
+    public static void perceptionLetsTheRunnerCatchASlowedShotWithoutAccelerating(GameTestHelper h) {
+        var p = player(h);
+        var shot = new Arrow(EntityType.ARROW, h.getLevel());
+        shot.setPos(p.getEyePosition().add(0, 0, 4));
+        shot.setDeltaMovement(0, 0, -3);
+        try {
+            com.jayptucker.heroesevolved.expansion.AdvancedTechniques.startPerception(p);
+            h.assertTrue(!com.jayptucker.heroesevolved.time.TimeStopService.shouldStopEntityTick(shot)
+                    && shot.getDeltaMovement().length() <= .401, "Perception slows the shot before it moves");
+            h.assertTrue(SpeedService.catchShot(p, shot), "Perception itself enables the right-click catch");
+            h.succeed();
+        } finally {
+            shot.discard();
+            com.jayptucker.heroesevolved.expansion.AdvancedTechniques.endPerception(p);
+            SpeedService.forget(p);
+        }
+    }
     @GameTest(template="rewind_empty", batch="speed.ownership")
     public static void superspeedUsesTheUniqueOwnershipRule(GameTestHelper h) {
         var data = new PowerOwnershipSavedData(); UUID first = UUID.randomUUID(), second = UUID.randomUUID();

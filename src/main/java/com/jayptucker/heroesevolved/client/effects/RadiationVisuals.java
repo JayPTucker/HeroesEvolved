@@ -22,8 +22,14 @@ public final class RadiationVisuals {
     private static final Map<Integer, NuclearChargeSound> SOUNDS = new HashMap<>();
     private static ClientLevel world;
     private RadiationVisuals() {}
+    private static final java.util.Set<Integer> OVERDRIVEN = new java.util.HashSet<>();
+
+    /** Is this entity running in Breeder Reactor's Overdrive? */
+    public static boolean overdrive(int id) { return OVERDRIVEN.contains(id); }
+
     public static void update(RadiationStatePayload value) {
         Minecraft mc = Minecraft.getInstance();
+        if (value.overdrive()) OVERDRIVEN.add(value.entityId()); else OVERDRIVEN.remove(value.entityId());
         if (mc.level != world) { clear(); world = mc.level; }
         if (world == null) return;
         if (value.stress() <= 0 && value.remaining() <= 0) { remove(value.entityId()); return; }

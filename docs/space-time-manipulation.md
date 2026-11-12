@@ -17,6 +17,11 @@ These are the default keys; rebinding and the inventory skill tree still work.
 | 4 | X | Rewrite the Moment | Restore the recorded timeline from fifteen seconds ago, including changed blocks, containers, and recorded entities, everywhere you have been in those seconds. Anyone who died in reach lives again. Everyone it reaches is carried back through their own fifteen seconds (see [Going back](#going-back)), even across a portal, and lands where they were. You recover lost health. It costs **130 stamina** (hold Shift to overexert when you're short) and recovers in **4 minutes at Level 4, 2½ minutes at Level 5**. While it's ready, a faint ghost of you, ringed in violet and visible only to you, stands where it would take you. |
 | 5 | V | Walk the Past | Shift + V records an area; V visits the recorded past with nearby companions. V in the past returns without energy cost or an entry-cooldown delay. |
 
+While **Between Seconds** or **Still World** is active, aim at a projectile affected by your field and
+right-click within 7 blocks to catch it for 2 stamina. Pickupable arrows and thrown items go into your
+inventory. TACZ bullets show a bright mark in slowed time so you can see where to aim. Catching one
+removes it from the air. Any shot you leave alone resumes when time returns to normal.
+
 ### Going back
 
 A rewind (Rewrite the Moment, or a speedster's [Overrun](superspeed.md#overrun-outrunning-the-last-minute))

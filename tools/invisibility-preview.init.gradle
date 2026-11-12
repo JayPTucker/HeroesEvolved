@@ -1,4 +1,4 @@
-// Actual optical concealment, refraction dash and public mirages in an isolated survival client.
+// Invisibility's Fade and force fields (shield, push, bridge, bubble, crush, nova and the tree), photographed in a flat world.
 allprojects {
     plugins.withId('net.neoforged.moddev') {
         afterEvaluate {

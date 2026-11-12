@@ -38,6 +38,13 @@ public final class FirstPersonArmGeometry {
             cryo(stack, side, pose, poseAge);
             return;
         }
+        if (switch (pose) {
+            case FORCE_SHIELD, FORCE_PUSH, FORCE_BUILD, FORCE_BUBBLE, FORCE_CRUSH, FORCE_NOVA -> true;
+            default -> false;
+        }) {
+            force(stack, side, pose, poseAge);
+            return;
+        }
         if (pose == ArmPose.OPTICAL_SPLIT || pose == ArmPose.OPTICAL_VEIL || pose == ArmPose.OPTICAL_DISPERSE) {
             optical(stack, side, pose, poseAge);
             return;
@@ -235,6 +242,47 @@ public final class FirstPersonArmGeometry {
                 height = side > 0 ? -.52F : -.42F; spread = side > 0 ? .4F : .62F;
                 depth = side > 0 ? -.55F : -.35F; pitch = side > 0 ? -112 : -80;
                 roll = side * 20;
+            }
+            default -> { }
+        }
+        stack.translate(side * spread, height, depth);
+        stack.mulPose(Axis.YP.rotationDegrees(yaw));
+        stack.mulPose(Axis.XP.rotationDegrees(pitch));
+        stack.mulPose(Axis.ZP.rotationDegrees(roll));
+    }
+
+    /** Invisibility's force fields: the hands hold up a lens, thrust it, sweep out a span, seal and crush a bubble. */
+    private static void force(PoseStack stack, float side, ArmPose pose, float age) {
+        float spread = .36F, height = -.42F, depth = -.4F, yaw = side * -4, pitch = -88, roll = side * 12;
+        switch (pose) {
+            case FORCE_SHIELD -> {
+                float open = smooth(age / 4F);
+                spread = .3F + .06F * open; depth = -.38F - .08F * open; yaw = side * (-2 - 6 * open); roll = side * (10 + 18 * open);
+                height += Mth.sin(age * .2F) * .01F;
+            }
+            case FORCE_PUSH -> {
+                float draw = smooth(age / 2F) * (1 - smooth((age - 2) / 2F)), recover = smooth((age - 6) / 6F);
+                spread = .32F; depth = -.5F + .22F * draw + .1F * recover; pitch = -92 + 14 * draw + 8 * recover; roll = side * 20;
+            }
+            case FORCE_BUILD -> {
+                float sweep = smooth(age / 10F);
+                spread = .5F - .12F * sweep; height = -.62F + .2F * sweep; pitch = -58 - 30 * sweep; yaw = side * (10 - 14 * sweep);
+            }
+            case FORCE_BUBBLE -> {
+                float open = smooth(age / 6F);
+                if (side > 0) { spread = .3F; height = -.38F; depth = -.46F - .06F * open; pitch = -90; roll = side * (8 + 20 * open); }
+                else { spread = .52F; height = -.6F; depth = -.3F; pitch = -66; yaw = side * 6; }
+            }
+            case FORCE_CRUSH -> {
+                float close = smooth(age / 8F), shake = Mth.sin(age * 2.1F) * .006F * close;
+                spread = .38F - .12F * close + shake; yaw = side * (-6 - 14 * close); roll = side * (12 + 30 * close); depth = -.44F;
+            }
+            case FORCE_NOVA -> {
+                float gather = smooth(age / 12F), fling = smooth((age - 20) / 3F);
+                spread = Mth.lerp(fling, .36F - .14F * gather, .64F);
+                yaw = side * Mth.lerp(fling, -4 - 22 * gather, 34);
+                pitch = Mth.lerp(fling, -88 + 8 * gather, -66);
+                height = Mth.lerp(fling, -.42F - .04F * gather, -.34F);
             }
             default -> { }
         }

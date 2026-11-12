@@ -98,10 +98,19 @@ public final class RadiationSickness extends MobEffect {
      * takes damage and a dose of their own; it does not hurt the caster or their allies.
      */
     public static void chainReaction(LivingEntity dead) {
-        int stage = stage(dead);
         UUID sourceId = SOURCES.remove(dead.getUUID());
+        if (!(dead.level() instanceof ServerLevel level)) return;
+        burst(dead, sourceId == null ? null : level.getServer().getPlayerList().getPlayer(sourceId), true);
+    }
+
+    /** A sick creature bursts without dying, as Chain Vent makes it: the same chain reaction, at any stage. */
+    public static void burst(LivingEntity sick, ServerPlayer caster) {
+        burst(sick, caster, false);
+    }
+
+    private static void burst(LivingEntity dead, ServerPlayer caster, boolean dying) {
+        int stage = Math.max(stage(dead), dying ? -1 : 1);
         if (stage < 1 || !(dead.level() instanceof ServerLevel level)) return;
-        ServerPlayer caster = sourceId == null ? null : level.getServer().getPlayerList().getPlayer(sourceId);
         double radius = 3 + stage;
         var center = dead.getBoundingBox().getCenter();
         int spread = 0;

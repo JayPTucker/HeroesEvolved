@@ -1,10 +1,7 @@
 package com.jayptucker.heroesevolved.invisibility;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
-import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.ability.ArmPose;
-import com.jayptucker.heroesevolved.network.ArmPosePayload;
-import com.jayptucker.heroesevolved.ability.Targeting;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
@@ -13,15 +10,16 @@ import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.events.EclipseService;
 import com.jayptucker.heroesevolved.expansion.ExpansionSkills;
 import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
+import com.jayptucker.heroesevolved.network.ArmPosePayload;
 import com.jayptucker.heroesevolved.network.OpticalStatePayload;
+import com.jayptucker.heroesevolved.network.SetPiecePayload;
 import com.jayptucker.heroesevolved.network.UnseenPayload;
 import com.jayptucker.heroesevolved.progression.MasteryService;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.skills.SkillTreeService;
-import com.jayptucker.heroesevolved.speed.SpeedService;
+import com.jayptucker.heroesevolved.styles.Piece;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -30,12 +28,14 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.projectile.Projectile;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.EventPriority;
@@ -57,7 +57,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** Light-bending stealth. The server owns concealment, Exposure, physical movement and search clues. */
+/**
+ * Invisibility: bending light round yourself, your friends and the things you touch. The server owns concealment,
+ * Exposure and the search clues hunters follow. The force fields live in {@link ForceFieldService}.
+ */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class InvisibilityService {
     private static final class Fade {
@@ -66,7 +69,8 @@ public final class InvisibilityService {
         final long began;
         final MobEffectInstance priorPotion;
         long until;
-        boolean drains, wet;
+        boolean drains, wet, quiet;
+        int sharing;
         double exposure;
         Vec3 previous, lastSeen;
         Fade(ServerPlayer player, long until, boolean drains) {
@@ -77,13 +81,16 @@ public final class InvisibilityService {
             this.priorPotion = potion == null ? null : new MobEffectInstance(potion);
         }
     }
-    private record Cloak(ServerPlayer owner, ServerLevel level, Vec3 start, Vec3 end, double radius, long until, boolean moving) {}
-    private record Dash(ServerPlayer owner, ServerLevel level, Vec3 direction, double speed, long until) {}
+    /** Something other than a player made unseen by Vanishing Touch, Vanishing Squad or a shared Fade. */
+    private record Hidden(Entity entity, ServerLevel level, long until) {}
     private record Search(Mob mob, ServerLevel level, Vec3 clue, long until) {}
+
+    static final double SHARE_REACH = 3, SQUAD_REACH = 8, LONG_SQUAD_REACH = 12, TOUCH_RANGE = 16, LONG_TOUCH_RANGE = 24;
+    static final int TOUCH_TICKS = 400, LONG_TOUCH_TICKS = 800, SQUAD_TICKS = 200, LONG_SQUAD_TICKS = 400, MAX_SHARED = 4;
+
     private static final Map<UUID, Fade> FADES = new HashMap<>();
-    private static final Map<UUID, Long> REVEALED = new HashMap<>(), STRIKES = new HashMap<>(), GHOSTS = new HashMap<>();
-    private static final Map<UUID, Cloak> CLOAKS = new HashMap<>();
-    private static final Map<UUID, Dash> DASHES = new HashMap<>();
+    private static final Map<UUID, Long> REVEALED = new HashMap<>(), SQUADS = new HashMap<>();
+    private static final Map<UUID, Hidden> HIDDEN = new HashMap<>();
     private static final Map<UUID, Search> SEARCHES = new HashMap<>();
     private static final Map<UUID, Boolean> SYNCED = new HashMap<>();
     private static final long FOREVER = Long.MAX_VALUE;
@@ -101,13 +108,14 @@ public final class InvisibilityService {
         return fade != null && fade.level == p.level() && p.isAlive() && !p.isOnFire()
                 && REVEALED.getOrDefault(p.getUUID(), 0L) <= now(p.getServer());
     }
+    /** Whether a creature or object (not a player) is hidden by Vanishing Touch or a shared veil. */
+    public static boolean isHidden(Entity e) { return HIDDEN.containsKey(e.getUUID()); }
     public static int exposure(ServerPlayer p) {
         Fade fade = FADES.get(p.getUUID());
         return fade == null ? 0 : (int) Math.round(fade.exposure);
     }
-    public static boolean veilActive(ServerPlayer p) { return CLOAKS.containsKey(p.getUUID()); }
-    public static boolean ghostActive(ServerPlayer p) { return GHOSTS.getOrDefault(p.getUUID(), 0L) > now(p.getServer()); }
-    public static boolean activeDash(ServerPlayer p) { return DASHES.containsKey(p.getUUID()); }
+    public static int sharing(ServerPlayer p) { Fade f = FADES.get(p.getUUID()); return f == null ? 0 : f.sharing; }
+    public static boolean squadActive(ServerPlayer p) { return SQUADS.getOrDefault(p.getUUID(), 0L) > now(p.getServer()); }
 
     public static void addExposure(ServerPlayer p, double amount) {
         Fade fade = FADES.get(p.getUUID());
@@ -135,10 +143,16 @@ public final class InvisibilityService {
         }
         sync(p);
     }
+    /** A Fade given by someone else: with Quiet Light, the one sharing it keeps it steady and it builds no Exposure. */
+    private static void shareFade(ServerPlayer from, ServerPlayer friend, int ticks) {
+        fade(friend, ticks, false);
+        Fade f = FADES.get(friend.getUUID());
+        if (f != null && friend != from) f.quiet = SkillTreeService.has(from, InvisibilitySkills.QUIET_LIGHT);
+    }
     public static boolean unfade(ServerPlayer p) {
         Fade state = FADES.remove(p.getUUID());
         if (state == null) return false;
-        GHOSTS.remove(p.getUUID());
+        SQUADS.remove(p.getUUID());
         p.removeEffect(MobEffects.INVISIBILITY);
         AbilityEffects.send(p.serverLevel(), Kind.OPTIC_REFORM, p.position(), p.getEyePosition(), 1);
         p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.ILLUSIONER_MIRROR_MOVE, SoundSource.PLAYERS, .5F, 1.2F);
@@ -160,7 +174,11 @@ public final class InvisibilityService {
     }
     public static void revealAround(ServerLevel level, Vec3 center, double radius, int ticks) {
         for (ServerPlayer p : level.players()) if (p.position().distanceToSqr(center) <= radius * radius) reveal(p, ticks);
+        for (Hidden h : List.copyOf(HIDDEN.values()))
+            if (h.level == level && h.entity.position().distanceToSqr(center) <= radius * radius) unhide(h.entity);
     }
+    /** A force move gives its caster away, the same as a blow. */
+    public static void forceAttack(ServerPlayer p) { attack(p); }
     private static void sync(ServerPlayer p) {
         boolean hidden = isUnseen(p);
         if (!hidden && isFaded(p)) p.removeEffect(MobEffects.INVISIBILITY);
@@ -170,78 +188,29 @@ public final class InvisibilityService {
             else p.removeEffect(MobEffects.INVISIBILITY);
             PacketDistributor.sendToPlayersTrackingEntityAndSelf(p, new UnseenPayload(p.getId(), hidden));
         }
-        OpticalStatePayload.send(p, isFaded(p), hidden, exposure(p), veilActive(p), ghostActive(p));
+        OpticalStatePayload.send(p, isFaded(p), hidden, exposure(p), sharing(p) > 0, squadActive(p));
     }
-    private static void search(Mob mob, ServerPlayer p, Vec3 clue) {
-        if (mob.level() != p.level() || OpticalDecoyService.isInvestigating(mob)) return;
+    private static void search(Mob mob, Entity hidden, Vec3 clue) {
+        if (mob.level() != hidden.level()) return;
         mob.setTarget(null);
-        if (mob.getLastHurtByMob() == p) mob.setLastHurtByMob(null);
-        SEARCHES.put(mob.getUUID(), new Search(mob, p.serverLevel(), clue, now(p.getServer()) + 60));
+        if (mob.getLastHurtByMob() == hidden) mob.setLastHurtByMob(null);
+        SEARCHES.put(mob.getUUID(), new Search(mob, (ServerLevel) mob.level(), clue, now(mob.getServer()) + 60));
         mob.getNavigation().moveTo(clue.x, clue.y, clue.z, .9);
         mob.getLookControl().setLookAt(clue.x, clue.y + 1, clue.z);
     }
-    private static void loseTargets(ServerPlayer p, double radius, Vec3 clue) {
-        for (Mob mob : p.serverLevel().getEntitiesOfClass(Mob.class, p.getBoundingBox().inflate(radius), m -> m.getTarget() == p)
-                .stream().limit(24).toList()) search(mob, p, clue);
+    private static void loseTargets(LivingEntity e, double radius, Vec3 clue) {
+        for (Mob mob : e.level().getEntitiesOfClass(Mob.class, e.getBoundingBox().inflate(radius), m -> m.getTarget() == e)
+                .stream().limit(24).toList()) search(mob, e, clue);
     }
+
+    // ================================================================ G: Fade
 
     public static boolean toggleFade(ServerPlayer p) {
         if (unfade(p)) return true;
         if (!PowerRules.canAct(p)) return false;
         fade(p, 0, true);
+        ArmPosePayload.show(p, ArmPose.OPTICAL_VEIL, 14);
         p.displayClientMessage(Component.translatable("invisibility.heroesevolved.faded").withStyle(ChatFormatting.GRAY), true);
-        return true;
-    }
-    /** Physical refraction dash: ordinary collision solves movement, with no position teleport. */
-    public static boolean silentStep(ServerPlayer p, int level) {
-        if (!PowerRules.canAct(p) || p.isPassenger() || activeDash(p)) return false;
-        Vec3 look = p.getLookAngle().multiply(1, 0, 1);
-        if (look.lengthSqr() < .001) look = Vec3.directionFromRotation(0, p.getYRot());
-        Vec3 direction = look.normalize();
-        Vec3 end = SpeedService.swept(p, direction.scale(6 + Math.clamp(level, 1, 5) * 1.2));
-        double distance = end.distanceTo(p.position());
-        if (distance < .65) return false;
-        DASHES.put(p.getUUID(), new Dash(p, p.serverLevel(), direction, Math.min(2, distance / 6), now(p.getServer()) + 6));
-        OpticalDecoyService.spawnEcho(p, direction.reverse(), 30);
-        AbilityEffects.send(p.serverLevel(), Kind.OPTIC_STEP, p.position(), end, 1);
-        addExposure(p, -12);
-        return true;
-    }
-    public static boolean armStrike(ServerPlayer p) {
-        STRIKES.put(p.getUUID(), now(p.getServer()) + 200);
-        p.displayClientMessage(Component.translatable("invisibility.heroesevolved.strike_ready"), true);
-        return true;
-    }
-    public static boolean mirage(ServerPlayer p, int level) {
-        if (!OpticalDecoyService.spawnMirage(p, level)) return false;
-        ArmPosePayload.show(p, ArmPose.OPTICAL_SPLIT, 18);
-        return true;
-    }
-    public static boolean endVeil(ServerPlayer p) { return CLOAKS.remove(p.getUUID()) != null; }
-    public static boolean shroud(ServerPlayer p) {
-        double radius = 4 + (SkillTreeService.has(p, "invisibility_2_0") ? 1 : 0);
-        CLOAKS.put(p.getUUID(), new Cloak(p, p.serverLevel(), p.position(), p.position(), radius, now(p.getServer()) + 240, true));
-        fade(p, 30, false);
-        ArmPosePayload.show(p, ArmPose.OPTICAL_VEIL, 24);
-        veilEffect(CLOAKS.get(p.getUUID()), p.position(), p.position());
-        return true;
-    }
-    /** The formation boundary is guidance for its participants, not a beacon for opponents. */
-    private static void veilEffect(Cloak cloak, Vec3 start, Vec3 end) {
-        for (ServerPlayer viewer : cloak.level.players()) {
-            if (viewer != cloak.owner && !ExpansionSkills.friendly(cloak.owner, viewer)) continue;
-            if (viewer.position().distanceToSqr(start) > 64 * 64) continue;
-            PacketDistributor.sendToPlayer(viewer, new com.jayptucker.heroesevolved.network.AbilityEffectPayload(
-                    Kind.OPTIC_VEIL, start, end, (float) cloak.radius));
-        }
-    }
-    public static boolean ghostProtocol(ServerPlayer p) {
-        GHOSTS.put(p.getUUID(), now(p.getServer()) + 160);
-        fade(p, 160, false);
-        addExposure(p, -50);
-        OpticalDecoyService.burst(p, 3);
-        ArmPosePayload.show(p, ArmPose.OPTICAL_DISPERSE, 20);
-        AbilityEffects.send(p.serverLevel(), Kind.OPTIC_BURST, p.position(), p.getEyePosition(), 6);
         return true;
     }
     public static void awaken(ServerPlayer p) {
@@ -249,119 +218,104 @@ public final class InvisibilityService {
         p.displayClientMessage(Component.translatable("invisibility.heroesevolved.awakened").withStyle(ChatFormatting.GRAY), false);
     }
 
-    public static boolean skill(AbilityUseContext c, int branch) {
-        ServerPlayer p = c.player();
-        switch (branch) {
-            case 0 -> { fade(p, 60, false); addExposure(p, -35); armStrike(p); }
-            case 1 -> {
-                p.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 60, 0));
-                fade(p, 120, false); addExposure(p, -20); OpticalDecoyService.burst(p, 1);
-            }
-            case 2 -> {
-                p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 100, 1)); fade(p, 100, false);
-                if (SkillTreeService.has(p, "invisibility_2_2"))
-                    for (ServerPlayer friend : p.serverLevel().players())
-                        if (friend != p && friend.distanceToSqr(p) <= 16 && ExpansionSkills.friendly(p, friend)) fade(friend, 100, false);
-            }
-            default -> { return false; }
+    // ================================================================ objects and creatures
+
+    /** Hides a creature or object that isn't a player: everyone's client stops drawing it until it returns. */
+    public static void hide(Entity e, int ticks) {
+        if (e instanceof ServerPlayer) return;
+        long until = now(e.getServer()) + ticks;
+        Hidden old = HIDDEN.get(e.getUUID());
+        HIDDEN.put(e.getUUID(), new Hidden(e, (ServerLevel) e.level(), old == null ? until : Math.max(until, old.until)));
+        if (e instanceof LivingEntity living) {
+            living.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, ticks + 20, 0, false, false));
+            loseTargets(living, 32, living.position());
         }
-        return true;
+        if (old == null) {
+            PacketDistributor.sendToPlayersTrackingEntity(e, new UnseenPayload(e.getId(), true));
+            AbilityEffects.send((ServerLevel) e.level(), Kind.OPTIC_FADE, e.position(), e.position().add(0, e.getBbHeight(), 0), 1);
+        }
     }
-    public static boolean technique(AbilityUseContext c, String mechanic) {
-        ServerPlayer p = c.player();
-        switch (mechanic) {
-            case "smoke_and_mirrors" -> {
-                var hit = p.serverLevel().clip(new ClipContext(p.getEyePosition(), p.getEyePosition().add(p.getLookAngle().scale(18)),
-                        ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
-                Vec3 clue = hit.getLocation();
-                boolean longClue = SkillTreeService.has(p, "invisibility_lingering_mirage");
-                long until = now(p.getServer()) + (longClue ? 120 : 60);
-                for (Mob mob : p.serverLevel().getEntitiesOfClass(Mob.class, p.getBoundingBox().inflate(longClue ? 18 : 12),
-                        m -> ExpansionSkills.hostile(p, m) && (m.getTarget() == null || m.getTarget() == p && isUnseen(p))).stream().limit(16).toList()) {
-                    mob.setTarget(null);
-                    SEARCHES.put(mob.getUUID(), new Search(mob, p.serverLevel(), clue, until));
-                }
-                p.serverLevel().playSound(null, clue.x, clue.y, clue.z, SoundEvents.STONE_STEP, SoundSource.PLAYERS, 1.1F, .9F);
-                AbilityEffects.send(p.serverLevel(), Kind.OPTIC_FOOTSTEP, clue, clue.add(0, 1, 0), 1);
-                return true;
-            }
-            case "pickpocket" -> {
-                double reach = SkillTreeService.has(p, "invisibility_light_fingers") ? 4 : 2;
-                LivingEntity target = Targeting.livingEntityInSight(p, reach, t -> t instanceof Mob && !t.getMainHandItem().isEmpty());
-                if (!(target instanceof Mob mob)) {
-                    p.displayClientMessage(Component.translatable("invisibility.heroesevolved.nothing_to_take"), true); return false;
-                }
-                ItemStack taken = mob.getMainHandItem().copy();
-                mob.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
-                if (!p.getInventory().add(taken)) p.drop(taken, false);
-                AbilityEffects.send(p.serverLevel(), Kind.OPTIC_THREAD, mob.getEyePosition(), p.getEyePosition(), 1);
-                p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, .6F, 1.6F);
-                return true;
-            }
-            case "cloak_field" -> {
-                Vec3 start = p.position(), flat = p.getLookAngle().multiply(1, 0, 1).normalize();
-                if (flat.lengthSqr() < .001) flat = Vec3.directionFromRotation(0, p.getYRot());
-                Vec3 end = p.serverLevel().clip(new ClipContext(start.add(0, 1, 0), start.add(flat.scale(12)).add(0, 1, 0),
-                        ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p)).getLocation().add(0, -1, 0);
-                if (end.distanceToSqr(start) < 1) return false;
-                CLOAKS.put(p.getUUID(), new Cloak(p, p.serverLevel(), start, end,
-                        SkillTreeService.has(p, "invisibility_wider_cloak") ? 3 : 2, now(p.getServer()) + 300, false));
-                AbilityEffects.send(p.serverLevel(), Kind.OPTIC_THREAD, start.add(0, .3, 0), end.add(0, .3, 0), 2);
-                return true;
-            }
-            default -> { return false; }
+    public static void unhide(Entity e) {
+        if (HIDDEN.remove(e.getUUID()) == null) return;
+        if (e instanceof LivingEntity living) living.removeEffect(MobEffects.INVISIBILITY);
+        if (!e.isRemoved()) {
+            PacketDistributor.sendToPlayersTrackingEntity(e, new UnseenPayload(e.getId(), false));
+            AbilityEffects.send((ServerLevel) e.level(), Kind.OPTIC_REFORM, e.position(), e.position().add(0, e.getBbHeight(), 0), 1);
         }
     }
 
+    /** Vanishing Touch: the friend, pet or thing under your aim fades from sight for twenty seconds. */
+    public static boolean vanishingTouch(ServerPlayer p) {
+        if (!PowerRules.canAct(p)) return false;
+        boolean longer = SkillTreeService.has(p, InvisibilitySkills.LONG_VANISH);
+        double range = longer ? LONG_TOUCH_RANGE : TOUCH_RANGE;
+        int ticks = longer ? LONG_TOUCH_TICKS : TOUCH_TICKS;
+        Vec3 eye = p.getEyePosition(), end = eye.add(p.getLookAngle().scale(range));
+        HitResult wall = p.serverLevel().clip(new ClipContext(eye, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
+        if (wall.getType() != HitResult.Type.MISS) end = wall.getLocation();
+        var hit = ProjectileUtil.getEntityHitResult(p, eye, end, p.getBoundingBox().expandTowards(end.subtract(eye)).inflate(1),
+                e -> e != p && !e.isSpectator() && !(e instanceof Projectile) && !(e instanceof net.minecraft.world.entity.monster.Enemy)
+                        && !(e instanceof ServerPlayer other && !ExpansionSkills.friendly(p, other)),
+                eye.distanceToSqr(end));
+        if (hit == null) return false;
+        Entity target = hit.getEntity();
+        if (target instanceof ServerPlayer friend) {
+            if (!ExpansionSkills.friendly(p, friend) || !PowerRules.canAct(friend)) return false;
+            shareFade(p, friend, ticks);
+        } else hide(target, ticks);
+        SetPiecePayload.send(p.serverLevel(), Piece.FORCE_VANISH, target.position(), target.position().add(0, target.getBbHeight(), 0),
+                (float) ForceGeometry.bubbleRadius(target), target);
+        ArmPosePayload.show(p, ArmPose.OPTICAL_SPLIT, 14);
+        p.serverLevel().playSound(null, target.blockPosition(), SoundEvents.ILLUSIONER_PREPARE_MIRROR, SoundSource.PLAYERS, .7F, 1.6F);
+        return true;
+    }
+
+    /** Vanishing Squad: you and every friend, pet and companion around you fade at once. */
+    public static boolean vanishingSquad(ServerPlayer p) {
+        if (!PowerRules.canAct(p)) return false;
+        boolean longer = SkillTreeService.has(p, InvisibilitySkills.LONG_VANISH);
+        double reach = longer ? LONG_SQUAD_REACH : SQUAD_REACH;
+        int ticks = longer ? LONG_SQUAD_TICKS : SQUAD_TICKS;
+        fade(p, ticks, false);
+        SQUADS.put(p.getUUID(), now(p.getServer()) + ticks);
+        for (LivingEntity t : p.serverLevel().getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(reach),
+                e -> e != p && e.isAlive() && e.distanceTo(p) <= reach && ForceFieldService.friend(p, e))) {
+            if (t instanceof ServerPlayer friend) { if (PowerRules.canAct(friend)) shareFade(p, friend, ticks); }
+            else hide(t, ticks);
+        }
+        SetPiecePayload.send(p.serverLevel(), Piece.FORCE_VANISH, p.position(), p.getEyePosition(), (float) reach, null);
+        ArmPosePayload.show(p, ArmPose.OPTICAL_DISPERSE, 16);
+        p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.ILLUSIONER_CAST_SPELL, SoundSource.PLAYERS, .8F, 1.3F);
+        sync(p);
+        return true;
+    }
+
+    // ================================================================ tick
+
     public static void tick(MinecraftServer server) {
         long time = now(server);
-        for (Dash dash : List.copyOf(DASHES.values())) {
-            ServerPlayer p = dash.owner;
-            if (time >= dash.until || p.level() != dash.level || !PowerRules.canAct(p) || p.isPassenger()) {
-                DASHES.remove(p.getUUID()); p.setDeltaMovement(p.getDeltaMovement().scale(.35)); continue;
-            }
-            Vec3 safe = SpeedService.swept(p, dash.direction.scale(dash.speed)).subtract(p.position());
-            if (safe.lengthSqr() < .04) { DASHES.remove(p.getUUID()); continue; }
-            p.setDeltaMovement(safe); p.resetFallDistance(); p.hurtMarked = true;
-            p.connection.send(new ClientboundSetEntityMotionPacket(p));
-        }
-        CLOAKS.values().removeIf(c -> time >= c.until || !PowerRules.canAct(c.owner) || c.owner.level() != c.level || c.owner.isRemoved());
-        if (time % 10 == 0) for (Cloak cloak : List.copyOf(CLOAKS.values())) {
-            Vec3 start = cloak.moving ? cloak.owner.position() : cloak.start;
-            Vec3 end = cloak.moving ? start : cloak.end;
-            int shared = 0;
-            for (ServerPlayer friend : cloak.level.players()) {
-                if (!ExpansionSkills.friendly(cloak.owner, friend) || !PowerRules.canAct(friend)) continue;
-                Vec3 segment = end.subtract(start);
-                double along = segment.lengthSqr() < .001 ? 0 : Math.clamp(friend.position().subtract(start).dot(segment) / segment.lengthSqr(), 0, 1);
-                if (friend.position().distanceToSqr(start.add(segment.scale(along))) > cloak.radius * cloak.radius
-                        || !cloak.owner.hasLineOfSight(friend)) continue;
-                if (friend != cloak.owner && ++shared > 4) break;
-                fade(friend, 15, false);
-            }
-            if (cloak.moving && time % 20 == 0 && !PlayerEnergyService.tryConsume(cloak.owner, Math.max(1, shared))) { endVeil(cloak.owner); continue; }
-            veilEffect(cloak, start, end);
-        }
         for (Fade fade : List.copyOf(FADES.values())) {
             ServerPlayer p = fade.player;
             if (p.isRemoved() || p.level() != fade.level || !PowerRules.canAct(p) || time >= fade.until
                     || fade.drains && !isInvisibilityOwner(p)
                     && !com.jayptucker.heroesevolved.mimicry.MimicryService.isBorrowingInvisibility(p)) { unfade(p); continue; }
-            if (fade.drains && time % (SkillTreeService.has(p, "invisibility_claudes_lesson") ? 20 : 10) == 0) {
-                if (!PlayerEnergyService.tryConsume(p, 1)) { unfade(p); continue; }
-                MasteryService.awardEnergySpent(p, 1);
+            if (fade.drains && time % 10 == 0) share(p, fade);
+            if (fade.drains && time % 20 == 0) {
+                int cost = 2 + fade.sharing;
+                if (!PlayerEnergyService.tryConsume(p, cost)) {
+                    p.displayClientMessage(Component.translatable("invisibility.heroesevolved.exhausted").withStyle(ChatFormatting.GRAY), true);
+                    unfade(p); continue;
+                }
+                MasteryService.awardEnergySpent(p, cost);
             }
             double distance = p.position().distanceTo(fade.previous);
             fade.previous = p.position();
             int level = Math.clamp(PlayerProgressionService.getLevel(p), 1, 5);
             boolean moving = distance > .02 && distance < 4;
-            double amount = moving ? p.isSprinting() ? .55 + .12 * (6 - level)
-                    : p.isShiftKeyDown() ? -.15 : .08 * (6 - level) : -.65;
-            if (amount > 0 && moving && !p.isSprinting() && SkillTreeService.has(p, "invisibility_0_0")) amount *= .5;
-            if (amount < 0 && SkillTreeService.has(p, "invisibility_0_2")
-                    && p.serverLevel().getEntitiesOfClass(Mob.class, p.getBoundingBox().inflate(16),
-                    m -> ExpansionSkills.hostile(p, m) && m.hasLineOfSight(p)).isEmpty()) amount = -1.1;
-            if (ghostActive(p) && amount > 0) amount *= .2;
+            double amount = moving ? p.isSprinting() ? .45 + .1 * (6 - level)
+                    : p.isShiftKeyDown() ? -.15 : .06 * (6 - level) : -.8;
+            if (amount > 0 && moving && !p.isSprinting() && SkillTreeService.has(p, InvisibilitySkills.QUIET_LIGHT)) amount *= .5;
+            if (amount > 0 && fade.quiet) amount = 0;
             addExposure(p, amount);
             boolean wet = p.isInWaterRainOrBubble();
             if (wet && !fade.wet) { addExposure(p, 30); reveal(p, 12); }
@@ -376,69 +330,86 @@ public final class InvisibilityService {
             if (time % 5 == 0) sync(p);
         }
         REVEALED.values().removeIf(until -> until <= time);
-        STRIKES.values().removeIf(until -> until <= time);
-        GHOSTS.values().removeIf(until -> until <= time);
-        if (time % 20 == 0) for (UUID id : List.copyOf(GHOSTS.keySet())) {
-            Fade fade = FADES.get(id);
-            if (fade != null) OpticalDecoyService.spawnEcho(fade.player, fade.player.getLookAngle(), 40);
-        }
+        SQUADS.values().removeIf(until -> until <= time);
+        for (Hidden h : List.copyOf(HIDDEN.values()))
+            if (time >= h.until || h.entity.isRemoved() || h.entity.level() != h.level
+                    || h.entity instanceof LivingEntity l && (!l.isAlive() || l.isOnFire())) unhide(h.entity);
         for (Search search : List.copyOf(SEARCHES.values())) {
             Mob mob = search.mob;
             if (!mob.isAlive() || mob.isRemoved() || mob.level() != search.level || time >= search.until || mob.getTarget() != null) {
                 SEARCHES.remove(mob.getUUID()); continue;
             }
-            if (OpticalDecoyService.isInvestigating(mob)) continue;
             mob.getNavigation().moveTo(search.clue.x, search.clue.y, search.clue.z, .8);
             mob.getLookControl().setLookAt(search.clue.x, search.clue.y + 1, search.clue.z);
         }
     }
 
+    /** A held Fade covers friends and pets within three blocks; each one shared costs a stamina a second. */
+    private static void share(ServerPlayer p, Fade fade) {
+        int shared = 0;
+        for (LivingEntity t : p.serverLevel().getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(SHARE_REACH),
+                e -> e != p && e.isAlive() && e.distanceTo(p) <= SHARE_REACH && ForceFieldService.friend(p, e) && p.hasLineOfSight(e))) {
+            if (shared >= MAX_SHARED) break;
+            if (t instanceof ServerPlayer friend) {
+                if (!ExpansionSkills.friendly(p, friend) || !PowerRules.canAct(friend)) continue;
+                shareFade(p, friend, 15);
+            } else if (t instanceof TamableAnimal pet && p.getUUID().equals(pet.getOwnerUUID())) hide(pet, 15);
+            else continue;
+            shared++;
+        }
+        if (shared != fade.sharing) { fade.sharing = shared; sync(p); }
+    }
+
     @SubscribeEvent public static void serverTick(ServerTickEvent.Post event) { tick(event.getServer()); }
     @SubscribeEvent public static void target(LivingChangeTargetEvent event) {
-        if (!(event.getNewAboutToBeSetTarget() instanceof ServerPlayer p) || !isUnseen(p) || event.getEntity().distanceToSqr(p) <= 4) return;
-        if (event.getEntity() instanceof Mob mob) search(mob, p, FADES.get(p.getUUID()).lastSeen);
+        LivingEntity next = event.getNewAboutToBeSetTarget();
+        if (next == null || event.getEntity().distanceToSqr(next) <= 4) return;
+        if (next instanceof ServerPlayer p && isUnseen(p)) {
+            if (event.getEntity() instanceof Mob mob) search(mob, p, FADES.get(p.getUUID()).lastSeen);
+        } else if (!isHidden(next)) return;
+        else if (event.getEntity() instanceof Mob mob) search(mob, next, next.position());
         // Canceling preserves the previous target. Replace it with null so an existing chase really ends.
         event.setNewAboutToBeSetTarget(null);
     }
     @SubscribeEvent public static void visibility(LivingEvent.LivingVisibilityEvent event) {
         if (event.getEntity() instanceof ServerPlayer p && isInvisibilityOwner(p)) event.modifyVisibility(isUnseen(p) ? .05 : .6);
+        else if (isHidden(event.getEntity())) event.modifyVisibility(.05);
     }
     private static void attack(ServerPlayer p) { if (isFaded(p)) { addExposure(p, 55); reveal(p, 20); } }
     @SubscribeEvent(priority = EventPriority.LOW) public static void damage(LivingIncomingDamageEvent event) {
         if (event.getSource().getEntity() instanceof ServerPlayer attacker && event.getSource().getDirectEntity() == attacker
-                && event.getSource().is(DamageTypes.PLAYER_ATTACK)) {
-            if (STRIKES.remove(attacker.getUUID()) != null) {
-                float multiplier = isUnseen(attacker) ? SkillTreeService.has(attacker, "invisibility_assassin") ? 3 : 1.5F : 1;
-                event.setAmount((event.getAmount() + 3 + PlayerProgressionService.getLevel(attacker)) * multiplier);
-            }
-            attack(attacker);
-        }
-        if (event.getEntity() instanceof ServerPlayer victim && isFaded(victim)) {
-            if (SkillTreeService.has(victim, "invisibility_phantom") && isUnseen(victim)) event.setAmount(event.getAmount() * .7F);
-            addExposure(victim, 35); reveal(victim, 20);
-        }
+                && event.getSource().is(DamageTypes.PLAYER_ATTACK) && !ForceFieldService.striking()) attack(attacker);
+        if (event.getEntity() instanceof ServerPlayer victim && isFaded(victim)) { addExposure(victim, 35); reveal(victim, 20); }
+        else if (isHidden(event.getEntity())) unhide(event.getEntity());
     }
     @SubscribeEvent public static void projectile(EntityJoinLevelEvent event) {
         if (!event.getLevel().isClientSide() && event.getEntity() instanceof Projectile shot && shot.getOwner() instanceof ServerPlayer p) attack(p);
     }
     @SubscribeEvent public static void block(PlayerInteractEvent.RightClickBlock event) {
-        if (event.getEntity() instanceof ServerPlayer p && isFaded(p) && !SkillTreeService.has(p, "invisibility_pickpocket")) addExposure(p, 6);
+        if (event.getEntity() instanceof ServerPlayer p && isFaded(p)) addExposure(p, 6);
     }
     @SubscribeEvent public static void tracking(PlayerEvent.StartTracking event) {
-        if (event.getTarget() instanceof ServerPlayer target && event.getEntity() instanceof ServerPlayer viewer)
+        if (!(event.getEntity() instanceof ServerPlayer viewer)) return;
+        if (event.getTarget() instanceof ServerPlayer target)
             PacketDistributor.sendToPlayer(viewer, new UnseenPayload(target.getId(), isUnseen(target), false));
+        else if (isHidden(event.getTarget()))
+            PacketDistributor.sendToPlayer(viewer, new UnseenPayload(event.getTarget().getId(), true, false));
     }
     public static void forget(ServerPlayer p) {
-        unfade(p); STRIKES.remove(p.getUUID()); GHOSTS.remove(p.getUUID()); CLOAKS.remove(p.getUUID()); DASHES.remove(p.getUUID());
-        REVEALED.remove(p.getUUID()); SYNCED.remove(p.getUUID()); OpticalDecoyService.clear(p);
+        unfade(p); SQUADS.remove(p.getUUID());
+        REVEALED.remove(p.getUUID()); SYNCED.remove(p.getUUID());
+        ForceFieldService.forget(p);
         OpticalStatePayload.send(p, false, false, 0, false, false);
     }
     @SubscribeEvent public static void logout(PlayerEvent.PlayerLoggedOutEvent event) { if (event.getEntity() instanceof ServerPlayer p) forget(p); }
     @SubscribeEvent public static void dimension(PlayerEvent.PlayerChangedDimensionEvent event) { if (event.getEntity() instanceof ServerPlayer p) forget(p); }
-    @SubscribeEvent public static void death(LivingDeathEvent event) { if (event.getEntity() instanceof ServerPlayer p) forget(p); }
+    @SubscribeEvent public static void death(LivingDeathEvent event) {
+        if (event.getEntity() instanceof ServerPlayer p) forget(p);
+        else HIDDEN.remove(event.getEntity().getUUID());
+    }
     @SubscribeEvent public static void stopping(ServerStoppingEvent event) {
         for (Fade fade : List.copyOf(FADES.values())) unfade(fade.player);
-        FADES.clear(); REVEALED.clear(); STRIKES.clear(); CLOAKS.clear(); SYNCED.clear(); GHOSTS.clear(); DASHES.clear(); SEARCHES.clear();
+        FADES.clear(); REVEALED.clear(); SYNCED.clear(); SQUADS.clear(); SEARCHES.clear(); HIDDEN.clear();
     }
     public static List<ServerPlayer> faded() { return FADES.values().stream().map(f -> f.player).toList(); }
 }

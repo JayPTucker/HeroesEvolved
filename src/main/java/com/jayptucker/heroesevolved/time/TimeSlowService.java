@@ -3,7 +3,6 @@ package com.jayptucker.heroesevolved.time;
 import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
 import com.jayptucker.heroesevolved.events.EclipseService;
 import com.jayptucker.heroesevolved.sounds.ModSounds;
-import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -23,23 +22,17 @@ import java.util.UUID;
  * Owns the short-lived Time Slow fields created by Time Manipulation users.
  *
  * <p>We deliberately slow individual entity ticks instead of slowing the
- * server itself. That keeps the rest of a multiplayer world responsive while
- * making entities and projectiles in the field update only once per second.</p>
+ * server itself. Entities update less often and projectiles move a shorter
+ * distance each tick, while the rest of the world stays responsive.</p>
  */
 public final class TimeSlowService {
     private static final Map<UUID, TimeSlowField> ACTIVE_FIELDS =
             new HashMap<>();
 
-    // Projectile gravity must be restored to its original state. Tracking it
-    // separately prevents Time Slow from changing projectiles that were
-    // intentionally created without gravity.
-    private static final Map<UUID, ProjectileState>
-            SLOWED_PROJECTILES = new HashMap<>();
-
     private TimeSlowService() {
     }
 
-    public static void clear() { ACTIVE_FIELDS.clear(); restoreAllProjectiles(); }
+    public static void clear() { ACTIVE_FIELDS.clear(); ProjectileTimeService.releaseInactive(); }
 
     public static boolean hasActiveField(ServerPlayer player) {
         return ACTIVE_FIELDS.containsKey(player.getUUID());
@@ -50,10 +43,7 @@ public final class TimeSlowService {
 
         if (field != null) {
             playEndSound(player.serverLevel(), field, player);
-        }
-
-        if (ACTIVE_FIELDS.isEmpty()) {
-            restoreAllProjectiles();
+            ProjectileTimeService.releaseInactive();
         }
     }
 
@@ -137,11 +127,6 @@ public final class TimeSlowService {
             }
         }
 
-        // This is a safety net for projectiles removed or unloaded before
-        // their next entity tick can restore their original gravity setting.
-        if (ACTIVE_FIELDS.isEmpty()) {
-            restoreAllProjectiles();
-        }
     }
 
     /**
@@ -150,25 +135,11 @@ public final class TimeSlowService {
      * and other non-projectile entities at the field's current mastery level.
      */
     public static boolean shouldSkipEntityTick(Entity entity) {
-        if (!(entity.level() instanceof ServerLevel level)) {
+        if (entity instanceof Projectile || !(entity.level() instanceof ServerLevel level)) {
             return false;
         }
 
-        TimeSlowField field = getContainingField(entity, level);
-
-        if (entity instanceof Projectile projectile) {
-            updateProjectileMotion(
-                    projectile,
-                    level,
-                    field != null,
-                    field == null ? 1 : field.tickInterval()
-            );
-
-            // Projectiles move every server tick at one twentieth of their
-            // stored velocity. This avoids the client/server rubber-banding
-            // caused by pausing an arrow for nineteen ticks at a time.
-            return false;
-        }
+        TimeSlowField field = getContainingField(entity, entity.position());
 
         if (field == null) {
             return false;
@@ -183,52 +154,31 @@ public final class TimeSlowService {
                 != Math.floorMod(gameTime, interval);
     }
 
-    /**
-     * Captures the result of a projectile's slow movement ticks. After its
-     * level-based interval completes, that result becomes the next full-speed velocity,
-     * matching one normal tick of drag without applying it twenty times.
-     */
-    public static void afterEntityTick(Entity entity) {
-        if (!(entity instanceof Projectile projectile)) {
-            return;
-        }
-
-        ProjectileState state = SLOWED_PROJECTILES.get(projectile.getUUID());
-
-        if (state == null) {
-            return;
-        }
-
-        if (projectile.isRemoved()) {
-            SLOWED_PROJECTILES.remove(projectile.getUUID());
-            return;
-        }
-
-        state.advanceMovementTick();
-
-        if (state.shouldUpdateFullVelocity()) {
-            state.updateFullVelocity(projectile.getDeltaMovement());
-        }
+    static int projectileInterval(Projectile shot, Vec3 end) {
+        TimeSlowField field = getContainingField(shot, end);
+        return field == null ? ProjectileTimeService.NORMAL : field.tickInterval();
     }
 
-    private static TimeSlowField getContainingField(
-            Entity entity,
-            ServerLevel level
-    ) {
+    static boolean controlsShot(ServerPlayer player, Projectile shot, Vec3 end) {
+        TimeSlowField field = ACTIVE_FIELDS.get(player.getUUID());
         double radius = HeroesEvolvedConfig.COMMON.timeSlowRadius.get();
-        double radiusSquared = radius * radius;
+        return field != null && !field.hasEnded() && field.dimension().equals(shot.level().dimension())
+                && ProjectileTimeService.reachesField(shot.position(), end, field.center(), radius);
+    }
+
+    private static TimeSlowField getContainingField(Entity entity, Vec3 end) {
+        double radius = HeroesEvolvedConfig.COMMON.timeSlowRadius.get();
         TimeSlowField strongestField = null;
 
         for (TimeSlowField field : ACTIVE_FIELDS.values()) {
-            if (!field.dimension().equals(level.dimension())
+            if (!field.dimension().equals(entity.level().dimension())
                     || field.ownerId().equals(entity.getUUID()) || entity.isSpectator()
                     || com.jayptucker.heroesevolved.speed.SpeedService.outrunsTime(entity)
                     || field.hasEnded()) {
                 continue;
             }
 
-            if (entity.position().distanceToSqr(field.center())
-                    <= radiusSquared) {
+            if (ProjectileTimeService.reachesField(entity.position(), end, field.center(), radius)) {
                 if (strongestField == null
                         || field.tickInterval()
                         > strongestField.tickInterval()) {
@@ -238,85 +188,6 @@ public final class TimeSlowService {
         }
 
         return strongestField;
-    }
-
-    private static void updateProjectileMotion(
-            Projectile projectile,
-            ServerLevel level,
-            boolean isSlowed,
-            int tickInterval
-    ) {
-        UUID projectileId = projectile.getUUID();
-
-        if (!isSlowed) {
-            restoreProjectile(projectileId, projectile, level);
-            return;
-        }
-
-        ProjectileState state = SLOWED_PROJECTILES.computeIfAbsent(
-                    projectileId,
-                    ignored -> new ProjectileState(
-                            projectile,
-                            projectile.isNoGravity(),
-                            projectile.getDeltaMovement(),
-                            tickInterval
-                    )
-        );
-
-        state.setTickInterval(tickInterval);
-
-        // Time Slow controls when the projectile advances. Leaving vanilla
-        // gravity active would make arrows fall between their slow updates.
-        projectile.setNoGravity(true);
-        projectile.setDeltaMovement(
-                state.fullVelocity().scale(1.0D / tickInterval)
-        );
-
-        if (state.consumeVelocitySyncRequest()) {
-            level.getChunkSource().broadcastAndSend(
-                    projectile,
-                    new ClientboundSetEntityMotionPacket(projectile)
-            );
-        }
-    }
-
-    private static void restoreAllProjectiles() {
-        for (ProjectileState state : SLOWED_PROJECTILES.values()) {
-            if (!state.projectile().isRemoved()) {
-                state.projectile().setNoGravity(state.wasNoGravity());
-                state.projectile().setDeltaMovement(state.fullVelocity());
-
-                if (state.projectile().level() instanceof ServerLevel level) {
-                    level.getChunkSource().broadcastAndSend(
-                            state.projectile(),
-                            new ClientboundSetEntityMotionPacket(
-                                    state.projectile()
-                            )
-                    );
-                }
-            }
-        }
-
-        SLOWED_PROJECTILES.clear();
-    }
-
-    private static void restoreProjectile(
-            UUID projectileId,
-            Projectile projectile,
-            ServerLevel level
-    ) {
-        ProjectileState state = SLOWED_PROJECTILES.remove(
-                projectileId
-        );
-
-        if (state != null && !projectile.isRemoved()) {
-            projectile.setNoGravity(state.wasNoGravity());
-            projectile.setDeltaMovement(state.fullVelocity());
-            level.getChunkSource().broadcastAndSend(
-                    projectile,
-                    new ClientboundSetEntityMotionPacket(projectile)
-            );
-        }
     }
 
     private static void playEndSound(
@@ -408,69 +279,6 @@ public final class TimeSlowService {
 
         private int tickInterval() {
             return tickInterval;
-        }
-    }
-
-    private static final class ProjectileState {
-        private final Projectile projectile;
-        private final boolean wasNoGravity;
-        private Vec3 fullVelocity;
-        private int tickInterval;
-        private int movementTicks;
-        private boolean velocitySyncRequested = true;
-
-        private ProjectileState(
-                Projectile projectile,
-                boolean wasNoGravity,
-                Vec3 fullVelocity,
-                int tickInterval
-        ) {
-            this.projectile = projectile;
-            this.wasNoGravity = wasNoGravity;
-            this.fullVelocity = fullVelocity;
-            this.tickInterval = tickInterval;
-        }
-
-        private Projectile projectile() {
-            return projectile;
-        }
-
-        private boolean wasNoGravity() {
-            return wasNoGravity;
-        }
-
-        private Vec3 fullVelocity() {
-            return fullVelocity;
-        }
-
-        private void advanceMovementTick() {
-            movementTicks++;
-        }
-
-        private boolean shouldUpdateFullVelocity() {
-            return movementTicks >= tickInterval;
-        }
-
-        private void updateFullVelocity(Vec3 slowedVelocity) {
-            fullVelocity = slowedVelocity.scale(
-                    tickInterval
-            );
-            movementTicks = 0;
-            velocitySyncRequested = true;
-        }
-
-        private void setTickInterval(int tickInterval) {
-            if (this.tickInterval != tickInterval) {
-                this.tickInterval = tickInterval;
-                movementTicks = 0;
-                velocitySyncRequested = true;
-            }
-        }
-
-        private boolean consumeVelocitySyncRequest() {
-            boolean requested = velocitySyncRequested;
-            velocitySyncRequested = false;
-            return requested;
         }
     }
 }

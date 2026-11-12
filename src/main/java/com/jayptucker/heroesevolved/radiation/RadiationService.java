@@ -116,7 +116,8 @@ public final class RadiationService {
         player.setData(ModDataAttachments.PLAYER_RADIATION_STRESS, mass);
         syncVisuals(player);
         if (mass >= MAXIMUM_MASS && !BREACHES.containsKey(player.getUUID())
-                && !DETONATIONS.containsKey(player.getUUID())) {
+                && !DETONATIONS.containsKey(player.getUUID())
+                && !RadiationSkills.overdriven(player) && !RadiationSkills.overdrive(player)) {
             BREACHES.put(player.getUUID(),
                     player.serverLevel().getGameTime() + BREACH_COUNTDOWN_TICKS);
             player.sendSystemMessage(Component.literal(
@@ -156,7 +157,7 @@ public final class RadiationService {
             remaining = (int) Math.max(0, detonation.at - player.serverLevel().getGameTime());
             duration = DETONATION_CHARGE_TICKS;
         }
-        return new RadiationStatePayload(player.getId(), player.getUUID(), mass(player), remaining, duration);
+        return new RadiationStatePayload(player.getId(), player.getUUID(), mass(player), remaining, duration, RadiationSkills.overdriven(player));
     }
     public static void syncVisuals(ServerPlayer player) {
         PacketDistributor.sendToPlayersTrackingEntityAndSelf(player, visualState(player));
@@ -192,7 +193,8 @@ public final class RadiationService {
     public static boolean radiantTouch(ServerPlayer player, int powerLevel) {
         ServerLevel level = player.serverLevel();
         Vec3 eye = player.getEyePosition(), aim = player.getLookAngle().normalize();
-        double reach = 8.0D;
+        boolean searing = RadiationSkills.has(player, RadiationSkills.SEARING_PALMS);
+        double reach = searing ? 11.0D : 8.0D;
         List<LivingEntity> targets = level.getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().expandTowards(aim.scale(reach)).inflate(3.0D),
                         entity -> hostile(player, entity) && player.hasLineOfSight(entity) && inCone(eye, aim, entity, reach, 0.8D))
                 .stream().sorted(java.util.Comparator.comparingDouble(player::distanceToSqr)).limit(6).toList();
@@ -216,7 +218,7 @@ public final class RadiationService {
             double closeness = 1 - 0.5 * Math.min(1, target.distanceTo(player) / reach);
             double resist = Math.max(0.2, 1 - target.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE));
             target.setDeltaMovement(target.getDeltaMovement().scale(0.3).add(new Vec3(aim.x, 0, aim.z).normalize()
-                    .scale(0.85 * closeness * resist)).add(0, 0.28 * resist, 0));
+                    .scale((searing ? 1.15 : 0.85) * closeness * resist)).add(0, 0.28 * resist, 0));
             target.hurtMarked = true;
             if (target instanceof ServerPlayer other) other.connection.send(new ClientboundSetEntityMotionPacket(other));
             AbilityEffects.send(level, Kind.RADIATION_DOSE, target.getBoundingBox().getCenter(), target.position(), target.getBbWidth());
@@ -225,7 +227,7 @@ public final class RadiationService {
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.FIRECHARGE_USE, SoundSource.PLAYERS, 0.9F, 0.6F);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, 0.5F, 0.5F);
         ArmPosePayload.show(player, ArmPose.TWO_HANDS, 10);
-        addMass(player, 6);
+        addMass(player, searing && targets.size() >= 3 ? 12 : 6);
         MasteryService.markPowerUse(player, ModAbilities.RADIATION_ID);
         return true;
     }
@@ -236,9 +238,16 @@ public final class RadiationService {
         return distance <= reach + entity.getBbWidth() && (distance < 1.2D || to.normalize().dot(aim) >= cosine);
     }
 
-    private static Vec3 hand(ServerPlayer player) {
+    /**
+     * The casting palm: the main arm's shoulder (1.375 up, or 1.17 crouching, 0.3125 out from the body's facing), then
+     * most of an arm's length along the look. Beams leave here, beside the body, so they read from behind too.
+     */
+    public static Vec3 hand(ServerPlayer player) {
         Vec3 look = player.getLookAngle();
-        return player.getEyePosition().add(look.scale(0.6D)).add(0.0D, -0.3D, 0.0D);
+        double side = player.getMainArm() == net.minecraft.world.entity.HumanoidArm.LEFT ? 1 : -1;
+        double yaw = Math.toRadians(player.yBodyRot);
+        return player.position().add(Math.cos(yaw) * side * 0.3125D, player.isCrouching() ? 1.17D : 1.375D,
+                Math.sin(yaw) * side * 0.3125D).add(look.scale(0.64D));
     }
 
     /** Close-range heat boils water, thaws ice and melts metal locks. */
@@ -278,6 +287,7 @@ public final class RadiationService {
 
     /** How much harder the caster's radiation hits at their current Core. */
     public static float multiplier(ServerPlayer player) {
+        if (RadiationSkills.overdriven(player)) return 2.0F;
         int core = mass(player);
         return core >= CRITICAL ? 1.5F : core >= HOT ? 1.25F : 1.0F;
     }
@@ -296,9 +306,14 @@ public final class RadiationService {
      * keep getting dosed. A caster keeps at most two such patches; a third replaces the oldest.
      */
     public static void contaminate(ServerPlayer player, Vec3 center, double radius, int ticks) {
+        contaminate(player, center, radius, ticks, 3);
+    }
+
+    /** As above, keeping at most {@code cap} patches for the caster (a Glowing Path trail keeps more). */
+    public static void contaminate(ServerPlayer player, Vec3 center, double radius, int ticks, int cap) {
         ServerLevel level = player.serverLevel();
         List<Zone> mine = ZONES.stream().filter(z -> z.owner.equals(player.getUUID())).toList();
-        if (mine.size() >= 2) ZONES.remove(mine.getFirst());
+        if (mine.size() >= cap) ZONES.remove(mine.getFirst());
         ZONES.add(new Zone(player.getUUID(), level, center, radius, level.getGameTime() + ticks));
     }
 
@@ -333,13 +348,21 @@ public final class RadiationService {
         }
         SetPiecePayload.send(level, Piece.RAD_EMP, player.position(), player.position().add(0, 1, 0), RadiationEmp.RADIUS, null);
         CameraShakePayload.sendAround(level, player.position(), 20.0D, 0.7F, 8);
-        int vented = vent(player, 25);
+        boolean safe = RadiationSkills.has(player, RadiationSkills.SAFE_VENTING);
+        int vented = vent(player, safe ? 40 : 25);
+        if (safe && vented > 0) com.jayptucker.heroesevolved.energy.PlayerEnergyService.restore(player, vented / 2);
         if (vented > 0) player.displayClientMessage(Component.literal("The pulse carries " + vented + " Core out of you.")
                 .withStyle(ChatFormatting.AQUA), true);
         level.playSound(null, player.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 1.4F, 0.6F);
         level.playSound(null, player.blockPosition(), SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 0.8F, 0.6F);
         ArmPosePayload.show(player, ArmPose.ARMS_WIDE, 12);
         MasteryService.markPowerUse(player, ModAbilities.RADIATION_ID);
+    }
+
+    /** Is {@code at} inside contaminated ground this caster left? */
+    public static boolean inOwnZone(ServerPlayer player, Vec3 at) {
+        return ZONES.stream().anyMatch(z -> z.owner.equals(player.getUUID()) && z.level == player.serverLevel()
+                && z.center.distanceToSqr(at) <= (z.radius + 1) * (z.radius + 1));
     }
 
     public static boolean canVent(ServerPlayer player) {
@@ -418,7 +441,9 @@ public final class RadiationService {
         int core = mass(player);
         SetPiecePayload.send(level, Piece.RAD_BEAM, hand(player), end, 0.6F + core / 100.0F, null);
         if (!damageTick) return;
-        float damage = (1.5F + powerLevel * 0.4F + core / 25.0F) * multiplier(player);
+        float damage = (1.5F + powerLevel * 0.4F + core / 25.0F) * multiplier(player)
+                * (RadiationSkills.has(player, RadiationSkills.FOCUSED_BEAM) ? 1.3F : 1.0F);
+        if (RadiationSkills.has(player, RadiationSkills.SAFE_VENTING)) com.jayptucker.heroesevolved.energy.PlayerEnergyService.restore(player, 1);
         // It pierces: everything along the line is struck.
         for (Entity entity : level.getEntities(player, new AABB(eye, end).inflate(1.2D), Entity::isAlive)) {
             if (!(entity instanceof LivingEntity living) || !hostile(player, living)) continue;
@@ -593,7 +618,8 @@ public final class RadiationService {
         if (mass >= MAXIMUM_MASS && !BREACHES.containsKey(player.getUUID()) && !isDetonating(player)) addMass(player, 0);
 
         // Mass bleeds away slowly while you rest.
-        if (gameTime % 20 == 0 && mass > 0 && !BREACHES.containsKey(player.getUUID()) && !isDetonating(player)
+        if (gameTime % (RadiationSkills.has(player, RadiationSkills.HOT_START) ? 40 : 20) == 0 && mass > 0
+                && !BREACHES.containsKey(player.getUUID()) && !isDetonating(player)
                 && gameTime - LAST_HURT.getOrDefault(player.getUUID(), Long.MIN_VALUE / 2) > 100) {
             setMass(player, mass - 1);
         }
@@ -623,6 +649,7 @@ public final class RadiationService {
         long gameTime = server.overworld().getGameTime();
         NuclearFallout.tick(server);
         RadiationLeap.tick(server);
+        RadiationSkills.tick(server);
         for (Emission emission : List.copyOf(EMISSIONS.values())) tickEmission(emission, emission.player.serverLevel().getGameTime());
         for (Zone zone : List.copyOf(ZONES)) {
             long now = zone.level.getGameTime();
@@ -633,7 +660,7 @@ public final class RadiationService {
             for (LivingEntity target : zone.level.getEntitiesOfClass(LivingEntity.class, new AABB(zone.center, zone.center).inflate(zone.radius, 2, zone.radius),
                     entity -> (owner == null ? !RadiationSickness.immune(entity) : hostile(owner, entity))
                             && entity.position().distanceToSqr(zone.center) <= zone.radius * zone.radius + 4)) {
-                RadiationSickness.dose(target, owner, 1, 100, 2);
+                RadiationSickness.dose(target, owner, RadiationSkills.zoneStages(owner), 100, owner != null && RadiationSkills.zoneStages(owner) > 1 ? 3 : 2);
             }
             zone.level.playSound(null, zone.center.x, zone.center.y, zone.center.z, SoundEvents.NOTE_BLOCK_HAT.value(), SoundSource.PLAYERS, 0.3F, 1.9F);
         }
@@ -699,6 +726,7 @@ public final class RadiationService {
     public static void stopAll(ServerPlayer player) {
         if (EMISSIONS.remove(player.getUUID()) != null) ArmPosePayload.clear(player);
         RadiationLeap.forget(player);
+        RadiationSkills.forget(player);
         ZONES.removeIf(zone -> zone.owner.equals(player.getUUID()));
         RadiationDecay.clear(player);
         player.setData(ModDataAttachments.PLAYER_RADIATION_STRESS, 0);
@@ -718,6 +746,7 @@ public final class RadiationService {
         BREACHES.clear(); DETONATIONS.clear(); LAST_HURT.clear(); EMISSIONS.clear(); ZONES.clear(); CHARGE_DAMAGE.clear();
         RadiationSickness.clear();
         RadiationLeap.clear();
+        RadiationSkills.clear();
         NuclearFallout.clear();
         RadiationEmp.clear();
     }

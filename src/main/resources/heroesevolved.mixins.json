@@ -27,7 +27,8 @@
     "SeveredArmorMixin",
     "SeveredHandItemMixin",
     "EclipseSkyMixin",
-    "TornadoCameraMixin"
+    "TornadoCameraMixin",
+    "UnseenObjectMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -3,7 +3,6 @@ package com.jayptucker.heroesevolved.time;
 import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
 import com.jayptucker.heroesevolved.events.EclipseService;
 import com.jayptucker.heroesevolved.sounds.ModSounds;
-import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -25,8 +24,6 @@ import java.util.UUID;
  */
 public final class TimeStopService {
     private static final Map<UUID, TimeStopField> ACTIVE_FIELDS =
-            new HashMap<>();
-    private static final Map<UUID, StoppedProjectile> STOPPED_PROJECTILES =
             new HashMap<>();
 
     // Hits landed on frozen creatures by the field's owner. Nothing moves
@@ -124,7 +121,7 @@ public final class TimeStopService {
         }
     }
 
-    public static void clear() { ACTIVE_FIELDS.clear(); restoreAllProjectiles(); STORED_IMPACTS.clear(); }
+    public static void clear() { ACTIVE_FIELDS.clear(); ProjectileTimeService.releaseInactive(); STORED_IMPACTS.clear(); }
 
     public static boolean hasActiveField(ServerPlayer player) {
         return ACTIVE_FIELDS.containsKey(player.getUUID());
@@ -169,10 +166,7 @@ public final class TimeStopService {
         if (field != null) {
             playTemporalCue(player.serverLevel(), field.center(), player);
             releaseImpacts(player.getServer(), player.getUUID());
-        }
-
-        if (ACTIVE_FIELDS.isEmpty()) {
-            restoreAllProjectiles();
+            ProjectileTimeService.releaseInactive();
         }
     }
 
@@ -216,9 +210,6 @@ public final class TimeStopService {
             }
         }
 
-        if (ACTIVE_FIELDS.isEmpty()) {
-            restoreAllProjectiles();
-        }
     }
 
     /**
@@ -231,13 +222,8 @@ public final class TimeStopService {
             return false;
         }
 
-        TimeStopField field = getContainingField(entity, level);
-
-        if (entity instanceof Projectile projectile) {
-            updateProjectileState(projectile, level, field != null);
-        }
-
-        return field != null || SpaceTimeService.isSuspended(entity);
+        if (entity instanceof Projectile projectile) return ProjectileTimeService.beforeTick(projectile);
+        return getContainingField(entity, level) != null || SpaceTimeService.isSuspended(entity);
     }
 
     public static int energyCostForLevel(int powerLevel) {
@@ -282,12 +268,26 @@ public final class TimeStopService {
         };
     }
 
+    static boolean stopsProjectile(Projectile shot, Vec3 end) {
+        return getContainingField(shot, (ServerLevel) shot.level(), end) != null;
+    }
+
+    static boolean controlsShot(ServerPlayer player, Projectile shot, Vec3 end) {
+        TimeStopField field = ACTIVE_FIELDS.get(player.getUUID());
+        double radius = HeroesEvolvedConfig.COMMON.timeStopRadius.get();
+        return field != null && !field.hasEnded() && field.dimension().equals(shot.level().dimension())
+                && ProjectileTimeService.reachesField(shot.position(), end, field.center(), radius);
+    }
+
     private static TimeStopField getContainingField(
             Entity entity,
             ServerLevel level
     ) {
+        return getContainingField(entity, level, entity.position());
+    }
+
+    private static TimeStopField getContainingField(Entity entity, ServerLevel level, Vec3 end) {
         double radius = HeroesEvolvedConfig.COMMON.timeStopRadius.get();
-        double radiusSquared = radius * radius;
 
         for (TimeStopField field : ACTIVE_FIELDS.values()) {
             if (field.dimension().equals(level.dimension())
@@ -296,82 +296,12 @@ public final class TimeStopService {
                     && !entity.isSpectator()
                     && !com.jayptucker.heroesevolved.speed.SpeedService.outrunsTime(entity)
                     && !field.hasEnded()
-                    && entity.position().distanceToSqr(field.center())
-                    <= radiusSquared) {
+                    && ProjectileTimeService.reachesField(entity.position(), end, field.center(), radius)) {
                 return field;
             }
         }
 
         return null;
-    }
-
-    private static void updateProjectileState(
-            Projectile projectile,
-            ServerLevel level,
-            boolean isStopped
-    ) {
-        UUID projectileId = projectile.getUUID();
-
-        if (!isStopped) {
-            restoreProjectile(projectileId, projectile, level);
-            return;
-        }
-
-        StoppedProjectile previousState = STOPPED_PROJECTILES.putIfAbsent(
-                projectileId,
-                new StoppedProjectile(
-                        projectile,
-                        projectile.isNoGravity(),
-                        projectile.getDeltaMovement()
-                )
-        );
-
-        projectile.setNoGravity(true);
-        projectile.setDeltaMovement(Vec3.ZERO);
-
-        // Clients only need the zero-motion packet once, when the projectile
-        // first becomes frozen. Re-sending it every tick wastes bandwidth.
-        if (previousState == null) {
-            level.getChunkSource().broadcastAndSend(
-                    projectile,
-                    new ClientboundSetEntityMotionPacket(projectile)
-            );
-        }
-    }
-
-    private static void restoreAllProjectiles() {
-        for (StoppedProjectile stopped : STOPPED_PROJECTILES.values()) {
-            if (stopped.projectile().isRemoved()
-                    || !(stopped.projectile().level() instanceof ServerLevel level)) {
-                continue;
-            }
-
-            stopped.projectile().setNoGravity(stopped.wasNoGravity());
-            stopped.projectile().setDeltaMovement(stopped.velocity());
-            level.getChunkSource().broadcastAndSend(
-                    stopped.projectile(),
-                    new ClientboundSetEntityMotionPacket(stopped.projectile())
-            );
-        }
-
-        STOPPED_PROJECTILES.clear();
-    }
-
-    private static void restoreProjectile(
-            UUID projectileId,
-            Projectile projectile,
-            ServerLevel level
-    ) {
-        StoppedProjectile stopped = STOPPED_PROJECTILES.remove(projectileId);
-
-        if (stopped != null && !projectile.isRemoved()) {
-            projectile.setNoGravity(stopped.wasNoGravity());
-            projectile.setDeltaMovement(stopped.velocity());
-            level.getChunkSource().broadcastAndSend(
-                    projectile,
-                    new ClientboundSetEntityMotionPacket(projectile)
-            );
-        }
     }
 
     /** Plays the same cue for freezing time and returning it to normal. */
@@ -454,12 +384,5 @@ public final class TimeStopService {
             this.target = target;
             this.ownerId = ownerId;
         }
-    }
-
-    private record StoppedProjectile(
-            Projectile projectile,
-            boolean wasNoGravity,
-            Vec3 velocity
-    ) {
     }
 }

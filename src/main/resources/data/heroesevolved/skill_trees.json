@@ -1628,23 +1628,28 @@
     "branches": [
       [
         {
-          "name": "Stable Emission",
-          "description": "Reduce activation stamina costs by 10%."
+          "name": "Searing Palms",
+          "description": "Radiant Heat reaches 11 blocks instead of 8 and throws harder. Catching three or more enemies in one cone builds twice the Core.",
+          "icon": "minecraft:blaze_powder",
+          "mechanic": "searing_palms"
         },
         {
           "name": "Gamma Lance",
-          "description": "Irradiate a target up to 40 blocks away for 9 + level damage and a stage of Radiation Sickness.",
-          "energy": 30,
-          "cooldown": 120
+          "description": "A narrow lance of gamma light pierces everything on a line up to 40 blocks: 8 + level damage and a stage of Radiation Sickness. With 15 Core to spend, it spends it and strikes twice as hard with two stages.",
+          "energy": 18,
+          "cooldown": 100,
+          "icon": "minecraft:end_rod"
         },
         {
-          "name": "Stable Emission Mastery",
-          "description": "Reduce activation stamina costs by another 15% (25% total)."
+          "name": "Focused Beam",
+          "description": "Meltdown Beam deals 30% more damage.",
+          "icon": "minecraft:spyglass",
+          "mechanic": "focused_beam"
         },
         {
           "id": "radiation_heat_vent",
           "name": "Heat Vent",
-          "description": "Dump up to 30 stress into a cone ahead, burning everything in it.",
+          "description": "Dump up to 30 Core into a roaring cone 9 blocks ahead. It burns harder the more you vent, sets enemies alight and throws them back.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -1655,8 +1660,8 @@
         },
         {
           "id": "radiation_clean_vent",
-          "name": "Clean Vent",
-          "description": "Vent up to 50 stress without setting anything alight.",
+          "name": "Chain Vent",
+          "description": "Every sick enemy Heat Vent hits bursts as if it had died: the chain reaction spreads its sickness to everything around it.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -1665,8 +1670,8 @@
         },
         {
           "id": "radiation_containment",
-          "name": "Containment",
-          "description": "Venting wraps you in Fire Resistance and Resistance.",
+          "name": "Supercritical",
+          "description": "While your Core is Critical, every enemy you kill bursts in a small blast that hurts, doses and throws what is near and feeds you 5 Core.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -1677,23 +1682,28 @@
       ],
       [
         {
-          "name": "Gamma Pressure",
-          "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
+          "name": "Hot Start",
+          "description": "Core cools half as fast while you rest, so you stay Hot between fights.",
+          "icon": "minecraft:magma_block",
+          "mechanic": "hot_start"
         },
         {
           "name": "Lead Skin",
-          "description": "Condense a protective layer around yourself for Resistance II for 8 seconds.",
-          "energy": 32,
-          "cooldown": 260
+          "description": "Condense a layer of lead over your skin: Resistance II for 8 seconds, and anything that hits you in melee meanwhile is dosed.",
+          "energy": 24,
+          "cooldown": 300,
+          "icon": "minecraft:iron_chestplate"
         },
         {
-          "name": "Gamma Pressure Mastery",
-          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+          "name": "Safe Venting",
+          "description": "EMP vents 40 Core instead of 25 and turns half of it into stamina. Every pulse of the Meltdown Beam restores a point of stamina.",
+          "icon": "minecraft:copper_bulb",
+          "mechanic": "safe_venting"
         },
         {
           "id": "radiation_reactor_core",
           "name": "Reactor Core",
-          "description": "Turn up to 20 stress into stamina, and give nearby friends a burst of energy.",
+          "description": "Turn up to 20 Core into stamina, and give friends within 6 blocks a burst of stamina.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -1705,7 +1715,7 @@
         {
           "id": "radiation_power_transfer",
           "name": "Power Transfer",
-          "description": "Reactor Core converts up to 40 stress.",
+          "description": "Reactor Core converts up to 40 Core, and the friends you power dig faster.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -1714,8 +1724,8 @@
         },
         {
           "id": "radiation_reactor",
-          "name": "Reactor",
-          "description": "Friends you power also gain Haste II and Strength.",
+          "name": "Breeder Reactor",
+          "description": "Once a minute, reaching 100 Core runs you hot instead of failing: ten seconds of Overdrive in which your radiation hits twice as hard. Vent before it ends, or containment fails as usual.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -1726,23 +1736,28 @@
       ],
       [
         {
-          "name": "Reactor Rhythm",
-          "description": "Reduce ability cooldowns by 10%."
+          "name": "Fallout Boots",
+          "description": "Fission Leap's launch leaves the ground you left contaminated for 5 seconds.",
+          "icon": "minecraft:leather_boots",
+          "mechanic": "fallout_boots"
         },
         {
           "name": "Decontaminate",
-          "description": "Purge harmful effects and flames from yourself and teammates within 8 blocks, then grant 8 seconds of Fire Resistance.",
-          "energy": 30,
-          "cooldown": 200
+          "description": "Purge harmful effects and flames from yourself and friends within 8 blocks, then grant 8 seconds of Fire Resistance.",
+          "energy": 20,
+          "cooldown": 240,
+          "icon": "minecraft:milk_bucket"
         },
         {
-          "name": "Reactor Rhythm Mastery",
-          "description": "Reduce ability cooldowns by another 15% (25% total)."
+          "name": "Second Leap",
+          "description": "Fission Leap can launch you once more in mid-air before you slam.",
+          "icon": "minecraft:rabbit_foot",
+          "mechanic": "second_leap"
         },
         {
           "id": "radiation_glowing_path",
           "name": "Glowing Path",
-          "description": "Contaminate the ground around you for ten seconds; enemies standing in it sicken.",
+          "description": "For 8 seconds you leave contaminated ground wherever you walk.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -1753,8 +1768,8 @@
         },
         {
           "id": "radiation_wider_path",
-          "name": "Wider Path",
-          "description": "The contaminated zone grows to nine blocks.",
+          "name": "Half-Life",
+          "description": "The ground you contaminate stays dangerous twice as long and doses two stages at a time.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -1764,7 +1779,7 @@
         {
           "id": "radiation_catastrophe",
           "name": "Catastrophe",
-          "description": "The zone lasts twenty seconds and withers those who stay.",
+          "description": "A Fission Leap slam into ground you contaminated sets it off: a blast 60% wider and half again as strong, leaving a bigger patch.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -1775,9 +1790,9 @@
       ]
     ],
     "branch_names": [
-      "CONTAINMENT",
+      "MELTDOWN",
       "REACTOR",
-      "CATASTROPHE"
+      "FALLOUT"
     ],
     "styles": [
       {
@@ -2617,35 +2632,40 @@
     "branches": [
       [
         {
-          "name": "Soft Footfall",
-          "description": "Walking builds less Exposure while concealed."
+          "name": "Quiet Light",
+          "description": "Walking while faded builds half as much Exposure, and friends who share your Fade build none at all.",
+          "icon": "minecraft:feather",
+          "mechanic": "quiet_light"
         },
         {
-          "name": "Vanishing Counter",
-          "description": "Fade for three seconds and prepare one surprise melee strike. Your next hit within ten seconds reveals you as it lands.",
-          "energy": 22,
-          "cooldown": 100
+          "name": "Vanishing Touch",
+          "description": "Make the friend, pet or object under your aim, up to 16 blocks away, invisible for 20 seconds: a player, a tamed animal, a villager, a boat, a cart or a dropped item. Hunters lose track of a hidden creature.",
+          "energy": 18,
+          "cooldown": 200,
+          "icon": "minecraft:glass_pane"
         },
         {
-          "name": "Clean Break",
-          "description": "Exposure settles faster after nearby hunters lose line of sight."
+          "name": "Unseen Constructs",
+          "description": "Your shields, bridges, barriers, bubbles and disc are invisible to everyone except you and your friends. Foes walk into walls they cannot see.",
+          "icon": "minecraft:tinted_glass",
+          "mechanic": "unseen_constructs"
         },
         {
           "id": "invisibility_smoke_and_mirrors",
-          "name": "False Footsteps",
-          "description": "Project footsteps and a refracted flicker at aimed ground. Nearby hostile mobs investigate the false trail instead of your hidden position.",
+          "name": "Vanishing Squad",
+          "description": "You and every friend, pet and companion within 8 blocks fade for 10 seconds. Hunters lose all of you at once.",
           "active": true,
           "level": 2,
           "cost": 2,
           "requires": "invisibility_0_0",
           "mechanic": "smoke_and_mirrors",
-          "energy": 20,
-          "cooldown": 300
+          "energy": 30,
+          "cooldown": 600
         },
         {
           "id": "invisibility_lingering_mirage",
-          "name": "Lingering Mirage",
-          "description": "False Footsteps lasts longer and draws hunters from farther away.",
+          "name": "Long Vanish",
+          "description": "Vanishing Touch reaches 24 blocks and lasts 40 seconds; Vanishing Squad reaches 12 blocks and lasts 20 seconds.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -2654,8 +2674,8 @@
         },
         {
           "id": "invisibility_assassin",
-          "name": "Assassin",
-          "description": "Vanishing Counter from full concealment deals triple surprise damage. The opening is spent after one hit, which reveals you.",
+          "name": "Unseen Force",
+          "description": "Force Push, Bubble, Crush, Pinpoint, Kinetic Shell and Force Nova cast while you are fully unseen hit 40% harder and do not give you away.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -2666,35 +2686,40 @@
       ],
       [
         {
-          "name": "Double Take",
-          "description": "Mirage lasts one second longer, giving its false route more time to draw attention."
+          "name": "Wide Lens",
+          "description": "Lens Shield is half again as wide and holds for 5 seconds instead of 3, giving it longer to store Pressure.",
+          "icon": "minecraft:shield",
+          "mechanic": "wide_lens"
         },
         {
-          "name": "Mirror Guard",
-          "description": "Leave an optical double, fade for six seconds and gain Resistance while you reposition.",
+          "name": "Force Barrier",
+          "description": "Raise a solid wall of force 7 blocks wide and 4 tall where you aim, up to 20 blocks away, for 10 seconds. Nothing walks or shoots through it.",
           "energy": 24,
-          "cooldown": 300
+          "cooldown": 300,
+          "icon": "minecraft:light_blue_stained_glass"
         },
         {
-          "name": "Perfect Imitation",
-          "description": "Mirages also imitate an attack gesture, making their false intentions more convincing."
+          "name": "Safety Net",
+          "description": "A pad of force catches you when you fall 6 blocks or more, so the landing does no harm. Once every 10 seconds.",
+          "icon": "minecraft:slime_ball",
+          "mechanic": "safety_net"
         },
         {
           "id": "invisibility_pickpocket",
-          "name": "Sleight of Hand",
-          "description": "Lift a mob's held item from within four blocks and quietly operate doors or containers while faded.",
+          "name": "Force Disc",
+          "description": "Ride a disc of force for 8 seconds. It glides wherever you look; crouch to step off and drift down.",
           "active": true,
           "level": 2,
           "cost": 2,
           "requires": "invisibility_1_0",
           "mechanic": "pickpocket",
-          "energy": 14,
-          "cooldown": 200
+          "energy": 20,
+          "cooldown": 300
         },
         {
           "id": "invisibility_light_fingers",
-          "name": "Light Fingers",
-          "description": "Sleight of Hand reaches eight blocks.",
+          "name": "Steady Disc",
+          "description": "Force Disc lasts 16 seconds, and Force Bridges stand for 20 seconds instead of 10.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -2703,8 +2728,8 @@
         },
         {
           "id": "invisibility_phantom",
-          "name": "Phantom",
-          "description": "While fully concealed, incoming damage is reduced by 30%. The hit still exposes you.",
+          "name": "Rebound",
+          "description": "Projectiles stopped by your Lens Shield, Force Push, Force Barrier or a shelter bubble fly back at whoever fired them.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -2715,35 +2740,40 @@
       ],
       [
         {
-          "name": "Close Formation",
-          "description": "Shared Veil reaches one block farther, helping companions stay together."
+          "name": "Hard Push",
+          "description": "Force Push reaches 14 blocks instead of 10 and throws half again as hard.",
+          "icon": "minecraft:piston",
+          "mechanic": "hard_push"
         },
         {
-          "name": "Slipstream",
-          "description": "Vanish for five seconds with Speed II and leave hunters searching your last known position.",
-          "energy": 20,
-          "cooldown": 240
+          "name": "Pinpoint",
+          "description": "Flick a bead of force at a foe up to 24 blocks away: 6 + level damage, and it pops them into the air, ready for a bubble.",
+          "energy": 14,
+          "cooldown": 120,
+          "icon": "minecraft:snowball"
         },
         {
-          "name": "Shared Escape",
-          "description": "Slipstream also briefly conceals nearby consenting friends."
+          "name": "Tight Seal",
+          "description": "Bubbles hold foes for 8 seconds instead of 5, and crushing them deals 50% more damage.",
+          "icon": "minecraft:iron_bars",
+          "mechanic": "tight_seal"
         },
         {
           "id": "invisibility_cloak_field",
-          "name": "Hidden Passage",
-          "description": "Lay a twelve-block optical passage for fifteen seconds. Solid walls clip its reach; consenting companions inside remain concealed.",
+          "name": "Kinetic Shell",
+          "description": "Seal up to 4 foes within 6 blocks of where you aim in bubbles for 3 seconds. One press of Crush closes them all.",
           "active": true,
           "level": 2,
           "cost": 2,
           "requires": "invisibility_2_0",
           "mechanic": "cloak_field",
           "energy": 30,
-          "cooldown": 600
+          "cooldown": 400
         },
         {
           "id": "invisibility_wider_cloak",
-          "name": "Broad Passage",
-          "description": "Widen Hidden Passage from a two-block radius to three blocks.",
+          "name": "Pressure Chain",
+          "description": "A crushed bubble bursts outward: foes within 4 blocks of it take half the crush damage and are thrown.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -2752,8 +2782,8 @@
         },
         {
           "id": "invisibility_claudes_lesson",
-          "name": "Claude's Lesson",
-          "description": "Sustained Fade drains one stamina per second instead of two.",
+          "name": "Implosion",
+          "description": "Force Nova pulls foes within 16 blocks toward you while it gathers, then seals the six nearest in bubbles, so the burst strikes them all for double damage.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -2764,9 +2794,9 @@
       ]
     ],
     "branch_names": [
-      "GHOST",
-      "TRICKSTER",
-      "INFILTRATOR"
+      "VEIL",
+      "AEGIS",
+      "PRESSURE"
     ],
     "styles": [
       {

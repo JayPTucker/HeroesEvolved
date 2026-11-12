@@ -163,7 +163,8 @@ public final class OpticalClient {
                 var gesture = com.jayptucker.heroesevolved.network.ClientArmPoseState.get(mc.player.getId());
                 if (gesture == com.jayptucker.heroesevolved.ability.ArmPose.OPTICAL_SPLIT
                         || gesture == com.jayptucker.heroesevolved.ability.ArmPose.OPTICAL_VEIL
-                        || gesture == com.jayptucker.heroesevolved.ability.ArmPose.OPTICAL_DISPERSE) {
+                        || gesture == com.jayptucker.heroesevolved.ability.ArmPose.OPTICAL_DISPERSE
+                        || gesture != null && gesture.name().startsWith("FORCE_")) {
                     FirstPersonArmGeometry.pose(pose, side, gesture, mc.player.tickCount,
                             com.jayptucker.heroesevolved.network.ClientArmPoseState.ageTicks(mc.player.getId()));
                 } else {

@@ -37,6 +37,7 @@ final class RadiationArt {
             case RAD_EMP -> emp(c, a, t);
             case RAD_BEAM -> beam(c, a, t);
             case RAD_CHARGE -> charge(c, a, t);
+            case RAD_LANCE -> lance(c, a, t);
             default -> { }
         }
     }
@@ -277,6 +278,51 @@ final class RadiationArt {
             int seed = (int) now;
             float k = (now % 4) / 4;
             c.cloud(to.add(0, k * 0.8, 0), 0.4F + k * 0.4F, 0.3F + k * 0.3F, 0.4F + k * 0.4F, seed % 8, now * 0.1F, 0.35F * f * (1 - k), Shades.smoke(c, SMOKE, 0.2F));
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Gamma Lance
+    // ------------------------------------------------------------------
+
+    /**
+     * A bolt of gamma light: a ring snaps open at the hand, a bright head races down the line dragging a green-white
+     * trail (it reads even from straight behind, as a receding star), and a flash and ring burst where it ends. A faint
+     * afterglow hangs along the whole line, then fades.
+     */
+    private static void lance(Canvas c, Active a, float t) {
+        Vec3 from = a.origin(), to = a.target(), span = to.subtract(from);
+        float length = (float) span.length();
+        if (length < 0.1F || !c.glow()) return;
+        Vec3 dir = span.scale(1 / length);
+        float s = a.scale(), life = a.piece().ticks, f = Mth.clamp((life - t) / 5, 0, 1);
+        float travel = out(t / 3);
+        Vec3 head = from.add(dir.scale(length * travel));
+        // The muzzle: rings opening at the hand, facing along the shot.
+        for (int i = 0; i < 2; i++) {
+            float ti = t - i * 1.2F;
+            if (ti < 0) continue;
+            float k = smooth(0, 6, ti);
+            c.ring(from.add(dir.scale(0.3 + k * 0.8)), dir, 0.2F + k * (0.9F + 0.4F * s), 0.06F, 0, TWO_PI, i == 0 ? WHITE_HOT : TOXIC, 0.85F * (1 - k));
+        }
+        c.glow(from, 0.5F + 0.4F * s, TOXIC, 0.7F * (1 - smooth(0, 6, t)));
+        // The trail behind the head: wide green glow, a hot white core.
+        Vec3 tail = from.add(dir.scale(Math.max(0, length * travel - 7)));
+        if (t < 6) {
+            c.line(tail, head, 0.32F * s, TOXIC, 0.1F, 0.7F);
+            c.line(tail, head, 0.1F * s, WHITE_HOT, 0.2F, 1F);
+            c.glow(head, 0.7F * s, WHITE_HOT, 0.95F);
+            c.glow(head, 1.6F * s, TOXIC, 0.5F);
+        }
+        // The afterglow along the line.
+        c.line(from, head, 0.12F * s, TOXIC, 0.45F * f, 0.3F * f);
+        c.line(from, head, 0.035F * s, WHITE_HOT, 0.7F * f, 0.5F * f);
+        // Where it ends: a flash and a ring facing back at the caster.
+        if (travel > 0.98F) {
+            float k = smooth(3, 11, t);
+            c.glow(to, (1.2F + 1.5F * k) * s, TOXIC, 0.8F * (1 - k));
+            c.glow(to, 0.6F * s, WHITE_HOT, 0.9F * (1 - k));
+            c.ring(to, dir, (0.3F + 1.6F * k) * s, 0.08F, 0, TWO_PI, TOXIC, 0.8F * (1 - k));
         }
     }
 

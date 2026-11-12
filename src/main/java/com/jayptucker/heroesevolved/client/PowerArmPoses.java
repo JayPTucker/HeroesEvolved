@@ -242,6 +242,41 @@ public final class PowerArmPoses {
                 set(model.leftArm, -.35F, .15F, -.65F);
             }
 
+            case FORCE_SHIELD -> {
+                float age = ClientArmPoseState.ageTicks(entity.getId());
+                float open = smooth(age / 4F), sway = Mth.sin(age * .2F) * .03F;
+                set(model.rightArm, aimX + .1F - open * .05F + sway, aimY - .12F - open * .16F, .08F + open * .12F);
+                set(model.leftArm, aimX + .1F - open * .05F - sway, aimY + .12F + open * .16F, -.08F - open * .12F);
+            }
+            case FORCE_PUSH -> {
+                float age = ClientArmPoseState.ageTicks(entity.getId());
+                float draw = smooth(age / 2F) * (1 - smooth((age - 2) / 2F)), recover = smooth((age - 6) / 6F);
+                set(model.rightArm, aimX + .55F * draw + .25F * recover, aimY - .1F, .06F + .1F * draw);
+                set(model.leftArm, aimX + .55F * draw + .25F * recover, aimY + .1F, -.06F - .1F * draw);
+            }
+            case FORCE_BUILD -> {
+                float sweep = smooth(ClientArmPoseState.ageTicks(entity.getId()) / 10F);
+                set(model.rightArm, -.45F - sweep * .55F, -.2F + sweep * .05F, .1F + sweep * .55F);
+                set(model.leftArm, -.45F - sweep * .55F, .2F - sweep * .05F, -.1F - sweep * .55F);
+            }
+            case FORCE_BUBBLE -> {
+                float open = smooth(ClientArmPoseState.ageTicks(entity.getId()) / 6F);
+                ModelPart off = rightHanded ? model.leftArm : model.rightArm;
+                set(main, aimX + .2F * (1 - open), aimY, -inward * (.05F + .1F * open));
+                set(off, -.55F - .25F * open, -inward * .25F, inward * .3F);
+            }
+            case FORCE_CRUSH -> {
+                float age = ClientArmPoseState.ageTicks(entity.getId());
+                float close = smooth(age / 8F), shake = Mth.sin(age * 2.1F) * .03F * close;
+                set(model.rightArm, aimX + .05F + shake, aimY - .35F + close * .3F, .2F - close * .1F);
+                set(model.leftArm, aimX + .05F - shake, aimY + .35F - close * .3F, -.2F + close * .1F);
+            }
+            case FORCE_NOVA -> {
+                float age = ClientArmPoseState.ageTicks(entity.getId());
+                float gather = smooth(age / 12F), fling = smooth((age - 20) / 3F);
+                set(model.rightArm, -1.15F * gather * (1 - fling) - .5F * fling, .5F * gather * (1 - fling), .1F + 1.3F * fling);
+                set(model.leftArm, -1.15F * gather * (1 - fling) - .5F * fling, -.5F * gather * (1 - fling), -.1F - 1.3F * fling);
+            }
             case OPTICAL_SPLIT, OPTICAL_VEIL, OPTICAL_DISPERSE -> {
                 float age = ClientArmPoseState.ageTicks(entity.getId());
                 float open = smooth(age / (pose == ArmPose.OPTICAL_DISPERSE ? 9F : 16F));
