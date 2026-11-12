@@ -132,6 +132,10 @@ dependencies {
     localRuntime "maven.modrinth:simple-radio:${simple_radio_version}"
     // Simple Radio needs lexiconfig at runtime.
     localRuntime "maven.modrinth:lexiconfig:${lexiconfig_version}"
+    // Required mod: TaCZ (Timeless and Classics Zero). The power-themed guns are a gun pack in our own data and
+    // assets; only weapons/TaczLink touches its classes.
+    compileOnly "maven.modrinth:timeless-and-classics-zero:${tacz_version}"
+    localRuntime "maven.modrinth:timeless-and-classics-zero:${tacz_version}"
 
     // Example optional mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime

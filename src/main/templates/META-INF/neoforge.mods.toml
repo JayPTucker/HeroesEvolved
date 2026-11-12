@@ -97,6 +97,14 @@ config="${mod_id}.mixins.json"
     ordering="AFTER"
     side="BOTH"
 
+# The power-themed guns (heat gun, cold gun, taser) are TaCZ guns, crafted at its gun smith table.
+[[dependencies.${mod_id}]]
+    modId="tacz"
+    type="required"
+    versionRange="[1.2.0,)"
+    ordering="AFTER"
+    side="BOTH"
+
 # Features are specific properties of the game environment, that you may want to declare you require. This example declares
 # that your mod requires GL version 3.2 or higher. Other features will be added. They are side aware so declaring this won't
 # stop your mod loading on the server for example.

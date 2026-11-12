@@ -1,0 +1,8 @@
+{
+  "name": "heroesevolved.gun.cold_gun.name",
+  "display": "heroesevolved:cold_gun_display",
+  "data": "heroesevolved:cold_gun_data",
+  "tooltip": "heroesevolved.gun.cold_gun.desc",
+  "type": "rifle",
+  "sort": 90
+}

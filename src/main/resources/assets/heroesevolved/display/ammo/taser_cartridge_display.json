@@ -1,0 +1,25 @@
+{
+  "model": "tacz:ammo/12g",
+  "texture": "heroesevolved:ammo/uv/taser_cartridge",
+  "slot": "heroesevolved:ammo/slot/taser_cartridge",
+  "tracer_color": "#FFE36A",
+  "transform": {
+    "scale": {
+      "thirdperson": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "ground": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "fixed": [
+        1,
+        1,
+        1
+      ]
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "materials": [
+    {
+      "item": {
+        "tag": "c:ingots/iron"
+      },
+      "count": 1
+    },
+    {
+      "item": {
+        "item": "minecraft:blaze_powder"
+      },
+      "count": 1
+    },
+    {
+      "item": {
+        "item": "minecraft:coal"
+      },
+      "count": 2
+    }
+  ],
+  "result": {
+    "type": "ammo",
+    "group": "alternative_proj",
+    "id": "heroesevolved:fuel_cell",
+    "count": 20
+  },
+  "type": "tacz:gun_smith_table_crafting"
+}

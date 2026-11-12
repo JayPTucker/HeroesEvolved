@@ -1,6 +1,8 @@
 package com.jayptucker.heroesevolved.company;
 
 import com.jayptucker.heroesevolved.story.sylar.SylarEntity;
+import com.jayptucker.heroesevolved.weapons.PowerWeapons;
+import com.jayptucker.heroesevolved.weapons.Stun;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.DustParticleOptions;
@@ -49,6 +51,10 @@ import java.util.UUID;
  * line shows where it is pointed for most of a second before it fires. Break his line of sight, or be
  * moving fast, and it misses.
  *
+ * <p>In the present a guard is armed with TaCZ guns instead ({@linkplain #armed() armed}): a Glock he fires in
+ * pairs after the same red sight-line, and the Company taser he switches to when someone comes within seven blocks.
+ * Only the past's guards still carry the dart rifle, because nobody may be killed there.</p>
+ *
  * <p>The {@link Role#SUPPRESSOR} carries no rifle. He keeps a {@link SuppressorField}: near him nobody's
  * power answers, a player's or Gabriel Gray's. Up close he still hits like a man who has done this before.</p>
  *
@@ -62,6 +68,10 @@ public class CompanyAgentEntity extends PathfinderMob {
     public static final String LOOSE_TAG = "heroesevolved_loose";
     public static final int AIM_TICKS = 16, SHOT_COOLDOWN = 40;
     public static final double DART_RANGE = 18, CLOSE = 2.5;
+    /** The armed guard's numbers: pistol range and aim, shots per pair, the taser's reach and recharge. */
+    public static final double PISTOL_RANGE = 20, TASER_REACH = 7;
+    public static final int PISTOL_AIM = 12, TASER_AIM = 8, BURST = 2, BURST_GAP = 4, PISTOL_COOLDOWN = 40,
+            TASER_COOLDOWN = 80, DRAW_TICKS = 8, RELOAD_TICKS = 40;
     private static final int SHOUT_EVERY = 200;
     private static final Vector3f SIGHT = new Vector3f(0.95F, 0.12F, 0.1F);
     private static final Vector3f QUIET = new Vector3f(0.52F, 0.5F, 0.6F);
@@ -73,6 +83,8 @@ public class CompanyAgentEntity extends PathfinderMob {
     private BlockPos post;
     private boolean nonLethal;
     private final Map<UUID, Integer> shouted = new HashMap<>();
+    /** An armed guard's two guns; whichever he isn't holding is on his belt. */
+    private ItemStack pistol = ItemStack.EMPTY, taser = ItemStack.EMPTY;
 
     public CompanyAgentEntity(EntityType<? extends CompanyAgentEntity> type, Level level) {
         super(type, level);
@@ -99,6 +111,7 @@ public class CompanyAgentEntity extends PathfinderMob {
         agent.setRole(role);
         agent.guard(BlockPos.containing(at));
         agent.nonLethal = nonLethal;
+        agent.arm();
         return agent;
     }
 
@@ -121,6 +134,7 @@ public class CompanyAgentEntity extends PathfinderMob {
     @Override protected void registerGoals() {
         goalSelector.addGoal(0, new FloatGoal(this));
         goalSelector.addGoal(1, new DartGoal());
+        goalSelector.addGoal(1, new GunGoal());
         goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.15, true));
         goalSelector.addGoal(3, new MoveTowardsRestrictionGoal(this, 0.9));
         goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.55));
@@ -140,9 +154,29 @@ public class CompanyAgentEntity extends PathfinderMob {
 
     public void setRole(Role role) {
         entityData.set(ROLE, role.ordinal());
-        setItemSlot(EquipmentSlot.MAINHAND, role == Role.GUARD ? new ItemStack(Items.CROSSBOW) : ItemStack.EMPTY);
+        arm();
+    }
+
+    /**
+     * Hands him what his role and time carry: nothing for the Suppressor, the dart rifle in the past, and in the
+     * present a TaCZ pistol with the taser on his belt (the dart rifle again if TaCZ can't make them).
+     */
+    private void arm() {
+        pistol = ItemStack.EMPTY;
+        taser = ItemStack.EMPTY;
+        if (role() == Role.GUARD && !nonLethal) {
+            pistol = PowerWeapons.gun(PowerWeapons.AGENT_PISTOL);
+            taser = PowerWeapons.gun(PowerWeapons.TASER);
+        }
+        setItemSlot(EquipmentSlot.MAINHAND, role() != Role.GUARD ? ItemStack.EMPTY : armed() ? pistol : new ItemStack(Items.CROSSBOW));
         setDropChance(EquipmentSlot.MAINHAND, 0);
     }
+
+    /** True for a guard carrying TaCZ guns (one in the present) rather than the dart rifle. */
+    public boolean armed() { return role() == Role.GUARD && !pistol.isEmpty() && !taser.isEmpty(); }
+
+    public ItemStack pistol() { return pistol; }
+    public ItemStack taser() { return taser; }
 
     /** Where he stands watch; he won't chase anyone far from it. */
     public void guard(BlockPos post) {
@@ -154,7 +188,10 @@ public class CompanyAgentEntity extends PathfinderMob {
     public boolean aiming() { return entityData.get(AIMING); }
     public boolean outCold() { return entityData.get(OUT_COLD); }
     public boolean nonLethal() { return nonLethal; }
-    public void setNonLethal(boolean nonLethal) { this.nonLethal = nonLethal; }
+    public void setNonLethal(boolean nonLethal) {
+        this.nonLethal = nonLethal;
+        arm();
+    }
 
     /** Strangers are stopped; anyone in creative or spectating, or just put under, is left alone. */
     private boolean wouldStop(LivingEntity target) {
@@ -231,6 +268,19 @@ public class CompanyAgentEntity extends PathfinderMob {
     // The rifle
     // ------------------------------------------------------------------
 
+    /** The telegraph: a short red line along the barrel toward whoever he is aiming at. */
+    private void sight(ServerLevel level, LivingEntity target) {
+        Vec3 from = getEyePosition().subtract(0, 0.2, 0);
+        Vec3 to = target.getBoundingBox().getCenter();
+        Vec3 step = to.subtract(from);
+        double length = step.length();
+        DustParticleOptions dust = new DustParticleOptions(SIGHT, 0.5F);
+        for (double d = 1; d < Math.min(length, 12); d += 0.75) {
+            Vec3 at = from.add(step.scale(d / length));
+            level.sendParticles(dust, at.x, at.y, at.z, 1, 0, 0, 0, 0);
+        }
+    }
+
     /** The guard says something the first time he turns on someone (and now and then after). */
     private void shout(LivingEntity target) {
         if (!(level() instanceof ServerLevel level) || shouted.containsKey(target.getUUID())) return;
@@ -270,7 +320,7 @@ public class CompanyAgentEntity extends PathfinderMob {
 
         private boolean usable() {
             LivingEntity target = getTarget();
-            return role() == Role.GUARD && !outCold() && target != null && target.isAlive()
+            return role() == Role.GUARD && !armed() && !outCold() && target != null && target.isAlive()
                     && distanceToSqr(target) > CLOSE * CLOSE && distanceToSqr(target) <= (DART_RANGE + 8) * (DART_RANGE + 8);
         }
 
@@ -308,18 +358,100 @@ public class CompanyAgentEntity extends PathfinderMob {
                 entityData.set(AIMING, false);
             }
         }
+    }
 
-        /** The telegraph: a short red line along the barrel toward whoever he is aiming at. */
-        private void sight(ServerLevel level, LivingEntity target) {
-            Vec3 from = getEyePosition().subtract(0, 0.2, 0);
-            Vec3 to = target.getBoundingBox().getCenter();
-            Vec3 step = to.subtract(from);
-            double length = step.length();
-            DustParticleOptions dust = new DustParticleOptions(SIGHT, 0.5F);
-            for (double d = 1; d < Math.min(length, 12); d += 0.75) {
-                Vec3 at = from.add(step.scale(d / length));
-                level.sendParticles(dust, at.x, at.y, at.z, 1, 0, 0, 0, 0);
+    // ------------------------------------------------------------------
+    // The guns (an armed guard in the present)
+    // ------------------------------------------------------------------
+
+    /**
+     * Pistol at range, taser up close. He stops to shoot, raises the gun with the same red sight-line as the dart
+     * rifle, fires a pair, and changes magazines when he runs dry. Within seven blocks he swaps to the taser, fires its
+     * one cartridge, and swaps back while it recharges. A guard held by a taser himself does nothing.
+     */
+    final class GunGoal extends Goal {
+        private int aim, cooldown, taserCooldown, drawing, reloading, fired;
+
+        GunGoal() { setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK)); }
+
+        private boolean usable() {
+            LivingEntity target = getTarget();
+            if (!armed() || outCold() || target == null || !target.isAlive()) return false;
+            double d = distanceToSqr(target);
+            // Taser spent and someone in his face: he puts the gun down and hits them.
+            if (d <= CLOSE * CLOSE && taserCooldown > 0) return false;
+            return d <= (PISTOL_RANGE + 8) * (PISTOL_RANGE + 8);
+        }
+
+        @Override public boolean canUse() { return usable(); }
+        @Override public boolean canContinueToUse() { return usable(); }
+        @Override public boolean requiresUpdateEveryTick() { return true; }
+        @Override public void start() { aim = 0; fired = 0; holster(pistol); }
+        @Override public void stop() { aim = 0; entityData.set(AIMING, false); }
+
+        /** Puts {@code gun} in his hand (the other goes on his belt) and starts the draw. */
+        private void holster(ItemStack gun) {
+            if (getMainHandItem() != gun) setItemSlot(EquipmentSlot.MAINHAND, gun);
+            PowerWeapons.draw(CompanyAgentEntity.this);
+            drawing = DRAW_TICKS;
+            aim = 0;
+        }
+
+        @Override public void tick() {
+            LivingEntity target = getTarget();
+            if (target == null) return;
+            if (taserCooldown > 0 && --taserCooldown == 0) PowerWeapons.reload(taser);
+            if (cooldown > 0) cooldown--;
+            getLookControl().setLookAt(target, 30, 30);
+            if (Stun.held(CompanyAgentEntity.this)) { entityData.set(AIMING, false); aim = 0; return; }
+            double d = distanceToSqr(target);
+            boolean sees = getSensing().hasLineOfSight(target);
+            if (!sees || d > PISTOL_RANGE * PISTOL_RANGE) {
+                aim = 0;
+                entityData.set(AIMING, false);
+                getNavigation().moveTo(target, 1.0);
+                return;
             }
+            getNavigation().stop();
+            if (reloading > 0) {
+                if (--reloading == 0) PowerWeapons.reload(pistol);
+                return;
+            }
+            boolean close = d <= TASER_REACH * TASER_REACH && taserCooldown == 0;
+            ItemStack want = close ? taser : pistol;
+            if (getMainHandItem() != want) { holster(want); return; }
+            if (drawing > 0) { drawing--; return; }
+            if (cooldown > 0) return;
+            if (aim == 0 && fired == 0) {
+                shout(target);
+                level().playSound(null, getX(), getY(), getZ(), SoundEvents.ARMOR_EQUIP_IRON.value(), SoundSource.HOSTILE, 0.7F, 1.4F);
+            }
+            entityData.set(AIMING, true);
+            aim++;
+            if (aim % 3 == 1 && fired == 0 && level() instanceof ServerLevel level) sight(level, target);
+            if (aim < (close ? TASER_AIM : fired > 0 ? BURST_GAP : PISTOL_AIM)) return;
+            aim = 0;
+            String result = PowerWeapons.fire(CompanyAgentEntity.this, target.getBoundingBox().getCenter());
+            swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+            if (close) {
+                // One cartridge: back to the pistol while the taser recharges.
+                taserCooldown = TASER_COOLDOWN;
+                fired = 0;
+                cooldown = 10;
+                entityData.set(AIMING, false);
+                return;
+            }
+            if ("NO_AMMO".equals(result) || PowerWeapons.rounds(pistol) <= 0) {
+                reloading = RELOAD_TICKS;
+                fired = 0;
+                entityData.set(AIMING, false);
+                level().playSound(null, getX(), getY(), getZ(), SoundEvents.ARMOR_EQUIP_CHAIN.value(), SoundSource.HOSTILE, 0.8F, 0.8F);
+                return;
+            }
+            if ("SUCCESS".equals(result) && ++fired < BURST) return;
+            fired = 0;
+            cooldown = PISTOL_COOLDOWN;
+            entityData.set(AIMING, false);
         }
     }
 
@@ -342,6 +474,7 @@ public class CompanyAgentEntity extends PathfinderMob {
         setRole(role);
         guard(tag.contains("post") ? BlockPos.of(tag.getLong("post")) : blockPosition());
         nonLethal = tag.getBoolean("non_lethal");
+        arm();
         if (tag.getBoolean("out_cold")) settle();
     }
 }

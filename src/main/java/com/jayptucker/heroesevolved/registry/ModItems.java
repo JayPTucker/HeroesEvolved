@@ -76,6 +76,10 @@ public final class ModItems {
     public static final DeferredItem<com.jayptucker.heroesevolved.story.elle.ElleCapacitorItem> ELLES_CAPACITOR = ITEMS.register("elles_capacitor",
             () -> new com.jayptucker.heroesevolved.story.elle.ElleCapacitorItem(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC)));
 
+    /** A TaCZ-crafted EMP grenade (weapons/EmpGrenade): thrown, it kills redstone, machines and Create shafts nearby. */
+    public static final DeferredItem<com.jayptucker.heroesevolved.weapons.EmpGrenade.GrenadeItem> EMP_GRENADE = ITEMS.register("emp_grenade",
+            () -> new com.jayptucker.heroesevolved.weapons.EmpGrenade.GrenadeItem(new Item.Properties().stacksTo(8)));
+
     /** The mod's emblem: the black sun. Used as the creative tab icon; not obtainable in survival. */
     public static final DeferredItem<Item> ECLIPSE_EMBLEM = ITEMS.registerSimpleItem("eclipse_emblem", new Item.Properties());
 
@@ -95,6 +99,7 @@ public final class ModItems {
                         output.accept(BUFFERED_SALINE.get());
                         output.accept(UNSTABLE_COMPOUND.get());
                         output.accept(SYLARS_WATCH.get());
+                        output.accept(EMP_GRENADE.get());
                         output.accept(com.jayptucker.heroesevolved.story.elle.ElleCapacitorItem.charged(new ItemStack(ELLES_CAPACITOR.get()), 3));
                         for (boolean donated : new boolean[] {true, false}) {
                             BloodPurity purity = new BloodPurity(donated, 3, "Creative");

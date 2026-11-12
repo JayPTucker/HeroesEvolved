@@ -1,0 +1,7 @@
+{
+  "name": "heroesevolved.ammo.fuel_cell.name",
+  "display": "heroesevolved:fuel_cell_display",
+  "stack_size": 40,
+  "tooltip": "heroesevolved.ammo.fuel_cell.desc",
+  "sort": 90
+}

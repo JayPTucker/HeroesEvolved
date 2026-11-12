@@ -85,6 +85,7 @@ final class PieceArt {
             case ELLE_ARENA, ELLE_AURA, ELLE_AIM, ELLE_BOLT, ELLE_RING_MARK, ELLE_RING, ELLE_SIPHON, ELLE_BACKFIRE,
                     ELLE_CONDUIT_MARK, ELLE_CONDUIT, ELLE_REBOOT, ELLE_STRIKE_MARK, ELLE_STRIKE, ELLE_ORB, ELLE_SHORT,
                     ELLE_PHASE, ELLE_ARRIVE, ELLE_OMEN, ELLE_DROP -> ElleArt.draw(c, a, t);
+            case GUN_HEAT, GUN_FROST, GUN_TASER -> WeaponArt.draw(c, a, t);
         }
     }
 }

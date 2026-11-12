@@ -24,6 +24,7 @@ public final class ModEntityRenderers {
         event.registerEntityRenderer(ModEntities.SYLAR.get(), SylarRenderer::new);
         event.registerEntityRenderer(ModEntities.COMPANY_AGENT.get(), CompanyAgentRenderer::new);
         event.registerEntityRenderer(ModEntities.ELLE.get(), ElleRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMP_GRENADE.get(), net.minecraft.client.renderer.entity.ThrownItemRenderer::new);
         event.registerEntityRenderer(
                 ModEntities.TEMPORAL_ECHO.get(),
                 TemporalEchoRenderer::new

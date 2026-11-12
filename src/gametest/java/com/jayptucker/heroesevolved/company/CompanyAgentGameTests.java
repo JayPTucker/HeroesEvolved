@@ -42,10 +42,10 @@ public final class CompanyAgentGameTests {
 
     @GameTest(template = "rewind_empty", batch = "company.darts")
     public static void dartsDeepenAndTheThirdPutsYouUnder(GameTestHelper h) {
-        CompanyAgentEntity guard = agent(h, CompanyAgentEntity.Role.GUARD, false, new BlockPos(1, 2, 1));
+        CompanyAgentEntity guard = agent(h, CompanyAgentEntity.Role.GUARD, true, new BlockPos(1, 2, 1));
         ServerPlayer p = stranger(h, Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(4, 2, 4))));
         try {
-            h.assertTrue(guard.getMainHandItem().is(Items.CROSSBOW), "A guard carries a tranquilizer rifle");
+            h.assertTrue(guard.getMainHandItem().is(Items.CROSSBOW), "A guard in the past carries a tranquilizer rifle");
             double speed = p.getAttributeValue(Attributes.MOVEMENT_SPEED);
             h.assertTrue(Tranquilizer.dart(guard, p) == 1 && Tranquilizer.doses(p) == 1, "One dart, one dose");
             h.assertTrue(p.getAttributeValue(Attributes.MOVEMENT_SPEED) < speed, "A dose makes your legs heavy");
@@ -70,7 +70,7 @@ public final class CompanyAgentGameTests {
 
     @GameTest(template = "rewind_empty", batch = "company.aim", timeoutTicks = 200)
     public static void aGuardSeesAStrangerAimsAndFires(GameTestHelper h) {
-        CompanyAgentEntity guard = agent(h, CompanyAgentEntity.Role.GUARD, false, new BlockPos(1, 2, 1));
+        CompanyAgentEntity guard = agent(h, CompanyAgentEntity.Role.GUARD, true, new BlockPos(1, 2, 1));
         // A listed player in survival, standing still in the open six blocks away.
         ServerPlayer p = new FakePlayer(h.getLevel(), new GameProfile(UUID.randomUUID(), "company-target"));
         p.setPos(Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(7, 2, 1))));

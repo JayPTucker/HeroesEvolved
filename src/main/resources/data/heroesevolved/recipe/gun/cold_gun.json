@@ -1,0 +1,33 @@
+{
+  "materials": [
+    {
+      "item": {
+        "tag": "c:ingots/iron"
+      },
+      "count": 24
+    },
+    {
+      "item": {
+        "item": "minecraft:packed_ice"
+      },
+      "count": 8
+    },
+    {
+      "item": {
+        "item": "minecraft:blue_ice"
+      },
+      "count": 2
+    },
+    {
+      "item": {
+        "tag": "c:gems/diamond"
+      },
+      "count": 2
+    }
+  ],
+  "result": {
+    "type": "gun",
+    "id": "heroesevolved:cold_gun"
+  },
+  "type": "tacz:gun_smith_table_crafting"
+}

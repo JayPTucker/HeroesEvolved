@@ -1,0 +1,7 @@
+{
+  "name": "heroesevolved.ammo.taser_cartridge.name",
+  "display": "heroesevolved:taser_cartridge_display",
+  "stack_size": 16,
+  "tooltip": "heroesevolved.ammo.taser_cartridge.desc",
+  "sort": 92
+}

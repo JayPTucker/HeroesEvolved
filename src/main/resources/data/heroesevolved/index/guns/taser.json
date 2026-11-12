@@ -1,0 +1,8 @@
+{
+  "name": "heroesevolved.gun.taser.name",
+  "display": "heroesevolved:taser_display",
+  "data": "heroesevolved:taser_data",
+  "tooltip": "heroesevolved.gun.taser.desc",
+  "type": "pistol",
+  "sort": 90
+}

@@ -101,6 +101,12 @@ public final class ModEntities {
                     com.jayptucker.heroesevolved.story.elle.ElleEntity::new, MobCategory.MISC)
                     .sized(.6F, 1.8F).noSave().noSummon().clientTrackingRange(96).updateInterval(2).build(id.toString()));
 
+    /** The EMP grenade in flight (weapons/EmpGrenade): thrown, stuck where it lands, then a pulse. */
+    public static final DeferredHolder<EntityType<?>, EntityType<com.jayptucker.heroesevolved.weapons.EmpGrenade.Thrown>> EMP_GRENADE =
+            ENTITY_TYPES.register("emp_grenade", id -> EntityType.Builder.<com.jayptucker.heroesevolved.weapons.EmpGrenade.Thrown>of(
+                    com.jayptucker.heroesevolved.weapons.EmpGrenade.Thrown::new, MobCategory.MISC)
+                    .sized(.25F, .25F).clientTrackingRange(64).updateInterval(5).build(id.toString()));
+
     public static void register(IEventBus modEventBus) {
         ENTITY_TYPES.register(modEventBus);
         modEventBus.addListener(ModEntities::registerAttributes);

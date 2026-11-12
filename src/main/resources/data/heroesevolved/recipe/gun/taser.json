@@ -1,0 +1,33 @@
+{
+  "materials": [
+    {
+      "item": {
+        "tag": "c:ingots/iron"
+      },
+      "count": 8
+    },
+    {
+      "item": {
+        "tag": "c:ingots/copper"
+      },
+      "count": 6
+    },
+    {
+      "item": {
+        "tag": "c:dusts/redstone"
+      },
+      "count": 8
+    },
+    {
+      "item": {
+        "tag": "c:dyes/yellow"
+      },
+      "count": 2
+    }
+  ],
+  "result": {
+    "type": "gun",
+    "id": "heroesevolved:taser"
+  },
+  "type": "tacz:gun_smith_table_crafting"
+}

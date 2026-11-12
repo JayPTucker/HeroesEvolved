@@ -1,0 +1,8 @@
+{
+  "name": "heroesevolved.gun.heat_gun.name",
+  "display": "heroesevolved:heat_gun_display",
+  "data": "heroesevolved:heat_gun_data",
+  "tooltip": "heroesevolved.gun.heat_gun.desc",
+  "type": "smg",
+  "sort": 90
+}

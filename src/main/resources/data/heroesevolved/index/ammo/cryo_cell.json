@@ -1,0 +1,7 @@
+{
+  "name": "heroesevolved.ammo.cryo_cell.name",
+  "display": "heroesevolved:cryo_cell_display",
+  "stack_size": 30,
+  "tooltip": "heroesevolved.ammo.cryo_cell.desc",
+  "sort": 91
+}

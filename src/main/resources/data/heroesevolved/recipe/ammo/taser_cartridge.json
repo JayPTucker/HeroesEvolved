@@ -1,0 +1,29 @@
+{
+  "materials": [
+    {
+      "item": {
+        "tag": "c:ingots/copper"
+      },
+      "count": 2
+    },
+    {
+      "item": {
+        "tag": "c:dusts/redstone"
+      },
+      "count": 2
+    },
+    {
+      "item": {
+        "tag": "c:strings"
+      },
+      "count": 2
+    }
+  ],
+  "result": {
+    "type": "ammo",
+    "group": "alternative_proj",
+    "id": "heroesevolved:taser_cartridge",
+    "count": 4
+  },
+  "type": "tacz:gun_smith_table_crafting"
+}

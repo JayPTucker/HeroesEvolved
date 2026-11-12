@@ -16,6 +16,14 @@ stranger he can see within sixteen blocks (anyone in survival or adventure), say
   faster than half a block a tick (Superspeed, fast Flight) most of them do.
 - **Up close** (within two and a half blocks) he puts the rifle down and hits you with it.
 
+### Armed guards in the present
+
+Outside the past a guard carries TaCZ guns instead of the dart rifle: a **Glock 17** and the **Company Taser**
+(see [weapons.md](weapons.md)). He aims the pistol the same way (stop, raise, red line), fires a pair of real
+rounds, waits two seconds, and changes magazines when he runs dry. Come within seven blocks and he swaps to the taser:
+one cartridge that locks you up for a second and a half, then back to the pistol while it recharges. Tased himself,
+he does nothing until it wears off. If TaCZ can't make the guns he falls back to the dart rifle.
+
 ### Tranquilizer darts
 
 Each dart that lands adds a dose of **Tranquilized** for ten seconds, and each dose makes you slower.
@@ -63,6 +71,6 @@ The skins and the effect icon are drawn by `tools/GenerateCompanyTextures.java`:
 java tools/GenerateCompanyTextures.java
 ```
 
-`CompanyAgentGameTests` covers a guard seeing, aiming at and darting a stranger, darts deepening and the
+`WeaponGameTests` covers armed guards shooting at range and tasing up close. `CompanyAgentGameTests` covers a guard seeing, aiming at and darting a stranger, darts deepening and the
 third putting you under, fast movement making darts miss, agents going down instead of dying in the
 past, and the Suppressor's quiet.

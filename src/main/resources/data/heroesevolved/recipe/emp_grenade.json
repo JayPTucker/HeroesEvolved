@@ -1,0 +1,37 @@
+{
+  "materials": [
+    {
+      "item": {
+        "tag": "c:ingots/iron"
+      },
+      "count": 4
+    },
+    {
+      "item": {
+        "tag": "c:ingots/copper"
+      },
+      "count": 6
+    },
+    {
+      "item": {
+        "tag": "c:storage_blocks/redstone"
+      },
+      "count": 1
+    },
+    {
+      "item": {
+        "tag": "c:gunpowders"
+      },
+      "count": 2
+    }
+  ],
+  "result": {
+    "type": "custom",
+    "group": "explosives",
+    "item": {
+      "id": "heroesevolved:emp_grenade",
+      "count": 2
+    }
+  },
+  "type": "tacz:gun_smith_table_crafting"
+}

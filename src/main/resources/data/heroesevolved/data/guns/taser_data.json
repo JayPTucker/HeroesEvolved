@@ -1,0 +1,102 @@
+{
+  "ammo": "heroesevolved:taser_cartridge",
+  "ammo_amount": 1,
+  "rpm": 120,
+  "bolt": "open_bolt",
+  "bullet": {
+    "life": 0.12,
+    "bullet_amount": 1,
+    "damage": 1,
+    "tracer_count_interval": 0,
+    "extra_damage": {
+      "armor_ignore": 0,
+      "head_shot_multiplier": 1,
+      "damage_adjust": [
+        {
+          "distance": "infinite",
+          "damage": 1
+        }
+      ]
+    },
+    "speed": 70,
+    "gravity": 0.3,
+    "knockback": 0,
+    "friction": 0.05,
+    "ignite": false,
+    "pierce": 1
+  },
+  "reload": {
+    "type": "magazine",
+    "feed": {
+      "empty": 1.75,
+      "tactical": 1
+    },
+    "cooldown": {
+      "empty": 2.15,
+      "tactical": 1.45
+    }
+  },
+  "draw_time": 0.3,
+  "put_away_time": 0.3,
+  "aim_time": 0.16,
+  "sprint_time": 0.08,
+  "weight": 1.1,
+  "movement_speed": {
+    "base": 0,
+    "aim": 0,
+    "reload": 0.1
+  },
+  "crawl_recoil_multiplier": 0.75,
+  "fire_mode": [
+    "semi"
+  ],
+  "allow_attachment_types": [],
+  "recoil": {
+    "pitch": [
+      {
+        "time": 0,
+        "value": [
+          0.6,
+          0.6
+        ]
+      },
+      {
+        "time": 0.08,
+        "value": [
+          0.6,
+          0.6
+        ]
+      },
+      {
+        "time": 0.2,
+        "value": [
+          0,
+          0
+        ]
+      }
+    ],
+    "yaw": [
+      {
+        "time": 0,
+        "value": [
+          -0.3,
+          0.3
+        ]
+      },
+      {
+        "time": 0.15,
+        "value": [
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  "inaccuracy": {
+    "stand": 1.5,
+    "move": 2,
+    "sneak": 1,
+    "lie": 0.75,
+    "aim": 0.4
+  }
+}

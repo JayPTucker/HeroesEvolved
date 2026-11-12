@@ -89,7 +89,10 @@ public enum Piece {
     // the conduits, her reboot, the storm, the phase changes, her arrival in the dark, the omens, the drop
     ELLE_ARENA(24), ELLE_AURA(12), ELLE_AIM(16), ELLE_BOLT(10), ELLE_RING_MARK(24), ELLE_RING(14), ELLE_SIPHON(60),
     ELLE_BACKFIRE(36), ELLE_CONDUIT_MARK(24), ELLE_CONDUIT(12), ELLE_REBOOT(60), ELLE_STRIKE_MARK(30), ELLE_STRIKE(14),
-    ELLE_ORB(48), ELLE_SHORT(20), ELLE_PHASE(30), ELLE_ARRIVE(60), ELLE_OMEN(16), ELLE_DROP(40);
+    ELLE_ORB(48), ELLE_SHORT(20), ELLE_PHASE(30), ELLE_ARRIVE(60), ELLE_OMEN(16), ELLE_DROP(40),
+    // The power-themed TaCZ guns: the heat gun's flame, the cold gun's frost streak (scale 0) and burst (scale 1), and a
+    // taser's barbs and current (bound to whoever they bit)
+    GUN_HEAT(8), GUN_FROST(12), GUN_TASER(16);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

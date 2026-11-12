@@ -1,0 +1,33 @@
+{
+  "materials": [
+    {
+      "item": {
+        "tag": "c:ingots/iron"
+      },
+      "count": 20
+    },
+    {
+      "item": {
+        "tag": "c:ingots/copper"
+      },
+      "count": 12
+    },
+    {
+      "item": {
+        "item": "minecraft:blaze_rod"
+      },
+      "count": 4
+    },
+    {
+      "item": {
+        "item": "minecraft:magma_cream"
+      },
+      "count": 2
+    }
+  ],
+  "result": {
+    "type": "gun",
+    "id": "heroesevolved:heat_gun"
+  },
+  "type": "tacz:gun_smith_table_crafting"
+}

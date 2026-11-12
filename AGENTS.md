@@ -421,3 +421,33 @@ whose machines are the counterplay. What the player sees is in [docs/elle-bishop
   do tests. Tests wait for every corner of the room (`ElleGameTests.ready`), not just the boss's chunk.
 - **A move's end mustn't shorten a longer hold-off.** `finish()` uses `Math.max` on the global cooldown, so a
   preview's or test's `holdOff` survives the moves it triggers.
+
+## Reusable patterns from the TaCZ weapons
+
+Heroes Evolved requires TaCZ (Timeless and Classics Zero) and adds power-themed guns, an EMP grenade, and TaCZ guns
+for the Company's guards (`weapons/`, art in `client/effects/setpiece/WeaponArt`). What the player sees is in
+[docs/weapons.md](docs/weapons.md).
+
+- **A gun pack in our own jar.** TaCZ 1.2 reads gun packs through the normal resource and data loaders, so our guns
+  are plain files: `data/heroesevolved/index/guns` + `data/guns` (numbers), `index/ammo`, `recipe/` (type
+  `tacz:gun_smith_table_crafting`; the 1.21.1 folder is `recipe`, not `recipes`) and `assets/heroesevolved/display`.
+  Change a gun's numbers there, not in code. A recipe's `"type": "custom"` result makes any item (the EMP grenade);
+  give it a `group` (a table tab such as `explosives`) or it shows in no tab.
+- **Borrow TaCZ's shapes, paint our own.** A display file may point `model` and `animation` at TaCZ's own resources
+  (`tacz:gun/p90_geo`, `tacz:p90`), so reloads and inspects animate for free. `tools/GenerateWeaponTextures.java`
+  reads the borrowed model's geometry from the TaCZ jar and paints every face by part (body, grip, barrel, magazine,
+  detail, glow) on its UV layout, and draws the inventory and HUD icons as a side view. No TaCZ texture is copied.
+- **One guarded class.** Only `weapons/TaczLink` imports TaCZ, like `radio/RadioLink`: every call is in try/catch and
+  sets a `broken` flag, after which the guns fire as plain TaCZ guns and agents fall back to the dart rifle. (The older
+  `time/TaczAmmoRecovery` predates it and reaches TaCZ by reflection; move it into `TaczLink` when it next changes.)
+- **Effects ride TaCZ's events.** `EntityHurtByGunEvent.Post` (server side) carries the gun id: `PowerWeapons.hit`
+  routes it to heat, cold or taser. `GunShootEvent` draws the muzzle effect; `AmmoHitBlockEvent` lets cold bolts skin
+  water with frosted ice. The effects reuse the powers' own services (`CryoService.chill`/`freezeSolid`,
+  `GridDisruption.emp`) at smaller numbers, so a gun is a weak version of a power, never a second implementation.
+- **Any creature can shoot a TaCZ gun.** Every `LivingEntity` is an `IGunOperator`: put the gun in the main hand,
+  `PowerWeapons.draw(mob)`, wait for the draw, then `PowerWeapons.fire(mob, point)`. Swapping guns means another draw.
+  Keep the gun's magazine topped with `PowerWeapons.reload`.
+- **TaCZ times shots in real milliseconds.** Draws, fire rates and cooldowns read a wall clock, not game ticks. In
+  play that is the same thing; in game tests the server runs ticks as fast as it can, so every shot comes back
+  `COOL_DOWN`. Tests that fire real TaCZ guns hold each tick to 50 ms (`WeaponGameTests.realTime`).
+- **An armor stand is a test shooter.** It is a living entity with no AI, so it fires exactly where you point it.

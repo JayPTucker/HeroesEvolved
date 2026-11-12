@@ -1,0 +1,115 @@
+{
+  "ammo": "heroesevolved:cryo_cell",
+  "ammo_amount": 15,
+  "rpm": 240,
+  "bolt": "closed_bolt",
+  "bullet": {
+    "life": 1,
+    "bullet_amount": 1,
+    "damage": 3,
+    "tracer_count_interval": 0,
+    "extra_damage": {
+      "armor_ignore": 0,
+      "head_shot_multiplier": 1.5,
+      "damage_adjust": [
+        {
+          "distance": 20,
+          "damage": 3
+        },
+        {
+          "distance": "infinite",
+          "damage": 2
+        }
+      ]
+    },
+    "speed": 90,
+    "gravity": 0.05,
+    "knockback": 0,
+    "friction": 0.02,
+    "ignite": false,
+    "pierce": 1
+  },
+  "reload": {
+    "type": "magazine",
+    "feed": {
+      "empty": 2.63,
+      "tactical": 1.42
+    },
+    "cooldown": {
+      "empty": 3,
+      "tactical": 2.25
+    }
+  },
+  "draw_time": 0.43,
+  "put_away_time": 0.33,
+  "aim_time": 0.24,
+  "sprint_time": 0.2,
+  "weight": 3.1,
+  "movement_speed": {
+    "base": 0,
+    "aim": -0.35,
+    "reload": -0.1
+  },
+  "crawl_recoil_multiplier": 0.75,
+  "fire_mode": [
+    "semi"
+  ],
+  "allow_attachment_types": [],
+  "builtin_attachments": {
+    "scope": {
+      "attachments": [
+        "tacz:scope_aug_default",
+        "tacz:oem_sight_aug"
+      ],
+      "display_attachment": "tacz:scope_aug_default"
+    }
+  },
+  "recoil": {
+    "pitch": [
+      {
+        "time": 0,
+        "value": [
+          1.1,
+          1.1
+        ]
+      },
+      {
+        "time": 0.08,
+        "value": [
+          1.1,
+          1.1
+        ]
+      },
+      {
+        "time": 0.2,
+        "value": [
+          0,
+          0
+        ]
+      }
+    ],
+    "yaw": [
+      {
+        "time": 0,
+        "value": [
+          -0.55,
+          0.55
+        ]
+      },
+      {
+        "time": 0.15,
+        "value": [
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  "inaccuracy": {
+    "stand": 2,
+    "move": 2.5,
+    "sneak": 1.5,
+    "lie": 0.75,
+    "aim": 0.25
+  }
+}
