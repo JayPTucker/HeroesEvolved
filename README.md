@@ -126,6 +126,9 @@ and placed by the mod. `tools/blueprint.py` validates, renders and imports them 
 photographs one in-game. Claude Code picks up the workflow and style guide automatically from
 the project skill in `.claude/skills/minecraft-building/`.
 
+Operators can open `/heroesevolved admin` to manage players, start the Eclipse, call up the bosses and
+set off village events. See [The admin menu](docs/admin-menu.md).
+
 ## Development
 
 macOS / Linux (set `JAVA_HOME` to a Java 21 JDK first):

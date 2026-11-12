@@ -77,6 +77,12 @@ public final class EmergencyBand {
 
     public static boolean live(Call call) { return CALLS.contains(call); }
 
+    /** A walkie-talkie tuned to the emergency band, or an empty stack if the radio mod can't make one. */
+    public static net.minecraft.world.item.ItemStack radio() { return RadioLink.tuned(FREQUENCY); }
+
+    /** Calls on the air now. */
+    public static int calls() { return CALLS.size(); }
+
     /** Is the radio network reachable (so calls are heard as sound on tuned radios, not only as subtitles)? */
     public static boolean onAir() { return RadioLink.available(); }
 

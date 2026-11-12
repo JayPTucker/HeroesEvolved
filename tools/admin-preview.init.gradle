@@ -1,0 +1,23 @@
+// The admin menu: both tabs, before and during a meltdown. Never bundled into the mod JAR.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('adminPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/admin-preview')
+                        programArguments.addAll('--width', '1280', '--height', '720')
+                        systemProperty('heroes.preview.admin', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('adminPreviewClasses')) }
+        }
+    }
+}

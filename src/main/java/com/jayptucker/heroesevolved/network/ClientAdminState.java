@@ -8,7 +8,7 @@ import java.util.List;
 /** Latest admin-menu data on the client. */
 public final class ClientAdminState {
     private static AdminStatePayload latest =
-            new AdminStatePayload(false, false, 5, List.of(), List.of());
+            new AdminStatePayload(false, false, 5, List.of(), List.of(), AdminStatePayload.World.NONE);
 
     private ClientAdminState() {
     }

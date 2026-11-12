@@ -18,8 +18,32 @@ public record AdminStatePayload(
         boolean eclipseActive,
         int maximumLevel,
         List<String> powers,
-        List<PlayerEntry> players
+        List<PlayerEntry> players,
+        World world
 ) implements CustomPacketPayload {
+    /**
+     * What is going on in the world, one line each, for the events tab. {@code flags} says which of the bosses and
+     * events are running, so the menu can offer to end them.
+     */
+    public record World(String eclipse, String sylar, String elle, String village, String radio, int flags) {
+        public static final int ECLIPSE = 1, TOTALITY = 2, SYLAR = 4, ELLE = 8, MELTDOWN = 16, RAID = 32, ON_AIR = 64;
+        public static final World NONE = new World("", "", "", "", "", 0);
+
+        public boolean has(int flag) { return (flags & flag) != 0; }
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, World> STREAM_CODEC = StreamCodec.of(
+                (buffer, w) -> {
+                    buffer.writeUtf(w.eclipse(), 256);
+                    buffer.writeUtf(w.sylar(), 256);
+                    buffer.writeUtf(w.elle(), 256);
+                    buffer.writeUtf(w.village(), 256);
+                    buffer.writeUtf(w.radio(), 256);
+                    buffer.writeVarInt(w.flags());
+                },
+                buffer -> new World(buffer.readUtf(256), buffer.readUtf(256), buffer.readUtf(256),
+                        buffer.readUtf(256), buffer.readUtf(256), buffer.readVarInt()));
+    }
+
     public record PlayerEntry(
             UUID id,
             String name,
@@ -30,7 +54,10 @@ public record AdminStatePayload(
             long masteryForNextLevel,
             int energy,
             int maximumEnergy,
-            boolean unlimitedEnergy
+            boolean unlimitedEnergy,
+            /** Where they are, and how far the stories have got with them. */
+            String whereabouts,
+            String story
     ) {
         public static final StreamCodec<RegistryFriendlyByteBuf, PlayerEntry>
                 STREAM_CODEC = StreamCodec.of(
@@ -45,6 +72,8 @@ public record AdminStatePayload(
                             buffer.writeVarInt(entry.energy());
                             buffer.writeVarInt(entry.maximumEnergy());
                             buffer.writeBoolean(entry.unlimitedEnergy());
+                            buffer.writeUtf(entry.whereabouts(), 128);
+                            buffer.writeUtf(entry.story(), 256);
                         },
                         buffer -> new PlayerEntry(
                                 UUIDUtil.STREAM_CODEC.decode(buffer),
@@ -56,7 +85,9 @@ public record AdminStatePayload(
                                 buffer.readVarLong(),
                                 buffer.readVarInt(),
                                 buffer.readVarInt(),
-                                buffer.readBoolean()
+                                buffer.readBoolean(),
+                                buffer.readUtf(128),
+                                buffer.readUtf(256)
                         )
                 );
     }
@@ -81,6 +112,8 @@ public record AdminStatePayload(
             AdminStatePayload::powers,
             PlayerEntry.STREAM_CODEC.apply(ByteBufCodecs.list(512)),
             AdminStatePayload::players,
+            World.STREAM_CODEC,
+            AdminStatePayload::world,
             AdminStatePayload::new
     );
 

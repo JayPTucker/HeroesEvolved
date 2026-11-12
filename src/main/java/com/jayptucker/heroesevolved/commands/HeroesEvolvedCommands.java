@@ -212,13 +212,7 @@ public final class HeroesEvolvedCommands {
 
     /** Wakes the Eclipse's power in the nearest grown villager (within 64 blocks): his village has {@code fuse} ticks. */
     private static int meltdown(CommandSourceStack source, int fuse) {
-        var level = source.getLevel();
-        var at = source.getPosition();
-        var villager = level.getEntitiesOfClass(net.minecraft.world.entity.npc.Villager.class,
-                        new net.minecraft.world.phys.AABB(at, at).inflate(64), v -> v.isAlive() && !v.isBaby()
-                                && !com.jayptucker.heroesevolved.village.VillagerMeltdown.critical(v))
-                .stream().min(java.util.Comparator.comparingDouble(v -> v.distanceToSqr(at))).orElse(null);
-        if (villager == null || com.jayptucker.heroesevolved.village.VillagerMeltdown.start(villager, fuse) == null) {
+        if (com.jayptucker.heroesevolved.village.VillagerMeltdown.startNear(source.getLevel(), source.getPosition(), fuse) == null) {
             source.sendFailure(Component.literal("No grown villager within 64 blocks."));
             return 0;
         }

@@ -78,5 +78,5 @@ His village calls for help on 101.10 FM. See [The emergency band](emergency-band
 /heroesevolved eclipse meltdown [seconds]   # the nearest grown villager starts to glow
 ```
 
-The admin screen's Start Eclipse button starts a full Eclipse. A manual Eclipse started at
+The [admin menu](admin-menu.md)'s World & Events tab has Start, Totality and Stop buttons; Start begins a full Eclipse. A manual Eclipse started at
 night still runs, but the sun, and the moon in front of it, are below the horizon.

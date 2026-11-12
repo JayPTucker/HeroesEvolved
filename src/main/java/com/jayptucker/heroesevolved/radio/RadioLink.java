@@ -88,4 +88,20 @@ final class RadioLink {
     }
 
     record Listening(Entity holder, Vec3 at) {}
+
+    /** A walkie-talkie already tuned to {@code frequency} (FM), or an empty stack if the radio mod can't make one. */
+    static net.minecraft.world.item.ItemStack tuned(String frequency) {
+        try {
+            var item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
+                    net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("simpleradio", "walkie_talkie"));
+            if (item == net.minecraft.world.item.Items.AIR) return net.minecraft.world.item.ItemStack.EMPTY;
+            var stack = new net.minecraft.world.item.ItemStack(item);
+            stack.set(com.codinglitch.simpleradio.core.SimpleRadioComponents.FREQUENCY, frequency);
+            stack.set(com.codinglitch.simpleradio.core.SimpleRadioComponents.MODULATION, Frequency.Modulation.FREQUENCY);
+            return stack;
+        } catch (Throwable t) {
+            fail("tuned", t);
+            return net.minecraft.world.item.ItemStack.EMPTY;
+        }
+    }
 }

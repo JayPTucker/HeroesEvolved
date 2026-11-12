@@ -37,7 +37,20 @@ public record AdminActionPayload(
         RESET_COOLDOWNS,
         FULL_HEAL,
         START_ECLIPSE,
-        STOP_ECLIPSE
+        STOP_ECLIPSE,
+        // Added for the events tab; new actions go last so the ordinals above never move.
+        ECLIPSE_TOTALITY,
+        SYLAR_STALK,
+        SYLAR_HUNT,
+        SYLAR_DISMISS,
+        ELLE_OMENS,
+        ELLE_ARRIVE,
+        ELLE_DISMISS,
+        MELTDOWN_START,
+        MELTDOWN_CANCEL,
+        RAID_START,
+        GIVE_RADIO,
+        TELEPORT_TO
     }
 
     public static final Type<AdminActionPayload> TYPE =

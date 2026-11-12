@@ -180,6 +180,34 @@ public final class VillagerMeltdown {
         }
     }
 
+    /** How far from someone the admin tools look for a villager to wake. */
+    public static final int NEAR = 64;
+
+    /** Wakes it in the nearest grown villager within {@link #NEAR} blocks of {@code at}. Null if there is none. */
+    public static Meltdown startNear(ServerLevel level, Vec3 at, int fuse) {
+        Villager villager = level.getEntitiesOfClass(Villager.class, new net.minecraft.world.phys.AABB(at, at).inflate(NEAR),
+                        v -> v.isAlive() && !v.isBaby() && !critical(v))
+                .stream().min(java.util.Comparator.comparingDouble(v -> v.distanceToSqr(at))).orElse(null);
+        return villager == null ? null : start(villager, fuse);
+    }
+
+    /** Ends every meltdown with nothing happening. How many there were. */
+    public static int cancelAll() {
+        List<Meltdown> all = all();
+        for (Meltdown m : all) finish(m);
+        return all.size();
+    }
+
+    /** One line on the meltdowns under way, for the admin menu. */
+    public static String describe() {
+        List<Meltdown> all = all();
+        if (all.isEmpty()) return "No meltdown under way.";
+        Meltdown m = all.getFirst();
+        int seconds = (m.fuse + 19) / 20;
+        return "Meltdown (bell " + m.bell.getX() + ", " + m.bell.getZ() + "): " + seconds / 60 + ":" + String.format("%02d", seconds % 60)
+                + " left, " + m.safeNow.size() + "/" + m.village.size() + " safe" + (all.size() > 1 ? " (+" + (all.size() - 1) + " more)" : "") + ".";
+    }
+
     /** Ends a meltdown with nothing happening at all (for admins and tests). */
     public static void cancel(Entity entity) {
         Meltdown m = of(entity);
