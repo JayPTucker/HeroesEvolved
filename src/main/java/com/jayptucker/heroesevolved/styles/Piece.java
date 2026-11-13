@@ -128,7 +128,24 @@ public enum Piece {
     VIBE_GATHER(9), VIBE_WAVE(18), VIBE_CROSSWAVE(18), VIBE_HIT(14), VIBE_BREACH_SEED(14),
     VIBE_BREACH_OPEN(12), VIBE_BREACH_ARRIVE(16), VIBE_BREACH_CLOSE(10), VIBE_TRANSIT(18),
     VIBE_TOUCH(24), VIBE_ECHO(29), VIBE_GUARD(10), VIBE_GUARD_CLOSE(10), VIBE_LOCK_WARN(16),
-    VIBE_LOCK(33), VIBE_AWAKEN(28);
+    VIBE_LOCK(33), VIBE_AWAKEN(28),
+    // Space-Time's skill tree, drawn by TimeArt (clockwork made of light): Selective Stasis's cage (re-sent, bound to the
+    // target) and the release when its stored blows land (scale is how many), a Spatial Anchor planted (target holds the
+    // hands' time of day), Second Chance's arrival, Stasis Seal's sphere (re-sent; scale is its radius) and its throw, one
+    // cut of Moment's Edge or a Behind You strike (scale 1, +10 for a replayed blow), the hole Fold Space leaves snapping
+    // shut (Snap Shut; scale is its reach), Foreknowledge's private mark (re-sent, bound) and Fast Forward (bound; scale 1
+    // on an enemy, 33 on a friend, 16 + radius for growth)
+    TIME_STASIS(12), TIME_RELEASE(18), TIME_ANCHOR(30), TIME_SECOND(20), TIME_SEAL(12), TIME_SEAL_BREAK(16), TIME_CUT(12),
+    TIME_SNAP(14), TIME_MARK(12), TIME_FORWARD(24),
+    // Density's skill tree, drawn by DensityArt (surfaces that ripple like water, and stone): Pass Through's wake through
+    // a body (scale is the body's height), an Ambush-primed hand (private, bound) and its strike, a wall left open by
+    // Ghost Network (re-sent; +10 when Phase Carry opens it), Harden's stone skin (re-sent, bound; scale 1 + weight / 8)
+    // and Rebound (scale is its radius), a Pile Driver or Crater Landing root, Sinkhole's warning and its soft ground
+    // (re-sent; scale is its radius), the ground closing over an Entombed body, Uproot, Fade Through (bound), Grasp from
+    // Below, Phase Fall (origin the floor, target the landing) and Untouchable's slip (bound)
+    DENSITY_PASS(12), DENSITY_PRIMED(60), DENSITY_AMBUSH(12), DENSITY_DOOR(12), DENSITY_HARDEN(12), DENSITY_REBOUND(16),
+    DENSITY_PILE(12), DENSITY_SINK_MARK(10), DENSITY_SINKHOLE(12), DENSITY_ENTOMB(20), DENSITY_UPROOT(14), DENSITY_FADE(60),
+    DENSITY_GRASP(14), DENSITY_DROP(14), DENSITY_SLIP(14);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

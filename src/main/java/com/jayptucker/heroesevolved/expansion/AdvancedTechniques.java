@@ -62,9 +62,7 @@ import java.util.*;
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class AdvancedTechniques {
     private record Zone(String kind, ServerPlayer owner, ServerLevel level, Vec3 center, Vec3 end, double radius, long until) {}
-    private record Seal(ServerPlayer owner, ServerLevel level, Vec3 center, double radius, long until, Map<Projectile, Vec3> held) {}
     private static final List<Zone> ZONES = new ArrayList<>();
-    private static final Map<UUID, Seal> SEALS = new HashMap<>();
     private static final Map<UUID, Long> ADAPTING = new HashMap<>();
     /** The kinds of harm each adapting body has learned, newest last: one, or three with Callus. */
     private static final Map<UUID, List<String>> ADAPTED_TO = new HashMap<>();
@@ -166,45 +164,9 @@ public final class AdvancedTechniques {
                 ArmPosePayload.show(p, ArmPose.REGEN_COMPRESS, 20);
             }
             // ---------------- Space-Time ----------------
-            case "stasis_seal" -> {
-                Seal existing = SEALS.remove(p.getUUID());
-                if (existing != null) { release(existing, true); return true; }
-                BlockHitResult hit = aimBlock(p, 24);
-                Vec3 center = hit.getType() == HitResult.Type.BLOCK ? hit.getLocation() : p.getEyePosition().add(p.getLookAngle().scale(12));
-                SEALS.put(p.getUUID(), new Seal(p, level, center, has(p, "time_manipulation_wider_seal") ? 5 : 3, now + 200, new HashMap<>()));
-                AbilityEffects.send(level, Kind.TEMPORAL_FIELD, center, center.add(0, 1, 0), 3);
-            }
-            case "shared_blink" -> {
-                BlockHitResult hit = aimBlock(p, has(p, "time_manipulation_far_fold") ? 48 : 24);
-                if (hit.getType() != HitResult.Type.BLOCK) return false;
-                Vec3 to = Vec3.atBottomCenterOf(hit.getBlockPos().relative(hit.getDirection()));
-                if (!SpeedService.safe(p, to)) return false;
-                Vec3 offset = to.subtract(p.position());
-                int carried = 0;
-                for (LivingEntity friend : level.getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(4), t -> t != p && friendly(p, t))) {
-                    if (carried++ >= 3) break;
-                    Vec3 dest = friend.position().add(offset);
-                    if (SpeedService.safe(friend, dest)) { friend.teleportTo(dest.x, dest.y, dest.z); friend.resetFallDistance(); }
-                }
-                AbilityEffects.send(level, Kind.TEMPORAL_BURST, p.position(), to, 1.5);
-                p.teleportTo(to.x, to.y, to.z);
-                p.resetFallDistance();
-                if (has(p, "time_manipulation_wayfinder"))
-                    for (ServerPlayer ally : allies(p, 6)) { ally.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 200, 1)); ally.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 200)); }
-            }
-            case "accelerate" -> {
-                int radius = has(p, "time_manipulation_era_radius") ? 5 : 3, calls = 0;
-                BlockPos origin = p.blockPosition();
-                for (int pass = 0; pass < 20 && calls < 600; pass++)
-                    for (BlockPos pos : BlockPos.betweenClosed(origin.offset(-radius, -1, -radius), origin.offset(radius, 2, radius))) {
-                        var state = level.getBlockState(pos);
-                        if (!state.isRandomlyTicking() || !WorldMutationPolicy.canEdit(p, level, pos)) continue;
-                        if (level.random.nextInt(4) == 0) { state.randomTick(level, pos.immutable(), level.random); calls++; }
-                    }
-                if (has(p, "time_manipulation_eras_end"))
-                    for (LivingEntity t : enemies(p, p.position(), radius)) { t.hurt(p.damageSources().magic(), 4); t.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 160, 1)); }
-                for (AgeableMob baby : level.getEntitiesOfClass(AgeableMob.class, p.getBoundingBox().inflate(radius), AgeableMob::isBaby)) baby.setAge(0);
-                AbilityEffects.send(level, Kind.TEMPORAL_FIELD, p.position(), p.getEyePosition(), radius);
+            // Space-Time's techniques live with the power.
+            case "stasis_seal", "shared_blink", "accelerate" -> {
+                return com.jayptucker.heroesevolved.time.SpaceTimeSkills.technique(c, mechanic);
             }
             // ---------------- Radiation ----------------
             // Induced Radioactivity's techniques live with the power.
@@ -301,23 +263,8 @@ public final class AdvancedTechniques {
         return true;
     }
 
-    private static void release(Seal seal, boolean thrown) {
-        boolean sender = has(seal.owner, "time_manipulation_return_to_sender");
-        Vec3 aim = seal.owner.getLookAngle().normalize();
-        for (var entry : seal.held.entrySet()) {
-            Projectile shot = entry.getKey();
-            if (shot.isRemoved()) continue;
-            shot.setNoGravity(false);
-            if (thrown) {
-                if (sender) shot.setOwner(seal.owner);
-                shot.setDeltaMovement(aim.scale(entry.getValue().length() * (sender ? 1.5 : 1.0) + 0.5));
-            } else shot.setDeltaMovement(entry.getValue());
-            shot.hurtMarked = true;
-        }
-    }
-
     // ------------------------------------------------------------------
-    // Tick: fields, persuaded mobs, perception, seals
+    // Tick: fields, persuaded mobs, perception
     // ------------------------------------------------------------------
 
     /**
@@ -462,17 +409,6 @@ public final class AdvancedTechniques {
             if (now % 24 == 0) p.playNotifySound(SoundEvents.WARDEN_HEARTBEAT, SoundSource.PLAYERS, 0.9F, 0.6F);
         }
 
-        // Stasis seals hold projectiles until thrown or expired.
-        for (Seal seal : List.copyOf(SEALS.values())) {
-            if (now >= seal.until || !seal.owner.isAlive()) { SEALS.remove(seal.owner.getUUID()); release(seal, false); continue; }
-            for (Projectile shot : seal.level.getEntitiesOfClass(Projectile.class, new AABB(seal.center, seal.center).inflate(seal.radius))) {
-                if (seal.held.size() >= 24) break;
-                seal.held.computeIfAbsent(shot, s -> s.getDeltaMovement());
-                shot.setDeltaMovement(Vec3.ZERO);
-                shot.setNoGravity(true);
-                shot.hurtMarked = true;
-            }
-        }
     }
 
     // ------------------------------------------------------------------
@@ -555,7 +491,7 @@ public final class AdvancedTechniques {
     }
 
     @SubscribeEvent public static void stopping(ServerStoppingEvent event) {
-        ZONES.clear(); SEALS.clear(); ADAPTING.clear(); ADAPTED_TO.clear();
+        ZONES.clear(); ADAPTING.clear(); ADAPTED_TO.clear();
         MIRAGES.clear(); PERCEPTION.clear(); DODGES.clear(); DODGE_UNTIL.clear(); OMENS.clear();
         COOLDOWNS.clear(); sharing = 0;
     }

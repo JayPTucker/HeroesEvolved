@@ -1437,23 +1437,25 @@
     "branches": [
       [
         {
-          "name": "Temporal Precision",
-          "description": "Reduce activation stamina costs by 10%."
+          "name": "Still Point",
+          "description": "While your Still World holds, Fold Space costs nothing and waits on no cooldown, three times.",
+          "mechanic": "still_point"
         },
         {
           "name": "Selective Stasis",
-          "description": "Suspend a visible target up to 40 blocks away for 4-5.5 seconds, including its AI and actions. One target at a time.",
+          "description": "Stop one creature you can see within 20 blocks for 4 to 5.5 seconds: it can't move, think or act. Your blows on it wait and land together when time resumes; press again to snap your fingers and let it go early. One creature at a time.",
           "energy": 22,
           "cooldown": 160
         },
         {
-          "name": "Temporal Precision Mastery",
-          "description": "Reduce activation stamina costs by another 15% (25% total)."
+          "name": "Compound Interest",
+          "description": "Blows you store in stopped time grow as they pile up: each adds a tenth to them all (up to 60% more), and a creature holds half again as much.",
+          "mechanic": "compound_interest"
         },
         {
           "id": "time_manipulation_stasis_seal",
           "name": "Stasis Seal",
-          "description": "Seal a point in time for ten seconds: projectiles entering it hang frozen. Cast again to throw them all where you look.",
+          "description": "Frame a point up to 24 blocks away and seal it in stopped time for eight seconds. Shots that fly in hang there, and enemies that walk in stop for two seconds (your blows on them wait). Press again to throw everything inside where you look.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -1464,8 +1466,8 @@
         },
         {
           "id": "time_manipulation_wider_seal",
-          "name": "Wider Seal",
-          "description": "The seal holds a five-block radius.",
+          "name": "Held Volley",
+          "description": "Your own shots wait in the seal too, and it reaches five blocks from its centre instead of three: fill it, then throw them all at once.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -1475,7 +1477,7 @@
         {
           "id": "time_manipulation_return_to_sender",
           "name": "Return to Sender",
-          "description": "Thrown projectiles become yours and fly half again as fast.",
+          "description": "Shots you throw from the seal become yours, fly half again as fast and curve onto the enemy nearest your aim.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -1486,35 +1488,37 @@
       ],
       [
         {
-          "name": "Accelerated Force",
-          "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
+          "name": "Behind You",
+          "description": "Fold Space aimed at an enemy lands you just behind it, facing it. Your next hit on it within two seconds lands 50% harder, or twice as hard if it is held in stopped time.",
+          "mechanic": "behind_you"
         },
         {
           "name": "Spatial Anchor",
-          "description": "Shift + key remembers safe ground. Press normally to return within 512 blocks in the same dimension. Destination must remain loaded and clear.",
+          "description": "Shift + key plants a gold clock on safe ground. Press normally to return to it within 512 blocks in the same world, bringing up to three friends beside you (teammates, players crouching, your pets). The destination must be loaded and clear.",
           "energy": 15,
           "cooldown": 60
         },
         {
-          "name": "Accelerated Force Mastery",
-          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+          "name": "Snap Shut",
+          "description": "The hole Fold Space leaves behind snaps shut: enemies within 3 blocks of where you stood are dragged into it, take 3 damage and are slowed.",
+          "mechanic": "snap_shut"
         },
         {
           "id": "time_manipulation_shared_blink",
-          "name": "Shared Blink",
-          "description": "Fold space to an aimed surface within 24 blocks, bringing up to three friends beside you.",
+          "name": "Moment's Edge",
+          "description": "Time stops for a heartbeat. You fold from enemy to enemy, up to three within 12 blocks, cutting each for 6 + level and landing behind the last. They feel every cut at once when time resumes.",
           "active": true,
           "level": 2,
           "cost": 2,
           "requires": "time_manipulation_1_0",
           "mechanic": "shared_blink",
-          "energy": 26,
-          "cooldown": 200
+          "energy": 28,
+          "cooldown": 240
         },
         {
           "id": "time_manipulation_far_fold",
-          "name": "Far Fold",
-          "description": "Shared Blink reaches 48 blocks.",
+          "name": "Long Edge",
+          "description": "Moment's Edge reaches 20 blocks and five enemies.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -1523,8 +1527,8 @@
         },
         {
           "id": "time_manipulation_wayfinder",
-          "name": "Wayfinder",
-          "description": "After a Shared Blink, everyone with you gains Speed II and Slow Falling.",
+          "name": "Thousand Cuts",
+          "description": "Moment's Edge cuts each enemy twice, and they stay stopped for two seconds after the last cut: every blow you add waits and lands with the rest.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -1549,35 +1553,37 @@
       ],
       [
         {
-          "name": "Clockwork Rhythm",
-          "description": "Reduce ability cooldowns by 10%."
+          "name": "Foreknowledge",
+          "description": "When you Rewrite the Moment or take a Second Chance, you remember who hurt you in the time you undid. For ten seconds they are marked to you alone, and your hits on them land 30% harder.",
+          "mechanic": "foreknowledge"
         },
         {
           "name": "Second Chance",
-          "description": "Return yourself to five seconds ago, recovering lost health and reducing fire. Leaves inventories, blocks and everyone else untouched. Requires five seconds of history.",
+          "description": "Turn your own clock back five seconds: where you stood, the health you lost and your fire. Inventories, blocks and everyone else stay as they are. Needs five seconds of history.",
           "energy": 30,
           "cooldown": 400
         },
         {
-          "name": "Clockwork Rhythm Mastery",
-          "description": "Reduce ability cooldowns by another 15% (25% total)."
+          "name": "Shared Hour",
+          "description": "Second Chance takes friends within 6 blocks back through their own five seconds too: where they stood, the health they lost and their fire.",
+          "mechanic": "shared_hour"
         },
         {
           "id": "time_manipulation_accelerate",
-          "name": "Accelerate Time",
-          "description": "Years pass in a moment around you: crops, saplings and young animals within three blocks grow up.",
+          "name": "Fast Forward",
+          "description": "Wind a creature's clock five seconds ahead (up to 20 blocks). An enemy suffers its next five seconds of burning, poison and wither at once and is left weary; if you hold it in stopped time, its stored blows land now. A friend's harmful effects run down instead, and their healing arrives early. Aimed at nothing, plants and young animals near you grow up.",
           "active": true,
           "level": 2,
           "cost": 2,
           "requires": "time_manipulation_2_0",
           "mechanic": "accelerate",
-          "energy": 18,
-          "cooldown": 400
+          "energy": 20,
+          "cooldown": 240
         },
         {
           "id": "time_manipulation_era_radius",
           "name": "Wider Era",
-          "description": "Accelerate Time reaches five blocks.",
+          "description": "Fast Forward also reaches every creature within 4 blocks of the one you aim at, each as friend or foe, and grows plants five blocks round you instead of three.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -1587,7 +1593,7 @@
         {
           "id": "time_manipulation_eras_end",
           "name": "Era's End",
-          "description": "Enemies caught in the accelerated moment wither: 4 damage and Weakness II.",
+          "description": "Fast Forward on an enemy brings back every blow you landed on it in the last five seconds, at half strength, all at once.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -2866,23 +2872,25 @@
     "branches": [
       [
         {
-          "name": "Light Step",
-          "description": "Reduce activation stamina costs by 10%."
+          "name": "Through the Wall",
+          "description": "Reach Through finds an enemy behind up to two blocks of wall, and a hand that comes out of a wall lands 3 harder.",
+          "mechanic": "through_the_wall"
         },
         {
-          "name": "Through-Strike",
-          "description": "Reach Through an enemy you can see up to 40 blocks away: the blow ignores armor and stops them healing.",
-          "energy": 24,
-          "cooldown": 100
+          "name": "Pass Through",
+          "description": "Run straight through the enemy you look at within 10 blocks and come out behind them, facing them: 4 + level damage that ignores armor, they can't heal for three seconds, and they're slowed for two.",
+          "energy": 22,
+          "cooldown": 160
         },
         {
-          "name": "Light Step Mastery",
-          "description": "Reduce activation stamina costs by another 15% (25% total)."
+          "name": "Inside Knowledge",
+          "description": "A body your hand has been inside can't heal for twice as long, and for that time your Ghost punches on it land at full strength, even at Full Ghost.",
+          "mechanic": "inside_knowledge"
         },
         {
           "id": "phasing_phase_carry",
           "name": "Phase Carry",
-          "description": "Pass through the wall ahead at Full Ghost, bringing up to three friends.",
+          "description": "Pass through the wall ahead, bringing up to three friends. For three seconds afterward, shots pass straight through them.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -2893,18 +2901,18 @@
         },
         {
           "id": "phasing_thicker_walls",
-          "name": "Thicker Walls",
-          "description": "At Ghost you walk through walls four blocks thicker.",
+          "name": "Ambush",
+          "description": "Stepping out of a wall primes your hand for three seconds: your next Reach Through costs nothing, waits on no cooldown and lands 4 harder.",
           "active": false,
           "level": 3,
           "cost": 1,
           "requires": "phasing_phase_carry",
-          "mechanic": "thicker_walls"
+          "mechanic": "ambush"
         },
         {
           "id": "phasing_ghost_network",
           "name": "Ghost Network",
-          "description": "Every wall you pass leaves you at Full Ghost, free of upkeep, for two seconds.",
+          "description": "Every wall you pass stays open for six seconds: friends and your pets who walk into either side come out of the other. You come out at Full Ghost, free of upkeep, for two seconds.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -2915,45 +2923,47 @@
       ],
       [
         {
-          "name": "Dense Core",
-          "description": "Increase outgoing attack damage by 10%."
+          "name": "Pile Driver",
+          "description": "At Full Dense, a punch drives a standing enemy knee-deep into the ground for a second and a half (each enemy once every eight seconds).",
+          "mechanic": "pile_driver"
         },
         {
           "name": "Harden",
-          "description": "Snap to Full Dense, free of upkeep, for six seconds.",
+          "description": "Snap to Full Dense, free of upkeep, for six seconds, banking the weight of every blow you take. Press again to Rebound: it all comes back out of the ground as a shockwave (wider and harder the more you took, up to 18 damage).",
           "energy": 20,
           "cooldown": 300
         },
         {
-          "name": "Dense Core Mastery",
-          "description": "Increase outgoing attack damage by another 15% (25% total)."
+          "name": "Crater Landing",
+          "description": "Your shockwaves (a Full Dense landing, Bedrock Slam, Rebound) root the enemies they hit knee-deep for two seconds instead of throwing them.",
+          "mechanic": "crater_landing"
         },
         {
           "id": "phasing_phase_lock",
-          "name": "Long Embed",
-          "description": "Embed an enemy up to 16 blocks away.",
+          "name": "Sinkhole",
+          "description": "Press down on a point up to 16 blocks away: after half a second the ground there goes soft for three seconds, and every enemy in it, or who walks in, sinks waist-deep for two.",
           "active": true,
           "level": 2,
           "cost": 2,
           "requires": "phasing_1_0",
           "mechanic": "phase_lock",
-          "energy": 24,
-          "cooldown": 240
+          "energy": 28,
+          "cooldown": 300
         },
         {
           "id": "phasing_long_lock",
-          "name": "Deep Set",
-          "description": "Embedded enemies stay stuck two seconds longer.",
+          "name": "Set in Stone",
+          "description": "Enemies you embed can't struggle free, and each blow you land on one at Dense holds it a second longer (up to four).",
           "active": false,
           "level": 3,
           "cost": 1,
           "requires": "phasing_phase_lock",
-          "mechanic": "long_lock"
+          "mechanic": "set_in_stone"
         },
         {
           "id": "phasing_entombed",
           "name": "Entombed",
-          "description": "Your embedded enemies take damage every second.",
+          "description": "Press Embed at an enemy you already hold in the ground and it closes right over them for three seconds: they take damage every second, then the ground throws them back up.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -2964,18 +2974,20 @@
       ],
       [
         {
-          "name": "Loose Molecules",
-          "description": "Reduce ability cooldowns by 10%."
+          "name": "Uproot",
+          "description": "Surfacing under an enemy you hold in the ground tears them out of it: the uppercut deals double and throws them twice as high. Anyone you surface under can't heal for two seconds.",
+          "mechanic": "uproot"
         },
         {
           "name": "Fade Through",
-          "description": "Three seconds at Full Ghost, free of upkeep.",
+          "description": "Three seconds at Full Ghost, free of upkeep. Every enemy you drift through takes 3 + half your level, is slowed, and can't heal for two seconds.",
           "energy": 18,
           "cooldown": 240
         },
         {
-          "name": "Loose Molecules Mastery",
-          "description": "Reduce ability cooldowns by another 15% (25% total)."
+          "name": "Grasp from Below",
+          "description": "Reach Through while you are sunk grabs the nearest enemy standing above you by the ankles: they're pulled waist-deep for two seconds and can't heal.",
+          "mechanic": "grasp_from_below"
         },
         {
           "id": "phasing_phase_fall",
@@ -2992,7 +3004,7 @@
         {
           "id": "phasing_deep_fall",
           "name": "Deep Fall",
-          "description": "Phase Fall reaches 32 blocks.",
+          "description": "Phase Fall reaches 32 blocks, and dropping through at Dense lands as heavily as if you had fallen the whole way: a shockwave instead of a step.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -3002,7 +3014,7 @@
         {
           "id": "phasing_untouchable",
           "name": "Untouchable",
-          "description": "Holding a Ghost or Dense notch drains stamina half as fast.",
+          "description": "Holding a Ghost or Dense notch drains stamina half as fast, and a blow that would take you below a third of your health passes through you as you slip to Full Ghost for two seconds (once every 30 seconds).",
           "active": false,
           "capstone": true,
           "level": 5,

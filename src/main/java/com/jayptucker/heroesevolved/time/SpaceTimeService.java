@@ -60,29 +60,61 @@ public final class SpaceTimeService {
         };
     }
     public static boolean activate(AbilityUseContext c, int branch) {
-        return switch (branch) {
+        boolean done = switch (branch) {
             case 0 -> suspend(c.player(), aimed(c.player()), 60 + c.abilityLevel() * 10);
             case 1 -> c.modifierHeld() ? remember(c.player()) : recall(c.player());
             case 2 -> secondChance(c.player());
             default -> false;
         };
+        if (done) com.jayptucker.heroesevolved.progression.MasteryService.markPowerUse(c.player(), ModAbilities.TIME_MANIPULATION_ID);
+        return done;
     }
     public static boolean suspend(ServerPlayer p, LivingEntity target, int ticks) {
         if (target == null || !target.isAlive() || target.level() != p.level()) return false;
-        // One target per traveller; replacing it immediately releases the previous target.
-        STASIS.put(p.getUUID(), new Stasis(p, target, target.position(), now(p) + Math.clamp(ticks, 1, 120)));
-        AbilityEffects.send(p.serverLevel(), Kind.TEMPORAL_FIELD, target.position(), target.getEyePosition(), 1.5);
+        // One target per traveller; replacing it immediately releases the previous target, and its stored blows land.
+        Stasis old = STASIS.put(p.getUUID(), new Stasis(p, target, target.position(), now(p) + Math.clamp(ticks, 1, 120)));
+        if (old != null && old.target != target) TimeStopService.release(p.getServer(), p.getUUID(), old.target);
+        // A cold violet clock closes round them with its hands stopped; the palm that stopped it closes into a fist.
+        TimeGeometry.show(p.serverLevel(), com.jayptucker.heroesevolved.styles.Piece.TIME_STASIS, target.position(), target.getEyePosition(), target.getBbHeight(), target);
+        com.jayptucker.heroesevolved.network.ArmPosePayload.show(p, com.jayptucker.heroesevolved.ability.ArmPose.TIME_HALT, 14);
+        p.serverLevel().playSound(null, target.blockPosition(), ModSounds.TIME_SLOW_STOP.get(), SoundSource.PLAYERS, .6F, 1.5F);
         cue(p);
         return true;
     }
+    private static boolean valid(Stasis s) {
+        return s.target.level() == s.owner.level() && s.until > now(s.owner) && s.owner.isAlive() && awakened(s.owner);
+    }
+    /** Who holds this creature in stopped time (Selective Stasis, a Stasis Seal, Moment's Edge), or null. */
+    public static java.util.UUID holder(Entity entity) {
+        if (!STASIS.isEmpty()) for (Stasis s : STASIS.values()) if (s.target == entity && valid(s)) return s.owner.getUUID();
+        return SpaceTimeSkills.holder(entity);
+    }
     public static boolean isSuspended(Entity entity) {
-        return STASIS.values().stream().anyMatch(s -> s.target == entity && s.target.level() == s.owner.level()
-                && s.until > now(s.owner) && s.owner.isAlive() && awakened(s.owner));
+        return holder(entity) != null;
+    }
+    /** Selective Stasis let go early with a snap of the fingers: its stored blows land at once. Free. */
+    public static boolean releaseStasis(ServerPlayer p) {
+        Stasis s = STASIS.remove(p.getUUID());
+        if (s == null) return false;
+        TimeStopService.release(p.getServer(), p.getUUID(), s.target);
+        com.jayptucker.heroesevolved.network.ArmPosePayload.show(p, com.jayptucker.heroesevolved.ability.ArmPose.TIME_SNAP, 10);
+        p.serverLevel().playSound(null, s.target.blockPosition(), net.minecraft.sounds.SoundEvents.AMETHYST_CLUSTER_BREAK, SoundSource.PLAYERS, .8F, 1.3F);
+        return true;
+    }
+    /** Lets this one creature out of your Selective Stasis, if it is the one you hold. */
+    public static boolean releaseTarget(ServerPlayer p, LivingEntity target) {
+        Stasis s = STASIS.get(p.getUUID());
+        if (s == null || s.target != target) return false;
+        STASIS.remove(p.getUUID());
+        TimeStopService.release(p.getServer(), p.getUUID(), target);
+        return true;
     }
     public static boolean remember(ServerPlayer p) {
         if (!safe(p, p.position()) || !p.onGround()) return message(p, "anchor_ground");
         p.setData(ModDataAttachments.SPACE_TIME_ANCHOR, Anchor.capture(p));
-        AbilityEffects.at(p, Kind.TEMPORAL_FIELD, 2);
+        // A palm pressed to the ground plants a gold clock face there, its hands set to the hour.
+        plant(p, p.position());
+        com.jayptucker.heroesevolved.network.ArmPosePayload.show(p, com.jayptucker.heroesevolved.ability.ArmPose.TIME_PLANT, 16);
         cue(p); message(p, "anchor_set");
         TemporalStoryService.reach(p, TemporalStoryService.ANCHOR);
         return true;
@@ -92,8 +124,35 @@ public final class SpaceTimeService {
         if (!a.set() || !a.dimension.equals(p.level().dimension().location().toString())) return message(p, "anchor_dimension");
         // Fixed budget: no chunk generation and no tickets retained by travel.
         if (p.position().distanceToSqr(a.position()) > 512 * 512 || !safe(p, a.position())) return message(p, "anchor_blocked");
+        // Friends beside you (teammates, or players crouching to be taken) come back with you.
+        Vec3 from = p.position();
+        List<LivingEntity> friends = p.serverLevel().getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(TimeGeometry.ANCHOR_CARRY),
+                t -> t != p && t.isAlive() && !t.isSpectator() && !t.isPassenger() && t.distanceToSqr(p) <= TimeGeometry.ANCHOR_CARRY * TimeGeometry.ANCHOR_CARRY
+                        && !(t instanceof com.jayptucker.heroesevolved.entity.TemporalEchoEntity)
+                        && (t instanceof ServerPlayer other ? p.isAlliedTo(other) || other.isShiftKeyDown()
+                        : t instanceof net.minecraft.world.entity.OwnableEntity pet && p.getUUID().equals(pet.getOwnerUUID())))
+                .stream().limit(3).toList();
+        com.jayptucker.heroesevolved.network.ArmPosePayload.show(p, com.jayptucker.heroesevolved.ability.ArmPose.TIME_RECALL, 16);
         travel(p, a); TemporalStoryService.reach(p, TemporalStoryService.ANCHOR);
+        int brought = 0;
+        for (LivingEntity friend : friends) {
+            Vec3 to = a.position().add(friend.position().subtract(from).multiply(1, 0, 1));
+            if (!safe(friend, to)) to = a.position().add(Math.cos(brought * 2.1) * 1.2, 0, Math.sin(brought * 2.1) * 1.2);
+            if (!safe(friend, to)) continue;
+            AbilityEffects.send(p.serverLevel(), Kind.TIME_FOLD, friend.position(), to, .8);
+            friend.teleportTo(to.x, to.y, to.z);
+            friend.setDeltaMovement(Vec3.ZERO); friend.resetFallDistance(); friend.hurtMarked = true;
+            if (friend instanceof ServerPlayer other) other.connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket(other));
+            brought++;
+        }
+        if (brought > 0) TemporalStoryService.reach(p, TemporalStoryService.RESCUE);
+        plant(p, a.position());
         return true;
+    }
+    /** The anchor's clock face, its hands showing the hour of the day (carried in the piece's scale). */
+    private static void plant(ServerPlayer p, Vec3 at) {
+        float hour = (p.serverLevel().getDayTime() + 6000) % 24000 / 1000F;
+        TimeGeometry.show(p.serverLevel(), com.jayptucker.heroesevolved.styles.Piece.TIME_ANCHOR, at, at.add(0, 1, 0), 1 + hour, null);
     }
     public static boolean safe(Entity entity, Vec3 position) {
         if (!(entity.level() instanceof ServerLevel level) || !Double.isFinite(position.lengthSqr())) return false;
@@ -112,8 +171,9 @@ public final class SpaceTimeService {
         AbilityEffects.send(p.serverLevel(), Kind.TEMPORAL_BURST, from, from.add(0, 1, 0), 2);
         AbilityEffects.at(p, Kind.TEMPORAL_BURST, 2); cue(p);
     }
+    /** Every player's last five seconds are kept (25 samples at most): Shared Hour can take a friend back through theirs. */
     public static void record(ServerPlayer p, long tick) {
-        if (!awakened(p) || !p.isAlive() || TemporalSnapshotService.isTemporalDimension(p.serverLevel())
+        if (!p.isAlive() || p.isSpectator() || TemporalSnapshotService.isTemporalDimension(p.serverLevel())
                 || com.jayptucker.heroesevolved.time.intro.TimeIntroService.isVisiting(p)) { HISTORY.remove(p.getUUID()); return; }
         var history = HISTORY.computeIfAbsent(p.getUUID(), k -> new ArrayDeque<>());
         history.addLast(new Moment(tick, Anchor.capture(p), p.getHealth(), p.getRemainingFireTicks()));
@@ -130,23 +190,57 @@ public final class SpaceTimeService {
         Moment m = personalTarget(p);
         if (m == null) return message(p, "history");
         if (!safe(p, m.place.position())) return message(p, "anchor_blocked");
+        // A hand at the chest turns a crown backward; violet trails run back to then, where rings close in on you.
+        com.jayptucker.heroesevolved.network.ArmPosePayload.show(p, com.jayptucker.heroesevolved.ability.ArmPose.TIME_WIND, 14);
+        SpaceTimeSkills.remember(p, TimeGeometry.SECOND_TICKS);
+        SpaceTimeSkills.sharedHour(p);
         Vec3 from = p.position(); travel(p, m.place);
         p.setHealth(Math.min(p.getMaxHealth(), Math.max(p.getHealth(), m.health)));
         p.setRemainingFireTicks(Math.min(p.getRemainingFireTicks(), m.fire));
         AbilityEffects.send(p.serverLevel(), Kind.TEMPORAL_REWIND, from, m.place.position(), 5);
+        TimeGeometry.show(p.serverLevel(), com.jayptucker.heroesevolved.styles.Piece.TIME_SECOND, m.place.position(), from, 1, p);
         HISTORY.remove(p.getUUID());
+        return true;
+    }
+    /** Shared Hour: one friend back through their own five seconds (where they stood, lost health, fire). */
+    static boolean rewindPersonal(ServerPlayer friend) {
+        Moment m = personalTarget(friend);
+        if (m == null || !safe(friend, m.place.position())) return false;
+        Vec3 from = friend.position();
+        travel(friend, m.place);
+        friend.setHealth(Math.min(friend.getMaxHealth(), Math.max(friend.getHealth(), m.health)));
+        friend.setRemainingFireTicks(Math.min(friend.getRemainingFireTicks(), m.fire));
+        AbilityEffects.send(friend.serverLevel(), Kind.TEMPORAL_REWIND, from, m.place.position(), 3);
+        TimeGeometry.show(friend.serverLevel(), com.jayptucker.heroesevolved.styles.Piece.TIME_SECOND, m.place.position(), from, 1, friend);
+        HISTORY.remove(friend.getUUID());
         return true;
     }
     public static void tick(MinecraftServer server) {
         long tick = server.overworld().getGameTime();
         if (tick % 5 == 0) for (ServerPlayer p : server.getPlayerList().getPlayers()) record(p, tick);
-        STASIS.values().removeIf(s -> tick >= s.until || !s.target.isAlive() || s.target.isRemoved()
-                || s.target.level() != s.owner.level() || !awakened(s.owner) || !PowerRules.canAct(s.owner));
-        if (tick % 20 == 0) for (Stasis s : STASIS.values())
-            AbilityEffects.send(s.owner.serverLevel(), Kind.TEMPORAL_FIELD, s.position, s.position.add(0, 1, 0), 1.5);
+        List<Stasis> ended = new ArrayList<>();
+        for (var it = STASIS.values().iterator(); it.hasNext(); ) {
+            Stasis s = it.next();
+            if (tick >= s.until || !s.target.isAlive() || s.target.isRemoved()
+                    || s.target.level() != s.owner.level() || !awakened(s.owner) || !PowerRules.canAct(s.owner)) {
+                it.remove();
+                ended.add(s);
+            }
+        }
+        // Time resumes for each, and every blow it was dealt while stopped lands together (after the loop: a blow can kill).
+        for (Stasis s : ended) TimeStopService.release(server, s.owner.getUUID(), s.target);
+        if (tick % 10 == 0) for (Stasis s : STASIS.values())
+            TimeGeometry.show(s.owner.serverLevel(), com.jayptucker.heroesevolved.styles.Piece.TIME_STASIS, s.target.position(),
+                    s.target.getEyePosition(), s.target.getBbHeight(), s.target);
     }
-    public static void forget(ServerPlayer p) { HISTORY.remove(p.getUUID()); STASIS.values().removeIf(s -> s.owner == p || s.target == p); }
-    public static void clear() { HISTORY.clear(); STASIS.clear(); }
+    public static void forget(ServerPlayer p) {
+        HISTORY.remove(p.getUUID());
+        Stasis own = STASIS.remove(p.getUUID());
+        if (own != null && p.getServer() != null) TimeStopService.release(p.getServer(), p.getUUID(), own.target);
+        STASIS.values().removeIf(s -> s.target == p);
+        SpaceTimeSkills.drop(p);
+    }
+    public static void clear() { HISTORY.clear(); STASIS.clear(); SpaceTimeSkills.clear(); }
     private static long now(ServerPlayer p) { return p.getServer().overworld().getGameTime(); }
     private static void cue(ServerPlayer p) { p.serverLevel().playSound(null, p.blockPosition(), ModSounds.TIME_BLINK.get(), SoundSource.PLAYERS, .7F, 1); }
     private static boolean message(ServerPlayer p, String key) { p.displayClientMessage(Component.translatable("time.heroesevolved." + key), true); return false; }

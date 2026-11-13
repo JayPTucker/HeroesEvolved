@@ -29,7 +29,8 @@ public final class TimeStopService {
     // Hits landed on frozen creatures by the field's owner. Nothing moves
     // while time is stopped, so the force waits and lands all at once.
     private static final Map<UUID, StoredImpact> STORED_IMPACTS = new HashMap<>();
-    private static boolean releasingImpacts;
+    /** How deep we are in landing stored blows: a blow can kill, and a death can let more go (reentrant). */
+    private static int releasingImpacts;
 
     private TimeStopService() {
     }
@@ -46,14 +47,17 @@ public final class TimeStopService {
             net.minecraft.world.damagesource.DamageSource source,
             float amount
     ) {
-        if (releasingImpacts
+        if (releasingImpacts > 0
                 || !(target.level() instanceof ServerLevel level)
                 || !(source.getEntity() instanceof ServerPlayer attacker)) {
             return false;
         }
 
+        // Still World, Selective Stasis, a Stasis Seal and Moment's Edge all store their holder's blows the same way.
         TimeStopField field = getContainingField(target, level);
-        if (field == null || !field.ownerId().equals(attacker.getUUID())) {
+        boolean held = field != null && field.ownerId().equals(attacker.getUUID())
+                || attacker.getUUID().equals(SpaceTimeService.holder(target));
+        if (!held) {
             return false;
         }
 
@@ -61,7 +65,8 @@ public final class TimeStopService {
                 target.getUUID(),
                 ignored -> new StoredImpact(target, attacker.getUUID())
         );
-        impact.damage = Math.min(target instanceof ServerPlayer ? 12 : 40, impact.damage + amount);
+        impact.damage = Math.min(SpaceTimeSkills.storeCap(attacker, target), impact.damage + amount);
+        impact.compound = SpaceTimeSkills.has(attacker, SpaceTimeSkills.COMPOUND);
         impact.hits = Math.min(8, impact.hits + 1);
         impact.push = impact.push.add(attacker.getLookAngle().scale(0.35D));
 
@@ -76,17 +81,38 @@ public final class TimeStopService {
     }
 
     private static void releaseImpacts(MinecraftServer server, UUID ownerId) {
-        ServerPlayer owner = server.getPlayerList().getPlayer(ownerId);
-        releasingImpacts = true;
-        try {
-            var iterator = STORED_IMPACTS.values().iterator();
-            while (iterator.hasNext()) {
-                StoredImpact impact = iterator.next();
-                if (!impact.ownerId.equals(ownerId)) {
-                    continue;
-                }
-                iterator.remove();
+        release(server, ownerId, null);
+    }
 
+    /** Has this owner stored blows on this creature? */
+    public static boolean hasStored(UUID ownerId, Entity target) {
+        StoredImpact impact = STORED_IMPACTS.get(target.getUUID());
+        return impact != null && impact.ownerId.equals(ownerId);
+    }
+
+    /**
+     * Lands the blows {@code ownerId} stored: on one creature, or (null) on every creature they no longer hold, as Still
+     * World ends. Compound Interest grows them by a tenth for each one stored.
+     */
+    public static void release(MinecraftServer server, UUID ownerId, Entity only) {
+        ServerPlayer owner = server.getPlayerList().getPlayer(ownerId);
+        // Take them out first, then land them: a blow can kill, and a death lets go of what the dead held (another release).
+        java.util.List<StoredImpact> landing = new java.util.ArrayList<>();
+        var iterator = STORED_IMPACTS.values().iterator();
+        while (iterator.hasNext()) {
+            StoredImpact impact = iterator.next();
+            if (!impact.ownerId.equals(ownerId)) {
+                continue;
+            }
+            if (only != null ? impact.target != only : ownerId.equals(SpaceTimeService.holder(impact.target))) {
+                continue;
+            }
+            iterator.remove();
+            landing.add(impact);
+        }
+        releasingImpacts++;
+        try {
+            for (StoredImpact impact : landing) {
                 var target = impact.target;
                 if (target.isRemoved() || !target.isAlive()
                         || !(target.level() instanceof ServerLevel level)) {
@@ -97,7 +123,10 @@ public final class TimeStopService {
                 target.hurt(owner == null
                         ? level.damageSources().magic()
                         : owner.damageSources().playerAttack(owner),
-                        impact.damage);
+                        impact.damage * SpaceTimeSkills.compound(impact.compound, impact.hits));
+                // The stopped clock round them cracks and its hands race on as every blow lands at once.
+                TimeGeometry.show(level, com.jayptucker.heroesevolved.styles.Piece.TIME_RELEASE, target.position(),
+                        target.getEyePosition(), impact.hits, target);
                 double pushLength = Math.min(3.0D, impact.push.length());
                 Vec3 push = impact.push.lengthSqr() < 0.0001D
                         ? Vec3.ZERO
@@ -117,7 +146,7 @@ public final class TimeStopService {
                         SoundSource.PLAYERS, 1.0F, 0.8F);
             }
         } finally {
-            releasingImpacts = false;
+            releasingImpacts--;
         }
     }
 
@@ -158,6 +187,7 @@ public final class TimeStopService {
                         durationSecondsForLevel(powerLevel) * 20, companion
                 )
         );
+        SpaceTimeSkills.stillWorldStarted(player);
     }
 
     public static void stop(ServerPlayer player) {
@@ -375,6 +405,8 @@ public final class TimeStopService {
         private final UUID ownerId;
         private float damage;
         private int hits;
+        /** Compound Interest, read when the blow was stored (the holder may be gone when they land). */
+        private boolean compound;
         private Vec3 push = Vec3.ZERO;
 
         private StoredImpact(

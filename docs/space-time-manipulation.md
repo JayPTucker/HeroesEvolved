@@ -66,15 +66,56 @@ Configured costs and cooldowns are adjusted by the shared balance multipliers; t
 
 ## Optional skills
 
-Learn and equip these through the inventory **Skills** button. Existing purchases retain their node IDs, points, and key assignments, with the new mechanics replacing the old ones.
+Learn and equip these through the inventory **Skills** button. The tree was rebuilt in November 2026 around the kit
+rather than stat bonuses: every node now changes a move or ties two together, and no generic cost, damage or cooldown
+nodes remain. Node IDs, points and key assignments carry over from the old tree.
 
-| Branch | Skill | Base stamina / cooldown | Mechanic |
-| --- | --- | --- | --- |
-| Control | Selective Stasis | 22 / 8 seconds | Actually pause a visible living target within 40 blocks, for 4 seconds at level 2 through 5.5 seconds at level 5. One target per traveller; retargeting releases the previous one. Respects solid cover and PvP/team rules. |
-| Force | Spatial Anchor | 15 / 3 seconds | Shift + key remembers safe ground. Normal activation teleports back within 512 blocks, in the same dimension. The destination survives relogging and death, but must still be loaded and safe. |
-| Survival | Second Chance | 30 / 20 seconds | Undo five seconds of your own position, lost health, and acquired fire. Does not modify inventories or the world. Requires a fresh five-second history and consumes that history on use. |
+One rule runs through it: **anything you hold in stopped time stores your blows.** A creature in your Still World,
+your Selective Stasis, your Stasis Seal or your Moment's Edge doesn't feel your hits until it is let go, and then
+feels them all at once.
 
-The existing passive discounts and damage bonuses still apply. Remembering an anchor uses its normal skill cost/cooldown. Shift retains the mod's existing overexertion behavior when stamina is insufficient.
+### Stillness (stopping things)
+
+| Skill | Kind | What it does |
+| --- | --- | --- |
+| **Still Point** | Passive | While your Still World holds, Fold Space costs nothing and waits on no cooldown, three times. Hiro teleporting around a frozen room. |
+| **Selective Stasis** | Active (22 stamina, 8 s) | Stop one creature you can see within 20 blocks for 4 to 5.5 seconds. Your blows on it wait and land together when time resumes. **Press again** to snap your fingers and let it go early (free). One creature at a time. |
+| **Compound Interest** | Passive | Stored blows grow as they pile up: each adds a tenth to them all (up to 60% more), and a creature holds half again as much. |
+| **Stasis Seal** | Technique (24 stamina, 10 s) | Frame a point up to 24 blocks away and seal it in stopped time for eight seconds. Shots that fly in hang there; enemies that walk in stop for two seconds (once each), and your blows on them wait. **Press again** to throw everything inside where you look (free). A seal that runs out lets its shots go on as they were. |
+| **Held Volley** | Upgrade | Your own shots wait in the seal too, and it reaches five blocks from its centre instead of three. Fill it with arrows, then throw them all at once. |
+| **Return to Sender** | Capstone | Shots you throw from the seal become yours, fly half again as fast and curve onto the enemy nearest your aim for two seconds. |
+
+### Wayfinder (folding space)
+
+| Skill | Kind | What it does |
+| --- | --- | --- |
+| **Behind You** | Passive | Fold Space aimed at an enemy lands you just behind it, facing it (round its side if its back is to a wall). Your next hit on it within two seconds lands 50% harder, or twice as hard if it is held in stopped time. |
+| **Spatial Anchor** | Active (15 stamina, 3 s) | Shift + key plants a gold clock on safe ground. Press normally to return to it within 512 blocks in the same world, bringing up to three friends beside you (teammates, players crouching, your own pets), each in the same place beside you. The destination survives relogging and death, but must be loaded and clear. |
+| **Snap Shut** | Passive | The hole Fold Space leaves behind snaps shut: enemies within 3 blocks of where you stood are dragged into it, take 3 damage and are slowed. The **Singularity** hangs from this node. |
+| **Moment's Edge** | Technique (28 stamina, 12 s) | Time stops for a heartbeat. You fold from enemy to enemy, up to three within 12 blocks (nearest first, then nearest to that one), cutting each for 6 + level and landing behind the last. They feel every cut at once when time resumes. |
+| **Long Edge** | Upgrade | Moment's Edge reaches 20 blocks and five enemies. |
+| **Thousand Cuts** | Capstone | Moment's Edge cuts each enemy twice, and they stay stopped for two seconds after the last cut: every blow you add waits and lands with the rest. |
+
+### Historian (undoing and hurrying time)
+
+| Skill | Kind | What it does |
+| --- | --- | --- |
+| **Foreknowledge** | Passive | When you Rewrite the Moment or take a Second Chance, you remember who hurt you in the time you undid. For ten seconds a small violet clock marks each of them, seen only by you, and your hits on them land 30% harder. |
+| **Second Chance** | Active (30 stamina, 20 s) | Turn your own clock back five seconds: where you stood, the health you lost and your fire. Inventories, blocks and everyone else stay as they are. Needs five seconds of history, and uses it up. |
+| **Shared Hour** | Passive | Second Chance takes friends within 6 blocks (teammates, or players crouching) back through their own five seconds too: where they stood, the health they lost and their fire. |
+| **Fast Forward** | Technique (20 stamina, 12 s) | Wind a creature's clock five seconds ahead (up to 20 blocks). An enemy suffers its next five seconds of burning, poison and wither at once, its effects run five seconds down, and it is left weary (Slowness II, Weakness); if you hold it in stopped time, its stored blows land now. A friend's harmful effects and fire run down instead, without hurting them, and the next five seconds of their Regeneration arrive at once. Aimed at nothing, crops, saplings and young animals within three blocks grow up. |
+| **Wider Era** | Upgrade | Fast Forward also reaches every creature within 4 blocks of the one you aim at, each as friend or foe, and grows plants five blocks round you. |
+| **Era's End** | Capstone | Fast Forward on an enemy brings back every blow you landed on it in the last five seconds, at half strength, all at once. |
+
+### Combos worth learning
+
+- **Still World → Still Point → Behind You.** Stop the room, fold behind each enemy for free, and hit each one twice as
+  hard (they are held in stopped time). Every blow lands when the Still World ends.
+- **Selective Stasis → hits → Fast Forward.** Pile blows on the frozen target (Compound Interest grows them), then Fast
+  Forward it: the stored blows land now, along with its poison and burning.
+- **Stasis Seal + Held Volley + Return to Sender.** Fire a quiver of arrows into your own seal, then throw them all at
+  one enemy.
+- **Second Chance + Foreknowledge + Shared Hour.** Pull your group out of a bad five seconds, then punish whoever caused it.
 
 ### Signature: Singularity
 
@@ -106,6 +147,28 @@ Future missions can query `TemporalStoryService.has(player, milestone)` to branc
   - **Still World:** the same clock in cold violet with its hands stopped at ten past ten. Motes hang perfectly still around anyone inside.
   - **Rewrite the Moment:** violet trails run backwards from now to then, and ghosts of you appear along the path, newest first. You arrive as rings collapse onto you and the hands spin backwards.
   - **Remember This Moment:** a golden frame snaps out around you with a flash, like a photograph.
+- The skill tree speaks the same grammar (drawn by `TimeArt`), and every skill has its own pose in third and first person:
+  - **Selective Stasis:** you thrust a palm out, and a cold violet clock closes round the target: a face under it and a
+    small one over its head, both stopped at ten past ten, three ice rings caging it that never turn, and motes hanging
+    perfectly still. Pressing again is a snap of the fingers; the clock cracks outward, its hands race on, and a gold
+    slash bursts from the target for every stored blow. Anything a seal or Moment's Edge holds wears the same cage.
+  - **Stasis Seal:** both hands frame a point ahead, and a sphere of stopped time hangs there, faint as glass, with a
+    clock round its equator and still motes inside. Thrown, it bursts along your aim, and three rings fly after what
+    it held.
+  - **Behind You** and **Moment's Edge:** a crescent of gold light, ticked like a clock's rim, opens across each enemy you
+    cut; the blade is drawn from your opposite hip and slashed out. Seams of folded space join each fold, and an echo of
+    you is left at every spot you leave.
+  - **Snap Shut:** violet rings fall in on the hole you left, three spiral arms wind into it, a dark core shows where
+    space is missing, and it closes in a flash.
+  - **Spatial Anchor:** a palm pressed to the ground plants a gold clock face that settles into the earth, its hands
+    showing the hour of the day; recalling draws a hand to your chest like a pocket watch and flicks it open.
+  - **Second Chance:** a hand at your chest turns a crown backward; violet rings close in on you from wide to tight
+    while the clock under you spins backward.
+  - **Foreknowledge:** a small violet clock with backward-spinning hands floats over each remembered enemy, for your
+    eyes only.
+  - **Fast Forward:** a crown twisted forward and flicked at the target. An enemy gets an amber clock whose hands race,
+    ring after ring of years climbing up its body and sand pouring down; a friend gets a gentler gold one; growth spreads
+    as rings over a wide gold face on the ground.
 - Geometry is bounded and uses the shared detail setting/particle budget. No new audio files: imported Blink, Slow/Stop, and cinematic recordings are preserved.
 - Time Stop and selective stasis also block movement and interaction packets. Frozen players cannot attack, use items, drop/swap items, or click inventory slots to bypass the effect. Spectators are excluded.
 - Fields stop on death, logout, dimension change, suppression, or power removal. Frozen projectile velocity/gravity are restored; no permanent AI flags are written.
@@ -116,6 +179,10 @@ Future missions can query `TemporalStoryService.has(player, milestone)` to branc
 
 `gradlew.bat runGameTestServer --init-script tools/rewind-gametest.init.gradle`
 
-The suite includes anchor serialization/blocked arrivals, personal-state restoration without inventory changes, consumed history, real selective tick suspension, companion immunity, projectile release, open-air Blink/fall momentum, and idempotent story flags, alongside existing rewind and other-power regressions.
+`SpaceTimeSkillsGameTests` covers the skill tree: Still Point's free folds, stored and compounded blows under Selective
+Stasis, the seal holding and throwing shots and creatures, Behind You, Snap Shut, Moment's Edge's delayed cuts, Fast
+Forward with Era's End, Foreknowledge, Shared Hour and the anchor bringing a pet home. The older suite includes anchor serialization/blocked arrivals, personal-state restoration without inventory changes, consumed history, real selective tick suspension, companion immunity, projectile release, open-air Blink/fall momentum, and idempotent story flags, alongside existing rewind and other-power regressions.
+
+`./gradlew runClient --init-script tools/time-skills-preview.init.gradle` photographs every skill into `build/time-skills-preview/screenshots/`.
 
 Run `tools/verify-effect-geometry.ps1`, `python tools/verify-skill-content.py`, and `gradlew.bat build` for geometry, content, and packaging checks. Multiplayer feel and the new visual composition still need an in-game playtest.

@@ -47,6 +47,7 @@ public final class SkillTreeGameTests {
         com.jayptucker.heroesevolved.invisibility.InvisibilityService.forget(p);
         com.jayptucker.heroesevolved.technopathy.TechnopathyService.forget(p);
         com.jayptucker.heroesevolved.assembly.MatterAssemblyService.forget(p);
+        com.jayptucker.heroesevolved.phasing.DensityService.forget(p);
     }
     private static LivingEntity target(GameTestHelper h, ServerPlayer p) {
         var target = EntityType.PILLAGER.create(h.getLevel());

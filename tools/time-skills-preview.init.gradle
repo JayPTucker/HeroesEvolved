@@ -1,0 +1,23 @@
+// The client casts every Space-Time skill and captures their effects and poses.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('timeSkillsPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/time-skills-preview')
+                        programArguments.addAll('--width', '1100', '--height', '800')
+                        systemProperty('heroes.preview.timeskills', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('timeSkillsPreviewClasses')) }
+        }
+    }
+}

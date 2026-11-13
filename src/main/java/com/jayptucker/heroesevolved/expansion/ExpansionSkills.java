@@ -68,6 +68,7 @@ public final class ExpansionSkills {
         return switch (mechanic) {
             case "blackout", "circuit_thread", "ground_sink", "arc_lattice" -> ElectroService.canStartCast(c.player());
             case "singularity" -> !com.jayptucker.heroesevolved.time.SingularityService.active(c.player());
+            case "shared_blink" -> com.jayptucker.heroesevolved.time.SpaceTimeSkills.canEdge(c.player());
             case "phoenix" -> !com.jayptucker.heroesevolved.pyro.PhoenixService.active(c.player()) && !c.player().isInWaterOrBubble();
             default -> true;
         };
@@ -198,7 +199,7 @@ public final class ExpansionSkills {
             }
             case "ember_mine", "blue_lance", "fire_shepherd" -> { return com.jayptucker.heroesevolved.pyro.PyroService.technique(c, mechanic); }
             case "smoke_and_mirrors", "pickpocket", "cloak_field" -> { return com.jayptucker.heroesevolved.invisibility.InvisibilitySkills.technique(c, mechanic); }
-            case "phase_carry", "phase_lock", "phase_fall" -> { return com.jayptucker.heroesevolved.phasing.DensityService.technique(c, mechanic); }
+            case "phase_carry", "phase_lock", "phase_fall" -> { return com.jayptucker.heroesevolved.phasing.DensitySkills.technique(c, mechanic); }
             case "sense_powers", "overcharge", "absorb_pain" -> { return com.jayptucker.heroesevolved.mimicry.MimicryService.technique(c, mechanic); }
             case "persuasion", "memory_walk", "hive_link" -> { return com.jayptucker.heroesevolved.telepathy.TelepathySkills.technique(c, mechanic); }
             default -> { return AdvancedTechniques.activate(c, mechanic); }

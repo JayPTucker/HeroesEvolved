@@ -34,6 +34,11 @@ final class PieceArt {
             case VIBE_GATHER, VIBE_WAVE, VIBE_CROSSWAVE, VIBE_HIT, VIBE_BREACH_SEED, VIBE_BREACH_OPEN,
                     VIBE_BREACH_ARRIVE, VIBE_BREACH_CLOSE, VIBE_TRANSIT, VIBE_TOUCH, VIBE_ECHO, VIBE_GUARD,
                     VIBE_GUARD_CLOSE, VIBE_LOCK_WARN, VIBE_LOCK, VIBE_AWAKEN -> VibeArt.draw(c, a, t);
+            case TIME_STASIS, TIME_RELEASE, TIME_ANCHOR, TIME_SECOND, TIME_SEAL, TIME_SEAL_BREAK, TIME_CUT, TIME_SNAP,
+                    TIME_MARK, TIME_FORWARD -> TimeArt.draw(c, a, t);
+            case DENSITY_PASS, DENSITY_PRIMED, DENSITY_AMBUSH, DENSITY_DOOR, DENSITY_HARDEN, DENSITY_REBOUND, DENSITY_PILE,
+                    DENSITY_SINK_MARK, DENSITY_SINKHOLE, DENSITY_ENTOMB, DENSITY_UPROOT, DENSITY_FADE, DENSITY_GRASP, DENSITY_DROP,
+                    DENSITY_SLIP -> DensityArt.draw(c, a, t);
             case GROUND_ZERO -> ElementArt.groundZero(c, a, t);
             case CONTAINMENT_DOME -> ElementArt.containment(c, a, t);
             case REACTOR_HEARTH -> ElementArt.reactor(c, a, t);

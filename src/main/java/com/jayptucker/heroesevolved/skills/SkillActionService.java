@@ -59,6 +59,7 @@ public final class SkillActionService {
         if (c.abilityId().getPath().equals("quake")) return com.jayptucker.heroesevolved.quake.QuakeSkills.canUse(c, branch);
         if (c.abilityId().getPath().equals("regeneration")) return com.jayptucker.heroesevolved.regeneration.RegenSkills.canUse(c, branch);
         if (c.abilityId().getPath().equals("telepathy")) return com.jayptucker.heroesevolved.telepathy.TelepathySkills.canUse(c, branch);
+        if (c.abilityId().getPath().equals("phasing")) return com.jayptucker.heroesevolved.phasing.DensitySkills.canUse(c, branch);
         if (c.abilityId().getPath().equals("precognition")) return true;
         if (branch == 0 && !c.abilityId().getPath().equals("flight"))
             return aimed(c.player(), false) != null;
@@ -120,7 +121,8 @@ public final class SkillActionService {
             case "superspeed" -> { return com.jayptucker.heroesevolved.speed.SpeedService.skill(c, branch); }
             case "pyrokinesis" -> { return com.jayptucker.heroesevolved.pyro.PyroService.skill(c, branch); }
             case "invisibility" -> { return com.jayptucker.heroesevolved.invisibility.InvisibilitySkills.skill(c, branch); }
-            case "phasing" -> { return com.jayptucker.heroesevolved.phasing.DensityService.skill(c, branch); }
+            // Density poses each skill itself (lunge, brace, fade); a generic pose would replace it.
+            case "phasing" -> { return com.jayptucker.heroesevolved.phasing.DensitySkills.skill(c, branch); }
             case "empathic_mimicry" -> { return com.jayptucker.heroesevolved.mimicry.MimicryService.skill(c, branch); }
             case "time_manipulation" -> {
                 return com.jayptucker.heroesevolved.time.SpaceTimeService.activate(c, branch);

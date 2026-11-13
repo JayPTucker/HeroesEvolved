@@ -797,3 +797,98 @@ two-way Breaches, Read the Vibe, Breach Guard → Return Fire and Frequency Lock
   (`VibeSight.mark(player, target, ticks)` keeps the longer one), so several sources can feed them safely.
 - **Photographs:** `tools/vibe-preview.init.gradle` (`uitest/VibePreview`) shoots every core move, active skill, class
   ability, Through the Seam, Overflow and the awakening into `build/vibe-preview/screenshots/`.
+
+## Reusable patterns from the Space-Time rework
+
+Space-Time Manipulation's tree (`time/SpaceTimeSkills`, numbers in `time/TimeGeometry`, art in
+`client/effects/setpiece/TimeArt`) was rebuilt in November 2026: Stillness, Wayfinder and Historian, eighteen interaction
+nodes, nine poses and ten pieces. What the player sees is in [docs/space-time-manipulation.md](docs/space-time-manipulation.md).
+
+- **One rule for every kind of stop.** Still World, Selective Stasis, a Stasis Seal and Moment's Edge all answer one
+  question, `SpaceTimeService.holder(entity)` (who holds this creature in stopped time), and `TimeStopService.storeImpact`
+  stores the holder's blows for any of them. `TimeStopService.release(server, owner, target)` lands one creature's blows;
+  Still World's end lands only those its owner no longer holds. A new freeze (a cryo cocoon that stores blows, a boss's
+  time trap) is one more branch in `holder`, not a fourth copy of the storing code.
+- **Making a core move free for a while.** Still Point overrides Fold Space's `energyCost(context)`, `cooldownTicks(context)`
+  *and* `cooldownId(context)`: during a Still World the fold uses a cooldown id of its own that never starts, so a fold
+  made just before the Still World doesn't block the free ones. Count the uses where the move succeeds
+  (`SpaceTimeSkills.folded`), not in the cost check, which runs on failed presses too.
+- **Hooks at the end of a core move.** Fold Space calls `SpaceTimeSkills.folded(player, from, to, free, carried)` once it
+  has moved you, and asks `SpaceTimeSkills.behind(player, reach)` for a destination before its own search. Passives that
+  change a core move (Behind You, Snap Shut, Still Point) live in the tree's class; the move only asks.
+- **Bonuses before storage.** Damage bonuses (Behind You, Foreknowledge's marks) run at `EventPriority.HIGH` on
+  `LivingIncomingDamageEvent`, ahead of the normal-priority handler that stores blows, so what is stored already includes
+  them. Damage a skill deals for itself (Fast Forward's poison and burning, Era's End's replay) sets a `replaying` flag so
+  it isn't recorded as one of your blows and replayed again.
+- **Read a holder's skills when the blow is stored, not when it lands.** The holder may be offline (or a test's
+  `FakePlayer` outside the player list) by the time blows land, so `StoredImpact` keeps Compound Interest as a flag.
+- **Landing blows can kill, and a death lets go of more.** Death runs `SpaceTimeService.forget`, which releases whatever
+  the dead player held. Every loop that lands blows (`TimeStopService.release`, the stasis and hold expiries, Moment's
+  Edge) first takes its entries out of the map, then lands them, and the "are we landing" guard is a depth counter, so a
+  release inside a release never throws `ConcurrentModificationException` or re-stores a blow.
+- **Hurt, then pull.** A blow from a player knocks its target away from them. Snap Shut hurts first and then sets the
+  pull, or the knockback cancels it.
+- **A chain of folds is a ticked sequence.** Moment's Edge holds every target for the whole sequence, then moves you behind
+  one every `EDGE_STEP` ticks (`p.teleportTo(level, x, y, z, yaw, pitch)` with the yaw and pitch from
+  `TimeGeometry.facing`, so you face each one). The cuts go through the normal hurt path and are stored because the target
+  is held; letting them go at the end makes "they feel every cut at once" true with no extra damage code.
+- **Everyone has a short history.** `SpaceTimeService.record` now keeps every player's last five seconds (25 samples), not
+  only the traveller's, so Shared Hour can take friends back through their own. It is the same bounded deque.
+- **Remembering attackers.** Foreknowledge keeps who hurt each traveller in a bounded deque (32 entries, 15 seconds), and
+  turns it into marks when time is undone: `SpaceTimeSkills.remember(player, ticks)` is called by `secondChance` and by
+  `TimeRewindService.rewind` *before* it clears the traveller's state. Marks are UUIDs, so a mob a rewind puts back is still
+  marked.
+- **Private pieces for a marker.** Foreknowledge's clock is sent with `TimeGeometry.showTo(viewer, ...)`, re-sent every ten
+  ticks as a twelve-tick piece. It faces the camera on the yaw only, so it stays upright.
+- **A held piece that stops when something unbound replaces it.** `superseded` matches unbound pieces only on equal origin
+  *and* target. The seal's sphere and its throw share an origin but not a target, so `TimeArt.seal` checks
+  `SetPieceClient.where(Piece.TIME_SEAL_BREAK)` for a throw at its origin instead.
+- **One clock primitive.** `TimeArt.face(c, at, axis, r, hour, minute, colour, alpha)` draws every clock: a three-layer rim,
+  twelve marks (every third longer), and two hands with pale cores. Stopped clocks read ten past ten, hurried ones race
+  forward, undone ones spin back; colour does the rest (violet and ice stopped, amber and gold hurried). The anchor's hands
+  show the real hour, carried in the piece's scale.
+- **Tests.** `SpaceTimeSkillsGameTests` uses a `FakePlayer` whose `teleportTo` also calls `absMoveTo` and whose
+  `isInvulnerableTo` is false, and zeroes `spawnInvulnerableTime` by reflection before it is hurt. Package-private entry
+  points (`seal`, `throwSeal`, `forwardEnemy`, `rewindPersonal`) let a test drive each skill without aiming.
+- **Photographs:** `tools/time-skills-preview.init.gradle` (`uitest/TimeSkillsPreview`) casts every skill into
+  `build/time-skills-preview/screenshots/`. It has its own flag, `heroes.preview.timeskills`: the older `TimePreview` driver
+  reads `heroes.preview.time`, and two drivers on one flag fight over the camera and the world. A back camera always hides
+  the creature you aim at behind your body; use first person or put the target close for a front shot. If the run fails
+  with "Failed to locate a primary monitor", the Mac's display is asleep: `caffeinate -u -d -t 600` wakes it.
+
+## Reusable patterns from the Density rework
+
+Density's tree (`phasing/DensitySkills`, numbers in `phasing/DensityGeometry`, art in `client/effects/setpiece/DensityArt`)
+was rebuilt in November 2026: Infiltrator, Density and Escape Artist, eighteen interaction nodes, ten poses and fifteen
+pieces. What the player sees is in [docs/density.md](docs/density.md).
+
+- **The core asks the tree where the moves meet.** `DensityService.pass` calls `DensitySkills.passed` (Ambush primes the
+  hand, Ghost Network opens the wall), Reach Through calls `touched` (the seal, and Inside Knowledge) and
+  `throughWall`, every shockwave asks `crater` before it throws anyone, and the surfacing uppercut calls `uprooted`.
+  The core keeps its own logic; the passives live in the tree's class.
+- **Follow-ups on a core key.** Ambush rides Reach Through's key and Entombed rides Embed's, as `.followUp(...)` on the
+  core `SimpleAction`. Each returns false when it doesn't apply (no primed hand, no held body in sight), so the normal
+  press still runs and pays its cost. A follow-up that succeeds is free and ignores the cooldown, which is the point.
+- **"Your blow" means your fist.** `indirectMagic(p, p)` has the player as its *direct* entity too, so a check of
+  `getDirectEntity() == p` alone counts Reach Through and the ground's grip on an Entombed body as punches. Set in
+  Stone once extended a burial forever from its own damage ticks. Melee-only passives check
+  `source.is(DamageTypes.PLAYER_ATTACK)` as well.
+- **Re-embedding deeper.** `DensityService.entomb` takes the existing hold out of the map, stands the body back on the
+  ground, embeds it again at full depth, and puts the old hold back if there is no room. Embedded bodies also ignore
+  `IN_WALL` damage, so a burial's damage is exactly the skill's.
+- **A passage friends can use.** A Ghost Network door is two mouths and a normal, re-sent as a 12-tick piece every ten
+  ticks. A player goes through when facing into the wall; a mob when its owner (or the caster) is on the far side.
+  Each traveller then waits two seconds, or they bounce straight back. Use this for any portal that follows its maker.
+- **A primed state shown only to its owner.** The Ambush hand is a 60-tick private piece (`DensityGeometry.showTo`)
+  bound to the player; the strike piece, bound to the same player, ends it at once through `superseded`.
+- **Draw at the ground, not the body.** Once a body is embedded, `position()` is under the floor, and a collar or slab
+  drawn there is buried. Ask `DensityService.surfaceOf(entity)` for the surface it is held in.
+- **Separate aiming from the effect.** `sinkhole` picks the ground and `sinkholeAt` opens the hole, so a game test opens
+  one at a known point without pointing a FakePlayer's head at the floor.
+- **Stone in a set piece.** `DensityArt.slab` draws `c.box` only in the SOLID pass and shrinks it instead of fading
+  (solids have no alpha). Harden's plates hide in your own first-person view, where they would sit inside the camera.
+- **Test gotchas.** `rewind_empty` is 12 × 6 × 12 with a barrier lid, so anything above y = 5 needs
+  `skyAccess = true`. No-AI mobs never land: set `setOnGround(true)` for anything that checks `onGround()` (Pile Driver,
+  Grasp from Below). Fill stone under an arena's floor (y = 0 and −1) before burying anything there.
+- **Photographs:** `tools/density-skills-preview.init.gradle` (`uitest/DensitySkillsPreview`, flag
+  `heroes.preview.densityskills`) casts every skill into `build/density-skills-preview/screenshots/`.

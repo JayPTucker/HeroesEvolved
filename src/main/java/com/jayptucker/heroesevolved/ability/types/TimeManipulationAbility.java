@@ -21,6 +21,7 @@ import com.jayptucker.heroesevolved.time.TemporalEntityEchoService;
 import com.jayptucker.heroesevolved.sounds.ModSounds;
 import com.jayptucker.heroesevolved.time.TimeSlowService;
 import com.jayptucker.heroesevolved.time.SpaceTimeService;
+import com.jayptucker.heroesevolved.time.SpaceTimeSkills;
 import com.jayptucker.heroesevolved.time.TemporalStoryService;
 import com.jayptucker.heroesevolved.time.TimeStopService;
 import com.jayptucker.heroesevolved.time.TemporalSnapshotService;
@@ -184,10 +185,30 @@ public final class TimeManipulationAbility implements Ability {
             return !context.player().isPassenger();
         }
 
+        // Still Point: while your Still World holds, three folds cost nothing and wait on no cooldown (they keep a
+        // cooldown of their own that never starts, so a fold just before the Still World doesn't block them).
+        @Override
+        public int energyCost(AbilityUseContext context) {
+            return SpaceTimeSkills.freeFold(context.player()) ? 0 : energyCost(context.abilityLevel());
+        }
+
+        @Override
+        public int cooldownTicks(AbilityUseContext context) {
+            return SpaceTimeSkills.freeFold(context.player()) ? 0 : cooldownTicks(context.abilityLevel());
+        }
+
+        @Override
+        public ResourceLocation cooldownId(AbilityUseContext context) {
+            return SpaceTimeSkills.freeFold(context.player()) ? STILL_FOLD : DEFINITION.id();
+        }
+
+        private static final ResourceLocation STILL_FOLD = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "time_blink_still");
+
         @Override
         public AbilityActivationResult activate(AbilityUseContext context) {
             ServerPlayer player = context.player();
             ServerLevel level = player.serverLevel();
+            boolean free = SpaceTimeSkills.freeFold(player);
 
             Vec3 origin = player.getEyePosition();
             Vec3 direction = player.getLookAngle().normalize();
@@ -201,6 +222,8 @@ public final class TimeManipulationAbility implements Ability {
                 }
             }
             if (maximumDistance < 2) return AbilityActivationResult.REJECTED;
+            // Behind You: aimed at a creature, the fold puts you just behind it, facing it.
+            Vec3 behind = SpaceTimeSkills.behind(player, maximumDistance);
             // Blink now uses the first solid block in the player's line of
             // sight. This makes its destination predictable: stand on top of
             // the block you are looking at, never somewhere below it.
@@ -211,7 +234,7 @@ public final class TimeManipulationAbility implements Ability {
                     ClipContext.Fluid.NONE,
                     player
             ));
-            Vec3 destination = hit.getType() == HitResult.Type.BLOCK
+            Vec3 destination = behind != null ? behind : hit.getType() == HitResult.Type.BLOCK
                     ? findSafeLandingDestination(level, player, hit.getBlockPos()) : null;
             // If the aimed surface has no headroom, step back along the visible ray.
             // Looking into open air is useful for escaping a fall or crossing a gap.
@@ -252,7 +275,11 @@ public final class TimeManipulationAbility implements Ability {
 
             Vec3 leftBehind = player.position();
             com.jayptucker.heroesevolved.network.TimeGhostPayload.echo(player, leftBehind, player.yBodyRot, 16, 0);
-            player.teleportTo(destination.x, destination.y, destination.z);
+            LivingEntity facing = behind != null ? SpaceTimeSkills.behindTarget(player) : null;
+            if (facing != null) {
+                float[] face = com.jayptucker.heroesevolved.time.TimeGeometry.facing(destination, facing);
+                player.teleportTo(level, destination.x, destination.y, destination.z, face[0], face[1]);
+            } else player.teleportTo(destination.x, destination.y, destination.z);
             player.resetFallDistance();
             player.setDeltaMovement(Vec3.ZERO);
             player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket(player));
@@ -287,6 +314,8 @@ public final class TimeManipulationAbility implements Ability {
                     0.90F,
                     1.0F
             );
+
+            SpaceTimeSkills.folded(player, leftBehind, destination, free, carriedDestination != null ? carriedEntity : null);
 
             MasteryService.markPowerUse(
                     player,

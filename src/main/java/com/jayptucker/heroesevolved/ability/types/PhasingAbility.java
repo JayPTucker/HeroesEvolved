@@ -2,6 +2,7 @@ package com.jayptucker.heroesevolved.ability.types;
 
 import com.jayptucker.heroesevolved.ability.*;
 import com.jayptucker.heroesevolved.phasing.DensityService;
+import com.jayptucker.heroesevolved.phasing.DensitySkills;
 import java.util.Map;
 
 /**
@@ -24,10 +25,14 @@ public final class PhasingAbility implements Ability {
             AbilitySlot.PRIMARY, SimpleAction.builder("phasing_shift", 1).cost(() -> 4, () -> 6)
                     .canUse(c -> !DensityService.sinking(c.player()))
                     .activate(c -> DensityService.shift(c.player(), c.modifierHeld())).build(),
+            // Ambush: a hand primed by stepping out of a wall reaches for free.
             AbilitySlot.SECONDARY, SimpleAction.builder("phasing_reach", 1).cost(() -> 16, () -> 60)
-                    .activate(c -> DensityService.reach(c.player(), c.abilityLevel())).build(),
+                    .activate(c -> DensityService.reach(c.player(), c.abilityLevel()))
+                    .followUp(DensitySkills::ambush).build(),
+            // Entombed: Embed aimed at a body you already hold closes the ground over it.
             AbilitySlot.TERTIARY, SimpleAction.builder("phasing_embed", 2).cost(() -> 24, () -> 200)
-                    .activate(c -> DensityService.embed(c.player(), c.abilityLevel(), 6)).build(),
+                    .activate(c -> DensityService.embed(c.player(), c.abilityLevel(), 6))
+                    .followUp(DensitySkills::entomb).build(),
             AbilitySlot.QUATERNARY, SimpleAction.builder("phasing_sink", 3).cost(() -> 20, () -> 40)
                     .canUse(c -> !c.player().isPassenger())
                     .activate(c -> DensityService.sinkOrSurface(c.player(), c.abilityLevel())).build(),

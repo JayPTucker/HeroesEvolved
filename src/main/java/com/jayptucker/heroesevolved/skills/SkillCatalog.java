@@ -37,6 +37,10 @@ public final class SkillCatalog {
                             : com.jayptucker.heroesevolved.cryo.CryoTechniqueService.followUp(c, mechanic))
                             : power.equals("regeneration") && mechanic.isEmpty()
                             ? com.jayptucker.heroesevolved.regeneration.RegenSkills.followUp(c, branch)
+                            : power.equals("time_manipulation")
+                            ? com.jayptucker.heroesevolved.time.SpaceTimeSkills.followUp(c, branch, mechanic)
+                            : power.equals("phasing")
+                            ? com.jayptucker.heroesevolved.phasing.DensitySkills.followUp(c, branch, mechanic)
                             : power.equals("telepathy") && mechanic.isEmpty()
                             && com.jayptucker.heroesevolved.telepathy.TelepathySkills.followUp(c, branch)).build();
         }

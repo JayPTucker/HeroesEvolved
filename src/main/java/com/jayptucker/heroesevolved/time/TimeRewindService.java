@@ -211,6 +211,8 @@ public final class TimeRewindService {
         }
         Deque<Sample> samples = HISTORY.get(player.getUUID());
 
+        // Foreknowledge: you remember who hurt you in the seconds you are about to undo.
+        SpaceTimeSkills.remember(player, REWIND_SECONDS * 20);
         TimeStopService.stop(player);
         TimeSlowService.stop(player);
         SpaceTimeService.forget(player);

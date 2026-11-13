@@ -283,6 +283,13 @@ public final class PowerArmPoses {
                             ClientArmPoseState.ageTicks(id), ageInTicks, rightHanded);
             case VIBE_PALM, VIBE_OPEN, VIBE_READ, VIBE_GUARD, VIBE_LOCK, VIBE_LANCE, VIBE_CROSS, VIBE_STEP ->
                     vibe(pose, main, rightHanded ? model.leftArm : model.rightArm, inward, aimX, aimY, ClientArmPoseState.ageTicks(id));
+            case TIME_HALT, TIME_SNAP, TIME_PLANT, TIME_RECALL, TIME_WIND, TIME_FRAME, TIME_THROW, TIME_DRAW, TIME_TURN ->
+                    time(pose, main, rightHanded ? model.leftArm : model.rightArm, inward, aimX, aimY,
+                            ClientArmPoseState.ageTicks(id), ageInTicks);
+            case DENSITY_LUNGE, DENSITY_USHER, DENSITY_BRACE, DENSITY_BURST, DENSITY_PRESS, DENSITY_CLOSE, DENSITY_FADE,
+                    DENSITY_DROP, DENSITY_GRASP, DENSITY_SLIP ->
+                    density(pose, main, rightHanded ? model.leftArm : model.rightArm, inward, aimX, aimY,
+                            ClientArmPoseState.ageTicks(id), ageInTicks);
             case REGEN_MEND, REGEN_OFFER, REGEN_STREAM, REGEN_BRACE, REGEN_LEAP, REGEN_LAND, REGEN_EMBRACE, REGEN_PAYBACK,
                     REGEN_INJECT, REGEN_FLING, REGEN_DRAW, REGEN_PUMP, REGEN_HARDEN, REGEN_RISE, REGEN_COMPRESS, REGEN_HEARTBEAT,
                     REGEN_DEFY, REGEN_BLOOM ->
@@ -979,6 +986,145 @@ public final class PowerArmPoses {
             case VIBE_STEP -> {
                 set(main, -1.38F + .36F * settle, inward * .18F, .13F * inward);
                 set(off, .47F - .29F * settle, 0, -.29F * inward);
+            }
+            default -> { }
+        }
+    }
+
+    /**
+     * Space-Time's skill gestures, with the same conventions as {@link #telepathy}: {@code main} casts, {@code off} is
+     * the other arm; {@code y = inward * k} turns the main arm across the body ({@code -inward} for the other arm).
+     */
+    private static void time(ArmPose pose, ModelPart main, ModelPart off, float inward, float aimX, float aimY,
+                             float age, float ageInTicks) {
+        switch (pose) {
+            case TIME_HALT -> {
+                // A palm thrust out, fingers spread, held as the clock locks, then drawn back a touch into a fist.
+                float push = smooth(age / 3F), settle = smooth((age - 8F) / 5F);
+                set(main, aimX + .5F * (1 - push) + .15F * settle, aimY, -.05F * inward);
+                set(off, .2F, 0, inward * .15F);
+            }
+            case TIME_SNAP -> {
+                // A hand raised beside the head snaps its fingers: a small flick at the third tick.
+                float rise = smooth(age / 3F), flick = Mth.sin(Mth.clamp((age - 3F) / 3F, 0, 1) * Mth.PI) * .25F;
+                set(main, -2.05F * rise + flick, -inward * .2F, -inward * .3F);
+                set(off, .1F, 0, inward * .1F);
+            }
+            case TIME_PLANT -> {
+                // Raised, then pressed palm-first down at the ground ahead; the other arm out for balance.
+                float press = smooth((age - 1F) / 5F);
+                set(main, Mth.lerp(press, -2.2F, -.55F), inward * .1F, -.05F * inward);
+                set(off, -.3F, 0, inward * .6F);
+            }
+            case TIME_RECALL -> {
+                // A hand drawn to the chest as if for a pocket watch, then flicked open out to the side.
+                float open = smooth((age - 7F) / 4F);
+                set(main, Mth.lerp(open, -1.1F, -1.4F), Mth.lerp(open, inward * .65F, -inward * .2F),
+                        Mth.lerp(open, inward * .1F, -inward * .35F));
+                set(off, -.2F, 0, inward * .1F);
+            }
+            case TIME_WIND -> {
+                // A hand at the chest turning a crown backward, the other cupped beneath it.
+                float lift = smooth(age / 3F), turn = Mth.sin(ageInTicks * 1.4F) * .12F * lift;
+                set(main, -1.2F * lift, inward * .55F * lift, turn);
+                set(off, -.95F * lift, -inward * .45F * lift, 0);
+            }
+            case TIME_FRAME -> {
+                // Both hands raised before the face, framing a point ahead like a photograph.
+                float lift = smooth(age / 4F);
+                set(main, Mth.lerp(lift, -.3F, aimX + .1F), aimY - inward * .18F * lift, -inward * .1F * lift);
+                set(off, Mth.lerp(lift, -.3F, aimX + .1F), aimY + inward * .18F * lift, inward * .1F * lift);
+            }
+            case TIME_THROW -> {
+                // Raised back, then swept forward along the aim; the other arm swings back.
+                float whip = smooth((age - 1F) / 3F);
+                set(main, Mth.lerp(whip, -2.6F, aimX + .2F), aimY, -inward * .2F * (1 - whip));
+                set(off, Mth.lerp(whip, aimX, .3F), 0, inward * .1F);
+            }
+            case TIME_DRAW -> {
+                // A blade drawn from the opposite hip and slashed out across the body.
+                float draw = smooth(age / 3F);
+                set(main, Mth.lerp(draw, -.4F, aimX + .1F), Mth.lerp(draw, inward * .9F, -inward * .7F),
+                        Mth.lerp(draw, inward * .3F, -inward * .2F));
+                set(off, .2F, 0, inward * .2F);
+            }
+            case TIME_TURN -> {
+                // A crown twisted forward at the chest, then flicked out at the target.
+                float flick = smooth((age - 6F) / 3F), turn = -Mth.sin(ageInTicks * 1.4F) * .12F * (1 - flick);
+                set(main, Mth.lerp(flick, -1.1F, aimX), Mth.lerp(flick, inward * .5F, aimY), turn - .05F * inward * flick);
+                set(off, -.25F, 0, inward * .12F);
+            }
+            default -> { }
+        }
+    }
+
+    /**
+     * Density's skill gestures, with the same conventions as {@link #time}: {@code main} casts, {@code off} is the other
+     * arm; {@code z = -inward * k} swings the main arm outward ({@code inward * k} for the other).
+     */
+    private static void density(ArmPose pose, ModelPart main, ModelPart off, float inward, float aimX, float aimY,
+                                float age, float ageInTicks) {
+        switch (pose) {
+            case DENSITY_LUNGE -> {
+                // Shoulder first through the body, both arms trailing; then the main arm comes round as you turn to face it.
+                float lunge = smooth(age / 2F), turn = smooth((age - 5F) / 3F);
+                set(main, Mth.lerp(turn, .65F * lunge, aimX + .3F), inward * .1F, -inward * .3F * (1 - turn));
+                set(off, .65F * lunge * (1 - turn * .6F), -inward * .1F, inward * .3F);
+            }
+            case DENSITY_USHER -> {
+                // One arm leads into the wall; the other waves friends on behind you.
+                float wave = Mth.sin(ageInTicks * .9F) * .25F * (1 - smooth((age - 8F) / 4F));
+                set(main, aimX + .1F, aimY, -inward * .05F);
+                set(off, .45F + wave, -inward * .2F, inward * .65F);
+            }
+            case DENSITY_BRACE -> {
+                // Fists clenched low at the sides, elbows out, a tremor of held weight.
+                float set = smooth(age / 3F), shake = Mth.sin(ageInTicks * 2.6F) * .015F;
+                set(main, -.3F * set + shake, inward * .15F * set, -inward * .32F * set);
+                set(off, -.3F * set - shake, -inward * .15F * set, inward * .32F * set);
+            }
+            case DENSITY_BURST -> {
+                // The weight let go: both arms flung out and down from the brace.
+                float k = smooth(age / 2F);
+                set(main, Mth.lerp(k, -.35F, .15F), 0, -inward * Mth.lerp(k, .3F, 1.15F));
+                set(off, Mth.lerp(k, -.35F, .15F), 0, inward * Mth.lerp(k, .3F, 1.15F));
+            }
+            case DENSITY_PRESS -> {
+                // Raised, then a palm pressed down at the far point; the other arm out for balance.
+                float press = smooth((age - 1F) / 4F);
+                set(main, Mth.lerp(press, -2.1F, aimX + .25F), aimY, -inward * .05F);
+                set(off, -.3F, 0, inward * .55F);
+            }
+            case DENSITY_CLOSE -> {
+                // Both hands raised together, then pressed down and closed, as if shutting a lid.
+                float rise = smooth(age / 3F), press = smooth((age - 3F) / 4F);
+                float x = Mth.lerp(press, -2F * rise, -.75F);
+                set(main, x, inward * Mth.lerp(press, .25F, .55F), inward * .1F);
+                set(off, x, -inward * Mth.lerp(press, .25F, .55F), -inward * .1F);
+            }
+            case DENSITY_FADE -> {
+                // Arms loose and open, drifting as if underwater.
+                float open = smooth(age / 4F), drift = Mth.sin(ageInTicks * .25F) * .1F;
+                set(main, -.35F * open + drift, 0, -inward * (.7F + drift) * open);
+                set(off, -.35F * open - drift, 0, inward * (.7F - drift) * open);
+            }
+            case DENSITY_DROP -> {
+                // Arms thrown up overhead as the floor gives way.
+                float up = smooth(age / 2F);
+                set(main, -2.8F * up, 0, -inward * .3F * up);
+                set(off, -2.8F * up, 0, inward * .3F * up);
+            }
+            case DENSITY_GRASP -> {
+                // A hand thrust straight up through the rock, clutching; the other braced down.
+                float thrust = smooth(age / 2F), clutch = Mth.sin(Mth.clamp((age - 2F) / 4F, 0, 1) * Mth.PI) * .15F;
+                set(main, -3F * thrust + clutch, 0, -inward * .1F);
+                set(off, .2F, 0, inward * .25F);
+            }
+            case DENSITY_SLIP -> {
+                // A twist away from the blow: one arm across the body, the other flung back.
+                float k = smooth(age / 2F), settle = smooth((age - 7F) / 5F);
+                set(main, -1.15F * k * (1 - settle), inward * .9F * k * (1 - settle), inward * .2F * k);
+                set(off, .6F * k * (1 - settle), 0, inward * .45F * k);
             }
             default -> { }
         }

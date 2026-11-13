@@ -136,5 +136,20 @@ public enum ArmPose {
      *  face like drawing a veil (Blind Spot) and hands clasped, then spread (Hive Mind). */
     TELE_READ, TELE_SUGGEST, TELE_LINK, TELE_PUPPET, TELE_NIGHTMARE, TELE_COMMAND, TELE_LISTEN, TELE_WEAVE, TELE_PERSUADE,
     TELE_MEMORY, TELE_HIVE, TELE_STORM, TELE_VEIL, TELE_GATHER,
-    VIBE_PALM, VIBE_OPEN, VIBE_READ, VIBE_GUARD, VIBE_LOCK, VIBE_LANCE, VIBE_CROSS, VIBE_STEP
+    VIBE_PALM, VIBE_OPEN, VIBE_READ, VIBE_GUARD, VIBE_LOCK, VIBE_LANCE, VIBE_CROSS, VIBE_STEP,
+    /** Space-Time's skills. A palm thrust out, fingers spread, that closes into a fist as the clock locks (Selective
+     *  Stasis); a raised hand that snaps its fingers (the stasis released); a palm pressed down toward the ground (an
+     *  anchor planted); a hand drawn to the chest and flicked open like a pocket watch (recall); a hand at the chest
+     *  turning a crown backward (Second Chance); both hands framing a point ahead (Stasis Seal); one arm swept forward
+     *  (the seal thrown); a blade drawn from the opposite hip and slashed across (Moment's Edge); a hand that twists a
+     *  crown forward and flicks it at the target (Fast Forward). */
+    TIME_HALT, TIME_SNAP, TIME_PLANT, TIME_RECALL, TIME_WIND, TIME_FRAME, TIME_THROW, TIME_DRAW, TIME_TURN,
+    /** Density's skill gestures: a shoulder-first lunge through a body, arms trailing (Pass Through); one arm leading
+     *  into a wall while the other waves friends on (Phase Carry); fists clenched low at the sides, braced (Harden);
+     *  both arms flung out and down as the weight is let go (Rebound); a palm pressed down at a distant point
+     *  (Sinkhole); both hands pressed down and closed together (Entombed); arms loose and open, drifting (Fade Through);
+     *  arms raised overhead as you drop (Phase Fall); a hand thrust straight up to grab (Grasp from Below); a twist
+     *  away with one arm across the body (Untouchable). */
+    DENSITY_LUNGE, DENSITY_USHER, DENSITY_BRACE, DENSITY_BURST, DENSITY_PRESS, DENSITY_CLOSE, DENSITY_FADE, DENSITY_DROP,
+    DENSITY_GRASP, DENSITY_SLIP
 }

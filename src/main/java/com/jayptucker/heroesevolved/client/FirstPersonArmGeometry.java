@@ -25,6 +25,21 @@ public final class FirstPersonArmGeometry {
             return;
         }
         if (switch (pose) {
+            case TIME_HALT, TIME_SNAP, TIME_PLANT, TIME_RECALL, TIME_WIND, TIME_FRAME, TIME_THROW, TIME_DRAW, TIME_TURN -> true;
+            default -> false;
+        }) {
+            time(stack, arm, side, pose, poseAge, time);
+            return;
+        }
+        if (switch (pose) {
+            case DENSITY_LUNGE, DENSITY_USHER, DENSITY_BRACE, DENSITY_BURST, DENSITY_PRESS, DENSITY_CLOSE, DENSITY_FADE,
+                    DENSITY_DROP, DENSITY_GRASP, DENSITY_SLIP -> true;
+            default -> false;
+        }) {
+            density(stack, arm, side, pose, poseAge, time);
+            return;
+        }
+        if (switch (pose) {
             case ELECTRO_DRAW, ELECTRO_CAST, ELECTRO_STREAM, ELECTRO_CALL, ELECTRO_COIL, ELECTRO_RELEASE -> true;
             default -> false;
         }) {
@@ -187,6 +202,170 @@ public final class FirstPersonArmGeometry {
                 y += main ? .06F : -.20F;
                 pitch += main ? 15 : 61;
                 roll = main ? -12 : 19;
+            }
+            default -> { }
+        }
+        stack.translate(side * x, y, z);
+        stack.mulPose(Axis.YP.rotationDegrees(side * yaw));
+        stack.mulPose(Axis.ZP.rotationDegrees(side * roll));
+        stack.mulPose(Axis.XP.rotationDegrees(pitch));
+    }
+
+    /**
+     * Space-Time's skill gestures in first person. The casting hand stays at the edge of the view; the other drops away
+     * unless both hands work together (the seal's frame, winding a crown).
+     */
+    private static void time(PoseStack stack, HumanoidArm arm, float side, ArmPose pose, float age, float clock) {
+        var player = net.minecraft.client.Minecraft.getInstance().player;
+        boolean main = player == null ? arm == HumanoidArm.RIGHT : arm == player.getMainArm();
+        float x = .35F, y = -.39F, z = -.41F, pitch = -86, yaw = 0, roll = 0;
+        boolean both = pose == ArmPose.TIME_FRAME || pose == ArmPose.TIME_WIND;
+        if (!main && !both) {
+            // The idle hand drops out of view.
+            y -= .5F; pitch += 55;
+        } else switch (pose) {
+            case TIME_HALT -> {
+                float push = smooth(age / 3F), settle = smooth((age - 8) / 5F);
+                z -= .14F * push - .05F * settle;
+                x -= .06F;
+                yaw = -8;
+                pitch -= 6 * push;
+            }
+            case TIME_SNAP -> {
+                float rise = smooth(age / 3F), flick = Mth.sin(Mth.clamp((age - 3) / 3F, 0, 1) * Mth.PI);
+                y += .2F * rise;
+                pitch -= 28 * rise - 10 * flick;
+                roll = -20 * rise;
+            }
+            case TIME_PLANT -> {
+                float press = smooth((age - 1) / 5F);
+                y += .12F - .3F * press;
+                pitch += -30 + 70 * press;
+            }
+            case TIME_RECALL -> {
+                float open = smooth((age - 7) / 4F);
+                x = Mth.lerp(open, .14F, .46F);
+                y += .04F;
+                roll = Mth.lerp(open, 35, -20);
+            }
+            case TIME_WIND -> {
+                float lift = smooth(age / 3F);
+                x = main ? .16F : .22F;
+                y = main ? -.3F : -.44F;
+                pitch += main ? 0 : 22;
+                roll = main ? Mth.sin(clock * 1.4F) * 18 * lift : -10;
+            }
+            case TIME_FRAME -> {
+                float lift = smooth(age / 4F);
+                x = Mth.lerp(lift, .35F, .22F);
+                y += .1F * lift;
+                z -= .08F * lift;
+                roll = (main ? -14 : 14) * lift;
+            }
+            case TIME_THROW -> {
+                float whip = smooth((age - 1) / 3F);
+                y += .26F * (1 - whip);
+                pitch += -38 * (1 - whip);
+                z -= .1F * whip;
+            }
+            case TIME_DRAW -> {
+                float draw = smooth(age / 3F);
+                x = Mth.lerp(draw, -.12F, .5F);
+                y = Mth.lerp(draw, -.46F, -.32F);
+                yaw = Mth.lerp(draw, 32, -26);
+                roll = Mth.lerp(draw, 40, -30);
+            }
+            case TIME_TURN -> {
+                float flick = smooth((age - 6) / 3F);
+                x = Mth.lerp(flick, .26F, .34F);
+                y = Mth.lerp(flick, -.3F, -.37F);
+                z -= .14F * flick;
+                roll = Mth.sin(clock * 1.4F) * 18 * (1 - flick);
+            }
+            default -> { }
+        }
+        stack.translate(side * x, y, z);
+        stack.mulPose(Axis.YP.rotationDegrees(side * yaw));
+        stack.mulPose(Axis.ZP.rotationDegrees(side * roll));
+        stack.mulPose(Axis.XP.rotationDegrees(pitch));
+    }
+
+    /**
+     * Density's skill gestures in first person. Hands stay at the edges of the view; the idle hand drops away unless both
+     * work together (the brace, the burst, closing the ground, the fade, the drop).
+     */
+    private static void density(PoseStack stack, HumanoidArm arm, float side, ArmPose pose, float age, float clock) {
+        var player = net.minecraft.client.Minecraft.getInstance().player;
+        boolean main = player == null ? arm == HumanoidArm.RIGHT : arm == player.getMainArm();
+        float x = .35F, y = -.39F, z = -.41F, pitch = -86, yaw = 0, roll = 0;
+        boolean both = pose == ArmPose.DENSITY_BRACE || pose == ArmPose.DENSITY_BURST || pose == ArmPose.DENSITY_CLOSE
+                || pose == ArmPose.DENSITY_FADE || pose == ArmPose.DENSITY_DROP;
+        if (!main && !both) {
+            y -= .5F; pitch += 55;
+        } else switch (pose) {
+            case DENSITY_LUNGE -> {
+                float turn = smooth((age - 5) / 3F);
+                y -= .32F * (1 - turn);
+                pitch += 45 * (1 - turn);
+                z -= .08F * turn;
+            }
+            case DENSITY_USHER -> {
+                x = .3F;
+                z -= .1F;
+                pitch -= 4;
+            }
+            case DENSITY_BRACE -> {
+                float set = smooth(age / 3F), shake = Mth.sin(clock * 2.6F) * .006F;
+                x = .44F + shake;
+                y = Mth.lerp(set, -.45F, -.58F);
+                pitch = -62;
+                roll = -12 * set;
+            }
+            case DENSITY_BURST -> {
+                float k = smooth(age / 2F);
+                x = Mth.lerp(k, .44F, .62F);
+                y = Mth.lerp(k, -.58F, -.72F);
+                pitch = -62 + 20 * k;
+                roll = -40 * k;
+            }
+            case DENSITY_PRESS -> {
+                float press = smooth((age - 1) / 4F);
+                y = Mth.lerp(press, -.22F, -.42F);
+                z -= .12F * press;
+                pitch = Mth.lerp(press, -112, -58);
+            }
+            case DENSITY_CLOSE -> {
+                float rise = smooth(age / 3F), press = smooth((age - 3) / 4F);
+                x = Mth.lerp(press, .35F, .16F);
+                y = Mth.lerp(press, -.39F + .2F * rise, -.46F);
+                pitch = Mth.lerp(press, -86 - 25 * rise, -52);
+                roll = 18 * press;
+            }
+            case DENSITY_FADE -> {
+                float open = smooth(age / 4F);
+                x = Mth.lerp(open, .35F, .52F);
+                y = -.5F;
+                pitch = -72;
+                roll = (Mth.sin(clock * .25F) * 8 - 14) * open;
+            }
+            case DENSITY_DROP -> {
+                float up = smooth(age / 2F);
+                x = .46F;
+                y = Mth.lerp(up, -.39F, -.12F);
+                pitch = Mth.lerp(up, -86, -128);
+            }
+            case DENSITY_GRASP -> {
+                float thrust = smooth(age / 2F);
+                x = .28F;
+                y = Mth.lerp(thrust, -.39F, -.1F);
+                z -= .12F * thrust;
+                pitch = Mth.lerp(thrust, -86, -140);
+            }
+            case DENSITY_SLIP -> {
+                float k = smooth(age / 2F), settle = smooth((age - 7) / 5F);
+                x = Mth.lerp(k * (1 - settle), .35F, .06F);
+                yaw = 22 * k * (1 - settle);
+                roll = 30 * k * (1 - settle);
             }
             default -> { }
         }

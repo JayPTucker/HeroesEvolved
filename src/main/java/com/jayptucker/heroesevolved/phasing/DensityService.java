@@ -118,6 +118,8 @@ public final class DensityService {
         final double depth;
         long until;
         final boolean entombed;
+        /** Ticks Set in Stone has added to the hold. */
+        int extended;
         Embedded(LivingEntity target, Entity owner, Vec3 at, double depth, long until, boolean entombed) {
             this.target = target; this.owner = owner; this.at = at; this.depth = depth; this.until = until; this.entombed = entombed;
         }
@@ -156,6 +158,42 @@ public final class DensityService {
     }
 
     public static boolean embedded(Entity e) { return EMBEDDED.containsKey(e.getUUID()); }
+    /** Where the ground's surface is round a body held in it (its feet if it isn't held). */
+    public static Vec3 surfaceOf(Entity e) {
+        Embedded held = EMBEDDED.get(e.getUUID());
+        return held == null ? e.position() : held.at.add(0, held.depth, 0);
+    }
+
+    /** Whoever put a body in the ground, or null. */
+    public static Entity holder(Entity e) { Embedded held = EMBEDDED.get(e.getUUID()); return held == null ? null : held.owner; }
+    /** True while the ground has closed right over a body (Entombed). */
+    public static boolean buried(Entity e) { Embedded held = EMBEDDED.get(e.getUUID()); return held != null && held.depth >= e.getBbHeight(); }
+
+    /** Holds an embedded body {@code ticks} longer, never past {@code max} added in all (Set in Stone). */
+    public static boolean extend(Entity e, int ticks, int max) {
+        Embedded held = EMBEDDED.get(e.getUUID());
+        if (held == null || held.extended >= max) return false;
+        int add = Math.min(ticks, max - held.extended);
+        held.extended += add; held.until += add;
+        return true;
+    }
+
+    /** Lets a body up out of the ground at once. */
+    public static void release(Entity e) { Embedded held = EMBEDDED.get(e.getUUID()); if (held != null) free(held); }
+
+    /**
+     * Entombed: a body already held in the ground sinks right under it for {@code ticks}, taking damage every second.
+     * False (and it stays as it was) if there is no room under it.
+     */
+    public static boolean entomb(LivingEntity target, Entity owner, int ticks) {
+        Embedded held = EMBEDDED.remove(target.getUUID());
+        if (held == null) return false;
+        hold(target, held.at.add(0, held.depth, 0));
+        if (embed(target, owner, ticks, true, 1.05, 2.3)) return true;
+        EMBEDDED.put(target.getUUID(), held);
+        hold(target, held.at);
+        return false;
+    }
     public static float breath(ServerPlayer p) { State s = STATES.get(p.getUUID()); return s == null ? BREATH : s.breath; }
 
     private static int tier(ServerPlayer p) { return Math.max(1, PlayerProgressionService.getLevel(p)); }
@@ -247,8 +285,7 @@ public final class DensityService {
     /** The thickest wall the body can walk through at its notch. */
     public static double wallLimit(ServerPlayer p, int notch) {
         if (notch >= NEUTRAL) return 0;
-        double thicker = SkillTreeService.has(p, "phasing_thicker_walls") ? 4 : 0;
-        return notch == GHOST ? 1 + thicker : 2 + tier(p) / 2 + thicker;
+        return notch == GHOST ? 1 : 2 + tier(p) / 2;
     }
 
     /** Ghost: walk into a wall and you come out the other side. Crouch to lean on it instead. */
@@ -279,7 +316,7 @@ public final class DensityService {
         level.playSound(null, BlockPos.containing(from), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.9F, 0.5F);
         level.playSound(null, p.blockPosition(), SoundEvents.ENDER_EYE_DEATH, SoundSource.PLAYERS, 0.4F, 1.5F);
         bankSolid(p, solid);
-        if (SkillTreeService.has(p, "phasing_ghost_network")) setNotch(p, FULL_GHOST, 40);
+        DensitySkills.passed(p, from, to);
     }
 
     /** Distance through solid matter counts toward the Evolved trial. */
@@ -294,16 +331,16 @@ public final class DensityService {
     }
 
     /** Friends within {@code radius} come along, each needing its own open landing beside you. */
-    private static int carryFriends(ServerPlayer player, Vec3 offset, double radius, int limit) {
-        int carried = 0;
+    static List<LivingEntity> carryFriends(ServerPlayer player, Vec3 offset, double radius, int limit) {
+        List<LivingEntity> carried = new ArrayList<>();
         for (LivingEntity friend : player.serverLevel().getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(radius),
                 other -> other != player && ExpansionSkills.friendly(player, other) && !other.isPassenger() && !EntityCarryService.isBeingCarried(other))) {
-            if (carried >= limit) break;
+            if (carried.size() >= limit) break;
             Vec3 to = friend.position().add(offset);
             if (!SpeedService.safe(friend, to)) continue;
             friend.teleportTo(to.x, to.y, to.z);
             friend.resetFallDistance();
-            carried++;
+            carried.add(friend);
         }
         return carried;
     }
@@ -314,21 +351,26 @@ public final class DensityService {
 
     /** Level 1, Reach Through: your arm sinks into a body, or through a wall into whatever holds items behind it. */
     public static boolean reach(ServerPlayer p, int tier) {
+        if (sinking(p) && SkillTreeService.has(p, DensitySkills.GRASP)) return DensitySkills.grasp(p, tier);
         LivingEntity target = Targeting.livingEntityInSight(p, 4 + tier * 0.5, t -> ExpansionSkills.hostile(p, t));
         ArmPosePayload.show(p, ArmPose.REACH, 12);
-        if (target != null) { reachInside(p, target, tier); return true; }
+        if (target != null) { reachInside(p, target, tier, 0); return true; }
+        if (DensitySkills.throughWall(p, tier)) return true;
         if (reachContainer(p)) return true;
         p.displayClientMessage(Component.translatable("density.heroesevolved.nothing_to_reach"), true);
         return false;
     }
 
     /** D.L.'s hand inside a body: a blow armour cannot stop, and for a few seconds that body cannot heal. */
-    public static void reachInside(ServerPlayer p, LivingEntity target, int tier) {
+    public static void reachInside(ServerPlayer p, LivingEntity target, int tier) { reachInside(p, target, tier, 0); }
+
+    /** Reach Through with {@code bonus} more damage (a hand through a wall, or an Ambush). */
+    public static void reachInside(ServerPlayer p, LivingEntity target, int tier, float bonus) {
         ServerLevel level = p.serverLevel();
         target.invulnerableTime = 0;
-        float damage = 5 + tier + (dense(p) ? 2 : 0);
+        float damage = 5 + tier + (dense(p) ? 2 : 0) + bonus;
         target.hurt(p.damageSources().indirectMagic(p, p), damage);
-        seal(target, 100);
+        DensitySkills.touched(p, target, 100);
         ItemStack taken = pullGear(target);
         if (!taken.isEmpty()) {
             ItemEntity drop = new ItemEntity(level, target.getX(), target.getY() + 0.3, target.getZ(), taken);
@@ -400,7 +442,7 @@ public final class DensityService {
         return false;
     }
 
-    private static Vec3 hand(Entity p) {
+    static Vec3 hand(Entity p) {
         Vec3 flat = new Vec3(p.getLookAngle().x, 0, p.getLookAngle().z);
         flat = flat.lengthSqr() < 1.0E-4 ? Vec3.ZERO : flat.normalize();
         return p.getEyePosition().add(flat.scale(0.5)).subtract(0, 0.45, 0);
@@ -414,9 +456,8 @@ public final class DensityService {
     public static boolean embed(ServerPlayer p, int tier, double range) {
         LivingEntity target = Targeting.livingEntityInSight(p, range, t -> ExpansionSkills.hostile(p, t) && !embedded(t));
         if (target == null) return false;
-        int ticks = 60 + 20 * tier + (SkillTreeService.has(p, "phasing_long_lock") ? 40 : 0);
         ArmPosePayload.show(p, ArmPose.GROUND, 10);
-        return embed(target, p, ticks, SkillTreeService.has(p, "phasing_entombed"), 0.45);
+        return embed(target, p, 60 + 20 * tier, false, 0.45);
     }
 
     /**
@@ -424,9 +465,14 @@ public final class DensityService {
      * there. It can still fight back, and it can struggle free. False if there is no ground to sink into.
      */
     public static boolean embed(LivingEntity target, Entity owner, int ticks, boolean entombed, double fraction) {
+        return embed(target, owner, ticks, entombed, fraction, 1.3);
+    }
+
+    /** As above, sinking no deeper than {@code maxDepth} blocks (Entombed buries a body right under). */
+    public static boolean embed(LivingEntity target, Entity owner, int ticks, boolean entombed, double fraction, double maxDepth) {
         if (!(target.level() instanceof ServerLevel level) || embedded(target) || target.getType().is(Tags.EntityTypes.BOSSES)
                 || target.isPassenger() || target.getBbHeight() > 4) return false;
-        double depth = Math.min(1.3, target.getBbHeight() * fraction);
+        double depth = Math.min(maxDepth, target.getBbHeight() * fraction);
         Vec3 at = target.position().subtract(0, depth, 0);
         BlockPos below = BlockPos.containing(target.position().subtract(0, 0.2, 0));
         if (level.getBlockState(below).getCollisionShape(level, below).isEmpty()) return false;
@@ -463,12 +509,14 @@ public final class DensityService {
             LivingEntity t = e.target;
             if (!t.isAlive() || t.isRemoved() || now >= e.until || t.isPassenger()) { free(e); continue; }
             // Struggling: a player fighting the ground (or any mob, now and then) works loose sooner.
-            if (t instanceof ServerPlayer player && player.position().distanceToSqr(e.at) > 0.09) e.until -= 3;
+            boolean set = e.owner instanceof ServerPlayer holder && SkillTreeService.has(holder, DensitySkills.SET_IN_STONE);
+            if (set) { /* Set in Stone: there is no working loose. */ }
+            else if (t instanceof ServerPlayer player && player.position().distanceToSqr(e.at) > 0.09) e.until -= 3;
             else if (!(t instanceof ServerPlayer) && now % 20 == 0 && t.getRandom().nextInt(4) == 0) e.until -= 10;
             hold(t, e.at);
             if (e.entombed && now % 20 == 0 && t.level() instanceof ServerLevel)
                 t.hurt(e.owner instanceof LivingEntity owner ? t.damageSources().indirectMagic(owner, owner) : t.damageSources().magic(), 2);
-            if (now % 10 == 0 && t.level() instanceof ServerLevel level) {
+            if (now % 10 == 0 && t.level() instanceof ServerLevel level && e.depth < t.getBbHeight()) {
                 Vec3 ground = e.at.add(0, e.depth, 0);
                 BlockPos below = BlockPos.containing(ground.subtract(0, 0.5, 0));
                 level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, level.getBlockState(below)), ground.x, ground.y + 0.1, ground.z,
@@ -494,7 +542,8 @@ public final class DensityService {
             if (t instanceof ServerPlayer player) player.teleportTo(level, up.x, up.y, up.z, player.getYRot(), player.getXRot());
             else t.teleportTo(up.x, up.y, up.z);
         }
-        t.setDeltaMovement(0, 0.25, 0); t.hurtMarked = true;
+        t.setDeltaMovement(0, e.depth >= t.getBbHeight() ? 0.6 : 0.25, 0); t.hurtMarked = true;
+        if (t instanceof ServerPlayer player) player.connection.send(new ClientboundSetEntityMotionPacket(player));
         AbilityEffects.send(level, Kind.DENSITY_RIPPLE, e.at.add(0, e.depth + 0.05, 0), e.at.add(0, e.depth + 1, 0), t.getBbWidth() + 0.4);
     }
 
@@ -581,11 +630,16 @@ public final class DensityService {
         if (chosen) {
             final Vec3 landing = to;
             int tier = tier(p);
-            for (LivingEntity above : level.getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(2.5, 1.5, 2.5),
+            boolean uproot = SkillTreeService.has(p, DensitySkills.UPROOT);
+            for (LivingEntity above : level.getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(2.5, 2.5, 2.5),
                     t -> ExpansionSkills.hostile(p, t) && t.position().distanceToSqr(landing) < 2.5 * 2.5)) {
+                // Uproot: a body you hold in the ground is torn out of it, twice as hard and twice as high.
+                boolean torn = uproot && embedded(above);
+                if (torn) release(above);
                 above.invulnerableTime = 0;
-                above.hurt(p.damageSources().playerAttack(p), 6 + tier);
-                above.setDeltaMovement(above.getDeltaMovement().add(0, 1.0, 0)); above.hurtMarked = true;
+                above.hurt(p.damageSources().playerAttack(p), (6 + tier) * (torn ? 2 : 1));
+                above.setDeltaMovement(above.getDeltaMovement().add(0, torn ? 2.0 : 1.0, 0)); above.hurtMarked = true;
+                if (uproot) DensitySkills.uprooted(p, above, torn);
                 if (above instanceof ServerPlayer other) other.connection.send(new ClientboundSetEntityMotionPacket(other));
                 AbilityEffects.send(level, Kind.DENSITY_REACH, landing.add(0, 0.5, 0), above.getBoundingBox().getCenter(), 1.2);
                 level.playSound(null, above.blockPosition(), SoundEvents.PLAYER_ATTACK_KNOCKBACK, SoundSource.PLAYERS, 1, 0.6F);
@@ -670,19 +724,20 @@ public final class DensityService {
         return true;
     }
 
-    /** Ground struck by something very heavy: everything nearby is hurt and thrown back. */
-    private static int shockwave(ServerPlayer p, Vec3 at, double radius, float damage) {
+    /** Ground struck by something very heavy: everything nearby is hurt and thrown back (or, with Crater Landing, rooted). */
+    public static int shockwave(ServerPlayer p, Vec3 at, double radius, float damage) {
         ServerLevel level = p.serverLevel();
         int struck = 0;
         for (LivingEntity t : ExpansionSkills.enemies(p, at, radius)) {
             double falloff = 1 - Math.sqrt(t.position().distanceToSqr(at)) / (radius + 1);
             t.invulnerableTime = 0;
             t.hurt(p.damageSources().playerAttack(p), (float) (damage * Math.max(0.4, falloff)));
+            struck++;
+            if (DensitySkills.crater(p, t)) continue;
             Vec3 away = new Vec3(t.getX() - at.x, 0, t.getZ() - at.z);
             away = away.lengthSqr() < 1.0E-4 ? new Vec3(0, 0, 1) : away.normalize();
             t.setDeltaMovement(away.scale(0.9 * falloff + 0.3).add(0, 0.45, 0)); t.hurtMarked = true;
             if (t instanceof ServerPlayer other) other.connection.send(new ClientboundSetEntityMotionPacket(other));
-            struck++;
         }
         com.jayptucker.heroesevolved.network.CameraShakePayload.sendAround(level, at, radius + 6, 0.7F, 8);
         BlockPos below = BlockPos.containing(at.subtract(0, 0.5, 0));
@@ -695,46 +750,10 @@ public final class DensityService {
     // Skill tree
     // ------------------------------------------------------------------
 
-    public static boolean skill(AbilityUseContext c, int branch) {
-        ServerPlayer p = c.player();
-        switch (branch) {
-            case 0 -> {
-                LivingEntity target = Targeting.livingEntityInSight(p, 40, t -> ExpansionSkills.hostile(p, t));
-                if (target == null) return false;
-                ArmPosePayload.show(p, ArmPose.REACH, 12);
-                reachInside(p, target, c.abilityLevel());
-            }
-            case 1 -> setNotch(p, FULL_DENSE, 120);
-            case 2 -> setNotch(p, FULL_GHOST, 60);
-            default -> { return false; }
-        }
-        return true;
-    }
+    /** The three branch actives and techniques live in {@link DensitySkills}. */
+    public static boolean skill(AbilityUseContext c, int branch) { return DensitySkills.skill(c, branch); }
 
-    public static boolean technique(AbilityUseContext c, String mechanic) {
-        ServerPlayer p = c.player();
-        switch (mechanic) {
-            case "phase_carry" -> {
-                Vec3 heading = new Vec3(p.getLookAngle().x, 0, p.getLookAngle().z);
-                if (heading.lengthSqr() < 1.0E-4) return false;
-                Vec3 from = p.position(), to = Passage.through(p, heading.normalize(), wallLimit(p, FULL_GHOST) + 1.5);
-                if (to == null) { p.displayClientMessage(Component.translatable("phasing.heroesevolved.no_passage"), true); return false; }
-                carryFriends(p, to.subtract(from), 3, 3);
-                pass(p, from, to);
-                return true;
-            }
-            case "phase_lock" -> { return embed(p, c.abilityLevel(), 16); }
-            case "phase_fall" -> {
-                double range = SkillTreeService.has(p, "phasing_deep_fall") ? 32 : 16;
-                Vec3 from = p.position(), to = Passage.through(p, new Vec3(0, c.modifierHeld() ? 1 : -1, 0), range);
-                if (to == null) { p.displayClientMessage(Component.translatable("phasing.heroesevolved.no_passage"), true); return false; }
-                carryFriends(p, to.subtract(from), 3, 3);
-                pass(p, from, to);
-                return true;
-            }
-            default -> { return false; }
-        }
-    }
+    public static boolean technique(AbilityUseContext c, String mechanic) { return DensitySkills.technique(c, mechanic); }
 
     // ------------------------------------------------------------------
     // Awakening, tick and events
@@ -754,7 +773,7 @@ public final class DensityService {
             else tickPassage(p, s, now);
             s.last = p.position();
             if (s.notch != NEUTRAL && now >= s.freeUntil) {
-                int every = (Math.abs(s.notch) == 2 ? 6 : 12) * (SkillTreeService.has(p, "phasing_untouchable") ? 2 : 1);
+                int every = (Math.abs(s.notch) == 2 ? 6 : 12) * (SkillTreeService.has(p, DensitySkills.UNTOUCHABLE) ? 2 : 1);
                 if (now % every == 0 && !PlayerEnergyService.tryConsume(p, 1)) {
                     set(p, s, s.notch + (s.notch > 0 ? -1 : 1));
                     p.displayClientMessage(Component.translatable("phasing.heroesevolved.exhausted"), true);
@@ -777,6 +796,8 @@ public final class DensityService {
     public static void damage(LivingIncomingDamageEvent event) {
         LivingEntity hurt = event.getEntity();
         var source = event.getSource();
+        // A body held in the ground isn't smothered by it: the hold is the damage.
+        if (source.is(DamageTypes.IN_WALL) && embedded(hurt)) { event.setCanceled(true); return; }
         if (hurt instanceof ServerPlayer player) {
             // A phaser cannot suffocate in walls.
             if (source.is(DamageTypes.IN_WALL) && isOwner(player)) { event.setCanceled(true); return; }
@@ -792,12 +813,15 @@ public final class DensityService {
 
     /** Shots fly straight through a Ghost. */
     @SubscribeEvent public static void projectile(ProjectileImpactEvent event) {
-        if (event.getRayTraceResult() instanceof EntityHitResult hit && hit.getEntity() instanceof ServerPlayer player && ghost(player))
+        if (event.getRayTraceResult() instanceof EntityHitResult hit && (hit.getEntity() instanceof ServerPlayer player && ghost(player)
+                || DensitySkills.loosened(hit.getEntity())))
             event.setCanceled(true);
     }
 
     @SubscribeEvent public static void attack(AttackEntityEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player && fullGhost(player)) event.setCanceled(true);
+        // Inside Knowledge: a body your hand has been inside is still in reach of a Full Ghost.
+        if (event.getEntity() instanceof ServerPlayer player && fullGhost(player) && !DensitySkills.knows(player, event.getTarget()))
+            event.setCanceled(true);
     }
 
     @SubscribeEvent public static void heal(LivingHealEvent event) {
@@ -807,8 +831,12 @@ public final class DensityService {
     /** Full Dense: a fall ends in a shockwave instead of a broken leg. */
     @SubscribeEvent public static void fall(LivingFallEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer p) || notch(p) != FULL_DENSE || event.getDistance() < 3) return;
-        float distance = event.getDistance();
         event.setDamageMultiplier(0);
+        impact(p, event.getDistance());
+    }
+
+    /** A Full Dense body landing from {@code distance} blocks: a shockwave instead of a broken leg. */
+    public static void impact(ServerPlayer p, float distance) {
         double radius = Math.min(6, 2 + distance / 4);
         shockwave(p, p.position(), radius, Math.min(12, distance * 0.8F));
         AbilityEffects.send(p.serverLevel(), Kind.DENSITY_SLAM, p.position(), p.position().add(0, 1, 0), radius);
@@ -826,6 +854,7 @@ public final class DensityService {
         if (s != null) DensityPayload.send(player, 0, -1);
         Embedded held = EMBEDDED.get(player.getUUID());
         if (held != null) free(held);
+        DensitySkills.drop(player);
     }
 
     /** Logging in inside a wall (a crash while underground): step out to the nearest open space. */
@@ -850,5 +879,6 @@ public final class DensityService {
         for (State s : List.copyOf(STATES.values())) forget(s.player);
         for (Embedded e : List.copyOf(EMBEDDED.values())) free(e);
         STATES.clear(); EMBEDDED.clear(); SEALED.clear();
+        DensitySkills.clear();
     }
 }
