@@ -21,9 +21,10 @@ public final class SonicEvents {
         if (event.getLevel() instanceof net.minecraft.server.level.ServerLevel level)
             SonicService.loudSound(level, event.getExplosion().center(), 15);
     }
-    /** A mob drawn to a Resonant Note does not pick a new target until the note is gone. */
+    /** A mob drawn to a Resonant Note, or held in a Quiet Zone, does not pick a new target until it is free. */
     @SubscribeEvent public static void target(LivingChangeTargetEvent event) {
-        if (event.getNewAboutToBeSetTarget() != null && SonicService.lured(event.getEntity())) event.setCanceled(true);
+        if (event.getNewAboutToBeSetTarget() != null && (SonicService.lured(event.getEntity())
+                || com.jayptucker.heroesevolved.sonic.SonicSkills.hushed(event.getEntity()))) event.setCanceled(true);
     }
     @SubscribeEvent public static void logout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) SonicService.forget(player);

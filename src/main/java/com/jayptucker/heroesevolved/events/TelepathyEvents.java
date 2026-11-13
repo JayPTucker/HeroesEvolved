@@ -63,6 +63,7 @@ public final class TelepathyEvents {
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             TelepathyService.stopAll(player);
+            com.jayptucker.heroesevolved.telepathy.TelepathySkills.leave(player);
             com.jayptucker.heroesevolved.telepathy.FutureVisions.forget(player);
         }
     }

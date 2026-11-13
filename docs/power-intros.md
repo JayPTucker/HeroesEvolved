@@ -1,20 +1,80 @@
 # First-acquisition power intros
 
-All eighteen powers have a distinct animated introduction when first unlocked.
+All nineteen powers have a distinct animated introduction when first unlocked.
 Grants, admin replacements, the Formula and natural dormant awakenings use the
 same acquisition hook. Assigning a dormant power alone does not run an intro.
 Existing unlocked non-time powers do not suddenly fire destructive intros on login.
 
-A natural awakening only happens at low health in a fight (see `eclipse.md`), so
-every release is built to save its owner. Each release first grants a second
-wind (at least 40% health and six seconds of Resistance II), then ends the fight
-in the power's own way. "Threats" below are monsters, anything targeting the
-owner, and whoever last hurt them, another player included.
+A natural awakening only happens when someone is about to lose a fight: the owner
+themself, or an ally near them (see `eclipse.md`). That person is the intro's
+**ward**, and every release is built to save them. Each release first grants the
+owner, and the ward, a second wind (at least 40% health and six seconds of
+Resistance II), then ends the ward's fight in the power's own way. "Threats" below
+are monsters near the ward, anything targeting the ward or the owner, and whoever
+last hurt either of them, another player included.
+
+The ward is shielded from the moment the power wakes until two seconds after its
+release (or rescue run) ends, and gets one cushioned fall. While the power charges,
+a thread runs from the owner to the ward so everyone can see who it is for. The
+release caption changes to a rescue line (`intro.heroesevolved.<power>.rescue`).
+
+## Rescues
+
+**Superspeed** answers allies up to 48 blocks away. Its charge is short (under a
+second) and slows every threat to a crawl. The runner then crosses to the ward
+along a searched route, picks them up (or tows them close behind when a low tunnel
+or their size won't allow a carry), and runs them out:
+
+- Underground or indoors, it takes the shortest route to open sky, running up walls
+  where it has to. A sealed cave settles for the reachable point furthest from the
+  threats.
+- Out in the open, it runs about 96 blocks across the surface, away from the
+  threats, turning round lava, fire, walls and cliffs and over water (it keeps going
+  up to 48 more blocks to stop on land). It stops early at the edge of loaded ground.
+- At the end the ward is set down beside the runner, who gets ten seconds of Speed III.
+
+The run moves 3.2 blocks a tick by teleport along the planned route, drawn with the
+speedster's trail (`intro/SpeedRescue`).
+
+**Flight** answers allies up to 64 blocks away, and only out under open sky: the owner
+must have no solid block above them (leaves don't count), and so must the ward. In a
+cave, the power strains toward the sky (an action-bar line) and stays asleep; a grant
+or the Formula underground waits until its owner steps outside. After a one-second
+charge the flyer swoops to the ward at 4.5 blocks a tick, takes them in a Skyhook carry,
+and climbs straight away from the fight at Skyburst speed (8.5 blocks a tick easing to
+1.25, rising 1.6 for each block outward, about 58°). The downdraft throws the ward's attackers
+clear. The flyer ends in a normal flight session, still carrying the ward, who has slow
+falling in case they're let go (`intro/FlightRescue`). With no ally to fetch, the flyer
+makes the same climb alone.
+
+Every other power plays its release where its owner stands, as below, and also reaches
+across to an ally ward (`intro/WardRelease`):
+
+| Power | What it does for an ally |
+| --- | --- |
+| Precognition | Their attackers lose them, are slowed and weakened, and stumble back; the ward sidesteps the nearest blow. |
+| Invisibility | The ward fades for five seconds; everything attacking them loses them. |
+| Phasing | The ward goes thin for five seconds (no harm reaches them) and the ripple shoves attackers away. |
+| Empathic Mimicry | Their attackers are drained (Weakness II) and the strength flows into the ward (Strength, Regeneration II). |
+| Telepathy | A psychic shout into every mind attacking them: lost target, slowed, weakened and confused. |
+| Cryokinesis | Everything within nine blocks of them freezes solid for six seconds. |
+| Radiation | The thirty-second heat spares friends and pets, and burns the ward's attackers too. |
+| Sonic Resonance | A wall of sound hurls their attackers back and turns incoming shots around. |
+| Pyrokinesis | The ring of fire rises round the ward instead. |
+| Quake | A fault line runs to the ward and erupts under their attackers. The owner's terrain fracture is skipped if the ward stands within fourteen blocks of it. |
+| Electrokinesis | Lightning strikes up to eight of their attackers. |
+| Telekinesis | Their attackers are flung away and the ward is lifted out and brought to the owner. |
+| Regeneration | The ward is healed in full and cleansed. |
+| Technopathy | A diagnostic lock slows their attackers, and arrows in flight at the ward drop. |
+| Matter Assembly | Attackers are shoved back, then a copper lattice rises round the ward for eight seconds. |
+| Time Manipulation | The ward is shielded for the whole vision; on a completed return they get the second wind and the monsters round them fall a heartbeat behind. |
+
+## Each power's release
 
 | Power | Charge | Release |
 | --- | --- | --- |
 | Precognition | Two and a half seconds of gold rings at the owner's feet while every nearby threat glows, with a gold ghost of where it is about to lunge. | A red ring of foresight. Threats within twelve blocks lose their target, stumble back, and are slowed and weakened; the first painting and a free Premonition follow. |
-| Superspeed | Two seconds of golden sparks. | Threats are thrown back and slowed to a crawl, and the owner gets ten seconds of Speed III. |
+| Superspeed | Under a second of golden sparks while every threat slows to a crawl. | The rescue run above: out of any cave and far across the surface, carrying the ward. |
 | Invisibility | Two seconds of the owner's outline dissolving into violet and silver strips. | A shattering optic burst. The owner fades for five seconds, every threat targeting them loses them, and they get a burst of speed to slip away. |
 | Phasing | Two seconds of ghostly strands as the floor turns thin. | Concentric density ripples. Five seconds of full intangibility, and the ripple shoves threats away. |
 | Empathic Mimicry | Two and a half seconds of gold threads to every heartbeat nearby. | A nearby power is remembered if one exists; threats within eight blocks are weakened and pushed back while their strength drains into the owner (Strength I). |
@@ -24,7 +84,7 @@ owner, and whoever last hurt them, another player included.
 | Sonic Resonance | Two seconds of vibrating air. | A full-strength sonic burst. |
 | Pyrokinesis | Two and a half seconds of smoke and heat. | A ring of fire bursts outward, burning and throwing back threats within eight blocks. |
 | Quake | Three seconds of increasing tremor, inward pressure rings, and energy gathering around both hands. | A spherical terrain fracture advances to twelve blocks over two seconds, with three pressure fronts, radial streaks, block fragments, debris, a sonic boom and camera shake. |
-| Flight | One and a half seconds of wind gathering underfoot and spiralling up the body. | The existing real Flight Skyburst fires through a rising column of wind rings and ribbons. Nearby enemies are pushed back. |
+| Flight | One second of wind gathering underfoot and spiralling up the body (only under open sky). | The airlift above: a swoop to the ward, a Skyhook carry and a straight climb away at Skyburst speed, ending in real flight. |
 | Electrokinesis | Two and a half seconds of electrical arcs feeding a rotating blue/white corona. | A central lightning strike, three surrounding follow-up strikes, expanding electrical rings and a discharge that repels and damages nearby enemies. |
 | Telekinesis | Two seconds of inward motes and a concentrating violet field. | Nearby mobs and loose items briefly levitate, cosmetic stones rise from the ground, then the lifted objects are pushed outward. Living targets receive a brief slow-fall effect on release. |
 | Regeneration | Two and a half seconds of wounds healing amid red-to-gold particles. | Full health, harmful-status removal, extinguished fire, and a healing bloom reaching non-hostile living entities within eight blocks. |
@@ -45,8 +105,8 @@ relogging, removing and regranting, or calling the natural awakening callback
 twice cannot repeatedly trigger terrain destruction or free healing. Time
 retains its existing persistent marker. Interrupted started intros are consumed.
 
-Owners are protected during the sequence and regular ability actions wait
-until it finishes. One subsequent fall is cushioned, with a thirty-second expiry.
+Owners are protected during the sequence (except from `/kill`) and regular ability
+actions wait until it finishes. One subsequent fall is cushioned, with a thirty-second expiry.
 Eclipse suppression (totality only) remains authoritative. Power removal, logout, death,
 dimension travel, and server shutdown cancel active sequences and clear poses.
 An intro acquired while visiting the city waits until the visit ends.
@@ -74,7 +134,9 @@ enters the existing flight session, with its normal subsequent flight upkeep.
 powershell -File tools/verify-effect-geometry.ps1
 ```
 
-The isolated server suite includes first-grant and dormant-unlock routing,
+The isolated server suite includes the rescues (`RescueGameTests`: a speedster
+running an ally out, a flyer carrying one into the sky, Flight staying asleep under a
+roof, and allies out of reach or still standing going unanswered), first-grant and dormant-unlock routing,
 duplicate callback handling, Quake charge timing, actual stone destruction,
 radius limits, bedrock, footing, canceled block breaks, persisted history,
 one-time regrants, interrupted charges, regeneration and nearby healing, real

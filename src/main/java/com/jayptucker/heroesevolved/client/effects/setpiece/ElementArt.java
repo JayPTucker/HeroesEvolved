@@ -16,7 +16,6 @@ final class ElementArt {
             AURORA_GREEN = rgb(0x5CFFB0), AURORA_VIOLET = rgb(0xB070FF);
     private static final float[] COPPER = rgb(0xB8733A);
     private static final float[] STONE = rgb(0x8A7F72), STONE_DARK = rgb(0x5E554C), MAGMA = rgb(0xFF8A2A), EARTH = rgb(0x9C8A70);
-    private static final float[] SOUND = rgb(0xE6E0FF), SOUND_GLOW = rgb(0x8FD8FF), HYMN = rgb(0xFFD27A);
 
     // ------------------------------------------------------------------
     // Radiation
@@ -264,70 +263,4 @@ final class ElementArt {
         }
     }
 
-    // ------------------------------------------------------------------
-    // Sound
-    // ------------------------------------------------------------------
-
-    private static Vec3[] wavyRing(Vec3 at, float radius, float amplitude, int lobes, float phase) {
-        Vec3[] p = new Vec3[49];
-        for (int i = 0; i <= 48; i++) {
-            float ang = i * Mth.TWO_PI / 48, rr = radius + amplitude * Mth.sin(lobes * ang + phase);
-            p[i] = at.add(Mth.cos(ang) * rr, 0, Mth.sin(ang) * rr);
-        }
-        return p;
-    }
-
-    /** Standing waves stack up over the point, ring on ring, then fold in on themselves and burst. */
-    static void cascade(Canvas c, Active a, float t) {
-        if (!c.glow()) return;
-        float r = a.scale(), build = 16;
-        Vec3 o = a.target();
-        float squeeze = t < build ? 1 : Mth.clamp(1 - (t - build) / 4, 0, 1);
-        int rings = Math.min(8, (int) (t / 2) + 1);
-        for (int i = 0; i < rings; i++) {
-            float h = 0.3F + i * 0.45F, rr = r * (0.55F + 0.45F * Mth.sin((i + 1) / 9F * Mth.PI)) * squeeze;
-            float amp = 0.25F * Mth.sin(t * 0.8F + i);
-            if (rr > 0.05F) c.ribbon(wavyRing(o.add(0, h, 0), rr, amp, 6, t * 0.6F + i), 0.07F, i % 2 == 0 ? SOUND : SOUND_GLOW, 0.85F, 0.85F);
-        }
-        if (t >= build) {
-            float s = t - build;
-            float p = Mth.clamp(s / 12, 0, 1);
-            c.ring(o.add(0, 0.1, 0), r * 1.3F * p, 0.3F, SOUND, 0.9F * (1 - p));
-            if (s < 5) c.glow(o.add(0, 1.6, 0), 5, WHITE, 1 - s / 5);
-            c.ribbon(wavyRing(o.add(0, 1.2, 0), r * 1.1F * p, 0.3F, 8, s), 0.12F, SOUND_GLOW, 0.7F * (1 - p), 0.7F * (1 - p));
-        }
-    }
-
-    /** A dome where sound goes dead, its skin rippling with interference fringes. */
-    static void silence(Canvas c, Active a, float t) {
-        float f = fade(t, a.piece().ticks, 10, 16), r = a.scale() * smooth(0, 10, t) + 0.01F;
-        Vec3 o = a.origin();
-        Pattern fringes = (theta, phi) -> 0.25F + 0.75F * Math.abs(Mth.sin(phi * 9 - t * 0.25F) * Mth.cos(theta * 4 + phi * 3));
-        if (c.soft()) c.shell(o, r, r * 0.85F, r, Mth.HALF_PI, SOUND, 0.18F * f, 0.25F, PLAIN, 0);
-        if (c.glow()) {
-            c.shell(o, r, r * 0.85F, r, Mth.HALF_PI, SOUND_GLOW, 0.4F * f, 0.5F, fringes, t * 0.01F);
-            c.ring(o.add(0, 0.06, 0), r, 0.12F, SOUND_GLOW, 0.6F * f);
-        }
-    }
-
-    /** A five-line staff of light circles them, notes rising off it on every beat. */
-    static void hymn(Canvas c, Active a, float t) {
-        if (!c.glow()) return;
-        float f = fade(t, a.piece().ticks, 8, 16);
-        Vec3 o = a.at(c);
-        for (int line = 0; line < 5; line++) {
-            float from = t * 0.06F + line * 0.1F;
-            c.ring(o.add(0, 1.05 + line * 0.1, 0), UP, 1.45F, 0.025F, from, from + Mth.PI * 1.5F, HYMN, 0.7F * f);
-        }
-        for (int i = 0; i < 10; i++) {
-            float k = ((t + i * 8) % 80) / 80, ang = i * 2.39996F + k * 1.5F, rr = 1.45F + k * 1.6F;
-            Vec3 head = o.add(Mth.cos(ang) * rr, 1.1 + k * 2.4, Mth.sin(ang) * rr);
-            float al = f * Mth.sin(k * Mth.PI);
-            c.glow(head, 0.16F, HYMN, al);
-            c.line(head.add(0.06, 0, 0), head.add(0.06, 0.4, 0), 0.025F, HYMN, al, al);
-            if (i % 2 == 0) c.line(head.add(0.06, 0.4, 0), head.add(0.22, 0.28, 0), 0.025F, HYMN, al, al);
-        }
-        float beat = (t % 10) / 10;
-        c.ring(o.add(0, 0.06, 0), 0.8F + beat * 3, 0.08F, HYMN, 0.5F * f * (1 - beat));
-    }
 }

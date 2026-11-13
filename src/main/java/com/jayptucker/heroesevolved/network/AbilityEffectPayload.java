@@ -58,7 +58,10 @@ public record AbilityEffectPayload(Kind kind, Vec3 origin, Vec3 target, float sc
         TECH_LINK, TECH_PULSE, TECH_SCAN, TECH_CAGE,
         MATTER_WEAVE, MATTER_SHARD, MATTER_COLLAPSE, MATTER_SHIELD,
         GRID_SHORT, GRID_CHARGE, GRID_SIPHON, ELECTRIC_BLACKOUT,
-        TIME_SINGULARITY, TIME_SINGULARITY_COLLAPSE, PYRO_PHOENIX, PYRO_PHOENIX_STRIKE
+        TIME_SINGULARITY, TIME_SINGULARITY_COLLAPSE, PYRO_PHOENIX, PYRO_PHOENIX_STRIKE,
+        // Superspeed's skills: Reflex Focus settling in, a dodge, the Mirage's crowd of afterimages (re-sent while it
+        // lasts), Momentum Strike, Slipstream Rescue (scale 10+ for the passenger) and Lightning Throw (10+ for a hop)
+        SPEED_FOCUS, SPEED_DODGE, SPEED_MIRAGE, SPEED_STRIKE, SPEED_SLIPSTREAM, SPEED_THROW
     }
 
     public static final Type<AbilityEffectPayload> TYPE = new Type<>(

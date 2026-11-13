@@ -81,6 +81,7 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue eclipseDepartureTicks;
         public final ModConfigSpec.DoubleValue eclipseDormantAbilityChance;
         public final ModConfigSpec.DoubleValue villagerMeltdownChance;
+        public final ModConfigSpec.DoubleValue giftedVillagerChance;
         public final ModConfigSpec.IntValue villagerMeltdownFuseTicks;
 
         // Awakening
@@ -180,6 +181,7 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue telepathyPuppetCooldownTicks;
         public final ModConfigSpec.IntValue telepathyNightmareEnergyCost;
         public final ModConfigSpec.IntValue telepathyNightmareCooldownTicks;
+        public final ModConfigSpec.BooleanValue telepathyHearsVoices, telepathyHearsGroups;
         public final ModConfigSpec.IntValue cryoBoltEnergyCost;
         public final ModConfigSpec.IntValue cryoBoltCooldownTicks;
         public final ModConfigSpec.IntValue cryoFreezeEnergyCost;
@@ -435,6 +437,10 @@ public final class HeroesEvolvedConfig {
                 villagerMeltdownChance = builder
                         .comment("Chance, each Eclipse, that its light wakes a power in one villager near a player: as the sun returns he starts to glow, and his village calls for help on the emergency band (101.10 FM).")
                         .defineInRange("villagerMeltdownChance", 0.20D, 0.0D, 1.0D);
+
+                giftedVillagerChance = builder
+                        .comment("Chance that a villager is born gifted: carrying a quiet power of their own that never claims a player's role. Only an Empathic Mimic can feel it, and copy it.")
+                        .defineInRange("giftedVillagerChance", 0.04D, 0.0D, 1.0D);
 
                 villagerMeltdownFuseTicks = builder
                         .comment("Ticks from a radioactive villager's first glow to his blast. 1200 is one minute.")
@@ -777,6 +783,10 @@ public final class HeroesEvolvedConfig {
                 telepathyPuppetCooldownTicks = cooldown(builder, "puppet", 20 * 45);
                 telepathyNightmareEnergyCost = energy(builder, "nightmare", 90);
                 telepathyNightmareCooldownTicks = cooldown(builder, "nightmare", 20 * 90);
+                telepathyHearsVoices = builder.comment("Let Far Hearing, Hive Link and Mind Network carry players' Simple Voice Chat voices.")
+                        .define("hearsVoices", true);
+                telepathyHearsGroups = builder.comment("Let telepathy carry voices from closed voice chat groups (normal and isolated).",
+                        "Off by default: a closed group is a private conversation.").define("hearsGroups", false);
                 builder.pop();
 
                 builder.push("cryokinesis");

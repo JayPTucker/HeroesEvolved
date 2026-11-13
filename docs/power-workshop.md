@@ -1,14 +1,14 @@
 # Power workshop
 
 This page records original redesign proposals. Phasing shipped as [Density](density.md),
-Sonic has its own [reworked kit](sonic-resonance.md), and [Telepathy](telepathy.md) now implements
+Sonic has its own [reworked kit](sonic-resonance.md) (its November 2026 pass added Ringing, follow-ups and an interaction tree; the Sonic proposal below is historical), and [Telepathy](telepathy.md) now implements
 Mind Threads, command suggestions, possession with resistance, shared sight, and private illusions.
 The detailed proposals below are historical directions; unused experiments remain proposals.
-Empathic Mimicry's redesign remains planned. The [current rework audit](power-rework-status.md)
+Empathic Mimicry shipped as a three-phase kit with a memory wheel ([guide](empathic-mimicry.md)); the Mimicry proposal below is historical. The [current rework audit](power-rework-status.md)
 separates implemented cores from older optional trees. [Invisibility](invisibility.md) now has
 Exposure, optical doubles and three redesigned skill branches. [Cryokinesis](cryokinesis.md)
 now connects Frost, solid sculpted ice, Glacier Ride, breakable prisons and Whiteout, with
-Sculptor, Glacier and Winterbinder progression. Mimicry retains its original kit.
+Sculptor, Glacier and Winterbinder progression.
 
 Telekinesis is the implemented reference in the current build: visible orbiting fragments,
 physical launches with swept collision, a staged lift and slam, caught projectile formations,

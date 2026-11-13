@@ -102,10 +102,10 @@ public final class PowerCompatibilityGameTests {
         LivingEntity enemy = target(h, p.position().add(0, 0, 6), false);
         try {
             MimicryService.remember(p, ModAbilities.PYROKINESIS_ID, 5);
-            AbilityAction action = echo(AbilitySlot.TERTIARY);
+            AbilityAction action = echo(AbilitySlot.PRIMARY);
             int baselineCost = action.energyCost(context(p)), baselineCooldown = action.cooldownTicks(context(p));
             learn(p, ModAbilities.MIMICRY_ID, "empathic_mimicry_sylars_mirror", "empathic_mimicry_peters_burden", "empathic_mimicry_twin_echo");
-            h.assertTrue(MimicryService.slots(p, 5) == 5, "The learned Sylar's Mirror grants its fifth real memory slot");
+            h.assertTrue(MimicryService.slots(p, 15) == 5, "At Level 15, Sylar's Mirror makes it the near set plus four kept ones");
             h.assertTrue(action.energyCost(context(p)) == (int) Math.ceil(baselineCost * .75), "Peter's Burden discounts the actual borrowed move");
             MimicryService.technique(context(p), "overcharge"); cast(h, p, action);
             h.assertTrue(action.cooldownTicks(context(p)) == baselineCooldown / 2, "Twin Echo halves the empowered cast's recovery");
@@ -122,10 +122,12 @@ public final class PowerCompatibilityGameTests {
         BlockPos wall = p.blockPosition().offset(0, 0, 6);
         try {
             for (int y = 0; y < 3; y++) h.getLevel().setBlock(wall.above(y), Blocks.STONE.defaultBlockState(), 3);
-            h.assertTrue(!MimicryService.empathize(p, 5), "The ordinary eight-block sight-based absorb cannot reach this person");
+            for (int i = 0; i < 10; i++) MimicryService.attune(p);
+            h.assertTrue(MimicryService.memory(p).current() == null, "Ten blocks and line of sight: a person behind a wall twelve away isn't felt");
             learn(p, ModAbilities.MIMICRY_ID, "empathic_mimicry_quick_study");
-            h.assertTrue(MimicryService.empathize(p, 5) && ModAbilities.PYROKINESIS_ID.equals(MimicryService.memory(p).current()),
-                    "The learned Quick Study node expands reach and senses through cover");
+            for (int i = 0; i < 10; i++) MimicryService.attune(p);
+            h.assertTrue(ModAbilities.PYROKINESIS_ID.equals(MimicryService.memory(p).current()),
+                    "The learned Quick Study node feels powers from twenty blocks, through cover");
             h.succeed();
         } finally {
             for (int y = 0; y < 3; y++) h.getLevel().setBlock(wall.above(y), Blocks.AIR.defaultBlockState(), 3);
@@ -161,7 +163,7 @@ public final class PowerCompatibilityGameTests {
             MimicryService.remember(p, ModAbilities.PYROKINESIS_ID, 5); MimicryService.remember(p, ModAbilities.FLIGHT_ID, 5);
             FlightDynamicsService.pressSkyburst(p);
             h.assertTrue(!FlightDynamicsService.isCharging(p), "Merely remembering Flight must not grant arbitrary native Flight access");
-            AbilityAction toggle = echo(AbilitySlot.TERTIARY); cast(h, p, toggle); toggle.release(context(p));
+            AbilityAction toggle = echo(AbilitySlot.PRIMARY); cast(h, p, toggle); toggle.release(context(p));
             FlightService.tick(p);
             h.assertTrue(FlightService.hasActiveSession(p) && MimicryService.isBorrowingFlight(p), "A real Flight Echo survives native server ownership checks");
             FlightService.setForwardInput(p, true); FlightService.changeSpeed(p, 1); FlightService.tick(p);
@@ -180,12 +182,12 @@ public final class PowerCompatibilityGameTests {
         ServerPlayer p = player(h, ModAbilities.MIMICRY_ID);
         try {
             MimicryService.remember(p, ModAbilities.FLIGHT_ID, 5);
-            AbilityAction burst = echo(AbilitySlot.QUATERNARY); cast(h, p, burst);
+            AbilityAction burst = echo(AbilitySlot.SECONDARY); cast(h, p, burst);
             for (int i = 0; i < 10; i++) { FlightService.tick(p); FlightDynamicsService.tick(p); }
             h.assertTrue(FlightDynamicsService.isCharging(p), "The borrowed held Skyburst remains a real charge");
             burst.release(context(p));
             h.assertTrue(!FlightDynamicsService.isCharging(p) && p.getDeltaMovement().length() > 1, "Releasing the Echo fires its borrowed slingshot");
-            AbilityAction dive = echo(AbilitySlot.QUINARY); cast(h, p, dive); dive.release(context(p));
+            AbilityAction dive = echo(AbilitySlot.TERTIARY); cast(h, p, dive); dive.release(context(p));
             DiveBombService.tick(p);
             h.assertTrue(DiveBombService.isDiving(p), "Echo III can perform Meteor Drop under temporary borrowed authorization");
             PowerRules.rewinding(p, true); MimicryService.tickBorrowed(p);
@@ -203,7 +205,7 @@ public final class PowerCompatibilityGameTests {
         ServerPlayer p = player(h, ModAbilities.MIMICRY_ID);
         LivingEntity enemy = target(h, p.position().add(0, 0, 5), false);
         MimicryService.remember(p, ModAbilities.ELECTROKINESIS_ID, 5);
-        AbilityAction action = echo(AbilitySlot.TERTIARY); cast(h, p, action);
+        AbilityAction action = echo(AbilitySlot.PRIMARY); cast(h, p, action);
         h.runAfterDelay(12, () -> {
             try {
                 h.assertTrue(ElectroService.isHolding(p), "The borrowed lightning key is an actual held channel");

@@ -211,7 +211,7 @@ public final class InvisibilityGameTests {
                 mimic.getData(ModDataAttachments.POWER_INTRO_HISTORY).with(ModAbilities.MIMICRY_ID));
         com.jayptucker.heroesevolved.mimicry.MimicryService.remember(mimic, ModAbilities.INVISIBILITY_ID, 5);
         var echo = com.jayptucker.heroesevolved.ability.registry.AbilityRegistry.ABILITIES.get(ModAbilities.MIMICRY_ID)
-                .actions().get(com.jayptucker.heroesevolved.ability.AbilitySlot.TERTIARY);
+                .actions().get(com.jayptucker.heroesevolved.ability.AbilitySlot.PRIMARY);
         var context = new AbilityUseContext(mimic, ModAbilities.MIMICRY_ID, 5, false);
         h.assertTrue(echo.canUse(context) && echo.activate(context)
                         == com.jayptucker.heroesevolved.ability.AbilityActivationResult.SUCCESS,

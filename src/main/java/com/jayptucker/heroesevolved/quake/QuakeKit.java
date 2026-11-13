@@ -13,6 +13,8 @@ import com.jayptucker.heroesevolved.network.AbilityEffectPayload;
 import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 import com.jayptucker.heroesevolved.network.ArmPosePayload;
 import com.jayptucker.heroesevolved.network.CameraShakePayload;
+import com.jayptucker.heroesevolved.skills.SkillTreeService;
+import com.jayptucker.heroesevolved.styles.Piece;
 import com.jayptucker.heroesevolved.network.StrainPayload;
 import com.jayptucker.heroesevolved.progression.EvolutionTrials;
 import com.jayptucker.heroesevolved.progression.MasteryService;
@@ -81,7 +83,7 @@ public final class QuakeKit {
         Body(ServerPlayer player) { this.player = player; last = player.position(); }
     }
 
-    private record Resonance(ServerPlayer owner, LivingEntity target, long until, float damage, Set<EquipmentSlot> rattled) {}
+    private record Resonance(ServerPlayer owner, LivingEntity target, long until, float damage, Set<EquipmentSlot> rattled, boolean jumped) {}
 
     private static final class Fissure {
         final ServerPlayer owner;
@@ -138,6 +140,14 @@ public final class QuakeKit {
         sync(p, b);
     }
 
+    /** Bleeds Strain off (Kinetic Sink): never below zero, and it doesn't count as using a power. */
+    public static void relieve(ServerPlayer p, int amount) {
+        Body b = BODIES.get(p.getUUID());
+        if (b == null || amount <= 0) return;
+        b.strain = Math.max(0, b.strain - amount);
+        sync(p, b);
+    }
+
     /** Sets Strain directly (tests and the preview). */
     public static void setStrain(ServerPlayer p, int strain) {
         Body b = body(p);
@@ -158,7 +168,7 @@ public final class QuakeKit {
         AbilityEffects.send(level, Kind.QUAKE_FRACTURE, p.position(), p.position().add(p.getLookAngle()), 1);
         level.playSound(null, p.blockPosition(), SoundEvents.SKELETON_HURT, SoundSource.PLAYERS, 1, 0.5F);
         level.playSound(null, p.blockPosition(), SoundEvents.ITEM_BREAK, SoundSource.PLAYERS, 0.8F, 0.6F);
-        ArmPosePayload.clear(p);
+        ArmPosePayload.show(p, ArmPose.QUAKE_FRACTURED, 40);
         p.displayClientMessage(Component.translatable("quake.heroesevolved.fractured").withStyle(ChatFormatting.DARK_RED), false);
     }
 
@@ -185,8 +195,8 @@ public final class QuakeKit {
         LivingEntity target = Targeting.livingEntityInSight(p, 16, t -> ExpansionSkills.hostile(p, t));
         if (target == null) return false;
         float damage = (1.5F + tier * 0.5F) * power(p);
-        RESONATING.put(target.getUUID(), new Resonance(p, target, now(p) + 60, damage, new HashSet<>()));
-        ArmPosePayload.show(p, ArmPose.ONE_HAND, 60);
+        RESONATING.put(target.getUUID(), new Resonance(p, target, now(p) + 60, damage, new HashSet<>(), false));
+        ArmPosePayload.show(p, ArmPose.QUAKE_TUNE, 60);
         ServerLevel level = p.serverLevel();
         AbilityEffects.send(level, Kind.QUAKE_RESONATE, hand(p), target.getBoundingBox().getCenter(), 1);
         level.playSound(null, target.blockPosition(), SoundEvents.WARDEN_SONIC_CHARGE, SoundSource.PLAYERS, 0.8F, 1.8F);
@@ -204,7 +214,13 @@ public final class QuakeKit {
     private static void tickResonance(long now) {
         for (Resonance r : List.copyOf(RESONATING.values())) {
             LivingEntity t = r.target;
-            if (!t.isAlive() || t.isRemoved() || now >= r.until || t.level() != r.owner.level()) { RESONATING.remove(t.getUUID()); continue; }
+            if (!t.isAlive() || t.isRemoved() || now >= r.until || t.level() != r.owner.level()) {
+                RESONATING.remove(t.getUUID());
+                // Sympathetic Frequency: a resonance that runs its course jumps once to the nearest enemy.
+                if (now >= r.until && !r.jumped && t.level() == r.owner.level() && SkillTreeService.has(r.owner, QuakeSkills.SYMPATHETIC))
+                    jump(r, now);
+                continue;
+            }
             ServerLevel level = (ServerLevel) t.level();
             long age = 60 - (r.until - now);
             if (age % 4 == 0)
@@ -233,9 +249,106 @@ public final class QuakeKit {
         }
     }
 
+    private static void jump(Resonance r, long now) {
+        LivingEntity from = r.target;
+        LivingEntity next = from.level().getEntitiesOfClass(LivingEntity.class, from.getBoundingBox().inflate(6),
+                        t -> t != from && !RESONATING.containsKey(t.getUUID()) && ExpansionSkills.hostile(r.owner, t))
+                .stream().min(java.util.Comparator.comparingDouble(from::distanceToSqr)).orElse(null);
+        if (next == null) return;
+        RESONATING.put(next.getUUID(), new Resonance(r.owner, next, now + 30, r.damage, new HashSet<>(), true));
+        AbilityEffects.send((ServerLevel) from.level(), Kind.QUAKE_RESONATE, from.getBoundingBox().getCenter(), next.getBoundingBox().getCenter(), 1);
+        from.level().playSound(null, next.blockPosition(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, 1, 0.7F);
+    }
+
+    /** Whether {@code p} has a resonance running on anyone. */
+    public static boolean resonatingAny(ServerPlayer p) {
+        for (Resonance r : RESONATING.values()) if (r.owner == p) return true;
+        return false;
+    }
+
+    /**
+     * Resonate's follow-up, Shatter: close the hand and the frequency collapses at once. Everything it had left to do
+     * lands in one blow, half again as hard, the armour takes a heavy rattle and the body is thrown away from her.
+     * Free; works on every resonance she has running.
+     */
+    public static boolean collapse(ServerPlayer p) {
+        boolean any = false;
+        long now = now(p);
+        for (Resonance r : List.copyOf(RESONATING.values())) {
+            if (r.owner != p) continue;
+            any = true;
+            collapse(r, now, 1.0);
+        }
+        if (any) ArmPosePayload.show(p, ArmPose.QUAKE_CLENCH, 12);
+        return any;
+    }
+
+    private static void collapse(Resonance r, long now, double launch) {
+        LivingEntity t = r.target;
+        RESONATING.remove(t.getUUID());
+        ServerLevel level = (ServerLevel) t.level();
+        int pulses = Math.max(1, (int) ((r.until - now) / 10));
+        float burst = r.damage * pulses * 1.5F + 2;
+        t.invulnerableTime = 0;
+        if (t.hurt(r.owner.damageSources().indirectMagic(r.owner, r.owner), burst)) landed(r.owner, t);
+        for (EquipmentSlot slot : new EquipmentSlot[] {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
+            var worn = t.getItemBySlot(slot);
+            if (!worn.isEmpty() && worn.isDamageableItem()) worn.hurtAndBreak(12, t, slot);
+        }
+        Vec3 away = t.position().subtract(r.owner.position()).multiply(1, 0, 1);
+        away = away.lengthSqr() < 1.0E-4 ? new Vec3(0, 0, 1) : away.normalize();
+        QuakeService.setVelocity(t, away.scale(0.9 * launch).add(0, 0.45 * launch, 0));
+        Vec3 mid = t.getBoundingBox().getCenter();
+        QuakeGeometry.show(level, Piece.QUAKE_SHATTER, mid, mid.add(away), t.getBbHeight(), null);
+        level.playSound(null, t.blockPosition(), SoundEvents.AMETHYST_CLUSTER_BREAK, SoundSource.PLAYERS, 1.2F, 0.6F);
+        level.playSound(null, t.blockPosition(), SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 0.5F, 1.8F);
+    }
+
     // ------------------------------------------------------------------
     // Fault Line
     // ------------------------------------------------------------------
+
+    /**
+     * Fault Line's follow-up, Upheaval: while the crack is still racing out, press again and both palms sweep up: the
+     * whole rest of its line erupts at once, throwing everything on it higher. Free.
+     */
+    public static boolean upheave(ServerPlayer p) {
+        Fissure found = null;
+        for (Fissure candidate : FISSURES) if (candidate.owner == p) found = candidate;
+        if (found == null) return false;
+        Fissure f = found;
+        FISSURES.remove(f);
+        ServerLevel level = f.level;
+        Vec3 at = f.at;
+        for (double d = 0; f.travelled + d < f.length; d += 1.5) {
+            Vec3 next = at.add(f.direction.scale(1.5));
+            BlockPos ground = QuakeService.findSurface(level, BlockPos.containing(next).getX(), BlockPos.containing(next).getZ(),
+                    BlockPos.containing(at).getY() - 1, deepRoots(p) ? 6 : 3);
+            if (ground == null || ground.getY() + 1 - at.y > climb(p)) break;
+            at = new Vec3(next.x, ground.getY() + 1, next.z);
+            AbilityEffects.send(level, Kind.QUAKE_ERUPT, at, at.add(0, 1, 0), 1.3);
+            QuakeService.burstDebris(level, ground, new Vec3(0, 1, 0), 2, 0.6);
+            for (LivingEntity t : level.getEntitiesOfClass(LivingEntity.class, new net.minecraft.world.phys.AABB(at, at).inflate(1.5, 2, 1.5),
+                    t -> ExpansionSkills.hostile(p, t) && !f.struck.contains(t.getUUID()))) {
+                f.struck.add(t.getUUID());
+                t.invulnerableTime = 0;
+                if (t.hurt(p.damageSources().playerAttack(p), f.damage * 0.8F)) landed(p, t);
+                Resonance ringing = RESONATING.get(t.getUUID());
+                boolean live = ringing != null && ringing.owner == p && SkillTreeService.has(p, QuakeSkills.LIVE_FAULT);
+                if (live) collapse(ringing, level.getGameTime(), 1.4);
+                QuakeService.setVelocity(t, new Vec3(0, f.launch * 1.35 * (live ? 2 : 1), 0));
+            }
+        }
+        ArmPosePayload.show(p, ArmPose.QUAKE_UPHEAVAL, 14);
+        level.playSound(null, p.blockPosition(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 1.0F, 0.5F);
+        CameraShakePayload.sendAround(level, at, 18, 1.4F, 12);
+        return true;
+    }
+
+    private static boolean deepRoots(ServerPlayer p) { return SkillTreeService.has(p, QuakeSkills.DEEP_ROOTS); }
+
+    /** How high a step the crack can climb: a half block, or a full one with Deep Roots. */
+    private static double climb(ServerPlayer p) { return deepRoots(p) ? 2.2 : 1.2; }
 
     /**
      * Level 3, Fault Line: a punch into the ground that opens a crack racing ahead of her, erupting
@@ -254,7 +367,7 @@ public final class QuakeKit {
         FISSURES.add(new Fissure(p, p.position().add(direction.scale(0.8)), direction, 10 + 2 * tier,
                 (5 + tier) * power(p), 0.75 + tier * 0.05));
         ServerLevel level = p.serverLevel();
-        ArmPosePayload.show(p, ArmPose.GROUND, 12);
+        ArmPosePayload.show(p, ArmPose.QUAKE_PUNCH_DOWN, 12);
         BlockPos under = BlockPos.containing(p.position()).below();
         QuakeService.burstDebris(level, under, new Vec3(0, 1, 0), 4, 0.5);
         AbilityEffects.send(level, Kind.QUAKE_ERUPT, p.position().add(direction), p.position().add(direction).add(0, 1, 0), 1.2);
@@ -274,9 +387,9 @@ public final class QuakeKit {
             for (int step = 0; step < 2 && !done; step++) {
                 Vec3 next = f.at.add(f.direction.scale(0.9));
                 BlockPos ground = QuakeService.findSurface(f.level, BlockPos.containing(next).getX(), BlockPos.containing(next).getZ(),
-                        BlockPos.containing(f.at).getY() - 1, 3);
-                // A wall stops it (the crack bursts against it); so does a drop into nothing.
-                if (ground == null || ground.getY() + 1 - f.at.y > 1.2) {
+                        BlockPos.containing(f.at).getY() - 1, deepRoots(f.owner) ? 6 : 3);
+                // A wall stops it (the crack bursts against it); so does a drop into nothing. Deep Roots climbs a step.
+                if (ground == null || ground.getY() + 1 - f.at.y > climb(f.owner)) {
                     BlockPos face = BlockPos.containing(next.add(0, 0.5, 0));
                     QuakeService.burstDebris(f.level, face, f.direction.reverse(), 5, 0.5);
                     AbilityEffects.send(f.level, Kind.QUAKE_ERUPT, f.at, f.at.add(0, 1, 0), 1.4);
@@ -295,7 +408,11 @@ public final class QuakeKit {
                     f.struck.add(t.getUUID());
                     t.invulnerableTime = 0;
                     if (t.hurt(f.owner.damageSources().playerAttack(f.owner), f.damage)) landed(f.owner, t);
-                    QuakeService.setVelocity(t, f.direction.scale(0.25).add(0, f.launch, 0));
+                    // Live Fault: a crack running under her own resonance breaks it, and throws them twice as high.
+                    Resonance ringing = RESONATING.get(t.getUUID());
+                    boolean live = ringing != null && ringing.owner == f.owner && SkillTreeService.has(f.owner, QuakeSkills.LIVE_FAULT);
+                    if (live) collapse(ringing, f.level.getGameTime(), 1.4);
+                    QuakeService.setVelocity(t, f.direction.scale(0.25).add(0, f.launch * (live ? 2 : 1), 0));
                     QuakeService.burstDebris(f.level, ground, new Vec3(0, 1, 0), 3, 0.55);
                     AbilityEffects.send(f.level, Kind.QUAKE_ERUPT, point, point.add(0, 1, 0), 1.2);
                     f.level.playSound(null, t.blockPosition(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.5F, 0.8F);
@@ -322,6 +439,7 @@ public final class QuakeKit {
         if (b.stillTicks == STILL_TICKS && now >= b.senseReady) {
             b.senseReady = now + SENSE_COOLDOWN;
             QuakeService.tremorPulse(p, 100, 20);
+            ArmPosePayload.show(p, ArmPose.QUAKE_FEEL, 24);
             heartbeats(p, 20);
         } else if (still && b.stillTicks > STILL_TICKS && (b.stillTicks - STILL_TICKS) % 20 == 0 && QuakeService.hasTremorSense(p)) {
             heartbeats(p, 20);
@@ -333,6 +451,7 @@ public final class QuakeKit {
         for (LivingEntity t : p.serverLevel().getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(radius),
                 t -> t != p && t.isAlive() && !t.isSpectator() && t.distanceToSqr(p) <= radius * radius)) {
             boolean danger = t instanceof Enemy || t.getHealth() < t.getMaxHealth() * 0.5F;
+            QuakeSkills.felt(p, t);
             Vec3 heart = t.position().add(0, t.getBbHeight() * 0.62, 0);
             PacketDistributor.sendToPlayer(p, new AbilityEffectPayload(Kind.QUAKE_HEARTBEAT, heart, heart.add(0, 1, 0),
                     danger ? 1.2F : 0.8F));
@@ -367,6 +486,7 @@ public final class QuakeKit {
         BODIES.remove(p.getUUID());
         FISSURES.removeIf(f -> f.owner == p);
         RESONATING.values().removeIf(r -> r.owner == p);
+        QuakeSkills.forget(p);
         StrainPayload.send(p, 0, false);
     }
 

@@ -205,7 +205,7 @@
   },
   {
     "power": "empathic_mimicry",
-    "action": "mimicry_empathize",
+    "action": "mimicry_echo_5",
     "energy": 1,
     "cooldown": 1
   },
@@ -218,6 +218,36 @@
   {
     "power": "matter_assembly",
     "action": "matter_assembly_cathedral",
+    "energy": 1,
+    "cooldown": 1
+  },
+  {
+    "power": "vibe",
+    "action": "vibe_blast",
+    "energy": 1,
+    "cooldown": 1
+  },
+  {
+    "power": "vibe",
+    "action": "vibe_breach",
+    "energy": 1,
+    "cooldown": 1
+  },
+  {
+    "power": "vibe",
+    "action": "vibe_read",
+    "energy": 1,
+    "cooldown": 1
+  },
+  {
+    "power": "vibe",
+    "action": "vibe_breach_guard",
+    "energy": 1,
+    "cooldown": 1
+  },
+  {
+    "power": "vibe",
+    "action": "vibe_frequency_lock",
     "energy": 1,
     "cooldown": 1
   }

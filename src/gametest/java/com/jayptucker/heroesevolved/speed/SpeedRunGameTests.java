@@ -96,8 +96,10 @@ public final class SpeedRunGameTests {
         var p = runner(h, 4, false);
         Vec3 center = p.position();
         var near = mob(h, EntityType.VINDICATOR, p, 4, 0, true);
-        // Well outside the funnel's reach (it holds what is within about seven blocks at the ground), inside its pull.
-        var far = mob(h, EntityType.COW, p, 0, 12, true);
+        // Well outside the funnel's reach (it holds what is within about seven blocks at the ground), inside its pull,
+        // and inside the arena: a cow beyond the barrier walls is held back by them, not by the tornado.
+        var far = mob(h, EntityType.COW, p, 7, 7, true);
+        double farStart = far.position().distanceTo(center);
         h.assertTrue(SpeedKit.cyclone(p, 4, true), "The cyclone starts with the key held");
         h.runAfterDelay(SpeedKit.TORNADO_HOLD + SpeedKit.TORNADO_ANCHOR + 2, () -> {
             h.assertTrue(SpeedKit.tornado(p), "It rose");
@@ -105,7 +107,8 @@ public final class SpeedRunGameTests {
             h.assertTrue(SpeedKit.cycloning(p) && SpeedKit.standing(p), "Held three seconds after it rose, letting go leaves it standing on its own");
             h.assertTrue(!p.hasEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN), "And the runner is free to go");
             h.runAfterDelay(60, () -> {
-                h.assertTrue(far.position().distanceTo(center) < 9, "It draws things in from far off: " + far.position().distanceTo(center));
+                h.assertTrue(far.position().distanceTo(center) < farStart - 2, "It draws things in from far off: "
+                        + farStart + " -> " + far.position().distanceTo(center));
                 h.assertTrue(near.getAirSupply() < near.getMaxAirSupply(), "What it carries cannot breathe: " + near.getAirSupply());
                 h.runAfterDelay(120, () -> {
                     try {

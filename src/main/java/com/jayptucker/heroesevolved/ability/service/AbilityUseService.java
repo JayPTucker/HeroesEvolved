@@ -123,6 +123,12 @@ public final class AbilityUseService {
             return AbilityUseResult.NOT_UNLOCKED;
         }
 
+        if (powerId.equals(com.jayptucker.heroesevolved.ability.registry.ModAbilities.SUPERSPEED_ID)
+                && com.jayptucker.heroesevolved.vibe.VibeService.desynced(player)) {
+            PowerFeedback.explain(player, Component.translatable("vibe.heroesevolved.desynced"));
+            return AbilityUseResult.CANNOT_USE;
+        }
+
         Ability power = AbilityRegistry.ABILITIES.get(powerId);
 
         if (power == null) {

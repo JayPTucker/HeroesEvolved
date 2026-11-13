@@ -25,7 +25,7 @@ public final class SuggestionService {
         Mob m=pending.mob;if(!m.isAlive()||m.level()!=p.level()||m.distanceToSqr(p)>48*48||!p.hasLineOfSight(m))return;
         if(command==4&&TelepathyFocus.focus(p,m)<60){p.displayClientMessage(Component.literal("Defend Me needs a deeper mind thread: 60 Focus."),true);return;}
         Vec3 point=command==0?p.pick(20,0,false).getLocation():command==2?m.position().add(m.position().subtract(p.position()).normalize().scale(12)):p.position();
-        ORDERS.put(m.getUUID(),new Order(p,m,command,point,now+200));m.setTarget(null);m.getNavigation().stop();TelepathyFocus.strain(p,5);
+        ORDERS.put(m.getUUID(),new Order(p,m,command,point,now+TelepathySkills.suggestionTicks(p,m,200)));m.setTarget(null);m.getNavigation().stop();TelepathyFocus.strain(p,5);
     }
     // Clearing a target must remain possible: cancelling a null target preserves the old attacker.
     public static boolean forbidden(Mob m,LivingEntity target){if(target==null)return false;Order o=ORDERS.get(m.getUUID());return o!=null&&(o.command!=4||target==o.owner||target instanceof net.minecraft.world.entity.player.Player);}

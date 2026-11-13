@@ -9,67 +9,15 @@ import java.util.List;
 
 import static com.jayptucker.heroesevolved.client.effects.setpiece.Canvas.*;
 
-/** Minds, life, foresight, empathy, machines and assembled matter. */
+/** Life, foresight, empathy, machines and assembled matter (minds are drawn by TelepathyArt). */
 final class MindArt {
     private MindArt() {}
 
-    private static final float[] MIND = rgb(0xC07CFF), MIND_DEEP = rgb(0x5A2AA8), MIND_PALE = rgb(0xF0DCFF), WHITE = {1, 1, 1};
+    private static final float[] WHITE = {1, 1, 1};
     private static final float[] BLOOD = rgb(0xE0303C), LIFE_GOLD = rgb(0xFFD98A), LEAF = rgb(0x8CFF8A), BLOOM = rgb(0xFFB8E0);
     private static final float[] PAINT = rgb(0xD8452A), INK = rgb(0x5A1A12), CANVAS = rgb(0xEDE3CF), FUTURE = rgb(0x7FE8FF);
     private static final float[] HOLO = rgb(0x5CFFD0), HOLO_DEEP = rgb(0x1E9C8A);
     private static final float[] CRYSTAL = rgb(0xDCE8F8), CRYSTAL_EDGE = rgb(0x9FD0FF), LATTICE = rgb(0xFFE6A8);
-
-    // ------------------------------------------------------------------
-    // Telepathy
-    // ------------------------------------------------------------------
-
-    /** A storm of thought over the point: strands of violet wheeling round a bright core, synapses firing through it. */
-    static void psychicStorm(Canvas c, Active a, float t) {
-        if (!c.glow()) return;
-        float f = fade(t, a.piece().ticks, 12, 20), r = a.scale();
-        Vec3 o = a.target();
-        for (int k = 0; k < 7; k++) c.helix(o, 4.2F, r, 0.4F, 1.4F, k * Mth.TWO_PI / 7 - t * 0.12F, 0.09F, k % 2 == 0 ? MIND : MIND_PALE, 0.7F * f, 30);
-        c.glow(o.add(0, 3.6, 0), 1.6F + 0.3F * Mth.sin(t * 0.5F), MIND_PALE, 0.8F * f);
-        int flick = (int) (t / 3);
-        for (int k = 0; k < 4; k++) {
-            float ang = hash(a.seed() + flick, k) * Mth.TWO_PI, rr = r * hash(a.seed() + flick, k + 4);
-            Vec3 p = o.add(Mth.cos(ang) * rr, 0.5 + hash(a.seed() + flick, k + 8) * 3, Mth.sin(ang) * rr);
-            c.bolt(o.add(0, 3.6, 0), p, a.seed() + flick * 17 + k, 0.4F, 0.04F, MIND, 0.7F * f);
-        }
-        c.disc(o.add(0, 0.05, 0), UP, r, MIND_DEEP, 0.3F * f, 0);
-        c.ring(o.add(0, 0.06, 0), r, 0.12F, MIND, 0.5F * f);
-    }
-
-    /** They slip out of every mind around them: rings of thought spread off them and a fading copy of them is left behind. */
-    static void blindSpot(Canvas c, Active a, float t) {
-        float life = a.piece().ticks, f = 1 - t / life;
-        Vec3 o = a.at(c);
-        if (c.soft()) c.shell(a.origin().add(0, 0.95, 0), 0.34F, 0.95F, 0.34F, Mth.PI, MIND_PALE, 0.35F * f, 0.3F, PLAIN, 0);
-        if (!c.glow()) return;
-        for (int k = 0; k < 3; k++) {
-            float p = Mth.clamp((t - k * 5) / 18, 0, 1);
-            if (p > 0) c.ring(o.add(0, 0.6 + k * 0.5, 0), 0.5F + p * 9, 0.15F, MIND, 0.7F * (1 - p));
-        }
-    }
-
-    /** A thread of thought joins a friend's head to the hive above where it was made, pulses running along it. */
-    static void hiveMind(Canvas c, Active a, float t) {
-        if (!c.glow()) return;
-        float f = fade(t, a.piece().ticks, 10, 20);
-        Vec3 head = a.at(c).add(0, 2.0, 0), hub = a.origin().add(0, 3.2, 0);
-        Vec3 mid = head.lerp(hub, 0.5).add(0, 0.8, 0);
-        Vec3[] curve = new Vec3[13];
-        for (int i = 0; i <= 12; i++) {
-            float k = i / 12F;
-            curve[i] = head.scale((1 - k) * (1 - k)).add(mid.scale(2 * k * (1 - k))).add(hub.scale(k * k));
-        }
-        c.ribbon(curve, 0.05F, MIND, 0.7F * f, 0.7F * f);
-        float p = (t * 0.05F) % 1;
-        c.glow(curve[Math.min(12, (int) (p * 12))], 0.25F, MIND_PALE, f);
-        c.ring(head.add(0, -0.1, 0), UP, 0.32F, 0.04F, t * 0.1F, t * 0.1F + Mth.PI * 1.6F, MIND_PALE, 0.8F * f);
-        c.glow(hub, 0.7F, MIND, 0.6F * f);
-        c.ring(hub, UP, 0.6F, 0.05F, -t * 0.08F, -t * 0.08F + Mth.PI * 1.5F, MIND_PALE, 0.6F * f);
-    }
 
     // ------------------------------------------------------------------
     // Regeneration

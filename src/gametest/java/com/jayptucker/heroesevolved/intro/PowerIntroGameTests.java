@@ -120,7 +120,7 @@ public final class PowerIntroGameTests {
         });
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 150, batch = "PowerIntroGameTests.flightReleasesIntoActualFlight")
+    @GameTest(template = "rewind_empty", timeoutTicks = 150, batch = "PowerIntroGameTests.flightReleasesIntoActualFlight", skyAccess = true)
     public static void flightReleasesIntoActualFlight(GameTestHelper helper) {
         ServerPlayer player = player(helper);
         PlayerAbilityService.grantAbility(player, ModAbilities.FLIGHT_ID);

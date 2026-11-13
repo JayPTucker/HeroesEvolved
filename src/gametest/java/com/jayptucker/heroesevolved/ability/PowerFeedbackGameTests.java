@@ -40,9 +40,11 @@ public final class PowerFeedbackGameTests {
         ServerPlayer player = player(helper, ModAbilities.QUAKE_ID, 5);
         helper.assertTrue(press(player, AbilitySlot.PRIMARY, false) == AbilityUseResult.SUCCESS,
                 "Shockwave must fire the first time");
+        // Pressed again at once, the other palm answers (Double Tap, free); only then must the next one wait.
+        helper.assertTrue(press(player, AbilitySlot.PRIMARY, false) == AbilityUseResult.SUCCESS, "The second press is Double Tap");
         AbilityUseResult again = press(player, AbilitySlot.PRIMARY, false);
         String message = PowerFeedback.lastMessage(player);
-        helper.assertTrue(again == AbilityUseResult.ON_COOLDOWN, "A second Shockwave must wait");
+        helper.assertTrue(again == AbilityUseResult.ON_COOLDOWN, "A third Shockwave must wait");
         helper.assertTrue(message != null && message.contains("ready in") && message.endsWith("s."),
                 "Cooldown feedback must show the time left: " + message);
         helper.succeed();

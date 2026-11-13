@@ -87,6 +87,8 @@ public final class QuakeService {
     // Players who propelled themselves with vibrations; their next landing
     // is fully cushioned.
     private static final Set<UUID> CUSHIONED_LANDINGS = new HashSet<>();
+    /** The last Shockwave each player threw: {game time, tier}, for Double Tap. */
+    private static final Map<UUID, long[]> DOUBLE_TAPS = new HashMap<>();
 
     private QuakeService() {
     }
@@ -102,14 +104,34 @@ public final class QuakeService {
      * opposite the full aim direction, preserving jump momentum.
      */
     public static void shockwave(ServerPlayer player, int powerLevel) {
+        palmBlast(player, powerLevel, 1.0F, false);
+        DOUBLE_TAPS.put(player.getUUID(), new long[] {player.serverLevel().getGameTime(), powerLevel});
+    }
+
+    /**
+     * Shockwave's follow-up: within {@link QuakeGeometry#DOUBLE_TAP_WINDOW} ticks, press again and the other palm answers
+     * with a lighter blast (60%). Free, once per Shockwave.
+     */
+    public static boolean doubleTap(ServerPlayer player) {
+        long[] tap = DOUBLE_TAPS.get(player.getUUID());
+        if (tap == null || player.serverLevel().getGameTime() - tap[0] > QuakeGeometry.DOUBLE_TAP_WINDOW || QuakeKit.fractured(player))
+            return false;
+        DOUBLE_TAPS.remove(player.getUUID());
+        palmBlast(player, (int) tap[1], 0.6F, true);
+        return true;
+    }
+
+    private static void palmBlast(ServerPlayer player, int powerLevel, float scale, boolean offHand) {
         ServerLevel level = player.serverLevel();
         Vec3 origin = player.getEyePosition();
         Vec3 direction = player.getLookAngle().normalize();
         double range = AbilityRanges.ranged(6.0D + powerLevel * 2.0D);
         // Strain makes everything hit harder, right up until the bones give.
         float strength = QuakeKit.power(player);
-        float damage = (3.0F + powerLevel * 1.5F) * strength;
-        double knockback = (1.0D + powerLevel * 0.3D) * strength;
+        // A Counterforce brace pours its stored force out through the palm.
+        float stored = scale >= 1 ? com.jayptucker.heroesevolved.expansion.ExpansionSkills.drainBrace(player) : 0;
+        float damage = (3.0F + powerLevel * 1.5F) * strength * scale + stored;
+        double knockback = (1.0D + powerLevel * 0.3D) * strength * scale + stored * 0.05D;
 
         BlockHitResult hit = level.clip(new ClipContext(
                 origin, origin.add(direction.scale(range)),
@@ -121,10 +143,13 @@ public final class QuakeService {
         Vec3 end = origin.add(direction.scale(length));
 
         spawnBeamRipples(level, origin, direction, length);
-        AbilityEffects.send(level, Kind.QUAKE_RINGS, origin.add(direction.scale(0.6D)).add(0.0D, -0.25D, 0.0D),
-                end, 1.0D + strength * 0.4D);
+        AbilityEffects.send(level, Kind.QUAKE_RINGS, QuakeGeometry.palm(player, 1, offHand, 0.6D),
+                end, (1.0D + strength * 0.4D) * (0.6D + 0.4D * scale));
+        catchShots(player, origin, direction, length);
         hitEntitiesAlongBeam(player, origin, direction, length, damage, knockback);
         shatterAlongBeam(player, origin, direction, length);
+        // A blast along a written fault sets it off at once.
+        com.jayptucker.heroesevolved.expansion.ExpansionSkills.igniteFaults(player, origin, direction, length);
 
         if (hit.getType() == HitResult.Type.BLOCK) {
             burstDebris(level, hit.getBlockPos(), direction.reverse(),
@@ -135,7 +160,7 @@ public final class QuakeService {
         // directly from the ground. Air propulsion does not require a block hit.
         boolean propulsion = !player.onGround() || direction.y < -0.35D;
         Vec3 velocity = QuakePropulsion.recoil(player.getDeltaMovement(), direction,
-                propulsion ? 1.3D + powerLevel * 0.12D : 0.12D, 3.0D);
+                (propulsion ? 1.3D + powerLevel * 0.12D : 0.12D) * scale, 3.0D);
         if (propulsion) {
             player.resetFallDistance();
             CUSHIONED_LANDINGS.add(player.getUUID());
@@ -146,10 +171,27 @@ public final class QuakeService {
                 SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS,
                 0.7F, 1.55F + level.getRandom().nextFloat() * 0.15F);
         CameraShakePayload.sendAround(level, end, 10.0D, 0.9F, 8);
-        // A single Shockwave is thrown from one palm.
-        ArmPosePayload.show(player, ArmPose.ONE_HAND, 8);
+        // A Shockwave is thrown from one palm; Double Tap from the other.
+        ArmPosePayload.show(player, offHand ? ArmPose.QUAKE_PALM_OFF : ArmPose.QUAKE_PALM, 9);
         MasteryService.markPowerUse(player, ModAbilities.QUAKE_ID);
-        QuakeKit.strain(player, QuakeKit.SHOCKWAVE_STRAIN);
+        QuakeKit.strain(player, scale >= 1 ? QuakeKit.SHOCKWAVE_STRAIN : QuakeKit.SHOCKWAVE_STRAIN / 2);
+    }
+
+    /**
+     * Shots and explosives on (or about to cross) a blast's line: bullets coming at her shake apart, explosives go off
+     * where the wave meets them, and anything else thrown at her is turned back (see {@link QuakeKinetics}).
+     */
+    static int catchShots(ServerPlayer player, Vec3 origin, Vec3 direction, double length) {
+        ServerLevel level = player.serverLevel();
+        AABB area = new AABB(origin, origin.add(direction.scale(length))).inflate(QuakeGeometry.BULLET_CATCH + 4);
+        int caught = 0;
+        for (Entity thing : level.getEntities(player, area, e -> e.isAlive() && (e instanceof Projectile || QuakeKinetics.explosive(e)))) {
+            double reach = com.jayptucker.heroesevolved.weapons.PowerWeapons.isBullet(thing)
+                    ? QuakeGeometry.BULLET_CATCH : 1.2D + thing.getBbWidth() / 2.0D;
+            if (!QuakeKinetics.crossing(thing, origin, direction, length, reach)) continue;
+            if (QuakeKinetics.disrupt(player, thing, direction) != QuakeKinetics.Result.NONE && ++caught >= 48) break;
+        }
+        return caught;
     }
 
     private static void spawnBeamRipples(
@@ -185,19 +227,15 @@ public final class QuakeService {
                 continue;
             }
 
-            // Incoming projectiles are caught by the wave and flung back.
-            if (target instanceof Projectile projectile) {
-                double speed = Math.max(1.6D, projectile.getDeltaMovement().length());
-                projectile.setOwner(player);
-                projectile.setDeltaMovement(direction.scale(speed));
-                level.getChunkSource().broadcastAndSend(projectile,
-                        new ClientboundSetEntityMotionPacket(projectile));
+            // Shots and explosives are caught by catchShots, every tick.
+            if (target instanceof Projectile || QuakeKinetics.explosive(target)) {
                 continue;
             }
 
             if (!(target instanceof LivingEntity living) || target.isSpectator()) {
                 continue;
             }
+            QuakeKinetics.disrupt(player, living, direction);
 
             if (TemporalEntityEchoService.isReplaying(living)) {
                 TemporalEntityEchoService.disturb(living, player);
@@ -247,7 +285,7 @@ public final class QuakeService {
                 .add(0.0D, -0.25D, 0.0D);
         AbilityEffects.send(player.serverLevel(), Kind.QUAKE_CONTACT,
                 palms, palms.add(player.getLookAngle()), 0.6D);
-        ArmPosePayload.show(player, ArmPose.TWO_HANDS_STRAIN, 15);
+        ArmPosePayload.show(player, ArmPose.QUAKE_BEAM, 15);
         player.serverLevel().playSound(null, player.getX(), player.getY(),
                 player.getZ(), SoundEvents.WARDEN_SONIC_CHARGE, SoundSource.PLAYERS,
                 0.9F, 1.5F);
@@ -299,7 +337,7 @@ public final class QuakeService {
                 return;
             }
             MasteryService.awardEnergySpent(player, drain);
-            ArmPosePayload.show(player, ArmPose.TWO_HANDS_STRAIN, 15);
+            ArmPosePayload.show(player, blast.propelling ? ArmPose.QUAKE_FLY : ArmPose.QUAKE_BEAM, 15);
             QuakeKit.strain(player, QuakeKit.BLAST_STRAIN);
             if (!BLASTS.containsKey(player.getUUID())) return;
             if (player.onGround()) {
@@ -335,6 +373,8 @@ public final class QuakeService {
                         hit.getLocation(), hit.getLocation().add(normal), 0.9D);
             }
         }
+        // Bullets are fast: the beam catches them every tick, not just when it hits bodies.
+        catchShots(player, origin, direction, length);
         if (blast.ageTicks % 5 == 0) {
             hitEntitiesAlongBeam(player, origin, direction, length,
                     (1.5F + blast.powerLevel * 0.5F) * QuakeKit.power(player), 0.7D);
@@ -361,6 +401,7 @@ public final class QuakeService {
             player.resetFallDistance();
             CUSHIONED_LANDINGS.add(player.getUUID());
         }
+        if (propelling != blast.propelling) ArmPosePayload.show(player, propelling ? ArmPose.QUAKE_FLY : ArmPose.QUAKE_BEAM, 15);
         blast.propelling = propelling;
 
         if (blast.ageTicks >= BLAST_MAXIMUM_TICKS) {
@@ -378,11 +419,11 @@ public final class QuakeService {
      * landing hits much harder.
      */
     public static void slam(ServerPlayer player, int powerLevel) {
-        ArmPosePayload.show(player, ArmPose.GROUND, player.onGround() ? 12 : 40);
         boolean airborne = !player.onGround()
                 && findSurface(player.serverLevel(), player.getBlockX(),
                 player.getBlockZ(), player.getBlockY(), 2) == null;
 
+        ArmPosePayload.show(player, airborne ? ArmPose.QUAKE_PLUNGE : ArmPose.QUAKE_PUNCH_DOWN, airborne ? 40 : 12);
         if (airborne) {
             PLUNGES.put(player.getUUID(), new Plunge(powerLevel,
                     player.serverLevel().getGameTime()));
@@ -434,7 +475,7 @@ public final class QuakeService {
      * creatures glow through walls, but only on her own screen.
      */
     public static void startTremorSense(ServerPlayer player, int powerLevel) {
-        ArmPosePayload.show(player, ArmPose.TEMPLE, 30);
+        ArmPosePayload.show(player, ArmPose.QUAKE_FEEL, 30);
         tremorPulse(player, 20 * (8 + 4 * Math.max(0, powerLevel - 3)), 24.0D + 8.0D * Math.max(0, powerLevel - 3));
         MasteryService.markPowerUse(player, ModAbilities.QUAKE_ID);
     }
@@ -590,7 +631,7 @@ public final class QuakeService {
                 true
         );
         QuakeKit.strain(player, QuakeKit.EARTHQUAKE_STRAIN);
-        ArmPosePayload.show(player, ArmPose.ARMS_WIDE,
+        ArmPosePayload.show(player, ArmPose.QUAKE_RUMBLE,
                 HeroesEvolvedConfig.COMMON.quakeEarthquakeDurationSeconds.get() * 20);
         player.sendSystemMessage(Component.literal(
                 "The ground answers you."
@@ -638,7 +679,9 @@ public final class QuakeService {
                     BlockPos.containing(player.position()), (int) radius));
         }
         if (fissures) {
-            traceFissures(level, quake, level.getRandom());
+            // Deep Roots: the fissures run half as far again.
+            traceFissures(level, quake, level.getRandom(),
+                    com.jayptucker.heroesevolved.skills.SkillTreeService.has(player, QuakeSkills.DEEP_ROOTS) ? 1.5D : 1.0D);
         }
         EARTHQUAKES.put(player.getUUID(), quake);
         AbilityEffects.send(level, Kind.QUAKE_PULSE, quake.center, quake.center, radius);
@@ -746,8 +789,8 @@ public final class QuakeService {
      * blocks out so her own footing holds. While the quake runs they crack, nearest first, and the
      * softer ground along them gives way.
      */
-    private static void traceFissures(ServerLevel level, Earthquake quake, RandomSource random) {
-        double reach = Math.min(quake.radius * 0.75D, FISSURE_REACH);
+    private static void traceFissures(ServerLevel level, Earthquake quake, RandomSource random, double scale) {
+        double reach = Math.min(quake.radius * 0.75D * scale, FISSURE_REACH * scale);
         double start = Math.min(FISSURE_START, reach * 0.5D);
         double base = random.nextDouble() * Math.PI * 2.0D;
         Set<BlockPos> seen = new HashSet<>();
@@ -845,6 +888,7 @@ public final class QuakeService {
 
         WAVES.add(new SeismicWave(owner.getUUID(), quake.level, quake.center,
                 quake.radius, quake.damage * 2.0F, 1.0D, quake.shatter));
+        ArmPosePayload.show(owner, ArmPose.QUAKE_AFTERSHOCK, 14);
         quake.level.playSound(null, quake.center.x, quake.center.y,
                 quake.center.z, SoundEvents.GENERIC_EXPLODE.value(),
                 SoundSource.PLAYERS, 2.0F, 0.35F);
@@ -917,7 +961,11 @@ public final class QuakeService {
         ).withStyle(ChatFormatting.DARK_RED));
     }
 
+    /** The next landing takes no fall damage (Pressure Step). */
+    static void cushion(ServerPlayer player) { CUSHIONED_LANDINGS.add(player.getUUID()); }
+
     public static void stopAll(ServerPlayer player) {
+        DOUBLE_TAPS.remove(player.getUUID());
         stopQuakeBlast(player, false);
         EARTHQUAKES.remove(player.getUUID());
         PLUNGES.remove(player.getUUID());

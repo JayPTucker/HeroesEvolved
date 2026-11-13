@@ -237,7 +237,7 @@ public final class EclipseGameTests {
         });
     }
 
-    @GameTest(template = "rewind_empty", batch = "eclipse.adrenaline_lethal", timeoutTicks = 60)
+    @GameTest(template = "rewind_empty", batch = "eclipse.adrenaline_lethal", timeoutTicks = 60, skyAccess = true)
     public static void aKillingBlowInAFightWakesThePowerInstead(GameTestHelper helper) {
         ServerPlayer player = player(helper);
         Zombie zombie = attacker(helper, player);

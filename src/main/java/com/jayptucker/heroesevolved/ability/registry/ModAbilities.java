@@ -160,6 +160,10 @@ public final class ModAbilities {
             com.jayptucker.heroesevolved.ability.types.CryokinesisAbility::new
     );
 
+    public static final ResourceLocation VIBE_ID = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "vibe");
+    public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.VibeAbility> VIBE =
+            ABILITIES.register(VIBE_ID.getPath(), com.jayptucker.heroesevolved.ability.types.VibeAbility::new);
+
     // RADIATION (the Glowing Man)
     public static final ResourceLocation RADIATION_ID =
         ResourceLocation.fromNamespaceAndPath(

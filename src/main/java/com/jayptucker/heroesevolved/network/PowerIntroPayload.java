@@ -8,7 +8,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-/** The existing compact cinematic caption style is shared by all awakenings. */
+/** The existing compact cinematic caption style is shared by all awakenings. Phase 0 charge, 1 release, 2 release that saves an ally. */
 public record PowerIntroPayload(ResourceLocation power, int phase) implements CustomPacketPayload {
     public static final Type<PowerIntroPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(
             HeroesEvolved.MOD_ID, "power_intro"));
@@ -20,7 +20,7 @@ public record PowerIntroPayload(ResourceLocation power, int phase) implements Cu
         context.enqueueWork(() -> {
             if (payload.phase < 0) TimeIntroCaption.clear();
             else TimeIntroCaption.showKey("intro.heroesevolved." + payload.power.getPath()
-                    + (payload.phase == 0 ? ".charge" : ".release"));
+                    + (payload.phase == 0 ? ".charge" : payload.phase == 2 ? ".rescue" : ".release"));
             // Out of the pod: say what to do first, and where the Journal is.
             if (payload.power.getPath().equals("bunker_3"))
                 TimeIntroCaption.hint(net.minecraft.network.chat.Component.translatable("hint.heroesevolved.bunker",

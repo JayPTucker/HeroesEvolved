@@ -91,6 +91,7 @@ what is happening (slow, stopped, backwards) without any text.
    | Invisibility (force fields) | `9CC8FF` field, `E8F4FF` edge, `3F6FD8` deep halo, `B6A2FF` sheen, `1E2A44` stress cracks (all in `ForceArt`) |
    | Elle Bishop (boss) | `2E6BD8` halo, `7FD4FF` arc, `F2FBFF` core (her current); `E0894A` copper, `FFD7A8` hot copper (the room's banks and conduits); `1A1E24` scorch (all in `ElleArt`) |
    | Flight | `535A5A` shadow, `D2D4CE` vapor, `DCDDD5` condensation, `F6F4EC` core (all in `FlightArt`; Tempest's storm uses `DBDBD2` cloud and `EEEDE3` wind) |
+   | Vibe | `07162F` void, `183B80` depth, `3096FF` blue, `90E6FF` ice, `EDFAFF` white core, `837CE8` ghost (combat echoes) (all in `VibeArt`) |
 
    Flight is also a good model of a whole power built from one shape language: every Flight set piece is drawn
    by `FlightArt` from three shared primitives (a translucent `arc` sheet with a turning lip, a broken tapered

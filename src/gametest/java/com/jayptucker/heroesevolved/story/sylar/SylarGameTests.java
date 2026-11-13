@@ -369,7 +369,7 @@ public final class SylarGameTests {
                 && chat.content().getString().startsWith("Sylar:")).count();
     }
 
-    @GameTest(template = "rewind_empty", batch = "sylar.boss", timeoutTicks = 40)
+    @GameTest(template = "rewind_empty", batch = "sylar.boss", timeoutTicks = 200)
     public static void aHuntShowsABossBarSizedToWhatHeHasTaken(GameTestHelper helper) {
         reset(helper); List<Packet<?>> packets = new ArrayList<>();
         ServerPlayer quarry = player(helper, ModAbilities.QUAKE_ID, 5, packets);
@@ -377,7 +377,9 @@ public final class SylarGameTests {
         story.learn(ModAbilities.ELECTROKINESIS_ID); story.learn(ModAbilities.CRYOKINESIS_ID); story.learn(ModAbilities.FLIGHT_ID);
         SylarEntity hunter = hunter(helper, quarry, 10); hunter.hunt(quarry);
         helper.assertTrue(hunter.getMaxHealth() == 80 + 3 * 12 && hunter.getHealth() == hunter.getMaxHealth(), "Health grows with every power he has taken");
-        helper.runAfterDelay(12, () -> {
+        // His bar is kept up by his own tick, which only runs once his chunk is entity-ticking; a freshly loaded chunk
+        // can take a few seconds while the rest of the suite runs. Give him twelve ticks from then.
+        whenTicking(helper, hunter, 150, () -> helper.runAfterDelay(12, () -> {
             try {
                 helper.assertTrue(hunter.bar().isVisible() && hunter.bar().getPlayers().contains(quarry), "The quarry sees his boss bar (visible="
                         + hunter.bar().isVisible() + " viewers=" + hunter.bar().getPlayers().size() + " combatTicks=" + hunter.combatTicks()
@@ -397,7 +399,18 @@ public final class SylarGameTests {
                     } finally { remove(quarry); }
                 });
             } catch (RuntimeException | AssertionError error) { remove(quarry); throw error; }
-        });
+        }), () -> remove(quarry));
+    }
+
+    /** Runs {@code then} once {@code entity}'s chunk is entity-ticking, checking each tick for up to {@code ticks}. */
+    private static void whenTicking(GameTestHelper helper, net.minecraft.world.entity.Entity entity, int ticks, Runnable then, Runnable giveUp) {
+        if (helper.getLevel().isPositionEntityTicking(entity.blockPosition())) { then.run(); return; }
+        if (ticks <= 0) {
+            giveUp.run();
+            helper.fail("His chunk never started ticking");
+            return;
+        }
+        helper.runAfterDelay(1, () -> whenTicking(helper, entity, ticks - 1, then, giveUp));
     }
 
     @GameTest(template = "rewind_empty", batch = "sylar.moves", timeoutTicks = 40)

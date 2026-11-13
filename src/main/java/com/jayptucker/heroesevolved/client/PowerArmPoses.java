@@ -168,6 +168,130 @@ public final class PowerArmPoses {
                 set(model.rightArm, -.97F + .68F * (1 - spread), .39F * spread, .81F * spread);
                 set(model.leftArm, -.97F + .68F * (1 - spread), -.39F * spread, -.81F * spread);
             }
+            case ELECTRO_RIDE -> {
+                // The arms snap from the forward lean straight back past the hips: the body is the bolt.
+                float sweep = smooth(ClientArmPoseState.ageTicks(id) / 1.5F);
+                float x = -1.0F + 2.35F * sweep + Mth.sin(ageInTicks * 2.9F) * .03F;
+                set(model.rightArm, x, 0, .3F + .15F * sweep);
+                set(model.leftArm, x, 0, -.3F - .15F * sweep);
+            }
+            case ELECTRO_CUP -> {
+                // Palms cupped together in front of the chest round the forming orb, then pushed out along the aim.
+                float age = ClientArmPoseState.ageTicks(id);
+                float push = smooth((age - 3F) / 5F), settle = smooth((age - 9F) / 6F);
+                float x = Mth.lerp(push, -1.18F, aimX + .05F) + .5F * settle;
+                float cup = .52F - .26F * push;
+                set(model.rightArm, x, aimY - cup, .04F);
+                set(model.leftArm, x, aimY + cup, -.04F);
+            }
+            case ELECTRO_LANCE -> {
+                // The casting arm locked straight along the aim, kicked up by the recoil; the other hand braces it.
+                float kick = 1 - smooth(ClientArmPoseState.ageTicks(id) / 6F);
+                set(main, aimX - .22F * kick, aimY, -.05F * inward);
+                set(rightHanded ? model.leftArm : model.rightArm, aimX + .32F - .1F * kick,
+                        aimY - inward * .62F, -.1F * inward);
+            }
+            case ELECTRO_TOUCH -> {
+                // A flat palm laid on the conductor, trembling as the current runs into the metal; the other arm held off.
+                float reach = smooth(ClientArmPoseState.ageTicks(id) / 4F);
+                float tremor = Mth.sin(ageInTicks * 3.1F) * .025F;
+                set(main, Mth.lerp(reach, -.4F, aimX + .25F) + tremor, aimY + inward * .08F, -.1F * inward);
+                set(rightHanded ? model.leftArm : model.rightArm, .32F, 0, -.42F * inward);
+            }
+            case ELECTRO_OVERCHARGE -> {
+                // Fists clenched at the sides, arms locked and shaking harder as the current floods in, then flexed out.
+                float age = ClientArmPoseState.ageTicks(id);
+                float flood = smooth(age / 10F), flex = smooth((age - 10F) / 5F);
+                float shake = Mth.sin(ageInTicks * 3.7F) * (.02F + .05F * flood) * (1 - flex);
+                set(model.rightArm, -.18F - .35F * flex + shake, 0, .22F + .32F * flex - shake);
+                set(model.leftArm, -.18F - .35F * flex - shake, 0, -.22F - .32F * flex + shake);
+            }
+            case ELECTRO_GROUND -> {
+                // Raised overhead, then driven palm-first down at the ground; the other arm thrown out for balance.
+                float drive = smooth((ClientArmPoseState.ageTicks(id) - 2F) / 4F);
+                set(main, Mth.lerp(drive, -2.85F, -.38F), 0, -.08F * inward);
+                set(rightHanded ? model.leftArm : model.rightArm, -.25F - .2F * drive, 0, -.75F * inward);
+            }
+            case ELECTRO_POINT -> {
+                // Two fingers flicked at the surface; the other hand on the hip.
+                float flick = Mth.sin(Math.min(1, ClientArmPoseState.ageTicks(id) / 4F) * Mth.PI) * .18F;
+                set(main, aimX - flick, aimY, -.05F * inward);
+                set(rightHanded ? model.leftArm : model.rightArm, .18F, -inward * .45F, -.55F * inward);
+            }
+            case MIMIC_TOUCH -> {
+                // An open palm laid flat on the person in front of you; the other hand held at the heart.
+                float reach = smooth(ClientArmPoseState.ageTicks(id) / 3F);
+                set(main, Mth.lerp(reach, -.6F, aimX + .12F), aimY, -.05F * inward);
+                set(rightHanded ? model.leftArm : model.rightArm, -1.05F, -inward * .62F, .05F * inward);
+            }
+            case MIMIC_SHIFT -> {
+                // A hand drawn to the heart as the old power goes, then opened outward as the new one answers.
+                float age = ClientArmPoseState.ageTicks(id);
+                float draw = smooth(age / 5F), open = smooth((age - 5F) / 5F);
+                set(main, Mth.lerp(open, -1.15F * draw, -.75F), Mth.lerp(open, inward * .75F * draw, -inward * .2F),
+                        Mth.lerp(open, .05F, -.65F * inward));
+                set(rightHanded ? model.leftArm : model.rightArm, -.15F, 0, .12F * inward);
+            }
+            case SPEED_GUARD -> {
+                // A boxer's guard, both forearms up at the face, bouncing light on the toes.
+                float bounce = Mth.sin(ageInTicks * .9F) * .05F;
+                set(model.rightArm, -1.9F + bounce, -.58F, .1F);
+                set(model.leftArm, -1.9F - bounce, .58F, -.1F);
+            }
+            case SPEED_SPLIT -> {
+                // Flung low and wide, flickering between places faster than the eye: the mirage tears loose.
+                float age = ClientArmPoseState.ageTicks(id);
+                float flicker = age < 12 ? Mth.sin(ageInTicks * 6.5F) * .14F * (1 - age / 12F) : 0;
+                set(model.rightArm, -.22F + flicker, 0, 1.0F - flicker);
+                set(model.leftArm, -.22F - flicker, 0, -1.0F + flicker);
+            }
+            case SPEED_LUNGE -> {
+                // The fist driven straight through along the aim; the other arm thrown back.
+                float drive = smooth(ClientArmPoseState.ageTicks(id) / 2F);
+                set(main, Mth.lerp(drive, aimX + 1.2F, aimX - .06F), aimY, -.04F * inward);
+                set(rightHanded ? model.leftArm : model.rightArm, .85F * drive, 0, -.2F * inward);
+            }
+            case SPEED_THROW -> {
+                // Cocked back over the shoulder, then whipped through like a javelin; the other hand sights the target.
+                float age = ClientArmPoseState.ageTicks(id);
+                float whip = smooth((age - 1F) / 2.5F), follow = smooth((age - 4F) / 6F);
+                set(main, Mth.lerp(whip, -2.75F, aimX + .35F) + .5F * follow, aimY - inward * .25F * (1 - whip),
+                        -.25F * inward * (1 - whip));
+                set(rightHanded ? model.leftArm : model.rightArm, Mth.lerp(whip, aimX, .4F), aimY, .1F * inward);
+            }
+            case SPEED_ESCORT -> {
+                // One arm reaching out and round the shoulders beside you; the other pumping back.
+                float pump = Mth.sin(ageInTicks * 1.2F) * .25F;
+                set(main, -1.25F, inward * .2F, -.62F * inward);
+                set(rightHanded ? model.leftArm : model.rightArm, .7F + pump, 0, .08F * inward);
+            }
+            case SPEED_STILL -> {
+                // Open hands held a little out from the sides, perfectly still while the world crawls.
+                float settle = smooth(ClientArmPoseState.ageTicks(id) / 6F);
+                set(model.rightArm, -.32F * settle, .12F * settle, .42F * settle);
+                set(model.leftArm, -.32F * settle, -.12F * settle, -.42F * settle);
+            }
+            case SONIC_CRY, SONIC_SCREAM, SONIC_PLUCK, SONIC_CLENCH, SONIC_WALL, SONIC_SHOVE, SONIC_VAULT, SONIC_DIVE,
+                    SONIC_GATHER, SONIC_RELEASE, SONIC_CUP, SONIC_SNAP, SONIC_HOWL, SONIC_LISTEN, SONIC_HUM, SONIC_HUSH,
+                    SONIC_CONDUCT, SONIC_DOME, SONIC_SING ->
+                    sonic(model, pose, main, rightHanded ? model.leftArm : model.rightArm, inward, aimX, aimY,
+                            ClientArmPoseState.ageTicks(id), ageInTicks);
+            case QUAKE_PALM, QUAKE_PALM_OFF, QUAKE_TUNE, QUAKE_CLENCH, QUAKE_PUNCH_DOWN, QUAKE_PLUNGE, QUAKE_UPHEAVAL, QUAKE_BEAM,
+                    QUAKE_FLY, QUAKE_RUMBLE, QUAKE_AFTERSHOCK, QUAKE_FEEL, QUAKE_FRACTURED, QUAKE_UPPERCUT, QUAKE_TRACE, QUAKE_SHELL,
+                    QUAKE_BRACE, QUAKE_RELEASE, QUAKE_DASH, QUAKE_TOUCH, QUAKE_SPLIT, QUAKE_RAMPART, QUAKE_ROOT ->
+                    quake(model, pose, main, rightHanded ? model.leftArm : model.rightArm, inward, aimX, aimY,
+                            ClientArmPoseState.ageTicks(id), ageInTicks, rightHanded);
+            case VIBE_PALM, VIBE_OPEN, VIBE_READ, VIBE_GUARD, VIBE_LOCK, VIBE_LANCE, VIBE_CROSS, VIBE_STEP ->
+                    vibe(pose, main, rightHanded ? model.leftArm : model.rightArm, inward, aimX, aimY, ClientArmPoseState.ageTicks(id));
+            case REGEN_MEND, REGEN_OFFER, REGEN_STREAM, REGEN_BRACE, REGEN_LEAP, REGEN_LAND, REGEN_EMBRACE, REGEN_PAYBACK,
+                    REGEN_INJECT, REGEN_FLING, REGEN_DRAW, REGEN_PUMP, REGEN_HARDEN, REGEN_RISE, REGEN_COMPRESS, REGEN_HEARTBEAT,
+                    REGEN_DEFY, REGEN_BLOOM ->
+                    regen(pose, main, rightHanded ? model.leftArm : model.rightArm, inward, aimX, aimY,
+                            ClientArmPoseState.ageTicks(id), ageInTicks);
+            case TELE_READ, TELE_SUGGEST, TELE_LINK, TELE_PUPPET, TELE_NIGHTMARE, TELE_COMMAND, TELE_LISTEN, TELE_WEAVE,
+                    TELE_PERSUADE, TELE_MEMORY, TELE_HIVE, TELE_STORM, TELE_VEIL, TELE_GATHER ->
+                    telepathy(pose, main, rightHanded ? model.leftArm : model.rightArm, inward, aimX, aimY,
+                            ClientArmPoseState.ageTicks(id), ageInTicks);
             case FLIGHT_COIL -> {
                 float gather = smooth(ClientArmPoseState.ageTicks(id) / 17F);
                 float reach = -1.17F + .49F * gather;
@@ -434,6 +558,531 @@ public final class PowerArmPoses {
         model.leftSleeve.copyFrom(model.leftArm);
         model.rightPants.copyFrom(model.rightLeg);
         model.leftPants.copyFrom(model.leftLeg);
+    }
+
+    /**
+     * Sonic Resonance's gestures. {@code main} is the casting arm and {@code off} the other; an arm swings outward with
+     * {@code z = -inward * k} (main) or {@code z = inward * k} (off), and turns in with {@code y = inward * k} (main) or
+     * {@code y = -inward * k} (off).
+     */
+    private static void sonic(PlayerModel<?> model, ArmPose pose, ModelPart main, ModelPart off, float inward,
+                              float aimX, float aimY, float age, float ageInTicks) {
+        switch (pose) {
+            case SONIC_CRY -> {
+                // The voice goes out and the arms are thrown back by it, fists low and wide.
+                float snap = smooth(age / 2F), settle = smooth((age - 6F) / 3F);
+                float back = 1.0F * snap * (1 - .45F * settle), out = .58F * snap;
+                set(main, back, 0, -inward * out);
+                set(off, back, 0, inward * out);
+            }
+            case SONIC_SCREAM -> {
+                // Braced further back and wider, shaking while the scream lasts.
+                float shake = Mth.sin(ageInTicks * 4.1F) * .05F, open = smooth(age / 3F);
+                set(main, (.8F + shake) * open, 0, -inward * (.85F - shake) * open);
+                set(off, (.8F - shake) * open, 0, inward * (.85F + shake) * open);
+            }
+            case SONIC_PLUCK -> {
+                // A hand flicks out past the aim as if plucking a string; the other hangs loose.
+                float flick = smooth(age / 2F), follow = smooth((age - 3F) / 5F);
+                set(main, Mth.lerp(flick, -1.0F, aimX + .1F) + .25F * follow, aimY + Mth.lerp(flick, inward * .5F, -inward * .35F), -inward * .1F);
+                set(off, -.15F, 0, inward * .1F);
+            }
+            case SONIC_CLENCH -> {
+                // The arm out at the Note, the fist closing and drawing back as it breaks.
+                float pull = smooth((age - 2F) / 4F);
+                set(main, aimX + .4F * pull, aimY + inward * .1F * pull, 0);
+                set(off, -.25F, 0, inward * .15F);
+            }
+            case SONIC_WALL -> {
+                // Both palms raised flat to the front, a little apart: holding the wall up.
+                float raise = smooth(age / 3F);
+                set(main, Mth.lerp(raise, 0, aimX - .05F), aimY - inward * .26F * raise, 0);
+                set(off, Mth.lerp(raise, 0, aimX - .05F), aimY + inward * .26F * raise, 0);
+            }
+            case SONIC_SHOVE -> {
+                // Drawn in to the chest, then a two-handed shove straight along the aim.
+                float drive = smooth((age - 1F) / 2.5F);
+                set(main, Mth.lerp(drive, -1.0F, aimX - .1F), aimY + Mth.lerp(drive, inward * .6F, -inward * .12F), 0);
+                set(off, Mth.lerp(drive, -1.0F, aimX - .1F), aimY + Mth.lerp(drive, -inward * .6F, inward * .12F), 0);
+            }
+            case SONIC_VAULT -> {
+                // Flung up and out as the cry at the ground throws the body away.
+                float fling = smooth(age / 2F), settle = smooth((age - 8F) / 4F);
+                float up = -2.5F * fling * (1 - .3F * settle), out = .45F * fling;
+                set(main, up, 0, -inward * out);
+                set(off, up, 0, inward * out);
+            }
+            case SONIC_DIVE -> {
+                // Pinned back along the body, streamlined for the plunge.
+                float flutter = Mth.sin(ageInTicks * 2.3F) * .03F;
+                set(main, .45F + flutter, 0, -inward * .08F);
+                set(off, .45F - flutter, 0, inward * .08F);
+            }
+            case SONIC_GATHER -> {
+                // Raised wide, then drawn in to the chest as the Crescendo builds, trembling more as it fills.
+                float built = smooth(age / 60F), tremble = Mth.sin(ageInTicks * 3.3F) * .035F * built;
+                float x = Mth.lerp(built, -1.75F, -1.25F) + tremble, out = Mth.lerp(built, 1.0F, 0), in = .7F * built;
+                set(main, x, inward * in, -inward * out);
+                set(off, x - tremble * 2, -inward * in, inward * out);
+            }
+            case SONIC_RELEASE -> {
+                // Flung wide and back from the chest, the body open as everything goes out.
+                float fling = smooth(age / 2F), settle = smooth((age - 9F) / 6F);
+                float x = Mth.lerp(fling, -1.25F, .4F) * (1 - .6F * settle), out = 1.3F * fling * (1 - .5F * settle);
+                set(main, x, 0, -inward * out);
+                set(off, x, 0, inward * out);
+            }
+            case SONIC_CUP -> {
+                // A hand cupped at the mouth to put the whole voice through one point.
+                float lift = smooth(age / 3F);
+                set(main, -2.05F * lift, inward * .55F * lift, 0);
+                set(off, .2F, 0, inward * .12F);
+            }
+            case SONIC_SNAP -> {
+                // A hand raised beside the head, then a snap forward at the point.
+                float raise = smooth(age / 2.5F), snap = smooth((age - 3F) / 2F);
+                set(main, Mth.lerp(snap, -2.7F * raise, aimX), Mth.lerp(snap, -inward * .15F, aimY), 0);
+                set(off, -.2F, 0, inward * .12F);
+            }
+            case SONIC_HOWL -> {
+                // Arms flung low and wide, hands open, shaking with the howl.
+                float spread = smooth(age / 3F), shake = Mth.sin(ageInTicks * 3.7F) * .04F;
+                set(main, -.35F * spread + shake, 0, -inward * (1.0F * spread - shake));
+                set(off, -.35F * spread - shake, 0, inward * (1.0F * spread + shake));
+            }
+            case SONIC_LISTEN -> {
+                // A hand to the ear; the other held out flat, feeling for the echo.
+                float lift = smooth(age / 4F);
+                set(main, -2.6F * lift, 0, inward * .3F * lift);
+                set(off, -1.2F * lift, 0, inward * .7F * lift);
+            }
+            case SONIC_HUM -> {
+                // Arms crossed over the chest, rising and falling with a low hum.
+                float breath = Mth.sin(ageInTicks * .35F) * .04F, cross = smooth(age / 4F);
+                set(main, (-1.05F + breath) * cross, inward * .85F * cross, 0);
+                set(off, (-1.25F - breath) * cross, -inward * .85F * cross, 0);
+            }
+            case SONIC_HUSH -> {
+                // A finger to the lips; the other hand held low, palm down, quieting the air.
+                float lift = smooth(age / 4F);
+                set(main, -2.0F * lift, inward * .5F * lift, 0);
+                set(off, -.55F * lift, 0, inward * .45F * lift);
+            }
+            case SONIC_CONDUCT -> {
+                // A conductor's raised hands, then four downbeats as the waves stack, held up for the burst.
+                float raise = smooth(age / 4F);
+                float beat = age < 4 || age > 20 ? 0 : Mth.sin(((age - 4F) % 4F) / 4F * Mth.PI);
+                float x = -2.55F * raise + 1.3F * beat;
+                set(main, x, 0, -inward * .3F);
+                set(off, x + .1F, 0, inward * .3F);
+            }
+            case SONIC_DOME -> {
+                // Palms pressed slowly down, flattening the air into a dome.
+                float press = smooth(age / 12F);
+                float x = Mth.lerp(press, -1.7F, -.75F);
+                set(main, x, 0, -inward * .4F);
+                set(off, x, 0, inward * .4F);
+            }
+            case SONIC_SING -> {
+                // Arms opened in song, palms up, swaying with the hymn.
+                float open = smooth(age / 5F), sway = Mth.sin(ageInTicks * .25F) * .06F;
+                set(main, -1.1F * open + sway, -inward * .2F * open, -inward * .8F * open);
+                set(off, -1.1F * open - sway, inward * .2F * open, inward * .8F * open);
+            }
+            default -> { }
+        }
+    }
+
+    /**
+     * Quake's gestures, with the same conventions as {@link #sonic}: {@code main} casts, {@code off} is the other arm; an
+     * arm swings outward with {@code z = -inward * k} (main) or {@code z = inward * k} (off).
+     */
+    private static void quake(PlayerModel<?> model, ArmPose pose, ModelPart main, ModelPart off, float inward,
+                              float aimX, float aimY, float age, float ageInTicks, boolean rightHanded) {
+        float shake = Mth.sin(ageInTicks * 4.3F) * .035F;
+        switch (pose) {
+            case QUAKE_PALM, QUAKE_PALM_OFF -> {
+                // One palm driven out along the aim; the other drawn back at the hip.
+                boolean second = pose == ArmPose.QUAKE_PALM_OFF;
+                ModelPart thrust = second ? off : main, back = second ? main : off;
+                float sign = second ? -1 : 1;
+                float drive = smooth(age / 1.5F), recoil = smooth((age - 2F) / 3F) * .2F;
+                set(thrust, Mth.lerp(drive, -1.0F, aimX) - recoil, aimY + sign * inward * .05F, 0);
+                set(back, .35F, 0, sign * inward * .12F);
+            }
+            case QUAKE_TUNE, QUAKE_CLENCH -> {
+                // A hand out at the target, fingers spread and trembling; the other grips its wrist. Shatter pulls it closed.
+                float pull = pose == ArmPose.QUAKE_CLENCH ? smooth((age - 1F) / 3F) : 0;
+                float tremble = pose == ArmPose.QUAKE_TUNE ? shake : 0;
+                set(main, aimX + tremble + .5F * pull, aimY, 0);
+                set(off, aimX + .3F + .4F * pull, aimY + inward * .45F, 0);
+            }
+            case QUAKE_PUNCH_DOWN -> {
+                // Raised, then a fist driven down into the ground ahead.
+                float drive = smooth((age - 1F) / 2F);
+                set(main, Mth.lerp(drive, -2.7F, -.45F), 0, -inward * .08F);
+                set(off, .4F, 0, inward * .2F);
+            }
+            case QUAKE_PLUNGE -> {
+                // Both fists locked together overhead, ready to hammer the landing.
+                set(main, -3.0F + shake, inward * .12F, 0);
+                set(off, -3.0F - shake, -inward * .12F, 0);
+            }
+            case QUAKE_UPHEAVAL -> {
+                // Both palms swept up from the ground to overhead, lifting the whole line.
+                float lift = smooth(age / 3F);
+                set(main, Mth.lerp(lift, -.3F, -2.4F), 0, -inward * .35F);
+                set(off, Mth.lerp(lift, -.3F, -2.4F), 0, inward * .35F);
+            }
+            case QUAKE_BEAM -> {
+                // Both palms pressed out along the aim, close together, shaking with the beam.
+                set(main, aimX + shake, aimY + inward * .12F, 0);
+                set(off, aimX - shake, aimY - inward * .12F, 0);
+            }
+            case QUAKE_FLY -> {
+                // Thrust down and back, palms to the ground: the beam carries her.
+                set(main, .55F + shake, 0, -inward * .25F);
+                set(off, .55F - shake, 0, inward * .25F);
+            }
+            case QUAKE_RUMBLE -> {
+                // Low and wide, palms down, the whole body trembling with the ground.
+                set(main, -.45F + shake, 0, -inward * (.7F + shake));
+                set(off, -.45F - shake, 0, inward * (.7F - shake));
+            }
+            case QUAKE_AFTERSHOCK -> {
+                // Both fists brought down from overhead together.
+                float slam = smooth((age - 1F) / 2F);
+                set(main, Mth.lerp(slam, -2.9F, -.4F), 0, -inward * .2F);
+                set(off, Mth.lerp(slam, -2.9F, -.4F), 0, inward * .2F);
+            }
+            case QUAKE_FEEL -> {
+                // A palm laid on the ground ahead, the other hand resting on the knee.
+                float reach = smooth(age / 4F);
+                set(main, -.75F * reach, 0, 0);
+                set(off, -.25F * reach, 0, inward * .12F);
+            }
+            case QUAKE_FRACTURED -> {
+                // Both arms clutched in to the chest, shaking.
+                float hurt = Mth.sin(ageInTicks * 6.1F) * .06F;
+                set(main, -.85F + hurt, inward * .9F, 0);
+                set(off, -1.0F - hurt, -inward * .9F, 0);
+            }
+            case QUAKE_UPPERCUT -> {
+                // A fist from the hip straight up through the target; the other arm guards the face.
+                float rise = smooth((age - 1F) / 2F);
+                set(main, Mth.lerp(rise, .35F, -2.25F), aimY, 0);
+                set(off, -1.2F, -inward * .6F, 0);
+            }
+            case QUAKE_TRACE -> {
+                // A hand trailed low across the ground, writing the fault.
+                float sweep = smooth(age / 12F);
+                set(main, -.55F, Mth.lerp(sweep, -inward * .5F, inward * .6F), 0);
+                set(off, .3F, 0, inward * .15F);
+            }
+            case QUAKE_SHELL -> {
+                // Crossed at the chest, then flung wide, palms out, holding the air apart.
+                float fling = smooth((age - 3F) / 2F);
+                set(main, Mth.lerp(fling, -1.2F, -1.4F) + shake * fling, Mth.lerp(fling, inward * .9F, 0), -inward * 1.1F * fling);
+                set(off, Mth.lerp(fling, -1.25F, -1.4F) - shake * fling, Mth.lerp(fling, -inward * .9F, 0), inward * 1.1F * fling);
+            }
+            case QUAKE_BRACE -> {
+                // Forearms crossed up in front of the face, taking the hits.
+                set(main, -1.7F + shake * .5F, inward * .85F, 0);
+                set(off, -1.55F - shake * .5F, -inward * .85F, 0);
+            }
+            case QUAKE_RELEASE -> {
+                // Out of the brace, a double-palm push.
+                float drive = smooth(age / 2F);
+                set(main, Mth.lerp(drive, -1.6F, aimX - .1F), aimY + Mth.lerp(drive, inward * .8F, -inward * .3F), 0);
+                set(off, Mth.lerp(drive, -1.6F, aimX - .1F), aimY + Mth.lerp(drive, -inward * .8F, inward * .3F), 0);
+            }
+            case QUAKE_DASH -> {
+                // Palms flung back at the air behind her.
+                float fling = smooth(age / 2F);
+                set(main, .95F * fling, 0, -inward * .3F * fling);
+                set(off, .95F * fling, 0, inward * .3F * fling);
+            }
+            case QUAKE_TOUCH -> {
+                // A palm laid flat on the wall, held still; the other arm loose.
+                float reach = smooth(age / 3F);
+                set(main, Mth.lerp(reach, -.6F, aimX + .15F), aimY - inward * .15F, 0);
+                set(off, -.2F, 0, inward * .1F);
+            }
+            case QUAKE_SPLIT -> {
+                // Both fists driven down, then pulled apart, tearing the ground open between them.
+                float apart = smooth((age - 2F) / 6F);
+                set(main, -.5F, 0, -inward * Mth.lerp(apart, .1F, .9F));
+                set(off, -.5F, 0, inward * Mth.lerp(apart, .1F, .9F));
+            }
+            case QUAKE_RAMPART -> {
+                // Both palms swept up in front, raising the slabs.
+                float lift = smooth(age / 4F);
+                set(main, Mth.lerp(lift, -.4F, -1.65F), -inward * .35F, 0);
+                set(off, Mth.lerp(lift, -.4F, -1.65F), inward * .35F, 0);
+            }
+            case QUAKE_ROOT -> {
+                // A wide, rooted stance: feet apart, fists low and out.
+                float settle = smooth(age / 5F);
+                set(main, -.2F, 0, -inward * .45F * settle);
+                set(off, -.2F, 0, inward * .45F * settle);
+                set(rightHanded ? model.rightLeg : model.leftLeg, 0, 0, -inward * .22F * settle);
+                set(rightHanded ? model.leftLeg : model.rightLeg, 0, 0, inward * .22F * settle);
+            }
+            default -> { }
+        }
+    }
+
+    /** Regeneration's gestures, with the same conventions as {@link #sonic}. */
+    private static void regen(ArmPose pose, ModelPart main, ModelPart off, float inward, float aimX, float aimY,
+                              float age, float ageInTicks) {
+        float shake = Mth.sin(ageInTicks * 4.1F) * .03F;
+        switch (pose) {
+            case REGEN_MEND -> {
+                // Both hands pressed to the wound, then flexed out as it closes.
+                float flex = smooth((age - 6F) / 4F);
+                set(main, Mth.lerp(flex, -1.0F, -.3F), inward * .8F * (1 - flex), -inward * .5F * flex);
+                set(off, Mth.lerp(flex, -1.1F, -.3F), -inward * .8F * (1 - flex), inward * .5F * flex);
+            }
+            case REGEN_OFFER, REGEN_STREAM -> {
+                // The cut palm held out to them; the other hand grips the forearm (and keeps it there while the blood flows).
+                float reach = smooth(age / 3F), tremble = pose == ArmPose.REGEN_STREAM ? shake : 0;
+                set(main, Mth.lerp(reach, -.5F, aimX + .2F) + tremble, aimY, 0);
+                set(off, Mth.lerp(reach, -.5F, aimX + .45F), aimY - inward * .45F, 0);
+            }
+            case REGEN_BRACE -> {
+                // Chest out, arms spread low and back: daring it.
+                float open = smooth(age / 4F);
+                set(main, .3F * open, 0, -inward * .45F * open);
+                set(off, .3F * open, 0, inward * .45F * open);
+            }
+            case REGEN_LEAP -> {
+                // Arms flung up as she throws herself off.
+                set(main, -2.9F + shake, 0, -inward * .35F);
+                set(off, -2.9F - shake, 0, inward * .35F);
+            }
+            case REGEN_LAND -> {
+                // Fists driven down beside her as she lands.
+                float slam = smooth(age / 2F);
+                set(main, Mth.lerp(slam, -2.5F, -.3F), 0, -inward * .25F);
+                set(off, Mth.lerp(slam, -2.5F, -.3F), 0, inward * .25F);
+            }
+            case REGEN_EMBRACE -> {
+                // Arms opened wide in front, drawing her friends in.
+                float open = smooth(age / 5F);
+                set(main, -1.3F * open, -inward * .6F * open, 0);
+                set(off, -1.3F * open, inward * .6F * open, 0);
+            }
+            case REGEN_PAYBACK -> {
+                // Hands pulled to the chest, then thrown open wide.
+                float fling = smooth((age - 3F) / 2F);
+                set(main, Mth.lerp(fling, -1.1F, -1.4F), Mth.lerp(fling, inward * .85F, 0), -inward * 1.2F * fling);
+                set(off, Mth.lerp(fling, -1.1F, -1.4F), Mth.lerp(fling, -inward * .85F, 0), inward * 1.2F * fling);
+            }
+            case REGEN_INJECT -> {
+                // A hand driven into the friend; the other holds her own elbow where the blood was drawn.
+                float drive = smooth(age / 3F);
+                set(main, Mth.lerp(drive, -.8F, aimX + .3F), aimY, 0);
+                set(off, -.6F, -inward * .9F, 0);
+            }
+            case REGEN_FLING -> {
+                // The cut palm swept across from the far side, flinging the blood out.
+                float sweep = smooth(age / 3F);
+                set(main, -1.4F, Mth.lerp(sweep, inward * .9F, -inward * .8F), 0);
+                set(off, .2F, 0, inward * .15F);
+            }
+            case REGEN_DRAW -> {
+                // A palm on their wound, drawing it in to her own chest.
+                float pull = smooth((age - 2F) / 8F);
+                set(main, Mth.lerp(pull, aimX, -1.2F), Mth.lerp(pull, aimY, inward * .6F), 0);
+                set(off, -.2F, 0, inward * .12F);
+            }
+            case REGEN_PUMP -> {
+                // Both fists up at the shoulders, flexing: the adrenaline hits.
+                float lift = smooth(age / 3F);
+                set(main, -.3F + shake, 0, -inward * 1.45F * lift);
+                set(off, -.3F - shake, 0, inward * 1.45F * lift);
+            }
+            case REGEN_HARDEN -> {
+                // Fists tensed at her sides, trembling as the body learns.
+                set(main, .1F + shake, 0, -inward * .25F);
+                set(off, .1F - shake, 0, inward * .25F);
+            }
+            case REGEN_RISE -> {
+                // One hand pushing off the ground, the other swung up for balance.
+                float push = smooth(age / 4F);
+                set(main, -.35F, 0, -inward * .1F);
+                set(off, Mth.lerp(push, -.4F, -1.6F), 0, inward * .4F);
+            }
+            case REGEN_COMPRESS -> {
+                // Both hands locked together on their chest, pumping.
+                float pump = Mth.abs(Mth.sin(ageInTicks * .9F)) * .25F;
+                set(main, -.9F + pump, inward * .35F, 0);
+                set(off, -.9F + pump, -inward * .35F, 0);
+            }
+            case REGEN_HEARTBEAT -> {
+                // A fist beaten against the chest, twice.
+                float beat = Mth.abs(Mth.sin(age * .6F)) * .2F;
+                set(main, -1.2F + beat, inward * .9F, 0);
+                set(off, -.2F, 0, inward * .3F);
+            }
+            case REGEN_DEFY -> {
+                // Arms out to the sides, palms open: come and try.
+                float open = smooth(age / 4F);
+                set(main, -.6F * open, 0, -inward * .9F * open);
+                set(off, -.6F * open, 0, inward * .9F * open);
+            }
+            case REGEN_BLOOM -> {
+                // Palms raised up in front as the tree of light grows.
+                float lift = smooth(age / 6F);
+                set(main, Mth.lerp(lift, -.6F, -2.2F), -inward * .25F, -inward * .15F);
+                set(off, Mth.lerp(lift, -.6F, -2.2F), inward * .25F, inward * .15F);
+            }
+            default -> { }
+        }
+    }
+
+    private static void vibe(ArmPose pose, ModelPart main, ModelPart off, float inward, float aimX, float aimY, float age) {
+        float push = smooth(age / (pose == ArmPose.VIBE_PALM ? 3F : 6F));
+        float settle = smooth((age - 10) / 7F);
+        switch (pose) {
+            case VIBE_PALM -> {
+                set(main, aimX + .61F * (1 - push) + .42F * settle, aimY - inward * .09F, inward * (.16F - .10F * push));
+                set(off, -.43F + .26F * push, -.14F * inward, -.27F * inward);
+            }
+            case VIBE_LANCE -> {
+                set(main, aimX + .38F * (1 - push) + .32F * settle, aimY, inward * .06F);
+                set(off, -.94F - .32F * push, -.30F * inward, .18F * inward);
+            }
+            case VIBE_CROSS -> {
+                set(main, aimX + .42F * (1 - push), aimY + inward * (.36F - .57F * push), inward * .23F);
+                set(off, aimX + .48F * (1 - push), aimY - inward * (.36F - .57F * push), -inward * .23F);
+            }
+            case VIBE_OPEN -> {
+                float open = smooth(age / 9F);
+                set(main, -1.52F + .22F * settle, inward * (.26F - .79F * open), inward * (.08F + .31F * open));
+                set(off, -1.52F + .22F * settle, -inward * (.26F - .79F * open), -inward * (.08F + .31F * open));
+            }
+            case VIBE_READ -> {
+                float sight = smooth((age - 7) / 8F);
+                set(main, aimX - .76F * sight, aimY + inward * (.08F + .50F * sight), inward * .13F);
+                set(off, -.27F, -.11F * inward, -.22F * inward);
+            }
+            case VIBE_GUARD -> {
+                set(main, -1.33F - .31F * push, -.31F * inward, .35F * inward);
+                set(off, -1.21F - .28F * push, .31F * inward, -.37F * inward);
+            }
+            case VIBE_LOCK -> {
+                float fall = smooth((age - 12) / 6F);
+                set(main, -1.26F - .86F * push + 1.45F * fall, -.43F * inward, .52F * inward);
+                set(off, -1.26F - .86F * push + 1.45F * fall, .43F * inward, -.52F * inward);
+            }
+            case VIBE_STEP -> {
+                set(main, -1.38F + .36F * settle, inward * .18F, .13F * inward);
+                set(off, .47F - .29F * settle, 0, -.29F * inward);
+            }
+            default -> { }
+        }
+    }
+
+    /**
+     * Telepathy's gestures, with the same conventions as {@link #sonic}: {@code main} casts, {@code off} is the other arm;
+     * an arm swings outward with {@code z = -inward * k} (main) or {@code z = inward * k} (off). The temple is
+     * {@code (-2.35, inward * .1, inward * .55)}: the arm raised and turned in until two fingers touch beside the eye.
+     */
+    private static void telepathy(ArmPose pose, ModelPart main, ModelPart off, float inward, float aimX, float aimY,
+                                  float age, float ageInTicks) {
+        switch (pose) {
+            case TELE_READ -> {
+                // Two fingers at the temple, trembling a little; the other hand reaching toward the mind.
+                float lift = smooth(age / 4F), tremble = Mth.sin(ageInTicks * 2.1F) * .02F;
+                set(main, -2.35F * lift + tremble, inward * .1F * lift, inward * .55F * lift);
+                set(off, Mth.lerp(lift, -.2F, aimX + .35F), aimY * .6F, inward * .08F);
+            }
+            case TELE_SUGGEST -> {
+                // A palm out at the mind, then lowered slowly: easy now.
+                float press = smooth((age - 3F) / 8F);
+                set(main, Mth.lerp(press, aimX, -.85F), aimY + inward * .1F, -inward * .1F);
+                set(off, -.15F, 0, inward * .1F);
+            }
+            case TELE_LINK -> {
+                // Both hands to the temples, then opened outward to every mind around.
+                float lift = smooth(age / 4F), open = smooth((age - 8F) / 6F);
+                float x = Mth.lerp(open, -2.35F * lift, -1.3F), y = .1F * lift * (1 - open), z = Mth.lerp(open, .55F * lift, -1.0F);
+                set(main, x, inward * y, inward * z);
+                set(off, x, -inward * y, -inward * z);
+            }
+            case TELE_PUPPET -> {
+                // Both hands raised before the face, fingers hooked down as if on strings, twitching the body along.
+                float raise = smooth(age / 4F);
+                float a = Mth.sin(ageInTicks * 1.7F) * .05F, b = Mth.sin(ageInTicks * 1.7F + 1.5F) * .05F;
+                set(main, Mth.lerp(raise, 0, aimX - .45F) + a, aimY + inward * .15F, 0);
+                set(off, Mth.lerp(raise, 0, aimX - .2F) + b, aimY - inward * .3F, inward * .1F);
+            }
+            case TELE_NIGHTMARE -> {
+                // A hand drawn down over the face, then flung out at the mind; the other held back, low and wide.
+                float draw = smooth(age / 6F), fling = smooth((age - 6F) / 3F);
+                set(main, Mth.lerp(fling, -2.6F + .7F * draw, aimX - .1F), Mth.lerp(fling, inward * .6F, aimY), 0);
+                set(off, .3F * fling, 0, inward * .35F);
+            }
+            case TELE_COMMAND -> {
+                // Two fingers raised beside the head, then a sharp point at the mind.
+                float raise = smooth(age / 1.5F), snap = smooth((age - 2F) / 1.5F);
+                set(main, Mth.lerp(snap, -2.6F * raise, aimX - .05F), Mth.lerp(snap, inward * .2F, aimY), 0);
+                set(off, -.9F, -inward * .5F, 0);
+            }
+            case TELE_LISTEN -> {
+                // Fingers at both temples, still, listening.
+                float lift = smooth(age / 4F), breath = Mth.sin(ageInTicks * .3F) * .02F;
+                set(main, -2.45F * lift + breath, inward * .15F * lift, inward * .6F * lift);
+                set(off, -2.45F * lift - breath, -inward * .15F * lift, -inward * .6F * lift);
+            }
+            case TELE_WEAVE -> {
+                // Hands weaving opposite circles before the chest, spinning the dream.
+                float turn = age * .45F;
+                set(main, -1.25F + Mth.sin(turn) * .18F, inward * (.35F + Mth.cos(turn) * .18F), 0);
+                set(off, -1.25F + Mth.sin(turn + Mth.PI) * .18F, -inward * (.35F + Mth.cos(turn + Mth.PI) * .18F), 0);
+            }
+            case TELE_PERSUADE -> {
+                // An open palm held out to the mind, swaying gently; the other hand on the heart.
+                float reach = smooth(age / 5F), sway = Mth.sin(ageInTicks * .2F) * .04F;
+                set(main, Mth.lerp(reach, -.3F, aimX + .1F) + sway, aimY + inward * .05F, -inward * .05F);
+                set(off, -1.0F * reach, -inward * .8F * reach, 0);
+            }
+            case TELE_MEMORY -> {
+                // A palm passed slowly before the eyes, wiping back through time.
+                float lift = smooth(age / 4F), sweep = smooth(age / 18F);
+                set(main, -1.9F * lift, Mth.lerp(sweep, inward * .6F, -inward * .4F), 0);
+                set(off, -.2F, 0, inward * .12F);
+            }
+            case TELE_HIVE -> {
+                // Palms raised, then pressed outward to the friends being linked.
+                float raise = smooth(age / 5F), open = smooth((age - 8F) / 6F);
+                float x = Mth.lerp(open, -2.0F * raise, -1.4F), out = Mth.lerp(open, .5F * raise, 1.1F);
+                set(main, x, 0, -inward * out);
+                set(off, x, 0, inward * out);
+            }
+            case TELE_STORM -> {
+                // Hands to the temples, then thrown up at the point where the storm forms.
+                float lift = smooth(age / 4F), thrust = smooth((age - 6F) / 3F);
+                float x = Mth.lerp(thrust, -2.35F * lift, aimX - .5F), z = Mth.lerp(thrust, .55F * lift, -.15F);
+                set(main, x, aimY * thrust, inward * z);
+                set(off, x, aimY * thrust, -inward * z);
+            }
+            case TELE_VEIL -> {
+                // A hand swept across the face like drawing a veil; the other low and wide.
+                float sweep = smooth(age / 8F);
+                set(main, -2.0F, Mth.lerp(sweep, -inward * .4F, inward * .7F), 0);
+                set(off, -.3F, 0, inward * .5F);
+            }
+            case TELE_GATHER -> {
+                // Hands clasped at the chest, then spread to share the hive.
+                float clasp = smooth(age / 5F), open = smooth((age - 8F) / 6F);
+                float x = Mth.lerp(open, -1.1F * clasp, -1.0F), in = .7F * clasp * (1 - open), out = 1.2F * open;
+                set(main, x, inward * in, -inward * out);
+                set(off, x, -inward * in, inward * out);
+            }
+            default -> { }
+        }
     }
 
     private static float smooth(float value) {

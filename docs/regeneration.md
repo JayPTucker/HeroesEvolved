@@ -64,13 +64,56 @@ loses limbs.
 
 ## Actions
 
+Every action has its own arm pose in third and first person, and three of them have a free second press.
+
 | Key | Level | Action | Behavior | Base stamina / cooldown |
 | --- | --- | --- | --- | --- |
-| G | 1 | Rapid Mending | Heal 4 + 2 per level instantly, plus one per 8 Regrowth, spending all of it. Healing past full health becomes up to four hearts of Absorption. Clears fire and toxins, and regrows missing limbs in a second. | unchanged |
-| H | 2 | Blood Gift | Heal someone up to 12 blocks away (was 10) for 6 + 2 per level, plus one per 10 Regrowth, with Regeneration II. It burns the undead. The cut costs you 3 health and gives 6 Regrowth. Holding an empty syringe still bottles the blood for the Formula. | unchanged |
-| Z | 3 | Indestructible | For ten seconds: no fall damage or knockback, Resistance, and now **Reckless**: punches hit 3 + level harder and break your own hand a little (1 health, 2 Regrowth). **Bullets come back out:** projectiles do half damage, and arrows push out of the wound and drop at your feet. | unchanged |
-| X | 4 | Blood Bond | Replaces Healing Aura. For ten seconds, friends within 8 blocks heal with you each second and the undead burn, as before, and you take **35% of every wound your friends suffer**. Monsters and players you are fighting are never bonded. | unchanged |
-| V | 5 | Second Life | Aim at a friend within 12 blocks: your blood heals them to full, and for one minute their next killing blow leaves them standing at 2 hearts with Regeneration III. Costs 50 Regrowth, 6 of your health and 40 stamina; 90-second cooldown. With no friend in sight, the key tells you how long you'd be down if killed. | 40 / 90 s |
+| G | 1 | Rapid Mending | **Pushes every arrow and stinger out of you first** (the arrows drop at your feet, and each gives 4 Regrowth). Then heal 4 + 2 per level instantly, plus one per 8 Regrowth, spending all of it. Healing past full health becomes up to four hearts of Absorption. Clears fire and toxins, and regrows missing limbs in a second. *Pose:* hands pressed to the wound, then flexed out. | unchanged |
+| H | 2 | Blood Gift | **Tap:** heal someone up to 12 blocks away for 6 + 2 per level, plus one per 10 Regrowth, with Regeneration II. It burns the undead. The cut costs you 3 health and gives 6 Regrowth. **Hold:** **Blood Stream**, a steady flow for up to four seconds: every half second they heal 2 + level/2 (+1 per 25 Regrowth) and lose a toxin, and it costs you 1 health and gives you 1 Regrowth. It stops if they leave your sight. With no one in reach (and no syringe), the key costs nothing. Holding an empty syringe still bottles the blood for the Formula. *Pose:* a palm offered; held, the other hand grips the forearm. | unchanged |
+| Z | 3 | Indestructible | For ten seconds: no fall damage or knockback, Resistance, **Reckless** punches (3 + level harder; each breaks your hand a little for 1 health and 2 Regrowth) and **bullets come back out** (projectiles do half damage, arrows drop at your feet). **Press again** for **Freefall**, once per Indestructible: you throw yourself about seven blocks up and forward, and come down on whatever is below. The landing hits everything within 3 + a quarter of the fall (up to 7 blocks) for 4 + the fall (up to 16) and throws it back, and every block fallen is a point of Regrowth. *Pose:* chest out, arms spread low; flung up for the leap; fists down for the landing. | unchanged |
+| X | 4 | Blood Bond | For ten seconds, friends within 8 blocks heal with you each second and the undead burn, and you take **35% of every wound your friends suffer**. **Press again** for **Pay It Back**: the bond ends, and everyone still in it heals by the wounds you took (plus 2 per level, up to 20 between them), and you gain twice what you took as Regrowth. *Pose:* arms opened to draw them in; hands pulled to the chest, then thrown open. | unchanged |
+| V | 5 | Second Life | Aim at a friend within 12 blocks: your blood heals them to full, and for one minute their next killing blow leaves them standing at 2 hearts with Regeneration III. Costs 50 Regrowth, 6 of your health and 40 stamina; 90-second cooldown. With no friend in sight, the key tells you how long you'd be down if killed. *Pose:* a hand pressed into them, the other on your own elbow. | 40 / 90 s |
+
+## Skill tree
+
+The tree is built around the kit rather than stat bonuses: every node changes a move or ties two together.
+Node IDs are unchanged, so earlier purchases carry over.
+
+### Martyr (other people's pain)
+
+| Node | What it does |
+| --- | --- |
+| **Shared Blood** | Friends you heal with Blood Gift, Blood Stream, Bloodletting or Second Life are bonded to you for six seconds, as if by Blood Bond: you take 35% of their wounds. |
+| **Bloodletting** (active, was Cauterize) | Cut your palm and fling a fan of blood six blocks ahead. Friends it splashes heal 4 + level and lose harmful effects (4 Regrowth each); the undead burn for the same. Costs 2 health. |
+| **Scar Tissue** | Every wound you take for someone else (Blood Bond, Shared Blood, Take the Wound, Martyr) gives twice the Regrowth. |
+| **Take the Wound** (technique) | A palm on a friend's wound draws it into you: heal them up to 8 and take half. |
+| **Martyr's Grace** | You take only a quarter. |
+| **Martyr** | Once every two minutes, take a killing blow meant for a teammate within eight blocks. |
+
+### Adaptation (a body that learns)
+
+| Node | What it does |
+| --- | --- |
+| **Reckless Abandon** | Reckless punches throw what they hit, and each broken hand gives 4 Regrowth instead of 2. |
+| **Adrenal Rush** (active) | Spend up to 40 Regrowth: heal 4 plus one per 5 spent, with Speed II, Haste and Jump Boost for 8 seconds. |
+| **Callus** | Adaptation remembers the last three kinds of harm at once. |
+| **Adaptation** (technique) | For thirty seconds, each repeat of the same kind of harm hurts 40% less. |
+| **Thick Skin** | Repeated harm is cut by 60%. |
+| **Perfect Adaptation** | Fire and wither can no longer hurt you. |
+
+### Recovery (getting back up)
+
+| Node | What it does |
+| --- | --- |
+| **Back on Your Feet** | Getting back up from being down throws a heartbeat that knocks back everything within 5 blocks, and you rise with Strength for 10 seconds. |
+| **Play Dead** (active, was Transfusion) | Drop as if dead for up to 4 seconds: you lie on your back, monsters within 16 blocks lose you and can't pick you again, and you heal 1 every half second. **Press again** (free) to get up: your next melee hit within 3 seconds lands 6 harder. Swinging also gets you up. |
+| **Quick Recovery** | Your time on the ground is a third shorter, and Rapid Mending is ready the moment you get up. |
+| **Revive** (technique) | Both hands on a friend's chest, pumping: pull a friend below 30% health back to 60%, with Regeneration II. |
+| **Field Medic** | Revive reaches 16 blocks. |
+| **Second Wind** | Revive also clears harmful effects and grants strong absorption. |
+
+The three styles keep their effects and have their own poses: **Vital Burst** (a fist beaten against the chest),
+**Undying** (arms out, palms open, daring it) and **Lifebloom** (palms raised).
 
 ## Look and sound
 
@@ -81,15 +124,33 @@ rings across the ground. Indestructible punches crack white with red sparks, and
 leaves a glint and a spray. All glows use the same additive ribbons as the lightning.
 Sounds are vanilla: the bone-block snap for broken hands, the Warden's heartbeat for a Second Life.
 
+The rework's pieces are drawn by `client/effects/setpiece/RegenArt` in the same palette, from four primitives:
+a sagging **strand** of blood (Blood Stream), **drops** sliding along it, a lub-dub **beat** ring (Pay It Back, a Freefall
+landing, Revive) and an **ecg** heart-monitor line (above a body playing dead, flat at first then beating again over a
+friend being revived). Blood is drawn with normal blending so it reads as blood, not light; its wet highlight glows. The
+stream fades where it passes the camera. Bloodletting flings a fan of drops that splash where they land; a Freefall
+landing cracks the ground dark red.
+
+## For developers
+
+- `regeneration/RegenSkills` holds Blood Stream, Freefall, the three branch actives (Bloodletting, Adrenal Rush, Play
+  Dead) and the passive hooks; `RegenerationService` keeps Mending, Blood Gift, Indestructible, Blood Bond (now with
+  Pay It Back and Shared Blood) and Second Life.
+- Play Dead lies the body down by marking it "downed" in `BodyStatePayload` (`BodyService.state`), which every client's
+  `BodyVisuals` already draws; the server ignores the give-up key unless she is really down.
+- Branch skills get a free second press through `SkillCatalog`'s `followUp` (Regeneration's Play Dead, as Cryokinesis).
+- Regeneration is on the no-stat-bonus list in `SkillTreeService.bonus`.
+
 ## Previewing and tests
 
 ```bash
+./gradlew runClient --init-script tools/regen-kit-preview.init.gradle
 ./gradlew runClient --init-script tools/regeneration-preview.init.gradle
 ./gradlew runClient --init-script tools/body-preview.init.gradle
 ```
 
 photograph every power at dusk, and each stage of a limb growing back plus the downed body, in
-`build/regeneration-preview/screenshots/` and `build/body-preview/screenshots/`. `RegenerationGameTests`
+`build/regeneration-preview/screenshots/` and `build/body-preview/screenshots/`. `RegenReworkGameTests` checks Mending pushing arrows out, Blood Stream and the tapped gift, Freefall, Pay It Back, Shared Blood, Scar Tissue, Bloodletting, Adrenal Rush, Play Dead and its ambush, and Quick Recovery with Back on Your Feet. The kit preview photographs every action, follow-up, skill and style into `build/regen-kit-preview/screenshots/`. `RegenerationGameTests`
 checks that wounds become Regrowth and Mending spends it (with overflow Absorption), that Blood Gift
 reaches eleven blocks and feeds Regrowth, Reckless punches and ejected arrows, Blood Bond's shared
 wounds, that Second Life saves a friend exactly once, and halved falls. It also checks that an axe

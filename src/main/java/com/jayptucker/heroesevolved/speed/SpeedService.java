@@ -210,16 +210,25 @@ public final class SpeedService {
     public static boolean skill(AbilityUseContext c, int branch) {
         ServerPlayer p = c.player();
         if (branch == 0) {
-            REFLEX.put(p.getUUID(), now(p) + 120); AbilityEffects.at(p, Kind.SPEED_BURST, 2); cue(p); return true;
+            // Guard up, and the world narrows: rings close in at eye height round a still afterimage.
+            REFLEX.put(p.getUUID(), now(p) + 120);
+            AbilityEffects.send(p.serverLevel(), Kind.SPEED_FOCUS, p.position(), p.getEyePosition(), 1);
+            com.jayptucker.heroesevolved.network.ArmPosePayload.show(p, com.jayptucker.heroesevolved.ability.ArmPose.SPEED_GUARD, 24);
+            p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, .7F, 1.8F);
+            cue(p); return true;
         }
         if (branch == 1) {
             LivingEntity t = target(p, 20); if (t == null) return false;
             Vec3 difference = t.position().subtract(p.position());
             Vec3 destination = swept(p, difference.scale(Math.max(0, difference.length() - 1.6) / Math.max(.01, difference.length())));
             if (destination.distanceToSqr(t.position()) > 9) return false;
+            Vec3 from = p.position();
             move(p, destination);
             if (canHit(p, t)) hit(p, t, 6 + c.abilityLevel());
-            AbilityEffects.send(p.serverLevel(), Kind.SPEED_IMPACT, p.getEyePosition(), t.getEyePosition(), 2);
+            // The rush strung out as afterimages, then the fist driven through: shock rings out the far side.
+            AbilityEffects.send(p.serverLevel(), Kind.SPEED_STRIKE, from, t.getBoundingBox().getCenter(), 1.2F);
+            com.jayptucker.heroesevolved.network.ArmPosePayload.show(p, com.jayptucker.heroesevolved.ability.ArmPose.SPEED_LUNGE, 10);
+            p.serverLevel().playSound(null, t.blockPosition(), SoundEvents.PLAYER_ATTACK_KNOCKBACK, SoundSource.PLAYERS, 1.2F, .7F);
             return true;
         }
         LivingEntity carried = passenger(p); if (carried == null) return false;
@@ -232,7 +241,13 @@ public final class SpeedService {
         }
         if (origin.distanceToSqr(destination) < 1) return false;
         Vec3 passengerDestination = carried.position().add(destination.subtract(origin));
-        move(p, destination); move(carried, passengerDestination); return true;
+        Vec3 passengerOrigin = carried.position();
+        move(p, destination); move(carried, passengerDestination);
+        // One wake for two bodies: the runner's gold path and afterimages, the passenger's ribbon of pressed wind.
+        AbilityEffects.send(p.serverLevel(), Kind.SPEED_SLIPSTREAM, origin, destination, 1);
+        AbilityEffects.send(p.serverLevel(), Kind.SPEED_SLIPSTREAM, passengerOrigin, passengerDestination, 11);
+        com.jayptucker.heroesevolved.network.ArmPosePayload.show(p, com.jayptucker.heroesevolved.ability.ArmPose.SPEED_ESCORT, 12);
+        return true;
     }
     public static boolean dodge(ServerPlayer p, DamageSource source) {
         if (!(source.getDirectEntity() instanceof Projectile) || !awakened(p) || !PowerRules.canAct(p)
@@ -243,7 +258,12 @@ public final class SpeedService {
             Vec3 destination = swept(p, side.scale(sign * 2));
             if (destination.distanceToSqr(p.position()) < 2.25) continue;
             if (!PlayerEnergyService.tryConsume(p, 3)) return false;
-            move(p, destination); DODGED.put(p.getUUID(), now(p) + 20); return true;
+            Vec3 from = p.position();
+            move(p, destination); DODGED.put(p.getUUID(), now(p) + 20);
+            // An afterimage stays where the shot was aimed; the runner is already beside it.
+            AbilityEffects.send(p.serverLevel(), Kind.SPEED_DODGE, from, destination, 1);
+            com.jayptucker.heroesevolved.network.ArmPosePayload.show(p, com.jayptucker.heroesevolved.ability.ArmPose.SPEED_GUARD, 10);
+            return true;
         }
         return false;
     }

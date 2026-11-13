@@ -133,13 +133,11 @@ public final class TelepathyGameTests {
         var mob=net.minecraft.world.entity.EntityType.PILLAGER.create(h.getLevel());mob.setPos(a.player.position().add(0,0,2));mob.setNoAi(true);h.getLevel().addFreshEntity(mob);
         try{
             var c=new com.jayptucker.heroesevolved.ability.AbilityUseContext(a.player,ModAbilities.TELEPATHY_ID,5,false);
-            h.assertTrue(com.jayptucker.heroesevolved.skills.SkillActionService.activate(c,0),"Implanted Command opens the choice for a mob");
-            SuggestionService.choose(a.player,3);
-            h.assertTrue(SuggestionService.forbidden(mob,a.player),"Forget Me actually suppresses the mob's target");
-            mob.discard();b.player.setShiftKeyDown(true);
-            h.assertTrue(com.jayptucker.heroesevolved.skills.SkillActionService.activate(c,1),"Shared Sight establishes a voluntary link");
-            h.assertTrue(com.jayptucker.heroesevolved.skills.SkillActionService.activate(c,1)&&PossessionService.occupied(a.player),"Recasting looks through the linked mind");
-            PossessionService.end(a.player,"Return");
+            h.assertTrue(com.jayptucker.heroesevolved.skills.SkillActionService.activate(c,0),"Drop It commands the aimed mob");
+            h.assertTrue(TelepathySkills.disarmed(mob),"Drop It leaves the mob unable to fight");
+            mob.discard();
+            h.assertTrue(com.jayptucker.heroesevolved.skills.SkillActionService.activate(c,1)&&TelepathySkills.listening(a.player),"Far Hearing starts listening");
+            h.assertTrue(TelepathySkills.followUp(c,1)&&!TelepathySkills.listening(a.player),"A second press stops it");
             h.assertTrue(com.jayptucker.heroesevolved.skills.SkillActionService.activate(c,2),"Dream Double opens illusion choices for a player");
             IllusionService.choose(a.player,0);
             h.assertTrue(b.packets.stream().anyMatch(p->p instanceof ClientboundCustomPayloadPacket cp&&cp.payload() instanceof IllusionPayload i&&i.kind()==0),"Choice creates the private clone scene");h.succeed();

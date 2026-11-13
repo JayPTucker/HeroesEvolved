@@ -4,6 +4,7 @@ import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.intro.PowerIntroService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -27,15 +28,19 @@ public final class PowerIntroEvents {
         if (event.getEntity() instanceof ServerPlayer player) PowerIntroService.dimensionChanged(player);
     }
     @SubscribeEvent public static void stopping(ServerStoppingEvent event) { PowerIntroService.clear(); }
+    /** Owners mid-intro and the allies their awakening is saving take no harm (/kill still works). */
     @SubscribeEvent(priority = EventPriority.HIGHEST) public static void damage(LivingIncomingDamageEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (PowerIntroService.isActive(player) || event.getSource().is(DamageTypeTags.IS_FALL)
-                && PowerIntroService.cushionFall(player)) event.setCanceled(true);
+        LivingEntity entity = event.getEntity();
+        if (entity.level().isClientSide) return;
+        if (PowerIntroService.shields(entity) && !event.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)
+                || event.getSource().is(DamageTypeTags.IS_FALL) && PowerIntroService.cushionFall(entity)) event.setCanceled(true);
     }
     @SubscribeEvent(priority = EventPriority.HIGHEST) public static void death(LivingDeathEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player && PowerIntroService.isActive(player)) {
+        LivingEntity entity = event.getEntity();
+        if (!entity.level().isClientSide && PowerIntroService.shields(entity)
+                && !event.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
             event.setCanceled(true);
-            player.setHealth(Math.max(1, player.getHealth()));
+            entity.setHealth(Math.max(1, entity.getHealth()));
         }
     }
 }

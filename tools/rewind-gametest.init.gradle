@@ -22,9 +22,12 @@ allprojects {
         }
         tasks.named('runGameTestServer') {
             dependsOn(tasks.named('rewindGameTestClasses'))
-            // Every run starts from a fresh world, so saved data (like an already-built bunker) never leaks between runs.
+            // Every run starts from a fresh world, so saved data (like an already-built bunker) never leaks between runs,
+            // and from the mod's default config, as on GitHub: a value left over from an old local run (a forward speed
+            // of 15 once made every Skyburst test fail here and nowhere else) must not decide what passes.
             def staleWorld = project.file('build/rewind-gametest-world/world')
-            doFirst { staleWorld.deleteDir() }
+            def staleConfig = project.file('build/rewind-gametest-world/config/heroesevolved-common.toml')
+            doFirst { staleWorld.deleteDir(); staleConfig.delete() }
         }
       }
     }

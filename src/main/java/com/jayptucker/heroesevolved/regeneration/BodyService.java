@@ -238,7 +238,7 @@ public final class BodyService {
         Body body = body(player);
         if (body.downed()) { player.setHealth(1.0F); return true; }
         int regrowth = RegenerationService.regrowth(player);
-        int ticks = recoveryTicks(powerLevel, regrowth);
+        int ticks = RegenSkills.recovery(player, recoveryTicks(powerLevel, regrowth));
         RegenerationService.spendRegrowth(player, regrowth);
         down(player, ticks);
         RegenerationService.bleed(player, 12);
@@ -304,6 +304,7 @@ public final class BodyService {
             player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 20 * 5, 1));
             player.sendSystemMessage(Component.literal("You gasp back to life.").withStyle(ChatFormatting.DARK_RED));
             com.jayptucker.heroesevolved.progression.EvolutionTrials.advance(player, com.jayptucker.heroesevolved.ability.registry.ModAbilities.REGENERATION_ID);
+            RegenSkills.stoodUp(player);
         }
         player.clearFire();
         player.setAirSupply(player.getMaxAirSupply());
@@ -423,7 +424,8 @@ public final class BodyService {
             starts[entry.getKey().ordinal()] = (int) (entry.getValue().growStart - now);
             grows[entry.getKey().ordinal()] = entry.getValue().growTicks;
         }
-        return new BodyStatePayload(player.getId(), player.getUUID(), body != null && body.downed(), starts, grows);
+        // Play Dead lies the body down the same way, so every client draws her on her back.
+        return new BodyStatePayload(player.getId(), player.getUUID(), body != null && body.downed() || RegenSkills.feigning(player), starts, grows);
     }
 
     public static void sync(ServerPlayer player) {

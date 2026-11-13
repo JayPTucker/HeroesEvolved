@@ -172,6 +172,8 @@ public final class RadiationService {
         for (LivingEntity target : player.serverLevel().getEntitiesOfClass(LivingEntity.class,
                 player.getBoundingBox().inflate(8), entity -> entity != player && entity.isAlive() && !entity.isSpectator()
                         && entity.distanceToSqr(player) <= 64
+                        // The ally the awakening is for, and the owner's pets, are spared the uncontrolled heat.
+                        && !com.jayptucker.heroesevolved.styles.StyleOps.isFriend(player, entity)
                         && (!(entity instanceof ServerPlayer other) || !other.isCreative()))) {
             irradiate(target, 80);
             target.hurt(player.damageSources().indirectMagic(player, player), target.distanceToSqr(player) <= 9 ? 4 : 2);

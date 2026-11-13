@@ -59,6 +59,15 @@ public final class PowerWeapons {
     /** False if TaCZ's API has changed under us; the guns then fire without their effects. */
     public static boolean available() { return TaczLink.available(); }
 
+    /** Whether {@code entity} is a gun's bullet in flight. */
+    public static boolean isBullet(Entity entity) { return TaczLink.bullet(entity); }
+
+    /** An explosive bullet's {radius, breaks blocks (1 or 0)}, or null for an ordinary round. */
+    public static @Nullable float[] bulletExplosion(Entity entity) { return TaczLink.explosive(entity); }
+
+    /** A bare bullet entity for tests: ordinary when {@code radius} is 0, explosive otherwise. */
+    public static @Nullable Entity testBullet(ServerLevel level, float radius) { return TaczLink.testBullet(level, radius); }
+
     /** A loaded gun: a full magazine and a round chambered. Empty if TaCZ doesn't know the id. */
     public static ItemStack gun(ResourceLocation id) {
         return TaczLink.gun(id, magazine(id), id.equals(HEAT_GUN));

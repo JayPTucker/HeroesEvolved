@@ -55,11 +55,13 @@ public final class SkillActionService {
         if (c.abilityId().getPath().equals("time_manipulation")) return com.jayptucker.heroesevolved.time.SpaceTimeService.canUse(c, branch);
         if (c.abilityId().getPath().equals("radiation")) return com.jayptucker.heroesevolved.radiation.RadiationSkills.canUse(c, branch);
         if (c.abilityId().getPath().equals("invisibility")) return com.jayptucker.heroesevolved.invisibility.InvisibilitySkills.canUse(c, branch);
-        if (c.abilityId().getPath().equals("precognition") || c.abilityId().getPath().equals("telepathy")) return true;
-        if (branch == 0 && !c.abilityId().getPath().equals("flight") && !c.abilityId().getPath().equals("regeneration"))
+        if (c.abilityId().getPath().equals("sonic_resonance")) return com.jayptucker.heroesevolved.sonic.SonicSkills.canUse(c, branch);
+        if (c.abilityId().getPath().equals("quake")) return com.jayptucker.heroesevolved.quake.QuakeSkills.canUse(c, branch);
+        if (c.abilityId().getPath().equals("regeneration")) return com.jayptucker.heroesevolved.regeneration.RegenSkills.canUse(c, branch);
+        if (c.abilityId().getPath().equals("telepathy")) return com.jayptucker.heroesevolved.telepathy.TelepathySkills.canUse(c, branch);
+        if (c.abilityId().getPath().equals("precognition")) return true;
+        if (branch == 0 && !c.abilityId().getPath().equals("flight"))
             return aimed(c.player(), false) != null;
-        if (branch == 2 && c.abilityId().getPath().equals("regeneration"))
-            return c.player().getHealth() > 4 && aimed(c.player(), true) != null;
         return true;
     }
     public static boolean activate(AbilityUseContext c, int branch) {
@@ -69,26 +71,20 @@ public final class SkillActionService {
         switch (power) {
             case "technopathy" -> { return com.jayptucker.heroesevolved.technopathy.TechnopathyService.skill(c, branch); }
             case "matter_assembly" -> { return com.jayptucker.heroesevolved.assembly.MatterAssemblyService.activate(c, "matter_assembly_" + branch + "_1"); }
-            case "quake" -> {
-                if (branch == 0) { hit(p, target, 7 + level); push(target, p.getLookAngle().scale(1.5).add(0, .15, 0)); }
-                if (branch == 1) for (var t : nearby(p, 8)) { hit(p, t, 4); effect(t, MobEffects.MOVEMENT_SLOWDOWN, 100, 2); }
-                if (branch == 2) {
-                    push(p, p.getLookAngle().reverse().scale(1.2).add(0, .4, 0));
-                    for (var t : nearby(p, 4)) { hit(p, t, 3); push(t, t.position().subtract(p.position()).normalize().scale(.9)); }
-                }
-                visual(p, target, Kind.QUAKE_PULSE, branch == 1 ? 8 : 3);
-            }
+            case "quake" -> { return com.jayptucker.heroesevolved.quake.QuakeSkills.skill(c, branch); }
             case "flight" -> { return com.jayptucker.heroesevolved.flight.FlightSkillService.activate(p, "flight_" + branch + "_1"); }
             case "cryokinesis" -> { return com.jayptucker.heroesevolved.cryo.CryoKitService.skill(c, branch); }
             case "electrokinesis" -> {
                 if (!ElectroService.canStartCast(p)) return false;
                 if (branch == 0) {
                     if (target == null) return false;
-                    ArmPosePayload.show(p, ArmPose.ELECTRO_CAST, 12);
+                    // One straight, braced shot, not a fork: it breaks into ordinary lightning only after it lands.
+                    ArmPosePayload.show(p, ArmPose.ELECTRO_LANCE, 14);
                     var levelAtCast = p.serverLevel();
                     LivingEntity primary = target;
                     Vec3 contact = primary.getBoundingBox().getCenter();
-                    ElectroGeometry.show(levelAtCast, Piece.ELECTRO_ARC, ElectroGeometry.hand(p, 1, .68), contact, 1.8, p);
+                    ElectroGeometry.show(levelAtCast, Piece.ELECTRO_LANCE, ElectroGeometry.hand(p, 1, .72), contact, 1, p);
+                    p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.TRIDENT_THUNDER.value(), SoundSource.PLAYERS, .5F, 1.9F);
                     com.jayptucker.heroesevolved.expansion.PowerReactions.electric(p, target);
                     hit(p, target, 8 + level); effect(target, MobEffects.MOVEMENT_SLOWDOWN, 50, 3);
                     int hop = 0;
@@ -96,7 +92,7 @@ public final class SkillActionService {
                             t -> t != primary && ElectroService.hostile(p, t) && t.distanceToSqr(primary) <= 36 && primary.hasLineOfSight(t))
                             .stream().sorted(Comparator.comparingDouble(primary::distanceToSqr)).limit(2).toList()) {
                         hit(p, t, 4);
-                        ElectroGeometry.show(levelAtCast, Piece.ELECTRO_ARC, contact, t.getBoundingBox().getCenter(), .8, null, 2 + hop++);
+                        ElectroGeometry.show(levelAtCast, Piece.ELECTRO_ARC, contact, t.getBoundingBox().getCenter(), .8, null, 3 + hop++);
                     }
                 }
                 if (branch == 1) {
@@ -107,28 +103,19 @@ public final class SkillActionService {
                 if (branch == 2) {
                     effect(p, MobEffects.MOVEMENT_SPEED, 160, 1); effect(p, MobEffects.DIG_SPEED, 160, 1);
                     ElectroService.fillCharge(p);
-                    ElectroGeometry.show(p.serverLevel(), Piece.ELECTRO_COIL, p.position(), p.position(), 1, p);
-                    ArmPosePayload.show(p, ArmPose.ELECTRO_COIL, 12);
+                    // Current floods up the body from the feet; fists clench, then flex out as it flares off the chest.
+                    ElectroGeometry.show(p.serverLevel(), Piece.ELECTRO_OVERCHARGE, p.position(), p.position(), 1, p);
+                    ArmPosePayload.show(p, ArmPose.ELECTRO_OVERCHARGE, 18);
+                    p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS, .8F, 1.7F);
                 }
                 p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.COPPER_BULB_TURN_ON, SoundSource.PLAYERS, 1, 1.35F);
             }
             case "telekinesis" -> {
                 return com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.activate(p, "telekinesis_" + branch + "_1", c.modifierHeld());
             }
-            case "telepathy" -> {
-                if(branch==0)return com.jayptucker.heroesevolved.telepathy.SuggestionService.open(p);
-                if(branch==1)return com.jayptucker.heroesevolved.telepathy.TelepathyService.mindLink(p,level);
-                return com.jayptucker.heroesevolved.telepathy.IllusionService.open(p);
-            }
-            case "regeneration" -> {
-                if (branch == 0) { cleanse(p); p.heal(6); }
-                if (branch == 1) { p.heal(4); effect(p, MobEffects.MOVEMENT_SPEED, 160, 1); effect(p, MobEffects.DIG_SPEED, 160, 0); }
-                if (branch == 2) {
-                    LivingEntity recipient = aimed(p, true); if (recipient == null || p.getHealth() <= 4) return false;
-                    p.hurt(p.damageSources().magic(), 3); recipient.heal(10); effect(recipient, MobEffects.ABSORPTION, 200, 0); target = recipient;
-                }
-                visual(p, target, Kind.REGENERATION, 3);
-            }
+            // Telepathy poses each skill itself (Drop It, Far Hearing, Dream Double); a generic pose would replace it.
+            case "telepathy" -> { return com.jayptucker.heroesevolved.telepathy.TelepathySkills.skill(c, branch); }
+            case "regeneration" -> { return com.jayptucker.heroesevolved.regeneration.RegenSkills.skill(c, branch); }
             case "precognition" -> { return com.jayptucker.heroesevolved.precog.PrecognitionService.skill(c, branch); }
             case "superspeed" -> { return com.jayptucker.heroesevolved.speed.SpeedService.skill(c, branch); }
             case "pyrokinesis" -> { return com.jayptucker.heroesevolved.pyro.PyroService.skill(c, branch); }
@@ -141,17 +128,11 @@ public final class SkillActionService {
             case "radiation" -> {
                 return com.jayptucker.heroesevolved.radiation.RadiationSkills.skill(c, branch);
             }
-            case "sonic_resonance" -> {
-                if (branch == 0) { hit(p, target, 9 + level); push(target, p.getLookAngle().scale(1.1)); SonicService.voice(p, false); }
-                if (branch == 1) {
-                    for (var t : nearby(p, 8)) { effect(t, MobEffects.WEAKNESS, 120, 1); effect(t, MobEffects.MOVEMENT_SLOWDOWN, 80, 2); hit(p, t, 3); }
-                    SonicService.voice(p, false);
-                }
-                if (branch == 2) { effect(p, MobEffects.DAMAGE_RESISTANCE, 100, 0); reflect(p, p.position(), 7); field(p, power, 100); }
-                visual(p, target, branch == 0 ? Kind.SONIC_WAVE : Kind.SONIC_BURST, 6);
-            }
+            case "sonic_resonance" -> { return com.jayptucker.heroesevolved.sonic.SonicSkills.skill(c, branch); }
             default -> { return false; }
         }
+        // Electrokinesis poses each skill itself (lance, release, overcharge); a generic pose would replace it.
+        if (power.equals("electrokinesis")) return true;
         com.jayptucker.heroesevolved.network.ArmPosePayload.show(p,
                 branch == 0 ? ArmPose.ONE_HAND : branch == 1 ? ArmPose.ARMS_WIDE : ArmPose.ARMS_RAISED, 16);
         return true;
@@ -168,10 +149,6 @@ public final class SkillActionService {
                 .filter(t -> t.distanceToSqr(p) <= radius * radius).limit(32).toList());
         if (!targets.contains(p)) targets.addFirst(p);
         return targets;
-    }
-    private static void cleanse(LivingEntity entity) {
-        for (var e : List.copyOf(entity.getActiveEffects())) if (!e.getEffect().value().isBeneficial()) entity.removeEffect(e.getEffect());
-        entity.clearFire();
     }
     private static void push(Entity target, Vec3 velocity) {
         target.setDeltaMovement(velocity); target.hurtMarked = true;

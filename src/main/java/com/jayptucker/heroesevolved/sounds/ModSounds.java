@@ -109,6 +109,17 @@ public final class ModSounds {
     public static final Supplier<SoundEvent> SYLAR_WATCH = SOUND_EVENTS.register("sylar_watch", () ->
             SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "sylar_watch")));
 
+    public static final Supplier<SoundEvent> VIBE_PULSE = vibeSound("vibe_pulse");
+    public static final Supplier<SoundEvent> VIBE_BREACH = vibeSound("vibe_breach");
+    public static final Supplier<SoundEvent> VIBE_SHUT = vibeSound("vibe_shut");
+    public static final Supplier<SoundEvent> VIBE_ECHO = vibeSound("vibe_echo");
+    public static final Supplier<SoundEvent> VIBE_COLLAPSE = vibeSound("vibe_collapse");
+
+    private static Supplier<SoundEvent> vibeSound(String id) {
+        return SOUND_EVENTS.register(id, () -> SoundEvent.createVariableRangeEvent(
+                ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, id)));
+    }
+
     public static void register(IEventBus modEventBus) {
         SOUND_EVENTS.register(modEventBus);
     }

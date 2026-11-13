@@ -10,7 +10,7 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 
-/** Feeds fights into the adrenaline check and keeps a freshly awakened player alive. */
+/** Feeds fights into the danger check and keeps a freshly awakened player, and the ally they woke for, alive. */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class AwakeningEvents {
     private AwakeningEvents() {
@@ -21,7 +21,9 @@ public final class AwakeningEvents {
     public static void incoming(LivingIncomingDamageEvent event) {
         AwakeningService.recordCombat(event.getEntity(), event.getSource());
 
-        if (event.getEntity() instanceof ServerPlayer player && AwakeningService.inGrace(player)) {
+        // The owner and the ally they woke for are both shielded until the intro takes over (/kill still works).
+        if (!event.getEntity().level().isClientSide && AwakeningService.inGrace(event.getEntity())
+                && !event.getSource().is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) {
             event.setCanceled(true);
         }
     }
@@ -29,9 +31,16 @@ public final class AwakeningEvents {
     /** Lowest priority, so it sees the damage every other reduction has already settled on. */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void damage(LivingDamageEvent.Pre event) {
+        if (event.getEntity().level().isClientSide) {
+            return;
+        }
+
         if (event.getEntity() instanceof ServerPlayer player) {
             event.setNewDamage(AwakeningService.interceptDamage(player, event.getSource(), event.getNewDamage()));
         }
+
+        // An ally going down wakes a dormant power nearby, which saves them.
+        event.setNewDamage(AwakeningService.interceptAllyDamage(event.getEntity(), event.getSource(), event.getNewDamage()));
     }
 
     @SubscribeEvent

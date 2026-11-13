@@ -23,10 +23,14 @@ public final class PowerIcons {
             Map.entry("superspeed", Items.SUGAR), Map.entry("precognition", Items.PAINTING),
             Map.entry("pyrokinesis", Items.BLAZE_POWDER), Map.entry("invisibility", Items.GLASS_PANE),
             Map.entry("phasing", Items.CHORUS_FRUIT), Map.entry("empathic_mimicry", Items.AMETHYST_SHARD),
-            Map.entry("technopathy", Items.COMPARATOR), Map.entry("matter_assembly", Items.STONECUTTER));
+            Map.entry("technopathy", Items.COMPARATOR), Map.entry("matter_assembly", Items.STONECUTTER),
+            Map.entry("vibe", Items.ECHO_SHARD));
 
     /** First keyword found in an ability's id or name picks its picture. Order matters: specific before general. */
     private static final List<Map.Entry<String, Item>> KEYWORDS = List.of(
+            Map.entry("vibe_blast", Items.WIND_CHARGE), Map.entry("vibe_breach_guard", Items.SHIELD),
+            Map.entry("vibe_breach", Items.ENDER_PEARL), Map.entry("vibe_read", Items.SPYGLASS),
+            Map.entry("vibe_frequency_lock", Items.CRYING_OBSIDIAN),
             Map.entry("handshake", Items.COMPARATOR), Map.entry("tripwire", Items.TRIPWIRE_HOOK),
             Map.entry("intercept", Items.IRON_BARS), Map.entry("machine_city", Items.REDSTONE_BLOCK),
             Map.entry("relay", Items.REPEATER), Map.entry("barricade", Items.STONE_BRICK_WALL),

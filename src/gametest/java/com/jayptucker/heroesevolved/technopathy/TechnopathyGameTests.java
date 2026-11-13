@@ -378,7 +378,7 @@ public final class TechnopathyGameTests {
             h.assertTrue(MimicryService.remember(p, ModAbilities.TECHNOPATHY_ID, 5), "The power can be remembered without taking its unique ownership");
             h.assertTrue(!TechnopathyService.canUse(context(p)) && !TechnopathyService.core(context(p), "handshake")
                             && TechnopathyService.nodeCount(p) == 0, "Merely remembering it cannot authorize forged native power calls");
-            AbilityAction echo = AbilityRegistry.ABILITIES.get(ModAbilities.MIMICRY_ID).actions().get(AbilitySlot.TERTIARY);
+            AbilityAction echo = AbilityRegistry.ABILITIES.get(ModAbilities.MIMICRY_ID).actions().get(AbilitySlot.PRIMARY);
             h.assertTrue(echo.canUse(echoContext) && echo.activate(echoContext) == AbilityActivationResult.SUCCESS,
                     "A real borrowed Handshake must pass its narrowly scoped authorization gate");
             echo.release(echoContext);

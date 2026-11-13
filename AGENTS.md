@@ -129,6 +129,40 @@ abilities will meet. Reuse these instead of starting again. What the player sees
 - **Speed tuning lives in one place.** `FlightSpeedControl.speed(step, max)` maps wheel steps to cruise speed;
   Skyburst's numbers are constants at the top of `FlightDynamicsService`.
 
+## Reusable patterns from the rescue awakenings
+
+Natural awakenings answer danger to the owner *or a nearby ally*, and every release saves that person, the
+**ward** (`intro/Danger`, `intro/SpeedRescue`, `intro/FlightRescue`, `intro/WardRelease`). What the player sees is in
+[docs/power-intros.md](docs/power-intros.md) and [docs/eclipse.md](docs/eclipse.md).
+
+- **Who counts as an ally, and who is a threat.** `Danger.ally(owner, other)` (friendly players and own pets, via
+  `StyleOps.isFriend`) and `Danger.threats(owner, ward, radius)` (monsters near the ward, anything targeting either,
+  and whoever last hurt either). Use these for anything else that protects someone.
+- **"Outside" is a heightmap check.** `Danger.openSky(entity)` compares the eye block with
+  `MOTION_BLOCKING_NO_LEAVES`, so tree cover still counts as outside. Sky light would fail under leaves.
+- **Damage to anyone can wake someone else's power.** `AwakeningService.interceptAllyDamage` runs on every
+  `LivingDamageEvent.Pre` and caps the blow; `recordCombat` now tracks every living thing, pruned past 2048 entries.
+- **Hand the ward through the unlock.** `awakenFromAdrenaline` puts the ward in `PENDING_WARD` around
+  `awakenAssigned`, and `PowerIntroService.acquired` reads it with `pendingWard`, so no ability's `onAwaken` changed.
+- **A release that moves people is a `Rescue`.** The session ticks it and waits for it to finish, and `cancel` calls
+  `stop()` so a carry is always set down. Shield the ward with `shieldWard` while it runs.
+- **Routes through caves are a bounded breadth-first search** over cells the body fits in and can push off from (a
+  floor or a wall), cached per run (`SpeedRescue.search`). It gives up at 16,000 cells and falls back to the best
+  cell it reached. Walk the route by teleporting a few blocks a tick; the client can't follow a twisting tunnel by
+  velocity alone.
+- **Moving a `FakePlayer` in tests.** Its connection ignores teleports and motion payloads, so call `absMoveTo` (or
+  `setPos`) as well, as `SpeedRescue.teleport` and `FlightRescue.drive` do. A `FakePlayer` refuses to ride anything,
+  so anyone a test carries must be a real `ServerPlayer` on an `EmbeddedChannel` (`RescueGameTests.carriable`).
+- **Test arenas have a lid.** A game test's arena is boxed in barrier blocks, ceiling included, unless the test sets
+  `skyAccess = true`; anything that checks for open sky (Flight's awakening) needs it. The `rewind_empty` floor is at
+  relative y=1, so stand players at y=2.
+- **The suite is order-sensitive.** Adding or renaming test batches reshuffles the run order, and about eight older
+  tests (conduits, Sylar's escape, rapid punches, Long Winter, Fault, the Sentry Seal) then fail on power-ownership
+  leaks with no code change. Check against the untouched code with stand-in tests of the same names before blaming a
+  change.
+- **Powers are blocked during an intro.** `PowerRules.canAct` is false while `PowerIntroService.isActive`, so
+  `FlightDynamicsService` forgets any burst. Intro movement sends `SkyburstMotionPayload` itself instead.
+
 ## Reusable patterns from the Induced Radioactivity rework
 
 The radiation power (`radiation/`, art in `client/effects/setpiece/RadiationArt`) was reworked in November 2026
@@ -296,6 +330,281 @@ Invisibility (`invisibility/`, art in `client/effects/setpiece/ForceArt`) became
 - **Test gotchas.** No-AI mobs ignore velocity (assert on `getDeltaMovement`, or use a mob with AI such as a pig),
   and the `rewind_empty` arena is 12 blocks across: entities placed beyond it sit in unloaded or solid ground.
 
+## Reusable patterns from the Electrokinesis rework
+
+Electrokinesis (`electro/`, art in `client/effects/setpiece/ElectroArt`) is Elle Bishop's current: Charge,
+Chain Lightning / Live Current, Ball Lightning, Thunderstrike, Ride the Lightning, Storm Surge, Blackout and seven
+skills, each with its own arm pose and set piece (November 2026). What the player sees is in
+[docs/electrokinesis.md](docs/electrokinesis.md).
+
+- **One art class, a handful of primitives.** Every piece is drawn by `ElectroArt` from `fork` (a jagged channel with
+  side branches), `ring`, `corona` (a shell with orbiting rings), `braid` and `pulse` (a ground ring with fingers),
+  all through `stroke`'s three layers. Palette: `10172D` shadow, `3D52B8` indigo, `5588FF` blue, `84D5FF` ion,
+  `EAF5FF` core. New moves are new arrangements of these, not new primitives (Arc Lance's straight beam, Circuit
+  Thread's lit block edges and Arc Lattice's sagging wire are the exceptions, and they still use the palette).
+- **Effects leave the palm the player sees.** `ElectroArt.hand(c, owner, reach)` uses `ElectroGeometry.hand` in third
+  person and a camera-space point in first person, so a bolt starts at the visible hand in both. Bind the piece to the
+  caster (`show(..., player)`) for this to work.
+- **Every move has its own pose,** in third (`PowerArmPoses`) and first person (`FirstPersonArmGeometry.electro` and
+  `skills`): draw, cast, stream, call, coil, release, ride (arms flung back), cup (palms round the orb), lance (braced,
+  straight arm), touch (palm on metal), overcharge (fists clenched at the sides), ground (palm driven down) and point.
+- **A generic skill pose overwrites yours.** `SkillActionService.activate` sends `ONE_HAND` / `ARMS_WIDE` /
+  `ARMS_RAISED` after every implicit branch skill. A power that poses its own skills must `return` before that line
+  (Electrokinesis does). Quake, Regeneration and Sonic still get the generic pose.
+- **Held constructs are re-sent short pieces.** Ground Sink's rod, Arc Lattice's anchors and wires go out every ten
+  ticks as 12-tick pieces that fade in and out over two (`fade(t, ticks, 2, 2)`), so copies hand over seamlessly. The
+  sink's stored charge rides in the piece's `scale` (1 + charge / 16) and brightens the rod's tip.
+- **Thin a beam that passes the camera.** Arc Lance dims itself where it runs close by the camera (the front view looks
+  straight down it) but not for the caster's own first-person view, where the hand is always beside the camera.
+- **Telegraphs share their timing.** `ElectroGeometry.STRIKE_DELAY` and `SURGE_TICKS` drive both the server's delay and
+  the warning ring's build, so the marker always fills exactly as the bolt lands.
+
+## Reusable patterns from the Superspeed rework
+
+Superspeed (`speed/`, effects in `client/effects/SpeedEffects`, `SpeedAfterimages`, `SpeedCyclone`,
+`setpiece/SpeedArt`) is the guide's reference for "the body is the effect". Its six optional skills were brought up to
+the core's standard in November 2026. What the player sees is in [docs/superspeed.md](docs/superspeed.md).
+
+- **Afterimages are the speedster's signature.** `SpeedAfterimages` snapshots the real skin and limb pose and leaves it
+  fading for 18 ticks. Use `along(from, to, n)` for a burst, `ring(center, r, n, phase)` for a lap, and
+  `at(near, position, yaw)` for one placed anywhere (the Mirage's crowd, a dodge's leftover stance). The runner must
+  be within three blocks of `near`/`to`.
+- **Quick strokes, not set pieces.** Speed's effects are `AbilityEffects` kinds drawn with `LightningRenderer`:
+  gold `FFC23A` ribbons, an amber `FF8A1E` halo and a hot `FFF6D8` core, with `bolt(...)` through them. Staged
+  timing uses the stroke's `delay` (Lightning Throw's bolt leaves three ticks after the wind-up).
+- **A variant flag in the scale.** A Slipstream passenger and a Charged Throw hop send `scale + 10`, the same trick as
+  Pyrokinesis's `BLUE_SCALE`: no new kind or payload field.
+- **Held states pulse.** The Mirage re-sends `SPEED_MIRAGE` every five ticks while it lasts; each pulse places a few
+  afterimages by the game time (not the random source), so every viewer sees the same crowd.
+- **Bursts teleport, swept.** `SpeedService.move` teleports along a `swept` path and draws the trail; build any new
+  dash on it (Momentum Strike, Slipstream Rescue and the dodge all do).
+- **First-person gestures stay out of the camera.** A raised or cocked arm in `FirstPersonArmGeometry` must sit at the
+  edge of the view (Lightning Throw's starts at the top corner and whips down through the centre), and an effect's
+  origin must be in front of the eye: the first throw started behind the camera and streaked across the whole screen.
+
+### Photographing skills (`tools/skill-anim-preview.init.gradle`)
+
+`uitest/SkillAnimationsPreview` casts every Electrokinesis and Superspeed skill in a flat world and saves front, back
+and first-person shots to `build/skill-anim-preview/screenshots/`. Lessons from writing it:
+
+- **Play in survival.** A creative player's hits ignore a mob's invulnerability, so the targets die after a cast or two.
+- **Report, don't throw.** An `AssertionError` inside a server task crashes the integrated server and ends the run.
+- **Shoot two or three ticks after the cast,** not one: the pose and the piece haven't reached the client yet.
+- **Log the pose the client applies** (`ClientArmPoseState.get` in `PowerArmPoses.apply`) when a pose looks wrong: that
+  is how the generic skill pose above was found.
+
+## Reusable patterns from the Empathic Mimicry rework
+
+Empathic Mimicry (`mimicry/`, art in `client/effects/setpiece/MimicArt`, the wheel in `gui/screen/MemoryWheelScreen`)
+became a three-phase kit in November 2026: the power of whoever you are near (Levels 1 to 5), sets kept by touch
+(6 to 14), whole kits remembered (15 to 20), five Echo keys and a memory wheel. What the player sees is in
+[docs/empathic-mimicry.md](docs/empathic-mimicry.md).
+
+- **Borrow a power by running its real actions.** An Echo (`MimicryService.echo`) wraps the copied power's own
+  `AbilityAction` for the same slot and calls it inside `invoke(...)`, which marks the call as borrowed. Powers whose
+  native gates check ownership ask `MimicryService.isBorrowingX(player)` (Flight, Pyrokinesis, Invisibility,
+  Cryokinesis, Technopathy, Matter Assembly). A new power with an ownership gate needs one of these, or Echoes of it
+  fail. Switching sets, logging out or changing dimension runs `forget`, which ends every held borrowed action.
+- **One question: who has a power.** `MimicryService.imprintOf(mimic, entity)` answers for players, gifted villagers,
+  the meltdown villager, Sylar and Elle. Attunement, touch, Sense Powers and the stamina passive all use it, so a new
+  powered NPC is one more branch there.
+- **Keep the old API when the model changes.** The memory became near + kept + channel, but `current()`, `powers()`,
+  `remember(player, power, tier)` and `recall(player, step)` still work, so a dozen callers and tests didn't change.
+  The codec reads the old `powers`/`active` fields and loads them as kept sets.
+- **Menus can show a proxy's target.** `PlayerPowerSyncService` asks `MimicryService.shown(player, action)` and uses
+  the copied action's name and path, so the wheel, key list and HUD say "Skyburst", not "Echo II". Resync the loadout
+  whenever the channel changes (`MimicryService.sync` does).
+- **A second wheel is a small screen and one payload each way.** `MimicMemoryPayload` (server to client, on every
+  change and at login) feeds `ClientMimicMemory`; `MimicChoicePayload` (client to server) channels or forgets a slot.
+  The key handling copies the ability wheel's hold-to-open, tap-to-act pattern (`ClientKeyEvents.handleMemoryKey`).
+- **Two numbers in a piece's scale.** An attunement sends `colourIndex + progress` (whole part and fraction); a touch
+  adds 32. Each power's colour lives in `mimicry/MimicColors`, shared by the server and the art.
+- **Fade a thread per point near the camera.** `MimicArt.thread` dims each point by its distance to the camera
+  (`ribbon` with per-point alphas), so a thread ending at your own chest or passing a front-view camera doesn't fill
+  the screen, while the rest of it stays bright. Prefer this to dimming the whole stroke.
+- **Throttle touches per target.** One swing can land twice on the same person; two quick touches on different
+  people should both count (`LAST_TOUCH` stores the target as well as the time).
+- **A saved roll on an entity.** Gifted villagers roll once in `EntityJoinLevelEvent` and save `heroesevolved_gift`
+  and `heroesevolved_gift_rolled` in the persistent data, so a reload never re-rolls.
+- **Preview gotchas.** A camera behind the player can't see a thread that runs straight ahead (the body hides it):
+  stage sources off to the side. A front camera sits on the far side of anyone in front of the player: use a child
+  villager (`setBaby(true)`) to see over them.
+
+## Reusable patterns from the Sonic Resonance rework
+
+Sonic Resonance (`sonic/`, art in `client/effects/setpiece/SonicArt`) was reworked in November 2026: every move,
+skill and style has its own pose and set piece, three moves gained free follow-ups, and the tree became eighteen
+interactions (`sonic/SonicSkills`). What the player sees is in [docs/sonic-resonance.md](docs/sonic-resonance.md).
+
+- **One damage helper makes a status cheap.** Every sonic hit goes through `SonicService.hit(owner, target, damage)`.
+  Ringing (`SonicService.ring`) is left by four sources (Focused Shriek, Shatter Note, a braced Cry, Deep Echo), and
+  `hit` cashes it in for extra damage and Resonance. Route a power's damage through one helper, and a new mark or
+  bonus is one change.
+- **Moves that pass through your own constructs.** A Cry or Crescendo checks its line against the singer's Note
+  (`onLine`: distance from a segment) and Wall (`throughWall`: a ray crossing the wall's plane inside its box). A tap
+  through the Note breaks it harmonic for free; the held scream feeds it; Feedback Loop amplifies through the Wall.
+  Cheap geometry against your own things gives combos without new state.
+- **One key, several follow-ups.** Note (press: break; Shift: carry it once), Wall (press: shove; Shift: drop),
+  Vault (press in the air: dive). `SimpleAction.followUp` runs before cooldown and stamina and sees
+  `c.modifierHeld()`, so one predicate picks between two follow-ups. A follow-up that returns false falls through
+  to the normal Shift-deactivate (the Wall's drop).
+- **A moving construct drawn from one packet.** A shoved Wall moves a fixed `SonicGeometry.WALL_PUSH_SPEED` a tick;
+  the server and `SonicArt` both call `SonicGeometry.pushed(start, normal, age)`, so a single `SONIC_WALL_PUSH`
+  piece draws the whole roll. The standing wall's re-sent piece is bound to the owner, so `superseded` stops it the
+  moment the push starts.
+- **An opposite is the same shapes inverted.** Silence (Quiet Zone, Silence Dome) reuses `SonicArt.front` in slate
+  colours with rings that close inward. Four primitives (`front`, `trace`, `staff`, `glyph`) and one palette
+  (`tone(k)` blends rose, amber, mint, azure and violet) draw all twenty-one pieces.
+- **Re-sent poses must be continuous.** The scream, Crescendo's gather, the dive, Resonant Guard's hum and the Quiet
+  Zone's hush are refreshed while they last, so they are on `ClientArmPoseState`'s continuous list; otherwise each
+  refresh restarts the gesture from frame one.
+- **Delegate the whole branch.** `SkillActionService` returns `SonicSkills.skill(c, branch)` directly, which also
+  skips the generic skill pose (see Electrokinesis above).
+- **Taking a power off the stat-bonus list breaks tests that used its stat nodes.** A stamina-discount test bought
+  `sonic_resonance_0_0`; it now uses Empathic Mimicry (see the Quake section). Search the tests for a power's `_0_0`/`_1_0`/`_2_0` nodes when you add it
+  to `SkillTreeService.bonus`'s list.
+- **A FakePlayer never lands.** A test singer that isn't in the level is still ticked by the service's own server
+  tick, but `onGround()` never comes true, so Sonic Dive lands on its `DIVE_MAX` timeout (as Fission Leap's slam
+  does). Tests that need skill nodes set `SKILL_TREES` directly (`SonicGameTests.learn`).
+- **Photographs:** `tools/sonic-kit-preview.init.gradle` (`uitest/SonicKitPreview`) shoots every move, skill and
+  style into `build/sonic-kit-preview/screenshots/`.
+
+## Reusable patterns from the Quake rework
+
+Quake (`quake/`, new art in `client/effects/setpiece/QuakeArt`) was reworked in November 2026: free follow-ups on four
+moves, blasts that shake bullets to dust and set off explosives, an eighteen-node interaction tree (`quake/QuakeSkills`)
+and 23 poses. What the player sees is in [docs/quake.md](docs/quake.md).
+
+- **One place decides what a wave does to things.** `QuakeKinetics.disrupt(owner, entity, push)` answers for every
+  blast, the beam and the Vibration Shell: an incoming TaCZ bullet turns to dust, an explosive goes off where it is
+  (credited to whoever fired it), a creeper's fuse is lit, any other shot turns back and becomes hers. Give the next
+  deflecting power (a shield, a force field) the same single entry point instead of copying the cases.
+- **Fast things need a forward-looking check.** Bullets cross several blocks a tick, so `QuakeKinetics.crossing` tests the
+  shot's position *and* where it will be next tick against the blast's line, with a wider reach for bullets
+  (`QuakeGeometry.BULLET_CATCH`). Held effects (the beam, the shell) screen shots every tick, even when they only hit
+  bodies every few.
+- **Reading another mod's private state.** TaCZ keeps a round's explosion settings private; `TaczLink.explosive` reads
+  them by reflection inside its try/catch and treats any failure as an ordinary round. `PowerWeapons.testBullet` makes
+  a bare bullet for tests (`EntityKineticBullet.TYPE`).
+- **A follow-up for each signature move.** Shockwave → Double Tap (a time window kept in `DOUBLE_TAPS`), Resonate →
+  Shatter (collapse the rest of a running effect into one blow), Fault Line → Upheaval (finish a travelling effect at
+  once), Earthquake → an early aftershock (`followUp` that calls the existing `deactivate`). All are
+  `followUp`s, so they are free and ignore the cooldown.
+- **Follow-ups change what other tests see.** A second Shockwave press is now Double Tap, so a test that expected the
+  second press to hit the cooldown now presses three times (`PowerFeedbackGameTests`).
+- **Passives that link two moves, by checking the other's state.** Live Fault (a crack under her own resonance collapses
+  it), Pressure Skin (a shot is cancelled while braced, blasting or shelled), Read the Pulse (a felt heartbeat is marked
+  and the next hit on it, in `LivingIncomingDamageEvent`, lands harder), Kinetic Sink (each shot broken calls
+  `QuakeKit.relieve`). Each is a few lines where the two moves already meet.
+- **A telegraph a beat before an aimed hit.** Seismic Lance marks the target's feet and strikes `LANCE_DELAY` ticks later,
+  queued in `LANCES`. A test that checks damage at once must wait for it (the all-skills test exempts it).
+- **Moving stat-bonus tests again.** Quake joined the no-stat-bonus list, so the discount and attack-bonus tests in
+  `SkillTreeGameTests` moved to Empathic Mimicry and Electrokinesis. These are the powers that still have the generic
+  nodes.
+- **Test players keep three seconds of spawn protection** even when `isInvulnerableTo` is overridden: `ServerPlayer.hurt`
+  checks `spawnInvulnerableTime` itself. Zero it by reflection (`QuakeReworkGameTests.pressureSkin...`). Skeleton arrows
+  also scale to nothing on the test server's difficulty; use an ownerless shot.
+- **Photographs:** `tools/quake-kit-preview.init.gradle` (`uitest/QuakeKitPreview`) shoots every move, follow-up, skill and
+  style into `build/quake-kit-preview/screenshots/`.
+
+## Reusable patterns from the Regeneration rework
+
+Regeneration (`regeneration/`, new art in `client/effects/setpiece/RegenArt`) was reworked in November 2026: follow-ups on
+three keys, a held Blood Gift, Play Dead, an eighteen-node interaction tree (`regeneration/RegenSkills`) and 18 poses.
+What the player sees is in [docs/regeneration.md](docs/regeneration.md).
+
+- **Tap or hold on a plain action.** Blood Gift became tap/hold the same way Canary Cry is: `activate` records the press,
+  the server tick turns a press held `STREAM_HOLD` ticks into the held effect, and `release` either gives the tap's effect
+  or ends the held one. Move the "is there a target" check into `canUse` (with its own message), so a press with no one
+  in reach still costs nothing.
+- **Reuse a body state the client already draws.** Play Dead lies the player down by setting the "downed" flag in
+  `BodyStatePayload` (`BodyService.state`); `BodyVisuals` forces the sleeping pose on every client. A server-side
+  `setForcedPose` alone doesn't reach the player's own client. Check what else the flag drives (here, only the give-up
+  key, which the server ignores unless she is really down).
+- **Branch skills can have a second press.** `SkillCatalog`'s generic builder takes a `followUp`; Regeneration's Play
+  Dead uses it to get up for free, as Cryokinesis's skills do.
+- **A follow-up that spends what the first part collected.** Blood Bond keeps a running `taken` total of the wounds
+  Claire draws onto herself; Pay It Back turns it into healing for her friends and Regrowth for her. Any held or
+  absorbing move can bank a number this way and cash it out on the second press.
+- **Watch which damage type a new hit uses.** Freefall's landing first used `playerAttack`, so it also counted as one of
+  Indestructible's Reckless punches (which cost her health and gave Regrowth). It now uses an explosion source. Check
+  the power's own `LivingIncomingDamageEvent` hooks before picking a source.
+- **"Hostile" is not "not a friend".** `ExpansionSkills.hostile` is true for every creature that isn't an ally, cows
+  included. A heal that should reach animals and villagers needs a friend rule (`RegenerationService.bonded`), not
+  `!hostile`.
+- **Blood should be drawn as blood.** `RegenArt` draws blood in the soft (normal-blended) pass so it is red, not light, and
+  keeps only a thin wet highlight in the glow pass. `Canvas.bolt` adds a bright core, so dark cracks use plain jagged
+  lines (`RegenArt.gash`).
+- **Tests.** `RegenerationGameTests`' fixture puts the FakePlayer in the player list, so features ticked through
+  `getPlayerList().getPlayer` (the downed timer, Shared Blood's lookup) work; reuse it. A cow's 10 health caps any
+  heal you assert on; a zombie's armour shaves a couple of points off a hit; use a pillager for exact numbers.
+- **Photographs:** `tools/regen-kit-preview.init.gradle` (`uitest/RegenKitPreview`) shoots every action, follow-up, skill and
+  style into `build/regen-kit-preview/screenshots/`. A leap needs its landing shots timed to the fall; a front camera with
+  someone standing in front of the player only shows their back.
+
+## Reusable patterns from the Telepathy rework
+
+Telepathy's tree (`telepathy/TelepathySkills`, art in `client/effects/setpiece/TelepathyArt`) was reworked in November
+2026: eighteen interaction nodes, three of which carry real Simple Voice Chat voices, and 14 poses. What the player sees
+is in [docs/telepathy.md](docs/telepathy.md).
+
+- **Carrying voice chat audio.** `telepathy/MindVoice` is the only class that imports the voice chat API; Simple Voice
+  Chat finds it by its `@ForgeVoicechatPlugin` annotation (a public no-argument constructor is enough). For each
+  `MicrophonePacketEvent` it looks up routes and re-sends the packet with `packet.staticSoundPacketBuilder()` (inside the
+  head) or `locationalSoundPacketBuilder().position(...).distance(...)` (from a point). Like `RadioLink`, every call is
+  in try/catch and sets a `broken` flag.
+  - **Give relayed audio its own channel** (`channelId`, a UUID made from the speaker's), or it shares a decoder with the
+    speaker's ordinary voice and garbles. Give it a volume category (`registerVolumeCategory` on server start) so
+    players can turn it down.
+  - **Never relay to someone who already hears the speaker**: same group, or within `getVoiceChatDistance()` in the same
+    level. Respect closed groups (`Group.Type` not `OPEN`) unless the server opts in.
+  - **Direction without position:** a locational packet placed a few blocks from the listener toward the speaker, nearer
+    for louder, sounds like a distant voice from the right direction.
+  - **Changing the sound.** Decode with `voice.createDecoder()`, change the 960 samples, encode with
+    `createEncoder(OpusEncoderMode.VOIP)` and pass the bytes to the builder's `opusEncodedData`. Keep one decoder,
+    effect and encoder per speaker (the codecs and the effect's echo carry state from frame to frame), process once per
+    packet for every listener, and close them on `PlayerDisconnectedEvent`. The effect itself is a plain class
+    (`telepathy/PsychicVoice`) so a game test can feed it a tone.
+  - **Speaking so only one mind hears.** `event.cancel()` on a `MicrophonePacketEvent` stops the voice chat's own
+    proximity and group broadcast; relay the packet yourself first. That is the inner voice (Shift + Mind Link).
+- **Work routes out on the server thread, read them on the voice thread.** `MindVoiceRoutes.compute(...)` builds an
+  immutable map each tick and `publish` swaps it into a `volatile` field; the voice thread only reads it and records who
+  was heard in concurrent maps (`drain`, `speaking`). The rules have no voice chat imports, so game tests check them
+  directly (`TelepathyReworkGameTests.farHearing...`).
+- **Ask before you carry someone's voice.** Hive Link and Hive Mind take teammates or players who crouch to volunteer,
+  never every nearby player (with PvP off, `StyleOps.isFriend` is true for everyone). A listened-to speaker gets a hint.
+- **A talk-down everyone can see.** Persuasion's windup (`TelepathyGeometry.PERSUADE_TICKS`) is a public `TELE_PERSUADE`
+  piece whose scale is its length, so the art closes exactly as it lands; breaking line of sight ends it. The ending
+  piece (`TELE_WON` or `TELE_FRIGHT`) is bound to the same mind, so `superseded` stops the windup drawing at once.
+- **A memory you can walk.** `telepathy/MindMemory` remembers every player, and other creatures near anyone who has
+  learned Memory Walk, every half second for a minute (at most 256). A walked path goes to the walker as at most twenty
+  private `TELE_MEMORY` segments, each delayed two ticks after the last so the trail unspools backward in time; the age
+  and a "hurt here" flag ride in the scale. Memory Walk on the ground finds who passed through a place.
+- **Private pieces for one viewer.** `TelepathyGeometry.showTo(viewer, ...)` sends a piece to one player: a heard voice's
+  mark, a linked friend's halo, a voice inside your head. Use it for anything only one mind perceives.
+- **Hooks into the core, not copies of it.** The tree reads the core where it already decides things:
+  `SuggestionService.choose` asks `TelepathySkills.suggestionTicks`, `PossessionService.end` calls `released` (only when
+  control had begun), `IllusionService` calls `fright` on contact, and `TelepathyFocus` gained `deepen` (add Focus to a
+  mind without reading it) and `threads(p, min)`. The old Implanted Command and Shared Sight duplicated core actions;
+  their slots now hold new moves.
+- **Links outlast deaths and dimension changes.** `TelepathyService.stopAll` runs on death and dimension change, so a
+  link that reaches anywhere is only left on logout (`TelepathySkills.leave`).
+- **Test players must be in the player list** when the code looks them up by id: links and routes resolve members with
+  `getPlayerList().getPlayer`. The test fixture adds and removes them by reflection, as `RegenerationGameTests` does.
+- **Voice tests stay close.** `TelepathyReworkGameTests` shrinks the voice chat range to five blocks (`nearVoices`) so
+  "far apart" is twenty blocks; never send test players hundreds of blocks off.
+- **Local full-suite runs start from the default config.** A forward speed of 15 left in
+  `build/rewind-gametest-world/config` since October made both Skyburst tests fail locally and nowhere else (a tap
+  already hit the 10-block cap); `tools/rewind-gametest.init.gradle` now deletes that config with the world, as GitHub's
+  fresh checkout does. When a test passes alone but fails in the full run, compare the run's config before blaming code.
+- **Tests that wait on a chunk wait for it.** A freshly loaded chunk can take seconds to start entity-ticking while the
+  suite runs, and a test FakePlayer moving out of its arena leaves no player to keep chunks ticking. Sylar's boss bar and
+  the meltdown crowd now wait for `isPositionEntityTicking` before their clock starts; the flight rescue measures the
+  flyer while the ally is carried; the anchored tornado's far cow stands inside the arena's barrier walls; Elle's conduit
+  test has 400 ticks for her pocket floor to come alive.
+- **Photographs:** `tools/telepathy-kit-preview.init.gradle` (`uitest/TelepathyKitPreview`) shoots every pose and piece into
+  `build/telepathy-kit-preview/screenshots/`; villagers stand in for the second mind.
+
 ## Reusable patterns from village distress calls (radio and meltdowns)
 
 Villages call for help over Simple Radio, and the first event that calls is a villager's meltdown (`radio/`,
@@ -451,3 +760,40 @@ for the Company's guards (`weapons/`, art in `client/effects/setpiece/WeaponArt`
   play that is the same thing; in game tests the server runs ticks as fast as it can, so every shot comes back
   `COOL_DOWN`. Tests that fire real TaCZ guns hold each tick to 50 ms (`WeaponGameTests.realTime`).
 - **An armor stand is a test shooter.** It is a living entity with no AI, so it fires exactly where you point it.
+
+## Reusable patterns from Vibe
+
+Vibe (`vibe/`, art in `client/effects/setpiece/VibeArt`) is Cisco Ramon's power, added in November 2026: Vibe Blast,
+two-way Breaches, Read the Vibe, Breach Guard → Return Fire and Frequency Lock. What the player sees is in
+[docs/vibe.md](docs/vibe.md).
+
+- **One crossing test for every opening.** `VibeGeometry.crossing(from, to, center, normal, width, height)` checks a
+  segment against the same ellipse the viewer sees. Breaches use it on each traveler's last two body centres; the guard
+  uses it on each shot's step. Reuse it for any doorway, rift or window.
+- **A portal keeps your direction of travel.** A traveler comes out on the side of the far mouth they were heading for
+  (`Mouth.arrival(side)`), turned by the angle between the two mouths (`Mouth.yaw()`). Sending everyone out of the front
+  of the far mouth bounced anyone walking back through it between the two mouths.
+- **A link to another dimension.** `VibeBreaches` holds a region ticket on the exit's chunk while the link is open, moves
+  players with `changeDimension(new DimensionTransition(...))`, and adds them to `CROSSING` while they move, so the
+  `PlayerChangedDimensionEvent` handler that tidies up a power (`VibeService.forget`) doesn't close the link they're
+  using. A saved destination lives in `Player.PERSISTED_NBT_TAG`, so it survives death.
+- **A short combat memory.** `VibeSight.record` keeps every hit (`LivingDamageEvent.Post`) in a bounded deque for 25
+  seconds; a read replays the matching ones privately (`VibeGeometry.privatePiece`) and marks the attackers. Any
+  "what happened here" power can read the same trace.
+- **Catching fast shots needs three hooks.** The guard screens each projectile's step in `EntityTickEvent.Pre`
+  (lowest priority), again in `ProjectileImpactEvent` (a shot whose whole step fell between ticks), and TaCZ rounds in
+  `TaczLink`'s `EntityHurtByGunEvent.Pre`.
+- **Switching another power off for a while.** A Frequency Lock puts a caught speedster in `VibeService.DESYNCED`, and
+  `AbilityUseService` refuses Superspeed while `VibeService.desynced(player)` is true. `desync` is package-visible so
+  `VibeKitGameTests` can test the rule directly (the test server never allows PvP).
+- **`SpeedService.swept` returns a position, not a displacement.** Subtract the entity's position before measuring how
+  far it got. The awakening's rescue once treated the result as a displacement and never moved anyone.
+- **A wave through your own portal.** Through the Seam asks `VibeBreaches.seam(owner, from, to)` for the first open
+  mouth a wave crosses; it returns the crossing, the matching point on the other mouth and the turned direction
+  (`VibeBreaches.turn`). The first wave stops at the mouth, and a second one leaves the far mouth when the front
+  arrives, sharing one strike list. Any projectile that should pass through a portal can use the same lookup.
+- **Every passive ties two moves together.** Slingshot (cross a breach → next blast), Return Address (guard → mark),
+  Overflow (Return Fire → a small lock queued in `OVERFLOWS`), Residual Sense (damage taken → mark). Marks never shorten
+  (`VibeSight.mark(player, target, ticks)` keeps the longer one), so several sources can feed them safely.
+- **Photographs:** `tools/vibe-preview.init.gradle` (`uitest/VibePreview`) shoots every core move, active skill, class
+  ability, Through the Seam, Overflow and the awakening into `build/vibe-preview/screenshots/`.

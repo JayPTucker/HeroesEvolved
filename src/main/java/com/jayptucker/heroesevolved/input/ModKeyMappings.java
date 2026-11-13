@@ -72,6 +72,17 @@ public final class ModKeyMappings {
             "key.categories.heroesevolved"
     );
 
+    /**
+     * Empathic Mimicry's memory wheel: hold to choose which remembered power answers; tap to step to the next.
+     * B is unbound in vanilla.
+     */
+    public static final KeyMapping MEMORY_WHEEL = new KeyMapping(
+            "key.heroesevolved.memory_wheel",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_B,
+            "key.categories.heroesevolved"
+    );
+
     /** The eight ability keys, in order. */
     public static final KeyMapping[] ABILITY_KEYS = {
             ABILITY_1, ABILITY_2, ABILITY_3, ABILITY_4,
@@ -116,5 +127,6 @@ public final class ModKeyMappings {
         event.register(ABILITY_7);
         event.register(ABILITY_8);
         event.register(ABILITY_WHEEL);
+        event.register(MEMORY_WHEEL);
     }
 }

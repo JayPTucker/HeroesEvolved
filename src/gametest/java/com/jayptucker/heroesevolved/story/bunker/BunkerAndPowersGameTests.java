@@ -402,7 +402,7 @@ public final class BunkerAndPowersGameTests {
         try {
             h.assertTrue(MimicryService.remember(p, ModAbilities.PYROKINESIS_ID, 3), "A power can be remembered");
             h.assertTrue(!MimicryService.remember(p, ModAbilities.MIMICRY_ID, 3), "Mimicry cannot copy itself");
-            var echo = AbilityRegistry.ABILITIES.get(ModAbilities.MIMICRY_ID).actions().get(AbilitySlot.TERTIARY);
+            var echo = AbilityRegistry.ABILITIES.get(ModAbilities.MIMICRY_ID).actions().get(AbilitySlot.PRIMARY);
             var context = new AbilityUseContext(p, ModAbilities.MIMICRY_ID, 3, false);
             float health = victim.getHealth();
             h.assertTrue(echo.canUse(context) && echo.activate(context) == AbilityActivationResult.SUCCESS, "Echo I charges the borrowed Cinder Spear");

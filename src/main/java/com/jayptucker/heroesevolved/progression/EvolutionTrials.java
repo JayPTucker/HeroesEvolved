@@ -35,6 +35,7 @@ public final class EvolutionTrials {
             Map.entry("phasing", new Trial("Travel 2,000 blocks through solid matter", 2000)),
             Map.entry("quake", new Trial("Push through it: land 40 quake hits while at 80 Strain or more", 40)),
             Map.entry("technopathy", new Trial("Intercept 40 hostile projectiles with your network", 40)),
+            Map.entry("vibe", new Trial("Catch 40 hostile projectiles in a Breach Guard", 40)),
             Map.entry("matter_assembly", new Trial("Strike enemies 40 times with assembled Shards", 40))
     );
 

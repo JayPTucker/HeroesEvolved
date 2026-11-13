@@ -153,5 +153,35 @@
         "attenuation_distance": 24
       }
     ]
+  },
+  "vibe_pulse": {
+    "subtitle": "subtitles.heroesevolved.vibe_pulse",
+    "sounds": [
+      "heroesevolved:ability/vibe_pulse"
+    ]
+  },
+  "vibe_breach": {
+    "subtitle": "subtitles.heroesevolved.vibe_breach",
+    "sounds": [
+      "heroesevolved:ability/vibe_breach"
+    ]
+  },
+  "vibe_shut": {
+    "subtitle": "subtitles.heroesevolved.vibe_shut",
+    "sounds": [
+      "heroesevolved:ability/vibe_shut"
+    ]
+  },
+  "vibe_echo": {
+    "subtitle": "subtitles.heroesevolved.vibe_echo",
+    "sounds": [
+      "heroesevolved:ability/vibe_echo"
+    ]
+  },
+  "vibe_collapse": {
+    "subtitle": "subtitles.heroesevolved.vibe_collapse",
+    "sounds": [
+      "heroesevolved:ability/vibe_collapse"
+    ]
   }
 }

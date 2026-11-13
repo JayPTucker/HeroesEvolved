@@ -10,9 +10,10 @@ import java.util.Map;
  * and Black Canary (whose voice is a weapon).
  * <ul>
  *   <li>Level 1, Canary Cry: tap for a focused cry; hold for the sustained scream.</li>
- *   <li>Level 2, Resonant Note: a humming note that lures enemies to it; press again to break it on them.</li>
- *   <li>Level 3, Wall of Sound: shots turn back off it and enemies are pushed away.</li>
- *   <li>Level 4, Sonic Vault: cry at the ground to leap; land on a shockwave.</li>
+ *   <li>Level 2, Resonant Note: a humming note that lures enemies to it; press again to break it on them, or Shift +
+ *   press to carry it once to where you aim.</li>
+ *   <li>Level 3, Wall of Sound: shots turn back off it and enemies are pushed away; press again to shove it forward.</li>
+ *   <li>Level 4, Sonic Vault: cry at the ground to leap; land on a shockwave. Press again in the air to dive.</li>
  *   <li>Level 5, Crescendo: hold to build, release one wave that spends all your Resonance.</li>
  *   <li>Always: Sound Sight shows every sound around you as colour. Sonic hits and explosions build Resonance.</li>
  * </ul>
@@ -45,14 +46,18 @@ public final class SonicResonanceAbility implements Ability {
                     boolean active = SonicService.screaming(c.player()); SonicService.stop(c.player()); return active;
                 }
             },
+            // Press again (free) to break the Note; Shift + press to carry it once to where you aim.
             AbilitySlot.SECONDARY, SimpleAction.builder("sonic_note", 2).cost(() -> 20, () -> 120)
-                    .deactivateOnPress(c -> SonicService.hasNote(c.player()))
-                    .deactivate(c -> SonicService.detonate(c.player()))
+                    .followUp(c -> SonicService.noteFollowUp(c.player(), c.modifierHeld()))
                     .activate(c -> SonicService.placeNote(c.player(), c.abilityLevel())).build(),
+            // Press again (free) to shove the Wall forward; Shift + press drops it.
             AbilitySlot.TERTIARY, SimpleAction.builder("sonic_wall", 3).cost(() -> 28, () -> 300)
+                    .followUp(c -> !c.modifierHeld() && SonicService.pushWall(c.player()))
                     .deactivate(c -> SonicService.dropWall(c.player()))
                     .activate(c -> SonicService.wall(c.player(), c.abilityLevel())).build(),
+            // Press again in the air after a Vault (free) to dive onto a harder shockwave.
             AbilitySlot.QUATERNARY, SimpleAction.builder("sonic_vault", 4).cost(() -> 25, () -> 80)
+                    .followUp(c -> SonicService.dive(c.player(), c.abilityLevel()))
                     .activate(c -> { SonicService.vault(c.player()); return true; }).build(),
             AbilitySlot.QUINARY, new Held("sonic_crescendo", 5, 60, 20 * 60) {
                 @Override public boolean canUse(AbilityUseContext c) { return !SonicService.building(c.player()); }

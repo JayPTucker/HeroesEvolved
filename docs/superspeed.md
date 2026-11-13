@@ -199,6 +199,22 @@ Three branches, nine nodes, using the existing points, mastery bonuses and loado
 | Kinetic Force / Force | Momentum Strike | Rush a visible target up to 40 blocks away through a clear path, ending within striking distance and dealing 6 + level damage. | 28 / 9 seconds |
 | Quick Recovery / Survival | Slipstream Rescue | Carry one nearby villager, friendly creature, teammate, or crouching player up to twelve blocks ahead. Preserves their offset and sweeps both bodies before moving either. | 24 / 6 seconds |
 
+### How the skills look
+
+Every skill has its own arm pose (in third and first person) and is drawn in the speedster's gold, using the
+player's real afterimages rather than sprites:
+
+| Skill | What you see |
+| --- | --- |
+| Reflex Focus | Fists come up into a boxer's guard. Three gold rings close in at eye height, one after another, round a still afterimage of you. |
+| A dodge | You are simply beside where you were: an afterimage stays where the shot was aimed, a low gold streak and two scorched skid lines run to where you went, and a glint flashes where it would have hit. |
+| Speed Mirage | Arms flung low and wide, flickering. For as long as it lasts, afterimages of you keep appearing all round, facing every way, with thin threads of lightning back to your body. With Time Remnant, a remnant beside each foe lashes out when it strikes. |
+| Momentum Strike | The rush is strung out as afterimages along a gold lane; the fist drives through, and a cone of shock rings blows out the far side of the target. |
+| Lightning Throw | The arm cocks back over the shoulder as lightning gathers in the hand, then whips through like a javelin; the bolt leaves the hand a moment later and bursts where it lands. Charged Throw's hops follow on without a wind-up. |
+| Slipstream Rescue | One arm reaches round the person beside you. Your path is a gold ribbon with afterimages; theirs is a pale ribbon of pressed wind wrapped in rings. |
+| Perception | Open hands held a little out from your sides, perfectly still, while the gold clock rings ripple out. |
+| Relay Run (style) | Each friend is fetched along a gold arc, their outline fading where they stood, and a ring closes round them as they land in the circle. |
+
 Learn and equip these with the inventory **Skills** button. Passive discounts apply to initial activation costs and cooldowns, not ongoing running or dodge costs. Running earns Mastery for actual stamina spent. Each running interval is paid upfront so toggling cannot avoid the drain; walking does not consume running stamina.
 
 ## Power interactions and awakening

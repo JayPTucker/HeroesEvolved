@@ -5,24 +5,18 @@ import com.jayptucker.heroesevolved.mimicry.MimicryService;
 import java.util.Map;
 
 /**
- * Empathic Mimicry, inspired by Peter Petrelli.
- * <ul>
- *   <li>Level 1, Empathize: absorb the power of the player (or Sylar) you look at.</li>
- *   <li>Level 1, Recall: choose which memory to channel; Shift steps back.</li>
- *   <li>Levels 2, 3 and 5, Echo I/II/III: that power's first three abilities, a level weaker.</li>
- *   <li>Always: near another powered player you regain stamina. Memories persist; one to four by level.</li>
- * </ul>
+ * Empathic Mimicry, inspired by Peter Petrelli. Its five keys are Echoes of whichever set is channeled: Echo I to V
+ * perform that power's five abilities, one level weaker than its owner's, unlocking at the mimic's own Power Levels
+ * 1, 3, 6, 10 and 15. Sets come from being near someone with a power (always) and from touching them (Level 6 on);
+ * the memory wheel chooses between them. See {@link MimicryService}.
  */
 public final class MimicryAbility implements Ability {
     private static final Map<AbilitySlot, AbilityAction> ACTIONS = Map.of(
-            AbilitySlot.PRIMARY, SimpleAction.builder("mimicry_empathize", 1).cost(() -> 20, () -> 100)
-                    .activate(c -> MimicryService.empathize(c.player(), c.abilityLevel())).build(),
-            AbilitySlot.SECONDARY, SimpleAction.builder("mimicry_recall", 1).cost(() -> 2, () -> 10)
-                    .activate(c -> MimicryService.recall(c.player(), 1))
-                    .deactivate(c -> MimicryService.recall(c.player(), -1)).build(),
-            AbilitySlot.TERTIARY, MimicryService.echo(1, AbilitySlot.PRIMARY, 2),
-            AbilitySlot.QUATERNARY, MimicryService.echo(2, AbilitySlot.SECONDARY, 3),
-            AbilitySlot.QUINARY, MimicryService.echo(3, AbilitySlot.TERTIARY, 5));
+            AbilitySlot.PRIMARY, MimicryService.echo(1, AbilitySlot.PRIMARY, 1),
+            AbilitySlot.SECONDARY, MimicryService.echo(2, AbilitySlot.SECONDARY, 2),
+            AbilitySlot.TERTIARY, MimicryService.echo(3, AbilitySlot.TERTIARY, 3),
+            AbilitySlot.QUATERNARY, MimicryService.echo(4, AbilitySlot.QUATERNARY, 4),
+            AbilitySlot.QUINARY, MimicryService.echo(5, AbilitySlot.QUINARY, 5));
     @Override public AbilityDefinition definition() { return new AbilityDefinition(0, 0, 5, AbilityActivationType.INSTANT); }
     @Override public Map<AbilitySlot, AbilityAction> actions() { return ACTIONS; }
     @Override public boolean canUse(AbilityUseContext c) { return false; }

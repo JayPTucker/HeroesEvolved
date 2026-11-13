@@ -420,7 +420,8 @@ public final class FlightSkillGameTests {
                 FlightDynamicsService.releaseSkyburst(p);
             }
             h.assertTrue(upgraded.getDeltaMovement().length() > baseline.getDeltaMovement().length() + .4,
-                    "Vector Control reaches a stronger Skyburst in the same eighteen-tick hold");
+                    "Vector Control reaches a stronger Skyburst in the same eighteen-tick hold" + FlightReworkGameTests.why(baseline)
+                            + FlightReworkGameTests.why(upgraded));
             h.succeed();
         } finally { cleanup(baseline); cleanup(upgraded); }
     }

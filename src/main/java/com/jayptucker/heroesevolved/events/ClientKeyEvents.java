@@ -107,6 +107,28 @@ public final class ClientKeyEvents {
         }
 
         handleWheelKey(minecraft, allowOverexertion);
+        handleMemoryKey(minecraft);
+    }
+
+    private static long memoryDownSince = -1;
+
+    /**
+     * Empathic Mimicry's memory wheel: held, it opens the wheel of remembered powers; tapped, it steps the channel
+     * to the next one.
+     */
+    private static void handleMemoryKey(Minecraft minecraft) {
+        boolean down = ModKeyMappings.MEMORY_WHEEL.isDown();
+        if (!com.jayptucker.heroesevolved.gui.screen.MemoryWheelScreen.isMimic()) { memoryDownSince = -1; return; }
+        long now = minecraft.level.getGameTime();
+        if (down && memoryDownSince < 0) {
+            memoryDownSince = now;
+        } else if (down && now - memoryDownSince >= WHEEL_HOLD_TICKS) {
+            memoryDownSince = -1;
+            minecraft.setScreen(new com.jayptucker.heroesevolved.gui.screen.MemoryWheelScreen());
+        } else if (!down && memoryDownSince >= 0) {
+            memoryDownSince = -1;
+            com.jayptucker.heroesevolved.gui.screen.MemoryWheelScreen.stepNext();
+        }
     }
 
     /**

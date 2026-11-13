@@ -12,6 +12,7 @@ import com.tacz.guns.api.item.builder.GunItemBuilder;
 import com.tacz.guns.api.item.gun.FireMode;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.LogicalSide;
@@ -40,6 +41,7 @@ final class TaczLink {
     static void listen() {
         if (listening || broken) return;
         try {
+            NeoForge.EVENT_BUS.addListener(EntityHurtByGunEvent.Pre.class, TaczLink::vibeIntercept);
             NeoForge.EVENT_BUS.addListener(EntityHurtByGunEvent.Post.class, TaczLink::hurt);
             NeoForge.EVENT_BUS.addListener(GunShootEvent.class, TaczLink::shot);
             NeoForge.EVENT_BUS.addListener(AmmoHitBlockEvent.class, TaczLink::block);
@@ -47,6 +49,16 @@ final class TaczLink {
         } catch (Throwable t) {
             fail("listen", t);
         }
+    }
+
+    private static void vibeIntercept(EntityHurtByGunEvent.Pre event) {
+        if (broken || event.getLogicalSide() != LogicalSide.SERVER
+                || !(event.getBullet().level() instanceof ServerLevel level)) return;
+        Entity bullet = event.getBullet();
+        var from = bullet.position();
+        var target = event.getHurtEntity().getBoundingBox().clip(from, from.add(bullet.getDeltaMovement()));
+        if (target.isPresent() && com.jayptucker.heroesevolved.vibe.VibeService.intercept(level, bullet, from, target.get()))
+            event.setCanceled(true);
     }
 
     private static void hurt(EntityHurtByGunEvent.Post event) {
@@ -165,5 +177,59 @@ final class TaczLink {
             fail("shoot", t);
             return "BROKEN";
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Bullets in flight (Quake shakes them apart, or sets off the explosive ones)
+    // ------------------------------------------------------------------
+
+    /** Whether {@code entity} is a TaCZ bullet in flight. */
+    static boolean bullet(Entity entity) {
+        if (broken) return false;
+        try {
+            return entity instanceof com.tacz.guns.entity.EntityKineticBullet;
+        } catch (Throwable t) {
+            fail("bullet", t);
+            return false;
+        }
+    }
+
+    /**
+     * An explosive bullet's blast radius and whether it breaks blocks, or null for an ordinary round. TaCZ keeps these
+     * private, so they are read by reflection; any failure just treats the round as ordinary.
+     */
+    static float[] explosive(Entity entity) {
+        if (broken || !bullet(entity)) return null;
+        try {
+            Class<?> type = com.tacz.guns.entity.EntityKineticBullet.class;
+            if (!(boolean) field(type, "explosion").get(entity)) return null;
+            float radius = (float) field(type, "explosionRadius").get(entity);
+            boolean destroy = (boolean) field(type, "explosionDestroyBlock").get(entity);
+            return new float[] {Math.max(1, radius), destroy ? 1 : 0};
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /** A bare TaCZ bullet (tests): ordinary, or explosive with {@code radius}. */
+    static Entity testBullet(net.minecraft.server.level.ServerLevel level, float radius) {
+        try {
+            var bullet = new com.tacz.guns.entity.EntityKineticBullet(com.tacz.guns.entity.EntityKineticBullet.TYPE, level);
+            if (radius > 0) {
+                Class<?> type = com.tacz.guns.entity.EntityKineticBullet.class;
+                field(type, "explosion").set(bullet, true);
+                field(type, "explosionRadius").set(bullet, radius);
+            }
+            return bullet;
+        } catch (Throwable t) {
+            fail("testBullet", t);
+            return null;
+        }
+    }
+
+    private static java.lang.reflect.Field field(Class<?> type, String name) throws NoSuchFieldException {
+        var field = type.getDeclaredField(name);
+        field.setAccessible(true);
+        return field;
     }
 }

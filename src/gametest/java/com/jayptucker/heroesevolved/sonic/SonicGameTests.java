@@ -22,9 +22,15 @@ import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
-/** Canary Cry (tap and hold), Resonant Note's lure and burst, Wall of Sound, Sonic Vault's landing, Crescendo and Resonance. */
+/**
+ * Canary Cry (tap and hold), Resonant Note's lure and burst, Wall of Sound, Sonic Vault's landing, Crescendo and Resonance,
+ * and the rework's follow-ups and interactions: a Cry or Crescendo through your Note, the scream feeding it, the shoved
+ * Wall, Sonic Dive, Ringing, Feedback Loop and the three branch skills.
+ */
 @GameTestHolder("heroesevolved")
 @PrefixGameTestTemplate(false)
 public final class SonicGameTests {
@@ -188,5 +194,169 @@ public final class SonicGameTests {
         h.assertTrue(EvolutionTrials.special("sonic_resonance") && EvolutionTrials.trial("sonic_resonance").goal() == 40,
                 "Sonic Resonance evolves by catching 40 enemies in Resonant Note bursts");
         h.succeed();
+    }
+
+    private static void learn(ServerPlayer p, String... ids) {
+        p.setData(ModDataAttachments.SKILL_TREES, com.jayptucker.heroesevolved.skills.SkillTreeData.empty().with(
+                ModAbilities.SONIC_RESONANCE_ID.toString(), new com.jayptucker.heroesevolved.skills.SkillTreeData.Build(15, Set.of(ids), Map.of())));
+    }
+
+    /** A point straight ahead of the singer's eyes (the test singer faces +Z). */
+    private static Vec3 ahead(ServerPlayer p, double distance) { return p.getEyePosition().add(0, 0, distance); }
+
+    @GameTest(template = "rewind_empty", batch = "sonic.note_cry")
+    public static void aCryThroughYourNoteBreaksItHarmonicForFree(GameTestHelper h) {
+        var p = singer(h, 2);
+        var t = mob(h, EntityType.PILLAGER, p, 3.5, 6, false);
+        try {
+            SonicService.placeNoteAt(p, ahead(p, 6), 2);
+            SonicService.press(p, 2);
+            SonicService.release(p);
+            h.assertTrue(!SonicService.hasNote(p), "The cry broke the note it passed through");
+            h.assertTrue(SonicService.resonance(p) == 0, "A harmonic it didn't have to pay for");
+            h.assertTrue(Math.abs(100 - t.getHealth() - 12) < 0.1F, "Harmonic damage (8 becomes 12), got " + (100 - t.getHealth()));
+            h.succeed();
+        } finally { t.discard(); SonicService.forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "sonic.note_feed")
+    public static void theScreamFeedsTheNoteInsteadOfBreakingIt(GameTestHelper h) {
+        var p = singer(h, 2);
+        var t = mob(h, EntityType.PILLAGER, p, 3.5, 6, false);
+        try {
+            SonicService.placeNoteAt(p, ahead(p, 6), 2);
+            SonicService.cry(p, 2, true);
+            h.assertTrue(SonicService.hasNote(p), "The held scream doesn't break the note");
+            float before = t.getHealth();
+            SonicService.detonate(p);
+            h.assertTrue(Math.abs(before - t.getHealth() - 8.5F) < 0.1F, "Fed once, the burst hits half a point harder (8.5), got " + (before - t.getHealth()));
+            h.succeed();
+        } finally { t.discard(); SonicService.forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "sonic.note_move")
+    public static void shiftCarriesTheNoteOnce(GameTestHelper h) {
+        var p = singer(h, 2);
+        try {
+            SonicService.placeNoteAt(p, ahead(p, 3), 2);
+            Vec3 first = SonicService.notePosition(p);
+            h.assertTrue(SonicService.noteFollowUp(p, true), "Shift + press moves the note");
+            h.assertTrue(SonicService.hasNote(p) && !SonicService.notePosition(p).equals(first), "It is still playing, somewhere else");
+            Vec3 second = SonicService.notePosition(p);
+            SonicService.noteFollowUp(p, true);
+            h.assertTrue(SonicService.notePosition(p).equals(second), "Only once");
+            h.assertTrue(SonicService.noteFollowUp(p, false) && !SonicService.hasNote(p), "A plain press breaks it");
+            h.succeed();
+        } finally { SonicService.forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "sonic.wall_push", timeoutTicks = 40)
+    public static void aShovedWallRollsForwardThroughEnemies(GameTestHelper h) {
+        var p = singer(h, 3);
+        var t = mob(h, EntityType.PILLAGER, p, 0, 5, false);
+        SonicService.wall(p, 3);
+        h.assertTrue(SonicService.pushWall(p) && SonicService.pushing(p), "Pressing again shoves the wall");
+        h.assertTrue(!SonicService.pushWall(p), "A rolling wall can't be shoved again");
+        h.runAfterDelay(8, () -> {
+            try { h.assertTrue(100 - t.getHealth() >= 7 - 0.1F, "It hit what it rolled through (4 + tier)"); }
+            catch (RuntimeException e) { t.discard(); SonicService.forget(p); throw e; }
+        });
+        h.runAfterDelay(SonicGeometry.WALL_PUSH_TICKS + 4, () -> {
+            try {
+                h.assertTrue(!SonicService.hasWall(p), "It ends when it has rolled its course");
+                h.succeed();
+            } finally { t.discard(); SonicService.forget(p); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "sonic.dive", timeoutTicks = 80)
+    public static void sonicDiveLandsOnAWiderHarderShockwave(GameTestHelper h) {
+        var p = singer(h, 4);
+        var t = mob(h, EntityType.PILLAGER, p, 5, 0, false);
+        h.assertTrue(!SonicService.dive(p, 4), "No dive without a Vault first");
+        SonicService.vault(p);
+        h.assertTrue(SonicService.dive(p, 4) && SonicService.diving(p), "After a Vault, pressing again in the air dives");
+        h.runAfterDelay(SonicGeometry.DIVE_MAX + 3, () -> {
+            try {
+                h.assertTrue(!SonicService.diving(p), "The dive lands (or times out)");
+                h.assertTrue(Math.abs(100 - t.getHealth() - 10.5F) < 0.1F, "Five blocks out, a 1.5x shockwave: (3 + tier) * 1.5, got " + (100 - t.getHealth()));
+                h.assertTrue(SonicService.cushion(p, 12), "The landing takes no fall damage");
+                h.succeed();
+            } finally { t.discard(); SonicService.forget(p); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "sonic.ring")
+    public static void ringingShattersOnTheNextSonicHit(GameTestHelper h) {
+        var p = singer(h, 1);
+        var t = mob(h, EntityType.PILLAGER, p, 0, 4, false);
+        try {
+            SonicService.ring(p, t);
+            h.assertTrue(SonicService.ringing(t), "The target rings");
+            SonicService.press(p, 1);
+            SonicService.release(p);
+            h.assertTrue(!SonicService.ringing(t), "The next hit shatters the ring");
+            h.assertTrue(Math.abs(100 - t.getHealth() - (5.2F + SonicGeometry.RING_DAMAGE)) < 0.1F, "Cry (5.2) + ring (6), got " + (100 - t.getHealth()));
+            h.assertTrue(SonicService.resonance(p) == 4 + SonicGeometry.RING_RESONANCE, "4 for the hit and 10 for the ring");
+            h.succeed();
+        } finally { t.discard(); SonicService.forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "sonic.feedback")
+    public static void feedbackLoopAmplifiesACryThroughYourWall(GameTestHelper h) {
+        var p = singer(h, 3);
+        var t = mob(h, EntityType.PILLAGER, p, 0, 6, false);
+        try {
+            SonicService.wall(p, 3);
+            SonicService.press(p, 3);
+            SonicService.release(p);
+            float plain = 100 - t.getHealth();
+            h.assertTrue(Math.abs(plain - 7.6F) < 0.1F, "Without the skill the wall changes nothing (7.6), got " + plain);
+            learn(p, "sonic_resonance_0_2");
+            t.setHealth(100);
+            SonicService.press(p, 3);
+            SonicService.release(p);
+            h.assertTrue(Math.abs(100 - t.getHealth() - 11.4F) < 0.1F, "Through the wall with Feedback Loop: half again (11.4), got " + (100 - t.getHealth()));
+            h.succeed();
+        } finally { t.discard(); SonicService.forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "sonic.shriek")
+    public static void focusedShriekHitsOneTargetAndLeavesItRinging(GameTestHelper h) {
+        var p = singer(h, 3);
+        var t = mob(h, EntityType.PILLAGER, p, 0, 6, false);
+        try {
+            h.assertTrue(SonicSkills.focusedShriek(p, 3), "The shriek finds the target ahead");
+            h.assertTrue(Math.abs(100 - t.getHealth() - 12) < 0.1F, "9 + level, got " + (100 - t.getHealth()));
+            h.assertTrue(SonicService.ringing(t), "And leaves it Ringing");
+            h.succeed();
+        } finally { t.discard(); SonicService.forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "sonic.quiet", timeoutTicks = 30)
+    public static void theQuietZoneKeepsMobsFromTargeting(GameTestHelper h) {
+        var p = singer(h, 3);
+        var zombie = mob(h, EntityType.ZOMBIE, p, 2, 0, true);
+        zombie.setTarget(p);
+        SonicSkills.quietZone(p);
+        h.runAfterDelay(6, () -> {
+            try {
+                h.assertTrue(zombie.getTarget() == null && SonicSkills.hushed(zombie), "Inside the zone it loses its target");
+                zombie.setTarget(p);
+                h.assertTrue(zombie.getTarget() == null, "And can't pick a new one");
+                h.succeed();
+            } finally { zombie.discard(); SonicService.forget(p); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "sonic.crescendo_note")
+    public static void crescendoBreaksTheNoteInItsPath(GameTestHelper h) {
+        var p = singer(h, 5);
+        try {
+            SonicService.placeNoteAt(p, ahead(p, 8), 5);
+            SonicService.fireCrescendo(p, 5, 1F);
+            h.assertTrue(!SonicService.hasNote(p), "The wave broke the note");
+            h.succeed();
+        } finally { SonicService.forget(p); }
     }
 }

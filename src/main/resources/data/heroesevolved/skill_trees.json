@@ -4,23 +4,25 @@
     "branches": [
       [
         {
-          "name": "Fault Control",
-          "description": "Reduce activation stamina costs by 10%."
+          "name": "Live Fault",
+          "description": "A Fault Line that runs under an enemy you are Resonating breaks the resonance at once (Shatter's blow) and throws them twice as high.",
+          "mechanic": "live_fault"
         },
         {
           "name": "Seismic Lance",
-          "description": "Strike one target up to 40 blocks away for 7 + level damage and a powerful directional shove.",
+          "description": "An uppercut, and a moment later a column of earth bursts up under one enemy within 24 blocks (its feet are marked first): 7 + level damage, thrown straight up. An enemy already in the air is smashed back down instead, for double. +10 Strain.",
           "energy": 24,
-          "cooldown": 70
+          "cooldown": 90
         },
         {
-          "name": "Fault Control Mastery",
-          "description": "Reduce activation stamina costs by another 15% (25% total)."
+          "name": "Deep Roots",
+          "description": "Earthquake's fissures run half again as far, and your Fault Lines climb one-block steps and cross deeper drops instead of stopping.",
+          "mechanic": "deep_roots"
         },
         {
           "id": "quake_fault_script",
           "name": "Fault Script",
-          "description": "Write a twelve-step fault along nearby ground. After two seconds it erupts outward, hitting each enemy once.",
+          "description": "Trail a hand along the ground and write a twelve-step fault ahead of you. It glows brighter until it erupts two seconds later, hitting each enemy once. A Shockwave fired along it sets it off at once.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -42,7 +44,7 @@
         {
           "id": "quake_undertow",
           "name": "Undertow",
-          "description": "Your written fault returns for a second pass after its first wave.",
+          "description": "Your written fault returns for a second pass after its first wave, dragging what it hits back toward you.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -53,23 +55,25 @@
       ],
       [
         {
-          "name": "Tectonic Force",
-          "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
+          "name": "Pressure Skin",
+          "description": "While you are braced (Counterforce), holding Quake Blast or inside your Vibration Shell, a shot or bullet that reaches you shakes apart on your skin instead (+4 Strain).",
+          "mechanic": "pressure_skin"
         },
         {
-          "name": "Aftershock",
-          "description": "Damage visible enemies within 8 blocks and slow them for 5 seconds. Does not destroy terrain.",
-          "energy": 32,
-          "cooldown": 160
+          "name": "Vibration Shell",
+          "description": "Cross your arms, then fling them out: the air round you shakes into a shell 3 blocks across for 4 seconds. Bullets that reach it shake apart, explosives go off outside it, other shots turn back, and enemies who push in are thrown out. +10 Strain.",
+          "energy": 30,
+          "cooldown": 240
         },
         {
-          "name": "Tectonic Force Mastery",
-          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+          "name": "Kinetic Sink",
+          "description": "Every bullet, shot or explosive your blasts and shell break, turn back or set off bleeds 3 Strain away instead of adding to it.",
+          "mechanic": "kinetic_sink"
         },
         {
           "id": "quake_counterforce",
           "name": "Counterforce",
-          "description": "Brace for five seconds, absorbing half of incoming damage into a counterwave. Cast again to release; stored force releases at expiry.",
+          "description": "Cross your forearms and brace for five seconds, absorbing half of incoming damage into a counterwave. Cast again to release it as a double-palm push, or throw a Shockwave to pour it out through the blast. Stored force releases at expiry.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -102,23 +106,25 @@
       ],
       [
         {
-          "name": "Steady Rhythm",
-          "description": "Reduce ability cooldowns by 10%."
+          "name": "Sympathetic Frequency",
+          "description": "A Resonate that runs its full course jumps once to the nearest enemy within 6 blocks and shakes it for another second and a half.",
+          "mechanic": "sympathetic_frequency"
         },
         {
-          "name": "Fault Step",
-          "description": "Kick away from your aim while blasting nearby enemies backward. Useful in midair.",
+          "name": "Pressure Step",
+          "description": "Fling both palms back at the air behind you and shoot about eight blocks along your aim. A ring goes off where you left, hitting and shoving back anyone there; your landing is cushioned. +8 Strain.",
           "energy": 22,
           "cooldown": 100
         },
         {
-          "name": "Steady Rhythm Mastery",
-          "description": "Reduce ability cooldowns by another 15% (25% total)."
+          "name": "Read the Pulse",
+          "description": "Every hostile heartbeat Tremor Sense lets you feel is marked for five seconds: your next quake on it lands 25% harder.",
+          "mechanic": "read_the_pulse"
         },
         {
           "id": "quake_seamfinder",
           "name": "Surgical Fracture",
-          "description": "Open a small seam in the aimed wall. Only ordinary blocks of hardness 2 or less fracture; containers are spared.",
+          "description": "Lay a palm on a wall up to 24 blocks away and open a small seam: cracks run out from your hand. Only ordinary blocks of hardness 2 or less fracture; containers are spared.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -1029,23 +1035,25 @@
     "branches": [
       [
         {
-          "name": "Quiet Mind",
-          "description": "Reduce activation stamina costs by 10%."
+          "name": "Whispered Orders",
+          "description": "A Suggestion to a mind you hold a 30+ Focus thread to lasts twenty seconds instead of ten, and giving it deepens the thread by 20.",
+          "mechanic": "whispered_orders"
         },
         {
-          "name": "Implanted Command",
-          "description": "Choose a command for a visible mob. Defend Me needs 60 Mind Thread Focus.",
-          "energy": 24,
-          "cooldown": 120
+          "name": "Drop It",
+          "description": "Point two fingers and push one word into a mind up to 20 blocks away. A mob forgets its target and can't attack or shoot for four seconds (one you hold a 60+ thread to drops what it's holding); a player's hands won't obey for two: no attacks, no items.",
+          "energy": 22,
+          "cooldown": 160
         },
         {
-          "name": "Quiet Mind Mastery",
-          "description": "Reduce activation stamina costs by another 15% (25% total)."
+          "name": "Strings Attached",
+          "description": "Let a possessed mob go and it keeps fighting your enemies for fifteen seconds. A possessed player you let go is slowed and can't strike you for three.",
+          "mechanic": "strings_attached"
         },
         {
           "id": "telepathy_persuasion",
           "name": "Persuasion",
-          "description": "A suggestion that cannot be refused. A mob becomes your ally and fights your enemies for 20 seconds; a villager gives you hero's discounts; a hostile player cannot attack you for six seconds.",
+          "description": "Speak softly into a mind up to 16 blocks away for two seconds; if it stays in your sight, it's won over. A mob follows you and fights your enemies for thirty seconds, a villager gives you a hero's discount, and a hostile player can't strike you for six seconds. A mind you hold a 60+ thread to turns at once.",
           "active": true,
           "level": 4,
           "cost": 2,
@@ -1057,7 +1065,7 @@
         {
           "id": "telepathy_silver_tongue",
           "name": "Silver Tongue",
-          "description": "Persuasion reaches 24 blocks and lasts 40 seconds.",
+          "description": "Persuasion reaches 24 blocks and takes one second. Enemies within eight blocks of a persuaded mob turn on it instead of you.",
           "active": false,
           "level": 4,
           "cost": 1,
@@ -1067,7 +1075,7 @@
         {
           "id": "telepathy_edens_voice",
           "name": "Eden's Voice",
-          "description": "Persuasion also sways every hostile mob within eight blocks.",
+          "description": "Persuasion speaks to every mind you hold a 30+ thread to at once (up to four more), and a persuaded player can't strike you for ten seconds.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -1078,23 +1086,25 @@
       ],
       [
         {
-          "name": "Mental Pressure",
-          "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
+          "name": "Open Book",
+          "description": "You know where a mind you've read will move: your hits on it land 20% harder at 30 Focus and 40% harder at 60.",
+          "mechanic": "open_book"
         },
         {
-          "name": "Shared Sight",
-          "description": "Link willing nearby minds; cast again on a linked friend to look through their eyes for five seconds. Esc returns.",
-          "energy": 28,
-          "cooldown": 220
+          "name": "Far Hearing",
+          "description": "Fingers to both temples: for thirty seconds you hear every voice within 160 blocks. Players talking on voice chat reach you from the direction they're in, fainter the farther they are and clear when you face them, each marked for you alone; with no one talking, things hunting within 48 blocks whisper where they are. Press again to stop.",
+          "energy": 18,
+          "cooldown": 400
         },
         {
-          "name": "Mental Pressure Mastery",
-          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+          "name": "Eavesdropper",
+          "description": "Far Hearing reaches 320 blocks, and a voice you face while it speaks is threaded: Focus on its speaker builds to 30, as if you were reading them.",
+          "mechanic": "eavesdropper"
         },
         {
           "id": "telepathy_memory_walk",
           "name": "Memory Walk",
-          "description": "Read a mind up to 24 blocks away. Players reveal their power; every unseen player within 32 blocks is exposed for ten seconds.",
+          "description": "Walk back through a mind up to 24 blocks away: its path over the last thirty seconds shows for you alone as fading footsteps, an echo stands where it was, and whoever hurt it is named. Aim at a place instead to see everyone who passed through it.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -1106,7 +1116,7 @@
         {
           "id": "telepathy_deep_read",
           "name": "Deep Read",
-          "description": "Memory Walk exposes the unseen within 48 blocks and outlines nearby hostile mobs.",
+          "description": "Memory Walk reaches back a whole minute, and walking a mind leaves you a 40-Focus thread to it.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -1115,20 +1125,21 @@
         },
         {
           "id": "telepathy_dreamweaver",
-          "name": "Dreamweaver",
-          "description": "Memory Walk also puts an enemy target into a waking sleep for six seconds.",
+          "name": "Lost in Thought",
+          "description": "Memory Walk makes an enemy relive what you walked: a mob wanders back along its own trail for six seconds and can't pick a target; a player is lost in it, slowed and their sight clouded, for four seconds.",
           "active": false,
           "capstone": true,
           "level": 5,
           "cost": 3,
           "requires": "telepathy_deep_read",
-          "mechanic": "dreamweaver"
+          "mechanic": "lost_in_thought"
         }
       ],
       [
         {
-          "name": "Clear Thoughts",
-          "description": "Reduce ability cooldowns by 10%."
+          "name": "Shared Burden",
+          "description": "While you share a Mind Link or Hive Link with a friend, your Strain falls twice as fast and possession builds it half as fast.",
+          "mechanic": "shared_burden"
         },
         {
           "name": "Dream Double",
@@ -1137,13 +1148,14 @@
           "cooldown": 180
         },
         {
-          "name": "Clear Thoughts Mastery",
-          "description": "Reduce ability cooldowns by another 15% (25% total)."
+          "name": "Waking Fright",
+          "description": "A mind that walks into or touches one of your illusions panics: it's thrown back, slowed and Shaken, and your next hit on it deals 6 more.",
+          "mechanic": "waking_fright"
         },
         {
           "id": "telepathy_hive_link",
           "name": "Hive Link",
-          "description": "Link the minds of nearby teammates for thirty seconds: they see each other through walls and in the dark.",
+          "description": "A Mind Link that lasts: up to six willing friends within 24 blocks (teammates, or anyone crouching) for ten minutes, through deaths and other dimensions. Linked minds hear each other's voices inside their heads from anywhere, see each other through walls, and see a halo over each friend that swells while they speak and flares red when they're badly hurt.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -1155,7 +1167,7 @@
         {
           "id": "telepathy_shared_senses",
           "name": "Shared Senses",
-          "description": "Anything hunting a linked mind glows for the whole link.",
+          "description": "Whatever hunts a linked mind glows for the whole link, and a whisper tells each of you what it is and where.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -1165,7 +1177,7 @@
         {
           "id": "telepathy_mind_network",
           "name": "Mind Network",
-          "description": "Linked teammates share a quarter of every wound among the link.",
+          "description": "Your voice reaches inside the head of every player you hold a 30+ thread to, anywhere in the world, and theirs comes back to you. With your inner voice on, only they hear you: a conversation no one else knows is happening.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -1185,7 +1197,7 @@
         "id": "telepathy_psychic_storm",
         "role": "offense",
         "name": "Psychic Storm",
-        "description": "A storm of thought wheels over a point up to 24 blocks away for 6 seconds. Foes within 6 blocks take psychic damage, reel, and turn on one another.",
+        "description": "A storm of thought wheels over a point up to 24 blocks away for 6 seconds. Foes within 6 blocks take psychic damage, reel and turn on one another, and every second in it threads them 10 Focus deeper.",
         "energy": 35,
         "cooldown": 440,
         "cost": 3,
@@ -1209,7 +1221,7 @@
         "id": "telepathy_hive_mind",
         "role": "support",
         "name": "Hive Mind",
-        "description": "Link up to six of you within 14 blocks for 10 seconds. Damage any of you takes is shared out evenly among the others.",
+        "description": "Link up to six of you within 14 blocks for 10 seconds. Damage any of you takes is shared out evenly among the others, and teammates and crouching volunteers in it hear each other's voices from anywhere.",
         "energy": 25,
         "cooldown": 520,
         "cost": 3,
@@ -1224,23 +1236,25 @@
     "branches": [
       [
         {
-          "name": "Cellular Efficiency",
-          "description": "Reduce activation stamina costs by 10%."
+          "name": "Shared Blood",
+          "description": "Friends you heal with Blood Gift, Blood Stream, Bloodletting or Second Life are bonded to you for six seconds, as if by Blood Bond: you take 35% of their wounds.",
+          "mechanic": "shared_blood"
         },
         {
-          "name": "Cauterize",
-          "description": "Purge your harmful status effects, extinguish yourself, and instantly restore 6 health.",
-          "energy": 28,
-          "cooldown": 180
+          "name": "Bloodletting",
+          "description": "Cut your palm and fling a fan of blood six blocks ahead. Friends it splashes heal 4 + level and lose their harmful effects (each gives you 4 Regrowth); the undead it splashes burn for the same. Costs 2 health.",
+          "energy": 24,
+          "cooldown": 160
         },
         {
-          "name": "Cellular Efficiency Mastery",
-          "description": "Reduce activation stamina costs by another 15% (25% total)."
+          "name": "Scar Tissue",
+          "description": "Every wound you take for someone else (Blood Bond, Shared Blood, Take the Wound, Martyr) gives twice the Regrowth.",
+          "mechanic": "scar_tissue"
         },
         {
           "id": "regeneration_take_the_wound",
           "name": "Take the Wound",
-          "description": "Heal a friend up to 8 health and take half of it as your own wound.",
+          "description": "Lay a palm on a friend's wound and draw it into yourself: heal them up to 8 and take half of it as your own wound.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -1273,23 +1287,25 @@
       ],
       [
         {
-          "name": "Blood Strength",
-          "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
+          "name": "Reckless Abandon",
+          "description": "Your Reckless punches throw what they hit, and each hand you break on someone gives 4 Regrowth instead of 2.",
+          "mechanic": "reckless_abandon"
         },
         {
           "name": "Adrenal Rush",
-          "description": "Heal 4 health and gain Speed II and Haste for 8 seconds.",
+          "description": "Spend up to 40 Regrowth: heal 4, plus one per 5 spent, and run on Speed II, Haste and Jump Boost for 8 seconds.",
           "energy": 30,
           "cooldown": 240
         },
         {
-          "name": "Blood Strength Mastery",
-          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+          "name": "Callus",
+          "description": "Adaptation remembers the last three kinds of harm at once instead of only the last.",
+          "mechanic": "callus"
         },
         {
           "id": "regeneration_adaptation",
           "name": "Adaptation",
-          "description": "For thirty seconds, each repeat of the same kind of harm hurts 40% less.",
+          "description": "Tense up and let your body learn: for thirty seconds, each repeat of the same kind of harm hurts 40% less.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -1322,23 +1338,25 @@
       ],
       [
         {
-          "name": "Rapid Recovery",
-          "description": "Reduce ability cooldowns by 10%."
+          "name": "Back on Your Feet",
+          "description": "Getting back up from being down throws a heartbeat that knocks back everything within 5 blocks, and you rise with Strength for 10 seconds.",
+          "mechanic": "back_on_your_feet"
         },
         {
-          "name": "Transfusion",
-          "description": "Sacrifice 3 health to heal a target up to 40 blocks away for 10 health and grant Absorption for 10 seconds. Requires more than 4 health.",
-          "energy": 30,
-          "cooldown": 200
+          "name": "Play Dead",
+          "description": "Drop as if dead for up to 4 seconds. Monsters within 16 blocks lose you and can't pick you again while you lie there, and you heal 1 every half second. Press again to get up: your next melee hit within 3 seconds lands 6 harder.",
+          "energy": 24,
+          "cooldown": 300
         },
         {
-          "name": "Rapid Recovery Mastery",
-          "description": "Reduce ability cooldowns by another 15% (25% total)."
+          "name": "Quick Recovery",
+          "description": "Your time on the ground is a third shorter, and Rapid Mending is ready the moment you get up.",
+          "mechanic": "quick_recovery"
         },
         {
           "id": "regeneration_revive",
           "name": "Revive",
-          "description": "Pull a friend below 30% health back to 60%, with Regeneration II.",
+          "description": "Both hands on a friend's chest: pull a friend below 30% health back to 60%, with Regeneration II.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -1838,23 +1856,25 @@
     "branches": [
       [
         {
-          "name": "Breath Control",
-          "description": "Reduce activation stamina costs by 10%."
+          "name": "Braced Voice",
+          "description": "Crouch to brace as you tap the Cry and it focuses instead of throwing you back: a narrower cone that strikes 40% harder and leaves everything it hits Ringing.",
+          "mechanic": "braced_voice"
         },
         {
           "name": "Focused Shriek",
-          "description": "Concentrate your scream on one target up to 40 blocks away for 9 + level damage and knockback.",
+          "description": "Cup a hand to your mouth and put the whole voice through one point up to 40 blocks away: 9 + level damage and a shove, and the target is left Ringing for six seconds. Your next sonic hit on a Ringing enemy shatters the ring for 6 more damage and 10 Resonance.",
           "energy": 26,
           "cooldown": 100
         },
         {
-          "name": "Breath Control Mastery",
-          "description": "Reduce activation stamina costs by another 15% (25% total)."
+          "name": "Feedback Loop",
+          "description": "A Cry or Crescendo that passes through your own Wall of Sound comes out amplified: the Cry half again as hard and twelve blocks longer, the Crescendo 30% harder and eight blocks longer.",
+          "mechanic": "feedback_loop"
         },
         {
           "id": "sonic_resonance_shatter_note",
           "name": "Shatter Note",
-          "description": "Find a resonant frequency: glass, ice and leaves around an aimed point up to 24 blocks away shatter.",
+          "description": "Snap your fingers at a point up to 24 blocks away and find its frequency: glass, ice and leaves around it shatter, and enemies there take 4 and are left Ringing.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -1866,7 +1886,7 @@
         {
           "id": "sonic_resonance_wider_shatter",
           "name": "Wider Shatter",
-          "description": "Shatter Note breaks a 5x5x5 area.",
+          "description": "Shatter Note breaks a 5x5x5 area, and a Shatter Note near your own Resonant Note breaks it harmonic, for free.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -1876,7 +1896,7 @@
         {
           "id": "sonic_resonance_resonant_breaker",
           "name": "Resonant Breaker",
-          "description": "Shatter Note also breaks stone, dirt and wood (hardness up to 3). Protected ground is always spared.",
+          "description": "Shatter Note also breaks stone, dirt and wood (hardness up to 3), and stuns enemies that were already Ringing for a second. Protected ground is always spared.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -1887,23 +1907,25 @@
       ],
       [
         {
-          "name": "Vocal Power",
-          "description": "Increase your outgoing attack damage by 10% while your awakened power is active."
+          "name": "Perfect Pitch",
+          "description": "Enemies your Resonant Note lures glow for you through walls, and they come to it faster.",
+          "mechanic": "perfect_pitch"
         },
         {
           "name": "Dissonant Wave",
-          "description": "Scream at visible enemies within 8 blocks for 3 damage, Weakness II for 6 seconds and a strong 4-second slow.",
+          "description": "Throw your head back and howl clashing notes: visible enemies within 8 blocks take 3 damage, Weakness II for 6 seconds and a strong 4-second slow. Enemies gathered at your Resonant Note take it twice and are thrown into the note.",
           "energy": 30,
           "cooldown": 180
         },
         {
-          "name": "Vocal Power Mastery",
-          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse."
+          "name": "Siren Song",
+          "description": "Your Resonant Note lures from 24 blocks instead of 16, draws bigger creatures (up to 200 health) and plays four seconds longer.",
+          "mechanic": "siren_song"
         },
         {
           "id": "sonic_resonance_echo_map",
           "name": "Echo Map",
-          "description": "Sound out the rock: ores within twelve blocks glimmer for you alone.",
+          "description": "A hand to your ear and a sonar sweep only you see: ores within twelve blocks glimmer for you alone.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -1915,7 +1937,7 @@
         {
           "id": "sonic_resonance_deep_echo",
           "name": "Deep Echo",
-          "description": "Echo Map reaches twenty blocks.",
+          "description": "Echo Map reaches twenty blocks, and every enemy its sweep passes is left Ringing.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -1936,23 +1958,25 @@
       ],
       [
         {
-          "name": "Resonant Rhythm",
-          "description": "Reduce ability cooldowns by 10%."
+          "name": "Sympathetic Strings",
+          "description": "Your friends' shots pass through your Wall of Sound instead of turning back, and come out half again as fast and hard.",
+          "mechanic": "sympathetic_strings"
         },
         {
           "name": "Resonant Guard",
-          "description": "Gain Resistance and leave a 5-second sonic screen that reflects incoming projectiles within 7 blocks.",
+          "description": "Cross your arms and hum: Resistance for 5 seconds and a shell of standing waves 7 blocks across that turns back incoming shots. Every shot it turns builds 4 Resonance.",
           "energy": 30,
           "cooldown": 220
         },
         {
-          "name": "Resonant Rhythm Mastery",
-          "description": "Reduce ability cooldowns by another 15% (25% total)."
+          "name": "Sustain",
+          "description": "Your Wall of Sound and Resonant Guard last half again as long, and your Resonance doesn't fade while either stands.",
+          "mechanic": "sustain"
         },
         {
           "id": "sonic_resonance_quiet_zone",
           "name": "Quiet Zone",
-          "description": "A six-block field of silence for ten seconds: mobs inside lose their targets.",
+          "description": "A finger to your lips: a field of silence six blocks across for ten seconds. Mobs inside lose their targets and can't pick new ones.",
           "active": true,
           "level": 2,
           "cost": 2,
@@ -3065,7 +3089,7 @@
         {
           "id": "empathic_mimicry_quick_study",
           "name": "Quick Study",
-          "description": "Empathize reaches 16 blocks and works without line of sight.",
+          "description": "You feel powers from 20 blocks away, even through walls.",
           "active": false,
           "level": 3,
           "cost": 1,
@@ -3075,7 +3099,7 @@
         {
           "id": "empathic_mimicry_sylars_mirror",
           "name": "Sylar's Mirror",
-          "description": "Absorbing from Sylar takes everything he has learned, and you can hold one more memory.",
+          "description": "Touching Sylar keeps everything he has stolen that you have room for, and you can keep one more set.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -3665,6 +3689,240 @@
         "level": 3,
         "mechanic": "mending_lattice",
         "icon": "minecraft:budding_amethyst"
+      }
+    ]
+  },
+  {
+    "power": "vibe",
+    "branch_names": [
+      "Concussion",
+      "Breaching",
+      "Dimensional Sight"
+    ],
+    "branches": [
+      [
+        {
+          "id": "vibe_0_0",
+          "name": "Through the Seam",
+          "description": "A Vibe Blast that crosses one of your open Breaches carries on out of the other mouth with the range it had left.",
+          "icon": "minecraft:wind_charge",
+          "level": 1,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "vibe_0_1",
+          "name": "Vibe Lance",
+          "description": "Draw your off hand in and fire a narrow, hard-hitting wave up to 27 blocks.",
+          "icon": "minecraft:amethyst_shard",
+          "level": 2,
+          "cost": 2,
+          "active": true,
+          "energy": 18,
+          "cooldown": 85
+        },
+        {
+          "id": "vibe_0_2",
+          "name": "Return Address",
+          "description": "Each shot Breach Guard catches marks whoever fired it, as if you had read them.",
+          "icon": "minecraft:shield",
+          "level": 2,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "vibe_backscatter",
+          "name": "Backscatter",
+          "description": "Each projectile stored in Breach Guard adds more damage to Return Fire.",
+          "icon": "minecraft:spectral_arrow",
+          "level": 3,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "vibe_reverb",
+          "name": "Reverb",
+          "description": "Fire a broad double-palm blast that hurls enemies farther.",
+          "icon": "minecraft:echo_shard",
+          "level": 4,
+          "cost": 2,
+          "active": true,
+          "energy": 29,
+          "cooldown": 145
+        },
+        {
+          "id": "vibe_reservoir",
+          "name": "Overflow",
+          "description": "Return Fire with three or more banked impacts collapses into interference where it stops, damaging and slowing enemies within three blocks.",
+          "icon": "minecraft:amethyst_block",
+          "level": 5,
+          "cost": 3,
+          "active": false,
+          "capstone": true
+        }
+      ],
+      [
+        {
+          "id": "vibe_1_0",
+          "name": "Slingshot",
+          "description": "For three seconds after you cross your own Breach, your next blast fires at once and hits 30% harder.",
+          "icon": "minecraft:ender_pearl",
+          "level": 1,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "vibe_1_1",
+          "name": "Attune Frequency",
+          "description": "Save the world, position and facing where you are standing for World Frequency.",
+          "icon": "minecraft:lodestone",
+          "level": 2,
+          "cost": 2,
+          "active": true,
+          "energy": 8,
+          "cooldown": 50
+        },
+        {
+          "id": "vibe_world_frequency",
+          "name": "World Frequency",
+          "description": "Hold Shift and cast Breach to open a link to your saved location, including in another dimension.",
+          "icon": "minecraft:ender_eye",
+          "level": 3,
+          "cost": 2,
+          "active": false
+        },
+        {
+          "id": "vibe_wayfarer",
+          "name": "Wayfarer",
+          "description": "Crossing your linked breach grants Speed for five seconds.",
+          "icon": "minecraft:rabbit_foot",
+          "level": 3,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "vibe_flashstep",
+          "name": "Flashstep",
+          "description": "Snap through a tiny breach to safe ground up to 11 blocks away.",
+          "icon": "minecraft:chorus_fruit",
+          "level": 4,
+          "cost": 2,
+          "active": true,
+          "energy": 13,
+          "cooldown": 85
+        },
+        {
+          "id": "vibe_horizon",
+          "name": "Safe Horizon",
+          "description": "Anyone who crosses your linked breaches loses their fire and gains Resistance for four seconds.",
+          "icon": "minecraft:crying_obsidian",
+          "level": 5,
+          "cost": 3,
+          "active": false,
+          "capstone": true
+        }
+      ],
+      [
+        {
+          "id": "vibe_2_0",
+          "name": "Residual Sense",
+          "description": "Anyone who hurts you leaves a residue: they are marked for six seconds, as if you had read them.",
+          "icon": "minecraft:sculk_sensor",
+          "level": 1,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "vibe_2_1",
+          "name": "Co-Vibe",
+          "description": "Share a longer-range read and its combat echoes with nearby allies.",
+          "icon": "minecraft:spyglass",
+          "level": 2,
+          "cost": 2,
+          "active": true,
+          "energy": 14,
+          "cooldown": 105
+        },
+        {
+          "id": "vibe_deep_read",
+          "name": "Deep Read",
+          "description": "Vibe readings replay up to six impacts and mark enemies for longer.",
+          "icon": "minecraft:written_book",
+          "level": 2,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "vibe_afterimage",
+          "name": "Afterimage",
+          "description": "Blasts that hit a marked enemy also slow them and briefly interrupt Superspeed.",
+          "icon": "minecraft:phantom_membrane",
+          "level": 3,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "vibe_prism_lock",
+          "name": "Prism Lock",
+          "description": "Collapse a larger interference zone at longer range, slowing enemies for four seconds.",
+          "icon": "minecraft:prismarine_crystals",
+          "level": 4,
+          "cost": 2,
+          "active": true,
+          "energy": 34,
+          "cooldown": 260
+        },
+        {
+          "id": "vibe_fixed_point",
+          "name": "Fixed Point",
+          "description": "Marked enemies caught in either lock are slowed for five seconds.",
+          "icon": "minecraft:recovery_compass",
+          "level": 5,
+          "cost": 3,
+          "active": false,
+          "capstone": true
+        }
+      ]
+    ],
+    "styles": [
+      {
+        "id": "vibe_crosswave",
+        "name": "Crosswave",
+        "description": "Throw two diverging wave fronts from your palms with a broad concussion.",
+        "icon": "minecraft:heart_of_the_sea",
+        "level": 3,
+        "cost": 3,
+        "active": true,
+        "energy": 34,
+        "cooldown": 220,
+        "role": "offense",
+        "mechanic": "vibe_crosswave"
+      },
+      {
+        "id": "vibe_mirror",
+        "name": "Mirror Breach",
+        "description": "Open a wider defensive breach for five seconds. Return its stored impact with Breach Guard.",
+        "icon": "minecraft:shield",
+        "level": 3,
+        "cost": 3,
+        "active": true,
+        "energy": 26,
+        "cooldown": 250,
+        "role": "defense",
+        "mechanic": "vibe_mirror"
+      },
+      {
+        "id": "vibe_sanctuary",
+        "name": "Sanctuary Breach",
+        "description": "Open an evacuation route that extinguishes allies and grants Resistance as they cross.",
+        "icon": "minecraft:ender_eye",
+        "level": 3,
+        "cost": 3,
+        "active": true,
+        "energy": 28,
+        "cooldown": 260,
+        "role": "support",
+        "mechanic": "vibe_sanctuary"
       }
     ]
   }

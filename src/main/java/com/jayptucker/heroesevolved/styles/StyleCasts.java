@@ -1,7 +1,9 @@
 package com.jayptucker.heroesevolved.styles;
 
 import com.jayptucker.heroesevolved.ability.AbilityUseContext;
+import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.Targeting;
+import com.jayptucker.heroesevolved.network.ArmPosePayload;
 import com.jayptucker.heroesevolved.cryo.CryoCastEffects;
 import com.jayptucker.heroesevolved.network.CameraShakePayload;
 import com.jayptucker.heroesevolved.network.ScreenTintPayload;
@@ -43,6 +45,7 @@ public final class StyleCasts {
     public static boolean canUse(AbilityUseContext c, String mechanic) {
         ServerPlayer p = c.player();
         return switch (mechanic) {
+            case "vibe_crosswave", "vibe_mirror", "vibe_sanctuary" -> com.jayptucker.heroesevolved.vibe.VibeService.ready(p);
             case "vital_burst" -> p.getHealth() > 6;
             case "lightning_flurry", "shadow_strike" -> !foes(p, p.position(), mechanic.equals("shadow_strike") ? 10 : 12).isEmpty();
             default -> true;
@@ -55,6 +58,10 @@ public final class StyleCasts {
         int lvl = Math.max(1, c.abilityLevel());
         Vec3 at = p.position(), f = facing(p);
         switch (mechanic) {
+            case "vibe_crosswave" -> { return com.jayptucker.heroesevolved.vibe.VibeService.blast(c,
+                    com.jayptucker.heroesevolved.vibe.VibeService.Blast.CROSSWAVE); }
+            case "vibe_mirror" -> { return com.jayptucker.heroesevolved.vibe.VibeService.guard(p, true); }
+            case "vibe_sanctuary" -> { return com.jayptucker.heroesevolved.vibe.VibeBreaches.open(p, false, true); }
             // ---------------------------------------------------------- Radiation
             case "ground_zero" -> {
                 Vec3 point = aim(p, 32);
@@ -283,6 +290,7 @@ public final class StyleCasts {
             case "fissure_maw" -> {
                 float length = 14;
                 piece(p, Piece.FISSURE_MAW, at, at.add(f.scale(length)), length, null);
+                ArmPosePayload.show(p, ArmPose.QUAKE_SPLIT, 16);
                 sound(level, at, SoundEvents.GENERIC_EXPLODE.value(), 1, 0.5F);
                 Set<LivingEntity> thrown = new HashSet<>();
                 Vec3 side = new Vec3(-f.z, 0, f.x);
@@ -302,6 +310,7 @@ public final class StyleCasts {
             case "stone_rampart" -> {
                 float radius = 3.5F;
                 piece(p, Piece.STONE_RAMPART, at, at.add(f), radius, null);
+                ArmPosePayload.show(p, ArmPose.QUAKE_RAMPART, 16);
                 sound(level, at, SoundEvents.STONE_PLACE, 2, 0.5F);
                 StyleRuntime.run(p, 200, age -> {
                     for (Projectile shot : incoming(p, at.add(0, 1, 0), radius + 1.2)) {
@@ -317,6 +326,7 @@ public final class StyleCasts {
             case "bedrock_stance" -> {
                 float radius = 10;
                 piece(p, Piece.BEDROCK_STANCE, at, at, radius, null);
+                ArmPosePayload.show(p, ArmPose.QUAKE_ROOT, 24);
                 sound(level, at, SoundEvents.ANVIL_LAND, 0.8F, 0.5F);
                 List<LivingEntity> held = friends(p, at, radius);
                 for (LivingEntity friend : held) {
@@ -413,12 +423,15 @@ public final class StyleCasts {
                 Vec3 point = aim(p, 24);
                 float radius = 6;
                 piece(p, Piece.PSYCHIC_STORM, at, point, radius, null);
+                ArmPosePayload.show(p, ArmPose.TELE_STORM, 20);
                 sound(level, point, SoundEvents.ELDER_GUARDIAN_CURSE, 0.6F, 1.4F);
                 StyleRuntime.run(p, 120, age -> {
                     if (age % 20 != 0) return;
                     List<LivingEntity> caught = foes(p, point, radius);
                     for (LivingEntity t : caught) {
                         magic(p, t, 2 + lvl * 0.5F);
+                        // Every second in the storm threads a mind a little deeper.
+                        com.jayptucker.heroesevolved.telepathy.TelepathySkills.stormThread(p, t);
                         effect(t, MobEffects.CONFUSION, 80, 0);
                         effect(t, MobEffects.WEAKNESS, 60, 0);
                         if (t instanceof Mob mob && caught.size() > 1) {
@@ -430,6 +443,7 @@ public final class StyleCasts {
             }
             case "blind_spot" -> {
                 piece(p, Piece.BLIND_SPOT, at, at, 1, p);
+                ArmPosePayload.show(p, ArmPose.TELE_VEIL, 16);
                 StyleRuntime.ward(p, Ward.BLIND, 100, p);
                 for (Mob mob : level.getEntitiesOfClass(Mob.class, p.getBoundingBox().inflate(16), m -> m.getTarget() == p)) mob.setTarget(null);
                 sound(level, at, SoundEvents.ILLUSIONER_MIRROR_MOVE, 1, 1);
@@ -440,10 +454,14 @@ public final class StyleCasts {
                     StyleRuntime.ward(friend, Ward.HIVE, 200, p).group = group;
                     piece(p, Piece.HIVE_MIND, at, at, 1, friend);
                 }
+                ArmPosePayload.show(p, ArmPose.TELE_GATHER, 20);
+                // For as long as the wounds are shared, so are the voices.
+                com.jayptucker.heroesevolved.telepathy.TelepathySkills.linkVoices(p, group, 200);
                 sound(level, at, SoundEvents.BEACON_POWER_SELECT, 1, 0.6F);
             }
             // ---------------------------------------------------------- Regeneration
             case "vital_burst" -> {
+                ArmPosePayload.show(p, ArmPose.REGEN_HEARTBEAT, 20);
                 float radius = 6;
                 p.setHealth(Math.max(1, p.getHealth() - 4));
                 piece(p, Piece.VITAL_BURST, at, at, radius, null);
@@ -454,12 +472,14 @@ public final class StyleCasts {
                 heal(p, Math.min(10, hits * 2));
             }
             case "undying" -> {
+                ArmPosePayload.show(p, ArmPose.REGEN_DEFY, 20);
                 piece(p, Piece.UNDYING, at, at, 1, p);
                 StyleRuntime.ward(p, Ward.UNDYING, 120, p);
                 sound(level, at, SoundEvents.BEACON_POWER_SELECT, 1, 1.5F);
                 StyleRuntime.run(p, 120, age -> { }, () -> { heal(p, p.getMaxHealth() * 0.3F); sound(level, p.position(), SoundEvents.TOTEM_USE, 0.4F, 1.6F); });
             }
             case "lifebloom" -> {
+                ArmPosePayload.show(p, ArmPose.REGEN_BLOOM, 20);
                 float radius = 7;
                 piece(p, Piece.LIFEBLOOM, at, at, radius, null);
                 sound(level, at, SoundEvents.AMETHYST_BLOCK_RESONATE, 1.5F, 1.4F);
@@ -477,6 +497,7 @@ public final class StyleCasts {
                 Vec3 point = aim(p, 24);
                 float radius = 4.5F;
                 piece(p, Piece.RESONANCE_CASCADE, at, point, radius, null);
+                ArmPosePayload.show(p, ArmPose.SONIC_CONDUCT, 20);
                 StyleRuntime.run(p, 16, age -> {
                     if (age % 4 == 0 && age < 16) sound(level, point, SoundEvents.NOTE_BLOCK_CHIME.value(), 1.2F, 0.6F + age * 0.06F);
                     if (age != 16) return;
@@ -491,6 +512,7 @@ public final class StyleCasts {
             case "silence_dome" -> {
                 float radius = 5;
                 piece(p, Piece.SILENCE_DOME, at, at, radius, null);
+                ArmPosePayload.show(p, ArmPose.SONIC_DOME, 22);
                 sound(level, at, SoundEvents.SCULK_SHRIEKER_SHRIEK, 0.4F, 1.8F);
                 StyleRuntime.run(p, 160, age -> {
                     for (Projectile shot : incoming(p, at.add(0, 1, 0), radius)) push(shot, shot.getDeltaMovement().scale(0.2));
@@ -499,6 +521,7 @@ public final class StyleCasts {
             }
             case "battle_hymn" -> {
                 piece(p, Piece.BATTLE_HYMN, at, at, 1, p);
+                ArmPosePayload.show(p, ArmPose.SONIC_SING, 24);
                 for (LivingEntity friend : friends(p, at, 12)) {
                     effect(friend, MobEffects.DAMAGE_BOOST, 200, 0);
                     effect(friend, MobEffects.MOVEMENT_SPEED, 200, 0);

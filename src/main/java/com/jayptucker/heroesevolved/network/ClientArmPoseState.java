@@ -30,7 +30,13 @@ public final class ClientArmPoseState {
         boolean continuous = pose == ArmPose.KINETIC_GATHER || pose == ArmPose.KINETIC_HOLD
                 || pose == ArmPose.FIRE_FORGE || pose == ArmPose.FIRE_BREATH || pose == ArmPose.FIRE_SUN
                 || pose == ArmPose.CRYO_WEAVE || pose == ArmPose.CRYO_WHITEOUT || pose == ArmPose.CRYO_SURF
-                || pose == ArmPose.CRYO_LANCE || pose == ArmPose.CRYO_LOOM || pose == ArmPose.CRYO_SHELTER;
+                || pose == ArmPose.CRYO_LANCE || pose == ArmPose.CRYO_LOOM || pose == ArmPose.CRYO_SHELTER
+                || pose == ArmPose.SONIC_SCREAM || pose == ArmPose.SONIC_GATHER || pose == ArmPose.SONIC_DIVE
+                || pose == ArmPose.SONIC_HUM || pose == ArmPose.SONIC_HUSH
+                || pose == ArmPose.QUAKE_BEAM || pose == ArmPose.QUAKE_FLY || pose == ArmPose.QUAKE_RUMBLE
+                || pose == ArmPose.QUAKE_TUNE || pose == ArmPose.QUAKE_BRACE || pose == ArmPose.QUAKE_SHELL
+                || pose == ArmPose.TELE_READ || pose == ArmPose.TELE_WEAVE
+                || pose == ArmPose.VIBE_GUARD || pose == ArmPose.REGEN_STREAM || pose == ArmPose.REGEN_EMBRACE || pose == ArmPose.REGEN_BRACE;
         long began = continuous && previous != null && previous.pose == pose && previous.endMillis > now
                 ? previous.startMillis : now;
         POSES.put(entityId, new Entry(pose, began, now + durationTicks * 50L));

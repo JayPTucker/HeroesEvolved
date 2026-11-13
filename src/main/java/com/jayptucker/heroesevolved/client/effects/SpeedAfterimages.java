@@ -96,6 +96,13 @@ public final class SpeedAfterimages {
         for (int i = 0; i < count; i++) capture(p, world.getGameTime(), count == 1 ? from : from.lerp(to, i / (double) count), yaw);
     }
 
+    /** One afterimage of the runner nearest {@code near}, left at {@code position} facing {@code yaw}. */
+    public static void at(Vec3 near, Vec3 position, float yaw) {
+        AbstractClientPlayer p = runnerNear(near);
+        if (p == null || world == null) return;
+        capture(p, world.getGameTime(), position, yaw);
+    }
+
     /** Afterimages of the runner spaced around a ring, each facing along it, as if caught mid-lap. */
     public static void ring(Vec3 center, double radius, int count, double phase) {
         AbstractClientPlayer p = runnerNear(center);

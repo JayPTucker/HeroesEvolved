@@ -46,12 +46,30 @@ coils around your chest as you rise, then a pulse spreads out under successive t
 Strikes and bursts briefly light nearby blocks. Wind-ups use an anchor hum, Live Current has a sharp
 electrical buzz, and impacts use a lightning crack with distant thunder on larger strikes.
 
+Each base power has its own arm pose. Chain Lightning draws the hand back and snaps it forward, Live Current
+holds it out trembling, Thunderstrike raises it to the sky, and Storm Surge coils the arms in, then flings them wide.
+**Ball Lightning** cups both palms round the forming orb in front of the chest and pushes it out from between them.
+**Ride the Lightning** whips both arms straight back past the hips as the body becomes the bolt.
+
 ## Skill tree
 
 **Arc Lance** reaches its listed 40-block range and forks to up to two exposed foes near its target.
 **Static Screen** marks the area where it reflects projectiles. **Overcharge** fills Charge as well
-as granting Speed II and Haste II. Circuit Thread, Ground Sink and Arc Lattice use the same blue
-channels and brief pulses to show their conductors, discharge and crossing points.
+as granting Speed II and Haste II.
+
+How each skill looks:
+
+| Skill | What you see |
+| --- | --- |
+| Arc Lance | The casting arm locks straight, braced by the other hand, and kicks up with the recoil. The shot is one dead-straight beam, white at the core, with a coil of ions spinning down it and rings blown off the palm; as it fades it breaks back into ordinary forked lightning, which then leaps to the nearby foes. |
+| Static Screen | The arms fling wide and a ring of struts rises round you, crowned by a broken ring. |
+| Overcharge | Fists clench at your sides and shake as a band of current climbs your body from the feet to the crown, then the arms flex out as it flares off your chest in a ring. |
+| Circuit Thread | A flat palm laid toward the metal, trembling. Current crawls from it into the first conductor, then from block to block, and each block's edges light up as it arrives. |
+| Ground Sink | A hand raised overhead and driven down at the ground: a strike into the floor, and a rod of current left standing in grounding rings, its tip glowing brighter as it stores projectile energy. Cast again and the rod blows, forking into everything nearby. |
+| Arc Lattice | A two-finger flick sends a spark to the surface, where a small three-pronged pylon is planted. Anchors are joined by taut, slightly sagging wires with a bead of light running along them. |
+| Blackout | See below. |
+
+The styles have their own pieces too: Tesla Spire's mast and zaps, Faraday Cage's struts, and Jumpstart's heart rings.
 
 ### Signature: Blackout
 

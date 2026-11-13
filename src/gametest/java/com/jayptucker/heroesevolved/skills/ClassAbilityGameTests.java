@@ -47,11 +47,11 @@ public final class ClassAbilityGameTests {
             // The tree itself is untouched: still eighteen nodes (and any signature).
             h.assertTrue(SkillCatalog.nodes(power.getPath()).stream().noneMatch(SkillCatalog.Node::style), power + "'s tree holds no class abilities");
         }
-        h.assertTrue(powers == 18, "All eighteen powers have classes, found " + powers);
+        h.assertTrue(powers == AbilityRegistry.ABILITIES.size(), "Every registered power must have classes");
         h.succeed();
     }
 
-    /** Every one of the fifty-four abilities runs through its real mechanic without failing, with a foe in front of it. */
+    /** Each class ability runs through its real mechanic without failing, with a foe in front of it. */
     @GameTest(template = "rewind_empty", batch = "class.casts", timeoutTicks = 60)
     public static void everyClassAbilityCasts(GameTestHelper h) {
         for (ResourceLocation power : AbilityRegistry.ABILITIES.keySet()) {

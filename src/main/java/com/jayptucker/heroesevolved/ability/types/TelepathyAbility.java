@@ -21,8 +21,9 @@ import static com.jayptucker.heroesevolved.config.HeroesEvolvedConfig.COMMON;
  *   <li>Level 1, Read Mind: hold to hear thoughts and establish a Mind Thread.</li>
  *   <li>Level 2, Suggestion: a hostile mob forgets you; a peaceful one
  *   follows you.</li>
- *   <li>Level 3, Mind Link: linked players see each other through walls
- *   and feel it when one is hurt.</li>
+ *   <li>Level 3, Mind Link: one willing player or a party; linked minds hear each other's voices
+ *   from anywhere, see each other through walls and feel it when one is hurt. Shift + Mind Link
+ *   turns the inner voice on: only linked minds hear you.</li>
  *   <li>Level 4, Puppet: possess a deeply read body; players fight back through a mental contest.</li>
  *   <li>Level 5, Nightmare: connected minds perceive private apparitions and flee in terror.</li>
  *   <li>Passive: hear hostile thoughts when something unseen hunts you.
@@ -57,6 +58,9 @@ public final class TelepathyAbility implements Ability {
                     .canUse(context -> true)
                     .activate(context -> TelepathyService.mindLink(
                             context.player(), context.abilityLevel()))
+                    // Shift + Mind Link, once there is a mind to speak into: the inner voice, on or off, for free.
+                    .followUp(context -> context.modifierHeld()
+                            && com.jayptucker.heroesevolved.telepathy.TelepathySkills.toggleInnerVoice(context.player()))
                     .build(),
             AbilitySlot.QUATERNARY, SimpleAction.builder("telepathy_puppet", 4)
                     .cost(COMMON.telepathyPuppetEnergyCost::get,
@@ -103,6 +107,7 @@ public final class TelepathyAbility implements Ability {
     @Override
     public void onRevoked(AbilityUseContext context) {
         TelepathyService.stopAll(context.player());
+        com.jayptucker.heroesevolved.telepathy.TelepathySkills.leave(context.player());
     }
 
     @Override

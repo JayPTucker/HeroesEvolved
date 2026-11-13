@@ -18,7 +18,22 @@ final class PieceArt {
             case ELECTRO_DRAW, ELECTRO_ARC, ELECTRO_CURRENT, ELECTRO_ORB, ELECTRO_PRIME, ELECTRO_WARN,
                     ELECTRO_STRIKE, ELECTRO_PULSE, ELECTRO_RIDE, ELECTRO_SCAR, ELECTRO_COIL, ELECTRO_SIPHON,
                     ELECTRO_BLACKOUT, ELECTRO_AURA, ELECTRO_FIELD, ELECTRO_SCREEN,
-                    TESLA_SPIRE, TESLA_ZAP, FARADAY_CAGE, JUMPSTART -> ElectroArt.draw(c, a, t);
+                    TESLA_SPIRE, TESLA_ZAP, FARADAY_CAGE, JUMPSTART, ELECTRO_LANCE, ELECTRO_THREAD,
+                    ELECTRO_OVERCHARGE, ELECTRO_SINK, ELECTRO_SINK_BURST, ELECTRO_ANCHOR, ELECTRO_WIRE -> ElectroArt.draw(c, a, t);
+            case MIMIC_ATTUNE, MIMIC_IMPRINT, MIMIC_SHIFT -> MimicArt.draw(c, a, t);
+            case SONIC_CRY, SONIC_SCREAM, SONIC_NOTE, SONIC_NOTE_BURST, SONIC_WALL, SONIC_WALL_PUSH, SONIC_VAULT,
+                    SONIC_DIVE, SONIC_LANDING, SONIC_GATHER, SONIC_CRESCENDO, SONIC_SHRIEK, SONIC_RING, SONIC_SHATTER,
+                    SONIC_DISSONANCE, SONIC_ECHO, SONIC_GUARD, SONIC_QUIET,
+                    RESONANCE_CASCADE, SILENCE_DOME, BATTLE_HYMN -> SonicArt.draw(c, a, t);
+            case QUAKE_DUST, QUAKE_SHATTER, QUAKE_LANCE, QUAKE_SHELL, QUAKE_BRACE, QUAKE_DASH, QUAKE_SEAM, QUAKE_TRACE ->
+                    QuakeArt.draw(c, a, t);
+            case REGEN_STREAM, REGEN_FAN, REGEN_IMPACT, REGEN_PAYBACK, REGEN_FEIGN, REGEN_CPR -> RegenArt.draw(c, a, t);
+            case TELE_COMMAND, TELE_LISTEN, TELE_VOICE, TELE_WEAVE, TELE_PERSUADE, TELE_WON, TELE_RECALL, TELE_MEMORY,
+                    TELE_ECHO, TELE_LOST, TELE_FRIGHT, TELE_HIVE_LINK, TELE_HALO, TELE_PROJECT,
+                    PSYCHIC_STORM, BLIND_SPOT, HIVE_MIND -> TelepathyArt.draw(c, a, t);
+            case VIBE_GATHER, VIBE_WAVE, VIBE_CROSSWAVE, VIBE_HIT, VIBE_BREACH_SEED, VIBE_BREACH_OPEN,
+                    VIBE_BREACH_ARRIVE, VIBE_BREACH_CLOSE, VIBE_TRANSIT, VIBE_TOUCH, VIBE_ECHO, VIBE_GUARD,
+                    VIBE_GUARD_CLOSE, VIBE_LOCK_WARN, VIBE_LOCK, VIBE_AWAKEN -> VibeArt.draw(c, a, t);
             case GROUND_ZERO -> ElementArt.groundZero(c, a, t);
             case CONTAINMENT_DOME -> ElementArt.containment(c, a, t);
             case REACTOR_HEARTH -> ElementArt.reactor(c, a, t);
@@ -34,16 +49,11 @@ final class PieceArt {
             case IMPLOSION -> MotionArt.implosion(c, a, t);
             case DEBRIS_HALO -> MotionArt.debrisHalo(c, a, t);
             case GATHERING_HAND -> MotionArt.gathering(c, a, t);
-            case PSYCHIC_STORM -> MindArt.psychicStorm(c, a, t);
-            case BLIND_SPOT -> MindArt.blindSpot(c, a, t);
-            case HIVE_MIND -> MindArt.hiveMind(c, a, t);
             case VITAL_BURST -> MindArt.vitalBurst(c, a, t);
             case UNDYING -> MindArt.undying(c, a, t);
             case LIFEBLOOM -> MindArt.lifebloom(c, a, t);
-            case RESONANCE_CASCADE -> ElementArt.cascade(c, a, t);
-            case SILENCE_DOME -> ElementArt.silence(c, a, t);
-            case BATTLE_HYMN -> ElementArt.hymn(c, a, t);
-            case LIGHTNING_FLURRY, RELAY_RUN -> MotionArt.flurry(c, a, t);
+            case LIGHTNING_FLURRY -> MotionArt.flurry(c, a, t);
+            case RELAY_RUN -> MotionArt.relay(c, a, t);
             case PHASE_BLUR -> MotionArt.phaseBlur(c, a, t);
             case FORETOLD_STRIKE -> MindArt.foretold(c, a, t);
             case BRANCHING_PATHS -> MindArt.branching(c, a, t);

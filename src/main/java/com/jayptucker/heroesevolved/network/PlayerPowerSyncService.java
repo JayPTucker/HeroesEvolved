@@ -104,7 +104,10 @@ public final class PlayerPowerSyncService {
                     com.jayptucker.heroesevolved.skills.SkillTreeService.cooldown(player, power,
                             com.jayptucker.heroesevolved.ability.PowerBalance.cooldown(id, action.cooldownTicks(preview))));
             int uses = com.jayptucker.heroesevolved.ability.service.AbilityRanks.uses(player, power, action);
-            entries.add(new LoadoutPayload.Entry(entry.key(), id.getPath(), action.definition().displayNameKey(), tier >= unlockTier,
+            // An Echo shows the copied ability it would perform (its name and its icon).
+            var shown = com.jayptucker.heroesevolved.mimicry.MimicryService.shown(player, action);
+            entries.add(new LoadoutPayload.Entry(entry.key(), shown == null ? id.getPath() : shown.id().getPath(),
+                    shown == null ? action.definition().displayNameKey() : shown.displayNameKey(), tier >= unlockTier,
                     com.jayptucker.heroesevolved.progression.PowerLevels.levelForTier(unlockTier), energy, cooldown,
                     CooldownService.getExpirationGameTime(player, action.cooldownId(preview)),
                     com.jayptucker.heroesevolved.ability.service.AbilityRanks.rank(uses), uses));
@@ -183,9 +186,10 @@ public final class PlayerPowerSyncService {
         }
 
         AbilityUseContext preview = previewContext(player, false);
+        var shown = com.jayptucker.heroesevolved.mimicry.MimicryService.shown(player, action);
         return Stream.of(new AbilityActionSnapshot(
                 slot,
-                action.definition().displayNameKey(),
+                shown == null ? action.definition().displayNameKey() : shown.displayNameKey(),
                 unlocked,
                 CooldownService.getExpirationGameTime(player, actionId),
                 unlockLevel,

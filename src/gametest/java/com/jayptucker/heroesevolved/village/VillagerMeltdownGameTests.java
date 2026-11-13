@@ -93,7 +93,7 @@ public final class VillagerMeltdownGameTests {
         });
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 100, batch = "village.meltdown.flee")
+    @GameTest(template = "rewind_empty", timeoutTicks = 260, batch = "village.meltdown.flee")
     public static void hisNeighboursScreamAndRun(GameTestHelper helper) {
         Villager him = EntityType.VILLAGER.create(helper.getLevel()), neighbour = EntityType.VILLAGER.create(helper.getLevel());
         him.moveTo(Vec3.atBottomCenterOf(helper.absolutePos(new BlockPos(2, 2, 6))));
@@ -103,9 +103,31 @@ public final class VillagerMeltdownGameTests {
         double before = neighbour.distanceTo(him);
         // Someone to hear them: shouts are only for runners near a player.
         ServerPlayer witness = holder(helper, Vec3.atBottomCenterOf(helper.absolutePos(new BlockPos(9, 4, 6))), ModAbilities.SUPERSPEED_ID, 1);
-        try {
-            VillagerMeltdown.start(him, 2000);
-        } catch (RuntimeException e) { cleanup(witness, him, neighbour); throw e; }
+        // A meltdown pauses while its villager isn't ticking, and while the rest of the suite runs a freshly loaded chunk
+        // can take a few seconds to start: begin once they're both live.
+        whenTicking(helper, 150, () -> {
+            if (!helper.getLevel().isPositionEntityTicking(him.blockPosition()) || !helper.getLevel().isPositionEntityTicking(neighbour.blockPosition()))
+                return false;
+            try {
+                VillagerMeltdown.start(him, 2000);
+            } catch (RuntimeException e) { cleanup(witness, him, neighbour); throw e; }
+            flee(helper, him, neighbour, witness, before);
+            return true;
+        }, () -> cleanup(witness, him, neighbour));
+    }
+
+    /** Tries {@code step} each tick until it returns true, for up to {@code ticks}; then gives up and fails. */
+    private static void whenTicking(GameTestHelper helper, int ticks, java.util.function.BooleanSupplier step, Runnable giveUp) {
+        if (step.getAsBoolean()) return;
+        if (ticks <= 0) {
+            giveUp.run();
+            helper.fail("The villagers' chunk never started ticking");
+            return;
+        }
+        helper.runAfterDelay(1, () -> whenTicking(helper, ticks - 1, step, giveUp));
+    }
+
+    private static void flee(GameTestHelper helper, Villager him, Villager neighbour, ServerPlayer witness, double before) {
         helper.runAfterDelay(15, () -> {
             try {
                 var target = neighbour.getBrain().getMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.WALK_TARGET);

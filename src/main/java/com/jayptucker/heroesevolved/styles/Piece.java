@@ -92,7 +92,43 @@ public enum Piece {
     ELLE_ORB(48), ELLE_SHORT(20), ELLE_PHASE(30), ELLE_ARRIVE(60), ELLE_OMEN(16), ELLE_DROP(40),
     // The power-themed TaCZ guns: the heat gun's flame, the cold gun's frost streak (scale 0) and burst (scale 1), and a
     // taser's barbs and current (bound to whoever they bit)
-    GUN_HEAT(8), GUN_FROST(12), GUN_TASER(16);
+    GUN_HEAT(8), GUN_FROST(12), GUN_TASER(16),
+    // Electrokinesis's skills: Arc Lance's straight shot, Circuit Thread crawling block to block, Overcharge climbing
+    // the body, Ground Sink's rod (re-sent while it stands) and its discharge, and Arc Lattice's anchors and wires
+    // (both re-sent while the lattice stands)
+    ELECTRO_LANCE(16), ELECTRO_THREAD(16), ELECTRO_OVERCHARGE(18), ELECTRO_SINK(12), ELECTRO_SINK_BURST(24),
+    ELECTRO_ANCHOR(12), ELECTRO_WIRE(12),
+    // Empathic Mimicry: the thread of an attunement (re-sent as it builds), the moment a set is taken, and a switch
+    MIMIC_ATTUNE(12), MIMIC_IMPRINT(28), MIMIC_SHIFT(18),
+    // Sonic Resonance, all drawn by SonicArt: the cry and the held scream (re-sent while it lasts), a Note playing
+    // (re-sent; scale grows as it is fed) and breaking (+32 when harmonic), the Wall (re-sent) and its push, the
+    // vault, the dive (re-sent) and the landing, Crescendo gathering (re-sent; scale is how built) and going out,
+    // the skills (Focused Shriek, a Ringing mark re-sent on its target, Shatter Note, Dissonant Wave, Echo Map's sweep,
+    // Resonant Guard and Quiet Zone, both re-sent)
+    SONIC_CRY(14), SONIC_SCREAM(5), SONIC_NOTE(12), SONIC_NOTE_BURST(26), SONIC_WALL(12), SONIC_WALL_PUSH(18),
+    SONIC_VAULT(16), SONIC_DIVE(5), SONIC_LANDING(28), SONIC_GATHER(8), SONIC_CRESCENDO(30), SONIC_SHRIEK(14),
+    SONIC_RING(12), SONIC_SHATTER(20), SONIC_DISSONANCE(22), SONIC_ECHO(40), SONIC_GUARD(12), SONIC_QUIET(12),
+    // Quake, drawn by QuakeArt: a bullet shaken to dust, a Resonate collapsing, Seismic Lance's column, the Vibration Shell
+    // (re-sent; scale is its radius), Counterforce's brace (re-sent, bound; scale is how much is stored), Pressure Step,
+    // Surgical Fracture's cracks on a wall, and one step of a written fault (scale is its fuse in ticks)
+    QUAKE_DUST(14), QUAKE_SHATTER(16), QUAKE_LANCE(24), QUAKE_SHELL(12), QUAKE_BRACE(12), QUAKE_DASH(14), QUAKE_SEAM(30),
+    QUAKE_TRACE(40),
+    // Regeneration, drawn by RegenArt: Blood Stream's flow (re-sent while held, bound to Claire), Bloodletting's fan, a
+    // Freefall landing, Pay It Back's burst, Play Dead's slowing heartbeat (re-sent, bound) and Revive's compressions
+    REGEN_STREAM(5), REGEN_FAN(16), REGEN_IMPACT(24), REGEN_PAYBACK(24), REGEN_FEIGN(12), REGEN_CPR(20),
+    // Telepathy, drawn by TelepathyArt: Drop It's word, Far Hearing's listening (re-sent, bound) and a voice heard (sent to
+    // the listener; scale 1 + 10 × how far), Dream Double's weave, Persuasion's talk-down (scale is its length in ticks)
+    // and a mind won over (re-sent on a persuaded mob), Memory Walk's cast, a trail segment (private; scale 1 + 10 × how
+    // long ago, +32 where it was hurt) and the echo where the memory began, Lost in Thought (re-sent), Waking Fright,
+    // Hive Link's threads and a linked friend's halo (private, re-sent; +16 speaking, +32 in danger), and a voice
+    // inside your head (Mind Network)
+    TELE_COMMAND(14), TELE_LISTEN(12), TELE_VOICE(12), TELE_WEAVE(22), TELE_PERSUADE(40), TELE_WON(12), TELE_RECALL(18),
+    TELE_MEMORY(200), TELE_ECHO(200), TELE_LOST(12), TELE_FRIGHT(18), TELE_HIVE_LINK(26), TELE_HALO(12), TELE_PROJECT(12),
+    // Vibe: split blue wave fronts, two-sided breaches, combat echoes and collapsing interference bands.
+    VIBE_GATHER(9), VIBE_WAVE(18), VIBE_CROSSWAVE(18), VIBE_HIT(14), VIBE_BREACH_SEED(14),
+    VIBE_BREACH_OPEN(12), VIBE_BREACH_ARRIVE(16), VIBE_BREACH_CLOSE(10), VIBE_TRANSIT(18),
+    VIBE_TOUCH(24), VIBE_ECHO(29), VIBE_GUARD(10), VIBE_GUARD_CLOSE(10), VIBE_LOCK_WARN(16),
+    VIBE_LOCK(33), VIBE_AWAKEN(28);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

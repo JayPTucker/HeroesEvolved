@@ -189,6 +189,36 @@ final class MotionArt {
         }
     }
 
+    /**
+     * Relay Run: a friend is fetched. A gold ribbon arcs from where they stood to their place in the ring round the
+     * runner, their outline is left fading where they were, and a ring closes round them as they land.
+     */
+    static void relay(Canvas c, Active a, float t) {
+        float f = fade(t, a.piece().ticks, 1, 8);
+        Vec3 from = a.origin(), to = a.target();
+        Vec3[] arc = new Vec3[13];
+        for (int i = 0; i < arc.length; i++) {
+            float u = i / 12F;
+            arc[i] = from.lerp(to, u).add(0, .9 + Mth.sin(Mth.PI * u) * .9, 0);
+        }
+        float drawn = smooth(0, 3, t);
+        int shown = Math.max(2, (int) (drawn * arc.length));
+        Vec3[] part = java.util.Arrays.copyOf(arc, shown);
+        if (c.soft()) {
+            c.ribbon(part, .3F, BOLT_RED, .25F * f, .1F * f);
+            c.shell(from.add(0, .95, 0), .3F, .92F, .3F, Mth.PI, BOLT, .3F * f * (1 - smooth(2, 10, t)), .2F, PLAIN, 0);
+        }
+        if (c.glow()) {
+            c.ribbon(part, .12F, BOLT, .7F * f, .3F * f);
+            c.ribbon(part, .04F, WHITE, f, .5F * f);
+            if (drawn > .99F) {
+                float close = smooth(3, 9, t);
+                c.ring(to.add(0, .06, 0), new Vec3(0, 1, 0), 1.1F - .6F * close, .07F, 0, Mth.TWO_PI, BOLT, .8F * f);
+                c.glow(to.add(0, 1, 0), .9F * (1 - close) + .1F, WHITE, f);
+            }
+        }
+    }
+
     /** They blur: several of them jitter in and out round where they stand, crackling. */
     static void phaseBlur(Canvas c, Active a, float t) {
         float f = fade(t, a.piece().ticks, 6, 12);

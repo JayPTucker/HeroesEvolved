@@ -353,6 +353,8 @@ public final class TimeIntroService {
             AbilityEffects.at(player, AbilityEffectPayload.Kind.TEMPORAL_BURST, 4);
             // Awakenings come in a fight: whatever was fighting you is now a heartbeat behind.
             com.jayptucker.heroesevolved.events.AwakeningService.secondWind(player);
+            // An ally the vision woke for is back on their feet as well.
+            com.jayptucker.heroesevolved.events.AwakeningService.timeVisionEnded(player);
             for (net.minecraft.world.entity.Mob mob : player.serverLevel().getEntitiesOfClass(
                     net.minecraft.world.entity.Mob.class, player.getBoundingBox().inflate(12),
                     mob -> mob instanceof net.minecraft.world.entity.monster.Enemy && mob.isAlive())) {

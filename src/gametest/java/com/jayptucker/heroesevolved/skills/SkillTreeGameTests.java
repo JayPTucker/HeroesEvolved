@@ -29,7 +29,7 @@ import java.util.*;
 public final class SkillTreeGameTests {
     private static final List<String> POWERS = List.of("quake", "flight", "cryokinesis", "electrokinesis", "telekinesis",
             "telepathy", "regeneration", "time_manipulation", "radiation", "sonic_resonance", "superspeed", "precognition", "pyrokinesis",
-            "invisibility", "phasing", "empathic_mimicry", "technopathy", "matter_assembly");
+            "invisibility", "phasing", "empathic_mimicry", "technopathy", "matter_assembly", "vibe");
     private static ResourceLocation id(String power) { return ResourceLocation.fromNamespaceAndPath("heroesevolved", power); }
     private static ServerPlayer player(GameTestHelper h, String power, int level) {
         var p = new FakePlayer(h.getLevel(), new GameProfile(UUID.randomUUID(), "skill-test"));
@@ -128,29 +128,32 @@ public final class SkillTreeGameTests {
     }
     @GameTest(template="rewind_empty", batch="skills.activation")
     public static void equippedSkillUsesRealDamageDiscountedEnergyAndPersistentCooldown(GameTestHelper h) {
-        var p = player(h, "sonic_resonance", 5); var victim = target(h, p);
+        // Empathic Mimicry keeps the stat nodes (Sonic Resonance's and Quake's trees became interactions), and its
+        // Borrowed Strike is a plain aimed hit.
+        var p = player(h, "empathic_mimicry", 5); var victim = target(h, p);
         try {
-            SkillTreeService.purchase(p, "sonic_resonance_0_0"); SkillTreeService.purchase(p, "sonic_resonance_0_1");
-            SkillTreeService.equip(p, AbilitySlot.PRIMARY, "sonic_resonance_0_1");
+            SkillTreeService.purchase(p, "empathic_mimicry_0_0"); SkillTreeService.purchase(p, "empathic_mimicry_0_1");
+            SkillTreeService.equip(p, AbilitySlot.PRIMARY, "empathic_mimicry_0_1");
             int energy = PlayerEnergyService.getEnergy(p); float health = victim.getHealth();
             var result = AbilityUseService.activateAssignedAction(p, AbilitySlot.PRIMARY, false);
             h.assertTrue(result == AbilityUseResult.SUCCESS && victim.getHealth() < health, "New loadout skill must damage a real aimed mob");
-            h.assertTrue(PlayerEnergyService.getEnergy(p) == energy - 24, "26 base stamina with 10% reduction rounds up to 24");
-            h.assertTrue(CooldownService.isOnCooldown(p, id("sonic_resonance_0_1")), "Sub-ability must use its own cooldown");
-            SkillTreeService.equip(p, AbilitySlot.SECONDARY, "sonic_resonance_0_1");
+            h.assertTrue(PlayerEnergyService.getEnergy(p) == energy - 20, "22 base stamina with 10% reduction rounds up to 20");
+            h.assertTrue(CooldownService.isOnCooldown(p, id("empathic_mimicry_0_1")), "Sub-ability must use its own cooldown");
+            SkillTreeService.equip(p, AbilitySlot.SECONDARY, "empathic_mimicry_0_1");
             h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, false) == AbilityUseResult.ON_COOLDOWN, "Moving a skill cannot reset its cooldown");
             h.succeed();
         } finally { victim.discard(); cleanup(p); }
     }
     @GameTest(template="rewind_empty", batch="skills.bonuses")
     public static void skillBonusesApplyToCostsCooldownsAndAttacks(GameTestHelper h) {
-        var p = player(h, "quake", 5); var victim = target(h, p);
+        // Electrokinesis keeps the generic stat nodes; Quake, Sonic and others traded theirs for interactions.
+        var p = player(h, "electrokinesis", 5); var victim = target(h, p);
         try {
-            for (int branch : new int[]{0,1}) for (int tier = 0; tier < 3; tier++) h.assertTrue(SkillTreeService.purchase(p, "quake_" + branch + "_" + tier), "Build must fit in the points a Level 15 power has");
-            h.assertTrue(SkillTreeService.activationCost(p, id("quake"), 40) == 30, "Control mastery should reduce activation stamina by 25%");
+            for (int branch : new int[]{0,1}) for (int tier = 0; tier < 3; tier++) h.assertTrue(SkillTreeService.purchase(p, "electrokinesis_" + branch + "_" + tier), "Build must fit in the points a Level 15 power has");
+            h.assertTrue(SkillTreeService.activationCost(p, id("electrokinesis"), 40) == 30, "Control mastery should reduce activation stamina by 25%");
             float before = victim.getHealth(); victim.hurt(p.damageSources().playerAttack(p), 4);
             h.assertTrue(before - victim.getHealth() >= 4.9F, "Force mastery should increase outgoing attack damage by 25%");
-            h.assertTrue(SkillCatalog.available("quake", SkillTreeService.build(p, id("quake")))
+            h.assertTrue(SkillCatalog.available("electrokinesis", SkillTreeService.build(p, id("electrokinesis")))
                     == com.jayptucker.heroesevolved.progression.PowerLevels.points(15) - 10, "Specializing in two branches spends ten points");
             h.succeed();
         } finally { victim.discard(); cleanup(p); }
@@ -159,12 +162,11 @@ public final class SkillTreeGameTests {
     public static void allThirtyOptionalSkillsHaveGameplayConsequences(GameTestHelper h) {
         for (String power : POWERS) {
             // These physical/stateful kits have dedicated travel, field and lifecycle tests.
-            if (Set.of("flight", "telekinesis", "telepathy", "cryokinesis", "technopathy", "matter_assembly", "invisibility").contains(power)) continue;
+            if (Set.of("flight", "telekinesis", "telepathy", "cryokinesis", "technopathy", "matter_assembly", "invisibility", "vibe").contains(power)) continue;
             var p = player(h, power, 5);
             try {
                 for (int branch = 0; branch < 3; branch++) {
                     var victim = target(h, p); p.setHealth(10); p.removeAllEffects(); p.setDeltaMovement(Vec3.ZERO);
-                    if (power.equals("regeneration") && branch == 2) victim.setHealth(5);
                     LivingEntity rescued = null;
                     if (power.equals("superspeed") && branch == 2) {
                         rescued = EntityType.VILLAGER.create(h.getLevel()); rescued.setPos(p.position().add(.9, 0, 0)); h.getLevel().addFreshEntity(rescued);
@@ -179,11 +181,16 @@ public final class SkillTreeGameTests {
                     }
                     var context = new AbilityUseContext(p, id(power), 5, settingAnchor);
                     h.assertTrue(SkillActionService.canUse(context, branch) && SkillActionService.activate(context, branch), "Optional skill must activate: " + power + "/" + branch);
-                    if (branch == 0 && !power.equals("flight") && !power.equals("regeneration") && !power.equals("telepathy") && !power.equals("time_manipulation") && !power.equals("superspeed") && !power.equals("precognition"))
+                    // Seismic Lance's column bursts up a beat after its warning (QuakeReworkGameTests checks it lands).
+                    if (branch == 0 && !power.equals("flight") && !power.equals("regeneration") && !power.equals("telepathy") && !power.equals("time_manipulation") && !power.equals("superspeed") && !power.equals("precognition") && !power.equals("quake"))
                         h.assertTrue(victim.getHealth() < before, "Aimed attack must damage its target: " + power);
                     if (branch == 0 && power.equals("time_manipulation")) h.assertTrue(com.jayptucker.heroesevolved.time.SpaceTimeService.isSuspended(victim), "Selective Stasis must pause its target");
-                    if (power.equals("regeneration") && branch < 2) h.assertTrue(p.getHealth() > 10, "Regeneration branch must actually heal");
-                    if (power.equals("regeneration") && branch == 2) h.assertTrue(victim.getHealth() > before && victim.hasEffect(MobEffects.ABSORPTION), "Transfusion must heal and shield its recipient");
+                    if (power.equals("regeneration") && branch == 0) h.assertTrue(p.getHealth() < 10, "Bloodletting must cut her palm");
+                    if (power.equals("regeneration") && branch == 1) h.assertTrue(p.getHealth() > 10, "Adrenal Rush must actually heal");
+                    if (power.equals("regeneration") && branch == 2) {
+                        h.assertTrue(com.jayptucker.heroesevolved.regeneration.RegenSkills.feigning(p), "Play Dead must drop her");
+                        com.jayptucker.heroesevolved.regeneration.RegenSkills.forget(p);
+                    }
                     if (power.equals("flight") && branch != 1) h.assertTrue(p.getDeltaMovement().lengthSqr() > .5, "Flight mobility must move the player");
                     if (branch == 1 && Set.of("radiation", "telepathy").contains(power)) h.assertTrue(p.hasEffect(MobEffects.DAMAGE_RESISTANCE), "Defensive skill must grant Resistance: " + power);
                     if (branch == 2 && power.equals("electrokinesis")) h.assertTrue(p.hasEffect(MobEffects.MOVEMENT_SPEED), "Overcharge must improve movement");

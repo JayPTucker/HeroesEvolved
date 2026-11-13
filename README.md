@@ -10,7 +10,7 @@ and the server: villages call for help over the radio. See [The emergency band](
 ## Skills and progression
 
 Open the survival inventory and click **Skills**, next to the recipe book.
-Every power has three named branches of six nodes: eighteen per power, 324 in all.
+Every power has three named branches of six nodes: eighteen per power, 342 in all.
 The Abilities page is also the skill tree: each branch is drawn as its real tree, and you learn skills and put them on keys right there.
 Powers grow from Level 1 to 20 (Manifesting, Controlled, Practiced, Mastered, and Evolved after a
 per-power trial). Levels unlock the core kit and give skill points; story notes hidden in the world
@@ -18,10 +18,10 @@ give more. Put any ability on any of eight keys, or cast anything from the **abi
 Abilities rank up with use. Purchases and loadouts persist across death and relogging. See
 [Power Levels, keys and the ability wheel](docs/progression.md).
 
-All eighteen powers have trees: Quake, Flight, Cryokinesis, Electrokinesis,
+All nineteen powers have trees: Quake, Flight, Cryokinesis, Electrokinesis,
 Telekinesis, Telepathy, Regeneration, Time Manipulation, Radiation, Sonic
 Resonance, Superspeed, Precognition, Pyrokinesis, Invisibility, Density (Phasing) and
-Empathic Mimicry, Technopathy and Matter Assembly. Sonic Resonance's cries are original synthesized sound design, including a
+Empathic Mimicry, Technopathy, Matter Assembly and [Vibe](docs/vibe.md). Sonic Resonance's cries are original synthesized sound design, including a
 positional sustained scream that stops when you release its key.
 
 Three powers also have a **signature ability**, a showpiece hung under one branch's Mastery at Level 10:
@@ -109,7 +109,7 @@ Space-Time Manipulation's [first awakening](docs/time-manipulation-intro.md) tak
 companions to Odessa at 6:14 to witness the explosion and watch the city run backwards.
 
 See [Invisibility](docs/invisibility.md) for Exposure, optical doubles, shared concealment and
-its eighteen redesigned skills. [Phasing and Empathic Mimicry](docs/new-powers.md) records the
+its eighteen redesigned skills. [Phasing](docs/new-powers.md) and [Empathic Mimicry](docs/empathic-mimicry.md) record the
 other added powers and the techniques introduced to the original trees.
 
 See [The Formula](docs/formula.md) for awakening unclaimed powers without waiting for an

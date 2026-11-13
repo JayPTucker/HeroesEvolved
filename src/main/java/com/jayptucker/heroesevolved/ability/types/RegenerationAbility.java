@@ -34,12 +34,15 @@ import java.util.Map;
  *   fast. Falls hurt half as much. From Level 2 toxins are purged. Heavy blades and explosions take
  *   limbs, which grow back from the bone out. And you cannot be killed: a lethal blow puts you down
  *   on the ground (90 seconds at Level 1, 12 at Level 5) until your body repairs itself.</li>
- *   <li>Level 1, Rapid Mending: spend all Regrowth on an instant heal; overflow becomes Absorption.</li>
- *   <li>Level 2, Blood Gift: heal someone up to twelve blocks away with your blood (it burns the
- *   undead); the cut feeds Regrowth. Holding an empty syringe bottles it for the Formula.</li>
+ *   <li>Level 1, Rapid Mending: push out lodged arrows, then spend all Regrowth on an instant heal; overflow becomes
+ *   Absorption.</li>
+ *   <li>Level 2, Blood Gift: tap to heal someone up to twelve blocks away with your blood (it burns the
+ *   undead); hold for Blood Stream, a steady flow. The cut feeds Regrowth. Holding an empty syringe bottles it for
+ *   the Formula.</li>
  *   <li>Level 3, Indestructible: no falls or knockback, dulled pain, reckless punches, and
- *   bullets pushed back out.</li>
- *   <li>Level 4, Blood Bond: friends nearby heal with you and you take a share of their wounds.</li>
+ *   bullets pushed back out. Press again for Freefall, a leap that crashes down on what's below.</li>
+ *   <li>Level 4, Blood Bond: friends nearby heal with you and you take a share of their wounds. Press again to Pay
+ *   It Back.</li>
  *   <li>Level 5, Second Life: your blood in a friend saves them from their next death.</li>
  * </ul>
  */
@@ -58,6 +61,8 @@ public final class RegenerationAbility implements Ability {
             .cost(HeroesEvolvedConfig.COMMON.regenerationAuraEnergyCost::get,
                 HeroesEvolvedConfig.COMMON.regenerationAuraCooldownTicks::get)
             .canUse(context -> !RegenerationService.hasHealingAura(context.player()))
+            // Pressed again during the bond: Pay It Back, the wounds she took returned to her friends as healing. Free.
+            .followUp(context -> RegenerationService.payItBack(context.player()))
             .activate(context -> {
                 RegenerationService.healingAura(context.player(),
                     context.abilityLevel());
@@ -217,18 +222,22 @@ public final class RegenerationAbility implements Ability {
             return HeroesEvolvedConfig.COMMON.regenerationBloodGiftCooldownTicks.get();
         }
 
+        /** No one in reach (and no syringe in hand) means no cost and no cooldown. */
         @Override
         public boolean canUse(AbilityUseContext context) {
-            return true;
+            return com.jayptucker.heroesevolved.regeneration.RegenSkills.canGift(context.player());
+        }
+
+        /** Pressed: a tap gives the gift on release; held, it becomes Blood Stream. */
+        @Override
+        public AbilityActivationResult activate(AbilityUseContext context) {
+            com.jayptucker.heroesevolved.regeneration.RegenSkills.pressGift(context.player(), context.abilityLevel());
+            return AbilityActivationResult.SUCCESS;
         }
 
         @Override
-        public AbilityActivationResult activate(AbilityUseContext context) {
-            // No target means no cost and no cooldown.
-            return RegenerationService.bloodGift(
-                    context.player(), context.abilityLevel())
-                    ? AbilityActivationResult.SUCCESS
-                    : AbilityActivationResult.REJECTED;
+        public void release(AbilityUseContext context) {
+            com.jayptucker.heroesevolved.regeneration.RegenSkills.releaseGift(context.player());
         }
     }
 
@@ -254,6 +263,12 @@ public final class RegenerationAbility implements Ability {
         @Override
         public boolean canUse(AbilityUseContext context) {
             return !RegenerationService.isIndestructible(context.player());
+        }
+
+        /** Pressed again while Indestructible: Freefall, a leap that comes down on whatever is below. Free, once. */
+        @Override
+        public boolean followUp(AbilityUseContext context) {
+            return com.jayptucker.heroesevolved.regeneration.RegenSkills.freefall(context.player());
         }
 
         @Override
@@ -297,8 +312,9 @@ public final class RegenerationAbility implements Ability {
         public boolean canUse(AbilityUseContext context) {
             ServerPlayer player = context.player();
             if (RegenerationService.findSecondLifeTarget(player) != null) return true;
-            int down = com.jayptucker.heroesevolved.regeneration.BodyService.recoveryTicks(context.abilityLevel(),
-                    RegenerationService.regrowth(player)) / 20;
+            int down = com.jayptucker.heroesevolved.regeneration.RegenSkills.recovery(player,
+                    com.jayptucker.heroesevolved.regeneration.BodyService.recoveryTicks(context.abilityLevel(),
+                    RegenerationService.regrowth(player))) / 20;
             player.displayClientMessage(Component.literal("Death will not hold you: if you go down, you're up in "
                     + down + "s. Aim at a friend to give them a Second Life."), true);
             return false;

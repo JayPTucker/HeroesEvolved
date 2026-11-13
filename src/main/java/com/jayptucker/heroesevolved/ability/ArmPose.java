@@ -79,5 +79,62 @@ public enum ArmPose {
     ELECTRO_DRAW, ELECTRO_CAST, ELECTRO_STREAM, ELECTRO_CALL, ELECTRO_COIL, ELECTRO_RELEASE,
     /** Invisibility's force fields: palms up behind a lens, a two-handed thrust, a low sweep that lays a span,
      *  an open hand sealing a bubble, a closing fist, and arms gathering then flung wide for Force Nova. */
-    FORCE_SHIELD, FORCE_PUSH, FORCE_BUILD, FORCE_BUBBLE, FORCE_CRUSH, FORCE_NOVA
+    FORCE_SHIELD, FORCE_PUSH, FORCE_BUILD, FORCE_BUBBLE, FORCE_CRUSH, FORCE_NOVA,
+    /** Electrokinesis: arms flung back as the body becomes the bolt (Ride the Lightning); palms cupped round a
+     *  forming orb, then pushed out (Ball Lightning); a braced, straight-armed lance (Arc Lance); a palm laid on
+     *  metal (Circuit Thread); fists clenched at the sides as current floods the body (Overcharge); a palm driven
+     *  down into the ground (Ground Sink); a two-finger point that plants an anchor (Arc Lattice). */
+    ELECTRO_RIDE, ELECTRO_CUP, ELECTRO_LANCE, ELECTRO_TOUCH, ELECTRO_OVERCHARGE, ELECTRO_GROUND, ELECTRO_POINT,
+    /** Superspeed's skills: a boxer's guard (Reflex Focus), arms flung low and flickering (Speed Mirage), a fist
+     *  driven through (Momentum Strike), a javelin throw (Lightning Throw), an arm round someone's shoulders
+     *  (Slipstream Rescue) and open hands held perfectly still (Perception). */
+    SPEED_GUARD, SPEED_SPLIT, SPEED_LUNGE, SPEED_THROW, SPEED_ESCORT, SPEED_STILL,
+    /** Empathic Mimicry: an open palm laid on someone to keep their power; a hand drawn to the heart, then opened,
+     *  to switch which remembered power answers. */
+    MIMIC_TOUCH, MIMIC_SHIFT,
+    /** Sonic Resonance. The core: arms swept back as the voice goes out (Cry) and braced wide and shaking while it is
+     *  held (the scream); a plucked string (setting a Note) and a closing fist (breaking it); palms raised flat (Wall of
+     *  Sound) and a two-handed shove that sends it rolling; arms thrown up as the cry at the ground launches you
+     *  (Vault) and pinned back in the dive; arms gathering in to the chest (Crescendo building) and flung wide and back
+     *  (its release). The skills: a hand cupped at the mouth (Focused Shriek), a raised finger-snap (Shatter Note),
+     *  a low, wide howl (Dissonant Wave), a hand to the ear (Echo Map), arms crossed over the chest (Resonant Guard), a
+     *  finger to the lips (Quiet Zone), a conductor's beat (Resonance Cascade), palms pressed down (Silence Dome) and
+     *  arms opened in song (Battle Hymn). */
+    SONIC_CRY, SONIC_SCREAM, SONIC_PLUCK, SONIC_CLENCH, SONIC_WALL, SONIC_SHOVE, SONIC_VAULT, SONIC_DIVE, SONIC_GATHER,
+    SONIC_RELEASE, SONIC_CUP, SONIC_SNAP, SONIC_HOWL, SONIC_LISTEN, SONIC_HUM, SONIC_HUSH, SONIC_CONDUCT, SONIC_DOME,
+    SONIC_SING,
+    /** Quake. The core: a palm thrust out (Shockwave) and the other palm after it (Double Tap); a hand held out with the
+     *  fingers spread and trembling (Resonate) closing into a fist (Shatter); a fist driven into the ground (Fault Line,
+     *  a grounded Slam), both fists brought down from overhead (the airborne Slam) and both palms swept up (Upheaval);
+     *  both palms out and shaking (Quake Blast) or thrust down and back (Quake Blast flight); arms low and wide, palms
+     *  down (Earthquake) and both fists slammed down (its aftershock); a palm laid on the ground (Tremor Sense) and arms
+     *  clutched to the chest (a fracture). The skills: an uppercut (Seismic Lance), a hand trailed along the ground
+     *  (Fault Script), arms crossed then flung out (Vibration Shell), forearms crossed (Counterforce's brace) and a
+     *  double palm push (its release), palms flung back (Pressure Step) and a palm on the wall (Surgical Fracture). The
+     *  styles: fists driven down and pulled apart (Fissure Maw), palms swept up (Stone Rampart) and a wide, rooted stance
+     *  (Bedrock Stance). */
+    QUAKE_PALM, QUAKE_PALM_OFF, QUAKE_TUNE, QUAKE_CLENCH, QUAKE_PUNCH_DOWN, QUAKE_PLUNGE, QUAKE_UPHEAVAL, QUAKE_BEAM,
+    QUAKE_FLY, QUAKE_RUMBLE, QUAKE_AFTERSHOCK, QUAKE_FEEL, QUAKE_FRACTURED, QUAKE_UPPERCUT, QUAKE_TRACE, QUAKE_SHELL,
+    QUAKE_BRACE, QUAKE_RELEASE, QUAKE_DASH, QUAKE_TOUCH, QUAKE_SPLIT, QUAKE_RAMPART, QUAKE_ROOT,
+    /** Regeneration. The core: hands pressed to the wound, then flexed out (Rapid Mending); a palm offered up (Blood
+     *  Gift) and held out with the other hand gripping the forearm (Blood Stream); chest out, arms spread low, daring it
+     *  (Indestructible), arms flung up (Freefall) and fists driven down on landing; arms opened to draw friends in (Blood
+     *  Bond) and hands pulled to the chest then thrown open (Pay It Back); a hand pressing into a friend (Second Life).
+     *  The skills: a cut palm flung across (Bloodletting), a palm drawing a wound in (Take the Wound), fists clenched and
+     *  flexed (Adrenal Rush), fists tensed at the sides (Adaptation), an arm pushing up off the ground (getting up from
+     *  Play Dead) and both hands pumping down (Revive's chest compressions). The styles: a fist beating the chest (Vital
+     *  Burst), arms out, palms open, daring it (Undying) and palms raised (Lifebloom). */
+    REGEN_MEND, REGEN_OFFER, REGEN_STREAM, REGEN_BRACE, REGEN_LEAP, REGEN_LAND, REGEN_EMBRACE, REGEN_PAYBACK, REGEN_INJECT,
+    REGEN_FLING, REGEN_DRAW, REGEN_PUMP, REGEN_HARDEN, REGEN_RISE, REGEN_COMPRESS, REGEN_HEARTBEAT, REGEN_DEFY, REGEN_BLOOM,
+    /** Telepathy. The core: two fingers at the temple, the other hand reaching toward the mind (Read Mind); a palm
+     *  lowered, easing (Suggestion); both hands to the temples, then opened outward (Mind Link); a raised hand with the
+     *  fingers hooked down as if on strings, twitching (Puppet); a hand drawn down over the face and flung out
+     *  (Nightmare). The skills: a sharp two-fingered point (Drop It); fingers at both temples, head bowed (Far Hearing);
+     *  hands weaving circles before the chest (Dream Double); an open palm held out, the other hand on the heart
+     *  (Persuasion); a palm passed slowly before the eyes (Memory Walk); palms raised, then pressed out toward friends
+     *  (Hive Link). The styles: hands at the temples thrown up at the point (Psychic Storm), a hand swept across the
+     *  face like drawing a veil (Blind Spot) and hands clasped, then spread (Hive Mind). */
+    TELE_READ, TELE_SUGGEST, TELE_LINK, TELE_PUPPET, TELE_NIGHTMARE, TELE_COMMAND, TELE_LISTEN, TELE_WEAVE, TELE_PERSUADE,
+    TELE_MEMORY, TELE_HIVE, TELE_STORM, TELE_VEIL, TELE_GATHER,
+    VIBE_PALM, VIBE_OPEN, VIBE_READ, VIBE_GUARD, VIBE_LOCK, VIBE_LANCE, VIBE_CROSS, VIBE_STEP
 }

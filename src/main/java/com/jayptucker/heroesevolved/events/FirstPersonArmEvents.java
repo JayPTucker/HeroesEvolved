@@ -71,6 +71,7 @@ public final class FirstPersonArmEvents {
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         ClientArmPoseState.clear();
+        com.jayptucker.heroesevolved.network.ClientMimicMemory.clear();
     }
 
     private static void renderArm(

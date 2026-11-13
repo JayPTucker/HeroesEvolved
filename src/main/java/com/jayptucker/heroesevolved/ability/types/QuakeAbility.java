@@ -20,14 +20,17 @@ import java.util.Map;
  * Quake, after Daisy Johnson (Agents of S.H.I.E.L.D.): vibration, and what it costs her body.
  *
  * <ul>
- *   <li>Level 1, Shockwave: a palm blast that hurls targets, turns arrows back and shatters glass. In
- *   midair (or aimed down) it launches her the other way.</li>
+ *   <li>Level 1, Shockwave: a palm blast that hurls targets, shakes incoming bullets to dust, sets off explosives,
+ *   turns arrows back and shatters glass. In midair (or aimed down) it launches her the other way. Press again at once
+ *   for Double Tap, the other palm.</li>
  *   <li>Level 2, Resonate: shake one enemy apart from the inside for three seconds: it staggers and
- *   can't aim, its armour rattles apart and its bones ache.</li>
+ *   can't aim, its armour rattles apart and its bones ache. Press again to Shatter it in one blow.</li>
  *   <li>Level 3, Fault Line: punch the ground and a crack races out ahead of her, erupting under every
- *   enemy on its way. Aimed straight down or from the air, it is the Seismic Slam ring.</li>
- *   <li>Level 4, Quake Blast: hold to pour a two-handed beam. Jump and it carries her: Daisy's flight.</li>
- *   <li>Level 5, Earthquake: a sustained quake ending in an aftershock.</li>
+ *   enemy on its way; press again for Upheaval, the rest of the line at once. Aimed straight down or from the air,
+ *   it is the Seismic Slam ring.</li>
+ *   <li>Level 4, Quake Blast: hold to pour a two-handed beam that shakes bullets apart as they come. Jump and it
+ *   carries her: Daisy's flight.</li>
+ *   <li>Level 5, Earthquake: a sustained quake ending in an aftershock; press again to release it early.</li>
  *   <li>Always: Strain builds with every quake and makes her hit harder, until at 100 the bones in her
  *   arms crack. Crouch still to feel heartbeats through walls. Vibration cushions her landings.</li>
  * </ul>
@@ -38,11 +41,15 @@ public final class QuakeAbility implements Ability {
 
     private static final Map<AbilitySlot, AbilityAction> ACTIONS = Map.of(
             AbilitySlot.PRIMARY, new ShockwaveAction(),
+            // Press again (free) while it resonates: Shatter, the frequency collapsing in one blow.
             AbilitySlot.SECONDARY, com.jayptucker.heroesevolved.ability.SimpleAction.builder("quake_resonate", 2).cost(() -> 18, () -> 160)
+                    .followUp(c -> QuakeKit.collapse(c.player()))
                     .canUse(c -> !QuakeKit.fractured(c.player()))
                     .activate(c -> QuakeKit.resonate(c.player(), c.abilityLevel())).build(),
             AbilitySlot.TERTIARY, com.jayptucker.heroesevolved.ability.SimpleAction.builder("quake_fault_line", 3)
                     .cost(() -> HeroesEvolvedConfig.COMMON.quakeSlamEnergyCost.get(), () -> HeroesEvolvedConfig.COMMON.quakeSlamCooldownTicks.get())
+                    // Press again (free) while the crack still races: Upheaval, the rest of its line erupting at once.
+                    .followUp(c -> QuakeKit.upheave(c.player()))
                     .canUse(c -> !c.player().isPassenger() && !QuakeKit.fractured(c.player()))
                     .activate(c -> QuakeKit.faultLine(c.player(), c.abilityLevel())).build(),
             AbilitySlot.QUATERNARY, new QuakeBlastAction(),
@@ -184,6 +191,12 @@ public final class QuakeAbility implements Ability {
             return !context.player().isPassenger() && !QuakeKit.fractured(context.player());
         }
 
+        /** Double Tap: pressed again just after a Shockwave, the other palm answers, free. */
+        @Override
+        public boolean followUp(AbilityUseContext context) {
+            return QuakeService.doubleTap(context.player());
+        }
+
         @Override
         public AbilityActivationResult activate(AbilityUseContext context) {
             QuakeService.shockwave(context.player(), context.abilityLevel());
@@ -222,6 +235,12 @@ public final class QuakeAbility implements Ability {
             }
             QuakeService.stopEarthquake(context.player());
             return true;
+        }
+
+        /** Pressed again while the ground shakes: bring both fists down and release the aftershock now. Free. */
+        @Override
+        public boolean followUp(AbilityUseContext context) {
+            return deactivate(context);
         }
 
         @Override

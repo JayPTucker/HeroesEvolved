@@ -148,12 +148,176 @@ final class ElectroArt {
                 fork(c, at, end, .09F, alpha, seed, 3);
                 if (c.glow()) c.glow(end, .75F, BLUE, alpha * .64F);
             }
+            case ELECTRO_LANCE -> lance(c, owner, at, end, t, alpha, size, clock, seed);
+            case ELECTRO_THREAD -> thread(c, at, end, t, alpha, seed);
+            case ELECTRO_OVERCHARGE -> overcharge(c, feet, t, alpha, clock, seed);
+            case ELECTRO_SINK -> sink(c, at, size, clock, fade(t, a.piece().ticks, 2, 2), seed);
+            case ELECTRO_SINK_BURST -> {
+                // The rod blows: forks thrown up off its tip, then the stored charge runs out along the ground.
+                Vec3 tip = at.add(0, SINK_ROD, 0);
+                float flash = 1 - smooth(2, 10, t);
+                int forks = minimal() ? 3 : 7;
+                for (int i = 0; i < forks; i++) {
+                    float angle = (i + hash(seed, i)) * TWO_PI / forks;
+                    Vec3 out = tip.add(cos(angle) * 2.2 * size, 1.1 + 1.6 * hash(seed, i + 9), sin(angle) * 2.2 * size);
+                    fork(c, tip, tip.lerp(out, smooth(0, 3, t)), .07F, alpha * flash, seed + i * 41, 1);
+                }
+                if (c.glow()) c.glow(tip, 1.3F * flash + .2F, CORE, alpha * flash);
+                pulse(c, at, 7 * size, t - 2, alpha, seed, false);
+            }
+            case ELECTRO_ANCHOR -> anchor(c, at, clock, fade(t, a.piece().ticks, 2, 2), seed);
+            case ELECTRO_WIRE -> wire(c, at, end, clock, fade(t, a.piece().ticks, 2, 2), seed);
             case JUMPSTART -> {
                 Vec3 heart = ElectroGeometry.chest(end);
                 fork(c, ElectroGeometry.chest(at), heart, .07F, alpha * (1 - smooth(4, 9, t)), seed, 2);
                 ring(c, heart, UP, .24F + 1.45F * smooth(1, 12, t), .085F, 0, TWO_PI, alpha);
             }
             default -> { }
+        }
+    }
+
+    /** How tall Ground Sink's rod stands, in blocks. */
+    private static final float SINK_ROD = 1.35F;
+
+    /**
+     * Arc Lance: not a fork but one dead-straight shot, white at the core, gone the moment it lands. Rings blow off
+     * the braced palm, a coil of ions spins down the beam, and as it fades the straight line breaks back into
+     * ordinary lightning.
+     */
+    private static void lance(Canvas c, Player owner, Vec3 at, Vec3 end, float t, float alpha, float size, float clock, int seed) {
+        if (owner != null && t < 3) at = hand(c, owner, .72);
+        Vec3 axis = end.subtract(at);
+        if (axis.lengthSqr() < .01) return;
+        Vec3 dir = axis.normalize();
+        // A shot passing right by the camera (the front view) would fill the screen: thin it out there.
+        Minecraft mc = Minecraft.getInstance();
+        if (owner != mc.player || mc.options.getCameraType() != CameraType.FIRST_PERSON) {
+            Vec3 eye = c.camera();
+            double along = Math.clamp(eye.subtract(at).dot(dir), 0, axis.length());
+            alpha *= (float) Math.clamp((eye.distanceTo(at.add(dir.scale(along))) - .6) / 1.6, .12, 1);
+        }
+        float reach = smooth(0, 1.2F, t), straight = 1 - smooth(3, 9, t);
+        Vec3 front = at.lerp(end, reach);
+        if (straight > .01F) {
+            if (c.soft()) c.line(at, front, .19F * size, INDIGO, .5F * alpha * straight, .3F * alpha * straight);
+            if (c.glow()) {
+                c.line(at, front, .1F * size, BLUE, .7F * alpha * straight, .55F * alpha * straight);
+                c.line(at, front, .035F * size, CORE, alpha * straight, alpha * straight);
+            }
+            if (!minimal() && c.glow()) {
+                Vec3 right = side(dir), up = dir.cross(right);
+                int turns = (int) Math.max(4, at.distanceTo(front) * 1.2);
+                Vec3[] coil = new Vec3[turns * 6 + 1];
+                for (int i = 0; i < coil.length; i++) {
+                    float u = i / (float) (coil.length - 1), angle = u * turns * TWO_PI - clock * 3;
+                    coil[i] = at.lerp(front, u).add(right.scale(cos(angle) * .16F * size)).add(up.scale(sin(angle) * .16F * size));
+                }
+                c.ribbon(coil, .022F, ION, .7F * alpha * straight, .3F * alpha * straight);
+            }
+        }
+        // Breaking back into lightning as the shot fades.
+        if (t > 2.5F) fork(c, at, end, .06F * size, alpha * smooth(2.5F, 5, t) * (1 - smooth(9, 15, t)), seed, 2);
+        // Muzzle rings blown off the palm, out along the beam.
+        for (int i = 0; i < 2; i++) {
+            float age = t - i * 1.5F;
+            if (age < 0) continue;
+            float out = smooth(0, 6, age);
+            ring(c, at.add(dir.scale(.25 + out * .9)), dir, .14F + .42F * out, .05F, 0, TWO_PI, alpha * (1 - out));
+        }
+        if (reach > .98F) corona(c, end, .32F * size * (1 - smooth(4, 14, t)) + .05F, clock, alpha, seed);
+    }
+
+    /** Circuit Thread: current crawling from one conductor to the next, lighting each block's edges as it arrives. */
+    private static void thread(Canvas c, Vec3 from, Vec3 to, float t, float alpha, int seed) {
+        float crawl = smooth(0, 3, t);
+        Vec3 front = from.lerp(to, crawl);
+        fork(c, from, front, .045F, alpha * .85F, seed, 1);
+        if (c.glow()) c.glow(front, .22F, ION, alpha * .7F);
+        if (crawl < .99F) return;
+        // The block it reached hums: its edges glow, brightest the moment the current lands.
+        float lit = alpha * (.45F + .55F * (1 - smooth(3, 9, t)));
+        Vec3 o = to.subtract(.5, 1.03, .5);
+        double[][] corners = new double[8][];
+        for (int i = 0; i < 8; i++) corners[i] = new double[]{o.x + (i & 1), o.y + (i >> 1 & 1), o.z + (i >> 2 & 1)};
+        int[][] edges = {{0, 1}, {2, 3}, {4, 5}, {6, 7}, {0, 2}, {1, 3}, {4, 6}, {5, 7}, {0, 4}, {1, 5}, {2, 6}, {3, 7}};
+        for (int[] e : edges) {
+            Vec3 p = new Vec3(corners[e[0]][0], corners[e[0]][1], corners[e[0]][2]);
+            Vec3 q = new Vec3(corners[e[1]][0], corners[e[1]][1], corners[e[1]][2]);
+            if (c.soft()) c.line(p, q, .07F, INDIGO, lit * .45F, lit * .45F);
+            if (c.glow()) {
+                c.line(p, q, .03F, BLUE, lit * .8F, lit * .8F);
+                c.line(p, q, .011F, CORE, lit, lit);
+            }
+        }
+    }
+
+    /** Overcharge: a band of current climbs the body from the feet to the crown, then flares off the chest. */
+    private static void overcharge(Canvas c, Vec3 feet, float t, float alpha, float clock, int seed) {
+        float climb = smooth(0, 9, t);
+        float height = .05F + 1.85F * climb;
+        Vec3 band = feet.add(0, height, 0);
+        ring(c, band, UP, .42F + .1F * sin(clock * 3), .06F, clock, TWO_PI, alpha * (1 - smooth(9, 12, t)));
+        int crawlers = minimal() ? 2 : 5;
+        for (int i = 0; i < crawlers; i++) {
+            float angle = i * TWO_PI / crawlers + clock * 1.7F;
+            Vec3 low = feet.add(cos(angle) * .36, Math.max(.05, height - .9), sin(angle) * .36);
+            Vec3 high = feet.add(cos(angle + .6F) * .4, height, sin(angle + .6F) * .4);
+            fork(c, low, high, .035F, alpha * .8F, seed + i * 23 + (int) (t * .5F), 1);
+        }
+        if (t > 9) {
+            float burst = smooth(9, 17, t);
+            Vec3 chest = ElectroGeometry.chest(feet);
+            ring(c, chest, UP, .4F + 2.1F * burst, .07F, 0, TWO_PI, alpha * (1 - burst));
+            if (c.glow()) c.glow(chest, .9F * (1 - burst) + .1F, CORE, alpha * (1 - burst));
+        }
+    }
+
+    /** Ground Sink: a rod of current stood in the ground with grounding rings round its foot. Its charge glows at the tip. */
+    private static void sink(Canvas c, Vec3 at, float size, float clock, float alpha, int seed) {
+        Vec3 foot = at.add(0, .04, 0), tip = at.add(0, SINK_ROD, 0);
+        if (c.soft()) c.line(foot, tip, .13F, SHADOW, alpha * .7F, alpha * .5F);
+        if (c.glow()) {
+            c.line(foot, tip, .06F, BLUE, alpha * .6F, alpha * .8F);
+            c.line(foot, tip, .02F, CORE, alpha * .8F, alpha);
+        }
+        for (int i = 0; i < 3; i++)
+            ring(c, foot, UP, .55F + i * .75F, .05F, clock * (i % 2 == 0 ? .5F : -.4F) + i, TWO_PI - .9F - i * .3F,
+                    alpha * (.75F - i * .18F));
+        float stored = Math.clamp(size - 1, 0, 1);
+        corona(c, tip, .12F + .22F * stored, clock, alpha, seed);
+        if (!minimal() && stored > .05F) fork(c, tip, foot.add(cos(clock) * 1.2, 0, sin(clock) * 1.2), .03F, alpha * stored, seed + (int) clock, 1);
+    }
+
+    /** Arc Lattice's anchor: a three-pronged pylon planted on the surface, a spark caught at its tip. */
+    private static void anchor(Canvas c, Vec3 at, float clock, float alpha, int seed) {
+        Vec3 base = at.subtract(0, .45, 0), tip = base.add(0, .78, 0);
+        for (int i = 0; i < 3; i++) {
+            float angle = i * TWO_PI / 3 + hash(seed, i) * .3F;
+            Vec3 foot = base.add(cos(angle) * .32, 0, sin(angle) * .32);
+            if (c.soft()) c.line(foot, tip, .06F, SHADOW, alpha * .8F, alpha * .6F);
+            if (c.glow()) c.line(foot, tip, .018F, ION, alpha * .7F, alpha);
+        }
+        ring(c, base.add(0, .03, 0), UP, .45F, .04F, clock * .6F, TWO_PI - 1.1F, alpha * .7F);
+        corona(c, tip, .1F, clock, alpha, seed);
+    }
+
+    /** Arc Lattice's wire: a taut, slightly sagging line of current with a bead of light running along it. */
+    private static void wire(Canvas c, Vec3 a, Vec3 b, float clock, float alpha, int seed) {
+        Vec3 from = a.add(0, .33, 0), to = b.add(0, .33, 0);
+        double length = from.distanceTo(to);
+        if (length < .1) return;
+        int n = clamp((int) (length * 2), 6, 40);
+        Vec3[] points = new Vec3[n + 1];
+        for (int i = 0; i <= n; i++) {
+            float u = i / (float) n;
+            points[i] = from.lerp(to, u).subtract(0, .05 * length * sin(PI * u), 0);
+        }
+        stroke(c, points, .03F, alpha);
+        if (c.glow()) {
+            float bead = frac(clock * .45F + hash(seed, 1));
+            Vec3 at = points[Math.min(n, (int) (bead * n))];
+            c.glow(at, .3F, ION, alpha * .8F);
+            c.glow(at, .1F, CORE, alpha);
         }
     }
 

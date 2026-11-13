@@ -17,6 +17,7 @@ public final class SkillCatalog {
         public ResourceLocation actionId() { return ResourceLocation.fromNamespaceAndPath("heroesevolved", id); }
         public AbilityAction action() {
             if (style) return com.jayptucker.heroesevolved.styles.StyleSkills.action(this);
+            if (power.equals("vibe")) return com.jayptucker.heroesevolved.vibe.VibeSkills.action(this);
             if (power.equals("flight")) return com.jayptucker.heroesevolved.flight.FlightSkillService.action(this);
             if (power.equals("telekinesis")) return com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.action(this);
             if (power.equals("technopathy")) return SimpleAction.builder(id, level()).cost(() -> energy, () -> cooldown)
@@ -31,9 +32,13 @@ public final class SkillCatalog {
                             : com.jayptucker.heroesevolved.expansion.ExpansionSkills.canUse(c, mechanic))
                     .activate(c -> mechanic.isEmpty() ? SkillActionService.activate(c, branch)
                             : com.jayptucker.heroesevolved.expansion.ExpansionSkills.activate(c, mechanic))
-                    .followUp(c -> power.equals("cryokinesis") && (mechanic.isEmpty()
+                    .followUp(c -> power.equals("cryokinesis") ? (mechanic.isEmpty()
                             ? com.jayptucker.heroesevolved.cryo.CryoCombatSkills.followUp(c, branch)
-                            : com.jayptucker.heroesevolved.cryo.CryoTechniqueService.followUp(c, mechanic))).build();
+                            : com.jayptucker.heroesevolved.cryo.CryoTechniqueService.followUp(c, mechanic))
+                            : power.equals("regeneration") && mechanic.isEmpty()
+                            ? com.jayptucker.heroesevolved.regeneration.RegenSkills.followUp(c, branch)
+                            : power.equals("telepathy") && mechanic.isEmpty()
+                            && com.jayptucker.heroesevolved.telepathy.TelepathySkills.followUp(c, branch)).build();
         }
     }
     private static final Map<String, List<String>> BRANCHES = new HashMap<>();

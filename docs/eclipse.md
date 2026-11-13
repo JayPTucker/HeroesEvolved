@@ -43,19 +43,32 @@ power's owner never rolls again because they already have one. A player who join
 rolls on login. Each Eclipse allows one roll per player, even across reconnects. Each power still
 has exactly one owner. The chosen are told only that "something in your blood answers the dark."
 
-## Adrenaline: when a dormant power wakes
+## Danger: when a dormant power wakes
 
-A dormant power does not wake on its own. It waits for adrenaline: its owner must be **in a
-fight** (hit by, or hitting, a living attacker within the last `awakening.combatWindowSeconds`,
-default 10) **and** below `awakening.healthThreshold` (default 4 health, two hearts).
+A dormant power does not wake on its own. It waits for someone to be in real danger: its owner,
+or an ally near them.
+
+- **The owner:** in a fight (hit by, or hitting, a living attacker within the last
+  `awakening.combatWindowSeconds`, default 10) **and** below `awakening.healthThreshold` (default
+  4 health, two hearts).
+- **An ally:** a friendly player (a teammate, or any player while PvP is off) or the owner's own
+  pet, within the power's reach (48 blocks for Superspeed, 64 for Flight, 16 for Space-Time, 24 for
+  the rest), in a fight and below the same threshold (pets: 40% of their health if that is lower).
+  The nearest one in danger is answered.
+- **Flight needs open sky.** It only wakes when its owner has no solid block overhead (leaves don't
+  count) and the one in danger is out in the open too. Down in a cave, the owner feels it strain toward
+  the sky and nothing happens.
+
+The rest:
 
 - As a fight drags a dormant owner's health down, a heartbeat starts and quickens.
-- A blow in a fight that would take them below the threshold wakes the power before it lands, and
-  is capped so it cannot kill, even through absorption hearts.
-- The awakened owner is shielded until their power's intro takes over, and the intro shields them
-  for its whole length.
-- Every intro release grants a second wind (at least 40% health, Resistance II for six seconds)
-  and then ends the fight its own way. See `power-intros.md`.
+- A blow in a fight that would take the owner or an answered ally below the threshold wakes the
+  power before it lands, and is capped so it cannot kill, even through absorption hearts.
+- The owner and the one in danger (the intro's ward) are shielded until the power's intro takes over,
+  and the intro shields them for its whole length.
+- Every intro release grants the owner and the ward a second wind (at least 40% health, Resistance II
+  for six seconds) and then saves the ward its own way: a speedster runs them out of the fight, a
+  flyer carries them into the sky. See `power-intros.md`.
 - Low health from a fall, starvation or the like is not a fight, and wakes nothing.
 - Nothing wakes during totality.
 

@@ -162,6 +162,7 @@ public final class PossessionService {
     public static void clear() { for(Session s:List.copyOf(SESSIONS.values())) end(s.owner,"The connection ends."); RESISTANT.clear(); }
     public static void end(ServerPlayer owner,String reason) {
         Session s=SESSIONS.remove(owner.getUUID()); if(s==null)return;
+        if(!s.sight && s.active) TelepathySkills.released(owner, s.body);
         if(!s.sight) {
             if(s.body instanceof Mob m) m.setNoAi(s.noAi);
             s.body.setShiftKeyDown(false); s.body.setSprinting(false);

@@ -401,15 +401,17 @@ public final class ElectroService {
     public static boolean ballLightning(ServerPlayer player, int powerLevel) {
         if (!canStartCast(player)) return false;
         boolean over = spendOvercharge(player);
-        Vec3 eye = player.getEyePosition(), palm = handPosition(player);
+        // The orb forms between both cupped palms, in front of the chest.
+        Vec3 eye = player.getEyePosition(), palm = player.position().add(0, player.isCrouching() ? 1.02 : 1.22, 0)
+                .add(player.getLookAngle().scale(.62));
         // A palm pressed into a wall cannot spawn its orb on the far side.
         Vec3 start = visible(player, eye, palm) ? palm : eye;
         Orb orb = new Orb(player.getUUID(), player.serverLevel(), start,
                 player.getLookAngle().normalize().scale(.55), powerLevel, over);
         ORBS.add(orb);
-        show(orb.level, Piece.ELECTRO_DRAW, palm, palm, over ? 1.45 : 1.1, player);
+        show(orb.level, Piece.ELECTRO_DRAW, start, start, over ? 1.45 : 1.1, null);
         show(orb.level, Piece.ELECTRO_ORB, start, start.add(orb.velocity), over ? .68 : .47, null);
-        ArmPosePayload.show(player, ArmPose.ELECTRO_CAST, 12);
+        ArmPosePayload.show(player, ArmPose.ELECTRO_CUP, 16);
         sound(player, SoundEvents.BREEZE_SHOOT, 0.8F, 1.8F);
         sound(player, SoundEvents.BEACON_POWER_SELECT, 0.4F, 2.0F);
         backfireIfWet(player, powerLevel);
@@ -688,6 +690,7 @@ public final class ElectroService {
         for (int i = 1; i < scar.size(); i++)
             show(level, Piece.ELECTRO_SCAR, scar.get(i - 1), scar.get(i), over ? 1.35 : 1, null);
         sound(player, SoundEvents.TRIDENT_RIPTIDE_1.value(), 0.7F, 1.6F);
+        ArmPosePayload.show(player, ArmPose.ELECTRO_RIDE, 12);
         player.teleportTo(end.x, end.y, end.z);
         player.resetFallDistance();
         level.playSound(null, end.x, end.y, end.z, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 0.8F, 1.4F);

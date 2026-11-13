@@ -193,7 +193,12 @@ public final class TelepathyService {
         }
         List<UUID> members = new ArrayList<>();
         members.add(player.getUUID());
-        for (ServerPlayer other : player.serverLevel().players()) {
+        // Aimed at one willing mind (a teammate, or someone crouching to say yes), the link is just the two of you;
+        // otherwise it takes every willing mind nearby, a party.
+        LivingEntity aimed = Targeting.livingEntityInSight(player, 64, t -> t instanceof ServerPlayer);
+        if (aimed instanceof ServerPlayer one && one != player && !one.isSpectator() && (player.isAlliedTo(one) || one.isShiftKeyDown())) {
+            members.add(one.getUUID());
+        } else for (ServerPlayer other : player.serverLevel().players()) {
             if (other != player && !other.isSpectator()
                     && (player.isAlliedTo(other) || other.isShiftKeyDown())
                     && other.distanceToSqr(player) <= 32.0D * 32.0D) {
@@ -202,18 +207,21 @@ public final class TelepathyService {
         }
         if (members.size() < 2) {
             player.displayClientMessage(Component.literal(
-                    "There are no other minds close enough to link with."), true);
+                    "There are no willing minds to link with. A friend can crouch to say yes."), true);
             return false;
         }
 
-        long until = player.serverLevel().getGameTime() + 20L * (30 + 10 * (powerLevel - 3));
+        // Two minutes, three at tier 4, four at tier 5: long enough to talk across the world.
+        long until = player.serverLevel().getGameTime() + 20L * (120 + 60 * Math.max(0, powerLevel - 3));
         LINKS.put(player.getUUID(), new Link(members, until));
         for (UUID memberId : members) {
             ServerPlayer member = player.server.getPlayerList().getPlayer(memberId);
             if (member != null) {
                 member.displayClientMessage(Component.literal(
                         "Your mind is linked with " + (members.size() - 1) + " other"
-                                + (members.size() > 2 ? "s" : "") + ".")
+                                + (members.size() > 2 ? "s" : "") + (member == player
+                                ? ". Talk and they hear you from anywhere; Shift + Mind Link for your inner voice."
+                                : ". Talk and you'll hear each other from anywhere."))
                         .withStyle(ChatFormatting.LIGHT_PURPLE), true);
                 ScreenTintPayload.send(member, TELEPATHY_COLOR_TINT, 20,
                         ScreenTintPayload.Style.VIGNETTE);
@@ -222,6 +230,26 @@ public final class TelepathyService {
         }
         MasteryService.markPowerUse(player, ModAbilities.TELEPATHY_ID);
         return true;
+    }
+
+    /** Every Mind Link's members who are online: each group hears each other's voices from anywhere. */
+    public static List<List<ServerPlayer>> linkGroups(MinecraftServer server) {
+        List<List<ServerPlayer>> groups = new ArrayList<>();
+        for (Link link : LINKS.values()) {
+            List<ServerPlayer> online = new ArrayList<>();
+            for (UUID id : link.members) {
+                ServerPlayer member = server.getPlayerList().getPlayer(id);
+                if (member != null) online.add(member);
+            }
+            if (online.size() > 1) groups.add(online);
+        }
+        return groups;
+    }
+
+    /** Whether the player is in any Mind Link, as its telepath or a member. */
+    public static boolean linked(ServerPlayer player) {
+        for (Link link : LINKS.values()) if (link.members.contains(player.getUUID())) return true;
+        return false;
     }
 
     /** Warn the rest of a linked group when one of them is hurt. */
@@ -351,6 +379,7 @@ public final class TelepathyService {
         TelepathyFocus.forget(player);
         IllusionService.forget(player);
         SuggestionService.forget(player);
+        TelepathySkills.forget(player);
         LINKS.remove(player.getUUID());
         FORGETTING.values().removeIf(s -> s.playerId.equals(player.getUUID()));
         FOLLOWING.values().removeIf(s -> s.playerId.equals(player.getUUID()));
@@ -373,6 +402,7 @@ public final class TelepathyService {
         TelepathyFocus.tick(server);
         IllusionService.tick(server);
         SuggestionService.tick(server);
+        TelepathySkills.tick(server);
         tickNightmares(server, gameTime);
     }
 

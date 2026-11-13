@@ -642,7 +642,11 @@ public final class PyroService {
 
     /** First awakening: the flames escape all at once in a ring of real fire. */
     public static void awaken(ServerPlayer player) {
-        Vec3 center = player.position();
+        awaken(player, player.position());
+    }
+
+    /** The awakening's ring of fire, raised round {@code center}: the owner, or an ally they woke to save. */
+    public static void awaken(ServerPlayer player, Vec3 center) {
         for (LivingEntity target : enemies(player, center, 8)) {
             burn(player, target, 6, 5);
             push(target, target.position().subtract(center).multiply(1, 0, 1).normalize().scale(1.1).add(0, 0.3, 0));

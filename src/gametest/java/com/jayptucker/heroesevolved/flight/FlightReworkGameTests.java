@@ -221,7 +221,7 @@ public final class FlightReworkGameTests {
             for (int i = 0; i < FlightDynamicsService.SKYBURST_FULL_CHARGE_TICKS; i++) FlightDynamicsService.tick(p);
             FlightDynamicsService.releaseSkyburst(p);
             h.assertTrue(p.getDeltaMovement().length() > tapSpeed * 1.4,
-                    "Full charge and Momentum must give a much faster launch");
+                    "Full charge and Momentum must give a much faster launch (tap " + tapSpeed + ")" + why(p));
             h.assertTrue(travelSkyburst(p) > tapRange * 1.7, "A fully powered launch must carry much farther");
 
             p.setPos(start);
@@ -575,5 +575,23 @@ public final class FlightReworkGameTests {
             h.assertTrue(target.getHealth() == target.getMaxHealth(), "Canceling Tempest must never execute its damaging finale");
             h.succeed();
         } finally { target.discard(); forget(p); }
+    }
+
+    /** Why a test flyer can't fly right now: every gate {@code FlightDynamicsService.eligible} reads. */
+    static String why(net.minecraft.server.level.ServerPlayer p) {
+        return " [canAct=" + com.jayptucker.heroesevolved.ability.service.PowerRules.canAct(p)
+                + " preserved=" + com.jayptucker.heroesevolved.expansion.ExpansionSkills.preserved(p)
+                + " frozen=" + com.jayptucker.heroesevolved.cryo.CryoService.isFrozen(p)
+                + " stopped=" + com.jayptucker.heroesevolved.time.TimeStopService.isStopped(p)
+                + " eclipse=" + com.jayptucker.heroesevolved.events.EclipseService.arePowersSuppressed(p)
+                + " intro=" + com.jayptucker.heroesevolved.intro.PowerIntroService.isActive(p)
+                + " suppressor=" + com.jayptucker.heroesevolved.company.SuppressorField.suppresses(p)
+                + " downed=" + com.jayptucker.heroesevolved.regeneration.BodyService.isDowned(p)
+                + " water=" + p.isInWaterOrBubble() + " passenger=" + p.isPassenger()
+                + " authorized=" + com.jayptucker.heroesevolved.flight.FlightService.isFlightAuthorized(p)
+                + " session=" + com.jayptucker.heroesevolved.flight.FlightService.hasActiveSession(p)
+                + " forwardSpeed=" + com.jayptucker.heroesevolved.config.HeroesEvolvedConfig.COMMON.flightForwardSpeed.get()
+                + " momentum=" + FlightDynamicsService.momentum(p) + " speed=" + p.getDeltaMovement().length()
+                + " at=" + p.blockPosition() + "]";
     }
 }

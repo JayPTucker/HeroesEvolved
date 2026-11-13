@@ -34,7 +34,7 @@ public final class IllusionService {
         // Ground placement is bounded and must be visible to the affected mind.
         var hit=v.serverLevel().clip(new net.minecraft.world.level.ClipContext(start.add(0,4,0),start.add(0,-6,0),net.minecraft.world.level.ClipContext.Block.COLLIDER,net.minecraft.world.level.ClipContext.Fluid.NONE,v));
         if(hit.getType()!=HitResult.Type.MISS)start=new Vec3(start.x,hit.getLocation().y,start.z);
-        create(p,v,kind,start,v.position(),160);
+        if(create(p,v,kind,start,v.position(),160))TelepathySkills.wove(p,v);
     }
     public static boolean create(ServerPlayer p,ServerPlayer v,int kind,Vec3 from,Vec3 to,int ticks){
         if(!eligible(p,v)||kind<0||kind>4)return false;
@@ -47,12 +47,19 @@ public final class IllusionService {
     public static void dissolve(ServerPlayer viewer,int id){
         Vision v=VISIONS.get(id);if(v==null||v.viewer!=viewer)return;
         AABB bounds=v.bounds(viewer.serverLevel().getGameTime()).inflate(.35);
-        if(bounds.contains(viewer.getEyePosition()) || bounds.clip(viewer.getEyePosition(),viewer.getEyePosition().add(viewer.getLookAngle().scale(6))).isPresent())remove(v);
+        if(bounds.contains(viewer.getEyePosition()) || bounds.clip(viewer.getEyePosition(),viewer.getEyePosition().add(viewer.getLookAngle().scale(6))).isPresent()){TelepathySkills.fright(v.caster,viewer,v.position(viewer.serverLevel().getGameTime()));remove(v);}
     }
     private static void remove(Vision v){VISIONS.remove(v.id);PacketDistributor.sendToPlayer(v.viewer,new IllusionPayload(v.id,-1,0,v.position(v.viewer.serverLevel().getGameTime()),Vec3.ZERO,0));}
     public static void tick(MinecraftServer server){
         long now=server.overworld().getGameTime();PENDING.entrySet().removeIf(e->e.getValue().until<now);
-        for(Vision v:List.copyOf(VISIONS.values()))if(now-v.start>=v.ticks||!eligible(v.caster,v.viewer)||v.viewer.hasDisconnected()||v.caster.hasDisconnected()||v.bounds(now).intersects(v.viewer.getBoundingBox()))remove(v);
+        for(Vision v:List.copyOf(VISIONS.values())){
+            boolean touched=v.bounds(now).intersects(v.viewer.getBoundingBox());
+            if(now-v.start>=v.ticks||!eligible(v.caster,v.viewer)||v.viewer.hasDisconnected()||v.caster.hasDisconnected()||touched){
+                // Waking Fright: walking into the illusion frightens the mind that made it real.
+                if(touched&&!v.viewer.hasDisconnected())TelepathySkills.fright(v.caster,v.viewer,v.position(now));
+                remove(v);
+            }
+        }
     }
     public static void forget(ServerPlayer p){PENDING.remove(p.getUUID());for(Vision v:List.copyOf(VISIONS.values()))if(v.caster==p||v.viewer==p)remove(v);}
     public static void clear(){for(Vision v:List.copyOf(VISIONS.values()))remove(v);PENDING.clear();}

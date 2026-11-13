@@ -109,7 +109,7 @@ public final class RegenerationService {
     /** Keeps the owner's HUD current: Regrowth, time left on the ground, and giving up. Only sends changes. */
     public static void syncHud(ServerPlayer player, int powerLevel) {
         int downed = BodyService.downedRemaining(player);
-        int recovery = BodyService.recoveryTicks(powerLevel, regrowth(player));
+        int recovery = RegenSkills.recovery(player, BodyService.recoveryTicks(powerLevel, regrowth(player)));
         int giveUp = BodyService.canGiveUp(player) ? BodyService.giveUpProgress(player) : -1;
         int key = java.util.Objects.hash(regrowth(player), downed / 20, recovery / 20, giveUp);
         if (SENT.getOrDefault(player.getUUID(), Integer.MIN_VALUE) == key) return;
@@ -145,6 +145,8 @@ public final class RegenerationService {
      * per 8), and healing past full health stays on as up to four hearts of Absorption.
      */
     public static void rapidMending(ServerPlayer player, int powerLevel) {
+        // The glass comes out first: every arrow and stinger lodged in her is pushed out, and each one feeds Regrowth.
+        int lodged = pullOutLodged(player);
         int spent = spendRegrowth(player, MAX_REGROWTH);
         float heal = 4.0F + 2.0F * powerLevel + spent / 8.0F;
         float overflow = Math.max(0, player.getHealth() + heal - player.getMaxHealth());
@@ -168,11 +170,37 @@ public final class RegenerationService {
         level.playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.BONE_BLOCK_PLACE, SoundSource.PLAYERS, 0.9F, 1.3F);
         ScreenTintPayload.send(player, 0x50A01010, 20, ScreenTintPayload.Style.VIGNETTE);
-        player.displayClientMessage(Component.literal(purged
-                ? "Your body burns the poison away."
+        com.jayptucker.heroesevolved.network.ArmPosePayload.show(player, com.jayptucker.heroesevolved.ability.ArmPose.REGEN_MEND, 14);
+        player.displayClientMessage(Component.literal(lodged > 0
+                ? "You push " + lodged + (lodged == 1 ? " arrow" : " arrows") + " out of the wound and it closes behind them."
+                : purged ? "Your body burns the poison away."
                 : "Your bones click back into place.")
                 .withStyle(ChatFormatting.RED), true);
         MasteryService.markPowerUse(player, ModAbilities.REGENERATION_ID);
+    }
+
+    /** Pushes every lodged arrow and stinger out (arrows drop at her feet). Each gives 4 Regrowth; returns how many. */
+    public static int pullOutLodged(ServerPlayer player) {
+        int arrows = player.getArrowCount(), stingers = player.getStingerCount();
+        if (arrows + stingers == 0) return 0;
+        player.setArrowCount(0);
+        player.setStingerCount(0);
+        ServerLevel level = player.serverLevel();
+        Vec3 wound = player.position().add(0, 1.1, 0);
+        if (arrows > 0) {
+            var item = new net.minecraft.world.entity.item.ItemEntity(level, wound.x, wound.y, wound.z,
+                    new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.ARROW, arrows));
+            item.setDeltaMovement(0, 0.15, 0);
+            item.setPickUpDelay(10);
+            level.addFreshEntity(item);
+        }
+        for (int i = 0; i < Math.min(4, arrows + stingers); i++) {
+            double yaw = i * Math.PI / 2 + player.getRandom().nextDouble();
+            AbilityEffects.send(level, Kind.REGEN_EJECT, wound, wound.add(Math.cos(yaw), 0.2, Math.sin(yaw)), 1.0D);
+        }
+        addRegrowth(player, 4 * (arrows + stingers));
+        level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.CHAIN_PLACE, SoundSource.PLAYERS, 1.0F, 1.6F);
+        return arrows + stingers;
     }
 
     // ------------------------------------------------------------------
@@ -244,6 +272,8 @@ public final class RegenerationService {
                 Kind.REGENERATION,
                 target.position(), target.position(), 1.0D);
 
+        if (!target.isInvertedHealAndHarm()) share(player, target);
+        com.jayptucker.heroesevolved.network.ArmPosePayload.show(player, com.jayptucker.heroesevolved.ability.ArmPose.REGEN_OFFER, 14);
         // Her own cut, never fatal: she will regrow it in seconds, and it feeds her Regrowth.
         player.setHealth(Math.max(1.0F, player.getHealth() - BLOOD_GIFT_SELF_COST));
         addRegrowth(player, 6);
@@ -269,8 +299,9 @@ public final class RegenerationService {
         player.serverLevel().playSound(null, player.getX(), player.getY(),
                 player.getZ(), SoundEvents.ARMOR_EQUIP_NETHERITE.value(),
                 SoundSource.PLAYERS, 1.0F, 0.7F);
+        com.jayptucker.heroesevolved.network.ArmPosePayload.show(player, com.jayptucker.heroesevolved.ability.ArmPose.REGEN_BRACE, 20);
         player.displayClientMessage(Component.literal(
-                "You can't feel pain anymore. Hit as hard as you like."
+                "You can't feel pain anymore. Hit as hard as you like. Press again to jump."
         ).withStyle(ChatFormatting.RED), true);
         MasteryService.markPowerUse(player, ModAbilities.REGENERATION_ID);
     }
@@ -288,7 +319,16 @@ public final class RegenerationService {
      */
     public static float recklessBlow(ServerPlayer player, LivingEntity target, int powerLevel) {
         player.setHealth(Math.max(1.0F, player.getHealth() - 1.0F));
-        addRegrowth(player, 2);
+        boolean abandon = com.jayptucker.heroesevolved.skills.SkillTreeService.has(player, RegenSkills.RECKLESS_ABANDON);
+        addRegrowth(player, abandon ? 4 : 2);
+        if (abandon) {
+            // Reckless Abandon: she doesn't hold back, and the blow throws them.
+            Vec3 away = target.position().subtract(player.position()).multiply(1, 0, 1);
+            if (away.lengthSqr() > 1.0E-4) {
+                target.setDeltaMovement(away.normalize().scale(1.2).add(0, 0.35, 0));
+                target.hurtMarked = true;
+            }
+        }
         AbilityEffects.send(player.serverLevel(), Kind.REGEN_RECKLESS, target.getBoundingBox().getCenter(),
                 player.getEyePosition(), 1.0D);
         player.serverLevel().playSound(null, target.getX(), target.getY(), target.getZ(),
@@ -335,6 +375,7 @@ public final class RegenerationService {
         });
 
         SECOND_LIFE.values().removeIf(until -> gameTime >= until + 20);
+        SHARED.values().removeIf(shared -> gameTime >= shared.until);
         HEALING_AURAS.entrySet().removeIf(entry -> {
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
             if (player == null || gameTime >= entry.getValue().until()) {
@@ -366,6 +407,7 @@ public final class RegenerationService {
         HEALING_AURAS.put(player.getUUID(), new Aura(
                 player.serverLevel().getGameTime() + 20 * 10, powerLevel));
         pulseHealingAura(player, powerLevel);
+        com.jayptucker.heroesevolved.network.ArmPosePayload.show(player, com.jayptucker.heroesevolved.ability.ArmPose.REGEN_EMBRACE, 30);
         player.serverLevel().playSound(null, player.getX(), player.getY(),
                 player.getZ(), SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS,
                 0.9F, 1.4F);
@@ -398,7 +440,50 @@ public final class RegenerationService {
         AbilityEffects.at(player, Kind.HEALING_AURA, AURA_RADIUS);
     }
 
-    private record Aura(long until, int powerLevel) {
+    private static final class Aura {
+        final long until; final int powerLevel;
+        /** How much of her friends' wounds she has taken onto herself during this bond. */
+        float taken;
+        Aura(long until, int powerLevel) { this.until = until; this.powerLevel = powerLevel; }
+        long until() { return until; }
+        int powerLevel() { return powerLevel; }
+    }
+
+    /** Friends Shared Blood bonded through a gift: friend → {Claire's id, until}. */
+    private record Shared(UUID claire, long until) {}
+    private static final Map<UUID, Shared> SHARED = new HashMap<>();
+
+    /** Shared Blood: a friend she has just healed is bonded to her for six seconds, as if by Blood Bond. */
+    static void share(ServerPlayer claire, LivingEntity friend) {
+        if (friend == claire || !com.jayptucker.heroesevolved.skills.SkillTreeService.has(claire, RegenSkills.SHARED_BLOOD)) return;
+        if (!bonded(claire, friend)) return;
+        SHARED.put(friend.getUUID(), new Shared(claire.getUUID(), claire.serverLevel().getGameTime() + 120));
+    }
+
+    /**
+     * Blood Bond's follow-up, Pay It Back: she ends the bond and gives back what she took. Everyone still in it heals by the
+     * wounds she drew onto herself (up to 20 between them), and she gains twice that in Regrowth. Free.
+     */
+    public static boolean payItBack(ServerPlayer claire) {
+        Aura aura = HEALING_AURAS.remove(claire.getUUID());
+        if (aura == null) return false;
+        ServerLevel level = claire.serverLevel();
+        List<LivingEntity> friends = level.getEntitiesOfClass(LivingEntity.class, claire.getBoundingBox().inflate(AURA_RADIUS),
+                e -> e != claire && e.isAlive() && e.distanceToSqr(claire) <= AURA_RADIUS * AURA_RADIUS && bonded(claire, e));
+        float pool = Math.min(20, aura.taken + 2 * aura.powerLevel);
+        if (!friends.isEmpty()) {
+            float each = pool / friends.size();
+            for (LivingEntity friend : friends) {
+                friend.heal(each);
+                AbilityEffects.send(level, Kind.BLOOD_THREAD, claire.position().add(0, 1.1, 0), friend.getBoundingBox().getCenter(), 1.0D);
+            }
+        }
+        addRegrowth(claire, Math.round(aura.taken * 2));
+        RegenSkills.show(level, com.jayptucker.heroesevolved.styles.Piece.REGEN_PAYBACK, claire.position(), claire.position(), AURA_RADIUS, claire);
+        com.jayptucker.heroesevolved.network.ArmPosePayload.show(claire, com.jayptucker.heroesevolved.ability.ArmPose.REGEN_PAYBACK, 14);
+        level.playSound(null, claire.blockPosition(), SoundEvents.WARDEN_HEARTBEAT, SoundSource.PLAYERS, 1.4F, 1.3F);
+        level.playSound(null, claire.blockPosition(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, 1, 0.8F);
+        return true;
     }
 
     /** Is this creature sheltered by someone's Blood Bond? Returns the Claire holding it, or null. */
@@ -409,11 +494,17 @@ public final class RegenerationService {
             if (claire == null || claire == entity || claire.level() != entity.level() || !claire.isAlive()) continue;
             if (entity.distanceToSqr(claire) <= AURA_RADIUS * AURA_RADIUS && bonded(claire, entity)) return claire;
         }
+        // Shared Blood: bonded for a few seconds by a gift, wherever she is.
+        Shared shared = SHARED.get(entity.getUUID());
+        if (shared != null && level.getGameTime() < shared.until) {
+            ServerPlayer claire = level.getServer().getPlayerList().getPlayer(shared.claire);
+            if (claire != null && claire != entity && claire.level() == entity.level() && claire.isAlive()) return claire;
+        }
         return null;
     }
 
     /** A friend: no monster or undead, and a player only if Claire is not fighting them (PvP off, or on her team). */
-    private static boolean bonded(ServerPlayer claire, LivingEntity entity) {
+    static boolean bonded(ServerPlayer claire, LivingEntity entity) {
         if (entity == claire || entity instanceof net.minecraft.world.entity.monster.Enemy || entity.isInvertedHealAndHarm()) return false;
         return !(entity instanceof ServerPlayer other) || claire.isAlliedTo(other)
                 || !com.jayptucker.heroesevolved.expansion.ExpansionSkills.hostile(claire, other);
@@ -427,6 +518,9 @@ public final class RegenerationService {
         } finally {
             sharing--;
         }
+        Aura aura = HEALING_AURAS.get(claire.getUUID());
+        if (aura != null) aura.taken += share;
+        scar(claire, share);
         MasteryService.awardRescue(claire, Math.min(4, Math.round(share)));
         AbilityEffects.send(claire.serverLevel(), Kind.REGEN_BOND, friend.getBoundingBox().getCenter(),
                 claire.position().add(0, 1.1, 0), 1.0D);
@@ -458,6 +552,8 @@ public final class RegenerationService {
         purgeToxins(target);
         SECOND_LIFE.put(target.getUUID(), player.serverLevel().getGameTime() + SECOND_LIFE_TICKS);
         player.setHealth(Math.max(1.0F, player.getHealth() - 6.0F));
+        share(player, target);
+        com.jayptucker.heroesevolved.network.ArmPosePayload.show(player, com.jayptucker.heroesevolved.ability.ArmPose.REGEN_INJECT, 14);
         ServerLevel level = player.serverLevel();
         AbilityEffects.send(level, Kind.BLOOD_THREAD, player.position().add(0, 1.1, 0), target.getBoundingBox().getCenter(), 1.4D);
         AbilityEffects.send(level, Kind.REGEN_SECOND_LIFE, target.position(), target.position().add(0, 1, 0), target.getBbHeight());
@@ -470,6 +566,12 @@ public final class RegenerationService {
         MasteryService.markPowerUse(player, ModAbilities.REGENERATION_ID);
         MasteryService.awardRescue(player, 20);
         return true;
+    }
+
+    /** Scar Tissue: a wound she takes for someone else feeds twice the Regrowth (the second half added here). */
+    public static void scar(ServerPlayer claire, float taken) {
+        if (taken > 0 && com.jayptucker.heroesevolved.skills.SkillTreeService.has(claire, RegenSkills.SCAR_TISSUE))
+            addRegrowth(claire, Math.max(1, Math.round(taken * 2)));
     }
 
     public static boolean hasSecondLife(LivingEntity entity) {
@@ -508,6 +610,7 @@ public final class RegenerationService {
     }
 
     public static void forget(ServerPlayer player) {
+        RegenSkills.forget(player);
         INDESTRUCTIBLE_UNTIL.remove(player.getUUID());
         HEALING_AURAS.remove(player.getUUID());
         REGROWTH.remove(player.getUUID());
@@ -515,7 +618,7 @@ public final class RegenerationService {
     }
 
     public static void clear() {
-        INDESTRUCTIBLE_UNTIL.clear(); HEALING_AURAS.clear(); REGROWTH.clear(); SENT.clear(); SECOND_LIFE.clear();
+        INDESTRUCTIBLE_UNTIL.clear(); HEALING_AURAS.clear(); REGROWTH.clear(); SENT.clear(); SECOND_LIFE.clear(); SHARED.clear();
     }
 
     private static boolean purgeToxins(LivingEntity entity) {

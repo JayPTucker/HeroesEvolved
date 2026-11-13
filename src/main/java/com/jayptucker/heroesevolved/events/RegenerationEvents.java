@@ -153,7 +153,11 @@ public final class RegenerationEvents {
 
     @SubscribeEvent
     public static void onFall(LivingFallEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player
+        if (event.getEntity() instanceof ServerPlayer player && com.jayptucker.heroesevolved.regeneration.RegenSkills.falling(player)) {
+            // Freefall: she comes down on whatever is below, and feels nothing.
+            com.jayptucker.heroesevolved.regeneration.RegenSkills.land(player, event.getDistance());
+            event.setDamageMultiplier(0.0F);
+        } else if (event.getEntity() instanceof ServerPlayer player
                 && RegenerationService.isIndestructible(player)) {
             event.setDamageMultiplier(0.0F);
         } else if (event.getEntity() instanceof ServerPlayer player && hasAwakenedRegeneration(player)

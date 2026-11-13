@@ -443,7 +443,8 @@ public final class ElleGameTests {
                 }));
     }
 
-    @GameTest(template = "rewind_empty", batch = "elle.conduit", timeoutTicks = 120)
+    // The pocket arena's freshly forced chunks can take several seconds to start ticking while the rest of the suite runs.
+    @GameTest(template = "rewind_empty", batch = "elle.conduit", timeoutTicks = 400)
     public static void conduitSurgesHurtOnTheStripButNotOnRubber(GameTestHelper helper) {
         reset(helper);
         ServerPlayer player = player(helper, ModAbilities.QUAKE_ID, new BlockPos(6, 2, 6), "elle-conduit");
