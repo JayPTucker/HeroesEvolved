@@ -99,7 +99,6 @@ public final class AbilitySlotHudOverlay {
         }
 
         y = drawRadiationCore(guiGraphics, y);
-        y = drawClarity(guiGraphics, y);
         y = drawResonance(guiGraphics, y);
         y = drawMomentum(guiGraphics, y);
         y = drawDensity(guiGraphics, y);
@@ -182,22 +181,6 @@ public final class AbilitySlotHudOverlay {
         return key >= 1 && key <= ModKeyMappings.ABILITY_KEYS.length
                 ? ModKeyMappings.ABILITY_KEYS[key - 1].getTranslatedKeyMessage().getString()
                 : Component.translatable("hud.heroesevolved.wheel_short").getString();
-    }
-
-    /** Isaac Mendez's Clarity: earned each time a foreseen harm misses, spent on painting and The Future Is Written. */
-    private static int drawClarity(GuiGraphics guiGraphics, int y) {
-        var mc = Minecraft.getInstance();
-        boolean seer = ClientPowerState.getSnapshot().abilities().stream().anyMatch(power -> power.unlocked()
-                && power.abilityId().equals(ModAbilities.PRECOGNITION_ID));
-        if (mc.player == null || !seer) return y;
-        int clarity = com.jayptucker.heroesevolved.network.ClientClarity.get();
-        int color = clarity >= 100 ? 0xFFFFF4E0 : 0xFFF7D88D;
-        guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.clarity", clarity), START_X, y, color, true);
-        guiGraphics.fill(START_X, y + 10, START_X + 100, y + 13, 0x80403418);
-        guiGraphics.fill(START_X, y + 10, START_X + clarity, y + 13, color);
-        // The notch marks the most a painted ending can spend.
-        guiGraphics.fill(START_X + 50, y + 9, START_X + 51, y + 14, 0xC0FFFFFF);
-        return y + LINE_HEIGHT + 6;
     }
 
     /** Superspeed's Momentum, with notches where the body crackles, you buffet, and the sound barrier breaks. */

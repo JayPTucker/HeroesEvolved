@@ -31,7 +31,6 @@ public final class EvolutionTrials {
             Map.entry("electrokinesis", new Trial("Unleash 25 Overcharged powers", 25)),
             Map.entry("superspeed", new Trial("Run 20 km (20,000 blocks) with Accelerate", 20000)),
             Map.entry("sonic_resonance", new Trial("Catch 40 enemies in the burst of a Resonant Note", 40)),
-            Map.entry("precognition", new Trial("Change the future 50 times: let foreseen harm miss you or a friend", 50)),
             Map.entry("phasing", new Trial("Travel 2,000 blocks through solid matter", 2000)),
             Map.entry("quake", new Trial("Push through it: land 40 quake hits while at 80 Strain or more", 40)),
             Map.entry("technopathy", new Trial("Intercept 40 hostile projectiles with your network", 40)),

@@ -64,7 +64,7 @@ public final class AbilityEffectRenderer {
                 || CryoEffects.play(level, effect.kind(), origin, target, size, detail)
                 || PyroEffects.play(level, effect.kind(), origin, target, size, detail)
                 || ElectroEffects.play(level, effect.kind(), origin, target, size, detail)
-                || PrecogEffects.play(level, effect.kind(), origin, target, size, detail)
+                || WardThreadEffects.play(level, effect.kind(), origin, target)
                 || SonicEffects.play(level, effect.kind(), origin, target, size, detail)
                 || SpeedEffects.play(level, effect.kind(), origin, target, size, detail)
                 || DensityEffects.play(level, effect.kind(), origin, target, size, detail)

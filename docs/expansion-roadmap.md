@@ -62,13 +62,11 @@ Each combination needs a visual cue, a short lifetime, an owner, and a counter. 
 
 ## New powers worth adding
 
-### Precognition: Oracle / Painter / Fatekeeper
+### Precognition (removed)
 
-Make this the next major power. A trance creates a physical painting showing a planned possible event in a recognizable location, including clues to a target, route, or cause. Paintings belong on walls and in an investigation journal. A small scene renderer with a painted treatment can produce images from authored or selected event compositions once per vision; this does not require recording or rendering the entire world continuously.
-
-Combat foresight reads existing attack intent and projectile paths. Story foresight uses events the director has actually selected. A vision should identify its uncertainty: preventing one cause may change the painting or reveal a second possible outcome. Players' arbitrary future decisions cannot be known in advance.
-
-The awakening could produce a painting of the group with Sylar watching from a rooftop and one person's face obscured. Completing the related investigation reveals why that person was missing. The existing cartographer memory is a natural introduction.
+Precognition was built (Danger Sense, Clarity, painted endings, Fate Thread) and then removed in November 2026: almost every
+move answered harm that was already coming, so it had little to do between fights. Isaac Mendez's paintings remain in the
+story. A future seer should act on what it foresees rather than only avoid it.
 
 ### Technopathy: Signal / Infiltration / Machine Bond
 
@@ -86,7 +84,7 @@ Copy an observed outward appearance and use it to enter an NPC-controlled locati
 
 Reshape a limited volume of ordinary material into a ramp, brace, cover, or repair patch. Pull the actual inputs from reachable blocks or supplied material; track what was used. Smoothly moving a few visual proxies is preferable to dozens of full simulated block entities. Reshaping never creates free valuable resources. It provides a rebuilding and infiltration role that Quake's destruction currently lacks.
 
-Add these in batches of one or two, each with meaningful missions and interactions. Precognition and Technopathy supply the strongest next pair because they expand investigation and facilities as well as combat.
+Add these in batches of one or two, each with meaningful missions and interactions. Technopathy supplies the strongest next addition because they expand investigation and facilities as well as combat.
 
 ## The flagship campaign: A Future Unwritten
 
@@ -113,7 +111,7 @@ Unpowered players need consequential roles: operate containment rigs, manage eva
 
 1. **Flexible skills and shared reactions.** Replace the strict three-by-three assumptions in `SkillCatalog` and `SkillTreeScreen`, positional node IDs, and branch-number dispatch in `SkillActionService`. Use stable named IDs, explicit prerequisites and effect identifiers, scrolling/panning, and a migration that preserves existing purchases or refunds replaced nodes. Keep server-side purchase/loadout validation.
 2. **A small vertical slice.** Rework Quake, Cryokinesis, and Electrokinesis around distinct branches and three tested material interactions. Ship one rescue/infiltration mission demonstrating precision, teamwork, and alternate routes. Playtest this before expanding every tree.
-3. **Persistent story planning and Precognition.** Introduce shared incident records, planned causes, evidence, participants, outcomes, and recovery after restart. Connect the existing future memories, time milestones, journal, and Sylar knowledge. Predictions read incident records; they do not invent unrelated warnings.
+3. **Persistent story planning.** Introduce shared incident records, planned causes, evidence, participants, outcomes, and recovery after restart. Connect the existing future memories, time milestones, journal, and Sylar knowledge. Predictions read incident records; they do not invent unrelated warnings.
 4. **Technopathy and the facility campaign.** Add the first actual mission devices, infiltration spaces, survivors, and a branching route to the city finale. Add the remaining powers after their supporting interactions exist.
 5. **Expand the full roster.** Apply lessons from the first trees, then add settlement reactions, follow-up incidents, and new mission variations.
 

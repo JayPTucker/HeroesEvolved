@@ -1,6 +1,6 @@
 # A Future Unwritten
 
-This expansion introduced Precognition, deeper Quake, Cryokinesis and Electrokinesis trees, shared power reactions, and the original Hourglass Annex rescue. [The Last Signal](the-past.md) is the current campaign. The skill techniques and reactions below are still playable.
+This expansion introduced deeper Quake, Cryokinesis and Electrokinesis trees, shared power reactions, and the original Hourglass Annex rescue. [The Last Signal](the-past.md) is the current campaign. The skill techniques and reactions below are still playable.
 
 ## Build choices and progression
 
@@ -38,9 +38,9 @@ Discovering each shared reaction for the first time grants two training points t
 
 Reactions have target limits and a short recovery interval. Secondary reaction hits cannot trigger another reaction recursively. Ordinary PvP, team, and cover rules still apply to the damaging searches.
 
-## Precognition and the paintings
+## The paintings
 
-See the [current Precognition guide](precognition.md) for its kit, training and shareable canvas. The artwork for the original Annex vision now also depicts the sleepers and hot copper relay of The Last Signal. Copies of the current painting share an identity and update when the sleepers are safe. Older *Unfinished Hour* canvases keep their own map identity. Artwork sources and provenance are in the [artwork notes](artwork/README.md).
+Precognition, the power that painted these canvases, was removed from the game in November 2026. The bunker's receiver now hands over The Last Signal canvas the first time it records the call. The artwork for the original Annex vision now also depicts the sleepers and hot copper relay of The Last Signal. Copies of the current painting share an identity and update when the sleepers are safe. Older *Unfinished Hour* canvases keep their own map identity. Artwork sources and provenance are in the [artwork notes](artwork/README.md).
 
 ## Verification
 

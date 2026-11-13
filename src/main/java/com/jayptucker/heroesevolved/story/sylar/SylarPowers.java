@@ -26,8 +26,8 @@ import java.util.Set;
 /**
  * Everything Sylar can do with what he has taken, as real moves: each has a windup the player can
  * read (a pose, a telegraph, a sound), then does what the power does, in its own colours. Telekinesis
- * is his own gift and always available. Passive gifts (Precognition's sidestep, Regeneration's second
- * life, Mimicry's borrowing) live on {@link SylarEntity}.
+ * is his own gift and always available. Passive gifts (Regeneration's second life,
+ * Mimicry's borrowing) live on {@link SylarEntity}.
  */
 public final class SylarPowers {
     /** How he holds himself while winding a move up: drawn by the renderer. */

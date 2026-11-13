@@ -29,6 +29,7 @@
     "SeveredHandItemMixin",
     "EclipseSkyMixin",
     "TornadoCameraMixin",
+    "CarriedCameraMixin",
     "UnseenObjectMixin",
     "CryoConstructClientMixin"
   ],

@@ -12,12 +12,8 @@ import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 import com.jayptucker.heroesevolved.network.ScreenTintPayload;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
 import com.jayptucker.heroesevolved.radiation.RadiationService;
-import com.jayptucker.heroesevolved.registry.ModBlocks;
 import com.jayptucker.heroesevolved.skills.SkillTreeService;
 import com.jayptucker.heroesevolved.speed.SpeedService;
-import net.minecraft.ChatFormatting;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.MinecraftServer;
@@ -26,7 +22,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.DamageTypeTags;
-import net.minecraft.tags.StructureTags;
 import net.minecraft.world.Container;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -70,9 +65,6 @@ public final class AdvancedTechniques {
     /** Perception: the world around a runner moves at a fraction of its speed. */
     private record Perception(ServerPlayer owner, long until, double radius, int interval) {}
     private static final Map<UUID, Perception> PERCEPTION = new HashMap<>();
-    private static final Map<UUID, Integer> DODGES = new HashMap<>();
-    private static final Map<UUID, Long> DODGE_UNTIL = new HashMap<>();
-    private static final Map<UUID, Long> OMENS = new HashMap<>();
     private static final Map<UUID, Long> COOLDOWNS = new HashMap<>();
     private static int sharing;
 
@@ -215,49 +207,6 @@ public final class AdvancedTechniques {
                 level.playSound(null, p.blockPosition(), SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 0.8F, 1.4F);
             }
             case "perception" -> startPerception(p);
-            // ---------------- Precognition ----------------
-            case "foresight" -> {
-                DODGES.put(p.getUUID(), has(p, "precognition_clear_sight") ? 5 : 3);
-                DODGE_UNTIL.put(p.getUUID(), now + 200);
-                if (has(p, "precognition_fatekeeper")) for (ServerPlayer ally : allies(p, 8)) if (ally != p) {
-                    DODGES.put(ally.getUUID(), Math.max(1, DODGES.getOrDefault(ally.getUUID(), 0)));
-                    DODGE_UNTIL.put(ally.getUUID(), now + 200);
-                }
-                AbilityEffects.send(level, Kind.PROPHECY_THREAD, p.position(), p.getEyePosition(), 2);
-            }
-            case "find_the_path" -> {
-                int radius = has(p, "precognition_far_sight") ? 64 : 32;
-                BlockPos origin = p.blockPosition(), found = null;
-                double best = Double.MAX_VALUE;
-                int checked = 0;
-                for (BlockPos pos : BlockPos.withinManhattan(origin, radius, Math.min(radius, 48), radius)) {
-                    if (++checked > 400_000) break;
-                    var state = level.getBlockState(pos);
-                    if (state.is(ModBlocks.HELIXITE_ORE.get()) || state.is(ModBlocks.DEEPSLATE_HELIXITE_ORE.get())) {
-                        double d = pos.distSqr(origin);
-                        if (d < best) { best = d; found = pos.immutable(); }
-                        break;
-                    }
-                }
-                if (found != null) {
-                    Vec3 to = Vec3.atCenterOf(found), from = p.getEyePosition(), step = to.subtract(from).normalize();
-                    for (int i = 1; i <= 12; i++) {
-                        Vec3 point = from.add(step.scale(i * 1.5));
-                        level.sendParticles(p, ParticleTypes.END_ROD, true, point.x, point.y, point.z, 1, 0, 0, 0, 0);
-                    }
-                    p.displayClientMessage(Component.translatable("technique.heroesevolved.find_the_path.helixite", (int) Math.sqrt(best)), true);
-                } else p.displayClientMessage(Component.translatable("technique.heroesevolved.find_the_path.none"), true);
-                if (has(p, "precognition_the_painter")) {
-                    BlockPos village = level.findNearestMapStructure(StructureTags.VILLAGE, origin, 64, false);
-                    if (village != null) p.sendSystemMessage(Component.translatable("technique.heroesevolved.find_the_path.village",
-                            village.getX(), village.getZ()).withStyle(ChatFormatting.GOLD));
-                }
-            }
-            case "shared_omen" -> {
-                long until = now + (has(p, "precognition_long_omen") ? 240 : 160);
-                for (ServerPlayer ally : allies(p, 24)) OMENS.put(ally.getUUID(), until);
-                AbilityEffects.send(level, Kind.PROPHECY_THREAD, p.position(), p.getEyePosition(), 4);
-            }
             default -> { return false; }
         }
         return true;
@@ -375,9 +324,6 @@ public final class AdvancedTechniques {
 
         ADAPTING.values().removeIf(until -> until <= now);
         ADAPTED_TO.keySet().removeIf(id -> !ADAPTING.containsKey(id));
-        DODGE_UNTIL.values().removeIf(until -> until <= now);
-        DODGES.keySet().removeIf(id -> !DODGE_UNTIL.containsKey(id));
-        OMENS.values().removeIf(until -> until <= now);
         COOLDOWNS.values().removeIf(until -> until <= now);
 
         // Superspeed: mirages hold attention, perception slows (or stops) what flies at you.
@@ -422,28 +368,12 @@ public final class AdvancedTechniques {
             event.setCanceled(true);
             return;
         }
-        // Shared Omen: the moment something chooses you, you brace.
-        if (target instanceof ServerPlayer player && OMENS.containsKey(player.getUUID()) && cooldown(player.getUUID(), "omen", now(player), 40)) {
-            player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 60, 0));
-            var owner = player.getServer().getPlayerList().getPlayers().stream().filter(p -> has(p, "precognition_isaacs_gift")).findAny();
-            if (owner.isPresent()) player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 100, 0));
-        }
     }
 
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void damage(LivingIncomingDamageEvent event) {
         LivingEntity victim = event.getEntity();
         long now = victim.getServer() == null ? 0 : now(victim.getServer());
-
-        // Foresight: dodge a blow you saw coming.
-        Integer dodges = DODGES.get(victim.getUUID());
-        if (dodges != null && dodges > 0 && event.getSource().getEntity() != null) {
-            if (dodges == 1) DODGES.remove(victim.getUUID()); else DODGES.put(victim.getUUID(), dodges - 1);
-            event.setCanceled(true);
-            if (victim.level() instanceof ServerLevel level)
-                level.sendParticles(ParticleTypes.END_ROD, victim.getX(), victim.getY() + 1, victim.getZ(), 6, .3, .5, .3, .02);
-            return;
-        }
 
         if (victim instanceof ServerPlayer player) {
             // Adaptation: the same harm twice is less harm.
@@ -492,7 +422,7 @@ public final class AdvancedTechniques {
 
     @SubscribeEvent public static void stopping(ServerStoppingEvent event) {
         ZONES.clear(); ADAPTING.clear(); ADAPTED_TO.clear();
-        MIRAGES.clear(); PERCEPTION.clear(); DODGES.clear(); DODGE_UNTIL.clear(); OMENS.clear();
+        MIRAGES.clear(); PERCEPTION.clear();
         COOLDOWNS.clear(); sharing = 0;
     }
 }

@@ -5,6 +5,7 @@ import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
 import com.jayptucker.heroesevolved.skills.SkillCatalog;
 import com.jayptucker.heroesevolved.skills.SkillTreeService;
+import com.jayptucker.heroesevolved.weapons.PowerWeapons;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
@@ -46,7 +47,7 @@ public final class StyleRuntime {
     private static final List<Cast> CASTS = new ArrayList<>();
 
     /** Protections and tricks attached to one entity, for a while. */
-    public enum Ward { TIME_LOOP, EMBER, FARADAY, UNDYING, BLUR, BRANCH, PROPHECY, PHASE_FIELD, EMPATHY, HIVE, BLIND, LATTICE }
+    public enum Ward { TIME_LOOP, EMBER, FARADAY, UNDYING, BLUR, REFRACTION, PHASE_FIELD, EMPATHY, HIVE, BLIND, LATTICE }
 
     public static final class WardState {
         public long until;
@@ -183,6 +184,12 @@ public final class StyleRuntime {
         LivingEntity attacker = source.getEntity() instanceof LivingEntity living ? living : null;
         boolean melee = attacker != null && source.getDirectEntity() == attacker && attacker.distanceToSqr(victim) < 25;
         boolean projectile = source.getDirectEntity() instanceof Projectile;
+        // Refraction Cloak: light bends round the body, and so does every shot aimed at it (TaCZ rounds included).
+        if (active(victim, Ward.REFRACTION) && (projectile || PowerWeapons.isBullet(source.getDirectEntity()))) {
+            event.setCanceled(true);
+            refract(victim, source.getDirectEntity());
+            return;
+        }
         if (active(victim, Ward.PHASE_FIELD)) {
             if (projectile) { event.setCanceled(true); return; }
             event.setAmount(event.getAmount() * 0.8F);
@@ -202,13 +209,6 @@ public final class StyleRuntime {
             victim.level().playSound(null, victim.blockPosition(), net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_RESONATE,
                     net.minecraft.sounds.SoundSource.PLAYERS, 0.8F, 1.4F);
             if (empathy.charges <= 0) unward(victim, Ward.EMPATHY);
-            return;
-        }
-        WardState branch = state(victim, Ward.BRANCH);
-        if (branch != null && victim instanceof ServerPlayer p) {
-            unward(victim, Ward.BRANCH);
-            event.setCanceled(true);
-            StyleOps.stepAside(p, attacker);
             return;
         }
         if (melee) {
@@ -255,14 +255,6 @@ public final class StyleRuntime {
             return;
         }
         if (active(victim, Ward.UNDYING)) { event.setNewDamage(Math.max(0, health - 1)); return; }
-        WardState prophecy = state(victim, Ward.PROPHECY);
-        if (prophecy != null) {
-            unward(victim, Ward.PROPHECY);
-            event.setNewDamage(Math.max(0, health - 1));
-            victim.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 40, 2));
-            victim.level().playSound(null, victim.blockPosition(), net.minecraft.sounds.SoundEvents.TOTEM_USE,
-                    net.minecraft.sounds.SoundSource.PLAYERS, 0.5F, 1.6F);
-        }
     }
 
     /** Blind Spot: no mind near them can find them again for a while. */
@@ -271,6 +263,25 @@ public final class StyleRuntime {
     }
 
     private static boolean active(LivingEntity entity, Ward ward) { return state(entity, ward) != null; }
+
+    /** True while a Refraction Cloak bends shots round this body. */
+    public static boolean refracting(LivingEntity entity) { return active(entity, Ward.REFRACTION); }
+
+    /** A shot slides off the cloak: it is turned aside where it struck, with a glassy ring. */
+    public static void refract(LivingEntity victim, net.minecraft.world.entity.Entity shot) {
+        if (!(victim.level() instanceof net.minecraft.server.level.ServerLevel level)) return;
+        Vec3 at = shot == null ? victim.getEyePosition() : shot.position();
+        if (shot != null) {
+            Vec3 v = shot.getDeltaMovement();
+            // Turned 60 degrees round the vertical, the way the cloak's own bending turns shots further out.
+            StyleOps.push(shot, new Vec3(v.x * 0.5 - v.z * 0.87, v.y, v.x * 0.87 + v.z * 0.5));
+            if (PowerWeapons.isBullet(shot)) shot.discard();
+        }
+        com.jayptucker.heroesevolved.effects.AbilityEffects.send(level,
+                com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind.OPTIC_BURST, at, at, 0.6);
+        level.playSound(null, victim.blockPosition(), net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_HIT,
+                net.minecraft.sounds.SoundSource.PLAYERS, 0.8F, 1.7F);
+    }
 
     private static WardState state(LivingEntity entity, Ward ward) {
         var wards = WARDS.get(entity.getUUID());

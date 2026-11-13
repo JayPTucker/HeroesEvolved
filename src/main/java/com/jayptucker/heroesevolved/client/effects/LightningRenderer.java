@@ -53,6 +53,16 @@ public final class LightningRenderer {
     }
 
     /** A four-pointed glint: crossed thin ribbons, for the bright point where current lands or leaves. */
+    /** Points round a circle at {@code center} in the plane of {@code a} and {@code b} (closed: the last equals the first). */
+    static List<Vec3> circle(Vec3 center, Vec3 a, Vec3 b, double radius, int points) {
+        List<Vec3> out = new ArrayList<>(points + 1);
+        for (int i = 0; i <= points; i++) {
+            double angle = i * Math.PI * 2 / points;
+            out.add(center.add(a.scale(Math.cos(angle) * radius)).add(b.scale(Math.sin(angle) * radius)));
+        }
+        return out;
+    }
+
     static void star(Vec3 center, float size, int color, float alpha, int life, int delay) {
         for (int i = 0; i < 3; i++) {
             double angle = i * Math.PI / 3;

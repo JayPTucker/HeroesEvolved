@@ -185,7 +185,7 @@ public final class SylarStoryService {
     }
 
     private static final Set<String> OPENERS = Set.of("quake", "flight", "cryokinesis", "electrokinesis", "telekinesis", "telepathy",
-            "regeneration", "time_manipulation", "radiation", "sonic_resonance", "superspeed", "precognition", "pyrokinesis",
+            "regeneration", "time_manipulation", "radiation", "sonic_resonance", "superspeed", "pyrokinesis",
             "invisibility", "phasing", "empathic_mimicry");
     /** Admin preview uses the same loaded, collision-safe spawn rules and singleton as natural encounters. */
     public static boolean start(ServerPlayer player, boolean ambush) { return start(player, ambush, false); }

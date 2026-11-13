@@ -58,22 +58,6 @@ final class WardRelease {
         List<LivingEntity> threats = Danger.threats(owner, ward, 12);
         AbilityEffects.send(level, Kind.PROPHECY_THREAD, owner.getEyePosition(), ward.getEyePosition(), 1.5);
         switch (power) {
-            case "precognition" -> {
-                // Every blow about to land on them was seen coming: they step out of it, and it misses.
-                for (LivingEntity threat : threats) {
-                    lose(threat);
-                    threat.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 2));
-                    threat.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100, 1));
-                    PrivateGlow.glow(owner, threat, 160);
-                    AbilityEffects.send(level, Kind.PRECOG_CROSS, threat.position(), threat.position(),
-                            Math.max(1, threat.getBbHeight()));
-                    shove(threat, ward.position(), 0.6, 0.25);
-                }
-                LivingEntity nearest = threats.stream().min(java.util.Comparator.comparingDouble(ward::distanceToSqr)).orElse(null);
-                if (nearest != null) shove(ward, nearest.position(), 0.7, 0.2);
-                AbilityEffects.send(level, Kind.PRECOG_RING, ward.position(), ward.getEyePosition(), 6);
-                sound(level, ward, SoundEvents.BELL_RESONATE, 1.4F, 0.8F);
-            }
             case "invisibility" -> {
                 // The ward fades with them; whatever was fighting them has nothing to aim at.
                 if (ward instanceof ServerPlayer friend) {

@@ -1,6 +1,6 @@
 # First-acquisition power intros
 
-All nineteen powers have a distinct animated introduction when first unlocked.
+All eighteen powers have a distinct animated introduction when first unlocked.
 Grants, admin replacements, the Formula and natural dormant awakenings use the
 same acquisition hook. Assigning a dormant power alone does not run an intro.
 Existing unlocked non-time powers do not suddenly fire destructive intros on login.
@@ -52,7 +52,6 @@ across to an ally ward (`intro/WardRelease`):
 
 | Power | What it does for an ally |
 | --- | --- |
-| Precognition | Their attackers lose them, are slowed and weakened, and stumble back; the ward sidesteps the nearest blow. |
 | Invisibility | The ward fades for five seconds; everything attacking them loses them. |
 | Phasing | The ward goes thin for five seconds (no harm reaches them) and the ripple shoves attackers away. |
 | Empathic Mimicry | Their attackers are drained (Weakness II) and the strength flows into the ward (Strength, Regeneration II). |
@@ -73,7 +72,6 @@ across to an ally ward (`intro/WardRelease`):
 
 | Power | Charge | Release |
 | --- | --- | --- |
-| Precognition | Two and a half seconds of gold rings at the owner's feet while every nearby threat glows, with a gold ghost of where it is about to lunge. | A red ring of foresight. Threats within twelve blocks lose their target, stumble back, and are slowed and weakened; the first painting and a free Premonition follow. |
 | Superspeed | Under a second of golden sparks while every threat slows to a crawl. | The rescue run above: out of any cave and far across the surface, carrying the ward. |
 | Invisibility | Two seconds of the owner's outline dissolving into violet and silver strips. | A shattering optic burst. The owner fades for five seconds, every threat targeting them loses them, and they get a burst of speed to slip away. |
 | Phasing | Two seconds of ghostly strands as the floor turns thin. | Concentric density ripples. Five seconds of full intangibility, and the ripple shoves threats away. |

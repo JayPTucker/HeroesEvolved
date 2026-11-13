@@ -255,7 +255,8 @@ public final class AdminService {
         }
 
         String name = target.getName().getString();
-        if (!PlayerAbilityService.availableTo(target, powerId)) return "That unique power already belongs to another player.";
+        String holder = PlayerAbilityService.adminFree(target, powerId);
+        if (holder != null) return "Only one player can have " + powerId.getPath() + ", and " + holder + " still has it. Remove it from them first.";
         return PlayerAbilityService.replaceWithAbility(target, powerId)
                 ? "Gave " + name + " " + powerId.getPath() + " (awakened)."
                 : name + " already has that power awakened.";

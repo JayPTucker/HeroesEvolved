@@ -10,9 +10,17 @@ has never seen this introduction gets it on their next login. The seen flag
 survives logout, death, and power replacement.
 
 At acquisition, the server captures other players in the same dimension whose
-feet are within a spherical ten-block radius (inclusive). The group travels to
-`heroesevolved:time_fracture`. Each visitor keeps their own saved dimension,
-position, yaw, and pitch for the return. Companions without Time Manipulation
+feet are within a spherical ten-block radius (inclusive). Then the new traveller
+**gathers everyone else online** (`time/intro/TimeGather`): every second and a
+half they fold space to the next player, nearest first and one world at a time,
+with a blink and a resonating chime at both ends and a violet flash for whoever is
+taken. Everyone already gathered folds along, and the newcomer is taken by the
+wrist. Players in story dimensions, arenas, a vision or an avenue run are left
+where they are. When nobody is left, the whole group travels to
+`heroesevolved:time_fracture`. If the traveller leaves or dies mid-gather, everyone
+taken goes back where they were. Each visitor keeps their own saved dimension,
+position, yaw, and pitch for the return: for a gathered player, the place they
+were taken from. Companions without Time Manipulation
 remain eligible for their own introduction if they later acquire the power.
 
 ## The vision

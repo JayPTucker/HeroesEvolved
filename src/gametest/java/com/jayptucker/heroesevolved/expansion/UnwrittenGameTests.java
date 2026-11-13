@@ -8,7 +8,6 @@ import com.jayptucker.heroesevolved.ability.data.PlayerAbilityData;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
-import com.jayptucker.heroesevolved.precog.PrecognitionService;
 import com.jayptucker.heroesevolved.skills.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.*;
@@ -49,7 +48,7 @@ public final class UnwrittenGameTests {
         t.getAttribute(Attributes.MAX_HEALTH).setBaseValue(100); t.setHealth(100); h.getLevel().addFreshEntity(t); return t;
     }
     private static AbilityUseContext context(ServerPlayer p, String power) { return new AbilityUseContext(p, ResourceLocation.fromNamespaceAndPath("heroesevolved", power), 5, false); }
-    private static void clear(ServerPlayer p) { ExpansionSkills.forget(p); PrecognitionService.forget(p); com.jayptucker.heroesevolved.cryo.CryoService.releaseEntity(p); }
+    private static void clear(ServerPlayer p) { ExpansionSkills.forget(p); com.jayptucker.heroesevolved.cryo.CryoService.releaseEntity(p); }
     @GameTest(template="rewind_empty", batch="unwritten.migration")
     public static void legacySavesRetainPurchasesAndNewTrainingDefaultsToZero(GameTestHelper h) {
         var json = JsonParser.parseString("{\"heroesevolved:quake\":{\"highest_level\":5,\"learned\":[\"quake_0_0\",\"quake_0_1\"],\"slots\":{\"PRIMARY\":\"quake_0_1\"}}}");
@@ -121,7 +120,7 @@ public final class UnwrittenGameTests {
     }
     @GameTest(template="rewind_empty", batch="unwritten.painting")
     public static void paintingIsALockedShareableMapAndReflectsTheIncident(GameTestHelper h) {
-        var p = player(h, "precognition");
+        var p = player(h, "telepathy");
         var stack = PropheticPainting.canvas(p); var map = net.minecraft.world.item.MapItem.getSavedData(stack, p.getServer().overworld());
         h.assertTrue(PropheticPainting.isCanvas(stack) && map != null && map.locked && map.colors.length == 16384, "Canvas is a real locked map with persistent pixel data");
         byte[] before = PropheticPainting.pixels(FacilityData.Phase.PLANNED, false, 0), after = PropheticPainting.pixels(FacilityData.Phase.SAVED, true, 3);
@@ -138,7 +137,7 @@ public final class UnwrittenGameTests {
     }
     @GameTest(template="rewind_empty", batch="unwritten.facility", timeoutTicks=180)
     public static void facilityBuildsInBatchesAndManualRouteCanSaveBothCaptives(GameTestHelper h) {
-        var p = player(h, "precognition"); var d = FacilityData.get(p.getServer());
+        var p = player(h, "telepathy"); var d = FacilityData.get(p.getServer());
         d.visitors.clear(); d.reset();
         FacilityService.tick(p.getServer());
         h.assertTrue(d.cursor == 256 && d.phase == FacilityData.Phase.BUILDING, "Construction respects its fixed per-tick budget");
@@ -165,27 +164,5 @@ public final class UnwrittenGameTests {
             clear(p);
             });
         });
-    }
-    @GameTest(template="rewind_empty", batch="unwritten.sever")
-    public static void redMarginCancelsOneCommittedHitButNotTheNext(GameTestHelper h) {
-        var p = player(h, "precognition"); var t = enemy(h, p.position().add(0, 0, 3)); p.setYRot(0); p.setXRot(0);
-        try {
-            h.assertTrue(PrecognitionService.skill(context(p, "precognition"), 1), "Red Margin marks a visible enemy's intention");
-            float before = p.getHealth(); p.hurt(p.damageSources().mobAttack(t), 4);
-            h.assertTrue(p.getHealth() == before, "Marked attack is crossed out");
-            p.invulnerableTime = 0; p.hurt(p.damageSources().mobAttack(t), 4);
-            h.assertTrue(p.getHealth() < before, "The consumed intention cannot cancel a second attack"); h.succeed();
-        } finally { t.discard(); clear(p); }
-    }
-    @GameTest(template="rewind_empty", batch="unwritten.fate")
-    public static void fateThreadCanSaveItsOwnCasterAndCannotImmediatelyRepeat(GameTestHelper h) {
-        var p = player(h, "precognition"); p.setShiftKeyDown(true); p.setHealth(3);
-        try {
-            h.assertTrue(PrecognitionService.fateThread(p), "Self Fate Thread activates");
-            p.hurt(p.damageSources().generic(), 100);
-            h.assertTrue(p.isAlive() && p.getHealth() == 2, "A lethal hit crosses out the caster's own death and leaves one heart");
-            h.assertTrue(!PrecognitionService.fateThread(p), "The rescued player has a thirty-second repeat guard");
-            h.succeed();
-        } finally { clear(p); }
     }
 }

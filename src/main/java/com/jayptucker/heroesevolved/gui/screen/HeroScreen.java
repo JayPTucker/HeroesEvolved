@@ -212,6 +212,47 @@ public abstract class HeroScreen extends Screen {
     }
 
     /** A small coloured tag: OFFENSE, DEFENSE, SUPPORT. */
+    /**
+     * Draws a name in {@code room} pixels without cutting it mid-word: full size if it fits, a little smaller if that
+     * fits, and otherwise smaller still with an ellipsis. Returns true when the name had to be shortened.
+     */
+    protected boolean fitted(GuiGraphics g, String text, int x, int y, int room, int color, boolean shadow) {
+        int full = font.width(text);
+        if (full <= room) { g.drawString(font, text, x, y, color, shadow); return false; }
+        float scale = 0.8F;
+        String shown = full * scale <= room ? text : ellipsis(text, (int) (room / scale));
+        g.pose().pushPose();
+        g.pose().translate(x, y + 1, 0);
+        g.pose().scale(scale, scale, 1);
+        g.drawString(font, shown, 0, 0, color, shadow);
+        g.pose().popPose();
+        return !shown.equals(text);
+    }
+
+    /** The longest start of {@code text} that fits {@code room} with "…" after it, cut at a word where it can be. */
+    protected String ellipsis(String text, int room) {
+        if (font.width(text) <= room) return text;
+        String cut = font.plainSubstrByWidth(text, Math.max(0, room - font.width("…")));
+        int space = cut.lastIndexOf(' ');
+        if (space > cut.length() / 2) cut = cut.substring(0, space);
+        return cut.stripTrailing() + "…";
+    }
+
+    /** Up to {@code lines} lines of {@code text} wrapped at words into {@code room}, the last ending in "…" if it overflows. */
+    protected List<String> wrapped(String text, int room, int lines) {
+        List<String> out = new ArrayList<>();
+        String rest = text;
+        while (!rest.isEmpty() && out.size() < lines) {
+            if (out.size() == lines - 1 || font.width(rest) <= room) { out.add(ellipsis(rest, room)); break; }
+            String cut = font.plainSubstrByWidth(rest, room);
+            int space = cut.lastIndexOf(' ');
+            if (space > 0 && cut.length() < rest.length()) cut = cut.substring(0, space);
+            out.add(cut);
+            rest = rest.substring(cut.length()).stripLeading();
+        }
+        return out;
+    }
+
     protected int pill(GuiGraphics g, int x, int y, String text, int color) {
         int w = font.width(text) + 6;
         g.fill(x, y, x + w, y + 10, (color & 0x00FFFFFF) | 0x55000000);

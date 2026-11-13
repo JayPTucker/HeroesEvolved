@@ -29,7 +29,7 @@ public final class TelepathyClient {
         if(p.role()==5||p.role()==6){mc.setScreen(new Choice(p.role()==6));return;}
         previousRole=role();state=p;seen=mc.level==null?0:mc.level.getGameTime();
         if(p.role()!=3)typing="";
-        if(p.role()==0 && previousRole!=0){if(mc.player!=null)mc.setCameraEntity(previous==null||previous.level()!=mc.level?mc.player:previous);previous=null;mc.setScreen(null);ClientMomentum.clear();ClientResonance.clear();ClientClarity.clear();ClientStrain.clear();ClientDensity.clear();ClientRegenerationState.clear();}
+        if(p.role()==0 && previousRole!=0){if(mc.player!=null)mc.setCameraEntity(previous==null||previous.level()!=mc.level?mc.player:previous);previous=null;mc.setScreen(null);ClientMomentum.clear();ClientResonance.clear();ClientStrain.clear();ClientDensity.clear();ClientRegenerationState.clear();}
         if((p.role()==2||p.role()==4)&&mc.player!=null&&mc.level!=null){
             Entity target=mc.level.getEntity(p.entity());
             if(target!=null){if(previous==null){previous=mc.getCameraEntity();mc.player.setYRot(target.getYRot());mc.player.setXRot(target.getXRot());}mc.setCameraEntity(target);}

@@ -20,7 +20,7 @@ public final class PowerIcons {
             Map.entry("telekinesis", Items.ENDER_PEARL), Map.entry("telepathy", Items.ENDER_EYE),
             Map.entry("regeneration", Items.GOLDEN_APPLE), Map.entry("time_manipulation", Items.CLOCK),
             Map.entry("radiation", Items.MAGMA_CREAM), Map.entry("sonic_resonance", Items.BELL),
-            Map.entry("superspeed", Items.SUGAR), Map.entry("precognition", Items.PAINTING),
+            Map.entry("superspeed", Items.SUGAR),
             Map.entry("pyrokinesis", Items.BLAZE_POWDER), Map.entry("invisibility", Items.GLASS_PANE),
             Map.entry("phasing", Items.CHORUS_FRUIT), Map.entry("empathic_mimicry", Items.AMETHYST_SHARD),
             Map.entry("technopathy", Items.COMPARATOR), Map.entry("matter_assembly", Items.STONECUTTER),

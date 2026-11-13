@@ -570,32 +570,6 @@ public final class StyleCasts {
                 if (runners.isEmpty()) piece(p, Piece.RELAY_RUN, at.add(f.scale(-4)), at, 1, null);
                 sound(level, at, SoundEvents.LIGHTNING_BOLT_IMPACT, 0.4F, 2);
             }
-            // ---------------------------------------------------------- Precognition
-            case "foretold_strike" -> {
-                Vec3 point = aim(p, 24);
-                float radius = 3;
-                piece(p, Piece.FORETOLD_STRIKE, at, point, radius, null);
-                sound(level, point, SoundEvents.BOOK_PAGE_TURN, 1.5F, 0.7F);
-                StyleRuntime.run(p, 40, age -> {
-                    if (age != 40) return;
-                    for (LivingEntity t : foes(p, point, radius)) hurt(p, t, 16 + 3 * lvl);
-                    sound(level, point, SoundEvents.GENERIC_EXPLODE.value(), 0.8F, 1.6F);
-                    sound(level, point, SoundEvents.SLIME_SQUISH, 1.5F, 0.6F);
-                });
-            }
-            case "branching_paths" -> {
-                piece(p, Piece.BRANCHING_PATHS, at, at, 1, p);
-                StyleRuntime.ward(p, Ward.BRANCH, 120, p);
-                sound(level, at, SoundEvents.AMETHYST_BLOCK_CHIME, 1.5F, 0.8F);
-            }
-            case "prophecy_canvas" -> {
-                piece(p, Piece.PROPHECY_CANVAS, at, at, 12, null);
-                for (LivingEntity friend : friends(p, at, 12)) {
-                    StyleRuntime.ward(friend, Ward.PROPHECY, 300, p);
-                    effect(friend, MobEffects.LUCK, 300, 0);
-                }
-                sound(level, at, SoundEvents.VILLAGER_WORK_CARTOGRAPHER, 1.5F, 0.8F);
-            }
             // ---------------------------------------------------------- Invisibility
             case "shadow_strike" -> {
                 List<LivingEntity> marks = foes(p, at, 10).stream().limit(3).toList();
@@ -613,11 +587,18 @@ public final class StyleCasts {
             case "refraction_cloak" -> {
                 piece(p, Piece.REFRACTION_CLOAK, at, at, 1, p);
                 effect(p, MobEffects.INVISIBILITY, 120, 0);
+                StyleRuntime.ward(p, Ward.REFRACTION, 120, p);
                 sound(level, at, SoundEvents.ILLUSIONER_PREPARE_MIRROR, 1, 1.2F);
                 StyleRuntime.run(p, 120, age -> {
-                    for (Projectile shot : incoming(p, p.position().add(0, 1, 0), 4)) {
-                        Vec3 v = shot.getDeltaMovement();
-                        if (v.dot(p.position().add(0, 1, 0).subtract(shot.position())) <= 0) continue;
+                    // Shots bend away before they arrive. Fast ones (TaCZ rounds cross several blocks a tick) are found
+                    // from further out by where they will be next tick; whatever still reaches the body is turned by the ward.
+                    Vec3 body = p.position().add(0, 1, 0);
+                    for (Projectile shot : incoming(p, body, 12)) {
+                        Vec3 v = shot.getDeltaMovement(), from = shot.position();
+                        if (v.dot(body.subtract(from)) <= 0) continue;
+                        double reach = Math.max(4, v.length() * 1.5);
+                        double along = Math.max(0, Math.min(1, body.subtract(from).dot(v) / Math.max(1e-6, v.lengthSqr())));
+                        if (from.distanceTo(body) > reach || from.add(v.scale(along)).distanceTo(body) > 2.5) continue;
                         push(shot, new Vec3(v.x * 0.5 - v.z * 0.87, v.y, v.x * 0.87 + v.z * 0.5));
                     }
                 });

@@ -303,15 +303,19 @@ public final class HeroesEvolvedCommands {
 
         int grantedCount = 0;
 
+        String holder = null;
         for (ServerPlayer player : players) {
+            String held = PlayerAbilityService.adminFree(player, abilityId);
+            if (held != null) { holder = held; continue; }
             if (PlayerAbilityService.grantAbility(player, abilityId)) {
                 grantedCount++;
             }
         }
 
         if (grantedCount == 0) {
-            source.sendFailure(Component.literal(
-                    "Selected players already have powers, or this unique power belongs to another player."
+            source.sendFailure(Component.literal(holder != null
+                    ? "Only one player can have " + abilityId.getPath() + ", and " + holder + " still has it. Remove it from them first."
+                    : "Selected players already have powers."
             ));
             return 0;
         }
@@ -345,7 +349,10 @@ public final class HeroesEvolvedCommands {
 
         int replacedCount = 0;
 
+        String holder = null;
         for (ServerPlayer player : players) {
+            String held = PlayerAbilityService.adminFree(player, abilityId);
+            if (held != null) { holder = held; continue; }
             if (PlayerAbilityService.replaceWithAbility(player, abilityId)) {
                 replacedCount++;
             }
@@ -353,7 +360,9 @@ public final class HeroesEvolvedCommands {
 
         if (replacedCount == 0) {
             source.sendFailure(Component.literal(
-                    "Selected players already have this power unlocked, or it belongs to another player."
+                    holder != null
+                            ? "Only one player can have " + abilityId.getPath() + ", and " + holder + " still has it. Remove it from them first."
+                            : "Selected players already have this power unlocked."
             ));
             return 0;
         }

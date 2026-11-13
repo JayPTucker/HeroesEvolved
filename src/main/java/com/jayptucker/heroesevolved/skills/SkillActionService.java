@@ -60,7 +60,6 @@ public final class SkillActionService {
         if (c.abilityId().getPath().equals("regeneration")) return com.jayptucker.heroesevolved.regeneration.RegenSkills.canUse(c, branch);
         if (c.abilityId().getPath().equals("telepathy")) return com.jayptucker.heroesevolved.telepathy.TelepathySkills.canUse(c, branch);
         if (c.abilityId().getPath().equals("phasing")) return com.jayptucker.heroesevolved.phasing.DensitySkills.canUse(c, branch);
-        if (c.abilityId().getPath().equals("precognition")) return true;
         if (branch == 0 && !c.abilityId().getPath().equals("flight"))
             return aimed(c.player(), false) != null;
         return true;
@@ -117,7 +116,6 @@ public final class SkillActionService {
             // Telepathy poses each skill itself (Drop It, Far Hearing, Dream Double); a generic pose would replace it.
             case "telepathy" -> { return com.jayptucker.heroesevolved.telepathy.TelepathySkills.skill(c, branch); }
             case "regeneration" -> { return com.jayptucker.heroesevolved.regeneration.RegenSkills.skill(c, branch); }
-            case "precognition" -> { return com.jayptucker.heroesevolved.precog.PrecognitionService.skill(c, branch); }
             case "superspeed" -> { return com.jayptucker.heroesevolved.speed.SpeedService.skill(c, branch); }
             case "pyrokinesis" -> { return com.jayptucker.heroesevolved.pyro.PyroService.skill(c, branch); }
             case "invisibility" -> { return com.jayptucker.heroesevolved.invisibility.InvisibilitySkills.skill(c, branch); }

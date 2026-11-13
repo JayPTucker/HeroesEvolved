@@ -67,7 +67,7 @@ final class DensityEffects {
         int color = way < -0.5 ? TEAL : way > 0.5 ? STONE : PALE;
         for (int i = 0; i < 5; i++) {
             double h = way > 0.5 ? 1.9 - i * 0.45 : 0.1 + i * 0.45;
-            LightningRenderer.stroke(PrecogEffects.circle(feet.add(0, h, 0), new Vec3(1, 0, 0), new Vec3(0, 0, 1), 0.55, 28),
+            LightningRenderer.stroke(LightningRenderer.circle(feet.add(0, h, 0), new Vec3(1, 0, 0), new Vec3(0, 0, 1), 0.55, 28),
                     0.04F * size, 0.04F * size, i == 2 ? PALE : color, 0.65F, 8, i);
         }
         if (way > 0.5) ripple(feet.add(0, 0.05, 0), UP, 1.2F, STONE, 14, 4);
@@ -88,7 +88,7 @@ final class DensityEffects {
             LightningRenderer.stroke(strand, 0.045F, 0.03F, i % 2 == 0 ? TEAL : PALE, 0.4F * strength + 0.15F, 5, 0);
         }
         if (strength >= 1 && random.nextFloat() < 0.5F)
-            LightningRenderer.stroke(PrecogEffects.circle(feet.add(0, 0.2 + random.nextDouble() * 1.5, 0), new Vec3(1, 0, 0), new Vec3(0, 0, 1),
+            LightningRenderer.stroke(LightningRenderer.circle(feet.add(0, 0.2 + random.nextDouble() * 1.5, 0), new Vec3(1, 0, 0), new Vec3(0, 0, 1),
                     0.42, 24), 0.03F, 0.03F, PALE, 0.35F, 6, 0);
     }
 
@@ -171,7 +171,7 @@ final class DensityEffects {
     private static void slam(Vec3 center, float radius, RandomSource random) {
         Vec3 at = center.add(0, 0.05, 0);
         for (int i = 0; i < 3; i++)
-            LightningRenderer.stroke(PrecogEffects.circle(at.add(0, i * 0.08, 0), new Vec3(1, 0, 0), new Vec3(0, 0, 1),
+            LightningRenderer.stroke(LightningRenderer.circle(at.add(0, i * 0.08, 0), new Vec3(1, 0, 0), new Vec3(0, 0, 1),
                     radius * (0.4 + i * 0.3), 56), 0.16F - i * 0.03F, 0.16F - i * 0.03F, i == 0 ? PALE : STONE, 0.7F - i * 0.15F, 12, i * 2);
         for (int i = 0; i < 9; i++) {
             double angle = i * Math.PI * 2 / 9 + random.nextDouble() * 0.3;

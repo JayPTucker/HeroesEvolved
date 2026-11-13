@@ -40,8 +40,8 @@ import java.util.*;
  * he has taken. He fights in three phases: <i>The Watchmaker</i>, measured, telekinesis and one
  * stolen gift at a time; <i>Hunger</i> below half, faster and harder; <i>Unfinished</i> below a
  * fifth, when he may try to escape if he knows how. Every power he knows is a real move with a windup
- * you can read (see {@link SylarPowers}); his passive gifts work too: Precognition sidesteps a blow,
- * Regeneration gets him back up once, Mimicry borrows your power for the fight.</p>
+ * you can read (see {@link SylarPowers}); his passive gifts work too: Regeneration gets him back up once,
+ * Mimicry borrows your power for the fight.</p>
  */
 public final class SylarEntity extends PathfinderMob implements Enemy {
     private static final EntityDataAccessor<Boolean> EXTRACTING = SynchedEntityData.defineId(SylarEntity.class, EntityDataSerializers.BOOLEAN);
@@ -63,7 +63,7 @@ public final class SylarEntity extends PathfinderMob implements Enemy {
     private Vec3 mark = Vec3.ZERO;
     private ResourceLocation borrowed;
     private boolean revived, escapeTried;
-    private int downedTicks, escapeIn = -1, unseenTicks, nextSidestep;
+    private int downedTicks, escapeIn = -1, unseenTicks;
     private UUID pinned;
     private int pinnedUntil;
     private UUID flurryTarget;
@@ -659,35 +659,12 @@ public final class SylarEntity extends PathfinderMob implements Enemy {
     // Taking damage
     // ------------------------------------------------------------------
 
-    private int nextPredictedDodge;
     @Override public boolean hurt(DamageSource source, float amount) {
         if (level().isClientSide) return super.hurt(source, amount);
         if (downedTicks > 0) return false;
         // Reeling from a cracked watch, he can't guard himself.
         if (stagger > 0) amount *= 1.25F;
         var story = SylarStoryData.get(level().getServer());
-        boolean precog = story.knows(ModAbilities.PRECOGNITION_ID) || ModAbilities.PRECOGNITION_ID.equals(borrowed);
-        if (tickCount >= nextPredictedDodge && source.getDirectEntity() instanceof Projectile && precog && stagger == 0 && !fleeing) {
-            Vec3 facing = getLookAngle().multiply(1, 0, 1).normalize(), side = new Vec3(-facing.z, 0, facing.x);
-            Vec3 end = com.jayptucker.heroesevolved.speed.SpeedService.swept(this, side.scale(2));
-            if (end.distanceToSqr(position()) >= 2.25) {
-                nextPredictedDodge = tickCount + 80;
-                AbilityEffects.send((ServerLevel) level(), Kind.PROPHECY_BREAK, position(), end, 1.5);
-                teleportTo(end.x, end.y, end.z); return false;
-            }
-        }
-        // He saw that blow coming, too (but not twice in four seconds).
-        if (hunting && precog && stagger == 0 && !fleeing && held == null && tickCount >= nextSidestep && source.getEntity() instanceof LivingEntity attacker
-                && !(source.getDirectEntity() instanceof Projectile) && random.nextFloat() < 0.25F) {
-            Vec3 away = SylarPowers.flat(position().subtract(attacker.position())), side = new Vec3(-away.z, 0, away.x);
-            Vec3 end = com.jayptucker.heroesevolved.speed.SpeedService.swept(this, side.scale(random.nextBoolean() ? 1.8 : -1.8));
-            if (end.distanceToSqr(position()) >= 1) {
-                nextSidestep = tickCount + 80;
-                AbilityEffects.send((ServerLevel) level(), Kind.PRECOG_GHOST, position(), position(), getBbHeight());
-                teleportTo(end.x, end.y, end.z);
-                return false;
-            }
-        }
         // Claire's gift: the first time he should die in a fight, he gets back up instead.
         boolean regenerates = story.knows(ModAbilities.REGENERATION_ID) || ModAbilities.REGENERATION_ID.equals(borrowed);
         if (hunting && regenerates && !revived && amount >= getHealth() + getAbsorptionAmount()

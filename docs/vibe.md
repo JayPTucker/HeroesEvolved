@@ -25,7 +25,7 @@ Every passive ties two moves together.
 
 ## Look and feel
 
-The palm winds up around a tightening pair of crescents. Each release sends a staggered train of blue fronts with pale edges and twisting filaments. Breaches stretch a vertical cut into a deep-blue iris, with a moving lip and inward-turning bands. They pinch shut into a flash. The guard's inner arcs brighten as it banks impacts. During a read, violet-blue silhouettes flicker into place in the order the hits happened. Frequency Lock's white indicator fills around the ring before the interference folds toward its centre. Each core move has a first- and third-person pose, with original synthesized cues for the wave, breach, snap, vision and collapse.
+The palm winds up around a tightening pair of crescents. Each release sends a staggered train of blue fronts, each a lens of pressed air with a bright rim and two split crescents, leaving a fading tube of rings along the path and twisting filaments. Breaches stretch a vertical cut into a deep-blue iris, with a moving lip and inward-turning bands. They pinch shut into a flash. The guard's inner arcs brighten as it banks impacts. During a read, violet-blue silhouettes flicker into place in the order the hits happened. Frequency Lock's white indicator fills around the ring before the interference folds toward its centre. Each core move has a first- and third-person pose, with original synthesized cues for the wave, breach, snap, vision and collapse.
 
 The awakening opens two flickering tears around the caster and tries to breach the endangered player or ally out of the fight. If the nearby path is blocked, the interference gives the ward space to escape.
 

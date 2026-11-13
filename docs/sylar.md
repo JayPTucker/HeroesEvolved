@@ -155,7 +155,6 @@ He favours what he took from **you**: "Recognise it? Your power. My hands."
 ### His passive gifts
 
 - **Telekinesis:** shots aimed at him while he is not busy turn aside.
-- **Precognition:** he sidesteps a shot, and sometimes a blow, at most once every four seconds.
 - **Regeneration:** he heals slowly. The first killing blow in a fight puts him down for five
   seconds instead, then he rises at two-fifths of his health.
 - **Density:** a wall between you does not stop him for long. It ripples like water as he walks out of it near you.

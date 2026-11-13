@@ -42,6 +42,5 @@ branch. Each branch also has a name now.
 | **Radiation** | Heat Vent, Reactor Core, Glowing Path | Vent stress as a fire cone, turn stress into stamina, or poison the ground |
 | **Sonic Resonance** | Shatter Note, Echo Map, Quiet Zone | A finger-snap shatters glass and ice (stone with the capstone) and leaves foes Ringing; a sonar sweep finds ores and rings enemies; a field of silence keeps mobs from targeting |
 | **Superspeed** | Speed Mirage, **Lightning Throw**, Perception | The Flash's moves: hurl your own lightning by spending Momentum (counts as electric); **Infinite Mass Punch** at 90 Momentum; slow or stop projectiles |
-| **Precognition** | Foresight, Find the Path, Shared Omen | Dodge the next 3–5 blows; find the nearest Helixite; The Painter shows the nearest village |
 
 **Totals:** 16 powers, 288 skill nodes, 96 optional actions.

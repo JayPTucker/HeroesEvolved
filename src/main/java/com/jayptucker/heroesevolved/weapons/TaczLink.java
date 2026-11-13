@@ -55,6 +55,13 @@ final class TaczLink {
         if (broken || event.getLogicalSide() != LogicalSide.SERVER
                 || !(event.getBullet().level() instanceof ServerLevel level)) return;
         Entity bullet = event.getBullet();
+        // A Refraction Cloak turns the round before it lands: no damage, no TaCZ hit effects.
+        if (event.getHurtEntity() instanceof net.minecraft.world.entity.LivingEntity living
+                && com.jayptucker.heroesevolved.styles.StyleRuntime.refracting(living)) {
+            com.jayptucker.heroesevolved.styles.StyleRuntime.refract(living, bullet);
+            event.setCanceled(true);
+            return;
+        }
         var from = bullet.position();
         var target = event.getHurtEntity().getBoundingBox().clip(from, from.add(bullet.getDeltaMovement()));
         if (target.isPresent() && com.jayptucker.heroesevolved.vibe.VibeService.intercept(level, bullet, from, target.get()))

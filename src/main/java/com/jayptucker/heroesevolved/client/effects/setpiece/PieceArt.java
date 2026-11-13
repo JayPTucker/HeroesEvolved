@@ -60,9 +60,6 @@ final class PieceArt {
             case LIGHTNING_FLURRY -> MotionArt.flurry(c, a, t);
             case RELAY_RUN -> MotionArt.relay(c, a, t);
             case PHASE_BLUR -> MotionArt.phaseBlur(c, a, t);
-            case FORETOLD_STRIKE -> MindArt.foretold(c, a, t);
-            case BRANCHING_PATHS -> MindArt.branching(c, a, t);
-            case PROPHECY_CANVAS -> MindArt.prophecy(c, a, t);
             case SHADOW_STRIKE -> MotionArt.shadowStrike(c, a, t);
             case REFRACTION_CLOAK -> MotionArt.refraction(c, a, t);
             case PRISM_HAZE -> MotionArt.prismHaze(c, a, t);

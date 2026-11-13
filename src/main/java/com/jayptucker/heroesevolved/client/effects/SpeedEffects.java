@@ -66,7 +66,7 @@ final class SpeedEffects {
 
     private static void burst(Vec3 at, float size, RandomSource random) {
         Vec3 c = at.add(0, 0.9, 0);
-        LightningRenderer.stroke(PrecogEffects.circle(at.add(0, 0.1, 0), new Vec3(1, 0, 0), new Vec3(0, 0, 1), 0.6 * size, 28), 0.06F, 0.06F, GOLD, 0.6F, 10, 0);
+        LightningRenderer.stroke(LightningRenderer.circle(at.add(0, 0.1, 0), new Vec3(1, 0, 0), new Vec3(0, 0, 1), 0.6 * size, 28), 0.06F, 0.06F, GOLD, 0.6F, 10, 0);
         for (int i = 0; i < 4; i++) {
             double angle = random.nextDouble() * Math.PI * 2;
             bolt(c, c.add(Math.cos(angle) * size * 0.8, (random.nextDouble() - 0.3) * size * 0.6, Math.sin(angle) * size * 0.8), 0.025F, random, 6, 0);
@@ -110,7 +110,7 @@ final class SpeedEffects {
         Vec3 a = dir.cross(UP).lengthSqr() < 1.0E-4 ? new Vec3(1, 0, 0) : dir.cross(UP).normalize(), b = a.cross(dir).normalize();
         for (int i = 0; i < 5; i++) {
             double back = i * 0.7 * size, radius = (0.6 + i * 0.45) * size;
-            LightningRenderer.stroke(PrecogEffects.circle(at.subtract(dir.scale(back)), a, b, radius, 36), 0.08F, 0.08F, i < 2 ? HOT : 0xD8E8FF,
+            LightningRenderer.stroke(LightningRenderer.circle(at.subtract(dir.scale(back)), a, b, radius, 36), 0.08F, 0.08F, i < 2 ? HOT : 0xD8E8FF,
                     0.75F - i * 0.1F, 12, i);
         }
         LightningRenderer.star(at, 0.8F * size, HOT, 0.9F, 6, 0);
@@ -150,7 +150,7 @@ final class SpeedEffects {
             Vec3 top = center.add(Math.cos(a + 0.5) * radius, 2.8 + built * 1.5, Math.sin(a + 0.5) * radius);
             LightningRenderer.stroke(List.of(foot, foot.lerp(top, 0.5).add(0, 0.2, 0), top), 0.06F, 0.02F, i % 3 == 0 ? HOT : AMBER, 0.4F, 4, 0);
         }
-        LightningRenderer.stroke(PrecogEffects.circle(center.add(0, 0.1, 0), new Vec3(1, 0, 0), new Vec3(0, 0, 1), radius, 48), 0.07F, 0.07F, AMBER, 0.55F, 4, 0);
+        LightningRenderer.stroke(LightningRenderer.circle(center.add(0, 0.1, 0), new Vec3(1, 0, 0), new Vec3(0, 0, 1), radius, 48), 0.07F, 0.07F, AMBER, 0.55F, 4, 0);
         double angle = phase * 3 + random.nextDouble();
         Vec3 rim = center.add(Math.cos(angle) * radius, 0.3 + random.nextDouble() * 2, Math.sin(angle) * radius);
         bolt(rim, rim.add(Math.cos(angle + 0.6) * 1.2, (random.nextDouble() - 0.5), Math.sin(angle + 0.6) * 1.2), 0.025F, random, 4, 0);
@@ -191,7 +191,7 @@ final class SpeedEffects {
     private static void perception(Vec3 feet, float radius, RandomSource random, boolean detail) {
         Vec3 center = feet.add(0, 0.1, 0);
         for (int i = 0; i < 3; i++)
-            LightningRenderer.stroke(PrecogEffects.circle(center.add(0, i * 0.05, 0), new Vec3(1, 0, 0), new Vec3(0, 0, 1),
+            LightningRenderer.stroke(LightningRenderer.circle(center.add(0, i * 0.05, 0), new Vec3(1, 0, 0), new Vec3(0, 0, 1),
                     radius * (0.35 + i * 0.32), 48), 0.05F, 0.05F, i == 2 ? AMBER : GOLD, 0.5F - i * 0.1F, 14, i * 3);
         int motes = detail ? 14 : 6;
         Vec3 last = null;
@@ -212,7 +212,7 @@ final class SpeedEffects {
         Vec3 a = new Vec3(1, 0, 0), b = new Vec3(0, 0, 1);
         for (int i = 0; i < 3; i++) {
             double radius = (1.7 - i * 0.5) * size;
-            LightningRenderer.stroke(PrecogEffects.circle(eye.subtract(0, 0.15 + i * 0.05, 0), a, b, radius, 40),
+            LightningRenderer.stroke(LightningRenderer.circle(eye.subtract(0, 0.15 + i * 0.05, 0), a, b, radius, 40),
                     0.04F, 0.04F, i == 2 ? HOT : GOLD, 0.7F - i * 0.1F, 8, i * 2);
         }
         LightningRenderer.star(eye.subtract(0, 0.2, 0), 0.25F, HOT, 0.8F, 5, 5);
@@ -258,7 +258,7 @@ final class SpeedEffects {
             SpeedAfterimages.at(feet, spot, yaw);
             if (detail) bolt(feet.add(0, 1.1, 0), spot.add(0, 1.1, 0), 0.012F, random, 5, 0);
         }
-        LightningRenderer.stroke(PrecogEffects.circle(feet.add(0, 0.06, 0), new Vec3(1, 0, 0), new Vec3(0, 0, 1), 2.4, 40),
+        LightningRenderer.stroke(LightningRenderer.circle(feet.add(0, 0.06, 0), new Vec3(1, 0, 0), new Vec3(0, 0, 1), 2.4, 40),
                 0.03F, 0.03F, GOLD, 0.35F, 6, 0);
     }
 
@@ -277,7 +277,7 @@ final class SpeedEffects {
         Vec3 side = dir.cross(UP).lengthSqr() < 1.0E-4 ? new Vec3(1, 0, 0) : dir.cross(UP).normalize(), up = side.cross(dir).normalize();
         for (int i = 0; i < 4; i++) {
             Vec3 center = at.add(dir.scale(0.3 + i * 0.55));
-            LightningRenderer.stroke(PrecogEffects.circle(center, side, up, (0.35 + i * 0.3) * size, 30), 0.06F, 0.06F,
+            LightningRenderer.stroke(LightningRenderer.circle(center, side, up, (0.35 + i * 0.3) * size, 30), 0.06F, 0.06F,
                     i == 0 ? HOT : i < 3 ? GOLD : AMBER, 0.85F - i * 0.15F, 7, i);
         }
         LightningRenderer.star(at, 0.7F * size, HOT, 1F, 5, 0);
@@ -303,7 +303,7 @@ final class SpeedEffects {
             Vec3 side = dir.cross(UP).lengthSqr() < 1.0E-4 ? new Vec3(1, 0, 0) : dir.cross(UP).normalize(), up = side.cross(dir).normalize();
             double length = a.distanceTo(b);
             for (double d = 1; d < length; d += 2) {
-                LightningRenderer.stroke(PrecogEffects.circle(a.add(dir.scale(d)), side, up, 0.85, 24), 0.035F, 0.035F,
+                LightningRenderer.stroke(LightningRenderer.circle(a.add(dir.scale(d)), side, up, 0.85, 24), 0.035F, 0.035F,
                         0xDBE6F5, 0.45F, 8, (int) (d / 3));
             }
         } else {

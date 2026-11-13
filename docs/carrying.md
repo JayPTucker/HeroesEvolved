@@ -21,7 +21,9 @@ While you carry something your body turns with your view. The cargo model follow
 facing every frame, including during flight. You can look down to see cargo in your arms in first person.
 You can still click the ground to set it down, mine and use items.
 
-A carried player's camera is where their head is drawn, in front of your left shoulder.
+A carried player's camera is where their head is drawn, in front of your left shoulder. It follows your smoothed
+position and facing every frame (`mixin/CarriedCameraMixin`), the same way their body is drawn, so it doesn't
+jolt when you turn or walk.
 
 ## Rules
 

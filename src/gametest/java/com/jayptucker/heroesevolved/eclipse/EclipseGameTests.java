@@ -270,22 +270,4 @@ public final class EclipseGameTests {
             helper.succeed();
         } finally { EclipseService.end(player.getServer()); zombie.discard(); remove(player); }
     }
-
-    @GameTest(template = "rewind_empty", batch = "eclipse.precog_intro", timeoutTicks = 160)
-    public static void precognitionHasAnAnimatedIntroThatStopsTheFight(GameTestHelper helper) {
-        ServerPlayer player = player(helper);
-        Zombie zombie = attacker(helper, player);
-        PlayerAbilityService.grantAbility(player, ModAbilities.PRECOGNITION_ID);
-        helper.assertTrue(PowerIntroService.isActive(player), "Precognition plays a full intro");
-        helper.runAfterDelay(110, () -> {
-            try {
-                helper.assertTrue(!PowerIntroService.isActive(player), "The intro finishes");
-                helper.assertTrue(player.getData(ModDataAttachments.POWER_INTRO_HISTORY).seen().contains(ModAbilities.PRECOGNITION_ID),
-                        "The intro is recorded");
-                helper.assertTrue(zombie.hasEffect(MobEffects.MOVEMENT_SLOWDOWN) && zombie.hasEffect(MobEffects.WEAKNESS),
-                        "The release leaves attackers stumbling");
-                helper.succeed();
-            } finally { zombie.discard(); remove(player); }
-        });
-    }
 }

@@ -440,7 +440,7 @@ public final class BunkerAndPowersGameTests {
                 }
             }
         }
-        h.assertTrue(tried == 45, "Expected 45 techniques across the other fifteen powers, tried " + tried);
+        h.assertTrue(tried == 42, "Expected 42 techniques across the other fifteen powers, tried " + tried);
         h.succeed();
     }
 }

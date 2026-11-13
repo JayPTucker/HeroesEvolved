@@ -207,7 +207,7 @@ public final class PossessionService {
     }
     private static boolean mirrored(Packet<?> p) {
         if(p instanceof ClientboundBlockChangedAckPacket || p instanceof ClientboundContainerSetContentPacket || p instanceof ClientboundContainerSetSlotPacket || p instanceof ClientboundContainerSetDataPacket || p instanceof ClientboundOpenScreenPacket || p instanceof ClientboundContainerClosePacket || p instanceof ClientboundSetCarriedItemPacket || p instanceof ClientboundSetHealthPacket) return true;
-        if(p instanceof ClientboundCustomPayloadPacket c) return c.payload() instanceof PlayerPowerSyncPayload || c.payload() instanceof LoadoutPayload || c.payload() instanceof MomentumPayload || c.payload() instanceof ResonancePayload || c.payload() instanceof ClarityPayload || c.payload() instanceof StrainPayload || c.payload() instanceof DensityPayload || c.payload() instanceof RadiationStatePayload || c.payload() instanceof RegenerationStatePayload || c.payload() instanceof PyroStatePayload || c.payload() instanceof OpticalStatePayload;
+        if(p instanceof ClientboundCustomPayloadPacket c) return c.payload() instanceof PlayerPowerSyncPayload || c.payload() instanceof LoadoutPayload || c.payload() instanceof MomentumPayload || c.payload() instanceof ResonancePayload || c.payload() instanceof StrainPayload || c.payload() instanceof DensityPayload || c.payload() instanceof RadiationStatePayload || c.payload() instanceof RegenerationStatePayload || c.payload() instanceof PyroStatePayload || c.payload() instanceof OpticalStatePayload;
         return false;
     }
     /** Returns true only for the controller's superseded personal UI updates. */

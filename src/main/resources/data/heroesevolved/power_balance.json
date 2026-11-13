@@ -180,12 +180,6 @@
     "cooldown": 1
   },
   {
-    "power": "precognition",
-    "action": "precog_paint",
-    "energy": 1,
-    "cooldown": 1
-  },
-  {
     "power": "pyrokinesis",
     "action": "pyro_inferno",
     "energy": 0.8,

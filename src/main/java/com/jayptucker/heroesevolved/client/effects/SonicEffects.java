@@ -48,7 +48,7 @@ public final class SonicEffects {
             double radius = (0.25 + i * 0.35) * Math.max(0.6, loudness);
             int color = hue(hue + i * 0.04F, 0.85F);
             if (ground) {
-                LightningRenderer.stroke(PrecogEffects.circle(at.add(0, 0.05, 0), new Vec3(1, 0, 0), new Vec3(0, 0, 1), radius, 24),
+                LightningRenderer.stroke(LightningRenderer.circle(at.add(0, 0.05, 0), new Vec3(1, 0, 0), new Vec3(0, 0, 1), radius, 24),
                         0.025F, 0.025F, color, alpha * (1 - i * 0.2F), 12, i * 2);
             } else {
                 LightningRenderer.stroke(facing(at, radius, 24), 0.03F, 0.03F, color, alpha * (1 - i * 0.2F), 12, i * 2);
@@ -84,7 +84,7 @@ public final class SonicEffects {
             if (d < skip) continue;
             double radius = (0.25 + d * 0.05) * size;
             int delay = (int) (d / 3.0);
-            LightningRenderer.stroke(PrecogEffects.circle(from.add(dir.scale(d)), a, b, radius, 28), 0.04F * size, 0.04F * size,
+            LightningRenderer.stroke(LightningRenderer.circle(from.add(dir.scale(d)), a, b, radius, 28), 0.04F * size, 0.04F * size,
                     hue(base + i * 0.045F, 0.65F), 0.55F, 9, delay);
         }
         int ribbons = 2;
@@ -111,10 +111,10 @@ public final class SonicEffects {
             double r = radius * i / steps;
             int delay = i * 2, color = hue(base + i * 0.08F, 0.6F);
             float alpha = (quiet ? 0.35F : 0.55F) * (1.1F - i / (float) steps * 0.5F);
-            LightningRenderer.stroke(PrecogEffects.circle(body, new Vec3(1, 0, 0), new Vec3(0, 0, 1), r, 40), 0.05F, 0.05F, color, alpha, 12, delay);
+            LightningRenderer.stroke(LightningRenderer.circle(body, new Vec3(1, 0, 0), new Vec3(0, 0, 1), r, 40), 0.05F, 0.05F, color, alpha, 12, delay);
             if (!quiet) {
-                LightningRenderer.stroke(PrecogEffects.circle(body, new Vec3(1, 0, 0), UP, r * 0.8, 36), 0.04F, 0.04F, hue(base + i * 0.08F + 0.3F, 0.6F), alpha * 0.7F, 10, delay);
-                LightningRenderer.stroke(PrecogEffects.circle(body, new Vec3(0, 0, 1), UP, r * 0.8, 36), 0.04F, 0.04F, hue(base + i * 0.08F + 0.6F, 0.6F), alpha * 0.7F, 10, delay);
+                LightningRenderer.stroke(LightningRenderer.circle(body, new Vec3(1, 0, 0), UP, r * 0.8, 36), 0.04F, 0.04F, hue(base + i * 0.08F + 0.3F, 0.6F), alpha * 0.7F, 10, delay);
+                LightningRenderer.stroke(LightningRenderer.circle(body, new Vec3(0, 0, 1), UP, r * 0.8, 36), 0.04F, 0.04F, hue(base + i * 0.08F + 0.6F, 0.6F), alpha * 0.7F, 10, delay);
             }
         }
     }
@@ -130,6 +130,6 @@ public final class SonicEffects {
         Vec3 left = UP.cross(view);
         if (left.lengthSqr() < 1.0E-6) left = new Vec3(1, 0, 0);
         left = left.normalize();
-        return PrecogEffects.circle(center, left, view.cross(left).normalize(), radius, points);
+        return LightningRenderer.circle(center, left, view.cross(left).normalize(), radius, points);
     }
 }

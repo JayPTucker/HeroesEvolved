@@ -1,7 +1,6 @@
 package com.jayptucker.heroesevolved.styles;
 
 import com.jayptucker.heroesevolved.network.SetPiecePayload;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerLevel;
@@ -152,22 +151,5 @@ public final class StyleOps {
             shot.setOwner(p);
             push(shot, away.scale(Math.max(0.8, shot.getDeltaMovement().length())));
         }
-    }
-
-    /** Steps a player aside from a blow, to the safest of three nearby spots. */
-    public static void stepAside(ServerPlayer p, LivingEntity attacker) {
-        Vec3 best = null;
-        double far = -1;
-        for (int k = 0; k < 3; k++) {
-            double ang = k * Math.PI * 2 / 3 + 0.4;
-            Vec3 spot = p.position().add(Math.cos(ang) * 2.5, 0, Math.sin(ang) * 2.5);
-            BlockPos feet = BlockPos.containing(spot);
-            if (!p.level().getBlockState(feet).getCollisionShape(p.level(), feet).isEmpty()
-                    || !p.level().getBlockState(feet.above()).getCollisionShape(p.level(), feet.above()).isEmpty()) continue;
-            double d = attacker == null ? k : spot.distanceToSqr(attacker.position());
-            if (d > far) { far = d; best = spot; }
-        }
-        if (best != null) p.teleportTo(best.x, best.y, best.z);
-        sound(p.serverLevel(), p.position(), net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_CHIME, 0.9F, 1.5F);
     }
 }

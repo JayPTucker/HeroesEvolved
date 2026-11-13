@@ -11,7 +11,7 @@ You wake in the Company’s Odessa stasis bunker centuries after the city burned
 
 Primatech relay stations generate far apart in rings around the world origin, like strongholds. The campaign can be played with or without an awakened power, and you can find a station by exploring even if the bunker is disabled. The receiver's Journal entry shows the **X** and **Z** coordinates it found. After opening the annex, an electrical cast aimed near the isolator can cut the feed, and a cold cast aimed near the coolant valve can stabilize life support.
 
-**Records**, **Dreams**, **The Way Back**, and **The Watchmaker** track optional discoveries, telepathic fragments, temporal milestones, and Sylar encounters. Precognition’s shareable painting depicts the sleepers and changes when the rescue succeeds.
+**Records**, **Dreams**, **The Way Back**, and **The Watchmaker** track optional discoveries, telepathic fragments, temporal milestones, and Sylar encounters. The first time the bunker's receiver records the call, it also hands over Isaac Mendez's canvas of The Last Signal: a shareable painting of the sleepers that changes when the rescue succeeds.
 
 ## Existing worlds
 

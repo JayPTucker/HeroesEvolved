@@ -12,6 +12,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Objects;
+import java.util.UUID;
 import java.util.Optional;
 
 public final class PlayerAbilityService {
@@ -137,7 +138,6 @@ public final class PlayerAbilityService {
 
         com.jayptucker.heroesevolved.skills.SkillActionService.forget(player);
         com.jayptucker.heroesevolved.expansion.ExpansionSkills.forget(player);
-        com.jayptucker.heroesevolved.precog.PrecognitionService.forget(player);
 
         if (ability != null) {
             ability.onRevoked(new AbilityUseContext(
@@ -173,6 +173,21 @@ public final class PlayerAbilityService {
         if (!AbilityRegistry.ABILITIES.containsKey(abilityId)) {
             throw new IllegalArgumentException("Unknown ability: " + abilityId);
         }
+    }
+
+    /**
+     * Before an admin gives {@code abilityId} to {@code player}: frees the power if its recorded owner no longer holds it.
+     * Returns the name of the player who still holds it, or null when it is free for {@code player}.
+     */
+    public static String adminFree(ServerPlayer player, ResourceLocation abilityId) {
+        var ownership = PowerOwnershipSavedData.get(player.getServer());
+        if (ownership.reclaimForAdmin(player.getServer(), abilityId, player.getUUID())) return null;
+        UUID owner = ownership.owner(abilityId).orElse(null);
+        if (owner == null) return null;
+        var online = player.getServer().getPlayerList().getPlayer(owner);
+        if (online != null) return online.getName().getString();
+        var cache = player.getServer().getProfileCache();
+        return cache == null ? "another player" : cache.get(owner).map(profile -> profile.getName()).orElse("another player");
     }
 
     public static boolean availableTo(ServerPlayer player, ResourceLocation abilityId) {

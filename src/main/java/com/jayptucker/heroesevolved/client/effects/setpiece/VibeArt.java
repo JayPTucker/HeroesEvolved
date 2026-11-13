@@ -96,9 +96,32 @@ final class VibeArt {
             Vec3 center = from.add(line.scale(along));
             alpha *= smooth(.15F, .85F, (float) center.distanceTo(c.camera()));
             front(c, center, direction, width, width * .75F, k * 1.07F + t * .12F, alpha, .6F);
-            if (c.glow() && k == 0) c.glow(center, width * .9F, BLUE, alpha * .38F);
+            if (!c.glow()) continue;
+            // The front has a body: a lens of pressed air, bright at its rim, and a whole ring round it, so it reads
+            // from behind the caster and from the side, not only as two crescents seen face-on.
+            float lens = k == 0 ? 1 : .55F;
+            c.disc(center, direction, width * .96F, BLUE, alpha * .05F * lens, alpha * .24F * lens);
+            c.ring(center, direction, width, .05F * a.scale() + .02F, 0, Mth.TWO_PI, ICE, alpha * .62F * lens);
+            if (k == 0) c.glow(center, width * .9F, BLUE, alpha * .38F);
         }
-        if (!c.glow() || minimal()) return;
+        if (!c.glow()) return;
+        // The wake: rings left hanging along the path the lead front has crossed, each fading a few ticks after it
+        // passed, so a single frame shows the whole blast travel (the Quake shockwave's tube).
+        double length = line.length();
+        float lead = Math.min(1, (float) (t / travel));
+        int rings = minimal() ? 3 : Math.max(3, (int) (length / 1.3));
+        for (int i = 1; i <= rings; i++) {
+            float f = i / (float) (rings + 1);
+            if (f > lead) break;
+            float since = (float) (t - f * travel);
+            float ringAlpha = (1 - smooth(0, 7, since)) * smooth(-.5F, 1.5F, since) * .55F;
+            if (ringAlpha <= .01F) continue;
+            Vec3 at = from.add(line.scale(f));
+            ringAlpha *= smooth(.4F, 1.4F, (float) at.distanceTo(c.camera()));
+            float radius = (.2F + .62F * Mth.sqrt(f)) * a.scale() * (1 + since * .05F);
+            c.ring(at, direction, radius, .035F, 0, Mth.TWO_PI, i % 2 == 0 ? ICE : BLUE, ringAlpha);
+        }
+        if (minimal()) return;
         float p = Math.min(1, (float) (t / travel));
         Vec3 side = VibeGeometry.side(direction);
         Vec3 up = side.cross(direction);
@@ -201,7 +224,7 @@ final class VibeArt {
                 edge[i] = at.add(side.scale(x * Math.cos(angle))).add(up.scale(y * Math.sin(angle)))
                         .add(normal.scale(Math.sin(f * Mth.PI) * x * split));
             }
-            if (c.glow()) stroke(c, edge, .036F, alpha, wing == 0 ? ICE : BLUE);
+            if (c.glow()) stroke(c, edge, .05F, alpha, wing == 0 ? ICE : BLUE);
             else c.ribbon(edge, .085F, DEPTH, .3F * alpha, .1F * alpha);
         }
     }

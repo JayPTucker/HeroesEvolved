@@ -111,14 +111,24 @@ public final class ClassAbilityGameTests {
         undying.hurt(h.getLevel().damageSources().generic(), 500);
         h.assertTrue(undying.isAlive() && undying.getHealth() >= 1, "Undying keeps its last heart");
 
-        Pillager painted = pillager(h, p.position().add(-2, 0, 2));
-        StyleRuntime.ward(painted, StyleRuntime.Ward.PROPHECY, 100, p);
-        painted.hurt(h.getLevel().damageSources().generic(), 500);
-        h.assertTrue(painted.isAlive(), "The prophecy saves them once");
-        painted.invulnerableTime = 0;
-        painted.removeAllEffects();
-        painted.hurt(h.getLevel().damageSources().generic(), 500);
-        h.assertFalse(painted.isAlive(), "but only once");
+        Pillager cloaked = pillager(h, p.position().add(-2, 0, 2));
+        StyleRuntime.ward(cloaked, StyleRuntime.Ward.REFRACTION, 100, p);
+        float whole = cloaked.getHealth();
+        var arrow = EntityType.ARROW.create(h.getLevel());
+        arrow.setPos(cloaked.position().add(0, 1, -2));
+        cloaked.hurt(h.getLevel().damageSources().arrow(arrow, null), 6);
+        h.assertTrue(cloaked.getHealth() == whole, "Refraction Cloak turns an arrow aside");
+        var bullet = com.jayptucker.heroesevolved.weapons.PowerWeapons.testBullet(h.getLevel(), 0);
+        if (bullet != null) {
+            bullet.setPos(cloaked.position().add(0, 1, -2));
+            h.getLevel().addFreshEntity(bullet);
+            cloaked.invulnerableTime = 0;
+            cloaked.hurt(h.getLevel().damageSources().thrown(bullet, null), 6);
+            h.assertTrue(cloaked.getHealth() == whole && bullet.isRemoved(), "and a TaCZ round is turned and spent");
+        }
+        cloaked.invulnerableTime = 0;
+        cloaked.hurt(h.getLevel().damageSources().generic(), 5);
+        h.assertTrue(cloaked.getHealth() == whole - 5, "It does nothing for a blow that is not a shot");
 
         Pillager warded = pillager(h, p.position().add(2, 0, -2));
         StyleRuntime.ward(warded, StyleRuntime.Ward.EMPATHY, 100, p).charges = 2;

@@ -5,7 +5,9 @@ import com.jayptucker.heroesevolved.ability.data.PlayerAbilityData;
 import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
+import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.data.PowerOwnershipSavedData;
+import com.jayptucker.heroesevolved.events.PowerOwnershipEvents;
 import com.jayptucker.heroesevolved.intro.PowerIntroService;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.core.BlockPos;
@@ -16,6 +18,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.neoforge.common.util.FakePlayer;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import java.nio.file.Files;
@@ -32,6 +35,51 @@ public final class PowerOwnershipGameTests {
     private static void remove(ServerPlayer player) {
         PowerIntroService.forget(player); PowerOwnershipTestSupport.release(player);
         player.serverLevel().removePlayerImmediately(player, Entity.RemovalReason.DISCARDED);
+    }
+    @GameTest(template = "rewind_empty", batch = "ownership.retired", timeoutTicks = 50)
+    public static void removedPowerIsSwappedForAnUnclaimedOneAtLogin(GameTestHelper helper) {
+        ServerPlayer awake = player(helper), dormant = player(helper);
+        var removed = net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("heroesevolved", "precognition");
+        try {
+            helper.assertTrue(!AbilityRegistry.ABILITIES.containsKey(removed), "Precognition is no longer a power");
+            var ownership = PowerOwnershipSavedData.get(awake.getServer());
+            awake.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty().assignDormant(removed).unlock(removed));
+            awake.setData(ModDataAttachments.POWER_JOURNEY, awake.getData(ModDataAttachments.POWER_JOURNEY).evolve(removed.getPath()));
+            ownership.claim(removed, awake.getUUID());
+            PowerOwnershipEvents.login(new PlayerEvent.PlayerLoggedInEvent(awake));
+            var power = PlayerAbilityService.getData(awake).assignedPower().orElseThrow();
+            helper.assertTrue(AbilityRegistry.ABILITIES.containsKey(power.getKey()) && power.getValue().isUnlocked(),
+                    "An awakened owner of a removed power wakes with a real one: " + power.getKey());
+            helper.assertTrue(PowerOwnershipSavedData.get(awake.getServer()).owner(power.getKey()).orElseThrow().equals(awake.getUUID()),
+                    "The new power is theirs alone");
+            helper.assertTrue(awake.getData(ModDataAttachments.POWER_JOURNEY).isEvolved(power.getKey().getPath()), "Evolved carries over");
+            helper.assertTrue(PowerOwnershipSavedData.get(awake.getServer()).owner(removed).isEmpty(), "The removed power's claim is released");
+
+            dormant.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty().assignDormant(removed));
+            PowerOwnershipEvents.login(new PlayerEvent.PlayerLoggedInEvent(dormant));
+            var waiting = PlayerAbilityService.getData(dormant).assignedPower().orElseThrow();
+            helper.assertTrue(AbilityRegistry.ABILITIES.containsKey(waiting.getKey()) && !waiting.getValue().isUnlocked()
+                    && !waiting.getKey().equals(power.getKey()), "A dormant owner gets a different, still-dormant power");
+            helper.succeed();
+        } finally { remove(awake); remove(dormant); }
+    }
+    @GameTest(template = "rewind_empty", batch = "ownership.admin", timeoutTicks = 50)
+    public static void adminCanGiveAPowerItsLastOwnerNoLongerHas(GameTestHelper helper) {
+        ServerPlayer first = player(helper), second = player(helper);
+        try {
+            helper.assertTrue(PlayerAbilityService.grantAbility(first, ModAbilities.RADIATION_ID), "The first player takes Radiation");
+            helper.assertTrue(PlayerAbilityService.adminFree(second, ModAbilities.RADIATION_ID) != null,
+                    "An admin can't give a power its owner still has");
+            PlayerAbilityService.removeAssignedAbility(first);
+            helper.assertTrue(!PlayerAbilityService.availableTo(second, ModAbilities.RADIATION_ID),
+                    "Removing it still doesn't hand the role on by itself");
+            helper.assertTrue(PlayerAbilityService.adminFree(second, ModAbilities.RADIATION_ID) == null
+                    && PlayerAbilityService.replaceWithAbility(second, ModAbilities.RADIATION_ID),
+                    "but an admin can now give it to someone else");
+            helper.assertTrue(PlayerAbilityService.adminFree(first, ModAbilities.RADIATION_ID) != null,
+                    "and it is the new holder's until it is taken from them");
+            helper.succeed();
+        } finally { remove(first); remove(second); }
     }
     @GameTest(template = "rewind_empty", batch = "ownership.exclusive", timeoutTicks = 50)
     public static void dormantGrantReplacementAndRemovalCannotDuplicatePower(GameTestHelper helper) {

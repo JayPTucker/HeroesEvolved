@@ -28,7 +28,7 @@ import java.util.*;
 @PrefixGameTestTemplate(false)
 public final class SkillTreeGameTests {
     private static final List<String> POWERS = List.of("quake", "flight", "cryokinesis", "electrokinesis", "telekinesis",
-            "telepathy", "regeneration", "time_manipulation", "radiation", "sonic_resonance", "superspeed", "precognition", "pyrokinesis",
+            "telepathy", "regeneration", "time_manipulation", "radiation", "sonic_resonance", "superspeed", "pyrokinesis",
             "invisibility", "phasing", "empathic_mimicry", "technopathy", "matter_assembly", "vibe");
     private static ResourceLocation id(String power) { return ResourceLocation.fromNamespaceAndPath("heroesevolved", power); }
     private static ServerPlayer player(GameTestHelper h, String power, int level) {
@@ -39,7 +39,7 @@ public final class SkillTreeGameTests {
     }
     private static void cleanup(ServerPlayer p) {
         SkillActionService.forget(p);
-        com.jayptucker.heroesevolved.precog.PrecognitionService.forget(p); SonicService.stop(p);
+        SonicService.stop(p);
         com.jayptucker.heroesevolved.speed.SpeedService.forget(p);
         com.jayptucker.heroesevolved.time.SpaceTimeService.forget(p);
         com.jayptucker.heroesevolved.flight.FlightService.stopForPowerRemoval(p);
@@ -183,7 +183,7 @@ public final class SkillTreeGameTests {
                     var context = new AbilityUseContext(p, id(power), 5, settingAnchor);
                     h.assertTrue(SkillActionService.canUse(context, branch) && SkillActionService.activate(context, branch), "Optional skill must activate: " + power + "/" + branch);
                     // Seismic Lance's column bursts up a beat after its warning (QuakeReworkGameTests checks it lands).
-                    if (branch == 0 && !power.equals("flight") && !power.equals("regeneration") && !power.equals("telepathy") && !power.equals("time_manipulation") && !power.equals("superspeed") && !power.equals("precognition") && !power.equals("quake"))
+                    if (branch == 0 && !power.equals("flight") && !power.equals("regeneration") && !power.equals("telepathy") && !power.equals("time_manipulation") && !power.equals("superspeed") && !power.equals("quake"))
                         h.assertTrue(victim.getHealth() < before, "Aimed attack must damage its target: " + power);
                     if (branch == 0 && power.equals("time_manipulation")) h.assertTrue(com.jayptucker.heroesevolved.time.SpaceTimeService.isSuspended(victim), "Selective Stasis must pause its target");
                     if (power.equals("regeneration") && branch == 0) h.assertTrue(p.getHealth() < 10, "Bloodletting must cut her palm");
@@ -268,7 +268,7 @@ public final class SkillTreeGameTests {
             try {
                 h.assertTrue(victim.getDeltaMovement().z < 0, "The gravity well must pull a mob toward its anchor over time");
                 SkillActionService.forget(p);
-        com.jayptucker.heroesevolved.precog.PrecognitionService.forget(p); victim.setDeltaMovement(Vec3.ZERO);
+                victim.setDeltaMovement(Vec3.ZERO);
                 SkillActionService.tick(h.getLevel().getServer());
                 h.assertTrue(victim.getDeltaMovement().lengthSqr() == 0, "Removed field must stop altering its targets");
                 h.succeed();

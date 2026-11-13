@@ -43,11 +43,43 @@ public final class PowerOwnershipSavedData extends SavedData {
     /** True while no power in this world has ever had an owner. */
     public boolean noneClaimed() { return owners.isEmpty(); }
     public boolean available(ResourceLocation power, UUID player) { return !owners.containsKey(power) || owners.get(power).equals(player); }
+    /** Frees a power, for one that no longer exists. */
+    public void release(ResourceLocation power) { if (owners.remove(power) != null) setDirty(); }
     public boolean claim(ResourceLocation power, UUID player) {
         if (!available(power, player)) return false;
         if (owners.putIfAbsent(power, player) == null) setDirty();
         return true;
     }
+    /**
+     * For admins: frees the claim on {@code power} when its recorded owner no longer holds it (an admin removed or replaced
+     * it, or it was a dormant power since cleared). Returns true when {@code player} may now take it.
+     */
+    public boolean reclaimForAdmin(MinecraftServer server, ResourceLocation power, UUID player) {
+        UUID owner = owners.get(power);
+        if (owner == null || owner.equals(player)) return true;
+        if (holds(server, owner, power)) return false;
+        release(power);
+        return true;
+    }
+
+    /** Whether {@code player} still has {@code power} assigned: live data when online, their saved file when offline. */
+    public static boolean holds(MinecraftServer server, UUID player, ResourceLocation power) {
+        net.minecraft.world.entity.player.Player online = server.getPlayerList().getPlayer(player);
+        for (var level : server.getAllLevels()) if (online == null) online = level.getPlayerByUUID(player);
+        if (online != null) return online.getData(ModDataAttachments.PLAYER_ABILITIES).hasAbility(power);
+        Path file = server.getWorldPath(LevelResource.PLAYER_DATA_DIR).resolve(player + ".dat");
+        if (!Files.isRegularFile(file)) return false;
+        try {
+            CompoundTag root = NbtIo.readCompressed(file, NbtAccounter.create(16 * 1024 * 1024));
+            return root.getCompound("neoforge:attachments").getCompound("heroesevolved:player_abilities")
+                    .getCompound("abilities").contains(power.toString());
+        } catch (Exception e) {
+            // Unreadable: keep the claim rather than hand someone's power away by mistake.
+            HeroesEvolved.LOGGER.warn("Could not read {} to check power ownership", file.getFileName(), e);
+            return true;
+        }
+    }
+
     public void importLegacyPlayer(UUID player, CompoundTag root) {
         CompoundTag powers = root.getCompound("neoforge:attachments")
                 .getCompound("heroesevolved:player_abilities").getCompound("abilities");

@@ -196,6 +196,9 @@ public final class LastSignalService {
                 data.setDirty();
                 chime(player.serverLevel(), BunkerBuilder.receiverPos(bunker.origin));
                 tell(player, "RELAY STATION: Two pods occupied. Life support failing. Requesting extraction.");
+                // Isaac painted this call before the Last Day; Bennet filed his canvas with the receiver.
+                com.jayptucker.heroesevolved.expansion.PropheticPainting.giveSignal(player);
+                tell(player, "Clipped behind the receiver: a canvas signed I. Mendez. Two sleepers behind glass, a relay glowing hot.");
             }
             tell(player, "Relay coordinates: X " + lead.getX() + ", Z " + lead.getZ()
                     + ". The Journal recorded the signal. Take the shaft to the surface.");

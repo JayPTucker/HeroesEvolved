@@ -115,6 +115,8 @@ abilities will meet. Reuse these instead of starting again. What the player sees
   The client re-links the passenger chain once both entities exist, because the passenger packet can arrive
   before either entity has spawned. Seats come from `anchor.seatPosition(carrier)`; fast moves check them with
   `EntityCarryService.canTravelTo`. Carried loads skip the dash pose and keep the upright carry frame.
+  A carried player's own camera is moved each frame to the seat worked out from the carrier's interpolated
+  position and facing (`mixin/CarriedCameraMixin`); placed from the passenger's once-a-tick position, it jolted.
 
 ### Sound and feel
 

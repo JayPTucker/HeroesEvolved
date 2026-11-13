@@ -71,7 +71,6 @@ public final class PowerIntroService {
             Map.entry("invisibility", new Spec(40, 40, 0xCFD8E0, ArmPose.ARMS_WIDE, Kind.OPTIC_FADE, Kind.OPTIC_BURST)),
             Map.entry("phasing", new Spec(40, 40, 0x9FE3D6, ArmPose.TWO_HANDS, Kind.DENSITY_GHOST, Kind.DENSITY_RIPPLE)),
             Map.entry("empathic_mimicry", new Spec(50, 40, 0xE8C27A, ArmPose.TEMPLE, Kind.PROPHECY_THREAD, Kind.PSYCHIC_AWAKEN_RELEASE)),
-            Map.entry("precognition", new Spec(50, 40, 0xF7D88D, ArmPose.TEMPLE, Kind.PRECOG_FUTURE, Kind.PRECOG_RING)),
             Map.entry("technopathy", new Spec(50, 40, 0x60E0C1, ArmPose.TEMPLE, Kind.TECH_LINK, Kind.TECH_SCAN)),
             Map.entry("matter_assembly", new Spec(50, 40, 0xE7B771, ArmPose.TWO_HANDS, Kind.MATTER_WEAVE, Kind.MATTER_SHIELD)),
             Map.entry("vibe", new Spec(28, 25, 0x46BDFF, ArmPose.VIBE_READ, null, null)));
@@ -217,7 +216,6 @@ public final class PowerIntroService {
             if (session.power.getPath().equals("telepathy")) chargeTelepathy(session, age);
             if (session.power.getPath().equals("cryokinesis")) chargeCryokinesis(session, age);
             if (session.power.getPath().equals("radiation")) chargeRadiation(session, age);
-            if (session.power.getPath().equals("precognition")) chargePrecognition(session, age);
             if (session.power.getPath().equals("empathic_mimicry") && age % 10 == 0) chargeMimicry(session);
             if (spec.charge != null && session.ally() && session.wardHere()) WardRelease.charge(session.power.getPath(), player, session.ward,
                     age, spec.charge);
@@ -251,7 +249,6 @@ public final class PowerIntroService {
             case "cryokinesis" -> SoundEvents.PLAYER_HURT_FREEZE;
             case "radiation" -> SoundEvents.BEACON_ACTIVATE;
             case "pyrokinesis" -> SoundEvents.FIRECHARGE_USE;
-            case "precognition" -> SoundEvents.AMETHYST_BLOCK_RESONATE;
             case "invisibility" -> SoundEvents.ILLUSIONER_PREPARE_MIRROR;
             case "phasing" -> SoundEvents.RESPAWN_ANCHOR_CHARGE;
             case "empathic_mimicry" -> SoundEvents.ENCHANTMENT_TABLE_USE;
@@ -353,7 +350,6 @@ public final class PowerIntroService {
                 repelEnemies(player, 6, 0, 1.0);
             }
             case "empathic_mimicry" -> releaseMimicry(session);
-            case "precognition" -> releasePrecognition(session);
             case "technopathy" -> com.jayptucker.heroesevolved.technopathy.TechnopathyService.awaken(player);
             case "matter_assembly" -> com.jayptucker.heroesevolved.assembly.MatterAssemblyService.awaken(player);
             case "vibe" -> {
@@ -563,43 +559,6 @@ public final class PowerIntroService {
         sound(player, SoundEvents.GLASS_BREAK, 1.6F, 0.5F);
         sound(player, SoundEvents.POWDER_SNOW_BREAK, 1.6F, 0.6F);
         CameraShakePayload.sendAround(level, player.position(), 20, 0.8F, 14);
-    }
-
-    // ------------------------------------------------------------------
-    // Precognition: every attacker's next move, painted in gold, then
-    // stepped around before it happens.
-    // ------------------------------------------------------------------
-
-    private static void chargePrecognition(Session session, int age) {
-        ServerPlayer player = session.player;
-        if (age % 8 != 0) return;
-        for (LivingEntity threat : Danger.threats(player, session.ward, 16)) {
-            // A ghost of where it is about to be: already lunging at you.
-            Vec3 lunge = threat.position().lerp(player.position(), 0.6);
-            AbilityEffects.send(player.serverLevel(), Kind.PRECOG_GHOST, threat.position(), lunge,
-                    Math.max(1, threat.getBbHeight()));
-            PrivateGlow.glow(player, threat, 20);
-        }
-        if (age % 16 == 0) sound(player, SoundEvents.AMETHYST_BLOCK_CHIME, 0.8F, 0.6F + age / 100.0F);
-    }
-
-    private static void releasePrecognition(Session session) {
-        ServerPlayer player = session.player;
-        ArmPosePayload.show(player, ArmPose.ARMS_WIDE, 30);
-        // Every blow they were about to land has already been seen; they stumble into the miss.
-        for (LivingEntity threat : threats(player, 12)) {
-            if (threat instanceof Mob mob) mob.setTarget(null);
-            threat.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 2));
-            threat.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100, 1));
-            PrivateGlow.glow(player, threat, 160);
-            AbilityEffects.send(player.serverLevel(), Kind.PRECOG_CROSS, threat.position(), threat.position(),
-                    Math.max(1, threat.getBbHeight()));
-            Vec3 away = threat.position().subtract(player.position()).multiply(1, 0, 1).normalize();
-            velocity(threat, away.scale(0.6).add(0, 0.25, 0));
-        }
-        sound(player, SoundEvents.BELL_RESONATE, 1.4F, 0.8F);
-        sound(player, SoundEvents.AMETHYST_BLOCK_RESONATE, 1.6F, 0.5F);
-        com.jayptucker.heroesevolved.precog.PrecognitionService.firstVision(player);
     }
 
     // ------------------------------------------------------------------

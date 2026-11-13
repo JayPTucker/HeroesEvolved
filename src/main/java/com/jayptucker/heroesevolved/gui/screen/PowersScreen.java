@@ -211,11 +211,11 @@ public final class PowersScreen extends HeroScreen {
             String keyText = keyIndex > 0 ? key(keyIndex) : "—";
             int keyW = Math.max(16, font.width(keyText) + 6);
             int nameRoom = listW - 25 - keyW - 8;
-            g.drawString(font, font.plainSubstrByWidth(a.name.getString(), nameRoom), textX, y + 3, a.unlocked ? TEXT : DIM, false);
+            if (fitted(g, a.name.getString(), textX, y + 3, nameRoom, a.unlocked ? TEXT : DIM, false) && over) hover = a.name;
             String facts = !a.unlocked ? "Unlocks at Level " + a.unlockLevel
                     : (a.energy <= 0 ? "free" : a.energy + " stamina") + " · " + seconds(a.cooldown);
             int pillW = font.width(roleLabel(a.role)) + 6;
-            g.drawString(font, font.plainSubstrByWidth(facts, nameRoom - pillW - 4), textX, y + 12, MUTED, false);
+            g.drawString(font, ellipsis(facts, nameRoom - pillW - 4), textX, y + 12, MUTED, false);
             pill(g, x + listW - keyW - 6 - pillW, y + 11, roleLabel(a.role), roleColor(a.role));
             int kx = x + listW - keyW - 3;
             g.fill(kx, y + 4, kx + keyW, y + 17, keyIndex > 0 ? 0xCC2A1C10 : 0x55000000);
@@ -236,24 +236,24 @@ public final class PowersScreen extends HeroScreen {
         panel(g, rx, top, rw, detailBottom - top);
         if (selected != null) {
             g.renderFakeItem(selected.icon, rx + 6, top + 6);
-            g.drawString(font, font.plainSubstrByWidth(selected.name.getString(), rw - 30), rx + 26, top + 6, TEXT, true);
+            fitted(g, selected.name.getString(), rx + 26, top + 6, rw - 30, TEXT, true);
             int px = rx + 26 + pill(g, rx + 26, top + 16, roleLabel(selected.role), roleColor(selected.role)) + 4;
-            g.drawString(font, font.plainSubstrByWidth(selected.kind, rx + rw - px - 4), px, top + 17, MUTED, false);
+            g.drawString(font, ellipsis(selected.kind, rx + rw - px - 4), px, top + 17, MUTED, false);
             String facts = (selected.energy <= 0 ? "Free" : selected.energy + " stamina") + "  ·  " + seconds(selected.cooldown) + " cooldown"
                     + (selected.rank.isEmpty() ? "" : "  ·  " + selected.rank);
-            g.drawString(font, font.plainSubstrByWidth(facts, rw - 12), rx + 6, top + 30, GOLD, false);
+            g.drawString(font, ellipsis(facts, rw - 12), rx + 6, top + 30, GOLD, false);
             int lines = Math.max(1, (detailBottom - (top + 44) - 12) / 10);
             int after = paragraph(g, selected.description, rx + 6, top + 43, rw - 12, lines, TEXT);
             int keyIndex = ClientLoadout.keyOf(selected.actionKey);
             Component status = !selected.unlocked ? Component.literal("Unlocks at Level " + selected.unlockLevel).withStyle(ChatFormatting.RED)
                     : keyIndex > 0 ? Component.literal("On " + key(keyIndex) + ". Also on the ability wheel (hold R).").withStyle(ChatFormatting.GREEN)
                     : Component.literal("On the ability wheel only. Click a key below to put it there.").withStyle(ChatFormatting.GOLD);
-            g.drawString(font, font.plainSubstrByWidth(status.getString(), rw - 12), rx + 6, Math.min(after + 2, detailBottom - 11), status.getStyle().getColor() == null ? TEXT
+            g.drawString(font, ellipsis(status.getString(), rw - 12), rx + 6, Math.min(after + 2, detailBottom - 11), status.getStyle().getColor() == null ? TEXT
                     : status.getStyle().getColor().getValue() | 0xFF000000, false);
         }
         int ky = detailBottom + 6;
         g.drawString(font, "KEYS", rx, ky, GOLD, false);
-        g.drawString(font, font.plainSubstrByWidth("click to assign, right-click to clear", rw - 30), rx + 28, ky, DIM, false);
+        g.drawString(font, ellipsis("click to assign, right-click to clear", rw - 30), rx + 28, ky, DIM, false);
         int slotW = (rw - 9) / 4;
         Map<String, Ability> byKey = new HashMap<>();
         list.forEach(a -> byKey.put(a.actionKey, a));
@@ -272,7 +272,7 @@ public final class PowersScreen extends HeroScreen {
                 g.pose().scale(0.75F, 0.75F, 1);
                 g.renderFakeItem(on.icon, 0, 0);
                 g.pose().popPose();
-                g.drawString(font, font.plainSubstrByWidth(on.name.getString(), slotW - 6), sx + 3, sy + 13, TEXT, false);
+                fitted(g, on.name.getString(), sx + 3, sy + 13, slotW - 6, TEXT, false);
             } else g.drawString(font, "empty", sx + 3, sy + 13, DIM, false);
             int index = k;
             Ability chosen = selected;
@@ -305,7 +305,7 @@ public final class PowersScreen extends HeroScreen {
             lanes = Math.max(lanes, 1 + (int) nodes.stream().filter(n -> n.branch() == fb).mapToDouble(n -> place.get(n.id())[0]).max().orElse(0));
         }
         int treeTop = top + 14, rowGap = Math.max(HEX_H + 2, (bottom - treeTop - HEX_H) / Math.max(1, depth));
-        boolean names = rowGap >= HEX_H + 12;
+        boolean names = rowGap >= HEX_H + 12, twoLines = rowGap >= HEX_H + 19;
         int laneGap = Math.min(40, (colW - HEX_W - 4) / Math.max(1, lanes - 1));
         // Names under the hexes only where there is room for them; otherwise hover a hex, or read its card.
         names = names && laneGap >= 40;
@@ -318,7 +318,8 @@ public final class PowersScreen extends HeroScreen {
         }
         for (int b = 0; b < 3; b++) {
             String name = SkillCatalog.branchName(path, b).toUpperCase();
-            g.drawCenteredString(font, font.plainSubstrByWidth(name, colW - 4), x + b * colW + colW / 2, top, TEXT);
+            String shown = ellipsis(name, colW - 4);
+            g.drawString(font, shown, x + b * colW + (colW - font.width(shown)) / 2, top, TEXT);
             if (b > 0) g.fill(x + b * colW, treeTop, x + b * colW + 1, bottom, 0x22FFFFFF);
         }
         for (SkillCatalog.Node n : nodes) {
@@ -347,14 +348,17 @@ public final class PowersScreen extends HeroScreen {
             if (over) { g.blitSprite(HEX_SELECTED, c[0], c[1], HEX_W, HEX_H); hover = Component.literal(n.name()); }
             if (names) {
                 // Each name fits within its own lane, so neighbours never run into each other.
+                // Long names wrap at a word onto a second line where the rows leave room, and end in "…" where they don't.
                 int room = (int) ((lanes > 1 ? Math.min(laneGap - 3, colW - 4) : colW - 4) / 0.75F);
-                String label = font.plainSubstrByWidth(n.name(), room);
-                int lw = font.width(label);
-                g.pose().pushPose();
-                g.pose().translate(c[0] + HEX_W / 2F - lw * 0.375F, c[1] + HEX_H + 1, 0);
-                g.pose().scale(0.75F, 0.75F, 1);
-                g.drawString(font, label, 0, 0, has ? GOLD : canLearn ? TEXT : DIM, false);
-                g.pose().popPose();
+                List<String> label = wrapped(n.name(), room, twoLines ? 2 : 1);
+                for (int line = 0; line < label.size(); line++) {
+                    int lw = font.width(label.get(line));
+                    g.pose().pushPose();
+                    g.pose().translate(c[0] + HEX_W / 2F - lw * 0.375F, c[1] + HEX_H + 1 + line * 7, 0);
+                    g.pose().scale(0.75F, 0.75F, 1);
+                    g.drawString(font, label.get(line), 0, 0, has ? GOLD : canLearn ? TEXT : DIM, false);
+                    g.pose().popPose();
+                }
             }
             String id = n.id();
             boolean buyable = canLearn && !has;
@@ -383,7 +387,7 @@ public final class PowersScreen extends HeroScreen {
         if (n.active()) {
             String role = roleOf(n.role(), n.description());
             int pw = pill(g, x + 26, py, roleLabel(role), roleColor(role));
-            g.drawString(font, font.plainSubstrByWidth(kind, w - 36 - pw), x + 30 + pw, py + 1, MUTED, false);
+            g.drawString(font, ellipsis(kind, w - 36 - pw), x + 30 + pw, py + 1, MUTED, false);
         } else g.drawString(font, kind, x + 26, py + 1, MUTED, false);
         int cy = py + 14;
         String facts = SkillCatalog.branchName(path, n.branch()) + "  ·  " + n.cost() + (n.cost() == 1 ? " point" : " points")
@@ -481,7 +485,7 @@ public final class PowersScreen extends HeroScreen {
             g.renderFakeItem(PowerIcons.node(n), cx + 5, cy);
             cy = Math.max(paragraph(g, Component.literal(n.name()).withStyle(ChatFormatting.BOLD), cx + 25, cy + 4, cardW - 30, 2, TEXT), cy + 18) + 2;
             cy = paragraph(g, Component.literal(PERKS[Math.max(0, SkillCatalog.ROLES.indexOf(n.role()))]), cx + 5, cy, cardW - 10, 3, color) + 3;
-            g.drawString(font, font.plainSubstrByWidth(n.energy() + " stamina · " + seconds(n.cooldown()), cardW - 10), cx + 5, cy, GOLD, false);
+            g.drawString(font, ellipsis(n.energy() + " stamina · " + seconds(n.cooldown()), cardW - 10), cx + 5, cy, GOLD, false);
             cy += 12;
             int buttonY = cardsTop + cardH - 18;
             int keyIndex = mine ? ClientLoadout.keyOf(n.id()) : 0;
@@ -490,7 +494,7 @@ public final class PowersScreen extends HeroScreen {
             List<FormattedCharSequence> desc = font.split(Component.literal(n.description()), cardW - 10);
             paragraph(g, Component.literal(n.description()), cx + 5, cy, cardW - 10, Math.max(1, room), TEXT);
             if (desc.size() > room && over) hover = Component.literal(n.description());
-            if (mine) g.drawString(font, font.plainSubstrByWidth(keyIndex > 0 ? "On " + key(keyIndex) : "On the ability wheel", cardW - 10),
+            if (mine) g.drawString(font, ellipsis(keyIndex > 0 ? "On " + key(keyIndex) : "On the ability wheel", cardW - 10),
                     cx + 5, buttonY - 12, keyIndex > 0 ? GREEN : GOLD, false);
             Component label = mine ? Component.literal("YOUR CLASS ✔")
                     : !awake ? Component.literal("NOT AWAKE")

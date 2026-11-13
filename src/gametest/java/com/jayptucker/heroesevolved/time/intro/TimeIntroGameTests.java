@@ -80,6 +80,40 @@ public final class TimeIntroGameTests {
         player.serverLevel().removePlayerImmediately(player, Entity.RemovalReason.DISCARDED);
     }
 
+    /** The first traveller folds to each player in turn, takes them along, and moves on with everyone gathered. */
+    @GameTest(template = "rewind_empty", timeoutTicks = 200, batch = "TimeIntroGameTests.gatherEveryone")
+    public static void gatherFetchesEachPlayerInTurn(GameTestHelper helper) {
+        Vec3 origin = Vec3.atBottomCenterOf(helper.absolutePos(new BlockPos(3, 2, 3)));
+        // Without the power the finished group is dropped from the queue, so no vision starts under the other tests.
+        ServerPlayer owner = player(helper, origin, "gather-owner");
+        ServerPlayer first = player(helper, origin.add(4, 0, 0), "gather-first");
+        ServerPlayer second = player(helper, origin.add(0, 0, 6), "gather-second");
+        List<ServerPlayer> players = List.of(owner, first, second);
+        try {
+            TimeGather.begin(owner, List.of(first, second), List.of(owner.getUUID()));
+            helper.assertTrue(TimeGather.gathering(owner) && TimeIntroService.isQueued(owner), "The traveller starts gathering");
+        } catch (RuntimeException e) { players.forEach(TimeIntroGameTests::remove); throw e; }
+        helper.runAfterDelay(10, () -> {
+            try {
+                helper.assertTrue(owner.distanceTo(first) < 2.5, "The first fold lands beside the nearest player");
+                helper.assertTrue(TimeGather.gathering(first) && !TimeGather.gathering(second), "and takes only them");
+            } catch (RuntimeException e) { players.forEach(TimeIntroGameTests::remove); throw e; }
+        });
+        helper.runAfterDelay(10 + TimeGather.HOP_TICKS, () -> {
+            try {
+                helper.assertTrue(owner.distanceTo(second) < 2.5 && first.distanceTo(second) < 3,
+                        "The next fold brings everyone gathered so far to the next player");
+                helper.assertTrue(TimeGather.gathering(second), "who is taken too");
+            } catch (RuntimeException e) { players.forEach(TimeIntroGameTests::remove); throw e; }
+        });
+        helper.runAfterDelay(20 + TimeGather.HOP_TICKS * 2, () -> {
+            try {
+                helper.assertTrue(!TimeGather.gathering(owner), "With nobody left, the group goes to the vision");
+                helper.succeed();
+            } finally { players.forEach(TimeIntroGameTests::remove); }
+        });
+    }
+
     @GameTest(template = "rewind_empty", timeoutTicks = 4000, batch = "TimeIntroGameTests.fullSceneAudienceReturnAndRecovery")
     public static void fullSceneAudienceReturnAndRecovery(GameTestHelper helper) {
         ServerLevel source = helper.getLevel();

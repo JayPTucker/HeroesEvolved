@@ -45,10 +45,6 @@ public final class ModAbilities {
     public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.SuperspeedAbility> SUPERSPEED =
             ABILITIES.register(SUPERSPEED_ID.getPath(), com.jayptucker.heroesevolved.ability.types.SuperspeedAbility::new);
 
-    public static final ResourceLocation PRECOGNITION_ID = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "precognition");
-    public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.PrecognitionAbility> PRECOGNITION =
-            ABILITIES.register("precognition", com.jayptucker.heroesevolved.ability.types.PrecognitionAbility::new);
-
     public static final ResourceLocation INVISIBILITY_ID = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "invisibility");
     public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.InvisibilityAbility> INVISIBILITY =
             ABILITIES.register(INVISIBILITY_ID.getPath(), com.jayptucker.heroesevolved.ability.types.InvisibilityAbility::new);

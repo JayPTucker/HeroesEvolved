@@ -40,7 +40,6 @@ public final class ModPayloads {
             .playToClient(SonicVoicePayload.TYPE, SonicVoicePayload.STREAM_CODEC, SonicVoicePayload::handle)
             .playToClient(UnseenPayload.TYPE, UnseenPayload.STREAM_CODEC, UnseenPayload::handle)
             .playToClient(RegenerationStatePayload.TYPE, RegenerationStatePayload.STREAM_CODEC, RegenerationStatePayload::handle)
-            .playToClient(ClarityPayload.TYPE, ClarityPayload.STREAM_CODEC, ClarityPayload::handle)
             .playToClient(ResonancePayload.TYPE, ResonancePayload.STREAM_CODEC, ResonancePayload::handle)
             .playToClient(MomentumPayload.TYPE, MomentumPayload.STREAM_CODEC, MomentumPayload::handle)
             .playToClient(DensityPayload.TYPE, DensityPayload.STREAM_CODEC, DensityPayload::handle)

@@ -67,7 +67,8 @@ public final class TimeIntroService {
     private static Scene scene;
     private static boolean configured;
 
-    private record Request(UUID owner, List<UUID> group) {}
+    /** {@code origins} holds where a gathered player was taken from, which is where the vision sends them home. */
+    private record Request(UUID owner, List<UUID> group, Map<UUID, TimeIntroVisit> origins) {}
     private static final class Scene {
         final UUID owner;
         final Set<UUID> visitors = new LinkedHashSet<>();
@@ -94,7 +95,7 @@ public final class TimeIntroService {
 
     /** Waiting for the city after acquiring the power; the awakening shields them meanwhile. */
     public static boolean isQueued(ServerPlayer player) {
-        return QUEUE.stream().anyMatch(request -> request.owner.equals(player.getUUID()));
+        return TimeGather.fetching(player) || QUEUE.stream().anyMatch(request -> request.owner.equals(player.getUUID()));
     }
 
     /** A vision is playing in the city right now. */
@@ -123,7 +124,7 @@ public final class TimeIntroService {
             player.setData(ModDataAttachments.TIME_INTRO_SEEN, true);
             return;
         }
-        if (QUEUE.stream().anyMatch(request -> request.owner.equals(player.getUUID()))) return;
+        if (isQueued(player)) return;
         // Capture the ten-block audience at acquisition, not after any city preparation/queue delay.
         List<UUID> group = player.serverLevel().players().stream()
                 .filter(other -> other == player || other.distanceToSqr(player) <= 100)
@@ -132,7 +133,18 @@ public final class TimeIntroService {
             group = new ArrayList<>(group);
             group.addFirst(player.getUUID());
         }
-        QUEUE.add(new Request(player.getUUID(), List.copyOf(group)));
+        // Everyone else online is fetched first, one fold at a time, and travels with the group.
+        List<ServerPlayer> fetch = TimeGather.targets(player, group);
+        if (!fetch.isEmpty()) {
+            TimeGather.begin(player, fetch, group);
+            return;
+        }
+        QUEUE.add(new Request(player.getUUID(), List.copyOf(group), Map.of()));
+    }
+
+    /** Called when a gather has fetched everyone: the group waits for the vision like any other audience. */
+    static void enqueue(ServerPlayer owner, List<UUID> group, Map<UUID, TimeIntroVisit> origins) {
+        QUEUE.add(new Request(owner.getUUID(), List.copyOf(group), Map.copyOf(origins)));
     }
 
     public static void login(ServerPlayer player) {
@@ -149,6 +161,7 @@ public final class TimeIntroService {
     }
 
     public static void tick(MinecraftServer server) {
+        TimeGather.tick(server);
         ServerLevel city = server.getLevel(DIMENSION);
         if (city == null) return;
         if (!configured) {
@@ -274,7 +287,8 @@ public final class TimeIntroService {
                 ServerPlayer visitor = server.getPlayerList().getPlayer(id);
                 if (visitor == null || !visitor.isAlive() || isVisiting(visitor) || isCity(visitor.level())) continue;
                 next.visitors.add(id);
-                visitor.setData(ModDataAttachments.TIME_INTRO_VISIT, TimeIntroVisit.capture(visitor));
+                // A gathered player goes home to where they were taken from, not to where the gather left them.
+                visitor.setData(ModDataAttachments.TIME_INTRO_VISIT, request.origins.getOrDefault(id, TimeIntroVisit.capture(visitor)));
                 // Remembered for good: telepaths who were there recognise the city in others' dreams.
                 visitor.setData(ModDataAttachments.PLAYER_SEEN_FUTURE_CITY.get(), true);
                 if (PlayerAbilityService.getData(visitor).ability(POWER)
@@ -376,6 +390,7 @@ public final class TimeIntroService {
     }
 
     public static void shutdown(MinecraftServer server) {
+        TimeGather.cancelAll(server);
         AvenueService.shutdown(server);
         ServerLevel city = server.getLevel(DIMENSION);
         if (scene != null && city != null) finish(server, city, false);

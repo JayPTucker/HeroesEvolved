@@ -79,9 +79,6 @@ public final class StylePreview {
         shot(Piece.LIGHTNING_FLURRY, Place.LINE, 1, 4);
         shot(Piece.PHASE_BLUR, Place.BOUND, 1, 40);
         shot(Piece.RELAY_RUN, Place.LINE, 1, 4);
-        far(Piece.FORETOLD_STRIKE, Place.AIMED, 3, 9, 6, 38, 26, 44);
-        shot(Piece.BRANCHING_PATHS, Place.BOUND, 1, 40);
-        far(Piece.PROPHECY_CANVAS, Place.STAGE, 12, 12, 2, -6, 40);
         shot(Piece.SHADOW_STRIKE, Place.FACE, 1, 4);
         shot(Piece.REFRACTION_CLOAK, Place.BOUND, 1, 40);
         shot(Piece.PRISM_HAZE, Place.STAGE, 6, 60);

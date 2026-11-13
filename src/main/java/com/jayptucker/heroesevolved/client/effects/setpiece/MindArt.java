@@ -15,7 +15,6 @@ final class MindArt {
 
     private static final float[] WHITE = {1, 1, 1};
     private static final float[] BLOOD = rgb(0xE0303C), LIFE_GOLD = rgb(0xFFD98A), LEAF = rgb(0x8CFF8A), BLOOM = rgb(0xFFB8E0);
-    private static final float[] PAINT = rgb(0xD8452A), INK = rgb(0x5A1A12), CANVAS = rgb(0xEDE3CF), FUTURE = rgb(0x7FE8FF);
     private static final float[] HOLO = rgb(0x5CFFD0), HOLO_DEEP = rgb(0x1E9C8A);
     private static final float[] CRYSTAL = rgb(0xDCE8F8), CRYSTAL_EDGE = rgb(0x9FD0FF), LATTICE = rgb(0xFFE6A8);
 
@@ -89,82 +88,6 @@ final class MindArt {
             Vec3 d = dir.scale(Mth.cos(tilt)).add(Mth.cos(yaw) * Mth.sin(tilt), 0, Mth.sin(yaw) * Mth.sin(tilt)).normalize();
             branch(c, seed * 31 + i + depth, to, d, length * 0.68F, depth + 1, grow, f, tips);
         }
-    }
-
-    // ------------------------------------------------------------------
-    // Precognition
-    // ------------------------------------------------------------------
-
-    /** A ring is painted on the ground and crossed out; when the painting comes true, it bursts in ink. */
-    static void foretold(Canvas c, Active a, float t) {
-        float r = a.scale(), strike = 40;
-        Vec3 o = a.target().add(0, 0.06, 0);
-        float fade = t < strike ? 1 : Mth.clamp(1 - (t - strike) / 20, 0, 1);
-        if (c.glow() || c.soft()) {
-            float drawn = smooth(0, 14, t);
-            int steps = 48;
-            List<Vec3> pts = new ArrayList<>();
-            for (int i = 0; i <= steps * drawn; i++) {
-                float ang = i * Mth.TWO_PI / steps * 1.08F, rr = r * (1 + 0.04F * Mth.sin(i * 0.9F));
-                pts.add(o.add(Mth.cos(ang) * rr, 0, Mth.sin(ang) * rr));
-            }
-            if (pts.size() > 1 && c.soft()) c.ribbon(pts.toArray(Vec3[]::new), 0.22F, PAINT, 0.95F * fade, 0.7F * fade);
-            float x = smooth(14, 24, t);
-            if (x > 0 && c.soft()) {
-                c.line(o.add(-r * 0.6, 0.01, -r * 0.6), o.add(-r * 0.6 + r * 1.2 * x, 0.01, -r * 0.6 + r * 1.2 * x), 0.2F, PAINT, 0.95F * fade, 0.8F * fade);
-                float y = smooth(19, 28, t);
-                if (y > 0) c.line(o.add(r * 0.6, 0.01, -r * 0.6), o.add(r * 0.6 - r * 1.2 * y, 0.01, -r * 0.6 + r * 1.2 * y), 0.2F, PAINT, 0.95F * fade, 0.8F * fade);
-            }
-            if (c.glow() && t < strike) c.ring(o, r, 0.08F, PAINT, 0.3F + 0.3F * Mth.sin(t * 0.6F));
-        }
-        if (t >= strike) {
-            float s = t - strike;
-            if (c.glow()) {
-                if (s < 5) c.glow(o.add(0, 1.5, 0), 5, WHITE, 1 - s / 5);
-                c.ring(o, r * (1 + s * 0.1F), 0.4F, PAINT, 0.8F * fade);
-            }
-            if (c.soft()) for (int i = 0; i < 10; i++) {
-                float ang = i * Mth.TWO_PI / 10, p = Mth.clamp(s / 14, 0, 1);
-                c.cloud(o.add(Mth.cos(ang) * r * p, 0.5 + p * 1.5, Mth.sin(ang) * r * p), 0.7F, 0.5F, 0.7F, a.seed() + i, i, 0.6F * (1 - p),
-                        Shades.flat(i % 2 == 0 ? PAINT : INK));
-            }
-        }
-    }
-
-    /** Three futures of them stand round them, pale cyan, threads of fate running back to the one that is real. */
-    static void branching(Canvas c, Active a, float t) {
-        float f = fade(t, a.piece().ticks, 8, 14);
-        Vec3 o = a.at(c);
-        for (int k = 0; k < 3; k++) {
-            float ang = k * Mth.TWO_PI / 3 + 0.4F + Mth.sin(t * 0.04F + k) * 0.15F;
-            Vec3 p = o.add(Mth.cos(ang) * 2.5, 0.95, Mth.sin(ang) * 2.5);
-            if (c.soft()) c.shell(p, 0.33F, 0.95F, 0.33F, Mth.PI, FUTURE, 0.28F * f * (0.7F + 0.3F * Mth.sin(t * 0.3F + k)), 0.15F, PLAIN, 0);
-            if (c.glow()) {
-                c.line(o.add(0, 1, 0), p, 0.03F, FUTURE, 0.5F * f, 0.2F * f);
-                c.ring(p.add(0, -0.9, 0), 0.5F, 0.05F, FUTURE, 0.5F * f);
-            }
-        }
-    }
-
-    /** Painted canvases hang in the air above them, turning, brush strokes swirling between them. */
-    static void prophecy(Canvas c, Active a, float t) {
-        float life = a.piece().ticks, f = fade(t, life, 10, 20);
-        Vec3 o = a.origin();
-        for (int i = 0; i < 5; i++) {
-            float ang = i * Mth.TWO_PI / 5 + t * 0.02F;
-            Vec3 p = o.add(Mth.cos(ang) * 2.4, 3 + Mth.sin(t * 0.05F + i) * 0.2, Mth.sin(ang) * 2.4);
-            if (c.solid() && f > 0.3F) c.box(p, 0.55F * f, 0.42F * f, 0.03F, -ang + Mth.HALF_PI, 0, 0, CANVAS, 1);
-            if (c.glow()) {
-                Vec3 face = new Vec3(Mth.cos(ang), 0, Mth.sin(ang)).scale(0.05);
-                Vec3 side = new Vec3(-Mth.sin(ang), 0, Mth.cos(ang));
-                for (int s = 0; s < 3; s++) {
-                    float hh = -0.25F + s * 0.25F;
-                    c.line(p.add(face).add(side.scale(-0.4)).add(0, hh, 0), p.add(face).add(side.scale(0.4)).add(0, hh + 0.1, 0), 0.05F,
-                            hue(i * 0.17F + s * 0.1F), 0.7F * f, 0.7F * f);
-                }
-            }
-        }
-        if (c.glow()) for (int k = 0; k < 3; k++) c.helix(o.add(0, 1.4, 0), 2.2F, 2.6F, 1.2F, 1.1F, k * 2.1F + t * 0.06F, 0.06F, hue(k * 0.3F), 0.5F * f, 24);
     }
 
     // ------------------------------------------------------------------
