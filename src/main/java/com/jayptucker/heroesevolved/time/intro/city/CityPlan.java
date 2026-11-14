@@ -15,7 +15,8 @@ import java.util.List;
 public final class CityPlan {
     /**
      * One letter per block, rows north to south. T tower, X the tallest tower, D downtown, m midtown,
-     * r residential; P Kirby Plaza, H city hall, C church, K park, L parking, U construction, Q Primatech.
+     * r residential; P Kirby Plaza, H city hall, C church, K park, L parking, U construction, Q Primatech,
+     * A the Odessa Arms ({@link Apartments}), where the Last Day begins.
      */
     private static final String[] MAP = {
             "mmDDDDmm",
@@ -25,7 +26,7 @@ public final class CityPlan {
             "rmDmmDmr",
             "rrCrrKrr",
             "rLrrrrUr",
-            "rrrQQrrr"};
+            "rrAQQrrr"};
 
     private static final String[] SHOPS = {"CORNER CAFE", "PHARMACY", "CITY MARKET", "BOOKS & NEWS", "DELI", "LAUNDROMAT",
             "HARDWARE", "BARBER", "DINER", "LENA'S BAKERY", "ROSA'S FLOWERS", "SHOES", "RECORDS", "OPTICIAN", "DRY CLEANING",
@@ -53,6 +54,7 @@ public final class CityPlan {
                     case 'L' -> Landmarks.parking(out, bx, bz);
                     case 'U' -> Landmarks.construction(out, bx, bz);
                     case 'Q' -> { if (bx == 3) Landmarks.primatech(out); }
+                    case 'A' -> out.add(Apartments.feature());
                     default -> buildings(out, bx, bz, kind);
                 }
                 if (kind != 'Q') {

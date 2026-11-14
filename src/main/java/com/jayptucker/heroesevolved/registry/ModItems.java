@@ -34,6 +34,15 @@ public final class ModItems {
             COMPONENTS.registerComponentType("blood_purity", builder -> builder
                     .persistent(BloodPurity.CODEC).networkSynchronized(BloodPurity.STREAM_CODEC));
 
+    /** Forge Energy kept in a broken Ability Dampener's item, so picking it up loses nothing. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> STORED_ENERGY =
+            COMPONENTS.registerComponentType("stored_energy", builder -> builder
+                    .persistent(com.mojang.serialization.Codec.INT).networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.VAR_INT));
+
+    /** A dampener round's hold: no power answers until it wears off. See dampener/Dampening. */
+    public static final DeferredHolder<MobEffect, MobEffect> DAMPENED = EFFECTS.register("dampened",
+            com.jayptucker.heroesevolved.dampener.Dampening.Effect::new);
+
     /** After a forced draw: weakened, and a regenerating body cannot regrow until it wears off. */
     public static final DeferredHolder<MobEffect, MobEffect> DRAINED = EFFECTS.register("drained",
             () -> new MobEffect(MobEffectCategory.HARMFUL, 0x7A1020) {});
@@ -54,6 +63,7 @@ public final class ModItems {
     public static final DeferredItem<net.minecraft.world.item.DoubleHighBlockItem> CRYOCHAMBER = ITEMS.register("cryochamber",
             () -> new net.minecraft.world.item.DoubleHighBlockItem(ModBlocks.CRYOCHAMBER.get(), new Item.Properties().stacksTo(16)));
     public static final DeferredItem<?> ALARM_BEACON = ITEMS.registerSimpleBlockItem(ModBlocks.ALARM_BEACON);
+    public static final DeferredItem<?> ABILITY_DAMPENER = ITEMS.registerSimpleBlockItem(ModBlocks.ABILITY_DAMPENER);
 
     public static final DeferredItem<SyringeItem> EMPTY_SYRINGE = ITEMS.register("empty_syringe",
             () -> new SyringeItem(new Item.Properties().stacksTo(16)));
@@ -71,6 +81,10 @@ public final class ModItems {
     /** What Sylar leaves when he falls: once a life, five seconds back. */
     public static final DeferredItem<com.jayptucker.heroesevolved.story.sylar.SylarsWatchItem> SYLARS_WATCH = ITEMS.register("sylars_watch",
             () -> new com.jayptucker.heroesevolved.story.sylar.SylarsWatchItem(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC).fireResistant()));
+
+    /** Noah Bennet's horn-rimmed glasses, worn on the head and drawn on the face (story/actor and the Last Day). */
+    public static final DeferredItem<com.jayptucker.heroesevolved.item.HornRimmedGlassesItem> HORN_RIMMED_GLASSES = ITEMS.register("horn_rimmed_glasses",
+            () -> new com.jayptucker.heroesevolved.item.HornRimmedGlassesItem(new Item.Properties().stacksTo(1)));
 
     /** What Elle Bishop leaves when she is beaten: three charges of stored lightning, refilled from machines. */
     public static final DeferredItem<com.jayptucker.heroesevolved.story.elle.ElleCapacitorItem> ELLES_CAPACITOR = ITEMS.register("elles_capacitor",
@@ -99,7 +113,14 @@ public final class ModItems {
                         output.accept(BUFFERED_SALINE.get());
                         output.accept(UNSTABLE_COMPOUND.get());
                         output.accept(SYLARS_WATCH.get());
+                        output.accept(HORN_RIMMED_GLASSES.get());
                         output.accept(EMP_GRENADE.get());
+                        output.accept(ABILITY_DAMPENER.get());
+                        ItemStack fullDampener = new ItemStack(ABILITY_DAMPENER.get());
+                        fullDampener.set(STORED_ENERGY.get(), com.jayptucker.heroesevolved.dampener.DampenerGeometry.CAPACITY);
+                        output.accept(fullDampener);
+                        ItemStack nullifier = com.jayptucker.heroesevolved.dampener.Nullifier.charged();
+                        if (!nullifier.isEmpty()) output.accept(nullifier);
                         output.accept(com.jayptucker.heroesevolved.story.elle.ElleCapacitorItem.charged(new ItemStack(ELLES_CAPACITOR.get()), 3));
                         for (boolean donated : new boolean[] {true, false}) {
                             BloodPurity purity = new BloodPurity(donated, 3, "Creative");

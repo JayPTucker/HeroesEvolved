@@ -13,6 +13,14 @@ public final class CityGrid {
     public static final int LOT_MIN = 11, LOT_MAX = 28;
     /** The superblock where the avenue ends: Primatech Paper's lot, blocks 3 and 4 of the southern row. */
     public static final int TERMINUS_BZ = 7;
+    /** The stasis bunker's north door under Primatech Paper's lobby: the Last Day's safe house is built from here. */
+    public static final int SHAFT_X = 4, SHAFT_Z = 112;
+    /**
+     * The top flight of the stair down to it, open to the lobby through a slot in the floor along the north wall: the top
+     * step is at {@code STAIR_X0}, a block below the lobby floor, and the flight goes down east (blueprint
+     * {@code lastday_stairwell}).
+     */
+    public static final int STAIR_X0 = 8, STAIR_X1 = 15, STAIR_Z0 = 109, STAIR_Z1 = 111;
 
     private CityGrid() {}
 

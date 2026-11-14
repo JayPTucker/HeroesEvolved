@@ -48,8 +48,24 @@ public final class TempestCamera {
         return null;
     }
 
+    /** A still view set by a preview driver (see {@link #fix}); it wins over everything else. */
+    private static Shot fixed;
+
+    /**
+     * Holds the view still at {@code at}, looking at {@code lookAt}, until called with nulls. For preview drivers that
+     * need a side view of something done along the look (a camera behind or in front of the player sees only their
+     * body). Keep the game in a third-person mode so the player is still drawn.
+     */
+    public static void fix(Vec3 at, Vec3 lookAt) {
+        if (at == null || lookAt == null) { fixed = null; return; }
+        Vec3 look = lookAt.subtract(at);
+        fixed = new Shot(at, (float) (Mth.atan2(-look.x, look.z) * Mth.RAD_TO_DEG),
+                (float) (-Mth.atan2(look.y, look.horizontalDistance()) * Mth.RAD_TO_DEG));
+    }
+
     /** The view for this frame, or null when there is no tornado to watch. */
     public static Shot shot(float partial) {
+        if (fixed != null) return fixed;
         if (spot == null || spotOld == null) return null;
         Vec3 at = spotOld.lerp(spot, partial), look = focusOld.lerp(focus, partial).subtract(at);
         float yaw = (float) (Mth.atan2(-look.x, look.z) * Mth.RAD_TO_DEG);

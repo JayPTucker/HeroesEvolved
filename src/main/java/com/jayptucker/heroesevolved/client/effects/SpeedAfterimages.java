@@ -69,7 +69,7 @@ public final class SpeedAfterimages {
             Vec3 previous = PREVIOUS.put(p.getUUID(), p.position());
             var attribute = p.getAttribute(Attributes.MOVEMENT_SPEED);
             if (previous == null || now % interval != 0 || attribute == null || !attribute.hasModifier(SpeedService.STRIDE)
-                    || p.isInvisible() || p.isSpectator() || !p.isAlive() || p.isPassenger()
+                    || p.isInvisible() || p.isSpectator() || !p.isAlive() || p.isPassenger() || TimeVeilClient.hidden(p)
                     || p.position().distanceToSqr(previous) < .025 || p.position().distanceToSqr(previous) > 64) continue;
             capture(p, now, p.position(), p.yBodyRot);
         }

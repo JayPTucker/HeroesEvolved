@@ -24,7 +24,7 @@ import java.util.UUID;
 
 /**
  * A storyline heard in other minds. Villagers dream of a city none of them
- * has seen: Odessa on its Last Day, centuries gone. The Eclipse carries the
+ * has seen: Odessa on its Last Day, 103 years gone. The Eclipse carries the
  * last memories of the people who died there forward into the living, and a
  * Time Manipulator stands on that same avenue on awakening.
  *

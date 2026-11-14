@@ -18,7 +18,8 @@
     "PossessionSyncMixin",
     "PossessionPermissionMixin",
     "EclipseMoonPhaseMixin",
-    "SoulFireBlockMixin"
+    "SoulFireBlockMixin",
+    "InvertedHealMixin"
   ],
   "client": [
     "FlightSprintMixin",
@@ -30,8 +31,12 @@
     "EclipseSkyMixin",
     "TornadoCameraMixin",
     "CarriedCameraMixin",
+    "VeiledShadowMixin",
     "UnseenObjectMixin",
-    "CryoConstructClientMixin"
+    "CryoConstructClientMixin",
+    "ParticleWindAccess",
+    "ParticleEngineAccess",
+    "MorphSensesMixin"
   ],
   "injectors": {
     "defaultRequire": 1

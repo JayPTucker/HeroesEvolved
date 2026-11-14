@@ -60,6 +60,7 @@ public final class CryoChamberService {
         var state = level.getBlockState(base);
         if (!(state.getBlock() instanceof CryoChamberBlock)) return false;
         if (player.isShiftKeyDown() && CryoEvents.hasAwakenedCryokinesis(player)) return charge(player, base);
+        if (claireNote(player, level, base)) return true;
         Occupant mine = OCCUPANTS.get(player.getUUID());
         if (mine != null && mine.base.equals(base)) return exit(player);
         if (occupied(level, base)) {
@@ -75,6 +76,15 @@ public final class CryoChamberService {
         enter(player, base, 0);
         player.setRespawnPosition(level.dimension(), base, CryoChamberBlock.yaw(state.getValue(CryoChamberBlock.FACING)), false, false);
         player.displayClientMessage(Component.translatable("cryochamber.heroesevolved.entered").withStyle(ChatFormatting.AQUA), true);
+        return true;
+    }
+
+    /** The first look inside Pod 14 in the present turns up what Claire left in it. */
+    private static boolean claireNote(ServerPlayer player, ServerLevel level, BlockPos base) {
+        BunkerData data = BunkerData.get(level.getServer());
+        if (!data.built || !BunkerBuilder.isClaires(level, data.origin, base) || player.getPersistentData().getBoolean("heroesevolved_claire_note")) return false;
+        player.getPersistentData().putBoolean("heroesevolved_claire_note", true);
+        player.sendSystemMessage(Component.translatable("cryochamber.heroesevolved.claire_note").withStyle(ChatFormatting.AQUA));
         return true;
     }
 

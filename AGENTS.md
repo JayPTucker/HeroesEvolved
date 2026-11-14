@@ -290,6 +290,37 @@ sees is in [docs/pyrokinesis.md](docs/pyrokinesis.md).
 - **Live drawing for flight jets.** `PyroArt.live()` / `drawLive(c)` draw the flame streams on palms and
   boots for every pyro flyer each frame, following the bank, the same way `FlightArt` draws wind.
 
+## Reusable patterns from firebending (Pyrokinesis melee)
+
+Pyrokinesis gained a fighting style in November 2026 (`pyro/PyroCombat`, numbers in `pyro/PyroGeometry`, input in
+`client/PyroCombatClient`, whole-body turns in `render/PyroCombatPoseRenderer`, art in `PyroArt`). What the player sees is
+in [docs/pyrokinesis.md](docs/pyrokinesis.md). Reuse these for any power that should fight hand to hand.
+
+- **Moves without keys.** An empty-handed left click (`InputEvent.InteractionKeyMappingTriggered`, cancelled when the
+  crosshair isn't on a block) and a double-tapped A, D or S (edges read in `ClientTickEvent`) send `PyroCombatPayload`.
+  The server routes it through `PossessionService.actionActor`, picks the move, pays for it and times it. Both can be
+  switched off in `ClientVisualSettings` (`firebendingStrikes`, `firebendingDodges`).
+- **A click that can't throw fire still punches.** The payload carries the crosshair's entity; when `PyroCombat.strike`
+  returns -1 (no stamina, power switched off), the server does a plain `player.attack`. A cancelled click must never
+  leave a player swinging at nothing.
+- **A combo is three numbers.** The next step, the last strike's time and when the next is allowed (`Fighter`). A click
+  within `COMBO_WINDOW` carries on; the client also throttles so mashing doesn't flood the server.
+- **Dodges with evasion.** A dodge records an evasion window (`EVADE_TICKS`) that cancels blows with an entity source in
+  `LivingIncomingDamageEvent`, before the power's immunities. The first blow evaded loads a reward (Counterflame), the
+  cross-move link. Never evade `BYPASSES_INVULNERABILITY`.
+- **Ground dashes are re-sent each tick.** One velocity packet on the ground is eaten by friction within two ticks;
+  `PyroCombat.push` re-sends the dash for `STEP_TICKS`, working out the hop's fall the client's way
+  (`(vy - .08) * .98`), and stops on `horizontalCollision`. During Flame Flight, `PyroFlightService.tick` skips steering
+  while `PyroCombat.isDodging`, or cruise overwrites the dash.
+- **Turning the whole body.** `render/PyroCombatPoseRenderer` rotates the model in `RenderPlayerEvent.Pre` about the hip,
+  in the body's yaw frame (as `CryoRidePoseRenderer` does), keyed off the arm pose and its age: a backflip, a spin, a
+  twist into a kick. The camera never turns. Legs are posed in `PowerArmPoses.firebend`; copy the pants afterward.
+- **A kicked crescent.** `PyroArt.crescent` lays flame tongues along an arc between two angles in any plane, unrolled
+  over time, trailing back the way the foot came, with a three-layer lip. The roundhouse (horizontal), flip kick
+  (vertical) and sweep kick (a full turn) are one primitive. The server's `PyroGeometry.inCrescent` uses the same reach
+  and angle.
+- **Strikes never place blocks.** Fire thrown many times a second would grief; only the kit's casts light real fire.
+
 ## Reusable patterns from the Invisibility rework
 
 Invisibility (`invisibility/`, art in `client/effects/setpiece/ForceArt`) became a force-field kit in November
@@ -383,6 +414,17 @@ the core's standard in November 2026. What the player sees is in [docs/superspee
 - **First-person gestures stay out of the camera.** A raised or cocked arm in `FirstPersonArmGeometry` must sit at the
   edge of the view (Lightning Throw's starts at the top corner and whips down through the centre), and an effect's
   origin must be in front of the eye: the first throw started behind the camera and streaked across the whole screen.
+
+- **Deflecting shots and clearing the air (Wind Arms).** `SpeedWindArms.catchShot(level, shot, from, to)` turns any
+  projectile whose step this tick crosses the funnels, sampled every 0.4 blocks so a TaCZ bullet that crosses the whole
+  funnel in one tick is still caught. It is asked from three places, like the Vibe guard: `events/SpeedWindEvents`
+  (before each projectile's tick, and on impact) and `TaczLink`'s `EntityHurtByGunEvent.Pre`. Turned shots take the
+  speedster as owner, so they are never caught twice; a trident keeps its thrower (loyalty) and is remembered instead.
+  - An `AreaEffectCloud` never sends its own position (its tracker interval is effectively never): move it with
+    `setPos` and broadcast a `ClientboundTeleportEntityPacket`.
+  - Particles exist only on clients, so each client blows them itself: `client/effects/WindArmsAir` walks the particle
+    engine (`mixin/ParticleEngineAccess`, `mixin/ParticleWindAccess`) for every player in the `WIND_ARMS` pose, using the
+    same `SpeedWindArms.inFunnel` test as the server. This is how to make any power move smoke, spores or dust.
 
 ### Photographing skills (`tools/skill-anim-preview.init.gradle`)
 
@@ -604,6 +646,11 @@ is in [docs/telepathy.md](docs/telepathy.md).
   the meltdown crowd now wait for `isPositionEntityTicking` before their clock starts; the flight rescue measures the
   flyer while the ally is carried; the anchored tornado's far cow stands inside the arena's barrier walls; Elle's conduit
   test has 400 ticks for her pocket floor to come alive.
+- **A look-don't-touch inventory.** Mind's Eye (`telepathy/MindsEyeMenu`) is a `ChestMenu` over a `SimpleContainer` of
+  *copies*, re-mirrored in `broadcastChanges`, with `clicked`, `quickMoveStack` and `canDragTo` all refusing. Use it for
+  any read-only view of another inventory. A `FakePlayer` ignores `openMenu`, so tests build the menu directly.
+- **Remembered chat is public chat only.** `TelepathySkills.said` records `ServerChatEvent` lines (twenty, thirty minutes,
+  forgotten on logout); private messages and commands never reach it.
 - **Photographs:** `tools/telepathy-kit-preview.init.gradle` (`uitest/TelepathyKitPreview`) shoots every pose and piece into
   `build/telepathy-kit-preview/screenshots/`; villagers stand in for the second mind.
 
@@ -664,6 +711,91 @@ Villages call for help over Simple Radio, and the first event that calls is a vi
   sets him off at once.
 - **Time fields start at a safe sentinel.** `now - Long.MIN_VALUE` overflows to a negative number, so a "last hit"
   check of `now - hitAt < 20` with `hitAt = Long.MIN_VALUE` is always true. Start such fields at `-1000`.
+
+## Reusable patterns from the Last Day (the playable prologue)
+
+Every new player now lives the evening Odessa ended before waking in the bunker (`story/prologue/PrologueService`,
+the light's timing in `PrologueTimeline`, Noah, Claire, Peter and Ted in `story/actor/StoryActorEntity`, the
+apartments in `time/intro/city/Apartments`). The Space-Time vision reuses the actors to show Peter and Ted. What the
+player sees is in [docs/the-last-day.md](docs/the-last-day.md).
+
+- **One entity for every scripted character.** `StoryActorEntity` is an unsaved, invulnerable `PathfinderMob` with
+  no goals. A synced `Role` picks the skin (`StoryActorRenderer`, Ted adds a glow layer) and a synced `Pose` picks
+  the arms. The script drives it with `walkTo`, `face`, `place` and `say` (chat as `<Name>` plus a speech bubble).
+  Spawn with a scene tag and remove by it. Add a role and a skin in `tools/GenerateStoryActorTextures.java` for the
+  next character; don't write another entity.
+- **A scene that hands off to the real game.** The prologue ends by calling `BunkerService.handOff`, which runs the
+  normal wake-up in the pod the player was sealed in. The prologue pod index *is* `BunkerData.pod(uuid, …)`, so the
+  number matches 103 years later. Pod 14 (Claire's) is excluded everywhere.
+- **Two scenes, one city.** The prologue and the Space-Time vision share `time_fracture`. `TimeIntroService` only
+  starts its next scene while `PrologueService.running()` is false, and `TimeGather` skips players waiting for a
+  prologue. The city's protections (no damage, powers, edits or items) check `isMember` and `isWaiting` as well as
+  the vision's visitors.
+- **Ready-up without a screen.** A clickable chat line runs `/lastday ready`, and using your own door counts too.
+  The run starts when everyone present is ready or a timer after the last arrival. Late arrivals wait on a held black
+  tint until the run ends.
+- **Tension without the payoff.** The light grows on one shared curve (`PrologueTimeline`) read by the server (white
+  flashes and tremors on each surge) and the client (the glow's size), but it never detonates on screen. Save the
+  real blast for the vision.
+- **Stragglers are carried, not killed.** At the deadline an agent darts anyone outside (`Tranquilizer` trail and
+  go-under blur), and they skip to their pod. Nobody holds the group up.
+- **The bunker as it was.** `story/bunker/PastBunker.build(level, origin)` builds the stasis bunker from the same
+  blueprints with every light on and nothing grown in (`past(layer, state)`). Night Three and the prologue both use
+  it. Build it once below anything the city rebuilds, and reset only its pods and doors each run.
+- **A way in for a crowd under a deadline is a stair, not a ladder.** The safe house is reached by a 3-wide switchback
+  (blueprint `lastday_stairwell`); the city draws only its top step and a railed slot in the lobby floor
+  (`Landmarks.safeHouse`), so a city rebuild never touches the part underground. A game test walks the route cell by
+  cell (`PrologueGameTests.walkable`).
+- **A door that shuts behind a group mustn't shut anyone out.** The vault (`PrologueService.vault`, block swaps with a
+  grindstone for its wheel) closes only once every sheltered member is past it, or after ten seconds; anyone still on
+  the stair side is moved through first. "Safe" starts at the turn of the stair, and anyone who climbs back up is put
+  back at the foot.
+- **One pod that looks different.** Pod 14's clawed glass is a `cracked` block state on the Cryochamber with four
+  `_cracked` models that inherit the normal ones and swap only the glass texture. Use this for any one-off variant of a
+  modelled block; don't copy the models.
+- **Check where the cast stands, in a test.** Guards and actors are spawned at hand-written offsets inside rooms built
+  from blueprints; two of them once stood inside a desk and a lectern. `PrologueGameTests.standing` asserts every
+  scene entity is clear of blocks and on a floor once the scene is set. Do the same for any scripted scene.
+- **Story text goes to chat, once.** `TimeIntroCaption` writes captions (with their subtitle in grey) and instructions
+  (`»`) to chat, skipping repeats, instead of drawing over the scene; story actors speak in chat only. Don't add
+  action-bar nags or on-screen captions to a scene: one chat line per beat. Hide corner labels while a black hold tint
+  is up (`ClientScreenTintState.blackedOut`).
+- **Pace before the payoff.** The evening crowd runs in `VisionCrowd.calm()` (a conversation every thirteen seconds, pauses
+  between lines); the light gets fifteen quiet seconds of staring (`PrologueTimeline.SIRENS`) before the sirens, the
+  agents' calls and the objective; the surges sit at fractions of the run, so they quicken toward the end.
+- **Props on a face are items, not skin pixels.** Glasses painted into an 8-pixel face read as a mask. Noah's are an
+  item (`HornRimmedGlassesItem`, `Equipable` in the head slot) whose 3D model the head item layer draws on the face; the
+  model is sized for that layer (a full block worn on the head is 1.25 times the head, so the head spans 1.6 to 14.4 in
+  model units and the face is the north side), and `neoforge:separate_transforms` gives it a flat icon elsewhere.
+  `StoryActorEntity.role` puts the pair on Noah. Use the same for hats, masks or headsets.
+- **A blast felt underground.** `PrologueService.quake` collects the hall's lights when the blow lands, kills them,
+  flickers them back (a third stay dark) and drops `FallingBlockEntity` rubble down the aisle, all undone by the next
+  run's room rebuild. `PrologueGameTests` checks rubble and dark lights after the blast.
+- **One path, two ways of seeing it.** The sky fight (`time/intro/SkyFight`) is pure maths: positions and moves at any
+  tick for a `Script` (start, pass length, passes). The vision moves real actors along it (`VisionFight`, with the powers'
+  own pieces: `FLIGHT_SKYBURST`, `ELLE_BOLT`, `WATCH_HOLD`, `FLIGHT_IMPACT`, `TIME_SNAP`); the Last Day draws it on each
+  client from the light's start time (`client/effects/intro/SkyFightArt`, hooked into `SetPieceClient`'s live drawing),
+  because a dedicated server only sends entities within its view distance and the fight is 190 blocks away. Use this
+  for anything watched from very far off.
+- **Probe the city before choreographing over it.** The towers' real faces and heights decided the fight's centre, its
+  reach, and where the throw lands; `PrologueGameTests.theSkyFightHasRoomAndAWallToHit` walks every tick of the path for
+  open air and checks the raycast finds the wall the far view draws. A real crater is put back with
+  `FractureCity.rebuild` when the fireball covers it.
+- **Flying actors.** `StoryActorEntity.glide(at, look)` sets position and facing each tick (no gravity, no physics), and
+  `StoryActorRenderer.setupRotations` lays a `FLY` actor along its line of flight (as an elytra flyer) or spins a
+  `TUMBLE` one. `shouldRenderAtSqrDistance` is raised so actors read from across the city; their update interval is 1.
+- **A player's double in a scene.** `Role.TRAVELER` with `StoryActorEntity.doubleOf(uuid, name)` syncs whose double it is;
+  `StoryActorRenderer` draws that player's own skin as this client knows it (on the slim model if their arms are slim)
+  and shows their name over the head, and the actor speaks in chat under that name. The vision's twist uses it: the
+  time traveler whose power the vision is comes back for Peter (`VisionFight.travelerArrives`).
+- **Vanilla does the frost and the title.** The pods' creeping frost is `setTicksFrozen` (the powder-snow overlay,
+  kept below the damage threshold), and *103 years later...* is a vanilla title packet over a held black tint
+  (`ScreenTintPayload.Style.HOLD`). No new overlay was needed.
+- **Recovery from a crash.** A player sealed in their pod gets the `SLEPT` tag; logging in with it skips straight to
+  the wake-up. Anyone who logged out earlier starts the day over.
+- **Returning a group together.** The vision's `together(...)` lands everyone in a ring of open standing spots round
+  the traveler's return point, falling back to each player's own ticket if the traveler's is gone. Reuse it for any
+  scene that should end with the party side by side.
 
 ## Reusable patterns from the Watchmaker (Sylar's boss fight)
 
@@ -763,6 +895,39 @@ for the Company's guards (`weapons/`, art in `client/effects/setpiece/WeaponArt`
   `COOL_DOWN`. Tests that fire real TaCZ guns hold each tick to 50 ms (`WeaponGameTests.realTime`).
 - **An armor stand is a test shooter.** It is a living entity with no AI, so it fires exactly where you point it.
 
+## Reusable patterns from the Ability Dampener
+
+The Ability Dampener (an RF-powered field where no power works) and the Nullifier (a TaCZ pistol charged with RF that
+fires dampener rounds) were added in November 2026 (`dampener/`, art in `client/effects/setpiece/DampenerArt`). What the
+player sees is in [docs/ability-dampener.md](docs/ability-dampener.md).
+
+- **One question for "is this power switched off".** `Dampening.dampened(entity)` covers a live field and a round's
+  `DAMPENED` effect. `PowerRules.canActWithoutPreservation` asks it beside the Suppressor and the Eclipse, so every key,
+  sustained power and passive goes quiet with no per-power code. NPCs with powers (Sylar, Elle) and
+  `MimicryService.imprintOf` ask it too. A new way to block powers is one more branch there.
+- **A timed status as a mob effect.** The round's hold is a real `MobEffect` (`ModItems.DAMPENED`): it syncs, shows an
+  icon, refreshes rather than stacks, and survives milk (`fillEffectCures` left empty). Prefer this to a hand-rolled map
+  when a status should be visible to the player.
+- **A machine's state is "paid this tick".** The projector's field is live only while `level.getGameTime() - paidAt <= 1`,
+  so anything that stops it ticking (an EMP's stall via `BlockEntityStallMixin`, an unloaded chunk) drops the field with
+  no extra bookkeeping. Copy this for any powered effect that must die when its block stops.
+- **A battery that other mods see.** Register `Capabilities.EnergyStorage.BLOCK` for the block entity and
+  `Capabilities.EnergyStorage.ITEM` for the item; every FE mod's cables and chargers then work, and `GridDisruption`'s
+  EMPs drain them (they only drain storages that `canExtract`). A capability can be registered on another mod's item
+  (`tacz:modern_kinetic_gun`) and answer null for every stack that isn't yours.
+- **A TaCZ gun that reloads from itself.** TaCZ's internal reserve ("dummy ammo": `DummyAmmo` and `MaxDummyAmmo` in the
+  gun's custom data, read through `TaczLink.reserve`) replaces inventory ammo for reloads, and the HUD counts it. The
+  Nullifier's battery *is* this reserve, with part-made rounds kept beside it. A gun from the gun smith table has no
+  reserve yet, so `Nullifier.carried` gives it one on the next player tick.
+- **Using a block with a gun in hand.** TaCZ takes right-click for aiming; its *Interact With Gun* key (O) calls the normal
+  use, so `Block.useItemOn` and `PlayerInteractEvent.RightClickBlock` still see it. Say so in the docs.
+- **Keep a block's charge when it is broken.** `collectImplicitComponents` / `applyImplicitComponents` with a data
+  component (`STORED_ENERGY`) and a `minecraft:copy_components` loot function (`source: block_entity`).
+- **Telegraph a field by its edge.** The dome's set piece is re-sent every ten ticks as a twelve-tick piece with two-tick
+  fades, checks the block's `ACTIVE` state so it vanishes the moment power is cut, and draws its foot on the ground: the
+  edge a player must cross is what matters. Rings that close inward read as "power swallowed"; every other power's rings
+  open outward.
+
 ## Reusable patterns from Vibe
 
 Vibe (`vibe/`, art in `client/effects/setpiece/VibeArt`) is Cisco Ramon's power, added in November 2026: Vibe Blast,
@@ -849,6 +1014,21 @@ nodes, nine poses and ten pieces. What the player sees is in [docs/space-time-ma
   twelve marks (every third longer), and two hands with pale cores. Stopped clocks read ten past ten, hurried ones race
   forward, undone ones spin back; colour does the rest (violet and ice stopped, amber and gold hurried). The anchor's hands
   show the real hour, carried in the piece's scale.
+- **Moving faster than time (`time/TimeVeil`).** While someone slows or stops time, everyone else is sent a
+  `TimeVeilPayload` and `client/effects/TimeVeilClient` hides the caster (model, name, and shadow via
+  `mixin/VeiledShadowMixin`) and draws a still stand-in with their skin where they started; the reveal is a blur
+  (speedster) or a blink (traveller), or nothing if they are back on the spot. Who sees through it is one rule,
+  `TimeVeil.movesInTime`. `AbilityEffects.send` and `SetPiecePayload.send` skip any viewer for whom
+  `TimeVeil.masks(viewer, origin)` is true, so a trail drawn beside a hidden body can't give it away; a field's own
+  visual goes only to those who see the caster (`TimeVeil.showToSeers`). Begin and end it with a reason
+  (`SLOW`, `STOP`, `PERCEPTION`), so overlapping fields keep one stand-in. The chat hints (`hint`, `over`) go out
+  with the first reason and the last, and whoever was puzzled (`Veil.puzzled`) is told it is over even if the caster
+  logs off.
+- **Server-wide fields and parallel tests.** Time fields reach every entity in every dimension when
+  `fieldsServerWide` is on (the default). `TimeFieldTestSupport` turns it off on the game-test server, or one test's
+  Still World would freeze every other test's mobs; `TimeVeilGameTests` turns it on inside its own one-test batch.
+  Photographs: `tools/veil-preview.init.gradle` (`uitest/TimeVeilPreview`, flag `heroes.preview.veil`), with a second
+  player staged as in `ContainmentPreview`.
 - **Tests.** `SpaceTimeSkillsGameTests` uses a `FakePlayer` whose `teleportTo` also calls `absMoveTo` and whose
   `isInvulnerableTo` is false, and zeroes `spawnInvulnerableTime` by reflection before it is hurt. Package-private entry
   points (`seal`, `throwSeal`, `forwardEnemy`, `rewindPersonal`) let a test drive each skill without aiming.
@@ -894,3 +1074,173 @@ pieces. What the player sees is in [docs/density.md](docs/density.md).
   Grasp from Below). Fill stone under an arena's floor (y = 0 and −1) before burying anything there.
 - **Photographs:** `tools/density-skills-preview.init.gradle` (`uitest/DensitySkillsPreview`, flag
   `heroes.preview.densityskills`) casts every skill into `build/density-skills-preview/screenshots/`.
+
+## Reusable patterns from Shapeshifting
+
+Shapeshifting (`shapeshift/`, stand-ins in `client/MorphClient`, art in `client/effects/setpiece/ShapeArt`,
+`ShapeInstinctArt` and `ShapeTrickArt`) was built in November 2026, in phases 1 to 6 of
+[docs/shapeshifting.md](docs/shapeshifting.md); phase 7 is polish. It is rollable (not in `IN_DEVELOPMENT`).
+
+- **The kit and where it lives.**
+  - **Keys:** Morph (study, the form wheel, revert), Instinct (each form's own attack), Decoy, Reflection and Nightmare.
+  - **Classes and their jobs:**
+    - `ShapeshiftService`: forms, the body, kin and the shape history.
+    - `ShapeshiftForms`: level bands, sizes, kin and the body a form gives.
+    - `ShapeshiftTraits` and `ShapeshiftTraitService`: gifts and weaknesses.
+    - `ShapeshiftHands`: what a form without hands can't do.
+    - `ShapeshiftInstinct` and `InstinctMove`: Instinct.
+    - `ShapeshiftTricks` and `ShapeDecoy`: Decoy, Reflection, Nightmare, Borrowed Face, the Doppelganger, cowed and
+      turned creatures, and the awakening.
+    - `ShapeshiftSuspicion`: Suspicion, exposure and the readers who see through a disguise.
+    - `ShapeshiftChat`: speaking as someone.
+    - `ShapeshiftSkills`: the 18-node tree, Apex Form and the three classes.
+  - **Tests:** `ShapeshiftGameTests`, `ShapeshiftTricksGameTests` and `ShapeshiftSkillsGameTests`.
+- **One art language.** Every piece is plates that flip from slate to brass. `ShapeArt` holds the primitives (`hull`,
+  `scale`, `face`) and the palette (`SHADOW 1F2A3D`, `SLATE 3E6F86`, `SHEEN 8FCFC6`, `BRASS C29A5E`, `HIGHLIGHT F1ECE2`).
+  `ShapeInstinctArt` adds `around` (a ring of plates about any axis), `streak`, `seamRing` and `loose` (a tumbling
+  plate), shared with `ShapeTrickArt`. New moves reuse pieces where they can: Hybrid is `SHIFT_TOUCH` on yourself,
+  Chimera `SHIFT_STUDY`, Many Hands a string of `SHIFT_LUNGE`s, Apex Form's growth a `SHIFT_DECOY_BURST`.
+
+- **A power still being built.** Put it in `ModAbilities.IN_DEVELOPMENT` (empty now). `ModAbilities.rollable` keeps it
+  out of every random pick (the Eclipse, the Formula, gifted villagers, retired-power swaps) while admins can still give
+  it, and `ClassAbilityGameTests` and `SkillTreeGameTests` don't expect a tree or classes from it yet. It still needs a
+  `power_balance.json` entry for every action, an intro `Spec` in `PowerIntroService`, a `MimicColors` colour and a
+  `PowerIcons` entry.
+- **Changing a player's hitbox.** `MorphBodies` answers `EntityEvent.Size` on both sides from two maps (server and client
+  are kept apart because an integrated server shares entity ids with its client). Call `refreshDimensions()` after a
+  change on each side; the client also re-checks every tick in case the form arrived before the body did.
+- **Drawing a player as something else.** Cancel `RenderPlayerEvent.Pre` and draw a client-only stand-in entity (never
+  added to the level) with the same renderer call, copying facing, head, swing, crouch and hurt flash each frame and
+  the walk cycle each tick (`WalkAnimationState.update`). Check `UnseenClient.hidden` first.
+- **Mobs that ignore someone.** Clear the target in `LivingChangeTargetEvent` (as Invisibility does). For mobs already
+  fighting, erase `ATTACK_TARGET` and `ANGRY_AT` from the brain too, and check `hasMemoryValue` before `getMemory`:
+  fetching a memory a brain doesn't register throws.
+- **Attributes from a form.** Read them from one cached example per type (`ShapeshiftForms.example`), add transient
+  modifiers with the `heroesevolved:shapeshift_*` ids, and keep health as a fraction across every change.
+- **Swapping a body under cover (phase 2).** A model can't be clipped mid-render, so the change hides the swap: solid
+  plates (drawn in the SOLID pass, which writes depth) close over the old body, the stand-in is swapped while the shell
+  is shut, and the plates fall away from the new one. `MorphClient.Transition` holds both ends; `ShapeshiftGeometry`'s
+  `COVERED`, `SWAP` and `SHED` are the one timeline the renderer and `ShapeArt` both read. Keep one stand-in per form
+  per player during a change, or the old and new bodies fight over one and are re-created every frame.
+- **Animate a state change, not a resync.** `MorphStatePayload.animate` is true only when the form really changes; a
+  viewer who starts tracking you gets the state without the ripple.
+- **A hull for any body.** `ShapeArt.hull` lays rows of hinged scales on ellipses that follow a body's outline (an
+  upright profile and a beast's mound, blended by height over width). Each scale is a lit fan drawn with `Canvas.v`
+  (package-private, so per-vertex colours work): a slate front and a brass back a hair apart, so a plate flipped past
+  90° really shows its underside, darker at the hinge and paler at glancing angles. Studying, touching and the morph
+  are three ways of driving the same hull (a scan band, a distance from the hand, two fronts).
+- **Effects round your own body in first person.** Hiding them leaves the player seeing nothing; drawing them at body
+  size fills the screen. Draw a wider version (a curtain about a block out) and cull it just below the eye. Measure
+  from the current eye, which already sits at the new body's height when the hitbox changes at the start.
+- **A form's own arm in first person.** NeoForge's `RenderArmEvent` gives the empty-hand pose already transformed: cancel
+  it and render the form's `HumanoidModel` arm (`resetPose()` first) with its texture. Cancel `RenderHandEvent` at HIGH
+  priority to show nothing for a handless form. `FirstPersonArmEvents` asks `MorphClient.formArm` so power gestures use
+  the form's arm too.
+- **Models on a GUI wheel.** `InventoryScreen.renderEntityInInventory` draws any cached, unspawned entity; scale it by
+  its largest dimension and translate by half its height. The form wheel (`gui/screen/FormWheelScreen`) is opened by the
+  server (`FormLibraryPayload`), answered with `MorphChoicePayload`, and the server throttles picks (`CHOICE_GAP`).
+- **A form is a type plus an optional profile (phase 3).** `ShapeshiftForm` keys a creature by its type id and a person by
+  `player:<uuid>`, saves a person's id, name and skin texture, and goes over the network with `ByteBufCodecs.GAME_PROFILE`.
+  Compare forms by `key()`, never by type: two people are both `EntityType.PLAYER`. The library still reads phase 1's
+  list of bare type ids.
+- **Drawing someone as another player.** `MorphClient.Double` is a client-only `RemotePlayer` with the copied profile.
+  It takes the skin from the client's `PlayerInfo` if the person is online, otherwise from
+  `SkinManager.getInsecureSkin`, and its customisation byte is set so the hat and sleeves show. It takes its owner's
+  entity id, so arm poses keyed by id follow it, and so the `RenderPlayerEvent` handler must skip `Double`s or it
+  draws them recursively. Hide your own double's name tag with `RenderNameTagEvent.setCanRender(TriState.FALSE)`.
+- **Speaking as someone.** Cancel `ServerChatEvent` and send each viewer a system message built from
+  `chat.type.text`, with the name's `SHOW_ENTITY` hover and `/tell` click copied from vanilla, so a bystander can't
+  tell it apart. Commands never reach `ServerChatEvent`, so `/msg` stays honest for free.
+- **Operators in game tests.** The game-test server's `PlayerList.op` grants level 0. Add a
+  `ServerOpListEntry(profile, 4, false)` to `getOps()` yourself, and remove it afterwards.
+- **Photograph a change by its progress, not by tick.** The preview's `watch(name, points...)` shoots on the render frame
+  where `Transition.progress` passes each point, so the shots land on the same moments whatever the server's timing.
+- **Many moves on one key (phase 4).** Instinct is one action whose move comes from the form (`InstinctMove.of`).
+  Each move carries its own stamina cost and cooldown, kept per move, and its ordinal rides in the `SHIFT_INSTINCT`
+  piece's scale (append new moves at the end). Traits (`ShapeshiftTraits`) and hand rules (`ShapeshiftHands`) are
+  read from a living example of the form, cached per side, so a modded mob gets the traits of the vanilla class it
+  extends and the client never predicts a use the server refuses.
+- **A first-person effect from your arm starts at the hand you see.** A Lunge drawn from the shoulder sat on the
+  crosshair. `ShapeInstinctArt.viewHand` puts the start low and to the side of the camera, as `ElectroArt.hand`
+  does, and the tip is drawn thinner, with no seam ring, so the target stays visible.
+- **A held creature's bands must pinch, not flare.** One row of plates hanging from a seam reads as a skirt from
+  any camera above it. The grab draws two rows per band, one hanging and one standing, both tipped in at the
+  points (a negative hinge angle in `ShapeArt.scale`), so each band reads as a cuff.
+- **Side views of a move.** `TempestCamera.fix(at, lookAt)` holds a still camera for preview drivers (clear it
+  with nulls). Keep the game in a third-person mode so the player's body is still drawn.
+- **A body for mobs to chase (phase 5).** Decoy is a real, unsaved `PathfinderMob` (`ShapeDecoy`, `.noSave().noSummon()`)
+  with no AI, so mobs can target it and hit it. `IEntityWithComplexSpawn` sends its shape in the spawn data, so a viewer
+  who arrives late still sees the right body, and its renderer draws the same stand-in a morph uses. It cancels damage
+  with no entity behind it (falls, fire) and bursts on the first blow.
+- **A set piece's scale is clamped to 0.05–64 on the client.** A flag of 0 or -1 arrives as 0.05. Nightmare's viewer
+  flag is 2 (a foe, who sees a warden) or 1 (anyone else); the first version used 0 and -1 and showed everyone the warden.
+- **`SimpleAction.builder(path, unlock)` takes a tier (1–5), not a Power Level.** Passing 6, 10 or 15 locks the key
+  forever (the HUD shows "[Level 15]"). Instinct had the same mistake (tier 3, Level 6) until phase 5.
+- **A status that stops creatures attacking.** `ShapeshiftTricks` keeps one "cowed" map for confused and frightened
+  creatures: a `LivingChangeTargetEvent` handler clears their target, a `LivingIncomingDamageEvent` handler at HIGH
+  priority cancels their blows, and the tick moves frightened ones away with `DefaultRandomPos.getPosAway`.
+- **Seen through by other powers.** `ShapeshiftSuspicion.read(reader, target)` is the one call: Telepathy's Read Mind and
+  Vibe's Read the Vibe make it. The next power that should see through a disguise adds one line.
+- **Testing what a FakePlayer can't feel.** A game-test FakePlayer is invulnerable, so no damage event ever reaches it.
+  The events call small entry points (`ShapeshiftTricks.struck`, `ShapeshiftSuspicion.blow`) that tests call directly.
+- **Growing a player (phase 6).** Apex Form puts a transient modifier on `Attributes.SCALE`: it syncs to every client by
+  itself and resizes the hitbox. Two things must follow it: `MorphBodies`' size event multiplies the form's own size by
+  `getScale()`, and `MorphClient` scales the pose stack before drawing the stand-in. Call `refreshDimensions()` after
+  changing it, or the hitbox waits for the next tick (and a test FakePlayer never ticks).
+- **Drawing a creature as someone else.** Borrowed Face sends a `MorphStatePayload` for the creature's id;
+  `MorphClient.renderCreature` cancels `RenderLivingEvent.Pre` and draws the stand-in (a person's `Double`), and the
+  StartTracking hook sends it to late viewers. Creatures keep their own hitbox.
+- **Two target rules on one event.** The kin rule (`ShapeshiftService.target`, normal priority) clears a target to
+  null; the "turned" rule (`ShapeshiftTricks.target`, low priority) must check its own map before returning early on a
+  null target, or the kin rule wins.
+- **Leaving the in-development list.** Removing a power from `ModAbilities.IN_DEVELOPMENT` makes it rollable and puts
+  it under the catalog tests: add it to `SkillTreeGameTests.POWERS` (and its skip list if it has its own skill tests)
+  and to `tools/verify-skill-content.py`'s expected set.
+- **Wiring a new power's tree and classes.**
+  - **The tree:** the power's entry in `skill_trees.json` (three lanes of six nodes; positions 1 and 4 active, 5 the
+    capstone; a signature appended to a lane with `"requires"` set to that lane's mastery, `_1_2`).
+  - **Routing:** a line in `SkillCatalog.Node.action` routes the tree to the power's own class. A case in `StyleCasts`
+    (`canUse` and `cast`) routes the classes.
+  - **Bookkeeping:**
+    - an entry in `SkillTreeService.bonus`'s no-stat-bonus list, and a `forget` call where that class handles a respec;
+    - an entry in `EvolutionTrials`;
+    - a `case` in `PowerIntroService`'s release for the awakening.
+  - **Names:** must match `en_us.json`; check with `python tools/verify-skill-content.py`.
+- **Every class ability must cast alone.** `ClassAbilityGameTests.everyClassAbilityCasts` casts each one with only a
+  pillager near. Masquerade, which needs friends, now includes the caster and falls back to the nearest creature seen.
+- **A short history of shapes.** `ShapeshiftService` remembers the last eight shapes worn (`previous`, `history`,
+  `lastCreature`) and when each change happened (`lastChange`). Quick Change, Hybrid, Chimera, Masquerade and Ambush
+  Shift all read it; record it wherever a form starts or ends (`morph` and `end` both call `remember`).
+- **Borrowing gifts without a shape.** Hybrid's traits come back from `ShapeshiftService.traits(player)` when no shape
+  is worn, so every damage and fire hook that already asks about traits works for it unchanged. Its own tick calls
+  `ShapeshiftTraitService.tick`. Gifts a client draws (wall climbing, the glowing senses) are left out: the client
+  only knows worn shapes.
+- **A bonus for one move.** Ambush Shift sets `ShapeshiftInstinct.bonus` around `perform` in `use`, and `hit` multiplies
+  by it, so the first Instinct after a change hits harder without every move knowing.
+- **Suspicion on the HUD.** `SuspicionPayload` (server to the wearer, only when the value moves a point or reaches 0)
+  feeds `gui/SuspicionHudOverlay`, an almond eye under the crosshair that fills brass and flashes red past 70.
+  Exposure locks Morph (`ShapeshiftSuspicion.locked`, checked in `study` and `morph`) and bursts the shape off with
+  `breakForm`, which sends `SHIFT_EXPOSED` and no ripple (`animate` false).
+- **One viewer sees something else.** Nightmare sends each player their own `SHIFT_NIGHTMARE` piece bound to the
+  shapeshifter. `SetPieceClient.boundTo(piece, entity)` finds it, and `MorphClient` draws a roaring warden stand-in
+  (`roarAnimationState`) in that player's place only on a foe's client.
+- **A walking shell.** The Doppelganger is a `ShapeDecoy` with a walk vector: it steps along the ground on the server
+  (up a block where it must, stopping at a wall). On the client, `ShapeDecoy.tick` advances its stand-in's walk cycle
+  from its own movement.
+- **Morph flags.** `MorphStatePayload.flags` carries per-wearer drawing rules (`PERFECT_COPY` hides your own gear in a
+  person's shape). Add a bit here before adding a payload.
+- **Voice chat stays on the voice thread.** Masking a speaker's voice would mean re-broadcasting audio to whoever is
+  near, but `MicrophonePacketEvent` runs off the server thread, where the level can't safely be searched (Telepathy only
+  reads routes published from the server tick). The planned Familiar Voice became Practised Manner instead.
+- **Chat as someone is a server choice.** `HeroesEvolvedConfig.COMMON.shapeshiftChatImpersonation` turns it off. Nobody
+  may copy an operator (`ShapeshiftService.operator`), the copied person is told, and operators and telepaths who have
+  read the speaker see who really spoke (`ShapeshiftChat.seesThrough`).
+- **Photographs:** `tools/shapeshift-preview.init.gradle` (`uitest/ShapeshiftPreview`, flag `heroes.preview.shapeshift`)
+  shoots every phase into `build/shapeshift-preview/screenshots/`.
+  - To photograph what only a foe sees, the driver sends the foe's private piece to the local player.
+  - A front camera behind a standing mob ends up inside it: move the player clear first.
+  - Fixed cameras (`side()`) only see what is staged in front of them.
+- **Known flaky tests.** `hisneighboursscreamandrun` (the meltdown crowd) and
+  `facilitybuildsinbatchesandmanualroutecansavebothcaptives` (waits on chunk loading) each failed once during this
+  work and passed on the next run with no change. Re-run before blaming new code.
+

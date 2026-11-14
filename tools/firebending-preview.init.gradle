@@ -1,0 +1,23 @@
+// The client throws every firebending strike, kick and dodge and captures them.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('firebendingPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/firebending-preview')
+                        programArguments.addAll('--width', '1100', '--height', '800')
+                        systemProperty('heroes.preview.firebending', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('firebendingPreviewClasses')) }
+        }
+    }
+}

@@ -343,6 +343,11 @@ public final class SpeedArt {
         float length = down ? 3.5F : 8;
         Vec3[] basis = basis(dir);
         double shoulderY = e.isCrouching() ? 1.17 : 1.375;
+        // In your own first-person view the palms sit just under the lens: the hand blur is left to the first-person
+        // arms, and the funnels fade in with distance from the camera, so they frame the aim instead of covering it.
+        var mc = net.minecraft.client.Minecraft.getInstance();
+        boolean own = e == mc.getCameraEntity() && mc.options.getCameraType().isFirstPerson();
+        Vec3 cam = c.camera();
         for (int hand = -1; hand <= 1; hand += 2) {
             // Shoulder joints sit five pixels out from the middle; an arm is twelve pixels long.
             Vec3 shoulder = pos.add(0, shoulderY, 0).add(side.scale(hand * 0.3125));
@@ -350,31 +355,38 @@ public final class SpeedArt {
             float turn = now * 0.9F * hand;
             if (c.soft()) {
                 // The hand circling too fast to see: a pale blurred disc across the arm's end.
-                c.disc(palm.subtract(dir.scale(0.1)), dir, 0.34F, WIND, 0.38F * f, 0.05F * f);
+                if (!own) c.disc(palm.subtract(dir.scale(0.1)), dir, 0.34F, WIND, 0.38F * f, 0.05F * f);
                 for (int s = 0; s < 4; s++) {
                     int n = 22;
                     Vec3[] p = new Vec3[n + 1];
+                    float[] width = new float[n + 1], alpha = new float[n + 1];
                     for (int k = 0; k <= n; k++) {
                         float d = length * k / n, r = 0.16F + d * 0.26F, ang = turn + s * TWO_PI / 4 + d * 1.4F;
                         p[k] = palm.add(dir.scale(d)).add(basis[0].scale(cos(ang) * r)).add(basis[1].scale(sin(ang) * r));
+                        width[k] = 0.09F;
+                        alpha[k] = Mth.lerp(k / (float) n, 0.7F, 0.05F) * f * (own ? clear(p[k], cam) : 1);
                     }
-                    c.ribbon(p, 0.09F, WIND, 0.7F * f, 0.05F * f);
+                    c.ribbon(p, width, WIND, alpha);
                 }
                 for (int i = 0; i < 5; i++) {
                     float d = (now * 0.8F + i * length / 5F) % length, r = 0.16F + d * 0.26F, fade = 1 - d / length;
                     float gap = turn + i * 1.7F;
-                    c.ring(palm.add(dir.scale(d)), dir, r, 0.07F + d * 0.015F, gap, gap + 4.8F, WIND, 0.6F * f * fade);
+                    Vec3 at = palm.add(dir.scale(d));
+                    c.ring(at, dir, r, 0.07F + d * 0.015F, gap, gap + 4.8F, WIND, 0.6F * f * fade * (own ? clear(at, cam) : 1));
                 }
             }
             if (c.glow()) {
                 for (int s = 0; s < 2; s++) {
                     int n = 10;
                     Vec3[] p = new Vec3[n + 1];
+                    float[] width = new float[n + 1], alpha = new float[n + 1];
                     for (int k = 0; k <= n; k++) {
                         float d = length * 0.6F * k / n, r = 0.1F + d * 0.22F, ang = turn * 1.3F + s * PI + d * 1.8F;
                         p[k] = palm.add(dir.scale(d)).add(basis[0].scale(cos(ang) * r)).add(basis[1].scale(sin(ang) * r));
+                        width[k] = 0.03F;
+                        alpha[k] = Mth.lerp(k / (float) n, 0.5F, 0) * f * (own ? clear(p[k], cam) : 1);
                     }
-                    c.ribbon(p, 0.03F, GOLD, 0.5F * f, 0);
+                    c.ribbon(p, width, GOLD, alpha);
                 }
             }
         }
@@ -387,6 +399,40 @@ public final class SpeedArt {
             }
         }
     }
+
+    /**
+     * A shot caught in the Wind Arms and blown back: a ring of pressed air snaps open where it turned, two wind
+     * strands twist off along its new path like a small copy of the funnel, and a gold streak shows the way it went.
+     */
+    static void deflect(Canvas c, Active a, float t) {
+        float life = a.piece().ticks, f = Mth.clamp(1 - t / life, 0, 1), s = Math.min(1, a.scale());
+        Vec3 o = a.origin(), dir = a.target().subtract(o);
+        dir = dir.lengthSqr() < 1e-6 ? new Vec3(0, 0, 1) : dir.normalize();
+        Vec3[] basis = basis(dir);
+        float open = 1 - (1 - Math.min(1, t / 4)) * (1 - Math.min(1, t / 4)) * (1 - Math.min(1, t / 4));
+        if (c.soft()) {
+            c.ring(o, dir, (0.25F + 0.7F * open) * s, 0.12F * s, 0, TWO_PI, WIND, 0.6F * f);
+            c.ring(o.add(dir.scale(0.5 * open)), dir, (0.15F + 0.45F * open) * s, 0.08F * s, 0, TWO_PI, WIND, 0.4F * f);
+            float length = 2.6F * s * (0.4F + 0.6F * open);
+            for (int k = 0; k < 2; k++) {
+                int n = 14;
+                Vec3[] p = new Vec3[n + 1];
+                for (int i = 0; i <= n; i++) {
+                    float d = length * i / n, r = (0.35F - d * 0.08F) * s, ang = k * PI + d * 2.6F + t * 0.9F;
+                    p[i] = o.add(dir.scale(d)).add(basis[0].scale(cos(ang) * r)).add(basis[1].scale(sin(ang) * r));
+                }
+                c.ribbon(p, 0.07F * s, WIND, 0.6F * f, 0);
+            }
+        }
+        if (c.glow()) {
+            float head = 3.2F * s * open;
+            c.ribbon(new Vec3[] {o, o.add(dir.scale(head * 0.5)), o.add(dir.scale(head))}, 0.035F, GOLD, 0.7F * f, 0);
+            c.glow(o, 0.35F * s, HOT, 0.5F * f * (1 - open * 0.6F));
+        }
+    }
+
+    /** How much of a first-person funnel shows at {@code p}: nothing within a block of the lens, all of it by four. */
+    private static float clear(Vec3 p, Vec3 cam) { return Mth.clamp(((float) p.distanceTo(cam) - 1) / 3, 0, 1); }
 
     private static Vec3[] basis(Vec3 axis) {
         Vec3 ref = Math.abs(axis.y) > 0.9 ? new Vec3(1, 0, 0) : UP;

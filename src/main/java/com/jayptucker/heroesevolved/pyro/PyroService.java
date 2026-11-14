@@ -197,7 +197,7 @@ public final class PyroService {
         if (blue) sound(player, SoundEvents.SOUL_ESCAPE.value(), 1.2F, 0.8F);
     }
 
-    private static float scaled(ServerPlayer player, float damage) {
+    static float scaled(ServerPlayer player, float damage) {
         return isBlue(player) ? damage * BLUE_MULTIPLIER : damage;
     }
 
@@ -209,7 +209,7 @@ public final class PyroService {
         return !friendly(player, target) && FlightSkillService.hostile(player, target);
     }
 
-    private static DamageSource fire(ServerPlayer player) {
+    static DamageSource fire(ServerPlayer player) {
         // An attributed fire source: armor still applies, and fire-immune creatures resist it.
         return new DamageSource(player.serverLevel().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE)
                 .getHolderOrThrow(DamageTypes.IN_FIRE), player);
@@ -229,7 +229,7 @@ public final class PyroService {
         if (fireSeconds > 0 && target.isAlive()) target.igniteForSeconds(fireSeconds);
     }
 
-    private static List<LivingEntity> enemies(ServerPlayer player, Vec3 center, double radius) {
+    static List<LivingEntity> enemies(ServerPlayer player, Vec3 center, double radius) {
         return player.serverLevel().getEntitiesOfClass(LivingEntity.class, new AABB(center, center).inflate(radius),
                         target -> hostile(player, target) && target.position().distanceToSqr(center) <= radius * radius)
                 .stream().limit(32).toList();
@@ -240,7 +240,7 @@ public final class PyroService {
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, target)).getType() == HitResult.Type.MISS;
     }
 
-    private static boolean exposed(ServerPlayer owner, Vec3 from, Vec3 to) {
+    static boolean exposed(ServerPlayer owner, Vec3 from, Vec3 to) {
         return owner.serverLevel().clip(new ClipContext(from, to, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.ANY, owner)).getType() == HitResult.Type.MISS;
     }
@@ -259,7 +259,7 @@ public final class PyroService {
         player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(), sound, SoundSource.PLAYERS, volume, pitch);
     }
 
-    private static void push(LivingEntity target, Vec3 velocity) {
+    static void push(LivingEntity target, Vec3 velocity) {
         target.setDeltaMovement(velocity);
         target.hurtMarked = true;
         if (target instanceof ServerPlayer other) other.connection.send(new ClientboundSetEntityMotionPacket(other));
@@ -479,6 +479,22 @@ public final class PyroService {
 
     public static boolean hasRing(ServerPlayer player) { return RINGS.containsKey(player.getUUID()); }
 
+    /** A kick whose fire sweeps across the caster's own open Firestorm fans it, the same as a Breath pulse. */
+    static boolean fan(ServerPlayer player, Vec3 from, double reach) {
+        Ring ring = RINGS.get(player.getUUID());
+        long now = player.getServer().overworld().getGameTime();
+        if (ring == null || now < ring.opens || ring.level != player.level()) return false;
+        if (ring.center.subtract(from).horizontalDistance() > reach + ring.radius(now)
+                || Math.abs(ring.center.y - from.y) > 3) return false;
+        ring.fedUntil = Math.max(ring.fedUntil, now + (isBlue(player) && SkillTreeService.has(player, "pyrokinesis_1_2") ? 48 : 24));
+        return true;
+    }
+
+    static boolean isFed(ServerPlayer player) {
+        Ring ring = RINGS.get(player.getUUID());
+        return ring != null && player.getServer().overworld().getGameTime() < ring.fedUntil;
+    }
+
     private static Vec3 groundAim(ServerPlayer player, double reach) {
         ServerLevel level = player.serverLevel();
         Vec3 eye = player.getEyePosition();
@@ -668,7 +684,7 @@ public final class PyroService {
     }
 
     /** Water, ice and snow turn fire into steam instead of catching. */
-    private static boolean quenching(ServerLevel level, BlockPos pos) {
+    static boolean quenching(ServerLevel level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
         return !state.getFluidState().isEmpty() || state.is(BlockTags.ICE) || state.is(BlockTags.SNOW);
     }
@@ -1125,6 +1141,7 @@ public final class PyroService {
     public static void forget(ServerPlayer player) {
         UUID id = player.getUUID();
         stopFlames(player, false);
+        PyroCombat.forget(player);
         HEAT.remove(id);
         WARNINGS.keySet().removeIf(mine -> mine.owner == player);
         MINES.remove(id);
@@ -1133,6 +1150,7 @@ public final class PyroService {
 
     public static void clear() {
         PyroFlightService.clear();
+        PyroCombat.clear();
         HEAT.clear();
         SPEARS.clear();
         PALMS.clear();

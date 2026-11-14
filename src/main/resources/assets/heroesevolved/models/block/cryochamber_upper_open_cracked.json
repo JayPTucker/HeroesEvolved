@@ -1,0 +1,6 @@
+{
+  "parent": "heroesevolved:block/cryochamber_upper_open",
+  "textures": {
+    "glass": "heroesevolved:block/cryochamber_glass_cracked"
+  }
+}

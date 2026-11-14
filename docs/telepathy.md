@@ -17,6 +17,14 @@ deeply. Voices heard inside the head are distorted to sound like thoughts. See
 - **Read Mind:** hold to establish Focus, hear surface thoughts, and see a target's current prey.
   Release to stop reading. Fine violet filaments and an iris around the target show the connection.
   Two fingers go to the temple while the other hand reaches toward the mind.
+  - **A player's power.** Read a player to 60 Focus and their mind gives up the power that has woken in
+    it ("their power is Pyrokinesis"), once per thread. A dormant power, or none, reads as no power awake.
+  - **Mind's Eye (Shift + Read Mind, tier 4).** Aimed at a player you've read all the way (100 Focus),
+    or else the deepest-read player within 48 blocks, you look through their eyes: their inventory opens
+    for you to see (pack, hotbar, armour and off hand, refreshed live) but never to touch, and the last
+    twenty lines they said in public chat (within thirty minutes) come back to you with how long ago. It
+    costs 10 Strain rather than stamina. They feel someone sifting through their memories. Private
+    messages and commands are never remembered, and a player's lines are forgotten when they log out.
 - **Suggestion:** choose Look There, Come Here, Leave, Forget Me, or Defend Me for an aimed mob.
   Look There directs it toward the point along your aim; Defend Me requires 60 Focus and makes it
   attack nearby mobs hunting you. Commands expire after ten seconds.

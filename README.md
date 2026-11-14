@@ -35,6 +35,10 @@ Electric powers reach real machines from other mods. EMPs drain and stop anythin
 (Mekanism, Thermal, Powah, ...) and seize Create's shafts; lightning charges FE machines; Technopathy enrols
 and shuts them down. No machine mod is required. See [Powers and machines](docs/machines.md).
 
+Machines can fight back: an RF-powered [Ability Dampener](docs/ability-dampener.md) holds a field where no power
+works, and the Nullifier, a TaCZ pistol charged with RF instead of loaded with ammo, fires rounds that switch a power
+off for a few seconds.
+
 See [Technopathy](docs/technopathy.md) for physical relay networks, remote mechanisms,
 prepared traps, stolen projectile trajectories and Machine City. See
 [Matter Assembly](docs/matter-assembly.md) for paid temporary walls, bridges, cages,
@@ -94,15 +98,19 @@ Puppet possession with an arrow-key resistance struggle, and private Dreamweaver
 See [Telekinesis](docs/telekinesis.md) for the rebuilt physical force kit and all eighteen skills: orbiting fragments, staggered volleys, Iron Rain, precise grips, projectile catches and aimed force fields. [Power workshop](docs/power-workshop.md) records the original redesign proposals and remaining Mimicry directions.
 
 See [Pyrokinesis and Helixite](docs/pyrokinesis.md) for the fire power, its real-fire rules,
-reactions with Cryokinesis, Flight and Superspeed, and the new Helixite crystal ore.
-New players wake sealed in a Cryochamber in a stasis bunker beneath world spawn,
-centuries after Odessa burned. Search the Overworld for the rare Company relay ruins. The bunker
+reactions with Cryokinesis, Flight and Superspeed, and the new Helixite crystal ore. Pyrokinetics also
+[fight with fire](docs/pyrokinesis.md#firebending-fists-feet-and-dodges): empty-handed clicks throw jabs, crosses and
+kicked crescents of flame, and double-tapping a direction dodges on a jet step or a backflip.
+New players begin on [the Last Day](docs/the-last-day.md): they wake in their apartment in Odessa, explore an
+ordinary evening, run for the Primatech safe house when the light appears, and are sealed in stasis by Noah Bennet.
+They wake in a Cryochamber in that same bunker beneath world spawn, 103 years after Odessa burned. Search the Overworld for the rare Company relay ruins. The bunker
 receiver can give you coordinates, recorded in the Journal (**J**). Restore life support and escort
 Mara and Ivo out of the annex while Gabriel Gray approaches. The survivors have an account to
 share back at the bunker. See [The Last Signal](docs/the-past.md).
 
 Space-Time Manipulation's [first awakening](docs/time-manipulation-intro.md) takes you and nearby
-companions to Odessa at 6:14 to witness the explosion and watch the city run backwards.
+companions to Odessa at 6:14 to watch Peter Petrelli try to stop Ted Sprague, witness the explosion, watch the city
+run backwards, and land together beside the traveller.
 
 See [Invisibility](docs/invisibility.md) for Exposure, optical doubles, shared concealment and
 its eighteen redesigned skills. [Phasing](docs/new-powers.md) and [Empathic Mimicry](docs/empathic-mimicry.md) record the

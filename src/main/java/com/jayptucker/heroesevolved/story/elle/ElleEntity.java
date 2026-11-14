@@ -167,6 +167,8 @@ public final class ElleEntity extends PathfinderMob implements Enemy {
             if (--stagger == 0) entityData.set(POSE, 0);
             return;
         }
+        // A dampener round (or field) cuts her windup short; until it wears off she can only keep her distance.
+        if (com.jayptucker.heroesevolved.dampener.Dampening.dampened(this)) { if (casting != null) finish(casting); keepDistance(target); return; }
         if (casting != null) { tickCast(level, target); return; }
         if (globalCooldown > 0) globalCooldown--;
         else if (combatTicks >= 30) choose(level, target);

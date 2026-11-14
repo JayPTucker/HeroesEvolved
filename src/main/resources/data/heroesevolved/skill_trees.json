@@ -3742,5 +3742,252 @@
         "mechanic": "vibe_sanctuary"
       }
     ]
+  },
+  {
+    "power": "shapeshifting",
+    "branch_names": [
+      "Infiltrator",
+      "Beast",
+      "Identity"
+    ],
+    "branches": [
+      [
+        {
+          "id": "shapeshifting_0_0",
+          "name": "Blend In",
+          "description": "Suspicion rises 30% slower, and hunters lose you after one second out of sight instead of two.",
+          "icon": "minecraft:armadillo_scute",
+          "level": 1,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "shapeshifting_0_1",
+          "name": "Quick Change",
+          "description": "Switch at once to the shape you wore before this one (or your own body), with no study. Every mob hunting you loses you as you change.",
+          "icon": "minecraft:clock",
+          "level": 2,
+          "cost": 2,
+          "active": true,
+          "energy": 10,
+          "cooldown": 60
+        },
+        {
+          "id": "shapeshifting_0_2",
+          "name": "Second Skin",
+          "description": "A blow must be worth half your form's health to break it, not 30%. Whoever you reflect is set upon by its own kind for five seconds.",
+          "icon": "minecraft:turtle_scute",
+          "level": 2,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "shapeshifting_hollow_crowd",
+          "name": "Hollow Crowd",
+          "description": "Your Decoys stand for twelve seconds, and their burst confuses every foe within four blocks, not just the striker.",
+          "icon": "minecraft:armor_stand",
+          "level": 3,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "shapeshifting_shed",
+          "name": "Shed",
+          "description": "Slip out of a grab, a web or a slowing hold: shed a Decoy where you stood and step three blocks back, free.",
+          "icon": "minecraft:cobweb",
+          "level": 4,
+          "cost": 2,
+          "active": true,
+          "energy": 14,
+          "cooldown": 160
+        },
+        {
+          "id": "shapeshifting_faceless",
+          "name": "Faceless",
+          "description": "Among three or more of your shape's kind, Suspicion can't rise, and shots from farther than four blocks miss you.",
+          "icon": "minecraft:skeleton_skull",
+          "level": 5,
+          "cost": 3,
+          "active": false,
+          "capstone": true
+        }
+      ],
+      [
+        {
+          "id": "shapeshifting_1_0",
+          "name": "Natural Weapons",
+          "description": "Instinct costs 30% less stamina, and Lunge reaches two blocks farther.",
+          "icon": "minecraft:bone",
+          "level": 1,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "shapeshifting_1_1",
+          "name": "Hybrid",
+          "description": "Keep your own body for twenty seconds but take the gifts of the last creature you wore: its fire immunity, its flight, its breath under water, its slow fall.",
+          "icon": "minecraft:spider_eye",
+          "level": 2,
+          "cost": 2,
+          "active": true,
+          "energy": 16,
+          "cooldown": 400
+        },
+        {
+          "id": "shapeshifting_1_2",
+          "name": "Apex",
+          "description": "Your health cap rises by 20, and large and boss shapes cost half as much stamina to hold.",
+          "icon": "minecraft:iron_block",
+          "level": 2,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "shapeshifting_ambush",
+          "name": "Ambush Shift",
+          "description": "The first Instinct within two seconds of changing shape hits 50% harder. In mid-air, studying takes no time at all.",
+          "icon": "minecraft:rabbit_foot",
+          "level": 3,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "shapeshifting_chimera",
+          "name": "Chimera",
+          "description": "For twenty seconds your Instinct is the attack of the shape you wore before this one.",
+          "icon": "minecraft:fermented_spider_eye",
+          "level": 4,
+          "cost": 2,
+          "active": true,
+          "energy": 18,
+          "cooldown": 400
+        },
+        {
+          "id": "shapeshifting_pack_leader",
+          "name": "Pack Leader",
+          "description": "In a creature's shape, every wolf near you joins in on whatever you strike, and as a raider so does every raider.",
+          "icon": "minecraft:lead",
+          "level": 5,
+          "cost": 3,
+          "active": false,
+          "capstone": true
+        },
+        {
+          "id": "shapeshifting_apex_form",
+          "name": "Apex Form",
+          "description": "Grow to two and a half times your shape's size for twelve seconds, with a boss's health and twice its strength. Your Instinct becomes a ground slam that throws everything within five blocks.",
+          "active": true,
+          "signature": true,
+          "icon": "minecraft:heavy_core",
+          "level": 4,
+          "cost": 3,
+          "requires": "shapeshifting_1_2",
+          "energy": 50,
+          "cooldown": 900
+        }
+      ],
+      [
+        {
+          "id": "shapeshifting_2_0",
+          "name": "Perfect Copy",
+          "description": "In a person's shape, your own armour and what you hold no longer show: the shape is all anyone sees.",
+          "icon": "minecraft:leather_chestplate",
+          "level": 1,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "shapeshifting_2_1",
+          "name": "Borrowed Face",
+          "description": "Touch a creature and swap looks for eight seconds: you take its shape, it wears yours, and its own kind turn on it.",
+          "icon": "minecraft:player_head",
+          "level": 2,
+          "cost": 2,
+          "active": true,
+          "energy": 18,
+          "cooldown": 300
+        },
+        {
+          "id": "shapeshifting_2_2",
+          "name": "Practised Manner",
+          "description": "In a person's shape, people watching you raise Suspicion half as fast, and it fades twice as fast.",
+          "icon": "minecraft:name_tag",
+          "level": 2,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "shapeshifting_long_con",
+          "name": "Long Con",
+          "description": "You can study a person from 12 blocks away, not 6.",
+          "icon": "minecraft:spyglass",
+          "level": 3,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "shapeshifting_doppelganger",
+          "name": "Doppelganger",
+          "description": "Leave a copy of your shape that walks on ahead for eight seconds. Every mob hunting you follows it instead, and it bursts on the first blow.",
+          "icon": "minecraft:painting",
+          "level": 4,
+          "cost": 2,
+          "active": true,
+          "energy": 20,
+          "cooldown": 300
+        },
+        {
+          "id": "shapeshifting_social_engineering",
+          "name": "Social Engineering",
+          "description": "Taking a person's shape calls their pets to you at once, and Familiar lasts thirty seconds.",
+          "icon": "minecraft:emerald",
+          "level": 5,
+          "cost": 3,
+          "active": false,
+          "capstone": true
+        }
+      ]
+    ],
+    "styles": [
+      {
+        "id": "shapeshifting_many_hands",
+        "name": "Many Hands",
+        "description": "Plated arms lash out from you to strike up to five foes within 8 blocks, one after another, for 5 + tier each.",
+        "icon": "minecraft:shears",
+        "level": 3,
+        "cost": 3,
+        "active": true,
+        "energy": 34,
+        "cooldown": 240,
+        "role": "offense",
+        "mechanic": "shapeshifting_many_hands"
+      },
+      {
+        "id": "shapeshifting_plate_mail",
+        "name": "Plate Mail",
+        "description": "Plates lock over you for eight seconds: shots skid off, you take 30% less damage, and the first blow sheds a Decoy.",
+        "icon": "minecraft:turtle_helmet",
+        "level": 3,
+        "cost": 3,
+        "active": true,
+        "energy": 26,
+        "cooldown": 300,
+        "role": "defense",
+        "mechanic": "shapeshifting_plate_mail"
+      },
+      {
+        "id": "shapeshifting_masquerade",
+        "name": "Masquerade",
+        "description": "You and up to four friends within 10 blocks take one creature's shape for twenty seconds: the one you wear, the newest you remember, or the nearest you can see. Its kind take you all for their own.",
+        "icon": "minecraft:carved_pumpkin",
+        "level": 3,
+        "cost": 3,
+        "active": true,
+        "energy": 32,
+        "cooldown": 400,
+        "role": "support",
+        "mechanic": "shapeshifting_masquerade"
+      }
+    ]
   }
 ]

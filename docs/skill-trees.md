@@ -31,10 +31,11 @@ upgrade and a capstone in each branch (see [the new powers guide](new-powers.md)
 
 **Signature abilities** sit on top of the eighteen: one showpiece active hung under a branch's Mastery
 node, at Level 10 for 3 points. They are not capstones, so taking one never blocks your capstone.
-Mark a node `"signature": true` in `skill_trees.json` (it must be active). There are three so far:
+Mark a node `"signature": true` in `skill_trees.json` (it must be active). There are four so far:
 [Blackout](electrokinesis.md#signature-blackout) (Electrokinesis, Groundkeeper),
-[Singularity](space-time-manipulation.md#signature-singularity) (Time Manipulation, Wayfinder) and
-[Phoenix](pyrokinesis.md#signature-phoenix) (Pyrokinesis, Phoenix). To see their effects (and the machine
+[Singularity](space-time-manipulation.md#signature-singularity) (Time Manipulation, Wayfinder),
+[Phoenix](pyrokinesis.md#signature-phoenix) (Pyrokinesis, Phoenix) and
+[Apex Form](shapeshifting.md#skills-eighteen-nodes) (Shapeshifting, Beast). To see the first three's effects (and the machine
 short-out, charge and siphon effects) at night from a fixed camera, run
 `./gradlew runClient --init-script tools/signature-preview.init.gradle`; screenshots land in
 `build/signature-preview/screenshots/`. Gameplay checks are in `SignatureAbilityGameTests` and `GridGameTests`.

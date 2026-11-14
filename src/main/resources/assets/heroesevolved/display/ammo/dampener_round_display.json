@@ -1,0 +1,25 @@
+{
+  "model": "tacz:ammo/12g",
+  "texture": "heroesevolved:ammo/uv/dampener_round",
+  "slot": "heroesevolved:ammo/slot/dampener_round",
+  "tracer_color": "#BFE3DC",
+  "transform": {
+    "scale": {
+      "thirdperson": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "ground": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "fixed": [
+        1,
+        1,
+        1
+      ]
+    }
+  }
+}

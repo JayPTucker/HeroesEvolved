@@ -43,6 +43,8 @@ public final class GenerateWeaponTextures {
     static final Palette HEAT = new Palette(0x3A3532, 0x22201F, 0xB0703A, 0xF07A1E, 0x8A5A30, 0xFFC04A, true);
     static final Palette COLD = new Palette(0xD9E3E8, 0x59687A, 0x8FB3C9, 0x52D8F0, 0x3D4A5A, 0xBDF4FF, false);
     static final Palette TASER = new Palette(0xF2C230, 0x1F1F22, 0x2A2A2E, 0xF7D85A, 0x3A3A40, 0x7FD0FF, false);
+    /** The Nullifier: Primatech slate with a pale battery cell where the magazine goes. */
+    static final Palette NULLIFIER = new Palette(0x4A5866, 0x1E242B, 0x8796A3, 0xBFE3DC, 0x2C333B, 0xE6F4F0, false);
 
     public static void main(String[] args) throws IOException {
         Path jar = args.length > 0 ? Path.of(args[0]) : findJar();
@@ -50,9 +52,11 @@ public final class GenerateWeaponTextures {
             gun(zip, "gun/p90_geo", HEAT, "heat_gun");
             gun(zip, "gun/aug_geo", COLD, "cold_gun");
             gun(zip, "gun/cz75_geo", TASER, "taser");
+            gun(zip, "gun/deagle_geo", NULLIFIER, "dampener_gun");
             ammo(zip, HEAT, "fuel_cell");
             ammo(zip, COLD, "cryo_cell");
             ammo(zip, TASER, "taser_cartridge");
+            ammo(zip, NULLIFIER, "dampener_round");
         }
         write(grenade(), ROOT + "item/emp_grenade.png");
     }

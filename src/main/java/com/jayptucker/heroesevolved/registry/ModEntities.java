@@ -101,11 +101,23 @@ public final class ModEntities {
                     com.jayptucker.heroesevolved.story.elle.ElleEntity::new, MobCategory.MISC)
                     .sized(.6F, 1.8F).noSave().noSummon().clientTrackingRange(96).updateInterval(2).build(id.toString()));
 
+    /** Noah, Claire, Peter and Ted, as scenes move them (story/actor). Never saved. */
+    public static final DeferredHolder<EntityType<?>, EntityType<com.jayptucker.heroesevolved.story.actor.StoryActorEntity>> STORY_ACTOR =
+            ENTITY_TYPES.register("story_actor", id -> EntityType.Builder.<com.jayptucker.heroesevolved.story.actor.StoryActorEntity>of(
+                    com.jayptucker.heroesevolved.story.actor.StoryActorEntity::new, MobCategory.MISC)
+                    .sized(.6F, 1.8F).noSave().noSummon().clientTrackingRange(128).updateInterval(1).build(id.toString()));
+
     /** The EMP grenade in flight (weapons/EmpGrenade): thrown, stuck where it lands, then a pulse. */
     public static final DeferredHolder<EntityType<?>, EntityType<com.jayptucker.heroesevolved.weapons.EmpGrenade.Thrown>> EMP_GRENADE =
             ENTITY_TYPES.register("emp_grenade", id -> EntityType.Builder.<com.jayptucker.heroesevolved.weapons.EmpGrenade.Thrown>of(
                     com.jayptucker.heroesevolved.weapons.EmpGrenade.Thrown::new, MobCategory.MISC)
                     .sized(.25F, .25F).clientTrackingRange(64).updateInterval(5).build(id.toString()));
+
+    /** Shapeshifting's Decoy: the empty shell left where its maker stood (shapeshift/ShapeDecoy). Never saved. */
+    public static final DeferredHolder<EntityType<?>, EntityType<com.jayptucker.heroesevolved.shapeshift.ShapeDecoy>> SHAPE_DECOY =
+            ENTITY_TYPES.register("shape_decoy", id -> EntityType.Builder.<com.jayptucker.heroesevolved.shapeshift.ShapeDecoy>of(
+                    com.jayptucker.heroesevolved.shapeshift.ShapeDecoy::new, MobCategory.MISC)
+                    .sized(.6F, 1.8F).noSave().noSummon().clientTrackingRange(64).updateInterval(5).build(id.toString()));
 
     public static void register(IEventBus modEventBus) {
         ENTITY_TYPES.register(modEventBus);
@@ -117,5 +129,7 @@ public final class ModEntities {
         event.put(SYLAR.get(), com.jayptucker.heroesevolved.story.sylar.SylarEntity.createAttributes().build());
         event.put(COMPANY_AGENT.get(), com.jayptucker.heroesevolved.company.CompanyAgentEntity.createAttributes().build());
         event.put(ELLE.get(), com.jayptucker.heroesevolved.story.elle.ElleEntity.createAttributes().build());
+        event.put(STORY_ACTOR.get(), com.jayptucker.heroesevolved.story.actor.StoryActorEntity.createAttributes().build());
+        event.put(SHAPE_DECOY.get(), com.jayptucker.heroesevolved.shapeshift.ShapeDecoy.createAttributes().build());
     }
 }

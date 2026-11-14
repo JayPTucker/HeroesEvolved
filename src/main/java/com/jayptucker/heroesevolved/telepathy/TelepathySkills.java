@@ -894,6 +894,109 @@ public final class TelepathySkills {
     @SubscribeEvent public static void stopping(ServerStoppingEvent event) { clear(); }
 
     // ------------------------------------------------------------------
+    // Deep reading: a player's power, what they carry, what they've said
+    // ------------------------------------------------------------------
+
+    /** Focus at which reading a player shows their power; and how deep, at what tier and how near, Mind's Eye needs. */
+    public static final int REVEAL_FOCUS = 60, EYE_FOCUS = 100, EYE_TIER = 4;
+    public static final double EYE_RANGE = 48;
+    /** How many lines of a player's public chat are remembered, and for how long. */
+    private static final int SAID_LINES = 20;
+    private static final long SAID_MILLIS = 30 * 60 * 1000L;
+    private record Said(long at, String text) {}
+    private static final Map<UUID, java.util.Deque<Said>> SAID = new HashMap<>();
+    private static final Map<UUID, Long> SIFTED = new HashMap<>();
+
+    /** The power a player carries, if it has awoken; a dormant power can't be found. */
+    public static java.util.Optional<net.minecraft.resources.ResourceLocation> sensedPower(ServerPlayer target) {
+        return com.jayptucker.heroesevolved.ability.service.PlayerAbilityService.getData(target).assignedPower()
+                .filter(entry -> entry.getValue().isUnlocked()).map(Map.Entry::getKey);
+    }
+
+    /** Read deep enough ({@link #REVEAL_FOCUS}), a player's mind gives up the power that has woken in it. */
+    static void revealPower(ServerPlayer p, ServerPlayer target) {
+        var power = sensedPower(target);
+        p.sendSystemMessage(power.map(id -> Component.translatable("technique.heroesevolved.read_mind.power", target.getName(),
+                        Component.translatable("ability." + id.getNamespace() + "." + id.getPath())))
+                .orElseGet(() -> Component.translatable("technique.heroesevolved.read_mind.no_power", target.getName()))
+                .withStyle(ChatFormatting.LIGHT_PURPLE));
+        TelepathyService.whisper(p, 1.2F);
+    }
+
+    /** Remembers a line a player said in public chat (never a private message or a command). */
+    public static void said(ServerPlayer speaker, String text) {
+        if (text == null || text.isBlank()) return;
+        long now = System.currentTimeMillis();
+        var lines = SAID.computeIfAbsent(speaker.getUUID(), k -> new java.util.ArrayDeque<>());
+        lines.addLast(new Said(now, text.length() > 256 ? text.substring(0, 256) : text));
+        while (lines.size() > SAID_LINES || !lines.isEmpty() && now - lines.peekFirst().at > SAID_MILLIS) lines.removeFirst();
+    }
+
+    @SubscribeEvent public static void chat(net.neoforged.neoforge.event.ServerChatEvent event) {
+        said(event.getPlayer(), event.getRawText());
+    }
+
+    /**
+     * Mind's Eye (Shift + Read Mind, tier 4): look through the eyes of a player you've read all the way (100 Focus, within
+     * 48 blocks). Their inventory opens for you to see, never to touch, and what they've said lately comes back to you.
+     * They feel someone sifting through their memories. It costs Strain, not stamina.
+     */
+    public static boolean mindsEye(ServerPlayer p, int tier) {
+        ServerPlayer target = eyeTarget(p);
+        if (target == null) return false;
+        if (tier < EYE_TIER) {
+            p.displayClientMessage(Component.translatable("technique.heroesevolved.minds_eye.tier"), true);
+            return false;
+        }
+        if (TelepathyFocus.focus(p, target) < EYE_FOCUS) {
+            p.displayClientMessage(Component.translatable("technique.heroesevolved.minds_eye.shallow", target.getName()), true);
+            return false;
+        }
+        p.openMenu(new net.minecraft.world.SimpleMenuProvider((id, inventory, viewer) -> MindsEyeMenu.open(id, inventory, p, target),
+                Component.translatable("technique.heroesevolved.minds_eye.title", target.getName())));
+        recall(p, target);
+        TelepathyFocus.strain(p, 10);
+        ArmPosePayload.show(p, ArmPose.TELE_MEMORY, 22);
+        show(p.serverLevel(), Piece.TELE_RECALL, hand(p, 1, .5), target.getEyePosition(), 1, target);
+        long now = now(p);
+        Long last = SIFTED.get(target.getUUID());
+        if (last == null || now - last > 600) {
+            SIFTED.put(target.getUUID(), now);
+            target.displayClientMessage(Component.translatable("technique.heroesevolved.minds_eye.felt").withStyle(ChatFormatting.DARK_PURPLE), true);
+        }
+        return true;
+    }
+
+    /** The player Mind's Eye looks into: the one you aim at, or else the one you've read deepest. */
+    static ServerPlayer eyeTarget(ServerPlayer p) {
+        if (Targeting.livingEntityInSight(p, EYE_RANGE, t -> t instanceof ServerPlayer && t != p && !t.isSpectator()) instanceof ServerPlayer aimed)
+            return aimed;
+        ServerPlayer best = null;
+        for (LivingEntity t : TelepathyFocus.threads(p, EYE_FOCUS))
+            if (t instanceof ServerPlayer sp && sp != p && !sp.isSpectator() && sp.distanceToSqr(p) <= EYE_RANGE * EYE_RANGE) best = sp;
+        return best;
+    }
+
+    /** What a player has said lately, as the telepath hears it back. */
+    static void recall(ServerPlayer p, ServerPlayer target) {
+        var lines = SAID.getOrDefault(target.getUUID(), new java.util.ArrayDeque<>());
+        long now = System.currentTimeMillis();
+        lines.removeIf(line -> now - line.at > SAID_MILLIS);
+        if (lines.isEmpty()) {
+            p.sendSystemMessage(Component.translatable("technique.heroesevolved.minds_eye.quiet", target.getName()).withStyle(ChatFormatting.LIGHT_PURPLE));
+            return;
+        }
+        p.sendSystemMessage(Component.translatable("technique.heroesevolved.minds_eye.chat", target.getName()).withStyle(ChatFormatting.LIGHT_PURPLE));
+        for (Said line : lines) {
+            long minutes = (now - line.at) / 60000;
+            String ago = minutes < 1 ? Component.translatable("technique.heroesevolved.minds_eye.now").getString()
+                    : Component.translatable("technique.heroesevolved.minds_eye.minutes", minutes).getString();
+            p.sendSystemMessage(Component.translatable("technique.heroesevolved.minds_eye.line", ago, line.text)
+                    .withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
+        }
+    }
+
+    // ------------------------------------------------------------------
 
     public static void forget(ServerPlayer p) {
         UUID id = p.getUUID();
@@ -916,12 +1019,15 @@ public final class TelepathySkills {
         PROJECTED.keySet().removeIf(key -> key.contains(id.toString()));
         WHISPERED.remove(id);
         INNER.remove(id);
+        SAID.remove(id);
+        SIFTED.remove(id);
         MindMemory.forget(id);
     }
 
     public static void clear() {
         DISARMED.clear(); COMPELLED.clear(); PERSUADING.clear(); PERSUADED.clear(); LISTENING.clear(); LOST.clear();
         SHAKEN.clear(); HIVES.clear(); STYLE_HIVES.clear(); PROJECTED.clear(); WHISPERED.clear(); INNER.clear();
+        SAID.clear(); SIFTED.clear();
         MindMemory.clear();
         MindVoiceRoutes.clear();
     }

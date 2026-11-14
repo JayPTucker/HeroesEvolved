@@ -46,6 +46,8 @@ public final class CryoChamberBlock extends Block {
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
     public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
     public static final BooleanProperty CHARGED = BooleanProperty.create("charged");
+    /** Pod 14 in the present: frost on the glass, clawed through from the inside (BunkerBuilder.releaseClaire). */
+    public static final BooleanProperty CRACKED = BooleanProperty.create("cracked");
 
     /** Shapes for a pod whose front faces north; rotated for the other facings. */
     private static final Map<Direction, VoxelShape[]> SHAPES = new EnumMap<>(Direction.class);
@@ -75,13 +77,13 @@ public final class CryoChamberBlock extends Block {
     public CryoChamberBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(HALF, DoubleBlockHalf.LOWER)
-                .setValue(OPEN, true).setValue(CHARGED, false));
+                .setValue(OPEN, true).setValue(CHARGED, false).setValue(CRACKED, false));
     }
 
     @Override protected MapCodec<? extends Block> codec() { return CODEC; }
 
     @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, HALF, OPEN, CHARGED);
+        builder.add(FACING, HALF, OPEN, CHARGED, CRACKED);
     }
 
     @Override
@@ -106,6 +108,15 @@ public final class CryoChamberBlock extends Block {
             BlockState state = level.getBlockState(pos);
             if (state.getBlock() instanceof CryoChamberBlock && state.getValue(OPEN) != open)
                 level.setBlock(pos, state.setValue(OPEN, open), Block.UPDATE_ALL);
+        }
+    }
+
+    /** Frosts and claws (or clears) the glass of both halves together. */
+    public static void setCracked(Level level, BlockPos base, boolean cracked) {
+        for (BlockPos pos : new BlockPos[] {base, base.above()}) {
+            BlockState state = level.getBlockState(pos);
+            if (state.getBlock() instanceof CryoChamberBlock && state.getValue(CRACKED) != cracked)
+                level.setBlock(pos, state.setValue(CRACKED, cracked), Block.UPDATE_ALL);
         }
     }
 

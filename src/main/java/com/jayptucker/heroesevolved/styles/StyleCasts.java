@@ -46,6 +46,7 @@ public final class StyleCasts {
         ServerPlayer p = c.player();
         return switch (mechanic) {
             case "vibe_crosswave", "vibe_mirror", "vibe_sanctuary" -> com.jayptucker.heroesevolved.vibe.VibeService.ready(p);
+            case "shapeshifting_many_hands", "shapeshifting_plate_mail", "shapeshifting_masquerade" -> true;
             case "vital_burst" -> p.getHealth() > 6;
             case "lightning_flurry", "shadow_strike" -> !foes(p, p.position(), mechanic.equals("shadow_strike") ? 10 : 12).isEmpty();
             default -> true;
@@ -61,6 +62,9 @@ public final class StyleCasts {
             case "vibe_crosswave" -> { return com.jayptucker.heroesevolved.vibe.VibeService.blast(c,
                     com.jayptucker.heroesevolved.vibe.VibeService.Blast.CROSSWAVE); }
             case "vibe_mirror" -> { return com.jayptucker.heroesevolved.vibe.VibeService.guard(p, true); }
+            case "shapeshifting_many_hands", "shapeshifting_plate_mail", "shapeshifting_masquerade" -> {
+                return com.jayptucker.heroesevolved.shapeshift.ShapeshiftSkills.cast(c, mechanic);
+            }
             case "vibe_sanctuary" -> { return com.jayptucker.heroesevolved.vibe.VibeBreaches.open(p, false, true); }
             // ---------------------------------------------------------- Radiation
             case "ground_zero" -> {

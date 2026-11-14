@@ -174,6 +174,7 @@ public final class FormulaService {
     public static List<ResourceLocation> unclaimed(ServerPlayer recipient) {
         return AbilityRegistry.ABILITIES.keySet().stream()
                 .filter(id -> PlayerAbilityService.availableTo(recipient, id))
+                .filter(com.jayptucker.heroesevolved.ability.registry.ModAbilities::rollable)
                 .sorted(Comparator.comparing(ResourceLocation::toString)).toList();
     }
 

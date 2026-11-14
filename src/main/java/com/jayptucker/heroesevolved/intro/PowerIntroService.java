@@ -73,7 +73,8 @@ public final class PowerIntroService {
             Map.entry("empathic_mimicry", new Spec(50, 40, 0xE8C27A, ArmPose.TEMPLE, Kind.PROPHECY_THREAD, Kind.PSYCHIC_AWAKEN_RELEASE)),
             Map.entry("technopathy", new Spec(50, 40, 0x60E0C1, ArmPose.TEMPLE, Kind.TECH_LINK, Kind.TECH_SCAN)),
             Map.entry("matter_assembly", new Spec(50, 40, 0xE7B771, ArmPose.TWO_HANDS, Kind.MATTER_WEAVE, Kind.MATTER_SHIELD)),
-            Map.entry("vibe", new Spec(28, 25, 0x46BDFF, ArmPose.VIBE_READ, null, null)));
+            Map.entry("vibe", new Spec(28, 25, 0x46BDFF, ArmPose.VIBE_READ, null, null)),
+            Map.entry("shapeshifting", new Spec(30, 25, 0x8FCFC6, ArmPose.TEMPLE, null, null)));
     private static final Map<UUID, Session> SESSIONS = new HashMap<>();
     private static final Map<UUID, Integer> SOFT_LANDINGS = new HashMap<>();
     /** Allies an awakening is saving, shielded until this game tick. */
@@ -254,6 +255,7 @@ public final class PowerIntroService {
             case "empathic_mimicry" -> SoundEvents.ENCHANTMENT_TABLE_USE;
             case "technopathy" -> SoundEvents.COMPARATOR_CLICK;
             case "vibe" -> SoundEvents.AMETHYST_BLOCK_RESONATE;
+            case "shapeshifting" -> SoundEvents.ILLUSIONER_MIRROR_MOVE;
             case "matter_assembly" -> SoundEvents.DEEPSLATE_PLACE;
             default -> SoundEvents.WIND_CHARGE_BURST.value();
         };
@@ -355,6 +357,10 @@ public final class PowerIntroService {
             case "vibe" -> {
                 LivingEntity saved = ward ? session.ward : player;
                 com.jayptucker.heroesevolved.vibe.VibeService.awaken(player, saved, Danger.threats(player, saved, 10));
+            }
+            case "shapeshifting" -> {
+                LivingEntity saved = ward ? session.ward : player;
+                com.jayptucker.heroesevolved.shapeshift.ShapeshiftTricks.awaken(player, saved, Danger.threats(player, saved, 10));
             }
         }
         // Every other power reaches across to the ally it woke for, and ends their fight too.

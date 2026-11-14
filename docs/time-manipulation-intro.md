@@ -2,7 +2,8 @@
 
 The first unlocked Time Manipulation assignment queues a one-time vision of
 Odessa in the last half-minute before 6:14 PM on the Last Day, which in this
-world happened centuries before [The Last Signal](the-past.md).
+world happened 103 years before [The Last Signal](the-past.md) (and is the evening new players live as
+[the Last Day](the-last-day.md)).
 The HUD reads PAST · ODESSA, THE LAST DAY for everyone there. Natural awakening,
 `/heroes` grants, and admin replacements all enter through `PlayerAbilityService`.
 Dormant assignment alone does not trigger it. An existing unlocked time user who
@@ -18,9 +19,11 @@ taken. Everyone already gathered folds along, and the newcomer is taken by the
 wrist. Players in story dimensions, arenas, a vision or an avenue run are left
 where they are. When nobody is left, the whole group travels to
 `heroesevolved:time_fracture`. If the traveller leaves or dies mid-gather, everyone
-taken goes back where they were. Each visitor keeps their own saved dimension,
-position, yaw, and pitch for the return: for a gathered player, the place they
-were taken from. Companions without Time Manipulation
+taken goes back where they were. **When the vision ends, everyone lands together
+beside the traveller**, in a ring of open standing places around where they were
+when the power woke. Each visitor still keeps their own saved dimension, position,
+yaw, and pitch as a recovery ticket (for a gathered player, the place they were
+taken from), used if they log out or the server stops mid-vision. Companions without Time Manipulation
 remain eligible for their own introduction if they later acquire the power.
 
 ## The vision
@@ -36,20 +39,24 @@ suits at Primatech: the first hints of what is coming.
 
 | When | What happens |
 | --- | --- |
-| 0 s | Arrival: the blink, the onboarding music, *This already happened.* |
+| 0 s | Arrival: the blink, the onboarding music, *This already happened.* Right ahead, high between the towers lining the avenue, Peter Petrelli and Sylar are fighting in the sky. |
+| 0–11 s | Four passes down the avenue toward you and back over the cross street: they fly at each other and meet. When Peter lands one, a pressure front bursts off his fist and Elle's lightning cracks into Sylar, who is knocked back tumbling; when Sylar does, his telekinetic grip clamps round Peter and flings him away. |
+| 11 s | Peter catches Sylar, winds up and hurls him into the tower on the left of the avenue, about thirty blocks from you: the wall caves in round him in a burst of stone, glass and dust, and the ground shakes where you stand. Sylar doesn't come out. |
+| 12–14 s | Peter dives up the avenue to the plaza and lands hard beside Ted, then takes him by the shoulders and tries to talk him down: *"Ted! Ted, look at me!"* … *"I'm not leaving you. We do this together."* |
 | 10 s | A light appears at the north end of the avenue: Ted Sprague is glowing at ground zero, a halo and a pillar of light over the rooftops, with a low hum that rises as he brightens. |
 | 20 s | The sirens start: three across the city, one after another, each winding up from a low growl into a long wail. Everyone runs south, down whichever street they are on. The crowd's panic rises from every street, and people run past you screaming and away. |
 | 29 s | The ground starts to tremble. |
+| 29 s | **The twist:** a figure folds out of nowhere beside Peter in violet rings, with a clock running backward under it, and its name over its head is yours: the time traveler, from further along than now. *"Peter! It's too late. Come with me!"* Peter: *"Who... who are you?"* *"Someone who's already seen how this ends."* It takes hold of him (*"No! Ted-"*), and space snaps shut on the two of them. Ted is alone: *"I'm sorry..."* Everyone in the vision sees it, with the traveler's own skin and name. |
 | 32 s | **6:14.** The flash whites out the sky. A fireball swells over the north end, the blast lands half a second later, and a pale dome of condensed air races out with the shock. |
 | after | The fireball rises and rolls over into a mushroom cap on a stem of dust, lit from below by its own fire and from the west by the low sun. A wall of dust and debris, a ring around ground zero with billows rolling along its crest, comes down every street at about 23 blocks a second. Ahead of it windows burst, awnings, leaves and street furniture tear away, cars and pieces of facades are flung toward you, and the heat of the flash has already set roofs and trees alight. Its roar grows as it gets closer. People it reaches are gone. |
 | 20 blocks away | **Time stops.** The wave, the dust, the debris in the air and the sound hold still for two and a half seconds. Then it all runs backwards: the debris flies home, every window and car goes back where it was, the fires go out, the cloud shrinks into the fireball and the fireball into the man, back to a second before the flash. Then time stays stopped for three seconds more, the city whole and everyone back where they stood, so you can take in what you undid, and then you are home. It is your power doing it: a clock of gold light snaps open under your feet with its hands at 6:14, inside a bezel and outer arcs, a thread of light rising from each hour and bands circling you. While time holds, only its second hand moves, straining to tick. As time runs back the whole clock turns backwards with it, rings of light close in on you like the wave going home, and motes stream into you; at the end it all draws into a column of light where you stand. Everyone in the vision sees it on whoever has the power. The people of Odessa run back too: they hold mid-stride while time is stopped, then run backwards along the very paths they took, violet trails behind them, past the sirens to where they stood talking, browsing and walking before anyone screamed or ran. Those the dust took come back out of it as it passes them. |
 
-### On screen
+### In chat
 
-There is little to read: the city, the light and the wave tell it. A few one-line **captions** sit
-low on the screen on a dark band (*This already happened.* on arrival, *6:14* at the flash, *Time
-stops.* at the freeze, *You were there.* at home), each up as long as it takes to read. One
-**instruction** sits just above them: *Look around. Find out where you are.* on arrival, *Look north,
+There is little to read: the city, the light and the wave tell it, and nothing is laid over the scene. A few one-line
+**captions** go to chat, each with its subtitle in grey (*This already happened.* on arrival, *6:14* at the flash, *Time
+stops.* at the freeze, *You were there.* at home). An **instruction** line starting » follows when there is something
+to do: *Look around. Find out where you are.* on arrival, *Look north,
 up the avenue.* when the glow starts, nothing from the flash on, and *Press J for your Journal* at
 home (using whatever key the Journal is bound to).
 

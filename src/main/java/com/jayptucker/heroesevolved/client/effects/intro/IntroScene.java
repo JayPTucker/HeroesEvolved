@@ -16,7 +16,19 @@ public final class IntroScene {
     static boolean active;
     /** The Time vision, where time stops and runs back; the avenue simply ends. */
     static boolean vision;
+
+    /** Whether the scene playing is the Time vision (not the Last Day or the avenue at 6:14). */
+    public static boolean isVision() { return vision; }
     static long arrival = -1, detonation = -1, freeze = -1;
+    /**
+     * The Last Day's prologue: the light appears ({@link #light}) and grows for {@link #run} ticks, surging, but never
+     * goes off while anyone is there to see it. {@link #underground} once this player is down in the safe house.
+     */
+    static boolean prologue, underground;
+    static long light = -1;
+    static int run = 1800;
+    /** The prologue's clock: always long before the flash. */
+    private static final float NEVER = -100000;
     static float frozenAt;
     /** Where the rewind ends: a second before the flash. */
     static final float REWOUND = -20;
@@ -26,7 +38,8 @@ public final class IntroScene {
     static void reset() {
         active = false;
         vision = false;
-        arrival = detonation = freeze = -1;
+        prologue = underground = false;
+        arrival = detonation = freeze = light = -1;
         frozenAt = 0;
     }
 
@@ -41,6 +54,7 @@ public final class IntroScene {
     /** Ticks since the flash, as the scene shows them: still while frozen, falling while rewinding. */
     public static float t(float partial) {
         if (!active) return Float.NEGATIVE_INFINITY;
+        if (prologue) return NEVER;
         float now = now(partial);
         if (freeze >= 0) {
             float since = now - freeze;
@@ -53,6 +67,9 @@ public final class IntroScene {
         if (arrival >= 0) return now - arrival - lead();
         return Float.NEGATIVE_INFINITY;
     }
+
+    /** Ticks since the prologue's light appeared, or -1 before it. */
+    static float sinceLight(float partial) { return prologue && light >= 0 ? now(partial) - light : -1; }
 
     static boolean frozen(float partial) {
         return freeze >= 0 && now(partial) - freeze < IntroBlast.FREEZE_TICKS;

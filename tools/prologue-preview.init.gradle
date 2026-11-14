@@ -1,0 +1,23 @@
+// The Last Day (story/prologue), photographed beat by beat. Never bundled into the mod JAR.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('prologuePreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/prologue-preview')
+                        programArguments.addAll('--width', '1280', '--height', '720')
+                        systemProperty('heroes.preview.prologue', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('prologuePreviewClasses')) }
+        }
+    }
+}

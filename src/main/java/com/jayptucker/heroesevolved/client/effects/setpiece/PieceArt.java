@@ -14,7 +14,8 @@ final class PieceArt {
             case PYRO_FORGE, PYRO_SPEAR, PYRO_BREATH, PYRO_FIRESTORM_PRIME, PYRO_FIRESTORM,
                     PYRO_COLLAPSE, PYRO_BURST, PYRO_SUN_CHARGE, PYRO_SUN_DROP, PYRO_LASH, PYRO_MANTLE,
                     PYRO_CAUTERIZE, PYRO_MINE_ARM, PYRO_MINE_WARN, PYRO_LANCE, PYRO_SHEPHERD, PYRO_TAKEOFF, PYRO_PHOENIX, PYRO_WAKE,
-                    SUNFALL, EMBER_SHROUD, HEARTHFIRE -> PyroArt.draw(c, a, t);
+                    SUNFALL, EMBER_SHROUD, HEARTHFIRE, PYRO_JAB, PYRO_KICK, PYRO_SWEEP_KICK, PYRO_JET_STEP, PYRO_FLIP,
+                    PYRO_COUNTER -> PyroArt.draw(c, a, t);
             case ELECTRO_DRAW, ELECTRO_ARC, ELECTRO_CURRENT, ELECTRO_ORB, ELECTRO_PRIME, ELECTRO_WARN,
                     ELECTRO_STRIKE, ELECTRO_PULSE, ELECTRO_RIDE, ELECTRO_SCAR, ELECTRO_COIL, ELECTRO_SIPHON,
                     ELECTRO_BLACKOUT, ELECTRO_AURA, ELECTRO_FIELD, ELECTRO_SCREEN,
@@ -80,6 +81,7 @@ final class PieceArt {
             case EXPLODING_MAN -> MiniBlast.draw(c, a.origin(), a.scale() / 80F, a.scale() * 1.15F, t, a.piece().ticks);
             case SPEED_GUST -> SpeedArt.gust(c, a, t);
             case SPEED_ARMS -> SpeedArt.arms(c, a, t);
+            case SPEED_DEFLECT -> SpeedArt.deflect(c, a, t);
             case SPEED_DISINTEGRATE -> SpeedArt.disintegrate(c, a, t);
             case SHIELD_BRACE -> ShieldArt.draw(c, a, t);
             case VILLAGE_MELTDOWN, VILLAGE_SAFE -> VillageArt.draw(c, a, t);
@@ -98,6 +100,9 @@ final class PieceArt {
                     ELLE_CONDUIT_MARK, ELLE_CONDUIT, ELLE_REBOOT, ELLE_STRIKE_MARK, ELLE_STRIKE, ELLE_ORB, ELLE_SHORT,
                     ELLE_PHASE, ELLE_ARRIVE, ELLE_OMEN, ELLE_DROP -> ElleArt.draw(c, a, t);
             case GUN_HEAT, GUN_FROST, GUN_TASER -> WeaponArt.draw(c, a, t);
+            case SHIFT_STUDY, SHIFT_TOUCH, SHIFT_LUNGE, SHIFT_INSTINCT, SHIFT_HOLD, SHIFT_SONIC, SHIFT_GAZE,
+                 SHIFT_DECOY, SHIFT_DECOY_BURST, SHIFT_REFLECT, SHIFT_NIGHTMARE, SHIFT_EXPOSED, SHIFT_DAZE, SHIFT_PLATES -> ShapeArt.draw(c, a, t);
+            case DAMPENER_FIELD, DAMPENER_SHOT, DAMPENER_HIT, DAMPENER_MARK, DAMPENER_CHARGE -> DampenerArt.draw(c, a, t);
         }
     }
 }

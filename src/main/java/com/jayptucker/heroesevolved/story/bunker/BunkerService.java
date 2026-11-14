@@ -84,10 +84,8 @@ public final class BunkerService {
         MinecraftServer server = player.getServer();
         BunkerData data = ensureBuilt(server);
         ServerLevel overworld = server.overworld();
-        // Once Pod 14 stayed shut on the third night, Claire Bennet is still asleep in it: nobody else wakes there.
-        int index = data.pod(player.getUUID(), BunkerBuilder.PODS,
-                com.jayptucker.heroesevolved.story.night.NightThreeData.get(server).podKept()
-                        ? com.jayptucker.heroesevolved.story.night.NightThreeBunker.CLAIRE : -1);
+        // Pod 14 is Claire Bennet's, the one her father sealed her in on the Last Day: nobody else sleeps there.
+        int index = data.pod(player.getUUID(), BunkerBuilder.PODS, com.jayptucker.heroesevolved.story.night.NightThreeBunker.CLAIRE);
         BlockPos base = data.origin.offset(BunkerBuilder.podOffset(index));
         if (!overworld.getBlockState(base).is(ModBlocks.CRYOCHAMBER.get())) BunkerBuilder.placePod(overworld, data.origin, index, true);
         if (player.level() != overworld) player.teleportTo(overworld, base.getX() + .5, base.getY(), base.getZ() + .5, 0, 0);
@@ -95,6 +93,17 @@ public final class BunkerService {
         BunkerBuilder.labelPod(overworld, data.origin, index, player.getGameProfile().getName(), false);
         SESSIONS.put(player.getUUID(), 0);
         return true;
+    }
+
+    /**
+     * The Last Day is over for {@code player}: they wake now, in the pod with the same number as the one they were sealed
+     * in under Primatech, 103 years later.
+     */
+    public static void handOff(ServerPlayer player) {
+        if (!com.jayptucker.heroesevolved.config.HeroesEvolvedConfig.COMMON.bunkerEnabled.get()) return;
+        begin(player);
+        SESSIONS.put(player.getUUID(), 1);
+        step(player, 1);
     }
 
     private static boolean veteran(ServerPlayer player) {
@@ -118,6 +127,12 @@ public final class BunkerService {
                             data.origin.getX(), data.origin.getZ(), StoryLead.journalKey()).withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
                     continue;
                 }
+                // A new player lives the Last Day first; it hands them back here, 103 years later (handOff).
+                if (com.jayptucker.heroesevolved.story.prologue.PrologueService.wanted(player)) {
+                    SESSIONS.remove(id);
+                    com.jayptucker.heroesevolved.story.prologue.PrologueService.join(player);
+                    continue;
+                }
                 begin(player);
                 SESSIONS.put(id, 1);
                 age = 1;
@@ -130,6 +145,7 @@ public final class BunkerService {
         BunkerPower.tick(server.overworld(), bunker);
         if (server.overworld().getGameTime() % 20 == 0) {
             BunkerBuilder.upgrade(server.overworld(), bunker);
+            BunkerBuilder.releaseClaire(server.overworld(), bunker.origin);
             // Nobody waking or about to (a server restarted mid-waking, or a veteran only told where the
             // bunker is): the power comes back.
             if (!bunker.powered && !BunkerPower.switching() && !alarmed && SESSIONS.keySet().stream().allMatch(STEPPED_OUT::contains))
@@ -137,7 +153,7 @@ public final class BunkerService {
             // Every sleeper's name over their pod, including those who woke before the nameplates did this.
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 Integer pod = bunker.pods.get(player.getUUID());
-                if (pod != null) BunkerBuilder.labelPod(server.overworld(), bunker.origin, pod, player.getGameProfile().getName(),
+                if (pod != null && pod != com.jayptucker.heroesevolved.story.night.NightThreeBunker.CLAIRE) BunkerBuilder.labelPod(server.overworld(), bunker.origin, pod, player.getGameProfile().getName(),
                         !SESSIONS.containsKey(player.getUUID()) || STEPPED_OUT.contains(player.getUUID()));
             }
         }

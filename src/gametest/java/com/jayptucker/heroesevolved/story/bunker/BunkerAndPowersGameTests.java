@@ -146,6 +146,20 @@ public final class BunkerAndPowersGameTests {
         h.assertTrue(explosions(overworld, data.origin).size() == 1 && explosions(overworld, data.origin).getFirst().survives(),
                 "Isaac's explosion, Exhibit 1, hangs whole above the dead screen: " + explosions(overworld, data.origin));
         h.assertTrue(exhibitOne(overworld, data).equals("EXHIBIT 1"), "Its label reads EXHIBIT 1: " + exhibitOne(overworld, data));
+        // Pod 14: Claire's, open, clawed through from inside, with her note on a lectern beside it (put back if taken).
+        BunkerBuilder.releaseClaire(overworld, data.origin);
+        BlockPos claire = data.origin.offset(BunkerBuilder.podOffset(com.jayptucker.heroesevolved.story.night.NightThreeBunker.CLAIRE));
+        for (BlockPos half : new BlockPos[] {claire, claire.above()})
+            h.assertTrue(overworld.getBlockState(half).is(ModBlocks.CRYOCHAMBER.get())
+                            && overworld.getBlockState(half).getValue(com.jayptucker.heroesevolved.story.bunker.CryoChamberBlock.OPEN)
+                            && overworld.getBlockState(half).getValue(com.jayptucker.heroesevolved.story.bunker.CryoChamberBlock.CRACKED),
+                    "Pod 14 stands open, its glass clawed through: " + overworld.getBlockState(half));
+        BlockPos note = BunkerBuilder.claireLectern(data.origin);
+        h.assertTrue(overworld.getBlockEntity(note) instanceof LecternBlockEntity desk && desk.hasBook()
+                && desk.getBook().getHoverName().getString().contains("Whoever Wakes Next"), "Claire's note waits on the lectern beside her pod");
+        ((LecternBlockEntity) overworld.getBlockEntity(note)).clearContent();
+        BunkerBuilder.releaseClaire(overworld, data.origin);
+        h.assertTrue(overworld.getBlockEntity(note) instanceof LecternBlockEntity again && again.hasBook(), "...and is put back if someone takes it");
         h.succeed();
     }
 

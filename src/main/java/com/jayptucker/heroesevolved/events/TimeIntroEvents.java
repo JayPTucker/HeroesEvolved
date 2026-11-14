@@ -29,25 +29,36 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 public final class TimeIntroEvents {
     private TimeIntroEvents() {}
 
-    @SubscribeEvent public static void tick(ServerTickEvent.Post event) { TimeIntroService.tick(event.getServer()); }
+    @SubscribeEvent public static void tick(ServerTickEvent.Post event) {
+        TimeIntroService.tick(event.getServer());
+        com.jayptucker.heroesevolved.story.prologue.PrologueService.tick(event.getServer());
+    }
     @SubscribeEvent public static void login(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) TimeIntroService.login(player);
     }
     @SubscribeEvent public static void logout(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) TimeIntroService.logout(player);
+        if (event.getEntity() instanceof ServerPlayer player) {
+            com.jayptucker.heroesevolved.story.prologue.PrologueService.logout(player);
+            TimeIntroService.logout(player);
+        }
     }
     @SubscribeEvent public static void respawn(PlayerEvent.PlayerRespawnEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) TimeIntroService.login(player);
     }
-    @SubscribeEvent public static void stopping(ServerStoppingEvent event) { TimeIntroService.shutdown(event.getServer()); }
+    @SubscribeEvent public static void stopping(ServerStoppingEvent event) {
+        com.jayptucker.heroesevolved.story.prologue.PrologueService.shutdown(event.getServer());
+        TimeIntroService.shutdown(event.getServer());
+    }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void damage(LivingIncomingDamageEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player && TimeIntroService.isVisiting(player)) event.setCanceled(true);
+        if (event.getEntity() instanceof ServerPlayer player && (TimeIntroService.isVisiting(player)
+                || com.jayptucker.heroesevolved.story.prologue.PrologueService.isMember(player) || com.jayptucker.heroesevolved.story.prologue.PrologueService.isWaiting(player))) event.setCanceled(true);
     }
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void death(LivingDeathEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player && TimeIntroService.isVisiting(player)) {
+        if (event.getEntity() instanceof ServerPlayer player && (TimeIntroService.isVisiting(player)
+                || com.jayptucker.heroesevolved.story.prologue.PrologueService.isMember(player) || com.jayptucker.heroesevolved.story.prologue.PrologueService.isWaiting(player))) {
             event.setCanceled(true);
             player.setHealth(Math.max(1, player.getHealth()));
         } else if (event.getEntity() instanceof ServerPlayer player && AvenueService.isRunner(player)) {
@@ -60,7 +71,7 @@ public final class TimeIntroEvents {
         // Server only. The event also fires as a client receives each entity, and a client knows neither the
         // scene tags nor the vision's crowd, so it would turn away everyone on the avenue and in the vision.
         if (!event.getLevel().isClientSide() && TimeIntroService.isCity(event.getLevel()) && event.getEntity() instanceof Mob
-                && !TimeIntroService.isCurrentCrowd(event.getEntity())
+                && !TimeIntroService.isCurrentCrowd(event.getEntity()) && !com.jayptucker.heroesevolved.story.prologue.PrologueService.isScene(event.getEntity())
                 && !(AvenueService.running() && AvenueService.isScene(event.getEntity()))) event.setCanceled(true);
     }
     @SubscribeEvent public static void breaking(BlockEvent.BreakEvent event) {
@@ -74,6 +85,8 @@ public final class TimeIntroEvents {
         if (event.getEntity() instanceof ServerPlayer player && AvenueService.isRunner(player)
                 && EntityCarryService.isCarrying(player)) return;
         if (TimeIntroService.isCity(event.getLevel())) {
+            // Trying your own apartment door on the Last Day says you're ready to go out.
+            if (event.getEntity() instanceof ServerPlayer player) com.jayptucker.heroesevolved.story.prologue.PrologueService.useBlock(player, event.getPos());
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.FAIL);
         }

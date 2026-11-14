@@ -93,7 +93,7 @@ across to an ally ward (`intro/WardRelease`):
 Each new composition has its own charge and release particle kinds. Primary
 cues remain visible on Minimal particles; richer filaments, motes and layered
 fronts scale with the particle setting. The shared 768-particle cap remains.
-The existing compact caption layout is reused. Captions stay up as long as their words take to read (about fourteen characters a second, on a dark band), and one that arrives while another is still being read waits its turn. Existing flight/time audio and
+Captions go to chat, one line each with the subtitle in grey, and a caption repeated within ten seconds is skipped; nothing is drawn over the scene. Existing flight/time audio and
 the city intro assets are unchanged; other intros use vanilla sound cues and
 replay the existing New Beginning cue for their owner.
 

@@ -1,0 +1,23 @@
+// Moving faster than time as an ordinary player sees it: the frozen stand-in, the blur, the reappearance. Never bundled into the mod JAR.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('veilPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/veil-preview')
+                        programArguments.addAll('--width', '1100', '--height', '800')
+                        systemProperty('heroes.preview.veil', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('veilPreviewClasses')) }
+        }
+    }
+}

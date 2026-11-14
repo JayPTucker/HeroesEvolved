@@ -43,7 +43,8 @@ public record SetPiecePayload(int piece, Vec3 origin, Vec3 target, float scale, 
         SetPiecePayload payload = new SetPiecePayload(piece.ordinal(), origin, target, scale, bound == null ? -1 : bound.getId(), seed, Math.max(0, delay));
         double range = 128 + scale * 4;
         for (ServerPlayer viewer : level.players())
-            if (viewer.position().distanceToSqr(origin) <= range * range || viewer.position().distanceToSqr(target) <= range * range)
+            if ((viewer.position().distanceToSqr(origin) <= range * range || viewer.position().distanceToSqr(target) <= range * range)
+                    && !com.jayptucker.heroesevolved.time.TimeVeil.masks(viewer, origin))
                 PacketDistributor.sendToPlayer(viewer, payload);
     }
 

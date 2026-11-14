@@ -244,5 +244,35 @@
     "action": "vibe_frequency_lock",
     "energy": 1,
     "cooldown": 1
+  },
+  {
+    "power": "shapeshifting",
+    "action": "shapeshift_morph",
+    "energy": 1,
+    "cooldown": 1
+  },
+  {
+    "power": "shapeshifting",
+    "action": "shapeshift_instinct",
+    "energy": 1,
+    "cooldown": 1
+  },
+  {
+    "power": "shapeshifting",
+    "action": "shapeshift_decoy",
+    "energy": 1,
+    "cooldown": 1
+  },
+  {
+    "power": "shapeshifting",
+    "action": "shapeshift_reflection",
+    "energy": 1,
+    "cooldown": 1
+  },
+  {
+    "power": "shapeshifting",
+    "action": "shapeshift_nightmare",
+    "energy": 1,
+    "cooldown": 1
   }
 ]

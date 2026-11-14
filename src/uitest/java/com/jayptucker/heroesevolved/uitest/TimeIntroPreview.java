@@ -8,6 +8,8 @@ import com.jayptucker.heroesevolved.time.intro.TimeIntroService;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
+import net.minecraft.world.phys.Vec3;
+import com.jayptucker.heroesevolved.time.intro.SkyFight;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Difficulty;
@@ -30,44 +32,45 @@ public final class TimeIntroPreview {
     private static String pending, shot;
     private static int shotAt = -1;
 
-    /** When time stops for someone standing in the street where the wave shots are taken. */
-    private static final int FROZEN = TimeIntroService.DETONATION_TICK + IntroBlast.arrival(IntroBlast.distance(4.5, 72.5));
+    /** When time stops for someone standing at the vantage, where the wave shots are taken. */
+    private static final int FROZEN = TimeIntroService.DETONATION_TICK + IntroBlast.arrival(IntroBlast.distance(4.5, -14.5));
+
+    private static final SkyFight.Script FIGHT = SkyFight.VISION;
+    private static final int CLASH_1 = FIGHT.clashAt(1), CLASH_2 = FIGHT.clashAt(2), IMPACT = FIGHT.impactAt(), LANDED = FIGHT.landAt();
 
     /** Scene tick, then what to do: a position to stand (x, z, yaw, pitch) and/or a photograph. */
     private static final Object[][] STEPS = {
-            {40, 4.5, 72.5, 180f, -6f, "1-arrival"},
-            // The group just behind the arrival point is talking by now.
-            {100, 4.5, 70.5, -15f, -4f, "1b-conversation"},
-            {120, -18.5, 70.5, 200f, -4f, "2-side-street"},
-            {300, 4.5, 72.5, 180f, -8f, "3-glow-early"},
-            {520, 4.5, 72.5, 180f, -9f, "4-glow-bright"},
-            // Up on a roof for the light and the cloud ...
-            {560, 20.5, 84.5, 174f, -6f, null},
-            {620, null, null, null, -6f, "5-glow-roof"},
+            {40, 4.5, -14.5, 180f, -32f, "1-arrival-sky-fight"},
+            // Peter and Sylar over the plaza: a clash Sylar takes (his grip), one Peter takes (lightning), the throw.
+            {CLASH_1, null, null, null, -32f, "1b-sylar-grips-peter"},
+            {CLASH_2, null, null, null, -32f, "1c-peter-strikes"},
+            {IMPACT - 2, 4.5, -14.5, 166f, -38f, "2-sylar-into-the-tower"},
+            {IMPACT + 18, null, null, null, -38f, "2b-crater"},
+            {LANDED - 2, 4.5, -20.5, 180f, -4f, "2c-peter-lands-by-ted"},
+            {300, 4.5, -20.5, 180f, -4f, "3-glow-early"},
+            {440, 4.5, -20.5, 180f, -4f, "3b-peter-holds-ted", CameraType.FIRST_PERSON},
+            {520, 4.5, -14.5, 180f, -6f, "4-glow-bright"},
+            {560, null, null, null, -4f, "5-sirens-crowd", CameraType.THIRD_PERSON_FRONT},
+            // Close in on ground zero (a preview camera): the traveler's double folds in beside Peter, and the two are gone.
+            {584, null, null, null, -4f, null, CameraType.FIRST_PERSON, new Vec3[] {new Vec3(9.5, 67.2, -69.5), new Vec3(4.8, 65.4, -76.5)}},
+            {590, null, null, null, null, "5b-traveler-arrives"},
+            {607, null, null, null, null, "5b2-who-are-you"},
+            {614, null, null, null, null, "5c-traveler-takes-hold"},
+            {619, null, null, null, null, "5d-gone"},
+            {626, null, null, null, null, null, null, "clear"},
+            {TimeIntroService.DETONATION_TICK - 2, null, null, null, -4f, null, CameraType.FIRST_PERSON},
             {TimeIntroService.DETONATION_TICK + 2, null, null, null, null, "6-flash"},
-            {TimeIntroService.DETONATION_TICK + 14, null, null, null, -8f, "7-fireball"},
-            {TimeIntroService.DETONATION_TICK + 34, null, null, null, -14f, "8-rising"},
-            {TimeIntroService.DETONATION_TICK + 44, 4.5, 96.5, 180f, -2f, null},
-            {TimeIntroService.DETONATION_TICK + 50, null, null, null, -2f, "9-cap-aerial"},
-            // ... then down in the street for the wave.
-            {TimeIntroService.DETONATION_TICK + 56, 4.5, 72.5, 180f, -10f, null},
-            {TimeIntroService.DETONATION_TICK + 66, null, null, null, -10f, "10-wave"},
-            {TimeIntroService.DETONATION_TICK + 80, null, null, null, -12f, "11-wave-close"},
-            // Time stops: the clock of the power opens under them, holds, then runs back. Optional 7th: the camera.
+            {TimeIntroService.DETONATION_TICK + 8, null, null, null, -8f, "7-fireball"},
+            // Time stops: the clock of the power opens under them, holds, then runs back.
             {FROZEN + 1, null, null, null, 55f, "12-frozen-dial"},
-            {FROZEN + 16, null, null, null, 32f, "12b-frozen-behind", CameraType.THIRD_PERSON_BACK},
-            {FROZEN + 28, null, null, null, 6f, "12c-frozen-ahead", CameraType.FIRST_PERSON},
-            {FROZEN + 40, null, null, null, 18f, "12d-frozen-wave", CameraType.THIRD_PERSON_BACK},
-            // The crowd, down the street behind them: held mid-run, running back, and home before the sirens.
+            {FROZEN + 16, null, null, null, 20f, "12b-frozen-behind", CameraType.THIRD_PERSON_BACK},
+            {FROZEN + 28, null, null, null, -4f, "12c-frozen-ahead", CameraType.FIRST_PERSON},
             {FROZEN + 46, null, null, null, 4f, "12e-crowd-frozen", CameraType.THIRD_PERSON_FRONT},
-            {FROZEN + IntroBlast.FREEZE_TICKS + 9, null, null, null, 30f, "13-rewinding", CameraType.THIRD_PERSON_BACK},
+            {FROZEN + IntroBlast.FREEZE_TICKS + 9, null, null, null, 20f, "13-rewinding", CameraType.THIRD_PERSON_BACK},
             {FROZEN + IntroBlast.FREEZE_TICKS + 21, null, null, null, 62f, "13b-rewinding-dial", CameraType.FIRST_PERSON},
-            {FROZEN + IntroBlast.FREEZE_TICKS + 28, null, null, null, 22f, "13c-rewinding-front", CameraType.THIRD_PERSON_FRONT},
             {FROZEN + IntroBlast.FREEZE_TICKS + 33, null, null, null, 4f, "13e-crowd-running-back", CameraType.THIRD_PERSON_FRONT},
-            {FROZEN + IntroBlast.FREEZE_TICKS + 38, null, null, null, 26f, "13d-closing", CameraType.THIRD_PERSON_BACK},
-            {FROZEN + IntroBlast.FREEZE_TICKS + 41, null, null, null, 4f, "13f-crowd-home", CameraType.THIRD_PERSON_FRONT},
-            // Time holds a few seconds more after the rewind, everyone back where they stood.
-            {FROZEN + IntroBlast.FREEZE_TICKS + IntroBlast.REWIND_TICKS + 30, null, null, null, 4f, "13g-held", CameraType.THIRD_PERSON_FRONT},
+            // Time holds a few seconds more after the rewind: everyone back where they stood, Peter and Ted again.
+            {FROZEN + IntroBlast.FREEZE_TICKS + IntroBlast.REWIND_TICKS + 30, null, null, null, -4f, "13g-held", CameraType.FIRST_PERSON},
     };
 
     private static void onServer(Minecraft mc, Consumer<ServerPlayer> action) {
@@ -98,6 +101,8 @@ public final class TimeIntroPreview {
         if (mc.screen instanceof net.minecraft.client.gui.screens.PauseScreen) mc.setScreen(null);
         var server = mc.getSingleplayerServer();
         worldTicks++;
+        // A new world starts players on the Last Day; this preview is about the vision, so wake straight in the bunker.
+        if (worldTicks == 5) onServer(mc, p -> com.jayptucker.heroesevolved.story.prologue.PrologueService.skip(p));
         var city = server.getLevel(TimeIntroService.DIMENSION);
         // After the stasis awakening has let the player go and the city stands, the power wakes.
         if (!granted && worldTicks > 240 && city != null && FractureCity.get(city).ready()) {
@@ -122,15 +127,17 @@ public final class TimeIntroPreview {
             double x = (double) s[1], z = (double) s[2];
             float yaw = (float) s[3], pitch = (float) s[4];
             onServer(mc, p -> {
-                boolean air = z == 96.5;
-                p.getAbilities().mayfly = air; p.getAbilities().flying = air; p.onUpdateAbilities();
-                p.teleportTo(p.serverLevel(), x, air ? 175 : x == 20.5 ? 130 : 64, z, yaw, pitch);
+                p.teleportTo(p.serverLevel(), x, 64, z, yaw, pitch);
             });
         } else if (s[4] != null) {
             float pitch = (float) s[4];
             onServer(mc, p -> p.teleportTo(p.serverLevel(), p.getX(), p.getY(), p.getZ(), p.getYRot(), pitch));
         }
-        if (s.length > 6) mc.options.setCameraType((CameraType) s[6]);
+        if (s.length > 6 && s[6] != null) mc.options.setCameraType((CameraType) s[6]);
+        if (s.length > 7) {
+            if (s[7] instanceof Vec3[] v) com.jayptucker.heroesevolved.client.effects.TempestCamera.fix(v[0], v[1]);
+            else com.jayptucker.heroesevolved.client.effects.TempestCamera.fix(null, null);
+        }
         if (s[5] != null) { shotAt = scene + 3; shot = "intro-" + s[5] + ".png"; }
         System.out.println("INTRO_STEP " + step + " at scene " + scene);
     }

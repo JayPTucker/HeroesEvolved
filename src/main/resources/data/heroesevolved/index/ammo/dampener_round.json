@@ -1,0 +1,7 @@
+{
+  "name": "heroesevolved.ammo.dampener_round.name",
+  "display": "heroesevolved:dampener_round_display",
+  "stack_size": 30,
+  "tooltip": "heroesevolved.ammo.dampener_round.desc",
+  "sort": 94
+}

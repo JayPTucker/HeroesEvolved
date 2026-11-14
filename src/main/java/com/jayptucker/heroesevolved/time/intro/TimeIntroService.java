@@ -51,12 +51,21 @@ public final class TimeIntroService {
             ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "time_fracture"));
     private static final ResourceLocation POWER = ResourceLocation.fromNamespaceAndPath(
             HeroesEvolved.MOD_ID, "time_manipulation");
-    public static final Vec3 ARRIVAL = new Vec3(4, 64, 70);
+    /**
+     * The vantage: the avenue beside city hall, about sixty blocks south of Kirby Plaza. Close enough to watch Peter
+     * Petrelli try to talk Ted Sprague down, far enough to see the flash and the wave leave ground zero before time stops.
+     */
+    public static final Vec3 ARRIVAL = new Vec3(4, 64, -14);
     public static final Vec3 BLAST = IntroBlast.CENTER;
     /** Sprague's light becomes something you notice; the sirens start; the light falls. */
     public static final int GLOW_TICK = 200, SIREN_TICK = 400, DETONATION_TICK = 640;
-    /** Where visitors may walk: the southern half of the city, well inside its edges. */
-    public static final int ROAM_X0 = -92, ROAM_X1 = 96, ROAM_Z0 = -4, ROAM_Z1 = 96;
+    /** Where visitors may walk: the stretch of avenue and sidewalk around the vantage, nowhere nearer ground zero. */
+    public static final int ROAM_X0 = -6, ROAM_X1 = 14, ROAM_Z0 = -22, ROAM_Z1 = -2;
+    /**
+     * The crowd stands three city blocks north of where the plan puts it, around the vantage and up toward the plaza; it
+     * runs south past the visitors, and the curious walk no further north than this.
+     */
+    public static final int CROWD_SHIFT = -96, CROWD_RUN_Z = 40, CROWD_STARE_Z = -70;
     /** The last moment anyone can still be here: the farthest corner of the walk, frozen, rewound. */
     public static final int RETURN_TICK = DETONATION_TICK
             + IntroBlast.arrival(Math.max(IntroBlast.distance(ROAM_X0, ROAM_Z1), IntroBlast.distance(ROAM_X1, ROAM_Z1)))
@@ -76,6 +85,11 @@ public final class TimeIntroService {
         final Map<UUID, Integer> frozenAt = new HashMap<>();
         final Map<UUID, Vec3> frozenWhere = new HashMap<>();
         VisionCrowd crowd;
+        /** Where the one whose power it is goes home: everyone else lands beside them. */
+        TimeIntroVisit ownerHome;
+        int returned;
+        /** Ground zero: Peter and Sylar in the sky, Ted in the plaza, the traveler's double at the end (VisionFight). */
+        VisionFight fight;
         int ticks;
         int nextCry = 24;
         Scene(UUID owner) { this.owner = owner; }
@@ -175,7 +189,8 @@ public final class TimeIntroService {
         cityData.tickBuild(city);
         if (scene == null) {
             // A vision waits for an evening on the avenue to end; they share the city.
-            if (cityData.ready() && !AvenueService.running()) startNext(server, city);
+            if (cityData.ready() && !AvenueService.running()
+                    && !com.jayptucker.heroesevolved.story.prologue.PrologueService.running()) startNext(server, city);
             return;
         }
         Scene current = scene;
@@ -196,6 +211,7 @@ public final class TimeIntroService {
                 player.setDeltaMovement(Vec3.ZERO);
                 player.fallDistance = 0;
                 if (current.ticks - frozen >= IntroBlast.STOPPED_TICKS) {
+                    together(server, current, player);
                     returnHome(player, true);
                     return true;
                 }
@@ -211,6 +227,7 @@ public final class TimeIntroService {
             return;
         }
         animateCrowd(city, current);
+        animateActors(server, current);
         if (current.ticks == GLOW_TICK) forEachVisitor(server, player -> cue(player, TimeIntroPayload.GLOW));
         if (current.ticks == SIREN_TICK) forEachVisitor(server, player -> cue(player, TimeIntroPayload.SIREN));
         if (current.ticks == DETONATION_TICK - 60) forEachVisitor(server, player ->
@@ -314,6 +331,12 @@ public final class TimeIntroService {
                 index++;
             }
             next.crowd = VisionCrowd.spawn(city, CROWD_TAG, CROWD_SIZE);
+            ServerPlayer owner2 = server.getPlayerList().getPlayer(request.owner);
+            TimeIntroVisit home = owner2 == null ? null : owner2.getData(ModDataAttachments.TIME_INTRO_VISIT);
+            next.ownerHome = home != null && home.pending() ? home : null;
+            Scene started = next;
+            next.fight = VisionFight.start(city, CROWD_TAG, () -> watchers(server, started), (actor, text) -> line(server, started, actor, text),
+                    () -> traveler(server, started));
             return;
         }
     }
@@ -326,6 +349,71 @@ public final class TimeIntroService {
         com.jayptucker.heroesevolved.entity.EntityCarryService.release(player);
         com.jayptucker.heroesevolved.quake.QuakeService.stopAll(player);
         com.jayptucker.heroesevolved.telekinesis.TelekinesisService.stopAll(player);
+    }
+
+    /**
+     * Ground zero, seen from the vantage: Peter Petrelli and Sylar fighting in the sky while Ted Sprague burns below, Peter
+     * throwing Sylar into a tower and diving to Ted, then trying to talk him down until the traveler takes him (VisionFight). The
+     * words reach every visitor in chat. The tower is put back as the fireball covers it.
+     */
+    private static void animateActors(MinecraftServer server, Scene current) {
+        if (current.fight == null || current.ticks > DETONATION_TICK + 8) return;
+        if (current.ticks == DETONATION_TICK + 8) { current.fight.restore(); return; }
+        current.fight.tick(current.ticks);
+    }
+
+    /** Whose double comes for Peter: the one whose power this is, or, if they have gone, someone still watching. */
+    private static ServerPlayer traveler(MinecraftServer server, Scene current) {
+        ServerPlayer owner = server.getPlayerList().getPlayer(current.owner);
+        if (owner != null && current.visitors.contains(current.owner)) return owner;
+        List<ServerPlayer> watching = watchers(server, current);
+        return watching.isEmpty() ? null : watching.getFirst();
+    }
+
+    private static List<ServerPlayer> watchers(MinecraftServer server, Scene current) {
+        List<ServerPlayer> out = new ArrayList<>();
+        for (UUID id : current.visitors) {
+            ServerPlayer player = server.getPlayerList().getPlayer(id);
+            if (player != null) out.add(player);
+        }
+        return out;
+    }
+
+    private static void line(MinecraftServer server, Scene current, com.jayptucker.heroesevolved.story.actor.StoryActorEntity actor, String text) {
+        List<ServerPlayer> listeners = new ArrayList<>();
+        for (UUID id : current.visitors) {
+            ServerPlayer player = server.getPlayerList().getPlayer(id);
+            if (player != null) listeners.add(player);
+        }
+        actor.say(text, actor.role() == com.jayptucker.heroesevolved.story.actor.StoryActorEntity.Role.TED, listeners, CROWD_TAG);
+    }
+
+    /**
+     * Time put back, the group lands together: everyone but the one whose power it is goes home beside them, in a ring
+     * of open standing places around where they were. If there is nowhere to stand, on their spot.
+     */
+    private static void together(MinecraftServer server, Scene current, ServerPlayer player) {
+        if (current.ownerHome == null || player.getUUID().equals(current.owner)) return;
+        TimeIntroVisit home = current.ownerHome;
+        ServerLevel level = server.getLevel(ResourceKey.create(Registries.DIMENSION, home.dimension()));
+        if (level == null) return;
+        Vec3 centre = new Vec3(home.x(), home.y(), home.z());
+        Vec3 spot = centre;
+        for (int k = 0; k < 16; k++) {
+            int slot = current.returned + k;
+            double radius = 1.4 + (slot / 8) * 1.2, angle = slot % 8 * Math.PI / 4 + (slot / 8) * Math.PI / 8;
+            Vec3 at = centre.add(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+            var box = player.getDimensions(player.getPose()).makeBoundingBox(at);
+            BlockPos below = BlockPos.containing(at.x, at.y - 0.5, at.z);
+            if (level.noCollision(player, box) && !level.getBlockState(below).getCollisionShape(level, below).isEmpty()) {
+                spot = at;
+                current.returned = slot + 1;
+                break;
+            }
+        }
+        float yaw = (float) Math.toDegrees(Math.atan2(-(centre.x - spot.x), centre.z - spot.z));
+        player.setData(ModDataAttachments.TIME_INTRO_VISIT, new TimeIntroVisit(true, home.dimension(), spot.x, spot.y, spot.z,
+                spot == centre ? home.yaw() : yaw, 0));
     }
 
     private static void animateCrowd(ServerLevel city, Scene current) {
@@ -404,8 +492,12 @@ public final class TimeIntroService {
 
     private static void finish(MinecraftServer server, ServerLevel city, boolean completed) {
         Scene current = scene;
-        forEachVisitor(server, player -> returnHome(player, completed));
+        forEachVisitor(server, player -> {
+            if (completed) together(server, current, player);
+            returnHome(player, completed);
+        });
         if (current.crowd != null) current.crowd.discard();
+        if (current.fight != null) current.fight.end();
         forceCity(city, false);
         scene = null;
     }

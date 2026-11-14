@@ -205,6 +205,11 @@ public final class PyroFlightService {
             if (jets.age % 5 == 0) sync(player);
             return;
         }
+        if (PyroCombat.isDodging(player)) {
+            // A jet step or backflip owns the body for a moment; cruise picks up again where it leaves off.
+            jets.lastPosition = player.position();
+            return;
+        }
         boolean moving = Math.abs(jets.forward) + Math.abs(jets.strafe) > .01 || jets.rise || jets.descend;
         boolean wantsBoost = jets.boost && jets.forward > 0 && jets.speedStep > 0;
         if (wantsBoost && jets.age >= jets.boostFuelUntil && PyroService.spendHeat(player, 8)) {

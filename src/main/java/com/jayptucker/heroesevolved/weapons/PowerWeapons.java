@@ -35,11 +35,15 @@ import org.jetbrains.annotations.Nullable;
  *   solid for two seconds (one for a player). A weak Cryokinesis. Bolts that hit water skin it with ice.</li>
  *   <li><b>Taser</b>: one cartridge at a time, eight blocks. A hit locks the target's muscles: barely moving, no
  *   jumping, no landing blows (see {@link Stun}). A weak Electrokinesis hit.</li>
+ *   <li><b>Nullifier</b>: dampener rounds made from the Forge Energy in its own battery, not from ammo items. A hit
+ *   dampens the target's power for a while (see {@code dampener/Dampening} and {@code dampener/Nullifier}).</li>
  * </ul>
  */
 public final class PowerWeapons {
     public static final ResourceLocation HEAT_GUN = id("heat_gun"), COLD_GUN = id("cold_gun"), TASER = id("taser");
     public static final ResourceLocation FUEL_CELL = id("fuel_cell"), CRYO_CELL = id("cryo_cell"), TASER_CARTRIDGE = id("taser_cartridge");
+    /** The Nullifier and its dampener round. The rounds come out of the gun's RF battery, never the inventory. */
+    public static final ResourceLocation DAMPENER_GUN = id("dampener_gun"), DAMPENER_ROUND = id("dampener_round");
     /** The Company's sidearm: TaCZ's own Glock 17. */
     public static final ResourceLocation AGENT_PISTOL = ResourceLocation.fromNamespaceAndPath("tacz", "glock_17");
 
@@ -70,8 +74,16 @@ public final class PowerWeapons {
 
     /** A loaded gun: a full magazine and a round chambered. Empty if TaCZ doesn't know the id. */
     public static ItemStack gun(ResourceLocation id) {
-        return TaczLink.gun(id, magazine(id), id.equals(HEAT_GUN));
+        ItemStack gun = TaczLink.gun(id, magazine(id), id.equals(HEAT_GUN));
+        if (id.equals(DAMPENER_GUN) && !gun.isEmpty()) com.jayptucker.heroesevolved.dampener.Nullifier.prepare(gun);
+        return gun;
     }
+
+    /** A gun's internal reserve (the Nullifier's battery, in rounds), or -1 if it has none. */
+    public static int reserve(ItemStack stack) { return TaczLink.reserve(stack); }
+
+    /** Sets a gun's internal reserve and its cap. TaCZ reloads from it instead of the inventory. */
+    public static void reserve(ItemStack stack, int rounds, int max) { TaczLink.reserve(stack, rounds, max); }
 
     public static ItemStack ammo(ResourceLocation id, int count) { return TaczLink.ammo(id, count); }
 
@@ -88,6 +100,7 @@ public final class PowerWeapons {
         if (id.equals(HEAT_GUN)) return 40;
         if (id.equals(COLD_GUN)) return 15;
         if (id.equals(TASER)) return 1;
+        if (id.equals(DAMPENER_GUN)) return com.jayptucker.heroesevolved.dampener.DampenerGeometry.MAGAZINE;
         return 17;
     }
 
@@ -136,6 +149,11 @@ public final class PowerWeapons {
             level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(), SoundEvents.GLASS_BREAK, SoundSource.PLAYERS, 0.35F, 1.9F);
         } else if (gun.equals(TASER)) {
             level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(), SoundEvents.TRIDENT_THROW.value(), SoundSource.PLAYERS, 0.6F, 1.8F);
+        } else if (gun.equals(DAMPENER_GUN)) {
+            SetPiecePayload.send(level, Piece.DAMPENER_SHOT, muzzle(shooter),
+                    reach(shooter, com.jayptucker.heroesevolved.dampener.DampenerGeometry.RANGE), 0, shooter);
+            level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(), SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 0.5F, 2.0F);
+            level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(), SoundEvents.AMETHYST_CLUSTER_BREAK, SoundSource.PLAYERS, 0.7F, 0.7F);
         }
     }
 
@@ -145,6 +163,7 @@ public final class PowerWeapons {
         if (gun.equals(HEAT_GUN)) heat(attacker, target);
         else if (gun.equals(COLD_GUN)) cold(attacker, target, at);
         else if (gun.equals(TASER)) tase(attacker, target, at);
+        else if (gun.equals(DAMPENER_GUN)) com.jayptucker.heroesevolved.dampener.Dampening.strike(attacker, target, at);
     }
 
     /** A round struck a block: cold bolts skin water with ice that melts again. */

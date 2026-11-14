@@ -34,6 +34,48 @@ These are the default keys, and each action can also be selected from the abilit
 | X | 3 | **Flame Flight** | Toggle flight with this key or double-tap Jump. Scroll for throttle, then hold Forward to cruise in a streamlined flying pose with banking. Release to brake into a hover; toggle again for a soft landing. While airborne, Shift + X spends 16 stamina to dive into a fiery impact. | 25 / 5 s to start; 6 stamina/s hovering, 10 stamina/s moving or boosting |
 | V | 5 | **Sunfall** | Hold up to 3 s to grow a miniature sun above the locked target. Release to drop it onto the marked area. Longer charges widen the impact up to 10 blocks. Stored Heat fuels the blast, and blue Heat makes it hotter. Shift + V cancels the charge. | 75 / 48 s with default config and shared balance |
 
+## Firebending: fists, feet and dodges
+
+A pyrokinetic fights with fire thrown from the fists and feet, and dodges on jets of flame. None of it needs a key:
+it's how your bare hands and movement keys work once you have the power.
+
+### Strikes (left-click with an empty hand)
+
+Each click throws the next strike of a combo. A click within about a second of the last keeps the combo going; a
+slower one starts it again. Clicking at a block you're close enough to dig still digs it.
+
+| Strike | Level | What happens | Stamina |
+| --- | --- | --- | --- |
+| **Jab** | 1 | Your lead fist snaps out and a fist of fire flies 16 blocks along your aim. It hits the first enemy in its path for 2 + 0.4 × level fire damage, sets them burning for 2 s and knocks them back a little. | 2 |
+| **Cross** | 1 | The same from your rear fist. At level 1 the jab and cross simply alternate. | 2 |
+| **Roundhouse** | 2 | The third strike. Your rear leg swings round at hip height and throws a crescent of fire 7 blocks out, 110° wide. Everything in it takes 3 + level, burns for 4 s and is thrown away from you. | 5 |
+| **Sweep kick** | 2 | **Crouch and click.** You drop low and sweep one leg through a full turn. A ring of fire rolls out 4 blocks across the ground, burning and tripping everyone round you, front and back. | 5 |
+
+- Strikes follow Heat like the rest of the kit: blue fire hits 50% harder.
+- Strikes never set blocks on fire, so they're safe to throw anywhere.
+- A kick whose fire sweeps through your own **Firestorm** fans it, the same as Dragon's Breath does.
+- Holding an item, standing in water, or holding a cast (Breath, a charging Spear or Sunfall) means an ordinary punch.
+  So does running out of stamina: the click still lands as a punch on whatever you were aiming at.
+
+### Dodges (double-tap a direction)
+
+| Dodge | Level | What happens | Stamina |
+| --- | --- | --- | --- |
+| **Jet Step** | 1 | **Double-tap left or right.** Flame bursts from your feet and the far palm and throws you about 5 blocks sideways, leaving scorch marks on the ground. | 8 |
+| **Flip Kick** | 2 | **Double-tap back.** Your feet fire down and forward and you backflip away. As your legs come over, they kick an arc of fire up through everything in front of you, launching them into the air. At level 1, back is a plain Jet Step backward. | 11 |
+
+- Dodges have a 0.9 s cooldown and also work during Flame Flight, where the jet step is a quick sideways burst.
+- Your landing is cushioned for two seconds after any dodge.
+- **Evasion:** for the first 8 ticks (0.4 s) of a dodge, blows from creatures, players and projectiles miss you.
+- **Counterflame:** the first blow you evade in a dodge gives 10 Heat and loads your rear fist, which glows. Your
+  next click within two seconds is a free cross that throws a fireball: twice as wide, 2.2× damage, a heavier
+  knockback, and it bursts over nearby enemies if the target was already burning. Dodge through an attack and punish
+  it straight away.
+
+Both controls can be switched off in the client config (Mods → Heroes Evolved → Config: `firebendingStrikes` and
+`firebendingDodges`). Server owners can change the stamina costs and the dodge cooldown under `pyrokinesis` in the
+common config.
+
 ## Flame Flight and Heat
 
 - **X or double-tap Jump** toggles Flame Flight. Double-tap Jump always selects the base flight
@@ -77,6 +119,14 @@ along a route and light them from a distance with Blue Lance or a fully charged 
 - In flight the flame streams follow your palms and boots as you bank. The afterburner opens a longer
   exhaust and leaves a fading wake along your path. Meteor Dive gathers a collar of flame before it
   releases. The flight camera stays level.
+- **Firebending.** A jab or cross flares at the knuckles, then a tight fist of flame with a combed tail flies along
+  your aim and splashes back where it lands. Your shoulders turn into each punch while the other fist guards your
+  chin. The roundhouse chambers your rear leg and swings it round as your hips twist with it. A crescent of flame
+  tongues unrolls behind the foot, with a bright leading lip, and flies outward. The sweep kick spins your body once
+  on one planted leg and rolls a wheel of fire out across the ground. A jet step leans you into the dash, with jets
+  from both feet and the far palm, a launch blast behind you and two scorched skid marks. The flip kick turns a full
+  backflip as an arc of fire rises in front of you. A Counterflame snaps a ring of flame round your body, and your
+  rear fist burns until you throw it.
 - Ember Lash curls from hand to target as it reels. The Mantle turns around the caster, and mines mark
   their blast radius when triggered. Cauterizing Flame climbs around its recipient. Fire Shepherd draws
   streams from fires and rescued allies into the caster's palm. The Phoenix folds its wings on a dive.
@@ -165,6 +215,12 @@ Formula should cost something, without needing an endgame grind.
 Regenerate the textures with `python3 tools/generate-helixite-textures.py`.
 
 ## Verification
+
+Firebending's game tests (`PyroCombatGameTests`) cover the jab–cross–roundhouse combo and its timing, the level-1
+loop, the empty-hand rule, the sweep kick tripping enemies on every side and fanning a Firestorm, evasion and
+Counterflame, the flip kick's launch and cushion, and running out of stamina. The preview
+`./gradlew runClient --offline --init-script tools/firebending-preview.init.gradle` photographs every strike, kick
+and dodge from behind, in front and in first person into `build/firebending-preview/screenshots/`.
 
 Game tests cover aimed casts, charge cancellation, the Firestorm warning and Breath interaction,
 Sunfall's locked impact, and the collision sweep for Meteor Dive. They also check flight permissions,

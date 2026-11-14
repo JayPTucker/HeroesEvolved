@@ -142,6 +142,21 @@ public final class TimeIntroGameTests {
                     city.getEntities(EntityType.VILLAGER, TimeIntroService::isCurrentCrowd).size() == TimeIntroService.CROWD_SIZE,
                     "Scene must load the whole crowd on the streets"))
                     .thenExecute(() -> crowdReady[0] = true);
+            // The twist: the vision's own time traveler (the owner's double, with their name) comes for Peter, and takes him.
+            helper.startSequence().thenWaitUntil(() -> helper.assertTrue(TimeIntroService.sceneTicks() >= 608, "Waiting for the traveler"))
+                    .thenExecute(() -> {
+                        var cast = city.getEntities(com.jayptucker.heroesevolved.registry.ModEntities.STORY_ACTOR.get(), actor -> true);
+                        helper.assertTrue(cast.stream().anyMatch(a -> a.role() == com.jayptucker.heroesevolved.story.actor.StoryActorEntity.Role.TRAVELER
+                                        && a.doubleOf().filter(owner.getUUID()::equals).isPresent()
+                                        && a.displayName().equals(owner.getGameProfile().getName())),
+                                "The time traveler who comes for Peter is the owner's double: " + cast.stream().map(a -> a.displayName()).toList());
+                    })
+                    .thenWaitUntil(() -> helper.assertTrue(TimeIntroService.sceneTicks() >= 624, "Waiting for the fold"))
+                    .thenExecute(() -> {
+                        var cast = city.getEntities(com.jayptucker.heroesevolved.registry.ModEntities.STORY_ACTOR.get(), actor -> true);
+                        helper.assertTrue(cast.size() == 1 && cast.getFirst().role() == com.jayptucker.heroesevolved.story.actor.StoryActorEntity.Role.TED,
+                                "Before the light falls, Peter and the traveler are gone; Ted is alone: " + cast.stream().map(a -> a.displayName()).toList());
+                    });
             // A few blocks from the wave, time stops for each visitor before they go home.
             helper.startSequence().thenWaitUntil(() -> helper.assertTrue(TimeIntroService.isFrozen(owner), "Waiting for the wave"))
                     .thenExecute(() -> {
@@ -155,6 +170,12 @@ public final class TimeIntroGameTests {
                 helper.assertTrue(TimeIntroService.isCity(owner.level()), "Newly granted power must start intro");
                 helper.assertTrue(owner.position().distanceToSqr(TimeIntroService.ARRIVAL) < 20,
                         "Arrival must actually place the group on the city avenue");
+                var actors = city.getEntities(com.jayptucker.heroesevolved.registry.ModEntities.STORY_ACTOR.get(), actor -> true);
+                helper.assertTrue(actors.size() == 3, "Peter, Sylar and Ted must be at ground zero: " + actors.size());
+                helper.assertTrue(actors.stream().filter(a -> a.role() != com.jayptucker.heroesevolved.story.actor.StoryActorEntity.Role.TED)
+                        .allMatch(a -> a.getY() > IntroBlast.CENTER.y + 20), "...Peter and Sylar fighting high in the sky over the plaza");
+                helper.assertTrue(IntroBlast.distance(owner.getX(), owner.getZ()) > 50,
+                        "The vantage must be far enough to watch the flash from");
                 helper.assertTrue(TimeIntroService.isCity(edge.level()), "Player exactly ten blocks away must join");
                 helper.assertTrue(outside.level() == source, "Player beyond ten blocks must stay home");
                 helper.assertTrue(TimeIntroService.isVisiting(leaving), "Audience must have a durable return ticket");
@@ -184,14 +205,16 @@ public final class TimeIntroGameTests {
                     helper.assertTrue(owner.level() == source && edge.level() == source, "Everyone must return at the end");
                     helper.assertTrue(owner.position().distanceToSqr(origin) < 0.001,
                             "Owner must return to original position");
-                    helper.assertTrue(edge.position().distanceToSqr(origin.add(10, 0, 0)) < 0.001,
-                            "Companions must return to their own position");
+                    helper.assertTrue(edge.position().distanceToSqr(origin) < 16 && edge.position().distanceToSqr(origin) > 0.5,
+                            "Companions must land together beside the one whose power it is: " + edge.position());
                     helper.assertTrue(owner.getYRot() == 37 && owner.getXRot() == -12, "Return must restore orientation");
                     helper.assertTrue(!TimeIntroService.isVisiting(owner), "Completed visit must clear its ticket");
                     helper.assertTrue(city.getForcedChunks().isEmpty(), "Scene chunk tickets must be released");
                     helper.assertTrue(crowdReady[0], "The full crowd must have loaded during the scene");
                     helper.assertTrue(froze[0], "Time must have stopped for the owner before the wave reached them");
                     helper.assertTrue(city.getEntities(EntityType.VILLAGER, villager -> true).isEmpty(), "Crowd must be removed");
+                    helper.assertTrue(city.getEntities(com.jayptucker.heroesevolved.registry.ModEntities.STORY_ACTOR.get(), actor -> true).isEmpty(),
+                            "Peter and Ted must be removed");
                     PlayerAbilityService.removeAssignedAbility(owner);
                     PlayerAbilityService.grantAbility(owner, ModAbilities.TIME_MANIPULATION_ID);
                 } catch (Throwable error) {
@@ -215,10 +238,11 @@ public final class TimeIntroGameTests {
         stale.addTag("heroesevolved_time_intro_crowd");
         stale.moveTo(4, 64, 70, 0, 0);
         helper.assertTrue(!city.addFreshEntity(stale), "Saved crowd from an interrupted scene must not respawn");
-        FractureCity.buildColumn(city, 4, 70);
-        helper.assertTrue(city.getBlockState(new BlockPos(4, 63, 70)).getBlock().getDescriptionId().endsWith("_concrete"),
+        int ax = (int) Math.floor(TimeIntroService.ARRIVAL.x), az = (int) Math.floor(TimeIntroService.ARRIVAL.z);
+        FractureCity.buildColumn(city, ax, az);
+        helper.assertTrue(city.getBlockState(new BlockPos(ax, 63, az)).getBlock().getDescriptionId().endsWith("_concrete"),
                 "Arrival must have a solid, painted road");
-        helper.assertTrue(city.getBlockState(new BlockPos(4, 64, 70)).isAir() && city.getBlockState(new BlockPos(4, 65, 70)).isAir(),
+        helper.assertTrue(city.getBlockState(new BlockPos(ax, 64, az)).isAir() && city.getBlockState(new BlockPos(ax, 65, az)).isAir(),
                 "Arrival must be unobstructed");
         // A downtown tower's north face: glass behind its piers, somewhere up its height.
         FractureCity.rebuild(city, 11, -21, 28, -20);
@@ -228,9 +252,9 @@ public final class TimeIntroGameTests {
                 for (int y = 70; y < 130 && !glass; y++)
                     glass = city.getBlockState(new BlockPos(x, y, z)).getSoundType() == net.minecraft.world.level.block.SoundType.GLASS;
         helper.assertTrue(glass, "Building facades must have actual windows");
-        // Even a visitor at the north edge of the walk sees the wave coming for a second; nobody is left behind.
+        // Even a visitor at the north edge of the vantage sees the flash and the wave leave ground zero; nobody is left behind.
         double nearest = IntroBlast.distance(IntroBlast.CENTER.x, TimeIntroService.ROAM_Z0);
-        helper.assertTrue(IntroBlast.arrival(nearest) >= 20, "The closest allowed visitor must see the wave coming: " + IntroBlast.arrival(nearest));
+        helper.assertTrue(IntroBlast.arrival(nearest) >= 10, "The closest allowed visitor must see the wave coming: " + IntroBlast.arrival(nearest));
         double farthest = Math.max(IntroBlast.distance(TimeIntroService.ROAM_X0, TimeIntroService.ROAM_Z1),
                 IntroBlast.distance(TimeIntroService.ROAM_X1, TimeIntroService.ROAM_Z1));
         helper.assertTrue(TimeIntroService.RETURN_TICK >= TimeIntroService.DETONATION_TICK + IntroBlast.arrival(farthest)

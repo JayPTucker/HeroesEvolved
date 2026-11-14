@@ -226,7 +226,8 @@ public final class AdvancedTechniques {
                 || entity instanceof Projectile || !(entity.level() instanceof ServerLevel level)) return false;
         for (Perception field : PERCEPTION.values()) {
             ServerPlayer p = field.owner;
-            if (p.level() != level || entity.getVehicle() == p || entity.distanceToSqr(p) > field.radius * field.radius
+            boolean everywhere = com.jayptucker.heroesevolved.time.TimeVeil.serverWide();
+            if (!everywhere && (p.level() != level || entity.distanceToSqr(p) > field.radius * field.radius) || entity.getRootVehicle() == p
                     || entity instanceof net.minecraft.world.entity.OwnableEntity pet && pet.getOwner() == p || !active(field)) continue;
             return Math.floorMod(entity.getId(), field.interval) != Math.floorMod(level.getGameTime(), field.interval);
         }
@@ -239,6 +240,9 @@ public final class AdvancedTechniques {
         boolean longer = has(p, "superspeed_long_perception"), flashTime = has(p, "superspeed_flash_time");
         Perception field = new Perception(p, now(p) + (longer ? 200 : 120), longer ? 16 : 12, flashTime ? 6 : 3);
         PERCEPTION.put(p.getUUID(), field);
+        // Everyone else sees a runner standing perfectly still, and never sees them move.
+        com.jayptucker.heroesevolved.time.TimeVeil.begin(p, com.jayptucker.heroesevolved.time.TimeVeil.Style.SPEED,
+                com.jayptucker.heroesevolved.time.TimeVeil.PERCEPTION);
         AbilityEffects.send(level, Kind.SPEED_PERCEPTION, p.position(), p.getEyePosition(), (float) field.radius);
         // Open hands, held perfectly still while everything else crawls.
         ArmPosePayload.show(p, ArmPose.SPEED_STILL, 40);
@@ -249,8 +253,10 @@ public final class AdvancedTechniques {
 
     /** Ends Perception at once (tests, power loss). */
     public static void endPerception(ServerPlayer p) {
-        if (PERCEPTION.remove(p.getUUID()) != null)
+        if (PERCEPTION.remove(p.getUUID()) != null) {
             com.jayptucker.heroesevolved.time.ProjectileTimeService.releaseInactive();
+            com.jayptucker.heroesevolved.time.TimeVeil.end(p, com.jayptucker.heroesevolved.time.TimeVeil.PERCEPTION);
+        }
     }
 
     /** True while {@code p} has Perception up. */
@@ -280,9 +286,9 @@ public final class AdvancedTechniques {
 
     private static boolean affectsShot(Perception field, Projectile shot, Vec3 end) {
         ServerPlayer owner = field.owner;
-        return owner.level() == shot.level() && shot.getOwner() != owner && active(field)
-                && com.jayptucker.heroesevolved.time.ProjectileTimeService
-                .reachesField(shot.position(), end, owner.position(), field.radius);
+        if (shot.getOwner() == owner || !active(field)) return false;
+        return com.jayptucker.heroesevolved.time.TimeVeil.serverWide() || owner.level() == shot.level()
+                && com.jayptucker.heroesevolved.time.ProjectileTimeService.reachesField(shot.position(), end, owner.position(), field.radius);
     }
 
     private static boolean active(Perception field) {

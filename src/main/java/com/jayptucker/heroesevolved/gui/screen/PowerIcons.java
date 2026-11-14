@@ -24,10 +24,14 @@ public final class PowerIcons {
             Map.entry("pyrokinesis", Items.BLAZE_POWDER), Map.entry("invisibility", Items.GLASS_PANE),
             Map.entry("phasing", Items.CHORUS_FRUIT), Map.entry("empathic_mimicry", Items.AMETHYST_SHARD),
             Map.entry("technopathy", Items.COMPARATOR), Map.entry("matter_assembly", Items.STONECUTTER),
-            Map.entry("vibe", Items.ECHO_SHARD));
+            Map.entry("vibe", Items.ECHO_SHARD), Map.entry("shapeshifting", Items.ARMADILLO_SCUTE));
 
     /** First keyword found in an ability's id or name picks its picture. Order matters: specific before general. */
     private static final List<Map.Entry<String, Item>> KEYWORDS = List.of(
+            Map.entry("shapeshift_morph", Items.ARMADILLO_SCUTE),
+            Map.entry("shapeshift_instinct", Items.BONE),
+            Map.entry("shapeshift_decoy", Items.ARMOR_STAND), Map.entry("shapeshift_reflection", Items.GLASS_PANE),
+            Map.entry("shapeshift_nightmare", Items.SCULK_SHRIEKER),
             Map.entry("vibe_blast", Items.WIND_CHARGE), Map.entry("vibe_breach_guard", Items.SHIELD),
             Map.entry("vibe_breach", Items.ENDER_PEARL), Map.entry("vibe_read", Items.SPYGLASS),
             Map.entry("vibe_frequency_lock", Items.CRYING_OBSIDIAN),

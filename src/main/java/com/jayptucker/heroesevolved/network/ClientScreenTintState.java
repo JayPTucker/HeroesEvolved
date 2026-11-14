@@ -76,6 +76,14 @@ public final class ClientScreenTintState {
         return active;
     }
 
+    /** Whether a held tint has the screen near black now (a blackout, a title card), so the HUD's labels step aside. */
+    public static boolean blackedOut() {
+        for (ActiveTint tint : active())
+            if (tint.style() == ScreenTintPayload.Style.HOLD && (tint.color() >>> 24) * tint.strength() >= 200
+                    && (tint.color() & 0xFFFFFF) == 0) return true;
+        return false;
+    }
+
     public record ActiveTint(int color, ScreenTintPayload.Style style, float strength) {
     }
 

@@ -23,8 +23,20 @@ public final class BunkerLogs {
 
     public static ItemStack lockdown() {
         return book("Lockdown Order 7", "N. Bennet",
-                "Odessa has lost power. Seal the stasis wing and keep the pods on the generator.",
+                "6:09 PM. Sprague is critical at Kirby Plaza. Petrelli is with him. We are out of time.",
+                "Bring in everyone on the Odessa list we can reach. They carry the marker, whether they know it or not. Whoever won't come, dart them and carry them down.",
+                "Seal them in the stasis wing. The generator will keep the pods for as long as it has to. They won't understand. They'll hate me for it.",
+                "Claire goes in Pod 14. Whatever she says.",
                 "Leave the receiver on the emergency frequency. Anyone who answers from the surface will need a clear route to the hatch.");
+    }
+
+    /** Left in Pod 14 by the one sleeper who woke early. */
+    public static ItemStack claireNote() {
+        return book("For Whoever Wakes Next", "Claire",
+                "I woke up. The counter on my pod said sixty-one years. I guess I healed through the cold. Of course I did.",
+                "Everyone else is still asleep. The panel says opening a pod early could kill you, so I didn't. I'm sorry. I sat with you for a while.",
+                "Dad's order is in Records. He thought he was saving us. Maybe he was. I'm sorry for what he did to you. He never came back for me.",
+                "I'm going up to find out what's left. If you're reading this, you're awake. Find me.\n\nClaire");
     }
 
     public static ItemStack helixite() {

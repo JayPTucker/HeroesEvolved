@@ -489,6 +489,80 @@ public final class PowerArmPoses {
                 set(model.rightArm, -.85F - tuck * .28F + plunge * 1.65F, -.35F + plunge * .26F, .21F);
                 set(model.leftArm, -.85F - tuck * .28F + plunge * 1.65F, .35F - plunge * .26F, -.21F);
             }
+            case FIRE_JAB, FIRE_CROSS, FIRE_KICK, FIRE_SWEEP_KICK, FIRE_STEP, FIRE_FLIP ->
+                    firebend(model, entity, pose, main, rightHanded ? model.leftArm : model.rightArm,
+                            rightHanded ? model.rightLeg : model.leftLeg, rightHanded ? model.leftLeg : model.rightLeg,
+                            inward, aimX, aimY, ClientArmPoseState.ageTicks(id));
+            case SHIFT_STUDY -> {
+                // Two fingers at the temple, tapping as the shape is learned; the other arm folded under the elbow.
+                float age = ClientArmPoseState.ageTicks(id);
+                float raise = smooth(age / 4F), tap = Mth.sin(age * .9F) * .04F * raise;
+                set(main, -2.45F * raise + tap, inward * .18F * raise, -inward * .62F * raise);
+                set(rightHanded ? model.leftArm : model.rightArm, -1.0F * raise, -inward * .78F * raise, inward * .05F);
+            }
+            case SHIFT_SWEEP -> {
+                // A palm raised before the face and drawn down over it, the plates following the hand.
+                float age = ClientArmPoseState.ageTicks(id);
+                float raise = smooth(age / 3F), sweep = smooth((age - 3F) / 8F);
+                set(main, -2.6F * raise + 2.05F * sweep, inward * .5F * raise * (1 - .4F * sweep), inward * .22F * raise);
+                set(rightHanded ? model.leftArm : model.rightArm, -.2F * raise, 0, -inward * .28F * raise);
+            }
+            case SHIFT_LUNGE -> {
+                // The arm thrown straight along the aim as it lengthens; the other drawn back for balance.
+                float age = ClientArmPoseState.ageTicks(id);
+                float throwOut = smooth(age / 2F) * (1 - smooth((age - 6F) / 3F));
+                set(main, Mth.lerp(throwOut, -.4F, aimX), aimY * throwOut, -.04F * inward);
+                set(rightHanded ? model.leftArm : model.rightArm, .45F * throwOut, 0, -inward * .2F * throwOut);
+            }
+            case SHIFT_TOUCH -> {
+                // An open palm pressed to the creature; the other hand loose at the side.
+                float reach = smooth(ClientArmPoseState.ageTicks(id) / 3F);
+                set(main, Mth.lerp(reach, -.6F, aimX + .1F), aimY, -.05F * inward);
+                set(rightHanded ? model.leftArm : model.rightArm, -.25F, 0, -inward * .15F);
+            }
+            case SHIFT_SHED -> {
+                // Shoulders rolled back as you step out of a shell: both arms swung back and out, then loose again.
+                float age = ClientArmPoseState.ageTicks(id);
+                float roll = smooth(age / 3F) * (1 - smooth((age - 7F) / 6F));
+                set(model.rightArm, .85F * roll, 0, .35F * roll);
+                set(model.leftArm, .85F * roll, 0, -.35F * roll);
+            }
+            case SHIFT_REFLECT -> {
+                // A flat palm raised between you and your attacker, like a mirror held up; the other arm drawn in.
+                float age = ClientArmPoseState.ageTicks(id);
+                float raise = smooth(age / 3F) * (1 - smooth((age - 12F) / 4F));
+                set(main, Mth.lerp(raise, -.3F, aimX - .15F), aimY * raise, inward * .1F * raise);
+                set(rightHanded ? model.leftArm : model.rightArm, -.7F * raise, -inward * .5F * raise, 0);
+            }
+            case SHIFT_GUARD -> {
+                // Forearms crossed over the chest as the plates lock on, held, then let go.
+                float age = ClientArmPoseState.ageTicks(id);
+                float cross = smooth(age / 3F) * (1 - smooth((age - 12F) / 4F));
+                set(model.rightArm, -1.35F * cross, -.75F * cross, 0);
+                set(model.leftArm, -1.35F * cross, .75F * cross, 0);
+            }
+            case SHIFT_GIFT -> {
+                // Both palms turned out and low, giving a shape away to the friends around.
+                float age = ClientArmPoseState.ageTicks(id);
+                float open = smooth(age / 4F) * (1 - smooth((age - 12F) / 4F));
+                set(model.rightArm, -.55F * open, -.35F * open, .55F * open);
+                set(model.leftArm, -.55F * open, .35F * open, -.55F * open);
+            }
+            case SHIFT_SLAM -> {
+                // Both fists raised high and driven down to the ground.
+                float age = ClientArmPoseState.ageTicks(id);
+                float raise = smooth(age / 3F), drive = smooth((age - 3F) / 3F);
+                float x = Mth.lerp(drive, -2.9F * raise, -.3F);
+                set(model.rightArm, x, -.2F, .15F);
+                set(model.leftArm, x, .2F, -.15F);
+            }
+            case SHIFT_NIGHTMARE -> {
+                // Arms flung wide and up as the nightmare rears, held, then dropped.
+                float age = ClientArmPoseState.ageTicks(id);
+                float fling = smooth(age / 4F) * (1 - smooth((age - 16F) / 6F)), shake = Mth.sin(age * 1.9F) * .04F * fling;
+                set(model.rightArm, -.6F * fling + shake, 0, 1.75F * fling);
+                set(model.leftArm, -.6F * fling - shake, 0, -1.75F * fling);
+            }
             case ONE_HAND -> set(main, aimX, aimY + inward * 0.1F, 0.0F);
             case TWO_HANDS, TWO_HANDS_STRAIN -> {
                 float tremble = pose == ArmPose.TWO_HANDS_STRAIN
@@ -1229,6 +1303,85 @@ public final class PowerArmPoses {
             }
             default -> { }
         }
+    }
+
+    /**
+     * Firebending, with the conventions of {@link #telepathy}: {@code main} is the rear (cross) arm and {@code off} the
+     * lead (jab) arm; {@code rear} and {@code lead} are the legs on those sides. {@code y = inward * k} turns the main
+     * arm across the body, and {@code z = -inward * k} lifts it outward (the other side takes the opposite signs).
+     * The whole body's turn (the roundhouse's twist, the sweep's spin, the backflip) is {@code PyroCombatPoseRenderer}.
+     */
+    private static void firebend(PlayerModel<?> model, LivingEntity entity, ArmPose pose, ModelPart main, ModelPart off,
+                                 ModelPart rear, ModelPart lead, float inward, float aimX, float aimY, float age) {
+        switch (pose) {
+            case FIRE_JAB, FIRE_CROSS -> {
+                // A fist snapped out along the aim and drawn back to guard; the other fist stays up at the chin.
+                float punch = smooth(age / 1.5F) * (1 - smooth((age - 4) / 4F));
+                boolean cross = pose == ArmPose.FIRE_CROSS;
+                ModelPart striking = cross ? main : off, guard = cross ? off : main;
+                float side = cross ? inward : -inward;
+                set(striking, Mth.lerp(punch, -1.3F, aimX + .04F), Mth.lerp(punch, side * .5F, aimY + side * .1F),
+                        Mth.lerp(punch, -side * .1F, 0));
+                set(guard, -1.4F, -side * .55F, side * .12F);
+                // A fighting stance: lead foot forward, rear foot back, the rear one driving the cross.
+                set(lead, -.28F - (cross ? 0 : .08F * punch), 0, inward * .05F);
+                set(rear, .32F + (cross ? .12F * punch : 0), 0, -inward * .05F);
+            }
+            case FIRE_KICK -> {
+                // The rear leg chambers, swings round at hip height from its own side across, and comes back down.
+                float chamber = smooth(age / 2.5F), swing = smooth((age - 1.5F) / 4F), recover = smooth((age - 7) / 5F);
+                float lift = chamber * (1 - recover);
+                set(rear, -1.45F * lift, Mth.lerp(swing, -inward * .95F, inward * .55F) * lift, -inward * .32F * lift);
+                set(lead, .12F * lift, 0, inward * .08F * lift);
+                // Arms flung out for balance: the rear arm swings back as the leg goes forward.
+                set(main, .55F * swing * (1 - recover), inward * .2F, -inward * (.35F + .5F * lift));
+                set(off, -1.1F * (1 - recover) - .2F, -inward * .45F * lift, inward * (.25F + .6F * lift));
+            }
+            case FIRE_SWEEP_KICK -> {
+                // Dropped low on the lead leg; the rear leg swept straight out at the ankle; both hands to the ground.
+                float settle = smooth(age / 2F) * (1 - smooth((age - 10) / 4F));
+                set(rear, -.12F * settle, -inward * .35F * settle, -inward * 1.3F * settle);
+                set(lead, -.95F * settle, inward * .15F * settle, inward * .1F * settle);
+                set(main, -.6F * settle, 0, -inward * .3F * settle);
+                set(off, -.6F * settle, 0, inward * .3F * settle);
+            }
+            case FIRE_STEP -> {
+                // The palm on the far side shoves out against the jet's direction; the near arm guards; feet tucked.
+                Vec3 travel = entity instanceof Player player
+                        ? com.jayptucker.heroesevolved.flight.FlightVisualGeometry.travel(player) : entity.getDeltaMovement();
+                float yaw = entity.yBodyRot * Mth.DEG_TO_RAD;
+                double sideways = travel.x * -Math.cos(yaw) + travel.z * -Math.sin(yaw);
+                double ahead = travel.x * -Math.sin(yaw) + travel.z * Math.cos(yaw);
+                float settle = 1 - smooth((age - 5) / 5F);
+                if (ahead < -Math.abs(sideways)) {
+                    // Straight back: both palms thrust forward, the jets pushing from the hands.
+                    set(main, -1.45F * settle, inward * .2F, -inward * .1F);
+                    set(off, -1.45F * settle, -inward * .2F, inward * .1F);
+                } else {
+                    // Moving to the player's right means the left palm pushes out to the left, and the other way.
+                    boolean towardRight = sideways > 0;
+                    ModelPart push = towardRight ? model.leftArm : model.rightArm;
+                    ModelPart near = towardRight ? model.rightArm : model.leftArm;
+                    float out = towardRight ? -1 : 1;
+                    set(push, -.15F * settle, 0, out * 1.45F * settle);
+                    set(near, -1.25F * settle, out * .45F * settle, out * .1F);
+                }
+                set(model.rightLeg, -.35F * settle, 0, .12F * settle);
+                set(model.leftLeg, -.25F * settle, 0, -.12F * settle);
+            }
+            case FIRE_FLIP -> {
+                // Arms thrown up and back over the head; the knees drawn in through the turn, then straight to land.
+                float throwUp = smooth(age / 2.5F) * (1 - smooth((age - 9) / 4F));
+                float tuck = Mth.sin(Mth.PI * Mth.clamp(age / 11F, 0, 1));
+                set(main, -2.85F * throwUp, 0, -inward * .35F * throwUp);
+                set(off, -2.85F * throwUp, 0, inward * .35F * throwUp);
+                set(rear, -1.35F * tuck, 0, -inward * .1F);
+                set(lead, -1.5F * tuck, 0, inward * .1F);
+            }
+            default -> { }
+        }
+        model.rightPants.copyFrom(model.rightLeg);
+        model.leftPants.copyFrom(model.leftLeg);
     }
 
     private static float smooth(float value) {

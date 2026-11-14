@@ -25,7 +25,8 @@ public final class AbilityEffects {
             double along = segment.lengthSqr() < 0.001D ? 0.0D
                     : Math.clamp(viewer.position().subtract(origin).dot(segment)
                             / segment.lengthSqr(), 0.0D, 1.0D);
-            if (viewer.position().distanceToSqr(origin.add(segment.scale(along))) <= range * range) {
+            if (viewer.position().distanceToSqr(origin.add(segment.scale(along))) <= range * range
+                    && !com.jayptucker.heroesevolved.time.TimeVeil.masks(viewer, origin)) {
                 PacketDistributor.sendToPlayer(viewer, payload);
             }
         }

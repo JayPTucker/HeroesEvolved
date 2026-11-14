@@ -109,6 +109,58 @@ public final class IntroDirector {
                 }
             }
             case TimeIntroPayload.FREEZE -> freeze(now, players);
+            case TimeIntroPayload.PROLOGUE_APARTMENT -> {
+                clear();
+                TimeIntroCaption.clear();
+                TimeIntroCaption.clearHint();
+                TimeIntroCaption.showKey("intro.heroesevolved.prologue_wake");
+            }
+            case TimeIntroPayload.PROLOGUE_EVENING -> {
+                clear();
+                IntroScene.active = true;
+                IntroScene.prologue = true;
+                IntroScene.arrival = now;
+                PanicSounds.preload();
+                instruct("prologue_evening", 600);
+            }
+            case TimeIntroPayload.PROLOGUE_LIGHT -> {
+                if (!IntroScene.prologue) { clear(); IntroScene.active = IntroScene.prologue = true; IntroScene.arrival = now; }
+                IntroScene.light = now;
+                if (!players.isEmpty()) IntroScene.run = Math.max(1, players.getFirst());
+                if (hum == null) hum = play(new Loop(() -> SoundEvents.BEACON_AMBIENT, SoundSource.AMBIENT, 0.1F, 0.6F));
+                // First just the light; where to go comes with the sirens.
+                TimeIntroCaption.showKey("intro.heroesevolved.prologue_light", true);
+            }
+            case TimeIntroPayload.PROLOGUE_SIRENS -> {
+                if (!IntroScene.underground) instruct("prologue_run", -1);
+                if (siren == null) siren = sirens();
+                PanicSounds.panic(now);
+                if (IntroScene.underground) underground();
+            }
+            case TimeIntroPayload.PROLOGUE_UNDERGROUND -> {
+                IntroScene.underground = true;
+                underground();
+                instruct("prologue_hall", -1);
+            }
+            case TimeIntroPayload.PROLOGUE_POD -> {
+                IntroScene.underground = true;
+                if (!IntroScene.prologue) { IntroScene.active = IntroScene.prologue = true; }
+                if (siren == null) siren = sirens();
+                PanicSounds.panic(now);
+                underground();
+                TimeIntroCaption.clearHint();
+            }
+            case TimeIntroPayload.PROLOGUE_BLAST -> {
+                // Through rock and steel: one deep blow, and then the city goes quiet.
+                stop(blast);
+                blast = play(new Loop(ModSounds.NUCLEAR_BLAST, SoundSource.AMBIENT, 0.55F, 0.62F));
+                blast.once();
+                stop(siren); siren = null;
+                stop(hum); hum = null;
+                PanicSounds.stop();
+            }
+            case TimeIntroPayload.PROLOGUE_NOAH -> TimeIntroCaption.clearHint();
+            case TimeIntroPayload.PROLOGUE_END -> { clear(); TimeIntroCaption.clearHint(); }
             default -> { }
         }
     }
@@ -146,6 +198,13 @@ public final class IntroDirector {
         TimeIntroCaption.hint(net.minecraft.network.chat.Component.translatable("hint.heroesevolved." + key, resolved), ticks);
     }
 
+    /** Down in the safe house: the sirens and the crowd far above, the light's hum barely there. */
+    private static void underground() {
+        if (siren != null) siren.set(0.16F, 0.92F);
+        if (hum != null) hum.set(0.03F, 0.5F);
+        PanicSounds.muffle(true);
+    }
+
     private static void clear() {
         stop(siren); stop(hum); stop(roar); stop(blast);
         siren = null;
@@ -168,12 +227,13 @@ public final class IntroDirector {
         if (mc.level == null || !TimeIntroService.isCity(mc.level)) { clear(); return; }
         float t = IntroScene.t(0);
         CityShatter.tick(t);
+        if (IntroScene.prologue) PanicSounds.tick(mc);
         if (IntroScene.vision) {
             PanicSounds.tick(mc);
             CrowdRewind.record(mc);
             CrowdRewind.tick(mc);
         }
-        if (hum != null) {
+        if (hum != null && !IntroScene.underground) {
             float g = BlastRenderer.glowStrength(t);
             hum.set(0.08F + 0.55F * g, 0.55F + 0.5F * g);
         }

@@ -29,6 +29,8 @@ public final class Canvas {
     public boolean soft() { return pass == Pass.SOFT; }
     public boolean glow() { return pass == Pass.GLOW; }
     public Vec3 camera() { return new Vec3(cx, cy, cz); }
+    /** How far into the current tick this frame is. */
+    public float partial() { return partial; }
 
     // ------------------------------------------------------------------
     // Colour

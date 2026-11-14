@@ -664,7 +664,7 @@ public final class NightThreeService {
             tell(player, "In the present, Pod 14 in the stasis hall is sealed again. Someone is still asleep in it.", ChatFormatting.AQUA);
         }
         if (SylarStoryData.get(server).forget(ModAbilities.REGENERATION_ID))
-            tell(player, "In the present, the watchmaker's wounds stop closing on their own. Whatever has kept him alive all these centuries, "
+            tell(player, "In the present, the watchmaker's wounds stop closing on their own. Whatever has kept him alive all these years, "
                     + "it was never Claire's gift.", ChatFormatting.DARK_PURPLE);
     }
 

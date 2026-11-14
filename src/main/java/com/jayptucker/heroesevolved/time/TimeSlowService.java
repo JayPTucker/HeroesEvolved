@@ -53,11 +53,14 @@ public final class TimeSlowService {
         if (field != null) {
             playEndSound(player.serverLevel(), field, player);
             ProjectileTimeService.releaseInactive();
+            TimeVeil.end(player, TimeVeil.SLOW);
         }
     }
 
     public static void start(ServerPlayer player, int powerLevel) {
         ServerLevel level = player.serverLevel();
+        // From now on everyone else sees a still figure where the traveller stood (before any effect gives them away).
+        TimeVeil.begin(player, TimeVeil.Style.TIME, TimeVeil.SLOW);
         int durationTicks = HeroesEvolvedConfig.COMMON
                 .timeSlowDurationSeconds
                 .get() * 20;
@@ -118,15 +121,18 @@ public final class TimeSlowService {
                 if (level != null && owner != null) {
                     playEndSound(level, field, owner);
                 }
+                if (owner != null) TimeVeil.end(owner, TimeVeil.SLOW);
             } else {
                 field.center = owner.position();
                 if (level.getGameTime() % 10 != 0) continue;
                 // The bubble stays visible while it lasts.
-                com.jayptucker.heroesevolved.effects.AbilityEffects.send(level, com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind.TIME_SLOW_PULSE,
+                if (TimeVeil.serverWide()) TimeVeil.showToSeers(owner, com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind.TIME_SLOW_PULSE,
+                        field.center(), field.center().add(0, 1, 0), HeroesEvolvedConfig.COMMON.timeSlowRadius.get());
+                else com.jayptucker.heroesevolved.effects.AbilityEffects.send(level, com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind.TIME_SLOW_PULSE,
                         field.center(), field.center().add(0, 1, 0), HeroesEvolvedConfig.COMMON.timeSlowRadius.get());
                 owner.displayClientMessage(net.minecraft.network.chat.Component.translatable("time.heroesevolved.slowed", (field.remainingTicks + 19) / 20), true);
-                // Slowed time takes on a faded, sepia warmth.
-                com.jayptucker.heroesevolved.network.ScreenTintPayload.sendAround(
+                // Slowed time takes on a faded, sepia warmth (server-wide, TimeVeil tints every screen instead).
+                if (!TimeVeil.serverWide()) com.jayptucker.heroesevolved.network.ScreenTintPayload.sendAround(
                         level, field.center(),
                         HeroesEvolvedConfig.COMMON.timeSlowRadius.get(),
                         0x30806030, 14,
@@ -180,14 +186,17 @@ public final class TimeSlowService {
         TimeSlowField strongestField = null;
 
         for (TimeSlowField field : ACTIVE_FIELDS.values()) {
-            if (!field.dimension().equals(entity.level().dimension())
+            boolean everywhere = TimeVeil.serverWide();
+            if (!everywhere && !field.dimension().equals(entity.level().dimension())
                     || field.ownerId().equals(entity.getUUID()) || entity.isSpectator()
+                    // Whatever the traveller carries moves with them.
+                    || field.ownerId().equals(entity.getRootVehicle().getUUID())
                     || com.jayptucker.heroesevolved.speed.SpeedService.outrunsTime(entity)
                     || field.hasEnded()) {
                 continue;
             }
 
-            if (ProjectileTimeService.reachesField(entity.position(), end, field.center(), radius)) {
+            if (everywhere || ProjectileTimeService.reachesField(entity.position(), end, field.center(), radius)) {
                 if (strongestField == null
                         || field.tickInterval()
                         > strongestField.tickInterval()) {

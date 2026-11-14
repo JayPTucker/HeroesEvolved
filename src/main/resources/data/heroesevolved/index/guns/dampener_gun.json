@@ -1,0 +1,8 @@
+{
+  "name": "heroesevolved.gun.dampener_gun.name",
+  "display": "heroesevolved:dampener_gun_display",
+  "data": "heroesevolved:dampener_gun_data",
+  "tooltip": "heroesevolved.gun.dampener_gun.desc",
+  "type": "pistol",
+  "sort": 93
+}

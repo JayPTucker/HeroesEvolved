@@ -28,6 +28,15 @@ public record TimeIntroPayload(int stage, java.util.List<Integer> players) imple
     public static final int BUNKER_POWER = 16, BUNKER_QUIET = 17;
     /** Someone else is waking: the alarm as heard out in the bunker, until a BUNKER_POWER or BUNKER_QUIET. */
     public static final int BUNKER_HALL_ALARM = 18;
+    /**
+     * The Last Day (story/prologue): waking in your apartment, the ordinary evening, the light (players: the run's length
+     * in ticks), the sirens, reaching the safe house, sealed in a pod as the city screams, the blast heard through rock,
+     * and the end of it all (on to the bunker, 103 years later).
+     */
+    public static final int PROLOGUE_APARTMENT = 19, PROLOGUE_EVENING = 20, PROLOGUE_LIGHT = 21, PROLOGUE_SIRENS = 22,
+            PROLOGUE_UNDERGROUND = 23, PROLOGUE_POD = 24, PROLOGUE_BLAST = 25, PROLOGUE_END = 26,
+            /** Noah's scene begins: the objective line steps aside for the dialogue. */
+            PROLOGUE_NOAH = 27;
     public static final Type<TimeIntroPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(
             HeroesEvolved.MOD_ID, "time_intro"));
     public static final StreamCodec<RegistryFriendlyByteBuf, TimeIntroPayload> STREAM_CODEC =

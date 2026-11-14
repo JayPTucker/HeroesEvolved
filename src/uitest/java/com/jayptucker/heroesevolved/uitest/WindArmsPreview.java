@@ -32,7 +32,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-/** Superspeed's Wind Arms, blowing pillagers away and lifting the speedster, photographed 400+ blocks from spawn. */
+/**
+ * Superspeed's Wind Arms, blowing pillagers away, lifting the speedster, and clearing a smoke screen and a lingering cloud
+ * while turning arrows back, photographed 400+ blocks from spawn.
+ */
 @EventBusSubscriber(modid = "heroesevolved", value = Dist.CLIENT)
 public final class WindArmsPreview {
     private static boolean started;
@@ -93,6 +96,16 @@ public final class WindArmsPreview {
         if (mc.screen instanceof net.minecraft.client.gui.screens.PauseScreen) mc.setScreen(null);
         worldTicks++;
         if (worldTicks >= 240 && worldTicks < 300 && worldTicks % 4 == 0) { int t0 = worldTicks; double cy = mc.player.getY(); onServer(mc, p -> System.out.println("ARMS_LIFT t=" + t0 + " client=" + cy + " server=" + p.getY() + " h=" + SpeedWindArms.heightAboveGround(p))); }
+        if (worldTicks >= 336 && worldTicks < 348) {
+            // A smoke bomb going off: a ball of long-lived campfire smoke in front of the speedster.
+            var r = mc.level.random;
+            for (int i = 0; i < 70; i++) {
+                double a = r.nextDouble() * Math.PI * 2, b = r.nextDouble() * 2 - 1, d = Math.cbrt(r.nextDouble()) * 2.6;
+                double rr = Math.sqrt(1 - b * b) * d;
+                mc.level.addParticle(net.minecraft.core.particles.ParticleTypes.CAMPFIRE_COSY_SMOKE, true,
+                        480.5 + Math.cos(a) * rr, -58.2 + b * d * .7, 706.5 + Math.sin(a) * rr, 0, .005, 0);
+            }
+        }
         switch (worldTicks) {
             case 150 -> onServer(mc, p -> {
                 p.serverLevel().setDayTime(5000);
@@ -128,7 +141,37 @@ public final class WindArmsPreview {
             case 290 -> shot("2c-lift-high");
             case 302 -> onServer(mc, SpeedWindArms::stop);
             case 315 -> shot("2d-floating-down");
-            case 340 -> mc.stop();
+            // A smoke screen, a lingering poison cloud and arrows: the arms clear the air and send the arrows back.
+            case 330 -> onServer(mc, p -> {
+                p.teleportTo(p.serverLevel(), 480.5, -60, 700.5, 0, 0);
+                p.setYHeadRot(0);
+                var archer = spawn(p, EntityType.PILLAGER, 480.5, 716);
+                archer.setNoAi(true);
+                var cloud = new net.minecraft.world.entity.AreaEffectCloud(p.serverLevel(), 480.5, -60, 707);
+                cloud.setRadius(3); cloud.setDuration(600); cloud.setRadiusPerTick(0);
+                cloud.setPotionContents(new net.minecraft.world.item.alchemy.PotionContents(net.minecraft.world.item.alchemy.Potions.POISON));
+                p.serverLevel().addFreshEntity(cloud);
+                stand(p, new Vec3(471.5, -58.5, 705.5), -90, 6);
+            });
+            case 334 -> { look(mc, true); mc.options.setCameraType(CameraType.THIRD_PERSON_BACK); }
+            case 350 -> onServer(mc, SpeedWindArms::start);
+            case 352, 358, 364, 370 -> onServer(mc, p -> {
+                var archer = MOBS.isEmpty() ? null : MOBS.get(MOBS.size() - 1);
+                var arrow = EntityType.ARROW.create(p.serverLevel());
+                arrow.setOwner(archer);
+                arrow.setPos(480.5 + (worldTicks % 2 == 0 ? .4 : -.4), p.getEyeY(), 712);
+                arrow.setDeltaMovement(0, 0, -1.6);
+                p.serverLevel().addFreshEntity(arrow);
+            });
+            case 348 -> shot("3-smoke-before");
+            case 354 -> shot("3b-deflect");
+            case 360 -> shot("3c-smoke-clearing");
+            case 366 -> shot("3d-deflect-again");
+            case 376 -> shot("3e-cleared");
+            case 380 -> { look(mc, false); mc.options.setCameraType(CameraType.FIRST_PERSON); }
+            case 384 -> shot("3f-first-person");
+            case 392 -> onServer(mc, p -> { SpeedWindArms.stop(p); MOBS.forEach(LivingEntity::discard); MOBS.clear(); });
+            case 400 -> mc.stop();
             default -> { }
         }
     }

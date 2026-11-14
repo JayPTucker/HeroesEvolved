@@ -10,10 +10,10 @@ import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.neoforge.network.PacketDistributor;
 import java.util.*;
 
-/** Bounded, expiring mind threads; no arbitrary private player data is recorded. */
+/** Bounded, expiring mind threads. A thread read to 60 shows a player's awakened power, once. */
 public final class TelepathyFocus {
     private static final Map<UUID,Mind> MINDS=new HashMap<>();
-    private static final class Thread { final LivingEntity target; int focus; long until; Thread(LivingEntity t){target=t;} }
+    private static final class Thread { final LivingEntity target; int focus; long until; boolean known; Thread(LivingEntity t){target=t;} }
     private static final class Mind { ServerPlayer owner; final LinkedHashMap<UUID,Thread> threads=new LinkedHashMap<>(); LivingEntity reading; int tier, strain; long since; }
     public static boolean start(ServerPlayer p,int tier) {
         LivingEntity target=TelepathyService.mindInSight(p,24); if(target==null){TelepathyService.readMind(p,tier);return false;} if(PossessionService.occupied(p))return false;
@@ -48,6 +48,8 @@ public final class TelepathyFocus {
                 else {
                     Thread f=m.threads.computeIfAbsent(t.getUUID(),k->new Thread(t));f.focus=Math.min(100,f.focus+1+(m.tier>=4?1:0));f.until=now+600;
                     while(m.threads.size()>4)m.threads.remove(m.threads.keySet().iterator().next());
+                    // Read deep enough, a player's mind gives up the power that has woken in it (once a thread).
+                    if(!f.known&&f.focus>=TelepathySkills.REVEAL_FOCUS&&t instanceof ServerPlayer other){f.known=true;TelepathySkills.revealPower(p,other);}
                     if(now%6==0)com.jayptucker.heroesevolved.network.ArmPosePayload.show(p,com.jayptucker.heroesevolved.ability.ArmPose.TELE_READ,8);
                     if(now%6==0)AbilityEffects.send(p.serverLevel(),Kind.MIND_LINK,p.getEyePosition(),t.getEyePosition(),.4+f.focus/100.0);
                 }

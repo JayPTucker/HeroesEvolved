@@ -205,6 +205,60 @@ public final class BunkerBuilder {
         sign.setWaxed(true);
     }
 
+    /**
+     * Pod 14 in the present: Claire Bennet's, open and empty, its glass frosted and clawed through from the inside. She
+     * woke decades early and left; her note waits on a lectern beside the pod ({@link #claireLectern}). Kept that way
+     * every time the bunker is near, so nothing seals it again, and the note is put back if someone takes it.
+     */
+    public static void releaseClaire(ServerLevel level, BlockPos origin) {
+        int claire = com.jayptucker.heroesevolved.story.night.NightThreeBunker.CLAIRE;
+        BlockPos base = origin.offset(podOffset(claire));
+        if (!level.isLoaded(base)) return;
+        BlockState state = level.getBlockState(base);
+        if (!(state.getBlock() instanceof CryoChamberBlock)) placePod(level, origin, claire, true);
+        else if (!state.getValue(CryoChamberBlock.OPEN)) CryoChamberBlock.setOpen(level, base, true);
+        CryoChamberBlock.setCracked(level, base, true);
+        BlockPos lectern = claireLectern(origin);
+        BlockState stand = level.getBlockState(lectern);
+        if (stand.isAir() || stand.canBeReplaced())
+            level.setBlock(lectern, net.minecraft.world.level.block.Blocks.LECTERN.defaultBlockState()
+                    .setValue(LecternBlock.FACING, net.minecraft.core.Direction.NORTH), Block.UPDATE_ALL);
+        if (level.getBlockEntity(lectern) instanceof LecternBlockEntity desk && !desk.hasBook()) {
+            level.setBlock(lectern, level.getBlockState(lectern).setValue(LecternBlock.HAS_BOOK, true), Block.UPDATE_ALL);
+            if (level.getBlockEntity(lectern) instanceof LecternBlockEntity filled) filled.setBook(BunkerLogs.claireNote());
+        }
+        var cells = com.jayptucker.heroesevolved.structure.Blueprint.load(CHAMBER.blueprint()).markerOffsets("sign:pod14");
+        if (cells.isEmpty()) return;
+        BlockPos pos = origin.offset(CHAMBER.at()).offset(cells.getFirst());
+        if (level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.SignBlockEntity sign
+                && !sign.getFrontText().getMessage(2, false).getString().equals("RELEASED"))
+            signPod(level, origin, claire, net.minecraft.world.item.DyeColor.LIGHT_BLUE, "SUBJECT 14", "C. BENNET", "RELEASED", "");
+    }
+
+    /** The lectern beside Pod 14 (chamber cell 11 1 15), read from the step in front of the pod. */
+    public static BlockPos claireLectern(BlockPos origin) { return origin.offset(4, 1, 33); }
+
+    /** Whether {@code base} is Claire's pod in the bunker under spawn. */
+    public static boolean isClaires(ServerLevel level, BlockPos origin, BlockPos base) {
+        return level.dimension() == net.minecraft.world.level.Level.OVERWORLD
+                && base.equals(origin.offset(podOffset(com.jayptucker.heroesevolved.story.night.NightThreeBunker.CLAIRE)));
+    }
+
+    /** Writes up to four lines on pod {@code index}'s sign, whatever it said before. */
+    public static void signPod(ServerLevel level, BlockPos origin, int index, net.minecraft.world.item.DyeColor color, String... lines) {
+        var cells = com.jayptucker.heroesevolved.structure.Blueprint.load(CHAMBER.blueprint())
+                .markerOffsets(String.format("sign:pod%02d", index + 1));
+        if (cells.isEmpty()) return;
+        BlockPos pos = origin.offset(CHAMBER.at()).offset(cells.getFirst());
+        if (!level.isLoaded(pos) || !(level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.SignBlockEntity sign)) return;
+        var text = new net.minecraft.world.level.block.entity.SignText().setColor(color).setHasGlowingText(true);
+        for (int i = 0; i < 4; i++) text = text.setMessage(i, net.minecraft.network.chat.Component.literal(i < lines.length ? lines[i] : ""));
+        sign.setText(text, true);
+        sign.setWaxed(true);
+        sign.setChanged();
+        level.sendBlockUpdated(pos, level.getBlockState(pos), level.getBlockState(pos), Block.UPDATE_CLIENTS);
+    }
+
     /** The space the bunker's rooms take up, relative to its origin (the floor under the shaft). */
     private static net.minecraft.world.level.levelgen.structure.BoundingBox bounds;
 
@@ -282,7 +336,8 @@ public final class BunkerBuilder {
                 case "lab" -> new ItemStack[] {new ItemStack(ModItems.HELIXITE_SHARD.get()),
                         new ItemStack(ModItems.EMPTY_SYRINGE.get(), 2), new ItemStack(Items.GLASS_BOTTLE, 3), donatedSample()};
                 case "security" -> new ItemStack[] {new ItemStack(Items.IRON_SWORD), new ItemStack(Items.LEATHER_CHESTPLATE),
-                        new ItemStack(Items.SHIELD), new ItemStack(Items.COOKED_BEEF, 6), new ItemStack(Items.COMPASS)};
+                        new ItemStack(Items.SHIELD), new ItemStack(Items.COOKED_BEEF, 6), new ItemStack(Items.COMPASS),
+                        new ItemStack(ModItems.HORN_RIMMED_GLASSES.get())};   // Bennet's spare pair
                 default -> new ItemStack[0];
             };
             for (int i = 0; i < items.length; i++) chest.setItem(i * 2, items[i]);

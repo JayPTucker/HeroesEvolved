@@ -35,6 +35,7 @@ public final class PowerOwnershipEvents {
         // Migrate older worlds with duplicate assignments before that player can use the duplicate.
         PlayerAbilityService.removeAssignedAbility(player);
         var replacement = AbilityRegistry.ABILITIES.keySet().stream().sorted()
+                .filter(com.jayptucker.heroesevolved.ability.registry.ModAbilities::rollable)
                 .filter(power -> ownership.available(power, player.getUUID())).findFirst();
         if (replacement.isPresent() && PlayerAbilityService.assignDormantAbility(player, replacement.get()))
             player.sendSystemMessage(Component.literal("Your old power belongs to someone else. A different, unique power lies dormant within you."));
@@ -52,6 +53,7 @@ public final class PowerOwnershipEvents {
         PlayerAbilityService.removeAssignedAbility(player);
         ownership.release(old);
         List<ResourceLocation> open = AbilityRegistry.ABILITIES.keySet().stream()
+                .filter(com.jayptucker.heroesevolved.ability.registry.ModAbilities::rollable)
                 .filter(power -> ownership.available(power, player.getUUID()))
                 .sorted(Comparator.comparing(ResourceLocation::toString)).toList();
         if (open.isEmpty()) {

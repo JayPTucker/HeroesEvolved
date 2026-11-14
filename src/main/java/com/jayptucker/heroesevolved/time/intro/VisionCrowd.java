@@ -36,8 +36,20 @@ import java.util.UUID;
  * screams come from where they run. Speech hangs over a speaker's head for a few seconds; only the
  * people near a visitor talk, and never more than a couple of conversations at once.
  */
-final class VisionCrowd {
+public final class VisionCrowd {
     enum Role { TALK, WALK, BROWSE }
+
+    /**
+     * When the crowd notices the light, when it runs, and when the dust takes it (scene ticks), how far south it runs,
+     * and how far north the curious may walk toward the light.
+     */
+    public record Timing(int glow, int siren, int detonation, int runToZ, int stareFloorZ) {}
+
+    /** The Time vision's half-minute. */
+    static Timing vision() {
+        return new Timing(TimeIntroService.GLOW_TICK, TimeIntroService.SIREN_TICK, TimeIntroService.DETONATION_TICK,
+                TimeIntroService.CROWD_RUN_Z, TimeIntroService.CROWD_STARE_Z);
+    }
 
     static final class Person {
         final Villager body;
@@ -89,7 +101,14 @@ final class VisionCrowd {
     private final Map<UUID, Integer> nextTalk = new HashMap<>();
     private final Set<Integer> spoken = new HashSet<>();
     private final Set<List<Person>> used = new HashSet<>();
-    private int nextShout, script;
+    private int nextShout, script, now;
+    /** Ticks between one conversation and the next near a visitor, the pause between lines, and between stares. */
+    private int talkGap = 70, firstTalk = 80, linePause = 4, stareGap = 44;
+
+    /** An ordinary evening's pace (the Last Day): conversations further apart, with a breath between lines. */
+    public void calm() { talkGap = 260; firstTalk = 200; linePause = 30; stareGap = 100; }
+    private Timing timing;
+    private int shift;
 
     // ------------------------------------------------------------------
     // Who is where
@@ -105,24 +124,34 @@ final class VisionCrowd {
     private static final double[][] WINDOWS = {{12.5, 87.5, 90}, {-5.5, 66.5, 270}, {12.5, 52.5, 90}, {-5.5, 40.5, 270}};
 
     static VisionCrowd spawn(ServerLevel city, String tag, int size) {
+        return spawn(city, tag, size, vision(), TimeIntroService.CROWD_SHIFT);
+    }
+
+    /**
+     * Puts {@code size} people on the streets, every place {@code shift} blocks further south than the plan's own (a
+     * whole number of city blocks, so sidewalks stay sidewalks), living by {@code timing}.
+     */
+    public static VisionCrowd spawn(ServerLevel city, String tag, int size, Timing timing, int shift) {
         VisionCrowd crowd = new VisionCrowd();
+        crowd.timing = timing;
+        crowd.shift = shift;
         int made = 0;
         for (int g = 0; g < GROUPS.length && made < size; g++) {
             List<Person> group = new ArrayList<>();
             int members = 2 + g % 2;
             for (int i = 0; i < members && made < size; i++, made++) {
                 double a = i * Math.PI * 2 / members + g;
-                Vec3 at = new Vec3(GROUPS[g][0] + Math.cos(a) * 0.9, CityGrid.STREET_Y + 1, GROUPS[g][1] + Math.sin(a) * 0.9);
+                Vec3 at = new Vec3(GROUPS[g][0] + Math.cos(a) * 0.9, CityGrid.STREET_Y + 1, GROUPS[g][1] + shift + Math.sin(a) * 0.9);
                 Person person = crowd.add(city, tag, made, at, Role.TALK, crowd.groups.size());
                 if (person != null) group.add(person);
             }
             if (group.size() > 1) crowd.groups.add(group);
         }
         for (int w = 0; w < WINDOWS.length && made < size; w++, made++)
-            crowd.add(city, tag, made, new Vec3(WINDOWS[w][0], CityGrid.STREET_Y + 1, WINDOWS[w][1]), Role.BROWSE, -1);
+            crowd.add(city, tag, made, new Vec3(WINDOWS[w][0], CityGrid.STREET_Y + 1, WINDOWS[w][1] + shift), Role.BROWSE, -1);
         for (int k = 0; made < size; k++, made++) {
             int[] loop = LOOPS[k % LOOPS.length];
-            Vec3 start = corner(loop, k);
+            Vec3 start = crowd.corner(loop, k);
             Person person = crowd.add(city, tag, made, start, Role.WALK, -1);
             if (person != null) person.leg = k % 4;
         }
@@ -130,8 +159,8 @@ final class VisionCrowd {
     }
 
     /** The four corners of a block's sidewalk loop, one step in from the curb. */
-    private static Vec3 corner(int[] loop, int leg) {
-        int ox = CityGrid.originX(loop[0]), oz = CityGrid.originZ(loop[1]);
+    private Vec3 corner(int[] loop, int leg) {
+        int ox = CityGrid.originX(loop[0]), oz = CityGrid.originZ(loop[1]) + shift;
         return switch (Math.floorMod(leg, 4)) {
             case 0 -> new Vec3(ox + 9.5, CityGrid.STREET_Y + 1, oz + 9.5);
             case 1 -> new Vec3(ox + 30.5, CityGrid.STREET_Y + 1, oz + 9.5);
@@ -162,14 +191,15 @@ final class VisionCrowd {
     // The half-minute
     // ------------------------------------------------------------------
 
-    void tick(ServerLevel city, int ticks, List<ServerPlayer> visitors, String tag) {
+    public void tick(ServerLevel city, int ticks, List<ServerPlayer> visitors, String tag) {
+        now = ticks;
         bubbles.removeIf(b -> {
             if (ticks < b.until && b.speaker.isAlive() && !b.display.isRemoved()) return false;
             b.display.discard();
             return true;
         });
-        if (ticks >= TimeIntroService.DETONATION_TICK) { talks.clear(); return; }
-        boolean stare = ticks >= TimeIntroService.GLOW_TICK, run = ticks >= TimeIntroService.SIREN_TICK;
+        if (ticks >= timing.detonation()) { talks.clear(); return; }
+        boolean stare = ticks >= timing.glow(), run = ticks >= timing.siren();
         if (ticks % 5 == 0)
             for (int i = 0; i < people.size(); i++) steer(people.get(i), i, ticks, stare, run);
         if (!stare) converse(city, ticks, visitors, tag);
@@ -180,7 +210,7 @@ final class VisionCrowd {
                 Person who = near(visitors, 22);
                 if (who != null) say(city, who.body, run ? SHOUT[CityGrid.hash(ticks, 3) % SHOUT.length]
                         : STARE[CityGrid.hash(ticks, 5) % STARE.length], run, 50, tag);
-                nextShout = ticks + (run ? 26 : 44);
+                nextShout = ticks + (run ? 26 : stareGap);
             }
         }
     }
@@ -191,7 +221,7 @@ final class VisionCrowd {
         var brain = body.getBrain();
         if (run) {
             // Away from the light, down whichever street they are on.
-            double x = body.getX() + Math.sin(i * 1.7) * 2, z = Math.min(TimeIntroService.ROAM_Z1 - 2, body.getZ() + 45);
+            double x = body.getX() + Math.sin(i * 1.7) * 2, z = Math.min(timing.runToZ(), body.getZ() + 45);
             brain.setMemory(MemoryModuleType.WALK_TARGET, new WalkTarget(BlockPos.containing(x, CityGrid.STREET_Y, z), 0.95F, 2));
             brain.eraseMemory(MemoryModuleType.LOOK_TARGET);
             return;
@@ -201,7 +231,7 @@ final class VisionCrowd {
             BlockPos light = BlockPos.containing(IntroBlast.CENTER.x, IntroBlast.CENTER.y + 18, IntroBlast.CENTER.z);
             brain.setMemory(MemoryModuleType.LOOK_TARGET, new BlockPosTracker(light));
             if (i % 4 == 0) brain.setMemory(MemoryModuleType.WALK_TARGET,
-                    new WalkTarget(BlockPos.containing(body.getX(), CityGrid.STREET_Y, Math.max(TimeIntroService.ROAM_Z0, body.getZ() - 10)), 0.4F, 2));
+                    new WalkTarget(BlockPos.containing(body.getX(), CityGrid.STREET_Y, Math.max(timing.stareFloorZ(), body.getZ() - 10)), 0.4F, 2));
             else brain.eraseMemory(MemoryModuleType.WALK_TARGET);
             return;
         }
@@ -240,7 +270,7 @@ final class VisionCrowd {
     /** Starts conversations near visitors, and plays the ones running. */
     private void converse(ServerLevel city, int ticks, List<ServerPlayer> visitors, String tag) {
         for (ServerPlayer visitor : visitors) {
-            int next = nextTalk.getOrDefault(visitor.getUUID(), 80);
+            int next = nextTalk.getOrDefault(visitor.getUUID(), firstTalk);
             if (ticks < next || talks.size() >= 2) continue;
             List<Person> group = null;
             double best = 24 * 24;
@@ -260,7 +290,7 @@ final class VisionCrowd {
             script = pick + 1;
             used.add(group);
             talks.add(new Talk(group, TALK[pick], ticks));
-            nextTalk.put(visitor.getUUID(), ticks + 70);
+            nextTalk.put(visitor.getUUID(), ticks + talkGap);
         }
         talks.removeIf(talk -> {
             if (ticks < talk.nextAt) return false;
@@ -269,7 +299,7 @@ final class VisionCrowd {
             String line = talk.lines[talk.index++];
             int hold = 46 + line.length();
             if (speaker.body.isAlive()) say(city, speaker.body, line, false, hold, tag);
-            talk.nextAt = ticks + hold + 4;
+            talk.nextAt = ticks + hold + linePause;
             return false;
         });
     }
@@ -294,11 +324,11 @@ final class VisionCrowd {
         bubbles.removeIf(b -> b.speaker == speaker);
         Display.TextDisplay display = com.jayptucker.heroesevolved.effects.SpeechBubble.show(city, speaker, text, shout, tag);
         if (display == null) return;
-        bubbles.add(new Bubble(display, speaker, TimeIntroService.sceneTicks() + ticks));
+        bubbles.add(new Bubble(display, speaker, now + ticks));
     }
 
     /** People the dust has reached are gone, and so are their words. */
-    void engulf(float front) {
+    public void engulf(float front) {
         people.removeIf(p -> {
             if (p.body.isAlive() && IntroBlast.distance(p.body.getX(), p.body.getZ()) > front) return false;
             p.body.ejectPassengers();
@@ -312,7 +342,7 @@ final class VisionCrowd {
         });
     }
 
-    void discard() {
+    public void discard() {
         bubbles.forEach(b -> b.display.discard());
         bubbles.clear();
         people.forEach(p -> { p.body.ejectPassengers(); p.body.discard(); });

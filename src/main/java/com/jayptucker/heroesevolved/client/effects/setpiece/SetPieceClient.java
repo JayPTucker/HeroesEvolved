@@ -107,6 +107,17 @@ public final class SetPieceClient {
         return null;
     }
 
+    /** The newest running copy of {@code piece} bound to {@code entity}, or null. */
+    public static Active boundTo(Piece piece, int entity) {
+        if (world == null || Minecraft.getInstance().level != world) return null;
+        long now = world.getGameTime();
+        Active best = null;
+        for (Active a : ACTIVE)
+            if (a.piece == piece && a.entity == entity && now >= a.start && now - a.start <= piece.ticks && (best == null || a.start > best.start))
+                best = a;
+        return best;
+    }
+
     /** Where each running copy of {@code piece} is now: on its entity if it rides one, else where it was cast. */
     public static List<Vec3> where(Piece piece) {
         List<Vec3> out = new ArrayList<>();
@@ -138,7 +149,8 @@ public final class SetPieceClient {
         if (!solid && event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || ACTIVE.isEmpty() && !SpeedArt.live() && !RewindArt.live() && !FlightArt.live()
-                && !PyroArt.live() && !CryoConstructArt.live(mc.level) && !ClientProjectileTime.hasControlledShots()) return;
+                && !PyroArt.live() && !ShapeArt.live() && !CryoConstructArt.live(mc.level) && !ClientProjectileTime.hasControlledShots()
+                && !com.jayptucker.heroesevolved.client.effects.intro.SkyFightArt.live()) return;
         if (world != mc.level) { ACTIVE.clear(); world = mc.level; }
         Vec3 camera = event.getCamera().getPosition();
         Canvas c = CANVAS;
@@ -192,6 +204,8 @@ public final class SetPieceClient {
             RewindArt.drawLive(c);
             FlightArt.drawLive(c);
             PyroArt.drawLive(c);
+            ShapeArt.drawLive(c);
+            com.jayptucker.heroesevolved.client.effects.intro.SkyFightArt.drawLive(c);
             CryoConstructArt.draw(c);
             TemporalProjectileArt.draw(c);
         } catch (RuntimeException broken) {

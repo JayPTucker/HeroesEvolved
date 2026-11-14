@@ -72,6 +72,13 @@ final class BlastRenderer {
     /** Works out this frame's fog for a camera {@code distance} from ground zero. */
     static void atmosphere(float t, double distance, float vanillaEnd) {
         fog(t, FOG);
+        if (IntroScene.prologue) {
+            // The north burns white as he brightens, and the haze flares with every surge.
+            float g = glowStrength(t);
+            FOG[0] = Mth.lerp(g * 0.5F, FOG[0], 1.0F);
+            FOG[1] = Mth.lerp(g * 0.5F, FOG[1], 0.86F);
+            FOG[2] = Mth.lerp(g * 0.5F, FOG[2], 0.62F);
+        }
         float end = Math.min(200, vanillaEnd);
         float start = end * 0.55F;
         double gap = gap(t, distance);
@@ -530,6 +537,10 @@ final class BlastRenderer {
 
     /** How bright Sprague is: nothing much on arrival, unbearable at 6:14, gone a moment after. */
     static float glowStrength(float t) {
+        if (IntroScene.prologue) {
+            float since = IntroScene.sinceLight(0);
+            return since < 0 ? 0 : com.jayptucker.heroesevolved.story.prologue.PrologueTimeline.glow(since, IntroScene.run);
+        }
         int lead = IntroScene.lead();
         float start = IntroScene.vision ? TimeIntroService.GLOW_TICK - 120 : 0;
         if (t < 0) return Mth.clamp((t + lead - start) / (lead - start), 0.05F, 1);

@@ -166,7 +166,7 @@ final class WeaponArt {
      * The muzzle of whoever fired, this frame: in first person, low and right of the camera where TaCZ draws the gun;
      * otherwise forward and right of the eyes. Falls back to where the server said.
      */
-    private static Vec3 muzzle(Canvas c, Entity shooter, Vec3 fallback) {
+    static Vec3 muzzle(Canvas c, Entity shooter, Vec3 fallback) {
         if (!(shooter instanceof LivingEntity living)) return fallback;
         Minecraft mc = Minecraft.getInstance();
         Vec3 look = living.getViewVector(c.partial);

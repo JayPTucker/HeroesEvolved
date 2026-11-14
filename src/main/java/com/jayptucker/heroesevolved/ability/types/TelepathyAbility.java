@@ -42,6 +42,8 @@ public final class TelepathyAbility implements Ability {
                 public int energyCost(int level) { return COMMON.telepathyReadEnergyCost.get(); }
                 public int cooldownTicks(int level) { return 20; }
                 public boolean canUse(AbilityUseContext c) { return true; }
+                // Shift + Read Mind at tier 4, on a player read all the way: Mind's Eye. Free (it costs Strain).
+                public boolean followUp(AbilityUseContext c) { return c.modifierHeld() && com.jayptucker.heroesevolved.telepathy.TelepathySkills.mindsEye(c.player(), c.abilityLevel()); }
                 public AbilityActivationResult activate(AbilityUseContext c) { return com.jayptucker.heroesevolved.telepathy.TelepathyFocus.start(c.player(),c.abilityLevel()) ? AbilityActivationResult.SUCCESS : AbilityActivationResult.REJECTED; }
                 public void release(AbilityUseContext c) { com.jayptucker.heroesevolved.telepathy.TelepathyFocus.stop(c.player()); }
                 public boolean deactivate(AbilityUseContext c) { if(!com.jayptucker.heroesevolved.telepathy.TelepathyFocus.reading(c.player()))return false; release(c); return true; }

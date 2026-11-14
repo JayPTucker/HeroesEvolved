@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "active=false": {
+      "model": "heroesevolved:block/ability_dampener"
+    },
+    "active=true": {
+      "model": "heroesevolved:block/ability_dampener_on"
+    }
+  }
+}

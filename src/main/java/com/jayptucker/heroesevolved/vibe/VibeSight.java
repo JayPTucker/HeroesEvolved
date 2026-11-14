@@ -67,6 +67,8 @@ public final class VibeSight {
                 if (scene.size() == (SkillTreeService.has(player, "vibe_deep_read") ? 6 : 3)) break;
             }
         }
+        // A shapeshifter's vibration is their own, whatever shape they wear: reading one sees through it.
+        if (witness != null) com.jayptucker.heroesevolved.shapeshift.ShapeshiftSuspicion.read(player, witness);
         ArmPosePayload.show(player, ArmPose.VIBE_READ, 24);
         SetPiecePayload.send(player.serverLevel(), Piece.VIBE_TOUCH, hand, touch, 1, player);
         StyleOps.sound(player.serverLevel(), touch, ModSounds.VIBE_ECHO.get(), .7F, .75F);

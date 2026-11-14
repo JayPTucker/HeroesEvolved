@@ -64,6 +64,11 @@ final class TaczLink {
         }
         var from = bullet.position();
         var target = event.getHurtEntity().getBoundingBox().clip(from, from.add(bullet.getDeltaMovement()));
+        // A speedster's Wind Arms turn the round back before it lands.
+        if (target.isPresent() && com.jayptucker.heroesevolved.speed.SpeedWindArms.catchShot(level, bullet, from, target.get())) {
+            event.setCanceled(true);
+            return;
+        }
         if (target.isPresent() && com.jayptucker.heroesevolved.vibe.VibeService.intercept(level, bullet, from, target.get()))
             event.setCanceled(true);
     }
@@ -144,6 +149,34 @@ final class TaczLink {
         } catch (Throwable t) {
             fail("ammoCount", t);
             return 0;
+        }
+    }
+
+    /**
+     * A gun's internal reserve ("dummy ammo"): when a gun has one, TaCZ reloads from it instead of the inventory. The
+     * Nullifier's battery is this reserve. Returns -1 for a gun without one.
+     */
+    static int reserve(ItemStack stack) {
+        if (broken) return -1;
+        try {
+            IGun gun = IGun.getIGunOrNull(stack);
+            return gun == null || !gun.useDummyAmmo(stack) ? -1 : gun.getDummyAmmoAmount(stack);
+        } catch (Throwable t) {
+            fail("reserve", t);
+            return -1;
+        }
+    }
+
+    /** Sets a gun's internal reserve and its cap, giving it one if it had none. */
+    static void reserve(ItemStack stack, int rounds, int max) {
+        if (broken) return;
+        try {
+            IGun gun = IGun.getIGunOrNull(stack);
+            if (gun == null) return;
+            gun.setMaxDummyAmmoAmount(stack, max);
+            gun.setDummyAmmoAmount(stack, Math.clamp(rounds, 0, max));
+        } catch (Throwable t) {
+            fail("setReserve", t);
         }
     }
 

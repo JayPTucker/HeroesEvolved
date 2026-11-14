@@ -218,6 +218,8 @@ public final class MimicryService {
     /** What {@code mimic} could borrow from {@code source}, or null if they have nothing to give. */
     public static Imprint imprintOf(ServerPlayer mimic, LivingEntity source) {
         if (source == mimic || !source.isAlive() || source.isSpectator()) return null;
+        // A dampened power has nothing to copy.
+        if (com.jayptucker.heroesevolved.dampener.Dampening.dampened(source)) return null;
         if (source instanceof ServerPlayer other) {
             ResourceLocation power = power(other);
             return copyable(power) ? new Imprint(power, other.getGameProfile().getName(), Optional.of(other.getUUID()), "player") : null;

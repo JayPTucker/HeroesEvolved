@@ -201,6 +201,84 @@ public final class SpeedRunGameTests {
         });
     }
 
+    @GameTest(template = "rewind_empty", batch = "speedrun.arms.deflect", timeoutTicks = 60)
+    public static void windArmsTurnShotsAndBulletsBack(GameTestHelper h) {
+        var p = runner(h, 4, true);
+        p.setYRot(0); p.setXRot(0); p.setYHeadRot(0);
+        var shooter = mob(h, EntityType.PILLAGER, p, 0, 7);
+        try {
+            h.assertTrue(SpeedWindArms.start(p), "The arms start spinning");
+            var level = h.getLevel();
+            Vec3 eye = p.getEyePosition();
+
+            var own = EntityType.ARROW.create(level);
+            own.setOwner(p);
+            h.assertFalse(SpeedWindArms.catchShot(level, own, eye.add(0, 0, 6), eye.add(0, 0, 4.5)), "Your own shot passes");
+
+            var arrow = EntityType.ARROW.create(level);
+            arrow.setOwner(shooter);
+            arrow.setPos(eye.add(0, 0, 6));
+            arrow.setDeltaMovement(0, 0, -1.5);
+            h.assertFalse(SpeedWindArms.catchShot(level, arrow, eye.add(5, 0, 2), eye.add(5, 0, .5)), "A shot wide of the funnels passes");
+            h.assertFalse(SpeedWindArms.catchShot(level, arrow, eye.add(0, 0, -6), eye.add(0, 0, -4.5)), "A shot from behind meets your back first");
+            h.assertTrue(SpeedWindArms.catchShot(level, arrow, eye.add(0, 0, 6), eye.add(0, 0, 4.5)), "An arrow flying at you is caught");
+            h.assertTrue(arrow.getDeltaMovement().z > 1.4 && arrow.getOwner() == p, "It is blown back the way it came, and is yours: " + arrow.getDeltaMovement());
+            h.assertFalse(SpeedWindArms.catchShot(level, arrow, eye.add(0, 0, 6), eye.add(0, 0, 7.5)), "A shot is turned once");
+
+            var fireball = EntityType.FIREBALL.create(level);
+            fireball.setOwner(shooter);
+            fireball.setDeltaMovement(0, 0, -.6);
+            h.assertTrue(SpeedWindArms.catchShot(level, fireball, eye.add(0, 0, 8), eye.add(0, 0, 7.4)) && fireball.getDeltaMovement().z > 1,
+                    "A fireball is turned back at whoever threw it: " + fireball.getDeltaMovement());
+
+            for (float explosive : new float[] {0, 3}) {
+                Entity bullet = com.jayptucker.heroesevolved.weapons.PowerWeapons.testBullet(level, explosive);
+                h.assertTrue(bullet != null, "TaCZ can make a bullet");
+                ((net.minecraft.world.entity.projectile.Projectile) bullet).setOwner(shooter);
+                bullet.setDeltaMovement(0, 0, -15);
+                // Fifteen blocks a tick: it starts beyond the funnels' reach and would end behind you.
+                h.assertTrue(SpeedWindArms.catchShot(level, bullet, eye.add(0, 0, SpeedWindArms.REACH + 1), eye.add(0, 0, -1)),
+                        "A bullet crossing the whole funnel in one tick is still caught (explosive " + explosive + ")");
+                h.assertTrue(bullet.getDeltaMovement().z > 14 && ((net.minecraft.world.entity.projectile.Projectile) bullet).getOwner() == p,
+                        "and sent back at full speed as yours: " + bullet.getDeltaMovement());
+            }
+            h.succeed();
+        } finally { shooter.discard(); SpeedWindArms.stop(p); done(p, true); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "speedrun.arms.blast", timeoutTicks = 60)
+    public static void windArmsBlowExplosivesShotsAndCloudsAway(GameTestHelper h) {
+        var p = runner(h, 4, true);
+        p.setYRot(0); p.setXRot(0); p.setYHeadRot(0);
+        var level = h.getLevel();
+        var shooter = mob(h, EntityType.PILLAGER, p, 2, 7);
+        var tnt = new net.minecraft.world.entity.item.PrimedTnt(level, p.getX(), p.getY(), p.getZ() + 3, null);
+        tnt.setFuse(400);
+        level.addFreshEntity(tnt);
+        var cloud = new net.minecraft.world.entity.AreaEffectCloud(level, p.getX(), p.getY(), p.getZ() + 5);
+        cloud.setRadius(3); cloud.setDuration(600); cloud.setRadiusPerTick(0);
+        level.addFreshEntity(cloud);
+        var arrow = EntityType.ARROW.create(level);
+        arrow.setOwner(shooter);
+        arrow.setNoGravity(true);
+        arrow.setPos(p.getEyePosition().add(0, 0, 6));
+        arrow.setDeltaMovement(0, 0, -1.2);
+        level.addFreshEntity(arrow);
+        double tntZ = tnt.getZ(), cloudZ = cloud.getZ();
+        h.assertTrue(SpeedWindArms.start(p), "The arms start spinning");
+        h.runAfterDelay(3, () -> {
+            try {
+                h.assertTrue(tnt.getZ() > tntZ + .5, "Primed TNT is blown away: " + (tnt.getZ() - tntZ));
+                h.assertTrue(cloud.isRemoved() || cloud.getRadius() < 3 && cloud.getZ() > cloudZ,
+                        "A lingering cloud drifts off and thins: " + cloud.getRadius() + " at " + (cloud.getZ() - cloudZ));
+                h.assertTrue(arrow.getOwner() == p && (arrow.isRemoved() || arrow.getDeltaMovement().z > 0),
+                        "An arrow in flight is turned before it reaches you: " + arrow.getDeltaMovement());
+                h.assertTrue(p.getHealth() == p.getMaxHealth(), "Nothing reached you");
+                h.succeed();
+            } finally { tnt.discard(); cloud.discard(); arrow.discard(); shooter.discard(); SpeedWindArms.stop(p); done(p, true); }
+        });
+    }
+
     @GameTest(template = "rewind_empty", batch = "speedrun.arms.lift", timeoutTicks = 60)
     public static void windArmsPointedDownLiftYouAndLetYouFloatDown(GameTestHelper h) {
         var p = runner(h, 4, true);

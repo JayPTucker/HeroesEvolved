@@ -78,7 +78,8 @@ public final class TimeGather {
     private static boolean fetchable(ServerPlayer player) {
         return player.isAlive() && !player.isSpectator() && "minecraft".equals(player.level().dimension().location().getNamespace())
                 && !TimeIntroService.isVisiting(player) && !TimeIntroService.isCity(player.level()) && !AvenueService.isRunner(player)
-                && !gathering(player);
+                && !gathering(player) && !com.jayptucker.heroesevolved.story.prologue.PrologueService.isWaiting(player)
+                && !com.jayptucker.heroesevolved.story.bunker.BunkerService.isAwakening(player);
     }
 
     /** Players in another dimension count as far away, so the chain finishes one world before moving to the next. */

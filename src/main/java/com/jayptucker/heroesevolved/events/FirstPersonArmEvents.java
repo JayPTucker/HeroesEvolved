@@ -93,6 +93,18 @@ public final class FirstPersonArmEvents {
         try {
             FirstPersonArmGeometry.pose(poseStack, side, pose, player.tickCount + event.getPartialTick(),
                     ClientArmPoseState.ageTicks(player.getId()) + event.getPartialTick());
+            var form = com.jayptucker.heroesevolved.client.MorphClient.formArm(player, side);
+            if (form != null) {
+                // In a humanoid form the gesture is made with the form's own arm.
+                var formArm = form.arm();
+                var saved = formArm.storePose();
+                formArm.setPos(0, 0, 0);
+                formArm.setRotation(0, 0, 0);
+                formArm.render(poseStack, event.getMultiBufferSource().getBuffer(RenderType.entityCutoutNoCull(form.texture())),
+                        event.getPackedLight(), OverlayTexture.NO_OVERLAY);
+                formArm.loadPose(saved);
+                return;
+            }
             arm.setPos(0, 0, 0);
             arm.setRotation(0, 0, 0);
             sleeve.copyFrom(arm);

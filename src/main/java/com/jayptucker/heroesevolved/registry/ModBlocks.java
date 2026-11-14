@@ -65,6 +65,12 @@ public final class ModBlocks {
                     .lightLevel(state -> state.getValue(com.jayptucker.heroesevolved.story.bunker.AlarmBeaconBlock.LIT)
                             ? com.jayptucker.heroesevolved.story.bunker.AlarmBeaconBlock.LIGHT : 0)));
 
+    /** A pylon that burns Forge Energy to hold a sphere in which no power answers. See docs/ability-dampener.md. */
+    public static final DeferredBlock<com.jayptucker.heroesevolved.dampener.AbilityDampenerBlock> ABILITY_DAMPENER = BLOCKS.register("ability_dampener",
+            () -> new com.jayptucker.heroesevolved.dampener.AbilityDampenerBlock(BlockBehaviour.Properties.of().strength(4F, 8F)
+                    .requiresCorrectToolForDrops().sound(SoundType.NETHERITE_BLOCK)
+                    .lightLevel(state -> state.getValue(com.jayptucker.heroesevolved.dampener.AbilityDampenerBlock.ACTIVE) ? 6 : 0)));
+
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CentrifugeBlockEntity>> CENTRIFUGE_ENTITY =
             BLOCK_ENTITIES.register("centrifuge", () -> BlockEntityType.Builder.of(CentrifugeBlockEntity::new, CENTRIFUGE.get()).build(null));
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SynthesisStationBlockEntity>> SYNTHESIS_STATION_ENTITY =
@@ -72,6 +78,10 @@ public final class ModBlocks {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.jayptucker.heroesevolved.story.bunker.AlarmBeaconBlockEntity>> ALARM_BEACON_ENTITY =
             BLOCK_ENTITIES.register("alarm_beacon", () -> BlockEntityType.Builder.of(
                     com.jayptucker.heroesevolved.story.bunker.AlarmBeaconBlockEntity::new, ALARM_BEACON.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.jayptucker.heroesevolved.dampener.AbilityDampenerBlockEntity>> ABILITY_DAMPENER_ENTITY =
+            BLOCK_ENTITIES.register("ability_dampener", () -> BlockEntityType.Builder.of(
+                    com.jayptucker.heroesevolved.dampener.AbilityDampenerBlockEntity::new, ABILITY_DAMPENER.get()).build(null));
 
     private ModBlocks() {}
 
@@ -85,5 +95,8 @@ public final class ModBlocks {
     private static void capabilities(RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, CENTRIFUGE_ENTITY.get(), SidedInvWrapper::new);
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, SYNTHESIS_STATION_ENTITY.get(), SidedInvWrapper::new);
+        // The Ability Dampener takes Forge Energy from any side, and gives it to a Nullifier (or an EMP).
+        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ABILITY_DAMPENER_ENTITY.get(), (entity, side) -> entity.energy());
+        com.jayptucker.heroesevolved.dampener.Nullifier.capabilities(event);
     }
 }

@@ -37,7 +37,8 @@ public final class HeroesEvolvedConfig {
 
     public static final class Common {
         public final ModConfigSpec.BooleanValue sylarEnabled, sylarCanAcquirePowers;
-        public final ModConfigSpec.BooleanValue bunkerEnabled;
+        public final ModConfigSpec.BooleanValue bunkerEnabled, prologueEnabled;
+        public final ModConfigSpec.IntValue prologueEveningSeconds, prologueRunSeconds, prologueReadySeconds;
         public final ModConfigSpec.IntValue sylarFirstEncounterSeconds, sylarSightingIntervalSeconds, sylarHuntIntervalSeconds;
         public final ModConfigSpec.BooleanValue elleEnabled;
         public final ModConfigSpec.IntValue elleFirstVisitDays, elleOmenTicks, elleRevisitDays;
@@ -140,6 +141,7 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue timeSlowCooldownTicks;
         public final ModConfigSpec.IntValue timeSlowDurationSeconds;
         public final ModConfigSpec.DoubleValue timeSlowRadius;
+        public final ModConfigSpec.BooleanValue timeFieldsServerWide;
         public final ModConfigSpec.IntValue timeSlowLevelOneTickIntervalTicks;
         public final ModConfigSpec.IntValue timeSlowLevelTwoTickIntervalTicks;
         public final ModConfigSpec.IntValue timeSlowLevelThreeTickIntervalTicks;
@@ -182,6 +184,7 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue telepathyNightmareEnergyCost;
         public final ModConfigSpec.IntValue telepathyNightmareCooldownTicks;
         public final ModConfigSpec.BooleanValue telepathyHearsVoices, telepathyHearsGroups;
+        public final ModConfigSpec.BooleanValue shapeshiftChatImpersonation;
         public final ModConfigSpec.IntValue cryoBoltEnergyCost;
         public final ModConfigSpec.IntValue cryoBoltCooldownTicks;
         public final ModConfigSpec.IntValue cryoFreezeEnergyCost;
@@ -226,6 +229,7 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue pyroBackdraftCooldownTicks;
         public final ModConfigSpec.IntValue pyroInfernoEnergyCost;
         public final ModConfigSpec.IntValue pyroInfernoCooldownTicks;
+        public final ModConfigSpec.IntValue pyroStrikeEnergyCost, pyroKickEnergyCost, pyroDodgeEnergyCost, pyroDodgeCooldownTicks;
         public final ModConfigSpec.IntValue telekinesisPushEnergyCost;
         public final ModConfigSpec.IntValue telekinesisPushCooldownTicks;
         public final ModConfigSpec.IntValue telekinesisGripEnergyCost;
@@ -240,6 +244,15 @@ public final class HeroesEvolvedConfig {
             bunkerEnabled = builder.comment("New players wake sealed in a Cryochamber in the stasis bunker under world spawn.",
                             "The bunker is built once, the first time a player joins.")
                     .define("enabled", true);
+            prologueEnabled = builder.comment("Before waking in the bunker, new players live the Last Day: they wake in their apartment in Odessa,",
+                            "run for the Primatech safe house when the light appears, and are sealed in their pods. Needs the bunker.")
+                    .define("prologue", true);
+            prologueReadySeconds = builder.comment("How long the prologue waits in the apartments for everyone to be ready, after the latest arrival.")
+                    .defineInRange("prologueReadySeconds", 60, 5, 600);
+            prologueEveningSeconds = builder.comment("How long players explore Odessa's ordinary evening before the light appears.")
+                    .defineInRange("prologueEveningSeconds", 180, 10, 1800);
+            prologueRunSeconds = builder.comment("How long players have to reach the safe house once the light appears, before Company agents dart them.")
+                    .defineInRange("prologueRunSeconds", 120, 20, 600);
             builder.pop();
             builder.push("sylar");
             sylarEnabled = builder.comment("Enable the unique Sylar storyline hunter in the Overworld.").define("enabled", true);
@@ -675,6 +688,12 @@ public final class HeroesEvolvedConfig {
                         .comment("Radius, in blocks, of a Time Slow field.")
                         .defineInRange("slowRadius", 50.0D, 1.0D, 128.0D);
 
+                timeFieldsServerWide = builder
+                        .comment("Slowing or stopping time (Between Seconds, Still World, a speedster's Perception) reaches every",
+                                "entity and player on the server, in every dimension, instead of an area round the caster.",
+                                "Off, the fields use slowRadius and stopRadius.")
+                        .define("fieldsServerWide", true);
+
                 timeSlowLevelOneTickIntervalTicks = builder
                         .comment("Ticks between updates for Level 1 Time Slow. ")
                         .defineInRange("slowLevel1TickIntervalTicks", 7, 1, 100);
@@ -789,6 +808,14 @@ public final class HeroesEvolvedConfig {
                         "Off by default: a closed group is a private conversation.").define("hearsGroups", false);
                 builder.pop();
 
+                builder.push("shapeshifting");
+                shapeshiftChatImpersonation = builder.comment("Let a shapeshifter wearing another player's shape speak as them in public chat.",
+                                "Private messages and commands always use the real name, nobody can copy an operator, the copied",
+                                "player is always told, operators and telepaths can see who really spoke, and every line is logged.",
+                                "Off: player shapes still work, but chat uses the real name.")
+                        .define("chatImpersonation", true);
+                builder.pop();
+
                 builder.push("cryokinesis");
                 cryoBoltEnergyCost = energy(builder, "frostBolt", 14);
                 cryoBoltCooldownTicks = cooldown(builder, "frostBolt", 20);
@@ -864,6 +891,14 @@ public final class HeroesEvolvedConfig {
                 pyroBackdraftCooldownTicks = cooldown(builder, "backdraft", 20 * 5);
                 pyroInfernoEnergyCost = energy(builder, "inferno", 94);
                 pyroInfernoCooldownTicks = cooldown(builder, "inferno", 20 * 80);
+                pyroStrikeEnergyCost = builder.comment("Stamina for one firebending jab or cross (left-click with an empty hand).")
+                        .defineInRange("strikeEnergyCost", 2, 0, 100);
+                pyroKickEnergyCost = builder.comment("Stamina for a roundhouse, sweep kick or flip kick.")
+                        .defineInRange("kickEnergyCost", 5, 0, 100);
+                pyroDodgeEnergyCost = builder.comment("Stamina for a jet step or backflip (double-tap left, right or back).")
+                        .defineInRange("dodgeEnergyCost", 8, 0, 100);
+                pyroDodgeCooldownTicks = builder.comment("Ticks between two dodges.")
+                        .defineInRange("dodgeCooldownTicks", 18, 0, 20 * 60);
                 builder.pop();
 
                 builder.push("grid");

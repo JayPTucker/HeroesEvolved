@@ -253,6 +253,12 @@ public final class SylarEntity extends PathfinderMob implements Enemy {
         if (fleeing) { tickChase(serverLevel, victim, story); return; }
         if (held != null) { tickHold(serverLevel); return; }
         if (recovery > 0) { recovery--; setTarget(null); return; }
+        // A dampener round (or field) breaks his hold, his grip and his windup; until it wears off he has only his fists.
+        if (com.jayptucker.heroesevolved.dampener.Dampening.dampened(this)) {
+            if (extractionTicks > 0 || casting != null || pinned != null) interrupt();
+            else setTarget(victim);
+            return;
+        }
         boolean inReach = distanceToSqr(victim) <= 7 * 7 && hasLineOfSight(victim);
         if (extractionTicks > 0 && !arena) {
             if (!inReach) { interrupt(); return; }

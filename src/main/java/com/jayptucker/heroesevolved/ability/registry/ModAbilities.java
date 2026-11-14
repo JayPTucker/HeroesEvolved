@@ -160,6 +160,20 @@ public final class ModAbilities {
     public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.VibeAbility> VIBE =
             ABILITIES.register(VIBE_ID.getPath(), com.jayptucker.heroesevolved.ability.types.VibeAbility::new);
 
+    public static final ResourceLocation SHAPESHIFTING_ID = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "shapeshifting");
+    public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.ShapeshiftingAbility> SHAPESHIFTING =
+            ABILITIES.register(SHAPESHIFTING_ID.getPath(), com.jayptucker.heroesevolved.ability.types.ShapeshiftingAbility::new);
+
+    /**
+     * Powers still being built (none now: Shapeshifting left the list when its tree and classes landed). Admins can give them, but the
+     * Eclipse, the Formula, gifted villagers and retired-power swaps never roll them, and the catalog tests that expect a
+     * finished tree and classes skip them. Remove a power from here when its skill tree and classes land.
+     */
+    public static final java.util.Set<ResourceLocation> IN_DEVELOPMENT = java.util.Set.of();
+
+    /** Can this power be handed out at random? */
+    public static boolean rollable(ResourceLocation power) { return !IN_DEVELOPMENT.contains(power); }
+
     // RADIATION (the Glowing Man)
     public static final ResourceLocation RADIATION_ID =
         ResourceLocation.fromNamespaceAndPath(

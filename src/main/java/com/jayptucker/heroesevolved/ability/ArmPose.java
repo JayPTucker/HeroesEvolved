@@ -151,5 +151,24 @@ public enum ArmPose {
      *  arms raised overhead as you drop (Phase Fall); a hand thrust straight up to grab (Grasp from Below); a twist
      *  away with one arm across the body (Untouchable). */
     DENSITY_LUNGE, DENSITY_USHER, DENSITY_BRACE, DENSITY_BURST, DENSITY_PRESS, DENSITY_CLOSE, DENSITY_FADE, DENSITY_DROP,
-    DENSITY_GRASP, DENSITY_SLIP
+    DENSITY_GRASP, DENSITY_SLIP,
+    /** Firebending. The lead fist driven out along the aim while the rear hand guards the chin (jab); the rear fist
+     *  driven through as the lead pulls back (cross); the rear leg swung round at hip height, arms flung out for balance
+     *  (roundhouse); dropped low on one leg, the other swept round in a full turn, hands to the ground (sweep kick); a
+     *  palm thrust out against the direction of travel, feet tucked (jet step); arms thrown up and back as the legs
+     *  kick over in a backflip (flip kick). */
+    FIRE_JAB, FIRE_CROSS, FIRE_KICK, FIRE_SWEEP_KICK, FIRE_STEP, FIRE_FLIP,
+    /** Shapeshifting. Two fingers at the temple, the other arm folded under the elbow, while a creature is studied
+     *  (study); one palm drawn down over the face as the plates start to climb (sweep); an open palm laid on a creature
+     *  to learn its shape (touch). */
+    SHIFT_STUDY, SHIFT_SWEEP, SHIFT_TOUCH,
+    /** Shapeshifting's Lunge: the arm thrown straight along the aim as it lengthens, the other drawn back. */
+    SHIFT_LUNGE,
+    /** Shapeshifting's tricks: shoulders rolled back as you step out of a shell (shed, also when a disguise bursts off);
+     *  a flat palm raised between you and your attacker like a mirror (reflect); arms flung wide as the nightmare rears
+     *  (nightmare). */
+    SHIFT_SHED, SHIFT_REFLECT, SHIFT_NIGHTMARE,
+    /** Shapeshifting's classes and signature: forearms crossed over the chest as plates lock on (guard); both palms
+     *  turned out and low, giving a shape away (gift); both fists driven down for Apex Form's slam (slam). */
+    SHIFT_GUARD, SHIFT_GIFT, SHIFT_SLAM
 }

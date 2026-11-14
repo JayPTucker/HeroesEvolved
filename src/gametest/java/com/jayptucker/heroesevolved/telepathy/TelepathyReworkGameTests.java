@@ -537,4 +537,62 @@ public final class TelepathyReworkGameTests {
             h.succeed();
         } finally { clean(a, b); }
     }
+
+    // ------------------------------------------------------------------
+    // Deep reading
+    // ------------------------------------------------------------------
+
+    private static long systemMessages(Actor a) {
+        return a.packets.stream().filter(p -> p instanceof net.minecraft.network.protocol.game.ClientboundSystemChatPacket c && !c.overlay()).count();
+    }
+
+    @GameTest(template = "rewind_empty", batch = "telepathy.read_power")
+    public static void readingAPlayerDeepEnoughShowsTheirAwakenedPower(GameTestHelper h) {
+        Actor a = telepath(h, 2, "seer"), b = telepath(h, 6, "pyro"), c = telepath(h, 9, "sleeper");
+        try {
+            b.player.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty().assignDormant(ModAbilities.PYROKINESIS_ID).unlock(ModAbilities.PYROKINESIS_ID));
+            c.player.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty().assignDormant(ModAbilities.PYROKINESIS_ID));
+            h.assertTrue(TelepathySkills.sensedPower(b.player).filter(ModAbilities.PYROKINESIS_ID::equals).isPresent(), "An awakened power can be found");
+            h.assertTrue(TelepathySkills.sensedPower(c.player).isEmpty(), "A dormant one can't");
+            h.assertTrue(TelepathyFocus.start(a.player, 5), "Read Mind finds the player");
+            long before = systemMessages(a);
+            for (int i = 0; i < 20; i++) TelepathyFocus.tick(h.getLevel().getServer());
+            h.assertTrue(TelepathyFocus.focus(a.player, b.player) < TelepathySkills.REVEAL_FOCUS && systemMessages(a) == before,
+                    "A shallow read gives nothing away");
+            for (int i = 0; i < 20; i++) TelepathyFocus.tick(h.getLevel().getServer());
+            h.assertTrue(systemMessages(a) == before + 1, "Read to 60 Focus, their mind gives up its power, once");
+            for (int i = 0; i < 20; i++) TelepathyFocus.tick(h.getLevel().getServer());
+            h.assertTrue(systemMessages(a) == before + 1, "and doesn't repeat itself while the thread holds");
+            h.succeed();
+        } finally { clean(a, b, c); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "telepathy.minds_eye")
+    public static void mindsEyeShowsWhatTheyCarryAndSayButNeverLetsGo(GameTestHelper h) {
+        Actor a = telepath(h, 2, "eye"), b = telepath(h, 6, "carrier");
+        try {
+            b.player.getInventory().setItem(0, new ItemStack(Items.DIAMOND, 3));
+            b.player.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.IRON_HELMET));
+            TelepathySkills.said(b.player, "Meet me at the tower.");
+            h.assertTrue(!TelepathySkills.mindsEye(a.player, 3), "Below tier 4, the eyes stay shut");
+            h.assertTrue(!TelepathySkills.mindsEye(a.player, 5), "A mind not read all the way stays shut");
+            TelepathyFocus.deepen(a.player, b.player, 100, 100);
+            long before = systemMessages(a);
+            h.assertTrue(TelepathySkills.mindsEye(a.player, 5), "Read to 100 at tier 5, Mind's Eye opens");
+            // A FakePlayer ignores openMenu, so the test builds the same view Mind's Eye opens.
+            var menu = MindsEyeMenu.open(1, a.player.getInventory(), a.player, b.player);
+            h.assertTrue(menu.stillValid(a.player), "Their inventory opens for the telepath");
+            h.assertTrue(menu.getSlot(27).getItem().is(Items.DIAMOND) && menu.getSlot(27).getItem().getCount() == 3, "The hotbar is shown");
+            h.assertTrue(menu.getSlot(36).getItem().is(Items.IRON_HELMET), "So is what they wear");
+            menu.clicked(27, 0, net.minecraft.world.inventory.ClickType.PICKUP, a.player);
+            menu.clicked(27, 0, net.minecraft.world.inventory.ClickType.QUICK_MOVE, a.player);
+            h.assertTrue(b.player.getInventory().getItem(0).getCount() == 3, "Nothing can be taken");
+            h.assertTrue(menu.getCarried().isEmpty() && a.player.getInventory().countItem(Items.DIAMOND) == 0, "or copied");
+            b.player.getInventory().setItem(1, new ItemStack(Items.EMERALD));
+            menu.broadcastChanges();
+            h.assertTrue(menu.getSlot(28).getItem().is(Items.EMERALD), "The view follows what they carry");
+            h.assertTrue(systemMessages(a) >= before + 2, "What they said lately comes back");
+            h.succeed();
+        } finally { clean(a, b); }
+    }
 }

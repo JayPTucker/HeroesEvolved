@@ -418,11 +418,40 @@ final class Landmarks {
             int door = 4;
             c.sign(door, Y + 5, z0 - 1, Direction.NORTH, Blocks.DARK_OAK_WALL_SIGN, DyeColor.WHITE, true, "PRIMATECH");
             c.sign(door - 1, Y + 5, z0 - 1, Direction.NORTH, Blocks.DARK_OAK_WALL_SIGN, DyeColor.WHITE, true, "PAPER CO.");
+            safeHouse(c);
             for (int x : new int[] {-2, 10}) {
                 c.fill(x, Y, sz0 + 1, x, Y + 8, sz0 + 1, Blocks.IRON_BARS);
                 c.set(x, Y + 9, sz0 + 1, (x < 0 ? Blocks.BLUE_BANNER : Blocks.WHITE_BANNER).defaultBlockState()
                         .setValue(net.minecraft.world.level.block.BannerBlock.ROTATION, 8));
             }
         }));
+    }
+
+    /**
+     * The way down to the stasis bunker, just inside the doors: the top of a wide stair, open to the lobby through a
+     * railed slot in the floor along the north wall. It goes down east, turns, and comes back to the vault door under the
+     * lobby (blueprint {@code lastday_stairwell}, placed by story/prologue below anything the city rebuilds).
+     */
+    private static void safeHouse(CityCanvas c) {
+        int x0 = CityGrid.STAIR_X0, x1 = CityGrid.STAIR_X1, z0 = CityGrid.STAIR_Z0, z1 = CityGrid.STAIR_Z1;
+        BlockState step = CityCanvas.stairs(Blocks.POLISHED_DEEPSLATE_STAIRS, Direction.WEST, false);
+        for (int z = z0; z <= z1; z++) {
+            // The top step, a block down from the lobby floor; the rest of the slot is open down to the flight.
+            c.set(x0, Y - 1, z, step);
+            c.set(x0, Y, z, Blocks.AIR);
+            for (int x = x0 + 1; x <= x1; x++) c.fill(x, Y - 1, z, x, Y, z, Blocks.AIR);
+            // A hazard edge where the floor ends, and rails across the far end.
+            c.set(x0 - 1, Y, z, (z - z0) % 2 == 0 ? Blocks.YELLOW_CONCRETE : Blocks.BLACK_CONCRETE);
+            c.set(x1 + 1, Y, z, Blocks.POLISHED_BLACKSTONE);
+            c.set(x1 + 1, Y + 1, z, Blocks.IRON_BARS);
+        }
+        // The open side: a dark lip and a rail all the way along.
+        for (int x = x0; x <= x1 + 1; x++) {
+            c.set(x, Y, z1 + 1, Blocks.POLISHED_BLACKSTONE);
+            c.set(x, Y + 1, z1 + 1, Blocks.IRON_BARS);
+        }
+        // A post at the head of the stair with the way marked on it.
+        c.fill(x0 - 1, Y + 1, z1 + 1, x0 - 1, Y + 2, z1 + 1, Blocks.POLISHED_BLACKSTONE);
+        c.sign(x0 - 2, Y + 2, z1 + 1, Direction.WEST, Blocks.DARK_OAK_WALL_SIGN, DyeColor.YELLOW, true, "SUBLEVEL 4", "SHELTER", "STAFF ONLY");
     }
 }

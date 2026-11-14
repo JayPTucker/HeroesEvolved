@@ -49,11 +49,6 @@ public final class NightThreeBunker {
     public static final int CLAIRE = 13;
 
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
-    /** What centuries grew or left behind; none of it is here yet. */
-    private static final Set<Block> LATER = Set.of(Blocks.MOSS_CARPET, Blocks.SHORT_GRASS, Blocks.FERN, Blocks.AZALEA,
-            Blocks.FLOWERING_AZALEA_LEAVES, Blocks.AZALEA_LEAVES, Blocks.GLOW_LICHEN, Blocks.CAVE_VINES, Blocks.CAVE_VINES_PLANT,
-            Blocks.COBWEB, Blocks.POINTED_DRIPSTONE, Blocks.HANGING_ROOTS, Blocks.SPORE_BLOSSOM, Blocks.MANGROVE_ROOTS,
-            Blocks.DARK_OAK_WOOD, Blocks.BONE_BLOCK, Blocks.SKELETON_SKULL, Blocks.REDSTONE_WIRE);
 
     private NightThreeBunker() {}
 
@@ -70,33 +65,10 @@ public final class NightThreeBunker {
     }
 
     /** The lockdown version of a block: lights on, no decay, nothing grown in, no blood. */
-    public static BlockState past(int layer, BlockState state) {
-        Block block = state.getBlock();
-        if (block == Blocks.ROOTED_DIRT || block == Blocks.MOSS_BLOCK || block == Blocks.DIRT)
-            return layer == 0 ? Blocks.POLISHED_DEEPSLATE.defaultBlockState() : Blocks.DEEPSLATE_BRICKS.defaultBlockState();
-        if (LATER.contains(block)) return AIR;
-        if (block == Blocks.CRACKED_DEEPSLATE_TILES) return Blocks.DEEPSLATE_TILES.defaultBlockState();
-        if (block == Blocks.CRACKED_DEEPSLATE_BRICKS) return Blocks.DEEPSLATE_BRICKS.defaultBlockState();
-        if (block == Blocks.RED_STAINED_GLASS) return Blocks.WHITE_STAINED_GLASS.defaultBlockState();
-        if (block == Blocks.SOUL_LANTERN) return Blocks.LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, state.getValue(LanternBlock.HANGING));
-        if (state.hasProperty(BlockStateProperties.LIT)) return state.setValue(BlockStateProperties.LIT, true);
-        return state;
-    }
+    public static BlockState past(int layer, BlockState state) { return com.jayptucker.heroesevolved.story.bunker.PastBunker.past(layer, state); }
 
     /** The space the bunker takes up, solid rock around it included. */
-    static BoundingBox bounds() {
-        List<Room> rooms = new ArrayList<>(BunkerBuilder.ROOMS);
-        rooms.add(BunkerBuilder.OFFICE);
-        BoundingBox box = new BoundingBox(ORIGIN);
-        for (Room room : rooms) {
-            Blueprint blueprint = Blueprint.load(room.blueprint());
-            BlockPos anchor = ORIGIN.offset(room.at());
-            box.encapsulate(anchor.offset(blueprint.offset(0, 0, 0, Rotation.NONE)));
-            box.encapsulate(anchor.offset(blueprint.offset(blueprint.width() - 1, blueprint.height() - 1, blueprint.depth() - 1, Rotation.NONE)));
-        }
-        box.encapsulate(at(0, 10, 0));
-        return box.inflatedBy(2);
-    }
+    static BoundingBox bounds() { return com.jayptucker.heroesevolved.story.bunker.PastBunker.bounds(ORIGIN); }
 
     /** Builds the rock around the bunker once, then the rooms; afterwards only the rooms. */
     public static void build(MinecraftServer server, ServerLevel level) {
@@ -115,19 +87,12 @@ public final class NightThreeBunker {
 
     /** Places every room as it was on the third night, and puts back what any earlier night changed. */
     static void rooms(ServerLevel level) {
-        for (Room room : BunkerBuilder.ROOMS) place(level, room);
-        place(level, BunkerBuilder.OFFICE);
-        BunkerBuilder.retireFirstExhibit(level, ORIGIN.offset(BunkerBuilder.CHAMBER.at()));
+        com.jayptucker.heroesevolved.story.bunker.PastBunker.rooms(level, ORIGIN);
         shaft(level);
-        repairChamber(level);
         BlockState bars = Blocks.IRON_BARS.defaultBlockState();
         for (BlockPos pos : cageBars()) level.setBlock(pos, bars, Block.UPDATE_CLIENTS);
         for (BlockPos pos : cageBars()) level.setBlock(pos, Block.updateFromNeighbourShapes(bars, level, pos), Block.UPDATE_CLIENTS);
         signPod(level);
-    }
-
-    private static void place(ServerLevel level, Room room) {
-        Blueprint.load(room.blueprint()).place(level, ORIGIN.offset(room.at()), Rotation.NONE, Integer.MAX_VALUE - 1, NightThreeBunker::past);
     }
 
     /** The ladder well from the records room, closed off by a hatch only the Company opens from above. */
@@ -135,21 +100,6 @@ public final class NightThreeBunker {
         for (int y = 1; y <= 7; y++) level.setBlock(at(0, y, 0), Blocks.LADDER.defaultBlockState().setValue(LadderBlock.FACING, Direction.SOUTH), Block.UPDATE_CLIENTS);
         level.setBlock(at(0, 8, 0), Blocks.IRON_TRAPDOOR.defaultBlockState().setValue(TrapDoorBlock.HALF, Half.TOP)
                 .setValue(TrapDoorBlock.FACING, Direction.SOUTH), Block.UPDATE_CLIENTS);
-    }
-
-    /** Chamber grid cell to the past's world position (the chamber's anchor is grid 7 0 0, at bunker 0 0 18). */
-    private static BlockPos chamber(int gx, int gy, int gz) { return at(gx - 7, gy, gz + 18); }
-
-    /** Where the cave broke into the stasis hall in the present, the hall is whole: floor, wall frame, beam and duct. */
-    private static void repairChamber(ServerLevel level) {
-        BlockState floor = Blocks.POLISHED_DEEPSLATE.defaultBlockState();
-        for (int gz = 14; gz <= 21; gz++) for (int gx = 10; gx <= 13; gx++) level.setBlock(chamber(gx, 0, gz), floor, Block.UPDATE_CLIENTS);
-        level.setBlock(chamber(9, 0, 18), Blocks.POLISHED_TUFF.defaultBlockState(), Block.UPDATE_CLIENTS);
-        level.setBlock(chamber(11, 1, 14), AIR, Block.UPDATE_CLIENTS);
-        level.setBlock(chamber(10, 1, 15), AIR, Block.UPDATE_CLIENTS);
-        level.setBlock(chamber(12, 1, 15), Blocks.DEEPSLATE_TILE_WALL.defaultBlockState(), Block.UPDATE_CLIENTS);
-        for (int gx = 10; gx <= 13; gx++) level.setBlock(chamber(gx, 11, 19), floor, Block.UPDATE_CLIENTS);
-        for (int gz = 15; gz <= 18; gz++) level.setBlock(chamber(10, 11, gz), Blocks.WAXED_WEATHERED_CUT_COPPER.defaultBlockState(), Block.UPDATE_CLIENTS);
     }
 
     /** Pod 14's sign, before anyone drew her blood. */

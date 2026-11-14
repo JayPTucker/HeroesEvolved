@@ -164,6 +164,8 @@ public final class TimeStopService {
 
     public static void start(ServerPlayer player, int powerLevel, boolean carryCompanion) {
         ServerLevel level = player.serverLevel();
+        // Everyone else sees the traveller frozen where they stood, like the rest of the world.
+        TimeVeil.begin(player, TimeVeil.Style.TIME, TimeVeil.STOP);
 
         playTemporalCue(level, player.position(), player);
 
@@ -197,6 +199,7 @@ public final class TimeStopService {
             playTemporalCue(player.serverLevel(), field.center(), player);
             releaseImpacts(player.getServer(), player.getUUID());
             ProjectileTimeService.releaseInactive();
+            TimeVeil.end(player, TimeVeil.STOP);
         }
     }
 
@@ -224,13 +227,16 @@ public final class TimeStopService {
                     playTemporalCue(level, field.center(), owner);
                 }
                 releaseImpacts(server, field.ownerId());
+                if (owner != null) TimeVeil.end(owner, TimeVeil.STOP);
             } else if (level != null && level.getGameTime() % 10 == 0) {
                 owner.displayClientMessage(net.minecraft.network.chat.Component.translatable("time.heroesevolved.stopped", (field.remainingTicks + 19) / 20), true);
                 // The stopped dome stays visible while it lasts.
-                com.jayptucker.heroesevolved.effects.AbilityEffects.send(level, com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind.TIME_STOP_PULSE,
+                if (TimeVeil.serverWide()) TimeVeil.showToSeers(owner, com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind.TIME_STOP_PULSE,
                         field.center(), field.center().add(0, 1, 0), HeroesEvolvedConfig.COMMON.timeStopRadius.get());
-                // Stopped time looks drained and cold to anyone inside it.
-                com.jayptucker.heroesevolved.network.ScreenTintPayload.sendAround(
+                else com.jayptucker.heroesevolved.effects.AbilityEffects.send(level, com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind.TIME_STOP_PULSE,
+                        field.center(), field.center().add(0, 1, 0), HeroesEvolvedConfig.COMMON.timeStopRadius.get());
+                // Stopped time looks drained and cold to anyone inside it (server-wide, TimeVeil tints every screen).
+                if (!TimeVeil.serverWide()) com.jayptucker.heroesevolved.network.ScreenTintPayload.sendAround(
                         level, field.center(),
                         HeroesEvolvedConfig.COMMON.timeStopRadius.get(),
                         0x40506A90, 14,
@@ -320,13 +326,17 @@ public final class TimeStopService {
         double radius = HeroesEvolvedConfig.COMMON.timeStopRadius.get();
 
         for (TimeStopField field : ACTIVE_FIELDS.values()) {
-            if (field.dimension().equals(level.dimension())
+            boolean everywhere = TimeVeil.serverWide();
+            if ((everywhere || field.dimension().equals(level.dimension()))
                     && !field.ownerId().equals(entity.getUUID())
                     && !entity.getUUID().equals(field.companion)
+                    // Whatever the traveller (or their companion) carries moves with them.
+                    && !field.ownerId().equals(entity.getRootVehicle().getUUID())
+                    && !entity.getRootVehicle().getUUID().equals(field.companion)
                     && !entity.isSpectator()
                     && !com.jayptucker.heroesevolved.speed.SpeedService.outrunsTime(entity)
                     && !field.hasEnded()
-                    && ProjectileTimeService.reachesField(entity.position(), end, field.center(), radius)) {
+                    && (everywhere || ProjectileTimeService.reachesField(entity.position(), end, field.center(), radius))) {
                 return field;
             }
         }

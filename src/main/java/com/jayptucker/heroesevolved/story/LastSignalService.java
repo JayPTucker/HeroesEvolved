@@ -304,8 +304,10 @@ public final class LastSignalService {
     private static void testimony(ServerPlayer player, Entity target) {
         if (target.getName().getString().equals(NAMES.getFirst())) {
             tell(player, "Mara: I kept sending the signal. I thought we were the last two people awake.");
+            tell(player, "Mara: Bennet's men pulled us off the street too. He said it was for our own good. A hundred and three years...");
         } else {
             tell(player, "Ivo: The line kept both sites on backup power. We can finally shut it down.");
+            tell(player, "Ivo: The girl from Pod 14 came by the annex once, years ago. She sat with us a while, then she went up top.");
         }
         if (!StoryDiscoveries.has(player, StoryDiscoveries.SIGNAL_TESTIMONY)) {
             var book = BunkerLogs.book(StoryDiscoveries.SIGNAL_TESTIMONY, StoryDiscoveries.SIGNAL_AUTHOR,

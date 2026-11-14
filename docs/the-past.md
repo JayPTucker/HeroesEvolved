@@ -1,6 +1,6 @@
 # The Last Signal
 
-You wake in the Company’s Odessa stasis bunker centuries after the city burned. At 6:14 PM on the Last Day, Ted Sprague lost control downtown. Noah Bennet sealed the bunker, and the stasis pods kept their occupants alive. The [Space-Time Manipulation awakening](time-manipulation-intro.md) lets its owner and nearby companions stand on the avenue, witness the explosion, and see the city run backwards before returning home.
+You wake in the Company’s Odessa stasis bunker 103 years after the city burned. You were there: on [the Last Day](the-last-day.md) you ran for this bunker when the light appeared, and Noah Bennet sealed you in a pod for your own good. At 6:14 PM Ted Sprague lost control downtown, and the stasis pods kept their occupants alive. The [Space-Time Manipulation awakening](time-manipulation-intro.md) lets its owner and nearby companions stand on the avenue, witness the explosion, and see the city run backwards before returning home.
 
 ## Follow the signal
 
@@ -19,17 +19,19 @@ Existing bunkers receive the receiver and recovery rooms where the original fixt
 
 ## The first five minutes
 
-1. **STASIS FAILURE.** A new player joins sealed inside a Cryochamber. A new bunker is on emergency
+New players first live [the Last Day](the-last-day.md), which ends with them sealed in a pod under Primatech. Then:
+
+1. **STASIS FAILURE.** A new player wakes sealed inside a Cryochamber. A new bunker is on emergency
    power: every lamp is dark, and only the alarm beacons on its walls and ceilings turn, sweeping red
    beams across the hall. The facility alarm whoops in time with the red pulse, muffled through the
    lid, while the pod's own warning beeps quicken toward release.
-2. **How long were you asleep?** Frost on the glass. The pod holds you while the revival protocol runs.
+2. **37,620 days.** The pod's counter: 103 years. Frost on the glass. The pod holds you while the revival protocol runs.
 3. **You are awake.** The pod chimes and hisses open (about 5.5 seconds in) and you earn **Wake Up**.
 4. **The power comes back.** The alarm holds until you step out of the pod. Then it cuts off, a breaker
    slams, and the bunker's lights click on in a wave from the generator, down the hall from its door to
    its far wall. The beacons keep turning.
 
-Every new player wakes this way, in the pod assigned to them, whose nameplate now carries their name
+Every new player wakes this way, in the pod assigned to them (the same number they were sealed in on the Last Day; never Pod 14, Claire Bennet's, which stands open and empty with her note inside), whose nameplate now carries their name
 ("SUBJECT 03 / name / REVIVAL IN PROGRESS", then "REVIVED"). Their waking cuts the main power again: the
 lights go out, and everyone already in the bunker hears the alarm until the last sleeper is out of their
 pod, when the power comes back for all of them.

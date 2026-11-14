@@ -12,8 +12,8 @@ These are the default keys; rebinding and the inventory skill tree still work.
 | Level | Key | Ability | Use |
 | --- | --- | --- | --- |
 | 1 | G | Fold Space | Blink to a visible surface or into open air. Cancels falling momentum. From level 2, Shift carries one nearby living companion if there is room. Players must be teammates or crouching. |
-| 1 | H | Between Seconds | Other players move and recharge attacks more slowly across the server. A bubble follows you and slows nearby mobs and projectiles. Shift + H ends it. |
-| 3 | Z | Still World | Freeze entities in a fixed area. Your attacks accumulate and land when time resumes. Shift while starting includes one touching companion; Shift + Z while active resumes time for free. |
+| 1 | H | Between Seconds | Slows everything on the server: creatures and shots, and other players' movement and attack recharge. Every screen takes a faint amber cast. Everyone else sees you frozen where you started (see [Faster than time](#faster-than-time)). Shift + H ends it. |
+| 3 | Z | Still World | Stops everything on the server but you (and one companion): creatures, shots and other players. Every screen turns drained and cold, and everyone else sees you frozen where you started (see [Faster than time](#faster-than-time)). Your attacks accumulate and land when time resumes. Shift while starting includes one touching companion; Shift + Z while active resumes time for free. |
 | 4 | X | Rewrite the Moment | Restore the recorded timeline from fifteen seconds ago, including changed blocks, containers, and recorded entities, everywhere you have been in those seconds. Anyone who died in reach lives again. Everyone it reaches is carried back through their own fifteen seconds (see [Going back](#going-back)), even across a portal, and lands where they were. You recover lost health. It costs **130 stamina** (hold Shift to overexert when you're short) and recovers in **4 minutes at Level 4, 2½ minutes at Level 5**. While it's ready, a faint ghost of you, ringed in violet and visible only to you, stands where it would take you. |
 | 5 | V | Walk the Past | Shift + V records an area; V visits the recorded past with nearby companions. V in the past returns without energy cost or an entry-cooldown delay. |
 
@@ -22,6 +22,25 @@ right-click within 7 blocks to catch it for 2 stamina. Pickupable arrows and thr
 inventory. TACZ bullets glow and keep moving in Between Seconds. Catching one recovers a matching
 round of ammunition. A shotgun blast yields one shell. Shots still in flight resume their normal speed
 when the field ends.
+
+### Faster than time
+
+Between Seconds and Still World reach the whole server, in every dimension, unless `fieldsServerWide` is off in the
+config (then they keep to `slowRadius` and `stopRadius`). A speedster's Perception works the same way.
+
+While one holds, nobody sees you move. Everyone else sees a still figure of you where you started, with your skin,
+and your real body, name and shadow are hidden from them, along with any effect drawn right beside you. Only players
+with Superspeed or Space-Time, or a Mimic channeling either, see you as you are. You see a faint copy of yourself on
+the spot, so you can find it again.
+
+When it ends, if you are back on your spot, nobody notices a thing. Anywhere else, the still figure vanishes in a
+violet blink and you appear where you really are. (A speedster's vanishes in a blur and a gust of wind.)
+
+Everyone it reaches gets a quiet hint in chat, in grey italics, never naming who did it. Players who can't move in
+time feel their body lag behind their thoughts ("Your body is still, but your brain seems to be moving faster than
+normal... what's happening?"), or stop altogether when time is stopped, and when it is over they are told so ("That
+was weird..."). Each has a few variants. Speedsters and time travellers only sense it ("Someone may be messing with
+time."). The lines are in `en_us.json` under `time.heroesevolved.veil`.
 
 ### Going back
 
@@ -127,7 +146,7 @@ Wayfinder's signature ability hangs under **Accelerated Force Mastery**, after S
 
 ## Story: The Way Back
 
-The acquisition vision is Odessa at 6:14 PM on the Last Day, centuries before [The Last Signal](the-past.md). The HUD reads **PAST · ODESSA, THE LAST DAY** there. Five durable advancements appear in the vanilla Advancements screen and in the Journal as **The Way Back**.
+The acquisition vision is Odessa at 6:14 PM on the Last Day, 103 years before [The Last Signal](the-past.md). The HUD reads **PAST · ODESSA, THE LAST DAY** there. Five durable advancements appear in the vanilla Advancements screen and in the Journal as **The Way Back**.
 
 1. **The Last Day** — stand in Odessa at 6:14 PM and escape the light.
 2. **No One Left Behind** — carry a companion through space or share stopped time by touch.

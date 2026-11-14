@@ -230,6 +230,7 @@ public final class EclipseService {
             List<ResourceLocation> abilityIds = AbilityRegistry.ABILITIES.keySet()
                     .stream()
                     .filter(power -> PlayerAbilityService.availableTo(player, power))
+                    .filter(com.jayptucker.heroesevolved.ability.registry.ModAbilities::rollable)
                     .sorted(Comparator.comparing(ResourceLocation::toString))
                     .toList();
 

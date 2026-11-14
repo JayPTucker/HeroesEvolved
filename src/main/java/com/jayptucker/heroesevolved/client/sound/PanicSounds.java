@@ -52,7 +52,7 @@ public final class PanicSounds {
     private static SynthSound bed;
     private static final List<RunnerVoice> VOICES = new ArrayList<>();
     private static final Map<Integer, Long> LAST_VOICED = new HashMap<>();
-    private static boolean panicking, detonated;
+    private static boolean panicking, detonated, muffled;
     private static long since, nextVoice;
     private static final Random RANDOM = new Random();
 
@@ -92,8 +92,20 @@ public final class PanicSounds {
         while (VOICES.size() > 1) Minecraft.getInstance().getSoundManager().stop(VOICES.removeLast());
     }
 
+    /**
+     * Heard through rock and a steel lid (the Last Day's safe house and pods): only the crowd, far off and quiet, and no
+     * single voices.
+     */
+    public static void muffle(boolean muffle) {
+        muffled = muffle;
+        if (muffle) {
+            for (RunnerVoice voice : VOICES) Minecraft.getInstance().getSoundManager().stop(voice);
+            VOICES.clear();
+        }
+    }
+
     public static void stop() {
-        panicking = detonated = false;
+        panicking = detonated = muffled = false;
         if (bed != null) Minecraft.getInstance().getSoundManager().stop(bed);
         bed = null;
         for (RunnerVoice voice : VOICES) Minecraft.getInstance().getSoundManager().stop(voice);
@@ -114,11 +126,11 @@ public final class PanicSounds {
             mc.getSoundManager().play(bed);
         }
         // Fades in over three seconds as the sirens wind up; louder still once the light falls.
-        float target = detonated ? 0.5F : Math.min(0.32F, (now - since) / 60F * 0.32F);
+        float target = muffled ? 0.09F : detonated ? 0.5F : Math.min(0.32F, (now - since) / 60F * 0.32F);
         bed.set(bed.volume() + Mth.clamp(target - bed.volume(), -0.02F, 0.04F), 1);
 
         VOICES.removeIf(voice -> !mc.getSoundManager().isActive(voice));
-        if (!detonated) voice(mc, ready, now, mc.player.getBoundingBox().inflate(28, 10, 28));
+        if (!detonated && !muffled) voice(mc, ready, now, mc.player.getBoundingBox().inflate(28, 10, 28));
     }
 
     /**

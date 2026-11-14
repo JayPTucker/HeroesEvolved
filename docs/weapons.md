@@ -12,8 +12,10 @@ All of them are crafted at TaCZ's **gun smith table**, in its usual tabs.
 | **Cryo Carbine** (cold gun) | Rifle | 24 iron, 8 packed ice, 2 blue ice, 2 diamonds | Frost bolts, one a time, accurate to forty blocks. Each bolt adds frost: the target is slower with every hit, and about the fifth freezes it solid for two seconds (one for a player). Bolts that hit water skin it with ice that melts again. |
 | **Company Taser** | Pistol | 8 iron, 6 copper, 8 redstone, 2 yellow dye | One cartridge, eight blocks. A hit locks the target up: barely moving, no jumping and no landing blows for two and a half seconds (a second and a half for a player). |
 | **EMP Grenade** (×2) | Explosives | 4 iron, 6 copper, 1 block of redstone, 2 gunpowder | Throw it (use). It sticks where it lands, beeps for a second, and pulses. |
+| **Nullifier** (dampener pistol) | Pistol | 16 iron, 8 copper, 4 Helixite shards, 6 amethyst shards, 1 block of redstone | Dampener rounds, six to a magazine: whoever one hits loses their power for eight seconds. It is charged with Forge Energy, not loaded with ammo. See [ability-dampener.md](ability-dampener.md). |
 
-Their ammunition is made at the same table, in the *Alternative projectiles* tab:
+Their ammunition is made at the same table, in the *Alternative projectiles* tab (the Nullifier makes its own rounds
+from the RF in its battery):
 
 | Ammo | Materials | Makes |
 | --- | --- | --- |

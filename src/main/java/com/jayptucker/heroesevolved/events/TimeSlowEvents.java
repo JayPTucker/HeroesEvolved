@@ -26,6 +26,7 @@ public final class TimeSlowEvents {
     public static void onServerTick(ServerTickEvent.Post event) {
         com.jayptucker.heroesevolved.time.SpaceTimeService.tick(event.getServer());
         TimeSlowService.tick(event.getServer());
+        com.jayptucker.heroesevolved.time.TimeVeil.tick(event.getServer());
         ProjectileTimeService.tick(event.getServer());
         com.jayptucker.heroesevolved.time.TimeRewindService.tick(event.getServer());
     }

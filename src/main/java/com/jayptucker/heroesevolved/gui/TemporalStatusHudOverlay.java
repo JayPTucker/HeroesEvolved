@@ -60,6 +60,11 @@ public final class TemporalStatusHudOverlay {
             return;
         }
 
+        // Nothing over a black screen: a blackout or a title card such as "103 years later..."
+        if (com.jayptucker.heroesevolved.network.ClientScreenTintState.blackedOut()) {
+            return;
+        }
+
         String pastLabel = PAST_LABELS.get(minecraft.level.dimension().location());
         boolean inPast = pastLabel != null;
         boolean hasTimeManipulation = ClientPowerState.getSnapshot()

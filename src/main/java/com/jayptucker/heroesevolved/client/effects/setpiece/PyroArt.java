@@ -9,6 +9,7 @@ import com.jayptucker.heroesevolved.pyro.PyroGeometry;
 import com.jayptucker.heroesevolved.styles.StyleCasts;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.ParticleStatus;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
@@ -163,8 +164,174 @@ final class PyroArt {
                 marker(c, at, size, -phase, alpha * .65F, fire);
                 jet(c, at.add(0, .05, 0), at.add(0, 2.8, 0), .58F, phase, alpha, fire, minimal() ? 2 : 6, .75F);
             }
+            case PYRO_JAB -> jab(c, a, at, end, size, t, phase, alpha, fire);
+            case PYRO_KICK -> {
+                // The rear leg sweeps from its own side across: the crescent unrolls behind the foot and flies out.
+                Vec3 forward = flat(end.subtract(at)), right = new Vec3(-forward.z, 0, forward.x);
+                int sweep = a.bound(c) instanceof Player p && p.getMainArm() == HumanoidArm.LEFT ? -1 : 1;
+                float open = smooth(0, PyroGeometry.KICK_OPEN, t), half = (float) Math.toRadians(PyroGeometry.KICK_HALF_ANGLE);
+                float radius = .9F + ((float) PyroGeometry.KICK_REACH - .9F) * (1 - (1 - open) * (1 - open));
+                crescent(c, at, forward, right, radius, sweep * half, -sweep * half, smooth(0, 3.2F, t),
+                        .25F, phase, alpha * (1 - smooth(7, 12, t) * .55F), fire, a.seed());
+            }
+            case PYRO_FLIP -> {
+                // The feet come up from under the body and over the head: an arc rises in front and flies out.
+                Vec3 forward = flat(end.subtract(at));
+                float open = smooth(0, PyroGeometry.KICK_OPEN, t);
+                float radius = .8F + ((float) PyroGeometry.FLIP_REACH - .8F) * (1 - (1 - open) * (1 - open));
+                crescent(c, at, forward, UP, radius, -.55F, 1.45F, smooth(0, 4, t), .23F, .6F, phase,
+                        alpha * (1 - smooth(7, 14, t) * .55F), fire, a.seed());
+            }
+            case PYRO_SWEEP_KICK -> {
+                // One leg swept through a full turn at ankle height: a wheel of fire rolls out across the ground.
+                float spread = smooth(0, PyroGeometry.SWEEP_OPEN, t);
+                float radius = .7F + (size - .7F) * (1 - (1 - spread) * (1 - spread));
+                Vec3 floor = at.add(0, .12, 0);
+                float start = hash(a.seed(), 1) * TWO_PI;
+                crescent(c, floor, new Vec3(1, 0, 0), new Vec3(0, 0, 1), radius, start,
+                        start + TWO_PI * smooth(0, PyroGeometry.SWEEP_SPIN, t), 1, .2F, phase, alpha, fire, a.seed());
+                curtain(c, at, radius, .2F + .55F * (1 - smooth(3, 14, t)), phase, alpha * .7F, fire);
+                marker(c, at, radius, -phase, alpha * .5F, fire);
+                smoke(c, at, t, alpha * .7F, a.seed());
+            }
+            case PYRO_JET_STEP -> jetStep(c, a, at, end, size > 1.5F, t, phase, alpha, fire);
+            case PYRO_COUNTER -> {
+                // A blow passes through where you were: a flare of flame snaps round the body and lifts away.
+                Vec3 body = a.at(c);
+                float r = .45F + 1.55F * smooth(0, 5, t);
+                float clear = smooth(.4F, 2.4F, (float) c.camera().distanceTo(body.add(0, 1, 0)));
+                curtain(c, body, r, 1.7F * (1 - smooth(2, 12, t)) + .2F, -phase * 2, alpha * (.3F + .7F * clear), fire);
+                if (c.glow()) c.glow(body.add(0, 1.05, 0), 1.4F * (1 - smooth(0, 8, t)) + .2F, fire.gold, alpha * .45F);
+                sparks(c, body, 1.8F, t, alpha, fire, a.seed());
+            }
             default -> { }
         }
+    }
+
+    /** A fist of flame: a muzzle flare at the knuckles, a tight head with a combed tail, then a splash where it lands. */
+    private static void jab(Canvas c, Active a, Vec3 at, Vec3 end, float size, float t, float phase, float alpha, Fire fire) {
+        boolean blazing = size > 1.5F;
+        float s = blazing ? 1.75F : 1, flight = PyroGeometry.JAB_FLIGHT * (blazing ? 1.35F : 1);
+        Vec3 path = end.subtract(at);
+        if (path.lengthSqr() < .01) return;
+        Vec3 aim = path.normalize();
+        float travel = smooth(0, flight, t);
+        Vec3 head = at.lerp(end, travel);
+        Vec3 tail = at.lerp(end, smooth(1.1F, flight + 4.5F, t) * .97F);
+        float flying = alpha * (1 - smooth(flight, flight + 1.5F, t));
+        float flare = alpha * (1 - smooth(0, 3, t));
+        flame(c, at, at.add(aim.scale(.55 * s)), .13F * s, phase, flare, fire);
+        billows(c, head, tail, .15F * s, .2F * s, -phase * 1.3F, flying, fire, a.seed());
+        orb(c, head, .15F * s, phase, flying, fire);
+        // The splash opens back toward the thrower and lifts.
+        float splash = smooth(flight - .5F, flight + 1.5F, t) * (1 - smooth(flight + 1.5F, 9, t));
+        if (splash > .01F) {
+            Vec3 right = side(aim), up = aim.cross(right);
+            int count = minimal() ? 3 : detail() ? 8 : 5;
+            for (int i = 0; i < count; i++) {
+                float angle = i * TWO_PI / count + hash(a.seed(), i) * .8F;
+                Vec3 out = right.scale(cos(angle)).add(up.scale(sin(angle))).scale(.8).add(aim.scale(-.55)).add(0, .25, 0);
+                flame(c, end, end.add(out.scale((.45 + .35 * hash(a.seed(), i + 9)) * s * (.4 + .6 * splash))),
+                        .12F * s, phase + i * 1.7F, alpha * splash, fire);
+            }
+            if (c.glow()) c.glow(end, .55F * s, fire.gold, alpha * splash * .5F);
+        }
+    }
+
+    /**
+     * A kicked crescent: tongues of flame along an arc from angle {@code from} to {@code to} in the plane of
+     * {@code forward} and {@code lateral}, unrolled to {@code reveal} of its length. Each tongue trails back the way
+     * the foot came, and a bright lip runs along the leading edge.
+     */
+    private static void crescent(Canvas c, Vec3 center, Vec3 forward, Vec3 lateral, float radius, float from, float to,
+                                 float reveal, float width, float phase, float alpha, Fire fire, int seed) {
+        crescent(c, center, forward, lateral, radius, from, to, reveal, width, .16F, phase, alpha, fire, seed);
+    }
+
+    /** {@code thickness}: how far the tongues stray out of the arc's plane, so an arc seen edge-on still has body. */
+    private static void crescent(Canvas c, Vec3 center, Vec3 forward, Vec3 lateral, float radius, float from, float to,
+                                 float reveal, float width, float thickness, float phase, float alpha, Fire fire, int seed) {
+        if (alpha < .01F || reveal <= .01F) return;
+        int count = minimal() ? 6 : detail() ? 16 : 11;
+        Vec3 normal = forward.cross(lateral).normalize();
+        Vec3[] lip = new Vec3[count];
+        float[] lipAlpha = new float[count];
+        int shown = 0;
+        for (int i = 0; i < count; i++) {
+            float u = i / (count - 1F);
+            if (u > reveal) break;
+            float angle = from + (to - from) * u;
+            Vec3 radial = forward.scale(cos(angle)).add(lateral.scale(sin(angle)));
+            Vec3 back = forward.scale(sin(angle)).add(lateral.scale(-cos(angle))).scale(Math.signum(to - from));
+            float taper = .35F + .65F * sin(PI * u);
+            // The newest tongues, just thrown from the foot, burn hottest.
+            float fresh = .7F + .3F * (1 - smooth(0, .3F, reveal - u));
+            // A thick arc (the flip kick, seen edge-on from behind) scatters its roots across the plane as well.
+            double stray = thickness > .3F ? thickness * .6 * (hash(seed, i + 40) - .5) : 0;
+            Vec3 base = center.add(radial.scale(radius)).add(normal.scale(stray));
+            Vec3 tip = base.add(back.scale(.5 + .55 * taper)).add(radial.scale(-.2))
+                    .add(normal.scale(thickness * sin(phase * 1.3F + i * 2.1F)));
+            flame(c, base, tip, width * (.55F + .65F * taper), phase + i * 1.9F + hash(seed, i), alpha * taper * fresh, fire);
+            lip[i] = base.add(radial.scale(.06));
+            lipAlpha[i] = alpha * taper * fresh;
+            shown++;
+        }
+        if (c.glow() && shown >= 2) {
+            Vec3[] points = java.util.Arrays.copyOf(lip, shown);
+            float[] halo = new float[shown], core = new float[shown], wide = new float[shown], thin = new float[shown];
+            for (int i = 0; i < shown; i++) {
+                float clear = cameraClearance(c, points[i]);
+                halo[i] = lipAlpha[i] * .28F * clear;
+                core[i] = lipAlpha[i] * .85F * clear;
+                wide[i] = width * .9F;
+                thin[i] = width * .16F;
+            }
+            c.ribbon(points, wide, fire.body, halo);
+            c.ribbon(points, thin, fire.gold, core);
+        }
+    }
+
+    /**
+     * A jet step: flame blasts from the feet and the trailing palm against the direction of travel, leaves two
+     * scorched skid marks and a thin wake. A backflip (flip) fires both feet down and forward instead.
+     */
+    private static void jetStep(Canvas c, Active a, Vec3 at, Vec3 end, boolean flip, float t, float phase, float alpha, Fire fire) {
+        Vec3 path = end.subtract(at);
+        if (path.lengthSqr() < .01) return;
+        Vec3 dir = path.normalize(), right = side(dir);
+        Vec3 feet = a.bound(c) instanceof Player p ? p.getPosition(c.partial) : at.lerp(end, smooth(0, 5, t));
+        float pushing = alpha * (1 - smooth(3, 8, t));
+        Vec3 exhaust = flip ? dir.scale(-.55).add(0, -.85, 0).normalize() : dir.scale(-1).add(0, -.12, 0).normalize();
+        for (int foot : new int[]{-1, 1}) {
+            Vec3 nozzle = feet.add(right.scale(foot * .12)).add(0, .12, 0);
+            jet(c, nozzle, nozzle.add(exhaust.scale(1.25 + .25 * sin(phase + foot))), .15F, phase + foot,
+                    pushing, fire, minimal() ? 1 : 3, .16F);
+        }
+        if (!flip) {
+            // The far arm is flung straight out against the dash: the palm is at shoulder height, an arm's length out.
+            Vec3 palm = feet.add(0, 1.36, 0).add(dir.scale(-1.0));
+            flame(c, palm, palm.add(dir.scale(-1.05)).add(0, .1, 0), .15F, phase * 1.2F, pushing, fire);
+        }
+        // The launch blast where the dodge began, spreading and rising away.
+        float launch = alpha * (1 - smooth(1, 9, t));
+        billows(c, at.add(0, .15, 0), at.add(exhaust.scale(1.8)).add(0, .35, 0), .22F, .55F, phase, launch, fire, a.seed());
+        if (c.soft() && !flip) {
+            // Two scorched skid marks along the ground, drawn dark with normal blending.
+            float scorch = alpha * .55F * (1 - smooth(8, 14, t));
+            for (int foot : new int[]{-1, 1}) {
+                Vec3 offset = right.scale(foot * .17).add(0, .03, 0);
+                Vec3[] marks = new Vec3[6];
+                for (int i = 0; i < marks.length; i++)
+                    marks[i] = at.lerp(end, .7 * i / (marks.length - 1.0) * smooth(0, 4, t)).add(offset);
+                c.ribbon(marks, .06F, SOOT, scorch * .4F, scorch);
+            }
+        }
+        smoke(c, at, t, alpha * .8F, a.seed());
+    }
+
+    private static Vec3 flat(Vec3 v) {
+        Vec3 level = new Vec3(v.x, 0, v.z);
+        return level.lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : level.normalize();
     }
 
     private static void fall(Canvas c, Vec3 sky, Vec3 ground, float radius, float duration,
@@ -234,7 +401,9 @@ final class PyroArt {
         for (int i = 0; i < 3; i++) {
             float s = .30F + t * .045F;
             Vec3 puff = at.add((hash(seed, i) - .5) * t * .15, .4 + t * .12, (hash(seed, i + 8) - .5) * t * .15);
-            c.cloud(puff, s, s * 1.25F, s, seed + i, t * .06F, alpha * .18F * smooth(1, 8, t), Shades.smoke(c, SOOT, 0));
+            // A puff rising through the camera would fill the view; it clears near the eye like the flames do.
+            c.cloud(puff, s, s * 1.25F, s, seed + i, t * .06F, alpha * .18F * smooth(1, 8, t) * cameraClearance(c, puff),
+                    Shades.smoke(c, SOOT, 0));
         }
     }
 

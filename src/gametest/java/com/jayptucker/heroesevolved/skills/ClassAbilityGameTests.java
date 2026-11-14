@@ -47,7 +47,9 @@ public final class ClassAbilityGameTests {
             // The tree itself is untouched: still eighteen nodes (and any signature).
             h.assertTrue(SkillCatalog.nodes(power.getPath()).stream().noneMatch(SkillCatalog.Node::style), power + "'s tree holds no class abilities");
         }
-        h.assertTrue(powers == AbilityRegistry.ABILITIES.size(), "Every registered power must have classes");
+        // Powers still being built get their tree and classes in a later phase.
+        h.assertTrue(powers == AbilityRegistry.ABILITIES.size() - com.jayptucker.heroesevolved.ability.registry.ModAbilities.IN_DEVELOPMENT.size(),
+                "Every registered power must have classes");
         h.succeed();
     }
 

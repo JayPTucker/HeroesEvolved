@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "heroesevolved:block/ability_dampener_top_on",
+    "bottom": "heroesevolved:block/ability_dampener_bottom",
+    "side": "heroesevolved:block/ability_dampener_side_on"
+  }
+}

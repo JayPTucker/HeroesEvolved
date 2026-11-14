@@ -78,6 +78,8 @@ public final class TelepathyService {
             return false;
         }
 
+        // A mind can't wear a disguise: whoever is under a shapeshifter's borrowed shape is heard by name.
+        com.jayptucker.heroesevolved.shapeshift.ShapeshiftSuspicion.read(player, target);
         int glowTicks = 20 * (4 + powerLevel);
         PrivateGlow.glow(player, target, glowTicks);
         if (target instanceof Mob mob && mob.getTarget() != null) {

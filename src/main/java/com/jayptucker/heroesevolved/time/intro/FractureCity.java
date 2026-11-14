@@ -16,10 +16,15 @@ import net.minecraft.world.level.saveddata.SavedData;
  */
 public final class FractureCity extends SavedData {
     public static final int MIN = CityGrid.MIN, WIDTH = CityGrid.WIDTH, STREET_Y = CityGrid.STREET_Y;
-    private static final int VERSION = 3;
+    /** 4: the Odessa Arms and the way down from Primatech's lobby (the Last Day); 5: a stair instead of a ladder. */
+    private static final int VERSION = 5;
     private static final long BUDGET_NANOS = 12_000_000L;
     private static final int CHUNKS = WIDTH / 16, FIRST_CHUNK = MIN >> 4;
     private int unit, version;
+    /** Someone is waiting on the city (a new player's Last Day): build it about three times as fast. */
+    private static boolean rush;
+
+    public void rush(boolean on) { rush = on; }
 
     public static FractureCity get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(new Factory<>(FractureCity::new,
@@ -37,7 +42,8 @@ public final class FractureCity extends SavedData {
     public void tickBuild(ServerLevel level) {
         if (ready()) return;
         long start = System.nanoTime();
-        while (unit < CHUNKS * CHUNKS && System.nanoTime() - start < BUDGET_NANOS) {
+        long budget = rush ? BUDGET_NANOS * 3 : BUDGET_NANOS;
+        while (unit < CHUNKS * CHUNKS && System.nanoTime() - start < budget) {
             int cx = FIRST_CHUNK + unit % CHUNKS, cz = FIRST_CHUNK + unit / CHUNKS;
             rebuild(level, cx << 4, cz << 4, (cx << 4) + 15, (cz << 4) + 15);
             unit++;

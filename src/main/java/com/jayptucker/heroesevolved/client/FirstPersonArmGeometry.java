@@ -60,7 +60,9 @@ public final class FirstPersonArmGeometry {
                     REGEN_INJECT, REGEN_FLING, REGEN_DRAW, REGEN_PUMP, REGEN_HARDEN, REGEN_RISE, REGEN_COMPRESS, REGEN_HEARTBEAT,
                     REGEN_DEFY, REGEN_BLOOM,
                     TELE_READ, TELE_SUGGEST, TELE_LINK, TELE_PUPPET, TELE_NIGHTMARE, TELE_COMMAND, TELE_LISTEN, TELE_WEAVE,
-                    TELE_PERSUADE, TELE_MEMORY, TELE_HIVE, TELE_STORM, TELE_VEIL, TELE_GATHER -> true;
+                    TELE_PERSUADE, TELE_MEMORY, TELE_HIVE, TELE_STORM, TELE_VEIL, TELE_GATHER,
+                    SHIFT_STUDY, SHIFT_SWEEP, SHIFT_TOUCH, SHIFT_LUNGE,
+                    SHIFT_SHED, SHIFT_REFLECT, SHIFT_NIGHTMARE, SHIFT_GUARD, SHIFT_GIFT, SHIFT_SLAM -> true;
             default -> false;
         }) {
             skills(stack, arm, side, pose, time, poseAge);
@@ -98,6 +100,14 @@ public final class FirstPersonArmGeometry {
             default -> false;
         }) {
             fire(stack, side, pose, poseAge);
+            return;
+        }
+        if (switch (pose) {
+            case FIRE_JAB, FIRE_CROSS, FIRE_KICK, FIRE_SWEEP_KICK, FIRE_STEP, FIRE_FLIP -> true;
+            default -> false;
+        }) {
+            var player = net.minecraft.client.Minecraft.getInstance().player;
+            firebend(stack, side, player == null || arm == player.getMainArm(), pose, poseAge);
             return;
         }
         if (pose == ArmPose.KINETIC_GATHER || pose == ArmPose.KINETIC_HOLD || pose == ArmPose.KINETIC_RELEASE) {
@@ -472,6 +482,70 @@ public final class FirstPersonArmGeometry {
                 float reach = smooth(age / 3);
                 if (main) { spread = .26F; height = -.38F; depth = -.3F - .2F * reach; pitch = -95; yaw = 8; roll = -side * 70; }
                 else { spread = .22F; height = -.58F; depth = -.28F; pitch = -55; yaw = 40; }
+            }
+            case SHIFT_STUDY -> {
+                // The hand raised to the temple, at the top edge of the view; the other low at the side.
+                float raise = smooth(age / 4), tap = Mth.sin(age * .9F) * .01F * raise;
+                if (main) { spread = .44F; height = Mth.lerp(raise, -.42F, -.08F) + tap; depth = -.3F; pitch = Mth.lerp(raise, -90, -18); yaw = -12 * raise; }
+                else { spread = .5F; height = -.66F; pitch = -50; yaw = 20; }
+            }
+            case SHIFT_SWEEP -> {
+                // The palm raised in front of the eyes and drawn down across the view.
+                float raise = smooth(age / 3), sweep = smooth((age - 3) / 8);
+                if (main) { spread = Mth.lerp(raise, .4F, .16F); height = Mth.lerp(sweep, Mth.lerp(raise, -.42F, .02F), -.78F); depth = -.34F;
+                    pitch = Mth.lerp(sweep, Mth.lerp(raise, -90, -15), -125); roll = -side * 25 * raise * (1 - sweep); }
+                else { spread = .6F; height = -.7F; pitch = -40; yaw = 15; }
+            }
+            case SHIFT_LUNGE -> {
+                // Thrown straight out toward the crosshair as it lengthens, then drawn back.
+                float out = smooth(age / 2) * (1 - smooth((age - 6) / 3));
+                if (main) { spread = Mth.lerp(out, .42F, .22F); height = Mth.lerp(out, -.5F, -.34F); depth = -.3F - .3F * out;
+                    pitch = Mth.lerp(out, -60, -90); yaw = 4; roll = -side * 20 * out; }
+                else { spread = .62F; height = -.76F; pitch = -40; yaw = 20; }
+            }
+            case SHIFT_TOUCH -> {
+                // The palm pressed forward, flat, against the creature.
+                float reach = smooth(age / 3);
+                if (main) { spread = Mth.lerp(reach, .42F, .26F); height = Mth.lerp(reach, -.52F, -.4F); depth = -.32F - .2F * reach;
+                    pitch = Mth.lerp(reach, -70, -86); yaw = 6; roll = -side * 80 * reach; }
+                else { spread = .62F; height = -.76F; pitch = -40; yaw = 20; }
+            }
+            case SHIFT_SHED -> {
+                // Both hands drop away to the lower corners as the shoulders roll back, then return.
+                float back = smooth(age / 3) * (1 - smooth((age - 7) / 6));
+                spread = .5F + .2F * back; height = -.6F - .25F * back; depth = -.28F + .1F * back;
+                pitch = -50 + 30 * back; yaw = 20 * back;
+            }
+            case SHIFT_REFLECT -> {
+                // The palm raised flat at the edge of the view, fingers up, like a pane held toward the attacker.
+                float raise = smooth(age / 3) * (1 - smooth((age - 12) / 4));
+                if (main) { spread = Mth.lerp(raise, .44F, .3F); height = Mth.lerp(raise, -.56F, -.3F); depth = -.4F;
+                    pitch = Mth.lerp(raise, -60, -12); yaw = -8 * raise; roll = side * 6 * raise; }
+                else { spread = .6F; height = -.7F; pitch = -40; yaw = 20; }
+            }
+            case SHIFT_NIGHTMARE -> {
+                // Both arms flung out to the sides of the view and up.
+                float fling = smooth(age / 4) * (1 - smooth((age - 16) / 6));
+                spread = Mth.lerp(fling, .48F, .78F); height = Mth.lerp(fling, -.56F, -.18F); depth = -.34F;
+                pitch = Mth.lerp(fling, -55, -20); roll = -side * 40 * fling;
+            }
+            case SHIFT_GUARD -> {
+                // Forearms crossed low in front of the view as the plates lock on.
+                float cross = smooth(age / 3) * (1 - smooth((age - 12) / 4));
+                spread = Mth.lerp(cross, .5F, .12F); height = Mth.lerp(cross, -.6F, -.42F); depth = -.34F;
+                pitch = Mth.lerp(cross, -50, -80); yaw = 35 * cross; roll = -side * 30 * cross;
+            }
+            case SHIFT_GIFT -> {
+                // Both palms turned up and out at the lower edges of the view.
+                float open = smooth(age / 4) * (1 - smooth((age - 12) / 4));
+                spread = Mth.lerp(open, .5F, .62F); height = Mth.lerp(open, -.62F, -.5F); depth = -.36F;
+                pitch = Mth.lerp(open, -50, -75); roll = side * 70 * open;
+            }
+            case SHIFT_SLAM -> {
+                // Both fists raised to the top edge, then driven down out of the view.
+                float raise = smooth(age / 3), drive = smooth((age - 3) / 3);
+                spread = .32F; height = Mth.lerp(drive, Mth.lerp(raise, -.6F, -.1F), -.9F); depth = -.34F;
+                pitch = Mth.lerp(drive, Mth.lerp(raise, -50, -10), -120);
             }
             case MIMIC_SHIFT -> {
                 // Drawn in to the chest, then opened out to the side.
@@ -1078,6 +1152,79 @@ public final class FirstPersonArmGeometry {
                 depth = -.27F - tuck * .08F + plunge * .19F;
                 pitch = -74 - tuck * 15 - plunge * 27;
                 yaw = side * (9 + tuck * 18 - plunge * 22);
+            }
+            default -> { }
+        }
+        stack.translate(side * spread, height, depth);
+        stack.mulPose(Axis.YP.rotationDegrees(yaw));
+        stack.mulPose(Axis.XP.rotationDegrees(pitch));
+        stack.mulPose(Axis.ZP.rotationDegrees(roll));
+    }
+
+    /**
+     * Firebending in first person. A punching fist drives in toward the crosshair and back while the other stays
+     * raised at the edge of the view; kicks swing the arms for balance; a sweep plants both hands low; a dodge throws
+     * the arms wide; a backflip flings them up out of sight.
+     */
+    private static void firebend(PoseStack stack, float side, boolean main, ArmPose pose, float age) {
+        float spread = .43F, height = -.4F, depth = -.25F, pitch = -82, yaw = side * 5, roll = side * 4;
+        switch (pose) {
+            case FIRE_JAB, FIRE_CROSS -> {
+                boolean striking = main == (pose == ArmPose.FIRE_CROSS);
+                float punch = smooth(age / 1.5F) * (1 - smooth((age - 4) / 4F));
+                if (striking) {
+                    spread = .4F - .2F * punch;
+                    height = -.42F + .08F * punch;
+                    depth = -.22F - .38F * punch;
+                    pitch = -78 - 10 * punch;
+                    yaw = side * (6 + 12 * punch);
+                } else {
+                    // The guard stays low at the edge of the view, out of the line of fire.
+                    spread = .47F;
+                    height = -.5F;
+                    depth = -.27F;
+                    pitch = -76;
+                    yaw = side * 10;
+                    roll = side * 10;
+                }
+            }
+            case FIRE_KICK -> {
+                float swing = (float) Math.sin(Math.PI * Math.clamp(age / 10F, 0, 1));
+                if (main) {
+                    spread = .5F + .18F * swing;
+                    height = -.45F - .2F * swing;
+                    pitch = -82 + 38 * swing;
+                    yaw = side * (5 - 18 * swing);
+                } else {
+                    spread = .4F - .12F * swing;
+                    height = -.38F + .04F * swing;
+                    depth = -.3F;
+                    yaw = side * (5 + 24 * swing);
+                    roll = side * 10;
+                }
+            }
+            case FIRE_SWEEP_KICK -> {
+                float plant = smooth(age / 2F) * (1 - smooth((age - 10) / 4F));
+                spread = .42F + .06F * plant;
+                height = -.4F - .24F * plant;
+                depth = -.25F - .08F * plant;
+                pitch = -82 - 45 * plant;
+                yaw = side * (5 + 6 * plant);
+            }
+            case FIRE_STEP -> {
+                float wide = smooth(age / 1.5F) * (1 - smooth((age - 5) / 5F));
+                spread = .43F + .25F * wide;
+                height = -.4F - .04F * wide;
+                pitch = -82 + 22 * wide;
+                yaw = side * (5 - 30 * wide);
+                roll = side * (4 + 20 * wide);
+            }
+            case FIRE_FLIP -> {
+                float up = smooth(age / 2.5F) * (1 - smooth((age - 9) / 4F));
+                height = -.4F + .55F * up;
+                spread = .43F + .1F * up;
+                pitch = -82 + 55 * up;
+                roll = side * (4 + 10 * up);
             }
             default -> { }
         }

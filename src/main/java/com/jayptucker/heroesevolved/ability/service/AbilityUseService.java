@@ -100,6 +100,10 @@ public final class AbilityUseService {
                             ? "Your power is still awakening..."
                             : com.jayptucker.heroesevolved.company.SuppressorField.suppresses(player)
                             ? "Your power won't answer. The man in the gray suit is too close."
+                            : com.jayptucker.heroesevolved.dampener.Dampening.struck(player)
+                            ? "A dampener round has smothered your power. It will come back."
+                            : com.jayptucker.heroesevolved.dampener.Dampening.field(player) != null
+                            ? "An ability dampener's field is smothering your power."
                             : "You can't use your power right now."));
             return AbilityUseResult.CANNOT_USE;
         }

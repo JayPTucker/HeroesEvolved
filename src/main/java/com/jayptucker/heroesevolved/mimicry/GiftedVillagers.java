@@ -50,7 +50,7 @@ public final class GiftedVillagers {
         data.putBoolean(ROLLED, true);
         if (villager.getRandom().nextDouble() >= HeroesEvolvedConfig.COMMON.giftedVillagerChance.get()) return;
         List<ResourceLocation> powers = AbilityRegistry.ABILITIES.keySet().stream()
-                .filter(power -> !power.equals(ModAbilities.MIMICRY_ID)).sorted().toList();
+                .filter(power -> !power.equals(ModAbilities.MIMICRY_ID)).filter(ModAbilities::rollable).sorted().toList();
         if (!powers.isEmpty()) data.putString(GIFT, powers.get(villager.getRandom().nextInt(powers.size())).toString());
     }
 

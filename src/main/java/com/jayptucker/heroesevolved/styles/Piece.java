@@ -91,6 +91,11 @@ public enum Piece {
     // The power-themed TaCZ guns: the heat gun's flame, the cold gun's frost streak (scale 0) and burst (scale 1), and a
     // taser's barbs and current (bound to whoever they bit)
     GUN_HEAT(8), GUN_FROST(12), GUN_TASER(16),
+    // The Ability Dampener, drawn by DampenerArt (a slate lattice and rings that close inward, as if a wave were being
+    // cancelled): the projector's field (re-sent; scale is its radius, target.x - origin.x how far it has spun up), the
+    // Nullifier's shot, a round landing (bound to whoever it hit; scale is their height), a dampened body's collar
+    // (re-sent, bound) and the gun drinking from a machine (bound to the player; scale is the rounds it took)
+    DAMPENER_FIELD(12), DAMPENER_SHOT(10), DAMPENER_HIT(16), DAMPENER_MARK(12), DAMPENER_CHARGE(16),
     // Electrokinesis's skills: Arc Lance's straight shot, Circuit Thread crawling block to block, Overcharge climbing
     // the body, Ground Sink's rod (re-sent while it stands) and its discharge, and Arc Lattice's anchors and wires
     // (both re-sent while the lattice stands)
@@ -143,7 +148,32 @@ public enum Piece {
     // Below, Phase Fall (origin the floor, target the landing) and Untouchable's slip (bound)
     DENSITY_PASS(12), DENSITY_PRIMED(60), DENSITY_AMBUSH(12), DENSITY_DOOR(12), DENSITY_HARDEN(12), DENSITY_REBOUND(16),
     DENSITY_PILE(12), DENSITY_SINK_MARK(10), DENSITY_SINKHOLE(12), DENSITY_ENTOMB(20), DENSITY_UPROOT(14), DENSITY_FADE(60),
-    DENSITY_GRASP(14), DENSITY_DROP(14), DENSITY_SLIP(14);
+    DENSITY_GRASP(14), DENSITY_DROP(14), DENSITY_SLIP(14),
+    // A shot caught in a speedster's Wind Arms and blown back (drawn by SpeedArt): origin where it turned, target one
+    // block along its new path; scale 1, or 0.7 for a bullet
+    SPEED_DEFLECT(10),
+    // Firebending, drawn by PyroArt (all bound to the fighter; BLUE_SCALE added for blue fire): a fist of fire from hand to
+    // end (scale 1, or 1 + BLAZING for a Counterflame fireball), a roundhouse's crescent (origin the hip, target the
+    // crescent's far middle), a spinning sweep kick's ring (scale is its radius), a jet step (origin and target the feet
+    // before and after), a backflip's rising arc (origin the hip, target its far middle), and a dodged blow (Counterflame)
+    PYRO_JAB(9), PYRO_KICK(12), PYRO_SWEEP_KICK(14), PYRO_JET_STEP(14), PYRO_FLIP(14), PYRO_COUNTER(12),
+    // Shapeshifting, drawn by ShapeArt (both bound to the creature, shown only to the shapeshifter and to it): plates
+    // tracing a studied creature's outline (origin the studier's eye), and plates rippling out from a touching hand
+    // (origin the touch). The morph itself is drawn live from MorphStatePayload, not as a piece.
+    SHIFT_STUDY(20), SHIFT_TOUCH(14),
+    // Shapeshifting's Instinct (ShapeArt): Lunge's lengthening arm of plates (origin the shoulder, target the reach; scale
+    // 1 on a hit), any other form's move (bound to the shapeshifter; scale is the InstinctMove's ordinal), a zombie's grab
+    // (bound to the held creature), the warden's charge and boom (origin the chest, target the far end), and the
+    // guardian's gaze (bound to its target)
+    SHIFT_LUNGE(10), SHIFT_INSTINCT(16), SHIFT_HOLD(40), SHIFT_SONIC(26), SHIFT_GAZE(22),
+    // Shapeshifting's tricks (ShapeArt): the seam down a decoy's back while it stands (bound to the decoy; scale its
+    // height) and its burst (scale 1 when struck), Reflection's mirror between you and your attacker (bound to you;
+    // origin your chest, target theirs), Nightmare's flare (sent to each viewer alone, bound to the shapeshifter; scale 2
+    // for a foe, who sees a warden in your place, 1 for anyone else), a disguise bursting off (bound to the wearer;
+    // scale its width), and the plates circling a confused creature's head (bound to it; scale its length in ticks)
+    SHIFT_DECOY(240), SHIFT_DECOY_BURST(22), SHIFT_REFLECT(20), SHIFT_NIGHTMARE(36), SHIFT_EXPOSED(24), SHIFT_DAZE(40),
+    // Plate Mail: plates locked flat over the body, re-sent every ten ticks while it lasts (bound to the wearer; scale its width)
+    SHIFT_PLATES(12);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;
