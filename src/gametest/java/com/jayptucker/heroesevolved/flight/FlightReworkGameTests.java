@@ -90,12 +90,18 @@ public final class FlightReworkGameTests {
         return target;
     }
 
+    /**
+     * Real airspeed without going anywhere: Momentum counts the distance moved each tick, so the flier shuttles 1.5
+     * blocks back and forth over the arena. (It used to fly 1.5 blocks a tick straight out, 270 blocks for the
+     * momentum test, and a Skyburst there failed whenever that far chunk wasn't loaded: the swept move refuses cells in
+     * unloaded chunks.)
+     */
     private static void flyFast(ServerPlayer p, int ticks) {
         FlightService.setForwardInput(p, true);
         for (int i = 0; i < 4; i++) FlightService.changeSpeed(p, 1);
         for (int i = 0; i < ticks; i++) {
             p.setDeltaMovement(new Vec3(0, 0, 1.5));
-            p.setPos(p.position().add(0, 0, 1.5));
+            p.setPos(p.position().add(0, 0, i % 2 == 0 ? 1.5 : -1.5));
             FlightDynamicsService.tick(p);
         }
     }
