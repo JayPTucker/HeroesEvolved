@@ -14,6 +14,7 @@ allprojects {
                         gameDirectory = project.file('build/fighting-preview')
                         programArguments.addAll('--width', '1100', '--height', '800')
                         systemProperty('heroes.preview.fighting', 'true')
+                        if (project.hasProperty('input')) systemProperty('heroes.preview.fighting.input', 'true')
                         if (project.hasProperty('only')) systemProperty('heroes.preview.fighting.only', project.property('only'))
                     }
                 }

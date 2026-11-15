@@ -401,7 +401,10 @@ player sees is in [docs/fighting-styles.md](docs/fighting-styles.md).
 - **Don't change a set while you walk it.** `PrologueService.holdWaiting` removed players from `WAITING` while
   iterating it and crashed the server when a preview player joined the Last Day; it now walks `List.copyOf(WAITING)`.
 - **Photographs:** `tools/fighting-preview.init.gradle` (flag `heroes.preview.fighting`; `-Ponly=telekinesis,quake` to
-  shoot some) runs every style through the same scene into `build/fighting-preview/screenshots/`. Each preview driver
+  shoot some) runs every style through the same scene into `build/fighting-preview/screenshots/`. Add `-Pinput` for the
+  input check: it presses the real attack key three times at a pillager and double-taps right and back for all ten
+  styles, and prints `INPUT <power> ... PASS/FAIL` and `INPUT_RESULT`. Game tests call `strike`/`dodge` directly, so only
+  this catches a broken click or double-tap on the client. Each preview driver
   needs its own flag: `heroes.preview.styles` already belonged to `uitest/StylePreview`, and two drivers on one flag
   started two worlds and photographed the dark. The preview's actors have no AI, so shoves don't move them; check
   knockback in game tests.

@@ -207,6 +207,7 @@ public final class HydroPreview {
         if (age % 20 == 0) com.jayptucker.heroesevolved.network.ClientScreenTintState.clear();
 
         if (hydro()) hydroScript(mc, age - 40);
+        else if (styles() && input()) inputScript(mc, age - 40);
         else if (styles()) stylesScript(mc, age - 40);
         else lightningScript(mc, age - 40);
     }
@@ -427,6 +428,97 @@ public final class HydroPreview {
      * Every style through the same scene, from the side: lead, rear, finisher; the low move from behind; a side dodge,
      * the back dodge and the counter (a blow taken during a dodge, or for the brawler, during a brace) and its strike.
      */
+    // ------------------------------------------------------------------
+    // Real input for every style (flag heroes.preview.fighting.input)
+    // ------------------------------------------------------------------
+
+    private static ResourceLocation[] INPUT_POWERS = {ModAbilities.PYROKINESIS_ID, ModAbilities.ELECTROKINESIS_ID,
+            ModAbilities.HYDROKINESIS_ID, ModAbilities.SUPERSPEED_ID, ModAbilities.QUAKE_ID, ModAbilities.CRYOKINESIS_ID,
+            ModAbilities.PHASING_ID, ModAbilities.REGENERATION_ID, ModAbilities.INVISIBILITY_ID, ModAbilities.TELEKINESIS_ID};
+    static {
+        String only = System.getProperty("heroes.preview.fighting.only", "");
+        if (!only.isBlank()) INPUT_POWERS = java.util.Arrays.stream(INPUT_POWERS)
+                .filter(id -> java.util.List.of(only.split(",")).contains(id.getPath())).toArray(ResourceLocation[]::new);
+    }
+    private static final int INPUT_SCENE = 90;
+    private static float inputHealth;
+    private static Vec3 inputFrom = Vec3.ZERO;
+    private static int inputFailures;
+
+    /** Claire doesn't dodge: a double-tap is a brace, and she stays where she is. */
+    private static boolean braces(ServerPlayer p, ResourceLocation power) {
+        return power.equals(ModAbilities.REGENERATION_ID) && com.jayptucker.heroesevolved.combat.StyleMotion.bracing(p);
+    }
+
+    private static boolean input() { return Boolean.getBoolean("heroes.preview.fighting.input"); }
+
+    /** Presses the real keys, as a player would: three clicks at a pillager, then a double-tapped right and back. */
+    private static void inputScript(Minecraft mc, int age) {
+        if (age < 130) return;
+        int scene = (age - 130) / INPUT_SCENE, t = (age - 130) % INPUT_SCENE;
+        if (scene >= INPUT_POWERS.length) {
+            if (scene == INPUT_POWERS.length && t == 0) {
+                log("INPUT_RESULT " + (inputFailures == 0 ? "ALL PASS" : inputFailures + " FAILED"));
+                PreviewQuiet.quit();
+            }
+            return;
+        }
+        ResourceLocation power = INPUT_POWERS[scene];
+        String name = power.getPath();
+        var attack = mc.options.keyAttack;
+        switch (t) {
+            case 0 -> server(mc, p -> {
+                p.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty().assignDormant(power).unlock(power));
+                p.setData(ModDataAttachments.POWER_INTRO_HISTORY, p.getData(ModDataAttachments.POWER_INTRO_HISTORY).with(power));
+                PlayerProgressionService.setLevel(p, 5);
+                com.jayptucker.heroesevolved.network.PlayerPowerSyncService.sync(p);
+                reset(p, 200 + scene * 20, 0);
+                Mob target = actor(p, 0, 3);
+                target.setHealth(target.getMaxHealth());
+                look(p);
+            });
+            case 12 -> server(mc, p -> inputHealth = ACTORS.getFirst().getHealth());
+            case 14, 22, 30 -> {
+                log(name + " click: crosshair " + (mc.hitResult == null ? "none" : mc.hitResult.getType()));
+                net.minecraft.client.KeyMapping.click(attack.getKey());
+            }
+            case 44 -> server(mc, p -> {
+                float health = ACTORS.getFirst().getHealth();
+                boolean ok = health < inputHealth;
+                if (!ok) inputFailures++;
+                log("INPUT " + name + " strikes " + (ok ? "PASS" : "FAIL") + " (" + inputHealth + " -> " + health + ")");
+                p.teleportTo(world(p), anchor.x, anchor.y, anchor.z, 0, 0);
+                p.setDeltaMovement(Vec3.ZERO);
+                ACTORS.forEach(Mob::discard);
+                ACTORS.clear();
+            });
+            case 50 -> server(mc, p -> inputFrom = p.position());
+            case 52, 55 -> mc.options.keyRight.setDown(true);
+            case 53, 56 -> mc.options.keyRight.setDown(false);
+            case 64 -> server(mc, p -> {
+                double moved = p.position().x - inputFrom.x;
+                // Facing south (yaw 0), right is west: x goes down.
+                boolean ok = braces(p, power) || moved < -1.5;
+                if (!ok) inputFailures++;
+                log("INPUT " + name + " dodge right " + (ok ? "PASS" : "FAIL") + " (moved x " + String.format("%.2f", moved) + ")");
+                p.teleportTo(world(p), anchor.x, anchor.y, anchor.z, 0, 0);
+                p.setDeltaMovement(Vec3.ZERO);
+                FightingStyles.forget(p);
+                PlayerEnergyService.restore(p, 999);
+            });
+            case 68 -> server(mc, p -> inputFrom = p.position());
+            case 70, 73 -> mc.options.keyDown.setDown(true);
+            case 71, 74 -> mc.options.keyDown.setDown(false);
+            case 86 -> server(mc, p -> {
+                double moved = p.position().z - inputFrom.z;
+                boolean ok = braces(p, power) || moved < -1.5;
+                if (!ok) inputFailures++;
+                log("INPUT " + name + " dodge back " + (ok ? "PASS" : "FAIL") + " (moved z " + String.format("%.2f", moved) + ")");
+            });
+            default -> { }
+        }
+    }
+
     private static void stylesScript(Minecraft mc, int age) {
         if (age < 130) return;
         int scene = (age - 130) / STYLE_SCENE, t = (age - 130) % STYLE_SCENE;

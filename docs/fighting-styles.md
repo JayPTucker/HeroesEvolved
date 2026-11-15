@@ -119,4 +119,5 @@ A telekinetic never lays a hand on anyone.
   `combat/StyleHits` has the shared aiming, hurting and shoving. See AGENTS.md, "Reusable patterns from the shared
   fighting styles".
 - Tests: `combat/FightingStylesGameTests`. Photographs: `tools/fighting-preview.init.gradle` (flag
-  `heroes.preview.fighting`) shoots every style into `build/fighting-preview/screenshots/`.
+  `heroes.preview.fighting`) shoots every style into `build/fighting-preview/screenshots/`. With `-Pinput` it instead presses the real keys for all ten
+  styles (three clicks, a double-tapped right and back) and prints a PASS or FAIL for each.
