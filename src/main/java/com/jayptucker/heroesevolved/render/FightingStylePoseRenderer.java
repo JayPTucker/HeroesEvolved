@@ -131,6 +131,61 @@ public final class FightingStylePoseRenderer {
             }
             case WATER_LEAP -> pitch = 16 * Mth.sin(Mth.PI * Mth.clamp(age / 14F, 0, 1));
             case WATER_CALL -> pitch = -5 * smooth(age / 5F);
+            // The shared styles: the shoulders turn into every blow, the haymaker and hook twist the hips, the hammer and
+            // headbutt pitch forward into the target, the slide drops onto a hip leaning back, the spin turns once, the
+            // tackle drives the shoulder down, and a side step leans along its line.
+            case STYLE_JAB, STYLE_CROSS -> {
+                float punch = smooth(age / 1.4F) * (1 - smooth((age - 4) / 4F));
+                twist = (pose == ArmPose.STYLE_CROSS ? 12 : -9) * handed * punch;
+            }
+            case STYLE_FLURRY -> twist = 7 * handed * Mth.sin(age * 3.1F) * (1 - smooth((age - 7) / 3F));
+            case STYLE_HOOK -> twist = -22 * handed * smooth(age / 1.8F) * (1 - smooth((age - 6) / 4F));
+            case STYLE_HAYMAKER -> {
+                float wind = smooth(age / 2F), swing = smooth((age - 2) / 2F), recover = smooth((age - 7) / 4F);
+                twist = handed * (-18 * wind * (1 - swing) + 32 * swing * (1 - recover));
+            }
+            case STYLE_UPPERCUT -> {
+                float rise = smooth((age - 1.5F) / 2F) * (1 - smooth((age - 7) / 4F));
+                pitch = -10 * rise;
+                drop = .1F * smooth(age / 1.5F) * (1 - smooth((age - 1.5F) / 1.5F));
+            }
+            case STYLE_HAMMER -> pitch = 20 * smooth((age - 3) / 2F) * (1 - smooth((age - 8) / 4F)) - 6 * smooth(age / 2.5F) * (1 - smooth((age - 3) / 2F));
+            case STYLE_DOUBLE_PALM -> pitch = 9 * smooth((age - 1.5F) / 1.5F) * (1 - smooth((age - 7) / 4F));
+            case STYLE_GROUND -> {
+                float down = smooth(age / 2F) * (1 - smooth((age - 10) / 4F));
+                drop = .34F * down;
+                pitch = 24 * down;
+            }
+            case STYLE_SLIDE -> {
+                float on = smooth(age / 1.5F) * (1 - smooth((age - 8) / 4F));
+                drop = .5F * on;
+                pitch = -22 * on;
+            }
+            case STYLE_SIDESTEP -> {
+                Vec3 travel = FlightVisualGeometry.travel(player);
+                double yaw = Math.toRadians(body);
+                double sideways = travel.x * -Math.cos(yaw) + travel.z * -Math.sin(yaw);
+                roll = (float) Math.clamp(sideways * 14, -16, 16) * (1 - smooth((age - 3) / 5F));
+            }
+            case STYLE_BACKSTEP -> pitch = -12 * smooth(age / 1.2F) * (1 - smooth((age - 5) / 5F));
+            case STYLE_SPIN -> {
+                float spin = Mth.clamp(age / 9F, 0, 1);
+                twist = 360 * handed * (1 - (1 - spin) * (1 - spin));
+            }
+            case STYLE_HEADBUTT -> {
+                float back = smooth(age / 1.5F) * (1 - smooth((age - 1.5F) / 1F)), drive = smooth((age - 2) / 1.2F) * (1 - smooth((age - 6) / 5F));
+                pitch = -10 * back + 30 * drive;
+            }
+            case STYLE_TACKLE -> {
+                float on = smooth(age / 1.5F) * (1 - smooth((age - 8) / 4F));
+                pitch = 26 * on;
+                twist = -25 * handed * on;
+                drop = .1F * on;
+            }
+            case STYLE_BRACE -> drop = .1F * smooth(age / 1.5F);
+            case STYLE_SWAT, STYLE_SWAT_OFF -> twist = (pose == ArmPose.STYLE_SWAT ? 10 : -10) * handed
+                    * smooth(age / 1.2F) * (1 - smooth((age - 5) / 3F));
+            case STYLE_LIFT -> pitch = -7 * smooth(age / 3F) * (1 - smooth((age - 9) / 2F));
             default -> { return; }
         }
         if (twist == 0 && pitch == 0 && roll == 0 && drop == 0) return;

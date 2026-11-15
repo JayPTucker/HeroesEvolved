@@ -68,6 +68,7 @@ public final class HydroPreview {
 
     private static boolean hydro() { return Boolean.getBoolean("heroes.preview.hydro"); }
     private static boolean lightning() { return Boolean.getBoolean("heroes.preview.lightning"); }
+    private static boolean styles() { return Boolean.getBoolean("heroes.preview.fighting"); }
 
     private static void server(Minecraft mc, Consumer<ServerPlayer> action) {
         var id = mc.player.getUUID();
@@ -163,7 +164,7 @@ public final class HydroPreview {
     }
 
     @SubscribeEvent public static void tick(ClientTickEvent.Post event) {
-        if (!hydro() && !lightning()) return;
+        if (!hydro() && !lightning() && !styles()) return;
         var mc = Minecraft.getInstance();
         if (!started && ++startup >= 35 && mc.screen != null && mc.getOverlay() == null) {
             started = true;
@@ -189,7 +190,7 @@ public final class HydroPreview {
         if (age == 110) {
             mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
             com.jayptucker.heroesevolved.network.ClientScreenTintState.clear();
-            ResourceLocation power = hydro() ? ModAbilities.HYDROKINESIS_ID : ModAbilities.ELECTROKINESIS_ID;
+            ResourceLocation power = hydro() ? ModAbilities.HYDROKINESIS_ID : styles() ? STYLE_POWERS[0] : ModAbilities.ELECTROKINESIS_ID;
             server(mc, p -> {
                 CryoChamberService.release(p);
                 p.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty().assignDormant(power).unlock(power));
@@ -206,6 +207,7 @@ public final class HydroPreview {
         if (age % 20 == 0) com.jayptucker.heroesevolved.network.ClientScreenTintState.clear();
 
         if (hydro()) hydroScript(mc, age - 40);
+        else if (styles()) stylesScript(mc, age - 40);
         else lightningScript(mc, age - 40);
     }
 
@@ -403,6 +405,88 @@ public final class HydroPreview {
         }
     }
 
+    // ------------------------------------------------------------------
+    // The shared-engine fighting styles (flag heroes.preview.fighting)
+    // ------------------------------------------------------------------
+
+    /** Every style, or only those named in heroes.preview.fighting.only (comma-separated power paths). */
+    private static final ResourceLocation[] STYLE_POWERS = java.util.stream.Stream.of(ModAbilities.SUPERSPEED_ID,
+            ModAbilities.QUAKE_ID, ModAbilities.CRYOKINESIS_ID, ModAbilities.PHASING_ID, ModAbilities.REGENERATION_ID,
+            ModAbilities.INVISIBILITY_ID, ModAbilities.TELEKINESIS_ID)
+            .filter(id -> System.getProperty("heroes.preview.fighting.only", "").isBlank()
+                    || java.util.List.of(System.getProperty("heroes.preview.fighting.only").split(",")).contains(id.getPath()))
+            .toArray(ResourceLocation[]::new);
+    /** How long each style's scene runs. */
+    private static final int STYLE_SCENE = 130;
+
+    private static com.jayptucker.heroesevolved.combat.ComboStyle style(ServerPlayer p) {
+        return (com.jayptucker.heroesevolved.combat.ComboStyle) FightingStyles.of(p);
+    }
+
+    /**
+     * Every style through the same scene, from the side: lead, rear, finisher; the low move from behind; a side dodge,
+     * the back dodge and the counter (a blow taken during a dodge, or for the brawler, during a brace) and its strike.
+     */
+    private static void stylesScript(Minecraft mc, int age) {
+        if (age < 130) return;
+        int scene = (age - 130) / STYLE_SCENE, t = (age - 130) % STYLE_SCENE;
+        if (scene >= STYLE_POWERS.length) {
+            if (scene == STYLE_POWERS.length && t == 0) PreviewQuiet.quit();
+            return;
+        }
+        ResourceLocation power = STYLE_POWERS[scene];
+        String name = power.getPath();
+        switch (t) {
+            case 0 -> {
+                mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+                server(mc, p -> {
+                    p.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty().assignDormant(power).unlock(power));
+                    p.setData(ModDataAttachments.POWER_INTRO_HISTORY, p.getData(ModDataAttachments.POWER_INTRO_HISTORY).with(power));
+                    PlayerProgressionService.setLevel(p, 5);
+                    reset(p, 200 + scene * 20, 0);
+                    actor(p, 0, 3.6);
+                    look(p);
+                });
+                side(4.5, 1.7, 1.6, 0, 1.2, 1.8);
+            }
+            case 12 -> server(mc, p -> log(name + " lead " + style(p).strike(p)));
+            case 13 -> capture = name + "-01-lead.png";
+            case 15 -> capture = name + "-02-lead-late.png";
+            case 19 -> server(mc, p -> log(name + " rear " + style(p).strike(p)));
+            case 20 -> capture = name + "-03-rear.png";
+            case 26 -> server(mc, p -> { look(p); log(name + " finisher " + style(p).next(p) + " " + style(p).strike(p)); });
+            case 28 -> capture = name + "-04-finisher.png";
+            case 32 -> capture = name + "-05-finisher-late.png";
+            // The low move, from behind, with foes all round
+            case 45 -> server(mc, p -> { reset(p, 200 + scene * 20, 25); actor(p, 2.4, .5); actor(p, -2.4, 1.2); actor(p, .4, 3); });
+            case 50 -> mc.options.keyShift.setDown(true);
+            case 56 -> server(mc, p -> log(name + " low " + style(p).next(p) + " " + style(p).strike(p)));
+            case 58 -> capture = name + "-06-low.png";
+            case 62 -> capture = name + "-07-low-late.png";
+            case 66 -> mc.options.keyShift.setDown(false);
+            // Dodges, from the side
+            case 75 -> { server(mc, p -> { reset(p, 200 + scene * 20, 0); actor(p, 1.5, 5); }); side(-.5, 2.2, 9, 0, 1, 0); }
+            case 82 -> server(mc, p -> log(name + " dodge " + style(p).dodge(p, FightingStyles.Dodge.RIGHT)));
+            case 84 -> capture = name + "-08-dodge.png";
+            case 102 -> server(mc, p -> log(name + " back " + style(p).dodge(p, FightingStyles.Dodge.BACK)));
+            case 105 -> capture = name + "-09-back.png";
+            case 108 -> capture = name + "-10-back-late.png";
+            // The counter and its strike
+            case 113 -> server(mc, p -> { reset(p, 200 + scene * 20, 0); actor(p, 0, 3.4); look(p); });
+            case 116 -> server(mc, p -> {
+                boolean dodged = style(p).dodge(p, FightingStyles.Dodge.LEFT);
+                p.invulnerableTime = 0;
+                p.hurt(p.damageSources().mobAttack(ACTORS.getFirst()), 4);
+                log(name + " counter " + dodged + " loaded " + style(p).loaded(p));
+            });
+            case 118 -> capture = name + "-11-counter.png";
+            case 121 -> server(mc, p -> { look(p); log(name + " loaded strike " + style(p).strike(p)); });
+            case 123 -> capture = name + "-12-loaded.png";
+            case 126 -> capture = name + "-13-loaded-late.png";
+            default -> { }
+        }
+    }
+
     /** Uses a learned tree node's action, as the ability wheel would. */
     private static boolean useNode(ServerPlayer p, String id) {
         var node = SkillCatalog.nodes("hydrokinesis").stream().filter(n -> n.id().equals(id)).findFirst().orElseThrow();
@@ -510,7 +594,7 @@ public final class HydroPreview {
     }
 
     @SubscribeEvent public static void hud(RenderGuiEvent.Pre event) {
-        if (age >= 100 && (hydro() || lightning())) event.setCanceled(true);
+        if (age >= 100 && (hydro() || lightning() || styles())) event.setCanceled(true);
     }
 
     @SubscribeEvent public static void frame(RenderFrameEvent.Post event) {

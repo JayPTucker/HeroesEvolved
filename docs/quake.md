@@ -63,6 +63,10 @@ Quake Blast beam and the Vibration Shell all do this:
   crystals. The blast is credited to whoever fired it. A creeper's fuse is lit.
 - **Other shots** (arrows, tridents, snowballs) are turned back the way the wave pushes and become yours.
 
+## Fighting style: Pressure Palm
+
+With an empty hand you fight in the Pressure Palm style on the shared fighting-style controls (see [fighting-styles.md](fighting-styles.md#pressure-palm-quake)): open palms that drive pressure rings (harder with Strain), a Double Palm shove, a Ground Punch that cracks a small fault, an air kick-off and a recoil leap, and Rebound, which sends an evaded blow straight back. A palm on someone frozen solid shatters them for double.
+
 ## Skill tree
 
 The tree is built around the kit rather than stat bonuses: every node changes a move or ties two together.

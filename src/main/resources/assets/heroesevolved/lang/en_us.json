@@ -1386,5 +1386,19 @@
   "action.heroesevolved.hydro_tidal_dome": "Tidal Dome",
   "action.heroesevolved.hydro_tidal_dome.desc": "Raise a dome of water over you for six seconds. It swallows shots from outside; friends inside gain Resistance and enemies inside are slowed and Soaked.",
   "action.heroesevolved.hydro_healing_spring": "Healing Spring",
-  "action.heroesevolved.hydro_healing_spring.desc": "A spring wells up at your feet for eight seconds; friends standing in it heal and lose their fire, poison and wither."
+  "action.heroesevolved.hydro_healing_spring.desc": "A spring wells up at your feet for eight seconds; friends standing in it heal and lose their fire, poison and wither.",
+  "speed.heroesevolved.too_tired": "Too tired to keep up the pace.",
+  "speed.heroesevolved.too_slow": "Too Slow: your next strike is a barrage!",
+  "quake.heroesevolved.too_tired": "Too tired to push the air.",
+  "quake.heroesevolved.rebound": "Rebound: their blow goes straight back!",
+  "cryo.heroesevolved.too_tired": "Too tired to keep the ice.",
+  "cryo.heroesevolved.cold_snap": "Cold Snap: they freeze solid. Your next jab shatters them!",
+  "density.heroesevolved.too_tired": "Too tired to hold your density.",
+  "density.heroesevolved.reach_through": "Reach Through: your next jab reaches them through anything!",
+  "regen.heroesevolved.too_tired": "Too tired to swing.",
+  "regen.heroesevolved.payback": "Payback: your next swing gives it all back!",
+  "force.heroesevolved.too_tired": "Too tired to hold a lens.",
+  "force.heroesevolved.pressure": "Pressure stored: your next jab lets it go as shards!",
+  "telekinesis.heroesevolved.too_tired": "Too tired to reach out.",
+  "telekinesis.heroesevolved.grip": "Grip: they hang helpless. Your next swat throws them!"
 }

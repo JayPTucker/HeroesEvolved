@@ -32,6 +32,10 @@ These are the default keys; learned active skills can replace them as usual.
 - **Fade, then strike.** Force moves are attacks: casting one while faded flickers you visible (unless you
   learn Unseen Force).
 
+## Fighting style: Force Palm
+
+With an empty hand you fight in the Force Palm style on the shared fighting-style controls (see [fighting-styles.md](fighting-styles.md#force-palm-invisibility)): jabs through a knuckle lens, a Force Burst fan, a Field Slam dome, a Shield Slide behind a pane, a trampoline Bounce, and stored Pressure released as shards. While you are invisible, the lens is all an enemy sees of the blow.
+
 ## Exposure and counterplay
 
 Fade keeps the Exposure system. Movement adds Exposure, sprinting much more than walking, and less as you

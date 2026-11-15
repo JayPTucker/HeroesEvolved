@@ -39,6 +39,10 @@ barriers and protected ground (spawn protection, and other places you may not to
 **Evolved trial:** travel 2,000 blocks through solid matter, by walking through walls and by moving
 underground.
 
+## Fighting style: Ghost Fist
+
+With an empty hand you fight in the Ghost Fist style on the shared fighting-style controls (see [fighting-styles.md](fighting-styles.md#ghost-fist-density)): armour-ignoring jabs that grow denser through a combo, a Stone Hammer that pins, soft ground that sinks foes to the shins, the longest-lasting dodge of any style (Phase Slip), sinking through the floor to surface away, and Reach Through, a jab across nine blocks and through walls.
+
 ## Skill tree
 
 Every node changes a move or ties two of them together; none is a plain stat bonus. Node ids are unchanged from the

@@ -74,8 +74,8 @@ public final class ElectroCombat {
     private static final List<Decoy> DECOYS = new ArrayList<>();
 
     public static final FightingStyles.Style STYLE = new FightingStyles.Style() {
-        @Override public boolean owns(ServerPlayer player) {
-            return ElectroEvents.hasAwakenedElectrokinesis(player) && !com.jayptucker.heroesevolved.events.EclipseService.arePowersSuppressed(player);
+        @Override public net.minecraft.resources.ResourceLocation power() {
+            return com.jayptucker.heroesevolved.ability.registry.ModAbilities.ELECTROKINESIS_ID;
         }
         @Override public int strike(ServerPlayer player) { return ElectroCombat.strike(player); }
         @Override public boolean dodge(ServerPlayer player, Dodge dodge) { return ElectroCombat.dodge(player, dodge); }
@@ -97,7 +97,7 @@ public final class ElectroCombat {
 
     /** The style needs the power, and arms not already busy with a stream, a surge or a Blackout's wind-up. */
     static boolean canFight(ServerPlayer player) {
-        return player.isAlive() && !player.isSpectator() && STYLE.owns(player) && PowerRules.canAct(player)
+        return player.isAlive() && !player.isSpectator() && FightingStyles.fights(player, STYLE) && PowerRules.canAct(player)
                 && ElectroService.canStartCast(player);
     }
 

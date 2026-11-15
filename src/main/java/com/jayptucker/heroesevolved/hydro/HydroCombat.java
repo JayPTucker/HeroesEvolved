@@ -66,7 +66,9 @@ public final class HydroCombat {
     private static final Map<UUID, Fighter> FIGHTERS = new HashMap<>();
 
     public static final FightingStyles.Style STYLE = new FightingStyles.Style() {
-        @Override public boolean owns(ServerPlayer player) { return HydroService.isHydrokinetic(player); }
+        @Override public net.minecraft.resources.ResourceLocation power() {
+            return com.jayptucker.heroesevolved.ability.registry.ModAbilities.HYDROKINESIS_ID;
+        }
         @Override public int strike(ServerPlayer player) { return HydroCombat.strike(player); }
         @Override public boolean dodge(ServerPlayer player, Dodge dodge) { return HydroCombat.dodge(player, dodge); }
         @Override public void counter(ServerPlayer player, DamageSource source) { turnTheTide(player, source); }
@@ -86,7 +88,7 @@ public final class HydroCombat {
     }
 
     static boolean canFight(ServerPlayer player) {
-        return player.isAlive() && !player.isSpectator() && HydroService.isHydrokinetic(player) && PowerRules.canAct(player)
+        return player.isAlive() && !player.isSpectator() && FightingStyles.fights(player, STYLE) && PowerRules.canAct(player)
                 && !HydroService.riding(player) && !HydroService.storming(player) && !HydroSkills.jetting(player);
     }
 

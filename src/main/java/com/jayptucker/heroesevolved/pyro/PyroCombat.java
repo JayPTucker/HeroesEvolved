@@ -65,7 +65,9 @@ public final class PyroCombat {
 
     /** Firebending, as the shared fighting-style input sees it. */
     public static final FightingStyles.Style STYLE = new FightingStyles.Style() {
-        @Override public boolean owns(ServerPlayer player) { return PyroService.isPyrokinetic(player); }
+        @Override public net.minecraft.resources.ResourceLocation power() {
+            return com.jayptucker.heroesevolved.ability.registry.ModAbilities.PYROKINESIS_ID;
+        }
         @Override public int strike(ServerPlayer player) { return PyroCombat.strike(player); }
         @Override public boolean dodge(ServerPlayer player, Dodge dodge) { return PyroCombat.dodge(player, dodge); }
         @Override public void counter(ServerPlayer player, net.minecraft.world.damagesource.DamageSource source) { counterflame(player); }
@@ -86,7 +88,7 @@ public final class PyroCombat {
 
     /** Bending needs the power in hand, dry hands, and no held cast or dive already using the body. */
     static boolean canFight(ServerPlayer player) {
-        return player.isAlive() && !player.isSpectator() && PyroService.isPyrokinetic(player) && PowerRules.canAct(player)
+        return player.isAlive() && !player.isSpectator() && FightingStyles.fights(player, STYLE) && PowerRules.canAct(player)
                 && !player.isInWaterOrBubble() && !PyroFlightService.isDiving(player) && !PyroService.isChanneling(player)
                 && !PyroService.isChargingSpear(player) && !PyroService.isCharging(player);
     }

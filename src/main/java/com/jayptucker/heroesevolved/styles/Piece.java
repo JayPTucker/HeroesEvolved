@@ -201,7 +201,15 @@ public enum Piece {
     // re-sent; scale its radius), a Tidal Dome and a Healing Spring (re-sent; scale the radius), and the awakening (bound;
     // target the ward)
     HYDRO_GEYSER_MARK(16), HYDRO_GEYSER(24), HYDRO_JET(4), HYDRO_WALL(12), HYDRO_HEAL(20), HYDRO_RAIN(12), HYDRO_DOME(12),
-    HYDRO_SPRING(12), HYDRO_AWAKEN(30);
+    HYDRO_SPRING(12), HYDRO_AWAKEN(30),
+    // Fighting styles, drawn by StyleArt. Force Palm (in the force fields' lenses and panes, bound to the fighter): a jab
+    // through a lens on the knuckles (origin the fist, target the end; scale 1 on a hit, .6 a miss), one shard of a
+    // released Pressure (origin the fist), a Force Burst's fan of lenses (origin the chest, target its far middle; scale
+    // its reach), a Field Slam's dome (scale its radius), a Shield Slide's pane (origin and target the feet before and
+    // after) and a Bounce's trampoline pane (origin the feet, target a block back). Ice Skater: a skate's ice strip,
+    // lingering (origin and target its ends).
+    STYLE_LENS_JAB(9), STYLE_SHARDS(10), STYLE_FORCE_BURST(14), STYLE_FIELD_SLAM(16), STYLE_LENS_SLIDE(12), STYLE_BOUNCE(14),
+    STYLE_ICE_STRIP(60), STYLE_TK_PALM(11), STYLE_TK_GRASP(36);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

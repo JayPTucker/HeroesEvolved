@@ -847,12 +847,15 @@ public final class PrologueService {
     private static void holdWaiting(MinecraftServer server, FractureCity cityData) {
         if (WAITING.isEmpty()) return;
         long time = server.overworld().getGameTime();
-        WAITING.removeIf(id -> {
+        // Walk a copy: adding a player to the run teleports them into the city, and the dimension change that causes
+        // removes them from WAITING too, which crashed the server mid-loop when it walked the set itself.
+        for (UUID id : List.copyOf(WAITING)) {
             ServerPlayer player = server.getPlayerList().getPlayer(id);
-            if (player == null) return true;
+            if (player == null) { WAITING.remove(id); continue; }
             if (run != null && open(run)) {
+                WAITING.remove(id);
                 add(player, run);
-                return true;
+                continue;
             }
             player.setDeltaMovement(Vec3.ZERO);
             player.fallDistance = 0;
@@ -864,8 +867,7 @@ public final class PrologueService {
                 if (!news.equals(NOTICE.put(id, news)))
                     player.sendSystemMessage(Component.translatable("prologue.heroesevolved." + news).withStyle(ChatFormatting.GRAY));
             }
-            return false;
-        });
+        }
     }
 
     // ------------------------------------------------------------------

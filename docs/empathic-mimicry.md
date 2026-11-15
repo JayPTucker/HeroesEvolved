@@ -32,6 +32,10 @@ Level 15 mimic has all of it.
 - A held or sustained copy (a borrowed flight, a Fade, a fire channel) ends cleanly when you switch sets, change
   dimension, log out or lose the power.
 
+## Fighting styles
+
+With an empty hand, Peter fights in the style of the power he is channelling (near or kept): firebending, the lightning style, waterbending or any of the seven in [fighting-styles.md](fighting-styles.md).
+
 ## The memory wheel
 
 **Hold B** (rebind under Heroes Evolved in Controls) to open the memory wheel. Your near set sits at the top,

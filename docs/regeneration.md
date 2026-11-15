@@ -74,6 +74,10 @@ Every action has its own arm pose in third and first person, and three of them h
 | X | 4 | Blood Bond | For ten seconds, friends within 8 blocks heal with you each second and the undead burn, and you take **35% of every wound your friends suffer**. **Press again** for **Pay It Back**: the bond ends, and everyone still in it heals by the wounds you took (plus 2 per level, up to 20 between them), and you gain twice what you took as Regrowth. *Pose:* arms opened to draw them in; hands pulled to the chest, then thrown open. | unchanged |
 | V | 5 | Second Life | Aim at a friend within 12 blocks: your blood heals them to full, and for one minute their next killing blow leaves them standing at 2 hearts with Regeneration III. Costs 50 Regrowth, 6 of your health and 40 stamina; 90-second cooldown. With no friend in sight, the key tells you how long you'd be down if killed. *Pose:* a hand pressed into them, the other on your own elbow. | 40 / 90 s |
 
+## Fighting style: Reckless Brawler
+
+With an empty hand you fight in the Reckless Brawler style on the shared fighting-style controls (see [fighting-styles.md](fighting-styles.md#reckless-brawler-regeneration)): hooks and haymakers that cost Claire a little health and hit harder the more hurt she is, a dizzying headbutt and a tackle. She doesn't dodge: a double-tap is a Brace that halves every blow for a moment and loads Payback, most of what she took returned on her next swing.
+
 ## Skill tree
 
 The tree is built around the kit rather than stat bonuses: every node changes a move or ties two together.

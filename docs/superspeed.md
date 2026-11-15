@@ -199,6 +199,10 @@ stopped: a tick with no step while you are still running (moves arriving unevenl
 
 While **Accelerate is enabled**, edible food is consumed **four times faster**, even when standing still. A normal 32-tick meal takes 8 ticks (0.4 seconds). Nutrition, item consumption, and food effects stay normal. Disabling Accelerate restores normal eating speed immediately, including during a meal. Bows, potions, milk, and other non-food uses are unaffected.
 
+## Fighting style: Blur Boxing
+
+With an empty hand you fight in the Blur Boxing style on the shared fighting-style controls (see [fighting-styles.md](fighting-styles.md#blur-boxing-superspeed)): three-blow jabs, a Blitz that runs through the foe and stops behind them, a Skid Sweep, Blur Steps, a Rewind Step to where you were a second ago, and Too Slow, a barrage from afterimages circling whoever you evaded.
+
 ## Skill tree
 
 Three branches, nine nodes, using the existing points, mastery bonuses and loadout controls:

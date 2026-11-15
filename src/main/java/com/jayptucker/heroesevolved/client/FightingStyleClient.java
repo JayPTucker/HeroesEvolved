@@ -29,7 +29,8 @@ import java.util.Set;
 public final class FightingStyleClient {
     /** The powers with a fighting style (see combat/FightingStyles). */
     private static final Set<ResourceLocation> STYLED = Set.of(ModAbilities.PYROKINESIS_ID, ModAbilities.ELECTROKINESIS_ID,
-            ModAbilities.HYDROKINESIS_ID);
+            ModAbilities.HYDROKINESIS_ID, ModAbilities.SUPERSPEED_ID, ModAbilities.QUAKE_ID, ModAbilities.CRYOKINESIS_ID,
+            ModAbilities.PHASING_ID, ModAbilities.REGENERATION_ID, ModAbilities.INVISIBILITY_ID, ModAbilities.TELEKINESIS_ID);
     /** Two presses of one direction this many ticks apart or less are a dodge. */
     private static final int DOUBLE_TAP = 6;
     /** The client sends no faster than the quickest strike the server allows. */
@@ -41,8 +42,14 @@ public final class FightingStyleClient {
     private FightingStyleClient() {}
 
     private static boolean styled() {
-        return ClientPowerState.getSnapshot().abilities().stream()
-                .anyMatch(a -> a.unlocked() && STYLED.contains(a.abilityId()));
+        if (ClientPowerState.getSnapshot().abilities().stream().anyMatch(a -> a.unlocked() && STYLED.contains(a.abilityId())))
+            return true;
+        // An empath fights with the style of whatever power they are channeling.
+        var memory = com.jayptucker.heroesevolved.network.ClientMimicMemory.get();
+        if (memory.selected() < 0 || memory.selected() >= memory.slots().size()) return false;
+        // The memory sends a power's path alone (its namespace is always the mod's).
+        String path = memory.slots().get(memory.selected()).power();
+        return STYLED.stream().anyMatch(id -> id.getPath().equals(path));
     }
 
     private static boolean free(Minecraft mc) {

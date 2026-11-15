@@ -24,6 +24,10 @@ Bullet Catch and Storm begin their recovery when the active sequence ends. Endin
 does not require a second stamina payment. Timed-out or interrupted projectile catches drop
 their shots safely, restoring each projectile's original gravity setting.
 
+## Fighting style: Puppeteer
+
+With an empty hand you fight in the Puppeteer style on the shared fighting-style controls (see [fighting-styles.md](fighting-styles.md#puppeteer-telekinesis)): swats that bat the foe in sight sideways (and hurt whoever they hit), a lift and slam, a repulse, self-shoves and a float back, and Grip, which hangs whoever you evaded in the air.
+
 ## All eighteen purchased nodes
 
 Existing node IDs, prerequisites, prices and equipped action IDs remain compatible with saved

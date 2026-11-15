@@ -191,5 +191,17 @@ public enum ArmPose {
     /** Hydrokinesis's skills and classes: both palms pushed forward together (Pressure Jet); palms turned up and lifted
      *  (Geyser, Tide Wall, Water Spout, Rain Call); hands cupped at the chest, then pressed out toward the target (Healing
      *  Water, Healing Spring); both arms swept up and over the head (Tidal Dome). */
-    WATER_PUSH, WATER_RAISE, WATER_HEAL, WATER_DOME
+    WATER_PUSH, WATER_RAISE, WATER_HEAL, WATER_DOME,
+    /** Shared fighting-style poses (combat/ComboStyle), used by Superspeed, Quake, Cryokinesis, Density, Regeneration,
+     *  Invisibility and Telekinesis, each with its own art: a lead jab and a rear cross from a guard; both fists pumping
+     *  too fast to follow (flurry); a lead hook round the side; a rear haymaker swung from behind the shoulder; a rising
+     *  uppercut; both fists raised and brought down together (hammer); both palms driven out (double palm); a palm
+     *  pressed to the floor from a crouch (ground); a low slide on one hip, the lead arm reaching ahead (slide); a quick
+     *  step sideways, guard up (sidestep); a hop backward, arms forward for balance (backstep); arms out through a full
+     *  turn (spin); the head driven forward (headbutt); shoulder down, charging (tackle); forearms crossed, braced to
+     *  take a blow (brace); a hand flicked across the body without touching anything (swat, main and off hand); a palm
+     *  raised to lift something unseen (lift). */
+    STYLE_JAB, STYLE_CROSS, STYLE_FLURRY, STYLE_HOOK, STYLE_HAYMAKER, STYLE_UPPERCUT, STYLE_HAMMER, STYLE_DOUBLE_PALM,
+    STYLE_GROUND, STYLE_SLIDE, STYLE_SIDESTEP, STYLE_BACKSTEP, STYLE_SPIN, STYLE_HEADBUTT, STYLE_TACKLE, STYLE_BRACE,
+    STYLE_SWAT, STYLE_SWAT_OFF, STYLE_LIFT
 }

@@ -497,6 +497,12 @@ public final class PowerArmPoses {
                     lightningStyle(model, entity, pose, main, rightHanded ? model.leftArm : model.rightArm,
                             rightHanded ? model.rightLeg : model.leftLeg, rightHanded ? model.leftLeg : model.rightLeg,
                             inward, aimX, aimY, ClientArmPoseState.ageTicks(id));
+            case STYLE_JAB, STYLE_CROSS, STYLE_FLURRY, STYLE_HOOK, STYLE_HAYMAKER, STYLE_UPPERCUT, STYLE_HAMMER,
+                    STYLE_DOUBLE_PALM, STYLE_GROUND, STYLE_SLIDE, STYLE_SIDESTEP, STYLE_BACKSTEP, STYLE_SPIN, STYLE_HEADBUTT,
+                    STYLE_TACKLE, STYLE_BRACE, STYLE_SWAT, STYLE_SWAT_OFF, STYLE_LIFT ->
+                    fighting(model, pose, main, rightHanded ? model.leftArm : model.rightArm,
+                            rightHanded ? model.rightLeg : model.leftLeg, rightHanded ? model.leftLeg : model.rightLeg,
+                            inward, aimX, aimY, ClientArmPoseState.ageTicks(id));
             case WATER_WHIP, WATER_SNARE, WATER_HEAVE, WATER_OCTOPUS, WATER_BURST, WATER_SURF, WATER_LEAP, WATER_CALL,
                     WATER_LASH, WATER_BACKHAND, WATER_DAGGERS, WATER_WHEEL, WATER_FLOW, WATER_VAULT,
                     WATER_PUSH, WATER_RAISE, WATER_HEAL, WATER_DOME ->
@@ -1621,6 +1627,161 @@ public final class PowerArmPoses {
         }
         model.rightPants.copyFrom(model.rightLeg);
         model.leftPants.copyFrom(model.leftLeg);
+    }
+
+    /**
+     * The shared fighting-style poses (combat/ComboStyle), with the conventions of {@link #firebend}: {@code main} is
+     * the rear arm, {@code off} the lead. For the main arm {@code y = inward * k} turns it across the body; for the off
+     * arm {@code y = -inward * k} does. Every move has a wind-up, a strike and a recovery a few ticks long; the whole
+     * body's turn is {@code FightingStylePoseRenderer}.
+     */
+    private static void fighting(PlayerModel<?> model, ArmPose pose, ModelPart main, ModelPart off, ModelPart rear,
+                                 ModelPart lead, float inward, float aimX, float aimY, float age) {
+        switch (pose) {
+            case STYLE_JAB, STYLE_CROSS -> {
+                float punch = smooth(age / 1.4F) * (1 - smooth((age - 4) / 4F));
+                boolean cross = pose == ArmPose.STYLE_CROSS;
+                ModelPart striking = cross ? main : off, guard = cross ? off : main;
+                float side = cross ? inward : -inward;
+                set(striking, Mth.lerp(punch, -1.4F, aimX + .03F), Mth.lerp(punch, side * .48F, aimY + side * .08F), 0);
+                set(guard, -1.55F, -side * .5F, side * .1F);
+                stance(lead, rear, inward, .25F, cross ? 0 : .06F * punch, cross ? .1F * punch : 0);
+            }
+            case STYLE_FLURRY -> {
+                // Both fists pumping out and back, out of step, faster than the eye follows.
+                float on = smooth(age / 1F) * (1 - smooth((age - 7) / 3F));
+                float a = .5F + .5F * Mth.sin(age * 3.1F), b = .5F + .5F * Mth.sin(age * 3.1F + Mth.PI);
+                set(main, Mth.lerp(a * on, -1.5F, aimX), inward * Mth.lerp(a, .45F, .12F) + aimY * a * on, 0);
+                set(off, Mth.lerp(b * on, -1.5F, aimX), -inward * Mth.lerp(b, .45F, .12F) + aimY * b * on, 0);
+                stance(lead, rear, inward, .3F, 0, 0);
+            }
+            case STYLE_HOOK -> {
+                // The lead fist swung round the side, elbow up, across into the target.
+                float swing = smooth(age / 1.8F), recover = smooth((age - 6) / 4F);
+                set(off, Mth.lerp(recover, -1.5F, -1.2F), Mth.lerp(swing, inward * .95F, -inward * .55F) * (1 - recover),
+                        inward * .35F * (1 - recover));
+                set(main, -1.5F, inward * .5F, -inward * .1F);
+                stance(lead, rear, inward, .3F, .1F * swing, 0);
+            }
+            case STYLE_HAYMAKER -> {
+                // Wound back behind the shoulder, then swung round and through with everything behind it.
+                float wind = smooth(age / 2F), swing = smooth((age - 2) / 2F), recover = smooth((age - 7) / 4F);
+                float x = Mth.lerp(swing, Mth.lerp(wind, -1.2F, .5F), aimX + .1F);
+                set(main, Mth.lerp(recover, x, -1.3F), Mth.lerp(swing, -inward * .8F, inward * .45F) * (1 - recover),
+                        -inward * .4F * (1 - swing));
+                set(off, -1.3F, -inward * .55F, inward * .15F);
+                stance(lead, rear, inward, .35F, 0, .15F * swing);
+            }
+            case STYLE_UPPERCUT -> {
+                float dip = smooth(age / 1.5F) * (1 - smooth((age - 1.5F) / 1.5F)), rise = smooth((age - 1.5F) / 2F),
+                        recover = smooth((age - 7) / 4F);
+                float x = Mth.lerp(rise, .25F * (1 - dip) + .4F * dip, -2.55F);
+                set(main, Mth.lerp(recover, x, -1.2F), inward * .3F, 0);
+                set(off, -1.4F, -inward * .45F, inward * .1F);
+                stance(lead, rear, inward, .3F, -.15F * dip, 0);
+            }
+            case STYLE_HAMMER -> {
+                // Both fists raised overhead together, then brought down as one.
+                float raise = smooth(age / 2.5F), drop = smooth((age - 3) / 2F), recover = smooth((age - 8) / 4F);
+                float x = Mth.lerp(drop, -2.95F * raise, -.65F);
+                x = Mth.lerp(recover, x, -.3F);
+                set(main, x, inward * .35F, 0);
+                set(off, x, -inward * .35F, 0);
+                stance(lead, rear, inward, .3F, 0, 0);
+            }
+            case STYLE_DOUBLE_PALM -> {
+                float draw = smooth(age / 1.5F) * (1 - smooth((age - 1.5F) / 1F)), thrust = smooth((age - 1.5F) / 1.5F),
+                        recover = smooth((age - 7) / 4F);
+                float x = Mth.lerp(thrust, -.8F - .3F * draw, aimX + .1F);
+                set(main, Mth.lerp(recover, x, -.4F), inward * .15F + aimY * thrust, 0);
+                set(off, Mth.lerp(recover, x, -.4F), -inward * .15F + aimY * thrust, 0);
+                stance(lead, rear, inward, .4F, 0, .1F * thrust);
+            }
+            case STYLE_GROUND -> {
+                float drop = smooth(age / 2F) * (1 - smooth((age - 10) / 4F));
+                set(main, -.75F * drop, inward * .2F * drop, -inward * .08F);
+                set(off, .5F * drop, -inward * .1F, inward * .5F * drop);
+                set(lead, -1.25F * drop, 0, inward * .08F * drop);
+                set(rear, .95F * drop, 0, -inward * .12F * drop);
+            }
+            case STYLE_SLIDE -> {
+                // Down on one hip, lead leg out ahead, lead arm reaching forward and the other back for balance.
+                float on = smooth(age / 1.5F) * (1 - smooth((age - 8) / 4F));
+                set(off, -1.6F * on, -inward * .2F, inward * .2F * on);
+                set(main, .7F * on, inward * .1F, -inward * .45F * on);
+                set(lead, -1.45F * on, 0, inward * .12F * on);
+                set(rear, .6F * on, 0, -inward * .2F * on);
+            }
+            case STYLE_SIDESTEP -> {
+                float on = smooth(age / 1F) * (1 - smooth((age - 4) / 5F));
+                set(main, -1.55F * on, inward * .5F * on, -inward * .1F);
+                set(off, -1.55F * on, -inward * .5F * on, inward * .1F);
+                set(lead, -.2F * on, 0, inward * .25F * on);
+                set(rear, .15F * on, 0, -inward * .25F * on);
+            }
+            case STYLE_BACKSTEP -> {
+                float on = smooth(age / 1.2F) * (1 - smooth((age - 5) / 5F));
+                set(main, -1.2F * on, inward * .1F, -inward * .3F * on);
+                set(off, -1.2F * on, -inward * .1F, inward * .3F * on);
+                set(lead, -.55F * on, 0, inward * .05F);
+                set(rear, -.2F * on, 0, -inward * .05F);
+            }
+            case STYLE_SPIN -> {
+                float out = smooth(age / 2F) * (1 - smooth((age - 9) / 4F));
+                set(main, -.3F * out, 0, -inward * 1.45F * out);
+                set(off, -.3F * out, 0, inward * 1.45F * out);
+                stance(lead, rear, inward, .2F * out, 0, 0);
+            }
+            case STYLE_HEADBUTT -> {
+                // Hands drawn back to the hips as the head is driven forward.
+                float on = smooth(age / 1.5F) * (1 - smooth((age - 6) / 5F));
+                set(main, .55F * on, inward * .1F, -inward * .3F * on);
+                set(off, .55F * on, -inward * .1F, inward * .3F * on);
+                stance(lead, rear, inward, .35F * on, .1F * on, 0);
+            }
+            case STYLE_TACKLE -> {
+                // Shoulder down: the lead arm tucked across the chest, the rear driving back.
+                float on = smooth(age / 1.5F) * (1 - smooth((age - 8) / 4F)), run = Mth.sin(age * 1.6F) * on;
+                set(off, -1.1F * on, -inward * .9F * on, 0);
+                set(main, .6F * on, inward * .15F, -inward * .25F * on);
+                set(lead, -.7F * run, 0, 0);
+                set(rear, .7F * run, 0, 0);
+            }
+            case STYLE_BRACE -> {
+                // Forearms crossed in front of the face, feet planted wide.
+                float on = smooth(age / 1.5F);
+                set(main, -1.85F * on, inward * .85F * on, 0);
+                set(off, -1.75F * on, -inward * .75F * on, 0);
+                set(lead, -.3F * on, 0, inward * .25F * on);
+                set(rear, .3F * on, 0, -inward * .25F * on);
+            }
+            case STYLE_SWAT, STYLE_SWAT_OFF -> {
+                // A hand flicked across the body: nothing is touched, the foe is batted all the same.
+                boolean useMain = pose == ArmPose.STYLE_SWAT;
+                ModelPart arm = useMain ? main : off;
+                float s = useMain ? inward : -inward;
+                float flick = smooth(age / 1.2F), recover = smooth((age - 5) / 3F);
+                set(arm, Mth.lerp(recover, aimX + .2F, -.8F), Mth.lerp(flick, -s * .7F, s * .75F) * (1 - recover), -s * .2F);
+                set(useMain ? off : main, -.9F, s * .3F, s * .15F);
+                stance(lead, rear, inward, .2F, 0, 0);
+            }
+            case STYLE_LIFT -> {
+                // A palm turned up and raised: something unseen goes up with it, and is held.
+                float lift = smooth(age / 3F), slam = smooth((age - 9) / 2F);
+                set(main, Mth.lerp(slam, Mth.lerp(lift, -.9F, -2.55F), -.6F), inward * .2F, -inward * .15F);
+                set(off, -1.0F, -inward * .25F, inward * .1F);
+                stance(lead, rear, inward, .25F, 0, 0);
+            }
+            default -> { }
+        }
+        model.rightPants.copyFrom(model.rightLeg);
+        model.leftPants.copyFrom(model.leftLeg);
+    }
+
+    /** A fighting stance: lead foot forward, rear foot back, plus a little drive from either. */
+    private static void stance(ModelPart lead, ModelPart rear, float inward, float spread, float leadDrive, float rearDrive) {
+        set(lead, -spread - leadDrive, 0, inward * .05F);
+        set(rear, spread + rearDrive, 0, -inward * .05F);
     }
 
     private static float smooth(float value) {

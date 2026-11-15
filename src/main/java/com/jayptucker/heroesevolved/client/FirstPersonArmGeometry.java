@@ -128,6 +128,16 @@ public final class FirstPersonArmGeometry {
             water(stack, side, player == null || arm == player.getMainArm(), pose, poseAge);
             return;
         }
+        if (switch (pose) {
+            case STYLE_JAB, STYLE_CROSS, STYLE_FLURRY, STYLE_HOOK, STYLE_HAYMAKER, STYLE_UPPERCUT, STYLE_HAMMER,
+                    STYLE_DOUBLE_PALM, STYLE_GROUND, STYLE_SLIDE, STYLE_SIDESTEP, STYLE_BACKSTEP, STYLE_SPIN, STYLE_HEADBUTT,
+                    STYLE_TACKLE, STYLE_BRACE, STYLE_SWAT, STYLE_SWAT_OFF, STYLE_LIFT -> true;
+            default -> false;
+        }) {
+            var player = net.minecraft.client.Minecraft.getInstance().player;
+            fighting(stack, side, player == null || arm == player.getMainArm(), pose, poseAge);
+            return;
+        }
         if (pose == ArmPose.KINETIC_GATHER || pose == ArmPose.KINETIC_HOLD || pose == ArmPose.KINETIC_RELEASE) {
             kinetic(stack, side, pose, time, poseAge);
             return;
@@ -1443,6 +1453,95 @@ public final class FirstPersonArmGeometry {
                 pitch = -82 + 8 * k;
                 yaw = side * (5 + 30 * k);
                 roll = side * (4 - 70 * k);
+            }
+            default -> { }
+        }
+        stack.translate(side * spread, height, depth);
+        stack.mulPose(Axis.YP.rotationDegrees(yaw));
+        stack.mulPose(Axis.XP.rotationDegrees(pitch));
+        stack.mulPose(Axis.ZP.rotationDegrees(roll));
+    }
+
+    /**
+     * The shared fighting-style poses in first person. Punches drive in toward the crosshair from the guard and back;
+     * the flurry pumps both fists; the hook sweeps in from the side; the haymaker comes from behind the shoulder; the
+     * uppercut rises from below; the hammer drops from the top of the view; swats flick across; ground and slide moves
+     * take the hands down out of sight; dodges throw them out to the sides.
+     */
+    private static void fighting(PoseStack stack, float side, boolean main, ArmPose pose, float age) {
+        float spread = .43F, height = -.4F, depth = -.25F, pitch = -82, yaw = side * 5, roll = side * 4;
+        switch (pose) {
+            case STYLE_JAB, STYLE_CROSS -> {
+                boolean striking = main == (pose == ArmPose.STYLE_CROSS);
+                float punch = smooth(age / 1.4F) * (1 - smooth((age - 4) / 4F));
+                if (striking) {
+                    spread = .4F - .2F * punch; height = -.42F + .08F * punch; depth = -.22F - .38F * punch;
+                    pitch = -78 - 10 * punch; yaw = side * (6 + 12 * punch);
+                } else { spread = .47F; height = -.48F; pitch = -74; yaw = side * 10; roll = side * 10; }
+            }
+            case STYLE_FLURRY -> {
+                float on = smooth(age) * (1 - smooth((age - 7) / 3F));
+                float k = (.5F + .5F * (float) Math.sin(age * 3.1F + (main ? 0 : Math.PI))) * on;
+                spread = .42F - .15F * k; depth = -.22F - .32F * k; height = -.42F + .06F * k; pitch = -80 - 8 * k;
+                yaw = side * (6 + 10 * k);
+            }
+            case STYLE_HOOK, STYLE_HAYMAKER -> {
+                boolean striking = main == (pose == ArmPose.STYLE_HAYMAKER);
+                float swing = smooth((age - (pose == ArmPose.STYLE_HAYMAKER ? 2 : 0)) / 2F) * (1 - smooth((age - 6) / 4F));
+                if (striking) {
+                    spread = .55F - .4F * swing; height = -.4F + .05F * swing; depth = -.25F - .2F * swing;
+                    yaw = side * (-10 + 50 * swing); roll = side * (4 - 40 * swing); pitch = -80;
+                } else { spread = .47F; height = -.48F; pitch = -74; yaw = side * 10; roll = side * 10; }
+            }
+            case STYLE_UPPERCUT -> {
+                if (main) {
+                    float rise = smooth((age - 1.5F) / 2F) * (1 - smooth((age - 7) / 4F));
+                    spread = .32F; height = -.65F + .45F * rise; depth = -.3F - .1F * rise; pitch = -50 - 50 * rise;
+                } else { spread = .47F; height = -.48F; pitch = -74; }
+            }
+            case STYLE_HAMMER -> {
+                float raise = smooth(age / 2.5F), drop = smooth((age - 3) / 2F), recover = smooth((age - 8) / 4F);
+                float up = raise * (1 - drop) * (1 - recover);
+                spread = .3F; height = -.4F + .5F * up - .25F * drop * (1 - recover); depth = -.3F;
+                pitch = -82 + 60 * up - 25 * drop * (1 - recover);
+            }
+            case STYLE_DOUBLE_PALM -> {
+                float thrust = smooth((age - 1.5F) / 1.5F) * (1 - smooth((age - 7) / 4F));
+                spread = .4F - .2F * thrust; depth = -.22F - .35F * thrust; pitch = -82 - 6 * thrust;
+                yaw = side * (5 + 18 * thrust); roll = side * (4 - 60 * thrust);
+            }
+            case STYLE_GROUND, STYLE_SLIDE -> {
+                float drop = smooth(age / 2F) * (1 - smooth((age - 9) / 4F));
+                height = -.4F - .3F * drop; depth = -.25F - .1F * drop; pitch = -82 - 50 * drop;
+                spread = .43F + (main ? 0 : .15F) * drop;
+            }
+            case STYLE_SIDESTEP, STYLE_BACKSTEP, STYLE_SPIN -> {
+                float out = smooth(age / 1.2F) * (1 - smooth((age - 4) / 5F));
+                spread = .43F + .25F * out; height = -.4F - .06F * out; pitch = -82 + 25 * out;
+                yaw = side * (5 - 30 * out); roll = side * (4 + 22 * out);
+            }
+            case STYLE_HEADBUTT, STYLE_TACKLE -> {
+                float on = smooth(age / 1.5F) * (1 - smooth((age - 6) / 5F));
+                spread = .5F; height = -.45F - .2F * on; pitch = -82 + 30 * on; yaw = side * (5 - 15 * on);
+            }
+            case STYLE_BRACE -> {
+                float on = smooth(age / 1.5F);
+                spread = .43F - .3F * on; height = -.4F + .12F * on; depth = -.3F - .05F * on;
+                pitch = -82 + 10 * on; yaw = side * (5 + 40 * on); roll = side * (4 - 70 * on);
+            }
+            case STYLE_SWAT, STYLE_SWAT_OFF -> {
+                boolean striking = main == (pose == ArmPose.STYLE_SWAT);
+                if (striking) {
+                    float flick = smooth(age / 1.2F), recover = smooth((age - 5) / 3F), k = flick * (1 - recover);
+                    spread = .5F - .45F * k; height = -.38F + .04F * k; depth = -.3F;
+                    yaw = side * (-15 + 55 * k); roll = side * (10 - 60 * k); pitch = -82;
+                } else { spread = .47F; height = -.48F; pitch = -74; }
+            }
+            case STYLE_LIFT -> {
+                if (main) {
+                    float lift = smooth(age / 3F) * (1 - smooth((age - 9) / 2F));
+                    spread = .38F; height = -.45F + .25F * lift; depth = -.32F; pitch = -82 + 45 * lift; roll = side * (4 - 50 * lift);
+                } else { spread = .47F; height = -.48F; pitch = -74; }
             }
             default -> { }
         }

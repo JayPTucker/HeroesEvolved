@@ -365,6 +365,47 @@ Electrokinesis gained a fighting style in November 2026 on the shared engine (`e
 - **Cross-power rules live where the damage is dealt.** `ElectroService.shock` reads `HydroService.soaked`, and
   `PyroService.burn` turns a soaked target's burn into steam: one line each, at the one place each power hurts things.
 
+## Reusable patterns from the shared fighting styles
+
+Seven more powers gained fighting styles in November 2026 on the same engine: Blur Boxing (`speed/SpeedStyle`), Pressure
+Palm (`quake/QuakeStyle`), Ice Skater (`cryo/CryoStyle`), Ghost Fist (`phasing/DensityStyle`), Reckless Brawler
+(`regeneration/RegenStyle`), Force Palm (`invisibility/ForceStyle`) and Puppeteer (`telekinesis/KineticStyle`). What the
+player sees is in [docs/fighting-styles.md](docs/fighting-styles.md).
+
+- **A style is only its moves.** `combat/ComboStyle` holds the combo (lead, rear, a finisher from level 2, crouch for the
+  low move), the dodges (back is the special one from level 2), the counter that loads the next strike and marks the
+  attacker, costs, cooldowns and the tired message. A subclass writes `throwMove`, `dodgeMove` and `onCounter`, and can
+  override `tickFighter` (lingering things), `evadeTicks` (Density's longer slip, 0 for a style that doesn't dodge) and
+  `canFight` (Claire can't swing a broken arm). The fighter keeps a one-second `trail` (Rewind Step), a `stack` (Density's
+  growing weight) and `banked` damage (Payback).
+- **One helper class for hitting.** `combat/StyleHits` aims (`aimed`, `firstInTube`, `foes`), hurts (`hurt` resets
+  `invulnerableTime` so a three-blow jab lands three times, and guards against re-entry), shoves with knockback
+  resistance respected (`shove`, `away`), and places hands and chests (`hand`, `chest`). `blink` teleports with
+  `absMoveTo` too, so FakePlayers move in tests.
+- **Speak in the power's own strokes.** Most styles need no new art: Blur Boxing uses Superspeed's afterimages and
+  lanes, Pressure Palm Quake's rings and fissures, Ghost Fist Density's ripples. New pieces live in
+  `client/effects/setpiece/StyleArt` and borrow the power's primitives (Force Palm draws with `ForceArt.lens`/`pane`).
+  Telekinesis's strokes were too thin to read at fighting range, so the Puppeteer has a visible hand: `STYLE_TK_PALM`
+  (a palm print on each swat) and `STYLE_TK_GRASP` (fingers closing over a lifted or gripped body, bound to it, with
+  the hold's length in the scale).
+- **A brace instead of a dodge.** `StyleMotion.brace(player, ticks)` and the style's `braced(player, source, amount)`
+  reduce a blow rather than cancel it; `FightingStyles.incoming` checks the brace before evasion. Reckless Brawler banks
+  every braced blow and calls `counter` on the first.
+- **Cross-power rules where the blow lands.** A Pressure Palm on someone frozen solid shatters them
+  (`CryoService.shatterHit`); a Frost Jab on someone Soaked freezes them solid. One line each.
+- **Mimicry fights too.** `FightingStyles.of(player)` falls back to the style of the power Peter is channelling, and
+  `FightingStyles.fights(player, style)` is the ownership check every style uses, so a borrowed style works with no
+  per-style code. The client's `FightingStyleClient` does the same with `ClientMimicMemory`.
+- **A helper name can shadow the base class.** Claire's health cost was first called `pay(p, 1)`, which resolved to
+  `ComboStyle.pay(player, int)` (stamina) and silently cost stamina instead. Name a style's own costs differently.
+- **Don't change a set while you walk it.** `PrologueService.holdWaiting` removed players from `WAITING` while
+  iterating it and crashed the server when a preview player joined the Last Day; it now walks `List.copyOf(WAITING)`.
+- **Photographs:** `tools/fighting-preview.init.gradle` (flag `heroes.preview.fighting`; `-Ponly=telekinesis,quake` to
+  shoot some) runs every style through the same scene into `build/fighting-preview/screenshots/`. Each preview driver
+  needs its own flag: `heroes.preview.styles` already belonged to `uitest/StylePreview`, and two drivers on one flag
+  started two worlds and photographed the dark. The preview's actors have no AI, so shoves don't move them; check
+  knockback in game tests.
+
 ## Reusable patterns from Hydrokinesis (water)
 
 Hydrokinesis (`hydro/`, art in `client/effects/setpiece/HydroArt`) was added in November 2026: the reservoir, five core

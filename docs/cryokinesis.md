@@ -62,6 +62,10 @@ A combat sequence is **Ice Blast → Glacial Sculpt → Glacier Ride → Crystal
 Whiteout prepares a larger battlefield: cold links the ice, the field grows, and the final
 collapse spends what has been built.
 
+## Fighting style: Ice Skater
+
+With an empty hand you fight in the Ice Skater style on the shared fighting-style controls (see [fighting-styles.md](fighting-styles.md#ice-skater-cryokinesis)): chilling frost jabs (a Soaked foe freezes at once), an ice-spike uppercut, a frost ring, skates that leave lingering strips of ice, a spinning back glide, and Cold Snap, which freezes whoever you evaded.
+
 ## Three skill branches
 
 The branches unlock interactions; their roots and masteries no longer silently apply the

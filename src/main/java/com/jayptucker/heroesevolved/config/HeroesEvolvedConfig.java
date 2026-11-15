@@ -218,6 +218,7 @@ public final class HeroesEvolvedConfig {
                 hydroOctopusEnergyCost, hydroOctopusCooldownTicks, hydroRiderEnergyCost, hydroRiderCooldownTicks,
                 hydroMaelstromEnergyCost, hydroMaelstromCooldownTicks;
         public final ModConfigSpec.IntValue hydroStrikeEnergyCost, hydroFlourishEnergyCost, hydroDodgeEnergyCost, hydroDodgeCooldownTicks;
+        public final ModConfigSpec.IntValue styleStrikeEnergyCost, styleFlourishEnergyCost, styleDodgeEnergyCost, styleDodgeCooldownTicks;
         public final ModConfigSpec.BooleanValue pyroWorldFire;
         public final ModConfigSpec.BooleanValue gridAffectMachines, gridAffectCreate, gridAffectCarriedItems;
         public final ModConfigSpec.IntValue gridMaxDrainPerMachine, gridLightningCharge;
@@ -884,6 +885,18 @@ public final class HeroesEvolvedConfig {
                 hydroDodgeEnergyCost = builder.comment("Stamina for a Flow Step or Geyser Vault (double-tap left, right or back).")
                         .defineInRange("dodgeEnergyCost", 8, 0, 100);
                 hydroDodgeCooldownTicks = builder.comment("Ticks between two dodges.")
+                        .defineInRange("dodgeCooldownTicks", 18, 0, 20 * 60);
+                builder.pop();
+
+                builder.comment("The fighting styles of Superspeed, Quake, Cryokinesis, Density, Regeneration, Invisibility",
+                        "and Telekinesis (left-click with an empty hand; double-tap a direction to dodge).").push("fightingStyles");
+                styleStrikeEnergyCost = builder.comment("Stamina for one lead or rear strike.")
+                        .defineInRange("strikeEnergyCost", 2, 0, 100);
+                styleFlourishEnergyCost = builder.comment("Stamina for a finisher or a crouching low move.")
+                        .defineInRange("flourishEnergyCost", 5, 0, 100);
+                styleDodgeEnergyCost = builder.comment("Stamina for a dodge (or a brace); a back dodge costs 3 more.")
+                        .defineInRange("dodgeEnergyCost", 8, 0, 100);
+                styleDodgeCooldownTicks = builder.comment("Ticks between two dodges.")
                         .defineInRange("dodgeCooldownTicks", 18, 0, 20 * 60);
                 builder.pop();
 

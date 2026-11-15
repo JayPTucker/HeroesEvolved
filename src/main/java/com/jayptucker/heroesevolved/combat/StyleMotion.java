@@ -37,6 +37,7 @@ public final class StyleMotion {
     private static final Map<UUID, Dash> DASHES = new HashMap<>();
     private static final Map<UUID, Evade> EVADES = new HashMap<>();
     private static final Map<UUID, Long> CUSHIONS = new HashMap<>();
+    private static final Map<UUID, Long> BRACES = new HashMap<>();
 
     private StyleMotion() {}
 
@@ -78,6 +79,17 @@ public final class StyleMotion {
         if (evade.countered) return Evasion.MISSED;
         evade.countered = true;
         return Evasion.COUNTER;
+    }
+
+    /**
+     * Braces for {@code ticks}: blows still land, but the style decides what is left of each
+     * ({@link FightingStyles.Style#braced}). Regeneration's brawler braces instead of dodging.
+     */
+    public static void brace(ServerPlayer player, int ticks) { BRACES.put(player.getUUID(), now(player) + ticks); }
+
+    public static boolean bracing(ServerPlayer player) {
+        Long until = BRACES.get(player.getUUID());
+        return until != null && now(player) <= until;
     }
 
     /** Falls are cushioned for {@code ticks}, so a flip off a ledge lands soft. */
@@ -123,6 +135,7 @@ public final class StyleMotion {
         }
         EVADES.values().removeIf(evade -> now > evade.until);
         CUSHIONS.values().removeIf(until -> now > until);
+        BRACES.values().removeIf(until -> now > until);
     }
 
     public static void forget(ServerPlayer player) {
@@ -130,11 +143,13 @@ public final class StyleMotion {
         DASHES.remove(id);
         EVADES.remove(id);
         CUSHIONS.remove(id);
+        BRACES.remove(id);
     }
 
     public static void clear() {
         DASHES.clear();
         EVADES.clear();
         CUSHIONS.clear();
+        BRACES.clear();
     }
 }
