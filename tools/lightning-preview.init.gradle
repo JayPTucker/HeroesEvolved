@@ -1,0 +1,23 @@
+// The client photographs Electrokinesis's lightning style: sparks, the clap, the slam and the dodges (uitest/HydroPreview).
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('lightningPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/lightning-preview')
+                        programArguments.addAll('--width', '1100', '--height', '800')
+                        systemProperty('heroes.preview.lightning', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('lightningPreviewClasses')) }
+        }
+    }
+}

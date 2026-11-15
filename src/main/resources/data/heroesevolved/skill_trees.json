@@ -3989,5 +3989,239 @@
         "mechanic": "shapeshifting_masquerade"
       }
     ]
+  },
+  {
+    "power": "hydrokinesis",
+    "branch_names": [
+      "Tides",
+      "Currents",
+      "Healing"
+    ],
+    "branches": [
+      [
+        {
+          "id": "hydro_0_0",
+          "name": "Undertow",
+          "description": "Water Whip's crack drags its target a step toward you instead of away, and every whip hits Soaked enemies 25% harder.",
+          "icon": "minecraft:fishing_rod",
+          "level": 1,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "hydro_0_1",
+          "name": "Geyser",
+          "description": "Mark a spot up to 22 blocks away; a moment later a column of water bursts up there, throwing everyone on it skyward (6 + level). A Crashing Wave that rolls over the mark sets it off at once.",
+          "icon": "minecraft:bubble_coral_block",
+          "level": 2,
+          "cost": 2,
+          "active": true,
+          "energy": 20,
+          "cooldown": 90
+        },
+        {
+          "id": "hydro_0_2",
+          "name": "Riptide",
+          "description": "Crashing Wave carries everything it catches all the way to the end of its run and slams them down there.",
+          "icon": "minecraft:trident",
+          "level": 2,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "hydro_brine_edge",
+          "name": "Brine Edge",
+          "description": "Ice Daggers freeze Soaked enemies solid for a second, and a lash that strikes a frozen enemy hits twice as hard.",
+          "icon": "minecraft:packed_ice",
+          "level": 3,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "hydro_pressure_jet",
+          "name": "Pressure Jet",
+          "description": "Push a thin, high-pressure jet of water from both palms for two seconds: it hurts and shoves whatever it touches and puts out fire. Shift stops it.",
+          "icon": "minecraft:prismarine_shard",
+          "level": 4,
+          "cost": 2,
+          "active": true,
+          "energy": 26,
+          "cooldown": 140
+        },
+        {
+          "id": "hydro_tsunami_heart",
+          "name": "Tsunami Heart",
+          "description": "Standing in water, your Crashing Wave rises twice as wide and tall, and Maelstrom's Deluge sends a wave rolling out in every direction.",
+          "icon": "minecraft:heart_of_the_sea",
+          "level": 5,
+          "cost": 3,
+          "active": false,
+          "capstone": true
+        }
+      ],
+      [
+        {
+          "id": "hydro_1_0",
+          "name": "Slipstream",
+          "description": "Flow Steps leave a slick of water for three seconds that slows and soaks enemies on it, and your next lash reaches half again as far.",
+          "icon": "minecraft:kelp",
+          "level": 1,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "hydro_1_1",
+          "name": "Tide Wall",
+          "description": "Raise a curved wall of water two blocks ahead for five seconds. It swallows shots, soaks and slows enemies who walk through it, and a Water Whip cast through it is twice as thick and reaches farther.",
+          "icon": "minecraft:prismarine_wall",
+          "level": 2,
+          "cost": 2,
+          "active": true,
+          "energy": 18,
+          "cooldown": 120
+        },
+        {
+          "id": "hydro_1_2",
+          "name": "Child of the Sea",
+          "description": "See clearly underwater, Octopus Form's arms reach twice as far in water, and Wave Rider runs half again as fast and twice as long on water.",
+          "icon": "minecraft:nautilus_shell",
+          "level": 2,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "hydro_return_current",
+          "name": "Return Current",
+          "description": "Shots your Octopus Form, Tide Wall or Tidal Dome swallow are flung back at whoever fired them.",
+          "icon": "minecraft:arrow",
+          "level": 3,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "hydro_water_spout",
+          "name": "Water Spout",
+          "description": "Ride a pillar of water up to eight blocks high for six seconds, drifting where you look and knocking enemies from its foot. Press again to crash down in a splash (5 + level).",
+          "icon": "minecraft:soul_sand",
+          "level": 4,
+          "cost": 2,
+          "active": true,
+          "energy": 24,
+          "cooldown": 160
+        },
+        {
+          "id": "hydro_endless_tide",
+          "name": "Endless Tide",
+          "description": "Wave Rider refills your water as you ride, and leaping off its crest lands as a Crashing Wave rolling on the way you rode.",
+          "icon": "minecraft:sea_lantern",
+          "level": 5,
+          "cost": 3,
+          "active": false,
+          "capstone": true
+        }
+      ],
+      [
+        {
+          "id": "hydro_2_0",
+          "name": "Sea's Blessing",
+          "description": "Water heals you twice as fast, rain heals you too, and each second in water washes away one harmful effect.",
+          "icon": "minecraft:sea_pickle",
+          "level": 1,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "hydro_2_1",
+          "name": "Healing Water",
+          "description": "Wrap a friend you aim at within six blocks (or yourself) in glowing water: it heals 6 + level over three seconds and washes away one harmful effect at once.",
+          "icon": "minecraft:glistering_melon_slice",
+          "level": 2,
+          "cost": 2,
+          "active": true,
+          "energy": 16,
+          "cooldown": 100
+        },
+        {
+          "id": "hydro_2_2",
+          "name": "Water Skin",
+          "description": "You carry half again as much water (150), and come back from death with it full.",
+          "icon": "minecraft:glass_bottle",
+          "level": 2,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "hydro_soothing_tide",
+          "name": "Soothing Tide",
+          "description": "Healing Water spreads to every friend within four blocks of the one you heal, at half strength.",
+          "icon": "minecraft:lily_pad",
+          "level": 3,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "hydro_rain_call",
+          "name": "Rain Call",
+          "description": "Call a rain cloud over you for twenty seconds, ten blocks across: friends under it heal and stop burning, enemies are Soaked, fires go out and your water fills.",
+          "icon": "minecraft:cauldron",
+          "level": 4,
+          "cost": 2,
+          "active": true,
+          "energy": 30,
+          "cooldown": 400
+        },
+        {
+          "id": "hydro_spirit_water",
+          "name": "Spirit Water",
+          "description": "Once every five minutes, with at least 30 water carried, a killing blow is turned aside: the water closes your wounds, leaving you at 8 health, and is spent.",
+          "icon": "minecraft:ghast_tear",
+          "level": 5,
+          "cost": 3,
+          "active": false,
+          "capstone": true
+        }
+      ]
+    ],
+    "styles": [
+      {
+        "id": "hydro_tsunami",
+        "name": "Tsunami",
+        "description": "Draw the water up into a great wave nine blocks wide and roll it 24 blocks ahead, carrying everything before it (10 + 2 x level).",
+        "icon": "minecraft:tube_coral_block",
+        "level": 3,
+        "cost": 3,
+        "active": true,
+        "energy": 40,
+        "cooldown": 260,
+        "role": "offense",
+        "mechanic": "hydro_tsunami"
+      },
+      {
+        "id": "hydro_tidal_dome",
+        "name": "Tidal Dome",
+        "description": "Raise a dome of water over you for six seconds. It swallows shots from outside; friends inside gain Resistance and enemies inside are slowed and Soaked.",
+        "icon": "minecraft:glass",
+        "level": 3,
+        "cost": 3,
+        "active": true,
+        "energy": 28,
+        "cooldown": 260,
+        "role": "defense",
+        "mechanic": "hydro_tidal_dome"
+      },
+      {
+        "id": "hydro_healing_spring",
+        "name": "Healing Spring",
+        "description": "A spring wells up at your feet for eight seconds; friends standing in it heal and lose their fire, poison and wither.",
+        "icon": "minecraft:lily_of_the_valley",
+        "level": 3,
+        "cost": 3,
+        "active": true,
+        "energy": 26,
+        "cooldown": 240,
+        "role": "support",
+        "mechanic": "hydro_healing_spring"
+      }
+    ]
   }
 ]

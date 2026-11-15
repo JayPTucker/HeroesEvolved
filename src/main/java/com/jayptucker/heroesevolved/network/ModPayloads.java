@@ -32,6 +32,7 @@ public final class ModPayloads {
             .playToClient(PyroStatePayload.TYPE, PyroStatePayload.STREAM_CODEC, PyroStatePayload::handle)
             .playToServer(PyroFlightInputPayload.TYPE, PyroFlightInputPayload.STREAM_CODEC, PyroFlightInputPayload::handle)
             .playToServer(FightingStylePayload.TYPE, FightingStylePayload.STREAM_CODEC, FightingStylePayload::handle)
+            .playToClient(HydroStatePayload.TYPE, HydroStatePayload.STREAM_CODEC, HydroStatePayload::handle)
             .playToClient(IllusionPayload.TYPE, IllusionPayload.STREAM_CODEC, IllusionPayload::handle)
             .playToClient(MindStatePayload.TYPE, MindStatePayload.STREAM_CODEC, MindStatePayload::handle)
             .playToServer(MindInputPayload.TYPE, MindInputPayload.STREAM_CODEC, MindInputPayload::handle)

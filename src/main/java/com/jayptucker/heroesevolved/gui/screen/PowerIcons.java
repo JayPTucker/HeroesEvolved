@@ -24,10 +24,14 @@ public final class PowerIcons {
             Map.entry("pyrokinesis", Items.BLAZE_POWDER), Map.entry("invisibility", Items.GLASS_PANE),
             Map.entry("phasing", Items.CHORUS_FRUIT), Map.entry("empathic_mimicry", Items.AMETHYST_SHARD),
             Map.entry("technopathy", Items.COMPARATOR), Map.entry("matter_assembly", Items.STONECUTTER),
-            Map.entry("vibe", Items.ECHO_SHARD), Map.entry("shapeshifting", Items.ARMADILLO_SCUTE));
+            Map.entry("vibe", Items.ECHO_SHARD), Map.entry("shapeshifting", Items.ARMADILLO_SCUTE),
+            Map.entry("hydrokinesis", Items.HEART_OF_THE_SEA));
 
     /** First keyword found in an ability's id or name picks its picture. Order matters: specific before general. */
     private static final List<Map.Entry<String, Item>> KEYWORDS = List.of(
+            Map.entry("hydro_water_whip", Items.FISHING_ROD), Map.entry("hydro_crashing_wave", Items.WATER_BUCKET),
+            Map.entry("hydro_octopus_form", Items.INK_SAC), Map.entry("hydro_wave_rider", Items.OAK_BOAT),
+            Map.entry("hydro_maelstrom", Items.CONDUIT),
             Map.entry("shapeshift_morph", Items.ARMADILLO_SCUTE),
             Map.entry("shapeshift_instinct", Items.BONE),
             Map.entry("shapeshift_decoy", Items.ARMOR_STAND), Map.entry("shapeshift_reflection", Items.GLASS_PANE),

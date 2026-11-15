@@ -21,9 +21,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Firebending turns the whole body, not just the limbs: the roundhouse twists the hips round with the kick, the sweep
- * kick spins once on the planted foot, a jet step leans away from its jet, and the flip kick turns a full backflip.
- * Only the model turns; the camera never does.
+ * The fighting styles turn the whole body, not just the limbs. Firebending: the roundhouse twists the hips round with
+ * the kick, the sweep kick spins once on the planted foot, a jet step leans away from its jet, and the flip kick turns a
+ * full backflip. Lightning: the shoulders snap into each spark, the clap leans in, the slam drops to one knee. Water: the
+ * whip winds away and cracks through, the wheel spins, the vault flips, and a surfer stands sideways on the wave. Only
+ * the model turns; the camera never does.
  */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID, value = Dist.CLIENT)
 public final class FightingStylePoseRenderer {
@@ -86,6 +88,49 @@ public final class FightingStylePoseRenderer {
                 roll = (float) Math.clamp(sideways * 14, -20, 20) * (1 - smooth((age - 2) / 5F));
             }
             case ELECTRO_FLASH -> pitch = -17 * smooth(age / 1.2F) * (1 - smooth((age - 4) / 5F));
+            // Water: the body flows with the arms. The whip winds away and cracks through, the heave leans back then
+            // drives forward, the wheel spins once, the vault flips over backward, the surfer stands sideways on the
+            // wave and leans into each turn.
+            case WATER_WHIP -> {
+                float wind = smooth(age / 2F), crack = smooth((age - 2) / 1.6F), recover = smooth((age - 7) / 3F);
+                twist = handed * (-12 * wind * (1 - crack) + 18 * crack * (1 - recover));
+                pitch = 9 * crack * (1 - recover);
+            }
+            case WATER_SNARE -> {
+                float haul = smooth((age - 4) / 4F) * (1 - smooth((age - 10) / 3F));
+                twist = -12 * handed * haul;
+                pitch = -9 * haul;
+            }
+            case WATER_HEAVE -> {
+                float scoop = smooth(age / 2.5F), heave = smooth((age - 2.5F) / 3F), recover = smooth((age - 9) / 5F);
+                pitch = (-8 * scoop * (1 - heave) + 12 * heave) * (1 - recover);
+            }
+            case WATER_LASH, WATER_BACKHAND -> {
+                float flick = smooth(age / 1.3F) * (1 - smooth((age - 4) / 4F));
+                twist = (pose == ArmPose.WATER_BACKHAND ? 15 : -11) * handed * flick;
+            }
+            case WATER_DAGGERS -> pitch = 8 * smooth((age - 2) / 1.5F) * (1 - smooth((age - 7) / 5F));
+            case WATER_WHEEL -> {
+                float spin = Mth.clamp(age / com.jayptucker.heroesevolved.hydro.HydroGeometry.WHEEL_SPIN, 0, 1);
+                twist = 360 * handed * (1 - (1 - spin) * (1 - spin));
+                drop = .14F * smooth(age / 2F) * (1 - smooth((age - 10) / 4F));
+            }
+            case WATER_FLOW -> {
+                Vec3 travel = FlightVisualGeometry.travel(player);
+                double yaw = Math.toRadians(body);
+                double sideways = travel.x * -Math.cos(yaw) + travel.z * -Math.sin(yaw);
+                roll = (float) Math.clamp(sideways * 16, -14, 14) * (1 - smooth((age - 3) / 6F));
+            }
+            case WATER_VAULT -> pitch = -360 * smooth(age / com.jayptucker.heroesevolved.hydro.HydroGeometry.VAULT_FLIP);
+            case WATER_SURF -> {
+                float settle = smooth(age / 4F);
+                float turn = Mth.clamp(Mth.wrapDegrees(player.getYRot() - player.yRotO) * .9F, -18, 18);
+                twist = 58 * handed * settle;
+                roll = -turn * settle;
+                drop = (.12F + .04F * Mth.sin(age * .21F)) * settle;
+            }
+            case WATER_LEAP -> pitch = 16 * Mth.sin(Mth.PI * Mth.clamp(age / 14F, 0, 1));
+            case WATER_CALL -> pitch = -5 * smooth(age / 5F);
             default -> { return; }
         }
         if (twist == 0 && pitch == 0 && roll == 0 && drop == 0) return;

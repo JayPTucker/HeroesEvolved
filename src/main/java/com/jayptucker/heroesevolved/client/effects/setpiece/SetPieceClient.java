@@ -149,7 +149,7 @@ public final class SetPieceClient {
         if (!solid && event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || ACTIVE.isEmpty() && !SpeedArt.live() && !RewindArt.live() && !FlightArt.live()
-                && !PyroArt.live() && !ShapeArt.live() && !CryoConstructArt.live(mc.level) && !ClientProjectileTime.hasControlledShots()
+                && !PyroArt.live() && !ShapeArt.live() && !HydroArt.live() && !CryoConstructArt.live(mc.level) && !ClientProjectileTime.hasControlledShots()
                 && !com.jayptucker.heroesevolved.client.effects.intro.SkyFightArt.live()) return;
         if (world != mc.level) { ACTIVE.clear(); world = mc.level; }
         Vec3 camera = event.getCamera().getPosition();
@@ -205,6 +205,7 @@ public final class SetPieceClient {
             FlightArt.drawLive(c);
             PyroArt.drawLive(c);
             ShapeArt.drawLive(c);
+            HydroArt.drawLive(c);
             com.jayptucker.heroesevolved.client.effects.intro.SkyFightArt.drawLive(c);
             CryoConstructArt.draw(c);
             TemporalProjectileArt.draw(c);

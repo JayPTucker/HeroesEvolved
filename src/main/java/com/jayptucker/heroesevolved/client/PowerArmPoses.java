@@ -497,6 +497,12 @@ public final class PowerArmPoses {
                     lightningStyle(model, entity, pose, main, rightHanded ? model.leftArm : model.rightArm,
                             rightHanded ? model.rightLeg : model.leftLeg, rightHanded ? model.leftLeg : model.rightLeg,
                             inward, aimX, aimY, ClientArmPoseState.ageTicks(id));
+            case WATER_WHIP, WATER_SNARE, WATER_HEAVE, WATER_OCTOPUS, WATER_BURST, WATER_SURF, WATER_LEAP, WATER_CALL,
+                    WATER_LASH, WATER_BACKHAND, WATER_DAGGERS, WATER_WHEEL, WATER_FLOW, WATER_VAULT,
+                    WATER_PUSH, WATER_RAISE, WATER_HEAL, WATER_DOME ->
+                    waterbend(model, entity, pose, main, rightHanded ? model.leftArm : model.rightArm,
+                            rightHanded ? model.rightLeg : model.leftLeg, rightHanded ? model.leftLeg : model.rightLeg,
+                            inward, aimX, aimY, ClientArmPoseState.ageTicks(id));
             case SHIFT_STUDY -> {
                 // Two fingers at the temple, tapping as the shape is learned; the other arm folded under the elbow.
                 float age = ClientArmPoseState.ageTicks(id);
@@ -1435,6 +1441,181 @@ public final class PowerArmPoses {
                 set(off, (back ? -.9F : .65F) * flung, -inward * .12F, inward * (.35F + .3F * flung));
                 set(lead, (back ? -.5F : -.2F) * flung, 0, inward * .06F);
                 set(rear, (back ? .15F : .2F) * flung, 0, -inward * .06F);
+            }
+            default -> { }
+        }
+        model.rightPants.copyFrom(model.rightLeg);
+        model.leftPants.copyFrom(model.leftLeg);
+    }
+
+    /**
+     * Hydrokinesis and waterbending, with the conventions of {@link #firebend} ({@code main} the rear arm, {@code off}
+     * the lead). Water moves in arcs, so every gesture swings from the shoulder through a curve and follows through,
+     * never a straight jab: a whip drawn overhead and cracked down, a heave from the hips, arms circling with the
+     * octopus's, a surfer's balance.
+     */
+    private static void waterbend(PlayerModel<?> model, LivingEntity entity, ArmPose pose, ModelPart main, ModelPart off,
+                                  ModelPart rear, ModelPart lead, float inward, float aimX, float aimY, float age) {
+        switch (pose) {
+            case WATER_WHIP -> {
+                // Drawn up and back over the shoulder, then cracked down along the aim and followed through low.
+                float wind = smooth(age / 2F), crack = smooth((age - 2) / 1.6F), follow = smooth((age - 4) / 3F), recover = smooth((age - 7) / 3F);
+                float x = Mth.lerp(crack, Mth.lerp(wind, -.4F, -2.85F), aimX + .1F) + .45F * follow;
+                set(main, Mth.lerp(recover, x, -.3F), inward * Mth.lerp(crack, -.15F, .2F) + aimY * crack, -inward * .25F * (1 - crack));
+                set(off, -.7F - .2F * wind, -inward * .35F, inward * (.15F + .25F * crack));
+                set(lead, -.3F * (1 - recover), 0, inward * .06F);
+                set(rear, .25F * (1 - recover), 0, -inward * .06F);
+            }
+            case WATER_SNARE -> {
+                // Flung out to throw, then hauled back hand over fist to the chest.
+                float throwOut = smooth(age / 1.5F), haul = smooth((age - 4) / 4F);
+                set(main, Mth.lerp(haul, Mth.lerp(throwOut, -1.2F, aimX), -1.25F), Mth.lerp(haul, aimY, inward * .7F), -inward * .1F);
+                set(off, Mth.lerp(haul, -.9F, -1.4F), -inward * Mth.lerp(haul, .3F, .5F), inward * .12F);
+                set(lead, -.35F * (1 - haul) + .1F * haul, 0, inward * .06F);
+                set(rear, .2F + .25F * haul, 0, -inward * .06F);
+            }
+            case WATER_HEAVE -> {
+                // Both arms swept low and back, then heaved up and forward together as the wave rises.
+                float scoop = smooth(age / 2.5F), heave = smooth((age - 2.5F) / 3F), recover = smooth((age - 9) / 5F);
+                float x = Mth.lerp(heave, Mth.lerp(scoop, -.2F, .55F), aimX - .45F);
+                x = Mth.lerp(recover, x, -.25F);
+                set(main, x, inward * .1F * heave, -inward * (.25F - .15F * heave));
+                set(off, x, -inward * .1F * heave, inward * (.25F - .15F * heave));
+                set(lead, -.4F * heave * (1 - recover), 0, inward * .1F);
+                set(rear, .35F * heave * (1 - recover), 0, -inward * .1F);
+            }
+            case WATER_OCTOPUS -> {
+                // Arms held out from the sides, palms open, turning slow circles with the arms of water.
+                float open = smooth(age / 4F);
+                float circle = Mth.sin(age * .16F) * .18F, lift = Mth.cos(age * .16F) * .12F;
+                set(main, -.45F * open + circle, inward * .1F, -inward * (1.15F * open + lift));
+                set(off, -.45F * open - circle, -inward * .1F, inward * (1.15F * open - lift));
+                set(lead, -.12F * open, 0, inward * .18F * open);
+                set(rear, .12F * open, 0, -inward * .18F * open);
+            }
+            case WATER_BURST -> {
+                // Every arm thrown out at once: both arms flung wide and up.
+                float fling = smooth(age / 1.5F) * (1 - smooth((age - 7) / 5F));
+                set(main, -.9F * fling, 0, -inward * 1.6F * fling);
+                set(off, -.9F * fling, 0, inward * 1.6F * fling);
+                set(lead, -.2F * fling, 0, inward * .2F * fling);
+                set(rear, .2F * fling, 0, -inward * .2F * fling);
+            }
+            case WATER_SURF -> {
+                // A surfer's stance: lead arm out ahead, rear arm out behind, knees soft and swaying with the wave.
+                float settle = smooth(age / 4F), sway = Mth.sin(age * .21F);
+                set(off, (-.95F + .1F * sway) * settle, -inward * .25F, inward * (.85F + .1F * sway) * settle);
+                set(main, (.45F - .1F * sway) * settle, inward * .2F, -inward * (.95F - .1F * sway) * settle);
+                set(lead, -.45F * settle, inward * .15F, inward * .12F);
+                set(rear, (.4F + .05F * sway) * settle, -inward * .15F, -inward * .12F);
+            }
+            case WATER_LEAP -> {
+                // Thrown off the crest: arms up, knees drawn in, then reaching down to land.
+                float up = smooth(age / 2F), land = smooth((age - 9) / 5F);
+                set(main, Mth.lerp(land, -2.75F * up, -.6F), 0, -inward * .3F);
+                set(off, Mth.lerp(land, -2.75F * up, -.6F), 0, inward * .3F);
+                float tuck = Mth.sin(Mth.PI * Mth.clamp(age / 12F, 0, 1));
+                set(lead, -1.1F * tuck, 0, inward * .08F);
+                set(rear, -.9F * tuck, 0, -inward * .08F);
+            }
+            case WATER_CALL -> {
+                // Both arms raised high and circling, calling the water up.
+                float raise = smooth(age / 5F), circle = Mth.sin(age * .2F) * .3F;
+                set(main, -2.65F * raise, inward * circle * raise, -inward * (.4F + .1F * Mth.cos(age * .2F)) * raise);
+                set(off, -2.65F * raise, inward * circle * raise, inward * (.4F - .1F * Mth.cos(age * .2F)) * raise);
+                set(lead, -.15F * raise, 0, inward * .15F * raise);
+                set(rear, .15F * raise, 0, -inward * .15F * raise);
+            }
+            case WATER_LASH -> {
+                // The lead hand flicks a lash from down by the hip, up and out along the aim, and back.
+                float flick = smooth(age / 1.3F) * (1 - smooth((age - 4) / 4F));
+                set(off, Mth.lerp(flick, .25F, aimX + .1F), Mth.lerp(flick, -inward * .45F, aimY - inward * .15F), inward * .2F * (1 - flick));
+                set(main, -1.0F, inward * .3F, -inward * .1F);
+                set(lead, -.3F - .08F * flick, 0, inward * .05F);
+                set(rear, .3F, 0, -inward * .05F);
+            }
+            case WATER_BACKHAND -> {
+                // The rear hand starts across the chest and sweeps out to its own side along the aim.
+                float sweep = smooth(age / 1.4F) * (1 - smooth((age - 4.5F) / 4F));
+                set(main, Mth.lerp(sweep, -1.3F, aimX + .05F), Mth.lerp(sweep, inward * .95F, aimY - inward * .3F), -inward * .15F * sweep);
+                set(off, -1.0F, -inward * .3F, inward * .1F);
+                set(lead, -.28F, 0, inward * .05F);
+                set(rear, .32F + .1F * sweep, 0, -inward * .05F);
+            }
+            case WATER_DAGGERS -> {
+                // Both hands drawn back to the shoulders, then thrust out together, fingers spread, throwing the ice.
+                float draw = smooth(age / 2F), thrust = smooth((age - 2) / 1.5F), recover = smooth((age - 7) / 5F);
+                float x = Mth.lerp(thrust, Mth.lerp(draw, -.6F, -1.9F), aimX);
+                x = Mth.lerp(recover, x, -.4F);
+                set(main, x, inward * Mth.lerp(thrust, .15F, -.08F) + aimY * thrust, -inward * .2F * (1 - thrust));
+                set(off, x, -inward * Mth.lerp(thrust, .15F, -.08F) + aimY * thrust, inward * .2F * (1 - thrust));
+                set(lead, -.35F * (1 - recover), 0, inward * .06F);
+                set(rear, .3F * (1 - recover), 0, -inward * .06F);
+            }
+            case WATER_WHEEL -> {
+                // Low, both arms swept out to the sides as the body turns, carrying the ring of water round.
+                float out = smooth(age / 2F) * (1 - smooth((age - 10) / 4F));
+                set(main, -.5F * out, inward * .1F, -inward * 1.35F * out);
+                set(off, -.5F * out, -inward * .1F, inward * 1.35F * out);
+                set(lead, -.75F * out, 0, inward * .2F * out);
+                set(rear, .3F * out, 0, -inward * .25F * out);
+            }
+            case WATER_FLOW -> {
+                // Skating on water: the trailing palm pushes down and back against the flow, the other arm forward.
+                Vec3 travel = entity instanceof Player player
+                        ? com.jayptucker.heroesevolved.flight.FlightVisualGeometry.travel(player) : entity.getDeltaMovement();
+                float yaw = entity.yBodyRot * Mth.DEG_TO_RAD;
+                double sideways = travel.x * -Math.cos(yaw) + travel.z * -Math.sin(yaw);
+                float settle = 1 - smooth((age - 5) / 5F);
+                boolean towardRight = sideways > 0;
+                ModelPart push = towardRight ? model.leftArm : model.rightArm;
+                ModelPart near = towardRight ? model.rightArm : model.leftArm;
+                float out = towardRight ? -1 : 1;
+                set(push, .5F * settle, 0, out * .9F * settle);
+                set(near, -1.1F * settle, out * .4F * settle, out * .15F);
+                set(model.rightLeg, -.3F * settle, 0, .18F * settle);
+                set(model.leftLeg, .2F * settle, 0, -.18F * settle);
+            }
+            case WATER_VAULT -> {
+                // The geyser throws the body over backward: arms up and back, knees in, then straight to land.
+                float throwUp = smooth(age / 2.5F) * (1 - smooth((age - 10) / 4F));
+                float tuck = Mth.sin(Mth.PI * Mth.clamp(age / 12F, 0, 1));
+                set(main, -2.85F * throwUp, 0, -inward * .45F * throwUp);
+                set(off, -2.85F * throwUp, 0, inward * .45F * throwUp);
+                set(rear, -1.3F * tuck, 0, -inward * .1F);
+                set(lead, -1.45F * tuck, 0, inward * .1F);
+            }
+            case WATER_PUSH -> {
+                // Both palms pushed straight out together along the aim, braced, trembling with the pressure.
+                float brace = smooth(age / 3F), shake = Mth.sin(age * 2.3F) * .02F;
+                set(main, Mth.lerp(brace, -.6F, aimX) + shake, aimY + inward * .16F * brace, 0);
+                set(off, Mth.lerp(brace, -.6F, aimX) - shake, aimY - inward * .16F * brace, 0);
+                set(lead, -.4F * brace, 0, inward * .1F);
+                set(rear, .45F * brace, 0, -inward * .1F);
+            }
+            case WATER_RAISE -> {
+                // Palms turned up and lifted, raising the water from the ground.
+                float lift = smooth(age / 6F), recover = smooth((age - 12) / 6F);
+                float x = Mth.lerp(lift, -.45F, -1.95F) * (1 - recover) - .3F * recover;
+                set(main, x, inward * .12F, -inward * .28F);
+                set(off, x, -inward * .12F, inward * .28F);
+                set(lead, -.12F * lift, 0, inward * .12F * lift);
+                set(rear, .12F * lift, 0, -inward * .12F * lift);
+            }
+            case WATER_HEAL -> {
+                // Hands cupped together at the chest, then pressed gently out toward the one being healed.
+                float cup = smooth(age / 3F), press = smooth((age - 6) / 4F), recover = smooth((age - 15) / 5F);
+                float x = Mth.lerp(press, -1.15F, aimX + .2F) * cup;
+                set(main, Mth.lerp(recover, x, -.3F), inward * Mth.lerp(press, .6F, .22F) * cup, 0);
+                set(off, Mth.lerp(recover, x, -.3F), -inward * Mth.lerp(press, .6F, .22F) * cup, 0);
+            }
+            case WATER_DOME -> {
+                // Arms swept up from the sides and over the head, then spread wide as the dome settles.
+                float rise = smooth(age / 6F), spread = smooth((age - 8) / 6F);
+                set(main, -2.9F * rise + .5F * spread, 0, -inward * (.45F * (1 - rise) + .2F + 1.0F * spread));
+                set(off, -2.9F * rise + .5F * spread, 0, inward * (.45F * (1 - rise) + .2F + 1.0F * spread));
+                set(lead, -.15F * rise, 0, inward * .15F * rise);
+                set(rear, .15F * rise, 0, -inward * .15F * rise);
             }
             default -> { }
         }

@@ -72,9 +72,14 @@ slower one starts it again. Clicking at a block you're close enough to dig still
   knockback, and it bursts over nearby enemies if the target was already burning. Dodge through an attack and punish
   it straight away.
 
-Both controls can be switched off in the client config (Mods → Heroes Evolved → Config: `firebendingStrikes` and
-`firebendingDodges`). Server owners can change the stamina costs and the dodge cooldown under `pyrokinesis` in the
-common config.
+Both controls can be switched off in the client config (Mods → Heroes Evolved → Config: `fightingStyleStrikes` and
+`fightingStyleDodges`, shared with Electrokinesis's and Hydrokinesis's styles). Server owners can change the stamina
+costs and the dodge cooldown under `pyrokinesis` in the common config.
+
+Firebending was the first fighting style, and the others are built on it: Electrokinesis fights with sparks and flashes
+of lightning ([electrokinesis.md](electrokinesis.md#fighting-style-lightning)) and Hydrokinesis as a waterbender
+([hydrokinesis.md](hydrokinesis.md#waterbending-the-fighting-style)). The controls, the evasion window and the cushioned
+landing work the same for all three.
 
 ## Flame Flight and Heat
 

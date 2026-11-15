@@ -74,7 +74,7 @@ public final class PyroEvents {
             PlayerEnergyService.restore(player, 3);
             if (com.jayptucker.heroesevolved.skills.SkillTreeService.has(player, "pyrokinesis_2_0")) PyroService.addHeat(player, 5);
         }
-        if (player.isInWaterRainOrBubble()) {
+        if (player.isInWaterRainOrBubble() || com.jayptucker.heroesevolved.hydro.HydroService.soaked(player)) {
             PyroService.quench(player);
             PlayerEnergyService.consumeUpTo(player, 2);
         }

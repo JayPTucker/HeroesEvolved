@@ -74,7 +74,8 @@ public final class PowerIntroService {
             Map.entry("technopathy", new Spec(50, 40, 0x60E0C1, ArmPose.TEMPLE, Kind.TECH_LINK, Kind.TECH_SCAN)),
             Map.entry("matter_assembly", new Spec(50, 40, 0xE7B771, ArmPose.TWO_HANDS, Kind.MATTER_WEAVE, Kind.MATTER_SHIELD)),
             Map.entry("vibe", new Spec(28, 25, 0x46BDFF, ArmPose.VIBE_READ, null, null)),
-            Map.entry("shapeshifting", new Spec(30, 25, 0x8FCFC6, ArmPose.TEMPLE, null, null)));
+            Map.entry("shapeshifting", new Spec(30, 25, 0x8FCFC6, ArmPose.TEMPLE, null, null)),
+            Map.entry("hydrokinesis", new Spec(30, 30, 0x3CC2D6, ArmPose.WATER_CALL, null, null)));
     private static final Map<UUID, Session> SESSIONS = new HashMap<>();
     private static final Map<UUID, Integer> SOFT_LANDINGS = new HashMap<>();
     /** Allies an awakening is saving, shielded until this game tick. */
@@ -199,6 +200,11 @@ public final class PowerIntroService {
         if (session.ally() && session.wardHere()) shieldWard(session.ward, WARD_TAIL_TICKS);
         if (age == 1) begin(session);
         if (age < spec.chargeTicks) {
+            if (age == 1 && session.power.getPath().equals("hydrokinesis")) {
+                // The water gathers first: a whirlpool opens at the bender's feet.
+                com.jayptucker.heroesevolved.network.SetPiecePayload.send(player.serverLevel(),
+                        com.jayptucker.heroesevolved.styles.Piece.HYDRO_WHIRLPOOL, player.position(), player.position(), 2.5F, null);
+            }
             if (age == 1 && session.power.getPath().equals("vibe")) {
                 LivingEntity ward = session.ally() && session.wardHere() ? session.ward : player;
                 com.jayptucker.heroesevolved.network.SetPiecePayload.send(player.serverLevel(),
@@ -255,6 +261,7 @@ public final class PowerIntroService {
             case "empathic_mimicry" -> SoundEvents.ENCHANTMENT_TABLE_USE;
             case "technopathy" -> SoundEvents.COMPARATOR_CLICK;
             case "vibe" -> SoundEvents.AMETHYST_BLOCK_RESONATE;
+            case "hydrokinesis" -> SoundEvents.CONDUIT_ACTIVATE;
             case "shapeshifting" -> SoundEvents.ILLUSIONER_MIRROR_MOVE;
             case "matter_assembly" -> SoundEvents.DEEPSLATE_PLACE;
             default -> SoundEvents.WIND_CHARGE_BURST.value();
@@ -361,6 +368,10 @@ public final class PowerIntroService {
             case "shapeshifting" -> {
                 LivingEntity saved = ward ? session.ward : player;
                 com.jayptucker.heroesevolved.shapeshift.ShapeshiftTricks.awaken(player, saved, Danger.threats(player, saved, 10));
+            }
+            case "hydrokinesis" -> {
+                LivingEntity saved = ward ? session.ward : player;
+                com.jayptucker.heroesevolved.hydro.HydroService.awaken(player, saved, Danger.threats(player, saved, 10));
             }
         }
         // Every other power reaches across to the ally it woke for, and ends their fight too.

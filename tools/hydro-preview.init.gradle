@@ -1,0 +1,23 @@
+// The client photographs Hydrokinesis: the kit, waterbending, the tree and the classes (uitest/HydroPreview).
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('hydroPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/hydro-preview')
+                        programArguments.addAll('--width', '1100', '--height', '800')
+                        systemProperty('heroes.preview.hydro', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('hydroPreviewClasses')) }
+        }
+    }
+}

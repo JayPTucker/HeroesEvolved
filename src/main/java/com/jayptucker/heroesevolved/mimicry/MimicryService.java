@@ -500,6 +500,11 @@ public final class MimicryService {
         return isBorrowingConstructPower(player, ModAbilities.MATTER_ASSEMBLY_ID);
     }
 
+    /** An Echo of Hydrokinesis: the water the empath borrowed is drawn round them like a hydrokinetic's. */
+    public static boolean isBorrowingHydrokinesis(ServerPlayer player) {
+        return isBorrowingConstructPower(player, ModAbilities.HYDROKINESIS_ID);
+    }
+
     /** Only a real Echo invocation or its still-selected session authorizes these constructs. */
     private static boolean isBorrowingConstructPower(ServerPlayer player, ResourceLocation power) {
         if (player.isRemoved() || !isMimic(player) || !PowerRules.canAct(player)

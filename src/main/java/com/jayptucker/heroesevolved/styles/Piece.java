@@ -180,7 +180,28 @@ public enum Piece {
     // radius), an Arc Step (origin and target the feet before and after; scale 2 for a Flashback), a Flashback's static
     // (unbound; scale its radius; it bursts FLASHBACK_FUSE ticks in), a blow grounded out, and the loaded rear fist (re-sent)
     ELECTRO_SPARK(9), ELECTRO_CLAP(14), ELECTRO_GROUND_ARC(16), ELECTRO_ARC_STEP(12), ELECTRO_DECOY(24),
-    ELECTRO_GROUND_OUT(14), ELECTRO_LOADED(7);
+    ELECTRO_GROUND_OUT(14), ELECTRO_LOADED(7),
+    // Hydrokinesis, drawn by HydroArt (living water: glassy sea-blue bodies with foam lips and white spray; THIN added to
+    // the scale when the water was pulled from the air). The kit: a Water Whip from hand to end (bound to the bender;
+    // scale 1 on a hit, .6 a miss, + 4 for a snare), the coil a snare throws round its catch (bound to it; origin the
+    // hand; scale its height), a Crashing Wave and a Tsunami (origin the floor it rises from, target its reach along the
+    // ground; scale half its width), an Octopus Form arm lashing out (bound; origin the arm's root, target the foe), every
+    // arm thrown out at once (bound; scale the burst's radius), a splash anywhere (scale its radius), Maelstrom's opening
+    // whirlpool (scale its ring) and the Deluge it comes down as (scale its reach).
+    HYDRO_WHIP(12), HYDRO_SNARE(14), HYDRO_WAVE(28), HYDRO_TSUNAMI(40), HYDRO_TENDRIL(9), HYDRO_BURST(16), HYDRO_SPLASH(16),
+    HYDRO_WHIRLPOOL(36), HYDRO_DELUGE(26),
+    // Waterbending (bound to the bender): a lash (scale 1 / .6, + 4 when Turn the Tide loaded it), one ice dagger (origin
+    // the hands), a Water Wheel (scale its radius), a Flow Step (origin and target the feet before and after), a Geyser
+    // Vault's column (origin where it bursts, target a block ahead; scale its radius), a blow turned (Turn the Tide), and
+    // the loaded rear hand (re-sent)
+    HYDRO_LASH(10), HYDRO_DAGGER(10), HYDRO_WHEEL(14), HYDRO_FLOW(16), HYDRO_VAULT(18), HYDRO_UNDERTOW(12), HYDRO_LOADED(7),
+    // Hydrokinesis's tree and classes: a Geyser's mark and its burst (scale the radius), the Pressure Jet (bound, re-sent
+    // every two ticks from the palms to its end), a Tide Wall (re-sent; origin its foot, target a block along its facing;
+    // scale half its width), Healing Water wrapping its target (bound to it), a Rain Call cloud (bound to the caller,
+    // re-sent; scale its radius), a Tidal Dome and a Healing Spring (re-sent; scale the radius), and the awakening (bound;
+    // target the ward)
+    HYDRO_GEYSER_MARK(16), HYDRO_GEYSER(24), HYDRO_JET(4), HYDRO_WALL(12), HYDRO_HEAL(20), HYDRO_RAIN(12), HYDRO_DOME(12),
+    HYDRO_SPRING(12), HYDRO_AWAKEN(30);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

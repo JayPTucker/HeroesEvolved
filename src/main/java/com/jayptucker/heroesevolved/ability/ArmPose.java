@@ -175,5 +175,21 @@ public enum ArmPose {
      *  the rear fist driven through (cross); both palms swung in and slammed together in front of the chest
      *  (Thunderclap); dropped to one knee with the palm driven into the floor (Grounding Strike); the body flicked
      *  sideways, both arms trailing (Arc Step); arms swept back and the body thrown backward (Flashback). */
-    ELECTRO_JAB, ELECTRO_CROSS, ELECTRO_CLAP, ELECTRO_SLAM, ELECTRO_STEP, ELECTRO_FLASH
+    ELECTRO_JAB, ELECTRO_CROSS, ELECTRO_CLAP, ELECTRO_SLAM, ELECTRO_STEP, ELECTRO_FLASH,
+    /** Hydrokinesis's kit, all flowing arcs from the shoulder rather than straight thrusts. The main arm drawn high and
+     *  back and cracked down along the aim (Water Whip); the arm flung out, then hauled back to the chest (snare); both
+     *  arms swept low and heaved up and forward together (Crashing Wave); arms held out and circling slowly, palms open,
+     *  as the arms of water turn (Octopus Form); both arms flung out at once (the burst); a surfer's stance, arms out for
+     *  balance (Wave Rider); arms thrown up as the body leaves the crest (leap); both arms raised and circling overhead
+     *  (Maelstrom). */
+    WATER_WHIP, WATER_SNARE, WATER_HEAVE, WATER_OCTOPUS, WATER_BURST, WATER_SURF, WATER_LEAP, WATER_CALL,
+    /** Waterbending. The lead hand flicks a lash from the hip up and out (lash); the rear hand sweeps a backhand across
+     *  (backhand); both hands drawn back and thrust forward, fingers spread, throwing daggers (Ice Daggers); a low crouch,
+     *  arms sweeping round (Water Wheel); one palm pushed down and back as the body skates (Flow Step); arms flung up and
+     *  back through a backflip (Geyser Vault). */
+    WATER_LASH, WATER_BACKHAND, WATER_DAGGERS, WATER_WHEEL, WATER_FLOW, WATER_VAULT,
+    /** Hydrokinesis's skills and classes: both palms pushed forward together (Pressure Jet); palms turned up and lifted
+     *  (Geyser, Tide Wall, Water Spout, Rain Call); hands cupped at the chest, then pressed out toward the target (Healing
+     *  Water, Healing Spring); both arms swept up and over the head (Tidal Dome). */
+    WATER_PUSH, WATER_RAISE, WATER_HEAL, WATER_DOME
 }

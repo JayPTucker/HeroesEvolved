@@ -274,5 +274,35 @@
     "action": "shapeshift_nightmare",
     "energy": 1,
     "cooldown": 1
+  },
+  {
+    "power": "hydrokinesis",
+    "action": "hydro_water_whip",
+    "energy": 1,
+    "cooldown": 1
+  },
+  {
+    "power": "hydrokinesis",
+    "action": "hydro_crashing_wave",
+    "energy": 1,
+    "cooldown": 1
+  },
+  {
+    "power": "hydrokinesis",
+    "action": "hydro_octopus_form",
+    "energy": 1,
+    "cooldown": 1
+  },
+  {
+    "power": "hydrokinesis",
+    "action": "hydro_wave_rider",
+    "energy": 1,
+    "cooldown": 1
+  },
+  {
+    "power": "hydrokinesis",
+    "action": "hydro_maelstrom",
+    "energy": 1,
+    "cooldown": 1
   }
 ]

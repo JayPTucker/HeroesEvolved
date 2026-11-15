@@ -65,9 +65,10 @@ public final class ElectroCombat {
         int step;
         long lastStrike = -1000, readyAt = -1000, dodgeReady = -1000, loadedUntil = -1000;
         UUID grounded;
+        ServerPlayer player;
     }
     /** A Flashback's static, left where the dodge began, bursting at {@code due}. */
-    private record Decoy(UUID owner, ServerLevel level, Vec3 at, long due, int powerLevel) {}
+    private record Decoy(ServerPlayer owner, ServerLevel level, Vec3 at, long due, int powerLevel) {}
 
     private static final Map<UUID, Fighter> FIGHTERS = new HashMap<>();
     private static final List<Decoy> DECOYS = new ArrayList<>();
@@ -88,7 +89,11 @@ public final class ElectroCombat {
 
     private static long now(ServerPlayer player) { return player.getServer().overworld().getGameTime(); }
 
-    private static Fighter fighter(ServerPlayer player) { return FIGHTERS.computeIfAbsent(player.getUUID(), id -> new Fighter()); }
+    private static Fighter fighter(ServerPlayer player) {
+        Fighter fighter = FIGHTERS.computeIfAbsent(player.getUUID(), id -> new Fighter());
+        fighter.player = player;
+        return fighter;
+    }
 
     /** The style needs the power, and arms not already busy with a stream, a surge or a Blackout's wind-up. */
     static boolean canFight(ServerPlayer player) {
@@ -104,7 +109,7 @@ public final class ElectroCombat {
     public static boolean isDodging(ServerPlayer player) { return StyleMotion.dashing(player); }
 
     public static int pendingDecoys(ServerPlayer player) {
-        return (int) DECOYS.stream().filter(d -> d.owner.equals(player.getUUID())).count();
+        return (int) DECOYS.stream().filter(d -> d.owner == player).count();
     }
 
     /** The strike the next click throws. */
@@ -339,7 +344,7 @@ public final class ElectroCombat {
         ServerLevel world = player.serverLevel();
         ElectroGeometry.show(world, Piece.ELECTRO_ARC_STEP, from, from.add(direction.scale(travel)), flashback ? 2 : 1, player);
         if (flashback) {
-            DECOYS.add(new Decoy(player.getUUID(), world, from, now + ElectroGeometry.FLASHBACK_FUSE, level));
+            DECOYS.add(new Decoy(player, world, from, now + ElectroGeometry.FLASHBACK_FUSE, level));
             ElectroGeometry.show(world, Piece.ELECTRO_DECOY, from, from.add(forward), ElectroGeometry.FLASHBACK_RADIUS, null);
         }
         ArmPosePayload.show(player, flashback ? ArmPose.ELECTRO_FLASH : ArmPose.ELECTRO_STEP, 10);
@@ -382,15 +387,15 @@ public final class ElectroCombat {
         for (Decoy decoy : List.copyOf(DECOYS)) {
             if (now < decoy.due) continue;
             DECOYS.remove(decoy);
-            ServerPlayer owner = server.getPlayerList().getPlayer(decoy.owner);
-            if (owner == null || owner.serverLevel() != decoy.level || !PowerRules.canAct(owner)) continue;
+            ServerPlayer owner = decoy.owner;
+            if (!owner.isAlive() || owner.serverLevel() != decoy.level || !PowerRules.canAct(owner)) continue;
             burst(owner, decoy);
         }
         if (now % 5 == 0) {
-            for (var entry : List.copyOf(FIGHTERS.entrySet())) {
-                if (now >= entry.getValue().loadedUntil) continue;
-                ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
-                if (player == null) continue;
+            for (Fighter fighter : List.copyOf(FIGHTERS.values())) {
+                if (now >= fighter.loadedUntil) continue;
+                ServerPlayer player = fighter.player;
+                if (player == null || !player.isAlive()) continue;
                 Vec3 fist = ElectroGeometry.fist(player, 1, true);
                 ElectroGeometry.show(player.serverLevel(), Piece.ELECTRO_LOADED, fist, fist, 1, player);
             }
@@ -419,6 +424,6 @@ public final class ElectroCombat {
 
     public static void forget(ServerPlayer player) {
         FIGHTERS.remove(player.getUUID());
-        DECOYS.removeIf(d -> d.owner.equals(player.getUUID()));
+        DECOYS.removeIf(d -> d.owner == player);
     }
 }

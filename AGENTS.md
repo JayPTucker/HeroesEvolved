@@ -9,7 +9,18 @@
   scenery block by block should follow the same rules (supports first, then the things they hold).
 - **Gameplay tests:** `./gradlew runGameTestServer --init-script tools/rewind-gametest.init.gradle`.
 - **In-game previews:** `tools/*-preview.init.gradle`; stage scenes at least 50 blocks from spawn, where the
-  bunker's walls trap the player.
+  bunker's walls trap the player. A new preview player starts in the Last Day's city, which is another dimension:
+  call `PrologueService.skip` and then `CryoChamberService.release`, teleport into `server.overworld()` explicitly,
+  force-load the staging chunks, and keep every scene inside that one small area (`uitest/HydroPreview.stage`). Log the
+  dimension and the block underfoot before trusting any shot; a preview that skipped this photographed void.
+- **Movement and fighting: Pyrokinesis is the bar.** Pyrokinesis has GREAT movement, the best in the mod: firebending's
+  combo of fists and kicks, jet-step dodges with an evasion window, a backflip kick, a counter that rewards a dodge,
+  whole-body turns, and Flame Flight's jets on palms and boots. Many other abilities should move like it, though not
+  all of them (a telepath or a healer has no business doing backflips). When a power should feel physical, start from
+  firebending: the shared `combat/FightingStyles` engine gives any power the same input, dodges, evasion and counters
+  (Electrokinesis's lightning style and Hydrokinesis's waterbending are each one class on it, plus art and poses), and
+  `render/FightingStylePoseRenderer` turns the whole body. See "Reusable patterns from firebending" below, and
+  [docs/pyrokinesis.md](docs/pyrokinesis.md) for what the player sees.
 
 ## Reusable patterns from the Flight rework
 
@@ -295,34 +306,110 @@ sees is in [docs/pyrokinesis.md](docs/pyrokinesis.md).
 
 ## Reusable patterns from firebending (Pyrokinesis melee)
 
-Pyrokinesis gained a fighting style in November 2026 (`pyro/PyroCombat`, numbers in `pyro/PyroGeometry`, input in
-`client/PyroCombatClient`, whole-body turns in `render/PyroCombatPoseRenderer`, art in `PyroArt`). What the player sees is
-in [docs/pyrokinesis.md](docs/pyrokinesis.md). Reuse these for any power that should fight hand to hand.
+Pyrokinesis gained a fighting style in November 2026 (`pyro/PyroCombat`, numbers in `pyro/PyroGeometry`, art in
+`PyroArt`). Its input, dodges and evasion became the shared fighting-style engine (`combat/FightingStyles`,
+`combat/StyleMotion`, `client/FightingStyleClient`, `network/FightingStylePayload`, whole-body turns in
+`render/FightingStylePoseRenderer`), which Electrokinesis and Hydrokinesis also use. What the player sees is in
+[docs/pyrokinesis.md](docs/pyrokinesis.md). Reuse these for any power that should fight hand to hand.
 
+- **A new style is one class.** Implement `FightingStyles.Style` (`owns`, `strike`, `dodge`, `counter`, `tick`,
+  `forget`, `clear`), add it to `FightingStyles.STYLES`, and add the power to `FightingStyleClient.STYLED`. Input,
+  payload, client settings, evasion, fall cushions and cleanup on death, logout and dimension change come for free.
+  Copy `PyroCombat`, `electro/ElectroCombat` or `hydro/HydroCombat` for the shape of one.
 - **Moves without keys.** An empty-handed left click (`InputEvent.InteractionKeyMappingTriggered`, cancelled when the
-  crosshair isn't on a block) and a double-tapped A, D or S (edges read in `ClientTickEvent`) send `PyroCombatPayload`.
-  The server routes it through `PossessionService.actionActor`, picks the move, pays for it and times it. Both can be
-  switched off in `ClientVisualSettings` (`firebendingStrikes`, `firebendingDodges`).
-- **A click that can't throw fire still punches.** The payload carries the crosshair's entity; when `PyroCombat.strike`
-  returns -1 (no stamina, power switched off), the server does a plain `player.attack`. A cancelled click must never
-  leave a player swinging at nothing.
+  crosshair isn't on a block) and a double-tapped A, D or S (edges read in `ClientTickEvent`) send
+  `FightingStylePayload`. The server routes it through `PossessionService.actionActor` to the actor's style, which picks
+  the move, pays for it and times it. Both can be switched off in `ClientVisualSettings` (`fightingStyleStrikes`,
+  `fightingStyleDodges`).
+- **A click that can't strike still punches.** The payload carries the crosshair's entity; when a style's `strike`
+  returns -1 (no stamina, power switched off), `FightingStyles.strikeInput` does a plain `player.attack`. A cancelled
+  click must never leave a player swinging at nothing.
 - **A combo is three numbers.** The next step, the last strike's time and when the next is allowed (`Fighter`). A click
   within `COMBO_WINDOW` carries on; the client also throttles so mashing doesn't flood the server.
-- **Dodges with evasion.** A dodge records an evasion window (`EVADE_TICKS`) that cancels blows with an entity source in
-  `LivingIncomingDamageEvent`, before the power's immunities. The first blow evaded loads a reward (Counterflame), the
-  cross-move link. Never evade `BYPASSES_INVULNERABILITY`.
+- **Dodges with evasion.** `StyleMotion.evade(player, ticks)` opens an evasion window; `FightingStyles` cancels blows
+  with an entity source in `LivingIncomingDamageEvent` (HIGH priority, before the power's immunities) and calls the
+  style's `counter(player, source)` for the first one, the cross-move link (Counterflame, Ground Out, Turn the Tide).
+  Never evade `BYPASSES_INVULNERABILITY`.
 - **Ground dashes are re-sent each tick.** One velocity packet on the ground is eaten by friction within two ticks;
-  `PyroCombat.push` re-sends the dash for `STEP_TICKS`, working out the hop's fall the client's way
-  (`(vy - .08) * .98`), and stops on `horizontalCollision`. During Flame Flight, `PyroFlightService.tick` skips steering
-  while `PyroCombat.isDodging`, or cruise overwrites the dash.
-- **Turning the whole body.** `render/PyroCombatPoseRenderer` rotates the model in `RenderPlayerEvent.Pre` about the hip,
-  in the body's yaw frame (as `CryoRidePoseRenderer` does), keyed off the arm pose and its age: a backflip, a spin, a
-  twist into a kick. The camera never turns. Legs are posed in `PowerArmPoses.firebend`; copy the pants afterward.
+  `StyleMotion.dash` re-sends the push for its push ticks, working out the hop's fall the client's way
+  (`(vy - .08) * .98`), and stops on `horizontalCollision`. A flip is an `impulse` (pushed once, then flies). During
+  Flame Flight, `PyroFlightService.tick` skips steering while `PyroCombat.isDodging`, or cruise overwrites the dash.
+- **Turning the whole body.** `render/FightingStylePoseRenderer` rotates the model in `RenderPlayerEvent.Pre` about the
+  hip, in the body's yaw frame (as `CryoRidePoseRenderer` does), keyed off the arm pose and its age: a backflip, a spin, a
+  twist into a kick, a surfer's sideways stance. The camera never turns. Legs are posed in `PowerArmPoses` (`firebend`,
+  `lightningStyle`, `waterbend`); copy the pants afterward.
+- **Keep the owner, not their id.** Anything a style leaves behind (Flashback's static) holds the `ServerPlayer`, not a
+  UUID looked up in the player list: game-test players (and other mods' fake players) aren't in the list.
 - **A kicked crescent.** `PyroArt.crescent` lays flame tongues along an arc between two angles in any plane, unrolled
   over time, trailing back the way the foot came, with a three-layer lip. The roundhouse (horizontal), flip kick
   (vertical) and sweep kick (a full turn) are one primitive. The server's `PyroGeometry.inCrescent` uses the same reach
   and angle.
 - **Strikes never place blocks.** Fire thrown many times a second would grief; only the kit's casts light real fire.
+
+## Reusable patterns from the lightning style (Electrokinesis melee)
+
+Electrokinesis gained a fighting style in November 2026 on the shared engine (`electro/ElectroCombat`, numbers in
+`ElectroGeometry`, art in `ElectroArt`). What the player sees is in [docs/electrokinesis.md](docs/electrokinesis.md).
+
+- **Give each style its own character, not a recolour.** Firebending kicks; lightning boxes. Sparks seek the nearest
+  body within `SPARK_SEEK` of the aim (lightning finds a conductor), the finisher is a clap rather than a kick, dodges
+  are flashes (pushed hard and nearly level for three ticks) rather than hops, and the back dodge leaves a delayed
+  static burst behind instead of kicking. Same engine, same controls, a different fight.
+- **A counter that points at the attacker.** `Style.counter` gets the `DamageSource`, so Ground Out remembers who threw
+  the evaded blow and the next spark goes through them and chains on (`ElectroCombat.chain`).
+- **A body sketched in the power.** `ElectroArt.sketch` draws a figure in forks (spine, shoulders, arms, legs, a halo
+  head). Arc Step leaves one where you stood and Flashback's static crackles in that shape until it bursts. Any power
+  can leave its own "afterimage" this way without the speedster's skin snapshots.
+- **Hands per side.** `ElectroGeometry.fist(player, partial, main)` and `ElectroArt.fist(c, owner, main, reach)` place
+  the lead or rear fist in third person and in first person, so a jab leaves the hand that threw it.
+- **Cross-power rules live where the damage is dealt.** `ElectroService.shock` reads `HydroService.soaked`, and
+  `PyroService.burn` turns a soaked target's burn into steam: one line each, at the one place each power hurts things.
+
+## Reusable patterns from Hydrokinesis (water)
+
+Hydrokinesis (`hydro/`, art in `client/effects/setpiece/HydroArt`) was added in November 2026: the reservoir, five core
+moves, waterbending, an eighteen-node tree and three classes. What the player sees is in
+[docs/hydrokinesis.md](docs/hydrokinesis.md).
+
+- **A resource you can see on the body.** The reservoir has no HUD bar: `HydroStatePayload` (water, capacity and state
+  flags, sent to the bender and everyone tracking them, on change and on `StartTracking`) feeds `ClientHydroState`, and
+  `HydroArt.drawLive` draws the water flowing round the waist, longer and thicker the fuller. Ease the drawn value toward
+  the server's each client tick so it never jumps.
+- **Never let a resource lock the kit.** `HydroService.draw` spends water if there is enough and otherwise pulls it
+  "thin from the air": the move still works at 70% and costs a little stamina, and its piece gets `HydroGeometry.THIN`
+  added to the scale so the art draws it paler and thinner (the same scale-flag trick as Pyrokinesis's `BLUE_SCALE`).
+- **A status other powers read.** Soaked is a real `MobEffect` (`hydro/Soaked`, `ModItems.SOAKED`) so it syncs and shows an
+  icon. Lightning hits it harder, fire turns to steam on it, Ice Daggers freeze it. Make cross-power hooks statuses, not
+  private maps.
+- **A travelling shape both sides follow over the terrain.** A wave is one packet: the server and `HydroArt.wave` both
+  ask `HydroGeometry.waveFront` how far it has rolled and `HydroGeometry.waveFloor` (a block-by-block ground walk over a
+  `BlockGetter`, so the client can run it on its own level) how high the ground is there. The drawn wave climbs the same
+  steps the real one does.
+- **Held moves tick on the server tick, not the player tick.** Octopus Form, Wave Rider and Maelstrom keep a reference to
+  their `ServerPlayer` and tick from `HydroService.tick`, so they run the same for game-test players, which the level
+  never ticks.
+- **The shared tornado, again.** Maelstrom is the Superspeed/Tempest tornado with a new style (`SpeedCyclonePayload.HYDRO`):
+  `SpeedArt.tornado` swaps the funnel to water and spray, drops the debris and the lightning, and calls
+  `HydroArt.waterspout` for the whirlpool, foam bands and spray crown. The physics is `TornadoWind.blowTempest` with
+  suffocation on, so a waterspout drowns. A whirlpool, sandstorm or gravity well is another style, not a second tornado.
+- **Water is drawn as water.** `HydroArt.tube` and `sheet` draw lit, translucent surfaces in the SOFT pass (sea-blue
+  bodies, teal where thin, more opaque at the silhouette where you look through more water), with white `foam` lips and
+  falling `spray`; only thin glints go in the GLOW pass. Additive water reads as light, not water.
+- **A surfer stands sideways.** `WATER_SURF` turns the model 58° in `FightingStylePoseRenderer` and rolls it against the
+  turn rate (`yRot - yRotO`), while the arms hold a balance pose. The camera stays forward.
+- **Continuous poses must not have a recovery.** A re-sent pose keeps its age (`ClientArmPoseState`'s continuous list), so a
+  pose whose arms lower after a few ticks (`WATER_RAISE`) will droop halfway through a long hold. Held moves use poses that
+  hold (`WATER_CALL`, `WATER_OCTOPUS`, `WATER_SURF`, `WATER_PUSH`).
+- **Photographs:** `tools/hydro-preview.init.gradle` (`uitest/HydroPreview`, flag `heroes.preview.hydro`) shoots every
+  move, the style, the tree and the classes into `build/hydro-preview/screenshots/`; `tools/lightning-preview.init.gradle`
+  (the same driver, flag `heroes.preview.lightning`) shoots Electrokinesis's style into `build/lightning-preview/`.
+  - A fixed side camera (`TempestCamera.fix`) must be queued behind the scene's reset on the server thread
+    (`HydroPreview.side`): the reset clears the camera, and with any server lag a clear sent in the same tick, or a few
+    ticks later, lands after the fix.
+  - Don't stand an actor straight ahead of the player for a front shot: the front camera ends up inside it.
+- **Show nothing for someone who no longer has the power.** `HydroService.sync` sends no water and no flags unless the
+  player is a hydrokinetic (or borrowing it, `MimicryService.isBorrowingHydrokinesis`), so a respec or a revoked power
+  doesn't leave water drawn round them.
 
 ## Reusable patterns from the Invisibility rework
 

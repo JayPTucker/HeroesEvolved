@@ -24,6 +24,8 @@ public record SpeedCyclonePayload(int entity, Vec3 center, float radius, int age
     public static final int SPEED = 0, FLIGHT = 1, CONTAIN = 2;
     /** A containment run the heat has beaten: the runner slows to a stop on the ring and stands there. */
     public static final int CONTAIN_FAIL = 3;
+    /** Hydrokinesis's Maelstrom: a waterspout, its funnel drawn as spray and green-blue water over a whirlpool. */
+    public static final int HYDRO = 4;
     public static final Type<SpeedCyclonePayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "speed_cyclone"));
     public static final StreamCodec<RegistryFriendlyByteBuf, SpeedCyclonePayload> STREAM_CODEC = StreamCodec.of((buf, p) -> {
         buf.writeVarInt(p.entity);

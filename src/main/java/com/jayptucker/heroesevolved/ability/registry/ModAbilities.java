@@ -164,6 +164,10 @@ public final class ModAbilities {
     public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.ShapeshiftingAbility> SHAPESHIFTING =
             ABILITIES.register(SHAPESHIFTING_ID.getPath(), com.jayptucker.heroesevolved.ability.types.ShapeshiftingAbility::new);
 
+    public static final ResourceLocation HYDROKINESIS_ID = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "hydrokinesis");
+    public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.HydrokinesisAbility> HYDROKINESIS =
+            ABILITIES.register(HYDROKINESIS_ID.getPath(), com.jayptucker.heroesevolved.ability.types.HydrokinesisAbility::new);
+
     /**
      * Powers still being built (none now: Shapeshifting left the list when its tree and classes landed). Admins can give them, but the
      * Eclipse, the Formula, gifted villagers and retired-power swaps never roll them, and the catalog tests that expect a

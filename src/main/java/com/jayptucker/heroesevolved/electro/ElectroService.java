@@ -987,7 +987,8 @@ public final class ElectroService {
     private static void shock(ServerPlayer player, LivingEntity target, float damage, boolean continuous) {
         if (!target.isAlive()) return;
         com.jayptucker.heroesevolved.expansion.PowerReactions.electric(player, target);
-        float amount = target.isInWaterRainOrBubble() ? damage * 1.5F : damage;
+        // Water carries current: anyone wet, or soaked by a hydrokinetic, takes half again as much.
+        float amount = target.isInWaterRainOrBubble() || com.jayptucker.heroesevolved.hydro.HydroService.soaked(target) ? damage * 1.5F : damage;
         // Power damage uses the player-attack type for aggro and kill credit; the depth counter
         // stops Static Touch from treating it as a punch.
         powerDamageDepth++;

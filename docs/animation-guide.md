@@ -1,9 +1,10 @@
 # Animating abilities
 
 A guide for anyone (Claude, ChatGPT/Codex, or a person) making the visuals and animations for a power in
-Heroes Evolved. It is drawn from the three sets that look best so far: **Quake**, **Superspeed** and
-**Space-Time Manipulation**. Read it before writing any effect, pose or set piece, and check your work
-against the list at the end before showing it.
+Heroes Evolved. It is drawn from the sets that look best so far: **Quake**, **Superspeed** and
+**Space-Time Manipulation** for effects, and **Pyrokinesis** for movement (its fighting style and flight are the best
+movement in the mod). Read it before writing any effect, pose or set piece, and check your work against the list at the
+end before showing it.
 
 The player judges a power by watching it. They don't read the description or the code. If it doesn't look good
 on screen it isn't finished, however correct it is.
@@ -78,6 +79,29 @@ Time reads as **clockwork made of light** (`client/effects/TimeEffects.java`, `s
 Lesson: **give the power rules, and let them carry meaning.** Colour, speed and direction tell the player
 what is happening (slow, stopped, backwards) without any text.
 
+### Pyrokinesis: the body fights
+
+Pyrokinesis has the best movement in the mod, and many (not all) powers should move like it
+(`pyro/PyroCombat`, `combat/FightingStyles`, `render/FightingStylePoseRenderer`, `PowerArmPoses.firebend`):
+
+- **The whole body moves, not just the arms.** A jab turns the shoulders into the punch, a roundhouse twists the hips
+  round with the kick, a sweep kick drops low and spins once on the planted foot, a jet step leans away from its jet,
+  and the flip kick is a full backflip. The legs are posed too (a fighting stance, a chambered knee, a tuck), and the
+  camera never turns.
+- **Every move has a wind-up, a strike and a recovery,** each a few ticks long, eased with `smooth(age / n)`: the fist
+  snaps out in 1.5 ticks and is drawn back over four.
+- **The effect leaves the limb that threw it.** Fire leaves the fist that punched (`PyroGeometry.hand`, lead or rear),
+  the kick's crescent unrolls behind the foot along its swing, the jet step's flame blasts from the feet and the trailing
+  palm.
+- **Movement is rewarded.** Dodges have an evasion window, and the first blow dodged loads a counter you can see (the
+  rear fist burns brighter). Moving well is part of fighting well.
+- **Flight has a body.** Flame Flight streams fire from the palms and boots, follows the bank, and the arms push aft
+  beside the hips.
+
+Lesson: **when a power should feel physical, make the body the animation.** Electrokinesis (a boxer's sparks, a clap, a
+slam to one knee, flashes as a bolt) and Hydrokinesis (whips cracked overhead, a surfer's stance, a backflip off a
+geyser) follow it, each with its own character. Not every power should: a telepath or a healer moves differently.
+
 ## 3. Principles
 
 1. **One idea per power, one palette per power.** Name three to six colours, each with a role. Hard-code them
@@ -92,6 +116,9 @@ what is happening (slow, stopped, backwards) without any text.
    | Elle Bishop (boss) | `2E6BD8` halo, `7FD4FF` arc, `F2FBFF` core (her current); `E0894A` copper, `FFD7A8` hot copper (the room's banks and conduits); `1A1E24` scorch (all in `ElleArt`) |
    | Flight | `535A5A` shadow, `D2D4CE` vapor, `DCDDD5` condensation, `F6F4EC` core (all in `FlightArt`; Tempest's storm uses `DBDBD2` cloud and `EEEDE3` wind) |
    | Vibe | `07162F` void, `183B80` depth, `3096FF` blue, `90E6FF` ice, `EDFAFF` white core, `837CE8` ghost (combat echoes) (all in `VibeArt`) |
+   | Pyrokinesis | `A32813` edge, `F76A13` body, `FFBE42` gold (ember fire); `38409E`, `447EF4`, `74CCF3` (blue fire); `493833` soot (all in `PyroArt`) |
+   | Electrokinesis | `10172D` shadow, `3D52B8` indigo, `5588FF` blue, `84D5FF` ion, `EAF5FF` core (all in `ElectroArt`, the fighting style included) |
+   | Hydrokinesis | `0B3A5C` deep, `1F78B4` sea, `3CC2D6` teal, `9EE8F2` shallow (glints, healing), `F2FBFF` foam, `CDEFFF` ice (all in `HydroArt`) |
 
    Flight is also a good model of a whole power built from one shape language: every Flight set piece is drawn
    by `FlightArt` from three shared primitives (a translucent `arc` sheet with a turning lip, a broken tapered
@@ -111,7 +138,8 @@ what is happening (slow, stopped, backwards) without any text.
    from the side, from behind, from the front and in first person.
 7. **Dark needs its own pass.** Black adds nothing when blended additively, so cracks, soot, scorch marks and
    shadows must use normal blending. `LightningRenderer` does this automatically for dark colours; on a
-   Canvas, draw them in the SOFT or SOLID pass, not GLOW.
+   Canvas, draw them in the SOFT or SOLID pass, not GLOW. The same goes for anything that is matter rather than light:
+   blood (`RegenArt`) and water (`HydroArt`) are drawn lit, in the SOFT pass, with only thin glints in GLOW.
 8. **Respect the world.** Rings lie on their physical plane (the ground, or across the blast), not facing the
    camera. Things follow the terrain (the Tempest follows the ground's height). Face the way a body is really
    travelling, not where it looks: `FlightVisualGeometry.travel(player)` works for other players too. A body
@@ -218,6 +246,11 @@ Game tests check gameplay; they can't show an animation. Every visual must be se
   and save screenshots to `build/<name>-preview/screenshots/`.
   Run them with `./gradlew runClient --init-script tools/<name>-preview.init.gradle`.
 - **Stage at least 50 blocks from spawn.** The bunker stands at spawn and its walls trap the player.
+- **Stage in the overworld, in one loaded place.** A new player starts in the Last Day's city (another dimension):
+  end it with `PrologueService.skip`, release them with `CryoChamberService.release`, teleport into
+  `server.overworld()`, force-load the staging chunks and keep every scene within a few dozen blocks
+  (`HydroPreview.stage`). Hopping hundreds of blocks between scenes, or staying in the prologue's dimension, leaves the
+  player over void with no ground and no actors. Log the dimension and the block underfoot.
 - **Shoot several angles and moments**: from the side (to judge the pose), from behind (what the player
   sees), from the front, and at the wind-up, the peak and the aftermath. Crop and enlarge to judge the hands.
 - **Don't film a moving player through another entity.** `mc.setCameraEntity(otherEntity)` stops the local

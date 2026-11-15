@@ -118,6 +118,16 @@ public final class FirstPersonArmGeometry {
             lightningStyle(stack, side, player == null || arm == player.getMainArm(), pose, poseAge);
             return;
         }
+        if (switch (pose) {
+            case WATER_WHIP, WATER_SNARE, WATER_HEAVE, WATER_OCTOPUS, WATER_BURST, WATER_SURF, WATER_LEAP, WATER_CALL,
+                    WATER_LASH, WATER_BACKHAND, WATER_DAGGERS, WATER_WHEEL, WATER_FLOW, WATER_VAULT,
+                    WATER_PUSH, WATER_RAISE, WATER_HEAL, WATER_DOME -> true;
+            default -> false;
+        }) {
+            var player = net.minecraft.client.Minecraft.getInstance().player;
+            water(stack, side, player == null || arm == player.getMainArm(), pose, poseAge);
+            return;
+        }
         if (pose == ArmPose.KINETIC_GATHER || pose == ArmPose.KINETIC_HOLD || pose == ArmPose.KINETIC_RELEASE) {
             kinetic(stack, side, pose, time, poseAge);
             return;
@@ -1298,6 +1308,141 @@ public final class FirstPersonArmGeometry {
                 pitch = -82 + (pose == ArmPose.ELECTRO_FLASH ? -6 : 30) * flung;
                 yaw = side * (5 - 34 * flung);
                 roll = side * (4 + 26 * flung);
+            }
+            default -> { }
+        }
+        stack.translate(side * spread, height, depth);
+        stack.mulPose(Axis.YP.rotationDegrees(yaw));
+        stack.mulPose(Axis.XP.rotationDegrees(pitch));
+        stack.mulPose(Axis.ZP.rotationDegrees(roll));
+    }
+
+    /**
+     * Hydrokinesis in first person. Every gesture keeps the hands at the edges of the view and moves them in arcs: the
+     * whip hand rises out of the top corner and cracks down through the view; a lash flicks up from the bottom corner;
+     * the heave lifts both hands from below; the octopus and the surf hold the arms out at the sides; daggers thrust in
+     * toward the crosshair; calls and raises lift the palms.
+     */
+    private static void water(PoseStack stack, float side, boolean main, ArmPose pose, float age) {
+        float spread = .43F, height = -.4F, depth = -.25F, pitch = -82, yaw = side * 5, roll = side * 4;
+        switch (pose) {
+            case WATER_WHIP -> {
+                if (main) {
+                    float wind = smooth(age / 2F), crack = smooth((age - 2) / 1.6F), recover = smooth((age - 6) / 4F);
+                    float up = wind * (1 - crack);
+                    spread = .44F - .12F * crack * (1 - recover);
+                    height = -.4F + .55F * up - .1F * crack * (1 - recover);
+                    depth = -.25F - .2F * crack * (1 - recover);
+                    pitch = -82 + 70 * up - 10 * crack * (1 - recover);
+                    roll = side * (4 + 25 * up);
+                } else {
+                    spread = .48F; height = -.48F; pitch = -74; yaw = side * 10;
+                }
+            }
+            case WATER_SNARE -> {
+                float throwOut = smooth(age / 1.5F), haul = smooth((age - 4) / 4F);
+                if (main) {
+                    spread = .4F - .15F * throwOut + .1F * haul;
+                    depth = -.25F - .3F * throwOut * (1 - haul);
+                    height = -.42F + .06F * throwOut - .08F * haul;
+                    pitch = -82 - 8 * throwOut + 30 * haul;
+                } else {
+                    spread = .47F; height = -.46F; pitch = -76 + 20 * haul;
+                }
+            }
+            case WATER_HEAVE, WATER_RAISE, WATER_CALL -> {
+                float lift = pose == ArmPose.WATER_HEAVE ? smooth((age - 2.5F) / 3F) * (1 - smooth((age - 9) / 5F))
+                        : pose == ArmPose.WATER_RAISE ? smooth(age / 6F) * (1 - smooth((age - 12) / 6F)) : smooth(age / 5F);
+                float circle = pose == ArmPose.WATER_CALL ? (float) Math.sin(age * .2F) * .04F * side : 0;
+                spread = .45F + .05F * lift + circle;
+                height = -.55F + .45F * lift;
+                depth = -.28F;
+                pitch = -70 + 40 * lift;
+                roll = side * (8 - 4 * lift);
+            }
+            case WATER_OCTOPUS, WATER_SURF -> {
+                float open = smooth(age / 4F), sway = (float) Math.sin(age * .18F) * .03F;
+                boolean ahead = pose == ArmPose.WATER_SURF && !main;
+                spread = .5F + .2F * open + sway;
+                height = -.42F + (ahead ? .05F : -.08F) * open;
+                depth = ahead ? -.32F : -.22F;
+                pitch = -82 + (ahead ? 0 : 25) * open;
+                yaw = side * (5 - 28 * open);
+                roll = side * (4 + 30 * open);
+            }
+            case WATER_BURST, WATER_DOME -> {
+                float fling = pose == ArmPose.WATER_BURST ? smooth(age / 1.5F) * (1 - smooth((age - 7) / 5F)) : smooth((age - 8) / 6F);
+                spread = .45F + .3F * fling;
+                height = -.4F + (pose == ArmPose.WATER_DOME ? .3F * smooth(age / 6F) * (1 - fling) : .05F * fling);
+                pitch = -82 + 35 * fling;
+                yaw = side * (5 - 36 * fling);
+                roll = side * (4 + 32 * fling);
+            }
+            case WATER_LEAP, WATER_VAULT -> {
+                float up = smooth(age / 2.5F) * (1 - smooth((age - 9) / 4F));
+                height = -.4F + .55F * up;
+                spread = .43F + .12F * up;
+                pitch = -82 + 55 * up;
+                roll = side * (4 + 12 * up);
+            }
+            case WATER_LASH, WATER_BACKHAND -> {
+                boolean striking = main == (pose == ArmPose.WATER_BACKHAND);
+                float flick = smooth(age / 1.3F) * (1 - smooth((age - 4) / 4F));
+                if (striking) {
+                    // Up from the bottom corner in a curve toward the crosshair, and back down.
+                    spread = .44F - .2F * flick;
+                    height = -.58F + .2F * flick;
+                    depth = -.22F - .3F * flick;
+                    pitch = -66 - 22 * flick;
+                    yaw = side * (12 + 10 * flick);
+                    roll = side * (14 - 40 * flick);
+                } else {
+                    spread = .47F; height = -.47F; depth = -.27F; pitch = -74; yaw = side * 10; roll = side * 10;
+                }
+            }
+            case WATER_DAGGERS -> {
+                float draw = smooth(age / 2F), thrust = smooth((age - 2) / 1.5F), recover = smooth((age - 7) / 5F);
+                float k = thrust * (1 - recover);
+                spread = .45F - .15F * k;
+                height = -.42F + .05F * draw * (1 - thrust) + .06F * k;
+                depth = -.2F + .06F * draw * (1 - thrust) - .3F * k;
+                pitch = -82 - 6 * k;
+                yaw = side * (6 + 14 * k);
+            }
+            case WATER_WHEEL -> {
+                float out = smooth(age / 2F) * (1 - smooth((age - 10) / 4F));
+                spread = .45F + .28F * out;
+                height = -.45F - .08F * out;
+                pitch = -82 + 30 * out;
+                yaw = side * (5 - 34 * out);
+                roll = side * (4 + 28 * out);
+            }
+            case WATER_FLOW -> {
+                float wide = smooth(age / 1.5F) * (1 - smooth((age - 5) / 5F));
+                spread = .43F + .22F * wide;
+                height = -.4F - .1F * wide;
+                pitch = -82 + 30 * wide;
+                yaw = side * (5 - 26 * wide);
+                roll = side * (4 + 18 * wide);
+            }
+            case WATER_PUSH -> {
+                float brace = smooth(age / 3F), shake = (float) Math.sin(age * 2.3F) * .004F;
+                spread = .43F - .18F * brace + shake;
+                height = -.42F + .07F * brace + shake;
+                depth = -.25F - .25F * brace;
+                pitch = -82 - 6 * brace;
+                yaw = side * (5 + 16 * brace);
+                roll = side * (4 - 60 * brace);
+            }
+            case WATER_HEAL -> {
+                float cup = smooth(age / 3F), press = smooth((age - 6) / 4F), recover = smooth((age - 15) / 5F);
+                float k = cup * (1 - recover);
+                spread = .43F - .2F * k + .08F * press;
+                height = -.42F - .04F * k;
+                depth = -.25F - .12F * press * (1 - recover);
+                pitch = -82 + 8 * k;
+                yaw = side * (5 + 30 * k);
+                roll = side * (4 - 70 * k);
             }
             default -> { }
         }

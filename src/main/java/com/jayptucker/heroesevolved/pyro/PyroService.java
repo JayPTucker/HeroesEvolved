@@ -218,6 +218,17 @@ public final class PyroService {
     /** One pyrokinetic hit: a thermal-shock check, attributed fire damage, then ignition. */
     public static void burn(ServerPlayer player, LivingEntity target, float damage, int fireSeconds) {
         if (!hostile(player, target)) return;
+        // A hydrokinetic's soaking boils off as steam: the burn is blunted and it can't catch, this time.
+        if (com.jayptucker.heroesevolved.hydro.HydroService.soaked(target)) {
+            target.removeEffect(com.jayptucker.heroesevolved.registry.ModItems.SOAKED);
+            damage *= .6F;
+            fireSeconds = 0;
+            if (target.level() instanceof ServerLevel level) {
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD, target.getX(), target.getY() + target.getBbHeight() * .6,
+                        target.getZ(), 6, .25, .3, .25, .02);
+                level.playSound(null, target.blockPosition(), SoundEvents.FIRE_EXTINGUISH, net.minecraft.sounds.SoundSource.PLAYERS, .6F, 1.4F);
+            }
+        }
         powerDamageDepth++;
         try {
             com.jayptucker.heroesevolved.expansion.PowerReactions.thermal(player, target);
