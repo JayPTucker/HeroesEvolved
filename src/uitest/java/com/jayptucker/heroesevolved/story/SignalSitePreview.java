@@ -131,7 +131,7 @@ public final class SignalSitePreview {
                     failure = exception;
                 }
             });
-            if (extracted && pending == null) mc.stop();
+            if (extracted && pending == null) com.jayptucker.heroesevolved.uitest.PreviewQuiet.quit();
             return;
         }
         Shot shot = SHOTS.get(index);

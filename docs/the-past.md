@@ -15,7 +15,7 @@ Primatech relay stations generate far apart in rings around the world origin, li
 
 ## Existing worlds
 
-Existing bunkers receive the receiver and recovery rooms where the original fixtures are still in place. Look for relay stations in newly generated terrain. Previously earned story books, advancements, discovery rewards, and past outcomes remain in the save. Books from the earlier bunker layout and retired Hourglass Annex, Avenue at 6:14, and Night Three episodes remain valid discoveries when found. The game recovers players whose saves still place them in one of those visits.
+Existing bunkers receive the receiver and recovery rooms where the original fixtures are still in place; the old copper receiver becomes the radio console, and the ground round an existing ruined lobby is graded the same way. Look for relay stations in newly generated terrain. Previously earned story books, advancements, discovery rewards, and past outcomes remain in the save. Books from the earlier bunker layout and retired Hourglass Annex, Avenue at 6:14, and Night Three episodes remain valid discoveries when found. The game recovers players whose saves still place them in one of those visits.
 
 ## The first five minutes
 
@@ -41,18 +41,19 @@ A lectern in the middle of the chamber holds the orientation log. The receiver i
 | Room | What is in it |
 | --- | --- |
 | **Stasis hall** | Fourteen Cryochambers under copper galleries, alarm beacons, the orientation log, and Isaac Mendez's painting of the explosion on the far wall. Glow berries light the end where a cave broke through the ceiling |
-| **Records room** | The signal receiver on the east desk, Noah Bennet's lockdown order, filing cabinets, and a chest with bread, apples and torches |
-| **Lab** (east of the corridor) | A Centrifuge, a Synthesis Station, the Helixite assay log, and a chest with a Helixite Shard, Empty Syringes, bottles and a donated blood sample |
-| **Infirmary** (west of the corridor) | Two cots, medical storage and a screened recovery area. Mara and Ivo recover here after the rescue |
+| **Records room** | The signal receiver on the east desk: a Simple Radio receiver with a transmitter stacked on it, a speaker and a microphone, the operator's chair in front. Noah Bennet's lockdown order, filing cabinets, and a chest with bread, apples and torches |
+| **Lab** (east of the corridor) | A long bench of instruments (a Centrifuge and a Synthesis Station among them), the Helixite assay log, specimen tubes, a lit specimen tank, and a chest with a Helixite Shard, Empty Syringes, bottles and a donated blood sample |
+| **Infirmary** (west of the corridor) | Two cots, medical storage and a screened recovery area, opening through an arch into a west ward with two more cots. Mara and Ivo recover here after the rescue |
 | **Generator hall** (east of records) | A cold reactor, fourteen power cells and a catwalk |
 | **Security** (west of records) | The checkpoint, lockers, emergency gear and a marked maintenance hatch |
 | **Maintenance bay** | Down the ladder from security are a workbench, a map desk, a cot and storage |
-| **Shaft** | A ladder up to a spruce trapdoor on the surface, directly at world spawn |
+| **The vault and the stair** (north of records) | The vault door the Last Day's survivors came through, stuck open a hundred years, cracked and grown over with vines, moss and roots. Behind it a switchback stair climbs to a ruined lobby at world spawn, where it comes up through a railed slot in the floor under the old SUBLEVEL 4 sign. The lobby stands at the ground's middle height over its footprint, and the land round it is graded to meet its floor (cut back where a hill rose, filled where it fell away, trees cleared), so it sits in a clearing on the surface rather than in a pit. Glow lichen and glow berries light the way. (A world too shallow for the stair, such as a superflat one, gets a ladder to a hatch instead.) |
 
 The bunker is built once, about 32 blocks below world spawn, the first time any player joins. Its books give more context about the Company, the sleepers, and Odessa.
 
 **Existing worlds:** players who have already played more than two minutes, or who already have an
-awakened power, are not put in a pod. They get a chat message saying where the bunker is instead. An earlier bunker receives compatible additions the first time someone comes near the stasis hall.
+awakened power, are not put in a pod. They get a chat message saying where the bunker is instead. An earlier bunker receives compatible additions the first time someone comes near the stasis hall; its rooms, ladder
+and hatch otherwise stay as they were built.
 Disable the spawn bunker with `bunker.enabled = false` in the common config.
 
 ## The Cryochamber

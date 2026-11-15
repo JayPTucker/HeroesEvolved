@@ -67,13 +67,56 @@ final class Streets {
             // Bus stops along the avenue, on the blocks east of it; they take that sidewalk's middle.
             boolean stop = side == 2 && bx == 4 && bz % 2 == 0;
             for (int along : new int[] {13, 27}) out.add(prop(ox, oz, s, along, 0, 2, c -> lamp(c, ox, oz, s, along)));
+            // The Odessa Arms' front stays open to the street: planters, not trees, before its doors and fire escape.
+            boolean arms = bx == Apartments.BX && bz == Apartments.BZ && side == 0;
             if (stop) out.add(prop(ox, oz, s, 17, 2, 3, c -> busStop(c, ox, oz, s, 15)));
-            else if (kind != Kind.DOWNTOWN || seed % 3 == 0)
+            else if (!arms && (kind != Kind.DOWNTOWN || seed % 3 == 0))
                 for (int along : new int[] {17, 22}) out.add(prop(ox, oz, s, along, 0, 3, c -> tree(c, ox, oz, s, along, bx * 7 + bz + along)));
             else for (int along : new int[] {17, 22}) out.add(prop(ox, oz, s, along, 1, 1, c -> planter(c, ox, oz, s, along)));
             if (side == 0) out.add(prop(ox, oz, s, 15, 1, 0, c -> hydrant(c, ox, oz, s, 15)));
-            if (seed % 2 == 0 && !stop) out.add(prop(ox, oz, s, 19, 1, 1, c -> bench(c, ox, oz, s, 19, 24)));
+            // Benches outside shops, never on residential streets, where they would stand on a stoop's steps.
+            if (seed % 2 == 0 && !stop && kind != Kind.RESIDENTIAL) out.add(prop(ox, oz, s, 19, 1, 1, c -> bench(c, ox, oz, s, 19, 24)));
         }
+        // A traffic signal on the corner where this block's two roads cross, and a manhole in each road.
+        out.add(new Feature(ox + 4, oz + 4, ox + 12, oz + 12, c -> signal(c, ox, oz)));
+        out.add(new Feature(ox + 2, oz + 18, ox + 2, oz + 18, c -> manhole(c, ox + 2, oz + 18)));
+        out.add(new Feature(ox + 18, oz + 5, ox + 18, oz + 5, c -> manhole(c, ox + 18, oz + 5)));
+    }
+
+    /**
+     * A signal on the block's north-west sidewalk corner: a post, an arm out over each road, a lamp hanging from each,
+     * and the street names on the post.
+     */
+    static void signal(CityCanvas c, int ox, int oz) {
+        int x = ox + 8, z = oz + 8, y = CityGrid.STREET_Y;
+        if (!CityGrid.road(x - 1, z) || !CityGrid.road(x, z - 1)) return;
+        c.fill(x, y, z, x, y + 7, z, Blocks.POLISHED_BLACKSTONE_WALL);
+        c.set(x, y + 8, z, Blocks.POLISHED_BLACKSTONE);
+        for (Direction arm : new Direction[] {Direction.WEST, Direction.NORTH}) {
+            // A thin mast arm out over the road, and the signal head hanging from its end on a short chain.
+            for (int i = 1; i <= 4; i++)
+                c.set(x + arm.getStepX() * i, y + 8, z + arm.getStepZ() * i, Blocks.CHAIN.defaultBlockState()
+                        .setValue(net.minecraft.world.level.block.ChainBlock.AXIS, arm.getAxis()));
+            int hx = x + arm.getStepX() * 4, hz = z + arm.getStepZ() * 4;
+            c.set(hx, y + 7, hz, Blocks.CHAIN);
+            c.set(hx, y + 6, hz, Blocks.CHAIN);
+            c.set(hx, y + 5, hz, Blocks.REDSTONE_LAMP.defaultBlockState().setValue(net.minecraft.world.level.block.RedstoneLampBlock.LIT,
+                    CityGrid.chance(ox, oz, arm.ordinal()) < 0.5));
+        }
+        int bx = Math.floorMod(CityGrid.bx(ox), NORTH_SOUTH.length), number = CityGrid.bz(oz) + 2;
+        c.sign(x + 1, y + 2, z, Direction.EAST, Blocks.DARK_OAK_WALL_SIGN, DyeColor.WHITE, false, NORTH_SOUTH[bx]);
+        c.sign(x, y + 2, z + 1, Direction.SOUTH, Blocks.DARK_OAK_WALL_SIGN, DyeColor.WHITE, false,
+                number + (number == 2 ? "ND ST" : number == 3 ? "RD ST" : "TH ST"));
+    }
+
+    /** The streets running north and south, west to east; the fifth is the avenue. */
+    private static final String[] NORTH_SOUTH = {"BIG SPRING", "LINCOLN AVE", "TEXAS AVE", "JACKSON ST", "ODESSA AVE",
+            "GRANT AVE", "WASHINGTON", "SAM HOUSTON"};
+
+    /** A manhole cover set into the asphalt. */
+    static void manhole(CityCanvas c, int x, int z) {
+        if (!CityGrid.road(x, z)) return;
+        c.set(x, CityGrid.STREET_Y - 1, z, CityCanvas.trapdoor(Blocks.IRON_TRAPDOOR, Direction.NORTH, true, false));
     }
 
     /** One side's frame: where along a side, how far in from the curb, its outward direction. */
@@ -110,13 +153,14 @@ final class Streets {
         int kind = CityGrid.hash(salt, 3) % 3;
         Block log = kind == 0 ? Blocks.OAK_LOG : kind == 1 ? Blocks.BIRCH_LOG : Blocks.DARK_OAK_LOG;
         Block leaves = kind == 0 ? Blocks.OAK_LEAVES : kind == 1 ? Blocks.BIRCH_LEAVES : Blocks.DARK_OAK_LEAVES;
-        c.set(x, y, z, Blocks.COARSE_DIRT);
+        c.set(x, y - 1, z, Blocks.COARSE_DIRT);
         // A low iron fence around the pit.
         for (Direction d : Direction.Plane.HORIZONTAL) {
             if (d == out) continue;
             c.set(x + d.getStepX(), y, z + d.getStepZ(), CityCanvas.trapdoor(Blocks.IRON_TRAPDOOR, d.getOpposite(), false, true));
         }
-        c.fill(x, y + 1, z, x, y + 3, z, log);
+        // The trunk rises out of the soil at the paving's level, not off a block standing above it.
+        c.fill(x, y, z, x, y + 3, z, log);
         BlockState leaf = CityCanvas.leaves(leaves);
         for (int dy = 3; dy <= 6; dy++) {
             double r = dy == 3 ? 1.5 : dy == 6 ? 1.3 : 2.4;
@@ -135,7 +179,7 @@ final class Streets {
     static void planter(CityCanvas c, int ox, int oz, int side, int along) {
         int x = sx(ox, side, along, 1), z = sz(oz, side, along, 1);
         int y = CityGrid.STREET_Y;
-        c.set(x, y, z, Blocks.POLISHED_ANDESITE);
+        c.set(x, y, z, Blocks.MOSS_BLOCK);
         c.set(x, y + 1, z, Blocks.AZALEA);
     }
 
@@ -151,20 +195,24 @@ final class Streets {
         c.set(sx(ox, side, bin, 1), CityGrid.STREET_Y, sz(oz, side, bin, 1), Blocks.CAULDRON);
     }
 
+    /**
+     * A bus shelter at the curb, open at the back and low over the curb so it never blocks a shop door or a stoop: two
+     * posts, a flat roof out over the curb, a bench between them, and the stop's sign on a post of its own.
+     */
     static void busStop(CityCanvas c, int ox, int oz, int side, int start) {
         Direction out = out(side);
         int y = CityGrid.STREET_Y;
         for (int a = start; a <= start + 4; a++) {
-            int bx = sx(ox, side, a, 2), bz = sz(oz, side, a, 2);
-            c.fill(bx, y, bz, bx, y + 2, bz, Blocks.GLASS_PANE);
-            c.set(bx, y + 3, bz, CityCanvas.slab(Blocks.SMOOTH_STONE_SLAB, false));
+            c.set(sx(ox, side, a, 0), y + 3, sz(oz, side, a, 0), CityCanvas.slab(Blocks.SMOOTH_STONE_SLAB, false));
             c.set(sx(ox, side, a, 1), y + 3, sz(oz, side, a, 1), CityCanvas.slab(Blocks.SMOOTH_STONE_SLAB, false));
         }
-        for (int a : new int[] {start, start + 4}) c.fill(sx(ox, side, a, 1), y, sz(oz, side, a, 1), sx(ox, side, a, 1), y + 2, sz(oz, side, a, 1), Blocks.POLISHED_BLACKSTONE_WALL);
+        for (int a : new int[] {start, start + 4}) {
+            c.fill(sx(ox, side, a, 1), y, sz(oz, side, a, 1), sx(ox, side, a, 1), y + 2, sz(oz, side, a, 1), Blocks.POLISHED_BLACKSTONE_WALL);
+        }
         for (int a = start + 1; a <= start + 3; a++)
             c.set(sx(ox, side, a, 1), y, sz(oz, side, a, 1), CityCanvas.stairs(Blocks.SPRUCE_STAIRS, out.getOpposite(), false));
         int px = sx(ox, side, start - 1, 0), pz = sz(oz, side, start - 1, 0);
-        c.fill(px, y, pz, px, y + 3, pz, Blocks.POLISHED_BLACKSTONE_WALL);
+        c.fill(px, y, pz, px, y + 3, pz, Blocks.POLISHED_BLACKSTONE);
         c.sign(px + out.getStepX(), y + 2, pz + out.getStepZ(), out, Blocks.SPRUCE_WALL_SIGN, DyeColor.BLACK, false, "BUS 14", "AVENUE");
     }
 
@@ -178,6 +226,9 @@ final class Streets {
             {Blocks.YELLOW_CONCRETE, Blocks.YELLOW_CARPET}, {Blocks.LIGHT_BLUE_CONCRETE, Blocks.LIGHT_BLUE_CARPET},
             {Blocks.GREEN_CONCRETE, Blocks.GREEN_CARPET}, {Blocks.LIGHT_GRAY_CONCRETE, Blocks.LIGHT_GRAY_CARPET},
             {Blocks.ORANGE_CONCRETE, Blocks.ORANGE_CARPET}, {Blocks.CYAN_CONCRETE, Blocks.CYAN_CARPET}};
+
+    /** Yellow cabs: about half of what is parked. */
+    private static final int TAXI = 4;
 
     /** Cars parked along the outer lanes of every road segment except the avenue's. */
     static void park(List<Feature> out, int bx, int bz) {
@@ -195,7 +246,7 @@ final class Streets {
                     if (CityGrid.terminus(x, z) || !CityGrid.road(x, z)) continue;
                     final int fx = x, fz = z, fs = seed;
                     out.add(new Feature(x - 1, z - 1, x + (northSouth ? 2 : 6), z + (northSouth ? 6 : 2),
-                            c -> car(c, fx, fz, northSouth ? Direction.SOUTH : Direction.EAST, northSouth ? Direction.EAST : Direction.SOUTH, PAINT[fs % PAINT.length])));
+                            c -> car(c, fx, fz, northSouth ? Direction.SOUTH : Direction.EAST, northSouth ? Direction.EAST : Direction.SOUTH, PAINT[fs / 7 % 2 == 0 ? TAXI : fs % PAINT.length])));
                 }
             }
         }

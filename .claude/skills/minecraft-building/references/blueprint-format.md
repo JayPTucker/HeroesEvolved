@@ -54,6 +54,8 @@ So a block that should face the inside of a room's west wall faces `east`.
 - Every character in a grid is in the palette.
 - A palette character is defined once.
 - Unused palette entries are reported (not an error), which usually means a typo in a grid.
+- Every property name and value is one the block really has (`facing=up` on stairs is an error).
+- Placement: see `block-states.md`; a `note:` is a likely mistake (a shutter facing the wrong way) rather than a sure one.
 
 ## Rotation
 
@@ -65,8 +67,10 @@ placement time instead of keeping rotated copies.
 
 | Command | What it does |
 | --- | --- |
-| `python3 tools/blueprint.py validate <files...>` | Format and block-id checks |
-| `python3 tools/blueprint.py render <file> [--cut Y] [--scale N] [--out png]` | Isometric view + per-layer plans |
+| `python3 tools/blueprint.py validate <files...>` | Format, block ids, property values, and placement (supports, halves, hinges, stair corners) |
+| `python3 tools/blueprint.py render <file> [--cut Y] [--scale N] [--view se/sw/ne/nw] [--out png]` | Isometric view with real shapes + per-layer plans marking facings |
+| `python3 tools/blueprint.py facts <state...>` | What the game says about a state: properties, defaults, what each face holds |
+| `python3 tools/blueprint.py set <file> LAYER ROW COL VALUE ...` | Change single cells; adds palette entries, splits layer ranges |
 | `python3 tools/blueprint.py stats <file>` | Size, anchor, block counts, markers |
 | `python3 tools/blueprint.py from-nbt <file.nbt> [--out file]` | Convert a structure-block save |
 | `./gradlew runClient --init-script tools/blueprint-preview.init.gradle -Pblueprint=<name> [-Pcut=Y]` | In-game screenshots from four corners, above, and inside |

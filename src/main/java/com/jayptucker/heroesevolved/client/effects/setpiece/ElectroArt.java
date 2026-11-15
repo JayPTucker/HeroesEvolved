@@ -172,8 +172,232 @@ final class ElectroArt {
                 fork(c, ElectroGeometry.chest(at), heart, .07F, alpha * (1 - smooth(4, 9, t)), seed, 2);
                 ring(c, heart, UP, .24F + 1.45F * smooth(1, 12, t), .085F, 0, TWO_PI, alpha);
             }
+            case ELECTRO_SPARK -> spark(c, owner, at, end, size, t, alpha, clock, seed);
+            case ELECTRO_CLAP -> clap(c, owner, at, end, size, t, alpha, clock, seed);
+            case ELECTRO_GROUND_ARC -> {
+                // The palm goes into the floor: a bolt down through it, a scorch star, then the ring runs out.
+                Vec3 forward = flat(end.subtract(at)), palm = at.add(forward.scale(.62)).add(0, .06, 0);
+                float jolt = alpha * (1 - smooth(2, 6, t));
+                fork(c, palm.add(0, 1.05, 0), palm, .085F, jolt, seed, 2);
+                if (c.glow()) c.glow(palm, .9F * (1 - smooth(0, 6, t)) + .15F, CORE, jolt);
+                scorch(c, palm, .55F + .35F * smooth(0, 4, t), alpha * .8F, seed);
+                pulse(c, at, size, t - 1, alpha, seed, false);
+            }
+            case ELECTRO_ARC_STEP -> arcStep(c, owner, at, end, size > 1.5F, t, alpha, clock, seed);
+            case ELECTRO_DECOY -> decoy(c, at, end, size, t, alpha, clock, seed);
+            case ELECTRO_GROUND_OUT -> {
+                // A blow passes through a flash: the current snaps in round the body and runs up into the rear fist.
+                Vec3 body = owner == null ? at : feet;
+                float snap = 1 - smooth(0, 5, t);
+                corona(c, ElectroGeometry.chest(body), .38F + .75F * snap, -clock * 2.4F, alpha * (.55F + .45F * snap), seed);
+                Vec3 fist = owner == null ? body.add(0, 1.375, 0) : fist(c, owner, true, .66);
+                int legs = minimal() ? 2 : 4;
+                for (int i = 0; i < legs; i++) {
+                    float angle = i * TWO_PI / legs + hash(seed, i) * .8F;
+                    Vec3 root = body.add(cos(angle) * .55, .05, sin(angle) * .55);
+                    fork(c, root, root.lerp(fist, smooth(0, 4, t)), .045F, alpha * .8F, seed + i * 23, 1);
+                }
+                ring(c, body.add(0, .05, 0), UP, .4F + 1.7F * smooth(0, 9, t), .07F, 0, TWO_PI, alpha * (1 - smooth(5, 14, t)));
+            }
+            case ELECTRO_LOADED -> {
+                if (owner == null) return;
+                float live = fade(t, a.piece().ticks, 1.5F, 1.5F);
+                Vec3 fist = fist(c, owner, true, .66);
+                corona(c, fist, .15F + .03F * sin(clock * 3), clock * 2.2F, live * .9F, seed);
+                if (!minimal()) braid(c, fist.add(0, -.25, 0), fist.add(0, .25, 0), .2F, clock * 3, live * .7F, 2.2F);
+            }
             default -> { }
         }
+    }
+
+    // ------------------------------------------------------------------
+    // The lightning style
+    // ------------------------------------------------------------------
+
+    /**
+     * A spark from the fist: a flash at the knuckles, a leader that races to its end in SPARK_FLIGHT ticks and keeps
+     * flickering with return strokes, a burst of side-forks where it lands, or a fizzle into three dying branches when
+     * it found nothing. A chained spark (Ground Out) is thicker and has a braid of ions wound round it.
+     */
+    private static void spark(Canvas c, Player owner, Vec3 at, Vec3 end, float size, float t, float alpha, float clock, int seed) {
+        boolean chained = size >= ElectroGeometry.CHAINED;
+        if (chained) size -= ElectroGeometry.CHAINED;
+        boolean hit = size > .85F;
+        if (owner != null && t < 4) at = fist(c, owner, ClientArmPoseState.get(owner.getId()) != ArmPose.ELECTRO_JAB, .66);
+        Vec3 path = end.subtract(at);
+        if (path.lengthSqr() < .01) return;
+        float k = chained ? 1.6F : 1;
+        float travel = smooth(0, ElectroGeometry.SPARK_FLIGHT, t);
+        Vec3 front = at.lerp(end, travel);
+        float returnStroke = t < ElectroGeometry.SPARK_FLIGHT ? 1 : .5F + .5F * abs(sin(t * 2.6F));
+        float body = alpha * returnStroke * (1 - smooth(3, 8.5F, t));
+        corona(c, at, (.13F + .1F * (1 - smooth(0, 3, t))) * k, clock * 2, alpha * (1 - smooth(1, 4, t)), seed);
+        fork(c, at, front, .062F * k, body, seed + (int) (t / 2), chained ? 4 : 2);
+        if (chained) braid(c, at, front, .17F, clock * 2.5F, body * .8F, 2.4F);
+        if (t < ElectroGeometry.SPARK_FLIGHT) return;
+        float land = alpha * (1 - smooth(ElectroGeometry.SPARK_FLIGHT + .5F, 8, t));
+        Vec3 aim = path.normalize(), right = side(aim), up = aim.cross(right);
+        if (hit) {
+            // The bolt hits a body: a ring flung back toward the fist, short forks crawling over the target.
+            float open = smooth(ElectroGeometry.SPARK_FLIGHT, ElectroGeometry.SPARK_FLIGHT + 4, t);
+            ring(c, end.subtract(aim.scale(.25)), aim, (.2F + .6F * open) * k, .05F, clock, TWO_PI, land * (1 - open * .6F));
+            int legs = minimal() ? 2 : 4;
+            for (int i = 0; i < legs; i++) {
+                float angle = i * TWO_PI / legs + hash(seed, i + 70) * 1.3F;
+                Vec3 out = right.scale(cos(angle)).add(up.scale(sin(angle))).scale(.55 + .3 * hash(seed, i + 80));
+                fork(c, end, end.add(out).add(aim.scale(-.15)), .035F * k, land, seed + i * 13 + (int) t, 1);
+            }
+            if (c.glow()) c.glow(end, .5F * k, ION, land * .7F);
+        } else {
+            // Nothing to ground it: the leader splits and dies in the air.
+            for (int i = 0; i < 3; i++) {
+                float angle = i * TWO_PI / 3 + hash(seed, i + 90);
+                Vec3 out = aim.scale(.45).add(right.scale(cos(angle) * .4)).add(up.scale(sin(angle) * .4));
+                fork(c, end, end.add(out.scale(smooth(ElectroGeometry.SPARK_FLIGHT, 5, t))), .03F, land * .8F, seed + i * 17, 0);
+            }
+        }
+    }
+
+    /**
+     * Thunderclap: the palms swing in and meet, a white flash and a ring blown off the hands, then a fan of forks opens
+     * across the cone and a jagged leading edge races out to its reach. Static crawls along two of the fan's lines as
+     * it fades.
+     */
+    private static void clap(Canvas c, Player owner, Vec3 at, Vec3 end, float reach, float t, float alpha, float clock, int seed) {
+        Vec3 forward = flat(end.subtract(at)), right = new Vec3(-forward.z, 0, forward.x);
+        if (owner != null && t < 3) at = ElectroGeometry.clap(owner, c.partial, forward);
+        float meet = smooth(0, 2, t);
+        if (t < 2.5F) for (int s : new int[]{-1, 1})
+            corona(c, at.add(right.scale(s * .38 * (1 - meet))), .12F + .06F * meet, clock * 2 * s, alpha, seed + s);
+        float flash = 1 - smooth(2, 7, t);
+        if (c.glow() && t >= 1.6F) {
+            c.glow(at, 1.25F * flash + .15F, CORE, alpha * flash);
+            c.glow(at, 2.4F * flash, BLUE, alpha * flash * .45F);
+        }
+        if (t >= 2) {
+            float blow = smooth(2, 6, t);
+            ring(c, at.add(forward.scale(.2 * blow)), forward, .25F + 1.1F * blow, .06F, clock, TWO_PI, alpha * (1 - blow * .7F));
+        }
+        float open = smooth(2, 2 + ElectroGeometry.CLAP_OPEN, t);
+        if (open <= 0) return;
+        float half = (float) Math.toRadians(ElectroGeometry.CLAP_HALF_ANGLE), fanAlpha = alpha * (1 - smooth(8, 14, t));
+        int forks = minimal() ? 3 : 7;
+        for (int i = 0; i < forks; i++) {
+            float u = i / (forks - 1F), angle = -half + 2 * half * u + (hash(seed, i) - .5F) * .14F;
+            Vec3 dir = forward.scale(cos(angle)).add(right.scale(sin(angle)));
+            float length = reach * (.78F + .22F * hash(seed, i + 30)) * (1 - (1 - open) * (1 - open));
+            Vec3 tip = at.add(dir.scale(length)).add(0, (hash(seed, i + 50) - .55F) * .7F, 0);
+            fork(c, at, tip, .058F, fanAlpha * (.65F + .35F * sin(PI * u)), seed + i * 29 + (int) (t / 2), 1);
+        }
+        // The fan's leading edge: one jagged arc at its reach.
+        int n = minimal() ? 7 : 13;
+        Vec3[] edge = new Vec3[n];
+        float r = reach * (1 - (1 - open) * (1 - open));
+        for (int i = 0; i < n; i++) {
+            float angle = -half + 2 * half * i / (n - 1F);
+            float jag = (hash(seed + (int) (t / 2), i + 110) - .5F) * .35F;
+            edge[i] = at.add(forward.scale(cos(angle) * (r + jag))).add(right.scale(sin(angle) * (r + jag)))
+                    .add(0, (hash(seed, i + 130) - .5F) * .25F, 0);
+        }
+        stroke(c, edge, .05F, fanAlpha * .85F);
+        if (t > 6 && !minimal()) for (int i = 0; i < 2; i++) {
+            float angle = (hash(seed, i + 150) * 2 - 1) * half;
+            Vec3 dir = forward.scale(cos(angle)).add(right.scale(sin(angle)));
+            braid(c, at.add(dir.scale(.6)), at.add(dir.scale(reach * .85)), .14F, clock * 2 + i, fanAlpha * .6F, 3);
+        }
+    }
+
+    /**
+     * Arc Step: where the fighter stood, a sketch of their body in lightning hangs for a moment; a bolt joins it to
+     * the body as it flashes away, flickering, and a ground ring pops at each end. A Flashback leaves its sketch to
+     * {@link #decoy} instead.
+     */
+    private static void arcStep(Canvas c, Player owner, Vec3 at, Vec3 end, boolean flashback, float t, float alpha,
+                                float clock, int seed) {
+        Vec3 path = end.subtract(at);
+        if (path.lengthSqr() < .01) return;
+        Vec3 dir = path.normalize();
+        Vec3 body = owner != null ? owner.getPosition(c.partial) : at.lerp(end, smooth(0, 3, t));
+        // The sketch faces the way the fighter faced, which for a side step is across the line of travel.
+        Vec3 facing = owner != null ? flat(Vec3.directionFromRotation(0, owner.getYRot())) : flat(dir);
+        if (!flashback) sketch(c, at, facing, alpha * (1 - smooth(1, 7, t)), seed + (int) (t / 2), .4F);
+        float bolt = alpha * (t < 3 ? 1 : (.45F + .55F * abs(sin(t * 2.3F))) * (1 - smooth(4, 11, t)));
+        Vec3 tail = at.add(0, .9, 0), head = (t < 4 ? body : end).add(0, .9, 0);
+        fork(c, tail, head, .075F, bolt, seed + (int) (t / 2), 3);
+        braid(c, tail, head, .22F, -clock * 2, bolt * .55F, 2);
+        if (t < 4 && owner != null) corona(c, ElectroGeometry.chest(body), .32F, clock * 2.5F, alpha * (1 - smooth(2, 4, t)), seed);
+        pulse(c, at, 1.2F, t, alpha * .8F, seed, false);
+        pulse(c, end, 1F, t - 3, alpha * .65F, seed + 5, false);
+    }
+
+    /**
+     * A Flashback's static: the lightning sketch stays where the fighter stood and crackles harder as its fuse burns, a
+     * ring on the ground closes toward it like a strike's warning, and at the end it bursts in a pulse and a bolt.
+     */
+    private static void decoy(Canvas c, Vec3 at, Vec3 end, float radius, float t, float alpha, float clock, int seed) {
+        float fuse = ElectroGeometry.FLASHBACK_FUSE, build = smooth(0, fuse, t);
+        Vec3 facing = flat(end.subtract(at));
+        if (t < fuse) {
+            float crackle = alpha * (.55F + .45F * build) * (.7F + .3F * abs(sin(t * 3.1F)));
+            sketch(c, at, facing, crackle, seed + (int) (t / 1.5F), .4F + .5F * build);
+            corona(c, ElectroGeometry.chest(at), .5F - .3F * build, -clock * (1.5F + 2 * build), crackle * .8F, seed);
+            Vec3 floor = at.add(0, .05, 0);
+            ring(c, floor, UP, radius, .06F, 0, TWO_PI, alpha * (.4F + .5F * build));
+            ring(c, floor, UP, radius * (1 - .85F * build), .1F, -t * .2F, TWO_PI - .6F, alpha * .7F);
+            return;
+        }
+        float after = t - fuse;
+        fork(c, at.add(0, .1, 0), at.add(0, 2.6 * smooth(0, 1.5F, after), 0), .1F, alpha * (1 - smooth(2, 8, after)), seed, 3);
+        if (c.glow()) c.glow(at.add(0, .9, 0), 1.6F * (1 - smooth(0, 6, after)), CORE, alpha);
+        pulse(c, at, radius, after, alpha, seed, false);
+    }
+
+    /** A body sketched in lightning, facing {@code facing}: a spine, shoulders, two arms, two legs and a halo of a head. */
+    private static void sketch(Canvas c, Vec3 feet, Vec3 facing, float alpha, int seed, float jitter) {
+        if (alpha < .01F) return;
+        Vec3 right = new Vec3(-facing.z, 0, facing.x);
+        Vec3 hip = feet.add(0, .78, 0), neck = feet.add(0, 1.45, 0);
+        float w = .04F + .02F * jitter;
+        fork(c, hip, neck, w, alpha, seed, 0);
+        Vec3 shoulderL = neck.add(right.scale(-.32)).add(0, -.05, 0), shoulderR = neck.add(right.scale(.32)).add(0, -.05, 0);
+        fork(c, shoulderL, shoulderR, w * .8F, alpha * .8F, seed + 1, 0);
+        fork(c, shoulderL, shoulderL.add(right.scale(-.12)).add(0, -.68, 0).add(facing.scale(.1)), w * .8F, alpha * .85F, seed + 2, 0);
+        fork(c, shoulderR, shoulderR.add(right.scale(.12)).add(0, -.68, 0).add(facing.scale(.1)), w * .8F, alpha * .85F, seed + 3, 0);
+        fork(c, hip, feet.add(right.scale(-.15)).add(0, .02, 0), w * .8F, alpha * .85F, seed + 4, 0);
+        fork(c, hip, feet.add(right.scale(.15)).add(0, .02, 0), w * .8F, alpha * .85F, seed + 5, 0);
+        ring(c, neck.add(0, .3, 0), facing, .2F, .04F, 0, TWO_PI, alpha * .8F);
+    }
+
+    /** A dark star burnt into the floor round a palm, drawn with normal blending. */
+    private static void scorch(Canvas c, Vec3 at, float radius, float alpha, int seed) {
+        if (!c.soft() || alpha < .01F) return;
+        int rays = minimal() ? 5 : 9;
+        for (int i = 0; i < rays; i++) {
+            float angle = (i + hash(seed, i + 170) * .6F) * TWO_PI / rays;
+            float reach = radius * (.6F + .4F * hash(seed, i + 190));
+            c.line(at.add(0, .02, 0), at.add(cos(angle) * reach, .02, sin(angle) * reach), .05F, SHADOW, alpha * .7F, 0);
+        }
+        c.ring(at.add(0, .02, 0), UP, radius * .3F, radius * .3F, 0, TWO_PI, SHADOW, alpha * .45F);
+    }
+
+    private static Vec3 flat(Vec3 v) {
+        Vec3 level = new Vec3(v.x, 0, v.z);
+        return level.lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : level.normalize();
+    }
+
+    /**
+     * A fist as the viewer sees it: {@code main} for the main (rear) arm. In the fighter's own first-person view it is
+     * the camera-space hand, on its own side of the crosshair.
+     */
+    private static Vec3 fist(Canvas c, Player owner, boolean main, double reach) {
+        Minecraft mc = Minecraft.getInstance();
+        if (owner != mc.player || mc.options.getCameraType() != CameraType.FIRST_PERSON)
+            return ElectroGeometry.fist(owner, c.partial, main).add(owner.getViewVector(c.partial).scale(reach - .66));
+        Vec3 look = owner.getViewVector(c.partial);
+        Vec3 right = Vec3.directionFromRotation(0, owner.getViewYRot(c.partial) + 90);
+        Vec3 cameraUp = right.cross(look).normalize();
+        boolean rightSide = (owner.getMainArm() == HumanoidArm.RIGHT) == main;
+        return c.camera().add(look.scale(reach + .13)).add(right.scale(rightSide ? .39 : -.39)).subtract(cameraUp.scale(.43));
     }
 
     /** How tall Ground Sink's rod stands, in blocks. */

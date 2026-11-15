@@ -332,7 +332,7 @@ public final class FlightPreview {
             }
             case 1100 -> onServer(mc, p -> { FlightDynamicsService.pressSkyburst(p); releaseBurst(p, "night tap"); });
             case 1104 -> pending = "flight-skyburst-first-person-release.png";
-            case 1120 -> mc.stop();
+            case 1120 -> PreviewQuiet.quit();
             default -> { }
         }
     }

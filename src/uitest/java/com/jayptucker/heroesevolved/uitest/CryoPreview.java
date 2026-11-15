@@ -358,7 +358,7 @@ public final class CryoPreview {
                     System.out.println("CRYO_CLIENT_LOOM_WALK PASS at="+p.position());
                 });
             }
-            case 1190 -> mc.stop();
+            case 1190 -> PreviewQuiet.quit();
             default -> { }
         }
     }

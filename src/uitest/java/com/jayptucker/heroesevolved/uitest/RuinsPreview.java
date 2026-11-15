@@ -43,7 +43,7 @@ public final class RuinsPreview {
         if (mc.screen instanceof net.minecraft.client.gui.screens.PauseScreen) mc.setScreen(null);
         int index = (worldTicks - 200) / 60, phase = (worldTicks - 200) % 60;
         if (worldTicks < 200) return; // let the intro alarm overlay fade first
-        if (index >= RUINS.length) { if (phase == 0) mc.stop(); return; }
+        if (index >= RUINS.length) { if (phase == 0) PreviewQuiet.quit(); return; }
         int x = 200 + index * 40; // well clear of the spawn bunker
         String name = RUINS[index];
         if (phase == 0) server.execute(() -> {

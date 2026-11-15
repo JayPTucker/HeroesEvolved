@@ -15,9 +15,10 @@ public final class BunkerData extends SavedData {
     public static final String NAME = "heroesevolved_stasis_bunker";
     /**
      * Bumped when the layout changes. Older bunkers receive targeted updates ({@link BunkerBuilder#upgrade}).
-     * 2 and 3: Exhibit 1. 4: alarm beacons. 5: the signal receiver and recovery rooms.
+     * 2 and 3: Exhibit 1. 4: alarm beacons. 5: the signal receiver and recovery rooms. 6: the receiver is a Simple Radio
+     * console.
      */
-    public static final int LAYOUT = 5;
+    public static final int LAYOUT = 6;
     public boolean built;
     public BlockPos origin = BlockPos.ZERO;
     public int layout;

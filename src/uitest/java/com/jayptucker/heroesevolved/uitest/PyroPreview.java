@@ -421,7 +421,7 @@ public final class PyroPreview {
             case 948 -> pending = "pyro-22-phoenix-hunt.png";
             case 970 -> {
                 if (Boolean.getBoolean("heroes.preview.pyro.skillsOnly")) {
-                    mc.stop();
+                    PreviewQuiet.quit();
                     break;
                 }
                 mc.options.setCameraType(CameraType.FIRST_PERSON);
@@ -438,7 +438,7 @@ public final class PyroPreview {
                 System.out.println("PYRO_CLIENT_SOUL_FIRE PASS blocks=" + flames);
                 pending = "pyro-23-soul-fire-aftermath.png";
             }
-            case 1005 -> mc.stop();
+            case 1005 -> PreviewQuiet.quit();
             default -> { }
         }
     }

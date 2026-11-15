@@ -4,9 +4,10 @@ import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.config.ClientVisualSettings;
 import com.jayptucker.heroesevolved.network.ClientPowerState;
-import com.jayptucker.heroesevolved.network.PyroCombatPayload;
+import com.jayptucker.heroesevolved.network.FightingStylePayload;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -17,13 +18,18 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import java.util.Set;
+
 /**
- * A pyrokinetic's hands and feet. An empty-handed left click that isn't digging a block throws the next firebending
- * strike instead of a punch; double-tapping left, right or back dodges. Both can be switched off in the client config.
- * The server decides what each one actually does.
+ * The hands and feet of a power that fights (Pyrokinesis, Electrokinesis, Hydrokinesis). An empty-handed left click
+ * that isn't digging a block throws the next strike of the power's style instead of a punch; double-tapping left,
+ * right or back dodges. Both can be switched off in the client config. The server decides what each one does.
  */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID, value = Dist.CLIENT)
-public final class PyroCombatClient {
+public final class FightingStyleClient {
+    /** The powers with a fighting style (see combat/FightingStyles). */
+    private static final Set<ResourceLocation> STYLED = Set.of(ModAbilities.PYROKINESIS_ID, ModAbilities.ELECTROKINESIS_ID,
+            ModAbilities.HYDROKINESIS_ID);
     /** Two presses of one direction this many ticks apart or less are a dodge. */
     private static final int DOUBLE_TAP = 6;
     /** The client sends no faster than the quickest strike the server allows. */
@@ -32,11 +38,11 @@ public final class PyroCombatClient {
     private static final long[] LAST_PRESS = {Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE};
     private static long lastStrike = Long.MIN_VALUE;
 
-    private PyroCombatClient() {}
+    private FightingStyleClient() {}
 
-    private static boolean pyro() {
+    private static boolean styled() {
         return ClientPowerState.getSnapshot().abilities().stream()
-                .anyMatch(a -> a.unlocked() && a.abilityId().equals(ModAbilities.PYROKINESIS_ID));
+                .anyMatch(a -> a.unlocked() && STYLED.contains(a.abilityId()));
     }
 
     private static boolean free(Minecraft mc) {
@@ -48,7 +54,7 @@ public final class PyroCombatClient {
     public static void click(InputEvent.InteractionKeyMappingTriggered event) {
         Minecraft mc = Minecraft.getInstance();
         if (!event.isAttack() || event.getHand() != InteractionHand.MAIN_HAND || !free(mc)
-                || !ClientVisualSettings.FIRE_STRIKES.get() || !mc.player.getMainHandItem().isEmpty() || !pyro()) return;
+                || !ClientVisualSettings.STYLE_STRIKES.get() || !mc.player.getMainHandItem().isEmpty() || !styled()) return;
         // A block under the crosshair is still dug by hand.
         if (mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.BLOCK) return;
         event.setCanceled(true);
@@ -57,13 +63,13 @@ public final class PyroCombatClient {
         if (lastStrike != Long.MIN_VALUE && now - lastStrike < STRIKE_EVERY && now >= lastStrike) return;
         lastStrike = now;
         int target = mc.hitResult instanceof EntityHitResult hit ? hit.getEntity().getId() : -1;
-        PacketDistributor.sendToServer(new PyroCombatPayload(PyroCombatPayload.STRIKE, target));
+        PacketDistributor.sendToServer(new FightingStylePayload(FightingStylePayload.STRIKE, target));
     }
 
     @SubscribeEvent
     public static void tick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
-        if (!free(mc) || !ClientVisualSettings.FIRE_DODGES.get() || !pyro()) {
+        if (!free(mc) || !ClientVisualSettings.STYLE_DODGES.get() || !styled()) {
             java.util.Arrays.fill(WAS_DOWN, false);
             java.util.Arrays.fill(LAST_PRESS, Long.MIN_VALUE);
             return;
@@ -74,7 +80,7 @@ public final class PyroCombatClient {
             boolean down = keys[i].isDown();
             if (down && !WAS_DOWN[i]) {
                 if (LAST_PRESS[i] != Long.MIN_VALUE && now - LAST_PRESS[i] <= DOUBLE_TAP && now >= LAST_PRESS[i]) {
-                    PacketDistributor.sendToServer(new PyroCombatPayload(PyroCombatPayload.DODGE, i));
+                    PacketDistributor.sendToServer(new FightingStylePayload(FightingStylePayload.DODGE, i));
                     LAST_PRESS[i] = Long.MIN_VALUE;
                 } else {
                     LAST_PRESS[i] = now;

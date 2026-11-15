@@ -9,6 +9,8 @@ package com.jayptucker.heroesevolved.time.intro.city;
 public final class CityGrid {
     public static final int MIN = -128, WIDTH = 256, BLOCK = 32, ROAD = 8, STREET_Y = 64;
     public static final int BLOCKS = WIDTH / BLOCK, MAX = MIN + WIDTH - 1;
+    /** The outskirts: a ring this wide round the city (whole chunks), drawn with it, then prairie to the horizon. */
+    public static final int OUTSKIRTS = 96, OUTER_MIN = MIN - OUTSKIRTS, OUTER_MAX = MAX + OUTSKIRTS;
     /** Building lots run 11..28 inside each block; 8..10 and 29..31 are sidewalk. */
     public static final int LOT_MIN = 11, LOT_MAX = 28;
     /** The superblock where the avenue ends: Primatech Paper's lot, blocks 3 and 4 of the southern row. */

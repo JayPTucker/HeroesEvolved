@@ -29,6 +29,9 @@ palette:
   2 = yellow_carpet
   3 = red_carpet
   X = chest[facing=east] @loot:isaac_studio
+  C = white_bed[facing=east,part=foot]
+  D = vine[west=true]
+  E = vine[east=true]
 
 # floor
 layer 0:
@@ -53,7 +56,7 @@ _R..3.2..yxR_
 _R...1.....R_
 _R.....3...R_
 _R.1..1....R_
-_R...2...MMR_
+_R...2...CMR_
 _RXuT......R_
 _RRRRR.RRRRR_
 _s__s___s__s_
@@ -69,7 +72,7 @@ _R.........R_
 _R.........R_
 _R..p......R_
 _RiiRR.RRiiR_
-_s__s___sW_s_
+_s__s___sD_s_
 
 layer 3:
 _s__s___s____
@@ -82,7 +85,7 @@ _R........?R_
 _R.........R_
 _R.........R_
 _RiiRR.RRiiR_
-_s_Ws___sWWs_
+_s_Es___sDEs_
 
 layer 4:
 _sV_sV_Vs____
@@ -95,7 +98,7 @@ _R.........R_
 _R.........R_
 _R.........R_
 _RiiRRRRRiiR_
-_s_WsAAAsWWs_
+_s_EsAAAsDEs_
 
 layer 5:
 _sV_sV_Vs____
@@ -108,7 +111,7 @@ _R.........R_
 _R.........R_
 _R.........R_
 _RiiRRRRRiiR_
-_s_Ws___s_Ws_
+_s_Es___s_Es_
 
 # lintel band
 layer 6:

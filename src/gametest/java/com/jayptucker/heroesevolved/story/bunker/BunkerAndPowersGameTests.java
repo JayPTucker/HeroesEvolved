@@ -119,7 +119,8 @@ public final class BunkerAndPowersGameTests {
                 "The orientation log waits on the chamber lectern");
         h.assertTrue(BunkerData.get(server).built && BunkerService.ensureBuilt(server).origin.equals(data.origin), "The bunker is built only once");
         BlockPos receiver = BunkerBuilder.receiverPos(data.origin);
-        h.assertTrue(overworld.getBlockState(receiver).is(Blocks.WAXED_WEATHERED_CUT_COPPER), "The receiver stands on the records desk");
+        h.assertTrue(BunkerBuilder.isReceiver(overworld.getBlockState(receiver)) && !overworld.getBlockState(receiver).is(Blocks.WAXED_WEATHERED_CUT_COPPER),
+                "The radio receiver stands on the records desk");
         h.assertTrue(BunkerBuilder.survivorPositions(data.origin).size() == 2
                         && BunkerBuilder.survivorPositions(data.origin).stream().allMatch(pos ->
                                 overworld.getBlockState(pos).isAir() && overworld.getBlockState(pos.above()).isAir()),
@@ -260,8 +261,8 @@ public final class BunkerAndPowersGameTests {
             h.assertTrue(overworld.getBlockState(oldBeacon).isAir(), "The excess old beacon was removed");
             h.assertTrue(overworld.getBlockState(oldLamp).equals(data.powered ? Blocks.GLOWSTONE.defaultBlockState()
                     : BunkerPower.off(Blocks.GLOWSTONE.defaultBlockState())), "The first-exhibit light uses the new dark state");
-            h.assertTrue(overworld.getBlockState(receiver).is(Blocks.WAXED_WEATHERED_CUT_COPPER),
-                    "The receiver replaced the old display pane");
+            h.assertTrue(BunkerBuilder.isReceiver(overworld.getBlockState(receiver)) && !overworld.getBlockState(receiver).is(Blocks.WAXED_WEATHERED_CUT_COPPER),
+                    "The radio receiver replaced the old display pane");
             h.assertTrue(BunkerBuilder.upgrade(overworld, data) && explosions(overworld, data.origin).size() == 1, "A second upgrade adds nothing");
             overworld.setBlock(lectern.above(), Blocks.AIR.defaultBlockState(), 3);
             overworld.setBlock(alteredPanel, Blocks.POLISHED_DEEPSLATE.defaultBlockState(), 3);
@@ -353,7 +354,7 @@ public final class BunkerAndPowersGameTests {
     @GameTest(template = "rewind_empty", batch = "blueprints")
     public static void blueprintsLoadWithTheirMarkers(GameTestHelper h) {
         for (String name : new String[] {"bunker_chamber", "bunker_records", "bunker_corridor", "bunker_lab", "bunker_cell",
-                "bunker_generator", "bunker_security", "bunker_entrance", "bunker_office"}) {
+                "bunker_generator", "bunker_security", "bunker_office"}) {
             var blueprint = com.jayptucker.heroesevolved.structure.Blueprint.load(name);
             h.assertTrue(blueprint.width() > 0 && blueprint.height() > 0 && blueprint.depth() > 0, "Empty blueprint " + name);
         }

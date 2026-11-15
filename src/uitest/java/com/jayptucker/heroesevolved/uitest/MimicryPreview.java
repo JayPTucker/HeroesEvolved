@@ -139,7 +139,7 @@ public final class MimicryPreview {
             }
             case 442 -> pending = "m5-ability-wheel-echoes.png";
             case 448 -> mc.setScreen(null);
-            case 470 -> mc.stop();
+            case 470 -> PreviewQuiet.quit();
             default -> { }
         }
     }

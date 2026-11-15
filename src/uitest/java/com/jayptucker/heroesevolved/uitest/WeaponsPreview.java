@@ -218,7 +218,7 @@ public final class WeaponsPreview {
             case 585 -> shot("1-held-cold");
             case 590 -> hold(mc, PowerWeapons.TASER);
             case 610 -> shot("1-held-taser");
-            case 620 -> mc.stop();
+            case 620 -> PreviewQuiet.quit();
             default -> { }
         }
         // Keep the guard's target (no AI on the husk, so nothing else would draw his eye).

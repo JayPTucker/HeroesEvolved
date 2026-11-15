@@ -145,7 +145,7 @@ public final class LastSignalService {
         BlockPos pos = event.getPos();
         BunkerData bunker = BunkerData.get(player.getServer());
         if (hasBunker(player) && bunker.built && pos.equals(BunkerBuilder.receiverPos(bunker.origin))
-                && player.serverLevel().getBlockState(pos).is(Blocks.WAXED_WEATHERED_CUT_COPPER)) {
+                && BunkerBuilder.isReceiver(player.serverLevel().getBlockState(pos))) {
             accept(event);
             receive(player, bunker);
             return;
@@ -201,7 +201,7 @@ public final class LastSignalService {
                 tell(player, "Clipped behind the receiver: a canvas signed I. Mendez. Two sleepers behind glass, a relay glowing hot.");
             }
             tell(player, "Relay coordinates: X " + lead.getX() + ", Z " + lead.getZ()
-                    + ". The Journal recorded the signal. Take the shaft to the surface.");
+                    + ". The Journal recorded the signal. Make for the surface.");
         }
         StoryJournalPayload.send(player);
     }

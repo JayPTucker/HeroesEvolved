@@ -1,84 +1,115 @@
-# The Formula lab, abandoned: a working Centrifuge and Synthesis Station on the bench, the Helixite assay,
-# a cracked specimen tube, and a chest with a donated sample and reagents.
+# The Formula lab, abandoned: a long bench of instruments (the Centrifuge and Synthesis Station among them),
+# the Helixite assay on its lectern, specimen tubes (one broken), the sample chest in the island, and a lit
+# specimen tank at the far end. Copper ribs and hanging bulbs under the ceiling. The chest, lectern and door
+# keep their old cells: BunkerLayoutUpgrade, the tests and the corridor depend on them.
 name: bunker_lab
 anchor: 0 0 0
 palette:
   A = polished_deepslate
   B = yellow_concrete
-  C = black_concrete
-  D = deepslate_tiles
-  E = yellow_terracotta
-  F = smooth_quartz
-  G = chest[facing=west] @loot:lab
-  H = lectern[facing=north] @log:helixite
-  I = white_carpet
-  J = barrel[facing=up]
-  K = glass_pane
-  L = iron_block
-  M = tuff_bricks
-  N = cauldron
-  O = heroesevolved:centrifuge[facing=south]
-  P = brewing_stand
-  Q = heroesevolved:synthesis_station[facing=south]
-  R = amethyst_cluster[facing=up]
-  S = flower_pot
-  T = air
-  U = pearlescent_froglight
-  V = end_rod[facing=down]
-  W = cobweb
-  X = deepslate_bricks
-  Y = waxed_copper_bulb[lit=true]
+  C = polished_tuff
+  D = black_concrete
+  E = deepslate_tiles
+  F = yellow_terracotta
+  G = smooth_quartz
+  H = white_carpet
+  I = waxed_copper_grate
+  J = chest[facing=west] @loot:lab
+  K = sea_lantern
+  L = lectern[facing=north] @log:helixite
+  M = iron_trapdoor[facing=north,open=true,half=bottom]
+  N = barrel[facing=up]
+  O = iron_block
+  P = tuff_bricks
+  Q = amethyst_cluster[facing=up]
+  R = flower_pot
+  S = heroesevolved:centrifuge[facing=south]
+  T = heroesevolved:synthesis_station[facing=south]
+  U = brewing_stand
+  V = cauldron
+  W = black_stained_glass_pane
+  X = glass
+  Y = kelp_plant
+  Z = water
+  a = light_blue_stained_glass
+  b = kelp
+  c = cobweb
+  d = iron_trapdoor[facing=north,half=top,open=false]
+  e = lightning_rod[facing=east]
+  f = waxed_copper_bulb[lit=true]
+  g = waxed_cut_copper
+  h = waxed_weathered_cut_copper
+  i = waxed_weathered_cut_copper_slab[type=top]
+  j = chain[axis=y]
 
-# floor
+# floor and walkway
 layer 0:
-AAAAAAAA
-AAAAAAAA
-AAAAAAAA
-ABAAAAAA
-ACAAAAAA
-AAAAAAAA
-AAAAAAAA
-AAAAAAAA
+AAAAAAAAAAAAA
+AAAAAAAAAAAAA
+AAAAAAAAAAAAA
+ABCCCCCCCCCCA
+ADCCCCCCCCCCA
+AAAAAAAAAAAAA
+AAAAAAAAAAAAA
+AAAAAAAAAAAAA
 
-# bench
 layer 1:
-DDDDDDDD
-DEFFFFED
-D......D
-......GD
-.......D
-D..H.I.D
-DJJ..KLD
-DDDDDDDD
+EEEEEEEEEEEEE
+EFGAGGAGGAGFE
+E........HIIE
+.....FJF..IKE
+.....GGG..IKE
+E.HL...M..IIE
+EIIANGAOOAIIE
+EEEEEEEEEEEEE
 
-# lab equipment
 layer 2:
-DMMDMMDM
-MNOPQRSM
-M......M
-.......D
-.......M
-M.....KM
-DJ...TUD
-MMMDMMDM
+PPPPPPPPPPPPP
+PQRASTAUVAUWP
+P.........XXP
+.......R..XYP
+.....Q.U..XZP
+P.........XXP
+PaaA.RAOOAaaP
+PPPPPPPPPPPPP
 
 layer 3:
-DDDDDDDD
-D.V.V.WD
-D......D
-D......D
-D......D
-DW.....D
-D.....LD
-DDDDDDDD
+PPPPPPPPPPPPP
+P..A..A..A..P
+P.........XXP
+P.........XbP
+P.........XZP
+P.........XXP
+PacA..AddAaaP
+PPPPPPPPPPPPP
 
-# ceiling and bulbs
 layer 4:
-XXXXXXXX
-XXXXXXXX
-XXYXXYXX
-XXXXXXXX
-XXXXXXXX
-XXXXXXXX
-XXXXXXXX
-XXXXXXXX
+PPPPPPPPPPPPP
+PeeAeeAeeAeeP
+P.f.f..f..XXP
+P.........XZP
+P.........XZP
+P.f.f..f..XXP
+PggA..A..AggP
+PPPPPPPPPPPPP
+
+layer 5:
+hhhhhhhhhhhhh
+hc.i..i..i..h
+h.jij.ij.iIIh
+h..i..i..iIIh
+h..i..i..iIIh
+h.jij.ij.iIIh
+h..i..i..i.ch
+hhhhhhhhhhhhh
+
+# ceiling
+layer 6:
+EEEEEEEEEEEEE
+EEEEEEEEEEEEE
+EEEEEEEEEEEEE
+EEEEEEEEEEEEE
+EEEEEEEEEEEEE
+EEEEEEEEEEEEE
+EEEEEEEEEEEEE
+EEEEEEEEEEEEE

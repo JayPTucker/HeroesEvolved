@@ -9,6 +9,7 @@ public final class CityDraw {
             for (int z = canvas.z0; z <= canvas.z1; z++) {
                 canvas.clearColumn(x, z, CityGrid.STREET_Y);
                 Streets.ground(canvas, x, z);
+                Outskirts.ground(canvas, x, z);
             }
         for (Feature feature : CityPlan.features())
             if (feature.touches(canvas)) feature.draw().accept(canvas);

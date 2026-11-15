@@ -161,9 +161,9 @@ public final class PyroCombatGameTests {
         var source = p.damageSources().mobAttack(foe);
         try {
             float health = p.getHealth();
-            h.assertTrue(PyroCombat.dodge(p, PyroCombat.Dodge.LEFT), "A jet step");
+            h.assertTrue(PyroCombat.dodge(p, com.jayptucker.heroesevolved.combat.FightingStyles.Dodge.LEFT), "A jet step");
             h.assertTrue(PyroCombat.isDodging(p) && PyroCombat.isEvading(p), "The step has its evasion window");
-            h.assertTrue(!PyroCombat.dodge(p, PyroCombat.Dodge.RIGHT), "Dodges have a cooldown");
+            h.assertTrue(!PyroCombat.dodge(p, com.jayptucker.heroesevolved.combat.FightingStyles.Dodge.RIGHT), "Dodges have a cooldown");
             p.hurt(source, 6);
             h.assertTrue(p.getHealth() == health, "A blow during the step misses");
             h.assertTrue(PyroCombat.isLoaded(p) && PyroService.heat(p) >= PyroCombat.COUNTER_HEAT,
@@ -192,7 +192,7 @@ public final class PyroCombatGameTests {
         try {
             float before = foe.getHealth();
             foe.setDeltaMovement(Vec3.ZERO);
-            h.assertTrue(PyroCombat.dodge(p, PyroCombat.Dodge.BACK), "A backflip");
+            h.assertTrue(PyroCombat.dodge(p, com.jayptucker.heroesevolved.combat.FightingStyles.Dodge.BACK), "A backflip");
             h.assertTrue(foe.getHealth() < before, "The flip kick's arc burns the foe in front");
             h.assertTrue(foe.getDeltaMovement().y > .5, "The arc launches the foe upward");
             h.assertTrue(p.getDeltaMovement().z < 0 && p.getDeltaMovement().y > .3, "The fighter flips up and back");
@@ -211,7 +211,7 @@ public final class PyroCombatGameTests {
         try {
             PlayerEnergyService.consumeUpTo(p, PlayerEnergyService.getMaximumEnergy(p));
             h.assertTrue(PyroCombat.strike(p) == -1, "No stamina, no fist of fire (the click punches instead)");
-            h.assertTrue(!PyroCombat.dodge(p, PyroCombat.Dodge.LEFT), "No stamina, no jet step");
+            h.assertTrue(!PyroCombat.dodge(p, com.jayptucker.heroesevolved.combat.FightingStyles.Dodge.LEFT), "No stamina, no jet step");
             h.succeed();
         } finally { PyroService.forget(p); }
     }

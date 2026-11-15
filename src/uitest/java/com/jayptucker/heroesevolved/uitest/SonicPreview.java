@@ -148,7 +148,7 @@ public final class SonicPreview {
             case 470 -> onServer(mc, p -> { place(p, 300, 0, 0, 30); SonicService.vault(p); });
             case 474 -> onServer(mc, p -> { p.teleportTo(p.serverLevel(), p.getX(), -60, p.getZ(), 0, 30); SonicService.cushion(p, 6); });
             case 477 -> pending = "sonic-7-landing.png";
-            case 490 -> { onServer(mc, p -> clearMobs()); mc.stop(); }
+            case 490 -> { onServer(mc, p -> clearMobs()); PreviewQuiet.quit(); }
             default -> { }
         }
     }

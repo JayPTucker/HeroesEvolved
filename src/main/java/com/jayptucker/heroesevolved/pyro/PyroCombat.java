@@ -2,6 +2,9 @@ package com.jayptucker.heroesevolved.pyro;
 
 import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
+import com.jayptucker.heroesevolved.combat.FightingStyles;
+import com.jayptucker.heroesevolved.combat.FightingStyles.Dodge;
+import com.jayptucker.heroesevolved.combat.StyleMotion;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.network.ArmPosePayload;
 import com.jayptucker.heroesevolved.network.CameraShakePayload;
@@ -16,10 +19,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
@@ -45,7 +45,6 @@ import static com.jayptucker.heroesevolved.config.HeroesEvolvedConfig.COMMON;
  * <p>Strikes never place fire blocks, so they are safe to throw anywhere; the kit's casts still do.</p>
  */
 public final class PyroCombat {
-    public enum Dodge { LEFT, RIGHT, BACK }
     public enum Strike { JAB, CROSS, ROUNDHOUSE, SWEEP }
 
     /** Level from which the combo ends in a roundhouse, crouching sweeps, and a back dodge flips. */
@@ -61,15 +60,19 @@ public final class PyroCombat {
         int step;
         long lastStrike = -1000, readyAt = -1000, dodgeReady = -1000, loadedUntil = -1000;
     }
-    private record Dash(ServerPlayer player, Vec3 push, double lift, long start, boolean flip, boolean flying) {
-        int length() { return flip ? PyroGeometry.FLIP_SPIN : PyroGeometry.STEP_TICKS + 2; }
-    }
-    private static final class Evade { long until; boolean countered; }
 
     private static final Map<UUID, Fighter> FIGHTERS = new HashMap<>();
-    private static final Map<UUID, Dash> DASHES = new HashMap<>();
-    private static final Map<UUID, Evade> EVADES = new HashMap<>();
-    private static final Map<UUID, Long> CUSHIONS = new HashMap<>();
+
+    /** Firebending, as the shared fighting-style input sees it. */
+    public static final FightingStyles.Style STYLE = new FightingStyles.Style() {
+        @Override public boolean owns(ServerPlayer player) { return PyroService.isPyrokinetic(player); }
+        @Override public int strike(ServerPlayer player) { return PyroCombat.strike(player); }
+        @Override public boolean dodge(ServerPlayer player, Dodge dodge) { return PyroCombat.dodge(player, dodge); }
+        @Override public void counter(ServerPlayer player, net.minecraft.world.damagesource.DamageSource source) { counterflame(player); }
+        @Override public void tick(MinecraftServer server) { PyroCombat.tick(server); }
+        @Override public void forget(ServerPlayer player) { FIGHTERS.remove(player.getUUID()); }
+        @Override public void clear() { FIGHTERS.clear(); }
+    };
 
     private PyroCombat() {}
 
@@ -88,12 +91,9 @@ public final class PyroCombat {
                 && !PyroService.isChargingSpear(player) && !PyroService.isCharging(player);
     }
 
-    public static boolean isDodging(ServerPlayer player) { return DASHES.containsKey(player.getUUID()); }
+    public static boolean isDodging(ServerPlayer player) { return StyleMotion.dashing(player); }
 
-    public static boolean isEvading(ServerPlayer player) {
-        Evade evade = EVADES.get(player.getUUID());
-        return evade != null && now(player) <= evade.until;
-    }
+    public static boolean isEvading(ServerPlayer player) { return StyleMotion.evading(player); }
 
     public static boolean isLoaded(ServerPlayer player) {
         Fighter fighter = FIGHTERS.get(player.getUUID());
@@ -112,20 +112,6 @@ public final class PyroCombat {
     // ------------------------------------------------------------------
     // Strikes
     // ------------------------------------------------------------------
-
-    /**
-     * An empty-handed click. If the fire can't be thrown at all (no stamina, the power switched off), the click is
-     * still a plain punch at whatever the crosshair was on, so a tired or dampened fighter isn't left swinging at air.
-     */
-    public static void strikeInput(ServerPlayer player, int targetId) {
-        if (!player.getMainHandItem().isEmpty() || strike(player) >= 0) return;
-        Entity target = targetId < 0 ? null : player.level().getEntity(targetId);
-        if (target != null && target != player && target.isAlive() && target.isAttackable()
-                && player.canInteractWithEntity(target, 1)) {
-            player.attack(target);
-            player.swing(InteractionHand.MAIN_HAND, true);
-        }
-    }
 
     /** Throws the next strike. Returns 1 if thrown, 0 if it's too soon, and -1 if no fire can be thrown at all. */
     public static int strike(ServerPlayer player) {
@@ -270,8 +256,7 @@ public final class PyroCombat {
 
     /** A double-tapped direction: a jet step to the side, or a back step that becomes a flip kick from level 2. */
     public static boolean dodge(ServerPlayer player, Dodge dodge) {
-        UUID id = player.getUUID();
-        if (!canFight(player) || player.isPassenger() || player.isFallFlying() || DASHES.containsKey(id)) return false;
+        if (!canFight(player) || player.isPassenger() || player.isFallFlying() || StyleMotion.dashing(player)) return false;
         Fighter fighter = fighter(player);
         long now = now(player);
         if (now < fighter.dodgeReady) return false;
@@ -295,15 +280,11 @@ public final class PyroCombat {
         boolean flying = PyroFlightService.isFlying(player);
         double speed = flip ? .62 : flying ? 1.35 : 1.05;
         double lift = flip ? (flying ? .45 : .62) : flying ? 0 : player.onGround() ? .26 : .1;
-        Dash dash = new Dash(player, direction.scale(speed), lift, now, flip, flying);
-        DASHES.put(id, dash);
-        Evade evade = new Evade();
-        evade.until = now + EVADE_TICKS;
-        EVADES.put(id, evade);
-        CUSHIONS.put(id, now + CUSHION_TICKS);
+        StyleMotion.dash(player, direction.scale(speed), lift, PyroGeometry.STEP_TICKS,
+                flip ? PyroGeometry.FLIP_SPIN : PyroGeometry.STEP_TICKS + 2, flip, flying);
+        StyleMotion.evade(player, EVADE_TICKS);
+        StyleMotion.cushion(player, CUSHION_TICKS);
         fighter.dodgeReady = now + COMMON.pyroDodgeCooldownTicks.get();
-        player.resetFallDistance();
-        push(dash, 0);
 
         boolean blue = PyroService.isBlue(player);
         Vec3 from = player.position();
@@ -339,34 +320,6 @@ public final class PyroCombat {
         PyroService.addHeat(player, Math.min(6, struck * 2));
     }
 
-    /** Re-sends the dash each tick so ground friction doesn't eat it; the hop's fall is worked out the client's way. */
-    private static void push(Dash dash, int age) {
-        ServerPlayer player = dash.player;
-        if (dash.flip) {
-            if (age == 0) PyroService.push(player, dash.push.add(0, dash.lift, 0));
-            return;
-        }
-        if (age >= PyroGeometry.STEP_TICKS) return;
-        double vertical = dash.lift;
-        if (!dash.flying) for (int i = 0; i < age; i++) vertical = (vertical - .08) * .98;
-        PyroService.push(player, dash.push.add(0, dash.flying ? 0 : vertical, 0));
-    }
-
-    /**
-     * Called for every blow a pyrokinetic player takes. A blow from a creature or a shot during a dodge's first
-     * ticks misses; the first one each dodge loads a Counterflame.
-     */
-    public static boolean evade(ServerPlayer player, DamageSource source) {
-        Evade evade = EVADES.get(player.getUUID());
-        if (evade == null || now(player) > evade.until || source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)
-                || source.getEntity() == player || source.getEntity() == null && source.getDirectEntity() == null) return false;
-        if (!evade.countered) {
-            evade.countered = true;
-            counterflame(player);
-        }
-        return true;
-    }
-
     private static void counterflame(ServerPlayer player) {
         Fighter fighter = fighter(player);
         fighter.loadedUntil = now(player) + LOADED_TICKS;
@@ -384,30 +337,14 @@ public final class PyroCombat {
     }
 
     /** Falls are cushioned for a moment after any dodge, so a flip off a ledge lands on its jets. */
-    public static boolean cushion(ServerPlayer player) {
-        Long until = CUSHIONS.get(player.getUUID());
-        return until != null && now(player) <= until;
-    }
+    public static boolean cushion(ServerPlayer player) { return StyleMotion.cushioned(player); }
 
     // ------------------------------------------------------------------
     // Tick and cleanup
     // ------------------------------------------------------------------
 
-    public static void tick(MinecraftServer server) {
+    static void tick(MinecraftServer server) {
         long now = server.overworld().getGameTime();
-        for (Dash dash : List.copyOf(DASHES.values())) {
-            ServerPlayer player = dash.player;
-            int age = (int) (now - dash.start);
-            if (player.isRemoved() || !player.isAlive() || !PowerRules.canAct(player) || age >= dash.length()
-                    || age > 0 && !dash.flip && player.horizontalCollision) {
-                DASHES.remove(player.getUUID());
-                continue;
-            }
-            push(dash, age);
-            player.resetFallDistance();
-        }
-        EVADES.values().removeIf(evade -> now > evade.until);
-        CUSHIONS.values().removeIf(until -> now > until);
         if (now % 5 == 0) {
             for (var entry : List.copyOf(FIGHTERS.entrySet())) {
                 if (now >= entry.getValue().loadedUntil) continue;
@@ -425,17 +362,12 @@ public final class PyroCombat {
     }
 
     public static void forget(ServerPlayer player) {
-        UUID id = player.getUUID();
-        FIGHTERS.remove(id);
-        DASHES.remove(id);
-        EVADES.remove(id);
-        CUSHIONS.remove(id);
+        FIGHTERS.remove(player.getUUID());
+        StyleMotion.forget(player);
     }
 
     public static void clear() {
         FIGHTERS.clear();
-        DASHES.clear();
-        EVADES.clear();
-        CUSHIONS.clear();
+        StyleMotion.clear();
     }
 }

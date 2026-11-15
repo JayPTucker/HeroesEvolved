@@ -25,19 +25,27 @@ public final class TimeCityPreview {
 
     /** x, y, z, yaw, pitch, name. */
     private static final Object[][] VIEWS = {
-            {4.5, 65.6, 70.5, 180f, -4f, "1-arrival"},
-            {4.5, 65.6, 20.5, 180f, -8f, "2-avenue-midtown"},
-            {9.5, 65.6, -12.5, 110f, -6f, "3-city-hall"},
-            {-30.5, 65.6, 68.5, -90f, -4f, "4-residential-street"},
-            {-44.5, 65.6, 60.5, 200f, -8f, "5-shopfronts"},
-            {40.5, 66.6, 36.5, 135f, -10f, "6-park"},
-            {-26.5, 66.6, 36.5, 225f, -18f, "7-church"},
-            {60.5, 66.6, 66.5, 160f, -25f, "8-crane"},
-            {4.5, 65.6, 88.5, 0f, -6f, "9-primatech"},
-            {4.5, 65.6, -40.5, 180f, -20f, "10-downtown"},
-            {90.5, 175.6, 130.5, 145f, 32f, "11-aerial-southeast"},
-            {4.5, 150.6, 150.5, 180f, 22f, "12-aerial-south"},
-            {-60.5, 120.6, -20.5, 225f, 25f, "13-aerial-downtown"},
+            {24.5, 66.1, -76.5, 90f, -6f, "01-kirby-plaza"},
+            {2.5, 65.6, -70.5, -110f, -4f, "02-kirby-from-ted"},
+            {4.5, 65.6, 70.5, 180f, -4f, "03-arrival-up-the-avenue"},
+            {4.5, 65.6, 36.5, 180f, -28f, "04-great-towers"},
+            {-2.5, 67.6, 34.5, -120f, -22f, "05-odessa-square"},
+            {14.5, 66.1, 13.5, 0f, -8f, "06-red-steps"},
+            {-44.5, 66.6, 99.5, 0f, -14f, "07-odessa-arms"},
+            {-42.5, 66.6, 116.5, 90f, -12f, "08-arms-stairwell"},
+            {-46.5, 76.6, 116.5, 90f, 40f, "09-arms-stairwell-down"},
+            {-48.5, 71.6, 111.5, 135f, 10f, "10-arms-apartment"},
+            {-108.5, 69.6, -97.5, 180f, 8f, "11-commons-pond"},
+            {-60.5, 110.6, -60.5, 135f, 35f, "12-commons-aerial"},
+            {4.5, 65.6, 88.5, 0f, -6f, "13-primatech"},
+            {-30.5, 65.6, 68.5, -90f, -4f, "14-residential-street"},
+            {36.5, 65.6, 30.5, 180f, -18f, "15-midtown-canyon"},
+            {4.5, 160.6, 175.5, 180f, 14f, "16-skyline-from-south"},
+            {110.5, 175.6, 140.5, 145f, 30f, "17-aerial-southeast"},
+            {-120.5, 150.6, 60.5, -115f, 18f, "18-skyline-from-west"},
+            {-48.5, 236.6, 34.5, -140f, 12f, "19-crowns"},
+            {131.5, 65.6, 70.5, 180f, -6f, "20-suburb-street"},
+            {240.5, 150.6, 240.5, 135f, 22f, "21-aerial-outskirts"},
     };
 
     @SubscribeEvent public static void tick(ClientTickEvent.Post e) {
@@ -64,10 +72,15 @@ public final class TimeCityPreview {
         if (!built) {
             var city = server.getLevel(TimeIntroService.DIMENSION);
             if (city != null && worldTicks % 100 == 0) System.out.println("CITY_PROGRESS " + FractureCity.get(city).progress());
-            if (city != null && FractureCity.get(city).ready()) { built = true; shot = 0; wait = 0; System.out.println("CITY_READY at " + worldTicks); }
+            if (city != null && FractureCity.get(city).complete()) {
+                built = true; shot = 0; wait = 0;
+                System.out.println("CITY_READY at " + worldTicks);
+                int lo = com.jayptucker.heroesevolved.time.intro.city.CityGrid.OUTER_MIN, hi = com.jayptucker.heroesevolved.time.intro.city.CityGrid.OUTER_MAX;
+                server.execute(() -> System.out.println("CITY_AUDIT\n" + com.jayptucker.heroesevolved.time.intro.city.CityAudit.run(city, lo, lo, hi, hi)));
+            }
             return;
         }
-        if (shot >= VIEWS.length) { if (++wait > 20) mc.stop(); return; }
+        if (shot >= VIEWS.length) { if (++wait > 20) PreviewQuiet.quit(); return; }
         Object[] view = VIEWS[shot];
         if (wait == 0) go(mc, (double) view[0], (double) view[1], (double) view[2], (float) view[3], (float) view[4]);
         wait++;
@@ -80,6 +93,8 @@ public final class TimeCityPreview {
         var server = mc.getSingleplayerServer();
         server.execute(() -> {
             var player = server.getPlayerList().getPlayer(mc.player.getUUID());
+            // A new player is enrolled in the Last Day, which keeps them inside its streets: the camera roams the whole city.
+            com.jayptucker.heroesevolved.story.prologue.PrologueService.skip(player);
             player.teleportTo(server.getLevel(TimeIntroService.DIMENSION), x, y, z, yaw, pitch);
         });
     }

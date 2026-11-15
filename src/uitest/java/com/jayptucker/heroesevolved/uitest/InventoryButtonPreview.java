@@ -49,7 +49,7 @@ public final class InventoryButtonPreview {
                     && b.getMessage().getString().equals(">")).findFirst()
                     .ifPresent(c -> ((net.minecraft.client.gui.components.Button) c).onPress());
             case 140 -> pending = "creative-tab-icon.png";
-            case 155 -> mc.stop();
+            case 155 -> PreviewQuiet.quit();
             default -> { }
         }
     }

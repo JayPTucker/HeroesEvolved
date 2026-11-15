@@ -31,17 +31,11 @@ public final class PyroEvents {
 
     @SubscribeEvent public static void tick(ServerTickEvent.Post event) {
         PyroService.tick(event.getServer());
-        com.jayptucker.heroesevolved.pyro.PyroCombat.tick(event.getServer());
     }
 
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
         if (event.getEntity() instanceof ServerPlayer victim && PyroService.isPyrokinetic(victim)) {
-            // A blow that lands in the first ticks of a jet step or flip misses (and may load a Counterflame).
-            if (com.jayptucker.heroesevolved.pyro.PyroCombat.evade(victim, event.getSource())) {
-                event.setCanceled(true);
-                return;
-            }
             boolean lava = event.getSource().is(DamageTypes.LAVA);
             if (event.getSource().is(DamageTypeTags.IS_FIRE)
                     && (!lava || PlayerProgressionService.getLevel(victim) >= LAVA_IMMUNITY_LEVEL)) {
@@ -88,8 +82,8 @@ public final class PyroEvents {
 
     @SubscribeEvent
     public static void fall(LivingFallEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player && (PyroService.cushion(player)
-                || com.jayptucker.heroesevolved.pyro.PyroCombat.cushion(player))) event.setDamageMultiplier(0);
+        // A jet step's or backflip's landing is cushioned by combat/FightingStyles.
+        if (event.getEntity() instanceof ServerPlayer player && PyroService.cushion(player)) event.setDamageMultiplier(0);
     }
 
     @SubscribeEvent

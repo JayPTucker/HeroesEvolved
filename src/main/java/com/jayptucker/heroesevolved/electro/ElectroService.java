@@ -974,12 +974,12 @@ public final class ElectroService {
         return FlightSkillService.hostile(player, target);
     }
 
-    private static boolean visible(ServerPlayer player, Vec3 from, Vec3 to) {
+    static boolean visible(ServerPlayer player, Vec3 from, Vec3 to) {
         return player.serverLevel().clip(new ClipContext(from, to, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.NONE, player)).getType() == HitResult.Type.MISS;
     }
 
-    private static void shock(ServerPlayer player, LivingEntity target, float damage) {
+    static void shock(ServerPlayer player, LivingEntity target, float damage) {
         shock(player, target, damage, false);
     }
 

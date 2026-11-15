@@ -154,7 +154,7 @@ public final class RadiationPreview {
             case 940 -> pending = "radiation-7-cloud-a.png";
             case 990 -> pending = "radiation-7-cloud-b.png";
             case 1070 -> pending = "radiation-7-cloud-c.png";
-            case 1110 -> mc.stop();
+            case 1110 -> PreviewQuiet.quit();
             default -> { }
         }
     }

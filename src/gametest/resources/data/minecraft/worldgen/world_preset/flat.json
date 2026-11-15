@@ -59,12 +59,16 @@
               "block": "minecraft:bedrock"
             },
             {
-              "height": 62,
+              "height": 59,
               "block": "minecraft:stone"
             },
             {
+              "height": 3,
+              "block": "minecraft:dirt"
+            },
+            {
               "height": 1,
-              "block": "minecraft:light_gray_concrete"
+              "block": "minecraft:grass_block"
             }
           ],
           "lakes": false,

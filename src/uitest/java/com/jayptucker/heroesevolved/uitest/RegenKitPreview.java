@@ -181,7 +181,7 @@ public final class RegenKitPreview {
             case 826 -> pending = "t2-undying.png";
             case 850 -> onServer(mc, p -> { place(p, 3240, 0, 0, 5); check(StyleCasts.cast(context(p), "lifebloom"), "lifebloom"); });
             case 862 -> pending = "t3-lifebloom.png";
-            case 890 -> mc.stop();
+            case 890 -> PreviewQuiet.quit();
             default -> { }
         }
     }

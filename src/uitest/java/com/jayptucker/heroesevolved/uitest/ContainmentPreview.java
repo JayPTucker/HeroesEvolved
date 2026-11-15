@@ -216,7 +216,7 @@ public final class ContainmentPreview {
             case 615 -> onServer(mc, p -> STANDINS.forEach(s -> System.out.println("SHIELD_HEALTH " + s.getName().getString()
                     + " " + s.getHealth() + " shielded=" + com.jayptucker.heroesevolved.radiation.NuclearShields.shielded(s))));
             case 680 -> onServer(mc, p -> dropAll());
-            case 690 -> mc.stop();
+            case 690 -> PreviewQuiet.quit();
             default -> { }
         }
     }

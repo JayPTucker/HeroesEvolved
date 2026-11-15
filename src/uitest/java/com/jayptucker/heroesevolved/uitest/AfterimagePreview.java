@@ -37,7 +37,7 @@ public final class AfterimagePreview {
                 File file = new File(mc.gameDirectory, "afterimages.png"); image.writeToFile(file);
             } catch (Exception e) { throw new RuntimeException(e); }
         }
-        if (frames == 14) Minecraft.getInstance().stop();
+        if (frames == 14) PreviewQuiet.quit();
     }
     private static final class Preview extends Screen {
         Preview() { super(Component.literal("Speed afterimage render check")); }

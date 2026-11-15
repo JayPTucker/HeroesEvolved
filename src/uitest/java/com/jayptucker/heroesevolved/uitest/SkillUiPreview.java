@@ -140,7 +140,7 @@ public final class SkillUiPreview {
         if (frames == 81) capture(mc, "journal-way-back.png");
         if (frames == 82) { mc.options.guiScale().set(3); mc.resizeDisplay(); com.jayptucker.heroesevolved.gui.screen.JournalScreen.openAt(0); com.jayptucker.heroesevolved.gui.screen.JournalScreen.open(null); }
         if (frames == 86) capture(mc, "journal-signal-scale3.png");
-        if (frames == 89) mc.stop();
+        if (frames == 89) PreviewQuiet.quit();
     }
 
     private static final class PaintingScreen extends net.minecraft.client.gui.screens.Screen {

@@ -105,7 +105,7 @@ public final class SignaturePreview {
         if (t == 456) pending = "signature-8-machines-short.png";
         if (t == 480) effect(Kind.GRID_CHARGE, new Vec3(298.5, -59.5, 3.5), new Vec3(298.5, -58.5, 3.5), 1F);
         if (t == 484) pending = "signature-9-machine-charge.png";
-        if (t == 510) mc.stop();
+        if (t == 510) PreviewQuiet.quit();
     }
 
     @SubscribeEvent public static void frame(RenderFrameEvent.Post event) {

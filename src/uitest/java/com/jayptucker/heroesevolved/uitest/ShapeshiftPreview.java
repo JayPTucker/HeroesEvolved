@@ -371,7 +371,7 @@ public final class ShapeshiftPreview {
             });
             case 1800 -> onServer(mc, p -> System.out.println("SHAPESHIFT_HYBRID " + skill(p, "shapeshifting_1_1")));
             case 1804 -> shot("45-hybrid");
-            case 1820 -> mc.stop();
+            case 1820 -> PreviewQuiet.quit();
             default -> { }
         }
     }

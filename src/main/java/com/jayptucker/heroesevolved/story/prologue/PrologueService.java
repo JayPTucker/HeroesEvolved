@@ -70,8 +70,11 @@ import java.util.UUID;
  * The Last Day: how every new player's story begins.
  * <ol>
  *   <li><b>Apartment.</b> You wake in your apartment in the Odessa Arms, a block from Primatech Paper, on the Last Day.
- *   The door is shut until everyone who woke with you is ready (or a minute after the last of them woke).</li>
- *   <li><b>Evening.</b> The doors open. Odessa is having an ordinary evening; its people talk about their day.</li>
+ *   Everyone meets in the lobby downstairs; the street doors open when all of you are there (or a minute after the
+ *   last of you woke).</li>
+ *   <li><b>Evening.</b> The doors open. Odessa is having an ordinary evening; its people talk about their day. You're
+ *   sent for groceries at the City Market, up the avenue, by a column of light in the street in front of it; twenty
+ *   seconds after the last of you gets there, the light appears (or when the evening's time is up).</li>
  *   <li><b>The light.</b> Far up the avenue, a man begins to glow. Sirens. Primatech opens its doors and its agents wave
  *   people in. Get down the stair in the lobby, through the vault, before the light grows too bright: it surges, again and again, but you
  *   never see it go. Whoever is still out when time runs out is darted by an agent and carried down.</li>
@@ -104,7 +107,7 @@ public final class PrologueService {
     static final class Member {
         final UUID id;
         final int unit;
-        boolean ready, inside, stowed, shot;
+        boolean ready, inside, stowed, shot, shopped;
         int dartedAt = -1, pod = -1;
         Member(UUID id, int unit) { this.id = id; this.unit = unit; }
     }
@@ -130,6 +133,8 @@ public final class PrologueService {
         int pleas, nextPlea;
         /** The vault at the foot of the stair has shut behind the last of them. */
         boolean sealed;
+        /** The evening's clock tick the light appears at, once everyone has reached the beacon (-1 until then). */
+        int lightAt = -1;
     }
 
     private record Bubble(Display.TextDisplay display, int until) {}
@@ -205,14 +210,26 @@ public final class PrologueService {
         if (waiting > 0) player.sendSystemMessage(Component.translatable("prologue.heroesevolved.waiting_for", waiting).withStyle(ChatFormatting.GRAY));
     }
 
-    /** A right-click on a block in the city: your apartment door says you are ready. True if it was handled. */
+    /**
+     * A right-click on a block in the city. Before the evening the Arms' street doors are shut: trying them says who
+     * the lobby is still waiting for. True if it was handled.
+     */
     public static boolean useBlock(ServerPlayer player, BlockPos pos) {
         Member member = run == null ? null : run.members.get(player.getUUID());
         if (member == null || run.phase != Phase.APARTMENT) return false;
-        BlockPos door = Apartments.door(member.unit);
-        if (!pos.equals(door) && !pos.equals(door.above())) return false;
-        ready(player);
+        boolean front = Apartments.frontDoors().stream().anyMatch(door -> pos.equals(door) || pos.equals(door.above()));
+        if (!front) return false;
+        player.sendSystemMessage(Component.translatable("prologue.heroesevolved.front_locked", upstairs(player.getServer(), run))
+                .withStyle(ChatFormatting.GRAY));
         return true;
+    }
+
+    /** How many of the run are not yet in the lobby. */
+    private static long upstairs(MinecraftServer server, Run current) {
+        return current.members.values().stream().filter(m -> {
+            ServerPlayer p = server.getPlayerList().getPlayer(m.id);
+            return !m.ready && (p == null || !Apartments.inLobby(p.position()));
+        }).count();
     }
 
     private static void add(ServerPlayer player, Run current) {
@@ -248,12 +265,8 @@ public final class PrologueService {
             player.sendSystemMessage(Component.translatable("prologue.heroesevolved.wake_late", Apartments.number(member.unit)).withStyle(ChatFormatting.GOLD));
             return;
         }
-        Component button = Component.translatable("prologue.heroesevolved.ready_button").withStyle(style -> style
-                .withColor(ChatFormatting.GREEN).withBold(true)
-                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/lastday ready"))
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable("prologue.heroesevolved.ready_hover"))));
         player.sendSystemMessage(Component.translatable("prologue.heroesevolved.wake", Apartments.number(member.unit))
-                .withStyle(ChatFormatting.GOLD).append(" ").append(button));
+                .withStyle(ChatFormatting.GOLD));
     }
 
     // ------------------------------------------------------------------
@@ -309,13 +322,6 @@ public final class PrologueService {
         player.getFoodData().setFoodLevel(20);
         player.getFoodData().setExhaustion(0);
         player.fallDistance = 0;
-        if (player.getY() >= CityGrid.STREET_Y - 2) {
-            double x = Math.clamp(player.getX(), ROAM_X0, ROAM_X1), z = Math.clamp(player.getZ(), ROAM_Z0, ROAM_Z1);
-            if (x != player.getX() || z != player.getZ()) {
-                player.teleportTo(x, player.getY(), z);
-                player.setDeltaMovement(Vec3.ZERO);
-            }
-        }
     }
 
     private static void start(MinecraftServer server, ServerLevel city) {
@@ -326,7 +332,9 @@ public final class PrologueService {
         for (Entity entity : city.getAllEntities()) if (isScene(entity)) stale.add(entity);
         stale.forEach(Entity::discard);
         LastDayData.get(city).reset(city);
-        doors(city, Apartments.doors(), false);
+        // Apartment doors open, so people can come down; the street doors shut until everyone is in the lobby.
+        doors(city, Apartments.doors(), true);
+        doors(city, Apartments.frontDoors(), false);
         for (int i = 0; i < Apartments.UNITS; i++) plate(city, i, "");
         for (UUID id : List.copyOf(WAITING)) {
             ServerPlayer player = server.getPlayerList().getPlayer(id);
@@ -337,6 +345,13 @@ public final class PrologueService {
     }
 
     private static void apartment(MinecraftServer server, ServerLevel city, Run current) {
+        // Whoever reaches the lobby is ready; they hear how many are still upstairs.
+        forEach(server, current, (player, member) -> {
+            if (member.ready || !Apartments.inLobby(player.position())) return;
+            member.ready = true;
+            long waiting = upstairs(server, current);
+            if (waiting > 0) player.sendSystemMessage(Component.translatable("prologue.heroesevolved.waiting_for", waiting).withStyle(ChatFormatting.GRAY));
+        });
         boolean everyone = current.members.values().stream().allMatch(m -> m.ready);
         if (everyone || current.age - current.lastJoin >= current.ready) evening(server, city, current, true);
     }
@@ -347,10 +362,13 @@ public final class PrologueService {
         current.age = 0;
         current.clock = 0;
         doors(city, Apartments.doors(), true);
+        doors(city, Apartments.frontDoors(), true);
         current.crowd = VisionCrowd.spawn(city, TAG, TimeIntroService.CROWD_SIZE, new VisionCrowd.Timing(current.evening,
                 current.evening + PrologueTimeline.SIRENS, Integer.MAX_VALUE, (int) ENTRANCE.z - 4, ROAM_Z0), 0);
         // An ordinary evening goes at an ordinary pace: fewer conversations, with pauses between lines.
         if (current.crowd != null) current.crowd.calm();
+        // When the sirens go, Odessa's people run for Primatech too: in through its doors and down the stair.
+        if (current.crowd != null) current.crowd.shelter(ENTRANCE, new Vec3(CityGrid.STAIR_X0 + .5, CityGrid.STREET_Y, CityGrid.STAIR_Z0 + 1.5));
         // The Company's men on Primatech's door: "Guards on every door at Primatech." "For a paper company?"
         for (double dx : new double[] {-2.5, 2.5}) agent(city, ENTRANCE.add(dx, 0, 0), 180);
         forEach(server, current, (player, member) -> {
@@ -360,7 +378,20 @@ public final class PrologueService {
     }
 
     private static void evening(MinecraftServer server, ServerLevel city, Run current) {
-        if (current.clock >= current.evening) light(server, city, current, true);
+        // The errand: groceries from the City Market. A column of light in the middle of the avenue in front of it shows
+        // everyone where to go; when the last of them gets there, the light comes twenty seconds later.
+        if (current.age % 10 == 0) {
+            Vec3 beacon = com.jayptucker.heroesevolved.time.intro.city.Market.beacon();
+            SetPiecePayload.send(city, Piece.VILLAGE_SAFE, beacon, beacon.add(0, 1, 0), 3, null);
+            forEach(server, current, (player, member) -> {
+                if (member.shopped || !com.jayptucker.heroesevolved.time.intro.city.Market.arrived(player.position())) return;
+                member.shopped = true;
+                player.sendSystemMessage(Component.translatable("prologue.heroesevolved.groceries").withStyle(ChatFormatting.GOLD));
+                player.playNotifySound(SoundEvents.BUNDLE_INSERT, SoundSource.PLAYERS, 0.8F, 1);
+            });
+            if (current.lightAt < 0 && current.members.values().stream().allMatch(m -> m.shopped)) current.lightAt = current.clock + LIGHT_DELAY;
+        }
+        if (current.clock >= current.evening || current.lightAt >= 0 && current.clock >= current.lightAt) light(server, city, current, true);
     }
 
     /** Far up the avenue, a man begins to glow. */
@@ -1089,6 +1120,12 @@ public final class PrologueService {
 
     /** The phase now playing, or "none". */
     public static String phase() { return run == null ? "none" : run.phase.name().toLowerCase(java.util.Locale.ROOT); }
+
+    /** How long after everyone reaches the market's beacon the light appears: twenty seconds. */
+    public static final int LIGHT_DELAY = 20 * 20;
+
+    /** For tests: ticks until the light appears because everyone reached the beacon, or -1 if not everyone has. */
+    public static int lightIn() { return run == null || run.lightAt < 0 ? -1 : Math.max(0, run.lightAt - run.clock); }
 
     /** For tests: the pod a member was sealed in, or -1. */
     public static int pod(ServerPlayer player) {

@@ -267,7 +267,7 @@ public final class CarryPreview {
                 if (CarryVisuals.isCarrying(mc.player)) throw new IllegalStateException("Skyhook client retained released cargo");
                 pending = "skyhook-released.png";
             }
-            case 580 -> mc.stop();
+            case 580 -> PreviewQuiet.quit();
             default -> { }
         }
     }

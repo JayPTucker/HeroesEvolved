@@ -214,7 +214,7 @@ public final class SonicKitPreview {
             case 1014 -> pending = "t2-silence-dome.png";
             case 1040 -> onServer(mc, p -> { place(p, 1760, 0, 0, 10); check(StyleCasts.cast(context(p), "battle_hymn"), "battle hymn"); });
             case 1052 -> pending = "t3-battle-hymn.png";
-            case 1080 -> mc.stop();
+            case 1080 -> PreviewQuiet.quit();
             default -> { }
         }
     }

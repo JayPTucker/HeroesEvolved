@@ -213,6 +213,11 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue electroRideCooldownTicks;
         public final ModConfigSpec.IntValue electroStormEnergyCost;
         public final ModConfigSpec.IntValue electroStormCooldownTicks;
+        public final ModConfigSpec.IntValue electroStrikeEnergyCost, electroClapEnergyCost, electroDodgeEnergyCost, electroDodgeCooldownTicks;
+        public final ModConfigSpec.IntValue hydroWhipEnergyCost, hydroWhipCooldownTicks, hydroWaveEnergyCost, hydroWaveCooldownTicks,
+                hydroOctopusEnergyCost, hydroOctopusCooldownTicks, hydroRiderEnergyCost, hydroRiderCooldownTicks,
+                hydroMaelstromEnergyCost, hydroMaelstromCooldownTicks;
+        public final ModConfigSpec.IntValue hydroStrikeEnergyCost, hydroFlourishEnergyCost, hydroDodgeEnergyCost, hydroDodgeCooldownTicks;
         public final ModConfigSpec.BooleanValue pyroWorldFire;
         public final ModConfigSpec.BooleanValue gridAffectMachines, gridAffectCreate, gridAffectCarriedItems;
         public final ModConfigSpec.IntValue gridMaxDrainPerMachine, gridLightningCharge;
@@ -851,6 +856,35 @@ public final class HeroesEvolvedConfig {
                 electroRideCooldownTicks = cooldown(builder, "rideTheLightning", 20 * 5);
                 electroStormEnergyCost = energy(builder, "stormSurge", 110);
                 electroStormCooldownTicks = cooldown(builder, "stormSurge", 20 * 120);
+                electroStrikeEnergyCost = builder.comment("Stamina for one spark jab or cross (left-click with an empty hand).")
+                        .defineInRange("strikeEnergyCost", 2, 0, 100);
+                electroClapEnergyCost = builder.comment("Stamina for a Thunderclap or a Grounding Strike.")
+                        .defineInRange("clapEnergyCost", 5, 0, 100);
+                electroDodgeEnergyCost = builder.comment("Stamina for an Arc Step or Flashback (double-tap left, right or back).")
+                        .defineInRange("dodgeEnergyCost", 8, 0, 100);
+                electroDodgeCooldownTicks = builder.comment("Ticks between two dodges.")
+                        .defineInRange("dodgeCooldownTicks", 18, 0, 20 * 60);
+                builder.pop();
+
+                builder.push("hydrokinesis");
+                hydroWhipEnergyCost = energy(builder, "waterWhip", 10);
+                hydroWhipCooldownTicks = cooldown(builder, "waterWhip", 14);
+                hydroWaveEnergyCost = energy(builder, "crashingWave", 26);
+                hydroWaveCooldownTicks = cooldown(builder, "crashingWave", 20 * 6);
+                hydroOctopusEnergyCost = energy(builder, "octopusForm", 30);
+                hydroOctopusCooldownTicks = cooldown(builder, "octopusForm", 20 * 14);
+                hydroRiderEnergyCost = energy(builder, "waveRider", 22);
+                hydroRiderCooldownTicks = cooldown(builder, "waveRider", 20 * 8);
+                hydroMaelstromEnergyCost = energy(builder, "maelstrom", 95);
+                hydroMaelstromCooldownTicks = cooldown(builder, "maelstrom", 20 * 75);
+                hydroStrikeEnergyCost = builder.comment("Stamina for one water lash (left-click with an empty hand).")
+                        .defineInRange("strikeEnergyCost", 2, 0, 100);
+                hydroFlourishEnergyCost = builder.comment("Stamina for Ice Daggers or a Water Wheel.")
+                        .defineInRange("flourishEnergyCost", 5, 0, 100);
+                hydroDodgeEnergyCost = builder.comment("Stamina for a Flow Step or Geyser Vault (double-tap left, right or back).")
+                        .defineInRange("dodgeEnergyCost", 8, 0, 100);
+                hydroDodgeCooldownTicks = builder.comment("Ticks between two dodges.")
+                        .defineInRange("dodgeCooldownTicks", 18, 0, 20 * 60);
                 builder.pop();
 
                 builder.push("telekinesis");

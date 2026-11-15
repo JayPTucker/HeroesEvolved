@@ -493,6 +493,10 @@ public final class PowerArmPoses {
                     firebend(model, entity, pose, main, rightHanded ? model.leftArm : model.rightArm,
                             rightHanded ? model.rightLeg : model.leftLeg, rightHanded ? model.leftLeg : model.rightLeg,
                             inward, aimX, aimY, ClientArmPoseState.ageTicks(id));
+            case ELECTRO_JAB, ELECTRO_CROSS, ELECTRO_CLAP, ELECTRO_SLAM, ELECTRO_STEP, ELECTRO_FLASH ->
+                    lightningStyle(model, entity, pose, main, rightHanded ? model.leftArm : model.rightArm,
+                            rightHanded ? model.rightLeg : model.leftLeg, rightHanded ? model.leftLeg : model.rightLeg,
+                            inward, aimX, aimY, ClientArmPoseState.ageTicks(id));
             case SHIFT_STUDY -> {
                 // Two fingers at the temple, tapping as the shape is learned; the other arm folded under the elbow.
                 float age = ClientArmPoseState.ageTicks(id);
@@ -1309,7 +1313,7 @@ public final class PowerArmPoses {
      * Firebending, with the conventions of {@link #telepathy}: {@code main} is the rear (cross) arm and {@code off} the
      * lead (jab) arm; {@code rear} and {@code lead} are the legs on those sides. {@code y = inward * k} turns the main
      * arm across the body, and {@code z = -inward * k} lifts it outward (the other side takes the opposite signs).
-     * The whole body's turn (the roundhouse's twist, the sweep's spin, the backflip) is {@code PyroCombatPoseRenderer}.
+     * The whole body's turn (the roundhouse's twist, the sweep's spin, the backflip) is {@code FightingStylePoseRenderer}.
      */
     private static void firebend(PlayerModel<?> model, LivingEntity entity, ArmPose pose, ModelPart main, ModelPart off,
                                  ModelPart rear, ModelPart lead, float inward, float aimX, float aimY, float age) {
@@ -1377,6 +1381,60 @@ public final class PowerArmPoses {
                 set(off, -2.85F * throwUp, 0, inward * .35F * throwUp);
                 set(rear, -1.35F * tuck, 0, -inward * .1F);
                 set(lead, -1.5F * tuck, 0, inward * .1F);
+            }
+            default -> { }
+        }
+        model.rightPants.copyFrom(model.rightLeg);
+        model.leftPants.copyFrom(model.leftLeg);
+    }
+
+    /**
+     * Electrokinesis's fighting style, with the conventions of {@link #firebend} ({@code main} the rear arm, {@code off}
+     * the lead). Quicker and more upright than firebending: a boxer's guard, sparks snapped from open fingers, a clap,
+     * a slam to one knee, and dodges with the arms flung back like a body pulled along by its own bolt.
+     */
+    private static void lightningStyle(PlayerModel<?> model, LivingEntity entity, ArmPose pose, ModelPart main, ModelPart off,
+                                       ModelPart rear, ModelPart lead, float inward, float aimX, float aimY, float age) {
+        switch (pose) {
+            case ELECTRO_JAB, ELECTRO_CROSS -> {
+                // Snapped out faster than a firebender's fist and pulled straight back to a high guard.
+                float punch = smooth(age / 1.2F) * (1 - smooth((age - 3.5F) / 4F));
+                boolean cross = pose == ArmPose.ELECTRO_CROSS;
+                ModelPart striking = cross ? main : off, guard = cross ? off : main;
+                float side = cross ? inward : -inward;
+                set(striking, Mth.lerp(punch, -1.55F, aimX + .02F), Mth.lerp(punch, side * .42F, aimY + side * .06F),
+                        Mth.lerp(punch, -side * .08F, side * .05F));
+                set(guard, -1.75F, -side * .48F, side * .1F);
+                set(lead, -.22F - (cross ? 0 : .06F * punch), 0, inward * .04F);
+                set(rear, .26F + (cross ? .1F * punch : 0), 0, -inward * .04F);
+            }
+            case ELECTRO_CLAP -> {
+                // Both arms thrown wide, then swung in to meet palm to palm in front of the chest, held as the fan goes.
+                float wind = smooth(age / 1.2F), meet = smooth((age - 1) / 1.5F), recover = smooth((age - 7) / 5F);
+                float x = Mth.lerp(meet, -1.1F, aimX + .25F);
+                float across = Mth.lerp(meet, -.85F, .42F) * wind;
+                set(main, Mth.lerp(recover, x, -.2F), inward * across * (1 - recover), -inward * .55F * wind * (1 - meet));
+                set(off, Mth.lerp(recover, x, -.2F), -inward * across * (1 - recover), inward * .55F * wind * (1 - meet));
+                float stance = 1 - recover;
+                set(lead, -.32F * stance, 0, inward * .1F * stance);
+                set(rear, .3F * stance, 0, -inward * .1F * stance);
+            }
+            case ELECTRO_SLAM -> {
+                // Dropped to one knee: the rear hand driven into the floor in front, the lead flung back for balance.
+                float drop = smooth(age / 2F) * (1 - smooth((age - 10) / 4F));
+                set(main, -.75F * drop, inward * .2F * drop, -inward * .08F);
+                set(off, .7F * drop, -inward * .1F, inward * .55F * drop);
+                set(lead, -1.25F * drop, 0, inward * .08F * drop);
+                set(rear, .95F * drop, 0, -inward * .12F * drop);
+            }
+            case ELECTRO_STEP, ELECTRO_FLASH -> {
+                // Pulled along by the bolt: both arms flung back behind the body, legs together, then settling.
+                float flung = smooth(age / 1.2F) * (1 - smooth((age - 4) / 5F));
+                boolean back = pose == ArmPose.ELECTRO_FLASH;
+                set(main, (back ? -.9F : .65F) * flung, inward * .12F, -inward * (.35F + .3F * flung));
+                set(off, (back ? -.9F : .65F) * flung, -inward * .12F, inward * (.35F + .3F * flung));
+                set(lead, (back ? -.5F : -.2F) * flung, 0, inward * .06F);
+                set(rear, (back ? .15F : .2F) * flung, 0, -inward * .06F);
             }
             default -> { }
         }

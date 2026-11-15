@@ -1,0 +1,28 @@
+// Runs only the game tests in some packages (default: structure, the block-state facts and placement checks), in a
+// world of their own. Test code is excluded from the release jar.
+//   ./gradlew runGameTestServer --init-script tools/structure-gametest.init.gradle
+//   ./gradlew runGameTestServer --init-script tools/structure-gametest.init.gradle -PtestPackages=structure,time/intro
+// The FACT lines BlockStateFactsGameTests prints land in build/structure-test-world/logs/latest.log.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def packages = (project.findProperty('testPackages') ?: 'structure').toString().split(',')*.trim()
+            def tests = sourceSets.create('structureTest') {
+                java.srcDir('src/gametest/java')
+                packages.each { java.include("com/jayptucker/heroesevolved/${it}/**") }
+                resources.srcDir('src/gametest/resources')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(tests) } }
+                runs { gameTestServer { gameDirectory = project.file('build/structure-test-world') } }
+            }
+            tasks.named('runGameTestServer') {
+                dependsOn(tasks.named('structureTestClasses'))
+                def staleWorld = project.file('build/structure-test-world/world')
+                doFirst { staleWorld.deleteDir() }
+            }
+        }
+    }
+}

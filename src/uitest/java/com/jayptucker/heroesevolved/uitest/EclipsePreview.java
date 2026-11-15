@@ -59,7 +59,7 @@ public final class EclipsePreview {
             }
             if(step==30)pending=s.name();
         }
-        if(world==220+40*SHOTS.length){ClientEclipseState.clear();mc.stop();}
+        if(world==220+40*SHOTS.length){ClientEclipseState.clear();PreviewQuiet.quit();}
     }
     @SubscribeEvent public static void render(RenderFrameEvent.Post e){if(pending==null)return;var mc=Minecraft.getInstance();try(var image=Screenshot.takeScreenshot(mc.getMainRenderTarget())){Path out=mc.gameDirectory.toPath().resolve("screenshots").resolve(pending);Files.createDirectories(out.getParent());image.writeToFile(out);}catch(Exception ex){throw new RuntimeException(ex);}pending=null;}
 }

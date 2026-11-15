@@ -7,25 +7,38 @@ in the pod with the same number.
 
 ## What happens
 
-1. **Your apartment.** You wake in the **Odessa Arms**, a brick walk-up a block west of Primatech Paper. The caption
-   reads *Odessa · 6:02 PM*, and your name is on the plate by your door. There are twelve apartments on three floors,
-   each with a bed under the window, a kitchen, a table and a radio. With more than twelve new players at once, they
+1. **Your apartment.** You wake in the **Odessa Arms**, a brick walk-up a block west of Primatech Paper, with a fire
+   escape up its front and a water tank on its roof. The caption reads *Odessa · 6:02 PM*, and your name is on the plate
+   by your door. There are twelve apartments on three floors, each with a bed under the window, a kitchen, a table and a
+   radio. A wooden stairwell winds down from every floor to the lobby: two short flights and a half landing a storey,
+   round an open well with a rail, under a skylight. With more than twelve new players at once, they
    share: the emptiest apartment takes the next person, and the plate lists who lives there.
-   - **Waiting for each other.** The door stays shut until everyone who woke with you is ready. Try your door, or click
-     **[I'm ready]** in chat. If someone never readies, the doors open anyway 60 seconds after the last person arrived.
+   - **Meeting in the lobby.** Your apartment door is open; the building's street doors are not. Everyone who woke
+     with you meets in the lobby downstairs, and the street doors open once you're all there. Trying them early tells you
+     how many are still upstairs. If someone never comes down, the doors open anyway 60 seconds after the last person
+     arrived. (`/lastday ready` still counts you as ready from anywhere.)
 2. **The evening.** The doors open on an ordinary evening, three minutes long.
+   - **An errand.** You're sent for groceries at the **City Market**, a grocery up the avenue a block south of Odessa
+     Square, with produce out on the sidewalk, aisles of shelves and a checkout. A **column of light** stands in the middle
+     of the avenue in front of it, visible across town, so everyone can find the way. Reach it (or step into the shop)
+     and the bag is yours.
+   - **Then it happens.** Twenty seconds after the last of you reaches the beacon, the light appears up the avenue. If
+     someone never gets there, the evening still ends when its three minutes are up.
+   - The whole city is open to walk, out to the suburbs and the prairie; nothing turns you back at the edge of town.
    - Odessa's people chat on the sidewalks, look in shop windows and walk round the block. It's unhurried: a
      conversation every thirteen seconds or so near you, with a breath between lines.
    - Their talk has hints of what's coming: Ted Sprague looked sick today, Isaac Mendez painted the street on fire, and
      there are guards on every door at Primatech.
-   - Two Company agents stand outside Primatech's lobby.
+   - Two Company agents stand outside Primatech's lobby, TaCZ pistols in hand (the Company darts people, but its men
+     go armed).
 3. **The light.** Far up the avenue, a man begins to glow.
    - For fifteen seconds nobody runs: people stop and stare at it, and wonder aloud.
    - Far up the avenue, over the light, two small figures meet in a flash: Peter Petrelli and Sylar, fighting in the sky.
      Pale condensation trails behind Peter and dark smoke behind Sylar; their clashes flash and boom (the sound arrives a
-     moment late, from that far away). About a minute in, Sylar is hurled into the tower beside the plaza in a burst of
+     moment late, from that far away). About a minute in, Sylar is hurled into the dark glass tower beside the plaza in a burst of
      dust, and Peter dives into the light. You see it all up close later, if a friend's power takes you back.
-   - Then the sirens start, the crowd runs south toward Primatech, and you're told where to go.
+   - Then the sirens start, and Odessa's people run for Primatech too: down their streets, through its open doors and
+     down the stair to the shelter. You're told where to go.
    - Two columns of light mark the way: one over Primatech's doors, one at the head of the stair inside.
    - The agents call people in (three calls, twenty seconds apart): *"Down the stairs in the lobby! Go!"* Just inside the doors, a railed slot in the lobby
      floor opens on a **wide stair** down. It goes down east, turns at a landing, and comes back west to a **vault
@@ -98,6 +111,9 @@ the nugget below).
   is, as before.
 - **Waiting for the city.** On a new world, Odessa is built the first time it's needed. The first player waits on a
   dark screen showing build progress, and the city builds three times as fast while anyone waits.
+- **The edge of town.** Odessa doesn't end in fog: past its last street lie suburbs (ranch houses, a gas station, a
+  motel, a diner, a strip mall), then oil country (pumpjacks, tank batteries, a water tower, a freight train by a grain
+  elevator) and open prairie along highways to the horizon. The outskirts go up after the city, so nobody waits on them.
 - **One day at a time.** The prologue and the Space-Time vision share the city and take turns.
 - **Joining friends.** Anyone who joins while a group is still in its apartments, or out in the evening with at least 40
   seconds of it left, joins that group's day: a late arrival wakes in an apartment with the door already open. Anyone

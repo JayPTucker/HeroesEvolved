@@ -45,7 +45,8 @@ public final class CompanyAgentGameTests {
         CompanyAgentEntity guard = agent(h, CompanyAgentEntity.Role.GUARD, true, new BlockPos(1, 2, 1));
         ServerPlayer p = stranger(h, Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(4, 2, 4))));
         try {
-            h.assertTrue(guard.getMainHandItem().is(Items.CROSSBOW), "A guard in the past carries a tranquilizer rifle");
+            h.assertTrue(com.jayptucker.heroesevolved.weapons.PowerWeapons.is(guard.getMainHandItem(), com.jayptucker.heroesevolved.weapons.PowerWeapons.AGENT_PISTOL),
+                    "A guard in the past carries a TaCZ sidearm (and still darts people)");
             double speed = p.getAttributeValue(Attributes.MOVEMENT_SPEED);
             h.assertTrue(Tranquilizer.dart(guard, p) == 1 && Tranquilizer.doses(p) == 1, "One dart, one dose");
             h.assertTrue(p.getAttributeValue(Attributes.MOVEMENT_SPEED) < speed, "A dose makes your legs heavy");

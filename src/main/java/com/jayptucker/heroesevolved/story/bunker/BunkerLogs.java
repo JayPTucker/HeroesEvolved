@@ -17,7 +17,7 @@ public final class BunkerLogs {
     public static ItemStack orientation() {
         return book("Stasis Wing: Orientation", "Dr. M. Suresh",
                 "PRIMATECH RESEARCH\nOdessa Site, Sublevel 4\n\nWhen your pod opens, wait for the main lights. Walk through the corridor to Records. Use the signal receiver on the east desk.",
-                "The receiver reports the coordinates of the surface relay. Take the ladder in Records up to the hatch, then follow them across the surface.",
+                "The receiver reports the coordinates of the surface relay. Go through the vault door behind Records and up the stairs, then follow them across the surface.",
                 "For recovery, the infirmary is on the west side of the corridor. The Formula lab is opposite.");
     }
 

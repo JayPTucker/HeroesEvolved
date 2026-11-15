@@ -168,7 +168,11 @@ public class CompanyAgentEntity extends PathfinderMob {
             pistol = PowerWeapons.gun(PowerWeapons.AGENT_PISTOL);
             taser = PowerWeapons.gun(PowerWeapons.TASER);
         }
-        setItemSlot(EquipmentSlot.MAINHAND, role() != Role.GUARD ? ItemStack.EMPTY : armed() ? pistol : new ItemStack(Items.CROSSBOW));
+        // A guard in the past still darts people (DartGoal, the Last Day's tranquilizer), but carries a TaCZ sidearm, as
+        // the Company's men do; the crossbow is only for a world without TaCZ.
+        ItemStack sidearm = role() == Role.GUARD && !armed() ? PowerWeapons.gun(PowerWeapons.AGENT_PISTOL) : ItemStack.EMPTY;
+        setItemSlot(EquipmentSlot.MAINHAND, role() != Role.GUARD ? ItemStack.EMPTY : armed() ? pistol
+                : !sidearm.isEmpty() ? sidearm : new ItemStack(Items.CROSSBOW));
         setDropChance(EquipmentSlot.MAINHAND, 0);
     }
 

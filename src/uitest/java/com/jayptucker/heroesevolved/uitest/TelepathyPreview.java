@@ -77,7 +77,7 @@ public final class TelepathyPreview {
             if(moved<.3||target.getHealth()>=target.getMaxHealth())throw new AssertionError("Live client mob controls failed: moved="+moved+", target health="+target.getHealth());
             System.out.println("TELEPATHY_MOB_CLIENT_CHECK PASS moved="+moved+" target health="+target.getHealth());
         });
-        if(world==550)mc.stop();
+        if(world==550)PreviewQuiet.quit();
     }
     @SubscribeEvent public static void render(RenderFrameEvent.Post e){if(pending==null)return;var mc=Minecraft.getInstance();try(var image=Screenshot.takeScreenshot(mc.getMainRenderTarget())){Path out=mc.gameDirectory.toPath().resolve("screenshots").resolve(pending);Files.createDirectories(out.getParent());image.writeToFile(out);}catch(Exception ex){throw new RuntimeException(ex);}pending=null;}
 }

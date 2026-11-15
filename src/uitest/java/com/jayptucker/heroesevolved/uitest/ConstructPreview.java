@@ -80,7 +80,7 @@ public final class ConstructPreview {
         mc.player.setYRot(0); mc.player.setXRot(4); mc.player.yHeadRot = 0; mc.player.yBodyRot = 0;
         boolean weaveOnly = Boolean.getBoolean("heroes.preview.construct.weaveOnly");
         if (weaveOnly && worldTicks < 200) return;
-        if (weaveOnly && worldTicks >= 220) { mc.stop(); return; }
+        if (weaveOnly && worldTicks >= 220) { PreviewQuiet.quit(); return; }
         switch (weaveOnly ? worldTicks + 150 : worldTicks) {
             case 200 -> effect(Kind.TECH_LINK, CENTER.add(-2.6, -.2, -2.5), CENTER.add(1.3, .5, 1), 1);
             case 204 -> pending = "construct-1-tech-link.png";
@@ -111,7 +111,7 @@ public final class ConstructPreview {
             case 504 -> pending = "construct-9-tech-minimal.png";
             case 535 -> effect(Kind.MATTER_SHIELD, CENTER, CENTER.add(0, 0, -1), 3);
             case 539 -> pending = "construct-10-matter-minimal.png";
-            case 565 -> mc.stop();
+            case 565 -> PreviewQuiet.quit();
             default -> { }
         }
     }

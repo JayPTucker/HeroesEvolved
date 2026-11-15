@@ -278,7 +278,7 @@ public final class VibePreview {
             case 1166 -> server(mc, p -> cast(p, AbilitySlot.QUATERNARY));
             case 1170 -> capture = "29-overflow-return-fire.png";
             case 1176 -> capture = "30-overflow-collapse.png";
-            case 1200 -> mc.stop();
+            case 1200 -> PreviewQuiet.quit();
             default -> { }
         }
     }

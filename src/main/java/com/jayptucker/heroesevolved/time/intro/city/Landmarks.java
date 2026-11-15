@@ -20,10 +20,10 @@ final class Landmarks {
     static void cityHall(List<Feature> out, int bx, int bz) {
         int ox = CityGrid.originX(bx), oz = CityGrid.originZ(bz);
         int x0 = ox + 11, z0 = oz + 11, x1 = ox + 24, z1 = oz + 28;
-        Building.Look look = new Building.Look(Blocks.SMOOTH_QUARTZ, Blocks.QUARTZ_BRICKS, Blocks.SMOOTH_QUARTZ, Blocks.CHISELED_QUARTZ_BLOCK,
-                Blocks.GRAY_STAINED_GLASS, Blocks.GLASS, Blocks.OCHRE_FROGLIGHT, Blocks.POLISHED_ANDESITE, Blocks.LIGHT_GRAY_CONCRETE,
-                Blocks.QUARTZ_BRICKS, Blocks.QUARTZ_STAIRS, true, 2, 2, 0.5, Building.Ground.PLAIN, Blocks.QUARTZ_BRICKS,
-                Blocks.QUARTZ_BRICKS, Blocks.WHITE_WOOL, Blocks.WHITE_WOOL, Blocks.DARK_OAK_DOOR);
+        Building.Look look = new Building.Look(Blocks.SMOOTH_QUARTZ, Blocks.QUARTZ_BRICKS, Blocks.CHISELED_QUARTZ_BLOCK, Blocks.QUARTZ_STAIRS,
+                Blocks.GRAY_STAINED_GLASS_PANE, Blocks.GLASS_PANE, false, Blocks.OCHRE_FROGLIGHT, Blocks.POLISHED_ANDESITE,
+                Blocks.LIGHT_GRAY_CONCRETE, Blocks.QUARTZ_BRICKS, Blocks.QUARTZ_STAIRS, 2, 0.5, Building.Ground.PLAIN, Blocks.QUARTZ_BRICKS,
+                Blocks.QUARTZ_BRICKS, Blocks.QUARTZ_STAIRS, Blocks.QUARTZ_STAIRS, Blocks.DARK_OAK_DOOR, Blocks.WHITE_TERRACOTTA, false);
         Building hall = new Building(x0, z0, x1, z1, 3, look, Building.tiers(3), Building.Top.FLAT, new boolean[] {true, true, true, true}, CityGrid.hash(bx, bz, 1));
         out.add(new Feature(x0 - 2, z0 - 2, x1 + 6, z1 + 2, c -> {
             hall.draw(c);
@@ -51,8 +51,15 @@ final class Landmarks {
             }
         }
         c.sign(x + 2, Y + 10, cz, Direction.EAST, Blocks.DARK_OAK_WALL_SIGN, DyeColor.YELLOW, true, "CITY OF ODESSA");
-        c.door(x - 1, Y + 4, cz, Blocks.DARK_OAK_DOOR, Direction.EAST);
-        c.door(x - 1, Y + 4, cz + 1, Blocks.DARK_OAK_DOOR, Direction.EAST);
+        c.doubleDoor(x - 1, Y + 4, cz, Blocks.DARK_OAK_DOOR, Direction.EAST, Direction.SOUTH, false);
+        // Inside the doors, a landing at the portico's height and a flight down to the hall floor.
+        c.fill(x - 4, Y + 1, cz - 1, x - 2, Y + 3, cz + 2, Blocks.POLISHED_ANDESITE);
+        c.fill(x - 4, Y + 4, cz - 1, x - 2, Y + 5, cz + 2, Blocks.AIR);
+        for (int i = 0; i < 3; i++) {
+            c.fill(x - 5 - i, Y + 1, cz - 1, x - 5 - i, Y + 2 - i, cz + 2, Blocks.POLISHED_ANDESITE);
+            for (int z = cz - 1; z <= cz + 2; z++) c.set(x - 5 - i, Y + 3 - i, z, CityCanvas.stairs(Blocks.POLISHED_ANDESITE_STAIRS, Direction.EAST, false));
+            c.fill(x - 5 - i, Y + 4 - i, cz - 1, x - 5 - i, Y + 5, cz + 2, Blocks.AIR);
+        }
     }
 
     /** Nine square, a clock on every face, a belfry and a green copper roof. */
@@ -165,17 +172,34 @@ final class Landmarks {
             for (int dx = -2; dx <= 2; dx++)
                 for (int dy = -2; dy <= 2; dy++)
                     if (dx * dx + dy * dy <= 5) c.set(cx + dx, wall + dy - 1, z0, (dx + dy) % 2 == 0 ? Blocks.PURPLE_STAINED_GLASS : Blocks.ORANGE_STAINED_GLASS);
-            c.door(cx, Y + 1, z0, Blocks.SPRUCE_DOOR, Direction.NORTH);
-            c.door(cx + 1, Y + 1, z0, Blocks.SPRUCE_DOOR, Direction.NORTH);
+            c.doubleDoor(cx, Y + 1, z0, Blocks.SPRUCE_DOOR, Direction.NORTH, Direction.EAST, false);
             c.fill(cx, Y + 3, z0, cx + 1, Y + 3, z0, Blocks.CHISELED_STONE_BRICKS);
             steeple(c, ox + 11, oz + 12);
-            // Candlelight inside.
-            for (int z = z0 + 2; z < z1; z += 3) c.set(cx, wall - 1, z, CityCanvas.hangingLantern(Blocks.LANTERN));
+            // Lanterns on chains from the ridge, down the aisle.
+            int ridge = wall + 1 + half;
+            for (int z = z0 + 2; z < z1; z += 3) {
+                c.fill(cx, wall, z, cx, ridge - 1, z, Blocks.CHAIN);
+                c.set(cx, wall - 1, z, CityCanvas.hangingLantern(Blocks.LANTERN));
+            }
+            // Pews either side of the aisle, facing the altar at the south end.
+            for (int z = z0 + 3; z <= z1 - 4; z += 2)
+                for (int x = x0 + 1; x <= x1 - 1; x++) {
+                    if (x == cx || x == cx + 1) continue;
+                    c.set(x, Y + 1, z, CityCanvas.stairs(Blocks.SPRUCE_STAIRS, Direction.NORTH, false));
+                }
+            // The altar on a step, candles on it, and a lectern beside it.
+            c.fill(x0 + 1, Y + 1, z1 - 2, x1 - 1, Y + 1, z1 - 1, CityCanvas.slab(Blocks.POLISHED_ANDESITE_SLAB, false));
+            c.fill(cx - 1, Y + 1, z1 - 1, cx + 2, Y + 1, z1 - 1, Blocks.CHISELED_STONE_BRICKS);
+            for (int x = cx - 1; x <= cx + 2; x += 3)
+                c.set(x, Y + 2, z1 - 1, Blocks.CANDLE.defaultBlockState().setValue(net.minecraft.world.level.block.CandleBlock.LIT, true)
+                        .setValue(net.minecraft.world.level.block.CandleBlock.CANDLES, 3));
+            c.set(cx - 2, Y + 2, z1 - 2, Blocks.LECTERN.defaultBlockState().setValue(net.minecraft.world.level.block.LecternBlock.FACING, Direction.NORTH));
         }));
     }
 
     private static void steeple(CityCanvas c, int x, int z) {
         int top = Y + 26;
+        c.fill(x + 1, Y + 1, z + 1, x + 3, top - 1, z + 3, Blocks.AIR);
         for (int y = Y; y <= top; y++)
             for (int dx = 0; dx < 5; dx++)
                 for (int dz = 0; dz < 5; dz++) {
@@ -184,7 +208,7 @@ final class Landmarks {
                     boolean louver = y >= top - 4 && y <= top - 1 && (dx == 2 || dz == 2);
                     c.set(x + dx, y, z + dz, louver ? Blocks.SPRUCE_TRAPDOOR.defaultBlockState() : ((dx == 0 || dx == 4) && (dz == 0 || dz == 4) ? Blocks.CHISELED_STONE_BRICKS : Blocks.STONE_BRICKS).defaultBlockState());
                 }
-        c.set(x + 2, top - 2, z + 2, Blocks.BELL.defaultBlockState().setValue(net.minecraft.world.level.block.BellBlock.ATTACHMENT,
+        c.set(x + 2, top - 1, z + 2, Blocks.BELL.defaultBlockState().setValue(net.minecraft.world.level.block.BellBlock.ATTACHMENT,
                 net.minecraft.world.level.block.state.properties.BellAttachType.CEILING));
         c.fill(x + 1, top, z + 1, x + 3, top, z + 3, Blocks.STONE_BRICKS);
         // The spire.
@@ -204,7 +228,13 @@ final class Landmarks {
                 if (pick == 0) c.set(x, Y + 1, z, Blocks.POPPY);
                 else if (pick == 1) c.set(x, Y + 1, z, Blocks.SHORT_GRASS);
             }
+        // Railings on the street, with a gate and a path up to the doors.
+        int door = (ox + 17 + ox + 27) / 2;
         for (int x = ox + 11; x <= ox + 28; x++) {
+            if (x == door || x == door + 1) {
+                for (int z = oz + 11; z < oz + 16; z++) { c.set(x, Y, z, Blocks.DIRT_PATH); c.set(x, Y + 1, z, Blocks.AIR); }
+                continue;
+            }
             c.set(x, Y + 1, oz + 11, x % 2 == 0 ? Blocks.STONE_BRICK_WALL : Blocks.IRON_BARS);
         }
         bigTree(c, ox + 27, oz + 14, 0);
@@ -247,7 +277,7 @@ final class Landmarks {
         }));
     }
 
-    private static void fountain(CityCanvas c, int cx, int cz) {
+    static void fountain(CityCanvas c, int cx, int cz) {
         for (int dx = -3; dx <= 3; dx++)
             for (int dz = -3; dz <= 3; dz++) {
                 int d = Math.max(Math.abs(dx), Math.abs(dz));
@@ -277,27 +307,95 @@ final class Landmarks {
                 }
     }
 
-    /** Kirby Plaza at the north end of the avenue: paving, planters and a steel sphere. */
+    /**
+     * Kirby Plaza at the north end of the avenue, where Ted burns and Peter comes down to stop him: dark granite paving
+     * ruled in pale lines, a low black plinth, and on it a great red sculpture of two stepped ribbons rising from either
+     * end and crossing in the middle, folded over a red band along its foot. It stands near the avenue, so it is behind
+     * Ted as anyone looks up the avenue at him, and low enough (under y 72) to leave the sky fight's air clear. Hedged
+     * planters with trees close the plaza's back, uplights wash the sculpture, and pole lamps stand at the corners; the
+     * dark glass offices round it (CityPlan) look down on all of it.
+     */
     static void plaza(List<Feature> out, int bx, int bz) {
         int ox = CityGrid.originX(bx), oz = CityGrid.originZ(bz);
+        int a = ox + CityGrid.LOT_MIN, b = ox + CityGrid.LOT_MAX, c0 = oz + CityGrid.LOT_MIN, d = oz + CityGrid.LOT_MAX;
         out.add(new Feature(ox + 8, oz + 8, ox + 31, oz + 31, c -> {
-            for (int x = ox + 11; x <= ox + 28; x++)
-                for (int z = oz + 11; z <= oz + 28; z++)
-                    c.set(x, Y, z, (x + z) % 2 == 0 ? Blocks.POLISHED_ANDESITE : Blocks.SMOOTH_STONE);
-            int cx = ox + 19, cz = oz + 19;
-            for (int dx = -3; dx <= 3; dx++)
-                for (int dy = 0; dy <= 6; dy++)
-                    for (int dz = -3; dz <= 3; dz++)
-                        if (Math.abs(dx * dx + (dy - 3) * (dy - 3) + dz * dz - 9) <= 2)
-                            c.set(cx + dx, Y + 2 + dy, cz + dz, (dx + dy + dz) % 2 == 0 ? Blocks.IRON_BLOCK : Blocks.LIGHT_GRAY_CONCRETE);
-            c.fill(cx, Y + 1, cz, cx, Y + 2, cz, Blocks.POLISHED_ANDESITE);
-            for (int[] p : new int[][] {{ox + 13, oz + 13}, {ox + 26, oz + 13}, {ox + 13, oz + 26}, {ox + 26, oz + 26}}) {
-                c.fill(p[0] - 1, Y + 1, p[1] - 1, p[0] + 1, Y + 1, p[1] + 1, Blocks.STONE_BRICKS);
-                c.set(p[0], Y + 1, p[1], Blocks.GRASS_BLOCK);
-                c.set(p[0], Y + 2, p[1], Blocks.FLOWERING_AZALEA);
+            // Granite paving in a grid of pale lines, every fourth block.
+            for (int x = a; x <= b; x++)
+                for (int z = c0; z <= d; z++) {
+                    boolean line = (x - a) % 4 == 0 || (z - c0) % 4 == 0;
+                    c.set(x, Y, z, line ? Blocks.POLISHED_ANDESITE : Blocks.POLISHED_DEEPSLATE);
+                }
+            // The plinth: a low black block with a lit groove round its foot.
+            int cx = a + 5, cz = (c0 + d) / 2;
+            for (int x = cx - 3; x <= cx + 3; x++)
+                for (int z = cz - 8; z <= cz + 8; z++) {
+                    boolean rim = x == cx - 3 || x == cx + 3 || z == cz - 8 || z == cz + 8;
+                    c.set(x, Y + 1, z, rim ? Blocks.POLISHED_BLACKSTONE_BRICKS : Blocks.POLISHED_BLACKSTONE);
+                }
+            sculpture(c, cx, Y + 2, cz);
+            // Floodlit without fixtures: unseen light on the plinth round the sculpture's foot.
+            for (int z = cz - 7; z <= cz + 7; z += 3) {
+                c.set(cx - 3, Y + 2, z, Blocks.LIGHT);
+                c.set(cx + 3, Y + 2, z, Blocks.LIGHT);
             }
-            c.sign(cx, Y + 2, cz - 1, Direction.NORTH, Blocks.DARK_OAK_WALL_SIGN, DyeColor.WHITE, true, "KIRBY", "PLAZA");
+            c.sign(cx - 4, Y + 1, cz, Direction.WEST, Blocks.DARK_OAK_WALL_SIGN, DyeColor.WHITE, true, "KIRBY", "PLAZA");
+            // Hedged planters along the back (east) and north edges, each with a tree; benches facing the sculpture.
+            for (int z = c0 + 1; z <= d - 1; z += 6) planter(c, b - 2, z);
+            for (int x = a + 3; x <= b - 6; x += 6) planter(c, x, c0 + 1);
+            for (int z = c0 + 4; z <= d - 4; z += 6) {
+                c.set(b - 5, Y + 1, z, CityCanvas.stairs(Blocks.SPRUCE_STAIRS, Direction.EAST, false));
+                c.set(b - 5, Y + 1, z + 1, CityCanvas.stairs(Blocks.SPRUCE_STAIRS, Direction.EAST, false));
+            }
+            for (int[] p : new int[][] {{a, c0}, {a, d}, {b, d}}) {
+                c.fill(p[0], Y + 1, p[1], p[0], Y + 5, p[1], Blocks.POLISHED_BLACKSTONE_WALL);
+                c.set(p[0], Y + 6, p[1], Blocks.SEA_LANTERN);
+            }
         }));
+    }
+
+    /**
+     * The red sculpture, long axis north to south, standing on {@code y}. Two stepped ribbons, each two blocks wide, climb
+     * from opposite ends six blocks up and cross in the middle; legs hold their high ends; a band runs along the foot.
+     */
+    private static void sculpture(CityCanvas c, int cx, int y, int cz) {
+        Block red = Blocks.RED_CONCRETE;
+        int half = 6;
+        for (int i = 0; i <= 2 * half; i++) {
+            int h = i / 2;
+            // Ribbon A climbs northward on the west side, ribbon B southward on the east; they share the middle column.
+            int za = cz + half - i, zb = cz - half + i;
+            for (int x = cx - 1; x <= cx; x++) {
+                c.set(x, y + h, za, red);
+                if (i % 2 == 0 && h > 0) c.set(x, y + h - 1, za, red);
+            }
+            for (int x = cx; x <= cx + 1; x++) {
+                c.set(x, y + h, zb, red);
+                if (i % 2 == 0 && h > 0) c.set(x, y + h - 1, zb, red);
+            }
+        }
+        // Legs under the high ends, and the band along the foot on the west side.
+        c.fill(cx - 1, y, cz - half, cx - 1, y + half - 1, cz - half, Blocks.RED_TERRACOTTA);
+        c.fill(cx + 1, y, cz + half, cx + 1, y + half - 1, cz + half, Blocks.RED_TERRACOTTA);
+        for (int z = cz - half; z <= cz + half; z++) c.set(cx - 2, y, z, CityCanvas.slab(Blocks.RED_NETHER_BRICK_SLAB, false));
+    }
+
+    /** A raised planter: a stone kerb round a hedge of leaves, a small tree in the middle. */
+    private static void planter(CityCanvas c, int x, int z) {
+        for (int dx = 0; dx <= 2; dx++)
+            for (int dz = 0; dz <= 2; dz++) {
+                boolean centre = dx == 1 && dz == 1;
+                c.set(x + dx, Y + 1, z + dz, centre ? Blocks.GRASS_BLOCK : Blocks.POLISHED_BLACKSTONE_BRICKS);
+                if (!centre) c.set(x + dx, Y + 2, z + dz, CityCanvas.leaves(Blocks.AZALEA_LEAVES));
+            }
+        c.set(x + 1, Y, z + 1, Blocks.DIRT);
+        c.fill(x + 1, Y + 2, z + 1, x + 1, Y + 4, z + 1, Blocks.DARK_OAK_LOG);
+        for (int dx = -1; dx <= 3; dx++)
+            for (int dz = -1; dz <= 3; dz++)
+                for (int dy = 5; dy <= 7; dy++) {
+                    int r = Math.abs(dx - 1) + Math.abs(dz - 1);
+                    if (r > (dy == 6 ? 3 : 2)) continue;
+                    c.set(x + dx, Y + dy, z + dz, CityCanvas.leaves(Blocks.DARK_OAK_LEAVES));
+                }
     }
 
     // ------------------------------------------------------------------
@@ -320,13 +418,13 @@ final class Landmarks {
                     carOnLot(c, x, z, seed);
                 }
             for (int[] p : new int[][] {{ox + 19, oz + 19}}) {
-                c.fill(p[0], Y + 1, p[1], p[0], Y + 6, p[1], Blocks.POLISHED_BLACKSTONE_WALL);
+                c.fill(p[0], Y, p[1], p[0], Y + 6, p[1], Blocks.POLISHED_BLACKSTONE_WALL);
                 c.set(p[0], Y + 7, p[1], Blocks.SEA_LANTERN);
             }
             // The attendant's booth by the entrance.
             int bx0 = ox + 26, bz0 = oz + 18;
-            c.fill(bx0, Y + 1, bz0, bx0 + 1, Y + 2, bz0 + 1, Blocks.WHITE_CONCRETE);
-            c.set(bx0, Y + 2, bz0, Blocks.GLASS);
+            c.fill(bx0, Y, bz0, bx0 + 1, Y + 2, bz0 + 1, Blocks.WHITE_CONCRETE);
+            c.set(bx0, Y + 1, bz0, Blocks.GLASS);
             c.fill(bx0, Y + 3, bz0, bx0 + 1, Y + 3, bz0 + 1, CityCanvas.slab(Blocks.SMOOTH_STONE_SLAB, false));
         }));
     }
@@ -366,8 +464,10 @@ final class Landmarks {
                     for (int x = ox + 19; x <= ox + 25; x++) for (int z = oz + 19; z <= oz + 25; z++)
                         if (floor < 4) c.set(x, y, z, Blocks.SMOOTH_STONE_SLAB);
                 }
-                if (floor < 3) for (int z = oz + 18; z <= oz + 26; z++) c.set(ox + 17, y + 1, z, Blocks.SCAFFOLDING);
             }
+            // Scaffolding up the west side, standing on the ground.
+            for (int z = oz + 18; z <= oz + 26; z += 2) c.fill(ox + 17, Y + 1, z, ox + 17, Y + 12, z, Blocks.SCAFFOLDING.defaultBlockState()
+                    .setValue(net.minecraft.world.level.block.ScaffoldingBlock.DISTANCE, 0)); // held from the ground: placed without updates, it must be told
             // The crane: a lattice mast, the cab, a long jib out over the street and a counterweight.
             int top = Y + 58;
             for (int y = Y + 1; y <= top; y++)
@@ -401,12 +501,14 @@ final class Landmarks {
         int bz = CityGrid.TERMINUS_BZ;
         int sx0 = CityGrid.originX(3) + 8, sx1 = CityGrid.originX(4) + 31, sz0 = CityGrid.originZ(bz) + 8, sz1 = CityGrid.originZ(bz) + 31;
         int x0 = sx0 + 3, x1 = sx1 - 3, z0 = sz0 + 4, z1 = sz1 - 3;
-        Building.Look look = new Building.Look(Blocks.WHITE_CONCRETE, Blocks.LIGHT_GRAY_CONCRETE, Blocks.LIGHT_GRAY_CONCRETE, Blocks.WHITE_CONCRETE,
-                Blocks.BLACK_STAINED_GLASS, Blocks.LIGHT_BLUE_STAINED_GLASS, Blocks.SEA_LANTERN, Blocks.POLISHED_ANDESITE,
-                Blocks.LIGHT_GRAY_CONCRETE, Blocks.SMOOTH_STONE_SLAB, null, false, 99, 2, 0.45, Building.Ground.LOBBY,
-                Blocks.POLISHED_BLACKSTONE, Blocks.WHITE_CONCRETE, Blocks.WHITE_WOOL, Blocks.WHITE_WOOL, Blocks.IRON_DOOR);
+        Building.Look look = new Building.Look(Blocks.WHITE_CONCRETE, Blocks.LIGHT_GRAY_CONCRETE, Blocks.WHITE_CONCRETE, null,
+                Blocks.BLACK_STAINED_GLASS_PANE, Blocks.GLASS_PANE, false, Blocks.SEA_LANTERN, Blocks.POLISHED_ANDESITE,
+                Blocks.LIGHT_GRAY_CONCRETE, Blocks.WHITE_CONCRETE, null, 3, 0.45, Building.Ground.LOBBY,
+                Blocks.POLISHED_BLACKSTONE, Blocks.WHITE_CONCRETE, Blocks.QUARTZ_STAIRS, Blocks.QUARTZ_STAIRS, Blocks.WAXED_COPPER_DOOR,
+                Blocks.LIGHT_GRAY_CONCRETE, false);
         Building hq = new Building(x0, z0, x1, z1, 9, look, Building.tiers(9, 7, 2), Building.Top.MAST,
                 new boolean[] {true, false, false, false}, CityGrid.hash(77, 7));
+        hq.doorsOpen = true;   // the Last Day: everyone runs in here, villagers too
         out.add(new Feature(sx0, sz0, sx1, sz1, c -> {
             for (int x = sx0; x <= sx1; x++)
                 for (int z = sz0; z <= sz1; z++) {

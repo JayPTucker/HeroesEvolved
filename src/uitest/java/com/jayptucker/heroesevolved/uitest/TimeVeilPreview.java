@@ -146,7 +146,7 @@ public final class TimeVeilPreview {
             case 294 -> shot("7-stopped-reappear");
             case 303 -> shot("8-stopped-after");
             case 310 -> onServer(mc, p -> drop());
-            case 318 -> mc.stop();
+            case 318 -> PreviewQuiet.quit();
             default -> { }
         }
     }

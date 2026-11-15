@@ -105,7 +105,7 @@ public final class RewindTravelPreview {
             case 648 -> shot(mc, "4-overworld");
             case 662 -> shot(mc, "5-landed");
             case 680 -> shot(mc, "6-after");
-            case 700 -> mc.stop();
+            case 700 -> PreviewQuiet.quit();
             default -> { }
         }
     }

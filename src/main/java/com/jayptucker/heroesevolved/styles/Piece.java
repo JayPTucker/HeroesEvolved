@@ -173,7 +173,14 @@ public enum Piece {
     // scale its width), and the plates circling a confused creature's head (bound to it; scale its length in ticks)
     SHIFT_DECOY(240), SHIFT_DECOY_BURST(22), SHIFT_REFLECT(20), SHIFT_NIGHTMARE(36), SHIFT_EXPOSED(24), SHIFT_DAZE(40),
     // Plate Mail: plates locked flat over the body, re-sent every ten ticks while it lasts (bound to the wearer; scale its width)
-    SHIFT_PLATES(12);
+    SHIFT_PLATES(12),
+    // Electrokinesis's fighting style, drawn by ElectroArt (bound to the fighter unless said): a spark from fist to end
+    // (scale 1 on a hit, .7 on a miss, + CHAINED when Ground Out loaded it), a Thunderclap's fan (origin the palms, target
+    // its far middle; scale its reach), a Grounding Strike's ring (origin the feet, target a block ahead; scale its
+    // radius), an Arc Step (origin and target the feet before and after; scale 2 for a Flashback), a Flashback's static
+    // (unbound; scale its radius; it bursts FLASHBACK_FUSE ticks in), a blow grounded out, and the loaded rear fist (re-sent)
+    ELECTRO_SPARK(9), ELECTRO_CLAP(14), ELECTRO_GROUND_ARC(16), ELECTRO_ARC_STEP(12), ELECTRO_DECOY(24),
+    ELECTRO_GROUND_OUT(14), ELECTRO_LOADED(7);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

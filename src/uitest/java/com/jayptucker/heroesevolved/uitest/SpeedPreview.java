@@ -162,7 +162,7 @@ public final class SpeedPreview {
             case 445 -> onServer(mc, p -> { PlayerEnergyService.restore(p, 999); SpeedKit.lightspeed(p, 5); });
             case 447 -> pending = "speed-5-lightspeed.png";
             case 452 -> pending = "speed-5-lightspeed-b.png";
-            case 470 -> { onServer(mc, p -> clearMobs()); mc.stop(); }
+            case 470 -> { onServer(mc, p -> clearMobs()); PreviewQuiet.quit(); }
             default -> { }
         }
     }

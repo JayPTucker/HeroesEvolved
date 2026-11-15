@@ -52,6 +52,7 @@ palette:
   7 = polished_blackstone_button[face=wall,facing=east]
   D = dead_bush
   F = short_grass
+  A = polished_blackstone_button[face=wall,facing=west]
 signs:
   mailbox black = THE BENNETS | 1 | 
 
@@ -59,7 +60,7 @@ signs:
 layer 0:
 __________________
 _sssssssssss_GGGG_
-_sfffffffffs_GGGG_
+_sfffffffffs_CGGG_
 _sfffffffffs_GGGG_
 _sfffffffffs_GGGG_
 _sfffffffCfs_GGGG_
@@ -68,7 +69,7 @@ _sfffffffffs_GGGG_
 _sssssssssss_GGGG_
 _ppppppppppp_GGGG_
 _ppppppppppp_GGGG_
-_____www_____GGGG_
+_____www_____GGGC_
 _____www_____GGGG_
 _____www__________
 
@@ -80,9 +81,9 @@ _Wrrr..q.mac_F__v_
 _W...k.....WV_____
 _W........aW______
 _W......m.oW__33__
-_W..t....a.WV7227_
+_W..t....a.WVA227_
 _W......a..c__22__
-_TWWWW.WcWcc_7227_
+_TWWWW.WcWcc_A227_
 ___m__________44__
 _e__e___e_me______
 _________D______D_
@@ -144,7 +145,7 @@ __________________
 _TWWWWWbb_________
 _WHE......._______
 _W........._______
-_W..Z..._.v_V_____
+_W..Z..._.v_______
 _Wk..Z...vov______
 _Wm.......v_______
 _WX........_______
@@ -207,7 +208,7 @@ __________________
 layer 9:
 __________________
 ((((((g(__________
-__m_______________
+__________________
 _W________________
 _W________________
 __________________

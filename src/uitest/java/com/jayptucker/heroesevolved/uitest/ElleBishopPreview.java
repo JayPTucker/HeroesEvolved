@@ -224,7 +224,7 @@ public final class ElleBishopPreview {
             case 1024 -> shot("7-capacitor");
             case 1034 -> shot("7-capacitor-caught");
             case 1130 -> shot("8-home");
-            case 1140 -> mc.stop();
+            case 1140 -> PreviewQuiet.quit();
             default -> { }
         }
     }

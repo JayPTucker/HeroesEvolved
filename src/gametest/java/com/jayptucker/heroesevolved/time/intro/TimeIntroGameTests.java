@@ -278,21 +278,21 @@ public final class TimeIntroGameTests {
                 for (int y = 64; y <= 65; y++)
                     helper.assertTrue(city.getBlockState(new BlockPos(x, y, z)).isAir(), "The avenue must be clear at " + x + ", " + y + ", " + z
                             + ": " + city.getBlockState(new BlockPos(x, y, z)));
-        // City hall's colonnade faces the avenue under its name.
-        FractureCity.buildColumn(city, -5, -12);
-        var sign = city.getBlockEntity(new BlockPos(-5, 74, -12));
+        // City hall's colonnade faces the avenue under its name (block 3,5).
+        FractureCity.buildColumn(city, -5, 51);
+        var sign = city.getBlockEntity(new BlockPos(-5, 74, 51));
         helper.assertTrue(sign instanceof net.minecraft.world.level.block.entity.SignBlockEntity hall
                 && hall.getFrontText().getMessage(1, false).getString().equals("CITY OF ODESSA"), "City hall must be labelled");
-        // A park replaces a building lot: shade trees and a fountain.
-        FractureCity.buildColumn(city, 46, 46);
-        helper.assertTrue(city.getBlockState(new BlockPos(46, 65, 46)).is(net.minecraft.tags.BlockTags.LOGS), "Park must have trees");
-        FractureCity.buildColumn(city, 51, 51);
-        helper.assertTrue(city.getBlockState(new BlockPos(51, 67, 51)).is(Blocks.WATER_CAULDRON), "Park fountain must have a contained upper basin");
-        // The tallest tower downtown carries a spire high over the street.
-        FractureCity.buildColumn(city, 51, -44);
-        boolean spire = false;
-        for (int y = 160; y < 200 && !spire; y++) spire = !city.getBlockState(new BlockPos(51, y, -44)).isAir();
-        helper.assertTrue(spire, "The tallest tower must rise past y 160");
+        // The Commons' mall (block 1,1): rows of shade trees and a fountain where the paths cross.
+        FractureCity.buildColumn(city, -80, -82);
+        helper.assertTrue(city.getBlockState(new BlockPos(-80, 65, -82)).is(net.minecraft.tags.BlockTags.LOGS), "The mall must have trees");
+        FractureCity.buildColumn(city, -76, -76);
+        helper.assertTrue(city.getBlockState(new BlockPos(-76, 67, -76)).is(Blocks.WATER_CAULDRON), "The mall's fountain must have a contained upper basin");
+        // The Odessa State Building, in the middle of town, carries its mast high over the street.
+        FractureCity.buildColumn(city, -12, -12);
+        boolean mast = false;
+        for (int y = 232; y < 252 && !mast; y++) mast = !city.getBlockState(new BlockPos(-12, y, -12)).isAir();
+        helper.assertTrue(mast, "The tallest tower must rise past y 232");
         helper.succeed();
     }
 }

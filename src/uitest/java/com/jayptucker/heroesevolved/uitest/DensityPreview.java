@@ -201,7 +201,7 @@ public final class DensityPreview {
                 SpeedService.tickRunner(p);
             });
             case 432 -> pending = "density-10-vibrate.png";
-            case 445 -> mc.stop();
+            case 445 -> PreviewQuiet.quit();
             default -> { }
         }
     }

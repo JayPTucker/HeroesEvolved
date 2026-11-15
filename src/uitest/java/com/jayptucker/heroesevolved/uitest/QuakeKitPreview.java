@@ -256,7 +256,7 @@ public final class QuakeKitPreview {
             case 1146 -> pending = "t2-stone-rampart.png";
             case 1180 -> onServer(mc, p -> { place(p, 2360, 0, 0, 10); check(StyleCasts.cast(context(p), "bedrock_stance"), "bedrock stance"); });
             case 1188 -> pending = "t3-bedrock-stance.png";
-            case 1220 -> mc.stop();
+            case 1220 -> PreviewQuiet.quit();
             default -> { }
         }
     }

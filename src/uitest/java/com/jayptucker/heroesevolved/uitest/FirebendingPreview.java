@@ -99,7 +99,7 @@ public final class FirebendingPreview {
         System.out.println("FIRE_PREVIEW " + PyroCombat.next(p) + " " + PyroCombat.strike(p));
     }
 
-    private static void dodge(ServerPlayer p, PyroCombat.Dodge dodge) {
+    private static void dodge(ServerPlayer p, com.jayptucker.heroesevolved.combat.FightingStyles.Dodge dodge) {
         System.out.println("FIRE_PREVIEW " + dodge + " " + PyroCombat.dodge(p, dodge));
     }
 
@@ -170,18 +170,18 @@ public final class FirebendingPreview {
             case 262 -> mc.options.keyShift.setDown(false);
             // ---------------------------------------------------------- Jet step, behind and in front
             case 275 -> server(mc, p -> reset(p, 300, 0));
-            case 285 -> server(mc, p -> dodge(p, PyroCombat.Dodge.LEFT));
+            case 285 -> server(mc, p -> dodge(p, com.jayptucker.heroesevolved.combat.FightingStyles.Dodge.LEFT));
             case 287 -> capture = "10-jet-step.png";
             case 290 -> capture = "11-jet-step-late.png";
             case 300 -> mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
-            case 308 -> server(mc, p -> dodge(p, PyroCombat.Dodge.RIGHT));
+            case 308 -> server(mc, p -> dodge(p, com.jayptucker.heroesevolved.combat.FightingStyles.Dodge.RIGHT));
             case 310 -> capture = "12-jet-step-front.png";
             // ---------------------------------------------------------- Flip kick
             case 330 -> {
                 mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
                 server(mc, p -> { reset(p, 330, 0); actor(p, 1.6, 3); });
             }
-            case 340 -> server(mc, p -> dodge(p, PyroCombat.Dodge.BACK));
+            case 340 -> server(mc, p -> dodge(p, com.jayptucker.heroesevolved.combat.FightingStyles.Dodge.BACK));
             case 342 -> capture = "13-flip.png";
             case 345 -> capture = "14-flip-mid.png";
             case 348 -> capture = "15-flip-late.png";
@@ -189,7 +189,7 @@ public final class FirebendingPreview {
                 mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
                 server(mc, p -> reset(p, 360, 0));
             }
-            case 375 -> server(mc, p -> dodge(p, PyroCombat.Dodge.BACK));
+            case 375 -> server(mc, p -> dodge(p, com.jayptucker.heroesevolved.combat.FightingStyles.Dodge.BACK));
             case 378 -> capture = "16-flip-front.png";
             case 381 -> capture = "17-flip-front-mid.png";
             // ---------------------------------------------------------- Counterflame
@@ -197,7 +197,7 @@ public final class FirebendingPreview {
                 mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
                 server(mc, p -> { reset(p, 390, 0); actor(p, 3, 6); look(p); });
             }
-            case 410 -> server(mc, p -> dodge(p, PyroCombat.Dodge.LEFT));
+            case 410 -> server(mc, p -> dodge(p, com.jayptucker.heroesevolved.combat.FightingStyles.Dodge.LEFT));
             case 411 -> server(mc, p -> {
                 p.invulnerableTime = 0;
                 p.hurt(p.damageSources().mobAttack(ACTORS.getFirst()), 4);
@@ -233,11 +233,11 @@ public final class FirebendingPreview {
             case 540 -> server(mc, FirebendingPreview::strike);
             case 543 -> capture = "27-sweep-first-person.png";
             case 550 -> mc.options.keyShift.setDown(false);
-            case 560 -> server(mc, p -> dodge(p, PyroCombat.Dodge.LEFT));
+            case 560 -> server(mc, p -> dodge(p, com.jayptucker.heroesevolved.combat.FightingStyles.Dodge.LEFT));
             case 562 -> capture = "28-jet-step-first-person.png";
-            case 585 -> server(mc, p -> dodge(p, PyroCombat.Dodge.BACK));
+            case 585 -> server(mc, p -> dodge(p, com.jayptucker.heroesevolved.combat.FightingStyles.Dodge.BACK));
             case 588 -> capture = "29-flip-first-person.png";
-            case 610 -> mc.stop();
+            case 610 -> PreviewQuiet.quit();
             default -> { }
         }
     }

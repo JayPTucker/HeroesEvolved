@@ -23,12 +23,11 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import java.util.List;
 
 /**
- * Builds the Odessa stasis bunker once, under world spawn: a ladder shaft from the surface,
- * then room blueprints: records (with the generator room east and security west, and maintenance
- * under security), a corridor with a lab and an infirmary off it, the stasis hall
- * with fourteen Cryochambers, and a ruined hut
- * marking the hatch on the surface. Coordinates are relative to the bunker floor
- * directly below spawn, with +Z running away from the shaft.
+ * Builds the Odessa stasis bunker once, under world spawn: room blueprints for records (with the generator room east
+ * and security west, and maintenance under security), a corridor with a lab and an infirmary off it, and the stasis hall
+ * with fourteen Cryochambers; then the way out north of records, the vault and the switchback stair up to a ruined lobby
+ * on the surface ({@link BunkerStair}). Coordinates are relative to the bunker floor directly below spawn (where a shallow
+ * world's ladder shaft comes down), with +Z running away from the stair.
  */
 public final class BunkerBuilder {
     /** Fourteen pods: seven along each long wall of the chamber. */
@@ -60,6 +59,30 @@ public final class BunkerBuilder {
             SECURITY);
     /** Maintenance under the security checkpoint. */
     public static final Room OFFICE = new Room("bunker_office", new BlockPos(-14, -6, 3));
+
+    /** The receiver: Simple Radio's, or the copper box an older bunker was built with. */
+    public static boolean isReceiver(BlockState state) {
+        return state.is(Blocks.WAXED_WEATHERED_CUT_COPPER)
+                || "simpleradio:receiver".equals(net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString());
+    }
+
+    /**
+     * Swaps an older bunker's receiver (a copper box, tinted glass, a lightning rod and a bulb) for the radio console the
+     * records blueprint has now, cell by cell, only where the old pieces are still there.
+     */
+    private static void radioConsole(ServerLevel level, BlockPos origin) {
+        var records = Blueprint.load(RECORDS.blueprint());
+        var states = records.statesMatching(state -> true);
+        BlockPos at = origin.offset(RECORDS.at());
+        for (String marker : List.of("signal:receiver", "signal:display", "signal:speaker", "signal:microphone"))
+            for (BlockPos cell : records.markerOffsets(marker)) {
+                BlockPos pos = at.offset(cell);
+                BlockState now = level.getBlockState(pos);
+                boolean old = now.isAir() || now.is(Blocks.WAXED_WEATHERED_CUT_COPPER) || now.is(Blocks.TINTED_GLASS)
+                        || now.is(Blocks.LIGHTNING_ROD) || now.is(Blocks.WAXED_WEATHERED_COPPER_BULB);
+                if (old && states.get(cell) != null) level.setBlock(pos, states.get(cell), Block.UPDATE_ALL);
+            }
+    }
 
     public static BlockPos receiverPos(BlockPos origin) {
         return markerPositions(origin, RECORDS, "signal:receiver").getFirst();
@@ -146,6 +169,12 @@ public final class BunkerBuilder {
                 Blueprint.load(room.blueprint()).addMissing(level, data.origin.offset(room.at()), Rotation.NONE, BEACON::equals);
         }
         BunkerLayoutUpgrade.apply(level, data);
+        // The receiver becomes a Simple Radio console.
+        if (data.layout < 6) {
+            radioConsole(level, data.origin);
+            // The ground round the ruined lobby at spawn, graded to meet its floor instead of standing as a pit's walls.
+            BunkerStair.regrade(level, data.origin);
+        }
         data.layout = BunkerData.LAYOUT;
         data.setDirty();
         com.jayptucker.heroesevolved.HeroesEvolved.LOGGER.info("Brought the stasis bunker at {} up to layout {}", data.origin, data.layout);
@@ -289,9 +318,11 @@ public final class BunkerBuilder {
     /** Builds the bunker below the world's spawn and returns its origin (the floor below the shaft). */
     public static BlockPos build(ServerLevel level) {
         BlockPos spawn = level.getSharedSpawnPos();
-        for (int cx = (spawn.getX() - 12) >> 4; cx <= (spawn.getX() + 12) >> 4; cx++)
-            for (int cz = (spawn.getZ() - 4) >> 4; cz <= (spawn.getZ() + 40) >> 4; cz++) level.getChunk(cx, cz);
-        int surface = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, spawn.getX(), spawn.getZ());
+        for (int cx = (spawn.getX() - 16) >> 4; cx <= (spawn.getX() + 24) >> 4; cx++)
+            for (int cz = (spawn.getZ() - 20) >> 4; cz <= (spawn.getZ() + 40) >> 4; cz++) level.getChunk(cx, cz);
+        // The ground the ruined lobby stands on: the middle height of its whole footprint, not one column's, so on a
+        // hillside it sits on the slope instead of in a pit cut down to wherever spawn happened to be lowest.
+        int surface = BunkerStair.groundLevel(level, spawn);
         // Deep enough to be a secret; on shallow worlds, as deep as the world allows.
         int floor = Math.max(level.getMinBuildHeight() + 2, surface - 32);
         BunkerBuilder builder = new BunkerBuilder(level, new BlockPos(spawn.getX(), floor, spawn.getZ()), surface);
@@ -364,20 +395,24 @@ public final class BunkerBuilder {
     private void build() {
         int top = surface - origin.getY();
 
-        // The shaft: a one-block ladder well from the records room to a trapdoor at the surface.
-        for (int y = 0; y < Math.max(top, 4); y++)
-            for (int x = -1; x <= 1; x++)
-                for (int z = -1; z <= 1; z++) set(x, y, z, x == 0 && z == 0 && y > 0 ? AIR : WALL);
-        for (int y = 1; y < top; y++) set(0, y, 0, Blocks.LADDER.defaultBlockState().setValue(LadderBlock.FACING, Direction.SOUTH));
-        if (top > 2) set(0, top, 0, Blocks.SPRUCE_TRAPDOOR.defaultBlockState().setValue(TrapDoorBlock.HALF, Half.TOP)
-                .setValue(TrapDoorBlock.FACING, Direction.SOUTH));
+        boolean stair = BunkerStair.fits(top);
+        if (!stair) {
+            // Too shallow for the stair (a superflat world): a one-block ladder well from the records room to a hatch.
+            for (int y = 0; y < Math.max(top, 4); y++)
+                for (int x = -1; x <= 1; x++)
+                    for (int z = -1; z <= 1; z++) set(x, y, z, x == 0 && z == 0 && y > 0 ? AIR : WALL);
+            for (int y = 1; y < top; y++) set(0, y, 0, Blocks.LADDER.defaultBlockState().setValue(LadderBlock.FACING, Direction.SOUTH));
+            if (top > 2) set(0, top, 0, Blocks.SPRUCE_TRAPDOOR.defaultBlockState().setValue(TrapDoorBlock.HALF, Half.TOP)
+                    .setValue(TrapDoorBlock.FACING, Direction.SOUTH));
+        }
 
         // The rooms are blueprints in data/heroesevolved/blueprints; see the minecraft-building skill.
         for (Room room : ROOMS) room(room.blueprint(), room.at().getX(), room.at().getY(), room.at().getZ());
         if (origin.getY() + OFFICE.at().getY() > level.getMinBuildHeight())
             room(OFFICE.blueprint(), OFFICE.at().getX(), OFFICE.at().getY(), OFFICE.at().getZ());
-        // A ruined hut marks the hatch on the surface, so the way back down can be found.
-        if (top > 2) room("bunker_entrance", 0, top, 0);
+        // The way out, as the Last Day's survivors came in: the vault behind records, stuck open and grown over, and a
+        // switchback stair up to a ruined lobby on the surface (BunkerStair).
+        if (stair) BunkerStair.build(level, origin, top);
     }
 
 }

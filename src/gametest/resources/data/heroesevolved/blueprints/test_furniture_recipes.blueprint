@@ -1,0 +1,79 @@
+# The furniture recipes from the building skill's block-states.md, drawn once so that tools/blueprint.py validate and
+# BlueprintPlacementGameTests check them against the game. Only the game-test server loads this file.
+name: test_furniture_recipes
+anchor: 0 0 0
+palette:
+  S = stone
+  D = dirt
+  c = oak_stairs[facing=south]
+  w = oak_trapdoor[facing=west,open=true]
+  e = oak_trapdoor[facing=east,open=true]
+  W = oak_wall_sign[facing=west]
+  E = oak_wall_sign[facing=east]
+  f = oak_fence
+  p = oak_pressure_plate
+  t = spruce_slab[type=top]
+  a = candle
+  C = chain
+  H = lantern[hanging=true]
+  b = stone_slab
+  n = oak_trapdoor[facing=north,open=true]
+  s = oak_trapdoor[facing=south,open=true]
+  P = poppy
+  B = barrel[facing=up]
+  K = cauldron
+  l = lever[face=wall,facing=south]
+  T = wall_torch[facing=south]
+  N = red_bed[facing=east,part=foot]
+  M = red_bed[facing=east,part=head]
+  X = chest[facing=south,type=right]
+  Y = chest[facing=south,type=left]
+  O = oak_door[facing=north,hinge=left,half=lower]
+  o = oak_door[facing=north,hinge=left,half=upper]
+  Q = oak_door[facing=north,hinge=right,half=lower]
+  q = oak_door[facing=north,hinge=right,half=upper]
+  V = vine[north=true]
+
+# floor
+layer 0:
+SSSSSSSSSSSSSSSS
+SSSSSSSSSSSSSSSS
+SSSSSSSSSSSSSSSS
+SSSSSSSSSSSSSSSS
+SSSSSSSSSSSSSSSS
+SSSSSSSSSSSSSSSS
+
+# chairs (trapdoor arms, sign arms), a table, a sink, a window box, a bed, a double chest, a double door in the wall
+layer 1:
+SSSSSSSSSSSSSOQS
+.f.....BKB......
+wce.WcE..f...n..
+............wDe.
+NM.XY........s..
+................
+
+# a plate on the table post, a torch and a tap on the wall, a candle on a post, a poppy in the window box
+layer 2:
+SSSSSSSSSSSSSoqS
+.p..TH..l.t.....
+.........a......
+.............P..
+................
+................
+
+# lamps: one on a chain under a full block, one under a bottom slab; a vine on the wall
+layer 3:
+SSSSSSSSSSSSSSSS
+.....C.H..a.V...
+................
+................
+................
+................
+
+layer 4:
+SSSSSSSSSSSSSSSS
+.....S.b........
+................
+................
+................
+................

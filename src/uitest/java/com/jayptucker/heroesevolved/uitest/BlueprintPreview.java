@@ -72,7 +72,7 @@ public final class BlueprintPreview {
             SHOTS.add(new Shot("inside", new Vec3(w / 2, -59.4, 1.5), new Vec3(w / 2, -59.4, d)));
         }
         if (worldTicks < 60 || pending != null) return;
-        if (shot >= SHOTS.size() * 15) { mc.stop(); return; }
+        if (shot >= SHOTS.size() * 15) { PreviewQuiet.quit(); return; }
         Shot current = SHOTS.get(shot / 15);
         if (shot % 15 == 0) {
             Vec3 delta = current.look.subtract(current.eye);

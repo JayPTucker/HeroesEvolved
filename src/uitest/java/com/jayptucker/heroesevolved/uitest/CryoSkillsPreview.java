@@ -196,7 +196,7 @@ public final class CryoSkillsPreview {
                     throw new AssertionError("Constellation must share Frost, spend the network and propagate staged prepared fractures");
                 System.out.println("CRYO_SKILLS_CONSTELLATION PASS");CryoService.stopAll(p);
             });
-            case 610 -> mc.stop();
+            case 610 -> PreviewQuiet.quit();
             default -> { }
         }
     }

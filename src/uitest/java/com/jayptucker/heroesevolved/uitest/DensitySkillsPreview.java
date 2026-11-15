@@ -336,7 +336,7 @@ public final class DensitySkillsPreview {
             case 1006 -> capture = "33-entomb-first-person.png";
             case 1020 -> server(mc, p -> { reset(p, 680, 0, 0); ArmPosePayload.show(p, ArmPose.DENSITY_USHER, 20); });
             case 1024 -> capture = "34-usher-first-person.png";
-            case 1045 -> mc.stop();
+            case 1045 -> PreviewQuiet.quit();
             default -> { }
         }
     }

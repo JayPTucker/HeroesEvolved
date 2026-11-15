@@ -26,10 +26,10 @@ import java.util.Set;
  * Only the model turns; the camera never does.
  */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID, value = Dist.CLIENT)
-public final class PyroCombatPoseRenderer {
+public final class FightingStylePoseRenderer {
     private static final Set<Integer> POSED = new HashSet<>();
 
-    private PyroCombatPoseRenderer() {}
+    private FightingStylePoseRenderer() {}
 
     @SubscribeEvent
     public static void pre(RenderPlayerEvent.Pre event) {
@@ -64,6 +64,28 @@ public final class PyroCombatPoseRenderer {
                 roll = (float) Math.clamp(sideways * 18, -16, 16) * lean;
             }
             case FIRE_FLIP -> pitch = -360 * smooth(age / PyroGeometry.FLIP_SPIN);
+            // Lightning: a quicker, smaller turn into each spark, a lean into the clap, a drop to one knee for the slam,
+            // a lean along a flash sideways and a lean back into a Flashback.
+            case ELECTRO_JAB, ELECTRO_CROSS -> {
+                float punch = smooth(age / 1.2F) * (1 - smooth((age - 3.5F) / 4F));
+                twist = (pose == ArmPose.ELECTRO_CROSS ? 12 : -8) * handed * punch;
+            }
+            case ELECTRO_CLAP -> {
+                float lean = smooth((age - 1) / 1.5F) * (1 - smooth((age - 7) / 5F));
+                pitch = 9 * lean;
+            }
+            case ELECTRO_SLAM -> {
+                float down = smooth(age / 2F) * (1 - smooth((age - 10) / 4F));
+                drop = .34F * down;
+                pitch = 24 * down;
+            }
+            case ELECTRO_STEP -> {
+                Vec3 travel = FlightVisualGeometry.travel(player);
+                double yaw = Math.toRadians(body);
+                double sideways = travel.x * -Math.cos(yaw) + travel.z * -Math.sin(yaw);
+                roll = (float) Math.clamp(sideways * 14, -20, 20) * (1 - smooth((age - 2) / 5F));
+            }
+            case ELECTRO_FLASH -> pitch = -17 * smooth(age / 1.2F) * (1 - smooth((age - 4) / 5F));
             default -> { return; }
         }
         if (twist == 0 && pitch == 0 && roll == 0 && drop == 0) return;

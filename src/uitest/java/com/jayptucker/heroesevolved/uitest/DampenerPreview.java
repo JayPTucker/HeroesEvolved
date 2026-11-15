@@ -166,7 +166,7 @@ public final class DampenerPreview {
             case 426 -> shot("11-charge-front");
             case 440 -> { mc.options.setCameraType(CameraType.FIRST_PERSON); onServer(mc, p -> p.teleportTo(p.serverLevel(), X + 0.5, Y, Z - 4.5, 0, 4)); }
             case 470 -> shot("12-held");
-            case 480 -> mc.stop();
+            case 480 -> PreviewQuiet.quit();
             default -> { }
         }
     }

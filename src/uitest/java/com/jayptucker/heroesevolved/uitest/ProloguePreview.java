@@ -179,7 +179,7 @@ public final class ProloguePreview {
             }
             if (wakeTicks == 165) pending = "prologue-21-pod-14.png";
             if (wakeTicks == 170) camera(null, null);
-            if (wakeTicks > 185) mc.stop();
+            if (wakeTicks > 185) PreviewQuiet.quit();
             return;
         }
         String phase = PrologueService.phase();

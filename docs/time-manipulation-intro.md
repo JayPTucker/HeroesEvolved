@@ -93,28 +93,64 @@ across), eight by eight city blocks of 32 on a grid of eight-wide roads. The
 avenue runs north-south along x 0..7 and ends in a T in front of Primatech
 Paper at the south edge. Parked cars and other street furniture leave the avenue clear.
 
-- **Districts.** Downtown towers crowd the north end around Kirby Plaza, where
-  the light falls: glass curtain walls with setbacks and masts, and art deco
-  towers with stone piers, dark spandrels, stepped crowns and spires; the
-  tallest rises past y 160. Midtown has ribbon-windowed offices and hotels.
-  The south is brick walk-ups and brownstone rows.
-- **Buildings have depth.** Piers stand proud of glass set one block in, with a
-  sill below and a lintel above every bay. Brick and brownstone buildings carry
-  a dark cornice over the sidewalk; brick ones have shops with striped awnings,
-  display windows, named signs and doors, and water towers on their roofs.
-  Brownstones have stoops with railings. Towers have lobbies with canopies.
-  About a third of the windows are lit.
+- **Districts.** Odessa is built like a slice of Manhattan. The skyline peaks
+  in the middle of town, where two great towers stand either side of the
+  avenue: the Odessa State Building (limestone piers, three setbacks, a lit deco
+  crown and a mooring mast, past y 240) and the Bishop Building (white brick,
+  a crown of steel arches over lit sunbursts, and a needle). Round them stand
+  bronze glass slabs over plazas, deco setback towers with spires, gothic towers
+  under copper roofs, and towers with lower annexes. Kirby Plaza, where the light
+  falls, sits in the downtown cluster at the north end of the avenue, ringed by
+  dark glass offices. Pre-war apartment blocks with water tanks and midtown
+  offices and hotels step down to the edges, where each residential street is a
+  row of narrow buildings of their own widths and heights: brownstones with
+  stoops, brick walk-ups with shops and fire escapes, now and then a tenement.
+- **Buildings have depth.** Windows are set a block back between piers two
+  blocks deep, with a stone sill (an upside-down stair) below and a lintel above;
+  glass towers have curtain walls flush between mullions. Behind every window is
+  a room three blocks deep with its own ceiling light where the lights are on.
+  Brick and brownstone buildings carry a dark cornice over the sidewalk, and many
+  brick walk-ups have iron fire escapes. Brick ones have shops with striped
+  awnings hung from the fascia, display shelves, named signs and doors, and water
+  towers and stair huts on their roofs. Brownstones have stoops with solid cheeks
+  and iron rails. Towers have lobbies with glass doors under a canopy. About a
+  third of the windows are lit.
+- **Nothing hangs in the air.** Every awning, cornice, canopy, stoop and fire
+  escape hangs from its own wall, and only over the sidewalk. Every door opens
+  onto floor on both sides. `CityAudit` checks the whole city and its outskirts
+  block by block, and a game test fails if anything floats.
+- **No monsters.** Nothing hostile spawns in Odessa on its own, however dark a
+  room is: it is a memory of one evening, not a place monsters live.
 - **Streets.** Raised sidewalks behind a curb, double yellow lines, stop lines
-  and crosswalks, tall lamp posts leaning lanterns over the road, street trees
-  in fenced pits, hydrants, benches and bins, bus shelters on the avenue, and
-  parked cars on the side streets.
+  and crosswalks, tall lamp posts leaning lanterns over the road, traffic signals
+  with street names on every corner, manholes, street trees in fenced pits,
+  hydrants, benches and bins, open-backed bus shelters on the avenue, and parked
+  cars on the side streets.
 - **Landmarks.** City hall faces the avenue with a colonnade and a clock tower
-  stopped at 6:14. There is a church with a steeple, a park with a fountain,
-  Kirby Plaza at ground zero, a parking lot, a construction site whose tower
-  crane stands over the skyline, and Primatech Paper closing the avenue.
+  stopped at 6:14. **Kirby Plaza** is dark granite ruled in pale lines, with a
+  great red sculpture of two stepped ribbons crossing on a black plinth near the
+  avenue (behind Ted as you look up the avenue at him), hedged planters and
+  uplights. **Odessa Square**, a block south-east of the great towers, is red
+  steps facing up the avenue and a building wrapped in lit, lettered billboards
+  and a news ticker, with a subway entrance in its paving. **The Commons** fill
+  the north-west corner: a pond with a stone bridge, a wooded ramble, a great
+  lawn with a bandshell, and a mall between rows of trees. There is a church with
+  a steeple, a parking lot, a construction site whose tower crane stands over the
+  skyline, and Primatech Paper closing the avenue. Half the parked cars are
+  yellow cabs, and slab towers have plazas with planters and subway entrances. The
+  church has pews, an altar and chained lanterns; city hall's doors open onto a
+  landing with steps down to its hall.
+- **Outskirts.** A ring 96 blocks deep surrounds the city on the same grid:
+  suburbs of ranch houses with yards, driveways and cars; a gas station, motel,
+  diner and strip mall on the roads in; then oil country (pumpjacks, tank
+  batteries, a barn and windmill, the Odessa water tower, a freight train by a
+  grain elevator); then prairie along highways with power lines. Beyond the
+  ring the dimension's own ground is grass.
 
 The city is built while the server runs, a chunk at a time, never more than
-about twelve milliseconds a tick, and reused afterwards. Its version is saved
+about twelve milliseconds a tick, and reused afterwards. The city's own chunks
+come first (scenes may start once they stand); the outskirts follow, nearest
+first, and the build carries on after a restart from where it stopped. Its version is saved
 with it: a city from an older version is rebuilt over, column by column, the
 first time the server starts. Any rectangle can be put back exactly as the plan
 draws it (`FractureCity.rebuild`). Requests wait for construction to finish, and simultaneous groups queue

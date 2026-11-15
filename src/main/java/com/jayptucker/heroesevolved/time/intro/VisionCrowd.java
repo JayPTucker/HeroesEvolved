@@ -11,6 +11,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.ai.Brain;
 import net.minecraft.world.entity.ai.behavior.BlockPosTracker;
 import net.minecraft.world.entity.ai.behavior.EntityTracker;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
@@ -107,6 +108,15 @@ public final class VisionCrowd {
 
     /** An ordinary evening's pace (the Last Day): conversations further apart, with a breath between lines. */
     public void calm() { talkGap = 260; firstTalk = 200; linePause = 30; stareGap = 100; }
+
+    /** Where the crowd takes shelter when it runs (the Last Day: Primatech's doors, then the stair down), or null. */
+    private Vec3 shelterDoor, shelterStair;
+
+    /**
+     * When the sirens start, people run for shelter instead of just away: down their street to the road along
+     * {@code runToZ}, along it to {@code door}, in, and down the stair at {@code stair}, where they are gone from the street.
+     */
+    public void shelter(Vec3 door, Vec3 stair) { shelterDoor = door; shelterStair = stair; }
     private Timing timing;
     private int shift;
 
@@ -215,10 +225,37 @@ public final class VisionCrowd {
         }
     }
 
+    /**
+     * One runner's way to shelter, a leg at a time (a villager can only plan about forty blocks ahead): down (or up) their
+     * street to the road before the shelter, along it toward the door, through the door, and to the head of the stair,
+     * where they go below and leave the street.
+     */
+    private void runForShelter(Villager body, Brain<Villager> brain, int i) {
+        brain.eraseMemory(MemoryModuleType.LOOK_TARGET);
+        double x = body.getX(), z = body.getZ();
+        if (body.position().distanceToSqr(shelterStair) < 4) { body.discard(); return; }
+        BlockPos target;
+        boolean atRoad = Math.abs(z - timing.runToZ()) <= 3;
+        if (z > shelterDoor.z - 1.5 && Math.abs(x - shelterDoor.x) < 10) target = BlockPos.containing(shelterStair);
+        else if (atRoad && Math.abs(x - shelterDoor.x) < 3) target = BlockPos.containing(shelterDoor.x, CityGrid.STREET_Y + 1, shelterDoor.z + 1);
+        else if (atRoad) {
+            double step = Math.clamp(shelterDoor.x - x, -36, 36);
+            target = BlockPos.containing(x + step, CityGrid.STREET_Y, timing.runToZ() + Math.sin(i * 1.3));
+        } else {
+            double toward = Math.clamp(timing.runToZ() - z, -40, 40);
+            target = BlockPos.containing(x + Math.sin(i * 1.7) * 2, CityGrid.STREET_Y, z + toward);
+        }
+        brain.setMemory(MemoryModuleType.WALK_TARGET, new WalkTarget(target, 0.95F, 1));
+    }
+
     private void steer(Person person, int i, int ticks, boolean stare, boolean run) {
         Villager body = person.body;
         if (!body.isAlive()) return;
         var brain = body.getBrain();
+        if (run && shelterDoor != null) {
+            runForShelter(body, brain, i);
+            return;
+        }
         if (run) {
             // Away from the light, down whichever street they are on.
             double x = body.getX() + Math.sin(i * 1.7) * 2, z = Math.min(timing.runToZ(), body.getZ() + 45);

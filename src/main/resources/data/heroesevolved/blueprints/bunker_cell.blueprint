@@ -1,80 +1,105 @@
-# Infirmary: two cots, medical storage and a screened recovery area. The east opening joins the corridor.
+# Infirmary: the old recovery room (two cots, intake desk, the screened recovery bays, medical storage) opens
+# through an arch into a west ward with two more cots, a frosted screen, a medicine cabinet and hanging lamps.
+# The east opening joins the corridor. Every cell of the old room keeps its place (anchor 5 0 0 is the old
+# north-west corner): the gray cot, the survivors' spots and the chest are read by code and tests.
 name: bunker_cell
-anchor: 0 0 0
+anchor: 5 0 0
 palette:
   A = polished_deepslate
-  B = cracked_deepslate_bricks
-  C = white_bed[facing=east,part=foot]
-  D = white_bed[facing=east,part=head]
-  E = light_blue_stained_glass_pane
-  F = gray_bed[facing=south,part=head]
-  H = gray_bed[facing=south,part=foot]
-  I = dark_oak_stairs[facing=south]
-  J = spruce_slab[type=top]
-  K = smooth_quartz
-  L = chest[facing=west]
-  M = chiseled_deepslate
-  O = flower_pot
-  P = cobweb
-  Q = deepslate_bricks
-  R = waxed_weathered_copper_bulb[lit=true]
-  S = air @signal:survivor
-  T = spruce_wall_sign[facing=north] @sign:infirmary
-  U = cyan_terracotta
-  V = sea_lantern
-  W = waxed_copper_bulb[lit=true]
+  B = smooth_stone
+  C = cyan_terracotta
+  D = deepslate_bricks
+  E = cracked_deepslate_bricks
+  F = smooth_quartz
+  G = white_bed[facing=east,part=foot]
+  H = white_bed[facing=east,part=head]
+  I = white_bed[facing=west,part=head]
+  J = white_bed[facing=west,part=foot]
+  K = iron_bars
+  L = light_blue_stained_glass_pane
+  M = white_stained_glass_pane
+  N = gray_bed[facing=south,part=foot]
+  O = air @signal:survivor
+  P = gray_bed[facing=south,part=head]
+  Q = dark_oak_stairs[facing=south]
+  R = barrel[facing=up]
+  S = white_concrete
+  T = spruce_slab[type=top]
+  U = chest[facing=west]
+  V = brewing_stand
+  W = flower_pot
+  X = candle[candles=2,lit=true]
+  Y = spruce_wall_sign[facing=north] @sign:infirmary
+  Z = chiseled_deepslate
+  a = spruce_trapdoor[facing=south,half=top,open=false]
+  b = waxed_copper_bulb[lit=true]
+  c = chain[axis=y]
+  d = cobweb
+  e = waxed_weathered_cut_copper
+  f = waxed_weathered_cut_copper_slab[type=top]
+  g = waxed_weathered_copper_bulb[lit=true]
+  h = sea_lantern
 signs:
   infirmary white glow = INFIRMARY | RECOVERY COTS | KEEP CLEAR
 
 # floor
 layer 0:
-AAAAAAAA
-AAAAAAAA
-AAAAAAAA
-AAAAAAUU
-AAAAAAUU
-AAAAAAAA
-AAAAAAAA
-AAAAAAAA
+AAAAAAAAAAAAA
+ABBBBAAAAAAAA
+ABBBBAAAAAAAA
+ABBBBAAAAAACC
+ABBBBAAAAAACC
+ABBBBAAAAAAAA
+ABBBBAAAAAAAA
+AAAAAAAAAAAAA
 
-# cots and intake desk
 layer 1:
-BBBBBBBB
-B....CDB
-B.EEE..B
-B.EHS...
-B.EFS...
-BIEEEE.B
-BJJ.K.LB
-BBBBBBBB
+AAAAADEEEEEEE
+AFFF.A....GHE
+AIJK...LLL..E
+AMM....LNO...
+AMM....LPO...
+AIJK..QLLLL.E
+ARRRSATT.F.UE
+AAAAADEEEEEEE
 
 layer 2:
-BBBBBBBB
-B......B
-B.EEE..B
-M.E.....
-B.E.....
-B.EEEE.B
-B.O..T.B
-BBBMBBBB
+DDDEDDEEEEEEE
+DVW..A......E
+D..K...LLL..E
+EMM....L.....
+DMM....L.....
+D..K...LLLL.E
+D...XA.W..Y.E
+DEDDDDEEZEEEE
 
 layer 3:
-BBBMBBBB
-B......B
-BPEEEE.B
-B.E....B
-M.E..E.B
-B.EEEE.B
-B.....PB
-BBBBBBBB
+DDEDDDEEZEEEE
+Daa..A......E
+E.bc.AdLLLL.E
+D....A.L....E
+D....A.L..L.E
+D.bc.A.LLLL.E
+D....A.....dE
+EDDDDDEEEEEEE
+
+layer 4:
+eeeeeDeeeeeee
+e....f......e
+e.c..f......e
+e....f......e
+e....f......e
+e.c..f......e
+ed...f......e
+eeeeeDeeeeeee
 
 # ceiling
-layer 4:
-QQQQQQQQ
-QRQQQQQQ
-QQQQQQQQ
-QQQQVQQQ
-QQQQQQQQ
-QQQQQQQQ
-QQQQWQQQ
-QQQQQQQQ
+layer 5:
+DDDDDDDDDDDDD
+DDDDDDgDDDDDD
+DDDDDDDDDDDDD
+DDDDDDDDDhDDD
+DDDDDDDDDDDDD
+DDDDDDDDDDDDD
+DDDDDDDDDbDDD
+DDDDDDDDDDDDD

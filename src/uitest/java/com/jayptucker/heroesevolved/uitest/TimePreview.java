@@ -114,7 +114,7 @@ public final class TimePreview {
             case 720 -> { mc.options.setCameraType(CameraType.THIRD_PERSON_BACK); cast(mc, AbilitySlot.QUATERNARY, false); }
             case 722 -> pending = "time-6-rewind-a.png";
             case 726 -> pending = "time-6-rewind-b.png";
-            case 760 -> mc.stop();
+            case 760 -> PreviewQuiet.quit();
             default -> { }
         }
     }

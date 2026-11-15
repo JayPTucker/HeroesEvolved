@@ -16,7 +16,7 @@ public final class ClientVisualSettings {
     public static final ModConfigSpec.DoubleValue SHAKE, FLASH, FOG;
     public static final ModConfigSpec.BooleanValue REDUCE_FLASHING, SEVERED_LIMBS;
     /** Pyrokinesis controls: empty-handed left clicks throw fire, and double-tapping left, right or back dodges. */
-    public static final ModConfigSpec.BooleanValue FIRE_STRIKES, FIRE_DODGES;
+    public static final ModConfigSpec.BooleanValue STYLE_STRIKES, STYLE_DODGES;
 
     static {
         var b = new ModConfigSpec.Builder();
@@ -28,10 +28,12 @@ public final class ClientVisualSettings {
                 .define("reduceFlashing", false);
         SEVERED_LIMBS = b.comment("Show Regeneration's severed limbs growing back from the bone. Off: the limb fades out and back in.")
                 .define("showSeveredLimbs", true);
-        FIRE_STRIKES = b.comment("Pyrokinesis: left-click with an empty hand to throw fire from your fists and feet instead of punching.")
-                .define("firebendingStrikes", true);
-        FIRE_DODGES = b.comment("Pyrokinesis: double-tap left, right or back to dodge on a jet of flame.")
-                .define("firebendingDodges", true);
+        STYLE_STRIKES = b.comment("Fighting styles (Pyrokinesis, Electrokinesis, Hydrokinesis): left-click with an empty hand to",
+                        "strike with your power (fire, lightning or water) instead of punching.")
+                .define("fightingStyleStrikes", true);
+        STYLE_DODGES = b.comment("Fighting styles: double-tap left, right or back to dodge (a jet of flame, a flash of lightning,",
+                        "a slide on water).")
+                .define("fightingStyleDodges", true);
         SPEC = b.build();
     }
 

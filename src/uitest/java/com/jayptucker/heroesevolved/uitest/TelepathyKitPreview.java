@@ -284,7 +284,7 @@ public final class TelepathyKitPreview {
             case 1068 -> pending = "t3-hive-mind.png";
             case 1076 -> camera(mc, CameraType.THIRD_PERSON_FRONT);
             case 1080 -> pending = "t3-hive-mind-front.png";
-            case 1100 -> mc.stop();
+            case 1100 -> PreviewQuiet.quit();
             default -> { }
         }
         if (t == 220) onServer(mc, p -> TelepathyFocus.forget(p));

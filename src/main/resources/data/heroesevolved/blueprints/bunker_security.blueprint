@@ -30,6 +30,7 @@ palette:
   a = red_stained_glass
   b = waxed_copper_bulb[lit=true]
   d = spruce_wall_sign[facing=north] @sign:maintenance_hatch
+  I = waxed_weathered_cut_copper_slab[type=top]
 signs:
   checkpoint white glow = CHECKPOINT | EMERGENCY | SUPPLIES
   maintenance_hatch white glow = MAINTENANCE | ACCESS HATCH | DOWN
@@ -50,56 +51,56 @@ AAAAAAAAAA
 
 # barrier, desk, lockers
 layer 1:
-EEEEEEEEEE
+EEEAEEAEEE
 E....F....
 E.G..F...E
-E.GH.F...E
+A.GH.F...A
 E.G..F...E
 E........E
+A....F...A
 E....F...E
 E....F...E
-E....F...E
-EJJJJF.KLE
-EEEEEEEEEE
+AJJJJF.KLA
+EEEAEEAEEE
 
 layer 2:
-EMMEMMEMME
+EMMAMMAMME
 M....F....
 MN...F...M
-ECO..F...E
+ACO..F...A
 MN...F...M
 M........M
-E....F...E
+A....F...A
 M....F...M
 M.d..F...M
-EJJJJF..LE
-MMMEMMEMMM
+AJJJJF..LA
+MMMAMMAMMM
 
 layer 3:
-EMMEMMEMME
+EMMAMMAMME
 M........M
 MC.......M
-EP.......E
+AP.......A
 MC...F.Q.M
-M....RSTUM
-E....F.V.E
+M...ARSTUM
+A....F.V.A
 M........M
 M........M
-EWWWW....E
-MMMEMMEMMM
+AWWWW....A
+MMMAMMAMMM
 
 layer 4:
-EEEEEEEEEE
+EEEAEEAEEE
 E.......XE
+EIIIIIIIIE
+A........A
 E........E
+E...Y..Y.E
+A........A
 E........E
-E........E
-E......Y.E
-E........E
-E........E
-E........E
-EX.......E
-EEEEEEEEEE
+EIIIIIIIIE
+AX.......A
+EEEAEEAEEE
 
 # ceiling
 layer 5:

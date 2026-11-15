@@ -118,7 +118,7 @@ public final class NightThreePreview {
             case 490 -> capture(mc, "night-7-out-cold.png");
             case 500 -> visit(mc, 2.5, 1, 29.5, -55, 14);
             case 525 -> capture(mc, "night-8-pod-14.png");
-            case 545 -> mc.stop();
+            case 545 -> PreviewQuiet.quit();
             default -> { }
         }
     }

@@ -166,6 +166,8 @@ public final class Blueprint {
     public Map<String, List<BlockPos>> place(ServerLevel level, BlockPos at, Rotation rotation, int topLayer, Remap remap) {
         Map<String, List<BlockPos>> marked = new HashMap<>();
         Map<BlockPos, String> paintings = new LinkedHashMap<>();
+        List<BlockPos> placed = new ArrayList<>();
+        Set<BlockPos> written = new HashSet<>();
         for (int y = 0; y < Math.min(layers.size(), topLayer + 1); y++) {
             List<String> rows = layers.get(y);
             for (int z = 0; z < rows.size(); z++) {
@@ -180,7 +182,11 @@ public final class Blueprint {
                     if (level.isOutsideBuildHeight(pos)) continue;
                     BlockState existing = level.getBlockState(pos);
                     if (!existing.isAir() && existing.getDestroySpeed(level, pos) < 0) continue;
-                    level.setBlock(pos, state.rotate(rotation), Block.UPDATE_CLIENTS);
+                    // No shape updates while placing: cells are written north to south, so a vine or a pane would
+                    // otherwise be judged (and a vine deleted) before the wall south or east of it exists.
+                    level.setBlock(pos, state.rotate(rotation), Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
+                    written.add(pos.immutable());
+                    if (!state.isAir()) placed.add(pos.immutable());
                     String marker = markers.get(key);
                     if (marker == null) continue;
                     marked.computeIfAbsent(marker, k -> new ArrayList<>()).add(pos.immutable());
@@ -189,9 +195,38 @@ public final class Blueprint {
                 }
             }
         }
+        settleShapes(level, placed, written);
         // Paintings last, once the walls they hang on exist.
         paintings.forEach((pos, spec) -> hangPainting(level, pos, spec, rotation));
         return marked;
+    }
+
+    /**
+     * The pass vanilla structures make once every block is down: each block placed asks its neighbours for its shape
+     * again, so stair corners, pane and bar arms, fence and wall joints come out the same whichever order (and rotation)
+     * the cells were written in, and then the world's blocks round the edge do the same (a fence outside now meets the
+     * new wall). Twice, because a wall's height depends on the walls beside it. A block this would remove (a torch with
+     * nothing behind it, a door missing its other half, a plant on stone) is left as drawn;
+     * {@code BlueprintPlacementGameTests} reports those instead.
+     */
+    private static void settleShapes(ServerLevel level, List<BlockPos> placed, Set<BlockPos> written) {
+        Set<BlockPos> edge = new LinkedHashSet<>();
+        for (BlockPos pos : written)
+            for (net.minecraft.core.Direction side : net.minecraft.core.Direction.values()) {
+                BlockPos next = pos.relative(side);
+                if (!written.contains(next) && !level.isOutsideBuildHeight(next)) edge.add(next);
+            }
+        for (int pass = 0; pass < 2; pass++) {
+            for (BlockPos pos : placed) settle(level, pos);
+            for (BlockPos pos : edge) settle(level, pos);
+        }
+    }
+
+    private static void settle(ServerLevel level, BlockPos pos) {
+        BlockState now = level.getBlockState(pos);
+        if (now.isAir()) return;
+        BlockState settled = Block.updateFromNeighbourShapes(now, level, pos);
+        if (settled != now && !settled.isAir()) level.setBlock(pos, settled, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
     }
 
     /**
@@ -275,6 +310,13 @@ public final class Blueprint {
                 }
             }
         return found;
+    }
+
+    /** True when the grid cell (x west to east, y up, z north to south, from the grid's corner) is keep ({@code _}). */
+    public boolean isKeep(int x, int y, int z) {
+        if (y < 0 || y >= layers.size() || z < 0 || z >= layers.get(y).size()) return false;
+        String row = layers.get(y).get(z);
+        return x >= 0 && x < row.length() && row.charAt(x) == '_';
     }
 
     /** Every grid cell carrying {@code marker}, relative to the anchor, unrotated, in reading order. */

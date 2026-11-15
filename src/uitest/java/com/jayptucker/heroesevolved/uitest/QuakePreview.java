@@ -210,7 +210,7 @@ public final class QuakePreview {
             case 800 -> pending = "quake-15-earthquake-cracking.png";
             case 895 -> pending = "quake-16-earthquake-fissures.png";
             case 940 -> pending = "quake-17-earthquake-after.png";
-            case 955 -> mc.stop();
+            case 955 -> PreviewQuiet.quit();
             default -> { }
         }
     }

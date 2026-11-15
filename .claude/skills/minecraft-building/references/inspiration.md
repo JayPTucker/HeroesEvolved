@@ -6,7 +6,7 @@ exist in `references/images/`, look at them too.
 
 ## 1. Underground command hall (facility interior)
 
-A huge, tall hall full of workstations under a busy ceiling. Why it works:
+Image: `command-hall.webp`. A huge, tall hall full of workstations under a busy ceiling. Why it works:
 
 - **Scale and height.** The room is tall enough (12+ blocks) that the ceiling becomes its own
   layer of detail. Halls feel important when the ceiling is far away.
@@ -77,7 +77,7 @@ A street of mid-rise buildings decades after the end. Why it works:
 
 ## 5. Overgrown skyline (large-scale landmarks)
 
-A tower, a domed hall and a suspension bridge, all reclaimed. Why it works:
+Image: `overgrown-skyline.webp`. A tower, a domed hall and a suspension bridge, all reclaimed. Why it works:
 
 - **Repetition at scale.** A tower's window grid repeated many stories. The eye accepts a lot of
   repetition if the material changes in bands.
@@ -88,6 +88,85 @@ A tower, a domed hall and a suspension bridge, all reclaimed. Why it works:
   top and on the shaded side.
 - **A bridge** with chain cables and towers, hung with vines, over water. Water and reflections
   sell the scene.
+
+## 6. Cliff facility facade (a structure set into terrain)
+
+Image: `cliff-facility-facade.webp`. A pale stone face built into a dirt cliff, like a bunker entrance.
+
+- **Dark frames on a pale face.** Smooth stone and stone bricks for the wall, with arches stepped in
+  a darker block (polished deepslate or gray concrete) one block proud of it. The frames are
+  what you see first; the wall between them stays plain.
+- **Buttresses with ledges.** Pillars stand out from the wall with a slab or stair ledge every two
+  blocks, so they read as ribs and catch shadow at every height.
+- **A narrow slit door** at the centre of the tallest arch is more striking than a wide opening.
+- **The cliff eats the edge.** Where the face meets the hill, the boundary is ragged: cobblestone,
+  stone and dirt mixed in steps, never a straight cut line.
+- **Vine curtains.** Vines (or weeping/twisting vines and cave vines) hang in long streaks from the
+  grass at the top, longer in some places than others, over both the cliff and the facade.
+
+Use this for the bunker's entrance, the signal site's bulkheads, and anything dug into a hill.
+
+## 7. Stone and timber halls (warm, low-lit interiors)
+
+Images: `stone-timber-hall.webp`, `timber-main-hallway.png`.
+
+- **A ceiling with structure.** Dark oak (or spruce) beams run in a grid under a darker stone
+  ceiling, and the panels between step up in tiers (coffers) toward a lamp at the centre. In a
+  corridor, stairs on each side curve the ceiling into a vault, with a rib every three blocks.
+- **Lights set into the build.** A lamp set flush in the middle of a ceiling coffer, and one in the
+  floor under it, make a vertical axis. Lanterns hang from trapdoor brackets on the pillars and
+  from chains down the middle of a corridor. Light is warm and sparse; the corners stay dark.
+- **A sunken or bordered floor.** A step down into the centre of the hall, edged with stairs and
+  framed in planks, turns a flat room into a place. A corridor's path has stepped, ragged edges
+  where it meets the side floor, not a straight line.
+- **Pillars and alcoves.** Log pillars every three or four blocks with a stone-brick panel between,
+  a log arch over each doorway, and alcoves holding a planter (flowering azalea in a pot or
+  terracotta), a bookshelf or a window.
+- **Two materials, one temperature.** Gray stone and dark wood, nothing else big. All colour comes
+  from the light and the plants.
+
+Use this for the bunker's older rooms, the records room, offices, and any underground hall that
+should feel old rather than clinical.
+
+## 8. City block house (dense, lived-in small builds)
+
+Images: `city-block-house.png`, `city-block-house-annotated.png`.
+
+- **A block is several buildings stacked.** A shop on the ground floor, flats above, a roof garden,
+  a stair tower; each volume has its own material (red brick, terracotta, sandstone, pale concrete)
+  and its own roof height, so the outline steps.
+- **Every storey has a different front.** Shopfronts with glass, striped awnings (wool or banner
+  patterns) and a sign; flats with balconies, shutters (trapdoors) and window boxes.
+- **Outside stairs and walkways** wrap the building and connect the volumes.
+- **Clutter with a purpose.** The annotated picture is a checklist: rooftop AC units and a
+  satellite dish, a power pole with wires (chains or tripwire), garbage bins, a playground and
+  sandbox, a fence, potted plants, lamps. Something every two or three blocks.
+- **A base to stand on.** Pavement, a curb and a strip of road make the build sit in a street.
+
+Use this for Odessa's lived-in streets (`time/intro/city/Building`) and for any village or city lot.
+
+## 9. Canal town row (a street of distinct houses)
+
+Image: `medieval-canal-town.png`.
+
+- **No two houses alike.** Widths of three to six, different heights, colours and roof shapes, all
+  sharing one timber-frame language. A street reads as grown, not built at once.
+- **Jettied upper floors.** Each storey sticks out a block further than the one below it, on
+  stair or log brackets, so the facade has deep shadow lines.
+- **Window boxes and awnings** at every opening, with leaves or flowers.
+- **A quay wall that weathers downward.** Stone bricks at the top fading into mossy, cracked and
+  mixed stone near the water; a wooden jetty on posts.
+
+## 10. Downtown plaza (city scale)
+
+Image: `modern-city-plaza.webp`.
+
+- **Towers with setbacks.** Each tower steps in near the top and ends in a crown or spire; facades
+  have vertical bands of a darker material between window columns. Heights vary a lot.
+- **One open centre.** A round fountain plaza ringed by columns, in a park, with streets on either
+  side. A city needs a place where the eye rests.
+- **Streets that are furnished.** Tree rows on both sides, street lamps, crosswalk stripes, lane
+  lines, traffic lights and parked cars.
 
 ## Micro-builds (reusable furniture and props)
 
@@ -109,3 +188,11 @@ A tower, a domed hall and a suspension bridge, all reclaimed. Why it works:
 | Street light | fence or wall column, a lantern or end rod hanging from a trapdoor arm |
 | Bench | stairs in a row with trapdoors at the ends |
 | Billboard | a flat wall of concrete with a simple pixel image, on fence legs |
+| Flush ceiling lamp | a redstone lamp (lit) or froglight in the middle of a stepped coffer of slabs and stairs, beams round it |
+| Wall lantern | a lantern hanging under a trapdoor or stair bracket on a log pillar |
+| Awning | a row of stairs or slabs in alternating wool or terracotta colours over a shopfront, or banners |
+| Window box | a trapdoor on the wall under the window with leaves, azalea or flowers on top |
+| Satellite dish | a white banner on a wall, or a daylight detector on a fence post, angled by a stair behind it, on a roof |
+| Power pole and wires | a fence or log column with a stripped-log crossbar; chains or tripwire between poles |
+| Garbage bin | a composter or cauldron (green or gray), or a barrel with a trapdoor lid |
+| Planter | a decorated pot or terracotta block with flowering azalea, a fern or a small leaf bush on top |

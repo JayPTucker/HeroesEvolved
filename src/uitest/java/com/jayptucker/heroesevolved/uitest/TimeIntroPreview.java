@@ -116,7 +116,7 @@ public final class TimeIntroPreview {
         if (scene < 0 && step > 0) {
             if (!home) { home = true; homeTicks = 0; mc.options.setCameraType(CameraType.FIRST_PERSON); System.out.println("INTRO_HOME"); }
             if (++homeTicks == 30) pending = "intro-14-home.png";
-            if (homeTicks > 50) mc.stop();
+            if (homeTicks > 50) PreviewQuiet.quit();
             return;
         }
         if (step >= STEPS.length || scene < 0) return;

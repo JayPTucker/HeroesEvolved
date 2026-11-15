@@ -32,17 +32,21 @@ palette:
   X = iron_block @bank:1
   Y = lever[face=wall,facing=south,powered=true] @breaker:0
   Z = lever[face=wall,facing=south,powered=true] @breaker:1
-  a = waxed_copper_bulb[lit=true] @bulb:5
-  b = waxed_copper_bulb[lit=true] @bulb:2
+  a = waxed_copper_bulb[lit=true,powered=true] @bulb:5
+  b = waxed_copper_bulb[lit=true,powered=true] @bulb:2
   c = iron_block @bank:5
   d = lever[face=wall,facing=east,powered=true] @breaker:5
   e = lever[face=wall,facing=west,powered=true] @breaker:2
   f = iron_block @bank:2
   g = lever[face=wall,facing=north,powered=true] @breaker:4
   h = lever[face=wall,facing=north,powered=true] @breaker:3
-  i = waxed_copper_bulb[lit=true] @bulb:4
+  i = waxed_copper_bulb[lit=true,powered=true] @bulb:4
   j = iron_block @bank:4
-  k = waxed_copper_bulb[lit=true] @bulb:3
+  k = waxed_copper_bulb[lit=true,powered=true] @bulb:3
+  α = waxed_copper_bulb[lit=true] @bulb:5
+  β = waxed_copper_bulb[lit=true] @bulb:2
+  γ = waxed_copper_bulb[lit=true] @bulb:4
+  δ = waxed_copper_bulb[lit=true] @bulb:3
   l = iron_block @bank:3
   m = chain
   n = waxed_copper_block
@@ -157,7 +161,7 @@ B.........................B
 B.........................B
 B.........................B
 EO.......................OE
-Ba.......................bB
+Bα.......................βB
 Bcd..........P..........efB
 Ba.......................bA
 EO.......................OE
@@ -170,7 +174,7 @@ B.........................B
 B.........................B
 E.........................E
 B......g...........h......B
-B....OijiO..TTT..OklkO....A
+B....OγjiO..TTT..OδlkO....A
 BBBEBBBEBBAPPPPPBBBEBABEBBB
 
 layer 3:

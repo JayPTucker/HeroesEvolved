@@ -172,7 +172,7 @@ public final class RadiationTreePreview {
             case 520 -> { mc.options.hideGui = false; }
             case 524 -> shot("9-overdrive-hud");
             case 530 -> onServer(mc, p -> RadiationService.vent(p, 100));
-            case 545 -> mc.stop();
+            case 545 -> PreviewQuiet.quit();
             default -> { }
         }
     }

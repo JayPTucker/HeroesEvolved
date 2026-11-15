@@ -100,7 +100,7 @@ public final class AdminPreview {
             case 300 -> shot("4-world-totality");
             case 305 -> onServer(mc, p -> System.out.println("ADMIN_RADIO " + p.getInventory().items.stream()
                     .filter(s -> !s.isEmpty()).map(s -> s.getItem() + " " + s.getComponents()).toList()));
-            case 315 -> mc.stop();
+            case 315 -> PreviewQuiet.quit();
             default -> { }
         }
     }

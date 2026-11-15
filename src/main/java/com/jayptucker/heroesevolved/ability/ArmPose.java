@@ -170,5 +170,10 @@ public enum ArmPose {
     SHIFT_SHED, SHIFT_REFLECT, SHIFT_NIGHTMARE,
     /** Shapeshifting's classes and signature: forearms crossed over the chest as plates lock on (guard); both palms
      *  turned out and low, giving a shape away (gift); both fists driven down for Apex Form's slam (slam). */
-    SHIFT_GUARD, SHIFT_GIFT, SHIFT_SLAM
+    SHIFT_GUARD, SHIFT_GIFT, SHIFT_SLAM,
+    /** Electrokinesis's fighting style. The lead fist snapped out with the fingers opening as the spark leaves (jab);
+     *  the rear fist driven through (cross); both palms swung in and slammed together in front of the chest
+     *  (Thunderclap); dropped to one knee with the palm driven into the floor (Grounding Strike); the body flicked
+     *  sideways, both arms trailing (Arc Step); arms swept back and the body thrown backward (Flashback). */
+    ELECTRO_JAB, ELECTRO_CROSS, ELECTRO_CLAP, ELECTRO_SLAM, ELECTRO_STEP, ELECTRO_FLASH
 }

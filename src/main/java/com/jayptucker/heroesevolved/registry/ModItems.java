@@ -43,6 +43,10 @@ public final class ModItems {
     public static final DeferredHolder<MobEffect, MobEffect> DAMPENED = EFFECTS.register("dampened",
             com.jayptucker.heroesevolved.dampener.Dampening.Effect::new);
 
+    /** Drenched by a hydrokinetic: no fire, more from lightning, less from burns. See hydro/Soaked. */
+    public static final DeferredHolder<MobEffect, MobEffect> SOAKED = EFFECTS.register("soaked",
+            com.jayptucker.heroesevolved.hydro.Soaked::new);
+
     /** After a forced draw: weakened, and a regenerating body cannot regrow until it wears off. */
     public static final DeferredHolder<MobEffect, MobEffect> DRAINED = EFFECTS.register("drained",
             () -> new MobEffect(MobEffectCategory.HARMFUL, 0x7A1020) {});

@@ -34,6 +34,8 @@ public final class CityCanvas {
     final ServerLevel level;
     final int x0, z0, x1, z1;
     private final List<BlockPos> shaped = new ArrayList<>();
+    /** Everything written in the canvas's outermost columns: a pane or stair across the edge may need to join it. */
+    private final List<BlockPos> edge = new ArrayList<>();
     private final Map<BlockPos, SignText> signs = new LinkedHashMap<>();
     private final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
@@ -53,6 +55,7 @@ public final class CityCanvas {
         if (!in(x, z) || level.isOutsideBuildHeight(y)) return;
         cursor.set(x, y, z);
         level.setBlock(cursor, state, FLAGS);
+        if (x == x0 || x == x1 || z == z0 || z == z1) edge.add(cursor.immutable());
         Block block = state.getBlock();
         if (block instanceof IronBarsBlock || block instanceof FenceBlock || block instanceof WallBlock || block instanceof StairBlock)
             shaped.add(cursor.immutable());
@@ -86,9 +89,19 @@ public final class CityCanvas {
         signs.put(new BlockPos(x, y, z), text);
     }
 
-    /** Joins panes, bars, fences, walls and stairs to what now stands around them, and writes the signs. */
+    /**
+     * Joins panes, bars, fences, walls and stairs to what now stands around them, and writes the signs. A patch is drawn
+     * a chunk at a time, so a window pane on the last row of one chunk was joined before the wall beside it, in the next
+     * chunk, was built: every block on this patch's edge also asks its neighbour across the edge to join it again.
+     */
     public void finish() {
         BlockPos.MutableBlockPos near = new BlockPos.MutableBlockPos();
+        for (BlockPos pos : edge)
+            for (Direction side : Direction.Plane.HORIZONTAL) {
+                near.setWithOffset(pos, side);
+                if (!in(near.getX(), near.getZ())) reshape(near.immutable());
+            }
+        edge.clear();
         for (BlockPos pos : shaped) {
             reshape(pos);
             for (Direction side : Direction.Plane.HORIZONTAL) {
@@ -143,7 +156,26 @@ public final class CityCanvas {
 
     /** A closed door, both halves, opening outward along {@code facing}. */
     public void door(int x, int y, int z, Block door, Direction facing) {
+        door(x, y, z, door, facing, net.minecraft.world.level.block.state.properties.DoorHingeSide.LEFT, false);
+    }
+
+    /**
+     * Double doors: one at ({@code x}, {@code z}) and its partner a step {@code along}, both facing {@code facing}, hinged
+     * on their outer sides (the leaf on the facing's counter-clockwise side has its hinge on the left).
+     */
+    public void doubleDoor(int x, int y, int z, Block door, Direction facing, Direction along, boolean open) {
+        var left = net.minecraft.world.level.block.state.properties.DoorHingeSide.LEFT;
+        var right = net.minecraft.world.level.block.state.properties.DoorHingeSide.RIGHT;
+        boolean firstOnLeft = along == facing.getClockWise();
+        door(x, y, z, door, facing, firstOnLeft ? left : right, open);
+        door(x + along.getStepX(), y, z + along.getStepZ(), door, facing, firstOnLeft ? right : left, open);
+    }
+
+    public void door(int x, int y, int z, Block door, Direction facing, net.minecraft.world.level.block.state.properties.DoorHingeSide hinge,
+                     boolean open) {
         BlockState lower = door.defaultBlockState().setValue(net.minecraft.world.level.block.DoorBlock.FACING, facing)
+                .setValue(net.minecraft.world.level.block.DoorBlock.HINGE, hinge)
+                .setValue(net.minecraft.world.level.block.DoorBlock.OPEN, open)
                 .setValue(net.minecraft.world.level.block.DoorBlock.HALF, net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER);
         set(x, y, z, lower);
         set(x, y + 1, z, lower.setValue(net.minecraft.world.level.block.DoorBlock.HALF,

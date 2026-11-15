@@ -171,7 +171,7 @@ public final class WindArmsPreview {
             case 380 -> { look(mc, false); mc.options.setCameraType(CameraType.FIRST_PERSON); }
             case 384 -> shot("3f-first-person");
             case 392 -> onServer(mc, p -> { SpeedWindArms.stop(p); MOBS.forEach(LivingEntity::discard); MOBS.clear(); });
-            case 400 -> mc.stop();
+            case 400 -> PreviewQuiet.quit();
             default -> { }
         }
     }

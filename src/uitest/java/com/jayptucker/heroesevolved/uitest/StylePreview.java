@@ -153,7 +153,7 @@ public final class StylePreview {
             step = 0; wait = 0;
             return;
         }
-        if (step >= SHOTS.size()) { if (++wait > 20) mc.stop(); return; }
+        if (step >= SHOTS.size()) { if (++wait > 20) PreviewQuiet.quit(); return; }
         Shot s = SHOTS.get(step);
         if (wait == 0) {
             SetPieceClient.clear();

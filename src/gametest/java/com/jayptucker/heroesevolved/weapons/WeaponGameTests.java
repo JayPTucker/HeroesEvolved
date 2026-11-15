@@ -202,7 +202,8 @@ public final class WeaponGameTests {
         CompanyAgentEntity past = CompanyAgentEntity.create(ModEntities.COMPANY_AGENT.get(), h.getLevel(), CompanyAgentEntity.Role.GUARD, at, 0, true);
         h.assertTrue(present.armed() && PowerWeapons.is(present.getMainHandItem(), PowerWeapons.AGENT_PISTOL)
                 && PowerWeapons.is(present.taser(), PowerWeapons.TASER), "A guard in the present carries a TaCZ pistol and a taser");
-        h.assertTrue(!past.armed() && past.getMainHandItem().is(Items.CROSSBOW), "A guard in the past keeps his dart rifle");
+        h.assertTrue(!past.armed() && PowerWeapons.is(past.getMainHandItem(), PowerWeapons.AGENT_PISTOL),
+                "A guard in the past darts people (not armed with bullets) but carries a TaCZ sidearm");
         h.succeed();
     }
 

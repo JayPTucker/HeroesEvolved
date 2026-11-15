@@ -60,6 +60,11 @@ Run through this on the in-game screenshots before calling a build done. The use
 - [ ] **Weathering with logic:** stains under ledges, moss on horizontal surfaces, vines falling from the top,
       damage concentrated where force hit. Not random noise.
 - [ ] **Sits in the land:** foundations follow terrain, vegetation at its feet, nothing floating.
+- [ ] **Palette:** three to five blocks, roughly 60/30/10, the roof darker than the walls; it holds up at night too.
+- [ ] **Proportion:** doors 2 to 3 tall, headroom 2 clear on every walking cell, windows sized to their wall.
+- [ ] **Seen from the path and from afar:** an eye-level shot along the way in, and a shot 20 to 30 blocks back.
+- [ ] **No dark floor where mobs would spawn**, unless the darkness is the point and something in the story lights it.
+- [ ] **Audit clean:** `CityAudit` reports nothing for the build (see SKILL.md).
 
 ## Lessons from builds so far
 
@@ -76,3 +81,23 @@ Run through this on the in-game screenshots before calling a build done. The use
 - **Weathering follows a cause.** Char by distance from the fire origin, crumble walls toward where
   the blast came from. `Grid.weather()` with a small `every` makes a checkerboard; use it only for
   light sprinkles on intact walls.
+- **Audit, then look.** `CityAudit` (see SKILL.md) found about 4,000 faults in a city that looked fine in photos:
+  awnings and railings hanging in air, doors opening into solid huts, plants on stone, lanterns with nothing above.
+  Run it on anything big before judging the screenshots.
+- **A pane needs something to hold.** A glass pane between two solid blocks (or other panes) is a window; a pane on its
+  own is a stub. Set glass back between piers two blocks deep, or put it in the wall plane beside a corner or pier.
+- **A sill is an upside-down stair, not a slab in the reveal.** A slab sitting inside a window recess reads as a shelf;
+  an upside-down stair in the course below the window gives a lip with a shadow under it.
+- **Light the dark places with what grew there.** In a ruin, glow lichen and glow berries light a stairwell well enough to
+  walk and keep mobs from spawning, and they tell the story better than a working lamp would.
+- **Blocks placed without updates keep their defaults.** Scaffolding placed by code stays at distance 7 and can't stand
+  until something updates it: set `distance=0` yourself. The same goes for any block whose state depends on neighbours.
+- **Placement order kills vines.** Blueprints were placed north to south with shape updates on, so a vine clinging to
+  the wall south of it was judged before that wall existed and deleted. Placement now writes without updates and settles
+  shapes afterwards (as vanilla structures do); the lesson stands for any code that places blocks one by one with
+  `UPDATE_ALL`: put supports down before the things they hold.
+- **"It looks fine" isn't "it stays".** A torch, plant or lantern with nothing to hold it is drawn happily until the
+  first block update beside it, often when a player walks in. The Isaac studio's vines hung on window bars, the signal
+  site's bracket lanterns on sideways chains, the ruins' grass on planks; all looked right in screenshots.
+- **Clearing a footprint cuts trees.** Remove the loose leaves in a ring round anything that clears ground, or they hang
+  in the air until they decay.

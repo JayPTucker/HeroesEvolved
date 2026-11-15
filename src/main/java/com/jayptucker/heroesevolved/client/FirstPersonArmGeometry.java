@@ -110,6 +110,14 @@ public final class FirstPersonArmGeometry {
             firebend(stack, side, player == null || arm == player.getMainArm(), pose, poseAge);
             return;
         }
+        if (switch (pose) {
+            case ELECTRO_JAB, ELECTRO_CROSS, ELECTRO_CLAP, ELECTRO_SLAM, ELECTRO_STEP, ELECTRO_FLASH -> true;
+            default -> false;
+        }) {
+            var player = net.minecraft.client.Minecraft.getInstance().player;
+            lightningStyle(stack, side, player == null || arm == player.getMainArm(), pose, poseAge);
+            return;
+        }
         if (pose == ArmPose.KINETIC_GATHER || pose == ArmPose.KINETIC_HOLD || pose == ArmPose.KINETIC_RELEASE) {
             kinetic(stack, side, pose, time, poseAge);
             return;
@@ -1225,6 +1233,71 @@ public final class FirstPersonArmGeometry {
                 spread = .43F + .1F * up;
                 pitch = -82 + 55 * up;
                 roll = side * (4 + 10 * up);
+            }
+            default -> { }
+        }
+        stack.translate(side * spread, height, depth);
+        stack.mulPose(Axis.YP.rotationDegrees(yaw));
+        stack.mulPose(Axis.XP.rotationDegrees(pitch));
+        stack.mulPose(Axis.ZP.rotationDegrees(roll));
+    }
+
+    /**
+     * Electrokinesis's style in first person. A spark jab snaps in toward the crosshair with the fingers opening, the
+     * guard held high at the edge of the view; the clap swings both hands in from the sides to meet just below the
+     * crosshair; the slam drives the main hand down out of the bottom of the view; dodges fling both arms away.
+     */
+    private static void lightningStyle(PoseStack stack, float side, boolean main, ArmPose pose, float age) {
+        float spread = .43F, height = -.4F, depth = -.25F, pitch = -82, yaw = side * 5, roll = side * 4;
+        switch (pose) {
+            case ELECTRO_JAB, ELECTRO_CROSS -> {
+                boolean striking = main == (pose == ArmPose.ELECTRO_CROSS);
+                float punch = smooth(age / 1.2F) * (1 - smooth((age - 3.5F) / 4F));
+                if (striking) {
+                    spread = .4F - .22F * punch;
+                    height = -.42F + .1F * punch;
+                    depth = -.22F - .4F * punch;
+                    pitch = -80 - 12 * punch;
+                    yaw = side * (6 + 14 * punch);
+                    roll = side * (4 - 30 * punch);
+                } else {
+                    spread = .46F;
+                    height = -.44F;
+                    depth = -.28F;
+                    pitch = -72;
+                    yaw = side * 12;
+                    roll = side * 12;
+                }
+            }
+            case ELECTRO_CLAP -> {
+                float meet = smooth((age - 1) / 1.5F), recover = smooth((age - 7) / 5F), open = 1 - smooth(age / 1.2F) * (1 - meet);
+                float k = meet * (1 - recover);
+                spread = .43F + .18F * (1 - open) * (1 - meet) - .3F * k;
+                height = -.4F + .06F * k;
+                depth = -.25F - .18F * k;
+                pitch = -82 - 6 * k;
+                yaw = side * (5 + 34 * k);
+                roll = side * (4 - 70 * k);
+            }
+            case ELECTRO_SLAM -> {
+                float drop = smooth(age / 2F) * (1 - smooth((age - 10) / 4F));
+                if (main) {
+                    height = -.4F - .32F * drop;
+                    depth = -.25F - .12F * drop;
+                    pitch = -82 - 60 * drop;
+                } else {
+                    spread = .43F + .2F * drop;
+                    height = -.4F - .3F * drop;
+                    pitch = -82 + 40 * drop;
+                }
+            }
+            case ELECTRO_STEP, ELECTRO_FLASH -> {
+                float flung = smooth(age / 1.2F) * (1 - smooth((age - 4) / 5F));
+                spread = .43F + .28F * flung;
+                height = -.4F - .12F * flung;
+                pitch = -82 + (pose == ArmPose.ELECTRO_FLASH ? -6 : 30) * flung;
+                yaw = side * (5 - 34 * flung);
+                roll = side * (4 + 26 * flung);
             }
             default -> { }
         }

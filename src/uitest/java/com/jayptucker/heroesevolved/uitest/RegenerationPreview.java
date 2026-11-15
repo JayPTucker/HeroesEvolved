@@ -124,7 +124,7 @@ public final class RegenerationPreview {
             case 400 -> { mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT); onServer(mc, p -> { place(p, 300, 0, 0, 10); p.hurt(p.damageSources().generic(), 1000); }); }
             case 402 -> pending = "regen-9-resurrection-a.png";
             case 418 -> pending = "regen-9-resurrection-b.png";
-            case 440 -> mc.stop();
+            case 440 -> PreviewQuiet.quit();
             default -> { }
         }
     }

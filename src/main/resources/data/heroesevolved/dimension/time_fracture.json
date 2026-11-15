@@ -5,9 +5,22 @@
     "settings": {
       "biome": "minecraft:plains",
       "layers": [
-        { "height": 1, "block": "minecraft:bedrock" },
-        { "height": 62, "block": "minecraft:stone" },
-        { "height": 1, "block": "minecraft:light_gray_concrete" }
+        {
+          "height": 1,
+          "block": "minecraft:bedrock"
+        },
+        {
+          "height": 59,
+          "block": "minecraft:stone"
+        },
+        {
+          "height": 3,
+          "block": "minecraft:dirt"
+        },
+        {
+          "height": 1,
+          "block": "minecraft:grass_block"
+        }
       ],
       "lakes": false,
       "features": false,

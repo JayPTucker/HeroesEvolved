@@ -69,7 +69,7 @@ public final class BunkerPreview {
                 visit(mc, 1, 1, 7, 194, -2, false);
             }
             case 270 -> pending = "bunker-5-receiver.png";
-            case 280 -> visit(mc, 3, 1, 15, -90, 15, false);
+            case 280 -> visit(mc, 3, 1, 14, -80, 2, false);
             case 305 -> pending = "bunker-6-lab.png";
             case 315 -> visit(mc, -2, 1, 15, 118, 6, false);
             case 340 -> pending = "bunker-7-infirmary.png";
@@ -93,7 +93,31 @@ public final class BunkerPreview {
             case 660 -> pending = "bunker-16-exhibit-one-close.png";
             case 670 -> visit(mc, -2, 1, 20, 90, -18, false); // the sleeper's own pod and nameplate
             case 695 -> pending = "bunker-17-nameplate.png";
-            case 715 -> mc.stop();
+            case 705 -> visit(mc, 2, 1, -3, 34, -6, false); // the vault from its landing: stuck open, cracked, grown over
+            case 730 -> pending = "bunker-18-vault.png";
+            case 740 -> visit(mc, 16, 5, 7, 140, 24, true); // the ruined lobby on the surface, from the south-east
+            case 765 -> pending = "bunker-19-lobby.png";
+            case 775 -> visit(mc, -1, 2, -6, -90, 30, true); // the head of the stair, looking down the slot
+            case 800 -> pending = "bunker-20-stair-slot.png";
+            case 810 -> visit(mc, 4, 1, -2, -90, -18, false); // in the well, up the first flight
+            case 835 -> pending = "bunker-21-stairwell.png";
+            // Audit at the end, once every light has come back on and the light has settled.
+            case 845 -> {
+                var server = mc.getSingleplayerServer();
+                server.execute(() -> {
+                    BlockPos o = BunkerData.get(server).origin;
+                    int surface = server.overworld().getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, o.getX(), o.getZ());
+                    System.out.println("BUNKER_AUDIT\n" + com.jayptucker.heroesevolved.time.intro.city.CityAudit.run(server.overworld(),
+                            o.getX() - 18, o.getY() - 8, o.getZ() - 11, o.getX() + 18, surface + 16, o.getZ() + 44));
+                    // Dark floor only inside what the bunker built (its rooms, then the stairwell), not the caves round it.
+                    var rooms = com.jayptucker.heroesevolved.story.bunker.PastBunker.bounds(o);
+                    System.out.println("BUNKER_DARK rooms\n" + com.jayptucker.heroesevolved.time.intro.city.CityAudit.run(server.overworld(),
+                            rooms.minX() + 2, rooms.minY() + 2, rooms.minZ() + 2, rooms.maxX() - 2, rooms.maxY() - 2, rooms.maxZ() - 2, true));
+                    System.out.println("BUNKER_DARK stair\n" + com.jayptucker.heroesevolved.time.intro.city.CityAudit.run(server.overworld(),
+                            o.getX() - 3, o.getY() - 1, o.getZ() - 9, o.getX() + 15, surface, o.getZ(), true));
+                });
+            }
+            case 850 -> PreviewQuiet.quit();
             default -> { }
         }
     }

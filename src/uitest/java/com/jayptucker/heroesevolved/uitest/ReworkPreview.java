@@ -116,7 +116,7 @@ public final class ReworkPreview {
         if (worldTicks % 60 == 0 && worldTicks > 200) onServer(mc, p -> PlayerEnergyService.restore(p, 999));
         // How fast the flyer really goes round their Tempest.
         if (worldTicks >= 250 && worldTicks < 262) System.out.println("TEMPEST_ORBIT t=" + worldTicks + " at " + mc.player.position());
-        if (worldTicks == 296 && Boolean.getBoolean("heroes.preview.rework.tempestOnly")) mc.stop();
+        if (worldTicks == 296 && Boolean.getBoolean("heroes.preview.rework.tempestOnly")) PreviewQuiet.quit();
         switch (worldTicks) {
             // Flight's Tempest: flying high, the tornado touches down on the ground ahead.
             case 200 -> onServer(mc, p -> {
@@ -199,7 +199,7 @@ public final class ReworkPreview {
             case 666 -> shot("4b-starfall");
             case 676 -> shot("4c-starfall-low");
             case 684 -> shot("4d-starfall-impact");
-            case 700 -> mc.stop();
+            case 700 -> PreviewQuiet.quit();
             default -> { }
         }
     }

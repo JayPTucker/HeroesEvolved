@@ -335,7 +335,7 @@ public final class InvisibilityPreview {
             case 846 -> mc.options.hideGui = false;
             case 850 -> server(mc, p -> { place(p, 1200, 0, 0, 5); InvisibilityService.toggleFade(p); });
             case 856 -> shot("18-hud");
-            case 870 -> mc.stop();
+            case 870 -> PreviewQuiet.quit();
             default -> { }
         }
     }

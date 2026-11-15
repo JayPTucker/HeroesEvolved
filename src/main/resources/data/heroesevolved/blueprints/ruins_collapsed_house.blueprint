@@ -22,18 +22,19 @@ palette:
   F = fern
   V = vine[west=true]
   X = chest[facing=east] @loot:ruins_house
+  A = coarse_dirt
 
 # foundation, set into the ground
 layer 0:
 SSSSSSSSSS_
 SffffffffS_
 SffffffffS_
-SffffffffS_
+SffAfffffS_
 SffffffffSS
 SffffffffS_
-SffffffffS_
-SffffffffS_
-SffffffffS_
+SffAfffffS_
+SfAffffffS_
+SAfffffffS_
 SSSSSSSSSS_
 
 # ground floor and rubble
@@ -80,20 +81,44 @@ k.......U__
 k.......h__
 R.......u__
 R.......U__
-kV......h__
+k_......h__
 k.......u__
 k.......U__
 SRR......._
 
 # chimney stack
-layer 5-7:
+layer 5:
 ___________
 ___________
 ___________
 ___________
 R__________
 R__________
-_V_________
+___________
+___________
+___________
+___________
+
+layer 6:
+___________
+___________
+___________
+___________
+R__________
+R__________
+___________
+___________
+___________
+___________
+
+layer 7:
+___________
+___________
+___________
+___________
+R__________
+R__________
+___________
 ___________
 ___________
 ___________

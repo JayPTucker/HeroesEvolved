@@ -178,7 +178,7 @@ public final class WatchmakerPreview {
             case 854 -> shot("7-watch-drop");
             case 872 -> shot("7-watch-caught");
             case 980 -> shot("8-home");
-            case 990 -> mc.stop();
+            case 990 -> PreviewQuiet.quit();
             default -> { }
         }
     }

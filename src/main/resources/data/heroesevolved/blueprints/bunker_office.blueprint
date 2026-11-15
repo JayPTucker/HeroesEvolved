@@ -19,7 +19,6 @@ palette:
   O = ladder[facing=north]
   P = chiseled_bookshelf[facing=west,slot_0_occupied=true,slot_5_occupied=true]
   Q = lantern[hanging=false]
-  R = black_stained_glass_pane
   S = flower_pot
   T = candle[candles=2,lit=false]
   U = chiseled_bookshelf[facing=west,slot_1_occupied=true,slot_3_occupied=true]
@@ -27,6 +26,8 @@ palette:
   X = cobweb
   Y = waxed_copper_bulb[lit=true]
   Z = deepslate_bricks
+  V = tinted_glass
+  R = waxed_weathered_cut_copper_slab[type=top]
 signs:
   office white glow = MAINTENANCE | WORKBENCH | SPARE STORAGE
 
@@ -55,7 +56,7 @@ CDDEDDEDC
 layer 2:
 CDDEDDEDC
 D.......D
-D...QRS.D
+D...QVS.D
 E.......E
 D.......D
 DT......D
@@ -75,10 +76,10 @@ CDDWDDEDC
 layer 4:
 CCCCCCCCC
 CX......C
-C.......C
+CRRRRRRRC
 C.......C
 C...Y...C
-C.......C
+CRRRRRRRC
 C.O....XC
 CCCCCCCCC
 

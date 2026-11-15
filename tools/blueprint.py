@@ -6,10 +6,12 @@ then horizontal layers drawn as character grids from the bottom up. See
 
 Usage:
   python3 tools/blueprint.py validate <file.blueprint>...
-  python3 tools/blueprint.py render <file.blueprint> [--out preview.png] [--cut Y] [--scale N]
+  python3 tools/blueprint.py render <file.blueprint> [--out preview.png] [--cut Y] [--scale N] [--view se|sw|ne|nw]
   python3 tools/blueprint.py from-nbt <structure.nbt> [--out name.blueprint]
   python3 tools/blueprint.py stats <file.blueprint>
   python3 tools/blueprint.py to-nbt <file.blueprint> --out data/<ns>/structure/<name>.nbt
+  python3 tools/blueprint.py set <file.blueprint> LAYER ROW COL VALUE [LAYER ROW COL VALUE ...]
+  python3 tools/blueprint.py facts <block state>...
 
 render writes one image: an isometric view (cut away above layer Y when --cut is given, so
 interiors are visible) beside a top-down plan of every layer. Colors come from the real block
@@ -324,24 +326,164 @@ def solid(state):
     return state not in ("keep", "minecraft:air") and not any(t in state for t in TRANSPARENT)
 
 
-def render(bp, out, cut=None, scale=6):
+STAIR_QUARTERS = {  # raised quarters of each stair state, as the game reports them (BlockStateFactsGameTests)
+    ("north", "straight"): "NW NE", ("north", "inner_left"): "NW NE SW", ("north", "inner_right"): "NW NE SE",
+    ("north", "outer_left"): "NW", ("north", "outer_right"): "NE",
+    ("south", "straight"): "SW SE", ("south", "inner_left"): "NE SW SE", ("south", "inner_right"): "NW SW SE",
+    ("south", "outer_left"): "SE", ("south", "outer_right"): "SW",
+    ("west", "straight"): "NW SW", ("west", "inner_left"): "NW SW SE", ("west", "inner_right"): "NW NE SW",
+    ("west", "outer_left"): "SW", ("west", "outer_right"): "NW",
+    ("east", "straight"): "NE SE", ("east", "inner_left"): "NW NE SE", ("east", "inner_right"): "NE SW SE",
+    ("east", "outer_left"): "NE", ("east", "outer_right"): "SE",
+}
+T = 3 / 16   # a door's or trapdoor's thickness
+
+
+def edge_box(side, thick, y0=0.0, y1=1.0):
+    """A plate `thick` deep against one edge of the cell."""
+    return {"north": (0, y0, 0, 1, y1, thick), "south": (0, y0, 1 - thick, 1, y1, 1),
+            "west": (0, y0, 0, thick, y1, 1), "east": (1 - thick, y0, 0, 1, y1, 1),
+            "up": (0, 1 - thick, 0, 1, 1, 1), "down": (0, 0, 0, 1, thick, 1)}[side]
+
+
+def shape_boxes(state, neighbour):
+    """The boxes (x0, y0, z0, x1, y1, z1 within the cell) a state fills, close to the game's own shapes.
+    `neighbour(direction)` gives the state next door, for the arms of fences, walls, panes and bars."""
+    name, p = short(state), full_props(state)
+    facing = p.get("facing")
+    if name.endswith("_stairs"):
+        low, high = ((0, .5), (.5, 1)) if p.get("half", "bottom") == "bottom" else ((.5, 1), (0, .5))
+        boxes = [(0, low[0], 0, 1, low[1], 1)]
+        for q in STAIR_QUARTERS.get((facing or "north", p.get("shape", "straight")), "").split():
+            x0 = 0 if q[1] == "W" else .5
+            z0 = 0 if q[0] == "N" else .5
+            boxes.append((x0, high[0], z0, x0 + .5, high[1], z0 + .5))
+        return boxes
+    if name.endswith("_slab"):
+        return [{"bottom": (0, 0, 0, 1, .5, 1), "top": (0, .5, 0, 1, 1, 1)}.get(p.get("type", "bottom"), (0, 0, 0, 1, 1, 1))]
+    if name.endswith("_trapdoor"):
+        if p.get("open") == "true" and facing:
+            return [edge_box(OPPOSITE[facing], T)]
+        return [edge_box("up" if p.get("half") == "top" else "down", T)]
+    if name.endswith("_door") and facing:
+        if p.get("open") == "true":
+            return [edge_box(COUNTER[facing] if p.get("hinge") == "left" else CLOCKWISE[facing], T)]
+        return [edge_box(OPPOSITE[facing], T)]
+    if name.endswith("_fence_gate") and facing:
+        if p.get("open") == "true":
+            return [(0, .3, .4375, .125, 1, .5625), (.875, .3, .4375, 1, 1, .5625)] if AXIS[facing] == "z" else \
+                   [(.4375, .3, 0, .5625, 1, .125), (.4375, .3, .875, .5625, 1, 1)]
+        return [(0, .3, .4375, 1, 1, .5625)] if AXIS[facing] == "z" else [(.4375, .3, 0, .5625, 1, 1)]
+
+    def arms(post, arm, joins):
+        boxes = [post]
+        for d in ("north", "south", "west", "east"):
+            n = neighbour(d)
+            if n and n not in ("keep", "minecraft:air") and joins(n, d):
+                a0, a1, y0, y1 = arm
+                boxes.append({"north": (a0, y0, 0, a1, y1, .5), "south": (a0, y0, .5, a1, y1, 1),
+                              "west": (0, y0, a0, .5, y1, a1), "east": (.5, y0, a0, 1, y1, a1)}[d])
+        return boxes
+
+    def sturdy_toward(n, d):
+        return bool(offers(n, OPPOSITE[d], STURDY))
+    if name.endswith("_fence"):
+        return arms((.375, 0, .375, .625, 1, .625), (.4375, .5625, .375, .9375),
+                    lambda n, d: short(n).endswith("_fence") or short(n).endswith("_fence_gate") or sturdy_toward(n, d))
+    if name.endswith("_wall") and not name.endswith("_wall_sign") and not name.endswith("_wall_banner") and "torch" not in name:
+        return arms((.25, 0, .25, .75, 1, .75), (.3125, .6875, 0, .875),
+                    lambda n, d: short(n).endswith("_wall") or "bars" in short(n) or "pane" in short(n) or sturdy_toward(n, d))
+    if name.endswith("_pane") or name == "glass_pane" or name.endswith("bars"):
+        return arms((.4375, 0, .4375, .5625, 1, .5625), (.4375, .5625, 0, 1),
+                    lambda n, d: "pane" in short(n) or "bars" in short(n) or short(n).endswith("_wall") or sturdy_toward(n, d))
+    if name == "chain":
+        return [{"x": (0, .4375, .4375, 1, .5625, .5625), "z": (.4375, .4375, 0, .5625, .5625, 1)}.get(
+            p.get("axis", "y"), (.4375, 0, .4375, .5625, 1, .5625))]
+    if name.endswith("lantern") and name not in ("sea_lantern", "jack_o_lantern"):
+        if p.get("hanging") == "true":
+            return [(.3125, .0625, .3125, .6875, .5625, .6875), (.4375, .5625, .4375, .5625, 1, .5625)]
+        return [(.3125, 0, .3125, .6875, .5, .6875)]
+    if name.endswith("wall_torch") and facing:
+        x0, z0 = {"north": (.4375, .6875), "south": (.4375, .1875), "west": (.6875, .4375), "east": (.1875, .4375)}[facing]
+        return [(x0, .2, z0, x0 + .125, .85, z0 + .125)]
+    if name.endswith("torch"):
+        return [(.4375, 0, .4375, .5625, .625, .5625)]
+    if (name == "ladder" or name.endswith("_wall_sign") or name.endswith("_wall_banner")) and facing:
+        return [edge_box(OPPOSITE[facing], .125, .1 if "sign" in name else 0, .85 if "sign" in name else 1)]
+    if (name.endswith("_button") or name == "lever") and facing:
+        face = p.get("face", "wall")
+        if face == "floor":
+            return [(.3125, 0, .375, .6875, .125, .625)]
+        if face == "ceiling":
+            return [(.3125, .875, .375, .6875, 1, .625)]
+        x0, y0, z0, x1, y1, z1 = edge_box(OPPOSITE[facing], .125)
+        return [(max(x0, .3125) if AXIS[facing] == "z" else x0, .375, max(z0, .3125) if AXIS[facing] == "x" else z0,
+                 min(x1, .6875) if AXIS[facing] == "z" else x1, .625, min(z1, .6875) if AXIS[facing] == "x" else z1)]
+    if name in ("vine", "glow_lichen", "sculk_vein"):
+        return [edge_box(d, .0625) for d in ("north", "south", "west", "east", "up", "down") if p.get(d) == "true"] or [edge_box("down", .0625)]
+    if name.endswith("carpet") or name.endswith("pressure_plate") or name.endswith("rail") or name == "redstone_wire":
+        return [(0, 0, 0, 1, .0625, 1)]
+    if name == "snow":
+        return [(0, 0, 0, 1, int(p.get("layers", "1")) / 8, 1)]
+    if name.endswith("_bed"):
+        return [(0, 0, 0, 1, .5625, 1)]
+    if name in ("chest", "trapped_chest", "ender_chest"):
+        return [(.0625, 0, .0625, .9375, .875, .9375)]
+    if name.endswith("candle") or name == "flower_pot" or name.startswith("potted_"):
+        return [(.3125, 0, .3125, .6875, .375, .6875)]
+    if name in ("end_rod", "lightning_rod") and facing:
+        return [{"x": (0, .4375, .4375, 1, .5625, .5625), "z": (.4375, .4375, 0, .5625, .5625, 1)}.get(
+            AXIS.get(facing), (.4375, 0, .4375, .5625, 1, .5625))]
+    if name in PLANTS or name in DOUBLE_PLANTS or name in ("cobweb", "hanging_roots", "spore_blossom", "sweet_berry_bush"):
+        return [(.25, 0, .25, .75, .8, .75)]
+    return None   # a full cube
+
+
+def rotate_state(state, turns):
+    """The state turned clockwise (seen from above) `turns` quarter turns, as Rotation does in the game."""
+    if turns % 4 == 0 or "[" not in state:
+        return state
+    p = props_of(state)
+    for _ in range(turns % 4):
+        q = dict(p)
+        if p.get("facing") in CLOCKWISE:
+            q["facing"] = CLOCKWISE[p["facing"]]
+        if p.get("axis") in ("x", "z"):
+            q["axis"] = "z" if p["axis"] == "x" else "x"
+        for d in ("north", "east", "south", "west"):
+            if d in p:
+                q[CLOCKWISE[d]] = p[d]
+        if "rotation" in p and p["rotation"].isdigit():
+            q["rotation"] = str((int(p["rotation"]) + 4) % 16)
+        p = q
+    return block_id(state) + "[" + ",".join(f"{k}={v}" for k, v in p.items()) + "]"
+
+
+def render(bp, out, cut=None, scale=6, view="se"):
+    """An isometric view from one corner (cut away above `cut`) beside a plan of every layer. Partial blocks are drawn
+    in their real shapes (slabs, stair corners, trapdoors and doors open or shut, fence and pane arms, lamps), and the
+    plans mark which way stairs, doors and trapdoors face, so orientation can be checked before the game is started."""
     jar = client_jar()
     colors = Colors(jar)
-    W, H, D = bp.width, bp.height, bp.depth
+    turns = {"se": 0, "ne": 1, "nw": 2, "sw": 3}[view]
+    W0, H, D0 = bp.width, bp.height, bp.depth
     top = H - 1 if cut is None else min(H - 1, cut)
     grid = {}
     for x, y, z, ch in bp.cells():
         if y <= top:
             state = bp.palette.get(ch, "keep")
             if state not in ("keep", "minecraft:air"):
-                grid[(x, y, z)] = state
+                w, d = W0, D0
+                for _ in range(turns):   # a quarter turn clockwise: the north edge becomes the east edge
+                    x, z = d - 1 - z, x
+                    w, d = d, w
+                grid[(x, y, z)] = rotate_state(state, turns)
+    W, D = (W0, D0) if turns % 2 == 0 else (D0, W0)
     s = scale
-    # Isometric canvas.
     iso_w = (W + D) * s * 2 + 4
     iso_h = (W + D) * s + (top + 1) * s * 2 + 4
-    # Top-down plans: one small grid per layer, wrapped into columns.
-    cell = max(3, s - 1)
-    plan_w, plan_h = W * cell + 6, D * cell + 14
+    cell = max(5, s)
+    plan_w, plan_h = W0 * cell + 6, D0 * cell + 14
     per_row = max(1, min(top + 1, 6))
     plans_w = per_row * plan_w
     plans_h = math.ceil((top + 1) / per_row) * plan_h
@@ -355,49 +497,107 @@ def render(bp, out, cut=None, scale=6):
     def shade(color, f):
         return tuple(max(0, min(255, int(c * f))) for c in color)
 
-    # Viewed from the south-east, above: each cube shows its top, south (+z) and east (+x) faces.
+    # Viewed from the corner after turning the grid: each box shows its top, +z and +x faces.
     hw, hh, ch = 2 * s, s, 2 * s
     ox, oy = D * hw + 2, (top + 1) * ch + hh + 2
-    for (x, y, z) in sorted(grid, key=lambda p: (p[0] + p[2], p[1])):
+
+    def project(x, y, z):
+        """A point in block units on the canvas, lined up with the full-cube fast path below."""
+        return ox + (x - z) * hw, oy + (x + z - 1) * hh - (y - 1) * ch
+
+    def fill(points, color):
+        xs, ys = [q[0] for q in points], [q[1] for q in points]
+        n = len(points)
+        for py in range(int(math.floor(min(ys))), int(math.ceil(max(ys))) + 1):
+            for px in range(int(math.floor(min(xs))), int(math.ceil(max(xs))) + 1):
+                sign = 0
+                inside = True
+                for i in range(n):
+                    ax, ay = points[i]
+                    bx, by = points[(i + 1) % n]
+                    cross = (bx - ax) * (py + .5 - ay) - (by - ay) * (px + .5 - ax)
+                    if abs(cross) < 1e-9:
+                        continue
+                    if sign == 0:
+                        sign = 1 if cross > 0 else -1
+                    elif (cross > 0) != (sign > 0):
+                        inside = False
+                        break
+                if inside:
+                    put(px, py, color)
+
+    def draw_box(x, y, z, box, top_c, side_c):
+        x0, y0, z0, x1, y1, z1 = box
+        X0, X1, Y0, Y1, Z0, Z1 = x + x0, x + x1, y + y0, y + y1, z + z0, z + z1
+        fill([project(X0, Y1, Z0), project(X1, Y1, Z0), project(X1, Y1, Z1), project(X0, Y1, Z1)], top_c)
+        fill([project(X0, Y0, Z1), project(X1, Y0, Z1), project(X1, Y1, Z1), project(X0, Y1, Z1)], shade(side_c, 0.8))
+        fill([project(X1, Y0, Z0), project(X1, Y0, Z1), project(X1, Y1, Z1), project(X1, Y1, Z0)], shade(side_c, 0.62))
+
+    for (x, y, z) in sorted(grid, key=lambda q: (q[0] + q[2], q[1])):
         state = grid[(x, y, z)]
         above, south, east = grid.get((x, y + 1, z)), grid.get((x, y, z + 1)), grid.get((x + 1, y, z))
-        if solid(state) and above and solid(above) and south and solid(south) and east and solid(east):
+        boxes = shape_boxes(state, lambda d: grid.get((x + SIDE[d][0], y, z + SIDE[d][2])))
+        if boxes is None and solid(state) and above and solid(above) and shape_boxes(above, lambda d: None) is None \
+                and south and solid(south) and shape_boxes(south, lambda d: None) is None \
+                and east and solid(east) and shape_boxes(east, lambda d: None) is None:
             continue
         bid = block_id(state)
-        cx, cy = ox + (x - z) * hw, oy + (x + z) * hh - y * ch
         top_c, side_c = colors.color(bid, "top"), colors.color(bid, "side")
-        if not solid(state):  # thin blocks read as slightly translucent
+        if not solid(state):
             top_c, side_c = shade(top_c, 1.1), shade(side_c, 1.1)
-        for dy in range(-hh, hh + 1):
-            span = int(hw * (1 - abs(dy) / hh))
-            for dx in range(-span, span + 1):
-                put(cx + dx, cy + dy, top_c)
-        for t in range(hw + 1):
-            y_south = cy + int(t * hh / hw)
-            y_east = cy + hh - int(t * hh / hw)
-            for dy in range(ch):
-                put(cx - hw + t, y_south + dy, shade(side_c, 0.8))
-                put(cx + t, y_east + dy, shade(side_c, 0.62))
-    # Plans.
+        if boxes is None:   # the fast path for full cubes
+            cx, cy = ox + (x - z) * hw, oy + (x + z) * hh - y * ch
+            for dy in range(-hh, hh + 1):
+                span = int(hw * (1 - abs(dy) / hh))
+                for dx in range(-span, span + 1):
+                    put(cx + dx, cy + dy, top_c)
+            for t in range(hw + 1):
+                y_south = cy + int(t * hh / hw)
+                y_east = cy + hh - int(t * hh / hw)
+                for dy in range(ch):
+                    put(cx - hw + t, y_south + dy, shade(side_c, 0.8))
+                    put(cx + t, y_east + dy, shade(side_c, 0.62))
+            continue
+        for box in sorted(boxes, key=lambda b: ((b[0] + b[3]) / 2 + (b[2] + b[5]) / 2, b[1])):
+            draw_box(x, y, z, box, top_c, side_c)
+    # Plans, always north up: each cell's top colour; stairs darker on their low side, a pale bar where a door or an
+    # open trapdoor stands, so facings can be read layer by layer.
     px0 = iso_w + 4
     for y in range(top + 1):
         col, row = y % per_row, y // per_row
         bx, by = px0 + col * plan_w, 2 + row * plan_h
-        for i, ch in enumerate(str(y)):
+        for i, digit in enumerate(str(y)):
             for dy in range(5):
                 for dx in range(3):
-                    if DIGITS[ch][dy] >> (2 - dx) & 1:
+                    if DIGITS[digit][dy] >> (2 - dx) & 1:
                         put(bx + i * 4 + dx, by + dy, (230, 230, 230))
-        for z in range(D):
-            for x in range(W):
-                ch = bp.layers[y][z][x] if z < len(bp.layers[y]) and x < len(bp.layers[y][z]) else "_"
-                state = bp.palette.get(ch, "keep")
+        for z in range(D0):
+            for x in range(W0):
+                c = bp.layers[y][z][x] if z < len(bp.layers[y]) and x < len(bp.layers[y][z]) else "_"
+                state = bp.palette.get(c, "keep")
                 if state == "keep":
                     continue
                 color = (52, 54, 62) if state == "minecraft:air" else colors.color(block_id(state), "top")
+                x0, y0 = bx + x * cell, by + 8 + z * cell
                 for dy in range(cell - 1):
                     for dx in range(cell - 1):
-                        put(bx + x * cell + dx, by + 8 + z * cell + dy, color)
+                        put(x0 + dx, y0 + dy, color)
+                name, sp = short(state), full_props(state) if state != "minecraft:air" else {}
+                if name.endswith("_stairs"):
+                    raised = STAIR_QUARTERS.get((sp.get("facing", "north"), sp.get("shape", "straight")), "")
+                    half = (cell - 1) / 2
+                    for dy in range(cell - 1):
+                        for dx in range(cell - 1):
+                            q = ("N" if dy < half else "S") + ("W" if dx < half else "E")
+                            if q not in raised:
+                                put(x0 + dx, y0 + dy, shade(color, 0.55))
+                elif (name.endswith("_door") or (name.endswith("_trapdoor") and sp.get("open") == "true")) and sp.get("facing"):
+                    box = shape_boxes(state, lambda d: None)[0]
+                    for dy in range(cell - 1):
+                        for dx in range(cell - 1):
+                            fx, fz = (dx + .5) / (cell - 1), (dy + .5) / (cell - 1)
+                            inside = box[0] - .08 <= fx <= box[3] + .08 and box[2] - .08 <= fz <= box[5] + .08
+                            put(x0 + dx, y0 + dy, (235, 225, 200) if inside else shade(color, 0.5))
     png(out, [[canvas[y][x] for x in range(width)] for y in range(height)])
 
 
@@ -568,6 +768,281 @@ def to_nbt(bp, out):
     print(f"PASS: exported {out} ({bp.width}x{bp.height}x{bp.depth}, {len(blocks)} blocks, {len(palette)} states)")
 
 
+# ----------------------------------------------------------------------------------------------------------------
+# Placement checks: the game's own rules, applied to a blueprint's grid
+# ----------------------------------------------------------------------------------------------------------------
+# What each block needs to stay is read from the game's source (canSurvive of each block class) and what each neighbour
+# offers from tools/block-facts.json.gz, which BlockStateFactsGameTests writes from the running game: for every block
+# state, which of its faces are sturdy, give centre or rigid support, are full, and whether it counts as solid. So a
+# lantern under a horizontal chain, a vine on iron bars or a torch on a slab's side is caught exactly. A neighbour that is
+# keep (_) or outside the grid is unknown, and nothing is said about it. BlueprintPlacementGameTests is the authority:
+# it places every blueprint and asks the game.
+
+SIDE = {"north": (0, 0, -1), "south": (0, 0, 1), "west": (-1, 0, 0), "east": (1, 0, 0), "up": (0, 1, 0), "down": (0, -1, 0)}
+OPPOSITE = {"north": "south", "south": "north", "west": "east", "east": "west", "up": "down", "down": "up"}
+CLOCKWISE = {"north": "east", "east": "south", "south": "west", "west": "north"}
+COUNTER = {v: k for k, v in CLOCKWISE.items()}
+AXIS = {"north": "z", "south": "z", "west": "x", "east": "x"}
+FACE_BIT = {"down": 0, "up": 1, "north": 2, "south": 3, "west": 4, "east": 5}
+STURDY, CENTER, RIGID, FULL_FACE = 0, 6, 12, 18
+SOLID_BIT, AIR_BIT = 1 << 24, 1 << 25
+# BlockTags.DIRT plus farmland: where grass, ferns, flowers and saplings grow (BushBlock.mayPlaceOn).
+SOIL = ("grass_block", "dirt", "coarse_dirt", "podzol", "rooted_dirt", "moss_block", "mud", "muddy_mangrove_roots",
+        "mycelium", "farmland")
+DEAD_BUSH_SOIL = SOIL + ("sand", "red_sand", "suspicious_sand", "terracotta")
+PLANTS = ("short_grass", "fern", "poppy", "dandelion", "cornflower", "allium", "azure_bluet", "oxeye_daisy", "lily_of_the_valley",
+          "red_tulip", "orange_tulip", "white_tulip", "pink_tulip", "blue_orchid", "torchflower", "pink_petals", "dead_bush",
+          "azalea", "flowering_azalea", "sweet_berry_bush")
+DOUBLE_PLANTS = ("tall_grass", "large_fern", "sunflower", "lilac", "rose_bush", "peony", "pitcher_plant")
+_FACTS = None
+
+
+def facts():
+    """{block id: {"p": {property: [values]}, "d": default key, "s": {state key: mask}}} from the game, or {}."""
+    global _FACTS
+    if _FACTS is None:
+        path = ROOT / "tools/block-facts.json.gz"
+        try:
+            _FACTS = json.loads(gzip.decompress(path.read_bytes()).decode("utf-8"))
+        except OSError:
+            _FACTS = {}
+    return _FACTS
+
+
+def props_of(state):
+    m = re.search(r"\[(.*)\]$", state)
+    return dict(kv.split("=", 1) for kv in m.group(1).split(",")) if m else {}
+
+
+def short(state):
+    return block_id(state).split(":", 1)[-1]
+
+
+def full_props(state):
+    """Every property of a state, with the block's defaults filled in."""
+    entry = facts().get(block_id(state))
+    p = dict(kv.split("=", 1) for kv in entry["d"].split(",")) if entry and entry["d"] else {}
+    p.update(props_of(state))
+    return p
+
+
+def mask_of(state):
+    """The face mask of a state, or None when the state is unknown (keep, outside the grid, a block the game lacks)."""
+    if state is None or state == "keep":
+        return None
+    entry = facts().get(block_id(state))
+    if not entry:
+        return None
+    p = full_props(state)
+    key = ",".join(f"{k}={p[k]}" for k in sorted(p))
+    return entry["s"].get(key, entry["s"].get(entry["d"]))
+
+
+def offers(state, face, kind):
+    """Does `state` offer `kind` support on its `face`? None when unknown."""
+    m = mask_of(state)
+    if m is None:
+        return None
+    if kind == "solid":
+        return bool(m & SOLID_BIT)
+    if kind == "not_air":
+        return not m & AIR_BIT
+    return bool(m >> (kind + FACE_BIT[face]) & 1)
+
+
+def property_errors(bp):
+    """Property names and values the game doesn't know (a typo there is silently dropped by the game)."""
+    errors = []
+    for ch, state in bp.palette.items():
+        entry = facts().get(block_id(state)) if state != "keep" else None
+        if not entry:
+            continue
+        for k, v in props_of(state).items():
+            if k not in entry["p"]:
+                errors.append(f"palette '{ch}': {short(state)} has no property '{k}' (it has: {', '.join(entry['p']) or 'none'})")
+            elif v not in entry["p"][k]:
+                errors.append(f"palette '{ch}': {short(state)}'s {k} can't be '{v}' (it can be: {', '.join(entry['p'][k])})")
+    return errors
+
+
+def stair_shape(at, x, y, z, p):
+    """The shape the game gives a stair here (StairBlock.getStairsShape), or None when a neighbour that matters is unknown."""
+    facing, half = p.get("facing", "north"), p.get("half", "bottom")
+
+    def stair(direction):
+        dx, dy, dz = SIDE[direction]
+        s = at(x + dx, y + dy, z + dz)
+        if s is None or s == "keep":
+            return "unknown"
+        return full_props(s) if short(s).endswith("_stairs") else None
+
+    def can_take(direction):
+        n = stair(direction)
+        if n == "unknown":
+            return None
+        return n is None or n.get("facing") != facing or n.get("half") != half
+
+    front = stair(facing)
+    if front == "unknown":
+        return None
+    if front and front.get("half") == half and AXIS[front["facing"]] != AXIS[facing]:
+        take = can_take(OPPOSITE[front["facing"]])
+        if take is None:
+            return None
+        if take:
+            return "outer_left" if front["facing"] == COUNTER[facing] else "outer_right"
+    back = stair(OPPOSITE[facing])
+    if back == "unknown":
+        return None
+    if back and back.get("half") == half and AXIS[back["facing"]] != AXIS[facing]:
+        take = can_take(back["facing"])
+        if take is None:
+            return None
+        if take:
+            return "inner_left" if back["facing"] == COUNTER[facing] else "inner_right"
+    return "straight"
+
+
+def placement_errors(bp, notes=None):
+    """Blocks that couldn't stay, pairs that don't match and shapes the game would redraw; heuristics go to `notes`."""
+    errors = []
+    notes = notes if notes is not None else []
+    w, h, d = bp.width, bp.height, bp.depth
+
+    def at(x, y, z):
+        if not (0 <= x < w and 0 <= y < h and 0 <= z < d):
+            return None
+        try:
+            ch = bp.layers[y][z][x]
+        except IndexError:
+            return None
+        return bp.palette.get(ch, "keep")
+
+    def side(x, y, z, direction):
+        dx, dy, dz = SIDE[direction]
+        return at(x + dx, y + dy, z + dz)
+
+    def complain(x, y, z, state, what, into=None):
+        (errors if into is None else into).append(f"layer {y} row {z} col {x}: {state.split(':', 1)[-1]} {what}")
+
+    def needs(x, y, z, state, direction, kind, what):
+        """The neighbour toward `direction` must offer `kind` on the face that touches this cell."""
+        if offers(side(x, y, z, direction), OPPOSITE[direction], kind) is False:
+            complain(x, y, z, state, what)
+
+    for x, y, z, ch in bp.cells():
+        state = bp.palette.get(ch, "keep")
+        if state in ("keep", "minecraft:air"):
+            continue
+        name, p = short(state), full_props(state)
+        facing = p.get("facing")
+        # --- two-block things: both halves, matching
+        if name.endswith("_door") and "half" in p:
+            want = "upper" if p["half"] == "lower" else "lower"
+            other = side(x, y, z, "up" if want == "upper" else "down")
+            if other is not None and other != "keep" and not (short(other) == name and full_props(other).get("half") == want
+                    and all(full_props(other).get(k) == p.get(k) for k in ("facing", "hinge", "open"))):
+                complain(x, y, z, state, f"needs its {want} half {'above' if want == 'upper' else 'below'}, with the same facing, hinge and open")
+            if p["half"] == "lower":
+                needs(x, y, z, state, "down", STURDY, "stands on nothing sturdy (a door needs a full top face under it)")
+                # Double doors: the hinges go on the outer sides. hinge=left is on the facing's counter-clockwise side.
+                hinge_side = COUNTER[facing] if p.get("hinge") == "left" else CLOCKWISE[facing]
+                beside = side(x, y, z, hinge_side)
+                if beside and short(beside).endswith("_door") and full_props(beside).get("facing") == facing:
+                    complain(x, y, z, state, f"has its hinge ({p.get('hinge')}, the {hinge_side} edge) against the door beside it: "
+                             f"in a double door each hinge goes on the outer side")
+        if name.endswith("_bed") and "part" in p and facing:
+            toward = facing if p["part"] == "foot" else OPPOSITE[facing]
+            want = "head" if p["part"] == "foot" else "foot"
+            other = side(x, y, z, toward)
+            if other is not None and other != "keep" and not (short(other) == name and full_props(other).get("part") == want
+                    and full_props(other).get("facing") == facing):
+                complain(x, y, z, state, f"needs its {want} to the {toward} (a bed's head is on its facing side)")
+        if name in ("chest", "trapped_chest") and p.get("type") in ("left", "right") and facing:
+            toward = CLOCKWISE[facing] if p["type"] == "left" else COUNTER[facing]
+            want = "right" if p["type"] == "left" else "left"
+            other = side(x, y, z, toward)
+            if other is not None and other != "keep" and not (short(other) == name and full_props(other).get("type") == want
+                    and full_props(other).get("facing") == facing):
+                complain(x, y, z, state, f"needs a type={want} half to the {toward}, with the same facing")
+        if name in DOUBLE_PLANTS and "half" in p:
+            other = side(x, y, z, "up" if p["half"] == "lower" else "down")
+            if other is not None and other != "keep" and not (short(other) == name and full_props(other).get("half") != p["half"]):
+                complain(x, y, z, state, "needs its other half")
+        # --- stairs: write the corner the game will draw
+        if name.endswith("_stairs") and facing:
+            shape = stair_shape(at, x, y, z, p)
+            if shape and shape != p.get("shape", "straight"):
+                complain(x, y, z, state, f"will be drawn {shape} by the game (it joins the stairs beside it); write shape={shape}")
+        # --- held from the side opposite their facing (the facing is the way they stick out)
+        if facing and (name.endswith("wall_torch") or name == "ladder" or name == "tripwire_hook"
+                       or ((name == "lever" or name.endswith("_button")) and p.get("face") == "wall")):
+            needs(x, y, z, state, OPPOSITE[facing], STURDY, f"hangs on its {OPPOSITE[facing]} side (opposite its facing), which isn't sturdy")
+        if facing and ((name.endswith("_wall_sign") and "hanging" not in name) or name.endswith("_wall_banner")):
+            needs(x, y, z, state, OPPOSITE[facing], "solid", f"hangs on its {OPPOSITE[facing]} side (opposite its facing), which isn't solid")
+        if name.endswith("amethyst_bud") or name == "amethyst_cluster":
+            if facing:
+                needs(x, y, z, state, OPPOSITE[facing], STURDY, f"grows from its {OPPOSITE[facing]} side, which isn't sturdy")
+        # --- held from their facing side
+        if name == "bell" and p.get("attachment") == "single_wall" and facing:
+            needs(x, y, z, state, facing, STURDY, f"a wall bell hangs on its facing side ({facing}), which isn't sturdy")
+        if name == "cocoa" and facing:
+            log = side(x, y, z, facing)
+            if log and log != "keep" and "jungle" not in short(log):
+                complain(x, y, z, state, f"cocoa grows on a jungle log on its facing side ({facing})")
+        # --- vines and lichen: each face clings to a full face
+        if name in ("vine", "glow_lichen", "sculk_vein"):
+            for face in ("north", "south", "west", "east", "up", "down"):
+                if p.get(face) != "true" or offers(side(x, y, z, face), OPPOSITE[face], FULL_FACE) is not False:
+                    continue
+                above = side(x, y, z, "up")
+                if name == "vine" and face not in ("up", "down") and above and short(above) == "vine" and full_props(above).get(face) == "true":
+                    continue   # held by the vine above it
+                complain(x, y, z, state, f"clings to its {face} side ({face}=true), which has no full face to hold it")
+        # --- things that stand on the block below
+        below = side(x, y, z, "down")
+        if name in ("torch", "soul_torch", "redstone_torch") or name.endswith("candle") or (
+                name in ("lantern", "soul_lantern") and p.get("hanging") != "true"):
+            needs(x, y, z, state, "down", CENTER, "stands on nothing that holds its centre")
+        if (name.endswith("_sign") and "wall" not in name and "hanging" not in name) or (name.endswith("_banner") and "wall" not in name):
+            needs(x, y, z, state, "down", "solid", "stands on nothing solid")
+        if name.endswith("carpet") and offers(below, "up", "not_air") is False:
+            complain(x, y, z, state, "lies on air")
+        if name.endswith("rail"):
+            needs(x, y, z, state, "down", RIGID, "needs a rigid block under it")
+        if name.endswith("pressure_plate") and offers(below, "up", RIGID) is False and offers(below, "up", CENTER) is False:
+            complain(x, y, z, state, "needs a rigid block or a centre support under it")
+        if name == "redstone_wire" and below and short(below) != "hopper":
+            needs(x, y, z, state, "down", STURDY, "needs a sturdy top face under it")
+        if (name == "lever" or name.endswith("_button")) and p.get("face") == "floor":
+            needs(x, y, z, state, "down", STURDY, "stands on nothing sturdy")
+        if name in PLANTS or (name in DOUBLE_PLANTS and p.get("half") == "lower"):
+            soil = DEAD_BUSH_SOIL if name == "dead_bush" else SOIL + (("clay",) if "azalea" in name else ())
+            terracotta = name == "dead_bush" and below and short(below).endswith("terracotta") and "glazed" not in short(below)
+            if below is not None and below != "keep" and short(below) not in soil and not terracotta:
+                complain(x, y, z, state, f"cannot grow on {short(below)} (it needs {'sand, terracotta or ' if name == 'dead_bush' else ''}grass, dirt, moss or the like)")
+        # --- things that hang from the block above
+        if (name in ("lantern", "soul_lantern") and p.get("hanging") == "true") or name == "spore_blossom":
+            needs(x, y, z, state, "up", CENTER, "hangs from nothing that holds its centre (a horizontal chain doesn't)")
+        if name.endswith("_hanging_sign") and "wall" not in name:
+            needs(x, y, z, state, "up", CENTER, "hangs from nothing that holds its centre")
+        if name == "hanging_roots" or ((name == "lever" or name.endswith("_button")) and p.get("face") == "ceiling"):
+            needs(x, y, z, state, "up", STURDY, "hangs from nothing sturdy")
+        if name in ("cave_vines", "cave_vines_plant", "weeping_vines", "weeping_vines_plant"):
+            above = side(x, y, z, "up")
+            if not (above and short(above).startswith(name.split("_plant")[0])):
+                needs(x, y, z, state, "up", STURDY, "hangs from nothing sturdy")
+        # --- heuristics: probably wrong, worth a look
+        if name.endswith("_trapdoor") and p.get("open") == "true" and facing:
+            panel, away = side(x, y, z, OPPOSITE[facing]), side(x, y, z, facing)
+            # A shutter hangs in the air beside a window; a railing or an arm stands on something, so it isn't asked about.
+            if offers(away, OPPOSITE[facing], STURDY) and offers(panel, facing, "not_air") is False \
+                    and offers(side(x, y, z, "down"), "up", "not_air") is False:
+                complain(x, y, z, state, f"lies on its {OPPOSITE[facing]} edge, away from the wall to its {facing}; "
+                         f"if it is a shutter, flat on that wall it would face {OPPOSITE[facing]}", notes)
+    return errors
+
+
 def validate(paths):
     jar = client_jar()
     blocks = known_blocks(jar)
@@ -575,11 +1050,17 @@ def validate(paths):
     for path in paths:
         bp, errors = parse(path)
         for ch, state in bp.palette.items():
-            if state != "keep" and block_id(state) not in blocks:
+            # The game's own list (block-facts) also knows the blocks of the mods it runs with, such as Simple Radio's.
+            if state != "keep" and block_id(state) not in blocks and block_id(state) not in facts():
                 errors.append(f"palette '{ch}': unknown block {block_id(state)}")
             props = re.search(r"\[(.*)\]$", state)
             if props and not re.fullmatch(r"[a-z0-9_]+=[a-z0-9_]+(,[a-z0-9_]+=[a-z0-9_]+)*", props.group(1)):
                 errors.append(f"palette '{ch}': malformed properties [{props.group(1)}]")
+        notes = []
+        if not errors:
+            errors.extend(property_errors(bp))
+        if not errors:
+            errors.extend(placement_errors(bp, notes))
         used = {ch for _, _, _, ch in bp.cells()}
         unused = [ch for ch in bp.palette if ch not in used and ch not in DEFAULTS]
         if errors:
@@ -590,6 +1071,8 @@ def validate(paths):
         else:
             print(f"PASS: {path} ({bp.width}x{bp.height}x{bp.depth}, {len(bp.palette) - 2} palette entries"
                   + (f", unused: {''.join(unused)}" if unused else "") + ")")
+        for n in notes:
+            print("  note: " + n)
     return ok
 
 
@@ -604,14 +1087,125 @@ def stats(path):
     print("markers:", ", ".join(f"{ch}=@{m}" for ch, m in bp.markers.items()) or "none")
 
 
+# ----------------------------------------------------------------------
+# Editing single cells
+# ----------------------------------------------------------------------
+
+def set_cells(path, edits):
+    """Changes cells in place: each edit is (layer, row, col, value), value a palette letter or a block state.
+
+    A state that isn't in the palette yet gets a new letter (one with no marker is reused when it already exists). A layer
+    drawn as a range (layer 2-4:) is split first so only the named layer changes. Comments and everything else stay put.
+    """
+    bp, errors = parse(path)
+    if errors:
+        print("\n".join(errors)); return False
+    lines = pathlib.Path(path).read_text(encoding="utf-8").splitlines()
+    full = lambda st: st if st == "keep" or ":" in st.split("[")[0] else "minecraft:" + st
+    taken = set(bp.palette)
+    # Letters and digits first, then Greek and Cyrillic; never '@' (it reads as a marker), quotes or a backslash.
+    letters = "".join(c for c in CHARS if c.isalnum()) + "αβγδεζηθικλμνξπρστυφχψωΓΔΘΛΞΠΣΦΨΩабвгдежзийклмнопрстуфхцчшщ"
+    pool = [c for c in letters if c not in taken]
+    added = []
+
+    def letter(value):
+        if len(value) == 1 and value in bp.palette:
+            return value
+        want = full(value)
+        for ch, st in bp.palette.items():
+            if st == want and ch not in bp.markers:
+                return ch
+        for ch, st in added:
+            if st == want:
+                return ch
+        ch = pool.pop(0)
+        added.append((ch, want))
+        return ch
+
+    def headers():
+        found = []
+        for i, raw in enumerate(lines):
+            m = re.match(r"^layer\s+(\d+)(?:\s*-\s*(\d+))?\s*:\s*$", raw.strip())
+            if m:
+                found.append((i, int(m.group(1)), int(m.group(2) or m.group(1))))
+        return found
+
+    def rows_of(start):
+        """Line numbers of a layer's grid rows (comment lines inside the layer skipped)."""
+        out, i = [], start + 1
+        while i < len(lines) and lines[i].strip():
+            if not lines[i].lstrip().startswith("#"):
+                out.append(i)
+            i += 1
+        return out, i
+
+    for y, z, x, value in edits:
+        ch = letter(value)
+        for at, low, high in headers():
+            if low <= y <= high:
+                break
+        else:
+            print(f"no layer {y}"); return False
+        if low != high:
+            grid, end = rows_of(at)
+            body = [lines[i] for i in grid]
+            parts = []
+            for a, b in ((low, y - 1), (y, y), (y + 1, high)):
+                if a <= b:
+                    parts += [f"layer {a}:" if a == b else f"layer {a}-{b}:"] + body + [""]
+            lines[at:end] = parts[:-1]
+            at = lines.index(f"layer {y}:", at)
+        grid, _ = rows_of(at)
+        row = lines[grid[z]]
+        if x >= len(row):
+            print(f"layer {y} row {z} has no col {x}"); return False
+        lines[grid[z]] = row[:x] + ch + row[x + 1:]
+    if added:
+        last = max(i for i, raw in enumerate(lines) if re.match(r"^\s+\S\s*=\s*\S+", raw) and not raw.strip().startswith("#")
+                   and i < headers()[0][0])
+        indent = re.match(r"^(\s*)", lines[last]).group(1)
+        lines[last + 1:last + 1] = [f"{indent}{ch} = {st.removeprefix('minecraft:')}" for ch, st in added]
+    pathlib.Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+    for ch, st in added:
+        print(f"added palette '{ch}' = {st}")
+    print(f"PASS: set {len(edits)} cell(s) in {path}")
+    return True
+
+
+def describe(states):
+    """Prints what the game says about block states: properties, defaults, and what each face holds."""
+    kinds = (("sturdy", STURDY), ("centre", CENTER), ("rigid", RIGID), ("full", FULL_FACE))
+    for raw in states:
+        state = raw if ":" in raw.split("[")[0] else "minecraft:" + raw
+        entry = facts().get(block_id(state))
+        if not entry:
+            print(f"{raw}: not a block the game knows"); continue
+        p = full_props(state)
+        print(f"{block_id(state)}[{','.join(f'{k}={v}' for k, v in sorted(p.items()))}]")
+        for k, values in entry["p"].items():
+            print(f"  {k}: {' | '.join(values)}" + ("   (default " + p[k] + ")" if k in p else ""))
+        m = mask_of(state)
+        print(f"  solid: {'yes' if m & SOLID_BIT else 'no'} (wall and standing signs, banners need a solid neighbour)")
+        for face in ("up", "down", "north", "south", "west", "east"):
+            held = [n for n, k in kinds if m >> (k + FACE_BIT[face]) & 1]
+            print(f"  {face:5} face: {', '.join(held) if held else '-'}")
+    print("sturdy: torches, ladders, buttons, levers, doors, redstone; centre: lanterns, candles, standing torches, hanging signs;"
+          "\nrigid: rails, pressure plates; full: vines and glow lichen.")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
     v = sub.add_parser("validate"); v.add_argument("files", nargs="+")
     r = sub.add_parser("render"); r.add_argument("file"); r.add_argument("--out"); r.add_argument("--cut", type=int); r.add_argument("--scale", type=int, default=6)
+    r.add_argument("--view", choices=("se", "sw", "ne", "nw"), default="se", help="the corner the camera looks from")
     n = sub.add_parser("from-nbt"); n.add_argument("file"); n.add_argument("--out")
     s = sub.add_parser("stats"); s.add_argument("file")
     t = sub.add_parser("to-nbt"); t.add_argument("file"); t.add_argument("--out", required=True)
+    f = sub.add_parser("facts", help="what the game says about block states: facts oak_stairs[half=top] chain[axis=x]")
+    f.add_argument("states", nargs="+")
+    e = sub.add_parser("set", help="change cells: set <file> LAYER ROW COL VALUE [LAYER ROW COL VALUE ...]")
+    e.add_argument("file"); e.add_argument("cells", nargs="+")
     args = parser.parse_args()
     if args.command == "validate":
         sys.exit(0 if validate(args.files) else 1)
@@ -620,7 +1214,7 @@ def main():
         if errors:
             print("\n".join(errors)); sys.exit(1)
         out = args.out or str(pathlib.Path(args.file).with_suffix(".png"))
-        render(bp, out, args.cut, args.scale)
+        render(bp, out, args.cut, args.scale, args.view)
         print(f"PASS: rendered {out}")
     if args.command == "from-nbt":
         from_nbt(args.file, args.out or str(pathlib.Path(args.file).with_suffix(".blueprint")))
@@ -631,6 +1225,13 @@ def main():
         if errors:
             print("\n".join(errors)); sys.exit(1)
         to_nbt(bp, args.out)
+    if args.command == "facts":
+        describe(args.states)
+    if args.command == "set":
+        if len(args.cells) % 4:
+            print("cells come in fours: LAYER ROW COL VALUE (a palette letter or a block state)"); sys.exit(1)
+        edits = [(int(args.cells[i]), int(args.cells[i + 1]), int(args.cells[i + 2]), args.cells[i + 3]) for i in range(0, len(args.cells), 4)]
+        sys.exit(0 if set_cells(args.file, edits) else 1)
 
 
 if __name__ == "__main__":

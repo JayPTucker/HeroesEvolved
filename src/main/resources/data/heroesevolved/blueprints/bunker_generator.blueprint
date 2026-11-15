@@ -11,7 +11,7 @@ palette:
   F = white_carpet
   G = waxed_copper_block
   H = iron_block
-  I = ladder[facing=south]
+  I = ladder[facing=east]
   J = barrel[facing=up]
   K = smooth_quartz_slab[type=top]
   L = tuff_bricks
@@ -56,83 +56,83 @@ AAAAAAAAAA
 
 # reactor base
 layer 1:
-DDDDDDDDDD
+DDDADDADDD
 .........D
 D........D
-DE.......D
+AE.......A
 DF.G..G..D
 D...HH...D
-D...HH...D
+A...HH...A
 D..G..G..D
 DI.......D
-D.JJ..KK.D
-DDDDDDDDDD
+A.JJ..KK.A
+DDDADDADDD
 
 layer 2:
-DLLDLLDLLD
+DLLALLALLD
 ..MMMNMMML
 L....O..ML
-D.......MD
+A.......MA
 L..PQQP.NL
 L..QRRQ.ML
-D..QRRQ.MD
+A..QRRQ.MA
 L..PQQP.NL
 LI......ML
-D.J...ST.D
-LLLDLLDLLL
+A.J...ST.A
+LLLALLALLL
 
 layer 3:
-DLLDLLDLLD
+DLLALLALLD
 L.UUUUUUUL
 L.......UL
-D.......UD
+A.......UA
 L..PQQP.UL
 L..QVVQ.UL
-D..QVVQ.UD
+A..QVVQ.UA
 L..PQQP.UL
 LI......UL
-D........D
-LLLDLLDLLL
+A........A
+LLLALLALLL
 
 # catwalk
 layer 4:
-DLLDLLDLLD
+DLLALLALLD
 L........L
 L.......WL
-D.......WD
+A.......WA
 L..PQQP.WL
 L..QVVQ.WL
-D..QVVQ.WD
+A..QVVQ.WA
 L..PQQP.WL
 LI......WL
-DWWWWWWWWD
-LLLDLLDLLL
+AWWWWWWWWA
+LLLALLALLL
 
 layer 5:
-DLLDLLDLLD
+DLLALLALLD
 L.X......L
 LYMZ...a.L
-D.b....a.D
+A.b....a.A
 L..PQQPa.L
 LccQ..Qa.L
-D..Q..QacD
+A..Q..QacA
 L..PQQPa.L
 L.aaaaaaaL
-D........D
-LLLDLLDLLL
+A........A
+LLLALLALLL
 
 layer 6:
-DDDDDDDDDD
+DDDADDADDD
 D....d...D
 D.e..d...D
-D....d...D
+A....d...A
 D..G..G..D
 D...ff...D
-D...ff...D
+A...ff...A
 D..G..G..D
-D........D
-D........D
-DDDDDDDDDD
+DWWWWWWWWD
+A........A
+DDDADDADDD
 
 # ceiling
 layer 7:

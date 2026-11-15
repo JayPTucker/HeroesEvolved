@@ -197,7 +197,7 @@ public final class SpeedRunPreview {
                 SpeedService.toggle(p);
             });
             case 552 -> { mc.options.setCameraType(CameraType.THIRD_PERSON_BACK); sprint(mc, true); running = true; last = mc.player.position(); }
-            case 1500 -> { sprint(mc, false); running = false; mc.stop(); }
+            case 1500 -> { sprint(mc, false); running = false; PreviewQuiet.quit(); }
             default -> { }
         }
     }
@@ -228,7 +228,7 @@ public final class SpeedRunPreview {
                 case 96 -> shot("16c-arrive");
                 case 104 -> { look(mc, false); mc.options.setCameraType(CameraType.THIRD_PERSON_BACK); }
                 case 108 -> shot("17-arrive-behind");
-                case 130 -> { running = false; mc.stop(); }
+                case 130 -> { running = false; PreviewQuiet.quit(); }
                 default -> { }
             }
             return;

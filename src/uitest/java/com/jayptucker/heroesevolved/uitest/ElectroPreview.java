@@ -201,7 +201,7 @@ public final class ElectroPreview {
                 SkillActionService.activate(new AbilityUseContext(p, ModAbilities.ELECTROKINESIS_ID, 5, false), 1);
             });
             case 543 -> pending = "electro-9-static-screen.png";
-            case 560 -> mc.stop();
+            case 560 -> PreviewQuiet.quit();
             default -> { }
         }
     }

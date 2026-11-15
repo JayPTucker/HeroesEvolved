@@ -89,7 +89,7 @@ public final class BodyPreview {
             case 805 -> pending = "body-8-downed-view.png";
             case 810 -> { mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT); mc.options.hideGui = true; }
             case 860 -> pending = "body-9-up-again.png";
-            case 880 -> mc.stop();
+            case 880 -> PreviewQuiet.quit();
             default -> { }
         }
     }

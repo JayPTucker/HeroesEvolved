@@ -281,7 +281,7 @@ public final class TimeSkillsPreview {
             case 915 -> server(mc, p -> { reset(p, 480, 0, 0, 6000); actor(p, 2, 4, 200); actor(p, -2, 7, 160); });
             case 930 -> server(mc, p -> cast(p, "time_manipulation_shared_blink"));
             case 932 -> capture = "32-edge-first-person.png";
-            case 960 -> mc.stop();
+            case 960 -> PreviewQuiet.quit();
             default -> { }
         }
     }

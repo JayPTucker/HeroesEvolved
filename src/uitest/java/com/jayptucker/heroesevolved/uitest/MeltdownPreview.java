@@ -239,7 +239,7 @@ public final class MeltdownPreview {
             case 540 -> onServer(mc, p -> System.out.println("MELTDOWN_SAVED alive=" + him.isAlive()
                     + " critical=" + com.jayptucker.heroesevolved.village.VillagerMeltdown.critical(him)));
             case 550 -> onServer(mc, p -> dropAll());
-            case 560 -> mc.stop();
+            case 560 -> PreviewQuiet.quit();
             default -> { }
         }
     }

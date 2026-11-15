@@ -142,7 +142,7 @@ public final class SylarPreview {
             case 460 -> onServer(mc, p -> { SylarEntity s = SylarStoryService.hunter(); if (s != null) s.hurt(p.damageSources().playerAttack(p), 1000); });
             case 470 -> pending = "sylar-8-down.png";
             case 565 -> pending = "sylar-8-revived.png";
-            case 580 -> { onServer(mc, p -> SylarStoryService.dismiss(p.getServer())); mc.stop(); }
+            case 580 -> { onServer(mc, p -> SylarStoryService.dismiss(p.getServer())); PreviewQuiet.quit(); }
             default -> { }
         }
     }

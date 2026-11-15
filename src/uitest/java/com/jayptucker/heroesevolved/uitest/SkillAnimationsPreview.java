@@ -242,7 +242,7 @@ public final class SkillAnimationsPreview {
             // Perception: open hands held still while the world crawls.
             case 890 -> onServer(mc, p -> { place(p, 1400, 0, 0, 5); check(AdvancedTechniques.activate(context(p, speed), "perception"), "perception"); });
             case 896 -> pending = "s6-perception.png";
-            case 930 -> mc.stop();
+            case 930 -> PreviewQuiet.quit();
             default -> { }
         }
     }

@@ -119,21 +119,37 @@ public final class PrologueGameTests {
                         helper.assertTrue(unit >= 0, "Everyone wakes in an apartment: " + p.position());
                         units.add(unit);
                         BlockPos door = Apartments.door(unit);
-                        helper.assertTrue(city.getBlockState(door).getBlock() instanceof DoorBlock && !city.getBlockState(door).getValue(DoorBlock.OPEN),
-                                "Apartment doors stay shut until everyone is ready");
+                        helper.assertTrue(city.getBlockState(door).getBlock() instanceof DoorBlock && city.getBlockState(door).getValue(DoorBlock.OPEN),
+                                "Apartment doors stand open: everyone comes down to the lobby");
                     }
                     helper.assertTrue(units.size() == 2, "Each player has their own apartment");
-                    // Trying your door says you're ready; the day waits for the other.
-                    helper.assertTrue(PrologueService.useBlock(players[0], Apartments.door(units.iterator().next()))
-                            || PrologueService.useBlock(players[0], Apartments.door(units.stream().skip(1).findFirst().orElseThrow())), "The door counts as ready");
-                    helper.assertTrue(PrologueService.phase().equals("apartment"), "One ready isn't everyone");
-                    PrologueService.ready(players[1]);
+                    for (BlockPos front : Apartments.frontDoors())
+                        helper.assertTrue(!city.getBlockState(front).getValue(DoorBlock.OPEN), "The street doors stay shut until everyone has met");
+                    helper.assertTrue(PrologueService.useBlock(players[0], Apartments.frontDoors().get(0)), "Trying the street door says who we wait for");
+                    // One comes down to the lobby; the day waits for the other.
+                    Vec3 lobby = Apartments.lobby();
+                    players[0].teleportTo(city, lobby.x, lobby.y, lobby.z, 0, 0);
                 }))
-                .thenIdle(2)
+                .thenIdle(3)
                 .thenExecute(() -> guard(cleanup, () -> {
-                    helper.assertTrue(PrologueService.phase().equals("evening"), "Everyone ready: the evening begins");
-                    for (BlockPos door : Apartments.doors())
-                        helper.assertTrue(city.getBlockState(door).getValue(DoorBlock.OPEN), "The apartment doors open");
+                    helper.assertTrue(PrologueService.phase().equals("apartment"), "One in the lobby isn't everyone");
+                    Vec3 lobby = Apartments.lobby().add(1, 0, 0);
+                    players[1].teleportTo(city, lobby.x, lobby.y, lobby.z, 0, 0);
+                }))
+                .thenIdle(3)
+                .thenExecute(() -> guard(cleanup, () -> {
+                    helper.assertTrue(PrologueService.phase().equals("evening"), "Everyone in the lobby: the evening begins");
+                    for (BlockPos door : Apartments.frontDoors())
+                        helper.assertTrue(city.getBlockState(door).getValue(DoorBlock.OPEN), "The street doors open");
+                    helper.assertTrue(PrologueService.lightIn() < 0, "Nobody has reached the beacon yet");
+                    // Everyone goes to the beacon in front of the City Market.
+                    Vec3 beacon = com.jayptucker.heroesevolved.time.intro.city.Market.beacon();
+                    for (int k = 0; k < players.length; k++) players[k].teleportTo(city, beacon.x + k, beacon.y + 1, beacon.z, 0, 0);
+                }))
+                .thenIdle(12)
+                .thenExecute(() -> guard(cleanup, () -> {
+                    int in = PrologueService.lightIn();
+                    helper.assertTrue(in > 0 && in <= PrologueService.LIGHT_DELAY, "Everyone at the beacon: the light comes twenty seconds later: " + in);
                     helper.assertTrue(PrologueService.skipTo(server, "light", 0), "The light can be reached");
                 }))
                 // Freshly forced chunks take a while to show their entities (see AGENTS.md): wait for everyone.

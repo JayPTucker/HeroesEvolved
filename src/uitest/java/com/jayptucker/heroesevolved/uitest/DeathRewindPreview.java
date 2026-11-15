@@ -90,7 +90,7 @@ public final class DeathRewindPreview {
             }
             case 720 -> onServer(mc, p -> report(p, "after rewind"));
             case 725 -> pending = "death-rewind-2-back.png";
-            case 740 -> mc.stop();
+            case 740 -> PreviewQuiet.quit();
             default -> { }
         }
     }

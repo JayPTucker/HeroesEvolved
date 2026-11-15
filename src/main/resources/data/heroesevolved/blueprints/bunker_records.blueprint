@@ -1,4 +1,5 @@
-# Records and communications. The receiver sits on the east desk, visible from the stasis corridor.
+# Records and communications. The radio console sits on the east desk, facing the room: a Simple Radio receiver with a
+# transmitter stacked on it, a speaker and a microphone beside it; the operator's chair is on the room side.
 name: bunker_records
 anchor: 5 0 0
 palette:
@@ -29,11 +30,12 @@ palette:
   c = iron_trapdoor[facing=south,open=true,half=bottom]
   d = deepslate_bricks
   e = red_stained_glass
-  f = waxed_weathered_cut_copper @signal:receiver
-  g = tinted_glass @signal:display
-  h = lightning_rod[facing=up] @signal:antenna
-  i = waxed_weathered_copper_bulb[lit=true] @signal:indicator
+  f = simpleradio:receiver[facing=south] @signal:receiver
+  g = simpleradio:transmitter[facing=south] @signal:display
+  h = simpleradio:speaker[facing=south] @signal:speaker
+  i = simpleradio:microphone[rotation=0] @signal:microphone
   j = spruce_wall_sign[facing=south] @sign:receiver
+  N = waxed_weathered_cut_copper_slab[type=top]
 signs:
   receiver light_blue glow = SIGNAL RECEIVER | USE CONSOLE | SURFACE RELAY
 
@@ -53,56 +55,56 @@ AAAAAAAAAAA
 
 # desks, lecterns, filing
 layer 1:
-EEEEE.EEEEE
-.......F...
+EEEAE.AEEAE
+...........
 E.....GGG.E
-EH....I.GJE
+AH....IFGJA
 EH.K...K.LE
 EH.M.....JE
-E...I....LE
+A...I....LA
 EH.......JE
 EH.O.P.O.LE
-E.I.......E
-EEEE...EEEE
+A.I.......A
+EEEA...EEAE
 
 layer 2:
-EQQEQ.EQQEQ
+EQQAQ.AQQAQ
 ...........
 Q.....hfi.Q
-EH......TLE
+AH......TLA
 QH.......JQ
 QH.......LQ
-EU.......JE
+AU.......JA
 QH.......LQ
 QH.....I.JQ
-E.........E
-QQQE...QQEQ
+A.........A
+QQQA...QQAQ
 
 layer 3:
-EQQEQQEQQEQ
+EQQAQQAQQAQ
 Q.........Q
 Q......g..Q
-EH.....j.JE
+AH.....j.JA
 QH.......LQ
 QH.......JQ
-EH.......LE
+AH.......LA
 QH.......JQ
 QH.......LQ
-E.........E
-QQQE...QQEQ
+A.........A
+QQQA...QQAQ
 
 layer 4:
-EEEEEEEEEEE
+EEEAEEAEEAE
 EW.......WE
-E.........E
-EX........E
+ENNNNNNNNNE
+AX........A
 EX...Y....E
 EX..Zab...E
-EX...c....E
+AX...c....A
 EX........E
 EX........E
-E........WE
-EEEEEEEEEEE
+A........WA
+EEEAEEEEEAE
 
 # ceiling
 layer 5:

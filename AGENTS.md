@@ -3,7 +3,10 @@
 - **Animations and power visuals:** read [docs/animation-guide.md](docs/animation-guide.md) before making or
   changing any ability effect, arm pose, set piece or camera. It sets the quality bar (from Quake, Superspeed
   and Space-Time Manipulation), the tools, the body anchor points and how to photograph your work.
-- **Structures:** see `.claude/skills/minecraft-building/SKILL.md` (blueprints, renders, in-game screenshots).
+- **Structures:** see `.claude/skills/minecraft-building/SKILL.md` (blueprints, renders, in-game screenshots). Its
+  `references/block-states.md` says, from the game itself, which way stairs, doors, trapdoors, torches and the rest face
+  and what holds them; `tools/blueprint.py validate` and `BlueprintPlacementGameTests` enforce it. Any Java that places
+  scenery block by block should follow the same rules (supports first, then the things they hold).
 - **Gameplay tests:** `./gradlew runGameTestServer --init-script tools/rewind-gametest.init.gradle`.
 - **In-game previews:** `tools/*-preview.init.gradle`; stage scenes at least 50 blocks from spawn, where the
   bunker's walls trap the player.
@@ -1244,3 +1247,54 @@ Shapeshifting (`shapeshift/`, stand-ins in `client/MorphClient`, art in `client/
   `facilitybuildsinbatchesandmanualroutecansavebothcaptives` (waits on chunk loading) each failed once during this
   work and passed on the next run with no change. Re-run before blaming new code.
 
+
+## Reusable patterns from the Odessa rebuild
+
+Odessa (`time/intro/city/`) was redrawn in November 2026 so nothing floats or dead-ends, and gained outskirts so the city
+no longer ends in fog over grey concrete. What the player sees is in [docs/the-last-day.md](docs/the-last-day.md).
+
+- **Audit a build, don't eyeball it.** `CityAudit.run` walks a box and reports floating blocks (anything not joined face
+  to face to the ground), blocks whose `canSurvive` fails (plants on concrete, wall signs on nothing, ladders on walls),
+  lone glass panes, and doors that open into a wall or onto a drop. The city preview prints `CITY_AUDIT`, the bunker
+  preview `BUNKER_AUDIT`, and `CityAuditGameTests` fails on any fault. Iron bars may stand alone on purpose (poles).
+- **Draw from the wall out.** `Building.Face` addresses a cell by face, position along it and depth (0 the wall plane,
+  1 the glass, negative over the sidewalk). Awnings, cornices, canopies, stoops and fire escapes all hang from depth 0,
+  and only on faces with a street in front, so nothing reaches into the building next door.
+- **A window is held at both ends.** Panes sit a block back between piers two blocks deep; a pane beside a door or a
+  corner goes in the wall plane instead, where the corner holds it. A room three blocks deep with a partition behind it
+  shows through a lit window, not a hollow shell.
+- **Build what players see first.** `FractureCity` builds the city's chunks before the outskirts (`ready()` vs
+  `complete()`) and saves how far it got, so the Last Day never waits on the prairie.
+- **Paving clears what grew there.** Scrub is scattered by the ground pass; any feature that repaves calls
+  `Outskirts.floor`, which clears the block above, or grass is left standing on a parking lot.
+- **Dark floor, and a city without monsters.** `CityAudit.run(..., true)` also finds dark floor where monsters would
+  spawn; run it after the light settles and only over the build (caves round it are dark too). The vision dimension
+  spawns monsters at light level 0, so `CityMonsters` cancels every natural monster spawn there: every sealed dark room
+  and the space behind each building's rooms would otherwise breed zombies during the Last Day.
+- **Previews are silent.** `uitest/PreviewQuiet` mutes the game whenever a `heroes.preview.*` flag is on; the Last Day's
+  sirens and the bunker's alarms otherwise play on the machine running the photos. A preview player is also enrolled in
+  the Last Day, which keeps them inside its streets: `TimeCityPreview` calls `PrologueService.skip` before each jump.
+
+## Reusable patterns from the bunker rework
+
+The stasis bunker (`story/bunker/`) was reworked in November 2026: the lab and infirmary grew, the plain rooms gained
+structure, and the way out became the Last Day's own vault and stair, a hundred years on. What the player sees is in
+[docs/the-past.md](docs/the-past.md).
+
+- **The way out is drawn in code.** `BunkerStair` builds the vault, the switchback and the ruined lobby at spawn, because
+  its depth depends on the terrain (about 31 blocks on a normal world). Two lanes (the south one beside the vault, the
+  north one behind a divider) climb along x 3..12 and turn on landings at both ends; the number and length of flights
+  are worked out from the depth, so the last step is always the lobby's floor. The top flight stays open to the sky as
+  a railed slot, as Primatech's lobby has it. A world too shallow for it (`BunkerStair.fits`, under 12) keeps the ladder.
+- **One look, two times.** The vault, the hazard stripe, the rails and the SUBLEVEL 4 sign copy the Last Day's
+  (`lastday_stairwell`, `PrologueService.vault`, `Landmarks.safeHouse`), so a player who lived the Last Day recognises
+  the door they came through. The present's version is stuck open off its hinge, cracked, and grown over.
+- **Vines need a face or a vine above.** A vine hung across a doorway is held by the vine above it, back to one on the
+  lintel; one placed against air, glass or iron bars can't stay. Lichen, cave vines and hanging roots need the block
+  above or behind them too. The audit finds the ones that don't.
+- **Build into free rock, keep the pins.** The lab grew east and up and the infirmary west, keeping every cell that code,
+  tests and `BunkerLayoutUpgrade` read (chests, lecterns, cots, survivor spots, lights). Moving the anchor with the
+  growth keeps old cells at their world positions. Bunkers are built once, so all of this reaches new worlds only;
+  existing worlds keep their rooms, ladder and hatch.
+- **Audit the bunker too.** The bunker preview prints `BUNKER_AUDIT` for the rooms, the stairwell and the lobby. It
+  photographs the vault, the stairwell, the slot and the lobby (`bunker-18` to `bunker-21`).
