@@ -145,7 +145,8 @@ public final class AbilityWheelScreen extends Screen {
             LoadoutPayload.Entry entry = entries.get(hover);
             centred(graphics, Component.translatable(entry.nameKey()).getString(), cx, cy - 13, TEXT);
             String detail = !entry.unlocked() ? "Unlocks at Level " + entry.unlockLevel()
-                    : entry.energy() + " stamina" + (entry.rank() > 1 ? "  ·  Rank " + roman(entry.rank()) : "");
+                    : com.jayptucker.heroesevolved.ability.PowerBalance.describe(entry.path(), entry.energy())
+                    + (entry.rank() > 1 ? "  ·  Rank " + roman(entry.rank()) : "");
             centred(graphics, detail, cx, cy - 2, entry.unlocked() ? MUTED : 0xFFE07070);
             if (channelling != null) centred(graphics, "Holding", cx, cy + 9, GOLD);
         } else {

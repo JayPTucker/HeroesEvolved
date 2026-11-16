@@ -324,7 +324,7 @@ public final class ElectroService {
             return;
         }
         if (now % 4 == 0) {
-            if (!PlayerEnergyService.tryConsume(player, 3)) { HOLDS.remove(player.getUUID()); endStream(player); return; }
+            if (!PlayerEnergyService.drain(player, 3)) { HOLDS.remove(player.getUUID()); endStream(player); return; }
             MasteryService.awardEnergySpent(player, 3);
         }
         if (now % 2 == 0) streamPulse(hold, now % 4 == 0);

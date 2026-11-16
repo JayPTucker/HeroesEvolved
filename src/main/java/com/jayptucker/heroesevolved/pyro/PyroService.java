@@ -1005,7 +1005,7 @@ public final class PyroService {
                 continue;
             }
             if (now % 5 != 0) continue;
-            if (!PlayerEnergyService.tryConsume(player, 3)) { stopPalm(player); continue; }
+            if (!PlayerEnergyService.drain(player, 3)) { stopPalm(player); continue; }
             MasteryService.awardEnergySpent(player, 3);
             palmPulse(channel, now);
         }

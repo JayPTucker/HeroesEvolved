@@ -202,7 +202,7 @@ public final class AbilityUseService {
             return AbilityUseResult.CANNOT_USE;
         }
 
-        int energyCost = AbilityRanks.energy(player, powerId, abilityAction, com.jayptucker.heroesevolved.skills.SkillTreeService.activationCost(player, powerId, com.jayptucker.heroesevolved.ability.PowerBalance.energy(abilityAction.definition().id(), abilityAction.energyCost(context))));
+        int energyCost = AbilityRanks.energy(player, powerId, abilityAction, com.jayptucker.heroesevolved.skills.SkillTreeService.activationCost(player, powerId, com.jayptucker.heroesevolved.ability.PowerBalance.energy(abilityAction.definition().id(), abilityAction.energyCost(context)) + abilityAction.travelCost(context)));
 
         boolean requiresOverexertion =
                 PlayerEnergyService.getEnergy(player) < energyCost;
@@ -210,6 +210,7 @@ public final class AbilityUseService {
         // Holding Shift when pressing a slot is the player's explicit consent
         // to use overexertion if they lack the required energy.
         if (requiresOverexertion && !allowOverexertion) {
+            PlayerEnergyService.refused(player);
             PowerFeedback.explain(player, actionName.copy().append(Component.literal(
                     " needs " + energyCost + " stamina (you have "
                             + PlayerEnergyService.getEnergy(player)

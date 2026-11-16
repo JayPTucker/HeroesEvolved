@@ -609,7 +609,7 @@ public final class ShapeshiftService {
         if (!MORPHS.containsKey(player.getUUID())) return;
         ShapeshiftSuspicion.tick(player, morph, now);
         if (!MORPHS.containsKey(player.getUUID())) return;
-        if (now % ShapeshiftSkills.drainPeriod(player) == 0 && morph.size.drainPerSecond > 0 && !PlayerEnergyService.tryConsume(player, morph.size.drainPerSecond)) {
+        if (now % ShapeshiftSkills.drainPeriod(player) == 0 && morph.size.drainPerSecond > 0 && !PlayerEnergyService.drain(player, morph.size.drainPerSecond)) {
             end(player, "tired");
             return;
         }

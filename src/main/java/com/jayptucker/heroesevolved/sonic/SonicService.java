@@ -837,7 +837,7 @@ public final class SonicService {
             }
         }
         if (now % 10 == 0) for (Channel channel : List.copyOf(CHANNELS.values())) {
-            if (!PlayerEnergyService.tryConsume(channel.player, 6)) { stop(channel.player); continue; }
+            if (!PlayerEnergyService.drain(channel.player, 6)) { stop(channel.player); continue; }
             MasteryService.awardEnergySpent(channel.player, 6); cry(channel.player, channel.level, true);
         }
         CUSHION.values().removeIf(until -> until < now);

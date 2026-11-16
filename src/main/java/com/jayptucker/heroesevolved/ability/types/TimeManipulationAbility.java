@@ -206,29 +206,37 @@ public final class TimeManipulationAbility implements Ability {
 
         private static final ResourceLocation STILL_FOLD = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "time_blink_still");
 
+        /**
+         * Folding space costs a little to start and more the further you go: the table's base, plus
+         * {@code per_block} (0.3) stamina for every block between where you stand and where you land.
+         */
         @Override
-        public AbilityActivationResult activate(AbilityUseContext context) {
-            ServerPlayer player = context.player();
-            ServerLevel level = player.serverLevel();
-            boolean free = SpaceTimeSkills.freeFold(player);
+        public int travelCost(AbilityUseContext context) {
+            if (SpaceTimeSkills.freeFold(context.player())) return 0;
+            Vec3 destination = destination(context.player(), context.abilityLevel());
+            if (destination == null) return 0;
+            double perBlock = com.jayptucker.heroesevolved.ability.PowerBalance.perBlock(DEFINITION.id().getPath(), 0.3D)
+                    * com.jayptucker.heroesevolved.ability.PowerBalance.costScale();
+            return (int) Math.round(perBlock * context.player().position().distanceTo(destination));
+        }
 
+        /** Where a fold would land right now, or null. The cost and the fold itself both ask this. */
+        private static Vec3 destination(ServerPlayer player, int tier) {
+            ServerLevel level = player.serverLevel();
             Vec3 origin = player.getEyePosition();
             Vec3 direction = player.getLookAngle().normalize();
-            int maximumDistance = getMaximumDistance(
-                    context.abilityLevel()
-            );
+            int maximumDistance = getMaximumDistance(tier);
 
             for (int distance = 1; distance <= maximumDistance; distance++) {
                 if (!level.hasChunkAt(BlockPos.containing(origin.add(direction.scale(distance))))) {
                     maximumDistance = distance - 1; break;
                 }
             }
-            if (maximumDistance < 2) return AbilityActivationResult.REJECTED;
+            if (maximumDistance < 2) return null;
             // Behind You: aimed at a creature, the fold puts you just behind it, facing it.
             Vec3 behind = SpaceTimeSkills.behind(player, maximumDistance);
-            // Blink now uses the first solid block in the player's line of
-            // sight. This makes its destination predictable: stand on top of
-            // the block you are looking at, never somewhere below it.
+            // Blink uses the first solid block in the player's line of sight. This makes its destination
+            // predictable: stand on top of the block you are looking at, never somewhere below it.
             BlockHitResult hit = level.clip(new ClipContext(
                     origin,
                     origin.add(direction.scale(maximumDistance)),
@@ -248,6 +256,17 @@ public final class TimeManipulationAbility implements Ability {
                     if (SpaceTimeService.safe(player, candidate)) { destination = candidate; break; }
                 }
             }
+            return destination;
+        }
+
+        @Override
+        public AbilityActivationResult activate(AbilityUseContext context) {
+            ServerPlayer player = context.player();
+            ServerLevel level = player.serverLevel();
+            boolean free = SpaceTimeSkills.freeFold(player);
+            Vec3 direction = player.getLookAngle().normalize();
+            Vec3 behind = SpaceTimeSkills.behind(player, getMaximumDistance(context.abilityLevel()));
+            Vec3 destination = destination(player, context.abilityLevel());
             if (destination == null) return AbilityActivationResult.REJECTED;
 
             // Carry Blink is intentionally folded into the familiar Blink
@@ -476,6 +495,12 @@ public final class TimeManipulationAbility implements Ability {
                     && !TimeSlowService.hasActiveField(context.player());
         }
 
+        // Held for as long as it is paid for: pressing the key again lets time run on.
+        @Override
+        public boolean deactivateOnPress(AbilityUseContext context) {
+            return TimeSlowService.hasActiveField(context.player());
+        }
+
         @Override
         public boolean deactivate(AbilityUseContext context) {
             if (!TimeSlowService.hasActiveField(context.player())) {
@@ -491,7 +516,7 @@ public final class TimeManipulationAbility implements Ability {
             ServerPlayer player = context.player();
 
             TimeStopService.stop(player);
-            TimeSlowService.start(player, context.abilityLevel());
+            TimeSlowService.hold(player, context.abilityLevel());
             MasteryService.markPowerUse(
                     player,
                     context.abilityId()
@@ -523,15 +548,23 @@ public final class TimeManipulationAbility implements Ability {
             return TimeStopService.energyCostForLevel(powerLevel);
         }
 
+        // Held time is paid for by the second, so the recovery no longer grows with the level (the longer stops
+        // it once paid for are now bought with stamina): every level waits what Level 6 does.
         @Override
         public int cooldownTicks(int powerLevel) {
-            return TimeStopService.cooldownTicksForLevel(powerLevel);
+            return TimeStopService.cooldownTicksForLevel(3);
         }
 
         @Override
         public boolean canUse(AbilityUseContext context) {
             return !context.player().isPassenger()
                     && !TimeStopService.hasActiveField(context.player());
+        }
+
+        // Held for as long as it is paid for: pressing the key again lets time run on.
+        @Override
+        public boolean deactivateOnPress(AbilityUseContext context) {
+            return TimeStopService.hasActiveField(context.player());
         }
 
         @Override
@@ -551,7 +584,7 @@ public final class TimeManipulationAbility implements Ability {
             // Stopping time supersedes a current slow field, preventing two
             // overlapping effects from competing over entities and projectiles.
             TimeSlowService.stop(player);
-            TimeStopService.start(player, context.abilityLevel(), context.modifierHeld());
+            TimeStopService.hold(player, context.abilityLevel(), context.modifierHeld());
             MasteryService.markPowerUse(player, context.abilityId());
             return AbilityActivationResult.SUCCESS;
         }

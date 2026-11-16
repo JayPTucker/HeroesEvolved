@@ -375,7 +375,7 @@ public final class FlightService {
             return;
         }
 
-        if (PlayerEnergyService.tryConsume(player, energyDrain)) {
+        if (PlayerEnergyService.drain(player, energyDrain)) {
             MasteryService.awardEnergySpent(player, energyDrain);
         }
     }

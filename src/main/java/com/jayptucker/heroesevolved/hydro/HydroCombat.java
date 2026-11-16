@@ -120,7 +120,7 @@ public final class HydroCombat {
         Strike move = next(player);
         boolean loaded = now < fighter.loadedUntil && move != Strike.WHEEL;
         int cost = loaded ? 0 : move == Strike.LASH || move == Strike.BACKHAND
-                ? COMMON.hydroStrikeEnergyCost.get() : COMMON.hydroFlourishEnergyCost.get();
+                ? com.jayptucker.heroesevolved.ability.PowerBalance.styleEnergy("hydrokinesis", "strike", COMMON.hydroStrikeEnergyCost.get()) : com.jayptucker.heroesevolved.ability.PowerBalance.styleEnergy("hydrokinesis", "finisher", COMMON.hydroFlourishEnergyCost.get());
         if (cost > 0) {
             if (!PlayerEnergyService.tryConsume(player, cost)) {
                 player.displayClientMessage(Component.translatable("hydro.heroesevolved.too_tired"), true);
@@ -264,7 +264,7 @@ public final class HydroCombat {
         if (now < fighter.dodgeReady) return false;
         int level = Math.max(1, PlayerProgressionService.getLevel(player));
         boolean vault = dodge == Dodge.BACK && level >= DAGGER_LEVEL;
-        int cost = COMMON.hydroDodgeEnergyCost.get() + (vault ? 3 : 0);
+        int cost = com.jayptucker.heroesevolved.ability.PowerBalance.styleEnergy("hydrokinesis", vault ? "back_dodge" : "dodge", COMMON.hydroDodgeEnergyCost.get() + (vault ? 3 : 0));
         if (cost > 0) {
             if (!PlayerEnergyService.tryConsume(player, cost)) {
                 player.displayClientMessage(Component.translatable("hydro.heroesevolved.too_tired"), true);
@@ -298,7 +298,7 @@ public final class HydroCombat {
         }
         StyleMotion.evade(player, EVADE_TICKS);
         StyleMotion.cushion(player, CUSHION_TICKS);
-        fighter.dodgeReady = now + COMMON.hydroDodgeCooldownTicks.get();
+        fighter.dodgeReady = now + com.jayptucker.heroesevolved.ability.PowerBalance.styleCooldown("hydrokinesis", "dodge", COMMON.hydroDodgeCooldownTicks.get());
         ArmPosePayload.show(player, vault ? ArmPose.WATER_VAULT : ArmPose.WATER_FLOW, vault ? HydroGeometry.VAULT_FLIP + 2 : 10);
         HydroService.sound(player, SoundEvents.PLAYER_SPLASH_HIGH_SPEED, .7F, vault ? .8F : 1.3F);
         return true;

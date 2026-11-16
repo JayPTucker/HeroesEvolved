@@ -124,7 +124,7 @@ public final class PyroCombat {
         Strike move = next(player);
         boolean loaded = now < fighter.loadedUntil && move != Strike.SWEEP;
         int cost = loaded ? 0 : move == Strike.JAB || move == Strike.CROSS
-                ? COMMON.pyroStrikeEnergyCost.get() : COMMON.pyroKickEnergyCost.get();
+                ? com.jayptucker.heroesevolved.ability.PowerBalance.styleEnergy("pyrokinesis", "strike", COMMON.pyroStrikeEnergyCost.get()) : com.jayptucker.heroesevolved.ability.PowerBalance.styleEnergy("pyrokinesis", "finisher", COMMON.pyroKickEnergyCost.get());
         if (cost > 0) {
             if (!PlayerEnergyService.tryConsume(player, cost)) {
                 player.displayClientMessage(Component.translatable("pyro.heroesevolved.too_tired"), true);
@@ -264,7 +264,7 @@ public final class PyroCombat {
         if (now < fighter.dodgeReady) return false;
         int level = Math.max(1, PlayerProgressionService.getLevel(player));
         boolean flip = dodge == Dodge.BACK && level >= KICK_LEVEL;
-        int cost = COMMON.pyroDodgeEnergyCost.get() + (flip ? 3 : 0);
+        int cost = com.jayptucker.heroesevolved.ability.PowerBalance.styleEnergy("pyrokinesis", flip ? "back_dodge" : "dodge", COMMON.pyroDodgeEnergyCost.get() + (flip ? 3 : 0));
         if (cost > 0) {
             if (!PlayerEnergyService.tryConsume(player, cost)) {
                 player.displayClientMessage(Component.translatable("pyro.heroesevolved.too_tired"), true);
@@ -286,7 +286,7 @@ public final class PyroCombat {
                 flip ? PyroGeometry.FLIP_SPIN : PyroGeometry.STEP_TICKS + 2, flip, flying);
         StyleMotion.evade(player, EVADE_TICKS);
         StyleMotion.cushion(player, CUSHION_TICKS);
-        fighter.dodgeReady = now + COMMON.pyroDodgeCooldownTicks.get();
+        fighter.dodgeReady = now + com.jayptucker.heroesevolved.ability.PowerBalance.styleCooldown("pyrokinesis", "dodge", COMMON.pyroDodgeCooldownTicks.get());
 
         boolean blue = PyroService.isBlue(player);
         Vec3 from = player.position();

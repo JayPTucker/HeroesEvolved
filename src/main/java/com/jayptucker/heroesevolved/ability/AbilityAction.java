@@ -45,7 +45,15 @@ public interface AbilityAction {
         return energyCost(context.abilityLevel());
     }
 
-    default int cooldownTicks(int powerLevel) {
+    /**
+     * Stamina on top of the balanced cost that depends on what this use will do (Fold Space's distance). It is
+     * already in final stamina: the balance table doesn't scale it again, but the skill and rank discounts do.
+     */
+    default int travelCost(AbilityUseContext context) {
+        return 0;
+    }
+
+        default int cooldownTicks(int powerLevel) {
         return definition().cooldownTicksForLevel(powerLevel);
     }
 

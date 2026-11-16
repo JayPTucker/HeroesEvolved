@@ -162,7 +162,36 @@ public final class TimeStopService {
 
     public static void start(ServerPlayer player, int powerLevel) { start(player, powerLevel, false); }
 
+    /** The id of Still World's stamina drain in {@link com.jayptucker.heroesevolved.energy.StaminaDrain}. */
+    public static final String DRAIN = "time_stop";
+    /** A held Still World has no clock of its own; this only guards against a field that is never paid for. */
+    private static final int HELD_TICKS = 20 * 60 * 10;
+
+    /**
+     * Still World as the key starts it: time stays stopped for as long as the traveller pays for it, until the key is
+     * pressed again or the stamina runs out. It drains {@link #drainPerSecond} and holds stamina recovery while it
+     * lasts. {@link #start} keeps the old fixed-length stop for scenes and tests.
+     */
+    public static void hold(ServerPlayer player, int powerLevel, boolean carryCompanion) {
+        start(player, powerLevel, carryCompanion, HELD_TICKS, true);
+        com.jayptucker.heroesevolved.energy.StaminaDrain.start(player, DRAIN, drainPerSecond(powerLevel), true, () -> {
+            if (!hasActiveField(player)) return;
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable("time.heroesevolved.stopped_out"), true);
+            stop(player);
+        });
+    }
+
+    /** Stamina a second to hold time still: 12 at Level 6, 10 at Level 10, 8 at Level 15 (the table's {@code drain}). */
+    public static double drainPerSecond(int powerLevel) {
+        double base = com.jayptucker.heroesevolved.ability.PowerBalance.drain(DRAIN, 12);
+        return base * switch (Math.clamp(powerLevel, 3, 5)) { case 3 -> 1.0; case 4 -> 5.0 / 6.0; default -> 2.0 / 3.0; };
+    }
+
     public static void start(ServerPlayer player, int powerLevel, boolean carryCompanion) {
+        start(player, powerLevel, carryCompanion, durationSecondsForLevel(powerLevel) * 20, false);
+    }
+
+    private static void start(ServerPlayer player, int powerLevel, boolean carryCompanion, int ticks, boolean held) {
         ServerLevel level = player.serverLevel();
         // Everyone else sees the traveller frozen where they stood, like the rest of the world.
         TimeVeil.begin(player, TimeVeil.Style.TIME, TimeVeil.STOP);
@@ -186,7 +215,7 @@ public final class TimeStopService {
                         player.getUUID(),
                         level.dimension(),
                         player.position(),
-                        durationSecondsForLevel(powerLevel) * 20, companion
+                        ticks, companion, held
                 )
         );
         SpaceTimeSkills.stillWorldStarted(player);
@@ -204,10 +233,11 @@ public final class TimeStopService {
                 com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind.TEMPORAL_FIELD, center, center.add(0, 1, 0),
                 HeroesEvolvedConfig.COMMON.timeStopRadius.get());
         ACTIVE_FIELDS.put(player.getUUID(), new TimeStopField(player.getUUID(), player.serverLevel().dimension(), center,
-                ticks, null));
+                ticks, null, false));
     }
 
     public static void stop(ServerPlayer player) {
+        com.jayptucker.heroesevolved.energy.StaminaDrain.stop(player, DRAIN);
         TimeStopField field = ACTIVE_FIELDS.remove(player.getUUID());
 
         if (field != null) {
@@ -242,9 +272,18 @@ public final class TimeStopService {
                     playTemporalCue(level, field.center(), owner);
                 }
                 releaseImpacts(server, field.ownerId());
-                if (owner != null) TimeVeil.end(owner, TimeVeil.STOP);
+                if (owner != null) {
+                    TimeVeil.end(owner, TimeVeil.STOP);
+                    com.jayptucker.heroesevolved.energy.StaminaDrain.stop(owner, DRAIN);
+                }
             } else if (level != null && level.getGameTime() % 10 == 0) {
-                owner.displayClientMessage(net.minecraft.network.chat.Component.translatable("time.heroesevolved.stopped", (field.remainingTicks + 19) / 20), true);
+                if (field.held) {
+                    // Held: what's left is however long the stamina lasts.
+                    double rate = com.jayptucker.heroesevolved.energy.StaminaDrain.rate(owner);
+                    int seconds = rate <= 0 ? 0 : (int) (com.jayptucker.heroesevolved.energy.PlayerEnergyService.getStamina(owner) / rate);
+                    owner.displayClientMessage(net.minecraft.network.chat.Component.translatable("time.heroesevolved.stopped_held",
+                            String.format("%.0f", rate), seconds), true);
+                } else owner.displayClientMessage(net.minecraft.network.chat.Component.translatable("time.heroesevolved.stopped", (field.remainingTicks + 19) / 20), true);
                 // The stopped dome stays visible while it lasts.
                 if (TimeVeil.serverWide()) TimeVeil.showToSeers(owner, com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind.TIME_STOP_PULSE,
                         field.center(), field.center().add(0, 1, 0), HeroesEvolvedConfig.COMMON.timeStopRadius.get());
@@ -389,18 +428,21 @@ public final class TimeStopService {
         private final Vec3 center;
         private int remainingTicks;
         private final UUID companion;
+        /** Started from the key: lasts while stamina is paid. */
+        private final boolean held;
 
         private TimeStopField(
                 UUID ownerId,
                 ResourceKey<Level> dimension,
                 Vec3 center,
-                int remainingTicks, UUID companion
+                int remainingTicks, UUID companion, boolean held
         ) {
             this.ownerId = ownerId;
             this.dimension = dimension;
             this.center = center;
             this.remainingTicks = remainingTicks;
             this.companion = companion;
+            this.held = held;
         }
 
         private UUID ownerId() {

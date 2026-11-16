@@ -126,5 +126,6 @@ public record PlayerPowerSyncPayload(
             IPayloadContext context
     ) {
         ClientPowerState.update(payload);
+        ClientStamina.correct(payload.energy(), payload.maximumEnergy());
     }
 }

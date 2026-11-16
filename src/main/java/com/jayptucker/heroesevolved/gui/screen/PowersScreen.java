@@ -98,7 +98,10 @@ public final class PowersScreen extends HeroScreen {
 
     /** One castable ability, as the Loadout page shows it. */
     private record Ability(String actionKey, Component name, Component description, ItemStack icon, String role, String kind,
-                           boolean unlocked, int unlockLevel, int energy, int cooldown, String rank) {}
+                           boolean unlocked, int unlockLevel, int energy, int cooldown, String rank, String id) {
+        /** "18 stamina", "20 + 12/s stamina", "free". */
+        String stamina() { return com.jayptucker.heroesevolved.ability.PowerBalance.describe(id, energy); }
+    }
 
     private static boolean awake() { AbilitySnapshot p = power(); return p != null && p.unlocked(); }
 
@@ -125,7 +128,7 @@ public final class PowersScreen extends HeroScreen {
                     roleOf("", description.getString()), "Core ability", awake && power.level() >= action.definition().unlockLevel(),
                     PowerLevels.levelForTier(action.definition().unlockLevel()),
                     entry != null ? entry.energy() : action.energyCost(Math.max(1, power.level())),
-                    entry != null ? entry.cooldownTicks() : action.cooldownTicks(Math.max(1, power.level())), entry == null ? "" : rank(entry)));
+                    entry != null ? entry.cooldownTicks() : action.cooldownTicks(Math.max(1, power.level())), entry == null ? "" : rank(entry), id));
         }
         Set<String> learned = learned();
         List<SkillCatalog.Node> nodes = new ArrayList<>(SkillCatalog.styles(path));
@@ -136,7 +139,7 @@ public final class PowersScreen extends HeroScreen {
             list.add(new Ability(node.id(), Component.literal(node.name()), Component.literal(node.description()), PowerIcons.node(node),
                     roleOf(node.role(), node.description()), node.style() ? "Class ability" : node.signature() ? "Signature skill" : "Learned skill",
                     awake, PowerLevels.levelForTier(node.level()), entry != null ? entry.energy() : node.energy(),
-                    entry != null ? entry.cooldownTicks() : node.cooldown(), entry == null ? "" : rank(entry)));
+                    entry != null ? entry.cooldownTicks() : node.cooldown(), entry == null ? "" : rank(entry), node.id()));
         }
         return list;
     }
@@ -213,7 +216,7 @@ public final class PowersScreen extends HeroScreen {
             int nameRoom = listW - 25 - keyW - 8;
             if (fitted(g, a.name.getString(), textX, y + 3, nameRoom, a.unlocked ? TEXT : DIM, false) && over) hover = a.name;
             String facts = !a.unlocked ? "Unlocks at Level " + a.unlockLevel
-                    : (a.energy <= 0 ? "free" : a.energy + " stamina") + " · " + seconds(a.cooldown);
+                    : a.stamina() + " · " + seconds(a.cooldown);
             int pillW = font.width(roleLabel(a.role)) + 6;
             g.drawString(font, ellipsis(facts, nameRoom - pillW - 4), textX, y + 12, MUTED, false);
             pill(g, x + listW - keyW - 6 - pillW, y + 11, roleLabel(a.role), roleColor(a.role));
@@ -239,7 +242,8 @@ public final class PowersScreen extends HeroScreen {
             fitted(g, selected.name.getString(), rx + 26, top + 6, rw - 30, TEXT, true);
             int px = rx + 26 + pill(g, rx + 26, top + 16, roleLabel(selected.role), roleColor(selected.role)) + 4;
             g.drawString(font, ellipsis(selected.kind, rx + rw - px - 4), px, top + 17, MUTED, false);
-            String facts = (selected.energy <= 0 ? "Free" : selected.energy + " stamina") + "  ·  " + seconds(selected.cooldown) + " cooldown"
+            String stamina = selected.stamina();
+            String facts = (stamina.equals("free") ? "Free" : stamina) + "  ·  " + seconds(selected.cooldown) + " cooldown"
                     + (selected.rank.isEmpty() ? "" : "  ·  " + selected.rank);
             g.drawString(font, ellipsis(facts, rw - 12), rx + 6, top + 30, GOLD, false);
             int lines = Math.max(1, (detailBottom - (top + 44) - 12) / 10);

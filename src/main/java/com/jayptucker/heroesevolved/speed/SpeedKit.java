@@ -304,7 +304,7 @@ public final class SpeedKit {
             if (built >= TORNADO_STAND) { CYCLONES.remove(entry.getKey()); release(c, now); continue; }
             if (built >= 0 && built < TORNADO_ANCHOR) {
                 // The key is never trusted to come back up, and holding the wind up costs stamina until it is anchored.
-                if (built > 0 && built % 20 == 0 && !PlayerEnergyService.tryConsume(p, TORNADO_ENERGY)) {
+                if (built > 0 && built % 20 == 0 && !PlayerEnergyService.drain(p, TORNADO_ENERGY)) {
                     CYCLONES.remove(entry.getKey()); release(c, now); continue;
                 }
             }
@@ -338,7 +338,8 @@ public final class SpeedKit {
             double lift = Math.min(0.12, 0.04 + age * 0.0015);
             push(living, around.scale(0.6).add(out.scale(pull)).add(0, living.getY() - c.center.y < 3.5 ? lift : 0, 0));
             living.fallDistance = 0;
-            if (age % 10 == 0) SpeedService.hit(p, living, (2 + c.tier * 0.5F) * (living instanceof ServerPlayer ? 0.6F : 1));
+            // Balanced to its stamina (tools/balance.py): 1.2 + 0.3 a tier every half second, about 12 a target at Level 6.
+            if (age % 10 == 0) SpeedService.hit(p, living, (1.2F + c.tier * 0.3F) * (living instanceof ServerPlayer ? 0.6F : 1));
         }
     }
 

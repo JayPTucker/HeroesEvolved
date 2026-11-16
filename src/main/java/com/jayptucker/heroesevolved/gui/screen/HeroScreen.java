@@ -165,11 +165,17 @@ public abstract class HeroScreen extends Screen {
                     : "Mastery " + loadout.masteryInto() + " / " + loadout.masteryNeeded() + " to Level " + (loadout.level() + 1);
             g.drawString(font, font.plainSubstrByWidth(mastery, half), x, y + 6, MUTED, false);
         }
-        float fraction = sync.maximumEnergy() <= 0 ? 0 : Mth.clamp(sync.energy() / (float) sync.maximumEnergy(), 0, 1);
+        boolean live = com.jayptucker.heroesevolved.network.ClientStamina.known();
+        float now = live ? com.jayptucker.heroesevolved.network.ClientStamina.stamina() : sync.energy();
+        int max = live ? (int) com.jayptucker.heroesevolved.network.ClientStamina.maximum() : sync.maximumEnergy();
+        float fraction = max <= 0 ? 0 : Mth.clamp(now / max, 0, 1);
         int sx = x + w - half;
         g.fill(sx, y, sx + half, y + 3, 0xFF1C2A33);
         g.fill(sx, y, sx + (int) (half * fraction), y + 3, ENERGY);
-        String stamina = "Stamina " + sync.energy() + " / " + sync.maximumEnergy() + "  (+" + sync.energyRegenerationPerSecond() + "/s)";
+        // Base recovery from the full sync; the live packet adds the calm bonus.
+        String rate = live && com.jayptucker.heroesevolved.network.ClientStamina.regen() > 0
+                ? String.format("%.1f", com.jayptucker.heroesevolved.network.ClientStamina.regen()) : String.valueOf(sync.energyRegenerationPerSecond());
+        String stamina = "Stamina " + (int) now + " / " + max + "  (+" + rate + "/s)";
         g.drawString(font, font.plainSubstrByWidth(stamina, half), sx + half - Math.min(half, font.width(stamina)), y + 6, ENERGY, false);
     }
 

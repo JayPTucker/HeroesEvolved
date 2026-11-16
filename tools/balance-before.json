@@ -1,0 +1,502 @@
+{
+ "matter_assembly_barricade": {
+  "energy": 12,
+  "cooldown": 60,
+  "unlock": 1
+ },
+ "matter_assembly_shard_lance": {
+  "energy": 14,
+  "cooldown": 30,
+  "unlock": 1
+ },
+ "matter_assembly_causeway": {
+  "energy": 22,
+  "cooldown": 160,
+  "unlock": 2
+ },
+ "matter_assembly_cage": {
+  "energy": 30,
+  "cooldown": 220,
+  "unlock": 3
+ },
+ "matter_assembly_cathedral": {
+  "energy": 70,
+  "cooldown": 1000,
+  "unlock": 5
+ },
+ "mimicry_echo_1": {
+  "energy": 0,
+  "cooldown": 20,
+  "unlock": 1
+ },
+ "mimicry_echo_2": {
+  "energy": 0,
+  "cooldown": 20,
+  "unlock": 2
+ },
+ "mimicry_echo_3": {
+  "energy": 0,
+  "cooldown": 20,
+  "unlock": 3
+ },
+ "mimicry_echo_4": {
+  "energy": 0,
+  "cooldown": 20,
+  "unlock": 4
+ },
+ "mimicry_echo_5": {
+  "energy": 0,
+  "cooldown": 20,
+  "unlock": 5
+ },
+ "sonic_cry": {
+  "energy": 18,
+  "cooldown": 25,
+  "unlock": 1
+ },
+ "sonic_note": {
+  "energy": 16,
+  "cooldown": 96,
+  "unlock": 2
+ },
+ "sonic_wall": {
+  "energy": 23,
+  "cooldown": 225,
+  "unlock": 3
+ },
+ "sonic_vault": {
+  "energy": 25,
+  "cooldown": 80,
+  "unlock": 4
+ },
+ "sonic_crescendo": {
+  "energy": 48,
+  "cooldown": 960,
+  "unlock": 5
+ },
+ "electro_chain_lightning": {
+  "energy": 18,
+  "cooldown": 30,
+  "unlock": 1
+ },
+ "electro_ball_lightning": {
+  "energy": 25,
+  "cooldown": 60,
+  "unlock": 2
+ },
+ "electro_thunderstrike": {
+  "energy": 39,
+  "cooldown": 160,
+  "unlock": 3
+ },
+ "electro_ride_the_lightning": {
+  "energy": 30,
+  "cooldown": 100,
+  "unlock": 4
+ },
+ "electro_storm_surge": {
+  "energy": 94,
+  "cooldown": 1440,
+  "unlock": 5
+ },
+ "invisibility_fade": {
+  "energy": 6,
+  "cooldown": 10,
+  "unlock": 1
+ },
+ "invisibility_silent_step": {
+  "energy": 14,
+  "cooldown": 80,
+  "unlock": 1
+ },
+ "invisibility_unseen_strike": {
+  "energy": 16,
+  "cooldown": 80,
+  "unlock": 2
+ },
+ "invisibility_shroud": {
+  "energy": 25,
+  "cooldown": 200,
+  "unlock": 3
+ },
+ "invisibility_ghost_protocol": {
+  "energy": 90,
+  "cooldown": 1800,
+  "unlock": 5
+ },
+ "telekinesis_push": {
+  "energy": 12,
+  "cooldown": 30,
+  "unlock": 1
+ },
+ "telekinesis_grip": {
+  "energy": 30,
+  "cooldown": 200,
+  "unlock": 2
+ },
+ "telekinesis_bullet_stop": {
+  "energy": 32,
+  "cooldown": 420,
+  "unlock": 3
+ },
+ "telekinesis_disarm": {
+  "energy": 20,
+  "cooldown": 160,
+  "unlock": 4
+ },
+ "telekinesis_storm": {
+  "energy": 94,
+  "cooldown": 1440,
+  "unlock": 5
+ },
+ "pyro_flare": {
+  "energy": 14,
+  "cooldown": 25,
+  "unlock": 1
+ },
+ "pyro_flame_palm": {
+  "energy": 12,
+  "cooldown": 80,
+  "unlock": 1
+ },
+ "pyro_ring_of_fire": {
+  "energy": 35,
+  "cooldown": 300,
+  "unlock": 2
+ },
+ "pyro_backdraft": {
+  "energy": 25,
+  "cooldown": 100,
+  "unlock": 3
+ },
+ "pyro_inferno": {
+  "energy": 76,
+  "cooldown": 960,
+  "unlock": 5
+ },
+ "flight_toggle": {
+  "energy": 0,
+  "cooldown": 0,
+  "unlock": 1
+ },
+ "flight_launch": {
+  "energy": 18,
+  "cooldown": 60,
+  "unlock": 1
+ },
+ "flight_dive_bomb": {
+  "energy": 28,
+  "cooldown": 120,
+  "unlock": 3
+ },
+ "flight_skyward_grab": {
+  "energy": 30,
+  "cooldown": 100,
+  "unlock": 4
+ },
+ "flight_cyclone": {
+  "energy": 47,
+  "cooldown": 450,
+  "unlock": 5
+ },
+ "radiation_radiant_touch": {
+  "energy": 15,
+  "cooldown": 20,
+  "unlock": 1
+ },
+ "radiation_pulse": {
+  "energy": 26,
+  "cooldown": 128,
+  "unlock": 2
+ },
+ "radiation_emp": {
+  "energy": 24,
+  "cooldown": 280,
+  "unlock": 3
+ },
+ "radiation_meltdown_beam": {
+  "energy": 25,
+  "cooldown": 120,
+  "unlock": 4
+ },
+ "radiation_exploding_man": {
+  "energy": 140,
+  "cooldown": 9000,
+  "unlock": 5
+ },
+ "technopathy_handshake": {
+  "energy": 8,
+  "cooldown": 20,
+  "unlock": 1
+ },
+ "technopathy_remote_hand": {
+  "energy": 5,
+  "cooldown": 12,
+  "unlock": 1
+ },
+ "technopathy_tripwire": {
+  "energy": 20,
+  "cooldown": 70,
+  "unlock": 2
+ },
+ "technopathy_intercept": {
+  "energy": 30,
+  "cooldown": 240,
+  "unlock": 3
+ },
+ "technopathy_machine_city": {
+  "energy": 85,
+  "cooldown": 1200,
+  "unlock": 5
+ },
+ "regeneration_rapid_mending": {
+  "energy": 25,
+  "cooldown": 500,
+  "unlock": 1
+ },
+ "regeneration_blood_gift": {
+  "energy": 21,
+  "cooldown": 450,
+  "unlock": 2
+ },
+ "regeneration_indestructible": {
+  "energy": 40,
+  "cooldown": 1200,
+  "unlock": 3
+ },
+ "regeneration_healing_aura": {
+  "energy": 36,
+  "cooldown": 720,
+  "unlock": 4
+ },
+ "regeneration_second_life": {
+  "energy": 40,
+  "cooldown": 1800,
+  "unlock": 5
+ },
+ "hydro_water_whip": {
+  "energy": 10,
+  "cooldown": 14,
+  "unlock": 1
+ },
+ "hydro_crashing_wave": {
+  "energy": 26,
+  "cooldown": 120,
+  "unlock": 1
+ },
+ "hydro_octopus_form": {
+  "energy": 30,
+  "cooldown": 280,
+  "unlock": 2
+ },
+ "hydro_wave_rider": {
+  "energy": 22,
+  "cooldown": 160,
+  "unlock": 3
+ },
+ "hydro_maelstrom": {
+  "energy": 95,
+  "cooldown": 1500,
+  "unlock": 5
+ },
+ "shapeshift_morph": {
+  "energy": 0,
+  "cooldown": 20,
+  "unlock": 1
+ },
+ "shapeshift_instinct": {
+  "energy": 0,
+  "cooldown": 6,
+  "unlock": 2
+ },
+ "shapeshift_decoy": {
+  "energy": 16,
+  "cooldown": 200,
+  "unlock": 3
+ },
+ "shapeshift_reflection": {
+  "energy": 18,
+  "cooldown": 240,
+  "unlock": 4
+ },
+ "shapeshift_nightmare": {
+  "energy": 40,
+  "cooldown": 600,
+  "unlock": 5
+ },
+ "vibe_blast": {
+  "energy": 9,
+  "cooldown": 22,
+  "unlock": 1
+ },
+ "vibe_breach": {
+  "energy": 20,
+  "cooldown": 130,
+  "unlock": 2
+ },
+ "vibe_read": {
+  "energy": 12,
+  "cooldown": 100,
+  "unlock": 3
+ },
+ "vibe_breach_guard": {
+  "energy": 21,
+  "cooldown": 170,
+  "unlock": 4
+ },
+ "vibe_frequency_lock": {
+  "energy": 42,
+  "cooldown": 340,
+  "unlock": 5
+ },
+ "speed_accelerate": {
+  "energy": 0,
+  "cooldown": 0,
+  "unlock": 1
+ },
+ "speed_blitz": {
+  "energy": 14,
+  "cooldown": 40,
+  "unlock": 1
+ },
+ "speed_snatch": {
+  "energy": 20,
+  "cooldown": 200,
+  "unlock": 2
+ },
+ "speed_cyclone": {
+  "energy": 30,
+  "cooldown": 240,
+  "unlock": 4
+ },
+ "speed_lightspeed": {
+  "energy": 50,
+  "cooldown": 900,
+  "unlock": 5
+ },
+ "cryo_frost_bolt": {
+  "energy": 14,
+  "cooldown": 20,
+  "unlock": 1
+ },
+ "cryo_flash_freeze": {
+  "energy": 35,
+  "cooldown": 300,
+  "unlock": 2
+ },
+ "cryo_ice_wall": {
+  "energy": 20,
+  "cooldown": 80,
+  "unlock": 3
+ },
+ "cryo_glacial_spikes": {
+  "energy": 30,
+  "cooldown": 200,
+  "unlock": 4
+ },
+ "cryo_blizzard": {
+  "energy": 88,
+  "cooldown": 1440,
+  "unlock": 5
+ },
+ "telepathy_read_mind": {
+  "energy": 7,
+  "cooldown": 14,
+  "unlock": 1
+ },
+ "telepathy_suggestion": {
+  "energy": 25,
+  "cooldown": 240,
+  "unlock": 2
+ },
+ "telepathy_mind_link": {
+  "energy": 27,
+  "cooldown": 12,
+  "unlock": 3
+ },
+ "telepathy_puppet": {
+  "energy": 50,
+  "cooldown": 1035,
+  "unlock": 4
+ },
+ "telepathy_nightmare": {
+  "energy": 72,
+  "cooldown": 1260,
+  "unlock": 5
+ },
+ "quake_shockwave": {
+  "energy": 15,
+  "cooldown": 30,
+  "unlock": 1
+ },
+ "quake_resonate": {
+  "energy": 18,
+  "cooldown": 160,
+  "unlock": 2
+ },
+ "quake_fault_line": {
+  "energy": 30,
+  "cooldown": 96,
+  "unlock": 3
+ },
+ "quake_blast": {
+  "energy": 10,
+  "cooldown": 0,
+  "unlock": 4
+ },
+ "quake_earthquake": {
+  "energy": 102,
+  "cooldown": 1560,
+  "unlock": 5
+ },
+ "time_blink": {
+  "energy": 25,
+  "cooldown": 120,
+  "unlock": 1
+ },
+ "time_slow": {
+  "energy": 56,
+  "cooldown": 540,
+  "unlock": 1
+ },
+ "time_stop": {
+  "energy": 60,
+  "cooldown": 630,
+  "unlock": 3
+ },
+ "time_rewind": {
+  "energy": 130,
+  "cooldown": 4800,
+  "unlock": 4
+ },
+ "temporal_snapshot": {
+  "energy": 40,
+  "cooldown": 600,
+  "unlock": 5
+ },
+ "phasing_shift": {
+  "energy": 4,
+  "cooldown": 6,
+  "unlock": 1
+ },
+ "phasing_reach": {
+  "energy": 16,
+  "cooldown": 60,
+  "unlock": 1
+ },
+ "phasing_embed": {
+  "energy": 24,
+  "cooldown": 200,
+  "unlock": 2
+ },
+ "phasing_sink": {
+  "energy": 20,
+  "cooldown": 40,
+  "unlock": 3
+ },
+ "phasing_hollow": {
+  "energy": 60,
+  "cooldown": 900,
+  "unlock": 5
+ }
+}

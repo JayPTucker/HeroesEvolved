@@ -11,10 +11,10 @@ These are the default keys; rebinding and the inventory skill tree still work.
 
 | Level | Key | Ability | Use |
 | --- | --- | --- | --- |
-| 1 | G | Fold Space | Blink to a visible surface or into open air. Cancels falling momentum. From level 2, Shift carries one nearby living companion if there is room. Players must be teammates or crouching. |
-| 1 | H | Between Seconds | Slows everything on the server: creatures and shots, and other players' movement and attack recharge. Every screen takes a faint amber cast. Everyone else sees you frozen where you started (see [Faster than time](#faster-than-time)). Shift + H ends it. |
-| 3 | Z | Still World | Stops everything on the server but you (and one companion): creatures, shots and other players. Every screen turns drained and cold, and everyone else sees you frozen where you started (see [Faster than time](#faster-than-time)). Your attacks accumulate and land when time resumes. Shift while starting includes one touching companion; Shift + Z while active resumes time for free. |
-| 4 | X | Rewrite the Moment | Restore the recorded timeline from fifteen seconds ago, including changed blocks, containers, and recorded entities, everywhere you have been in those seconds. Anyone who died in reach lives again. Everyone it reaches is carried back through their own fifteen seconds (see [Going back](#going-back)), even across a portal, and lands where they were. You recover lost health. It costs **130 stamina** (hold Shift to overexert when you're short) and recovers in **4 minutes at Level 4, 2½ minutes at Level 5**. While it's ready, a faint ghost of you, ringed in violet and visible only to you, stands where it would take you. |
+| 1 | G | Fold Space | Blink to a visible surface or into open air. Cancels falling momentum. It costs **4 stamina plus 0.3 for every block folded** (9 for a 16-block fold, 49 for the full 150), so a short hop is cheap and a long jump is a commitment. From Level 3, Shift carries one nearby living companion if there is room. Players must be teammates or crouching. |
+| 1 | H | Between Seconds | Slows everything on the server: creatures and shots, and other players' movement and attack recharge. Every screen takes a faint amber cast. Everyone else sees you frozen where you started (see [Faster than time](#faster-than-time)). It lasts **as long as you pay for it**: 10 stamina to start, then 5 a second (4 at Level 15), and your stamina doesn't recover meanwhile. Press H again to end it. |
+| 3 | Z | Still World | Stops everything on the server but you (and one companion): creatures, shots and other players. Every screen turns drained and cold, and everyone else sees you frozen where you started (see [Faster than time](#faster-than-time)). Your attacks accumulate and land when time resumes. It lasts **until you press Z again or your stamina runs out**: 20 stamina to start (25 at Level 10, 30 at Level 15), then 12 a second at Level 6, 10 at Level 10 and 8 at Level 15, with no recovery while the world is still. A full bar holds time for about 9 seconds at Level 6, 13 at Level 10, 19 at Level 15 and 22 at Level 20. Shift while starting includes one touching companion; pressing Z again resumes time for free. |
+| 4 | X | Rewrite the Moment | Restore the recorded timeline from fifteen seconds ago, including changed blocks, containers, and recorded entities, everywhere you have been in those seconds. Anyone who died in reach lives again. Everyone it reaches is carried back through their own fifteen seconds (see [Going back](#going-back)), even across a portal, and lands where they were. You recover lost health. It costs **120 stamina** (hold Shift to overexert when you're short) and recovers in **4 minutes at Level 10, 2½ minutes at Level 15**. While it's ready, a faint ghost of you, ringed in violet and visible only to you, stands where it would take you. |
 | 5 | V | Walk the Past | Shift + V records an area; V visits the recorded past with nearby companions. V in the past returns without energy cost or an entry-cooldown delay. |
 
 While **Between Seconds** or **Still World** is active, aim at a projectile affected by your field and
@@ -76,12 +76,12 @@ From Level 4, Rewrite the Moment can undo your death. For **fifteen seconds afte
 - Everything you dropped when you died is un-made, as are the experience orbs. Drops sitting in a chunk
   that unloaded while you were away are refused when the chunk loads again, so nothing is duplicated.
   Nearby blocks, containers and creatures rewind as usual.
-- It needs Rewind off cooldown when you die, and costs what the key does: 130 stamina and the full
+- It needs Rewind off cooldown when you die, and costs what the key does: 120 stamina and the full
   cooldown. A body just back from the dead rarely has that much stamina, so it overexerts (Weakness,
   Nausea and some damage) instead of failing. It is not offered during
   the time-travel story missions, and in hardcore it returns you to Survival.
 
-Configured costs and cooldowns are adjusted by the shared balance multipliers; the HUD shows final values. Still World now lasts at most 6/8/10 seconds by level and stores at most 12 damage per player or 40 per mob. Ranges and level unlocks retain their configuration. Slow and Stop supersede one another. Entity freezing does not freeze redstone, scheduled block ticks, weather, or the entire multiplayer world.
+Costs and cooldowns come from the stamina table ([Stamina and balance](stamina-balance.md)); the HUD shows final values. Still World stores at most 12 damage per player or 40 per mob, however long it is held. Ranges and level unlocks retain their configuration. Slow and Stop supersede one another. Entity freezing does not freeze redstone, scheduled block ticks, weather, or the entire multiplayer world.
 
 ## Optional skills
 
@@ -98,7 +98,7 @@ feels them all at once.
 | Skill | Kind | What it does |
 | --- | --- | --- |
 | **Still Point** | Passive | While your Still World holds, Fold Space costs nothing and waits on no cooldown, three times. Hiro teleporting around a frozen room. |
-| **Selective Stasis** | Active (22 stamina, 8 s) | Stop one creature you can see within 20 blocks for 4 to 5.5 seconds. Your blows on it wait and land together when time resumes. **Press again** to snap your fingers and let it go early (free). One creature at a time. |
+| **Selective Stasis** | Active (21 stamina, 8 s) | Stop one creature you can see within 20 blocks for 4 to 5.5 seconds. Your blows on it wait and land together when time resumes. **Press again** to snap your fingers and let it go early (free). One creature at a time. |
 | **Compound Interest** | Passive | Stored blows grow as they pile up: each adds a tenth to them all (up to 60% more), and a creature holds half again as much. |
 | **Stasis Seal** | Technique (24 stamina, 10 s) | Frame a point up to 24 blocks away and seal it in stopped time for eight seconds. Shots that fly in hang there; enemies that walk in stop for two seconds (once each), and your blows on them wait. **Press again** to throw everything inside where you look (free). A seal that runs out lets its shots go on as they were. |
 | **Held Volley** | Upgrade | Your own shots wait in the seal too, and it reaches five blocks from its centre instead of three. Fill it with arrows, then throw them all at once. |
@@ -109,9 +109,9 @@ feels them all at once.
 | Skill | Kind | What it does |
 | --- | --- | --- |
 | **Behind You** | Passive | Fold Space aimed at an enemy lands you just behind it, facing it (round its side if its back is to a wall). Your next hit on it within two seconds lands 50% harder, or twice as hard if it is held in stopped time. |
-| **Spatial Anchor** | Active (15 stamina, 3 s) | Shift + key plants a gold clock on safe ground. Press normally to return to it within 512 blocks in the same world, bringing up to three friends beside you (teammates, players crouching, your own pets), each in the same place beside you. The destination survives relogging and death, but must be loaded and clear. |
+| **Spatial Anchor** | Active (16 stamina, 3.25 s) | Shift + key plants a gold clock on safe ground. Press normally to return to it within 512 blocks in the same world, bringing up to three friends beside you (teammates, players crouching, your own pets), each in the same place beside you. The destination survives relogging and death, but must be loaded and clear. |
 | **Snap Shut** | Passive | The hole Fold Space leaves behind snaps shut: enemies within 3 blocks of where you stood are dragged into it, take 3 damage and are slowed. The **Singularity** hangs from this node. |
-| **Moment's Edge** | Technique (28 stamina, 12 s) | Time stops for a heartbeat. You fold from enemy to enemy, up to three within 12 blocks (nearest first, then nearest to that one), cutting each for 6 + level and landing behind the last. They feel every cut at once when time resumes. |
+| **Moment's Edge** | Technique (27 stamina, 12 s) | Time stops for a heartbeat. You fold from enemy to enemy, up to three within 12 blocks (nearest first, then nearest to that one), cutting each for 6 + level and landing behind the last. They feel every cut at once when time resumes. |
 | **Long Edge** | Upgrade | Moment's Edge reaches 20 blocks and five enemies. |
 | **Thousand Cuts** | Capstone | Moment's Edge cuts each enemy twice, and they stay stopped for two seconds after the last cut: every blow you add waits and lands with the rest. |
 
@@ -120,9 +120,9 @@ feels them all at once.
 | Skill | Kind | What it does |
 | --- | --- | --- |
 | **Foreknowledge** | Passive | When you Rewrite the Moment or take a Second Chance, you remember who hurt you in the time you undid. For ten seconds a small violet clock marks each of them, seen only by you, and your hits on them land 30% harder. |
-| **Second Chance** | Active (30 stamina, 20 s) | Turn your own clock back five seconds: where you stood, the health you lost and your fire. Inventories, blocks and everyone else stay as they are. Needs five seconds of history, and uses it up. |
+| **Second Chance** | Active (26 stamina, 20 s) | Turn your own clock back five seconds: where you stood, the health you lost and your fire. Inventories, blocks and everyone else stay as they are. Needs five seconds of history, and uses it up. |
 | **Shared Hour** | Passive | Second Chance takes friends within 6 blocks (teammates, or players crouching) back through their own five seconds too: where they stood, the health they lost and their fire. |
-| **Fast Forward** | Technique (20 stamina, 12 s) | Wind a creature's clock five seconds ahead (up to 20 blocks). An enemy suffers its next five seconds of burning, poison and wither at once, its effects run five seconds down, and it is left weary (Slowness II, Weakness); if you hold it in stopped time, its stored blows land now. A friend's harmful effects and fire run down instead, without hurting them, and the next five seconds of their Regeneration arrive at once. Aimed at nothing, crops, saplings and young animals within three blocks grow up. |
+| **Fast Forward** | Technique (21 stamina, 12 s) | Wind a creature's clock five seconds ahead (up to 20 blocks). An enemy suffers its next five seconds of burning, poison and wither at once, its effects run five seconds down, and it is left weary (Slowness II, Weakness); if you hold it in stopped time, its stored blows land now. A friend's harmful effects and fire run down instead, without hurting them, and the next five seconds of their Regeneration arrive at once. Aimed at nothing, crops, saplings and young animals within three blocks grow up. |
 | **Wider Era** | Upgrade | Fast Forward also reaches every creature within 4 blocks of the one you aim at, each as friend or foe, and grows plants five blocks round you. |
 | **Era's End** | Capstone | Fast Forward on an enemy brings back every blow you landed on it in the last five seconds, at half strength, all at once. |
 
@@ -138,7 +138,7 @@ feels them all at once.
 
 ### Signature: Singularity
 
-Wayfinder's signature ability hangs under **Accelerated Force Mastery**, after Spatial Anchor (Level 10, 3 points, 50 stamina, 35 s cooldown). Space folds to a point where you aim (up to 24 blocks, held clear of the surface).
+Wayfinder's signature ability hangs under **Accelerated Force Mastery**, after Spatial Anchor (Level 10, 3 points, 51 stamina, 35 s cooldown). Space folds to a point where you aim (up to 24 blocks, held clear of the surface).
 
 - **For five seconds** a black core with a photon ring and a turning accretion disk (hot gold inside, violet outside) hangs in the air. Every enemy within 10 blocks is dragged into a spiralling orbit, faster the closer it falls; anything within 1.6 blocks of the core takes 3 + half your level every half second and is slowed. Hostile arrows and fireballs bend into it and vanish. Loose items and experience drift in. Dust is torn off the ground below (cosmetic only: no block is ever touched).
 - **Then it collapses:** rings pinch to a point, a flash, and a shockwave throws everything within 8 blocks outward for 8 + level (less at the edge). What it swallowed is set at your feet.

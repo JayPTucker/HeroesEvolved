@@ -1,308 +1,1395 @@
 [
   {
-    "power": "quake",
-    "action": "quake_fault_line",
-    "energy": 0.85,
-    "cooldown": 0.8
-  },
-  {
-    "power": "quake",
-    "action": "quake_earthquake",
-    "energy": 0.85,
-    "cooldown": 0.65
-  },
-  {
-    "power": "flight",
-    "action": "flight_dive_bomb",
-    "energy": 0.8,
-    "cooldown": 0.75
-  },
-  {
-    "power": "flight",
-    "action": "flight_cyclone",
-    "energy": 0.85,
-    "cooldown": 0.75
-  },
-  {
-    "power": "cryokinesis",
-    "action": "cryo_ice_wall",
-    "energy": 0.8,
-    "cooldown": 0.8
-  },
-  {
-    "power": "cryokinesis",
-    "action": "cryo_blizzard",
-    "energy": 0.8,
-    "cooldown": 0.6
-  },
-  {
-    "power": "electrokinesis",
-    "action": "electro_chain_lightning",
-    "energy": 1,
-    "cooldown": 1.2
-  },
-  {
-    "power": "electrokinesis",
-    "action": "electro_thunderstrike",
-    "energy": 0.85,
-    "cooldown": 0.8
-  },
-  {
-    "power": "electrokinesis",
-    "action": "electro_storm_surge",
-    "energy": 0.85,
-    "cooldown": 0.6
-  },
-  {
-    "power": "telekinesis",
-    "action": "telekinesis_push",
-    "energy": 0.8,
-    "cooldown": 1
-  },
-  {
-    "power": "telekinesis",
-    "action": "telekinesis_bullet_stop",
-    "energy": 0.8,
-    "cooldown": 0.7
-  },
-  {
-    "power": "telekinesis",
-    "action": "telekinesis_storm",
-    "energy": 0.85,
-    "cooldown": 0.6
+    "power": "telepathy",
+    "action": "telepathy_read_mind",
+    "unlock": 1,
+    "energy": 8,
+    "cooldown": 15,
+    "base_energy": 10,
+    "base_cooldown": 20,
+    "role": "basic",
+    "note": "held read; builds Focus"
   },
   {
     "power": "telepathy",
-    "action": "telepathy_read_mind",
-    "energy": 0.7,
-    "cooldown": 0.7
+    "action": "telepathy_suggestion",
+    "unlock": 2,
+    "energy": 21,
+    "cooldown": 190,
+    "base_energy": 25,
+    "base_cooldown": 240,
+    "role": "heavy",
+    "note": "a 5 s command on one mind"
   },
   {
     "power": "telepathy",
     "action": "telepathy_mind_link",
-    "energy": 0.75,
-    "cooldown": 0.6
+    "unlock": 3,
+    "energy": 18,
+    "cooldown": 110,
+    "base_energy": 35,
+    "base_cooldown": 20,
+    "role": "skill",
+    "note": "links willing minds (no damage)"
   },
   {
     "power": "telepathy",
     "action": "telepathy_puppet",
-    "energy": 1,
-    "cooldown": 1.15
+    "unlock": 4,
+    "energy": 40,
+    "cooldown": 600,
+    "base_energy": 50,
+    "base_cooldown": 900,
+    "role": "ultimate",
+    "note": "about 10 s in control of a body"
   },
   {
     "power": "telepathy",
     "action": "telepathy_nightmare",
-    "energy": 0.8,
-    "cooldown": 0.7
+    "unlock": 5,
+    "energy": 63,
+    "cooldown": 940,
+    "base_energy": 90,
+    "base_cooldown": 1800,
+    "role": "ultimate",
+    "note": "5 s of fear on everyone linked"
   },
   {
-    "power": "regeneration",
-    "action": "regeneration_rapid_mending",
-    "energy": 1,
-    "cooldown": 1.25
-  },
-  {
-    "power": "regeneration",
-    "action": "regeneration_blood_gift",
-    "energy": 0.7,
-    "cooldown": 0.75
-  },
-  {
-    "power": "regeneration",
-    "action": "regeneration_healing_aura",
-    "energy": 0.8,
-    "cooldown": 0.6
-  },
-  {
-    "power": "time_manipulation",
-    "action": "time_slow",
-    "energy": 0.65,
-    "cooldown": 0.6
-  },
-  {
-    "power": "time_manipulation",
-    "action": "time_stop",
-    "energy": 0.6,
-    "cooldown": 0.35
-  },
-  {
-    "power": "time_manipulation",
-    "action": "time_rewind",
-    "energy": 1,
-    "cooldown": 1.0
-  },
-  {
-    "power": "radiation",
-    "action": "radiation_emp",
-    "energy": 0.8,
-    "cooldown": 0.7
-  },
-  {
-    "power": "radiation",
-    "action": "radiation_pulse",
-    "energy": 0.85,
-    "cooldown": 0.8
-  },
-  {
-    "power": "radiation",
-    "action": "radiation_exploding_man",
-    "energy": 1,
-    "cooldown": 0.75
-  },
-  {
-    "power": "sonic_resonance",
-    "action": "sonic_note",
-    "energy": 0.8,
-    "cooldown": 0.8
-  },
-  {
-    "power": "sonic_resonance",
-    "action": "sonic_crescendo",
-    "energy": 0.8,
-    "cooldown": 0.8
-  },
-  {
-    "power": "sonic_resonance",
-    "action": "sonic_wall",
-    "energy": 0.8,
-    "cooldown": 0.75
+    "power": "superspeed",
+    "action": "speed_accelerate",
+    "unlock": 1,
+    "energy": 0,
+    "cooldown": 0,
+    "base_energy": 0,
+    "base_cooldown": 0,
+    "role": "basic",
+    "note": "toggle; 3 a second while running (6 in Redline)"
   },
   {
     "power": "superspeed",
     "action": "speed_blitz",
-    "energy": 1,
-    "cooldown": 1
+    "unlock": 1,
+    "energy": 23,
+    "cooldown": 50,
+    "base_energy": 14,
+    "base_cooldown": 40,
+    "role": "quick",
+    "note": "four blows of 2.5 after a 22-block rush (a gap-closer: half its distance counts)"
+  },
+  {
+    "power": "superspeed",
+    "action": "speed_snatch",
+    "unlock": 2,
+    "energy": 16,
+    "cooldown": 95,
+    "base_energy": 20,
+    "base_cooldown": 200,
+    "role": "skill",
+    "note": "takes items, shots and a weapon"
+  },
+  {
+    "power": "superspeed",
+    "action": "speed_cyclone",
+    "unlock": 3,
+    "energy": 38,
+    "cooldown": 340,
+    "base_energy": 30,
+    "base_cooldown": 240,
+    "role": "heavy",
+    "note": "3 s of wind: 1.2 + 0.3/tier every half second, lift, no air"
   },
   {
     "power": "superspeed",
     "action": "speed_lightspeed",
-    "energy": 1,
-    "cooldown": 1
+    "unlock": 5,
+    "energy": 88,
+    "cooldown": 1320,
+    "base_energy": 50,
+    "base_cooldown": 900,
+    "role": "ultimate",
+    "note": "8 + tier + Momentum/5 to everything on a 48-block line"
   },
   {
-    "power": "pyrokinesis",
-    "action": "pyro_inferno",
-    "energy": 0.8,
-    "cooldown": 0.6
+    "power": "regeneration",
+    "action": "regeneration_rapid_mending",
+    "unlock": 1,
+    "energy": 16,
+    "cooldown": 300,
+    "base_energy": 25,
+    "base_cooldown": 400,
+    "role": "heavy",
+    "note": "spends Regrowth on an instant heal (Regrowth limits it)"
   },
   {
-    "power": "invisibility",
-    "action": "invisibility_ghost_protocol",
-    "energy": 1,
-    "cooldown": 1
+    "power": "regeneration",
+    "action": "regeneration_blood_gift",
+    "unlock": 2,
+    "energy": 16,
+    "cooldown": 95,
+    "base_energy": 30,
+    "base_cooldown": 600,
+    "role": "skill",
+    "note": "heals a friend; held, a stream"
   },
   {
-    "power": "phasing",
-    "action": "phasing_hollow",
-    "energy": 1,
-    "cooldown": 1
+    "power": "regeneration",
+    "action": "regeneration_indestructible",
+    "unlock": 3,
+    "energy": 32,
+    "cooldown": 280,
+    "base_energy": 40,
+    "base_cooldown": 1200,
+    "role": "heavy",
+    "note": "10 s: no knockback, dulled pain, hard punches"
   },
   {
-    "power": "empathic_mimicry",
-    "action": "mimicry_echo_5",
-    "energy": 1,
-    "cooldown": 1
+    "power": "regeneration",
+    "action": "regeneration_healing_aura",
+    "unlock": 4,
+    "energy": 34,
+    "cooldown": 300,
+    "base_energy": 45,
+    "base_cooldown": 1200,
+    "role": "heavy",
+    "note": "10 s: friends heal with you; you share their wounds"
   },
   {
-    "power": "technopathy",
-    "action": "technopathy_machine_city",
-    "energy": 1,
-    "cooldown": 1
+    "power": "regeneration",
+    "action": "regeneration_second_life",
+    "unlock": 5,
+    "energy": 55,
+    "cooldown": 1800,
+    "base_energy": 40,
+    "base_cooldown": 1800,
+    "role": "ultimate",
+    "note": "a friend heals fully and cheats death once (also 50 Regrowth)"
   },
   {
-    "power": "matter_assembly",
-    "action": "matter_assembly_cathedral",
-    "energy": 1,
-    "cooldown": 1
+    "power": "flight",
+    "action": "flight_toggle",
+    "unlock": 1,
+    "energy": 0,
+    "cooldown": 0,
+    "base_energy": 0,
+    "base_cooldown": 0,
+    "role": "basic",
+    "note": "toggle; 4 a second cruising, 9 boosting"
+  },
+  {
+    "power": "flight",
+    "action": "flight_launch",
+    "unlock": 1,
+    "energy": 12,
+    "cooldown": 35,
+    "base_energy": 18,
+    "base_cooldown": 60,
+    "role": "quick",
+    "note": "Skyburst: a dash of up to 20 blocks"
+  },
+  {
+    "power": "flight",
+    "action": "flight_dive_bomb",
+    "unlock": 2,
+    "energy": 25,
+    "cooldown": 150,
+    "base_energy": 35,
+    "base_cooldown": 160,
+    "role": "skill",
+    "note": "5 + tier + Momentum on landing, a pressure wave"
+  },
+  {
+    "power": "flight",
+    "action": "flight_skyward_grab",
+    "unlock": 3,
+    "energy": 21,
+    "cooldown": 125,
+    "base_energy": 30,
+    "base_cooldown": 100,
+    "role": "skill",
+    "note": "seize and carry, then a throw"
+  },
+  {
+    "power": "flight",
+    "action": "flight_cyclone",
+    "unlock": 5,
+    "energy": 70,
+    "cooldown": 1040,
+    "base_energy": 55,
+    "base_cooldown": 600,
+    "role": "ultimate",
+    "note": "Tempest: lifts and bursts everything round its eye"
+  },
+  {
+    "power": "electrokinesis",
+    "action": "electro_chain_lightning",
+    "unlock": 1,
+    "energy": 15,
+    "cooldown": 25,
+    "base_energy": 18,
+    "base_cooldown": 25,
+    "role": "basic",
+    "note": "4 + 1.5/tier, chaining at 75%"
+  },
+  {
+    "power": "electrokinesis",
+    "action": "electro_ball_lightning",
+    "unlock": 2,
+    "energy": 25,
+    "cooldown": 150,
+    "base_energy": 25,
+    "base_cooldown": 60,
+    "role": "skill",
+    "note": "an orb that lashes (3 + tier) and bursts (5 + tier)"
+  },
+  {
+    "power": "electrokinesis",
+    "action": "electro_thunderstrike",
+    "unlock": 3,
+    "energy": 27,
+    "cooldown": 160,
+    "base_energy": 45,
+    "base_cooldown": 200,
+    "role": "skill",
+    "note": "4 + 2/tier where you marked"
+  },
+  {
+    "power": "electrokinesis",
+    "action": "electro_ride_the_lightning",
+    "unlock": 4,
+    "energy": 30,
+    "cooldown": 180,
+    "base_energy": 30,
+    "base_cooldown": 100,
+    "role": "skill",
+    "note": "a bolt's dash; 4 + tier to what you pass"
+  },
+  {
+    "power": "electrokinesis",
+    "action": "electro_storm_surge",
+    "unlock": 5,
+    "energy": 72,
+    "cooldown": 1080,
+    "base_energy": 110,
+    "base_cooldown": 2400,
+    "role": "ultimate",
+    "note": "8 + tier + Charge to everything round you"
   },
   {
     "power": "vibe",
     "action": "vibe_blast",
-    "energy": 1,
-    "cooldown": 1
+    "unlock": 1,
+    "energy": 14,
+    "cooldown": 20,
+    "base_energy": 9,
+    "base_cooldown": 22,
+    "role": "basic",
+    "note": "a wave of 4 + tier (palm) to 7 + 1.5/tier"
   },
   {
     "power": "vibe",
     "action": "vibe_breach",
-    "energy": 1,
-    "cooldown": 1
+    "unlock": 2,
+    "energy": 20,
+    "cooldown": 120,
+    "base_energy": 20,
+    "base_cooldown": 130,
+    "role": "skill",
+    "note": "two-way portals"
   },
   {
     "power": "vibe",
     "action": "vibe_read",
-    "energy": 1,
-    "cooldown": 1
+    "unlock": 3,
+    "energy": 14,
+    "cooldown": 85,
+    "base_energy": 12,
+    "base_cooldown": 100,
+    "role": "skill",
+    "note": "replays a scene's fights"
   },
   {
     "power": "vibe",
     "action": "vibe_breach_guard",
-    "energy": 1,
-    "cooldown": 1
+    "unlock": 4,
+    "energy": 22,
+    "cooldown": 130,
+    "base_energy": 21,
+    "base_cooldown": 170,
+    "role": "skill",
+    "note": "a moving breach that swallows shots"
   },
   {
     "power": "vibe",
     "action": "vibe_frequency_lock",
-    "energy": 1,
-    "cooldown": 1
+    "unlock": 5,
+    "energy": 58,
+    "cooldown": 880,
+    "base_energy": 42,
+    "base_cooldown": 340,
+    "role": "ultimate",
+    "note": "4 + tier (+4 if read) and a slow, after a telegraph"
   },
   {
-    "power": "shapeshifting",
-    "action": "shapeshift_morph",
-    "energy": 1,
-    "cooldown": 1
+    "power": "matter_assembly",
+    "action": "matter_assembly_barricade",
+    "unlock": 1,
+    "energy": 12,
+    "cooldown": 70,
+    "base_energy": 12,
+    "base_cooldown": 60,
+    "role": "skill",
+    "note": "a 3x2 wall (also costs material)"
   },
   {
-    "power": "shapeshifting",
-    "action": "shapeshift_instinct",
-    "energy": 1,
-    "cooldown": 1
+    "power": "matter_assembly",
+    "action": "matter_assembly_shard_lance",
+    "unlock": 1,
+    "energy": 12,
+    "cooldown": 20,
+    "base_energy": 14,
+    "base_cooldown": 30,
+    "role": "basic",
+    "note": "a shard up to 64 blocks"
   },
   {
-    "power": "shapeshifting",
-    "action": "shapeshift_decoy",
-    "energy": 1,
-    "cooldown": 1
+    "power": "matter_assembly",
+    "action": "matter_assembly_causeway",
+    "unlock": 2,
+    "energy": 20,
+    "cooldown": 120,
+    "base_energy": 22,
+    "base_cooldown": 160,
+    "role": "skill",
+    "note": "8 s of walking on air"
   },
   {
-    "power": "shapeshifting",
-    "action": "shapeshift_reflection",
-    "energy": 1,
-    "cooldown": 1
+    "power": "matter_assembly",
+    "action": "matter_assembly_cage",
+    "unlock": 3,
+    "energy": 22,
+    "cooldown": 200,
+    "base_energy": 30,
+    "base_cooldown": 220,
+    "role": "heavy",
+    "note": "a cell round one enemy"
   },
   {
-    "power": "shapeshifting",
-    "action": "shapeshift_nightmare",
-    "energy": 1,
-    "cooldown": 1
+    "power": "matter_assembly",
+    "action": "matter_assembly_cathedral",
+    "unlock": 5,
+    "energy": 70,
+    "cooldown": 1040,
+    "base_energy": 70,
+    "base_cooldown": 1000,
+    "role": "ultimate",
+    "note": "three turrets for 20 s"
+  },
+  {
+    "power": "invisibility",
+    "action": "invisibility_fade",
+    "unlock": 1,
+    "energy": 6,
+    "cooldown": 10,
+    "base_energy": 6,
+    "base_cooldown": 10,
+    "role": "basic",
+    "note": "toggle; 2 a second, +1 per friend"
+  },
+  {
+    "power": "invisibility",
+    "action": "invisibility_silent_step",
+    "unlock": 1,
+    "energy": 14,
+    "cooldown": 40,
+    "base_energy": 14,
+    "base_cooldown": 80,
+    "role": "quick",
+    "note": "Lens Shield: 3 s, 70% off frontal harm, stops shots"
+  },
+  {
+    "power": "invisibility",
+    "action": "invisibility_unseen_strike",
+    "unlock": 2,
+    "energy": 14,
+    "cooldown": 40,
+    "base_energy": 16,
+    "base_cooldown": 80,
+    "role": "quick",
+    "note": "Force Bridge: a 12-block span"
+  },
+  {
+    "power": "invisibility",
+    "action": "invisibility_shroud",
+    "unlock": 3,
+    "energy": 29,
+    "cooldown": 260,
+    "base_energy": 25,
+    "base_cooldown": 200,
+    "role": "heavy",
+    "note": "Bubble: 5 s hold, then a crush (6 + 2/tier)"
+  },
+  {
+    "power": "invisibility",
+    "action": "invisibility_ghost_protocol",
+    "unlock": 5,
+    "energy": 77,
+    "cooldown": 1160,
+    "base_energy": 90,
+    "base_cooldown": 1800,
+    "role": "ultimate",
+    "note": "Force Nova: heavy damage and a throw in 12 blocks"
+  },
+  {
+    "power": "telekinesis",
+    "action": "telekinesis_push",
+    "unlock": 1,
+    "energy": 8,
+    "cooldown": 15,
+    "base_energy": 15,
+    "base_cooldown": 30,
+    "role": "basic",
+    "note": "a shove (2 + tier/4)"
+  },
+  {
+    "power": "telekinesis",
+    "action": "telekinesis_grip",
+    "unlock": 2,
+    "energy": 24,
+    "cooldown": 145,
+    "base_energy": 30,
+    "base_cooldown": 200,
+    "role": "skill",
+    "note": "hold, then a throw"
+  },
+  {
+    "power": "telekinesis",
+    "action": "telekinesis_bullet_stop",
+    "unlock": 3,
+    "energy": 22,
+    "cooldown": 200,
+    "base_energy": 40,
+    "base_cooldown": 600,
+    "role": "heavy",
+    "note": "catches every shot, then turns them"
+  },
+  {
+    "power": "telekinesis",
+    "action": "telekinesis_disarm",
+    "unlock": 4,
+    "energy": 16,
+    "cooldown": 95,
+    "base_energy": 20,
+    "base_cooldown": 160,
+    "role": "skill",
+    "note": "tears a weapon away"
+  },
+  {
+    "power": "telekinesis",
+    "action": "telekinesis_storm",
+    "unlock": 5,
+    "energy": 79,
+    "cooldown": 1180,
+    "base_energy": 110,
+    "base_cooldown": 2400,
+    "role": "ultimate",
+    "note": "lifts and slams everyone round you"
   },
   {
     "power": "hydrokinesis",
     "action": "hydro_water_whip",
-    "energy": 1,
-    "cooldown": 1
+    "unlock": 1,
+    "energy": 10,
+    "cooldown": 15,
+    "base_energy": 10,
+    "base_cooldown": 14,
+    "role": "basic",
+    "note": "4 + tier along your aim"
   },
   {
     "power": "hydrokinesis",
     "action": "hydro_crashing_wave",
-    "energy": 1,
-    "cooldown": 1
+    "unlock": 1,
+    "energy": 22,
+    "cooldown": 130,
+    "base_energy": 26,
+    "base_cooldown": 120,
+    "role": "skill",
+    "note": "5 + tier to what it carries"
   },
   {
     "power": "hydrokinesis",
     "action": "hydro_octopus_form",
-    "energy": 1,
-    "cooldown": 1
+    "unlock": 2,
+    "energy": 30,
+    "cooldown": 280,
+    "base_energy": 30,
+    "base_cooldown": 280,
+    "role": "heavy",
+    "note": "10 s: arms lash (6 + tier), shots swallowed, a third off blows"
   },
   {
     "power": "hydrokinesis",
     "action": "hydro_wave_rider",
-    "energy": 1,
-    "cooldown": 1
+    "unlock": 3,
+    "energy": 20,
+    "cooldown": 120,
+    "base_energy": 22,
+    "base_cooldown": 160,
+    "role": "skill",
+    "note": "6 s of surfing"
   },
   {
     "power": "hydrokinesis",
     "action": "hydro_maelstrom",
-    "energy": 1,
-    "cooldown": 1
+    "unlock": 5,
+    "energy": 79,
+    "cooldown": 1180,
+    "base_energy": 95,
+    "base_cooldown": 1500,
+    "role": "ultimate",
+    "note": "a waterspout that drags and drowns"
+  },
+  {
+    "power": "technopathy",
+    "action": "technopathy_handshake",
+    "unlock": 1,
+    "energy": 8,
+    "cooldown": 15,
+    "base_energy": 8,
+    "base_cooldown": 20,
+    "role": "basic",
+    "note": "enrols a network"
+  },
+  {
+    "power": "technopathy",
+    "action": "technopathy_remote_hand",
+    "unlock": 1,
+    "energy": 5,
+    "cooldown": 12,
+    "base_energy": 5,
+    "base_cooldown": 12,
+    "role": "basic",
+    "note": "works a linked device"
+  },
+  {
+    "power": "technopathy",
+    "action": "technopathy_tripwire",
+    "unlock": 2,
+    "energy": 16,
+    "cooldown": 95,
+    "base_energy": 20,
+    "base_cooldown": 70,
+    "role": "skill",
+    "note": "a trap: 6 + tier and a stumble"
+  },
+  {
+    "power": "technopathy",
+    "action": "technopathy_intercept",
+    "unlock": 3,
+    "energy": 24,
+    "cooldown": 220,
+    "base_energy": 30,
+    "base_cooldown": 240,
+    "role": "heavy",
+    "note": "10 s of arrow diversion"
+  },
+  {
+    "power": "technopathy",
+    "action": "technopathy_machine_city",
+    "unlock": 5,
+    "energy": 75,
+    "cooldown": 1120,
+    "base_energy": 85,
+    "base_cooldown": 1200,
+    "role": "ultimate",
+    "note": "12 s of a defended district"
+  },
+  {
+    "power": "shapeshifting",
+    "action": "shapeshift_morph",
+    "unlock": 1,
+    "energy": 0,
+    "cooldown": 20,
+    "base_energy": 0,
+    "base_cooldown": 20,
+    "role": "basic",
+    "note": "a form pays its own size cost and drain"
+  },
+  {
+    "power": "shapeshifting",
+    "action": "shapeshift_instinct",
+    "unlock": 2,
+    "energy": 0,
+    "cooldown": 6,
+    "base_energy": 0,
+    "base_cooldown": 6,
+    "role": "basic",
+    "note": "each form's move pays its own cost"
+  },
+  {
+    "power": "shapeshifting",
+    "action": "shapeshift_decoy",
+    "unlock": 3,
+    "energy": 16,
+    "cooldown": 95,
+    "base_energy": 16,
+    "base_cooldown": 200,
+    "role": "skill",
+    "note": "a shell that draws the hunt for 6 s"
+  },
+  {
+    "power": "shapeshifting",
+    "action": "shapeshift_reflection",
+    "unlock": 4,
+    "energy": 21,
+    "cooldown": 125,
+    "base_energy": 18,
+    "base_cooldown": 240,
+    "role": "skill",
+    "note": "become your attacker; its kind forget you"
+  },
+  {
+    "power": "shapeshifting",
+    "action": "shapeshift_nightmare",
+    "unlock": 5,
+    "energy": 55,
+    "cooldown": 820,
+    "base_energy": 40,
+    "base_cooldown": 600,
+    "role": "ultimate",
+    "note": "5 s of fear in 12 blocks"
+  },
+  {
+    "power": "pyrokinesis",
+    "action": "pyro_flare",
+    "unlock": 1,
+    "energy": 16,
+    "cooldown": 25,
+    "base_energy": 14,
+    "base_cooldown": 25,
+    "role": "basic",
+    "note": "4 + tier and 4 s burning, splashing nearby"
+  },
+  {
+    "power": "pyrokinesis",
+    "action": "pyro_flame_palm",
+    "unlock": 1,
+    "energy": 8,
+    "cooldown": 60,
+    "base_energy": 12,
+    "base_cooldown": 80,
+    "role": "skill",
+    "note": "held cone; 12 a second while breathing"
+  },
+  {
+    "power": "pyrokinesis",
+    "action": "pyro_ring_of_fire",
+    "unlock": 2,
+    "energy": 27,
+    "cooldown": 240,
+    "base_energy": 35,
+    "base_cooldown": 300,
+    "role": "heavy",
+    "note": "an 8 s wall of flame (4 + tier) that draws burning foes in"
+  },
+  {
+    "power": "pyrokinesis",
+    "action": "pyro_backdraft",
+    "unlock": 3,
+    "energy": 12,
+    "cooldown": 80,
+    "base_energy": 25,
+    "base_cooldown": 100,
+    "role": "quick",
+    "note": "Flame Flight toggle; 6-10 a second"
+  },
+  {
+    "power": "pyrokinesis",
+    "action": "pyro_inferno",
+    "unlock": 5,
+    "energy": 68,
+    "cooldown": 1020,
+    "base_energy": 94,
+    "base_cooldown": 1600,
+    "role": "ultimate",
+    "note": "Sunfall: a charged sun on the marked area"
+  },
+  {
+    "power": "cryokinesis",
+    "action": "cryo_frost_bolt",
+    "unlock": 1,
+    "energy": 8,
+    "cooldown": 20,
+    "base_energy": 14,
+    "base_cooldown": 20,
+    "role": "basic",
+    "note": "held stream; pulses pay as they go"
+  },
+  {
+    "power": "cryokinesis",
+    "action": "cryo_flash_freeze",
+    "unlock": 2,
+    "energy": 18,
+    "cooldown": 110,
+    "base_energy": 35,
+    "base_cooldown": 300,
+    "role": "skill",
+    "note": "an ice wall or ramp"
+  },
+  {
+    "power": "cryokinesis",
+    "action": "cryo_ice_wall",
+    "unlock": 3,
+    "energy": 12,
+    "cooldown": 80,
+    "base_energy": 25,
+    "base_cooldown": 100,
+    "role": "quick",
+    "note": "Glacier Ride toggle; 4-8 a second"
+  },
+  {
+    "power": "cryokinesis",
+    "action": "cryo_glacial_spikes",
+    "unlock": 4,
+    "energy": 27,
+    "cooldown": 240,
+    "base_energy": 30,
+    "base_cooldown": 200,
+    "role": "heavy",
+    "note": "Crystal Prison: a hold, then a shatter (5 + tier)"
+  },
+  {
+    "power": "cryokinesis",
+    "action": "cryo_blizzard",
+    "unlock": 5,
+    "energy": 79,
+    "cooldown": 1180,
+    "base_energy": 110,
+    "base_cooldown": 2400,
+    "role": "ultimate",
+    "note": "Whiteout"
+  },
+  {
+    "power": "empathic_mimicry",
+    "action": "mimicry_echo_1",
+    "unlock": 1,
+    "energy": -1,
+    "cooldown": -1,
+    "role": "basic",
+    "note": "pays the copied move's own cost"
+  },
+  {
+    "power": "empathic_mimicry",
+    "action": "mimicry_echo_2",
+    "unlock": 2,
+    "energy": -1,
+    "cooldown": -1,
+    "role": "basic",
+    "note": "pays the copied move's own cost"
+  },
+  {
+    "power": "empathic_mimicry",
+    "action": "mimicry_echo_3",
+    "unlock": 3,
+    "energy": -1,
+    "cooldown": -1,
+    "role": "basic",
+    "note": "pays the copied move's own cost"
+  },
+  {
+    "power": "empathic_mimicry",
+    "action": "mimicry_echo_4",
+    "unlock": 4,
+    "energy": -1,
+    "cooldown": -1,
+    "role": "basic",
+    "note": "pays the copied move's own cost"
+  },
+  {
+    "power": "empathic_mimicry",
+    "action": "mimicry_echo_5",
+    "unlock": 5,
+    "energy": -1,
+    "cooldown": -1,
+    "role": "basic",
+    "note": "pays the copied move's own cost"
+  },
+  {
+    "power": "radiation",
+    "action": "radiation_radiant_touch",
+    "unlock": 1,
+    "energy": 14,
+    "cooldown": 20,
+    "base_energy": 15,
+    "base_cooldown": 20,
+    "role": "basic",
+    "note": "a cone of 3 + tier to up to six"
+  },
+  {
+    "power": "radiation",
+    "action": "radiation_pulse",
+    "unlock": 2,
+    "energy": 22,
+    "cooldown": 130,
+    "base_energy": 30,
+    "base_cooldown": 160,
+    "role": "skill",
+    "note": "Fission Leap: a blast and a launch; the slam is free"
+  },
+  {
+    "power": "radiation",
+    "action": "radiation_emp",
+    "unlock": 3,
+    "energy": 20,
+    "cooldown": 180,
+    "base_energy": 30,
+    "base_cooldown": 400,
+    "role": "heavy",
+    "note": "kills machines for 10 s, shoves, reveals, vents Core"
+  },
+  {
+    "power": "radiation",
+    "action": "radiation_meltdown_beam",
+    "unlock": 4,
+    "energy": 18,
+    "cooldown": 120,
+    "base_energy": 25,
+    "base_cooldown": 120,
+    "role": "skill",
+    "note": "a held beam that spends Core"
+  },
+  {
+    "power": "radiation",
+    "action": "radiation_exploding_man",
+    "unlock": 5,
+    "energy": 120,
+    "cooldown": 6000,
+    "base_energy": 140,
+    "base_cooldown": 12000,
+    "role": "ultimate",
+    "note": "Critical Mass: a 24-block nuclear blast after 25 s"
+  },
+  {
+    "power": "phasing",
+    "action": "phasing_shift",
+    "unlock": 1,
+    "energy": 4,
+    "cooldown": 6,
+    "base_energy": 4,
+    "base_cooldown": 6,
+    "role": "basic",
+    "note": "a notch of density; holding it drains 1.7-3.3 a second"
+  },
+  {
+    "power": "phasing",
+    "action": "phasing_reach",
+    "unlock": 1,
+    "energy": 16,
+    "cooldown": 50,
+    "base_energy": 16,
+    "base_cooldown": 60,
+    "role": "quick",
+    "note": "5 + tier that ignores armour, and no healing for 5 s"
+  },
+  {
+    "power": "phasing",
+    "action": "phasing_embed",
+    "unlock": 2,
+    "energy": 21,
+    "cooldown": 125,
+    "base_energy": 24,
+    "base_cooldown": 200,
+    "role": "skill",
+    "note": "half into the floor for 5 s, taking 50% more"
+  },
+  {
+    "power": "phasing",
+    "action": "phasing_sink",
+    "unlock": 3,
+    "energy": 16,
+    "cooldown": 50,
+    "base_energy": 20,
+    "base_cooldown": 40,
+    "role": "quick",
+    "note": "move through the ground"
+  },
+  {
+    "power": "phasing",
+    "action": "phasing_hollow",
+    "unlock": 5,
+    "energy": 66,
+    "cooldown": 1000,
+    "base_energy": 60,
+    "base_cooldown": 900,
+    "role": "ultimate",
+    "note": "everyone in 6 + tier blocks sinks for 5 s"
+  },
+  {
+    "power": "time_manipulation",
+    "action": "time_blink",
+    "unlock": 1,
+    "energy": 4,
+    "cooldown": 30,
+    "base_energy": 25,
+    "base_cooldown": 120,
+    "per_block": 0.3,
+    "role": "quick",
+    "note": "Fold Space: 4 to start, 0.3 for every block folded"
+  },
+  {
+    "power": "time_manipulation",
+    "action": "time_slow",
+    "unlock": 1,
+    "energy": 10,
+    "cooldown": 40,
+    "base_energy": 85,
+    "base_cooldown": 900,
+    "drain": 5,
+    "role": "skill",
+    "note": "Between Seconds: held, 5 a second (recovery stops)"
+  },
+  {
+    "power": "time_manipulation",
+    "action": "time_stop",
+    "unlock": 3,
+    "energy": 20,
+    "cooldown": 200,
+    "base_energy": 100,
+    "base_cooldown": 1800,
+    "drain": 12,
+    "role": "heavy",
+    "note": "Still World: held, 12/10/8 a second by tier (recovery stops)"
+  },
+  {
+    "power": "time_manipulation",
+    "action": "time_rewind",
+    "unlock": 4,
+    "energy": 120,
+    "cooldown": 4800,
+    "base_energy": 130,
+    "base_cooldown": 4800,
+    "role": "ultimate",
+    "note": "Rewrite the Moment: most of a tank, a long recovery"
+  },
+  {
+    "power": "time_manipulation",
+    "action": "temporal_snapshot",
+    "unlock": 5,
+    "energy": 35,
+    "cooldown": 600,
+    "base_energy": 40,
+    "base_cooldown": 600,
+    "role": "ultimate",
+    "note": "Walk the Past: travel 35, recording 18, return free"
+  },
+  {
+    "power": "sonic_resonance",
+    "action": "sonic_cry",
+    "unlock": 1,
+    "energy": 12,
+    "cooldown": 20,
+    "base_energy": 18,
+    "base_cooldown": 25,
+    "role": "basic",
+    "note": "tap: 4 + 1.2/tier in a narrow cone; held: 12 a second"
+  },
+  {
+    "power": "sonic_resonance",
+    "action": "sonic_note",
+    "unlock": 2,
+    "energy": 14,
+    "cooldown": 85,
+    "base_energy": 20,
+    "base_cooldown": 120,
+    "role": "skill",
+    "note": "a lure that plays 8 s"
+  },
+  {
+    "power": "sonic_resonance",
+    "action": "sonic_wall",
+    "unlock": 3,
+    "energy": 22,
+    "cooldown": 200,
+    "base_energy": 28,
+    "base_cooldown": 300,
+    "role": "heavy",
+    "note": "5 s that turns shots back"
+  },
+  {
+    "power": "sonic_resonance",
+    "action": "sonic_vault",
+    "unlock": 4,
+    "energy": 16,
+    "cooldown": 50,
+    "base_energy": 25,
+    "base_cooldown": 80,
+    "role": "quick",
+    "note": "a leap and a safe landing"
+  },
+  {
+    "power": "sonic_resonance",
+    "action": "sonic_crescendo",
+    "unlock": 5,
+    "energy": 68,
+    "cooldown": 1020,
+    "base_energy": 60,
+    "base_cooldown": 1200,
+    "role": "ultimate",
+    "note": "a charged cone, 6 + 10 x charge + tier, after up to 3 s of build"
+  },
+  {
+    "power": "quake",
+    "action": "quake_shockwave",
+    "unlock": 1,
+    "energy": 13,
+    "cooldown": 20,
+    "base_energy": 15,
+    "base_cooldown": 30,
+    "role": "basic",
+    "note": "3 + 1.5/tier, a throw, shots shaken to dust"
+  },
+  {
+    "power": "quake",
+    "action": "quake_resonate",
+    "unlock": 2,
+    "energy": 24,
+    "cooldown": 145,
+    "base_energy": 18,
+    "base_cooldown": 160,
+    "role": "skill",
+    "note": "3 s of shaking (1.5 + tier/2 a pulse), a stagger"
+  },
+  {
+    "power": "quake",
+    "action": "quake_fault_line",
+    "unlock": 3,
+    "energy": 28,
+    "cooldown": 170,
+    "base_energy": 35,
+    "base_cooldown": 120,
+    "role": "skill",
+    "note": "a racing crack: (4 + tier) and a launch"
+  },
+  {
+    "power": "quake",
+    "action": "quake_blast",
+    "unlock": 4,
+    "energy": 10,
+    "cooldown": 0,
+    "base_energy": 10,
+    "base_cooldown": 0,
+    "role": "basic",
+    "note": "held beam; it drains per second"
+  },
+  {
+    "power": "quake",
+    "action": "quake_earthquake",
+    "unlock": 5,
+    "energy": 81,
+    "cooldown": 1220,
+    "base_energy": 120,
+    "base_cooldown": 2400,
+    "role": "ultimate",
+    "note": "seconds of shaking, then an aftershock"
+  },
+  {
+    "power": "pyrokinesis",
+    "action": "style_pyrokinesis_strike",
+    "energy": 2,
+    "base_energy": 2,
+    "role": "style"
+  },
+  {
+    "power": "pyrokinesis",
+    "action": "style_pyrokinesis_finisher",
+    "energy": 5,
+    "base_energy": 5,
+    "role": "style"
+  },
+  {
+    "power": "pyrokinesis",
+    "action": "style_pyrokinesis_dodge",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 18,
+    "base_cooldown": 18,
+    "role": "style"
+  },
+  {
+    "power": "pyrokinesis",
+    "action": "style_pyrokinesis_back_dodge",
+    "energy": 11,
+    "base_energy": 11,
+    "role": "style"
+  },
+  {
+    "power": "electrokinesis",
+    "action": "style_electrokinesis_strike",
+    "energy": 2,
+    "base_energy": 2,
+    "role": "style"
+  },
+  {
+    "power": "electrokinesis",
+    "action": "style_electrokinesis_finisher",
+    "energy": 5,
+    "base_energy": 5,
+    "role": "style"
+  },
+  {
+    "power": "electrokinesis",
+    "action": "style_electrokinesis_dodge",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 18,
+    "base_cooldown": 18,
+    "role": "style"
+  },
+  {
+    "power": "electrokinesis",
+    "action": "style_electrokinesis_back_dodge",
+    "energy": 11,
+    "base_energy": 11,
+    "role": "style"
+  },
+  {
+    "power": "hydrokinesis",
+    "action": "style_hydrokinesis_strike",
+    "energy": 2,
+    "base_energy": 2,
+    "role": "style"
+  },
+  {
+    "power": "hydrokinesis",
+    "action": "style_hydrokinesis_finisher",
+    "energy": 5,
+    "base_energy": 5,
+    "role": "style"
+  },
+  {
+    "power": "hydrokinesis",
+    "action": "style_hydrokinesis_dodge",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 18,
+    "base_cooldown": 18,
+    "role": "style"
+  },
+  {
+    "power": "hydrokinesis",
+    "action": "style_hydrokinesis_back_dodge",
+    "energy": 11,
+    "base_energy": 11,
+    "role": "style"
+  },
+  {
+    "power": "superspeed",
+    "action": "style_superspeed_strike",
+    "energy": 2,
+    "base_energy": 2,
+    "role": "style"
+  },
+  {
+    "power": "superspeed",
+    "action": "style_superspeed_finisher",
+    "energy": 5,
+    "base_energy": 5,
+    "role": "style"
+  },
+  {
+    "power": "superspeed",
+    "action": "style_superspeed_dodge",
+    "energy": 6,
+    "base_energy": 8,
+    "cooldown": 14,
+    "base_cooldown": 18,
+    "role": "style"
+  },
+  {
+    "power": "superspeed",
+    "action": "style_superspeed_back_dodge",
+    "energy": 9,
+    "base_energy": 11,
+    "role": "style"
+  },
+  {
+    "power": "quake",
+    "action": "style_quake_strike",
+    "energy": 2,
+    "base_energy": 2,
+    "role": "style"
+  },
+  {
+    "power": "quake",
+    "action": "style_quake_finisher",
+    "energy": 6,
+    "base_energy": 5,
+    "role": "style"
+  },
+  {
+    "power": "quake",
+    "action": "style_quake_dodge",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 18,
+    "base_cooldown": 18,
+    "role": "style"
+  },
+  {
+    "power": "quake",
+    "action": "style_quake_back_dodge",
+    "energy": 11,
+    "base_energy": 11,
+    "role": "style"
+  },
+  {
+    "power": "cryokinesis",
+    "action": "style_cryokinesis_strike",
+    "energy": 2,
+    "base_energy": 2,
+    "role": "style"
+  },
+  {
+    "power": "cryokinesis",
+    "action": "style_cryokinesis_finisher",
+    "energy": 5,
+    "base_energy": 5,
+    "role": "style"
+  },
+  {
+    "power": "cryokinesis",
+    "action": "style_cryokinesis_dodge",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 18,
+    "base_cooldown": 18,
+    "role": "style"
+  },
+  {
+    "power": "cryokinesis",
+    "action": "style_cryokinesis_back_dodge",
+    "energy": 11,
+    "base_energy": 11,
+    "role": "style"
+  },
+  {
+    "power": "phasing",
+    "action": "style_phasing_strike",
+    "energy": 2,
+    "base_energy": 2,
+    "role": "style"
+  },
+  {
+    "power": "phasing",
+    "action": "style_phasing_finisher",
+    "energy": 5,
+    "base_energy": 5,
+    "role": "style"
+  },
+  {
+    "power": "phasing",
+    "action": "style_phasing_dodge",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 18,
+    "base_cooldown": 18,
+    "role": "style"
+  },
+  {
+    "power": "phasing",
+    "action": "style_phasing_back_dodge",
+    "energy": 11,
+    "base_energy": 11,
+    "role": "style"
+  },
+  {
+    "power": "regeneration",
+    "action": "style_regeneration_strike",
+    "energy": 2,
+    "base_energy": 2,
+    "role": "style"
+  },
+  {
+    "power": "regeneration",
+    "action": "style_regeneration_finisher",
+    "energy": 5,
+    "base_energy": 5,
+    "role": "style"
+  },
+  {
+    "power": "regeneration",
+    "action": "style_regeneration_dodge",
+    "energy": 6,
+    "base_energy": 8,
+    "cooldown": 18,
+    "base_cooldown": 18,
+    "role": "style"
+  },
+  {
+    "power": "regeneration",
+    "action": "style_regeneration_back_dodge",
+    "energy": 9,
+    "base_energy": 11,
+    "role": "style"
+  },
+  {
+    "power": "invisibility",
+    "action": "style_invisibility_strike",
+    "energy": 2,
+    "base_energy": 2,
+    "role": "style"
+  },
+  {
+    "power": "invisibility",
+    "action": "style_invisibility_finisher",
+    "energy": 5,
+    "base_energy": 5,
+    "role": "style"
+  },
+  {
+    "power": "invisibility",
+    "action": "style_invisibility_dodge",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 18,
+    "base_cooldown": 18,
+    "role": "style"
+  },
+  {
+    "power": "invisibility",
+    "action": "style_invisibility_back_dodge",
+    "energy": 11,
+    "base_energy": 11,
+    "role": "style"
+  },
+  {
+    "power": "telekinesis",
+    "action": "style_telekinesis_strike",
+    "energy": 2,
+    "base_energy": 2,
+    "role": "style"
+  },
+  {
+    "power": "telekinesis",
+    "action": "style_telekinesis_finisher",
+    "energy": 5,
+    "base_energy": 5,
+    "role": "style"
+  },
+  {
+    "power": "telekinesis",
+    "action": "style_telekinesis_dodge",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 18,
+    "base_cooldown": 18,
+    "role": "style"
+  },
+  {
+    "power": "telekinesis",
+    "action": "style_telekinesis_back_dodge",
+    "energy": 11,
+    "base_energy": 11,
+    "role": "style"
   }
 ]

@@ -118,6 +118,7 @@ public final class ModPayloads {
                 EclipseStatePayload.STREAM_CODEC,
                 EclipseStatePayload::handle
             )
+            .playToClient(StaminaPayload.TYPE, StaminaPayload.STREAM_CODEC, StaminaPayload::handle)
             .playToClient(
                 OverexertionEffectPayload.TYPE,
                 OverexertionEffectPayload.STREAM_CODEC,

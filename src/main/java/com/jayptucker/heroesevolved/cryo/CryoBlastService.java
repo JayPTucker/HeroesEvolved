@@ -110,7 +110,7 @@ public final class CryoBlastService {
             }
             boolean pulse = (age - 2) % PULSE_TICKS == 0;
             int cost = critical ? 1 : PULSE_COST;
-            if (pulse && !PlayerEnergyService.tryConsume(player, cost)) {
+            if (pulse && !PlayerEnergyService.drain(player, cost)) {
                 stop(player);
                 continue;
             }

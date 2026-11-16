@@ -16,8 +16,6 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class PlayerAbilityTickEvents {
-    private static final int ENERGY_REGENERATION_INTERVAL_TICKS = 20;
-
     private PlayerAbilityTickEvents() {
     }
 
@@ -27,11 +25,8 @@ public final class PlayerAbilityTickEvents {
             return;
         }
 
-        long gameTime = player.serverLevel().getGameTime();
-
-        if (gameTime % ENERGY_REGENERATION_INTERVAL_TICKS == 0) {
-            PlayerEnergyService.restoreNaturally(player);
-        }
+        // Stamina recovers a little every tick (see PlayerEnergyService) and the bar is sent when it moves.
+        PlayerEnergyService.tick(player);
 
         MasteryService.tickActiveTime(player);
 

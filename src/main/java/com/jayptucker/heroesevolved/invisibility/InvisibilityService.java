@@ -302,7 +302,7 @@ public final class InvisibilityService {
             if (fade.drains && time % 10 == 0) share(p, fade);
             if (fade.drains && time % 20 == 0) {
                 int cost = 2 + fade.sharing;
-                if (!PlayerEnergyService.tryConsume(p, cost)) {
+                if (!PlayerEnergyService.drain(p, cost)) {
                     p.displayClientMessage(Component.translatable("invisibility.heroesevolved.exhausted").withStyle(ChatFormatting.GRAY), true);
                     unfade(p); continue;
                 }

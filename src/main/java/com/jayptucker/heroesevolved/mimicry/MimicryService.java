@@ -561,14 +561,16 @@ public final class MimicryService {
             @Override public int energyCost(AbilityUseContext c) {
                 EchoCast cast = selected(c, copied);
                 if (cast == null) return 0;
-                int cost = cast.action.energyCost(cast.context);
+                // The copied move's balanced cost (the Echo's own table entry passes it through unchanged).
+                int cost = com.jayptucker.heroesevolved.ability.PowerBalance.energy(cast.action.definition().id(), cast.action.energyCost(cast.context))
+                        + cast.action.travelCost(cast.context);
                 return SkillTreeService.has(c.player(), "empathic_mimicry_peters_burden") ? (int) Math.ceil(cost * .75) : cost;
             }
             @Override public int cooldownTicks(AbilityUseContext c) {
                 EchoCast cast = pressed(c.player());
                 if (cast == null) cast = selected(c, copied);
                 if (cast == null) return 20;
-                int ticks = (int) Math.ceil(cast.action.cooldownTicks(cast.context) * 1.5);
+                int ticks = (int) Math.ceil(com.jayptucker.heroesevolved.ability.PowerBalance.cooldown(cast.action.definition().id(), cast.action.cooldownTicks(cast.context)) * 1.5);
                 return cast.full && SkillTreeService.has(c.player(), "empathic_mimicry_twin_echo") ? ticks / 2 : ticks;
             }
             @Override public AbilityActivationResult activate(AbilityUseContext c) {

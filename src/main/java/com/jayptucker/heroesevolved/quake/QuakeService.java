@@ -332,7 +332,7 @@ public final class QuakeService {
         if (blast.ageTicks % 10 == 0) {
             int drain = Math.max(1,
                     HeroesEvolvedConfig.COMMON.quakeBlastDrainPerSecond.get() / 2);
-            if (!PlayerEnergyService.tryConsume(player, drain)) {
+            if (!PlayerEnergyService.drain(player, drain)) {
                 stopQuakeBlast(player, true);
                 return;
             }

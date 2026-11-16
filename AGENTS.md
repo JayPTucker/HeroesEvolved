@@ -22,6 +22,48 @@
   `render/FightingStylePoseRenderer` turns the whole body. See "Reusable patterns from firebending" below, and
   [docs/pyrokinesis.md](docs/pyrokinesis.md) for what the player sees.
 
+## Stamina and balance
+
+Every cost, cooldown, per-second drain and unlock tier is set in one place. The rules and the full table are in
+[docs/stamina-balance.md](docs/stamina-balance.md).
+
+- **Change numbers in `tools/balance.py`, never by hand.** It holds the rules (about 2 stamina per point of damage at
+  the unlock tier, +40% per extra target, 3 per second of control, 0.35 per block, a band per key) and every core
+  action's inputs. It writes `data/heroesevolved/power_balance.json`, the skill and class numbers in `skill_trees.json`
+  (designed values kept as `design_energy`/`design_cooldown`), and the doc. `py -3 tools/balance.py --check` fails if
+  any is stale. It reads each action's own cost from `build/rewind-gametest-world/build/balance/actions.json`, which
+  `BalanceDumpGameTests` writes on every game-test run.
+- **The table is absolute, scaled from each action's own base.** `PowerBalance.energy(id, configured)` returns the
+  table's stamina times `configured / base_energy`, so another tier, mode or server config scales in proportion, and
+  zero stays zero (free follow-ups, free returns). An entry with `energy: -1` passes the code's value through (Mimicry's
+  Echoes already pay the copied move's balanced cost). The table can also set `unlock` (read by
+  `AbilityActionDefinition.unlockLevel()`), `drain` and `per_block`, and fighting-style moves as
+  `style_<power>_<move>` (`PowerBalance.styleEnergy`). A new core action must be added there, or
+  `PowerBalanceGameTests` fails.
+- **Stamina is fractional.** `PlayerEnergyService.getStamina` is exact; `getEnergy` rounds down for code that thinks in
+  whole points. Recovery runs every tick (`PlayerEnergyService.tick`, from the player tick) and a small
+  `StaminaPayload` carries the bar; the full power sync no longer goes out on every change.
+- **Two ways to spend.** `tryConsume` / `consumeUpTo` are for moves: they pause recovery for
+  `staminaRecoveryDelayTicks` (1.5 s). `drain(player, amount)` is for anything held (flights, toggles, beams, streams,
+  a morph's upkeep): fractions are fine and it never restarts the pause. A held power must use `drain`, or flying
+  would stop recovery for good.
+- **Held for as long as it is paid for.** `energy/StaminaDrain.start(player, id, perSecond, holdsRecovery, onEmpty)`
+  takes stamina every server tick and calls `onEmpty` when the bar can't pay; `stop` ends it quietly. Still World
+  (`TimeStopService.hold`) and Between Seconds (`TimeSlowService.hold`) use it with `holdsRecovery` true, and end on a
+  second press (`deactivateOnPress`). `start` still gives the old fixed-length field to scenes, intros and tests.
+  Drains tick on the server tick and keep their `ServerPlayer`, so they run for game-test players.
+- **Costs that depend on what a use will do.** `AbilityAction.travelCost(context)` adds stamina after the table (Fold
+  Space: 0.3 a block to the destination its own `destination(...)` search finds, the same one the fold then uses). It
+  is not scaled by the table again; skill and rank discounts still apply.
+- **The HUD reads `ClientStamina`,** which runs the bar forward on the server's rates between packets and keeps a
+  trailing "just spent" value. `PlayerEnergyService.refused(player)` flashes and shakes the bar; call it wherever a move
+  is refused for lack of stamina (`AbilityUseService` and `ComboStyle.pay` do).
+- **Menus describe costs with `PowerBalance.describe(path, energy)`** ("20 + 12/s stamina"), so held and distance
+  costs read the same on the wheel and the Powers page.
+- **Photographs:** `tools/stamina-preview.init.gradle` (`uitest/StaminaHudPreview`, flag `heroes.preview.stamina`)
+  shoots the bar full, just spent, recovering, during Still World, low and refused into `build/stamina-preview/`.
+  A preview must call `PlayerPowerSyncService.sync` after granting a power, or the HUD doesn't know it has one.
+
 ## Reusable patterns from the Flight rework
 
 Flight's November 2026 rework (Skyburst, Tempest, Skyhook and the six optional skills) solved problems other

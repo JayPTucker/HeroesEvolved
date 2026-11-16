@@ -47,7 +47,31 @@ public final class TimeSlowService {
         return interval;
     }
 
+    /** The id of Between Seconds' stamina drain. */
+    public static final String DRAIN = "time_slow";
+    private static final int HELD_TICKS = 20 * 60 * 10;
+
+    /**
+     * Between Seconds as the key starts it: it lasts while the traveller pays for it ({@link #drainPerSecond}),
+     * until the key is pressed again or the stamina runs out, and holds recovery meanwhile. {@link #start} keeps
+     * the fixed-length field the awakening reflex uses.
+     */
+    public static void hold(ServerPlayer player, int powerLevel) {
+        start(player, powerLevel, HELD_TICKS, true);
+        com.jayptucker.heroesevolved.energy.StaminaDrain.start(player, DRAIN, drainPerSecond(powerLevel), true, () -> {
+            if (!hasActiveField(player)) return;
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable("time.heroesevolved.slowed_out"), true);
+            stop(player);
+        });
+    }
+
+    /** Stamina a second: 5, a little less as the power grows (4 at Level 15). */
+    public static double drainPerSecond(int powerLevel) {
+        return com.jayptucker.heroesevolved.ability.PowerBalance.drain(DRAIN, 5) * (1 - .05 * (Math.clamp(powerLevel, 1, 5) - 1));
+    }
+
     public static void stop(ServerPlayer player) {
+        com.jayptucker.heroesevolved.energy.StaminaDrain.stop(player, DRAIN);
         TimeSlowField field = ACTIVE_FIELDS.remove(player.getUUID());
 
         if (field != null) {
@@ -58,12 +82,13 @@ public final class TimeSlowService {
     }
 
     public static void start(ServerPlayer player, int powerLevel) {
+        start(player, powerLevel, HeroesEvolvedConfig.COMMON.timeSlowDurationSeconds.get() * 20, false);
+    }
+
+    private static void start(ServerPlayer player, int powerLevel, int durationTicks, boolean held) {
         ServerLevel level = player.serverLevel();
         // From now on everyone else sees a still figure where the traveller stood (before any effect gives them away).
         TimeVeil.begin(player, TimeVeil.Style.TIME, TimeVeil.SLOW);
-        int durationTicks = HeroesEvolvedConfig.COMMON
-                .timeSlowDurationSeconds
-                .get() * 20;
         int tickInterval = getTickIntervalForLevel(powerLevel);
 
         // Starting here, instead of inside the keybind action, keeps the
@@ -87,7 +112,8 @@ public final class TimeSlowService {
                         level.dimension(),
                         player.position(),
                         durationTicks,
-                        tickInterval
+                        tickInterval,
+                        held
                 )
         );
     }
@@ -121,7 +147,10 @@ public final class TimeSlowService {
                 if (level != null && owner != null) {
                     playEndSound(level, field, owner);
                 }
-                if (owner != null) TimeVeil.end(owner, TimeVeil.SLOW);
+                if (owner != null) {
+                    TimeVeil.end(owner, TimeVeil.SLOW);
+                    com.jayptucker.heroesevolved.energy.StaminaDrain.stop(owner, DRAIN);
+                }
             } else {
                 field.center = owner.position();
                 if (level.getGameTime() % 10 != 0) continue;
@@ -130,7 +159,12 @@ public final class TimeSlowService {
                         field.center(), field.center().add(0, 1, 0), HeroesEvolvedConfig.COMMON.timeSlowRadius.get());
                 else com.jayptucker.heroesevolved.effects.AbilityEffects.send(level, com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind.TIME_SLOW_PULSE,
                         field.center(), field.center().add(0, 1, 0), HeroesEvolvedConfig.COMMON.timeSlowRadius.get());
-                owner.displayClientMessage(net.minecraft.network.chat.Component.translatable("time.heroesevolved.slowed", (field.remainingTicks + 19) / 20), true);
+                if (field.held) {
+                    double rate = com.jayptucker.heroesevolved.energy.StaminaDrain.rate(owner);
+                    int seconds = rate <= 0 ? 0 : (int) (com.jayptucker.heroesevolved.energy.PlayerEnergyService.getStamina(owner) / rate);
+                    owner.displayClientMessage(net.minecraft.network.chat.Component.translatable("time.heroesevolved.slowed_held",
+                            String.format("%.0f", rate), seconds), true);
+                } else owner.displayClientMessage(net.minecraft.network.chat.Component.translatable("time.heroesevolved.slowed", (field.remainingTicks + 19) / 20), true);
                 // Slowed time takes on a faded, sepia warmth (server-wide, TimeVeil tints every screen instead).
                 if (!TimeVeil.serverWide()) com.jayptucker.heroesevolved.network.ScreenTintPayload.sendAround(
                         level, field.center(),
@@ -259,14 +293,17 @@ public final class TimeSlowService {
         private Vec3 center;
         private int remainingTicks;
         private final int tickInterval;
+        private final boolean held;
 
         private TimeSlowField(
                 UUID ownerId,
                 ResourceKey<Level> dimension,
                 Vec3 center,
                 int remainingTicks,
-                int tickInterval
+                int tickInterval,
+                boolean held
         ) {
+            this.held = held;
             this.ownerId = ownerId;
             this.dimension = dimension;
             this.center = center;

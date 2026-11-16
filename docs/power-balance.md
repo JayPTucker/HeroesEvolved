@@ -1,5 +1,9 @@
 # Power balance and Superspeed rework
 
+> **Superseded.** Stamina costs, cooldowns and unlock levels are now set by the stamina table and its rules in
+> [Stamina and balance](stamina-balance.md) (November 2026). The percentages below describe the earlier pass and no
+> longer apply; the Superspeed and freeze notes still do.
+
 This pass strengthens Superspeed's movement-to-combat loop and adjusts stamina costs, cooldowns, and the longest control effects across all eleven power sets. Existing worlds retain ownership, progression, purchased skills, and loadouts. Install the updated JAR on both clients and server.
 
 ## Superspeed

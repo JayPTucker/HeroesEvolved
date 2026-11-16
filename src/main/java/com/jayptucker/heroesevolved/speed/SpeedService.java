@@ -326,7 +326,7 @@ public final class SpeedService {
         if (step != null && !step.hasModifier(STEP)) step.addTransientModifier(new AttributeModifier(STEP, STEP_UP, AttributeModifier.Operation.ADD_VALUE));
         if (running && r.activeTicks++ % 20 == 0) {
             int cost = redline ? 6 : 3, before = PlayerEnergyService.getEnergy(p);
-            if (!PlayerEnergyService.tryConsume(p, cost)) { stop(p); p.displayClientMessage(Component.translatable("speed.heroesevolved.exhausted"), true); return; }
+            if (!PlayerEnergyService.drain(p, cost)) { stop(p); p.displayClientMessage(Component.translatable("speed.heroesevolved.exhausted"), true); return; }
             MasteryService.awardEnergySpent(p, Math.max(0, before - PlayerEnergyService.getEnergy(p)));
         }
         if (running && distance > .015 && distance < 25 && now(p) % 2 == 0) {

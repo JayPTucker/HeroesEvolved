@@ -233,7 +233,7 @@ public final class CryoRideService {
         r.previous = p.position();
         if (r.age % 20 == 0) {
             int drain = speed > .05 ? 8 : 4;
-            if (!PlayerEnergyService.tryConsume(p, drain)) { stop(p, true); return; }
+            if (!PlayerEnergyService.drain(p, drain)) { stop(p, true); return; }
             MasteryService.awardEnergySpent(p, drain);
         }
         BlockPos actual = ground(r.level, p.position(), 8, r.foundations);

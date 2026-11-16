@@ -28,13 +28,15 @@ public final class PowerBalanceGameTests {
         com.jayptucker.heroesevolved.progression.PlayerProgressionService.setLevel(p, 5);
         int before = com.jayptucker.heroesevolved.energy.PlayerEnergyService.getEnergy(p);
         var result = com.jayptucker.heroesevolved.ability.service.AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, false);
-        h.assertTrue(result == AbilityUseResult.SUCCESS && before - com.jayptucker.heroesevolved.energy.PlayerEnergyService.getEnergy(p) == 16, "Resonant Note must charge adjusted stamina");
+        var note = PowerBalance.tuning("sonic_note");
+        int spent = before - com.jayptucker.heroesevolved.energy.PlayerEnergyService.getEnergy(p);
+        h.assertTrue(result == AbilityUseResult.SUCCESS && spent == note.energy(), "Resonant Note must charge the table's stamina, spent " + spent);
         try {
             var method = com.jayptucker.heroesevolved.network.PlayerPowerSyncService.class.getDeclaredMethod("toSnapshots", ServerPlayer.class, AbilitySlot.class, AbilityAction.class);
             method.setAccessible(true);
             var snapshots = (java.util.stream.Stream<com.jayptucker.heroesevolved.network.AbilityActionSnapshot>) method.invoke(null, p, AbilitySlot.SECONDARY, ModAbilities.SONIC_RESONANCE.get().actions().get(AbilitySlot.SECONDARY));
             var shown = snapshots.findFirst().orElseThrow();
-            h.assertTrue(shown.energyCost() == 16 && shown.cooldownTicks() == 96, "HUD must show the same adjusted cost and cooldown");
+            h.assertTrue(shown.energyCost() == note.energy() && shown.cooldownTicks() == note.cooldown(), "HUD must show the same adjusted cost and cooldown");
         } catch (ReflectiveOperationException e) { throw new AssertionError(e); }
         h.succeed();
     }
@@ -49,14 +51,26 @@ public final class PowerBalanceGameTests {
     @GameTest(template="rewind_empty", batch="balance.catalog")
     public static void tuningCoversEveryPowerAndOnlyRealActions(GameTestHelper h) {
         var powers = new HashSet<String>();
+        var covered = new HashSet<String>();
         for (var entry : PowerBalance.entries().entrySet()) {
             String name = entry.getKey(); var tuning = entry.getValue(); powers.add(tuning.power());
             var ability = AbilityRegistry.ABILITIES.get(ResourceLocation.fromNamespaceAndPath("heroesevolved", tuning.power()));
-            h.assertTrue(ability != null && ability.actions().values().stream().anyMatch(a -> a.definition().id().getPath().equals(name)), "Invalid balance action " + name);
+            h.assertTrue(ability != null, "Unknown power in balance entry " + name);
+            if (name.startsWith("style_")) continue;
+            h.assertTrue(ability.actions().values().stream().anyMatch(a -> a.definition().id().getPath().equals(name)), "Invalid balance action " + name);
+            covered.add(name);
         }
         h.assertTrue(powers.size() == AbilityRegistry.ABILITIES.size(), "Every power must participate in the balance review");
+        // Every core action is in the table, so no key keeps an unreviewed cost.
+        for (var ability : AbilityRegistry.ABILITIES)
+            for (var action : ability.actions().values())
+                h.assertTrue(covered.contains(action.definition().id().getPath()), "Missing from the balance table: " + action.definition().id());
+        // Values the code computes for another tier scale in proportion to the table's base.
         var stop = ResourceLocation.fromNamespaceAndPath("heroesevolved", "time_stop");
-        h.assertTrue(PowerBalance.energy(stop, 150) == 90 && PowerBalance.cooldown(stop, 3600) == 1260, "Time tuning must apply to configured values");
+        var tuning = PowerBalance.tuning(stop);
+        h.assertTrue(PowerBalance.energy(stop, tuning.baseEnergy()) == tuning.energy()
+                && PowerBalance.energy(stop, tuning.baseEnergy() * 3 / 2) == Math.round(tuning.energy() * 1.5F)
+                && PowerBalance.cooldown(stop, tuning.baseCooldown()) == tuning.cooldown(), "Time tuning must apply to configured values");
         h.assertTrue(PowerBalance.energy(stop, 0) == 0 && PowerBalance.cooldown(stop, 0) == 0, "Free actions stay free"); h.succeed();
     }
     @GameTest(template="rewind_empty", batch="balance.freeze")

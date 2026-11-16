@@ -37,8 +37,14 @@ public record AbilityActionDefinition(
         }
     }
 
+    /** The tier this action opens at: the stamina table's ({@link PowerBalance}) if it gives one. */
+    @Override
+    public int unlockLevel() {
+        return PowerBalance.unlock(id, unlockLevel);
+    }
+
     public boolean isUnlockedAt(int powerLevel) {
-        return powerLevel >= unlockLevel;
+        return powerLevel >= unlockLevel();
     }
 
     public int energyCostForLevel(int powerLevel) {

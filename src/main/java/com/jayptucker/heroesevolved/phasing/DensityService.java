@@ -774,7 +774,7 @@ public final class DensityService {
             s.last = p.position();
             if (s.notch != NEUTRAL && now >= s.freeUntil) {
                 int every = (Math.abs(s.notch) == 2 ? 6 : 12) * (SkillTreeService.has(p, DensitySkills.UNTOUCHABLE) ? 2 : 1);
-                if (now % every == 0 && !PlayerEnergyService.tryConsume(p, 1)) {
+                if (now % every == 0 && !PlayerEnergyService.drain(p, 1)) {
                     set(p, s, s.notch + (s.notch > 0 ? -1 : 1));
                     p.displayClientMessage(Component.translatable("phasing.heroesevolved.exhausted"), true);
                 }

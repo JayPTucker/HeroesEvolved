@@ -227,7 +227,7 @@ public final class PyroFlightService {
         boolean pillar = SkillTreeService.has(player, "pyrokinesis_pillar_of_flame");
         if (jets.age % 20 == 0) {
             int drain = moving ? 10 : pillar ? 4 : 6;
-            if (!PlayerEnergyService.tryConsume(player, drain)) { stop(player, true); return; }
+            if (!PlayerEnergyService.drain(player, drain)) { stop(player, true); return; }
             MasteryService.awardEnergySpent(player, drain);
             if (!jets.boosted) PyroService.addHeat(player, 2);
         }

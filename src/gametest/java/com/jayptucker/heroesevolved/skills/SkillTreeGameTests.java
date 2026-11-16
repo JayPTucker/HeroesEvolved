@@ -140,7 +140,11 @@ public final class SkillTreeGameTests {
             int energy = PlayerEnergyService.getEnergy(p); float health = victim.getHealth();
             var result = AbilityUseService.activateAssignedAction(p, AbilitySlot.PRIMARY, false);
             h.assertTrue(result == AbilityUseResult.SUCCESS && victim.getHealth() < health, "New loadout skill must damage a real aimed mob");
-            h.assertTrue(PlayerEnergyService.getEnergy(p) == energy - 20, "22 base stamina with 10% reduction rounds up to 20");
+            // The node's balanced stamina (skill_trees.json), less Control's 10%, rounded up.
+            int base = SkillCatalog.find("empathic_mimicry", "empathic_mimicry_0_1").orElseThrow().energy();
+            int expected = (int) Math.ceil(base * 0.9);
+            h.assertTrue(PlayerEnergyService.getEnergy(p) == energy - expected, base + " base stamina with 10% reduction rounds up to " + expected
+                    + ", spent " + (energy - PlayerEnergyService.getEnergy(p)));
             h.assertTrue(CooldownService.isOnCooldown(p, id("empathic_mimicry_0_1")), "Sub-ability must use its own cooldown");
             SkillTreeService.equip(p, AbilitySlot.SECONDARY, "empathic_mimicry_0_1");
             h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, false) == AbilityUseResult.ON_COOLDOWN, "Moving a skill cannot reset its cooldown");

@@ -49,13 +49,17 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue activeMasteryAmount;
         public final ModConfigSpec.IntValue mobKillMasteryPerTenHealth;
         public final ModConfigSpec.DoubleValue masteryPerEnergySpent;
-        public final ModConfigSpec.IntValue energyRegenerationBonusEveryLevels;
         public final ModConfigSpec.IntValue mobKillWindowTicks;
         public final ModConfigSpec.IntValue mobKillFullRewardLimit;
         public final ModConfigSpec.IntValue mobKillMaximumRewardedKills;
         public final ModConfigSpec.IntValue baseEnergy;
-        public final ModConfigSpec.IntValue energyPerLevel;
-        public final ModConfigSpec.IntValue energyRegenerationPerSecond;
+        public final ModConfigSpec.DoubleValue energyPerPowerLevel;
+        public final ModConfigSpec.DoubleValue staminaRegenerationPerSecond;
+        public final ModConfigSpec.DoubleValue staminaRegenerationPerPowerLevel;
+        public final ModConfigSpec.DoubleValue staminaCalmRegenerationMultiplier;
+        public final ModConfigSpec.IntValue staminaRecoveryDelayTicks;
+        public final ModConfigSpec.DoubleValue staminaCostScale;
+        public final ModConfigSpec.DoubleValue cooldownScale;
         public final ModConfigSpec.IntValue regenerationEnergyCost;
         public final ModConfigSpec.IntValue regenerationIntervalTicks;
         public final ModConfigSpec.IntValue regenerationDamageDelayTicks;
@@ -345,21 +349,36 @@ public final class HeroesEvolvedConfig {
             builder.push("energy");
 
                 baseEnergy = builder
-                        .comment("Energy available to a level-one player.")
+                        .comment("Stamina available at Power Level 1.")
                         .defineInRange("baseEnergy", 100, 1, 10_000);
 
-                energyPerLevel = builder
-                        .comment("Additional maximum energy gained for each character level after level one.")
-                        .defineInRange("energyPerLevel", 20, 0, 1_000);
+                energyPerPowerLevel = builder
+                        .comment("Additional maximum stamina for each Power Level after the first (195 at Level 20 by default).")
+                        .defineInRange("staminaPerPowerLevel", 5.0D, 0.0D, 1_000.0D);
 
-                energyRegenerationPerSecond = builder
-                        .comment("Energy naturally restored every second.")
-                        .defineInRange("energyRegenerationPerSecond", 1, 0, 1_000);
+                staminaRegenerationPerSecond = builder
+                        .comment("Stamina recovered every second at Power Level 1, once the recovery pause has passed.")
+                        .defineInRange("staminaRegenerationPerSecond", 3.0D, 0.0D, 1_000.0D);
 
-                energyRegenerationBonusEveryLevels = builder
-                        .comment("Every this many levels, energy regenerates 1 point faster per second, "
-                                + "so higher-level powers stay usable. 0 disables the bonus.")
-                        .defineInRange("energyRegenerationBonusEveryLevels", 2, 0, 1_000);
+                staminaRegenerationPerPowerLevel = builder
+                        .comment("Extra recovery per second for each Power Level after the first.")
+                        .defineInRange("staminaRegenerationPerPowerLevel", 0.12D, 0.0D, 100.0D);
+
+                staminaCalmRegenerationMultiplier = builder
+                        .comment("Recovery is multiplied by this after five seconds without dealing or taking damage.")
+                        .defineInRange("staminaCalmRegenerationMultiplier", 2.0D, 1.0D, 10.0D);
+
+                staminaRecoveryDelayTicks = builder
+                        .comment("Ticks of no recovery after stamina is spent on a move (held drains don't restart it).")
+                        .defineInRange("staminaRecoveryDelayTicks", 30, 0, 20 * 30);
+
+                staminaCostScale = builder
+                        .comment("Multiplies every power's stamina cost and drain, after the balance table. 1 keeps the table's numbers.")
+                        .defineInRange("staminaCostScale", 1.0D, 0.0D, 10.0D);
+
+                cooldownScale = builder
+                        .comment("Multiplies every power's cooldown, after the balance table. 1 keeps the table's numbers.")
+                        .defineInRange("cooldownScale", 1.0D, 0.0D, 10.0D);
 
                 builder.pop();
         

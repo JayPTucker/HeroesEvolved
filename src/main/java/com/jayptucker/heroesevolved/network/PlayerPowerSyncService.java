@@ -62,7 +62,7 @@ public final class PlayerPowerSyncService {
                 new PlayerPowerSyncPayload(
                         PlayerEnergyService.getEnergy(player),
                         PlayerEnergyService.getMaximumEnergy(player),
-                        PlayerEnergyService.regenerationPerSecond(player),
+                        (int) Math.round(PlayerEnergyService.regenerationPerSecond(player)),
                         abilities,
                         actions
                 )

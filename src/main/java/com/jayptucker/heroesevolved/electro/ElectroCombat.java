@@ -134,7 +134,7 @@ public final class ElectroCombat {
         Strike move = next(player);
         boolean loaded = now < fighter.loadedUntil && move != Strike.GROUND;
         int cost = loaded ? 0 : move == Strike.JAB || move == Strike.CROSS
-                ? COMMON.electroStrikeEnergyCost.get() : COMMON.electroClapEnergyCost.get();
+                ? com.jayptucker.heroesevolved.ability.PowerBalance.styleEnergy("electrokinesis", "strike", COMMON.electroStrikeEnergyCost.get()) : com.jayptucker.heroesevolved.ability.PowerBalance.styleEnergy("electrokinesis", "finisher", COMMON.electroClapEnergyCost.get());
         if (cost > 0) {
             if (!PlayerEnergyService.tryConsume(player, cost)) {
                 player.displayClientMessage(Component.translatable("electro.heroesevolved.too_tired"), true);
@@ -316,7 +316,7 @@ public final class ElectroCombat {
         if (now < fighter.dodgeReady) return false;
         int level = Math.max(1, PlayerProgressionService.getLevel(player));
         boolean flashback = dodge == Dodge.BACK && level >= CLAP_LEVEL;
-        int cost = COMMON.electroDodgeEnergyCost.get() + (flashback ? 3 : 0);
+        int cost = com.jayptucker.heroesevolved.ability.PowerBalance.styleEnergy("electrokinesis", flashback ? "back_dodge" : "dodge", COMMON.electroDodgeEnergyCost.get() + (flashback ? 3 : 0));
         if (cost > 0) {
             if (!PlayerEnergyService.tryConsume(player, cost)) {
                 player.displayClientMessage(Component.translatable("electro.heroesevolved.too_tired"), true);
@@ -338,7 +338,7 @@ public final class ElectroCombat {
                 ElectroGeometry.STEP_TICKS + 2, false, false);
         StyleMotion.evade(player, EVADE_TICKS);
         StyleMotion.cushion(player, CUSHION_TICKS);
-        fighter.dodgeReady = now + COMMON.electroDodgeCooldownTicks.get();
+        fighter.dodgeReady = now + com.jayptucker.heroesevolved.ability.PowerBalance.styleCooldown("electrokinesis", "dodge", COMMON.electroDodgeCooldownTicks.get());
 
         double travel = speed * ElectroGeometry.STEP_TICKS;
         ServerLevel world = player.serverLevel();

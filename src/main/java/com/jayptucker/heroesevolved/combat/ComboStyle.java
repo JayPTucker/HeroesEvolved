@@ -110,7 +110,9 @@ public abstract class ComboStyle implements FightingStyles.Style {
     protected void tickFighter(ServerPlayer player, Fighter fighter, long now) {}
 
     protected int strikeCost(Move move) {
-        return move == Move.LEAD || move == Move.REAR ? COMMON.styleStrikeEnergyCost.get() : COMMON.styleFlourishEnergyCost.get();
+        String style = power.getPath();
+        return move == Move.LEAD || move == Move.REAR ? com.jayptucker.heroesevolved.ability.PowerBalance.styleEnergy(style, "strike", COMMON.styleStrikeEnergyCost.get())
+                : com.jayptucker.heroesevolved.ability.PowerBalance.styleEnergy(style, "finisher", COMMON.styleFlourishEnergyCost.get());
     }
 
     /** Whether the style dodges at all (a brawler who braces instead overrides {@link #dodge}). */
@@ -149,7 +151,7 @@ public abstract class ComboStyle implements FightingStyles.Style {
         if (now < fighter.dodgeReady) return false;
         int level = Math.max(1, PlayerProgressionService.getLevel(player));
         boolean special = dodge == Dodge.BACK && level >= FINISHER_LEVEL;
-        if (!pay(player, COMMON.styleDodgeEnergyCost.get() + (special ? 3 : 0))) return false;
+        if (!pay(player, com.jayptucker.heroesevolved.ability.PowerBalance.styleEnergy(power.getPath(), special ? "back_dodge" : "dodge", COMMON.styleDodgeEnergyCost.get() + (special ? 3 : 0)))) return false;
         Vec3 forward = StyleHits.level(player), right = StyleHits.right(forward);
         Vec3 direction = switch (dodge) {
             case LEFT -> right.scale(-1);
@@ -159,7 +161,7 @@ public abstract class ComboStyle implements FightingStyles.Style {
         int evade = evadeTicks(special);
         if (evade > 0) StyleMotion.evade(player, evade);
         StyleMotion.cushion(player, CUSHION_TICKS);
-        fighter.dodgeReady = now + COMMON.styleDodgeCooldownTicks.get();
+        fighter.dodgeReady = now + com.jayptucker.heroesevolved.ability.PowerBalance.styleCooldown(power.getPath(), "dodge", COMMON.styleDodgeCooldownTicks.get());
         dodgeMove(player, fighter, dodge, direction, special, level);
         return true;
     }
@@ -179,6 +181,7 @@ public abstract class ComboStyle implements FightingStyles.Style {
     protected boolean pay(ServerPlayer player, int cost) {
         if (cost <= 0) return true;
         if (!PlayerEnergyService.tryConsume(player, cost)) {
+            PlayerEnergyService.refused(player);
             player.displayClientMessage(Component.translatable(tired), true);
             return false;
         }

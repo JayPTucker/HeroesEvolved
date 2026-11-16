@@ -44,6 +44,12 @@ Mastery comes from using your power for something:
 - **Stamina spent** still counts, at half a point per point (config `powerUseMasteryPerEnergy`).
 - A small trickle for active, non-AFK play.
 
+## Stamina
+
+The stamina bar grows with Power Level: 100 at Level 1 and 5 more each level (195 at Level 20). It recovers 3 a
+second at Level 1, a little faster each level, and twice as fast out of combat; a move pauses recovery for 1.5 s.
+Costs, cooldowns and unlock levels for every power are in [Stamina and balance](stamina-balance.md).
+
 ## Ability ranks
 
 Each ability ranks up the more you use it successfully: Rank II after 25 uses (10% shorter
