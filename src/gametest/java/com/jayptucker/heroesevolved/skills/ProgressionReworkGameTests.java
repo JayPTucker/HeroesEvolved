@@ -139,14 +139,17 @@ public final class ProgressionReworkGameTests {
         var p = player(h, ModAbilities.QUAKE_ID, 5);
         var action = AbilityRegistry.ABILITIES.get(ModAbilities.QUAKE_ID).actions().get(AbilitySlot.PRIMARY);
         int cooldown = 200, cost = 40;
+        // Fourteen levels past this move's Level 1, the practice discount applies on top of the ranks.
+        double practice = 1 - AbilityRanks.levelDiscount(p, action);
+        int rankOne = (int) Math.ceil(cost * practice - 1e-9), rankThree = (int) Math.ceil(cost * practice * 0.9 - 1e-9);
         h.assertTrue(AbilityRanks.cooldown(p, ModAbilities.QUAKE_ID, action, cooldown) == cooldown, "Rank I is the base");
         for (int i = 0; i < AbilityRanks.RANK_TWO; i++) AbilityRanks.used(p, ModAbilities.QUAKE_ID, action);
         h.assertTrue(AbilityRanks.rank(p, ModAbilities.QUAKE_ID, action) == 2, "25 uses is Rank II");
         h.assertTrue(AbilityRanks.cooldown(p, ModAbilities.QUAKE_ID, action, cooldown) == 180
-                && AbilityRanks.energy(p, ModAbilities.QUAKE_ID, action, cost) == cost, "Rank II: 10% faster, same stamina");
+                && AbilityRanks.energy(p, ModAbilities.QUAKE_ID, action, cost) == rankOne, "Rank II: 10% faster, same stamina");
         for (int i = AbilityRanks.RANK_TWO; i < AbilityRanks.RANK_THREE; i++) AbilityRanks.used(p, ModAbilities.QUAKE_ID, action);
         h.assertTrue(AbilityRanks.cooldown(p, ModAbilities.QUAKE_ID, action, cooldown) == 160
-                && AbilityRanks.energy(p, ModAbilities.QUAKE_ID, action, cost) == 36, "Rank III: 20% faster, 10% cheaper");
+                && AbilityRanks.energy(p, ModAbilities.QUAKE_ID, action, cost) == rankThree, "Rank III: 20% faster, 10% cheaper");
         h.assertTrue(p.getData(ModDataAttachments.POWER_JOURNEY).uses("telepathy", action.definition().id().getPath()) == 0,
                 "Uses belong to one power");
         h.succeed();

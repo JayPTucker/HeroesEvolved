@@ -46,7 +46,8 @@ Mastery comes from using your power for something:
 
 ## Stamina
 
-The stamina bar grows with Power Level: 100 at Level 1 and 5 more each level (195 at Level 20). It recovers 3 a
+The stamina bar grows with Power Level: 100 at Level 1 and 4 more each level (176 at Level 20), and every move
+costs 4% less for each level since it unlocked, up to 30% off. It recovers 3 a
 second at Level 1, a little faster each level, and twice as fast out of combat; a move pauses recovery for 1.5 s.
 Costs, cooldowns and unlock levels for every power are in [Stamina and balance](stamina-balance.md).
 

@@ -58,6 +58,10 @@ Every cost, cooldown, per-second drain and unlock tier is set in one place. The 
 - **The HUD reads `ClientStamina`,** which runs the bar forward on the server's rates between packets and keeps a
   trailing "just spent" value. `PlayerEnergyService.refused(player)` flashes and shakes the bar; call it wherever a move
   is refused for lack of stamina (`AbilityUseService` and `ComboStyle.pay` do).
+- **Practice discount.** `AbilityRanks.energy` takes 4% off per Power Level since an action unlocked (its
+  `definition().unlockLevel()`, so skills and class abilities count from their node's level), capped at 30%, then
+  Rank III's 10%. Activation and every HUD path go through it; held drains don't. Tests that check a charged cost
+  must compute it with `AbilityRanks.energy`, not read the table.
 - **Menus describe costs with `PowerBalance.describe(path, energy)`** ("20 + 12/s stamina"), so held and distance
   costs read the same on the wheel and the Powers page.
 - **Photographs:** `tools/stamina-preview.init.gradle` (`uitest/StaminaHudPreview`, flag `heroes.preview.stamina`)

@@ -17,7 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * Stamina: the one pool every power, skill, class ability and fighting style spends.
  *
  * <ul>
- *   <li>The bar is 100 at Power Level 1 and grows 5 a level (195 at Level 20).</li>
+ *   <li>The bar is 100 at Power Level 1 and grows 4 a level (176 at Level 20). Moves also get cheaper as you level
+ *       past them ({@link com.jayptucker.heroesevolved.ability.service.AbilityRanks#levelDiscount}).</li>
  *   <li>It recovers every tick: 3 a second at Level 1, 0.12 more each level, doubled after five seconds out of
  *       combat. Spending on a move pauses recovery for 1.5 seconds, so a fight is paid for out of the bar and the
  *       quiet after it refills you.</li>

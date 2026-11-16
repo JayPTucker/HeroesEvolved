@@ -142,7 +142,9 @@ public final class SkillTreeGameTests {
             h.assertTrue(result == AbilityUseResult.SUCCESS && victim.getHealth() < health, "New loadout skill must damage a real aimed mob");
             // The node's balanced stamina (skill_trees.json), less Control's 10%, rounded up.
             int base = SkillCatalog.find("empathic_mimicry", "empathic_mimicry_0_1").orElseThrow().energy();
-            int expected = (int) Math.ceil(base * 0.9);
+            // Then the practice discount for the Power Levels since the skill opened.
+            int expected = com.jayptucker.heroesevolved.ability.service.AbilityRanks.energy(p, id("empathic_mimicry"),
+                    Loadout.resolve(p, id("empathic_mimicry"), "empathic_mimicry_0_1"), (int) Math.ceil(base * 0.9));
             h.assertTrue(PlayerEnergyService.getEnergy(p) == energy - expected, base + " base stamina with 10% reduction rounds up to " + expected
                     + ", spent " + (energy - PlayerEnergyService.getEnergy(p)));
             h.assertTrue(CooldownService.isOnCooldown(p, id("empathic_mimicry_0_1")), "Sub-ability must use its own cooldown");

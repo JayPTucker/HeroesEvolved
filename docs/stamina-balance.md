@@ -6,7 +6,11 @@ Change a number there and re-run it, not here.
 
 ## The bar
 
-- **Size:** 100 at Power Level 1, 5 more each level: 145 at Level 10, 170 at 15, 195 at 20.
+- **Size:** 100 at Power Level 1, 4 more each level: 136 at Level 10, 156 at 15, 176 at 20.
+- **Practice:** a move costs 4% less for every Power Level since it unlocked, up to 30% off (eight levels
+  later). A Level 1 move is at the cap by Level 9; an ultimate that opened at Level 15 is 16% off at Level 19.
+  The table's numbers below are full price; the HUD and menus show what you actually pay. Rank III's 10% stacks
+  on top. Held drains (Still World's per-second cost, flying) aren't discounted.
 - **Recovery:** 3 a second at Level 1, 0.12 more each level (5.3 at Level 20), and **double** after five seconds
   without dealing or taking damage. It runs every tick, so the bar fills smoothly.
 - **The pause:** spending stamina on a move stops recovery for 1.5 seconds. A fight is paid for out of the bar; the
@@ -36,11 +40,12 @@ Photographed by `tools/stamina-preview.init.gradle` (`uitest/StaminaHudPreview`,
 
 | Move | Cost |
 | --- | --- |
-| Still World | 20 to start, then 12 a second at Level 6, 10 at Level 10, 8 at Level 15. It lasts until you press
-  the key again or the stamina runs out (recovery stops meanwhile): about 9 s at Level 6, 13 at Level 10, 19 at
-  Level 15 and 22 at Level 20 from a full bar. |
+| Still World | 20 to start (21 at Level 15 after its practice discount), then 12 a second at Level 6, 10 at
+  Level 10, 8 at Level 15. It lasts until you press the key again or the stamina runs out (recovery stops
+  meanwhile): about 8 s at Level 6, 11 at Level 10, 17 at Level 15 and 19 at Level 20 from a full bar. |
 | Between Seconds | 10 to start, then 5 a second (4 at Level 15), recovery stopped; press again to end. |
-| Fold Space | 4 to start plus 0.3 for every block folded: 9 for a 16-block fold, 28 for 80, 49 for 150. |
+| Fold Space | 4 to start plus 0.3 for every block folded, at full price: 9 for a 16-block fold, 28 for 80, 49
+  for 150. Practice takes up to 30% off (35 for a 150-block fold at Level 15). |
 | Free Flight | 4 a second cruising, 9 boosting (recovery still runs). |
 | Accelerate | 3 a second running, 6 in Redline. |
 | Fade | 2 a second, +1 for each friend faded with you. |
@@ -67,8 +72,9 @@ changes instead, so damage always follows stamina.
 Cooldown follows cost by role, in seconds per point of stamina: basic 0.08 (at least half a second), quick 0.15,
 skill 0.3, heavy 0.45, ultimate 0.75. Toggles and held powers get a short cooldown and pay by the second.
 
-Damage scales with tier inside the code (4 + tier, 5 + 1.5 x tier...), and costs don't, so a move gets more
-for its stamina as you level, on a bar that grows by 95%.
+Damage scales with tier inside the code (4 + tier, 5 + 1.5 x tier...), a move gets cheaper with practice, and
+the bar grows by 76%, so a move gets more for its stamina as you level, while the newest and biggest moves
+stay at full price until you have had them a while.
 
 ## Unlock levels
 

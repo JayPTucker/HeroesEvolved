@@ -353,8 +353,8 @@ public final class HeroesEvolvedConfig {
                         .defineInRange("baseEnergy", 100, 1, 10_000);
 
                 energyPerPowerLevel = builder
-                        .comment("Additional maximum stamina for each Power Level after the first (195 at Level 20 by default).")
-                        .defineInRange("staminaPerPowerLevel", 5.0D, 0.0D, 1_000.0D);
+                        .comment("Additional maximum stamina for each Power Level after the first (176 at Level 20 by default).")
+                        .defineInRange("staminaPerPowerLevel", 4.0D, 0.0D, 1_000.0D);
 
                 staminaRegenerationPerSecond = builder
                         .comment("Stamina recovered every second at Power Level 1, once the recovery pause has passed.")

@@ -30,13 +30,16 @@ public final class PowerBalanceGameTests {
         var result = com.jayptucker.heroesevolved.ability.service.AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, false);
         var note = PowerBalance.tuning("sonic_note");
         int spent = before - com.jayptucker.heroesevolved.energy.PlayerEnergyService.getEnergy(p);
-        h.assertTrue(result == AbilityUseResult.SUCCESS && spent == note.energy(), "Resonant Note must charge the table's stamina, spent " + spent);
+        var noteAction = ModAbilities.SONIC_RESONANCE.get().actions().get(AbilitySlot.SECONDARY);
+        int charged = com.jayptucker.heroesevolved.ability.service.AbilityRanks.energy(p, ModAbilities.SONIC_RESONANCE_ID, noteAction, note.energy());
+        h.assertTrue(charged < note.energy(), "Level 15 is past Resonant Note's Level 3, so it is discounted");
+        h.assertTrue(result == AbilityUseResult.SUCCESS && spent == charged, "Resonant Note must charge the table's stamina less the discount, spent " + spent);
         try {
             var method = com.jayptucker.heroesevolved.network.PlayerPowerSyncService.class.getDeclaredMethod("toSnapshots", ServerPlayer.class, AbilitySlot.class, AbilityAction.class);
             method.setAccessible(true);
             var snapshots = (java.util.stream.Stream<com.jayptucker.heroesevolved.network.AbilityActionSnapshot>) method.invoke(null, p, AbilitySlot.SECONDARY, ModAbilities.SONIC_RESONANCE.get().actions().get(AbilitySlot.SECONDARY));
             var shown = snapshots.findFirst().orElseThrow();
-            h.assertTrue(shown.energyCost() == note.energy() && shown.cooldownTicks() == note.cooldown(), "HUD must show the same adjusted cost and cooldown");
+            h.assertTrue(shown.energyCost() == charged && shown.cooldownTicks() == note.cooldown(), "HUD must show the same adjusted cost and cooldown");
         } catch (ReflectiveOperationException e) { throw new AssertionError(e); }
         h.succeed();
     }

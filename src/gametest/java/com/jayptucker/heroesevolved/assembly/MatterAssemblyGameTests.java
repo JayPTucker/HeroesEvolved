@@ -164,7 +164,12 @@ public final class MatterAssemblyGameTests {
         h.assertTrue(SkillTreeService.equip(p, AbilitySlot.PRIMARY, "matter_assembly_switchback"), "Learned route equips from inventory");
         int energy = PlayerEnergyService.getEnergy(p);
         h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.PRIMARY, false) == AbilityUseResult.SUCCESS, "The equipped route is playable");
-        h.assertTrue(PlayerEnergyService.getEnergy(p) == energy - 20 && CooldownService.isOnCooldown(p, id("matter_assembly_switchback")), "Optional action has a real independent cost and cooldown");
+        // The node's balanced stamina, less the practice discount for the levels since it opened.
+        var route = com.jayptucker.heroesevolved.skills.Loadout.resolve(p, id("matter_assembly"), "matter_assembly_switchback");
+        int cost = com.jayptucker.heroesevolved.ability.service.AbilityRanks.energy(p, id("matter_assembly"), route,
+                com.jayptucker.heroesevolved.skills.SkillCatalog.find("matter_assembly", "matter_assembly_switchback").orElseThrow().energy());
+        h.assertTrue(PlayerEnergyService.getEnergy(p) == energy - cost && CooldownService.isOnCooldown(p, id("matter_assembly_switchback")),
+                "Optional action has a real independent cost and cooldown: spent " + (energy - PlayerEnergyService.getEnergy(p)) + ", expected " + cost);
         h.runAfterDelay(5, () -> {
             try {
                 var cells = MatterAssemblyService.cells(p);

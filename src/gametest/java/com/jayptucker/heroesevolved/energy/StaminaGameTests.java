@@ -156,8 +156,11 @@ public final class StaminaGameTests {
             var result = AbilityUseService.activateAssignedAction(p, AbilitySlot.PRIMARY, false);
             double spent = before - PlayerEnergyService.getStamina(p);
             int base = PowerBalance.tuning("time_blink").energy();
+            // Level 15 is fourteen levels past Fold Space's Level 1, so the 30% practice discount applies.
+            int expected = com.jayptucker.heroesevolved.ability.service.AbilityRanks.energy(p, ModAbilities.TIME_MANIPULATION_ID, fold, base + far);
+            h.assertTrue(com.jayptucker.heroesevolved.ability.service.AbilityRanks.levelDiscount(p, fold) == .30, "A Level 1 move is at the cap by Level 15");
             h.assertTrue(result == AbilityUseResult.SUCCESS, "The fold should go, got " + result);
-            h.assertTrue(Math.abs(spent - (base + far)) < 1.01, "It charges the base and the distance: spent " + spent + ", expected " + (base + far));
+            h.assertTrue(Math.abs(spent - expected) < 1.01, "It charges the base and the distance, discounted: spent " + spent + ", expected " + expected);
             h.succeed();
         } finally { done(p); }
     }
@@ -202,15 +205,37 @@ public final class StaminaGameTests {
     }
 
     @GameTest(template = "rewind_empty", batch = "stamina.bar")
+    public static void movesGetCheaperTheLongerYouHaveHadThem(GameTestHelper h) {
+        var p = traveller(h, 1);
+        try {
+            var actions = ModAbilities.TIME_MANIPULATION.get().actions();
+            var fold = actions.get(AbilitySlot.PRIMARY);      // opens at Level 1
+            var still = actions.get(AbilitySlot.TERTIARY);    // opens at Level 6
+            var id = ModAbilities.TIME_MANIPULATION_ID;
+            PlayerProgressionService.setPowerLevel(p, 1);
+            h.assertTrue(com.jayptucker.heroesevolved.ability.service.AbilityRanks.energy(p, id, fold, 100) == 100, "Full price on the level it opens");
+            PlayerProgressionService.setPowerLevel(p, 6);
+            h.assertTrue(com.jayptucker.heroesevolved.ability.service.AbilityRanks.energy(p, id, fold, 100) == 80, "4% a level: five levels on, 20% off");
+            h.assertTrue(com.jayptucker.heroesevolved.ability.service.AbilityRanks.energy(p, id, still, 100) == 100, "A move that just opened is full price");
+            PlayerProgressionService.setPowerLevel(p, 15);
+            h.assertTrue(com.jayptucker.heroesevolved.ability.service.AbilityRanks.energy(p, id, fold, 100) == 70, "Capped at 30% off");
+            h.assertTrue(com.jayptucker.heroesevolved.ability.service.AbilityRanks.energy(p, id, still, 100) == 70, "Nine levels on, at the cap too");
+            h.assertTrue(com.jayptucker.heroesevolved.ability.service.AbilityRanks.energy(p, id, still, 0) == 0, "Free stays free");
+            h.assertTrue(com.jayptucker.heroesevolved.ability.service.AbilityRanks.energy(p, id, still, 1) == 1, "Never below 1");
+            h.succeed();
+        } finally { done(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "stamina.bar")
     public static void theBarGrowsWithPowerLevel(GameTestHelper h) {
         var p = traveller(h, 1);
         try {
             PlayerProgressionService.setPowerLevel(p, 1);
             h.assertTrue(PlayerEnergyService.getMaximumEnergy(p) == 100, "100 at Level 1");
             PlayerProgressionService.setPowerLevel(p, 10);
-            h.assertTrue(PlayerEnergyService.getMaximumEnergy(p) == 145, "145 at Level 10");
+            h.assertTrue(PlayerEnergyService.getMaximumEnergy(p) == 136, "136 at Level 10");
             PlayerProgressionService.setPowerLevel(p, 15);
-            h.assertTrue(PlayerEnergyService.getMaximumEnergy(p) == 170, "170 at Level 15");
+            h.assertTrue(PlayerEnergyService.getMaximumEnergy(p) == 156, "156 at Level 15");
             h.succeed();
         } finally { done(p); }
     }
