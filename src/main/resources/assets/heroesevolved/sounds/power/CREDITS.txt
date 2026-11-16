@@ -1,0 +1,5 @@
+Power signature sounds: original synthesized sound design
+
+Every .ogg under sounds/power/ is generated from scratch by tools/generate-power-audio.py.
+No recordings, samples or third-party audio are used: each cue is built from filtered noise,
+oscillators, struck partials, bubble chirps and synthetic rooms. 48 kHz mono Vorbis.

@@ -900,6 +900,22 @@ public final class HydroService {
         if (tide != null && player.isAlive()) sync(player, true);
     }
 
+    /**
+     * Their powers changed (a new power, a revoked one, a mimic switching sets). {@link #forget} on revoke runs while the
+     * power is still theirs, so its sync still carries the water; this one runs after, and tells every viewer to stop
+     * drawing it if they no longer bend water. Held moves end too, or the octopus arms stay on a body that can't use them.
+     */
+    public static void powerChanged(ServerPlayer player) {
+        Tide tide = TIDES.get(player.getUUID());
+        if (tide == null || !player.isAlive()) return;
+        if (!isHydrokinetic(player) && !com.jayptucker.heroesevolved.mimicry.MimicryService.isBorrowingHydrokinesis(player)) {
+            if (tide.ride != null) endRide(player);
+            tide.octopus = null;
+            tide.storm = null;
+        }
+        sync(player, true);
+    }
+
     /** Logout: everything stops and the reservoir is forgotten (it refills). */
     public static void leave(ServerPlayer player) {
         forget(player);

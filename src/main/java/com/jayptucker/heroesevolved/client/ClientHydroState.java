@@ -47,6 +47,11 @@ public final class ClientHydroState {
     public static void update(HydroStatePayload payload) {
         var level = Minecraft.getInstance().level;
         long now = level == null ? 0 : level.getGameTime();
+        // No water and no held move: nothing to draw (someone who lost the power, or a mimic who let it go).
+        if (payload.water() <= 0 && payload.flags() == 0) {
+            BENDERS.remove(payload.entity());
+            return;
+        }
         Bender bender = BENDERS.computeIfAbsent(payload.entity(), Bender::new);
         int changed = bender.flags ^ payload.flags();
         for (int bit = 0; bit < 8; bit++) if ((changed & 1 << bit) != 0) bender.changed[bit] = now;

@@ -20,6 +20,7 @@ import net.minecraft.server.level.ServerPlayer;
 import com.jayptucker.heroesevolved.network.PlayerPowerSyncService;
 import com.jayptucker.heroesevolved.progression.MasteryService;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
+import com.jayptucker.heroesevolved.sounds.PowerSounds;
 
 import java.util.Map;
 import java.util.Optional;
@@ -49,8 +50,11 @@ public final class AbilityUseService {
     private static void release(ServerPlayer player, Function<ResourceLocation, AbilityAction> chooser) {
         PlayerAbilityService.getData(player).assignedPower()
                 .filter(entry -> entry.getValue().isUnlocked() && AbilityRegistry.ABILITIES.get(entry.getKey()) != null)
-                .ifPresent(entry -> Optional.ofNullable(chooser.apply(entry.getKey())).ifPresent(action -> action.release(
-                        new AbilityUseContext(player, entry.getKey(), PlayerProgressionService.getLevel(player), false))));
+                .ifPresent(entry -> Optional.ofNullable(chooser.apply(entry.getKey())).ifPresent(action -> {
+                    int mark = PowerSounds.mark();
+                    action.release(new AbilityUseContext(player, entry.getKey(), PlayerProgressionService.getLevel(player), false));
+                    PowerSounds.used(player, entry.getKey(), action, PowerSounds.Phase.RELEASE, mark);
+                }));
     }
 
     /** Presses ability key 1 to 5 by its slot. */
@@ -166,7 +170,9 @@ public final class AbilityUseService {
                 allowOverexertion
         );
 
+        int mark = PowerSounds.mark();
         if (abilityAction.followUp(context)) {
+            PowerSounds.used(player, powerId, abilityAction, PowerSounds.Phase.FOLLOW_UP, mark);
             PlayerPowerSyncService.sync(player);
             return AbilityUseResult.SUCCESS;
         }
@@ -175,6 +181,7 @@ public final class AbilityUseService {
         // end the effect immediately. This branch is intentionally before
         // cooldown and energy checks, because ending an effect is always free.
         if ((context.modifierHeld() || abilityAction.deactivateOnPress(context)) && abilityAction.deactivate(context)) {
+            PowerSounds.used(player, powerId, abilityAction, PowerSounds.Phase.DISMISS, mark);
             PlayerPowerSyncService.sync(player);
             return AbilityUseResult.SUCCESS;
         }
@@ -210,10 +217,12 @@ public final class AbilityUseService {
             return AbilityUseResult.INSUFFICIENT_ENERGY;
         }
 
+        mark = PowerSounds.mark();
         if (abilityAction.activate(context)
                 != AbilityActivationResult.SUCCESS) {
             return AbilityUseResult.ACTIVATION_REJECTED;
         }
+        PowerSounds.used(player, powerId, abilityAction, PowerSounds.Phase.PRESS, mark);
 
         AbilityEffects.onAction(
                 player, powerId, abilityAction.definition().id().getPath());

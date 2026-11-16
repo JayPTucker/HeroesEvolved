@@ -102,7 +102,9 @@ public final class FightingStyles {
     public static void strikeInput(ServerPlayer player, int targetId) {
         if (!player.getMainHandItem().isEmpty()) return;
         Style style = of(player);
-        if (style != null && style.strike(player) >= 0) return;
+        int thrown = style == null ? -1 : style.strike(player);
+        if (thrown == 1) com.jayptucker.heroesevolved.sounds.PowerSounds.strike(player, style.power());
+        if (thrown >= 0) return;
         Entity target = targetId < 0 ? null : player.level().getEntity(targetId);
         if (target != null && target != player && target.isAlive() && target.isAttackable()
                 && player.canInteractWithEntity(target, 1)) {
@@ -113,7 +115,9 @@ public final class FightingStyles {
 
     public static boolean dodge(ServerPlayer player, Dodge dodge) {
         Style style = of(player);
-        return style != null && style.dodge(player, dodge);
+        if (style == null || !style.dodge(player, dodge)) return false;
+        com.jayptucker.heroesevolved.sounds.PowerSounds.dodge(player, style.power());
+        return true;
     }
 
     @SubscribeEvent

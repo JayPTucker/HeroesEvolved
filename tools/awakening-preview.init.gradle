@@ -1,0 +1,26 @@
+// A live run through every power's awakening and the dangers each one answers (uitest/AwakeningPreview), to watch.
+// -Ponly=cryokinesis,time_manipulation keeps some powers; -Psound turns the game's sound back on.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('awakeningPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/awakening-preview')
+                        programArguments.addAll('--width', '1280', '--height', '800')
+                        systemProperty('heroes.preview.awakening', 'true')
+                        if (project.hasProperty('only')) systemProperty('heroes.preview.awakening.only', project.property('only'))
+                        if (project.hasProperty('sound')) systemProperty('heroes.preview.sound', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('awakeningPreviewClasses')) }
+        }
+    }
+}

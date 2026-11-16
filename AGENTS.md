@@ -178,6 +178,33 @@ Natural awakenings answer danger to the owner *or a nearby ally*, and every rele
   change.
 - **Powers are blocked during an intro.** `PowerRules.canAct` is false while `PowerIntroService.isActive`, so
   `FlightDynamicsService` forgets any burst. Intro movement sends `SkyburstMotionPayload` itself instead.
+- **Each power wakes for the dangers it can answer.** `Danger.Peril` (FIGHT, BLAST, FALL, FIRE, DROWNING, LOW) and
+  `Danger.answers(power, peril)` are the one table: every power answers a fight and a blast, only some a fall, lava or
+  water, and only Space-Time "under two hearts for any reason". `Danger.of(source, victim)` classifies a blow for the
+  damage intercepts; `Danger.hazard`, `fallDamage` (the vanilla landing worked out ahead) and `blastDamage` (vanilla's
+  explosion formula with cover, armor and difficulty) find the danger before it lands. A new power adds itself to the
+  sets in `Danger` and a case in `intro/PerilRelease`.
+- **Hold the danger while the power charges.** `Danger.hold` runs every charge tick of a danger awakening: threats
+  crawl, creeper fuses are capped short of going off (`mixin/CreeperSwellAccess`), TNT stops counting, shots slow and a
+  fall hangs in mid-air. Without it a three-second charge lets the creeper go off first. Any power-up that takes time to
+  arrive (a summon, a long cast) can borrow it.
+- **A power can fight on its own.** `intro/Surge` drives a player's fighting style (`Style.strike`) or kit actions
+  (`AbilityAction.activate` with a level-5 context) for a few seconds, facing each target in turn. Use it for anything
+  that should act through a player (a berserk state, a possession).
+- **Turning a player without moving them.** `connection.teleport(x, y, z, yaw, pitch, Set.of(X, Y, Z))` still takes
+  the player's *absolute* position: the server moves them to `x, y, z` and only the packet is relative. Passing zeros
+  (as the first surge did) teleports the player to the world's origin. Pass `getX(), getY(), getZ()`.
+- **A synced state must be cleared after the change, not before.** `HydroService.forget` runs inside `onRevoked`,
+  while the power is still theirs, so its sync still carried the water and the octopus arms stayed drawn on the next
+  power. `HydroService.powerChanged` runs from `PlayerAbilityService.saveData` and `MimicryService.sync`, after the
+  change; the client drops a bender whose state comes back empty.
+- **Watching awakenings live:** `tools/awakening-preview.init.gradle` (`uitest/AwakeningPreview`, flag
+  `heroes.preview.awakening`) plays every power's awakening and every danger in one run and closes itself.
+  `-Ponly=cryokinesis,quake` keeps some; `-Psound` keeps the sound on (every other preview is silent).
+- **Hold back one system's start for another.** Space-Time's danger awakening stops time (`intro/TimeAwakening`)
+  before the vision: `TimeAwakening.arm` runs before the unlock so `PowerIntroService.acquired` and the ability's
+  `onAwaken` see `claims(player)` and wait; `end` starts the vision. A logout during the stop leaves the vision to
+  `TimeIntroService.login`, which already re-runs an unseen intro.
 
 ## Reusable patterns from the Induced Radioactivity rework
 
@@ -1429,3 +1456,24 @@ structure, and the way out became the Last Day's own vault and stair, a hundred 
   existing worlds keep their rooms, ladder and hatch.
 - **Audit the bunker too.** The bunker preview prints `BUNKER_AUDIT` for the rooms, the stairwell and the lobby. It
   photographs the vault, the stairwell, the slot and the lobby (`bunker-18` to `bunker-21`).
+
+## Reusable patterns from the power sounds
+
+Every power got a palette of original synthesized cues in November 2026 (`sounds/PowerSounds`, `sounds/PowerCue`, made by
+`tools/generate-power-audio.py`). What the player hears is in [docs/power-sounds.md](docs/power-sounds.md).
+
+- **One hook gives every action a sound.** `AbilityUseService` calls `PowerSounds.used` after each press, follow-up,
+  dismissal and release, so core moves, skill-tree actives and class abilities all sound without per-move code. Pick a
+  different cue in the tables at the top of `PowerSounds`, not at the call site.
+- **Did the action already make a sound?** `mixin/ServerSoundCountMixin` counts every `ServerLevel.playSeededSound`;
+  take `PowerSounds.mark()` before something runs and compare after. Space-Time, Sonic Resonance and Vibe (hand-made
+  sounds) only get a cue for silence, and a release only plays when it did something.
+- **Impacts from one event.** A `LivingDamageEvent.Post` hook plays the attacker's power's impact where the blow lands.
+  Plain swings are told apart by `AttackEntityEvent` in the same tick (style strikes go through `StyleHits.hurt`, which
+  fires none), vanilla projectiles by the direct entity's namespace, and damage over time by a 1.5 floor.
+- **Making OGGs here.** `build/audio-tools` holds numpy, scipy and soundfile (`py -3 -m pip install --target
+  build/audio-tools --no-deps scipy`), and soundfile writes Vorbis. Synthesize in Python, normalise loudness on the
+  band above 150 Hz (sub-bass alone is silent on laptop speakers, so give thumps a mid-range knock), keep peaks under
+  0.8 because Vorbis overshoots, and check the files with numbers and a spectrogram sheet before wiring them in.
+- **Private cues.** A stealthy move's cue goes to its user alone as a `ClientboundSoundPacket` (`PowerSounds.play(...,
+  alone)`).

@@ -115,6 +115,19 @@ public final class ModSounds {
     public static final Supplier<SoundEvent> VIBE_ECHO = vibeSound("vibe_echo");
     public static final Supplier<SoundEvent> VIBE_COLLAPSE = vibeSound("vibe_collapse");
 
+    /** Every power's signature cues ({@link PowerCue}), keyed by event path, e.g. {@code power.pyrokinesis.cast}. */
+    public static final java.util.Map<String, Supplier<SoundEvent>> POWER_CUES = powerCues();
+
+    private static java.util.Map<String, Supplier<SoundEvent>> powerCues() {
+        java.util.Map<String, Supplier<SoundEvent>> cues = new java.util.HashMap<>();
+        for (String power : PowerCue.POWERS) {
+            for (PowerCue cue : PowerCue.values()) {
+                if (PowerCue.has(power, cue)) cues.put(PowerCue.event(power, cue), vibeSound(PowerCue.event(power, cue)));
+            }
+        }
+        return java.util.Map.copyOf(cues);
+    }
+
     private static Supplier<SoundEvent> vibeSound(String id) {
         return SOUND_EVENTS.register(id, () -> SoundEvent.createVariableRangeEvent(
                 ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, id)));

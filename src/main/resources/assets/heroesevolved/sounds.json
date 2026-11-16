@@ -64,7 +64,7 @@
     "subtitle": "subtitles.heroesevolved.time_slow",
     "sounds": [
       {
-          "name": "heroesevolved:ability/time_slow_stop",
+        "name": "heroesevolved:ability/time_slow_stop",
         "volume": 0.9,
         "pitch": 1.0
       }
@@ -121,10 +121,22 @@
   "skyburst_boom": {
     "subtitle": "subtitles.heroesevolved.skyburst_boom",
     "sounds": [
-      { "name": "minecraft:mob/warden/sonic_boom1", "attenuation_distance": 192 },
-      { "name": "minecraft:mob/warden/sonic_boom2", "attenuation_distance": 192 },
-      { "name": "minecraft:mob/warden/sonic_boom3", "attenuation_distance": 192 },
-      { "name": "minecraft:mob/warden/sonic_boom4", "attenuation_distance": 192 }
+      {
+        "name": "minecraft:mob/warden/sonic_boom1",
+        "attenuation_distance": 192
+      },
+      {
+        "name": "minecraft:mob/warden/sonic_boom2",
+        "attenuation_distance": 192
+      },
+      {
+        "name": "minecraft:mob/warden/sonic_boom3",
+        "attenuation_distance": 192
+      },
+      {
+        "name": "minecraft:mob/warden/sonic_boom4",
+        "attenuation_distance": 192
+      }
     ]
   },
   "sonic_cry": {
@@ -182,6 +194,876 @@
     "subtitle": "subtitles.heroesevolved.vibe_collapse",
     "sounds": [
       "heroesevolved:ability/vibe_collapse"
+    ]
+  },
+  "power.cryokinesis.cast": {
+    "subtitle": "subtitles.heroesevolved.power.cryokinesis.cast",
+    "sounds": [
+      "heroesevolved:power/cryokinesis/cast_1",
+      "heroesevolved:power/cryokinesis/cast_2",
+      "heroesevolved:power/cryokinesis/cast_3"
+    ]
+  },
+  "power.cryokinesis.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.cryokinesis.heavy",
+    "sounds": [
+      "heroesevolved:power/cryokinesis/heavy_1",
+      "heroesevolved:power/cryokinesis/heavy_2"
+    ]
+  },
+  "power.cryokinesis.charge": {
+    "subtitle": "subtitles.heroesevolved.power.cryokinesis.charge",
+    "sounds": [
+      "heroesevolved:power/cryokinesis/charge_1"
+    ]
+  },
+  "power.cryokinesis.impact": {
+    "subtitle": "subtitles.heroesevolved.power.cryokinesis.impact",
+    "sounds": [
+      "heroesevolved:power/cryokinesis/impact_1",
+      "heroesevolved:power/cryokinesis/impact_2",
+      "heroesevolved:power/cryokinesis/impact_3"
+    ]
+  },
+  "power.cryokinesis.end": {
+    "subtitle": "subtitles.heroesevolved.power.cryokinesis.end",
+    "sounds": [
+      "heroesevolved:power/cryokinesis/end_1",
+      "heroesevolved:power/cryokinesis/end_2"
+    ]
+  },
+  "power.cryokinesis.strike": {
+    "subtitle": "subtitles.heroesevolved.power.cryokinesis.strike",
+    "sounds": [
+      "heroesevolved:power/cryokinesis/strike_1",
+      "heroesevolved:power/cryokinesis/strike_2",
+      "heroesevolved:power/cryokinesis/strike_3"
+    ]
+  },
+  "power.cryokinesis.dodge": {
+    "subtitle": "subtitles.heroesevolved.power.cryokinesis.dodge",
+    "sounds": [
+      "heroesevolved:power/cryokinesis/dodge_1",
+      "heroesevolved:power/cryokinesis/dodge_2"
+    ]
+  },
+  "power.electrokinesis.cast": {
+    "subtitle": "subtitles.heroesevolved.power.electrokinesis.cast",
+    "sounds": [
+      "heroesevolved:power/electrokinesis/cast_1",
+      "heroesevolved:power/electrokinesis/cast_2",
+      "heroesevolved:power/electrokinesis/cast_3"
+    ]
+  },
+  "power.electrokinesis.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.electrokinesis.heavy",
+    "sounds": [
+      "heroesevolved:power/electrokinesis/heavy_1",
+      "heroesevolved:power/electrokinesis/heavy_2"
+    ]
+  },
+  "power.electrokinesis.charge": {
+    "subtitle": "subtitles.heroesevolved.power.electrokinesis.charge",
+    "sounds": [
+      "heroesevolved:power/electrokinesis/charge_1"
+    ]
+  },
+  "power.electrokinesis.impact": {
+    "subtitle": "subtitles.heroesevolved.power.electrokinesis.impact",
+    "sounds": [
+      "heroesevolved:power/electrokinesis/impact_1",
+      "heroesevolved:power/electrokinesis/impact_2",
+      "heroesevolved:power/electrokinesis/impact_3"
+    ]
+  },
+  "power.electrokinesis.end": {
+    "subtitle": "subtitles.heroesevolved.power.electrokinesis.end",
+    "sounds": [
+      "heroesevolved:power/electrokinesis/end_1",
+      "heroesevolved:power/electrokinesis/end_2"
+    ]
+  },
+  "power.electrokinesis.strike": {
+    "subtitle": "subtitles.heroesevolved.power.electrokinesis.strike",
+    "sounds": [
+      "heroesevolved:power/electrokinesis/strike_1",
+      "heroesevolved:power/electrokinesis/strike_2",
+      "heroesevolved:power/electrokinesis/strike_3"
+    ]
+  },
+  "power.electrokinesis.dodge": {
+    "subtitle": "subtitles.heroesevolved.power.electrokinesis.dodge",
+    "sounds": [
+      "heroesevolved:power/electrokinesis/dodge_1",
+      "heroesevolved:power/electrokinesis/dodge_2"
+    ]
+  },
+  "power.flight.cast": {
+    "subtitle": "subtitles.heroesevolved.power.flight.cast",
+    "sounds": [
+      "heroesevolved:power/flight/cast_1",
+      "heroesevolved:power/flight/cast_2",
+      "heroesevolved:power/flight/cast_3"
+    ]
+  },
+  "power.flight.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.flight.heavy",
+    "sounds": [
+      "heroesevolved:power/flight/heavy_1",
+      "heroesevolved:power/flight/heavy_2"
+    ]
+  },
+  "power.flight.charge": {
+    "subtitle": "subtitles.heroesevolved.power.flight.charge",
+    "sounds": [
+      "heroesevolved:power/flight/charge_1"
+    ]
+  },
+  "power.flight.impact": {
+    "subtitle": "subtitles.heroesevolved.power.flight.impact",
+    "sounds": [
+      "heroesevolved:power/flight/impact_1",
+      "heroesevolved:power/flight/impact_2",
+      "heroesevolved:power/flight/impact_3"
+    ]
+  },
+  "power.flight.end": {
+    "subtitle": "subtitles.heroesevolved.power.flight.end",
+    "sounds": [
+      "heroesevolved:power/flight/end_1",
+      "heroesevolved:power/flight/end_2"
+    ]
+  },
+  "power.hydrokinesis.cast": {
+    "subtitle": "subtitles.heroesevolved.power.hydrokinesis.cast",
+    "sounds": [
+      "heroesevolved:power/hydrokinesis/cast_1",
+      "heroesevolved:power/hydrokinesis/cast_2",
+      "heroesevolved:power/hydrokinesis/cast_3"
+    ]
+  },
+  "power.hydrokinesis.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.hydrokinesis.heavy",
+    "sounds": [
+      "heroesevolved:power/hydrokinesis/heavy_1",
+      "heroesevolved:power/hydrokinesis/heavy_2"
+    ]
+  },
+  "power.hydrokinesis.charge": {
+    "subtitle": "subtitles.heroesevolved.power.hydrokinesis.charge",
+    "sounds": [
+      "heroesevolved:power/hydrokinesis/charge_1"
+    ]
+  },
+  "power.hydrokinesis.impact": {
+    "subtitle": "subtitles.heroesevolved.power.hydrokinesis.impact",
+    "sounds": [
+      "heroesevolved:power/hydrokinesis/impact_1",
+      "heroesevolved:power/hydrokinesis/impact_2",
+      "heroesevolved:power/hydrokinesis/impact_3"
+    ]
+  },
+  "power.hydrokinesis.end": {
+    "subtitle": "subtitles.heroesevolved.power.hydrokinesis.end",
+    "sounds": [
+      "heroesevolved:power/hydrokinesis/end_1",
+      "heroesevolved:power/hydrokinesis/end_2"
+    ]
+  },
+  "power.hydrokinesis.strike": {
+    "subtitle": "subtitles.heroesevolved.power.hydrokinesis.strike",
+    "sounds": [
+      "heroesevolved:power/hydrokinesis/strike_1",
+      "heroesevolved:power/hydrokinesis/strike_2",
+      "heroesevolved:power/hydrokinesis/strike_3"
+    ]
+  },
+  "power.hydrokinesis.dodge": {
+    "subtitle": "subtitles.heroesevolved.power.hydrokinesis.dodge",
+    "sounds": [
+      "heroesevolved:power/hydrokinesis/dodge_1",
+      "heroesevolved:power/hydrokinesis/dodge_2"
+    ]
+  },
+  "power.invisibility.cast": {
+    "subtitle": "subtitles.heroesevolved.power.invisibility.cast",
+    "sounds": [
+      "heroesevolved:power/invisibility/cast_1",
+      "heroesevolved:power/invisibility/cast_2",
+      "heroesevolved:power/invisibility/cast_3"
+    ]
+  },
+  "power.invisibility.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.invisibility.heavy",
+    "sounds": [
+      "heroesevolved:power/invisibility/heavy_1",
+      "heroesevolved:power/invisibility/heavy_2"
+    ]
+  },
+  "power.invisibility.charge": {
+    "subtitle": "subtitles.heroesevolved.power.invisibility.charge",
+    "sounds": [
+      "heroesevolved:power/invisibility/charge_1"
+    ]
+  },
+  "power.invisibility.impact": {
+    "subtitle": "subtitles.heroesevolved.power.invisibility.impact",
+    "sounds": [
+      "heroesevolved:power/invisibility/impact_1",
+      "heroesevolved:power/invisibility/impact_2",
+      "heroesevolved:power/invisibility/impact_3"
+    ]
+  },
+  "power.invisibility.end": {
+    "subtitle": "subtitles.heroesevolved.power.invisibility.end",
+    "sounds": [
+      "heroesevolved:power/invisibility/end_1",
+      "heroesevolved:power/invisibility/end_2"
+    ]
+  },
+  "power.invisibility.strike": {
+    "subtitle": "subtitles.heroesevolved.power.invisibility.strike",
+    "sounds": [
+      "heroesevolved:power/invisibility/strike_1",
+      "heroesevolved:power/invisibility/strike_2",
+      "heroesevolved:power/invisibility/strike_3"
+    ]
+  },
+  "power.invisibility.dodge": {
+    "subtitle": "subtitles.heroesevolved.power.invisibility.dodge",
+    "sounds": [
+      "heroesevolved:power/invisibility/dodge_1",
+      "heroesevolved:power/invisibility/dodge_2"
+    ]
+  },
+  "power.matter_assembly.cast": {
+    "subtitle": "subtitles.heroesevolved.power.matter_assembly.cast",
+    "sounds": [
+      "heroesevolved:power/matter_assembly/cast_1",
+      "heroesevolved:power/matter_assembly/cast_2",
+      "heroesevolved:power/matter_assembly/cast_3"
+    ]
+  },
+  "power.matter_assembly.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.matter_assembly.heavy",
+    "sounds": [
+      "heroesevolved:power/matter_assembly/heavy_1",
+      "heroesevolved:power/matter_assembly/heavy_2"
+    ]
+  },
+  "power.matter_assembly.charge": {
+    "subtitle": "subtitles.heroesevolved.power.matter_assembly.charge",
+    "sounds": [
+      "heroesevolved:power/matter_assembly/charge_1"
+    ]
+  },
+  "power.matter_assembly.impact": {
+    "subtitle": "subtitles.heroesevolved.power.matter_assembly.impact",
+    "sounds": [
+      "heroesevolved:power/matter_assembly/impact_1",
+      "heroesevolved:power/matter_assembly/impact_2",
+      "heroesevolved:power/matter_assembly/impact_3"
+    ]
+  },
+  "power.matter_assembly.end": {
+    "subtitle": "subtitles.heroesevolved.power.matter_assembly.end",
+    "sounds": [
+      "heroesevolved:power/matter_assembly/end_1",
+      "heroesevolved:power/matter_assembly/end_2"
+    ]
+  },
+  "power.empathic_mimicry.cast": {
+    "subtitle": "subtitles.heroesevolved.power.empathic_mimicry.cast",
+    "sounds": [
+      "heroesevolved:power/empathic_mimicry/cast_1",
+      "heroesevolved:power/empathic_mimicry/cast_2",
+      "heroesevolved:power/empathic_mimicry/cast_3"
+    ]
+  },
+  "power.empathic_mimicry.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.empathic_mimicry.heavy",
+    "sounds": [
+      "heroesevolved:power/empathic_mimicry/heavy_1",
+      "heroesevolved:power/empathic_mimicry/heavy_2"
+    ]
+  },
+  "power.empathic_mimicry.charge": {
+    "subtitle": "subtitles.heroesevolved.power.empathic_mimicry.charge",
+    "sounds": [
+      "heroesevolved:power/empathic_mimicry/charge_1"
+    ]
+  },
+  "power.empathic_mimicry.impact": {
+    "subtitle": "subtitles.heroesevolved.power.empathic_mimicry.impact",
+    "sounds": [
+      "heroesevolved:power/empathic_mimicry/impact_1",
+      "heroesevolved:power/empathic_mimicry/impact_2",
+      "heroesevolved:power/empathic_mimicry/impact_3"
+    ]
+  },
+  "power.empathic_mimicry.end": {
+    "subtitle": "subtitles.heroesevolved.power.empathic_mimicry.end",
+    "sounds": [
+      "heroesevolved:power/empathic_mimicry/end_1",
+      "heroesevolved:power/empathic_mimicry/end_2"
+    ]
+  },
+  "power.phasing.cast": {
+    "subtitle": "subtitles.heroesevolved.power.phasing.cast",
+    "sounds": [
+      "heroesevolved:power/phasing/cast_1",
+      "heroesevolved:power/phasing/cast_2",
+      "heroesevolved:power/phasing/cast_3"
+    ]
+  },
+  "power.phasing.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.phasing.heavy",
+    "sounds": [
+      "heroesevolved:power/phasing/heavy_1",
+      "heroesevolved:power/phasing/heavy_2"
+    ]
+  },
+  "power.phasing.charge": {
+    "subtitle": "subtitles.heroesevolved.power.phasing.charge",
+    "sounds": [
+      "heroesevolved:power/phasing/charge_1"
+    ]
+  },
+  "power.phasing.impact": {
+    "subtitle": "subtitles.heroesevolved.power.phasing.impact",
+    "sounds": [
+      "heroesevolved:power/phasing/impact_1",
+      "heroesevolved:power/phasing/impact_2",
+      "heroesevolved:power/phasing/impact_3"
+    ]
+  },
+  "power.phasing.end": {
+    "subtitle": "subtitles.heroesevolved.power.phasing.end",
+    "sounds": [
+      "heroesevolved:power/phasing/end_1",
+      "heroesevolved:power/phasing/end_2"
+    ]
+  },
+  "power.phasing.strike": {
+    "subtitle": "subtitles.heroesevolved.power.phasing.strike",
+    "sounds": [
+      "heroesevolved:power/phasing/strike_1",
+      "heroesevolved:power/phasing/strike_2",
+      "heroesevolved:power/phasing/strike_3"
+    ]
+  },
+  "power.phasing.dodge": {
+    "subtitle": "subtitles.heroesevolved.power.phasing.dodge",
+    "sounds": [
+      "heroesevolved:power/phasing/dodge_1",
+      "heroesevolved:power/phasing/dodge_2"
+    ]
+  },
+  "power.pyrokinesis.cast": {
+    "subtitle": "subtitles.heroesevolved.power.pyrokinesis.cast",
+    "sounds": [
+      "heroesevolved:power/pyrokinesis/cast_1",
+      "heroesevolved:power/pyrokinesis/cast_2",
+      "heroesevolved:power/pyrokinesis/cast_3"
+    ]
+  },
+  "power.pyrokinesis.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.pyrokinesis.heavy",
+    "sounds": [
+      "heroesevolved:power/pyrokinesis/heavy_1",
+      "heroesevolved:power/pyrokinesis/heavy_2"
+    ]
+  },
+  "power.pyrokinesis.charge": {
+    "subtitle": "subtitles.heroesevolved.power.pyrokinesis.charge",
+    "sounds": [
+      "heroesevolved:power/pyrokinesis/charge_1"
+    ]
+  },
+  "power.pyrokinesis.impact": {
+    "subtitle": "subtitles.heroesevolved.power.pyrokinesis.impact",
+    "sounds": [
+      "heroesevolved:power/pyrokinesis/impact_1",
+      "heroesevolved:power/pyrokinesis/impact_2",
+      "heroesevolved:power/pyrokinesis/impact_3"
+    ]
+  },
+  "power.pyrokinesis.end": {
+    "subtitle": "subtitles.heroesevolved.power.pyrokinesis.end",
+    "sounds": [
+      "heroesevolved:power/pyrokinesis/end_1",
+      "heroesevolved:power/pyrokinesis/end_2"
+    ]
+  },
+  "power.pyrokinesis.strike": {
+    "subtitle": "subtitles.heroesevolved.power.pyrokinesis.strike",
+    "sounds": [
+      "heroesevolved:power/pyrokinesis/strike_1",
+      "heroesevolved:power/pyrokinesis/strike_2",
+      "heroesevolved:power/pyrokinesis/strike_3"
+    ]
+  },
+  "power.pyrokinesis.dodge": {
+    "subtitle": "subtitles.heroesevolved.power.pyrokinesis.dodge",
+    "sounds": [
+      "heroesevolved:power/pyrokinesis/dodge_1",
+      "heroesevolved:power/pyrokinesis/dodge_2"
+    ]
+  },
+  "power.quake.cast": {
+    "subtitle": "subtitles.heroesevolved.power.quake.cast",
+    "sounds": [
+      "heroesevolved:power/quake/cast_1",
+      "heroesevolved:power/quake/cast_2",
+      "heroesevolved:power/quake/cast_3"
+    ]
+  },
+  "power.quake.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.quake.heavy",
+    "sounds": [
+      "heroesevolved:power/quake/heavy_1",
+      "heroesevolved:power/quake/heavy_2"
+    ]
+  },
+  "power.quake.charge": {
+    "subtitle": "subtitles.heroesevolved.power.quake.charge",
+    "sounds": [
+      "heroesevolved:power/quake/charge_1"
+    ]
+  },
+  "power.quake.impact": {
+    "subtitle": "subtitles.heroesevolved.power.quake.impact",
+    "sounds": [
+      "heroesevolved:power/quake/impact_1",
+      "heroesevolved:power/quake/impact_2",
+      "heroesevolved:power/quake/impact_3"
+    ]
+  },
+  "power.quake.end": {
+    "subtitle": "subtitles.heroesevolved.power.quake.end",
+    "sounds": [
+      "heroesevolved:power/quake/end_1",
+      "heroesevolved:power/quake/end_2"
+    ]
+  },
+  "power.quake.strike": {
+    "subtitle": "subtitles.heroesevolved.power.quake.strike",
+    "sounds": [
+      "heroesevolved:power/quake/strike_1",
+      "heroesevolved:power/quake/strike_2",
+      "heroesevolved:power/quake/strike_3"
+    ]
+  },
+  "power.quake.dodge": {
+    "subtitle": "subtitles.heroesevolved.power.quake.dodge",
+    "sounds": [
+      "heroesevolved:power/quake/dodge_1",
+      "heroesevolved:power/quake/dodge_2"
+    ]
+  },
+  "power.radiation.cast": {
+    "subtitle": "subtitles.heroesevolved.power.radiation.cast",
+    "sounds": [
+      "heroesevolved:power/radiation/cast_1",
+      "heroesevolved:power/radiation/cast_2",
+      "heroesevolved:power/radiation/cast_3"
+    ]
+  },
+  "power.radiation.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.radiation.heavy",
+    "sounds": [
+      "heroesevolved:power/radiation/heavy_1",
+      "heroesevolved:power/radiation/heavy_2"
+    ]
+  },
+  "power.radiation.charge": {
+    "subtitle": "subtitles.heroesevolved.power.radiation.charge",
+    "sounds": [
+      "heroesevolved:power/radiation/charge_1"
+    ]
+  },
+  "power.radiation.impact": {
+    "subtitle": "subtitles.heroesevolved.power.radiation.impact",
+    "sounds": [
+      "heroesevolved:power/radiation/impact_1",
+      "heroesevolved:power/radiation/impact_2",
+      "heroesevolved:power/radiation/impact_3"
+    ]
+  },
+  "power.radiation.end": {
+    "subtitle": "subtitles.heroesevolved.power.radiation.end",
+    "sounds": [
+      "heroesevolved:power/radiation/end_1",
+      "heroesevolved:power/radiation/end_2"
+    ]
+  },
+  "power.regeneration.cast": {
+    "subtitle": "subtitles.heroesevolved.power.regeneration.cast",
+    "sounds": [
+      "heroesevolved:power/regeneration/cast_1",
+      "heroesevolved:power/regeneration/cast_2",
+      "heroesevolved:power/regeneration/cast_3"
+    ]
+  },
+  "power.regeneration.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.regeneration.heavy",
+    "sounds": [
+      "heroesevolved:power/regeneration/heavy_1",
+      "heroesevolved:power/regeneration/heavy_2"
+    ]
+  },
+  "power.regeneration.charge": {
+    "subtitle": "subtitles.heroesevolved.power.regeneration.charge",
+    "sounds": [
+      "heroesevolved:power/regeneration/charge_1"
+    ]
+  },
+  "power.regeneration.impact": {
+    "subtitle": "subtitles.heroesevolved.power.regeneration.impact",
+    "sounds": [
+      "heroesevolved:power/regeneration/impact_1",
+      "heroesevolved:power/regeneration/impact_2",
+      "heroesevolved:power/regeneration/impact_3"
+    ]
+  },
+  "power.regeneration.end": {
+    "subtitle": "subtitles.heroesevolved.power.regeneration.end",
+    "sounds": [
+      "heroesevolved:power/regeneration/end_1",
+      "heroesevolved:power/regeneration/end_2"
+    ]
+  },
+  "power.regeneration.strike": {
+    "subtitle": "subtitles.heroesevolved.power.regeneration.strike",
+    "sounds": [
+      "heroesevolved:power/regeneration/strike_1",
+      "heroesevolved:power/regeneration/strike_2",
+      "heroesevolved:power/regeneration/strike_3"
+    ]
+  },
+  "power.regeneration.dodge": {
+    "subtitle": "subtitles.heroesevolved.power.regeneration.dodge",
+    "sounds": [
+      "heroesevolved:power/regeneration/dodge_1",
+      "heroesevolved:power/regeneration/dodge_2"
+    ]
+  },
+  "power.shapeshifting.cast": {
+    "subtitle": "subtitles.heroesevolved.power.shapeshifting.cast",
+    "sounds": [
+      "heroesevolved:power/shapeshifting/cast_1",
+      "heroesevolved:power/shapeshifting/cast_2",
+      "heroesevolved:power/shapeshifting/cast_3"
+    ]
+  },
+  "power.shapeshifting.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.shapeshifting.heavy",
+    "sounds": [
+      "heroesevolved:power/shapeshifting/heavy_1",
+      "heroesevolved:power/shapeshifting/heavy_2"
+    ]
+  },
+  "power.shapeshifting.charge": {
+    "subtitle": "subtitles.heroesevolved.power.shapeshifting.charge",
+    "sounds": [
+      "heroesevolved:power/shapeshifting/charge_1"
+    ]
+  },
+  "power.shapeshifting.impact": {
+    "subtitle": "subtitles.heroesevolved.power.shapeshifting.impact",
+    "sounds": [
+      "heroesevolved:power/shapeshifting/impact_1",
+      "heroesevolved:power/shapeshifting/impact_2",
+      "heroesevolved:power/shapeshifting/impact_3"
+    ]
+  },
+  "power.shapeshifting.end": {
+    "subtitle": "subtitles.heroesevolved.power.shapeshifting.end",
+    "sounds": [
+      "heroesevolved:power/shapeshifting/end_1",
+      "heroesevolved:power/shapeshifting/end_2"
+    ]
+  },
+  "power.sonic_resonance.cast": {
+    "subtitle": "subtitles.heroesevolved.power.sonic_resonance.cast",
+    "sounds": [
+      "heroesevolved:power/sonic_resonance/cast_1",
+      "heroesevolved:power/sonic_resonance/cast_2",
+      "heroesevolved:power/sonic_resonance/cast_3"
+    ]
+  },
+  "power.sonic_resonance.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.sonic_resonance.heavy",
+    "sounds": [
+      "heroesevolved:power/sonic_resonance/heavy_1",
+      "heroesevolved:power/sonic_resonance/heavy_2"
+    ]
+  },
+  "power.sonic_resonance.charge": {
+    "subtitle": "subtitles.heroesevolved.power.sonic_resonance.charge",
+    "sounds": [
+      "heroesevolved:power/sonic_resonance/charge_1"
+    ]
+  },
+  "power.sonic_resonance.impact": {
+    "subtitle": "subtitles.heroesevolved.power.sonic_resonance.impact",
+    "sounds": [
+      "heroesevolved:power/sonic_resonance/impact_1",
+      "heroesevolved:power/sonic_resonance/impact_2",
+      "heroesevolved:power/sonic_resonance/impact_3"
+    ]
+  },
+  "power.sonic_resonance.end": {
+    "subtitle": "subtitles.heroesevolved.power.sonic_resonance.end",
+    "sounds": [
+      "heroesevolved:power/sonic_resonance/end_1",
+      "heroesevolved:power/sonic_resonance/end_2"
+    ]
+  },
+  "power.superspeed.cast": {
+    "subtitle": "subtitles.heroesevolved.power.superspeed.cast",
+    "sounds": [
+      "heroesevolved:power/superspeed/cast_1",
+      "heroesevolved:power/superspeed/cast_2",
+      "heroesevolved:power/superspeed/cast_3"
+    ]
+  },
+  "power.superspeed.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.superspeed.heavy",
+    "sounds": [
+      "heroesevolved:power/superspeed/heavy_1",
+      "heroesevolved:power/superspeed/heavy_2"
+    ]
+  },
+  "power.superspeed.charge": {
+    "subtitle": "subtitles.heroesevolved.power.superspeed.charge",
+    "sounds": [
+      "heroesevolved:power/superspeed/charge_1"
+    ]
+  },
+  "power.superspeed.impact": {
+    "subtitle": "subtitles.heroesevolved.power.superspeed.impact",
+    "sounds": [
+      "heroesevolved:power/superspeed/impact_1",
+      "heroesevolved:power/superspeed/impact_2",
+      "heroesevolved:power/superspeed/impact_3"
+    ]
+  },
+  "power.superspeed.end": {
+    "subtitle": "subtitles.heroesevolved.power.superspeed.end",
+    "sounds": [
+      "heroesevolved:power/superspeed/end_1",
+      "heroesevolved:power/superspeed/end_2"
+    ]
+  },
+  "power.superspeed.strike": {
+    "subtitle": "subtitles.heroesevolved.power.superspeed.strike",
+    "sounds": [
+      "heroesevolved:power/superspeed/strike_1",
+      "heroesevolved:power/superspeed/strike_2",
+      "heroesevolved:power/superspeed/strike_3"
+    ]
+  },
+  "power.superspeed.dodge": {
+    "subtitle": "subtitles.heroesevolved.power.superspeed.dodge",
+    "sounds": [
+      "heroesevolved:power/superspeed/dodge_1",
+      "heroesevolved:power/superspeed/dodge_2"
+    ]
+  },
+  "power.technopathy.cast": {
+    "subtitle": "subtitles.heroesevolved.power.technopathy.cast",
+    "sounds": [
+      "heroesevolved:power/technopathy/cast_1",
+      "heroesevolved:power/technopathy/cast_2",
+      "heroesevolved:power/technopathy/cast_3"
+    ]
+  },
+  "power.technopathy.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.technopathy.heavy",
+    "sounds": [
+      "heroesevolved:power/technopathy/heavy_1",
+      "heroesevolved:power/technopathy/heavy_2"
+    ]
+  },
+  "power.technopathy.charge": {
+    "subtitle": "subtitles.heroesevolved.power.technopathy.charge",
+    "sounds": [
+      "heroesevolved:power/technopathy/charge_1"
+    ]
+  },
+  "power.technopathy.impact": {
+    "subtitle": "subtitles.heroesevolved.power.technopathy.impact",
+    "sounds": [
+      "heroesevolved:power/technopathy/impact_1",
+      "heroesevolved:power/technopathy/impact_2",
+      "heroesevolved:power/technopathy/impact_3"
+    ]
+  },
+  "power.technopathy.end": {
+    "subtitle": "subtitles.heroesevolved.power.technopathy.end",
+    "sounds": [
+      "heroesevolved:power/technopathy/end_1",
+      "heroesevolved:power/technopathy/end_2"
+    ]
+  },
+  "power.telekinesis.cast": {
+    "subtitle": "subtitles.heroesevolved.power.telekinesis.cast",
+    "sounds": [
+      "heroesevolved:power/telekinesis/cast_1",
+      "heroesevolved:power/telekinesis/cast_2",
+      "heroesevolved:power/telekinesis/cast_3"
+    ]
+  },
+  "power.telekinesis.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.telekinesis.heavy",
+    "sounds": [
+      "heroesevolved:power/telekinesis/heavy_1",
+      "heroesevolved:power/telekinesis/heavy_2"
+    ]
+  },
+  "power.telekinesis.charge": {
+    "subtitle": "subtitles.heroesevolved.power.telekinesis.charge",
+    "sounds": [
+      "heroesevolved:power/telekinesis/charge_1"
+    ]
+  },
+  "power.telekinesis.impact": {
+    "subtitle": "subtitles.heroesevolved.power.telekinesis.impact",
+    "sounds": [
+      "heroesevolved:power/telekinesis/impact_1",
+      "heroesevolved:power/telekinesis/impact_2",
+      "heroesevolved:power/telekinesis/impact_3"
+    ]
+  },
+  "power.telekinesis.end": {
+    "subtitle": "subtitles.heroesevolved.power.telekinesis.end",
+    "sounds": [
+      "heroesevolved:power/telekinesis/end_1",
+      "heroesevolved:power/telekinesis/end_2"
+    ]
+  },
+  "power.telekinesis.strike": {
+    "subtitle": "subtitles.heroesevolved.power.telekinesis.strike",
+    "sounds": [
+      "heroesevolved:power/telekinesis/strike_1",
+      "heroesevolved:power/telekinesis/strike_2",
+      "heroesevolved:power/telekinesis/strike_3"
+    ]
+  },
+  "power.telekinesis.dodge": {
+    "subtitle": "subtitles.heroesevolved.power.telekinesis.dodge",
+    "sounds": [
+      "heroesevolved:power/telekinesis/dodge_1",
+      "heroesevolved:power/telekinesis/dodge_2"
+    ]
+  },
+  "power.telepathy.cast": {
+    "subtitle": "subtitles.heroesevolved.power.telepathy.cast",
+    "sounds": [
+      "heroesevolved:power/telepathy/cast_1",
+      "heroesevolved:power/telepathy/cast_2",
+      "heroesevolved:power/telepathy/cast_3"
+    ]
+  },
+  "power.telepathy.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.telepathy.heavy",
+    "sounds": [
+      "heroesevolved:power/telepathy/heavy_1",
+      "heroesevolved:power/telepathy/heavy_2"
+    ]
+  },
+  "power.telepathy.charge": {
+    "subtitle": "subtitles.heroesevolved.power.telepathy.charge",
+    "sounds": [
+      "heroesevolved:power/telepathy/charge_1"
+    ]
+  },
+  "power.telepathy.impact": {
+    "subtitle": "subtitles.heroesevolved.power.telepathy.impact",
+    "sounds": [
+      "heroesevolved:power/telepathy/impact_1",
+      "heroesevolved:power/telepathy/impact_2",
+      "heroesevolved:power/telepathy/impact_3"
+    ]
+  },
+  "power.telepathy.end": {
+    "subtitle": "subtitles.heroesevolved.power.telepathy.end",
+    "sounds": [
+      "heroesevolved:power/telepathy/end_1",
+      "heroesevolved:power/telepathy/end_2"
+    ]
+  },
+  "power.time_manipulation.cast": {
+    "subtitle": "subtitles.heroesevolved.power.time_manipulation.cast",
+    "sounds": [
+      "heroesevolved:power/time_manipulation/cast_1",
+      "heroesevolved:power/time_manipulation/cast_2",
+      "heroesevolved:power/time_manipulation/cast_3"
+    ]
+  },
+  "power.time_manipulation.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.time_manipulation.heavy",
+    "sounds": [
+      "heroesevolved:power/time_manipulation/heavy_1",
+      "heroesevolved:power/time_manipulation/heavy_2"
+    ]
+  },
+  "power.time_manipulation.charge": {
+    "subtitle": "subtitles.heroesevolved.power.time_manipulation.charge",
+    "sounds": [
+      "heroesevolved:power/time_manipulation/charge_1"
+    ]
+  },
+  "power.time_manipulation.impact": {
+    "subtitle": "subtitles.heroesevolved.power.time_manipulation.impact",
+    "sounds": [
+      "heroesevolved:power/time_manipulation/impact_1",
+      "heroesevolved:power/time_manipulation/impact_2",
+      "heroesevolved:power/time_manipulation/impact_3"
+    ]
+  },
+  "power.time_manipulation.end": {
+    "subtitle": "subtitles.heroesevolved.power.time_manipulation.end",
+    "sounds": [
+      "heroesevolved:power/time_manipulation/end_1",
+      "heroesevolved:power/time_manipulation/end_2"
+    ]
+  },
+  "power.vibe.cast": {
+    "subtitle": "subtitles.heroesevolved.power.vibe.cast",
+    "sounds": [
+      "heroesevolved:power/vibe/cast_1",
+      "heroesevolved:power/vibe/cast_2",
+      "heroesevolved:power/vibe/cast_3"
+    ]
+  },
+  "power.vibe.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.vibe.heavy",
+    "sounds": [
+      "heroesevolved:power/vibe/heavy_1",
+      "heroesevolved:power/vibe/heavy_2"
+    ]
+  },
+  "power.vibe.charge": {
+    "subtitle": "subtitles.heroesevolved.power.vibe.charge",
+    "sounds": [
+      "heroesevolved:power/vibe/charge_1"
+    ]
+  },
+  "power.vibe.impact": {
+    "subtitle": "subtitles.heroesevolved.power.vibe.impact",
+    "sounds": [
+      "heroesevolved:power/vibe/impact_1",
+      "heroesevolved:power/vibe/impact_2",
+      "heroesevolved:power/vibe/impact_3"
+    ]
+  },
+  "power.vibe.end": {
+    "subtitle": "subtitles.heroesevolved.power.vibe.end",
+    "sounds": [
+      "heroesevolved:power/vibe/end_1",
+      "heroesevolved:power/vibe/end_2"
     ]
   }
 }

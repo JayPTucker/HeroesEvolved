@@ -46,13 +46,16 @@ has exactly one owner. The chosen are told only that "something in your blood an
 ## Danger: when a dormant power wakes
 
 A dormant power does not wake on its own. It waits for someone to be in real danger: its owner,
-or an ally near them.
+or an ally near them. Losing a fight and a blast about to go off wake every power; a deadly fall,
+lava or fire, and drowning wake only the powers that can do something about them; and Space-Time
+answers anyone under two hearts who is still being hurt, by stopping time. The full table, and
+what each power does about each danger, is in [power-intros.md](power-intros.md).
 
 - **The owner:** in a fight (hit by, or hitting, a living attacker within the last
   `awakening.combatWindowSeconds`, default 10) **and** below `awakening.healthThreshold` (default
   4 health, two hearts).
 - **An ally:** a friendly player (a teammate, or any player while PvP is off) or the owner's own
-  pet, within the power's reach (48 blocks for Superspeed, 64 for Flight, 16 for Space-Time, 24 for
+  pet, within the power's reach (48 blocks for Superspeed, 64 for Flight, 20 for Space-Time, 24 for
   the rest), in a fight and below the same threshold (pets: 40% of their health if that is lower).
   The nearest one in danger is answered.
 - **Flight needs open sky.** It only wakes when its owner has no solid block overhead (leaves don't
@@ -69,7 +72,7 @@ The rest:
 - Every intro release grants the owner and the ward a second wind (at least 40% health, Resistance II
   for six seconds) and then saves the ward its own way: a speedster runs them out of the fight, a
   flyer carries them into the sky. See `power-intros.md`.
-- Low health from a fall, starvation or the like is not a fight, and wakes nothing.
+- Low health from something no power can help with (starving, a cactus) wakes only Space-Time, which stops time for anyone under two hearts who is still being hurt. The void and `/kill` wake nothing.
 - Nothing wakes during totality.
 
 The Formula and admin awakenings skip the adrenaline requirement.

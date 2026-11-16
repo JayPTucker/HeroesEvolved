@@ -37,7 +37,9 @@ public final class PreviewQuiet {
     @SubscribeEvent public static void tick(ClientTickEvent.Pre e) {
         if (previewing == null)
             previewing = System.getProperties().stringPropertyNames().stream()
-                    .anyMatch(key -> key.startsWith("heroes.preview.") && Boolean.getBoolean(key));
+                    .anyMatch(key -> key.startsWith("heroes.preview.") && Boolean.getBoolean(key))
+                    // A preview someone is sitting and watching can opt back in to sound (-Psound).
+                    && !Boolean.getBoolean("heroes.preview.sound");
         if (!previewing) return;
         var volume = Minecraft.getInstance().options.getSoundSourceOptionInstance(SoundSource.MASTER);
         if (volume.get() != 0.0) volume.set(0.0);

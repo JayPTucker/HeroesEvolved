@@ -9,6 +9,7 @@
     "BlockEntityStallMixin",
     "CreateKineticSeizeMixin",
     "PlayerListSaveAccess",
+    "CreeperSwellAccess",
     "StoppedTimeInputMixin",
     "SlowedFlightMovementMixin",
     "SpeedWaterCollisionMixin",
@@ -19,7 +20,8 @@
     "PossessionPermissionMixin",
     "EclipseMoonPhaseMixin",
     "SoulFireBlockMixin",
-    "InvertedHealMixin"
+    "InvertedHealMixin",
+    "ServerSoundCountMixin"
   ],
   "client": [
     "FlightSprintMixin",

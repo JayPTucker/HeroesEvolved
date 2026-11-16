@@ -26,7 +26,14 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 
+import com.jayptucker.heroesevolved.intro.Danger;
+import com.jayptucker.heroesevolved.intro.Danger.Peril;
+import com.jayptucker.heroesevolved.intro.TimeAwakening;
+
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,8 +42,10 @@ import java.util.UUID;
  * Handles the one-time transition from a dormant power to an awakened one.
  *
  * <p>A dormant power from the Eclipse waits for danger: it wakes when its owner, or an ally near them
- * (a friendly player or their own pet), is in a fight and about to lose it. A blow that would cross that
- * line, lethal or not, wakes the power first and cannot kill. The endangered one becomes the intro's
+ * (a friendly player or their own pet), is about to die of something it can answer ({@link Danger.Peril}):
+ * losing a fight or a creeper about to go off for every power, a deadly fall, lava or drowning for the powers
+ * that can help, and for Space-Time anyone under two hearts at all. A blow that would cross that line, lethal
+ * or not, wakes the power first and cannot kill. The endangered one becomes the intro's
  * <em>ward</em>: the intro shields them, and its release saves them in the power's own way (a speedster
  * runs them out, a flyer carries them off; see {@code docs/power-intros.md}).
  */
@@ -57,6 +66,10 @@ public final class AwakeningService {
     private static final Map<UUID, Long> GRACE_UNTIL = new HashMap<>();
     /** Whom each awakening is saving, read by the intro while the power unlocks. */
     private static final Map<UUID, LivingEntity> PENDING_WARD = new HashMap<>();
+    /** What the ward is being saved from, read by the intro with the ward. */
+    private static final Map<UUID, Peril> PENDING_PERIL = new HashMap<>();
+    /** Last game tick each player was hurt by anything. */
+    private static final Map<UUID, Long> LAST_HURT = new HashMap<>();
     /** Wards of a Space-Time awakening, shielded until their owner's vision ends: ward -> owner. */
     private static final Map<UUID, UUID> TIME_WARDS = new HashMap<>();
     private static final Map<UUID, Long> SKY_HINTS = new HashMap<>();
@@ -70,11 +83,19 @@ public final class AwakeningService {
 
     /** Called for any damage between living things; both sides are now in a fight. */
     public static void recordCombat(LivingEntity victim, DamageSource source) {
-        if (!(source.getEntity() instanceof LivingEntity attacker) || attacker == victim || victim.level().isClientSide) {
+        if (victim.level().isClientSide) {
+            return;
+        }
+        long now = victim.level().getGameTime();
+        // Any hurt counts for Space-Time, which answers anyone under two hearts who is still being hurt.
+        if (victim instanceof net.minecraft.world.entity.player.Player) {
+            LAST_HURT.put(victim.getUUID(), now);
+        }
+
+        if (!(source.getEntity() instanceof LivingEntity attacker) || attacker == victim) {
             return;
         }
 
-        long now = victim.level().getGameTime();
         LAST_COMBAT.put(victim.getUUID(), now);
         LAST_COMBAT.put(attacker.getUUID(), now);
 
@@ -82,6 +103,12 @@ public final class AwakeningService {
             long window = window();
             LAST_COMBAT.values().removeIf(at -> now - at > window);
         }
+    }
+
+    /** Hurt by anything at all within the combat window (players only). */
+    public static boolean recentlyHurt(LivingEntity entity) {
+        Long last = LAST_HURT.get(entity.getUUID());
+        return last != null && entity.level().getGameTime() - last <= window();
     }
 
     public static boolean inCombat(LivingEntity entity) {
@@ -133,16 +160,44 @@ public final class AwakeningService {
             }
         }
 
-        if (!tryAwakenFromAdrenaline(player) && player.serverLevel().getGameTime() % ALLY_SCAN_TICKS == 0) {
+        if (!tryAwakenFromAdrenaline(player) && player.serverLevel().getGameTime() % ALLY_SCAN_TICKS == 0
+                && !answerBlast(player)) {
             answerAlly(player);
         }
     }
 
-    /** Wakes a dormant power if its owner is in a fight and below the health threshold. */
+    /**
+     * What this creature is in danger from that this power answers, or null: losing a fight, a deadly landing,
+     * lava or fire, drowning, or (Space-Time only) simply being under two hearts and still getting hurt.
+     * Blasts are found from the explosive's side, in {@link #answerBlast}.
+     */
+    public static Peril peril(LivingEntity entity, String power) {
+        if (endangered(entity)) {
+            return Peril.FIGHT;
+        }
+
+        Peril hazard = Danger.hazard(entity, threshold(entity));
+        if (hazard != null && Danger.answers(power, hazard)) {
+            return hazard;
+        }
+
+        if (Danger.answers(power, Peril.LOW) && entity instanceof net.minecraft.world.entity.player.Player
+                && entity.isAlive() && entity.getHealth() + entity.getAbsorptionAmount() < threshold() && recentlyHurt(entity)) {
+            return Peril.LOW;
+        }
+
+        return null;
+    }
+
+    /** Wakes a dormant power if its owner is in danger it can answer (a fight going badly, a fall, fire, water). */
     public static boolean tryAwakenFromAdrenaline(ServerPlayer player) {
         String power = dormantPower(player);
-        if (power == null || player.getHealth() >= threshold() || !inCombat(player)
-                || EclipseService.arePowersSuppressed(player)) {
+        if (power == null || EclipseService.arePowersSuppressed(player)) {
+            return false;
+        }
+
+        Peril peril = peril(player, power);
+        if (peril == null) {
             return false;
         }
 
@@ -151,23 +206,28 @@ public final class AwakeningService {
             return false;
         }
 
-        return awakenFromAdrenaline(player, player);
+        return awakenFromAdrenaline(player, player, peril);
     }
 
-    /** Wakes a dormant power for the nearest ally in reach who is about to lose a fight. */
+    /** Wakes a dormant power for the nearest ally in reach who is in danger it can answer. */
     public static boolean answerAlly(ServerPlayer owner) {
         String power = dormantPower(owner);
         if (power == null || EclipseService.arePowersSuppressed(owner)) {
             return false;
         }
 
-        double reach = com.jayptucker.heroesevolved.intro.Danger.reach(power);
+        double reach = Danger.reach(power);
         boolean blocked = false;
         LivingEntity ward = null;
+        Peril wardPeril = null;
         double nearest = Double.MAX_VALUE;
         for (LivingEntity ally : owner.serverLevel().getEntitiesOfClass(LivingEntity.class,
-                owner.getBoundingBox().inflate(reach), ally -> com.jayptucker.heroesevolved.intro.Danger.ally(owner, ally)
-                        && ally.distanceToSqr(owner) <= reach * reach && endangered(ally))) {
+                owner.getBoundingBox().inflate(reach), ally -> Danger.ally(owner, ally)
+                        && ally.distanceToSqr(owner) <= reach * reach)) {
+            Peril peril = peril(ally, power);
+            if (peril == null) {
+                continue;
+            }
             if (!answers(owner, ally, power)) {
                 blocked = true;
                 continue;
@@ -176,6 +236,7 @@ public final class AwakeningService {
             if (distance < nearest) {
                 nearest = distance;
                 ward = ally;
+                wardPeril = peril;
             }
         }
 
@@ -183,7 +244,49 @@ public final class AwakeningService {
             hintSky(owner);
         }
 
-        return ward != null && awakenFromAdrenaline(owner, ward);
+        return ward != null && awakenFromAdrenaline(owner, ward, wardPeril);
+    }
+
+    /**
+     * A creeper hissing or TNT burning down, about to take the owner or an ally in reach below the line: the
+     * power wakes before it goes off. The owner is answered first, then the nearest ally.
+     */
+    public static boolean answerBlast(ServerPlayer owner) {
+        String power = dormantPower(owner);
+        if (power == null || EclipseService.arePowersSuppressed(owner)) {
+            return false;
+        }
+
+        double reach = Danger.reach(power);
+        List<Entity> explosives = Danger.explosives(owner.level(), owner.position(), reach + 8);
+        if (explosives.isEmpty()) {
+            return false;
+        }
+
+        List<LivingEntity> people = new ArrayList<>();
+        people.add(owner);
+        people.addAll(owner.serverLevel().getEntitiesOfClass(LivingEntity.class, owner.getBoundingBox().inflate(reach),
+                ally -> Danger.ally(owner, ally) && ally.distanceToSqr(owner) <= reach * reach));
+        people.sort(Comparator.comparingDouble(person -> person.distanceToSqr(owner)));
+
+        boolean blocked = false;
+        for (LivingEntity person : people) {
+            for (Entity explosive : explosives) {
+                if (!Danger.blastEndangers(explosive, person, threshold(person))) {
+                    continue;
+                }
+                if (!answers(owner, person, power)) {
+                    blocked = true;
+                    break;
+                }
+                return awakenFromAdrenaline(owner, person, Peril.BLAST);
+            }
+        }
+
+        if (blocked) {
+            hintSky(owner);
+        }
+        return false;
     }
 
     /**
@@ -192,24 +295,26 @@ public final class AwakeningService {
      */
     public static boolean answers(ServerPlayer owner, LivingEntity ward, String power) {
         if ("flight".equals(power)) {
-            return com.jayptucker.heroesevolved.intro.Danger.openSky(owner)
-                    && com.jayptucker.heroesevolved.intro.Danger.openSky(ward);
+            return Danger.openSky(owner) && Danger.openSky(ward);
         }
 
         return true;
     }
 
     /**
-     * Final damage about to land on a player. A blow in a fight that would take a dormant owner
-     * below the threshold wakes the power before it lands, and is capped so it cannot kill.
+     * Final damage about to land on a player. A blow that would take a dormant owner below the threshold,
+     * from a danger their power answers (a fight, a blast, and for some powers a fall, fire or drowning),
+     * wakes the power before it lands, and is capped so it cannot kill.
      */
     public static float interceptDamage(ServerPlayer player, DamageSource source, float damage) {
         recordCombat(player, source);
         // Absorption hearts soak the blow after this point, so they count toward what survives it.
         float pool = player.getHealth() + player.getAbsorptionAmount();
         String power = dormantPower(player);
+        Peril peril = Danger.of(source, player);
 
-        if (damage <= 0 || power == null || !inCombat(player)
+        if (damage <= 0 || power == null || peril == null || !Danger.answers(power, peril)
+                || peril == Peril.FIGHT && !inCombat(player)
                 || EclipseService.arePowersSuppressed(player)
                 || pool - damage >= threshold()) {
             return damage;
@@ -220,7 +325,7 @@ public final class AwakeningService {
             return damage;
         }
 
-        if (!awakenFromAdrenaline(player, player)) {
+        if (!awakenFromAdrenaline(player, player, peril)) {
             return damage;
         }
 
@@ -228,12 +333,12 @@ public final class AwakeningService {
     }
 
     /**
-     * Final damage about to land on anyone. A blow in a fight that would take an ally of a dormant owner
-     * below the line wakes that owner's power to save them, and is capped so it cannot kill.
+     * Final damage about to land on anyone. A blow that would take an ally of a dormant owner below the line,
+     * from a danger that owner's power answers, wakes it to save them, and is capped so it cannot kill.
      */
     public static float interceptAllyDamage(LivingEntity victim, DamageSource source, float damage) {
-        if (damage <= 0 || !(victim.level() instanceof ServerLevel level)
-                || !(source.getEntity() instanceof LivingEntity attacker) || attacker == victim) {
+        Peril peril = Danger.of(source, victim);
+        if (damage <= 0 || peril == null || !(victim.level() instanceof ServerLevel level)) {
             return damage;
         }
 
@@ -242,15 +347,16 @@ public final class AwakeningService {
             return damage;
         }
 
+        Entity attacker = source.getEntity();
         ServerPlayer rescuer = null;
         double nearest = Double.MAX_VALUE;
         for (ServerPlayer owner : level.players()) {
             String power = owner == victim || owner == attacker ? null : dormantPower(owner);
-            if (power == null || EclipseService.arePowersSuppressed(owner)
-                    || !com.jayptucker.heroesevolved.intro.Danger.ally(owner, victim)) {
+            if (power == null || !Danger.answers(power, peril) || EclipseService.arePowersSuppressed(owner)
+                    || !Danger.ally(owner, victim)) {
                 continue;
             }
-            double reach = com.jayptucker.heroesevolved.intro.Danger.reach(power);
+            double reach = Danger.reach(power);
             double distance = owner.distanceToSqr(victim);
             if (distance > reach * reach || distance >= nearest) {
                 continue;
@@ -263,7 +369,7 @@ public final class AwakeningService {
             nearest = distance;
         }
 
-        if (rescuer == null || !awakenFromAdrenaline(rescuer, victim)) {
+        if (rescuer == null || !awakenFromAdrenaline(rescuer, victim, peril)) {
             return damage;
         }
 
@@ -304,6 +410,11 @@ public final class AwakeningService {
         return ward == null || !ward.isAlive() || ward.level() != owner.level() ? owner : ward;
     }
 
+    /** What the awakening in progress is saving its ward from, or null when it isn't a danger awakening. */
+    public static Peril pendingPeril(ServerPlayer owner) {
+        return PENDING_PERIL.get(owner.getUUID());
+    }
+
     /**
      * Shared by every awakening release: the surge that lets someone who was about to lose a
      * fight stand back up. Each power adds its own way of ending the fight.
@@ -312,6 +423,8 @@ public final class AwakeningService {
         entity.setHealth(Math.max(entity.getHealth(), entity.getMaxHealth() * SECOND_WIND_HEALTH));
         entity.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, SECOND_WIND_RESISTANCE_TICKS, 1));
         entity.clearFire();
+        entity.setAirSupply(entity.getMaxAirSupply());
+        entity.resetFallDistance();
     }
 
     /** A completed Space-Time vision: the ally the owner woke for is back on their feet too. */
@@ -342,6 +455,8 @@ public final class AwakeningService {
         LAST_COMBAT.remove(player.getUUID());
         GRACE_UNTIL.remove(player.getUUID());
         PENDING_WARD.remove(player.getUUID());
+        PENDING_PERIL.remove(player.getUUID());
+        LAST_HURT.remove(player.getUUID());
         SKY_HINTS.remove(player.getUUID());
         TIME_WARDS.remove(player.getUUID());
         TIME_WARDS.values().removeIf(owner -> owner.equals(player.getUUID()));
@@ -351,38 +466,53 @@ public final class AwakeningService {
         LAST_COMBAT.clear();
         GRACE_UNTIL.clear();
         PENDING_WARD.clear();
+        PENDING_PERIL.clear();
+        LAST_HURT.clear();
         TIME_WARDS.clear();
         SKY_HINTS.clear();
     }
 
-    private static boolean awakenFromAdrenaline(ServerPlayer player, LivingEntity ward) {
+    private static boolean awakenFromAdrenaline(ServerPlayer player, LivingEntity ward, Peril peril) {
         String power = dormantPower(player);
+        boolean time = "time_manipulation".equals(power);
         PENDING_WARD.put(player.getUUID(), ward);
+        PENDING_PERIL.put(player.getUUID(), peril);
+        // Space-Time answers by stopping time where the danger is; its vision waits until time starts again.
+        if (time) TimeAwakening.arm(player);
+        boolean awakened = false;
         try {
-            if (!awakenAssigned(player)) {
+            awakened = awakenAssigned(player);
+            if (!awakened) {
                 return false;
             }
         } finally {
             PENDING_WARD.remove(player.getUUID());
+            PENDING_PERIL.remove(player.getUUID());
+            if (time && !awakened) TimeAwakening.disarm(player);
         }
 
-        long until = player.serverLevel().getGameTime() + GRACE_TICKS;
+        long until = player.serverLevel().getGameTime() + GRACE_TICKS
+                + (time ? TimeAwakening.FREEZE_TICKS : 0);
         GRACE_UNTIL.put(player.getUUID(), until);
+        if (time) TimeAwakening.begin(player, ward, peril);
+        // It doesn't ask. The heart slams, the edges of sight go red, and the power is already coming out.
         player.playNotifySound(SoundEvents.WARDEN_HEARTBEAT, SoundSource.PLAYERS, 1.0F, 1.4F);
+        player.playNotifySound(SoundEvents.WARDEN_HEARTBEAT, SoundSource.PLAYERS, 1.0F, 0.8F);
         ScreenTintPayload.send(player, 0x70B00000, 24, ScreenTintPayload.Style.VIGNETTE);
+        String cause = peril == Peril.FIGHT || peril == Peril.LOW ? "" : "." + peril.name().toLowerCase(java.util.Locale.ROOT);
 
         if (ward == player) {
-            player.displayClientMessage(Component.translatable("awakening.heroesevolved.self")
+            player.displayClientMessage(Component.translatable("awakening.heroesevolved.self" + cause)
                     .withStyle(ChatFormatting.RED, ChatFormatting.ITALIC), true);
             return true;
         }
 
         // Someone you'd fight for is going down: the power wakes for them.
         GRACE_UNTIL.put(ward.getUUID(), until);
-        if ("time_manipulation".equals(power)) {
+        if (time) {
             TIME_WARDS.put(ward.getUUID(), player.getUUID());
         }
-        player.displayClientMessage(Component.translatable("awakening.heroesevolved.ally", ward.getDisplayName())
+        player.displayClientMessage(Component.translatable("awakening.heroesevolved.ally" + cause, ward.getDisplayName())
                 .withStyle(ChatFormatting.RED, ChatFormatting.ITALIC), true);
         if (ward instanceof ServerPlayer saved) {
             saved.displayClientMessage(Component.translatable("awakening.heroesevolved.saved", player.getDisplayName())

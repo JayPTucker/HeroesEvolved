@@ -159,6 +159,7 @@ public final class PlayerAbilityService {
                 data
         );
         com.jayptucker.heroesevolved.intro.PowerIntroService.assignmentChanged(player);
+        com.jayptucker.heroesevolved.hydro.HydroService.powerChanged(player);
 
         PlayerPowerSyncService.sync(player);
         data.assignedPower().filter(entry -> entry.getValue().isUnlocked()

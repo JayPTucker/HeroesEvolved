@@ -56,7 +56,7 @@ final class WardRelease {
     static void apply(String power, ServerPlayer owner, LivingEntity ward) {
         ServerLevel level = owner.serverLevel();
         List<LivingEntity> threats = Danger.threats(owner, ward, 12);
-        AbilityEffects.send(level, Kind.PROPHECY_THREAD, owner.getEyePosition(), ward.getEyePosition(), 1.5);
+        if (ward != owner) AbilityEffects.send(level, Kind.PROPHECY_THREAD, owner.getEyePosition(), ward.getEyePosition(), 1.5);
         switch (power) {
             case "invisibility" -> {
                 // The ward fades with them; whatever was fighting them has nothing to aim at.
@@ -96,6 +96,7 @@ final class WardRelease {
                     threat.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 100, 0));
                     PrivateGlow.glow(owner, threat, 120);
                 }
+                turn(threats);
                 AbilityEffects.send(level, Kind.PSYCHIC_PUSH, ward.position(), ward.position().add(0, 1, 0), 10);
             }
             case "cryokinesis" -> {
@@ -240,6 +241,23 @@ final class WardRelease {
         bolt.moveTo(at);
         bolt.setVisualOnly(true);
         level.addFreshEntity(bolt);
+    }
+
+    /** A telepath's shout turns attackers on each other: each mob goes for the nearest of the others. */
+    static void turn(List<LivingEntity> threats) {
+        for (LivingEntity threat : threats) {
+            if (!(threat instanceof Mob mob)) continue;
+            LivingEntity nearest = null;
+            double best = Double.MAX_VALUE;
+            for (LivingEntity other : threats) {
+                double distance = other.distanceToSqr(mob);
+                if (other != mob && other.isAlive() && distance < best) { best = distance; nearest = other; }
+            }
+            if (nearest != null) {
+                mob.setTarget(nearest);
+                mob.setLastHurtByMob(nearest);
+            }
+        }
     }
 
     private static void lose(LivingEntity threat) {

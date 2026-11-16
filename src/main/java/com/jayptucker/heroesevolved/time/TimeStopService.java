@@ -192,6 +192,21 @@ public final class TimeStopService {
         SpaceTimeSkills.stillWorldStarted(player);
     }
 
+    /**
+     * The first stop, which nobody chose: when someone near a dormant traveller is about to die, time stops
+     * round <em>them</em> (the field is centred on whoever is in danger) for {@code ticks}, whatever the
+     * traveller's level. Blows the traveller lands meanwhile are stored and land when it ends, as in Still World.
+     */
+    public static void awaken(ServerPlayer player, Vec3 center, int ticks) {
+        TimeVeil.begin(player, TimeVeil.Style.TIME, TimeVeil.STOP);
+        playTemporalCue(player.serverLevel(), center, player);
+        com.jayptucker.heroesevolved.effects.AbilityEffects.send(player.serverLevel(),
+                com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind.TEMPORAL_FIELD, center, center.add(0, 1, 0),
+                HeroesEvolvedConfig.COMMON.timeStopRadius.get());
+        ACTIVE_FIELDS.put(player.getUUID(), new TimeStopField(player.getUUID(), player.serverLevel().dimension(), center,
+                ticks, null));
+    }
+
     public static void stop(ServerPlayer player) {
         TimeStopField field = ACTIVE_FIELDS.remove(player.getUUID());
 

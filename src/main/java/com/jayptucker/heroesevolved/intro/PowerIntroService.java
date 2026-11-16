@@ -97,6 +97,8 @@ public final class PowerIntroService {
         final Spec spec;
         /** Who the awakening is saving: the owner, or an ally who was going down. */
         final LivingEntity ward;
+        /** What the ward was about to die of, or null for an awakening that wasn't danger (a grant, the Formula). */
+        final Danger.Peril peril;
         ResourceKey<Level> dimension;
         final List<Entity> lifted = new ArrayList<>();
         Vec3 releaseOrigin;
@@ -104,8 +106,8 @@ public final class PowerIntroService {
         Rescue rescue;
         boolean rescued;
         int age;
-        Session(ServerPlayer player, ResourceLocation power, Spec spec, LivingEntity ward) {
-            this.player = player; this.power = power; this.spec = spec; this.ward = ward;
+        Session(ServerPlayer player, ResourceLocation power, Spec spec, LivingEntity ward, Danger.Peril peril) {
+            this.player = player; this.power = power; this.spec = spec; this.ward = ward; this.peril = peril;
             dimension = player.level().dimension();
         }
         boolean ally() { return ward != player; }
@@ -118,13 +120,15 @@ public final class PowerIntroService {
         Session current = SESSIONS.get(player.getUUID());
         if (current != null && !current.power.equals(power)) cancel(player);
         if (power.equals(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "time_manipulation"))) {
-            TimeIntroService.acquired(player, power);
+            // A danger awakening stops time first; the vision starts when time does (TimeAwakening).
+            if (!TimeAwakening.claims(player)) TimeIntroService.acquired(player, power);
             return;
         }
         if (!power.getNamespace().equals(HeroesEvolved.MOD_ID) || !SPECS.containsKey(power.getPath())
                 || player.getData(ModDataAttachments.POWER_INTRO_HISTORY).seen().contains(power)) return;
         LivingEntity ward = AwakeningService.pendingWard(player);
-        SESSIONS.computeIfAbsent(player.getUUID(), ignored -> new Session(player, power, SPECS.get(power.getPath()), ward));
+        Danger.Peril peril = AwakeningService.pendingPeril(player);
+        SESSIONS.computeIfAbsent(player.getUUID(), ignored -> new Session(player, power, SPECS.get(power.getPath()), ward, peril));
     }
 
     private static boolean matches(Session session) {
@@ -173,6 +177,8 @@ public final class PowerIntroService {
         SOFT_LANDINGS.values().removeIf(ticks -> ticks <= 0);
         long now = server.overworld().getGameTime();
         SHIELDED.values().removeIf(until -> until <= now);
+        TimeAwakening.tick(server);
+        Surge.tick(server);
         for (Session session : List.copyOf(SESSIONS.values())) {
             if (session.player.getServer() != server) continue;
             tick(session);
@@ -215,8 +221,7 @@ public final class PowerIntroService {
                         age / (double) spec.chargeTicks);
             }
             if (age % 10 == 0) ArmPosePayload.show(player, spec.pose, 14);
-            Vec3 motion = player.getDeltaMovement();
-            velocity(player, new Vec3(motion.x * 0.45, motion.y, motion.z * 0.45));
+            seize(session, age);
             if (session.power.getPath().equals("quake") && age % 12 == 0)
                 CameraShakePayload.sendAround(player.serverLevel(), player.position(), 18, age / 150.0F, 12);
             if (session.power.getPath().equals("regeneration") && age % 6 == 0) player.heal(0.75F);
@@ -232,6 +237,31 @@ public final class PowerIntroService {
         if (session.rescue != null && !session.rescued) session.rescued = session.rescue.tick();
         if (age >= spec.chargeTicks + spec.releaseTicks && (session.blast == null
                 || session.blast.finished()) && (session.rescue == null || session.rescued)) finish(session);
+    }
+
+    /**
+     * Nobody decides to awaken. While the power charges it has the owner, not the other way round: they are
+     * rooted where they stand (Radiation's long burn lets them stagger away from friends), the heartbeat
+     * quickens and the ground under them shakes harder as it comes. In a danger awakening the edges of sight
+     * pulse red, and the danger itself is held off ({@link Danger#hold}) so the release still lands on it.
+     */
+    private static void seize(Session session, int age) {
+        ServerPlayer player = session.player;
+        String path = session.power.getPath();
+        boolean radiation = path.equals("radiation");
+        double grip = radiation ? 0.45 : 0;
+        Vec3 motion = player.getDeltaMovement();
+        velocity(player, new Vec3(motion.x * grip, motion.y, motion.z * grip));
+        if (session.peril != null) Danger.hold(player, session.wardHere() ? session.ward : player, session.peril, age);
+        if (radiation) return; // Its thirty seconds have beats of their own.
+        float build = age / (float) session.spec.chargeTicks;
+        int beat = Math.max(4, Math.round(12 - 8 * build));
+        if (age % beat == 0)
+            player.playNotifySound(SoundEvents.WARDEN_HEARTBEAT, SoundSource.PLAYERS, 0.7F + 0.3F * build, 0.8F + 0.6F * build);
+        if (age % 10 == 0 && !path.equals("quake"))
+            CameraShakePayload.sendAround(player.serverLevel(), player.position(), 6, 0.15F + 0.45F * build, 12);
+        if (session.peril != null && age % 20 == 0)
+            ScreenTintPayload.send(player, 0x50B00000, 16, ScreenTintPayload.Style.VIGNETTE);
     }
 
     private static void begin(Session session) {
@@ -310,13 +340,22 @@ public final class PowerIntroService {
                 ArmPosePayload.show(player, ArmPose.ARMS_RAISED, 30);
                 lightning(player, player.position());
                 sound(player, SoundEvents.LIGHTNING_BOLT_THUNDER, 1.8F, 0.7F);
+                // The current finds every body that was on them, and goes through it.
+                int struck = 0;
+                for (LivingEntity threat : threats(player, 12)) {
+                    if (struck++ >= 8) break;
+                    lightning(player, threat.position());
+                    threat.hurt(player.damageSources().playerAttack(player), 6);
+                    AbilityEffects.send(player.serverLevel(), Kind.ELECTRIC_ARC, player.getEyePosition(), threat.getEyePosition(), 1.5);
+                }
                 repelEnemies(player, 10, 8, 1.1);
             }
             case "telekinesis" -> {
                 ArmPosePayload.show(player, ArmPose.ARMS_WIDE, 35);
                 session.lifted.addAll(player.serverLevel().getEntities(player, player.getBoundingBox().inflate(8),
-                        entity -> entity.isAlive() && (entity instanceof Mob || entity instanceof ItemEntity)
-                                && entity.distanceToSqr(player) <= 64 && !entity.isPassenger()));
+                        entity -> entity.isAlive() && (entity instanceof Mob || entity instanceof ItemEntity
+                                || entity instanceof net.minecraft.world.entity.item.PrimedTnt)
+                                && entity.distanceToSqr(player) <= 100 && !entity.isPassenger()));
                 sound(player, SoundEvents.WIND_CHARGE_BURST.value(), 1.6F, 0.55F);
             }
             case "regeneration" -> {
@@ -339,7 +378,14 @@ public final class PowerIntroService {
                 // Reach whoever is going down, scoop them up and run them out: up out of any cave, then far away.
                 session.rescue = new SpeedRescue(player, ward ? session.ward : player);
             }
-            case "sonic_resonance" -> com.jayptucker.heroesevolved.sonic.SonicService.burst(player, 1, true);
+            case "sonic_resonance" -> {
+                com.jayptucker.heroesevolved.sonic.SonicService.burst(player, 1, true);
+                // The first scream isn't aimed and isn't held back: it hurts whatever was close.
+                for (LivingEntity threat : threats(player, 8)) {
+                    threat.hurt(player.damageSources().indirectMagic(player, player), 6);
+                    threat.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 100, 0));
+                }
+            }
             case "radiation" -> releaseRadiation(session);
             case "pyrokinesis" -> {
                 ArmPosePayload.show(player, ArmPose.ARMS_WIDE, 30);
@@ -351,7 +397,9 @@ public final class PowerIntroService {
                 for (LivingEntity threat : threats(player, 24)) {
                     if (threat instanceof Mob mob && mob.getTarget() == player) mob.setTarget(null);
                 }
-                player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 100, 0));
+                // The field that hides them comes out as a burst first, shoving everything close away.
+                repelEnemies(player, 6, 3, 1.3);
+                player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 100, 1));
             }
             case "phasing" -> {
                 com.jayptucker.heroesevolved.phasing.DensityService.awaken(player);
@@ -359,7 +407,11 @@ public final class PowerIntroService {
                 repelEnemies(player, 6, 0, 1.0);
             }
             case "empathic_mimicry" -> releaseMimicry(session);
-            case "technopathy" -> com.jayptucker.heroesevolved.technopathy.TechnopathyService.awaken(player);
+            case "technopathy" -> {
+                com.jayptucker.heroesevolved.technopathy.TechnopathyService.awaken(player);
+                // Everything that was attacking them is read like a machine, and seized like one.
+                WardRelease.apply("technopathy", player, player);
+            }
             case "matter_assembly" -> com.jayptucker.heroesevolved.assembly.MatterAssemblyService.awaken(player);
             case "vibe" -> {
                 LivingEntity saved = ward ? session.ward : player;
@@ -376,6 +428,9 @@ public final class PowerIntroService {
         }
         // Every other power reaches across to the ally it woke for, and ends their fight too.
         if (ward && session.rescue == null) WardRelease.apply(session.power.getPath(), player, session.ward);
+        // Then whatever was about to kill them: the blast, the landing, the lava, the water.
+        if (session.peril != null) PerilRelease.apply(session.power.getPath(), player, ward ? session.ward : player,
+                session.peril, session.rescue != null);
         SOFT_LANDINGS.put(player.getUUID(), 20 * 30);
     }
 
@@ -384,6 +439,9 @@ public final class PowerIntroService {
         if (session.blast != null) session.blast.advance(player, tick + 1);
         if (session.ally() && session.rescue == null && session.wardHere())
             WardRelease.aftermath(session.power.getPath(), player, session.ward, tick);
+        // The lattice rises round the owner too, once the shove has cleared the space.
+        if (!session.ally() && session.power.getPath().equals("matter_assembly"))
+            WardRelease.aftermath("matter_assembly", player, player, tick);
         switch (session.power.getPath()) {
             case "electrokinesis" -> {
                 if (tick > 0 && tick <= 36 && tick % 12 == 0) {
@@ -406,11 +464,18 @@ public final class PowerIntroService {
                     if (tick % 7 == 0) debris(player, tick * 0.8);
                 }
                 if (tick == 28) {
+                    List<LivingEntity> threats = threats(player, 15);
                     for (Entity entity : session.lifted) {
                         if (!entity.isAlive() || entity.level() != player.level() || entity.distanceToSqr(player) > 225) continue;
                         Vec3 away = entity.position().subtract(session.releaseOrigin).multiply(1, 0, 1).normalize();
-                        velocity(entity, away.scale(0.65).add(0, 0.15, 0));
-                        if (entity instanceof LivingEntity living) living.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 100));
+                        // Whatever was attacking them is thrown, hard; everything else is only set aside.
+                        if (entity instanceof LivingEntity living && threats.contains(living)) {
+                            velocity(entity, away.scale(1.9).add(0, 0.55, 0));
+                            living.hurt(player.damageSources().indirectMagic(player, player), 5);
+                        } else {
+                            velocity(entity, away.scale(0.65).add(0, 0.15, 0));
+                            if (entity instanceof LivingEntity living) living.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 100));
+                        }
                     }
                     AbilityEffects.send(player.serverLevel(), Kind.PSYCHIC_PUSH, session.releaseOrigin,
                             session.releaseOrigin.add(0, 1, 0), 10);
@@ -483,6 +548,8 @@ public final class PowerIntroService {
                 mind.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 100, 0));
             }
         }
+        // And the shout leaves something behind in them: each one now sees the others as the enemy.
+        WardRelease.turn(threats(player, 12));
         AbilityEffects.send(player.serverLevel(), Kind.PSYCHIC_PUSH, player.position(),
                 player.position().add(0, 1, 0), 12);
         sound(player, SoundEvents.EVOKER_PREPARE_ATTACK, 1.5F, 0.8F);
@@ -657,6 +724,9 @@ public final class PowerIntroService {
         ArmPosePayload.clear(session.player);
         SESSIONS.remove(session.player.getUUID());
         if (session.power.getPath().equals("radiation")) RadiationService.refreshGlow(session.player);
+        // A fight isn't over because the burst is: the power keeps fighting through them for a few seconds.
+        if (session.peril == Danger.Peril.FIGHT && session.rescue == null && Surge.has(session.power.getPath()))
+            Surge.begin(session.player, session.wardHere() ? session.ward : session.player, session.power);
     }
     public static void cancel(ServerPlayer player) {
         Session session = SESSIONS.remove(player.getUUID());
@@ -669,7 +739,12 @@ public final class PowerIntroService {
             if (session.power.getPath().equals("radiation")) RadiationService.refreshGlow(player);
         }
     }
-    public static void forget(ServerPlayer player) { cancel(player); SOFT_LANDINGS.remove(player.getUUID()); }
+    public static void forget(ServerPlayer player) {
+        cancel(player);
+        TimeAwakening.forget(player);
+        Surge.forget(player);
+        SOFT_LANDINGS.remove(player.getUUID());
+    }
     public static void assignmentChanged(ServerPlayer player) {
         Session session = SESSIONS.get(player.getUUID());
         if (session != null && !matches(session)) cancel(player);
@@ -680,6 +755,8 @@ public final class PowerIntroService {
     }
     public static void clear() {
         for (Session session : List.copyOf(SESSIONS.values())) cancel(session.player);
+        TimeAwakening.clear();
+        Surge.clear();
         SOFT_LANDINGS.clear();
         SHIELDED.clear();
     }

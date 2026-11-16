@@ -135,6 +135,8 @@ public final class TimeManipulationAbility implements Ability {
     public void onAwaken(AbilityUseContext context) {
         // Time Manipulation first awakens as a defensive reflex: the world
         // around the player slows before they consciously control the power.
+        // A danger awakening stops time outright instead (intro/TimeAwakening).
+        if (com.jayptucker.heroesevolved.intro.TimeAwakening.claims(context.player())) return;
         TimeSlowService.start(context.player(), context.abilityLevel());
     }
 

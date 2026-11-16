@@ -427,6 +427,8 @@ public final class MimicryService {
         PacketDistributor.sendToPlayer(player, new com.jayptucker.heroesevolved.network.MimicMemoryPayload(List.copyOf(slots),
                 memory.selectedSlot(), keepCapacity(player), PlayerProgressionService.getPowerLevel(player)));
         com.jayptucker.heroesevolved.network.PlayerPowerSyncService.sync(player);
+        // Switching away from a borrowed Hydrokinesis takes its water (and any octopus arms) with it.
+        com.jayptucker.heroesevolved.hydro.HydroService.powerChanged(player);
     }
 
     private static com.jayptucker.heroesevolved.network.MimicMemoryPayload.Slot slot(Imprint imprint, boolean kept) {
