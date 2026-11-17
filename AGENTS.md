@@ -469,6 +469,12 @@ player sees is in [docs/fighting-styles.md](docs/fighting-styles.md).
 - **A brace instead of a dodge.** `StyleMotion.brace(player, ticks)` and the style's `braced(player, source, amount)`
   reduce a blow rather than cancel it; `FightingStyles.incoming` checks the brace before evasion. Reckless Brawler banks
   every braced blow and calls `counter` on the first.
+- **Skids, not blinks, for a speedster in a fight.** Players disliked Blur Boxing's dodges and Blitz teleporting
+  (striking, then appearing behind the mob). `StyleMotion.skid(player, push, ticks)` throws the real body and eases the
+  push off as a cube, so most of the ground goes in the first ticks and the rest is a short slide; `skidReach(ticks)`
+  turns a distance into a push (the Blitz stops `BLITZ_STOP` short of the foe). Each skid has its own pose
+  (`SPEED_SKID_BACK` kneels side-on, `SPEED_SKID_LEFT`/`RIGHT` lean away from the slide over a braking hand) and ends in
+  Superspeed's `SPEED_GUST` piece for the skid marks and dust.
 - **Cross-power rules where the blow lands.** A Pressure Palm on someone frozen solid shatters them
   (`CryoService.shatterHit`); a Frost Jab on someone Soaked freezes them solid. One line each.
 - **Mimicry fights too.** `FightingStyles.of(player)` falls back to the style of the power Peter is channelling, and
@@ -1104,7 +1110,8 @@ layer is in [docs/gifted-mobs.md](docs/gifted-mobs.md).
 
 ## Reusable patterns from gifted mobs and village incidents
 
-Any villager, illager or humanoid monster can carry a power and use it (`gifted/`), half of villagers whose gift wakes
+Only villagers and illagers can carry a power (`GiftedMobs.mayCarry`; `bestow` refuses anything else and a gift saved on
+any other mob is taken away when it loads); they use it (`gifted/`), half of villagers whose gift wakes
 turn evil and besiege their village (`Renegades`), raids get champions (`GiftedRaids`), and village events can happen
 hundreds of blocks from a player (`village/VillageIncidents`). Built in November 2026. What the player sees is in
 [docs/gifted-mobs.md](docs/gifted-mobs.md) and [docs/emergency-band.md](docs/emergency-band.md).
@@ -1115,7 +1122,7 @@ hundreds of blocks from a player (`village/VillageIncidents`). Built in November
   siege (`Renegades.Terror`) is saved beside it and resumed on the next tick after it loads, as the meltdown is.
 - **Roll once per mob, by context.** `GiftedMobs.join` marks every mob `ROLLED` and decides by what it is: a raider with
   a current raid (its wave leader, `Raid.joinRaid` sets the raid before the entity is added), a `PatrollingMonster` leader
-  with spawn type `PATROL`, a humanoid with spawn type `NATURAL` (NeoForge's `Mob.getSpawnType()`). Villagers roll a
+  with spawn type `PATROL`, an illager with spawn type `NATURAL` (NeoForge's `Mob.getSpawnType()`). Villagers roll a
   dormant gift instead (`GiftedVillagers`). Do heavy work (messages, set pieces) on the next tick (`FRESH`).
 - **Turning one mob into another.** `villager.convertTo(type, false)` keeps position, name, no-AI and persistence but not
   persistent data, so write the gift after; fire `EventHooks.onLivingConvert`; call `finalizeSpawn(..., CONVERSION, ...)`
@@ -1376,7 +1383,7 @@ two-way Breaches, Read the Vibe, Breach Guard → Return Fire and Frequency Lock
   the caster's starting position. Mob goal targets and brain `ATTACK_TARGET` reads resolve through it, and sight and
   acquisition cannot track the actual caster. Weak shadow references resolve back to the owner when time resumes.
   Gifted Superspeed/Space-Time users keep their own clock and perception. Tests are in `TemporalSharingGameTests`;
-  `tools/temporal-preview.init.gradle -Pmobtime` stages ordinary and gifted zombies beside the shared-time guest.
+  `tools/temporal-preview.init.gradle -Pmobtime` stages two ordinary zombies and a gifted pillager beside the shared-time guest.
 
 Space-Time Manipulation's tree (`time/SpaceTimeSkills`, numbers in `time/TimeGeometry`, art in
 `client/effects/setpiece/TimeArt`) was rebuilt in November 2026: Stillness, Wayfinder and Historian, eighteen interaction

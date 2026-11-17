@@ -261,7 +261,7 @@ While **Accelerate is enabled**, edible food is consumed **four times faster**, 
 
 ## Fighting style: Blur Boxing
 
-With an empty hand you fight in the Blur Boxing style on the shared fighting-style controls (see [fighting-styles.md](fighting-styles.md#blur-boxing-superspeed)): three-blow jabs, a Blitz that runs through the foe and stops behind them, a Skid Sweep, Blur Steps, a Rewind Step to where you were a second ago, and Too Slow, a barrage from afterimages circling whoever you evaded.
+With an empty hand you fight in the Blur Boxing style on the shared fighting-style controls (see [fighting-styles.md](fighting-styles.md#blur-boxing-superspeed)): three-blow jabs, a Blitz that closes the gap and skids to a stop in front of the foe, a Skid Sweep, Skid Turns (left and right: a low sideways slide braked on one hand), a Skid Stop (back: thrown backward onto one knee, sliding to a halt), and Too Slow, a barrage from afterimages circling whoever you evaded.
 
 ## Skill tree
 

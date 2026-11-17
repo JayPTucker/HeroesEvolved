@@ -155,7 +155,7 @@ public final class FightingStylesGameTests {
     // ------------------------------------------------------------------
 
     @GameTest(template = "rewind_empty", batch = "styles.speed_moves")
-    public static void aBlitzEndsBehindTheTargetAndABlurStepCounters(GameTestHelper h) {
+    public static void aBlitzStopsInFrontAndSkidsMoveTheBody(GameTestHelper h) {
         ServerPlayer p = fighter(h, ModAbilities.SUPERSPEED_ID, 2);
         LivingEntity foe = foe(h, p, 4, 0);
         aim(p, foe);
@@ -163,13 +163,27 @@ public final class FightingStylesGameTests {
             SpeedStyle.STYLE.fighter(p).step = 2;
             SpeedStyle.STYLE.fighter(p).lastStrike = p.getServer().overworld().getGameTime();
             h.assertTrue(SpeedStyle.STYLE.next(p) == Move.FINISHER, "The combo is due its Blitz");
+            Vec3 start = p.position();
             h.assertTrue(SpeedStyle.STYLE.strike(p) == 1, "The Blitz");
-            h.assertTrue(p.getZ() > foe.getZ(), "The speedster ends up behind the target, at z " + p.getZ() + " past " + foe.getZ());
+            h.assertTrue(p.position().distanceTo(start) < .01, "The Blitz doesn't teleport");
+            h.assertTrue(p.getDeltaMovement().z > .3, "The Blitz skids in toward the foe: " + p.getDeltaMovement());
+            double reach = p.getDeltaMovement().z * StyleMotion.skidReach(SpeedStyle.BLITZ_TICKS);
+            h.assertTrue(start.z + reach < foe.getZ() - .5, "It stops in front of the foe, not behind: " + (start.z + reach) + " vs " + foe.getZ());
+            h.assertTrue(foe.getDeltaMovement().z > 0, "The foe is driven back, away from the speedster");
+
+            StyleMotion.forget(p);
             Vec3 before = p.position();
-            h.assertTrue(SpeedStyle.STYLE.dodge(p, Dodge.LEFT), "A Blur Step");
-            h.assertTrue(p.position().distanceTo(before) > 3, "The speedster is simply somewhere else");
+            h.assertTrue(SpeedStyle.STYLE.dodge(p, Dodge.LEFT), "A Skid Turn");
+            Vec3 side = p.getDeltaMovement();
+            h.assertTrue(p.position().distanceTo(before) < .01, "A dodge doesn't teleport");
+            h.assertTrue(side.horizontalDistance() > 1.5 && Math.abs(side.x) > 5 * Math.abs(side.z), "A Skid Turn throws the body sideways: " + side);
             p.hurt(p.damageSources().mobAttack(foe), 6);
-            h.assertTrue(SpeedStyle.STYLE.loaded(p), "A blow during the step loads Too Slow");
+            h.assertTrue(SpeedStyle.STYLE.loaded(p), "A blow during the skid loads Too Slow");
+
+            StyleMotion.forget(p);
+            SpeedStyle.STYLE.fighter(p).dodgeReady = -1000;
+            h.assertTrue(SpeedStyle.STYLE.dodge(p, Dodge.BACK), "A Skid Stop");
+            h.assertTrue(p.getDeltaMovement().z < -1.5, "A Skid Stop throws the body backward: " + p.getDeltaMovement());
         });
         forget(p);
         foe.discard();

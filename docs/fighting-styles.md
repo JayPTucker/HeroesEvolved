@@ -27,11 +27,16 @@ Telekinesis.
 | Move | What happens |
 | --- | --- |
 | **Jab** (lead, rear) | Three blows too fast to see, each from a slightly different angle with an afterimage at each, 4.5 blocks. |
-| **Blitz** (finisher) | You run straight through the foe in front (up to 9 blocks) and stop behind them, hitting as you pass (3 + level). |
+| **Blitz** (finisher) | A streak of gold closes the gap to the foe in front (up to 9 blocks) and you skid to a stop square in front of them as the blow lands (3 + level) and drives them back. You never end up behind them. |
 | **Skid Sweep** (low) | A slide in under them that takes their legs (2 + ½ level) and slows them. |
-| **Blur Step** (side) | You are simply somewhere else, five blocks over, with an afterimage left where you stood. |
-| **Rewind Step** (back) | Back to where you were a second ago. |
+| **Skid Turn** (left, right) | You're thrown sideways at speed, about five blocks, crouched low and leaning away from the slide with your trailing hand flat on the ground, sliding the last stretch to a stop. |
+| **Skid Stop** (back) | You're thrown backward, turn side-on and drop to one knee with your lead hand dragging on the ground in front, sliding to a halt about six blocks back (eight and a half from level 2). |
 | **Too Slow** (counter) | Six blows from afterimages circling the attacker. |
+
+Every dodge moves your real body; nothing teleports. Most of the ground goes in the first few ticks and the rest is a
+short slide, with dust and sparks thrown up where your hand drags, a gold streak while you're fast, and Superspeed's
+stop gust when you halt (two scorched skid marks behind you, dust billowing on). The evasion window and counter are the
+same as every style's.
 
 ## Pressure Palm (Quake)
 

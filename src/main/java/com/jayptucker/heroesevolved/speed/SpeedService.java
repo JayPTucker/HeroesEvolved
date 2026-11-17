@@ -64,6 +64,8 @@ public final class SpeedService {
         int activeTicks, wallTicks, momentum, sentMomentum = -1, runMomentum, smother;
         int speedStep, sentSpeedStep, sentMaximumSpeedStep;
         long vibrateReady, gustReady;
+        /** A skid stop the runner's client reported: until when it lasts, and when the next may start. */
+        long skidUntil = Long.MIN_VALUE, skidReady;
         /** The fastest step of the last few ticks, fading: a sudden stop is measured against it. */
         double peak, lastStep;
         boolean barrier;
@@ -360,6 +362,7 @@ public final class SpeedService {
         syncMarker(p, WATER_RUN, running && level >= 3);
         if (running && distance > .01) r.runMomentum = r.momentum;
         if (vibrate(p, r)) { r.previous = p.position(); return; }
+        skidDust(p, r);
         stopping(p, r, distance);
         if (running && level >= 4 && p.horizontalCollision && r.wallTicks++ < 30 && p.fallDistance < 3) {
             p.setDeltaMovement(p.getDeltaMovement().x, .32, p.getDeltaMovement().z);
@@ -489,12 +492,55 @@ public final class SpeedService {
         // two ticks, and a stop must show in both the pace and the latest step.
         double pace = (step + r.lastStep) / 2;
         r.lastStep = step;
-        if (r.peak >= GUST_SPEED && pace < r.peak * .35 && step < r.peak * .35 && r.runMomentum >= GUST_MOMENTUM && now(p) >= r.gustReady) {
+        boolean stopped = pace < r.peak * .35 && step < r.peak * .35;
+        if (stopped && r.peak >= GUST_SPEED && r.runMomentum >= GUST_MOMENTUM && now(p) >= r.gustReady) {
             gust(p, r, r.peak);
             r.peak = 0;
             return;
         }
+        // A skid stop too slow (or too fresh) for a gust still leaves its marks and kicks up a little dust.
+        if (stopped && r.peak >= SKID_SPEED && now(p) <= r.skidUntil + 6 && now(p) >= r.gustReady) {
+            r.gustReady = now(p) + 20;
+            Vec3 heading = r.heading.lengthSqr() > 0 ? r.heading : horizontal(p.getLookAngle());
+            com.jayptucker.heroesevolved.network.SetPiecePayload.send(p.serverLevel(), com.jayptucker.heroesevolved.styles.Piece.SPEED_GUST,
+                    p.position(), p.position().add(heading), (float) Math.clamp(r.peak * .25, .2, .45), null);
+            r.peak = 0;
+            return;
+        }
         r.peak = Math.max(pace, r.peak * .88);
+    }
+
+    /** The slowest run (blocks a tick) whose stop is a skid: about twice a sprint. */
+    public static final double SKID_SPEED = .5;
+    /** How long a skid stop's pose holds, and how soon another may start. */
+    public static final int SKID_POSE = 14, SKID_GAP = 12;
+
+    /**
+     * The runner's own client reports letting go at speed: it keeps a short easing slide itself (the client owns its
+     * movement, as with the ledge drop), and the server shows everyone the hockey stop and scrapes the ground.
+     */
+    public static void skidStop(ServerPlayer p) {
+        Runner r = RUNNERS.get(p.getUUID());
+        long now = now(p);
+        if (r == null || !awakened(p) || !PowerRules.canAct(p) || p.isPassenger() || p.isFallFlying() || now < r.skidReady
+                || com.jayptucker.heroesevolved.combat.StyleMotion.dashing(p) || now - r.lastMoving > 4) return;
+        r.skidReady = now + SKID_GAP;
+        r.skidUntil = now + SKID_POSE - 4;
+        com.jayptucker.heroesevolved.network.ArmPosePayload.show(p, com.jayptucker.heroesevolved.ability.ArmPose.SPEED_SKID_STOP, SKID_POSE);
+        var ground = p.level().getBlockState(BlockPos.containing(p.getX(), p.getY() - .2, p.getZ()));
+        if (!ground.isAir()) p.level().playSound(null, p.blockPosition(), ground.getSoundType().getHitSound(), SoundSource.PLAYERS, .8F, .75F);
+        p.level().playSound(null, p.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, .35F, .6F);
+    }
+
+    /** Dust thrown up by the braking hand and the skidding feet while a skid stop runs. */
+    private static void skidDust(ServerPlayer p, Runner r) {
+        if (now(p) > r.skidUntil || !p.onGround()) return;
+        var ground = p.level().getBlockState(BlockPos.containing(p.getX(), p.getY() - .2, p.getZ()));
+        if (ground.isAir()) return;
+        Vec3 heading = r.heading.lengthSqr() > 0 ? r.heading : horizontal(p.getLookAngle());
+        Vec3 hand = p.position().subtract(heading.scale(.5));
+        p.serverLevel().sendParticles(new net.minecraft.core.particles.BlockParticleOption(ParticleTypes.BLOCK, ground),
+                hand.x, p.getY() + .1, hand.z, 3, .15, .04, .15, .15);
     }
 
     /**

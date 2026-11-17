@@ -118,6 +118,31 @@ public final class GiftedMobGameTests {
         helper.runAfterDelay(60, () -> { cleanup(made.toArray(Entity[]::new)); helper.succeed(); });
     }
 
+    @GameTest(template = "rewind_empty", timeoutTicks = 20, batch = "gifted.carriers")
+    public static void onlyVillagersAndIllagersCarryPowers(GameTestHelper helper) {
+        Zombie zombie = mob(helper, EntityType.ZOMBIE, 2, 2);
+        Mob skeleton = mob(helper, EntityType.SKELETON, 4, 2), witch = mob(helper, EntityType.WITCH, 6, 2);
+        Mob vindicator = mob(helper, EntityType.VINDICATOR, 8, 2);
+        Villager villager = mob(helper, EntityType.VILLAGER, 2, 6);
+        try {
+            for (Mob m : List.of(zombie, skeleton, witch))
+                helper.assertTrue(GiftedMobs.bestow(m, ModAbilities.QUAKE_ID, Rarity.RARE, true, Gift.Origin.ADMIN, null, null) == null
+                        && !GiftedMobs.isGifted(m), m.getType() + " can't carry a power");
+            helper.assertTrue(GiftedMobs.bestow(vindicator, ModAbilities.QUAKE_ID, Rarity.RARE, true, Gift.Origin.ADMIN, null, null) != null,
+                    "An illager can");
+            helper.assertTrue(GiftedMobs.bestow(villager, ModAbilities.QUAKE_ID, Rarity.RARE, false, Gift.Origin.GUARDIAN, null, null) != null,
+                    "and so can a villager");
+            // A zombie gifted before the rule (its gift saved on it) loses it when it next loads.
+            Zombie old = EntityType.ZOMBIE.create(helper.getLevel());
+            old.moveTo(Vec3.atBottomCenterOf(helper.absolutePos(new BlockPos(4, 2, 6))));
+            new Gift(ModAbilities.PYROKINESIS_ID, Rarity.EPIC, true, "Old Gift", Gift.Origin.WILD, null).write(old);
+            helper.getLevel().addFreshEntity(old);
+            helper.assertTrue(!GiftedMobs.isGifted(old) && Gift.read(old) == null, "A saved gift on a zombie is taken away");
+            old.discard();
+            helper.succeed();
+        } finally { cleanup(zombie, skeleton, witch, vindicator, villager); }
+    }
+
     @GameTest(template = "rewind_empty", timeoutTicks = 20, batch = "gifted.sides")
     public static void guardiansFightMonstersAndRenegadesFightPeople(GameTestHelper helper) {
         Villager guardian = mob(helper, EntityType.VILLAGER, 2, 2);

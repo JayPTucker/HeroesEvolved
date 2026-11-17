@@ -24,8 +24,8 @@ import java.util.Comparator;
 /**
  * Admin commands for gifted mobs and village events:
  * <ul>
- *   <li>{@code /heroesevolved gifted give <power> [rarity] [evil|good]}: the nearest mob within 8 blocks gets a power;</li>
- *   <li>{@code /heroesevolved gifted summon <power> [rarity] [pillager|vindicator|illusioner|zombie|...]}: a gifted mob here;</li>
+ *   <li>{@code /heroesevolved gifted give <power> [rarity] [evil|good]}: the nearest villager or illager within 8 blocks gets a power;</li>
+ *   <li>{@code /heroesevolved gifted summon <power> [rarity] [pillager|vindicator|illusioner|evoker]}: a gifted illager here (only villagers and illagers carry powers);</li>
  *   <li>{@code /heroesevolved gifted cleanse}: the nearest gifted mob loses its power;</li>
  *   <li>{@code /heroesevolved gifted cast <move>}: the nearest gifted mob winds up a move at you;</li>
  *   <li>{@code /heroesevolved village turn|guardian|wake}: the nearest grown villager's gift wakes evil, good, or by roll;</li>
@@ -53,7 +53,7 @@ public final class GiftedCommands {
                                         .executes(c -> summon(c, rarity(c), "pillager"))
                                         .then(Commands.argument("mob", StringArgumentType.word())
                                                 .suggests((c, b) -> SharedSuggestionProvider.suggest(new String[]{"pillager", "vindicator",
-                                                        "illusioner", "evoker", "witch", "zombie", "husk", "skeleton", "stray", "piglin_brute"}, b))
+                                                        "illusioner", "evoker"}, b))
                                                 .executes(c -> summon(c, rarity(c), StringArgumentType.getString(c, "mob")))))))
                 .then(Commands.literal("cleanse").executes(GiftedCommands::cleanse))
                 .then(Commands.literal("cast")
@@ -115,8 +115,8 @@ public final class GiftedCommands {
     private static int give(CommandContext<CommandSourceStack> c, Rarity rarity, boolean evil) {
         ResourceLocation power = power(c);
         if (power == null) { c.getSource().sendFailure(Component.literal("Unknown power.")); return 0; }
-        Mob mob = nearest(c.getSource(), Mob.class, 8, m -> true);
-        if (mob == null) { c.getSource().sendFailure(Component.literal("No mob within 8 blocks.")); return 0; }
+        Mob mob = nearest(c.getSource(), Mob.class, 8, GiftedMobs::mayCarry);
+        if (mob == null) { c.getSource().sendFailure(Component.literal("No villager or illager within 8 blocks: only they can carry a power.")); return 0; }
         GiftedMob g = GiftedMobs.bestow(mob, power, rarity, evil, Gift.Origin.ADMIN, null, null);
         GiftedMobs.announce(mob);
         c.getSource().sendSuccess(() -> Component.literal("Gave " + g.gift().name() + " (" + rarity.title + " " + g.gift().powerName() + ")."), true);
@@ -128,7 +128,10 @@ public final class GiftedCommands {
         if (power == null) { c.getSource().sendFailure(Component.literal("Unknown power.")); return 0; }
         var level = c.getSource().getLevel();
         var entityType = EntityType.byString("minecraft:" + type).orElse(null);
-        if (entityType == null || !(entityType.create(level) instanceof Mob mob)) { c.getSource().sendFailure(Component.literal("Not a mob: " + type)); return 0; }
+        if (entityType == null || !(entityType.create(level) instanceof Mob mob) || !GiftedMobs.mayCarry(mob)) {
+            c.getSource().sendFailure(Component.literal("Only villagers and illagers carry powers: " + type));
+            return 0;
+        }
         Vec3 at = c.getSource().getPosition();
         mob.moveTo(at.x, at.y, at.z, c.getSource().getRotation().y, 0);
         mob.getPersistentData().putBoolean(GiftedMobs.ROLLED, true);

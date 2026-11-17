@@ -248,7 +248,7 @@ public final class TemporalSharingGameTests {
         try (var scene = new Scene(h)) {
             var owner = scene.player(ModAbilities.TIME_MANIPULATION_ID, 5, 0);
             var ordinary = net.minecraft.world.entity.EntityType.ZOMBIE.create(h.getLevel());
-            var gifted = net.minecraft.world.entity.EntityType.ZOMBIE.create(h.getLevel());
+            var gifted = net.minecraft.world.entity.EntityType.PILLAGER.create(h.getLevel()); // only villagers and illagers carry powers
             ordinary.setPos(owner.position().add(0, 0, 4)); gifted.setPos(ordinary.position());
             try {
                 com.jayptucker.heroesevolved.gifted.GiftedMobs.bestow(gifted, ModAbilities.SUPERSPEED_ID,

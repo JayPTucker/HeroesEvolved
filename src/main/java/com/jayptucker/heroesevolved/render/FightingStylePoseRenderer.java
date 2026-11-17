@@ -24,8 +24,9 @@ import java.util.Set;
  * The fighting styles turn the whole body, not just the limbs. Firebending: the roundhouse twists the hips round with
  * the kick, the sweep kick spins once on the planted foot, a jet step leans away from its jet, and the flip kick turns a
  * full backflip. Lightning: the shoulders snap into each spark, the clap leans in, the slam drops to one knee. Water: the
- * whip winds away and cracks through, the wheel spins, the vault flips, and a surfer stands sideways on the wave. Only
- * the model turns; the camera never does.
+ * whip winds away and cracks through, the wheel spins, the vault flips, and a surfer stands sideways on the wave. A
+ * speedster's skid drops onto a knee side-on, or leans low over a braking hand. Only the model turns; the camera never
+ * does.
  */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID, value = Dist.CLIENT)
 public final class FightingStylePoseRenderer {
@@ -193,6 +194,31 @@ public final class FightingStylePoseRenderer {
             case STYLE_SWAT, STYLE_SWAT_OFF -> twist = (pose == ArmPose.STYLE_SWAT ? 10 : -10) * handed
                     * smooth(age / 1.2F) * (1 - smooth((age - 5) / 3F));
             case STYLE_LIFT -> pitch = -7 * smooth(age / 3F) * (1 - smooth((age - 9) / 2F));
+            // Blur Boxing's skids. Back: thrown back, turning side-on and dropping onto one knee, leaning forward over
+            // the hand that drags in front, then rising. Sideways: crouched low and leaning away from the slide, over
+            // the trailing hand on the ground.
+            case SPEED_SKID_BACK -> {
+                float thrown = smooth(age) * (1 - smooth((age - 1.5F) / 2F));
+                float kneel = smooth((age - 1) / 2.5F) * (1 - smooth((age - 12) / 5F));
+                drop = .45F * kneel;
+                pitch = 22 * kneel - 6 * thrown;
+                twist = -42 * handed * smooth(age / 4F) * (1 - smooth((age - 12) / 5F));
+            }
+            case SPEED_SKID_LEFT, SPEED_SKID_RIGHT -> {
+                float on = smooth(age / 1.5F) * (1 - smooth((age - 9) / 5F));
+                // A positive roll tips the head to the body's right; lean away from the way the skid goes.
+                roll = (pose == ArmPose.SPEED_SKID_RIGHT ? -26 : 26) * on;
+                drop = .4F * on;
+                pitch = 8 * on;
+            }
+            // A runner's hockey stop: turned side-on to the run (the rear shoulder back), leaning away from it.
+            case SPEED_SKID_STOP -> {
+                float on = smooth(age / 1.5F) * (1 - smooth((age - 9) / 5F));
+                twist = -68 * handed * on;
+                roll = 24 * handed * on;
+                drop = .38F * on;
+                pitch = 4 * on;
+            }
             default -> { return; }
         }
         if (twist == 0 && pitch == 0 && roll == 0 && drop == 0) return;

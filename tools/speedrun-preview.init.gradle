@@ -14,6 +14,7 @@ allprojects {
                         gameDirectory = project.file('build/speedrun-preview')
                         programArguments.addAll('--width', '1100', '--height', '800')
                         systemProperty('heroes.preview.speedrun', 'true')
+                        if (project.hasProperty('stop')) systemProperty('heroes.preview.speedrun.stop', 'true')
                     }
                 }
             }

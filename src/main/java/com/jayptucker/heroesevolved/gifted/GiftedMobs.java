@@ -34,11 +34,7 @@ import net.minecraft.world.entity.OwnableEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.monster.AbstractSkeleton;
 import net.minecraft.world.entity.monster.PatrollingMonster;
-import net.minecraft.world.entity.monster.Witch;
-import net.minecraft.world.entity.monster.Zombie;
-import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.raid.Raider;
@@ -65,7 +61,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Gifted mobs: any villager, illager or humanoid monster carrying a power and using it. Every loaded one is ticked here
+ * Gifted mobs: villagers and illagers (the only mobs that may, {@link #mayCarry}) carrying a power and using it. Every loaded one is ticked here
  * ({@link GiftedMob}); its gift is saved on it ({@link Gift}).
  * <p>
  * Where they come from (each rolled once per mob, then remembered with {@link #ROLLED}):
@@ -74,7 +70,7 @@ import java.util.UUID;
  *   evil and become renegades ({@link Renegades});</li>
  *   <li>a raid's wave leader made its champion, always in the last wave ({@link GiftedRaids});</li>
  *   <li>the leader of a pillager patrol crossing the land;</li>
- *   <li>now and then a zombie, skeleton, witch or piglin that spawns with one.</li>
+ *   <li>now and then an illager that spawns on its own with one.</li>
  * </ul>
  * Each is graded by {@link Rarity}, named ({@link GiftNames}), tougher than its kind, and drops something worth having.
  */
@@ -140,6 +136,7 @@ public final class GiftedMobs {
      * {@code name} null rolls one.
      */
     public static GiftedMob bestow(Mob mob, ResourceLocation power, Rarity rarity, boolean evil, Gift.Origin origin, BlockPos home, String name) {
+        if (!mayCarry(mob)) return null;
         Gift gift = new Gift(power, rarity, evil, name != null ? name : GiftNames.roll(power, mob.getRandom()), origin, home);
         gift.write(mob);
         mob.getPersistentData().putBoolean(ROLLED, true);
@@ -200,11 +197,13 @@ public final class GiftedMobs {
         if (event.getLevel().isClientSide() || !(event.getEntity() instanceof Mob mob)) return;
         Gift gift = Gift.read(mob);
         if (gift != null) {
+            // A gift saved on a mob that may no longer carry one (a zombie gifted before the rule): it goes.
+            if (!mayCarry(mob)) { cleanse(mob); return; }
             ACTIVE.computeIfAbsent(mob.getUUID(), id -> new GiftedMob(mob, gift));
             return;
         }
         var data = mob.getPersistentData();
-        if (data.getBoolean(ROLLED) || data.getBoolean(FOLLOWER)) return;
+        if (data.getBoolean(ROLLED) || data.getBoolean(FOLLOWER) || !mayCarry(mob)) return;
         data.putBoolean(ROLLED, true);
         if (mob instanceof AbstractVillager) return; // villagers roll a dormant gift instead (GiftedVillagers)
         RandomSource random = mob.getRandom();
@@ -220,17 +219,18 @@ public final class GiftedMobs {
             }
             return;
         }
-        if (humanoid(mob) && (mob.getSpawnType() == MobSpawnType.NATURAL || mob.getSpawnType() == MobSpawnType.PATROL)
-                && random.nextDouble() < config.giftedWildChance.get()) {
+        if (mob.getSpawnType() == MobSpawnType.NATURAL && random.nextDouble() < config.giftedWildChance.get()) {
             bestow(mob, randomPower(random), Rarity.roll(random, Rarity.UNCOMMON), true, Gift.Origin.WILD, null, null);
             FRESH.add(mob);
         }
     }
 
-    /** Human-shaped monsters: the ones that can carry a power. */
-    static boolean humanoid(Mob mob) {
-        return mob instanceof Zombie || mob instanceof AbstractSkeleton || mob instanceof Witch || mob instanceof AbstractPiglin
-                || mob instanceof Raider;
+    /**
+     * Who may carry a power: villagers (wandering traders included) and illagers (pillagers, vindicators, evokers,
+     * illusioners). People, in other words. Zombies, skeletons, witches, piglins, ravagers and every other mob may not.
+     */
+    public static boolean mayCarry(Entity entity) {
+        return entity instanceof AbstractVillager || entity instanceof net.minecraft.world.entity.monster.AbstractIllager;
     }
 
     @SubscribeEvent

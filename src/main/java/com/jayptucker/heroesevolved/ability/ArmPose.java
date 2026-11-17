@@ -206,5 +206,13 @@ public enum ArmPose {
     STYLE_SWAT, STYLE_SWAT_OFF, STYLE_LIFT,
     /** Finishers. Dragon Coil's landing: dropped into a low horse stance, the rear palm thrust out at the foe, the lead
      *  fist drawn back to the hip. */
-    FINISH_DRAGON
+    FINISH_DRAGON,
+    /** Blur Boxing's skids (speed/SpeedStyle). Back: thrown backward, the body turning side-on as it drops to one knee,
+     *  the lead hand dragging on the ground in front and the rear arm flung back for balance, then rising. Left and
+     *  right (the way the skid travels): crouched low and leaning away from the slide, the trailing hand flat on the
+     *  ground braking, the leading leg out straight and the other arm up for balance. */
+    SPEED_SKID_BACK, SPEED_SKID_LEFT, SPEED_SKID_RIGHT,
+    /** A runner letting go at speed (speed/SpeedService.skidStop): a hockey stop, the body turned side-on to the run,
+     *  crouched and leaning back from it, the rear hand on the ground braking and the lead arm out for balance. */
+    SPEED_SKID_STOP
 }

@@ -209,12 +209,12 @@ public final class GiftedPreview {
             case 44 -> shot("1-crown-close");
             case 46 -> side(0, 3, 1, 0, 2.2, 7);
             case 58 -> shot("1-crowns-front");
-            // ---- A guardian: a villager's halo, fighting a monster ----
+            // ---- A guardian: a villager's halo, fighting an evil illager ----
             case 60 -> server(mc, p -> {
                 reset(p);
                 lead = actor(p, EntityType.VILLAGER, -1.5, 5);
                 gift(lead, ModAbilities.HYDROKINESIS_ID, Rarity.MYTHIC, false);
-                gift(actor(p, EntityType.ZOMBIE, 2.5, 8), ModAbilities.QUAKE_ID, Rarity.UNCOMMON, true);
+                gift(actor(p, EntityType.VINDICATOR, 2.5, 8), ModAbilities.QUAKE_ID, Rarity.UNCOMMON, true);
             });
             case 64 -> side(5.5, 2.4, 3, 0.5, 1.8, 6.5);
             case 80 -> shot("2-guardian-a");

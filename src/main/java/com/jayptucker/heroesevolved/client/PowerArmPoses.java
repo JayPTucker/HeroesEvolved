@@ -251,6 +251,10 @@ public final class PowerArmPoses {
                 set(main, Mth.lerp(drive, aimX + 1.2F, aimX - .06F), aimY, -.04F * inward);
                 set(rightHanded ? model.leftArm : model.rightArm, .85F * drive, 0, -.2F * inward);
             }
+            case SPEED_SKID_BACK, SPEED_SKID_LEFT, SPEED_SKID_RIGHT, SPEED_SKID_STOP ->
+                    speedSkid(model, pose, main, rightHanded ? model.leftArm : model.rightArm,
+                            rightHanded ? model.rightLeg : model.leftLeg, rightHanded ? model.leftLeg : model.rightLeg,
+                            inward, ClientArmPoseState.ageTicks(id));
             case SPEED_THROW -> {
                 // Cocked back over the shoulder, then whipped through like a javelin; the other hand sights the target.
                 float age = ClientArmPoseState.ageTicks(id);
@@ -1782,6 +1786,41 @@ public final class PowerArmPoses {
                 stance(lead, rear, inward, .25F, 0, 0);
             }
             default -> { }
+        }
+        model.rightPants.copyFrom(model.rightLeg);
+        model.leftPants.copyFrom(model.leftLeg);
+    }
+
+    /**
+     * Blur Boxing's skids (speed/SpeedStyle), with the conventions of {@link #fighting}. Back: thrown back with the arms
+     * forward, then down on the rear knee with the lead hand dragging on the ground in front and the rear arm flung back,
+     * held while the slide runs out, then up. Sideways: crouched low, the trailing hand flat on the ground and the
+     * leading leg out straight, the other arm up and out for balance. The drop, lean and side-on turn of the whole body
+     * are {@code FightingStylePoseRenderer}.
+     */
+    private static void speedSkid(PlayerModel<?> model, ArmPose pose, ModelPart main, ModelPart off, ModelPart rear,
+                                  ModelPart lead, float inward, float age) {
+        if (pose == ArmPose.SPEED_SKID_BACK) {
+            float thrown = smooth(age) * (1 - smooth((age - 1.5F) / 2F));
+            float kneel = smooth((age - 1) / 2.5F) * (1 - smooth((age - 12) / 5F));
+            set(off, Mth.lerp(kneel, -1.25F * thrown, -.3F), -inward * .15F * kneel, inward * (.1F + .12F * kneel));
+            set(main, Mth.lerp(kneel, -1.1F * thrown, .75F), inward * .1F, -inward * (.1F + .45F * kneel));
+            set(lead, -1.3F * kneel - .2F * thrown, 0, inward * .1F * kneel);
+            set(rear, .95F * kneel + .15F * thrown, 0, -inward * .12F * kneel);
+        } else {
+            // The trailing side (away from the slide) is the one that brakes. A stop turns the body side-on (rear
+            // shoulder back), so the run carries on toward the lead side: a sideways skid toward the off hand.
+            boolean right = pose == ArmPose.SPEED_SKID_RIGHT || pose == ArmPose.SPEED_SKID_STOP && inward > 0;
+            ModelPart brakeArm = right ? model.leftArm : model.rightArm, freeArm = right ? model.rightArm : model.leftArm;
+            ModelPart outLeg = right ? model.rightLeg : model.leftLeg, bentLeg = right ? model.leftLeg : model.rightLeg;
+            // Outward (away from the body) is +z for the right limbs and -z for the left.
+            float brakeOut = right ? -1 : 1, freeOut = -brakeOut;
+            float on = smooth(age / 1.5F) * (1 - smooth((age - 9) / 5F));
+            float down = smooth((age - .5F) / 2F) * (1 - smooth((age - 9) / 5F));
+            set(brakeArm, -.25F * down, 0, brakeOut * (.1F + .55F * down));
+            set(freeArm, -.35F * on, 0, freeOut * (.1F + 1.25F * on));
+            set(outLeg, -.1F * on, 0, freeOut * (.05F + .6F * on));
+            set(bentLeg, -.9F * on, 0, brakeOut * (.05F + .12F * on));
         }
         model.rightPants.copyFrom(model.rightLeg);
         model.leftPants.copyFrom(model.leftLeg);

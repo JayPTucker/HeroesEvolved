@@ -3,6 +3,7 @@ package com.jayptucker.heroesevolved.uitest;
 import com.jayptucker.heroesevolved.ability.data.PlayerAbilityData;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.client.effects.SpeedOverrunClient;
+import com.jayptucker.heroesevolved.client.effects.TempestCamera;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.network.OverrunPayload;
@@ -94,6 +95,8 @@ public final class SpeedRunPreview {
 
     private static void shot(String name) { pending = "run-" + name + ".png"; }
 
+    private static boolean stopOnly() { return Boolean.getBoolean("heroes.preview.speedrun.stop"); }
+
     @SubscribeEvent public static void tick(ClientTickEvent.Post e) {
         if (!Boolean.getBoolean("heroes.preview.speedrun")) return;
         var mc = Minecraft.getInstance();
@@ -183,6 +186,30 @@ public final class SpeedRunPreview {
             case 532 -> shot("10b-stop");
             case 537 -> shot("10c-stop");
             case 539 -> { look(mc, false); onServer(mc, p -> { clearMobs(); SpeedService.stop(p); }); }
+            default -> { }
+        }
+        // -Pstop: only the sudden stop, then a second run watched side-on as the runner skids to a halt.
+        if (stopOnly()) {
+            switch (worldTicks) {
+                case 212 -> worldTicks = 475;
+                case 541 -> onServer(mc, p -> { place(p, 300, 60, 0, 4); SpeedService.toggle(p); });
+                case 545 -> sprint(mc, true);
+                case 586 -> {
+                    Vec3 at = mc.player.position();
+                    TempestCamera.fix(at.add(6.5, 1.4, 2.5), at.add(0, .7, 2.5));
+                    System.out.println("SKID_STOP release at " + at + " speed " + mc.player.getDeltaMovement().horizontalDistance());
+                    sprint(mc, false);
+                }
+                case 588 -> shot("11-skid-side");
+                case 590 -> shot("11b-skid-side");
+                case 593 -> shot("11c-skid-side");
+                case 598 -> { shot("11d-skid-side"); System.out.println("SKID_STOP ended at " + mc.player.position()); }
+                case 604 -> { TempestCamera.fix(null, null); PreviewQuiet.quit(); }
+                default -> { }
+            }
+            return;
+        }
+        switch (worldTicks) {
             // Outrunning the last minute: a minute of history to go back to, then twenty seconds flat out.
             case 541 -> onServer(mc, p -> {
                 place(p, 300, 120, 0, 4);

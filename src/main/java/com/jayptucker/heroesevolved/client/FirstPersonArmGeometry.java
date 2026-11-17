@@ -131,7 +131,8 @@ public final class FirstPersonArmGeometry {
         if (switch (pose) {
             case STYLE_JAB, STYLE_CROSS, STYLE_FLURRY, STYLE_HOOK, STYLE_HAYMAKER, STYLE_UPPERCUT, STYLE_HAMMER,
                     STYLE_DOUBLE_PALM, STYLE_GROUND, STYLE_SLIDE, STYLE_SIDESTEP, STYLE_BACKSTEP, STYLE_SPIN, STYLE_HEADBUTT,
-                    STYLE_TACKLE, STYLE_BRACE, STYLE_SWAT, STYLE_SWAT_OFF, STYLE_LIFT -> true;
+                    STYLE_TACKLE, STYLE_BRACE, STYLE_SWAT, STYLE_SWAT_OFF, STYLE_LIFT,
+                    SPEED_SKID_BACK, SPEED_SKID_LEFT, SPEED_SKID_RIGHT, SPEED_SKID_STOP -> true;
             default -> false;
         }) {
             var player = net.minecraft.client.Minecraft.getInstance().player;
@@ -1528,6 +1529,29 @@ public final class FirstPersonArmGeometry {
                 float thrust = smooth((age - 1.5F) / 1.5F) * (1 - smooth((age - 7) / 4F));
                 spread = .4F - .2F * thrust; depth = -.22F - .35F * thrust; pitch = -82 - 6 * thrust;
                 yaw = side * (5 + 18 * thrust); roll = side * (4 - 60 * thrust);
+            }
+            case SPEED_SKID_BACK -> {
+                // The lead hand drops toward the ground ahead; the rear arm is flung back out of view.
+                float kneel = smooth((age - 1) / 2.5F) * (1 - smooth((age - 12) / 5F));
+                if (!main) {
+                    spread = .45F + .05F * kneel; height = -.4F - .42F * kneel; depth = -.25F - .18F * kneel;
+                    pitch = -82 + 32 * kneel; roll = side * (4 + 12 * kneel);
+                } else {
+                    spread = .43F + .15F * kneel; height = -.4F - .55F * kneel; pitch = -82 + 55 * kneel;
+                }
+            }
+            case SPEED_SKID_LEFT, SPEED_SKID_RIGHT, SPEED_SKID_STOP -> {
+                // Sliding right, the left hand goes down to the ground and the right arm swings up and out. A stop
+                // turns side-on with the rear shoulder back, so the main hand brakes.
+                float on = smooth(age / 1.5F) * (1 - smooth((age - 9) / 5F));
+                boolean braking = pose == ArmPose.SPEED_SKID_STOP ? main : (pose == ArmPose.SPEED_SKID_RIGHT) == (side < 0);
+                if (braking) {
+                    spread = .43F + .3F * on; height = -.4F - .45F * on; depth = -.25F - .1F * on;
+                    pitch = -82 + 35 * on; roll = side * (4 + 25 * on);
+                } else {
+                    spread = .43F + .25F * on; height = -.4F + .1F * on; pitch = -82 + 10 * on;
+                    yaw = side * (5 + 15 * on); roll = side * (4 - 35 * on);
+                }
             }
             case STYLE_GROUND, STYLE_SLIDE -> {
                 float drop = smooth(age / 2F) * (1 - smooth((age - 9) / 4F));

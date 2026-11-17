@@ -27,6 +27,7 @@ public final class ModPayloads {
             .playToClient(FrictionPayload.TYPE, FrictionPayload.STREAM_CODEC, FrictionPayload::handle)
             .playToClient(CycloneStatusPayload.TYPE, CycloneStatusPayload.STREAM_CODEC, CycloneStatusPayload::handle)
             .playToServer(CycloneSpeedInputPayload.TYPE, CycloneSpeedInputPayload.STREAM_CODEC, CycloneSpeedInputPayload::handle)
+            .playToServer(SpeedSkidPayload.TYPE, SpeedSkidPayload.STREAM_CODEC, SpeedSkidPayload::handle)
             .playToClient(MimicMemoryPayload.TYPE, MimicMemoryPayload.STREAM_CODEC, MimicMemoryPayload::handle)
             .playToClient(TimeVeilPayload.TYPE, TimeVeilPayload.STREAM_CODEC, TimeVeilPayload::handle)
             .playToServer(MimicChoicePayload.TYPE, MimicChoicePayload.STREAM_CODEC, MimicChoicePayload::handle)

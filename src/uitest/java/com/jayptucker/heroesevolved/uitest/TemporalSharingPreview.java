@@ -84,7 +84,8 @@ public final class TemporalSharingPreview {
         world.addNewPlayer(guest);
         if (Boolean.getBoolean("heroes.preview.mobtime")) {
             for (int i = 0; i < 3; i++) {
-                var mob = net.minecraft.world.entity.EntityType.ZOMBIE.create(world);
+                // The third is gifted, so it is a pillager: only villagers and illagers carry powers.
+                net.minecraft.world.entity.Mob mob = i == 2 ? net.minecraft.world.entity.EntityType.PILLAGER.create(world) : net.minecraft.world.entity.EntityType.ZOMBIE.create(world);
                 mob.getPersistentData().putBoolean(com.jayptucker.heroesevolved.gifted.GiftedMobs.ROLLED, true);
                 mob.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_HELMET));
                 mob.moveTo(147.5 + i * 3, -60, 156.5, 180, 0);

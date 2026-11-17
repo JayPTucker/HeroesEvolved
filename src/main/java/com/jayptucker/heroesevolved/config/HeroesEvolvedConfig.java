@@ -515,7 +515,7 @@ public final class HeroesEvolvedConfig {
                         .defineInRange("giftedRaidChampionChance", 0.3D, 0.0D, 1.0D);
 
                 giftedWildChance = builder
-                        .comment("Chance that a zombie, skeleton, witch, piglin or illager spawning naturally carries a power.")
+                        .comment("Chance that an illager spawning on its own (not in a raid or patrol) carries a power. Only villagers and illagers ever carry powers: never zombies, skeletons, witches or other mobs.")
                         .defineInRange("giftedWildChance", 0.01D, 0.0D, 1.0D);
 
                 villageIncidentMinutes = builder

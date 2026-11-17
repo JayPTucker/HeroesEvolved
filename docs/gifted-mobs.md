@@ -1,7 +1,7 @@
 # Gifted mobs: guardians, renegades and champions
 
-Powers aren't only for players. Any villager can carry one, any power at all, and so can the illagers who raid them and
-the odd zombie, skeleton, witch or piglin. A mob with a power uses it, for or against you. The strongest are mini-bosses
+Powers aren't only for players. Any villager can carry one, any power at all, and so can the illagers who raid them
+(pillagers, vindicators, evokers and illusioners). **Nothing else does:** no zombies, skeletons, witches, piglins or other mobs; powers belong to people. A mob with a power uses it, for or against you. The strongest are mini-bosses
 in the spirit of Apotheosis's bosses and Cataclysm's fights: named, graded, readable, and worth beating.
 
 Code: `gifted/` (`GiftedMobs`, `GiftedMob`, `MobMoves`, `Renegades`, `GiftedRaids`, `Rarity`, `GiftNames`), village
@@ -17,7 +17,7 @@ runs them with the village and radiation tests).
 | A **gift waking** | Village incidents (every 20 minutes, 50%, in a village up to 640 blocks from a player) and the end of each Eclipse wake dormant gifts. See [the emergency band](emergency-band.md#where-they-happen). | Guardian: Uncommon or better. Renegade: Rare or better. |
 | A **raid's champion** | Each wave's leader (the one with the banner) has a 30% chance (`villages.giftedRaidChampionChance`), more in later waves. **The last wave's leader always is.** | Rare or better from the second half; the last wave Epic or better |
 | A **patrol leader** | 35% of pillager patrol leaders (`villages.giftedPatrolLeaderChance`): a named mini-boss crossing the land, perhaps past your home. | Rare or better |
-| A **wild one** | 1% of zombies, skeletons, witches, piglins and illagers spawning naturally (`villages.giftedWildChance`). | any |
+| A **wild one** | 1% of illagers that spawn on their own, outside a raid or patrol (`villages.giftedWildChance`); vanilla rarely spawns them that way. | any |
 
 ## A gift wakes: guardian or renegade
 
@@ -141,7 +141,7 @@ One picture for every gift: **a sigil over the head** in the power's colour (the
 ## Admin commands
 
 - `/heroesevolved gifted give <power> [rarity] [evil|good]`: the nearest mob within 8 blocks gets a power.
-- `/heroesevolved gifted summon <power> [rarity] [pillager|vindicator|illusioner|evoker|witch|zombie|husk|skeleton|stray|piglin_brute]`.
+- `/heroesevolved gifted summon <power> [rarity] [pillager|vindicator|illusioner|evoker]`. Only villagers and illagers can be given a power; `give` picks the nearest one.
 - `/heroesevolved gifted cleanse`: the nearest gifted mob loses its power.
 - `/heroesevolved gifted cast <move>`: the nearest gifted mob winds a move up at you.
 - `/heroesevolved village turn|guardian|wake|incident|calm`: see [the emergency band](emergency-band.md#admin-commands).

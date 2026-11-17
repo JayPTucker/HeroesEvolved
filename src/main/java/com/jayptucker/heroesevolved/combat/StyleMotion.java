@@ -29,9 +29,10 @@ public final class StyleMotion {
     /**
      * A dash: {@code push} each tick for {@code pushTicks} (with {@code lift} falling the client's way), or once at the
      * start when {@code impulse} (a flip, which flies on its own momentum). It lasts {@code length} ticks either way.
+     * With {@code ease} above 0 the push fades as {@code (1 - age / pushTicks)^ease} (a skid).
      */
     private record Dash(ServerPlayer player, Vec3 push, double lift, long start, int pushTicks, int length,
-                        boolean impulse, boolean flying) {}
+                        boolean impulse, boolean flying, int ease) {}
     private static final class Evade { long until; boolean countered; }
 
     private static final Map<UUID, Dash> DASHES = new HashMap<>();
@@ -48,9 +49,28 @@ public final class StyleMotion {
      * Anything already running for this player is replaced.
      */
     public static void dash(ServerPlayer player, Vec3 push, double lift, int pushTicks, int length, boolean impulse, boolean flying) {
-        Dash dash = new Dash(player, push, lift, now(player), pushTicks, length, impulse, flying);
-        DASHES.put(player.getUUID(), dash);
-        player.resetFallDistance();
+        start(new Dash(player, push, lift, now(player), pushTicks, length, impulse, flying, 0));
+    }
+
+    /**
+     * A skid: the body is thrown along {@code push} at full speed and the push eases off over {@code ticks} as a cube
+     * ({@code (1 - age / ticks)^3}), so most of the ground goes in the first few ticks and the rest is a short slide to
+     * a stop. It stays on the ground (no hop) and stops at a wall. It covers {@code push * skidReach(ticks)} blocks.
+     */
+    public static void skid(ServerPlayer player, Vec3 push, int ticks) {
+        start(new Dash(player, push, 0, now(player), ticks, ticks, false, false, 3));
+    }
+
+    /** How many blocks a {@link #skid} of {@code ticks} covers for each block a tick of its starting push. */
+    public static double skidReach(int ticks) {
+        double sum = 0;
+        for (int age = 0; age < ticks; age++) sum += Math.pow(1 - age / (double) ticks, 3);
+        return sum;
+    }
+
+    private static void start(Dash dash) {
+        DASHES.put(dash.player.getUUID(), dash);
+        dash.player.resetFallDistance();
         push(dash, 0);
     }
 
@@ -110,7 +130,8 @@ public final class StyleMotion {
         if (age >= dash.pushTicks) return;
         double vertical = dash.lift;
         if (!dash.flying) for (int i = 0; i < age; i++) vertical = (vertical - .08) * .98;
-        push(player, dash.push.add(0, dash.flying ? 0 : vertical, 0));
+        Vec3 along = dash.ease > 0 ? dash.push.scale(Math.pow(1 - age / (double) dash.pushTicks, dash.ease)) : dash.push;
+        push(player, along.add(0, dash.flying ? 0 : vertical, 0));
     }
 
     /** Sets a body's velocity on the server and, for a player, on their own client too. */

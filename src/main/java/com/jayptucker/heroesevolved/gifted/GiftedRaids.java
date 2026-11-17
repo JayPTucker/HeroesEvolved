@@ -42,7 +42,7 @@ public final class GiftedRaids {
         Raid raid = raider.getCurrentRaid();
         if (raid == null || !(raider.level() instanceof ServerLevel level)) return false;
         watch(level, raid);
-        if (!raider.isPatrolLeader()) return false;
+        if (!raider.isPatrolLeader() || !GiftedMobs.mayCarry(raider)) return false;
         int wave = raider.getWave(), waves = raid.getNumGroups(level.getDifficulty());
         boolean last = wave >= waves;
         String waveKey = key(level, raid) + "/" + wave;
