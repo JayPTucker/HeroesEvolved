@@ -39,6 +39,22 @@
       }
     ]
   },
+  "main_menu_intro": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/main_menu_intro",
+        "stream": true
+      }
+    ]
+  },
+  "main_menu": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/main_menu",
+        "stream": true
+      }
+    ]
+  },
   "new_beginning": {
     "subtitle": "subtitles.heroesevolved.new_beginning",
     "sounds": [

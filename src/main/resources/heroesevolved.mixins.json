@@ -42,7 +42,10 @@
     "CryoConstructClientMixin",
     "ParticleWindAccess",
     "ParticleEngineAccess",
-    "MorphSensesMixin"
+    "MorphSensesMixin",
+    "TitleScreenMixin",
+    "TitleButtonMixin",
+    "TitleIconButtonMixin"
   ],
   "injectors": {
     "defaultRequire": 1
