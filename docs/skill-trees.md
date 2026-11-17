@@ -8,7 +8,7 @@ between the first three):
 - **Loadout**: everything you can cast (your five core abilities, your class ability and the skills
   you've learned), each tagged Offense, Defense, Support or Utility, beside your eight ability keys.
   Select an ability, then click a key slot to put it there; right-click a slot to empty it.
-  Everything is also on the **ability wheel** (hold R). See
+  Switch to **Wheel** to assign favorites and pin the ability used by a tap of R. See
   [Power Levels, keys and the ability wheel](progression.md).
 - **Skill Tree**: the three branches, each drawn as its real tree: the root on top forks into an
   upgrade path and a technique path that ends in the capstone. Connectors light up as you learn.
@@ -122,6 +122,6 @@ checks with `python tools/verify-skill-content.py`.
 For actual Minecraft-rendered layout previews, run
 `gradlew.bat runClient --init-script tools/skill-ui-preview.init.gradle`.
 The isolated client saves the Abilities page with nothing learned, with one branch partly learned,
-and with a wider build, at GUI scales two and three, then the eight key chips and the ability wheel,
+and with a wider build, at GUI scales two and three, then the eight key chips, wheel editor and ability wheel,
 in `build/skill-ui-preview-world/screenshots/`, then exits. This
 fixture is excluded from the released JAR.

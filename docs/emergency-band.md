@@ -45,22 +45,34 @@ bell and near a player starts to glow. The Eclipse gave him Induced Radioactivit
 - **The countdown:** a bar for everyone within about 110 blocks: `Meltdown 0:42  Safe 3/9`. It turns red for the last
   ten seconds, and the ground shakes.
 - **The call for help:** on 101.10 FM from the bell.
-- **The safe point:** a green column of light about 44 blocks out from the bell, on the side away from him, with a ring
-  on the ground.
+- **The safe point:** a green column of light with a ring on the ground, just outside the village: the nearest open,
+  dry, natural ground (not a roof or a treetop) that has no bed, job site or bell within 12 blocks and is at least 38
+  blocks from him (the blast's reach and 14 more), tried first on the side away from him.
+- **Who is still in danger:** every villager of his village who isn't at the safe point yet glows, so players can find
+  the ones hiding in houses or wandering off. A villager stops glowing when they reach safety.
+- **What pours off him:** shock waves, a lethal near-field and the ground decaying round him, all growing as the
+  countdown runs out. Getting close needs a suit (see [Meltdowns, friction and the suits](protective-suits.md)).
 
 **The countdown.** One minute (`eclipse.villagerMeltdownFuseTicks`, 1200 ticks).
 
 **Getting everyone out.** Anyone can pick up a villager (sneak + use) and carry them. A villager set down at the safe
 point counts as safe, with a chime, and stays put there until it is over.
 
+**Who counts as his village.** Every villager within 64 blocks of the bell when it starts, every villager whose home,
+job site or meeting place is within 64 blocks of the bell (even one wandering far off), and anyone who comes within the
+blast's reach of him while it lasts. The village is gathered again every two seconds, so villagers who wander in, or
+are born, count too; nobody is ever taken off the count. It is saved with him, so an unloaded chunk or a restart keeps
+it. If he is carried within the blast's reach of the safe point, nobody there counts as safe until he is moved away
+again, and players are warned.
+
 **Stopping him.**
 
 | How | What it does |
 | --- | --- |
-| A speedster's containment run (the Cyclone key near him) | Holds the heat in. Five seconds held and he is cool, as for a radioactive player. The run strains the speedster the same way. |
-| A radioactive player crouching within 3 blocks | Draws his heat into themselves. Eight seconds of it and he is cool, but they take on 48 Core, enough to run them Hot. |
-| Freezing him (Cryokinesis) or stopping his time (Space-Time) | Pauses the countdown for as long as it lasts. |
-| Carrying him well away from the village | He still goes off, but where he is, not among his neighbours. |
+| A speedster's containment run (the Cyclone key near him) | Holds the heat in. Ten seconds held, building to a climax, and he is cool, as for a radioactive player. **Needs the whole velocity suit:** without it the speedster burns up on the ring for three and a half seconds, then burns away, and he still goes off. |
+| A radioactive player crouching within 3 blocks | Draws his heat into themselves. Eight seconds of it and he is cool, but they take on 48 Core, enough to run them Hot. They are immune to his heat, and his waves don't throw them. |
+| Freezing him (Cryokinesis) or stopping his time (Space-Time) | Pauses the countdown for as long as it lasts. Near the end his near-field reaches as far as Ice Blast, so a cryokinetic needs a suit. |
+| Carrying him well away from the village | He still goes off, but where he is, not among his neighbours. Whoever carries him needs a suit, or Regeneration. |
 
 **Hurting him makes it worse.** Blows don't hurt him: each takes ten seconds off the countdown, at most once a second.
 If he dies anyway (by `/kill`, for instance), he goes off at once.
@@ -68,8 +80,11 @@ If he dies anyway (by `/kill`, for instance), he goes off at once.
 **The end.**
 
 - **Stopped:** everyone nearby gets Hero of the Village for 40 minutes, and he is an ordinary villager again.
-- **He goes off:** a nuclear blast of radius 24 where he stands. It breaks blocks only if `mobGriefing` is on. Players
-  are told how many of his village got out; if all of them did, they get Hero of the Village for 20 minutes.
+- **He goes off:** a nuclear blast where he stands, the same as a radioactive player's Critical Mass: radius 24, the
+  flash and white-out, the boom heard far off, the ground shaking for 300 blocks, the mushroom cloud, and far-off
+  players see the sky flash. He burns away in it. It breaks blocks only if `mobGriefing` is on. Players are told how
+  many of his village got out (anyone of his village not seen dying, including those carried off into chunks that have
+  since unloaded); if all of them did, they get Hero of the Village for 20 minutes.
 
 A meltdown is stored in the villager's own data, so it carries on through a server restart or an unloaded chunk.
 

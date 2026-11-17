@@ -5,6 +5,8 @@ import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.network.PlayerPowerSyncService;
 import com.jayptucker.heroesevolved.network.StaminaPayload;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
+import com.jayptucker.heroesevolved.time.TimeSlowService;
+import com.jayptucker.heroesevolved.time.TimeStopService;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -206,8 +208,7 @@ public final class PlayerEnergyService {
         State state = state(player);
         long now = player.level().getGameTime();
         double regen = currentRegeneration(player, now);
-        int flags = (paused(player, now) ? StaminaPayload.PAUSED : 0) | (calm(player, now) ? StaminaPayload.CALM : 0)
-                | (StaminaDrain.active(player) ? StaminaPayload.HELD : 0) | StaminaPayload.REFUSED;
+        int flags = flags(player, now) | StaminaPayload.REFUSED;
         try {
             PacketDistributor.sendToPlayer(player, new StaminaPayload((float) getStamina(player), getMaximumEnergy(player),
                     (float) regen, (float) state.drainRate, flags, (int) Math.max(0, Math.min(1000, state.pausedUntil - now))));
@@ -217,8 +218,7 @@ public final class PlayerEnergyService {
     private static void send(ServerPlayer player, State state, long now, double regen, boolean force) {
         float stamina = (float) getStamina(player), drain = (float) state.drainRate, rate = (float) regen;
         int max = getMaximumEnergy(player);
-        int flags = (paused(player, now) ? StaminaPayload.PAUSED : 0) | (calm(player, now) ? StaminaPayload.CALM : 0)
-                | (StaminaDrain.active(player) ? StaminaPayload.HELD : 0) | (hasUnlimitedEnergy(player) ? StaminaPayload.UNLIMITED : 0);
+        int flags = flags(player, now);
         boolean changed = Math.abs(stamina - state.sentStamina) >= .05F;
         // The client runs the bar on the rates between packets, so a steady change needs a packet only now and
         // then; a jump (a move, a hit, a refill) or a new rate goes out at once.
@@ -236,6 +236,15 @@ public final class PlayerEnergyService {
         } catch (RuntimeException ignored) {
             // Game-test players have no real connection.
         }
+    }
+
+    private static int flags(ServerPlayer player, long now) {
+        return (paused(player, now) ? StaminaPayload.PAUSED : 0)
+                | (calm(player, now) ? StaminaPayload.CALM : 0)
+                | (StaminaDrain.active(player) ? StaminaPayload.HELD : 0)
+                | (hasUnlimitedEnergy(player) ? StaminaPayload.UNLIMITED : 0)
+                | (StaminaDrain.active(player, TimeStopService.DRAIN) ? StaminaPayload.STILL_WORLD : 0)
+                | (StaminaDrain.active(player, TimeSlowService.DRAIN) ? StaminaPayload.BETWEEN_SECONDS : 0);
     }
 
     private static void validateAmount(int amount) {

@@ -9,7 +9,7 @@ All of them are crafted at TaCZ's **gun smith table**, in its usual tabs.
 | Weapon | Tab | Materials | What it does |
 | --- | --- | --- | --- |
 | **Thermal Projector** (heat gun) | SMG | 20 iron, 12 copper, 4 blaze rods, 2 magma cream | A short stream of fire, about ten blocks long, at ten rounds a second. Every round that lands sets the target alight and keeps it burning a second longer, up to five seconds. It thaws anything frozen. |
-| **Cryo Carbine** (cold gun) | Rifle | 24 iron, 8 packed ice, 2 blue ice, 2 diamonds | Frost bolts, one a time, accurate to forty blocks. Each bolt adds frost: the target is slower with every hit, and about the fifth freezes it solid for two seconds (one for a player). Bolts that hit water skin it with ice that melts again. |
+| **Cryo Carbine** (cold gun) | Rifle | 24 iron, 8 packed ice, 2 blue ice, 2 diamonds | Frost bolts, one a time, accurate to forty blocks. Each bolt adds frost: the target is slower with every hit, and about the fifth freezes it solid for two seconds (one for a player). Repeated shots freeze a patch around the impact, turning solid blocks brittle, water into ice, and lava into obsidian. |
 | **Company Taser** | Pistol | 8 iron, 6 copper, 8 redstone, 2 yellow dye | One cartridge, eight blocks. A hit locks the target up: barely moving, no jumping and no landing blows for two and a half seconds (a second and a half for a player). |
 | **EMP Grenade** (×2) | Explosives | 4 iron, 6 copper, 1 block of redstone, 2 gunpowder | Throw it (use). It sticks where it lands, beeps for a second, and pulses. |
 | **Nullifier** (dampener pistol) | Pistol | 16 iron, 8 copper, 4 Helixite shards, 6 amethyst shards, 1 block of redstone | Dampener rounds, six to a magazine: whoever one hits loses their power for eight seconds. It is charged with Forge Energy, not loaded with ammo. See [ability-dampener.md](ability-dampener.md). |
@@ -34,7 +34,8 @@ Projector roars and the Carbine cracks like ice.
   Heat to build. Like Pyrokinesis it undoes cold: a frozen target thaws at the first round.
 - **Cold gun vs Cryokinesis.** The same frost: the same slowing, the same frost overlay, the same ice shell that
   shatters when hit. But a gun's freeze is shorter (two seconds for a creature, one for a player, against four and a
-  bit from the power), and a Cryokinetic is immune to it, as to all frost.
+  bit from the power), and a Cryokinetic is immune to it, as to all frost. Terrain frost works the same way as
+  [Ice Blast](cryokinesis.md#freezing-terrain). Stone takes five direct hits, and obsidian takes thirteen.
 - **Taser vs Electrokinesis.** One target, one shot, then a reload. An Electrokinetic shrugs off half of it.
 - **EMP grenade vs the EMP.** The same pulse as Induced Radioactivity's EMP and Electrokinesis's Blackout
   (`GridDisruption.emp`), smaller: ten blocks for eight seconds instead of sixteen for ten. Redstone dies, and with it

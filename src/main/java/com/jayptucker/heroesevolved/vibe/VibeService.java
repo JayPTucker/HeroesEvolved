@@ -429,6 +429,7 @@ public final class VibeService {
         for (Guard guard : List.copyOf(GUARDS.values())) tickGuard(guard);
         DESYNCED.values().removeIf(lock -> lock.level().getGameTime() >= lock.until());
         VibeBreaches.tick(server);
+        VibeBeast.tick(server);
         VibeSight.tick(server);
     }
 
@@ -440,6 +441,8 @@ public final class VibeService {
         PRIMED.remove(player.getUUID());
         closeGuard(player);
         if (!VibeBreaches.crossing(player)) VibeBreaches.close(player);
+        VibeFrequencies.forget(player);
+        VibeBeast.forget(player);
         VibeSight.forget(player);
     }
 
@@ -452,6 +455,7 @@ public final class VibeService {
         GUARDS.clear();
         DESYNCED.clear();
         VibeSight.clear();
+        VibeBeast.clear();
         VibeBreaches.clear();
     }
 }

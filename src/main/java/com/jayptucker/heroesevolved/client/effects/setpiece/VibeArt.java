@@ -40,13 +40,13 @@ final class VibeArt {
             case VIBE_BREACH_OPEN -> {
                 if (!SetPieceClient.superseded(a, SHUT, a.start() + (long) t))
                     iris(c, a.origin(), facing(a), VibeGeometry.PORTAL_WIDTH, VibeGeometry.PORTAL_HEIGHT,
-                            1, fade(t, 12, 2, 2), clock(a, t), false, 0);
+                            1, fade(t, 12, 2, 2), clock(a, t), false, 0, window(a));
             }
             case VIBE_BREACH_ARRIVE -> {
                 float open = smooth(0, 6, t);
                 float alpha = fade(t, 16, 2, 7);
                 iris(c, a.origin(), facing(a), VibeGeometry.PORTAL_WIDTH, VibeGeometry.PORTAL_HEIGHT,
-                        open, alpha, clock(a, t), false, 0);
+                        open, alpha, clock(a, t), false, 0, window(a));
                 fragments(c, a, a.origin(), facing(a), t, 16, 1.25F);
             }
             case VIBE_BREACH_CLOSE, VIBE_GUARD_CLOSE -> {
@@ -64,6 +64,9 @@ final class VibeArt {
             case VIBE_LOCK_WARN -> lock(c, a, t, false);
             case VIBE_LOCK -> lock(c, a, t, true);
             case VIBE_AWAKEN -> awaken(c, a, t);
+            case VIBE_BEAST -> beast(c, a, t);
+            case VIBE_KICK -> kick(c, a, t);
+            case VIBE_SEAM -> seam(c, a, t);
             default -> { }
         }
     }
@@ -167,6 +170,16 @@ final class VibeArt {
 
     private static void iris(Canvas c, Vec3 at, Vec3 normal, double width, double height, float open, float alpha,
                              float time, boolean guard, int stored) {
+        iris(c, at, normal, width, height, open, alpha, time, guard, stored, false);
+    }
+
+    /** True when this breach mouth shows the far side's terrain ({@code BreachViewClient}); its middle then stays clear. */
+    private static boolean window(SetPieceClient.Active a) {
+        return com.jayptucker.heroesevolved.client.effects.BreachViewClient.showing(a.origin());
+    }
+
+    private static void iris(Canvas c, Vec3 at, Vec3 normal, double width, double height, float open, float alpha,
+                             float time, boolean guard, int stored, boolean window) {
         if (alpha <= .005F) return;
         Vec3 side = VibeGeometry.side(normal);
         Vec3 up = side.cross(normal).normalize();
@@ -178,8 +191,14 @@ final class VibeArt {
                 float a = Mth.TWO_PI * i / sides, b = Mth.TWO_PI * (i + 1) / sides;
                 Vec3 edge = lip(at, side, up, x, y, a, time);
                 Vec3 next = lip(at, side, up, x, y, b, time);
-                c.tri(at, edge, next, VOID, alpha * near * (guard ? .20F : .82F),
-                        alpha * near * .46F, alpha * near * .46F);
+                if (window) {
+                    Vec3 inner = at.lerp(edge, .74), innerNext = at.lerp(next, .74);
+                    float rim = alpha * near * .58F;
+                    c.tri(inner, edge, next, VOID, 0, rim, rim);
+                    c.tri(inner, next, innerNext, VOID, 0, rim, 0);
+                } else {
+                    c.tri(at, edge, next, VOID, alpha * near * (guard ? .20F : .82F), alpha * near * .46F, alpha * near * .46F);
+                }
             }
             return;
         }
@@ -201,7 +220,7 @@ final class VibeArt {
             Vec3[] trace = new Vec3[24];
             for (int i = 0; i < trace.length; i++) {
                 float f = i / (float) (trace.length - 1), angle = phase + f * 2.9F;
-                double radius = 1 - (guard ? .52 : .9) * f;
+                double radius = 1 - (guard ? .52 : window ? .2 : .9) * f;
                 trace[i] = at.add(side.scale(Math.cos(angle) * x * radius)).add(up.scale(Math.sin(angle) * y * radius))
                         .add(normal.scale(.13 * Mth.sin(f * Mth.PI)));
             }
@@ -211,7 +230,7 @@ final class VibeArt {
     }
 
     private static Vec3 lip(Vec3 at, Vec3 side, Vec3 up, double x, double y, float angle, float time) {
-        double ripple = 1 + .043 * Math.sin(angle * 7 - time * .18) + .023 * Math.sin(angle * 11 + time * .29);
+        double ripple = VibeGeometry.lipScale(angle, time);
         return at.add(side.scale(Math.cos(angle) * x * ripple)).add(up.scale(Math.sin(angle) * y * ripple));
     }
 
@@ -333,6 +352,82 @@ final class VibeArt {
         }
     }
 
+    /**
+     * A rift beast still out of phase with this world: two split fronts turning round its body like a collar of the
+     * breach it came through, a cold glow at its heart and shards falling off it. Re-sent while it lasts.
+     */
+    private static void beast(Canvas c, SetPieceClient.Active a, float t) {
+        if (!(a.bound(c) instanceof LivingEntity body)) return;
+        float alpha = fade(t, 12, 2, 2) * .8F;
+        Vec3 at = body.getPosition(c.partial);
+        float w = body.getBbWidth(), h = body.getBbHeight();
+        float time = clock(a, t);
+        for (int band = 0; band < 2; band++) {
+            Vec3 center = at.add(0, h * (.35 + .4 * band), 0);
+            float spin = time * (band == 0 ? .11F : -.09F);
+            front(c, center, VibeGeometry.UP, w * .78F, w * .78F, spin + band * 1.7F, alpha, .12F);
+        }
+        if (c.glow()) {
+            c.glow(at.add(0, h * .55, 0), w * .9F, BLUE, alpha * .3F);
+            fragments(c, a, at.add(0, h * .55, 0), VibeGeometry.UP, t, 12, w * .8F);
+        }
+    }
+
+    /**
+     * Breach Kick: a small tear opens at the kicking foot and another behind the foe, and the shin comes out of the far
+     * one. {@code origin} is the near tear, {@code target} the far one.
+     */
+    private static void kick(Canvas c, SetPieceClient.Active a, float t) {
+        Vec3 near = a.origin(), far = a.target();
+        Vec3 into = far.subtract(near).multiply(1, 0, 1);
+        if (into.lengthSqr() < .01) into = new Vec3(0, 0, 1);
+        into = into.normalize();
+        float open = smooth(0, 3, t) * (1 - smooth(9, 14, t));
+        float alpha = fade(t, 14, 1, 4);
+        iris(c, near, into, .42, .56, open, alpha, clock(a, t), false, 0);
+        // The far tear faces back at the kicker: the kick comes out of it toward them.
+        Vec3 out = into.reverse();
+        iris(c, far, out, .42, .56, open, alpha, clock(a, t) + 3, false, 0);
+        if (!c.glow()) return;
+        float reach = smooth(1.5F, 4.5F, t) * (1 - smooth(7, 11, t));
+        if (reach > .02F) {
+            Vec3 tip = far.add(out.scale(.85 * reach));
+            stroke(c, new Vec3[]{far.subtract(out.scale(.1)), far.add(out.scale(.4 * reach)), tip}, .09F, alpha, ICE);
+            c.glow(tip, .3F, ICE, alpha * .7F);
+        }
+        fragments(c, a, far, out, t, 14, .7F);
+    }
+
+    /** Seam Sweep: a jagged crack runs along the ground from the palm, glowing, with shards kicked up where it passes. */
+    private static void seam(Canvas c, SetPieceClient.Active a, float t) {
+        Vec3 from = a.origin().add(0, .06, 0);
+        Vec3 dir = a.target().subtract(a.origin()).multiply(1, 0, 1);
+        if (dir.lengthSqr() < .01) return;
+        dir = dir.normalize();
+        Vec3 side = VibeGeometry.side(dir);
+        float length = a.scale(), run = smooth(0, 4, t) * length, alpha = fade(t, 18, 1, 8);
+        int segments = Math.max(4, (int) (length * 2.5));
+        Vec3[] crack = new Vec3[segments + 1];
+        for (int i = 0; i <= segments; i++) {
+            float f = i / (float) segments;
+            double jag = (hash(a.seed(), i) - .5F) * .45 * Mth.sin(f * Mth.PI);
+            crack[i] = from.add(dir.scale(Math.min(f * length, run))).add(side.scale(jag));
+        }
+        if (c.soft()) {
+            c.ribbon(crack, .22F, VOID, .5F * alpha, .2F * alpha);
+            return;
+        }
+        if (!c.glow()) return;
+        stroke(c, crack, .06F, alpha, BLUE);
+        for (int i = 1; i < 6 && !minimal(); i++) {
+            float f = i / 6F;
+            if (f * length > run) break;
+            Vec3 at = from.add(dir.scale(f * length));
+            float lift = smooth(f * 4, f * 4 + 6, t);
+            front(c, at.add(0, lift * .8, 0), VibeGeometry.UP, .3F + lift * .4F, .3F + lift * .4F, i + t * .2F, alpha * (1 - lift), .1F);
+        }
+    }
+
     private static void fragments(Canvas c, SetPieceClient.Active a, Vec3 at, Vec3 normal, float t, int life, float reach) {
         if (!c.glow() || minimal()) return;
         float p = t / life, alpha = fade(t, life, 2, life / 2F);
@@ -392,7 +487,10 @@ final class VibeArt {
         return c.camera().add(look.scale(-palm.z)).add(side.scale(palm.x)).add(side.cross(look).scale(palm.y));
     }
 
-    private static Vec3 facing(SetPieceClient.Active a) { return a.facing(); }
+    private static Vec3 facing(SetPieceClient.Active a) {
+        Vec3 direction = a.target().subtract(a.origin()).normalize();
+        return direction.lengthSqr() < .01 ? a.facing() : direction;
+    }
     private static float clock(SetPieceClient.Active a, float age) { return (float) (a.start() % 24000) + age; }
     private static boolean minimal() {
         Minecraft mc = Minecraft.getInstance();

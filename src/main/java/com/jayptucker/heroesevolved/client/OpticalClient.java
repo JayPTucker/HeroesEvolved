@@ -47,8 +47,11 @@ public final class OpticalClient {
         seen = mc.level == null ? 0 : mc.level.getGameTime();
     }
     public static boolean concealed() {
+        return faded() && state.unseen();
+    }
+    public static boolean faded() {
         var mc = Minecraft.getInstance();
-        return mc.level != null && state.faded() && state.unseen() && mc.level.getGameTime() - seen < 25;
+        return mc.level != null && world == mc.level && state.faded() && mc.level.getGameTime() - seen < 25;
     }
     public static void transition(int id, boolean hidden) {
         var mc = Minecraft.getInstance();

@@ -21,9 +21,15 @@
     "EclipseMoonPhaseMixin",
     "SoulFireBlockMixin",
     "InvertedHealMixin",
-    "ServerSoundCountMixin"
+    "ServerSoundCountMixin",
+    "ProjectileAccess",
+    "ArrowAccess",
+    "BreachEntityDataAccess",
+    "CryoCarbineBulletMixin"
   ],
   "client": [
+    "BurnSkinMixin",
+    "BreachRenderTypeMixin",
     "FlightSprintMixin",
     "FlightRenderBoundsMixin",
     "PlayerModelMixin",
@@ -40,7 +46,10 @@
     "ParticleEngineAccess",
     "MorphSensesMixin",
     "FinisherGlowMixin",
-    "FinisherOutlineMixin"
+    "FinisherOutlineMixin",
+    "TitleScreenMixin",
+    "TitleButtonMixin",
+    "TitleIconButtonMixin"
   ],
   "injectors": {
     "defaultRequire": 1

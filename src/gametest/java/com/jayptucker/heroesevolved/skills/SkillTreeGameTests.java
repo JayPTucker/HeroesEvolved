@@ -103,14 +103,30 @@ public final class SkillTreeGameTests {
     @GameTest(template="rewind_empty", batch="skills.persistence")
     public static void purchasesLoadoutsAndPointHistorySurviveSerialization(GameTestHelper h) {
         var p = player(h, "sonic_resonance", 5);
+        String power = "sonic_resonance", shriek = "sonic_resonance_0_1";
         SkillTreeService.purchase(p, "sonic_resonance_0_0"); SkillTreeService.purchase(p, "sonic_resonance_0_1");
         h.assertTrue(SkillTreeService.equip(p, AbilitySlot.QUATERNARY, "sonic_resonance_0_1"), "Learned active should equip");
+        h.assertTrue(!SkillTreeService.bindWheel(p, power, WheelLoadout.TAP, Loadout.base(AbilitySlot.PRIMARY)),
+                "Only a wheel favorite can be pinned");
+        h.assertTrue(!SkillTreeService.bindWheel(p, "quake", 1, shriek), "A request from the old power's screen is stale");
+        h.assertTrue(!SkillTreeService.bindWheel(p, power, 1, "sonic_resonance_0_0"), "A passive cannot occupy a wheel slot");
+        h.assertTrue(SkillTreeService.bindWheel(p, power, 7, shriek)
+                && SkillTreeService.bindWheel(p, power, WheelLoadout.TAP, shriek), "A learned active can go on a fixed slot and be pinned");
+        h.assertTrue(SkillTreeService.bindWheel(p, power, 3, ""), "A wheel position can be deliberately left empty");
         var before = p.getData(ModDataAttachments.SKILL_TREES);
         var encoded = SkillTreeData.CODEC.encodeStart(JsonOps.INSTANCE, before).getOrThrow();
         var after = SkillTreeData.CODEC.parse(JsonOps.INSTANCE, encoded).getOrThrow();
         h.assertTrue(before.equals(after), "Save/load must preserve purchases, remaining points and key assignments");
         var copy = player(h, "sonic_resonance", 5); copy.setData(ModDataAttachments.SKILL_TREES, after);
         h.assertTrue(SkillTreeService.actions(copy, id("sonic_resonance")).get(AbilitySlot.QUATERNARY).definition().id().equals(id("sonic_resonance_0_1")), "Reconnected player must resolve saved action");
+        var restored = SkillTreeService.build(copy, id(power)).wheel();
+        h.assertTrue(WheelLoadout.positions(restored).get(6).equals(shriek) && WheelLoadout.quickCast(restored).equals(shriek),
+                "A relog must preserve the direction and the quick cast");
+        var withNewSkill = WheelLoadout.addLearned(restored, Loadout.base(AbilitySlot.PRIMARY));
+        h.assertTrue(WheelLoadout.positions(withNewSkill).get(2).isEmpty() && WheelLoadout.positions(withNewSkill).get(6).equals(shriek),
+                "Learning a move cannot fill a cleared position or move an existing favorite");
+        h.assertTrue(SkillTreeService.bindWheel(copy, power, 7, "")
+                && WheelLoadout.quickCast(SkillTreeService.build(copy, id(power)).wheel()).isEmpty(), "Clearing a favorite unpins it");
         h.assertTrue(!SkillTreeService.purchase(copy, "sonic_resonance_0_1"), "Relog cannot repurchase a node");
         h.succeed(); cleanup(p); cleanup(copy);
     }

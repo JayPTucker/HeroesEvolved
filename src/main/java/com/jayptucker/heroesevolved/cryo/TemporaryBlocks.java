@@ -47,17 +47,27 @@ public final class TemporaryBlocks {
             int durationTicks,
             ServerPlayer player
     ) {
+        return place(level, pos, state, durationTicks, player, false);
+    }
+
+    static boolean freezeSolid(ServerLevel level, BlockPos pos, int durationTicks, ServerPlayer player) {
+        return place(level, pos, CryoBridge.state(FrostConstructBlock.Form.SURFACE), durationTicks, player, true);
+    }
+
+    private static boolean place(ServerLevel level, BlockPos pos, BlockState state, int durationTicks,
+                                 ServerPlayer player, boolean freezeSolid) {
         Key key = new Key(level, pos.immutable());
         if ((PLACED.size() >= MAXIMUM_PLACED && !PLACED.containsKey(key)) || !level.isLoaded(pos)
                 || level.isOutsideBuildHeight(pos) || !level.getWorldBorder().isWithinBounds(pos)) return false;
         BlockState original = level.getBlockState(pos);
         Placed previous = PLACED.get(key);
         boolean replacingTemporary = previous != null && previous.placed.equals(original);
+        if (freezeSolid && replacingTemporary) return false;
         if (replacingTemporary && original.equals(state)) return refresh(level, pos, durationTicks, player);
         boolean water = original.getFluidState().is(Fluids.WATER) && original.is(Blocks.WATER);
         boolean replaceable = original.isAir() || (original.canBeReplaced() && original.getFluidState().isEmpty());
         AABB occupied = FrostConstructBlock.isFrost(state) ? state.getCollisionShape(level, pos).bounds().move(pos) : new AABB(pos);
-        if ((!replaceable && !water && !replacingTemporary) || level.getBlockEntity(pos) != null
+        if ((!freezeSolid && !replaceable && !water && !replacingTemporary) || level.getBlockEntity(pos) != null
                 || !level.getEntities(null, occupied).isEmpty()) return false;
         if (player != null && !WorldMutationPolicy.canEdit(player, level, pos)) return false;
         BlockState saved = replacingTemporary ? previous.original : original;

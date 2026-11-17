@@ -36,7 +36,7 @@ final class PieceArt {
                     PSYCHIC_STORM, BLIND_SPOT, HIVE_MIND, FINISH_LIGHTS -> TelepathyArt.draw(c, a, t);
             case VIBE_GATHER, VIBE_WAVE, VIBE_CROSSWAVE, VIBE_HIT, VIBE_BREACH_SEED, VIBE_BREACH_OPEN,
                     VIBE_BREACH_ARRIVE, VIBE_BREACH_CLOSE, VIBE_TRANSIT, VIBE_TOUCH, VIBE_ECHO, VIBE_GUARD,
-                    VIBE_GUARD_CLOSE, VIBE_LOCK_WARN, VIBE_LOCK, VIBE_AWAKEN -> VibeArt.draw(c, a, t);
+                    VIBE_GUARD_CLOSE, VIBE_LOCK_WARN, VIBE_LOCK, VIBE_AWAKEN, VIBE_BEAST, VIBE_KICK, VIBE_SEAM -> VibeArt.draw(c, a, t);
             case TIME_STASIS, TIME_RELEASE, TIME_ANCHOR, TIME_SECOND, TIME_SEAL, TIME_SEAL_BREAK, TIME_CUT, TIME_SNAP,
                     TIME_MARK, TIME_FORWARD, FINISH_LOOP -> TimeArt.draw(c, a, t);
             case DENSITY_PASS, DENSITY_PRIMED, DENSITY_AMBUSH, DENSITY_DOOR, DENSITY_HARDEN, DENSITY_REBOUND, DENSITY_PILE,
@@ -87,8 +87,9 @@ final class PieceArt {
             case SPEED_DISINTEGRATE -> SpeedArt.disintegrate(c, a, t);
             case SHIELD_BRACE -> ShieldArt.draw(c, a, t);
             case VILLAGE_MELTDOWN, VILLAGE_SAFE -> VillageArt.draw(c, a, t);
-            case CRYO_BLAST, CRYO_QUENCH, CRYO_CAST -> CryoBlastArt.draw(c, a, t);
+            case CRYO_BLAST, CRYO_QUENCH, CRYO_CAST, CRYO_TERRAIN_FROST -> CryoBlastArt.draw(c, a, t);
             case RAD_HEAT, RAD_LEAP, RAD_SLAM, RAD_ZONE, RAD_EMP, RAD_BEAM, RAD_CHARGE, RAD_LANCE -> RadiationArt.draw(c, a, t);
+            case RAD_SHOCK, RAD_FIELD, RAD_FLAKE, RAD_DISINTEGRATE -> HazardArt.draw(c, a, t);
             case FORCE_SHIELD, FORCE_PUSH, FORCE_FORM, FORCE_BRIDGE, FORCE_WALL, FORCE_BUBBLE, FORCE_CRUSH, FORCE_BEAD,
                     FORCE_NOVA_CHARGE, FORCE_NOVA, FORCE_DISC, FORCE_VANISH, FORCE_NET, FORCE_SHATTER, FORCE_RIPPLE -> ForceArt.draw(c, a, t);
             case OVERRUN_DEPART -> SpeedArt.depart(c, a, t);

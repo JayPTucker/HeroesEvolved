@@ -102,29 +102,29 @@ public final class EnergyHudOverlay {
         int refused = ClientStamina.sinceRefusal();
         if (refused < 10) x += Math.round(Mth.sin(refused * 2.4F) * (10 - refused) * .25F);
 
-        int color = com.jayptucker.heroesevolved.mimicry.MimicColors.color(power.abilityId().getPath()) & 0xFFFFFF;
+        int color = PowerUiColors.fill(power.abilityId().getPath());
         float fraction = Mth.clamp(now / max, 0, 1), trailFraction = Mth.clamp(trail / max, 0, 1);
         int fill = Math.round(BAR_WIDTH * fraction), ghost = Math.round(BAR_WIDTH * trailFraction);
         boolean low = exact < max * .2F;
 
         // Frame: dark, pulsing red when low, flashing white when a move was refused.
-        int frame = 0xFF0B0D12;
-        if (low) frame = blend(0xFF0B0D12, 0xFFB0202A, .45F + .45F * Mth.sin(clock * .3F));
+        int frame = PowerUiColors.FRAME;
+        if (low) frame = blend(frame, 0xFFB0202A, .45F + .45F * Mth.sin(clock * .3F));
         if (refused < 12) frame = blend(frame, 0xFFFFFFFF, (12 - refused) / 12F);
         g.fill(x - 1, y - 1, x + BAR_WIDTH + 1, y + BAR_HEIGHT + 1, frame);
-        g.fill(x, y, x + BAR_WIDTH, y + BAR_HEIGHT, 0xCC14171D);
+        g.fill(x, y, x + BAR_WIDTH, y + BAR_HEIGHT, argb(.8F, PowerUiColors.TRACK));
         // The empty part's inner shade, so the trough reads as a groove.
         g.fill(x, y, x + BAR_WIDTH, y + 1, 0x60000000);
 
         // What was just spent, fading out as it shrinks.
         if (ghost > fill) {
             float age = Math.min(1, ClientStamina.sinceSpend() / 30F);
-            g.fill(x + fill, y, x + ghost, y + BAR_HEIGHT, argb(.85F - .35F * age, blend(0xFFFFFFFF, 0xFF000000 | color, .25F)));
+            g.fill(x + fill, y, x + ghost, y + BAR_HEIGHT, argb(.85F - .35F * age, blend(0xFFFFFFFF, color, .25F)));
         }
 
         // The fill: the power's colour, lit along the top and shaded along the bottom.
         if (fill > 0) {
-            int body = 0xFF000000 | color;
+            int body = color;
             g.fill(x, y, x + fill, y + BAR_HEIGHT, body);
             g.fill(x, y, x + fill, y + 1, blend(body, 0xFFFFFFFF, .45F));
             g.fill(x, y + 1, x + fill, y + 2, blend(body, 0xFFFFFFFF, .18F));
@@ -176,7 +176,7 @@ public final class EnergyHudOverlay {
         pose.translate(x, y - 7, 0);
         pose.scale(.75F, .75F, 1);
         String value = ClientStamina.unlimited() ? "∞" : String.valueOf((int) Math.floor(exact + 1e-4F));
-        int valueColor = low ? blend(0xFFFF8A8A, 0xFFFFFFFF, .5F + .5F * Mth.sin(clock * .3F)) : 0xFFF4F0E8;
+        int valueColor = low ? blend(0xFFFF8A8A, 0xFFFFFFFF, .5F + .5F * Mth.sin(clock * .3F)) : PowerUiColors.TEXT;
         String rate = null;
         int rateColor = 0;
         if (ClientStamina.known() && !ClientStamina.unlimited()) {

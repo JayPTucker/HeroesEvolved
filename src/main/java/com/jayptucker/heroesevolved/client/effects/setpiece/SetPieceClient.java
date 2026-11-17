@@ -63,6 +63,10 @@ public final class SetPieceClient {
         if (level == null || piece == null || !Double.isFinite(payload.origin().lengthSqr()) || !Double.isFinite(payload.target().lengthSqr())
                 || !Float.isFinite(payload.scale())) return;
         if (world != level) { ACTIVE.clear(); world = level; }
+        if (piece == Piece.CRYO_TERRAIN_FROST) {
+            ACTIVE.removeIf(a -> a.piece == piece && a.origin.equals(payload.origin()));
+            if (payload.scale() >= 1) return;
+        }
         if (ACTIVE.size() >= 96) ACTIVE.removeFirst();
         ACTIVE.add(new Active(piece, payload.origin(), payload.target(), Math.clamp(payload.scale(), 0.05F, 64), payload.entity(), payload.seed(),
                 level.getGameTime() + Math.min(payload.delay(), 200)));

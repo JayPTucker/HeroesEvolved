@@ -209,6 +209,9 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue radiationBeamCooldownTicks;
         public final ModConfigSpec.IntValue radiationDetonationEnergyCost;
         public final ModConfigSpec.IntValue radiationDetonationCooldownTicks;
+        // Hazards: meltdowns, friction and the suits that keep them off
+        public final ModConfigSpec.BooleanValue meltdownHazards;
+        public final ModConfigSpec.BooleanValue frictionBurns;
         public final ModConfigSpec.IntValue electroChainEnergyCost;
         public final ModConfigSpec.IntValue electroChainCooldownTicks;
         public final ModConfigSpec.IntValue electroThunderstrikeEnergyCost;
@@ -865,6 +868,15 @@ public final class HeroesEvolvedConfig {
                 radiationBeamCooldownTicks = cooldown(builder, "meltdownBeam", 20 * 6);
                 radiationDetonationEnergyCost = energy(builder, "explodingMan", 140);
                 radiationDetonationCooldownTicks = cooldown(builder, "explodingMan", 20 * 600);
+                builder.pop();
+
+                builder.push("hazards");
+                meltdownHazards = builder
+                        .comment("Someone melting down (a radioactive player's Critical Mass, or a villager's meltdown) sends out shock waves, burns anyone unprotected near them, and makes the ground round them crumble and burn. A full radiation or velocity suit keeps it off.")
+                        .define("meltdownHazards", true);
+                frictionBurns = builder
+                        .comment("A speedster running faster than about 37 blocks a second (the top run speeds, the sound barrier, Lightspeed) burns up from friction unless they wear the velocity suit.")
+                        .define("frictionBurns", true);
                 builder.pop();
 
                 builder.push("electrokinesis");

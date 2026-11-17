@@ -2,9 +2,9 @@ package com.jayptucker.heroesevolved.weapons;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.cryo.CryoService;
+import com.jayptucker.heroesevolved.cryo.TerrainFrost;
 import com.jayptucker.heroesevolved.network.SetPiecePayload;
 import com.jayptucker.heroesevolved.styles.Piece;
-import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -14,15 +14,16 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.level.GameRules;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.function.UnaryOperator;
 
 /**
  * The power-themed TaCZ guns: what happens when their rounds land. TaCZ fires them (they are a gun pack in
@@ -32,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>Heat gun</b>: a short stream of fire. Every round sets the target alight and keeps it burning a little
  *   longer, up to five seconds, and thaws anything frozen. A weak Pyrokinesis.</li>
  *   <li><b>Cold gun</b>: frost bolts. Each adds frost (slower and slower); the fifth or so freezes the target
- *   solid for two seconds (one for a player). A weak Cryokinesis. Bolts that hit water skin it with ice.</li>
+ *   solid for two seconds (one for a player). A weak Cryokinesis. Repeated bolts also freeze terrain.</li>
  *   <li><b>Taser</b>: one cartridge at a time, eight blocks. A hit locks the target's muscles: barely moving, no
  *   jumping, no landing blows (see {@link Stun}). A weak Electrokinesis hit.</li>
  *   <li><b>Nullifier</b>: dampener rounds made from the Forge Energy in its own battery, not from ammo items. A hit
@@ -65,6 +66,18 @@ public final class PowerWeapons {
 
     /** Whether {@code entity} is a gun's bullet in flight. */
     public static boolean isBullet(Entity entity) { return TaczLink.bullet(entity); }
+
+    public static boolean bulletObstructed(Projectile round, Vec3 from, Vec3 to) {
+        return TaczLink.bulletObstructed(round, from, to);
+    }
+
+    public static ClipContext bulletClip(Entity round, ClipContext clip) {
+        return TaczLink.bulletClip(round, clip);
+    }
+
+    public static @Nullable Projectile breachBullet(Projectile round, DimensionTransition transition, UnaryOperator<Vec3> map) {
+        return TaczLink.breachBullet(round, transition, map);
+    }
 
     /** An explosive bullet's {radius, breaks blocks (1 or 0)}, or null for an ordinary round. */
     public static @Nullable float[] bulletExplosion(Entity entity) { return TaczLink.explosive(entity); }
@@ -140,18 +153,18 @@ public final class PowerWeapons {
     static void shot(LivingEntity shooter, ResourceLocation gun) {
         if (!(shooter.level() instanceof ServerLevel level)) return;
         if (gun.equals(HEAT_GUN)) {
-            SetPiecePayload.send(level, Piece.GUN_HEAT, muzzle(shooter), reach(shooter, HEAT_RANGE), 1, shooter);
+            SetPiecePayload.send(level, Piece.GUN_HEAT, muzzle(shooter), reach(shooter, HEAT_RANGE, ClipContext.Fluid.NONE), 1, shooter);
             if (shooter.tickCount % 3 == 0)
                 level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(), SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, 0.35F, 1.5F);
         } else if (gun.equals(COLD_GUN)) {
-            SetPiecePayload.send(level, Piece.GUN_FROST, muzzle(shooter), reach(shooter, COLD_RANGE), 0, shooter);
+            SetPiecePayload.send(level, Piece.GUN_FROST, muzzle(shooter), reach(shooter, COLD_RANGE, ClipContext.Fluid.ANY), 0, shooter);
             level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(), SoundEvents.POWDER_SNOW_BREAK, SoundSource.PLAYERS, 1.0F, 1.6F);
             level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(), SoundEvents.GLASS_BREAK, SoundSource.PLAYERS, 0.35F, 1.9F);
         } else if (gun.equals(TASER)) {
             level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(), SoundEvents.TRIDENT_THROW.value(), SoundSource.PLAYERS, 0.6F, 1.8F);
         } else if (gun.equals(DAMPENER_GUN)) {
             SetPiecePayload.send(level, Piece.DAMPENER_SHOT, muzzle(shooter),
-                    reach(shooter, com.jayptucker.heroesevolved.dampener.DampenerGeometry.RANGE), 0, shooter);
+                    reach(shooter, com.jayptucker.heroesevolved.dampener.DampenerGeometry.RANGE, ClipContext.Fluid.NONE), 0, shooter);
             level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(), SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 0.5F, 2.0F);
             level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(), SoundEvents.AMETHYST_CLUSTER_BREAK, SoundSource.PLAYERS, 0.7F, 0.7F);
         }
@@ -166,17 +179,11 @@ public final class PowerWeapons {
         else if (gun.equals(DAMPENER_GUN)) com.jayptucker.heroesevolved.dampener.Dampening.strike(attacker, target, at);
     }
 
-    /** A round struck a block: cold bolts skin water with ice that melts again. */
+    /** A round struck a block or liquid. */
     static void hitBlock(ServerLevel level, BlockHitResult hit, @Nullable Entity owner, ResourceLocation gun) {
         if (!gun.equals(COLD_GUN)) return;
         SetPiecePayload.send(level, Piece.GUN_FROST, hit.getLocation(), hit.getLocation(), 1, null);
-        BlockPos center = hit.getBlockPos();
-        for (BlockPos pos : BlockPos.betweenClosed(center.offset(-1, 0, -1), center.offset(1, 0, 1))) {
-            if (level.getBlockState(pos).getFluidState().getType() != Fluids.WATER || !level.getBlockState(pos).is(Blocks.WATER)
-                    || !level.getBlockState(pos.above()).isAir() || !mayChange(level, pos, owner)) continue;
-            level.setBlockAndUpdate(pos, Blocks.FROSTED_ICE.defaultBlockState());
-            level.scheduleTick(pos, Blocks.FROSTED_ICE, Mth.nextInt(level.random, 60, 120));
-        }
+        TerrainFrost.carbine(level, hit, owner);
     }
 
     // ------------------------------------------------------------------
@@ -218,13 +225,6 @@ public final class PowerWeapons {
         return true;
     }
 
-    /** A player may change a block they could build at; a creature, where mobs may grief. No break-event probe. */
-    private static boolean mayChange(ServerLevel level, BlockPos pos, @Nullable Entity owner) {
-        if (owner instanceof ServerPlayer player)
-            return player.mayBuild() && level.getWorldBorder().isWithinBounds(pos) && level.mayInteract(player, pos);
-        return level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING);
-    }
-
     /** Roughly where the muzzle is: a little forward, right and down from the eyes. */
     static Vec3 muzzle(LivingEntity shooter) {
         Vec3 look = shooter.getLookAngle();
@@ -233,9 +233,9 @@ public final class PowerWeapons {
     }
 
     /** Where a straight shot along the look would stop: the first block, or {@code range} away. */
-    static Vec3 reach(LivingEntity shooter, double range) {
+    private static Vec3 reach(LivingEntity shooter, double range, ClipContext.Fluid fluid) {
         Vec3 eye = shooter.getEyePosition(), end = eye.add(shooter.getLookAngle().scale(range));
-        BlockHitResult hit = shooter.level().clip(new ClipContext(eye, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, shooter));
+        BlockHitResult hit = shooter.level().clip(new ClipContext(eye, end, ClipContext.Block.COLLIDER, fluid, shooter));
         return hit.getType() == HitResult.Type.MISS ? end : hit.getLocation();
     }
 }

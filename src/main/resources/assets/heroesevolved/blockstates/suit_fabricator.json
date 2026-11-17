@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "heroesevolved:block/suit_fabricator"
+    },
+    "facing=east": {
+      "model": "heroesevolved:block/suit_fabricator",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "heroesevolved:block/suit_fabricator",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "heroesevolved:block/suit_fabricator",
+      "y": 270
+    }
+  }
+}

@@ -19,6 +19,7 @@ import com.jayptucker.heroesevolved.styles.Piece;
 import com.mojang.authlib.GameProfile;
 import io.netty.channel.embedded.EmbeddedChannel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.Connection;
@@ -163,6 +164,182 @@ public final class CryoReworkGameTests {
         });
     }
 
+    @GameTest(template = "rewind_empty", batch = "cryo.rework_stream", timeoutTicks = 430)
+    public static void heldIceBlastFreezesSolidsByHardness(GameTestHelper h) {
+        ServerPlayer caster = player(h, 3, true);
+        BlockPos stone = h.absolutePos(new BlockPos(3, 3, 6));
+        BlockPos edge = stone.above();
+        BlockPos corner = edge.east();
+        BlockPos covered = stone.west();
+        BlockPos obsidian = h.absolutePos(new BlockPos(5, 3, 6));
+        BlockPos softerNeighbor = obsidian.east();
+        var level = h.getLevel();
+        for (BlockPos pos : List.of(stone, edge, corner, covered))
+            level.setBlockAndUpdate(pos, Blocks.STONE.defaultBlockState());
+        level.setBlockAndUpdate(covered.north(), Blocks.BEDROCK.defaultBlockState());
+        level.setBlockAndUpdate(obsidian, Blocks.OBSIDIAN.defaultBlockState());
+        level.setBlockAndUpdate(softerNeighbor, Blocks.DIRT.defaultBlockState());
+        aim(caster, Vec3.atCenterOf(stone));
+
+        try {
+            h.assertTrue(AbilityUseService.activateAssignedAction(caster, AbilitySlot.PRIMARY, false) == AbilityUseResult.SUCCESS,
+                    "Ice Blast starts from its assigned key");
+        } catch (RuntimeException e) {
+            clean(caster);
+            throw e;
+        }
+        h.runAfterDelay(12, () -> {
+            try {
+                h.assertTrue(level.getBlockState(stone).is(Blocks.STONE), "A short hit does not freeze stone");
+            } catch (RuntimeException e) {
+                clean(caster);
+                throw e;
+            }
+        });
+        h.runAfterDelay(36, () -> {
+            try {
+                var frozen = level.getBlockState(stone);
+                h.assertTrue(FrostConstructBlock.isFrost(frozen) && frozen.getDestroySpeed(level, stone) <= 1,
+                        "Sustained cold turns the wall into brittle ice, including a block covered above");
+                h.assertTrue(level.getBlockState(edge).is(Blocks.STONE) && level.getBlockState(corner).is(Blocks.STONE),
+                        "The block under the aim freezes before the surrounding area");
+            } catch (RuntimeException e) {
+                clean(caster);
+                throw e;
+            }
+        });
+        h.runAfterDelay(52, () -> {
+            try {
+                h.assertTrue(FrostConstructBlock.isFrost(level.getBlockState(edge)) && level.getBlockState(corner).is(Blocks.STONE),
+                        "The closest neighbor freezes before the corner");
+            } catch (RuntimeException e) {
+                clean(caster);
+                throw e;
+            }
+        });
+        h.runAfterDelay(65, () -> {
+            try {
+                h.assertTrue(FrostConstructBlock.isFrost(level.getBlockState(corner)), "Holding aim also freezes the corners");
+                h.assertTrue(level.getBlockState(covered).is(Blocks.STONE), "Cold splash cannot reach through a covered face");
+                h.assertTrue(caster.gameMode.destroyBlock(stone), "The brittle block can be broken by hand");
+                aim(caster, Vec3.atCenterOf(obsidian));
+            } catch (RuntimeException e) {
+                clean(caster);
+                throw e;
+            }
+        });
+        h.runAfterDelay(125, () -> {
+            try {
+                h.assertTrue(level.getBlockState(obsidian).is(Blocks.OBSIDIAN), "Obsidian needs longer than stone");
+                h.assertTrue(level.getBlockState(softerNeighbor).is(Blocks.DIRT),
+                        "A softer neighbor cannot complete its freeze before the targeted block");
+            } catch (RuntimeException e) {
+                clean(caster);
+                throw e;
+            }
+        });
+        h.runAfterDelay(152, () -> {
+            try {
+                h.assertTrue(FrostConstructBlock.isFrost(level.getBlockState(obsidian))
+                                && FrostConstructBlock.isFrost(level.getBlockState(softerNeighbor)),
+                        "Sustained cold freezes the targeted obsidian and then its softer neighbor");
+            } finally {
+                clean(caster);
+            }
+        });
+        h.runAfterDelay(405, () -> {
+            h.assertTrue(level.getBlockState(stone).isAir(), "Shattered ice stays broken when the thaw timer expires");
+            h.assertTrue(level.getBlockState(obsidian).is(Blocks.OBSIDIAN), "Unbroken ice thaws to its original block");
+            h.succeed();
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "cryo.rework_stream", timeoutTicks = 180)
+    public static void heldIceBlastTurnsWaterToIceAndLavaToObsidian(GameTestHelper h) {
+        ServerPlayer caster = player(h, 3, true);
+        BlockPos water = h.absolutePos(new BlockPos(3, 3, 6));
+        BlockPos lava = h.absolutePos(new BlockPos(6, 3, 6));
+        var level = h.getLevel();
+        for (BlockPos pos : List.of(water, lava)) {
+            level.setBlockAndUpdate(pos.below(), Blocks.STONE.defaultBlockState());
+            for (Direction side : Direction.Plane.HORIZONTAL)
+                level.setBlockAndUpdate(pos.relative(side), Blocks.STONE.defaultBlockState());
+        }
+        level.setBlockAndUpdate(water, Blocks.WATER.defaultBlockState());
+        level.setBlockAndUpdate(lava, Blocks.LAVA.defaultBlockState());
+        caster.setPos(caster.position().add(0, 3, 0));
+        aim(caster, Vec3.atBottomCenterOf(water).add(0, .78, 0));
+        try {
+            h.assertTrue(CryoBlastService.start(caster, 1), "Ice Blast starts while aiming at the tank");
+        } catch (RuntimeException e) {
+            clean(caster);
+            throw e;
+        }
+
+        h.runAfterDelay(16, () -> {
+            try {
+                h.assertTrue(level.getBlockState(water).is(Blocks.ICE), "Aimed cold turns water directly into ice");
+                aim(caster, Vec3.atBottomCenterOf(lava).add(0, .78, 0));
+            } catch (RuntimeException e) {
+                clean(caster);
+                throw e;
+            }
+        });
+        h.runAfterDelay(50, () -> {
+            try {
+                h.assertTrue(level.getBlockState(lava).is(Blocks.OBSIDIAN), "Aimed cold hardens lava into obsidian");
+            } catch (RuntimeException e) {
+                clean(caster);
+                throw e;
+            }
+        });
+        h.runAfterDelay(130, () -> {
+            try {
+                h.assertTrue(level.getBlockState(lava).is(Blocks.OBSIDIAN), "Continued contact leaves the newly cooled lava solid");
+                h.succeed();
+            } finally {
+                clean(caster);
+            }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "cryo.rework_terrain_fade", timeoutTicks = 160)
+    public static void partialColdGradesAcrossThePatchAndFades(GameTestHelper h) {
+        ServerPlayer caster = player(h, 3, true);
+        var level = h.getLevel();
+        BlockPos center = h.absolutePos(new BlockPos(3, 3, 6));
+        for (BlockPos pos : BlockPos.betweenClosed(center.offset(-1, -1, 0), center.offset(1, 1, 0)))
+            level.setBlockAndUpdate(pos, Blocks.STONE.defaultBlockState());
+        BlockPos edge = center.above(), corner = center.above().east();
+        var hit = new net.minecraft.world.phys.BlockHitResult(Vec3.atCenterOf(center).add(0, 0, -.5), Direction.NORTH, center, false);
+        try {
+            // Three shard hits: well short of the thirty that stone needs.
+            for (int i = 0; i < 3; i++) TerrainFrost.projectile(level, hit, caster, false);
+            double middle = TerrainFrost.progress(level, center), side = TerrainFrost.progress(level, edge),
+                    far = TerrainFrost.progress(level, corner);
+            h.assertTrue(middle > side && side > far && far > 0,
+                    "Cold builds fastest where it hits, then the edges, then the corners: " + middle + ", " + side + ", " + far);
+            h.assertTrue(level.getBlockState(center).is(Blocks.STONE), "A few hits leave stone standing");
+        } catch (RuntimeException e) {
+            clean(caster);
+            throw e;
+        }
+        h.runAfterDelay(TerrainFrost.CONTACT_TIMEOUT + 5, () -> {
+            try {
+                h.assertTrue(TerrainFrost.progress(level, center) == 0 && TerrainFrost.progress(level, corner) == 0,
+                        "Unfinished cold fades once the hits stop");
+                h.assertTrue(level.getBlockState(center).is(Blocks.STONE) && level.getBlockState(edge).is(Blocks.STONE),
+                        "Faded cold leaves the terrain as it was");
+                // Starting again starts from nothing.
+                TerrainFrost.projectile(level, hit, caster, false);
+                h.assertTrue(TerrainFrost.progress(level, center) < .2, "Cold that faded does not come back");
+                h.succeed();
+            } finally {
+                clean(caster);
+            }
+        });
+    }
+
     @GameTest(template="rewind_empty", batch="cryo.rework_reactor", timeoutTicks=740)
     public static void iceBlastPausesAndDefusesALateInvoluntaryDetonation(GameTestHelper h) {
         ServerPlayer caster = player(h, 3, true), reactor = player(h, 3, false);
@@ -173,6 +350,8 @@ public final class CryoReworkGameTests {
         RadiationService.beginDetonation(reactor, 5, false);
         int start = RadiationService.visualState(reactor).remaining() - 12;
         float health = reactor.getHealth();
+        // Four blocks from a meltdown near its end is inside its lethal near-field: the cryokinetic needs a suit.
+        com.jayptucker.heroesevolved.radiation.MeltdownFieldGameTests.suit(caster, false);
         aim(caster, reactor.getBoundingBox().getCenter());
         PlayerProgressionService.setLevel(caster, 1);
         h.runAfterDelay(start, () -> {

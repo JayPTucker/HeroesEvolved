@@ -1,23 +1,25 @@
 package com.jayptucker.heroesevolved.vibe;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
+import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
 import com.jayptucker.heroesevolved.entity.EntityCarryService;
 import com.jayptucker.heroesevolved.network.ArmPosePayload;
+import com.jayptucker.heroesevolved.network.BreachActorsPayload;
+import com.jayptucker.heroesevolved.network.BreachViewPayload;
 import com.jayptucker.heroesevolved.network.ScreenTintPayload;
 import com.jayptucker.heroesevolved.network.SetPiecePayload;
+import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.skills.SkillTreeService;
 import com.jayptucker.heroesevolved.sounds.ModSounds;
 import com.jayptucker.heroesevolved.styles.Piece;
 import com.jayptucker.heroesevolved.styles.StyleOps;
+import com.jayptucker.heroesevolved.telepathy.MindVoiceRoutes;
 import com.jayptucker.heroesevolved.time.SpaceTimeService;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -25,12 +27,23 @@ import net.minecraft.server.level.TicketType;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.portal.DimensionTransition;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.AABB;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -38,125 +51,362 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Breaches: two linked mouths anyone friendly can walk through, either way. A breach opens to where the viber looks
+ * (Shift + Breach, or the wheel's centre) or to one of their frequencies ({@link VibeFrequencies}), however far, and
+ * Glimpse opens one that can be looked through but not crossed. Each mouth shows the terrain round the other one:
+ * when a breach opens, the server captures a {@link BreachSnapshot} round each mouth and sends it to players near the
+ * other, and the client draws it through the opening.
+ */
 public final class VibeBreaches {
-    private static final String ANCHOR = "heroesevolved_vibe_anchor";
-    private static final int LOAD_TIMEOUT = 60, LIFETIME = 180;
+    private static final int LOAD_TIMEOUT = 160, LIFETIME = 180, FAR_LIFETIME = 300, GLIMPSE_LIFETIME = 200;
+    private static final int TICKET_RADIUS = 3;
+    /** How far from a mouth players are shown the view through it. */
+    static final double VIEW_RANGE = 112;
     private static final TicketType<UUID> BREACH_TICKET = TicketType.create("heroesevolved_breach", Comparator.<UUID>naturalOrder());
     private static final Map<UUID, Gate> GATES = new HashMap<>();
     private static final Set<UUID> CROSSING = new HashSet<>();
+    private static int serial;
 
-    private record Mouth(ServerLevel level, Vec3 feet, Vec3 direction) {
-        Vec3 center() { return feet.add(0, VibeGeometry.PORTAL_HEIGHT, 0); }
-        Vec3 arrival() { return arrival(1); }
-        /** The side of this mouth a traveler comes out on: +1 ahead of it, −1 behind it. */
-        Vec3 arrival(double side) { return feet.add(direction.scale(1.14 * side)); }
-        float yaw() { return (float) Math.toDegrees(Math.atan2(-direction.x, direction.z)); }
+    /** A grounded or floating opening, with a special floor/ceiling pair for dropping through a surface. */
+    record Mouth(ServerLevel level, Vec3 feet, Vec3 direction, boolean flat, boolean airborne, float yaw) {
+        static Mouth upright(ServerLevel level, Vec3 feet, Vec3 direction) {
+            return grounded(level, feet, direction, VibeGeometry.yaw(direction));
+        }
+
+        static Mouth grounded(ServerLevel level, Vec3 feet, Vec3 direction, float yaw) {
+            return new Mouth(level, feet, direction, false, false, yaw);
+        }
+
+        static Mouth floating(ServerPlayer player, Vec3 center, Vec3 direction) {
+            return new Mouth(player.serverLevel(), center, direction, false, true, player.getYRot());
+        }
+
+        static Mouth flat(ServerLevel level, Vec3 feet, float heading) {
+            // Preserve the opening's axes at vertical pitch, including the yaw of a tuned frequency.
+            return new Mouth(level, feet, Vec3.directionFromRotation(89.99F, heading), true, false, heading);
+        }
+
+        Vec3 center() {
+            if (airborne) return feet;
+            return feet.add(0, flat ? .04 : VibeGeometry.PORTAL_HEIGHT * direction.horizontalDistance(), 0);
+        }
+
+        Vec3 arrival(LivingEntity traveler, double side) {
+            if (!airborne) return feet.add(Vec3.directionFromRotation(0, yaw).scale(1.14 * side));
+            double halfHeight = dimensions(traveler).height() / 2;
+            return center().add(direction.scale(1.14 * side)).subtract(0, halfHeight, 0);
+        }
+
+        Vec3 rotate(Vec3 vector, Mouth to) {
+            return VibeGeometry.rotate(vector, direction, yaw, to.direction, to.yaw);
+        }
+
         ChunkPos chunk() { return new ChunkPos(BlockPos.containing(feet)); }
     }
+
+    static final Vec3 DOWN = new Vec3(0, -1, 0);
+    /** How far above a destination's ground a ceiling mouth opens, and the pitch past which a breach opens underfoot. */
+    static final double DROP = 3, FLOOR_PITCH = 60;
+    /** Ticks after a drop before the same traveler can be taken by a flat mouth again (no falling straight back). */
+    private static final int DROP_GAP = 30;
+
+    /** An aimed breach (where you look), a breach to a frequency, or a glimpse (a window you can't cross). */
+    enum Kind { AIMED, FREQUENCY, GLIMPSE }
 
     private record Approach(ServerLevel world, Vec3 center) {}
 
     /** Where a wave passes into one mouth ({@code through}) and where, heading which way, it leaves the other. */
     record Seam(Vec3 through, Vec3 out, Vec3 direction) {}
 
+    /** A physical projectile's nearest crossing, independent of who fired it. */
+    record ShotCrossing(Mouth from, Mouth to, Vec3 hit) {
+        Vec3 rotate(Vec3 vector) { return from.rotate(vector, to); }
+
+        Vec3 map(Vec3 point) {
+            return to.center().add(rotate(point.subtract(from.center())));
+        }
+    }
+
+    /** What one mouth shows: the terrain round the other mouth, and who has been sent it. */
+    private static final class View {
+        final int id;
+        final Mouth here, there;
+        BreachSnapshot snapshot;
+        final Map<UUID, ServerPlayer> sent = new HashMap<>();
+
+        View(int id, Mouth here, Mouth there) {
+            this.id = id;
+            this.here = here;
+            this.there = there;
+        }
+    }
+
     private static final class Gate {
         final ServerPlayer owner;
         final Mouth entry, exit;
-        final boolean tuned, sanctuary;
+        final Kind kind;
+        final boolean sanctuary;
         final long started;
+        final int lifetime;
+        final View[] views;
         final Map<UUID, Approach> previous = new HashMap<>();
+        final Map<UUID, Long> dropped = new HashMap<>();
         long opened = -1;
 
-        Gate(ServerPlayer owner, Mouth entry, Mouth exit, boolean tuned, boolean sanctuary) {
+        Gate(ServerPlayer owner, Mouth entry, Mouth exit, Kind kind, boolean sanctuary) {
             this.owner = owner;
             this.entry = entry;
             this.exit = exit;
-            this.tuned = tuned;
+            this.kind = kind;
             this.sanctuary = sanctuary;
             started = entry.level().getGameTime();
+            lifetime = kind == Kind.GLIMPSE ? GLIMPSE_LIFETIME : kind == Kind.FREQUENCY ? FAR_LIFETIME : LIFETIME;
+            int id = ++serial & 0x3FFFFFFF;
+            views = new View[]{new View(id * 2, entry, exit), new View(id * 2 + 1, exit, entry)};
+        }
+
+        boolean flat() { return entry.flat(); }
+
+        void ticket(boolean open) {
+            ticket(entry, open);
+            if (entry.level() != exit.level() || !entry.chunk().equals(exit.chunk())) ticket(exit, open);
+        }
+
+        private void ticket(Mouth mouth, boolean open) {
+            VibeBreaches.ticket(mouth.level(), mouth.chunk(), owner.getUUID(), open);
         }
     }
 
     private VibeBreaches() {}
 
-    public static boolean open(ServerPlayer player, boolean tune, boolean sanctuary) {
-        if (!VibeService.ready(player) || GATES.containsKey(player.getUUID())) return false;
-        if (!travelWorld(player.serverLevel())) return fail(player, "restricted");
-        Vec3 direction = StyleOps.facing(player);
-        Vec3 feet = player.position().add(direction.scale(2));
-        Mouth entry = new Mouth(player.serverLevel(), feet, direction);
-        if (!clearMouth(player, entry) || !clearLine(player, feet.add(0, player.getEyeHeight(), 0))
-                || !safe(player, entry, entry.arrival()))
-            return fail(player, "blocked");
+    static void ticket(ServerLevel level, ChunkPos chunk, UUID owner, boolean open) {
+        var chunks = level.getChunkSource();
+        if (open) chunks.addRegionTicket(BREACH_TICKET, chunk, TICKET_RADIUS, owner, true);
+        else chunks.removeRegionTicket(BREACH_TICKET, chunk, TICKET_RADIUS, owner, true);
+    }
 
-        boolean tuned = tune && VibeService.nativePower(player) && SkillTreeService.has(player, "vibe_world_frequency");
-        Mouth exit;
-        if (tuned) {
-            exit = frequency(player);
-            if (exit == null) return fail(player, "no_frequency");
-        } else {
-            double range = 30;
-            Vec3 destination = aimedGround(player, range);
-            if (destination == null && sanctuary) destination = ground(player, player.position().add(direction.scale(5)));
-            if (destination == null) return fail(player, "no_exit");
-            Vec3 back = player.position().subtract(destination).multiply(1, 0, 1).normalize();
-            exit = null;
-            for (int offset = 0; offset < 4; offset++) {
-                Vec3 floor = offset == 0 ? destination : ground(player, destination.add(back.scale(offset)).add(0, .7, 0));
-                if (floor == null || floor.distanceToSqr(entry.feet()) < 9) continue;
-                Mouth candidate = new Mouth(player.serverLevel(), floor, direction);
-                if (safe(player, candidate, candidate.arrival()) && clearMouth(player, candidate)) {
-                    exit = candidate;
-                    break;
+    /**
+     * The Breach key's paid press. A pick from the frequency wheel opens a breach there (or, for -1, where you look);
+     * a press with Shift held opens one where you look at once, and a borrowed Vibe (which has no frequencies) always
+     * does.
+     */
+    public static boolean breach(AbilityUseContext context) {
+        ServerPlayer player = context.player();
+        Integer pick = VibeFrequencies.picked(player, false);
+        if (pick == null || pick < 0) return open(player, false);
+        return openTo(player, pick, Kind.FREQUENCY);
+    }
+
+    /**
+     * The Breach key's free press: close an open breach, or open the frequency wheel. False lets the press go on to
+     * {@link #breach} (Shift held, a pick from the wheel, or a borrowed Vibe).
+     */
+    public static boolean breachFollowUp(AbilityUseContext context) {
+        ServerPlayer player = context.player();
+        if (VibeFrequencies.picked(player, false) != null) return false;
+        if (close(player)) return true;
+        return !context.modifierHeld() && VibeFrequencies.wheel(player, com.jayptucker.heroesevolved.network.FrequencyListPayload.BREACH);
+    }
+
+    /** Glimpse's free press: close an open window, or open the wheel to choose where to look. */
+    public static boolean glimpseFollowUp(ServerPlayer player) {
+        if (VibeFrequencies.picked(player, true) != null) return false;
+        if (close(player)) return true;
+        return VibeFrequencies.wheel(player, com.jayptucker.heroesevolved.network.FrequencyListPayload.GLIMPSE);
+    }
+
+    /** Glimpse (Attune Frequency's slot): a window to a frequency picked on the wheel. */
+    public static boolean glimpse(ServerPlayer player) {
+        Integer pick = VibeFrequencies.picked(player, true);
+        if (pick == null || pick < 0) return fail(player, "pick_frequency");
+        return openTo(player, pick, Kind.GLIMPSE);
+    }
+
+    /** The extra stamina a press will cost: the distance to a frequency picked on the wheel. */
+    public static int travelCost(AbilityUseContext context) {
+        Integer pick = VibeFrequencies.picked(context.player(), false);
+        if (pick == null || pick < 0) return 0;
+        var frequency = VibeFrequencies.get(context.player(), pick);
+        return frequency == null ? 0 : VibeFrequencies.travel(context.player(), frequency);
+    }
+
+    public static boolean isOpen(ServerPlayer player) { return GATES.containsKey(player.getUUID()); }
+
+    static boolean hasGates() { return !GATES.isEmpty(); }
+
+    /** Looking down steeply opens the near mouth in the ground under the viber's feet. */
+    static boolean downward(ServerPlayer player) { return player.getXRot() >= FLOOR_PITCH; }
+
+    /** A walking-height opening, an opening in the air along the aim, or a hole underfoot. */
+    private static Mouth entry(ServerPlayer player) {
+        if (downward(player) && player.onGround()) {
+            return Mouth.flat(player.serverLevel(), player.position(), player.getYRot());
+        }
+        Vec3 normal = aim(player);
+        if (player.onGround() && normal.y <= .15) {
+            Vec3 foot = player.position().add(Vec3.directionFromRotation(0, player.getYRot()).scale(2));
+            Mouth grounded = Mouth.grounded(player.serverLevel(), foot, normal, player.getYRot());
+            if (safe(player, grounded, grounded.arrival(player, 1))) return grounded;
+        }
+        return Mouth.floating(player, player.getEyePosition().add(normal.scale(2)), normal);
+    }
+
+    private static boolean entryFits(ServerPlayer player, Mouth entry) {
+        if (entry.flat()) return player.onGround() && safe(player, entry, entry.feet());
+        return exitFits(player, entry) && clearLine(player, entry.center());
+    }
+
+    /**
+     * Can the exit stay open: an upright mouth needs room and a footing on its far side, and a ceiling mouth needs
+     * open air down to safe ground.
+     */
+    private static boolean exitFits(ServerPlayer player, Mouth mouth) {
+        if (!mouth.flat()) return clearMouth(player, mouth) && safeArrival(player, mouth, mouth.arrival(player, 1));
+        ServerLevel level = mouth.level();
+        Vec3 ground = mouth.feet().subtract(0, DROP, 0);
+        var column = new net.minecraft.world.phys.AABB(ground.x - .35, ground.y + .05, ground.z - .35,
+                ground.x + .35, mouth.feet().y + .3, ground.z + .35);
+        return clear(player, level, column) && safe(player, mouth, ground);
+    }
+
+    private static boolean openTo(ServerPlayer player, int slot, Kind kind) {
+        if (!canOpen(player) || GATES.containsKey(player.getUUID())) return false;
+        if (!travelWorld(player.serverLevel())) return fail(player, "restricted");
+        var frequency = VibeFrequencies.get(player, slot);
+        String refused = VibeFrequencies.refusal(player, frequency);
+        if (refused != null) return fail(player, refused);
+        Vec3 forward = Vec3.directionFromRotation(0, player.getYRot());
+        Mouth entry = player.onGround()
+                ? Mouth.upright(player.serverLevel(), player.position().add(forward.scale(2)), forward)
+                : Mouth.floating(player, player.getEyePosition().add(forward.scale(2)), forward);
+        if (!entryFits(player, entry)) return fail(player, "blocked");
+        ServerLevel target = VibeFrequencies.world(player, frequency);
+        if (target == null) return fail(player, "restricted");
+        if (!VibeFrequencies.loaded(target, frequency)) {
+            // The normal ability path has checked cooldown and stamina. Spend them when a clear exit is ready.
+            VibeFrequencies.prepare(player, target, frequency, slot, kind == Kind.GLIMPSE);
+            return false;
+        }
+        Mouth exit = frequencyExit(player, target, frequency);
+        if (exit == null) return fail(player, "no_exit");
+        return begin(player, new Gate(player, entry, exit, kind, false));
+    }
+
+    private static Mouth frequencyExit(ServerPlayer player, ServerLevel level, VibeFrequencies.Frequency frequency) {
+        Vec3 saved = frequency.feet();
+        BlockPos base = BlockPos.containing(saved);
+        for (BlockPos cell : BlockPos.spiralAround(base, 3, Direction.EAST, Direction.SOUTH)) {
+            Vec3 column = saved.add(cell.getX() - base.getX(), 0, cell.getZ() - base.getZ());
+            Vec3 ground = StyleOps.ground(level, column.add(0, 1.5, 0));
+            if (ground.equals(column.add(0, 1.5, 0)) || Math.abs(ground.y - saved.y) > 2) continue;
+            for (int turn : new int[]{0, 90, -90, 180}) {
+                Vec3 direction = Vec3.directionFromRotation(0, frequency.yaw() + turn);
+                Mouth mouth = Mouth.upright(level, ground, direction);
+                if (level == player.serverLevel() && mouth.feet().distanceToSqr(player.position()) < 16) continue;
+                if (exitFits(player, mouth)) return mouth;
+            }
+        }
+        return null;
+    }
+
+    /** Early aimed breaches reach 30 blocks. Higher tiers use the corresponding configured Fold Space range. */
+    static int aimRange(ServerPlayer player) {
+        int tier = PlayerProgressionService.getLevel(player);
+        return tier >= 4 ? SpaceTimeService.blinkRange(tier) : 30;
+    }
+
+    static boolean canOpen(ServerPlayer player) {
+        return VibeService.active(player) && !player.isPassenger()
+                && (!player.isVehicle() || EntityCarryService.isCarrying(player));
+    }
+
+    /** A breach to where the viber looks. Sanctuary Breach falls back to five blocks ahead. */
+    public static boolean open(ServerPlayer player, boolean sanctuary) {
+        if (!canOpen(player) || GATES.containsKey(player.getUUID())) return false;
+        if (!travelWorld(player.serverLevel())) return fail(player, "restricted");
+        Mouth entry = entry(player);
+        if (!entryFits(player, entry)) return fail(player, "blocked");
+        if (entry.flat()) return dropAhead(player, entry, sanctuary);
+        Mouth exit = aimedExit(player, entry, sanctuary);
+        if (exit == null) return fail(player, "no_exit");
+        return begin(player, new Gate(player, entry, exit, Kind.AIMED, sanctuary));
+    }
+
+    private static Mouth aimedExit(ServerPlayer player, Mouth entry, boolean sanctuary) {
+        Vec3 normal = entry.direction(), eye = player.getEyePosition();
+        BlockHitResult hit = aimHit(player, normal, aimRange(player));
+        Vec3 target = hit.getLocation();
+        boolean surface = hit.getType() == HitResult.Type.BLOCK;
+        boolean groundHit = surface && hit.getDirection() == Direction.UP;
+        if (groundHit || Math.abs(normal.y) < .08 || sanctuary) {
+            Vec3 landing = ground(player, surface ? target.subtract(normal.scale(.65)) : target);
+            Vec3 forward = Vec3.directionFromRotation(0, player.getYRot());
+            if (groundHit && !entry.airborne() && landing != null && landing.distanceToSqr(entry.feet()) < 9) {
+                // The ray meets the floor too close to fit two mouths. Keep the tilt and open farther along the floor.
+                landing = ground(player, player.position().add(forward.scale(7)).add(0, .75, 0));
+            }
+            if (landing == null && sanctuary) landing = ground(player, player.position().add(forward.scale(5)));
+            if (landing != null) {
+                for (int offset = 0; offset < 4; offset++) {
+                    Vec3 floor = offset == 0 ? landing : ground(player, landing.subtract(forward.scale(offset)).add(0, .7, 0));
+                    if (floor == null) continue;
+                    Mouth candidate = Mouth.grounded(player.serverLevel(), floor, normal, player.getYRot());
+                    if (candidate.center().distanceToSqr(entry.center()) >= 9 && clearLine(player, candidate.center())
+                            && exitFits(player, candidate)) return candidate;
                 }
             }
-            if (exit == null) return fail(player, "no_exit");
         }
-        if (entry.level() == exit.level() && entry.feet().distanceToSqr(exit.feet()) < 9) return fail(player, "too_close");
+        // Leave space past an exit on the ray for the traveler's whole body, even at ceilings and steep slopes.
+        double reach = eye.distanceTo(target);
+        for (double d = reach - (surface ? 1.5 : 0); d >= 4.5 && d >= reach - 4; d -= .5) {
+            Mouth candidate = Mouth.floating(player, eye.add(normal.scale(d)), normal);
+            if (candidate.center().distanceToSqr(entry.center()) >= 9 && exitFits(player, candidate)) return candidate;
+        }
+        return null;
+    }
 
-        Gate gate = new Gate(player, entry, exit, tuned, sanctuary);
+    /** A floor breach where you look down: you drop out of the air about twelve blocks ahead (nearer if that's blocked). */
+    private static boolean dropAhead(ServerPlayer player, Mouth entry, boolean sanctuary) {
+        Vec3 target = aimedGround(player, aimRange(player));
+        if (target != null && target.distanceToSqr(entry.feet()) >= 25) {
+            Mouth exit = Mouth.flat(player.serverLevel(), target.add(0, DROP, 0), player.getYRot());
+            if (exitFits(player, exit)) return begin(player, new Gate(player, entry, exit, Kind.AIMED, sanctuary));
+        }
+        Vec3 ahead = Vec3.directionFromRotation(0, player.getYRot());
+        for (double reach = 12; reach >= 5; reach -= 1.5) {
+            Vec3 ground = ground(player, player.position().add(ahead.scale(reach)).add(0, 1.2, 0));
+            if (ground == null || Math.abs(ground.y - player.getY()) > 6) continue;
+            Mouth exit = Mouth.flat(player.serverLevel(), ground.add(0, DROP, 0), player.getYRot());
+            if (exitFits(player, exit)) return begin(player, new Gate(player, entry, exit, Kind.AIMED, sanctuary));
+        }
+        return fail(player, "no_exit");
+    }
+
+    private static boolean begin(ServerPlayer player, Gate gate) {
+        VibeFrequencies.cancelPending(player);
         GATES.put(player.getUUID(), gate);
-        if (tuned) exit.level().getChunkSource().addRegionTicket(BREACH_TICKET, exit.chunk(), 3, player.getUUID());
+        gate.ticket(true);
         ArmPosePayload.show(player, ArmPose.VIBE_OPEN, 18);
-        SetPiecePayload.send(entry.level(), Piece.VIBE_BREACH_SEED, player.position(), entry.center(), 1, player);
-        StyleOps.sound(entry.level(), entry.center(), ModSounds.VIBE_BREACH.get(), .85F, 1.42F);
+        SetPiecePayload.send(gate.entry.level(), Piece.VIBE_BREACH_SEED, gate.entry.center().subtract(gate.entry.direction()),
+                gate.entry.center(), 1, player);
+        StyleOps.sound(gate.entry.level(), gate.entry.center(), ModSounds.VIBE_BREACH.get(), .85F,
+                gate.kind == Kind.GLIMPSE ? 1.7F : 1.42F);
         return true;
     }
 
-    public static boolean attune(ServerPlayer player) {
-        if (!VibeService.nativePower(player) || !travelWorld(player.serverLevel())) return fail(player, "restricted");
-        Mouth mouth = new Mouth(player.serverLevel(), player.position(), StyleOps.facing(player));
-        if (!player.onGround() || !safe(player, mouth, mouth.arrival()) || !clearMouth(player, mouth))
-            return fail(player, "no_exit");
-        var tag = new CompoundTag();
-        tag.putString("dimension", mouth.level().dimension().location().toString());
-        tag.putDouble("x", mouth.feet().x);
-        tag.putDouble("y", mouth.feet().y);
-        tag.putDouble("z", mouth.feet().z);
-        tag.putFloat("yaw", player.getYRot());
-        var persisted = player.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG);
-        persisted.put(ANCHOR, tag);
-        player.getPersistentData().put(Player.PERSISTED_NBT_TAG, persisted);
-        ArmPosePayload.show(player, ArmPose.VIBE_READ, 18);
-        VibeGeometry.privatePiece(player, Piece.VIBE_BREACH_ARRIVE, mouth.center(), mouth.center().add(mouth.direction()), 1, -1, 0);
-        StyleOps.sound(mouth.level(), mouth.center(), SoundEvents.LODESTONE_COMPASS_LOCK, 1, 1.4F);
-        player.displayClientMessage(Component.translatable("vibe.heroesevolved.attuned",
-                mouth.level().dimension().location().toString(), player.getBlockX(), player.getBlockY(), player.getBlockZ()), true);
-        return true;
-    }
-
-    private static Mouth frequency(ServerPlayer player) {
-        var persisted = player.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG);
-        if (!persisted.contains(ANCHOR)) return null;
-        var tag = persisted.getCompound(ANCHOR);
-        ResourceLocation key = ResourceLocation.tryParse(tag.getString("dimension"));
-        if (key == null) return null;
-        ServerLevel world = player.server.getLevel(ResourceKey.create(Registries.DIMENSION, key));
-        if (world == null || !travelWorld(world)) return null;
-        Vec3 feet = new Vec3(tag.getDouble("x"), tag.getDouble("y"), tag.getDouble("z"));
-        if (!Float.isFinite(tag.getFloat("yaw")) || !Double.isFinite(feet.lengthSqr()) || !world.getWorldBorder().isWithinBounds(BlockPos.containing(feet))
-                || feet.y < world.getMinBuildHeight() || feet.y + 3 >= world.getMaxBuildHeight()) return null;
-        return new Mouth(world, feet, Vec3.directionFromRotation(0, tag.getFloat("yaw")));
+    /** Where a frequency can be tuned: on the ground where the viber stands, with room for a mouth. Null (and told) if not. */
+    static Mouth markable(ServerPlayer player) {
+        if (!travelWorld(player.serverLevel())) {
+            fail(player, "restricted");
+            return null;
+        }
+        Mouth mouth = Mouth.upright(player.serverLevel(), player.position(), StyleOps.facing(player));
+        if (!player.onGround() || !exitFits(player, mouth)) {
+            fail(player, "no_mark");
+            return null;
+        }
+        return mouth;
     }
 
     static boolean travelWorld(ServerLevel level) {
@@ -165,20 +415,28 @@ public final class VibeBreaches {
     }
 
     static Vec3 aimedGround(ServerPlayer player, double range) {
-        Vec3 eye = player.getEyePosition();
         Vec3 aim = player.getLookAngle();
-        Vec3 end = eye.add(aim.scale(range));
+        BlockHitResult hit = aimHit(player, aim, range);
+        return ground(player, hit.getType() == HitResult.Type.BLOCK ? hit.getLocation().subtract(aim.scale(.65)) : hit.getLocation());
+    }
+
+    private static Vec3 aim(ServerPlayer player) {
+        return Vec3.directionFromRotation(Mth.clamp(player.getXRot(), -89.99F, 89.99F), player.getYRot());
+    }
+
+    private static BlockHitResult aimHit(ServerPlayer player, Vec3 aim, double range) {
+        Vec3 eye = player.getEyePosition();
+        ServerLevel level = player.serverLevel();
+        if (aim.y > 0) range = Math.min(range, Math.max(0, (level.getMaxBuildHeight() - 2.5 - eye.y) / aim.y));
+        else if (aim.y < 0) range = Math.min(range, Math.max(0, (level.getMinBuildHeight() + .1 - eye.y) / aim.y));
         // March only through chunks already on the server, before asking for block collision.
-        for (double d = 2; d <= range; d += 2) {
-            Vec3 sample = eye.add(aim.scale(d));
-            if (!player.serverLevel().hasChunkAt(BlockPos.containing(sample))) {
-                end = eye.add(aim.scale(d - 2));
+        for (int d = 1; d <= Math.ceil(range); d++) {
+            if (!level.hasChunkAt(BlockPos.containing(eye.add(aim.scale(Math.min(d, range)))))) {
+                range = d - 1;
                 break;
             }
         }
-        Vec3 hit = VibeGeometry.clip(player, eye, end);
-        if (hit.distanceToSqr(end) > .0001) hit = hit.subtract(aim.scale(.65));
-        return ground(player, hit);
+        return level.clip(new ClipContext(eye, eye.add(aim.scale(range)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
     }
 
     private static Vec3 ground(ServerPlayer player, Vec3 point) {
@@ -225,8 +483,11 @@ public final class VibeBreaches {
 
     public static boolean close(ServerPlayer player) {
         Gate gate = GATES.remove(player.getUUID());
-        if (gate == null) return false;
-        if (gate.tuned) gate.exit.level().getChunkSource().removeRegionTicket(BREACH_TICKET, gate.exit.chunk(), 3, player.getUUID());
+        if (gate == null) return VibeFrequencies.cancelPending(player);
+        if (GATES.isEmpty()) BreachVoiceRoutes.clear();
+        gate.ticket(false);
+        for (View view : gate.views)
+            for (ServerPlayer viewer : view.sent.values()) PacketDistributor.sendToPlayer(viewer, BreachViewPayload.ended(view.id));
         if (gate.opened >= 0) {
             for (Mouth mouth : List.of(gate.entry, gate.exit)) {
                 show(mouth, Piece.VIBE_BREACH_CLOSE);
@@ -240,45 +501,195 @@ public final class VibeBreaches {
     }
 
     static void tick(MinecraftServer server) {
+        VibeFrequencies.tick(server);
         for (Gate gate : List.copyOf(GATES.values())) {
             if (gate.owner.server != server) continue;
             long now = gate.entry.level().getGameTime();
             if (!VibeService.active(gate.owner) || gate.owner.isPassenger()
                     || gate.owner.level() != gate.entry.level() && gate.owner.level() != gate.exit.level()
-                    || gate.opened >= 0 && now - gate.opened >= LIFETIME) {
+                    || gate.opened >= 0 && now - gate.opened >= gate.lifetime) {
                 close(gate.owner);
                 continue;
             }
             if (gate.opened < 0) {
                 if (now - gate.started < VibeGeometry.BREACH_OPEN_TICKS) continue;
-                if (gate.exit.level().getChunkSource().getChunkNow(gate.exit.chunk().x, gate.exit.chunk().z) == null) {
+                if (!gate.entry.level().isPositionEntityTicking(BlockPos.containing(gate.entry.feet()))
+                        || !gate.exit.level().isPositionEntityTicking(BlockPos.containing(gate.exit.feet()))) {
                     if (now - gate.started < LOAD_TIMEOUT) continue;
                     fail(gate.owner, "no_exit");
                     close(gate.owner);
                     continue;
                 }
-                if (!clearMouth(gate.owner, gate.entry) || !clearMouth(gate.owner, gate.exit)
-                        || !safe(gate.owner, gate.entry, gate.entry.arrival())
-                        || !safe(gate.owner, gate.exit, gate.exit.arrival())) {
+                boolean entryClear = gate.flat() ? safe(gate.owner, gate.entry, gate.entry.feet()) : exitFits(gate.owner, gate.entry);
+                if (!entryClear || !exitFits(gate.owner, gate.exit)) {
                     fail(gate.owner, "no_exit");
                     close(gate.owner);
                     continue;
                 }
                 gate.opened = now;
+                gate.entry.level().resetEmptyTime();
+                gate.exit.level().resetEmptyTime();
+                // Each mouth shows the terrain round the other one.
                 for (Mouth mouth : List.of(gate.entry, gate.exit)) {
                     show(mouth, Piece.VIBE_BREACH_ARRIVE);
                     StyleOps.sound(mouth.level(), mouth.center(), SoundEvents.AMETHYST_BLOCK_CHIME, .44F, 1.65F);
                 }
             }
             if ((now - gate.opened) % 10 == 0) {
-                if (!clearMouth(gate.owner, gate.entry) || !clearMouth(gate.owner, gate.exit)) {
+                boolean obstructed = gate.flat()
+                        ? !safe(gate.owner, gate.entry, gate.entry.feet()) || !exitFits(gate.owner, gate.exit)
+                        : !exitFits(gate.owner, gate.entry) || !exitFits(gate.owner, gate.exit);
+                if (obstructed) {
                     close(gate.owner);
                     continue;
                 }
                 show(gate.entry, Piece.VIBE_BREACH_OPEN);
                 show(gate.exit, Piece.VIBE_BREACH_OPEN);
+                share(gate, now);
             }
-            transit(gate);
+            if ((now - gate.opened) % BreachActorsPayload.UPDATE_TICKS == 0) {
+                for (View view : gate.views) shareActors(view);
+            }
+            if (gate.kind != Kind.GLIMPSE) {
+                if (gate.flat()) drops(gate, now);
+                else transit(gate);
+            }
+        }
+        BreachVoiceRoutes.publish(GATES.values().stream()
+                .filter(gate -> gate.owner.server == server && gate.kind != Kind.GLIMPSE && gate.opened >= 0)
+                .map(gate -> new BreachVoiceRoutes.Link(gate.entry, gate.exit)).toList(), MindVoiceRoutes.voiceDistance());
+    }
+
+    /** Sends a bounded, live view of entities even when the viewer isn't tracking the destination's chunks. */
+    private static void shareActors(View view) {
+        if (view.sent.isEmpty()) return;
+        ServerLevel far = view.there.level();
+        Vec3 center = view.there.center();
+        ChunkPos chunk = view.there.chunk();
+        if (far.getChunkSource().getChunkNow(chunk.x, chunk.z) == null) return;
+        var volume = new AABB(center, center).inflate(BreachSnapshot.REACH);
+        var actors = far.getEntities((Entity) null, volume, entity -> entity.isAlive() && !entity.isSpectator() && !entity.isInvisible()
+                && entity.distanceToSqr(center) <= BreachSnapshot.REACH * BreachSnapshot.REACH);
+        actors.sort(Comparator.comparingDouble(entity -> entity.distanceToSqr(center)));
+        // Reserve room for both sides of the mouth, even when a crowd stands on one side.
+        int front = 0, back = 0;
+        var visible = new java.util.ArrayList<Entity>(BreachActorsPayload.LIMIT);
+        for (Entity actor : actors) {
+            boolean ahead = actor.getBoundingBox().getCenter().subtract(center).dot(view.there.direction()) >= 0;
+            if (ahead ? front >= BreachActorsPayload.LIMIT / 2 : back >= BreachActorsPayload.LIMIT / 2) continue;
+            visible.add(actor);
+            if (ahead) front++;
+            else back++;
+        }
+        var payload = new BreachActorsPayload(view.id, visible.stream()
+                .map(entity -> BreachActorsPayload.Actor.capture(far, entity)).toList());
+        for (ServerPlayer viewer : view.sent.values()) {
+            if (viewer.level() == view.here.level() && viewer.distanceToSqr(view.here.center()) <= VIEW_RANGE * VIEW_RANGE) {
+                PacketDistributor.sendToPlayer(viewer, payload);
+            }
+        }
+    }
+
+    /** Sends each mouth's view to players near it who don't have it yet, and forgets those who left its world. */
+    private static void share(Gate gate, long now) {
+        int left = (int) Math.max(1, gate.lifetime - (now - gate.opened)) + 10;
+        for (View view : gate.views) {
+            view.sent.values().removeIf(viewer -> viewer.isRemoved() || viewer.level() != view.here.level());
+            Vec3 center = view.here.center();
+            List<ServerPlayer> near = new java.util.ArrayList<>(view.here.level().players());
+            // The owner always sees through their own breach, even when the level doesn't list them (test players).
+            if (gate.owner.level() == view.here.level() && !near.contains(gate.owner)) near.add(gate.owner);
+            for (ServerPlayer viewer : near) {
+                if (view.sent.containsKey(viewer.getUUID()) || viewer.position().distanceToSqr(center) > VIEW_RANGE * VIEW_RANGE) continue;
+                if (view.snapshot == null) {
+                    if (!BreachSnapshot.ready(view.there.level(), view.there.center())) break;
+                    view.snapshot = BreachSnapshot.capture(view.there.level(), view.there.center());
+                }
+                view.sent.put(viewer.getUUID(), viewer);
+                PacketDistributor.sendToPlayer(viewer, new BreachViewPayload(view.id, center, view.here.yaw(), view.here.direction(),
+                        view.there.center(), view.there.yaw(), view.there.direction(), left, view.snapshot));
+            }
+        }
+    }
+
+    /** Package-visible for tests: what one of a viber's open mouths shows (0 the near mouth, 1 the far one). */
+    static BreachSnapshot view(ServerPlayer owner, int mouth) {
+        Gate gate = GATES.get(owner.getUUID());
+        return gate == null ? null : gate.views[mouth].snapshot;
+    }
+
+    /** Package-visible for tests: where one of a viber's open mouths stands (0 near, 1 far), and whether it lies flat. */
+    static Vec3 mouthAt(ServerPlayer owner, int mouth) {
+        Gate gate = GATES.get(owner.getUUID());
+        return gate == null ? null : (mouth == 0 ? gate.entry : gate.exit).feet();
+    }
+
+    static boolean flat(ServerPlayer owner) {
+        Gate gate = GATES.get(owner.getUUID());
+        return gate != null && gate.flat();
+    }
+
+    static boolean shown(ServerPlayer owner, int mouth, ServerPlayer viewer) {
+        Gate gate = GATES.get(owner.getUUID());
+        return gate != null && gate.views[mouth].sent.containsKey(viewer.getUUID());
+    }
+
+    static Kind kind(ServerPlayer owner) {
+        Gate gate = GATES.get(owner.getUUID());
+        return gate == null ? null : gate.kind;
+    }
+
+    /**
+     * A floor breach drops travelers through the hole and out of the ceiling mouth above the destination. Jumping
+     * into the ceiling mouth sends them back out beside the hole. A traveler isn't taken again for
+     * {@link #DROP_GAP} ticks, so landing near a mouth never bounces them straight back.
+     */
+    private static void drops(Gate gate, long now) {
+        gate.dropped.values().removeIf(at -> now - at > DROP_GAP);
+        for (Mouth from : List.of(gate.entry, gate.exit)) {
+            Mouth to = from == gate.entry ? gate.exit : gate.entry;
+            boolean down = from == gate.entry;
+            for (LivingEntity traveler : travelers(gate, from, 2)) {
+                if (gate.dropped.containsKey(traveler.getUUID())) continue;
+                Vec3 offset = traveler.position().subtract(from.feet());
+                if (!VibeGeometry.inside(offset, from.direction(), VibeGeometry.PORTAL_WIDTH, VibeGeometry.PORTAL_HEIGHT)) continue;
+                // Down through a hole: feet on (or just above) the floor it is cut in. Up into a ceiling: head through it.
+                boolean through = down ? offset.y > -.3 && offset.y < .8
+                        : traveler.getEyeY() >= from.feet().y - .15 && traveler.getEyeY() < from.feet().y + 1.2;
+                if (!through) continue;
+                Vec3 arrival = down ? to.feet().subtract(0, Math.max(2.05, dimensions(traveler).height() + .15), 0)
+                        : beside(traveler, to);
+                if (down && !exitFits(gate.owner, to)) {
+                    if (traveler instanceof ServerPlayer player) fail(player, "no_exit");
+                    close(gate.owner);
+                    return;
+                }
+                if (arrival == null || !clear(traveler, to.level(), dimensions(traveler).makeBoundingBox(arrival))) continue;
+                float yaw = traveler.getYRot() + to.yaw() - from.yaw();
+                Vec3 velocity = down ? new Vec3(0, -.35, 0) : Vec3.ZERO;
+                LivingEntity crossed = moveTraveler(traveler, to, arrival, yaw, traveler.getXRot(), velocity);
+                if (crossed == null) continue;
+                gate.dropped.put(crossed.getUUID(), now);
+                arrived(gate, crossed, down ? DOWN : Vec3.directionFromRotation(0, to.yaw()));
+            }
+        }
+    }
+
+    /** Where someone coming back up through a ceiling lands: a step beside the hole they fell through, or on it. */
+    private static Vec3 beside(LivingEntity traveler, Mouth hole) {
+        Vec3 step = hole.feet().add(Vec3.directionFromRotation(0, hole.yaw()).scale(1.5));
+        if (safe(traveler, hole, step)) return step;
+        return safe(traveler, hole, hole.feet()) ? hole.feet() : null;
+    }
+
+    private static void arrived(Gate gate, LivingEntity traveler, Vec3 direction) {
+        arrival(traveler, direction);
+        if (traveler == gate.owner) VibeService.prime(gate.owner);
+        if (SkillTreeService.has(gate.owner, "vibe_wayfarer"))
+            StyleOps.effect(traveler, net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED, 100, 0);
+        if (gate.sanctuary || SkillTreeService.has(gate.owner, "vibe_horizon")) {
+            traveler.clearFire();
+            StyleOps.effect(traveler, net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE, 80, 0);
         }
     }
 
@@ -287,10 +698,8 @@ public final class VibeBreaches {
         Set<UUID> moved = new HashSet<>();
         for (Mouth from : List.of(gate.entry, gate.exit)) {
             Mouth to = from == gate.entry ? gate.exit : gate.entry;
-            for (ServerPlayer traveler : List.copyOf(from.level().players())) {
-                if (moved.contains(traveler.getUUID()) || !PowerRules.canAct(traveler) || traveler.isPassenger()
-                        || traveler.isVehicle() || traveler.isSleeping() || EntityCarryService.isCarrying(traveler)
-                        || !StyleOps.isFriend(gate.owner, traveler)) continue;
+            for (LivingEntity traveler : travelers(gate, from, 14)) {
+                if (moved.contains(traveler.getUUID())) continue;
                 Vec3 center = traveler.getBoundingBox().getCenter();
                 if (center.distanceToSqr(from.center()) > 196) continue;
                 next.put(traveler.getUUID(), new Approach(from.level(), center));
@@ -301,26 +710,72 @@ public final class VibeBreaches {
                 // Come out on the side you were heading for, turned by the angle between the mouths, so walking
                 // back through the exit lands you behind the entry instead of in front of it (and bouncing back).
                 double side = center.subtract(previous.center()).dot(from.direction()) < 0 ? -1 : 1;
-                Vec3 arrival = to.arrival(side);
-                if (!clearMouth(traveler, from) || !safe(traveler, to, arrival) || !clearMouth(traveler, to)) {
-                    fail(traveler, "no_exit");
+                Vec3 arrival = to.arrival(traveler, side);
+                if (!clearMouth(traveler, from) || !safeArrival(traveler, to, arrival) || !clearMouth(traveler, to)) {
+                    if (traveler instanceof ServerPlayer player) fail(player, "no_exit");
                     continue;
                 }
-                if (!move(traveler, to.level(), arrival, traveler.getYRot() + to.yaw() - from.yaw())) continue;
-                moved.add(traveler.getUUID());
-                next.put(traveler.getUUID(), new Approach(to.level(), traveler.getBoundingBox().getCenter()));
-                arrival(traveler, to.direction().scale(side));
-                if (traveler == gate.owner) VibeService.prime(traveler);
-                if (SkillTreeService.has(gate.owner, "vibe_wayfarer"))
-                    StyleOps.effect(traveler, net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED, 100, 0);
-                if (gate.sanctuary || SkillTreeService.has(gate.owner, "vibe_horizon")) {
-                    traveler.clearFire();
-                    StyleOps.effect(traveler, net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE, 80, 0);
-                }
+                Vec3 heading = from.rotate(traveler.getLookAngle(), to);
+                float yaw = heading.horizontalDistanceSqr() < 1e-8 ? traveler.getYRot() + to.yaw() - from.yaw() : VibeGeometry.yaw(heading);
+                LivingEntity crossed = moveTraveler(traveler, to, arrival, yaw, VibeGeometry.pitch(heading),
+                        from.rotate(traveler.getDeltaMovement(), to));
+                if (crossed == null) continue;
+                moved.add(crossed.getUUID());
+                next.put(crossed.getUUID(), new Approach(to.level(), crossed.getBoundingBox().getCenter()));
+                arrived(gate, crossed, to.direction().scale(side));
             }
         }
         gate.previous.clear();
         gate.previous.putAll(next);
+    }
+
+    private static List<LivingEntity> travelers(Gate gate, Mouth mouth, double range) {
+        Vec3 center = mouth.center();
+        List<LivingEntity> nearby = new ArrayList<>(mouth.level().getEntitiesOfClass(Mob.class,
+                new AABB(center, center).inflate(range), Mob::isAlive));
+        nearby.addAll(mouth.level().players());
+        if (gate.owner.level() == mouth.level() && !nearby.contains(gate.owner)) nearby.add(gate.owner);
+        nearby.removeIf(entity -> !canCross(gate, entity));
+        return nearby;
+    }
+
+    private static boolean canCross(Gate gate, LivingEntity entity) {
+        if (!entity.isAlive() || entity.isSpectator() || entity.isPassenger() || entity.isSleeping()) return false;
+        if (entity instanceof ServerPlayer player) {
+            return PowerRules.canAct(player) && (!player.isVehicle() || EntityCarryService.isCarrying(player))
+                    && StyleOps.isFriend(gate.owner, player);
+        }
+        var size = dimensions(entity);
+        return !entity.isVehicle() && size.width() <= VibeGeometry.PORTAL_WIDTH * 2 && size.height() <= VibeGeometry.PORTAL_HEIGHT * 2
+                && !com.jayptucker.heroesevolved.cryo.CryoService.isFrozen(entity)
+                && !com.jayptucker.heroesevolved.time.TimeStopService.isStopped(entity);
+    }
+
+    private static LivingEntity moveTraveler(LivingEntity entity, Mouth to, Vec3 at, float yaw, float pitch, Vec3 velocity) {
+        if (entity instanceof ServerPlayer player) {
+            if (!EntityCarryService.travelWithCargo(player, to.level(), at, yaw, () -> move(player, to.level(), at, yaw, pitch))) {
+                fail(player, "no_exit");
+                return null;
+            }
+            if (to.flat() && velocity.lengthSqr() > 0) StyleOps.push(player, velocity);
+            return player;
+        }
+        LivingEntity arrived = entity;
+        if (entity.level() == to.level()) {
+            entity.moveTo(at.x, at.y, at.z, yaw, pitch);
+        } else {
+            if (!entity.canChangeDimensions((ServerLevel) entity.level(), to.level()) || VibeBeast.isBeast(entity)
+                    || !(entity.changeDimension(new DimensionTransition(to.level(), at, velocity, yaw, pitch,
+                    DimensionTransition.DO_NOTHING)) instanceof LivingEntity moved)) return null;
+            arrived = moved;
+            arrived.setXRot(pitch);
+        }
+        arrived.setYHeadRot(yaw);
+        arrived.setYBodyRot(yaw);
+        arrived.resetFallDistance();
+        if (arrived instanceof Mob mob) mob.getNavigation().stop();
+        StyleOps.push(arrived, velocity);
+        return arrived;
     }
 
     private static boolean move(ServerPlayer player, ServerLevel level, Vec3 to) {
@@ -328,14 +783,18 @@ public final class VibeBreaches {
     }
 
     private static boolean move(ServerPlayer player, ServerLevel level, Vec3 to, float yaw) {
+        return move(player, level, to, yaw, player.getXRot());
+    }
+
+    private static boolean move(ServerPlayer player, ServerLevel level, Vec3 to, float yaw, float pitch) {
         CROSSING.add(player.getUUID());
         boolean moved;
         try {
             yaw = Mth.wrapDegrees(yaw);
             moved = player.serverLevel() == level
-                    ? player.teleportTo(level, to.x, to.y, to.z, Set.of(), yaw, player.getXRot())
-                    : player.changeDimension(new DimensionTransition(level, to, Vec3.ZERO, yaw,
-                            player.getXRot(), DimensionTransition.DO_NOTHING)) == player;
+                    ? player.teleportTo(level, to.x, to.y, to.z, Set.of(), yaw, pitch)
+                    : player.changeDimension(new DimensionTransition(level, to, Vec3.ZERO, yaw, pitch,
+                            DimensionTransition.DO_NOTHING)) == player;
         } finally {
             CROSSING.remove(player.getUUID());
         }
@@ -347,13 +806,33 @@ public final class VibeBreaches {
 
     static boolean crossing(ServerPlayer player) { return CROSSING.contains(player.getUUID()); }
 
+    static ShotCrossing shotCrossing(Projectile shot, Vec3 from, Vec3 to) {
+        ShotCrossing nearest = null;
+        double distance = Double.POSITIVE_INFINITY;
+        for (Gate gate : GATES.values()) {
+            if (gate.opened < 0 || gate.kind == Kind.GLIMPSE) continue;
+            for (Mouth mouth : List.of(gate.entry, gate.exit)) {
+                if (shot.level() != mouth.level()) continue;
+                Vec3 hit = VibeGeometry.crossing(from, to, mouth.center(), mouth.direction(), VibeGeometry.PORTAL_WIDTH,
+                        VibeGeometry.PORTAL_HEIGHT);
+                if (hit == null) continue;
+                double along = hit.distanceToSqr(from);
+                if (along >= distance) continue;
+                nearest = new ShotCrossing(mouth, mouth == gate.entry ? gate.exit : gate.entry, hit);
+                distance = along;
+            }
+        }
+        return nearest;
+    }
+
     /**
      * Through the Seam: the first of the owner's open mouths the segment crosses, mapped onto the other mouth at the
-     * same place across its face. Only links whose two mouths are in the owner's world carry a wave.
+     * same place across its face. Only links whose two mouths are in the owner's world carry a wave; a glimpse
+     * carries nothing.
      */
     static Seam seam(ServerPlayer owner, Vec3 from, Vec3 to) {
         Gate gate = GATES.get(owner.getUUID());
-        if (gate == null || gate.opened < 0 || gate.entry.level() != owner.serverLevel()
+        if (gate == null || gate.opened < 0 || gate.kind == Kind.GLIMPSE || gate.flat() || gate.entry.level() != owner.serverLevel()
                 || gate.exit.level() != owner.serverLevel()) return null;
         Seam best = null;
         double nearest = Double.MAX_VALUE;
@@ -362,60 +841,72 @@ public final class VibeBreaches {
                     VibeGeometry.PORTAL_HEIGHT);
             if (hit == null || hit.distanceToSqr(from) >= nearest) continue;
             Mouth other = mouth == gate.entry ? gate.exit : gate.entry;
-            float turn = other.yaw() - mouth.yaw();
-            Vec3 offset = hit.subtract(mouth.center());
-            double across = offset.dot(VibeGeometry.side(mouth.direction()));
-            Vec3 out = other.center().add(VibeGeometry.side(other.direction()).scale(across)).add(0, offset.y, 0);
-            best = new Seam(hit, out, turn(to.subtract(from).normalize(), turn));
+            Vec3 out = other.center().add(mouth.rotate(hit.subtract(mouth.center()), other));
+            best = new Seam(hit, out, mouth.rotate(to.subtract(from).normalize(), other));
             nearest = hit.distanceToSqr(from);
         }
         return best;
     }
 
-    /** Turns a direction about the vertical by {@code degrees} of yaw, the way a traveler is turned between mouths. */
-    static Vec3 turn(Vec3 direction, float degrees) {
-        if (Math.abs(degrees) < 1e-3) return direction;
-        double yaw = Math.atan2(-direction.x, direction.z) + Math.toRadians(degrees);
-        double flat = Math.sqrt(direction.x * direction.x + direction.z * direction.z);
-        return new Vec3(-Math.sin(yaw) * flat, direction.y, Math.cos(yaw) * flat);
+    private static void arrival(LivingEntity traveler, Vec3 direction) {
+        ServerLevel level = (ServerLevel) traveler.level();
+        Vec3 center = traveler.position().add(0, VibeGeometry.PORTAL_HEIGHT, 0);
+        SetPiecePayload.send(level, Piece.VIBE_TRANSIT, center, center.add(direction), 1, traveler);
+        if (traveler instanceof ServerPlayer player) ScreenTintPayload.send(player, 0x4329B8FF, 12, ScreenTintPayload.Style.VIGNETTE);
+        StyleOps.sound(level, center, ModSounds.VIBE_SHUT.get(), .65F, 1.55F);
     }
 
-    private static void arrival(ServerPlayer player, Vec3 direction) {
-        Vec3 center = player.position().add(0, VibeGeometry.PORTAL_HEIGHT, 0);
-        SetPiecePayload.send(player.serverLevel(), Piece.VIBE_TRANSIT, center, center.add(direction), 1, player);
-        ScreenTintPayload.send(player, 0x4329B8FF, 12, ScreenTintPayload.Style.VIGNETTE);
-        StyleOps.sound(player.serverLevel(), center, ModSounds.VIBE_SHUT.get(), .65F, 1.55F);
-    }
-
-    private static boolean clearMouth(ServerPlayer player, Mouth mouth) {
-        Vec3 side = VibeGeometry.side(mouth.direction()).scale(.7);
-        for (Vec3 foot : List.of(mouth.feet(), mouth.feet().add(side), mouth.feet().subtract(side))) {
-            var box = new net.minecraft.world.phys.AABB(foot.x - .12, foot.y + .05, foot.z - .12,
-                    foot.x + .12, foot.y + VibeGeometry.PORTAL_HEIGHT * 2, foot.z + .12);
-            if (!clear(player, mouth.level(), box)) return false;
+    private static boolean clearMouth(LivingEntity player, Mouth mouth) {
+        Vec3 side = VibeGeometry.side(mouth.direction());
+        Vec3 up = side.cross(mouth.direction()).normalize();
+        Vec3 center = mouth.center();
+        double floor = mouth.airborne() ? Double.NEGATIVE_INFINITY : mouth.feet().y + .01;
+        double width = VibeGeometry.PORTAL_WIDTH, height = VibeGeometry.PORTAL_HEIGHT;
+        double xRange = Math.hypot(side.x * width, up.x * height) + .13;
+        double yRange = Math.hypot(side.y * width, up.y * height) + .13;
+        double zRange = Math.hypot(side.z * width, up.z * height) + .13;
+        AABB bounds = new AABB(center.x - xRange, Math.max(floor, center.y - yRange), center.z - zRange,
+                center.x + xRange, center.y + yRange, center.z + zRange);
+        if (clear(player, mouth.level(), bounds)) return true;
+        for (int x = -4; x <= 4; x++) {
+            for (int y = -5; y <= 5; y++) {
+                double across = x / 4.0, vertical = y / 5.0;
+                if (across * across + vertical * vertical > 1) continue;
+                Vec3 point = center.add(side.scale(across * width)).add(up.scale(vertical * height));
+                double bottom = Math.max(point.y - .13, floor);
+                AABB box = new AABB(point.x - .13, bottom, point.z - .13, point.x + .13, point.y + .13, point.z + .13);
+                if (!clear(player, mouth.level(), box)) return false;
+            }
         }
         return true;
     }
 
-    private static boolean safe(ServerPlayer player, Mouth mouth, Vec3 at) {
-        var box = player.getDimensions(net.minecraft.world.entity.Pose.STANDING).makeBoundingBox(at);
+    private static net.minecraft.world.entity.EntityDimensions dimensions(LivingEntity entity) {
+        return entity.getDimensions(entity instanceof ServerPlayer ? Pose.STANDING : entity.getPose());
+    }
+
+    private static boolean safeArrival(LivingEntity player, Mouth mouth, Vec3 at) {
+        return mouth.airborne() ? clear(player, mouth.level(), dimensions(player).makeBoundingBox(at))
+                : safe(player, mouth, at);
+    }
+
+    private static boolean safe(LivingEntity player, Mouth mouth, Vec3 at) {
+        var box = dimensions(player).makeBoundingBox(at);
         BlockPos floor = BlockPos.containing(at.subtract(0, .05, 0));
         var level = mouth.level();
         if (!clear(player, level, box) || !level.hasChunkAt(floor)) return false;
         var state = level.getBlockState(floor);
         return !state.getCollisionShape(level, floor).isEmpty() && !state.is(BlockTags.FIRE)
-                && !state.is(net.minecraft.world.level.block.Blocks.MAGMA_BLOCK)
-                && !state.is(net.minecraft.world.level.block.Blocks.CACTUS)
-                && !state.is(net.minecraft.world.level.block.Blocks.POWDER_SNOW);
+                && !state.is(Blocks.MAGMA_BLOCK) && !state.is(Blocks.CACTUS) && !state.is(Blocks.POWDER_SNOW);
     }
 
-    private static boolean clear(ServerPlayer player, ServerLevel level, net.minecraft.world.phys.AABB box) {
+    private static boolean clear(LivingEntity player, ServerLevel level, AABB box) {
         if (box.minY < level.getMinBuildHeight() || box.maxY >= level.getMaxBuildHeight()
                 || !level.getWorldBorder().isWithinBounds(box)) return false;
         for (BlockPos pos : BlockPos.betweenClosed(BlockPos.containing(box.minX, box.minY, box.minZ),
                 BlockPos.containing(box.maxX, box.maxY, box.maxZ))) {
             if (!level.hasChunkAt(pos) || !level.getFluidState(pos).isEmpty() || level.getBlockState(pos).is(BlockTags.FIRE)
-                    || level.getBlockState(pos).is(net.minecraft.world.level.block.Blocks.POWDER_SNOW)) return false;
+                    || level.getBlockState(pos).is(Blocks.POWDER_SNOW)) return false;
         }
         return !level.getBlockCollisions(player, box).iterator().hasNext();
     }
@@ -435,6 +926,8 @@ public final class VibeBreaches {
 
     static void clear() {
         for (Gate gate : List.copyOf(GATES.values())) close(gate.owner);
+        BreachVoiceRoutes.clear();
         CROSSING.clear();
+        VibeFrequencies.clear();
     }
 }

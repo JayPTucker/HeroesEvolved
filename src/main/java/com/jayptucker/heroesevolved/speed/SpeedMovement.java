@@ -44,6 +44,10 @@ public final class SpeedMovement {
                     && SpeedService.awakened(server) && PowerRules.canAct(server));
     }
 
+    public static boolean canAdjustSpeed(Player player) {
+        return player.isSprinting() && !player.isShiftKeyDown() && accelerating(player);
+    }
+
     public static VoxelShape waterSurface(BlockGetter level, BlockPos pos, FluidState fluid, CollisionContext context) {
         if (!(context instanceof EntityCollisionContext entityContext)
                 || !(entityContext.getEntity() instanceof Player player)

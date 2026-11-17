@@ -52,16 +52,28 @@ public final class RadiationSickness extends MobEffect {
         if (!(entity.level() instanceof ServerLevel level) || immune(entity)) return true;
         ServerPlayer source = source(level, entity);
         DamageSource damage = source != null ? level.damageSources().indirectMagic(source, source) : level.damageSources().magic();
-        entity.hurt(damage, 0.5F + 0.5F * amplifier);
+        float shield = com.jayptucker.heroesevolved.hazard.Suits.radiation(entity);
+        if (shield > 0) com.jayptucker.heroesevolved.hazard.Suits.wear(entity, shield);
+        RadiationDeaths.mark(entity);
+        entity.hurt(damage, (0.5F + 0.5F * amplifier) * (1 - shield));
+        // Badly dosed bodies start to come apart.
+        if (amplifier >= 2) {
+            MeltdownField.flake(entity, 0.2F + 0.2F * amplifier);
+            if (entity instanceof ServerPlayer p) com.jayptucker.heroesevolved.hazard.BodyBurn.raise(p, 0.03F * amplifier, 0.12F * amplifier);
+        }
         return true;
     }
 
     // ------------------------------------------------------------------
 
-    /** True for anyone who carries the radiation power: their own emissions cannot make them sick. */
+    /**
+     * True for anyone who carries the radiation power (their own emissions cannot make them sick) and anyone sealed in a
+     * full protective suit.
+     */
     public static boolean immune(LivingEntity entity) {
         return entity instanceof ServerPlayer player && PlayerAbilityService.getData(player).assignedPower()
-                .filter(entry -> entry.getKey().equals(ModAbilities.RADIATION_ID)).isPresent();
+                .filter(entry -> entry.getKey().equals(ModAbilities.RADIATION_ID)).isPresent()
+                || com.jayptucker.heroesevolved.hazard.Suits.sealed(entity);
     }
 
     public static int stage(LivingEntity entity) {

@@ -112,6 +112,7 @@ public final class NuclearFallout {
             // A high enough shield-maker's shield goes up and holds: far less gets through, and never enough to kill.
             float dealt = NuclearShields.brace(target, blast.center, damage);
             boolean held = dealt < damage;
+            RadiationDeaths.mark(target);
             if (dealt > 0) target.hurt(blast.level.damageSources().explosion(blast.owner, blast.owner), dealt);
             if (!held) RadiationService.irradiate(target, 160);
             Vec3 away = target.position().subtract(blast.center).multiply(1, 0, 1).normalize();
@@ -144,8 +145,11 @@ public final class NuclearFallout {
         for (LivingEntity target : blast.level.getEntitiesOfClass(LivingEntity.class,
                 new AABB(blast.center, blast.center).inflate(blast.radius), target -> vulnerable(blast, target))) {
             if (target.position().distanceToSqr(blast.center) > blast.radius * blast.radius || NuclearShields.shielded(target)) continue;
+            if (com.jayptucker.heroesevolved.hazard.Suits.sealed(target)) { com.jayptucker.heroesevolved.hazard.Suits.wear(target, 2); continue; }
             RadiationService.irradiate(target, 60);
-            target.hurt(blast.level.damageSources().indirectMagic(blast.owner, blast.owner), 2);
+            RadiationDeaths.mark(target);
+            target.hurt(blast.level.damageSources().indirectMagic(blast.owner, blast.owner),
+                    2 * (1 - com.jayptucker.heroesevolved.hazard.Suits.radiation(target)));
         }
     }
     private static void cloud(Blast blast, int age) {

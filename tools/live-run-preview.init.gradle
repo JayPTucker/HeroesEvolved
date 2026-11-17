@@ -1,0 +1,23 @@
+// A live meltdown with speedsters on the ring at tiers 3-5, suited and not, photographed in the client (uitest/ContainmentLivePreview).
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('liveRunPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/live-run-preview')
+                        programArguments.addAll('--width', '1100', '--height', '800')
+                        systemProperty('heroes.preview.liverun', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('liveRunPreviewClasses')) }
+        }
+    }
+}

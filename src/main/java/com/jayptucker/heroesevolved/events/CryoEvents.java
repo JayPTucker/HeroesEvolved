@@ -4,6 +4,7 @@ import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.cryo.CryoService;
+import com.jayptucker.heroesevolved.cryo.TerrainFrost;
 import com.jayptucker.heroesevolved.cryo.TemporaryBlocks;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
@@ -34,6 +35,7 @@ public final class CryoEvents {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onServerTick(ServerTickEvent.Post event) {
         CryoService.tick(event.getServer());
+        TerrainFrost.tick();
         TemporaryBlocks.tick(event.getServer());
     }
 
@@ -41,6 +43,7 @@ public final class CryoEvents {
     @SubscribeEvent
     public static void onServerStopping(ServerStoppingEvent event) {
         CryoService.clear();
+        TerrainFrost.clear();
         TemporaryBlocks.meltAll();
     }
 

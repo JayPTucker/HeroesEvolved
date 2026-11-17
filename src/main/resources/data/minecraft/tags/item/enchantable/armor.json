@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    "heroesevolved:radiation_hood",
+    "heroesevolved:velocity_cowl",
+    "heroesevolved:radiation_coat",
+    "heroesevolved:velocity_suit",
+    "heroesevolved:radiation_trousers",
+    "heroesevolved:velocity_leggings",
+    "heroesevolved:radiation_boots",
+    "heroesevolved:velocity_boots"
+  ]
+}

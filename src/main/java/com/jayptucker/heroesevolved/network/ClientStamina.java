@@ -66,6 +66,8 @@ public final class ClientStamina {
     public static boolean paused() { return pause > 0 || (flags & StaminaPayload.PAUSED) != 0 && regen <= 0; }
     public static boolean calm() { return (flags & StaminaPayload.CALM) != 0; }
     public static boolean held() { return (flags & StaminaPayload.HELD) != 0 || drain > 0; }
+    public static boolean stillWorld() { return (flags & StaminaPayload.STILL_WORLD) != 0; }
+    public static boolean betweenSeconds() { return (flags & StaminaPayload.BETWEEN_SECONDS) != 0; }
     public static boolean unlimited() { return (flags & StaminaPayload.UNLIMITED) != 0; }
     public static int sinceSpend() { return sinceSpend; }
     public static int pauseTicks() { return pause; }

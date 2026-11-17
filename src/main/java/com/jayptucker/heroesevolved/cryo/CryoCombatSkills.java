@@ -249,7 +249,7 @@ public final class CryoCombatSkills {
         double travel = Math.min(shot.remaining, shot.lance ? 2 : 1.4);
         Vec3 to = from.add(shot.direction.scale(travel));
         if (!shot.level.hasChunkAt(BlockPos.containing(from)) || !shot.level.hasChunkAt(BlockPos.containing(to))) { SHOTS.remove(shot); return; }
-        var block = shot.level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, shot.owner));
+        var block = shot.level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, shot.owner));
         Vec3 end = block.getType() == HitResult.Type.BLOCK ? block.getLocation() : to;
         LivingEntity struck = null;
         double nearest = from.distanceToSqr(end) + .00001;
@@ -265,7 +265,7 @@ public final class CryoCombatSkills {
             if (ExpansionSkills.hostile(shot.owner, struck)) impact(shot, struck);
             SHOTS.remove(shot);
         } else if (block.getType() == HitResult.Type.BLOCK) {
-            if (shot.level.getBlockState(block.getBlockPos().above()).isAir()) TemporaryBlocks.frostSurface(shot.level, block.getBlockPos(), 100, shot.owner);
+            TerrainFrost.projectile(shot.level, block, shot.owner, shot.lance);
             AbilityEffects.send(shot.level, Kind.CRYO_FRACTURE, end, end.add(0, .5, 0), shot.lance ? 1 : .4);
             SHOTS.remove(shot);
         } else if (shot.remaining <= 0) {

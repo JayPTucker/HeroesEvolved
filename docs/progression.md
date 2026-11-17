@@ -93,16 +93,27 @@ empty it. Your class ability (see [Classes](classes.md)) is bound the same way. 
 key at most; moving it puts the key it left back to its default, or leaves it empty if that default
 is already somewhere else. Flight's double-jump always toggles flight, whatever is on key 1.
 
+The top-left HUD shows the icon and current control for each bound ability. Locked abilities are
+dimmed, cooldowns count down over the icon, and an active marker appears on abilities such as
+Free Flight, Octopus Form and Still World. The controls use the current power's stamina color,
+and power meters sit below the icons.
+
 ## The ability wheel
 
-Everything you can cast is also on the **ability wheel**:
+Open **Powers → Loadout → Wheel** to put abilities into eight fixed positions. Select an ability
+from the list and click a position to assign it. Right-click a position to clear it. Select a
+wheel ability and click **Tap R** to pin it. Your layout is saved for each power.
+
+The wheel starts with your learned class ability and unlocked moves that have no assigned key.
+Newly learned abilities can fill unused positions. You can also put a keyed ability on the wheel.
 
 - **Hold R** to open it around the cursor. Flick toward an ability and **let go** to cast it.
   Letting go in the middle casts nothing.
 - **Hold left click** on an ability to cast it and keep holding it (for channelled abilities such
   as beams and screams) until you let go of the mouse.
-- **Tap R** to cast the last ability you chose from the wheel again.
+- **Tap R** to use the pinned ability. With no pin, it recasts your last wheel pick. The R tile
+  on the HUD shows which move a tap will cast.
 - Shift works as usual for overexerting.
 
-The wheel shows each ability's icon, its key, its cooldown sweep, rank pips, and the level that
-unlocks it. Like any open menu, it stops your movement while it is open.
+The wheel shows each favorite's icon and cooldown. Highlight an ability to see its name, stamina
+cost and rank. Like any open menu, it stops your movement while it is open.

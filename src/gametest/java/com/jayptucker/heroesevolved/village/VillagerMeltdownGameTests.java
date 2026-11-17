@@ -161,11 +161,12 @@ public final class VillagerMeltdownGameTests {
         } finally { cleanup(null, him); }
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 160, batch = "village.meltdown.speed")
+    @GameTest(template = "rewind_empty", timeoutTicks = 280, batch = "village.meltdown.speed")
     public static void aSpeedsterHoldsHimInAndHeLives(GameTestHelper helper) {
         Villager him = villager(helper, 470, 0);
         ServerPlayer runner = holder(helper, him.position().add(4, 0, 0), ModAbilities.SUPERSPEED_ID, 5);
         try {
+            com.jayptucker.heroesevolved.radiation.MeltdownFieldGameTests.suit(runner, true);
             VillagerMeltdown.start(him, 400);
             helper.assertTrue(SpeedContainment.start(runner, 5), "The Cyclone key near him starts a containment run");
             helper.assertTrue(SpeedContainment.containing(runner) || SpeedContainment.running(runner), "Round him");
@@ -176,9 +177,9 @@ public final class VillagerMeltdownGameTests {
                 helper.assertTrue(m != null && m.fuse() >= 395, "While the run holds him, his countdown doesn't run: " + (m == null ? "over" : m.fuse()));
             } catch (RuntimeException e) { cleanup(runner, him); throw e; }
         });
-        helper.runAfterDelay(125, () -> {
+        helper.runAfterDelay(SpeedContainment.DEFUSE_TICKS + 25, () -> {
             try {
-                helper.assertTrue(!VillagerMeltdown.critical(him), "Held five seconds, the heat is gone out of him");
+                helper.assertTrue(!VillagerMeltdown.critical(him), "Held ten seconds, the heat is gone out of him");
                 helper.assertTrue(him.isAlive(), "And he lives");
                 helper.assertTrue(him.getAttribute(Attributes.MOVEMENT_SPEED).getValue() > 0, "Free to walk again");
                 helper.succeed();
@@ -213,8 +214,8 @@ public final class VillagerMeltdownGameTests {
         helper.getLevel().setChunkForced(chunk.x, chunk.z, true);
         try {
             helper.getLevel().getChunk(chunk.x, chunk.z);
-            helper.assertTrue(m.safe().subtract(him.position()).horizontalDistance() >= VillagerMeltdown.SAFE_DISTANCE - 2,
-                    "The safe point is well out of the village: " + m.safe().subtract(him.position()).horizontalDistance());
+            helper.assertTrue(m.safe().subtract(him.position()).horizontalDistance() >= VillagerMeltdown.SAFE_DISTANCE - 1,
+                    "The safe point is out of the blast's reach, with room to spare: " + m.safe().subtract(him.position()).horizontalDistance());
             neighbour.teleportTo(m.safe().x, m.safe().y, m.safe().z);
         } catch (RuntimeException e) { helper.getLevel().setChunkForced(chunk.x, chunk.z, false); cleanup(null, him, neighbour); throw e; }
         helper.runAfterDelay(25, () -> {
@@ -223,6 +224,191 @@ public final class VillagerMeltdownGameTests {
                 helper.assertTrue(neighbour.getAttribute(Attributes.MOVEMENT_SPEED).getValue() <= 1.0E-6, "And stays huddled there");
                 helper.succeed();
             } finally { helper.getLevel().setChunkForced(chunk.x, chunk.z, false); cleanup(null, him, neighbour); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 120, batch = "village.meltdown.unsuited")
+    public static void aSpeedsterWithNoSuitBurnsAwayAndHeStillGoesOff(GameTestHelper helper) {
+        Villager him = villager(helper, 515, 0);
+        ServerPlayer runner = holder(helper, him.position().add(4, 0, 0), ModAbilities.SUPERSPEED_ID, 5);
+        try {
+            VillagerMeltdown.start(him, 400);
+            helper.assertTrue(SpeedContainment.start(runner, 5), "The Cyclone key near him still starts a run");
+        } catch (RuntimeException e) { cleanup(runner, him); throw e; }
+        helper.runAfterDelay(SpeedContainment.UNSUITED_TICKS + 10, () -> {
+            try {
+                helper.assertTrue(SpeedContainment.burningAway(runner), "Without the velocity suit the heat goes straight through them");
+                helper.assertTrue(VillagerMeltdown.critical(him), "And they didn't hold it long enough to stop it");
+                helper.succeed();
+            } finally { runner.setInvulnerable(false); cleanup(runner, him); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 80, batch = "village.meltdown.count")
+    public static void everyoneWhoBelongsCountsEvenLateComers(GameTestHelper helper) {
+        Villager him = villager(helper, 530, 0), neighbour = villager(helper, 530, 3);
+        Villager[] late = new Villager[1];
+        VillagerMeltdown.Meltdown m;
+        try {
+            m = VillagerMeltdown.start(him, 1000);
+            helper.assertTrue(m.villageSize() == 1, "His neighbour is his village: " + m.villageSize());
+            late[0] = villager(helper, 530, 6);
+        } catch (RuntimeException e) { cleanup(null, him, neighbour); throw e; }
+        helper.runAfterDelay(VillagerMeltdown.GATHER_EVERY + 5, () -> {
+            try {
+                helper.assertTrue(m.villageSize() == 2 && m.inVillage(late[0]), "Someone who wanders in later counts too: " + m.villageSize());
+                helper.assertTrue(neighbour.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING), "Those still in danger glow, to be found");
+                helper.assertTrue(VillagerMeltdown.survivors(m) == 2, "Both are alive");
+                java.util.UUID gone = java.util.UUID.randomUUID();
+                m.village.add(gone);
+                helper.assertTrue(VillagerMeltdown.survivors(m) == 3, "Someone off in an unloaded chunk isn't counted as dead");
+                m.dead.add(gone);
+                helper.assertTrue(VillagerMeltdown.survivors(m) == 2, "Someone seen dying is");
+                helper.succeed();
+            } finally { cleanup(null, him, neighbour, late[0]); }
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // A speedster at each level running rings round him, through the real Cyclone key
+    // ------------------------------------------------------------------
+
+    /**
+     * A speedster at {@code tier} four blocks from him, wearing the first {@code pieces} of the velocity suit (suit, then
+     * leggings, boots, cowl), with their power's awakening already seen so the key answers.
+     */
+    private static ServerPlayer runner(GameTestHelper helper, Villager him, int tier, int pieces) {
+        ServerPlayer p = holder(helper, him.position().add(4, 0, 0), ModAbilities.SUPERSPEED_ID, tier);
+        p.setData(ModDataAttachments.POWER_INTRO_HISTORY, p.getData(ModDataAttachments.POWER_INTRO_HISTORY).with(ModAbilities.SUPERSPEED_ID));
+        com.jayptucker.heroesevolved.energy.PlayerEnergyService.restore(p, com.jayptucker.heroesevolved.energy.PlayerEnergyService.getMaximumEnergy(p));
+        net.minecraft.world.item.Item[] items = {com.jayptucker.heroesevolved.hazard.SuitItems.VELOCITY_SUIT.get(),
+                com.jayptucker.heroesevolved.hazard.SuitItems.VELOCITY_LEGGINGS.get(), com.jayptucker.heroesevolved.hazard.SuitItems.VELOCITY_BOOTS.get(),
+                com.jayptucker.heroesevolved.hazard.SuitItems.VELOCITY_COWL.get()};
+        net.minecraft.world.entity.EquipmentSlot[] slots = {net.minecraft.world.entity.EquipmentSlot.CHEST, net.minecraft.world.entity.EquipmentSlot.LEGS,
+                net.minecraft.world.entity.EquipmentSlot.FEET, net.minecraft.world.entity.EquipmentSlot.HEAD};
+        for (int i = 0; i < pieces; i++) p.setItemSlot(slots[i], new net.minecraft.world.item.ItemStack(items[i]));
+        return p;
+    }
+
+    /** Presses the Cyclone key, as a player would. */
+    private static com.jayptucker.heroesevolved.ability.AbilityUseResult cyclone(ServerPlayer p) {
+        return com.jayptucker.heroesevolved.ability.service.AbilityUseService.activateAssignedAction(p,
+                com.jayptucker.heroesevolved.ability.AbilitySlot.QUATERNARY, false);
+    }
+
+    private static boolean pressed(com.jayptucker.heroesevolved.ability.AbilityUseResult r) {
+        return r == com.jayptucker.heroesevolved.ability.AbilityUseResult.SUCCESS
+                || r == com.jayptucker.heroesevolved.ability.AbilityUseResult.OVEREXERTED_SUCCESS;
+    }
+
+    /**
+     * One run round him: a runner at {@code tier} in {@code pieces} of the suit presses the key; {@code spent} drains their
+     * stamina and leaves them {@code health} just after. Four and a half seconds in, {@code during} sees the run (an
+     * unsuited runner is burning away by then); just after the ten-second hold, {@code check} sees how it ended.
+     */
+    private static void run(GameTestHelper helper, int height, int tier, int pieces, boolean spent, float health,
+                            java.util.function.BiConsumer<ServerPlayer, Villager> during,
+                            java.util.function.BiConsumer<ServerPlayer, Villager> check) {
+        Villager him = villager(helper, height, 0);
+        ServerPlayer p = runner(helper, him, tier, pieces);
+        try {
+            VillagerMeltdown.start(him, 600);
+            var result = cyclone(p);
+            helper.assertTrue(pressed(result), "A tier-" + tier + " speedster's Cyclone key near him starts a run: " + result);
+            helper.assertTrue(SpeedContainment.running(p), "And they are out on the ring");
+            if (spent) com.jayptucker.heroesevolved.energy.PlayerEnergyService.tryConsume(p,
+                    com.jayptucker.heroesevolved.energy.PlayerEnergyService.getEnergy(p));
+            if (health > 0) p.setHealth(health);
+        } catch (RuntimeException e) { cleanup(p, him); throw e; }
+        helper.runAfterDelay(SpeedContainment.UNSUITED_TICKS + 20, () -> {
+            try { during.accept(p, him); }
+            catch (RuntimeException e) { p.setInvulnerable(false); cleanup(p, him); throw e; }
+        });
+        helper.runAfterDelay(SpeedContainment.DEFUSE_TICKS + 25, () -> {
+            try {
+                check.accept(p, him);
+                helper.succeed();
+            } finally { p.setInvulnerable(false); cleanup(p, him); }
+        });
+    }
+
+    /** Holding him in: running, not burning, and he isn't counting down. */
+    private static void holding(GameTestHelper helper, ServerPlayer p, Villager him) {
+        helper.assertTrue(SpeedContainment.containing(p) && !SpeedContainment.burningAway(p), "Four seconds in, they're holding him in");
+        helper.assertTrue(VillagerMeltdown.critical(him), "Not done yet");
+    }
+
+    /** Burning away on the ring. */
+    private static void burning(GameTestHelper helper, ServerPlayer p, String why) {
+        helper.assertTrue(SpeedContainment.burningAway(p), why);
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 40, batch = "village.meltdown.tier2")
+    public static void belowTierThreeTheCycloneKeyIsLocked(GameTestHelper helper) {
+        Villager him = villager(helper, 545, 0);
+        ServerPlayer p = runner(helper, him, 2, 4);
+        try {
+            VillagerMeltdown.start(him, 600);
+            var result = cyclone(p);
+            helper.assertTrue(result == com.jayptucker.heroesevolved.ability.AbilityUseResult.ACTION_LOCKED && !SpeedContainment.running(p),
+                    "A tier-2 speedster can't run rings round him yet, suit or not: " + result);
+            helper.assertTrue(VillagerMeltdown.critical(him), "And he is still going to blow");
+            helper.succeed();
+        } finally { cleanup(p, him); }
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 300, batch = "village.meltdown.tier3")
+    public static void aSuitedTierThreeSpeedsterHoldsHimIn(GameTestHelper helper) {
+        run(helper, 635, 3, 4, false, 0, (p, him) -> holding(helper, p, him), (p, him) -> {
+            helper.assertTrue(!VillagerMeltdown.critical(him) && him.isAlive(), "The first tier with the Cyclone key, in the suit: he's cool and alive");
+            helper.assertTrue(p.isAlive() && !SpeedContainment.burningAway(p), "And the runner comes out of it (health " + p.getHealth() + ")");
+        });
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 300, batch = "village.meltdown.tier4")
+    public static void aSuitedTierFourSpeedsterHoldsHimIn(GameTestHelper helper) {
+        run(helper, 560, 4, 4, false, 0, (p, him) -> holding(helper, p, him), (p, him) -> {
+            helper.assertTrue(!VillagerMeltdown.critical(him) && him.isAlive(), "Five seconds held at tier 4, in the suit: he's cool and alive");
+            helper.assertTrue(p.isAlive() && !SpeedContainment.burningAway(p), "And the runner comes out of it (health " + p.getHealth() + ")");
+        });
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 300, batch = "village.meltdown.tier5")
+    public static void aSuitedTierFiveSpeedsterHoldsHimInUnhurt(GameTestHelper helper) {
+        run(helper, 575, 5, 4, false, 0, (p, him) -> holding(helper, p, him), (p, him) -> {
+            helper.assertTrue(!VillagerMeltdown.critical(him) && him.isAlive(), "Held at tier 5, in the suit: he's cool and alive");
+            helper.assertTrue(p.getHealth() >= p.getMaxHealth(), "A rested tier-5 runner pays it all in stamina, unhurt (health " + p.getHealth() + ")");
+            helper.assertTrue(com.jayptucker.heroesevolved.hazard.BodyBurn.level(p) == 0, "And the suit kept every bit of burn off");
+        });
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 300, batch = "village.meltdown.tier4bare")
+    public static void anUnsuitedTierFourSpeedsterBurnsAwayAndHeGoesOn(GameTestHelper helper) {
+        run(helper, 590, 4, 0, false, 0, (p, him) -> burning(helper, p, "No suit: the heat goes straight through them on the ring"),
+                (p, him) -> helper.assertTrue(VillagerMeltdown.critical(him), "And they didn't hold it long enough: he's still going to blow"));
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 300, batch = "village.meltdown.tier5bare")
+    public static void evenATierFiveSpeedsterNeedsTheSuit(GameTestHelper helper) {
+        run(helper, 650, 5, 0, false, 0, (p, him) -> burning(helper, p, "Tier 5 doesn't save a runner with no suit"),
+                (p, him) -> helper.assertTrue(VillagerMeltdown.critical(him), "And the blast goes on"));
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 300, batch = "village.meltdown.partial")
+    public static void threePiecesOfTheSuitAreNotEnough(GameTestHelper helper) {
+        run(helper, 605, 5, 3, false, 0, (p, him) -> burning(helper, p, "Without the cowl the suit isn't friction-proof, even at tier 5"),
+                (p, him) -> helper.assertTrue(VillagerMeltdown.critical(him), "So the blast goes on"));
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 300, batch = "village.meltdown.spent")
+    public static void aSuitedRunnerWhoseBodyGivesOutStillStopsIt(GameTestHelper helper) {
+        run(helper, 620, 4, 4, true, 3, (p, him) -> {
+            helper.assertTrue(SpeedContainment.doomed(p) && !SpeedContainment.burningAway(p),
+                    "Out of stamina and nearly out of health, their body gives out, but they run on");
+            helper.assertTrue(VillagerMeltdown.critical(him), "Still holding him in: the moment isn't over");
+        }, (p, him) -> {
+            burning(helper, p, "When the hold is done, it takes them");
+            helper.assertTrue(!VillagerMeltdown.critical(him) && him.isAlive(), "And they take it with them: he's cool and alive");
         });
     }
 }

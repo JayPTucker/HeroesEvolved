@@ -70,9 +70,11 @@ public final class SkillUiPreview {
             if (node.active() && learned.contains(node.id()))
                 entries.add(new com.jayptucker.heroesevolved.network.LoadoutPayload.Entry(node.id(), node.id(), node.action().definition().displayNameKey(),
                         true, com.jayptucker.heroesevolved.progression.PowerLevels.levelForTier(node.level()), node.energy(), node.cooldown(), 0, 1, 3));
+        String quick = learned.contains("pyrokinesis_sunfall") ? "pyrokinesis_sunfall" : "pyrokinesis_blue_lance";
         com.jayptucker.heroesevolved.network.ClientLoadout.update(new com.jayptucker.heroesevolved.network.LoadoutPayload(10, 640, 800, false,
                 "Defeat 60 enemies with your power", 0, 60, 2, entries,
-                java.util.List.of("base:PRIMARY", "base:SECONDARY", "base:TERTIARY", "base:QUATERNARY", "base:QUINARY", "pyrokinesis_blue_lance", "pyrokinesis_sunfall", ""))); 
+                java.util.List.of("base:PRIMARY", "base:SECONDARY", "base:TERTIARY", "base:QUATERNARY", "base:QUINARY", "pyrokinesis_blue_lance", "pyrokinesis_sunfall", ""),
+                "pyrokinesis", java.util.List.of(quick, "", "pyrokinesis_ember_mine", "", "base:PRIMARY", "", "", ""), quick));
     }
 
     @SubscribeEvent public static void rendered(RenderFrameEvent.Post event) {
@@ -140,7 +142,13 @@ public final class SkillUiPreview {
         if (frames == 81) capture(mc, "journal-way-back.png");
         if (frames == 82) { mc.options.guiScale().set(3); mc.resizeDisplay(); com.jayptucker.heroesevolved.gui.screen.JournalScreen.openAt(0); com.jayptucker.heroesevolved.gui.screen.JournalScreen.open(null); }
         if (frames == 86) capture(mc, "journal-signal-scale3.png");
-        if (frames == 89) PreviewQuiet.quit();
+        if (frames == 87) {
+            abilities(mc, chose, Map.of("KEY6", "pyrokinesis_blue_lance", "KEY7", "pyrokinesis_sunfall"), "wheel");
+        }
+        if (frames == 91) capture(mc, "hero-wheel-editor-scale3.png");
+        if (frames == 92) { mc.options.guiScale().set(2); mc.resizeDisplay(); }
+        if (frames == 96) capture(mc, "hero-wheel-editor-scale2.png");
+        if (frames == 99) PreviewQuiet.quit();
     }
 
     private static final class PaintingScreen extends net.minecraft.client.gui.screens.Screen {

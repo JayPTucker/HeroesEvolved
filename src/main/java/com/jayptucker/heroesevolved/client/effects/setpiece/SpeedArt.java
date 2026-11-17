@@ -462,8 +462,10 @@ public final class SpeedArt {
         Vec3 o = v.center;
         float r = v.radius, theta = v.angle(age);
         int seed = v.entity * 17;
-        // Holding a blast in builds over five seconds: everything grows denser, taller and brighter.
-        float hold = v.held == Long.MIN_VALUE ? 0 : Mth.clamp((now - v.held + c.partial) / 100F, 0, 1);
+        // Holding a blast in builds over ten seconds: everything grows denser, taller and brighter, and in the last
+        // quarter it comes to a head: lightning everywhere, a white-hot core and a pillar of light.
+        float hold = v.held == Long.MIN_VALUE ? 0 : Mth.clamp((now - v.held + c.partial) / (float) com.jayptucker.heroesevolved.speed.SpeedContainment.DEFUSE_TICKS, 0, 1);
+        float climax = Canvas.smooth(0.75F, 1, hold);
         if (c.glow()) {
             // The wall: the runner's light laid down lap over lap at every height, more of it the longer it holds.
             int layers = 4 + (int) (hold * 4);
@@ -481,7 +483,7 @@ public final class SpeedArt {
                             0.75F * phase * (0.4F + 0.6F * hold) * f);
                 }
                 // Gold lightning leaping from the wall to the one being held, more often as it comes.
-                int bolts = (int) (1 + hold * 5);
+                int bolts = (int) (1 + hold * 5 + climax * 6);
                 for (int k = 0; k < bolts; k++) {
                     int flick = (int) (age / 2) + k * 13;
                     if (hash(seed + flick, k) > 0.35F + 0.5F * hold) continue;
@@ -490,6 +492,11 @@ public final class SpeedArt {
                     c.bolt(wall, core.add(0, (hash(seed + flick, k + 9) - 0.5) * 0.8, 0), seed + flick, 0.35F, 0.04F + 0.03F * hold, HOT, 0.85F * f);
                 }
                 c.glow(core, 1.2F + 2.5F * hold, AMBER, 0.15F + 0.35F * hold);
+                if (climax > 0) {
+                    c.glow(core, 1.5F + 2.5F * climax, HOT, 0.6F * climax);
+                    c.line(o, o.add(0, 4 + 14 * climax, 0), 0.5F + 0.6F * climax, AMBER, 0.45F * climax, 0);
+                    c.line(o, o.add(0, 4 + 14 * climax, 0), 0.15F + 0.2F * climax, HOT, 0.9F * climax, 0);
+                }
             }
             // The heat dragged out: streams spiralling from the body out to the wall, behind the runner.
             for (int s = 0; s < 5; s++) {

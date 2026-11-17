@@ -70,7 +70,7 @@ Lightspeed spends all your Momentum.
 
 | Key | Tier (Level) | Ability | What it does | Cost / cooldown |
 | --- | --- | --- | --- | --- |
-| G | 1 (Level 1) | **Accelerate** | Toggle, then sprint (see below). Walk or crouch for precision; press again to stop. | Free; 3 stamina per running second |
+| G | 1 (Level 1) | **Accelerate** | Toggle, then sprint. Scroll while sprinting to adjust speed. Walk or crouch for precision. Press again to stop. | Free; 3 stamina per running second |
 | H | 1 (Level 1) | **Blitz** | Rush the enemy you look at, up to 12 + 2 per tier blocks, and land four blows in a fraction of a second. **Press again within a moment** and you are already on the next enemy within 10 blocks, up to the tier in extra links (six enemies at tier 5). 30 Momentum makes every blow 2 harder. With no one in sight it is a straight **dash**, the old Quickstep. | 14 / 2 s; chained presses are free |
 | Z | 2 (Level 3) | **Snatch** | In one blink, take every dropped item within reach (up to 16 stacks), pluck enemy shots out of the air (arrows go in your pocket), and take the weapon from the hand you look at. Another player's weapon is knocked to their feet instead. An afterimage holds your place: to anyone watching, you never moved. | 20 / 10 s |
 | X | 4 (Level 10) | **Cyclone** | Run rings around where you stand for three seconds. You are seen out on the ring, running laps, not standing in the middle. The wind drags enemies around and up, flings their shots away and hurts them every half second, then throws them all up and out. **Hold the key** for a second and a half and the ring rises into a **tornado** (see below). | 30 / 12 s |
@@ -114,7 +114,7 @@ A quick press is still the three-second ring. The server's wind and the drawing 
 
 ### Running the heat out of a radioactive player
 
-Press the Cyclone key (X, tier 4 and up) with a radioactive player within 10 blocks who is running **Hot**
+Press the Cyclone key (X, tier 3 and up) with a radioactive player within 10 blocks who is running **Hot**
 (40+ Core) or about to blow, and instead of a Cyclone you run rings round *them*, about twice as fast as a
 Cyclone, 4.5 blocks out (6.5 while holding a blast in, to keep clear of it). Your runner circles them inside a spinning wall of gold light, and their heat is dragged out on the wind:
 orange streams spiral out of their body to the wall, with green motes pulled after them.
@@ -122,7 +122,7 @@ orange streams spiral out of their body to the wall, with green motes pulled aft
 - **Cooling.** While they are only Hot, every tick of running carries a point of Core out of them, until they are
   cool (10 Core) or ten seconds pass. Let go of the key and you stop.
 - **Containment.** If their containment is failing, or the blast is already charging (theirs or an involuntary
-  meltdown), the run **holds it in**: neither the warning nor the charge runs down while you run. Hold it for **five seconds**, while it builds (the wall of light
+  meltdown), the run **holds it in**: neither the warning nor the charge runs down while you run. Hold it for **ten seconds**, while it builds all the way to the moment it breaks (the wall of light
   grows denser and taller, rings of pressure close in on them faster and faster, gold lightning leaps from the wall to
   them, the ground shakes harder and the wind climbs), and it is **defused** with a cold shock rolling out over the
   ground; their Core settles at 30. Once you are containing a blast you can't let go.
@@ -137,6 +137,25 @@ orange streams spiral out of their body to the wall, with green motes pulled aft
   their legs, crumbles where they come to a stop. Nothing can hurt you while you burn, and you die only when it is
   done, about five seconds after the heat beat you. The death message reads that you burned away holding back a
   meltdown.
+- **The climb.** The strain is back-loaded: you carry little heat at first and nearly four times as much by the
+  end (the same 120 units in all), the shaking and the hum quicken in the last quarter, a heartbeat thuds under them,
+  and the wall comes to a head: lightning everywhere, a white-hot core and a pillar of light. Halfway, you're told to
+  hold on.
+- **Dying doesn't end it early.** In the suit, if the heat would kill you mid-hold, your body gives out but you run
+  on: nothing can hurt you, you pay nothing more, and you burn hotter and hotter until the ten seconds are up. Then the
+  heat takes you, and you take the blast with you.
+- **The suit.** Holding a blast in needs the whole **velocity suit** (see
+  [Meltdowns, friction and the suits](protective-suits.md)). Without it the friction and the radiation go straight
+  through you: you burn up on the ring, harder and harder, for three and a half seconds, then burn away, and the blast
+  goes on. In the suit you carry only 60% of the
+  heat. Cooling someone who is merely Hot needs no suit.
+
+### Friction
+
+Faster than about 37 blocks a second (run settings 5 and 6, or a lower one with plenty of Momentum) your body heats
+from friction, and Lightspeed adds a burst of it: smoke, then flames at your feet and your skin scorching away, then
+burns every half-second until you ease off. It cools in a second or two at ordinary speeds. Each piece of the velocity
+suit keeps a quarter of it off; the whole suit, all of it. See [Meltdowns, friction and the suits](protective-suits.md).
 
 ### Overrun: outrunning the last minute
 
@@ -186,7 +205,18 @@ more on its own.
 
 **Evolved trial:** run 20 km (20,000 blocks) with Accelerate.
 
-Sprint movement uses native synced attributes. The starting movement multiplier ranges from 4x at level 1 to 8x at level 5. Running builds Momentum, adding up to another 2x, for a level-five peak of 10x. At least 50 Momentum empowers the next direct attack, consuming the charge for up to 12 bonus damage against mobs or 4 against players. The flurry deals 60% base damage against players. Other ordinary movement modifiers still apply. Camera expansion is capped at 1.12x to avoid extreme speed-induced distortion. While Accelerate is on you step straight up a full block (or a block and a slab) without jumping, sprinting or not. Run off a ledge of up to about two and a half blocks and you drop straight onto the lower ground, keeping your run, instead of hanging in the air; deeper drops fall normally. You take **no fall damage** while Accelerate is on. If you are on fire, half a second of running flat out (0.6 blocks a tick or more) fans the flames out, with a puff of smoke; it does nothing in lava.
+**Run speed.** Scroll up or down while sprinting with Accelerate to move one setting at a time. The HUD above Momentum shows your selected speed and the number of settings you have unlocked. Accelerate starts at your fastest unlocked setting. The wheel selects hotbar slots normally when Accelerate is off or when you walk or crouch. Your selection is ready when you sprint again with Accelerate on.
+
+| Setting | Unlocks at Power Level | Base sprint multiplier |
+| --- | --- | --- |
+| 1 | 1 | 2x |
+| 2 | 1 | 4x |
+| 3 | 3 | 5x |
+| 4 | 6 | 6x |
+| 5 | 10 | 7x |
+| 6 | 15 | 8x |
+
+Sprint movement uses native synced attributes. Running builds Momentum, adding up to another 2x to the selected speed. At least 50 Momentum empowers the next direct attack, consuming the charge for up to 12 bonus damage against mobs or 4 against players. The flurry deals 60% base damage against players. Other ordinary movement modifiers still apply. Camera expansion is capped at 1.12x to avoid extreme speed-induced distortion. While Accelerate is on you step straight up a full block (or a block and a slab) without jumping, sprinting or not. Run off a ledge of up to about two and a half blocks and you drop straight onto the lower ground, keeping your run, instead of hanging in the air; deeper drops fall normally. You take **no fall damage** while Accelerate is on. If you are on fire, half a second of running flat out (0.6 blocks a tick or more) fans the flames out, with a puff of smoke; it does nothing in lava.
 
 At **level 3**, sprinting with Accelerate supports your feet on the water surface using matching client/server collision. This includes flowing water and water plants. Release sprint, crouch, or disable Accelerate to sink normally. It does not lift submerged swimmers, support lava running, or catch long falls. At **level 4**, sprinting into a wall provides up to thirty ticks of upward assistance; it resets after returning to clear ground. Steep falls are not caught. Movement still benefits from in-game feel testing across terrain and server latency.
 

@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "top": "heroesevolved:block/suit_fabricator_top",
+    "front": "heroesevolved:block/suit_fabricator_front",
+    "side": "heroesevolved:block/suit_fabricator_side",
+    "bottom": "heroesevolved:block/suit_fabricator_bottom"
+  }
+}

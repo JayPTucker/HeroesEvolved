@@ -25,6 +25,11 @@ crimson bar under your ability list (the notch marks what a Second Life costs).
 
 ## Unkillable
 
+**A meltdown can't kill you.** You are the only one who can stand in a meltdown's lethal near-field without a suit:
+the heat burns you, your skin flakes away over the charred body underneath and grows back, but it never takes you
+below half a heart. Carry the glowing villager out of his village yourself. See
+[Meltdowns, friction and the suits](protective-suits.md).
+
 At any level, a lethal blow puts you **down** instead of killing you. This replaces the old
 once-per-ten-minutes Level 5 Resurrection.
 

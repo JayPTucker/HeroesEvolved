@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:smelting",
+  "category": "misc",
+  "ingredient": {
+    "item": "heroesevolved:unfired_ceramic_plate"
+  },
+  "result": {
+    "id": "heroesevolved:ceramic_plate"
+  },
+  "experience": 0.3,
+  "cookingtime": 200
+}

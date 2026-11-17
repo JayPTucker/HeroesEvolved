@@ -14,10 +14,20 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.portal.DimensionTransition;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.LogicalSide;
 import net.neoforged.neoforge.common.NeoForge;
 import org.jetbrains.annotations.Nullable;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.function.UnaryOperator;
 
 /**
  * The one place that touches TaCZ (Timeless and Classics Zero). The guns themselves are a gun pack in our own data
@@ -27,6 +37,8 @@ import org.jetbrains.annotations.Nullable;
  */
 final class TaczLink {
     private static boolean broken, listening;
+    private static Field[] bulletFields;
+    private static Field bulletOrigin;
 
     private TaczLink() {}
 
@@ -231,6 +243,72 @@ final class TaczLink {
         } catch (Throwable t) {
             fail("bullet", t);
             return false;
+        }
+    }
+
+    /** Uses TaCZ's own hitboxes and block rules for the incoming leg of a portal shot. */
+    static boolean bulletObstructed(Projectile round, Vec3 from, Vec3 to) {
+        var clip = bulletClip(round, new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, round));
+        return com.tacz.guns.util.block.BlockRayTrace.rayTraceBlocks(round.level(), clip).getType() != HitResult.Type.MISS
+                || com.tacz.guns.util.EntityUtil.findEntityOnPath(round, from, to) != null;
+    }
+
+    static ClipContext bulletClip(Entity round, ClipContext clip) {
+        if (broken) return clip;
+        try {
+            if (round instanceof com.tacz.guns.entity.EntityKineticBullet bullet
+                    && PowerWeapons.COLD_GUN.equals(bullet.getGunId())) {
+                return new ClipContext(clip.getFrom(), clip.getTo(), ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, round);
+            }
+        } catch (Throwable t) {
+            fail("bullet clip", t);
+        }
+        return clip;
+    }
+
+    /** TaCZ keeps ballistics and the damage falloff origin in runtime fields, outside the vanilla save data. */
+    static @Nullable Projectile breachBullet(Projectile source, DimensionTransition transition, UnaryOperator<Vec3> map) {
+        if (!(source instanceof com.tacz.guns.entity.EntityKineticBullet round)) return null;
+        try {
+            if (bulletFields == null) {
+                Class<?> type = com.tacz.guns.entity.EntityKineticBullet.class;
+                Field[] fields = Arrays.stream(type.getDeclaredFields()).filter(f -> !Modifier.isStatic(f.getModifiers()))
+                        .toArray(Field[]::new);
+                Field origin = type.getDeclaredField("startPos");
+                for (Field field : fields) field.setAccessible(true);
+                origin.setAccessible(true);
+                bulletOrigin = origin;
+                bulletFields = fields;
+            }
+            ServerLevel destination = transition.newLevel();
+            boolean newWorld = round.level() != destination;
+            var moved = round;
+            if (newWorld) {
+                if (!round.canChangeDimensions(round.level(), destination)
+                        || !net.neoforged.neoforge.common.CommonHooks.onTravelToDimension(round, destination.dimension())) return null;
+                moved = com.tacz.guns.entity.EntityKineticBullet.TYPE.create(destination);
+                if (moved == null) return null;
+                moved.restoreFrom(round);
+                moved.setUUID(round.getUUID());
+                for (Field field : bulletFields) field.set(moved, field.get(round));
+                moved.setOwner(round.getOwner());
+                moved.tickCount = round.tickCount;
+            }
+            Vec3 origin = (Vec3) bulletOrigin.get(round);
+            bulletOrigin.set(moved, map.apply(origin == null ? round.position() : origin));
+            Vec3 at = transition.pos();
+            moved.absMoveTo(at.x, at.y, at.z, transition.yRot(), transition.xRot());
+            moved.setDeltaMovement(transition.speed());
+            if (newWorld) {
+                if (!destination.addFreshEntity(moved)) return null;
+                destination.resetEmptyTime();
+                round.remove(Entity.RemovalReason.CHANGED_DIMENSION);
+                com.jayptucker.heroesevolved.time.TaczAmmoRecovery.transferred(round, moved);
+            }
+            return moved;
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError incompatible) {
+            fail("breach bullet", incompatible);
+            return null;
         }
     }
 

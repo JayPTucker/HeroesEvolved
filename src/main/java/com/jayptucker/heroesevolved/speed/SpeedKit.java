@@ -428,6 +428,8 @@ public final class SpeedKit {
             push(t, side.scale(rel.dot(side) >= 0 ? 1.0 : -1.0).add(dir.scale(0.5)).add(0, 0.45, 0));
         }
         SpeedService.move(p, end);
+        // Nothing heats a body like that streak: without the velocity suit it scorches.
+        SpeedFriction.burst(p, SpeedFriction.LIGHTSPEED_HEAT);
         AbilityEffects.send(level, Kind.SPEED_STREAK, start.add(0, 0.05, 0), end.add(0, 0.05, 0), 1 + momentum / 50F);
         AbilityEffects.send(level, Kind.SPEED_BOOM, end.add(0, 1, 0), end.add(0, 1, 0).add(dir), 2.5);
         for (LivingEntity t : level.getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(5), t -> SpeedService.canHit(p, t))) {
@@ -447,14 +449,15 @@ public final class SpeedKit {
         tickCyclones(now);
         SpeedWindArms.tick(now);
         SpeedContainment.tick(now);
+        SpeedFriction.tick(server, now);
         CHAINS.entrySet().removeIf(e -> now >= e.getValue().until + 20);
     }
 
     static void forget(ServerPlayer p) {
-        CHAINS.remove(p.getUUID()); HITS.remove(p.getUUID()); SpeedWindArms.forget(p); SpeedContainment.forget(p);
+        CHAINS.remove(p.getUUID()); HITS.remove(p.getUUID()); SpeedWindArms.forget(p); SpeedContainment.forget(p); SpeedFriction.forget(p);
         Cyclone c = CYCLONES.remove(p.getUUID());
         if (c != null) sync(c, now(p), true);
     }
 
-    static void clear() { CHAINS.clear(); HITS.clear(); CYCLONES.clear(); SpeedWindArms.clear(); SpeedContainment.clear(); }
+    static void clear() { CHAINS.clear(); HITS.clear(); CYCLONES.clear(); SpeedWindArms.clear(); SpeedContainment.clear(); SpeedFriction.clear(); }
 }

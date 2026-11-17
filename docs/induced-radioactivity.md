@@ -44,10 +44,23 @@ Action IDs are unchanged (`radiation_pulse` is Fission Leap, `radiation_meltdown
 
 ## Speedsters can hold it in
 
-A speedster (tier 4 and up) can run rings round you when you are Hot or about to blow: the run drains your Core,
-and if you are about to detonate (voluntarily or not) it holds the blast in and defuses it after five seconds.
-It can kill the speedster: if the heat would, they burn away to ash on the ring, and the blast still stops. See
+A speedster (tier 3 and up) can run rings round you when you are Hot or about to blow: the run drains your Core,
+and if you are about to detonate (voluntarily or not) it holds the blast in and defuses it after ten seconds that build
+to a climax.
+It can kill the speedster: if the heat would, they burn away to ash on the ring, and the blast still stops. A speedster
+without the whole velocity suit can't hold it at all: they burn up on the ring for three and a half seconds, then burn
+away, and the blast goes on. A suited speedster whose body gives out runs on until the hold is done, then burns away
+taking the blast with them. See
 [Superspeed](superspeed.md#running-the-heat-out-of-a-radioactive-player).
+
+## Melting down
+
+While Critical Mass charges (voluntary or not) the heat pours off you, building as the end comes: **shock waves** roll
+out further, harder and closer together (6 blocks every 4½ seconds at first, 22 blocks every ¾ second at the end), a
+**lethal near-field** (3 blocks at first, 12 at the end) burns and doses anyone unprotected, and the ground round you
+cracks and crumbles, scorches, burns and boils. You are immune, and so is every other radioactive player; a full
+radiation or velocity suit keeps it off; a Regeneration user burns but can't die of it. Anyone radiation kills burns
+away to glowing cubes. See [Meltdowns, friction and the suits](protective-suits.md).
 
 ## Shields can hold the blast
 

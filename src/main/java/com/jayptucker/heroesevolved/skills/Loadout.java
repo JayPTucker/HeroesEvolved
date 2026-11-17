@@ -16,7 +16,7 @@ import java.util.Map;
  *
  * <p>An ability is named by an <b>action key</b>: {@code base:<SLOT>} for one of the power's five
  * built-in abilities, or a skill node's id for a learned active skill. Any action can go on any key,
- * or on none (everything is always on the ability wheel). Keys 1 to 5 default to the five built-in
+ * or on none. Keys 1 to 5 default to the five built-in
  * abilities in order; keys 6 to 8 start empty. Bindings are saved in the skill build under "PRIMARY"
  * to "QUINARY" (the names older saves already use) and "KEY6" to "KEY8"; an empty value is a key
  * deliberately left empty.</p>

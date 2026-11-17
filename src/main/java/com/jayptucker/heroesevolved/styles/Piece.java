@@ -132,6 +132,9 @@ public enum Piece {
     VIBE_BREACH_OPEN(12), VIBE_BREACH_ARRIVE(16), VIBE_BREACH_CLOSE(10), VIBE_TRANSIT(18),
     VIBE_TOUCH(24), VIBE_ECHO(29), VIBE_GUARD(10), VIBE_GUARD_CLOSE(10), VIBE_LOCK_WARN(16),
     VIBE_LOCK(33), VIBE_AWAKEN(28),
+    // Vibe's Rift Beast (re-sent, bound to it), and the style's Breach Kick (origin the foot's mouth, target the far mouth
+    // behind the foe) and Seam Sweep (a crack along the ground; scale is its length)
+    VIBE_BEAST(12), VIBE_KICK(14), VIBE_SEAM(18),
     // Space-Time's skill tree, drawn by TimeArt (clockwork made of light): Selective Stasis's cage (re-sent, bound to the
     // target) and the release when its stored blows land (scale is how many), a Spatial Anchor planted (target holds the
     // hands' time of day), Second Chance's arrival, Stasis Seal's sphere (re-sent; scale is its radius) and its throw, one
@@ -210,6 +213,14 @@ public enum Piece {
     // lingering (origin and target its ends).
     STYLE_LENS_JAB(9), STYLE_SHARDS(10), STYLE_FORCE_BURST(14), STYLE_FIELD_SLAM(16), STYLE_LENS_SLIDE(12), STYLE_BOUNCE(14),
     STYLE_ICE_STRIP(60), STYLE_TK_PALM(11), STYLE_TK_GRASP(36),
+    // A meltdown (MeltdownField): a shock wave rolling out (scale its radius; the target's height above the origin its
+    // strength), the near-field's lethal edge on the ground (re-sent, bound to whoever is melting down; scale its
+    // radius), cubes peeling off a burning body (bound to it; scale how badly), and a body burning away to cubes when
+    // radiation kills it (bound to it, so its corpse is hidden; scale its height, the target along its facing as far as
+    // it is wide)
+    RAD_SHOCK(16), RAD_FIELD(12), RAD_FLAKE(24), RAD_DISINTEGRATE(90),
+    // Rime accumulating on one face, replaced as it grows. Scale 1 clears the face.
+    CRYO_TERRAIN_FROST(80),
     // Finishers (combat/Takedowns), each drawn in its power's own art. Dragon Coil (PyroArt): origin the foe's feet, target the
     // finisher's feet, scale the foe's height (+ PyroGeometry.BLUE_SCALE for blue fire). Closed Loop (TimeArt): origin the foe's
     // feet, target where you fold in; scale the foe's height (+ 32 when three of you strike). Lights Out (TelepathyArt): bound to

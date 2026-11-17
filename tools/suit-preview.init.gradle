@@ -1,0 +1,23 @@
+// The client photographs the protective suits, burning up, a meltdown's field and the Suit Fabricator (uitest/SuitPreview).
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('suitPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/suit-preview')
+                        programArguments.addAll('--width', '1100', '--height', '800')
+                        systemProperty('heroes.preview.suits', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('suitPreviewClasses')) }
+        }
+    }
+}

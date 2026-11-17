@@ -1,5 +1,6 @@
 package com.jayptucker.heroesevolved.gui.screen;
 
+import com.jayptucker.heroesevolved.gui.PowerUiColors;
 import com.jayptucker.heroesevolved.network.AbilitySnapshot;
 import com.jayptucker.heroesevolved.network.ClientLoadout;
 import com.jayptucker.heroesevolved.network.ClientPowerState;
@@ -27,7 +28,7 @@ import java.util.List;
  */
 public abstract class HeroScreen extends Screen {
     public static final int GOLD = 0xFFF2D27A, TEXT = 0xFFEDE3D6, MUTED = 0xFFB8A99A, DIM = 0xFF77695E, RED = 0xFFE07A6A,
-            GREEN = 0xFF9BD67A, ENERGY = 0xFF57B6E0, LINE = 0xFF8A7A6C, PANEL = 0x66000000, PANEL_EDGE = 0x33F2D27A;
+            GREEN = 0xFF9BD67A, LINE = 0xFF8A7A6C, PANEL = 0x66000000, PANEL_EDGE = 0x33F2D27A;
     public static final int OFFENSE = 0xFFE3685A, DEFENSE = 0xFF5FA8E0, SUPPORT = 0xFF7ACB6A, UTILITY = 0xFFB8A99A;
 
     public enum Tab {
@@ -170,13 +171,14 @@ public abstract class HeroScreen extends Screen {
         int max = live ? (int) com.jayptucker.heroesevolved.network.ClientStamina.maximum() : sync.maximumEnergy();
         float fraction = max <= 0 ? 0 : Mth.clamp(now / max, 0, 1);
         int sx = x + w - half;
-        g.fill(sx, y, sx + half, y + 3, 0xFF1C2A33);
-        g.fill(sx, y, sx + (int) (half * fraction), y + 3, ENERGY);
+        int energyColor = power != null && power.unlocked() ? PowerUiColors.fill(power.abilityId().getPath()) : 0xFF57B6E0;
+        g.fill(sx, y, sx + half, y + 3, PowerUiColors.TRACK);
+        g.fill(sx, y, sx + (int) (half * fraction), y + 3, energyColor);
         // Base recovery from the full sync; the live packet adds the calm bonus.
         String rate = live && com.jayptucker.heroesevolved.network.ClientStamina.regen() > 0
                 ? String.format("%.1f", com.jayptucker.heroesevolved.network.ClientStamina.regen()) : String.valueOf(sync.energyRegenerationPerSecond());
         String stamina = "Stamina " + (int) now + " / " + max + "  (+" + rate + "/s)";
-        g.drawString(font, font.plainSubstrByWidth(stamina, half), sx + half - Math.min(half, font.width(stamina)), y + 6, ENERGY, false);
+        g.drawString(font, font.plainSubstrByWidth(stamina, half), sx + half - Math.min(half, font.width(stamina)), y + 6, energyColor, false);
     }
 
     // ------------------------------------------------------------------

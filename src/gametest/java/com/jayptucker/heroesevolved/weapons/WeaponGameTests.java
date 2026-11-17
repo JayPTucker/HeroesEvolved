@@ -2,9 +2,11 @@ package com.jayptucker.heroesevolved.weapons;
 
 import com.jayptucker.heroesevolved.company.CompanyAgentEntity;
 import com.jayptucker.heroesevolved.cryo.CryoService;
+import com.jayptucker.heroesevolved.cryo.FrostConstructBlock;
 import com.jayptucker.heroesevolved.grid.GridDisruption;
 import com.jayptucker.heroesevolved.registry.ModEntities;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
@@ -164,6 +166,46 @@ public final class WeaponGameTests {
         pig.setNoAi(true);
         ArmorStand stand = shooter(h, new BlockPos(2, 2, 5), PowerWeapons.COLD_GUN);
         shootUntil(h, stand, pig, () -> CryoService.frostAmount(pig) > 0 || CryoService.isFrozen(pig), "A cold gun's bolts frost");
+    }
+
+    @GameTest(template = "rewind_empty", batch = "weapons.shots", timeoutTicks = 170)
+    public static void realColdShotsFreezeSolidsWaterAndLava(GameTestHelper h) {
+        realTime(h);
+        ArmorStand stand = shooter(h, new BlockPos(3, 4, 5), PowerWeapons.COLD_GUN);
+        stand.setNoGravity(true);
+        BlockPos stone = new BlockPos(7, 2, 5);
+        BlockPos stoneEdge = stone.east();
+        BlockPos water = new BlockPos(7, 2, 3);
+        BlockPos waterEdge = water.east();
+        BlockPos lava = new BlockPos(7, 2, 7);
+        BlockPos lavaEdge = lava.east();
+        h.setBlock(stone, Blocks.STONE);
+        h.setBlock(stoneEdge, Blocks.STONE);
+        for (BlockPos pos : java.util.List.of(water, waterEdge, lava, lavaEdge)) {
+            h.setBlock(pos.below(), Blocks.STONE);
+            for (Direction side : Direction.Plane.HORIZONTAL) h.setBlock(pos.relative(side), Blocks.STONE);
+        }
+        h.setBlock(water, Blocks.WATER);
+        h.setBlock(waterEdge, Blocks.WATER);
+        h.setBlock(lava, Blocks.LAVA);
+        h.setBlock(lavaEdge, Blocks.LAVA);
+
+        h.onEachTick(() -> {
+            if (stand.tickCount <= 12 || stand.tickCount % 5 != 0) return;
+            BlockPos target = !FrostConstructBlock.isFrost(h.getBlockState(stoneEdge)) ? stone
+                    : !h.getBlockState(waterEdge).is(Blocks.ICE) ? water : lava;
+            if (PowerWeapons.rounds(stand.getMainHandItem()) <= 1) PowerWeapons.reload(stand.getMainHandItem());
+            PowerWeapons.fire(stand, Vec3.atBottomCenterOf(h.absolutePos(target)).add(0, .78, 0));
+        });
+        h.succeedWhen(() -> {
+            h.assertTrue(FrostConstructBlock.isFrost(h.getBlockState(stone))
+                    && FrostConstructBlock.isFrost(h.getBlockState(stoneEdge)), "Cold bolts freeze a patch of solid blocks");
+            h.assertTrue(h.getBlockState(water).is(Blocks.ICE) && h.getBlockState(waterEdge).is(Blocks.ICE),
+                    "Cold bolts collide with water and freeze the surrounding surface");
+            h.assertTrue(h.getBlockState(lava).is(Blocks.OBSIDIAN) && h.getBlockState(lavaEdge).is(Blocks.OBSIDIAN),
+                    "Cold bolts collide with lava and cool the surrounding surface");
+            stand.discard();
+        });
     }
 
     @GameTest(template = "rewind_empty", batch = "weapons.shots", timeoutTicks = 160)

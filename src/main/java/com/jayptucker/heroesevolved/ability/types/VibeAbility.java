@@ -14,9 +14,11 @@ public final class VibeAbility implements Ability {
     private static final Map<AbilitySlot, AbilityAction> ACTIONS = Map.of(
             AbilitySlot.PRIMARY, SimpleAction.builder("vibe_blast", 1).cost(() -> 9, () -> 22)
                     .activate(c -> VibeService.blast(c, VibeService.Blast.PALM)).build(),
+            // Press: the frequency wheel (free). Shift: a breach where you look. Press while open: close it.
             AbilitySlot.SECONDARY, SimpleAction.builder("vibe_breach", 2).cost(() -> 20, () -> 130)
-                    .followUp(c -> VibeBreaches.close(c.player()))
-                    .activate(c -> VibeBreaches.open(c.player(), c.modifierHeld(), false)).build(),
+                    .followUp(VibeBreaches::breachFollowUp)
+                    .travel(VibeBreaches::travelCost)
+                    .activate(VibeBreaches::breach).build(),
             AbilitySlot.TERTIARY, SimpleAction.builder("vibe_read", 3).cost(() -> 12, () -> 100)
                     .activate(c -> VibeSight.read(c.player(), false)).build(),
             AbilitySlot.QUATERNARY, SimpleAction.builder("vibe_breach_guard", 4).cost(() -> 21, () -> 170)

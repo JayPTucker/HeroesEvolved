@@ -25,7 +25,7 @@ public record SkillTreeStatePayload(String power, boolean awakened, int level, S
                 if (level < 1 || level > 100 || highest < 1 || highest > 100) throw new IllegalArgumentException("Invalid skill level");
                 int count = b.readVarInt(); if (count < 0 || count > 90) throw new IllegalArgumentException("Invalid skill count");
                 Set<String> learned = new HashSet<>(); for (int i = 0; i < count; i++) learned.add(b.readUtf(96));
-                count = b.readVarInt(); if (count < 0 || count > 5) throw new IllegalArgumentException("Invalid loadout");
+                count = b.readVarInt(); if (count < 0 || count > Loadout.KEYS) throw new IllegalArgumentException("Invalid loadout");
                 Map<String, String> slots = new HashMap<>(); for (int i = 0; i < count; i++) slots.put(b.readUtf(24), b.readUtf(96));
                 return new SkillTreeStatePayload(power, awakened, level, new SkillTreeData.Build(highest, learned, slots, training));
             });

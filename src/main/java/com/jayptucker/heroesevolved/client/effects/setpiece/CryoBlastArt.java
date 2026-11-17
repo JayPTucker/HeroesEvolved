@@ -6,8 +6,10 @@ import com.jayptucker.heroesevolved.cryo.CryoBlastGeometry;
 import com.jayptucker.heroesevolved.styles.Piece;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.ParticleStatus;
+import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 
 /** Powder billows from both palms. Jagged ice chips spin through the cold and scatter at impact. */
@@ -23,6 +25,10 @@ final class CryoBlastArt {
 
     static void draw(Canvas c, Active a, float t) {
         if (c.solid()) return;
+        if (a.piece() == Piece.CRYO_TERRAIN_FROST) {
+            if (c.soft()) terrainFrost(c, a, t);
+            return;
+        }
         if (a.piece() == Piece.CRYO_QUENCH) {
             quench(c, a, t);
             return;
@@ -64,6 +70,64 @@ final class CryoBlastArt {
             c.cloud(landing, .44F * spread, .37F * spread, .44F * spread, 2, now * .19F,
                     (cast ? .42F : .28F) * alpha * impact, frost(c));
         }
+    }
+
+    private static void terrainFrost(Canvas c, Active a, float age) {
+        BlockPos pos = BlockPos.containing(a.origin());
+        if (!c.level.hasChunkAt(pos)) return;
+        var state = c.level.getBlockState(pos);
+        if (state.isAir()) return;
+        Vec3 normal = a.target().subtract(a.origin()).normalize();
+        Vec3 right = Math.abs(normal.y) > .5 ? new Vec3(1, 0, 0) : normal.cross(UP);
+        Vec3 up = normal.cross(right);
+        Vec3 center = a.origin().add(normal.scale(.504));
+        if (normal.y > .5 && (state.is(Blocks.WATER) || state.is(Blocks.LAVA))) {
+            double height = state.getFluidState().getHeight(c.level, pos);
+            center = center.add(0, height - 1, 0);
+        }
+
+        // The rime starts as a small star and spreads until, just before the block turns, it frosts the whole face.
+        float growth = Math.max(0, a.scale() - .12F * (1 - Canvas.smooth(0, 5, age)));
+        float alpha = (0.4F + .45F * growth) * (1 - Canvas.smooth(58, a.piece().ticks, age));
+        float radius = .74F * (float) Math.sqrt(growth);
+        int seed = Long.hashCode(pos.asLong());
+        boolean minimal = Minecraft.getInstance().options.particles().get() == ParticleStatus.MINIMAL;
+        float rim = alpha * (.38F + .4F * growth);
+        for (int i = 0; i < 8; i++) {
+            Vec3 left = frostEdge(center, right, up, radius, seed, i);
+            Vec3 edge = frostEdge(center, right, up, radius, seed, (i + 1) % 8);
+            float[] tint = Canvas.mix(ICE, MIST, Canvas.hash(seed, i + 8));
+            c.tri(center, left, edge, tint, alpha, rim, rim);
+        }
+        if (minimal || growth < .12F) return;
+        // Frost feathers: white veins from the impact, each with barbs swept back toward it.
+        for (int i = 0; i < 6; i++) {
+            double angle = i * Math.PI / 3 + (Canvas.hash(seed, i + 32) - .5) * .7;
+            double reach = radius * (.75 + .3 * Canvas.hash(seed, i + 40));
+            Vec3 tip = frostPoint(center, right, up, Math.cos(angle) * reach, Math.sin(angle) * reach);
+            c.line(center, tip, .014F, WHITE, alpha * .7F, alpha * .15F);
+            for (int b = 1; b <= 3; b++) {
+                double along = reach * b / 4, barb = reach * (.22 - .04 * b);
+                for (int side = -1; side <= 1; side += 2) {
+                    double branch = angle + side * .75;
+                    Vec3 root = frostPoint(center, right, up, Math.cos(angle) * along, Math.sin(angle) * along);
+                    Vec3 end = frostPoint(center, right, up, Math.cos(angle) * along + Math.cos(branch) * barb,
+                            Math.sin(angle) * along + Math.sin(branch) * barb);
+                    c.line(root, end, .009F, WHITE, alpha * .5F, alpha * .08F);
+                }
+            }
+        }
+    }
+
+    private static Vec3 frostEdge(Vec3 center, Vec3 right, Vec3 up, float radius, int seed, int i) {
+        double angle = i * Math.PI / 4 + (Canvas.hash(seed, i) - .5) * .35;
+        double reach = radius * (.8 + Canvas.hash(seed, i + 16) * .57);
+        return frostPoint(center, right, up, Math.cos(angle) * reach, Math.sin(angle) * reach);
+    }
+
+    /** A point on the struck face, kept inside it. */
+    private static Vec3 frostPoint(Vec3 center, Vec3 right, Vec3 up, double x, double y) {
+        return center.add(right.scale(Math.clamp(x, -.489, .489))).add(up.scale(Math.clamp(y, -.489, .489)));
     }
 
     private static void stream(Canvas c, Vec3 start, Vec3 end, int side, float now, float alpha,

@@ -1,14 +1,16 @@
 package com.jayptucker.heroesevolved.network;
 
-/** The local player's Momentum (Superspeed), as the server last sent it. */
+/** The local player's Superspeed state, as the server last sent it. */
 public final class ClientMomentum {
-    private static volatile int momentum;
+    private static volatile MomentumPayload state = MomentumPayload.INACTIVE;
 
     private ClientMomentum() {}
 
-    static void set(int value) { momentum = Math.clamp(value, 0, 100); }
+    static void set(MomentumPayload payload) { state = payload; }
 
-    public static int get() { return momentum; }
+    public static int get() { return Math.clamp(state.momentum(), 0, 100); }
+    public static int speedStep() { return state.speedStep(); }
+    public static int maximumSpeedStep() { return state.maximumSpeedStep(); }
 
-    public static void clear() { momentum = 0; }
+    public static void clear() { state = MomentumPayload.INACTIVE; }
 }

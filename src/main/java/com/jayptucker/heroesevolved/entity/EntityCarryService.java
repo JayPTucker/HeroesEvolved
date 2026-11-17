@@ -13,6 +13,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
@@ -20,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.BooleanSupplier;
 
 /** Carrier -> anchor -> cargo is one vanilla riding graph, predicted identically on both clients. */
 public final class EntityCarryService {
@@ -66,6 +68,10 @@ public final class EntityCarryService {
         if (target == null) return false;
         recover(target);
         if (!canPickUp(player, target, reach)) return false;
+        return attach(player, target);
+    }
+
+    private static boolean attach(ServerPlayer player, Entity target) {
         Vec3 seat = CarryGeometry.position(player, target);
         CarryAnchorEntity anchor = new CarryAnchorEntity(ModEntities.CARRY_ANCHOR.get(), player.serverLevel());
         anchor.bind(player, target);
@@ -131,6 +137,45 @@ public final class EntityCarryService {
         if (carry == null || carry.anchor.hold() != CarryGeometry.Hold.OVERHEAD || !valid(carry)) return true;
         Vec3 seat = carry.anchor.seatPosition(player).add(destination.subtract(player.position()));
         return safe(carry.cargo, seat);
+    }
+
+    /** Moves a carrier at a checked portal exit, keeping the cargo and its original flags together. */
+    public static boolean travelWithCargo(ServerPlayer player, ServerLevel level, Vec3 at, float yaw,
+                                          BooleanSupplier moveCarrier) {
+        Carry carry = active(player.getUUID());
+        if (carry == null) return moveCarrier.getAsBoolean();
+        Entity cargo = carry.cargo;
+        var height = player.getDimensions(net.minecraft.world.entity.Pose.STANDING).height();
+        Vec3 offset = CarryGeometry.seat(carry.anchor.hold(), player.getBbWidth(), height,
+                cargo.getBbWidth(), cargo.getBbHeight(), cargo.getEyeHeight(), CarryGeometry.side(player));
+        Vec3 seat = at.add(CarryGeometry.rotate(offset, yaw));
+        if (carry.anchor.hold() == CarryGeometry.Hold.OVERHEAD
+                && !CarryGeometry.clear(level, player, cargo.getBbWidth(), cargo.getBbHeight(), seat)) return false;
+
+        if (level == carry.level) {
+            if (!moveCarrier.getAsBoolean()) return false;
+            position(carry);
+            carry.lastSafe = releasePosition(cargo, CarryGeometry.releasePoint(player, cargo), at);
+            return true;
+        }
+
+        if (!cargo.canChangeDimensions(carry.level, level)) return false;
+        // Vanilla removes the old passenger graph during dimension changes. Restore the cargo's flags before it
+        // transfers, so the destination's entity-join recovery cannot pick up a stale carry.
+        releaseCarry(carry, currentSeat(carry), Vec3.ZERO, false);
+        if (!moveCarrier.getAsBoolean()) {
+            attach(player, cargo);
+            return false;
+        }
+        Entity transferred = cargo.changeDimension(new DimensionTransition(level, seat, Vec3.ZERO,
+                cargo.getYRot(), cargo.getXRot(), DimensionTransition.DO_NOTHING));
+        if (transferred != null) {
+            carry.original.restore(transferred);
+            if (!attach(player, transferred)) {
+                teleport(transferred, releasePosition(transferred, CarryGeometry.releasePoint(player, transferred), at));
+            }
+        }
+        return true;
     }
 
     /** Invalid placement does not change either mount link, protection or ownership. */

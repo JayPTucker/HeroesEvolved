@@ -43,13 +43,39 @@ public final class SpeedGameTests {
     public static void sprintBoostIsControlledAndNeverStacksOrSurvivesRevocation(GameTestHelper h) {
         var p = player(h);
         try {
+            var movement = p.getAttribute(Attributes.MOVEMENT_SPEED);
             double normal = p.getAttributeValue(Attributes.MOVEMENT_SPEED);
             SpeedService.toggle(p); SpeedService.tickRunner(p);
             h.assertTrue(p.getAttributeValue(Attributes.MOVEMENT_SPEED) == normal, "Walking should keep normal precision");
+            SpeedService.changeSpeed(p, -1);
             p.setSprinting(true); SpeedService.tickRunner(p);
             double fast = p.getAttributeValue(Attributes.MOVEMENT_SPEED);
-            h.assertTrue(fast > normal * 4, "Sprinting must actually accelerate");
+            h.assertTrue(movement.getModifier(SpeedService.STRIDE).amount() == 7,
+                    "A new tier-five run starts at 8x, and scrolling while walking cannot change it");
             SpeedService.tickRunner(p); h.assertTrue(p.getAttributeValue(Attributes.MOVEMENT_SPEED) == fast, "Modifier must not stack every tick");
+
+            SpeedService.changeSpeed(p, Integer.MIN_VALUE);
+            SpeedService.tickRunner(p);
+            h.assertTrue(movement.getModifier(SpeedService.STRIDE).amount() == 6,
+                    "A large scroll amount lowers the sprint by exactly one setting");
+            for (int i = 0; i < 6; i++) SpeedService.changeSpeed(p, -1);
+            SpeedService.tickRunner(p);
+            h.assertTrue(movement.getModifier(SpeedService.STRIDE).amount() == 1,
+                    "The slowest setting stays at 2x even when scrolling below it");
+
+            int[] unlockLevels = {1, 3, 6, 10, 15};
+            for (int i = 0; i < unlockLevels.length; i++) {
+                PlayerProgressionService.setPowerLevel(p, unlockLevels[i]);
+                for (int notch = 0; notch < 6; notch++) SpeedService.changeSpeed(p, 1);
+                SpeedService.tickRunner(p);
+                h.assertTrue(movement.getModifier(SpeedService.STRIDE).amount() == 3 + i,
+                        "Scrolling cannot exceed the speed unlocked at Power Level " + unlockLevels[i]);
+            }
+            PlayerProgressionService.setPowerLevel(p, 1);
+            SpeedService.tickRunner(p);
+            h.assertTrue(movement.getModifier(SpeedService.STRIDE).amount() == 3,
+                    "Losing levels clamps the selected running speed without a new scroll");
+
             p.setShiftKeyDown(true); SpeedService.tickRunner(p);
             h.assertTrue(!p.getAttribute(Attributes.MOVEMENT_SPEED).hasModifier(SpeedService.STRIDE), "Crouching must restore precision");
             p.setShiftKeyDown(false); p.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty()); SpeedService.tickRunner(p);
