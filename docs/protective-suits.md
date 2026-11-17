@@ -51,7 +51,18 @@ once. The heat shows as smoke, then flames at the feet and the skin scorching aw
 every half-second until they ease off. At ordinary speeds it cools in a second or two (faster in water or rain). Blitz
 and other dashes add none.
 
-Each piece of the **velocity suit** keeps a quarter of it off; the whole suit, all of it. Server owners can turn
+Each piece of the **velocity suit** keeps a quarter of it off; the whole suit, all of it.
+
+**The burn meter.** Under Momentum on a speedster's HUD: **Friction** fills from amber to orange to a flashing red
+"Burning up! Ease off", with notches where the skin starts to scorch (50) and where friction starts to hurt (70). Under
+it, **Skin** shows how much of your skin has burnt away (from friction, a meltdown or radiation) in ember red, turning
+green ("Skin regrowing") as it grows back. Each line only appears while there's something to show.
+
+**A speedster heals.** Their body knits back half a health point every 70 ticks at tier 1 down to every 30 at tier 5
+(a seventh to a third of a heart a second, on top of ordinary regeneration), once they haven't been hurt for two
+seconds, aren't burning from friction or holding a meltdown in, and aren't starving; it costs hunger like ordinary
+healing. Their burnt skin grows back faster than anyone's but a Regeneration user's: about 6 seconds from fully burnt at
+tier 1, 3 at tier 5 (12 for anyone else, under 2 for Regeneration), and you can watch the peeled pixels fill back in. Server owners can turn
 friction off with `hazards.frictionBurns`.
 
 **Holding in a blast needs the suit.** A speedster who runs rings round someone about to go off (a radioactive player

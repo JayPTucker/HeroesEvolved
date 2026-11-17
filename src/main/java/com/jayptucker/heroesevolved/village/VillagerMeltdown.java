@@ -87,7 +87,9 @@ public final class VillagerMeltdown {
      * at least {@link #CLEAR_OF_VILLAGE} from any of the village's beds, job sites and bells, on open ground; it counts
      * villagers within {@link #SAFE_RADIUS} of it.
      */
-    public static final int SAFE_MARGIN = 14, SAFE_DISTANCE = NuclearFallout.RADIUS + SAFE_MARGIN, SAFE_RADIUS = 7, CLEAR_OF_VILLAGE = 12;
+    public static final int SAFE_MARGIN = 52, SAFE_DISTANCE = NuclearFallout.RADIUS + SAFE_MARGIN, SAFE_RADIUS = 7, CLEAR_OF_VILLAGE = 24;
+    /** The safe point is never nearer the bell than this, however small the village. */
+    static final int SAFE_NEAREST = 40;
     /**
      * His village: every villager within this of the bell, or whose home, job site or meeting place is, or who comes
      * within the blast's reach of him while it lasts. Gathered again every {@link #GATHER_EVERY} ticks, so villagers who
@@ -277,8 +279,8 @@ public final class VillagerMeltdown {
         Vec3 away = Vec3.atCenterOf(bell).subtract(him).multiply(1, 0, 1);
         double start = away.lengthSqr() < 1 ? 0 : Math.atan2(away.z, away.x);
         Vec3 dryFallback = null, first = null;
-        for (int ring = 0; ring < 10; ring++) {
-            double d = Math.max(extent + CLEAR_OF_VILLAGE, 20) + ring * 6;
+        for (int ring = 0; ring < 18; ring++) {
+            double d = Math.max(extent + CLEAR_OF_VILLAGE, SAFE_NEAREST) + ring * 6;
             for (int i = 0; i < 16; i++) {
                 double a = start + (i % 2 == 0 ? 1 : -1) * ((i + 1) / 2) * Math.PI / 8;
                 int x = bell.getX() + (int) Math.round(Math.cos(a) * d), z = bell.getZ() + (int) Math.round(Math.sin(a) * d);

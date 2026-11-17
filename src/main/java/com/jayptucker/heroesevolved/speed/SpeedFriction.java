@@ -19,11 +19,19 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Friction at a speedster's top speeds. Running faster than {@link #FRICTION_PACE} (about 37 blocks a second: the top
+ * Friction at a speedster's top speeds, and a speedster's quickened healing.
+ * <p>
+ * Friction: Running faster than {@link #FRICTION_PACE} (about 37 blocks a second: the top
  * run speeds, or a lower one with a lot of Momentum) heats their body, faster the faster they go, and a Lightspeed streak
  * adds a burst of it. Heat shows as smoke, then their skin scorches and peels away, and past {@link #BURN} it burns them
  * every half-second until they ease off. It cools within a second or two at ordinary speeds (faster in water or rain).
- * The velocity suit keeps a quarter of it off for each piece; the whole suit, all of it.
+ * The velocity suit keeps a quarter of it off for each piece; the whole suit, all of it. The heat is sent to the speedster
+ * for the burn meter on their screen.
+ * <p>
+ * Healing: a speedster's body heals a little on its own, {@link #HEAL} health every {@link #healEvery} ticks (70 at tier
+ * 1, 30 at tier 5: from a seventh to a third of a heart a second, on top of ordinary regeneration), once they haven't been
+ * hurt for two seconds, aren't burning from friction or on a containment ring, and aren't starving. It costs hunger, as
+ * ordinary healing does. Their burnt skin also grows back faster ({@code BodyBurn.healRate}).
  */
 public final class SpeedFriction {
     /** Blocks a tick above which friction builds heat. */
@@ -32,8 +40,14 @@ public final class SpeedFriction {
     /** Heat a Lightspeed streak adds. */
     public static final float LIGHTSPEED_HEAT = 60;
 
+    /** Health a speedster's body knits back each time, and the hunger it costs. */
+    static final float HEAL = 0.5F, HEAL_EXHAUSTION = 1.5F;
+
+    /** Ticks between a speedster's heals at {@code tier}: 70 at tier 1, 30 at tier 5. */
+    static int healEvery(int tier) { return Math.max(30, 80 - 10 * tier); }
+
     private static final class Heat {
-        float heat;
+        float heat, sent = -1;
         Vec3 last;
         double pace;
         long warned = -1000;
@@ -75,6 +89,20 @@ public final class SpeedFriction {
             h.heat = Math.max(0, h.heat - (p.isInWaterRainOrBubble() ? 6 : 2.5F));
         }
         effects(p, h, now);
+        if (Math.abs(h.heat - h.sent) >= 2 || h.heat == 0 && h.sent != 0) {
+            h.sent = h.heat;
+            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(p, new com.jayptucker.heroesevolved.network.FrictionPayload(h.heat));
+        }
+    }
+
+    /** One tick of a speedster's quickened healing (exposed for tests). */
+    static void recover(ServerPlayer p, long now) {
+        if (!p.isAlive() || p.getHealth() >= p.getMaxHealth() || p.getLastDamageSource() != null || heat(p) >= SCORCH
+                || SpeedContainment.running(p) || p.getFoodData().getFoodLevel() <= 6) return;
+        int tier = com.jayptucker.heroesevolved.progression.PlayerProgressionService.getLevel(p);
+        if (now % healEvery(tier) != 0) return;
+        p.heal(HEAL);
+        p.causeFoodExhaustion(HEAL_EXHAUSTION);
     }
 
     private static Heat fresh(ServerPlayer p) {
@@ -85,8 +113,11 @@ public final class SpeedFriction {
     }
 
     static void tick(MinecraftServer server, long now) {
-        if (!enabled()) { HEATS.clear(); return; }
+        boolean friction = enabled();
+        if (!friction) HEATS.clear();
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            if (Suits.speedster(p)) recover(p, now);
+            if (!friction) continue;
             boolean running = SpeedService.active(p);
             Heat h = HEATS.get(p.getUUID());
             if (h == null) {

@@ -1618,6 +1618,13 @@ Meltdowns became dangerous to stand near and a speedster's top speeds dangerous 
   (`hazard/SuitFabricatorMenu`): patterns are picked with `clickMenuButton`, materials are matched in any order
   (`SuitPatterns`, ingredients by tag so `c:ingots/lead` from other mods works), and the screen is drawn with fills, so
   there is no GUI texture to maintain.
+- **Pin what's left behind.** A runner who burns away keeps the ring's middle from the moment they broke
+  (`SpeedContainment.Run.pinned`), so if the target is carried off or blows up, the burning body stays put. Anything
+  that plays out over a target that can move should decide whether it follows or stays, and store the point if it stays.
+- **A HUD readout under another.** The burn meter is its own class (`gui/BurnMeter.draw(g, x, y)` returns the y below
+  it) with one line in `AbilitySlotHudOverlay` under Momentum, so a shared overlay file barely changes. Show each line
+  only while it has something to say. A value the server sends in small steps (the burn healing) looks still on the
+  client, so "regrowing" is remembered for a moment after each step down (`BurnClient.regrowing`).
 - **Friction from real movement.** `SpeedFriction` measures a runner's own displacement each tick (smoothed, ignoring
   jumps over 8 blocks so Blitz and teleports don't count) instead of reading run settings, so Momentum and any future
   speed source count the same. Fire would be smothered by the speedster's own running (`SpeedService.smother`), so

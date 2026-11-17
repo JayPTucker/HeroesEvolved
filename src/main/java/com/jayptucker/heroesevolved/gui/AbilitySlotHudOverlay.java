@@ -70,6 +70,7 @@ public final class AbilitySlotHudOverlay {
         y = drawRadiationCore(guiGraphics, y);
         y = drawResonance(guiGraphics, y);
         y = drawMomentum(guiGraphics, y);
+        y = BurnMeter.draw(guiGraphics, START_X, y);
         y = drawDensity(guiGraphics, y);
         y = drawStrain(guiGraphics, y);
         y = drawRegrowth(guiGraphics, y);

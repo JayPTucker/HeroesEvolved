@@ -18,13 +18,25 @@ import java.util.UUID;
 
 /**
  * How badly a player is burning up, 0 to 1: a meltdown's heat, radiation sickness, a speedster's friction. Everyone
- * near sees their skin peel away pixel by pixel over a charred, glowing body. It heals back slowly once the burning
- * stops, and fast for a Regeneration user, whose skin visibly grows back. A death that burns them away sets it to 1.
+ * near sees their skin peel away pixel by pixel over a charred, glowing body. Once the burning stops it grows back, the
+ * peeled pixels filling in again: slowly for most people (about 12 seconds from fully burnt), quicker for a speedster
+ * (about 6 seconds at tier 1, 3 at tier 5) and fast for a Regeneration user (under 2). A death that burns them away sets
+ * it to 1.
  */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class BodyBurn {
-    /** Healing back a tick, once nothing has burned them for {@link #SETTLE} ticks. */
+    /** Healing back a tick, once nothing has burned them for {@link #SETTLE} ticks: anyone, and a Regeneration user. */
     static final float HEAL = 0.004F, REGROW = 0.03F;
+    /** A speedster's quickened body: this, plus {@link #SPEED_PER_TIER} a tier. */
+    static final float SPEED_HEAL = 0.006F, SPEED_PER_TIER = 0.0025F;
+
+    /** How fast this player's burnt skin grows back, a tick. */
+    public static float healRate(ServerPlayer player) {
+        if (Suits.regenerates(player)) return REGROW;
+        if (Suits.speedster(player))
+            return SPEED_HEAL + SPEED_PER_TIER * com.jayptucker.heroesevolved.progression.PlayerProgressionService.getLevel(player);
+        return HEAL;
+    }
     static final int SETTLE = 30;
 
     private static final class Burn {
@@ -74,7 +86,7 @@ public final class BodyBurn {
             if (p.isRemoved() && p.server.getPlayerList().getPlayer(p.getUUID()) == null) { BURNS.remove(p.getUUID()); continue; }
             if (!p.isAlive()) continue;
             if (p.serverLevel().getGameTime() - b.touched > SETTLE)
-                b.level = Math.max(0, b.level - (Suits.regenerates(p) ? REGROW : HEAL));
+                b.level = Math.max(0, b.level - healRate(p));
             sync(b, false);
             if (b.level <= 0 && b.sent <= 0) BURNS.remove(p.getUUID());
         }

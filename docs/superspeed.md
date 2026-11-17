@@ -141,6 +141,8 @@ orange streams spiral out of their body to the wall, with green motes pulled aft
   end (the same 120 units in all), the shaking and the hum quicken in the last quarter, a heartbeat thuds under them,
   and the wall comes to a head: lightning everywhere, a white-hot core and a pillar of light. Halfway, you're told to
   hold on.
+- **Burning away where you broke.** A runner who burns away stays where the heat beat them: if whoever they were
+  holding is carried off meanwhile, the burning body doesn't follow.
 - **Dying doesn't end it early.** In the suit, if the heat would kill you mid-hold, your body gives out but you run
   on: nothing can hurt you, you pay nothing more, and you burn hotter and hotter until the ten seconds are up. Then the
   heat takes you, and you take the blast with you.
@@ -155,7 +157,10 @@ orange streams spiral out of their body to the wall, with green motes pulled aft
 Faster than about 37 blocks a second (run settings 5 and 6, or a lower one with plenty of Momentum) your body heats
 from friction, and Lightspeed adds a burst of it: smoke, then flames at your feet and your skin scorching away, then
 burns every half-second until you ease off. It cools in a second or two at ordinary speeds. Each piece of the velocity
-suit keeps a quarter of it off; the whole suit, all of it. See [Meltdowns, friction and the suits](protective-suits.md).
+suit keeps a quarter of it off; the whole suit, all of it. A **burn meter** under Momentum shows the heat climbing toward
+the scorch and burn notches, and how much of your skin has burnt away. Your body heals a little on its own (faster at
+higher tiers, paid for in hunger) and your burnt skin grows back in a few seconds. See
+[Meltdowns, friction and the suits](protective-suits.md).
 
 ### Overrun: outrunning the last minute
 

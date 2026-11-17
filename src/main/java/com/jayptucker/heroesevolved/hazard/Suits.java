@@ -92,6 +92,9 @@ public final class Suits {
     /** A Regeneration user: the radiation burns them, but they grow back faster than it can kill them. */
     public static boolean regenerates(LivingEntity entity) { return holds(entity, ModAbilities.REGENERATION_ID); }
 
+    /** A speedster: their body heals and regrows a little faster than anyone else's (SpeedFriction, BodyBurn). */
+    public static boolean speedster(LivingEntity entity) { return holds(entity, ModAbilities.SUPERSPEED_ID); }
+
     /** Nothing a meltdown's radiation does reaches them: radioactive, sealed in a suit, or not really there. */
     public static boolean meltdownProof(LivingEntity entity) {
         return radioactive(entity) || sealed(entity) || entity.isSpectator()
