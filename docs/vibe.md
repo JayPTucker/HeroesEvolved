@@ -36,3 +36,16 @@ Test the power with `/heroesevolved power give @s vibe` on a player without an a
   them with the rest of the suite: `./gradlew runGameTestServer --init-script tools/rewind-gametest.init.gradle`.
 - **Photographs:** `./gradlew runClient --init-script tools/vibe-preview.init.gradle` casts every core move, active skill,
   class ability, Through the Seam, Overflow and the awakening, and saves 30 shots to `build/vibe-preview/screenshots/`.
+
+## Finishers: Off Frequency, Breach Drop, Point Blank
+
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks). Shift + C switches finishers off and on; the rules every finisher shares are in [finishers.md](finishers.md).
+
+- **What you see.** Wave fronts run between two blue panes either side of the foe. It splits into three copies tinted blue, red and green like a bad signal, buzzing; they drift apart, you snap your fingers, and they blink out one at a time with a breach's pop. Nothing is left.
+- **Marked foes** (Residual Sense, Return Address) within 12 blocks each take the overkill along a filament; with none marked it spills nearby.
+- **Reward:** Breach Guard is ready again.
+
+Each press of C plays one of three at random, never the one you used last. Off Frequency is described above; the two alternates give the same reward.
+
+- **Breach Drop.** A breach opens flat under the foe; it falls through, and the breach snaps shut over it.
+- **Point Blank.** Both palms on the foe, wave fronts gathering in them, and a Vibe Blast goes straight through it and out of its back.

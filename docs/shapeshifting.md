@@ -423,3 +423,15 @@ phases.
    This draft says no: it is still a player.
 4. **Breaking blocks in beast forms.** Bare-hand speed, or allow a few forms (ravager, wither) to break
    blocks faster?
+
+## Finishers: Unmade, Apex Bite, Its Own Face
+
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks). Shift + C switches finishers off and on; the rules every finisher shares are in [finishers.md](finishers.md).
+
+- **What you see.** You reach for the foe and plates ripple out over it from your touch, flipping slate to brass, until its whole shape is shut in them. Then they come loose one by one, the highest first, and fall tumbling with nothing underneath, and sink into the ground.
+- **Reward:** you learn the foe's shape without studying it.
+
+Each press of C plays one of three at random, never the one you used last. Unmade is described above; the two alternates give the same reward.
+
+- **Apex Bite.** Plates close over you and you are a ravager for a moment (a wolf where a ravager won't fit). It springs at the foe, brass jaws of plates close on it, and it bursts back into plates with you standing where you began.
+- **Its Own Face.** Plates ripple up over you and you wear the foe's own shape, facing it. It sees itself and flinches back twice, you strike, and the plates run up you again as you shed its shape.

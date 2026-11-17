@@ -856,4 +856,141 @@ public final class SpeedArt {
         }
     }
 
+
+    /**
+     * Late Thunder (the finisher, {@code speed/LateThunder}): a gold lane burns along the ground from where the runner
+     * blurred back to the foe, lightning crawls over the runner and white rings pile up at the shoulders as they come in,
+     * and at the punch a cone of white rings bursts out behind the foe (twice as long at full Momentum). Bound to the
+     * runner; origin the foe's feet, target where the runner blurred back to; scale the foe's height (+ FULL).
+     */
+    /**
+     * The alternate finishers ({@code speed/SpeedFinishers}). Hundred Fists: gold streaks from the shoulders fanning onto
+     * the foe and a ring at every point they land, more and faster, then a cone as the last one throws it. Flick: dust
+     * hanging still in a ring round you, the wrist's path left in the air as gold trails, a cone of white rings behind
+     * the foe, and a late shock ring. Bound to you; origin the foe's feet, target yours, scale its height.
+     */
+    static void alternates(Canvas c, Active a, float t) {
+        if (!c.glow() && !c.soft()) return;
+        float h = Math.max(.6F, a.scale()), life = a.piece().ticks, f = Canvas.fade(t, life, 1, 7);
+        Vec3 foe = a.origin(), home = a.target();
+        Vec3 dir = foe.subtract(home).multiply(1, 0, 1);
+        dir = dir.lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : dir.normalize();
+        Vec3 side = new Vec3(-dir.z, 0, dir.x);
+        Entity me = a.bound(c);
+        Vec3 body = me != null ? me.getPosition(c.partial) : home;
+        Vec3 chest = foe.add(0, h * .6, 0);
+        if (a.piece() == com.jayptucker.heroesevolved.styles.Piece.FINISH_FISTS) {
+            int start = com.jayptucker.heroesevolved.speed.SpeedFinishers.FISTS_START, land = com.jayptucker.heroesevolved.speed.SpeedFinishers.FISTS_LAND;
+            if (t >= start && t < land + 1 && c.glow()) {
+                float rate = smooth(start, land, t);
+                int fists = 4 + (int) (rate * 6);
+                for (int i = 0; i < fists; i++) {
+                    int s = a.seed() + (int) (t * 3) * 31 + i;
+                    boolean left = (i & 1) == 0;
+                    Vec3 shoulder = body.add(0, 1.35, 0).add(side.scale(left ? -.3 : .3));
+                    Vec3 hit = chest.add(side.scale((hash(s, 1) - .5) * .7)).add(0, (hash(s, 2) - .45) * h * .6, 0).subtract(dir.scale(.25));
+                    float k = hash(s, 3);
+                    Vec3 from = shoulder.lerp(hit, .35 + .3 * k);
+                    c.line(from, hit, .07F, AMBER, f * .25F, f * .5F);
+                    c.line(from, hit, .025F, GOLD, f * .5F, f);
+                    c.ring(hit, dir, .1F + .15F * k, .025F, 0, TWO_PI, HOT, f * (.5F + .5F * k));
+                }
+                c.glow(chest, .5F + .4F * rate, GOLD, f * .3F * rate);
+            }
+            if (t >= land) cone(c, chest, dir, t - land, 6, f);
+            return;
+        }
+        // Flick.
+        int draw = com.jayptucker.heroesevolved.speed.SpeedFinishers.FLICK_DRAW, snap = com.jayptucker.heroesevolved.speed.SpeedFinishers.FLICK_SNAP;
+        int land = com.jayptucker.heroesevolved.speed.SpeedFinishers.FLICK_LAND, boom = com.jayptucker.heroesevolved.speed.SpeedFinishers.FLICK_BOOM;
+        float still = Canvas.smooth(0, 3, t) * (1 - Canvas.smooth(land, land + 6, t));
+        // Dust hanging still round you: motes that don't fall, and one slow ring.
+        if (c.glow() && still > 0) {
+            for (int i = 0; i < 14; i++) {
+                float ang = hash(a.seed(), i) * TWO_PI, r = 1.2F + 1.4F * hash(a.seed(), i + 20);
+                Vec3 mote = body.add(cos(ang) * r, .2 + 1.8 * hash(a.seed(), i + 40), sin(ang) * r);
+                c.glow(mote, .045F, DUST, f * still * .9F);
+            }
+            c.ring(body.add(0, .05, 0), UP, 1.6F, .02F, 0, TWO_PI, HOT, f * still * .4F);
+        }
+        // The wrist's path: drawn back over the shoulder, then the flick forward, left hanging in the air as gold.
+        if (t >= draw) {
+            int n = 10;
+            Vec3 shoulder = body.add(0, 1.4, 0).add(side.scale(.32));
+            Vec3[] path = new Vec3[n];
+            float reveal = Canvas.smooth(draw, snap + 1, t);
+            for (int i = 0; i < n; i++) {
+                float u = reveal * i / (n - 1F), ang = -1.6F + 2.8F * u;
+                path[i] = shoulder.add(dir.scale(Math.sin(ang) * .55 + .15)).add(0, Math.cos(ang) * .45 - .1, 0).add(side.scale(.15 * u));
+            }
+            float hang = f * (1 - Canvas.smooth(land + 4, land + 12, t));
+            if (c.glow()) {
+                c.ribbon(path, .09F, AMBER, hang * .3F, hang * .6F);
+                c.ribbon(path, .03F, GOLD, hang * .6F, hang);
+            }
+        }
+        if (t >= land) cone(c, chest, dir, t - land, 5, f);
+        if (t >= boom && c.glow()) {
+            float k = Canvas.smooth(boom, boom + 6, t);
+            c.ring(chest, dir, .4F + 2.6F * k, .05F, 0, TWO_PI, HOT, f * (1 - k));
+            c.ring(foe.add(0, .05, 0), UP, .6F + 3F * k, .04F, 0, TWO_PI, GOLD, f * (1 - k));
+        }
+    }
+
+    /** A cone of white rings bursting out behind a struck body, as Late Thunder's. */
+    private static void cone(Canvas c, Vec3 chest, Vec3 dir, float k, int rings, float f) {
+        if (!c.glow()) return;
+        float open = 1 - (float) Math.pow(1 - Canvas.smooth(0, 6, k), 3), gone = f * (1 - Canvas.smooth(3, 12, k));
+        for (int i = 0; i < rings; i++) {
+            Vec3 at = chest.add(dir.scale(.4 + i * .8 * open));
+            float r = (.25F + i * .32F) * open;
+            c.ring(at, dir, r, .09F, 0, TWO_PI, AMBER, gone * .25F);
+            c.ring(at, dir, r, .03F, 0, TWO_PI, HOT, gone * (1 - i / (float) rings * .6F));
+        }
+        c.glow(chest, 1.2F * (1 - Canvas.smooth(0, 3, k)), HOT, f * (1 - Canvas.smooth(0, 3, k)));
+    }
+
+    static void finisher(Canvas c, Active a, float t) {
+        boolean full = a.scale() >= com.jayptucker.heroesevolved.speed.LateThunder.FULL;
+        float h = Math.max(.6F, a.scale() - (full ? com.jayptucker.heroesevolved.speed.LateThunder.FULL : 0));
+        float life = a.piece().ticks, f = Canvas.fade(t, life, 1, 8);
+        Vec3 foe = a.origin(), back = a.target();
+        Vec3 dir = foe.subtract(back).multiply(1, 0, 1);
+        dir = dir.lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : dir.normalize();
+        int land = com.jayptucker.heroesevolved.speed.LateThunder.LAND, run = com.jayptucker.heroesevolved.speed.LateThunder.COIL;
+        net.minecraft.world.entity.Entity runner = a.bound(c);
+        // The lane: a gold ribbon burning in along the ground from behind them to the foe while they coil, cooling after.
+        float laid = smooth(0, land, t), cool = 1 - smooth(land + 2, land + 12, t);
+        if (laid > 0 && c.glow()) {
+            Vec3 a0 = back.add(0, .05, 0), a1 = a0.lerp(foe.add(0, .05, 0), laid);
+            c.line(a0, a1, .16F, AMBER, f * .35F * cool, f * .5F * cool);
+            c.line(a0, a1, .05F, GOLD, f * .8F * cool, f * cool);
+            c.line(a0, a1, .015F, HOT, f * cool, f * cool);
+        }
+        // Lightning over the runner while they coil and come in, and rings piling up at the shoulders.
+        if (runner != null && t > 1 && t < land + 1 && c.glow()) {
+            Vec3 chest = runner.getPosition(c.partial).add(0, 1.2, 0);
+            for (int i = 0; i < 3; i++) {
+                int s = a.seed() + (int) t * 7 + i;
+                Vec3 off = new Vec3(hash(s, 1) - .5, hash(s, 2) - .3, hash(s, 3) - .5).scale(1.1);
+                c.bolt(chest, chest.add(off), s, .25F, .025F, GOLD, f * .8F);
+            }
+            float pile = smooth(2, land, t);
+            for (int k = 0; k < 3; k++)
+                c.ring(chest.add(dir.scale(.2 + k * .15)), dir, .3F + k * .12F * pile, .03F, 0, TWO_PI, HOT, f * pile * (.8F - k * .2F));
+        }
+        // The cone of white rings behind the foe at the punch.
+        if (t >= land) {
+            float open = 1 - (float) Math.pow(1 - smooth(land, land + 6, t), 3), gone = f * (1 - smooth(land + 3, land + 12, t));
+            int rings = full ? 9 : 5;
+            Vec3 chest = foe.add(0, h * .6, 0);
+            if (c.glow()) for (int k = 0; k < rings; k++) {
+                Vec3 at = chest.add(dir.scale(.4 + k * .8 * open));
+                float r = (.25F + k * .32F) * open;
+                c.ring(at, dir, r, .09F, 0, TWO_PI, AMBER, gone * .25F);
+                c.ring(at, dir, r, .03F, 0, TWO_PI, HOT, gone * (1 - k / (float) rings * .6F));
+            }
+            if (c.glow()) c.glow(chest, 1.2F * (1 - smooth(land, land + 3, t)), HOT, f * (1 - smooth(land, land + 3, t)));
+        }
+    }
 }

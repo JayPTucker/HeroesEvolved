@@ -162,3 +162,16 @@ takes a limb that grows back, that a missing arm can't swing and a missing leg s
 Mending regrows limbs, that a lethal blow downs her (untouchable, ignored by monsters) and she gets
 back up, the recovery times, that the void and a drained body still kill, that she's moved out of
 lava, and that holding Sneak gives up.
+
+## Finishers: Paid in Full, No Pain, Grip
+
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks). Shift + C switches finishers off and on; the rules every finisher shares are in [finishers.md](finishers.md).
+
+- **What you see.** You open your arms and take one last blow plainly: a gash opens across your chest and closes from the edges in. A red ring runs down your arm to your fist as you swing, and the punch throws blood out of the foe.
+- **What you suffered:** the punch adds a quarter of the damage you took in the last ten seconds (up to 20) to the overkill. The scripted blow costs a little health and the move heals 5.
+- **Reward:** 30 Regrowth.
+
+Each press of C plays one of three at random, never the one you used last. Paid in Full is described above; the two alternates give the same reward.
+
+- **No Pain.** You walk into three of the foe's blows, a short step each (a block and a bit in all); each one opens a wound that closes from the edges in as you come on. Then one haymaker. The blows are for show: they don't really hurt you.
+- **Grip.** It hits you; you catch its arm with the gash on your forearm still closing, a warm glow running down it, and headbutt it.

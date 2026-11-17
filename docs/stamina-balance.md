@@ -297,6 +297,11 @@ Strikes 2, finishers (kicks, claps, flourishes) 5 (Pressure Palm 6), dodges 8 an
 6 and 9, the Reckless Brawler's brace 6 and 9), and 0.9 s between dodges (0.7 s for a speedster). Every one pauses
 recovery, so a long exchange of blows is paid for.
 
+## Finishers
+
+Every finisher costs 8 stamina and shares one 3 s cooldown across all powers; a finished
+foe gives 10 stamina back. Entries: `finisher_pyrokinesis`, `finisher_time_manipulation`, `finisher_telepathy`, `finisher_electrokinesis`, `finisher_hydrokinesis`, `finisher_cryokinesis`, `finisher_quake`, `finisher_sonic_resonance`, `finisher_radiation`, `finisher_superspeed`, `finisher_flight`, `finisher_telekinesis`, `finisher_phasing`, `finisher_invisibility`, `finisher_regeneration`, `finisher_vibe`, `finisher_technopathy`, `finisher_matter_assembly`, `finisher_empathic_mimicry`, `finisher_shapeshifting`.
+
 ## Skill-tree and class abilities
 
 Actives keep their designed order and are pulled 30% toward the middle of their band, then clamped: early actives

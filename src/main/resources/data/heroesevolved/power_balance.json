@@ -1391,5 +1391,185 @@
     "energy": 11,
     "base_energy": 11,
     "role": "style"
+  },
+  {
+    "power": "pyrokinesis",
+    "action": "finisher_pyrokinesis",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
+  },
+  {
+    "power": "time_manipulation",
+    "action": "finisher_time_manipulation",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
+  },
+  {
+    "power": "telepathy",
+    "action": "finisher_telepathy",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
+  },
+  {
+    "power": "electrokinesis",
+    "action": "finisher_electrokinesis",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
+  },
+  {
+    "power": "hydrokinesis",
+    "action": "finisher_hydrokinesis",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
+  },
+  {
+    "power": "cryokinesis",
+    "action": "finisher_cryokinesis",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
+  },
+  {
+    "power": "quake",
+    "action": "finisher_quake",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
+  },
+  {
+    "power": "sonic_resonance",
+    "action": "finisher_sonic_resonance",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
+  },
+  {
+    "power": "radiation",
+    "action": "finisher_radiation",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
+  },
+  {
+    "power": "superspeed",
+    "action": "finisher_superspeed",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
+  },
+  {
+    "power": "flight",
+    "action": "finisher_flight",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
+  },
+  {
+    "power": "telekinesis",
+    "action": "finisher_telekinesis",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
+  },
+  {
+    "power": "phasing",
+    "action": "finisher_phasing",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
+  },
+  {
+    "power": "invisibility",
+    "action": "finisher_invisibility",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
+  },
+  {
+    "power": "regeneration",
+    "action": "finisher_regeneration",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
+  },
+  {
+    "power": "vibe",
+    "action": "finisher_vibe",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
+  },
+  {
+    "power": "technopathy",
+    "action": "finisher_technopathy",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
+  },
+  {
+    "power": "matter_assembly",
+    "action": "finisher_matter_assembly",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
+  },
+  {
+    "power": "empathic_mimicry",
+    "action": "finisher_empathic_mimicry",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
+  },
+  {
+    "power": "shapeshifting",
+    "action": "finisher_shapeshifting",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
   }
 ]

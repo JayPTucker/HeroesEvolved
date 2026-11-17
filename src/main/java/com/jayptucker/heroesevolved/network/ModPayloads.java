@@ -17,7 +17,7 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("92")
+        event.registrar("94")
             .playToClient(TemporalProjectilePayload.TYPE, TemporalProjectilePayload.STREAM_CODEC, TemporalProjectilePayload::handle)
             .playToClient(TemporalCatchStatePayload.TYPE, TemporalCatchStatePayload.STREAM_CODEC, TemporalCatchStatePayload::handle)
             .playToClient(SkyburstMotionPayload.TYPE, SkyburstMotionPayload.STREAM_CODEC, SkyburstMotionPayload::handle)
@@ -32,6 +32,9 @@ public final class ModPayloads {
             .playToClient(PyroStatePayload.TYPE, PyroStatePayload.STREAM_CODEC, PyroStatePayload::handle)
             .playToServer(PyroFlightInputPayload.TYPE, PyroFlightInputPayload.STREAM_CODEC, PyroFlightInputPayload::handle)
             .playToServer(FightingStylePayload.TYPE, FightingStylePayload.STREAM_CODEC, FightingStylePayload::handle)
+            .playToServer(FinisherPayload.TYPE, FinisherPayload.STREAM_CODEC, FinisherPayload::handle)
+            .playToClient(FinisherStatePayload.TYPE, FinisherStatePayload.STREAM_CODEC, FinisherStatePayload::handle)
+            .playToClient(FinisherRunPayload.TYPE, FinisherRunPayload.STREAM_CODEC, FinisherRunPayload::handle)
             .playToClient(HydroStatePayload.TYPE, HydroStatePayload.STREAM_CODEC, HydroStatePayload::handle)
             .playToClient(IllusionPayload.TYPE, IllusionPayload.STREAM_CODEC, IllusionPayload::handle)
             .playToClient(MindStatePayload.TYPE, MindStatePayload.STREAM_CODEC, MindStatePayload::handle)

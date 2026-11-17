@@ -542,4 +542,118 @@ final class SonicArt {
     }
 
     private static boolean minimal() { return Minecraft.getInstance().options.particles().get() == ParticleStatus.MINIMAL; }
+
+    /**
+     * Encore (the finisher, {@code sonic/Encore}): a Note hangs behind the foe; each pass of the scream is a ring of sound
+     * running through the foe, from the singer to the Note and back, faster each time and in the next colour of the tone
+     * (rose, amber, mint, azure, violet); on the last pass the Note breaks in a wide gold-cored ring. Bound to the foe, the
+     * singer's entity id in the seed; origin the singer's mouth, target the foe's chest; scale the number of passes.
+     */
+    /**
+     * The alternate finishers ({@code sonic/SonicFinishers}). Shatter Note: a high waveform from the mouth to the foe and
+     * a note hanging over its head, rings rippling on the body and closing tighter in time, then the note and the rings
+     * break outward like glass. Silence: slate rings closing in on the foe from all round and a dark hush over the ground,
+     * a held stillness, then one loud front bursting out in every colour. Origin the mouth, target the foe's chest,
+     * bound to the foe, scale its height.
+     */
+    static void alternates(Canvas c, Active a, float t) {
+        if (c.solid()) return;
+        float h = Math.max(.6F, a.scale()), f = fade(t, a.piece().ticks, 1, 8);
+        Entity foe = a.bound(c);
+        Vec3 feet = foe != null && foe.isAlive() ? foe.getPosition(c.partial) : a.target().subtract(0, h * .5, 0);
+        Vec3 chest = feet.add(0, h * .55, 0);
+        Player owner = c.level.getEntity(a.seed()) instanceof Player p ? p : null;
+        Vec3 mouth = owner != null ? mouth(c, owner) : a.origin();
+        float clock = c.level.getGameTime() % 2400 + c.partial;
+        if (a.piece() == com.jayptucker.heroesevolved.styles.Piece.FINISH_NOTE) {
+            int sing = com.jayptucker.heroesevolved.sonic.SonicFinishers.NOTE_SING, land = com.jayptucker.heroesevolved.sonic.SonicFinishers.NOTE_LAND;
+            if (t < land) {
+                float build = smooth(sing, land, t);
+                trace(c, mouth, chest, .03F, .06F + .06F * build, 6 + 10 * build, -clock * 1.6F, .03F, .9F, f * smooth(sing - 1, sing + 2, t), null);
+                int rings = 4;
+                for (int i = 0; i < rings; i++) {
+                    float r = Math.max(.3F, h * .3F) * (1.25F - .55F * build) * (1 + .06F * sin(clock * 2.5F + i));
+                    front(c, feet.add(0, h * (.15 + .22 * i), 0), UP, r, .035F, .85F + i * .03F, f * (.4F + .5F * build), .08F + .1F * build, clock * 3 + i);
+                }
+                glyph(c, feet.add(0, h + .45 + .05 * sin(clock * .4F), 0), .12F, tone(.95F), f * smooth(sing, sing + 4, t), true);
+                if (c.glow()) c.glow(chest, .3F + .5F * build, tone(.9F), f * .25F * build);
+            } else {
+                float k = smooth(land, land + 8, t), gone = f * (1 - k);
+                for (int i = 0; i < 3; i++) front(c, chest, UP, .3F + (2.2F + i * .6F) * k, .05F, .8F + i * .07F, gone, .2F, clock + i);
+                front(c, chest, mouth.subtract(chest).normalize(), .3F + 1.8F * k, .04F, .95F, gone, .25F, clock);
+                if (c.glow()) {
+                    c.glow(chest, 1.2F * (1 - smooth(land, land + 3, t)), CORE, f * (1 - smooth(land, land + 3, t)));
+                    // Shards of the note flying out.
+                    for (int i = 0; i < 8; i++) {
+                        float ang = i * TWO_PI / 8 + hash(a.seed(), i);
+                        Vec3 out = new Vec3(cos(ang), .4 * hash(a.seed(), i + 9), sin(ang));
+                        Vec3 at = feet.add(0, h + .45, 0).add(out.scale(k * 1.6));
+                        c.line(at, at.add(out.scale(.15)), .03F, tone(i / 8F), gone, gone * .4F);
+                    }
+                }
+            }
+            return;
+        }
+        // Silence.
+        int hush = com.jayptucker.heroesevolved.sonic.SonicFinishers.SILENCE_HUSH, shut = com.jayptucker.heroesevolved.sonic.SonicFinishers.SILENCE_SHUT;
+        int land = com.jayptucker.heroesevolved.sonic.SonicFinishers.SILENCE_LAND;
+        if (t < land) {
+            float close = smooth(hush, shut, t);
+            for (int i = 0; i < 4; i++) {
+                float r = lerp(close, 4.2F - i * .5F, Math.max(.35F, h * .28F) + i * .05F);
+                Vec3 at = feet.add(0, h * (.1 + .25 * i), 0);
+                if (c.soft()) c.ring(at, UP, r, .14F, 0, TWO_PI, HUSH, f * .45F);
+                if (c.glow()) c.ring(at, UP, r, .025F, 0, TWO_PI, HUSH_EDGE, f * .6F);
+            }
+            if (c.soft()) c.disc(feet.add(0, .04, 0), UP, lerp(close, 4.4F, 1.1F), HUSH, f * .3F * smooth(hush, hush + 4, t), 0);
+            // The held stillness: a dark lid over the head once it is shut.
+            float still = smooth(shut, shut + 2, t);
+            if (c.soft() && still > 0) c.disc(feet.add(0, h + .2, 0), UP, .5F, HUSH, f * .4F * still, 0);
+        } else {
+            float k = smooth(land, land + 8, t), gone = f * (1 - k);
+            for (int i = 0; i < 4; i++) front(c, feet.add(0, h * (.15 + .25 * i), 0), UP, .4F + 3.6F * k, .06F, i / 4F, gone, .15F, clock + i);
+            front(c, feet.add(0, .05, 0), UP, .5F + 4.5F * k, .08F, .5F, gone, 0, 0);
+            if (c.glow()) c.glow(chest, 1.6F * (1 - smooth(land, land + 3, t)), CORE, f * (1 - smooth(land, land + 3, t)));
+        }
+    }
+
+    static void finisher(Canvas c, Active a, float t) {
+        int passes = Math.max(2, Math.round(a.scale()));
+        float life = a.piece().ticks, f = fade(t, life, 1, 6);
+        net.minecraft.world.entity.Entity foe = a.bound(c), owner = c.level.getEntity(a.seed());
+        Vec3 chest = foe != null && foe.isAlive() ? foe.getBoundingBox().getCenter() : a.target();
+        Vec3 mouth = owner != null ? owner.getEyePosition(c.partial).add(0, -.25, 0) : a.origin();
+        Vec3 dir = chest.subtract(mouth);
+        if (dir.lengthSqr() < 1e-4) return;
+        dir = dir.normalize();
+        Vec3 note = chest.add(dir.scale(1.6)).add(0, .3, 0);
+        int land = com.jayptucker.heroesevolved.sonic.Encore.LAND;
+        float clock = (c.level.getGameTime() % 2400 + c.partial) / 20F;
+        // The Note behind the foe, brightening with each pass, gone when it breaks.
+        float noteAlpha = f * smooth(1, 3, t) * (1 - smooth(land, land + 1, t));
+        glyph(c, note, .3F, tone(Math.min(t / life, 1)), noteAlpha, true);
+        // The passes: rings running mouth -> Note, Note -> mouth, each faster and the next colour.
+        float from = com.jayptucker.heroesevolved.sonic.Encore.SCREAM;
+        for (int i = 0; i < passes; i++) {
+            float to = com.jayptucker.heroesevolved.sonic.Encore.passAt(i, passes);
+            float span = Math.max(1, to - from + 3);
+            float k = (t - from) / span;
+            if (k >= 0 && k <= 1) {
+                Vec3 a0 = i % 2 == 0 ? mouth : note, a1 = i % 2 == 0 ? note : mouth;
+                for (int echo = 0; echo < 3; echo++) {
+                    float q = k - echo * .08F;
+                    if (q < 0 || q > 1) continue;
+                    front(c, a0.lerp(a1, q), dir, .35F + .25F * (float) Math.sin(q * Math.PI), .045F, i / 4F, f * (1 - echo * .3F), .12F, clock * 6);
+                }
+            }
+            from = to;
+        }
+        // The Note breaks harmonic.
+        if (t >= land) {
+            float k = smooth(land, land + 7, t);
+            front(c, note, dir, .3F + 2.6F * k, .07F, 1, f * (1 - k), .2F, clock * 6);
+            front(c, chest, dir, .2F + 1.8F * k, .05F, .5F, f * (1 - k), .3F, clock * 6);
+            if (c.glow()) c.glow(note, .9F * (1 - k), GOLD, f * (1 - k));
+        }
+    }
 }

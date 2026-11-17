@@ -153,6 +153,19 @@ water full.
 
 **Evolution trial:** carry 60 enemies away on your waves.
 
+## Finishers: Breaker, Drowning Bubble, Riptide
+
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks). Shift + C switches finishers off and on; the rules every finisher shares are in [finishers.md](finishers.md).
+
+- **What you see.** A wave rises under your feet and lifts you where you stand, about two and a half blocks up. It curls over with you on its crest and throws its lip out in an arc onto the foe, carrying you one block forward and setting you down. It breaks into a ring of foam that runs out over the ground, with a burst of spray. You never leave your spot by more than a block and a half, and the rise and fall are smooth (your own client moves you).
+- **In water or rain** the wave is nearly twice the size and its foam throws other foes harder.
+- **Reward:** your reservoir is refilled.
+
+Each press of C plays one of three at random, never the one you used last. Breaker is described above; the two alternates give the same reward.
+
+- **Drowning Bubble.** A ball of water is drawn up from your hand and closes over the foe's head; bubbles stream up through it while it struggles. It drops, and the water bursts away in a splash.
+- **Riptide.** A water whip wraps the foe's waist and swings it once round you through the air on the end of it, trailing spray, and slams it into the ground where it stood. A wall in the way stops the swing.
+
 ## Verification
 
 - Game tests: `HydroGameTests` (the reservoir, every core move, waterbending, the tree's actives, the classes and

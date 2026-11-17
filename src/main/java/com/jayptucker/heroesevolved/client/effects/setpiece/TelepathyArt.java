@@ -58,8 +58,202 @@ final class TelepathyArt {
             case PSYCHIC_STORM -> storm(c, a, t, clock);
             case BLIND_SPOT -> blindSpot(c, a, bound, t, clock);
             case HIVE_MIND -> hiveMind(c, a, bound, t, clock);
+            case FINISH_LIGHTS -> lightsOut(c, a, bound, t, clock);
             default -> { }
         }
+    }
+
+    /**
+     * Lights Out (the finisher, {@code telepathy/LightsOut}): a thread runs from the telepath's temple to the foe's mind
+     * and an iris opens round its head; its eyes go pale and fixed while two halos close on it, one at the crown and one
+     * round the chest, with thought-waves falling in on it; a hush spreads over the ground; then the iris shuts like an
+     * eyelid, a dark disc swallows the light at its head, and the thread goes slack. Bound to the foe, the telepath's
+     * entity id in the seed; scale the foe's height.
+     */
+    private static void lightsOut(Canvas c, Active a, Entity bound, float t, float clock) {
+        float h = Math.max(.6F, a.scale());
+        float life = a.piece().ticks, f = fade(t, life, 2, 7);
+        Entity owner = c.level.getEntity(a.seed());
+        Vec3 temple = owner instanceof Player p ? templeOf(c, p) : a.origin();
+        boolean alive = bound != null && bound.isAlive();
+        Vec3 head = alive ? bound.getEyePosition(c.partial) : a.target();
+        Vec3 feet = head.subtract(0, h * .85, 0);
+        int grip = com.jayptucker.heroesevolved.telepathy.LightsOut.GRIP, closeAt = com.jayptucker.heroesevolved.telepathy.LightsOut.CLOSE;
+        int shake = com.jayptucker.heroesevolved.telepathy.LightsOut.SHAKE, land = com.jayptucker.heroesevolved.telepathy.LightsOut.LAND;
+        // The thread: out to the mind, taut while it holds, slack once the lights are out.
+        float slack = smooth(land, land + 6, t);
+        thread(c, temple, head, new Vec3(0, .45 + slack * .9, 0), smooth(0, grip, t) * (1 - slack * .6F), .03F, LILAC,
+                f * (1 - slack * .75F), clock, minimal() ? 1 : 3);
+        // The iris opens round the mind, then shuts like an eyelid as the lights go.
+        Vec3 toward = head.subtract(temple);
+        Vec3 axis = toward.lengthSqr() > 1e-4 ? toward.normalize() : UP;
+        float shut = smooth(land - 3, land, t);
+        iris(c, head, axis, .42F * smooth(1, grip + 1, t) * (1 - shut * .55F), LILAC, f * (1 - smooth(land, land + 4, t)),
+                clock * 2 * (1 - shut), .3F + .7F * shut);
+        // Pale, fixed eyes while it is held.
+        if (c.glow() && alive) {
+            Vec3 look = bound.getViewVector(c.partial);
+            Vec3 side = look.cross(UP);
+            side = side.lengthSqr() < 1e-4 ? new Vec3(1, 0, 0) : side.normalize();
+            float eyes = f * smooth(grip, grip + 3, t) * (1 - smooth(land - 1, land + 1, t));
+            for (int sign : new int[]{-1, 1}) {
+                Vec3 eye = head.add(look.scale(.27)).add(side.scale(sign * .12));
+                c.glow(eye, .09F, PALE, eyes);
+                c.glow(eye, .035F, CORE, eyes);
+            }
+        }
+        // Two halos close: one at the crown, one a beat later round the chest.
+        if (c.glow() || c.soft()) {
+            float done = 1 - smooth(land + 1, land + 6, t);
+            float crownClose = smooth(closeAt, land, t), chestClose = smooth(closeAt + 3, land, t);
+            Vec3 crown = head.add(0, .3, 0), chest = feet.add(0, h * .55, 0);
+            if (crownClose > 0) closingHalo(c, crown, lerp(crownClose, .95F, .2F), f * done);
+            if (chestClose > 0) closingHalo(c, chest, lerp(chestClose, 1.25F, .3F), f * done * .8F);
+        }
+        // Thought-waves fall in on it while the halos close.
+        for (int k = 0; k < 2; k++) {
+            float q = frac((t - closeAt) * .09F + k * .5F);
+            if (t < closeAt || t > land) continue;
+            ripple(c, head.subtract(0, h * .3, 0), axis, 1.6F * (1 - q) + .2F, .025F, PALE, f * .55F * q, clock, 4);
+        }
+        // The hush spreads over the ground: everything near forgets whom it was fighting.
+        float hush = smooth(shake, shake + 9, t);
+        if (hush > 0 && hush < 1) ripple(c, feet.add(0, .06, 0), UP,
+                .5F + hush * (float) com.jayptucker.heroesevolved.telepathy.LightsOut.HUSH_RANGE, .06F, LILAC, f * .6F * (1 - hush), clock, 6);
+        // Lights out: a dark disc swallows the glow at its head, behind a last violet flash.
+        float dark = smooth(land - 1, land + 1, t) * (1 - smooth(land + 3, land + 8, t));
+        if (dark > 0) {
+            if (c.soft()) c.disc(head, c.camera().subtract(head).normalize(), .55F * dark, SHADOW, .7F * dark * f, 0);
+            if (c.glow()) c.glow(head, .7F * (1 - smooth(land, land + 3, t)), VIOLET, .6F * f * (1 - smooth(land, land + 3, t)));
+        }
+    }
+
+    /** The alternate finishers ({@code telepathy/TelepathyFinishers}): Pressure and Last Thought. */
+    static void alternates(Canvas c, Active a, float t) {
+        if (c.solid()) return;
+        Entity bound = a.bound(c);
+        float clock = (c.level.getGameTime() % 2400 + c.partial) / 20F;
+        if (a.piece() == Piece.FINISH_PRESSURE) pressure(c, a, bound, t, clock);
+        else lastThought(c, a, bound, t, clock);
+    }
+
+    /**
+     * Pressure: three halos round the foe's head, stacked crown to jaw, closing a step with every pulse and flaring as
+     * they do; thought-waves fall in on it, short violet cracks spark at its temples, and as it folds the halos snap
+     * shut on a dark disc. Bound to the foe, the telepath's entity id in the seed; scale the foe's height.
+     */
+    private static void pressure(Canvas c, Active a, Entity bound, float t, float clock) {
+        float h = Math.max(.6F, a.scale()), f = fade(t, a.piece().ticks, 2, 7);
+        Entity owner = c.level.getEntity(a.seed());
+        boolean alive = bound != null && bound.isAlive();
+        Vec3 head = alive ? bound.getEyePosition(c.partial) : a.target();
+        Vec3 temple = owner instanceof Player p ? templeOf(c, p) : a.origin();
+        int[] pulses = com.jayptucker.heroesevolved.telepathy.TelepathyFinishers.PRESSURE_PULSES;
+        int land = com.jayptucker.heroesevolved.telepathy.TelepathyFinishers.PRESSURE_LAND;
+        // A faint line from the temple: this one doesn't touch; it presses from a distance.
+        thread(c, temple, head, new Vec3(0, .2, 0), smooth(0, 4, t), .015F, PALE, f * .5F * (1 - smooth(land, land + 4, t)), clock, 0);
+        float squeeze = 0, flare = 0;
+        for (int pulse : pulses) {
+            squeeze += smooth(pulse - 1, pulse + 1, t) / pulses.length;
+            flare = Math.max(flare, 1 - Math.abs(t - pulse) / 2.5F);
+        }
+        float shut = smooth(land - 1, land + 1, t), done = 1 - smooth(land + 1, land + 6, t);
+        for (int k = 0; k < 3; k++) {
+            Vec3 at = head.add(0, .28 - k * .22, 0);
+            float r = lerp(squeeze, .95F - k * .12F, .36F - k * .03F) * (1 - shut * .6F);
+            closingHalo(c, at, r, f * done * (.65F + .35F * flare));
+            // A second, brighter band on each halo so they read from across a fight, flaring rose on every pulse.
+            if (c.soft()) c.ring(at, UP, r, .16F, 0, TWO_PI, SHADOW, f * done * .3F);
+            if (c.glow()) {
+                c.ring(at, UP, r, .06F, 0, TWO_PI, VIOLET, f * done * .6F);
+                c.ring(at, UP, r * 1.08F, .035F, 0, TWO_PI, ROSE, f * done * (.25F + .75F * flare));
+            }
+        }
+        if (c.glow()) c.glow(head, .5F + .3F * squeeze, VIOLET, f * done * (.15F + .3F * flare));
+        for (int k = 0; k < 2; k++) {
+            float q = frac(t * .11F + k * .5F);
+            if (t > land) continue;
+            ripple(c, head, UP, 1.4F * (1 - q) + .25F, .02F, PALE, f * .45F * q, clock, 5);
+        }
+        // Cracks of strain at the temples, brighter on each pulse.
+        if (c.glow() && alive && t < land + 1) {
+            Vec3 side = bound.getViewVector(c.partial).cross(UP);
+            side = side.lengthSqr() < 1e-4 ? new Vec3(1, 0, 0) : side.normalize();
+            for (int sign : new int[]{-1, 1}) {
+                Vec3 at = head.add(side.scale(sign * .3));
+                c.bolt(at, at.add(side.scale(sign * .3)).add(0, .15, 0), a.seed() + (int) t + sign, .08F, .015F, VIOLET, f * (.3F + .7F * flare));
+            }
+        }
+        float dark = shut * (1 - smooth(land + 3, land + 8, t));
+        if (dark > 0) {
+            if (c.soft()) c.disc(head, c.camera().subtract(head).normalize(), .5F * dark, SHADOW, .7F * dark * f, 0);
+            if (c.glow()) c.glow(head, .8F * (1 - smooth(land, land + 3, t)), ROSE, .5F * f * (1 - smooth(land, land + 3, t)));
+        }
+    }
+
+    /**
+     * Last Thought: a thread drawn out of the foe's head toward your hand, a bead of light (its thought) running down it
+     * to you and opening into a small iris at your temple; then two fingers snip it and both halves spring back slack.
+     * Bound to the foe, the telepath's entity id in the seed; scale the foe's height.
+     */
+    private static void lastThought(Canvas c, Active a, Entity bound, float t, float clock) {
+        float f = fade(t, a.piece().ticks, 2, 7);
+        Entity owner = c.level.getEntity(a.seed());
+        boolean alive = bound != null && bound.isAlive();
+        Vec3 head = alive ? bound.getEyePosition(c.partial) : a.target();
+        Vec3 temple = owner instanceof Player p ? templeOf(c, p) : a.origin();
+        int drawn = com.jayptucker.heroesevolved.telepathy.TelepathyFinishers.THOUGHT_DRAWN;
+        int heard = com.jayptucker.heroesevolved.telepathy.TelepathyFinishers.THOUGHT_HEARD;
+        int land = com.jayptucker.heroesevolved.telepathy.TelepathyFinishers.THOUGHT_LAND;
+        Vec3 mid = head.lerp(temple, .5);
+        if (t < land) {
+            // Drawn out of the head toward you: it grows from the foe's end.
+            thread(c, head, temple, new Vec3(0, .35, 0), smooth(0, drawn, t), .028F, LILAC, f, clock, 0);
+            iris(c, head, temple.subtract(head).normalize(), .3F * smooth(0, 4, t), LILAC, f * (1 - smooth(heard, land, t) * .6F),
+                    clock * 2, .35F);
+        } else {
+            // Snipped: both halves spring back, slack and fading.
+            float slack = smooth(land, land + 5, t);
+            Vec3 cut = mid.add(0, .35 * .5, 0);
+            thread(c, head, cut, new Vec3(0, -.4 * slack, 0), 1 - slack * .4F, .022F, LILAC, f * (1 - slack), clock, 0);
+            thread(c, temple, cut, new Vec3(0, -.4 * slack, 0), 1 - slack * .4F, .022F, LILAC, f * (1 - slack), clock, 0);
+            if (c.glow()) c.glow(cut, .4F * (1 - smooth(land, land + 3, t)), CORE, f * (1 - smooth(land, land + 3, t)));
+            if (c.soft() && alive) c.disc(head, c.camera().subtract(head).normalize(), .4F * (1 - slack), SHADOW, .6F * f * (1 - slack), 0);
+        }
+        // The thought: a bead of light that runs from its head to yours.
+        if (t >= drawn && t < heard + 3 && c.glow()) {
+            float k = smooth(drawn, heard, t);
+            Vec3 bead = bezier(head, mid.add(0, .35, 0), temple, k);
+            float near = (float) Math.clamp((bead.distanceTo(c.camera()) - .6) / 1.2, 0, 1);
+            c.glow(bead, .16F, ROSE, f * near * (1 - smooth(heard, heard + 3, t)));
+            c.glow(bead, .07F, CORE, f * near * (1 - smooth(heard, heard + 3, t)));
+        }
+        if (t >= heard - 1 && t < heard + 8) {
+            float open = smooth(heard - 1, heard + 2, t) * (1 - smooth(heard + 4, heard + 8, t));
+            Vec3 toward = head.subtract(temple);
+            iris(c, temple.add(toward.normalize().scale(.25)), toward.normalize(), .14F * open, ROSE, f * open, clock * 3, .3F);
+        }
+    }
+
+    /** A closing halo: a dark backing, a lilac body and a pale core, level round a point. */
+    private static void closingHalo(Canvas c, Vec3 at, float r, float alpha) {
+        if (alpha < .01F || r < .02F) return;
+        if (c.soft()) c.ring(at, UP, r, .1F, 0, TWO_PI, SHADOW, alpha * .25F);
+        if (!c.glow()) return;
+        c.ring(at, UP, r, .035F, 0, TWO_PI, LILAC, alpha * .85F);
+        c.ring(at, UP, r, .012F, 0, TWO_PI, CORE, alpha);
+    }
+
+    /** The telepath's temple, where the two fingers press: beside the eyes, or low at the edge of your own first-person view. */
+    private static Vec3 templeOf(Canvas c, Player p) {
+        if (firstPerson(p)) {
+            Vec3 look = p.getViewVector(c.partial);
+            Vec3 right = Vec3.directionFromRotation(0, p.getViewYRot(c.partial) + 90);
+            return c.camera().add(look.scale(.5)).add(right.scale(.3)).add(0, .12, 0);
+        }
+        double yaw = Math.toRadians(p.getViewYRot(c.partial));
+        Vec3 right = new Vec3(-Math.cos(yaw), 0, -Math.sin(yaw));
+        return p.getEyePosition(c.partial).add(right.scale(.2)).add(0, .05, 0);
     }
 
     // ------------------------------------------------------------------

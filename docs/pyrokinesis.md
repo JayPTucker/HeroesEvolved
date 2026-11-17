@@ -149,6 +149,28 @@ regular fire could stay. Soul Fire deals twice the contact damage of regular fir
 - Server owners can make all pyrokinetic fire cosmetic with `pyrokinesis.worldFire = false` in the
   common config. Creatures still burn, but no blocks catch.
 
+## Finishers: Dragon Coil, Phoenix Kick, Hearth
+
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks) for Dragon Coil.
+Shift + C switches finishers off and on. See [finishers.md](finishers.md) for the rules every finisher shares.
+
+- **What you see.**
+  1. A low spinning hook kick lays a crescent of fire round the foe's legs.
+  2. A turning back kick lays a second crescent at its chest.
+  3. A jumping roundhouse lays a third at its head.
+  4. The three crescents join into one coil of flame wound up the body. A dragon's head rears over the foe, jaws
+     open, and bites down at its chest in a flash, while you drop into a low stance with one palm forward.
+  5. The coil lifts away as embers.
+- **At 70 Heat or more** the dragon is blue with white eyes, and its tail lashes the nearest other foe with
+  everything the bite didn't need. Otherwise that overkill spills onto up to three foes within 4 blocks.
+- **Reward:** 20 Heat.
+- **Fire:** no fire blocks are placed.
+
+Each press of C plays one of three at random, never the one you used last. Dragon Coil is described above; the two alternates give the same reward.
+
+- **Phoenix Kick.** A backflip kick throws a vertical crescent of flame up your side of the foe and knocks it into the air. You hop, and an axe kick's crescent comes down over it and slams it to the ground, where it goes up in a column of flame with two wings of fire sweeping out from its shoulders.
+- **Hearth.** Your palms go either side of the foe's head and tongues of flame close in round it from every side, a ball of fire squeezed smaller and hotter while it flinches. You clap, the ball falls in on itself, and the foe goes up in a column of flame.
+
 ## Skill tree (18 nodes)
 
 The six active techniques use distinct gestures and interact with Heat and the base kit. The opening

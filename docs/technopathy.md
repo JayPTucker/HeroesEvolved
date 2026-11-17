@@ -37,3 +37,16 @@ Every enrolled node checks `WorldMutationPolicy`; each actual operation checks i
 Projectile interception excludes ownerless arrows, allied shooters, tridents and stationary/in-ground arrows. It is limited to 12 arrows per check and 64 unique arrows per network lifetime. Only actual hostile arrow interceptions advance the Evolved trial; visual scans, toggles and the awakening pulse do not. Living effects enforce server PvP/team rules, tamed-owner safety and line of sight from their physical relay.
 
 There are no chunk tickets, no spawned helper entities and no persistent movement/AI flags. Hard ceilings are 64 sessions, 24 nodes, 160 graph visits per refresh, three wires, 18 queued/temporary commands, twelve Domino steps, eight Machine City anchors and sixteen candidate living bodies per local effect. Effects send a few world-anchored circuit links and cage refreshes at ten- or twenty-tick intervals. Existing imported sounds are unchanged; Technopathy uses quiet vanilla chimes/clicks and one vanilla awakening cue.
+
+## Finishers: Hard Reset, Kill Switch, Overclock
+
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks). Shift + C switches finishers off and on; the rules every finisher shares are in [finishers.md](finishers.md).
+
+- **What you see.** A palm on the nearest metal, and copper current runs node to node through up to twelve enrolled controls within 16 blocks, out from you toward the foe: lamps flicker, doors and trapdoors bang, levers flip. These are real block states, put back two seconds later. The last node fires a line taut through the foe and it goes down.
+- **With no circuit** the line runs short and plain from your own hand. The finisher is as big as the circuit you built.
+- **Reward:** your circuit's enrolment is renewed for two minutes.
+
+Each press of C plays one of three at random, never the one you used last. Hard Reset is described above; the two alternates give the same reward.
+
+- **Kill Switch.** No circuit needed: a copper circuit traces itself up the foe's body node by node. You flick a finger and it goes dark node by node from the top until the foe powers down.
+- **Overclock.** Current races round the foe's body in copper rings, faster and faster, spitting sparks, until it shorts out in a burst of them and a puff of smoke.

@@ -64,6 +64,14 @@ public final class CooldownService {
         );
     }
 
+    /** Ends one cooldown now (a finisher's reward: Fold Space ready again). */
+    public static void reset(ServerPlayer player, ResourceLocation abilityId) {
+        Objects.requireNonNull(player, "Player cannot be null.");
+        long gameTime = player.serverLevel().getGameTime();
+        PlayerCooldownData data = player.getData(ModDataAttachments.PLAYER_COOLDOWNS.get());
+        player.setData(ModDataAttachments.PLAYER_COOLDOWNS.get(), data.removeExpired(gameTime).startCooldown(abilityId, gameTime));
+    }
+
     /** Ends every cooldown the player has. Used by the admin menu. */
     public static void clearAll(ServerPlayer player) {
         Objects.requireNonNull(player, "Player cannot be null.");

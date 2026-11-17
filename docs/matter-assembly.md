@@ -79,6 +79,18 @@ There are at most 128 active Shards globally and twelve launch Shards per owner.
 
 The awakening is a brief amber construction bloom and a visible-enemy repulsion burst. It creates no free blocks. The evolution trial counts forty successful Shard hits.
 
+## Finishers: Monument, Hammer, Shard Orbit
+
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks). Shift + C switches finishers off and on; the rules every finisher shares are in [finishers.md](finishers.md).
+
+- **What you see.** Plates tear up all round and fly in arcs onto the foe with seams trailing, and it turns to stone in its last pose. A plinth rises under the statue; it holds, then crumbles from the top into falling chips and dust. Nothing is placed, so nobody else is trapped.
+- **Reward:** three Shards spin out of the dust and fly at the three nearest foes (or straight ahead), free.
+
+Each press of C plays one of three at random, never the one you used last. Monument is described above; the two alternates give the same reward.
+
+- **Hammer.** Plates tear up from the ground and gather over your head into a giant hammer, and you bring it down on the foe in an arc; it breaks apart into plates and dust. Nothing is placed.
+- **Shard Orbit.** Crystal shards rise round the foe and orbit it in a closing ring, faster and tighter, then all drive in at once and fall as chips.
+
 ## Verification
 
 `MatterAssemblyGameTests` exercises building from an empty inventory (stamina and cooldown only), an inventory left untouched, Skywalk catching a step on air, Sentinel Engine's three turrets shooting an enemy, physical wall collision and no loot, cancelled claim placement/refunds, Adventure restrictions and container preservation, lease serialization/expiry/orphan recovery, later-edit preservation, a purchased and equipped Switchback's actual geometry/cost/cooldown, forty-block swept projectile hits, cover/team safety, runtime cancellation after power loss, directservice purchase/tier/rewind gates, disabled PvP, Bank Shot, Drawbridge retraction, and actual armored-survival versus fatal-rescue damage. Test sources are isolated from the released mod by the existing GameTest init script.

@@ -38,7 +38,9 @@
     "CryoConstructClientMixin",
     "ParticleWindAccess",
     "ParticleEngineAccess",
-    "MorphSensesMixin"
+    "MorphSensesMixin",
+    "FinisherGlowMixin",
+    "FinisherOutlineMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -113,6 +113,19 @@ pressure blast at the onset and glassy partials ringing out after. Rebuild them 
 - The follow-ups use `SimpleAction.followUp`, so the second press is free and ignores the cooldown.
 - Sonic is on the no-stat-bonus list in `SkillTreeService.bonus`.
 
+## Finishers: Encore, Shatter Note, Silence
+
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks). Shift + C switches finishers off and on; the rules every finisher shares are in [finishers.md](finishers.md).
+
+- **What you see.** You flick a Note into the air behind the foe and scream point-blank. The ring of sound runs through the foe to the Note and back to your hand, again and again, faster each time and in the next colour (rose, amber, mint, azure, violet), until the Note breaks harmonic and the foe comes apart with it.
+- **Resonance:** two passes always; each 20 Resonance spent adds one, up to five. At five, every foe within 6 blocks is left Ringing.
+- **Reward:** half the Resonance spent comes back.
+
+Each press of C plays one of three at random, never the one you used last. Encore is described above. The two alternates spend no Resonance, so they give none back; your Resonance is only spent, and half returned, when Encore comes up.
+
+- **Shatter Note.** One held high note: a waveform runs from your mouth to the foe and a note hangs over its head. Its body ripples in time with rings that close tighter, until it goes still and the note and the rings break outward like glass.
+- **Silence.** Slate rings close in on the foe from all round over a dark hush on the ground, and every sound stops; it crumples without a sound. Then one loud crack, and a front bursts out in every colour.
+
 ## Verification
 
 `SonicGameTests` cover tap versus hold, recoil, the Note's lure, burst and harmonic, the Wall reflecting a

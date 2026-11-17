@@ -1,0 +1,25 @@
+// The client photographs every finisher (combat/Takedowns) with uitest/FinisherPreview: the glisten and prompt, then each
+// finisher's beats from its own camera and from behind. -Ponly=pyrokinesis,telepathy keeps some.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('finisherPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/finisher-preview')
+                        programArguments.addAll('--width', '1100', '--height', '800')
+                        systemProperty('heroes.preview.finisher', 'true')
+                        if (project.hasProperty('only')) systemProperty('heroes.preview.finisher.only', project.property('only'))
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('finisherPreviewClasses')) }
+        }
+    }
+}

@@ -380,4 +380,152 @@ final class RadiationArt {
             }
         }
     }
+
+    /**
+     * Chain Reaction (the finisher, {@code radiation/ChainReaction}): a bead of white light flies from the hand into the
+     * foe's chest and splits there (two, four, eight, sixteen motes orbiting tighter and hotter) while the body glows from
+     * within; a contained flash and a ring of heat; the spare motes are pieces of their own (scale under .5) that fly to
+     * the nearest foes and flash there. Bound to the foe, the caster's entity id in the seed; origin the hand, target the
+     * foe's feet; scale its height.
+     */
+    /**
+     * The alternate finishers ({@code radiation/RadiationFinishers}). Half-Life: a green glow inside the body, rings of
+     * decay pulsing over it slower and slower and fading from toxic to grey, motes drifting off, then ash falling where it
+     * crumbles. Pocket Sun: a white bead between the cupped hands, pressed into the foe, and a small contained blast with
+     * its own mushroom cloud. Origin the foe's feet, target the caster's, scale the foe's height.
+     */
+    static void alternates(Canvas c, Active a, float t) {
+        if (c.solid()) return;
+        float h = Math.max(.6F, a.scale()), life = a.piece().ticks;
+        float f = Mth.clamp(t / 1.5F, 0, 1) * Mth.clamp((life - t) / 7, 0, 1);
+        Vec3 feet = a.origin();
+        int seed = a.seed();
+        if (a.piece() == com.jayptucker.heroesevolved.styles.Piece.FINISH_HALF_LIFE) {
+            int ash = com.jayptucker.heroesevolved.combat.FinisherBeats.HALF_LIFE_ASH, land = com.jayptucker.heroesevolved.combat.FinisherBeats.HALF_LIFE_LAND;
+            float grey = smooth(ash, land, t);
+            float[] glow = new float[]{Mth.lerp(grey, TOXIC[0], SMOKE[0]), Mth.lerp(grey, TOXIC[1], SMOKE[1]), Mth.lerp(grey, TOXIC[2], SMOKE[2])};
+            if (t < land) {
+                // Rings of decay running up the body, each pulse slower than the last.
+                float period = 3 + t * .25F;
+                float phase = (t % period) / period;
+                for (int i = 0; i < 2; i++) {
+                    float k = (phase + i * .5F) % 1;
+                    if (c.glow()) c.ring(feet.add(0, h * k, 0), UP, Math.max(.35F, h * .26F), .04F, 0, TWO_PI, glow, f * (1 - grey * .6F) * Mth.sin(k * Mth.PI));
+                }
+                if (c.glow()) c.glow(feet.add(0, h * .55, 0), .6F + h * .3F, glow, f * .35F * (1 - grey));
+                // Motes coming off it and drifting up.
+                if (c.glow()) for (int i = 0; i < 8; i++) {
+                    float k = (t * .05F + hash(seed, i)) % 1;
+                    float ang = hash(seed, i + 10) * TWO_PI;
+                    Vec3 at = feet.add(cos(ang) * .35, h * (.2 + .9 * k), sin(ang) * .35);
+                    c.glow(at, .05F, glow, f * (1 - k) * .8F);
+                }
+            } else if (c.soft()) {
+                // Ash falling and spreading where it crumbles.
+                float k = t - land;
+                for (int i = 0; i < 18; i++) {
+                    float ang = hash(seed, i + 20) * TWO_PI;
+                    double r = .2 + .5 * hash(seed, i + 40) + k * .03;
+                    double y = h * hash(seed, i + 60) * Math.max(0, 1 - k * (.07 + .05 * hash(seed, i + 80)));
+                    Vec3 at = feet.add(Math.cos(ang) * r, y + .02, Math.sin(ang) * r);
+                    c.line(at, at.add(0, -.06, 0), .05F, i % 3 == 0 ? SMOKE : DUST, f * .9F, f * .5F);
+                }
+                c.ring(feet.add(0, .03, 0), UP, .4F + .3F * smooth(land, land + 6, t), .25F, 0, TWO_PI, SMOKE, f * .5F);
+            }
+            return;
+        }
+        // Pocket Sun.
+        int form = com.jayptucker.heroesevolved.radiation.RadiationFinishers.SUN_FORM, press = com.jayptucker.heroesevolved.radiation.RadiationFinishers.SUN_PRESS;
+        int land = com.jayptucker.heroesevolved.radiation.RadiationFinishers.SUN_LAND;
+        Vec3 home = a.target(), chest = feet.add(0, h * .55, 0);
+        Vec3 toward = chest.subtract(home.add(0, 1.2, 0));
+        Vec3 cupped = home.add(0, 1.15, 0).add(toward.multiply(1, 0, 1).normalize().scale(.6));
+        if (t < land) {
+            float grow = smooth(form, press, t), go = smooth(press, land, t);
+            Vec3 bead = cupped.lerp(chest, go * go);
+            float r = .05F + .14F * grow;
+            if (c.glow()) {
+                c.glow(bead, r * 3.5F, HEAT, f * .45F * grow);
+                c.glow(bead, r * 1.6F, WHITE_HOT, f * (.5F + .5F * grow));
+                for (int i = 0; i < 3; i++)
+                    c.ring(bead, new Vec3(cos(t * .3F + i * 2), .6, sin(t * .3F + i * 2)), r * 2.2F, .015F, 0, TWO_PI, EMBER, f * grow * .7F);
+            }
+        } else {
+            // A blast the size of a person: a white flash, a fireball that rises on a stem of dust and rolls over into a
+            // small cap, and a thin toxic ring on the ground. (MiniBlast is built for crater-sized blasts and won't shrink
+            // this far.)
+            float k = t - land, gone = f * (1 - smooth(land + 8, life, t));
+            float top = h + .9F * smooth(0, 8, k);
+            Vec3 ball = feet.add(0, h * .55 + (top - h * .55) * smooth(0, 8, k), 0);
+            if (c.glow()) {
+                float flash = 1 - smooth(0, 3, k);
+                c.glow(chest, .6F + 1.2F * flash, WHITE_HOT, f * flash);
+                c.glow(ball, .55F * (1 - smooth(4, 12, k)) + .15F, HEAT, gone * (1 - smooth(3, 12, k)) * .8F);
+                c.glow(ball, .25F * (1 - smooth(2, 8, k)), WHITE_HOT, gone);
+                c.ring(feet.add(0, .04, 0), UP, .3F + 1.6F * smooth(0, 8, k), .05F, 0, TWO_PI, TOXIC, gone * (1 - smooth(0, 10, k)));
+                c.ring(feet.add(0, .04, 0), UP, .2F + 1.1F * smooth(0, 6, k), .08F, 0, TWO_PI, HEAT, f * (1 - smooth(0, 5, k)));
+            }
+            if (c.soft() && k > 1) {
+                float heat = (float) Math.exp(-k / 6);
+                int stem = 4;
+                for (int i = 0; i < stem; i++) {
+                    float u = (i + .5F) / stem;
+                    Vec3 at = feet.add(0, (top - .2) * u * smooth(1, 6, k), 0);
+                    float s = .16F + .06F * (1 - u);
+                    c.cloud(at, s, s * 1.2F, s, seed + i, k * .03F, gone * .5F, Shades.smoke(c, DUST, heat * .6F));
+                }
+                float cap = smooth(2, 9, k);
+                for (int i = 0; i < 7; i++) {
+                    float ang = i * TWO_PI / 7 + .3F, r = i == 6 ? 0 : .38F * cap;
+                    float s = (.2F + .08F * hash(seed, i + 50)) * (.5F + .5F * cap);
+                    Vec3 at = feet.add(cos(ang) * r, top + .05 * hash(seed, i + 60), sin(ang) * r);
+                    c.cloud(at, s, s * .8F, s, seed + 10 + i, -k * .02F, gone * .6F, Shades.smoke(c, SMOKE, heat));
+                }
+            }
+        }
+    }
+
+    static void finisher(Canvas c, Active a, float t) {
+        float life = a.piece().ticks, f = Canvas.fade(t, life, 1, 6);
+        if (a.scale() < .5F) {
+            // A spare mote flying on to another foe, and its small flash there.
+            Vec3 at = a.origin().lerp(a.target().add(0, 1, 0), smooth(0, 4, t));
+            if (!c.glow()) return;
+            if (t < 4) { c.glow(at, .14F, WHITE_HOT, f); c.glow(at, .3F, HEAT, f * .5F); }
+            float flash = smooth(3, 5, t) * (1 - smooth(5, 11, t));
+            if (flash > 0) { c.glow(a.target().add(0, 1, 0), .9F * flash, HEAT, flash * .7F); c.ring(a.target().add(0, .1, 0), UP, .4F + 1.2F * smooth(4, 11, t), .05F, 0, TWO_PI, EMBER, flash); }
+            return;
+        }
+        float h = Math.max(.6F, a.scale());
+        net.minecraft.world.entity.Entity foe = a.bound(c);
+        Vec3 feet = foe != null && foe.isAlive() ? foe.getPosition(c.partial) : a.target();
+        Vec3 chest = feet.add(0, h * .6, 0);
+        int flick = com.jayptucker.heroesevolved.radiation.ChainReaction.FLICK, split = com.jayptucker.heroesevolved.radiation.ChainReaction.SPLIT;
+        int flash = com.jayptucker.heroesevolved.radiation.ChainReaction.FLASH, land = com.jayptucker.heroesevolved.radiation.ChainReaction.LAND;
+        if (!c.glow()) return;
+        // The bead, flicked from the hand.
+        if (t < flick + 1) {
+            Vec3 at = a.origin().lerp(chest, smooth(0, flick, t));
+            c.glow(at, .1F, WHITE_HOT, f);
+            c.glow(at, .22F, HEAT, f * .5F);
+        }
+        // Splitting inside: twice as many motes every couple of ticks, orbiting tighter and hotter.
+        if (t >= split && t < land + 1) {
+            int generations = Math.min(4, (int) ((t - split) / 2.5F) + 1), motes = 1 << generations;
+            float k = smooth(split, flash, t), spin = t * (.3F + .4F * k);
+            for (int i = 0; i < motes; i++) {
+                float th = hash(a.seed(), i) * TWO_PI + spin * (1 + i % 3), ph = hash(a.seed(), i + 40) * 3.1F;
+                double r = .38 - .2 * k;
+                Vec3 at = chest.add(Math.sin(ph) * Math.cos(th) * r, Math.cos(ph) * r * 1.4, Math.sin(ph) * Math.sin(th) * r);
+                c.glow(at, .07F, WHITE_HOT, f);
+            }
+            c.glow(chest, h * (.35F + .45F * k), HEAT, f * (.25F + .4F * k));
+        }
+        // The contained flash and a ring of heat over the ground.
+        if (t >= flash) {
+            float burst = 1 - smooth(flash, flash + 6, t);
+            c.glow(chest, (.6F + h * .8F) * burst, WHITE_HOT, f * burst);
+            c.ring(feet.add(0, .08, 0), UP, .5F + 2.5F * smooth(flash, flash + 10, t), .07F, 0, TWO_PI, EMBER, f * (1 - smooth(flash, flash + 10, t)));
+        }
+    }
 }

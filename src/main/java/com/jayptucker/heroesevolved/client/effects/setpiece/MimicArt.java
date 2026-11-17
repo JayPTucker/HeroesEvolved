@@ -172,4 +172,83 @@ final class MimicArt {
     }
 
     private static boolean minimal() { return Minecraft.getInstance().options.particles().get() == ParticleStatus.MINIMAL; }
+
+    /**
+     * The alternate finishers ({@code mimicry/MimicFinishers}). Echo: gold threads from the empath's chest to the gold
+     * outline of the foe (drawn by BodyCopies), a halo round the outline as it rises, and a flash where its blow lands.
+     * Borrowed Strength: a gold shimmer of rings rising round the empath as a kept power's finisher begins. Echo is bound
+     * to the foe, the empath's entity id in the seed; Borrowed Strength to the empath.
+     */
+    static void alternates(Canvas c, Active a, float t) {
+        if (c.solid()) return;
+        float life = a.piece().ticks, f = fade(t, life, 2, 6);
+        if (a.piece() == com.jayptucker.heroesevolved.styles.Piece.FINISH_BORROW) {
+            net.minecraft.world.entity.Entity me = a.bound(c);
+            if (me == null) return;
+            Vec3 feet = me.getPosition(c.partial);
+            for (int k = 0; k < 3; k++) {
+                float q = (t * .07F + k / 3F) % 1;
+                ring(c, feet.add(0, .1 + 2 * q, 0), UP, .55F - .2F * q, .03F, THREAD, f * sin(PI * q));
+            }
+            if (c.glow()) c.glow(feet.add(0, 1.1, 0), .8F, THREAD, f * .3F * (1 - smooth(0, life, t)));
+            return;
+        }
+        float h = Math.max(.6F, a.scale());
+        net.minecraft.world.entity.Entity foe = a.bound(c), owner = c.level.getEntity(a.seed());
+        Vec3 feet = foe != null && foe.isAlive() ? foe.getPosition(c.partial) : a.origin();
+        Vec3 echo = feet.add(a.facing().scale(1.25)).add(0, h * .6, 0);
+        int rise = com.jayptucker.heroesevolved.combat.FinisherBeats.ECHO_RISE, land = com.jayptucker.heroesevolved.combat.FinisherBeats.ECHO_LAND;
+        float up = smooth(rise, rise + 5, t), gone = 1 - smooth(land + 1, land + 5, t);
+        if (owner != null && t < land + 5) {
+            Vec3 heart = owner.getPosition(c.partial).add(0, 1.15, 0);
+            for (int k = 0; k < 2; k++) thread(c, strand(heart, echo, .35F * (1 - up), t * .2F + k * 2, .12F), .02F, f * up * gone * .8F);
+        }
+        if (t >= rise && t < land + 4) {
+            ring(c, echo.subtract(0, h * .6 - .05, 0), UP, .55F + .1F * sin(t * .5F), .03F, THREAD, f * up * gone);
+            if (c.glow()) c.glow(echo, .7F + h * .2F, THREAD, f * .25F * up * gone);
+        }
+        if (t >= land - 1 && c.glow()) {
+            float flash = 1 - smooth(land, land + 4, t);
+            Vec3 hit = feet.add(0, h * .6, 0).add(a.facing().scale(.3));
+            c.glow(hit, .3F + .9F * flash, CORE, f * flash);
+            ring(c, hit, a.facing(), .2F + 1.1F * smooth(land, land + 6, t), .04F, THREAD, f * (1 - smooth(land, land + 6, t)));
+        }
+    }
+
+    /**
+     * Take It In (the finisher, {@code mimicry/TakeItIn}): three gold threads sag between the foe and the empath's chest,
+     * draw tight while they feel what it felt, and snap straight; a pulse runs along them into the chest and blooms there
+     * as the foe goes still. A foe with a power to take burns the threads brighter. Bound to the foe, the empath's entity id
+     * in the seed; origin its feet; scale its height (+ POWERED).
+     */
+    static void finisher(Canvas c, Active a, float t) {
+        boolean powered = a.scale() >= com.jayptucker.heroesevolved.mimicry.TakeItIn.POWERED;
+        float h = Math.max(.6F, a.scale() - (powered ? com.jayptucker.heroesevolved.mimicry.TakeItIn.POWERED : 0));
+        float life = a.piece().ticks, f = fade(t, life, 2, 6) * (powered ? 1 : .85F);
+        net.minecraft.world.entity.Entity foe = a.bound(c), owner = c.level.getEntity(a.seed());
+        if (owner == null) return;
+        Vec3 from = (foe != null ? foe.getPosition(c.partial) : a.origin()).add(0, h * .6, 0);
+        Vec3 heart = owner.getPosition(c.partial).add(0, 1.15, 0);
+        int tight = com.jayptucker.heroesevolved.mimicry.TakeItIn.TIGHT, snap = com.jayptucker.heroesevolved.mimicry.TakeItIn.SNAP;
+        int land = com.jayptucker.heroesevolved.mimicry.TakeItIn.LAND;
+        float sag = .7F * (1 - smooth(tight, snap, t)), reach = smooth(0, 5, t), gone = 1 - smooth(land, land + 5, t);
+        for (int k = 0; k < 3; k++) {
+            float spread = (k - 1) * .18F;
+            int n = 14;
+            Vec3[] pts = new Vec3[n + 1];
+            for (int i = 0; i <= n; i++) {
+                float u = i / (float) n * reach;
+                pts[i] = from.lerp(heart, u).add(0, -sag * sin(PI * u) + spread * sin(PI * u), spread * .5 * sin(PI * u));
+            }
+            thread(c, pts, .025F, f * gone);
+        }
+        // The pulse running into the chest, and the bloom there.
+        if (t >= snap && t < land + 6 && c.glow()) {
+            float k = smooth(snap, land, t);
+            Vec3 bead = from.lerp(heart, k);
+            if (k < 1) { c.glow(bead, .18F, CORE, f); c.glow(bead, .35F, THREAD, f * .5F); }
+            float bloom = smooth(land - 1, land + 1, t) * (1 - smooth(land + 1, land + 6, t));
+            if (bloom > 0) ring(c, heart, heart.subtract(from).normalize(), .2F + .6F * smooth(land, land + 6, t), .05F, CORE, bloom * f);
+        }
+    }
 }

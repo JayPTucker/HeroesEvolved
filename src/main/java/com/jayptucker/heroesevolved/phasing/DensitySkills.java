@@ -245,6 +245,8 @@ public final class DensitySkills {
     }
 
     public static boolean primed(ServerPlayer p) { Long until = PRIMED.get(p.getUUID()); return until != null && until > now(p); }
+    /** Primes the Ambush hand as a pass through a wall does (Six Feet's reward); it only strikes for someone who has learned Ambush. */
+    public static void prime(ServerPlayer p) { PRIMED.put(p.getUUID(), now(p) + PRIMED_TICKS); }
 
     /** Every passage through a wall: Ambush primes the hand, Ghost Network leaves the wall open and you at Full Ghost. */
     static void passed(ServerPlayer p, Vec3 from, Vec3 to) {

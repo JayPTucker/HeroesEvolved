@@ -66,6 +66,13 @@ public final class FightingStylePoseRenderer {
                 roll = (float) Math.clamp(sideways * 18, -16, 16) * lean;
             }
             case FIRE_FLIP -> pitch = -360 * smooth(age / PyroGeometry.FLIP_SPIN);
+            // Dragon Coil's landing: dropped into a low stance, leaning a little into the thrust palm.
+            case FINISH_DRAGON -> {
+                float settle = smooth(age / 2F) * (1 - smooth((age - 11) / 4F));
+                drop = .32F * settle;
+                pitch = 7 * settle;
+                twist = 14 * handed * settle;
+            }
             // Lightning: a quicker, smaller turn into each spark, a lean into the clap, a drop to one knee for the slam,
             // a lean along a flash sideways and a lean back into a Flashback.
             case ELECTRO_JAB, ELECTRO_CROSS -> {

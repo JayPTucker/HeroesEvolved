@@ -490,4 +490,112 @@ final class DensityArt {
         if (age < 0 || age >= life) return 0;
         return (in > 0 ? smooth(0, in, age) : 1) * (out > 0 ? 1 - smooth(life - out, life, age) : 1);
     }
+
+    /**
+     * Six Feet (the finisher, {@code phasing/SixFeet}): ripples run out from the phaser's feet as they go Ghost; stone
+     * fingers rise round the foe's ankles and close; at the hammer the slabs fold over the spot like a closing hand and sink
+     * flat, leaving a ring of crumbs; started Dense, the ground splits in a star. Bound to the phaser; origin the foe's
+     * feet, target where the phaser stood; scale the foe's height (+ DENSE).
+     */
+    /**
+     * The alternate finishers ({@code phasing/DensityFinishers}). Phase Punch: standing ripples on the foe's chest as the
+     * ghostly fist sinks in, then a ring of stone and chips of it thrown out of its back as the fist turns solid. Heavy
+     * Hand: plates of stone gathering on the forearm, then a crater (a star of cracks, a ring of tilted slabs that fold in
+     * and seal it). Origin the foe's feet, target yours, the phaser's entity id in the seed, scale its height.
+     */
+    static void alternates(Canvas c, Active a, float t) {
+        float h = Math.max(.6F, a.scale()), f = fade(t, a.piece().ticks, 1, 7);
+        Vec3 foe = a.origin(), home = a.target();
+        Vec3 toMe = home.subtract(foe).multiply(1, 0, 1);
+        toMe = toMe.lengthSqr() < 1e-4 ? new Vec3(1, 0, 0) : toMe.normalize();
+        Entity owner = c.level.getEntity(a.seed());
+        int seed = a.seed();
+        if (a.piece() == Piece.FINISH_PHASE) {
+            int enter = com.jayptucker.heroesevolved.phasing.DensityFinishers.PHASE_ENTER, solid = com.jayptucker.heroesevolved.phasing.DensityFinishers.PHASE_SOLID;
+            Vec3 chest = foe.add(0, h * .6, 0).add(toMe.scale(.25));
+            if (t < solid + 1) {
+                float sink = smooth(enter, solid, t);
+                oval(c, chest, toMe, .35F + .15F * sink, .45F + .15F * sink, 3, (t * .12F) % 1, seed, f * smooth(enter - 1, enter + 1, t));
+                if (owner != null && c.glow()) {
+                    Vec3 fist = hand(c, owner);
+                    c.glow(fist, .22F, TEAL, f * .6F * (1 - sink * .5F));
+                    c.line(fist, chest, .05F, TEAL, f * .3F, f * .6F * sink);
+                }
+                ripple(c, home.add(0, .04, 0), UP, 1.2F, smooth(0, enter + 2, t), TEAL, f * (1 - smooth(enter, enter + 4, t)));
+            }
+            if (t >= solid) {
+                float k = smooth(solid, solid + 6, t);
+                ripple(c, chest.subtract(toMe.scale(.5)), toMe.scale(-1), .9F, k, PALE, f * (1 - k));
+                for (int i = 0; i < 7; i++) {
+                    float ang = hash(seed, i) * Mth.TWO_PI;
+                    Vec3 out = toMe.scale(-1).add(new Vec3(-toMe.z, 0, toMe.x).scale(Mth.cos(ang) * .6)).add(0, Mth.sin(ang) * .6, 0).normalize();
+                    float s = t - solid;
+                    Vec3 at = chest.subtract(toMe.scale(.4)).add(out.scale(s * .18)).add(0, -.012 * s * s, 0);
+                    slab(c, at, .07F, .06F, .08F, ang + s * .3F, s * .4F, i, STONE, 1 - smooth(solid + 8, solid + 12, t));
+                }
+                if (c.glow()) c.glow(chest, .7F * (1 - smooth(solid, solid + 3, t)), PALE, f * (1 - smooth(solid, solid + 3, t)));
+            }
+            return;
+        }
+        // Heavy Hand.
+        int brace = com.jayptucker.heroesevolved.phasing.DensityFinishers.HEAVY_BRACE, swing = com.jayptucker.heroesevolved.phasing.DensityFinishers.HEAVY_SWING;
+        int land = com.jayptucker.heroesevolved.combat.FinisherBeats.HEAVY_LAND;
+        if (t < land + 1 && owner != null) {
+            // Stone gathering on the forearm.
+            float grow = smooth(brace, swing - 2, t);
+            Vec3 fist = hand(c, owner);
+            boolean firstPerson = owner == Minecraft.getInstance().player && Minecraft.getInstance().options.getCameraType() == CameraType.FIRST_PERSON;
+            if (!firstPerson) for (int i = 0; i < 4; i++) {
+                float ang = i * Mth.HALF_PI + .3F;
+                slab(c, fist.add(Mth.cos(ang) * .1, -.05 - i * .04, Mth.sin(ang) * .1), .07F, .1F, .05F, ang, .2F, 0, STONE, grow);
+            }
+            ripple(c, home.add(0, .04, 0), UP, 1F, grow, SLATE, f * .6F * grow);
+        }
+        if (t >= land) {
+            float crack = smooth(land, land + 3, t), seal = smooth(land + 5, land + 11, t);
+            for (int i = 0; i < 7; i++)
+                crack(c, foe, i * Mth.TWO_PI / 7 + hash(seed, i + 9), 2.6F * crack, seed + i, .8F * (1 - seal), f);
+            int slabs = 7;
+            for (int i = 0; i < slabs; i++) {
+                float ang = i * Mth.TWO_PI / slabs + hash(seed, i + 30) * .3F;
+                float tilt = (1 - seal) * .9F * crack + seal * 1.4F;
+                Vec3 at = foe.add(Mth.cos(ang) * .75 * (1 - .5 * seal), .08 - .2 * seal, Mth.sin(ang) * .75 * (1 - .5 * seal));
+                slab(c, at, .34F, .08F, .26F, -ang, -tilt, 0, SLATE, 1 - smooth(land + 10, land + 14, t));
+            }
+            ripple(c, foe.add(0, .05, 0), UP, 2F, crack, PALE, f * (1 - smooth(land + 2, land + 8, t)));
+            if (c.glow()) c.glow(foe.add(0, .4, 0), 1.2F * (1 - smooth(land, land + 3, t)), PALE, f * .6F * (1 - smooth(land, land + 3, t)));
+        }
+    }
+
+    static void finisher(Canvas c, Active a, float t) {
+        boolean dense = a.scale() >= com.jayptucker.heroesevolved.phasing.SixFeet.DENSE;
+        float life = a.piece().ticks, f = fade(t, life, 1, 6);
+        Vec3 foe = a.origin(), home = a.target();
+        int grasp = com.jayptucker.heroesevolved.phasing.SixFeet.GRASP, land = com.jayptucker.heroesevolved.phasing.SixFeet.LAND;
+        // Ghost: ripples at the phaser's feet.
+        if (t < grasp + 6) for (int k = 0; k < 2; k++) {
+            float q = smooth(k * 2, grasp + 4 + k * 2, t);
+            if (q > 0 && q < 1) ripple(c, home.add(0, .04, 0), UP, .3F + 1.6F * q, q, TEAL, f * (1 - q));
+        }
+        // Stone fingers round the ankles, rising and closing in.
+        float rise = smooth(grasp, grasp + 5, t), close = smooth(grasp + 3, land, t), sink = smooth(land, land + 6, t);
+        if (rise > 0 && sink < 1) for (int i = 0; i < 6; i++) {
+            float ang = i * net.minecraft.util.Mth.TWO_PI / 6 + hash(a.seed(), i) * .3F;
+            double r = .55 - .2 * close;
+            Vec3 base = foe.add(Math.cos(ang) * r, -.2 - .6 * sink, Math.sin(ang) * r);
+            float yaw = -ang * net.minecraft.util.Mth.RAD_TO_DEG + 90, lean = 25 + 30 * close;
+            slab(c, base.add(0, .35 * rise, 0), .16F, .7F, .12F, yaw, lean, 0, SLATE, rise * (1 - sink));
+        }
+        // The slabs fold over and sink flat once the hammer lands.
+        if (t >= land - 1) {
+            float fold = smooth(land - 1, land + 3, t);
+            for (int i = 0; i < 4; i++) {
+                float ang = i * net.minecraft.util.Mth.HALF_PI + .4F;
+                Vec3 at = foe.add(Math.cos(ang) * .6 * (1 - fold * .7), .3 - .7 * sink, Math.sin(ang) * .6 * (1 - fold * .7));
+                slab(c, at, .55F, .12F, .5F, -ang * net.minecraft.util.Mth.RAD_TO_DEG, 80 * (1 - fold), 0, SLATE, 1 - smooth(land + 6, land + 10, t));
+            }
+            if (dense) for (int i = 0; i < 6; i++) crack(c, foe.add(0, .03, 0), i * net.minecraft.util.Mth.TWO_PI / 6 + hash(a.seed(), i + 9), 2.4F * fold, a.seed() + i, .8F, f);
+            ripple(c, foe.add(0, .04, 0), UP, .4F + 1.2F * fold, fold, PALE, f * (1 - smooth(land + 3, land + 9, t)));
+        }
+    }
 }

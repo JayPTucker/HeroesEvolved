@@ -663,4 +663,116 @@ final class ElectroArt {
     }
 
     private static boolean minimal() { return Minecraft.getInstance().options.particles().get() == ParticleStatus.MINIMAL; }
+
+    /** The alternate finishers ({@code electro/ElectroFinishers}): Lightning Rod and Overload. */
+    static void alternates(Canvas c, Active a, float t) {
+        if (c.solid()) return;
+        float h = Math.max(.6F, a.scale()), life = a.piece().ticks, f = fade(t, life, 1, 7);
+        net.minecraft.world.entity.Entity foe = a.bound(c);
+        Vec3 feet = foe != null ? foe.getPosition(c.partial) : a.origin();
+        Vec3 chest = feet.add(0, h * .6, 0);
+        Player owner = c.level.getEntity(a.seed()) instanceof Player p ? p : null;
+        Vec3 palm = owner != null ? hand(c, owner, .7) : a.target().add(0, 1.2, 0);
+        int seed = a.seed();
+        if (a.piece() == com.jayptucker.heroesevolved.styles.Piece.FINISH_ROD) {
+            // Lightning Rod: static climbing the body, a knot of charge gathering overhead, a warning ring closing at the
+            // feet; the bolt comes down through the foe and on into the open palm, then a scorch.
+            int land = com.jayptucker.heroesevolved.electro.ElectroFinishers.ROD_LAND;
+            float build = smooth(2, land, t);
+            Vec3 sky = feet.add(0, h + 4.5, 0);
+            if (t < land + 1) {
+                corona(c, sky, .3F + .5F * build, t * .4F, f * smooth(2, 6, t), seed);
+                if (c.soft()) c.disc(sky.add(0, .25, 0), UP, 1.4F * build, SHADOW, .35F * f * build, 0);
+                warning(c, feet, .6F + .9F * (1 - build), t, seed);
+                int climbers = minimal() ? 1 : 3;
+                for (int i = 0; i < climbers; i++) {
+                    float k = (t * .15F + i / (float) climbers) % 1;
+                    Vec3 at = feet.add(0, h * k, 0);
+                    float ang = hash(seed + (int) t, i) * TWO_PI;
+                    fork(c, at, at.add(cos(ang) * .35, .25, sin(ang) * .35), .025F, f * .7F * build, seed + (int) t * 3 + i, 0);
+                }
+                // A faint leader reaching down before the strike.
+                if (t > land - 4) fork(c, sky, sky.lerp(chest, smooth(land - 4, land, t)), .03F, f * .6F, seed + 9, 1);
+            }
+            if (t >= land && t < land + 5) {
+                float strike = f * (1 - smooth(land + 1, land + 5, t));
+                fork(c, sky, chest, .12F, strike, seed + 21, 4);
+                fork(c, chest, palm, .08F, strike, seed + 33, 2);
+                if (c.glow()) {
+                    c.glow(chest, 1.6F * (1 - smooth(land, land + 3, t)), CORE, strike);
+                    c.glow(palm, .5F, ION, strike);
+                }
+            }
+            if (t >= land) {
+                scorch(c, feet, 1F, f, seed);
+                pulse(c, feet, 2.2F, t - land, f * .7F, seed, false);
+            }
+            return;
+        }
+        // Overload: current poured in from the grabbing hand, a corona swelling over the body, forks into the ground round
+        // its feet, quicker and brighter, then a white flash and a ground pulse.
+        int land = com.jayptucker.heroesevolved.electro.ElectroFinishers.OVERLOAD_LAND;
+        float build = smooth(com.jayptucker.heroesevolved.electro.ElectroFinishers.OVERLOAD_GRAB, land, t);
+        if (t < land + 1) {
+            braid(c, palm, chest, .12F, t * .7F, f * smooth(1, 4, t), 3);
+            fork(c, palm, chest, .04F + .03F * build, f * smooth(1, 4, t), seed + (int) t, 1);
+            corona(c, chest, (.35F + .45F * build) * Math.max(1, h * .5F), t * (.3F + .4F * build), f * (.4F + .6F * build), seed);
+            int legs = minimal() ? 2 : 3 + (int) (build * 4);
+            for (int i = 0; i < legs; i++) {
+                float ang = hash(seed + (int) (t * 2), i) * TWO_PI;
+                Vec3 ground = feet.add(cos(ang) * (.6 + build * .8), .02, sin(ang) * (.6 + build * .8));
+                fork(c, chest.add(0, -h * .2, 0), ground, .035F, f * build * .8F, seed + i * 17 + (int) t, 0);
+            }
+            if (c.glow()) c.glow(chest, .6F + 1.2F * build, BLUE, f * build * .4F);
+        }
+        if (t >= land) {
+            float flash = 1 - smooth(land, land + 3, t);
+            if (c.glow()) {
+                c.glow(chest, .5F + 2.4F * flash, CORE, f * flash);
+                c.glow(chest, 1.2F + 1.8F * flash, ION, f * flash * .5F);
+            }
+            pulse(c, feet, 3F, t - land, f, seed, false);
+            scorch(c, feet, .8F, f, seed);
+        }
+    }
+
+    /**
+     * Short Circuit (the finisher, {@code electro/ShortCircuit}): a corona snaps on at the foe's brow where the fingers
+     * tap, the body is traced in lightning that brightens and twitches, the traced figure tears loose and rises, then
+     * earths into the ground as a bolt and leaves a scorch star. Bound to the foe; origin its feet, target the finisher;
+     * scale its height (+ TRAP when the sketch stays). A scale of STANDING is the trap's standing sketch; BURST its burst.
+     */
+    static void finisher(Canvas c, Active a, float t) {
+        float s = a.scale(), life = a.piece().ticks;
+        Vec3 origin = a.origin(), toward = a.target().subtract(origin).multiply(1, 0, 1);
+        Vec3 facing = toward.lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : toward.normalize();
+        int seed = a.seed();
+        if (s < .2F) {
+            // The trap bursts on whoever came close: a bolt from the standing figure into them.
+            if (t > 10) return;
+            float f = fade(t, 10, 0, 6);
+            fork(c, origin.add(0, 1, 0), a.target().add(0, 1, 0), .07F, f, seed + (int) t, 3);
+            corona(c, a.target().add(0, 1, 0), .45F + t * .05F, t * .4F, f, seed);
+            return;
+        }
+        if (s < .5F) {
+            // The figure left standing, crackling, until something comes close.
+            sketch(c, origin, facing, fade(t, life, 3, 3) * .8F, seed + (int) (t / 2), .05F);
+            return;
+        }
+        boolean trap = s >= com.jayptucker.heroesevolved.electro.ShortCircuit.TRAP;
+        float h = s - (trap ? com.jayptucker.heroesevolved.electro.ShortCircuit.TRAP : 0);
+        net.minecraft.world.entity.Entity foe = a.bound(c);
+        Vec3 feet = foe != null ? foe.getPosition(c.partial) : origin;
+        float f = fade(t, life, 1, 6);
+        int land = com.jayptucker.heroesevolved.electro.ShortCircuit.LAND;
+        float tap = smooth(1, 2.5F, t) * (1 - smooth(6, 10, t));
+        if (tap > 0) corona(c, feet.add(0, h * .88, 0).add(facing.scale(.25)), .18F + .1F * tap, t * .5F, f * tap, seed);
+        float traced = smooth(com.jayptucker.heroesevolved.electro.ShortCircuit.CRAWL, 11, t) * (1 - smooth(land, land + 1, t));
+        float rise = smooth(com.jayptucker.heroesevolved.electro.ShortCircuit.BLOW, land, t);
+        if (traced > 0) sketch(c, feet.add(0, rise * 1.3, 0), facing, f * traced, seed + (int) (t * 2), .02F + .06F * traced);
+        if (t >= land && t < land + 4)
+            fork(c, feet.add(0, 1.3 + h * .5, 0), feet, .09F, f * (1 - smooth(land + 1, land + 4, t)), seed + 3, 4);
+        if (t >= land) scorch(c, feet, .9F, f, seed);
+    }
 }

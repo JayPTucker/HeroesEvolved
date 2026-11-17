@@ -200,4 +200,100 @@ final class RegenArt {
     }
 
     private static boolean minimal() { return Minecraft.getInstance().options.particles().get() == ParticleStatus.MINIMAL; }
+
+    /**
+     * Paid in Full (the finisher, {@code regeneration/PaidInFull}): the blow she takes opens a gash across her chest that
+     * closes from the edges in; a red ring runs down her arm to the fist as she swings, and the punch throws blood out of
+     * the foe. Bound to her, the foe's entity id in the seed; origin where she stood, target the foe's feet; scale its
+     * height.
+     */
+    /**
+     * The alternate finishers ({@code regeneration/RegenFinishers}). No Pain: a gash opens at each of the three blows
+     * (chest, shoulder, ribs) and closes from the edges in as she walks on, a heartbeat ring at each; then blood thrown
+     * out of the foe at the haymaker. Grip: a gash across her forearm, closing while she holds the foe's arm, a warm
+     * glow along it, and blood at the headbutt. Bound to her, the foe's entity id in the seed; scale the foe's height.
+     */
+    static void alternates(Canvas c, Active a, float t) {
+        if (c.solid()) return;
+        float h = Math.max(.6F, a.scale()), f = fade(t, a.piece().ticks, 1, 6);
+        net.minecraft.world.entity.Entity her = a.bound(c), foe = c.level.getEntity(a.seed());
+        if (!(her instanceof net.minecraft.world.entity.player.Player p)) return;
+        Vec3 body = p.getPosition(c.partial);
+        float yaw = rotLerp(c.partial, p.yBodyRotO, p.yBodyRot) * DEG_TO_RAD;
+        Vec3 fwd = new Vec3(-sin(yaw), 0, cos(yaw)), side = new Vec3(cos(yaw), 0, sin(yaw));
+        Vec3 foeChest = foe != null ? foe.getPosition(c.partial).add(0, h * .6, 0) : a.target().add(0, h * .6, 0);
+        int land;
+        if (a.piece() == com.jayptucker.heroesevolved.styles.Piece.FINISH_NO_PAIN) {
+            int[] blows = com.jayptucker.heroesevolved.regeneration.RegenFinishers.NO_PAIN_BLOWS;
+            land = com.jayptucker.heroesevolved.regeneration.RegenFinishers.NO_PAIN_LAND;
+            float[][] spots = {{0, 1.15F, -.2F, .2F}, {.25F, 1.38F, .1F, -.1F}, {-.2F, .95F, .15F, .15F}};
+            for (int i = 0; i < blows.length; i++) {
+                float open = smooth(blows[i], blows[i] + 1, t) * (1 - smooth(blows[i] + 1, blows[i] + 5, t));
+                if (open <= 0) continue;
+                Vec3 at = body.add(side.scale(spots[i][0])).add(0, spots[i][1], 0).add(fwd.scale(.2));
+                gash(c, at.add(side.scale(spots[i][2] * open)).add(0, spots[i][3] * open * .5, 0),
+                        at.subtract(side.scale(spots[i][2] * open)).subtract(0, spots[i][3] * open * .5, 0), a.seed() + i, .05F * open, f);
+                beat(c, at, fwd, .3F, t - blows[i], f * .7F);
+            }
+        } else {
+            int hit = com.jayptucker.heroesevolved.regeneration.RegenFinishers.GRIP_HIT, hold = com.jayptucker.heroesevolved.regeneration.RegenFinishers.GRIP_CATCH;
+            land = com.jayptucker.heroesevolved.regeneration.RegenFinishers.GRIP_LAND;
+            Vec3 fist = com.jayptucker.heroesevolved.combat.StyleHits.hand(p, c.partial, true);
+            Vec3 elbow = body.add(side.scale(p.getMainArm() == net.minecraft.world.entity.HumanoidArm.LEFT ? .4 : -.4)).add(0, 1.1, 0);
+            float open = smooth(hit, hit + 1, t) * (1 - smooth(hold + 1, hold + 8, t));
+            if (open > 0) {
+                Vec3 mid = elbow.lerp(fist, .5);
+                Vec3 along = fist.subtract(elbow).normalize();
+                gash(c, mid.subtract(along.scale(.2 * open)), mid.add(along.scale(.2 * open)), a.seed(), .045F * open, f);
+            }
+            // The healing glow running along the arm while it holds.
+            if (t > hold && t < land && c.glow()) {
+                float k = smooth(hold, hold + 7, t);
+                c.ribbon(new Vec3[]{elbow, elbow.lerp(fist, k)}, .06F, LIFE, f * .5F, f * .7F);
+                c.glow(fist, .2F, LIFE, f * .5F);
+            }
+            // The arm it holds: a thread of blood between the hands.
+            if (t > hold && t < land + 1 && c.glow()) c.glow(foeChest.lerp(fist, .5), .12F, BRIGHT, f * .3F);
+        }
+        if (t >= land) {
+            Vec3 out = foeChest.add(fwd.scale(1.3)).add(0, .3, 0);
+            drops(c, foeChest, out, t - land, 9, .07F, f * (1 - smooth(land + 3, land + 10, t)), .5F);
+            if (c.glow()) c.glow(foeChest, .8F * (1 - smooth(land, land + 3, t)), BRIGHT, f * (1 - smooth(land, land + 3, t)));
+        }
+    }
+
+    static void finisher(Canvas c, Active a, float t) {
+        float h = Math.max(.6F, a.scale()), life = a.piece().ticks, f = fade(t, life, 1, 6);
+        net.minecraft.world.entity.Entity her = a.bound(c), foe = c.level.getEntity(a.seed());
+        if (!(her instanceof net.minecraft.world.entity.player.Player p)) return;
+        int take = com.jayptucker.heroesevolved.regeneration.PaidInFull.TAKE, close = com.jayptucker.heroesevolved.regeneration.PaidInFull.CLOSE;
+        int punch = com.jayptucker.heroesevolved.regeneration.PaidInFull.PUNCH, land = com.jayptucker.heroesevolved.regeneration.PaidInFull.LAND;
+        Vec3 body = p.getPosition(c.partial);
+        float yaw = rotLerp(c.partial, p.yBodyRotO, p.yBodyRot) * DEG_TO_RAD;
+        Vec3 fwd = new Vec3(-sin(yaw), 0, cos(yaw)), side = new Vec3(cos(yaw), 0, sin(yaw));
+        // The wound, opened by the blow and closing from the edges in.
+        if (t >= take && t < close + 3) {
+            float open = smooth(take, take + 1, t) * (1 - smooth(take + 3, close + 2, t));
+            Vec3 chest = body.add(0, 1.15, 0).add(fwd.scale(.2));
+            gash(c, chest.add(side.scale(-.22 * open)).add(0, .15, 0), chest.add(side.scale(.22 * open)).add(0, -.1, 0), a.seed(), .05F * open, f);
+        }
+        // The ring of every healed wound running down the arm to the fist.
+        if (t >= close && t < land + 1) {
+            Vec3 shoulder = body.add(side.scale(p.getMainArm() == net.minecraft.world.entity.HumanoidArm.LEFT ? .35 : -.35)).add(0, 1.38, 0);
+            Vec3 fist = com.jayptucker.heroesevolved.combat.StyleHits.hand(p, c.partial, true);
+            float k = smooth(close, land, t);
+            Vec3 at = shoulder.lerp(fist, k);
+            if (c.glow()) {
+                c.ring(at, fist.subtract(shoulder).normalize(), .13F, .05F, 0, TWO_PI, BRIGHT, f * .8F);
+                c.glow(at, .18F, BRIGHT, f * .5F);
+            }
+        }
+        // The punch: blood thrown out of the foe.
+        if (t >= land) {
+            Vec3 chest = foe != null ? foe.getPosition(c.partial).add(0, h * .6, 0) : a.target().add(0, h * .6, 0);
+            Vec3 out = chest.add(fwd.scale(1.4)).add(0, .3, 0);
+            drops(c, chest, out, t - land, 9, .07F, f * (1 - smooth(land + 3, land + 10, t)), .5F);
+            if (c.glow()) c.glow(chest, .8F * (1 - smooth(land, land + 3, t)), BRIGHT, f * (1 - smooth(land, land + 3, t)));
+        }
+    }
 }

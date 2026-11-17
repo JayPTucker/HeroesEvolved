@@ -188,6 +188,19 @@ and his new **Shockwave** move is Daisy's palm blast: a ring tube, and you are t
 - Action ids: `quake_resonate` and `quake_fault_line` replace `quake_tremor_sense` and
   `quake_seismic_slam`.
 
+## Finishers: Counterbeat, Fault Line, Shatter Point
+
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks). Shift + C switches finishers off and on; the rules every finisher shares are in [finishers.md](finishers.md).
+
+- **What you see.** Your palm flat toward the foe's chest. You feel its heartbeat: a double ring of pressure at each beat, coming faster and faster. One counter-pulse from your palm, rings closing in on its chest, then silence: one flat ring spreads over the ground and no more beats come.
+- **It spends Strain instead of adding it.**
+- **Reward:** 50 Strain vented, a way out of the red zone that also ends a fight.
+
+Each press of C plays one of three at random, never the one you used last. Counterbeat is described above; the two alternates give the same reward.
+
+- **Fault Line.** You stomp; a crack runs along the ground from your foot to the foe, the ground heaves it up on a ring of tilting slabs, and the slabs fold in over it as it drops, in a burst of dust.
+- **Shatter Point.** Your palm on the foe, and it shakes, harder and harder, pressure rings shivering on its body and cracks of light spreading over it, until it bursts into a ring of dust.
+
 ## Verification
 
 ```bash

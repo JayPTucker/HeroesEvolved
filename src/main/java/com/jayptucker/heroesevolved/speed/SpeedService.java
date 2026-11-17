@@ -540,6 +540,8 @@ public final class SpeedService {
     }
 
     public static int momentum(ServerPlayer p) { Runner r = RUNNERS.get(p.getUUID()); return r == null ? 0 : r.momentum; }
+    /** Raises banked Momentum to at least {@code amount} while running (Late Thunder's reward). */
+    public static void atLeastMomentum(ServerPlayer p, int amount) { Runner r = RUNNERS.get(p.getUUID()); if (r != null && r.momentum < amount) { r.momentum = Math.min(100, amount); syncMomentum(p, r); } }
     /** Spends all Momentum if at least {@code minimum} is banked; returns the amount spent, or 0. */
     public static int spendMomentum(ServerPlayer p, int minimum) {
         Runner r = RUNNERS.get(p.getUUID());

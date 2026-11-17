@@ -135,6 +135,15 @@ public final class TechnopathyService {
                 && p.position().distanceToSqr(Vec3.atCenterOf(n.root)) <= OWNER_TETHER * OWNER_TETHER ? n : null;
     }
     public static int nodeCount(ServerPlayer p) { Network n = current(p); return n == null ? 0 : n.nodes.size(); }
+    /** The enrolled nodes of this player's circuit, if it is live (a finisher's ripple runs through them). */
+    public static java.util.List<BlockPos> nodes(ServerPlayer p) { Network n = current(p); return n == null ? java.util.List.of() : java.util.List.copyOf(n.nodes); }
+    /** Flips an enrolled control to its other state through the normal rules; false if it is not a control or not allowed. */
+    public static boolean toggle(ServerPlayer p, BlockPos pos) {
+        Network n = current(p); if (n == null || !authorized(p) || !n.level.hasChunkAt(pos)) return false;
+        BlockState s = n.level.getBlockState(canonical(n.level, pos)); return isControl(s) && operate(n, pos, !value(s));
+    }
+    /** Keeps the circuit enrolled for another two minutes (Hard Reset's reward). */
+    public static void renew(ServerPlayer p) { Network n = current(p); if (n != null) n.until = Math.max(n.until, now(p) + 2400); }
     public static int activeFields(ServerPlayer p) {
         Network n = current(p); if (n == null) return 0;
         return n.wires.size() + (n.interceptUntil > now(p) ? 1 : 0) + (n.cityUntil > now(p) ? 1 : 0)

@@ -323,6 +323,10 @@ public final class MatterAssemblyService {
         }
         sound(p, SoundEvents.TRIDENT_THROW.value(), .8F, 1.5F); return true;
     }
+    /** Fires one free Shard from {@code from} along {@code direction} (Monument's reward). */
+    public static void launch(ServerPlayer p, Vec3 from, Vec3 direction, float damage) {
+        if (shardCount(p) < 12) NEW_SHARDS.add(new Shard(p, from, direction, damage, false));
+    }
     public static int shardCount(ServerPlayer p) {
         return (int) SHARDS.stream().filter(s -> s.owner == p).count() + (int) NEW_SHARDS.stream().filter(s -> s.owner == p).count();
     }

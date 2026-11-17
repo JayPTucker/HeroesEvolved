@@ -209,7 +209,25 @@ public enum Piece {
     // after) and a Bounce's trampoline pane (origin the feet, target a block back). Ice Skater: a skate's ice strip,
     // lingering (origin and target its ends).
     STYLE_LENS_JAB(9), STYLE_SHARDS(10), STYLE_FORCE_BURST(14), STYLE_FIELD_SLAM(16), STYLE_LENS_SLIDE(12), STYLE_BOUNCE(14),
-    STYLE_ICE_STRIP(60), STYLE_TK_PALM(11), STYLE_TK_GRASP(36);
+    STYLE_ICE_STRIP(60), STYLE_TK_PALM(11), STYLE_TK_GRASP(36),
+    // Finishers (combat/Takedowns), each drawn in its power's own art. Dragon Coil (PyroArt): origin the foe's feet, target the
+    // finisher's feet, scale the foe's height (+ PyroGeometry.BLUE_SCALE for blue fire). Closed Loop (TimeArt): origin the foe's
+    // feet, target where you fold in; scale the foe's height (+ 32 when three of you strike). Lights Out (TelepathyArt): bound to
+    // the foe, its seed the telepath's entity id; origin the telepath's eyes; scale the foe's height.
+    FINISH_DRAGON(38), FINISH_LOOP(34), FINISH_LIGHTS(34),
+    // The other finishers, each in its power's art (see each finisher class for what origin, target, scale and seed carry).
+    FINISH_SHORT(28), FINISH_BREAKER(34), FINISH_WARMTH(30), FINISH_THUNDER(30), FINISH_DOWNBURST(34), FINISH_BEAT(30),
+    FINISH_ENCORE(34), FINISH_STRINGS(32), FINISH_SIXFEET(34), FINISH_MIRRORS(32), FINISH_PAID(30), FINISH_CHAIN(30),
+    FINISH_FREQUENCY(30), FINISH_RESET(14), FINISH_MONUMENT(36), FINISH_TAKE(30), FINISH_UNMADE(34),
+    // The alternate finishers, two per power, each in its power's art; each finisher class says what origin, target,
+    // scale, binding and seed carry.
+    FINISH_PHOENIX(30), FINISH_HEARTH(32), FINISH_STOPPED(34), FINISH_UNWOUND(32), FINISH_PRESSURE(30), FINISH_THOUGHT(32),
+    FINISH_ROD(30), FINISH_OVERLOAD(30), FINISH_BUBBLE(32), FINISH_RIPTIDE(30), FINISH_COFFIN(30), FINISH_ICICLES(30),
+    FINISH_FISTS(28), FINISH_FLICK(28), FINISH_CLAP(26), FINISH_UPDRAFT(36), FINISH_FAULT(30), FINISH_SHATTER(28),
+    FINISH_NOTE(30), FINISH_SILENCE(32), FINISH_CRUSH(28), FINISH_TOSS(34), FINISH_PHASE(28), FINISH_HEAVY(30),
+    FINISH_BUBBLE_CRUSH(30), FINISH_LENS(26), FINISH_NO_PAIN(32), FINISH_GRIP(28), FINISH_HALF_LIFE(34),
+    FINISH_POCKET_SUN(34), FINISH_BREACH(30), FINISH_POINT_BLANK(26), FINISH_KILL_SWITCH(30), FINISH_OVERCLOCK(28),
+    FINISH_HAMMER(30), FINISH_ORBIT(30), FINISH_ECHO(28), FINISH_BORROW(16), FINISH_APEX(30), FINISH_FACE(30);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

@@ -979,7 +979,7 @@ public final class ElectroService {
                 ClipContext.Fluid.NONE, player)).getType() == HitResult.Type.MISS;
     }
 
-    static void shock(ServerPlayer player, LivingEntity target, float damage) {
+    public static void shock(ServerPlayer player, LivingEntity target, float damage) {
         shock(player, target, damage, false);
     }
 
