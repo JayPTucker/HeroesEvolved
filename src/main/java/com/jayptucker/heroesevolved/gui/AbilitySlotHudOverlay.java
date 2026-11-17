@@ -1,14 +1,21 @@
 package com.jayptucker.heroesevolved.gui;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
-import com.jayptucker.heroesevolved.ability.AbilitySlot;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
+import com.jayptucker.heroesevolved.client.ClientHydroState;
+import com.jayptucker.heroesevolved.client.MorphClient;
+import com.jayptucker.heroesevolved.client.OpticalClient;
+import com.jayptucker.heroesevolved.client.PyroFlightClient;
+import com.jayptucker.heroesevolved.client.effects.SpeedCyclone;
 import com.jayptucker.heroesevolved.input.ModKeyMappings;
-import com.jayptucker.heroesevolved.network.AbilityActionSnapshot;
+import com.jayptucker.heroesevolved.network.ClientFlightVisualState;
+import com.jayptucker.heroesevolved.network.ClientDensity;
 import com.jayptucker.heroesevolved.network.ClientLoadout;
 import com.jayptucker.heroesevolved.network.ClientPowerState;
+import com.jayptucker.heroesevolved.network.ClientStamina;
 import com.jayptucker.heroesevolved.network.LoadoutPayload;
-import com.jayptucker.heroesevolved.skills.Loadout;
+import com.jayptucker.heroesevolved.progression.PowerLevels;
+import com.jayptucker.heroesevolved.time.TemporalSnapshotService;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -20,6 +27,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @EventBusSubscriber(
         modid = HeroesEvolved.MOD_ID,
         value = Dist.CLIENT,
@@ -29,6 +39,7 @@ public final class AbilitySlotHudOverlay {
     private static final int START_X = 8;
     private static final int START_Y = 8;
     private static final int LINE_HEIGHT = 12;
+    private static final int TILE = 24, TILE_HEIGHT = 32, GAP = 3;
 
     private AbilitySlotHudOverlay() {
     }
@@ -51,53 +62,10 @@ public final class AbilitySlotHudOverlay {
     ) {
         // Dormant powers are intentionally unknown to the player. Do not
         // reveal their actions or controls until the awakening occurs.
-        if (Minecraft.getInstance().options.hideGui || !hasUnlockedAbility()) {
-            return;
-        }
+        var mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null || mc.options.hideGui || !hasUnlockedAbility()) return;
 
-        int y = START_Y;
-
-        if (ClientLoadout.known()) {
-            y = drawLoadout(guiGraphics, y);
-        } else {
-            for (AbilityActionSnapshot action
-                    : ClientPowerState.getSnapshot().actions()) {
-                boolean onCooldown = isOnCooldown(action);
-                guiGraphics.drawString(
-                        Minecraft.getInstance().font,
-                        buildDisplayText(action, onCooldown),
-                        START_X,
-                        y,
-                        getTextColor(action, onCooldown),
-                        true
-                );
-                y += LINE_HEIGHT;
-            }
-        }
-
-        if (hasUnlockedGroupTeleport()) {
-            String groupTeleportText = Minecraft.getInstance()
-                    .options
-                    .keyShift
-                    .getTranslatedKeyMessage()
-                    .getString()
-                    + " + "
-                    + keyName(ClientLoadout.known()
-                            ? ClientLoadout.keyOf(Loadout.base(AbilitySlot.PRIMARY))
-                            : 1)
-                    + "  Group Teleport";
-
-            guiGraphics.drawString(
-                    Minecraft.getInstance().font,
-                    groupTeleportText,
-                    START_X,
-                    y,
-                    0xFFFFD7DC,
-                    true
-            );
-            y += LINE_HEIGHT;
-        }
-
+        int y = drawLoadout(guiGraphics);
         y = drawRadiationCore(guiGraphics, y);
         y = drawResonance(guiGraphics, y);
         y = drawMomentum(guiGraphics, y);
@@ -109,78 +77,152 @@ public final class AbilitySlotHudOverlay {
             return;
         }
 
-        var mc = Minecraft.getInstance();
-        int step = mc.player == null ? 0 : com.jayptucker.heroesevolved.network.ClientFlightVisualState.speedStep(mc.player.getId());
-        String speedText = net.minecraft.network.chat.Component.translatable(
-                "hud.heroesevolved.flight_speed", step + 1).getString();
+        int step = ClientFlightVisualState.speedStep(mc.player.getId());
+        Component speedText = Component.translatable("hud.heroesevolved.flight_speed", step + 1);
 
         guiGraphics.drawString(
-                Minecraft.getInstance().font,
+                mc.font,
                 speedText,
                 START_X,
                 y,
                 0xFFFFD7DC,
                 true
         );
-        if (mc.player != null && (com.jayptucker.heroesevolved.network.ClientFlightVisualState.isFlightEnabled(mc.player.getId())
-                || com.jayptucker.heroesevolved.network.ClientFlightVisualState.isDiving(mc.player.getId()))) {
-            int id = mc.player.getId();
-            int momentum = com.jayptucker.heroesevolved.network.ClientFlightVisualState.momentum(id);
+        int id = mc.player.getId();
+        if (ClientFlightVisualState.isFlightEnabled(id) || ClientFlightVisualState.isDiving(id)) {
+            int momentum = ClientFlightVisualState.momentum(id);
             int color = momentum >= 100 ? 0xFFFFFFFF : 0xFF8EDAF0;
             y += LINE_HEIGHT;
             guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.flight_momentum", momentum),
                     START_X, y, color, true);
             guiGraphics.fill(START_X, y + 10, START_X + 100, y + 13, 0x80314650);
             guiGraphics.fill(START_X, y + 10, START_X + momentum, y + 13, color);
-            String maneuver = com.jayptucker.heroesevolved.network.ClientFlightVisualState.isCharging(id) ? "flight_charging"
-                    : com.jayptucker.heroesevolved.network.ClientFlightVisualState.isDiving(id) ? "flight_diving"
-                    : com.jayptucker.heroesevolved.network.ClientFlightVisualState.isCycloneActive(id) ? "flight_tempest" : null;
+            String maneuver = ClientFlightVisualState.isCharging(id) ? "flight_charging"
+                    : ClientFlightVisualState.isDiving(id) ? "flight_diving"
+                    : ClientFlightVisualState.isCycloneActive(id) ? "flight_tempest" : null;
             if (maneuver != null) guiGraphics.drawString(mc.font,
                     Component.translatable("hud.heroesevolved." + maneuver), START_X, y + 18, 0xFFCBEFF8, true);
         }
     }
 
-    /**
-     * Each bound key and its ability, then the wheel. Empty keys and keys
-     * with no key set in Controls are left out.
-     */
-    private static int drawLoadout(GuiGraphics guiGraphics, int y) {
+    private static int drawLoadout(GuiGraphics graphics) {
         var mc = Minecraft.getInstance();
-        long now = mc.level == null ? 0 : mc.level.getGameTime();
-        for (int key = 1; key <= ModKeyMappings.ABILITY_KEYS.length; key++) {
-            LoadoutPayload.Entry entry = ClientLoadout.entry(ClientLoadout.onKey(key));
-            if (entry == null || ModKeyMappings.ABILITY_KEYS[key - 1].isUnbound()) continue;
-            String keyName = keyName(key);
-            if (entry.nameKey().equals("hud.heroesevolved.temporal_snapshot_create")) {
-                keyName = mc.options.keyShift.getTranslatedKeyMessage().getString() + " + " + keyName;
+        var loadout = ClientLoadout.get();
+        if (loadout.power().isEmpty()) return START_Y;
+        var colors = PowerUiColors.forPower(loadout.power());
+        long now = mc.level.getGameTime();
+        int x = START_X, y = START_Y;
+        List<Component> modifiers = new ArrayList<>(2);
+        boolean sneak = mc.options.keyShift.isDown();
+        for (int index = 0; index < ModKeyMappings.ABILITY_KEYS.length; index++) {
+            KeyMapping mapping = ModKeyMappings.ABILITY_KEYS[index];
+            LoadoutPayload.Entry entry = ClientLoadout.entry(ClientLoadout.onKey(index + 1));
+            if (entry == null || mapping.isUnbound()) continue;
+            if (x + TILE > graphics.guiWidth() - START_X) { x = START_X; y += TILE_HEIGHT + GAP; }
+            long end = entry.cooldownEnd();
+            int cooldown = entry.cooldownTicks();
+            boolean snapshot = entry.path().equals("temporal_snapshot") && loadout.power().equals("time_manipulation")
+                    && !mc.level.dimension().equals(TemporalSnapshotService.TEMPORAL_DIMENSION);
+            boolean groupFold = entry.path().equals("time_blink") && loadout.power().equals("time_manipulation")
+                    && loadout.level() >= PowerLevels.levelForTier(2);
+            String key = mapping.getTranslatedKeyMessage().getString();
+            if (sneak && entry.unlocked()) {
+                if (snapshot) {
+                    end = entry.alternateCooldownEnd();
+                    cooldown = entry.alternateCooldownTicks();
+                    modifiers.add(Component.translatable("hud.heroesevolved.ability_modifier", key,
+                            Component.translatable("hud.heroesevolved.temporal_snapshot_create")));
+                } else if (groupFold) {
+                    modifiers.add(Component.translatable("hud.heroesevolved.ability_modifier", key,
+                            Component.translatable("hud.heroesevolved.group_teleport")));
+                }
             }
-            String text = keyName + "  " + Component.translatable(entry.nameKey()).getString()
-                    + (entry.rank() > 1 ? " " + "\u2022".repeat(entry.rank() - 1) : "");
-            long left = entry.cooldownEnd() - now;
-            int color = 0xFFFFD7DC;
-            if (!entry.unlocked()) {
-                text += " [Level " + entry.unlockLevel() + "]";
-                color = 0xFF777777;
-            } else if (left > 0) {
-                long seconds = (left + 19) / 20;
-                text += " (" + (seconds >= 60 ? (seconds + 59) / 60 + "m" : seconds + "s") + ")";
-                color = 0xFF777777;
-            }
-            guiGraphics.drawString(mc.font, text, START_X, y, color, true);
+            drawTile(graphics, loadout.power(), colors, entry, key, x, y, end - now, cooldown, false, snapshot || groupFold);
+            x += TILE + GAP;
+        }
+
+        KeyMapping wheel = ModKeyMappings.ABILITY_WHEEL;
+        if (!wheel.isUnbound()) {
+            if (x != START_X) x += 3;
+            if (x + TILE > graphics.guiWidth() - START_X) { x = START_X; y += TILE_HEIGHT + GAP; }
+            var quick = ClientLoadout.quickCast();
+            drawTile(graphics, loadout.power(), colors, quick, wheel.getTranslatedKeyMessage().getString(), x, y,
+                    quick == null ? 0 : quick.cooldownEnd() - now, quick == null ? 0 : quick.cooldownTicks(),
+                    true, false);
+            x += TILE;
+        }
+        if (x == START_X) return y;
+        y += TILE_HEIGHT + GAP;
+        for (Component modifier : modifiers) {
+            graphics.drawString(mc.font, modifier, START_X, y, colors.highlight(), true);
             y += LINE_HEIGHT;
         }
-        if (!ModKeyMappings.ABILITY_WHEEL.isUnbound()) {
-            guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.ability_wheel",
-                    ModKeyMappings.ABILITY_WHEEL.getTranslatedKeyMessage()), START_X, y, 0xFFB89AA0, true);
-            y += LINE_HEIGHT;
-        }
-        return y;
+        return y + 3;
     }
 
-    private static String keyName(int key) {
-        return key >= 1 && key <= ModKeyMappings.ABILITY_KEYS.length
-                ? ModKeyMappings.ABILITY_KEYS[key - 1].getTranslatedKeyMessage().getString()
-                : Component.translatable("hud.heroesevolved.wheel_short").getString();
+    private static void drawTile(GuiGraphics g, String power, PowerUiColors.Palette colors, LoadoutPayload.Entry entry, String key,
+                                 int x, int y, long left, int duration, boolean wheel, boolean alternate) {
+        var mc = Minecraft.getInstance();
+        boolean unlocked = entry == null || entry.unlocked();
+        boolean active = entry != null && unlocked && active(entry.path(), mc.player.getId());
+        int edge = active ? colors.highlight() : !unlocked || left > 0 ? PowerUiColors.MUTED_EDGE
+                : wheel ? colors.accent() : colors.edge();
+        g.fill(x, y, x + TILE, y + TILE_HEIGHT, active ? colors.selected() : colors.surface());
+        g.renderOutline(x, y, TILE, TILE_HEIGHT, edge);
+        g.fill(x + 1, y + 10, x + TILE - 1, y + 11, PowerUiColors.FRAME);
+
+        var font = mc.font;
+        int keyWidth = font.width(key);
+        float scale = Math.clamp((TILE - 4F) / Math.max(1, keyWidth), .64F, 1F);
+        String label = keyWidth * scale > TILE - 4 ? font.plainSubstrByWidth(key, (int) ((TILE - 8) / scale)) + "…" : key;
+        g.pose().pushPose();
+        g.pose().translate(x + TILE / 2F, y + 2, 0);
+        g.pose().scale(scale, scale, 1);
+        g.drawCenteredString(font, label, 0, 0, unlocked ? PowerUiColors.TEXT : PowerUiColors.MUTED_TEXT);
+        g.pose().popPose();
+
+        if (entry == null) {
+            g.renderOutline(x + 7, y + 16, 10, 10, edge);
+            g.fill(x + 11, y + 20, x + 13, y + 22, edge);
+            return;
+        }
+        AbilityIcons.draw(g, power, entry.path(), x + 2, y + 11, 20);
+        if (!unlocked) {
+            g.fill(x + 1, y + 11, x + TILE - 1, y + TILE_HEIGHT - 1, 0xA00B0D12);
+            g.renderOutline(x + 15, y + 21, 5, 5, PowerUiColors.MUTED_TEXT);
+            g.fill(x + 14, y + 24, x + 21, y + 29, PowerUiColors.MUTED_TEXT);
+        } else if (left > 0) {
+            int sweep = (int) Math.ceil(20 * Math.min(1.0, left / (double) Math.max(1, duration)));
+            g.fill(x + 1, y + TILE_HEIGHT - 1 - sweep, x + TILE - 1, y + TILE_HEIGHT - 1, 0xB00B0D12);
+            long seconds = (left + 19) / 20;
+            String countdown = seconds >= 60 ? (seconds + 59) / 60 + "m" : seconds + "s";
+            g.drawCenteredString(font, countdown, x + TILE / 2, y + 22, PowerUiColors.TEXT);
+        }
+        if (active) g.fill(x + 19, y + 13, x + 22, y + 16, colors.highlight());
+        if (alternate && unlocked && left <= 0) {
+            g.fill(x + 18, y + 26, x + 23, y + 27, colors.accent());
+            g.fill(x + 20, y + 24, x + 21, y + 29, colors.accent());
+        }
+    }
+
+    /** Use the power's live state so tapping a key or failing a cast never falsely marks it active. */
+    private static boolean active(String action, int entity) {
+        return switch (action) {
+            case "flight_toggle" -> ClientFlightVisualState.isFlightEnabled(entity);
+            case "flight_launch" -> ClientFlightVisualState.isCharging(entity) || ClientFlightVisualState.isBursting(entity);
+            case "flight_dive_bomb" -> ClientFlightVisualState.isDiving(entity);
+            case "flight_cyclone" -> ClientFlightVisualState.isCycloneActive(entity);
+            case "pyro_backdraft" -> PyroFlightClient.active();
+            case "speed_cyclone" -> SpeedCyclone.running(entity);
+            case "time_stop" -> ClientStamina.stillWorld();
+            case "time_slow" -> ClientStamina.betweenSeconds();
+            case "invisibility_fade" -> OpticalClient.faded();
+            case "phasing_shift" -> ClientDensity.get() != 0;
+            case "hydro_octopus_form" -> ClientHydroState.octopus(entity);
+            case "hydro_wave_rider" -> ClientHydroState.riding(entity);
+            case "shapeshift_morph" -> MorphClient.form(entity) != null;
+            default -> false;
+        };
     }
 
     /** Superspeed's Momentum, with notches where the body crackles, you buffet, and the sound barrier breaks. */
@@ -381,90 +423,9 @@ public final class AbilitySlotHudOverlay {
         );
     }
 
-    private static boolean hasUnlockedGroupTeleport() {
-        return ClientPowerState.getSnapshot().abilities().stream().anyMatch(
-                ability -> ability.unlocked()
-                        && ability.abilityId().equals(
-                        ModAbilities.TIME_MANIPULATION_ID
-                )
-                        && ability.level() >= 1
-        );
-    }
-
     private static boolean hasUnlockedAbility() {
         return ClientPowerState.getSnapshot().abilities().stream().anyMatch(
                 ability -> ability.unlocked()
         );
-    }
-
-    private static boolean isOnCooldown(
-            AbilityActionSnapshot action
-    ) {
-        Minecraft minecraft = Minecraft.getInstance();
-
-        return minecraft.level != null
-                && action.cooldownEndGameTime()
-                > minecraft.level.getGameTime();
-    }
-
-    private static int getTextColor(
-            AbilityActionSnapshot action,
-            boolean onCooldown
-    ) {
-        // Locked actions and actions on cooldown intentionally appear gray.
-        if (!action.unlocked() || onCooldown) {
-            return 0xFF777777;
-        }
-
-        return 0xFFFFD7DC;
-    }
-
-    private static String buildDisplayText(
-            AbilityActionSnapshot action,
-            boolean onCooldown
-    ) {
-        String keyName = getKeyMapping(action.slot())
-                .getTranslatedKeyMessage()
-                .getString();
-
-        if (action.displayNameKey().equals(
-                "hud.heroesevolved.temporal_snapshot_create"
-        )) {
-            keyName = Minecraft.getInstance().options.keyShift
-                    .getTranslatedKeyMessage().getString() + " + " + keyName;
-        }
-
-        String actionName = Component.translatable(
-                action.displayNameKey()
-        ).getString();
-
-        if (!action.unlocked()) {
-            return keyName + "  " + actionName + " [Locked]";
-        }
-
-        if (onCooldown) {
-            long remainingTicks = action.cooldownEndGameTime()
-                    - Minecraft.getInstance().level.getGameTime();
-
-            long remainingSeconds = (long) Math.ceil(remainingTicks / 20.0D);
-            String remainingText = remainingSeconds >= 60
-                    ? (long) Math.ceil(remainingSeconds / 60.0D) + "m"
-                    : remainingSeconds + "s";
-
-            return keyName + "  " + actionName
-                    + " (" + remainingText + ")";
-        }
-
-        return keyName + "  " + actionName;
-    }
-
-    private static KeyMapping getKeyMapping(AbilitySlot slot) {
-        return switch (slot) {
-            case PRIMARY -> ModKeyMappings.ABILITY_1;
-            case SECONDARY -> ModKeyMappings.ABILITY_2;
-            case TERTIARY -> ModKeyMappings.ABILITY_3;
-            case QUATERNARY -> ModKeyMappings.ABILITY_4;
-            case QUINARY -> ModKeyMappings.ABILITY_5;
-        };
     }
 }

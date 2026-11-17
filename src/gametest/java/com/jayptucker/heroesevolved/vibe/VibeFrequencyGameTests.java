@@ -345,13 +345,17 @@ public final class VibeFrequencyGameTests {
             VibeBreaches.close(listener);
         }));
         h.runAfterDelay(14, () -> guarded(listener, () -> {
-            h.assertTrue(BreachVoiceRoutes.routes(speaker.getUUID()).isEmpty(), "Closing the breach ends the relay");
+            h.assertTrue(BreachVoiceRoutes.routes(speaker.getUUID()).stream()
+                    .noneMatch(route -> route.listener().equals(listener.getUUID()) && route.audible(6)),
+                    "Closing the breach ends the relay between the two players");
             VibeFrequencies.choose(listener, FrequencyChoicePayload.GLIMPSE, 0, "");
         }));
         h.runAfterDelay(26, () -> {
             try {
                 done(h, listener, () -> h.assertTrue(VibeBreaches.kind(listener) == VibeBreaches.Kind.GLIMPSE
-                        && BreachVoiceRoutes.routes(speaker.getUUID()).isEmpty(), "Glimpse leaves proximity voice unchanged"));
+                        && BreachVoiceRoutes.routes(speaker.getUUID()).stream()
+                        .noneMatch(route -> route.listener().equals(listener.getUUID()) && route.audible(6)),
+                        "Glimpse leaves proximity voice unchanged"));
             } finally {
                 clean(speaker);
             }

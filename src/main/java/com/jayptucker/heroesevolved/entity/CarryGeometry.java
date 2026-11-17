@@ -11,6 +11,7 @@ import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -150,9 +151,12 @@ public final class CarryGeometry {
 
     /** Checks blocks only: a carry seat must not jitter between slots because another entity walks by. */
     public static boolean clear(Entity carrier, double heldWidth, double heldHeight, Vec3 feet) {
+        return clear(carrier.level(), carrier, heldWidth, heldHeight, feet);
+    }
+
+    static boolean clear(Level level, Entity carrier, double heldWidth, double heldHeight, Vec3 feet) {
         if (!Double.isFinite(feet.lengthSqr())) return false;
         AABB bounds = box(heldWidth, heldHeight, feet).deflate(.001D);
-        var level = carrier.level();
         if (bounds.minY < level.getMinBuildHeight() || bounds.maxY >= level.getMaxBuildHeight()
                 || !level.getWorldBorder().isWithinBounds(bounds)) return false;
         int minChunkX = Mth.floor(bounds.minX) >> 4, maxChunkX = Mth.floor(bounds.maxX) >> 4;

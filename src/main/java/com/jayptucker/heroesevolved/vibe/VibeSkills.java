@@ -9,7 +9,7 @@ public final class VibeSkills {
 
     public static AbilityAction action(SkillCatalog.Node node) {
         return SimpleAction.builder(node.id(), node.level()).cost(node::energy, node::cooldown)
-                .canUse(c -> VibeService.ready(c.player()))
+                .canUse(c -> node.id().equals("vibe_1_1") ? VibeBreaches.canOpen(c.player()) : VibeService.ready(c.player()))
                 // Glimpse: the press opens the wheel (or closes an open window) for free; the wheel's pick pays.
                 .followUp(c -> switch (node.id()) {
                     case "vibe_1_1" -> VibeBreaches.glimpseFollowUp(c.player());

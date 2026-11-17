@@ -7,6 +7,9 @@ import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.ability.service.AbilityUseService;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
+import com.jayptucker.heroesevolved.entity.CarryAnchorEntity;
+import com.jayptucker.heroesevolved.entity.EntityCarryService;
+import com.jayptucker.heroesevolved.events.EntityCarryEvents;
 import com.jayptucker.heroesevolved.grid.GridGameTests;
 import com.jayptucker.heroesevolved.progression.EvolutionTrials;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
@@ -25,6 +28,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.ClientInformation;
 import net.minecraft.server.network.CommonListenerCookie;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -37,6 +41,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.util.FakePlayer;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -152,27 +157,50 @@ public final class VibeGameTests {
         equip(h, p);
         h.getLevel().addNewPlayer(p);
         Vec3 start = p.position();
+        var pig = EntityType.PIG.create(h.getLevel());
+        pig.setPos(start.add(1.5, 0, .5));
+        h.getLevel().addFreshEntity(pig);
+        Runnable cleanup = () -> {
+            EntityCarryService.release(p);
+            pig.discard();
+            clean(p);
+        };
         p.setXRot(13);
-        h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, true) == AbilityUseResult.SUCCESS,
-                "A clear, grounded destination opens a linked breach");
+        try {
+            p.setShiftKeyDown(true);
+            var pickup = new PlayerInteractEvent.EntityInteract(p, InteractionHand.MAIN_HAND, pig);
+            EntityCarryEvents.onEntityInteract(pickup);
+            p.setShiftKeyDown(false);
+            h.assertTrue(pickup.isCanceled() && EntityCarryService.isBeingCarried(pig), "Sneak and right-click takes the pig in hand");
+            h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, true) == AbilityUseResult.SUCCESS,
+                    "The carrier can open a linked breach while holding the pig");
+        } catch (RuntimeException | AssertionError failure) {
+            cleanup.run();
+            throw failure;
+        }
+        var anchor = (CarryAnchorEntity) pig.getVehicle();
         h.runAfterDelay(12, () -> p.setPos(start.add(0, 0, 2.35)));
         h.runAfterDelay(14, () -> {
             try {
                 h.assertTrue(p.position().distanceToSqr(start) > 25, "Walking through the entry sends the player to the exit");
+                h.assertTrue(pig.getVehicle() == anchor && anchor.carrier() == p
+                        && pig.position().distanceToSqr(anchor.seatPosition(p)) < .01, "The same carry comes through with the player");
                 p.setPos(p.position().subtract(0, 0, 1.48));
-            } catch (RuntimeException failure) {
-                clean(p);
+            } catch (RuntimeException | AssertionError failure) {
+                cleanup.run();
                 throw failure;
             }
         });
         h.runAfterDelay(17, () -> {
             try {
                 h.assertTrue(p.position().distanceToSqr(start) < 14, "Crossing the other mouth sends the player back");
+                h.assertTrue(EntityCarryService.isBeingCarried(pig) && pig.position().distanceToSqr(p.position()) < 2,
+                        "The pig is still held after the return trip");
                 int energy = PlayerEnergyService.getEnergy(p);
                 h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, false) == AbilityUseResult.SUCCESS
                         && PlayerEnergyService.getEnergy(p) == energy, "A second press closes the pair before cooldown and energy checks");
                 h.succeed();
-            } finally { clean(p); }
+            } finally { cleanup.run(); }
         });
     }
 
@@ -245,7 +273,13 @@ public final class VibeGameTests {
         var connection = new Connection(PacketFlow.SERVERBOUND);
         var channel = new EmbeddedChannel(connection);
         var player = new ServerPlayer(origin.getServer(), origin, profile, ClientInformation.createDefault());
+        var cargo = EntityType.PIG.create(origin);
         Runnable cleanup = () -> {
+            EntityCarryService.release(player);
+            Entity inNether = nether.getEntity(cargo.getUUID());
+            Entity inOrigin = origin.getEntity(cargo.getUUID());
+            if (inNether != null) inNether.discard();
+            if (inOrigin != null) inOrigin.discard();
             clean(player);
             channel.close();
             if (!wasForced) nether.setChunkForced(chunk.x, chunk.z, false);
@@ -296,6 +330,10 @@ public final class VibeGameTests {
                                 ? ", owner=" + shot.getOwner() + ", motion=" + shot.getDeltaMovement() : ""));
                 float[] data = PowerWeapons.bulletExplosion(exit);
                 h.assertTrue(data != null && data[0] == 2.75F, "The bullet keeps its explosive ammo attributes");
+                cargo.setPos(start.add(1.5, 0, .5));
+                origin.addFreshEntity(cargo);
+                h.assertTrue(EntityCarryService.pickUp(player, cargo, EntityCarryService.ORDINARY_REACH),
+                        "Pick up a mob before crossing the dimension link");
                 player.setPos(start.add(0, 0, 2.3));
             } catch (RuntimeException | AssertionError failure) {
                 cleanup.run();
@@ -310,8 +348,11 @@ public final class VibeGameTests {
             try {
                 h.assertTrue(player.serverLevel() == nether && player.position().distanceToSqr(attuned) < 3,
                         "A real player crosses to the saved world and leaves the destination mouth");
+                Entity carried = nether.getEntity(cargo.getUUID());
+                h.assertTrue(origin.getEntity(cargo.getUUID()) == null && carried != null
+                        && EntityCarryService.isBeingCarried(carried), "The held mob has one copy and remains held in the Nether");
                 player.setPos(player.position().subtract(0, 0, 1.45));
-            } catch (RuntimeException failure) {
+            } catch (RuntimeException | AssertionError failure) {
                 cleanup.run();
                 throw failure;
             }
@@ -320,6 +361,12 @@ public final class VibeGameTests {
             try {
                 h.assertTrue(player.serverLevel() == origin && player.position().distanceToSqr(start) < 14,
                         "The same portal stays open after dimension change and returns the traveler");
+                Entity returned = origin.getEntity(cargo.getUUID());
+                h.assertTrue(nether.getEntity(cargo.getUUID()) == null && returned != null
+                        && EntityCarryService.isBeingCarried(returned), "The held mob returns without duplication");
+                EntityCarryService.release(player);
+                h.assertTrue(!returned.isNoGravity() && !returned.noPhysics && !returned.isInvulnerable(),
+                        "Releasing cargo restores its original flags after both dimension transitions");
                 h.succeed();
             } finally {
                 cleanup.run();

@@ -23,6 +23,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record StaminaPayload(float stamina, int maximum, float regen, float drain, int flags, int pauseTicks)
         implements CustomPacketPayload {
     public static final int PAUSED = 1, CALM = 2, HELD = 4, UNLIMITED = 8, REFUSED = 16;
+    public static final int STILL_WORLD = 32, BETWEEN_SECONDS = 64;
     public static final Type<StaminaPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "stamina"));
     public static final StreamCodec<RegistryFriendlyByteBuf, StaminaPayload> STREAM_CODEC = StreamCodec.composite(

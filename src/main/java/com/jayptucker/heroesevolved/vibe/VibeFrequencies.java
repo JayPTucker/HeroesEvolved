@@ -215,7 +215,7 @@ public final class VibeFrequencies {
 
     /** Opens the frequency wheel: Breach's plain press, or Glimpse. Only a native viber has frequencies to show. */
     public static boolean wheel(ServerPlayer player, int mode) {
-        if (!VibeService.nativePower(player) || !VibeService.ready(player)) return false;
+        if (!VibeService.nativePower(player) || !VibeBreaches.canOpen(player)) return false;
         MODES.put(player.getUUID(), mode);
         Frequency[] all = all(player);
         List<FrequencyListPayload.Entry> entries = new ArrayList<>();
@@ -238,7 +238,7 @@ public final class VibeFrequencies {
 
     /** A click on the wheel. Breaches and glimpses go through the normal press, so they pay and cool down as one. */
     public static void choose(ServerPlayer player, int op, int slot, String name) {
-        if (!VibeService.nativePower(player) || !VibeService.ready(player)) return;
+        if (!VibeService.nativePower(player) || !VibeBreaches.canOpen(player)) return;
         if (!(op == FrequencyChoicePayload.BREACH && slot == -1) && (slot < 0 || slot >= slots(player))) {
             VibeBreaches.fail(player, "slot_locked");
             return;
@@ -293,7 +293,7 @@ public final class VibeFrequencies {
         for (Pending pending : List.copyOf(PENDING.values())) {
             ServerPlayer player = pending.player();
             if (player.server != server) continue;
-            if (player.serverLevel() != pending.origin() || !VibeService.ready(player)) {
+            if (player.serverLevel() != pending.origin() || !VibeBreaches.canOpen(player)) {
                 cancelPending(player);
             } else if (pending.slot() >= slots(player) || !pending.frequency().equals(get(player, pending.slot()))
                     || now >= pending.expires()) {

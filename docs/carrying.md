@@ -4,6 +4,9 @@ Sneak and right-click a nearby entity to pick it up. Sneak and right-click a cle
 it down. A carried player can press Sneak to get free. Flight's Skyhook uses the same system for
 grabs, gentle releases and throws.
 
+You can open and cross a Vibe breach with a mob or player in your arms. They stay in your arms
+when you step out, including through a link between dimensions.
+
 ## How things are held
 
 What you carry is held in front of you, in your arms, and is drawn where your arms actually are.
@@ -38,7 +41,7 @@ can attach cargo as soon as both entities are in view. A carried player keeps th
 - Cargo in your arms stays within your own height, so it only comes loose if you crawl under
   something chest-high. An overhead lift needs the space above your head. Released cargo is put on
   the ground just in front of you, or at the nearest safe spot.
-- **Cleanup:** death, disconnects and dimension changes clean up both sides of a player carry, and so
+- **Cleanup:** death, disconnects and ordinary dimension changes clean up both sides of a player carry, and so
   does dismounting, the anchor disappearing, or something else changing the mount.
   - External teleports and new vehicles keep their position and control.
   - Gravity, collision, invulnerability and mob AI return to their previous values.

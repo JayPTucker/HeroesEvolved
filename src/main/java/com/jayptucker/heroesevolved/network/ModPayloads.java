@@ -17,7 +17,7 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("95")
+        event.registrar("96")
             .playToClient(TemporalProjectilePayload.TYPE, TemporalProjectilePayload.STREAM_CODEC, TemporalProjectilePayload::handle)
             .playToClient(TemporalCatchStatePayload.TYPE, TemporalCatchStatePayload.STREAM_CODEC, TemporalCatchStatePayload::handle)
             .playToClient(SkyburstMotionPayload.TYPE, SkyburstMotionPayload.STREAM_CODEC, SkyburstMotionPayload::handle)
@@ -60,6 +60,7 @@ public final class ModPayloads {
             .playToClient(LoadoutPayload.TYPE, LoadoutPayload.STREAM_CODEC, LoadoutPayload::handle)
             .playToServer(ActionInputPayload.TYPE, ActionInputPayload.STREAM_CODEC, ActionInputPayload::handle)
             .playToServer(BindKeyPayload.TYPE, BindKeyPayload.STREAM_CODEC, BindKeyPayload::handle)
+            .playToServer(BindWheelPayload.TYPE, BindWheelPayload.STREAM_CODEC, BindWheelPayload::handle)
             .playToServer(GiveUpPayload.TYPE, GiveUpPayload.STREAM_CODEC, GiveUpPayload::handle)
             .playBidirectional(DeathRewindPayload.TYPE, DeathRewindPayload.STREAM_CODEC, new net.neoforged.neoforge.network.handling.DirectionalPayloadHandler<>(DeathRewindPayload::handleClient, DeathRewindPayload::handleServer))
             .playToServer(SkillTreeActionPayload.TYPE, SkillTreeActionPayload.STREAM_CODEC, SkillTreeActionPayload::handle)

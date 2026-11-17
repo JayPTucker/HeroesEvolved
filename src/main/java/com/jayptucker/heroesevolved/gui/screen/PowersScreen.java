@@ -4,11 +4,14 @@ import com.jayptucker.heroesevolved.ability.AbilityAction;
 import com.jayptucker.heroesevolved.ability.AbilitySlot;
 import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.ability.service.AbilityRanks;
+import com.jayptucker.heroesevolved.gui.AbilityIcons;
+import com.jayptucker.heroesevolved.gui.PowerUiColors;
 import com.jayptucker.heroesevolved.input.ModKeyMappings;
 import com.jayptucker.heroesevolved.network.*;
 import com.jayptucker.heroesevolved.progression.PowerLevels;
 import com.jayptucker.heroesevolved.skills.Loadout;
 import com.jayptucker.heroesevolved.skills.SkillCatalog;
+import com.jayptucker.heroesevolved.skills.WheelLoadout;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphics;
@@ -17,7 +20,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
-import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.ArrayList;
@@ -37,9 +39,12 @@ public final class PowersScreen extends HeroScreen {
     private static final ResourceLocation HEX_OPEN = hex("open"), HEX_LOCKED = hex("locked"), HEX_LEARNED = hex("learned"),
             HEX_POWER = hex("power"), HEX_SELECTED = hex("selected");
     private static final int HEX_W = 26, HEX_H = 30, ROW = 24;
+    private static final String[] DIRECTIONS = {"Top", "Top right", "Right", "Bottom right",
+            "Bottom", "Bottom left", "Left", "Top left"};
 
     private Tab page = Tab.LOADOUT;
     private String selectedAction = Loadout.base(AbilitySlot.PRIMARY), selectedNode = "";
+    private boolean editingWheel;
     private int scroll;
     private boolean pending;
     private SkillTreeStatePayload seenState;
@@ -60,8 +65,9 @@ public final class PowersScreen extends HeroScreen {
         return this;
     }
 
-    /** Selects an ability or skill by its key, as a click would (used by the UI preview): a node id, "power", or "core:SLOT". */
+    /** Selects an ability, skill, or Loadout view as a click would. Used by the UI preview. */
     public void select(String key) {
+        if (key.equals("wheel")) { page = Tab.LOADOUT; editingWheel = true; return; }
         if (key.startsWith("core:")) { page = Tab.LOADOUT; selectedAction = Loadout.BASE + key.substring(5); return; }
         if (key.equals("power")) { page = Tab.LOADOUT; return; }
         AbilitySnapshot power = power();
@@ -92,12 +98,17 @@ public final class PowersScreen extends HeroScreen {
         if (minecraft.getConnection() != null) PacketDistributor.sendToServer(new BindKeyPayload(key, actionKey));
     }
 
+    private void bindWheel(String power, int slot, String actionKey) {
+        if (minecraft.getConnection() != null)
+            PacketDistributor.sendToServer(new BindWheelPayload(power, slot, actionKey));
+    }
+
     // ------------------------------------------------------------------
     // What the player has
     // ------------------------------------------------------------------
 
     /** One castable ability, as the Loadout page shows it. */
-    private record Ability(String actionKey, Component name, Component description, ItemStack icon, String role, String kind,
+    private record Ability(String actionKey, Component name, Component description, String role, String kind,
                            boolean unlocked, int unlockLevel, int energy, int cooldown, String rank, String id) {
         /** "18 stamina", "20 + 12/s stamina", "free". */
         String stamina() { return com.jayptucker.heroesevolved.ability.PowerBalance.describe(id, energy); }
@@ -121,12 +132,14 @@ public final class PowersScreen extends HeroScreen {
         for (AbilitySlot slot : AbilitySlot.values()) {
             AbilityAction action = ability == null ? null : ability.actions().get(slot);
             if (action == null) continue;
-            String key = Loadout.base(slot), id = action.definition().id().getPath();
+            String key = Loadout.base(slot);
             LoadoutPayload.Entry entry = ClientLoadout.entry(key);
-            Component description = Component.translatable(action.definition().displayNameKey() + ".desc");
-            list.add(new Ability(key, Component.translatable(action.definition().displayNameKey()), description, PowerIcons.action(path, id),
-                    roleOf("", description.getString()), "Core ability", awake && power.level() >= action.definition().unlockLevel(),
-                    PowerLevels.levelForTier(action.definition().unlockLevel()),
+            String id = entry == null ? action.definition().id().getPath() : entry.path();
+            String nameKey = entry == null ? action.definition().displayNameKey() : entry.nameKey();
+            Component description = Component.translatable(nameKey + ".desc");
+            list.add(new Ability(key, Component.translatable(nameKey), description,
+                    roleOf("", description.getString()), "Core ability", entry != null ? entry.unlocked() : awake && power.level() >= action.definition().unlockLevel(),
+                    entry != null ? entry.unlockLevel() : PowerLevels.levelForTier(action.definition().unlockLevel()),
                     entry != null ? entry.energy() : action.energyCost(Math.max(1, power.level())),
                     entry != null ? entry.cooldownTicks() : action.cooldownTicks(Math.max(1, power.level())), entry == null ? "" : rank(entry), id));
         }
@@ -136,7 +149,7 @@ public final class PowersScreen extends HeroScreen {
         for (SkillCatalog.Node node : nodes) {
             if (!node.active() || !learned.contains(node.id())) continue;
             LoadoutPayload.Entry entry = ClientLoadout.entry(node.id());
-            list.add(new Ability(node.id(), Component.literal(node.name()), Component.literal(node.description()), PowerIcons.node(node),
+            list.add(new Ability(node.id(), Component.literal(node.name()), Component.literal(node.description()),
                     roleOf(node.role(), node.description()), node.style() ? "Class ability" : node.signature() ? "Signature skill" : "Learned skill",
                     awake, PowerLevels.levelForTier(node.level()), entry != null ? entry.energy() : node.energy(),
                     entry != null ? entry.cooldownTicks() : node.cooldown(), entry == null ? "" : rank(entry), node.id()));
@@ -192,6 +205,8 @@ public final class PowersScreen extends HeroScreen {
 
     private void renderLoadout(GuiGraphics g, int mouseX, int mouseY) {
         List<Ability> list = abilities();
+        String powerPath = power().abilityId().getPath();
+        var colors = PowerUiColors.forPower(powerPath);
         int x = contentLeft(), top = contentTop(), bottom = contentBottom() - 4;
         int listW = Math.min(250, (int) (contentWidth() * 0.55F));
         g.drawString(font, "YOUR ABILITIES", x, top, GOLD, false);
@@ -200,15 +215,14 @@ public final class PowersScreen extends HeroScreen {
         scroll = Mth.clamp(scroll, 0, Math.max(0, list.size() - visible));
         Ability selected = list.stream().filter(a -> a.actionKey.equals(selectedAction)).findFirst().orElse(list.isEmpty() ? null : list.getFirst());
         if (selected != null) selectedAction = selected.actionKey;
-        String lastKind = "";
         for (int i = scroll; i < Math.min(list.size(), scroll + visible); i++) {
             Ability a = list.get(i);
             int y = listTop + (i - scroll) * ROW;
             boolean isSelected = a == selected, over = mouseX >= x && mouseX < x + listW && mouseY >= y && mouseY < y + ROW - 2;
-            g.fill(x, y, x + listW, y + ROW - 2, isSelected ? 0x996A4A14 : over ? 0x66403020 : 0x55000000);
-            if (isSelected) g.renderOutline(x, y, listW, ROW - 2, GOLD);
+            g.fill(x, y, x + listW, y + ROW - 2, isSelected ? colors.selected() : over ? colors.surface() : 0x55000000);
+            if (isSelected) g.renderOutline(x, y, listW, ROW - 2, colors.accent());
             g.fill(x, y, x + 2, y + ROW - 2, roleColor(a.role));
-            g.renderFakeItem(a.icon, x + 5, y + 3);
+            AbilityIcons.draw(g, powerPath, a.id, x + 5, y + 3, 16);
             if (!a.unlocked) g.fill(x + 5, y + 3, x + 21, y + 19, 0x99201A16);
             int textX = x + 25, keyIndex = ClientLoadout.keyOf(a.actionKey);
             String keyText = keyIndex > 0 ? key(keyIndex) : "—";
@@ -221,9 +235,9 @@ public final class PowersScreen extends HeroScreen {
             g.drawString(font, ellipsis(facts, nameRoom - pillW - 4), textX, y + 12, MUTED, false);
             pill(g, x + listW - keyW - 6 - pillW, y + 11, roleLabel(a.role), roleColor(a.role));
             int kx = x + listW - keyW - 3;
-            g.fill(kx, y + 4, kx + keyW, y + 17, keyIndex > 0 ? 0xCC2A1C10 : 0x55000000);
-            g.renderOutline(kx, y + 4, keyW, 13, keyIndex > 0 ? GOLD : LINE);
-            g.drawCenteredString(font, keyText, kx + keyW / 2, y + 7, keyIndex > 0 ? GOLD : DIM);
+            g.fill(kx, y + 4, kx + keyW, y + 17, keyIndex > 0 ? colors.surface() : 0x55000000);
+            g.renderOutline(kx, y + 4, keyW, 13, keyIndex > 0 ? colors.edge() : LINE);
+            g.drawCenteredString(font, keyText, kx + keyW / 2, y + 7, keyIndex > 0 ? colors.highlight() : DIM);
             String target = a.actionKey;
             hits.add(new Hit(x, y, listW, ROW - 2, () -> selectedAction = target, null));
         }
@@ -233,12 +247,12 @@ public final class PowersScreen extends HeroScreen {
             g.fill(barX, listTop, barX + 2, bottom, 0x33FFFFFF);
             g.fill(barX, thumbY, barX + 2, thumbY + thumb, GOLD);
         }
-        // The selected ability, then the eight keys.
+        // The selected ability and its two ways of assigning it.
         int rx = x + listW + 8, rw = contentRight() - rx;
         int keysH = 2 * 26 + 14, detailBottom = bottom - keysH - 6;
         panel(g, rx, top, rw, detailBottom - top);
         if (selected != null) {
-            g.renderFakeItem(selected.icon, rx + 6, top + 6);
+            AbilityIcons.draw(g, powerPath, selected.id, rx + 6, top + 6, 16);
             fitted(g, selected.name.getString(), rx + 26, top + 6, rw - 30, TEXT, true);
             int px = rx + 26 + pill(g, rx + 26, top + 16, roleLabel(selected.role), roleColor(selected.role)) + 4;
             g.drawString(font, ellipsis(selected.kind, rx + rw - px - 4), px, top + 17, MUTED, false);
@@ -249,33 +263,51 @@ public final class PowersScreen extends HeroScreen {
             int lines = Math.max(1, (detailBottom - (top + 44) - 12) / 10);
             int after = paragraph(g, selected.description, rx + 6, top + 43, rw - 12, lines, TEXT);
             int keyIndex = ClientLoadout.keyOf(selected.actionKey);
-            Component status = !selected.unlocked ? Component.literal("Unlocks at Level " + selected.unlockLevel).withStyle(ChatFormatting.RED)
-                    : keyIndex > 0 ? Component.literal("On " + key(keyIndex) + ". Also on the ability wheel (hold R).").withStyle(ChatFormatting.GREEN)
-                    : Component.literal("On the ability wheel only. Click a key below to put it there.").withStyle(ChatFormatting.GOLD);
-            g.drawString(font, ellipsis(status.getString(), rw - 12), rx + 6, Math.min(after + 2, detailBottom - 11), status.getStyle().getColor() == null ? TEXT
-                    : status.getStyle().getColor().getValue() | 0xFF000000, false);
+            int wheelPosition = ClientLoadout.wheelPosition(selected.actionKey);
+            String binding = keyIndex > 0 ? key(keyIndex) : "";
+            if (wheelPosition > 0) binding += (binding.isEmpty() ? "" : " · ") + "Wheel " + DIRECTIONS[wheelPosition - 1].toLowerCase(java.util.Locale.ROOT);
+            String status = !selected.unlocked ? "Unlocks at Level " + selected.unlockLevel
+                    : binding.isEmpty() ? "No key or wheel slot" : binding;
+            g.drawString(font, ellipsis(status, rw - 12), rx + 6, Math.min(after + 2, detailBottom - 11),
+                    selected.unlocked ? colors.highlight() : DIM, false);
         }
         int ky = detailBottom + 6;
-        g.drawString(font, "KEYS", rx, ky, GOLD, false);
-        g.drawString(font, ellipsis("click to assign, right-click to clear", rw - 30), rx + 28, ky, DIM, false);
-        int slotW = (rw - 9) / 4;
         Map<String, Ability> byKey = new HashMap<>();
         list.forEach(a -> byKey.put(a.actionKey, a));
+        bindingButton(g, rx, ky, 35, 12, "Keys", true, !editingWheel, mouseX, mouseY, colors, () -> editingWheel = false);
+        bindingButton(g, rx + 38, ky, 39, 12, "Wheel", true, editingWheel, mouseX, mouseY, colors, () -> editingWheel = true);
+        if (editingWheel) renderWheelBindings(g, mouseX, mouseY, rx, ky + 14, rw, powerPath, colors, selected, byKey);
+        else renderKeyBindings(g, mouseX, mouseY, rx, ky + 14, rw, powerPath, colors, selected, byKey);
+    }
+
+    private static void bindingBox(GuiGraphics g, int x, int y, int w, int h,
+                                   boolean selected, boolean over, PowerUiColors.Palette colors) {
+        g.fill(x, y, x + w, y + h, over ? colors.hover() : selected ? colors.selected() : colors.surface());
+        g.renderOutline(x, y, w, h, over ? colors.highlight() : selected ? colors.accent() : colors.edge());
+    }
+
+    private void bindingButton(GuiGraphics g, int x, int y, int w, int h, String label, boolean enabled,
+                               boolean selected, int mouseX, int mouseY, PowerUiColors.Palette colors, Runnable click) {
+        Hit hit = new Hit(x, y, w, h, click, null);
+        bindingBox(g, x, y, w, h, selected, enabled && hit.over(mouseX, mouseY), colors);
+        g.drawCenteredString(font, ellipsis(label, w - 4), x + w / 2, y + (h - 8) / 2,
+                enabled || selected ? PowerUiColors.TEXT : PowerUiColors.MUTED_TEXT);
+        if (enabled) hits.add(hit);
+    }
+
+    private void renderKeyBindings(GuiGraphics g, int mouseX, int mouseY, int rx, int y, int rw, String powerPath,
+                                   PowerUiColors.Palette colors, Ability selected, Map<String, Ability> byKey) {
+        int slotW = (rw - 9) / 4;
         for (int k = 1; k <= Loadout.KEYS; k++) {
-            int sx = rx + ((k - 1) % 4) * (slotW + 3), sy = ky + 12 + ((k - 1) / 4) * 26;
+            int sx = rx + ((k - 1) % 4) * (slotW + 3), sy = y + ((k - 1) / 4) * 25;
             String bound = ClientLoadout.onKey(k);
             Ability on = byKey.get(bound);
             boolean holdsSelected = selected != null && bound.equals(selected.actionKey);
             boolean over = mouseX >= sx && mouseX < sx + slotW && mouseY >= sy && mouseY < sy + 24;
-            g.fill(sx, sy, sx + slotW, sy + 24, holdsSelected ? 0xAA6A4A14 : over ? 0x88403020 : 0x66000000);
-            g.renderOutline(sx, sy, slotW, 24, holdsSelected ? GOLD : over ? TEXT : LINE);
-            g.drawString(font, key(k), sx + 3, sy + 2, GOLD, false);
+            bindingBox(g, sx, sy, slotW, 24, holdsSelected, over, colors);
+            g.drawString(font, key(k), sx + 3, sy + 2, colors.highlight(), false);
             if (on != null) {
-                g.pose().pushPose();
-                g.pose().translate(sx + slotW - 14, sy + 2, 0);
-                g.pose().scale(0.75F, 0.75F, 1);
-                g.renderFakeItem(on.icon, 0, 0);
-                g.pose().popPose();
+                AbilityIcons.draw(g, powerPath, on.id, sx + slotW - 14, sy + 2, 12);
                 fitted(g, on.name.getString(), sx + 3, sy + 13, slotW - 6, TEXT, false);
             } else g.drawString(font, "empty", sx + 3, sy + 13, DIM, false);
             int index = k;
@@ -284,8 +316,59 @@ public final class PowersScreen extends HeroScreen {
                 if (chosen == null || !chosen.unlocked) return;
                 bind(index, holdsSelected ? "" : chosen.actionKey);
             }, () -> bind(index, "")));
-            if (over && on != null) hover = on.name;
+            if (over) hover = (on == null ? Component.literal("Empty") : on.name.copy())
+                    .append(Component.literal("\nClick to assign. Right-click to clear."));
         }
+    }
+
+    private void renderWheelBindings(GuiGraphics g, int mouseX, int mouseY, int x, int y, int w, String powerPath,
+                                     PowerUiColors.Palette colors, Ability selected, Map<String, Ability> byKey) {
+        String pinned = ClientLoadout.get().quickCast();
+        for (int i = 0; i < WheelLoadout.SLOTS; i++) {
+            int slot = i + 1;
+            double angle = Math.PI * i / 4;
+            int sx = x + 18 + 16 * (int) Math.round(Math.sin(angle));
+            int sy = y + 16 + 16 * (int) Math.round(-Math.cos(angle));
+            String bound = ClientLoadout.onWheel(slot);
+            Ability on = byKey.get(bound);
+            boolean selectedHere = selected != null && selected.actionKey.equals(bound);
+            boolean over = mouseX >= sx && mouseX < sx + 15 && mouseY >= sy && mouseY < sy + 15;
+            bindingBox(g, sx, sy, 15, 15, selectedHere, over, colors);
+            if (on != null) {
+                AbilityIcons.draw(g, powerPath, on.id, sx + 1, sy + 1, 13);
+                if (bound.equals(pinned)) g.fill(sx + 11, sy + 11, sx + 14, sy + 14, colors.highlight());
+            }
+            if (over) hover = Component.literal(DIRECTIONS[i] + " · ")
+                    .append(on == null ? Component.literal("Empty") : on.name)
+                    .append(Component.literal("\nClick to assign. Right-click to clear."));
+            hits.add(new Hit(sx, sy, 15, 15, () -> {
+                if (selected != null && selected.unlocked) bindWheel(powerPath, slot, selectedHere ? "" : selected.actionKey);
+            }, () -> bindWheel(powerPath, slot, "")));
+        }
+
+        int px = x + 55, pw = w - 55;
+        var wheelKey = ModKeyMappings.ABILITY_WHEEL;
+        String label = wheelKey.isUnbound() ? "Quick cast" : "Tap " + wheelKey.getTranslatedKeyMessage().getString();
+        int textW = Math.max(1, pw - 18);
+        boolean canPin = selected != null && ClientLoadout.wheelPosition(selected.actionKey) > 0;
+        Ability target = byKey.get(pinned);
+        bindingButton(g, px, y, pw, 15, label, canPin, target != null, mouseX, mouseY, colors,
+                () -> bindWheel(powerPath, WheelLoadout.TAP, selected.actionKey.equals(pinned) ? "" : selected.actionKey));
+        if (mouseX >= px && mouseX < px + pw && mouseY >= y && mouseY < y + 15) {
+            hover = Component.literal(canPin ? "Pin the selected wheel ability to a tap. Right-click to clear."
+                    : "Select an ability assigned to the wheel to pin it here.");
+        }
+        if (target != null) hits.add(new Hit(px, y, pw, 15, null, () -> bindWheel(powerPath, WheelLoadout.TAP, "")));
+        if (target != null) {
+            AbilityIcons.draw(g, powerPath, target.id, px, y + 17, 15);
+            fitted(g, target.name.getString(), px + 17, y + 20, textW, TEXT, false);
+            hits.add(new Hit(px, y + 16, pw, 17, () -> selectedAction = target.actionKey,
+                    () -> bindWheel(powerPath, WheelLoadout.TAP, "")));
+        } else {
+            g.drawString(font, ellipsis("Recasts last pick", pw), px, y + 19, MUTED, false);
+        }
+        String hint = canPin ? (selected.actionKey.equals(pinned) ? "Unpin selected" : "Pin selected") : "Pick a favorite";
+        g.drawString(font, ellipsis(hint, pw), px, y + 36, MUTED, false);
     }
 
     // ---- Skill tree
@@ -342,7 +425,7 @@ public final class PowersScreen extends HeroScreen {
             boolean canLearn = canLearn(n, awake, has, level, learned, points, capstoneTaken);
             ResourceLocation sprite = has ? HEX_LEARNED : canLearn ? HEX_OPEN : HEX_LOCKED;
             g.blitSprite(sprite, c[0], c[1], HEX_W, HEX_H);
-            g.renderFakeItem(PowerIcons.node(n), c[0] + 5, c[1] + 7);
+            AbilityIcons.draw(g, path, n.id(), c[0] + 5, c[1] + 7, 16);
             if (!has && !canLearn) g.fill(c[0] + 4, c[1] + 7, c[0] + 22, c[1] + 23, 0x88201A16);
             if (n.capstone()) g.drawString(font, "✦", c[0] + HEX_W - 7, c[1] - 1, GOLD, true);
             if (n.signature()) g.drawString(font, "★", c[0] + HEX_W - 7, c[1] - 1, 0xFFC77DFF, true);
@@ -384,7 +467,7 @@ public final class PowersScreen extends HeroScreen {
         panel(g, x, y, w, h);
         String path = n.power();
         boolean has = learned.contains(n.id()), canLearn = canLearn(n, awake, has, level, learned, points, capstoneTaken);
-        g.renderFakeItem(PowerIcons.node(n), x + 6, y + 6);
+        AbilityIcons.draw(g, n.power(), n.id(), x + 6, y + 6, 16);
         int after = paragraph(g, Component.literal(n.name()).withStyle(ChatFormatting.BOLD), x + 26, y + 6, w - 32, 2, TEXT);
         String kind = n.capstone() ? "Capstone (one per build)" : n.signature() ? "Signature ability" : n.active() ? "Active skill" : "Passive skill";
         int py = Math.max(after, y + 16);
@@ -486,7 +569,7 @@ public final class PowersScreen extends HeroScreen {
             if (mine) g.renderOutline(cx, cardsTop, cardW, cardH, color);
             g.drawCenteredString(font, Component.literal(roleLabel(n.role())).withStyle(ChatFormatting.BOLD), cx + cardW / 2, cardsTop + 3, 0xFFFFFFFF);
             int cy = cardsTop + 18;
-            g.renderFakeItem(PowerIcons.node(n), cx + 5, cy);
+            AbilityIcons.draw(g, n.power(), n.id(), cx + 5, cy, 16);
             cy = Math.max(paragraph(g, Component.literal(n.name()).withStyle(ChatFormatting.BOLD), cx + 25, cy + 4, cardW - 30, 2, TEXT), cy + 18) + 2;
             cy = paragraph(g, Component.literal(PERKS[Math.max(0, SkillCatalog.ROLES.indexOf(n.role()))]), cx + 5, cy, cardW - 10, 3, color) + 3;
             g.drawString(font, ellipsis(n.energy() + " stamina · " + seconds(n.cooldown()), cardW - 10), cx + 5, cy, GOLD, false);
@@ -498,7 +581,8 @@ public final class PowersScreen extends HeroScreen {
             List<FormattedCharSequence> desc = font.split(Component.literal(n.description()), cardW - 10);
             paragraph(g, Component.literal(n.description()), cx + 5, cy, cardW - 10, Math.max(1, room), TEXT);
             if (desc.size() > room && over) hover = Component.literal(n.description());
-            if (mine) g.drawString(font, ellipsis(keyIndex > 0 ? "On " + key(keyIndex) : "On the ability wheel", cardW - 10),
+            if (mine) g.drawString(font, ellipsis(keyIndex > 0 ? "On " + key(keyIndex) :
+                            ClientLoadout.wheelPosition(n.id()) > 0 ? "On the ability wheel" : "Assign in Loadout", cardW - 10),
                     cx + 5, buttonY - 12, keyIndex > 0 ? GREEN : GOLD, false);
             Component label = mine ? Component.literal("YOUR CLASS ✔")
                     : !awake ? Component.literal("NOT AWAKE")

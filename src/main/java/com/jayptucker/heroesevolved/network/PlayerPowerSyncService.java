@@ -12,6 +12,7 @@ import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.progression.ProgressionCalculator;
 import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
 import com.jayptucker.heroesevolved.ability.types.TimeManipulationAbility;
+import com.jayptucker.heroesevolved.skills.WheelLoadout;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -75,7 +76,7 @@ public final class PlayerPowerSyncService {
     private static void sendLoadout(ServerPlayer player) {
         var assignment = PlayerAbilityService.getData(player).assignedPower();
         LoadoutPayload payload = assignment.filter(e -> e.getValue().isUnlocked()).map(e -> loadout(player, e.getKey()))
-                .orElseGet(() -> new LoadoutPayload(1, 0, 1, false, "", 0, 1, 0, List.of(), List.of()));
+                .orElse(LoadoutPayload.EMPTY);
         if (payload.equals(SENT_LOADOUTS.get(player.getUUID()))) return;
         SENT_LOADOUTS.put(player.getUUID(), payload);
         PacketDistributor.sendToPlayer(player, payload);
@@ -106,19 +107,32 @@ public final class PlayerPowerSyncService {
             int uses = com.jayptucker.heroesevolved.ability.service.AbilityRanks.uses(player, power, action);
             // An Echo shows the copied ability it would perform (its name and its icon).
             var shown = com.jayptucker.heroesevolved.mimicry.MimicryService.shown(player, action);
+            int alternateCooldown = 0;
+            long alternateCooldownEnd = 0;
+            if (id.getPath().equals("temporal_snapshot")) {
+                var alternate = previewContext(player, true);
+                alternateCooldown = com.jayptucker.heroesevolved.ability.service.AbilityRanks.cooldown(player, power, action,
+                        com.jayptucker.heroesevolved.skills.SkillTreeService.cooldown(player, power,
+                                com.jayptucker.heroesevolved.ability.PowerBalance.cooldown(id, action.cooldownTicks(alternate))));
+                alternateCooldownEnd = CooldownService.getExpirationGameTime(player, action.cooldownId(alternate));
+            }
             entries.add(new LoadoutPayload.Entry(entry.key(), shown == null ? id.getPath() : shown.id().getPath(),
                     shown == null ? action.definition().displayNameKey() : shown.displayNameKey(), tier >= unlockTier,
                     com.jayptucker.heroesevolved.progression.PowerLevels.levelForTier(unlockTier), energy, cooldown,
                     CooldownService.getExpirationGameTime(player, action.cooldownId(preview)),
-                    com.jayptucker.heroesevolved.ability.service.AbilityRanks.rank(uses), uses));
+                    com.jayptucker.heroesevolved.ability.service.AbilityRanks.rank(uses), uses, alternateCooldown, alternateCooldownEnd));
         }
-        var build = com.jayptucker.heroesevolved.skills.SkillTreeService.build(player, power);
+        var build = com.jayptucker.heroesevolved.skills.SkillTreeService.seedWheel(player, power, entries);
         List<String> keys = new java.util.ArrayList<>();
         for (int key = 1; key <= com.jayptucker.heroesevolved.skills.Loadout.KEYS; key++)
             keys.add(com.jayptucker.heroesevolved.skills.Loadout.binding(build, key));
+        var available = entries.stream().filter(LoadoutPayload.Entry::unlocked).map(LoadoutPayload.Entry::actionKey).collect(java.util.stream.Collectors.toSet());
+        List<String> wheel = WheelLoadout.positions(build.wheel()).stream().map(key -> available.contains(key) ? key : "").toList();
+        String quickCast = WheelLoadout.quickCast(build.wheel());
         return new LoadoutPayload(level, Math.max(0, Math.min(mastery, next) - here), Math.max(0, next - here), evolved, trial.description(),
                 Math.min(trial.goal(), com.jayptucker.heroesevolved.progression.EvolutionTrials.progress(player, power.getPath())), trial.goal(),
-                com.jayptucker.heroesevolved.skills.SkillTreeService.storyPoints(player), List.copyOf(entries), List.copyOf(keys));
+                com.jayptucker.heroesevolved.skills.SkillTreeService.storyPoints(player), List.copyOf(entries), List.copyOf(keys),
+                power.getPath(), wheel, wheel.contains(quickCast) ? quickCast : "");
     }
 
     private static List<AbilityActionSnapshot> createActionSnapshots(

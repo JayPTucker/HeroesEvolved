@@ -1,21 +1,42 @@
 package com.jayptucker.heroesevolved.network;
 
-import java.util.List;
-
 /** The local player's loadout and Power Level, as the server last sent them. */
 public final class ClientLoadout {
-    private static volatile LoadoutPayload state = new LoadoutPayload(1, 0, 1, false, "", 0, 1, 0, List.of(), List.of());
+    private static volatile LoadoutPayload state = LoadoutPayload.EMPTY;
     private static volatile boolean known;
+    private static String lastWheelAction = "";
 
     private ClientLoadout() {}
 
-    public static void update(LoadoutPayload payload) { state = payload; known = true; }
+    public static void update(LoadoutPayload payload) {
+        if (!state.power().equals(payload.power()) || !payload.wheel().contains(lastWheelAction)) lastWheelAction = "";
+        state = payload;
+        known = true;
+    }
 
     public static LoadoutPayload get() { return state; }
 
     public static boolean known() { return known; }
 
-    public static void clear() { state = new LoadoutPayload(1, 0, 1, false, "", 0, 1, 0, List.of(), List.of()); known = false; }
+    public static void clear() { state = LoadoutPayload.EMPTY; known = false; lastWheelAction = ""; }
+
+    public static String onWheel(int slot) {
+        var wheel = state.wheel();
+        return slot >= 1 && slot <= wheel.size() ? wheel.get(slot - 1) : "";
+    }
+
+    public static int wheelPosition(String actionKey) {
+        return actionKey.isEmpty() ? 0 : state.wheel().indexOf(actionKey) + 1;
+    }
+
+    public static void rememberWheelAction(String actionKey) {
+        lastWheelAction = actionKey;
+    }
+
+    public static LoadoutPayload.Entry quickCast() {
+        String pinned = state.quickCast();
+        return entry(pinned.isEmpty() ? lastWheelAction : pinned);
+    }
 
     /** The action key on key {@code index} (1 to 8), or "". */
     public static String onKey(int index) {

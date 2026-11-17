@@ -271,7 +271,7 @@ public final class VibeBreaches {
     }
 
     private static boolean openTo(ServerPlayer player, int slot, Kind kind) {
-        if (!VibeService.ready(player) || GATES.containsKey(player.getUUID())) return false;
+        if (!canOpen(player) || GATES.containsKey(player.getUUID())) return false;
         if (!travelWorld(player.serverLevel())) return fail(player, "restricted");
         var frequency = VibeFrequencies.get(player, slot);
         String refused = VibeFrequencies.refusal(player, frequency);
@@ -316,9 +316,14 @@ public final class VibeBreaches {
         return tier >= 4 ? SpaceTimeService.blinkRange(tier) : 30;
     }
 
+    static boolean canOpen(ServerPlayer player) {
+        return VibeService.active(player) && !player.isPassenger()
+                && (!player.isVehicle() || EntityCarryService.isCarrying(player));
+    }
+
     /** A breach to where the viber looks. Sanctuary Breach falls back to five blocks ahead. */
     public static boolean open(ServerPlayer player, boolean sanctuary) {
-        if (!VibeService.ready(player) || GATES.containsKey(player.getUUID())) return false;
+        if (!canOpen(player) || GATES.containsKey(player.getUUID())) return false;
         if (!travelWorld(player.serverLevel())) return fail(player, "restricted");
         Mouth entry = entry(player);
         if (!entryFits(player, entry)) return fail(player, "blocked");
@@ -735,19 +740,23 @@ public final class VibeBreaches {
     }
 
     private static boolean canCross(Gate gate, LivingEntity entity) {
-        if (!entity.isAlive() || entity.isSpectator() || entity.isPassenger() || entity.isVehicle() || entity.isSleeping()) return false;
+        if (!entity.isAlive() || entity.isSpectator() || entity.isPassenger() || entity.isSleeping()) return false;
         if (entity instanceof ServerPlayer player) {
-            return PowerRules.canAct(player) && !EntityCarryService.isCarrying(player) && StyleOps.isFriend(gate.owner, player);
+            return PowerRules.canAct(player) && (!player.isVehicle() || EntityCarryService.isCarrying(player))
+                    && StyleOps.isFriend(gate.owner, player);
         }
         var size = dimensions(entity);
-        return size.width() <= VibeGeometry.PORTAL_WIDTH * 2 && size.height() <= VibeGeometry.PORTAL_HEIGHT * 2
+        return !entity.isVehicle() && size.width() <= VibeGeometry.PORTAL_WIDTH * 2 && size.height() <= VibeGeometry.PORTAL_HEIGHT * 2
                 && !com.jayptucker.heroesevolved.cryo.CryoService.isFrozen(entity)
                 && !com.jayptucker.heroesevolved.time.TimeStopService.isStopped(entity);
     }
 
     private static LivingEntity moveTraveler(LivingEntity entity, Mouth to, Vec3 at, float yaw, float pitch, Vec3 velocity) {
         if (entity instanceof ServerPlayer player) {
-            if (!move(player, to.level(), at, yaw, pitch)) return null;
+            if (!EntityCarryService.travelWithCargo(player, to.level(), at, yaw, () -> move(player, to.level(), at, yaw, pitch))) {
+                fail(player, "no_exit");
+                return null;
+            }
             if (to.flat() && velocity.lengthSqr() > 0) StyleOps.push(player, velocity);
             return player;
         }

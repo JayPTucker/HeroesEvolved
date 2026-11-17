@@ -19,7 +19,7 @@ public final class SkillTreeService {
         var build = data.build(power.toString());
         int highest = Math.max(build.highestLevel(), PlayerProgressionService.getPowerLevel(player));
         if (highest != build.highestLevel()) {
-            build = new SkillTreeData.Build(highest, build.learned(), build.slots(), build.training());
+            build = new SkillTreeData.Build(highest, build.learned(), build.slots(), build.training(), build.wheel());
             player.setData(ModDataAttachments.SKILL_TREES, data.with(power.toString(), build));
         }
         return build;
@@ -37,8 +37,9 @@ public final class SkillTreeService {
                 || SkillCatalog.available(power.getPath(), build, storyPoints(player)) < node.cost()) return false;
         if (node.capstone() && SkillCatalog.nodes(power.getPath()).stream().anyMatch(n -> n.capstone() && build.learned().contains(n.id()))) return false;
         Set<String> learned = new HashSet<>(build.learned()); learned.add(node.id());
-        save(player, power, new SkillTreeData.Build(build.highestLevel(), learned, build.slots(), build.training()));
-        player.sendSystemMessage(Component.literal("Learned " + node.name() + (node.active() ? ". It's on your ability wheel; put it on a key from the Abilities page if you like." : ".")));
+        var wheel = node.active() ? WheelLoadout.addLearned(build.wheel(), node.id()) : build.wheel();
+        save(player, power, new SkillTreeData.Build(build.highestLevel(), learned, build.slots(), build.training(), wheel));
+        player.sendSystemMessage(Component.literal("Learned " + node.name() + (node.active() ? ". Find it in Powers → Loadout." : ".")));
         return true;
     }
     /**
@@ -57,6 +58,7 @@ public final class SkillTreeService {
         }
         Set<String> learned = new HashSet<>(build.learned());
         Map<String, String> slots = new HashMap<>(build.slots());
+        Map<String, String> wheel = new HashMap<>(build.wheel());
         if (current != null) {
             learned.remove(current.id());
             var context = new AbilityUseContext(player, power, PlayerProgressionService.getLevel(player), true);
@@ -64,12 +66,15 @@ public final class SkillTreeService {
             old.release(context);
             old.deactivate(context);
             slots.replaceAll((key, bound) -> bound.equals(current.id()) ? node.id() : bound);
+            wheel.replaceAll((key, bound) -> bound.equals(current.id()) ? node.id() : bound);
+        } else {
+            wheel = WheelLoadout.addLearned(wheel, node.id());
         }
         learned.add(node.id());
-        save(player, power, new SkillTreeData.Build(build.highestLevel(), learned, slots, build.training()));
+        save(player, power, new SkillTreeData.Build(build.highestLevel(), learned, slots, build.training(), wheel));
         String role = node.role().substring(0, 1).toUpperCase() + node.role().substring(1);
         player.sendSystemMessage(Component.literal("Your class is now " + role + ": " + node.name()
-                + (current == null ? ". It's on your ability wheel; put it on a key from the Abilities page if you like." : ".")));
+                + (current == null ? ". Find it in Powers → Loadout." : ".")));
         return true;
     }
 
@@ -102,12 +107,47 @@ public final class SkillTreeService {
             var action = Loadout.resolve(player, power, bound);
             if (action != null) { action.release(context); action.deactivate(context); }
         }
-        save(player, power, new SkillTreeData.Build(build.highestLevel(), build.learned(), Loadout.rebind(build, key, actionKey), build.training()));
+        save(player, power, new SkillTreeData.Build(build.highestLevel(), build.learned(),
+                Loadout.rebind(build, key, actionKey), build.training(), build.wheel()));
         return true;
     }
 
     private static void save(ServerPlayer player, ResourceLocation power, SkillTreeData.Build build) {
         player.setData(ModDataAttachments.SKILL_TREES, player.getData(ModDataAttachments.SKILL_TREES).with(power.toString(), build));
+    }
+
+    /** Seeds a class and unbound learned actions into unused positions and saves their locations. */
+    public static SkillTreeData.Build seedWheel(ServerPlayer player, ResourceLocation power, List<LoadoutPayload.Entry> entries) {
+        var build = build(player, power);
+        if (WheelLoadout.initialized(build.wheel())) return build;
+        String chosenClass = SkillCatalog.chosenStyle(power.getPath(), build).map(SkillCatalog.Node::id).orElse("");
+        List<String> candidates = entries.stream().filter(LoadoutPayload.Entry::unlocked)
+                .map(LoadoutPayload.Entry::actionKey)
+                .filter(key -> key.equals(chosenClass) || Loadout.keyOf(build, key) == 0)
+                .sorted(Comparator.comparing(key -> !key.equals(chosenClass)))
+                .toList();
+        var wheel = WheelLoadout.seed(build.wheel(), candidates);
+        var updated = new SkillTreeData.Build(build.highestLevel(), build.learned(), build.slots(), build.training(), wheel);
+        save(player, power, updated);
+        return updated;
+    }
+
+    public static boolean bindWheel(ServerPlayer player, String powerPath, int slot, String actionKey) {
+        var assignment = PlayerAbilityService.getData(player).assignedPower();
+        if (slot < WheelLoadout.TAP || slot > WheelLoadout.SLOTS || assignment.isEmpty()
+                || !assignment.get().getValue().isUnlocked() || !PowerRules.canAct(player)) return false;
+        var power = assignment.get().getKey();
+        if (!power.getPath().equals(powerPath)) return false;
+        var build = build(player, power);
+        if (!actionKey.isEmpty()) {
+            var action = Loadout.resolve(player, power, actionKey);
+            if (action == null || !action.definition().isUnlockedAt(PlayerProgressionService.getLevel(player))) return false;
+            if (slot == WheelLoadout.TAP && !WheelLoadout.positions(build.wheel()).contains(actionKey)) return false;
+        }
+        var wheel = WheelLoadout.place(build.wheel(), slot, actionKey);
+        if (!wheel.equals(build.wheel()))
+            save(player, power, new SkillTreeData.Build(build.highestLevel(), build.learned(), build.slots(), build.training(), wheel));
+        return true;
     }
     /** What ability keys 1 to 5 hold, by their slot. Keys 6 to 8 and the wheel go through {@link Loadout}. */
     public static Map<AbilitySlot, AbilityAction> actions(ServerPlayer player, ResourceLocation power) {
@@ -155,7 +195,7 @@ public final class SkillTreeService {
     public static void awardTraining(ServerPlayer player) {
         PlayerAbilityService.getData(player).assignedPower().ifPresent(e -> {
             var b = build(player, e.getKey());
-            save(player, e.getKey(), new SkillTreeData.Build(b.highestLevel(), b.learned(), b.slots(), Math.min(6, b.training() + 2)));
+            save(player, e.getKey(), new SkillTreeData.Build(b.highestLevel(), b.learned(), b.slots(), Math.min(6, b.training() + 2), b.wheel()));
             sync(player);
         });
     }

@@ -31,7 +31,8 @@ public final class ClientKeyEvents {
     private static final boolean[] ABILITY_WAS_DOWN = new boolean[ModKeyMappings.ABILITY_KEYS.length];
     /** Game tick the wheel key went down, or -1 while it is up. */
     private static long wheelDownSince = -1;
-    // Held longer than this, the wheel key opens the wheel; a shorter tap recasts.
+    private static boolean wheelOpenedForPress;
+    // Held longer than this, the wheel key opens the wheel; a shorter tap quick-casts.
     private static final long WHEEL_HOLD_TICKS = 4L;
     private static boolean flightForwardWasDown;
     private static boolean jumpWasDown;
@@ -133,9 +134,14 @@ public final class ClientKeyEvents {
 
     /**
      * The wheel key: held, it opens the ability wheel (which takes over
-     * from there); tapped, it casts the last ability cast from the wheel again.
+     * from there); tapped, it casts the pinned favorite or recasts the last pick.
      */
     private static void handleWheelKey(Minecraft minecraft, boolean allowOverexertion) {
+        if (wheelOpenedForPress) {
+            // Closing through mouse release or Escape must consume the original wheel press.
+            if (!AbilityWheelScreen.wheelKeyDown(minecraft)) wheelOpenedForPress = false;
+            return;
+        }
         boolean down = ModKeyMappings.ABILITY_WHEEL.isDown();
         long now = minecraft.level.getGameTime();
         if (down && wheelDownSince < 0) {
@@ -143,6 +149,7 @@ public final class ClientKeyEvents {
         } else if (down && now - wheelDownSince >= WHEEL_HOLD_TICKS) {
             wheelDownSince = -1;
             if (ClientLoadout.known() && !ClientLoadout.get().entries().isEmpty()) {
+                wheelOpenedForPress = true;
                 minecraft.setScreen(new AbilityWheelScreen(allowOverexertion));
             }
         } else if (!down && wheelDownSince >= 0) {

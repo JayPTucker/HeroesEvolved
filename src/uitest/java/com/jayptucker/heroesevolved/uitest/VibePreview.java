@@ -8,6 +8,7 @@ import com.jayptucker.heroesevolved.ability.service.AbilityUseService;
 import com.jayptucker.heroesevolved.cooldown.CooldownService;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
+import com.jayptucker.heroesevolved.entity.EntityCarryService;
 import com.jayptucker.heroesevolved.network.ActionInputPayload;
 import com.jayptucker.heroesevolved.network.ArmPosePayload;
 import com.jayptucker.heroesevolved.network.PlayerPowerSyncService;
@@ -222,11 +223,30 @@ public final class VibePreview {
             }
             case 190 -> server(mc, p -> p.teleportTo(p.serverLevel(), p.getX() + 2.4, p.getY(), p.getZ() - .3, 44, 4));
             case 197 -> capture = "39-breach-from-the-side.png";
-            case 212 -> server(mc, p -> {
+            case 199 -> server(mc, p -> {
                 walker.serverLevel().removePlayerImmediately(walker, Entity.RemovalReason.DISCARDED);
                 walker = null;
-                reset(p, 248, 0, 78, 6000);
+                p.teleportTo(p.serverLevel(), 208.5, p.getY(), .5, 0, 0);
+                var pig = EntityType.PIG.create(p.serverLevel());
+                pig.setPos(p.position().add(1.4, 0, 0));
+                p.serverLevel().addFreshEntity(pig);
+                if (!EntityCarryService.pickUp(p, pig, EntityCarryService.ORDINARY_REACH)) pig.discard();
             });
+            case 202 -> server(mc, p -> p.teleportTo(p.getX(), p.getY(), p.getZ() + 2.35));
+            case 208 -> {
+                mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
+                server(mc, p -> System.out.println("VIBE_PREVIEW carry arrived " + p.blockPosition()
+                        + " still carrying " + EntityCarryService.isCarrying(p)));
+                capture = "45-carry-through-breach.png";
+            }
+            case 212 -> {
+                mc.options.setCameraType(CameraType.FIRST_PERSON);
+                server(mc, p -> {
+                    var cargo = EntityCarryService.hurl(p, Vec3.ZERO);
+                    if (cargo != null) cargo.discard();
+                    reset(p, 248, 0, 78, 6000);
+                });
+            }
             case 221 -> PacketDistributor.sendToServer(new ActionInputPayload(2, "", true, true));
             case 224 -> server(mc, p -> p.teleportTo(p.serverLevel(), p.getX(), p.getY(), p.getZ() - 1.65, 0, 47));
             case 251 -> capture = "40-breach-underfoot.png";

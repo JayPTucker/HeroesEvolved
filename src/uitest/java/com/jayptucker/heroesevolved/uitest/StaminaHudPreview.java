@@ -6,8 +6,15 @@ import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.ability.service.AbilityUseService;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
+import com.jayptucker.heroesevolved.energy.StaminaDrain;
+import com.jayptucker.heroesevolved.input.ModKeyMappings;
+import com.jayptucker.heroesevolved.network.BindWheelPayload;
+import com.jayptucker.heroesevolved.network.ClientLoadout;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
+import com.jayptucker.heroesevolved.skills.Loadout;
+import com.jayptucker.heroesevolved.skills.WheelLoadout;
 import com.jayptucker.heroesevolved.story.bunker.CryoChamberService;
+import com.jayptucker.heroesevolved.time.TimeStopService;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -25,6 +32,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderFrameEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -55,6 +63,8 @@ public final class StaminaHudPreview {
         if (!started && ++startup >= 35 && mc.screen != null && mc.getOverlay() == null) {
             started = true;
             mc.options.pauseOnLostFocus = false;
+            mc.options.guiScale().set(2);
+            mc.resizeDisplay();
             mc.options.renderDistance().set(4);
             mc.getTutorial().setStep(net.minecraft.client.tutorial.TutorialSteps.NONE);
             var rules = new GameRules();
@@ -94,20 +104,33 @@ public final class StaminaHudPreview {
             return;
         }
         if (age % 20 == 0) com.jayptucker.heroesevolved.network.ClientScreenTintState.clear();
+        String stillWorld = Loadout.base(AbilitySlot.TERTIARY);
         switch (age) {
+            case 180 -> PacketDistributor.sendToServer(new BindWheelPayload(ModAbilities.TIME_MANIPULATION_ID.getPath(), 1, stillWorld));
+            case 185 -> PacketDistributor.sendToServer(new BindWheelPayload(ModAbilities.TIME_MANIPULATION_ID.getPath(), WheelLoadout.TAP, stillWorld));
+            case 195 -> {
+                if (!ClientLoadout.get().quickCast().equals(stillWorld)) throw new IllegalStateException("The server did not sync the wheel pin");
+            }
             case 200 -> capture = "stamina-1-full.png";
             case 210 -> server(mc, p -> PlayerEnergyService.tryConsume(p, 45));
             case 214 -> capture = "stamina-2-just-spent.png";
             case 270 -> capture = "stamina-3-recovering.png";
-            case 290 -> server(mc, p -> System.out.println("STAMINA_PREVIEW still world "
-                    + AbilityUseService.activateAssignedAction(p, AbilitySlot.TERTIARY, false)));
+            case 290 -> ModKeyMappings.ABILITY_WHEEL.setDown(true);
+            case 292 -> ModKeyMappings.ABILITY_WHEEL.setDown(false);
+            case 300 -> server(mc, p -> {
+                if (!StaminaDrain.active(p, TimeStopService.DRAIN)) throw new IllegalStateException("Tapping the wheel key did not cast Still World");
+                System.out.println("STAMINA_PREVIEW tap cast Still World");
+            });
             case 330 -> capture = "stamina-4-still-world.png";
+            case 332 -> { mc.options.guiScale().set(3); mc.resizeDisplay(); }
+            case 334 -> capture = "ability-hud-scale3.png";
+            case 336 -> { mc.options.guiScale().set(2); mc.resizeDisplay(); }
             case 340 -> server(mc, p -> AbilityUseService.activateAssignedAction(p, AbilitySlot.TERTIARY, false));
             case 345 -> server(mc, p -> PlayerEnergyService.tryConsume(p, Math.max(0, PlayerEnergyService.getEnergy(p) - 22)));
             case 352 -> capture = "stamina-5-low.png";
             case 380 -> server(mc, p -> {
                 com.jayptucker.heroesevolved.cooldown.CooldownService.clearAll(p);
-                PlayerEnergyService.tryConsume(p, Math.max(0, PlayerEnergyService.getEnergy(p) - 22));
+                PlayerEnergyService.tryConsume(p, PlayerEnergyService.getEnergy(p));
                 System.out.println("STAMINA_PREVIEW refused " + AbilityUseService.activateAssignedAction(p, AbilitySlot.TERTIARY, false));
             });
             case 382 -> capture = "stamina-6-refused.png";

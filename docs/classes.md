@@ -10,7 +10,10 @@ Every power can be played three ways. On the **Class** page of the hero menu (pr
 
 Each class also gives you its **class ability**, a showpiece with its own animation (see the table below). A class costs **3 skill points** and opens at **Level 6**. You keep one class at a time. Choosing another class gives the old one's points back, needs ten seconds out of combat, and puts the new ability on whatever key the old one was on. **RESPEC** clears your class along with everything else.
 
-Class abilities are learned skills like any other: they appear on the **Loadout** page and the ability wheel, and you can put them on any of your eight keys. "Friends" means you, your own pets, and players on your team (or, with PvP off, any player). Area abilities never break or place blocks, and their searches are capped.
+Class abilities appear on the **Loadout** page. Assign them to any of your eight keys or a favorite
+position on the ability wheel. A new class fills an unused wheel position if one is available.
+"Friends" means you, your own pets, and players on your team (or, with PvP off, any player).
+Area abilities never break or place blocks, and their searches are capped.
 
 ## How they are drawn
 
