@@ -45,6 +45,8 @@
     "ParticleWindAccess",
     "ParticleEngineAccess",
     "MorphSensesMixin",
+    "FinisherGlowMixin",
+    "FinisherOutlineMixin",
     "TitleScreenMixin",
     "TitleButtonMixin",
     "TitleIconButtonMixin",

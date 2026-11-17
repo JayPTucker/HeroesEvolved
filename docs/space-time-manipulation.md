@@ -97,6 +97,30 @@ From Level 4, Rewrite the Moment can undo your death. For **fifteen seconds afte
 
 Costs and cooldowns come from the stamina table ([Stamina and balance](stamina-balance.md)); the HUD shows final values. Still World stores at most 12 damage per player or 40 per mob, however long it is held. Ranges and level unlocks retain their configuration. Slow and Stop supersede one another. Entity freezing does not freeze redstone, scheduled block ticks, weather, or the entire multiplayer world.
 
+## Finishers: Closed Loop, Stopped Clock, Unwound
+
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks) for Closed Loop.
+Shift + C switches finishers off and on. See [finishers.md](finishers.md) for the rules every finisher shares.
+
+- **What you see.**
+  1. You fold out, leaving a violet tear that pinches shut, and a clock face stands across the foe, its hands racing
+     forward in amber.
+  2. Two of you fold in, one on each side of the foe, joined for a moment by a gold seam through it: you, and
+     yourself from two seconds from now, in your own skin.
+  3. You both strike at once. Two gold cuts cross on the foe.
+  4. The later you checks a watch and folds back into the past to become the first you.
+  5. The clock snaps still at ten past ten, in violet and ice.
+- **In a Still World or Between Seconds** there are three of you (a third strikes from behind the foe), and a
+  smaller clock over its head runs backward.
+- **In your own stopped time,** the cuts are stored like any other blow and land when time resumes. The finisher
+  still counts.
+- **Reward:** Fold Space is ready again.
+
+Each press of C plays one of three at random, never the one you used last. Closed Loop is described above; the two alternates give the same reward.
+
+- **Stopped Clock.** A violet clock face stands across the foe and its hands stop at ten past ten. You cut it six times where you stand; each cut hangs frozen in the air, pale ice, and cracks the face. Time starts again (the hands lurch on, amber) and every cut flares and lands at once.
+- **Unwound.** A clock across the foe runs backward, faster and faster, with a smaller one turning the other way over its head. Its last moments step back out of it as violet afterimages and are drawn back in; then the clock shrinks to a point and the foe is gone with it.
+
 ## Optional skills
 
 Learn and equip these through the inventory **Skills** button. The tree was rebuilt in November 2026 around the kit

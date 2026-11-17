@@ -209,6 +209,13 @@ STYLE_OVERRIDES = {
 STYLE_DODGE_COOLDOWN = 18  # ticks
 STYLE_DODGE_COOLDOWN_OVERRIDES = {"superspeed": 14}
 
+# Finishers (combat/Takedowns): one entry a power, shared by both of its finishers; the cooldown is shared by every
+# finisher. A kill gives 10 stamina back, so a finished fight costs less than one ended by swinging.
+FINISHER_POWERS = ["pyrokinesis", "time_manipulation", "telepathy", "electrokinesis", "hydrokinesis", "cryokinesis", "quake",
+                   "sonic_resonance", "radiation", "superspeed", "flight", "telekinesis", "phasing", "invisibility",
+                   "regeneration", "vibe", "technopathy", "matter_assembly", "empathic_mimicry", "shapeshifting"]
+FINISHER = (8, 60)  # stamina, cooldown in ticks
+
 # Damage that moved to match its stamina (the code carries each change; this list documents them).
 DAMAGE_CHANGES = [
     ("speed_cyclone", "Cyclone's wind: 2 + 0.5/tier every half second -> 1.2 + 0.3/tier (SpeedKit). It hit ultimate numbers "
@@ -270,6 +277,10 @@ def core_table(dump):
                 row.update(cooldown=STYLE_DODGE_COOLDOWN_OVERRIDES.get(power, STYLE_DODGE_COOLDOWN), base_cooldown=18)
             row["role"] = "style"
             rows.append(row)
+    for power in FINISHER_POWERS:
+        energy, cooldown = FINISHER
+        rows.append(dict(power=power, action=f"finisher_{power}", energy=energy, base_energy=8, cooldown=cooldown,
+                         base_cooldown=60, role="finisher"))
     return rows
 
 
@@ -421,7 +432,7 @@ def doc(rows, dump, skill_changes):
     w("")
     by_power = {}
     for r in rows:
-        if r.get("role") == "style":
+        if r.get("role") in ("style", "finisher"):
             continue
         by_power.setdefault(r["power"], []).append(r)
     for power, items in by_power.items():
@@ -448,6 +459,11 @@ def doc(rows, dump, skill_changes):
     w("Strikes 2, finishers (kicks, claps, flourishes) 5 (Pressure Palm 6), dodges 8 and back dodges 11 (a speedster's")
     w("6 and 9, the Reckless Brawler's brace 6 and 9), and 0.9 s between dodges (0.7 s for a speedster). Every one pauses")
     w("recovery, so a long exchange of blows is paid for.")
+    w("")
+    w("## Finishers")
+    w("")
+    w(f"Every finisher costs {FINISHER[0]} stamina and shares one {FINISHER[1] / 20:g} s cooldown across all powers; a finished")
+    w("foe gives 10 stamina back. Entries: " + ", ".join(f"`finisher_{p}`" for p in FINISHER_POWERS) + ".")
     w("")
     w("## Skill-tree and class abilities")
     w("")
@@ -485,7 +501,7 @@ def main():
     TREES.write_text(trees_text, encoding="utf-8")
     DOC.write_text(doc_text, encoding="utf-8")
     for r in rows:
-        if r.get("role") != "style":
+        if r.get("role") not in ("style", "finisher"):
             print(f"{r['action']:34} T{r['unlock']}  {r['energy']:>4}  {r.get('cooldown', 0) / 20:>6g}s")
     print(len(rows), "table rows;", len(skill_changes), "skills and class abilities")
 

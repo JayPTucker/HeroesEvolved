@@ -15,7 +15,7 @@ final class PieceArt {
                     PYRO_COLLAPSE, PYRO_BURST, PYRO_SUN_CHARGE, PYRO_SUN_DROP, PYRO_LASH, PYRO_MANTLE,
                     PYRO_CAUTERIZE, PYRO_MINE_ARM, PYRO_MINE_WARN, PYRO_LANCE, PYRO_SHEPHERD, PYRO_TAKEOFF, PYRO_PHOENIX, PYRO_WAKE,
                     SUNFALL, EMBER_SHROUD, HEARTHFIRE, PYRO_JAB, PYRO_KICK, PYRO_SWEEP_KICK, PYRO_JET_STEP, PYRO_FLIP,
-                    PYRO_COUNTER -> PyroArt.draw(c, a, t);
+                    PYRO_COUNTER, FINISH_DRAGON, FINISH_PHOENIX, FINISH_HEARTH -> PyroArt.draw(c, a, t);
             case ELECTRO_DRAW, ELECTRO_ARC, ELECTRO_CURRENT, ELECTRO_ORB, ELECTRO_PRIME, ELECTRO_WARN,
                     ELECTRO_STRIKE, ELECTRO_PULSE, ELECTRO_RIDE, ELECTRO_SCAR, ELECTRO_COIL, ELECTRO_SIPHON,
                     ELECTRO_BLACKOUT, ELECTRO_AURA, ELECTRO_FIELD, ELECTRO_SCREEN,
@@ -33,12 +33,12 @@ final class PieceArt {
             case REGEN_STREAM, REGEN_FAN, REGEN_IMPACT, REGEN_PAYBACK, REGEN_FEIGN, REGEN_CPR -> RegenArt.draw(c, a, t);
             case TELE_COMMAND, TELE_LISTEN, TELE_VOICE, TELE_WEAVE, TELE_PERSUADE, TELE_WON, TELE_RECALL, TELE_MEMORY,
                     TELE_ECHO, TELE_LOST, TELE_FRIGHT, TELE_HIVE_LINK, TELE_HALO, TELE_PROJECT,
-                    PSYCHIC_STORM, BLIND_SPOT, HIVE_MIND -> TelepathyArt.draw(c, a, t);
+                    PSYCHIC_STORM, BLIND_SPOT, HIVE_MIND, FINISH_LIGHTS -> TelepathyArt.draw(c, a, t);
             case VIBE_GATHER, VIBE_WAVE, VIBE_CROSSWAVE, VIBE_HIT, VIBE_BREACH_SEED, VIBE_BREACH_OPEN,
                     VIBE_BREACH_ARRIVE, VIBE_BREACH_CLOSE, VIBE_TRANSIT, VIBE_TOUCH, VIBE_ECHO, VIBE_GUARD,
                     VIBE_GUARD_CLOSE, VIBE_LOCK_WARN, VIBE_LOCK, VIBE_AWAKEN, VIBE_BEAST, VIBE_KICK, VIBE_SEAM -> VibeArt.draw(c, a, t);
             case TIME_STASIS, TIME_RELEASE, TIME_ANCHOR, TIME_SECOND, TIME_SEAL, TIME_SEAL_BREAK, TIME_CUT, TIME_SNAP,
-                    TIME_MARK, TIME_FORWARD -> TimeArt.draw(c, a, t);
+                    TIME_MARK, TIME_FORWARD, FINISH_LOOP -> TimeArt.draw(c, a, t);
             case DENSITY_PASS, DENSITY_PRIMED, DENSITY_AMBUSH, DENSITY_DOOR, DENSITY_HARDEN, DENSITY_REBOUND, DENSITY_PILE,
                     DENSITY_SINK_MARK, DENSITY_SINKHOLE, DENSITY_ENTOMB, DENSITY_UPROOT, DENSITY_FADE, DENSITY_GRASP, DENSITY_DROP,
                     DENSITY_SLIP -> DensityArt.draw(c, a, t);
@@ -115,6 +115,43 @@ final class PieceArt {
                     HYDRO_AWAKEN -> HydroArt.draw(c, a, t);
             case STYLE_LENS_JAB, STYLE_SHARDS, STYLE_FORCE_BURST, STYLE_FIELD_SLAM, STYLE_LENS_SLIDE, STYLE_BOUNCE,
                     STYLE_ICE_STRIP, STYLE_TK_PALM, STYLE_TK_GRASP -> StyleArt.draw(c, a, t);
+            case FINISH_SHORT -> ElectroArt.finisher(c, a, t);
+            case FINISH_BREAKER -> HydroArt.finisher(c, a, t);
+            case FINISH_WARMTH -> StyleArt.warmth(c, a, t);
+            case FINISH_STRINGS -> StyleArt.strings(c, a, t);
+            case FINISH_THUNDER -> SpeedArt.finisher(c, a, t);
+            case FINISH_DOWNBURST -> FlightArt.finisher(c, a, t);
+            case FINISH_BEAT -> QuakeArt.finisher(c, a, t);
+            case FINISH_ENCORE -> SonicArt.finisher(c, a, t);
+            case FINISH_SIXFEET -> DensityArt.finisher(c, a, t);
+            case FINISH_MIRRORS -> ForceArt.finisher(c, a, t);
+            case FINISH_PAID -> RegenArt.finisher(c, a, t);
+            case FINISH_CHAIN -> RadiationArt.finisher(c, a, t);
+            case FINISH_FREQUENCY -> VibeArt.finisher(c, a, t);
+            case FINISH_RESET -> CircuitArt.draw(c, a, t);
+            case FINISH_MONUMENT -> AssemblyArt.finisher(c, a, t);
+            case FINISH_TAKE -> MimicArt.finisher(c, a, t);
+            case FINISH_UNMADE -> ShapeArt.unmade(c, a, t);
+            // The alternate finishers, each power's two in its own art class.
+            case FINISH_STOPPED, FINISH_UNWOUND -> TimeArt.alternates(c, a, t);
+            case FINISH_PRESSURE, FINISH_THOUGHT -> TelepathyArt.alternates(c, a, t);
+            case FINISH_ROD, FINISH_OVERLOAD -> ElectroArt.alternates(c, a, t);
+            case FINISH_BUBBLE, FINISH_RIPTIDE -> HydroArt.alternates(c, a, t);
+            case FINISH_COFFIN, FINISH_ICICLES -> StyleArt.cryoFinishers(c, a, t);
+            case FINISH_FISTS, FINISH_FLICK -> SpeedArt.alternates(c, a, t);
+            case FINISH_CLAP, FINISH_UPDRAFT -> FlightArt.alternates(c, a, t);
+            case FINISH_FAULT, FINISH_SHATTER -> QuakeArt.alternates(c, a, t);
+            case FINISH_NOTE, FINISH_SILENCE -> SonicArt.alternates(c, a, t);
+            case FINISH_CRUSH, FINISH_TOSS -> StyleArt.kineticFinishers(c, a, t);
+            case FINISH_PHASE, FINISH_HEAVY -> DensityArt.alternates(c, a, t);
+            case FINISH_BUBBLE_CRUSH, FINISH_LENS -> ForceArt.alternates(c, a, t);
+            case FINISH_NO_PAIN, FINISH_GRIP -> RegenArt.alternates(c, a, t);
+            case FINISH_HALF_LIFE, FINISH_POCKET_SUN -> RadiationArt.alternates(c, a, t);
+            case FINISH_BREACH, FINISH_POINT_BLANK -> VibeArt.alternates(c, a, t);
+            case FINISH_KILL_SWITCH, FINISH_OVERCLOCK -> CircuitArt.alternates(c, a, t);
+            case FINISH_HAMMER, FINISH_ORBIT -> AssemblyArt.alternates(c, a, t);
+            case FINISH_ECHO, FINISH_BORROW -> MimicArt.alternates(c, a, t);
+            case FINISH_APEX, FINISH_FACE -> ShapeArt.alternates(c, a, t);
         }
     }
 }

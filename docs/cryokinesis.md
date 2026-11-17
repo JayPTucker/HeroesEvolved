@@ -223,3 +223,16 @@ The six optional skills have their own live control and mesh preview:
 
 It photographs forging and flying lances, armor plate loss/countershots, the travelling cold
 front, a guided rising weave, pressure-bearing cocoon release and the staged crystal network.
+
+## Finishers: Last Warmth, Coffin, Icicle Ring
+
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks). Shift + C switches finishers off and on; the rules every finisher shares are in [finishers.md](finishers.md).
+
+- **What you see.** You hold an open palm toward the foe's chest. A small ember of its warmth is drawn out along a thread to your hand (the only warm colour in the kit) while frost creeps over it from the feet and the crown. You close your fist on the ember and it goes out in a puff of steam; the rimed foe breaks into falling snow.
+- **Hot foes** (blazes, magma cubes, anything fire-proof, a pyrokinetic) give up a whole flame: twice the stamina back, and a pyrokinetic's fire goes out.
+- **Reward:** it counts as heat theft: 8 stamina back (16 from a hot foe).
+
+Each press of C plays one of three at random, never the one you used last. Last Warmth is described above; the two alternates give the same reward.
+
+- **Coffin.** Ice grows up over the foe from its feet in tall leaning shards and seals it in a frosted shell. One jab, and the coffin bursts: shards are thrown out and skid away over the ground, and snow falls where it stood.
+- **Icicle Ring.** A ring of icicles rises round the foe, then leans in until their points meet over its head. It freezes where it stands in a burst of frost, and the icicles crumble.

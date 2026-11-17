@@ -91,3 +91,16 @@ Empathize and Recall keys are gone: being near someone, touching them and the me
 stages gifted villagers, lets an attunement run, touches, switches and opens both wheels, and saves screenshots in
 `build/mimicry-preview/screenshots/`. The gameplay checks are in
 `src/gametest/java/com/jayptucker/heroesevolved/mimicry/MimicryGameTests.java`.
+
+## Finishers: Take It In, Echo, Borrowed Strength
+
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks). Shift + C switches finishers off and on; the rules every finisher shares are in [finishers.md](finishers.md).
+
+- **Channeling a power,** you finish with that power's finisher (Dragon Coil, Lights Out and the rest). With nothing channeled, you have your own:
+- **What you see.** Your hand goes to your heart and three gold threads sag between the foe and your chest, draw tight while you feel what it felt, and snap straight. A pulse runs along them into your chest and blooms there as the foe goes still.
+- **A foe with a power** (a gifted villager, a player, Sylar or Elle) is imprinted at once: its power becomes a kept set, no touch needed.
+
+Each press of C plays one of three at random, never the one you used last. Take It In is described above; the two alternates give the same reward.
+
+- **Echo.** A gold outline of the foe rises in front of it, facing it, gold threads running to it from your chest, and hits the foe with its own swing. A foe with a power is imprinted, as with Take It In.
+- **Borrowed Strength.** One finisher picked at random from the powers you have kept, played as that power's own, with a gold shimmer over you as it starts. It only comes up once you have kept a power, and gives no power's reward (the stamina back still comes). Channeling a power, you get that power's three instead.

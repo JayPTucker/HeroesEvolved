@@ -95,3 +95,16 @@ Dedicated GameTests cover progression persistence, physical travel and intercept
 field recasts, targeting, cleanup and the base interaction controls. The standalone effect
 geometry check includes eighty-four kinetic hand/skin/phase combinations. In-game multiplayer
 playtesting remains the check for animation feel and balance.
+
+## Finishers: Cut Strings, Crush, Toss
+
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks). Shift + C switches finishers off and on; the rules every finisher shares are in [finishers.md](finishers.md).
+
+- **What you see.** You raise a hand and thin strings run from your fingers to the foe's head, hands and feet. You lift it and make it dance (turns, a jerk, a hop) while your fingers play, then draw a finger across: the strings snap one by one and it drops in a heap.
+- **A mob holding a weapon** drops it, and the weapon floats to you. Players keep their gear.
+- **Reward:** Grip is ready again.
+
+Each press of C plays one of three at random, never the one you used last. Cut Strings is described above; the two alternates give the same reward.
+
+- **Crush.** You close your fist slowly and the five fingers of air close over the foe from above, trembling, bands of pressure tightening round it, until it buckles.
+- **Toss.** The hand of air lifts the foe three and a half blocks up and holds it a beat, trembling; you pull your arm down hard and it is slammed into the ground in a ripple.

@@ -66,6 +66,9 @@ public final class TempestCamera {
     /** The view for this frame, or null when there is no tornado to watch. */
     public static Shot shot(float partial) {
         if (fixed != null) return fixed;
+        // A finisher of your own holds a still side view for its length.
+        Shot finisher = com.jayptucker.heroesevolved.client.FinisherClient.shot();
+        if (finisher != null) return finisher;
         if (spot == null || spotOld == null) return null;
         Vec3 at = spotOld.lerp(spot, partial), look = focusOld.lerp(focus, partial).subtract(at);
         float yaw = (float) (Mth.atan2(-look.x, look.z) * Mth.RAD_TO_DEG);

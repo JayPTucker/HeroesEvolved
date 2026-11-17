@@ -571,6 +571,8 @@ public final class SpeedService {
     }
     /** The fastest run-speed setting this speedster has unlocked (tier + 1). */
     public static int maximumSpeedStep(ServerPlayer p) { return maximumSpeedStep(PlayerProgressionService.getLevel(p)); }
+    /** Raises banked Momentum to at least {@code amount} while running (Late Thunder's reward); the runner's next tick tells the HUD. */
+    public static void atLeastMomentum(ServerPlayer p, int amount) { Runner r = RUNNERS.get(p.getUUID()); if (r != null && r.momentum < amount) r.momentum = Math.min(100, amount); }
     /** Spends all Momentum if at least {@code minimum} is banked; returns the amount spent, or 0. */
     public static int spendMomentum(ServerPlayer p, int minimum) {
         Runner r = RUNNERS.get(p.getUUID());

@@ -52,9 +52,10 @@ public final class StoryActorEntity extends PathfinderMob {
      * REACH holds someone by the shoulders; KNEEL is down on one knee, doubled over; GLOW is Ted's: arms out, shaking;
      * HAND_ON_GLASS lays one palm flat in front of him. In the air: HOVER holds still with the legs hanging; FLY lies along
      * the line of flight, fist first; STRIKE throws a hand out at someone (a punch, a bolt, a telekinetic grip); TUMBLE is
-     * thrown end over end.
+     * thrown end over end. WATCH lifts the left wrist to the chest and looks down at it, as at a watch (Closed Loop's
+     * double, checking the time before it goes back).
      */
-    public enum Pose { IDLE, PLEAD, SHOVE, AIM, REACH, KNEEL, GLOW, HAND_ON_GLASS, HOVER, FLY, STRIKE, TUMBLE }
+    public enum Pose { IDLE, PLEAD, SHOVE, AIM, REACH, KNEEL, GLOW, HAND_ON_GLASS, HOVER, FLY, STRIKE, TUMBLE, WATCH }
 
     private Vec3 walkTarget;
     private double walkSpeed = 0.5;

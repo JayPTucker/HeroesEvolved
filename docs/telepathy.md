@@ -109,6 +109,30 @@ An illusion lasts eight seconds, and each victim can have one at a time. Nightma
 six-second double. These are render-only scenes: no server entity, collision, container, or block
 is created. A false shelter is a fixed small layout, not a copy of an arbitrary building.
 
+## Finishers: Lights Out, Pressure, Last Thought
+
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** at it from up to **6 blocks** for Lights
+Out (every other power's finisher reaches 4). It is the only finisher that never touches the foe. Shift + C
+switches finishers off and on. See [finishers.md](finishers.md) for the rules every finisher shares.
+
+- **What you see.**
+  1. Two fingers to your temple, the other hand reaching out. A thread runs from your head to the foe's, an iris
+     opens round its mind, and its eyes go pale and fixed.
+  2. Two halos close on it, one at the crown and one round the chest, while thought-waves fall in on it and its head
+     bows.
+  3. A hush spreads over the ground: every hostile within 8 blocks forgets whom it was fighting for a moment.
+  4. Everyone nearby hears a whisper in chat: "...quiet now."
+  5. The iris shuts like an eyelid, a dark disc swallows the light at its head, and the foe goes down. The thread
+     goes slack.
+- **Overkill:** it spills onto up to three foes within 4 blocks as the same quiet blow.
+- **It works the same alone or in a crowd.** An earlier draft (Last Order, which turned the foe on another hostile)
+  needed other angry mobs nearby, so it was dropped.
+
+Each press of C plays one of three at random, never the one you used last. Lights Out is described above; the two alternates give the same reward.
+
+- **Pressure.** Two fingers to your temple, and three halos close round the foe's head, a step tighter with every pulse; it clutches at its head, bows lower each time, and folds. Six blocks, like Lights Out.
+- **Last Thought.** You draw a glowing thread out of the foe's head toward you. Its last thought runs down the thread as a rose bead of light into your temple, and you hear it in chat (to you alone). Then you snip the thread and both halves spring back slack. Six blocks.
+
 ## The skill tree
 
 Eighteen nodes in three branches, each one changing a move or tying two together. There are no generic

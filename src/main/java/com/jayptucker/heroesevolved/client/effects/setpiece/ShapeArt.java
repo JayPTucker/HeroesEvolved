@@ -420,4 +420,99 @@ final class ShapeArt {
     static boolean minimal() { return Minecraft.getInstance().options.particles().get() == ParticleStatus.MINIMAL; }
 
     static boolean detail() { return Minecraft.getInstance().options.particles().get() == ParticleStatus.ALL; }
+
+    /**
+     * Unmade (the finisher, {@code shapeshift/Unmade}): plates ripple out over the foe from the shapeshifter's touch,
+     * flipping slate to brass, until its whole shape is shut in them; then (the body under them hidden by
+     * {@code BodyCopies}) they come loose one by one, the highest first, and fall tumbling with nothing underneath, and
+     * sink into the ground. Bound to the foe, the shapeshifter's entity id in the seed; origin its feet; scale its height.
+     */
+    /**
+     * The alternate finishers ({@code shapeshift/ShapeFinishers}); only the pieces bound to the foe draw (the hide-mark
+     * pieces bound to you only hide you, in BodyCopies). Apex Bite: brass jaws of plates closing on the foe as the beast
+     * strikes. Its Own Face: seams of plates running up where you stand as you take its shape and as you shed it, and a
+     * brass flash where you strike. Origin the foe's feet, target yours, scale its height.
+     */
+    static void alternates(Canvas c, Active a, float t) {
+        if (c.solid() || a.scale() <= com.jayptucker.heroesevolved.combat.FinisherBeats.HIDE_MARK) return;
+        float h = Math.max(.6F, a.scale()), life = a.piece().ticks, alpha = fade(t, life, 1, 5);
+        Entity foe = a.bound(c);
+        Vec3 feet = foe != null && foe.isAlive() ? foe.getPosition(c.partial) : a.origin();
+        Vec3 home = a.target(), toMe = home.subtract(feet).multiply(1, 0, 1);
+        toMe = toMe.lengthSqr() < 1e-4 ? new Vec3(1, 0, 0) : toMe.normalize();
+        Vec3 across = new Vec3(-toMe.z, 0, toMe.x);
+        Vec3 chest = feet.add(0, h * .6, 0);
+        if (a.piece() == com.jayptucker.heroesevolved.styles.Piece.FINISH_APEX) {
+            int land = com.jayptucker.heroesevolved.combat.FinisherBeats.APEX_LAND;
+            if (t < land - 3 || t > land + 5) return;
+            float shut = smooth(land - 3, land, t), gone = 1 - smooth(land + 1, land + 5, t);
+            Vec3 mouth = chest.add(toMe.scale(.35));
+            for (int jaw = 0; jaw < 2; jaw++) {
+                float sign = jaw == 0 ? 1 : -1, open = (1 - shut) * .9F + .08F;
+                Vec3[] arc = new Vec3[9];
+                for (int i = 0; i < arc.length; i++) {
+                    float u = i / (arc.length - 1F) * 2 - 1;
+                    arc[i] = mouth.add(across.scale(u * .55)).add(0, sign * (open * (1 - u * u * .6F)), 0)
+                            .add(toMe.scale(.25 * (1 - u * u)));
+                }
+                band(c, arc, .12F, BRASS, alpha * gone);
+                if (c.glow()) for (int i = 1; i < arc.length - 1; i += 2)
+                    c.line(arc[i], arc[i].add(0, -sign * .18, 0), .03F, HIGHLIGHT, alpha * gone, 0);
+            }
+            if (c.glow() && t >= land) c.glow(chest, .9F * (1 - smooth(land, land + 4, t)), BRASS, alpha);
+            return;
+        }
+        int wear = com.jayptucker.heroesevolved.combat.FinisherBeats.FACE_WEAR, back = com.jayptucker.heroesevolved.combat.FinisherBeats.FACE_BACK;
+        int land = com.jayptucker.heroesevolved.combat.FinisherBeats.FACE_LAND;
+        for (int beat : new int[]{wear, back}) {
+            float k = smooth(beat - 4, beat + 2, t);
+            if (k <= 0 || k >= 1) continue;
+            for (int i = 0; i < 3; i++) {
+                float y = (float) (h * Math.min(1, k * 1.2 - i * .15));
+                if (y < 0) continue;
+                ShapeInstinctArt.seamRing(c, home.add(0, y, 0), UP, .45F, alpha * sin(PI * k));
+            }
+        }
+        if (t >= land - 1 && t < land + 6) {
+            float flash = 1 - smooth(land, land + 5, t);
+            if (c.glow()) {
+                c.glow(chest.add(toMe.scale(.3)), .3F + .8F * flash, BRASS, alpha * flash);
+                c.ring(chest, toMe, .2F + 1.2F * smooth(land, land + 6, t), .04F, 0, TWO_PI, HIGHLIGHT, alpha * flash);
+            }
+        }
+    }
+
+    static void unmade(Canvas c, Active a, float t) {
+        Entity foe = a.bound(c), owner = c.level.getEntity(a.seed());
+        float life = a.piece().ticks, alpha = fade(t, life, 1, 4);
+        Vec3 feet = foe != null ? foe.getPosition(c.partial) : a.origin();
+        float w = foe != null ? foe.getBbWidth() : .6F, h = foe != null ? foe.getBbHeight() : Math.max(.6F, a.scale());
+        float bodyYaw = foe != null ? yawOf(foe, c.partial) : 0;
+        Vec3 hand = owner != null ? owner.getEyePosition(c.partial).add(0, -.5, 0) : feet.add(0, h * .6, 0);
+        int gone = com.jayptucker.heroesevolved.combat.FinisherBeats.UNMADE_GONE;
+        float span = Math.max(w, h) * 1.3F + .3F, wave = easeOut(t / gone) * 1.3F;
+        hull(feet, bodyYaw, w, h, a.seed(), s -> {
+            float d = (float) tip(s).distanceTo(hand) / span;
+            if (t < gone) {
+                // Shutting: each plate flips brass as the wave passes, then settles closed.
+                float k = (float) Math.exp(-square((wave - d) / .22F));
+                float shut = d < wave ? 1 : 0;
+                float shown = Math.max(k, shut);
+                if (shown * alpha < .02F) return;
+                if (c.soft()) scale(c, s, s.hinge, s.lean + k * 1.6F, 0, 1, mix(face(s), SHEEN, k * .7F), Math.min(1, shown * alpha));
+                else if (k > .6F && (s.col & 1) == 0 && c.glow()) c.glow(tip(s), .09F, BRASS, .45F * k * alpha);
+                return;
+            }
+            // Loose: from the top down, each plate falls and tumbles, then sinks away.
+            float start = gone + (1 - s.fy) * 6 + s.hash * 2, age = t - start;
+            if (age < 0) {
+                if (c.soft()) scale(c, s, s.hinge, s.lean, 0, 1, face(s), alpha);
+                return;
+            }
+            float drop = .02F * age * age, fadeOut = 1 - smooth(6, 12, age);
+            Vec3 at = s.hinge.add(s.out.scale(age * .05)).add(0, -drop, 0);
+            if (at.y < feet.y - .05) at = new Vec3(at.x, feet.y - .05 - (age - 6) * .02, at.z);
+            if (c.soft()) scale(c, s, at, s.lean + age * .3F, age * .45F, 1, face(s), alpha * fadeOut);
+        });
+    }
 }

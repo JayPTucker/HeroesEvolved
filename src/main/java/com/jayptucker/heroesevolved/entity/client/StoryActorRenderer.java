@@ -125,6 +125,13 @@ public final class StoryActorRenderer extends HumanoidMobRenderer<StoryActorEnti
                         rightArm.xRot = -0.3F + hard; leftArm.xRot = -0.3F - hard;
                         rightArm.zRot = 1.25F; leftArm.zRot = -1.25F;
                     }
+                    case WATCH -> {
+                        // The left wrist brought up across the chest, the right hand pulling the cuff back, head bowed to
+                        // read the time.
+                        leftArm.xRot = -1.35F; leftArm.yRot = 0.55F; leftArm.zRot = 0.1F;
+                        rightArm.xRot = -1.1F; rightArm.yRot = -0.35F;
+                        head.xRot = 0.55F; head.yRot = 0.2F;
+                    }
                     default -> { return; }
                 }
                 rightSleeve.copyFrom(rightArm); leftSleeve.copyFrom(leftArm); jacket.copyFrom(body); hat.copyFrom(head);

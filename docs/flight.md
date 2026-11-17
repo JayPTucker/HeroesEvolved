@@ -121,6 +121,18 @@ their saved values. Skyburst starts at 2.5 times the configured forward speed an
 per tick with default settings and a full charge and Momentum reserve. Its thrust lasts 20–29 ticks.
 The old ascent-duration entry remains for config compatibility.
 
+## Finishers: Downburst, Vacuum Clap, Updraft
+
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks). Shift + C switches finishers off and on; the rules every finisher shares are in [finishers.md](finishers.md).
+
+- **What you see.** You shoot four and a half blocks straight up from where you stand with a ring of vapour at your feet, hang and flip head-down, and dive back onto your own spot with a front of condensation rings ahead of you. The air you drove down bursts out of the ground and rolls along it to the foe as a standing front of rings; it flattens the foe and blows a ring of dust flat outward, and every foe in that ring (3.5 blocks) takes the overkill. You land where you took off. Under a low ceiling the rise is shorter.
+- **Reward:** Skyburst is ready again.
+
+Each press of C plays one of three at random, never the one you used last. Downburst is described above; the two alternates give the same reward.
+
+- **Vacuum Clap.** Arms flung wide, then brought together: two pressure fronts close on the foe from either side and crush it between them, with a flash and a ring of dust blown flat.
+- **Updraft.** A sweep of the arm, and a column of wind lifts the foe (not you) six blocks up, spinning, and holds it. You cut the wind from the top down and it drops. A low ceiling keeps the lift lower.
+
 ## Verification and preview
 
 ```bash

@@ -296,6 +296,19 @@ A whirlwind considers at most 32 affected entities per update. Transient movemen
 
 Both client and server need the updated mod.
 
+## Finishers: Late Thunder, Hundred Fists, Flick
+
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks). Shift + C switches finishers off and on; the rules every finisher shares are in [finishers.md](finishers.md).
+
+- **What you see.** You coil where you stand while a burning gold lane lays itself along the ground from behind you to the foe, lightning crawling over you and white rings piling at your shoulders. Then one short dash (two blocks at most, only what a punch can't reach) and the punch lands; a cone of white rings bursts out behind the foe, it is thrown in a straight line, and the sonic boom arrives a beat after the hit.
+- **At 100 Momentum** the cone is longer and carries the overkill down the whole line behind the foe.
+- **Reward:** Momentum goes to at least 60 (while you are running).
+
+Each press of C plays one of three at random, never the one you used last. Late Thunder is described above; the two alternates give the same reward.
+
+- **Hundred Fists.** You stay where you are while your arms blur: gold streaks fan from your shoulders onto the foe, a ring at every point they land, more and faster, and the last one throws it with a cone of white rings.
+- **Flick.** The air round you goes still, dust hanging where it was. You draw a hand back and flick it once; the wrist's path hangs in the air as a gold trail, the foe is thrown, and the sonic boom arrives late.
+
 ## Verification
 
 Run `gradlew.bat runGameTestServer --init-script tools/rewind-gametest.init.gradle` for gameplay tests. `SpeedRunGameTests` covers the tornado (it rises only when held, carries what it caught up its funnel, costs stamina, and throws everything out when let go), a quick press staying a ring, the sudden-stop gust (it shoves only what is close, does no harm, and fires once per stop), Overrun charging only at tier 5 and closing when you ease off, and crossing (position, a broken block, inventory and a newcomer all rolled back, then the cooldown), a block placed where you stood after you left, a death along your way and your own death undone, running hunger falling with Power Level, the ledge rules (a full-block step, a snap down a two-block drop but not a real fall, and no fall damage), running putting out flames (not a jog, not before half a second), and Wind Arms (blowing away what is ahead and nothing behind, harmlessly, putting out flames; lifting when pointed down; turning arrows, fireballs and TaCZ bullets, ordinary and explosive, back as yours, even a bullet that crosses the whole funnel in one tick, but not your own shot, one from behind or one wide of the funnels; blowing primed TNT away; and carrying a lingering cloud off). `gradlew.bat runClient --init-script tools/windarms-preview.init.gradle` photographs Wind Arms into `build/windarms-preview/screenshots/`. `RewindTravelGameTests` checks the trip back across worlds and its speed limit; `tools/rewind-travel-preview.init.gradle` photographs a Rewrite the Moment that goes back through the Nether. `gradlew.bat runClient --init-script tools/speedrun-preview.init.gradle` photographs the runner, the tornado, a real stop and a real twenty-second run into Overrun, into `build/speedrun-preview/screenshots/`. Superspeed coverage also includes native stride changes and cleanup, wall-safe bursts, preserved falling momentum, energy exhaustion and rapid-toggle protection, stopped-time/cold interactions, paid projectile dodges, contact rescue, momentum strikes, interrupted flurries and unique ownership.

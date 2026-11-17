@@ -122,6 +122,15 @@ public final class SetPieceClient {
         return best;
     }
 
+    /** Every running piece bound to {@code entity} (for drawing that entity's body differently, as {@code BodyCopies} does). */
+    static List<Active> on(int entity) {
+        List<Active> out = new ArrayList<>();
+        if (world == null || Minecraft.getInstance().level != world || ACTIVE.isEmpty()) return out;
+        long now = world.getGameTime();
+        for (Active a : ACTIVE) if (a.entity == entity && now >= a.start && now - a.start <= a.piece.ticks) out.add(a);
+        return out;
+    }
+
     /** Where each running copy of {@code piece} is now: on its entity if it rides one, else where it was cast. */
     public static List<Vec3> where(Piece piece) {
         List<Vec3> out = new ArrayList<>();
@@ -154,7 +163,7 @@ public final class SetPieceClient {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || ACTIVE.isEmpty() && !SpeedArt.live() && !RewindArt.live() && !FlightArt.live()
                 && !PyroArt.live() && !ShapeArt.live() && !HydroArt.live() && !CryoConstructArt.live(mc.level) && !ClientProjectileTime.hasControlledShots()
-                && !com.jayptucker.heroesevolved.client.effects.intro.SkyFightArt.live() && !GiftArt.live() && !VillageArt.flaresLive()) return;
+                && !com.jayptucker.heroesevolved.client.effects.intro.SkyFightArt.live() && !TakedownArt.live() && !GiftArt.live() && !VillageArt.flaresLive()) return;
         if (world != mc.level) { ACTIVE.clear(); world = mc.level; }
         Vec3 camera = event.getCamera().getPosition();
         Canvas c = CANVAS;
@@ -210,6 +219,7 @@ public final class SetPieceClient {
             PyroArt.drawLive(c);
             ShapeArt.drawLive(c);
             HydroArt.drawLive(c);
+            TakedownArt.drawLive(c);
             com.jayptucker.heroesevolved.client.effects.intro.SkyFightArt.drawLive(c);
             GiftArt.drawLive(c);
             VillageArt.flares(c);

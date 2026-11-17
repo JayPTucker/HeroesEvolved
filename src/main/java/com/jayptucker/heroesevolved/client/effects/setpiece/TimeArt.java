@@ -47,7 +47,138 @@ final class TimeArt {
             case TIME_SNAP -> snap(c, a, t);
             case TIME_MARK -> mark(c, a, t);
             case TIME_FORWARD -> forward(c, a, t);
+            case FINISH_LOOP -> loop(c, a, t);
             default -> { }
+        }
+    }
+
+    /**
+     * Closed Loop (the finisher, {@code time/ClosedLoop}): a clock face stands across the foe, its hands racing forward in
+     * amber while two of you fold in either side (a gold seam joins the two places), then it snaps still at ten past ten,
+     * violet and ice, the moment the later you goes back. With three of you a second, smaller face over the foe's head
+     * runs backward. Origin the foe's feet, target where you fold in, scale the foe's height (+ 32 for three).
+     */
+    private static void loop(Canvas c, Active a, float t) {
+        boolean three = a.scale() >= com.jayptucker.heroesevolved.time.ClosedLoop.THREE;
+        float h = Math.max(.6F, a.scale() - (three ? com.jayptucker.heroesevolved.time.ClosedLoop.THREE : 0));
+        float life = a.piece().ticks, f = fade(t, life, 3, 8);
+        Vec3 feet = a.origin(), near = a.target();
+        Vec3 toNear = near.subtract(feet).multiply(1, 0, 1);
+        toNear = toNear.lengthSqr() < 1e-4 ? new Vec3(1, 0, 0) : toNear.normalize();
+        Vec3 far = feet.subtract(near.subtract(feet).multiply(1, 0, 1));
+        Vec3 chest = feet.add(0, h * .6, 0);
+        float r = Math.max(1.05F, h * .68F);
+        float stopAt = com.jayptucker.heroesevolved.time.ClosedLoop.GONE;
+        boolean stopped = t >= stopAt;
+        // Racing forward, faster and faster, until the loop closes; then held at ten past ten.
+        float run = Math.min(t, stopAt);
+        float minute = stopped ? STOP_MINUTE : run * run * .004F + run * .05F, hour = stopped ? STOP_HOUR : minute / 12F;
+        float snap = smooth(stopAt, stopAt + 2, t);
+        face(c, chest.subtract(toNear.scale(.35)), toNear, r * (1 + .08F * (1 - snap) * (stopped ? 1 : 0)), hour, minute,
+                stopped ? VIOLET : AMBER, f * (.75F + .25F * snap));
+        if (stopped) {
+            face(c, chest.subtract(toNear.scale(.37)), toNear, r * .72F, hour, minute, ICE, f * .5F * snap);
+            motes(c, feet, r * .9F, h * 1.1F, a.seed(), 10, 0, t, ICE, f * .6F * snap);
+            if (c.glow()) c.glow(chest, .9F * (1 - smooth(stopAt, stopAt + 4, t)), PALE, f * (1 - smooth(stopAt, stopAt + 4, t)));
+        } else {
+            motes(c, feet, r * .9F, h * 1.1F, a.seed(), 8, .05F, t, GOLD, f * .5F);
+        }
+        // The fold: a gold seam through the foe joins the two places you arrive, as you arrive.
+        float seam = smooth(4, 6, t) * (1 - smooth(10, 14, t));
+        if (seam > 0) seam(c, near.add(0, 1, 0), far.add(0, 1, 0), .05F, GOLD, f * seam);
+        if (three) {
+            Vec3 crown = feet.add(0, h + .5, 0);
+            float back = -t * .12F;
+            face(c, crown, UP, .55F, back / 12F, back, VIOLET, f * smooth(5, 8, t));
+        }
+    }
+
+    /** The alternate finishers ({@code time/TimeFinishers}): Stopped Clock and Unwound. */
+    static void alternates(Canvas c, Active a, float t) {
+        if (c.solid()) return;
+        if (a.piece() == com.jayptucker.heroesevolved.styles.Piece.FINISH_STOPPED) stopped(c, a, t);
+        else unwound(c, a, t);
+    }
+
+    /**
+     * Stopped Clock: a violet face across the foe whose hands race and stop at ten past ten; six cuts hang frozen across
+     * the body, each one cracking the face; time lurches on (amber), and every cut flares at once and the face breaks.
+     * Origin the foe's feet, target yours, scale its height.
+     */
+    private static void stopped(Canvas c, Active a, float t) {
+        float h = Math.max(.6F, a.scale()), f = fade(t, a.piece().ticks, 2, 8);
+        Vec3 feet = a.origin(), toMe = a.target().subtract(feet).multiply(1, 0, 1);
+        toMe = toMe.lengthSqr() < 1e-4 ? new Vec3(1, 0, 0) : toMe.normalize();
+        Vec3 right = new Vec3(-toMe.z, 0, toMe.x);
+        Vec3 chest = feet.add(0, h * .6, 0);
+        int[] cuts = com.jayptucker.heroesevolved.time.TimeFinishers.STOPPED_CUTS;
+        int resume = com.jayptucker.heroesevolved.time.TimeFinishers.STOPPED_RESUME, land = com.jayptucker.heroesevolved.time.TimeFinishers.STOPPED_LAND;
+        float r = Math.max(1.05F, h * .7F);
+        boolean going = t >= resume;
+        // Hands race for a moment, stop dead, then lurch on when time starts again.
+        float minute = t < 3 ? t * .12F : going ? STOP_MINUTE + (t - resume) * .03F : STOP_MINUTE;
+        float hour = t < 3 ? minute / 12 : going ? STOP_HOUR + (t - resume) * .0025F : STOP_HOUR;
+        float broken = smooth(land, land + 4, t);
+        Vec3 faceAt = chest.subtract(toMe.scale(.4));
+        face(c, faceAt, toMe, r, hour, minute, going ? AMBER : VIOLET, f * (1 - broken));
+        if (!going) motes(c, feet, r * .9F, h * 1.1F, a.seed(), 10, 0, t, ICE, f * .6F);
+        // Cracks across the face: one more for every cut, running out from the centre.
+        int cracked = 0;
+        for (int cut : cuts) if (t >= cut) cracked++;
+        for (int i = 0; i < cracked; i++) {
+            float ang = hash(a.seed(), i) * Mth.TWO_PI;
+            Vec3 out = right.scale(Mth.cos(ang)).add(0, Mth.sin(ang), 0);
+            Vec3 bend = out.add(right.scale(Mth.sin(ang) * .3)).normalize();
+            Vec3 mid = faceAt.add(out.scale(r * .45)), end = mid.add(bend.scale(r * .5));
+            seam(c, faceAt, mid, .022F, ICE, f * (1 - broken) * .9F);
+            seam(c, mid, end, .016F, ICE, f * (1 - broken) * .7F);
+        }
+        // The cuts themselves, frozen where they were made, flaring together as they land.
+        float flare = smooth(land - 1, land, t) * (1 - smooth(land + 1, land + 6, t));
+        for (int i = 0; i < cuts.length; i++) {
+            if (t < cuts[i]) continue;
+            float ang = (hash(a.seed() + 11, i) - .5F) * 2.4F + (i % 2 == 0 ? .5F : -.5F);
+            Vec3 across = right.scale(Mth.cos(ang)).add(0, Mth.sin(ang), 0);
+            Vec3 at = chest.add(0, (hash(a.seed() + 5, i) - .5) * h * .5, 0).add(toMe.scale(.2));
+            float len = h * (.55F + .2F * hash(a.seed() + 9, i)) * smooth(cuts[i], cuts[i] + 1, t);
+            float hold = t < land ? .75F : 0;
+            float alpha = f * (hold + flare * 1.2F);
+            seam(c, at.subtract(across.scale(len)), at.add(across.scale(len)), .03F, t < land ? ICE : GOLD, alpha);
+            if (c.glow() && t < cuts[i] + 3) c.glow(at, .35F * (1 - smooth(cuts[i], cuts[i] + 3, t)), PALE, f * .6F);
+        }
+        if (t >= land) {
+            float burst = smooth(land, land + 6, t), gone = f * (1 - burst);
+            if (c.glow()) {
+                c.glow(chest, .4F + 1.2F * (1 - smooth(land, land + 3, t)), PALE, f * (1 - smooth(land, land + 3, t)));
+                c.ring(faceAt, toMe, r * (1 + burst * .6F), .05F, 0, Mth.TWO_PI, GOLD, gone);
+            }
+            motes(c, feet, r * (1 + burst), h * 1.2F, a.seed() + 3, 14, .06F, t - land, GOLD, gone * .8F);
+        }
+    }
+
+    /**
+     * Unwound: a clock across the foe spins backward, faster and faster, violet into ice; its afterimages (drawn by
+     * BodyCopies) step back out and are pulled in; then the face shrinks to a point where the body was, with a pale flash.
+     * Origin the foe's feet, target yours, bound to the foe, scale its height.
+     */
+    private static void unwound(Canvas c, Active a, float t) {
+        float h = Math.max(.6F, a.scale()), f = fade(t, a.piece().ticks, 2, 8);
+        Vec3 feet = a.origin(), toMe = a.target().subtract(feet).multiply(1, 0, 1);
+        toMe = toMe.lengthSqr() < 1e-4 ? new Vec3(1, 0, 0) : toMe.normalize();
+        Vec3 chest = feet.add(0, h * .6, 0);
+        int gone = com.jayptucker.heroesevolved.combat.FinisherBeats.UNWOUND_GONE, land = com.jayptucker.heroesevolved.combat.FinisherBeats.UNWOUND_LAND;
+        float spin = -(t * t * .006F + t * .03F);
+        float shrink = smooth(gone - 2, land, t);
+        float r = Math.max(1.05F, h * .7F) * (1 - shrink * .97F);
+        float[] colour = t < gone - 4 ? VIOLET : ICE;
+        face(c, chest.subtract(toMe.scale(.4)), toMe, r, spin / 12, spin, colour, f * (1 - smooth(land, land + 2, t)));
+        // A second, smaller face turning faster, the other way round, over the head.
+        face(c, feet.add(0, h + .45, 0), UP, .45F * (1 - shrink), -spin * .7F / 12, -spin * .7F, DEEP, f * .6F * smooth(2, 5, t) * (1 - shrink));
+        motes(c, feet, Math.max(.3F, r * .9F), h * 1.1F, a.seed(), 10, -.04F, t, PALE, f * .5F * (1 - shrink));
+        if (t >= land - 1 && c.glow()) {
+            float flash = 1 - smooth(land, land + 4, t);
+            c.glow(chest, .2F + 1.1F * flash, PALE, f * flash);
+            c.ring(chest, toMe, .2F + 1.6F * smooth(land, land + 6, t), .04F, 0, Mth.TWO_PI, VIOLET, f * (1 - smooth(land, land + 6, t)));
         }
     }
 

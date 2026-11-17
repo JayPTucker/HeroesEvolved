@@ -614,4 +614,89 @@ final class ForceArt {
         lens(c, at, n, size * 0.5F * out(t / 3), 0.05F, 0, 0.6F * (1 - smooth(0, life, t)), 1);
         c.glow(at, 0.4F, EDGE, 0.6F * (1 - smooth(0, 4, t)));
     }
+
+    /**
+     * Hall of Mirrors (Invisibility's finisher, {@code invisibility/HallOfMirrors}): panes of bent light rise one by one in
+     * a ring round the foe, each facing it (the reflections of you in them are {@code BodyCopies}); when you step out of
+     * the pane behind it they all shatter inward into tumbling facets. Bound to you; origin the foe's feet, target where
+     * you started; scale the foe's height.
+     */
+    /**
+     * The alternate finishers ({@code invisibility/ForceFinishers}). Bubble Crush: a cage closes round the foe and squeezes
+     * in, stress cracks spreading over it, then it bursts into facets. Lens Strike: a lens raised in front of the caster,
+     * thrown flat at the foe, a flash on contact and a ring of facets. Origin the foe's feet, target yours, scale its height.
+     */
+    static void alternates(Canvas c, Active a, float t) {
+        if (c.solid()) return;
+        float h = Math.max(.6F, a.scale());
+        float f = Mth.clamp(t / 1.5F, 0, 1) * Mth.clamp((a.piece().ticks - t) / 7, 0, 1);
+        Vec3 feet = a.origin(), home = a.target();
+        Vec3 toMe = home.subtract(feet).multiply(1, 0, 1);
+        toMe = toMe.lengthSqr() < 1e-4 ? new Vec3(1, 0, 0) : toMe.normalize();
+        Vec3 mid = feet.add(0, h * .5, 0);
+        int seed = a.seed();
+        if (a.piece() == Piece.FINISH_BUBBLE_CRUSH) {
+            int shut = com.jayptucker.heroesevolved.invisibility.ForceFinishers.BUBBLE_SHUT, land = com.jayptucker.heroesevolved.invisibility.ForceFinishers.BUBBLE_LAND;
+            float full = Math.max(.7F, h * .62F);
+            if (t < land) {
+                float form = out(t / shut), strain = smooth(shut, land, t);
+                float radius = full * (.4F + .6F * form) * (1 - .38F * strain * strain);
+                cage(c, mid, radius, clock(c, t) * .04F + strain * 1.6F, UP, f, .8F + strain, EDGE);
+                if (c.glow()) c.glow(mid, radius * .9F, SHEEN, .25F * strain * f);
+                if (c.soft()) for (int i = 0; i < (int) (strain * 9); i++) {
+                    float th = hash(seed, i) * TWO_PI, ph = .4F + hash(seed, i + 20) * 2.3F;
+                    Vec3 n = new Vec3(sin(ph) * cos(th), cos(ph), sin(ph) * sin(th));
+                    Vec3 n2 = new Vec3(sin(ph + .6F) * cos(th + .5F), cos(ph + .6F), sin(ph + .6F) * sin(th + .5F));
+                    c.bolt(mid.add(n.scale(radius * 1.01)), mid.add(n2.scale(radius * 1.01)), seed + i, .12F, .025F, STRESS, f * .85F);
+                }
+            } else {
+                float s = t - land;
+                for (int i = 0; i < (minimal() ? 8 : 16); i++) facet(c, mid, seed, i, full * .5F, s, .14F, f * (1 - smooth(land + 4, land + 11, t)));
+                if (c.glow()) c.glow(mid, full * 1.4F * (1 - smooth(land, land + 3, t)), EDGE, f * (1 - smooth(land, land + 3, t)));
+            }
+            return;
+        }
+        // Lens Strike.
+        int raise = com.jayptucker.heroesevolved.invisibility.ForceFinishers.LENS_RAISE, shove = com.jayptucker.heroesevolved.invisibility.ForceFinishers.LENS_SHOVE;
+        int land = com.jayptucker.heroesevolved.invisibility.ForceFinishers.LENS_LAND;
+        Vec3 held = home.add(0, 1.25, 0).subtract(toMe.scale(.9));
+        Vec3 hit = mid.add(toMe.scale(Math.max(.3, h * .2)));
+        if (t < land) {
+            float up = out(t / raise);
+            float fly = t < shove ? 0 : smooth(shove, land, t);
+            Vec3 at = held.lerp(hit, fly * fly);
+            lens(c, at, toMe.scale(-1), (.55F + .25F * fly) * up, .12F, clock(c, t) * .05F, f, fly * .4F);
+            if (fly > 0 && c.glow()) line3(c, new Vec3[]{held, held.lerp(at, .5), at}, .05F, f * .4F * fly);
+        } else {
+            float s = t - land;
+            lens(c, hit, toMe.scale(-1), .8F * (1 - smooth(land, land + 3, t)) + .05F, .02F, 0, f * (1 - smooth(land, land + 3, t)), 1);
+            for (int i = 0; i < (minimal() ? 6 : 12); i++) facet(c, hit, seed, i, .3F, s, .16F, f * (1 - smooth(land + 3, land + 10, t)));
+            if (c.glow()) {
+                c.glow(hit, 1.1F * (1 - smooth(land, land + 3, t)), EDGE, f * (1 - smooth(land, land + 3, t)));
+                c.ring(hit, toMe, .3F + 1.6F * smooth(land, land + 7, t), .04F, 0, TWO_PI, FIELD, f * (1 - smooth(land, land + 7, t)));
+            }
+        }
+    }
+
+    static void finisher(Canvas c, Active a, float t) {
+        float h = Math.max(.6F, a.scale()) + .5F, life = a.piece().ticks;
+        float f = Canvas.fade(t, life, 1, 4);
+        Vec3 foe = a.origin(), home = a.target();
+        int panes = com.jayptucker.heroesevolved.combat.FinisherBeats.MIRRORS_PANES;
+        int rise = com.jayptucker.heroesevolved.combat.FinisherBeats.MIRRORS_RISE;
+        int land = com.jayptucker.heroesevolved.combat.FinisherBeats.MIRRORS_LAND;
+        for (int i = 0; i < panes; i++) {
+            Vec3 at = com.jayptucker.heroesevolved.combat.FinisherBeats.pane(foe, home, i, panes);
+            Vec3 radial = at.subtract(foe).multiply(1, 0, 1).normalize(), across = new Vec3(-radial.z, 0, radial.x);
+            float up = smooth(rise + i, rise + i + 4, t), shatter = smooth(land, land + 1.5F, t);
+            if (up <= 0) continue;
+            if (shatter < 1) {
+                Vec3 corner = at.subtract(across.scale(.6)).add(0, .02, 0);
+                pane(c, corner, across.scale(1.2), new Vec3(0, h * up, 0), f * (1 - shatter) * .85F, .35F, true);
+            }
+            if (t >= land) for (int k = 0; k < 4; k++)
+                facet(c, at.add(0, h * (.2 + .2 * k), 0).lerp(foe.add(0, h * .5, 0), smooth(land, land + 8, t) * .7), a.seed() + i * 7, k,
+                        .1F, t - land, .03F, f * (1 - smooth(land + 4, land + 10, t)));
+        }
+    }
 }

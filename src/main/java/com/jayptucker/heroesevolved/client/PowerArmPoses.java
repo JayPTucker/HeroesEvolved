@@ -489,7 +489,7 @@ public final class PowerArmPoses {
                 set(model.rightArm, -.85F - tuck * .28F + plunge * 1.65F, -.35F + plunge * .26F, .21F);
                 set(model.leftArm, -.85F - tuck * .28F + plunge * 1.65F, .35F - plunge * .26F, -.21F);
             }
-            case FIRE_JAB, FIRE_CROSS, FIRE_KICK, FIRE_SWEEP_KICK, FIRE_STEP, FIRE_FLIP ->
+            case FIRE_JAB, FIRE_CROSS, FIRE_KICK, FIRE_SWEEP_KICK, FIRE_STEP, FIRE_FLIP, FINISH_DRAGON ->
                     firebend(model, entity, pose, main, rightHanded ? model.leftArm : model.rightArm,
                             rightHanded ? model.rightLeg : model.leftLeg, rightHanded ? model.leftLeg : model.rightLeg,
                             inward, aimX, aimY, ClientArmPoseState.ageTicks(id));
@@ -1393,6 +1393,15 @@ public final class PowerArmPoses {
                 set(off, -2.85F * throwUp, 0, inward * .35F * throwUp);
                 set(rear, -1.35F * tuck, 0, -inward * .1F);
                 set(lead, -1.5F * tuck, 0, inward * .1F);
+            }
+            case FINISH_DRAGON -> {
+                // Dragon Coil's landing: a low horse stance, feet wide and knees bent; the rear palm thrust out at the
+                // foe, fingers up, and the lead fist drawn back to the hip.
+                float settle = smooth(age / 2F) * (1 - smooth((age - 11) / 4F));
+                set(main, Mth.lerp(settle, -.4F, aimX + .05F), aimY + inward * .12F * settle, -inward * .08F * settle);
+                set(off, -.35F * settle, -inward * .25F * settle, inward * .55F * settle);
+                set(rear, -.55F * settle, 0, -inward * .42F * settle);
+                set(lead, -.55F * settle, 0, inward * .42F * settle);
             }
             default -> { }
         }

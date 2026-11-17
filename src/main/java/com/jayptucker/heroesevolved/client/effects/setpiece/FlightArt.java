@@ -397,4 +397,133 @@ final class FlightArt {
 
     private static boolean minimal() { return Minecraft.getInstance().options.particles().get() == ParticleStatus.MINIMAL; }
     private static boolean detail() { return Minecraft.getInstance().options.particles().get() == ParticleStatus.ALL; }
+
+    /**
+     * Downburst (the finisher, {@code flight/Downburst}): a ring of vapour bursts from the flyer's feet as they shoot up,
+     * a pressure front of condensation rings leads the dive, and when it stops above the foe the pushed air flattens a
+     * ring outward over the ground. Bound to the flyer; origin the foe's feet, target where they took off; scale the
+     * foe's height.
+     */
+    /**
+     * The alternate finishers ({@code flight/FlightFinishers}). Vacuum Clap: two pressure fronts standing either side of
+     * the foe, closing in until they meet through it, a flash and a dust ring blown flat. Updraft: a column of wind spun
+     * round the foe as it is lifted, held, cut away from the top down, and a ring of dust where it lands. Origin the foe's
+     * feet where it stood, target yours, scale its height; Updraft's is bound to the foe.
+     */
+    static void alternates(Canvas c, Active a, float t) {
+        if (c.solid()) return;
+        float h = Math.max(.6F, a.scale()), f = fade(t, a.piece().ticks, 1, 8);
+        Vec3 feet = a.origin(), toMe = a.target().subtract(feet).multiply(1, 0, 1);
+        toMe = toMe.lengthSqr() < 1e-4 ? new Vec3(1, 0, 0) : toMe.normalize();
+        Vec3 across = new Vec3(-toMe.z, 0, toMe.x);
+        if (a.piece() == com.jayptucker.heroesevolved.styles.Piece.FINISH_CLAP) {
+            int wide = com.jayptucker.heroesevolved.flight.FlightFinishers.CLAP_WIDE, land = com.jayptucker.heroesevolved.flight.FlightFinishers.CLAP_LAND;
+            Vec3 chest = feet.add(0, h * .55, 0);
+            if (t < land + 1) {
+                float k = smooth(wide, land, t);
+                float close = k * k;
+                for (int sign : new int[]{-1, 1}) {
+                    Vec3 at = chest.add(across.scale(sign * (2.6 - 2.3 * close)));
+                    Vec3 axis = across.scale(-sign);
+                    float r = .9F + h * .25F;
+                    arc(c, at, axis, r, .14F, t * .05F + sign, TWO_PI, f * smooth(0, wide + 1, t));
+                    arc(c, at.subtract(axis.scale(.35)), axis, r * .75F, .1F, t * .07F - sign, 5F, f * .6F * smooth(0, wide + 2, t));
+                    spiral(c, at, axis, .5F, r * .9F, r * .5F, t * .3F + sign, 3.5F, .05F, f * .4F * k);
+                }
+            }
+            if (t >= land) {
+                float burst = 1 - (float) Math.pow(1 - smooth(land, land + 8, t), 2), gone = f * (1 - smooth(land + 4, land + 13, t));
+                impact(c, feet.add(0, .08, 0), UP, 3.5F, t - land, f, a.seed());
+                arc(c, chest, toMe, .3F + 1.2F * burst, .12F, 0, TWO_PI, gone);
+                if (c.glow()) c.glow(chest, 1.2F * (1 - smooth(land, land + 3, t)), CORE, f * .7F * (1 - smooth(land, land + 3, t)));
+                if (c.soft()) c.ring(feet.add(0, .06, 0), UP, .5F + 3F * burst, .4F, 0, TWO_PI, SHADOW, gone * .3F);
+            }
+            return;
+        }
+        // Updraft.
+        int top = com.jayptucker.heroesevolved.flight.FlightFinishers.UPDRAFT_TOP, cut = com.jayptucker.heroesevolved.flight.FlightFinishers.UPDRAFT_CUT;
+        int land = com.jayptucker.heroesevolved.flight.FlightFinishers.UPDRAFT_LAND;
+        net.minecraft.world.entity.Entity foe = a.bound(c);
+        Vec3 body = foe != null && foe.isAlive() ? foe.getPosition(c.partial) : feet;
+        float height = (float) (com.jayptucker.heroesevolved.flight.FlightFinishers.UPDRAFT_HEIGHT + h + 1.2);
+        if (t < cut + 4) {
+            // The column: spirals climbing round where it stood, cut away from the top down once the wind stops.
+            float built = smooth(0, 5, t), gone = smooth(cut, cut + 4, t);
+            float shown = height * built * (1 - gone);
+            Vec3 base = feet.add(0, height * gone, 0);
+            for (int i = 0; i < 3; i++)
+                spiral(c, base, UP, shown, .8F + .2F * i, .55F + .15F * i, -t * .6F + i * 2.1F, 9 + i * 2, .07F, f * .7F);
+            arc(c, feet.add(0, .08, 0), UP, 1.1F + .3F * sin(t * .5F), .16F, t * .2F, TWO_PI, f * built * (1 - gone));
+            // Rings riding up with the body.
+            if (t < cut) for (int k = 0; k < 2; k++)
+                arc(c, body.add(0, h * (.2 + .5 * k), 0), UP, .7F + .1F * k, .1F, t * .4F + k * 2, 5.4F, f * .8F);
+        }
+        if (t >= land) {
+            impact(c, feet.add(0, .08, 0), UP, 3F, t - land, f, a.seed());
+            if (c.soft()) c.ring(feet.add(0, .06, 0), UP, .5F + 2.4F * smooth(land, land + 8, t), .35F, 0, TWO_PI, SHADOW,
+                    f * .35F * (1 - smooth(land + 3, land + 10, t)));
+        }
+    }
+
+    static void finisher(Canvas c, Active a, float t) {
+        float life = a.piece().ticks, f = fade(t, life, 1, 8);
+        Vec3 foe = a.origin(), home = a.target();
+        net.minecraft.world.entity.Entity flyer = a.bound(c);
+        int rise = com.jayptucker.heroesevolved.flight.Downburst.RISE, flip = com.jayptucker.heroesevolved.flight.Downburst.FLIP;
+        int land = com.jayptucker.heroesevolved.flight.Downburst.LAND;
+        // Take-off: a vapour ring opening at the feet.
+        if (t < rise + 4) {
+            float k = smooth(0, rise, t), gone = f * (1 - smooth(rise - 2, rise + 4, t));
+            Vec3 at = home.add(0, .1, 0);
+            if (c.soft()) c.ring(at, UP, .4F + 2.2F * k, .25F, 0, TWO_PI, VAPOR, gone * .45F);
+            if (c.glow()) c.ring(at, UP, .4F + 2.2F * k, .05F, 0, TWO_PI, CORE, gone * .7F);
+        }
+        int dive = com.jayptucker.heroesevolved.flight.Downburst.DIVE;
+        // The dive: a front of rings ahead of the flyer, down onto the spot they left.
+        if (flyer != null && t > flip && t < dive + 1) {
+            Vec3 body = flyer.getPosition(c.partial);
+            float k = smooth(flip, dive, t);
+            for (int i = 0; i < 3; i++) {
+                Vec3 at = body.add(0, -.5 - i * .45, 0);
+                float r = .7F + i * .25F + .5F * k;
+                if (c.soft()) c.ring(at, UP, r, .18F, 0, TWO_PI, CONDENSATION, f * (.5F - i * .12F));
+                if (c.glow()) c.ring(at, UP, r, .035F, 0, TWO_PI, CORE, f * (.8F - i * .2F));
+            }
+        }
+        // The air driven into the ground bursts out where they land and rolls along it to the foe: a standing front of
+        // rings, leaning forward, with a dust skirt at its foot.
+        if (t >= dive - 1 && t < land + 2) {
+            float k = smooth(dive - 1, dive + 4, t), gone = f * (1 - smooth(dive + 2, dive + 8, t));
+            Vec3 at = home.add(0, .08, 0);
+            if (c.soft()) c.ring(at, UP, .6F + 1.6F * k, .35F, 0, TWO_PI, VAPOR, gone * .5F);
+            if (c.glow()) c.ring(at, UP, .6F + 1.6F * k, .05F, 0, TWO_PI, CORE, gone * .8F);
+            Vec3 dir = foe.subtract(home).multiply(1, 0, 1);
+            if (dir.lengthSqr() > 1e-4) {
+                dir = dir.normalize();
+                float roll = smooth(dive, land, t), keep = f * (1 - smooth(land, land + 2, t));
+                Vec3 front = home.lerp(foe, roll);
+                for (int i = 0; i < 3; i++) {
+                    Vec3 ringAt = front.subtract(dir.scale(i * .35)).add(0, .7 + i * .05, 0);
+                    float r = .9F - i * .15F;
+                    if (c.soft()) c.ring(ringAt, dir, r, .2F, 0, TWO_PI, CONDENSATION, keep * (.45F - i * .1F));
+                    if (c.glow()) c.ring(ringAt, dir, r, .04F, 0, TWO_PI, CORE, keep * (.85F - i * .22F));
+                }
+                if (c.soft()) c.ring(front.add(0, .08, 0), UP, .8F, .3F, 0, TWO_PI, SHADOW, keep * .3F);
+            }
+        }
+        // The air goes on: a flattened ring blown out over the ground, and a dark dust ring under it.
+        if (t >= land) {
+            float k = 1 - (float) Math.pow(1 - smooth(land, land + 8, t), 2), gone = f * (1 - smooth(land + 4, land + 14, t));
+            float r = .5F + (float) com.jayptucker.heroesevolved.flight.Downburst.RING * k;
+            Vec3 at = foe.add(0, .06, 0);
+            if (c.soft()) {
+                c.ring(at, UP, r, .45F, 0, TWO_PI, SHADOW, gone * .35F);
+                c.ring(at, UP, r * .8F, .3F, 0, TWO_PI, VAPOR, gone * .5F);
+            }
+            if (c.glow()) {
+                c.ring(at.add(0, .05, 0), UP, r, .06F, 0, TWO_PI, CORE, gone);
+                c.glow(foe.add(0, .5, 0), 1.4F * (1 - smooth(land, land + 4, t)), CORE, f * .6F * (1 - smooth(land, land + 4, t)));
+            }
+        }
+    }
 }

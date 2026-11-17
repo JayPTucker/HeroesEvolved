@@ -208,4 +208,120 @@ final class QuakeArt {
     }
 
     private static boolean minimal() { return Minecraft.getInstance().options.particles().get() == ParticleStatus.MINIMAL; }
+
+    /**
+     * The alternate finishers ({@code quake/QuakeFinishers}). Fault Line: a stomp ring at her feet, a crack running along
+     * the ground to the foe, slabs tilting up round it as it heaves, then folding in over it in dust. Shatter Point:
+     * pressure rings shivering on the body, cracks of light spreading over it, then a burst into a ring of dust. Origin
+     * the foe's feet, target hers, bound to the foe, scale its height.
+     */
+    static void alternates(Canvas c, Active a, float t) {
+        float h = Math.max(.6F, a.scale()), f = fade(t, a.piece().ticks, 1, 8);
+        Vec3 feet = a.origin(), home = a.target();
+        int seed = a.seed();
+        if (a.piece() == com.jayptucker.heroesevolved.styles.Piece.FINISH_FAULT) {
+            int stomp = com.jayptucker.heroesevolved.quake.QuakeFinishers.FAULT_STOMP, reach = com.jayptucker.heroesevolved.quake.QuakeFinishers.FAULT_REACH;
+            int heave = com.jayptucker.heroesevolved.quake.QuakeFinishers.FAULT_HEAVE, land = com.jayptucker.heroesevolved.quake.QuakeFinishers.FAULT_LAND;
+            if (t >= stomp) {
+                float p = clamp((t - stomp) / 8, 0, 1);
+                pressure(c, home.add(0, .06, 0), UP, .4F + 1.6F * p, .08F, f * (1 - p), .08F, t);
+                // The crack runs to the foe in jagged steps and stays.
+                float run = smooth(stomp, reach, t);
+                int steps = 6;
+                Vec3 prev = home.add(0, .03, 0);
+                for (int i = 1; i <= steps; i++) {
+                    float u = i / (float) steps;
+                    if (u > run + .001F) break;
+                    Vec3 dir = feet.subtract(home).multiply(1, 0, 1);
+                    Vec3 side = dir.lengthSqr() < 1e-4 ? new Vec3(1, 0, 0) : new Vec3(-dir.z, 0, dir.x).normalize();
+                    Vec3 next = home.lerp(feet, u).add(side.scale((hash(seed, i) - .5) * .5 * (i == steps ? 0 : 1))).add(0, .03, 0);
+                    crack(c, prev, next, seed + i, .09F, f);
+                    if (c.glow() && t < reach + 3) c.line(prev, next, .03F, WAVE, f * .5F, f * .5F);
+                    prev = next;
+                }
+            }
+            // Slabs tilt up in a ring as the ground heaves, then fold in over the spot.
+            if (t >= reach - 1) {
+                float up = smooth(reach - 1, heave, t), fold = smooth(heave, land, t);
+                int slabs = minimal() ? 5 : 8;
+                float r = Math.max(.7F, h * .35F + .4F);
+                if (c.solid()) for (int i = 0; i < slabs; i++) {
+                    float yaw = i * TWO_PI / slabs + hash(seed, i + 20) * .3F;
+                    Vec3 out = new Vec3(cos(yaw), 0, sin(yaw));
+                    float tilt = up * (.9F + .2F * hash(seed, i + 30)) * (1 - fold) + fold * 1.45F;
+                    float sink = smooth(land + 4, land + 12, t) * .5F;
+                    Vec3 at = feet.add(out.scale(r * (1 - .45 * fold))).add(0, .25 * up - sink, 0);
+                    c.box(at, .32F, .1F, .26F, -yaw, -tilt, 0, STONE, 1);
+                }
+                if (t >= land) {
+                    dust(c, feet.add(0, .3, 0), UP, t - land, 1.4F, seed);
+                    grit(c, feet.add(0, .2, 0), UP.scale(.6), minimal() ? 8 : 18, 1.2F, t - land, 14, seed + 5);
+                }
+            }
+            return;
+        }
+        // Shatter Point.
+        int touch = com.jayptucker.heroesevolved.quake.QuakeFinishers.SHATTER_TOUCH, land = com.jayptucker.heroesevolved.quake.QuakeFinishers.SHATTER_LAND;
+        Vec3 mid = feet.add(0, h * .5, 0);
+        if (t < land) {
+            float build = smooth(touch, land, t);
+            for (int i = 0; i < 3; i++)
+                pressure(c, feet.add(0, h * (.2 + .3 * i), 0), UP, Math.max(.35F, h * .26F) * (1 + .05F * sin(t * 3 + i)), .04F,
+                        f * (.3F + .5F * build), .15F + .1F * build, t * 5 + i);
+            // Cracks of light spreading over the body, more every few ticks.
+            int cracks = (int) (build * 9);
+            for (int i = 0; i < cracks; i++) {
+                float yaw = hash(seed, i) * TWO_PI, y = hash(seed, i + 30);
+                float r = Math.max(.3F, h * .25F);
+                Vec3 from = feet.add(cos(yaw) * r, h * y, sin(yaw) * r);
+                Vec3 to = feet.add(cos(yaw + .5F) * r, h * Math.min(1, y + .2F), sin(yaw + .5F) * r);
+                crack(c, from, to, seed + i, .03F, f);
+                if (c.glow()) c.bolt(from, to, seed + i, .12F, .012F, CORE, f * .8F * build);
+            }
+            if (c.glow()) c.glow(mid, .4F + .6F * build, WAVE, f * .3F * build);
+        } else {
+            shatter(c, mid, h, t - land + 4, seed);
+            dust(c, feet.add(0, .3, 0), UP, t - land, 1.6F, seed + 3);
+        }
+    }
+
+    /**
+     * Counterbeat (the finisher, {@code quake/Counterbeat}): each heartbeat the foe's body shows is a double ring of
+     * pressure opening at its chest, coming faster and faster; the counter-pulse is rings closing in on the chest from
+     * her side; then one flat ring spreads over the ground and no more beats come. Bound to the foe, Quake's entity id in
+     * the seed; origin its feet; scale its height.
+     */
+    static void finisher(Canvas c, Active a, float t) {
+        float h = Math.max(.6F, a.scale()), life = a.piece().ticks, f = fade(t, life, 1, 6);
+        net.minecraft.world.entity.Entity foe = a.bound(c), owner = c.level.getEntity(a.seed());
+        Vec3 feet = foe != null ? foe.getPosition(c.partial) : a.origin();
+        Vec3 chest = feet.add(0, h * .6, 0);
+        Vec3 toward = owner != null ? owner.getPosition(c.partial).subtract(feet).multiply(1, 0, 1) : new Vec3(0, 0, 1);
+        Vec3 axis = toward.lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : toward.normalize();
+        float phase = (c.level.getGameTime() % 2400 + c.partial) * .3F;
+        int counter = com.jayptucker.heroesevolved.quake.Counterbeat.COUNTER, land = com.jayptucker.heroesevolved.quake.Counterbeat.LAND;
+        // The heartbeats: a double pulse at each, the second a moment after the first.
+        for (int beat : com.jayptucker.heroesevolved.quake.Counterbeat.BEATS) {
+            for (int twice = 0; twice < 2; twice++) {
+                float age = t - beat - twice * 1.2F;
+                if (age < 0 || age > 5) continue;
+                float k = age / 5;
+                pressure(c, chest, axis, .15F + .55F * k, .05F, f * (1 - k), .2F, phase);
+            }
+        }
+        // The counter-pulse: rings falling in on the chest.
+        if (t >= counter && t < land + 1) {
+            for (int i = 0; i < 3; i++) {
+                float k = smooth(counter + i * .6F, land, t);
+                if (k <= 0 || k >= 1) continue;
+                pressure(c, chest.add(axis.scale(.3 * (1 - k))), axis, 1.2F * (1 - k) + .05F, .07F, f * (1 - k * .5F), .4F, phase);
+            }
+        }
+        // Silence: one flat ring over the ground.
+        if (t >= land) {
+            float k = smooth(land, land + 8, t);
+            pressure(c, feet.add(0, .06, 0), UP, .4F + 3.6F * k, .08F, f * (1 - k), .1F, phase);
+            grit(c, feet, UP.scale(.2), 8, 1.2F, t - land, 10, a.seed());
+        }
+    }
 }

@@ -126,6 +126,18 @@ constructs, bubbles the player made or is held in, the Nova wind-up and the disc
 what was there. Hidden creatures and objects return when their time ends, when hurt or set alight, or when
 a sensing power reveals them. A pre-existing vanilla Invisibility potion is restored when Fade ends.
 
+## Finishers: Hall of Mirrors, Bubble Crush, Lens Strike
+
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks). Shift + C switches finishers off and on; the rules every finisher shares are in [finishers.md](finishers.md).
+
+- **What you see.** You vanish, and five panes of bent light rise one by one in a ring round the foe, each holding a pale reflection of you turned toward it. You step out of the pane behind it with a Force Palm, and every pane shatters inward into tumbling facets.
+- **Reward:** three seconds of Fade afterwards, free, to get away.
+
+Each press of C plays one of three at random, never the one you used last. Hall of Mirrors is described above; the two alternates give the same reward.
+
+- **Bubble Crush.** A force bubble closes round the foe, dark stress cracks spreading over its facets, and squeezes shut until it bursts into tumbling shards.
+- **Lens Strike.** You raise a Lens Shield and shove it; the lens flies at the foe and flattens it, with a flash and a ring of shards.
+
 ## Verification
 
 `InvisibilityGameTests` covers Fade, Exposure, reveals, shared Fades, potion restoring, a borrowed Fade, the

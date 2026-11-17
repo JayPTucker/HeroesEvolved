@@ -103,7 +103,7 @@ public final class FirstPersonArmGeometry {
             return;
         }
         if (switch (pose) {
-            case FIRE_JAB, FIRE_CROSS, FIRE_KICK, FIRE_SWEEP_KICK, FIRE_STEP, FIRE_FLIP -> true;
+            case FIRE_JAB, FIRE_CROSS, FIRE_KICK, FIRE_SWEEP_KICK, FIRE_STEP, FIRE_FLIP, FINISH_DRAGON -> true;
             default -> false;
         }) {
             var player = net.minecraft.client.Minecraft.getInstance().player;
@@ -1253,6 +1253,25 @@ public final class FirstPersonArmGeometry {
                 spread = .43F + .1F * up;
                 pitch = -82 + 55 * up;
                 roll = side * (4 + 10 * up);
+            }
+            case FINISH_DRAGON -> {
+                // Dragon Coil's landing: the rear palm thrust in at the crosshair, the lead fist pulled down to the hip.
+                float thrust = smooth(age / 2F) * (1 - smooth((age - 11) / 4F));
+                if (main) {
+                    spread = .4F - .22F * thrust;
+                    height = -.42F + .1F * thrust;
+                    depth = -.25F - .35F * thrust;
+                    pitch = -80 - 8 * thrust;
+                    yaw = side * (6 + 14 * thrust);
+                    roll = side * (4 - 30 * thrust);
+                } else {
+                    spread = .5F;
+                    height = -.4F - .28F * thrust;
+                    depth = -.2F;
+                    pitch = -82 - 30 * thrust;
+                    yaw = side * 12;
+                    roll = side * 12;
+                }
             }
             default -> { }
         }

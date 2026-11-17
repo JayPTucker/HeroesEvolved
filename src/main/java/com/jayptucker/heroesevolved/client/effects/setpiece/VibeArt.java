@@ -501,4 +501,93 @@ final class VibeArt {
         if (age < 0 || age >= life) return 0;
         return (in > 0 ? smooth(0, in, age) : 1) * (out > 0 ? 1 - smooth(life - out, life, age) : 1);
     }
+
+    /**
+     * Off Frequency (the finisher, {@code vibe/OffFrequency}): wave fronts run between two blue panes either side of the
+     * foe (the split, tinted copies of it are {@code BodyCopies}), and each copy blinks out with a breach's pop. A piece
+     * with a scale under .5 is a filament from the foe to a marked foe that takes the overkill. Bound to the foe, Cisco's
+     * entity id in the seed; origin its feet, target where Cisco stands; scale its height.
+     */
+    /**
+     * The alternate finishers ({@code vibe/VibeFinishers}). Breach Drop: a breach lying flat under the foe, opening, the
+     * body dropping through it (BodyCopies), and the iris snapping shut. Point Blank: wave fronts gathering in the palms
+     * against the foe, then a run of fronts straight through it and out of its back.
+     */
+    static void alternates(Canvas c, SetPieceClient.Active a, float t) {
+        if (c.solid()) return;
+        float h = Math.max(.6F, a.scale()), life = a.piece().ticks;
+        float clock = clock(a, t);
+        if (a.piece() == Piece.FINISH_BREACH) {
+            int open = com.jayptucker.heroesevolved.combat.FinisherBeats.BREACH_OPEN, land = com.jayptucker.heroesevolved.combat.FinisherBeats.BREACH_LAND;
+            float alpha = fade(t, life, 2, 5);
+            float shape = smooth(1, open, t) * (1 - smooth(land, land + 3, t));
+            Vec3 floor = a.origin().add(0, .05, 0);
+            float w = .7F + h * .2F;
+            iris(c, floor, new Vec3(0, 1, 0), w, w, shape, alpha, clock, false, 0);
+            if (t >= land && t < land + 5 && c.glow()) {
+                float k = smooth(land, land + 5, t);
+                c.ring(floor, new Vec3(0, 1, 0), w * (.4F + 1.4F * k), .05F, 0, Mth.TWO_PI, ICE, alpha * (1 - k));
+                c.glow(floor.add(0, .2, 0), .9F * (1 - k), WHITE, alpha * (1 - k));
+            }
+            return;
+        }
+        // Point Blank: bound to you, the target the foe's chest.
+        float alpha = fade(t, life, 1, 6);
+        int gather = com.jayptucker.heroesevolved.vibe.VibeFinishers.BLANK_GATHER, land = com.jayptucker.heroesevolved.vibe.VibeFinishers.BLANK_LAND;
+        Vec3 chest = a.target();
+        Vec3 palms = hand(c, a, false).lerp(hand(c, a, true), .5);
+        Vec3 dir = chest.subtract(palms);
+        if (dir.lengthSqr() < 1e-4) return;
+        dir = dir.normalize();
+        if (t < land) {
+            float build = smooth(gather, land, t);
+            for (int k = 0; k < 3; k++) {
+                float q = ((t * .18F + k / 3F) % 1);
+                Vec3 at = palms.add(dir.scale(.1 + .25 * (1 - q)));
+                front(c, at, dir, (.15F + .35F * q) * (.5F + build), (.12F + .28F * q) * (.5F + build), clock * .2F + k, alpha * build * (1 - q), .4F);
+            }
+            if (c.glow()) c.glow(palms, .2F + .3F * build, BLUE, alpha * .5F * build);
+        } else {
+            float s = t - land;
+            for (int k = 0; k < (minimal() ? 2 : 4); k++) {
+                float p = Mth.clamp((s - k * .8F) / 7, 0, 1.2F);
+                if (p <= 0 || p > 1.15F) continue;
+                Vec3 at = chest.subtract(dir.scale(.4)).add(dir.scale(p * 4.2));
+                float width = (.45F + .6F * p) * Math.max(1, h * .6F);
+                front(c, at, dir, width, width * .75F, k * 1.07F + t * .12F, alpha * (1 - p * .8F), .6F);
+            }
+            if (c.glow()) c.glow(chest, 1F * (1 - smooth(land, land + 3, t)), WHITE, alpha * (1 - smooth(land, land + 3, t)));
+        }
+    }
+
+    static void finisher(Canvas c, SetPieceClient.Active a, float t) {
+        float life = a.piece().ticks, f = Canvas.fade(t, life, 1, 6);
+        if (a.scale() < .5F) {
+            filament(c, a.origin(), a.target(), .2F, t, f * (1 - smooth(4, 10, t)), ICE);
+            return;
+        }
+        float h = Math.max(.6F, a.scale());
+        net.minecraft.world.entity.Entity foe = a.bound(c);
+        Vec3 feet = foe != null ? foe.getPosition(c.partial) : a.origin();
+        Vec3 toward = a.target().subtract(feet).multiply(1, 0, 1);
+        Vec3 facing = toward.lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : toward.normalize(), side = new Vec3(-facing.z, 0, facing.x);
+        int split = com.jayptucker.heroesevolved.combat.FinisherBeats.FREQUENCY_SPLIT, gone = com.jayptucker.heroesevolved.combat.FinisherBeats.FREQUENCY_GONE;
+        float phase = (c.level.getGameTime() % 2400 + c.partial) * .4F;
+        // The fronts either side of the foe, the gap between them buzzing.
+        float hold = smooth(0, 4, t) * (1 - smooth(gone, gone + 4, t));
+        if (hold > 0) for (int sign : new int[]{-1, 1}) {
+            Vec3 at = feet.add(side.scale(sign * (1.1 + .3 * smooth(split + 6, split + 13, t)))).add(0, h * .55, 0);
+            front(c, at, side.scale(-sign), .55F, h * .6F, phase, f * hold, smooth(split, split + 6, t));
+        }
+        // Each copy blinks out with a pop where it stood.
+        if (c.glow()) for (int i = 0; i < 3; i++) {
+            float k = smooth(gone + i, gone + i + 3, t);
+            if (k <= 0 || k >= 1) continue;
+            float drift = .12F + .85F;
+            Vec3 at = feet.add(side.scale((i - 1) * drift)).add(0, h * .55, 0);
+            float[] tint = i == 0 ? BLUE : i == 1 ? WHITE : ICE;
+            c.ring(at, facing, .2F + .9F * k, .05F, 0, net.minecraft.util.Mth.TWO_PI, tint, f * (1 - k));
+            c.glow(at, .5F * (1 - k), WHITE, f * (1 - k));
+        }
+    }
 }

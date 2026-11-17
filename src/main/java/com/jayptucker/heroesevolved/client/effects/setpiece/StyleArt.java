@@ -268,4 +268,271 @@ final class StyleArt {
     private static Vec3 side(Vec3 axis) { return (Math.abs(axis.y) > .93 ? new Vec3(0, 0, 1) : UP).cross(axis).normalize(); }
 
     private static boolean minimal() { return Minecraft.getInstance().options.particles().get() == ParticleStatus.MINIMAL; }
+
+    private static final float[] WARM = rgb(0xFF9A3C), WARM_CORE = rgb(0xFFE0A0);
+
+    /**
+     * Last Warmth (Cryokinesis's finisher, {@code cryo/LastWarmth}): an ember of the foe's warmth is drawn out of its
+     * chest along a thread to the open palm (the only warm colour in the kit), frost rings creep over the body from the
+     * feet and the crown toward the middle as it leaves, the fist closes on it in a puff of steam, and the rimed body
+     * breaks into falling snow. Bound to the foe, the caster's entity id in the seed; scale its height (+ HOT: a flame).
+     */
+    static void warmth(Canvas c, Active a, float t) {
+        boolean hot = a.scale() >= com.jayptucker.heroesevolved.cryo.LastWarmth.HOT;
+        float h = Math.max(.6F, a.scale() - (hot ? com.jayptucker.heroesevolved.cryo.LastWarmth.HOT : 0));
+        float life = a.piece().ticks, f = fade(t, life, 1, 6);
+        net.minecraft.world.entity.Entity foe = a.bound(c), owner = c.level.getEntity(a.seed());
+        Vec3 feet = foe != null && foe.isAlive() ? foe.getPosition(c.partial) : a.origin();
+        Vec3 chest = feet.add(0, h * .6, 0);
+        Vec3 palm = owner instanceof net.minecraft.world.entity.player.Player p
+                ? com.jayptucker.heroesevolved.combat.StyleHits.hand(p, c.partial, true) : chest.add(0, 0, 1);
+        int draw = com.jayptucker.heroesevolved.cryo.LastWarmth.DRAW, close = com.jayptucker.heroesevolved.cryo.LastWarmth.CLOSE;
+        int land = com.jayptucker.heroesevolved.cryo.LastWarmth.LAND;
+        float r = Math.max(.45F, h * .22F);
+        // Frost creeping in from the feet and the crown.
+        float creep = smooth(draw, land, t);
+        if (c.glow() && t < land + 4) for (int k = 0; k < 2; k++) {
+            double y = k == 0 ? h * (.05 + .45 * creep) : h * (.98 - .4 * creep);
+            float a1 = f * (.3F + .6F * creep) * (1 - smooth(land, land + 4, t));
+            c.ring(feet.add(0, y, 0), UP, r, .07F, 0, TWO_PI, GLACIER, a1 * .4F);
+            c.ring(feet.add(0, y, 0), UP, r, .022F, 0, TWO_PI, RIME, a1);
+        }
+        // The ember drawn out to the palm, and the thread it rides.
+        float pull = smooth(draw, close, t);
+        if (t >= draw && t < close + 1) {
+            Vec3 ember = chest.lerp(palm, pull);
+            float size = hot ? .26F : .12F;
+            if (c.glow()) {
+                c.line(chest, ember, .02F, FROST, f * .5F, f * .8F);
+                c.glow(ember, size * 2.4F, WARM, f * .5F);
+                c.glow(ember, size, WARM_CORE, f);
+            }
+        }
+        // The fist closes: steam.
+        float steam = smooth(close, close + 1, t) * (1 - smooth(close + 2, close + 8, t));
+        if (steam > 0 && c.glow()) for (int i = 0; i < 5; i++) {
+            Vec3 puff = palm.add((hash(a.seed(), i) - .5) * .3, (t - close) * .05 + hash(a.seed(), i + 5) * .2, (hash(a.seed(), i + 9) - .5) * .3);
+            c.glow(puff, .14F + (t - close) * .02F, RIME, steam * f * .35F);
+        }
+        // Snow and chips of ice as the rimed body breaks.
+        if (t >= land && c.glow()) {
+            float fall = t - land;
+            for (int i = 0; i < 16; i++) {
+                double ang = hash(a.seed(), i + 20) * TWO_PI, rr = r * (.4 + 1.2 * hash(a.seed(), i + 40));
+                double y = h * hash(a.seed(), i + 60) - fall * (.05 + .05 * hash(a.seed(), i + 80));
+                if (y < 0) continue;
+                c.glow(feet.add(Math.cos(ang) * rr * (1 + fall * .03), y, Math.sin(ang) * rr * (1 + fall * .03)), .05F, RIME, f * .9F);
+            }
+        }
+    }
+
+    /**
+     * Telekinesis's alternate finishers ({@code telekinesis/KineticFinishers}), with the Puppeteer's hand. Crush: the
+     * fingers close over the foe from above and squeeze in, trembling, bands of pressure tightening round it, then an
+     * inward ripple as it buckles. Toss: the hand carries it up, holds it, and drives it down into a ripple and dust
+     * ring. Bound to the foe; origin its feet where it stood, target yours, scale its height.
+     */
+    static void kineticFinishers(Canvas c, Active a, float t) {
+        if (c.solid()) return;
+        float h = Math.max(.6F, a.scale()), f = fade(t, a.piece().ticks, 1, 7);
+        net.minecraft.world.entity.Entity foe = a.bound(c);
+        boolean alive = foe != null && foe.isAlive();
+        Vec3 feet = alive ? foe.getPosition(c.partial) : a.origin();
+        float clock = c.level.getGameTime() % 2400 + c.partial;
+        if (a.piece() == com.jayptucker.heroesevolved.styles.Piece.FINISH_CRUSH) {
+            int land = com.jayptucker.heroesevolved.telekinesis.KineticFinishers.CRUSH_LAND;
+            if (t < land + 1) {
+                float squeeze = smooth(2, land, t);
+                fingers(c, feet, h, foe != null ? foe.getBbWidth() : .6F, smooth(0, 3, t), squeeze, f, clock, a.seed());
+                if (c.glow()) for (int i = 0; i < 3; i++) {
+                    float r = (Math.max(.35F, h * .25F) + .3F) * (1.1F - .45F * squeeze) * (1 + .04F * sin(clock * 2 + i));
+                    c.ring(feet.add(0, h * (.25 + .28 * i), 0), UP, r, .04F, 0, TWO_PI, TK_EDGE, f * (.35F + .45F * squeeze));
+                }
+            } else if (c.glow()) {
+                float k = smooth(land, land + 6, t);
+                c.ring(feet.add(0, h * .5, 0), UP, 1.4F * (1 - k) + .1F, .06F, 0, TWO_PI, TK_EDGE, f * (1 - k));
+                c.glow(feet.add(0, h * .5, 0), .9F * (1 - smooth(land, land + 3, t)), TK_CORE, f * (1 - smooth(land, land + 3, t)));
+            }
+            return;
+        }
+        // Toss.
+        int high = com.jayptucker.heroesevolved.telekinesis.KineticFinishers.TOSS_HIGH, pull = com.jayptucker.heroesevolved.telekinesis.KineticFinishers.TOSS_PULL;
+        int land = com.jayptucker.heroesevolved.telekinesis.KineticFinishers.TOSS_LAND;
+        if (t < land) {
+            fingers(c, feet, h, foe != null ? foe.getBbWidth() : .6F, smooth(0, 3, t), .25F, f, clock, a.seed());
+            // A trail of bent air under the body on the way down.
+            if (t > pull && c.glow()) c.line(feet, feet.add(0, 1.4, 0), .2F, TK_EDGE, 0, f * .5F);
+            if (c.glow() && t < high) c.ring(a.origin().add(0, .05, 0), UP, .6F + .4F * smooth(0, high, t), .04F, 0, TWO_PI, TK_EDGE, f * .5F);
+        } else {
+            Vec3 ground = a.origin().add(0, .05, 0);
+            float k = smooth(land, land + 8, t);
+            if (c.glow()) {
+                c.ring(ground, UP, .4F + 2.6F * k, .06F, 0, TWO_PI, TK_EDGE, f * (1 - k));
+                c.ring(ground, UP, .3F + 1.6F * k, .025F, 0, TWO_PI, TK_CORE, f * (1 - k));
+                c.glow(ground.add(0, .4, 0), 1.1F * (1 - smooth(land, land + 3, t)), TK_CORE, f * .6F * (1 - smooth(land, land + 3, t)));
+            }
+            if (c.soft()) c.ring(ground, UP, .5F + 2.2F * k, .35F, 0, TWO_PI, TK_SHADE, f * .3F * (1 - k));
+        }
+    }
+
+    /** Five fingers of bent air over a body, from open ({@code close} 0) to shut, squeezed in by {@code squeeze}. */
+    private static void fingers(Canvas c, Vec3 feet, float height, float width, float close, float squeeze, float alpha, float clock, int seed) {
+        float k = close * alpha;
+        if (k <= .003F) return;
+        float r = (width * .5F + .3F) * (1 + .8F * (1 - close)) * (1 - .4F * squeeze);
+        Vec3 crown = feet.add(0, height + .45, 0);
+        int n = 7;
+        for (int f = 0; f < 5; f++) {
+            float angle = f * TWO_PI / 5 + hash(seed, 0) * TWO_PI;
+            float tremble = (.04F + .05F * squeeze) * sin(clock * (1.7F + squeeze * 2) + f * 2.1F);
+            Vec3 out = new Vec3(cos(angle), 0, sin(angle));
+            float reach = f == 0 ? .5F : .78F;
+            Vec3[] finger = new Vec3[n];
+            for (int i = 0; i < n; i++) {
+                float u = i / (n - 1F), bend = sin(u * PI * .5F);
+                finger[i] = crown.add(out.scale(r * bend + tremble)).add(0, -(height + .45) * reach * u * u - .1 * u, 0);
+            }
+            if (c.soft()) c.ribbon(finger, .16F, TK_SHADE, k * .3F, k * .05F);
+            else if (c.glow()) {
+                c.ribbon(finger, .07F, TK_EDGE, k * .8F, k * .2F);
+                c.ribbon(finger, .025F, TK_CORE, k, k * .3F);
+            }
+        }
+        if (c.glow()) c.glow(crown, .5F * k, TK_CORE, k * .45F);
+    }
+
+    /**
+     * Cryokinesis's alternate finishers ({@code cryo/CryoFinishers}), in Last Warmth's frost: Coffin (leaning shards grow
+     * up over the body and seal, then burst outward and skid away) and Icicle Ring (a ring of icicles rises, leans in until
+     * their points meet over the foe, a frost burst, and they crumble). Origin the foe's feet, target yours, scale its height.
+     */
+    static void cryoFinishers(Canvas c, Active a, float t) {
+        if (c.solid()) return;
+        float h = Math.max(.6F, a.scale()), f = fade(t, a.piece().ticks, 1, 7);
+        Vec3 feet = a.origin();
+        int seed = a.seed();
+        if (a.piece() == com.jayptucker.heroesevolved.styles.Piece.FINISH_COFFIN) {
+            int sealed = com.jayptucker.heroesevolved.cryo.CryoFinishers.COFFIN_SEALED, land = com.jayptucker.heroesevolved.cryo.CryoFinishers.COFFIN_LAND;
+            float r = Math.max(.4F, h * .26F);
+            int n = minimal() ? 7 : 11;
+            if (t < land) {
+                for (int i = 0; i < n; i++) {
+                    float ang = (i + hash(seed, i) * .4F) * TWO_PI / n;
+                    // Each shard starts a little later than the last, so the ice climbs round the body.
+                    float grow = smooth(i * .6F, sealed - 2 + i * .2F, t);
+                    if (grow <= 0) continue;
+                    Vec3 out = new Vec3(cos(ang), 0, sin(ang));
+                    Vec3 base = feet.add(out.scale(r * 1.05));
+                    Vec3 tip = feet.add(out.scale(r * .35)).add(0, (h + .25) * (.75F + .25F * hash(seed, i + 7)) * grow, 0);
+                    float shake = t > sealed ? (hash(seed + (int) t, i) - .5F) * .02F : 0;
+                    c.shard(base.add(shake, 0, shake), tip, .16F + .06F * hash(seed, i + 3), 5, ang, FROST, f * .55F);
+                }
+                float seal = smooth(sealed - 3, sealed, t);
+                if (c.soft() && seal > 0) c.shell(feet.add(0, h * .5, 0), r * .95F, h * .58F, r * .95F, PI, GLACIER, f * .25F * seal, .6F,
+                        Canvas.hexes(5, .12F, .4F), 0);
+                if (c.glow()) for (int k = 0; k < 3; k++) {
+                    float y = (float) (h * (.15 + .35 * k)) * smooth(0, sealed, t);
+                    c.ring(feet.add(0, y, 0), UP, r, .02F, 0, TWO_PI, RIME, f * .7F);
+                }
+            } else {
+                // Shattered: shards thrown out and skidding over the ground, slowing, then snow.
+                float k = t - land;
+                for (int i = 0; i < n + 4; i++) {
+                    float ang = hash(seed, i + 30) * TWO_PI;
+                    Vec3 out = new Vec3(cos(ang), 0, sin(ang));
+                    float travel = (1 - (float) Math.exp(-k * .25F)) * (1.2F + 1.6F * hash(seed, i + 40));
+                    double hop = Math.max(0, .9 * hash(seed, i + 50) * h * (1 - k / 6F) * (k < 6 ? 1 : 0) + .04);
+                    Vec3 at = feet.add(out.scale(r + travel)).add(0, hop, 0);
+                    Vec3 tip = at.add(out.scale(.3)).add(0, .08, 0);
+                    c.shard(at, tip, .07F + .05F * hash(seed, i + 60), 4, ang + k * .4F, FROST, f * .7F);
+                }
+                if (c.glow()) {
+                    c.glow(feet.add(0, h * .5, 0), 1.2F * (1 - smooth(land, land + 3, t)), RIME, f * (1 - smooth(land, land + 3, t)));
+                    c.ring(feet.add(0, .04, 0), UP, r + 2.2F * smooth(land, land + 8, t), .03F, 0, TWO_PI, RIME, f * (1 - smooth(land + 2, land + 9, t)));
+                }
+                snow(c, feet, r, h, k, f, seed);
+            }
+            return;
+        }
+        // Icicle Ring.
+        int risen = com.jayptucker.heroesevolved.cryo.CryoFinishers.ICICLES_RISEN, land = com.jayptucker.heroesevolved.cryo.CryoFinishers.ICICLES_LAND;
+        float ringR = Math.max(1.3F, h * .6F + .7F);
+        int n = minimal() ? 6 : 9;
+        Vec3 meet = feet.add(0, h + .35, 0);
+        float rise = smooth(0, risen, t), lean = smooth(risen, land, t), crumble = smooth(land + 3, land + 10, t);
+        for (int i = 0; i < n; i++) {
+            float ang = i * TWO_PI / n + .2F;
+            Vec3 base = feet.add(cos(ang) * ringR, 0, sin(ang) * ringR);
+            Vec3 upright = base.add(0, (h + .8) * rise, 0);
+            Vec3 tip = upright.lerp(meet, lean);
+            if (crumble > 0) tip = base.lerp(tip, 1 - crumble);
+            if (base.distanceToSqr(tip) < .01) continue;
+            c.shard(base, tip, .14F * (1 - crumble * .5F), 5, ang, FROST, f * .6F);
+            if (c.glow()) c.line(base, tip, .02F, RIME, f * .3F, f * .7F);
+        }
+        if (c.glow() && t < land + 4) c.ring(feet.add(0, .04, 0), UP, ringR, .03F, 0, TWO_PI, GLACIER, f * .6F * rise);
+        if (t >= land) {
+            float burst = smooth(land, land + 6, t), gone = f * (1 - smooth(land + 2, land + 9, t));
+            if (c.glow()) {
+                c.glow(meet, .3F + 1.3F * (1 - smooth(land, land + 3, t)), RIME, f * (1 - smooth(land, land + 3, t)));
+                c.ring(feet.add(0, h * .5, 0), UP, .4F + 1.6F * burst, .04F, 0, TWO_PI, FROST, gone);
+            }
+            if (c.soft()) c.shell(feet.add(0, h * .5, 0), .45F + .2F * h, h * .55F, .45F + .2F * h, PI, GLACIER, gone * .3F, .6F,
+                    Canvas.hexes(5, .12F, .4F), 0);
+            snow(c, feet, ringR * .6F, h, t - land, f, seed);
+        }
+    }
+
+    /** Falling snow and glinting chips round a broken frozen body. */
+    private static void snow(Canvas c, Vec3 feet, float r, float h, float fall, float f, int seed) {
+        if (!c.glow()) return;
+        for (int i = 0; i < 16; i++) {
+            double ang = hash(seed, i + 20) * TWO_PI, rr = r * (.4 + 1.2 * hash(seed, i + 40));
+            double y = h * hash(seed, i + 60) - fall * (.05 + .05 * hash(seed, i + 80));
+            if (y < 0) continue;
+            c.glow(feet.add(Math.cos(ang) * rr * (1 + fall * .03), y, Math.sin(ang) * rr * (1 + fall * .03)), .05F, RIME, f * .9F);
+        }
+    }
+
+    /**
+     * Cut Strings (Telekinesis's finisher, {@code telekinesis/CutStrings}): thin strings run from the raised fingers to
+     * the foe's head, hands and feet, swaying as it dances, and snap one by one at the cut, their halves whipping away.
+     * Bound to the foe, the puppeteer's entity id in the seed; scale its height.
+     */
+    static void strings(Canvas c, Active a, float t) {
+        float h = Math.max(.6F, a.scale()), life = a.piece().ticks, f = fade(t, life, 2, 6);
+        net.minecraft.world.entity.Entity foe = a.bound(c), owner = c.level.getEntity(a.seed());
+        if (foe == null || !(owner instanceof net.minecraft.world.entity.player.Player p)) return;
+        Vec3 feet = foe.getPosition(c.partial);
+        float yaw = net.minecraft.util.Mth.rotLerp(c.partial, foe instanceof net.minecraft.world.entity.LivingEntity l ? l.yBodyRotO : 0,
+                foe instanceof net.minecraft.world.entity.LivingEntity l2 ? l2.yBodyRot : 0) * DEG_TO_RAD;
+        Vec3 side = new Vec3(cos(yaw), 0, sin(yaw));
+        Vec3 hand = com.jayptucker.heroesevolved.combat.StyleHits.hand(p, c.partial, true).add(0, .25, 0);
+        Vec3[] ends = {feet.add(0, h * .97, 0), feet.add(side.scale(.38)).add(0, h * .6, 0), feet.add(side.scale(-.38)).add(0, h * .6, 0),
+                feet.add(side.scale(.14)).add(0, .1, 0), feet.add(side.scale(-.14)).add(0, .1, 0)};
+        int cut = com.jayptucker.heroesevolved.telekinesis.CutStrings.CUT;
+        float reach = smooth(0, 6, t);
+        for (int i = 0; i < ends.length; i++) {
+            Vec3 finger = hand.add(side.scale((i - 2) * .05));
+            float snapAt = cut + i * .6F, sway = sin((t + i * 3) * .5F) * .12F;
+            Vec3 end = finger.lerp(ends[i], reach);
+            if (t < snapAt) {
+                Vec3 mid = finger.lerp(end, .5).add(0, -.1 + sway, 0);
+                if (c.glow()) {
+                    c.line(finger, mid, .018F, TK_EDGE, f * .5F, f * .5F);
+                    c.line(mid, end, .018F, TK_EDGE, f * .5F, f * .5F);
+                    c.line(finger, mid, .006F, TK_CORE, f, f);
+                    c.line(mid, end, .006F, TK_CORE, f, f);
+                    c.glow(end, .06F, TK_CORE, f * reach);
+                }
+            } else if (c.glow()) {
+                // Snapped: the two halves whip away and fade.
+                float k = smooth(snapAt, snapAt + 5, t), gone = f * (1 - k);
+                Vec3 mid = finger.lerp(ends[i], .5);
+                c.line(finger, finger.lerp(mid, 1 - k * .7).add(0, -k * .4, 0), .012F, TK_EDGE, gone, gone * .3F);
+                c.line(ends[i], ends[i].lerp(mid, 1 - k * .7).add(0, k * .5, 0), .012F, TK_EDGE, gone, gone * .3F);
+                if (k < .3F) c.glow(mid, .15F, TK_CORE, f * (1 - k / .3F));
+            }
+        }
+    }
 }

@@ -17,6 +17,8 @@ public final class ClientVisualSettings {
     public static final ModConfigSpec.BooleanValue REDUCE_FLASHING, SEVERED_LIMBS;
     /** Pyrokinesis controls: empty-handed left clicks throw fire, and double-tapping left, right or back dodges. */
     public static final ModConfigSpec.BooleanValue STYLE_STRIKES, STYLE_DODGES;
+    /** Finishers: the gold glisten on foes low enough to finish, and the camera that pulls back to frame the move. */
+    public static final ModConfigSpec.BooleanValue FINISHER_GLISTEN, FINISHER_CAMERA;
 
     static {
         var b = new ModConfigSpec.Builder();
@@ -34,6 +36,12 @@ public final class ClientVisualSettings {
         STYLE_DODGES = b.comment("Fighting styles: double-tap left, right or back to dodge (a jet of flame, a flash of lightning,",
                         "a slide on water).")
                 .define("fightingStyleDodges", true);
+        FINISHER_GLISTEN = b.comment("Finishers: a gold shimmer and a rising glint on foes low enough to finish. Off: only the",
+                        "key prompt under the crosshair shows.")
+                .define("finisherGlisten", true);
+        FINISHER_CAMERA = b.comment("Finishers: the camera pulls back to a still side view while your finisher plays. Off: the",
+                        "camera stays where it is.")
+                .define("finisherCamera", true);
         SPEC = b.build();
     }
 

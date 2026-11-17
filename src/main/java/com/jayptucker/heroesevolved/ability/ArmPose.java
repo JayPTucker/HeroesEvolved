@@ -203,5 +203,8 @@ public enum ArmPose {
      *  raised to lift something unseen (lift). */
     STYLE_JAB, STYLE_CROSS, STYLE_FLURRY, STYLE_HOOK, STYLE_HAYMAKER, STYLE_UPPERCUT, STYLE_HAMMER, STYLE_DOUBLE_PALM,
     STYLE_GROUND, STYLE_SLIDE, STYLE_SIDESTEP, STYLE_BACKSTEP, STYLE_SPIN, STYLE_HEADBUTT, STYLE_TACKLE, STYLE_BRACE,
-    STYLE_SWAT, STYLE_SWAT_OFF, STYLE_LIFT
+    STYLE_SWAT, STYLE_SWAT_OFF, STYLE_LIFT,
+    /** Finishers. Dragon Coil's landing: dropped into a low horse stance, the rear palm thrust out at the foe, the lead
+     *  fist drawn back to the hip. */
+    FINISH_DRAGON
 }

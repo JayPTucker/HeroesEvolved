@@ -1217,4 +1217,148 @@ final class HydroArt {
 
     private static boolean minimal() { return Minecraft.getInstance().options.particles().get() == ParticleStatus.MINIMAL; }
     private static boolean detail() { return Minecraft.getInstance().options.particles().get() == ParticleStatus.ALL; }
+
+    /**
+     * Breaker (the finisher, {@code hydro/Breaker}): a curling wave carries the rider on its crest along the same path the
+     * server moves them ({@code Breaker.ride}), its body falling away to the ground behind; when its lip comes down on the
+     * foe it breaks into a ring of foam that runs out over the ground and a burst of spray. In water or rain it is twice
+     * the size. Origin the rider's start, target the foe's feet; scale the foe's height (+ WET).
+     */
+    /** The alternate finishers ({@code hydro/HydroFinishers}): Drowning Bubble and Riptide. */
+    static void alternates(Canvas c, Active a, float t) {
+        if (c.solid()) return;
+        float h = Math.max(.6F, a.scale()), f = fade(t, a.piece().ticks, 2, 8);
+        float phase = (c.level.getGameTime() % 2400 + c.partial) * .3F;
+        Player owner = c.level.getEntity(a.seed()) instanceof Player p ? p : null;
+        if (a.piece() == Piece.FINISH_BUBBLE) {
+            // A ball of water closing over the head, bubbles streaming up through it, then bursting into a splash.
+            int close = com.jayptucker.heroesevolved.hydro.HydroFinishers.BUBBLE_CLOSE, land = com.jayptucker.heroesevolved.hydro.HydroFinishers.BUBBLE_LAND;
+            Vec3 feet = a.origin(), head = feet.add(0, h * .85, 0);
+            if (t < land) {
+                float grow = smooth(0, close, t), struggle = .04F * sin(t * 2.3F);
+                Vec3 centre = head.add(0, .05 + struggle, 0);
+                float r = .1F + .45F * grow;
+                // Water drawn up from the ground to the head while it forms.
+                if (t < close + 2 && owner != null) {
+                    Vec3 palm = hand(c, owner, true);
+                    whip(c, palm, centre, t, close, .1F, f * (1 - smooth(close, close + 2, t)), phase, a.seed(), UP, 0);
+                }
+                orb(c, centre, r, phase, f * (.6F + .4F * grow), 0);
+                ringTube(c, centre, r * 1.02F, .05F, phase * .3F, TWO_PI, f * .6F * grow, .3F);
+                // Bubbles rising inside, each a small bright bead that wobbles up and pops at the top.
+                if (c.glow() && t > close) for (int i = 0; i < (minimal() ? 3 : 7); i++) {
+                    float k = frac(t * .09F + hash(a.seed(), i));
+                    float ang = hash(a.seed(), i + 9) * TWO_PI + k * 3;
+                    Vec3 bead = centre.add(cos(ang) * r * .4 * (1 - k), -r * .7 + k * r * 1.5, sin(ang) * r * .4 * (1 - k));
+                    c.glow(bead, .035F + .025F * hash(a.seed(), i + 4), FOAM, f * .8F);
+                }
+                spray(c, centre.add(0, r, 0), UP, .3F, .06F, t - close, 40, f * .4F * smooth(close, close + 3, t), a.seed(), 3, .3F);
+            } else {
+                splash(c, head, 1.1F, t - land, f, a.seed(), 0, true);
+                splash(c, feet, .9F, t - land - 2, f * .7F, a.seed() + 1, 0, false);
+            }
+            return;
+        }
+        // Riptide: a whip from the palm to the foe, coiled round its waist; it swings once round the bender on the end of
+        // it, trailing spray, and a splash where it lands.
+        int wrap = com.jayptucker.heroesevolved.hydro.HydroFinishers.RIPTIDE_WRAP, land = com.jayptucker.heroesevolved.hydro.HydroFinishers.RIPTIDE_LAND;
+        Entity foe = a.bound(c);
+        Vec3 feet = foe != null && foe.isAlive() ? foe.getPosition(c.partial) : a.origin();
+        Vec3 waist = feet.add(0, h * .5, 0);
+        if (t < land + 1) {
+            Vec3 palm = owner != null ? hand(c, owner, true) : a.target().add(0, 1.3, 0);
+            Vec3 path = waist.subtract(palm);
+            Vec3 bend = path.lengthSqr() < 1e-4 ? UP : path.normalize().cross(UP);
+            if (bend.lengthSqr() < 1e-4) bend = new Vec3(1, 0, 0);
+            float reach = smooth(0, wrap, t);
+            int n = minimal() ? 9 : 14;
+            Vec3[] spine = new Vec3[n];
+            float[] r = new float[n], al = new float[n];
+            for (int i = 0; i < n; i++) {
+                float u = reach * i / (n - 1F);
+                spine[i] = palm.lerp(waist, u).add(bend.normalize().scale(sin(PI * u) * .35 * (1 - smooth(wrap, wrap + 3, t))))
+                        .add(0, sin(PI * u) * .25, 0);
+                r[i] = .11F * (1 - .4F * u);
+                al[i] = f * .9F;
+            }
+            tube(c, spine, r, al, 0);
+            if (t > wrap - 2) ringTube(c, waist, Math.max(.32F, h * .22F), .09F, phase * .5F, TWO_PI, f * smooth(wrap - 2, wrap, t), 0);
+            if (t > wrap) spray(c, waist, UP, .6F, .08F, (t - wrap) % 6, 6, f * .6F, a.seed() + (int) ((t - wrap) / 6), 4, 0);
+        }
+        if (t >= land) {
+            splash(c, a.origin(), 1.3F, t - land, f, a.seed(), 0, true);
+            ripple(c, a.origin().add(0, .04, 0), .5F + 2.4F * smooth(land, land + 9, t), .08F, f * (1 - smooth(land + 4, land + 10, t)));
+        }
+    }
+
+    static void finisher(Canvas c, Active a, float t) {
+        boolean wet = a.scale() >= com.jayptucker.heroesevolved.hydro.Breaker.WET;
+        float size = wet ? 1.8F : 1;
+        Vec3 home = a.origin(), foe = a.target();
+        Vec3 dir = flat(foe.subtract(home)), right = new Vec3(-dir.z, 0, dir.x);
+        float f = fade(t, a.piece().ticks, 2, 8), phase = (c.level.getGameTime() % 2400 + c.partial) * .3F;
+        int land = com.jayptucker.heroesevolved.hydro.Breaker.LAND;
+        if (t <= land + 1) {
+            Vec3 rider = com.jayptucker.heroesevolved.hydro.Breaker.ride(home, foe, Math.min(t, land));
+            double ground = Math.min(home.y, foe.y);
+            float half = .9F * size, grow = smooth(0, 6, t);
+            int n = 7;
+            Vec3[] crest = new Vec3[n], lip = new Vec3[n];
+            float[] r = new float[n], al = new float[n], w = new float[n];
+            for (int i = 0; i < n; i++) {
+                float u = i / (n - 1F) * 2 - 1;
+                crest[i] = rider.add(right.scale(u * half)).add(0, -.3 - .2 * u * u, 0);
+                lip[i] = crest[i].add(dir.scale(.25 * size)).add(0, .28 * size, 0);
+                r[i] = (.42F + .08F * sin(phase + i)) * size * (1 - .5F * u * u) * grow;
+                al[i] = f * (1 - .4F * u * u);
+                w[i] = .12F * size;
+            }
+            tube(c, crest, r, al, 0);
+            for (int i = 0; i < 3; i++) {
+                float u = (i - 1) * .6F;
+                Vec3 top = rider.add(right.scale(u * half)).add(0, -.45, 0);
+                Vec3 base = new Vec3(top.x, ground + .1, top.z).subtract(dir.scale(1.2 * size));
+                tube(c, new Vec3[]{top, top.lerp(base, .5).subtract(dir.scale(.3)), base},
+                        new float[]{.42F * size * grow, .58F * size * grow, .7F * size * grow}, new float[]{f * .8F, f * .7F, f * .5F}, 0);
+            }
+            foam(c, lip, w, al);
+            // The lip: thrown from the crest in an arc and down onto the foe, reaching it as the blow lands.
+            int crestAt = com.jayptucker.heroesevolved.hydro.Breaker.CREST;
+            if (t > crestAt - 2) {
+                float reach = smooth(crestAt - 2, land, t);
+                Vec3 from = rider.add(dir.scale(.35)).add(0, .1, 0), to = foe.add(0, Math.max(.6F, a.scale() % 32) * .7, 0);
+                Vec3 mid = from.lerp(to, .5).add(0, 1.4 * size, 0);
+                int m = 9;
+                Vec3[] arc = new Vec3[m];
+                float[] ar = new float[m], aa = new float[m], aw = new float[m];
+                for (int i = 0; i < m; i++) {
+                    float u = reach * i / (m - 1F), v = 1 - u;
+                    arc[i] = from.scale(v * v).add(mid.scale(2 * u * v)).add(to.scale(u * u));
+                    float tip = i / (m - 1F);
+                    ar[i] = (.38F - .2F * tip) * size * (1 + .08F * sin(phase * 2 + i));
+                    aa[i] = f * (.85F - .25F * tip);
+                    aw[i] = .1F * size;
+                }
+                tube(c, arc, ar, aa, 0);
+                foam(c, arc, aw, aa);
+                spray(c, arc[m - 1], dir.add(0, .6, 0).normalize(), .5F * size, .18F, t - crestAt, 8, f * .8F, a.seed() + 3, 6, 0);
+            }
+        }
+        if (t >= land - 1) {
+            float k = smooth(land - 1, land + 8, t);
+            int n = 28;
+            Vec3 at = foe.add(0, .05, 0);
+            Vec3[] ring = new Vec3[n + 1];
+            float[] w = new float[n + 1], al = new float[n + 1];
+            float radius = (.5F + 3.2F * k) * size;
+            for (int i = 0; i <= n; i++) {
+                float ang = i * TWO_PI / n;
+                ring[i] = at.add(cos(ang) * radius, 0, sin(ang) * radius);
+                w[i] = .04F + .16F * (1 - k);
+                al[i] = f * (1 - k);
+            }
+            foam(c, ring, w, al);
+            spray(c, foe.add(0, .3, 0), UP, 1.2F * size, .25F, t - land, 14, f, a.seed(), 10, 0);
+        }
+    }
 }

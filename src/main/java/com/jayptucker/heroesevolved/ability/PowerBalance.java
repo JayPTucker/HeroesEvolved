@@ -68,6 +68,10 @@ public final class PowerBalance {
     public static int styleEnergy(String power, String move, int configured) { return energy(ACTIONS.get("style_" + power + "_" + move), configured); }
     public static int styleCooldown(String power, String move, int configured) { return cooldown(ACTIONS.get("style_" + power + "_" + move), configured); }
 
+    /** Any entry by its name in the table (a finisher's {@code finisher_<power>}). */
+    public static int energy(String action, int configured) { return energy(ACTIONS.get(action), configured); }
+    public static int cooldown(String action, int configured) { return cooldown(ACTIONS.get(action), configured); }
+
     private static int energy(Tuning tuning, int configured) {
         if (configured <= 0) return 0;
         // An entry with no stamina of its own passes the code's value through (Mimicry's Echoes already pay the

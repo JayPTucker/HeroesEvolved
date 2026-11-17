@@ -204,7 +204,205 @@ final class PyroArt {
                 if (c.glow()) c.glow(body.add(0, 1.05, 0), 1.4F * (1 - smooth(0, 8, t)) + .2F, fire.gold, alpha * .45F);
                 sparks(c, body, 1.8F, t, alpha, fire, a.seed());
             }
+            case FINISH_DRAGON -> dragon(c, a, size, t, phase, fire, blue);
+            case FINISH_PHOENIX -> phoenix(c, a, size, t, phase, fire);
+            case FINISH_HEARTH -> hearth(c, a, size, t, phase, fire);
             default -> { }
+        }
+    }
+
+    private static final float[] WHITE_HOT = rgb(0xF4FBFF);
+
+    /**
+     * Phoenix Kick ({@code pyro/PyroFinishers}): a backflip kick's crescent rises on your side of the foe and throws it
+     * up; an axe kick's crescent comes down over it from above; it lands in a column of flame and two wings of fire sweep
+     * out and up from its shoulders. Origin the foe's feet where it stood, target yours; bound to the foe (it is lifted);
+     * size the foe's height.
+     */
+    private static void phoenix(Canvas c, Active a, float height, float t, float phase, Fire fire) {
+        Vec3 feet = a.origin();
+        Vec3 toMe = flat(a.target().subtract(feet)), right = new Vec3(-toMe.z, 0, toMe.x);
+        float h = Math.max(.6F, height), radius = .6F + h * .25F;
+        float alpha = fade(t, a.piece().ticks, 1, 9);
+        Vec3 body = a.bound(c) != null ? a.bound(c).getPosition(c.partial) : feet;
+        int flip = com.jayptucker.heroesevolved.pyro.PyroFinishers.PHOENIX_FLIP, axe = com.jayptucker.heroesevolved.pyro.PyroFinishers.PHOENIX_AXE;
+        int slam = com.jayptucker.heroesevolved.pyro.PyroFinishers.PHOENIX_SLAM;
+        // The flip kick: a vertical crescent up the near side of the foe, unrolling from below.
+        float up = smooth(0, flip + 1, t);
+        crescent(c, feet.add(0, h * .5, 0), toMe, UP, radius, -.55F * PI, .45F * PI, up, .24F, .2F, phase,
+                alpha * (1 - smooth(flip + 4, flip + 10, t)), fire, a.seed());
+        // The axe kick: from over the top, down the near side, round the lifted body.
+        if (t > axe - 3) {
+            float down = smooth(axe - 3, axe + 1, t);
+            crescent(c, body.add(0, h * .5, 0), toMe, UP, radius * 1.1F, .62F * PI, -.3F * PI, down, .26F, .2F, phase + 2,
+                    alpha * (1 - smooth(slam + 3, slam + 9, t)), fire, a.seed() + 7);
+        }
+        // A trail of embers under the body while it is in the air.
+        if (t > flip && t < slam && c.glow()) c.glow(body.add(0, h * .5, 0), .5F + h * .3F, fire.body, alpha * .25F);
+        if (t < slam + 6) marker(c, feet, radius * 1.1F, phase, alpha * smooth(0, 3, t) * (1 - smooth(slam, slam + 6, t)), fire);
+        if (t < slam) return;
+        // The slam: a column, and two wings of fire sweeping out and up from the shoulders, then folding away.
+        float flash = 1 - smooth(slam, slam + 3, t), rise = 1 - smooth(slam + 2, slam + 12, t);
+        if (c.glow()) c.glow(feet.add(0, h * .55, 0), .3F + .8F * flash, fire.gold, alpha * flash * .55F);
+        jet(c, feet.add(0, .12, 0), feet.add(0, .5 + h * 1.2 * smooth(slam, slam + 4, t), 0), .3F, -phase, alpha * rise, fire,
+                minimal() ? 2 : 4, radius * .3F);
+        float spread = smooth(slam, slam + 5, t), fold = 1 - smooth(slam + 6, slam + 13, t);
+        Vec3 shoulders = feet.add(0, h * .75, 0);
+        for (int sign : new int[]{-1, 1}) {
+            Vec3 root = shoulders.add(right.scale(sign * .25));
+            Vec3 tip = shoulders.add(right.scale(sign * (.4 + 1.6 * spread))).add(0, .3 + 1.1 * spread, 0).add(toMe.scale(-.4 * spread));
+            Vec3 mid = root.lerp(tip, .5).add(0, .45 * spread, 0);
+            billows(c, root, mid, .22F, .2F, phase + sign, alpha * fold, fire, a.seed() + sign);
+            billows(c, mid, tip, .18F, .28F, phase - sign, alpha * fold * .9F, fire, a.seed() + 3 * sign);
+            for (int f = 0; f < 3; f++) {
+                Vec3 feather = root.lerp(tip, .4 + f * .22);
+                flame(c, feather, feather.add(0, -.35 - f * .1, 0).add(toMe.scale(-.25)), .14F, phase + f, alpha * fold * .8F, fire);
+            }
+        }
+        if (c.soft()) c.ring(feet.add(0, .05, 0), radius * (.6F + .9F * smooth(slam, slam + 8, t)), .1F, SOOT, alpha * rise * .5F);
+        sparks(c, feet, radius * 1.5F, t - slam, alpha, fire, a.seed());
+        smoke(c, feet, t - slam, alpha, a.seed());
+    }
+
+    /**
+     * Hearth ({@code pyro/PyroFinishers}): tongues of flame close round the foe's head from every side, a ball of fire
+     * squeezed smaller and hotter by the palms; at the clap it falls in on itself, and the foe goes up in a column of
+     * flame. Origin the foe's feet, target yours, size its height.
+     */
+    private static void hearth(Canvas c, Active a, float height, float t, float phase, Fire fire) {
+        Vec3 feet = a.origin();
+        float h = Math.max(.6F, height);
+        float alpha = fade(t, a.piece().ticks, 1, 9);
+        int squeeze = com.jayptucker.heroesevolved.pyro.PyroFinishers.HEARTH_SQUEEZE, clap = com.jayptucker.heroesevolved.pyro.PyroFinishers.HEARTH_CLAP;
+        int land = com.jayptucker.heroesevolved.pyro.PyroFinishers.HEARTH_LAND;
+        Vec3 head = feet.add(0, h * .82, 0);
+        float gather = smooth(0, 4, t), tight = smooth(2, squeeze, t), fall = smooth(clap, land, t);
+        float beat = .06F * sin(t * 1.9F) * (1 - fall);
+        float r = (1.25F - .65F * tight) * (1 - fall * .9F) + beat;
+        if (t < land + 2) {
+            float shown = alpha * gather * (1 - smooth(land, land + 2, t));
+            int n = minimal() ? 10 : detail() ? 26 : 16;
+            for (int i = 0; i < n; i++) {
+                // Points spread evenly over a sphere, each a tongue licking inward toward the head.
+                float y = 1 - 2 * (i + .5F) / n, ring = sqrt(Math.max(0, 1 - y * y)), ang = i * 2.39996F + phase * .08F;
+                Vec3 dir = new Vec3(cos(ang) * ring, y, sin(ang) * ring);
+                Vec3 base = head.add(dir.scale(r));
+                Vec3 tip = head.add(dir.scale(r * (.42F + .12F * sin(phase * 2 + i)))).add(0, .12, 0);
+                flame(c, base, tip, .16F + .06F * tight, phase + i * 1.3F, shown * (.6F + .4F * tight), fire);
+            }
+            orb(c, head, .12F + .2F * tight * (1 - fall), phase, shown * (.4F + .6F * tight), fire);
+            if (c.glow()) c.glow(head, r * 1.6F, fire.body, shown * (.15F + .25F * tight));
+        }
+        if (t < land) return;
+        float flash = 1 - smooth(land, land + 3, t), rise = 1 - smooth(land + 3, land + 12, t);
+        if (c.glow()) {
+            c.glow(head, .4F + 1.1F * flash, WHITE_HOT, alpha * flash * .5F);
+            c.glow(feet.add(0, h * .5, 0), .9F + h * .5F, fire.gold, alpha * flash * .35F);
+        }
+        jet(c, feet.add(0, .1, 0), feet.add(0, .6 + (h + 1.8) * smooth(land, land + 4, t), 0), .4F, -phase, alpha * rise, fire,
+                minimal() ? 3 : 6, .25F);
+        curtain(c, feet, .55F + .5F * smooth(land, land + 6, t), 1.1F * rise + .2F, phase, alpha * rise, fire);
+        if (c.soft()) c.ring(feet.add(0, .05, 0), .6F + .9F * smooth(land, land + 8, t), .12F, SOOT, alpha * rise * .55F);
+        sparks(c, head, 1.4F, t - land, alpha, fire, a.seed());
+        smoke(c, feet, t - land, alpha, a.seed());
+    }
+
+    /**
+     * Dragon Coil (the finisher, {@code pyro/DragonCoil}): three kicked crescents wrap the foe low, at the chest and at
+     * the head, each unrolling behind the foot that threw it; then they join tail to head into one coil of flame that
+     * winds up the body, a head rears over the foe and bites down, a flash, and the coil lifts away as embers. Origin
+     * the foe's feet, target the finisher's feet, size the foe's height.
+     */
+    private static void dragon(Canvas c, Active a, float height, float t, float phase, Fire fire, boolean blue) {
+        Vec3 feet = a.origin();
+        Vec3 forward = flat(a.target().subtract(feet)), right = new Vec3(-forward.z, 0, forward.x);
+        float h = Math.max(.6F, height), radius = .55F + h * .22F;
+        float alpha = fade(t, a.piece().ticks, 1, 10);
+        float knot = smooth(17, 21, t);
+        // The kicks: a low hook, a back kick at the chest, a jumping roundhouse at the head, each from the other side.
+        float[][] kicks = {{1, .22F, -.4F, 1.1F}, {7, .55F, .6F, -.9F}, {13, .9F, -.7F, .9F}};
+        for (float[] kick : kicks) {
+            float start = kick[0];
+            if (t < start) continue;
+            Vec3 center = feet.add(0, h * kick[1], 0);
+            float reveal = smooth(start, start + 4, t);
+            float bright = alpha * (1 - knot) * (1 - smooth(start + 10, start + 16, t) * .45F);
+            crescent(c, center, forward, right, radius * (1.15F - .15F * reveal), kick[2] * PI, kick[3] * PI, reveal,
+                    .22F, .18F, phase, bright, fire, a.seed() + (int) start);
+        }
+        if (t < 26) marker(c, feet, radius * 1.15F, phase, alpha * smooth(0, 3, t) * (1 - smooth(22, 26, t)), fire);
+        if (t < 17) return;
+
+        // The coil: tongues of flame wound up the body, trailing back along the turn like scales.
+        float bite = smooth(21.5F, 23, t), lift = Math.max(0, t - 24) * .09F;
+        float coil = alpha * (1 - smooth(24, 32, t));
+        float r = radius * (1.05F - .25F * smooth(20, 23, t));
+        int count = minimal() ? 8 : detail() ? 18 : 13;
+        float turns = 2.25F, start = -.4F * PI + phase * .04F;
+        Vec3[] lip = new Vec3[count];
+        float[] lipAlpha = new float[count];
+        int shown = 0;
+        for (int i = 0; i < count; i++) {
+            float u = i / (count - 1F);
+            if (u > knot) break;
+            float angle = start + u * turns * TWO_PI;
+            Vec3 radial = forward.scale(cos(angle)).add(right.scale(sin(angle)));
+            Vec3 along = forward.scale(-sin(angle)).add(right.scale(cos(angle)));
+            Vec3 base = feet.add(radial.scale(r)).add(0, h * (.12 + .88 * u) + lift * (1 + u), 0);
+            Vec3 tip = base.subtract(along.scale(.55)).add(radial.scale(.12)).add(0, .14 + lift, 0);
+            float taper = .45F + .55F * sin(PI * Math.min(1, u * 1.15F));
+            flame(c, base, tip, .2F * taper, phase + i * 1.9F, coil * taper, fire);
+            lip[i] = base;
+            lipAlpha[i] = coil * taper * cameraClearance(c, base);
+            shown++;
+        }
+        if (c.glow() && shown >= 2) {
+            Vec3[] points = java.util.Arrays.copyOf(lip, shown);
+            float[] wide = new float[shown], thin = new float[shown], halo = new float[shown], core = new float[shown];
+            for (int i = 0; i < shown; i++) {
+                wide[i] = .2F; thin[i] = .04F;
+                halo[i] = lipAlpha[i] * .25F; core[i] = lipAlpha[i] * .8F;
+            }
+            c.ribbon(points, wide, fire.body, halo);
+            c.ribbon(points, thin, fire.gold, core);
+        }
+
+        // The head rears over the foe, jaws open, and bites down at the chest.
+        if (t < 30 && knot > .6F) {
+            float topAngle = start + turns * TWO_PI;
+            Vec3 top = feet.add(forward.scale(cos(topAngle) * r)).add(right.scale(sin(topAngle) * r)).add(0, h, 0);
+            Vec3 reared = feet.add(forward.scale(.25)).add(0, h + .55 + .45 * smooth(18, 21, t), 0);
+            Vec3 chest = feet.add(0, h * .62, 0);
+            Vec3 head = reared.lerp(chest.add(forward.scale(.2)), bite).add(0, lift, 0);
+            float shown2 = coil * smooth(17.5F, 19.5F, t);
+            billows(c, top, head, .2F, .25F, phase, shown2, fire, a.seed());
+            orb(c, head, .26F, phase, shown2, fire);
+            Vec3 jaw = chest.subtract(head);
+            jaw = jaw.lengthSqr() < 1e-3 ? forward.scale(-1) : jaw.normalize();
+            Vec3 across = side(jaw), up = jaw.cross(across).normalize();
+            float open = .55F * (1 - bite) + .08F;
+            for (int sign : new int[]{-1, 1}) {
+                Vec3 tipAt = head.add(jaw.scale(.6)).add(up.scale(sign * open * .45));
+                flame(c, head, tipAt, .14F, phase + sign, shown2, fire);
+            }
+            if (c.glow()) for (int sign : new int[]{-1, 1}) {
+                Vec3 eye = head.add(across.scale(sign * .13)).add(up.scale(.12)).subtract(jaw.scale(.05));
+                c.glow(eye, .08F, blue ? WHITE_HOT : fire.gold, shown2);
+                c.glow(eye, .03F, WHITE_HOT, shown2);
+            }
+        }
+        // The bite: a flash at the chest and a burst of fire round the feet.
+        if (t >= 22) {
+            // Kept to the foe's own size: a camera a couple of blocks off (first person, no finisher camera) must still
+            // see the body go down through it.
+            // (Not burst(): its low ring of tongues reads as a flat orange sheet from the finisher camera's side view.)
+            float flash = 1 - smooth(22, 25, t), rise = 1 - smooth(24, 31, t);
+            if (c.glow()) c.glow(feet.add(0, h * .62, 0), .25F + .7F * flash, fire.gold, alpha * flash * .55F);
+            jet(c, feet.add(0, .15, 0), feet.add(0, .4 + h * .9 * smooth(22, 26, t), 0), .3F, -phase, alpha * rise, fire,
+                    minimal() ? 2 : 4, radius * .3F);
+            if (c.soft()) c.ring(feet.add(0, .05, 0), radius * (.6F + .9F * smooth(22, 28, t)), .1F, SOOT, alpha * rise * .5F);
+            sparks(c, feet, radius * 1.4F, t - 22, alpha, fire, a.seed());
+            smoke(c, feet, t - 22, alpha, a.seed());
         }
     }
 

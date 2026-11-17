@@ -60,6 +60,12 @@ public final class PowerBalanceGameTests {
             var ability = AbilityRegistry.ABILITIES.get(ResourceLocation.fromNamespaceAndPath("heroesevolved", tuning.power()));
             h.assertTrue(ability != null, "Unknown power in balance entry " + name);
             if (name.startsWith("style_")) continue;
+            // A finisher's entry must belong to a finisher that is built.
+            if (name.startsWith("finisher_")) {
+                h.assertTrue(com.jayptucker.heroesevolved.combat.Takedowns.all().stream()
+                        .anyMatch(f -> com.jayptucker.heroesevolved.combat.Takedowns.action(f).equals(name)), "No finisher for " + name);
+                continue;
+            }
             h.assertTrue(ability.actions().values().stream().anyMatch(a -> a.definition().id().getPath().equals(name)), "Invalid balance action " + name);
             covered.add(name);
         }

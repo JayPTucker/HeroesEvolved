@@ -105,6 +105,17 @@ public final class ModKeyMappings {
             "key.categories.heroesevolved"
     );
 
+    /**
+     * Finish a glistening foe; Shift + the key switches finishers on or off. C is vanilla's "save hotbar" key, which
+     * only does anything in creative with a number key held, so the two rarely meet.
+     */
+    public static final KeyMapping FINISHER = new KeyMapping(
+            "key.heroesevolved.finisher",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_C,
+            "key.categories.heroesevolved"
+    );
+
     private ModKeyMappings() {
     }
 
@@ -128,5 +139,6 @@ public final class ModKeyMappings {
         event.register(ABILITY_8);
         event.register(ABILITY_WHEEL);
         event.register(MEMORY_WHEEL);
+        event.register(FINISHER);
     }
 }

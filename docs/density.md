@@ -151,6 +151,19 @@ stop him for long: it ripples as he walks out of it near you. See [Sylar](sylar.
 - If you log in inside a wall (after a crash while underground, say), you step out to the nearest
   open space.
 
+## Finishers: Six Feet, Phase Punch, Heavy Hand
+
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks). Shift + C switches finishers off and on; the rules every finisher shares are in [finishers.md](finishers.md).
+
+- **What you see.** Ripples run out from your feet as you go Ghost. Stone fingers rise round the foe's ankles and pull it into the ground to the knees. You come up behind it and bring a two-fisted hammer down on its head; it is driven under, and slabs fold over the spot like a closing hand and sink flat. No real blocks break.
+- **Dense when it starts:** the ground splits in a star and every foe within 4 blocks is rooted for three seconds.
+- **Reward:** your Ambush hand is primed (it strikes only if you have learned Ambush).
+
+Each press of C plays one of three at random, never the one you used last. Six Feet is described above; the two alternates give the same reward.
+
+- **Phase Punch.** Your fist goes ghostly and sinks into the foe's chest through rippling ovals, then turns solid inside it: a ring of stone and chips of it are thrown out of its back.
+- **Heavy Hand.** You go Dense, stone gathering on your forearm, and one overhead blow drives the foe down into a crater: a star of cracks and a ring of slabs that fold in and seal it.
+
 ## Verification
 
 ```bash

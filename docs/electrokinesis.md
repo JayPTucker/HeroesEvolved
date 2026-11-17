@@ -157,3 +157,16 @@ casts the base powers, the Ball Lightning combo, Blackout and Static Screen, and
 
 photographs the fighting style (sparks, the Thunderclap, Grounding Strike, Arc Step, Flashback, Ground Out and first
 person) into `build/lightning-preview/screenshots/`; its checks are in `ElectroCombatGameTests.java`.
+
+## Finishers: Short Circuit, Lightning Rod, Overload
+
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks). Shift + C switches finishers off and on; the rules every finisher shares are in [finishers.md](finishers.md).
+
+- **What you see.** You tap two fingers on the foe's brow and a corona snaps on there. Sparks crawl over it and trace its body in lightning, brighter and twitching. You blow on your fingertips: the traced figure tears loose and rises out of it, then earths into the ground as a bolt and burns a scorch star.
+- **At 100 Charge** the figure is left standing as a trap for about three seconds, and bursts on the first foe that comes close.
+- **Reward:** 25 Charge.
+
+Each press of C plays one of three at random, never the one you used last. Short Circuit is described above; the two alternates give the same reward.
+
+- **Lightning Rod.** One hand up to the sky, the other toward the foe. Static climbs its body while a dark knot of charge gathers overhead and a warning ring closes at its feet. A bolt comes down through it and on into your open palm, and a scorch star is left on the ground.
+- **Overload.** You grab the foe and pump current in. A corona swells round it, brighter and brighter, with forks crawling from it into the ground and its flinches coming faster, until it pops in a white flash and a ground pulse.

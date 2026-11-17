@@ -229,6 +229,19 @@ a new body, and tells nearby witnesses who have progressed the Telepathy/city st
 Worlds that already kept Gabriel Gray from the light in the earlier Avenue episode retain that
 outcome. Sylar cannot copy Induced Radioactivity in those worlds. See [Sylar](sylar.md#taking-your-power).
 
+## Finishers: Chain Reaction, Half-Life, Pocket Sun
+
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks). Shift + C switches finishers off and on; the rules every finisher shares are in [finishers.md](finishers.md).
+
+- **What you see.** You flick a bead of white light into the foe's chest. It splits inside (two, four, eight, sixteen motes, orbiting tighter and hotter) while the body glows from within; a contained flash and a ring of heat. The spare motes fly to up to three foes within 6 blocks, dose them and flash on them.
+- **During a meltdown warning** it vents 40 Critical Mass and stands the warning down: a low foe is an emergency exit.
+- **Reward:** 25 Critical Mass vented.
+
+Each press of C plays one of three at random, never the one you used last. Chain Reaction is described above; the two alternates give the same reward.
+
+- **Half-Life.** One touch, and the foe glows green from within, rings of decay pulsing slower and slower over it while the Geiger ticks; it greys to ash and crumbles.
+- **Pocket Sun.** A white bead of heat grows between your cupped hands; you press it into the foe and it goes up in a small contained blast with its own mushroom cloud. It hurts nothing else: there is no overkill spill.
+
 ## Verification
 
 `RadiationGameTests` also covers the kit: the cone hits and throws what is in front and not behind,
