@@ -45,9 +45,10 @@ bell and near a player starts to glow. The Eclipse gave him Induced Radioactivit
 - **The countdown:** a bar for everyone within about 110 blocks: `Meltdown 0:42  Safe 3/9`. It turns red for the last
   ten seconds, and the ground shakes.
 - **The call for help:** on 101.10 FM from the bell.
-- **The safe point:** a green column of light with a ring on the ground, just outside the village: the nearest open,
-  dry, natural ground (not a roof or a treetop) that has no bed, job site or bell within 12 blocks and is at least 38
-  blocks from him (the blast's reach and 14 more), tried first on the side away from him.
+- **The safe point:** a green column of light with a ring on the ground, well outside the village and the radiation:
+  the nearest open, dry, natural ground (not a roof or a treetop) that has no bed, job site or bell within 24 blocks,
+  is at least 40 blocks from the bell, and is at least 76 blocks from him (three times the blast's reach), tried first
+  on the side away from him.
 - **Who is still in danger:** every villager of his village who isn't at the safe point yet glows, so players can find
   the ones hiding in houses or wandering off. A villager stops glowing when they reach safety.
 - **What pours off him:** shock waves, a lethal near-field and the ground decaying round him, all growing as the

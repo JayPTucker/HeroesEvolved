@@ -411,4 +411,45 @@ public final class VillagerMeltdownGameTests {
             helper.assertTrue(!VillagerMeltdown.critical(him) && him.isAlive(), "And they take it with them: he's cool and alive");
         });
     }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 160, batch = "village.meltdown.pinned")
+    public static void aBurningRunnerStaysWhereTheyBroke(GameTestHelper helper) {
+        Villager him = villager(helper, 665, 0);
+        ServerPlayer p = runner(helper, him, 4, 0);
+        net.minecraft.world.phys.Vec3[] pinned = new net.minecraft.world.phys.Vec3[1];
+        try {
+            VillagerMeltdown.start(him, 900);
+            helper.assertTrue(pressed(cyclone(p)), "The run starts");
+        } catch (RuntimeException e) { cleanup(p, him); throw e; }
+        helper.runAfterDelay(SpeedContainment.UNSUITED_TICKS + 5, () -> {
+            try {
+                helper.assertTrue(SpeedContainment.burningAway(p), "No suit: they're burning away");
+                pinned[0] = SpeedContainment.ringCenter(p);
+                // Someone carries him off while the runner burns.
+                him.teleportTo(him.getX() + 12, him.getY(), him.getZ() + 9);
+            } catch (RuntimeException e) { p.setInvulnerable(false); cleanup(p, him); throw e; }
+        });
+        helper.runAfterDelay(SpeedContainment.UNSUITED_TICKS + 30, () -> {
+            try {
+                var now = SpeedContainment.ringCenter(p);
+                helper.assertTrue(now != null && now.distanceTo(pinned[0]) < 0.01,
+                        "The burning runner stays where they broke, not where he went: " + pinned[0] + " -> " + now);
+                helper.assertTrue(now.subtract(him.position()).horizontalDistance() > 10, "And he really did move away");
+                helper.succeed();
+            } finally { p.setInvulnerable(false); cleanup(p, him); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 40, batch = "village.meltdown.safefar")
+    public static void theSafePointIsFarFromHimAndClearOfTheVillage(GameTestHelper helper) {
+        Villager him = villager(helper, 680, 0);
+        try {
+            VillagerMeltdown.Meltdown m = VillagerMeltdown.start(him, 900);
+            double far = m.safe().subtract(him.position()).horizontalDistance();
+            helper.assertTrue(VillagerMeltdown.SAFE_DISTANCE >= 3 * com.jayptucker.heroesevolved.radiation.NuclearFallout.RADIUS,
+                    "The safe point keeps three blast-reaches off him");
+            helper.assertTrue(far >= VillagerMeltdown.SAFE_DISTANCE - 1, "And it does: " + far + " blocks");
+            helper.succeed();
+        } finally { cleanup(null, him); }
+    }
 }

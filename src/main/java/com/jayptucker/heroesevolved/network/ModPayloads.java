@@ -22,6 +22,7 @@ public final class ModPayloads {
             .playToClient(TemporalCatchStatePayload.TYPE, TemporalCatchStatePayload.STREAM_CODEC, TemporalCatchStatePayload::handle)
             .playToClient(SkyburstMotionPayload.TYPE, SkyburstMotionPayload.STREAM_CODEC, SkyburstMotionPayload::handle)
             .playToClient(BurnPayload.TYPE, BurnPayload.STREAM_CODEC, BurnPayload::handle)
+            .playToClient(FrictionPayload.TYPE, FrictionPayload.STREAM_CODEC, FrictionPayload::handle)
             .playToClient(MimicMemoryPayload.TYPE, MimicMemoryPayload.STREAM_CODEC, MimicMemoryPayload::handle)
             .playToClient(TimeVeilPayload.TYPE, TimeVeilPayload.STREAM_CODEC, TimeVeilPayload::handle)
             .playToServer(MimicChoicePayload.TYPE, MimicChoicePayload.STREAM_CODEC, MimicChoicePayload::handle)

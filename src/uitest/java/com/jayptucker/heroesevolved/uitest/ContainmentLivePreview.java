@@ -258,11 +258,39 @@ public final class ContainmentLivePreview {
         if (t == 920) begin(mc, "tier4-unsuited", STAGE + 210, STAGE, 4, false, 300);
         if (t == 950) press(mc);
         if (t >= 956 && t <= 1040 && t % 12 == 8) capture = String.format("4-tier4-unsuited-%04d.png", t);
+        // While they burn, someone carries him off: the burning runner must stay where they broke.
+        if (t == 1028) server(mc, p -> {
+            var before = SpeedContainment.ringCenter(runner);
+            him.teleportTo(him.getX() + 10, him.getY(), him.getZ() + 6);
+            log("PINNED before=" + before);
+        });
+        if (t == 1046) server(mc, p -> log("PINNED after=" + SpeedContainment.ringCenter(runner) + " villagerAt=" + him.position()));
+        if (t == 1036 || t == 1046) capture = String.format("4-tier4-unsuited-moved-%04d.png", t);
         if (t == 1050) server(mc, ContainmentLivePreview::result);
         if (t == 1070) server(mc, p -> p.teleportTo(world(p), STAGE + 210.5, -40, STAGE + 45.5, 180, 18));
         if (t >= 1210 && t <= 1270 && t % 10 == 0) capture = String.format("5-blast-%04d.png", t);
-        if (t == 1275) server(mc, p -> { result(p); log("DONE"); dropAll(); });
-        if (t == 1290) PreviewQuiet.quit();
+        if (t == 1275) server(mc, p -> { result(p); dropAll(); });
+        // You, a tier-5 speedster, after a Lightspeed-sized burst of friction with your skin burnt: the burn meter, and
+        // your skin growing back.
+        if (t == 1290) {
+            mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_FRONT);
+            server(mc, p -> {
+                p.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty().assignDormant(ModAbilities.SUPERSPEED_ID).unlock(ModAbilities.SUPERSPEED_ID));
+                p.setData(ModDataAttachments.POWER_INTRO_HISTORY, p.getData(ModDataAttachments.POWER_INTRO_HISTORY).with(ModAbilities.SUPERSPEED_ID));
+                PlayerProgressionService.setLevel(p, 5);
+                com.jayptucker.heroesevolved.network.PlayerPowerSyncService.sync(p);
+                p.getAbilities().flying = false;
+                p.onUpdateAbilities();
+                p.teleportTo(world(p), STAGE - 30.5, -60, STAGE + 0.5, 0, 0);
+            });
+        }
+        if (t == 1300) server(mc, p -> {
+            com.jayptucker.heroesevolved.speed.SpeedFriction.burst(p, 80);
+            com.jayptucker.heroesevolved.hazard.BodyBurn.atLeast(p, 0.75F);
+        });
+        if (t == 1306 || t == 1320 || t == 1345 || t == 1365 || t == 1385 || t == 1410) capture = String.format("6-meter-regrow-%04d.png", t);
+        if (t == 1412) server(mc, p -> log("DONE"));
+        if (t == 1420) PreviewQuiet.quit();
     }
 
     @SubscribeEvent public static void frame(RenderFrameEvent.Post event) {

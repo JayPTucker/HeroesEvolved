@@ -52,7 +52,7 @@ public final class BurnClient {
     /** How fast the drawn burn follows the server's: quick to burn, a little slower to heal. */
     static final float RISE = 0.06F, FALL = 0.03F;
 
-    private static final class Burn { float target, shown, last; }
+    private static final class Burn { float target, shown, last; long fell = Long.MIN_VALUE / 2; }
     private static final Map<Integer, Burn> BURNS = new HashMap<>();
 
     private static final class Peel {
@@ -68,13 +68,24 @@ public final class BurnClient {
 
     public static void set(int entity, float level) {
         Burn b = BURNS.computeIfAbsent(entity, id -> new Burn());
-        b.target = Mth.clamp(level, 0, 1);
+        float next = Mth.clamp(level, 0, 1);
+        var world = Minecraft.getInstance().level;
+        if (next < b.target && world != null) b.fell = world.getGameTime();
+        b.target = next;
     }
 
     /** How burnt this body is drawn, 0 to 1. */
     public static float level(Entity entity, float partial) {
         Burn b = BURNS.get(entity.getId());
         return b == null ? 0 : Mth.lerp(partial, b.last, b.shown);
+    }
+
+    /** Is this body's burnt skin growing back right now? */
+    public static boolean regrowing(Entity entity) {
+        Burn b = BURNS.get(entity.getId());
+        var world = Minecraft.getInstance().level;
+        // The server heals it a little at a time, so it is "growing back" for a moment after each step down.
+        return b != null && (b.target < b.shown - 0.001F || world != null && world.getGameTime() - b.fell < 15);
     }
 
     @SubscribeEvent

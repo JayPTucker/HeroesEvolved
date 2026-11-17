@@ -98,6 +98,11 @@ public final class SpeedContainment {
          * on, burning, until the hold is done; then they burn away and take the blast with them.
          */
         boolean doomed;
+        /**
+         * Where the ring was when the heat beat them. They burn away there: if whoever they were holding is carried off
+         * (or blows up) meanwhile, the burning body stays where it broke and doesn't follow.
+         */
+        Vec3 pinned;
         float debt;
         Run(ServerPlayer runner, LivingEntity target, int tier, long start) {
             this.runner = runner; this.target = target; this.tier = tier; this.start = start;
@@ -294,7 +299,9 @@ public final class SpeedContainment {
         ServerPlayer p = r.runner;
         LivingEntity t = r.target;
         ServerLevel level = p.serverLevel();
+        Vec3 ringCenter = center(r);
         r.failedAt = now(p);
+        r.pinned = ringCenter;
         p.setInvulnerable(true);
         p.setHealth(Math.max(1, Math.min(p.getHealth(), 1)));
         BodyBurn.atLeast(p, 1);
@@ -310,9 +317,9 @@ public final class SpeedContainment {
         sync(r, false);
         // The burning starts once they have stopped and stood a moment; the client finds where they stopped on the
         // ring. If it can't, the burning falls back to the ring between the two of them, never the one they saved.
-        Vec3 toward = p.position().subtract(t.position()).multiply(1, 0, 1);
+        Vec3 toward = p.position().subtract(ringCenter).multiply(1, 0, 1);
         toward = toward.lengthSqr() < 1.0E-4 ? new Vec3(1, 0, 0) : toward.normalize();
-        Vec3 center = t.position().add(toward.scale(ring(r)));
+        Vec3 center = ringCenter.add(toward.scale(ring(r)));
         SetPiecePayload.send(level, Piece.SPEED_DISINTEGRATE, center, center.add(new Vec3(-toward.z, 0, toward.x)), 1, p);
         level.playSound(null, center.x, center.y, center.z, SoundEvents.FIRECHARGE_USE, SoundSource.PLAYERS, 1.4F, 0.5F);
         level.playSound(null, center.x, center.y, center.z, SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 1.6F, 0.6F);
@@ -327,7 +334,7 @@ public final class SpeedContainment {
         if (since % 10 == 0) sync(r, false);
         p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 3, 6, false, false, false));
         p.fallDistance = 0;
-        Vec3 at = r.target.position();
+        Vec3 at = r.pinned;
         if (since == 20) p.serverLevel().playSound(null, at.x, at.y, at.z, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 0.8F, 1.6F);
         if (since % 12 == 0)
             p.serverLevel().playSound(null, at.x, at.y, at.z, SoundEvents.FIRE_AMBIENT, SoundSource.PLAYERS, 1.2F, 0.7F);
@@ -356,12 +363,26 @@ public final class SpeedContainment {
         sync(r, true);
     }
 
-    /** The ring is drawn round the target's feet (on the ground under them while they hang in the air charging). */
-    private static void sync(Run r, boolean ended) {
+    /**
+     * The ring's middle: round the target's feet (on the ground under them while they hang in the air charging), or,
+     * once the heat has beaten the runner, where it was at that moment.
+     */
+    private static Vec3 center(Run r) {
+        if (r.pinned != null) return r.pinned;
         LivingEntity t = r.target;
         Vec3 from = t.position();
         var hit = t.level().clip(new ClipContext(from, from.add(0, -6, 0), ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, t));
-        Vec3 center = hit.getType() == HitResult.Type.BLOCK ? hit.getLocation() : from;
+        return hit.getType() == HitResult.Type.BLOCK ? hit.getLocation() : from;
+    }
+
+    /** Where this runner's ring is centred now (for tests), or null if they aren't running one. */
+    public static Vec3 ringCenter(ServerPlayer runner) {
+        Run r = RUNS.get(runner.getUUID());
+        return r == null ? null : center(r);
+    }
+
+    private static void sync(Run r, boolean ended) {
+        Vec3 center = center(r);
         int held = r.containedFrom < 0 || r.failedAt >= 0 ? -1 : (int) (now(r.runner) - r.containedFrom);
         SpeedCyclonePayload.send(r.runner.serverLevel(), r.runner, center, (float) ring(r), (int) (now(r.runner) - r.start), held, ended,
                 false, r.failedAt >= 0 ? SpeedCyclonePayload.CONTAIN_FAIL : SpeedCyclonePayload.CONTAIN);
