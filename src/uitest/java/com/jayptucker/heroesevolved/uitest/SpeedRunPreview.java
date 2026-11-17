@@ -55,8 +55,15 @@ public final class SpeedRunPreview {
         server.execute(() -> action.accept(server.getPlayerList().getPlayer(mc.player.getUUID())));
     }
 
+    /** Into the overworld (a new player starts in the Last Day's city), with the ground ahead of a run kept loaded. */
     private static void place(ServerPlayer p, double x, double z, float yaw, float pitch) {
-        p.teleportTo(p.serverLevel(), x + 0.5, -60, z + 0.5, yaw, pitch);
+        var world = p.getServer().overworld();
+        for (int cx = ((int) x - 16) >> 4; cx <= ((int) x + 16) >> 4; cx++)
+            for (int cz = ((int) z - 16) >> 4; cz <= ((int) z + 240) >> 4; cz++)
+                world.setChunkForced(cx, cz, true);
+        p.teleportTo(world, x + 0.5, -60, z + 0.5, yaw, pitch);
+        System.out.println("SPEEDRUN placed in " + p.level().dimension().location() + " at " + p.blockPosition()
+                + " on " + world.getBlockState(p.blockPosition().below()));
     }
 
     private static <T extends Mob> T spawn(ServerPlayer p, EntityType<T> type, double x, double z, boolean ai) {
@@ -127,8 +134,14 @@ public final class SpeedRunPreview {
                         + " charge=" + SpeedOverrun.charge(p) + " breach=" + SpeedOverrun.breachOpen(p) + " sprint=" + p.isSprinting()
                         + " food=" + p.getFoodData().getFoodLevel() + "/" + p.getFoodData().getSaturationLevel()));
         switch (worldTicks) {
+            // End the Last Day and let the new player out of their pod before anything is staged.
+            case 170 -> onServer(mc, com.jayptucker.heroesevolved.story.prologue.PrologueService::skip);
+            case 180 -> {
+                com.jayptucker.heroesevolved.network.ClientScreenTintState.clear();
+                onServer(mc, com.jayptucker.heroesevolved.story.bunker.CryoChamberService::release);
+            }
             case 200 -> onServer(mc, p -> {
-                p.serverLevel().setDayTime(4500);
+                p.getServer().overworld().setDayTime(4500);
                 p.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty()
                         .assignDormant(ModAbilities.SUPERSPEED_ID).unlock(ModAbilities.SUPERSPEED_ID));
                 p.setData(ModDataAttachments.POWER_INTRO_HISTORY, p.getData(ModDataAttachments.POWER_INTRO_HISTORY).with(ModAbilities.SUPERSPEED_ID));
