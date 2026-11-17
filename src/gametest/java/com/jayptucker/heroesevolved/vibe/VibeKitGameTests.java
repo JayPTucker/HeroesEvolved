@@ -247,7 +247,7 @@ public final class VibeKitGameTests {
         p.setXRot(13);
         var cleanup = track(p);
         Pillager[] behind = new Pillager[1];
-        step(cleanup, () -> h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, false)
+        step(cleanup, () -> h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, true)
                 == AbilityUseResult.SUCCESS, "A linked breach opens"));
         h.runAfterDelay(12, () -> p.setPos(start.add(0, 0, 2.35)));
         h.runAfterDelay(14, () -> step(cleanup, () -> {
@@ -277,7 +277,7 @@ public final class VibeKitGameTests {
         Pillager between = target(h, start.add(0, 0, 4));
         Pillager beyond = target(h, start.add(0, 0, 8.5));
         var cleanup = track(p, between, beyond);
-        step(cleanup, () -> h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, false)
+        step(cleanup, () -> h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, true)
                 == AbilityUseResult.SUCCESS, "A linked breach opens"));
         h.runAfterDelay(11, () -> step(cleanup, () -> {
             p.setXRot(0);
@@ -319,7 +319,7 @@ public final class VibeKitGameTests {
         Vec3 start = p.position();
         p.setXRot(13);
         var cleanup = track(p);
-        step(cleanup, () -> h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, false)
+        step(cleanup, () -> h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, true)
                 == AbilityUseResult.SUCCESS, "A linked breach opens"));
         h.runAfterDelay(11, () -> p.igniteForSeconds(4));
         h.runAfterDelay(12, () -> p.setPos(start.add(0, 0, 2.35)));

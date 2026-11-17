@@ -1391,5 +1391,35 @@
     "energy": 11,
     "base_energy": 11,
     "role": "style"
+  },
+  {
+    "power": "vibe",
+    "action": "style_vibe_strike",
+    "energy": 2,
+    "base_energy": 2,
+    "role": "style"
+  },
+  {
+    "power": "vibe",
+    "action": "style_vibe_finisher",
+    "energy": 5,
+    "base_energy": 5,
+    "role": "style"
+  },
+  {
+    "power": "vibe",
+    "action": "style_vibe_dodge",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 18,
+    "base_cooldown": 18,
+    "role": "style"
+  },
+  {
+    "power": "vibe",
+    "action": "style_vibe_back_dodge",
+    "energy": 11,
+    "base_energy": 11,
+    "role": "style"
   }
 ]

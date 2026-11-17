@@ -14,15 +14,19 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.function.UnaryOperator;
 
 /**
  * The power-themed TaCZ guns: what happens when their rounds land. TaCZ fires them (they are a gun pack in
@@ -65,6 +69,14 @@ public final class PowerWeapons {
 
     /** Whether {@code entity} is a gun's bullet in flight. */
     public static boolean isBullet(Entity entity) { return TaczLink.bullet(entity); }
+
+    public static boolean bulletObstructed(Projectile round, Vec3 from, Vec3 to) {
+        return TaczLink.bulletObstructed(round, from, to);
+    }
+
+    public static @Nullable Projectile breachBullet(Projectile round, DimensionTransition transition, UnaryOperator<Vec3> map) {
+        return TaczLink.breachBullet(round, transition, map);
+    }
 
     /** An explosive bullet's {radius, breaks blocks (1 or 0)}, or null for an ordinary round. */
     public static @Nullable float[] bulletExplosion(Entity entity) { return TaczLink.explosive(entity); }

@@ -17,7 +17,7 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("92")
+        event.registrar("95")
             .playToClient(TemporalProjectilePayload.TYPE, TemporalProjectilePayload.STREAM_CODEC, TemporalProjectilePayload::handle)
             .playToClient(TemporalCatchStatePayload.TYPE, TemporalCatchStatePayload.STREAM_CODEC, TemporalCatchStatePayload::handle)
             .playToClient(SkyburstMotionPayload.TYPE, SkyburstMotionPayload.STREAM_CODEC, SkyburstMotionPayload::handle)
@@ -46,6 +46,10 @@ public final class ModPayloads {
             .playToClient(SuspicionPayload.TYPE, SuspicionPayload.STREAM_CODEC, SuspicionPayload::handle)
             .playToClient(FormLibraryPayload.TYPE, FormLibraryPayload.STREAM_CODEC, FormLibraryPayload::handle)
             .playToServer(MorphChoicePayload.TYPE, MorphChoicePayload.STREAM_CODEC, MorphChoicePayload::handle)
+            .playToClient(FrequencyListPayload.TYPE, FrequencyListPayload.STREAM_CODEC, FrequencyListPayload::handle)
+            .playToServer(FrequencyChoicePayload.TYPE, FrequencyChoicePayload.STREAM_CODEC, FrequencyChoicePayload::handle)
+            .playToClient(BreachViewPayload.TYPE, BreachViewPayload.STREAM_CODEC, BreachViewPayload::handle)
+            .playToClient(BreachActorsPayload.TYPE, BreachActorsPayload.STREAM_CODEC, BreachActorsPayload::handle)
             .playToClient(RegenerationStatePayload.TYPE, RegenerationStatePayload.STREAM_CODEC, RegenerationStatePayload::handle)
             .playToClient(ResonancePayload.TYPE, ResonancePayload.STREAM_CODEC, ResonancePayload::handle)
             .playToClient(MomentumPayload.TYPE, MomentumPayload.STREAM_CODEC, MomentumPayload::handle)

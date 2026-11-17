@@ -45,6 +45,12 @@ public final class ClientProjectileTime {
     private static void applyMotion(Projectile shot, TemporalProjectilePayload payload) {
         shot.setPos(payload.position());
         shot.setDeltaMovement(payload.motion());
+        if (payload.warped()) {
+            var motion = payload.motion();
+            shot.setYRot((float) Math.toDegrees(Math.atan2(motion.x, motion.z)));
+            shot.setXRot((float) Math.toDegrees(Math.atan2(motion.y, motion.horizontalDistance())));
+            shot.setOldPosAndRot();
+        }
     }
 
     public static boolean hasControlledShots() { return !SHOTS.isEmpty(); }

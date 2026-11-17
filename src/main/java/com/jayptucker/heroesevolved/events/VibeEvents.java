@@ -1,6 +1,7 @@
 package com.jayptucker.heroesevolved.events;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
+import com.jayptucker.heroesevolved.vibe.BreachProjectiles;
 import com.jayptucker.heroesevolved.vibe.VibeService;
 import com.jayptucker.heroesevolved.vibe.VibeSight;
 import net.minecraft.server.level.ServerLevel;
@@ -35,9 +36,9 @@ public final class VibeEvents {
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void beforeProjectileTick(EntityTickEvent.Pre event) {
         var entity = event.getEntity();
-        if (VibeService.hasGuard() && entity instanceof Projectile shot
+        if (entity instanceof Projectile shot
                 && shot.level() instanceof ServerLevel level
-                && VibeService.intercept(level, shot, shot.position(), shot.position().add(shot.getDeltaMovement()))) {
+                && BreachProjectiles.beforeTick(level, shot)) {
             event.setCanceled(true);
         }
     }
@@ -47,6 +48,24 @@ public final class VibeEvents {
         if (!(shot.level() instanceof ServerLevel level)) return;
         var to = event.getRayTraceResult().getLocation();
         if (VibeService.intercept(level, shot, shot.position(), to)) event.setCanceled(true);
+    }
+
+    /** A rift beast never turns on its owner or their friends, drops nothing, and never outlives the server's memory of it. */
+    @SubscribeEvent public static void beastTarget(net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent event) {
+        if (com.jayptucker.heroesevolved.vibe.VibeBeast.refuses(event.getEntity(), event.getNewAboutToBeSetTarget()))
+            event.setNewAboutToBeSetTarget(null);
+    }
+
+    @SubscribeEvent public static void beastDrops(net.neoforged.neoforge.event.entity.living.LivingDropsEvent event) {
+        if (com.jayptucker.heroesevolved.vibe.VibeBeast.isBeast(event.getEntity())) event.setCanceled(true);
+    }
+
+    @SubscribeEvent public static void beastExperience(net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent event) {
+        if (com.jayptucker.heroesevolved.vibe.VibeBeast.isBeast(event.getEntity())) event.setCanceled(true);
+    }
+
+    @SubscribeEvent public static void beastJoin(net.neoforged.neoforge.event.entity.EntityJoinLevelEvent event) {
+        if (!event.getLevel().isClientSide() && com.jayptucker.heroesevolved.vibe.VibeBeast.orphan(event.getEntity())) event.setCanceled(true);
     }
 
     @SubscribeEvent public static void logout(PlayerEvent.PlayerLoggedOutEvent event) {

@@ -64,7 +64,8 @@ public final class FightingStyles {
             com.jayptucker.heroesevolved.phasing.DensityStyle.STYLE,
             com.jayptucker.heroesevolved.regeneration.RegenStyle.STYLE,
             com.jayptucker.heroesevolved.invisibility.ForceStyle.STYLE,
-            com.jayptucker.heroesevolved.telekinesis.KineticStyle.STYLE);
+            com.jayptucker.heroesevolved.telekinesis.KineticStyle.STYLE,
+            com.jayptucker.heroesevolved.vibe.VibeStyle.STYLE);
 
     private FightingStyles() {}
 

@@ -21,9 +21,13 @@
     "EclipseMoonPhaseMixin",
     "SoulFireBlockMixin",
     "InvertedHealMixin",
-    "ServerSoundCountMixin"
+    "ServerSoundCountMixin",
+    "ProjectileAccess",
+    "ArrowAccess",
+    "BreachEntityDataAccess"
   ],
   "client": [
+    "BreachRenderTypeMixin",
     "FlightSprintMixin",
     "FlightRenderBoundsMixin",
     "PlayerModelMixin",

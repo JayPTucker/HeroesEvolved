@@ -198,7 +198,7 @@ act("quake_earthquake", "quake", 5, "ultimate", "seconds of shaking, then an aft
 
 # Fighting styles (empty-handed clicks and double-taps): strike, finisher/kick/clap, dodge, back dodge, dodge cooldown.
 STYLE_POWERS = ["pyrokinesis", "electrokinesis", "hydrokinesis", "superspeed", "quake", "cryokinesis", "phasing",
-                "regeneration", "invisibility", "telekinesis"]
+                "regeneration", "invisibility", "telekinesis", "vibe"]
 STYLE = {"strike": (2, 2), "finisher": (5, 5), "dodge": (8, 8), "back_dodge": (11, 11)}
 STYLE_OVERRIDES = {
     # A speedster's dodge is a step, not a leap; a brawler pays with his body and braces.
@@ -371,6 +371,8 @@ def doc(rows, dump, skill_changes):
     w("| Between Seconds | 10 to start, then 5 a second (4 at Level 15), recovery stopped; press again to end. |")
     w("| Fold Space | 4 to start plus 0.3 for every block folded, at full price: 9 for a 16-block fold, 28 for 80, 49")
     w("  for 150. Practice takes up to 30% off (35 for a 150-block fold at Level 15). |")
+    w("| Breach to a frequency | The breach's own cost plus 1 for every 40 blocks to the frequency (up to 30 more), or 15")
+    w("  more to another world. A breach where you look costs nothing extra. |")
     w("| Free Flight | 4 a second cruising, 9 boosting (recovery still runs). |")
     w("| Accelerate | 3 a second running, 6 in Redline. |")
     w("| Fade | 2 a second, +1 for each friend faded with you. |")

@@ -1147,7 +1147,7 @@ two-way Breaches, Read the Vibe, Breach Guard → Return Fire and Frequency Lock
 - **A portal keeps your direction of travel.** A traveler comes out on the side of the far mouth they were heading for
   (`Mouth.arrival(side)`), turned by the angle between the two mouths (`Mouth.yaw()`). Sending everyone out of the front
   of the far mouth bounced anyone walking back through it between the two mouths.
-- **A link to another dimension.** `VibeBreaches` holds a region ticket on the exit's chunk while the link is open, moves
+- **A link to another dimension.** `VibeBreaches` keeps both mouths' chunks ticking while the link is open, moves
   players with `changeDimension(new DimensionTransition(...))`, and adds them to `CROSSING` while they move, so the
   `PlayerChangedDimensionEvent` handler that tidies up a power (`VibeService.forget`) doesn't close the link they're
   using. A saved destination lives in `Player.PERSISTED_NBT_TAG`, so it survives death.
@@ -1164,13 +1164,50 @@ two-way Breaches, Read the Vibe, Breach Guard → Return Fire and Frequency Lock
   far it got. The awakening's rescue once treated the result as a displacement and never moved anyone.
 - **A wave through your own portal.** Through the Seam asks `VibeBreaches.seam(owner, from, to)` for the first open
   mouth a wave crosses; it returns the crossing, the matching point on the other mouth and the turned direction
-  (`VibeBreaches.turn`). The first wave stops at the mouth, and a second one leaves the far mouth when the front
+  (`VibeGeometry.rotation`). The first wave stops at the mouth, and a second one leaves the far mouth when the front
   arrives, sharing one strike list. Any projectile that should pass through a portal can use the same lookup.
 - **Every passive ties two moves together.** Slingshot (cross a breach → next blast), Return Address (guard → mark),
   Overflow (Return Fire → a small lock queued in `OVERFLOWS`), Residual Sense (damage taken → mark). Marks never shorten
   (`VibeSight.mark(player, target, ticks)` keeps the longer one), so several sources can feed them safely.
+- **Waypoints that grow with level.** Breaches go to frequencies (`VibeFrequencies`): a fixed array of slots in the
+  player's persisted data (so they survive death), `slots(powerLevel, worlds)` deciding how many are usable (one, then
+  one every four Power Levels, two more from World Frequency). An old single-value save (`heroesevolved_vibe_anchor`)
+  is read into slot 1 on first use. Copy this for any power with saved places.
+- **A wheel pick that pays through the normal press.** The Breach key's `followUp` opens the frequency wheel for free.
+  The wheel's click (`FrequencyChoicePayload`) records a pick for this tick and calls
+  `AbilityUseService.activateAction` with Breach's built-in action key, so it works after a key rebind. `followUp` sees
+  the pick and steps aside, so cooldown, stamina and sounds apply, and `SimpleAction.Builder.travel` adds the distance
+  cost from the same pick. The server checks the player's current slot count on each wheel choice.
+- **Seeing through a portal.** When the destination chunks are loaded, the server captures a `BreachSnapshot` round each mouth (blocks and
+  packed light inside a 30-block sphere, plus that biome's sky, grass, foliage and water colours, run-length packed; a test keeps
+  a flat arena's under 64 KB) and sends it in `BreachViewPayload` to players within 112 blocks of the other mouth, and
+  again to anyone who arrives later or changes world. `client/effects/BreachViewClient` tessellates it off the render
+  thread with the vanilla block and liquid renderers over a `BlockAndTintGetter` backed by the snapshot, into the chunk
+  layers, with their relative yaw and pitch baked in (`VibeGeometry.rotation`, reused for actors, travelers and shots).
+  Each frame after entities it marks the opening in the stencil buffer,
+  pushes its depth to the far plane with `glDepthRange(1, 1)` and fills it with the far sky, draws the far terrain with
+  the terrain shaders (`CHUNK_OFFSET` set to the near mouth, fog set to end where the snapshot ends) and writes the
+  opening's own depth back.
+  - The main target gets its stencil from NeoForge's `RenderTarget.enableStencil()` in a client tick. Fabulous targets
+    that copy the main depth buffer use the same depth/stencil format. Far-side translucency draws into the main target.
+  - Only the half of the far side ahead of the viewer is drawn, so a wall behind the far mouth never blocks the view;
+    blocks in the mouth's plane go in both halves.
+  - The liquid renderer writes positions within the block's chunk section and takes no pose; wrap its consumer to add
+    the section's corner and the turn (`BreachViewClient.Moved`).
+  - A set piece that frames a window must leave its middle clear: `VibeArt` asks `BreachViewClient.showing(origin)` and
+    keeps only the dark rim and the lip.
+- **Live entities in the window.** `BreachActorsPayload` sends bounded updates using spawn and appearance data from
+  the other mouth. `BreachViewActors` draws detached copies with the vanilla renderers after opaque terrain and before
+  translucent terrain. Keep the copies outside the client world's entity list and the rendering inside the stencil.
+- **A shot through a breach.** `BreachProjectiles` tests the shot's whole tick segment against both mouths and lets
+  cover or a target in front of the opening take the normal hit. Map the crossing point and rotate the full velocity
+  between the mouths. The shot resumes its own collision logic from the far mouth on the next tick. `TaczLink`
+  maps the round's damage falloff origin and carries TaCZ's runtime-only round fields if it changes dimension.
 - **Photographs:** `tools/vibe-preview.init.gradle` (`uitest/VibePreview`) shoots every core move, active skill, class
-  ability, Through the Seam, Overflow and the awakening into `build/vibe-preview/screenshots/`.
+  ability, Through the Seam, Overflow, the awakening, the frequency wheel and the view through a breach into a built
+  garden into `build/vibe-preview/screenshots/`. It skips the Last Day and stages every scene on one strip of forced
+  overworld chunks; breaches are sealed in the mod's own dimensions, so a preview left in the city casts nothing.
+  Run with `-Pbreaches` for the focused Fabulous preview of terrain, entities and tilted/floor openings.
 
 ## Reusable patterns from the Space-Time rework
 

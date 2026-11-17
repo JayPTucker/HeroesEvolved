@@ -132,6 +132,9 @@ public enum Piece {
     VIBE_BREACH_OPEN(12), VIBE_BREACH_ARRIVE(16), VIBE_BREACH_CLOSE(10), VIBE_TRANSIT(18),
     VIBE_TOUCH(24), VIBE_ECHO(29), VIBE_GUARD(10), VIBE_GUARD_CLOSE(10), VIBE_LOCK_WARN(16),
     VIBE_LOCK(33), VIBE_AWAKEN(28),
+    // Vibe's Rift Beast (re-sent, bound to it), and the style's Breach Kick (origin the foot's mouth, target the far mouth
+    // behind the foe) and Seam Sweep (a crack along the ground; scale is its length)
+    VIBE_BEAST(12), VIBE_KICK(14), VIBE_SEAM(18),
     // Space-Time's skill tree, drawn by TimeArt (clockwork made of light): Selective Stasis's cage (re-sent, bound to the
     // target) and the release when its stored blows land (scale is how many), a Spatial Anchor planted (target holds the
     // hands' time of day), Second Chance's arrival, Stasis Seal's sphere (re-sent; scale is its radius) and its throw, one

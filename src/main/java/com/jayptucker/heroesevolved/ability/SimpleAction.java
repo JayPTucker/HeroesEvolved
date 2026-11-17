@@ -26,6 +26,7 @@ public final class SimpleAction implements AbilityAction {
     private final Predicate<AbilityUseContext> deactivateOnPress;
     private final Predicate<AbilityUseContext> followUp;
     private final java.util.function.Consumer<AbilityUseContext> release;
+    private final java.util.function.ToIntFunction<AbilityUseContext> travel;
 
     private SimpleAction(Builder builder) {
         definition = new AbilityActionDefinition(
@@ -43,6 +44,7 @@ public final class SimpleAction implements AbilityAction {
         deactivateOnPress = builder.deactivateOnPress;
         followUp = builder.followUp;
         release = builder.release;
+        travel = builder.travel;
     }
 
     public static Builder builder(String path, int unlockLevel) {
@@ -83,6 +85,8 @@ public final class SimpleAction implements AbilityAction {
 
     @Override public void release(AbilityUseContext context) { release.accept(context); }
 
+    @Override public int travelCost(AbilityUseContext context) { return travel.applyAsInt(context); }
+
     @Override
     public AbilityActivationResult activate(AbilityUseContext context) {
         return activation.activate(context)
@@ -101,6 +105,7 @@ public final class SimpleAction implements AbilityAction {
         private Predicate<AbilityUseContext> deactivateOnPress = context -> false;
         private Predicate<AbilityUseContext> followUp = context -> false;
         private java.util.function.Consumer<AbilityUseContext> release = context -> {};
+        private java.util.function.ToIntFunction<AbilityUseContext> travel = context -> 0;
 
         private Builder(String path, int unlockLevel) {
             this.path = path;
@@ -142,6 +147,12 @@ public final class SimpleAction implements AbilityAction {
         /** Called when the key is let go: for actions that do more the longer the key is held. */
         public Builder release(java.util.function.Consumer<AbilityUseContext> action) {
             release = action;
+            return this;
+        }
+
+        /** Stamina on top of the balanced cost for what this use will do (see {@link AbilityAction#travelCost}). */
+        public Builder travel(java.util.function.ToIntFunction<AbilityUseContext> cost) {
+            travel = cost;
             return this;
         }
 

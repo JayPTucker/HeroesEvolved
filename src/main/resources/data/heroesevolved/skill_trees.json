@@ -4032,8 +4032,8 @@
         },
         {
           "id": "vibe_1_1",
-          "name": "Attune Frequency",
-          "description": "Save the world, position and facing where you are standing for World Frequency.",
+          "name": "Glimpse",
+          "description": "Open a window to one of your frequencies: see the place through it for ten seconds, without crossing.",
           "icon": "minecraft:lodestone",
           "level": 2,
           "cost": 2,
@@ -4046,7 +4046,7 @@
         {
           "id": "vibe_world_frequency",
           "name": "World Frequency",
-          "description": "Hold Shift and cast Breach to open a link to your saved location, including in another dimension.",
+          "description": "Breach and Glimpse reach frequencies in other dimensions, and you can hold two more.",
           "icon": "minecraft:ender_eye",
           "level": 3,
           "cost": 2,
@@ -4083,6 +4083,22 @@
           "cost": 3,
           "active": false,
           "capstone": true
+        },
+        {
+          "id": "vibe_rift_beast",
+          "name": "Rift Beast",
+          "description": "Open a breach to a hostile world and pull a beast through to fight beside you for half a minute. Like a wolf, it follows you, attacks whatever you hit and whatever hits you, and never turns on you or your friends. Press again to send it at what you look at; Shift-press to send it home.",
+          "active": true,
+          "signature": true,
+          "icon": "minecraft:crimson_nylium",
+          "level": 4,
+          "cost": 3,
+          "requires": "vibe_world_frequency",
+          "mechanic": "vibe_rift_beast",
+          "energy": 52,
+          "cooldown": 900,
+          "design_energy": 52,
+          "design_cooldown": 900
         }
       ],
       [

@@ -86,6 +86,11 @@ public final class TaczAmmoRecovery {
         }
     }
 
+    public static void transferred(Projectile from, Projectile to) {
+        Round round = PELLETS.remove(from);
+        if (round != null) PELLETS.put(to, round);
+    }
+
     public static void clear() {
         FIRED.clear();
         PELLETS.clear();

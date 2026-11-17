@@ -1,6 +1,7 @@
 package com.jayptucker.heroesevolved.telepathy;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
+import com.jayptucker.heroesevolved.vibe.BreachVoiceRoutes;
 import de.maxhenkel.voicechat.api.ForgeVoicechatPlugin;
 import de.maxhenkel.voicechat.api.Group;
 import de.maxhenkel.voicechat.api.VoicechatConnection;
@@ -9,6 +10,7 @@ import de.maxhenkel.voicechat.api.VoicechatServerApi;
 import de.maxhenkel.voicechat.api.events.EventRegistration;
 import de.maxhenkel.voicechat.api.events.MicrophonePacketEvent;
 import de.maxhenkel.voicechat.api.events.PlayerDisconnectedEvent;
+import de.maxhenkel.voicechat.api.events.VoiceDistanceEvent;
 import de.maxhenkel.voicechat.api.events.VoicechatServerStartedEvent;
 import de.maxhenkel.voicechat.api.events.VoicechatServerStoppedEvent;
 import de.maxhenkel.voicechat.api.opus.OpusDecoder;
@@ -25,9 +27,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * The one place that speaks to Simple Voice Chat (henkelmax), found by its {@code @ForgeVoicechatPlugin} scan. For every
  * microphone packet it looks up the telepathic routes the server worked out ({@link MindVoiceRoutes}) and sends the voice
- * on: inside the listener's head (a static packet) or from a point near them in the speaker's direction (a locational
- * one). Relayed voices use their own channel per speaker, so they never mix with the speaker's ordinary voice, and their
- * own volume category, "Telepathy", which every player can turn down in the voice chat settings.
+ * on inside the listener's head or from a point in the speaker's direction. Public proximity speech can also pass
+ * through open Vibe breaches. Each kind of relay uses its own channel and volume category.
  *
  * <p>A voice heard inside the head is decoded, run through {@link PsychicVoice} and encoded again (one codec pair per
  * speaker, so the stream stays continuous), so it sounds like a thought rather than a voice in the room. A telepath
@@ -39,8 +40,11 @@ import java.util.concurrent.ConcurrentHashMap;
 @ForgeVoicechatPlugin
 public final class MindVoice implements VoicechatPlugin {
     static final String CATEGORY = "telepathy";
+    private static final String BREACH_CATEGORY = "breach";
     private static volatile boolean broken;
+    private static volatile boolean breachBroken;
     private static final Map<UUID, UUID> FAR_CHANNELS = new ConcurrentHashMap<>(), HEAD_CHANNELS = new ConcurrentHashMap<>();
+    private static final Map<UUID, UUID> BREACH_CHANNELS = new ConcurrentHashMap<>();
     /** Each speaker's codecs and distortion, kept while they speak into minds. */
     private static final Map<UUID, Head> HEADS = new ConcurrentHashMap<>();
 
@@ -59,14 +63,18 @@ public final class MindVoice implements VoicechatPlugin {
         registration.registerEvent(VoicechatServerStartedEvent.class, this::started);
         registration.registerEvent(VoicechatServerStoppedEvent.class, event -> {
             MindVoiceRoutes.clear();
+            BreachVoiceRoutes.clear();
+            BREACH_CHANNELS.clear();
             HEADS.values().forEach(Head::close);
             HEADS.clear();
         });
         registration.registerEvent(PlayerDisconnectedEvent.class, event -> {
             Head head = HEADS.remove(event.getPlayerUuid());
             if (head != null) synchronized (head) { head.close(); }
+            BREACH_CHANNELS.remove(event.getPlayerUuid());
         });
         registration.registerEvent(MicrophonePacketEvent.class, this::microphone);
+        registration.registerEvent(VoiceDistanceEvent.class, this::breach, -100);
     }
 
     private static void fail(String what, Throwable t) {
@@ -84,6 +92,52 @@ public final class MindVoice implements VoicechatPlugin {
         } catch (Throwable t) {
             fail("start", t);
         }
+        try {
+            VoicechatServerApi api = event.getVoicechat();
+            api.registerVolumeCategory(api.volumeCategoryBuilder().setId(BREACH_CATEGORY).setName("Vibe Breach")
+                    .setDescription("Proximity voices through an open breach").build());
+        } catch (Throwable t) {
+            failBreach(t);
+        }
+    }
+
+    private void breach(VoiceDistanceEvent event) {
+        if (breachBroken || event.isCancelled()) return;
+        try {
+            VoicechatConnection sender = event.getSenderConnection();
+            if (sender == null || sender.getPlayer() == null || sender.isDisabled()) return;
+            Group group = sender.getGroup();
+            if (group != null && group.getType() != Group.Type.OPEN) return;
+            UUID speaker = sender.getPlayer().getUuid();
+            if (MindVoiceRoutes.inner(speaker)) return;
+            List<BreachVoiceRoutes.Route> routes = BreachVoiceRoutes.routes(speaker);
+            if (routes.isEmpty()) return;
+            var packet = event.getPacket();
+            var voice = event.getVoicechat();
+            float range = event.getDistance();
+            for (BreachVoiceRoutes.Route route : routes) {
+                if (!route.audible(range)) continue;
+                VoicechatConnection to = voice.getConnectionOf(route.listener());
+                if (to == null || !to.isConnected() || to.isDisabled()) continue;
+                Group theirs = to.getGroup();
+                if (theirs != null && (theirs.getType() == Group.Type.ISOLATED
+                        || group != null && theirs.getId().equals(group.getId()))) continue;
+                if (!broken && MindVoiceRoutes.routes(speaker).stream().anyMatch(mind -> mind.listener().equals(route.listener())
+                        && (!packet.isWhispering() || mind.kind() != MindVoiceRoutes.Kind.FAR
+                        || mind.range() <= TelepathyGeometry.WHISPER_RANGE))) continue;
+                var at = route.position();
+                voice.sendLocationalSoundPacketTo(to, packet.locationalSoundPacketBuilder()
+                        .channelId(channel(BREACH_CHANNELS, speaker, BREACH_CATEGORY))
+                        .position(voice.createPosition(at.x, at.y, at.z)).distance(range).category(BREACH_CATEGORY).build());
+            }
+        } catch (Throwable t) {
+            failBreach(t);
+        }
+    }
+
+    private static void failBreach(Throwable failure) {
+        if (!breachBroken) HeroesEvolved.LOGGER.warn("Simple Voice Chat is unable to relay voices through breaches", failure);
+        breachBroken = true;
     }
 
     private void microphone(MicrophonePacketEvent event) {

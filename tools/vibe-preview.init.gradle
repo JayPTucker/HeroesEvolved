@@ -14,6 +14,7 @@ allprojects {
                         gameDirectory = project.file('build/vibe-preview')
                         programArguments.addAll('--width', '1100', '--height', '800')
                         systemProperty('heroes.preview.vibe', 'true')
+                        if (project.hasProperty('breaches')) systemProperty('heroes.preview.vibe.breaches', 'true')
                     }
                 }
             }

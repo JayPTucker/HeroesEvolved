@@ -66,7 +66,7 @@ public final class StyleCasts {
             case "shapeshifting_many_hands", "shapeshifting_plate_mail", "shapeshifting_masquerade" -> {
                 return com.jayptucker.heroesevolved.shapeshift.ShapeshiftSkills.cast(c, mechanic);
             }
-            case "vibe_sanctuary" -> { return com.jayptucker.heroesevolved.vibe.VibeBreaches.open(p, false, true); }
+            case "vibe_sanctuary" -> { return com.jayptucker.heroesevolved.vibe.VibeBreaches.open(p, true); }
             case "hydro_tsunami", "hydro_tidal_dome", "hydro_healing_spring" -> {
                 return com.jayptucker.heroesevolved.hydro.HydroSkills.cast(c, mechanic);
             }

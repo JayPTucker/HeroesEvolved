@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.UnaryOperator;
 
 /** One velocity and gravity snapshot per projectile, even when time fields overlap. */
 public final class ProjectileTimeService {
@@ -130,6 +131,19 @@ public final class ProjectileTimeService {
     public static boolean isInFlight(Projectile shot) {
         State state = SHOTS.get(shot);
         return (state == null ? shot.getDeltaMovement() : state.fullVelocity).lengthSqr() > .0025;
+    }
+
+    /** Keeps the original velocity and the slowed velocity on the same heading when a shot crosses a breach. */
+    public static void throughBreach(Projectile from, Projectile to, UnaryOperator<Vec3> turn) {
+        State state = SHOTS.remove(from);
+        if (state != null) {
+            state.fullVelocity = turn.apply(state.fullVelocity);
+            state.appliedVelocity = to.getDeltaMovement();
+            state.start = to.position();
+            SHOTS.put(to, state);
+        }
+        PacketDistributor.sendToPlayersTrackingEntity(to, new TemporalProjectilePayload(to.getId(),
+                state == null ? NORMAL : state.interval, to.position(), to.getDeltaMovement(), true));
     }
 
     private static boolean canCatchInTime(ServerPlayer player) {

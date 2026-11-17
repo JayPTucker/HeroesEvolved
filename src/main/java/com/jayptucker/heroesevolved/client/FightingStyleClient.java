@@ -30,7 +30,8 @@ public final class FightingStyleClient {
     /** The powers with a fighting style (see combat/FightingStyles). */
     private static final Set<ResourceLocation> STYLED = Set.of(ModAbilities.PYROKINESIS_ID, ModAbilities.ELECTROKINESIS_ID,
             ModAbilities.HYDROKINESIS_ID, ModAbilities.SUPERSPEED_ID, ModAbilities.QUAKE_ID, ModAbilities.CRYOKINESIS_ID,
-            ModAbilities.PHASING_ID, ModAbilities.REGENERATION_ID, ModAbilities.INVISIBILITY_ID, ModAbilities.TELEKINESIS_ID);
+            ModAbilities.PHASING_ID, ModAbilities.REGENERATION_ID, ModAbilities.INVISIBILITY_ID, ModAbilities.TELEKINESIS_ID,
+            ModAbilities.VIBE_ID);
     /** Two presses of one direction this many ticks apart or less are a dodge. */
     private static final int DOUBLE_TAP = 6;
     /** The client sends no faster than the quickest strike the server allows. */

@@ -1,6 +1,5 @@
 package com.jayptucker.heroesevolved.ability.types;
 
-import com.jayptucker.heroesevolved.ability.AbilityRanges;
 
 import com.jayptucker.heroesevolved.effects.AbilityEffects;
 import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
@@ -225,7 +224,7 @@ public final class TimeManipulationAbility implements Ability {
             ServerLevel level = player.serverLevel();
             Vec3 origin = player.getEyePosition();
             Vec3 direction = player.getLookAngle().normalize();
-            int maximumDistance = getMaximumDistance(tier);
+            int maximumDistance = SpaceTimeService.blinkRange(tier);
 
             for (int distance = 1; distance <= maximumDistance; distance++) {
                 if (!level.hasChunkAt(BlockPos.containing(origin.add(direction.scale(distance))))) {
@@ -265,7 +264,7 @@ public final class TimeManipulationAbility implements Ability {
             ServerLevel level = player.serverLevel();
             boolean free = SpaceTimeSkills.freeFold(player);
             Vec3 direction = player.getLookAngle().normalize();
-            Vec3 behind = SpaceTimeSkills.behind(player, getMaximumDistance(context.abilityLevel()));
+            Vec3 behind = SpaceTimeSkills.behind(player, SpaceTimeService.blinkRange(context.abilityLevel()));
             Vec3 destination = destination(player, context.abilityLevel());
             if (destination == null) return AbilityActivationResult.REJECTED;
 
@@ -419,24 +418,6 @@ public final class TimeManipulationAbility implements Ability {
             // The player can still Blink normally if there is no safe space
             // for the selected target at the destination.
             return null;
-        }
-
-        private static int getMaximumDistance(int powerLevel) {
-            return AbilityRanges.ranged(switch (Math.clamp(powerLevel, 1, 5)) {
-                case 1 -> HeroesEvolvedConfig.COMMON
-                        .timeBlinkLevelOneDistance.get();
-                case 2 -> HeroesEvolvedConfig.COMMON
-                        .timeBlinkLevelTwoDistance.get();
-                case 3 -> HeroesEvolvedConfig.COMMON
-                        .timeBlinkLevelThreeDistance.get();
-                case 4 -> HeroesEvolvedConfig.COMMON
-                        .timeBlinkLevelFourDistance.get();
-                case 5 -> HeroesEvolvedConfig.COMMON
-                        .timeBlinkLevelFiveDistance.get();
-                default -> throw new IllegalStateException(
-                        "Unexpected Blink power level."
-                );
-            });
         }
 
         /**

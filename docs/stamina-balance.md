@@ -46,6 +46,8 @@ Photographed by `tools/stamina-preview.init.gradle` (`uitest/StaminaHudPreview`,
 | Between Seconds | 10 to start, then 5 a second (4 at Level 15), recovery stopped; press again to end. |
 | Fold Space | 4 to start plus 0.3 for every block folded, at full price: 9 for a 16-block fold, 28 for 80, 49
   for 150. Practice takes up to 30% off (35 for a 150-block fold at Level 15). |
+| Breach to a frequency | The breach's own cost plus 1 for every 40 blocks to the frequency (up to 30 more), or 15
+  more to another world. A breach where you look costs nothing extra. |
 | Free Flight | 4 a second cruising, 9 boosting (recovery still runs). |
 | Accelerate | 3 a second running, 6 in Redline. |
 | Fade | 2 a second, +1 for each friend faded with you. |
@@ -464,8 +466,9 @@ and 0.75.
 | matter_assembly | Mending Lattice | class:support | 26 (was 25) | 19.5s (was 22s) |
 | vibe | Vibe Lance | skill | 19 (was 18) | 4.25s |
 | vibe | Reverb | skill | 27 (was 29) | 7.25s |
-| vibe | Attune Frequency | skill | 12 (was 8) | 2.5s |
+| vibe | Glimpse | skill | 12 (was 8) | 2.5s |
 | vibe | Flashstep | skill | 16 (was 13) | 4.25s |
+| vibe | Rift Beast | skill | 52 | 45s |
 | vibe | Co-Vibe | skill | 16 (was 14) | 5.25s |
 | vibe | Prism Lock | skill | 31 (was 34) | 13s |
 | vibe | Crosswave | class:offense | 34 | 15.25s (was 11s) |

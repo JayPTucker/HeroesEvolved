@@ -1,10 +1,12 @@
 package com.jayptucker.heroesevolved.time;
 
+import com.jayptucker.heroesevolved.ability.AbilityRanges;
 import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.ability.Targeting;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
+import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.effects.AbilityEffects;
 import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
@@ -40,6 +42,18 @@ public final class SpaceTimeService {
     private static final Map<UUID, Deque<Moment>> HISTORY = new HashMap<>();
     private static final Map<UUID, Stasis> STASIS = new HashMap<>();
     private SpaceTimeService() {}
+
+    /** The configured Fold Space range after the shared ranged-power multiplier. */
+    public static int blinkRange(int tier) {
+        var config = HeroesEvolvedConfig.COMMON;
+        return AbilityRanges.ranged(switch (Math.clamp(tier, 1, 5)) {
+            case 1 -> config.timeBlinkLevelOneDistance.get();
+            case 2 -> config.timeBlinkLevelTwoDistance.get();
+            case 3 -> config.timeBlinkLevelThreeDistance.get();
+            case 4 -> config.timeBlinkLevelFourDistance.get();
+            default -> config.timeBlinkLevelFiveDistance.get();
+        });
+    }
 
     public static boolean awakened(ServerPlayer p) {
         return PlayerAbilityService.getData(p).assignedPower().filter(e -> e.getKey().equals(ModAbilities.TIME_MANIPULATION_ID) && e.getValue().isUnlocked()).isPresent();
