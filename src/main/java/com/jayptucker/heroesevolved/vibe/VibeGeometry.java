@@ -41,7 +41,7 @@ public final class VibeGeometry {
         return shoulder.add(direction.scale(.69));
     }
 
-    public static double waveTravel(double distance) { return Mth.clamp(distance / 3.2, 2.5, 8); }
+    public static double waveTravel(double distance) { return Mth.clamp(distance / 3.2, 2.5, 24); }
 
     /** A direction's yaw, in Minecraft's convention (0 is +Z, 90 is −X). */
     public static float yaw(Vec3 direction) { return (float) Math.toDegrees(Math.atan2(-direction.x, direction.z)); }

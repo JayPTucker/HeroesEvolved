@@ -80,8 +80,8 @@ public final class TelepathyClient {
                 String[] names={"UP ↑","RIGHT →","DOWN ↓","LEFT ←"};
                 g.fill(cx-100,h/2+18,cx+100,h/2+83,0xD0181028);
                 g.drawCenteredString(mc.font,"PRESS "+names[Math.clamp(state.cue(),0,3)]+" TO FIGHT BACK",cx,h/2+29,0xFFFFFF);
-                g.fill(cx-85,h/2+48,cx+85,h/2+55,0xFF382342);g.fill(cx-85,h/2+48,cx-85+(170*state.resistance()/100),h/2+55,0xFFDBB4FF);
-                g.drawCenteredString(mc.font,"Break free: "+state.resistance()+"%",cx,h/2+64,0xDCBDEF);
+                com.jayptucker.heroesevolved.gui.HudGauges.at(g,cx-com.jayptucker.heroesevolved.gui.HudGauges.SIZE/2,h/2+42,
+                        com.jayptucker.heroesevolved.gui.HudGauges.Gauge.ring(state.resistance()/100F,0xFFDBB4FF).middle(state.resistance()+"%").label("BREAK FREE"));
             }else g.drawCenteredString(mc.font,"Esc · return to yourself",cx,60,0xB59CCB);
             if(role()==3&&!typing.isEmpty()){
                 // Where their own chat box would be; above it when they have it open themselves.
@@ -90,7 +90,19 @@ public final class TelepathyClient {
                 g.fill(2,y-2,Math.min(w-2,mc.font.width(shown)+8),y+10,0x90180C28);
                 g.drawString(mc.font,shown,4,y,0xEDCBFF);
             }
-        }else if(state.focus()>0||state.strain()>0)g.drawCenteredString(mc.font,"Mind Thread "+state.focus()+"  ·  Strain "+state.strain(),cx,h-76,0xDCBDEF);
+        }
+    }
+
+    /** A telepath's strongest Mind Thread (its Focus) and their Mental Strain, while either is up. */
+    public static void gauges(java.util.List<com.jayptucker.heroesevolved.gui.HudGauges.Gauge> gauges){
+        if(Minecraft.getInstance().player==null||role()>=1&&role()<=4)return;
+        if(state.focus()>0)gauges.add(com.jayptucker.heroesevolved.gui.HudGauges.Gauge.ring(Math.clamp(state.focus(),0,100)/100F,0xFFDCBDEF)
+                .middle(Integer.toString(state.focus())).label("THREAD"));
+        if(state.strain()>0){
+            int strain=Math.clamp(state.strain(),0,100);
+            int color=strain>=80?(com.jayptucker.heroesevolved.gui.HudGauges.flash()?0xFFFF7A9A:0xFFFFC0D0):strain>=50?0xFFF2A0D8:0xFFC9A0F0;
+            gauges.add(com.jayptucker.heroesevolved.gui.HudGauges.Gauge.ring(strain/100F,color).middle(Integer.toString(strain)).label("STRAIN").notches(0.5F,0.8F));
+        }
     }
     private static final class Choice extends Screen {
         final boolean illusion;

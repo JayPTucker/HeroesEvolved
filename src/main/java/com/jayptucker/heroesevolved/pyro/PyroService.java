@@ -1,5 +1,6 @@
 package com.jayptucker.heroesevolved.pyro;
 
+import com.jayptucker.heroesevolved.ability.ProjectileRanges;
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.ability.ArmPose;
@@ -329,7 +330,7 @@ public final class PyroService {
         ServerLevel level = player.serverLevel();
         Vec3 eye = player.getEyePosition();
         boolean blue = isBlue(player);
-        LivingEntity target = Targeting.livingEntityInSight(player, 16, t -> hostile(player, t)
+        LivingEntity target = Targeting.livingEntityInRange(player, ProjectileRanges.FIREBALL, ClipContext.Fluid.ANY, t -> hostile(player, t)
                 && exposed(player, eye, t.getBoundingBox().getCenter()));
         Vec3 end;
         if (target != null) {
@@ -347,7 +348,7 @@ public final class PyroService {
                 if (SkillTreeService.has(player, "pyrokinesis_0_2")) addHeat(player, 8);
             }
         } else {
-            var hit = level.clip(new ClipContext(eye, eye.add(player.getLookAngle().scale(32)),
+            var hit = level.clip(new ClipContext(eye, eye.add(player.getLookAngle().scale(ProjectileRanges.FIREBALL)),
                     ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, player));
             end = hit.getLocation();
             if (hit.getType() == HitResult.Type.BLOCK) {
@@ -393,7 +394,7 @@ public final class PyroService {
         if (progress < 0.25) return flare(player, spear.level);
         ServerLevel level = player.serverLevel();
         Vec3 eye = player.getEyePosition(), aim = player.getLookAngle().normalize();
-        var hit = level.clip(new ClipContext(eye, eye.add(aim.scale(32)),
+        var hit = level.clip(new ClipContext(eye, eye.add(aim.scale(ProjectileRanges.FIRE_SPEAR)),
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, player));
         double reach = eye.distanceTo(hit.getLocation());
         boolean blue = isBlue(player), fueled = progress >= 0.9 && heat(player) >= 20;
@@ -401,7 +402,7 @@ public final class PyroService {
         if (fueled) spendHeat(player, 20);
         int struck = 0;
         boolean detonated = false;
-        for (LivingEntity target : enemies(player, eye, 33)) {
+        for (LivingEntity target : enemies(player, eye, reach + 1)) {
             Vec3 delta = target.getBoundingBox().getCenter().subtract(eye);
             double along = delta.dot(aim);
             double width = (fueled ? 1.1 : 0.55) + target.getBbWidth() * 0.5;
@@ -849,8 +850,8 @@ public final class PyroService {
     private static boolean blueLance(ServerPlayer player, int powerLevel) {
         ServerLevel level = player.serverLevel();
         Vec3 eye = player.getEyePosition(), aim = player.getLookAngle().normalize();
-        var hit = level.clip(new ClipContext(eye, eye.add(aim.scale(24)), ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, player));
-        double length = hit.getType() == HitResult.Type.BLOCK ? eye.distanceTo(hit.getLocation()) : 24;
+        var hit = level.clip(new ClipContext(eye, eye.add(aim.scale(ProjectileRanges.BLUE_LANCE)), ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, player));
+        double length = hit.getType() == HitResult.Type.BLOCK ? eye.distanceTo(hit.getLocation()) : ProjectileRanges.BLUE_LANCE;
         int struck = 0;
         for (LivingEntity target : enemies(player, eye, length + 1)) {
             Vec3 delta = target.getBoundingBox().getCenter().subtract(eye);

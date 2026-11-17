@@ -564,6 +564,13 @@ public final class SpeedService {
     }
 
     public static int momentum(ServerPlayer p) { Runner r = RUNNERS.get(p.getUUID()); return r == null ? 0 : r.momentum; }
+    /** The run-speed setting this speedster has selected, or their fastest while Accelerate is off. */
+    public static int speedStep(ServerPlayer p) {
+        Runner r = RUNNERS.get(p.getUUID());
+        return r != null ? Math.min(r.speedStep, maximumSpeedStep(p)) : maximumSpeedStep(p);
+    }
+    /** The fastest run-speed setting this speedster has unlocked (tier + 1). */
+    public static int maximumSpeedStep(ServerPlayer p) { return maximumSpeedStep(PlayerProgressionService.getLevel(p)); }
     /** Spends all Momentum if at least {@code minimum} is banked; returns the amount spent, or 0. */
     public static int spendMomentum(ServerPlayer p, int minimum) {
         Runner r = RUNNERS.get(p.getUUID());

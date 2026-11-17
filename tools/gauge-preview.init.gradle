@@ -1,0 +1,23 @@
+// Photographs the HUD's ring gauges in each state (uitest/HudGaugePreview).
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('gaugePreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/gauge-preview')
+                        programArguments.addAll('--width', '1100', '--height', '800')
+                        systemProperty('heroes.preview.gauges', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('gaugePreviewClasses')) }
+        }
+    }
+}

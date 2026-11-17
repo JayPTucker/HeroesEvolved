@@ -64,7 +64,11 @@ import java.util.UUID;
 
 /**
  * A villager the Eclipse woke a power in: Induced Radioactivity, and no way to hold it. As the sun comes back he starts
- * to glow, and about a minute later he goes off like a radioactive player's Critical Mass. He can't help it.
+ * to glow, and four minutes later ({@link HeroesEvolvedConfig.Common#villagerMeltdownFuseTicks}) he goes off like a
+ * radioactive player's Critical Mass: the same blast, radius {@link NuclearFallout#RADIUS} (not the larger awakening
+ * blast), its crater carved the moment the wave arrives. He can't help it. It may happen in any village within a few
+ * hundred blocks of a player ({@link VillageIncidents}); his village stays loaded ({@link VillageTickets}) and calls for
+ * help on the emergency band, so there is time to get there.
  * <p>
  * His village calls for help on the emergency band, and everyone near sees a countdown. Players either get the village
  * out, carrying villagers (sneak + use) to the safe point marked by a column of light, or stop him:
@@ -254,7 +258,9 @@ public final class VillagerMeltdown {
         MELTDOWNS.put(m.villager.getUUID(), m);
         root(m.villager, true);
         gather(m);
-        m.call = EmergencyBand.call(m.level, m.bell, words(m), m.fuse + 200);
+        // His village stays loaded while it lasts, however far off the nearest player is.
+        VillageTickets.hold(m.level, m.bell, key(m));
+        m.call = EmergencyBand.call(m.level, m.bell, EmergencyBand.Trouble.MELTDOWN, words(m), m.fuse + 200);
         if (fresh) {
             Vec3 at = m.villager.position();
             m.level.playSound(null, at.x, at.y, at.z, SoundEvents.BEACON_POWER_SELECT, SoundSource.NEUTRAL, 2.0F, 0.5F);
@@ -622,6 +628,7 @@ public final class VillagerMeltdown {
         MeltdownField.end(m.villager);
         for (UUID id : m.village) if (m.level.getEntity(id) instanceof Villager v) { root(v, false); v.removeEffect(MobEffects.GLOWING); }
         if (m.call != null) EmergencyBand.end(m.call);
+        VillageTickets.release(key(m));
         m.bar.removeAllPlayers();
     }
 
@@ -629,8 +636,11 @@ public final class VillagerMeltdown {
     private static void pause(Meltdown m) {
         MELTDOWNS.remove(m.villager.getUUID());
         if (m.call != null) EmergencyBand.end(m.call);
+        VillageTickets.release(key(m));
         m.bar.removeAllPlayers();
     }
+
+    private static String key(Meltdown m) { return "meltdown:" + m.villager.getUUID(); }
 
     /** He can't walk away from it; villagers who reach safety stay huddled there. */
     private static void root(Villager v, boolean on) {
@@ -726,7 +736,9 @@ public final class VillagerMeltdown {
             lastPhase = phase;
         }
         if (awakenAt == Long.MIN_VALUE || now < awakenAt) return;
-        if (awaken(server) != null || ++awakenTries >= 12) awakenAt = Long.MIN_VALUE;
+        // A village anywhere within reach of a player (it calls for help and stays loaded); failing that, one beside them.
+        if (VillageIncidents.request(server, VillageIncidents.Kind.MELTDOWN) || awaken(server) != null || ++awakenTries >= 12)
+            awakenAt = Long.MIN_VALUE;
         else awakenAt = now + 200;
     }
 

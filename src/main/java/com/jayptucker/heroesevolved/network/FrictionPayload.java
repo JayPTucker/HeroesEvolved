@@ -8,7 +8,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-/** A speedster's friction heat (0 to 100), sent to them alone when it moves, for the burn meter (gui/BurnMeter). */
+/** A speedster's friction heat (0 to 100), sent to them alone when it moves, for the heat gauge (gui/HudGauges). */
 public record FrictionPayload(float heat) implements CustomPacketPayload {
     public static final Type<FrictionPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "friction"));
     public static final StreamCodec<RegistryFriendlyByteBuf, FrictionPayload> STREAM_CODEC = StreamCodec.composite(
@@ -17,6 +17,6 @@ public record FrictionPayload(float heat) implements CustomPacketPayload {
     @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
     public static void handle(FrictionPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> com.jayptucker.heroesevolved.gui.BurnMeter.friction(payload.heat));
+        context.enqueueWork(() -> com.jayptucker.heroesevolved.gui.HudGauges.friction(payload.heat));
     }
 }

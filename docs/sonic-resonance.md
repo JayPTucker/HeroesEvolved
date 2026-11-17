@@ -27,7 +27,7 @@ It works through walls, since sound does, so you can follow a zombie around a co
 invisible player's footsteps give them away. Loud sounds bloom larger: a hurt or a break more than a
 step, an explosion most of all.
 
-**Resonance** (0 to 100, shown in rainbow under your ability keys):
+**Resonance** (0 to 100, shown as a rainbow ring under your ability keys):
 
 - **Builds** from sonic hits that land (4 per enemy a Cry hits), shots your Wall of Sound or Resonant
   Guard turns back (4 each), shattering a Ring (10), and any explosion within 16 blocks (+15).

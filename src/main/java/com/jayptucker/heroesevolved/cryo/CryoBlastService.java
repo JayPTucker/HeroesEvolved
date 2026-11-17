@@ -130,14 +130,11 @@ public final class CryoBlastService {
         Vec3 reach = eye.add(player.getLookAngle().scale(CryoBlastGeometry.REACH));
         BlockHitResult block = level.clip(new ClipContext(eye, reach, ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, player));
         Vec3 end = block.getLocation();
-        LivingEntity first = null;
-        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, new AABB(eye, end).inflate(.5),
-                entity -> entity != player && entity.isAlive() && !entity.isSpectator() && !(entity instanceof TemporalEchoEntity))) {
-            var hit = target.getBoundingBox().inflate(CryoBlastGeometry.AIM_PADDING).clip(eye, end);
-            if (hit.isEmpty() || !player.hasLineOfSight(target)) continue;
-            first = target;
-            end = hit.get();
-        }
+        var hit = com.jayptucker.heroesevolved.ability.Targeting.firstLivingHit(player, eye, end,
+                CryoBlastGeometry.AIM_PADDING, entity -> !(entity instanceof TemporalEchoEntity)
+                        && player.hasLineOfSight(entity));
+        LivingEntity first = hit == null ? null : (LivingEntity) hit.getEntity();
+        if (hit != null) end = hit.getLocation();
         return new Contact(end, first, block);
     }
 

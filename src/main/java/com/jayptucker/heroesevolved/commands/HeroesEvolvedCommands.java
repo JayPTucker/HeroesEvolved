@@ -34,6 +34,8 @@ public final class HeroesEvolvedCommands {
                         .then(com.jayptucker.heroesevolved.story.sylar.SylarCommands.branch())
                         .then(com.jayptucker.heroesevolved.story.elle.ElleEvents.branch())
                         .then(com.jayptucker.heroesevolved.structure.BlueprintCommands.branch())
+                        .then(com.jayptucker.heroesevolved.gifted.GiftedCommands.gifted())
+                        .then(com.jayptucker.heroesevolved.gifted.GiftedCommands.village())
                         .then(Commands.literal("admin")
                                 .executes(context -> {
                                     com.jayptucker.heroesevolved.admin.AdminService

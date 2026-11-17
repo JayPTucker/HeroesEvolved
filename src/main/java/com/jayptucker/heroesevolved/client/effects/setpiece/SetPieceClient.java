@@ -154,7 +154,7 @@ public final class SetPieceClient {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || ACTIVE.isEmpty() && !SpeedArt.live() && !RewindArt.live() && !FlightArt.live()
                 && !PyroArt.live() && !ShapeArt.live() && !HydroArt.live() && !CryoConstructArt.live(mc.level) && !ClientProjectileTime.hasControlledShots()
-                && !com.jayptucker.heroesevolved.client.effects.intro.SkyFightArt.live()) return;
+                && !com.jayptucker.heroesevolved.client.effects.intro.SkyFightArt.live() && !GiftArt.live() && !VillageArt.flaresLive()) return;
         if (world != mc.level) { ACTIVE.clear(); world = mc.level; }
         Vec3 camera = event.getCamera().getPosition();
         Canvas c = CANVAS;
@@ -211,6 +211,8 @@ public final class SetPieceClient {
             ShapeArt.drawLive(c);
             HydroArt.drawLive(c);
             com.jayptucker.heroesevolved.client.effects.intro.SkyFightArt.drawLive(c);
+            GiftArt.drawLive(c);
+            VillageArt.flares(c);
             CryoConstructArt.draw(c);
             TemporalProjectileArt.draw(c);
         } catch (RuntimeException broken) {

@@ -10,7 +10,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
- * Where a speedster's Overrun stands, for their HUD: {@link #HIDDEN}; {@link #LOCKED} (below Power Level 15);
+ * Where a speedster's Overrun stands, for their HUD: {@link #HIDDEN}; {@link #LOCKED} (no run speed 5 yet);
  * {@link #GATHERING} its minute of history (value: seconds left); {@link #COOLDOWN} (value: seconds left);
  * {@link #READY} (value: the charge, in thousandths); {@link #BREACH} open (value: thousandths of the way through).
  */

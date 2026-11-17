@@ -1,5 +1,7 @@
 # Vibe
 
+See [ranged attack distances](projectile-ranges.md) for the current projectile and beam ranges.
+
 Cisco Ramon's power from *The Flash* uses dimensional vibrations for concussive blasts, walk-through breaches and glimpses of past events. The [Arrowverse Wiki](https://arrow.fandom.com/wiki/Cisco_Ramon#Powers_and_abilities) describes Cisco's original abilities. [DC's character profile](https://www.dc.com/characters/vibe) also describes his shockwaves and interdimensional travel.
 
 ## Core abilities

@@ -211,7 +211,7 @@ public final class ForceFieldService {
         Vec3 eye = p.getEyePosition(), dir = p.getLookAngle().normalize();
         double range = hard ? ForceGeometry.HARD_PUSH_RANGE : ForceGeometry.PUSH_RANGE;
         HitResult wall = p.serverLevel().clip(new ClipContext(eye, eye.add(dir.scale(range)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
-        if (wall.getType() != HitResult.Type.MISS) range = Math.max(1.5, wall.getLocation().distanceTo(eye) + .5);
+        if (wall.getType() != HitResult.Type.MISS) range = wall.getLocation().distanceTo(eye);
         float damage = 4 + level(p) + 2 * shield.pressure;
         double knock = (1.3 + .15 * shield.pressure) * (hard ? 1.5 : 1);
         WAVES.add(new Wave(p, eye, dir, range, shield.radius + .45, damage, knock, unseen));
@@ -236,7 +236,10 @@ public final class ForceFieldService {
                 double along = centre.subtract(w.start).dot(w.dir);
                 if (along < from - 1 || along > to + .6) continue;
                 double across = centre.subtract(w.start.add(w.dir.scale(along))).length();
-                if (across > w.radius + t.getBbWidth() * .5 || !w.hit.add(t.getId())) continue;
+                if (across > w.radius + t.getBbWidth() * .5 || w.hit.contains(t.getId())
+                        || w.level.clip(new ClipContext(w.start, centre, ClipContext.Block.COLLIDER,
+                                ClipContext.Fluid.NONE, w.owner)).getType() != HitResult.Type.MISS) continue;
+                w.hit.add(t.getId());
                 Bubble bubble = BUBBLES.get(t.getUUID());
                 if (bubble != null && bubble.holding()) { startRoll(bubble, w.dir); continue; }
                 if (!foe(w.owner, t)) continue;

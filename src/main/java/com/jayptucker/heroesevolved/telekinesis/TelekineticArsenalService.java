@@ -1,5 +1,6 @@
 package com.jayptucker.heroesevolved.telekinesis;
 
+import com.jayptucker.heroesevolved.ability.ProjectileRanges;
 import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.effects.AbilityEffects;
 import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
@@ -69,7 +70,7 @@ public final class TelekineticArsenalService {
 
     /** A push flicks the oldest available fragment down the crosshair. */
     public static boolean launchOne(ServerPlayer player) {
-        return launchAt(player, TelekinesisSkillService.aimPoint(player, 40), null);
+        return launchAt(player, TelekinesisSkillService.aimPoint(player, ProjectileRanges.KINETIC_SHARD), null);
     }
 
     public static boolean launchAt(ServerPlayer player, Vec3 point, LivingEntity excluded) {
@@ -115,7 +116,7 @@ public final class TelekineticArsenalService {
         shard.flightAge = 0;
         shard.delay = -1;
         shard.arcing = arcing;
-        shard.remainingDistance = arcing ? 48 : shard.damage > 4 ? 40 : 32;
+        shard.remainingDistance = arcing ? ProjectileRanges.IRON_RAIN : shard.damage > 4 ? ProjectileRanges.KINETIC_SPEAR : ProjectileRanges.KINETIC_SHARD;
         Vec3 delta = point.subtract(shard.position);
         // A real ballistic path. A ceiling can stop Iron Rain before it reaches its destination.
         shard.velocity = arcing ? delta.scale(1.0 / 22).add(0, .045 * 21 / 2, 0)

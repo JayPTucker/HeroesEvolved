@@ -243,6 +243,7 @@ public final class AdvancedTechniques {
         // Everyone else sees a runner standing perfectly still, and never sees them move.
         com.jayptucker.heroesevolved.time.TimeVeil.begin(p, com.jayptucker.heroesevolved.time.TimeVeil.Style.SPEED,
                 com.jayptucker.heroesevolved.time.TimeVeil.PERCEPTION);
+        com.jayptucker.heroesevolved.time.TemporalVoiceState.publish(p.getServer());
         AbilityEffects.send(level, Kind.SPEED_PERCEPTION, p.position(), p.getEyePosition(), (float) field.radius);
         // Open hands, held perfectly still while everything else crawls.
         ArmPosePayload.show(p, ArmPose.SPEED_STILL, 40);
@@ -256,16 +257,25 @@ public final class AdvancedTechniques {
         if (PERCEPTION.remove(p.getUUID()) != null) {
             com.jayptucker.heroesevolved.time.ProjectileTimeService.releaseInactive();
             com.jayptucker.heroesevolved.time.TimeVeil.end(p, com.jayptucker.heroesevolved.time.TimeVeil.PERCEPTION);
+            com.jayptucker.heroesevolved.time.TemporalVoiceState.publish(p.getServer());
         }
     }
 
     /** True while {@code p} has Perception up. */
     public static boolean perceiving(ServerPlayer p) { return PERCEPTION.containsKey(p.getUUID()); }
 
+    public static boolean perceptionReaches(ServerPlayer player) {
+        return PERCEPTION.values().stream().anyMatch(field -> active(field) && (com.jayptucker.heroesevolved.time.TimeVeil.serverWide()
+                || field.owner.level() == player.level() && field.owner.distanceToSqr(player) <= field.radius * field.radius));
+    }
+
     public static int playerSlowInterval(ServerPlayer target) {
         int interval = 1;
         for (Perception field : PERCEPTION.values())
-            if (!field.owner.getUUID().equals(target.getUUID()) && active(field))
+            if (!field.owner.getUUID().equals(target.getUUID()) && active(field)
+                    && !com.jayptucker.heroesevolved.time.TemporalSharing.movesWith(field.owner.getUUID(), target)
+                    && (com.jayptucker.heroesevolved.time.TimeVeil.serverWide() || field.owner.level() == target.level()
+                    && field.owner.distanceToSqr(target) <= field.radius * field.radius))
                 interval = Math.max(interval, field.interval);
         return interval;
     }

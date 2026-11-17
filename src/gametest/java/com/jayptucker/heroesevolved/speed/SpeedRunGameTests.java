@@ -332,15 +332,19 @@ public final class SpeedRunGameTests {
 
     @GameTest(template = "rewind_empty", batch = "speedrun.overrun.charge", timeoutTicks = 40)
     public static void onlyTheFastestOutrunTheMinuteAndEasingOffClosesTheBreach(GameTestHelper h) {
-        var slow = runner(h, 4, false);
+        // Tier 3's fastest run setting is 4; tier 4 has speed 5 and tier 5 speed 6. Accelerate starts at the fastest.
+        var slow = runner(h, 3, false);
+        var mid = runner(h, 4, false);
         var fast = runner(h, 5, false);
         try {
             long base = h.getLevel().getServer().overworld().getGameTime() - 3000;
-            SpeedService.toggle(slow); SpeedService.toggle(fast);
+            SpeedService.toggle(slow); SpeedService.toggle(mid); SpeedService.toggle(fast);
             int limit = SpeedOverrun.REWIND_TICKS + SpeedOverrun.CHARGE_TICKS + 40;
-            for (int i = 0; i < limit && !SpeedOverrun.breachOpen(fast); i++) { stride(slow, i, base + i); stride(fast, i, base + i); }
-            h.assertTrue(SpeedOverrun.breachOpen(fast), "Flat out long enough, with a minute behind them, the breach opens: charge " + SpeedOverrun.charge(fast));
-            h.assertTrue(SpeedOverrun.charge(slow) == 0 && !SpeedOverrun.breachOpen(slow), "Below tier 5 nothing happens");
+            for (int i = 0; i < limit && !SpeedOverrun.breachOpen(fast); i++) { stride(slow, i, base + i); stride(mid, i, base + i); stride(fast, i, base + i); }
+            h.assertTrue(SpeedOverrun.breachOpen(fast), "Flat out at speed 6, with a minute behind them, the breach opens: charge " + SpeedOverrun.charge(fast));
+            h.assertTrue(SpeedOverrun.breachOpen(mid), "At speed 5 too: charge " + SpeedOverrun.charge(mid));
+            h.assertTrue(SpeedService.maximumSpeedStep(slow) < SpeedOverrun.MIN_SPEED && SpeedOverrun.charge(slow) == 0 && !SpeedOverrun.breachOpen(slow),
+                    "Without run speed 5 nothing happens");
             // Ease off: stop running.
             fast.setSprinting(false);
             long at = base + limit;
@@ -348,7 +352,7 @@ public final class SpeedRunGameTests {
             h.assertTrue(!SpeedOverrun.breachOpen(fast), "Easing off closes the breach");
             h.assertTrue(SpeedOverrun.charge(fast) <= SpeedOverrun.WAKE_TICKS, "And the wake drops back");
             h.succeed();
-        } finally { done(slow, false); done(fast, false); }
+        } finally { done(slow, false); done(mid, false); done(fast, false); }
     }
 
     @GameTest(template = "rewind_empty", batch = "speedrun.overrun.cross", timeoutTicks = 40)

@@ -156,6 +156,13 @@ public final class TimeStopService {
         return ACTIVE_FIELDS.containsKey(player.getUUID());
     }
 
+    /** Field coverage, including its owner and companions, for the voice-thread snapshot. */
+    public static boolean reaches(ServerPlayer player) {
+        double radius = HeroesEvolvedConfig.COMMON.timeStopRadius.get();
+        return ACTIVE_FIELDS.values().stream().anyMatch(field -> !field.hasEnded() && (TimeVeil.serverWide()
+                || field.dimension.equals(player.level().dimension()) && player.position().distanceToSqr(field.center) <= radius * radius));
+    }
+
     public static boolean isStopped(Entity entity) {
         return SpaceTimeService.isSuspended(entity) || entity.level() instanceof ServerLevel level && getContainingField(entity, level) != null;
     }
@@ -219,6 +226,8 @@ public final class TimeStopService {
                 )
         );
         SpaceTimeSkills.stillWorldStarted(player);
+        if (companion != null && level.getEntity(companion) instanceof ServerPlayer other) TemporalSharing.include(player, other);
+        TemporalVoiceState.publish(player.getServer());
     }
 
     /**
@@ -234,6 +243,7 @@ public final class TimeStopService {
                 HeroesEvolvedConfig.COMMON.timeStopRadius.get());
         ACTIVE_FIELDS.put(player.getUUID(), new TimeStopField(player.getUUID(), player.serverLevel().dimension(), center,
                 ticks, null, false));
+        TemporalVoiceState.publish(player.getServer());
     }
 
     public static void stop(ServerPlayer player) {
@@ -245,6 +255,7 @@ public final class TimeStopService {
             releaseImpacts(player.getServer(), player.getUUID());
             ProjectileTimeService.releaseInactive();
             TimeVeil.end(player, TimeVeil.STOP);
+            TemporalVoiceState.publish(player.getServer());
         }
     }
 
@@ -384,6 +395,7 @@ public final class TimeStopService {
             if ((everywhere || field.dimension().equals(level.dimension()))
                     && !field.ownerId().equals(entity.getUUID())
                     && !entity.getUUID().equals(field.companion)
+                    && !TemporalSharing.movesWith(field.ownerId, entity)
                     // Whatever the traveller (or their companion) carries moves with them.
                     && !field.ownerId().equals(entity.getRootVehicle().getUUID())
                     && !entity.getRootVehicle().getUUID().equals(field.companion)

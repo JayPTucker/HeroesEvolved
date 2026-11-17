@@ -709,7 +709,7 @@
         },
         {
           "name": "Arc Lance",
-          "description": "Shock a target up to 40 blocks away for 8 + level damage, briefly stagger it, then arc to two nearby enemies.",
+          "description": "Shock a target up to 80 blocks away for 8 + level damage, briefly stagger it, then arc to two nearby enemies.",
           "energy": 26,
           "cooldown": 105,
           "level": 2,
@@ -947,7 +947,7 @@
         },
         {
           "name": "Vector Lance",
-          "description": "Launch a visible stone lance along your crosshair. It travels up to 40 blocks, collides with cover, and deals 8 damage.",
+          "description": "Launch a visible stone lance along your crosshair. It travels up to 64 blocks, collides with cover, and deals 8 damage.",
           "energy": 23,
           "cooldown": 100,
           "level": 2,
@@ -1871,7 +1871,7 @@
         },
         {
           "name": "Gamma Lance",
-          "description": "A narrow lance of gamma light pierces everything on a line up to 40 blocks: 8 + level damage and a stage of Radiation Sickness. With 15 Core to spend, it spends it and strikes twice as hard with two stages.",
+          "description": "A narrow lance of gamma light pierces everything on a line up to 80 blocks: 8 + level damage and a stage of Radiation Sickness. With 15 Core to spend, it spends it and strikes twice as hard with two stages.",
           "energy": 19,
           "cooldown": 100,
           "icon": "minecraft:end_rod",
@@ -2627,7 +2627,7 @@
         {
           "id": "pyrokinesis_blue_lance",
           "name": "Blue Lance",
-          "description": "Pierce 24 blocks for (8 + level) x 1.5 blue fire damage. The seam stays for 0.6 seconds and pulses for 2.5 damage every four ticks. It primes armed Ember Mines in its path. Solid cover and water stop it.",
+          "description": "Pierce 96 blocks for (8 + level) x 1.5 blue fire damage. The seam stays for 0.6 seconds and pulses for 2.5 damage every four ticks. It primes armed Ember Mines in its path. Solid cover and water stop it.",
           "active": true,
           "level": 3,
           "cost": 2,
@@ -3968,7 +3968,7 @@
         {
           "id": "vibe_0_1",
           "name": "Vibe Lance",
-          "description": "Draw your off hand in and fire a narrow, hard-hitting wave up to 27 blocks.",
+          "description": "Draw your off hand in and fire a narrow, hard-hitting wave up to 72 blocks.",
           "icon": "minecraft:amethyst_shard",
           "level": 2,
           "cost": 2,
@@ -4690,7 +4690,7 @@
       {
         "id": "hydro_tsunami",
         "name": "Tsunami",
-        "description": "Draw the water up into a great wave nine blocks wide and roll it 24 blocks ahead, carrying everything before it (10 + 2 x level).",
+        "description": "Draw the water up into a great wave nine blocks wide and roll it 48 blocks ahead, carrying everything before it (10 + 2 x level).",
         "icon": "minecraft:tube_coral_block",
         "level": 3,
         "cost": 3,

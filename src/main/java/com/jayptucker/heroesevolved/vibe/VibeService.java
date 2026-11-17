@@ -1,5 +1,6 @@
 package com.jayptucker.heroesevolved.vibe;
 
+import com.jayptucker.heroesevolved.ability.ProjectileRanges;
 import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
@@ -108,10 +109,10 @@ public final class VibeService {
         Vec3 hand = VibeGeometry.hand(player, direction, 1, false);
         Vec3 eye = player.getEyePosition();
         double range = switch (kind) {
-            case PALM -> 17;
-            case LANCE -> 27;
-            case REVERB -> 21;
-            case CROSSWAVE -> 24;
+            case PALM -> ProjectileRanges.VIBE_PALM;
+            case LANCE -> ProjectileRanges.VIBE_LANCE;
+            case REVERB -> ProjectileRanges.VIBE_HEAVY;
+            case CROSSWAVE -> ProjectileRanges.VIBE_HEAVY;
         };
         Vec3 end = VibeGeometry.clip(player, eye, eye.add(direction.scale(range)));
         if (hand.distanceToSqr(end) < .2 || end.subtract(eye).dot(direction) < .8) return VibeBreaches.fail(player, "blocked");
@@ -273,7 +274,7 @@ public final class VibeService {
         closeGuard(player);
         Vec3 aim = player.getLookAngle();
         Vec3 hand = VibeGeometry.hand(player, aim, 1, false);
-        Vec3 end = VibeGeometry.clip(player, hand, hand.add(aim.scale(23)));
+        Vec3 end = VibeGeometry.clip(player, hand, hand.add(aim.scale(ProjectileRanges.VIBE_PALM)));
         ArmPosePayload.show(player, ArmPose.VIBE_LANCE, 14);
         float bonus = SkillTreeService.has(player, "vibe_backscatter") ? 2.7F : 1.8F;
         wave(player, hand, end, .65F + guard.stored * .14F, 5 + guard.stored * bonus, true, false, new HashSet<>());

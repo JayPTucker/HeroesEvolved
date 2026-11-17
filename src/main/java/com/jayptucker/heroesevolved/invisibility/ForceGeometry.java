@@ -1,5 +1,6 @@
 package com.jayptucker.heroesevolved.invisibility;
 
+import com.jayptucker.heroesevolved.ability.ProjectileRanges;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
@@ -18,7 +19,7 @@ public final class ForceGeometry {
     /** How far the shield's centre bows out toward the threat: the lens's sag at its middle. */
     public static final double SHIELD_SAG = 0.32;
     /** Force Push: the wave's speed in blocks a tick, its reach (Hard Push reaches farther) and its half-width. */
-    public static final double PUSH_SPEED = 2.6, PUSH_RANGE = 10, HARD_PUSH_RANGE = 14, PUSH_RADIUS = 1.9;
+    public static final double PUSH_SPEED = 2.6, PUSH_RANGE = ProjectileRanges.FORCE_PUSH, HARD_PUSH_RANGE = ProjectileRanges.HARD_FORCE_PUSH, PUSH_RADIUS = 1.9;
     /** The Force Barrier's height in blocks. */
     public static final int WALL_HEIGHT = 4;
     /** Force Nova's reach. */

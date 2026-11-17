@@ -1,5 +1,7 @@
 # Electrokinesis
 
+See [ranged attack distances](projectile-ranges.md) for the current projectile and beam ranges.
+
 Character source: [Elle Bishop](https://heroes.fandom.com/wiki/Elle_Bishop) and
 [Electric Manipulation](https://heroes.fandom.com/wiki/Electric_Manipulation). Elle's blue, crackling
 current is the look; her weakness to water is the drawback. Numbers are configurable starting values.

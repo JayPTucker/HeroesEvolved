@@ -1,0 +1,29 @@
+// Targeted tests for gifted mobs, village events and nuclear blasts; test code is excluded from the release jar.
+// ./gradlew runGameTestServer --init-script tools/gifted-gametest.init.gradle
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def tests = sourceSets.create('giftedTest') {
+                java.srcDir('src/gametest/java')
+                java.include('com/jayptucker/heroesevolved/gifted/**')
+                java.include('com/jayptucker/heroesevolved/village/**')
+                java.include('com/jayptucker/heroesevolved/radiation/**')
+                java.include('com/jayptucker/heroesevolved/mimicry/**')
+                java.include('com/jayptucker/heroesevolved/*.java')
+                resources.srcDir('src/gametest/resources')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(tests) } }
+                runs { gameTestServer { gameDirectory = project.file('build/gifted-test-world') } }
+            }
+            tasks.named('runGameTestServer') {
+                dependsOn(tasks.named('giftedTestClasses'))
+                def staleWorld = project.file('build/gifted-test-world/world')
+                def staleConfig = project.file('build/gifted-test-world/config/heroesevolved-common.toml')
+                doFirst { staleWorld.deleteDir(); staleConfig.delete() }
+            }
+        }
+    }
+}

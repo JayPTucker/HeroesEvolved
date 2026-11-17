@@ -185,15 +185,18 @@ public final class OpticalClient {
         var mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null || mc.options.hideGui || !state.faded()
                 || mc.level.getGameTime() - seen >= 25) return;
-        int x=gui.guiWidth()/2,y=gui.guiHeight()-94;
-        int color=state.exposure()>=70?0xFFF0B58A:0xFFAEDDF2;
-        gui.drawCenteredString(mc.font, Component.translatable("invisibility.heroesevolved.exposure",state.exposure()),x,y-11,color);
-        gui.fill(x-61,y,x+61,y+5,0xA01D2230);
-        gui.fill(x-60,y+1,x-60+Math.clamp(state.exposure(),0,100)*120/100,y+4,color);
-        gui.drawCenteredString(mc.font,Component.translatable(!state.unseen()?"invisibility.heroesevolved.optical_revealed"
-                :state.exposure()>=35?"invisibility.heroesevolved.optical_flicker":"invisibility.heroesevolved.optical_hidden"),x,y-24,color);
-        if(state.veil()||state.ghost())gui.drawCenteredString(mc.font,Component.translatable(state.ghost()
-                ?"invisibility.heroesevolved.optical_ghost":"invisibility.heroesevolved.optical_veil"),x,y-36,0xC6B2E8);
+        // Exposure is a ring in the ability HUD's row (gauges).
+    }
+
+    /** Exposure while faded: blue while hidden, amber as you flicker (35), orange once seen (70). */
+    public static void gauges(java.util.List<com.jayptucker.heroesevolved.gui.HudGauges.Gauge> gauges) {
+        var mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null || !state.faded() || mc.level.getGameTime() - seen >= 25) return;
+        int exposure = Math.clamp(state.exposure(), 0, 100);
+        int color = !state.unseen() || exposure >= 70 ? 0xFFF0B58A : exposure >= 35 ? 0xFFF2D98A : 0xFFAEDDF2;
+        String word = state.ghost() ? "GHOST" : state.veil() ? "VEIL" : !state.unseen() ? "SEEN" : exposure >= 35 ? "FLICKER" : "HIDDEN";
+        gauges.add(com.jayptucker.heroesevolved.gui.HudGauges.Gauge.ring(exposure / 100F, color).middle(Integer.toString(exposure))
+                .label(word, state.ghost() || state.veil() ? 0xFFC6B2E8 : com.jayptucker.heroesevolved.gui.HudGauges.LABEL).notches(0.35F, 0.7F));
     }
     @EventBusSubscriber(modid=HeroesEvolved.MOD_ID,value=Dist.CLIENT,bus=EventBusSubscriber.Bus.MOD)
     public static final class Hud {

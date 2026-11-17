@@ -1,5 +1,6 @@
 package com.jayptucker.heroesevolved.hydro;
 
+import com.jayptucker.heroesevolved.ability.ProjectileRanges;
 import com.jayptucker.heroesevolved.network.SetPiecePayload;
 import com.jayptucker.heroesevolved.styles.Piece;
 import net.minecraft.core.BlockPos;
@@ -37,11 +38,11 @@ public final class HydroGeometry {
     public static final double WHIP_REACH = 10, WHIP_WIDTH = .6;
     public static final float WHIP_FLIGHT = 4;
     /** Crashing Wave: how far it rolls, half its width and its crest's height (both scale with a Tsunami). */
-    public static final double WAVE_REACH = 14, WAVE_HALF_WIDTH = 2.5, WAVE_HEIGHT = 2.6;
+    public static final double WAVE_REACH = ProjectileRanges.WATER_WAVE, WAVE_HALF_WIDTH = 2.5, WAVE_HEIGHT = 2.6;
     /** A wave rises for WAVE_RISE ticks, rolls for the rest of its piece's length less WAVE_BREAK, then breaks. */
     public static final int WAVE_RISE = 4, WAVE_BREAK = 8;
     /** Tsunami (the class ability): a far bigger wave. */
-    public static final double TSUNAMI_REACH = 24, TSUNAMI_HALF_WIDTH = 4.5;
+    public static final double TSUNAMI_REACH = ProjectileRanges.TSUNAMI, TSUNAMI_HALF_WIDTH = 4.5;
     /** Octopus Form: how long it can last, its tentacles' reach, where shots are swallowed, and how many arms. */
     public static final int OCTOPUS_TICKS = 200, ARMS = 8, LASH_EVERY = 8;
     public static final double OCTOPUS_REACH = 5, OCTOPUS_CATCH = 3.2, OCTOPUS_BURST = 6;
@@ -61,7 +62,7 @@ public final class HydroGeometry {
     public static final double LASH_REACH = 7;
     public static final float LASH_FLIGHT = 3;
     /** Ice Daggers: how far they fly, how many, the angle between them, and their flight time. */
-    public static final double DAGGER_REACH = 14;
+    public static final double DAGGER_REACH = ProjectileRanges.WATER_DAGGERS;
     public static final int DAGGERS = 5;
     public static final double DAGGER_SPREAD = 6;
     public static final float DAGGER_FLIGHT = 4;

@@ -1,12 +1,13 @@
 package com.jayptucker.heroesevolved.cryo;
 
+import com.jayptucker.heroesevolved.ability.ProjectileRanges;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
 /** Aim and palm anchors shared by the ice blast and its renderer. */
 public final class CryoBlastGeometry {
-    public static final double REACH = 12;
+    public static final double REACH = ProjectileRanges.ICE_STREAM;
     public static final double ARM_REACH = .68;
     static final double AIM_PADDING = .24;
 

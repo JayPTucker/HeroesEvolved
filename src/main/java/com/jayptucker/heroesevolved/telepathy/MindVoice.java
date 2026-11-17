@@ -2,12 +2,18 @@ package com.jayptucker.heroesevolved.telepathy;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.vibe.BreachVoiceRoutes;
+import com.jayptucker.heroesevolved.time.TemporalVoice;
+import com.jayptucker.heroesevolved.time.TemporalVoiceState;
 import de.maxhenkel.voicechat.api.ForgeVoicechatPlugin;
 import de.maxhenkel.voicechat.api.Group;
 import de.maxhenkel.voicechat.api.VoicechatConnection;
 import de.maxhenkel.voicechat.api.VoicechatPlugin;
 import de.maxhenkel.voicechat.api.VoicechatServerApi;
 import de.maxhenkel.voicechat.api.events.EventRegistration;
+import de.maxhenkel.voicechat.api.events.EntitySoundPacketEvent;
+import de.maxhenkel.voicechat.api.events.LocationalSoundPacketEvent;
+import de.maxhenkel.voicechat.api.events.StaticSoundPacketEvent;
+import de.maxhenkel.voicechat.api.events.SoundPacketEvent;
 import de.maxhenkel.voicechat.api.events.MicrophonePacketEvent;
 import de.maxhenkel.voicechat.api.events.PlayerDisconnectedEvent;
 import de.maxhenkel.voicechat.api.events.VoiceDistanceEvent;
@@ -17,12 +23,21 @@ import de.maxhenkel.voicechat.api.opus.OpusDecoder;
 import de.maxhenkel.voicechat.api.opus.OpusEncoder;
 import de.maxhenkel.voicechat.api.opus.OpusEncoderMode;
 import de.maxhenkel.voicechat.api.packets.MicrophonePacket;
+import de.maxhenkel.voicechat.api.packets.SoundPacket;
+import de.maxhenkel.voicechat.api.packets.EntitySoundPacket;
+import de.maxhenkel.voicechat.api.packets.LocationalSoundPacket;
+import de.maxhenkel.voicechat.api.packets.StaticSoundPacket;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * The one place that speaks to Simple Voice Chat (henkelmax), found by its {@code @ForgeVoicechatPlugin} scan. For every
@@ -47,6 +62,7 @@ public final class MindVoice implements VoicechatPlugin {
     private static final Map<UUID, UUID> BREACH_CHANNELS = new ConcurrentHashMap<>();
     /** Each speaker's codecs and distortion, kept while they speak into minds. */
     private static final Map<UUID, Head> HEADS = new ConcurrentHashMap<>();
+    private static final TemporalAudio TEMPORAL = new TemporalAudio();
 
     private record Head(OpusDecoder decoder, OpusEncoder encoder, PsychicVoice voice) {
         void close() {
@@ -62,6 +78,8 @@ public final class MindVoice implements VoicechatPlugin {
     @Override public void registerEvents(EventRegistration registration) {
         registration.registerEvent(VoicechatServerStartedEvent.class, this::started);
         registration.registerEvent(VoicechatServerStoppedEvent.class, event -> {
+            TEMPORAL.stop();
+            TemporalVoiceState.clear();
             MindVoiceRoutes.clear();
             BreachVoiceRoutes.clear();
             BREACH_CHANNELS.clear();
@@ -69,11 +87,21 @@ public final class MindVoice implements VoicechatPlugin {
             HEADS.clear();
         });
         registration.registerEvent(PlayerDisconnectedEvent.class, event -> {
+            TEMPORAL.forget(event.getPlayerUuid());
             Head head = HEADS.remove(event.getPlayerUuid());
             if (head != null) synchronized (head) { head.close(); }
             BREACH_CHANNELS.remove(event.getPlayerUuid());
         });
+        // Ahead of Simple Radio (priority 0): a frozen mouth must never enter a transmitter's buffer.
+        registration.registerEvent(MicrophonePacketEvent.class, event -> {
+            var sender = event.getSenderConnection();
+            if (sender != null && sender.getPlayer() != null && TemporalVoiceState.frozen(sender.getPlayer().getUuid())) event.cancel();
+        }, 1000);
         registration.registerEvent(MicrophonePacketEvent.class, this::microphone);
+        // These are separate concrete events in SVC, not a polymorphic SoundPacketEvent subscription.
+        registration.registerEvent(EntitySoundPacketEvent.class, TEMPORAL::outgoing, -1000);
+        registration.registerEvent(LocationalSoundPacketEvent.class, TEMPORAL::outgoing, -1000);
+        registration.registerEvent(StaticSoundPacketEvent.class, TEMPORAL::outgoing, -1000);
         registration.registerEvent(VoiceDistanceEvent.class, this::breach, -100);
     }
 
@@ -83,6 +111,8 @@ public final class MindVoice implements VoicechatPlugin {
     }
 
     private void started(VoicechatServerStartedEvent event) {
+        broken = breachBroken = false;
+        TEMPORAL.start(event.getVoicechat());
         try {
             VoicechatServerApi api = event.getVoicechat();
             MindVoiceRoutes.voiceDistance(api.getVoiceChatDistance());
@@ -116,6 +146,7 @@ public final class MindVoice implements VoicechatPlugin {
             var voice = event.getVoicechat();
             float range = event.getDistance();
             for (BreachVoiceRoutes.Route route : routes) {
+                if (TemporalVoiceState.blocks(speaker, route.listener())) continue;
                 if (!route.audible(range)) continue;
                 VoicechatConnection to = voice.getConnectionOf(route.listener());
                 if (to == null || !to.isConnected() || to.isDisabled()) continue;
@@ -160,6 +191,7 @@ public final class MindVoice implements VoicechatPlugin {
             boolean closed = !inner && group != null && group.getType() != Group.Type.OPEN && !MindVoiceRoutes.hearsGroups();
             byte[] thought = null;
             for (MindVoiceRoutes.Route route : routes) {
+                if (TemporalVoiceState.blocks(speaker, route.listener())) continue;
                 VoicechatConnection to = voice.getConnectionOf(route.listener());
                 if (to == null || !to.isConnected() || to.isDisabled()) continue;
                 Group theirs = to.getGroup();
@@ -204,6 +236,167 @@ public final class MindVoice implements VoicechatPlugin {
     private static UUID channel(Map<UUID, UUID> channels, UUID speaker, String kind) {
         return channels.computeIfAbsent(speaker, s -> UUID.nameUUIDFromBytes(
                 ("heroesevolved:telepathy:" + kind + ":" + s).getBytes(StandardCharsets.UTF_8)));
+    }
+
+    /**
+     * The final delivery gate covers proximity, groups, telepathy, breaches and Simple Radio's output. A short rolling
+     * buffer holds only audio that was actually sent; a single voice worker plays its dying tail even if PTT is released
+     * at the instant time changes. No entity or mutable gameplay state is read here.
+     */
+    private static final class TemporalAudio {
+        private static final String CATEGORY = "temporal_echo";
+        private record StreamKey(UUID speaker, UUID channel) {}
+        private record DeliveryKey(StreamKey stream, UUID listener) {}
+        private final Map<StreamKey, HeardStream> streams = new java.util.HashMap<>();
+        private final Map<DeliveryKey, Delivery> deliveries = new java.util.HashMap<>();
+        private final List<DyingVoice> tails = new ArrayList<>();
+        private VoicechatServerApi api;
+        private ScheduledExecutorService worker;
+        private boolean failed;
+
+        synchronized void start(VoicechatServerApi voice) {
+            stop();
+            api = voice;
+            failed = false;
+            try {
+                voice.registerVolumeCategory(voice.volumeCategoryBuilder().setId(CATEGORY).setName("Time fading voices")
+                        .setDescription("Speech slowing into reverb when time changes").build());
+                worker = Executors.newSingleThreadScheduledExecutor(task -> {
+                    Thread thread = new Thread(task, "Heroes temporal voice"); thread.setDaemon(true); return thread;
+                });
+                worker.scheduleAtFixedRate(this::tick, 20, 20, TimeUnit.MILLISECONDS);
+            } catch (Throwable error) { fail(error); }
+        }
+
+        private void fail(Throwable error) {
+            if (!failed) HeroesEvolved.LOGGER.warn("Temporal voice tails unavailable; time still silences speech", error);
+            failed = true;
+            streams.values().forEach(HeardStream::close); streams.clear();
+            tails.forEach(DyingVoice::close); tails.clear(); deliveries.clear();
+        }
+
+        synchronized void outgoing(SoundPacketEvent<? extends SoundPacket> event) {
+            SoundPacket packet = event.getPacket();
+            if (CATEGORY.equals(packet.getCategory()) || event.isCancelled()) return;
+            var receiver = event.getReceiverConnection();
+            if (receiver == null || receiver.getPlayer() == null) return;
+            UUID listener = receiver.getPlayer().getUuid(), speaker = packet.getSender();
+            if (TemporalVoiceState.blocks(speaker, listener)) { event.cancel(); return; }
+            if (failed || packet.getOpusEncodedData().length == 0 || api == null) return;
+            try {
+                long now = System.nanoTime();
+                StreamKey key = new StreamKey(speaker, packet.getChannelId());
+                HeardStream stream = streams.get(key);
+                if (stream == null) {
+                    if (streams.size() >= 256) return;
+                    stream = new HeardStream(api.createDecoder()); streams.put(key, stream);
+                }
+                stream.hear(packet, now);
+                DeliveryKey delivery = new DeliveryKey(key, listener);
+                if (deliveries.size() < 2048 || deliveries.containsKey(delivery))
+                    deliveries.put(delivery, new Delivery(packet, now));
+            } catch (Throwable error) { fail(error); }
+        }
+
+        private synchronized void tick() {
+            if (api == null || failed) return;
+            try {
+                long now = System.nanoTime();
+                var heard = deliveries.entrySet().iterator();
+                while (heard.hasNext()) {
+                    var entry = heard.next(); var key = entry.getKey(); var delivery = entry.getValue();
+                    boolean blocked = TemporalVoiceState.blocks(key.stream.speaker, key.listener);
+                    if (blocked && now - delivery.at < 300_000_000L) {
+                        HeardStream stream = streams.get(key.stream);
+                        if (stream != null) tails.add(new DyingVoice(key, delivery.packet, TemporalVoice.tail(stream.recent()),
+                                api.createEncoder(OpusEncoderMode.AUDIO)));
+                    }
+                    if (blocked || now - delivery.at > 500_000_000L) heard.remove();
+                }
+                var playing = tails.iterator();
+                while (playing.hasNext()) {
+                    DyingVoice tail = playing.next();
+                    var to = api.getConnectionOf(tail.key.listener);
+                    if (!TemporalVoiceState.blocks(tail.key.stream.speaker, tail.key.listener) || to == null
+                            || !to.isConnected() || to.isDisabled() || !tail.send(api, to)) {
+                        tail.close(); playing.remove();
+                    }
+                }
+                var idle = streams.values().iterator();
+                while (idle.hasNext()) {
+                    HeardStream stream = idle.next();
+                    if (now - stream.at > 2_000_000_000L) { stream.close(); idle.remove(); }
+                }
+            } catch (Throwable error) { fail(error); }
+        }
+
+        synchronized void forget(UUID player) {
+            deliveries.keySet().removeIf(key -> key.listener.equals(player) || key.stream.speaker.equals(player));
+            streams.entrySet().removeIf(entry -> {
+                if (!entry.getKey().speaker.equals(player)) return false;
+                entry.getValue().close(); return true;
+            });
+            tails.removeIf(tail -> {
+                if (!tail.key.listener.equals(player) && !tail.key.stream.speaker.equals(player)) return false;
+                tail.close(); return true;
+            });
+        }
+
+        synchronized void stop() {
+            if (worker != null) worker.shutdownNow(); worker = null;
+            streams.values().forEach(HeardStream::close); streams.clear();
+            tails.forEach(DyingVoice::close); tails.clear(); deliveries.clear(); api = null;
+        }
+
+        private record Delivery(SoundPacket packet, long at) {}
+
+        private static final class HeardStream {
+            final OpusDecoder decoder;
+            final short[] history = new short[TemporalVoice.HISTORY];
+            long sequence = Long.MIN_VALUE, at;
+            int size;
+            HeardStream(OpusDecoder decoder) { this.decoder = decoder; }
+            void hear(SoundPacket packet, long now) {
+                if (packet.getSequenceNumber() == sequence) return; // One decode per stream frame, however many listeners.
+                if (now - at > 300_000_000L) { size = 0; decoder.resetState(); }
+                sequence = packet.getSequenceNumber(); at = now;
+                short[] pcm = decoder.decode(packet.getOpusEncodedData());
+                if (pcm == null || pcm.length == 0) return;
+                int length = Math.min(pcm.length, history.length), keep = Math.min(size, history.length - length);
+                System.arraycopy(history, size - keep, history, 0, keep);
+                System.arraycopy(pcm, pcm.length - length, history, keep, length); size = keep + length;
+            }
+            short[] recent() { return Arrays.copyOf(history, size); }
+            void close() { if (!decoder.isClosed()) decoder.close(); }
+        }
+
+        private static final class DyingVoice {
+            final DeliveryKey key;
+            final SoundPacket original;
+            final short[] samples;
+            final OpusEncoder encoder;
+            final UUID channel = UUID.randomUUID();
+            int cursor;
+            DyingVoice(DeliveryKey key, SoundPacket original, short[] samples, OpusEncoder encoder) {
+                this.key = key; this.original = original; this.samples = samples; this.encoder = encoder;
+            }
+            boolean send(VoicechatServerApi api, VoicechatConnection to) {
+                if (cursor >= samples.length) return false;
+                byte[] opus = encoder.encode(Arrays.copyOfRange(samples, cursor, cursor + TemporalVoice.FRAME));
+                long sequence = cursor / TemporalVoice.FRAME; cursor += TemporalVoice.FRAME;
+                if (original instanceof StaticSoundPacket)
+                    api.sendStaticSoundPacketTo(to, original.staticSoundPacketBuilder().channelId(channel)
+                            .opusEncodedData(opus).sequenceNumber(sequence).category(CATEGORY).build());
+                else if (original instanceof LocationalSoundPacket)
+                    api.sendLocationalSoundPacketTo(to, original.locationalSoundPacketBuilder().channelId(channel)
+                            .opusEncodedData(opus).sequenceNumber(sequence).category(CATEGORY).build());
+                else if (original instanceof EntitySoundPacket)
+                    api.sendEntitySoundPacketTo(to, original.entitySoundPacketBuilder().channelId(channel)
+                            .opusEncodedData(opus).sequenceNumber(sequence).category(CATEGORY).build());
+                return true;
+            }
+            void close() { if (!encoder.isClosed()) encoder.close(); }
+        }
     }
 
     /** A lilac eye for the volume slider: 16 by 16, ARGB. */

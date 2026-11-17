@@ -232,6 +232,12 @@ public final class MimicryService {
         }
         if (source instanceof com.jayptucker.heroesevolved.story.elle.ElleEntity)
             return new Imprint(ModAbilities.ELECTROKINESIS_ID, "Elle Bishop", Optional.of(source.getUUID()), "elle");
+        // A gifted mob (a guardian, a renegade, a raid's champion): its power, or whatever a gifted mimic last copied.
+        var gifted = com.jayptucker.heroesevolved.gifted.Gift.read(source);
+        if (gifted != null) {
+            ResourceLocation power = com.jayptucker.heroesevolved.gifted.GiftedMobs.powerOf(source);
+            return copyable(power) ? new Imprint(power, gifted.name(), Optional.of(source.getUUID()), "villager") : null;
+        }
         if (source instanceof net.minecraft.world.entity.npc.Villager villager) {
             ResourceLocation power = com.jayptucker.heroesevolved.village.VillagerMeltdown.critical(villager)
                     ? ModAbilities.RADIATION_ID : GiftedVillagers.gift(villager);

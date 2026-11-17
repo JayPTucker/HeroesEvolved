@@ -1,5 +1,6 @@
 package com.jayptucker.heroesevolved.sonic;
 
+import com.jayptucker.heroesevolved.ability.ProjectileRanges;
 import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.Targeting;
@@ -63,7 +64,7 @@ public final class SonicSkills {
     private SonicSkills() {}
 
     private static LivingEntity shriekTarget(ServerPlayer p) {
-        return Targeting.livingEntityInSight(p, 40, t -> SonicService.canHit(p, t));
+        return Targeting.livingEntityInRange(p, ProjectileRanges.FOCUSED_SHRIEK, ClipContext.Fluid.NONE, t -> SonicService.canHit(p, t));
     }
 
     // ------------------------------------------------------------------

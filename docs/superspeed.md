@@ -9,8 +9,9 @@ before you blinked. The kit keeps the Flash's golden lightning and adds her blin
 
 ### Momentum
 
-Running builds **Momentum** (0 to 100), shown as a gold bar under your ability keys, with notches at
-30, 50 and 60.
+Running builds **Momentum** (0 to 100), shown as a gold ring under your ability keys, with the number in the middle,
+notches at 30, 50, 60 and 80, and pips under it for your run-speed setting. It flashes at 100. Beside it, only when they
+have something to say, sit rings for Overrun, friction heat and burnt skin.
 
 | Momentum | What happens |
 | --- | --- |
@@ -73,7 +74,7 @@ Lightspeed spends all your Momentum.
 | G | 1 (Level 1) | **Accelerate** | Toggle, then sprint. Scroll while sprinting to adjust speed. Walk or crouch for precision. Press again to stop. | Free; 3 stamina per running second |
 | H | 1 (Level 1) | **Blitz** | Rush the enemy you look at, up to 12 + 2 per tier blocks, and land four blows in a fraction of a second. **Press again within a moment** and you are already on the next enemy within 10 blocks, up to the tier in extra links (six enemies at tier 5). 30 Momentum makes every blow 2 harder. With no one in sight it is a straight **dash**, the old Quickstep. | 14 / 2 s; chained presses are free |
 | Z | 2 (Level 3) | **Snatch** | In one blink, take every dropped item within reach (up to 16 stacks), pluck enemy shots out of the air (arrows go in your pocket), and take the weapon from the hand you look at. Another player's weapon is knocked to their feet instead. An afterimage holds your place: to anyone watching, you never moved. | 20 / 10 s |
-| X | 4 (Level 10) | **Cyclone** | Run rings around where you stand for three seconds. You are seen out on the ring, running laps, not standing in the middle. The wind drags enemies around and up, flings their shots away and hurts them every half second, then throws them all up and out. **Hold the key** for a second and a half and the ring rises into a **tornado** (see below). | 30 / 12 s |
+| X | 4 (Level 10) | **Cyclone** | Run rings around where you stand for three seconds. You are seen out on the ring, running laps, not standing in the middle. The wind drags enemies around and up, flings their shots away and hurts them every half second, then throws them all up and out. **Hold the key** for a second and a half and the ring rises into a **tornado** (see below). **Scroll** while it runs to set its speed (1 up to your fastest run setting, starting at your current one): at **1-2** it's a **vacuum** that drags the air out of the ring, so whatever is caught is held where it is, can't breathe and suffocates, and burns out, and it never rises (held, it lasts up to ten seconds for stamina each second); at **3 and up** it's the wind, harder the faster, and rises when held. Slow an unanchored tornado back to 2 and it comes down into a vacuum. It never rises round a radioactive player or a villager in meltdown. A ring on the HUD shows its speed: VACUUM, WIND, TORNADO or NO LIFT. | 30 / 12 s |
 | Shift + X | 4 (Level 10) | **Wind Arms** | Spin both arms out in front so fast they become two funnels of wind, for as long as you hold the key (up to three seconds). **Look ahead** and everything in front of you, out to 14 blocks, is blown away (harder the closer it is): creatures, dropped items, primed TNT and TNT minecarts. Shots flying into the funnels are turned round, blown back the way they came at their own speed, and become yours: arrows, potions, a ghast's fireball (back at the ghast), a wither skull, an EMP grenade, and TaCZ bullets and explosive rounds, which are caught even though they cross the whole funnel in a single tick. A shot from behind still hits your back, and your friends' shots pass. A puff of air and a gold streak show where each one turned. Clouds are carried off: a lingering potion's or dragon's breath cloud drifts away and thins until it is gone, and smoke (a smoke bomb, a campfire, an explosion's smoke) and any other particles in the funnels are torn out into a plume and fade within three seconds; pointed down, the downdraft throws them out in a ring. It does no harm and puts out flames. **Look down** (more than about 45 degrees) and the funnels lift you up to 7 blocks off the ground, where you hover, drifting the way you face; let go and you float down. | 12 / 4 s (its own cooldown, separate from Cyclone's) |
 | V | 5 (Level 15) | **Lightspeed** | Streak up to 48 blocks forward along a clear path. Everything on the line takes 8 + tier + Momentum / 5, is set alight for two seconds and is thrown aside. You leave a scorched scar and a sonic boom where you stop. Spends all your Momentum. | 50 / 45 s |
 
@@ -157,14 +158,15 @@ orange streams spiral out of their body to the wall, with green motes pulled aft
 Faster than about 37 blocks a second (run settings 5 and 6, or a lower one with plenty of Momentum) your body heats
 from friction, and Lightspeed adds a burst of it: smoke, then flames at your feet and your skin scorching away, then
 burns every half-second until you ease off. It cools in a second or two at ordinary speeds. Each piece of the velocity
-suit keeps a quarter of it off; the whole suit, all of it. A **burn meter** under Momentum shows the heat climbing toward
-the scorch and burn notches, and how much of your skin has burnt away. Your body heals a little on its own (faster at
+suit keeps a quarter of it off; the whole suit, all of it. A **heat ring** beside Momentum shows the heat climbing toward
+the scorch and burn notches, and a **skin ring** how much of your skin has burnt away. Your body heals a little on its own (faster at
 higher tiers, paid for in hunger) and your burnt skin grows back in a few seconds. See
 [Meltdowns, friction and the suits](protective-suits.md).
 
 ### Overrun: outrunning the last minute
 
-Speedsters at **tier 5 (Power Level 15)** can run so fast they overrun time. There is nothing to press.
+Speedsters with **run speed 5** (tier 4 and up) can run so fast they overrun time, but only while running at **speed 5 or 6**:
+at a slower setting the charge never builds, and you're told to scroll up. There is nothing to press.
 
 1. **Run flat out.** With Accelerate on, sprint at 20 blocks a second or more with at least 90
    Momentum. A corner or a jump is forgiven (half a second); easing off for longer lets the charge fade.
@@ -189,10 +191,10 @@ Speedsters at **tier 5 (Power Level 15)** can run so fast they overrun time. The
    ground. Light is drawn into you, and a clock face under your feet spins its hands backward and winds
    down to rest. The action bar reads *One minute ago.*
 
-**On the HUD**, under Momentum, a line says where Overrun stands: *Overrun in 7:42* while it cools down (or
-while it is still gathering its minute of history, after logging in or after the last one); *Overrun ready*
-when it can charge, with a violet bar that fills as you run flat out; the bar pulses once the breach is open.
-Below Power Level 15 the line only appears while you run flat out, to say it needs Power Level 15.
+**On the HUD**, a violet ring beside Momentum says where Overrun stands: the time left in the middle (*7m*, then
+*42s*) while it cools down (or while it is still gathering its minute of history, after logging in or after the last
+one); *OK* when it can charge, then a ring that fills as you run flat out, flashing *GO* once the breach is open.
+Below Power Level 15 the ring only appears while you run flat out, with a dim *15* to say it needs Power Level 15.
 
 Ease off while the breach is open and it closes; the wake drops back to where it first showed. Overrun
 needs a full minute of history (none after logging in). Dying or going through a portal ends the run,

@@ -1,5 +1,6 @@
 package com.jayptucker.heroesevolved.pyro;
 
+import com.jayptucker.heroesevolved.ability.ProjectileRanges;
 import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
 import com.jayptucker.heroesevolved.combat.FightingStyles;
@@ -157,7 +158,7 @@ public final class PyroCombat {
     private static void fist(ServerPlayer player, int level, boolean rear, boolean loaded) {
         ServerLevel world = player.serverLevel();
         Vec3 eye = player.getEyePosition(), aim = player.getLookAngle().normalize();
-        var hit = world.clip(new ClipContext(eye, eye.add(aim.scale(PyroGeometry.JAB_REACH)),
+        var hit = world.clip(new ClipContext(eye, eye.add(aim.scale(loaded ? ProjectileRanges.FIREBALL : PyroGeometry.JAB_REACH)),
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, player));
         double length = eye.distanceTo(hit.getLocation()), width = loaded ? .9 : .45, nearest = Double.MAX_VALUE;
         LivingEntity target = null;

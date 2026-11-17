@@ -1,5 +1,7 @@
 # Quake (Daisy Johnson)
 
+See [ranged attack distances](projectile-ranges.md) for the current projectile and beam ranges.
+
 Quake is based on Daisy "Quake" Johnson from *Agents of S.H.I.E.L.D.*: vibration, and what it costs
 her body. Her powers make her arms ache, she learns to push through it, and if she pushes too far the
 bones in her arms crack. The rework keeps the palm blast, the beam she flies on and the earthquake. It
@@ -7,7 +9,7 @@ adds **Strain**, two new abilities, passive Tremor Sense and a new look.
 
 ## Strain
 
-Strain (0 to 100) is a bar under your ability keys. Every quake builds it:
+Strain (0 to 100) is a ring under your ability keys. Every quake builds it:
 
 | Power | Strain |
 | --- | --- |
@@ -19,8 +21,8 @@ Strain (0 to 100) is a bar under your ability keys. Every quake builds it:
 
 - **The harder you push, the harder you hit.** Every Quake power deals 1 + Strain/200 times its normal
   damage and force, so up to 50% more at the edge.
-- **50, Pushing it:** the bar turns amber.
-- **80, Breaking:** your forearms visibly shake and pressure leaks from your palms. The bar flickers
+- **50, Pushing it:** the ring turns amber.
+- **80, Breaking:** your forearms visibly shake and pressure leaks from your palms. The ring flickers
   red. Hits landed from here count toward the Evolved trial.
 - **100, Fracture:** the bones in your arms crack. You take 3 damage, your powers lock for 8 seconds,
   you are left with Weakness II and Mining Fatigue II for 13 seconds, any beam or earthquake you're

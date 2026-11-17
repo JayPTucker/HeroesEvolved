@@ -1,5 +1,7 @@
 # Pyrokinesis and Helixite
 
+See [ranged attack distances](projectile-ranges.md) for the current projectile and beam ranges.
+
 Character sources: [Meredith Gordon](https://heroes.fandom.com/wiki/Meredith_Gordon),
 [Flint Gordon](https://heroes.fandom.com/wiki/Flint_Gordon) and
 [Pyrokinesis](https://heroes.fandom.com/wiki/Pyrokinesis). Meredith's orange fire is the base
@@ -28,7 +30,7 @@ These are the default keys, and each action can also be selected from the abilit
 
 | Key | Level | Action | Behavior | Base stamina / cooldown |
 | --- | --- | --- | --- | --- |
-| G | 1 | **Cinder Spear** | Tap for a 32-block fire bolt or hold up to 1 s for a piercing spear. A full charge can spend 20 Heat to widen the strike. Burning enemies can detonate and scorch others nearby. A fully charged spear also primes armed Ember Mines along its path. | 14 / 1.25 s |
+| G | 1 | **Cinder Spear** | Tap for a 80-block fire bolt or hold up to 1 s for a piercing spear. A full charge can spend 20 Heat to widen the strike. Burning enemies can detonate and scorch others nearby. A fully charged spear also primes armed Ember Mines along its path. | 14 / 1.25 s |
 | H | 1 | **Dragon's Breath** | Hold a sweeping flame cone for up to 5 s. It pushes enemies back and builds Heat, extending its reach from 6 to 10 blocks. Aim at your Firestorm to feed it. Works during Flame Flight. | 12 / 4 s, then 3 stamina every 5 ticks |
 | Z | 2 | **Firestorm** | Mark the ground for 0.6 s, then raise a radius-4 fire circle for 8 s. It draws in burning foes and consumes exposed hostile shots. Breath widens it to 5.5 blocks and makes it burn faster. Shift + Z collapses the circle after a short warning. Heat and a fanned circle strengthen the blast. | 35 / 15 s |
 | X | 3 | **Flame Flight** | Toggle flight with this key or double-tap Jump. Scroll for throttle, then hold Forward to cruise in a streamlined flying pose with banking. Release to brake into a hover; toggle again for a soft landing. While airborne, Shift + X spends 16 stamina to dive into a fiery impact. | 25 / 5 s to start; 6 stamina/s hovering, 10 stamina/s moving or boosting |
@@ -157,7 +159,7 @@ and mastery nodes now improve specific maneuvers. Only one capstone can be learn
 | Branch | Active skill | Technique → upgrade → capstone |
 | --- | --- | --- |
 | **Kindler** | **Ember Lash** sets a foe burning and reels them toward you until they reach three blocks or break cover. **Kindling** grants 4 extra Heat when a Cinder Spear hits. **Flashpoint** refunds 8 Heat per cast that detonates a burning enemy. | **Ember Mine** hides two embers. Foes, charged Cinder Spear and Blue Lance can prime them. **Long Fuse** raises the limit to three and radius to four. **Wildfire** leaves real fire and primes nearby mines in sight, each with its own warning. |
-| **Blue Flame** | **Heat Mantle** grants Resistance and burns exposed foes and hostile projectiles. Each consumed shot feeds 2 Heat, capped at 8 per pulse. **Stoke** grants 2 extra Heat per successful Breath pulse. **Furnace** doubles the time a blue Breath keeps Firestorm fanned. | **Blue Lance** pierces 24 blocks and leaves a brief damaging seam. It primes armed mines along its path. **White Heat** lowers the blue threshold to 60. **Flint's Fury** makes Sunfall blue and three blocks wider. |
+| **Blue Flame** | **Heat Mantle** grants Resistance and burns exposed foes and hostile projectiles. Each consumed shot feeds 2 Heat, capped at 8 per pulse. **Stoke** grants 2 extra Heat per successful Breath pulse. **Furnace** doubles the time a blue Breath keeps Firestorm fanned. | **Blue Lance** pierces 96 blocks and leaves a brief damaging seam. It primes armed mines along its path. **White Heat** lowers the blue threshold to 60. **Flint's Fury** makes Sunfall blue and three blocks wider. |
 | **Phoenix** | **Cauterizing Flame** heals, cleanses and extinguishes a friend in sight or yourself. Spend Heat for absorption. **Warm Blood** generates 5 Heat per second in fire or lava. **Hearthkeeper** halves the absorption cost and banks Heat when Fire Shepherd rescues burning friends. | **Fire Shepherd** extinguishes nearby fires for stamina, health and Heat, and helps burning friends. **Thaw** clears nearby friends' cold effects. **Pillar of Flame** strengthens vertical flight thrust and reduces hover drain. |
 
 Mines remain private while dormant; their warning and eruption become visible to everyone when

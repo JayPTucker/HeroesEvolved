@@ -92,12 +92,14 @@ public final class TimeVeil {
         Veil veil = VEILS.get(player.getUUID());
         if (veil == null || !veil.reasons.remove(reason) || !veil.reasons.isEmpty()) return;
         VEILS.remove(player.getUUID());
+        TemporalSharing.end(player);
         reveal(player, veil);
         over(player.getServer(), veil);
     }
 
     /** Drops a veil without any effect (logout, death, a changed dimension). */
     public static void forget(ServerPlayer player) {
+        TemporalSharing.end(player);
         Veil veil = VEILS.remove(player.getUUID());
         if (veil == null) return;
         for (ServerPlayer viewer : player.getServer().getPlayerList().getPlayers())
@@ -164,6 +166,7 @@ public final class TimeVeil {
 
     /** Speedsters and time travellers live in the same fast time, and so does a Mimic channeling either of them. */
     public static boolean movesInTime(ServerPlayer viewer) {
+        if (TemporalSharing.shared(viewer)) return true;
         if (SpeedService.awakened(viewer) || SpaceTimeService.awakened(viewer)) return true;
         if (!MimicryService.isMimic(viewer)) return false;
         ResourceLocation channel = MimicryService.memory(viewer).current();
@@ -246,5 +249,5 @@ public final class TimeVeil {
         }
     }
 
-    public static void clear() { VEILS.clear(); }
+    public static void clear() { VEILS.clear(); TemporalSharing.clear(); TemporalVoiceState.clear(); }
 }

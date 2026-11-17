@@ -1,5 +1,6 @@
 package com.jayptucker.heroesevolved.cryo;
 
+import com.jayptucker.heroesevolved.ability.ProjectileRanges;
 import com.jayptucker.heroesevolved.ability.Targeting;
 import com.jayptucker.heroesevolved.ability.AbilityRanges;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
@@ -310,11 +311,11 @@ public final class CryoService {
         ServerLevel level = player.serverLevel();
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle();
-        double range = 20.0D;
-        LivingEntity target = Targeting.livingEntityInSight(player, range,
+        double range = ProjectileRanges.ICE_BOLT;
+        LivingEntity target = Targeting.livingEntityInRange(player, range, ClipContext.Fluid.ANY,
                 entity -> !(entity instanceof TemporalEchoEntity));
 
-        BlockHitResult blockHit = level.clip(new ClipContext(eye, eye.add(look.scale(AbilityRanges.ranged(range))),
+        BlockHitResult blockHit = level.clip(new ClipContext(eye, eye.add(look.scale(range)),
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, player));
         Vec3 end = target != null ? target.getBoundingBox().getCenter()
                 : blockHit.getLocation();

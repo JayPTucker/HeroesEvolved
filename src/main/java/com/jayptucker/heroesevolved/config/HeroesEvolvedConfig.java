@@ -89,6 +89,17 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.DoubleValue giftedVillagerChance;
         public final ModConfigSpec.IntValue villagerMeltdownFuseTicks;
 
+        // Villages: gifted mobs, renegades and distress calls
+        public final ModConfigSpec.DoubleValue giftedEvilChance;
+        public final ModConfigSpec.DoubleValue giftedPatrolLeaderChance;
+        public final ModConfigSpec.DoubleValue giftedRaidChampionChance;
+        public final ModConfigSpec.DoubleValue giftedWildChance;
+        public final ModConfigSpec.IntValue villageIncidentMinutes;
+        public final ModConfigSpec.DoubleValue villageIncidentChance;
+        public final ModConfigSpec.IntValue villageIncidentRange;
+        public final ModConfigSpec.IntValue distressRange;
+        public final ModConfigSpec.IntValue renegadeKillSeconds;
+
         // Awakening
         public final ModConfigSpec.DoubleValue awakeningHealthThreshold;
         public final ModConfigSpec.IntValue awakeningCombatWindowSeconds;
@@ -480,12 +491,52 @@ public final class HeroesEvolvedConfig {
                         .defineInRange("villagerMeltdownChance", 0.20D, 0.0D, 1.0D);
 
                 giftedVillagerChance = builder
-                        .comment("Chance that a villager is born gifted: carrying a quiet power of their own that never claims a player's role. Only an Empathic Mimic can feel it, and copy it.")
-                        .defineInRange("giftedVillagerChance", 0.04D, 0.0D, 1.0D);
+                        .comment("Chance that a villager is born gifted: carrying a dormant power of their own (any power, Empathic Mimicry included) that never claims a player's role. An Empathic Mimic can feel it and copy it. When it wakes, the villager either guards their village or turns on it (see villages.giftedEvilChance).")
+                        .defineInRange("giftedVillagerChance", 0.05D, 0.0D, 1.0D);
 
                 villagerMeltdownFuseTicks = builder
-                        .comment("Ticks from a radioactive villager's first glow to his blast. 1200 is one minute.")
-                        .defineInRange("villagerMeltdownFuseTicks", 1_200, 200, 12_000);
+                        .comment("Ticks from a radioactive villager's first glow to his blast. 4800 is four minutes: time to answer a distress call from hundreds of blocks away.")
+                        .defineInRange("villagerMeltdownFuseTicks", 4_800, 200, 12_000);
+
+                builder.pop();
+
+                builder.push("villages");
+
+                giftedEvilChance = builder
+                        .comment("Chance that a villager's gift turns them evil when it wakes: they become an illager with their power and terrorise their own village, which calls for help. Otherwise they guard it.")
+                        .defineInRange("giftedEvilChance", 0.5D, 0.0D, 1.0D);
+
+                giftedPatrolLeaderChance = builder
+                        .comment("Chance that the leader of a pillager patrol carries a power: a named mini-boss crossing the land.")
+                        .defineInRange("giftedPatrolLeaderChance", 0.35D, 0.0D, 1.0D);
+
+                giftedRaidChampionChance = builder
+                        .comment("Chance that a raid wave's leader is its champion, carrying a power. The last wave's leader always is, and is at least Epic.")
+                        .defineInRange("giftedRaidChampionChance", 0.3D, 0.0D, 1.0D);
+
+                giftedWildChance = builder
+                        .comment("Chance that a zombie, skeleton, witch, piglin or illager spawning naturally carries a power.")
+                        .defineInRange("giftedWildChance", 0.01D, 0.0D, 1.0D);
+
+                villageIncidentMinutes = builder
+                        .comment("Every this many minutes, roll villageIncidentChance: if it hits, a gifted villager in a village within villageIncidentRange of a player wakes (and may turn on their village). 0 turns these off.")
+                        .defineInRange("villageIncidentMinutes", 20, 0, 1_440);
+
+                villageIncidentChance = builder
+                        .comment("Chance, each villageIncidentMinutes, of a village incident.")
+                        .defineInRange("villageIncidentChance", 0.5D, 0.0D, 1.0D);
+
+                villageIncidentRange = builder
+                        .comment("How far from a player (in blocks) a village incident may happen. Its village is kept loaded while it lasts.")
+                        .defineInRange("villageIncidentRange", 640, 64, 4_096);
+
+                distressRange = builder
+                        .comment("How far (in blocks) a village's distress call carries without a radio: a line in chat, a reminder of which way every thirty seconds, and a flare in the sky. A radio tuned to 101.10 FM hears every call in the same world.")
+                        .defineInRange("distressRange", 768, 64, 8_192);
+
+                renegadeKillSeconds = builder
+                        .comment("A renegade takes one of its village every this many seconds while nobody stops it. Ten villagers give players several minutes to arrive.")
+                        .defineInRange("renegadeKillSeconds", 45, 5, 600);
 
                 builder.pop();
 

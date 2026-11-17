@@ -1,5 +1,7 @@
 # Cryokinesis
 
+See [ranged attack distances](projectile-ranges.md) for the current projectile and beam ranges.
+
 Cryokinesis draws on Killer Frost's heat absorption. Ice Blast builds **Frost** while it draws
 energy out of flames and unstable reactors. Solid ice construction, Glacier Ride and deliberate
 shatters let you turn that cold into cover, movement and burst damage.
@@ -56,8 +58,8 @@ do not.
 
 ## Heat absorption
 
-- **Get suited first.** Near the end of a meltdown its lethal near-field reaches 12 blocks, as far as Ice Blast. A
-  cryokinetic who means to freeze someone melting down, or hold Ice Blast on them, needs a full radiation or velocity
+- **Keep a safe distance.** Near the end of a meltdown its lethal near-field reaches 12 blocks. Ice Blast reaches 24 blocks, so
+  emergency cooling can begin from outside that field. Entering the field still requires a full radiation or velocity
   suit (see [Meltdowns, friction and the suits](protective-suits.md)).
 
 - **Reactor rescue.** Aim Ice Blast directly at a radioactive player during their warning or

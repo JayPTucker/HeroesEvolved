@@ -1,5 +1,6 @@
 package com.jayptucker.heroesevolved.radiation;
 
+import com.jayptucker.heroesevolved.ability.ProjectileRanges;
 import com.jayptucker.heroesevolved.ability.AbilityRanges;
 import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.ability.ArmPose;
@@ -90,7 +91,7 @@ public final class RadiationSkills {
     static boolean gammaLance(ServerPlayer p, int tier) {
         ServerLevel level = p.serverLevel();
         Vec3 eye = p.getEyePosition(), look = p.getLookAngle();
-        double reach = AbilityRanges.ranged(40);
+        double reach = ProjectileRanges.GAMMA_LANCE;
         var hit = level.clip(new ClipContext(eye, eye.add(look.scale(reach)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
         Vec3 end = hit.getType() == HitResult.Type.BLOCK ? hit.getLocation() : eye.add(look.scale(reach));
         boolean charged = RadiationService.vent(p, 15) == 15;
@@ -100,7 +101,8 @@ public final class RadiationSkills {
             if (!(e instanceof LivingEntity t) || !RadiationService.hostile(p, t)) continue;
             Vec3 to = t.getBoundingBox().getCenter().subtract(eye);
             double along = to.dot(look);
-            if (along < 0 || to.subtract(look.scale(along)).length() > 0.8 + t.getBbWidth() / 2) continue;
+            if (along < 0 || along > eye.distanceTo(end) || to.subtract(look.scale(along)).length() > 0.8 + t.getBbWidth() / 2
+                    || level.clip(new ClipContext(eye, t.getBoundingBox().getCenter(), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p)).getType() != HitResult.Type.MISS) continue;
             t.invulnerableTime = 0;
             t.hurt(p.damageSources().indirectMagic(p, p), damage);
             RadiationService.irradiate(t, p, charged ? 2 : 1, 140);

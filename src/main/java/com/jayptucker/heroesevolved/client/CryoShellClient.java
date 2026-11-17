@@ -48,10 +48,11 @@ public final class CryoShellClient {
             event.registerAboveAll(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID,"cryo_shell"),(gui,delta)->{
                 var mc=Minecraft.getInstance();if(mc.player==null||mc.options.hideGui||!FrozenVisuals.isFrozen(mc.player))return;
                 int x=gui.guiWidth()/2,y=gui.guiHeight()/2+34,progress=cracks(mc.player.getId());
-                gui.drawCenteredString(mc.font,Component.translatable("cryo.heroesevolved.prison_struggle"),x,y,0xCDEFFF);
-                gui.fill(x-61,y+12,x+61,y+18,0xC01B3344);
-                gui.fill(x-60,y+13,x-60+progress*120/100,y+17,0xFFBCE9FF);
-                gui.drawCenteredString(mc.font,Component.translatable("cryo.heroesevolved.prison_cracks",progress),x,y+23,0xE2F5FF);
+                // The cracks as a small ring just under the crosshair, like the ability HUD's, and how to crack them under it,
+                // both clear of the action bar's messages.
+                gui.drawCenteredString(mc.font,Component.translatable("cryo.heroesevolved.prison_struggle"),x,y+6,0xCDEFFF);
+                com.jayptucker.heroesevolved.gui.HudGauges.at(gui,x-com.jayptucker.heroesevolved.gui.HudGauges.SIZE/2,y-26,
+                        com.jayptucker.heroesevolved.gui.HudGauges.Gauge.ring(progress/100F,0xFFBCE9FF).middle(progress+"%").label("CRACKS"));
             });
         }
     }

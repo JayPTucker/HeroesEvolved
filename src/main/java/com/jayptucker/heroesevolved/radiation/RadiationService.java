@@ -1,5 +1,6 @@
 package com.jayptucker.heroesevolved.radiation;
 
+import com.jayptucker.heroesevolved.ability.ProjectileRanges;
 import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.Targeting;
 import com.jayptucker.heroesevolved.ability.AbilityRanges;
@@ -440,9 +441,9 @@ public final class RadiationService {
         ServerLevel level = player.serverLevel();
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle();
-        BlockHitResult hit = level.clip(new ClipContext(eye, eye.add(look.scale(AbilityRanges.ranged(24.0D))),
+        BlockHitResult hit = level.clip(new ClipContext(eye, eye.add(look.scale(ProjectileRanges.RADIATION_BEAM)),
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
-        Vec3 end = hit.getType() == HitResult.Type.BLOCK ? hit.getLocation() : eye.add(look.scale(AbilityRanges.ranged(24.0D)));
+        Vec3 end = hit.getType() == HitResult.Type.BLOCK ? hit.getLocation() : eye.add(look.scale(ProjectileRanges.RADIATION_BEAM));
         int core = mass(player);
         SetPiecePayload.send(level, Piece.RAD_BEAM, hand(player), end, 0.6F + core / 100.0F, null);
         if (!damageTick) return;
@@ -454,7 +455,10 @@ public final class RadiationService {
             if (!(entity instanceof LivingEntity living) || !hostile(player, living)) continue;
             Vec3 toEntity = living.getBoundingBox().getCenter().subtract(eye);
             double along = toEntity.dot(look);
-            if (along < 0.0D || toEntity.subtract(look.scale(along)).length() > 1.4D + living.getBbWidth() / 2) continue;
+            if (along < 0.0D || along > eye.distanceTo(end)
+                    || toEntity.subtract(look.scale(along)).length() > 1.4D + living.getBbWidth() / 2
+                    || level.clip(new ClipContext(eye, living.getBoundingBox().getCenter(),
+                            ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player)).getType() != HitResult.Type.MISS) continue;
             living.invulnerableTime = 0;
             living.hurt(player.damageSources().indirectMagic(player, player), damage);
             living.igniteForSeconds(3.0F);

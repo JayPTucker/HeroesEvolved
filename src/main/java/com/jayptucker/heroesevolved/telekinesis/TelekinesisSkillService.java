@@ -85,8 +85,11 @@ public final class TelekinesisSkillService {
     public static boolean activate(ServerPlayer player, String id, boolean modifier) {
         if (!canUse(player, id)) return false;
         switch (id) {
-            case "telekinesis_0_1" -> { return TelekineticArsenalService.lance(player, aimPoint(player, 40)); }
-            case "telekinesis_kinetic_volley" -> { return TelekineticArsenalService.volley(player, aimPoint(player, 32), modifier); }
+            case "telekinesis_0_1" -> { return TelekineticArsenalService.lance(player, aimPoint(player,
+                    com.jayptucker.heroesevolved.ability.ProjectileRanges.KINETIC_SPEAR)); }
+            case "telekinesis_kinetic_volley" -> { return TelekineticArsenalService.volley(player, aimPoint(player,
+                    modifier ? com.jayptucker.heroesevolved.ability.ProjectileRanges.IRON_RAIN
+                            : com.jayptucker.heroesevolved.ability.ProjectileRanges.KINETIC_SHARD), modifier); }
             case "telekinesis_remote_hand" -> { return remoteHand(player); }
             case "telekinesis_1_1" -> {
                 State state = state(player);

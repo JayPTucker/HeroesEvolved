@@ -1,5 +1,6 @@
 package com.jayptucker.heroesevolved.cryo;
 
+import com.jayptucker.heroesevolved.ability.ProjectileRanges;
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.ability.ArmPose;
@@ -142,14 +143,18 @@ public final class CryoCombatSkills {
         removeGuard(guard);
         for (int i = 0; i < count && SHOTS.size() < MAX_SHOTS; i++) {
             double angle = count <= 1 ? 0 : (i / (double)(count - 1) - .5) * .6;
-            SHOTS.add(new Shot(guard.owner, origin, aim.yRot((float) angle), false, 3 + guard.stored / 8, 10));
+            SHOTS.add(new Shot(guard.owner, origin, aim.yRot((float) angle), false, 3 + guard.stored / 8, ProjectileRanges.ICE_SHARDS));
         }
-        AbilityEffects.send(guard.level, Kind.CRYO_REBOUND, origin, origin.add(aim.scale(10)), count);
+        AbilityEffects.send(guard.level, Kind.CRYO_REBOUND, origin, origin.add(aim.scale(ProjectileRanges.ICE_SHARDS)), count);
         ArmPosePayload.show(guard.owner, ArmPose.CRYO_SHATTER, 14);
         guard.level.playSound(null, guard.owner.blockPosition(), SoundEvents.GLASS_BREAK, SoundSource.PLAYERS, 1.1F, 1.4F);
         return true;
     }
-    private static Vec3 palm(ServerPlayer p) { return p.getEyePosition().add(p.getLookAngle().scale(.6)).add(0, -.35, 0); }
+    private static Vec3 palm(ServerPlayer p) {
+        Vec3 eye = p.getEyePosition(), hand = eye.add(p.getLookAngle().scale(.6)).add(0, -.35, 0);
+        // A hand inside cover must not launch a lance from the other side of it.
+        return visible(p.serverLevel(), eye, hand, p) ? hand : eye;
+    }
     private static void forgeEffect(Forge forge, float progress) {
         Vec3 origin = palm(forge.owner);
         AbilityEffects.send(forge.level, Kind.CRYO_LANCE_FORGE, origin, origin.add(forge.owner.getLookAngle().scale(1.6)), progress);
@@ -202,7 +207,7 @@ public final class CryoCombatSkills {
             long age = forge.level.getGameTime() - forge.began;
             if (age < 12) { if (age % 2 == 0) forgeEffect(forge, (float)age / 12); continue; }
             FORGES.remove(forge.owner.getUUID());
-            if (SHOTS.size() < MAX_SHOTS) SHOTS.add(new Shot(forge.owner, palm(forge.owner), forge.owner.getLookAngle(), true, 6 + forge.tier, 40));
+            if (SHOTS.size() < MAX_SHOTS) SHOTS.add(new Shot(forge.owner, palm(forge.owner), forge.owner.getLookAngle(), true, 6 + forge.tier, ProjectileRanges.CRYSTAL_LANCE));
             forge.level.playSound(null, forge.owner.blockPosition(), SoundEvents.TRIDENT_THROW.value(), SoundSource.PLAYERS, .9F, 1.5F);
         }
         for (Shot shot : List.copyOf(SHOTS)) {
@@ -251,14 +256,9 @@ public final class CryoCombatSkills {
         if (!shot.level.hasChunkAt(BlockPos.containing(from)) || !shot.level.hasChunkAt(BlockPos.containing(to))) { SHOTS.remove(shot); return; }
         var block = shot.level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, shot.owner));
         Vec3 end = block.getType() == HitResult.Type.BLOCK ? block.getLocation() : to;
-        LivingEntity struck = null;
-        double nearest = from.distanceToSqr(end) + .00001;
-        for (LivingEntity target : shot.level.getEntitiesOfClass(LivingEntity.class, new AABB(from, end).inflate(.35),
-                t -> t != shot.owner && t.isAlive() && !t.isSpectator()).stream().limit(64).toList()) {
-            var contact = target.getBoundingBox().inflate(.18).clip(from, end);
-            Vec3 point = target.getBoundingBox().inflate(.18).contains(from) ? from : contact.orElse(null);
-            if (point != null && from.distanceToSqr(point) < nearest) { nearest = from.distanceToSqr(point); end = point; struck = target; }
-        }
+        var contact = com.jayptucker.heroesevolved.ability.Targeting.firstLivingHit(shot.owner, from, end, .18, t -> true);
+        LivingEntity struck = contact == null ? null : (LivingEntity) contact.getEntity();
+        if (contact != null) end = contact.getLocation();
         AbilityEffects.send(shot.level, Kind.CRYO_LANCE_FLIGHT, from, end, shot.lance ? 1 : .45);
         shot.position = end; shot.remaining -= travel;
         if (struck != null) {

@@ -82,14 +82,17 @@ final class PieceArt {
             case MENDING_LATTICE -> MindArt.mending(c, a, t);
             case EXPLODING_MAN -> MiniBlast.draw(c, a.origin(), a.scale() / 80F, a.scale() * 1.15F, t, a.piece().ticks);
             case SPEED_GUST -> SpeedArt.gust(c, a, t);
+            case SPEED_SHARED_TIME -> SpeedArt.sharedTime(c, a, t);
             case SPEED_ARMS -> SpeedArt.arms(c, a, t);
             case SPEED_DEFLECT -> SpeedArt.deflect(c, a, t);
             case SPEED_DISINTEGRATE -> SpeedArt.disintegrate(c, a, t);
             case SHIELD_BRACE -> ShieldArt.draw(c, a, t);
             case VILLAGE_MELTDOWN, VILLAGE_SAFE -> VillageArt.draw(c, a, t);
+            case GIFT_AWAKEN, GIFT_TURN, GIFT_UNBOUND -> GiftArt.draw(c, a, t);
             case CRYO_BLAST, CRYO_QUENCH, CRYO_CAST, CRYO_TERRAIN_FROST -> CryoBlastArt.draw(c, a, t);
             case RAD_HEAT, RAD_LEAP, RAD_SLAM, RAD_ZONE, RAD_EMP, RAD_BEAM, RAD_CHARGE, RAD_LANCE -> RadiationArt.draw(c, a, t);
             case RAD_SHOCK, RAD_FIELD, RAD_FLAKE, RAD_DISINTEGRATE -> HazardArt.draw(c, a, t);
+            case SPEED_VACUUM -> CycloneArt.vacuum(c, a, t);
             case FORCE_SHIELD, FORCE_PUSH, FORCE_FORM, FORCE_BRIDGE, FORCE_WALL, FORCE_BUBBLE, FORCE_CRUSH, FORCE_BEAD,
                     FORCE_NOVA_CHARGE, FORCE_NOVA, FORCE_DISC, FORCE_VANISH, FORCE_NET, FORCE_SHATTER, FORCE_RIPPLE -> ForceArt.draw(c, a, t);
             case OVERRUN_DEPART -> SpeedArt.depart(c, a, t);

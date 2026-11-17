@@ -1,5 +1,6 @@
 package com.jayptucker.heroesevolved.skills;
 
+import com.jayptucker.heroesevolved.ability.ProjectileRanges;
 import com.jayptucker.heroesevolved.ability.*;
 import com.jayptucker.heroesevolved.ability.Targeting;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
@@ -158,7 +159,7 @@ public final class SkillActionService {
         AbilityEffects.send(p.serverLevel(), kind, p.getEyePosition(), target == null ? p.getEyePosition().add(p.getLookAngle()) : target.getEyePosition(), scale);
     }
     private static LivingEntity arcLanceTarget(ServerPlayer player) {
-        return Targeting.livingEntityInSight(player, 40, target -> ElectroService.hostile(player, target));
+        return Targeting.livingEntityInRange(player, ProjectileRanges.ARC_LANCE, net.minecraft.world.level.ClipContext.Fluid.NONE, target -> ElectroService.hostile(player, target));
     }
 
     private static void field(ServerPlayer p, String power, int ticks) { FIELDS.put(p.getUUID(), new Field(p, p.position(), power, p.getServer().overworld().getGameTime() + ticks)); }

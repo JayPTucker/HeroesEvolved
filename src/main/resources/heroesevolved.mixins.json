@@ -47,7 +47,8 @@
     "MorphSensesMixin",
     "TitleScreenMixin",
     "TitleButtonMixin",
-    "TitleIconButtonMixin"
+    "TitleIconButtonMixin",
+    "IllagerCastPoseMixin"
   ],
   "injectors": {
     "defaultRequire": 1

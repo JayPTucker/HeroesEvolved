@@ -1,5 +1,7 @@
 # Telekinesis
 
+See [ranged attack distances](projectile-ranges.md) for the current projectile and beam ranges.
+
 Telekinesis is a physical force kit built around acquiring, suspending, redirecting and
 releasing objects. Damage from launched fragments happens when their traveling paths hit
 something. Bodies thrown into walls or slammed onto ground produce a separate impact.

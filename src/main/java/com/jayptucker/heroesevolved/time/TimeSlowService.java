@@ -39,10 +39,18 @@ public final class TimeSlowService {
         return ACTIVE_FIELDS.containsKey(player.getUUID());
     }
 
+    public static boolean reaches(ServerPlayer player) {
+        double radius = HeroesEvolvedConfig.COMMON.timeSlowRadius.get();
+        return ACTIVE_FIELDS.values().stream().anyMatch(field -> !field.hasEnded() && (TimeVeil.serverWide()
+                || field.dimension.equals(player.level().dimension()) && player.position().distanceToSqr(field.center) <= radius * radius));
+    }
+
     static int playerSlowInterval(ServerPlayer target) {
         int interval = 1;
         for (TimeSlowField field : ACTIVE_FIELDS.values())
-            if (!field.ownerId().equals(target.getUUID()) && !field.hasEnded())
+            if (!field.ownerId().equals(target.getUUID()) && !TemporalSharing.movesWith(field.ownerId, target) && !field.hasEnded()
+                    && (TimeVeil.serverWide() || field.dimension.equals(target.level().dimension())
+                    && target.position().distanceToSqr(field.center) <= Math.pow(HeroesEvolvedConfig.COMMON.timeSlowRadius.get(), 2)))
                 interval = Math.max(interval, field.tickInterval());
         return interval;
     }
@@ -78,6 +86,7 @@ public final class TimeSlowService {
             playEndSound(player.serverLevel(), field, player);
             ProjectileTimeService.releaseInactive();
             TimeVeil.end(player, TimeVeil.SLOW);
+            TemporalVoiceState.publish(player.getServer());
         }
     }
 
@@ -116,6 +125,7 @@ public final class TimeSlowService {
                         held
                 )
         );
+        TemporalVoiceState.publish(player.getServer());
     }
 
     /**
@@ -223,6 +233,7 @@ public final class TimeSlowService {
             boolean everywhere = TimeVeil.serverWide();
             if (!everywhere && !field.dimension().equals(entity.level().dimension())
                     || field.ownerId().equals(entity.getUUID()) || entity.isSpectator()
+                    || TemporalSharing.movesWith(field.ownerId, entity)
                     // Whatever the traveller carries moves with them.
                     || field.ownerId().equals(entity.getRootVehicle().getUUID())
                     || com.jayptucker.heroesevolved.speed.SpeedService.outrunsTime(entity)

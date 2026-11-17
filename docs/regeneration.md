@@ -9,7 +9,8 @@ Her blood heals others; it brought Nathan back. Numbers are configurable startin
 
 Every hit you take becomes **Regrowth (0–100)**: two points per point of real damage, plus a little
 from your own Blood Gift cuts and reckless punches. It is stored healing, and the HUD shows it as a
-crimson bar under your ability list (the notch marks what a Second Life costs).
+crimson ring under your ability keys (the notch marks what a Second Life costs), beside a ring saying how long a
+lethal blow would keep you down (once down, it counts you up and fills as you hold the give-up key).
 
 - **Passive healing burns it.** Each regeneration tick burns up to 10 Regrowth for 2 extra healing,
   so after a beating your wounds close fast, not at the usual trickle.

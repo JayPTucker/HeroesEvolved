@@ -1,7 +1,6 @@
 import com.jayptucker.heroesevolved.client.effects.PowerParticle;
 import com.jayptucker.heroesevolved.client.effects.NuclearCloudGeometry;
 import com.jayptucker.heroesevolved.client.effects.DetonationCloudGeometry;
-import com.jayptucker.heroesevolved.radiation.NuclearTerrainCursor;
 import net.minecraft.core.BlockPos;
 import org.joml.Quaternionf;
 import com.jayptucker.heroesevolved.network.NuclearCloudPayload;
@@ -387,24 +386,7 @@ public class EffectGeometryCheck {
                 "{\"x\":%f,\"y\":%f,\"z\":%f,\"width\":%f,\"height\":%f,\"heat\":%f,\"alpha\":%f}",
                 puff.x(), puff.y(), puff.z(), puff.width(), puff.height(), puff.heat(), puff.alpha())).toList();
         java.nio.file.Files.writeString(java.nio.file.Path.of("build/nuclear-puffs.json"), "[" + String.join(",", preview) + "]");
-        for (int radius : new int[] {1, 2, 24, 48}) {
-            NuclearTerrainCursor cursor = new NuclearTerrainCursor(radius);
-            var offset = new BlockPos.MutableBlockPos();
-            var visited = new it.unimi.dsi.fastutil.longs.LongOpenHashSet();
-            int previousSlice = -1;
-            while (cursor.next(offset)) {
-                int slice = offset.getY() >= 0 ? offset.getY() * 2 : -offset.getY() * 2 - 1;
-                if (slice < previousSlice) throw new AssertionError("Crater dug deeply before completing the outward surface sweep");
-                previousSlice = slice;
-                if (offset.getX() * offset.getX() + offset.getY() * offset.getY() + offset.getZ() * offset.getZ() > radius * radius
-                        || !visited.add(offset.asLong())) throw new AssertionError("Duplicate or out-of-range crater voxel");
-            }
-            int expected = 0;
-            for (int x = -radius; x <= radius; x++) for (int y = -radius; y <= radius; y++) for (int z = -radius; z <= radius; z++)
-                if (x * x + y * y + z * z <= radius * radius) expected++;
-            if (visited.size() != expected || cursor.next(offset)) throw new AssertionError("Crater cursor skipped voxels or restarted");
-            System.out.println("PASS: Streaming radius-" + radius + " crater visits all " + expected + " voxels exactly once.");
-        }
+        // The crater is carved in one tick by NuclearFallout.carve; GiftedMobGameTests.aCraterIsCarvedAllAtOnce checks it.
         try (SpriteContents contents = new SpriteContents(ResourceLocation.withDefaultNamespace("test"),
                 new FrameSize(16,16), new NativeImage(16,16,true), ResourceMetadata.EMPTY)) {
             TextureAtlasSprite sprite = new TestSprite(contents);

@@ -1,5 +1,7 @@
 # Induced Radioactivity
 
+See [ranged attack distances](projectile-ranges.md) for the current projectile and beam ranges.
+
 A reactor you run hot. Induced Radioactivity is heat, a radiation sickness that spreads through a crowd,
 electromagnetic pulses and, at the top, a nuclear blast. Design source:
 [Radiation Emission](https://heroes.fandom.com/wiki/Radiation_Emission). The numbers below are game design
@@ -8,7 +10,7 @@ choices.
 ## Core: the hotter you run, the stronger you are
 
 Core (the stored "stress") builds as you use your power and as you are hurt. It is fuel as well as a danger.
-The HUD shows a **Core** bar under your ability list, with notches at each threshold.
+The HUD shows **Core** as a ring under your ability keys, with notches at each threshold and the tier named under it.
 
 | Core | State | What it does |
 | --- | --- | --- |
@@ -158,14 +160,14 @@ The first awakening creates a forty-eight-block spherical blast (ninety-six
 blocks across). Later detonations retain a twenty-four-block radius. The first
 wave deals 120 health damage at its center, tapering to 32 at its boundary;
 later waves deal 80 down to 20, before armor and other normal reductions.
-The damage/visual front reaches its radius in five ticks; terrain work begins
-after that front and catches up independently. All blasts share a server-wide
-limit of 512 block removals and 8,192 scanned positions per tick, with a soft
-four-millisecond terrain budget. Expensive individual block callbacks can exceed
-that time allowance. A streaming slice cursor clears outward at foot/ground height before deepening the crater
-without allocating or sorting the entire sphere when detonation begins. Dense
-craters therefore take longer to finish; queued terrain work expires after
-three minutes. Silent block writes avoid separate break particles and sounds
+The damage/visual front reaches its radius in five ticks, and the whole crater
+goes in that same moment, in one tick (`NuclearFallout.carve`), top down. The
+inside of the sphere is cleared without neighbour or shape updates (nothing is
+left there to hear about it); the outer shell, and any block touching water or
+lava, updates fully, so sand falls in, water flows and torches drop at the rim as
+after an ordinary explosion. A dense test crater of 726 blocks takes about 6 ms;
+a full radius-24 crater in solid ground is tens of thousands of blocks and costs
+a single noticeable tick. Silent block writes avoid separate break particles and sounds
 for every destroyed block while retaining normal chunk updates. It vaporizes
 ordinary blocks, preserves a small footing, ignores fluids and unbreakable
 blocks, and respects build permissions, world borders, spawn protection and
@@ -253,13 +255,12 @@ cloud delivery, exclusive dormant/admin claims, saved ownership, offline
 migration and roster exhaustion. Fixtures run in separate batches because the
 production role ownership applies to test players too.
 
-Performance regression checks cover simultaneous dense craters sharing the
-same removal budget, gradual completion without per-block break events, and
+Performance regression checks cover simultaneous dense craters each carved in a
+single tick without per-block break events, and
 cloud heartbeats retaining their original coordinates after the owner moves.
 Silent crater writes also restore through Time Rewind, including container
 contents without duplicate drops. The complete isolated suite has 42 tests.
-The geometry check verifies all crater voxels are visited exactly once at both
-blast radii, along with finite smoke geometry, UVs, colors, camera angles,
+The geometry check verifies finite smoke geometry, UVs, colors, camera angles,
 detail levels and the per-cloud vertex limit. These checks do not measure
 client frame rate or guarantee the cost of third-party block callbacks.
 
@@ -274,6 +275,5 @@ Camera-anchor correction: the cloud and city cinematic submit camera-relative
 world vertices without applying the event view matrix a second time. The active
 shader supplies that rotation. Geometry regression checks cover camera movement,
 yaw and pitch; server cloud heartbeats retain the original detonation center.
-The ground dust skirt reaches full spread in about 1.4 seconds. Terrain advances
-outward in complete horizontal slices before progressing deeper, under the shared
-512-break / 8,192-scan / soft 4 ms tick budget. Dense craters still deepen gradually.
+The ground dust skirt reaches full spread in about 1.4 seconds. The crater is
+carved all at once when the wave reaches its edge, five ticks after the blast.

@@ -17,12 +17,14 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("98")
+        event.registrar("101")
             .playToClient(TemporalProjectilePayload.TYPE, TemporalProjectilePayload.STREAM_CODEC, TemporalProjectilePayload::handle)
             .playToClient(TemporalCatchStatePayload.TYPE, TemporalCatchStatePayload.STREAM_CODEC, TemporalCatchStatePayload::handle)
             .playToClient(SkyburstMotionPayload.TYPE, SkyburstMotionPayload.STREAM_CODEC, SkyburstMotionPayload::handle)
             .playToClient(BurnPayload.TYPE, BurnPayload.STREAM_CODEC, BurnPayload::handle)
             .playToClient(FrictionPayload.TYPE, FrictionPayload.STREAM_CODEC, FrictionPayload::handle)
+            .playToClient(CycloneStatusPayload.TYPE, CycloneStatusPayload.STREAM_CODEC, CycloneStatusPayload::handle)
+            .playToServer(CycloneSpeedInputPayload.TYPE, CycloneSpeedInputPayload.STREAM_CODEC, CycloneSpeedInputPayload::handle)
             .playToClient(MimicMemoryPayload.TYPE, MimicMemoryPayload.STREAM_CODEC, MimicMemoryPayload::handle)
             .playToClient(TimeVeilPayload.TYPE, TimeVeilPayload.STREAM_CODEC, TimeVeilPayload::handle)
             .playToServer(MimicChoicePayload.TYPE, MimicChoicePayload.STREAM_CODEC, MimicChoicePayload::handle)
@@ -36,6 +38,8 @@ public final class ModPayloads {
             .playToServer(FightingStylePayload.TYPE, FightingStylePayload.STREAM_CODEC, FightingStylePayload::handle)
             .playToClient(HydroStatePayload.TYPE, HydroStatePayload.STREAM_CODEC, HydroStatePayload::handle)
             .playToClient(IllusionPayload.TYPE, IllusionPayload.STREAM_CODEC, IllusionPayload::handle)
+            .playToClient(GiftedMobPayload.TYPE, GiftedMobPayload.STREAM_CODEC, GiftedMobPayload::handle)
+            .playToClient(DistressPayload.TYPE, DistressPayload.STREAM_CODEC, DistressPayload::handle)
             .playToClient(MindStatePayload.TYPE, MindStatePayload.STREAM_CODEC, MindStatePayload::handle)
             .playToServer(MindInputPayload.TYPE, MindInputPayload.STREAM_CODEC, MindInputPayload::handle)
             .playBidirectional(MindTypingPayload.TYPE, MindTypingPayload.STREAM_CODEC, MindTypingPayload::handle)

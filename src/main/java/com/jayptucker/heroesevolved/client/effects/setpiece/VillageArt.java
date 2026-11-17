@@ -80,6 +80,57 @@ final class VillageArt {
         }
     }
 
+    // ------------------------------------------------------------------
+    // Distress flares, drawn live over every village calling for help
+    // ------------------------------------------------------------------
+
+    /** Each kind of trouble's flare (by {@code EmergencyBand.Trouble} ordinal): other, meltdown, renegade, raid. */
+    private static final float[][] FLARE = {rgb(0xFFB040), rgb(0xFFC650), rgb(0xE0303A), rgb(0xB45AFF)};
+    /** The flare climbs this high; beyond {@link #FAR} it is drawn nearer and smaller, so it looks the same. */
+    private static final float FLARE_HEIGHT = 150, FAR = 320;
+
+    static boolean flaresLive() { return com.jayptucker.heroesevolved.client.ClientDistress.any(); }
+
+    /**
+     * Every distress flare: a tall column of light over the village in its trouble's colour, wide enough to see from
+     * hundreds of blocks, with a flare shell climbing it every two seconds and bursting into a ring at the top. Past
+     * {@link #FAR} blocks the whole flare is drawn nearer the camera and smaller in proportion (it covers the same part of
+     * the sky), so the far plane never clips it. Close by it thins out, so it doesn't fill the view at the village.
+     */
+    static void flares(Canvas c) {
+        if (!c.glow() || c.level == null) return;
+        long now = c.level.getGameTime();
+        Vec3 camera = c.camera();
+        for (var flare : com.jayptucker.heroesevolved.client.ClientDistress.all()) {
+            float[] col = FLARE[Math.clamp(flare.kind(), 0, FLARE.length - 1)];
+            Vec3 base = flare.at();
+            double distance = Math.sqrt(Math.pow(base.x - camera.x, 2) + Math.pow(base.z - camera.z, 2));
+            float near = Canvas.smooth(16, 56, (float) distance);
+            if (near <= 0) continue;
+            float k = distance > FAR ? (float) (FAR / distance) : 1;
+            Vec3 at = camera.add(base.subtract(camera).scale(k));
+            float age = now - flare.since() + c.partial, f = Mth.clamp(age / 20, 0, 1) * near;
+            float height = FLARE_HEIGHT * k, width = Math.max(.6F, (float) distance * .006F) * k;
+            Vec3 top = at.add(0, height, 0);
+            c.line(at, top, width * 3, col, f * .16F, 0);
+            c.line(at, top, width, col, f * .5F, f * .08F);
+            c.line(at, top.subtract(0, height * .3, 0), width * .3F, PALE, f * .8F, 0);
+            c.glow(at.add(0, 1.5 * k, 0), width * 4, col, f * .35F);
+            // The shell: up in twenty ticks, a burst at the top that opens and fades over the next twenty.
+            float cycle = age % 40;
+            if (cycle < 20) {
+                float up = Canvas.smooth(0, 20, cycle);
+                Vec3 shell = at.add(0, height * up, 0);
+                c.glow(shell, width * 2.2F, col, f * .8F);
+                c.glow(shell, width * .9F, WHITE_HOT, f * .9F);
+            } else {
+                float open = Canvas.smooth(20, 40, cycle);
+                c.ring(top, UP, (8 + 18 * open) * k, width * .8F, 0, TWO_PI, col, f * .6F * (1 - open));
+                c.glow(top, (6 + 10 * open) * k, col, f * .35F * (1 - open));
+            }
+        }
+    }
+
     /**
      * The safe point: a soft green column of light that can be seen across the village, a ring on the ground the size of
      * the safe area, and dashes turning slowly round it.

@@ -113,22 +113,30 @@ public final class PyroFlightClient {
         if (mc.player == null || mc.level == null || mc.options.hideGui || !state.pyro()
                 || mc.level.getGameTime() - seen > 20 || ClientPowerState.getSnapshot().abilities().stream()
                 .noneMatch(a -> a.unlocked() && a.abilityId().equals(ModAbilities.PYROKINESIS_ID))) return;
-        int center = gui.guiWidth() / 2, y = gui.guiHeight() - 92;
+        // Heat and flight Momentum are rings in the ability HUD's row (gauges); only the controls stay as words.
+        int center = gui.guiWidth() / 2;
         int color = state.blue() ? 0xFF68C5FF : 0xFFFF943D;
-        gui.fill(center - 61, y, center + 61, y + 5, 0xB0281A18);
-        gui.fill(center - 60, y + 1, center - 60 + Math.clamp(state.heat(), 0, 100) * 120 / 100, y + 4, color);
-        gui.drawCenteredString(mc.font, Component.translatable("pyro.heroesevolved.heat", state.heat()), center, y - 11, color);
         if (active()) {
             gui.drawCenteredString(mc.font, Component.translatable(state.diving() ? "pyro.heroesevolved.meteor" : "pyro.heroesevolved.flight_controls"), center, 34, color);
             gui.drawCenteredString(mc.font, Component.translatable("pyro.heroesevolved.flight_stop"), center, 46, 0xE8D5B8);
-            int maximum = FlightSpeedControl.maximumStep(pyroLevel());
-            gui.drawCenteredString(mc.font, Component.translatable(state.boosting()
-                    ? "pyro.heroesevolved.flight_boosting" : "pyro.heroesevolved.flight_speed",
-                    Math.clamp(state.speedStep(), 0, maximum), maximum), center, 60, color);
-            gui.fill(center - 46, 73, center + 46, 77, 0xB0281A18);
-            gui.fill(center - 45, 74, center - 45 + Math.clamp(state.momentum(), 0, 100) * 90 / 100, 76, color);
-            gui.drawCenteredString(mc.font, Component.translatable("pyro.heroesevolved.flight_momentum", state.momentum()),
-                    center, 81, 0xE8D5B8);
+        }
+    }
+
+    /** Heat (blue when the flames are), and in flame flight its Momentum with pips for the speed setting. */
+    public static void gauges(java.util.List<com.jayptucker.heroesevolved.gui.HudGauges.Gauge> gauges) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null || !state.pyro() || mc.level.getGameTime() - seen > 20
+                || ClientPowerState.getSnapshot().abilities().stream().noneMatch(a -> a.unlocked() && a.abilityId().equals(ModAbilities.PYROKINESIS_ID)))
+            return;
+        int heat = Math.clamp(state.heat(), 0, 100);
+        int color = state.blue() ? 0xFF68C5FF : 0xFFFF943D;
+        gauges.add(com.jayptucker.heroesevolved.gui.HudGauges.Gauge.ring(heat / 100F, color).middle(Integer.toString(heat))
+                .label(state.blue() ? "BLUE HEAT" : "HEAT"));
+        if (active()) {
+            int maximum = FlightSpeedControl.maximumStep(pyroLevel()), step = Math.clamp(state.speedStep(), 0, maximum);
+            int momentum = Math.clamp(state.momentum(), 0, 100);
+            gauges.add(com.jayptucker.heroesevolved.gui.HudGauges.Gauge.ring(momentum / 100F, color).middle(Integer.toString(momentum))
+                    .label(state.boosting() ? "BOOST" : "FLIGHT " + step).pips(maximum, step, color));
         }
     }
     @EventBusSubscriber(modid = HeroesEvolved.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)

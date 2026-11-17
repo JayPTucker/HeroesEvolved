@@ -1,0 +1,23 @@
+// ./gradlew runClient --init-script tools/projectile-preview.init.gradle
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('projectilePreview') {
+                java.srcDir('src/uitest/java')
+                java.include('com/jayptucker/heroesevolved/uitest/ProjectileRangePreview.java')
+                java.include('com/jayptucker/heroesevolved/uitest/PreviewQuiet.java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs { client {
+                    gameDirectory = project.file('build/projectile-preview')
+                    programArguments.addAll('--width', '1100', '--height', '800')
+                    systemProperty('heroes.preview.projectiles', 'true')
+                } }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('projectilePreviewClasses')) }
+        }
+    }
+}

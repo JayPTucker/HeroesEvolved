@@ -1,6 +1,6 @@
 package com.jayptucker.heroesevolved.quake;
 
-import com.jayptucker.heroesevolved.ability.AbilityRanges;
+import com.jayptucker.heroesevolved.ability.ProjectileRanges;
 
 import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
@@ -125,7 +125,7 @@ public final class QuakeService {
         ServerLevel level = player.serverLevel();
         Vec3 origin = player.getEyePosition();
         Vec3 direction = player.getLookAngle().normalize();
-        double range = AbilityRanges.ranged(6.0D + powerLevel * 2.0D);
+        double range = ProjectileRanges.QUAKE_BLAST;
         // Strain makes everything hit harder, right up until the bones give.
         float strength = QuakeKit.power(player);
         // A Counterforce brace pours its stored force out through the palm.
@@ -235,6 +235,8 @@ public final class QuakeService {
             if (!(target instanceof LivingEntity living) || target.isSpectator()) {
                 continue;
             }
+            if (level.clip(new ClipContext(origin, living.getBoundingBox().getCenter(),
+                    ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player)).getType() != HitResult.Type.MISS) continue;
             QuakeKinetics.disrupt(player, living, direction);
 
             if (TemporalEntityEchoService.isReplaying(living)) {
@@ -348,7 +350,7 @@ public final class QuakeService {
 
         Vec3 origin = player.getEyePosition();
         Vec3 direction = player.getLookAngle().normalize();
-        double range = AbilityRanges.ranged(10.0D + blast.powerLevel);
+        double range = ProjectileRanges.QUAKE_BLAST;
         BlockHitResult hit = level.clip(new ClipContext(
                 origin, origin.add(direction.scale(range)),
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player

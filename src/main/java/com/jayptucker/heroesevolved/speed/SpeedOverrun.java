@@ -40,8 +40,8 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Overrun: outrunning the last minute. Nothing to press; it belongs to the fastest speedsters only (tier 5,
- * Power Level 15). Run flat out long enough and time starts to smear around you (the wake). Keep going and a
+ * Overrun: outrunning the last minute. Nothing to press; it belongs to the fastest speedsters only: it unlocks with
+ * run speed {@link #MIN_SPEED}, and only charges while you run at setting 5 or 6. Run flat out long enough and time starts to smear around you (the wake). Keep going and a
  * breach opens in the air ahead; run on through it and you come out of it a minute ago. Everything within
  * 64 blocks of where you were then is as it was: blocks, chests, creatures, people, and you, with what you
  * carried and how hurt you were. Ease off and the breach closes. Once every ten minutes.
@@ -52,6 +52,10 @@ import java.util.UUID;
 public final class SpeedOverrun {
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("heroesevolved", "speed_overrun");
     public static final int TIER = 5;
+    /** The run-speed setting Overrun needs: it unlocks once you have it, and charges only while you run at it or faster. */
+    public static final int MIN_SPEED = 5;
+    /** How often a speedster flat out at a slower setting is told why nothing is happening. */
+    private static final int HINT_EVERY = 100;
     public static final int REWIND_SECONDS = 60, REWIND_TICKS = REWIND_SECONDS * 20, SAMPLE_TICKS = 20;
     /** Ticks flat out before the breach opens; when the wake begins to show; how long you must run on through the breach. */
     public static final int CHARGE_TICKS = 400, WAKE_TICKS = 160, BREACH_TICKS = 60;
@@ -78,7 +82,7 @@ public final class SpeedOverrun {
 
     /** A speedster fast enough for it, somewhere it may happen. */
     public static boolean eligible(ServerPlayer p) {
-        return p.isAlive() && !p.isSpectator() && SpeedService.awakened(p) && PlayerProgressionService.getLevel(p) >= TIER
+        return p.isAlive() && !p.isSpectator() && SpeedService.awakened(p) && SpeedService.maximumSpeedStep(p) >= MIN_SPEED
                 && !TimeIntroService.isVisiting(p) && !TimeIntroService.isCity(p.level());
     }
 
@@ -98,7 +102,12 @@ public final class SpeedOverrun {
         State s = STATES.computeIfAbsent(p.getUUID(), id -> new State());
         if (now % SAMPLE_TICKS == 0) record(p, s, now);
         boolean ready = !CooldownService.isOnCooldown(p, ID) && target(s, now) != null;
-        boolean running = ready && PowerRules.canAct(p) && SpeedService.flatOut(p, TOP_SPEED, TOP_MOMENTUM);
+        boolean flatOut = ready && PowerRules.canAct(p) && SpeedService.flatOut(p, TOP_SPEED, TOP_MOMENTUM);
+        boolean fastEnough = SpeedService.speedStep(p) >= MIN_SPEED;
+        boolean running = flatOut && fastEnough;
+        if (flatOut && !fastEnough && now % HINT_EVERY == 0)
+            p.displayClientMessage(net.minecraft.network.chat.Component.literal("Overrun needs run speed 5 or 6. Scroll up while you sprint.")
+                    .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE), true);
         s.slack = running ? 0 : s.slack + 1;
         boolean easing = s.slack > SLACK;
         if (s.breach >= 0) {

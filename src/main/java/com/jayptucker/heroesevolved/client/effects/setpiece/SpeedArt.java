@@ -39,6 +39,41 @@ public final class SpeedArt {
 
     private SpeedArt() {}
 
+    /** A reservoir-like orbit at the guest's waist: amber halo, gold lightning and a moving white-hot head. */
+    static void sharedTime(Canvas c, Active a, float t) {
+        if (SetPieceClient.superseded(a, java.util.Set.of(a.piece()), c.level.getGameTime())) return;
+        float fade = smooth(0, 2, t) * (1 - smooth(8, 12, t));
+        Entity guest = a.bound(c);
+        Vec3 waist = a.at(c).add(0, guest != null && guest.isCrouching() ? .72 : 1.0, 0);
+        boolean minimal = net.minecraft.client.Minecraft.getInstance().options.particles().get()
+                == net.minecraft.client.ParticleStatus.MINIMAL;
+        float now = c.level.getGameTime() + c.partial, head = now * .18F + a.seed();
+        int count = minimal ? 32 : 56;
+        for (int band = 0; band < (minimal ? 1 : 2); band++) {
+            double[] x = new double[count + 1], y = new double[count + 1], z = new double[count + 1];
+            float[] alpha = new float[count + 1], widths = new float[count + 1];
+            for (int i = 0; i <= count; i++) {
+                float k = i / (float) count, angle = head + band * PI - (1 - k) * PI * 1.55F;
+                float jitter = (hash(a.seed() + (int) (now / 2), i + band * 70) - .5F) * .085F;
+                float radius = .77F + .05F * sin(angle * 3 + now * .04F) + jitter;
+                x[i] = waist.x + cos(angle) * radius;
+                y[i] = waist.y + sin(angle * 2 + now * .07F) * .12F + band * .09F + jitter;
+                z[i] = waist.z + sin(angle) * radius;
+                alpha[i] = fade * k * k; widths[i] = .035F * (.25F + .75F * k);
+            }
+            if (c.soft()) c.ribbon(x, y, z, alpha, widths, SOOT);
+            if (c.glow()) {
+                for (int layer = 0; layer < 3; layer++) {
+                    float width = layer == 0 ? 3.6F : layer == 1 ? 1.3F : .34F;
+                    float opacity = layer == 0 ? .18F : layer == 1 ? .8F : 1;
+                    float[] w = widths.clone(), al = alpha.clone();
+                    for (int i = 0; i <= count; i++) { w[i] *= width; al[i] *= opacity; }
+                    c.ribbon(x, y, z, al, w, layer == 0 ? AMBER : layer == 1 ? GOLD : HOT);
+                }
+            }
+        }
+    }
+
     /** Is anything of Superspeed's with no fixed length (a cyclone, a wake) to be drawn? */
     static boolean live() {
         return !SpeedCyclone.views().isEmpty() || !SpeedOverrunClient.states().isEmpty();

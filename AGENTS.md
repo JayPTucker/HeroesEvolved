@@ -9,6 +9,9 @@
   scenery block by block should follow the same rules (supports first, then the things they hold).
 - **Worn gear:** see `.claude/skills/minecraft-armor/SKILL.md` before making or changing any armor, suit or costume:
   skin-tight models, 3D details as child boxes, scripted textures and how to photograph them.
+- **Mobs and bosses:** read "Designing mobs and bosses" below before making any mob that fights with a power, a
+  mini-boss, a boss or a world event. It sets the bar (from Apotheosis's bosses and Cataclysm's fights, and our own
+  Sylar and Elle) and names the shared machinery (`gifted/`, `village/VillageIncidents`, the emergency band).
 - **Gameplay tests:** `./gradlew runGameTestServer --init-script tools/rewind-gametest.init.gradle`.
 - **In-game previews:** `tools/*-preview.init.gradle`; stage scenes at least 50 blocks from spawn, where the
   bunker's walls trap the player. A new preview player starts in the Last Day's city, which is another dimension:
@@ -873,13 +876,19 @@ Villages call for help over Simple Radio, and the first event that calls is a vi
   Simple Radio and Lexiconfig come from the Modrinth maven (`maven.modrinth:<slug>:<version id>`), all `localRuntime`.
   Pin Modrinth jars by **version ID** (`L8SiUelt`), not version number: a number shared between loaders resolves
   to the Fabric jar. `neoforge.mods.toml` lists `voicechat` and `simpleradio` as required on both sides.
+- **Calls carry hundreds of blocks, and their villages stay loaded.** (Updated with the gifted mobs, below.) A call tells
+  everyone within `distressRange` (768) when it starts, reminds them every thirty seconds, and lights a flare
+  (`DistressPayload` → `client/ClientDistress` → `VillageArt.flares`) coloured by its `EmergencyBand.Trouble`. Whatever
+  starts a call should also hold its village with `VillageTickets.hold(level, bell, key)` and release it when it ends,
+  or a call from 500 blocks away is over (or frozen) before anyone arrives.
 - **One class touches the other mod.** Simple Radio has no published API, so only `radio/RadioLink` imports it.
   - A call is a `Transmitter` on a frequency, added with `frequencies().getOrCreate("101.10", FREQUENCY)`; it takes
     48 kHz mono `short[]` audio through `push`.
   - Every call is wrapped in try/catch and sets a `broken` flag. If the mod changes, calls fall back to subtitles
     for players within 96 blocks, and nothing crashes.
-- **A call is one line.** `EmergencyBand.call(level, at, words, ticks)` puts a call on 101.10 FM and returns a
-  `Call`. Use `call.say(words)` to update it (a countdown) and `EmergencyBand.end(call)` to stop it.
+- **A call is one line.** `EmergencyBand.call(level, at, trouble, words, ticks)` puts a call on 101.10 FM and returns
+  a `Call`. Use `call.say(words)` to update it (a countdown) and `EmergencyBand.end(call)` to stop it. A new kind of
+  trouble is a new `Trouble` (append it) and a colour in `VillageArt.FLARE`.
   - The audio is synthesised each tick: low-passed static that drifts, plus a keyed SOS tone.
   - Listeners get a subtitle every 60 ticks with the bearing and distance to the call.
   - Don't ship sound files for calls: there is no OGG encoder here (see the intro audio notes).
@@ -1005,6 +1014,128 @@ player sees is in [docs/the-last-day.md](docs/the-last-day.md).
 - **Returning a group together.** The vision's `together(...)` lands everyone in a ring of open standing spots round
   the traveler's return point, falling back to each player's own ticket if the traveler's is gone. Reuse it for any
   scene that should end with the party side by side.
+
+## Designing mobs and bosses
+
+The bar for anything that fights the player with a power, from a gifted pillager to Sylar. It is drawn from two mods
+players love for exactly this, [Apotheosis](https://www.minecraft-guides.com/mod/apotheosis/wiki/apothic-bosses/)
+(bosses as a layer over the whole world) and [Cataclysm](https://www.minecraft-guides.com/wiki/cataclysm/) (bosses as
+set-piece fights), and from our own Sylar (`story/sylar/`) and Elle (`story/elle/`). What the player sees of the gifted
+layer is in [docs/gifted-mobs.md](docs/gifted-mobs.md).
+
+### Two layers: the world's mini-bosses and the story's bosses
+
+- **Mini-bosses live in the world (Apotheosis).** A small chance turns an ordinary mob into a named one, where the
+  player already is: a raid's wave leader, a patrol's leader crossing past their home, a natural spawn, a villager whose
+  gift wakes. They need no structure or summoning item; they make the world surprising. Use `gifted/GiftedMobs.bestow`
+  for any of these instead of writing a new entity.
+- **Bosses are set pieces (Cataclysm).** A place built for the fight (Sylar's shop, Primatech's test floor), a way in
+  that the player chooses (a story beat, an item, a door), phases that change the room, and a reward that gates
+  something. Copy `story/sylar/WatchmakerArena` and `story/elle/PrimatechArena`.
+- **Minions under bosses (Cataclysm).** Big fights have a layer below them: guards cleared first, followers that answer
+  a phase change (`GiftedMob.follower`). Followers carry `GiftedMobs.FOLLOWER` so they never roll gifts of their own.
+
+### Grading and naming (Apotheosis)
+
+- **A rarity on every powered mob.** `gifted/Rarity`: Uncommon, Rare, Epic, Mythic, each adding health, damage, faster
+  casting, knockback resistance, armor, more moves, and from Epic a boss bar, a phase change and followers. The name is
+  in the rarity's colour. Roll with a floor for the context (`Rarity.roll(random, floor)`: the last raid wave is Epic+).
+- **A generated name that says what it is.** `GiftNames.roll(power, random)`: "Hollis the Ashen", "Vesna Stormcaller".
+  Hostile ones wear it overhead (`setCustomNameVisible`); friendly ones show it when looked at.
+- **Announce it.** "has awoken nearby!" to players within 140 blocks, and glow for a minute so it can be found
+  (`GiftedMobs.announce`). Keep chat quiet: wild ones only from Rare up.
+- **Toughen with permanent, named attribute modifiers** (`heroesevolved:gifted_*`, `addOrReplacePermanentModifier`), so
+  they save with the mob, re-applying is harmless and a cleanse removes exactly them. Persistence required: a named mob
+  must not despawn.
+- **A guaranteed prize.** Its own weapon, named for it and enchanted by rarity (set the slot's drop chance to 0 and drop
+  the prize yourself), emeralds, experience and Mastery for the killer (`GiftedMobs.reward`). Cataclysm's lesson on top:
+  the best rewards gate something (a boss's drop opens the next thing), so a story boss should drop a key, not just loot.
+
+### The fight (Cataclysm)
+
+- **Every move is read before it lands.** A windup with a pose, a telegraph and a sound, then the move. Gifted mobs: a
+  ring at the feet fills over the windup (`GiftArt.cast`), the hands glow where the move leaves them, illagers raise
+  their arms (`mixin/IllagerCastPoseMixin`). Sylar: a dial whose hand reaches twelve as the move lands. Marked moves
+  (thunderstrike, firestorm, geyser, frequency lock) fix their spot when the windup starts (`GiftedMob.mark`), so moving
+  beats them.
+- **Weak windows.** A heavy blow during a windup breaks it and staggers (`GiftedMob.struck`; Sylar's charged hits crack
+  his watch); after a signature move the mob is spent and takes half again as much (`GiftedMob.spent`). Cataclysm's
+  Harbinger is stunned by an EMP; here an Ability Dampener switches any gifted mob's power off (`Dampening.dampened`).
+- **Phases from health, and the player must see the change.** At half health an Epic or Mythic mob goes unbound: a set
+  piece (`GIFT_UNBOUND`), a raid horn and a roar, a line to everyone near, effects cleared, a short resistance, faster
+  casting, its signature and followers. Sylar's phases change the room (doors bar, clocks speed up); do that for a boss.
+- **Anti-cheese.** Only players really hurt a mini-boss: anything else (golems, wolves, lava, falls, dripstone) chips at
+  most 3 a blow (`GiftedMobs.incoming`; `/kill` still works). Cataclysm adds per-hit damage caps, ranged falloff past
+  ~20 blocks, arrow immunity in a phase, status immunities and a leash: a boss that is dragged away goes home and heals.
+  Renegades walk home to their bell with no one to fight, and every gifted mob heals out of combat
+  (`GiftedMob.passives`/`idle`). Pick the ones a fight needs; don't stack all of them on a mini-boss.
+- **Their own side.** One rule decides whom a powered mob hurts (`MobMoves.foe`): evil hurts players, villagers, golems,
+  pets and good gifts, never another monster; good (a guardian) hurts monsters and evil gifts, never people. A new
+  faction is a branch there.
+- **Powers as moves, not player actions.** Player `AbilityAction`s need a `ServerPlayer`. Mobs use `MobMoves.Move`
+  records (windup, cooldown, range, sight, telegraph/pulse/execute) built on the power's own effects (`AbilityEffects`
+  kinds, set pieces such as `HYDRO_WHIP`, `VIBE_LOCK`, `SHIFT_LUNGE`) and services that take any `LivingEntity`
+  (`CryoService.freezeSolid`, `DensityService.embed`, `HydroService.soak`, `RadiationService.irradiate`). Every power
+  has two moves and a signature; Empathic Mimicry borrows its foe's (`GiftedMob.copy`). Sylar's `SylarPowers` is the
+  older, Sylar-only version of the same idea.
+
+### Checklist for a new mob or boss
+
+- [ ] Graded (`Rarity`) or deliberately a one-off boss; named; announced.
+- [ ] Every attack has a windup the player can read, and the drawn telegraph shares its numbers with the server.
+- [ ] At least one weak window (an interrupt, a spent state, a stun) and one answer from another power (dampen, freeze,
+      stop time, a cross-power rule).
+- [ ] Phases change something the player can see.
+- [ ] Can't be cheesed by the obvious trap (lava, a pillar, a golem farm); leashed if it has a home.
+- [ ] A reward worth the fight, dropped in the world.
+- [ ] Saved on the entity (persistent data), so it survives an unloaded chunk and a restart.
+- [ ] Game tests for its rules; a preview that photographs its telegraphs and phases.
+
+## Reusable patterns from gifted mobs and village incidents
+
+Any villager, illager or humanoid monster can carry a power and use it (`gifted/`), half of villagers whose gift wakes
+turn evil and besiege their village (`Renegades`), raids get champions (`GiftedRaids`), and village events can happen
+hundreds of blocks from a player (`village/VillageIncidents`). Built in November 2026. What the player sees is in
+[docs/gifted-mobs.md](docs/gifted-mobs.md) and [docs/emergency-band.md](docs/emergency-band.md).
+
+- **State on the entity, a runtime object while loaded.** `Gift` (power, rarity, side, name, origin, home) is saved in
+  the mob's persistent data; `GiftedMobs` keeps a `GiftedMob` for every loaded one (made in `EntityJoinLevelEvent`,
+  dropped in `EntityLeaveLevelEvent`) and ticks it from the server tick, only where `isPositionEntityTicking`. A renegade's
+  siege (`Renegades.Terror`) is saved beside it and resumed on the next tick after it loads, as the meltdown is.
+- **Roll once per mob, by context.** `GiftedMobs.join` marks every mob `ROLLED` and decides by what it is: a raider with
+  a current raid (its wave leader, `Raid.joinRaid` sets the raid before the entity is added), a `PatrollingMonster` leader
+  with spawn type `PATROL`, a humanoid with spawn type `NATURAL` (NeoForge's `Mob.getSpawnType()`). Villagers roll a
+  dormant gift instead (`GiftedVillagers`). Do heavy work (messages, set pieces) on the next tick (`FRESH`).
+- **Turning one mob into another.** `villager.convertTo(type, false)` keeps position, name, no-AI and persistence but not
+  persistent data, so write the gift after; fire `EventHooks.onLivingConvert`; call `finalizeSpawn(..., CONVERSION, ...)`
+  for the new mob's gear; `setCanJoinRaid(false)` so a raid doesn't recruit a renegade.
+- **Pacing a threat so players can arrive.** A renegade's blows on its own village are cancelled
+  (`LivingIncomingDamageEvent`) except when its turn comes (`Renegades.mayHurt`, every 45 s), and its powers check the
+  same rule through `MobMoves.foe`. Pace by permission, not by slowing the AI.
+- **Keep a far village loaded.** `village/VillageTickets.hold(level, bell, key)` adds a region ticket (a custom
+  `TicketType`, not saved) that keeps everything within five chunks of the bell entity-ticking; release it when the event
+  ends. Meltdowns, sieges and raids all hold one. A restart drops it; the event resumes when a player goes there.
+- **Find a village anywhere.** `VillageIncidents.find` uses `ServerLevel.findNearestMapStructure(StructureTags.VILLAGE,
+  ...)` from a point a few hundred blocks off in a random direction (so it isn't always the nearest). It returns the
+  village's start at y 0: once the chunk is loaded, stand it on the ground (`getHeightmapPos`) before searching for POIs,
+  which are found by 3D distance. Then wait a couple of seconds for entities (`Pending.readyAt`). It returns null in a
+  world without structures (the game-test world), so tests start events directly.
+- **One village question.** `village/Villages` finds the bell and who belongs (near the bell, or a home, job or meeting
+  place there). The meltdown predates it and has its own copy; use `Villages` for anything new.
+- **A flare that never clips.** A set piece is skipped past 224 blocks, and the far plane is four render distances off,
+  so `VillageArt.flares` is drawn live, and past 320 blocks it is drawn nearer the camera and smaller in the same
+  proportion: it covers the same part of the sky. Use this for any marker that must be seen from very far.
+- **A whole-crater carve in one tick.** `NuclearFallout.carve(level, center, radius, player)` clears the inside of a
+  sphere with `UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE` (no neighbour updates: nothing inside is left) and the rim, and
+  anything next to a fluid, with `UPDATE_ALL`. About 9 µs a block. Use it for any big instant hole.
+- **Arm poses for vanilla models.** `mixin/IllagerCastPoseMixin` adds poses at the tail of `IllagerModel.setupAnim` from
+  a client mirror (`client/ClientGifted`, fed by `GiftedMobPayload` on change and `StartTracking`). Uncross the arms
+  (`arms.visible = false`) before posing them.
+- **Tests.** `GiftedMobGameTests` (run them with the village, radiation and mimicry tests:
+  `./gradlew runGameTestServer --init-script tools/gifted-gametest.init.gradle`). `GiftedMob.land(move, target)` runs a
+  move from telegraph to landing at once; `Renegades.hurry` brings a renegade's next turn forward. A raid can be built in
+  a test (`new Raid(id, level, center)`, `setLeader`, `joinRaid`). Mark test mobs `ROLLED` and give test villagers a null
+  gift, or the rolls make the test random. Kill a mini-boss in a test with a player's blow: anything else is capped.
 
 ## Reusable patterns from the Watchmaker (Sylar's boss fight)
 
@@ -1621,9 +1752,20 @@ Meltdowns became dangerous to stand near and a speedster's top speeds dangerous 
 - **Pin what's left behind.** A runner who burns away keeps the ring's middle from the moment they broke
   (`SpeedContainment.Run.pinned`), so if the target is carried off or blows up, the burning body stays put. Anything
   that plays out over a target that can move should decide whether it follows or stays, and store the point if it stays.
-- **A HUD readout under another.** The burn meter is its own class (`gui/BurnMeter.draw(g, x, y)` returns the y below
-  it) with one line in `AbilitySlotHudOverlay` under Momentum, so a shared overlay file barely changes. Show each line
-  only while it has something to say. A value the server sends in small steps (the burn healing) looks still on the
+- **A setting you scroll while a move runs.** The Cyclone's speed (`SpeedKit.cycloneSpeed`) is changed by a
+  `CycloneSpeedInputPayload` from `client/ClientCyclone`, whose scroll handler runs at HIGH priority and only while the
+  server's `CycloneStatusPayload` says a Cyclone is running, so it never fights the run-speed or flight scroll. The
+  status payload also feeds the HUD ring. The move reads the setting each tick (vacuum up to 2, wind and the tornado
+  from 3), so a change takes effect at once.
+- **Compact HUD rings.** `gui/HudGauges` draws a row of small ring gauges (Momentum with run-speed pips, Overrun, heat,
+  skin) as quads in `RenderType.gui()` (`arc`: a ring segment clockwise from the top), with the value in the middle at
+  half or three-quarter scale and a tiny label or setting pips under it. Every power's readout is one (radiation Core,
+  Resonance in a rainbow, Strain, a two-way Density dial and Breath, Regrowth and the downed timer, Flight, Momentum and
+  Overrun, heat and skin): each adds `HudGauges.Gauge.ring(...)` (or `dial`) to one list, and `HudGauges.row` draws
+  them, wrapping at the screen's edge. Words remain only for an instruction you need right now (giving up when down,
+  steering a flight maneuver). Each ring
+  only appears while it has something to say. Prefer a ring to another line of text and a bar when adding a readout.
+  `uitest/HudGaugePreview` (flag `heroes.preview.gauges`) photographs every state with the readings set on the client. A value the server sends in small steps (the burn healing) looks still on the
   client, so "regrowing" is remembered for a moment after each step down (`BurnClient.regrowing`).
 - **Friction from real movement.** `SpeedFriction` measures a runner's own displacement each tick (smoothed, ignoring
   jumps over 8 blocks so Blitz and teleports don't count) instead of reading run settings, so Momentum and any future

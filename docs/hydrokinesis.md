@@ -1,5 +1,7 @@
 # Hydrokinesis
 
+See [ranged attack distances](projectile-ranges.md) for the current projectile and beam ranges.
+
 Water bent the way the sea's own children bend it in the old myths, and fought with the flowing forms of the Water
 Tribes' benders: whips and waves, an armour of arms, a ride on a cresting wave, a waterspout you can steer. Water heals
 you, carries you and makes you stronger; without it, you pull what you can out of the air.
@@ -24,7 +26,7 @@ you, carries you and makes you stronger; without it, you pull what you can out o
 | Key | Level | Action | What happens | Stamina / cooldown |
 | --- | --- | --- | --- | --- |
 | G | 1 | **Water Whip** | A whip of water cracks out from your hand along your aim, up to 10 blocks: 4 + level damage to the first enemy, who is driven back and soaked. Missing, it splashes out fires where it lands. **Shift** snares instead: the whip coils round the first enemy's waist and hauls them to you. | 10 / 0.7 s |
-| H | 1 | **Crashing Wave** | You heave a wave up out of the ground and roll it 14 blocks forward, following the ground. It carries away whatever it catches (5 + level), swallows arrows, puts out fires and hardens lava (where you may build). | 26 / 6 s |
+| H | 1 | **Crashing Wave** | You heave a wave up out of the ground and roll it 32 blocks forward, following the ground. It carries away whatever it catches (5 + level), swallows arrows, puts out fires and hardens lava (where you may build). | 26 / 6 s |
 | Z | 2 | **Octopus Form** | Water wraps round you in a clear shell with eight arms. For up to ten seconds (water drains while it lasts) two arms lash at the nearest enemies within 5 blocks every 0.4 s, shots that come near are swallowed, and blows against you lose a third. **Press again** to throw every arm out at once (6 + level, everyone within 6 blocks hurled away); **Shift** to let it fall. | 30 / 14 s |
 | X | 3 | **Wave Rider** | A cresting wave rises under your feet and you surf it for six seconds, steering with your look: faster on water, climbing single steps, knocking enemies in the way aside and soaking them. **Press again** to leap off the crest; the landing is cushioned and splashes everyone near (4 + level / 2). **Shift** steps off. | 22 / 8 s |
 | V | 5 | **Maelstrom** | A whirlpool opens where you look (up to 28 blocks) and, after a second and a half, rises as a **waterspout** for eight seconds. It drifts toward wherever you look, drags enemies in, whirls them up its wall and drowns them. When it ends, or when you press **Shift**, it comes down as a **Deluge**: everything it held is slammed to the ground (8 + level) and a ring of water runs out. | 95 / 75 s |
@@ -41,7 +43,7 @@ fights the ordinary way. Each strike takes a little water; with none, the water 
 | --- | --- | --- | --- |
 | **Lash** | 1 | The lead hand flicks a lash of water up from the hip and out along your aim, 7 blocks: 2 + 0.4 × level damage, and it soaks. | 2 |
 | **Backhand** | 1 | The rear hand sweeps a lash across from the far shoulder. Lashes alternate while you keep clicking. | 2 |
-| **Ice Daggers** | 2 | The third click of a combo. Both hands draw back and thrust out, freezing the water into five daggers thrown in a fan, 14 blocks: 1.5 + 0.3 × level each, and they slow. (Three daggers when pulled from the air.) | 5 |
+| **Ice Daggers** | 2 | The third click of a combo. Both hands draw back and thrust out, freezing the water into five daggers thrown in a fan, 40 blocks: 1.5 + 0.3 × level each, and they slow. (Three daggers when pulled from the air.) | 5 |
 | **Water Wheel** | 2 | **Crouch and click.** A ring of water whirled round your waist in one full turn, 4 blocks: everyone in reach is knocked away and soaked, and nearby fires go out. | 5 |
 
 ### Dodges (double-tap a direction)
@@ -140,7 +142,7 @@ on a low stance, and the vault is a backflip. Calls raise both arms and circle t
 
 | Class ability | Role | What it does |
 | --- | --- | --- |
-| **Tsunami** | Offense | A great wave nine blocks wide rolls 24 blocks ahead, carrying everything before it (10 + 2 × level). |
+| **Tsunami** | Offense | A great wave nine blocks wide rolls 48 blocks ahead, carrying everything before it (10 + 2 × level). |
 | **Tidal Dome** | Defense | A dome of clear water over you for six seconds, ripples running round it and foam at its foot. It swallows shots from outside; friends inside gain Resistance and enemies inside are slowed and Soaked. |
 | **Healing Spring** | Support | A clear pool wells up at your feet with a little fountain, light lifting off it, for eight seconds: friends standing in it heal and lose their fire, poison and wither. |
 

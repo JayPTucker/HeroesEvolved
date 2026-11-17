@@ -1,5 +1,7 @@
 package com.jayptucker.heroesevolved.radiation;
 
+import com.jayptucker.heroesevolved.HeroesEvolved;
+
 import com.jayptucker.heroesevolved.ability.*;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.ability.service.AbilityUseService;
@@ -368,8 +370,8 @@ public final class RadiationGameTests {
         });
     }
 
-    @GameTest(template = "rewind_empty", batch = "radiation.terrain_budget", timeoutTicks = 400)
-    public static void denseCraterIsGradualAndSharesOneBudgetAcrossBlasts(GameTestHelper helper) {
+    @GameTest(template = "rewind_empty", batch = "radiation.terrain_budget", timeoutTicks = 120)
+    public static void denseCratersAreCarvedTheMomentTheWaveArrives(GameTestHelper helper) {
         ServerPlayer first = player(helper, 170, false);
         List<Packet<?>> packets = new ArrayList<>();
         ServerPlayer second = observer(helper, first.position().add(70, 0, 0), packets);
@@ -388,20 +390,19 @@ public final class RadiationGameTests {
             }
         Map<Long, Integer> breaks = new HashMap<>();
         Consumer<BlockEvent.BreakEvent> counter = event -> {
-            if (event.getPlayer() == first || event.getPlayer() == second) {
-                int count = breaks.merge(helper.getLevel().getGameTime(), 1, Integer::sum);
-                helper.assertTrue(count <= NuclearFallout.MAX_BREAKS_PER_TICK, "Simultaneous dense craters must share a single per-tick break limit");
-            }
+            if (event.getPlayer() == first || event.getPlayer() == second) breaks.merge(helper.getLevel().getGameTime(), 1, Integer::sum);
         };
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, false, BlockEvent.BreakEvent.class, counter);
         packets.clear();
         NuclearFallout.begin(first); NuclearFallout.begin(second);
-        helper.runAfterDelay(NuclearFallout.WAVE_TICKS, () -> helper.assertTrue(stones.stream().anyMatch(pos -> helper.getLevel().getBlockState(pos).is(Blocks.STONE)),
-                "Dense terrain must break gradually rather than in one burst"));
-        helper.runAfterDelay(330, () -> {
+        helper.runAfterDelay(NuclearFallout.WAVE_TICKS - 2, () -> helper.assertTrue(stones.stream().allMatch(pos -> helper.getLevel().getBlockState(pos).is(Blocks.STONE)),
+                "Nothing breaks before the wave reaches its edge"));
+        helper.runAfterDelay(NuclearFallout.WAVE_TICKS + 2, () -> {
             try {
-                helper.assertTrue(stones.stream().allMatch(pos -> helper.getLevel().getBlockState(pos).isAir()), "Both gradual craters must finish destroying ordinary blocks");
-                helper.assertTrue(breaks.size() > 1, "Terrain destruction must span several ticks");
+                helper.assertTrue(stones.stream().allMatch(pos -> helper.getLevel().getBlockState(pos).isAir()), "Both craters are carved the moment the wave arrives");
+                helper.assertTrue(breaks.size() == 1, "Each crater goes in one tick, not slice by slice: " + breaks);
+                HeroesEvolved.LOGGER.info("CRATER carved {} blocks in {} ms", NuclearFallout.lastCarveBlocks(),
+                        String.format("%.1f", NuclearFallout.lastCarveMillis()));
                 helper.assertTrue(packets.stream().noneMatch(packet -> packet instanceof net.minecraft.network.protocol.game.ClientboundLevelEventPacket event
                         && event.getType() == 2001), "Nuclear terrain removal must not send a separate block-break sound and particle event per block");
                 helper.succeed();
@@ -433,7 +434,7 @@ public final class RadiationGameTests {
                 var plan = com.jayptucker.heroesevolved.time.TimeRewindBlocks.plan(watcher, before);
                 helper.assertTrue(plan != null, "The witness must retain a timeline of the crater");
                 com.jayptucker.heroesevolved.time.TimeRewindBlocks.restore(watcher, plan);
-                helper.assertTrue(helper.getLevel().getBlockState(stone).is(Blocks.STONE), "Gradual silent removal must remain visible to Time Rewind");
+                helper.assertTrue(helper.getLevel().getBlockState(stone).is(Blocks.STONE), "Silent removal must remain visible to Time Rewind");
                 var restored = (net.minecraft.world.level.block.entity.ChestBlockEntity) helper.getLevel().getBlockEntity(chest);
                 helper.assertTrue(restored != null && restored.getItem(0).is(net.minecraft.world.item.Items.DIAMOND)
                         && restored.getItem(0).getCount() == 3, "Rewinding the crater must preserve original container contents");

@@ -7,6 +7,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import com.jayptucker.heroesevolved.time.TemporalSnapshotService;
 import com.jayptucker.heroesevolved.time.intro.TimeIntroService;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -20,15 +21,19 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import java.util.*;
 
-/** Fast damage front, bounded terrain processing, and a temporary radioactive aftermath. */
+/**
+ * Fast damage front, a crater carved in one tick, and a temporary radioactive aftermath. The crater goes the moment the
+ * wave reaches its edge ({@link #WAVE_TICKS}): the inside is cleared without neighbour updates (nothing inside is left
+ * to hear about it), and the outer shell and anything touching water or lava with full updates, so sand falls in, water
+ * flows and torches drop at the rim just as after an ordinary explosion.
+ */
 public final class NuclearFallout {
     public static final int RADIUS = 24, WAVE_TICKS = 5, FALLOUT_TICKS = 20 * 60;
     public static final int AWAKENING_RADIUS = 48, CLOUD_TICKS = 600;
     private static final List<Blast> BLASTS = new ArrayList<>();
-    public static final int MAX_SCANS_PER_TICK = 8192, MAX_BREAKS_PER_TICK = 512;
-    private static final long TERRAIN_NANOS = 4_000_000;
-    private static final int TERRAIN_TIMEOUT = 20 * 180;
-    private static int roundRobin;
+    /** How long the last crater took to carve, in milliseconds, and how many blocks it broke (tests and logs). */
+    private static double lastCarveMillis;
+    private static int lastCarveBlocks;
     private NuclearFallout() {}
     private static final class Blast {
         final ServerLevel level;
@@ -40,15 +45,11 @@ public final class NuclearFallout {
         final Set<UUID> struck = new HashSet<>();
         final UUID id = UUID.randomUUID();
         final int radius;
-        final NuclearTerrainCursor cursor;
-        final BlockPos.MutableBlockPos offset = new BlockPos.MutableBlockPos();
-        final BlockPos.MutableBlockPos position = new BlockPos.MutableBlockPos();
         boolean terrainFinished;
         Blast(LivingEntity owner, boolean awakening) {
             this.owner = owner; level = (ServerLevel) owner.level(); center = groundUnder(owner);
             block = BlockPos.containing(center); began = level.getGameTime();
             radius = awakening ? AWAKENING_RADIUS : RADIUS;
-            cursor = new NuclearTerrainCursor(radius);
         }
     }
     /** The ground under a caster who has risen a few blocks while charging, or where they are. */
@@ -65,7 +66,7 @@ public final class NuclearFallout {
     public static void begin(LivingEntity owner, boolean awakening) {
         if (!(owner.level() instanceof ServerLevel level)) return;
         if (TimeIntroService.isCity(level) || TemporalSnapshotService.isTemporalDimension(level)) return;
-        // Overlapping detonations refresh their own area rather than growing an unbounded work queue.
+        // Overlapping detonations refresh their own area rather than growing an unbounded list.
         BLASTS.removeIf(blast -> blast.owner.getUUID().equals(owner.getUUID()));
         if (BLASTS.size() >= 32) BLASTS.removeFirst();
         Blast blast = new Blast(owner, awakening);
@@ -74,28 +75,27 @@ public final class NuclearFallout {
         if (owner instanceof ServerPlayer player) AbilityEffects.at(player, Kind.NUCLEAR_SHOCKWAVE, blast.radius);
         else AbilityEffects.send(level, Kind.NUCLEAR_SHOCKWAVE, owner.position(), owner.position().add(0, 1, 0), blast.radius);
     }
+
+    /** The radius of the blast {@code owner} last set off, or 0 if none is under way (tests). */
+    public static int radiusOf(LivingEntity owner) {
+        for (Blast blast : BLASTS) if (blast.owner.getUUID().equals(owner.getUUID())) return blast.radius;
+        return 0;
+    }
+
     public static void tick(MinecraftServer server) {
         for (Blast blast : List.copyOf(BLASTS)) {
             if (blast.level.getServer() != server) continue;
             long age = blast.level.getGameTime() - blast.began;
-            if (age > TERRAIN_TIMEOUT) blast.terrainFinished = true;
             if (age > FALLOUT_TICKS && blast.terrainFinished) { BLASTS.remove(blast); continue; }
             double front = Math.min(blast.radius, (age + 1) * blast.radius / (double) WAVE_TICKS);
             if (age <= WAVE_TICKS) wave(blast, front);
+            // The wave has reached its edge: the whole crater goes at once.
+            if (age >= WAVE_TICKS && !blast.terrainFinished) {
+                blast.terrainFinished = true;
+                carve(blast);
+            }
             if (age <= FALLOUT_TICKS && age % 20 == 0) fallout(blast);
             if (age > 0 && age < CLOUD_TICKS && age % 40 == 0) cloud(blast, (int) age);
-        }
-        // One budget for the entire server, not one allowance per active explosion.
-        List<Blast> terrain = BLASTS.stream().filter(blast -> blast.level.getServer() == server
-                && !blast.terrainFinished && blast.level.getGameTime() - blast.began >= WAVE_TICKS).toList();
-        if (terrain.isEmpty()) return;
-        long deadline = System.nanoTime() + TERRAIN_NANOS;
-        int scans = 0, breaks = 0, empty = 0;
-        while (scans < MAX_SCANS_PER_TICK && breaks < MAX_BREAKS_PER_TICK && System.nanoTime() < deadline) {
-            Blast blast = terrain.get(Math.floorMod(roundRobin++, terrain.size()));
-            if (blast.terrainFinished) { if (++empty >= terrain.size()) break; continue; }
-            empty = 0; scans++;
-            if (terrainStep(blast)) breaks++;
         }
     }
     private static boolean vulnerable(Blast blast, LivingEntity entity) {
@@ -120,26 +120,61 @@ public final class NuclearFallout {
             target.hurtMarked = true;
         }
     }
-    private static boolean terrainStep(Blast blast) {
+
+    /**
+     * Breaks every block of the blast's sphere now. A player's blast breaks what they could break (one
+     * {@code BreakEvent} each, so claims and protections still hold); anyone else's follows {@code mobGriefing}, like a
+     * creeper's. Fluids and unbreakable blocks stay. A player's own column under their feet stays, so a caster who
+     * outlives their blast isn't dropped into it. Returns how many blocks broke.
+     */
+    static int carve(Blast blast) {
         LivingEntity owner = blast.owner;
         ServerLevel level = blast.level;
         ServerPlayer player = owner instanceof ServerPlayer p ? p : null;
-        // A player's blast breaks what they could break; anyone else's follows the mobGriefing rule, like a creeper's.
         boolean mayBreak = player != null ? player.mayBuild()
                 : level.getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_MOBGRIEFING);
-        if (!mayBreak || owner.level() != level) { blast.terrainFinished = true; return false; }
-        if (!blast.cursor.next(blast.offset)) { blast.terrainFinished = true; return false; }
-        BlockPos offset = blast.offset;
-        if (offset.getY() < 0 && offset.getX() * offset.getX() + offset.getZ() * offset.getZ() <= 2) return false;
-        BlockPos pos = blast.position.setWithOffset(blast.block, offset);
-        if (!level.hasChunkAt(pos) || !level.getWorldBorder().isWithinBounds(pos) || player != null && !level.mayInteract(player, pos)) return false;
-        BlockState state = level.getBlockState(pos);
-        if (state.isAir() || !state.getFluidState().isEmpty() || state.getDestroySpeed(level, pos) < 0) return false;
-        if (player != null && NeoForge.EVENT_BUS.post(new BlockEvent.BreakEvent(level, pos.immutable(), state, player)).isCanceled()) return false;
-        // Avoid a sound/particle event for every voxel. Normal removal still handles container
-        // contents, neighbors, lighting and the Time Rewind journal; chunk updates remain batched.
-        return level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+        if (!mayBreak || owner.level() != level) return 0;
+        return carve(level, blast.block, blast.radius, player);
     }
+
+    /** The crater itself, at any size (tests carve small ones inside an arena). */
+    public static int carve(ServerLevel level, BlockPos center, int r, ServerPlayer player) {
+        long began = System.nanoTime();
+        int inner = (r - 1) * (r - 1), broken = 0;
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        // Top down, so nothing is left hanging over a hole, even for the rest of the tick.
+        for (int y = r; y >= -r; y--)
+            for (int x = -r; x <= r; x++)
+                for (int z = -r; z <= r; z++) {
+                    int d2 = x * x + y * y + z * z;
+                    if (d2 > r * r) continue;
+                    if (player != null && y < 0 && x * x + z * z <= 2) continue;
+                    pos.setWithOffset(center, x, y, z);
+                    if (!level.hasChunkAt(pos) || !level.getWorldBorder().isWithinBounds(pos) || player != null && !level.mayInteract(player, pos)) continue;
+                    BlockState state = level.getBlockState(pos);
+                    if (state.isAir() || !state.getFluidState().isEmpty() || state.getDestroySpeed(level, pos) < 0) continue;
+                    if (player != null && NeoForge.EVENT_BUS.post(new BlockEvent.BreakEvent(level, pos.immutable(), state, player)).isCanceled()) continue;
+                    // Inside, nothing is left to hear about it: skip neighbour and shape updates. The rim, and anything
+                    // touching a fluid, update fully. No break sound or particles per block either way; ordinary removal
+                    // still drops container contents, relights and records the change for Time Rewind.
+                    int flags = d2 <= inner && !nearFluid(level, pos) ? Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE : Block.UPDATE_ALL;
+                    if (level.setBlock(pos, Blocks.AIR.defaultBlockState(), flags)) broken++;
+                }
+        lastCarveMillis = (System.nanoTime() - began) / 1.0e6;
+        lastCarveBlocks = broken;
+        return broken;
+    }
+
+    private static boolean nearFluid(ServerLevel level, BlockPos pos) {
+        for (Direction d : Direction.values())
+            if (!level.getFluidState(pos.relative(d)).isEmpty()) return true;
+        return false;
+    }
+
+    /** The last crater's carve time in milliseconds, and how many blocks it broke. */
+    public static double lastCarveMillis() { return lastCarveMillis; }
+    public static int lastCarveBlocks() { return lastCarveBlocks; }
+
     private static void fallout(Blast blast) {
         AbilityEffects.send(blast.level, Kind.NUCLEAR_FALLOUT, blast.center, blast.center, blast.radius);
         for (LivingEntity target : blast.level.getEntitiesOfClass(LivingEntity.class,
@@ -158,5 +193,5 @@ public final class NuclearFallout {
         for (ServerPlayer viewer : blast.level.players())
             if (viewer.position().distanceToSqr(blast.center) <= 400 * 400) PacketDistributor.sendToPlayer(viewer, payload);
     }
-    public static void clear() { BLASTS.clear(); roundRobin = 0; NuclearShields.clear(); }
+    public static void clear() { BLASTS.clear(); NuclearShields.clear(); }
 }

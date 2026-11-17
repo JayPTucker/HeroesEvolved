@@ -1,5 +1,6 @@
 package com.jayptucker.heroesevolved.electro;
 
+import com.jayptucker.heroesevolved.ability.ProjectileRanges;
 import com.jayptucker.heroesevolved.ability.AbilityRanges;
 import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.Targeting;
@@ -82,7 +83,8 @@ public final class ElectroService {
     public static final int TAP_TICKS = 6;
     private static final int STREAM_TICKS = 80;
     private static final int ELECTRIC_TINT = 0x5555AAFF;
-    private static final int ORB_LIFETIME_TICKS = AbilityRanges.ranged(50);
+    private static final double ORB_SPEED = .55;
+    private static final int ORB_LIFETIME_TICKS = (int) Math.ceil(ProjectileRanges.BALL_LIGHTNING / ORB_SPEED) + 1;
 
     private static final class Charge { int value; long lastGain; int tier; }
     private static final class Hold {
@@ -253,11 +255,11 @@ public final class ElectroService {
         ServerLevel level = player.serverLevel();
         Vec3 hand = handPosition(player);
         Vec3 eye = player.getEyePosition(), aim = player.getLookAngle();
-        double reach = AbilityRanges.ranged(16.0D);
+        double reach = ProjectileRanges.CHAIN_LIGHTNING;
         BlockHitResult hit = level.clip(new ClipContext(eye, eye.add(aim.scale(reach)),
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
         boolean charged = charge(player) >= CHARGED;
-        LivingEntity target = Targeting.livingEntityInSight(player, 16.0D, entity -> hostile(player, entity));
+        LivingEntity target = Targeting.livingEntityInRange(player, ProjectileRanges.CHAIN_LIGHTNING, ClipContext.Fluid.NONE, entity -> hostile(player, entity));
         double limit = Math.min(eye.distanceTo(hit.getLocation()), target == null ? reach : eye.distanceTo(target.getBoundingBox().getCenter()));
         Orb relay = aimedOrb(player, eye, aim, limit);
         boolean over = (target != null || relay != null) && spendOvercharge(player);
@@ -335,12 +337,12 @@ public final class ElectroService {
         ServerPlayer player = hold.player;
         ServerLevel level = player.serverLevel();
         Vec3 hand = handPosition(player), eye = player.getEyePosition(), aim = player.getLookAngle();
-        double range = AbilityRanges.ranged(7.0D);
+        double range = ProjectileRanges.LIVE_CURRENT;
         // The stream sticks to its target while it stays roughly under the crosshair.
         LivingEntity target = hold.target;
         if (target != null && (!hostile(player, target) || target.distanceTo(player) > range + 1
                 || target.getBoundingBox().getCenter().subtract(eye).normalize().dot(aim) < 0.9 || !player.hasLineOfSight(target))) target = null;
-        if (target == null) target = Targeting.livingEntityInSight(player, 7.0D, entity -> hostile(player, entity));
+        if (target == null) target = Targeting.livingEntityInRange(player, ProjectileRanges.LIVE_CURRENT, ClipContext.Fluid.NONE, entity -> hostile(player, entity));
         hold.target = target;
 
         Vec3 end;
@@ -406,8 +408,8 @@ public final class ElectroService {
                 .add(player.getLookAngle().scale(.62));
         // A palm pressed into a wall cannot spawn its orb on the far side.
         Vec3 start = visible(player, eye, palm) ? palm : eye;
-        Orb orb = new Orb(player.getUUID(), player.serverLevel(), start,
-                player.getLookAngle().normalize().scale(.55), powerLevel, over);
+        Orb orb = new Orb(player, player.serverLevel(), start,
+                player.getLookAngle().normalize().scale(ORB_SPEED), powerLevel, over);
         ORBS.add(orb);
         show(orb.level, Piece.ELECTRO_DRAW, start, start, over ? 1.45 : 1.1, null);
         show(orb.level, Piece.ELECTRO_ORB, start, start.add(orb.velocity), over ? .68 : .47, null);
@@ -471,16 +473,19 @@ public final class ElectroService {
             Vec3 toward = prey.getBoundingBox().getCenter().subtract(orb.position).normalize();
             orb.velocity = heading.scale(0.85D).add(toward.scale(0.15D)).normalize().scale(orb.velocity.length());
         }
-        Vec3 next = orb.position.add(orb.velocity);
+        double step = Math.min(orb.velocity.length(), ProjectileRanges.BALL_LIGHTNING - orb.travelled);
+        Vec3 next = orb.position.add(orb.velocity.normalize().scale(step));
         if (!level.hasChunkAt(BlockPos.containing(next)) || !level.getWorldBorder().isWithinBounds(BlockPos.containing(next))) return true;
 
         BlockHitResult blockHit = level.clip(new ClipContext(orb.position, next,
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, owner));
-        LivingEntity touched = level.getEntitiesOfClass(LivingEntity.class, new AABB(next, next).inflate(0.6D),
-                entity -> hostile(owner, entity) && visible(owner, orb.position, entity.getBoundingBox().getCenter()))
-                .stream().findFirst().orElse(null);
-        if (blockHit.getType() != HitResult.Type.MISS || touched != null || orb.ageTicks >= ORB_LIFETIME_TICKS) {
-            Vec3 impact = blockHit.getType() != HitResult.Type.MISS
+        Vec3 end = blockHit.getLocation();
+        var touched = Targeting.firstLivingHit(owner, orb.position, end, .3,
+                entity -> hostile(owner, entity) && visible(owner, orb.position, entity.getBoundingBox().getCenter()));
+        orb.travelled += step;
+        if (blockHit.getType() != HitResult.Type.MISS || touched != null
+                || orb.travelled >= ProjectileRanges.BALL_LIGHTNING - 1e-7 || orb.ageTicks >= ORB_LIFETIME_TICKS) {
+            Vec3 impact = touched != null ? touched.getLocation() : blockHit.getType() != HitResult.Type.MISS
                     ? blockHit.getLocation().subtract(orb.velocity.normalize().scale(.035)) : next;
             burst(owner, orb, impact);
             return true;
@@ -528,16 +533,19 @@ public final class ElectroService {
 
     private static final class Orb {
         private final UUID ownerId;
+        private final ServerPlayer owner;
         private final ServerLevel level;
         private final int powerLevel;
         private final boolean empowered;
         private Vec3 velocity;
         private Vec3 position;
         private int ageTicks;
+        private double travelled;
         private long relayAt;
 
-        private Orb(UUID ownerId, ServerLevel level, Vec3 position, Vec3 velocity, int powerLevel, boolean empowered) {
-            this.ownerId = ownerId;
+        private Orb(ServerPlayer owner, ServerLevel level, Vec3 position, Vec3 velocity, int powerLevel, boolean empowered) {
+            this.owner = owner;
+            this.ownerId = owner.getUUID();
             this.level = level;
             this.position = position;
             this.velocity = velocity;
@@ -918,8 +926,9 @@ public final class ElectroService {
 
         for (Iterator<Orb> iterator = ORBS.iterator(); iterator.hasNext(); ) {
             Orb orb = iterator.next();
-            ServerPlayer owner = server.getPlayerList().getPlayer(orb.ownerId);
-            if (owner == null || !owner.isAlive() || owner.level() != orb.level || tickOrb(owner, orb)) iterator.remove();
+            ServerPlayer owner = orb.owner;
+            if (owner.isRemoved() || !owner.isAlive() || owner.level() != orb.level || !PowerRules.canAct(owner)
+                    || tickOrb(owner, orb)) iterator.remove();
         }
         for (Strike strike : List.copyOf(STRIKES)) {
             if (strike.level.getGameTime() < strike.due) continue;

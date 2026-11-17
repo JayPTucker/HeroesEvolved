@@ -1,0 +1,25 @@
+// Focused long-range, obstruction and lifetime regressions. Tests stay out of the release jar.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def tests = sourceSets.create('projectileTest') {
+                java.srcDir('src/gametest/java')
+                java.include('com/jayptucker/heroesevolved/ability/ProjectileRangeGameTests.java')
+                java.include('com/jayptucker/heroesevolved/PowerOwnershipTestSupport.java')
+                resources.srcDir('src/gametest/resources')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(tests) } }
+                runs { gameTestServer { gameDirectory = project.file('build/projectile-test-world') } }
+            }
+            tasks.named('runGameTestServer') {
+                dependsOn(tasks.named('projectileTestClasses'))
+                def world = project.file('build/projectile-test-world/world')
+                def config = project.file('build/projectile-test-world/config/heroesevolved-common.toml')
+                doFirst { world.deleteDir(); config.delete() }
+            }
+        }
+    }
+}

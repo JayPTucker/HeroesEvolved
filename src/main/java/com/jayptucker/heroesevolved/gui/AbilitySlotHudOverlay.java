@@ -64,47 +64,27 @@ public final class AbilitySlotHudOverlay {
         // Dormant powers are intentionally unknown to the player. Do not
         // reveal their actions or controls until the awakening occurs.
         var mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null || mc.options.hideGui || !hasUnlockedAbility()) return;
+        if (mc.player == null || mc.level == null || mc.options.hideGui) return;
 
-        int y = drawLoadout(guiGraphics);
-        y = drawRadiationCore(guiGraphics, y);
-        y = drawResonance(guiGraphics, y);
-        y = drawMomentum(guiGraphics, y);
-        y = BurnMeter.draw(guiGraphics, START_X, y);
-        y = drawDensity(guiGraphics, y);
-        y = drawStrain(guiGraphics, y);
-        y = drawRegrowth(guiGraphics, y);
-
-        if (!hasFlightSpeedControl()) {
-            return;
-        }
-
-        int step = ClientFlightVisualState.speedStep(mc.player.getId());
-        Component speedText = Component.translatable("hud.heroesevolved.flight_speed", step + 1);
-
-        guiGraphics.drawString(
-                mc.font,
-                speedText,
-                START_X,
-                y,
-                0xFFFFD7DC,
-                true
-        );
-        int id = mc.player.getId();
-        if (ClientFlightVisualState.isFlightEnabled(id) || ClientFlightVisualState.isDiving(id)) {
-            int momentum = ClientFlightVisualState.momentum(id);
-            int color = momentum >= 100 ? 0xFFFFFFFF : 0xFF8EDAF0;
-            y += LINE_HEIGHT;
-            guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.flight_momentum", momentum),
-                    START_X, y, color, true);
-            guiGraphics.fill(START_X, y + 10, START_X + 100, y + 13, 0x80314650);
-            guiGraphics.fill(START_X, y + 10, START_X + momentum, y + 13, color);
-            String maneuver = ClientFlightVisualState.isCharging(id) ? "flight_charging"
-                    : ClientFlightVisualState.isDiving(id) ? "flight_diving"
-                    : ClientFlightVisualState.isCycloneActive(id) ? "flight_tempest" : null;
-            if (maneuver != null) guiGraphics.drawString(mc.font,
-                    Component.translatable("hud.heroesevolved." + maneuver), START_X, y + 18, 0xFFCBEFF8, true);
-        }
+        // Without a power the keys stay hidden, but rings that aren't a power's own (faded, burnt) still show.
+        int y = hasUnlockedAbility() ? drawLoadout(guiGraphics) : START_Y;
+        // Every power's readout is a ring in one compact row (gui/HudGauges); each shows only while it has something to say.
+        List<HudGauges.Gauge> gauges = new ArrayList<>();
+        radiationCore(gauges);
+        resonance(gauges);
+        if (holds(ModAbilities.SUPERSPEED_ID)) HudGauges.speed(gauges);
+        density(gauges);
+        strain(gauges);
+        regrowth(gauges);
+        flight(gauges);
+        com.jayptucker.heroesevolved.client.PyroFlightClient.gauges(gauges);
+        com.jayptucker.heroesevolved.client.OpticalClient.gauges(gauges);
+        com.jayptucker.heroesevolved.client.TelepathyClient.gauges(gauges);
+        HudGauges.burn(gauges);
+        y = HudGauges.row(guiGraphics, START_X, y + 2, gauges);
+        // Words stay only for what you must do right now.
+        y = downedHint(guiGraphics, y);
+        flightHint(guiGraphics, y);
     }
 
     private static int drawLoadout(GuiGraphics graphics) {
@@ -227,200 +207,121 @@ public final class AbilitySlotHudOverlay {
         };
     }
 
-    /** Superspeed's Momentum, with notches where the body crackles, you buffet, and the sound barrier breaks. */
-    private static int drawMomentum(GuiGraphics guiGraphics, int y) {
-        var mc = Minecraft.getInstance();
-        boolean speedster = ClientPowerState.getSnapshot().abilities().stream().anyMatch(power -> power.unlocked()
-                && power.abilityId().equals(ModAbilities.SUPERSPEED_ID));
-        if (mc.player == null || !speedster) return y;
-        int maximumSpeedStep = ClientMomentum.maximumSpeedStep();
-        if (maximumSpeedStep > 0) {
-            guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.run_speed",
-                    ClientMomentum.speedStep(), maximumSpeedStep), START_X, y, 0xFFFFC23A, true);
-            y += LINE_HEIGHT;
-        }
-        int momentum = ClientMomentum.get();
-        long time = mc.level == null ? 0 : mc.level.getGameTime();
-        int color = momentum >= 100 ? ((time / 3) % 2 == 0 ? 0xFFFFF6D8 : 0xFFFFC23A) : momentum >= 50 ? 0xFFFFC23A : 0xFFFF8A1E;
-        guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.momentum", momentum), START_X, y, color, true);
-        guiGraphics.fill(START_X, y + 10, START_X + 100, y + 13, 0x80402810);
-        guiGraphics.fill(START_X, y + 10, START_X + momentum, y + 13, color);
-        for (int mark : new int[] {30, 50, 60}) guiGraphics.fill(START_X + mark, y + 9, START_X + mark + 1, y + 14, 0xC0FFFFFF);
-        return drawOverrun(guiGraphics, y + LINE_HEIGHT + 6, momentum, time);
+    private static boolean holds(net.minecraft.resources.ResourceLocation power) {
+        return ClientPowerState.getSnapshot().abilities().stream().anyMatch(ability -> ability.unlocked() && ability.abilityId().equals(power));
     }
 
-    /**
-     * Overrun, under Momentum: how long until it can be done again (its minute of history, or its cooldown), or
-     * the charge filling as you run flat out, pulsing once the breach is open. Below Power Level 15 it only says
-     * so, and only while you run flat out.
-     */
-    private static int drawOverrun(GuiGraphics guiGraphics, int y, int momentum, long time) {
+    /** Induced Radioactivity's Core: notches at Hot, Glowing and Critical; orange when Hot, red when Critical, flashing at 100. */
+    private static void radiationCore(List<HudGauges.Gauge> gauges) {
         var mc = Minecraft.getInstance();
-        int state = com.jayptucker.heroesevolved.network.ClientOverrun.state();
-        int value = com.jayptucker.heroesevolved.network.ClientOverrun.value();
-        switch (state) {
-            case com.jayptucker.heroesevolved.network.OverrunStatusPayload.LOCKED -> {
-                if (momentum < 90) return y;
-                guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.overrun_locked"), START_X, y, 0xFF8C8CA0, true);
-                return y + LINE_HEIGHT;
-            }
-            case com.jayptucker.heroesevolved.network.OverrunStatusPayload.GATHERING,
-                 com.jayptucker.heroesevolved.network.OverrunStatusPayload.COOLDOWN -> {
-                int left = com.jayptucker.heroesevolved.network.ClientOverrun.secondsLeft();
-                String clock = left / 60 + ":" + String.format("%02d", left % 60);
-                guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.overrun_wait", clock), START_X, y, 0xFF9C8CD8, true);
-                return y + LINE_HEIGHT;
-            }
-            case com.jayptucker.heroesevolved.network.OverrunStatusPayload.READY,
-                 com.jayptucker.heroesevolved.network.OverrunStatusPayload.BREACH -> {
-                boolean breach = state == com.jayptucker.heroesevolved.network.OverrunStatusPayload.BREACH;
-                int fill = breach ? 100 : value / 10;
-                int color = breach ? ((time / 3) % 2 == 0 ? 0xFFF4EEFF : 0xFFB49CFF) : 0xFFB49CFF;
-                guiGraphics.drawString(mc.font, Component.translatable(fill > 0 ? "hud.heroesevolved.overrun" : "hud.heroesevolved.overrun_ready"),
-                        START_X, y, color, true);
-                if (fill > 0) {
-                    guiGraphics.fill(START_X, y + 10, START_X + 100, y + 13, 0x80302050);
-                    guiGraphics.fill(START_X, y + 10, START_X + fill, y + 13, color);
-                    return y + LINE_HEIGHT + 6;
-                }
-                return y + LINE_HEIGHT;
-            }
-            default -> { return y; }
-        }
-    }
-
-    /**
-     * Daisy Johnson's Strain: blue while she has it under control, amber past 50 (pushing it), red and
-     * flickering past 80 (breaking). While her arms are fractured the bar says so instead.
-     */
-    private static int drawStrain(GuiGraphics guiGraphics, int y) {
-        var mc = Minecraft.getInstance();
-        boolean quake = ClientPowerState.getSnapshot().abilities().stream().anyMatch(power -> power.unlocked()
-                && power.abilityId().equals(ModAbilities.QUAKE_ID));
-        if (mc.player == null || !quake) return y;
-        int strain = com.jayptucker.heroesevolved.network.ClientStrain.get();
-        boolean fractured = com.jayptucker.heroesevolved.network.ClientStrain.fractured();
-        long time = mc.level == null ? 0 : mc.level.getGameTime();
-        int color = fractured ? 0xFFFF4040 : strain >= 80 ? ((time / 3) % 2 == 0 ? 0xFFFF5A5A : 0xFFFFB0A0)
-                : strain >= 50 ? 0xFFFFC070 : 0xFF9FD8FF;
-        Component label = fractured ? Component.translatable("hud.heroesevolved.strain_fractured")
-                : Component.translatable("hud.heroesevolved.strain", strain);
-        guiGraphics.drawString(mc.font, label, START_X, y, color, true);
-        guiGraphics.fill(START_X, y + 10, START_X + 100, y + 13, 0x80303848);
-        guiGraphics.fill(START_X, y + 10, START_X + strain, y + 13, color);
-        for (int mark : new int[] {50, 80}) guiGraphics.fill(START_X + mark, y + 9, START_X + mark + 1, y + 14, 0xC0FFFFFF);
-        return y + LINE_HEIGHT + 6;
-    }
-
-    /**
-     * D.L. Hawkins's Density dial: a two-sided bar, Ghost to the left of centre and Dense to the right,
-     * with a notch at each setting. Underground, Breath runs out beneath it.
-     */
-    private static int drawDensity(GuiGraphics guiGraphics, int y) {
-        var mc = Minecraft.getInstance();
-        boolean phaser = ClientPowerState.getSnapshot().abilities().stream().anyMatch(power -> power.unlocked()
-                && power.abilityId().equals(ModAbilities.PHASING_ID));
-        if (mc.player == null || !phaser) return y;
-        int density = com.jayptucker.heroesevolved.network.ClientDensity.get();
-        int notch = Math.round(density / 50F);
-        int color = density < 0 ? 0xFF7FE8D8 : density > 0 ? 0xFFB4B0A8 : 0xFFE6ECEA;
-        guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.density",
-                Component.translatable("density.heroesevolved.notch." + (notch + 2))), START_X, y, color, true);
-        int mid = START_X + 50;
-        guiGraphics.fill(START_X, y + 10, START_X + 100, y + 13, 0x80283836);
-        if (density < 0) guiGraphics.fill(mid + density / 2, y + 10, mid, y + 13, 0xFF7FE8D8);
-        if (density > 0) guiGraphics.fill(mid, y + 10, mid + density / 2, y + 13, 0xFF9A958C);
-        for (int mark : new int[] {0, 25, 50, 75, 100}) guiGraphics.fill(START_X + mark, y + 9, START_X + mark + 1, y + 14, 0xC0FFFFFF);
-        y += LINE_HEIGHT + 6;
-        int breath = com.jayptucker.heroesevolved.network.ClientDensity.breath();
-        if (breath >= 0) {
-            long time = mc.level == null ? 0 : mc.level.getGameTime();
-            int air = breath > 25 || (time / 4) % 2 == 0 ? 0xFF8FD8FF : 0xFFFF6A6A;
-            guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.breath", breath), START_X, y, air, true);
-            guiGraphics.fill(START_X, y + 10, START_X + 100, y + 13, 0x80203040);
-            guiGraphics.fill(START_X, y + 10, START_X + breath, y + 13, air);
-            y += LINE_HEIGHT + 6;
-        }
-        return y;
-    }
-
-    /** Sonic Resonance: built by sonic hits and loud sounds, spent by a harmonic Note and by Crescendo. */
-    private static int drawResonance(GuiGraphics guiGraphics, int y) {
-        var mc = Minecraft.getInstance();
-        boolean singer = ClientPowerState.getSnapshot().abilities().stream().anyMatch(power -> power.unlocked()
-                && power.abilityId().equals(ModAbilities.SONIC_RESONANCE_ID));
-        if (mc.player == null || !singer) return y;
-        int resonance = com.jayptucker.heroesevolved.network.ClientResonance.get();
-        guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.resonance", resonance), START_X, y, 0xFFE0B8FF, true);
-        guiGraphics.fill(START_X, y + 10, START_X + 100, y + 13, 0x80302040);
-        // The bar runs through every colour, the way Emma sees a rising note.
-        long time = mc.level == null ? 0 : mc.level.getGameTime();
-        for (int x = 0; x < resonance; x++)
-            guiGraphics.fill(START_X + x, y + 10, START_X + x + 1, y + 13,
-                    0xFF000000 | net.minecraft.util.Mth.hsvToRgb(((x / 100F) + time / 200F) % 1F, 0.6F, 1F));
-        // The notch marks what a harmonic Note costs.
-        guiGraphics.fill(START_X + 30, y + 9, START_X + 31, y + 14, 0xC0FFFFFF);
-        return y + LINE_HEIGHT + 6;
-    }
-
-    /** Claire Bennet's Regrowth: stored healing from the hits she has taken, and whether Resurrection is ready. */
-    private static int drawRegrowth(GuiGraphics guiGraphics, int y) {
-        var mc = Minecraft.getInstance();
-        var regen = ClientPowerState.getSnapshot().abilities().stream().filter(power -> power.unlocked()
-                && power.abilityId().equals(com.jayptucker.heroesevolved.ability.registry.ModAbilities.REGENERATION_ID)).findFirst().orElse(null);
-        if (mc.player == null || regen == null) return y;
-        int regrowth = com.jayptucker.heroesevolved.network.ClientRegenerationState.regrowth();
-        int color = regrowth >= 50 ? 0xFFFF5A64 : 0xFFD0303C;
-        guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.regrowth", regrowth), START_X, y, color, true);
-        guiGraphics.fill(START_X, y + 10, START_X + 100, y + 13, 0x80401018);
-        guiGraphics.fill(START_X, y + 10, START_X + regrowth, y + 13, color);
-        // The notch marks what a Second Life costs.
-        guiGraphics.fill(START_X + 50, y + 9, START_X + 51, y + 14, 0xC0FFFFFF);
-        y += LINE_HEIGHT + 6;
-        long down = com.jayptucker.heroesevolved.network.ClientRegenerationState.downedRemaining();
-        if (down > 0) {
-            // Down on the ground: a countdown, and how to give up once you're allowed to.
-            guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.downed", time(down)), START_X, y, 0xFFFF6A6A, true);
-            y += LINE_HEIGHT;
-            int giveUp = com.jayptucker.heroesevolved.network.ClientRegenerationState.giveUp();
-            if (giveUp >= 0) {
-                guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.give_up",
-                        mc.options.keyShift.getTranslatedKeyMessage()), START_X, y, 0xFFB89A9A, true);
-                if (giveUp > 0) guiGraphics.fill(START_X, y + 10, START_X + giveUp * 100 / 60, y + 12, 0xFFFFD9A0);
-                y += LINE_HEIGHT + 4;
-            }
-        } else {
-            int recovery = com.jayptucker.heroesevolved.network.ClientRegenerationState.recoveryTicks();
-            guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.unkillable", time(recovery)), START_X, y, 0xFFFFD9A0, true);
-            y += LINE_HEIGHT;
-        }
-        return y;
-    }
-
-    private static String time(long ticks) {
-        long seconds = (ticks + 19) / 20;
-        return seconds / 60 + ":" + String.format("%02d", seconds % 60);
-    }
-
-    /** Induced Radioactivity's Core: a bar that turns orange when Hot, red when Critical, and flashes at 100. */
-    private static int drawRadiationCore(GuiGraphics guiGraphics, int y) {
-        var mc = Minecraft.getInstance();
-        boolean ted = ClientPowerState.getSnapshot().abilities().stream().anyMatch(power -> power.unlocked()
-                && power.abilityId().equals(com.jayptucker.heroesevolved.ability.registry.ModAbilities.RADIATION_ID));
-        if (mc.player == null || !ted) return y;
+        if (mc.player == null || !holds(ModAbilities.RADIATION_ID)) return;
         int core = Math.max(0, com.jayptucker.heroesevolved.client.effects.RadiationVisuals.stress(mc.player.getId()));
         boolean overdrive = com.jayptucker.heroesevolved.client.effects.RadiationVisuals.overdrive(mc.player.getId());
-        String tier = overdrive ? "overdrive" : core >= 100 ? "meltdown" : core >= 80 ? "critical" : core >= 60 ? "glowing" : core >= 40 ? "hot" : "stable";
+        String tier = overdrive ? "OVERDRIVE" : core >= 100 ? "VENT NOW!" : core >= 80 ? "CRITICAL" : core >= 60 ? "GLOWING" : core >= 40 ? "HOT" : "CORE";
         int color = overdrive ? ((mc.level.getGameTime() / 6) % 2 == 0 ? 0xFFFFD040 : 0xFFFFF0A0)
                 : core >= 100 ? ((mc.level.getGameTime() / 4) % 2 == 0 ? 0xFFFFFFFF : 0xFFFF4040)
                 : core >= 80 ? 0xFFFF5A3A : core >= 40 ? 0xFFFFA040 : 0xFFB8E04A;
-        guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.radiation_core", core,
-                Component.translatable("hud.heroesevolved.radiation_" + tier)), START_X, y, color, true);
-        guiGraphics.fill(START_X, y + 10, START_X + 100, y + 13, 0x80402A18);
-        guiGraphics.fill(START_X, y + 10, START_X + core, y + 13, color);
-        // Notches at the tier boundaries.
-        for (int mark : new int[] {40, 60, 80}) guiGraphics.fill(START_X + mark, y + 9, START_X + mark + 1, y + 14, 0xC0FFFFFF);
-        return y + LINE_HEIGHT + 6;
+        gauges.add(HudGauges.Gauge.ring(core / 100F, color).middle(Integer.toString(core))
+                .label(tier, core >= 40 || overdrive ? color : HudGauges.LABEL).notches(0.4F, 0.6F, 0.8F));
+    }
+
+    /** Sonic Resonance: through every colour, the way Emma sees a rising note; the notch marks a harmonic Note's cost. */
+    private static void resonance(List<HudGauges.Gauge> gauges) {
+        if (Minecraft.getInstance().player == null || !holds(ModAbilities.SONIC_RESONANCE_ID)) return;
+        int resonance = com.jayptucker.heroesevolved.network.ClientResonance.get();
+        gauges.add(HudGauges.Gauge.ring(resonance / 100F, 0xFFE0B8FF).rainbow().middle(Integer.toString(resonance)).label("RESONANCE").notches(0.3F));
+    }
+
+    /**
+     * D.L. Hawkins's Density: a two-way dial, Ghost filling anticlockwise from the top and Dense clockwise, a notch at
+     * each setting. Underground, Breath runs out beside it.
+     */
+    private static void density(List<HudGauges.Gauge> gauges) {
+        var mc = Minecraft.getInstance();
+        if (mc.player == null || !holds(ModAbilities.PHASING_ID)) return;
+        int density = com.jayptucker.heroesevolved.network.ClientDensity.get();
+        int notch = Math.round(density / 50F);
+        int color = density < 0 ? 0xFF7FE8D8 : density > 0 ? 0xFFB4B0A8 : 0xFFE6ECEA;
+        String setting = Component.translatable("density.heroesevolved.notch." + (notch + 2)).getString().toUpperCase(java.util.Locale.ROOT);
+        gauges.add(HudGauges.Gauge.dial(density / 100F, color).middle(density > 0 ? "+" + density : Integer.toString(density))
+                .label(setting).notches(-0.25F, 0, 0.25F, 0.5F));
+        int breath = com.jayptucker.heroesevolved.network.ClientDensity.breath();
+        if (breath >= 0) {
+            int air = breath > 25 || HudGauges.flash() ? 0xFF8FD8FF : 0xFFFF6A6A;
+            gauges.add(HudGauges.Gauge.ring(breath / 100F, air).middle(Integer.toString(breath)).label("BREATH"));
+        }
+    }
+
+    /** Daisy Johnson's Strain: blue in control, amber past 50, flickering red past 80; while her arms are fractured it says so. */
+    private static void strain(List<HudGauges.Gauge> gauges) {
+        if (Minecraft.getInstance().player == null || !holds(ModAbilities.QUAKE_ID)) return;
+        int strain = com.jayptucker.heroesevolved.network.ClientStrain.get();
+        if (com.jayptucker.heroesevolved.network.ClientStrain.fractured()) {
+            gauges.add(HudGauges.Gauge.ring(1, 0xFFFF4040).middle("!").label("FRACTURED", 0xFFFF4040));
+            return;
+        }
+        int color = strain >= 80 ? (HudGauges.flash() ? 0xFFFF5A5A : 0xFFFFB0A0) : strain >= 50 ? 0xFFFFC070 : 0xFF9FD8FF;
+        gauges.add(HudGauges.Gauge.ring(strain / 100F, color).middle(Integer.toString(strain)).label("STRAIN").notches(0.5F, 0.8F));
+    }
+
+    /**
+     * Claire Bennet's Regrowth (the notch marks a Second Life's cost), and how long she'd be down if killed; once down,
+     * the time until she's up, filling as she holds the give-up key.
+     */
+    private static void regrowth(List<HudGauges.Gauge> gauges) {
+        if (Minecraft.getInstance().player == null || !holds(ModAbilities.REGENERATION_ID)) return;
+        int regrowth = com.jayptucker.heroesevolved.network.ClientRegenerationState.regrowth();
+        int color = regrowth >= 50 ? 0xFFFF5A64 : 0xFFD0303C;
+        gauges.add(HudGauges.Gauge.ring(regrowth / 100F, color).middle(Integer.toString(regrowth)).label("REGROWTH").notches(0.5F));
+        long down = com.jayptucker.heroesevolved.network.ClientRegenerationState.downedRemaining();
+        if (down > 0) {
+            int giveUp = com.jayptucker.heroesevolved.network.ClientRegenerationState.giveUp();
+            int red = HudGauges.flash() ? 0xFFFF6A6A : 0xFFB03030;
+            gauges.add(HudGauges.Gauge.ring(giveUp > 0 ? giveUp / 60F : 0, 0xFFFFD9A0).middle(HudGauges.clock(down), 0xFFFF6A6A).label("DOWN", red));
+        } else {
+            int recovery = com.jayptucker.heroesevolved.network.ClientRegenerationState.recoveryTicks();
+            gauges.add(HudGauges.Gauge.ring(0, 0xFFFFD9A0).middle(HudGauges.clock(recovery), 0xFFFFD9A0).label("DOWN FOR"));
+        }
+    }
+
+    /** Down on the ground and allowed to give up: how. */
+    private static int downedHint(GuiGraphics guiGraphics, int y) {
+        var mc = Minecraft.getInstance();
+        if (!holds(ModAbilities.REGENERATION_ID) || com.jayptucker.heroesevolved.network.ClientRegenerationState.downedRemaining() <= 0
+                || com.jayptucker.heroesevolved.network.ClientRegenerationState.giveUp() < 0) return y;
+        guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.give_up", mc.options.keyShift.getTranslatedKeyMessage()),
+                START_X, y, 0xFFB89A9A, true);
+        return y + LINE_HEIGHT;
+    }
+
+    /** Flight: Momentum while in the air, and pips for the wheel's speed setting; the label names a maneuver under way. */
+    private static void flight(List<HudGauges.Gauge> gauges) {
+        var mc = Minecraft.getInstance();
+        if (mc.player == null || !hasFlightSpeedControl()) return;
+        int id = mc.player.getId();
+        int tier = ClientPowerState.getSnapshot().abilities().stream().filter(a -> a.unlocked() && a.abilityId().equals(ModAbilities.FLIGHT_ID))
+                .mapToInt(a -> a.level()).findFirst().orElse(1);
+        int step = ClientFlightVisualState.speedStep(id), steps = com.jayptucker.heroesevolved.flight.FlightSpeedControl.maximumStep(tier) + 1;
+        boolean flying = ClientFlightVisualState.isFlightEnabled(id) || ClientFlightVisualState.isDiving(id);
+        int momentum = flying ? ClientFlightVisualState.momentum(id) : 0;
+        int color = momentum >= 100 ? 0xFFFFFFFF : 0xFF8EDAF0;
+        String maneuver = !flying ? null : ClientFlightVisualState.isCharging(id) ? "COILING"
+                : ClientFlightVisualState.isDiving(id) ? "DIVING" : ClientFlightVisualState.isCycloneActive(id) ? "TEMPEST" : null;
+        gauges.add(HudGauges.Gauge.ring(momentum / 100F, color).middle(flying ? Integer.toString(momentum) : "")
+                .label(maneuver != null ? maneuver : "FLIGHT " + (step + 1), maneuver != null ? 0xFFCBEFF8 : HudGauges.LABEL)
+                .pips(steps, step + 1, 0xFF8EDAF0));
+    }
+
+    /** A flight maneuver under way: how to steer or release it. */
+    private static void flightHint(GuiGraphics guiGraphics, int y) {
+        var mc = Minecraft.getInstance();
+        if (mc.player == null || !hasFlightSpeedControl()) return;
+        int id = mc.player.getId();
+        if (!ClientFlightVisualState.isFlightEnabled(id) && !ClientFlightVisualState.isDiving(id)) return;
+        String maneuver = ClientFlightVisualState.isCharging(id) ? "flight_charging"
+                : ClientFlightVisualState.isDiving(id) ? "flight_diving"
+                : ClientFlightVisualState.isCycloneActive(id) ? "flight_tempest" : null;
+        if (maneuver != null) guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved." + maneuver), START_X, y, 0xFFCBEFF8, true);
     }
 
     private static boolean hasFlightSpeedControl() {

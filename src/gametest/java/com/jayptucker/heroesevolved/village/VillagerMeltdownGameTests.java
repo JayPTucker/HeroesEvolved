@@ -87,6 +87,8 @@ public final class VillagerMeltdownGameTests {
             try {
                 helper.assertTrue(!VillagerMeltdown.critical(him), "When the time runs out it is over");
                 helper.assertTrue(!him.isAlive(), "He goes with it");
+                helper.assertTrue(NuclearFallout.radiusOf(him) == NuclearFallout.RADIUS,
+                        "His blast is an ordinary Critical Mass, not the larger awakening blast: " + NuclearFallout.radiusOf(him));
                 helper.assertTrue(!neighbour.isAlive(), "And whoever stayed beside him");
                 helper.succeed();
             } finally { cleanup(null, him, neighbour); NuclearFallout.clear(); }

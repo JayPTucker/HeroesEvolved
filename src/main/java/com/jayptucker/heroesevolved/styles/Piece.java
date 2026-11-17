@@ -66,7 +66,7 @@ public enum Piece {
     RAD_LANCE(12),
     // Invisibility's force fields: lens shells with a bright rim and hexagonal facets. Constructs, bubbles, the shield and
     // the disc are re-sent every ten ticks while they last.
-    FORCE_SHIELD(12), FORCE_PUSH(14), FORCE_FORM(10), FORCE_BRIDGE(12), FORCE_WALL(12), FORCE_BUBBLE(12), FORCE_CRUSH(10),
+    FORCE_SHIELD(12), FORCE_PUSH(18), FORCE_FORM(10), FORCE_BRIDGE(12), FORCE_WALL(12), FORCE_BUBBLE(12), FORCE_CRUSH(10),
     FORCE_BEAD(9), FORCE_NOVA_CHARGE(22), FORCE_NOVA(30), FORCE_DISC(12), FORCE_VANISH(18), FORCE_NET(16),
     FORCE_SHATTER(18), FORCE_RIPPLE(8),
     // A speedster burning away on a containment run
@@ -128,7 +128,7 @@ public enum Piece {
     TELE_COMMAND(14), TELE_LISTEN(12), TELE_VOICE(12), TELE_WEAVE(22), TELE_PERSUADE(40), TELE_WON(12), TELE_RECALL(18),
     TELE_MEMORY(200), TELE_ECHO(200), TELE_LOST(12), TELE_FRIGHT(18), TELE_HIVE_LINK(26), TELE_HALO(12), TELE_PROJECT(12),
     // Vibe: split blue wave fronts, two-sided breaches, combat echoes and collapsing interference bands.
-    VIBE_GATHER(9), VIBE_WAVE(18), VIBE_CROSSWAVE(18), VIBE_HIT(14), VIBE_BREACH_SEED(14),
+    VIBE_GATHER(9), VIBE_WAVE(34), VIBE_CROSSWAVE(34), VIBE_HIT(14), VIBE_BREACH_SEED(14),
     VIBE_BREACH_OPEN(12), VIBE_BREACH_ARRIVE(16), VIBE_BREACH_CLOSE(10), VIBE_TRANSIT(18),
     VIBE_TOUCH(24), VIBE_ECHO(29), VIBE_GUARD(10), VIBE_GUARD_CLOSE(10), VIBE_LOCK_WARN(16),
     VIBE_LOCK(33), VIBE_AWAKEN(28),
@@ -220,7 +220,15 @@ public enum Piece {
     // it is wide)
     RAD_SHOCK(16), RAD_FIELD(12), RAD_FLAKE(24), RAD_DISINTEGRATE(90),
     // Rime accumulating on one face, replaced as it grows. Scale 1 clears the face.
-    CRYO_TERRAIN_FROST(80);
+    CRYO_TERRAIN_FROST(80),
+    // A slow Cyclone's vacuum (re-sent every ten ticks while it holds; scale its radius): the air dragged out of the ring
+    SPEED_VACUUM(12),
+    // Gifted mobs (gifted/GiftedMob): a gift waking (scale the power's colour index plus .75 if it woke evil, .25 if good),
+    // a villager turning into an illager (scale the colour index), and a mini-boss going unbound at half health (bound to
+    // it; scale the colour index plus .5). All drawn by GiftArt.
+    GIFT_AWAKEN(30), GIFT_TURN(44), GIFT_UNBOUND(36),
+    // Shared speedster Perception: gold lightning flowing round the guest's waist, re-sent every eight ticks.
+    SPEED_SHARED_TIME(12);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

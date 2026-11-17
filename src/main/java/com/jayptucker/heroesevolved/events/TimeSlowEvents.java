@@ -33,7 +33,9 @@ public final class TimeSlowEvents {
 
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void slowPlayers(ServerTickEvent.Post event) {
+        com.jayptucker.heroesevolved.time.TemporalSharing.tick(event.getServer());
         for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) PlayerTimeSlow.update(player);
+        com.jayptucker.heroesevolved.time.TemporalVoiceState.publish(event.getServer());
     }
 
     @SubscribeEvent
