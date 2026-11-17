@@ -165,7 +165,7 @@ public final class GiftedCommands {
         if (v == null) { c.getSource().sendFailure(Component.literal("No grown, ungifted villager within 64 blocks.")); return 0; }
         Mob became = evil == null ? Renegades.awaken(v) : Renegades.awaken(v, evil);
         if (became == null) { c.getSource().sendFailure(Component.literal("Their gift couldn't wake.")); return 0; }
-        c.getSource().sendSuccess(() -> Component.literal(became == v ? "Their gift woke." : "They turned."), true);
+        c.getSource().sendSuccess(() -> Component.literal(Renegades.turning(v) ? "They are turning." : "Their gift woke."), true);
         return 1;
     }
 

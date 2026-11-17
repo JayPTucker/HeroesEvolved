@@ -221,17 +221,26 @@ public final class AdvancedTechniques {
      * rule) updates once every few ticks, so mobs, falling blocks and items move at a third of their
      * speed, a sixth with Flash Time.
      */
-    public static boolean perceptionSkips(Entity entity) {
-        if (PERCEPTION.isEmpty() || entity instanceof net.minecraft.world.entity.player.Player
-                || entity instanceof Projectile || !(entity.level() instanceof ServerLevel level)) return false;
+    public static int perceptionInterval(Entity entity) {
+        if (com.jayptucker.heroesevolved.time.TemporalMobTime.perceives(entity)) return 1;
+        int interval = 1;
         for (Perception field : PERCEPTION.values()) {
             ServerPlayer p = field.owner;
-            boolean everywhere = com.jayptucker.heroesevolved.time.TimeVeil.serverWide();
-            if (!everywhere && (p.level() != level || entity.distanceToSqr(p) > field.radius * field.radius) || entity.getRootVehicle() == p
+            if (!com.jayptucker.heroesevolved.time.TimeVeil.serverWide()
+                    && (p.level() != entity.level() || entity.distanceToSqr(p) > field.radius * field.radius)
+                    || entity == p || entity.getRootVehicle() == p
+                    || com.jayptucker.heroesevolved.time.TemporalSharing.movesWith(p.getUUID(), entity)
                     || entity instanceof net.minecraft.world.entity.OwnableEntity pet && pet.getOwner() == p || !active(field)) continue;
-            return Math.floorMod(entity.getId(), field.interval) != Math.floorMod(level.getGameTime(), field.interval);
+            interval = Math.max(interval, field.interval);
         }
-        return false;
+        return interval;
+    }
+
+    public static boolean perceptionSkips(Entity entity) {
+        if (entity instanceof net.minecraft.world.entity.player.Player || entity instanceof Projectile
+                || !(entity.level() instanceof ServerLevel level)) return false;
+        int interval = perceptionInterval(entity);
+        return Math.floorMod(entity.getId(), interval) != Math.floorMod(level.getGameTime(), interval);
     }
 
     /** Perception: twelve blocks (sixteen with Long Perception) of the world slowed to a third, a sixth with Flash Time. */
@@ -263,6 +272,13 @@ public final class AdvancedTechniques {
 
     /** True while {@code p} has Perception up. */
     public static boolean perceiving(ServerPlayer p) { return PERCEPTION.containsKey(p.getUUID()); }
+
+    /** Every live Perception, for {@link com.jayptucker.heroesevolved.time.TimeFlow}: each follows its runner. */
+    public static void describe(List<com.jayptucker.heroesevolved.time.TimeFlow.Field> into) {
+        for (Perception field : PERCEPTION.values())
+            if (active(field)) into.add(new com.jayptucker.heroesevolved.time.TimeFlow.Field(field.owner.getUUID(), field.owner.getId(),
+                    field.owner.level().dimension(), field.owner.position(), field.radius, field.interval, true));
+    }
 
     public static boolean perceptionReaches(ServerPlayer player) {
         return PERCEPTION.values().stream().anyMatch(field -> active(field) && (com.jayptucker.heroesevolved.time.TimeVeil.serverWide()

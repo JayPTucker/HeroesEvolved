@@ -1,0 +1,24 @@
+// Slowed and stopped time (dust, rain, blur, fuses, shot wakes, a speedster wading); never bundled into the mod.
+// ./gradlew runClient --init-script tools/slowtime-preview.init.gradle  ->  build/slowtime-preview/screenshots/
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('slowtimePreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/slowtime-preview')
+                        programArguments.addAll('--width', '1100', '--height', '800')
+                        systemProperty('heroes.preview.slowtime', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('slowtimePreviewClasses')) }
+        }
+    }
+}

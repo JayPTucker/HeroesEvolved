@@ -27,7 +27,7 @@ import static com.jayptucker.heroesevolved.client.effects.PowerParticle.Shape.*;
 public final class ElectroEffects {
     static final int GLOW = 0x2D6CFF, BLUE = 0x63BAFF, PALE = 0xBFE6FF, WHITE = 0xF6FCFF;
     private static final Vec3 UP = new Vec3(0, 1, 0);
-    private record Pending(int at, Runnable run) {}
+    private record Pending(int at, Runnable run, int actor, double began, int delay) {}
     private static final List<Pending> PENDING = new ArrayList<>();
     private static ClientLevel pendingWorld;
     private static int clock;
@@ -326,7 +326,7 @@ public final class ElectroEffects {
 
     /** Runs a piece of an effect a few client ticks from now (re-strikes, a descending leader). */
     static void later(int ticks, Runnable run) {
-        if (PENDING.size() < 256) PENDING.add(new Pending(clock + ticks, run));
+        if (PENDING.size() < 256) PENDING.add(new Pending(clock + ticks, run, com.jayptucker.heroesevolved.client.ClientMobTime.actor(), com.jayptucker.heroesevolved.client.ClientMobTime.start(com.jayptucker.heroesevolved.client.ClientMobTime.actor(), Minecraft.getInstance().level.getGameTime()), ticks));
     }
 
     @SubscribeEvent public static void tick(ClientTickEvent.Post event) {
@@ -335,7 +335,9 @@ public final class ElectroEffects {
         clock++;
         if (level == null || PENDING.isEmpty() || Minecraft.getInstance().isPaused()) return;
         for (Pending pending : List.copyOf(PENDING)) {
-            if (pending.at() <= clock) { PENDING.remove(pending); pending.run().run(); }
+            if (pending.actor() < 0 ? pending.at() <= clock : com.jayptucker.heroesevolved.client.ClientMobTime.elapsed(pending.actor(), pending.began(), 0) >= pending.delay()) {
+                PENDING.remove(pending); com.jayptucker.heroesevolved.client.ClientMobTime.effect(pending.actor(), pending.run());
+            }
         }
     }
 }

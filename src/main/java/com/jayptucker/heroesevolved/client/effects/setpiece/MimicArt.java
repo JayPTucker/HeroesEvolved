@@ -25,7 +25,7 @@ final class MimicArt {
         if (c.solid()) return;
         Entity mimic = a.bound(c);
         Vec3 chest = mimic == null ? a.target() : mimic.getPosition(c.partial).add(0, mimic.getBbHeight() * .62, 0);
-        float clock = c.level.getGameTime() + c.partial;
+        float clock = c.time();
         switch (a.piece()) {
             case MIMIC_ATTUNE -> attune(c, a, t, chest, clock);
             case MIMIC_IMPRINT -> imprint(c, a, t, chest);

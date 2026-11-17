@@ -17,7 +17,9 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("102")
+        event.registrar("104")
+            .playToClient(MobTimePayload.TYPE, MobTimePayload.STREAM_CODEC, MobTimePayload::handle)
+            .playToClient(TimeFlowPayload.TYPE, TimeFlowPayload.STREAM_CODEC, TimeFlowPayload::handle)
             .playToClient(TemporalProjectilePayload.TYPE, TemporalProjectilePayload.STREAM_CODEC, TemporalProjectilePayload::handle)
             .playToClient(TemporalCatchStatePayload.TYPE, TemporalCatchStatePayload.STREAM_CODEC, TemporalCatchStatePayload::handle)
             .playToClient(SkyburstMotionPayload.TYPE, SkyburstMotionPayload.STREAM_CODEC, SkyburstMotionPayload::handle)

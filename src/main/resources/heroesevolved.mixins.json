@@ -11,6 +11,9 @@
     "PlayerListSaveAccess",
     "CreeperSwellAccess",
     "StoppedTimeInputMixin",
+    "TemporalMobTargetMixin",
+    "TemporalMobBrainMixin",
+    "TemporalMobSensesMixin",
     "SlowedFlightMovementMixin",
     "SpeedWaterCollisionMixin",
     "SunkPlayerMixin",
@@ -28,6 +31,10 @@
     "CryoCarbineBulletMixin"
   ],
   "client": [
+    "TemporalMobAnimationMixin",
+    "TemporalParticleMixin",
+    "TemporalParticleEngineMixin",
+    "TemporalWeatherMixin",
     "BurnSkinMixin",
     "BreachRenderTypeMixin",
     "FlightSprintMixin",

@@ -142,48 +142,59 @@ public final class GiftedMobGameTests {
         } finally { cleanup(guardian, raider, zombie, neighbour, golem); }
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 40, batch = "gifted.turn")
+    @GameTest(template = "rewind_empty", timeoutTicks = 60, batch = "gifted.turn")
     public static void anEvilGiftTurnsAVillagerIntoAnIllagerWhoKeepsIt(GameTestHelper helper) {
         Villager villager = mob(helper, EntityType.VILLAGER, 4, 4);
         Villager neighbour = mob(helper, EntityType.VILLAGER, 6, 4);
         GiftedVillagers.give(villager, ModAbilities.PYROKINESIS_ID);
-        Mob renegade = null;
+        UUID id = villager.getUUID();
         try {
-            renegade = Renegades.awaken(villager, true);
-            helper.assertTrue(renegade instanceof Raider, "They become an illager: " + renegade);
-            helper.assertTrue(villager.isRemoved(), "The villager is gone");
-            Gift gift = Gift.read(renegade);
-            helper.assertTrue(gift != null && gift.evil() && gift.power().equals(ModAbilities.PYROKINESIS_ID) && gift.origin() == Gift.Origin.RENEGADE,
-                    "They keep their power, turned: " + gift);
-            helper.assertTrue(gift.rarity().ordinal() >= Rarity.RARE.ordinal(), "A renegade is at least Rare");
-            helper.assertTrue(renegade.hasCustomName() && renegade.isCustomNameVisible(), "and wears its name");
-            Renegades.Terror terror = Renegades.of(renegade);
-            helper.assertTrue(terror != null && terror.villageSize() == 1, "It lays siege to its village (the neighbour): " + (terror == null ? 0 : terror.villageSize()));
-            helper.assertTrue(EmergencyBand.live(terror.call()) && terror.call().trouble() == EmergencyBand.Trouble.RENEGADE, "The village calls for help");
-            helper.assertTrue(renegade.getPersistentData().contains(Renegades.TAG), "The siege is saved on the renegade");
-            helper.succeed();
-        } finally { cleanup(renegade, neighbour, villager); }
+            helper.assertTrue(Renegades.awaken(villager, true) == villager && Renegades.turning(villager), "The gift begins to turn them");
+            helper.assertTrue(!villager.isRemoved() && Renegades.turnedFrom(id) == null,
+                    "While the cracks climb they are still a villager: the swap waits for the flash");
+            helper.assertTrue(Renegades.awaken(villager, true) == null, "and a turning villager can't be woken twice");
+        } catch (RuntimeException e) { cleanup(neighbour, villager); throw e; }
+        helper.runAfterDelay(Renegades.TURN_TICKS + 3, () -> {
+            Mob renegade = Renegades.turnedFrom(id);
+            try {
+                helper.assertTrue(renegade instanceof Raider, "They become an illager: " + renegade);
+                helper.assertTrue(villager.isRemoved(), "The villager is gone");
+                Gift gift = Gift.read(renegade);
+                helper.assertTrue(gift != null && gift.evil() && gift.power().equals(ModAbilities.PYROKINESIS_ID) && gift.origin() == Gift.Origin.RENEGADE,
+                        "They keep their power, turned: " + gift);
+                helper.assertTrue(gift.rarity().ordinal() >= Rarity.RARE.ordinal(), "A renegade is at least Rare");
+                helper.assertTrue(renegade.hasCustomName() && renegade.isCustomNameVisible(), "and wears its name");
+                Renegades.Terror terror = Renegades.of(renegade);
+                helper.assertTrue(terror != null && terror.villageSize() == 1, "It lays siege to its village (the neighbour): " + (terror == null ? 0 : terror.villageSize()));
+                helper.assertTrue(EmergencyBand.live(terror.call()) && terror.call().trouble() == EmergencyBand.Trouble.RENEGADE, "The village calls for help");
+                helper.assertTrue(renegade.getPersistentData().contains(Renegades.TAG), "The siege is saved on the renegade");
+                helper.succeed();
+            } finally { cleanup(renegade, neighbour, villager); }
+        });
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 40, batch = "gifted.siege")
+    @GameTest(template = "rewind_empty", timeoutTicks = 60, batch = "gifted.siege")
     public static void aRenegadesBlowsOnItsVillageWaitTheirTurn(GameTestHelper helper) {
         Villager villager = mob(helper, EntityType.VILLAGER, 4, 4);
         Villager neighbour = mob(helper, EntityType.VILLAGER, 6, 4);
         GiftedVillagers.give(villager, ModAbilities.TELEKINESIS_ID);
-        Mob renegade = null;
-        try {
-            renegade = Renegades.awaken(villager, true);
-            helper.assertTrue(renegade != null, "They turned");
-            float before = neighbour.getHealth();
-            neighbour.hurt(renegade.damageSources().mobAttack(renegade), 4);
-            helper.assertTrue(neighbour.getHealth() == before, "Between turns its blows on its village don't land");
-            helper.assertTrue(!MobMoves.foe(GiftedMobs.of(renegade), neighbour), "and its powers leave them be");
-            Renegades.hurry(renegade);
-            neighbour.invulnerableTime = 0;
-            neighbour.hurt(renegade.damageSources().mobAttack(renegade), 4);
-            helper.assertTrue(neighbour.getHealth() < before, "When its turn comes, they do");
-            helper.succeed();
-        } finally { cleanup(renegade, neighbour, villager); }
+        UUID id = villager.getUUID();
+        Renegades.awaken(villager, true);
+        helper.runAfterDelay(Renegades.TURN_TICKS + 3, () -> {
+            Mob renegade = Renegades.turnedFrom(id);
+            try {
+                helper.assertTrue(renegade != null, "They turned");
+                float before = neighbour.getHealth();
+                neighbour.hurt(renegade.damageSources().mobAttack(renegade), 4);
+                helper.assertTrue(neighbour.getHealth() == before, "Between turns its blows on its village don't land");
+                helper.assertTrue(!MobMoves.foe(GiftedMobs.of(renegade), neighbour), "and its powers leave them be");
+                Renegades.hurry(renegade);
+                neighbour.invulnerableTime = 0;
+                neighbour.hurt(renegade.damageSources().mobAttack(renegade), 4);
+                helper.assertTrue(neighbour.getHealth() < before, "When its turn comes, they do");
+                helper.succeed();
+            } finally { cleanup(renegade, neighbour, villager); }
+        });
     }
 
     @GameTest(template = "rewind_empty", timeoutTicks = 40, batch = "gifted.guardian")

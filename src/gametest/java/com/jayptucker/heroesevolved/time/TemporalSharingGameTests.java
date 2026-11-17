@@ -221,6 +221,82 @@ public final class TemporalSharingGameTests {
         }
     }
 
+    @GameTest(template = "rewind_empty", batch = "time.mob_memory")
+    public static void mobsAimAtTheRememberedBodyAndResumeTrackingAfterward(GameTestHelper h) {
+        try (var scene = new Scene(h)) {
+            var owner = scene.player(ModAbilities.TIME_MANIPULATION_ID, 5, 0);
+            var mob = net.minecraft.world.entity.EntityType.PIGLIN.create(h.getLevel());
+            mob.setPos(owner.position().add(0, 0, 5));
+            mob.setTarget(owner);
+            mob.getBrain().setMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.ATTACK_TARGET, owner);
+            TimeSlowService.start(owner, 5);
+            var shadow = mob.getTarget();
+            h.assertTrue(shadow != owner && shadow.position().equals(owner.position()), "AI sees a remembered body");
+            var anchor = shadow.position(); owner.setPos(owner.position().add(4, 0, 0));
+            h.assertTrue(mob.getTarget() == shadow && shadow.position().equals(anchor), "Moving never updates the remembered location");
+            h.assertTrue(!mob.hasLineOfSight(owner) && !mob.canAttack(owner), "Sight and target acquisition cannot track the hidden player");
+            mob.getBrain().setMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.ATTACK_TARGET, shadow);
+            TimeSlowService.stop(owner); TemporalMobTime.brain(mob);
+            h.assertTrue(mob.getTarget() == owner && mob.getBrain().getMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.ATTACK_TARGET).orElse(null) == owner,
+                    "Both goal AI and brain memory resume tracking when time returns");
+            h.succeed();
+        }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "time.mob_immunity")
+    public static void matchingGiftedMobsKeepUpWhileOrdinaryMobsSlow(GameTestHelper h) {
+        try (var scene = new Scene(h)) {
+            var owner = scene.player(ModAbilities.TIME_MANIPULATION_ID, 5, 0);
+            var ordinary = net.minecraft.world.entity.EntityType.ZOMBIE.create(h.getLevel());
+            var gifted = net.minecraft.world.entity.EntityType.ZOMBIE.create(h.getLevel());
+            ordinary.setPos(owner.position().add(0, 0, 4)); gifted.setPos(ordinary.position());
+            try {
+                com.jayptucker.heroesevolved.gifted.GiftedMobs.bestow(gifted, ModAbilities.SUPERSPEED_ID,
+                        com.jayptucker.heroesevolved.gifted.Rarity.RARE, true,
+                        com.jayptucker.heroesevolved.gifted.Gift.Origin.ADMIN, null, "Fast watcher");
+                ordinary.setTarget(owner); gifted.setTarget(owner);
+                TimeSlowService.start(owner, 5);
+                h.assertTrue(TemporalMobTime.interval(ordinary) > 1 && TemporalMobTime.interval(gifted) == 1, "Only the matching gift keeps its normal clock");
+                h.assertTrue(gifted.getTarget() == owner && gifted.hasLineOfSight(owner), "The matching gift sees the real body");
+                TimeStopService.start(owner, 5);
+                h.assertTrue(TemporalMobTime.interval(ordinary) == 0 && !TimeStopService.shouldStopEntityTick(gifted), "Matching powers also escape the world stop");
+                h.succeed();
+            } finally { com.jayptucker.heroesevolved.gifted.GiftedMobs.cleanse(gifted); }
+        }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "time.mob_cast")
+    public static void giftedWindupsAndRepeatedAttacksUseTheMobsClock(GameTestHelper h) throws Exception {
+        try (var scene = new Scene(h)) {
+            var owner = scene.player(ModAbilities.TIME_MANIPULATION_ID, 5, 0);
+            TimeSlowService.start(owner, 5);
+            net.minecraft.world.entity.monster.Pillager caster;
+            do {
+                caster = net.minecraft.world.entity.EntityType.PILLAGER.create(h.getLevel());
+                caster.setPos(owner.position().add(0, 0, 3));
+            } while (TemporalMobTime.advances(caster));
+            var victim = net.minecraft.world.entity.EntityType.IRON_GOLEM.create(h.getLevel());
+            victim.setPos(owner.position().add(0, 0, 5)); h.getLevel().addFreshEntity(victim);
+            try {
+                var g = com.jayptucker.heroesevolved.gifted.GiftedMobs.bestow(caster, ModAbilities.PYROKINESIS_ID,
+                        com.jayptucker.heroesevolved.gifted.Rarity.RARE, true,
+                        com.jayptucker.heroesevolved.gifted.Gift.Origin.ADMIN, null, "Slow caster");
+                var move = com.jayptucker.heroesevolved.gifted.MobMoves.of(ModAbilities.PYROKINESIS_ID).stream().filter(m -> m.windup() >= 8).findFirst().orElseThrow();
+                g.start(move, victim);
+                var step = g.getClass().getDeclaredMethod("tick"); step.setAccessible(true);
+                var age = g.getClass().getDeclaredField("castTicks"); age.setAccessible(true);
+                step.invoke(g);
+                h.assertTrue(age.getInt(g) == 0, "Skipped body ticks also skip cast pulses and repeat hits");
+                TimeSlowService.stop(owner); step.invoke(g);
+                h.assertTrue(age.getInt(g) == 1, "Normal time advances the windup once");
+                TimeStopService.start(owner, 5);
+                for (int i = 0; i < 10; i++) step.invoke(g);
+                h.assertTrue(age.getInt(g) == 1, "Stopped time freezes the whole pending cast");
+                h.succeed();
+            } finally { com.jayptucker.heroesevolved.gifted.GiftedMobs.cleanse(caster); victim.discard(); }
+        }
+    }
+
     private static de.maxhenkel.voicechat.api.VoicechatConnection connection(UUID id) {
         var player = proxy(de.maxhenkel.voicechat.api.ServerPlayer.class, (method, args) -> method.equals("getUuid") ? id : null);
         return proxy(de.maxhenkel.voicechat.api.VoicechatConnection.class, (method, args) -> switch (method) {

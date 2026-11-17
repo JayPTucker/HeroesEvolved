@@ -57,6 +57,19 @@ Lightspeed spends all your Momentum.
   `fieldsServerWide` off in the config, only within 12 blocks, 16 with Long Perception). Other players move and
   recharge attacks more slowly, and every screen takes a faint amber cast, so everyone can tell time is being slowed.
   Projectiles keep moving even with Flash Time. Perception has gold clock rings, hanging sparks and a slow heartbeat.
+  It bends the world the way Between Seconds does: dust rises and hangs, rain slows, particles drift, fuses burn
+  slowly and shots drag rings through the air (see [Bent time](space-time-manipulation.md#bent-time)).
+    - **Running in thick air.** In slowed time (your own Perception or anyone's Between Seconds) a speedster at speed
+      is still fast, but not as fast: the air drags at you as water would, and you keep 55% of your speed (40% in
+      stopped time). Walking in your own Perception you are never slowed; standing in someone else's slowed time you are
+      slowed like anyone until you break into a run. You wade: a ripple spreads across the ground from each footfall,
+      rings of air peel off your body behind you, the air piles up ahead of your shins like a bow wave with a V of wake
+      opening behind, and your feet kick the ground up into a spray that hangs along your path.
+    - **A blur to everyone.** Everyone sees you run in slowed time as a smear of faint gold afterimages, left every so
+      far you travel, so the faster you go the more of them there are (about one a tick at full speed).
+    - **Too fast to follow.** Ordinary mobs keep targeting the position where you entered Perception. Their attacks,
+      gifted casts, body animations and bound power effects slow with them. Gifted Superspeed and Space-Time mobs can
+      still track you and keep their own pace. Tracking returns when Perception ends.
     - **Share your pace from Power Level 10.** Activate Perception, then right-click a player within normal interaction
       reach. They move normally, see you moving, and can speak with other temporal perceivers until Perception ends.
       Gold lightning flows around their waist like a waterbender's reservoir: a broad amber halo, a gold orbit and a

@@ -54,7 +54,7 @@ public final class TemporalSharing {
                 || !owner.hasLineOfSight(player)) return false;
         var guests = GUESTS.computeIfAbsent(owner.getUUID(), id -> new HashMap<>());
         if (guests.containsKey(player.getUUID())) return true;
-        String reason = "shared:" + owner.getUUID();
+        String reason = TimeVeil.SHARED + owner.getUUID();
         guests.put(player.getUUID(), new Guest(owner, player, reason, speed));
         TimeVeil.begin(player, speed ? TimeVeil.Style.SPEED : TimeVeil.Style.TIME, reason);
         TimeVeil.refresh(player);

@@ -165,9 +165,12 @@ goes in that same moment, in one tick (`NuclearFallout.carve`), top down. The
 inside of the sphere is cleared without neighbour or shape updates (nothing is
 left there to hear about it); the outer shell, and any block touching water or
 lava, updates fully, so sand falls in, water flows and torches drop at the rim as
-after an ordinary explosion. A dense test crater of 726 blocks takes about 6 ms;
-a full radius-24 crater in solid ground is tens of thousands of blocks and costs
-a single noticeable tick. Silent block writes avoid separate break particles and sounds
+after an ordinary explosion. The crater of a later detonation (and a villager's
+meltdown) is twice its damage reach: radius 48 (`NuclearFallout.CRATER_RADIUS`),
+while the wave still hurts out to 24; the first awakening's crater stays at its
+own 48. In solid stone that is about 235,000 blocks, carved in about 136 ms (one
+tick, measured in `uitest/GiftedPreview`); a radius-24 crater was about 30,000
+blocks in 21 ms. Silent block writes avoid separate break particles and sounds
 for every destroyed block while retaining normal chunk updates. It vaporizes
 ordinary blocks, preserves a small footing, ignores fluids and unbreakable
 blocks, and respects build permissions, world borders, spawn protection and

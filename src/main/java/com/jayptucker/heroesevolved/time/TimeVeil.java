@@ -29,13 +29,16 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Moving faster than time. While someone slows time (Between Seconds, a speedster's Perception) or stops it (Still
- * World), everyone else sees them frozen where they started: their real body is hidden, and a stand-in with their skin
- * holds still on the spot. Only those who move in time themselves (Superspeed, Space-Time, or a Mimic channeling either)
- * see them as they really are.
+ * Moving faster than time. While someone stops time (Still World), everyone else sees them frozen where they stood:
+ * their real body is hidden, and a stand-in with their skin holds still on the spot. Only those who move in time
+ * themselves (Superspeed, Space-Time, or a Mimic channeling either) see them as they really are.
  * <p>
- * When it ends, a caster back on their spot simply carries on. Anyone else vanishes from the spot: a speedster in a blur
- * of afterimages and a gust of wind, a time traveller in a blink; they are wherever they really are.
+ * Slowed time (Between Seconds, a speedster's Perception) hides nobody: everyone sees the caster move, smeared into a
+ * blur of afterimages ({@link TimeFlow}, drawn by {@code SlowTimeEffects}). It still keeps the veil's other parts: the
+ * hints in chat, the slowed mobs aiming at where they last saw the caster ({@link #perceivedTarget}), and the tint.
+ * <p>
+ * When a stop ends, a caster back on their spot simply carries on. Anyone else vanishes from the spot: a speedster in a
+ * blur of afterimages and a gust of wind, a time traveller in a blink; they are wherever they really are.
  * <p>
  * While time is slowed, every player's screen takes a faint amber tint, so everyone can tell it is happening.
  */
@@ -43,6 +46,8 @@ public final class TimeVeil {
     public enum Style { SPEED, TIME }
 
     public static final String SLOW = "slow", STOP = "stop", PERCEPTION = "perception";
+    /** A guest's reason ({@link TemporalSharing}) is this and the owner's id. */
+    static final String SHARED = "shared:";
     /** How close to the spot counts as "back where they started". */
     static final double HOME = 1.5;
     /** Effects drawn this close to a hidden caster are hidden with them, so a lightning trail can't give them away. */
@@ -51,9 +56,10 @@ public final class TimeVeil {
     private static final class Veil {
         final UUID owner;
         final ResourceKey<Level> dimension;
-        final Vec3 at;
-        final float yaw, pitch;
+        Vec3 at;
+        float yaw, pitch;
         final Style style;
+        net.neoforged.neoforge.common.util.FakePlayer shadow;
         final Set<String> reasons = new HashSet<>();
         /** Who was given a hint that something odd was happening, and so is told when it is over. */
         final Set<UUID> puzzled = new HashSet<>();
@@ -66,34 +72,92 @@ public final class TimeVeil {
             pitch = player.getXRot();
             this.style = style;
         }
+
+        /** Only stopped time hides anyone (its caster, and the guests it was shared with); slowed time shows them as a blur. */
+        boolean hiding() {
+            for (String reason : reasons)
+                if (reason.equals(STOP) || reason.startsWith(SHARED) && TimeStopService.holds(UUID.fromString(reason.substring(SHARED.length()))))
+                    return true;
+            return false;
+        }
+
+        /** The stand-in stands where they were when time stopped, not where an earlier slow began. */
+        void anchor(ServerPlayer player) {
+            at = player.position();
+            yaw = player.yBodyRot;
+            pitch = player.getXRot();
+            if (shadow != null) shadow.moveTo(at.x, at.y, at.z, yaw, pitch);
+        }
     }
 
     private static final Map<UUID, Veil> VEILS = new HashMap<>();
+
+    private static final Map<net.minecraft.world.entity.LivingEntity, ServerPlayer> SHADOWS = new java.util.WeakHashMap<>();
+
+    public static net.minecraft.world.entity.LivingEntity shadow(UUID id) {
+        return SHADOWS.keySet().stream().filter(e -> e.getUUID().equals(id)).findFirst().orElse(null);
+    }
 
     private TimeVeil() {}
 
     /** Server-wide unless the config keeps time fields to an area (game tests do, so parallel tests can't freeze each other). */
     public static boolean serverWide() { return HeroesEvolvedConfig.COMMON.timeFieldsServerWide.get(); }
 
+    /** Server-only remembered body: never spawned, registered as a player, or sent to a client. */
+    public static net.minecraft.world.entity.LivingEntity perceivedTarget(net.minecraft.world.entity.Mob mob,
+            net.minecraft.world.entity.LivingEntity target) {
+        if (target == null) return null;
+        // Brain memories may still hold the old shadow after the field ends.
+        ServerPlayer original = SHADOWS.get(target);
+        if (original != null) {
+            Veil current = VEILS.get(original.getUUID());
+            return current != null && current.shadow == target ? target : perceivedTarget(mob, original);
+        }
+        if (!(target instanceof ServerPlayer player)) return target;
+        Veil veil = VEILS.get(player.getUUID());
+        if (veil == null || mob.level().dimension() != veil.dimension) return target;
+        if (veil.shadow == null) {
+            veil.shadow = new net.neoforged.neoforge.common.util.FakePlayer(mob.level() instanceof ServerLevel level ? level : player.serverLevel(),
+                    new com.mojang.authlib.GameProfile(UUID.randomUUID(), "TimeShadow"));
+            veil.shadow.moveTo(veil.at.x, veil.at.y, veil.at.z, veil.yaw, veil.pitch);
+            SHADOWS.put(veil.shadow, player);
+        }
+        return veil.shadow;
+    }
+
     /** Starts (or extends) hiding {@code player} behind a stand-in, for one {@code reason}. The first reason fixes the spot. */
     public static void begin(ServerPlayer player, Style style, String reason) {
         Veil veil = VEILS.get(player.getUUID());
-        if (veil == null) {
+        boolean fresh = veil == null;
+        if (fresh) {
             veil = new Veil(player, style);
             VEILS.put(player.getUUID(), veil);
-            show(player.getServer(), veil);
             hint(player, veil, reason.equals(STOP));
         }
+        boolean wasHiding = veil.hiding();
         veil.reasons.add(reason);
+        if (!wasHiding && veil.hiding()) {
+            if (!fresh) veil.anchor(player);
+            show(player.getServer(), veil);
+        } else if (fresh) show(player.getServer(), veil);
     }
 
     /** Ends one reason; when none are left, the stand-in goes and the caster is seen where they really are. */
     public static void end(ServerPlayer player, String reason) {
         Veil veil = VEILS.get(player.getUUID());
-        if (veil == null || !veil.reasons.remove(reason) || !veil.reasons.isEmpty()) return;
+        if (veil == null) return;
+        boolean wasHiding = veil.hiding();
+        if (!veil.reasons.remove(reason)) return;
+        if (!veil.reasons.isEmpty()) {
+            // Time starts again but stays slowed: the stand-in goes, and from now on they are seen as a blur.
+            if (wasHiding && !veil.hiding()) reveal(player, veil);
+            return;
+        }
         VEILS.remove(player.getUUID());
         TemporalSharing.end(player);
-        reveal(player, veil);
+        if (wasHiding) reveal(player, veil);
+        else for (ServerPlayer viewer : player.getServer().getPlayerList().getPlayers())
+            PacketDistributor.sendToPlayer(viewer, TimeVeilPayload.clear(veil.owner));
         over(player.getServer(), veil);
     }
 
@@ -159,6 +223,12 @@ public final class TimeVeil {
 
     public static boolean veiled(ServerPlayer player) { return VEILS.containsKey(player.getUUID()); }
 
+    /** True while {@code player} is hidden behind a stand-in (only in stopped time). */
+    public static boolean hiding(ServerPlayer player) {
+        Veil veil = VEILS.get(player.getUUID());
+        return veil != null && veil.hiding();
+    }
+
     /** Whether {@code viewer} sees {@code owner} as they really are while time is slowed or stopped. */
     public static boolean seesThrough(ServerPlayer viewer, UUID owner) {
         return viewer.getUUID().equals(owner) || movesInTime(viewer);
@@ -180,18 +250,19 @@ public final class TimeVeil {
     public static boolean masks(ServerPlayer viewer, Vec3 at) {
         if (VEILS.isEmpty()) return false;
         for (Veil veil : VEILS.values()) {
-            if (seesThrough(viewer, veil.owner)) continue;
+            if (!veil.hiding() || seesThrough(viewer, veil.owner)) continue;
             ServerPlayer owner = viewer.getServer().getPlayerList().getPlayer(veil.owner);
             if (owner != null && owner.level() == viewer.level() && owner.position().distanceToSqr(at) < MASK * MASK) return true;
         }
         return false;
     }
 
-    /** Sends a field's own visual (a bubble, a dome) only to those who can see its caster. */
+    /** Sends a field's own visual (a bubble, a dome) only to those who can see its caster: everyone, unless time is stopped. */
     public static void showToSeers(ServerPlayer owner, AbilityEffectPayload.Kind kind, Vec3 origin, Vec3 target, double scale) {
         var payload = new AbilityEffectPayload(kind, origin, target, (float) Math.clamp(scale, 0.1D, 64.0D));
+        boolean hidden = hiding(owner);
         for (ServerPlayer viewer : owner.serverLevel().players())
-            if (seesThrough(viewer, owner.getUUID()) && viewer.distanceToSqr(origin) < 128 * 128) PacketDistributor.sendToPlayer(viewer, payload);
+            if ((!hidden || seesThrough(viewer, owner.getUUID())) && viewer.distanceToSqr(origin) < 128 * 128) PacketDistributor.sendToPlayer(viewer, payload);
     }
 
     public static void tick(MinecraftServer server) {
@@ -206,7 +277,7 @@ public final class TimeVeil {
                 continue;
             }
             // Re-sent, so a player who logs in, comes into range or loses their own speed sees the right thing.
-            show(server, veil);
+            if (veil.hiding()) show(server, veil);
             slowed |= !veil.reasons.contains(STOP) || veil.reasons.size() > 1;
             stopped |= veil.reasons.contains(STOP);
         }
@@ -227,8 +298,8 @@ public final class TimeVeil {
 
     private static void show(ServerPlayer viewer, Veil veil) {
         boolean own = viewer.getUUID().equals(veil.owner);
-        // The caster sees a faint copy of their own stand-in, so they can find their spot again.
-        if (own || !seesThrough(viewer, veil.owner))
+        // The caster sees a faint copy of their own stand-in, so they can find their spot again. Slowed time has none.
+        if (veil.hiding() && (own || !seesThrough(viewer, veil.owner)))
             PacketDistributor.sendToPlayer(viewer, TimeVeilPayload.show(veil.owner, veil.dimension.location(), veil.at, veil.yaw, veil.pitch, veil.style));
         else PacketDistributor.sendToPlayer(viewer, TimeVeilPayload.clear(veil.owner));
     }
@@ -256,5 +327,5 @@ public final class TimeVeil {
         }
     }
 
-    public static void clear() { VEILS.clear(); TemporalSharing.clear(); TemporalVoiceState.clear(); }
+    public static void clear() { VEILS.clear(); SHADOWS.clear(); TemporalSharing.clear(); TemporalVoiceState.clear(); }
 }

@@ -36,10 +36,29 @@ public final class TimeSlowEvents {
         com.jayptucker.heroesevolved.time.TemporalSharing.tick(event.getServer());
         for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) PlayerTimeSlow.update(player);
         com.jayptucker.heroesevolved.time.TemporalVoiceState.publish(event.getServer());
+        // After the drags are set, so the picture the clients draw from names this tick's movers.
+        com.jayptucker.heroesevolved.time.TimeFlow.tick(event.getServer());
+    }
+
+    @SubscribeEvent
+    public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) com.jayptucker.heroesevolved.time.TimeFlow.catchUp(player);
     }
 
     @SubscribeEvent
     public static void onEntityTick(EntityTickEvent.Pre event) {
+        if (event.getEntity() instanceof net.minecraft.world.entity.Mob mob && !mob.level().isClientSide) {
+            com.jayptucker.heroesevolved.time.TemporalMobTime.brain(mob);
+            if (!com.jayptucker.heroesevolved.time.TemporalMobTime.advances(mob)) event.setCanceled(true);
+            return;
+        }
+        if (event.getEntity() instanceof net.minecraft.world.entity.item.PrimedTnt tnt && tnt.level() instanceof ServerLevel level) {
+            // Lit TNT in slowed time burns at least six times slower, so there is time to run (or carry it off).
+            int interval = com.jayptucker.heroesevolved.time.TimeFlow.fuse(Math.max(TimeSlowService.mobInterval(tnt),
+                    com.jayptucker.heroesevolved.expansion.AdvancedTechniques.perceptionInterval(tnt)));
+            if (interval > 1 && Math.floorMod(tnt.getId(), interval) != Math.floorMod(level.getGameTime(), interval)) event.setCanceled(true);
+            return;
+        }
         if (TimeSlowService.shouldSkipEntityTick(event.getEntity())
                 || com.jayptucker.heroesevolved.expansion.AdvancedTechniques.perceptionSkips(event.getEntity())) {
             event.setCanceled(true);
@@ -68,5 +87,6 @@ public final class TimeSlowEvents {
     public static void onStopping(ServerStoppingEvent event) {
         ProjectileTimeService.clear();
         TaczAmmoRecovery.clear();
+        com.jayptucker.heroesevolved.time.TimeFlow.clear();
     }
 }

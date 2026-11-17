@@ -34,9 +34,11 @@ import java.util.*;
 /** Local snapshots of skin and limb poses: no spawned entities, network spam, or live-player mutations. */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID, value = Dist.CLIENT)
 public final class SpeedAfterimages {
-    public static final int LIFETIME = 18, MAX_GHOSTS = 48;
+    public static final int LIFETIME = 18, MAX_GHOSTS = 96;
+    /** The speedster's warm gold, multiplied over the skin. */
+    public static final int GOLD = 0xFFE9C0;
     private record Ghost(UUID player, Vec3 position, float yaw, ResourceLocation skin, boolean slim,
-                         PartPose[] poses, int clothes, long born) {}
+                         PartPose[] poses, int clothes, long born, int tint, int life, float strength) {}
     private static final Deque<Ghost> GHOSTS = new ArrayDeque<>();
     private static final Map<UUID, Vec3> PREVIOUS = new HashMap<>();
     private static ClientLevel world;
@@ -44,7 +46,8 @@ public final class SpeedAfterimages {
     private static MultiBufferSource.BufferSource buffers;
     private SpeedAfterimages() {}
 
-    public static float opacity(float age) { return .42F * Math.clamp(1 - age / LIFETIME, 0, 1); }
+    public static float opacity(float age) { return opacity(age, LIFETIME); }
+    static float opacity(float age, int life) { return .42F * Math.clamp(1 - age / life, 0, 1); }
     static PlayerModel<AbstractClientPlayer> model(boolean narrow) {
         Minecraft mc = Minecraft.getInstance();
         if (wide == null) wide = new PlayerModel<>(mc.getEntityModels().bakeLayer(ModelLayers.PLAYER), false);
@@ -60,7 +63,7 @@ public final class SpeedAfterimages {
         if (world != mc.level) { world = mc.level; GHOSTS.clear(); PREVIOUS.clear(); wide = null; slim = null; }
         if (world == null || mc.player == null || mc.isPaused()) return;
         long now = world.getGameTime();
-        GHOSTS.removeIf(g -> now - g.born >= LIFETIME || now < g.born || world.getPlayerByUUID(g.player) == null);
+        GHOSTS.removeIf(g -> now - g.born >= g.life || now < g.born || world.getPlayerByUUID(g.player) == null);
         Set<UUID> seen = new HashSet<>();
         int interval = mc.options.particles().get() == ParticleStatus.MINIMAL ? 6 : 3;
         for (AbstractClientPlayer p : world.players()) {
@@ -70,6 +73,7 @@ public final class SpeedAfterimages {
             var attribute = p.getAttribute(Attributes.MOVEMENT_SPEED);
             if (previous == null || now % interval != 0 || attribute == null || !attribute.hasModifier(SpeedService.STRIDE)
                     || p.isInvisible() || p.isSpectator() || !p.isAlive() || p.isPassenger() || TimeVeilClient.hidden(p)
+                    || SlowTimeEffects.blurring(p)
                     || p.position().distanceToSqr(previous) < .025 || p.position().distanceToSqr(previous) > 64) continue;
             capture(p, now, p.position(), p.yBodyRot);
         }
@@ -115,7 +119,18 @@ public final class SpeedAfterimages {
         }
     }
 
-    private static void capture(AbstractClientPlayer p, long now, Vec3 position, float yaw) {
+    /**
+     * One afterimage of {@code p} at {@code position}, tinted and lasting {@code life} ticks: the blur of someone moving
+     * through slowed time ({@code SlowTimeEffects}).
+     */
+    public static void blur(AbstractClientPlayer p, Vec3 position, float yaw, int tint, int life, float strength) {
+        if (world == null || p.level() != world) return;
+        capture(p, world.getGameTime(), position, yaw, tint, life, strength);
+    }
+
+    private static void capture(AbstractClientPlayer p, long now, Vec3 position, float yaw) { capture(p, now, position, yaw, GOLD, LIFETIME, 1); }
+
+    private static void capture(AbstractClientPlayer p, long now, Vec3 position, float yaw, int tint, int life, float strength) {
         boolean narrow = p.getSkin().model() == PlayerSkin.Model.SLIM;
         var m = model(narrow);
         m.young = false; m.riding = false; m.crouching = p.isCrouching(); m.attackTime = 0; m.swimAmount = 0;
@@ -127,11 +142,14 @@ public final class SpeedAfterimages {
         int clothes = 0;
         for (PlayerModelPart part : PlayerModelPart.values()) if (p.isModelPartShown(part)) clothes |= part.getMask();
         while (GHOSTS.size() >= MAX_GHOSTS) GHOSTS.removeFirst();
-        GHOSTS.addLast(new Ghost(p.getUUID(), position, yaw, p.getSkin().texture(), narrow, poses, clothes, now));
+        GHOSTS.addLast(new Ghost(p.getUUID(), position, yaw, p.getSkin().texture(), narrow, poses, clothes, now, tint, life, strength));
     }
     public static void draw(PlayerModel<?> model, PoseStack pose, MultiBufferSource source, ResourceLocation skin, float alpha) {
+        draw(model, pose, source, skin, alpha, GOLD);
+    }
+    static void draw(PlayerModel<?> model, PoseStack pose, MultiBufferSource source, ResourceLocation skin, float alpha, int tint) {
         model.renderToBuffer(pose, source.getBuffer(RenderType.entityTranslucent(skin)), 0xF000F0,
-                OverlayTexture.NO_OVERLAY, ((int) (Math.clamp(alpha, 0, 1) * 255) << 24) | 0xFFE9C0);
+                OverlayTexture.NO_OVERLAY, ((int) (Math.clamp(alpha, 0, 1) * 255) << 24) | (tint & 0xFFFFFF));
     }
     @SubscribeEvent public static void render(RenderLevelStageEvent event) {
         Minecraft mc = Minecraft.getInstance();
@@ -150,7 +168,7 @@ public final class SpeedAfterimages {
             boolean own = mc.player != null && g.player.equals(mc.player.getUUID());
             double clearance = own ? 3.4 : 1.8;
             if (g.position.add(0, 1, 0).distanceToSqr(camera) < clearance * clearance) continue;
-            float alpha = opacity(world.getGameTime() - g.born + fraction);
+            float alpha = opacity(world.getGameTime() - g.born + fraction, g.life) * g.strength;
             if (alpha <= 0) continue;
             var m = model(g.slim); var parts = parts(m);
             for (int i = 0; i < parts.length; i++) { parts[i].loadPose(g.poses[i]); parts[i].visible = true; }
@@ -166,7 +184,7 @@ public final class SpeedAfterimages {
             pose.translate(g.position.x - camera.x, g.position.y - camera.y, g.position.z - camera.z);
             pose.mulPose(Axis.YP.rotationDegrees(180 - g.yaw));
             pose.scale(-.9375F, -.9375F, .9375F); pose.translate(0, -1.501, 0);
-            draw(m, pose, buffers, g.skin, alpha);
+            draw(m, pose, buffers, g.skin, alpha, g.tint);
         }
         buffers.endBatch();
     }

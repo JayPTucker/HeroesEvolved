@@ -29,7 +29,7 @@ final class TakedownArt {
     static void drawLive(Canvas c) {
         if (!c.glow() || !live()) return;
         Minecraft mc = Minecraft.getInstance();
-        float now = c.level.getGameTime() + c.partial;
+        float now = c.time();
         LivingEntity aimed = FinisherClient.aimed();
         boolean thin = mc.options.particles().get() == ParticleStatus.MINIMAL;
         double range = Takedowns.GLISTEN_RANGE;

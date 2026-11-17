@@ -22,7 +22,7 @@ import java.util.Map;
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID, value = Dist.CLIENT)
 public final class ClientGifted {
     /** One gifted mob's state, and when its cast and its unbinding began (client game time). */
-    public record State(int power, int rarity, int flags, int pose, int windup, long castAt, long unboundAt, long seenAt) {
+    public record State(int entity, int power, int rarity, int flags, int pose, int windup, long castAt, long unboundAt, long seenAt) {
         public boolean evil() { return (flags & GiftedMob.EVIL) != 0; }
         public boolean casting() { return (flags & GiftedMob.CASTING) != 0; }
         public boolean unbound() { return (flags & GiftedMob.UNBOUND) != 0; }
@@ -31,7 +31,7 @@ public final class ClientGifted {
         public boolean staggered() { return (flags & GiftedMob.STAGGERED) != 0; }
         /** How far through its windup it is, 0 to 1. */
         public float castProgress(long now, float partial) {
-            return windup <= 0 ? 0 : Math.clamp((now - castAt + partial) / windup, 0, 1);
+            return windup <= 0 ? 0 : Math.clamp((float) ClientMobTime.elapsed(entity, castAt, partial) / windup, 0, 1);
         }
     }
 
@@ -44,12 +44,12 @@ public final class ClientGifted {
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null) return;
         if (p.flags() < 0) { STATES.remove(p.entity()); return; }
-        long now = level.getGameTime();
+        long now = (long) ClientMobTime.clock(p.entity(), level.getGameTime());
         State old = STATES.get(p.entity());
         boolean casting = (p.flags() & GiftedMob.CASTING) != 0, unbound = (p.flags() & GiftedMob.UNBOUND) != 0;
         long castAt = casting ? (old != null && old.casting() && old.pose() == p.pose() ? old.castAt : now) : -1;
         long unboundAt = unbound ? (old != null && old.unbound() ? old.unboundAt : now) : -1;
-        STATES.put(p.entity(), new State(p.power(), p.rarity(), p.flags(), p.pose(), p.windup(), castAt, unboundAt, old != null ? old.seenAt : now));
+        STATES.put(p.entity(), new State(p.entity(), p.power(), p.rarity(), p.flags(), p.pose(), p.windup(), castAt, unboundAt, old != null ? old.seenAt : now));
     }
 
     public static State get(Entity entity) { return entity == null ? null : STATES.get(entity.getId()); }

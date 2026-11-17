@@ -45,6 +45,17 @@ public final class TimeSlowService {
                 || field.dimension.equals(player.level().dimension()) && player.position().distanceToSqr(field.center) <= radius * radius));
     }
 
+    /** Every live field, for {@link TimeFlow}: each follows its owner. */
+    static void describe(MinecraftServer server, java.util.List<TimeFlow.Field> into) {
+        double radius = HeroesEvolvedConfig.COMMON.timeSlowRadius.get();
+        for (TimeSlowField field : ACTIVE_FIELDS.values()) {
+            if (field.hasEnded()) continue;
+            ServerPlayer owner = server.getPlayerList().getPlayer(field.ownerId);
+            into.add(new TimeFlow.Field(field.ownerId, owner == null ? -1 : owner.getId(), field.dimension, field.center, radius,
+                    field.tickInterval, true));
+        }
+    }
+
     static int playerSlowInterval(ServerPlayer target) {
         int interval = 1;
         for (TimeSlowField field : ACTIVE_FIELDS.values())
@@ -193,6 +204,11 @@ public final class TimeSlowService {
      * Cancelling those entity ticks slows AI, falling blocks, item entities,
      * and other non-projectile entities at the field's current mastery level.
      */
+    public static int mobInterval(Entity entity) {
+        TimeSlowField field = getContainingField(entity, entity.position());
+        return field == null ? 1 : field.tickInterval();
+    }
+
     public static boolean shouldSkipEntityTick(Entity entity) {
         if (entity instanceof Player || entity instanceof Projectile || !(entity.level() instanceof ServerLevel level)) {
             return false;
@@ -234,6 +250,7 @@ public final class TimeSlowService {
             if (!everywhere && !field.dimension().equals(entity.level().dimension())
                     || field.ownerId().equals(entity.getUUID()) || entity.isSpectator()
                     || TemporalSharing.movesWith(field.ownerId, entity)
+                    || TemporalMobTime.perceives(entity)
                     // Whatever the traveller carries moves with them.
                     || field.ownerId().equals(entity.getRootVehicle().getUUID())
                     || com.jayptucker.heroesevolved.speed.SpeedService.outrunsTime(entity)

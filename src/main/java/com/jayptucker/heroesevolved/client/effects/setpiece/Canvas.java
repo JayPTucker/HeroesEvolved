@@ -23,6 +23,8 @@ public final class Canvas {
     /** 1 at noon, about 0.2 at midnight: how much the sun lights solid things. */
     float daylight = 1;
     float partial;
+    float effectTime = Float.NaN;
+    public float time() { return Float.isNaN(effectTime) ? level.getGameTime() + partial : effectTime; }
     ClientLevel level;
 
     public boolean solid() { return pass == Pass.SOLID; }

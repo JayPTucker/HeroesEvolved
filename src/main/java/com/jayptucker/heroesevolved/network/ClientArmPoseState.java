@@ -25,7 +25,7 @@ public final class ClientArmPoseState {
             POSES.remove(entityId);
             return;
         }
-        long now = Util.getMillis();
+        long now = time(entityId);
         Entry previous = POSES.get(entityId);
         boolean continuous = pose == ArmPose.KINETIC_GATHER || pose == ArmPose.KINETIC_HOLD
                 || pose == ArmPose.FIRE_FORGE || pose == ArmPose.FIRE_BREATH || pose == ArmPose.FIRE_SUN
@@ -51,7 +51,7 @@ public final class ClientArmPoseState {
         if (entry == null) {
             return null;
         }
-        if (Util.getMillis() >= entry.endMillis) {
+        if (time(entityId) >= entry.endMillis) {
             POSES.remove(entityId);
             return null;
         }
@@ -65,7 +65,14 @@ public final class ClientArmPoseState {
     /** Gesture phase survives hold refreshes, so hands do not snap back every server heartbeat. */
     public static float ageTicks(int entityId) {
         Entry entry = POSES.get(entityId);
-        return entry == null ? 0 : Math.max(0, (Util.getMillis() - entry.startMillis) / 50F);
+        return entry == null ? 0 : Math.max(0, (time(entityId) - entry.startMillis) / 50F);
+    }
+
+    private static long time(int entity) {
+        var mc = net.minecraft.client.Minecraft.getInstance();
+        if (mc.level != null && mc.level.getEntity(entity) instanceof net.minecraft.world.entity.Mob)
+            return (long) (com.jayptucker.heroesevolved.client.ClientMobTime.clock(entity, mc.level.getGameTime()) * 50);
+        return Util.getMillis();
     }
 
     private record Entry(ArmPose pose, long startMillis, long endMillis) {

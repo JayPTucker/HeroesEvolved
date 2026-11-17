@@ -148,12 +148,13 @@ public final class Renegades {
     }
 
     /**
-     * Wakes {@code villager}'s gift one way or the other. Evil: they turn ({@link #turn}). Good: they guard their village,
-     * unless the gift is Induced Radioactivity, which nobody good can hold (a meltdown). Null if they can't (a baby).
+     * Wakes {@code villager}'s gift one way or the other. Evil: they begin to turn ({@link #turn}; the renegade appears
+     * {@link #TURN_TICKS} later, {@link #turnedFrom}). Good: they guard their village, unless the gift is Induced
+     * Radioactivity, which nobody good can hold (a meltdown). Returns the villager, or null if they can't (a baby).
      */
     public static Mob awaken(Villager villager, boolean evil) {
         if (!(villager.level() instanceof ServerLevel level) || villager.isBaby() || !villager.isAlive() || GiftedMobs.isGifted(villager)
-                || VillagerMeltdown.critical(villager)) return null;
+                || VillagerMeltdown.critical(villager) || turning(villager)) return null;
         ResourceLocation power = GiftedVillagers.gift(villager);
         if (power == null) {
             power = GiftedMobs.randomPower(villager.getRandom());
@@ -186,29 +187,80 @@ public final class Renegades {
     }
 
     /**
-     * The gift turns {@code villager}: they become an illager carrying it, and lay siege to their own village. The
-     * renegade, or null if it couldn't happen.
+     * How long a turn takes before the body changes: crimson cracks climb the villager, a ring closes in on them, and
+     * the swap to an illager happens under the flash at the end ({@code GiftArt.turn} draws the same timeline), so the
+     * player sees a villager turn rather than an illager appear.
+     */
+    public static final int TURN_TICKS = 21;
+    private static final ResourceLocation TURN_ROOT = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "renegade_turning");
+
+    /** A villager in the middle of turning. */
+    private record Turning(Villager villager, ResourceLocation power, Rarity rarity, String name, BlockPos bell, long at) {}
+    private static final List<Turning> TURNING = new ArrayList<>();
+    /** Who each turned villager became (by the villager's id), while their siege lasts: tests and previews look them up. */
+    private static final Map<UUID, Mob> TURNED = new HashMap<>();
+
+    /** Is this villager in the middle of turning? */
+    public static boolean turning(Entity villager) {
+        for (Turning t : TURNING) if (t.villager == villager) return true;
+        return false;
+    }
+
+    /** The renegade a villager turned into, while its siege lasts, or null. */
+    public static Mob turnedFrom(UUID villager) { return TURNED.get(villager); }
+
+    /**
+     * The gift begins to turn {@code villager}: cracks climb them where they stand (they can't walk away), and
+     * {@link #TURN_TICKS} later they become an illager carrying it and lay siege to their own village. Returns the
+     * villager while they turn, or null if it couldn't happen.
      */
     public static Mob turn(Villager villager, ResourceLocation power, Rarity rarity) {
-        if (!(villager.level() instanceof ServerLevel level) || villager.isBaby() || !villager.isAlive()) return null;
+        if (!(villager.level() instanceof ServerLevel level) || villager.isBaby() || !villager.isAlive() || turning(villager)) return null;
         BlockPos bell = Villages.bell(level, villager.blockPosition());
         Vec3 at = villager.position();
         String name = villager.hasCustomName() ? villager.getCustomName().getString() + " " + GiftNames.roll(power, villager.getRandom()).split(" ", 2)[1]
                 : GiftNames.roll(power, villager.getRandom());
-        SetPiecePayload.send(level, Piece.GIFT_TURN, at, at.add(0, 1, 0), MimicColors.index(power.getPath()), null);
-        level.playSound(null, at.x, at.y, at.z, SoundEvents.ZOMBIE_VILLAGER_CONVERTED, SoundSource.HOSTILE, 1.4F, .6F);
+        SetPiecePayload.send(level, Piece.GIFT_TURN, at, at.add(0, 1, 0), MimicColors.index(power.getPath()), villager);
         level.playSound(null, at.x, at.y, at.z, SoundEvents.EVOKER_PREPARE_WOLOLO, SoundSource.HOSTILE, 1.4F, .5F);
+        level.playSound(null, at.x, at.y, at.z, SoundEvents.VILLAGER_HURT, SoundSource.NEUTRAL, 1.2F, .6F);
+        var speed = villager.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+        if (speed != null) speed.addOrUpdateTransientModifier(new net.minecraft.world.entity.ai.attributes.AttributeModifier(TURN_ROOT, -1,
+                net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+        villager.getNavigation().stop();
+        TURNING.add(new Turning(villager, power, rarity, name, bell, level.getGameTime() + TURN_TICKS));
+        return villager;
+    }
+
+    /** The flash at the end of a turn: the villager becomes the renegade. */
+    private static Mob convert(Turning t) {
+        Villager villager = t.villager;
+        if (!(villager.level() instanceof ServerLevel level) || villager.isRemoved() || !villager.isAlive()) return null;
+        Vec3 at = villager.position();
+        level.playSound(null, at.x, at.y, at.z, SoundEvents.ZOMBIE_VILLAGER_CONVERTED, SoundSource.HOSTILE, 1.4F, .6F);
         villager.setCustomName(null);
-        Raider renegade = villager.convertTo(illager(power), false);
+        Raider renegade = villager.convertTo(illager(t.power), false);
         if (renegade == null) return null;
         net.neoforged.neoforge.event.EventHooks.onLivingConvert(villager, renegade);
         renegade.finalizeSpawn(level, level.getCurrentDifficultyAt(renegade.blockPosition()), MobSpawnType.CONVERSION, null);
         renegade.setCanJoinRaid(false);
         renegade.setPatrolLeader(false);
-        GiftedMobs.bestow(renegade, power, rarity, true, Gift.Origin.RENEGADE, bell, name);
+        GiftedMobs.bestow(renegade, t.power, t.rarity, true, Gift.Origin.RENEGADE, t.bell, t.name);
         renegade.addEffect(new MobEffectInstance(MobEffects.GLOWING, 20 * 60, 0, false, false));
-        begin(renegade, level, bell, true);
+        TURNED.put(villager.getUUID(), renegade);
+        begin(renegade, level, t.bell, true);
         return renegade;
+    }
+
+    private static void tickTurning(MinecraftServer server) {
+        if (TURNING.isEmpty()) return;
+        for (Turning t : List.copyOf(TURNING)) {
+            if (t.villager.getServer() != server) continue;
+            // Killed or gone while turning: nothing becomes of it.
+            if (t.villager.isRemoved() || !t.villager.isAlive()) { TURNING.remove(t); continue; }
+            if (t.villager.level().getGameTime() < t.at) continue;
+            TURNING.remove(t);
+            convert(t);
+        }
     }
 
     // ------------------------------------------------------------------
@@ -247,6 +299,7 @@ public final class Renegades {
         MinecraftServer server = event.getServer();
         for (Mob m : List.copyOf(RESUMING)) resume(m);
         RESUMING.clear();
+        tickTurning(server);
         for (Terror t : List.copyOf(TERRORS.values())) if (t.level.getServer() == server) tick(t);
     }
 
@@ -360,6 +413,7 @@ public final class Renegades {
         t.renegade.getPersistentData().remove(TAG);
         if (t.call != null) EmergencyBand.end(t.call);
         VillageTickets.release(t.key());
+        TURNED.values().remove(t.renegade);
     }
 
     /** Ends a siege with nothing more happening (admin, tests). */
@@ -433,5 +487,7 @@ public final class Renegades {
         for (Terror t : List.copyOf(TERRORS.values())) pause(t);
         TERRORS.clear();
         RESUMING.clear();
+        TURNING.clear();
+        TURNED.clear();
     }
 }

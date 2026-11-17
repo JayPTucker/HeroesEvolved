@@ -71,6 +71,9 @@ Time reads as **clockwork made of light** (`client/effects/TimeEffects.java`, `s
 - **Clock faces** on the ground: two rings, twelve hour marks (every third one longer), and hands.
 - **Slowed time** is warm amber and drifts: hands crawl round, and sand hangs in the air, barely falling.
 - **Stopped time** is cold violet and holds perfectly still: hands stopped at ten past ten, motes frozen.
+- **Bent time is thick air** (`SlowTimeEffects`, `SlowTimeArt`): the world's particles and rain run at the field's rate,
+  chips of the ground hang, anyone faster than the world blurs into afterimages, and fast things leave thin pale rings
+  in the air (a shot's corkscrew wake, a wading speedster's ripples). Stopped, all of it holds still and turns violet.
 - **Rewound time runs backwards.** Trails draw from now to then, the hands spin the wrong way, and ghosts appear
   along the path *newest first*.
 - **Fold Space** stages it in steps (`ElectroEffects.later(step, ...)`): the tear behind you pinches shut, a

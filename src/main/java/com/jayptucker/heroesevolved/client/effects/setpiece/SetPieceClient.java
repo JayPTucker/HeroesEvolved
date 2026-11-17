@@ -34,7 +34,14 @@ import java.util.List;
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID, value = Dist.CLIENT)
 public final class SetPieceClient {
     /** One piece playing: where, toward what, how big, what it follows, its seed, and the game tick it began. */
-    public record Active(Piece piece, Vec3 origin, Vec3 target, float scale, int entity, int seed, long start) {
+    public record Active(Piece piece, Vec3 origin, Vec3 target, float scale, int entity, int seed, long start, double clockStart) {
+        public Active(Piece piece, Vec3 origin, Vec3 target, float scale, int entity, int seed, long start) {
+            this(piece, origin, target, scale, entity, seed, start,
+                    com.jayptucker.heroesevolved.client.ClientMobTime.start(entity, start));
+        }
+        public float age(float partial) {
+            return (float) com.jayptucker.heroesevolved.client.ClientMobTime.elapsed(entity, clockStart, partial);
+        }
         /** Where it is now: on the entity it follows (at its feet), or where it was cast. */
         public Vec3 at(Canvas canvas) {
             if (entity >= 0 && canvas.level != null) {
@@ -93,7 +100,7 @@ public final class SetPieceClient {
      */
     public static boolean superseded(Active a, java.util.Set<Piece> by, long now) {
         for (Active o : ACTIVE)
-            if (o != a && o.start >= a.start && by.contains(o.piece) && (o.piece != a.piece || now - o.start >= 2)
+            if (o != a && o.start >= a.start && by.contains(o.piece) && (o.piece != a.piece || o.age(0) >= 2)
                     && (a.entity >= 0 ? o.entity == a.entity : o.origin.equals(a.origin) && o.target.equals(a.target))) return true;
         return false;
     }
@@ -117,7 +124,7 @@ public final class SetPieceClient {
         long now = world.getGameTime();
         Active best = null;
         for (Active a : ACTIVE)
-            if (a.piece == piece && a.entity == entity && now >= a.start && now - a.start <= piece.ticks && (best == null || a.start > best.start))
+            if (a.piece == piece && a.entity == entity && now >= a.start && a.age(0) <= piece.ticks && (best == null || a.start > best.start))
                 best = a;
         return best;
     }
@@ -149,7 +156,7 @@ public final class SetPieceClient {
     @SubscribeEvent public static void tick(ClientTickEvent.Post event) {
         ClientLevel level = Minecraft.getInstance().level;
         if (world != level) { ACTIVE.clear(); world = level; }
-        if (level != null) ACTIVE.removeIf(a -> expired(a, level, level.getGameTime() - a.start));
+        if (level != null) ACTIVE.removeIf(a -> expired(a, level, a.age(0)));
     }
 
     private static boolean expired(Active a, ClientLevel level, float age) {
@@ -163,7 +170,8 @@ public final class SetPieceClient {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || ACTIVE.isEmpty() && !SpeedArt.live() && !RewindArt.live() && !FlightArt.live()
                 && !PyroArt.live() && !ShapeArt.live() && !HydroArt.live() && !CryoConstructArt.live(mc.level) && !ClientProjectileTime.hasControlledShots()
-                && !com.jayptucker.heroesevolved.client.effects.intro.SkyFightArt.live() && !TakedownArt.live() && !GiftArt.live() && !VillageArt.flaresLive()) return;
+                && !com.jayptucker.heroesevolved.client.effects.intro.SkyFightArt.live() && !TakedownArt.live() && !GiftArt.live() && !VillageArt.flaresLive()
+                && !SlowTimeArt.live()) return;
         if (world != mc.level) { ACTIVE.clear(); world = mc.level; }
         Vec3 camera = event.getCamera().getPosition();
         Canvas c = CANVAS;
@@ -200,16 +208,17 @@ public final class SetPieceClient {
         c.out = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
         long now = c.level.getGameTime();
         for (Active a : ACTIVE) {
-            float age = now - a.start + c.partial;
+            float age = a.age(c.partial);
             if (age < 0 || expired(a, c.level, age)) continue;
             if (a.origin.distanceToSqr(c.cx, c.cy, c.cz) > 224 * 224 && a.target.distanceToSqr(c.cx, c.cy, c.cz) > 224 * 224) continue;
             try {
+                c.effectTime = (float) com.jayptucker.heroesevolved.client.ClientMobTime.elapsed(a.entity, 0, c.partial);
                 PieceArt.draw(c, a, age);
             } catch (RuntimeException broken) {
                 // One broken piece must never take the frame with it.
                 HeroesEvolved.LOGGER.warn("Set piece {} failed to draw", a.piece, broken);
                 a = null;
-            }
+            } finally { c.effectTime = Float.NaN; }
         }
         // Then what has no fixed length: a speedster's cyclone or wake.
         try {
@@ -225,6 +234,7 @@ public final class SetPieceClient {
             VillageArt.flares(c);
             CryoConstructArt.draw(c);
             TemporalProjectileArt.draw(c);
+            SlowTimeArt.drawLive(c);
         } catch (RuntimeException broken) {
             HeroesEvolved.LOGGER.warn("Live power effects failed to draw", broken);
         }

@@ -12,7 +12,7 @@ These are the default keys; rebinding and the inventory skill tree still work.
 | Level | Key | Ability | Use |
 | --- | --- | --- | --- |
 | 1 | G | Fold Space | Blink to a visible surface or into open air. Cancels falling momentum. It costs **4 stamina plus 0.3 for every block folded** (9 for a 16-block fold, 49 for the full 150, less up to 30% as you level past it), so a short hop is cheap and a long jump is a commitment. From Level 3, Shift carries one nearby living companion if there is room. Players must be teammates or crouching. |
-| 1 | H | Between Seconds | Slows everything on the server: creatures and shots, and other players' movement and attack recharge. Every screen takes a faint amber cast. Everyone else sees you frozen where you started (see [Faster than time](#faster-than-time)). It lasts **as long as you pay for it**: 10 stamina to start, then 5 a second (4 at Level 15), and your stamina doesn't recover meanwhile. Press H again to end it. |
+| 1 | H | Between Seconds | Slows everything on the server: creatures and shots, and other players' movement and attack recharge. Every screen takes a faint amber cast. Everyone sees you move as a blur of amber afterimages (see [Faster than time](#faster-than-time) and [Bent time](#bent-time)). It lasts **as long as you pay for it**: 10 stamina to start, then 5 a second (4 at Level 15), and your stamina doesn't recover meanwhile. Press H again to end it. |
 | 3 | Z | Still World | Stops everything on the server but you (and one companion): creatures, shots and other players. Every screen turns drained and cold, and everyone else sees you frozen where you started (see [Faster than time](#faster-than-time)). Your attacks accumulate and land when time resumes. It lasts **until you press Z again or your stamina runs out**: 20 stamina to start (about 21 at Level 10 and 15 once practice discounts it), then 12 a second at Level 6, 10 at Level 10 and 8 at Level 15, with no recovery while the world is still. A full bar holds time for about 8 seconds at Level 6, 11 at Level 10, 17 at Level 15 and 19 at Level 20. Shift while starting includes one touching companion; pressing Z again resumes time for free. |
 | 4 | X | Rewrite the Moment | Restore the recorded timeline from fifteen seconds ago, including changed blocks, containers, and recorded entities, everywhere you have been in those seconds. Anyone who died in reach lives again. Everyone it reaches is carried back through their own fifteen seconds (see [Going back](#going-back)), even across a portal, and lands where they were. You recover lost health. It costs **120 stamina** (hold Shift to overexert when you're short) and recovers in **4 minutes at Level 10, 2½ minutes at Level 15**. While it's ready, a faint ghost of you, ringed in violet and visible only to you, stands where it would take you. |
 | 5 | V | Walk the Past | Shift + V records an area; V visits the recorded past with nearby companions. V in the past returns without energy cost or an entry-cooldown delay. |
@@ -24,6 +24,15 @@ round of ammunition. A shotgun blast yields one shell. Shots still in flight res
 when the field ends.
 
 ### Faster than time
+
+Creatures without Superspeed or Space-Time keep aiming and pathfinding toward the body they last saw where you
+entered fast time. Moving, casting or hitting them does not reveal your new position. Their ordinary target and brain
+memory recover when time resumes. Gifted creatures with matching temporal powers can see and follow your real body.
+
+Slowed creatures fight at their slowed pace: melee recovery, AI, gifted windups, pulses, flurries and delayed moves
+advance with their body ticks. Their client-side walking, swings, casting poses and bound ability effects use that
+same clock; stopped creatures and their bound effects freeze. Overlapping fields use the strongest rate. Your own
+animations and those of invited companions keep their normal pace.
 
 Start Between Seconds or Still World, then **right-click a player within normal interaction reach** to bring them
 into your time. They can move normally, see everyone moving in time, and speak with temporal perceivers. You can
@@ -42,13 +51,39 @@ when time returns. The fragment is a short rolling buffer in memory and is disca
 Between Seconds and Still World reach the whole server, in every dimension, unless `fieldsServerWide` is off in the
 config (then they keep to `slowRadius` and `stopRadius`). A speedster's Perception works the same way.
 
-While one holds, nobody sees you move. Everyone else sees a still figure of you where you started, with your skin,
-and your real body, name and shadow are hidden from them, along with any effect drawn right beside you. Only players
-with Superspeed or Space-Time, or a Mimic channeling either, see you as you are. You see a faint copy of yourself on
-the spot, so you can find it again.
+**In slowed time you are a blur.** Everyone can see you, but you move faster than the world round you, so you leave
+afterimages behind you: one every so far you travel, so standing still leaves none, walking a few, and running a
+smear of them (amber for a time traveller, gold for a speedster). Slowed creatures still swing at the spot where they
+last saw you when time slowed; they can't keep up.
+
+**In stopped time nobody sees you move.** Everyone else sees a still figure of you where you stood when time stopped,
+with your skin, and your real body, name and shadow are hidden from them, along with any effect drawn right beside you.
+Only players with Superspeed or Space-Time, or a Mimic channeling either, see you as you are. You see a faint copy of
+yourself on the spot, so you can find it again. A guest you share Still World with is hidden the same way.
 
 When it ends, if you are back on your spot, nobody notices a thing. Anywhere else, the still figure vanishes in a
-violet blink and you appear where you really are. (A speedster's vanishes in a blur and a gust of wind.)
+violet blink and you appear where you really are. (A speedster's vanishes in a blur and a gust of wind.) If time was
+also slowed, it stays slowed, and from then on you are a blur again.
+
+### Bent time
+
+Slowing or stopping time changes the whole world, not just the creatures in it. The air turns as thick as water, and
+everything fast leaves a mark in it:
+
+- **The ground lifts.** As time slows, chips of the ground burst up round whoever slowed it, and fine dust keeps rising
+  round you and hangs there, barely moving. When time stops it holds perfectly still; when time runs again it falls.
+- **Rain slows.** Drops crawl down and splash slowly, and the patter quietens; stopped, the rain hangs in the air and
+  falls silent.
+- **Every particle slows with the world**: smoke, splashes, sparks, explosions. A blast in slowed time blooms slowly
+  and its smoke hangs.
+- **Fuses burn slowly.** A creeper caught mid-swell, or lit TNT, burns at least six times slower in slowed time (more in
+  a slower field), so there is time to get clear, carry it off or answer it. Stopped, it doesn't burn at all.
+- **Shots leave rings.** A slowed arrow, bullet or thrown thing drags a corkscrew of thin pale rings behind it through
+  the air, each fixed where it was made, widening and fading. Stopped, the rings hold still and turn cold violet.
+- **Fast feet kick up the ground.** Anyone running fast through slowed time (a speedster, mostly) sprays chips of the
+  ground up behind them, and they hang in the air along the path.
+- **Movers blur** (above), and a speedster wades (see [Superspeed](superspeed.md#hands-at-speed-while-accelerate-is-on),
+  under Perception).
 
 Everyone it reaches gets a quiet hint in chat, in grey italics, never naming who did it. Players who can't move in
 time feel their body lag behind their thoughts ("Your body is still, but your brain seems to be moving faster than

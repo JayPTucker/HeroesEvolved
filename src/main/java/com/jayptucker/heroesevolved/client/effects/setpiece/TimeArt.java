@@ -491,7 +491,7 @@ final class TimeArt {
         Vec3 o = a.at(c), top = o.add(0, a.scale() + .55, 0);
         Vec3 toward = new Vec3(c.cx - top.x, 0, c.cz - top.z);
         toward = toward.lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : toward.normalize();
-        float spin = (c.level.getGameTime() + c.partial) * .05F;
+        float spin = (c.time()) * .05F;
         face(c, top, toward, .3F, -spin * .1F, -spin, VIOLET, .9F * f);
         if (c.glow()) c.ring(o.add(0, .05, 0), UP, .6F, .03F, 0, Mth.TWO_PI, VIOLET, .5F * f);
     }

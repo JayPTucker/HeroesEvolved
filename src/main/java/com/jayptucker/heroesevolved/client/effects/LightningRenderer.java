@@ -31,7 +31,7 @@ public final class LightningRenderer {
      * they are blended normally in a second pass.
      */
     private record Stroke(Vec3[] points, float startWidth, float endWidth, float r, float g, float b, float alpha,
-                          int born, int delay, int life, boolean flicker, boolean soft, boolean dark) {}
+                          int born, int delay, int life, boolean flicker, boolean soft, boolean dark, int actor, double began) {}
     private static final List<Stroke> STROKES = new ArrayList<>();
     private static MultiBufferSource.BufferSource buffers;
     private static ClientLevel world;
@@ -49,7 +49,8 @@ public final class LightningRenderer {
         float r = ((color >> 16) & 255) / 255F, g = ((color >> 8) & 255) / 255F, b = (color & 255) / 255F;
         boolean dark = 0.3F * r + 0.59F * g + 0.11F * b < 0.3F;
         STROKES.add(new Stroke(points.toArray(Vec3[]::new), startWidth, endWidth, r, g, b, alpha, clock, delay, Math.max(1, life),
-                life > 3 && !dark, soft, dark));
+                life > 3 && !dark, soft, dark, com.jayptucker.heroesevolved.client.ClientMobTime.actor(),
+                com.jayptucker.heroesevolved.client.ClientMobTime.start(com.jayptucker.heroesevolved.client.ClientMobTime.actor(), Minecraft.getInstance().level.getGameTime())));
     }
 
     /** A four-pointed glint: crossed thin ribbons, for the bright point where current lands or leaves. */
@@ -77,7 +78,7 @@ public final class LightningRenderer {
         if (level != world) { STROKES.clear(); world = level; }
         if (Minecraft.getInstance().isPaused()) return;
         clock++;
-        STROKES.removeIf(s -> clock - s.born - s.delay >= s.life);
+        STROKES.removeIf(s -> age(s, 0) >= s.life);
     }
 
     @SubscribeEvent public static void render(RenderLevelStageEvent event) {
@@ -90,7 +91,7 @@ public final class LightningRenderer {
             VertexConsumer out = buffers.getBuffer(type);
             for (Stroke s : STROKES) {
                 if (s.dark != darkPass) continue;
-                float age = clock - s.born - s.delay + partial;
+                float age = age(s, partial);
                 if (age < 0) continue;
                 float progress = Math.min(1, age / s.life);
                 float fade = (1 - progress) * (1 - progress * 0.5F);
@@ -102,6 +103,11 @@ public final class LightningRenderer {
             }
             buffers.endBatch(type);
         }
+    }
+
+    private static float age(Stroke s, float partial) {
+        return s.actor < 0 ? clock - s.born - s.delay + partial
+                : (float) com.jayptucker.heroesevolved.client.ClientMobTime.elapsed(s.actor, s.began, partial) - s.delay;
     }
 
     private static void ribbon(VertexConsumer out, Stroke s, Vec3 camera, float alpha) {

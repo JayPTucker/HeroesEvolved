@@ -130,6 +130,11 @@ public final class GiftedMob {
     // ------------------------------------------------------------------
 
     void tick() {
+        if (!com.jayptucker.heroesevolved.time.TemporalMobTime.advances(mob)) return;
+        com.jayptucker.heroesevolved.time.TemporalMobTime.acting(mob, this::tickInTime);
+    }
+
+    private void tickInTime() {
         int now = now();
         runLater(now);
         tickPin(now);
@@ -266,7 +271,9 @@ public final class GiftedMob {
     }
 
     private void tickCast() {
-        LivingEntity target = level().getEntity(castTarget) instanceof LivingEntity t && t.isAlive() ? t : null;
+        LivingEntity target = level().getEntity(castTarget) instanceof LivingEntity t && t.isAlive() ? t
+                : com.jayptucker.heroesevolved.time.TimeVeil.shadow(castTarget);
+        target = com.jayptucker.heroesevolved.time.TemporalMobTime.target(mob, target);
         if (target == null) { cancelCast(false); return; }
         mob.getNavigation().stop();
         face(target);

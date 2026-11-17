@@ -130,14 +130,26 @@ public final class VillagerMeltdownGameTests {
     }
 
     private static void flee(GameTestHelper helper, Villager him, Villager neighbour, ServerPlayer witness, double before) {
-        helper.runAfterDelay(15, () -> {
+        // The meltdown sets a runner's walk target every five ticks, and a villager's brain drops a target it can't path
+        // to (this arena is walled), so the target is only there for part of each five: look for it over a window
+        // rather than at one tick, which made this test fail on timing alone.
+        net.minecraft.world.entity.ai.memory.WalkTarget[] seen = new net.minecraft.world.entity.ai.memory.WalkTarget[1];
+        boolean[] shouted = new boolean[1];
+        for (int tick = 2; tick <= 24; tick++)
+            helper.runAfterDelay(tick, () -> {
+                neighbour.getBrain().getMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.WALK_TARGET).ifPresent(t -> {
+                    if (t.getSpeedModifier() >= 0.9F && seen[0] == null) seen[0] = t;
+                });
+                if (VillagerMeltdown.shouting(neighbour).contains("It's happening again!")) shouted[0] = true;
+            });
+        helper.runAfterDelay(25, () -> {
             try {
-                var target = neighbour.getBrain().getMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.WALK_TARGET);
-                helper.assertTrue(target.isPresent() && target.get().getSpeedModifier() >= 0.9F, "They break into a run, like Odessa's crowd");
-                helper.assertTrue(target.get().getTarget().currentPosition().distanceTo(him.position()) > VillagerMeltdown.FLEE_RANGE,
+                helper.assertTrue(seen[0] != null, "They break into a run, like Odessa's crowd (neighbour alive " + neighbour.isAlive()
+                        + ", ticking " + helper.getLevel().isPositionEntityTicking(neighbour.blockPosition()) + ", meltdown "
+                        + VillagerMeltdown.critical(him) + ", distance " + String.format("%.1f", neighbour.distanceTo(him)) + ")");
+                helper.assertTrue(seen[0].getTarget().currentPosition().distanceTo(him.position()) > VillagerMeltdown.FLEE_RANGE,
                         "Away from him, out of reach");
-                helper.assertTrue(VillagerMeltdown.shouting(neighbour).contains("It's happening again!"),
-                        "And the first of them shouts it: " + VillagerMeltdown.shouting(neighbour));
+                helper.assertTrue(shouted[0], "And the first of them shouts it: " + VillagerMeltdown.shouting(neighbour));
             } catch (RuntimeException e) { cleanup(witness, him, neighbour); throw e; }
         });
         helper.runAfterDelay(80, () -> {

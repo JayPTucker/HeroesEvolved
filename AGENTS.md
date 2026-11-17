@@ -1138,7 +1138,18 @@ hundreds of blocks from a player (`village/VillageIncidents`). Built in November
   proportion: it covers the same part of the sky. Use this for any marker that must be seen from very far.
 - **A whole-crater carve in one tick.** `NuclearFallout.carve(level, center, radius, player)` clears the inside of a
   sphere with `UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE` (no neighbour updates: nothing inside is left) and the rim, and
-  anything next to a fluid, with `UPDATE_ALL`. About 9 µs a block. Use it for any big instant hole.
+  anything next to a fluid, with `UPDATE_ALL`. Measured in solid stone: radius 24 is ~30,000 blocks in 21 ms; radius 48
+  (`CRATER_RADIUS`, an ordinary blast's crater, twice its damage reach) is ~235,000 blocks in 136 ms. Use it for any big
+  instant hole; past radius 48, spread it over ticks.
+- **Swap a body under cover.** A villager turning (`Renegades.turn`) stays a villager for `TURN_TICKS` (21) while the
+  cracks climb, and `convertTo` runs under the flash `GiftArt.turn` draws at that tick. Converting on frame one showed the
+  cracks climbing a pillager. Tests wait `TURN_TICKS` and find the renegade with `Renegades.turnedFrom(villagerId)`.
+- **Colour that must read at noon gets a normal-blended body.** Additive crimson washed out to pink against the sky (the
+  crown, the flare). Draw the coloured body in the SOFT pass and keep GLOW for rims, beads and tips; keep white cores thin.
+- **Photographs:** `tools/gifted-preview.init.gradle` (`uitest/GiftedPreview`, flag `heroes.preview.gifted`) shoots the
+  sigils, the three cast poses, unbound, a turn, the flare from 300 and 600 blocks, and a meltdown crater in solid stone
+  (it logs the carve time) into `build/gifted-preview/screenshots/`. Creative flight stops when a reset stands the player
+  on the ground: start it again after every teleport into the air (`hover`), or the shots are taken from the ground.
 - **Arm poses for vanilla models.** `mixin/IllagerCastPoseMixin` adds poses at the tail of `IllagerModel.setupAnim` from
   a client mirror (`client/ClientGifted`, fed by `GiftedMobPayload` on change and `StartTracking`). Uncross the arms
   (`arms.visible = false`) before posing them.
@@ -1356,6 +1367,17 @@ two-way Breaches, Read the Vibe, Breach Guard → Return Fire and Frequency Lock
 
 ## Reusable patterns from the Space-Time rework
 
+- **Mobs have one temporal clock.** `time/TemporalMobTime.interval` is the strongest field's interval (0 stopped,
+  1 normal); vanilla mob ticks and the whole gifted tick, including delayed steps, pulses and flurries, use it.
+  `MobTimeSync` sends rate changes and initial tracking state. `client/ClientMobTime` drives body interpolation,
+  casting poses, sigils, bound set pieces, short lightning strokes and delayed lightning steps. A gifted tick carries
+  its actor through `AbilityEffectPayload`, so short effects retain their source clock. Keep player animations free.
+- **A frozen memory is not a tracked player.** `TimeVeil.perceivedTarget` returns an unspawned, unregistered shadow at
+  the caster's starting position. Mob goal targets and brain `ATTACK_TARGET` reads resolve through it, and sight and
+  acquisition cannot track the actual caster. Weak shadow references resolve back to the owner when time resumes.
+  Gifted Superspeed/Space-Time users keep their own clock and perception. Tests are in `TemporalSharingGameTests`;
+  `tools/temporal-preview.init.gradle -Pmobtime` stages ordinary and gifted zombies beside the shared-time guest.
+
 Space-Time Manipulation's tree (`time/SpaceTimeSkills`, numbers in `time/TimeGeometry`, art in
 `client/effects/setpiece/TimeArt`) was rebuilt in November 2026: Stillness, Wayfinder and Historian, eighteen interaction
 nodes, nine poses and ten pieces. What the player sees is in [docs/space-time-manipulation.md](docs/space-time-manipulation.md).
@@ -1403,14 +1425,17 @@ nodes, nine poses and ten pieces. What the player sees is in [docs/space-time-ma
   twelve marks (every third longer), and two hands with pale cores. Stopped clocks read ten past ten, hurried ones race
   forward, undone ones spin back; colour does the rest (violet and ice stopped, amber and gold hurried). The anchor's hands
   show the real hour, carried in the piece's scale.
-- **Moving faster than time (`time/TimeVeil`).** While someone slows or stops time, everyone else is sent a
+- **Moving faster than time (`time/TimeVeil`).** While someone stops time, everyone else is sent a
   `TimeVeilPayload` and `client/effects/TimeVeilClient` hides the caster (model, name, and shadow via
-  `mixin/VeiledShadowMixin`) and draws a still stand-in with their skin where they started; the reveal is a blur
-  (speedster) or a blink (traveller), or nothing if they are back on the spot. Who sees through it is one rule,
+  `mixin/VeiledShadowMixin`) and draws a still stand-in with their skin where they stood; the reveal is a blur
+  (speedster) or a blink (traveller), or nothing if they are back on the spot. Slowed time keeps a veil (hints, mob
+  targeting, tint) but hides nobody: `Veil.hiding()` is true only for `STOP` or a guest of a stopped field, and the
+  stand-in is anchored when hiding starts (`Veil.anchor`), so a stop inside a slow stands where time stopped. Movers
+  in slowed time are drawn as a blur instead (see "slowed time" below). Who sees through it is one rule,
   `TimeVeil.movesInTime`. `AbilityEffects.send` and `SetPiecePayload.send` skip any viewer for whom
   `TimeVeil.masks(viewer, origin)` is true, so a trail drawn beside a hidden body can't give it away; a field's own
   visual goes only to those who see the caster (`TimeVeil.showToSeers`). Begin and end it with a reason
-  (`SLOW`, `STOP`, `PERCEPTION`), so overlapping fields keep one stand-in. The chat hints (`hint`, `over`) go out
+  (`SLOW`, `STOP`, `PERCEPTION`), so overlapping fields keep one veil. The chat hints (`hint`, `over`) go out
   with the first reason and the last, and whoever was puzzled (`Veil.puzzled`) is told it is over even if the caster
   logs off.
 - **Server-wide fields and parallel tests.** Time fields reach every entity in every dimension when
@@ -1426,6 +1451,56 @@ nodes, nine poses and ten pieces. What the player sees is in [docs/space-time-ma
   reads `heroes.preview.time`, and two drivers on one flag fight over the camera and the world. A back camera always hides
   the creature you aim at behind your body; use first person or put the target close for a front shot. If the run fails
   with "Failed to locate a primary monitor", the Mac's display is asleep: `caffeinate -u -d -t 600` wakes it.
+
+## Reusable patterns from slowed time (bent time as thick air)
+
+Slowed and stopped time were reworked in November 2026 so the whole world shows it, not only the creatures in it
+(`time/TimeFlow`, `client/ClientTimeFlow`, `client/effects/SlowTimeEffects`, rings in `setpiece/SlowTimeArt`). One idea:
+**bent time makes the air as thick as water, and everything fast leaves a mark in it.** What the player sees is in
+[docs/space-time-manipulation.md](docs/space-time-manipulation.md#bent-time) and the Perception bullets of
+[docs/superspeed.md](docs/superspeed.md).
+
+- **One picture of time for the clients.** `TimeFlow.fields` gathers every field (Between Seconds, Still World,
+  Perception, each service's `describe`) and `TimeFlow.style` names who moves faster than the world (field owners,
+  sharing guests, speedsters at speed). `TimeFlowPayload` carries both, sent on change and once a second; a following
+  field's centre is read from its owner on the client, so `sameAs` ignores it and walking doesn't resend. The client
+  asks `ClientTimeFlow.rate(x, y, z)` (1, 1/n, or 0 stopped) and `style(entity)`. A new kind of field is one more
+  `describe`; anything that should slow on the client asks `rate`.
+- **Every particle has a clock.** `mixin/TemporalParticleMixin` gives `Particle` a `TimedParticle` clock and
+  `TemporalParticleEngineMixin` skips its tick until the clock is due and draws it with a slowed partial tick (the mob
+  clock's trick, `ClientMobTime`). Smoke, splashes and explosions drift; stopped, they hang. `PowerParticle` is exempt:
+  power effects keep their own timing.
+- **Rain on its own clock.** `mixin/TemporalWeatherMixin` swaps `LevelRenderer.ticks` and the partial tick inside
+  `renderSnowAndRain` for `ClientTimeFlow`'s weather clock, which runs at the camera's rate, and skips `tickRain`
+  (splashes and patter) as often. The clock always runs (at 1 when nothing is slowed), so rain never jumps.
+- **A speedster is dragged, not frozen or freed.** `PlayerTimeSlow.update` uses `TimeFlow.drag` instead of the field's
+  1/n while a speedster's `STRIDE` is on: `DRAG_SLOW` 0.55 in slowed time (their own Perception too), `DRAG_STOP` 0.4
+  stopped. Their hands keep full attack speed. It rides the same attribute modifier, so flight scaling
+  (`SlowedFlightMovementMixin`) and the client follow for free.
+- **A floor under fuses.** `TimeFlow.fuse(interval)` is at least `FUSE_INTERVAL` (6) once time is slowed: a swelling
+  creeper's mob interval (`TemporalMobTime.interval`, so `MobTimeSync` tells the client) and lit TNT on both sides
+  (`TimeSlowEvents`, `ClientTimeFlow.fuse`). A new "about to go off" thing gets the same floor.
+- **Blur from distance, not time.** `SlowTimeEffects.blur` leaves an afterimage every `BLUR_SPACING + speed ×
+  BLUR_STRETCH` blocks travelled, so the blur thickens with speed (easing toward two a tick) and a mover standing still
+  leaves none. A fixed small spacing at a speedster's pace stacked thirty identical ghosts into a solid tube; fewer,
+  fainter (`BLUR_STRENGTH`), shorter-lived ones read as a blur. `SpeedAfterimages.blur(player, at, yaw, tint, life,
+  strength)` takes those per ghost; the speedster's ordinary running ghosts step aside while `SlowTimeEffects.blurring`.
+- **Ground chips are real particles.** `TimeMote` is a `TerrainParticle` (the block's own texture) that grows in and
+  shrinks out; spawned into slowed time it inherits the slowdown, so dust hangs and kicked spray arcs slowly. Stopped,
+  spawn them at their height already (they will never rise). `settle()` drops them when time runs again.
+- **Rings anchored in the world.** Shot wakes, footfall ripples and body rings are `SlowTimeEffects.Ring` records drawn
+  live by `SlowTimeArt`. Ripples age by their spot's rate (a little faster, so a trail stays a trail); a shot's rings
+  age in real time, or its wake would stretch twenty blocks behind a slowed shot. None age when stopped, and then they
+  turn violet. A shot's rings sit `WAKE_SPACING` apart, each turned `WAKE_TWIST` round the line from the last, so the
+  wake winds like the loose spring of rings behind a slowed bullet on screen (the first try, rings every 0.2 blocks,
+  made solid tubes). Each ring is a faint slate edge in SOFT plus halo, body and core in GLOW, so it reads against a
+  bright sky, and fades near the camera. A particle's clock starts due, or a blast in slowed time shows nothing for
+  its first slowed tick.
+- **Photographs:** `tools/slowtime-preview.init.gradle` (`uitest/SlowTimePreview`, flag `heroes.preview.slowtime`)
+  shoots dust and rain, a traveller's blur, a creeper's slowed fuse and blast, shot wakes, Still World, the resume and a
+  speedster wading through Perception into `build/slowtime-preview/screenshots/`. It drives the real player with
+  `keyUp`/`keySprint.setDown` and runs a side camera alongside with `TempestCamera.fix` each tick. Tests:
+  `TimeFlowGameTests` (in `tools/temporal-gametest.init.gradle`).
 
 ## Reusable patterns from the Density rework
 
@@ -1629,9 +1704,11 @@ Shapeshifting (`shapeshift/`, stand-ins in `client/MorphClient`, art in `client/
   - To photograph what only a foe sees, the driver sends the foe's private piece to the local player.
   - A front camera behind a standing mob ends up inside it: move the player clear first.
   - Fixed cameras (`side()`) only see what is staged in front of them.
-- **Known flaky tests.** `hisneighboursscreamandrun` (the meltdown crowd) and
-  `facilitybuildsinbatchesandmanualroutecansavebothcaptives` (waits on chunk loading) each failed once during this
-  work and passed on the next run with no change. Re-run before blaming new code.
+- **Known flaky tests.** `facilitybuildsinbatchesandmanualroutecansavebothcaptives` (waits on chunk loading) failed once
+  during this work and passed on the next run with no change. Re-run before blaming new code.
+  `hisneighboursscreamandrun` (the meltdown crowd) was flaky too, and is fixed: it read a runner's walk target at one
+  tick, but the meltdown re-sets it every five and the brain drops a target it can't path to in a walled arena, so it
+  now looks across a window. Check a re-sent brain memory over a window, never at one tick.
 
 
 ## Reusable patterns from the Odessa rebuild

@@ -98,7 +98,7 @@ final class VillageArt {
      * the sky), so the far plane never clips it. Close by it thins out, so it doesn't fill the view at the village.
      */
     static void flares(Canvas c) {
-        if (!c.glow() || c.level == null) return;
+        if (c.level == null || !c.glow() && !c.soft()) return;
         long now = c.level.getGameTime();
         Vec3 camera = c.camera();
         for (var flare : com.jayptucker.heroesevolved.client.ClientDistress.all()) {
@@ -110,11 +110,18 @@ final class VillageArt {
             float k = distance > FAR ? (float) (FAR / distance) : 1;
             Vec3 at = camera.add(base.subtract(camera).scale(k));
             float age = now - flare.since() + c.partial, f = Mth.clamp(age / 20, 0, 1) * near;
-            float height = FLARE_HEIGHT * k, width = Math.max(.6F, (float) distance * .006F) * k;
+            // About 1% of the distance wide: a few pixels at any range, so it can be picked out on the horizon.
+            float height = FLARE_HEIGHT * k, width = Math.max(.8F, (float) distance * .012F) * k;
             Vec3 top = at.add(0, height, 0);
-            c.line(at, top, width * 3, col, f * .16F, 0);
-            c.line(at, top, width, col, f * .5F, f * .08F);
-            c.line(at, top.subtract(0, height * .3, 0), width * .3F, PALE, f * .8F, 0);
+            if (c.soft()) {
+                // Its colour, with normal blending, so a crimson flare is crimson at noon rather than washed to pink.
+                c.line(at, top.subtract(0, height * .15, 0), width, col, f * .85F, f * .1F);
+                continue;
+            }
+            // Light only rims and cores it: a strong white core turned every flare the same pink-white at range.
+            c.line(at, top, width * 3, col, f * .14F, 0);
+            c.line(at, top, width * .6F, col, f * .35F, f * .06F);
+            c.line(at, top.subtract(0, height * .3, 0), width * .18F, PALE, f * .5F, 0);
             c.glow(at.add(0, 1.5 * k, 0), width * 4, col, f * .35F);
             // The shell: up in twenty ticks, a burst at the top that opens and fades over the next twenty.
             float cycle = age % 40;

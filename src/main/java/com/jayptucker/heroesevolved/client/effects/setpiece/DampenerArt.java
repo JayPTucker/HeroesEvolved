@@ -57,7 +57,7 @@ final class DampenerArt {
         float r = a.scale() * smooth(0, 1, grown);
         // Re-sent every ten ticks as a twelve-tick piece: two-tick fades let the copies hand over seamlessly.
         float alpha = fade(t, DampenerGeometry.FIELD_PIECE, 2, 2);
-        float time = c.level.getGameTime() + c.partial;
+        float time = c.time();
         Vec3 floor = center.add(0, -0.47, 0);
         boolean full = grown >= 1;
         if (r < 0.3F) {
@@ -165,7 +165,7 @@ final class DampenerArt {
         float height = Math.max(0.5F, a.scale()), width = Math.max(0.4F, body.getBbWidth());
         Vec3 feet = body.getPosition(c.partial);
         float alpha = fade(t, DampenerGeometry.MARK_PIECE, 2, 2);
-        float time = c.level.getGameTime() + c.partial;
+        float time = c.time();
         Minecraft mc = Minecraft.getInstance();
         // A collar would sit inside your own camera: in first person you only see the ring at your feet.
         boolean own = body == mc.getCameraEntity() && mc.options.getCameraType().isFirstPerson();

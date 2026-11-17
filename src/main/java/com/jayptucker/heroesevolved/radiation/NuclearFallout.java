@@ -29,6 +29,8 @@ import java.util.*;
  */
 public final class NuclearFallout {
     public static final int RADIUS = 24, WAVE_TICKS = 5, FALLOUT_TICKS = 20 * 60;
+    /** An ordinary blast's crater is twice its reach: the hole is radius 48 though the wave hurts out to 24. */
+    public static final int CRATER_RADIUS = RADIUS * 2;
     public static final int AWAKENING_RADIUS = 48, CLOUD_TICKS = 600;
     private static final List<Blast> BLASTS = new ArrayList<>();
     /** How long the last crater took to carve, in milliseconds, and how many blocks it broke (tests and logs). */
@@ -134,7 +136,7 @@ public final class NuclearFallout {
         boolean mayBreak = player != null ? player.mayBuild()
                 : level.getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_MOBGRIEFING);
         if (!mayBreak || owner.level() != level) return 0;
-        return carve(level, blast.block, blast.radius, player);
+        return carve(level, blast.block, blast.radius == AWAKENING_RADIUS ? AWAKENING_RADIUS : CRATER_RADIUS, player);
     }
 
     /** The crater itself, at any size (tests carve small ones inside an arena). */

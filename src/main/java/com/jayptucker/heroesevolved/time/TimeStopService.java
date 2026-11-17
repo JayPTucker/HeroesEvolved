@@ -156,11 +156,24 @@ public final class TimeStopService {
         return ACTIVE_FIELDS.containsKey(player.getUUID());
     }
 
+    /** Whether {@code owner} holds time stopped (by id, for a guest's veil). */
+    static boolean holds(UUID owner) { return ACTIVE_FIELDS.containsKey(owner); }
+
     /** Field coverage, including its owner and companions, for the voice-thread snapshot. */
     public static boolean reaches(ServerPlayer player) {
         double radius = HeroesEvolvedConfig.COMMON.timeStopRadius.get();
         return ACTIVE_FIELDS.values().stream().anyMatch(field -> !field.hasEnded() && (TimeVeil.serverWide()
                 || field.dimension.equals(player.level().dimension()) && player.position().distanceToSqr(field.center) <= radius * radius));
+    }
+
+    /** Every live field, for {@link TimeFlow}: stopped, and fixed where it began. */
+    static void describe(MinecraftServer server, java.util.List<TimeFlow.Field> into) {
+        double radius = HeroesEvolvedConfig.COMMON.timeStopRadius.get();
+        for (TimeStopField field : ACTIVE_FIELDS.values()) {
+            if (field.hasEnded()) continue;
+            ServerPlayer owner = server.getPlayerList().getPlayer(field.ownerId());
+            into.add(new TimeFlow.Field(field.ownerId(), owner == null ? -1 : owner.getId(), field.dimension(), field.center(), radius, 0, false));
+        }
     }
 
     public static boolean isStopped(Entity entity) {
@@ -396,6 +409,7 @@ public final class TimeStopService {
                     && !field.ownerId().equals(entity.getUUID())
                     && !entity.getUUID().equals(field.companion)
                     && !TemporalSharing.movesWith(field.ownerId, entity)
+                    && !TemporalMobTime.perceives(entity)
                     // Whatever the traveller (or their companion) carries moves with them.
                     && !field.ownerId().equals(entity.getRootVehicle().getUUID())
                     && !entity.getRootVehicle().getUUID().equals(field.companion)

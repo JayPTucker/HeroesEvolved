@@ -36,7 +36,7 @@ import static net.minecraft.util.Mth.sin;
  */
 final class GiftArt {
     private static final float[] GOLD = rgb(0xFFE7A0), CRIMSON = rgb(0xD6283A), DEEP = rgb(0x8E1020), CORE = rgb(0xFFF8EC),
-            SHADOW = rgb(0x1A0A10);
+            SHADOW = rgb(0x1A0A10), HALO = rgb(0xD9A93A);
     /** How far off a sigil is still drawn. */
     private static final double RANGE = 48;
 
@@ -55,7 +55,7 @@ final class GiftArt {
     static void drawLive(Canvas c) {
         if (c.level == null) return;
         long now = c.level.getGameTime();
-        float clock = (now % 24000) + c.partial;
+        float clock;
         boolean minimal = minimal();
         for (Map.Entry<Integer, ClientGifted.State> e : ClientGifted.all().entrySet()) {
             Entity entity = c.level.getEntity(e.getKey());
@@ -63,6 +63,7 @@ final class GiftArt {
             Vec3 feet = body.getPosition(c.partial);
             if (feet.distanceToSqr(c.cx, c.cy, c.cz) > RANGE * RANGE) continue;
             ClientGifted.State s = e.getValue();
+            clock = (float) com.jayptucker.heroesevolved.client.ClientMobTime.elapsed(entity.getId(), 0, c.partial) % 24000;
             float[] p = power(s.power());
             float dim = s.spent() ? .4F : 1;
             sigil(c, body, feet, s, p, clock, dim, minimal);
@@ -71,42 +72,60 @@ final class GiftArt {
         }
     }
 
-    /** The sigil over the head: a halo (good) or a thorned crown (evil), beads for its rarity. */
+    /**
+     * The sigil: a halo floating over a guardian, or a thorned crown sitting on an evil gift's head, with beads for its
+     * rarity. Its body is drawn with normal blending (the SOFT pass) so its colour holds against a bright sky; additive
+     * light only rims it, beads it and tips the thorns. Additive crimson alone washed out to pink at noon.
+     */
     private static void sigil(Canvas c, LivingEntity body, Vec3 feet, ClientGifted.State s, float[] p, float clock, float dim, boolean minimal) {
-        Vec3 head = feet.add(0, body.getBbHeight() + .32, 0);
+        boolean evil = s.evil();
+        Vec3 head = feet.add(0, body.getBbHeight() + (evil ? .08 : .32), 0);
         // Staggered, the sigil wobbles.
         Vec3 axis = s.staggered() ? new Vec3(sin(clock * .9F) * .45, 1, cos(clock * .7F) * .45) : UP;
-        float spin = clock * .05F, r = .3F;
-        float[] body2 = s.evil() ? CRIMSON : GOLD;
-        if (c.glow()) {
-            c.ring(head, axis, r, .12F, 0, TWO_PI, p, .22F * dim);
-            c.ring(head, axis, r, .045F, 0, TWO_PI, body2, .6F * dim);
-            c.ring(head, axis, r, .014F, 0, TWO_PI, CORE, .8F * dim);
-            int beads = s.rarity() + 1;
-            for (int i = 0; i < beads; i++) {
-                float a = spin + i * TWO_PI / beads;
-                c.glow(head.add(cos(a) * r, 0, sin(a) * r), .07F, p, .9F * dim);
-            }
-            if (s.boss() && !minimal) c.ring(head.add(0, .06, 0), axis, r + .14F, .025F, -spin * 2, -spin * 2 + TWO_PI * .7F, p, .55F * dim);
-            if (s.evil() && !minimal) {
-                // The crown's thorns: tilted out, uneven, white-hot at the tips.
-                int thorns = 5 + s.rarity() * 2;
-                for (int i = 0; i < thorns; i++) {
-                    float a = spin * .5F + i * TWO_PI / thorns, h = .16F + .1F * hash(body.getId(), i);
-                    Vec3 base = head.add(cos(a) * r, 0, sin(a) * r), tip = base.add(cos(a) * .07, h, sin(a) * .07);
-                    c.line(base, tip, .03F, CRIMSON, .75F * dim, .3F * dim);
-                    c.glow(tip, .045F, CORE, .5F * dim);
-                }
-            } else if (!s.evil()) c.glow(head, .5F, GOLD, .12F * dim);
-        } else if (c.soft() && (s.evil() || s.spent())) {
-            // A dark band under the crown so it reads in daylight; cracks across a spent sigil.
-            c.ring(head.add(0, -.01, 0), axis, r, .03F, 0, TWO_PI, SHADOW, .35F);
+        float spin = clock * .05F, r = evil ? .27F : .3F;
+        int thorns = 5 + s.rarity() * 2;
+        if (c.soft()) {
+            if (evil) {
+                c.ring(head, axis, r, .05F, 0, TWO_PI, DEEP, .9F * dim);
+                if (!minimal)
+                    for (int i = 0; i < thorns; i++) {
+                        Vec3[] thorn = thorn(head, r, spin, i, thorns, body.getId());
+                        c.line(thorn[0], thorn[1], .05F, DEEP, .95F * dim, .6F * dim);
+                    }
+            } else c.ring(head, axis, r, .05F, 0, TWO_PI, HALO, .75F * dim);
             if (s.spent())
                 for (int i = 0; i < 3; i++) {
                     float a = i * 2.1F + body.getId();
                     c.line(head.add(cos(a) * r, 0, sin(a) * r), head.add(cos(a + .5F) * r * .6, .05, sin(a + .5F) * r * .6), .02F, SHADOW, .7F, .3F);
                 }
+            return;
         }
+        if (!c.glow()) return;
+        c.ring(head, axis, r, .13F, 0, TWO_PI, p, .22F * dim);
+        c.ring(head, axis, r, .03F, 0, TWO_PI, evil ? CRIMSON : GOLD, .7F * dim);
+        c.ring(head, axis, r, .012F, 0, TWO_PI, CORE, .8F * dim);
+        int beads = s.rarity() + 1;
+        for (int i = 0; i < beads; i++) {
+            float a = spin + i * TWO_PI / beads;
+            c.glow(head.add(cos(a) * r, 0, sin(a) * r), .09F, p, .95F * dim);
+        }
+        if (s.boss() && !minimal) c.ring(head.add(0, .06, 0), axis, r + .14F, .025F, -spin * 2, -spin * 2 + TWO_PI * .7F, p, .55F * dim);
+        if (evil && !minimal) {
+            // White-hot tips, a breath of the power's colour round each.
+            for (int i = 0; i < thorns; i++) {
+                Vec3[] thorn = thorn(head, r, spin, i, thorns, body.getId());
+                c.line(thorn[0], thorn[1], .014F, CRIMSON, .5F * dim, .7F * dim);
+                c.glow(thorn[1], .08F, p, .35F * dim);
+                c.glow(thorn[1], .04F, CORE, .7F * dim);
+            }
+        } else if (!evil) c.glow(head, .6F, GOLD, .18F * dim);
+    }
+
+    /** One thorn of the crown: its base on the ring and its tip, tilted out, each its own height. */
+    private static Vec3[] thorn(Vec3 head, float r, float spin, int i, int thorns, int seed) {
+        float a = spin * .5F + i * TWO_PI / thorns, h = .14F + .09F * hash(seed, i);
+        Vec3 base = head.add(cos(a) * r, 0, sin(a) * r);
+        return new Vec3[] {base, base.add(cos(a) * .06, h, sin(a) * .06)};
     }
 
     /**
@@ -196,7 +215,7 @@ final class GiftArt {
 
     /**
      * A villager turning: crimson cracks climb them and scorch spreads under them, a ring closes in on them (the gift
-     * swallowing them), and the halo they might have worn breaks into a crown of thorns.
+     * swallowing them), a flash hides the moment they become an illager, and a crown of thorns bursts up and settles.
      */
     private static void turn(Canvas c, Active a, float t) {
         Vec3 feet = a.origin();
@@ -222,10 +241,16 @@ final class GiftArt {
         // The ring closes inward: something is taken, not given.
         float close = smooth(10, 22, t);
         if (t < 24) c.ring(feet.add(0, .08, 0), UP, 3F - 2.7F * close, .1F, 0, TWO_PI, CRIMSON, .7F * (1 - smooth(20, 24, t)));
+        // The flash the body changes under (Renegades.TURN_TICKS, 21): bright enough to hide the swap.
+        float flash = smooth(17, 21, t) * (1 - smooth(21, 28, t));
+        if (flash > 0) {
+            c.glow(chest, 2.2F * flash + .2F, CRIMSON, .85F * flash);
+            c.glow(chest, 1.3F * flash, CORE, .9F * flash);
+        }
         // The crown: thorns burst up from the head and settle.
         if (t > 20) {
             float burst = smooth(20, 26, t), settle = smooth(26, 34, t);
-            Vec3 head = feet.add(0, 2.2, 0);
+            Vec3 head = feet.add(0, 2.03, 0);
             c.glow(head, 1.6F * (1 - settle) + .3F, CRIMSON, .7F * (1 - settle * .7F) * out);
             for (int i = 0; i < 9; i++) {
                 float ang = i * TWO_PI / 9 + hash(seed, i + 30);

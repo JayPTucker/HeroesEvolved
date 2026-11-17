@@ -82,6 +82,18 @@ public final class TemporalSharingPreview {
         TemporalSharingPreview.<Map<UUID, ServerPlayer>>field(list, "playersByUUID").put(guest.getUUID(), guest);
         player.connection.send(ClientboundPlayerInfoUpdatePacket.createPlayerInitializing(List.of(guest)));
         world.addNewPlayer(guest);
+        if (Boolean.getBoolean("heroes.preview.mobtime")) {
+            for (int i = 0; i < 3; i++) {
+                var mob = net.minecraft.world.entity.EntityType.ZOMBIE.create(world);
+                mob.getPersistentData().putBoolean(com.jayptucker.heroesevolved.gifted.GiftedMobs.ROLLED, true);
+                mob.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_HELMET));
+                mob.moveTo(147.5 + i * 3, -60, 156.5, 180, 0);
+                mob.setTarget(player); world.addFreshEntity(mob);
+                if (i == 2) com.jayptucker.heroesevolved.gifted.GiftedMobs.bestow(mob, ModAbilities.SUPERSPEED_ID,
+                        com.jayptucker.heroesevolved.gifted.Rarity.RARE, true,
+                        com.jayptucker.heroesevolved.gifted.Gift.Origin.ADMIN, null, "Temporal peer");
+            }
+        }
         System.out.println("TEMPORAL_PREVIEW staged " + player.level().dimension().location() + " at " + player.blockPosition()
                 + " on " + world.getBlockState(player.blockPosition().below()));
     }
@@ -89,6 +101,7 @@ public final class TemporalSharingPreview {
     private static void share(ServerPlayer player) {
         AdvancedTechniques.startPerception(player);
         System.out.println("TEMPORAL_PREVIEW shared=" + TemporalSharing.include(player, guest));
+        if (Boolean.getBoolean("heroes.preview.mobtime")) player.teleportTo(player.serverLevel(), 147.5, -60, 150.5, 0, 12);
     }
 
     @SubscribeEvent public static void tick(ClientTickEvent.Post event) {
@@ -99,7 +112,7 @@ public final class TemporalSharingPreview {
             var rules = new GameRules(); rules.getRule(GameRules.RULE_DAYLIGHT).set(false, null);
             rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, null);
             mc.createWorldOpenFlows().createFreshLevel("Temporal-" + System.currentTimeMillis(),
-                    new LevelSettings("Temporal sharing", GameType.SURVIVAL, false, Difficulty.PEACEFUL, true, rules, WorldDataConfiguration.DEFAULT),
+                    new LevelSettings("Temporal sharing", GameType.SURVIVAL, false, Boolean.getBoolean("heroes.preview.mobtime") ? Difficulty.EASY : Difficulty.PEACEFUL, true, rules, WorldDataConfiguration.DEFAULT),
                     new WorldOptions(91L, false, false), access -> access.registryOrThrow(Registries.WORLD_PRESET)
                             .getOrThrow(WorldPresets.FLAT).createWorldDimensions(), mc.screen);
         }

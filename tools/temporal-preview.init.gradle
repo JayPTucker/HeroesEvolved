@@ -14,6 +14,7 @@ allprojects {
                         gameDirectory = project.file('build/temporal-preview')
                         programArguments.addAll('--width', '1100', '--height', '800')
                         systemProperty('heroes.preview.temporal', 'true')
+                        if (project.hasProperty('mobtime')) systemProperty('heroes.preview.mobtime', 'true')
                     }
                 }
             }

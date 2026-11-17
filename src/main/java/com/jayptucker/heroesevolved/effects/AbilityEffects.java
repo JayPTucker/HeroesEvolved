@@ -16,8 +16,12 @@ public final class AbilityEffects {
     }
 
     public static void send(ServerLevel level, Kind kind, Vec3 origin, Vec3 target, double scale) {
+        send(level, kind, origin, target, scale, com.jayptucker.heroesevolved.time.TemporalMobTime.actor());
+    }
+
+    private static void send(ServerLevel level, Kind kind, Vec3 origin, Vec3 target, double scale, int actor) {
         AbilityEffectPayload payload = new AbilityEffectPayload(kind, origin, target,
-                (float) Math.clamp(scale, 0.1D, 64.0D));
+                (float) Math.clamp(scale, 0.1D, 64.0D), actor);
         Vec3 segment = target.subtract(origin);
         double range = Math.min(128.0D, 64.0D + payload.scale());
         for (ServerPlayer viewer : level.players()) {
@@ -38,7 +42,7 @@ public final class AbilityEffects {
         Vec3 direction = kind == Kind.FLIGHT_BURST
                 ? FlightVisualGeometry.direction(player, FlightService.isCycloneActive(player), 1.0F)
                 : player.getLookAngle();
-        send(player.serverLevel(), kind, origin, origin.add(direction), scale);
+        send(player.serverLevel(), kind, origin, origin.add(direction), scale, player.getId());
     }
 
     public static void scan(ServerPlayer player, double radius) {

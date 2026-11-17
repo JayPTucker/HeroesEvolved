@@ -5,6 +5,8 @@ allprojects {
             def tests = sourceSets.create('temporalTest') {
                 java.srcDir('src/gametest/java')
                 java.include('com/jayptucker/heroesevolved/time/TemporalSharingGameTests.java')
+                java.include('com/jayptucker/heroesevolved/time/TimeFlowGameTests.java')
+                java.include('com/jayptucker/heroesevolved/time/TimeVeilGameTests.java')
                 java.include('com/jayptucker/heroesevolved/time/TimeFieldTestSupport.java')
                 java.include('com/jayptucker/heroesevolved/PowerOwnershipTestSupport.java')
                 resources.srcDir('src/gametest/resources')

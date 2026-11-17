@@ -10,8 +10,11 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /** One description per effect; the client builds the geometry locally. */
-public record AbilityEffectPayload(Kind kind, Vec3 origin, Vec3 target, float scale)
+public record AbilityEffectPayload(Kind kind, Vec3 origin, Vec3 target, float scale, int actor)
         implements CustomPacketPayload {
+    public AbilityEffectPayload(Kind kind, Vec3 origin, Vec3 target, float scale) {
+        this(kind, origin, target, scale, com.jayptucker.heroesevolved.time.TemporalMobTime.actor());
+    }
     public enum Kind {
         QUAKE_BEAM, QUAKE_IMPACT, QUAKE_PULSE, TREMOR_SCAN, QUAKE_PLUNGE,
         ELECTRIC_ARC, ELECTRIC_NOVA, PSYCHIC_PUSH, PSYCHIC_BIND, PSYCHIC_FIELD,
@@ -71,8 +74,9 @@ public record AbilityEffectPayload(Kind kind, Vec3 origin, Vec3 target, float sc
                 buffer.writeVec3(payload.origin);
                 buffer.writeVec3(payload.target);
                 buffer.writeFloat(payload.scale);
+                buffer.writeVarInt(payload.actor);
             }, buffer -> new AbilityEffectPayload(buffer.readEnum(Kind.class),
-                    buffer.readVec3(), buffer.readVec3(), buffer.readFloat()));
+                    buffer.readVec3(), buffer.readVec3(), buffer.readFloat(), buffer.readVarInt()));
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
@@ -80,6 +84,6 @@ public record AbilityEffectPayload(Kind kind, Vec3 origin, Vec3 target, float sc
     }
 
     public static void handle(AbilityEffectPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> AbilityEffectRenderer.play(payload));
+        context.enqueueWork(() -> com.jayptucker.heroesevolved.client.ClientMobTime.effect(payload.actor(), () -> AbilityEffectRenderer.play(payload)));
     }
 }

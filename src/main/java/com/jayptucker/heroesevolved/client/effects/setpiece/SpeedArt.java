@@ -47,7 +47,7 @@ public final class SpeedArt {
         Vec3 waist = a.at(c).add(0, guest != null && guest.isCrouching() ? .72 : 1.0, 0);
         boolean minimal = net.minecraft.client.Minecraft.getInstance().options.particles().get()
                 == net.minecraft.client.ParticleStatus.MINIMAL;
-        float now = c.level.getGameTime() + c.partial, head = now * .18F + a.seed();
+        float now = c.time(), head = now * .18F + a.seed();
         int count = minimal ? 32 : 56;
         for (int band = 0; band < (minimal ? 1 : 2); band++) {
             double[] x = new double[count + 1], y = new double[count + 1], z = new double[count + 1];
