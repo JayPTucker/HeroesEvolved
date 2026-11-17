@@ -10,6 +10,7 @@ import com.jayptucker.heroesevolved.effects.AbilityEffects;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.events.EclipseService;
 import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
+import com.jayptucker.heroesevolved.network.MomentumPayload;
 import com.jayptucker.heroesevolved.progression.MasteryService;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.time.TaczAmmoRecovery;
@@ -61,13 +62,17 @@ public final class SpeedService {
         Vec3 previous, trailPrevious;
         long lastMoving = Long.MIN_VALUE, redlineUntil;
         int activeTicks, wallTicks, momentum, sentMomentum = -1, runMomentum, smother;
+        int speedStep, sentSpeedStep, sentMaximumSpeedStep;
         long vibrateReady, gustReady;
         /** The fastest step of the last few ticks, fading: a sudden stop is measured against it. */
         double peak, lastStep;
         boolean barrier;
         double modifier = -1, distanceBank, speed;
         Vec3 heading = Vec3.ZERO;
-        Runner(ServerPlayer p) { player = p; level = p.level(); previous = p.position(); trailPrevious = previous; }
+        Runner(ServerPlayer p) {
+            player = p; level = p.level(); previous = p.position(); trailPrevious = previous;
+            speedStep = maximumSpeedStep(PlayerProgressionService.getLevel(p));
+        }
     }
     private record Flurry(ServerPlayer player, LivingEntity target, int damage, long start) {}
     /** A blast queued until the end of the tick, so vanilla knockback cannot halve it; then a window for slamming into a wall. */
@@ -85,14 +90,26 @@ public final class SpeedService {
     public static boolean active(ServerPlayer p) { return RUNNERS.containsKey(p.getUUID()); }
     public static boolean toggle(ServerPlayer p) {
         if (active(p)) { stop(p); return true; }
-        RUNNERS.put(p.getUUID(), new Runner(p));
+        Runner r = new Runner(p);
+        RUNNERS.put(p.getUUID(), r);
         syncMarker(p, ACCELERATING, true); quickHands(p, true);
+        syncState(p, r, r.speedStep);
         p.displayClientMessage(Component.translatable("speed.heroesevolved.enabled"), true);
         cue(p); return true;
     }
+    private static int maximumSpeedStep(int tier) { return tier + 1; }
+
+    public static void changeSpeed(ServerPlayer p, int direction) {
+        Runner r = RUNNERS.get(p.getUUID());
+        if (direction == 0 || r == null || r.level != p.level() || !SpeedMovement.canAdjustSpeed(p)) return;
+        int maximum = maximumSpeedStep(PlayerProgressionService.getLevel(p));
+        r.speedStep = Math.clamp(Math.min(r.speedStep, maximum) + Integer.signum(direction), 1, maximum);
+        syncState(p, r, maximum);
+    }
+
     public static boolean stop(ServerPlayer p) {
         boolean active = RUNNERS.remove(p.getUUID()) != null;
-        if (active) com.jayptucker.heroesevolved.network.MomentumPayload.send(p, 0);
+        if (active) MomentumPayload.clear(p);
         removeModifiers(p);
         syncMarker(p, ACCELERATING, false); syncMarker(p, WATER_RUN, false); quickHands(p, false);
         return active;
@@ -301,6 +318,8 @@ public final class SpeedService {
         }
         if (!awakened(p) || !PowerRules.canAct(p) || p.isPassenger() || p.level() != r.level || p.isFallFlying()) { stop(p); return; }
         int level = PlayerProgressionService.getLevel(p);
+        int maximum = maximumSpeedStep(level);
+        r.speedStep = Math.min(r.speedStep, maximum);
         boolean running = p.isSprinting() && !p.isShiftKeyDown();
         boolean redline = now(p) < r.redlineUntil;
         if (running && distance > .01 && distance < 64) r.momentum = Math.min(100, r.momentum + 3);
@@ -310,9 +329,11 @@ public final class SpeedService {
         if (running && distance > .01 && distance < 64) runFeats(p, r, Math.sqrt(distance));
         if (running && distance > .01 && distance < 64) easeHunger(p, Math.sqrt(distance));
         smother(p, r, running && distance < 64 ? Math.sqrt(distance) : 0);
-        syncMomentum(p, r);
+        syncState(p, r, maximum);
         // Quantize the modifier to avoid sending attribute packets for every tiny charge change.
-        double amount = running ? 2 + level + (r.momentum / 25) * .5 + (redline ? 3 : 0) : 0;
+        // The lowest setting is 2x. The remaining settings keep the former tier-based speeds.
+        double baseBoost = r.speedStep == 1 ? 1 : r.speedStep + 1;
+        double amount = running ? baseBoost + (r.momentum / 25) * .5 + (redline ? 3 : 0) : 0;
         if (r.modifier != amount) {
             removeModifiers(p);
             if (amount > 0) {
@@ -532,11 +553,14 @@ public final class SpeedService {
         return !e.level().noCollision(e, e.getBoundingBox().move(heading.scale(.35)).move(0, .6, 0).deflate(.02, 0, .02));
     }
 
-    private static void syncMomentum(ServerPlayer p, Runner r) {
-        if (r.sentMomentum >= 0 && Math.abs(r.momentum - r.sentMomentum) < 4 && r.momentum != 0 && r.momentum != 100) return;
-        if (r.momentum == r.sentMomentum) return;
+    private static void syncState(ServerPlayer p, Runner r, int maximumSpeedStep) {
+        boolean momentumChanged = r.momentum != r.sentMomentum && (r.sentMomentum < 0
+                || Math.abs(r.momentum - r.sentMomentum) >= 4 || r.momentum == 0 || r.momentum == 100);
+        if (!momentumChanged && r.speedStep == r.sentSpeedStep && maximumSpeedStep == r.sentMaximumSpeedStep) return;
         r.sentMomentum = r.momentum;
-        com.jayptucker.heroesevolved.network.MomentumPayload.send(p, r.momentum);
+        r.sentSpeedStep = r.speedStep;
+        r.sentMaximumSpeedStep = maximumSpeedStep;
+        MomentumPayload.send(p, r.momentum, r.speedStep, maximumSpeedStep);
     }
 
     public static int momentum(ServerPlayer p) { Runner r = RUNNERS.get(p.getUUID()); return r == null ? 0 : r.momentum; }
@@ -733,7 +757,7 @@ public final class SpeedService {
     }
     public static void forget(ServerPlayer p) {
         stop(p); FLURRIES.remove(p.getUUID()); REFLEX.remove(p.getUUID()); DODGED.remove(p.getUUID()); SpeedKit.forget(p); SpeedOverrun.forget(p);
-        com.jayptucker.heroesevolved.network.MomentumPayload.send(p, 0);
+        MomentumPayload.clear(p);
     }
 
     /**
@@ -742,7 +766,7 @@ public final class SpeedService {
      */
     public static void interrupt(ServerPlayer p) {
         stop(p); FLURRIES.remove(p.getUUID()); REFLEX.remove(p.getUUID()); DODGED.remove(p.getUUID()); SpeedKit.forget(p); SpeedOverrun.interrupt(p);
-        com.jayptucker.heroesevolved.network.MomentumPayload.send(p, 0);
+        MomentumPayload.clear(p);
     }
     public static void clear() { for (Runner r : List.copyOf(RUNNERS.values())) stop(r.player); FLURRIES.clear(); REFLEX.clear(); DODGED.clear(); BUFFETED.clear(); PENDING.clear(); SLAMS.clear(); IMPACTED.clear(); PUMMELED.clear(); LAST_PUNCH.clear(); CAUGHT.clear(); SpeedKit.clear(); SpeedOverrun.clear(); }
     private static void cue(ServerPlayer p) { p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, .7F, 1.4F); }

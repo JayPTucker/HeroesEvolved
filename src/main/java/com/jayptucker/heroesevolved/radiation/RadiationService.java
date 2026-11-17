@@ -587,11 +587,17 @@ public final class RadiationService {
         return true;
     }
 
-    private static void nuclearBlast(ServerPlayer player, boolean awakening) {
-        ServerLevel level = player.serverLevel();
-        Vec3 center = player.position();
-        RadiationDecay.clear(player);
-        NuclearFallout.begin(player, awakening);
+    /**
+     * A nuclear blast where {@code owner} stands, with everything that makes it land: the flash, the boom, the shaking,
+     * the white-out, the cloud and the far-off witnesses. A radioactive player's Critical Mass and a villager's meltdown
+     * both go off through here, at the same size.
+     */
+    public static void nuclearBlast(LivingEntity owner, boolean awakening) {
+        if (!(owner.level() instanceof ServerLevel level)) return;
+        Vec3 center = owner.position();
+        if (owner instanceof ServerPlayer player) RadiationDecay.clear(player);
+        MeltdownField.end(owner);
+        NuclearFallout.begin(owner, awakening);
 
         level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, center.x, center.y + 1.0D,
                 center.z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
@@ -608,7 +614,7 @@ public final class RadiationService {
         CameraShakePayload.sendAround(level, center, 300.0D, 3.5F, awakening ? 120 : 80);
         ScreenTintPayload.sendAround(level, center, 128.0D, 0xD0FFFFFF, 12,
                 ScreenTintPayload.Style.FLASH);
-        warnDistantWitnesses(player, center);
+        warnDistantWitnesses(owner, center);
     }
 
     private static void detonate(ServerPlayer player) {
@@ -620,8 +626,8 @@ public final class RadiationService {
     }
 
     /** Far-off players see the sky flash; those who've stood in Odessa on the Last Day recognise it. */
-    private static void warnDistantWitnesses(ServerPlayer source, Vec3 center) {
-        for (ServerPlayer witness : source.serverLevel().players()) {
+    private static void warnDistantWitnesses(LivingEntity source, Vec3 center) {
+        for (ServerPlayer witness : ((ServerLevel) source.level()).players()) {
             double distance = witness.position().distanceTo(center);
             if (witness == source || distance < 128.0D || distance > 1024.0D) {
                 continue;
@@ -768,7 +774,8 @@ public final class RadiationService {
             ServerLevel level = player.serverLevel();
             float intensity = Math.clamp(1 - remaining / (float) detonation.duration, 0, 1);
             boolean finalBuildup = remaining <= FINAL_BUILDUP_TICKS;
-            if (!held && finalBuildup && gameTime % 4 == 0) RadiationDecay.tick(player, intensity, false);
+            // Shock waves, the lethal near-field and the ground crumbling round them, building as the end comes.
+            MeltdownField.tick(player, intensity, held);
             if (gameTime % 3 == 0) level.sendParticles(WHITE_HOT, player.getX(), player.getY() + 1.0D, player.getZ(),
                     2, 0.4D, 0.6D, 0.4D, 0.0D);
             if (gameTime % (finalBuildup && !held ? 8 : 20) == 0) {

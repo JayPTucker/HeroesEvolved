@@ -25,7 +25,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -212,9 +211,7 @@ public final class CryoBlastService {
         }
         absorb(stream, absorbed);
         if (contact.target != null || contact.block.getType() != HitResult.Type.BLOCK) return;
-        BlockPos pos = contact.block.getBlockPos();
-        if (stream.level.getBlockState(pos).is(Blocks.WATER)) TemporaryBlocks.freezeWater(stream.level, pos, player);
-        else if (stream.level.getBlockState(pos.above()).isAir()) TemporaryBlocks.frostSurface(stream.level, pos, 100, player);
+        TerrainFrost.blast(stream.level, contact.block, player);
     }
 
     private static int snuffFire(Stream stream, Vec3 end) {

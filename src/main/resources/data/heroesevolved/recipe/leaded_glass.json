@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    " G ",
+    "GLG",
+    " G "
+  ],
+  "key": {
+    "G": {
+      "tag": "c:glass_blocks/colorless"
+    },
+    "L": {
+      "tag": "c:ingots/lead"
+    }
+  },
+  "result": {
+    "id": "heroesevolved:leaded_glass",
+    "count": 4
+  }
+}

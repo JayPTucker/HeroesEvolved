@@ -1,0 +1,24 @@
+// A survival client that holds Ice Blast on stone, obsidian, water and lava and photographs the terrain freezing.
+// Shots land in build/terrain-frost-preview/screenshots/; each logs a TERRAIN_SHOT line with the patch's blocks.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('terrainFrostPreview') {
+                java.srcDir('src/uitest/java')
+                java.include('com/jayptucker/heroesevolved/uitest/TerrainFrostPreview.java')
+                java.include('com/jayptucker/heroesevolved/uitest/PreviewQuiet.java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs { client {
+                    gameDirectory = project.file('build/terrain-frost-preview')
+                    programArguments.addAll('--width', '1100', '--height', '800')
+                    systemProperty('heroes.preview.terrainfrost', 'true')
+                } }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('terrainFrostPreviewClasses')) }
+        }
+    }
+}

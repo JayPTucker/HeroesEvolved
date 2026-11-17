@@ -24,9 +24,11 @@
     "ServerSoundCountMixin",
     "ProjectileAccess",
     "ArrowAccess",
-    "BreachEntityDataAccess"
+    "BreachEntityDataAccess",
+    "CryoCarbineBulletMixin"
   ],
   "client": [
+    "BurnSkinMixin",
     "BreachRenderTypeMixin",
     "FlightSprintMixin",
     "FlightRenderBoundsMixin",

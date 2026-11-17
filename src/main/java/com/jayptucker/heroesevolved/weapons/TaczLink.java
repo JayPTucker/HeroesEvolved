@@ -248,9 +248,22 @@ final class TaczLink {
 
     /** Uses TaCZ's own hitboxes and block rules for the incoming leg of a portal shot. */
     static boolean bulletObstructed(Projectile round, Vec3 from, Vec3 to) {
-        var clip = new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, round);
+        var clip = bulletClip(round, new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, round));
         return com.tacz.guns.util.block.BlockRayTrace.rayTraceBlocks(round.level(), clip).getType() != HitResult.Type.MISS
                 || com.tacz.guns.util.EntityUtil.findEntityOnPath(round, from, to) != null;
+    }
+
+    static ClipContext bulletClip(Entity round, ClipContext clip) {
+        if (broken) return clip;
+        try {
+            if (round instanceof com.tacz.guns.entity.EntityKineticBullet bullet
+                    && PowerWeapons.COLD_GUN.equals(bullet.getGunId())) {
+                return new ClipContext(clip.getFrom(), clip.getTo(), ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, round);
+            }
+        } catch (Throwable t) {
+            fail("bullet clip", t);
+        }
+        return clip;
     }
 
     /** TaCZ keeps ballistics and the damage falloff origin in runtime fields, outside the vanilla save data. */

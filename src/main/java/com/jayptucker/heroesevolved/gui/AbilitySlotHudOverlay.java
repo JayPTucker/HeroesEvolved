@@ -11,6 +11,7 @@ import com.jayptucker.heroesevolved.input.ModKeyMappings;
 import com.jayptucker.heroesevolved.network.ClientFlightVisualState;
 import com.jayptucker.heroesevolved.network.ClientDensity;
 import com.jayptucker.heroesevolved.network.ClientLoadout;
+import com.jayptucker.heroesevolved.network.ClientMomentum;
 import com.jayptucker.heroesevolved.network.ClientPowerState;
 import com.jayptucker.heroesevolved.network.ClientStamina;
 import com.jayptucker.heroesevolved.network.LoadoutPayload;
@@ -231,7 +232,13 @@ public final class AbilitySlotHudOverlay {
         boolean speedster = ClientPowerState.getSnapshot().abilities().stream().anyMatch(power -> power.unlocked()
                 && power.abilityId().equals(ModAbilities.SUPERSPEED_ID));
         if (mc.player == null || !speedster) return y;
-        int momentum = com.jayptucker.heroesevolved.network.ClientMomentum.get();
+        int maximumSpeedStep = ClientMomentum.maximumSpeedStep();
+        if (maximumSpeedStep > 0) {
+            guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.run_speed",
+                    ClientMomentum.speedStep(), maximumSpeedStep), START_X, y, 0xFFFFC23A, true);
+            y += LINE_HEIGHT;
+        }
+        int momentum = ClientMomentum.get();
         long time = mc.level == null ? 0 : mc.level.getGameTime();
         int color = momentum >= 100 ? ((time / 3) % 2 == 0 ? 0xFFFFF6D8 : 0xFFFFC23A) : momentum >= 50 ? 0xFFFFC23A : 0xFFFF8A1E;
         guiGraphics.drawString(mc.font, Component.translatable("hud.heroesevolved.momentum", momentum), START_X, y, color, true);

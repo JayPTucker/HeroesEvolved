@@ -212,7 +212,15 @@ public enum Piece {
     // after) and a Bounce's trampoline pane (origin the feet, target a block back). Ice Skater: a skate's ice strip,
     // lingering (origin and target its ends).
     STYLE_LENS_JAB(9), STYLE_SHARDS(10), STYLE_FORCE_BURST(14), STYLE_FIELD_SLAM(16), STYLE_LENS_SLIDE(12), STYLE_BOUNCE(14),
-    STYLE_ICE_STRIP(60), STYLE_TK_PALM(11), STYLE_TK_GRASP(36);
+    STYLE_ICE_STRIP(60), STYLE_TK_PALM(11), STYLE_TK_GRASP(36),
+    // A meltdown (MeltdownField): a shock wave rolling out (scale its radius; the target's height above the origin its
+    // strength), the near-field's lethal edge on the ground (re-sent, bound to whoever is melting down; scale its
+    // radius), cubes peeling off a burning body (bound to it; scale how badly), and a body burning away to cubes when
+    // radiation kills it (bound to it, so its corpse is hidden; scale its height, the target along its facing as far as
+    // it is wide)
+    RAD_SHOCK(16), RAD_FIELD(12), RAD_FLAKE(24), RAD_DISINTEGRATE(90),
+    // Rime accumulating on one face, replaced as it grows. Scale 1 clears the face.
+    CRYO_TERRAIN_FROST(80);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

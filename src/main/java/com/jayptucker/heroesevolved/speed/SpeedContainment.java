@@ -5,6 +5,8 @@ import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
+import com.jayptucker.heroesevolved.hazard.BodyBurn;
+import com.jayptucker.heroesevolved.hazard.Suits;
 import com.jayptucker.heroesevolved.network.CameraShakePayload;
 import com.jayptucker.heroesevolved.network.SetPiecePayload;
 import com.jayptucker.heroesevolved.network.SpeedCyclonePayload;
@@ -53,15 +55,32 @@ public final class SpeedContainment {
     /** How far away a hot player can be to be run round, and how wide the ring is. */
     /** How far away a hot player can be to be run round; how wide the ring is while cooling, and while holding a blast in. */
     public static final double REACH = 10, RING = 4.5, CONTAIN_RING = 6.5;
-    /** Ticks a blast must be held to be defused, and the longest a cooling run lasts. */
-    public static final int DEFUSE_TICKS = 100, COOL_MAX_TICKS = 200;
+    /**
+     * Ticks a blast must be held to be defused (ten seconds, building all the way to the moment it breaks), and the
+     * longest a cooling run lasts.
+     */
+    public static final int DEFUSE_TICKS = 200, COOL_MAX_TICKS = 200;
     /** A beaten runner keeps running while they burn away; from the beaten moment until they are gone. */
     public static final int DEATH_TICKS = 100;
+    /**
+     * Holding a blast in without the whole velocity suit: the friction and the radiation go straight through the runner,
+     * who burns up on the ring for this many ticks (three and a half seconds, harder and harder) and then burns away,
+     * long before the blast is held long enough to stop it, and so it goes on.
+     */
+    public static final int UNSUITED_TICKS = 70;
+    /** The share of the heat a suited runner still carries. */
+    static final float SUITED_HEAT = 0.6F;
     /** Core a cooling run drains a tick; the Core a defused blast settles at. */
     static final int COOL_PER_TICK = 1, DEFUSED_CORE = 30, COOL_FLOOR = 10;
-    /** Heat carried a tick while containing and while cooling. */
-    // A held blast is 120 units of heat in all, however long it takes: 1.2 a tick over five seconds.
-    static final float CONTAIN_HEAT = 1.2F, COOL_HEAT = 0.5F;
+    /**
+     * Heat carried a tick while containing (on average) and while cooling. A held blast is 120 units of heat in all:
+     * 0.6 a tick on average over ten seconds, but back-loaded, from 0.24 at the start to 0.96 at the end
+     * ({@link #containHeat}), so the strain climbs to the moment it breaks.
+     */
+    static final float CONTAIN_HEAT = 0.6F, COOL_HEAT = 0.5F;
+
+    /** Heat carried on a tick {@code k} of the way through a hold (0 to 1); it averages {@link #CONTAIN_HEAT}. */
+    static float containHeat(float k) { return CONTAIN_HEAT * (0.4F + 1.2F * Math.min(1, k)); }
     public static final ResourceKey<DamageType> DISINTEGRATED = ResourceKey.create(Registries.DAMAGE_TYPE,
             ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "disintegrated"));
 
@@ -74,6 +93,11 @@ public final class SpeedContainment {
         long containedFrom = -1;
         /** When the heat beat them: they stop, stand, burn away, and die at {@link #DEATH_TICKS} after it. */
         long failedAt = -1;
+        /**
+         * A suited runner whose body has given out mid-hold: nothing can hurt them now, they pay no more, and they run
+         * on, burning, until the hold is done; then they burn away and take the blast with them.
+         */
+        boolean doomed;
         float debt;
         Run(ServerPlayer runner, LivingEntity target, int tier, long start) {
             this.runner = runner; this.target = target; this.tier = tier; this.start = start;
@@ -136,8 +160,10 @@ public final class SpeedContainment {
         ServerLevel level = runner.serverLevel();
         level.playSound(null, target.blockPosition(), SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), SoundSource.PLAYERS, 1.2F, 0.9F);
         runner.displayClientMessage(Component.literal(critical(target)
-                ? "You run rings round " + target.getName().getString() + " to hold it in."
-                : "You run rings round " + target.getName().getString() + " to draw the heat off.").withStyle(ChatFormatting.GOLD), true);
+                ? Suits.frictionProof(runner) ? "You run rings round " + target.getName().getString() + " to hold it in."
+                        : "No suit! Running rings round " + target.getName().getString() + " now will burn you away."
+                : "You run rings round " + target.getName().getString() + " to draw the heat off.")
+                .withStyle(critical(target) && !Suits.frictionProof(runner) ? ChatFormatting.RED : ChatFormatting.GOLD), true);
         if (target instanceof ServerPlayer held) held.displayClientMessage(Component.literal(runner.getName().getString()
                 + " is running the heat out of you.").withStyle(ChatFormatting.AQUA), true);
         sync(r, false);
@@ -164,30 +190,51 @@ public final class SpeedContainment {
             // You are out on the ring: your body stays where it is, and nobody sees it.
             p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 3, 6, false, false, false));
             p.fallDistance = 0;
+            boolean suited = Suits.frictionProof(p);
             if (critical(t) && r.containedFrom < 0) {
                 r.containedFrom = now(p);
-                p.displayClientMessage(Component.literal("It's going to blow. Hold it in!").withStyle(ChatFormatting.RED, ChatFormatting.BOLD), true);
+                p.displayClientMessage(Component.literal(suited ? "It's going to blow. Hold it in!"
+                        : "It's going to blow, and you have no suit. The heat goes straight through you!")
+                        .withStyle(ChatFormatting.RED, ChatFormatting.BOLD), true);
                 sync(r, false);
             }
             if (r.containedFrom >= 0) {
                 hold(t);
-                if (!strain(r, CONTAIN_HEAT)) continue;
                 long held = now(p) - r.containedFrom;
+                if (!suited) {
+                    // Friction and radiation with nothing between them and the runner: they burn up on the ring, harder
+                    // and harder, and then they're gone.
+                    float burnt = held / (float) UNSUITED_TICKS;
+                    BodyBurn.atLeast(p, burnt);
+                    if (held == UNSUITED_TICKS / 2)
+                        p.displayClientMessage(Component.literal("You're burning up!").withStyle(ChatFormatting.RED, ChatFormatting.BOLD), true);
+                    if (age % 3 == 0) CameraShakePayload.sendAround(p.serverLevel(), t.position(), 18, 0.4F + 1.6F * burnt, 5);
+                    if (age % 6 == 0) p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.FIRE_AMBIENT, SoundSource.PLAYERS, 1 + burnt, 0.6F + 0.8F * burnt);
+                    if (held >= UNSUITED_TICKS) { disintegrate(r, false); continue; }
+                }
+                float k = Math.min(1, held / (float) DEFUSE_TICKS);
+                if (r.doomed) BodyBurn.atLeast(p, 0.35F + 0.65F * k);
+                else if (!strain(r, containHeat(k) * (suited ? SUITED_HEAT : 1))) continue;
                 if (held >= DEFUSE_TICKS) {
-                    defuse(t, DEFUSED_CORE, p);
                     // The heat goes out of them all at once: a cold shock rolls out over the ground.
                     SetPiecePayload.send(p.serverLevel(), Piece.RAD_EMP, t.position(), t.position().add(0, 1, 0), (float) (CONTAIN_RING + 3), null);
                     p.serverLevel().playSound(null, t.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 2.0F, 0.5F);
                     p.serverLevel().playSound(null, t.blockPosition(), SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), SoundSource.PLAYERS, 1.8F, 0.6F);
-                    CameraShakePayload.sendAround(p.serverLevel(), t.position(), 24, 1.4F, 10);
+                    CameraShakePayload.sendAround(p.serverLevel(), t.position(), 32, 2.0F, 14);
+                    if (r.doomed) { disintegrate(r, true); continue; }
+                    defuse(t, DEFUSED_CORE, p);
                     p.displayClientMessage(Component.literal("You held it. The blast is gone.").withStyle(ChatFormatting.GREEN), true);
                     end(r, true);
                     continue;
                 }
-                // It builds: the ground shakes harder and the wind climbs as the moment comes.
-                float k = Math.min(1, (now(p) - r.containedFrom) / (float) DEFUSE_TICKS);
-                if (age % 4 == 0) CameraShakePayload.sendAround(p.serverLevel(), t.position(), 18, 0.3F + 1.1F * k, 6);
-                if (age % 5 == 0) p.serverLevel().playSound(null, t.blockPosition(), SoundEvents.BEACON_AMBIENT, SoundSource.PLAYERS, 1.2F + k, 0.6F + 1.2F * k);
+                // It builds all the way: the ground shakes harder, the wind and the hum climb, and in the last quarter
+                // everything comes faster.
+                boolean climax = k > 0.75F;
+                if (age % (climax ? 2 : 4) == 0) CameraShakePayload.sendAround(p.serverLevel(), t.position(), 18 + 14 * k, 0.3F + 1.5F * k * k, 6);
+                if (age % (climax ? 3 : 5) == 0) p.serverLevel().playSound(null, t.blockPosition(), SoundEvents.BEACON_AMBIENT, SoundSource.PLAYERS, 1.2F + k, 0.6F + 1.2F * k);
+                if (climax && age % 8 == 0) p.serverLevel().playSound(null, t.blockPosition(), SoundEvents.WARDEN_HEARTBEAT, SoundSource.PLAYERS, 1.5F + k, 1.0F + k);
+                if (held == DEFUSE_TICKS / 2 && !r.doomed)
+                    p.displayClientMessage(Component.literal("Halfway. It's fighting you. Hold on!").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD), true);
             } else {
                 // Only a player is ever merely hot; a villager whose meltdown was stopped has nothing left to cool.
                 if (!(t instanceof ServerPlayer hot)) { end(r, true); continue; }
@@ -220,7 +267,16 @@ public final class SpeedContainment {
             int unpaid = owed - paid;
             if (unpaid > 0) {
                 float burn = unpaid / staminaPerHeat(r.tier) * healthPerHeat(r.tier);
-                if (p.getHealth() + p.getAbsorptionAmount() - burn <= 0) { disintegrate(r); return false; }
+                if (p.getHealth() + p.getAbsorptionAmount() - burn <= 0) {
+                    if (r.containedFrom < 0) { disintegrate(r, true); return false; }
+                    // Mid-hold: their body has given out, but they run on until it's done.
+                    r.doomed = true;
+                    p.setInvulnerable(true);
+                    p.setHealth(Math.max(1, Math.min(p.getHealth(), 1)));
+                    p.displayClientMessage(Component.literal("Your body is giving out. Don't let go. Finish it!")
+                            .withStyle(ChatFormatting.RED, ChatFormatting.BOLD), true);
+                    return true;
+                }
                 p.invulnerableTime = 0;
                 p.hurt(p.damageSources().source(DISINTEGRATED), burn);
             }
@@ -228,22 +284,29 @@ public final class SpeedContainment {
         return true;
     }
 
-    /** The heat was too much: the runner burns away on the ring, and takes the rest of the heat with them. */
     /**
-     * The heat has beaten them, but they take it with them: the blast is stopped now. On the ring the runner keeps
-     * running while they burn away, slowing as they go, and only when the last of them is gone do they die. Nothing
-     * else can hurt them meanwhile.
+     * The heat has beaten them. A suited runner whose body gave out takes it with them: the blast is stopped now. A
+     * runner with no suit never had a chance: they burn away and the blast goes on. On the ring the runner keeps running
+     * while they burn away, slowing as they go, and only when the last of them is gone do they die. Nothing else can
+     * hurt them meanwhile.
      */
-    private static void disintegrate(Run r) {
+    private static void disintegrate(Run r, boolean saves) {
         ServerPlayer p = r.runner;
         LivingEntity t = r.target;
         ServerLevel level = p.serverLevel();
         r.failedAt = now(p);
         p.setInvulnerable(true);
         p.setHealth(Math.max(1, Math.min(p.getHealth(), 1)));
-        defuse(t, 0, p);
-        if (t instanceof ServerPlayer saved) saved.sendSystemMessage(Component.literal(p.getName().getString() + " burned away holding your blast in.")
-                .withStyle(ChatFormatting.GOLD));
+        BodyBurn.atLeast(p, 1);
+        if (saves) {
+            defuse(t, 0, p);
+            if (t instanceof ServerPlayer saved) saved.sendSystemMessage(Component.literal(p.getName().getString() + " burned away holding your blast in.")
+                    .withStyle(ChatFormatting.GOLD));
+        } else {
+            for (ServerPlayer near : level.players())
+                if (near.distanceToSqr(t) <= 64 * 64) near.sendSystemMessage(Component.literal(p.getName().getString()
+                        + " burned away on the ring. Without a suit, the heat went straight through them.").withStyle(ChatFormatting.RED));
+        }
         sync(r, false);
         // The burning starts once they have stopped and stood a moment; the client finds where they stopped on the
         // ring. If it can't, the burning falls back to the ring between the two of them, never the one they saved.
@@ -273,6 +336,12 @@ public final class SpeedContainment {
         p.setInvulnerable(false);
         p.invulnerableTime = 0;
         p.hurt(p.damageSources().source(DISINTEGRATED), p.getHealth() + p.getAbsorptionAmount() + 1000);
+    }
+
+    /** Has this suited runner's body given out mid-hold, so they run on, burning, until it's done? */
+    public static boolean doomed(ServerPlayer runner) {
+        Run r = RUNS.get(runner.getUUID());
+        return r != null && r.doomed && r.failedAt < 0;
     }
 
     /** Has the heat beaten this runner (they are standing on the ring, burning away)? */

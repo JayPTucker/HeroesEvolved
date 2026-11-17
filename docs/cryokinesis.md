@@ -25,7 +25,40 @@ held indefinitely, and cold-immune creatures resist the freeze.
   prevents a player being immediately locked into another freeze.
 - The caster and allies are excluded from the deliberate hostile shatter burst.
 
+## Freezing terrain
+
+Hold **Ice Blast** on a surface or land repeated **Cryo Carbine** shots on it. A patch
+of frost grows across the exposed **3 × 3** area around the hit. The block under your
+aim freezes first. Cold builds two-thirds as fast along its edges and half as fast at the
+corners, and no neighbour finishes before the block you aim at.
+
+You can watch the change spread. Rime grows over each struck face, and cracks run through each
+solid block as it turns brittle, so the patch whitens and splits from the middle outward. Harder
+blocks take longer (the cold a block needs is 20 + 8 × √hardness):
+
+| Material | Aimed block | Whole patch |
+| --- | --- | --- |
+| Water | half a second | about a second |
+| Lava | about a second | about two and a half seconds |
+| Stone, dirt, wood | about a second and a half | about three seconds |
+| Obsidian | about four seconds | about eight seconds (one full Ice Blast) |
+
+Crystal Lance and Frost Armor shards also spread cold on impact. A Lance adds three times as
+much as a shard. Unfinished frost and its cracks fade four seconds after the last cold hit,
+and the block starts again from nothing.
+
+Full solid blocks turn into brittle ice you can break by hand. Break it within twelve
+seconds to clear the block, or let it thaw back into its original material. The ice
+yields no drops. Water turns into ordinary ice, and lava cools into obsidian. World
+protection applies to terrain changes. Unbreakable blocks, blocks with inventories and
+waterlogged blocks are ineligible. Only full blocks freeze: slabs, stairs, fences and other part-blocks
+do not.
+
 ## Heat absorption
+
+- **Get suited first.** Near the end of a meltdown its lethal near-field reaches 12 blocks, as far as Ice Blast. A
+  cryokinetic who means to freeze someone melting down, or hold Ice Blast on them, needs a full radiation or velocity
+  suit (see [Meltdowns, friction and the suits](protective-suits.md)).
 
 - **Reactor rescue.** Aim Ice Blast directly at a radioactive player during their warning or
   charge. Ice Blast pauses the countdown while it stays on target. Keep it there for 12 seconds

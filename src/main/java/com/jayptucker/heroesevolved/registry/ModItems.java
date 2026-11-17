@@ -120,6 +120,7 @@ public final class ModItems {
                         output.accept(HORN_RIMMED_GLASSES.get());
                         output.accept(EMP_GRENADE.get());
                         output.accept(ABILITY_DAMPENER.get());
+                        com.jayptucker.heroesevolved.hazard.SuitItems.tab(output);
                         ItemStack fullDampener = new ItemStack(ABILITY_DAMPENER.get());
                         fullDampener.set(STORED_ENERGY.get(), com.jayptucker.heroesevolved.dampener.DampenerGeometry.CAPACITY);
                         output.accept(fullDampener);
@@ -144,6 +145,7 @@ public final class ModItems {
         COMPONENTS.register(modEventBus);
         EFFECTS.register(modEventBus);
         ITEMS.register(modEventBus);
+        com.jayptucker.heroesevolved.hazard.SuitItems.register(modEventBus);
         TABS.register(modEventBus);
         ModMenus.register(modEventBus);
     }

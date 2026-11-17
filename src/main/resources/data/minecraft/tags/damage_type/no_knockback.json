@@ -1,6 +1,8 @@
 {
   "replace": false,
   "values": [
-    "heroesevolved:temporal_paradox"
+    "heroesevolved:temporal_paradox",
+    "heroesevolved:meltdown",
+    "heroesevolved:friction"
   ]
 }

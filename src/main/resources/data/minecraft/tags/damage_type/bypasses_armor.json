@@ -2,6 +2,8 @@
   "replace": false,
   "values": [
     "heroesevolved:temporal_paradox",
-    "heroesevolved:disintegrated"
+    "heroesevolved:disintegrated",
+    "heroesevolved:meltdown",
+    "heroesevolved:friction"
   ]
 }

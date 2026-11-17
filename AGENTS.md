@@ -7,6 +7,8 @@
   `references/block-states.md` says, from the game itself, which way stairs, doors, trapdoors, torches and the rest face
   and what holds them; `tools/blueprint.py validate` and `BlueprintPlacementGameTests` enforce it. Any Java that places
   scenery block by block should follow the same rules (supports first, then the things they hold).
+- **Worn gear:** see `.claude/skills/minecraft-armor/SKILL.md` before making or changing any armor, suit or costume:
+  skin-tight models, 3D details as child boxes, scripted textures and how to photograph them.
 - **Gameplay tests:** `./gradlew runGameTestServer --init-script tools/rewind-gametest.init.gradle`.
 - **In-game previews:** `tools/*-preview.init.gradle`; stage scenes at least 50 blocks from spawn, where the
   bunker's walls trap the player. A new preview player starts in the Last Day's city, which is another dimension:
@@ -1091,9 +1093,10 @@ for the Company's guards (`weapons/`, art in `client/effects/setpiece/WeaponArt`
   sets a `broken` flag, after which the guns fire as plain TaCZ guns and agents fall back to the dart rifle. (The older
   `time/TaczAmmoRecovery` predates it and reaches TaCZ by reflection; move it into `TaczLink` when it next changes.)
 - **Effects ride TaCZ's events.** `EntityHurtByGunEvent.Post` (server side) carries the gun id: `PowerWeapons.hit`
-  routes it to heat, cold or taser. `GunShootEvent` draws the muzzle effect; `AmmoHitBlockEvent` lets cold bolts skin
-  water with frosted ice. The effects reuse the powers' own services (`CryoService.chill`/`freezeSolid`,
-  `GridDisruption.emp`) at smaller numbers, so a gun is a weak version of a power, never a second implementation.
+  routes it to heat, cold or taser. `GunShootEvent` draws the muzzle effect; `AmmoHitBlockEvent` feeds cold bolts
+  into `TerrainFrost`, which they share with Ice Blast. The Cryo Carbine includes water and lava in its
+  projectile trace so TaCZ reports the first fluid contact as a hit. The effects reuse the powers' own services
+  (`CryoService.chill`/`freezeSolid`, `GridDisruption.emp`) at smaller numbers, so a gun is a weak version of a power.
 - **Any creature can shoot a TaCZ gun.** Every `LivingEntity` is an `IGunOperator`: put the gun in the main hand,
   `PowerWeapons.draw(mob)`, wait for the draw, then `PowerWeapons.fire(mob, point)`. Swapping guns means another draw.
   Keep the gun's magazine topped with `PowerWeapons.reload`.
@@ -1560,3 +1563,96 @@ Every power got a palette of original synthesized cues in November 2026 (`sounds
   0.8 because Vorbis overshoots, and check the files with numbers and a spectrogram sheet before wiring them in.
 - **Private cues.** A stealthy move's cue goes to its user alone as a `ClientboundSoundPacket` (`PowerSounds.play(...,
   alone)`).
+
+## Reusable patterns from meltdown hazards and the protective suits
+
+Meltdowns became dangerous to stand near and a speedster's top speeds dangerous to run at, with two suits to keep it off
+(November 2026: `radiation/MeltdownField`, `radiation/RadiationDeaths`, `speed/SpeedFriction`, `hazard/`, art in
+`client/effects/setpiece/HazardArt`, the peeling skin in `client/BurnClient`). What the player sees is in
+[docs/protective-suits.md](docs/protective-suits.md).
+
+- **One field for anything melting down.** `MeltdownField.tick(core, progress, held)` is called every tick by whatever is
+  melting down (RadiationService's detonation loop, `VillagerMeltdown.tick`): shock waves, the lethal near-field and the
+  decaying ground all scale from `progress`. A core that stops being ticked ends itself after five ticks. A new thing
+  that melts down (a boss, a reactor block) is one call, not a copy.
+- **A hazard is nobody's blow.** Meltdown heat and friction are their own damage types (`hazard/HazardDamage`) with no
+  attacker when a player is the source, so PvP rules don't stop a co-op meltdown from killing friends (vanilla only
+  gates damage whose causing entity is a player). A villager's meltdown names him, for the death message.
+- **Suits are a question, not armor points.** `Suits.radiation(entity)` (a quarter a piece of either suit),
+  `sealed`, `friction`, `frictionProof` and `meltdownProof` are the one place that decides protection; the damage code
+  multiplies by `1 - shield` and calls `Suits.wear`. Ordinary armor is bypassed by the damage types' tags. A new hazard
+  suit (a fire suit, a vacuum suit) is another `Suits.Kind`.
+- **Survive, don't dodge.** Regeneration's "can't die of it" is a `LivingDamageEvent.Pre` clamp to health − 1 on the
+  meltdown type (`MeltdownField.regrow`), so the hit still lands, burns and doses.
+- **Radiation sickness reads suits too.** `RadiationSickness.immune` is true for a sealed wearer, so every dose anywhere
+  respects the suits with no per-call change.
+- **Telling deaths apart after the fact.** `RadiationDeaths.mark(entity)` records "radiation just hurt this"; the death
+  hook counts a death as radiation if it was marked in the last half-second, sick, or hit by a radiation damage type.
+  Mark wherever radiation hurts (the blast's wave and fallout, the sickness, the field) and every such death burns away.
+- **Hiding a corpse while it breaks apart.** `RAD_DISINTEGRATE` is bound to the dying entity; `HazardArt.disintegrating`
+  keeps it hidden while the piece plays *and for as long as it stays dead* (a dead player lies there until they respawn),
+  and `BurnClient.hide` cancels `RenderLivingEvent.Pre` for it. The piece carries the body's height in its scale and its
+  width in the target's distance, so any creature breaks into cubes of its own size (humanoids use body parts).
+- **Repainting a player's own skin.** `BurnClient` reads a skin back from the GPU once (`NativeImage.downloadTexture`
+  after binding it, sized with `GL_TEXTURE_WIDTH`), repaints a `DynamicTexture` copy in 24 steps of blotchy value noise
+  (burnt pixels clear, a glowing then charred edge), and `mixin/BurnSkinMixin` returns it from
+  `PlayerRenderer.getTextureLocation`. The player's translucent skin shader discards the cleared pixels. Use this for any
+  effect that changes the skin itself (frost creeping, stone spreading).
+- **Something under the skin.** `BurnClient.EmberLayer` draws the player's own model parts again, thinner
+  (`ModelPart.xScale`/`zScale` 0.9, `yScale` 0.97, restored after), with its own texture and an `eyes` glow pass. Where
+  the skin is whole it hides the layer by depth; where it is clear the layer shows.
+- **A dyeable armor with an undyed overlay.** `ArmorMaterial.Layer(id, "", true)` plus `Layer(id, "_overlay", false)`,
+  a default `DYED_COLOR` component on the items, the `minecraft:dyeable` item tag, and an item color handler on layer 0.
+  The velocity suit's red is the dye; its white trim is the overlay, so a recoloured suit keeps its white, and the V cut
+  through the chest plate's overlay shows the dye.
+- **3D armor: read `.claude/skills/minecraft-armor/SKILL.md`** before making anything worn. Details (fins, plates,
+  belts, bands, tanks, soles) are extra boxes added as children of the body parts in the suit's own model, textured from
+  the armor texture's freed hat area.
+- **Armor worn skin-tight.** Vanilla armor inflates its boxes by a whole pixel (half for leggings), far too bulky for a
+  suit. `client/SuitModels` registers two layer definitions built from `HumanoidArmorModel.createBodyLayer` at a small
+  `CubeDeformation` (head replaced with its own), bakes them lazily, and returns them from an `IClientItemExtensions`
+  (`RegisterClientExtensionsEvent`); NeoForge copies the poses over. Keep each layer just past the player's own outer
+  skin layer (hat 0.5, jacket, sleeves and pants 0.25), or skin pixels poke through, and the outer pieces just past the
+  leggings.
+- **A bench without a block entity.** The Suit Fabricator is a stonecutter-style menu over a `SimpleContainer`
+  (`hazard/SuitFabricatorMenu`): patterns are picked with `clickMenuButton`, materials are matched in any order
+  (`SuitPatterns`, ingredients by tag so `c:ingots/lead` from other mods works), and the screen is drawn with fills, so
+  there is no GUI texture to maintain.
+- **Friction from real movement.** `SpeedFriction` measures a runner's own displacement each tick (smoothed, ignoring
+  jumps over 8 blocks so Blitz and teleports don't count) instead of reading run settings, so Momentum and any future
+  speed source count the same. Fire would be smothered by the speedster's own running (`SpeedService.smother`), so
+  friction burns with its damage type and particles rather than setting them alight.
+- **Village counts that don't shrink.** A meltdown's village is gathered again every two seconds (near the bell, a
+  home/job/meeting memory near it, or in the blast's reach), never shrinks, is saved with him, and the end count treats
+  an unloaded villager as alive unless the death hook saw them die. Check `brain.hasMemoryValue` before `getMemory`.
+- **A safe point outside a village.** `VillagerMeltdown.safePoint` reads the village's POIs (`PoiTypeTags.VILLAGE`) for
+  its extent, then searches rings outward from just past it for open natural ground clear of every building and of the
+  blast. Use it for any "meet here" marker that must not land on a roof.
+- **Textures:** `py -3 tools/generate-suit-textures.py` draws lead, the bench, the materials, both suits (worn and
+  icons) and the ember body.
+
+## Reusable patterns from terrain freezing
+
+Cold hits freeze the terrain they land on (`cryo/TerrainFrost`, art in `CryoBlastArt.terrainFrost`): Ice Blast, Crystal
+Lance, Frost Armor shards and the Cryo Carbine. Solids turn to brittle frost that thaws back, water to ice and lava to
+obsidian. What the player sees is in [docs/cryokinesis.md](docs/cryokinesis.md#freezing-terrain).
+
+- **One entry per source, one rule for all.** `blast`, `projectile` and `carbine` each take the hit and an amount of
+  cold; `spread` shares it over the exposed 3 x 3 patch (aimed block full, edges two-thirds, corners half, each checked
+  for line of sight from the impact so a covered face is skipped), and no neighbour may finish while the aimed block is
+  still cooling. A new cold source is one more entry with its own amount.
+- **Hardness decides the time.** `TerrainFrost.required` (20 + 8 * sqrt(hardness)) is the only number; balance by the
+  amounts a source adds, not by special cases per block.
+- **Show progress on a block without touching it.** The cold is a map, drawn two ways: a rime piece on the struck face
+  that the client replaces as it grows (`CRYO_TERRAIN_FROST`; scale 1 clears it) and the vanilla break overlay sent with
+  `level.destroyBlockProgress` under a negative id per block (`crackId`), which never matches an entity, so it doesn't
+  fight anyone's mining. Clear the overlay (-1) when the block turns or the cold fades. Use this for anything wearing a
+  block down (acid, heat, vines).
+- **Ask permission once, when the block changes.** Building cold checks only `mayBuild`, `mayInteract` and the world
+  border; the break event fires inside `TemporaryBlocks.freezeSolid` / `WorldMutationPolicy.place` at the change. A
+  refusal is remembered for the contact timeout, so a protected wall isn't asked again every pulse.
+- **Hitting liquids.** Ice Blast and Crystal Lance trace with `ClipContext.Fluid.ANY`; TaCZ rounds get it through
+  `mixin/CryoCarbineBulletMixin` (cold bolts only).
+- **Photographs:** `tools/terrain-frost-preview.init.gradle` (`uitest/TerrainFrostPreview`, flag
+  `heroes.preview.terrainfrost`) holds the real Ice Blast key on stone, obsidian, water and lava, breaks the ice by hand,
+  and logs each patch's blocks and progress (`TERRAIN_SHOT`) into `build/terrain-frost-preview/`.

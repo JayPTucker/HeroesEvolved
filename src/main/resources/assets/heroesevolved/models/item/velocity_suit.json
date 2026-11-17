@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "heroesevolved:item/velocity_suit",
+    "layer1": "heroesevolved:item/velocity_suit_overlay"
+  }
+}

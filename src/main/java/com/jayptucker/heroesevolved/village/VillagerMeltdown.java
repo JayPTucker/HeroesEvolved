@@ -10,8 +10,11 @@ import com.jayptucker.heroesevolved.events.EclipseService;
 import com.jayptucker.heroesevolved.data.EclipseTimeline;
 import com.jayptucker.heroesevolved.network.CameraShakePayload;
 import com.jayptucker.heroesevolved.network.SetPiecePayload;
+import com.jayptucker.heroesevolved.radiation.MeltdownField;
 import com.jayptucker.heroesevolved.radiation.NuclearFallout;
+import com.jayptucker.heroesevolved.radiation.RadiationDeaths;
 import com.jayptucker.heroesevolved.radiation.RadiationService;
+import net.minecraft.tags.PoiTypeTags;
 import com.jayptucker.heroesevolved.radio.EmergencyBand;
 import com.jayptucker.heroesevolved.styles.Piece;
 import com.jayptucker.heroesevolved.time.TimeStopService;
@@ -79,10 +82,18 @@ import java.util.UUID;
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class VillagerMeltdown {
     public static final String TAG = "heroesevolved_meltdown";
-    /** The safe point is this far from the bell, and counts villagers within {@link #SAFE_RADIUS} of it. */
-    public static final int SAFE_DISTANCE = 44, SAFE_RADIUS = 6;
-    /** Villagers this close to the bell when it starts are the ones to get out. */
-    public static final int VILLAGE_RADIUS = 48;
+    /**
+     * The safe point stands at least {@link #SAFE_DISTANCE} from him (the blast's reach and {@link #SAFE_MARGIN} more),
+     * at least {@link #CLEAR_OF_VILLAGE} from any of the village's beds, job sites and bells, on open ground; it counts
+     * villagers within {@link #SAFE_RADIUS} of it.
+     */
+    public static final int SAFE_MARGIN = 14, SAFE_DISTANCE = NuclearFallout.RADIUS + SAFE_MARGIN, SAFE_RADIUS = 7, CLEAR_OF_VILLAGE = 12;
+    /**
+     * His village: every villager within this of the bell, or whose home, job site or meeting place is, or who comes
+     * within the blast's reach of him while it lasts. Gathered again every {@link #GATHER_EVERY} ticks, so villagers who
+     * wander in (or are born) count too.
+     */
+    public static final int VILLAGE_RADIUS = 64, GATHER_EVERY = 40;
     /** Players this close see the countdown. */
     static final int WATCH_RANGE = 112;
     /** Each hit takes ten seconds off the countdown (at most once a second). */
@@ -108,6 +119,9 @@ public final class VillagerMeltdown {
         int fuse;
         final Set<UUID> village = new LinkedHashSet<>();
         final Set<UUID> safeNow = new HashSet<>();
+        /** Those of his village who died, so the count at the end can tell the dead from the merely unloaded. */
+        final Set<UUID> dead = new HashSet<>();
+        long warnedClose = -1000;
         EmergencyBand.Call call;
         final ServerBossEvent bar;
         long heldAt = -1000, hitAt = -1000, nextShout = -1000;
@@ -127,10 +141,13 @@ public final class VillagerMeltdown {
         /** The villagers of his village now standing at the safe point. */
         public int safeCount() { return safeNow.size(); }
         public int villageSize() { return village.size(); }
+        public boolean inVillage(Entity e) { return village.contains(e.getUUID()); }
         public EmergencyBand.Call call() { return call; }
     }
 
     private static final Map<UUID, Meltdown> MELTDOWNS = new HashMap<>();
+    /** Gone off, waiting a moment to count who lived. */
+    private static final List<Meltdown> ENDING = new ArrayList<>();
     /** Villagers loaded with a meltdown in their data, picked up next tick (not while their chunk is loading). */
     private static final List<Villager> RESUMING = new ArrayList<>();
     /** The Eclipse is leaving: when to wake a villager, if the roll said so. */
@@ -234,10 +251,7 @@ public final class VillagerMeltdown {
     private static void begin(Meltdown m, boolean fresh) {
         MELTDOWNS.put(m.villager.getUUID(), m);
         root(m.villager, true);
-        m.village.clear();
-        for (Villager v : m.level.getEntitiesOfClass(Villager.class, new net.minecraft.world.phys.AABB(m.bell).inflate(VILLAGE_RADIUS),
-                v -> v != m.villager && v.isAlive() && v.blockPosition().distSqr(m.bell) <= (long) VILLAGE_RADIUS * VILLAGE_RADIUS))
-            m.village.add(v.getUUID());
+        gather(m);
         m.call = EmergencyBand.call(m.level, m.bell, words(m), m.fuse + 200);
         if (fresh) {
             Vec3 at = m.villager.position();
@@ -250,22 +264,74 @@ public final class VillagerMeltdown {
     }
 
     /**
-     * The safe point: {@link #SAFE_DISTANCE} out from the bell, on the side away from him if the ground is dry there,
-     * otherwise the first dry direction round from it.
+     * The safe point: the nearest spot to the bell that is past the edge of the village (no bed, job site or bell within
+     * {@link #CLEAR_OF_VILLAGE}), out of the blast's reach from him with {@link #SAFE_MARGIN} to spare, and on open,
+     * dry, natural ground (not a roof or a treetop). It looks outward ring by ring from just past the village's furthest
+     * building, trying the side away from him first.
      */
     static Vec3 safePoint(ServerLevel level, BlockPos bell, Vec3 him) {
+        List<BlockPos> buildings = level.getPoiManager().getInRange(poi -> poi.is(PoiTypeTags.VILLAGE), bell, VILLAGE_RADIUS,
+                PoiManager.Occupancy.ANY).map(net.minecraft.world.entity.ai.village.poi.PoiRecord::getPos).toList();
+        double extent = 0;
+        for (BlockPos b : buildings) extent = Math.max(extent, Math.sqrt(Math.pow(b.getX() - bell.getX(), 2) + Math.pow(b.getZ() - bell.getZ(), 2)));
         Vec3 away = Vec3.atCenterOf(bell).subtract(him).multiply(1, 0, 1);
         double start = away.lengthSqr() < 1 ? 0 : Math.atan2(away.z, away.x);
-        Vec3 first = null;
-        for (int i = 0; i < 8; i++) {
-            double a = start + (i % 2 == 0 ? 1 : -1) * ((i + 1) / 2) * Math.PI / 4;
-            int x = bell.getX() + (int) Math.round(Math.cos(a) * SAFE_DISTANCE), z = bell.getZ() + (int) Math.round(Math.sin(a) * SAFE_DISTANCE);
-            int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-            Vec3 at = new Vec3(x + 0.5, y, z + 0.5);
-            if (first == null) first = at;
-            if (level.getFluidState(new BlockPos(x, y - 1, z)).isEmpty() && level.getFluidState(new BlockPos(x, y, z)).isEmpty()) return at;
+        Vec3 dryFallback = null, first = null;
+        for (int ring = 0; ring < 10; ring++) {
+            double d = Math.max(extent + CLEAR_OF_VILLAGE, 20) + ring * 6;
+            for (int i = 0; i < 16; i++) {
+                double a = start + (i % 2 == 0 ? 1 : -1) * ((i + 1) / 2) * Math.PI / 8;
+                int x = bell.getX() + (int) Math.round(Math.cos(a) * d), z = bell.getZ() + (int) Math.round(Math.sin(a) * d);
+                int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+                Vec3 at = new Vec3(x + 0.5, y, z + 0.5);
+                if (first == null) first = at;
+                BlockPos foot = new BlockPos(x, y, z);
+                if (!level.getFluidState(foot.below()).isEmpty() || !level.getFluidState(foot).isEmpty()) continue;
+                boolean clearOfBlast = at.subtract(him).horizontalDistanceSqr() >= (double) SAFE_DISTANCE * SAFE_DISTANCE;
+                if (clearOfBlast && dryFallback == null) dryFallback = at;
+                if (!clearOfBlast || !natural(level.getBlockState(foot.below()))) continue;
+                boolean inVillage = false;
+                for (BlockPos b : buildings)
+                    if (b.distSqr(foot) <= (double) CLEAR_OF_VILLAGE * CLEAR_OF_VILLAGE) { inVillage = true; break; }
+                if (!inVillage) return at;
+            }
         }
-        return first;
+        return dryFallback != null ? dryFallback : first;
+    }
+
+    /** Open ground: earth, sand, gravel, stone or snow, not a roof, a path or a treetop. */
+    private static boolean natural(net.minecraft.world.level.block.state.BlockState ground) {
+        return ground.is(net.minecraft.tags.BlockTags.DIRT) || ground.is(net.minecraft.tags.BlockTags.SAND)
+                || ground.is(net.minecraft.world.level.block.Blocks.GRAVEL) || ground.is(net.minecraft.tags.BlockTags.BASE_STONE_OVERWORLD)
+                || ground.is(net.minecraft.world.level.block.Blocks.SNOW_BLOCK) || ground.is(net.minecraft.tags.BlockTags.TERRACOTTA);
+    }
+
+    /** Adds to his village everyone who belongs to it now; nobody is ever taken off, so the count never shrinks. */
+    static void gather(Meltdown m) {
+        double reach = VILLAGE_RADIUS + 48;
+        for (Villager v : m.level.getEntitiesOfClass(Villager.class, new net.minecraft.world.phys.AABB(m.bell).inflate(reach, 64, reach),
+                v -> v != m.villager && v.isAlive()))
+            if (!m.village.contains(v.getUUID()) && belongs(m, v)) m.village.add(v.getUUID());
+    }
+
+    private static final List<net.minecraft.world.entity.ai.memory.MemoryModuleType<net.minecraft.core.GlobalPos>> PLACES = List.of(
+            net.minecraft.world.entity.ai.memory.MemoryModuleType.HOME, net.minecraft.world.entity.ai.memory.MemoryModuleType.JOB_SITE,
+            net.minecraft.world.entity.ai.memory.MemoryModuleType.POTENTIAL_JOB_SITE, net.minecraft.world.entity.ai.memory.MemoryModuleType.MEETING_POINT);
+
+    /** Near the bell, in the blast's reach of him, or living, working or meeting in the village. */
+    static boolean belongs(Meltdown m, Villager v) {
+        if (v.blockPosition().distSqr(m.bell) <= (long) VILLAGE_RADIUS * VILLAGE_RADIUS) return true;
+        double blast = NuclearFallout.RADIUS + 8;
+        if (v.distanceToSqr(m.villager) <= blast * blast) return true;
+        var brain = v.getBrain();
+        for (var place : PLACES) {
+            // Check before fetching: fetching a memory a brain doesn't register throws.
+            if (!brain.hasMemoryValue(place)) continue;
+            net.minecraft.core.GlobalPos at = brain.getMemory(place).orElse(null);
+            if (at != null && at.dimension() == m.level.dimension() && at.pos().distSqr(m.bell) <= (long) VILLAGE_RADIUS * VILLAGE_RADIUS)
+                return true;
+        }
+        return false;
     }
 
     // ------------------------------------------------------------------
@@ -303,6 +369,16 @@ public final class VillagerMeltdown {
             return;
         }
         float progress = 1 - m.fuse / (float) m.total;
+        // Shock waves, the lethal heat round him and the ground coming apart, worse the less time is left.
+        MeltdownField.tick(v, progress, frozen || held || drawing);
+        if (now % GATHER_EVERY == 0) gather(m);
+        if (now % 20 == 0 && now - m.warnedClose > 100
+                && m.safe.subtract(v.position()).horizontalDistanceSqr() < (double) (NuclearFallout.RADIUS + 2) * (NuclearFallout.RADIUS + 2)) {
+            m.warnedClose = now;
+            for (ServerPlayer p : watchers(m))
+                p.displayClientMessage(Component.literal("He's too close to the safe point! Nobody there is safe while he is.")
+                        .withStyle(ChatFormatting.RED), true);
+        }
         if (now % PIECE_EVERY == 0) {
             save(m);
             // Scale carries how far gone he is, and (+2) whether something is holding the heat in right now.
@@ -443,6 +519,10 @@ public final class VillagerMeltdown {
         return out;
     }
 
+    /**
+     * Who of his village is at the safe point now. Those who get there stay huddled there until it is over. Everyone of
+     * his village still in danger glows, so players can find the ones hiding in houses or wandering off.
+     */
     private static void tally(Meltdown m) {
         Set<UUID> was = Set.copyOf(m.safeNow);
         m.safeNow.clear();
@@ -451,14 +531,21 @@ public final class VillagerMeltdown {
             m.safeNow.add(v.getUUID());
             if (!was.contains(v.getUUID())) {
                 root(v, true);
+                v.removeEffect(MobEffects.GLOWING);
                 m.level.playSound(null, v.blockPosition(), SoundEvents.VILLAGER_YES, SoundSource.NEUTRAL, 1.0F, 1.0F);
                 m.level.playSound(null, v.blockPosition(), SoundEvents.NOTE_BLOCK_CHIME.value(), SoundSource.NEUTRAL, 1.0F, 1.2F);
             }
         }
+        for (UUID id : m.village)
+            if (!m.safeNow.contains(id) && m.level.getEntity(id) instanceof Villager v && v.isAlive())
+                v.addEffect(new MobEffectInstance(MobEffects.GLOWING, PIECE_EVERY * 3, 0, false, false, false));
     }
 
+    /** At the safe point, and the safe point out of his reach (someone may have carried him toward it). */
     public static boolean safe(Meltdown m, Entity e) {
-        return e.position().subtract(m.safe).horizontalDistanceSqr() <= SAFE_RADIUS * SAFE_RADIUS && Math.abs(e.getY() - m.safe.y) < 8;
+        double clear = NuclearFallout.RADIUS + 2;
+        return e.position().subtract(m.safe).horizontalDistanceSqr() <= SAFE_RADIUS * SAFE_RADIUS && Math.abs(e.getY() - m.safe.y) < 8
+                && e.position().subtract(m.villager.position()).horizontalDistanceSqr() > clear * clear;
     }
 
     private static void bar(Meltdown m, float progress) {
@@ -486,20 +573,36 @@ public final class VillagerMeltdown {
         return out;
     }
 
-    /** Time's up: he goes off where he is. Whoever of his village is alive afterwards made it. */
+    /**
+     * Time's up: he goes off where he is, a nuclear blast as big and as loud as a radioactive player's Critical Mass, and
+     * he burns away in it. Whoever of his village is alive afterwards made it.
+     */
     static void detonate(Meltdown m) {
         Villager v = m.villager;
         List<ServerPlayer> watching = watchers(m);
         finish(m);
+        ENDING.add(m);
         if (EntityCarryService.isBeingCarried(v)) EntityCarryService.releaseEntity(v);
-        NuclearFallout.begin(v, false);
+        RadiationDeaths.mark(v);
+        RadiationService.nuclearBlast(v, false);
         if (v.isAlive()) v.kill();
         m.level.getServer().tell(new net.minecraft.server.TickTask(m.level.getServer().getTickCount() + 10, () -> result(m, watching)));
     }
 
-    private static void result(Meltdown m, List<ServerPlayer> watching) {
+    /** Alive afterwards: not seen dying, and either alive where they stand or off in an unloaded chunk. */
+    static int survivors(Meltdown m) {
         int alive = 0;
-        for (UUID id : m.village) if (m.level.getEntity(id) instanceof Villager v && v.isAlive()) alive++;
+        for (UUID id : m.village) {
+            if (m.dead.contains(id)) continue;
+            Entity e = m.level.getEntity(id);
+            if (e == null || e instanceof Villager v && v.isAlive()) alive++;
+        }
+        return alive;
+    }
+
+    private static void result(Meltdown m, List<ServerPlayer> watching) {
+        ENDING.remove(m);
+        int alive = survivors(m);
         boolean everyone = alive == m.village.size();
         for (ServerPlayer p : watching) {
             if (p.isRemoved()) continue;
@@ -514,7 +617,8 @@ public final class VillagerMeltdown {
         MELTDOWNS.remove(m.villager.getUUID());
         m.villager.getPersistentData().remove(TAG);
         root(m.villager, false);
-        for (UUID id : m.village) if (m.level.getEntity(id) instanceof Villager v) root(v, false);
+        MeltdownField.end(m.villager);
+        for (UUID id : m.village) if (m.level.getEntity(id) instanceof Villager v) { root(v, false); v.removeEffect(MobEffects.GLOWING); }
         if (m.call != null) EmergencyBand.end(m.call);
         m.bar.removeAllPlayers();
     }
@@ -546,6 +650,9 @@ public final class VillagerMeltdown {
         tag.putDouble("safeX", m.safe.x);
         tag.putDouble("safeY", m.safe.y);
         tag.putDouble("safeZ", m.safe.z);
+        net.minecraft.nbt.ListTag village = new net.minecraft.nbt.ListTag();
+        for (UUID id : m.village) village.add(net.minecraft.nbt.NbtUtils.createUUID(id));
+        tag.put("village", village);
         m.villager.getPersistentData().put(TAG, tag);
     }
 
@@ -567,6 +674,9 @@ public final class VillagerMeltdown {
         int total = Math.max(1, tag.getInt("total"));
         Meltdown m = new Meltdown(v, level, BlockPos.of(tag.getLong("bell")),
                 new Vec3(tag.getDouble("safeX"), tag.getDouble("safeY"), tag.getDouble("safeZ")), total, Math.max(1, tag.getInt("fuse")));
+        // His village as it was counted before he unloaded, so those already carried far off still count.
+        for (net.minecraft.nbt.Tag id : tag.getList("village", net.minecraft.nbt.Tag.TAG_INT_ARRAY))
+            m.village.add(net.minecraft.nbt.NbtUtils.loadUUID(id));
         begin(m, false);
     }
 
@@ -591,7 +701,10 @@ public final class VillagerMeltdown {
     @SubscribeEvent
     public static void died(LivingDeathEvent event) {
         Meltdown m = of(event.getEntity());
-        if (m != null) detonate(m);
+        if (m != null) { detonate(m); return; }
+        UUID id = event.getEntity().getUUID();
+        for (Meltdown x : MELTDOWNS.values()) if (x.village.contains(id)) x.dead.add(id);
+        for (Meltdown x : ENDING) if (x.village.contains(id)) x.dead.add(id);
     }
 
     // ------------------------------------------------------------------
@@ -639,6 +752,7 @@ public final class VillagerMeltdown {
     public static void clear() {
         for (Meltdown m : List.copyOf(MELTDOWNS.values())) pause(m);
         MELTDOWNS.clear();
+        ENDING.clear();
         RESUMING.clear();
         BUBBLES.forEach(b -> b.display.discard());
         BUBBLES.clear();

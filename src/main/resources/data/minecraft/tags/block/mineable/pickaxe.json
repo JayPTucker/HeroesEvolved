@@ -7,6 +7,9 @@
     "heroesevolved:synthesis_station",
     "heroesevolved:cryochamber",
     "heroesevolved:alarm_beacon",
-    "heroesevolved:ability_dampener"
+    "heroesevolved:ability_dampener",
+    "heroesevolved:lead_ore",
+    "heroesevolved:deepslate_lead_ore",
+    "heroesevolved:suit_fabricator"
   ]
 }

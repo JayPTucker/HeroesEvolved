@@ -728,11 +728,13 @@ public final class RadiationGameTests {
         });
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 180, batch = "radiation.contain.hold")
+    @GameTest(template = "rewind_empty", timeoutTicks = 280, batch = "radiation.contain.hold")
     public static void aTopSpeedsterHoldsInABlastAndLives(GameTestHelper helper) {
         ServerPlayer target = player(helper, 365, false);
         ServerPlayer runner = speedster(helper, target, 5);
         try {
+            // Holding a blast in needs the whole velocity suit.
+            MeltdownFieldGameTests.suit(runner, true);
             RadiationService.beginDetonation(target, 5, true);
             helper.assertTrue(com.jayptucker.heroesevolved.speed.SpeedContainment.start(runner, 5), "A player about to blow is run round");
         } catch (RuntimeException e) { dropRunner(runner); remove(target); throw e; }
@@ -743,14 +745,14 @@ public final class RadiationGameTests {
                 helper.assertTrue(com.jayptucker.heroesevolved.speed.SpeedContainment.running(runner), "A blast being contained cannot be let go");
             } catch (RuntimeException e) { dropRunner(runner); remove(target); throw e; }
         });
-        helper.runAfterDelay(90, () -> {
+        helper.runAfterDelay(150, () -> {
             try {
-                helper.assertTrue(RadiationService.isDetonating(target), "Defusing takes five seconds of holding");
+                helper.assertTrue(RadiationService.isDetonating(target), "Defusing takes ten seconds of holding");
             } catch (RuntimeException e) { dropRunner(runner); remove(target); throw e; }
         });
-        helper.runAfterDelay(120, () -> {
+        helper.runAfterDelay(com.jayptucker.heroesevolved.speed.SpeedContainment.DEFUSE_TICKS + 20, () -> {
             try {
-                helper.assertTrue(!RadiationService.critical(target), "Held for five seconds, the blast is defused");
+                helper.assertTrue(!RadiationService.critical(target), "Held for ten seconds, the blast is defused");
                 helper.assertTrue(RadiationService.mass(target) <= 30, "And the Core settles: " + RadiationService.mass(target));
                 helper.assertTrue(runner.getHealth() > 0, "A tier-5 runner with stamina to spare lives: " + runner.getHealth());
                 helper.succeed();
@@ -758,26 +760,34 @@ public final class RadiationGameTests {
         });
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 200, batch = "radiation.contain.burn")
-    public static void anExhaustedRunnerBurnsAwayButTheBlastStops(GameTestHelper helper) {
+    @GameTest(template = "rewind_empty", timeoutTicks = 380, batch = "radiation.contain.burn")
+    public static void anExhaustedRunnerFinishesTheHoldThenBurnsAway(GameTestHelper helper) {
         ServerPlayer target = player(helper, 395, false);
         ServerPlayer runner = speedster(helper, target, 4);
         try {
+            MeltdownFieldGameTests.suit(runner, true);
             com.jayptucker.heroesevolved.energy.PlayerEnergyService.tryConsume(runner, com.jayptucker.heroesevolved.energy.PlayerEnergyService.getEnergy(runner));
             runner.setHealth(4);
             RadiationService.beginDetonation(target, 5, true);
             helper.assertTrue(com.jayptucker.heroesevolved.speed.SpeedContainment.start(runner, 4), "The run starts");
         } catch (RuntimeException e) { dropRunner(runner); remove(target); throw e; }
-        helper.runAfterDelay(40, () -> {
+        helper.runAfterDelay(120, () -> {
             try {
-                helper.assertTrue(com.jayptucker.heroesevolved.speed.SpeedContainment.burningAway(runner), "With nothing left, the heat beats the runner");
-                helper.assertTrue(!RadiationService.critical(target), "But it takes the blast with it, at once");
-                helper.assertTrue(runner.getHealth() > 0, "They stand on the ring and burn away before they die");
+                helper.assertTrue(com.jayptucker.heroesevolved.speed.SpeedContainment.doomed(runner) && !com.jayptucker.heroesevolved.speed.SpeedContainment.burningAway(runner),
+                        "With nothing left their body gives out, but they run on");
+                helper.assertTrue(RadiationService.critical(target), "Still holding it: the moment isn't over");
+                helper.assertTrue(runner.getHealth() > 0, "Nothing can hurt them now");
                 com.jayptucker.heroesevolved.speed.SpeedContainment.release(runner);
                 helper.assertTrue(com.jayptucker.heroesevolved.speed.SpeedContainment.running(runner), "Letting go can't save them now");
             } catch (RuntimeException e) { dropRunner(runner); remove(target); throw e; }
         });
-        helper.runAfterDelay(170, () -> {
+        helper.runAfterDelay(com.jayptucker.heroesevolved.speed.SpeedContainment.DEFUSE_TICKS + 10, () -> {
+            try {
+                helper.assertTrue(com.jayptucker.heroesevolved.speed.SpeedContainment.burningAway(runner), "When the hold is done, it takes them");
+                helper.assertTrue(!RadiationService.critical(target), "And they take the blast with them");
+            } catch (RuntimeException e) { dropRunner(runner); remove(target); throw e; }
+        });
+        helper.runAfterDelay(com.jayptucker.heroesevolved.speed.SpeedContainment.DEFUSE_TICKS + com.jayptucker.heroesevolved.speed.SpeedContainment.DEATH_TICKS + 20, () -> {
             try {
                 helper.assertTrue(runner.getHealth() <= 0 || runner.isDeadOrDying(), "When the burning is done, they are gone: " + runner.getHealth());
                 helper.assertTrue(!com.jayptucker.heroesevolved.speed.SpeedContainment.running(runner), "The run is over");
