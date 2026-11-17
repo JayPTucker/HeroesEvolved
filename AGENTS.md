@@ -827,6 +827,17 @@ is in [docs/telepathy.md](docs/telepathy.md).
   immutable map each tick and `publish` swaps it into a `volatile` field; the voice thread only reads it and records who
   was heard in concurrent maps (`drain`, `speaking`). The rules have no voice chat imports, so game tests check them
   directly (`TelepathyReworkGameTests.farHearing...`).
+- **Time also gates voice deliveries.** `time/TemporalVoiceState` publishes an immutable coverage/perception snapshot
+  after the server's time services. `MindVoice` cancels frozen microphones before Simple Radio (priority 1000) and gates
+  all three concrete outgoing packet events, including groups, telepathy, breaches and radio output. Its voice worker
+  stretches only the last already-delivered fragment through `time/TemporalVoice` into three seconds of reverb; no new
+  speech feeds the tail. Codecs, rolling buffers and tails are bounded and closed on disconnect/server stop. Category
+  names, like Minecraft profile names, must fit 16 characters or a joining client disconnects on packet encoding.
+- **Sharing fast time is one invitation.** Activate the field, then right-click a nearby player (`time/TemporalSharing`);
+  Superspeed needs tier 4 (Power Level 10). It grants movement in that owner's field, a veil, temporal sight and voice
+  access together; ending the field releases them, while another owner's invitation remains independent. The guest's
+  gold lightning waist-ring is `SPEED_SHARED_TIME`, re-sent every eight ticks only to temporal perceivers. Photographs:
+  `tools/temporal-preview.init.gradle`; focused rules/audio/event tests: `tools/temporal-gametest.init.gradle`.
 - **Ask before you carry someone's voice.** Hive Link and Hive Mind take teammates or players who crouch to volunteer,
   never every nearby player (with PvP off, `StyleOps.isFriend` is true for everyone). A listened-to speaker gets a hint.
 - **A talk-down everyone can see.** Persuasion's windup (`TelepathyGeometry.PERSUADE_TICKS`) is a public `TELE_PERSUADE`

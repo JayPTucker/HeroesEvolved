@@ -217,13 +217,20 @@ public final class TimeVeil {
     }
 
     private static void show(MinecraftServer server, Veil veil) {
-        for (ServerPlayer viewer : server.getPlayerList().getPlayers()) {
-            boolean own = viewer.getUUID().equals(veil.owner);
-            // The caster sees a faint copy of their own stand-in, so they can find their spot again.
-            if (own || !seesThrough(viewer, veil.owner))
-                PacketDistributor.sendToPlayer(viewer, TimeVeilPayload.show(veil.owner, veil.dimension.location(), veil.at, veil.yaw, veil.pitch, veil.style));
-            else PacketDistributor.sendToPlayer(viewer, TimeVeilPayload.clear(veil.owner));
-        }
+        for (ServerPlayer viewer : server.getPlayerList().getPlayers()) show(viewer, veil);
+    }
+
+    /** A touch changes perception immediately, without waiting for the ten-tick periodic refresh. */
+    public static void refresh(ServerPlayer viewer) {
+        for (Veil veil : VEILS.values()) show(viewer, veil);
+    }
+
+    private static void show(ServerPlayer viewer, Veil veil) {
+        boolean own = viewer.getUUID().equals(veil.owner);
+        // The caster sees a faint copy of their own stand-in, so they can find their spot again.
+        if (own || !seesThrough(viewer, veil.owner))
+            PacketDistributor.sendToPlayer(viewer, TimeVeilPayload.show(veil.owner, veil.dimension.location(), veil.at, veil.yaw, veil.pitch, veil.style));
+        else PacketDistributor.sendToPlayer(viewer, TimeVeilPayload.clear(veil.owner));
     }
 
     private static void reveal(ServerPlayer player, Veil veil) {

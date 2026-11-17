@@ -1,0 +1,23 @@
+// Shared Perception on a real second player; never bundled into the mod.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('temporalPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/temporal-preview')
+                        programArguments.addAll('--width', '1100', '--height', '800')
+                        systemProperty('heroes.preview.temporal', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('temporalPreviewClasses')) }
+        }
+    }
+}

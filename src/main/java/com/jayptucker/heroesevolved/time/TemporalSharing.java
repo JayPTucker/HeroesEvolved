@@ -57,6 +57,7 @@ public final class TemporalSharing {
         String reason = "shared:" + owner.getUUID();
         guests.put(player.getUUID(), new Guest(owner, player, reason, speed));
         TimeVeil.begin(player, speed ? TimeVeil.Style.SPEED : TimeVeil.Style.TIME, reason);
+        TimeVeil.refresh(player);
         PlayerTimeSlow.update(player);
         TemporalVoiceState.publish(owner.getServer());
         player.displayClientMessage(net.minecraft.network.chat.Component.translatable("time.heroesevolved.shared"), true);
@@ -72,6 +73,7 @@ public final class TemporalSharing {
 
     private static void release(Guest guest) {
         TimeVeil.end(guest.player, guest.reason);
+        TimeVeil.refresh(guest.player);
         PlayerTimeSlow.update(guest.player);
     }
 

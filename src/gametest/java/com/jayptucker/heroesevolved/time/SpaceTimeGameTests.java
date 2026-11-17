@@ -148,6 +148,8 @@ public final class SpaceTimeGameTests {
         double walk = target.getAttributeValue(Attributes.MOVEMENT_SPEED);
         double attack = target.getAttributeValue(Attributes.ATTACK_SPEED);
         try {
+            // This batch specifically checks server-wide player slowing; the suite defaults fields to local arenas.
+            TimeFieldTestSupport.serverWide(true);
             TimeSlowService.start(traveler, 5);
             AdvancedTechniques.startPerception(runner);
             PlayerTimeSlow.update(traveler);
@@ -180,6 +182,7 @@ public final class SpaceTimeGameTests {
             AdvancedTechniques.endPerception(runner);
             scoreboard.removePlayerTeam(team);
             clear(traveler);
+            TimeFieldTestSupport.serverWide(false);
         }
     }
 

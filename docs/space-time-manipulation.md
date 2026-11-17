@@ -25,6 +25,20 @@ when the field ends.
 
 ### Faster than time
 
+Start Between Seconds or Still World, then **right-click a player within normal interaction reach** to bring them
+into your time. They can move normally, see everyone moving in time, and speak with temporal perceivers. You can
+bring several players in; each invitation lasts only for the current field. Ending it, exhausting your stamina,
+losing your power, dying, logging out or changing dimension releases them. Someone still invited by another active
+traveller keeps that invitation. The older Shift-at-activation companion control still works.
+
+**Voice chat:** when time changes, voices already being heard drag down in pitch and trail into three seconds of
+reverb, followed by silence. New speech from players caught in time is cut off, even if they keep their microphone
+open. Players with Superspeed or Space-Time, Mimics channeling either, and invited companions can hear one another;
+ordinary frozen listeners cannot overhear them. Normal voice ranges, whispering, closed groups and telepathy's
+privacy rules still apply. This covers Simple Voice Chat proximity and groups, telepathic relays, Vibe breaches and
+Simple Radio input/output. The **Fading voices** slider controls the dying voice fragments. Speech resumes normally
+when time returns. The fragment is a short rolling buffer in memory and is discarded shortly afterward.
+
 Between Seconds and Still World reach the whole server, in every dimension, unless `fieldsServerWide` is off in the
 config (then they keep to `slowRadius` and `stopRadius`). A speedster's Perception works the same way.
 

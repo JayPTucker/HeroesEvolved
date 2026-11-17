@@ -2461,7 +2461,7 @@
         {
           "id": "superspeed_perception",
           "name": "Perception",
-          "description": "For six seconds, other players across the server and entities within 12 blocks move at a third of their speed. Incoming shots slow enough to catch.",
+          "description": "For six seconds, other players across the server and entities within 12 blocks move at a third of their speed. Incoming shots slow enough to catch. From Power Level 10, right-click players within reach to share Perception, marked by a ring of gold lightning. Caught voices slow into reverb, then silence.",
           "active": true,
           "level": 3,
           "cost": 2,

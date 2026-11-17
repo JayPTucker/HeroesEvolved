@@ -1,0 +1,26 @@
+// Focused voice and shared-time regressions; tests never enter the released mod.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def tests = sourceSets.create('temporalTest') {
+                java.srcDir('src/gametest/java')
+                java.include('com/jayptucker/heroesevolved/time/TemporalSharingGameTests.java')
+                java.include('com/jayptucker/heroesevolved/time/TimeFieldTestSupport.java')
+                java.include('com/jayptucker/heroesevolved/PowerOwnershipTestSupport.java')
+                resources.srcDir('src/gametest/resources')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(tests) } }
+                runs { gameTestServer { gameDirectory = project.file('build/temporal-test-world') } }
+            }
+            tasks.named('runGameTestServer') {
+                dependsOn(tasks.named('temporalTestClasses'))
+                def world = project.file('build/temporal-test-world/world')
+                def config = project.file('build/temporal-test-world/config/heroesevolved-common.toml')
+                doFirst { world.deleteDir(); config.delete() }
+            }
+        }
+    }
+}

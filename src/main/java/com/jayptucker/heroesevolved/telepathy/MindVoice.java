@@ -253,13 +253,14 @@ public final class MindVoice implements VoicechatPlugin {
         private VoicechatServerApi api;
         private ScheduledExecutorService worker;
         private boolean failed;
+        private long frame;
 
         synchronized void start(VoicechatServerApi voice) {
             stop();
             api = voice;
             failed = false;
             try {
-                voice.registerVolumeCategory(voice.volumeCategoryBuilder().setId(CATEGORY).setName("Time fading voices")
+                voice.registerVolumeCategory(voice.volumeCategoryBuilder().setId(CATEGORY).setName("Fading voices")
                         .setDescription("Speech slowing into reverb when time changes").build());
                 worker = Executors.newSingleThreadScheduledExecutor(task -> {
                     Thread thread = new Thread(task, "Heroes temporal voice"); thread.setDaemon(true); return thread;
@@ -302,14 +303,19 @@ public final class MindVoice implements VoicechatPlugin {
             if (api == null || failed) return;
             try {
                 long now = System.nanoTime();
+                long tick = ++frame;
+                Map<StreamKey, DyingAudio> starting = new java.util.HashMap<>();
                 var heard = deliveries.entrySet().iterator();
                 while (heard.hasNext()) {
                     var entry = heard.next(); var key = entry.getKey(); var delivery = entry.getValue();
                     boolean blocked = TemporalVoiceState.blocks(key.stream.speaker, key.listener);
                     if (blocked && now - delivery.at < 300_000_000L) {
                         HeardStream stream = streams.get(key.stream);
-                        if (stream != null) tails.add(new DyingVoice(key, delivery.packet, TemporalVoice.tail(stream.recent()),
-                                api.createEncoder(OpusEncoderMode.AUDIO)));
+                        if (stream != null) {
+                            DyingAudio audio = starting.computeIfAbsent(key.stream, id -> new DyingAudio(TemporalVoice.tail(stream.recent()),
+                                    api.createEncoder(OpusEncoderMode.AUDIO)));
+                            tails.add(new DyingVoice(key, delivery.packet, audio));
+                        }
                     }
                     if (blocked || now - delivery.at > 500_000_000L) heard.remove();
                 }
@@ -318,7 +324,7 @@ public final class MindVoice implements VoicechatPlugin {
                     DyingVoice tail = playing.next();
                     var to = api.getConnectionOf(tail.key.listener);
                     if (!TemporalVoiceState.blocks(tail.key.stream.speaker, tail.key.listener) || to == null
-                            || !to.isConnected() || to.isDisabled() || !tail.send(api, to)) {
+                            || !to.isConnected() || to.isDisabled() || !tail.send(api, to, tick)) {
                         tail.close(); playing.remove();
                     }
                 }
@@ -373,17 +379,15 @@ public final class MindVoice implements VoicechatPlugin {
         private static final class DyingVoice {
             final DeliveryKey key;
             final SoundPacket original;
-            final short[] samples;
-            final OpusEncoder encoder;
+            final DyingAudio audio;
             final UUID channel = UUID.randomUUID();
-            int cursor;
-            DyingVoice(DeliveryKey key, SoundPacket original, short[] samples, OpusEncoder encoder) {
-                this.key = key; this.original = original; this.samples = samples; this.encoder = encoder;
+            DyingVoice(DeliveryKey key, SoundPacket original, DyingAudio audio) {
+                this.key = key; this.original = original; this.audio = audio; audio.listeners++;
             }
-            boolean send(VoicechatServerApi api, VoicechatConnection to) {
-                if (cursor >= samples.length) return false;
-                byte[] opus = encoder.encode(Arrays.copyOfRange(samples, cursor, cursor + TemporalVoice.FRAME));
-                long sequence = cursor / TemporalVoice.FRAME; cursor += TemporalVoice.FRAME;
+            boolean send(VoicechatServerApi api, VoicechatConnection to, long tick) {
+                byte[] opus = audio.frame(tick);
+                if (opus == null) return false;
+                long sequence = audio.cursor / TemporalVoice.FRAME - 1;
                 if (original instanceof StaticSoundPacket)
                     api.sendStaticSoundPacketTo(to, original.staticSoundPacketBuilder().channelId(channel)
                             .opusEncodedData(opus).sequenceNumber(sequence).category(CATEGORY).build());
@@ -394,6 +398,25 @@ public final class MindVoice implements VoicechatPlugin {
                     api.sendEntitySoundPacketTo(to, original.entitySoundPacketBuilder().channelId(channel)
                             .opusEncodedData(opus).sequenceNumber(sequence).category(CATEGORY).build());
                 return true;
+            }
+            void close() { if (--audio.listeners == 0) audio.close(); }
+        }
+
+        /** One stretch and one encode per speaker/channel, shared by everyone who heard that stream. */
+        private static final class DyingAudio {
+            final short[] samples;
+            final OpusEncoder encoder;
+            int cursor, listeners;
+            long lastFrame = -1;
+            byte[] opus;
+            DyingAudio(short[] samples, OpusEncoder encoder) { this.samples = samples; this.encoder = encoder; }
+            byte[] frame(long tick) {
+                if (lastFrame == tick) return opus;
+                lastFrame = tick;
+                if (cursor >= samples.length) return opus = null;
+                opus = encoder.encode(Arrays.copyOfRange(samples, cursor, cursor + TemporalVoice.FRAME));
+                cursor += TemporalVoice.FRAME;
+                return opus;
             }
             void close() { if (!encoder.isClosed()) encoder.close(); }
         }

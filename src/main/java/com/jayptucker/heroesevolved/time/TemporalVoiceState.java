@@ -27,7 +27,9 @@ public final class TemporalVoiceState {
     public static boolean blocks(UUID speaker, UUID listener) {
         Listener from = players.get(speaker), to = players.get(listener);
         return (from != null && from.affected || to != null && to.affected)
-                && !(from != null && from.perceives && to != null && to.perceives);
+                // Radio receivers and server audio channels can have a non-player sender. Frozen microphones are
+                // cancelled before radio input; a temporal listener can still hear the remaining radio output.
+                && !((from == null || from.perceives) && to != null && to.perceives);
     }
 
     /** Cancel before Simple Radio or another microphone plugin can retransmit a frozen speaker. */

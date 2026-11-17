@@ -149,9 +149,9 @@
   "action.heroesevolved.time_blink": "Fold Space",
   "action.heroesevolved.time_blink.desc": "Blink onto a visible surface or into open air. Costs a little to start and 0.3 stamina for every block you fold. Stops before walls and resets falling momentum. Level 3+: hold Shift to carry someone touching you; other players must be teammates or crouching.",
   "action.heroesevolved.time_slow": "Between Seconds",
-  "action.heroesevolved.time_slow.desc": "Carry a bubble of slowed time with you for as long as you pay for it (about 5 stamina a second; stamina doesn't recover meanwhile). Creatures, arrows and falling blocks move slowly while you act normally. Press again to let time run on.",
+  "action.heroesevolved.time_slow.desc": "Carry a bubble of slowed time with you for as long as you pay for it (about 5 stamina a second; stamina doesn't recover meanwhile). Right-click a player within reach to share your time, sight and voice. Caught voices slow into reverb, then silence. Press again to let time run on.",
   "action.heroesevolved.time_stop": "Still World",
-  "action.heroesevolved.time_stop.desc": "Stop time for as long as your stamina lasts: 12 stamina a second at Level 6, 10 at Level 10, 8 at Level 15, and none recovers while the world is still. Store up to 12 damage against a player or 40 against a mob. Shift at activation includes one touching companion. Press again to let time run on.",
+  "action.heroesevolved.time_stop.desc": "Stop time for as long as your stamina lasts: 12 stamina a second at Level 6, 10 at Level 10, 8 at Level 15, with no recovery. Store up to 12 damage against a player or 40 against a mob. Right-click players within reach to share your time, sight and voice. Shift at activation includes one touching companion. Caught voices fade into silence. Press again to resume.",
   "action.heroesevolved.time_rewind": "Rewrite the Moment",
   "action.heroesevolved.time_rewind.desc": "Undo 15 recorded seconds of blocks, containers and entities everywhere you have been, plus your position and lost health; anyone who died in reach lives again. Everyone it reaches is carried back through their own 15 seconds, even through a portal. A ghost only you can see shows where it would take you. It can undo your own death: for 15 seconds after dying, rewind from the death screen (or with this key after respawning) to come back with what you were carrying. Costs 130 stamina (Shift overexerts); recovers in 4 minutes, 2½ at Level 5.",
   "action.heroesevolved.temporal_snapshot": "Walk the Past",
@@ -723,7 +723,7 @@
   "action.heroesevolved.superspeed_lightning_throw": "Lightning Throw",
   "action.heroesevolved.superspeed_lightning_throw.desc": "Spend your Momentum (at least 30) to hurl a bolt of your own lightning at an enemy within 32 blocks. It counts as electricity.",
   "action.heroesevolved.superspeed_perception": "Perception",
-  "action.heroesevolved.superspeed_perception.desc": "For six seconds, other players across the server and entities within 12 blocks move at a third of their speed. Incoming shots slow enough to catch.",
+  "action.heroesevolved.superspeed_perception.desc": "For six seconds, other players across the server and entities within 12 blocks move at a third of their speed. Incoming shots slow enough to catch. From Power Level 10, right-click players within reach to share Perception, marked by a ring of gold lightning. Caught voices slow into reverb, then silence.",
   "action.heroesevolved.invisibility_0_1": "Vanishing Touch",
   "action.heroesevolved.invisibility_0_1.desc": "Make the friend, pet or object under your aim, up to 16 blocks away, invisible for 20 seconds: a player, a tamed animal, a villager, a boat, a cart or a dropped item. Hunters lose track of a hidden creature.",
   "action.heroesevolved.invisibility_smoke_and_mirrors": "Vanishing Squad",
@@ -1582,5 +1582,6 @@
   "time.heroesevolved.stopped_held": "Still World: -%s stamina/s, %ss left | press again to resume",
   "time.heroesevolved.slowed_held": "Between Seconds: -%s stamina/s, %ss left | press again to resume",
   "time.heroesevolved.stopped_out": "Your stamina gives out, and time runs on.",
-  "time.heroesevolved.slowed_out": "Your stamina gives out, and the seconds catch up."
+  "time.heroesevolved.slowed_out": "Your stamina gives out, and the seconds catch up.",
+  "time.heroesevolved.shared": "You have been brought into their time. You can move, see and speak with them."
 }

@@ -57,6 +57,16 @@ Lightspeed spends all your Momentum.
   `fieldsServerWide` off in the config, only within 12 blocks, 16 with Long Perception). Other players move and
   recharge attacks more slowly, and every screen takes a faint amber cast, so everyone can tell time is being slowed.
   Projectiles keep moving even with Flash Time. Perception has gold clock rings, hanging sparks and a slow heartbeat.
+    - **Share your pace from Power Level 10.** Activate Perception, then right-click a player within normal interaction
+      reach. They move normally, see you moving, and can speak with other temporal perceivers until Perception ends.
+      Gold lightning flows around their waist like a waterbender's reservoir: a broad amber halo, a gold orbit and a
+      thin white-hot core, with bright heads racing around it. Only temporal perceivers see it. Several players can
+      join; the invitations end on power loss, death, logout or dimension change too.
+    - **Voices fall still.** Already audible speech slows in pitch and reverberates for three seconds, then goes
+      silent. Caught players cannot keep speaking into proximity chat, groups, telepathy, breaches or radios.
+      Superspeed and Space-Time users, Mimics channeling either, and invited players hear each other under the usual
+      range and privacy rules. Normal speech returns when time does; the voice chat's Fading voices slider controls
+      the transition. See [shared time and voice chat](space-time-manipulation.md#faster-than-time).
   - **Nobody sees you move.** Everyone else sees you standing perfectly still where you started, and your real
     body, name and shadow are hidden from them, along with any lightning or trail near you. Only players with
     Superspeed or Space-Time (or a Mimic channeling either) see you as you are. You see a faint copy of yourself
