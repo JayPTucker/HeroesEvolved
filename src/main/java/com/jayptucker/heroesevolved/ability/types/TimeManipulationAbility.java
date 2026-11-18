@@ -224,7 +224,7 @@ public final class TimeManipulationAbility implements Ability {
             ServerLevel level = player.serverLevel();
             Vec3 origin = player.getEyePosition();
             Vec3 direction = player.getLookAngle().normalize();
-            int maximumDistance = SpaceTimeService.blinkRange(tier);
+            int maximumDistance = (int) (SpaceTimeService.blinkRange(tier) * com.jayptucker.heroesevolved.amplify.Amplification.reach(player));
 
             for (int distance = 1; distance <= maximumDistance; distance++) {
                 if (!level.hasChunkAt(BlockPos.containing(origin.add(direction.scale(distance))))) {

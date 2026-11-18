@@ -77,7 +77,7 @@ public final class MobMoves {
             SONIC = ModAbilities.SONIC_RESONANCE_ID, FLIGHT = ModAbilities.FLIGHT_ID, MIND = ModAbilities.TELEPATHY_ID,
             FORCE = ModAbilities.INVISIBILITY_ID, DENSITY = ModAbilities.PHASING_ID, TECH = ModAbilities.TECHNOPATHY_ID,
             MATTER = ModAbilities.MATTER_ASSEMBLY_ID, REGEN = ModAbilities.REGENERATION_ID, HYDRO = ModAbilities.HYDROKINESIS_ID,
-            VIBE = ModAbilities.VIBE_ID, SHIFT = ModAbilities.SHAPESHIFTING_ID;
+            VIBE = ModAbilities.VIBE_ID, SHIFT = ModAbilities.SHAPESHIFTING_ID, AMP = ModAbilities.AMPLIFICATION_ID;
 
     public static final List<Move> ALL = List.of(
             // ---- Telekinesis: an unseen hand that throws, holds and slams ----
@@ -726,6 +726,49 @@ public final class MobMoves {
                         sound(l, at, SoundEvents.PLAYER_SPLASH_HIGH_SPEED, 1.5F, .6F);
                     }),
 
+            // ---- Power Amplification: a red bolt, supercharging its own side, and a burst that overcharges one of them ----
+            m("red_bolt", AMP, 10, 100, 2, 12, true, Pose.POINT,
+                    (g, l, t, p) -> sound(l, g.mob.position(), SoundEvents.BEACON_AMBIENT, .8F, 1.8F),
+                    NOTHING,
+                    (g, l, t, p) -> {
+                        SetPiecePayload.send(l, Piece.AMP_BOLT, hand(g.mob), chest(t), 1.2F, null);
+                        hurt(g, t, 5 * p);
+                        com.jayptucker.heroesevolved.amplify.AmpService.stun(t, 20);
+                        sound(l, t.position(), SoundEvents.LIGHTNING_BOLT_IMPACT, .7F, 1.8F);
+                    }),
+            m("supercharge_side", AMP, 16, 300, 0, 16, false, Pose.CAST,
+                    (g, l, t, p) -> sound(l, g.mob.position(), SoundEvents.BEACON_ACTIVATE, .8F, 1.6F),
+                    NOTHING,
+                    (g, l, t, p) -> {
+                        // Every gifted mob on its side within ten blocks fights supercharged; alone, it zaps its target.
+                        int surged = 0;
+                        for (LivingEntity ally : side(g, 10)) {
+                            com.jayptucker.heroesevolved.amplify.AmpHooks.supercharge(ally, false);
+                            SetPiecePayload.send(l, Piece.AMP_ZAP, hand(g.mob), chest(ally), 1, g.mob);
+                            surged++;
+                        }
+                        if (surged == 0) {
+                            SetPiecePayload.send(l, Piece.AMP_BOLT, hand(g.mob), chest(t), 1, null);
+                            hurt(g, t, 4 * p);
+                        }
+                    }),
+            sig("red_storm", AMP, 30, 420, 0, 10, false, Pose.SLAM,
+                    (g, l, t, p) -> {
+                        SetPiecePayload.send(l, Piece.AMP_GATHER, g.mob.position(), g.mob.position().add(0, 3, 0), 10, g.mob);
+                        sound(l, g.mob.position(), SoundEvents.BEACON_POWER_SELECT, 1.2F, .7F);
+                    },
+                    NOTHING,
+                    (g, l, t, p) -> {
+                        // Red lightning bursts from it; the nearest of its side is overcharged, and may go wild.
+                        for (LivingEntity e : foes(g, g.mob.position(), 6)) {
+                            hurt(g, e, 7 * p);
+                            com.jayptucker.heroesevolved.amplify.AmpService.stun(e, 40);
+                        }
+                        side(g, 10).stream().findFirst().ifPresent(ally -> com.jayptucker.heroesevolved.amplify.AmpHooks.supercharge(ally, true));
+                        SetPiecePayload.send(l, Piece.AMP_BURST, g.mob.position(), g.mob.position().add(0, 1, 0), 6, g.mob);
+                        sound(l, g.mob.position(), SoundEvents.LIGHTNING_BOLT_THUNDER, 1, 1.5F);
+                    }),
+
             // ---- Vibe: a blast, a step through a breach, a frequency lock that switches powers off ----
             m("vibe_blast", VIBE, 10, 120, 2, 18, true, Pose.POINT,
                     (g, l, t, p) -> sound(l, g.mob.position(), SoundEvents.AMETHYST_BLOCK_RESONATE, 1, 1.6F),
@@ -887,6 +930,13 @@ public final class MobMoves {
         return g.mob.level().getEntitiesOfClass(LivingEntity.class, new AABB(center, center).inflate(radius), t -> t != g.mob && t.isAlive()
                 && !foe(g, t) && t.distanceToSqr(center) <= radius * radius
                 && (g.evil() ? t instanceof Enemy : t instanceof AbstractVillager || t instanceof Player || t instanceof AbstractGolem));
+    }
+
+    /** The gifted mobs on {@code g}'s side within {@code radius}, nearest first (an amplifier's allies). */
+    static List<LivingEntity> side(GiftedMob g, double radius) {
+        return g.mob.level().getEntitiesOfClass(LivingEntity.class, g.mob.getBoundingBox().inflate(radius),
+                        e -> e != g.mob && e.isAlive() && GiftedMobs.isGifted(e) && GiftedMobs.isEvil(e) == g.evil()).stream()
+                .sorted(java.util.Comparator.comparingDouble(e -> e.distanceToSqr(g.mob))).limit(6).toList();
     }
 
     static List<LivingEntity> foes(GiftedMob g, Vec3 center, double radius) {

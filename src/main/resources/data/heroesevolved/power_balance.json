@@ -550,6 +550,61 @@
     "note": "a waterspout that drags and drowns"
   },
   {
+    "power": "power_amplification",
+    "action": "amp_supercharge",
+    "unlock": 1,
+    "energy": 14,
+    "cooldown": 85,
+    "base_energy": 12,
+    "base_cooldown": 80,
+    "role": "skill",
+    "note": "15 s Surge on an ally (+25% harm, -25% cost and cooldowns); held, an Overcharge (50 Charge)"
+  },
+  {
+    "power": "power_amplification",
+    "action": "amp_red_lightning",
+    "unlock": 1,
+    "energy": 11,
+    "cooldown": 20,
+    "base_energy": 8,
+    "base_cooldown": 16,
+    "role": "basic",
+    "note": "a bolt of 4 + tier (more with Charge), or a beam through a line"
+  },
+  {
+    "power": "power_amplification",
+    "action": "amp_shock_therapy",
+    "unlock": 2,
+    "energy": 14,
+    "cooldown": 40,
+    "base_energy": 14,
+    "base_cooldown": 120,
+    "role": "quick",
+    "note": "clears mind control, stuns and slows; stands a downed friend up"
+  },
+  {
+    "power": "power_amplification",
+    "action": "amp_jumpstart",
+    "unlock": 3,
+    "energy": 16,
+    "cooldown": 50,
+    "base_energy": 16,
+    "base_cooldown": 100,
+    "role": "quick",
+    "note": "doors, levers, furnaces x4 for 30 s, batteries, a mount x2"
+  },
+  {
+    "power": "power_amplification",
+    "action": "amp_thousand_times",
+    "unlock": 5,
+    "energy": 60,
+    "cooldown": 900,
+    "base_energy": 85,
+    "base_cooldown": 1400,
+    "role": "ultimate",
+    "note": "every ally within 10 blocks overcharged, no backlash"
+  },
+  {
     "power": "technopathy",
     "action": "technopathy_handshake",
     "unlock": 1,
@@ -1596,6 +1651,15 @@
   {
     "power": "shapeshifting",
     "action": "finisher_shapeshifting",
+    "energy": 8,
+    "base_energy": 8,
+    "cooldown": 60,
+    "base_cooldown": 60,
+    "role": "finisher"
+  },
+  {
+    "power": "power_amplification",
+    "action": "finisher_power_amplification",
     "energy": 8,
     "base_energy": 8,
     "cooldown": 60,

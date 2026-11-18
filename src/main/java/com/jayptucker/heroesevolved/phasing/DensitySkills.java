@@ -303,9 +303,10 @@ public final class DensitySkills {
 
     /** Harden: Full Dense, free of upkeep, banking the weight of every blow you take. Press again for Rebound. */
     static boolean harden(ServerPlayer p) {
-        DensityService.setNotch(p, DensityService.FULL_DENSE, HARDEN_TICKS);
+        int hardenTicks = HARDEN_TICKS * (com.jayptucker.heroesevolved.amplify.Amplification.surged(p) ? 2 : 1);
+        DensityService.setNotch(p, DensityService.FULL_DENSE, hardenTicks);
         if (DensityService.notch(p) != DensityService.FULL_DENSE) return false;
-        HARDENS.put(p.getUUID(), new Hardened(p, now(p) + HARDEN_TICKS));
+        HARDENS.put(p.getUUID(), new Hardened(p, now(p) + hardenTicks));
         ArmPosePayload.show(p, ArmPose.DENSITY_BRACE, 12);
         show(p.serverLevel(), Piece.DENSITY_HARDEN, p.position(), p.position(), 1, p);
         p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.DEEPSLATE_BRICKS_PLACE, SoundSource.PLAYERS, 1, .5F);

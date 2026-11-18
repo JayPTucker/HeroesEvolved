@@ -138,6 +138,15 @@ act("hydro_crashing_wave", "hydrokinesis", 1, "skill", "5 + tier to what it carr
 act("hydro_octopus_form", "hydrokinesis", 2, "heavy", "10 s: arms lash (6 + tier), shots swallowed, a third off blows", util=30)
 act("hydro_wave_rider", "hydrokinesis", 3, "skill", "6 s of surfing", blocks=30, util=8)
 act("hydro_maelstrom", "hydrokinesis", 5, "ultimate", "a waterspout that drags and drowns", dmg=10, n=4, ctrl=3, ult=True)
+# --- Power Amplification
+act("amp_supercharge", "power_amplification", 1, "skill", "15 s Surge on an ally (+25% harm, -25% cost and cooldowns); held, an Overcharge (50 Charge)",
+    util=14)
+act("amp_red_lightning", "power_amplification", 1, "basic", "a bolt of 4 + tier (more with Charge), or a beam through a line",
+    dmg=5.5)
+act("amp_shock_therapy", "power_amplification", 2, "quick", "clears mind control, stuns and slows; stands a downed friend up", util=12)
+act("amp_jumpstart", "power_amplification", 3, "quick", "doors, levers, furnaces x4 for 30 s, batteries, a mount x2", util=14)
+act("amp_thousand_times", "power_amplification", 5, "ultimate", "every ally within 10 blocks overcharged, no backlash",
+    util=45, ult=True)
 # --- Technopathy
 act("technopathy_handshake", "technopathy", 1, "basic", "enrols a network", util=8)
 act("technopathy_remote_hand", "technopathy", 1, "basic", "works a linked device", fixed=5, cd=.6)
@@ -213,7 +222,8 @@ STYLE_DODGE_COOLDOWN_OVERRIDES = {"superspeed": 14}
 # finisher. A kill gives 10 stamina back, so a finished fight costs less than one ended by swinging.
 FINISHER_POWERS = ["pyrokinesis", "time_manipulation", "telepathy", "electrokinesis", "hydrokinesis", "cryokinesis", "quake",
                    "sonic_resonance", "radiation", "superspeed", "flight", "telekinesis", "phasing", "invisibility",
-                   "regeneration", "vibe", "technopathy", "matter_assembly", "empathic_mimicry", "shapeshifting"]
+                   "regeneration", "vibe", "technopathy", "matter_assembly", "empathic_mimicry", "shapeshifting",
+                   "power_amplification"]
 FINISHER = (8, 60)  # stamina, cooldown in ticks
 
 # Damage that moved to match its stamina (the code carries each change; this list documents them).

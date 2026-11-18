@@ -214,5 +214,11 @@ public enum ArmPose {
     SPEED_SKID_BACK, SPEED_SKID_LEFT, SPEED_SKID_RIGHT,
     /** A runner letting go at speed (speed/SpeedService.skidStop): a hockey stop, the body turned side-on to the run,
      *  crouched and leaning back from it, the rear hand on the ground braking and the lead arm out for balance. */
-    SPEED_SKID_STOP
+    SPEED_SKID_STOP,
+    /** Power Amplification (amplify/): a hand thrust out at an ally, sparks jumping from the fingertips (zap); palms
+     *  cupped together at the chest round a growing ball of red energy (cup, held); the ball thrown from one palm (throw);
+     *  both hands driven forward together, heels touching, for the beam (beam); fingertips pressed to the temples
+     *  (temples, Shock Therapy); a palm laid flat on a block or machine (palm, Jumpstart); both arms raised over the head
+     *  (raise, A Thousand Times, held); hands held up and open while sparks dance between the fingers (show, held). */
+    AMP_ZAP, AMP_CUP, AMP_THROW, AMP_BEAM, AMP_TEMPLES, AMP_PALM, AMP_RAISE, AMP_SHOW
 }

@@ -628,5 +628,36 @@
       "hydro_tidal_dome": "bubble/wave",
       "hydro_healing_spring": "flower/drop"
     }
+  },
+  "power_amplification": {
+    "color": "#E0263A",
+    "icons": {
+      "amp_supercharge": "hand/bolt",
+      "amp_red_lightning": "bolt/burst",
+      "amp_shock_therapy": "face/spark",
+      "amp_jumpstart": "gear/bolt",
+      "amp_thousand_times": "people/bolt",
+      "amp_0_0": "people/heart",
+      "amp_0_1": "link/hand",
+      "amp_0_2": "valve/spark",
+      "amp_along_for_the_ride": "dash/people",
+      "amp_hold_hands": "chain/people",
+      "amp_breakthrough": "up/star",
+      "amp_1_0": "circle/up",
+      "amp_1_1": "burst/wall",
+      "amp_1_2": "bolt/shield",
+      "amp_burn_through": "beam/crack",
+      "amp_overcharge_enemy": "spark/skull",
+      "amp_second_coming": "skull/bolt",
+      "amp_2_0": "hand/face",
+      "amp_2_1": "pause/bolt",
+      "amp_2_2": "star/people",
+      "amp_mechanic": "gear/key",
+      "amp_doorbuster": "door/burst",
+      "amp_grounded": "down/bolt",
+      "amp_got_your_back": "dash/heart",
+      "amp_lightning_cannon": "beam/bolt",
+      "amp_lights_back_on": "sun/spark"
+    }
   }
 }

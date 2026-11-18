@@ -164,6 +164,11 @@ public final class ModAbilities {
     public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.ShapeshiftingAbility> SHAPESHIFTING =
             ABILITIES.register(SHAPESHIFTING_ID.getPath(), com.jayptucker.heroesevolved.ability.types.ShapeshiftingAbility::new);
 
+    /** Power Amplification: Ando Masahashi's red lightning, which makes other people's powers stronger. */
+    public static final ResourceLocation AMPLIFICATION_ID = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "power_amplification");
+    public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.AmplificationAbility> AMPLIFICATION =
+            ABILITIES.register(AMPLIFICATION_ID.getPath(), com.jayptucker.heroesevolved.ability.types.AmplificationAbility::new);
+
     public static final ResourceLocation HYDROKINESIS_ID = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "hydrokinesis");
     public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.HydrokinesisAbility> HYDROKINESIS =
             ABILITIES.register(HYDROKINESIS_ID.getPath(), com.jayptucker.heroesevolved.ability.types.HydrokinesisAbility::new);

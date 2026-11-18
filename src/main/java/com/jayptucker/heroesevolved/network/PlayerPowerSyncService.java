@@ -165,7 +165,7 @@ public final class PlayerPowerSyncService {
         ResourceLocation actionId = action.definition().id();
         int level = PlayerProgressionService.getLevel(player);
         int unlockLevel = action.definition().unlockLevel();
-        boolean unlocked = action.definition().isUnlockedAt(level);
+        boolean unlocked = action.definition().isUnlockedAt(level + com.jayptucker.heroesevolved.amplify.Amplification.tierBonus(player));
 
         if (actionId.equals(ResourceLocation.fromNamespaceAndPath(
                 com.jayptucker.heroesevolved.HeroesEvolved.MOD_ID,

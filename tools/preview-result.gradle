@@ -1,0 +1,33 @@
+// Gives a preview run an honest result. Apply it from a preview's init script, inside afterEvaluate:
+//
+//     apply from: rootProject.file('tools/preview-result.gradle')
+//
+// A preview closes the game with Runtime.halt once its photographs are written (uitest/PreviewQuiet.quit), and on
+// Windows that halt ends with a fail-fast exit code, so Gradle used to call every finished preview a failure. This
+// ignores the exit code and reads the result file PreviewQuiet.quit writes in the game directory instead:
+//  - no file: the game stopped before the driver finished (a crash, or the window closed by hand), and the run fails;
+//  - a line with FAIL in it (from PreviewQuiet.report): the run fails and prints those lines;
+//  - otherwise the run passes.
+// It only touches files and providers at execution time, as the configuration cache requires.
+
+tasks.named('runClient').configure { task ->
+    task.ignoreExitValue = true
+    def directory = task.gameDirectory
+    task.doFirst {
+        // A result left by an earlier run must never pass this one.
+        new File(directory.get().asFile, 'preview-result.txt').delete()
+    }
+    task.doLast { t ->
+        def where = directory.get().asFile
+        def result = new File(where, 'preview-result.txt')
+        if (!result.exists())
+            throw new GradleException("The preview stopped before it finished: the game crashed, a driver step threw, "
+                    + "or the window was closed. See ${new File(where, 'logs/latest.log')}")
+        def lines = result.readLines('UTF-8')
+        def failures = lines.findAll { it.contains('FAIL') }
+        lines.findAll { it != 'PREVIEW_DONE' }.each { t.logger.lifecycle(it) }
+        if (!failures.isEmpty())
+            throw new GradleException("The preview finished, but it reported failures:\n  " + failures.join('\n  '))
+        t.logger.lifecycle("PREVIEW PASSED. Photographs are in ${new File(where, 'screenshots')}")
+    }
+}

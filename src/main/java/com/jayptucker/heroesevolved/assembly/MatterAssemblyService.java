@@ -132,7 +132,7 @@ public final class MatterAssemblyService {
             case "causeway" -> skywalk(p);
             case "switchback" -> begin(p, route(p, 14, true, false), 600, action);
             case "drawbridge" -> drawbridge(p);
-            case "shard_lance" -> firePaid(p, 1, 3, 8 + c.abilityLevel() * 1.2F);
+            case "shard_lance" -> firePaid(p, com.jayptucker.heroesevolved.amplify.Amplification.surged(p) ? 2 : 1, 3, 8 + c.abilityLevel() * 1.2F);
             case "scattershot" -> firePaid(p, 5, 5, 5 + c.abilityLevel() * .5F);
             case "cage" -> cage(p);
             case "cathedral" -> cathedral(p);

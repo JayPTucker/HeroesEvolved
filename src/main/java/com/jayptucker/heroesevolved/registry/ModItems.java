@@ -47,6 +47,10 @@ public final class ModItems {
     public static final DeferredHolder<MobEffect, MobEffect> SOAKED = EFFECTS.register("soaked",
             com.jayptucker.heroesevolved.hydro.Soaked::new);
 
+    /** Amplified by red lightning (amplify/Amplification): stronger, cheaper, quicker powers. Level 0 a Surge, 1 an Overcharge. */
+    public static final DeferredHolder<MobEffect, MobEffect> SUPERCHARGED = EFFECTS.register("supercharged",
+            com.jayptucker.heroesevolved.amplify.Amplification.Effect::new);
+
     /** After a forced draw: weakened, and a regenerating body cannot regrow until it wears off. */
     public static final DeferredHolder<MobEffect, MobEffect> DRAINED = EFFECTS.register("drained",
             () -> new MobEffect(MobEffectCategory.HARMFUL, 0x7A1020) {});

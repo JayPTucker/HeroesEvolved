@@ -1,0 +1,37 @@
+// Every automated check that touches Power Amplification, in about two minutes instead of the full suite's six:
+// its own tests (amplify/), the skill tree, class and balance checks every power must pass (skills/), and the
+// finisher tests that force each of its three finishers on a low pillager (combat/TakedownGameTests).
+// Test code is excluded from the release jar.
+//
+//   ./gradlew runGameTestServer --init-script tools/amp-gametest.init.gradle
+//
+// It ends with "All N required tests passed :)" and BUILD SUCCESSFUL, or names each failing test.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def tests = sourceSets.create('ampTest') {
+                java.srcDir('src/gametest/java')
+                java.include('com/jayptucker/heroesevolved/amplify/**')
+                java.include('com/jayptucker/heroesevolved/skills/**')
+                java.include('com/jayptucker/heroesevolved/combat/TakedownGameTests.java')
+                // ClassAbilityGameTests builds its powered machines with the grid tests' helpers.
+                java.include('com/jayptucker/heroesevolved/grid/**')
+                java.include('com/jayptucker/heroesevolved/*.java')
+                resources.srcDir('src/gametest/resources')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(tests) } }
+                runs { gameTestServer { gameDirectory = project.file('build/amp-test-world') } }
+            }
+            tasks.named('runGameTestServer') {
+                dependsOn(tasks.named('ampTestClasses'))
+                // A fresh world and the default config every run, as the full suite does.
+                def staleWorld = project.file('build/amp-test-world/world')
+                def staleConfig = project.file('build/amp-test-world/config/heroesevolved-common.toml')
+                doFirst { staleWorld.deleteDir(); staleConfig.delete() }
+            }
+        }
+    }
+}

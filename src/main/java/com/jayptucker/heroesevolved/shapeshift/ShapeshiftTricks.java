@@ -341,6 +341,9 @@ public final class ShapeshiftTricks {
         if (who instanceof Mob mob) mob.setTarget(null);
     }
 
+    /** Shock Therapy (Power Amplification) clears confusion and fright. Returns whether there was any. */
+    public static boolean calm(Entity who) { return COWED.remove(who.getUUID()) != null; }
+
     /** Whether a creature is confused or frightened right now. */
     public static boolean cowed(Entity who) {
         Cowed c = COWED.get(who.getUUID());

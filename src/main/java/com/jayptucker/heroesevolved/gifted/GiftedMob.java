@@ -277,19 +277,22 @@ public final class GiftedMob {
         if (target == null) { cancelCast(false); return; }
         mob.getNavigation().stop();
         face(target);
-        castTicks++;
-        if (castTicks % 4 == 0) casting.pulse().run(this, level(), target, strength());
+        // Supercharged by an amplifier: it casts twice as fast.
+        boolean surged = com.jayptucker.heroesevolved.amplify.Amplification.surged(mob);
+        castTicks += surged ? 2 : 1;
+        if (castTicks % 4 == 0 || surged && castTicks % 4 == 1) casting.pulse().run(this, level(), target, strength());
         if (castTicks < casting.windup()) return;
         MobMoves.Move move = casting;
         casting = null; castTicks = 0;
         cooldowns.put(move.id(), now() + Math.round(move.cooldown() * gift.rarity().cooldown * (unbound ? .7F : 1)));
         readyAt = now() + Math.round((move.signature() ? 50 : 36) * gift.rarity().cooldown * (unbound ? .65F : 1));
-        if (!move.needsSight() || mob.hasLineOfSight(target)) {
+        if ((!move.needsSight() || mob.hasLineOfSight(target)) && !com.jayptucker.heroesevolved.amplify.Amplification.misfire(mob)) {
             try {
                 move.execute().run(this, level(), target, strength());
             } catch (RuntimeException e) {
                 com.jayptucker.heroesevolved.HeroesEvolved.LOGGER.warn("Gifted move {} failed", move.id(), e);
             }
+            com.jayptucker.heroesevolved.amplify.Amplification.powerUsed(mob, move.signature());
         }
         if (move.signature()) spent(60);
         sync();

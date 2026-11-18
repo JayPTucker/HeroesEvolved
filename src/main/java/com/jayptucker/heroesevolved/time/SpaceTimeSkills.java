@@ -273,6 +273,7 @@ public final class SpaceTimeSkills {
 
     /** Everything Fold Space sets off once you've moved: Still Point's count and Snap Shut. */
     public static void folded(ServerPlayer p, Vec3 from, Vec3 to, boolean free, Entity carried) {
+        com.jayptucker.heroesevolved.amplify.AmpHooks.folded(p, from, to);
         if (free) {
             FOLDS.computeIfPresent(p.getUUID(), (k, n) -> n > 1 ? n - 1 : null);
             p.displayClientMessage(Component.translatable("time.heroesevolved.still_point", FOLDS.getOrDefault(p.getUUID(), 0)), true);

@@ -4733,5 +4733,257 @@
         "design_cooldown": 240
       }
     ]
+  },
+  {
+    "power": "power_amplification",
+    "branch_names": [
+      "Sidekick",
+      "Red Lightning",
+      "Fixer"
+    ],
+    "branches": [
+      [
+        {
+          "id": "amp_0_0",
+          "name": "Close Friends",
+          "description": "A Surge runs at half speed, lasting about twice as long, while you stay within three blocks of the ally.",
+          "icon": "minecraft:poppy",
+          "level": 1,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "amp_0_1",
+          "name": "Partner",
+          "description": "Bond with the ally you look at, within 16 blocks, until you choose another. You can Supercharge your partner from across a room (16 blocks, in sight) along a red thread.",
+          "icon": "minecraft:lead",
+          "level": 2,
+          "cost": 2,
+          "active": true,
+          "energy": 13,
+          "cooldown": 100,
+          "design_energy": 10,
+          "design_cooldown": 100
+        },
+        {
+          "id": "amp_0_2",
+          "name": "Not Too Much",
+          "description": "Your partner's Overcharge backlashes are halved, overcharging them again too soon hurts half as much, and an overcharged breach of theirs never overshoots.",
+          "icon": "minecraft:clock",
+          "level": 3,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "amp_along_for_the_ride",
+          "name": "Along for the Ride",
+          "description": "When your supercharged partner folds, breaches, dashes or teleports away while you stand within eight blocks, you go with them.",
+          "icon": "minecraft:saddle",
+          "level": 3,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "amp_hold_hands",
+          "name": "Hold Hands",
+          "description": "Everyone touching your partner, a chain of friends each within two and a half blocks of the last (up to eight), shares their Surge for as long as it has left.",
+          "icon": "minecraft:string",
+          "level": 4,
+          "cost": 2,
+          "active": true,
+          "energy": 23,
+          "cooldown": 200,
+          "design_energy": 22,
+          "design_cooldown": 200
+        },
+        {
+          "id": "amp_breakthrough",
+          "name": "Breakthrough",
+          "description": "A partner on your Surge can use moves one tier above what they've unlocked.",
+          "icon": "minecraft:nether_star",
+          "level": 5,
+          "cost": 3,
+          "active": false,
+          "capstone": true
+        }
+      ],
+      [
+        {
+          "id": "amp_1_0",
+          "name": "Bigger Ball",
+          "description": "The ball between your hands grows twice as fast once you hold 50 Charge, and your bolts and beams reach four blocks farther.",
+          "icon": "minecraft:slime_ball",
+          "level": 1,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "amp_1_1",
+          "name": "Van Full",
+          "description": "Release a burst that bounces off nearby walls: everyone within five blocks takes 6 + level (more with Charge), double where you're closed in. It knocks out rather than kills: foes left at half a heart are stunned for five seconds.",
+          "icon": "minecraft:minecart",
+          "level": 2,
+          "cost": 2,
+          "active": true,
+          "energy": 20,
+          "cooldown": 160,
+          "design_energy": 20,
+          "design_cooldown": 160
+        },
+        {
+          "id": "amp_1_2",
+          "name": "Opposite Current",
+          "description": "Red lightning grounds out blue: with 20 Charge or more, lightning aimed at you (an Electrokinetic's, Elle's, a storm's) is halved, and the half you don't take becomes Charge.",
+          "icon": "minecraft:lightning_rod",
+          "level": 3,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "amp_burn_through",
+          "name": "Burn Through",
+          "description": "Your red lightning breaks the constructs in its path (ice walls, force barriers and bridges) and hits a foe behind a Lens Shield twice as hard.",
+          "icon": "minecraft:blaze_powder",
+          "level": 3,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "amp_overcharge_enemy",
+          "name": "Overcharge the Enemy",
+          "description": "Pour red energy into a powered foe within 16 blocks (a player with a power, a gifted mob, Sylar or Elle). Its next move goes wild: it misfires, hurts the one who cast it and lashes at its own side.",
+          "icon": "minecraft:redstone_torch",
+          "level": 4,
+          "cost": 2,
+          "active": true,
+          "energy": 24,
+          "cooldown": 240,
+          "design_energy": 24,
+          "design_cooldown": 240
+        },
+        {
+          "id": "amp_second_coming",
+          "name": "The Second Coming",
+          "description": "Stop holding back. Your red lightning, Van Full and Lightning Cannon hit twice as hard and kill instead of knocking out, and a supercharged friend in a beam's path takes it too.",
+          "icon": "minecraft:wither_rose",
+          "level": 5,
+          "cost": 3,
+          "active": false,
+          "capstone": true
+        }
+      ],
+      [
+        {
+          "id": "amp_2_0",
+          "name": "Steady Hands",
+          "description": "Shock Therapy reaches four blocks, and also clears a dampener's hold and puts out fire.",
+          "icon": "minecraft:feather",
+          "level": 1,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "amp_2_1",
+          "name": "Burnout",
+          "description": "Overload a powered foe within 12 blocks until its power shuts off for four seconds: a weak window on a gifted mob or a boss. Aimed at an Ability Dampener's projector, it blows the breaker for a minute.",
+          "icon": "minecraft:redstone_block",
+          "level": 2,
+          "cost": 2,
+          "active": true,
+          "energy": 19,
+          "cooldown": 200,
+          "design_energy": 18,
+          "design_cooldown": 200
+        },
+        {
+          "id": "amp_2_2",
+          "name": "Sparks for Show",
+          "description": "Crouch with an empty hand and red sparks dance between your fingers. Villagers who see it trade more cheaply with you; a creature hunting you with under 10 health hesitates for a second.",
+          "icon": "minecraft:emerald",
+          "level": 3,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "amp_mechanic",
+          "name": "Mechanic",
+          "description": "Jumpstart lasts twice as long and works on a TaCZ gun in your hand: its next 30 hits strike a fifth harder.",
+          "icon": "minecraft:piston",
+          "level": 3,
+          "cost": 1,
+          "active": false
+        },
+        {
+          "id": "amp_doorbuster",
+          "name": "Doorbuster",
+          "description": "Blast a door, gate or trapdoor within eight blocks off its hinges; whoever stands near it is knocked back and stunned for three seconds.",
+          "icon": "minecraft:iron_door",
+          "level": 4,
+          "cost": 2,
+          "active": true,
+          "energy": 18,
+          "cooldown": 160,
+          "design_energy": 16,
+          "design_cooldown": 160
+        },
+        {
+          "id": "amp_grounded",
+          "name": "Grounded",
+          "description": "A fifth of the damage powered foes deal you becomes Charge instead, and your hands never spark on their own.",
+          "icon": "minecraft:copper_block",
+          "level": 5,
+          "cost": 3,
+          "active": false,
+          "capstone": true
+        }
+      ]
+    ],
+    "styles": [
+      {
+        "id": "amp_lightning_cannon",
+        "name": "Lightning Cannon",
+        "description": "Cup your hands for two seconds, then fire a beam three blocks wide and 18 long that knocks down everything in its path (10 + 2 x level). With this class, every Supercharge you give arms your next red lightning at full strength.",
+        "icon": "minecraft:fire_charge",
+        "level": 3,
+        "cost": 3,
+        "active": true,
+        "energy": 37,
+        "cooldown": 335,
+        "role": "offense",
+        "mechanic": "amp_lightning_cannon",
+        "design_energy": 38,
+        "design_cooldown": 300
+      },
+      {
+        "id": "amp_lights_back_on",
+        "name": "Lights Back On",
+        "description": "Jolt every friend within eight blocks (you too) out of mind control, stuns and slows, and jumpstart every furnace and battery there.",
+        "icon": "minecraft:redstone_lamp",
+        "level": 3,
+        "cost": 3,
+        "active": true,
+        "energy": 27,
+        "cooldown": 260,
+        "role": "defense",
+        "mechanic": "amp_lights_back_on",
+        "design_energy": 26,
+        "design_cooldown": 260
+      },
+      {
+        "id": "amp_got_your_back",
+        "name": "Got Your Back",
+        "description": "Dash to your partner's side (or the nearest friend, pet or friendly villager within 16 blocks) and Surge them as you arrive. With nobody to reach, dash six blocks ahead with your next red lightning fully charged.",
+        "icon": "minecraft:rabbit_foot",
+        "level": 3,
+        "cost": 3,
+        "active": true,
+        "energy": 24,
+        "cooldown": 240,
+        "role": "support",
+        "mechanic": "amp_got_your_back",
+        "design_energy": 22,
+        "design_cooldown": 240
+      }
+    ]
   }
 ]

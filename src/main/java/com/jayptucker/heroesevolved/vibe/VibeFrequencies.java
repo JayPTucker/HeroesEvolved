@@ -92,7 +92,9 @@ public final class VibeFrequencies {
 
     private VibeFrequencies() {}
 
-    static boolean worlds(ServerPlayer player) { return SkillTreeService.has(player, "vibe_world_frequency"); }
+    static boolean worlds(ServerPlayer player) {
+        return SkillTreeService.has(player, "vibe_world_frequency") || com.jayptucker.heroesevolved.amplify.Amplification.overcharged(player);
+    }
 
     /** How many frequencies this viber can hold now. */
     public static int slots(ServerPlayer player) {

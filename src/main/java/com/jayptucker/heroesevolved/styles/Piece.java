@@ -246,7 +246,20 @@ public enum Piece {
     FINISH_NOTE(30), FINISH_SILENCE(32), FINISH_CRUSH(28), FINISH_TOSS(34), FINISH_PHASE(28), FINISH_HEAVY(30),
     FINISH_BUBBLE_CRUSH(30), FINISH_LENS(26), FINISH_NO_PAIN(32), FINISH_GRIP(28), FINISH_HALF_LIFE(34),
     FINISH_POCKET_SUN(34), FINISH_BREACH(30), FINISH_POINT_BLANK(26), FINISH_KILL_SWITCH(30), FINISH_OVERCLOCK(28),
-    FINISH_HAMMER(30), FINISH_ORBIT(30), FINISH_ECHO(28), FINISH_BORROW(16), FINISH_APEX(30), FINISH_FACE(30);
+    FINISH_HAMMER(30), FINISH_ORBIT(30), FINISH_ECHO(28), FINISH_BORROW(16), FINISH_APEX(30), FINISH_FACE(30),
+    // Power Amplification, drawn by AmpArt (red lightning: crimson bodies in the soft pass, hot rims and pale cores in
+    // glow). A zap from the hand to an ally (bound to the amplifier; seed the ally's id); the crackle climbing an ally as a
+    // Surge takes hold (bound to the ally); an Overcharge's ring of sparks tightening round the ally (bound to the ally,
+    // its whole length); a bolt and a beam (origin the hand, target the end; bound to the caster; scale the strength);
+    // Van Full's burst (scale the radius); Shock Therapy's jolt (bound to whoever is jolted); Jumpstart into a block or a
+    // machine (origin the hand, target the block); A Thousand Times' gathering (bound) and its wave (scale the radius);
+    // the Partner thread (bound to the amplifier, seed the partner's id); Burnout and a misfire (bound to the victim);
+    // Doorbuster's blast; the Invisibility overcharge's dome (scale the radius); a storm bolt from the sky; the
+    // awakening; a backlash (bound).
+    AMP_ZAP(10), AMP_SURGE(24), AMP_OVERCHARGE(120), AMP_BOLT(8), AMP_BEAM(10), AMP_BURST(16), AMP_SHOCK(14),
+    AMP_JUMP(16), AMP_GATHER(40), AMP_WAVE(18), AMP_THREAD(12), AMP_BURNOUT(24), AMP_WILD(14), AMP_DOOR(14),
+    AMP_DOME(12), AMP_STORM(10), AMP_AWAKEN(30), AMP_BACKLASH(16),
+    FINISH_JUICE(30), FINISH_RED_WAVE(28), FINISH_REVERSE(26);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

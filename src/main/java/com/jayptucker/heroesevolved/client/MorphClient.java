@@ -282,9 +282,19 @@ public final class MorphClient {
         var pose = event.getPoseStack();
         pose.pushPose();
         if (Math.abs(size - 1) > 1.0E-3) pose.scale(size, size, size);
-        renderer.render(standIn, yaw, partial, pose, event.getMultiBufferSource(), event.getPackedLight());
+        drawingFor = player.getId();
+        try {
+            renderer.render(standIn, yaw, partial, pose, event.getMultiBufferSource(), event.getPackedLight());
+        } finally {
+            drawingFor = -1;
+        }
         pose.popPose();
     }
+
+    /** The wearer whose stand-in is being drawn right now, or -1: what the stand-in shows (a supercharged field) is theirs. */
+    private static int drawingFor = -1;
+
+    public static int drawingFor() { return drawingFor; }
 
     /** A creature wearing a borrowed face is drawn as that face (a person's double, or another creature). */
     @SubscribeEvent public static void renderCreature(net.neoforged.neoforge.client.event.RenderLivingEvent.Pre<?, ?> event) {
@@ -317,8 +327,13 @@ public final class MorphClient {
         standIn.hurtTime = who.hurtTime;
         standIn.walkAnimation.setSpeed(who.walkAnimation.speed());
         float partial = event.getPartialTick();
-        Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(standIn).render(standIn,
-                Mth.lerp(partial, who.yRotO, who.getYRot()), partial, event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight());
+        drawingFor = who.getId();
+        try {
+            Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(standIn).render(standIn,
+                    Mth.lerp(partial, who.yRotO, who.getYRot()), partial, event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight());
+        } finally {
+            drawingFor = -1;
+        }
     }
 
     /** Your own double's name tag stays hidden from you, as your own name tag is. */

@@ -148,7 +148,7 @@ public final class RegenerationService {
         // The glass comes out first: every arrow and stinger lodged in her is pushed out, and each one feeds Regrowth.
         int lodged = pullOutLodged(player);
         int spent = spendRegrowth(player, MAX_REGROWTH);
-        float heal = 4.0F + 2.0F * powerLevel + spent / 8.0F;
+        float heal = (4.0F + 2.0F * powerLevel + spent / 8.0F) * (com.jayptucker.heroesevolved.amplify.Amplification.surged(player) ? 1.5F : 1);
         float overflow = Math.max(0, player.getHealth() + heal - player.getMaxHealth());
         player.heal(heal);
         if (overflow > 0) {

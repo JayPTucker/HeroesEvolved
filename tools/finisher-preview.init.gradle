@@ -20,6 +20,8 @@ allprojects {
                 }
             }
             tasks.named('runClient') { dependsOn(tasks.named('finisherPreviewClasses')) }
+            // Pass when every finisher ran (PREVIEW_DONE), not on the exit code the closing halt leaves.
+            apply from: rootProject.file('tools/preview-result.gradle')
         }
     }
 }

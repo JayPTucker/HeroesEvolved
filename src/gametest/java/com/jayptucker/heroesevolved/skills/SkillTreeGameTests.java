@@ -29,7 +29,8 @@ import java.util.*;
 public final class SkillTreeGameTests {
     private static final List<String> POWERS = List.of("quake", "flight", "cryokinesis", "electrokinesis", "telekinesis",
             "telepathy", "regeneration", "time_manipulation", "radiation", "sonic_resonance", "superspeed", "pyrokinesis",
-            "invisibility", "phasing", "empathic_mimicry", "technopathy", "matter_assembly", "vibe", "shapeshifting", "hydrokinesis");
+            "invisibility", "phasing", "empathic_mimicry", "technopathy", "matter_assembly", "vibe", "shapeshifting", "hydrokinesis",
+            "power_amplification");
     private static ResourceLocation id(String power) { return ResourceLocation.fromNamespaceAndPath("heroesevolved", power); }
     private static ServerPlayer player(GameTestHelper h, String power, int level) {
         var p = new FakePlayer(h.getLevel(), new GameProfile(UUID.randomUUID(), "skill-test"));
@@ -187,7 +188,7 @@ public final class SkillTreeGameTests {
     public static void allThirtyOptionalSkillsHaveGameplayConsequences(GameTestHelper h) {
         for (String power : POWERS) {
             // These physical/stateful kits have dedicated travel, field and lifecycle tests.
-            if (Set.of("flight", "telekinesis", "telepathy", "cryokinesis", "technopathy", "matter_assembly", "invisibility", "vibe", "shapeshifting", "hydrokinesis").contains(power)) continue;
+            if (Set.of("flight", "telekinesis", "telepathy", "cryokinesis", "technopathy", "matter_assembly", "invisibility", "vibe", "shapeshifting", "hydrokinesis", "power_amplification").contains(power)) continue;
             var p = player(h, power, 5);
             try {
                 for (int branch = 0; branch < 3; branch++) {

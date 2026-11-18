@@ -80,6 +80,7 @@ public final class AbilitySlotHudOverlay {
         com.jayptucker.heroesevolved.client.PyroFlightClient.gauges(gauges);
         com.jayptucker.heroesevolved.client.OpticalClient.gauges(gauges);
         com.jayptucker.heroesevolved.client.TelepathyClient.gauges(gauges);
+        com.jayptucker.heroesevolved.client.ClientAmp.gauges(gauges);
         HudGauges.burn(gauges);
         y = HudGauges.row(guiGraphics, START_X, y + 2, gauges);
         // Words stay only for what you must do right now.

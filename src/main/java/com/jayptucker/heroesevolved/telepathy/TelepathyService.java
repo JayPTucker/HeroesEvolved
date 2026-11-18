@@ -65,7 +65,7 @@ public final class TelepathyService {
     // ------------------------------------------------------------------
 
     public static LivingEntity mindInSight(ServerPlayer player, double range) {
-        return Targeting.livingEntityInSight(player, range,
+        return Targeting.livingEntityInSight(player, range * com.jayptucker.heroesevolved.amplify.Amplification.reach(player),
                 target -> !(target instanceof TemporalEchoEntity));
     }
 

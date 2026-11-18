@@ -171,7 +171,7 @@ public final class SetPieceClient {
         if (mc.level == null || ACTIVE.isEmpty() && !SpeedArt.live() && !RewindArt.live() && !FlightArt.live()
                 && !PyroArt.live() && !ShapeArt.live() && !HydroArt.live() && !CryoConstructArt.live(mc.level) && !ClientProjectileTime.hasControlledShots()
                 && !com.jayptucker.heroesevolved.client.effects.intro.SkyFightArt.live() && !TakedownArt.live() && !GiftArt.live() && !VillageArt.flaresLive()
-                && !SlowTimeArt.live()) return;
+                && !SlowTimeArt.live() && !AmpArt.live()) return;
         if (world != mc.level) { ACTIVE.clear(); world = mc.level; }
         Vec3 camera = event.getCamera().getPosition();
         Canvas c = CANVAS;
@@ -235,6 +235,7 @@ public final class SetPieceClient {
             CryoConstructArt.draw(c);
             TemporalProjectileArt.draw(c);
             SlowTimeArt.drawLive(c);
+            AmpArt.drawLive(c);
         } catch (RuntimeException broken) {
             HeroesEvolved.LOGGER.warn("Live power effects failed to draw", broken);
         }

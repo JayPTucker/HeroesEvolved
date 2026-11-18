@@ -85,7 +85,7 @@ public final class StaminaDrain {
                     empty.add(drain);
                     continue;
                 }
-                if (!PlayerEnergyService.drain(player, drain.perSecond() / 20.0D)) {
+                if (!PlayerEnergyService.drain(player, drain.perSecond() / 20.0D * com.jayptucker.heroesevolved.amplify.Amplification.drain(player))) {
                     stop(player, drain.id());
                     empty.add(drain);
                     continue;

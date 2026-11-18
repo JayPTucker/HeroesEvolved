@@ -137,6 +137,13 @@ public final class PowerArmPoses {
         // Inward rotation is negative for the right arm and positive for the left.
         float inward = rightHanded ? -1.0F : 1.0F;
 
+        if (AmpPoses.owns(pose)) {
+            AmpPoses.third(model, pose, id, ageInTicks, aimX, aimY, main, rightHanded ? model.leftArm : model.rightArm, inward);
+            model.rightSleeve.copyFrom(model.rightArm);
+            model.leftSleeve.copyFrom(model.leftArm);
+            return;
+        }
+
         switch (pose) {
             case ELECTRO_DRAW -> {
                 float load = smooth(ClientArmPoseState.ageTicks(id) / 5F);
