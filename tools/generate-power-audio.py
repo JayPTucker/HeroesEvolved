@@ -1167,7 +1167,7 @@ SUBTITLES = {
     "invisibility": ("Force field hums", "Force field booms", "Force field builds", "Force field thuds", "Force field fades", "Force palm thuds", "Force field shimmers"),
     "matter_assembly": ("Matter assembles", "Construct locks together", "Matter ratchets", "Shard strikes", "Construct comes apart", None, None),
     "empathic_mimicry": ("Echo chimes", "Echoes swell", "Echoes gather", "Echo rings", "Echoes fade", None, None),
-    "phasing": ("Body phases", "Density thuds", "Density shifts", "Dense blow lands", "Body solidifies", "Ghost fist swings", "Body slips"),
+    "phasing": ("Earth moves", "Earth thuds", "Ground rumbles", "Rock lands", "Ground settles", "Stone fist swings", "Ground slides"),
     "pyrokinesis": ("Fire whooshes", "Fire roars", "Flames build", "Fire bursts", "Flames die down", "Flame punch", "Flame jets"),
     "quake": ("Ground thumps", "Earth rumbles", "Tremor builds", "Rock cracks", "Ground settles", "Pressure palm thuds", "Ground scrapes"),
     "radiation": ("Radiation crackles", "Reactor booms", "Radiation builds", "Radiation burns", "Radiation cools", None, None),

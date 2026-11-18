@@ -500,6 +500,12 @@ public final class PowerArmPoses {
                 set(model.rightArm, -.85F - tuck * .28F + plunge * 1.65F, -.35F + plunge * .26F, .21F);
                 set(model.leftArm, -.85F - tuck * .28F + plunge * 1.65F, .35F - plunge * .26F, -.21F);
             }
+            case EARTH_STANCE, EARTH_LIFT, EARTH_STRIKE, EARTH_STOMP, EARTH_RAISE, EARTH_WALL, EARTH_SHOVE, EARTH_HEAVE,
+                    EARTH_SLAM, EARTH_CLAW, EARTH_GAUNTLET, EARTH_SURF, EARTH_LISTEN, EARTH_CRUSH, EARTH_TENT, EARTH_SLIDE_LEFT,
+                    EARTH_SLIDE_RIGHT ->
+                    earthbend(pose, main, rightHanded ? model.leftArm : model.rightArm,
+                            rightHanded ? model.rightLeg : model.leftLeg, rightHanded ? model.leftLeg : model.rightLeg,
+                            inward, aimX, aimY, ClientArmPoseState.ageTicks(id), ageInTicks, rightHanded);
             case FIRE_JAB, FIRE_CROSS, FIRE_KICK, FIRE_SWEEP_KICK, FIRE_STEP, FIRE_FLIP, FINISH_DRAGON ->
                     firebend(model, entity, pose, main, rightHanded ? model.leftArm : model.rightArm,
                             rightHanded ? model.rightLeg : model.leftLeg, rightHanded ? model.leftLeg : model.rightLeg,
@@ -1498,6 +1504,130 @@ public final class PowerArmPoses {
      * never a straight jab: a whip drawn overhead and cracked down, a heave from the hips, arms circling with the
      * octopus's, a surfer's balance.
      */
+    /**
+     * Density's earthbending, after Hung Gar. The feet are always set wide (Horse Stance) and the power comes up from them:
+     * a bridge arm out in front and a fist chambered at the hip; palms rising to lift a stone; a straight punch from the
+     * hip; a knee raised and stamped; palms thrust up for a pillar; forearms brought up edge-on for a wall; both palms
+     * driven forward; arms straining overhead to hold a mountain up and fists brought down to drop it; a tiger claw raked
+     * across; a gauntlet thrown out straight; a surfer's crouch; palms laid flat over the ground to listen; a raised fist
+     * crushing; arms swept up and apart for a tent; and a braced side-on slide over a low palm.
+     */
+    private static void earthbend(ArmPose pose, ModelPart main, ModelPart off, ModelPart rear, ModelPart lead,
+                                  float inward, float aimX, float aimY, float age, float ticks, boolean rightHanded) {
+        // Horse Stance's legs under every earth pose: wide, the lead knee a touch forward. Always fully set (a ramp from
+        // legs-together made every change of move snap the legs shut and open again).
+        float wide = 1;
+        set(lead, -.12F * wide, 0, inward * .5F * wide);
+        set(rear, .1F * wide, 0, -inward * .5F * wide);
+        switch (pose) {
+            case EARTH_STANCE -> {
+                float breath = Mth.sin(ticks * .12F) * .03F;
+                set(off, -1.15F * wide + breath, -inward * .25F, inward * .08F);
+                set(main, .3F * wide - breath, 0, -inward * .14F);
+            }
+            case EARTH_LIFT -> {
+                float rise = smooth(age / 5F);
+                float x = Mth.lerp(rise, .25F, -1.25F);
+                set(main, x, inward * .18F * rise, -inward * .12F);
+                set(off, x, -inward * .18F * rise, inward * .12F);
+            }
+            case EARTH_STRIKE -> {
+                float punch = smooth(age / 1.5F), recover = smooth((age - 5) / 5F);
+                set(main, Mth.lerp(recover, Mth.lerp(punch, .35F, aimX), -.3F), aimY * punch * (1 - recover), -inward * .1F * (1 - punch));
+                set(off, Mth.lerp(punch, -1F, .35F), 0, inward * .14F);
+                set(lead, -.35F * wide, 0, inward * .35F);
+                set(rear, .3F * wide, 0, -inward * .35F);
+            }
+            case EARTH_STOMP -> {
+                float raise = smooth(age / 2.5F), stamp = smooth((age - 2.5F) / 1.5F), recover = smooth((age - 9) / 5F);
+                set(lead, Mth.lerp(stamp, -1.25F * raise, -.1F), 0, inward * Mth.lerp(stamp, .15F, .5F));
+                float x = Mth.lerp(stamp, -1.5F * raise, -.35F);
+                x = Mth.lerp(recover, x, -.5F);
+                set(main, x, 0, -inward * (.2F + .35F * stamp));
+                set(off, x, 0, inward * (.2F + .35F * stamp));
+            }
+            case EARTH_RAISE -> {
+                float low = smooth(age / 1.5F), up = smooth((age - 1.5F) / 2.5F), recover = smooth((age - 9) / 5F);
+                float x = Mth.lerp(up, Mth.lerp(low, -.3F, .35F), -2.55F);
+                x = Mth.lerp(recover, x, -.6F);
+                set(main, x, inward * .1F, -inward * .15F);
+                set(off, x, -inward * .1F, inward * .15F);
+            }
+            case EARTH_WALL -> {
+                float up = smooth((age - 1) / 2.5F), recover = smooth((age - 10) / 5F);
+                float x = Mth.lerp(recover, Mth.lerp(up, -.3F, -1.95F), -.7F);
+                set(main, x, inward * .3F * up, 0);
+                set(off, x, -inward * .3F * up, 0);
+            }
+            case EARTH_SHOVE -> {
+                float draw = smooth(age / 1.5F), thrust = smooth((age - 1.5F) / 1.5F), recover = smooth((age - 7) / 5F);
+                float x = Mth.lerp(thrust, Mth.lerp(draw, -.6F, -.9F), aimX + .05F);
+                x = Mth.lerp(recover, x, -.5F);
+                set(main, x, inward * .12F * thrust + aimY * thrust, -inward * .15F * (1 - thrust));
+                set(off, x, -inward * .12F * thrust + aimY * thrust, inward * .15F * (1 - thrust));
+                set(lead, -.4F * wide, 0, inward * .3F);
+                set(rear, .35F * wide, 0, -inward * .3F);
+            }
+            case EARTH_HEAVE -> {
+                float up = smooth(age / 4F), strain = Mth.sin(ticks * 1.7F) * .035F * up;
+                set(main, -2.45F * up + strain, inward * .12F, -inward * (.35F + strain));
+                set(off, -2.45F * up - strain, -inward * .12F, inward * (.35F - strain));
+            }
+            case EARTH_SLAM -> {
+                float over = smooth(age / 1.2F), down = smooth((age - 1.2F) / 1.8F), recover = smooth((age - 8) / 5F);
+                float x = Mth.lerp(down, -2.95F * over, -.4F);
+                x = Mth.lerp(recover, x, -.4F);
+                set(main, x, inward * .15F, -inward * .1F);
+                set(off, x, -inward * .15F, inward * .1F);
+            }
+            case EARTH_CLAW -> {
+                float rake = smooth(age / 1.8F), recover = smooth((age - 5) / 4F);
+                set(off, Mth.lerp(recover, Mth.lerp(rake, -2.0F, aimX + .35F), -1.1F),
+                        Mth.lerp(rake, -inward * .45F, inward * .35F) + aimY * rake, inward * .12F);
+                set(main, .35F, 0, -inward * .14F);
+                set(lead, -.3F * wide, 0, inward * .4F);
+            }
+            case EARTH_GAUNTLET -> {
+                float out = smooth(age / 1.4F), recover = smooth((age - 7) / 5F);
+                set(main, Mth.lerp(recover, Mth.lerp(out, .3F, aimX), -.4F), aimY * out * (1 - recover), 0);
+                set(off, .35F, 0, inward * .14F);
+            }
+            case EARTH_SURF -> {
+                float settle = smooth(age / 4F), sway = Mth.sin(ticks * .25F);
+                set(off, (-1.0F + .1F * sway) * settle, -inward * .2F, inward * (.6F + .1F * sway) * settle);
+                set(main, (.3F - .1F * sway) * settle, inward * .2F, -inward * (.8F - .1F * sway) * settle);
+                set(lead, -.45F * settle, inward * .15F, inward * .2F);
+                set(rear, (.4F + .05F * sway) * settle, -inward * .15F, -inward * .2F);
+            }
+            case EARTH_LISTEN -> {
+                float lay = smooth(age / 5F), breath = Mth.sin(ticks * .1F) * .02F;
+                set(main, -.5F * lay + breath, 0, -inward * .45F * lay);
+                set(off, -.5F * lay - breath, 0, inward * .45F * lay);
+            }
+            case EARTH_CRUSH -> {
+                float up = smooth(age / 1.5F), clench = smooth((age - 2) / 2F), shake = Mth.sin(ticks * 2.3F) * .04F * clench;
+                set(main, -2.0F * up + .45F * clench + shake, inward * .1F, -inward * .1F);
+                set(off, .35F, 0, inward * .14F);
+            }
+            case EARTH_TENT -> {
+                float up = smooth(age / 3F), apart = smooth((age - 3) / 5F);
+                set(main, -2.6F * up + .4F * apart, 0, -inward * (.2F + .7F * apart));
+                set(off, -2.6F * up + .4F * apart, 0, inward * (.2F + .7F * apart));
+            }
+            case EARTH_SLIDE_LEFT, EARTH_SLIDE_RIGHT -> {
+                // The palm on the side the ground carries you hangs low over it; the other holds the guard.
+                boolean towardOff = (pose == ArmPose.EARTH_SLIDE_LEFT) == rightHanded;
+                ModelPart low = towardOff ? off : main, guard = towardOff ? main : off;
+                float out = low == off ? inward : -inward, on = smooth(age / 1.5F);
+                set(low, -.35F * on, 0, out * .95F * on);
+                set(guard, -1.15F * on, (low == off ? -inward : inward) * .3F, 0);
+                set(lead, -.1F, 0, inward * .65F * on);
+                set(rear, .1F, 0, -inward * .65F * on);
+            }
+            default -> { }
+        }
+    }
+
     private static void waterbend(PlayerModel<?> model, LivingEntity entity, ArmPose pose, ModelPart main, ModelPart off,
                                   ModelPart rear, ModelPart lead, float inward, float aimX, float aimY, float age) {
         switch (pose) {

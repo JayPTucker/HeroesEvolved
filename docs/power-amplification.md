@@ -79,7 +79,7 @@ switches it all off, as it does every power.
 | Quake | Strain builds half as fast. | **Aftershock:** no Strain at all, and every move hits as hard as at full Strain. *Backlash:* all the Strain comes due at once (it fills to 90). |
 | Sonic Resonance | Resonance builds twice as fast, and every Cry leaves its targets Ringing. | **Glass-breaker:** Resonance stays full, and a Cry shatters glass, ice and soft stone where it lands. *Backlash:* your voice gives out for four seconds. |
 | Telekinesis | A Grip holds twice as long. | **Everything at once:** every foe in front, within ten blocks, rises off the ground for the Overcharge. *Backlash:* a nosebleed while it holds. |
-| Density | Harden lasts twice as long. | **Ghost party:** friends within four blocks of you take no harm. *Backlash:* you come out heavy and slow. |
+| Density | Stone Skin lasts twice as long. | **Shelter of ground:** friends within four blocks of you take no harm. *Backlash:* your legs turn to stone and drag (slowed). |
 | Invisibility (force fields) | A Lens Shield holds twice the Pressure. | **A dome for everyone:** a dome six blocks across over where you stood; friends inside take no harm from outside it. *Backlash:* it takes all your stamina. |
 | Regeneration | Rapid Mending heals half again as much. | **The passive answered:** your healing spills over to friends within four blocks. *Backlash:* your Regrowth is spent. |
 | Induced Radioactivity | The Core fills half again as fast: amplifying a radioactive friend is a risk. | **The Core pours out:** every second, foes within eight blocks are dosed and ten Core vents. *Backlash:* 40 Core floods back. |

@@ -219,6 +219,44 @@ public final class FightingStylePoseRenderer {
                 drop = .38F * on;
                 pitch = 4 * on;
             }
+            // Density's earthbending (Hung Gar): the body sits low in Horse Stance, turns behind its punches, leans over a
+            // shove or a slam, and rides an Earth Surf side-on.
+            // Held level from one move to the next (a ramp from standing bobbed the body at every change).
+            case EARTH_STANCE, EARTH_LISTEN, EARTH_LIFT, EARTH_RAISE, EARTH_WALL, EARTH_HEAVE, EARTH_TENT, EARTH_CRUSH -> drop = .1F;
+            case EARTH_STRIKE, EARTH_GAUNTLET -> {
+                float punch = smooth(age / 1.5F) * (1 - smooth((age - 5) / 5F));
+                twist = -18 * handed * punch;
+                drop = .08F;
+            }
+            case EARTH_CLAW -> {
+                twist = 14 * handed * smooth(age / 1.5F) * (1 - smooth((age - 5) / 4F));
+                drop = .08F;
+            }
+            case EARTH_SHOVE -> {
+                pitch = 9 * smooth((age - 1.5F) / 1.5F) * (1 - smooth((age - 7) / 4F));
+                drop = .1F;
+            }
+            case EARTH_STOMP -> {
+                float lift = smooth(age / 2.5F) * (1 - smooth((age - 2.5F) / 1.5F));
+                drop = .12F * smooth((age - 3) / 1.5F) - .06F * lift;
+                pitch = 6 * smooth((age - 3) / 1.5F) * (1 - smooth((age - 8) / 4F));
+            }
+            case EARTH_SLAM -> {
+                pitch = 15 * smooth((age - 1) / 2F) * (1 - smooth((age - 7) / 5F)) - 5 * smooth(age / 1.5F) * (1 - smooth((age - 1) / 2F));
+                drop = .14F * smooth((age - 1) / 2F);
+            }
+            case EARTH_SURF -> {
+                float settle = smooth(age / 4F);
+                float turn = Mth.clamp(Mth.wrapDegrees(player.getYRot() - player.yRotO) * .9F, -18, 18);
+                twist = 50 * handed * settle;
+                roll = -turn * settle;
+                drop = (.14F + .03F * Mth.sin(age * .25F)) * settle;
+            }
+            case EARTH_SLIDE_LEFT, EARTH_SLIDE_RIGHT -> {
+                float on = smooth(age / 1.5F) * (1 - smooth((age - 8) / 5F));
+                roll = (pose == ArmPose.EARTH_SLIDE_RIGHT ? -9 : 9) * on;
+                drop = .16F * on;
+            }
             default -> { return; }
         }
         if (twist == 0 && pitch == 0 && roll == 0 && drop == 0) return;

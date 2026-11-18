@@ -211,7 +211,7 @@ public final class Takedowns {
             com.jayptucker.heroesevolved.sonic.SonicFinishers.SILENCE,
             com.jayptucker.heroesevolved.telekinesis.KineticFinishers.CRUSH,
             com.jayptucker.heroesevolved.telekinesis.KineticFinishers.TOSS,
-            com.jayptucker.heroesevolved.phasing.DensityFinishers.PHASE_PUNCH,
+            com.jayptucker.heroesevolved.phasing.DensityFinishers.ROCK_CLAP,
             com.jayptucker.heroesevolved.phasing.DensityFinishers.HEAVY_HAND,
             com.jayptucker.heroesevolved.invisibility.ForceFinishers.BUBBLE_CRUSH,
             com.jayptucker.heroesevolved.invisibility.ForceFinishers.LENS_STRIKE,

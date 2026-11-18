@@ -7,21 +7,21 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-/** A phaser's own Density dial (-100 Full Ghost to 100 Full Dense) and Breath underground (-1 above ground), for the HUD. */
-public record DensityPayload(int density, int breath) implements CustomPacketPayload {
+/** An earthbender's own Root (0 to 100), whether they hold Horse Stance, and Breath underground (-1 above ground), for the HUD. */
+public record DensityPayload(int root, boolean stance, int breath) implements CustomPacketPayload {
     public static final Type<DensityPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "density"));
     public static final StreamCodec<RegistryFriendlyByteBuf, DensityPayload> STREAM_CODEC = StreamCodec.of(
-            (b, v) -> { b.writeVarInt(v.density + 100); b.writeVarInt(v.breath + 1); },
-            b -> new DensityPayload(b.readVarInt() - 100, b.readVarInt() - 1));
+            (b, v) -> { b.writeVarInt(v.root); b.writeBoolean(v.stance); b.writeVarInt(v.breath + 1); },
+            b -> new DensityPayload(b.readVarInt(), b.readBoolean(), b.readVarInt() - 1));
 
     @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
-    public static void send(net.minecraft.server.level.ServerPlayer player, int density, int breath) {
+    public static void send(net.minecraft.server.level.ServerPlayer player, int root, boolean stance, int breath) {
         if (player.connection == null) return;
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, new DensityPayload(density, breath));
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, new DensityPayload(root, stance, breath));
     }
 
     public static void handle(DensityPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> ClientDensity.set(payload.density(), payload.breath()));
+        context.enqueueWork(() -> ClientDensity.set(payload.root(), payload.stance(), payload.breath()));
     }
 }

@@ -63,19 +63,21 @@ double.
 | **Spin Glide** (back) | A spinning backward glide that throws frost as it turns. |
 | **Cold Snap** (counter) | The attacker freezes solid, and the next jab shatters them for double. |
 
-## Ghost Fist (Density)
+## Tiger and Crane (Density)
 
-Every blow goes in intangible and turns solid inside the target, so it ignores armour, and each blow in a combo is a
-quarter denser (harder) than the last, up to four.
+Density's earthbending, after Hung Gar. Every blow pulls rock up out of the ground into the hand, and an earthbender
+doesn't hop out of the way: the side "dodge" is the ground carrying you, braced. Every blow is a quarter harder at full
+Root (see [density.md](density.md#root-and-footing)).
 
 | Move | What happens |
 | --- | --- |
-| **Ghost Jab** (lead, rear) | A fist through armour, 4 blocks. |
-| **Stone Hammer** (finisher) | Both fists turned to stone and brought down together, 4.5 blocks, pinning the foe to the ground. |
-| **Soft Ground** (low) | The ground round you goes soft (3.5 blocks) and foes sink to the shins. |
-| **Phase Slip** (side) | The body goes intangible for longer than any other style's dodge; blows and bodies pass through. |
-| **Sink and Surface** (back) | You sink into the floor and come up a few blocks away. |
-| **Reach Through** (counter) | The next jab reaches the attacker across nine blocks, through walls. |
+| **Tiger Claw** (lead) | A raking claw with stone closing over the fist, 4 blocks. |
+| **Gauntlet Claw** (rear) | The rear fist lands in a full stone gauntlet: 40% harder and a bigger shove. |
+| **Twin Slab** (finisher) | Both palms drive a slab of ground out ahead into everything in front of you (5 blocks), knocking it back. |
+| **Horse Stomp** (low) | A ring of stone spikes stabs up round you (3.5 blocks): hurt, slowed and bounced. |
+| **Earth Slide** (side) | The ground carries you sideways, upright and braced: a blow taken in it lands at half strength. |
+| **Sink and Surface** (back) | You sink into the floor and come up a few blocks away; blows miss you under it. |
+| **Neutral Jing** (counter) | The first blow taken in an Earth Slide: a pillar answers the attacker at once, and the next claw goes to them, half again as hard. |
 
 ## Reckless Brawler (Regeneration)
 

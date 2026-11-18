@@ -69,7 +69,7 @@ Meltdowns became dangerous to stand near and a speedster's top speeds dangerous 
 - **Compact HUD rings.** `gui/HudGauges` draws a row of small ring gauges (Momentum with run-speed pips, Overrun, heat,
   skin) as quads in `RenderType.gui()` (`arc`: a ring segment clockwise from the top), with the value in the middle at
   half or three-quarter scale and a tiny label or setting pips under it. Every power's readout is one (radiation Core,
-  Resonance in a rainbow, Strain, a two-way Density dial and Breath, Regrowth and the downed timer, Flight, Momentum and
+  Resonance in a rainbow, Strain, Density's Root (and Breath while tunnelling), Regrowth and the downed timer, Flight, Momentum and
   Overrun, heat and skin): each adds `HudGauges.Gauge.ring(...)` (or `dial`) to one list, and `HudGauges.row` draws
   them, wrapping at the screen's edge. Words remain only for an instruction you need right now (giving up when down,
   steering a flight maneuver). Each ring

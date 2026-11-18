@@ -11,7 +11,7 @@ import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.hydro.HydroService;
 import com.jayptucker.heroesevolved.invisibility.ForceStyle;
 import com.jayptucker.heroesevolved.mimicry.MimicryService;
-import com.jayptucker.heroesevolved.phasing.DensityStyle;
+import com.jayptucker.heroesevolved.phasing.EarthStyle;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.pyro.PyroCombat;
 import com.jayptucker.heroesevolved.quake.QuakeKit;
@@ -139,7 +139,7 @@ public final class FightingStylesGameTests {
     public static void iceSkaterCombo(GameTestHelper h) { combo(h, ModAbilities.CRYOKINESIS_ID, CryoStyle.STYLE, () -> {}); }
 
     @GameTest(template = "rewind_empty", batch = "styles.density_combo")
-    public static void ghostFistCombo(GameTestHelper h) { combo(h, ModAbilities.PHASING_ID, DensityStyle.STYLE, () -> {}); }
+    public static void tigerAndCraneCombo(GameTestHelper h) { combo(h, ModAbilities.PHASING_ID, EarthStyle.STYLE, () -> {}); }
 
     @GameTest(template = "rewind_empty", batch = "styles.regen_combo")
     public static void recklessBrawlerCombo(GameTestHelper h) { combo(h, ModAbilities.REGENERATION_ID, RegenStyle.STYLE, () -> {}); }
@@ -231,22 +231,23 @@ public final class FightingStylesGameTests {
     }
 
     @GameTest(template = "rewind_empty", batch = "styles.density_moves")
-    public static void ghostFistsGrowHeavierAndPhaseSlipsLast(GameTestHelper h) {
+    public static void tigerClawsLandInAGauntletAndTheGroundCarriesYou(GameTestHelper h) {
         ServerPlayer p = fighter(h, ModAbilities.PHASING_ID, 1);
         LivingEntity a = foe(h, p, 3, 0);
         aim(p, a);
         guarded(p, () -> {
             float before = a.getHealth();
-            DensityStyle.STYLE.strike(p);
+            EarthStyle.STYLE.strike(p);
             float first = before - a.getHealth();
-            DensityStyle.STYLE.fighter(p).readyAt = -1000;
+            EarthStyle.STYLE.fighter(p).readyAt = -1000;
             a.invulnerableTime = 0;
             float mid = a.getHealth();
-            DensityStyle.STYLE.strike(p);
+            EarthStyle.STYLE.strike(p);
             float second = mid - a.getHealth();
-            h.assertTrue(second > first * 1.1F, "The second blow of a combo is denser than the first: " + first + " then " + second);
-            h.assertTrue(DensityStyle.STYLE.dodge(p, Dodge.LEFT), "A Phase Slip");
-            h.assertTrue(StyleMotion.evading(p), "Blows pass through");
+            h.assertTrue(first > 0, "A tiger claw lands");
+            h.assertTrue(second > first * 1.2F, "The rear claw lands in a stone gauntlet: " + first + " then " + second);
+            h.assertTrue(EarthStyle.STYLE.dodge(p, Dodge.LEFT), "An Earth Slide");
+            h.assertTrue(StyleMotion.bracing(p) && !StyleMotion.evading(p), "An earthbender braces instead of dodging");
         });
         forget(p);
         a.discard();

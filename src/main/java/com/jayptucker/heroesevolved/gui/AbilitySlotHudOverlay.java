@@ -200,7 +200,7 @@ public final class AbilitySlotHudOverlay {
             case "time_stop" -> ClientStamina.stillWorld();
             case "time_slow" -> ClientStamina.betweenSeconds();
             case "invisibility_fade" -> OpticalClient.faded();
-            case "phasing_shift" -> ClientDensity.get() != 0;
+            case "phasing_shift" -> ClientDensity.stance();
             case "hydro_octopus_form" -> ClientHydroState.octopus(entity);
             case "hydro_wave_rider" -> ClientHydroState.riding(entity);
             case "shapeshift_morph" -> MorphClient.form(entity) != null;
@@ -234,18 +234,17 @@ public final class AbilitySlotHudOverlay {
     }
 
     /**
-     * D.L. Hawkins's Density: a two-way dial, Ghost filling anticlockwise from the top and Dense clockwise, a notch at
-     * each setting. Underground, Breath runs out beside it.
+     * Density's Root: an earth-brown ring that fills while the bender stands planted on earth, jade once it is full (the
+     * earth hits a quarter harder), with a notch at half. In Horse Stance the label says so. Underground, Breath runs out
+     * beside it.
      */
     private static void density(List<HudGauges.Gauge> gauges) {
         var mc = Minecraft.getInstance();
         if (mc.player == null || !holds(ModAbilities.PHASING_ID)) return;
-        int density = com.jayptucker.heroesevolved.network.ClientDensity.get();
-        int notch = Math.round(density / 50F);
-        int color = density < 0 ? 0xFF7FE8D8 : density > 0 ? 0xFFB4B0A8 : 0xFFE6ECEA;
-        String setting = Component.translatable("density.heroesevolved.notch." + (notch + 2)).getString().toUpperCase(java.util.Locale.ROOT);
-        gauges.add(HudGauges.Gauge.dial(density / 100F, color).middle(density > 0 ? "+" + density : Integer.toString(density))
-                .label(setting).notches(-0.25F, 0, 0.25F, 0.5F));
+        int root = com.jayptucker.heroesevolved.network.ClientDensity.root();
+        boolean stance = com.jayptucker.heroesevolved.network.ClientDensity.stance();
+        int color = root >= 100 ? 0xFF7FC48A : stance ? 0xFFD8B47A : 0xFFB89A74;
+        gauges.add(HudGauges.Gauge.ring(root / 100F, color).middle(Integer.toString(root)).label(stance ? "STANCE" : "ROOT").notches(0.5F));
         int breath = com.jayptucker.heroesevolved.network.ClientDensity.breath();
         if (breath >= 0) {
             int air = breath > 25 || HudGauges.flash() ? 0xFF8FD8FF : 0xFFFF6A6A;

@@ -66,7 +66,7 @@ public final class FightingStyles {
             com.jayptucker.heroesevolved.speed.SpeedStyle.STYLE,
             com.jayptucker.heroesevolved.quake.QuakeStyle.STYLE,
             com.jayptucker.heroesevolved.cryo.CryoStyle.STYLE,
-            com.jayptucker.heroesevolved.phasing.DensityStyle.STYLE,
+            com.jayptucker.heroesevolved.phasing.EarthStyle.STYLE,
             com.jayptucker.heroesevolved.regeneration.RegenStyle.STYLE,
             com.jayptucker.heroesevolved.invisibility.ForceStyle.STYLE,
             com.jayptucker.heroesevolved.telekinesis.KineticStyle.STYLE,

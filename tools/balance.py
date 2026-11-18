@@ -180,12 +180,17 @@ act("radiation_pulse", "radiation", 2, "skill", "Fission Leap: a blast and a lau
 act("radiation_emp", "radiation", 3, "heavy", "kills machines for 10 s, shoves, reveals, vents Core", util=20)
 act("radiation_meltdown_beam", "radiation", 4, "skill", "a held beam that spends Core", fixed=18, cd=6)
 act("radiation_exploding_man", "radiation", 5, "ultimate", "Critical Mass: a 24-block nuclear blast after 25 s", fixed=120, cd=300)
-# --- Density
-act("phasing_shift", "phasing", 1, "basic", "a notch of density; holding it drains 1.7-3.3 a second", fixed=4, cd=.3)
-act("phasing_reach", "phasing", 1, "quick", "5 + tier that ignores armour, and no healing for 5 s", dmg=6 * 1.2, util=2)
-act("phasing_embed", "phasing", 2, "skill", "half into the floor for 5 s, taking 50% more", ctrl=5, util=6)
-act("phasing_sink", "phasing", 3, "quick", "move through the ground", util=16)
-act("phasing_hollow", "phasing", 5, "ultimate", "everyone in 6 + tier blocks sinks for 5 s", ctrl=5, n=4, dmg=4, ult=True)
+# --- Density (earthbending)
+act("phasing_shift", "phasing", 1, "basic", "Horse Stance toggle; holding it drains 3.3 a second (half with Wait and Listen). "
+    "Shift: Seismic Stomp", fixed=4, cd=.3, drain=3.3)
+act("phasing_reach", "phasing", 1, "quick", "Rock Strike: lift a stone (6 + tier) or hold for a boulder; the punch is free",
+    dmg=7 * .85, util=2)
+act("phasing_embed", "phasing", 2, "skill", "Earth Shackle: a 3 + tier s hold, 50% more taken; Crush (4 + tier) is free",
+    ctrl=5, util=4)
+act("phasing_sink", "phasing", 3, "quick", "Pillar (4 + tier and a throw, or a lift for you) or a wall that stops shots and "
+    "shoves (5 + tier)", dmg=7 * .75, util=10)
+act("phasing_hollow", "phasing", 5, "ultimate", "Rising Mountain: a telegraphed lift and slam, 8 + 2/tier to all on it",
+    dmg=18 * .75, n=3, ctrl=3, ult=True)
 # --- Space-Time Manipulation
 act("time_blink", "time_manipulation", 1, "quick", "Fold Space: 4 to start, 0.3 for every block folded", fixed=4, cd=1.5, per_block=0.3)
 act("time_slow", "time_manipulation", 1, "skill", "Between Seconds: held, 5 a second (recovery stops)", fixed=10, cd=2, drain=5)

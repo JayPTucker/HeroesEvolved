@@ -18,9 +18,9 @@ animations and the complete skill tree.
 
 ## Phasing (D.L. Hawkins)
 
-Phasing has been reworked as **Density**: a dial from Full Ghost to Full Dense, Reach Through, Embed,
-Sink and Hollow Ground. See [Density](density.md). Walking through walls at speed now belongs to
-Superspeed's Vibrate.
+Phasing was reworked as **Density**, and Density has since become **earthbending** after Hung Gar: Horse Stance and
+Root, Rock Strike, Earth Shackle, pillars and walls, and the Rising Mountain. See [Density](density.md). Walking
+through walls at speed belongs to Superspeed's Vibrate.
 
 ## Empathic Mimicry (Peter Petrelli)
 

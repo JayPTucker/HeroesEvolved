@@ -157,7 +157,9 @@ public enum Piece {
     // on an enemy, 33 on a friend, 16 + radius for growth)
     TIME_STASIS(12), TIME_RELEASE(18), TIME_ANCHOR(30), TIME_SECOND(20), TIME_SEAL(12), TIME_SEAL_BREAK(16), TIME_CUT(12),
     TIME_SNAP(14), TIME_MARK(12), TIME_FORWARD(24),
-    // Density's skill tree, drawn by DensityArt (surfaces that ripple like water, and stone): Pass Through's wake through
+    // Density's older (phasing) skill tree, drawn by DensityArt. Since the earthbending rework only Harden (Stone Skin),
+    // Rebound, the Pile Driver root, Sinkhole (Quicksand), Entombed, Uproot and Grasp from Below are still sent; the rest
+    // keep their places because pieces go over the network by ordinal. Pass Through's wake through
     // a body (scale is the body's height), an Ambush-primed hand (private, bound) and its strike, a wall left open by
     // Ghost Network (re-sent; +10 when Phase Carry opens it), Harden's stone skin (re-sent, bound; scale 1 + weight / 8)
     // and Rebound (scale is its radius), a Pile Driver or Crater Landing root, Sinkhole's warning and its soft ground
@@ -273,7 +275,12 @@ public enum Piece {
     AMP_ZAP(10), AMP_SURGE(24), AMP_OVERCHARGE(120), AMP_BOLT(8), AMP_BEAM(10), AMP_BURST(16), AMP_SHOCK(14),
     AMP_JUMP(16), AMP_GATHER(40), AMP_WAVE(18), AMP_THREAD(12), AMP_BURNOUT(24), AMP_WILD(14), AMP_DOOR(14),
     AMP_DOME(12), AMP_STORM(10), AMP_AWAKEN(30), AMP_BACKLASH(16),
-    FINISH_JUICE(30), FINISH_RED_WAVE(28), FINISH_REVERSE(26);
+    FINISH_JUICE(30), FINISH_RED_WAVE(28), FINISH_REVERSE(26),
+    // Density's earthbending (phasing/, art in EarthArt). Earth pieces made of a block carry its id in the seed.
+    EARTH_STANCE(16), EARTH_LIFT(14), EARTH_THROW(8), EARTH_SHATTER(16), EARTH_SHACKLE(20), EARTH_CRUSH(14), EARTH_TUNNEL(16),
+    EARTH_PILLAR(14), EARTH_WALL(14), EARTH_SHOVE(10), EARTH_MOUNTAIN_MARK(15), EARTH_MOUNTAIN(12), EARTH_MOUNTAIN_SLAM(30),
+    EARTH_GAUNTLET(16), EARTH_AVALANCHE(20), EARTH_TENT(20), EARTH_SURF(12), EARTH_STOMP(24), EARTH_LISTEN(12), EARTH_CLAW(8),
+    EARTH_SLAB(12), EARTH_SPIKES(16), EARTH_SLIDE(14);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

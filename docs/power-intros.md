@@ -48,7 +48,7 @@ After the power's own release, the danger itself is answered (`intro/PerilReleas
 
 | Danger | How it ends |
 | --- | --- |
-| A blast | Telekinesis throws creepers and TNT at the sky. Cryokinesis locks creepers in ice with their fuse run back and snuffs TNT. Sonic Resonance screams them too far away to matter. Phasing lets the blast go through. Superspeed and Flight carry the ward out and let it go off behind them. Every other power runs the creepers' fuses back and shoves TNT clear with time added. |
+| A blast | Telekinesis throws creepers and TNT at the sky. Cryokinesis locks creepers in ice with their fuse run back and snuffs TNT. Sonic Resonance screams them too far away to matter. Density slams a shell of rock up round them to take the blast. Superspeed and Flight carry the ward out and let it go off behind them. Every other power runs the creepers' fuses back and shoves TNT clear with time added. |
 | A fall | Telekinesis holds them and lets them down slowly. Cryokinesis lays powder snow where they were going to land, Hydrokinesis a pool, Matter Assembly a copper platform under their feet. Flight swoops in and carries them. |
 | Fire | Cryokinesis and Hydrokinesis turn the lava within four blocks to obsidian (cobblestone where it flowed), put out the fire, and stand the ward on top. Pyrokinesis gives a minute of fire immunity ("it does not burn you") and lifts them out of lava; Regeneration gives ten seconds of it. |
 | Drowning | Hydrokinesis gives water breathing and Dolphin's Grace and carries them up; Regeneration a breath and ten seconds of water breathing. |
@@ -61,10 +61,10 @@ once the intro ends (`intro/Surge`). The owner only watches: their body turns to
 in turn, the edges of sight pulse red, and the power's own moves come out.
 
 - **Powers with a fighting style** (Pyrokinesis, Electrokinesis, Hydrokinesis, Quake,
-  Cryokinesis, Phasing, Invisibility, Telekinesis) lunge across to the nearest
+  Cryokinesis, Density, Invisibility, Telekinesis) lunge across to the nearest
   attacker within 24 blocks and throw that style's real combo at them, three strikes, then turn
   to the next: firebending's jabs and kicks, a boxer's sparks, waterbending's whips, Pressure
-  Palm, the Ice Skater, Ghost Fist, Force Palm, the Puppeteer.
+  Palm, the Ice Skater, Tiger and Crane, Force Palm, the Puppeteer.
 - **The rest fire their own kit**, one move at each attacker in turn: Sonic Resonance four
   tapped Cries, Telepathy a Nightmare and two Suggestions, Matter Assembly three Shard Lances and
   a Cage, Technopathy an Intercept and a Tripwire, Shapeshifting a Decoy and a Reflection.
@@ -129,7 +129,7 @@ across to an ally ward (`intro/WardRelease`):
 | Power | What it does for an ally |
 | --- | --- |
 | Invisibility | The ward fades for five seconds; everything attacking them loses them. |
-| Phasing | The ward goes thin for five seconds (no harm reaches them) and the ripple shoves attackers away. |
+| Density | The ground rises round the ward as a shell of rock for five seconds (no harm reaches them) and throws attackers back. |
 | Empathic Mimicry | Their attackers are drained (Weakness II) and the strength flows into the ward (Strength, Regeneration II). |
 | Telepathy | A psychic shout into every mind attacking them: lost target, slowed, weakened and confused, and each one turned on the nearest of the others. |
 | Cryokinesis | Everything within nine blocks of them freezes solid for six seconds. |
@@ -150,7 +150,7 @@ across to an ally ward (`intro/WardRelease`):
 | --- | --- | --- |
 | Superspeed | Under a second of golden sparks while every threat slows to a crawl. | The rescue run above: out of any cave and far across the surface, carrying the ward. |
 | Invisibility | Two seconds of the owner's outline dissolving into violet and silver strips. | A shattering optic burst. The owner fades for five seconds, every threat targeting them loses them, a burst of force shoves everything within six blocks away (3 damage), and they get Speed II to slip away. |
-| Phasing | Two seconds of ghostly strands as the floor turns thin. | Concentric density ripples. Five seconds of full intangibility, and the ripple shoves threats away. |
+| Density | Two seconds of the ground humming, cracks creeping out from the feet. | The feet set into Horse Stance with full Root, and the ground jumps under whatever was attacking, shoving it away. |
 | Empathic Mimicry | Two and a half seconds of gold threads to every heartbeat nearby. | A nearby power is remembered if one exists; threats within eight blocks are weakened and pushed back while their strength drains into the owner (Strength I). |
 | Telepathy | Three seconds of growing whispers while nearby minds light up. | Every mind within 24 blocks glows; hostile minds within twelve lose their target, are slowed, weakened and confused, and turn on the nearest of each other. |
 | Cryokinesis | Three seconds of frost creeping outward and snow settling. | A crown of ice spikes and the large awakening cold dome freezes everything around the owner. |

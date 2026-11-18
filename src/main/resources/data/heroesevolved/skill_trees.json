@@ -3025,14 +3025,14 @@
     "branches": [
       [
         {
-          "name": "Through the Wall",
-          "description": "Reach Through finds an enemy behind up to two blocks of wall, and a hand that comes out of a wall lands 3 harder.",
-          "mechanic": "through_the_wall",
+          "name": "Stacked Stones",
+          "description": "Rock Strike lifts three stone discs instead of one stone. Each press throws the next disc, free, for a little over half a stone's damage.",
+          "mechanic": "stacked_stones",
           "level": 1
         },
         {
-          "name": "Pass Through",
-          "description": "Run straight through the enemy you look at within 10 blocks and come out behind them, facing them: 4 + level damage that ignores armor, they can't heal for three seconds, and they're slowed for two.",
+          "name": "Earth Gauntlet",
+          "description": "A glove of stone flies at the enemy you look at within 18 blocks: 4 + level damage, and it grabs them. With a wall within four blocks behind them it pins them to it for two and a half seconds; otherwise it drags them back to you.",
           "energy": 21,
           "cooldown": 160,
           "level": 2,
@@ -3040,15 +3040,15 @@
           "design_cooldown": 160
         },
         {
-          "name": "Inside Knowledge",
-          "description": "A body your hand has been inside can't heal for twice as long, and for that time your Ghost punches on it land at full strength, even at Full Ghost.",
-          "mechanic": "inside_knowledge",
+          "name": "Know Your Stone",
+          "description": "Rock hits like the ground it came from: sand blinds for two seconds, gravel bursts off your fist as three pellets, deepslate, basalt and obsidian hit 40% harder but fly slower, and mud and clay slow whatever they hit.",
+          "mechanic": "know_your_stone",
           "level": 3
         },
         {
           "id": "phasing_phase_carry",
-          "name": "Phase Carry",
-          "description": "Pass through the wall ahead, bringing up to three friends. For three seconds afterward, shots pass straight through them.",
+          "name": "Avalanche",
+          "description": "Tear five boulders out of the ground in a line ahead of you, one after another. They roll on over the ground for 16 blocks, hitting everything in their way for 5 + level and throwing it forward and up.",
           "active": true,
           "level": 3,
           "cost": 2,
@@ -3061,36 +3061,36 @@
         },
         {
           "id": "phasing_thicker_walls",
-          "name": "Ambush",
-          "description": "Stepping out of a wall primes your hand for three seconds: your next Reach Through costs nothing, waits on no cooldown and lands 4 harder.",
+          "name": "Shatterpoint",
+          "description": "A rock that breaks against a wall bursts into a fan of five stone shards that fly back off it, each hitting for about a third of the rock.",
           "active": false,
           "level": 4,
           "cost": 1,
           "requires": "phasing_phase_carry",
-          "mechanic": "ambush"
+          "mechanic": "shatterpoint"
         },
         {
           "id": "phasing_ghost_network",
-          "name": "Ghost Network",
-          "description": "Every wall you pass stays open for six seconds: friends and your pets who walk into either side come out of the other. You come out at Full Ghost, free of upkeep, for two seconds.",
+          "name": "Metalbending",
+          "description": "Metal moves for you too: iron, copper and gold count as earth to stand on and bend, iron doors and trapdoors open to your bare hand, and your rocks hit an armored foe 1 harder for each piece of armor it wears.",
           "active": false,
           "capstone": true,
           "level": 5,
           "cost": 3,
           "requires": "phasing_thicker_walls",
-          "mechanic": "ghost_network"
+          "mechanic": "metalbending"
         }
       ],
       [
         {
-          "name": "Pile Driver",
-          "description": "At Full Dense, a punch drives a standing enemy knee-deep into the ground for a second and a half (each enemy once every eight seconds).",
-          "mechanic": "pile_driver",
+          "name": "Sei Ping Ma",
+          "description": "Your Horse Stance runs deep: Root fills half again as fast, and in stance it never drains, not even in the air.",
+          "mechanic": "sei_ping_ma",
           "level": 1
         },
         {
-          "name": "Harden",
-          "description": "Snap to Full Dense, free of upkeep, for six seconds, banking the weight of every blow you take. Press again to Rebound: it all comes back out of the ground as a shockwave (wider and harder the more you took, up to 18 damage).",
+          "name": "Stone Skin",
+          "description": "Plates of ground climb onto you and hold Horse Stance for six seconds, free of upkeep, banking the weight of every blow you take. Press again to Rebound: it all comes back out of the ground as a shockwave (wider and harder the more you took, up to 18 damage).",
           "energy": 20,
           "cooldown": 300,
           "level": 2,
@@ -3098,15 +3098,15 @@
           "design_cooldown": 300
         },
         {
-          "name": "Crater Landing",
-          "description": "Your shockwaves (a Full Dense landing, Bedrock Slam, Rebound) root the enemies they hit knee-deep for two seconds instead of throwing them.",
-          "mechanic": "crater_landing",
+          "name": "Pile Driver",
+          "description": "In Horse Stance a punch drives a standing enemy knee-deep into the ground for a second and a half (each enemy once every eight seconds), and your shockwaves root the enemies they hit instead of throwing them.",
+          "mechanic": "pile_driver",
           "level": 3
         },
         {
           "id": "phasing_phase_lock",
-          "name": "Sinkhole",
-          "description": "Press down on a point up to 16 blocks away: after half a second the ground there goes soft for three seconds, and every enemy in it, or who walks in, sinks waist-deep for two.",
+          "name": "Quicksand",
+          "description": "Press down on a point up to 16 blocks away: after half a second the earth there turns to quicksand for three seconds, and every enemy in it, or who walks in, sinks waist-deep for two.",
           "active": true,
           "level": 3,
           "cost": 2,
@@ -3120,7 +3120,7 @@
         {
           "id": "phasing_long_lock",
           "name": "Set in Stone",
-          "description": "Enemies you embed can't struggle free, and each blow you land on one at Dense holds it a second longer (up to four).",
+          "description": "Enemies you hold in the ground can't struggle free, and each blow you land on one in stance holds it a second longer (up to four).",
           "active": false,
           "level": 4,
           "cost": 1,
@@ -3130,7 +3130,7 @@
         {
           "id": "phasing_entombed",
           "name": "Entombed",
-          "description": "Press Embed at an enemy you already hold in the ground and it closes right over them for three seconds: they take damage every second, then the ground throws them back up.",
+          "description": "Press Earth Shackle again at an enemy you have already crushed and the ground closes right over them for three seconds: they take damage every second, then the ground throws them back up.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -3141,14 +3141,14 @@
       ],
       [
         {
-          "name": "Uproot",
-          "description": "Surfacing under an enemy you hold in the ground tears them out of it: the uppercut deals double and throws them twice as high. Anyone you surface under can't heal for two seconds.",
-          "mechanic": "uproot",
+          "name": "Seismic Sense",
+          "description": "Stand still in Horse Stance and the ground tells you who walks on it: every footstep within 20 blocks shows as a ripple, through walls, once a second.",
+          "mechanic": "seismic_sense",
           "level": 1
         },
         {
-          "name": "Fade Through",
-          "description": "Three seconds at Full Ghost, free of upkeep. Every enemy you drift through takes 3 + half your level, is slowed, and can't heal for two seconds.",
+          "name": "Tunnel",
+          "description": "Drop into the ground and move through it, feeling the footsteps of everything above. Your Breath runs out in about ten seconds. Press again to surface with an uppercut for anyone standing over you.",
           "energy": 19,
           "cooldown": 240,
           "level": 2,
@@ -3157,14 +3157,14 @@
         },
         {
           "name": "Grasp from Below",
-          "description": "Reach Through while you are sunk grabs the nearest enemy standing above you by the ankles: they're pulled waist-deep for two seconds and can't heal.",
+          "description": "Rock Strike while you tunnel grabs the nearest enemy standing above you by the ankles: they're pulled waist-deep for two seconds and can't heal.",
           "mechanic": "grasp_from_below",
           "level": 3
         },
         {
           "id": "phasing_phase_fall",
-          "name": "Phase Fall",
-          "description": "Drop through the floor to the open space below with up to three friends. Shift rises instead.",
+          "name": "Earth Surf",
+          "description": "A wave of ground carries you along at speed for six seconds and climbs a block at a step; anyone in your way is bowled over for 3 + half your level.",
           "active": true,
           "level": 3,
           "cost": 2,
@@ -3177,52 +3177,52 @@
         },
         {
           "id": "phasing_deep_fall",
-          "name": "Deep Fall",
-          "description": "Phase Fall reaches 32 blocks, and dropping through at Dense lands as heavily as if you had fallen the whole way: a shockwave instead of a step.",
+          "name": "Uproot",
+          "description": "Surfacing from a tunnel under an enemy you hold in the ground tears them out of it: the uppercut deals double and throws them twice as high. Anyone you surface under can't heal for two seconds.",
           "active": false,
           "level": 4,
           "cost": 1,
           "requires": "phasing_phase_fall",
-          "mechanic": "deep_fall"
+          "mechanic": "uproot"
         },
         {
           "id": "phasing_untouchable",
-          "name": "Untouchable",
-          "description": "Holding a Ghost or Dense notch drains stamina half as fast, and a blow that would take you below a third of your health passes through you as you slip to Full Ghost for two seconds (once every 30 seconds).",
+          "name": "Wait and Listen",
+          "description": "Horse Stance costs half as much to hold. Stand still in it for a second and a half and you are listening: the next blow aimed at you never lands, a pillar answers it under the attacker, your Root fills, and your next blow lands half again as hard (once every ten seconds).",
           "active": false,
           "capstone": true,
           "level": 5,
           "cost": 3,
           "requires": "phasing_deep_fall",
-          "mechanic": "untouchable"
+          "mechanic": "wait_and_listen"
         }
       ]
     ],
     "branch_names": [
-      "INFILTRATOR",
-      "DENSITY",
-      "ESCAPE ARTIST"
+      "BOULDER",
+      "MOUNTAIN",
+      "LISTENER"
     ],
     "styles": [
       {
         "id": "phasing_phase_eruption",
         "role": "offense",
-        "name": "Phase Eruption",
-        "description": "Sink into the ground and erupt beneath a point up to 20 blocks away. Foes within 3.5 blocks take 10 + 2 per tier and are thrown into the air.",
+        "name": "Pillar Barrage",
+        "description": "A fan of stone columns erupts round a point up to 20 blocks away. Foes within 3.5 blocks take 10 + 2 per tier and are thrown into the air.",
         "energy": 31,
         "cooldown": 320,
         "cost": 3,
         "level": 3,
         "mechanic": "phase_eruption",
-        "icon": "minecraft:mud",
+        "icon": "minecraft:pointed_dripstone",
         "design_energy": 30,
         "design_cooldown": 320
       },
       {
         "id": "phasing_dense_bulwark",
         "role": "defense",
-        "name": "Dense Bulwark",
-        "description": "Make yourself unbelievably dense for 8 seconds: you take far less damage and cannot be moved, but you are slow.",
+        "name": "Unmoving Mountain",
+        "description": "Set your stance so deep that nothing moves you for 8 seconds: Horse Stance, free, and you take far less damage, but you are slow.",
         "energy": 26,
         "cooldown": 390,
         "cost": 3,
@@ -3235,14 +3235,14 @@
       {
         "id": "phasing_phase_field",
         "role": "support",
-        "name": "Phase Field",
-        "description": "Loosen everyone near you. For 8 seconds, projectiles pass straight through you and friends within 8 blocks, and other damage is reduced.",
+        "name": "Earth Tent",
+        "description": "A dome of rock closes over you and the friends beside you for 8 seconds. It stops every shot, and those inside take less harm.",
         "energy": 26,
         "cooldown": 390,
         "cost": 3,
         "level": 3,
         "mechanic": "phase_field",
-        "icon": "minecraft:phantom_membrane",
+        "icon": "minecraft:cobblestone",
         "design_energy": 25,
         "design_cooldown": 480
       }

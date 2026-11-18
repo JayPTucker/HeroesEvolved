@@ -61,9 +61,9 @@ buffets and breaks the sound barrier. Blitz chains from enemy to enemy, Snatch t
 blink, Cyclone runs rings, and Lightspeed streaks through everything on the line. At 80 Momentum you
 vibrate through walls.
 
-See [Density](docs/density.md) for D.L. Hawkins, reworked from Phasing: a density dial from Full Ghost
-to Full Dense, a hand that reaches inside bodies and chests, enemies left stuck in the floor, and
-travel underground on a single breath.
+See [Density](docs/density.md) for earthbending after Hung Gar: a rooted Horse Stance, rocks torn up
+and punched (held, a boulder), stone shackles, pillars and walls to stand on and shove, and a disc of
+ground lifted with everyone on it and slammed back down.
 
 See [Quake](docs/quake.md) for Daisy Johnson: Strain makes every quake hit harder until the bones in
 her arms crack. Resonate shakes one enemy apart from the inside, Fault Line tears a crack across the

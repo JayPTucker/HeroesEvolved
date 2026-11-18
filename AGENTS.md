@@ -52,7 +52,7 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 | Power | Agent notes | What the player sees |
 | --- | --- | --- |
 | Cryokinesis | [powers/cryokinesis.md](docs/agents/powers/cryokinesis.md) (terrain freezing) | [cryokinesis.md](docs/cryokinesis.md) |
-| Density (Phasing) | [powers/density.md](docs/agents/powers/density.md) | [density.md](docs/density.md) |
+| Density (earthbending; id `phasing`) | [powers/density.md](docs/agents/powers/density.md) | [density.md](docs/density.md) |
 | Electrokinesis | [powers/electrokinesis.md](docs/agents/powers/electrokinesis.md) | [electrokinesis.md](docs/electrokinesis.md) |
 | Empathic Mimicry | [powers/mimicry.md](docs/agents/powers/mimicry.md) | [empathic-mimicry.md](docs/empathic-mimicry.md) |
 | Flight | [powers/flight.md](docs/agents/powers/flight.md) | [flight.md](docs/flight.md), [carrying.md](docs/carrying.md) |

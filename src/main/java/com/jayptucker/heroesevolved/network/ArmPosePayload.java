@@ -57,7 +57,22 @@ public record ArmPosePayload(
     }
 
     /** Holds a pose for a while, e.g. the moment a blast leaves the hand. */
+    /** The gesture the server last sent for each player, and the game tick it ends. */
+    private record Shown(ArmPose pose, long until) {}
+    private static final java.util.Map<ServerPlayer, Shown> SHOWN = new java.util.WeakHashMap<>();
+
+    /**
+     * The gesture still playing for {@code player}, or null. A held pose re-sent on a timer (a stance) asks this first,
+     * so it takes over only once a move's own gesture has finished, instead of cutting it off half-way.
+     */
+    public static ArmPose playing(ServerPlayer player) {
+        Shown shown = SHOWN.get(player);
+        return shown == null || player.getServer() == null || shown.until <= player.getServer().overworld().getGameTime() ? null : shown.pose;
+    }
+
     public static void show(ServerPlayer player, ArmPose pose, int durationTicks) {
+        if (player.getServer() != null)
+            SHOWN.put(player, new Shown(pose, player.getServer().overworld().getGameTime() + Math.max(0, durationTicks)));
         PacketDistributor.sendToPlayersTrackingEntityAndSelf(
                 player,
                 new ArmPosePayload(player.getId(), pose, durationTicks)

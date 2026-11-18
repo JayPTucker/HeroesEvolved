@@ -267,11 +267,11 @@ each level after (21 at Level 15, 28 Evolved), plus training and story notes, ag
 
 | Key | Move | Level | Stamina | Cooldown | Was | Pays for |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | `phasing_shift` | 1 | 4 | 0.3s | 4 / 0.3s, Level 1 | a notch of density; holding it drains 1.7-3.3 a second |
-| 2 | `phasing_reach` | 1 | 16 | 2.5s | 16 / 3s, Level 1 | 5 + tier that ignores armour, and no healing for 5 s |
-| 3 | `phasing_embed` | 3 | 21 | 6.25s | 24 / 10s, Level 3 | half into the floor for 5 s, taking 50% more |
-| 4 | `phasing_sink` | 6 | 16 | 2.5s | 20 / 2s, Level 6 | move through the ground |
-| 5 | `phasing_hollow` | 15 | 66 | 50s | 60 / 45s, Level 15 | everyone in 6 + tier blocks sinks for 5 s |
+| 1 | `phasing_shift` | 1 | 4 + 3.3/s | 0.3s | 4 / 0.3s, Level 1 | Horse Stance toggle; holding it drains 3.3 a second (half with Wait and Listen). Shift: Seismic Stomp |
+| 2 | `phasing_reach` | 1 | 14 | 2s | 16 / 3s, Level 1 | Rock Strike: lift a stone (6 + tier) or hold for a boulder; the punch is free |
+| 3 | `phasing_embed` | 3 | 19 | 5.75s | 24 / 10s, Level 3 | Earth Shackle: a 3 + tier s hold, 50% more taken; Crush (4 + tier) is free |
+| 4 | `phasing_sink` | 6 | 20 | 3s | 20 / 2s, Level 6 | Pillar (4 + tier and a throw, or a lift for you) or a wall that stops shots and shoves (5 + tier) |
+| 5 | `phasing_hollow` | 15 | 80 | 60s | 60 / 45s, Level 15 | Rising Mountain: a telegraphed lift and slam, 8 + 2/tier to all on it |
 
 ### Time Manipulation
 
@@ -443,15 +443,15 @@ and 0.75.
 | invisibility | Shadow Strike | class:offense | 31 (was 30) | 16s |
 | invisibility | Refraction Cloak | class:defense | 26 (was 25) | 19.5s (was 22s) |
 | invisibility | Prism Haze | class:support | 26 (was 25) | 19.5s (was 26s) |
-| phasing | Pass Through | skill | 21 (was 22) | 8s |
-| phasing | Phase Carry | skill | 25 (was 26) | 10s |
-| phasing | Harden | skill | 20 | 15s |
-| phasing | Sinkhole | skill | 27 (was 28) | 15s |
-| phasing | Fade Through | skill | 19 (was 18) | 12s |
-| phasing | Phase Fall | skill | 23 (was 22) | 10s |
-| phasing | Phase Eruption | class:offense | 31 (was 30) | 16s |
-| phasing | Dense Bulwark | class:defense | 26 (was 25) | 19.5s (was 24s) |
-| phasing | Phase Field | class:support | 26 (was 25) | 19.5s (was 24s) |
+| phasing | Earth Gauntlet | skill | 21 (was 22) | 8s |
+| phasing | Avalanche | skill | 25 (was 26) | 10s |
+| phasing | Stone Skin | skill | 20 | 15s |
+| phasing | Quicksand | skill | 27 (was 28) | 15s |
+| phasing | Tunnel | skill | 19 (was 18) | 12s |
+| phasing | Earth Surf | skill | 23 (was 22) | 10s |
+| phasing | Pillar Barrage | class:offense | 31 (was 30) | 16s |
+| phasing | Unmoving Mountain | class:defense | 26 (was 25) | 19.5s (was 24s) |
+| phasing | Earth Tent | class:support | 26 (was 25) | 19.5s (was 24s) |
 | empathic_mimicry | Borrowed Strike | skill | 21 (was 22) | 5s |
 | empathic_mimicry | Sense Powers | skill | 18 (was 16) | 14.5s (was 20s) |
 | empathic_mimicry | Empathic Surge | skill | 24 (was 26) | 15s |

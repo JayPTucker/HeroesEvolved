@@ -1,0 +1,19 @@
+{
+  "values": [
+    "minecraft:iron_block",
+    "minecraft:raw_iron_block",
+    "minecraft:iron_ore",
+    "minecraft:deepslate_iron_ore",
+    "minecraft:iron_bars",
+    "minecraft:iron_door",
+    "minecraft:iron_trapdoor",
+    "minecraft:anvil",
+    "minecraft:chipped_anvil",
+    "minecraft:damaged_anvil",
+    "minecraft:copper_block",
+    "minecraft:raw_copper_block",
+    "minecraft:gold_block",
+    "minecraft:raw_gold_block",
+    "minecraft:chain"
+  ]
+}

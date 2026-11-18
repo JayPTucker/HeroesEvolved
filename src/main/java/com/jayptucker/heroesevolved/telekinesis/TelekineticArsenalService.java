@@ -6,17 +6,11 @@ import com.jayptucker.heroesevolved.effects.AbilityEffects;
 import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 import com.jayptucker.heroesevolved.network.ArmPosePayload;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.FloatTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtUtils;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.Display;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.Blocks;
@@ -267,7 +261,7 @@ public final class TelekineticArsenalService {
     }
 
     private static final class Shard {
-        final DebrisDisplay display;
+        final com.jayptucker.heroesevolved.entity.BlockDebris display;
         final int slot;
         final Set<UUID> hit = new HashSet<>();
         Vec3 position, velocity = Vec3.ZERO, aim;
@@ -278,30 +272,10 @@ public final class TelekineticArsenalService {
         double remainingDistance;
         Shard(ServerLevel level, Vec3 at, int slot, float size) {
             this.slot = slot; position = at;
-            display = new DebrisDisplay(level, size);
+            display = new com.jayptucker.heroesevolved.entity.BlockDebris(level, Blocks.ANDESITE.defaultBlockState(), size);
             display.setPos(at);
             level.addFreshEntity(display);
         }
     }
 
-    /** Vanilla display protocol/renderer, but no save data or loot can outlive the owning session. */
-    private static final class DebrisDisplay extends Display.BlockDisplay {
-        DebrisDisplay(ServerLevel level, float size) {
-            super(EntityType.BLOCK_DISPLAY, level);
-            CompoundTag tag = new CompoundTag();
-            tag.put("block_state", NbtUtils.writeBlockState(Blocks.ANDESITE.defaultBlockState()));
-            tag.putInt("teleport_duration", 2);
-            tag.putFloat("view_range", .6F);
-            CompoundTag transform = new CompoundTag();
-            ListTag scale = new ListTag(), translation = new ListTag();
-            for (int i = 0; i < 3; i++) { scale.add(FloatTag.valueOf(size)); translation.add(FloatTag.valueOf(-size / 2)); }
-            transform.put("scale", scale); transform.put("translation", translation);
-            ListTag rotation = new ListTag();
-            for (float value : new float[]{0, 0, 0, 1}) rotation.add(FloatTag.valueOf(value));
-            transform.put("left_rotation", rotation); transform.put("right_rotation", rotation.copy());
-            tag.put("transformation", transform);
-            readAdditionalSaveData(tag);
-        }
-        @Override public boolean shouldBeSaved() { return false; }
-    }
 }

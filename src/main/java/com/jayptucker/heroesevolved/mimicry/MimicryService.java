@@ -513,6 +513,11 @@ public final class MimicryService {
         return isBorrowingConstructPower(player, ModAbilities.HYDROKINESIS_ID);
     }
 
+    /** An Echo of Density: the stance, the lifted rocks and the earthworks are kept while the session lasts. */
+    public static boolean isBorrowingDensity(ServerPlayer player) {
+        return isBorrowingConstructPower(player, ModAbilities.PHASING_ID);
+    }
+
     /** Only a real Echo invocation or its still-selected session authorizes these constructs. */
     private static boolean isBorrowingConstructPower(ServerPlayer player, ResourceLocation power) {
         if (player.isRemoved() || !isMimic(player) || !PowerRules.canAct(player)

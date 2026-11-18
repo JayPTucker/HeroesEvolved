@@ -90,7 +90,9 @@ final class PerilRelease {
                 for (Entity explosive : explosives) Danger.push(explosive, away(explosive, saved).scale(2.2).add(0, 0.6, 0));
             }
             case "phasing" -> {
-                // Nothing to do: they are thin enough that the blast goes straight through them.
+                // A shell of rock slams up round them and takes the blast.
+                com.jayptucker.heroesevolved.phasing.EarthGeometry.show(level, com.jayptucker.heroesevolved.styles.Piece.EARTH_TENT,
+                        saved.position(), saved.position(), 1.6F, null, null);
             }
             default -> {
                 Danger.disarm(saved, 8);

@@ -414,7 +414,7 @@ public final class PowerIntroService {
             }
             case "phasing" -> {
                 com.jayptucker.heroesevolved.phasing.DensityService.awaken(player);
-                // Blows already in motion pass through, and the ripple shoves their owners away.
+                // The feet set themselves, and the ground jumps under whatever was attacking.
                 repelEnemies(player, 6, 0, 1.0);
             }
             case "empathic_mimicry" -> releaseMimicry(session);

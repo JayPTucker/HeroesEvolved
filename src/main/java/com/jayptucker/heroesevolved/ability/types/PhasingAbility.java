@@ -3,42 +3,49 @@ package com.jayptucker.heroesevolved.ability.types;
 import com.jayptucker.heroesevolved.ability.*;
 import com.jayptucker.heroesevolved.phasing.DensityService;
 import com.jayptucker.heroesevolved.phasing.DensitySkills;
+import com.jayptucker.heroesevolved.phasing.Earthworks;
+import com.jayptucker.heroesevolved.phasing.Stones;
 import java.util.Map;
 
 /**
- * Density, after D.L. Hawkins (the registry id stays {@code phasing} so saved worlds keep the power).
+ * Density, reworked as earthbending after Hung Gar (the registry id stays {@code phasing} so saved worlds keep the
+ * power, and the action ids stay so loadouts and the balance table still match).
  * <ul>
- *   <li>Level 1, Shift: one notch toward Ghost; with Shift held, one toward Dense. Holding a notch costs stamina.</li>
- *   <li>Level 1, Reach Through: a hand inside an enemy (armour does nothing, and they cannot heal for a moment),
- *   or through a wall into the chest behind it.</li>
- *   <li>Level 2, Embed: phase an enemy halfway into the floor and make them solid again.</li>
- *   <li>Level 3, Sink: drop into the ground and move through it on your Breath. Press again to surface,
- *   with an uppercut for whoever is standing above you.</li>
- *   <li>Level 5, Hollow Ground: every enemy around you sinks into the ground at once. At Dense, Bedrock Slam
- *   instead: a shockwave, and stone-hard skin.</li>
- *   <li>Always: at Ghost, walk into a wall to pass through it (crouch to lean on it). You cannot suffocate,
- *   and a passage always ends in open space.</li>
+ *   <li>Level 1, Horse Stance: drop low and set your feet (no knockback, stone skin, heavy fists, Root fills twice as
+ *   fast); held, it costs stamina. With Shift, Seismic Stomp: every footstep within 24 blocks, through walls.</li>
+ *   <li>Level 1, Rock Strike: a stomp tears a stone out of the ground (hold for a boulder); press again to punch it at
+ *   what you look at. Free.</li>
+ *   <li>Level 3, Earth Shackle: stone climbs a foe's legs and holds them. Press again for Crush (free).</li>
+ *   <li>Level 6, Pillar: a column out of the earth you aim at (at your feet, it lifts you). With Shift, a wall; press
+ *   again to shove it (free).</li>
+ *   <li>Level 15, Rising Mountain: hold to tear up a disc of ground with everyone on it; let go and it slams down.</li>
  * </ul>
  */
 public final class PhasingAbility implements Ability {
     private static final Map<AbilitySlot, AbilityAction> ACTIONS = Map.of(
+            // While tunnelling, the stance key surfaces you, free.
             AbilitySlot.PRIMARY, SimpleAction.builder("phasing_shift", 1).cost(() -> 4, () -> 6)
-                    .canUse(c -> !DensityService.sinking(c.player()))
-                    .activate(c -> DensityService.shift(c.player(), c.modifierHeld())).build(),
-            // Ambush: a hand primed by stepping out of a wall reaches for free.
+                    .activate(c -> DensityService.stanceKey(c.player(), c.modifierHeld()))
+                    .followUp(c -> DensityService.sinking(c.player()) && DensityService.surface(c.player(), true)).build(),
+            // The punch that throws a lifted rock is free and ignores the cooldown; while tunnelling, Grasp from Below.
             AbilitySlot.SECONDARY, SimpleAction.builder("phasing_reach", 1).cost(() -> 16, () -> 60)
-                    .activate(c -> DensityService.reach(c.player(), c.abilityLevel()))
-                    .followUp(DensitySkills::ambush).build(),
-            // Entombed: Embed aimed at a body you already hold closes the ground over it.
+                    .activate(c -> DensityService.sinking(c.player()) ? DensitySkills.grasp(c.player(), c.abilityLevel())
+                            : Stones.lift(c.player(), c.abilityLevel()))
+                    .followUp(Stones::strike)
+                    .release(c -> Stones.release(c.player())).build(),
+            // Crush, then (with Entombed) the ground closes over them.
             AbilitySlot.TERTIARY, SimpleAction.builder("phasing_embed", 2).cost(() -> 24, () -> 200)
-                    .activate(c -> DensityService.embed(c.player(), c.abilityLevel(), 6))
-                    .followUp(DensitySkills::entomb).build(),
-            AbilitySlot.QUATERNARY, SimpleAction.builder("phasing_sink", 3).cost(() -> 20, () -> 40)
-                    .canUse(c -> !c.player().isPassenger())
-                    .activate(c -> DensityService.sinkOrSurface(c.player(), c.abilityLevel())).build(),
-            AbilitySlot.QUINARY, SimpleAction.builder("phasing_hollow", 5).cost(() -> 60, () -> 20 * 45)
                     .canUse(c -> !DensityService.sinking(c.player()))
-                    .activate(c -> DensityService.ultimate(c.player(), c.abilityLevel())).build());
+                    .activate(c -> DensityService.shackle(c.player(), c.abilityLevel(), 8))
+                    .followUp(DensityService::crush).build(),
+            AbilitySlot.QUATERNARY, SimpleAction.builder("phasing_sink", 3).cost(() -> 20, () -> 40)
+                    .canUse(c -> !c.player().isPassenger() && !DensityService.sinking(c.player()))
+                    .activate(c -> Earthworks.raise(c.player(), c.abilityLevel(), c.modifierHeld()))
+                    .followUp(Earthworks::shove).build(),
+            AbilitySlot.QUINARY, SimpleAction.builder("phasing_hollow", 5).cost(() -> 60, () -> 20 * 45)
+                    .canUse(c -> !DensityService.sinking(c.player()) && !Earthworks.raising(c.player()))
+                    .activate(c -> Earthworks.mountain(c.player(), c.abilityLevel()))
+                    .release(c -> Earthworks.releaseMountain(c.player())).build());
     @Override public AbilityDefinition definition() { return new AbilityDefinition(0, 0, 5, AbilityActivationType.INSTANT); }
     @Override public Map<AbilitySlot, AbilityAction> actions() { return ACTIONS; }
     @Override public boolean canUse(AbilityUseContext c) { return false; }

@@ -43,11 +43,11 @@ import java.util.List;
  *   breach life, cost, worlds and overshoot (Vibe), Skyburst's charge and length (Flight), blue fire, Heat and white fire
  *   (Pyrokinesis), one more chain (Electrokinesis), free water and the sea's boost (Hydrokinesis), longer freezes
  *   (Cryokinesis), Strain and its power (Quake), Resonance, Ringing and shattering (Sonic Resonance), a longer Grip
- *   (Telekinesis), a longer Harden (Density), twice the Pressure (Invisibility), a stronger Rapid Mending (Regeneration),
+ *   (Telekinesis), a longer Stone Skin (Density), twice the Pressure (Invisibility), a stronger Rapid Mending (Regeneration),
  *   a faster-filling Core (Induced Radioactivity), Technopathy's reach, an extra Shard (Matter Assembly), instant
  *   attunement and free Echoes (Empathic Mimicry), and slower Suspicion (Shapeshifting).</li>
  *   <li>Done here: Momentum, Daphne's run, the thousand voices, the storm, refilling water, the flash freeze, the
- *   levitation, the ghost party, the dome, the spilling heal, the Core pouring out, the grid answering, the shard orbit,
+ *   levitation, the shelter of ground, the dome, the spilling heal, the Core pouring out, the grid answering, the shard orbit,
  *   the Apex growth, and every backlash.</li>
  * </ul>
  */
@@ -368,7 +368,7 @@ final class AmpTuned {
     // Protection: the ghost party and the dome
     // ------------------------------------------------------------------
 
-    /** Friends inside an overcharged phaser's ghost party, or an overcharged force-field user's dome, take no harm. */
+    /** Friends inside an overcharged earthbender's shelter of ground, or an overcharged force-field user's dome, take no harm. */
     static void incoming(LivingIncomingDamageEvent event) {
         if (Amplification.BOOSTS.isEmpty() || event.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) return;
         LivingEntity victim = event.getEntity();

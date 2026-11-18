@@ -630,19 +630,21 @@ public final class StyleCasts {
             }
             // ---------------------------------------------------------- Density
             case "phase_eruption" -> {
+                // Pillar Barrage: a fan of columns erupts round the point you aim at, and everyone near it goes up.
                 Vec3 point = aim(p, 20);
                 float radius = 3.5F;
-                piece(p, Piece.PHASE_ERUPTION, at, point, radius, null);
-                sound(level, at, SoundEvents.ENDERMAN_TELEPORT, 1, 0.6F);
+                com.jayptucker.heroesevolved.network.ArmPosePayload.show(p, com.jayptucker.heroesevolved.ability.ArmPose.EARTH_RAISE, 14);
+                piece(p, Piece.EARTH_MOUNTAIN_MARK, point, point.add(0, 1, 0), radius, null);
+                sound(level, at, SoundEvents.WARDEN_DIG, 1.2F, 0.9F);
                 StyleRuntime.run(p, 8, age -> {
                     if (age != 8) return;
-                    p.teleportTo(point.x, point.y, point.z);
-                    p.fallDistance = 0;
-                    for (LivingEntity t : foes(p, point, radius)) { hurt(p, t, 10 + 2 * lvl); push(t, new Vec3(0, 1.1, 0)); }
+                    com.jayptucker.heroesevolved.phasing.Earthworks.barrage(p, point, lvl, radius);
                     sound(level, point, SoundEvents.GENERIC_EXPLODE.value(), 1, 1.2F);
                 });
             }
             case "dense_bulwark" -> {
+                // Unmoving Mountain: Horse Stance, set so deep nothing moves you.
+                com.jayptucker.heroesevolved.phasing.DensityService.setNotch(p, com.jayptucker.heroesevolved.phasing.DensityService.FULL_DENSE, 160);
                 piece(p, Piece.DENSE_BULWARK, at, at, 1, p);
                 effect(p, MobEffects.DAMAGE_RESISTANCE, 160, 2);
                 effect(p, MobEffects.MOVEMENT_SLOWDOWN, 160, 1);
@@ -652,11 +654,10 @@ public final class StyleCasts {
                 StyleRuntime.run(p, 160, age -> { }, () -> { var k = p.getAttribute(Attributes.KNOCKBACK_RESISTANCE); if (k != null) k.removeModifier(STEADY); });
             }
             case "phase_field" -> {
-                for (LivingEntity friend : friends(p, at, 8)) {
-                    StyleRuntime.ward(friend, Ward.PHASE_FIELD, 160, p);
-                    piece(p, Piece.PHASE_FIELD, friend.position(), friend.position(), 1, friend);
-                }
-                sound(level, at, SoundEvents.BEACON_AMBIENT, 1.5F, 1.6F);
+                // Earth Tent: a dome of rock closes over you and the friends beside you, and stops every shot.
+                com.jayptucker.heroesevolved.phasing.Earthworks.tent(p, 3.5, 160);
+                for (LivingEntity friend : friends(p, at, 3)) StyleRuntime.ward(friend, Ward.PHASE_FIELD, 160, p);
+                sound(level, at, SoundEvents.DEEPSLATE_PLACE, 1.5F, 0.6F);
             }
             // ---------------------------------------------------------- Empathic Mimicry
             case "prismatic_overflow" -> {

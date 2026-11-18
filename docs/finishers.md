@@ -29,7 +29,7 @@ key ends them with a short, showy move that belongs to your power alone.
   | Quake | Counterbeat | Fault Line, Shatter Point | `quake/QuakeFinishers` |
   | Sonic Resonance | Encore | Shatter Note, Silence | `sonic/SonicFinishers` |
   | Telekinesis | Cut Strings | Crush, Toss | `telekinesis/KineticFinishers` |
-  | Density | Six Feet | Phase Punch, Heavy Hand | `phasing/DensityFinishers` |
+  | Density | Six Feet | Rock Clap, Heavy Hand | `phasing/DensityFinishers` |
   | Invisibility | Hall of Mirrors | Bubble Crush, Lens Strike | `invisibility/ForceFinishers` |
   | Regeneration | Paid in Full | No Pain, Grip | `regeneration/RegenFinishers` |
   | Induced Radioactivity | Chain Reaction | Half-Life, Pocket Sun | `radiation/RadiationFinishers` |
@@ -315,7 +315,7 @@ style.
 - **Rule.** It is built on Moment's Edge's sequence (hold, fold, store, release): it stores the cuts and lands them
   together, through the normal `TimeStopService.storeImpact` path.
 
-### Density (Phasing): **Inside Out**
+### Density (Phasing): **Inside Out** (the phasing-era design; Density is earthbending now and this was not built)
 
 - **What happens.**
   1. You phase your arm into the foe's chest.
@@ -445,7 +445,7 @@ All the shared rules above still apply (the threshold, the hold, half damage, in
 | Telekinesis | Cut Strings | Held shots fire as the strings snap | Grip ready again |
 | Telepathy | Last Order | No other foe near: it kneels to you | Focus on every mind near |
 | Space-Time | Closed Loop | In stopped or slowed time: three of you | Fold Space ready again |
-| Density | Six Feet | At Dense: the hammer roots nearby foes | Ambush primed |
+| Density | Six Feet | In Horse Stance: the hammer roots nearby foes | Full Root |
 | Invisibility | Hall of Mirrors | Unseen Constructs hides the panes from foes | 3 s of free Fade |
 | Regeneration | Paid in Full | The punch adds what you suffered | +30 Regrowth |
 | Induced Radioactivity | Chain Reaction | During a Meltdown warning: an emergency vent | −25 Core |
@@ -634,18 +634,18 @@ It only works well with another angry mob nearby to turn the foe on; alone, the 
 
 ### Density (Phasing): **Six Feet**
 
-- **Why it fits.** Sink, Grasp from Below, Uproot and Entombed in one string: the combos the tree teaches, played
-  out as a single move.
+- **Why it fits.** Earth Shackle, Grasp from Below and Entombed in one string: the combos the tree teaches, played
+  out as a single move. (Density became earthbending after this was built; the beats were kept, re-dressed.)
 - **Beats.**
-  1. (0–6) You go Ghost and sink into the floor, leaving ripples.
-  2. (6–14) Stone fingers rise round the foe's ankles and pull it in to the waist.
-  3. (14–22) You burst up behind it at Full Dense, stone plates on your forearms, and bring a two-fisted hammer
-     down on its head.
+  1. (0–6) You stamp, and the ground round the foe cracks.
+  2. (6–14) Stone fingers rise round the foe's ankles and pull it in to the knees.
+  3. (14–22) You slide round behind it on the moving ground, stone plates on your forearms, and bring a two-fisted
+     hammer down on its head.
   4. (22–30) It is driven under. Slabs fold over the spot like a closing hand and sink flat, leaving only a ring of
      crumbs.
-- **Twist.** If your dial is at Dense when you start, the hammer splits the ground in a star (Bedrock Slam's look)
-  and roots every foe within 4 blocks. No real blocks break.
-- **Reward.** Your Ambush hand is primed.
+- **Twist.** If you are in Horse Stance when you start, the hammer splits the ground in a star and roots every foe
+  within 4 blocks. No real blocks break.
+- **Reward.** Your Root fills.
 - **Drawn with.** `DensityArt` ripples, Grasp from Below's fingers, `slab`, Entombed's closing slabs, and Harden's
   forearm plates. The foe is moved with `DensityService`'s embed and hidden under the surface
   (`surfaceOf` places the slabs).

@@ -69,22 +69,22 @@ Electrokinesis gained a fighting style in November 2026 on the shared engine (`e
 ## Reusable patterns from the shared fighting styles
 
 Seven more powers gained fighting styles in November 2026 on the same engine: Blur Boxing (`speed/SpeedStyle`), Pressure
-Palm (`quake/QuakeStyle`), Ice Skater (`cryo/CryoStyle`), Ghost Fist (`phasing/DensityStyle`), Reckless Brawler
+Palm (`quake/QuakeStyle`), Ice Skater (`cryo/CryoStyle`), Ghost Fist (`phasing/DensityStyle`, since replaced by Tiger and Crane, `phasing/EarthStyle`), Reckless Brawler
 (`regeneration/RegenStyle`), Force Palm (`invisibility/ForceStyle`) and Puppeteer (`telekinesis/KineticStyle`). What the
 player sees is in [docs/fighting-styles.md](../../docs/fighting-styles.md).
 
 - **A style is only its moves.** `combat/ComboStyle` holds the combo (lead, rear, a finisher from level 2, crouch for the
   low move), the dodges (back is the special one from level 2), the counter that loads the next strike and marks the
   attacker, costs, cooldowns and the tired message. A subclass writes `throwMove`, `dodgeMove` and `onCounter`, and can
-  override `tickFighter` (lingering things), `evadeTicks` (Density's longer slip, 0 for a style that doesn't dodge) and
-  `canFight` (Claire can't swing a broken arm). The fighter keeps a one-second `trail` (Rewind Step), a `stack` (Density's
-  growing weight) and `banked` damage (Payback).
+  override `tickFighter` (lingering things), `evadeTicks` (0 for a style that doesn't dodge; Tiger and Crane evades only on its back dodge, underground) and
+  `canFight` (Claire can't swing a broken arm). The fighter keeps a one-second `trail` (Rewind Step), a `stack` (a combo that
+  grows heavier) and `banked` damage (Payback).
 - **One helper class for hitting.** `combat/StyleHits` aims (`aimed`, `firstInTube`, `foes`), hurts (`hurt` resets
   `invulnerableTime` so a three-blow jab lands three times, and guards against re-entry), shoves with knockback
   resistance respected (`shove`, `away`), and places hands and chests (`hand`, `chest`). `blink` teleports with
   `absMoveTo` too, so FakePlayers move in tests.
 - **Speak in the power's own strokes.** Most styles need no new art: Blur Boxing uses Superspeed's afterimages and
-  lanes, Pressure Palm Quake's rings and fissures, Ghost Fist Density's ripples. New pieces live in
+  lanes, Pressure Palm Quake's rings and fissures. Tiger and Crane draws with `EarthArt`'s chunks and cracks. New pieces live in
   `client/effects/setpiece/StyleArt` and borrow the power's primitives (Force Palm draws with `ForceArt.lens`/`pane`).
   Telekinesis's strokes were too thin to read at fighting range, so the Puppeteer has a visible hand: `STYLE_TK_PALM`
   (a palm print on each swat) and `STYLE_TK_GRASP` (fingers closing over a lifted or gripped body, bound to it, with
@@ -120,3 +120,8 @@ player sees is in [docs/fighting-styles.md](../../docs/fighting-styles.md).
   needs its own flag: `heroes.preview.styles` already belonged to `uitest/StylePreview`, and two drivers on one flag
   started two worlds and photographed the dark. The preview's actors have no AI, so shoves don't move them; check
   knockback in game tests.
+- **A brace on a dodge key, and a counter that answers.** Tiger and Crane (`phasing/EarthStyle`) has no evasion on its
+  side dodges (`evadeTicks` returns 0 unless special): an Earth Slide is a `StyleMotion.skid` plus a `StyleMotion.brace`,
+  and `braced` halves the blow and calls `counter` for the first one (tracked in the fighter's `banked`, reset on each
+  slide). Its `onCounter` raises a pillar under the attacker at once (Neutral Jing) before the loaded claw. Use this for
+  any style whose defence is standing firm.

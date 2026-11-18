@@ -25,7 +25,7 @@ Each power has its own material, so you can tell who is fighting by ear:
 | Invisibility | a beating glass chord, force-field thuds and booms |
 | Matter Assembly | ratchets and clicks locking into a heavy clunk |
 | Empathic Mimicry | a sung chord with echoes (an Echo also sounds like the power it borrows) |
-| Density | ghostly flanged whooshes and very dense thuds |
+| Density | the phasing-era cues (flanged whooshes and very dense thuds) under each move's own stone, gravel and deepslate sounds; to be re-voiced as grinding rock |
 | Pyrokinesis | fire whooshes, roars, crackle, flame jets |
 | Quake | thumps, rumbling, grinding and cracking rock |
 | Induced Radioactivity | a Geiger counter over a reactor hum |

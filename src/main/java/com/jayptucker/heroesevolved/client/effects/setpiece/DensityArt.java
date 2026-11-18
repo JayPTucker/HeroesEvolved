@@ -34,16 +34,11 @@ final class DensityArt {
             STONE = rgb(0x9A9284), DARK = rgb(0x3E4A4E);
     /** Drawn with normal blending behind the light, so ripples hold against a bright sky. */
     private static final float[] INK = rgb(0x163331);
-    private static final Set<Piece> AMBUSHED = Set.of(Piece.DENSITY_AMBUSH);
 
     private DensityArt() {}
 
     static void draw(Canvas c, Active a, float t) {
         switch (a.piece()) {
-            case DENSITY_PASS -> pass(c, a, t);
-            case DENSITY_PRIMED -> primed(c, a, t);
-            case DENSITY_AMBUSH -> ambush(c, a, t);
-            case DENSITY_DOOR -> door(c, a, t);
             case DENSITY_HARDEN -> harden(c, a, t);
             case DENSITY_REBOUND -> rebound(c, a, t);
             case DENSITY_PILE -> pile(c, a, t);
@@ -51,10 +46,7 @@ final class DensityArt {
             case DENSITY_SINKHOLE -> sinkhole(c, a, t);
             case DENSITY_ENTOMB -> entomb(c, a, t);
             case DENSITY_UPROOT -> uproot(c, a, t);
-            case DENSITY_FADE -> fade(c, a, t);
             case DENSITY_GRASP -> grasp(c, a, t);
-            case DENSITY_DROP -> drop(c, a, t);
-            case DENSITY_SLIP -> slip(c, a, t);
             default -> { }
         }
     }
@@ -132,93 +124,6 @@ final class DensityArt {
         if (c.soft()) c.ribbon(pts, .07F, DARK, .75F * alpha, .1F * alpha);
         if (c.glow() && light > 0) c.ribbon(pts, .02F, PALE, .6F * light * alpha, 0);
     }
-
-    // ------------------------------------------------------------------
-    // Infiltrator
-    // ------------------------------------------------------------------
-
-    /**
-     * Pass Through (and an enemy Fade Through drifts through): the body's surface ripples like water where you went
-     * through it, a pale wake runs along your line, and a ghost of you is drawn out of it.
-     */
-    private static void pass(Canvas c, Active a, float t) {
-        Vec3 o = a.origin(), dir = a.target().subtract(o).multiply(1, 0, 1);
-        dir = dir.lengthSqr() < 1.0E-4 ? new Vec3(0, 0, 1) : dir.normalize();
-        float h = Math.max(.8F, a.scale()), life = a.piece().ticks, f = fade(t, life, 0, 6);
-        float open = 1 - (float) Math.pow(1 - Mth.clamp(t / 5F, 0, 1), 3);
-        Vec3 chest = o.add(0, h * .55, 0);
-        oval(c, chest, dir, .5F, h * .5F, 3, open * .9F, a.seed(), f);
-        ripple(c, chest.add(dir.scale(.3)), dir, .7F, open, TEAL, .8F * f);
-        // The wake: from two blocks before the body to where you came out.
-        Vec3 from = chest.subtract(dir.scale(2)), to = a.target().add(0, h * .55, 0);
-        if (c.soft()) c.line(from, to, .2F, INK, 0, .18F * f);
-        if (c.glow()) {
-            c.line(from, to, .35F, DEEP, 0, .3F * f);
-            c.line(from, to, .1F, TEAL, 0, .7F * f);
-            c.line(from, to, .03F, PALE, 0, .9F * f);
-            c.glow(chest, .5F + .4F * (1 - open), PALE, .7F * f * (1 - open * .6F));
-        }
-    }
-
-    /** Where a hand is drawn from: the visible hand in first person, the body's hand otherwise. */
-    private static Vec3 hand(Canvas c, Entity owner) {
-        Minecraft mc = Minecraft.getInstance();
-        if (!(owner instanceof LivingEntity body)) return owner.position().add(0, 1.2, 0);
-        Vec3 look = owner.getViewVector(c.partial);
-        if (owner != mc.player || mc.options.getCameraType() != CameraType.FIRST_PERSON)
-            return DensityGeometry.hand(body, look, c.partial);
-        Vec3 right = Vec3.directionFromRotation(0, owner.getViewYRot(c.partial) + 90);
-        Vec3 cameraUp = right.cross(look).normalize();
-        boolean rightHand = !(owner instanceof Player p) || p.getMainArm() == HumanoidArm.RIGHT;
-        return c.camera().add(look.scale(.85)).add(right.scale(rightHand ? .39 : -.39)).subtract(cameraUp.scale(.43));
-    }
-
-    /** Ambush: a hand primed by a wall. Teal water clings to it in turning rings until it strikes. */
-    private static void primed(Canvas c, Active a, float t) {
-        if (SetPieceClient.superseded(a, AMBUSHED, a.start() + (long) t)) return;
-        Entity owner = a.bound(c);
-        if (owner == null || !c.glow()) return;
-        float f = fade(t, a.piece().ticks, 3, 10), clock = t + c.partial;
-        Vec3 at = hand(c, owner), look = owner.getViewVector(c.partial);
-        float pulse = .75F + .25F * Mth.sin(clock * .5F);
-        c.glow(at, .22F * pulse, TEAL, .6F * f);
-        c.glow(at, .08F, PALE, .8F * f);
-        for (int i = 0; i < 2; i++) {
-            float spin = clock * (.25F + i * .1F) + i * Mth.PI;
-            Vec3 axis = look.add(Mth.cos(spin) * .6, Mth.sin(spin) * .6, 0).normalize();
-            c.ring(at, axis, .14F + i * .04F, .018F, 0, Mth.TWO_PI * .7F, i == 0 ? TEAL : PALE, .65F * f);
-        }
-    }
-
-    /** Ambush's strike: the arm drives into the body in two ticks and the body's surface ripples round it. */
-    private static void ambush(Canvas c, Active a, float t) {
-        Vec3 from = a.origin(), to = a.target(), dir = to.subtract(from);
-        if (dir.lengthSqr() < 1.0E-4) dir = new Vec3(0, 0, 1);
-        float life = a.piece().ticks, f = fade(t, life, 0, 5), reach = Mth.clamp(t / 2F, 0, 1);
-        Vec3 tip = from.add(dir.scale(reach));
-        if (c.soft()) c.line(from, tip, .16F, INK, .1F * f, .25F * f);
-        if (c.glow()) {
-            c.line(from, tip, .3F, DEEP, .15F * f, .35F * f);
-            c.line(from, tip, .1F, TEAL, .4F * f, .85F * f);
-            c.line(from, tip, .03F, PALE, .5F * f, f);
-        }
-        if (reach >= 1) {
-            float k = Mth.clamp((t - 2) / 6F, 0, 1);
-            ripple(c, to.subtract(dir.normalize().scale(.3)), dir, .9F, k, TEAL, f);
-            if (c.glow()) c.glow(to, .6F * (1 - k) + .15F, PALE, .8F * f);
-        }
-    }
-
-    /** Ghost Network: a wall you passed stays open, its face slowly rippling outward like a pond. Brighter for Phase Carry. */
-    private static void door(Canvas c, Active a, float t) {
-        boolean carried = a.scale() >= DensityGeometry.CARRIED;
-        Vec3 at = a.origin(), normal = a.target().subtract(at);
-        float f = fade(t, a.piece().ticks, 2, 2) * (carried ? 1.3F : .85F);
-        float phase = ((c.level.getGameTime() % 40) + c.partial) / 40F;
-        oval(c, at, normal, carried ? .75F : .6F, carried ? 1.2F : 1.05F, carried ? 4 : 3, phase, a.seed(), Math.min(1, f));
-        if (c.glow()) c.glow(at, .4F, TEAL, .25F * f);
-    }
-
     // ------------------------------------------------------------------
     // Density
     // ------------------------------------------------------------------
@@ -376,7 +281,7 @@ final class DensityArt {
     }
 
     // ------------------------------------------------------------------
-    // Escape Artist
+    // Listener (Uproot and Grasp from Below, kept from the older tree)
     // ------------------------------------------------------------------
 
     /** Uproot: a ring of stone shards bursts up round the body as it is torn out of the ground. */
@@ -397,37 +302,6 @@ final class DensityArt {
         ripple(c, o.add(0, .06, 0), UP, torn ? 1.6F : 1.2F, Mth.clamp(t / 8F, 0, 1), TEAL, f);
     }
 
-    /**
-     * Fade Through (and friends Phase Carry has loosened): the body thins to a few pale strands, and fainter shells of it
-     * trail behind it, each a step further back along its travel.
-     */
-    private static void fade(Canvas c, Active a, float t) {
-        Entity e = a.bound(c);
-        if (e == null) return;
-        boolean friend = a.scale() < 1;
-        Vec3 o = a.at(c);
-        float h = e.getBbHeight(), f = fade(t, a.piece().ticks, 3, 8) * (friend ? .6F : 1), clock = t + c.partial;
-        if (firstPerson(e)) f *= .35F;
-        Vec3 travel = new Vec3(e.getX() - e.xo, 0, e.getZ() - e.zo);
-        Vec3 back = travel.lengthSqr() < 1.0E-4 ? Vec3.directionFromRotation(0, e.getYRot()).reverse() : travel.normalize().reverse();
-        for (int s = 0; s < 3; s++) {
-            Vec3 at = o.add(back.scale(s * .45)).add(0, h * .5, 0);
-            float as = f * (1 - s * .3F) * (.7F + .3F * Mth.sin(clock * .7F + s));
-            oval(c, at, back, .38F, h * .52F, 1, .75F, a.seed() + s, as * .7F);
-        }
-        if (!c.glow()) return;
-        int strands = minimal() ? 3 : 6;
-        for (int i = 0; i < strands; i++) {
-            float ang = i * Mth.TWO_PI / strands + clock * .05F;
-            Vec3[] pts = new Vec3[9];
-            for (int j = 0; j < pts.length; j++) {
-                float y = j / 8F * h, sway = Mth.sin(clock * .3F + j * .9F + i) * .05F, rr = .36F + sway - (y > h * .76F ? .08F : 0);
-                pts[j] = o.add(Mth.cos(ang) * rr, y, Mth.sin(ang) * rr);
-            }
-            c.ribbon(pts, .03F, i % 2 == 0 ? TEAL : PALE, .15F * f, .55F * f);
-        }
-    }
-
     /** Grasp from Below: fingers of stone rise round the ankles and close in, with a teal ring where they broke the ground. */
     private static void grasp(Canvas c, Active a, float t) {
         Vec3 o = a.origin();
@@ -442,43 +316,6 @@ final class DensityArt {
             if (c.glow()) c.line(base.add(0, .1, 0), tip, .025F, TEAL, .5F * f, .1F * f);
         }
         ripple(c, o.add(0, .06, 0), UP, r + .5F, Mth.clamp(t / 6F, 0, 1), TEAL, f);
-    }
-
-    /** Phase Fall: the floor ripples where you sink into it, and again where you come out, with a pale streak between. */
-    private static void drop(Canvas c, Active a, float t) {
-        Vec3 from = a.origin(), to = a.target();
-        boolean down = to.y < from.y;
-        float life = a.piece().ticks, f = fade(t, life, 0, 6), k = Mth.clamp(t / 7F, 0, 1);
-        ripple(c, from.add(0, .06, 0), UP, 1.4F, k, TEAL, f);
-        // Coming out of a ceiling (down) or up through a floor (rise).
-        Vec3 out = down ? to.add(0, 2.05, 0) : to.add(0, .06, 0);
-        ripple(c, out, UP, 1.2F, Mth.clamp((t - 1) / 7F, 0, 1), TEAL, f);
-        if (c.glow()) {
-            Vec3 a0 = from.add(0, 1, 0), b0 = to.add(0, 1, 0);
-            float s = Mth.clamp(t / 2F, 0, 1);
-            c.line(a0, a0.lerp(b0, s), .35F, DEEP, .25F * f, .1F * f);
-            c.line(a0, a0.lerp(b0, s), .06F, PALE, .6F * f, .2F * f);
-        }
-    }
-
-    /** Untouchable: the blow goes through a pale shell of you left where you stood, which shivers and breaks into rings. */
-    private static void slip(Canvas c, Active a, float t) {
-        Vec3 o = a.origin();
-        float life = a.piece().ticks, f = fade(t, life, 0, 6), k = Mth.clamp(t / 8F, 0, 1);
-        Entity e = a.bound(c);
-        Vec3 face = e == null ? new Vec3(0, 0, 1) : Vec3.directionFromRotation(0, e.getYRot());
-        float shiver = Mth.sin((t + c.partial) * 3.1F) * .05F * (1 - k);
-        oval(c, o.add(face.scale(-.15 - k * .3)).add(shiver, .95, 0), face, .4F + k * .3F, .95F + k * .2F, 2, .6F + k * .3F, a.seed(),
-                f * (firstPerson(e) ? .3F : 1));
-        ripple(c, o.add(0, .06, 0), UP, 1.4F, k, PALE, .8F * f);
-        if (c.glow()) {
-            for (int i = 0; i < 8; i++) {
-                float ang = i * Mth.TWO_PI / 8 + hash(a.seed(), i);
-                Vec3 p = o.add(0, .4 + 1.1 * hash(a.seed(), i + 8), 0);
-                Vec3 out = new Vec3(Mth.cos(ang), (hash(a.seed(), i + 16) - .5F) * .6F, Mth.sin(ang));
-                c.line(p.add(out.scale(.3 + k * .8)), p.add(out.scale(.5 + k * 1.2)), .025F, TEAL, .7F * f * (1 - k), 0);
-            }
-        }
     }
 
     private static boolean minimal() {
@@ -497,46 +334,61 @@ final class DensityArt {
      * flat, leaving a ring of crumbs; started Dense, the ground splits in a star. Bound to the phaser; origin the foe's
      * feet, target where the phaser stood; scale the foe's height (+ DENSE).
      */
+    /** Where a hand is drawn from: the visible hand in first person, the body's hand otherwise. */
+    private static Vec3 hand(Canvas c, Entity owner) {
+        Minecraft mc = Minecraft.getInstance();
+        if (owner == mc.player && mc.options.getCameraType() == CameraType.FIRST_PERSON) {
+            Vec3 look = owner.getViewVector(c.partial);
+            Vec3 right = look.cross(UP).normalize();
+            return owner.getEyePosition(c.partial).add(look.scale(.6)).add(right.scale(.32)).add(0, -.3, 0);
+        }
+        if (owner instanceof LivingEntity body) {
+            Vec3 look = body.getViewVector(c.partial);
+            return DensityGeometry.hand(body, look, c.partial);
+        }
+        return owner.getPosition(c.partial).add(0, 1.2, 0);
+    }
+
     /**
-     * The alternate finishers ({@code phasing/DensityFinishers}). Phase Punch: standing ripples on the foe's chest as the
-     * ghostly fist sinks in, then a ring of stone and chips of it thrown out of its back as the fist turns solid. Heavy
-     * Hand: plates of stone gathering on the forearm, then a crater (a star of cracks, a ring of tilted slabs that fold in
-     * and seal it). Origin the foe's feet, target yours, the phaser's entity id in the seed, scale its height.
+     * The alternate finishers ({@code phasing/DensityFinishers}). Rock Clap: two slabs of the ground stand up on either side
+     * of the foe, then clap together and break into chunks that tumble out (the seed is the ground's block, so they are
+     * its colour). Heavy Hand: plates of stone gathering on the forearm, then a crater (a star of cracks, a ring of tilted
+     * slabs that fold in and seal it); its seed is the bender's entity id. Origin the foe's feet, target yours, scale its
+     * height.
      */
     static void alternates(Canvas c, Active a, float t) {
         float h = Math.max(.6F, a.scale()), f = fade(t, a.piece().ticks, 1, 7);
         Vec3 foe = a.origin(), home = a.target();
         Vec3 toMe = home.subtract(foe).multiply(1, 0, 1);
         toMe = toMe.lengthSqr() < 1e-4 ? new Vec3(1, 0, 0) : toMe.normalize();
-        Entity owner = c.level.getEntity(a.seed());
         int seed = a.seed();
         if (a.piece() == Piece.FINISH_PHASE) {
-            int enter = com.jayptucker.heroesevolved.phasing.DensityFinishers.PHASE_ENTER, solid = com.jayptucker.heroesevolved.phasing.DensityFinishers.PHASE_SOLID;
-            Vec3 chest = foe.add(0, h * .6, 0).add(toMe.scale(.25));
-            if (t < solid + 1) {
-                float sink = smooth(enter, solid, t);
-                oval(c, chest, toMe, .35F + .15F * sink, .45F + .15F * sink, 3, (t * .12F) % 1, seed, f * smooth(enter - 1, enter + 1, t));
-                if (owner != null && c.glow()) {
-                    Vec3 fist = hand(c, owner);
-                    c.glow(fist, .22F, TEAL, f * .6F * (1 - sink * .5F));
-                    c.line(fist, chest, .05F, TEAL, f * .3F, f * .6F * sink);
-                }
-                ripple(c, home.add(0, .04, 0), UP, 1.2F, smooth(0, enter + 2, t), TEAL, f * (1 - smooth(enter, enter + 4, t)));
+            int rise = com.jayptucker.heroesevolved.phasing.DensityFinishers.CLAP_RISE, land = com.jayptucker.heroesevolved.phasing.DensityFinishers.CLAP_LAND;
+            float[] rock = EarthArt.colour(c, seed);
+            Vec3 side = new Vec3(-toMe.z, 0, toMe.x);
+            float yaw = -(float) Math.atan2(toMe.x, toMe.z);
+            float up = smooth(0, rise, t), clap = smooth(rise + 1, land, t), gone = smooth(land + 1, land + 9, t);
+            float sh = h * 1.05F + .2F, gap = (1 - clap) * (.75F + h * .1F) + .24F;
+            if (t < land + 2) for (int s2 = -1; s2 <= 1; s2 += 2) {
+                // Each slab climbs out of the ground beside the foe, then swings in to meet the other (box sizes are halves).
+                Vec3 at = foe.add(side.scale(s2 * gap)).add(0, sh * .5 * up - sh * .5 * (1 - up), 0);
+                slab(c, at, .2F, sh * .5F, .55F, yaw, 0, s2 * .12F * (1 - clap), rock, 1);
             }
-            if (t >= solid) {
-                float k = smooth(solid, solid + 6, t);
-                ripple(c, chest.subtract(toMe.scale(.5)), toMe.scale(-1), .9F, k, PALE, f * (1 - k));
-                for (int i = 0; i < 7; i++) {
-                    float ang = hash(seed, i) * Mth.TWO_PI;
-                    Vec3 out = toMe.scale(-1).add(new Vec3(-toMe.z, 0, toMe.x).scale(Mth.cos(ang) * .6)).add(0, Mth.sin(ang) * .6, 0).normalize();
-                    float s = t - solid;
-                    Vec3 at = chest.subtract(toMe.scale(.4)).add(out.scale(s * .18)).add(0, -.012 * s * s, 0);
-                    slab(c, at, .07F, .06F, .08F, ang + s * .3F, s * .4F, i, STONE, 1 - smooth(solid + 8, solid + 12, t));
+            for (int i = 0; i < 6; i++) crack(c, foe, i * Mth.TWO_PI / 6 + hash(seed, i), 1.4F * up, seed + i, 0, f * (1 - gone));
+            if (t >= land) {
+                float s = t - land;
+                for (int i = 0; i < 12; i++) {
+                    float ang = hash(seed, i + 3) * Mth.TWO_PI, lift = .15F + hash(seed, i + 40) * .25F;
+                    Vec3 out = side.scale(Mth.cos(ang)).add(toMe.scale(Mth.sin(ang) * .5)).add(0, lift, 0);
+                    Vec3 at = foe.add(0, h * (.25 + hash(seed, i + 70) * .7), 0).add(out.scale(s * .2)).add(0, -.02 * s * s, 0);
+                    float size = .14F + hash(seed, i + 90) * .14F;
+                    slab(c, at, size, size, size, ang + s * .4F, s * .5F, i, rock, 1 - gone);
                 }
-                if (c.glow()) c.glow(chest, .7F * (1 - smooth(solid, solid + 3, t)), PALE, f * (1 - smooth(solid, solid + 3, t)));
+                if (c.glow()) c.glow(foe.add(0, h * .55, 0), .8F * (1 - smooth(land, land + 3, t)), PALE, f * .5F * (1 - smooth(land, land + 3, t)));
             }
             return;
         }
+        Entity owner = c.level.getEntity(seed);
         // Heavy Hand.
         int brace = com.jayptucker.heroesevolved.phasing.DensityFinishers.HEAVY_BRACE, swing = com.jayptucker.heroesevolved.phasing.DensityFinishers.HEAVY_SWING;
         int land = com.jayptucker.heroesevolved.combat.FinisherBeats.HEAVY_LAND;

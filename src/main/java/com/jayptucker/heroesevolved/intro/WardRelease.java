@@ -70,12 +70,13 @@ final class WardRelease {
                 AbilityEffects.send(level, Kind.OPTIC_BURST, ward.position(), ward.getEyePosition(), 6);
             }
             case "phasing" -> {
-                // They go thin for five seconds: blows pass straight through, and the ripple shoves.
+                // The ground rises round them as a shell of rock for five seconds, and throws the threats back.
                 PowerIntroService.shieldWard(ward, 100);
                 for (LivingEntity threat : threats) shove(threat, ward.position(), 1.1, 0.4);
-                AbilityEffects.send(level, Kind.DENSITY_RIPPLE, ward.position(), ward.getEyePosition(), 6);
-                AbilityEffects.send(level, Kind.DENSITY_GHOST, ward.position(), ward.getEyePosition(), 1);
-                sound(level, ward, SoundEvents.RESPAWN_ANCHOR_DEPLETE.value(), 1.2F, 1.4F);
+                com.jayptucker.heroesevolved.phasing.EarthGeometry.show(level, com.jayptucker.heroesevolved.styles.Piece.EARTH_TENT,
+                        ward.position(), ward.position(), 1.8F, null, null);
+                AbilityEffects.send(level, Kind.DENSITY_SLAM, ward.position(), ward.position().add(0, 1, 0), 4);
+                sound(level, ward, SoundEvents.WARDEN_DIG, 1.2F, 0.8F);
             }
             case "empathic_mimicry" -> {
                 // Their attackers' strength drains through the owner into the ward.

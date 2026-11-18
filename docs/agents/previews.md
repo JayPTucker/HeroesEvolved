@@ -124,7 +124,7 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | `awakening-preview.init.gradle` | every power's awakening and every danger, live | `-Ponly=cryokinesis,quake`, `-Psound` |
 | `cryo-preview.init.gradle`, `cryo-skills-preview.init.gradle` | Cryokinesis ice, skating, the six skills | |
 | `terrain-frost-preview.init.gradle` | Ice Blast freezing stone, obsidian, water and lava | |
-| `density-preview.init.gradle`, `density-skills-preview.init.gradle` | Density and every Density skill | |
+| `earth-preview.init.gradle` | Density's earthbending: every key, Tiger and Crane, the tree, the classes, Rock Clap, first person, the Root ring | |
 | `electro-preview.init.gradle`, `lightning-preview.init.gradle` | Electrokinesis, and its lightning style | |
 | `skill-anim-preview.init.gradle` | Electrokinesis and Superspeed skills | |
 | `flight-preview.init.gradle`, `rework-preview.init.gradle` | Flight maneuvers; Tempest, a standing tornado, Matter Assembly, Starfall | |

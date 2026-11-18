@@ -334,7 +334,6 @@ public final class MatterAssemblyService {
     public static List<BlockPos> cells(ServerPlayer p) { return AssemblyTerrain.get(p.serverLevel()).owned(p); }
     private static boolean canHarm(ServerPlayer p, LivingEntity target) {
         if (target == p || !target.isAlive() || target.isSpectator() || p.isAlliedTo(target)) return false;
-        if (com.jayptucker.heroesevolved.phasing.DensityService.isIntangible(target)) return false;
         if (target instanceof Player other && (other.isCreative() || !p.server.isPvpAllowed() || !p.canHarmPlayer(other))) return false;
         if (target instanceof net.minecraft.world.entity.TamableAnimal pet && pet.isOwnedBy(p)) return false;
         return true;

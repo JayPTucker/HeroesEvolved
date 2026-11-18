@@ -123,6 +123,16 @@ public final class FirstPersonArmGeometry {
             return;
         }
         if (switch (pose) {
+            case EARTH_STANCE, EARTH_LIFT, EARTH_STRIKE, EARTH_STOMP, EARTH_RAISE, EARTH_WALL, EARTH_SHOVE, EARTH_HEAVE,
+                    EARTH_SLAM, EARTH_CLAW, EARTH_GAUNTLET, EARTH_SURF, EARTH_LISTEN, EARTH_CRUSH, EARTH_TENT, EARTH_SLIDE_LEFT,
+                    EARTH_SLIDE_RIGHT -> true;
+            default -> false;
+        }) {
+            var player = net.minecraft.client.Minecraft.getInstance().player;
+            earth(stack, side, player == null || arm == player.getMainArm(), pose, poseAge, time);
+            return;
+        }
+        if (switch (pose) {
             case WATER_WHIP, WATER_SNARE, WATER_HEAVE, WATER_OCTOPUS, WATER_BURST, WATER_SURF, WATER_LEAP, WATER_CALL,
                     WATER_LASH, WATER_BACKHAND, WATER_DAGGERS, WATER_WHEEL, WATER_FLOW, WATER_VAULT,
                     WATER_PUSH, WATER_RAISE, WATER_HEAL, WATER_DOME -> true;
@@ -1382,6 +1392,93 @@ public final class FirstPersonArmGeometry {
      * the heave lifts both hands from below; the octopus and the surf hold the arms out at the sides; daggers thrust in
      * toward the crosshair; calls and raises lift the palms.
      */
+    /**
+     * Density's earthbending in first person. The hands stay at the edges of the view: the lead hand held out as a bridge
+     * and the rear fist low at the hip in stance; both palms rising up into view to lift a stone; a punch driven in toward
+     * the crosshair; palms pressing down out of sight for a stomp; both hands thrust up past the top of the view for a
+     * pillar and the forearms raised edge-on for a wall; a two-palm shove; arms straining up at the top corners for the
+     * mountain, then hammered down; the lead hand raking across for a claw; a fist thrown straight out; a balance crouch;
+     * palms hovering low over the ground; a fist raised and clenched; arms swept up and apart; and a low palm on the
+     * side of a slide.
+     */
+    private static void earth(PoseStack stack, float side, boolean main, ArmPose pose, float age, float time) {
+        float spread = .45F, height = -.48F, depth = -.28F, pitch = -78, yaw = side * 6, roll = side * 6;
+        switch (pose) {
+            case EARTH_STANCE -> {
+                float set = smooth(age / 3F), breath = (float) Math.sin(time * .12F) * .01F;
+                if (main) { spread = .5F; height = -.62F * set - .48F * (1 - set) + breath; depth = -.2F; pitch = -55; roll = side * 10; }
+                else { spread = .38F; height = -.4F + breath; depth = -.36F * set - .28F * (1 - set); pitch = -85; yaw = side * -8; }
+            }
+            case EARTH_LIFT -> {
+                float rise = smooth(age / 5F);
+                spread = .42F - .08F * rise; height = -.75F + .3F * rise; depth = -.3F; pitch = -60 - 25 * rise; roll = side * (4 - 30 * rise);
+            }
+            case EARTH_STRIKE, EARTH_GAUNTLET -> {
+                float punch = smooth(age / 1.5F), recover = smooth((age - 5) / 5F);
+                float k = punch * (1 - recover);
+                if (main) { spread = .45F - .25F * k; height = -.5F + .08F * k; depth = -.28F - .3F * k; pitch = -80 - 6 * k; yaw = side * (6 + 10 * k); }
+                else { spread = .5F; height = -.62F; depth = -.2F; pitch = -55; }
+            }
+            case EARTH_STOMP -> {
+                float raise = smooth(age / 2.5F), stamp = smooth((age - 2.5F) / 1.5F), recover = smooth((age - 9) / 5F);
+                float up = raise * (1 - stamp), down = stamp * (1 - recover);
+                spread = .5F; height = -.48F + .15F * up - .25F * down; depth = -.3F; pitch = -78 + 25 * down; roll = side * (6 + 20 * down);
+            }
+            case EARTH_RAISE, EARTH_TENT -> {
+                float up = smooth((age - 1.5F) / 2.5F), recover = smooth((age - 9) / 5F), k = up * (1 - recover);
+                spread = .46F + (pose == ArmPose.EARTH_TENT ? .15F * smooth((age - 3) / 5F) : 0);
+                height = -.55F + .55F * k; depth = -.3F; pitch = -70 - 55 * k; roll = side * (6 + 8 * k);
+            }
+            case EARTH_WALL -> {
+                float up = smooth((age - 1) / 2.5F), recover = smooth((age - 10) / 5F), k = up * (1 - recover);
+                spread = .45F - .12F * k; height = -.5F + .22F * k; depth = -.32F; pitch = -80 - 20 * k; yaw = side * (6 + 25 * k); roll = side * (6 + 45 * k);
+            }
+            case EARTH_SHOVE -> {
+                float thrust = smooth((age - 1.5F) / 1.5F), recover = smooth((age - 7) / 5F), k = thrust * (1 - recover);
+                spread = .44F - .14F * k; height = -.48F + .05F * k; depth = -.25F - .25F * k; pitch = -84; roll = side * (6 - 40 * k);
+            }
+            case EARTH_HEAVE -> {
+                float up = smooth(age / 4F), strain = (float) Math.sin(time * 1.7F) * .012F * up;
+                spread = .5F + strain; height = -.48F + .42F * up; depth = -.34F; pitch = -78 - 50 * up; roll = side * (6 + 15 * up);
+            }
+            case EARTH_SLAM -> {
+                float over = smooth(age / 1.2F), down = smooth((age - 1.2F) / 1.8F), recover = smooth((age - 8) / 5F);
+                float up = over * (1 - down), low = down * (1 - recover);
+                spread = .42F; height = -.48F + .5F * up - .25F * low; depth = -.3F; pitch = -78 - 60 * up + 20 * low;
+            }
+            case EARTH_CLAW -> {
+                float rake = smooth(age / 1.8F), recover = smooth((age - 5) / 4F), k = rake * (1 - recover);
+                if (!main) { spread = .5F - .4F * k; height = -.36F - .12F * k; depth = -.38F; pitch = -85; yaw = side * (-10 + 40 * k); roll = side * (10 - 20 * k); }
+                else { spread = .5F; height = -.62F; depth = -.2F; pitch = -55; }
+            }
+            case EARTH_SURF -> {
+                float open = smooth(age / 4F), sway = (float) Math.sin(time * .25F) * .02F;
+                spread = .55F + .15F * open + sway; height = -.5F - .05F * open; depth = main ? -.2F : -.34F; pitch = -70 + (main ? 20 : 0) * open;
+                yaw = side * (6 - 25 * open); roll = side * (6 + 25 * open);
+            }
+            case EARTH_LISTEN -> {
+                float lay = smooth(age / 5F);
+                spread = .52F; height = -.5F - .2F * lay; depth = -.32F; pitch = -78 + 35 * lay; roll = side * (6 + 10 * lay);
+            }
+            case EARTH_CRUSH -> {
+                float up = smooth(age / 1.5F), clench = smooth((age - 2) / 2F), shake = (float) Math.sin(time * 2.3F) * .008F * clench;
+                if (main) { spread = .4F + shake; height = -.48F + .25F * up - .06F * clench; depth = -.34F; pitch = -80 - 30 * up; }
+                else { spread = .5F; height = -.62F; depth = -.2F; pitch = -55; }
+            }
+            case EARTH_SLIDE_LEFT, EARTH_SLIDE_RIGHT -> {
+                boolean lowSide = (pose == ArmPose.EARTH_SLIDE_RIGHT) == (side > 0);
+                float on = smooth(age / 1.5F) * (1 - smooth((age - 8) / 5F));
+                spread = .5F + (lowSide ? .15F : -.05F) * on; height = -.48F - (lowSide ? .25F : 0) * on; depth = -.3F;
+                pitch = -78 + (lowSide ? 30 : 0) * on; roll = side * (6 + (lowSide ? 30 : 0) * on);
+            }
+            default -> { }
+        }
+        stack.translate(side * spread, height, depth);
+        stack.mulPose(Axis.YP.rotationDegrees(yaw));
+        stack.mulPose(Axis.XP.rotationDegrees(pitch));
+        stack.mulPose(Axis.ZP.rotationDegrees(roll));
+    }
+
     private static void water(PoseStack stack, float side, boolean main, ArmPose pose, float age) {
         float spread = .43F, height = -.4F, depth = -.25F, pitch = -82, yaw = side * 5, roll = side * 4;
         switch (pose) {

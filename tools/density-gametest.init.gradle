@@ -1,0 +1,28 @@
+// Targeted Density (earthbending) tests, with the fighting styles and the skill-tree and balance catalogs that check
+// every power; test code is excluded from the release jar.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def tests = sourceSets.create('densityTest') {
+                java.srcDir('src/gametest/java')
+                java.include('com/jayptucker/heroesevolved/phasing/**')
+                java.include('com/jayptucker/heroesevolved/combat/FightingStylesGameTests.java')
+                java.include('com/jayptucker/heroesevolved/skills/SkillTreeGameTests.java')
+                java.include('com/jayptucker/heroesevolved/skills/PowerBalanceGameTests.java')
+                java.include('com/jayptucker/heroesevolved/skills/BalanceDumpGameTests.java')
+                resources.srcDir('src/gametest/resources')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(tests) } }
+                runs { gameTestServer { gameDirectory = project.file('build/density-test-world') } }
+            }
+            tasks.named('runGameTestServer') {
+                dependsOn(tasks.named('densityTestClasses'))
+                def staleWorld = project.file('build/density-test-world/world')
+                doFirst { staleWorld.deleteDir() }
+            }
+        }
+    }
+}

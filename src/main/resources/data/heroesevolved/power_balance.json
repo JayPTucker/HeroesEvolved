@@ -933,52 +933,53 @@
     "cooldown": 6,
     "base_energy": 4,
     "base_cooldown": 6,
+    "drain": 3.3,
     "role": "basic",
-    "note": "a notch of density; holding it drains 1.7-3.3 a second"
+    "note": "Horse Stance toggle; holding it drains 3.3 a second (half with Wait and Listen). Shift: Seismic Stomp"
   },
   {
     "power": "phasing",
     "action": "phasing_reach",
     "unlock": 1,
-    "energy": 16,
-    "cooldown": 50,
+    "energy": 14,
+    "cooldown": 40,
     "base_energy": 16,
     "base_cooldown": 60,
     "role": "quick",
-    "note": "5 + tier that ignores armour, and no healing for 5 s"
+    "note": "Rock Strike: lift a stone (6 + tier) or hold for a boulder; the punch is free"
   },
   {
     "power": "phasing",
     "action": "phasing_embed",
     "unlock": 2,
-    "energy": 21,
-    "cooldown": 125,
+    "energy": 19,
+    "cooldown": 115,
     "base_energy": 24,
     "base_cooldown": 200,
     "role": "skill",
-    "note": "half into the floor for 5 s, taking 50% more"
+    "note": "Earth Shackle: a 3 + tier s hold, 50% more taken; Crush (4 + tier) is free"
   },
   {
     "power": "phasing",
     "action": "phasing_sink",
     "unlock": 3,
-    "energy": 16,
-    "cooldown": 50,
+    "energy": 20,
+    "cooldown": 60,
     "base_energy": 20,
     "base_cooldown": 40,
     "role": "quick",
-    "note": "move through the ground"
+    "note": "Pillar (4 + tier and a throw, or a lift for you) or a wall that stops shots and shoves (5 + tier)"
   },
   {
     "power": "phasing",
     "action": "phasing_hollow",
     "unlock": 5,
-    "energy": 66,
-    "cooldown": 1000,
+    "energy": 80,
+    "cooldown": 1200,
     "base_energy": 60,
     "base_cooldown": 900,
     "role": "ultimate",
-    "note": "everyone in 6 + tier blocks sinks for 5 s"
+    "note": "Rising Mountain: a telegraphed lift and slam, 8 + 2/tier to all on it"
   },
   {
     "power": "time_manipulation",

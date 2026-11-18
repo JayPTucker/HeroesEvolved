@@ -1,0 +1,14 @@
+{
+  "values": [
+    "minecraft:deepslate",
+    "minecraft:cobbled_deepslate",
+    "#minecraft:deepslate_ore_replaceables",
+    "minecraft:obsidian",
+    "minecraft:crying_obsidian",
+    "minecraft:blackstone",
+    "minecraft:basalt",
+    "minecraft:polished_basalt",
+    "minecraft:smooth_basalt",
+    "minecraft:ancient_debris"
+  ]
+}

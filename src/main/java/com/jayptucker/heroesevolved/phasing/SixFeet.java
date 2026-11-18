@@ -17,16 +17,16 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Density's finisher, Six Feet: ripples run out from your feet as you go Ghost, stone fingers rise round the foe's ankles
- * and pull it into the ground to the knees, you come up behind it at Full Dense with stone on your forearms and bring a
- * two-fisted hammer down on its head, and it is driven under while slabs fold over the spot like a closing hand. If you
- * are Dense when it starts, the hammer splits the ground in a star and roots every foe within 4 blocks. No real blocks
- * break. Your Ambush hand is primed.
+ * Density's finisher, Six Feet: you stamp, stone fingers rise round the foe's ankles and pull it into the ground to the
+ * knees, you slide round behind it on the moving ground with stone on your forearms and bring a two-fisted hammer down
+ * on its head, and it is driven under while slabs fold over the spot like a closing hand. If you are in Horse Stance
+ * when it starts, the hammer splits the ground in a star and roots every foe within 4 blocks. No real blocks break.
+ * Your Root fills.
  */
 public final class SixFeet {
     public static final int GRASP = 6, BEHIND = 13, HAMMER = 16, LAND = 20, TICKS = 30;
     public static final double SINK = .7, UNDER = 1.6, ROOT_RANGE = 4;
-    /** Added to the piece's scale when you start Dense (the star crack). */
+    /** Added to the piece's scale when you start in Horse Stance (the star crack). */
     public static final float DENSE = 32;
 
     private SixFeet() {}
@@ -51,8 +51,8 @@ public final class SixFeet {
             run.state = new Burial(behind, dense);
             Takedowns.show(run.level(), Piece.FINISH_SIXFEET, run.anchor, p.position(), Math.max(.6F, foe.getBbHeight()) + (dense ? DENSE : 0),
                     p, p.getId());
-            ArmPosePayload.show(p, ArmPose.DENSITY_DROP, GRASP + 2);
-            Takedowns.sound(run, p.position(), SoundEvents.AMETHYST_BLOCK_RESONATE, .7F, .6F);
+            ArmPosePayload.show(p, ArmPose.EARTH_STOMP, GRASP + 2);
+            Takedowns.sound(run, p.position(), SoundEvents.ROOTED_DIRT_BREAK, .9F, .6F);
         }
 
         @Override public void tick(Run run) {
@@ -70,7 +70,7 @@ public final class SixFeet {
                 Takedowns.sound(run, run.anchor, SoundEvents.ROOTED_DIRT_BREAK, 1F, .6F);
             }
             if (age == BEHIND && burial.behind != null) {
-                Takedowns.sound(run, p.position(), SoundEvents.SOUL_ESCAPE.value(), .7F, 1.4F);
+                Takedowns.sound(run, p.position(), SoundEvents.GRAVEL_BREAK, .8F, .7F);
                 Takedowns.move(p, burial.behind);
                 Takedowns.face(p, foe.getEyePosition());
             }

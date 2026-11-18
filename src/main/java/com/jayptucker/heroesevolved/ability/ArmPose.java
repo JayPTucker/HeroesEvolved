@@ -144,7 +144,9 @@ public enum ArmPose {
      *  (the seal thrown); a blade drawn from the opposite hip and slashed across (Moment's Edge); a hand that twists a
      *  crown forward and flicks it at the target (Fast Forward). */
     TIME_HALT, TIME_SNAP, TIME_PLANT, TIME_RECALL, TIME_WIND, TIME_FRAME, TIME_THROW, TIME_DRAW, TIME_TURN,
-    /** Density's skill gestures: a shoulder-first lunge through a body, arms trailing (Pass Through); one arm leading
+    /** Density's older skill gestures (since the earthbending rework, Brace, Burst, Press, Close and Grasp are still used;
+     *  the rest keep their places because poses go over the network by ordinal): a shoulder-first lunge through a body,
+     *  arms trailing (Pass Through); one arm leading
      *  into a wall while the other waves friends on (Phase Carry); fists clenched low at the sides, braced (Harden);
      *  both arms flung out and down as the weight is let go (Rebound); a palm pressed down at a distant point
      *  (Sinkhole); both hands pressed down and closed together (Entombed); arms loose and open, drifting (Fade Through);
@@ -227,5 +229,15 @@ public enum ArmPose {
     /** Breach Boxing's Breach Hop: both forearms thrown up across the face as the body dives sideways through a tear. */
     VIBE_HOP,
     /** Rift Fall: both arms thrown up at the sky, shaking as they tear it open, then dragged down as the ground gives way. */
-    VIBE_RIFT
+    VIBE_RIFT,
+    /** Density's earthbending, after Hung Gar (phasing/). Horse Stance: feet wide, knees bent low, fists chambered at the
+     *  hips (held). Lift: both palms rise from the hips to the chest, drawing a stone up. Strike: a straight punch from the
+     *  hip with the body turned behind it. Stomp: the lead knee raised and driven down, the arms pressing down with it.
+     *  Raise: both palms thrust up from low, a pillar. Wall: both forearms brought up together edge-on, a wall. Shove: both
+     *  palms driven forward at chest height. Heave: both arms lifting something enormous (held). Slam: both fists brought
+     *  down from overhead. Claw: a tiger claw raking forward, fingers hooked. Gauntlet: the arm thrown out straight, fist
+     *  closed. Surf: knees bent, arms out for balance (held). Listen: stance, palms flat toward the ground (held). Crush: a
+     *  raised fist clenched hard. Tent: both arms swept up and apart. Slide: braced side-on, the leading palm low. */
+    EARTH_STANCE, EARTH_LIFT, EARTH_STRIKE, EARTH_STOMP, EARTH_RAISE, EARTH_WALL, EARTH_SHOVE, EARTH_HEAVE, EARTH_SLAM,
+    EARTH_CLAW, EARTH_GAUNTLET, EARTH_SURF, EARTH_LISTEN, EARTH_CRUSH, EARTH_TENT, EARTH_SLIDE_LEFT, EARTH_SLIDE_RIGHT
 }
