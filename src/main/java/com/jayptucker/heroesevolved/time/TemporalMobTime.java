@@ -45,7 +45,7 @@ public final class TemporalMobTime {
     }
 
     public static LivingEntity target(Mob mob, LivingEntity target) {
-        if (perceives(mob)) return target;
+        if (perceives(mob) || TemporalSharing.shared(mob)) return target;
         return TimeVeil.perceivedTarget(mob, target);
     }
 

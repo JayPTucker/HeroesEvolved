@@ -138,6 +138,15 @@ public final class SetPieceClient {
         return out;
     }
 
+    /** Every copy of {@code piece} that has started and not yet ended. */
+    public static List<Active> running(Piece piece) {
+        List<Active> out = new ArrayList<>();
+        if (world == null || Minecraft.getInstance().level != world || ACTIVE.isEmpty()) return out;
+        long now = world.getGameTime();
+        for (Active a : ACTIVE) if (a.piece == piece && now >= a.start && a.age(0) <= piece.ticks) out.add(a);
+        return out;
+    }
+
     /** Where each running copy of {@code piece} is now: on its entity if it rides one, else where it was cast. */
     public static List<Vec3> where(Piece piece) {
         List<Vec3> out = new ArrayList<>();

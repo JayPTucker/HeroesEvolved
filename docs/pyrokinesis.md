@@ -20,6 +20,11 @@ awakening, mastery and skill points.
 - **Fuel and weakness:** standing in fire or lava restores 3 stamina per second. Water and rain cost
   2 stamina per second. Cold damage, including Cryokinesis, hurts you 50% more. A hostile
   Ice Blast or a solid freeze also drains your Heat and snuffs active flame attacks and jets.
+- **Rain puts you out.** Standing in the rain (rain falling on your feet or head; a roof, an overhang or a dry biome
+  keeps you burning), Pyrokinesis does nothing. Every move, firebending strike, dodge and finisher **fizzles** instead
+  (a hiss and a puff of smoke from the palms, free: no stamina, no cooldown). The moment the rain reaches you, held
+  flames go out: Flame Flight's jets, breath and palm streams, the fire ring, Ember Mines, a falling sun and the
+  Phoenix (which also burns out if it flies into rain). Smoke keeps curling off you until you get under cover.
 - **Contained fire:** crouch while casting and creatures still burn, but no fire blocks are placed.
 
 ## Actions

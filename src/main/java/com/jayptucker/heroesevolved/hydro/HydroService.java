@@ -185,13 +185,29 @@ public final class HydroService {
         return new Draw(.7F * boost, true);
     }
 
+    /** Health a second in water and in rain (doubled by Sea's Blessing). */
+    static final float WATER_HEAL = .75F, RAIN_HEAL = .5F;
+    /** Extra stamina recovery a second in water and in rain. */
+    static final double WATER_STAMINA = 2, RAIN_STAMINA = 1;
+
+    /** Water and rain feed a hydrokinetic's stamina, as a storm feeds an electrokinetic's. */
+    public static double seaEnergyBonus(ServerPlayer player) {
+        if (!isHydrokinetic(player) || com.jayptucker.heroesevolved.ability.service.Elements.dried(player)) return 0;
+        return player.isInWaterOrBubble() ? WATER_STAMINA : player.isInWaterRainOrBubble() ? RAIN_STAMINA : 0;
+    }
+
     /** The sea strengthens its own: a quarter more in water, a tenth more in rain. */
     public static float boost(ServerPlayer player) {
         return player.isInWaterOrBubble() ? 1.25F : player.isInWaterRainOrBubble() ? 1.1F : 1;
     }
 
+    /** Water needs the power to answer and somewhere it can exist: the Nether boils it all away. */
+    public static boolean canBend(ServerPlayer player) {
+        return PowerRules.canAct(player) && !com.jayptucker.heroesevolved.ability.service.Elements.dried(player);
+    }
+
     public static boolean canStartCast(ServerPlayer player) {
-        return PowerRules.canAct(player) && !storming(player);
+        return canBend(player) && !storming(player);
     }
 
     public static boolean octopus(ServerPlayer player) {
@@ -507,7 +523,7 @@ public final class HydroService {
 
     private static void tickOctopus(ServerPlayer player, Tide tide, long now) {
         Octopus octopus = tide.octopus;
-        if (now >= octopus.until || !PowerRules.canAct(player) || tide.water <= 0 && !player.isInWaterOrBubble()) {
+        if (now >= octopus.until || !canBend(player) || tide.water <= 0 && !player.isInWaterOrBubble()) {
             endOctopus(player);
             return;
         }
@@ -604,7 +620,7 @@ public final class HydroService {
     private static void tickRide(ServerPlayer player, Tide tide, long now) {
         Ride ride = tide.ride;
         long age = now - ride.start;
-        if (!PowerRules.canAct(player) || player.isPassenger()) { endRide(player); return; }
+        if (!canBend(player) || player.isPassenger()) { endRide(player); return; }
         if (ride.leapAt >= 0) {
             long air = now - ride.leapAt;
             if (air > 3 && (player.onGround() || player.isInWater()) || air > 40) {
@@ -711,7 +727,7 @@ public final class HydroService {
     private static void tickStorm(ServerPlayer player, Tide tide, long now) {
         Storm storm = tide.storm;
         long age = now - storm.start;
-        if (!player.level().dimension().equals(storm.dimension) || !PowerRules.canAct(player)) {
+        if (!player.level().dimension().equals(storm.dimension) || !canBend(player)) {
             tide.storm = null;
             sync(player, true);
             return;
@@ -802,9 +818,10 @@ public final class HydroService {
                 if (SkillTreeService.has(player, "hydro_1_2") && player.isEyeInFluid(FluidTags.WATER))
                     player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 260, 0, true, false, true));
             }
-            boolean healing = inWater || rain && blessing;
-            int every = blessing ? 20 : 40;
-            if (healing && player.tickCount % every == 0 && player.getHealth() < player.getMaxHealth()) player.heal(1);
+            // Water and rain mend a hydrokinetic: health each second (Sea's Blessing doubles it).
+            float heal = inWater ? WATER_HEAL : rain ? RAIN_HEAL : 0;
+            if (blessing) heal *= 2;
+            if (heal > 0 && player.tickCount % 20 == 0 && player.getHealth() < player.getMaxHealth()) player.heal(heal);
             if (inWater && blessing && player.tickCount % 20 == 0) {
                 for (MobEffectInstance effect : List.copyOf(player.getActiveEffects()))
                     if (effect.getEffect().value().getCategory() == MobEffectCategory.HARMFUL) {

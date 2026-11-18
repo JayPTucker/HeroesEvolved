@@ -109,11 +109,11 @@ act("electro_thunderstrike", "electrokinesis", 3, "skill", "4 + 2/tier where you
 act("electro_ride_the_lightning", "electrokinesis", 4, "skill", "a bolt's dash; 4 + tier to what you pass", dmg=8, n=2, blocks=16)
 act("electro_storm_surge", "electrokinesis", 5, "ultimate", "8 + tier + Charge to everything round you", dmg=13, n=4, ult=True)
 # --- Vibe
-act("vibe_blast", "vibe", 1, "basic", "a wave of 4 + tier (palm) to 7 + 1.5/tier", dmg=6, n=1.5)
+act("vibe_blast", "vibe", 1, "basic", "held blast: 1.2 + 0.35/tier every 6 ticks while it drains", fixed=4, cd=.5, drain=9)
 act("vibe_breach", "vibe", 2, "skill", "two-way portals", util=20)
 act("vibe_read", "vibe", 3, "skill", "replays a scene's fights", util=12)
 act("vibe_breach_guard", "vibe", 4, "skill", "a moving breach that swallows shots", util=22)
-act("vibe_frequency_lock", "vibe", 5, "ultimate", "4 + tier (+4 if read) and a slow, after a telegraph", dmg=9 * .75, n=4, ctrl=2, ult=True)
+act("vibe_frequency_lock", "vibe", 5, "ultimate", "Rift Fall: everyone in the ring drops out of a sky breach, 6 + 2/tier and a slow", dmg=9 * .75, n=4, ctrl=2, ult=True)
 # --- Matter Assembly
 act("matter_assembly_barricade", "matter_assembly", 1, "skill", "a 3x2 wall (also costs material)", util=12)
 act("matter_assembly_shard_lance", "matter_assembly", 1, "basic", "a shard up to 64 blocks", dmg=6)

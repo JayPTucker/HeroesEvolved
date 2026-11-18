@@ -237,8 +237,9 @@ public final class TimeSlowService {
     static boolean controlsShot(ServerPlayer player, Projectile shot, Vec3 end) {
         TimeSlowField field = ACTIVE_FIELDS.get(player.getUUID());
         double radius = HeroesEvolvedConfig.COMMON.timeSlowRadius.get();
-        return field != null && !field.hasEnded() && field.dimension().equals(shot.level().dimension())
-                && ProjectileTimeService.reachesField(shot.position(), end, field.center(), radius);
+        return field != null && !field.hasEnded() && (TimeVeil.serverWide()
+                || field.dimension().equals(shot.level().dimension())
+                && ProjectileTimeService.reachesField(shot.position(), end, field.center(), radius));
     }
 
     private static TimeSlowField getContainingField(Entity entity, Vec3 end) {

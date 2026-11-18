@@ -119,6 +119,17 @@ public final class PlayerAbilityService {
         return true;
     }
 
+    /** Replace an assignment without waking it; claim first so a refusal leaves the old power intact. */
+    public static boolean replaceWithDormantAbility(ServerPlayer player, ResourceLocation abilityId) {
+        validateRegisteredAbility(abilityId);
+        PlayerAbilityData data = getData(player);
+        if (data.ability(abilityId).filter(p -> !p.isUnlocked()).isPresent()) return false;
+        if (!claim(player, abilityId)) return false;
+        data.assignedPower().ifPresent(assignment -> revokeAbility(player, assignment));
+        saveData(player, PlayerAbilityData.empty().assignDormant(abilityId));
+        return true;
+    }
+
     public static boolean removeAssignedAbility(ServerPlayer player) {
         PlayerAbilityData data = getData(player);
 

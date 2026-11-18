@@ -285,7 +285,7 @@ public final class PowerArmPoses {
                     QUAKE_BRACE, QUAKE_RELEASE, QUAKE_DASH, QUAKE_TOUCH, QUAKE_SPLIT, QUAKE_RAMPART, QUAKE_ROOT ->
                     quake(model, pose, main, rightHanded ? model.leftArm : model.rightArm, inward, aimX, aimY,
                             ClientArmPoseState.ageTicks(id), ageInTicks, rightHanded);
-            case VIBE_PALM, VIBE_OPEN, VIBE_READ, VIBE_GUARD, VIBE_LOCK, VIBE_LANCE, VIBE_CROSS, VIBE_STEP ->
+            case VIBE_PALM, VIBE_OPEN, VIBE_READ, VIBE_GUARD, VIBE_LOCK, VIBE_LANCE, VIBE_CROSS, VIBE_STEP, VIBE_CHANNEL, VIBE_HOP, VIBE_RIFT ->
                     vibe(pose, main, rightHanded ? model.leftArm : model.rightArm, inward, aimX, aimY, ClientArmPoseState.ageTicks(id));
             case TIME_HALT, TIME_SNAP, TIME_PLANT, TIME_RECALL, TIME_WIND, TIME_FRAME, TIME_THROW, TIME_DRAW, TIME_TURN ->
                     time(pose, main, rightHanded ? model.leftArm : model.rightArm, inward, aimX, aimY,
@@ -1080,6 +1080,24 @@ public final class PowerArmPoses {
             case VIBE_STEP -> {
                 set(main, -1.38F + .36F * settle, inward * .18F, .13F * inward);
                 set(off, .47F - .29F * settle, 0, -.29F * inward);
+            }
+            case VIBE_RIFT -> {
+                // Both arms up at the sky, shaking; when the ring is full, dragged down hard.
+                float up = smooth(age / 5F), down = smooth((age - 20) / 3F), shake = .05F * net.minecraft.util.Mth.sin(age * 3.1F) * (1 - down);
+                set(main, -2.95F * up + 2.3F * down + shake, inward * (.22F - .1F * down), inward * (.35F - .2F * down));
+                set(off, -2.95F * up + 2.3F * down - shake, -inward * (.22F - .1F * down), -inward * (.35F - .2F * down));
+            }
+            case VIBE_HOP -> {
+                // Forearms crossed up in front of the face, diving through.
+                float tuck = smooth(age / 2F) * (1 - smooth((age - 6) / 4F));
+                set(main, -1.2F - .9F * tuck, inward * (.2F + .45F * tuck), inward * .3F);
+                set(off, -1.2F - .9F * tuck, -inward * (.2F + .45F * tuck), -inward * .3F);
+            }
+            case VIBE_CHANNEL -> {
+                // Arm locked straight at the tear, shaking with the blast; the other hand drawn back to brace.
+                float reach = smooth(age / 4F), shake = .035F * net.minecraft.util.Mth.sin(age * 2.7F);
+                set(main, aimX + .5F * (1 - reach) + shake, aimY - inward * .04F, inward * (.05F + shake));
+                set(off, -.38F - .2F * reach, -.36F * inward, -.33F * inward);
             }
             default -> { }
         }

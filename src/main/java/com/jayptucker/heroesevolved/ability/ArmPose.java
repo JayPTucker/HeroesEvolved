@@ -214,5 +214,12 @@ public enum ArmPose {
     SPEED_SKID_BACK, SPEED_SKID_LEFT, SPEED_SKID_RIGHT,
     /** A runner letting go at speed (speed/SpeedService.skidStop): a hockey stop, the body turned side-on to the run,
      *  crouched and leaning back from it, the rear hand on the ground braking and the lead arm out for balance. */
-    SPEED_SKID_STOP
+    SPEED_SKID_STOP,
+    /** Vibe channelling a breach (vibe/VibeBreaches): the casting arm held straight out at the tear, palm open and
+     *  trembling with the blast, the other drawn back to brace. Re-sent while it opens, so it holds. */
+    VIBE_CHANNEL,
+    /** Breach Boxing's Breach Hop: both forearms thrown up across the face as the body dives sideways through a tear. */
+    VIBE_HOP,
+    /** Rift Fall: both arms thrown up at the sky, shaking as they tear it open, then dragged down as the ground gives way. */
+    VIBE_RIFT
 }

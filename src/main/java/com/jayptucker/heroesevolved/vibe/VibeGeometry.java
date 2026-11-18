@@ -22,6 +22,12 @@ public final class VibeGeometry {
 
     private VibeGeometry() {}
 
+    /**
+     * How long a breach from the Breach key takes to tear open while the viber channels it: 30 ticks at tier 1, three
+     * fewer each tier (18 at tier 5). The server opens it and the client grows it on the same clock.
+     */
+    public static int channelTicks(int tier) { return 33 - 3 * Mth.clamp(tier, 1, 5); }
+
     public static Vec3 side(Vec3 direction) {
         Vec3 right = direction.cross(UP);
         return right.lengthSqr() < 1e-8 ? new Vec3(-1, 0, 0) : right.normalize();

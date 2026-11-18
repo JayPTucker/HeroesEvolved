@@ -18,7 +18,7 @@ public final class FirstPersonArmGeometry {
     public static void pose(PoseStack stack, HumanoidArm arm, ArmPose pose, float time, float poseAge) {
         float side = arm == HumanoidArm.RIGHT ? 1 : -1;
         if (switch (pose) {
-            case VIBE_PALM, VIBE_OPEN, VIBE_READ, VIBE_GUARD, VIBE_LOCK, VIBE_LANCE, VIBE_CROSS, VIBE_STEP -> true;
+            case VIBE_PALM, VIBE_OPEN, VIBE_READ, VIBE_GUARD, VIBE_LOCK, VIBE_LANCE, VIBE_CROSS, VIBE_STEP, VIBE_CHANNEL, VIBE_HOP, VIBE_RIFT -> true;
             default -> false;
         }) {
             vibe(stack, arm, side, pose, poseAge);
@@ -235,6 +235,31 @@ public final class FirstPersonArmGeometry {
                 pitch += -26 * push + 43 * fall;
                 x += .18F * push;
                 yaw = 18;
+            }
+            case VIBE_RIFT -> {
+                // Hands thrown up past the top of the view, then whipped down through it when the ground opens.
+                float up = smooth(age / 5F), down = smooth((age - 20) / 3F);
+                y += .55F * up - .7F * down;
+                z -= .1F * up;
+                pitch -= 70 * up - 85 * down;
+                roll = (main ? -1 : 1) * 12;
+            }
+            case VIBE_HOP -> {
+                // Both forearms flick up across the bottom of the view as you dive, then drop away.
+                float tuck = smooth(age / 2F) * (1 - smooth((age - 6) / 4F));
+                x -= .14F * tuck;
+                y += .1F * tuck;
+                pitch += 28 * tuck;
+                roll = (main ? -1 : 1) * 30 * tuck;
+            }
+            case VIBE_CHANNEL -> {
+                // The casting hand pushed out toward the middle of the view, trembling; the other drops away.
+                float reach = smooth(age / 4F), shake = .012F * net.minecraft.util.Mth.sin(age * 2.7F);
+                x -= main ? .11F * reach : -.1F;
+                y += main ? .07F * reach + shake : -.26F;
+                z -= main ? .2F * reach : 0;
+                pitch += main ? 6 : 55;
+                roll = main ? -8 : 14;
             }
             case VIBE_STEP -> {
                 x += main ? 0 : .14F;

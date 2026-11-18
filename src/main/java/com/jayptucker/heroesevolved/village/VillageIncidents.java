@@ -90,6 +90,8 @@ public final class VillageIncidents {
         Pending p = new Pending(level, village, kind, level.getGameTime(), key);
         VillageTickets.hold(level, village, key);
         PENDING.add(p);
+        // A viber nearby may see it before it happens.
+        com.jayptucker.heroesevolved.vibe.VibeVisions.foresee(level, village, kind);
     }
 
     /**

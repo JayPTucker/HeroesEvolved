@@ -120,8 +120,7 @@ public final class VibeCombatGameTests {
         p.setXRot(-56);
         p.setNoGravity(true);
         Vec3 start = p.position(), eye = p.getEyePosition(), aim = p.getLookAngle();
-        guarded(cleanup, () -> h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, true)
-                == AbilityUseResult.SUCCESS, "Shift + Breach opens along an upward aim"));
+        guarded(cleanup, () -> h.assertTrue(VibeBreaches.shiftHold(p), "Shift + Breach opens along an upward aim"));
         Vec3 near = VibeBreaches.mouthAt(p, 0), far = VibeBreaches.mouthAt(p, 1);
         guarded(cleanup, () -> {
             h.assertTrue(near.distanceToSqr(eye.add(aim.scale(2))) < 1e-5, "The near mouth is on the aim ray");
@@ -163,7 +162,7 @@ public final class VibeCombatGameTests {
         Vec3 start = p.position();
         Vec3[] ceiling = new Vec3[1];
         guarded(cleanup, () -> {
-            h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, true) == AbilityUseResult.SUCCESS,
+            h.assertTrue(VibeBreaches.shiftHold(p),
                     "Shift + Breach looking down opens a breach");
             h.assertTrue(VibeBreaches.flat(p), "and its near mouth lies flat in the floor");
             ceiling[0] = VibeBreaches.mouthAt(p, 1);
@@ -258,13 +257,18 @@ public final class VibeCombatGameTests {
     }
 
     @GameTest(template = "rewind_empty", batch = "vibe.style")
-    public static void blinkStepAndFoldBackGoThroughBreaches(GameTestHelper h) {
+    public static void breachHopAndFoldBackGoThroughBreaches(GameTestHelper h) {
         ServerPlayer p = viber(h);
         List<Entity> cleanup = new ArrayList<>(List.of(p));
-        done(h, cleanup, () -> {
-            Vec3 start = p.position();
+        Vec3 start = p.position();
+        guarded(cleanup, () -> {
             h.assertTrue(VibeStyle.STYLE.dodge(p, FightingStyles.Dodge.LEFT), "A double-tapped side dodges");
-            h.assertTrue(p.position().distanceTo(start) > 3, "Blink Step moves through a tiny breach at once: " + p.position());
+            h.assertTrue(VibeStyle.hopping(p) && p.position().distanceTo(start) < 2,
+                    "Breach Hop: a tear opens at the side and the viber dives into it");
+        });
+        h.runAfterDelay(VibeStyle.HOP_DIVE + 4, () -> done(h, cleanup, () -> {
+            h.assertTrue(!VibeStyle.hopping(p) && p.position().distanceTo(start) > 3.5,
+                    "and comes out of the far tear, several blocks along: " + p.position());
             VibeStyle.STYLE.fighter(p).dodgeReady = -1000;
             p.setPos(start.add(0, 0, 4));
             Vec3 spot = p.position();
@@ -275,7 +279,7 @@ public final class VibeCombatGameTests {
             h.assertTrue(VibeStyle.primed(p), "and leaves the spot it left primed");
             VibeStyle.burstAll(p);
             h.assertTrue(lurker.getHealth() < 24 && !VibeStyle.primed(p), "The primed spot bursts on a foe beside it");
-        });
+        }));
     }
 
     @GameTest(template = "rewind_empty", batch = "vibe.style")

@@ -13,7 +13,11 @@ public final class ProjectileCatchGeometry {
     private ProjectileCatchGeometry() {}
 
     public static double hitDistanceSquared(Player player, Projectile shot) {
-        if (player.level() != shot.level() || shot.isRemoved() || shot.getOwner() == player) return Double.POSITIVE_INFINITY;
+        return hitDistanceSquared(player, shot, false);
+    }
+
+    public static double hitDistanceSquared(Player player, Projectile shot, boolean controlsTime) {
+        if (player.level() != shot.level() || shot.isRemoved() || !controlsTime && shot.getOwner() == player) return Double.POSITIVE_INFINITY;
         Vec3 eye = player.getEyePosition(), center = shot.getBoundingBox().getCenter(), look = player.getLookAngle();
         Vec3 offset = center.subtract(eye);
         if (offset.lengthSqr() > REACH * REACH || offset.dot(look) < 0) return Double.POSITIVE_INFINITY;

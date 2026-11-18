@@ -135,6 +135,77 @@ public final class TemporalSharingGameTests {
         }
     }
 
+    @GameTest(template = "rewind_empty", batch = "time.sharing_passive")
+    public static void touchingAVillagerSharesPerceptionWithItsAiAndAnimationClock(GameTestHelper h) {
+        try (var scene = new Scene(h)) {
+            var speedster = scene.player(ModAbilities.SUPERSPEED_ID, 4, 0);
+            var villager = net.minecraft.world.entity.EntityType.VILLAGER.create(h.getLevel());
+            villager.setPos(speedster.position().add(2, 0, 0));
+            villager.getPersistentData().putBoolean(com.jayptucker.heroesevolved.gifted.GiftedMobs.ROLLED, true);
+            h.getLevel().addFreshEntity(villager);
+            try {
+                h.assertFalse(TemporalSharing.include(speedster, villager), "Perception must be active first");
+                AdvancedTechniques.startPerception(speedster);
+                h.assertTrue(TemporalMobTime.interval(villager) == 3, "The villager starts slowed");
+                var click = new PlayerInteractEvent.EntityInteract(speedster, InteractionHand.MAIN_HAND, villager);
+                NeoForge.EVENT_BUS.post(click);
+                h.assertTrue(click.isCanceled() && TemporalSharing.shared(villager), "Right-click shares speed instead of opening trades");
+                h.assertTrue(TemporalMobTime.interval(villager) == 1 && TemporalMobTime.advances(villager), "The shared mob ticks at normal speed");
+                TemporalSharing.tick(speedster.getServer());
+                h.assertTrue(TemporalSharing.shared(villager), "A mob guest does not need to be in the player list");
+                AdvancedTechniques.endPerception(speedster);
+                h.assertTrue(!TemporalSharing.shared(villager) && TemporalMobTime.interval(villager) == 1, "Ending Perception clears the invitation");
+                AdvancedTechniques.startPerception(speedster);
+                h.assertTrue(TemporalMobTime.interval(villager) == 3, "A new field does not inherit the old invitation");
+                h.succeed();
+            } finally { villager.discard(); }
+        }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "time.sharing_passive")
+    public static void passiveInvitationsRespectOtherFieldsAndEndOnPowerLoss(GameTestHelper h) {
+        try (var scene = new Scene(h)) {
+            var first = scene.player(ModAbilities.SUPERSPEED_ID, 4, 0);
+            var second = scene.player(ModAbilities.SUPERSPEED_ID, 4, 1);
+            var pig = net.minecraft.world.entity.EntityType.PIG.create(h.getLevel());
+            pig.setPos(first.position().add(2, 0, 0));
+            try {
+                AdvancedTechniques.startPerception(first); AdvancedTechniques.startPerception(second);
+                h.assertTrue(TemporalSharing.include(first, pig) && TemporalMobTime.interval(pig) == 3, "An unshared overlapping field still slows the pig");
+                h.assertTrue(TemporalSharing.include(second, pig) && TemporalMobTime.interval(pig) == 1, "Both invitations free it from both fields");
+                AdvancedTechniques.endPerception(first);
+                h.assertTrue(TemporalSharing.shared(pig) && TemporalMobTime.interval(pig) == 1, "One invitation survives the other field ending");
+                second.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty());
+                TemporalSharing.tick(second.getServer());
+                h.assertFalse(TemporalSharing.shared(pig), "Power loss removes the last invitation");
+                h.succeed();
+            } finally { pig.discard(); }
+        }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "time.sharing_passive")
+    public static void sharingPassiveCreaturesRequiresLevelTenReachAndSightAndRejectsMonsters(GameTestHelper h) {
+        try (var scene = new Scene(h)) {
+            var owner = scene.player(ModAbilities.SUPERSPEED_ID, 3, 0);
+            var pig = net.minecraft.world.entity.EntityType.PIG.create(h.getLevel());
+            var zombie = net.minecraft.world.entity.EntityType.ZOMBIE.create(h.getLevel());
+            pig.setPos(owner.position().add(2, 0, 0)); zombie.setPos(pig.position());
+            try {
+                AdvancedTechniques.startPerception(owner);
+                h.assertFalse(TemporalSharing.include(owner, pig), "Tier three cannot lend speed");
+                PlayerProgressionService.setLevel(owner, 4);
+                h.assertFalse(TemporalSharing.include(owner, zombie), "Hostile mobs cannot be invited");
+                pig.setPos(owner.position().add(5, 0, 0));
+                h.assertFalse(TemporalSharing.include(owner, pig), "Passive creatures still require touch range");
+                pig.setPos(owner.position().add(2, 0, 0));
+                BlockPos wall = owner.blockPosition().offset(1, 0, 0);
+                for (int y = 0; y < 3; y++) h.getLevel().setBlockAndUpdate(wall.above(y), net.minecraft.world.level.block.Blocks.STONE.defaultBlockState());
+                h.assertFalse(TemporalSharing.include(owner, pig), "Cover blocks passive invitations too");
+                h.succeed();
+            } finally { pig.discard(); zombie.discard(); }
+        }
+    }
+
     @GameTest(template = "rewind_empty", batch = "time.sharing")
     public static void losingThePowerReleasesGuestsAndOverlappingInvitationsStayIndependent(GameTestHelper h) {
         try (var scene = new Scene(h)) {

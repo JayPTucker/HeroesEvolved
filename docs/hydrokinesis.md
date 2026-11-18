@@ -11,11 +11,17 @@ you, carries you and makes you stronger; without it, you pull what you can out o
 - You **carry water**, seen as a stream flowing round your waist: a short arc when you have little, a full loop and a
   second, tilted strand when you are full. Up to 100 (150 with Water Skin).
 - It **fills** quickly while you stand or swim in water (10 a second), more slowly in rain (5 a second) and a little
-  when open water is close by. In the **Nether** it dries away.
+  when open water is close by.
+- **No water in the Nether.** The heat boils water off before it can gather, so Hydrokinesis does nothing there. Every
+  move, waterbending strike, dodge and finisher **fizzles** instead (a hiss and a puff of steam from the palms, free:
+  no stamina, no cooldown), held moves (Octopus Form, Wave Rider, Maelstrom, jets, spouts) end, and the water you
+  carry boils away the moment you arrive. Steam keeps rising off you while you stay. Back in the Overworld or the End
+  the reservoir fills as usual.
 - Every move **spends some**. With too little carried, the move pulls its water thin out of the air instead: it is
   drawn paler and thinner, hits 30% softer, and the effort costs a little stamina. Standing in water you never run out.
-- **The sea strengthens its own.** In water every move hits 25% harder (10% in rain), you breathe underwater, you
-  swim with Dolphin's Grace and you heal half a heart every two seconds.
+- **The sea strengthens its own.** In water every move hits 25% harder, you heal 0.75 health a second and your
+  stamina recovers 2 a second faster; you also breathe underwater and swim with Dolphin's Grace. In rain every move
+  hits 10% harder, you heal 0.5 a second and stamina recovers 1 a second faster. Sea's Blessing doubles the healing.
 - **Soaked.** Your water drenches what it hits (a status with a drop icon, six seconds). A soaked creature can't stay
   on fire, takes **half again as much from lightning** (Electrokinesis), turns **part of every burn into steam**
   (Pyrokinesis: the burn is blunted and doesn't catch, and the soaking boils off), and can be frozen solid by Ice
@@ -131,7 +137,7 @@ on a low stance, and the vault is a backflip. Calls raise both arms and circle t
 
 | Node | Level | What it does |
 | --- | --- | --- |
-| Sea's Blessing | 1 | Water heals you twice as fast, rain heals you too, and each second in water washes away one harmful effect. |
+| Sea's Blessing | 1 | Water and rain heal you twice as fast, and each second in water washes away one harmful effect. |
 | **Healing Water** (active) | 2 | Water glows in your cupped hands, arcs to a friend you aim at within six blocks (or stays with you) and spirals up their body: 6 + level healing over three seconds, and one harmful effect washed away at once. |
 | Water Skin | 2 | You carry half again as much water (150), and come back from death with it full. |
 | Soothing Tide | 3 | Healing Water spreads to every friend within four blocks of the one you heal, at half strength. |

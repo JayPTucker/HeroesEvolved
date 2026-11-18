@@ -82,13 +82,32 @@ public final class VibeGameTests {
         h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.TERTIARY, false) == AbilityUseResult.SUCCESS,
                 "Read the Vibe must cast from its normal key");
         h.assertTrue(VibeSight.marked(p, attacker), "The damage event must record and reveal the attacker behind the witness");
-        h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.PRIMARY, false) == AbilityUseResult.SUCCESS,
-                "Vibe Blast must queue");
-        h.assertTrue(attacker.getHealth() == 24, "The palm has a windup");
-        h.runAfterDelay(6, () -> {
+        // The blast stops at the first body: clear the witness out of its way.
+        witness.discard();
+        double stamina = com.jayptucker.heroesevolved.energy.PlayerEnergyService.getStamina(p);
+        h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.PRIMARY, false) == AbilityUseResult.SUCCESS
+                && VibeService.streaming(p), "Holding Vibe Blast starts a steady blast");
+        h.assertTrue(attacker.getHealth() == 24, "It gathers in the palm before it lands");
+        float hit = VibeService.streamDamage(com.jayptucker.heroesevolved.progression.PlayerProgressionService.getLevel(p));
+        h.runAfterDelay(VibeService.STREAM_GATHER + 2, () -> {
             try {
-                h.assertTrue(attacker.getHealth() < 14, "The replay mark amplifies damage");
-                h.assertTrue(covered.getHealth() == 24, "A solid wall stops the wave");
+                h.assertTrue(attacker.getHealth() <= 24 - hit * 1.29F && attacker.getHealth() > 24 - hit * 2.5F,
+                        "One hit has landed, harder for the replay mark: " + attacker.getHealth());
+                h.assertTrue(covered.getHealth() == 24, "A solid wall stops the blast");
+                h.assertTrue(com.jayptucker.heroesevolved.energy.PlayerEnergyService.getStamina(p) < stamina,
+                        "Holding it drains stamina");
+            } catch (RuntimeException | AssertionError failure) {
+                VibeService.forget(p);
+                attacker.discard();
+                covered.discard();
+                throw failure;
+            }
+        });
+        h.runAfterDelay(VibeService.STREAM_GATHER + VibeService.STREAM_PULSE * 2 + 2, () -> {
+            try {
+                h.assertTrue(attacker.getHealth() <= 24 - hit * 3.8F, "It keeps hitting for as long as it is held: " + attacker.getHealth());
+                AbilityUseService.releaseAssignedAction(p, AbilitySlot.PRIMARY);
+                h.assertFalse(VibeService.streaming(p), "Letting go of the key ends it");
                 h.succeed();
             } finally {
                 VibeService.forget(p);
@@ -172,7 +191,7 @@ public final class VibeGameTests {
             EntityCarryEvents.onEntityInteract(pickup);
             p.setShiftKeyDown(false);
             h.assertTrue(pickup.isCanceled() && EntityCarryService.isBeingCarried(pig), "Sneak and right-click takes the pig in hand");
-            h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, true) == AbilityUseResult.SUCCESS,
+            h.assertTrue(VibeBreaches.shiftHold(p),
                     "The carrier can open a linked breach while holding the pig");
         } catch (RuntimeException | AssertionError failure) {
             cleanup.run();
@@ -210,42 +229,87 @@ public final class VibeGameTests {
         try {
             h.setBlock(new BlockPos(5, 3, 4), Blocks.STONE);
             int energy = PlayerEnergyService.getEnergy(p);
-            h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, true) == AbilityUseResult.ACTIVATION_REJECTED
+            h.assertTrue(!VibeBreaches.shiftHold(p)
                     && PlayerEnergyService.getEnergy(p) == energy, "A mouth inside a wall must reject the cast without spending stamina");
             h.succeed();
         } finally { VibeService.forget(p); }
     }
 
-    @GameTest(template = "rewind_empty", batch = "vibe.lock")
-    public static void frequencyLockWarnsBeforeDamagingAndSlowingAnEnemy(GameTestHelper h) {
+    @GameTest(template = "rewind_empty", batch = "vibe.read")
+    public static void readingTheSceneReplaysBlowsEvenAfterTheFightersAreGone(GameTestHelper h) {
+        ServerPlayer p = viber(h);
+        Pillager attacker = target(h, p, 1.5, 3.5);
+        var victim = EntityType.VILLAGER.create(h.getLevel());
+        victim.setNoAi(true);
+        victim.setPos(p.position().add(0, 0, 3));
+        h.getLevel().addFreshEntity(victim);
+        try {
+            victim.hurt(h.getLevel().damageSources().mobAttack(attacker), 2);
+            attacker.hurt(h.getLevel().damageSources().mobAttack(victim), 1);
+            attacker.discard();
+            victim.discard();
+            // Looking at the floor where it happened, with nobody left to read.
+            p.setXRot(28);
+            h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.TERTIARY, false) == AbilityUseResult.SUCCESS,
+                    "Read the Vibe reads the scene");
+            h.assertTrue(VibeSight.replayed(p) == 2, "Both blows struck there are replayed: " + VibeSight.replayed(p));
+            h.succeed();
+        } finally {
+            VibeService.forget(p);
+            attacker.discard();
+            victim.discard();
+        }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "vibe.rift", skyAccess = true, timeoutTicks = 80)
+    public static void riftFallDropsEveryoneInTheRingOutOfTheSky(GameTestHelper h) {
         ServerPlayer p = viber(h);
         p.setXRot(18);
         Pillager caught = target(h, p, 0, 5);
         Pillager outside = target(h, p, 5.7, 0);
-        h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.QUINARY, false) == AbilityUseResult.SUCCESS,
-                "Frequency Lock casts from the normal slot");
-        h.runAfterDelay(VibeGeometry.LOCK_WARNING_TICKS - 2, () -> {
+        var big = EntityType.RAVAGER.create(h.getLevel());
+        big.setNoAi(true);
+        big.setPos(p.position().add(-1.5, 0, 7));
+        h.getLevel().addFreshEntity(big);
+        double floor = caught.getY(), bigY = big.getY();
+        Runnable cleanup = () -> {
+            VibeService.forget(p);
+            caught.discard();
+            outside.discard();
+            big.discard();
+        };
+        h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.QUINARY, false) == AbilityUseResult.SUCCESS
+                && RiftFall.open(p), "Rift Fall casts from the ultimate's key");
+        h.runAfterDelay(RiftFall.WARNING - 2, () -> {
             try {
-                h.assertTrue(caught.getHealth() == 24 && !caught.hasEffect(MobEffects.MOVEMENT_SLOWDOWN),
-                        "Enemies have time to leave the telegraph");
-            } catch (RuntimeException failure) {
-                VibeService.forget(p);
-                caught.discard();
-                outside.discard();
+                h.assertTrue(caught.getHealth() == 24 && Math.abs(caught.getY() - floor) < .01,
+                        "Enemies have the warning's time to leave the ring");
+                h.assertTrue(RiftFall.sky(p).y > floor + 10, "The breach opens high over the zone: " + RiftFall.sky(p));
+            } catch (RuntimeException | AssertionError failure) {
+                cleanup.run();
                 throw failure;
             }
         });
-        h.runAfterDelay(VibeGeometry.LOCK_WARNING_TICKS + 2, () -> {
+        h.runAfterDelay(RiftFall.WARNING + 2, () -> {
             try {
-                h.assertTrue(caught.getHealth() < 24 && caught.hasEffect(MobEffects.MOVEMENT_SLOWDOWN),
-                        "The collapse damages and slows the caught enemy");
+                h.assertTrue(caught.getY() > floor + 3, "The caught enemy drops through and comes out of the sky: " + caught.getY());
+                h.assertTrue(caught.getHealth() == 24, "It hasn't landed yet");
+            } catch (RuntimeException | AssertionError failure) {
+                cleanup.run();
+                throw failure;
+            }
+        });
+        h.runAfterDelay(RiftFall.WARNING + RiftFall.STEP * 2 + RiftFall.FALL + 3, () -> {
+            try {
+                h.assertTrue(caught.getHealth() < 24 && caught.hasEffect(MobEffects.MOVEMENT_SLOWDOWN)
+                        && caught.getY() - floor < 1.5, "It slams down, hurt and slowed: " + caught.getY());
+                h.assertTrue(big.getHealth() < big.getMaxHealth() && Math.abs(big.getY() - bigY) < .5,
+                        "Something too big for a breach takes the slam where it stands");
                 h.assertTrue(outside.getHealth() == 24 && !p.hasEffect(MobEffects.MOVEMENT_SLOWDOWN),
-                        "The collapse leaves enemies outside its radius and the caster alone");
+                        "Enemies outside the ring and the caster are left alone");
                 h.succeed();
             } finally {
-                VibeService.forget(p);
-                caught.discard();
-                outside.discard();
+                cleanup.run();
             }
         });
     }
@@ -309,6 +373,7 @@ public final class VibeGameTests {
                 .thenWaitUntil(() -> h.assertTrue(nether.isPositionEntityTicking(anchor), "The Nether fixture is ticking"))
                 .thenExecute(() -> {
                     VibeFrequencies.choose(player, com.jayptucker.heroesevolved.network.FrequencyChoicePayload.BREACH, 0, "");
+                    VibeBreaches.hurry(player);
                     h.assertTrue(VibeBreaches.kind(player) == VibeBreaches.Kind.FREQUENCY,
                             "With World Frequency, picking the Nether frequency opens a breach there");
                 })

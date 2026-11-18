@@ -55,14 +55,16 @@ Lightspeed spends all your Momentum.
 - **Rapid punches.** Your weapon recharges three times faster. Hold attack on an enemy to punch every
   few ticks without waiting out its flinch. Every blow after the first in a flurry does half damage
   (a third against players).
-- **Catch.** Right-click an arrow or thrown item in flight within 7 blocks to catch it out of the air
-  for 2 stamina. Arrows that could be picked up and thrown items go into your inventory. Fireballs
-  and skulls are snuffed out. Perception also lets you catch shots it slows, including TACZ bullets,
+- **Catch.** Right-click a projectile in flight within 7 blocks to catch it out of the air
+  for 2 stamina. Arrows and thrown items go into your inventory. Fireballs
+  become fire charges; wither skulls disappear. Tridents, rockets and wind charges are recovered too.
+  Perception also lets you catch shots it slows, including TaCZ bullets and your own shots,
   while Accelerate is off. Slowed bullets glow and return matching ammo when caught.
 - **Perception** slows everything on the server to a third of its speed, or a sixth with Flash Time (with
   `fieldsServerWide` off in the config, only within 12 blocks, 16 with Long Perception). Other players move and
   recharge attacks more slowly, and every screen takes a faint amber cast, so everyone can tell time is being slowed.
-  Projectiles keep moving even with Flash Time. Perception has gold clock rings, hanging sparks and a slow heartbeat.
+  Projectiles, including your own arrows and TaCZ rounds, slow down once fired and keep moving even with Flash Time.
+  Perception has gold clock rings, hanging sparks and a slow heartbeat.
   It bends the world the way Between Seconds does: dust rises and hangs, rain slows, particles drift, fuses burn
   slowly and shots drag rings through the air (see [Bent time](space-time-manipulation.md#bent-time)).
     - **Running in thick air.** In slowed time (your own Perception or anyone's Between Seconds) a speedster at speed
@@ -76,11 +78,13 @@ Lightspeed spends all your Momentum.
     - **Too fast to follow.** Ordinary mobs keep targeting the position where you entered Perception. Their attacks,
       gifted casts, body animations and bound power effects slow with them. Gifted Superspeed and Space-Time mobs can
       still track you and keep their own pace. Tracking returns when Perception ends.
-    - **Share your pace from Power Level 10.** Activate Perception, then right-click a player within normal interaction
+    - **Share your pace from Power Level 10.** Activate Perception, then right-click a player or passive creature (such as a
+      villager or animal) within normal interaction
       reach. They move normally, see you moving, and can speak with other temporal perceivers until Perception ends.
       Gold lightning flows around their waist like a waterbender's reservoir: a broad amber halo, a gold orbit and a
       thin white-hot core, with bright heads racing around it. Only temporal perceivers see it. Several players can
-      join; the invitations end on power loss, death, logout or dimension change too.
+      join; the invitations end on power loss, death, logout or dimension change too. Passive guests think, move and animate
+      at your pace until Perception ends; right-clicking a villager to share takes priority over opening trades.
     - **Voices fall still.** Already audible speech slows in pitch and reverberates for three seconds, then goes
       silent. Caught players cannot keep speaking into proximity chat, groups, telepathy, breaches or radios.
       Superspeed and Space-Time users, Mimics channeling either, and invited players hear each other under the usual

@@ -1,0 +1,22 @@
+// Photographs the real first radioactive awakening, crater floor and blinking recovery.
+allprojects {
+    layout.buildDirectory.set(layout.projectDirectory.dir('build/radiation-intro-runtime'))
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('radiationIntroPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs { client {
+                    gameDirectory = project.file('build/radiation-intro-preview')
+                    programArguments.addAll('--width', '1280', '--height', '800')
+                    systemProperty('heroes.preview.radiationintro', 'true')
+                } }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('radiationIntroPreviewClasses')) }
+        }
+    }
+}

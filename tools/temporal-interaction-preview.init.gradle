@@ -1,0 +1,23 @@
+// Frozen bullet wakes, a real client catch, and a villager sharing Perception.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('temporalInteractionPreview') {
+                java.srcDir('src/uitest/java')
+                java.include('com/jayptucker/heroesevolved/uitest/TemporalInteractionPreview.java')
+                java.include('com/jayptucker/heroesevolved/uitest/PreviewQuiet.java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs { client {
+                    gameDirectory = project.file('build/temporal-interaction-preview')
+                    programArguments.addAll('--width', '1280', '--height', '800')
+                    systemProperty('heroes.preview.temporalinteraction', 'true')
+                } }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('temporalInteractionPreviewClasses')) }
+        }
+    }
+}

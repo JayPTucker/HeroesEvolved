@@ -79,6 +79,8 @@ import java.util.concurrent.CompletableFuture;
 public final class BreachViewClient {
     /** Inside the iris's lip, so its moving rim always covers the window's edge. */
     private static final double INSET = .97;
+    /** How far behind the opening (away from the camera) its depth is put back: clear of the rim, well short of a block. */
+    private static final double DEPTH_BACK = .12;
     private static final double DRAW_RANGE = 96;
     private static final Map<Integer, View> VIEWS = new HashMap<>();
     private static @Nullable ClientLevel world;
@@ -471,13 +473,20 @@ public final class BreachViewClient {
         mc.getMainRenderTarget().bindWrite(false);
         VertexBuffer.unbind();
 
-        // 4. Put the opening's own depth back, so whatever is drawn later behind the breach stays behind it.
+        // 4. Put the opening's own depth back, so whatever is drawn later behind the breach stays behind it (block
+        //    entities such as beds and chests, translucent terrain, particles). The chunk layers' render state turns
+        //    depth testing off when it clears, and with it off OpenGL writes no depth at all: turn it back on first.
+        //    The depth goes a hair behind the opening's plane, not in it: the iris's rim is drawn in that plane, and two
+        //    surfaces at the same depth fight pixel by pixel, which flickered as jagged shards round the edge.
         RenderSystem.stencilFunc(GL11.GL_EQUAL, 1, 0xFF);
         RenderSystem.colorMask(false, false, false, false);
+        RenderSystem.enableDepthTest();
         RenderSystem.depthMask(true);
         RenderSystem.depthFunc(GL11.GL_ALWAYS);
         RenderSystem.disableCull();
-        ellipse(center, view.direction, rx, ry, phase, camera, -1);
+        Vec3 away = center.subtract(camera);
+        Vec3 behind = away.lengthSqr() < 1e-6 ? center : center.add(away.normalize().scale(DEPTH_BACK));
+        ellipse(behind, view.direction, rx, ry, phase, camera, -1);
         RenderSystem.depthFunc(GL11.GL_LEQUAL);
         RenderSystem.colorMask(true, true, true, true);
     }

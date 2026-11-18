@@ -12,6 +12,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.Enemy;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -23,10 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** A touch brings another player into the caster's current fast time, until that field ends. */
+/** A touch brings a player, or a speedster's passive companion, into the caster's fast time until the field ends. */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class TemporalSharing {
-    private record Guest(ServerPlayer owner, ServerPlayer player, String reason, boolean speed) {}
+    private record Guest(ServerPlayer owner, LivingEntity entity, String reason, boolean speed) {}
     private static final Map<UUID, Map<UUID, Guest>> GUESTS = new HashMap<>();
 
     private TemporalSharing() {}
@@ -41,14 +44,17 @@ public final class TemporalSharing {
         return guests != null && (guests.containsKey(entity.getUUID()) || guests.containsKey(entity.getRootVehicle().getUUID()));
     }
 
-    public static boolean shared(ServerPlayer player) {
-        return GUESTS.values().stream().anyMatch(guests -> guests.containsKey(player.getUUID()));
+    public static boolean shared(Entity entity) {
+        return GUESTS.values().stream().anyMatch(guests -> guests.containsKey(entity.getUUID()));
     }
 
     /** Server-authoritative reach, sight, power and active-field checks, also used by the interaction tests. */
-    public static boolean include(ServerPlayer owner, ServerPlayer player) {
+    public static boolean include(ServerPlayer owner, LivingEntity player) {
         boolean speed = SpeedService.awakened(owner) && PlayerProgressionService.getLevel(owner) >= 4;
+        boolean passive = speed && AdvancedTechniques.perceiving(owner) && player instanceof Mob mob
+                && !(mob instanceof Enemy) && mob.getTarget() == null;
         if ((!SpaceTimeService.awakened(owner) && !speed) || !active(owner) || !PowerRules.canAct(owner)
+                || !(player instanceof ServerPlayer) && !passive
                 || owner == player || !player.isAlive() || player.isSpectator() || owner.level() != player.level()
                 || owner.distanceToSqr(player) > owner.entityInteractionRange() * owner.entityInteractionRange()
                 || !owner.hasLineOfSight(player)) return false;
@@ -56,11 +62,13 @@ public final class TemporalSharing {
         if (guests.containsKey(player.getUUID())) return true;
         String reason = TimeVeil.SHARED + owner.getUUID();
         guests.put(player.getUUID(), new Guest(owner, player, reason, speed));
-        TimeVeil.begin(player, speed ? TimeVeil.Style.SPEED : TimeVeil.Style.TIME, reason);
-        TimeVeil.refresh(player);
-        PlayerTimeSlow.update(player);
+        if (player instanceof ServerPlayer guest) {
+            TimeVeil.begin(guest, speed ? TimeVeil.Style.SPEED : TimeVeil.Style.TIME, reason);
+            TimeVeil.refresh(guest);
+            PlayerTimeSlow.update(guest);
+            guest.displayClientMessage(net.minecraft.network.chat.Component.translatable("time.heroesevolved.shared"), true);
+        } else if (player instanceof Mob mob) MobTimeSync.refresh(mob);
         TemporalVoiceState.publish(owner.getServer());
-        player.displayClientMessage(net.minecraft.network.chat.Component.translatable("time.heroesevolved.shared"), true);
         return true;
     }
 
@@ -72,26 +80,30 @@ public final class TemporalSharing {
     }
 
     private static void release(Guest guest) {
-        TimeVeil.end(guest.player, guest.reason);
-        TimeVeil.refresh(guest.player);
-        PlayerTimeSlow.update(guest.player);
+        if (guest.entity instanceof ServerPlayer player) {
+            TimeVeil.end(player, guest.reason);
+            TimeVeil.refresh(player);
+            PlayerTimeSlow.update(player);
+        } else if (guest.entity instanceof Mob mob && !mob.isRemoved()) MobTimeSync.refresh(mob);
     }
 
     public static void tick(MinecraftServer server) {
         for (var entry : List.copyOf(GUESTS.entrySet())) {
             var guests = entry.getValue();
             for (Guest guest : List.copyOf(guests.values())) {
-                if (!active(guest.owner) || !guest.owner.isAlive() || !guest.player.isAlive()
-                        || guest.owner.isRemoved() || guest.player.isRemoved() || !PowerRules.canAct(guest.owner)
-                        || guest.owner.level() != guest.player.level()
-                        || server.getPlayerList().getPlayer(guest.player.getUUID()) != guest.player) {
-                    guests.remove(guest.player.getUUID());
+                if (!active(guest.owner) || !guest.owner.isAlive() || !guest.entity.isAlive()
+                        || guest.owner.isRemoved() || guest.entity.isRemoved() || !PowerRules.canAct(guest.owner)
+                        || guest.owner.level() != guest.entity.level()
+                        || guest.entity instanceof ServerPlayer player && server.getPlayerList().getPlayer(player.getUUID()) != player
+                        || guest.entity instanceof Mob && (!SpeedService.awakened(guest.owner)
+                            || PlayerProgressionService.getLevel(guest.owner) < 4 || !AdvancedTechniques.perceiving(guest.owner))) {
+                    guests.remove(guest.entity.getUUID());
                     release(guest);
                 } else if (guest.speed && server.overworld().getGameTime() % 8 == 0) {
-                    for (ServerPlayer viewer : guest.player.serverLevel().players())
-                        if (TimeVeil.movesInTime(viewer) && viewer.distanceToSqr(guest.player) < 128 * 128)
+                    for (ServerPlayer viewer : ((net.minecraft.server.level.ServerLevel) guest.entity.level()).players())
+                        if (TimeVeil.movesInTime(viewer) && viewer.distanceToSqr(guest.entity) < 128 * 128)
                             PacketDistributor.sendToPlayer(viewer, new SetPiecePayload(Piece.SPEED_SHARED_TIME.ordinal(),
-                                    guest.player.position(), guest.player.getEyePosition(), 1, guest.player.getId(),
+                                    guest.entity.position(), guest.entity.getEyePosition(), 1, guest.entity.getId(),
                                     guest.owner.getId(), 0));
                 }
             }
@@ -103,7 +115,7 @@ public final class TemporalSharing {
 
     private static boolean interact(PlayerInteractEvent event, Entity target) {
         return event.getHand() == InteractionHand.MAIN_HAND && event.getEntity() instanceof ServerPlayer owner
-                && target instanceof ServerPlayer player && include(owner, player);
+                && target instanceof LivingEntity player && include(owner, player);
     }
 
     @SubscribeEvent(priority = EventPriority.HIGH)

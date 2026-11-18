@@ -16,6 +16,7 @@ public abstract class FinisherOutlineMixin {
     @Inject(method = "getTeamColor", at = @At("HEAD"), cancellable = true)
     private void heroesevolved$glistenGold(CallbackInfoReturnable<Integer> cir) {
         Entity self = (Entity) (Object) this;
-        if (self.level().isClientSide && FinisherClient.outlined(self)) cir.setReturnValue(FinisherClient.GLISTEN);
+        if (com.jayptucker.heroesevolved.client.ClientGodMode.enabled(self.getUUID())) cir.setReturnValue(0xFFD700);
+        else if (self.level().isClientSide && FinisherClient.outlined(self)) cir.setReturnValue(FinisherClient.GLISTEN);
     }
 }

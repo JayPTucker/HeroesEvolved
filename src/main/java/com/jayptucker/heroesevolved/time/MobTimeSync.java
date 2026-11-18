@@ -16,6 +16,12 @@ import java.util.HashMap;
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class MobTimeSync {
     private static final Map<Mob, Integer> SENT = new HashMap<>();
+    /** A touch or release updates the animation clock immediately, including before the next periodic tick. */
+    public static void refresh(Mob mob) {
+        int interval = TemporalMobTime.interval(mob);
+        PacketDistributor.sendToPlayersTrackingEntity(mob, new MobTimePayload(mob.getId(), interval));
+        if (interval != 1) SENT.put(mob, interval); else SENT.remove(mob);
+    }
     @SubscribeEvent public static void tick(ServerTickEvent.Post event) {
         for (var level : event.getServer().getAllLevels()) {
             if (level.players().isEmpty()) continue;

@@ -61,8 +61,8 @@ item fights the ordinary way.
 
 | Dodge | Level | What happens | Stamina |
 | --- | --- | --- | --- |
-| **Arc Step** | 1 | **Double-tap left or right.** You flash about 5 blocks sideways as a bolt. A sketch of your body in lightning hangs where you stood for a moment, joined to you by a flickering arc. | 8 |
-| **Flashback** | 2 | **Double-tap back.** You snap 6 blocks backward and leave a charge of static where you stood: your lightning sketch crackles harder as a warning ring closes in on it, then bursts 0.6 s later, jolting and freezing anyone standing in it. At level 1, back is a plain Arc Step. | 11 |
+| **Arc Step** | 1 | **Double-tap left or right.** You flash about 5 blocks sideways as a bolt. A full-size electrical facade of your body hangs where you stood for a moment, joined to you by a flickering arc. | 8 |
+| **Flashback** | 2 | **Double-tap back.** You snap 6 blocks backward and leave a charge of static where you stood: your charged electrical facade crackles harder as a warning ring closes in on it, then bursts 0.6 s later, jolting and freezing anyone standing in it. At level 1, back is a plain Arc Step. | 11 |
 
 - **Evasion:** for the first 8 ticks of a dodge, blows from creatures, players and projectiles miss you. Your landing is
   cushioned for a moment after.
@@ -80,8 +80,11 @@ Every move is built from the kit's own lightning (indigo halo, blue channel, whi
   fan of forks opening across the cone with a jagged leading edge.
 - **Grounding Strike** drives a bolt down through the palm, burns a dark scorch star into the floor and sends the
   ground pulse out.
-- **Arc Step and Flashback** leave the lightning sketch of your body behind (spine, shoulders, arms, legs and a halo of
-  a head), with ground rings popping at both ends.
+- **Arc Step and Flashback** leave a full-size, three-dimensional electrical facade behind: a solid-shaped head,
+  torso, arms and legs wrapped in scrolling blue-white charge, like the field around a charged creeper. The body
+  stays frozen at the departure point while the field crawls over its surface, then fades away. Flashback holds it
+  until the static bursts. Short Circuit uses the same charged facade; none of these effects draw line skeletons.
+  Ground rings pop at both ends of the dodge. Minimal particles keeps the main field and omits the outer sheen.
 
 The body moves too. Sparks are boxer's punches from a high guard, snapped out and straight back with the shoulders
 turning into each one. The clap leans into the swing. The slam drops you to one knee. A sideways flash leans along its

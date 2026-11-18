@@ -147,11 +147,11 @@ each level after (21 at Level 15, 28 Evolved), plus training and story notes, ag
 
 | Key | Move | Level | Stamina | Cooldown | Was | Pays for |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | `vibe_blast` | 1 | 14 | 1s | 9 / 1.1s, Level 1 | a wave of 4 + tier (palm) to 7 + 1.5/tier |
+| 1 | `vibe_blast` | 1 | 4 + 9/s | 0.5s | 9 / 1.1s, Level 1 | held blast: 1.2 + 0.35/tier every 6 ticks while it drains |
 | 2 | `vibe_breach` | 3 | 20 | 6s | 20 / 6.5s, Level 3 | two-way portals |
 | 3 | `vibe_read` | 6 | 14 | 4.25s | 12 / 5s, Level 6 | replays a scene's fights |
 | 4 | `vibe_breach_guard` | 10 | 22 | 6.5s | 21 / 8.5s, Level 10 | a moving breach that swallows shots |
-| 5 | `vibe_frequency_lock` | 15 | 58 | 44s | 42 / 17s, Level 15 | 4 + tier (+4 if read) and a slow, after a telegraph |
+| 5 | `vibe_frequency_lock` | 15 | 58 | 44s | 42 / 17s, Level 15 | Rift Fall: everyone in the ring drops out of a sky breach, 6 + 2/tier and a slow |
 
 ### Matter Assembly
 

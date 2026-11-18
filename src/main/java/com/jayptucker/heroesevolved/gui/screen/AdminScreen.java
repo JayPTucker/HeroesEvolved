@@ -30,11 +30,11 @@ import java.util.UUID;
  * Every button is a request; the server checks permission and replies with fresh state, which redraws this screen.
  */
 public final class AdminScreen extends Screen {
-    private static final int MAX_WIDTH = 440, MAX_HEIGHT = 240;
+    private static final int MAX_WIDTH = 440, MAX_HEIGHT = 260;
     private static final int LIST_WIDTH = 108;
-    private static final int ROW = 22;
+    private static final int ROW = 20;
     private static final int LABEL_WIDTH = 46;
-    private static final int SECTION = 36;
+    private static final int SECTION = 32;
 
     private static final int BORDER = 0xFF6B101D;
     private static final int BACKGROUND = 0xF016090D;
@@ -54,6 +54,7 @@ public final class AdminScreen extends Screen {
     private static UUID selectedPlayer;
     private static int selectedPowerIndex;
     private static int playerScroll;
+    private static boolean incidentsPage;
     private static Tab tab = Tab.PLAYER;
 
     /** Status lines drawn this frame, and their full text for hovering when cut short. */
@@ -73,7 +74,8 @@ public final class AdminScreen extends Screen {
 
     /** For previews: which tab shows. */
     public static void show(Tab which) { tab = which; }
-    public static void showWorld() { tab = Tab.WORLD; }
+    public static void showWorld() { tab = Tab.WORLD; incidentsPage = false; }
+    public static void showIncidents() { tab = Tab.WORLD; incidentsPage = true; }
     public static void showPlayer() { tab = Tab.PLAYER; }
 
     private int contentX() { return left + LIST_WIDTH + 18; }
@@ -134,10 +136,10 @@ public final class AdminScreen extends Screen {
             AdminStatePayload.PlayerEntry entry = players.get(playerScroll + row);
             boolean selected = entry.id().equals(selectedPlayer);
             Component label = Component.literal((selected ? "▶ " : "") + entry.name())
-                    .withStyle(selected ? ChatFormatting.GOLD : ChatFormatting.WHITE);
+                    .withStyle(entry.godMode() ? ChatFormatting.GOLD : selected ? ChatFormatting.YELLOW : ChatFormatting.WHITE);
             Component tip = Component.literal(entry.name() + "\n").withStyle(ChatFormatting.BOLD)
                     .append(Component.literal((entry.powerId().isEmpty() ? "No power" : powerName(entry.powerId()).getString())
-                            + "  Level " + entry.level() + "\n" + entry.whereabouts()).withStyle(ChatFormatting.GRAY));
+                            + "  Level " + entry.level() + "\n" + entry.whereabouts() + (entry.godMode() ? "\nGod mode ON" : "")).withStyle(ChatFormatting.GRAY));
             addRenderableWidget(Button.builder(label, button -> {
                         selectedPlayer = entry.id();
                         rebuildWidgets();
@@ -168,7 +170,7 @@ public final class AdminScreen extends Screen {
     // ------------------------------------------------------------------
 
     /** Where the Player tab's rows start, under the player's card. */
-    private int playerRowsY() { return top + 112; }
+    private int playerRowsY() { return top + 107; }
 
     private void addPlayerTab(AdminStatePayload state, AdminStatePayload.PlayerEntry target) {
         int x = contentX() + LABEL_WIDTH;
@@ -179,6 +181,10 @@ public final class AdminScreen extends Screen {
         addMasteryRow(x, y + ROW * 2, w);
         addEnergyRow(target, x, y + ROW * 3, w);
         addToolsRow(target, x, y + ROW * 4, w);
+        buttons(x, y + ROW * 5, w,
+                button("God: " + (target.godMode() ? "ON" : "OFF"), "Prevent all damage and death; highlighted gold while enabled.", Action.TOGGLE_GOD_MODE, 0, true),
+                button("Bring here", "Teleport this player to your position and dimension.", Action.BRING_HERE, 0,
+                        minecraft != null && minecraft.player != null && !minecraft.player.getUUID().equals(target.id())));
     }
 
     private void addPowerRow(AdminStatePayload state, AdminStatePayload.PlayerEntry target, int x, int y, int w) {
@@ -186,7 +192,7 @@ public final class AdminScreen extends Screen {
         if (powers.isEmpty()) return;
         selectedPowerIndex = Math.floorMod(selectedPowerIndex, powers.size());
         String power = powers.get(selectedPowerIndex);
-        int name = w - 16 - 16 - 40 - 50 - 6;
+        int name = w - 16 - 16 - 40 - 50 - 54 - 6;
         addRenderableWidget(Button.builder(Component.literal("◀"), button -> { selectedPowerIndex--; rebuildWidgets(); })
                 .bounds(x, y, 14, 20).build());
         addRenderableWidget(Button.builder(powerName(power), button -> { selectedPowerIndex++; rebuildWidgets(); })
@@ -199,9 +205,12 @@ public final class AdminScreen extends Screen {
                         button -> send(Action.GIVE_POWER, power, 0))
                 .tooltip(Tooltip.create(Component.literal("Replace their power with this one, already awakened.")))
                 .bounds(x + 34 + name, y, 40, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("Dormant"), button -> send(Action.GIVE_DORMANT_POWER, power, 0))
+                .tooltip(Tooltip.create(Component.literal("Replace their power with this one, unawakened. They can awaken it naturally or with Awaken.")))
+                .bounds(x + 76 + name, y, 52, 20).build());
         Button remove = Button.builder(Component.literal("Remove"), button -> send(Action.REMOVE_POWER))
                 .tooltip(Tooltip.create(Component.literal("Take their power away.")))
-                .bounds(x + 76 + name, y, 50, 20).build();
+                .bounds(x + 130 + name, y, 50, 20).build();
         remove.active = !target.powerId().isEmpty();
         addRenderableWidget(remove);
     }
@@ -279,6 +288,21 @@ public final class AdminScreen extends Screen {
         int y = worldY() + 12;
         boolean someone = target != null;
 
+        addRenderableWidget(Button.builder(Component.literal(incidentsPage ? "◀ Main events" : "Village incidents ▶"), b -> {
+            incidentsPage = !incidentsPage; rebuildWidgets();
+        }).bounds(x, top + panelHeight - 24, w, 20).build());
+        if (incidentsPage) {
+            buttons(x, y, w,
+                    button("Awakening", "Queue a natural gifted-villager awakening near the chosen player; it may become a renegade.", Action.INCIDENT_AWAKENING, 0, someone),
+                    button("Renegade", "Queue a hostile gifted villager besieging a village near the chosen player.", Action.INCIDENT_RENEGADE, 0, someone));
+            buttons(x, y + SECTION, w,
+                    button("Guardian", "Queue a friendly gifted village guardian near the chosen player.", Action.INCIDENT_GUARDIAN, 0, someone),
+                    button("Meltdown", "Find and load a village in the configured incident range, then start its meltdown.", Action.INCIDENT_MELTDOWN, 0, someone));
+            buttons(x, y + SECTION * 2, w,
+                    button("Start raid", "Start a raid at the village nearest the chosen player.", Action.RAID_START, 0, someone),
+                    button("Stop raid", "Stop the active raid at the chosen player's current position. Surviving raiders remain.", Action.RAID_STOP, 0, someone));
+            return;
+        }
         // The Eclipse.
         buttons(x, y, w,
                 button("Start", "A full Eclipse from first contact.", Action.START_ECLIPSE, 0, !world.has(World.ECLIPSE)),
@@ -327,7 +351,7 @@ public final class AdminScreen extends Screen {
         for (int i = 0; i < specs.length; i++) {
             Spec s = specs[i];
             int bx = x + i * (each + gap), bw = i == specs.length - 1 ? x + w - bx : each;
-            Button b = Button.builder(Component.literal(s.label()), button -> send(s.action(), "", s.value()))
+            Button b = Button.builder(Component.literal(s.label()).withStyle(s.action() == Action.TOGGLE_GOD_MODE && s.label().endsWith("ON") ? ChatFormatting.GOLD : ChatFormatting.WHITE), button -> send(s.action(), "", s.value()))
                     .tooltip(Tooltip.create(Component.literal(s.tip()))).bounds(bx, y, bw, 20).build();
             b.active = s.active();
             addRenderableWidget(b);
@@ -370,7 +394,7 @@ public final class AdminScreen extends Screen {
     private void drawPlayer(GuiGraphics graphics, AdminStatePayload.PlayerEntry target, int maximumLevel) {
         NumberFormat numbers = NumberFormat.getIntegerInstance();
         int x = contentX(), w = contentWidth(), y = top + 38;
-        graphics.drawString(font, Component.literal(target.name()).withStyle(ChatFormatting.BOLD), x, y, TITLE, false);
+        graphics.drawString(font, Component.literal(target.name()).withStyle(ChatFormatting.BOLD), x, y, target.godMode() ? GOLD : TITLE, false);
         Component power = target.powerId().isEmpty() ? Component.literal("No power")
                 : powerName(target.powerId()).copy().append(Component.literal(target.awakened() ? "  Awakened" : "  Dormant"));
         int powerWidth = font.width(power);
@@ -399,7 +423,7 @@ public final class AdminScreen extends Screen {
         status(graphics, x, y + 10, w, target.story(), MUTED);
 
         graphics.fill(x, playerRowsY() - 5, x + w, playerRowsY() - 4, RULE);
-        String[] labels = {"Power", "Level", "Mastery", "Energy", "Tools"};
+        String[] labels = {"Power", "Level", "Mastery", "Energy", "Tools", "Admin"};
         for (int row = 0; row < labels.length; row++)
             graphics.drawString(font, labels[row], x, playerRowsY() + 6 + row * ROW, MUTED, false);
     }
@@ -409,6 +433,13 @@ public final class AdminScreen extends Screen {
         String acts = target == null ? "No player chosen: only world-wide controls work." : "Player events act on " + target.name() + ".";
         graphics.drawString(font, acts, x, top + 36, target == null ? ACCENT : MUTED, false);
         y += 2;
+        if (incidentsPage) {
+            section(graphics, x, y, w, "GIFTS", GOLD, false, "Awakenings and hostile renegades");
+            section(graphics, x, y + SECTION, w, "VILLAGE", VILLAGE, world.has(World.MELTDOWN), world.village());
+            section(graphics, x, y + SECTION * 2, w, "RAIDS", SYLAR, world.has(World.RAID), "Controls use the chosen player's village.");
+            status(graphics, x, y + SECTION * 3, w, "Incidents start after the village loads; refresh for status.", MUTED);
+            return;
+        }
         section(graphics, x, y, w, "ECLIPSE", GOLD, world.has(World.ECLIPSE), world.eclipse());
         section(graphics, x, y + SECTION, w, "SYLAR", SYLAR, world.has(World.SYLAR), world.sylar());
         section(graphics, x, y + SECTION * 2, w, "ELLE", ELLE, world.has(World.ELLE), world.elle());

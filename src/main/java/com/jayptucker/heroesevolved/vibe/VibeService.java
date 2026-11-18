@@ -71,6 +71,31 @@ public final class VibeService {
         }
     }
 
+    /** A held Vibe Blast: a steady blast from the palm for as long as the key is down and the stamina lasts. */
+    private static final class Stream {
+        final ServerPlayer owner;
+        final ServerLevel level;
+        final long started;
+        final int tier;
+        final float boost;
+        /** When the next hit lands: the gather's end (at once after Slingshot), then every pulse. */
+        long nextHit;
+
+        Stream(ServerPlayer owner, long started, int tier, float boost) {
+            this.owner = owner;
+            this.level = owner.serverLevel();
+            this.started = started;
+            this.tier = tier;
+            this.boost = boost;
+            nextHit = started + STREAM_GATHER;
+        }
+    }
+
+    /** The balance table's entry for the stream's per-second drain. */
+    static final String STREAM = "vibe_blast";
+    /** Ticks before the blast first lands (none after Slingshot), and between the hits it deals while held. */
+    public static final int STREAM_GATHER = 3, STREAM_PULSE = 6;
+    private static final Map<UUID, Stream> STREAMS = new HashMap<>();
     private static final Map<UUID, Shot> SHOTS = new HashMap<>();
     private static final List<Wave> WAVES = new ArrayList<>();
     private static final Map<UUID, Guard> GUARDS = new HashMap<>();
@@ -131,6 +156,110 @@ public final class VibeService {
         SHOTS.put(player.getUUID(), new Shot(player, player.serverLevel(), player.position(), direction, range, kind,
                 context.abilityLevel(), player.serverLevel().getGameTime() + windup, slung ? SLINGSHOT_BOOST : 1));
         return true;
+    }
+
+    /** What each hit of a held blast deals at a tier, before marks and Slingshot. */
+    public static float streamDamage(int tier) { return 1.2F + .35F * Math.clamp(tier, 1, 5); }
+
+    /**
+     * Vibe Blast, held, as Cisco fires it on the show: a steady blast pours from the palm and shoves whatever it reaches.
+     * It stops at the first foe or wall, hits every {@link #STREAM_PULSE} ticks, and drains stamina every tick
+     * ({@code StaminaDrain}) until the key comes up or the bar runs dry. Slingshot skips the gather and hits 30% harder;
+     * Through the Seam carries the blast through one of your breaches and on out of the other mouth.
+     */
+    public static boolean stream(AbilityUseContext context) {
+        ServerPlayer player = context.player();
+        if (!ready(player) || STREAMS.containsKey(player.getUUID())) return false;
+        long now = player.serverLevel().getGameTime();
+        Long primed = PRIMED.remove(player.getUUID());
+        boolean slung = primed != null && primed > now;
+        STREAMS.put(player.getUUID(), new Stream(player, slung ? now - STREAM_GATHER : now, context.abilityLevel(),
+                slung ? SLINGSHOT_BOOST : 1));
+        com.jayptucker.heroesevolved.energy.StaminaDrain.start(player, STREAM,
+                com.jayptucker.heroesevolved.ability.PowerBalance.drain(STREAM, 9), false, () -> endStream(player));
+        ArmPosePayload.show(player, ArmPose.VIBE_CHANNEL, 6);
+        StyleOps.sound(player.serverLevel(), player.getEyePosition(), ModSounds.VIBE_PULSE.get(), .9F, .66F);
+        if (slung) SetPiecePayload.send(player.serverLevel(), Piece.VIBE_HIT, VibeGeometry.hand(player, player.getLookAngle(), 1, false),
+                player.getEyePosition().add(player.getLookAngle()), 1.1F, player);
+        return true;
+    }
+
+    /** Lets go of a held blast. True if one was running. */
+    public static boolean endStream(ServerPlayer player) {
+        Stream stream = STREAMS.remove(player.getUUID());
+        if (stream == null) return false;
+        com.jayptucker.heroesevolved.energy.StaminaDrain.stop(player, STREAM);
+        ArmPosePayload.clearIf(player, ArmPose.VIBE_CHANNEL);
+        StyleOps.sound(stream.level, player.getEyePosition(), ModSounds.VIBE_SHUT.get(), .45F, 1.7F);
+        return true;
+    }
+
+    public static boolean streaming(ServerPlayer player) { return STREAMS.containsKey(player.getUUID()); }
+
+    /** One leg of the blast: where it starts, where it stops, and the foe it stopped on (if any). */
+    private record Leg(Vec3 from, Vec3 to, LivingEntity foe) {}
+
+    private static Leg leg(ServerPlayer player, Vec3 from, Vec3 direction, double range) {
+        Vec3 to = VibeGeometry.clip(player, from, from.add(direction.scale(range)));
+        LivingEntity first = null;
+        double nearest = Double.MAX_VALUE;
+        for (LivingEntity target : player.serverLevel().getEntitiesOfClass(LivingEntity.class, new AABB(from, to).inflate(1),
+                entity -> hostile(player, entity))) {
+            var hit = target.getBoundingBox().inflate(.3).clip(from, to);
+            if (hit.isEmpty()) continue;
+            double distance = hit.get().distanceToSqr(from);
+            if (distance < nearest) {
+                nearest = distance;
+                first = target;
+            }
+        }
+        if (first != null) to = from.add(direction.scale(Math.sqrt(nearest) + .15));
+        return new Leg(from, to, first);
+    }
+
+    private static void tickStream(Stream stream) {
+        ServerPlayer player = stream.owner;
+        if (!ready(player) || player.serverLevel() != stream.level) {
+            endStream(player);
+            return;
+        }
+        long age = stream.level.getGameTime() - stream.started;
+        Vec3 aim = player.getLookAngle(), hand = VibeGeometry.hand(player, aim, 1, false);
+        Leg first = leg(player, hand, aim, ProjectileRanges.VIBE_PALM);
+        Leg second = null;
+        // Through the Seam: the blast goes into one of your breaches and on out of the other.
+        if (SkillTreeService.has(player, "vibe_0_0")) {
+            VibeBreaches.Seam seam = VibeBreaches.seam(player, hand, first.to());
+            if (seam != null) {
+                first = new Leg(hand, seam.through(), null);
+                double left = ProjectileRanges.VIBE_PALM - hand.distanceTo(seam.through());
+                if (left > 1.5) second = leg(player, seam.out().add(seam.direction().scale(.35)), seam.direction(), left);
+            }
+        }
+        if (age % 2 == 0) {
+            SetPiecePayload.send(stream.level, Piece.VIBE_STREAM, first.to(), first.to().add(aim), stream.boost, player);
+            if (second != null) SetPiecePayload.send(stream.level, Piece.VIBE_STREAM, second.from(), second.to(), stream.boost, null);
+        }
+        if (age % 4 == 0) ArmPosePayload.show(player, ArmPose.VIBE_CHANNEL, 6);
+        long now = stream.level.getGameTime();
+        if (now < stream.nextHit) return;
+        stream.nextHit = now + STREAM_PULSE;
+        StyleOps.sound(stream.level, hand, ModSounds.VIBE_PULSE.get(), .4F, 1.3F);
+        for (Leg leg : second == null ? List.of(first) : List.of(first, second)) {
+            LivingEntity target = leg.foe();
+            if (target == null) continue;
+            boolean read = VibeSight.marked(player, target);
+            // Each hit of a held blast lands, though they come faster than a mob's usual moment of invulnerability.
+            target.invulnerableTime = 0;
+            if (!target.hurt(player.damageSources().indirectMagic(player, player),
+                    streamDamage(stream.tier) * stream.boost * (read ? 1.3F : 1))) continue;
+            Vec3 direction = leg.to().subtract(leg.from()).normalize();
+            double resistance = target.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE);
+            StyleOps.push(target, direction.multiply(1, 0, 1).scale(.55).add(0, .12, 0).scale(1 - resistance));
+            Vec3 center = target.getBoundingBox().getCenter();
+            SetPiecePayload.send(stream.level, Piece.VIBE_HIT, center, center.add(direction), read ? .9F : .6F, target);
+            if (read && SkillTreeService.has(player, "vibe_afterimage")) desync(target, 28);
+        }
     }
 
     /** Slingshot: crossing your own breach primes your next blast. */
@@ -404,6 +533,7 @@ public final class VibeService {
 
     public static void tick(MinecraftServer server) {
         for (Wave wave : List.copyOf(WAVES)) if (advance(wave)) WAVES.remove(wave);
+        for (Stream stream : List.copyOf(STREAMS.values())) if (stream.owner.server == server) tickStream(stream);
         for (Shot shot : List.copyOf(SHOTS.values())) {
             if (!ready(shot.owner()) || shot.owner().serverLevel() != shot.level()
                     || shot.owner().position().distanceToSqr(shot.position()) > 16) SHOTS.remove(shot.owner().getUUID());
@@ -430,24 +560,31 @@ public final class VibeService {
         for (Guard guard : List.copyOf(GUARDS.values())) tickGuard(guard);
         DESYNCED.values().removeIf(lock -> lock.level().getGameTime() >= lock.until());
         VibeBreaches.tick(server);
+        RiftFall.tick(server);
         VibeBeast.tick(server);
         VibeSight.tick(server);
+        VibeVisions.tick(server);
     }
 
     public static void forget(ServerPlayer player) {
+        endStream(player);
         SHOTS.remove(player.getUUID());
         WAVES.removeIf(wave -> wave.owner() == player);
         LOCKS.remove(player.getUUID());
         OVERFLOWS.removeIf(lock -> lock.owner() == player);
         PRIMED.remove(player.getUUID());
         closeGuard(player);
+        VibeBreaches.dropPress(player);
         if (!VibeBreaches.crossing(player)) VibeBreaches.close(player);
         VibeFrequencies.forget(player);
         VibeBeast.forget(player);
         VibeSight.forget(player);
+        VibeVisions.forget(player);
+        RiftFall.forget(player);
     }
 
     public static void clear() {
+        STREAMS.clear();
         SHOTS.clear();
         WAVES.clear();
         LOCKS.clear();
@@ -456,6 +593,8 @@ public final class VibeService {
         GUARDS.clear();
         DESYNCED.clear();
         VibeSight.clear();
+        VibeVisions.clear();
+        RiftFall.clear();
         VibeBeast.clear();
         VibeBreaches.clear();
     }

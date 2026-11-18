@@ -6,6 +6,7 @@ import com.jayptucker.heroesevolved.time.ProjectileTimeService;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -31,6 +32,16 @@ public final class ClientProjectileTime {
     public static void setCatchEnabled(boolean enabled) { catchEnabled = enabled; }
     public static boolean canCatch() { return catchEnabled; }
     public static boolean controls(Projectile shot) { return shot.level() == level && SHOTS.containsKey(shot.getId()); }
+    public static boolean stopped(Projectile shot) {
+        State state = shot.level() == level ? SHOTS.get(shot.getId()) : null;
+        return state != null && state.payload.interval() == ProjectileTimeService.STOPPED;
+    }
+    /** A suspended round has no velocity; retain the heading it had when time stopped. */
+    public static Vec3 direction(Projectile shot) {
+        State state = shot.level() == level ? SHOTS.get(shot.getId()) : null;
+        Vec3 direction = state == null ? shot.getDeltaMovement().normalize() : state.payload.direction();
+        return direction.lengthSqr() > 1e-8 ? direction : Vec3.directionFromRotation(shot.getXRot(), shot.getYRot());
+    }
 
     public static void apply(TemporalProjectilePayload payload) {
         var world = Minecraft.getInstance().level;
@@ -46,7 +57,7 @@ public final class ClientProjectileTime {
         shot.setPos(payload.position());
         shot.setDeltaMovement(payload.motion());
         if (payload.warped()) {
-            var motion = payload.motion();
+            var motion = payload.direction();
             shot.setYRot((float) Math.toDegrees(Math.atan2(motion.x, motion.z)));
             shot.setXRot((float) Math.toDegrees(Math.atan2(motion.y, motion.horizontalDistance())));
             shot.setOldPosAndRot();

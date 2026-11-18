@@ -1,0 +1,20 @@
+// Targeted Vibe tests; test code is excluded from the release jar.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def tests = sourceSets.create('vibeTest') {
+                java.srcDir('src/gametest/java')
+                java.include('com/jayptucker/heroesevolved/vibe/**')
+                java.include('com/jayptucker/heroesevolved/grid/**')
+                resources.srcDir('src/gametest/resources')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(tests) } }
+                runs { gameTestServer { gameDirectory = project.file('build/vibe-test-world') } }
+            }
+            tasks.named('runGameTestServer') { dependsOn(tasks.named('vibeTestClasses')) }
+        }
+    }
+}

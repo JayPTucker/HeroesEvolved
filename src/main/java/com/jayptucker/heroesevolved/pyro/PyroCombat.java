@@ -70,6 +70,10 @@ public final class PyroCombat {
             return com.jayptucker.heroesevolved.ability.registry.ModAbilities.PYROKINESIS_ID;
         }
         @Override public int strike(ServerPlayer player) { return PyroCombat.strike(player); }
+        @Override public boolean canStrike(ServerPlayer player, LivingEntity target) {
+            return PyroService.hostile(player, target) && !target.fireImmune()
+                    && !target.hasEffect(net.minecraft.world.effect.MobEffects.FIRE_RESISTANCE);
+        }
         @Override public boolean dodge(ServerPlayer player, Dodge dodge) { return PyroCombat.dodge(player, dodge); }
         @Override public void counter(ServerPlayer player, net.minecraft.world.damagesource.DamageSource source) { counterflame(player); }
         @Override public void tick(MinecraftServer server) { PyroCombat.tick(server); }
@@ -90,7 +94,8 @@ public final class PyroCombat {
     /** Bending needs the power in hand, dry hands, and no held cast or dive already using the body. */
     static boolean canFight(ServerPlayer player) {
         return player.isAlive() && !player.isSpectator() && FightingStyles.fights(player, STYLE) && PowerRules.canAct(player)
-                && !player.isInWaterOrBubble() && !PyroFlightService.isDiving(player) && !PyroService.isChanneling(player)
+                && !player.isInWaterOrBubble() && !com.jayptucker.heroesevolved.ability.service.Elements.doused(player)
+                && !PyroFlightService.isDiving(player) && !PyroService.isChanneling(player)
                 && !PyroService.isChargingSpear(player) && !PyroService.isCharging(player);
     }
 

@@ -9,7 +9,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /** Position and full-precision motion for shots that stop, slow, or resume. */
-public record TemporalProjectilePayload(int entityId, int interval, Vec3 position, Vec3 motion, boolean warped) implements CustomPacketPayload {
+public record TemporalProjectilePayload(int entityId, int interval, Vec3 position, Vec3 motion, Vec3 direction, boolean warped) implements CustomPacketPayload {
     public static final Type<TemporalProjectilePayload> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "temporal_projectile"));
     public static final StreamCodec<RegistryFriendlyByteBuf, TemporalProjectilePayload> STREAM_CODEC = StreamCodec.of(
@@ -18,12 +18,9 @@ public record TemporalProjectilePayload(int entityId, int interval, Vec3 positio
                 buf.writeVarInt(shot.interval);
                 buf.writeVec3(shot.position);
                 buf.writeVec3(shot.motion);
+                buf.writeVec3(shot.direction);
                 buf.writeBoolean(shot.warped);
-            }, buf -> new TemporalProjectilePayload(buf.readVarInt(), buf.readVarInt(), buf.readVec3(), buf.readVec3(), buf.readBoolean()));
-
-    public TemporalProjectilePayload(int entityId, int interval, Vec3 position, Vec3 motion) {
-        this(entityId, interval, position, motion, false);
-    }
+            }, buf -> new TemporalProjectilePayload(buf.readVarInt(), buf.readVarInt(), buf.readVec3(), buf.readVec3(), buf.readVec3(), buf.readBoolean()));
 
     @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
 

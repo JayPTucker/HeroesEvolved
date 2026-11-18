@@ -68,6 +68,20 @@ public final class VibeEvents {
         if (!event.getLevel().isClientSide() && com.jayptucker.heroesevolved.vibe.VibeBeast.orphan(event.getEntity())) event.setCanceled(true);
     }
 
+    @SubscribeEvent public static void visionBodyJoin(net.neoforged.neoforge.event.entity.EntityJoinLevelEvent event) {
+        if (!event.getLevel().isClientSide() && com.jayptucker.heroesevolved.vibe.VibeVisions.orphan(event.getEntity())) event.setCanceled(true);
+    }
+
+    /** Beds, chests, furnaces and the like remember who placed them, for a viber's touch. */
+    @SubscribeEvent public static void placed(net.neoforged.neoforge.event.level.BlockEvent.EntityPlaceEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player && event.getLevel() instanceof ServerLevel level)
+            com.jayptucker.heroesevolved.vibe.VibeVisions.placed(level, event.getPos(), player.getUUID());
+    }
+
+    @SubscribeEvent public static void login(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) com.jayptucker.heroesevolved.vibe.VibeVisions.login(player);
+    }
+
     @SubscribeEvent public static void logout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) VibeService.forget(player);
     }

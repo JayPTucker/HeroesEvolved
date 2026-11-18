@@ -158,6 +158,7 @@ public final class VibeFrequencyGameTests {
             tune(h, p, 1, 8, 8);
             PlayerProgressionService.setPowerLevel(p, 3);
             VibeFrequencies.choose(p, FrequencyChoicePayload.BREACH, 1, "");
+            VibeBreaches.hurry(p);
             VibeFrequencies.choose(p, FrequencyChoicePayload.FORGET, 1, "");
             h.assertTrue(!VibeBreaches.isOpen(p) && VibeFrequencies.get(p, 1) != null,
                     "A stale wheel cannot use or forget a slot that has since locked");
@@ -195,8 +196,11 @@ public final class VibeFrequencyGameTests {
             double stamina = PlayerEnergyService.getStamina(p);
             h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, false) == AbilityUseResult.SUCCESS
                     && !VibeBreaches.isOpen(p) && PlayerEnergyService.getStamina(p) == stamina,
-                    "A plain press opens the frequency wheel and costs nothing");
-            h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, true) == AbilityUseResult.SUCCESS
+                    "A plain press costs nothing");
+            VibeBreaches.letGo(p);
+            h.assertTrue(!VibeBreaches.isOpen(p) && !VibeBreaches.holding(p) && PlayerEnergyService.getStamina(p) == stamina,
+                    "and let go at once, it opens the frequency wheel and nothing else");
+            h.assertTrue(VibeBreaches.shiftHold(p)
                     && VibeBreaches.kind(p) == VibeBreaches.Kind.AIMED && PlayerEnergyService.getStamina(p) < stamina,
                     "Shift-press opens a paid breach where you look");
         });
@@ -217,7 +221,9 @@ public final class VibeFrequencyGameTests {
             double stamina = PlayerEnergyService.getStamina(p);
             h.assertTrue(AbilityUseService.activateKey(p, 6, false) == AbilityUseResult.SUCCESS && !VibeBreaches.isOpen(p),
                     "Breach opens the wheel when rebound to key six");
+            VibeBreaches.letGo(p);
             VibeFrequencies.choose(p, FrequencyChoicePayload.BREACH, 0, "");
+            VibeBreaches.hurry(p);
             h.assertTrue(VibeBreaches.kind(p) == VibeBreaches.Kind.FREQUENCY,
                     "Picking a frequency opens a breach even with the default key empty");
             h.assertTrue(PlayerEnergyService.getStamina(p) < stamina, "and pays Breach's cost");
@@ -255,6 +261,7 @@ public final class VibeFrequencyGameTests {
         h.runAfterDelay(19, mob::discard);
         guarded(player, () -> {
             VibeFrequencies.choose(player, FrequencyChoicePayload.BREACH, 0, "");
+            VibeBreaches.hurry(player);
             h.assertTrue(VibeBreaches.kind(player) == VibeBreaches.Kind.FREQUENCY && !VibeBreaches.flat(player),
                     "A saved waypoint opens upright even when looking down");
             Vec3 exit = VibeBreaches.mouthAt(player, 1);
@@ -289,7 +296,7 @@ public final class VibeFrequencyGameTests {
             PlayerProgressionService.setPowerLevel(player, 15);
             player.setXRot(-90);
             double eyeY = player.getEyeY();
-            h.assertTrue(AbilityUseService.activateAssignedAction(player, AbilitySlot.SECONDARY, true) == AbilityUseResult.SUCCESS,
+            h.assertTrue(VibeBreaches.shiftHold(player),
                     "The high-tier caster can aim through open sky");
             h.assertTrue(Math.abs(VibeBreaches.mouthAt(player, 1).y - eyeY
                     - com.jayptucker.heroesevolved.time.SpaceTimeService.blinkRange(5)) < .05,
@@ -314,6 +321,7 @@ public final class VibeFrequencyGameTests {
 
             double stamina = PlayerEnergyService.getStamina(player);
             VibeFrequencies.choose(player, FrequencyChoicePayload.BREACH, 0, "");
+            VibeBreaches.hurry(player);
             h.assertTrue(!VibeBreaches.isOpen(player) && PlayerEnergyService.getStamina(player) == stamina,
                     "Choosing an unloaded waypoint waits for chunks before paying for a breach");
             h.assertTrue(VibeBreaches.close(player) && !VibeBreaches.close(player), "A press cancels the pending opening once");
@@ -332,6 +340,7 @@ public final class VibeFrequencyGameTests {
         Vec3 destination = tune(h, listener, 0, 2, 8);
         speaker.setPos(destination.add(0, 0, 2.5));
         VibeFrequencies.choose(listener, FrequencyChoicePayload.BREACH, 0, "");
+        VibeBreaches.hurry(listener);
         h.runAfterDelay(11, () -> guarded(listener, () -> {
             var route = BreachVoiceRoutes.routes(speaker.getUUID()).stream()
                     .filter(candidate -> candidate.listener().equals(listener.getUUID())).findFirst().orElse(null);
@@ -349,6 +358,7 @@ public final class VibeFrequencyGameTests {
                     .noneMatch(route -> route.listener().equals(listener.getUUID()) && route.audible(6)),
                     "Closing the breach ends the relay between the two players");
             VibeFrequencies.choose(listener, FrequencyChoicePayload.GLIMPSE, 0, "");
+            VibeBreaches.hurry(listener);
         }));
         h.runAfterDelay(26, () -> {
             try {
@@ -371,6 +381,7 @@ public final class VibeFrequencyGameTests {
             h.assertTrue(AbilityUseService.activateAction(p, "vibe_1_1", false) == AbilityUseResult.SUCCESS && !VibeBreaches.isOpen(p),
                     "Glimpse's press opens the wheel for free");
             VibeFrequencies.choose(p, FrequencyChoicePayload.GLIMPSE, 0, "");
+            VibeBreaches.hurry(p);
             h.assertTrue(VibeBreaches.kind(p) == VibeBreaches.Kind.GLIMPSE, "Picking a frequency opens a window to it");
         } catch (RuntimeException | AssertionError failure) {
             clean(p);
@@ -400,6 +411,7 @@ public final class VibeFrequencyGameTests {
             h.assertTrue(VibeFrequencies.mark(p, 0), "Tune an exit turned ninety degrees from the entrance");
             place(h, p, 5, 2, 0);
             VibeFrequencies.choose(p, FrequencyChoicePayload.BREACH, 0, "");
+            VibeBreaches.hurry(p);
         });
         h.runAfterDelay(12, () -> done(h, p, () -> {
             Vec3 start = near.add(.15, -.15, -1.7);

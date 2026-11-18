@@ -36,7 +36,7 @@ public final class ClientArmPoseState {
                 || pose == ArmPose.QUAKE_BEAM || pose == ArmPose.QUAKE_FLY || pose == ArmPose.QUAKE_RUMBLE
                 || pose == ArmPose.QUAKE_TUNE || pose == ArmPose.QUAKE_BRACE || pose == ArmPose.QUAKE_SHELL
                 || pose == ArmPose.TELE_READ || pose == ArmPose.TELE_WEAVE
-                || pose == ArmPose.VIBE_GUARD || pose == ArmPose.REGEN_STREAM || pose == ArmPose.REGEN_EMBRACE || pose == ArmPose.REGEN_BRACE
+                || pose == ArmPose.VIBE_GUARD || pose == ArmPose.VIBE_CHANNEL || pose == ArmPose.REGEN_STREAM || pose == ArmPose.REGEN_EMBRACE || pose == ArmPose.REGEN_BRACE
                 || pose == ArmPose.DENSITY_BRACE
                 || pose == ArmPose.WATER_OCTOPUS || pose == ArmPose.WATER_SURF || pose == ArmPose.WATER_CALL
                 || pose == ArmPose.WATER_PUSH;

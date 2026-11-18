@@ -27,6 +27,8 @@ final class VibeArt {
     private static final float[] GHOST = rgb(0x837CE8);
     private static final Set<Piece> SHUT = Set.of(Piece.VIBE_BREACH_CLOSE);
     private static final Set<Piece> GUARD_SHUT = Set.of(Piece.VIBE_GUARD_CLOSE);
+    private static final Set<Piece> CHANNEL = Set.of(Piece.VIBE_BREACH_CHANNEL);
+    private static final Set<Piece> STREAM = Set.of(Piece.VIBE_STREAM);
 
     private VibeArt() {}
 
@@ -43,7 +45,8 @@ final class VibeArt {
                             1, fade(t, 12, 2, 2), clock(a, t), false, 0, window(a));
             }
             case VIBE_BREACH_ARRIVE -> {
-                float open = smooth(0, 6, t);
+                // A channelled mouth (scale 2) is already open when it arrives: it only flares.
+                float open = a.scale() >= 1.5F ? 1 : smooth(0, 6, t);
                 float alpha = fade(t, 16, 2, 7);
                 iris(c, a.origin(), facing(a), VibeGeometry.PORTAL_WIDTH, VibeGeometry.PORTAL_HEIGHT,
                         open, alpha, clock(a, t), false, 0, window(a));
@@ -67,8 +70,323 @@ final class VibeArt {
             case VIBE_BEAST -> beast(c, a, t);
             case VIBE_KICK -> kick(c, a, t);
             case VIBE_SEAM -> seam(c, a, t);
+            case VIBE_BREACH_CHANNEL -> channel(c, a, t);
+            case VIBE_PROJECT -> project(c, a, t);
+            case VIBE_HOP -> hop(c, a, t);
+            case VIBE_STREAM -> stream(c, a, t);
+            case VIBE_RIFT_ZONE -> riftZone(c, a, t);
+            case VIBE_RIFT_SKY -> riftSky(c, a, t);
+            case VIBE_RIFT_FALL -> riftFall(c, a, t);
             default -> { }
         }
+    }
+
+    /**
+     * A breach channelled from the palm, as Cisco opens one: a crackling blue blast held from the hand to a point in the
+     * air, where a tear swirls open from a spark into a full iris, its rim spitting little arcs. Re-sent every two ticks;
+     * the newest copy takes over, and each grows the tear on the channel's own clock (scale 1 + progress, seed length).
+     */
+    private static void channel(Canvas c, SetPieceClient.Active a, float t) {
+        if (SetPieceClient.superseded(a, CHANNEL, a.start() + (long) t)) return;
+        float length = Math.max(4, a.seed());
+        float p = Mth.clamp(a.scale() - 1 + t / length, 0, 1);
+        float alpha = fade(t, 5, 0, 1.5F);
+        if (alpha <= .005F) return;
+        Vec3 normal = facing(a), center = a.origin();
+        float clock = clock(a, t);
+        // The tear opens two steps in front of the viber: from their own eyes it must not flood the view.
+        float near = smooth(1.4F, 3.4F, (float) center.distanceTo(c.camera()));
+        float grow = .12F + .88F * (float) Math.pow(p, .8);
+        double width = VibeGeometry.PORTAL_WIDTH * grow, height = VibeGeometry.PORTAL_HEIGHT * grow;
+        iris(c, center, normal, width, height, (float) Math.pow(p, .6), alpha, clock * 1.6F, false, 0);
+        if (!c.glow()) return;
+        Vec3 hand = hand(c, a, false);
+        Vec3 line = center.subtract(hand);
+        if (line.lengthSqr() > .04) {
+            Vec3 direction = line.normalize();
+            // The blast: a white core, two jagged bolts re-struck every other tick, and fronts riding it to the tear.
+            filament(c, hand, center, .04F, t * 2, alpha * .9F, WHITE);
+            Vec3 side = VibeGeometry.side(direction), up = side.cross(direction).normalize();
+            int strike = (int) (clock / 2);
+            for (int bolt = 0; bolt < (minimal() ? 1 : 2); bolt++) {
+                Vec3[] points = new Vec3[9];
+                for (int i = 0; i < points.length; i++) {
+                    float f = i / (float) (points.length - 1), envelope = Mth.sin(f * Mth.PI);
+                    float jx = (hash(a.seed() + bolt * 31 + i, strike) - .5F) * .32F * envelope;
+                    float jy = (hash(a.seed() + bolt * 57 + i * 3, strike + 7) - .5F) * .32F * envelope;
+                    points[i] = hand.add(line.scale(f)).add(side.scale(jx)).add(up.scale(jy));
+                }
+                stroke(c, points, .03F, alpha * .85F, bolt == 0 ? BLUE : ICE);
+            }
+            for (int k = 0; k < (minimal() ? 2 : 4); k++) {
+                float f = (clock * .22F + k / 4F) % 1;
+                float r = .1F + .2F * f;
+                front(c, hand.add(line.scale(f)), direction, r, r * .8F, clock * .3F + k, alpha * (1 - .35F * f), .35F);
+            }
+            c.glow(hand, .22F + .08F * Mth.sin(clock * 1.7F), BLUE, alpha * .8F);
+            c.glow(hand, .09F, WHITE, alpha);
+        }
+        // The tear's rim crackles: short arcs jump round it, faster as it opens.
+        Vec3 side = VibeGeometry.side(normal), up = side.cross(normal).normalize();
+        int frame = (int) (clock / 1.5F);
+        int arcs = minimal() ? 2 : 3 + (int) (p * 4);
+        for (int k = 0; k < arcs; k++) {
+            float start = hash(a.seed() + k * 13, frame) * Mth.TWO_PI, span = .5F + hash(a.seed() + k * 7, frame + 3) * .9F;
+            Vec3[] points = new Vec3[7];
+            for (int i = 0; i < points.length; i++) {
+                float angle = start + span * i / (points.length - 1);
+                double out = 1.04 + (hash(a.seed() + k * 5 + i, frame + 11) - .3F) * .22;
+                points[i] = center.add(side.scale(Math.cos(angle) * width * out)).add(up.scale(Math.sin(angle) * height * out));
+            }
+            stroke(c, points, .022F, alpha * (.5F + .5F * p), k % 2 == 0 ? ICE : WHITE);
+        }
+        // An inward swirl, the far side not yet showing through.
+        for (int arm = 0; arm < (minimal() ? 1 : 2); arm++) {
+            Vec3[] spiral = new Vec3[18];
+            for (int i = 0; i < spiral.length; i++) {
+                float f = i / (float) (spiral.length - 1), angle = -clock * .5F + arm * Mth.PI + f * 4.4F;
+                double r = 1 - .92 * f;
+                spiral[i] = center.add(side.scale(Math.cos(angle) * width * r)).add(up.scale(Math.sin(angle) * height * r))
+                        .add(normal.scale(-.06 * f));
+            }
+            stroke(c, spiral, .02F, alpha * .55F * p * (.4F + .6F * near), arm == 0 ? ICE : GHOST);
+        }
+        c.glow(center, (float) (.25F + .6F * width), BLUE, alpha * (.35F + .3F * p) * (.25F + .75F * near));
+        if (p < .25F) c.glow(center, .2F, WHITE, alpha * (1 - p * 4) * near);
+    }
+
+    /**
+     * Breach Hop: the near tear snaps open beside the hopper and pinches shut behind them, the far one opens as they
+     * dive in, and for the moment they are inside, fronts streak from one to the other.
+     */
+    private static void hop(Canvas c, SetPieceClient.Active a, float t) {
+        Vec3 entry = a.origin(), exit = a.target(), line = exit.subtract(entry);
+        if (line.lengthSqr() < .25) return;
+        Vec3 direction = line.normalize();
+        float clock = clock(a, t) * 1.6F;
+        float in = smooth(0, 1.5F, t) * (1 - smooth(3, 6, t)), out = smooth(1.2F, 2.6F, t) * (1 - smooth(5, 9, t));
+        if (in > .01F) iris(c, entry, direction, VibeGeometry.PORTAL_WIDTH, VibeGeometry.PORTAL_HEIGHT, in, fade(t, 7, 0, 2), clock, false, 0);
+        if (out > .01F) iris(c, exit, direction, VibeGeometry.PORTAL_WIDTH, VibeGeometry.PORTAL_HEIGHT, out, fade(t, 10, 1, 3), clock, false, 0);
+        if (c.glow() && t >= 1 && t < 5) {
+            float k = smooth(1, 4, t), alpha = fade(t - 1, 4, .5F, 1.5F);
+            filament(c, entry, exit, .12F, t * 2, alpha * .6F, ICE);
+            for (int i = 0; i < (minimal() ? 1 : 3); i++) {
+                float f = Mth.clamp(k - i * .14F, 0, 1);
+                front(c, entry.lerp(exit, f), direction, .42F - i * .08F, .55F - i * .1F, clock * .3F + i, alpha * (1 - i * .25F), .35F);
+            }
+        }
+        if (t > 2) fragments(c, a, exit, direction, t - 2, 8, 1.1F);
+    }
+
+    /**
+     * A held Vibe Blast: a steady, crackling blast from the palm to whatever stops it. Bound to the viber it starts at the
+     * palm they see; unbound (the leg out of a breach) it runs from origin to target. Re-sent every two ticks.
+     */
+    private static void stream(Canvas c, SetPieceClient.Active a, float t) {
+        if (a.entity() >= 0 && SetPieceClient.superseded(a, STREAM, a.start() + (long) t)) return;
+        float alpha = fade(t, 5, 0, 1.5F) * (a.entity() >= 0 ? 1 : .6F);
+        if (alpha <= .005F) return;
+        Vec3 from, to;
+        if (a.bound(c) instanceof LivingEntity owner) {
+            Vec3 aim = a.target().subtract(a.origin());
+            aim = aim.lengthSqr() < 1e-6 ? owner.getViewVector(c.partial) : aim.normalize();
+            from = palm(c, owner, aim, false);
+            to = a.origin();
+        } else {
+            from = a.origin();
+            to = a.target();
+        }
+        Vec3 line = to.subtract(from);
+        if (line.lengthSqr() < .04) return;
+        Vec3 direction = line.normalize();
+        float clock = clock(a, t), hot = a.scale() > 1.05F ? 1.3F : 1;
+        if (c.soft()) {
+            // A faint body of pressed air round the blast, so it reads against a bright sky.
+            c.ribbon(new Vec3[]{from, from.lerp(to, .5), to}, .16F * hot, DEPTH, .18F * alpha, .05F * alpha);
+            return;
+        }
+        if (!c.glow()) return;
+        filament(c, from, to, .03F, clock * 2.2F, alpha, WHITE);
+        Vec3 side = VibeGeometry.side(direction), up = side.cross(direction).normalize();
+        int strike = (int) (clock / 2);
+        double length = line.length();
+        int points = Math.max(6, (int) (length * 2.2));
+        for (int bolt = 0; bolt < (minimal() ? 1 : 3); bolt++) {
+            Vec3[] path = new Vec3[points];
+            for (int i = 0; i < points; i++) {
+                float f = i / (float) (points - 1), envelope = .35F + .65F * Mth.sin(f * Mth.PI);
+                float jx = (hash(a.seed() + bolt * 31 + i, strike + bolt) - .5F) * .34F * envelope * hot;
+                float jy = (hash(a.seed() + bolt * 57 + i * 3, strike + 7 + bolt) - .5F) * .34F * envelope * hot;
+                path[i] = from.add(line.scale(f)).add(side.scale(jx)).add(up.scale(jy));
+            }
+            stroke(c, path, .034F * hot, alpha * (bolt == 0 ? .95F : .7F), bolt == 1 ? ICE : BLUE);
+        }
+        // Wave fronts ride the blast out to its end.
+        int fronts = minimal() ? 2 : Math.max(3, (int) (length / 1.6));
+        for (int k = 0; k < fronts; k++) {
+            float f = (clock * (2.4F / (float) Math.max(2, length)) + k / (float) fronts) % 1;
+            float r = (.14F + .26F * f) * hot;
+            Vec3 at = from.add(line.scale(f));
+            // Fronts right by the camera (your own palm, in first person) would fill the view: let them fade there.
+            float near = smooth(.7F, 2.4F, (float) at.distanceTo(c.camera()));
+            front(c, at, direction, r, r * .8F, clock * .3F + k, alpha * (1 - .4F * f) * near, .4F);
+        }
+        float palmNear = smooth(.5F, 1.8F, (float) from.distanceTo(c.camera()));
+        c.glow(from, (.22F + .06F * Mth.sin(clock * 1.9F)) * hot * (.4F + .6F * palmNear), BLUE, alpha * .85F * (.35F + .65F * palmNear));
+        c.glow(from, .1F, WHITE, alpha * (.35F + .65F * palmNear));
+        // Where it lands it splashes back.
+        c.glow(to, .45F * hot, ICE, alpha * .7F);
+        front(c, to.subtract(direction.scale(.1)), direction.reverse(), .3F * hot, .26F * hot, clock * .5F, alpha * .8F, .5F);
+    }
+
+    /**
+     * Rift Fall's warning: the zone on the ground, its rim filling white as the time runs out, hairline tears flickering
+     * open across the floor (more as it fills), and thin columns of light rising from the rim toward the sky breach.
+     */
+    private static void riftZone(Canvas c, SetPieceClient.Active a, float t) {
+        Vec3 at = a.origin().add(0, .07, 0);
+        float r = a.scale(), life = Piece.VIBE_RIFT_ZONE.ticks;
+        float alpha = fade(t, life, 2, 1), p = Mth.clamp(t / life, 0, 1);
+        if (c.soft()) {
+            c.disc(at, VibeGeometry.UP, r, VOID, alpha * .42F, alpha * .1F);
+            return;
+        }
+        if (!c.glow()) return;
+        c.ring(at, r, .08F, BLUE, alpha * .9F);
+        c.ring(at, VibeGeometry.UP, r - .18F, .04F, 0, Mth.TWO_PI * p, WHITE, alpha);
+        int frame = (int) (clock(a, t) / 2);
+        int tears = (minimal() ? 2 : 4) + (int) (p * 8);
+        for (int k = 0; k < tears; k++) {
+            float angle = hash(a.seed() + k, frame) * Mth.TWO_PI, reach = (float) Math.sqrt(hash(a.seed() + k * 7, frame)) * (r - .4F);
+            Vec3 middle = at.add(Math.cos(angle) * reach, 0, Math.sin(angle) * reach);
+            Vec3 along = new Vec3(-Math.sin(angle * 3), 0, Math.cos(angle * 3));
+            Vec3[] crack = new Vec3[5];
+            for (int i = 0; i < crack.length; i++) {
+                float f = i / 4F - .5F;
+                crack[i] = middle.add(along.scale(f * .9)).add(new Vec3(along.z, 0, -along.x).scale((hash(k * 13 + i, frame) - .5F) * .2F));
+            }
+            stroke(c, crack, .02F, alpha * (.4F + .6F * p), k % 2 == 0 ? ICE : BLUE);
+        }
+        int columns = minimal() ? 6 : 14;
+        for (int i = 0; i < columns; i++) {
+            float angle = i * Mth.TWO_PI / columns + t * .05F;
+            Vec3 foot = at.add(Math.cos(angle) * r, 0, Math.sin(angle) * r);
+            c.line(foot, foot.add(0, .4 + 2.2 * p, 0), .025F, ICE, alpha * (.25F + .35F * p), 0);
+        }
+    }
+
+    /**
+     * Rift Fall's breach in the sky: a great iris facing down at the zone, its rim spitting arcs, fed at first by a blast
+     * from each of the caster's palms. Once the ground opens, a faint shaft of light falls from it.
+     */
+    private static void riftSky(Canvas c, SetPieceClient.Active a, float t) {
+        float life = Math.max(20, a.seed()), r = a.scale();
+        float open = smooth(0, 14, t) * (1 - smooth(life - 10, life, t)), alpha = fade(t, life, 2, 6);
+        if (alpha <= .005F || open <= .01F) return;
+        Vec3 sky = a.origin(), normal = facing(a);
+        float clock = clock(a, t);
+        iris(c, sky, normal, r, r, open, alpha, clock * 1.2F, false, 0);
+        if (!c.glow()) return;
+        Vec3 side = VibeGeometry.side(normal), up = side.cross(normal).normalize();
+        int frame = (int) (clock / 1.5F);
+        for (int k = 0; k < (minimal() ? 3 : 7); k++) {
+            float start = hash(k * 11, frame) * Mth.TWO_PI, span = .4F + hash(k * 5, frame + 3) * .8F;
+            Vec3[] points = new Vec3[7];
+            for (int i = 0; i < points.length; i++) {
+                float angle = start + span * i / (points.length - 1);
+                double out = (1.05 + (hash(k * 3 + i, frame + 9) - .3F) * .25) * open;
+                points[i] = sky.add(side.scale(Math.cos(angle) * r * out)).add(up.scale(Math.sin(angle) * r * out));
+            }
+            stroke(c, points, .035F, alpha * .8F, k % 2 == 0 ? ICE : WHITE);
+        }
+        c.glow(sky, r * 1.1F * open, BLUE, alpha * .4F);
+        // The caster's palms feed it while the ring fills.
+        if (t < 23 && a.bound(c) instanceof LivingEntity owner) {
+            float feed = fade(t, 23, 2, 3);
+            for (boolean off : new boolean[]{false, true}) {
+                Vec3 hand = palm(c, owner, sky.subtract(owner.getEyePosition(c.partial)).normalize(), off);
+                filament(c, hand, sky, .06F, clock * 2 + (off ? 3 : 0), alpha * feed * .9F, WHITE);
+                Vec3 line = sky.subtract(hand);
+                Vec3 across = VibeGeometry.side(line.normalize()), lift = across.cross(line.normalize());
+                Vec3[] bolt = new Vec3[10];
+                for (int i = 0; i < bolt.length; i++) {
+                    float f = i / 9F, envelope = Mth.sin(f * Mth.PI);
+                    bolt[i] = hand.add(line.scale(f)).add(across.scale((hash(i + (off ? 40 : 0), frame) - .5F) * .5F * envelope))
+                            .add(lift.scale((hash(i * 3 + (off ? 70 : 0), frame + 5) - .5F) * .5F * envelope));
+                }
+                stroke(c, bolt, .03F, alpha * feed * .8F, BLUE);
+                c.glow(hand, .2F, BLUE, alpha * feed * .8F);
+            }
+        }
+        // The shaft of light the bodies fall down.
+        if (t >= 20 && t < life - 10) {
+            float shaft = fade(t - 20, life - 30, 3, 6) * .22F;
+            Vec3 ground = a.target();
+            for (int i = 0; i < 3; i++) {
+                float angle = clock * .08F + i * Mth.TWO_PI / 3;
+                Vec3 offset = side.scale(Math.cos(angle) * r * .5).add(up.scale(Math.sin(angle) * r * .5));
+                c.line(sky.add(offset), ground.add(offset), .05F, ICE, alpha * shaft, 0);
+            }
+        }
+    }
+
+    /** One body's plunge out of the sky breach: a streak of fronts and light above it, and a flash where it lands. */
+    private static void riftFall(Canvas c, SetPieceClient.Active a, float t) {
+        if (!c.glow()) return;
+        int fall = com.jayptucker.heroesevolved.vibe.RiftFall.FALL;
+        float h = Math.max(.6F, a.scale());
+        Vec3 top = a.origin(), ground = a.target();
+        Vec3 body;
+        if (a.bound(c) instanceof LivingEntity foe && t < fall + 1) body = foe.getPosition(c.partial);
+        else {
+            float f = Mth.clamp(t / fall, 0, 1);
+            body = new Vec3(top.x, top.y + (ground.y - top.y) * f * f, top.z);
+        }
+        if (t < fall + 1) {
+            float alpha = fade(t, fall + 1, 1, 1);
+            Vec3 head = body.add(0, h, 0);
+            double trail = Math.min(head.distanceTo(top.add(0, h, 0)) + .5, 4.5);
+            Vec3 tail = head.add(0, trail, 0);
+            filament(c, head, tail, .06F, t * 3, alpha * .8F, WHITE);
+            for (int k = 0; k < (minimal() ? 2 : 4); k++) {
+                float f = k / 4F;
+                front(c, head.add(0, trail * f, 0), new Vec3(0, 1, 0), (.5F - .08F * k) * Math.min(1.4F, h),
+                        (.5F - .08F * k) * Math.min(1.4F, h), t * .4F + k, alpha * (1 - f * .7F), .3F);
+            }
+            c.glow(body.add(0, h * .5, 0), .6F * h, BLUE, alpha * .5F);
+        }
+        if (t >= fall) {
+            float k = smooth(fall, fall + 4, t), alpha = 1 - k;
+            c.ring(ground.add(0, .06, 0), VibeGeometry.UP, .4F + 2.2F * k, .07F, 0, Mth.TWO_PI, ICE, alpha);
+            c.glow(ground.add(0, .3, 0), 1.2F * (1 - k), WHITE, alpha);
+        }
+    }
+
+    /** The palm a blast leaves: the hand the viewer sees, in first person or third. */
+    private static Vec3 palm(Canvas c, LivingEntity owner, Vec3 aim, boolean offHand) {
+        var mc = Minecraft.getInstance();
+        if (owner != mc.player || !mc.options.getCameraType().isFirstPerson()) return VibeGeometry.hand(owner, aim, c.partial, offHand);
+        Vec3 look = owner.getViewVector(c.partial);
+        Vec3 side = VibeGeometry.side(look);
+        HumanoidArm arm = offHand ? owner.getMainArm().getOpposite() : owner.getMainArm();
+        var pose = ClientArmPoseState.get(owner.getId());
+        Vec3 palm = pose != null && pose.name().startsWith("VIBE_")
+                ? FirstPersonArmGeometry.vibePalm(arm, pose, ClientArmPoseState.ageTicks(owner.getId()) + c.partial)
+                : new Vec3(arm == HumanoidArm.RIGHT ? .33 : -.33, -.33, -.76);
+        return c.camera().add(look.scale(-palm.z)).add(side.scale(palm.x)).add(side.cross(look).scale(palm.y));
+    }
+
+    /** A vision's hologram flickering in (a ring rising up a body's height) or out (falling), with a cold flash. */
+    private static void project(Canvas c, SetPieceClient.Active a, float t) {
+        if (!c.glow()) return;
+        boolean leaving = a.scale() < .75F;
+        float alpha = fade(t, 16, 1, 6), p = smooth(0, 10, t);
+        Vec3 feet = a.origin();
+        float h = 1.9F * (leaving ? 1 - p : p);
+        c.ring(feet.add(0, h, 0), VibeGeometry.UP, .42F, .035F, 0, Mth.TWO_PI, ICE, alpha);
+        c.ring(feet.add(0, h * .5, 0), VibeGeometry.UP, .36F, .02F, 0, Mth.TWO_PI, BLUE, alpha * .6F);
+        c.ring(feet.add(0, .03, 0), VibeGeometry.UP, .3F + .55F * p, .03F, 0, Mth.TWO_PI, BLUE, alpha * (1 - p));
+        c.glow(feet.add(0, 1, 0), .9F * (1 - .6F * p), BLUE, alpha * .4F);
     }
 
     private static void gather(Canvas c, SetPieceClient.Active a, float t) {
@@ -282,36 +600,29 @@ final class VibeArt {
         front(c, at, VibeGeometry.UP, .26F + p * .38F, .26F + p * .38F, t * .12F, alpha, .15F);
     }
 
+    /**
+     * A replayed blow (Read the Vibe). The bodies themselves are ghosts of the real creatures ({@code VibeEchoes}); this
+     * draws only what passes between them: from the attacker's piece (scale 1) a violet thread to the victim as the
+     * blow lands, and on the victim's piece a split front where it hit.
+     */
     private static void echo(Canvas c, SetPieceClient.Active a, float t) {
-        Vec3 from = a.origin(), to = a.target(), axis = to.subtract(from).normalize();
+        Vec3 from = a.origin(), to = a.target();
+        boolean attacker = a.scale() >= .8F;
         float alpha = fade(t, 29, 2, 10);
-        float p = smooth(2, 15, t);
-        if (c.glow()) {
-            filament(c, from, from.lerp(to, p), .28F, t, alpha, GHOST);
-            c.glow(from.lerp(to, p), .42F, ICE, alpha * .6F);
+        if (attacker) {
+            if (!c.glow()) return;
+            float p = smooth(4, 9, t);
+            if (p <= 0) return;
+            filament(c, from, from.lerp(to, p), .16F, t, alpha * .8F, GHOST);
+            if (p >= 1) c.glow(to, .35F * (1 - smooth(9, 18, t)), ICE, alpha * .7F);
+            return;
         }
-        echoBody(c, from, axis, alpha * .63F, t, a.seed());
-        if (p > .5F && from.distanceToSqr(to) > 1) echoBody(c, to, axis.reverse(), alpha, t + 3, a.seed() + 7);
-    }
-
-    private static void echoBody(Canvas c, Vec3 at, Vec3 normal, float alpha, float t, int seed) {
-        Vec3 level = normal.multiply(1, 0, 1).normalize();
-        if (level.lengthSqr() < .1) level = new Vec3(0, 0, 1);
-        Vec3 side = VibeGeometry.side(level);
-        float glitch = (hash(seed, (int) (t / 3)) - .5F) * .24F;
-        Vec3 chest = at.add(side.scale(glitch)), head = chest.add(0, .61, 0);
-        if (c.soft()) {
-            c.box(head, .19F, .20F, .14F, 0, 0, 0, DEPTH, alpha * .38F);
-            c.box(chest, .25F, .32F, .13F, 0, 0, 0, DEPTH, alpha * .32F);
-        } else {
-            front(c, head, level, .19F, .22F, .8F, alpha * .74F, .2F);
-            for (int sign : new int[]{-1, 1}) {
-                Vec3 shoulder = chest.add(side.scale(.29 * sign)).add(0, .23, 0);
-                Vec3 hip = chest.add(side.scale(.19 * sign)).add(0, -.29, 0);
-                stroke(c, new Vec3[]{shoulder.add(side.scale(.12 * sign)).add(0, -.39, 0), shoulder,
-                        chest.add(0, .25, 0), hip, hip.add(0, -.56, .08 * sign)}, .025F, alpha * .67F, GHOST);
-            }
-        }
+        float hit = smooth(8, 16, t);
+        if (t < 8 || hit >= 1) return;
+        Vec3 normal = from.subtract(to);
+        normal = normal.lengthSqr() < 1e-4 ? VibeGeometry.UP : normal.normalize().reverse();
+        front(c, from, normal, .25F + .55F * hit, .3F + .5F * hit, t * .2F, alpha * (1 - hit), .3F);
+        fragments(c, a, from, normal, t - 8, 10, .8F);
     }
 
     private static void lock(Canvas c, SetPieceClient.Active a, float t, boolean released) {

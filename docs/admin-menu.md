@@ -19,11 +19,19 @@ The player's card shows:
 
 | Row | Buttons |
 | --- | --- |
-| Power | Pick a power with the arrows, then **Give** it (awakened) or **Remove** theirs. |
+| Power | Pick a power with the arrows, then **Give** it (awakened), give it **Dormant** (unawakened), or **Remove** theirs. |
 | Level | Step down or up, jump to 1, 10, 15 or 20; **Awaken** a dormant power with its awakening scene. |
 | Mastery | +100, +1k, +10k, or **Reset** to Level 1. |
 | Energy | **Refill**, or turn **Unlimited** energy on and off. |
 | Tools | Reset **Cooldowns**, **Full Heal**, or **Go To** them (teleports you). |
+| Admin | Toggle **God** mode, or **Bring here** (teleport them to your position and dimension). |
+
+God mode prevents all damage and death, including void damage. It is saved through relogs and respawns, and can be
+turned off in the same menu. Enabled players have a gold outline visible to everyone and gold names in the player list.
+God mode leaves game mode, stamina costs, cooldowns and scoreboard teams alone.
+
+**Dormant** replaces the existing power without playing an awakening. It can awaken naturally later, or with **Awaken**.
+Both grant buttons respect unique power ownership: they cannot take a power another player still holds.
 
 ## World & Events
 
@@ -37,6 +45,20 @@ cut short to read all of it. Buttons that can't do anything right now are greyed
 | **Elle** (Elle Bishop) | **Omens** (a day of flickering lights before she comes), **Arrive** (she comes now), **Dismiss** | the chosen player |
 | **Village** | **Meltdown** (one minute) or **20 s**, in the villager nearest them; **Raid** on the nearest village; **End** every meltdown | the chosen player's surroundings (64 blocks) |
 | **Radio** | **Give tuned radio**: a walkie-talkie already on 101.10 FM | the chosen player |
+
+Use **Village incidents** for the newer village events:
+
+| Control | Result |
+| --- | --- |
+| **Awakening** | A gifted villager awakens naturally, potentially becoming a renegade. |
+| **Renegade** | A hostile gifted villager begins besieging its village. |
+| **Guardian** | A friendly gifted villager awakens to protect its village. |
+| **Meltdown** | Find and load a village, then begin a meltdown using the configured fuse. |
+| **Start raid** / **Stop raid** | Start at the nearest village; stop the raid at the chosen player's position. Surviving raiders remain. |
+
+Incidents search around the chosen player within the server's configured incident range (640 blocks by default).
+They begin once the village and its villagers load. The village status includes the number of queued incidents;
+**Refresh** updates the status. **Main events** returns to the original controls.
 
 Sylar and Elle refuse a player who can't take part. The player needs:
 

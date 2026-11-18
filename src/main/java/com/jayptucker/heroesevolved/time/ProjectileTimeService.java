@@ -122,7 +122,9 @@ public final class ProjectileTimeService {
 
     public static boolean canCatch(ServerPlayer player, Projectile shot) {
         State state = SHOTS.get(shot);
-        if (!canCatchInTime(player) || state == null || state.fullVelocity.lengthSqr() < 1e-8) return false;
+        if (!canCatchInTime(player) || state == null
+                || shot instanceof AbstractArrow arrow && ((com.jayptucker.heroesevolved.mixin.ArrowAccess) arrow).heroes$inGround()
+                || state.interval != STOPPED && state.fullVelocity.lengthSqr() < 1e-8) return false;
         Vec3 end = shot.position().add(state.fullVelocity);
         return TimeSlowService.controlsShot(player, shot, end) || TimeStopService.controlsShot(player, shot, end)
                 || AdvancedTechniques.controlsShot(player, shot, end);
@@ -143,7 +145,8 @@ public final class ProjectileTimeService {
             SHOTS.put(to, state);
         }
         PacketDistributor.sendToPlayersTrackingEntity(to, new TemporalProjectilePayload(to.getId(),
-                state == null ? NORMAL : state.interval, to.position(), to.getDeltaMovement(), true));
+                state == null ? NORMAL : state.interval, to.position(), to.getDeltaMovement(),
+                (state == null ? to.getDeltaMovement() : state.fullVelocity).normalize(), true));
     }
 
     private static boolean canCatchInTime(ServerPlayer player) {
@@ -165,7 +168,7 @@ public final class ProjectileTimeService {
     public static void sendToTracker(ServerPlayer player, Projectile shot) {
         State state = SHOTS.get(shot);
         if (state != null) PacketDistributor.sendToPlayer(player, new TemporalProjectilePayload(shot.getId(), state.interval,
-                shot.position(), state.appliedVelocity));
+                shot.position(), state.appliedVelocity, state.fullVelocity.normalize(), false));
     }
 
     public static void releaseInactive() {
@@ -188,6 +191,6 @@ public final class ProjectileTimeService {
     private static void sync(Projectile shot, State state) {
         boolean active = SHOTS.containsKey(shot);
         PacketDistributor.sendToPlayersTrackingEntity(shot, new TemporalProjectilePayload(shot.getId(),
-                active ? state.interval : NORMAL, shot.position(), shot.getDeltaMovement()));
+                active ? state.interval : NORMAL, shot.position(), shot.getDeltaMovement(), state.fullVelocity.normalize(), false));
     }
 }

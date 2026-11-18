@@ -50,7 +50,15 @@ public record AdminActionPayload(
         MELTDOWN_CANCEL,
         RAID_START,
         GIVE_RADIO,
-        TELEPORT_TO
+        TELEPORT_TO,
+        GIVE_DORMANT_POWER,
+        TOGGLE_GOD_MODE,
+        BRING_HERE,
+        INCIDENT_AWAKENING,
+        INCIDENT_RENEGADE,
+        INCIDENT_GUARDIAN,
+        INCIDENT_MELTDOWN,
+        RAID_STOP
     }
 
     public static final Type<AdminActionPayload> TYPE =

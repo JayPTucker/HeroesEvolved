@@ -55,6 +55,7 @@ public record AdminStatePayload(
             int energy,
             int maximumEnergy,
             boolean unlimitedEnergy,
+            boolean godMode,
             /** Where they are, and how far the stories have got with them. */
             String whereabouts,
             String story
@@ -72,6 +73,7 @@ public record AdminStatePayload(
                             buffer.writeVarInt(entry.energy());
                             buffer.writeVarInt(entry.maximumEnergy());
                             buffer.writeBoolean(entry.unlimitedEnergy());
+                            buffer.writeBoolean(entry.godMode());
                             buffer.writeUtf(entry.whereabouts(), 128);
                             buffer.writeUtf(entry.story(), 256);
                         },
@@ -85,6 +87,7 @@ public record AdminStatePayload(
                                 buffer.readVarLong(),
                                 buffer.readVarInt(),
                                 buffer.readVarInt(),
+                                buffer.readBoolean(),
                                 buffer.readBoolean(),
                                 buffer.readUtf(128),
                                 buffer.readUtf(256)

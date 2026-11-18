@@ -141,7 +141,7 @@ public final class PlayerEnergyService {
     public static void restoreNaturally(ServerPlayer player) {
     }
 
-    /** Recovery per second when nothing pauses it: base, plus Power Level, plus an electrokinetic's storm. */
+    /** Recovery per second when nothing pauses it: base, plus Power Level, plus an electrokinetic's storm or a hydrokinetic's water. */
     public static double regenerationPerSecond(ServerPlayer player) {
         double base = HeroesEvolvedConfig.COMMON.staminaRegenerationPerSecond.get()
                 + (PlayerProgressionService.getPowerLevel(player) - 1)
@@ -150,6 +150,8 @@ public final class PlayerEnergyService {
         if (com.jayptucker.heroesevolved.events.ElectroEvents.hasAwakenedElectrokinesis(player)) {
             base += com.jayptucker.heroesevolved.electro.ElectroService.stormEnergyBonus(player);
         }
+        // Hydrokinetics are fed by water and rain.
+        base += com.jayptucker.heroesevolved.hydro.HydroService.seaEnergyBonus(player);
         return base;
     }
 

@@ -183,7 +183,12 @@ public final class PyroFlightService {
             if (player.tickCount % 5 == 0 && PyroService.isPyrokinetic(player)) sync(player);
             return;
         }
-        if (jets.level != player.serverLevel() || !canStart(player)) { stop(player, true); return; }
+        if (jets.level != player.serverLevel() || !canStart(player)) {
+            // Rain puts the jets out: a hiss and a puff of smoke from the palms as they go.
+            if (com.jayptucker.heroesevolved.ability.service.Elements.doused(player)) com.jayptucker.heroesevolved.ability.service.Elements.fizzle(player, com.jayptucker.heroesevolved.ability.registry.ModAbilities.PYROKINESIS_ID, true);
+            stop(player, true);
+            return;
+        }
         jets.age++;
         player.resetFallDistance();
         if (!player.getAbilities().flying) {

@@ -112,7 +112,28 @@ public final class AdminService {
     ) {
         String name = target == null ? "" : target.getName().getString();
         return switch (request.action()) {
-            case GIVE_POWER -> givePower(target, request.argument());
+            case GIVE_POWER -> givePower(target, request.argument(), false);
+            case GIVE_DORMANT_POWER -> givePower(target, request.argument(), true);
+            case TOGGLE_GOD_MODE -> {
+                boolean enabled = !GodModeService.enabled(target);
+                GodModeService.set(target, enabled);
+                yield "God mode " + (enabled ? "enabled" : "disabled") + " for " + name + ".";
+            }
+            case BRING_HERE -> {
+                if (target == admin) yield "That's you.";
+                target.teleportTo(admin.serverLevel(), admin.getX(), admin.getY(), admin.getZ(), admin.getYRot(), admin.getXRot());
+                yield "Brought " + name + " here.";
+            }
+            case INCIDENT_AWAKENING -> incident(target, com.jayptucker.heroesevolved.village.VillageIncidents.Kind.AWAKENING);
+            case INCIDENT_RENEGADE -> incident(target, com.jayptucker.heroesevolved.village.VillageIncidents.Kind.RENEGADE);
+            case INCIDENT_GUARDIAN -> incident(target, com.jayptucker.heroesevolved.village.VillageIncidents.Kind.GUARDIAN);
+            case INCIDENT_MELTDOWN -> incident(target, com.jayptucker.heroesevolved.village.VillageIncidents.Kind.MELTDOWN);
+            case RAID_STOP -> {
+                var raid = target.serverLevel().getRaidAt(target.blockPosition());
+                if (raid == null || !raid.isActive()) yield "No active raid at " + name + "'s position.";
+                raid.stop();
+                yield "Stopped the raid at " + name + "'s position. Surviving raiders remain.";
+            }
             case REMOVE_POWER -> PlayerAbilityService.removeAssignedAbility(target)
                     ? "Removed " + name + "'s power."
                     : name + " has no power to remove.";
@@ -248,7 +269,16 @@ public final class AdminService {
                 : "The raid couldn't start there (Peaceful, or raids are off).";
     }
 
-    private static String givePower(ServerPlayer target, String powerName) {
+    private static String incident(ServerPlayer target, com.jayptucker.heroesevolved.village.VillageIncidents.Kind kind) {
+        var level = target.serverLevel();
+        int range = com.jayptucker.heroesevolved.config.HeroesEvolvedConfig.COMMON.villageIncidentRange.get();
+        BlockPos village = com.jayptucker.heroesevolved.village.VillageIncidents.find(level, target.blockPosition(), range, level.random);
+        if (village == null) return "No village within " + range + " blocks of " + target.getName().getString() + ".";
+        com.jayptucker.heroesevolved.village.VillageIncidents.requestAt(level, village, kind);
+        return "Queued " + kind.name().toLowerCase(java.util.Locale.ROOT) + " at " + village.getX() + ", " + village.getZ() + "; starts after the village loads.";
+    }
+
+    private static String givePower(ServerPlayer target, String powerName, boolean dormant) {
         ResourceLocation powerId = ResourceLocation.tryParse(powerName);
         if (powerId == null || !AbilityRegistry.ABILITIES.containsKey(powerId)) {
             return "Unknown power: " + powerName;
@@ -257,9 +287,11 @@ public final class AdminService {
         String name = target.getName().getString();
         String holder = PlayerAbilityService.adminFree(target, powerId);
         if (holder != null) return "Only one player can have " + powerId.getPath() + ", and " + holder + " still has it. Remove it from them first.";
-        return PlayerAbilityService.replaceWithAbility(target, powerId)
-                ? "Gave " + name + " " + powerId.getPath() + " (awakened)."
-                : name + " already has that power awakened.";
+        boolean changed = dormant ? PlayerAbilityService.replaceWithDormantAbility(target, powerId)
+                : PlayerAbilityService.replaceWithAbility(target, powerId);
+        String state = dormant ? "dormant" : "awakened";
+        return changed ? "Gave " + name + " " + powerId.getPath() + " (" + state + ")."
+                : name + " already has that power " + state + ".";
     }
 
     private static String awaken(ServerPlayer target) {
@@ -368,7 +400,7 @@ public final class AdminService {
         }
 
         if (!VillagerMeltdown.all().isEmpty()) flags |= AdminStatePayload.World.MELTDOWN;
-        String village = VillagerMeltdown.describe();
+        String village = VillagerMeltdown.describe() + " Queued incidents: " + com.jayptucker.heroesevolved.village.VillageIncidents.pending() + ".";
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             var raid = p.serverLevel().getRaidAt(p.blockPosition());
             if (raid != null && raid.isActive()) {
@@ -411,6 +443,7 @@ public final class AdminService {
                 PlayerEnergyService.getEnergy(player),
                 PlayerEnergyService.getMaximumEnergy(player),
                 PlayerEnergyService.hasUnlimitedEnergy(player),
+                GodModeService.enabled(player),
                 player.level().dimension().location().getPath().replace('_', ' ') + "  "
                         + player.getBlockX() + ", " + player.getBlockY() + ", " + player.getBlockZ(),
                 story(player)

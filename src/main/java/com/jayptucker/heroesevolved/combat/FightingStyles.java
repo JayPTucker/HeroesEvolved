@@ -4,6 +4,7 @@ import com.jayptucker.heroesevolved.HeroesEvolved;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
+import com.jayptucker.heroesevolved.ability.service.Elements;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
 import com.jayptucker.heroesevolved.events.EclipseService;
 import com.jayptucker.heroesevolved.mimicry.MimicryService;
@@ -11,6 +12,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -42,6 +45,8 @@ public final class FightingStyles {
         ResourceLocation power();
         /** Does this player fight this way with their own, awakened power? Use {@link #fights} to include borrowers. */
         default boolean owns(ServerPlayer player) { return hasPower(player, power()); }
+        /** Whether a direct click on this body can use the combo; other targets receive a vanilla punch. */
+        default boolean canStrike(ServerPlayer player, LivingEntity target) { return StyleHits.hostile(player, target); }
         /** Throws the next strike: 1 thrown, 0 too soon, -1 nothing could be thrown at all (the click punches). */
         int strike(ServerPlayer player);
         boolean dodge(ServerPlayer player, Dodge dodge);
@@ -99,14 +104,22 @@ public final class FightingStyles {
     /**
      * An empty-handed click. If the power can't strike at all (no stamina, the power switched off), the click is still
      * a plain punch at whatever the crosshair was on, so a tired or dampened fighter isn't left swinging at air.
+     * Targets the combo excludes or cannot hurt also receive that punch, within ordinary melee reach.
      */
     public static void strikeInput(ServerPlayer player, int targetId) {
         if (!player.getMainHandItem().isEmpty()) return;
         Style style = of(player);
-        int thrown = style == null ? -1 : style.strike(player);
+        Entity target = targetId < 0 ? null : player.level().getEntity(targetId);
+        // Styles filter their area hits to spare villagers, allies and pets. That must not swallow a deliberate
+        // vanilla attack on one of them, or on a boat/item frame. The fallback below still checks ordinary reach.
+        boolean punch = target != null && (target instanceof ArmorStand || !(target instanceof LivingEntity living)
+                || style != null && !style.canStrike(player, living));
+        // A rained-out firebender or a waterbender in the Nether only fizzles, then throws a plain punch.
+        boolean snuffed = style != null && Elements.snuffed(player, style.power());
+        if (snuffed) Elements.fizzle(player, style.power(), false);
+        int thrown = style == null || snuffed || punch ? -1 : style.strike(player);
         if (thrown == 1) com.jayptucker.heroesevolved.sounds.PowerSounds.strike(player, style.power());
         if (thrown >= 0) return;
-        Entity target = targetId < 0 ? null : player.level().getEntity(targetId);
         if (target != null && target != player && target.isAlive() && target.isAttackable()
                 && player.canInteractWithEntity(target, 1)) {
             player.attack(target);
@@ -116,6 +129,10 @@ public final class FightingStyles {
 
     public static boolean dodge(ServerPlayer player, Dodge dodge) {
         Style style = of(player);
+        if (style != null && Elements.snuffed(player, style.power())) {
+            Elements.fizzle(player, style.power(), false);
+            return false;
+        }
         if (style == null || !style.dodge(player, dodge)) return false;
         com.jayptucker.heroesevolved.sounds.PowerSounds.dodge(player, style.power());
         return true;

@@ -435,9 +435,10 @@ Electrokinesis gained a fighting style in November 2026 on the shared engine (`e
   static burst behind instead of kicking. Same engine, same controls, a different fight.
 - **A counter that points at the attacker.** `Style.counter` gets the `DamageSource`, so Ground Out remembers who threw
   the evaded blow and the next spark goes through them and chains on (`ElectroCombat.chain`).
-- **A body sketched in the power.** `ElectroArt.sketch` draws a figure in forks (spine, shoulders, arms, legs, a halo
-  head). Arc Step leaves one where you stood and Flashback's static crackles in that shape until it bursts. Any power
-  can leave its own "afterimage" this way without the speedster's skin snapshots.
+- **Electrical facades have volume.** `client/effects/ElectricalAfterimages` draws a full-sized player mesh wrapped
+  in the charged creeper's scrolling energy field for Arc Step, Flashback and Short Circuit. The departure position,
+  body facing and pose stay frozen while the field crawls over the surface. Use substantial body models for ghosts,
+  never a spine-and-limbs line skeleton. Minimal keeps one shell; the normal setting adds a pale outer sheen.
 - **Hands per side.** `ElectroGeometry.fist(player, partial, main)` and `ElectroArt.fist(c, owner, main, reach)` place
   the lead or rear fist in third person and in first person, so a jab leaves the hand that threw it.
 - **Cross-power rules live where the damage is dealt.** `ElectroService.shock` reads `HydroService.soaked`, and
@@ -508,6 +509,13 @@ moves, waterbending, an eighteen-node tree and three classes. What the player se
   flags, sent to the bender and everyone tracking them, on change and on `StartTracking`) feeds `ClientHydroState`, and
   `HydroArt.drawLive` draws the water flowing round the waist, longer and thicker the fuller. Ease the drawn value toward
   the server's each client tick so it never jumps.
+- **Where an element can't live.** `ability/service/Elements` is the one rule: Hydrokinesis is snuffed in an ultra-warm
+  dimension (the Nether), Pyrokinesis under rain (`doused`: rain at the feet or head). `AbilityUseService` refuses a
+  snuffed press before follow-ups, cost and cooldown (an Echo counts as the borrowed power), `FightingStyles` turns a
+  strike into a plain punch and refuses dodges, `Takedowns` refuses and interrupts finishers, and the powers' own held
+  gates (`HydroService.canBend`, `PyroService.canSustainFire`, the Phoenix and Flame Flight) end what is running.
+  `Elements.fizzle` is the shared puff and hiss; `Elements.check` (every five ticks) empties water or Heat with a big
+  fizzle as the element goes out. A new environmental weakness (cold for fire, a vacuum for sound) is one more case.
 - **Never let a resource lock the kit.** `HydroService.draw` spends water if there is enough and otherwise pulls it
   "thin from the air": the move still works at 70% and costs a little stamina, and its piece gets `HydroGeometry.THIN`
   added to the scale so the art draws it paler and thinner (the same scale-flag trick as Pyrokinesis's `BLUE_SCALE`).
@@ -1306,7 +1314,7 @@ player sees is in [docs/ability-dampener.md](docs/ability-dampener.md).
 ## Reusable patterns from Vibe
 
 Vibe (`vibe/`, art in `client/effects/setpiece/VibeArt`) is Cisco Ramon's power, added in November 2026: Vibe Blast,
-two-way Breaches, Read the Vibe, Breach Guard → Return Fire and Frequency Lock. What the player sees is in
+two-way Breaches, Read the Vibe, Breach Guard → Return Fire and Rift Fall (the slot that was Frequency Lock). What the player sees is in
 [docs/vibe.md](docs/vibe.md).
 
 - **One crossing test for every opening.** `VibeGeometry.crossing(from, to, center, normal, width, height)` checks a
@@ -1325,7 +1333,7 @@ two-way Breaches, Read the Vibe, Breach Guard → Return Fire and Frequency Lock
 - **Catching fast shots needs three hooks.** The guard screens each projectile's step in `EntityTickEvent.Pre`
   (lowest priority), again in `ProjectileImpactEvent` (a shot whose whole step fell between ticks), and TaCZ rounds in
   `TaczLink`'s `EntityHurtByGunEvent.Pre`.
-- **Switching another power off for a while.** A Frequency Lock puts a caught speedster in `VibeService.DESYNCED`, and
+- **Switching another power off for a while.** Rift Fall's landing (and Prism Lock) puts a caught speedster in `VibeService.DESYNCED`, and
   `AbilityUseService` refuses Superspeed while `VibeService.desynced(player)` is true. `desync` is package-visible so
   `VibeKitGameTests` can test the rule directly (the test server never allows PvP).
 - **`SpeedService.swept` returns a position, not a displacement.** Subtract the entity's position before measuring how
@@ -1376,6 +1384,73 @@ two-way Breaches, Read the Vibe, Breach Guard → Return Fire and Frequency Lock
   garden into `build/vibe-preview/screenshots/`. It skips the Last Day and stages every scene on one strip of forced
   overworld chunks; breaches are sealed in the mod's own dimensions, so a preview left in the city casts nothing.
   Run with `-Pbreaches` for the focused Fabulous preview of terrain, entities and tilted/floor openings.
+- **Tap or hold on a key with a free follow-up.** Breach's `followUp` only records the press (`VibeBreaches.PRESSES`,
+  holding the `ServerPlayer`, since test players aren't in the player list) and returns true, so the press is free. The
+  `release` callback turns a quick let-go into the wheel; the server tick turns a press still down after `HOLD_TICKS`
+  into the normal paid press (`VibeFrequencies.press`, the same path a wheel pick takes, so stamina, cooldown and the
+  distance cost apply). A press while a breach is open closes it and marks itself handled, so its release does nothing.
+- **A channelled opening.** A breach begun from the key (`keyed`) takes `VibeGeometry.channelTicks(tier)` to open, its
+  near mouth re-aimed from the look every tick (`follow`), and collapses if the key comes up first (`breachRelease`
+  gives the stamina back and resets the cooldown). The `VIBE_BREACH_CHANNEL` piece is re-sent every two ticks, bound to
+  the viber so it leaves the visible palm, with the progress in its scale and the channel's length in its seed (built
+  as a `SetPiecePayload` directly), so the client grows the tear smoothly and the newest copy supersedes the last. A
+  mouth that moves needs its chunk tickets remembered (`Gate.tickets`), or close releases the wrong ones. Tests that
+  aren't about the channel call `VibeBreaches.hurry` / `shiftHold` to keep the old eight-tick opening.
+- **A vision is a spectator on a leash, with a double left behind.** `vibe/VibeVisions` saves the way home in the
+  player's persisted data before anything changes, spawns a `StoryActorEntity` double (`Role.TRAVELER`, `doubleOf`),
+  sets spectator mode and teleports; each tick it resets the camera (no riding a mob's eyes) and pulls the watcher back
+  within `LEASH`. Logout, death, a power change, a gamemode change by an operator and server stop all end it through
+  `VibeService.forget`/`clear`; `login` restores anyone whose save survived a crash, and `orphan` refuses a double that
+  loads without its vision. `StoryActorEntity.hurt` swallows every blow before `LivingIncomingDamageEvent`, so the
+  double's "tear them back" hook lives in `hurt` itself. Use this for any out-of-body view (astral projection, a
+  remote camera).
+- **Who triggers a vision.** An ally (`Danger.ally`) more than `ALLY_NEAREST` (40) blocks off and under
+  `DANGER_HEALTH` (three hearts) always does; village trouble rolls `CHANCE`. The wait between visions is saved in the
+  player's persisted data (`VibeVisions.next`/`rest`), so relogging can't reset it. `trigger` skips the wait and the
+  roll, for tests and previews.
+- **Things that remember who placed them.** Vanilla doesn't record a block's placer, so `BlockEvent.EntityPlaceEvent`
+  stamps the player's UUID into the block entity's persistent data (`VibeVisions.placed`, `PLACED_BY`) for personal
+  blocks only (beds, both halves; chests, barrels, ender chests, furnaces, smokers, shulker boxes). It saves with the
+  block entity for free. Pets answer the same question through `OwnableEntity.getOwnerUUID`. A touch vision is Read the
+  Vibe with the hand on one (`VibeVisions.touch`, checked first in `VibeSight.read`), within `TOUCH_REACH`, rested
+  `TOUCH_REST` apart. Any power that should find a player through their things can ask `placedBy`.
+- **Seeing the future is a hook where the event is prepared.** `VillageIncidents.requestAt` calls
+  `VibeVisions.foresee`, so a village loading for an incident counts as trouble before it starts. A new kind of
+  incident is foreseen for free.
+- **A hologram for people who can't see the spectator.** Spectators aren't sent to other players, so
+  `VibeHologramPayload` carries the position and look every other tick to players within 64 blocks, and
+  `client/effects/VibeHologramClient` draws the player model with the skin from the client's player list: translucent
+  and blue-tinted, a charged-creeper `energySwirl` sheen over it, and an offset ghost copy. Simple Voice Chat won't let
+  ordinary players hear a spectator, so `MindVoice.hologram` relays their microphone as a locational sound from the
+  hologram (`VibeVisions.voices`, published from the server tick), with its own "Vibe Hologram" category.
+- **A screen effect as a post chain.** `assets/heroesevolved/shaders/post/vibe_vision.json` chains vanilla's `box_blur`
+  and `color_convolve` programs; `client/effects/VibeVisionClient` loads it with `GameRenderer.loadEffect`, animates the
+  blur with `PostChain.setUniform("Radius", ...)` and shuts it down only if it is still the current effect (spectating
+  a creeper replaces it). Washes, edges, scan lines and stutters are drawn over the HUD in `RenderGuiEvent.Post`, so a
+  preview that wants them must leave the GUI on.
+- **Ghosts of real creatures, not stick figures.** Read the Vibe's echoes (`client/effects/VibeEchoes`) draw each body
+  with its own model: the `VIBE_ECHO` piece carries the entity type's registry id in its seed (and the living entity's
+  id, for a player's skin), the client makes a stand-in per type (`type.create`, or a `RemotePlayer`), poses it and
+  renders the model alone (no layers) with `entityTranslucent` plus an `eyes` glow, through
+  `SetPieceClient.running(piece)`. Don't mark things with `PrivateGlow` outlines in Vibe: a white silhouette seen
+  through bodies reads as a stick figure; a `VIBE_HIT` ripple bound to the body says the same.
+- **A held beam that pays as it goes.** The held Vibe Blast (`VibeService.stream`) starts a `StaminaDrain` with the
+  table's `drain` and ends on the key's `release`, a second press, or an empty bar. Its hits are timed by a due tick
+  (`nextHit`), not by its age, so a first tick that lands late never skips a hit, and it clears the target's
+  `invulnerableTime` before each hit, or a mob ignores every other hit 6 ticks apart.
+- **A mass drop driven by hand.** Rift Fall (`vibe/RiftFall`) moves every swallowed body itself along a fixed fall line
+  (`teleportTo` plus a `ClientboundTeleportEntityPacket` each tick, because a mob's position otherwise reaches clients
+  every few ticks), so it lands the same for NoAI test mobs and players, adds no vanilla fall damage, and puts anyone
+  still falling down where they'd land if the caster leaves (`forget`). Anything a breach can't take (`fits`) is
+  slammed in place.
+- **A breach window must write its depth with the depth test on.** Chunk layers' `clearRenderState` turns depth testing
+  off, and OpenGL writes no depth while it is off, so `BreachViewClient` re-enables it before putting the opening's
+  depth back. Without that, block entities (beds, chests) and translucent blocks behind a breach showed through it.
+  Put it back a hair behind the plane (`DEPTH_BACK`, toward the far side), not in it: the iris's rim is drawn in the
+  plane, and two surfaces at one depth z-fight, which flickered as jagged shards round the edge.
+- **Photographs:** `tools/vibe-vision-preview.init.gradle` (`uitest/VibeVisionPreview`, flag
+  `heroes.preview.vibevision`). A player just released from the bunker has a darkness effect for a few seconds: clear
+  effects before the first shot. Tests: `tools/vibe-gametest.init.gradle` runs only the Vibe (and grid) tests.
 
 ## Reusable patterns from the Space-Time rework
 

@@ -13,7 +13,7 @@ import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 import com.jayptucker.heroesevolved.network.MomentumPayload;
 import com.jayptucker.heroesevolved.progression.MasteryService;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
-import com.jayptucker.heroesevolved.time.TaczAmmoRecovery;
+import com.jayptucker.heroesevolved.time.ProjectilePickup;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -766,25 +766,21 @@ public final class SpeedService {
     }
 
     /**
-     * Right-click a shot in flight to pluck it out of the air. Arrows and thrown items you could pick
-     * up go into your pocket; anything else (fireballs, skulls) is simply snuffed out.
+     * Right-click a shot to pluck it out of the air and recover its item. Wither skulls are snuffed out.
      */
     public static boolean catchShot(ServerPlayer p, Entity e) {
-        if (!(e instanceof Projectile shot) || shot.isRemoved() || shot.getOwner() == p || !PowerRules.canAct(p)
-                || shot.getOwner() instanceof LivingEntity owner && com.jayptucker.heroesevolved.flight.FlightSkillService.isFriend(p, owner)) return false;
+        if (!(e instanceof Projectile shot) || shot.isRemoved() || !PowerRules.canAct(p)) return false;
         long now = now(p);
         if (CAUGHT.getOrDefault(p.getUUID(), 0L) > now || shot.level() != p.level()) return false;
         boolean timeCatch = com.jayptucker.heroesevolved.time.ProjectileTimeService.canCatch(p, shot);
+        if (!timeCatch && (shot.getOwner() == p || shot.getOwner() instanceof LivingEntity owner
+                && com.jayptucker.heroesevolved.flight.FlightSkillService.isFriend(p, owner))) return false;
         if (!(timeCatch || SpeedMovement.accelerating(p) && com.jayptucker.heroesevolved.time.ProjectileTimeService.isInFlight(shot))
-                || !Double.isFinite(com.jayptucker.heroesevolved.time.ProjectileCatchGeometry.hitDistanceSquared(p, shot))) return false;
+                || !Double.isFinite(com.jayptucker.heroesevolved.time.ProjectileCatchGeometry.hitDistanceSquared(p, shot, timeCatch))) return false;
         Vec3 eye = p.getEyePosition();
         if (!PlayerEnergyService.tryConsume(p, 2)) return false;
         CAUGHT.put(p.getUUID(), now + 4);
-        net.minecraft.world.item.ItemStack prize;
-        if (shot instanceof net.minecraft.world.entity.projectile.AbstractArrow arrow && arrow.pickup == net.minecraft.world.entity.projectile.AbstractArrow.Pickup.ALLOWED)
-            prize = arrow.getPickupItemStackOrigin().copy();
-        else if (shot instanceof net.minecraft.world.entity.projectile.ThrowableItemProjectile thrown) prize = thrown.getItem().copy();
-        else prize = TaczAmmoRecovery.recover(shot);
+        net.minecraft.world.item.ItemStack prize = ProjectilePickup.recover(shot);
         Vec3 at = shot.position();
         shot.discard();
         if (!prize.isEmpty() && !p.getInventory().add(prize)) p.drop(prize, false);

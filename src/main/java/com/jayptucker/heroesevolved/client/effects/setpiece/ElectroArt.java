@@ -308,19 +308,16 @@ final class ElectroArt {
     }
 
     /**
-     * Arc Step: where the fighter stood, a sketch of their body in lightning hangs for a moment; a bolt joins it to
-     * the body as it flashes away, flickering, and a ground ring pops at each end. A Flashback leaves its sketch to
+     * Arc Step: where the fighter stood, a full-sized charged electrical facade hangs for a moment; a bolt joins it to
+     * the body as it flashes away, flickering, and a ground ring pops at each end. A Flashback leaves its facade to
      * {@link #decoy} instead.
      */
     private static void arcStep(Canvas c, Player owner, Vec3 at, Vec3 end, boolean flashback, float t, float alpha,
                                 float clock, int seed) {
         Vec3 path = end.subtract(at);
         if (path.lengthSqr() < .01) return;
-        Vec3 dir = path.normalize();
         Vec3 body = owner != null ? owner.getPosition(c.partial) : at.lerp(end, smooth(0, 3, t));
-        // The sketch faces the way the fighter faced, which for a side step is across the line of travel.
-        Vec3 facing = owner != null ? flat(Vec3.directionFromRotation(0, owner.getYRot())) : flat(dir);
-        if (!flashback) sketch(c, at, facing, alpha * (1 - smooth(1, 7, t)), seed + (int) (t / 2), .4F);
+        // ElectricalAfterimages draws the frozen, charged body at the departure point.
         float bolt = alpha * (t < 3 ? 1 : (.45F + .55F * abs(sin(t * 2.3F))) * (1 - smooth(4, 11, t)));
         Vec3 tail = at.add(0, .9, 0), head = (t < 4 ? body : end).add(0, .9, 0);
         fork(c, tail, head, .075F, bolt, seed + (int) (t / 2), 3);
@@ -331,15 +328,13 @@ final class ElectroArt {
     }
 
     /**
-     * A Flashback's static: the lightning sketch stays where the fighter stood and crackles harder as its fuse burns, a
+     * A Flashback's static: the electrical facade stays where the fighter stood and crackles harder as its fuse burns, a
      * ring on the ground closes toward it like a strike's warning, and at the end it bursts in a pulse and a bolt.
      */
     private static void decoy(Canvas c, Vec3 at, Vec3 end, float radius, float t, float alpha, float clock, int seed) {
         float fuse = ElectroGeometry.FLASHBACK_FUSE, build = smooth(0, fuse, t);
-        Vec3 facing = flat(end.subtract(at));
         if (t < fuse) {
             float crackle = alpha * (.55F + .45F * build) * (.7F + .3F * abs(sin(t * 3.1F)));
-            sketch(c, at, facing, crackle, seed + (int) (t / 1.5F), .4F + .5F * build);
             corona(c, ElectroGeometry.chest(at), .5F - .3F * build, -clock * (1.5F + 2 * build), crackle * .8F, seed);
             Vec3 floor = at.add(0, .05, 0);
             ring(c, floor, UP, radius, .06F, 0, TWO_PI, alpha * (.4F + .5F * build));
@@ -350,22 +345,6 @@ final class ElectroArt {
         fork(c, at.add(0, .1, 0), at.add(0, 2.6 * smooth(0, 1.5F, after), 0), .1F, alpha * (1 - smooth(2, 8, after)), seed, 3);
         if (c.glow()) c.glow(at.add(0, .9, 0), 1.6F * (1 - smooth(0, 6, after)), CORE, alpha);
         pulse(c, at, radius, after, alpha, seed, false);
-    }
-
-    /** A body sketched in lightning, facing {@code facing}: a spine, shoulders, two arms, two legs and a halo of a head. */
-    private static void sketch(Canvas c, Vec3 feet, Vec3 facing, float alpha, int seed, float jitter) {
-        if (alpha < .01F) return;
-        Vec3 right = new Vec3(-facing.z, 0, facing.x);
-        Vec3 hip = feet.add(0, .78, 0), neck = feet.add(0, 1.45, 0);
-        float w = .04F + .02F * jitter;
-        fork(c, hip, neck, w, alpha, seed, 0);
-        Vec3 shoulderL = neck.add(right.scale(-.32)).add(0, -.05, 0), shoulderR = neck.add(right.scale(.32)).add(0, -.05, 0);
-        fork(c, shoulderL, shoulderR, w * .8F, alpha * .8F, seed + 1, 0);
-        fork(c, shoulderL, shoulderL.add(right.scale(-.12)).add(0, -.68, 0).add(facing.scale(.1)), w * .8F, alpha * .85F, seed + 2, 0);
-        fork(c, shoulderR, shoulderR.add(right.scale(.12)).add(0, -.68, 0).add(facing.scale(.1)), w * .8F, alpha * .85F, seed + 3, 0);
-        fork(c, hip, feet.add(right.scale(-.15)).add(0, .02, 0), w * .8F, alpha * .85F, seed + 4, 0);
-        fork(c, hip, feet.add(right.scale(.15)).add(0, .02, 0), w * .8F, alpha * .85F, seed + 5, 0);
-        ring(c, neck.add(0, .3, 0), facing, .2F, .04F, 0, TWO_PI, alpha * .8F);
     }
 
     /** A dark star burnt into the floor round a palm, drawn with normal blending. */
@@ -757,7 +736,7 @@ final class ElectroArt {
         }
         if (s < .5F) {
             // The figure left standing, crackling, until something comes close.
-            sketch(c, origin, facing, fade(t, life, 3, 3) * .8F, seed + (int) (t / 2), .05F);
+            // ElectricalAfterimages draws the standing charged field.
             return;
         }
         boolean trap = s >= com.jayptucker.heroesevolved.electro.ShortCircuit.TRAP;
@@ -768,9 +747,6 @@ final class ElectroArt {
         int land = com.jayptucker.heroesevolved.electro.ShortCircuit.LAND;
         float tap = smooth(1, 2.5F, t) * (1 - smooth(6, 10, t));
         if (tap > 0) corona(c, feet.add(0, h * .88, 0).add(facing.scale(.25)), .18F + .1F * tap, t * .5F, f * tap, seed);
-        float traced = smooth(com.jayptucker.heroesevolved.electro.ShortCircuit.CRAWL, 11, t) * (1 - smooth(land, land + 1, t));
-        float rise = smooth(com.jayptucker.heroesevolved.electro.ShortCircuit.BLOW, land, t);
-        if (traced > 0) sketch(c, feet.add(0, rise * 1.3, 0), facing, f * traced, seed + (int) (t * 2), .02F + .06F * traced);
         if (t >= land && t < land + 4)
             fork(c, feet.add(0, 1.3 + h * .5, 0), feet, .09F, f * (1 - smooth(land + 1, land + 4, t)), seed + 3, 4);
         if (t >= land) scorch(c, feet, .9F, f, seed);
