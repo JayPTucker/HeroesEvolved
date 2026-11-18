@@ -29,9 +29,8 @@ These are settled (November 2026). Don't reopen them; ask only about what they l
 - **Story first, then a re-fight.** A boss's first fight is a story beat. After it is beaten, an item made from its drop
   lets players fight it again in its arena, and its first-kill drop helps unlock the next boss or area (Cataclysm's
   eyes and altars).
-- **Every boss has its own theme music**, original and synthesized, changing at each phase. The user has music and
-  audio files to work from: **ask the user where they are before composing**, and write their location into "Music"
-  below once you know it.
+- **Every boss has its own theme music**, original and synthesized, changing at each phase, made from the user's
+  reference library (see "Music" below).
 - **Every new boss has, by default:** a per-hit and per-second damage cap with falloff for distant attackers, healing
   and a walk home when nobody fights it, health that scales with the number of players, and a death scene before the
   drop. Sylar and Elle predate these; bringing them up to it is open work.
@@ -268,9 +267,13 @@ numbers as constants at the top of its entity class and in its doc.
 
 ## Music
 
-- **A theme per boss, original and synthesized**, made from the user's reference music and audio (ask where they are;
-  record the place here: *not yet recorded*). The reference sets mood, instruments and tempo; never copy a melody or a
-  recording. The mod's own tracks set its sound: `assets/heroesevolved/sounds/music/main_menu.ogg`,
+- **A theme per boss, original and synthesized**, made from the user's reference library in
+  `C:\Users\jaypa\OneDrive\Desktop\Gemini Heroes Reborn Audio` (the *Gemini: Heroes Reborn* score and ability sounds;
+  what each folder is for is in [docs/agents/audio.md](../../../docs/agents/audio.md#reference-audio-the-users-library)).
+  Its `Music/Gameplay Score` pieces each come in Exploration, Combat and Stealth states built from shared stems: the
+  model for a boss's phase loops. `Music/Stingers and Transitions` is the model for phase changes, `Music/Short Music
+  Cues` for the death scene's last chord. The reference sets mood, instruments, tempo and structure; never copy a melody
+  or put any of its audio in the mod. The mod's own tracks set its sound: `assets/heroesevolved/sounds/music/main_menu.ogg`,
   `main_menu_intro.ogg` and `new_beginning.ogg`.
 - **One loop per phase**, cut so they share a tempo and key; change on the next bar at a phase change, with a short
   stinger. The death scene ends the music on a last chord, then silence.

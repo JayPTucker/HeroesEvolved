@@ -42,7 +42,7 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 | Village distress calls, the radio, villager meltdowns | [village-events.md](docs/agents/village-events.md) |
 | TaCZ guns, Forge Energy machines, the Ability Dampener | [weapons-and-dampener.md](docs/agents/weapons-and-dampener.md) |
 | Meltdown hazards, protective suits, HUD ring gauges | [hazards-and-suits.md](docs/agents/hazards-and-suits.md) |
-| Sounds, music, OGG files, voice chat | [audio.md](docs/agents/audio.md), and [powers/telepathy.md](docs/agents/powers/telepathy.md) for voice chat |
+| Sounds, music, OGG files, voice chat | [audio.md](docs/agents/audio.md): start from the user's reference library it describes (`C:\Users\jaypa\OneDrive\Desktop\Gemini Heroes Reborn Audio`), never ship any of it; [powers/telepathy.md](docs/agents/powers/telepathy.md) for voice chat |
 | Costs, cooldowns, drains, unlock levels | "Stamina and balance" below, and [docs/stamina-balance.md](docs/stamina-balance.md) |
 | Writing, running or fixing game tests | [testing.md](docs/agents/testing.md) |
 | Screenshots of anything in game | [previews.md](docs/agents/previews.md) |

@@ -4,6 +4,38 @@ Power sounds, making OGG files, and where to look for long or live audio. Voice 
 
 Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 
+## Reference audio (the user's library)
+
+The user keeps the audio to work from in **`C:\Users\jaypa\OneDrive\Desktop\Gemini Heroes Reborn Audio`** (outside the
+repo, about 1.9 GB). It is the soundtrack and ability sounds extracted from the game *Gemini: Heroes Reborn* (score by
+Wendy Melvoin and Lisa Coleman). `Track List.txt` describes it and `Extraction Inventory.csv` maps every file to its
+source.
+
+**It is a reference, never an asset.** It belongs to its owners: never copy, trim, resample, layer or encode any of it
+into the mod, its tools' output or its tests. Listen to it and measure it, then make our own sound that answers the same
+need: the same job, mood, length, tempo and rough spectrum, with our own synthesis and our own melody.
+
+| Folder | Use it as the reference for |
+| --- | --- |
+| `Music/Gameplay Score` | a theme's states: each score bank has Exploration, Combat and sometimes Stealth versions of one piece, the model for a boss's phase loops and for music that changes with play |
+| `Music/Individual Layers and Alternate Encodings` | how those states are built from stems that share a tempo and key, so one layer can come in or drop out at a phase change |
+| `Music/Stingers and Transitions` | phase changes and arrivals (4 to 11 seconds) |
+| `Music/Short Music Cues` | defeats, victories, story beats (3 to 9 seconds) |
+| `Ability Sound Effects/Telekinesis` | Telekinesis: charge, hold loop, push, throw, impact, disperse, and catching bullets |
+| `Ability Sound Effects/Time Slow`, `Time Travel` | Space-Time: a slowed-time loop and its release, travel, and the "time view" loop and release |
+| `Ability Sound Effects/Tornado` | the shared tornado's loop and release (Superspeed, Flight's Tempest, Maelstrom) |
+| `Ability Sound Effects/Additional Ability Events` | vortex pulls and pillars, fire slams, thrown projectiles and their explosions, shoulder impacts, a loud time travel |
+| `Ability Sound Effects/Ability Feedback` | the "can't use that" cue (a refused press) |
+| `Ability Sound Effects/Individual Source Sounds` | single unmixed layers, for picking apart how a mixed effect is built |
+
+- **Measure, don't guess.** Read a file with soundfile from `build/audio-tools` (it reads FLAC and WAV) in a script run
+  with `py -3 -I`, and write down its length, loudness, tempo, the bands that carry it and how it starts and decays, with
+  a spectrogram next to one of ours. Design to those numbers.
+- **Loops come in pairs.** The library's held sounds are a loop plus a release (Time Slow, Time View, Tornado, the
+  Telekinesis hold); make held powers the same way, with the release playing when the drain stops.
+- **Record provenance.** Note in the generator which reference a new sound answers and that nothing was taken from it.
+  `tools/verify-skill-content.py` already checks the custom sounds' provenance.
+
 ## Reusable patterns from the power sounds
 
 Every power got a palette of original synthesized cues in November 2026 (`sounds/PowerSounds`, `sounds/PowerCue`, made by
