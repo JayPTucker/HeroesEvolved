@@ -14,10 +14,13 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
   `heroes.preview.<flag>` system property, and runs the client in its own folder under `build/`, so it never touches a
   real world. Screenshots land in `build/<folder>/screenshots/`.
 - `JAVA_HOME` must be a Java 21 JDK (it already is on this Windows machine).
-- **A preview that finished prints `PREVIEW_DONE`.** `PreviewQuiet.quit()` halts the game without saving its throwaway
-  world. On Windows the halt can still end with a fail-fast exit code, so Gradle may report the run as failed: if the
-  log has `PREVIEW_DONE`, the photographs are all written. End new drivers with `PreviewQuiet.quit()`, never
-  `Minecraft.stop()`, which saves every chunk Odessa and the bunker touched and leaves the window black for minutes.
+- **End every driver with `PreviewQuiet.quit()`,** never `Minecraft.stop()`, which saves every chunk Odessa and the
+  bunker touched and leaves the window black for minutes. `quit()` prints `PREVIEW_DONE`, writes `preview-result.txt`
+  and halts the game without saving its throwaway world.
+- **Pass or fail honestly.** On Windows the halt leaves a failing exit code, so a script without the result check ends in
+  BUILD FAILED even when every photo was written: look for `PREVIEW_DONE` in its log. **Every new preview script applies
+  `tools/preview-result.gradle`** (the amp and finisher previews do), which reads `preview-result.txt` instead; see
+  "Previews that pass or fail honestly" below.
 - **On a Mac:** if the run fails with "Failed to locate a primary monitor", the display is asleep:
   `caffeinate -u -d -t 600` wakes it.
 
@@ -59,7 +62,7 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 - **Every driver needs its own `heroes.preview.*` flag.** Two drivers on one flag (`heroes.preview.styles` and
   `heroes.preview.time` were both reused once) start two worlds, fight over the camera and photograph the dark.
 - **Print results; never throw** from a server task (see "Photographing skills"). Checks print a `PASS`/`FAIL` line, as
-  the fighting preview's `INPUT ... PASS/FAIL` does.
+  the fighting preview's `INPUT ... PASS/FAIL` does, and report failures with `PreviewQuiet.report` so the run fails.
 
 <!-- from speedster containment -->
 - **Previews with two players.** A preview needs a second player for this: a `FakePlayer` added to the player list,
@@ -80,6 +83,25 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
   drawn state stays. Hydrokinesis's water ring stayed round the waist in every later shot until
   `FinisherPreview.stage` called `HydroService.powerChanged`.
 
+<!-- from Power Amplification's branch -->
+## Previews that pass or fail honestly
+
+A preview closes the game with `Runtime.halt`, which on Windows leaves a failing exit code, so every finished preview used
+to end in BUILD FAILED and real failures looked the same as success. `tools/preview-result.gradle` fixes that for any
+preview whose init script applies it (`apply from: rootProject.file('tools/preview-result.gradle')` inside
+`afterEvaluate`; the amp and finisher previews do):
+
+- `PreviewQuiet.quit` writes `preview-result.txt` in the game directory before the halt (the log loses its last lines to
+  the halt), and the Gradle check ignores the exit code and reads that file instead. No file means the game stopped
+  early (a crash, or the window closed by hand); a line with FAIL in it, written with `PreviewQuiet.report`, fails the
+  run and is printed.
+- Report, don't throw: wrap each server step in a guard that reports the throw (`AmpPreview.guarded`), so one broken
+  scene is named and the rest still run, and end with one result line (`AMP_PREVIEW_RESULT PASS: 34 scenes, 76/76
+  photos`).
+- The configuration cache is on (`gradle.properties`), so a run task can't be given a custom output stream to read the
+  game's output; files and providers read at execution time are fine.
+- Start the first scene a few seconds after the Last Day's black hold lifts, or its photos come out dark.
+
 ## Photographing skills (`tools/skill-anim-preview.init.gradle`)
 
 `uitest/SkillAnimationsPreview` casts every Electrokinesis and Superspeed skill in a flat world and saves front, back
@@ -98,6 +120,7 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | Script | What it photographs | Options |
 | --- | --- | --- |
 | **Powers** | | |
+| `amp-preview.init.gradle` | Power Amplification: Supercharge, Overcharges, the tree, the HUD ring | `-Ponly=boost` (the twenty boosted powers) |
 | `awakening-preview.init.gradle` | every power's awakening and every danger, live | `-Ponly=cryokinesis,quake`, `-Psound` |
 | `cryo-preview.init.gradle`, `cryo-skills-preview.init.gradle` | Cryokinesis ice, skating, the six skills | |
 | `terrain-frost-preview.init.gradle` | Ice Blast freezing stone, obsidian, water and lava | |

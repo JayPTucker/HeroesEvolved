@@ -79,6 +79,8 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 | An out-of-body view | a spectator on a leash, with a double | [powers/vibe.md](powers/vibe.md) (visions) |
 | State that must not outlive the power | clear it after the change, not before | [awakenings.md](awakenings.md) (`HydroService.powerChanged`) |
 | A finisher | `Takedowns.Finisher` | [finishers.md](finishers.md) |
+| One power to change every other power's numbers | each power asks `Amplification.surged` where it decides its own number; shared bonuses in shared paths (`AbilityRanks`, `StaminaDrain`) | [powers/amplification.md](powers/amplification.md) |
+| A status every client can draw on someone else | its own payload, sent on change and on `StartTracking` (vanilla syncs only your own effects) | [powers/amplification.md](powers/amplification.md) (`SuperchargedPayload`) |
 
 ## Moving bodies
 
@@ -116,6 +118,7 @@ Read [animation-guide.md](../animation-guide.md) first; these are the code patte
 | Skills to keep their own pose | return before the generic skill pose | [powers/electrokinesis.md](powers/electrokinesis.md) |
 | The whole body to turn | `FightingStylePoseRenderer` | [fighting-styles.md](fighting-styles.md) |
 | Water, blood or colour that reads at noon | the coloured body in SOFT, rims in GLOW | [powers/hydrokinesis.md](powers/hydrokinesis.md), [powers/regeneration.md](powers/regeneration.md) |
+| An aura that follows the body | a render layer that draws the model again a size larger (`client/SuperchargeField`) | [powers/amplification.md](powers/amplification.md) |
 | Afterimages, ghosts and copies of bodies | `SpeedAfterimages`, `ElectricalAfterimages`, `VibeEchoes`, `BodyCopies` | [powers/superspeed.md](powers/superspeed.md), [fighting-styles.md](fighting-styles.md), [powers/vibe.md](powers/vibe.md), [finishers.md](finishers.md) |
 | A player drawn as something else | a client-only stand-in | [powers/shapeshifting.md](powers/shapeshifting.md) |
 | A changed skin | repaint a copy of the skin | [hazards-and-suits.md](hazards-and-suits.md) (`BurnClient`) |

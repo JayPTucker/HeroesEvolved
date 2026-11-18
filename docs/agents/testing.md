@@ -20,6 +20,7 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 | Init script | Runs |
 | --- | --- |
 | `tools/admin-gametest.init.gradle` | admin protection, permissions and dormant assignments |
+| `tools/amp-gametest.init.gradle` | Power Amplification, every power's skill-tree, class and balance checks, and the finisher tests (about two minutes) |
 | `tools/combat-target-gametest.init.gradle` | who powers may target |
 | `tools/elements-gametest.init.gradle` | Hydrokinesis in the Nether, Pyrokinesis in the rain |
 | `tools/fighting-gametest.init.gradle` | `FightingStylesGameTests` |
@@ -50,6 +51,11 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
   `hisneighboursscreamandrun` (the meltdown crowd) was flaky too, and is fixed: it read a runner's walk target at one
   tick, but the meltdown re-sets it every five and the brain drops a target it can't path to in a walled arena, so it
   now looks across a window. Check a re-sent brain memory over a window, never at one tick.
+  `thelastdayrunsfromapartmenttopod` failed four full runs in a row once another batch was added ("The guards, Noah and
+  Claire are all placed: 8", "Rubble comes down...: 2") and passed alone every time; it is fixed. The guards' chunks and
+  the stasis hall's, forced when the day starts, were still waking under the suite's load: the test now waits for all ten
+  of the cast and for every hall chunk to be entity-ticking before the blast, and counts the deepslate tiles the blast
+  drops as rubble too.
 - **Sylar's and the speedster tornado's tests race chunk loading.** They have failed with no code change, sometimes
   twice running. Re-run them alone before blaming a change.
 <!-- from Telepathy -->
@@ -170,3 +176,5 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 | Gifted mobs, raids and moves | `GiftedMobGameTests` (`GiftedMob.land`, `Renegades.hurry`) |
 | Finishers | `TakedownGameTests` |
 | Every class ability casting alone | `ClassAbilityGameTests.everyClassAbilityCasts` |
+| One generated test per power from a table | `AmplificationGameTests.BOOSTED` (a `@GameTestGenerator`; see [powers/amplification.md](powers/amplification.md)) |
+| A real player that area searches can find | `AmplificationGameTests.findable` (`addNewPlayer`, then `removePlayerImmediately`) |

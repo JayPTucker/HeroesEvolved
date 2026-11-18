@@ -50,7 +50,7 @@ Plus: the signature, the whole-arena move and its safe spot, the move that reach
 
 | Power | Effect on this boss |
 | --- | --- |
-| (all twenty) | special answer / works at boss strength / no effect |
+| (every power) | special answer / works at boss strength / no effect |
 
 ## Fight rules
 
