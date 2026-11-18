@@ -12,6 +12,24 @@ with plain NeoForge: a custom `HumanoidArmorModel` per look, extra boxes as chil
 parts, and a texture drawn by a script. The reference implementation is `client/SuitModels`
 (the radiation and velocity suits) with `tools/generate-suit-textures.py`; read both first.
 
+Related notes: how the suits protect (`Suits`, one question for every hazard), the Suit Fabricator, dyeable layers and
+the burnt-skin repaint are in [docs/agents/hazards-and-suits.md](../../../docs/agents/hazards-and-suits.md); preview
+rules are in [docs/agents/previews.md](../../../docs/agents/previews.md). What the player sees of the suits:
+[docs/protective-suits.md](../../../docs/protective-suits.md).
+
+## Is it armor at all?
+
+- **Armor** is an item in an armor slot that anyone (a player, an armor stand, a mob) can wear and take off. This skill.
+- **A character's look** (Sylar, Elle, the Company's agents, story actors) is a skin drawn by a generator:
+  `tools/generate-sylar-skin.py`, `tools/GenerateElleTextures.java`, `tools/GenerateCompanyTextures.java`,
+  `tools/GenerateStoryActorTextures.java`. Change the generator, never the PNG. A boss's costume belongs here, not in
+  an armor model (see the bosses skill, [../minecraft-bosses/SKILL.md](../minecraft-bosses/SKILL.md)).
+- **A prop on the face or head** (glasses, a headset, a hat) is an item with a 3D model drawn by the head item layer,
+  `Equipable` in the head slot: `item/HornRimmedGlassesItem` is the pattern. Painting it into an 8-pixel face reads as
+  a mask ([docs/agents/story-and-scenes.md](../../../docs/agents/story-and-scenes.md), "Props on a face are items").
+- **A change to the skin itself** (burning, frost creeping, stone spreading) repaints a copy of the player's skin
+  (`client/BurnClient`, [hazards-and-suits.md](../../../docs/agents/hazards-and-suits.md)).
+
 ## 1. Design before code
 
 Write down, for each piece (head, chest, legs, feet):
@@ -77,7 +95,10 @@ left `(u+d+w, v+d)` d x h, back `(u+2d+w, v+d)` w x h. Lay the blocks out on pap
 check that none overlap.
 
 Draw every texture with a Python script (standard library only, deterministic, like
-`tools/generate-suit-textures.py`: `faces()`, `paint()`, `box()` and `extra()` do the layout).
+`tools/generate-suit-textures.py`: `faces()`, `paint()`, `box()` and `extra()` do the layout). Run it with
+`py -3 tools/generate-suit-textures.py` on Windows (`python3` elsewhere); it writes the worn layers to
+`assets/heroesevolved/textures/models/armor/<name>_layer_1.png` (head, chest, boots), `_layer_2.png` (leggings) and
+their `_overlay` versions, and the item icons beside the other item textures. Never edit those PNGs by hand.
 For a dyeable set, register two `ArmorMaterial.Layer`s (`""` dyeable, `"_overlay"` not), give the
 items a default `DataComponents.DYED_COLOR`, tag them `minecraft:dyeable`, register an item color
 handler for layer 0, and paint the base in light grey with the trim in the overlay. A cut-out in
@@ -95,6 +116,11 @@ Item icons: a base and an overlay too, 16x16, from character masks (see `sprite(
   Leggings get the inner model; everything else the outer one.
 - Armor values, durability and repair live in an `ArmorMaterial` (`hazard/SuitMaterials`); add the
   items to the `minecraft:{head,chest,leg,foot}_armor` and `enchantable/*` tags.
+- The rest of a new set: the items (`hazard/SuitItems`, `SuitArmorItem`), item models and icons, `en_us.json` names, and
+  a recipe (the Suit Fabricator's `SuitPatterns`, matched by tag so other mods' materials work, or a normal recipe).
+- If the set protects against something, add a `Suits.Kind` and answer through `Suits` (a quarter a piece); never add a
+  special case in the hazard's own code.
+- Mobs and armor stands draw the same model through the same `IClientItemExtensions`; check both in the preview.
 
 ## 6. Photograph it
 
@@ -104,4 +130,6 @@ different colour), front, back and close, with `uitest/SuitPreview`
 `build/suit-preview/screenshots/`), and look at every shot. Check: no skin pokes through, details
 sit on the body (not floating, not sunk), mirrored details match, dyed and undyed both read, and
 the trim isn't bulkier than the reference. Hide chat in previews
-(`options.chatVisibility().set(ChatVisiblity.HIDDEN)`).
+(`options.chatVisibility().set(ChatVisiblity.HIDDEN)`). The preview's flag is `heroes.preview.suits`; a finished run
+prints `PREVIEW_DONE` (on Windows Gradle may still call it failed, and the shots are fine). Show the user the shots,
+and say what was changed from any reference picture they gave and why.

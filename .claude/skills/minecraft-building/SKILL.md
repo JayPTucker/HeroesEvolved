@@ -22,10 +22,17 @@ all read from the game itself. Then **look at the pictures in `references/images
 the job (its `README.md` says which is which): the words leave out proportion and density, the
 pictures don't. Compare your in-game screenshots with them before calling a build done.
 
-**On Windows** (this machine) the commands below are `python`, not `python3`. Python 3.12 lives in
-`%LOCALAPPDATA%\Programs\Python\Python312`; a shell started before it was installed won't find it on
-the PATH, so call `python.exe` there by its full path. `JAVA_HOME` is already set to a Java 21 JDK. Set
-`PYTHONIOENCODING=utf-8` for `blueprint.py stats`: some palettes use Greek letters, which the Windows console can't print.
+**On Windows** (this machine) the commands below that say `python3` are `py -3` (or `python`); `python3` is what
+GitHub's build and macOS use. Python 3.12 lives in `%LOCALAPPDATA%\Programs\Python\Python312`; a shell started before
+it was installed won't find it on the PATH, so call `python.exe` there by its full path. `blueprint.py` needs only the
+standard library. `JAVA_HOME` is already set to a Java 21 JDK. **Set `PYTHONIOENCODING=utf-8` for every `blueprint.py`
+command**: `validate` and `stats` print palette letters such as Greek ones, and the Windows console crashes on them
+(`UnicodeEncodeError`) before it says PASS.
+
+Related notes: Odessa's and the bunker's build lessons are in
+[docs/agents/story-and-scenes.md](../../../docs/agents/story-and-scenes.md); staging and photographing rules for every
+preview are in [docs/agents/previews.md](../../../docs/agents/previews.md); a boss arena's rules (rebuilt each fight,
+markers checked against a geometry class) are in the bosses skill ([../minecraft-bosses/SKILL.md](../minecraft-bosses/SKILL.md)).
 
 ## The loop
 
@@ -45,7 +52,9 @@ Building well means looking at what you built. Work in this loop and don't skip 
    to hold it (a torch on a slab's side, a lantern under a top slab or a sideways chain, a vine on iron bars, grass on
    planks). The support rules come from `tools/block-facts.json.gz`, which the game wrote. Fix every error; read every
    `note:`. `python3 tools/blueprint.py facts "<state>"` says what any state's faces hold.
-4. **Render.** `python3 tools/blueprint.py render <file> --cut <layer> --out <png> [--view se|sw|ne|nw]` draws an
+   `python3 tools/blueprint.py stats <file>` counts every block state, which is how to check the palette ratios in
+   `references/techniques.md`.
+4. **Render.** `python3 tools/blueprint.py render <file> --cut <layer> --out <png> [--view se|sw|ne|nw] [--scale 6]` draws an
    isometric view (cut away above the layer so you see inside) and a plan of every layer. Slabs, stair corners, doors
    and trapdoors (open or shut), fences, panes and lamps are drawn in their real shapes, and the plans darken each
    stair's low side and mark where each door and open trapdoor stands, so facings can be checked here. Look from the
@@ -57,7 +66,8 @@ Building well means looking at what you built. Work in this loop and don't skip 
    and read `build/blueprint-preview/screenshots/<name>-{se,sw,ne,nw,top,inside}.png`.
    (`JAVA_HOME` must point at a Java 21 JDK; on Windows it already does, on the Mac it is
    `$HOME/.jdks/jdk-21.0.13+9/Contents/Home`.) For the bunker in context, use
-   `tools/bunker-preview.init.gradle`, which starts a fresh world and tours every room.
+   `tools/bunker-preview.init.gradle`, which starts a fresh world and tours every room. A finished preview prints
+   `PREVIEW_DONE`; on Windows Gradle can still report the run as failed after it, and the screenshots are fine.
    Put at least one camera at eye height on the way a player walks in, and one 20 to 30 blocks back: the first
    shows doors, headroom and faces a high shot hides, the second whether the shape still reads. For anything big,
    run `CityAudit` on it (the city and bunker previews print it) and confirm each fault before fixing it.
@@ -98,6 +108,9 @@ marked.getOrDefault("loot:lab", List.of()).forEach(pos -> fillChest(pos));
   works out its shape from its neighbours, so stair corners, pane and fence arms and wall joints come out right in any
   order and rotation. A block the game would remove is left as drawn and pops off at the first update beside it; the
   validator and `BlueprintPlacementGameTests` catch those.
+- **Java that places scenery block by block** (Odessa, `BunkerStair`, `PastBunker`, `FacilityService`, an arena's
+  extras) follows the same facing and support rules as a blueprint (`references/block-states.md`): put supports down
+  before the things they hold, and check the result with `CityAudit`, because the validator only reads blueprints.
 - Ruins exported with `to-nbt` must be exported again after any change to their blueprint.
 - `/heroesevolved blueprint place <name> [rotation]` places one at your feet in a live world.
 
@@ -124,9 +137,19 @@ letters to memorable ones, add markers, and continue the loop from step 3.
 | `sylar_shop` | `WatchmakerArena.enter`, rebuilt before every fight in `heroesevolved:watchmaker_shop`; anchor is the clock face's middle | `@door:front` locks in phase two, `@door:back` bursts, `@alley:end`, `@rail:n/s`, `@spawn:*`. Preview with `tools/watchmaker-preview.init.gradle` |
 | `primatech_substation` | `PrimatechArena`, rebuilt before every fight in `heroesevolved:primatech_substation`; anchor is the room's middle floor block | Elle's arena, drawn by a draft script. `@bank:N`, `@breaker:N`, `@bulb:N`, `@rod:N`, `@conduit:N` must match `PrimatechGeometry` (a game test checks). Preview with `tools/elle-preview.init.gradle` |
 | `signal_site` | `SignalSite` (Primatech Field Relay 07, over a buried stasis wing) | Many `@signal:*` and `@sign:*` cells that code reads with `markerOffsets`; don't move them. `LastSignalGameTests` places it. Preview with `tools/signal-site-preview.init.gradle` |
-| `ruins_*` | world generation (jigsaw structures) | exported to `structure/ruins/<name>.nbt` with `to-nbt`; `@loot:<table>` becomes the chest's loot table. Preview with `tools/ruins-preview.init.gradle` |
+| `ruins_*` (`bennet_house`, `burnt_house`, `collapsed_house`, `isaac_studio`) | world generation (jigsaw structures) | exported to `structure/ruins/<name>.nbt` with `to-nbt`; `@loot:<table>` becomes the chest's loot table. Preview with `tools/ruins-preview.init.gradle` |
+| *(code)* `story/bunker/PastBunker` | Night Three (`story/night/NightThreeBunker`, in `heroesevolved:night_three`) and the Last Day (under Primatech Paper in Odessa) | The bunker as it was before the hundred years, from the same blueprints with every light on and nothing grown in (`past(layer, state)`). Build it once below anything the city rebuilds; each run resets only its pods and doors. Preview with `tools/night-three-preview.init.gradle` |
+| *(code)* `expansion/FacilityService` | the Hourglass Annex mission (`heroesevolved:unwritten_annex`) | A bounded mission site that never overwrites a player's settlement; it builds in batches. `facilitybuildsinbatchesandmanualroutecansavebothcaptives` is a known flaky test (it waits on chunk loading) |
 
-Odessa, the city of the Time vision and the avenue at 6:14, is drawn in Java rather than from blueprints: `time/intro/city/` (`CityPlan` decides what stands where, `Building` draws facades and crowns, `Streets` the street furniture, `Landmarks` city hall, the church, Kirby Plaza and Primatech, `Squares` the Commons, Odessa Square, tower plazas and subway entrances, `BlockFont` billboard lettering, `Apartments` the Odessa Arms). Since November 2026 it is laid out like a small Manhattan: the two great towers (the Odessa State Building and the Bishop Building) flank the avenue in the middle of town and the skyline steps down to brownstone rows at the edges. The story pins some of it: the towers west of Kirby Plaza and north of the vision's vantage (blocks 3,1 and 3,2) keep their avenue faces on the lot line (x = -4) up past y 120, because Sylar is thrown into them (`PrologueGameTests.theSkyFightHasRoomAndAWallToHit`); nothing in the plaza rises past y 72; the Arms keeps its door, plate and wake positions (`Apartments`). Bump `FractureCity.VERSION` after any change so built worlds redraw. Every write goes through a clipped `CityCanvas`, so `FractureCity.rebuild` can put back any rectangle exactly. Keep the street grid: the avenue on x 0..7 and the roads every 32 blocks are where `AvenueService` puts its people, door and paths. Photograph it with `tools/time-city-preview.init.gradle`.
+**Building an arena for a boss.** A boss's arena is a blueprint rebuilt before every fight in its own pocket dimension,
+so it may be broken freely. Put its anchor at the room's middle floor block, mark every cell the fight reads
+(`@bank:N`, `@door:front`, `@spawn:*`), keep those positions in one geometry class, and add a game test that compares
+the markers with the class (`PrimatechGeometry`). Register the dimension for game tests too. The rest is in the bosses
+skill.
+
+Odessa, the city of the Time vision and the avenue at 6:14, is drawn in Java rather than from blueprints: `time/intro/city/` (`CityPlan` decides what stands where, `Building` draws facades and crowns, `Streets` the street furniture, `Landmarks` city hall, the church, Kirby Plaza and Primatech, `Squares` the Commons, Odessa Square, tower plazas and subway entrances, `Market` the grocery on the avenue the Last Day
+sends everyone to, `BlockFont` billboard lettering, `Apartments` the Odessa Arms; `CityGrid` holds the grid's numbers,
+`Feature` is anything drawn with the columns it may touch, and `CityDraw` draws the plan in order). Since November 2026 it is laid out like a small Manhattan: the two great towers (the Odessa State Building and the Bishop Building) flank the avenue in the middle of town and the skyline steps down to brownstone rows at the edges. The story pins some of it: the towers west of Kirby Plaza and north of the vision's vantage (blocks 3,1 and 3,2) keep their avenue faces on the lot line (x = -4) up past y 120, because Sylar is thrown into them (`PrologueGameTests.theSkyFightHasRoomAndAWallToHit`); nothing in the plaza rises past y 72; the Arms keeps its door, plate and wake positions (`Apartments`). Bump `FractureCity.VERSION` after any change so built worlds redraw. Every write goes through a clipped `CityCanvas`, so `FractureCity.rebuild` can put back any rectangle exactly. Keep the street grid: the avenue on x 0..7 and the roads every 32 blocks are where `AvenueService` puts its people, door and paths. Photograph it with `tools/time-city-preview.init.gradle`.
 
 - **The outskirts** (`city/Outskirts`) ring the city 96 blocks deep (`CityGrid.OUTER_MIN..OUTER_MAX`) on the same 32-block grid:
   suburbs in ring 1, houses and oil leases in ring 2, prairie in ring 3, arterial highways every fourth line, a rail
