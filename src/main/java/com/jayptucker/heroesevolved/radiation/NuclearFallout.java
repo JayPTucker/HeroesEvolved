@@ -47,10 +47,12 @@ public final class NuclearFallout {
         final Set<UUID> struck = new HashSet<>();
         final UUID id = UUID.randomUUID();
         final int radius;
+        final boolean awakening;
         boolean terrainFinished;
         Blast(LivingEntity owner, boolean awakening) {
             this.owner = owner; level = (ServerLevel) owner.level(); center = groundUnder(owner);
             block = BlockPos.containing(center); began = level.getGameTime();
+            this.awakening = awakening;
             radius = awakening ? AWAKENING_RADIUS : RADIUS;
         }
     }
@@ -82,6 +84,30 @@ public final class NuclearFallout {
     public static int radiusOf(LivingEntity owner) {
         for (Blast blast : BLASTS) if (blast.owner.getUUID().equals(owner.getUUID())) return blast.radius;
         return 0;
+    }
+
+    /** Only available after the awakening's crater has actually been carved. */
+    public static Vec3 awakeningFloor(ServerPlayer owner) {
+        for (Blast blast : BLASTS) {
+            if (blast.owner != owner || !blast.awakening || !blast.terrainFinished) continue;
+            // Prefer the middle. A protected block, fluid or narrow ledge can require a nearby spot.
+            for (int ring = 0; ring <= 4; ring++) for (int x = -ring; x <= ring; x++) for (int z = -ring; z <= ring; z++) {
+                if (Math.max(Math.abs(x), Math.abs(z)) != ring) continue;
+                Vec3 from = new Vec3(blast.block.getX() + x + .5, blast.center.y + 2, blast.block.getZ() + z + .5);
+                var hit = blast.level.clip(new net.minecraft.world.level.ClipContext(from,
+                        new Vec3(from.x, blast.level.getMinBuildHeight(), from.z),
+                        net.minecraft.world.level.ClipContext.Block.COLLIDER,
+                        net.minecraft.world.level.ClipContext.Fluid.ANY, owner));
+                if (hit.getType() != net.minecraft.world.phys.HitResult.Type.BLOCK || hit.getDirection() != Direction.UP
+                        || !blast.level.getFluidState(hit.getBlockPos()).isEmpty()) continue;
+                Vec3 feet = hit.getLocation().add(0, .01, 0);
+                // A spherical crater can end in a one-block pit. Leave room for the whole lying body, and to stand.
+                if (blast.level.getWorldBorder().isWithinBounds(BlockPos.containing(feet))
+                        && blast.level.noCollision(owner, new AABB(feet.x - 1, feet.y, feet.z - 1,
+                        feet.x + 1, feet.y + 1.8, feet.z + 1))) return feet;
+            }
+        }
+        return null;
     }
 
     public static void tick(MinecraftServer server) {
@@ -126,8 +152,8 @@ public final class NuclearFallout {
     /**
      * Breaks every block of the blast's sphere now. A player's blast breaks what they could break (one
      * {@code BreakEvent} each, so claims and protections still hold); anyone else's follows {@code mobGriefing}, like a
-     * creeper's. Fluids and unbreakable blocks stay. A player's own column under their feet stays, so a caster who
-     * outlives their blast isn't dropped into it. Returns how many blocks broke.
+     * creeper's. Fluids and unbreakable blocks stay. Later blasts retain the caster's footing; the awakening clears
+     * it too, and its intro places the caster on the crater floor. Returns how many blocks broke.
      */
     static int carve(Blast blast) {
         LivingEntity owner = blast.owner;
@@ -136,11 +162,16 @@ public final class NuclearFallout {
         boolean mayBreak = player != null ? player.mayBuild()
                 : level.getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_MOBGRIEFING);
         if (!mayBreak || owner.level() != level) return 0;
-        return carve(level, blast.block, blast.radius == AWAKENING_RADIUS ? AWAKENING_RADIUS : CRATER_RADIUS, player);
+        return carve(level, blast.block, blast.radius == AWAKENING_RADIUS ? AWAKENING_RADIUS : CRATER_RADIUS,
+                player, !blast.awakening);
     }
 
     /** The crater itself, at any size (tests carve small ones inside an arena). */
     public static int carve(ServerLevel level, BlockPos center, int r, ServerPlayer player) {
+        return carve(level, center, r, player, true);
+    }
+
+    private static int carve(ServerLevel level, BlockPos center, int r, ServerPlayer player, boolean keepFooting) {
         long began = System.nanoTime();
         int inner = (r - 1) * (r - 1), broken = 0;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -150,7 +181,7 @@ public final class NuclearFallout {
                 for (int z = -r; z <= r; z++) {
                     int d2 = x * x + y * y + z * z;
                     if (d2 > r * r) continue;
-                    if (player != null && y < 0 && x * x + z * z <= 2) continue;
+                    if (keepFooting && player != null && y < 0 && x * x + z * z <= 2) continue;
                     pos.setWithOffset(center, x, y, z);
                     if (!level.hasChunkAt(pos) || !level.getWorldBorder().isWithinBounds(pos) || player != null && !level.mayInteract(player, pos)) continue;
                     BlockState state = level.getBlockState(pos);

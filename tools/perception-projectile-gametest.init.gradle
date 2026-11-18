@@ -1,0 +1,25 @@
+// Focused Perception projectile regressions, including real TaCZ entity ticks.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def tests = sourceSets.create('perceptionProjectileTest') {
+                java.srcDir('src/gametest/java')
+                java.include('com/jayptucker/heroesevolved/speed/PerceptionProjectileGameTests.java')
+                java.include('com/jayptucker/heroesevolved/time/TimeFieldTestSupport.java')
+                resources.srcDir('src/gametest/resources')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(tests) } }
+                runs { gameTestServer { gameDirectory = project.file('build/perception-projectile-test-world') } }
+            }
+            tasks.named('runGameTestServer') {
+                dependsOn(tasks.named('perceptionProjectileTestClasses'))
+                def world = project.file('build/perception-projectile-test-world/world')
+                def config = project.file('build/perception-projectile-test-world/config/heroesevolved-common.toml')
+                doFirst { world.deleteDir(); config.delete() }
+            }
+        }
+    }
+}

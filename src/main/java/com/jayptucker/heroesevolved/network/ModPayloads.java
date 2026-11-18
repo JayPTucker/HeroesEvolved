@@ -17,7 +17,8 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("105")
+        event.registrar("107")
+            .playToClient(GodModePayload.TYPE, GodModePayload.STREAM_CODEC, GodModePayload::handle)
             .playToClient(MobTimePayload.TYPE, MobTimePayload.STREAM_CODEC, MobTimePayload::handle)
             .playToClient(SuperchargedPayload.TYPE, SuperchargedPayload.STREAM_CODEC, SuperchargedPayload::handle)
             .playToClient(AmpStatePayload.TYPE, AmpStatePayload.STREAM_CODEC, AmpStatePayload::handle)
@@ -33,6 +34,8 @@ public final class ModPayloads {
             .playToServer(SpeedSkidPayload.TYPE, SpeedSkidPayload.STREAM_CODEC, SpeedSkidPayload::handle)
             .playToClient(MimicMemoryPayload.TYPE, MimicMemoryPayload.STREAM_CODEC, MimicMemoryPayload::handle)
             .playToClient(TimeVeilPayload.TYPE, TimeVeilPayload.STREAM_CODEC, TimeVeilPayload::handle)
+            .playToClient(VibeVisionPayload.TYPE, VibeVisionPayload.STREAM_CODEC, VibeVisionPayload::handle)
+            .playToClient(VibeHologramPayload.TYPE, VibeHologramPayload.STREAM_CODEC, VibeHologramPayload::handle)
             .playToServer(MimicChoicePayload.TYPE, MimicChoicePayload.STREAM_CODEC, MimicChoicePayload::handle)
             .playToServer(CryoRideInputPayload.TYPE, CryoRideInputPayload.STREAM_CODEC, CryoRideInputPayload::handle)
             .playToClient(CryoRideStatePayload.TYPE, CryoRideStatePayload.STREAM_CODEC, CryoRideStatePayload::handle)

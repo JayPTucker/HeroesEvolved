@@ -113,7 +113,8 @@ public final class PhoenixService {
             if (owner.isRemoved() || !owner.isAlive() || owner.serverLevel() != bird.level || !PowerRules.canAct(owner)
                     || !PyroService.isPyrokinetic(owner)
                     || bird.age() >= LIFETIME || !bird.level.isLoaded(BlockPos.containing(bird.position))
-                    || bird.level.getFluidState(BlockPos.containing(bird.position)).is(FluidTags.WATER)) {
+                    || bird.level.getFluidState(BlockPos.containing(bird.position)).is(FluidTags.WATER)
+                    || com.jayptucker.heroesevolved.ability.service.Elements.raining(bird.level, bird.position) || com.jayptucker.heroesevolved.ability.service.Elements.doused(owner)) {
                 BIRDS.remove(owner.getUUID());
                 dissolve(bird, false);
                 continue;

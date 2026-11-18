@@ -1,0 +1,26 @@
+// Targeted admin protection, permission and dormant-assignment tests.
+// ./gradlew runGameTestServer --init-script tools/admin-gametest.init.gradle
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def tests = sourceSets.create('adminTest') {
+                java.srcDir('src/gametest/java')
+                java.include('com/jayptucker/heroesevolved/admin/AdminGameTests.java')
+                java.include('com/jayptucker/heroesevolved/*.java')
+                resources.srcDir('src/gametest/resources')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(tests) } }
+                runs { gameTestServer { gameDirectory = project.file('build/admin-test-world') } }
+            }
+            tasks.named('runGameTestServer') {
+                dependsOn(tasks.named('adminTestClasses'))
+                def staleWorld = project.file('build/admin-test-world/world')
+                def staleConfig = project.file('build/admin-test-world/config/heroesevolved-common.toml')
+                doFirst { staleWorld.deleteDir(); staleConfig.delete() }
+            }
+        }
+    }
+}

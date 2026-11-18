@@ -135,6 +135,20 @@ public enum Piece {
     // Vibe's Rift Beast (re-sent, bound to it), and the style's Breach Kick (origin the foot's mouth, target the far mouth
     // behind the foe) and Seam Sweep (a crack along the ground; scale is its length)
     VIBE_BEAST(12), VIBE_KICK(14), VIBE_SEAM(18),
+    // A breach channelled from the palm (re-sent every two ticks, bound to the viber; scale is 1 + how far it has opened,
+    // the seed the channel's whole length in ticks), and a vision's hologram arriving or leaving (bound to nothing;
+    // scale 1 arriving, 0.5 leaving)
+    VIBE_BREACH_CHANNEL(5), VIBE_PROJECT(16),
+    // Breach Boxing's Breach Hop: a tear at the hopper's side (origin) and one farther along (target), the second
+    // opening as they dive into the first
+    VIBE_HOP(10),
+    // A held Vibe Blast, re-sent every two ticks: bound to the viber it runs from their palm to the origin; unbound (the
+    // leg out of a breach) from origin to target. Scale above 1 is Slingshot's harder blast.
+    VIBE_STREAM(5),
+    // Rift Fall: the zone's warning ring (scale its radius), the breach in the sky (origin, facing down at the zone's
+    // centre; scale its radius; bound to the caster, whose palms feed it at first; seed how long it stays), and one
+    // body's plunge out of it (bound to the body; origin where it comes out, target where it lands; scale its height)
+    VIBE_RIFT_ZONE(20), VIBE_RIFT_SKY(70), VIBE_RIFT_FALL(13),
     // Space-Time's skill tree, drawn by TimeArt (clockwork made of light): Selective Stasis's cage (re-sent, bound to the
     // target) and the release when its stored blows land (scale is how many), a Spatial Anchor planted (target holds the
     // hands' time of day), Second Chance's arrival, Stasis Seal's sphere (re-sent; scale is its radius) and its throw, one

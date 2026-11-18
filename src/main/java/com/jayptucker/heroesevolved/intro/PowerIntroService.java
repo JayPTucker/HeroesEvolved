@@ -20,6 +20,7 @@ import com.jayptucker.heroesevolved.network.PowerIntroPayload;
 import com.jayptucker.heroesevolved.network.ScreenTintPayload;
 import com.jayptucker.heroesevolved.sounds.ModSounds;
 import com.jayptucker.heroesevolved.radiation.RadiationService;
+import com.jayptucker.heroesevolved.radiation.NuclearFallout;
 import com.jayptucker.heroesevolved.time.intro.TimeIntroService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
@@ -38,6 +39,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.level.Level;
@@ -53,6 +55,7 @@ import java.util.UUID;
 
 /** Short, server-authoritative first-acquisition sequences. Time retains its city cinematic. */
 public final class PowerIntroService {
+    public static final int RADIATION_RECOVERY_TICKS = 140;
     private record Spec(int chargeTicks, int releaseTicks, int color, ArmPose pose, Kind charge, Kind release) {}
     private static final Map<String, Spec> SPECS = Map.ofEntries(
             Map.entry("quake", new Spec(60, 40, 0xB1E9FA, ArmPose.TWO_HANDS_STRAIN, Kind.QUAKE_AWAKEN_CHARGE, Kind.QUAKE_AWAKEN_RELEASE)),
@@ -63,7 +66,7 @@ public final class PowerIntroService {
             // Telepathy shares the psychic visuals, tinted toward a softer violet.
             Map.entry("telepathy", new Spec(60, 50, 0xA070FF, ArmPose.TEMPLE, Kind.PSYCHIC_AWAKEN_CHARGE, Kind.PSYCHIC_AWAKEN_RELEASE)),
             Map.entry("cryokinesis", new Spec(60, 50, 0xBFEFFF, ArmPose.TWO_HANDS_STRAIN, Kind.CRYO_AWAKEN_CHARGE, Kind.CRYO_AWAKEN_RELEASE)),
-            Map.entry("radiation", new Spec(600, 50, 0xFF781C, ArmPose.ARMS_WIDE, Kind.NUCLEAR_CHARGE, Kind.NUCLEAR_SHOCKWAVE)),
+            Map.entry("radiation", new Spec(600, RADIATION_RECOVERY_TICKS, 0xFF781C, ArmPose.ARMS_WIDE, null, null)),
             Map.entry("sonic_resonance", new Spec(45, 35, 0xE5CB78, ArmPose.ARMS_WIDE, Kind.SONIC_SENSE, Kind.SONIC_BURST)),
             Map.entry("superspeed", new Spec(16, 20, 0xFFBE45, ArmPose.ARMS_WIDE, Kind.SPEED_BURST, Kind.SPEED_VORTEX)),
             Map.entry("regeneration", new Spec(50, 40, 0xFFD89B, ArmPose.ARMS_WIDE, Kind.REGEN_AWAKEN_CHARGE, Kind.REGEN_AWAKEN_RELEASE)),
@@ -103,6 +106,9 @@ public final class PowerIntroService {
         ResourceKey<Level> dimension;
         final List<Entity> lifted = new ArrayList<>();
         Vec3 releaseOrigin;
+        Vec3 recoveryFloor;
+        Pose beforeRecovery;
+        boolean recovering;
         QuakeIntroBlast blast;
         Rescue rescue;
         boolean rescued;
@@ -275,8 +281,9 @@ public final class PowerIntroService {
                 player.getServer().getPlayerList()).heroesEvolved$savePlayer(player);
         caption(session, 0);
         player.playNotifySound(ModSounds.NEW_BEGINNING.get(), SoundSource.MUSIC, 0.35F, 1);
-        ScreenTintPayload.send(player, 0x24000000 | session.spec.color, session.spec.chargeTicks,
-                ScreenTintPayload.Style.PULSE);
+        if (!session.power.getPath().equals("radiation"))
+            ScreenTintPayload.send(player, 0x24000000 | session.spec.color, session.spec.chargeTicks,
+                    ScreenTintPayload.Style.PULSE);
         ArmPosePayload.show(player, session.spec.pose, 15);
         SoundEvent sound = switch (session.power.getPath()) {
             case "quake" -> SoundEvents.WARDEN_SONIC_CHARGE;
@@ -300,6 +307,7 @@ public final class PowerIntroService {
         };
         sound(player, sound, 0.9F, 0.7F);
         if (session.power.getPath().equals("radiation")) {
+            RadiationService.beginChargeEffects(player);
             RadiationService.syncVisuals(player);
             com.jayptucker.heroesevolved.telepathy.FutureVisions.radiationAwakening(player);
         }
@@ -314,10 +322,11 @@ public final class PowerIntroService {
                     session.power.getPath().equals("quake") ? QuakeIntroBlast.RADIUS
                             : session.power.getPath().equals("cryokinesis")
                             ? ColdDomeService.AWAKENING_RADIUS : 8);
-        ScreenTintPayload.send(player, 0x55000000 | session.spec.color, 18, ScreenTintPayload.Style.FLASH);
+        if (!session.power.getPath().equals("radiation"))
+            ScreenTintPayload.send(player, 0x55000000 | session.spec.color, 18, ScreenTintPayload.Style.FLASH);
         // Awakenings come at the brink of losing a fight; each release gets its owner back up
         // and then ends the fight its own way.
-        AwakeningService.secondWind(player);
+        AwakeningService.secondWind(player, !session.power.getPath().equals("radiation"));
         boolean ward = session.ally() && session.wardHere();
         if (ward) {
             AwakeningService.secondWind(session.ward);
@@ -449,6 +458,7 @@ public final class PowerIntroService {
         if (!session.ally() && session.power.getPath().equals("matter_assembly"))
             WardRelease.aftermath("matter_assembly", player, player, tick);
         switch (session.power.getPath()) {
+            case "radiation" -> recoverRadiation(session);
             case "electrokinesis" -> {
                 if (tick > 0 && tick <= 36 && tick % 12 == 0) {
                     double angle = tick * 0.53;
@@ -570,22 +580,7 @@ public final class PowerIntroService {
         ServerPlayer player = session.player;
         player.setGlowingTag(true);
         player.clearFire();
-        player.resetFallDistance();
-        double intensity = age / (double) session.spec.chargeTicks;
-        // Lifted slightly off the ground by the heat pouring out of you.
-        if (age > session.spec.chargeTicks - 40) {
-            Vec3 motion = player.getDeltaMovement();
-            velocity(player, new Vec3(motion.x * 0.3, 0.03, motion.z * 0.3));
-        }
-        player.serverLevel().sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD,
-                player.getX(), player.getY() + 1, player.getZ(), (int) (2 + intensity * 10),
-                0.4 + intensity, 0.7 + intensity, 0.4 + intensity, 0.01);
-        if (age % 10 == 0) {
-            RadiationService.awakeningAura(player);
-            com.jayptucker.heroesevolved.radiation.RadiationDecay.tick(player, (float) intensity, true);
-            CameraShakePayload.sendAround(player.serverLevel(), player.position(), 16,
-                    (float) (0.1 + intensity * 0.45), 12);
-        }
+        RadiationService.tickCharge(player, age, session.spec.chargeTicks, false);
         if (age % 20 == 0) {
             RadiationService.syncVisuals(player);
             player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
@@ -596,8 +591,38 @@ public final class PowerIntroService {
 
     private static void releaseRadiation(Session session) {
         ServerPlayer player = session.player;
-        ArmPosePayload.show(player, ArmPose.ARMS_RAISED, 30);
         RadiationService.awakeningRelease(player);
+        RadiationService.clearDetonationEffects(player);
+        ArmPosePayload.clear(player);
+        player.stopRiding();
+        player.stopFallFlying();
+        session.beforeRecovery = player.getForcedPose();
+        session.recovering = true;
+        player.setForcedPose(Pose.SLEEPING);
+        caption(session, 3);
+    }
+
+    /** The blast blacks out their sight; once the terrain goes, they wake on its real floor. */
+    private static void recoverRadiation(Session session) {
+        ServerPlayer player = session.player;
+        player.setForcedPose(Pose.SLEEPING);
+        player.clearFire();
+        player.resetFallDistance();
+        velocity(player, Vec3.ZERO);
+        if (session.recoveryFloor == null) session.recoveryFloor = NuclearFallout.awakeningFloor(player);
+        if (session.recoveryFloor != null && player.position().distanceToSqr(session.recoveryFloor) > .0001) {
+            Vec3 at = session.recoveryFloor;
+            player.teleportTo(player.serverLevel(), at.x, at.y, at.z, player.getYRot(), player.getXRot());
+            if (player.isFakePlayer()) player.absMoveTo(at.x, at.y, at.z, player.getYRot(), player.getXRot());
+        }
+    }
+
+    private static void endRadiation(Session session) {
+        RadiationService.clearDetonationEffects(session.player);
+        if (session.recovering) {
+            session.player.setForcedPose(session.beforeRecovery);
+        }
+        RadiationService.refreshGlow(session.player);
     }
 
     // ------------------------------------------------------------------
@@ -729,7 +754,10 @@ public final class PowerIntroService {
     private static void finish(Session session) {
         ArmPosePayload.clear(session.player);
         SESSIONS.remove(session.player.getUUID());
-        if (session.power.getPath().equals("radiation")) RadiationService.refreshGlow(session.player);
+        if (session.power.getPath().equals("radiation")) {
+            endRadiation(session);
+            caption(session, -1);
+        }
         // A fight isn't over because the burst is: the power keeps fighting through them for a few seconds.
         if (session.peril == Danger.Peril.FIGHT && session.rescue == null && Surge.has(session.power.getPath()))
             Surge.begin(session.player, session.wardHere() ? session.ward : session.player, session.power);
@@ -737,12 +765,13 @@ public final class PowerIntroService {
     public static void cancel(ServerPlayer player) {
         Session session = SESSIONS.remove(player.getUUID());
         if (session != null && session.rescue != null && !session.rescued) session.rescue.stop();
-        if (session != null && session.power.getPath().equals("radiation"))
+        if (session != null && session.power.getPath().equals("radiation")) {
             com.jayptucker.heroesevolved.radiation.RadiationDecay.clear(player);
+            endRadiation(session);
+        }
         if (session != null && session.age > 0) {
             ArmPosePayload.clear(player);
             caption(session, -1);
-            if (session.power.getPath().equals("radiation")) RadiationService.refreshGlow(player);
         }
     }
     public static void forget(ServerPlayer player) {

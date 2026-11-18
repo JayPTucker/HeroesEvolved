@@ -169,19 +169,6 @@ public final class RadiationService {
     }
     public static void refreshGlow(ServerPlayer player) { updateGlow(player); syncVisuals(player); }
 
-    /** The first uncontrolled burn affects every nearby living body, including poison-immune undead. */
-    public static void awakeningAura(ServerPlayer player) {
-        for (LivingEntity target : player.serverLevel().getEntitiesOfClass(LivingEntity.class,
-                player.getBoundingBox().inflate(8), entity -> entity != player && entity.isAlive() && !entity.isSpectator()
-                        && entity.distanceToSqr(player) <= 64
-                        // The ally the awakening is for, and the owner's pets, are spared the uncontrolled heat.
-                        && !com.jayptucker.heroesevolved.styles.StyleOps.isFriend(player, entity)
-                        && (!(entity instanceof ServerPlayer other) || !other.isCreative()))) {
-            irradiate(target, 80);
-            target.hurt(player.damageSources().indirectMagic(player, player), target.distanceToSqr(player) <= 9 ? 4 : 2);
-        }
-    }
-
     public static void awakeningRelease(ServerPlayer player) {
         nuclearBlast(player, true);
         setMass(player, 40);
@@ -496,9 +483,7 @@ public final class RadiationService {
             ScreenTintPayload.send(player, BREACH_TINT, 0, ScreenTintPayload.Style.PULSE);
         }
         player.setGlowingTag(true);
-        showDetonationEffects(player);
-        SetPiecePayload.send(player.serverLevel(), Piece.RAD_CHARGE, player.position(), player.position().add(0, 1, 0),
-                60, player);
+        beginChargeEffects(player);
         player.sendSystemMessage(Component.literal(voluntary
                 ? "You stop holding it in. (Shift + key to stop it.)"
                 : "Containment fails!").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD));
@@ -513,9 +498,43 @@ public final class RadiationService {
         ScreenTintPayload.send(player, DETONATION_TINT, 40, ScreenTintPayload.Style.HOLD);
     }
 
-    private static void clearDetonationEffects(ServerPlayer player) {
+    public static void clearDetonationEffects(ServerPlayer player) {
         ScreenTintPayload.send(player, DETONATION_TINT, 0, ScreenTintPayload.Style.HOLD);
         ArmPosePayload.clearIf(player, ArmPose.ARMS_WIDE);
+        MeltdownField.end(player);
+    }
+
+    /** Both the first loss of control and V use the same reactor, pose, heat and radiation. */
+    public static void beginChargeEffects(ServerPlayer player) {
+        showDetonationEffects(player);
+        SetPiecePayload.send(player.serverLevel(), Piece.RAD_CHARGE, player.position(), player.position().add(0, 1, 0),
+                60, player);
+    }
+
+    public static void tickCharge(ServerPlayer player, int elapsed, int duration, boolean held) {
+        long gameTime = player.serverLevel().getGameTime();
+        int remaining = duration - elapsed;
+        boolean rising = !held && elapsed < CHARGE_RISE_TICKS;
+        player.setDeltaMovement(player.getDeltaMovement().multiply(0.2D, 0.0D, 0.2D)
+                .add(0.0D, rising ? 0.16D : 0.0D, 0.0D));
+        player.connection.send(new ClientboundSetEntityMotionPacket(player));
+        player.resetFallDistance();
+        ServerLevel level = player.serverLevel();
+        float intensity = Math.clamp(elapsed / (float) duration, 0, 1);
+        boolean finalBuildup = remaining <= FINAL_BUILDUP_TICKS;
+        MeltdownField.tick(player, intensity, held);
+        if (gameTime % 3 == 0) level.sendParticles(WHITE_HOT, player.getX(), player.getY() + 1.0D, player.getZ(),
+                2, 0.4D, 0.6D, 0.4D, 0.0D);
+        if (gameTime % (finalBuildup && !held ? 8 : 20) == 0) {
+            level.playSound(null, player.blockPosition(), SoundEvents.BEACON_AMBIENT,
+                    SoundSource.PLAYERS, 2.0F, 0.6F + intensity);
+            CameraShakePayload.sendAround(level, player.position(), 32.0D,
+                    (held ? .2F : .4F) + intensity * intensity * (held ? .4F : 1.6F), 10);
+        }
+        if (gameTime % 20 == 0) {
+            showDetonationEffects(player);
+            syncVisuals(player);
+        }
     }
 
     // ------------------------------------------------------------------
@@ -769,30 +788,8 @@ public final class RadiationService {
                 continue;
             }
 
-            // The caster rises off the ground as it builds, then hangs there at the moment it goes.
             boolean held = LAST_HELD.getOrDefault(player.getUUID(), Long.MIN_VALUE) == gameTime;
-            boolean rising = !held && detonation.duration - remaining < CHARGE_RISE_TICKS;
-            player.setDeltaMovement(player.getDeltaMovement().multiply(0.2D, 0.0D, 0.2D)
-                    .add(0.0D, rising ? 0.16D : 0.0D, 0.0D));
-            player.connection.send(new ClientboundSetEntityMotionPacket(player));
-            player.resetFallDistance();
-            ServerLevel level = player.serverLevel();
-            float intensity = Math.clamp(1 - remaining / (float) detonation.duration, 0, 1);
-            boolean finalBuildup = remaining <= FINAL_BUILDUP_TICKS;
-            // Shock waves, the lethal near-field and the ground crumbling round them, building as the end comes.
-            MeltdownField.tick(player, intensity, held);
-            if (gameTime % 3 == 0) level.sendParticles(WHITE_HOT, player.getX(), player.getY() + 1.0D, player.getZ(),
-                    2, 0.4D, 0.6D, 0.4D, 0.0D);
-            if (gameTime % (finalBuildup && !held ? 8 : 20) == 0) {
-                level.playSound(null, player.blockPosition(), SoundEvents.BEACON_AMBIENT,
-                        SoundSource.PLAYERS, 2.0F, 0.6F + intensity);
-                CameraShakePayload.sendAround(level, player.position(), 32.0D,
-                        (held ? .2F : .4F) + intensity * intensity * (held ? .4F : 1.6F), 10);
-            }
-            if (gameTime % 20 == 0) {
-                showDetonationEffects(player);
-                syncVisuals(player);
-            }
+            tickCharge(player, detonation.duration - (int) remaining, detonation.duration, held);
         }
     }
 

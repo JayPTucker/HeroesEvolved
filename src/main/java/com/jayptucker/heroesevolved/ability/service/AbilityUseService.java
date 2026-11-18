@@ -77,6 +77,9 @@ public final class AbilityUseService {
             Function<ResourceLocation, AbilityAction> chooser,
             boolean allowOverexertion
     ) {
+        // Out of their body in a vision, a viber's power keys only make them appear (or fade) there.
+        if (com.jayptucker.heroesevolved.vibe.VibeVisions.watching(player))
+            return com.jayptucker.heroesevolved.vibe.VibeVisions.press(player) ? AbilityUseResult.SUCCESS : AbilityUseResult.CANNOT_USE;
         if (EclipseService.arePowersSuppressed(player)) return AbilityUseResult.POWER_SUPPRESSED;
         // A preserved caster can open only their own learned cocoon; other actions stay locked.
         if (com.jayptucker.heroesevolved.cryo.CryoTechniqueService.canReleaseCocoon(player)) {
@@ -175,6 +178,12 @@ public final class AbilityUseService {
                 powerLevel,
                 allowOverexertion
         );
+
+        // Water boils away in the Nether and rain puts fire out: a snuffed power fizzles, free, before anything runs.
+        // An empath's Echo is the borrowed power, so it fizzles where that power would.
+        ResourceLocation element = abilityAction.definition().id().getPath().startsWith("mimicry_echo_")
+                ? Elements.power(player) : powerId;
+        if (Elements.refuse(player, element)) return AbilityUseResult.CANNOT_USE;
 
         int mark = PowerSounds.mark();
         if (abilityAction.followUp(context)) {

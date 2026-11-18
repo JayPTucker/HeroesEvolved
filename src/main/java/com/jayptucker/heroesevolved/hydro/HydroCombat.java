@@ -70,6 +70,7 @@ public final class HydroCombat {
             return com.jayptucker.heroesevolved.ability.registry.ModAbilities.HYDROKINESIS_ID;
         }
         @Override public int strike(ServerPlayer player) { return HydroCombat.strike(player); }
+        @Override public boolean canStrike(ServerPlayer player, LivingEntity target) { return HydroService.hostile(player, target); }
         @Override public boolean dodge(ServerPlayer player, Dodge dodge) { return HydroCombat.dodge(player, dodge); }
         @Override public void counter(ServerPlayer player, DamageSource source) { turnTheTide(player, source); }
         @Override public void tick(MinecraftServer server) { HydroCombat.tick(server); }
@@ -88,7 +89,7 @@ public final class HydroCombat {
     }
 
     static boolean canFight(ServerPlayer player) {
-        return player.isAlive() && !player.isSpectator() && FightingStyles.fights(player, STYLE) && PowerRules.canAct(player)
+        return player.isAlive() && !player.isSpectator() && FightingStyles.fights(player, STYLE) && HydroService.canBend(player)
                 && !HydroService.riding(player) && !HydroService.storming(player) && !HydroSkills.jetting(player);
     }
 

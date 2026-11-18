@@ -99,6 +99,7 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue villageIncidentRange;
         public final ModConfigSpec.IntValue distressRange;
         public final ModConfigSpec.IntValue renegadeKillSeconds;
+        public final ModConfigSpec.IntValue vibeVisionMinutes;
 
         // Awakening
         public final ModConfigSpec.DoubleValue awakeningHealthThreshold;
@@ -540,6 +541,10 @@ public final class HeroesEvolvedConfig {
                 renegadeKillSeconds = builder
                         .comment("A renegade takes one of its village every this many seconds while nobody stops it. Ten villagers give players several minutes to arrive.")
                         .defineInRange("renegadeKillSeconds", 45, 5, 600);
+
+                vibeVisionMinutes = builder
+                        .comment("A Vibe user gets at most one uncontrollable vision every this many minutes: always when an ally more than 40 blocks away (within 12 chunks) drops below three hearts, sometimes when a village there is in trouble or about to be. 0 turns visions off.")
+                        .defineInRange("vibeVisionMinutes", 10, 0, 1_440);
 
                 builder.pop();
 

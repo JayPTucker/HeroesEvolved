@@ -152,7 +152,8 @@ public final class PrologueGameTests {
                     helper.assertTrue(in > 0 && in <= PrologueService.LIGHT_DELAY, "Everyone at the beacon: the light comes twenty seconds later: " + in);
                     helper.assertTrue(PrologueService.skipTo(server, "light", 0), "The light can be reached");
                 }))
-                // Freshly forced chunks take a while to show their entities (see AGENTS.md): wait for everyone.
+                // Freshly forced chunks expose their entities at different times: wait for the two entrance guards,
+                // seven stair/hall guards, both Bennets and the crowd before checking the whole cast's placement.
                 .thenWaitUntil(() -> helper.assertTrue(city.getEntities(ModEntities.STORY_ACTOR.get(), PrologueService::isScene).size() == 2
                         && city.getEntities(EntityType.VILLAGER, PrologueService::isScene).size() == TimeIntroService.CROWD_SIZE
                         && cast(city).size() >= CAST,
@@ -333,8 +334,8 @@ public final class PrologueGameTests {
                 .thenSucceed();
     }
 
-    /** The guards, Noah and Claire. */
-    private static final int CAST = 10;
+    /** The nine guards, Noah and Claire. */
+    private static final int CAST = 11;
 
     private static List<net.minecraft.world.entity.Entity> cast(ServerLevel city) {
         List<net.minecraft.world.entity.Entity> cast = new java.util.ArrayList<>();

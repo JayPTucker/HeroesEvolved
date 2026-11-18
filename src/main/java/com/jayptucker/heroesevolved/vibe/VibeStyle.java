@@ -26,8 +26,8 @@ import java.util.List;
  * Breach Boxing: Cisco fights through the seams between places. A jab is a vibrating palm whose pulse rings through
  * the body it hits and into whoever stands behind; the finisher is a Breach Kick, the foot going into a tear at the
  * kicker's side and out of one behind the foe, so the foe is kicked toward the kicker from behind; crouching lays a
- * palm on the ground and a seam cracks out along it, tripping everyone it passes. A side dodge is a Blink Step through
- * a tiny breach; back (from level 2) is Fold Back, a step back through a breach that leaves the old spot primed to
+ * palm on the ground and a seam cracks out along it, tripping everyone it passes. A side dodge is a Breach Hop: a tear
+ * snaps open beside you, you dive into it and shoot out of another one farther along; back (from level 2) is Fold Back, a step back through a breach that leaves the old spot primed to
  * burst. A dodged blow is answered from behind: the next strike comes out of a tear at the attacker's back.
  *
  * <p>Nothing here moves a body faster than {@link SpeedService#swept} allows, and the moves only hurt foes.</p>
@@ -35,12 +35,17 @@ import java.util.List;
 public final class VibeStyle extends ComboStyle {
     public static final VibeStyle STYLE = new VibeStyle();
     public static final double JAB_REACH = 4.5, RING_REACH = 2.5, KICK_REACH = 7, SEAM_LENGTH = 6, SEAM_WIDTH = 1.1,
-            BLINK = 3.6, FOLD = 4, FOLD_RADIUS = 2.6, BEHIND_REACH = 12;
+            BLINK = 3.6, FOLD = 4, FOLD_RADIUS = 2.6, BEHIND_REACH = 12, HOP = 6;
     public static final int FOLD_DELAY = 12;
+    /** Ticks from the side tear opening to coming out of the far one: the dive into it. */
+    public static final int HOP_DIVE = 2;
 
     /** Fold Back's primed spots, waiting to burst. */
     private record Fold(ServerPlayer owner, ServerLevel level, Vec3 at, long due, int level_) {}
     private static final List<Fold> FOLDS = new ArrayList<>();
+    /** Breach Hops in flight: the hopper dives into the near tear and comes out of the far one at {@code due}. */
+    private record Hop(ServerPlayer owner, ServerLevel level, Vec3 to, Vec3 direction, long due) {}
+    private static final List<Hop> HOPS = new ArrayList<>();
 
     private VibeStyle() { super(ModAbilities.VIBE_ID, "vibe.heroesevolved.too_tired"); }
 
@@ -148,6 +153,7 @@ public final class VibeStyle extends ComboStyle {
 
     @Override
     protected void dodgeMove(ServerPlayer p, Fighter f, Dodge dodge, Vec3 direction, boolean special, int level) {
+        if (!special && hop(p, direction)) return;
         Vec3 from = p.position();
         double distance = special ? FOLD : BLINK;
         Vec3 to = SpeedService.swept(p, direction.scale(distance));
@@ -172,6 +178,37 @@ public final class VibeStyle extends ComboStyle {
         }
     }
 
+    /**
+     * Breach Hop: a tear snaps open at your side, you throw yourself into it, and two ticks later you shoot out of another
+     * one {@link #HOP} blocks along, still moving that way. False if there is no room (the blink below takes over).
+     */
+    boolean hop(ServerPlayer p, Vec3 direction) {
+        Vec3 from = p.position();
+        Vec3 to = SpeedService.swept(p, direction.scale(HOP));
+        if (to.distanceToSqr(from) < 3.5 * 3.5) return false;
+        Vec3 entry = from.add(direction.scale(.9)).add(0, VibeGeometry.PORTAL_HEIGHT, 0);
+        Vec3 exit = to.subtract(direction.scale(.5)).add(0, VibeGeometry.PORTAL_HEIGHT, 0);
+        show(p, Piece.VIBE_HOP, entry, exit, 1, null);
+        StyleMotion.dash(p, direction.scale(.55), .12, HOP_DIVE, HOP_DIVE + 1, false, false);
+        HOPS.add(new Hop(p, world(p), to, direction, world(p).getGameTime() + HOP_DIVE));
+        pose(p, ArmPose.VIBE_HOP, 10);
+        StyleHits.sound(p, ModSounds.VIBE_BREACH.get(), .55F, 1.75F);
+        return true;
+    }
+
+    /** Out of the far tear: put down there, flung on along the hop. */
+    private static void land(Hop hop) {
+        ServerPlayer p = hop.owner();
+        StyleHits.blink(p, hop.to());
+        StyleMotion.push(p, hop.direction().scale(.42).add(0, .12, 0));
+        Vec3 arrive = hop.to().add(0, VibeGeometry.PORTAL_HEIGHT, 0);
+        SetPiecePayload.send(hop.level(), Piece.VIBE_TRANSIT, arrive, arrive.add(hop.direction()), 1, p);
+        StyleHits.sound(p, ModSounds.VIBE_SHUT.get(), .6F, 1.5F);
+    }
+
+    /** Package-visible for tests: whether a hop is between its two tears. */
+    static boolean hopping(ServerPlayer p) { return HOPS.stream().anyMatch(hop -> hop.owner() == p); }
+
     @Override
     protected void onCounter(ServerPlayer p, Fighter f, DamageSource source) {
         Vec3 at = p.position().add(0, VibeGeometry.PORTAL_HEIGHT, 0);
@@ -182,6 +219,13 @@ public final class VibeStyle extends ComboStyle {
 
     @Override
     protected void tickFighter(ServerPlayer player, Fighter fighter, long now) {
+        for (Hop hop : List.copyOf(HOPS)) {
+            if (hop.owner() != player) continue;
+            if (player.serverLevel() != hop.level() || !player.isAlive()) { HOPS.remove(hop); continue; }
+            if (hop.level().getGameTime() < hop.due()) continue;
+            HOPS.remove(hop);
+            land(hop);
+        }
         for (Fold fold : List.copyOf(FOLDS)) {
             if (fold.owner() != player) continue;
             if (player.serverLevel() != fold.level()) { FOLDS.remove(fold); continue; }
@@ -217,11 +261,13 @@ public final class VibeStyle extends ComboStyle {
     public void forget(ServerPlayer player) {
         super.forget(player);
         FOLDS.removeIf(fold -> fold.owner() == player);
+        HOPS.removeIf(hop -> hop.owner() == player);
     }
 
     @Override
     public void clear() {
         super.clear();
         FOLDS.clear();
+        HOPS.clear();
     }
 }

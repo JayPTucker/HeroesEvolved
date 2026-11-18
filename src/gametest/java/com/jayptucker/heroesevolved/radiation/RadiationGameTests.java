@@ -109,9 +109,17 @@ public final class RadiationGameTests {
     @GameTest(template = "rewind_empty", timeoutTicks = 1500, batch = "RadiationGameTests.firstAwakeningCannotCalmForThirtySeconds")
     public static void firstAwakeningCannotCalmForThirtySeconds(GameTestHelper helper) {
         ServerPlayer player = player(helper, 220, true);
-        Cow cow = mob(helper, EntityType.COW, player.position().add(5, 0, 0));
-        Zombie undead = mob(helper, EntityType.ZOMBIE, player.position().add(-5, 0, 0));
+        Cow cow = mob(helper, EntityType.COW, player.position().add(2, 0, 0));
+        Zombie undead = mob(helper, EntityType.ZOMBIE, player.position().add(-2, 0, 0));
         BlockPos center = player.blockPosition();
+        List<BlockPos> column = new ArrayList<>();
+        for (int y = 1; y <= NuclearFallout.AWAKENING_RADIUS; y++) {
+            BlockPos pos = center.below(y);
+            helper.getLevel().setBlock(pos, Blocks.STONE.defaultBlockState(), 3);
+            column.add(pos);
+        }
+        BlockPos floor = center.below(NuclearFallout.AWAKENING_RADIUS + 1);
+        helper.getLevel().setBlock(floor, Blocks.BEDROCK.defaultBlockState(), 3);
         BlockPos near = center.offset(40, 0, 0), outside = center.offset(50, 0, 0), protectedBlock = center.offset(16, 0, 0);
         for (BlockPos pos : List.of(near, outside, protectedBlock)) {
             keepLoaded(player, pos); helper.getLevel().setBlock(pos, Blocks.STONE.defaultBlockState(), 3);
@@ -122,23 +130,45 @@ public final class RadiationGameTests {
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, false, BlockEvent.BreakEvent.class, guard);
         float health = player.getHealth();
         helper.runAfterDelay(80, () -> {
-            helper.assertTrue(!cow.isAlive() && undead.getHealth() < undead.getMaxHealth(), "The uncontrolled aura must harm both ordinary and poison-immune mobs");
-            player.hurt(player.damageSources().generic(), 1000);
-            helper.assertTrue(player.isAlive() && player.getHealth() == health, "First awakening must block lethal damage through the real hurt path");
-            helper.assertTrue(!RadiationService.holdItIn(player), "First awakening cannot be canceled by holding it in");
+            try {
+                helper.assertTrue(!cow.isAlive() && undead.getHealth() < undead.getMaxHealth(), "The radiation field must harm both ordinary and poison-immune mobs");
+                helper.assertTrue(MeltdownField.active(player), "Awakening must use V's live heat and radiation field");
+                player.hurt(player.damageSources().generic(), 1000);
+                helper.assertTrue(player.isAlive() && player.getHealth() == health, "First awakening must block lethal damage through the real hurt path");
+                helper.assertTrue(!RadiationService.holdItIn(player), "First awakening cannot be canceled by holding it in");
+            } catch (RuntimeException e) { NeoForge.EVENT_BUS.unregister(guard); remove(player, cow, undead); throw e; }
         });
         helper.runAfterDelay(590, () -> {
-            RadiationService.tickPlayer(player, helper.getLevel().getGameTime());
-            helper.assertTrue(PowerIntroService.radiationChargeRemaining(player) > 0, "Must still charge near the end of thirty seconds");
-            helper.assertTrue(player.hasGlowingTag(), "Normal passive updates must not extinguish the awakening glow");
-            helper.assertTrue(RadiationService.visualState(player).remaining() > 0, "Observers must receive an active charge sound state");
-            helper.assertTrue(AbilityUseService.activateAssignedAction(player, AbilitySlot.QUINARY, true) == AbilityUseResult.CANNOT_USE,
-                    "Shift must not bypass the first thirty-second loss of control");
-            helper.assertTrue(helper.getLevel().getBlockState(near).is(Blocks.STONE), "Blast must wait for the whole charge");
+            try {
+                RadiationService.tickPlayer(player, helper.getLevel().getGameTime());
+                helper.assertTrue(PowerIntroService.radiationChargeRemaining(player) > 0, "Must still charge near the end of thirty seconds");
+                helper.assertTrue(player.hasGlowingTag(), "Normal passive updates must not extinguish the awakening glow");
+                helper.assertTrue(RadiationService.visualState(player).remaining() > 0, "Observers must receive an active charge sound state");
+                helper.assertTrue(AbilityUseService.activateAssignedAction(player, AbilitySlot.QUINARY, true) == AbilityUseResult.CANNOT_USE,
+                        "Shift must not bypass the first thirty-second loss of control");
+                helper.assertTrue(helper.getLevel().getBlockState(near).is(Blocks.STONE), "Blast must wait for the whole charge");
+            } catch (RuntimeException e) { NeoForge.EVENT_BUS.unregister(guard); remove(player, cow, undead); throw e; }
+        });
+        helper.runAfterDelay(615, () -> {
+            try {
+                helper.assertTrue(column.stream().allMatch(pos -> helper.getLevel().getBlockState(pos).isAir()),
+                        "Awakening must carve the center column, leaving no pole");
+                helper.assertTrue(player.position().distanceToSqr(Vec3.atBottomCenterOf(floor.above()).add(0, .01, 0)) < .001,
+                        "Owner must teleport to the real crater floor after it is carved: " + player.position());
+                helper.assertTrue(player.getForcedPose() == Pose.SLEEPING && PowerIntroService.isActive(player),
+                        "Owner must remain lying down and protected while blinking awake");
+                var resistance = player.getEffect(MobEffects.DAMAGE_RESISTANCE);
+                helper.assertTrue(resistance != null && !resistance.isVisible(),
+                        "Second-wind protection must remain without particles obscuring the low camera");
+                helper.assertTrue(!MeltdownField.active(player), "The charge field must end with the explosion");
+                player.hurt(player.damageSources().generic(), 1000);
+                helper.assertTrue(player.getHealth() == health, "Crater recovery must retain intro protection");
+            } catch (RuntimeException e) { NeoForge.EVENT_BUS.unregister(guard); remove(player, cow, undead); throw e; }
         });
         helper.runAfterDelay(1250, () -> {
             try {
                 helper.assertTrue(!PowerIntroService.isActive(player), "Awakening must settle after the release");
+                helper.assertTrue(player.getForcedPose() == null, "Recovery must restore the normal pose");
                 helper.assertTrue(helper.getLevel().getBlockState(near).isAir(), "Nuclear blast must destroy ordinary terrain forty blocks away");
                 helper.assertTrue(helper.getLevel().getBlockState(outside).is(Blocks.STONE), "Terrain outside the forty-eight-block awakening radius must survive");
                 helper.assertTrue(helper.getLevel().getBlockState(bedrock).is(Blocks.BEDROCK), "Unbreakable terrain must survive");
@@ -152,6 +182,31 @@ public final class RadiationGameTests {
                 helper.assertTrue(!PowerIntroService.isActive(player), "Regranting must not replay a free nuclear awakening");
                 helper.succeed();
             } finally { NeoForge.EVENT_BUS.unregister(guard); remove(player, cow, undead); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 680, batch = "radiation.recovery_cancel")
+    public static void powerRemovalReleasesCraterRecovery(GameTestHelper helper) {
+        ServerPlayer player = player(helper, 260, true);
+        BlockPos floor = player.blockPosition().below(4);
+        helper.getLevel().setBlock(floor, Blocks.BEDROCK.defaultBlockState(), 3);
+        helper.runAfterDelay(620, () -> {
+            try {
+                helper.assertTrue(player.getForcedPose() == Pose.SLEEPING && PowerIntroService.isActive(player),
+                        "Fixture must be recovering on the crater floor");
+                Vec3 at = player.position();
+                PlayerAbilityService.removeAssignedAbility(player);
+                helper.assertTrue(!PowerIntroService.isActive(player) && player.getForcedPose() == null,
+                        "Power removal must immediately release the lying pose and intro lock");
+                player.setPos(at.add(3, 0, 0));
+            } catch (RuntimeException e) { remove(player); throw e; }
+        });
+        helper.runAfterDelay(630, () -> {
+            try {
+                helper.assertTrue(player.getForcedPose() == null && !MeltdownField.active(player),
+                        "Canceled recovery must not restart the pose or radiation field");
+                helper.succeed();
+            } finally { remove(player); }
         });
     }
 

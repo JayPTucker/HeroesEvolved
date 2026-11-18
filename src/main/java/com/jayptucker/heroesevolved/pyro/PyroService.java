@@ -138,9 +138,11 @@ public final class PyroService {
                 .isPresent() && !EclipseService.arePowersSuppressed(player);
     }
 
+    /** Fire needs the power (own or borrowed) and dry air: rain puts every flame of it out. */
     private static boolean canSustainFire(ServerPlayer player) {
-        return isPyrokinetic(player)
-                || com.jayptucker.heroesevolved.mimicry.MimicryService.isBorrowingPyrokinesis(player);
+        return (isPyrokinetic(player)
+                || com.jayptucker.heroesevolved.mimicry.MimicryService.isBorrowingPyrokinesis(player))
+                && !com.jayptucker.heroesevolved.ability.service.Elements.doused(player);
     }
 
     /** True while one of this power's own hits is landing, so passives do not stack on top. */
@@ -266,8 +268,8 @@ public final class PyroService {
 
     /** Only one held cast owns the arms at a time. Breath remains compatible with jet flight. */
     public static boolean canStartCast(ServerPlayer player) {
-        return PowerRules.canAct(player) && !player.isInWaterOrBubble() && !PyroFlightService.isDiving(player)
-                && !isChanneling(player) && !isChargingSpear(player) && !isCharging(player);
+        return PowerRules.canAct(player) && !player.isInWaterOrBubble() && !com.jayptucker.heroesevolved.ability.service.Elements.doused(player)
+                && !PyroFlightService.isDiving(player) && !isChanneling(player) && !isChargingSpear(player) && !isCharging(player);
     }
 
     private static void sound(ServerPlayer player, SoundEvent sound, float volume, float pitch) {

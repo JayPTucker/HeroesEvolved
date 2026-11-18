@@ -1,0 +1,26 @@
+// Targeted tests for the elements (Hydrokinesis in the Nether, Pyrokinesis in the rain).
+// ./gradlew runGameTestServer --init-script tools/elements-gametest.init.gradle
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def tests = sourceSets.create('elementsTest') {
+                java.srcDir('src/gametest/java')
+                java.include('com/jayptucker/heroesevolved/ability/ElementsGameTests.java')
+                java.include('com/jayptucker/heroesevolved/*.java')
+                resources.srcDir('src/gametest/resources')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(tests) } }
+                runs { gameTestServer { gameDirectory = project.file('build/elements-test-world') } }
+            }
+            tasks.named('runGameTestServer') {
+                dependsOn(tasks.named('elementsTestClasses'))
+                def staleWorld = project.file('build/elements-test-world/world')
+                def staleConfig = project.file('build/elements-test-world/config/heroesevolved-common.toml')
+                doFirst { staleWorld.deleteDir(); staleConfig.delete() }
+            }
+        }
+    }
+}

@@ -69,14 +69,25 @@ public final class AdminPreview {
         }
         if (mc.player == null || mc.level == null) return;
         if (mc.screen instanceof net.minecraft.client.gui.screens.PauseScreen) mc.setScreen(null);
+        mc.getToasts().clear();
+        if (mc.screen instanceof AdminScreen screen)
+            for (var child : screen.children())
+                if (child instanceof net.minecraft.client.gui.components.AbstractWidget widget) widget.setTooltip(null);
+        org.lwjgl.glfw.GLFW.glfwSetCursorPos(mc.getWindow().getWindow(), 4, 4);
         switch (++worldTicks) {
+            case 130 -> onServer(mc, com.jayptucker.heroesevolved.story.prologue.PrologueService::skip);
             case 150 -> onServer(mc, p -> {
+                com.jayptucker.heroesevolved.story.bunker.CryoChamberService.release(p);
+                var world = p.getServer().overworld();
+                for (int cx = 92; cx <= 95; cx++) for (int cz = -2; cz <= 1; cz++) world.setChunkForced(cx, cz, true);
+                p.teleportTo(world, 1500.5, -60, -8.5, 0, 10);
                 p.serverLevel().setDayTime(6000);
                 p.setData(ModDataAttachments.POWER_INTRO_HISTORY, PowerIntroHistory.empty().with(ModAbilities.SUPERSPEED_ID));
                 p.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty()
                         .assignDormant(ModAbilities.SUPERSPEED_ID).unlock(ModAbilities.SUPERSPEED_ID));
                 PlayerProgressionService.setLevel(p, 4);
                 p.teleportTo(p.serverLevel(), 1500.5, -60, -8.5, 0, 10);
+                System.out.println("ADMIN_STAGE dimension=" + p.level().dimension().location() + " underfoot=" + p.level().getBlockState(p.blockPosition().below()));
                 // A bell and a few villagers, for the village events.
                 p.serverLevel().setBlockAndUpdate(new BlockPos(1500, -60, 0), Blocks.BELL.defaultBlockState()
                         .setValue(BellBlock.ATTACHMENT, BellAttachType.FLOOR));
@@ -86,6 +97,7 @@ public final class AdminPreview {
                     p.serverLevel().addFreshEntity(v);
                 }
             });
+            case 165 -> act(mc, AdminActionPayload.Action.TOGGLE_GOD_MODE, 0);
             case 170 -> { AdminScreen.showPlayer(); onServer(mc, AdminService::open); }
             case 185 -> shot("1-player");
             case 190 -> { AdminScreen.showWorld(); if (mc.screen instanceof AdminScreen s) s.onStateUpdated(); }
@@ -93,13 +105,17 @@ public final class AdminPreview {
             case 205 -> act(mc, AdminActionPayload.Action.MELTDOWN_START, 60);
             case 245 -> act(mc, AdminActionPayload.Action.REFRESH, 0);
             case 255 -> shot("3-world-meltdown");
+            case 258 -> { AdminScreen.showIncidents(); if (mc.screen instanceof AdminScreen s) s.onStateUpdated(); }
+            case 259 -> shot("5-incidents");
             case 260 -> act(mc, AdminActionPayload.Action.MELTDOWN_CANCEL, 0);
             case 266 -> act(mc, AdminActionPayload.Action.GIVE_RADIO, 0);
-            case 270 -> act(mc, AdminActionPayload.Action.ECLIPSE_TOTALITY, 0);
+            case 270 -> { AdminScreen.showWorld(); act(mc, AdminActionPayload.Action.ECLIPSE_TOTALITY, 0); }
             case 290 -> act(mc, AdminActionPayload.Action.REFRESH, 0);
             case 300 -> shot("4-world-totality");
             case 305 -> onServer(mc, p -> System.out.println("ADMIN_RADIO " + p.getInventory().items.stream()
                     .filter(s -> !s.isEmpty()).map(s -> s.getItem() + " " + s.getComponents()).toList()));
+            case 306 -> { act(mc, AdminActionPayload.Action.STOP_ECLIPSE, 0); mc.options.hideGui = true; mc.setScreen(null); mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_BACK); }
+            case 310 -> shot("6-god-outline");
             case 315 -> PreviewQuiet.quit();
             default -> { }
         }

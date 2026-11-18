@@ -78,6 +78,7 @@ public final class ElectroCombat {
             return com.jayptucker.heroesevolved.ability.registry.ModAbilities.ELECTROKINESIS_ID;
         }
         @Override public int strike(ServerPlayer player) { return ElectroCombat.strike(player); }
+        @Override public boolean canStrike(ServerPlayer player, LivingEntity target) { return ElectroService.hostile(player, target); }
         @Override public boolean dodge(ServerPlayer player, Dodge dodge) { return ElectroCombat.dodge(player, dodge); }
         @Override public void counter(ServerPlayer player, DamageSource source) { groundOut(player, source); }
         @Override public void tick(MinecraftServer server) { ElectroCombat.tick(server); }
@@ -345,7 +346,7 @@ public final class ElectroCombat {
         ElectroGeometry.show(world, Piece.ELECTRO_ARC_STEP, from, from.add(direction.scale(travel)), flashback ? 2 : 1, player);
         if (flashback) {
             DECOYS.add(new Decoy(player, world, from, now + ElectroGeometry.FLASHBACK_FUSE, level));
-            ElectroGeometry.show(world, Piece.ELECTRO_DECOY, from, from.add(forward), ElectroGeometry.FLASHBACK_RADIUS, null);
+            ElectroGeometry.show(world, Piece.ELECTRO_DECOY, from, from.add(forward), ElectroGeometry.FLASHBACK_RADIUS, player);
         }
         ArmPosePayload.show(player, flashback ? ArmPose.ELECTRO_FLASH : ArmPose.ELECTRO_STEP, 10);
         sound(player, SoundEvents.LIGHTNING_BOLT_IMPACT, .55F, 1.7F);

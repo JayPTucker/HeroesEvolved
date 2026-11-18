@@ -420,8 +420,14 @@ public final class AwakeningService {
      * fight stand back up. Each power adds its own way of ending the fight.
      */
     public static void secondWind(LivingEntity entity) {
+        secondWind(entity, true);
+    }
+
+    /** A low cinematic camera should not be filled by the owner's own Resistance particles. */
+    public static void secondWind(LivingEntity entity, boolean showParticles) {
         entity.setHealth(Math.max(entity.getHealth(), entity.getMaxHealth() * SECOND_WIND_HEALTH));
-        entity.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, SECOND_WIND_RESISTANCE_TICKS, 1));
+        entity.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, SECOND_WIND_RESISTANCE_TICKS, 1,
+                false, showParticles, true));
         entity.clearFire();
         entity.setAirSupply(entity.getMaxAirSupply());
         entity.resetFallDistance();

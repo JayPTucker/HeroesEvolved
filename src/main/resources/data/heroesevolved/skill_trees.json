@@ -4624,7 +4624,7 @@
         {
           "id": "hydro_2_0",
           "name": "Sea's Blessing",
-          "description": "Water heals you twice as fast, rain heals you too, and each second in water washes away one harmful effect.",
+          "description": "Water and rain heal you twice as fast, and each second in water washes away one harmful effect.",
           "icon": "minecraft:sea_pickle",
           "level": 1,
           "cost": 1,

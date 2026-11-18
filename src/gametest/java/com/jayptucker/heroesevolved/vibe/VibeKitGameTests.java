@@ -247,8 +247,7 @@ public final class VibeKitGameTests {
         p.setXRot(13);
         var cleanup = track(p);
         Pillager[] behind = new Pillager[1];
-        step(cleanup, () -> h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, true)
-                == AbilityUseResult.SUCCESS, "A linked breach opens"));
+        step(cleanup, () -> h.assertTrue(VibeBreaches.shiftHold(p), "A linked breach opens"));
         h.runAfterDelay(12, () -> p.setPos(start.add(0, 0, 2.35)));
         h.runAfterDelay(14, () -> step(cleanup, () -> {
             h.assertTrue(p.position().distanceToSqr(start) > 25, "The viber crosses to the exit");
@@ -263,9 +262,12 @@ public final class VibeKitGameTests {
                     "Vibe Blast fires");
             h.assertFalse(VibeService.primed(p), "The blast spends the prime");
         }));
-        // A normal palm winds up for three ticks; a slung one is away after one.
-        h.runAfterDelay(17, () -> finish(h, cleanup, () -> h.assertTrue(behind[0].getHealth() < 13.5F,
-                "Slingshot's blast lands early and 30% harder (11.7, a palm deals 9): " + behind[0].getHealth())));
+        // A normal blast gathers for three ticks; a slung one lands at once, 30% harder.
+        h.runAfterDelay(15, () -> finish(h, cleanup, () -> {
+            float hit = VibeService.streamDamage(com.jayptucker.heroesevolved.progression.PlayerProgressionService.getLevel(p));
+            h.assertTrue(behind[0].getHealth() <= 24 - hit * 1.29F,
+                    "Slingshot's blast lands at once and 30% harder: " + behind[0].getHealth());
+        }));
     }
 
     @GameTest(template = "rewind_empty", batch = "vibe.kit")
@@ -277,8 +279,7 @@ public final class VibeKitGameTests {
         Pillager between = target(h, start.add(0, 0, 4));
         Pillager beyond = target(h, start.add(0, 0, 8.5));
         var cleanup = track(p, between, beyond);
-        step(cleanup, () -> h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, true)
-                == AbilityUseResult.SUCCESS, "A linked breach opens"));
+        step(cleanup, () -> h.assertTrue(VibeBreaches.shiftHold(p), "A linked breach opens"));
         h.runAfterDelay(11, () -> step(cleanup, () -> {
             p.setXRot(0);
             h.assertTrue(VibeBreaches.seam(p, p.getEyePosition(), p.getEyePosition().add(0, 0, 10)) != null,
@@ -319,8 +320,7 @@ public final class VibeKitGameTests {
         Vec3 start = p.position();
         p.setXRot(13);
         var cleanup = track(p);
-        step(cleanup, () -> h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.SECONDARY, true)
-                == AbilityUseResult.SUCCESS, "A linked breach opens"));
+        step(cleanup, () -> h.assertTrue(VibeBreaches.shiftHold(p), "A linked breach opens"));
         h.runAfterDelay(11, () -> p.igniteForSeconds(4));
         h.runAfterDelay(12, () -> p.setPos(start.add(0, 0, 2.35)));
         h.runAfterDelay(14, () -> step(cleanup, () -> {
@@ -411,13 +411,13 @@ public final class VibeKitGameTests {
                     && VibeSight.marked(p, enemy), "Reading a hostile witness marks it");
             p.setXRot(18);
             h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.QUINARY, false) == AbilityUseResult.SUCCESS,
-                    "Frequency Lock casts");
+                    "Rift Fall casts");
         });
-        h.runAfterDelay(VibeGeometry.LOCK_WARNING_TICKS + 2, () -> finish(h, cleanup, () -> {
+        h.runAfterDelay(RiftFall.WARNING + RiftFall.FALL + 4, () -> finish(h, cleanup, () -> {
             var slow = enemy.getEffect(MobEffects.MOVEMENT_SLOWDOWN);
             h.assertTrue(slow != null && slow.getDuration() > 70,
                     "Fixed Point slows a marked enemy for five seconds (an unmarked one: under three)");
-            h.assertTrue(enemy.getHealth() <= 24 - 13, "A marked enemy takes the read bonus from the collapse: " + enemy.getHealth());
+            h.assertTrue(enemy.getHealth() <= 24 - 13, "A marked enemy takes the read bonus from the fall: " + enemy.getHealth());
         }));
     }
 

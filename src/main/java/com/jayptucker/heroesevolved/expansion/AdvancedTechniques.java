@@ -312,7 +312,8 @@ public final class AdvancedTechniques {
 
     private static boolean affectsShot(Perception field, Projectile shot, Vec3 end) {
         ServerPlayer owner = field.owner;
-        if (shot.getOwner() == owner || !active(field)) return false;
+        // Once fired, even the runner's own rounds travel through the slowed world.
+        if (!active(field)) return false;
         return com.jayptucker.heroesevolved.time.TimeVeil.serverWide() || owner.level() == shot.level()
                 && com.jayptucker.heroesevolved.time.ProjectileTimeService.reachesField(shot.position(), end, owner.position(), field.radius);
     }

@@ -45,7 +45,10 @@ import java.util.UUID;
  * Saved in the player's persisted data, so they survive death.
  */
 public final class VibeFrequencies {
-    static final String KEY = "heroesevolved_vibe_frequencies", OLD_ANCHOR = "heroesevolved_vibe_anchor";
+    static final String KEY = "heroesevolved_vibe_frequencies", OLD_ANCHOR = "heroesevolved_vibe_anchor",
+            LAST = "heroesevolved_vibe_last_frequency";
+    /** A pick that means "where the last vision showed" ({@link VibeVisions#spot}), not a slot. */
+    public static final int VISION = -2;
     public static final int MOST = 8, LEVEL_STEP = 4, WORLD_BONUS = 2;
     /** Breach costs a little more stamina the farther it reaches: one per {@code BLOCKS_PER_STAMINA}, capped. */
     static final int BLOCKS_PER_STAMINA = 40, MOST_TRAVEL = 30, WORLD_TRAVEL = 15;
@@ -278,6 +281,36 @@ public final class VibeFrequencies {
     static boolean loaded(ServerLevel level, Frequency frequency) {
         BlockPos base = BlockPos.containing(frequency.feet());
         return level.hasChunksAt(base.offset(-5, -2, -5), base.offset(5, 4, 5));
+    }
+
+    /** The Breach key held down: the same paid press a wheel pick makes, for {@code slot} (or -1, or {@link #VISION}). */
+    static void press(ServerPlayer player, int slot) {
+        cancelPending(player);
+        activatePick(player, slot, false);
+    }
+
+    /** Remembers the frequency a breach last went to (-1: where the viber looked). Saved, so it survives death. */
+    static void remember(ServerPlayer player, int slot) {
+        CompoundTag persisted = player.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG);
+        persisted.putInt(LAST, slot);
+        player.getPersistentData().put(Player.PERSISTED_NBT_TAG, persisted);
+    }
+
+    /** The frequency a breach last went to, or -1 (where the viber looked) if none. */
+    public static int last(ServerPlayer player) {
+        CompoundTag persisted = player.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG);
+        return persisted.contains(LAST) ? persisted.getInt(LAST) : -1;
+    }
+
+    /**
+     * Where a held Breach key goes: what a vision has just shown, else the frequency the breach last used if it can
+     * still be reached from here, else where the viber looks.
+     */
+    static int holdTarget(ServerPlayer player) {
+        if (VibeVisions.spot(player) != null) return VISION;
+        int last = last(player);
+        if (last < 0 || last >= slots(player)) return -1;
+        return refusal(player, get(player, last)) == null ? last : -1;
     }
 
     private static void activatePick(ServerPlayer player, int slot, boolean glimpse) {

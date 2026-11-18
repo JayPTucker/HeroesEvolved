@@ -142,14 +142,27 @@ public final class VibeBreaches {
         }
     }
 
+    private record Ticket(ServerLevel level, ChunkPos chunk) {}
+
     private static final class Gate {
         final ServerPlayer owner;
-        final Mouth entry, exit;
+        /** The near mouth turns with the viber's look while a keyed breach is still opening, so neither mouth is final. */
+        Mouth entry, exit;
         final Kind kind;
         final boolean sanctuary;
         final long started;
-        final int lifetime;
-        final View[] views;
+        final int lifetime, id;
+        /** How long the breach takes to open: a keyed breach is channelled ({@link VibeGeometry#channelTicks}). */
+        int channel = VibeGeometry.BREACH_OPEN_TICKS;
+        /** Opened from the Breach key (held or from the wheel): it is channelled from the palm and follows the look. */
+        boolean keyed;
+        /** Held open by the key: letting go before it opens collapses it (and gives the stamina back). */
+        boolean held;
+        double paid;
+        /** Where the viber looked when it began: a keyed aimed breach re-aims its exit only if that changed. */
+        Vec3 look = Vec3.ZERO;
+        View[] views;
+        final List<Ticket> tickets = new ArrayList<>();
         final Map<UUID, Approach> previous = new HashMap<>();
         final Map<UUID, Long> dropped = new HashMap<>();
         long opened = -1;
@@ -163,21 +176,56 @@ public final class VibeBreaches {
             started = entry.level().getGameTime();
             lifetime = (kind == Kind.GLIMPSE ? GLIMPSE_LIFETIME : kind == Kind.FREQUENCY ? FAR_LIFETIME : LIFETIME)
                     * (com.jayptucker.heroesevolved.amplify.Amplification.surged(owner) ? 2 : 1);
-            int id = ++serial & 0x3FFFFFFF;
-            views = new View[]{new View(id * 2, entry, exit), new View(id * 2 + 1, exit, entry)};
+            id = ++serial & 0x3FFFFFFF;
+            views = views();
         }
+
+        View[] views() { return new View[]{new View(id * 2, entry, exit), new View(id * 2 + 1, exit, entry)}; }
 
         boolean flat() { return entry.flat(); }
 
+        /** Keeps both mouths' chunks loaded. Each ticket is remembered, so the ones released are exactly those added. */
         void ticket(boolean open) {
-            ticket(entry, open);
-            if (entry.level() != exit.level() || !entry.chunk().equals(exit.chunk())) ticket(exit, open);
+            if (open) {
+                hold(entry);
+                hold(exit);
+                return;
+            }
+            for (Ticket ticket : tickets) VibeBreaches.ticket(ticket.level(), ticket.chunk(), owner.getUUID(), false);
+            tickets.clear();
         }
 
-        private void ticket(Mouth mouth, boolean open) {
-            VibeBreaches.ticket(mouth.level(), mouth.chunk(), owner.getUUID(), open);
+        void hold(Mouth mouth) {
+            Ticket ticket = new Ticket(mouth.level(), mouth.chunk());
+            if (tickets.contains(ticket)) return;
+            tickets.add(ticket);
+            VibeBreaches.ticket(ticket.level(), ticket.chunk(), owner.getUUID(), true);
         }
     }
+
+    /** A press of the Breach key, until it is let go: a tap opens the wheel, a hold channels a breach. */
+    private static final class Press {
+        /** Kept, not looked up: game-test players aren't in the player list. */
+        final ServerPlayer player;
+        final long at;
+        final boolean shift;
+        /** The press already did something (closed a breach): its release does nothing. */
+        final boolean handled;
+        boolean fired;
+
+        Press(ServerPlayer player, long at, boolean shift, boolean handled) {
+            this.player = player;
+            this.at = at;
+            this.shift = shift;
+            this.handled = handled;
+        }
+    }
+
+    /** How long the Breach key must be held before it starts channelling a breach instead of opening the wheel. */
+    public static final int HOLD_TICKS = 5;
+    private static final Map<UUID, Press> PRESSES = new HashMap<>();
+    /** True while the Breach key's own paid press runs, so the breach it opens is channelled. */
+    private static boolean keyed;
 
     private VibeBreaches() {}
 
@@ -188,26 +236,137 @@ public final class VibeBreaches {
     }
 
     /**
-     * The Breach key's paid press. A pick from the frequency wheel opens a breach there (or, for -1, where you look);
-     * a press with Shift held opens one where you look at once, and a borrowed Vibe (which has no frequencies) always
-     * does.
+     * The Breach key's paid press, which always comes from a pick: a slot on the frequency wheel, -1 for where you
+     * look, or {@link VibeFrequencies#VISION} for what a vision just showed. A hold picks for itself
+     * ({@link #fire}). The breach it opens is channelled from the palm and opens slowly.
      */
     public static boolean breach(AbilityUseContext context) {
         ServerPlayer player = context.player();
         Integer pick = VibeFrequencies.picked(player, false);
-        if (pick == null || pick < 0) return open(player, false);
-        return openTo(player, pick, Kind.FREQUENCY);
+        boolean was = keyed;
+        keyed = true;
+        try {
+            boolean opened;
+            if (pick == null || pick == -1) opened = open(player, false);
+            else if (pick == VibeFrequencies.VISION) opened = openToVision(player);
+            else opened = openTo(player, pick, Kind.FREQUENCY);
+            if (opened && pick != null && pick != VibeFrequencies.VISION) VibeFrequencies.remember(player, pick);
+            return opened;
+        } finally {
+            keyed = was;
+        }
     }
 
     /**
-     * The Breach key's free press: close an open breach, or open the frequency wheel. False lets the press go on to
-     * {@link #breach} (Shift held, a pick from the wheel, or a borrowed Vibe).
+     * The Breach key going down, always free. A press while a breach is open (or a destination is loading) closes it.
+     * Otherwise the press is remembered: let go quickly and the wheel opens ({@link #breachRelease}); keep holding for
+     * {@link #HOLD_TICKS} and a breach starts to channel toward the last frequency used ({@link #fire}). False lets a
+     * wheel pick go on to {@link #breach}.
      */
     public static boolean breachFollowUp(AbilityUseContext context) {
         ServerPlayer player = context.player();
         if (VibeFrequencies.picked(player, false) != null) return false;
-        if (close(player)) return true;
-        return !context.modifierHeld() && VibeFrequencies.wheel(player, com.jayptucker.heroesevolved.network.FrequencyListPayload.BREACH);
+        long now = player.serverLevel().getGameTime();
+        if (close(player)) {
+            PRESSES.put(player.getUUID(), new Press(player, now, context.modifierHeld(), true));
+            return true;
+        }
+        if (!canOpen(player)) return false;
+        PRESSES.put(player.getUUID(), new Press(player, now, context.modifierHeld(), false));
+        return true;
+    }
+
+    /** The Breach key let go: a tap opens the wheel, and a held breach that hasn't opened yet collapses. */
+    public static void breachRelease(AbilityUseContext context) {
+        ServerPlayer player = context.player();
+        Press press = PRESSES.remove(player.getUUID());
+        if (press == null || press.handled) return;
+        if (!press.fired) {
+            // A borrowed Vibe has no wheel: a tap opens where you look, as a hold does.
+            if (!VibeFrequencies.wheel(player, com.jayptucker.heroesevolved.network.FrequencyListPayload.BREACH)) fire(player, press);
+            return;
+        }
+        if (VibeFrequencies.cancelPending(player)) {
+            fail(player, "let_go");
+            return;
+        }
+        Gate gate = GATES.get(player.getUUID());
+        if (gate == null || !gate.held || gate.opened >= 0) return;
+        // Let go too soon: the tear pinches shut, and nothing was spent.
+        double paid = gate.paid;
+        close(player);
+        if (paid > 0) com.jayptucker.heroesevolved.energy.PlayerEnergyService.restore(player, paid);
+        com.jayptucker.heroesevolved.cooldown.CooldownService.reset(player,
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "vibe_breach"));
+        com.jayptucker.heroesevolved.network.PlayerPowerSyncService.sync(player);
+        fail(player, "let_go");
+    }
+
+    /**
+     * A hold long enough to be one: open toward what a vision just showed, else the last frequency the breach used, else
+     * where you look. Shift (or a borrowed Vibe, with no frequencies) always opens where you look. The breach goes
+     * through the key's normal paid press, so stamina, cooldown and distance cost apply.
+     */
+    private static void fire(ServerPlayer player, Press press) {
+        press.fired = true;
+        int target = press.shift || !VibeService.nativePower(player) ? -1 : VibeFrequencies.holdTarget(player);
+        double before = com.jayptucker.heroesevolved.energy.PlayerEnergyService.getStamina(player);
+        VibeFrequencies.press(player, target);
+        Gate gate = GATES.get(player.getUUID());
+        if (gate != null && gate.opened < 0)
+            gate.paid = Math.max(0, before - com.jayptucker.heroesevolved.energy.PlayerEnergyService.getStamina(player));
+    }
+
+    /** Players whose breaches open as fast as an unkeyed one: tests that aren't about the channel. */
+    private static final Set<UUID> HURRIED = new HashSet<>();
+
+    /** Tests: this player's keyed breaches (now and later) open in {@link VibeGeometry#BREACH_OPEN_TICKS}. */
+    static void hurry(ServerPlayer player) {
+        HURRIED.add(player.getUUID());
+        Gate gate = GATES.get(player.getUUID());
+        if (gate != null && gate.opened < 0) gate.channel = Math.min(gate.channel, VibeGeometry.BREACH_OPEN_TICKS);
+    }
+
+    /** Tests: the Breach key, pressed with Shift and held long enough, opening where the viber looks. True if it opened. */
+    static boolean shiftHold(ServerPlayer player) {
+        if (com.jayptucker.heroesevolved.ability.service.AbilityUseService.activateAssignedAction(player,
+                com.jayptucker.heroesevolved.ability.AbilitySlot.SECONDARY, true)
+                != com.jayptucker.heroesevolved.ability.AbilityUseResult.SUCCESS) return false;
+        hurry(player);
+        holdNow(player);
+        return isOpen(player);
+    }
+
+    /** Tests: the press waiting on the Breach key has been held long enough. */
+    static void holdNow(ServerPlayer player) {
+        Press press = PRESSES.get(player.getUUID());
+        if (press != null && !press.handled && !press.fired) fire(player, press);
+    }
+
+    /** Tests: the Breach key let go. */
+    static void letGo(ServerPlayer player) {
+        breachRelease(new AbilityUseContext(player, com.jayptucker.heroesevolved.ability.registry.ModAbilities.VIBE_ID,
+                Math.max(1, PlayerProgressionService.getLevel(player)), false));
+    }
+
+    /** Package-visible for tests: whether the Breach key is down and has started a breach. */
+    static boolean holding(ServerPlayer player) {
+        Press press = PRESSES.get(player.getUUID());
+        return press != null && press.fired;
+    }
+
+    /** How far a channelled breach has opened, 0 to 1 (1 once open), or -1 with none. Package-visible for tests. */
+    static float opening(ServerPlayer player) {
+        Gate gate = GATES.get(player.getUUID());
+        if (gate == null) return -1;
+        if (gate.opened >= 0) return 1;
+        return Mth.clamp((gate.entry.level().getGameTime() - gate.started) / (float) gate.channel, 0, 1);
+    }
+
+    /** Package-visible for tests: which way the near mouth faces. */
+    static Vec3 facing(ServerPlayer player) {
+        Gate gate = GATES.get(player.getUUID());
+        return gate == null ? null : gate.entry.direction();
     }
 
     /** Glimpse's free press: close an open window, or open the wheel to choose where to look. */
@@ -227,14 +386,16 @@ public final class VibeBreaches {
     /** The extra stamina a press will cost: the distance to a frequency picked on the wheel. */
     public static int travelCost(AbilityUseContext context) {
         Integer pick = VibeFrequencies.picked(context.player(), false);
-        if (pick == null || pick < 0 || com.jayptucker.heroesevolved.amplify.Amplification.surged(context.player())) return 0;
-        var frequency = VibeFrequencies.get(context.player(), pick);
+        if (pick == null || pick == -1 || com.jayptucker.heroesevolved.amplify.Amplification.surged(context.player())) return 0;
+        var frequency = pick == VibeFrequencies.VISION ? VibeVisions.spot(context.player()) : VibeFrequencies.get(context.player(), pick);
         return frequency == null ? 0 : VibeFrequencies.travel(context.player(), frequency);
     }
 
     public static boolean isOpen(ServerPlayer player) { return GATES.containsKey(player.getUUID()); }
 
     static boolean hasGates() { return !GATES.isEmpty(); }
+
+    static final float FREQUENCY_TILT = 30;
 
     /** Looking down steeply opens the near mouth in the ground under the viber's feet. */
     static boolean downward(ServerPlayer player) { return player.getXRot() >= FLOOR_PITCH; }
@@ -244,7 +405,15 @@ public final class VibeBreaches {
         if (downward(player) && player.onGround()) {
             return Mouth.flat(player.serverLevel(), player.position(), player.getYRot());
         }
-        Vec3 normal = aim(player);
+        return upright(player, 89.99F);
+    }
+
+    /**
+     * A near mouth facing along the look, tilted to its pitch (at most {@code tilt}): on the ground two steps ahead, or
+     * in the air. A frequency's mouth tilts at most {@link #FREQUENCY_TILT}, so it is always one you can walk into.
+     */
+    private static Mouth upright(ServerPlayer player, float tilt) {
+        Vec3 normal = Vec3.directionFromRotation(Mth.clamp(player.getXRot(), -tilt, tilt), player.getYRot());
         if (player.onGround() && normal.y <= .15) {
             Vec3 foot = player.position().add(Vec3.directionFromRotation(0, player.getYRot()).scale(2));
             Mouth grounded = Mouth.grounded(player.serverLevel(), foot, normal, player.getYRot());
@@ -277,10 +446,7 @@ public final class VibeBreaches {
         var frequency = VibeFrequencies.get(player, slot);
         String refused = VibeFrequencies.refusal(player, frequency);
         if (refused != null) return fail(player, refused);
-        Vec3 forward = Vec3.directionFromRotation(0, player.getYRot());
-        Mouth entry = player.onGround()
-                ? Mouth.upright(player.serverLevel(), player.position().add(forward.scale(2)), forward)
-                : Mouth.floating(player, player.getEyePosition().add(forward.scale(2)), forward);
+        Mouth entry = upright(player, FREQUENCY_TILT);
         if (!entryFits(player, entry)) return fail(player, "blocked");
         ServerLevel target = VibeFrequencies.world(player, frequency);
         if (target == null) return fail(player, "restricted");
@@ -292,6 +458,22 @@ public final class VibeBreaches {
         Mouth exit = frequencyExit(player, target, frequency);
         if (exit == null) return fail(player, "no_exit");
         return begin(player, new Gate(player, entry, exit, kind, false));
+    }
+
+    /** A breach to the place a vision just showed ({@link VibeVisions#spot}): beside the ally, or into the village. */
+    private static boolean openToVision(ServerPlayer player) {
+        if (!canOpen(player) || GATES.containsKey(player.getUUID())) return false;
+        var spot = VibeVisions.spot(player);
+        if (spot == null) return fail(player, "no_frequency");
+        ServerLevel target = VibeFrequencies.world(player, spot);
+        if (target == null || target != player.serverLevel()) return fail(player, "restricted");
+        if (spot.feet().distanceToSqr(player.position()) < 25) return fail(player, "at_frequency");
+        if (!VibeFrequencies.loaded(target, spot)) return fail(player, "no_exit");
+        Mouth entry = upright(player, FREQUENCY_TILT);
+        if (!entryFits(player, entry)) return fail(player, "blocked");
+        Mouth exit = frequencyExit(player, target, spot);
+        if (exit == null) return fail(player, "no_exit");
+        return begin(player, new Gate(player, entry, exit, Kind.FREQUENCY, false));
     }
 
     private static Mouth frequencyExit(ServerPlayer player, ServerLevel level, VibeFrequencies.Frequency frequency) {
@@ -397,12 +579,56 @@ public final class VibeBreaches {
         VibeFrequencies.cancelPending(player);
         GATES.put(player.getUUID(), gate);
         gate.ticket(true);
+        if (keyed) {
+            // Cisco's way: a vibe blast leaves the palm and tears the breach open slowly where he looks.
+            gate.keyed = true;
+            gate.held = holding(player);
+            gate.look = player.getLookAngle();
+            gate.channel = HURRIED.contains(player.getUUID()) ? VibeGeometry.BREACH_OPEN_TICKS
+                    : VibeGeometry.channelTicks(PlayerProgressionService.getLevel(player));
+            ArmPosePayload.show(player, ArmPose.VIBE_CHANNEL, 6);
+            channel(gate, gate.started);
+            StyleOps.sound(gate.entry.level(), gate.entry.center(), ModSounds.VIBE_BREACH.get(), .85F,
+                    gate.kind == Kind.GLIMPSE ? 1.3F : 1.02F);
+            StyleOps.sound(gate.entry.level(), gate.entry.center(), ModSounds.VIBE_PULSE.get(), .7F, .62F);
+            return true;
+        }
         ArmPosePayload.show(player, ArmPose.VIBE_OPEN, 18);
         SetPiecePayload.send(gate.entry.level(), Piece.VIBE_BREACH_SEED, gate.entry.center().subtract(gate.entry.direction()),
                 gate.entry.center(), 1, player);
         StyleOps.sound(gate.entry.level(), gate.entry.center(), ModSounds.VIBE_BREACH.get(), .85F,
                 gate.kind == Kind.GLIMPSE ? 1.7F : 1.42F);
         return true;
+    }
+
+    /**
+     * One beat of a channelled opening: the blast from the palm and the tear growing at the end of it. Re-sent every two
+     * ticks as a short piece bound to the viber (so it leaves the hand they see); the newest copy takes over from the
+     * last. Its scale is 1 plus how far the tear has opened, and its seed the whole channel's length, so the client
+     * grows it smoothly between copies.
+     */
+    private static void channel(Gate gate, long now) {
+        float progress = Mth.clamp((now - gate.started) / (float) gate.channel, 0, 1);
+        Mouth mouth = gate.entry;
+        var payload = new SetPiecePayload(Piece.VIBE_BREACH_CHANNEL.ordinal(), mouth.center(),
+                mouth.center().add(mouth.direction()), 1 + progress, gate.owner.getId(), gate.channel, 0);
+        for (ServerPlayer viewer : mouth.level().players())
+            if (viewer.position().distanceToSqr(mouth.center()) <= 128 * 128
+                    && !com.jayptucker.heroesevolved.time.TimeVeil.masks(viewer, mouth.center()))
+                PacketDistributor.sendToPlayer(viewer, payload);
+        if (gate.owner.level() == mouth.level() && !mouth.level().players().contains(gate.owner))
+            PacketDistributor.sendToPlayer(gate.owner, payload);
+    }
+
+    /** While a keyed breach opens, its near mouth turns with the viber's look (a floor breach stays in the floor). */
+    private static void follow(Gate gate) {
+        if (gate.flat() || gate.owner.level() != gate.entry.level()) return;
+        Mouth next = upright(gate.owner, gate.kind == Kind.AIMED ? 89.99F : FREQUENCY_TILT);
+        if (next.center().distanceToSqr(gate.entry.center()) < 1e-6 && next.direction().distanceToSqr(gate.entry.direction()) < 1e-6) return;
+        if (entryFits(gate.owner, next)) {
+            gate.entry = next;
+            gate.hold(next);
+        }
     }
 
     /** Where a frequency can be tuned: on the ground where the viber stands, with room for a mouth. Null (and told) if not. */
@@ -512,6 +738,17 @@ public final class VibeBreaches {
 
     static void tick(MinecraftServer server) {
         VibeFrequencies.tick(server);
+        for (var entry : List.copyOf(PRESSES.entrySet())) {
+            Press press = entry.getValue();
+            if (press.handled || press.fired) continue;
+            ServerPlayer player = press.player;
+            if (player.server != server) continue;
+            if (player.isRemoved() || !canOpen(player)) {
+                PRESSES.remove(entry.getKey());
+                continue;
+            }
+            if (player.serverLevel().getGameTime() - press.at >= HOLD_TICKS) fire(player, press);
+        }
         for (Gate gate : List.copyOf(GATES.values())) {
             if (gate.owner.server != server) continue;
             long now = gate.entry.level().getGameTime();
@@ -522,7 +759,21 @@ public final class VibeBreaches {
                 continue;
             }
             if (gate.opened < 0) {
-                if (now - gate.started < VibeGeometry.BREACH_OPEN_TICKS) continue;
+                if (gate.keyed && now - gate.started <= gate.channel) {
+                    // Channelling: the viber has to keep at it, and the tear turns with their look.
+                    if (!canOpen(gate.owner) || gate.owner.level() != gate.entry.level()) {
+                        close(gate.owner);
+                        continue;
+                    }
+                    follow(gate);
+                    if ((now - gate.started) % 2 == 0) channel(gate, now);
+                    if ((now - gate.started) % 4 == 0) ArmPosePayload.show(gate.owner, ArmPose.VIBE_CHANNEL, 6);
+                    if ((now - gate.started) % 6 == 3)
+                        StyleOps.sound(gate.entry.level(), gate.entry.center(), SoundEvents.AMETHYST_BLOCK_RESONATE, .5F,
+                                .7F + .9F * (now - gate.started) / gate.channel);
+                    if (now - gate.started < gate.channel) continue;
+                }
+                if (now - gate.started < gate.channel) continue;
                 if (!gate.entry.level().isPositionEntityTicking(BlockPos.containing(gate.entry.feet()))
                         || !gate.exit.level().isPositionEntityTicking(BlockPos.containing(gate.exit.feet()))) {
                     if (now - gate.started < LOAD_TIMEOUT) continue;
@@ -530,6 +781,15 @@ public final class VibeBreaches {
                     close(gate.owner);
                     continue;
                 }
+                if (gate.keyed && gate.kind == Kind.AIMED && !gate.flat() && gate.owner.getLookAngle().dot(gate.look) < .999) {
+                    // The tear turned as it opened: the far mouth goes where the viber looks now.
+                    Mouth exit = aimedExit(gate.owner, gate.entry, gate.sanctuary);
+                    if (exit != null) {
+                        gate.exit = exit;
+                        gate.hold(exit);
+                    }
+                }
+                gate.views = gate.views();
                 boolean entryClear = gate.flat() ? safe(gate.owner, gate.entry, gate.entry.feet()) : exitFits(gate.owner, gate.entry);
                 if (!entryClear || !exitFits(gate.owner, gate.exit)) {
                     fail(gate.owner, "no_exit");
@@ -539,11 +799,13 @@ public final class VibeBreaches {
                 gate.opened = now;
                 gate.entry.level().resetEmptyTime();
                 gate.exit.level().resetEmptyTime();
-                // Each mouth shows the terrain round the other one.
+                // Each mouth shows the terrain round the other one. A channelled mouth is already open: it only flares.
                 for (Mouth mouth : List.of(gate.entry, gate.exit)) {
-                    show(mouth, Piece.VIBE_BREACH_ARRIVE);
+                    SetPiecePayload.send(mouth.level(), Piece.VIBE_BREACH_ARRIVE, mouth.center(), mouth.center().add(mouth.direction()),
+                            gate.keyed && mouth == gate.entry ? 2 : 1, null);
                     StyleOps.sound(mouth.level(), mouth.center(), SoundEvents.AMETHYST_BLOCK_CHIME, .44F, 1.65F);
                 }
+                if (gate.keyed) ArmPosePayload.show(gate.owner, ArmPose.VIBE_OPEN, 12);
             }
             if ((now - gate.opened) % 10 == 0) {
                 boolean obstructed = gate.flat()
@@ -934,7 +1196,14 @@ public final class VibeBreaches {
         return false;
     }
 
+    static void dropPress(ServerPlayer player) {
+        PRESSES.remove(player.getUUID());
+        HURRIED.remove(player.getUUID());
+    }
+
     static void clear() {
+        PRESSES.clear();
+        HURRIED.clear();
         for (Gate gate : List.copyOf(GATES.values())) close(gate.owner);
         BreachVoiceRoutes.clear();
         CROSSING.clear();

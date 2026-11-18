@@ -185,6 +185,15 @@ Eclipse suppression (totality only) remains authoritative. Power removal, logout
 dimension travel, and server shutdown cancel active sequences and clear poses.
 An intro acquired while visiting the city waits until the visit ends.
 
+## Radioactive recovery
+
+The radioactive awakening uses Critical Mass's charge visuals and radiation hazards.
+After its blast carves the crater, the owner teleports to the floor, with no pillar
+left beneath them, and lies down for seven seconds. The view stays in first person
+as their eyes blink open and shut and their head slowly steadies. Controls, pose and
+the previous camera mode return when recovery ends or the intro is interrupted.
+See [Induced Radioactivity](induced-radioactivity.md#awakening-and-stress).
+
 ## Quake terrain behaviour
 
 This is actual block destruction, not a cosmetic explosion. The advancing sphere

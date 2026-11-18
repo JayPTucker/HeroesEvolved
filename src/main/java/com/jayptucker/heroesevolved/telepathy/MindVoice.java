@@ -55,11 +55,12 @@ import java.util.Arrays;
 @ForgeVoicechatPlugin
 public final class MindVoice implements VoicechatPlugin {
     static final String CATEGORY = "telepathy";
-    private static final String BREACH_CATEGORY = "breach";
+    private static final String BREACH_CATEGORY = "breach", HOLOGRAM_CATEGORY = "vibe_hologram";
     private static volatile boolean broken;
     private static volatile boolean breachBroken;
     private static final Map<UUID, UUID> FAR_CHANNELS = new ConcurrentHashMap<>(), HEAD_CHANNELS = new ConcurrentHashMap<>();
-    private static final Map<UUID, UUID> BREACH_CHANNELS = new ConcurrentHashMap<>();
+    private static final Map<UUID, UUID> BREACH_CHANNELS = new ConcurrentHashMap<>(), HOLOGRAM_CHANNELS = new ConcurrentHashMap<>();
+    private static volatile boolean hologramBroken;
     /** Each speaker's codecs and distortion, kept while they speak into minds. */
     private static final Map<UUID, Head> HEADS = new ConcurrentHashMap<>();
     private static final TemporalAudio TEMPORAL = new TemporalAudio();
@@ -91,6 +92,7 @@ public final class MindVoice implements VoicechatPlugin {
             Head head = HEADS.remove(event.getPlayerUuid());
             if (head != null) synchronized (head) { head.close(); }
             BREACH_CHANNELS.remove(event.getPlayerUuid());
+            HOLOGRAM_CHANNELS.remove(event.getPlayerUuid());
         });
         // Ahead of Simple Radio (priority 0): a frozen mouth must never enter a transmitter's buffer.
         registration.registerEvent(MicrophonePacketEvent.class, event -> {
@@ -98,6 +100,7 @@ public final class MindVoice implements VoicechatPlugin {
             if (sender != null && sender.getPlayer() != null && TemporalVoiceState.frozen(sender.getPlayer().getUuid())) event.cancel();
         }, 1000);
         registration.registerEvent(MicrophonePacketEvent.class, this::microphone);
+        registration.registerEvent(MicrophonePacketEvent.class, this::hologram);
         // These are separate concrete events in SVC, not a polymorphic SoundPacketEvent subscription.
         registration.registerEvent(EntitySoundPacketEvent.class, TEMPORAL::outgoing, -1000);
         registration.registerEvent(LocationalSoundPacketEvent.class, TEMPORAL::outgoing, -1000);
@@ -129,6 +132,54 @@ public final class MindVoice implements VoicechatPlugin {
         } catch (Throwable t) {
             failBreach(t);
         }
+        try {
+            VoicechatServerApi api = event.getVoicechat();
+            hologramBroken = false;
+            api.registerVolumeCategory(api.volumeCategoryBuilder().setId(HOLOGRAM_CATEGORY).setName("Vibe Hologram")
+                    .setDescription("A viber who appears to you in a vision").build());
+        } catch (Throwable t) {
+            failHologram(t);
+        }
+    }
+
+    /**
+     * A viber projecting a hologram during a vision is a spectator, whom Simple Voice Chat doesn't let ordinary players
+     * hear; their voice is carried to the players near the hologram, as if from it ({@code vibe/VibeVisions#voices}).
+     * Closed groups stay private, and whispers carry half as far.
+     */
+    private void hologram(MicrophonePacketEvent event) {
+        if (hologramBroken || event.isCancelled()) return;
+        try {
+            VoicechatConnection sender = event.getSenderConnection();
+            if (sender == null || sender.getPlayer() == null) return;
+            UUID speaker = sender.getPlayer().getUuid();
+            var routes = com.jayptucker.heroesevolved.vibe.VibeVisions.voices(speaker);
+            if (routes.isEmpty()) return;
+            Group group = sender.getGroup();
+            if (group != null && group.getType() != Group.Type.OPEN) return;
+            VoicechatServerApi voice = event.getVoicechat();
+            MicrophonePacket packet = event.getPacket();
+            for (var route : routes) {
+                if (TemporalVoiceState.blocks(speaker, route.listener())) continue;
+                VoicechatConnection to = voice.getConnectionOf(route.listener());
+                if (to == null || !to.isConnected() || to.isDisabled()) continue;
+                Group theirs = to.getGroup();
+                if (theirs != null && (theirs.getType() == Group.Type.ISOLATED || group != null && theirs.getId().equals(group.getId()))) continue;
+                var at = route.position();
+                voice.sendLocationalSoundPacketTo(to, packet.locationalSoundPacketBuilder()
+                        .channelId(channel(HOLOGRAM_CHANNELS, speaker, HOLOGRAM_CATEGORY))
+                        .position(voice.createPosition(at.x, at.y, at.z))
+                        .distance((float) (packet.isWhispering() ? route.range() / 2 : route.range()))
+                        .category(HOLOGRAM_CATEGORY).build());
+            }
+        } catch (Throwable t) {
+            failHologram(t);
+        }
+    }
+
+    private static void failHologram(Throwable failure) {
+        if (!hologramBroken) HeroesEvolved.LOGGER.warn("Simple Voice Chat is unable to carry a Vibe hologram's voice", failure);
+        hologramBroken = true;
     }
 
     private void breach(VoiceDistanceEvent event) {

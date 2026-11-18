@@ -12,11 +12,16 @@ import java.util.Map;
 public final class VibeAbility implements Ability {
     private static final AbilityDefinition DEFINITION = new AbilityDefinition(0, 0, 5, AbilityActivationType.INSTANT);
     private static final Map<AbilitySlot, AbilityAction> ACTIONS = Map.of(
-            AbilitySlot.PRIMARY, SimpleAction.builder("vibe_blast", 1).cost(() -> 9, () -> 22)
-                    .activate(c -> VibeService.blast(c, VibeService.Blast.PALM)).build(),
-            // Press: the frequency wheel (free). Shift: a breach where you look. Press while open: close it.
+            // Held: a steady blast from the palm, draining stamina until the key comes up.
+            AbilitySlot.PRIMARY, SimpleAction.builder("vibe_blast", 1).cost(() -> 4, () -> 10)
+                    .followUp(c -> VibeService.endStream(c.player()))
+                    .release(c -> VibeService.endStream(c.player()))
+                    .activate(VibeService::stream).build(),
+            // Tap: the frequency wheel (free). Hold: channel a breach to the last frequency used (Shift: where you
+            // look). Press while open: close it.
             AbilitySlot.SECONDARY, SimpleAction.builder("vibe_breach", 2).cost(() -> 20, () -> 130)
                     .followUp(VibeBreaches::breachFollowUp)
+                    .release(VibeBreaches::breachRelease)
                     .travel(VibeBreaches::travelCost)
                     .activate(VibeBreaches::breach).build(),
             AbilitySlot.TERTIARY, SimpleAction.builder("vibe_read", 3).cost(() -> 12, () -> 100)
@@ -25,8 +30,9 @@ public final class VibeAbility implements Ability {
                     .followUp(c -> !c.modifierHeld() && VibeService.returnFire(c))
                     .deactivate(c -> VibeService.closeGuard(c.player()))
                     .activate(c -> VibeService.guard(c.player(), false)).build(),
+            // Rift Fall (the id is Frequency Lock's, so loadouts and the balance table carry over).
             AbilitySlot.QUINARY, SimpleAction.builder("vibe_frequency_lock", 5).cost(() -> 42, () -> 340)
-                    .activate(c -> VibeService.lock(c, false)).build());
+                    .activate(com.jayptucker.heroesevolved.vibe.RiftFall::cast).build());
 
     @Override public AbilityDefinition definition() { return DEFINITION; }
     @Override public Map<AbilitySlot, AbilityAction> actions() { return ACTIONS; }

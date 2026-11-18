@@ -160,7 +160,13 @@ public final class VibePreview {
         System.out.println("VIBE_PREVIEW " + slot + " " + AbilityUseService.activateAssignedAction(player, slot, false));
     }
 
-    /** Shift + Breach: a breach where the player looks (a plain press opens the frequency wheel). */
+    /** A tap of Breach: down and straight back up, which opens the frequency wheel. */
+    private static void tap(ServerPlayer player) {
+        cast(player, AbilitySlot.SECONDARY);
+        AbilityUseService.releaseAssignedAction(player, AbilitySlot.SECONDARY);
+    }
+
+    /** Shift + Breach, held (never let go): five ticks later a breach starts to channel open where the player looks. */
     private static void aim(ServerPlayer player) {
         System.out.println("VIBE_PREVIEW aimed breach " + AbilityUseService.activateAssignedAction(player, AbilitySlot.SECONDARY, true));
     }
@@ -209,6 +215,8 @@ public final class VibePreview {
                 mc.options.setCameraType(CameraType.FIRST_PERSON);
                 PacketDistributor.sendToServer(new ActionInputPayload(2, "", true, false));
             }
+            // A tap: the wheel opens when the key comes back up (a hold would channel a breach instead).
+            case 160 -> PacketDistributor.sendToServer(new ActionInputPayload(2, "", false, false));
             case 165 -> {
                 if (mc.screen instanceof FrequencyWheelScreen wheel) {
                     wheel.mouseClicked(wheel.width / 2, wheel.height / 2 - Math.min(65, wheel.height / 4),
@@ -248,11 +256,12 @@ public final class VibePreview {
                 });
             }
             case 221 -> PacketDistributor.sendToServer(new ActionInputPayload(2, "", true, true));
-            case 224 -> server(mc, p -> p.teleportTo(p.serverLevel(), p.getX(), p.getY(), p.getZ() - 1.65, 0, 47));
+            // Held: the floor breach starts five ticks later, then the camera steps back to look into it.
+            case 228 -> server(mc, p -> p.teleportTo(p.serverLevel(), p.getX(), p.getY(), p.getZ() - 1.65, 0, 47));
             case 251 -> capture = "40-breach-underfoot.png";
             case 262 -> server(mc, p -> reset(p, 220, 0, -42, 6000));
             case 270 -> PacketDistributor.sendToServer(new ActionInputPayload(2, "", true, true));
-            case 294 -> capture = "41-breach-upward.png";
+            case 297 -> capture = "41-breach-upward.png";
             case 299 -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
             case 305 -> capture = "42-breach-upward-third-person.png";
             case 313 -> PreviewQuiet.quit();
@@ -323,7 +332,7 @@ public final class VibePreview {
             }
             case 254 -> server(mc, p -> aim(p));
             case 259 -> capture = "04-breach-forming.png";
-            case 275 -> capture = "05-linked-breaches.png";
+            case 278 -> capture = "05-linked-breaches.png";
             case 279 -> mc.options.setCameraType(CameraType.FIRST_PERSON);
             case 281 -> capture = "06-breach-first-person.png";
             case 285 -> server(mc, p -> p.teleportTo(p.getX(), p.getY(), p.getZ() + 2.3));
@@ -435,7 +444,7 @@ public final class VibePreview {
             case 1048 -> capture = "26-awakening-rescue.png";
             // ---------------------------------------------------------- passives that link two moves
             case 1070 -> server(mc, p -> reset(p, 430, 0, 11, 12800));
-            case 1090 -> server(mc, p -> aim(p));
+            case 1080 -> server(mc, p -> aim(p));
             case 1104 -> server(mc, p -> {
                 p.teleportTo(p.serverLevel(), p.getX(), p.getY(), p.getZ(), 0, 0);
                 actor(p, .3, 11);
@@ -481,7 +490,7 @@ public final class VibePreview {
                 guard.setItemSlot(EquipmentSlot.MAINHAND, Items.CROSSBOW.getDefaultInstance());
                 reset(p, 470, 0, 0, 6000);
             });
-            case 1215 -> server(mc, p -> cast(p, AbilitySlot.SECONDARY));
+            case 1215 -> server(mc, p -> tap(p));
             case 1219 -> { if (mc.screen instanceof FrequencyWheelScreen wheel) wheel.pin(0); }
             case 1222 -> capture = "31-frequency-wheel.png";
             case 1223 -> { if (mc.screen instanceof FrequencyWheelScreen wheel) wheel.keyPressed(GLFW.GLFW_KEY_R, 0, 0); }

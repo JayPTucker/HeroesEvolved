@@ -2,7 +2,6 @@ package com.jayptucker.heroesevolved.vibe;
 
 import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.Targeting;
-import com.jayptucker.heroesevolved.effects.PrivateGlow;
 import com.jayptucker.heroesevolved.network.ArmPosePayload;
 import com.jayptucker.heroesevolved.network.ScreenTintPayload;
 import com.jayptucker.heroesevolved.network.SetPiecePayload;
@@ -14,7 +13,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.Vec3;
 
@@ -32,10 +35,13 @@ public final class VibeSight {
     private static final int MARK_TICKS = 120;
     static final int RESIDUE_TICKS = 120;
     private record Trace(ServerLevel world, UUID attacker, UUID victim, Vec3 from, Vec3 to,
-                         Component attackerName, Component victimName, long tick) {}
+                         Component attackerName, Component victimName, long tick,
+                         EntityType<?> attackerType, EntityType<?> victimType) {}
     private record Mark(ServerLevel world, long until) {}
     private static final Deque<Trace> TRACES = new ArrayDeque<>();
     private static final Map<UUID, Map<UUID, Mark>> MARKS = new HashMap<>();
+    /** How many blows each viber's last read replayed (tests). */
+    private static final Map<UUID, Integer> REPLAYED = new HashMap<>();
 
     private VibeSight() {}
 
@@ -44,11 +50,14 @@ public final class VibeSight {
         long now = world.getGameTime();
         if (TRACES.size() >= MAX_TRACES) TRACES.removeFirst();
         TRACES.addLast(new Trace(world, attacker.getUUID(), victim.getUUID(), attacker.getBoundingBox().getCenter(),
-                victim.getBoundingBox().getCenter(), attacker.getDisplayName().copy(), victim.getDisplayName().copy(), now));
+                victim.getBoundingBox().getCenter(), attacker.getDisplayName().copy(), victim.getDisplayName().copy(), now,
+                attacker.getType(), victim.getType()));
     }
 
     public static boolean read(ServerPlayer player, boolean share) {
         if (!VibeService.ready(player)) return false;
+        // A hand on another player's bed, chest or pet: a vision of them instead of the scene.
+        if (!share && VibeVisions.touch(player)) return true;
         LivingEntity witness = Targeting.livingEntityInSight(player, share ? 8 : 5.5, entity -> true);
         Vec3 hand = VibeGeometry.hand(player, player.getLookAngle(), 1, false);
         Vec3 touch = witness == null ? VibeGeometry.clip(player, player.getEyePosition(),
@@ -67,6 +76,7 @@ public final class VibeSight {
                 if (scene.size() == (SkillTreeService.has(player, "vibe_deep_read") ? 6 : 3)) break;
             }
         }
+        REPLAYED.put(player.getUUID(), scene.size());
         // A shapeshifter's vibration is their own, whatever shape they wear: reading one sees through it.
         if (witness != null) com.jayptucker.heroesevolved.shapeshift.ShapeshiftSuspicion.read(player, witness);
         ArmPosePayload.show(player, ArmPose.VIBE_READ, 24);
@@ -78,31 +88,64 @@ public final class VibeSight {
                 : List.of(player);
         for (ServerPlayer viewer : viewers) {
             ScreenTintPayload.send(viewer, 0x90223D83, 34, ScreenTintPayload.Style.VIGNETTE);
-            if (scene.isEmpty()) {
-                VibeGeometry.privatePiece(viewer, Piece.VIBE_ECHO, touch, touch.add(0, .6, 0), .7F, -1, 6);
-                viewer.displayClientMessage(Component.translatable("vibe.heroesevolved.quiet"), true);
-            }
+            if (scene.isEmpty()) viewer.displayClientMessage(Component.translatable("vibe.heroesevolved.quiet"), true);
             for (int i = 0; i < scene.size(); i++) {
                 Trace trace = scene.get(scene.size() - 1 - i);
-                VibeGeometry.privatePiece(viewer, Piece.VIBE_ECHO, trace.from(), trace.to(), 1, -1, 5 + i * 5);
+                echo(viewer, trace, true, 5 + i * 9);
+                echo(viewer, trace, false, 5 + i * 9);
             }
             if (!scene.isEmpty()) {
                 Trace last = scene.getFirst();
                 viewer.displayClientMessage(Component.translatable("vibe.heroesevolved.echo",
                         last.attackerName(), last.victimName(), Math.max(0, (player.serverLevel().getGameTime() - last.tick()) / 20)), true);
             }
+            // No outlines: a white silhouette seen through bodies and walls read as a stick figure. The ghosts of the
+            // blows say who did what; a ripple over each one now marked says who to hit.
             if (witness instanceof Mob mob && mob.getTarget() != null && mob.getTarget().distanceToSqr(player) <= 576)
-                PrivateGlow.glow(viewer, mob.getTarget(), 70);
-            if (witness != null) PrivateGlow.glow(viewer, witness, 90);
+                ripple(viewer, mob.getTarget());
         }
-        if (witness != null && VibeService.hostile(player, witness)) mark(player, witness);
+        if (witness != null && VibeService.hostile(player, witness)) {
+            mark(player, witness);
+            for (ServerPlayer viewer : viewers) ripple(viewer, witness);
+        }
         for (Trace trace : scene) {
             if (trace.world().getEntity(trace.attacker()) instanceof LivingEntity attacker && VibeService.hostile(player, attacker)) {
                 mark(player, attacker);
-                for (ServerPlayer viewer : viewers) PrivateGlow.glow(viewer, attacker, 70);
+                for (ServerPlayer viewer : viewers) ripple(viewer, attacker);
             }
         }
         return true;
+    }
+
+    /**
+     * One body of a replayed blow, privately to {@code viewer}: a ghost of the attacker (scale 1) where it stood, turned to
+     * its victim, or of the victim (scale 0.6) where it was hit. The seed is the creature's type, so the client draws its
+     * real model even if it has since died; the entity is the living one if it is still about (for a player's skin).
+     */
+    private static void echo(ServerPlayer viewer, Trace trace, boolean attacker, int delay) {
+        Vec3 at = attacker ? trace.from() : trace.to(), toward = attacker ? trace.to() : trace.from();
+        EntityType<?> type = attacker ? trace.attackerType() : trace.victimType();
+        Entity live = trace.world().getEntity(attacker ? trace.attacker() : trace.victim());
+        PacketDistributor.sendToPlayer(viewer, new SetPiecePayload(Piece.VIBE_ECHO.ordinal(), at, toward, attacker ? 1 : .6F,
+                live == null ? -1 : live.getId(), BuiltInRegistries.ENTITY_TYPE.getId(type), delay));
+    }
+
+    /** A blue ripple over a body, privately: the viewer now knows it (a marked foe, or what the witness was after). */
+    private static void ripple(ServerPlayer viewer, LivingEntity target) {
+        Vec3 center = target.getBoundingBox().getCenter();
+        VibeGeometry.privatePiece(viewer, Piece.VIBE_HIT, center, center.add(0, 1, 0), Math.max(.8F, target.getBbHeight() * .55F),
+                target.getId(), 10);
+    }
+
+    /** Package-visible for tests: how many blows this viber's last read replayed. */
+    static int replayed(ServerPlayer player) { return REPLAYED.getOrDefault(player.getUUID(), -1); }
+
+    /** Package-visible for tests: how many blows are remembered near {@code at} in this world. */
+    static int remembered(ServerLevel world, Vec3 at, double radius) {
+        int n = 0;
+        for (Trace trace : TRACES)
+            if (trace.world() == world && trace.to().distanceToSqr(at) <= radius * radius) n++;
+        return n;
     }
 
     public static boolean marked(ServerPlayer player, LivingEntity target) {
@@ -140,6 +183,14 @@ public final class VibeSight {
         });
     }
 
-    static void forget(ServerPlayer player) { MARKS.remove(player.getUUID()); }
-    static void clear() { TRACES.clear(); MARKS.clear(); }
+    static void forget(ServerPlayer player) {
+        MARKS.remove(player.getUUID());
+        REPLAYED.remove(player.getUUID());
+    }
+
+    static void clear() {
+        TRACES.clear();
+        MARKS.clear();
+        REPLAYED.clear();
+    }
 }

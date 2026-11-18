@@ -53,7 +53,7 @@ public final class SpeedHands {
         // Shots are not pickable, so the crosshair never lands on them: trace a generous box instead.
         for (Projectile shot : mc.level.getEntitiesOfClass(Projectile.class, player.getBoundingBox().inflate(ProjectileCatchGeometry.REACH),
                 s -> s.isAlive() && (ClientProjectileTime.controls(s) || accelerating && s.getDeltaMovement().lengthSqr() > .0025))) {
-            double distance = ProjectileCatchGeometry.hitDistanceSquared(player, shot);
+            double distance = ProjectileCatchGeometry.hitDistanceSquared(player, shot, timeCatch && ClientProjectileTime.controls(shot));
             if (distance < bestDistance) { bestDistance = distance; best = shot; }
         }
         if (best == null) return;

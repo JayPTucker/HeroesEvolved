@@ -1,0 +1,27 @@
+// ./gradlew runGameTestServer --init-script tools/combat-target-gametest.init.gradle
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def tests = sourceSets.create('combatTargetTest') {
+                java.srcDir('src/gametest/java')
+                java.include('com/jayptucker/heroesevolved/combat/*.java')
+                java.include('com/jayptucker/heroesevolved/pyro/PyroCombatGameTests.java')
+                java.include('com/jayptucker/heroesevolved/electro/ElectroCombatGameTests.java')
+                java.include('com/jayptucker/heroesevolved/hydro/HydroGameTests.java')
+                resources.srcDir('src/gametest/resources')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(tests) } }
+                runs { gameTestServer { gameDirectory = project.file('build/combat-target-test-world') } }
+            }
+            tasks.named('runGameTestServer') {
+                dependsOn(tasks.named('combatTargetTestClasses'))
+                def staleWorld = project.file('build/combat-target-test-world/world')
+                def staleConfig = project.file('build/combat-target-test-world/config/heroesevolved-common.toml')
+                doFirst { staleWorld.deleteDir(); staleConfig.delete() }
+            }
+        }
+    }
+}

@@ -120,10 +120,16 @@ Every move is drawn in 3D on every nearby client (`client/effects/setpiece/Radia
 
 The first unlocked acquisition of the power starts a thirty-second uncontrolled
 charge. Ability inputs and direct attempts to vent or calm down cannot stop it.
-Damage and death protection last through the intro's release. Every half-second,
-creatures within eight blocks receive radiation sickness and direct radiation
-damage, including undead creatures that resist poison. The owner is excluded.
-The charge ends in the nuclear blast, then settles with forty percent stress.
+Damage and death protection last through the intro's recovery. The buildup uses
+the same reactor light, rising pose, sound, shock waves, lethal radiation field
+and crumbling ground as pressing V for Critical Mass, including its suit protection
+and radiation immunity. The charge ends in the nuclear blast, then settles with
+forty percent stress. The crater clears the ground directly beneath the owner too;
+once it is carved, they teleport to its actual floor and lie on their back.
+For seven seconds the view is forced into first person: black at first, then curved
+eyelids open, falter shut twice and slowly focus up past the crater rim. Movement
+and held items wait until they recover. Their previous camera mode and pose return
+when it ends, including when the intro is interrupted.
 The existing acquisition history prevents removal/regrant from repeating it.
 Started intros retain the existing interruption behavior on logout, dimension
 change, power removal or Eclipse suppression.
@@ -172,7 +178,8 @@ own 48. In solid stone that is about 235,000 blocks, carved in about 136 ms (one
 tick, measured in `uitest/GiftedPreview`); a radius-24 crater was about 30,000
 blocks in 21 ms. Silent block writes avoid separate break particles and sounds
 for every destroyed block while retaining normal chunk updates. It vaporizes
-ordinary blocks, preserves a small footing, ignores fluids and unbreakable
+ordinary blocks, preserves a small footing for later detonations (the awakening
+clears it and places the owner on the crater floor), ignores fluids and unbreakable
 blocks, and respects build permissions, world borders, spawn protection and
 canceled block-break events. It never deliberately loads chunks and does not
 alter the future-city or Temporal Snapshot dimensions. Normal world writes
@@ -187,10 +194,9 @@ on server shutdown; fallout does not move with a departing owner.
 
 During the thirty-second awakening and the final three seconds of later charges,
 nearby ordinary blocks crack, emit smoke, and eventually crumble.
-The decay footprint expands with the charge, up to eight blocks for awakening
-and six for later charges. At most twenty-four block cracks are active per
-owner. It retains the footing, skips containers and fluids, respects protected
-blocks, and clears its crack animations on cancellation and cleanup.
+Both charges use `MeltdownField` for the expanding decay footprint and its bounded
+block cracks. Protected blocks remain, and crack animations clear when the charge
+ends or is canceled.
 
 All players in the same dimension within three hundred blocks receive ground
 shake, including those exactly on the boundary. It lasts six seconds for the

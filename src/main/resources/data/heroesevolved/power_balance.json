@@ -278,12 +278,13 @@
     "power": "vibe",
     "action": "vibe_blast",
     "unlock": 1,
-    "energy": 14,
-    "cooldown": 20,
-    "base_energy": 9,
-    "base_cooldown": 22,
+    "energy": 4,
+    "cooldown": 10,
+    "base_energy": 4,
+    "base_cooldown": 10,
+    "drain": 9,
     "role": "basic",
-    "note": "a wave of 4 + tier (palm) to 7 + 1.5/tier"
+    "note": "held blast: 1.2 + 0.35/tier every 6 ticks while it drains"
   },
   {
     "power": "vibe",
@@ -327,7 +328,7 @@
     "base_energy": 42,
     "base_cooldown": 340,
     "role": "ultimate",
-    "note": "4 + tier (+4 if read) and a slow, after a telegraph"
+    "note": "Rift Fall: everyone in the ring drops out of a sky breach, 6 + 2/tier and a slow"
   },
   {
     "power": "matter_assembly",

@@ -5,6 +5,7 @@ import com.jayptucker.heroesevolved.client.ClientProjectileTime;
 import com.jayptucker.heroesevolved.client.ClientTimeFlow;
 import com.jayptucker.heroesevolved.network.TimeFlowPayload;
 import com.jayptucker.heroesevolved.time.TimeFlow;
+import com.jayptucker.heroesevolved.time.ProjectileTimeService;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.ParticleStatus;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -293,6 +294,22 @@ public final class SlowTimeEffects {
         ClientProjectileTime.forEachShot(shot -> {
             Shot s = SHOTS.computeIfAbsent(shot.getId(), id -> new Shot(shot.position()));
             s.seen = now;
+            // A round first seen already stopped never moved on this client, so it has no wake to preserve.
+            // Seed the same corkscrew behind its saved heading, already open: its clock cannot fade it in.
+            if (ClientProjectileTime.stopped(shot) && s.rings == 0 && ProjectileTimeService.isTaczBullet(shot)) {
+                Vec3 dir = ClientProjectileTime.direction(shot), u = perpendicular(dir), v = dir.cross(u);
+                int count = Minecraft.getInstance().options.particles().get() == net.minecraft.client.ParticleStatus.MINIMAL ? 3 : 7;
+                for (int i = 1; i <= count; i++) {
+                    double phase = i * WAKE_TWIST;
+                    Vec3 at = shot.position().subtract(dir.scale(i * .38))
+                            .add(u.scale(Math.cos(phase) * .025)).add(v.scale(Math.sin(phase) * .025));
+                    Ring ring = new Ring(Ring.SHOT, at, dir, .05F, 1.2F, 15, shot.getId() * 131 + i);
+                    ring.age = 3 + i * .65F;
+                    ring.step = 0;
+                    add(ring);
+                }
+                s.rings = count;
+            }
             Vec3 position = shot.position(), step = position.subtract(s.last);
             s.last = position;
             double distance = step.length();

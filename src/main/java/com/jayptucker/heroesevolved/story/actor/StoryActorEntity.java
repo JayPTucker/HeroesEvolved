@@ -218,6 +218,8 @@ public final class StoryActorEntity extends PathfinderMob {
 
     @Override public boolean hurt(DamageSource source, float amount) {
         if (source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) return super.hurt(source, amount);
+        // A Vibe vision's double: the blow tears the viber back into their body, and lands there.
+        if (!level().isClientSide) com.jayptucker.heroesevolved.vibe.VibeVisions.struck(this, source, amount);
         return false;
     }
 

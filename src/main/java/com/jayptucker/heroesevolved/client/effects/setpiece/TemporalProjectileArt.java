@@ -17,10 +17,16 @@ final class TemporalProjectileArt {
             if (!ProjectileTimeService.isTaczBullet(shot)) return;
             Vec3 at = shot.getPosition(canvas.partial).add(0, .03, 0);
             if (at.distanceToSqr(canvas.cx, canvas.cy, canvas.cz) > 48 * 48) return;
-            Vec3 direction = shot.getDeltaMovement();
-            boolean stopped = direction.lengthSqr() < .0001;
-            Vec3 axis = stopped ? Vec3.directionFromRotation(shot.getXRot(), shot.getYRot()) : direction.normalize();
+            boolean stopped = ClientProjectileTime.stopped(shot);
+            Vec3 axis = ClientProjectileTime.direction(shot);
             float[] glow = stopped ? VIOLET : AMBER;
+            // The suspended tracer tapers into its frozen air wake instead of collapsing to a dot.
+            if (stopped) {
+                Vec3 tail = at.subtract(axis.scale(2.5)), tip = at.subtract(axis.scale(.12));
+                canvas.line(tail, tip, .035F, VIOLET, 0, .14F);
+                canvas.line(tail, tip, .012F, PALE, 0, .38F);
+                canvas.line(at.subtract(axis.scale(.8)), tip, .004F, PALE, 0, .66F);
+            }
             canvas.line(at.subtract(axis.scale(.15)), at.add(axis.scale(.065)), .045F, COPPER, .74F, .91F);
             canvas.line(at.subtract(axis.scale(.29)), at.add(axis.scale(.08)), .022F, PALE, .17F, .90F);
             canvas.glow(at, .23F, glow, .43F);

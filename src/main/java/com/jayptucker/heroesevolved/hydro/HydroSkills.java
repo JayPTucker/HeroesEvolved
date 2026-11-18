@@ -148,7 +148,7 @@ public final class HydroSkills {
     }
 
     private static void tickJet(ServerPlayer player, Jet jet, long now) {
-        if (now >= jet.until || !PowerRules.canAct(player)) { endJet(player); return; }
+        if (now >= jet.until || !HydroService.canBend(player)) { endJet(player); return; }
         long age = now - jet.start;
         if (age % 10 == 0) {
             ArmPosePayload.show(player, ArmPose.WATER_PUSH, 12);
@@ -277,7 +277,7 @@ public final class HydroSkills {
     }
 
     private static void tickSpout(ServerPlayer player, Spout spout, long now) {
-        if (!PowerRules.canAct(player) || player.isPassenger()) { endSpout(player); return; }
+        if (!HydroService.canBend(player) || player.isPassenger()) { endSpout(player); return; }
         if (spout.dropAt >= 0) {
             long fall = now - spout.dropAt;
             if (fall > 2 && (player.onGround() || player.isInWater()) || fall > 40) {

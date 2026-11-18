@@ -18,8 +18,13 @@ These are the default keys; rebinding and the inventory skill tree still work.
 | 5 | V | Walk the Past | Shift + V records an area; V visits the recorded past with nearby companions. V in the past returns without energy cost or an entry-cooldown delay. |
 
 While **Between Seconds** or **Still World** is active, aim at a projectile affected by your field and
-right-click within 7 blocks to catch it for 2 stamina. Pickupable arrows and thrown items go into your
-inventory. TACZ bullets glow and keep moving in Between Seconds. Catching one recovers a matching
+right-click within 7 blocks to catch it for 2 stamina, including your own shots and friendly shots.
+Frozen bullets, arrows, thrown items and fireballs can all be caught; embedded arrows stay in their blocks.
+Arrows (including skeleton arrows), tridents, thrown items and rockets go into your inventory. Fireballs become fire
+charges, dragon fireballs become dragon's breath, wind charges are recovered and shulker bullets become shulker shells.
+Wither skulls simply disappear. TaCZ bullets glow and keep moving in Between Seconds.
+In Still World they hang with a tapered violet tracer and a frozen corkscrew wake, even when fired into already stopped time.
+Catching one recovers a matching
 round of ammunition. A shotgun blast yields one shell. Shots still in flight resume their normal speed
 when the field ends.
 
@@ -80,6 +85,7 @@ everything fast leaves a mark in it:
   a slower field), so there is time to get clear, carry it off or answer it. Stopped, it doesn't burn at all.
 - **Shots leave rings.** A slowed arrow, bullet or thrown thing drags a corkscrew of thin pale rings behind it through
   the air, each fixed where it was made, widening and fading. Stopped, the rings hold still and turn cold violet.
+  A bullet first seen already suspended keeps its original heading and has the same wake behind it.
 - **Fast feet kick up the ground.** Anyone running fast through slowed time (a speedster, mostly) sprays chips of the
   ground up behind them, and they hang in the air along the path.
 - **Movers blur** (above), and a speedster wades (see [Superspeed](superspeed.md#hands-at-speed-while-accelerate-is-on),

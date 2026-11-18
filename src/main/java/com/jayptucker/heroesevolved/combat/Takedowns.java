@@ -3,6 +3,7 @@ package com.jayptucker.heroesevolved.combat;
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.ability.PowerBalance;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
+import com.jayptucker.heroesevolved.ability.service.Elements;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.mimicry.MimicryService;
@@ -375,6 +376,13 @@ public final class Takedowns {
     public static boolean request(ServerPlayer player, int targetId, Finisher forced) {
         if (of(player) == null || !enabled(player) || RUNS.containsKey(player.getUUID())) return false;
         if (!PowerRules.canAct(player) || player.isPassenger() || player.isFallFlying()) return false;
+        // Rained-out fire and boiled-off water have nothing to finish with.
+        ResourceLocation element = powerOf(player);
+        if (Elements.snuffed(player, element)) {
+            Elements.fizzle(player, element, false);
+            player.displayClientMessage(Elements.reason(element), true);
+            return false;
+        }
         long now = now(player);
         if (now < READY_AT.getOrDefault(player.getUUID(), Long.MIN_VALUE)) return false;
         Entity entity = player.level().getEntity(targetId);
@@ -613,7 +621,11 @@ public final class Takedowns {
             end(run, true);
             return;
         }
-        if (!run.landed && !PowerRules.canAct(player)) { interrupt(run); return; }
+        if (!run.landed && (!PowerRules.canAct(player) || Elements.snuffed(player, run.finisher.power()))) {
+            if (Elements.snuffed(player, run.finisher.power())) Elements.fizzle(player, run.finisher.power(), true);
+            interrupt(run);
+            return;
+        }
         if (!run.landed && (!run.target.isAlive() || run.target.isRemoved())) { end(run, true); return; }
         run.age++;
         if (run.finisher.holds() && !run.landed && run.target.isAlive()) pin(run);

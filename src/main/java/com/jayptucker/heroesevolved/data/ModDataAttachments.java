@@ -86,6 +86,10 @@ public final class ModDataAttachments {
                 .build()
     );
 
+    public static final Supplier<AttachmentType<Boolean>> PLAYER_GOD_MODE =
+        ATTACHMENTS.register("player_god_mode", () -> AttachmentType.<Boolean>builder(() -> false)
+                .serialize(Codec.BOOL).copyOnDeath().build());
+
     // Operator-controlled test state, saved with the player between relogs.
     public static final Supplier<AttachmentType<Boolean>> PLAYER_UNLIMITED_ENERGY =
         ATTACHMENTS.register("player_unlimited_energy", () ->
