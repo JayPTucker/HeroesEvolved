@@ -16,6 +16,7 @@ import com.jayptucker.heroesevolved.pyro.PyroService;
 import com.jayptucker.heroesevolved.radiation.RadiationService;
 import com.jayptucker.heroesevolved.skills.SkillTreeService;
 import com.jayptucker.heroesevolved.styles.Piece;
+import com.jayptucker.heroesevolved.village.VillagerMeltdown;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -50,7 +51,8 @@ public final class CryoBlastService {
         final ServerLevel level;
         final int tier;
         final long began;
-        ServerPlayer reactor;
+        /** A radioactive player, or a villager in meltdown. */
+        LivingEntity reactor;
         int contactTicks, absorbed;
         boolean rescued;
 
@@ -100,8 +102,8 @@ public final class CryoBlastService {
             }
             if (age < 2) continue;
             Contact contact = trace(player, stream.level);
-            ServerPlayer reactor = reactorAt(contact.target);
-            boolean critical = reactor != null && RadiationService.critical(reactor);
+            LivingEntity reactor = reactorAt(contact.target);
+            boolean critical = reactor instanceof ServerPlayer hot ? RadiationService.critical(hot) : reactor != null;
             if (age >= MAX_TICKS && (reactor == null || reactor != stream.reactor
                     || !stream.rescued && (!critical || stream.contactTicks == 0))) {
                 stop(player);
@@ -138,20 +140,22 @@ public final class CryoBlastService {
         return new Contact(end, first, block);
     }
 
-    private static ServerPlayer reactorAt(LivingEntity contact) {
+    private static LivingEntity reactorAt(LivingEntity contact) {
+        if (contact != null && VillagerMeltdown.critical(contact)) return contact;
         return contact instanceof ServerPlayer player && RadiationEvents.hasAwakenedRadiation(player)
                 && !EclipseService.arePowersSuppressed(player) && PowerIntroService.radiationChargeRemaining(player) == 0
                 ? player : null;
     }
 
     /** Emergency cooling is safe in co-op. Once latched, the same beam cannot hurt the person it just rescued. */
-    private static boolean coolReactor(Stream stream, ServerPlayer target, boolean critical, boolean pulse) {
-        if (stream.reactor != target) {
+    private static boolean coolReactor(Stream stream, LivingEntity reactor, boolean critical, boolean pulse) {
+        if (stream.reactor != reactor) {
             stream.reactor = null;
             stream.contactTicks = 0;
             stream.rescued = false;
         }
-        if (target == null) return false;
+        if (reactor == null) return false;
+        if (!(reactor instanceof ServerPlayer target)) return coolMeltdown(stream, reactor, pulse);
         if (stream.reactor == null && !critical && (RadiationService.mass(target) < RadiationService.HOT
                 || !target.isShiftKeyDown() && !FlightSkillService.isFriend(stream.owner, target)
                         && !FlightSkillService.hostile(stream.owner, target))) return false;
@@ -180,6 +184,29 @@ public final class CryoBlastService {
             stream.owner.displayClientMessage(Component.translatable("cryo.heroesevolved.reactor_cooling",
                     target.getDisplayName(), Math.min(100, stream.contactTicks * 100 / STABILIZE_TICKS),
                     RadiationService.mass(target)), true);
+        }
+        return true;
+    }
+
+    /**
+     * A villager in meltdown has no Core to drain: the stream holds his countdown while it stays on him, and after the
+     * same twelve seconds as a reactor rescue the heat is gone out of him for good. He is never hit.
+     */
+    private static boolean coolMeltdown(Stream stream, LivingEntity villager, boolean pulse) {
+        stream.reactor = villager;
+        if (stream.rescued) return true;
+        VillagerMeltdown.hold(villager);
+        stream.contactTicks++;
+        if (stream.contactTicks >= STABILIZE_TICKS) {
+            stream.rescued = true;
+            VillagerMeltdown.defuse(villager, stream.owner);
+            primeCharge(stream);
+            shatterCue(stream, villager);
+            stream.owner.displayClientMessage(Component.translatable("cryo.heroesevolved.reactor_stable",
+                    villager.getDisplayName()), true);
+        } else if (pulse) {
+            stream.owner.displayClientMessage(Component.translatable("cryo.heroesevolved.meltdown_cooling",
+                    villager.getDisplayName(), Math.min(100, stream.contactTicks * 100 / STABILIZE_TICKS)), true);
         }
         return true;
     }
