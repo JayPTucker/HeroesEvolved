@@ -36,6 +36,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /** Long lanes outside the small, barrier-boxed template: real loaded chunks, real casts and real damage. */
 @GameTestHolder("heroesevolved")
@@ -85,16 +86,31 @@ public final class ProjectileRangeGameTests {
             }
         }
         AbilityUseContext context() { return new AbilityUseContext(player, power, 5, false); }
-        /** Wait for entity sections, not a fixed warm-up: large suites may still be loading this lane. */
+        /** Chunk workers need wall-clock time: GameTestServer can burn 240 simulated ticks in under a second. */
         void ready(Runnable action) {
             h.runAfterDelay(2, () -> {
-                for (int z = 62; z <= 69; z++) {
-                    if (!h.getLevel().isPositionEntityTicking(new BlockPos(chunkX * 16, 30, z * 16))) {
-                        ready(action); return;
+                try {
+                    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+                    // Pump chunk futures without advancing the test's clock or blocking their main-thread callbacks.
+                    h.getLevel().getServer().managedBlock(() -> {
+                        if (ticking() || System.nanoTime() >= deadline) return true;
+                        h.getLevel().getChunkSource().pollTask();
+                        return false;
+                    });
+                    for (int z = 62; z <= 69; z++) {
+                        h.assertTrue(h.getLevel().isPositionEntityTicking(new BlockPos(chunkX * 16, 30, z * 16)),
+                                "Timed out loading projectile lane chunk " + chunkX + ", " + z);
                     }
+                    action.run();
+                } catch (RuntimeException | AssertionError e) {
+                    close(); throw e;
                 }
-                try { action.run(); } catch (RuntimeException e) { close(); throw e; }
             });
+        }
+        private boolean ticking() {
+            for (int z = 62; z <= 69; z++)
+                if (!h.getLevel().isPositionEntityTicking(new BlockPos(chunkX * 16, 30, z * 16))) return false;
+            return true;
         }
         void later(int ticks, Runnable assertion) {
             h.runAfterDelay(ticks, () -> { try { assertion.run(); h.succeed(); } finally { close(); } });
