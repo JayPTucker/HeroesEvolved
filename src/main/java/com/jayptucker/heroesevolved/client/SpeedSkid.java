@@ -27,9 +27,13 @@ public final class SpeedSkid {
     /** How much of the run's speed the slide starts with, and the most it starts with (blocks a tick). */
     public static final double KEEP = .45, MAX_PUSH = 1.5;
 
-    private static boolean running;
+    /** A runner at full pace barely touches the ground (every bump is a little hop), so "running" is remembered for a
+     *  few ticks, and a release in mid-stride waits a few ticks to land before the skid starts. */
+    private static final int LANDING = 8;
+
+    private static int sinceRun = 1000, waiting = -1;
     private static double runSpeed;
-    private static Vec3 push = Vec3.ZERO;
+    private static Vec3 heading = Vec3.ZERO, push = Vec3.ZERO;
     private static int age = -1, ticks;
 
     private SpeedSkid() {}
@@ -37,31 +41,35 @@ public final class SpeedSkid {
     @SubscribeEvent
     public static void tick(ClientTickEvent.Post event) {
         LocalPlayer player = Minecraft.getInstance().player;
-        if (player == null) { running = false; age = -1; return; }
+        if (player == null) { sinceRun = 1000; waiting = age = -1; return; }
         Vec3 step = new Vec3(player.getX() - player.xo, 0, player.getZ() - player.zo);
-        boolean ground = player.onGround() && !player.isInWater() && !player.getAbilities().flying;
-        if (age >= 0) slide(player, ground);
-        boolean now = player.isSprinting() && !player.isShiftKeyDown() && ground && SpeedMovement.accelerating(player);
-        if (now) runSpeed = step.horizontalDistance();
-        else if (running && age < 0 && ground && !player.input.hasForwardImpulse()) {
-            double speed = Math.max(runSpeed, step.horizontalDistance());
-            Vec3 heading = step.lengthSqr() > 1e-6 ? step.normalize() : player.getLookAngle().multiply(1, 0, 1).normalize();
-            if (speed >= SpeedService.SKID_SPEED && Double.isFinite(heading.x)) {
-                push = heading.scale(Math.min(MAX_PUSH, speed * KEEP));
-                ticks = 6 + (int) Math.round(Math.min(4, speed * 1.5));
-                age = 0;
-                PacketDistributor.sendToServer(SpeedSkidPayload.INSTANCE);
-                slide(player, ground);
-            }
+        boolean free = !player.isInWater() && !player.getAbilities().flying && !player.isPassenger() && !player.isFallFlying();
+        if (age >= 0) slide(player, free);
+        if (player.isSprinting() && !player.isShiftKeyDown() && free && SpeedMovement.accelerating(player)) {
+            sinceRun = 0;
+            runSpeed = step.horizontalDistance();
+            if (step.lengthSqr() > 1e-6) heading = step.normalize();
+            waiting = -1;
+            return;
         }
-        running = now;
+        sinceRun++;
+        if (age >= 0 || player.input.hasForwardImpulse() || !free) { waiting = -1; return; }
+        if (waiting < 0 && sinceRun <= 3 && runSpeed >= SpeedService.SKID_SPEED) waiting = 0;
+        if (waiting < 0) return;
+        if (!player.onGround()) { if (++waiting > LANDING) waiting = -1; return; }
+        waiting = -1;
+        push = heading.scale(Math.min(MAX_PUSH, runSpeed * KEEP));
+        ticks = 6 + (int) Math.round(Math.min(4, runSpeed * 1.5));
+        age = 0;
+        PacketDistributor.sendToServer(SpeedSkidPayload.INSTANCE);
+        slide(player, true);
     }
 
     /** Sets next tick's velocity along the slide, or ends it if the runner steers out of it. */
-    private static void slide(LocalPlayer player, boolean ground) {
+    private static void slide(LocalPlayer player, boolean free) {
         ArmPose pose = ClientArmPoseState.get(player.getId());
         boolean dodging = pose == ArmPose.SPEED_SKID_BACK || pose == ArmPose.SPEED_SKID_LEFT || pose == ArmPose.SPEED_SKID_RIGHT;
-        if (age >= ticks || !ground || player.input.hasForwardImpulse() || player.horizontalCollision || dodging) {
+        if (age >= ticks || !free || player.input.hasForwardImpulse() || player.horizontalCollision || dodging) {
             age = -1;
             return;
         }

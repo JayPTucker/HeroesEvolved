@@ -27,6 +27,12 @@ the stone, and your Momentum and heading carry on. Crouch to stop it. Bedrock, b
 protected ground still stop you, and you never end up inside a block. **Blitz** vibrates too: at 80
 Momentum it reaches an enemy you can see through a window or gap by passing through the wall around it.
 
+**Letting go skids you to a stop.** Release Forward while running at 10 blocks a second or more and you
+don't halt dead: you turn side-on like a hockey stop, crouch and lean back from the run with one hand
+dragging on the ground, and slide to a halt (about half a block from a slow run, four flat out). Dirt
+flies up at your hand and scorched skid marks are left behind. Press Forward again, hit a wall or take
+off and the slide ends at once. If you let go in mid-stride, the skid starts when you land.
+
 **Sudden stops** throw a gust. Come down from a run of at least 18 blocks a second (with 40 or more
 Momentum) to a third of that pace in a tick or two, by letting go of the keys or by running into
 something, and the air you were dragging keeps going. It rushes on past you in pale streaks and

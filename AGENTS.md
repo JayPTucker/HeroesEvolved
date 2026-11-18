@@ -475,6 +475,11 @@ player sees is in [docs/fighting-styles.md](docs/fighting-styles.md).
   turns a distance into a push (the Blitz stops `BLITZ_STOP` short of the foe). Each skid has its own pose
   (`SPEED_SKID_BACK` kneels side-on, `SPEED_SKID_LEFT`/`RIGHT` lean away from the slide over a braking hand) and ends in
   Superspeed's `SPEED_GUST` piece for the skid marks and dust.
+- **A run's stop is a client-owned skid.** `client/SpeedSkid` sees Forward released at speed and keeps an easing slide
+  on the runner's own client (a server push would stop and restart them), then sends `SpeedSkidPayload`;
+  `SpeedService.skidStop` checks the run and shows everyone `SPEED_SKID_STOP`. A runner at full pace is off the ground
+  half the time, so "running" is remembered for a few ticks, and a release in mid-stride waits to land. Photograph it
+  with `tools/speedrun-preview.init.gradle -Pstop`.
 - **Cross-power rules where the blow lands.** A Pressure Palm on someone frozen solid shatters them
   (`CryoService.shatterHit`); a Frost Jab on someone Soaked freezes them solid. One line each.
 - **Mimicry fights too.** `FightingStyles.of(player)` falls back to the style of the power Peter is channelling, and
