@@ -717,7 +717,7 @@ public final class ForceFieldService {
             for (Projectile shot : p.serverLevel().getEntitiesOfClass(Projectile.class, new AABB(centre, centre).inflate(s.radius + 1.5),
                     shot -> hostileShot(p, shot) && ForceGeometry.onShield(eye, look, s.radius, shot.position(), 1.4))) {
                 deflect(p, shot, shot.position(), look, null);
-                s.pressure = Math.min(MAX_PRESSURE, s.pressure + 1);
+                s.pressure = Math.min(MAX_PRESSURE * (com.jayptucker.heroesevolved.amplify.Amplification.surged(p) ? 2 : 1), s.pressure + 1);
             }
             if ((s.until - time) % 10 == 0) showShield(s, false);
         }
@@ -744,7 +744,7 @@ public final class ForceFieldService {
         if (victim instanceof ServerPlayer p && SHIELDS.get(p.getUUID()) instanceof Shield s && source != null && source != p) {
             Vec3 from = (direct != null ? direct : source).position();
             if (ForceGeometry.shieldFaces(p.getEyePosition(), p.getLookAngle(), from)) {
-                s.pressure = Math.min(MAX_PRESSURE, s.pressure + 1);
+                s.pressure = Math.min(MAX_PRESSURE * (com.jayptucker.heroesevolved.amplify.Amplification.surged(p) ? 2 : 1), s.pressure + 1);
                 Vec3 at = ForceGeometry.shieldCentre(p.getEyePosition(), p.getLookAngle());
                 show(p, Piece.FORCE_RIPPLE, at, at.add(p.getLookAngle()), (float) s.radius, null, false);
                 if (direct instanceof Projectile) { event.setCanceled(true); return; }

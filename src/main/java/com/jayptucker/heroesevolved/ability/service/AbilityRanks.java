@@ -47,14 +47,20 @@ public final class AbilityRanks {
     /** An action's stamina after its level discount and Rank III's 10%, rounded up (never below 1). */
     public static int energy(ServerPlayer player, ResourceLocation power, AbilityAction action, int cost) {
         if (cost <= 0) return cost;
-        double discounted = cost * (1 - levelDiscount(player, action)) * (rank(player, power, action) >= 3 ? 0.9 : 1);
+        // A supercharge (Power Amplification) takes a quarter off; an overcharged empath's Echoes are free.
+        double amplified = com.jayptucker.heroesevolved.amplify.Amplification.cost(player, power, action.definition().id());
+        if (amplified <= 0) return 0;
+        double discounted = cost * (1 - levelDiscount(player, action)) * (rank(player, power, action) >= 3 ? 0.9 : 1) * amplified;
         return Math.max(1, (int) Math.ceil(discounted - 1e-9));
     }
 
     public static int cooldown(ServerPlayer player, ResourceLocation power, AbilityAction action, int ticks) {
         int rank = rank(player, power, action);
-        if (ticks <= 0 || rank == 1) return ticks;
-        return Math.max(1, (int) Math.ceil(ticks * (rank == 3 ? 0.8 : 0.9)));
+        double amplified = com.jayptucker.heroesevolved.amplify.Amplification.cooldown(player, power, action.definition().id());
+        if (ticks <= 0 || rank == 1 && amplified == 1) return ticks;
+        double scaled = ticks * (rank == 3 ? 0.8 : rank == 2 ? 0.9 : 1) * amplified;
+        if (scaled <= 0) return 0;
+        return Math.max(1, (int) Math.ceil(scaled));
     }
 
     /** Counts one successful use, and announces a new rank. */

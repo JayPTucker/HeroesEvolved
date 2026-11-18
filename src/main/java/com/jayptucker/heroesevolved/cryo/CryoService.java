@@ -194,6 +194,7 @@ public final class CryoService {
      * holds the Wither or the Ender Dragon for long.
      */
     public static boolean freezeSolid(LivingEntity target, int durationTicks, ServerPlayer caster) {
+        if (caster != null && com.jayptucker.heroesevolved.amplify.Amplification.surged(caster)) durationTicks = durationTicks * 3 / 2;
         if (!(target.level() instanceof ServerLevel level) || !target.isAlive() || durationTicks <= 0 || immune(target)) return false;
         if (target.getType().is(Tags.EntityTypes.BOSSES) || !target.isAlive()) {
             chill(target, 100, caster);

@@ -154,11 +154,13 @@ public final class PyroService {
     }
 
     public static boolean isBlue(ServerPlayer player) {
+        if (com.jayptucker.heroesevolved.amplify.Amplification.surged(player)) return true;
         return heat(player) >= (SkillTreeService.has(player, "pyrokinesis_white_heat") ? WHITE_HEAT : BLUE_HEAT);
     }
 
     public static void addHeat(ServerPlayer player, int amount) {
         if (amount <= 0) return;
+        if (com.jayptucker.heroesevolved.amplify.Amplification.surged(player)) amount *= 2;
         Heat heat = HEAT.computeIfAbsent(player.getUUID(), ignored -> new Heat());
         heat.value = Math.min(MAX_HEAT, heat.value + amount);
         heat.lastGain = player.getServer().overworld().getGameTime();
@@ -201,7 +203,8 @@ public final class PyroService {
     }
 
     static float scaled(ServerPlayer player, float damage) {
-        return isBlue(player) ? damage * BLUE_MULTIPLIER : damage;
+        float base = isBlue(player) ? damage * BLUE_MULTIPLIER : damage;
+        return com.jayptucker.heroesevolved.amplify.Amplification.overcharged(player) ? base * 1.5F : base;
     }
 
     public static boolean friendly(ServerPlayer player, LivingEntity target) {
@@ -222,7 +225,7 @@ public final class PyroService {
     public static void burn(ServerPlayer player, LivingEntity target, float damage, int fireSeconds) {
         if (!hostile(player, target)) return;
         // A hydrokinetic's soaking boils off as steam: the burn is blunted and it can't catch, this time.
-        if (com.jayptucker.heroesevolved.hydro.HydroService.soaked(target)) {
+        if (com.jayptucker.heroesevolved.hydro.HydroService.soaked(target) && !com.jayptucker.heroesevolved.amplify.Amplification.overcharged(player)) {
             target.removeEffect(com.jayptucker.heroesevolved.registry.ModItems.SOAKED);
             damage *= .6F;
             fireSeconds = 0;

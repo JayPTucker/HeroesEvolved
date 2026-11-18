@@ -11,7 +11,8 @@ lang = json.loads((assets / "lang/en_us.json").read_text(encoding="utf-8"))
 sounds = json.loads((assets / "sounds.json").read_text(encoding="utf-8"))
 expected = {"quake", "flight", "cryokinesis", "electrokinesis", "telekinesis", "telepathy",
             "regeneration", "time_manipulation", "radiation", "sonic_resonance", "superspeed", "pyrokinesis",
-            "invisibility", "phasing", "empathic_mimicry", "technopathy", "matter_assembly", "vibe", "shapeshifting", "hydrokinesis"}
+            "invisibility", "phasing", "empathic_mimicry", "technopathy", "matter_assembly", "vibe", "shapeshifting", "hydrokinesis",
+            "power_amplification"}
 assert {t["power"] for t in trees} == expected and len(trees) == len(expected)
 nodes = 0
 actives = 0

@@ -1,0 +1,27 @@
+// The client photographs Power Amplification with uitest/AmpPreview: Supercharge, Overcharges, red lightning, the tree's
+// actives and the HUD ring, into build/amp-preview/screenshots/.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('ampPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/amp-preview')
+                        programArguments.addAll('--width', '1100', '--height', '800')
+                        systemProperty('heroes.preview.amp', 'true')
+                        if (project.hasProperty('only')) systemProperty('heroes.preview.amp.only', project.property('only'))
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('ampPreviewClasses')) }
+            // Pass when every scene ran (PREVIEW_DONE), not on the exit code the closing halt leaves.
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

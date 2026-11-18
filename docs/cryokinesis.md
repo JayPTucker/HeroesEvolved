@@ -66,6 +66,8 @@ do not.
   charge. Ice Blast pauses the countdown while it stays on target. Keep it there for 12 seconds
   to drain Core to 30 or below and cancel the detonation. Losing contact resumes the countdown
   and resets stabilization progress.
+  A villager in meltdown is cooled the same way: twelve seconds on him and he is safe, and the cold never counts as
+  hurting him (see [the emergency band](emergency-band.md)).
   This works with PvP disabled and leaves the reactor unharmed. Allies and crouching players
   can also be cooled before they go critical. With PvP enabled, the blast can drain a hostile
   reactor that is already running hot.

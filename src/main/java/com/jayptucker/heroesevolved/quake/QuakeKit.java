@@ -123,7 +123,7 @@ public final class QuakeKit {
     public static int strain(ServerPlayer p) { Body b = BODIES.get(p.getUUID()); return b == null ? 0 : b.strain; }
 
     /** How hard her powers hit: 1 at rest, up to 1.5 at the edge of breaking. */
-    public static float power(ServerPlayer p) { return 1 + strain(p) / 200F; }
+    public static float power(ServerPlayer p) { return com.jayptucker.heroesevolved.amplify.Amplification.overcharged(p) ? 1.5F : 1 + strain(p) / 200F; }
 
     public static boolean fractured(ServerPlayer p) {
         Body b = BODIES.get(p.getUUID());
@@ -132,6 +132,8 @@ public final class QuakeKit {
 
     /** Adds Strain for one use of a power. Past 100, the bones in her arms crack. */
     public static void strain(ServerPlayer p, int amount) {
+        if (com.jayptucker.heroesevolved.amplify.Amplification.overcharged(p)) return;
+        if (com.jayptucker.heroesevolved.amplify.Amplification.surged(p)) amount = (amount + 1) / 2;
         if (amount <= 0) return;
         Body b = body(p);
         b.lastUse = now(p);

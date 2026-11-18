@@ -243,7 +243,7 @@ public final class TechnopathyService {
         return List.copyOf(result);
     }
     private static BlockPos aim(ServerPlayer p) {
-        double range = AbilityRanges.ranged(24);
+        double range = AbilityRanges.ranged(24) * com.jayptucker.heroesevolved.amplify.Amplification.reach(p);
         BlockHitResult hit = p.serverLevel().clip(new ClipContext(p.getEyePosition(), p.getEyePosition().add(p.getLookAngle().scale(range)),
                 ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, p));
         return hit.getType() == HitResult.Type.BLOCK && p.serverLevel().hasChunkAt(hit.getBlockPos())

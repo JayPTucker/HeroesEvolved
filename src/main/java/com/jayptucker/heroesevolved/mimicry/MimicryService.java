@@ -307,7 +307,7 @@ public final class MimicryService {
         }
         Attune attune = ATTUNES.computeIfAbsent(player.getUUID(), id -> new Attune());
         if (!nearest.getUUID().equals(attune.source)) { attune.source = nearest.getUUID(); attune.ticks = 0; }
-        attune.ticks += 5;
+        attune.ticks += com.jayptucker.heroesevolved.amplify.Amplification.surged(player) ? ATTUNE_TICKS : 5;
         float progress = Math.min(1, attune.ticks / (float) ATTUNE_TICKS);
         if (attune.ticks % 10 == 5) MimicVisuals.attuning(player, nearest, found.power(), progress);
         if (attune.ticks < ATTUNE_TICKS) return;

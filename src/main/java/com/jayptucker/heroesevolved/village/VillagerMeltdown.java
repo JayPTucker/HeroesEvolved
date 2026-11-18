@@ -75,10 +75,11 @@ import java.util.UUID;
  * <ul>
  *   <li>a speedster runs a containment run round him (the Cyclone key), and holds the blast in;</li>
  *   <li>a radioactive player crouches beside him and draws the heat into themselves;</li>
- *   <li>freezing him (Cryokinesis) or stopping his time (Space-Time) pauses the countdown while it lasts;</li>
+ *   <li>a cryokinetic holds Ice Blast on him: it holds the countdown, and twelve seconds of it cool him ({@link com.jayptucker.heroesevolved.cryo.CryoBlastService});</li>
+ *   <li>freezing him solid (Cryokinesis) or stopping his time (Space-Time) pauses the countdown while it lasts;</li>
  *   <li>carrying him well clear of the village means the blast hits no one there.</li>
  * </ul>
- * Hurting him makes it worse: every hit takes {@link #HIT_PENALTY} ticks off the countdown, and if he dies he goes off at
+ * Hurting him makes it worse (cold is not a blow): every hit takes {@link #HIT_PENALTY} ticks off the countdown, and if he dies he goes off at
  * once. Rare: {@link HeroesEvolvedConfig.Common#villagerMeltdownChance} each Eclipse.
  * <p>
  * His state is kept in his own data ({@link #TAG}), so a meltdown carries on through a restart or an unloaded chunk.
@@ -701,6 +702,8 @@ public final class VillagerMeltdown {
         Meltdown m = of(event.getEntity());
         if (m == null || event.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) return;
         event.setCanceled(true);
+        // Cold is how a cryokinetic holds him back, not a blow.
+        if (CryoService.isApplyingColdDamage() || event.getSource().is(DamageTypeTags.IS_FREEZING)) return;
         long now = m.level.getGameTime();
         if (now - m.hitAt < 20 || !(event.getSource().getEntity() instanceof LivingEntity)) return;
         m.hitAt = now;

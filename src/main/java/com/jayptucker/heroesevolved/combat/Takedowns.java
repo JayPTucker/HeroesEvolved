@@ -228,7 +228,11 @@ public final class Takedowns {
             com.jayptucker.heroesevolved.mimicry.MimicFinishers.ECHO,
             com.jayptucker.heroesevolved.mimicry.MimicFinishers.BORROWED_STRENGTH,
             com.jayptucker.heroesevolved.shapeshift.ShapeFinishers.APEX_BITE,
-            com.jayptucker.heroesevolved.shapeshift.ShapeFinishers.OWN_FACE);
+            com.jayptucker.heroesevolved.shapeshift.ShapeFinishers.OWN_FACE,
+            // Power Amplification: its signature, then its alternates.
+            com.jayptucker.heroesevolved.amplify.AmpFinishers.SIDEKICK_JUICE,
+            com.jayptucker.heroesevolved.amplify.AmpFinishers.RED_WAVE,
+            com.jayptucker.heroesevolved.amplify.AmpFinishers.REVERSE);
 
     private static final Map<UUID, Run> RUNS = new HashMap<>();
     private static final Map<UUID, Long> READY_AT = new HashMap<>();

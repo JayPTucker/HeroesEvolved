@@ -121,7 +121,7 @@ public final class FlightDynamicsService {
         }
         Vec3 burstStart = player.position();
         double spent = consumeMomentum(player);
-        double charge = dynamics.heldTicks < SKYBURST_TAP_TICKS ? 0
+        double charge = com.jayptucker.heroesevolved.amplify.Amplification.surged(player) ? 1 : dynamics.heldTicks < SKYBURST_TAP_TICKS ? 0
                 : Math.min(1, dynamics.heldTicks / (double) skyburstChargeTicks(player));
         double reserve = spent / MAX_MOMENTUM;
         Vec3 direction = player.getLookAngle().normalize();
@@ -129,7 +129,7 @@ public final class FlightDynamicsService {
         if (player.onGround() && direction.y < .2) direction = Vec3.directionFromRotation(-12, player.getYRot());
         double peak = Math.min(SKYBURST_MAX_SPEED,
                 HeroesEvolvedConfig.COMMON.flightForwardSpeed.get() * 2.5 + charge * 2.25 + reserve * 1.25);
-        int ticks = 20 + (int) Math.round(charge * 6 + reserve * 3);
+        int ticks = (20 + (int) Math.round(charge * 6 + reserve * 3)) * (com.jayptucker.heroesevolved.amplify.Amplification.overcharged(player) ? 3 : 1);
         dynamics.skyburst = new Skyburst(direction, peak, ticks);
         dynamics.burstTicks = ticks;
         applySkyburst(player, dynamics);

@@ -279,7 +279,7 @@ public final class ElectroService {
             flashLight(level, hit.getLocation(), 3);
         } else {
             float damage = (4.0F + powerLevel * 1.5F) * (over ? 1.4F : 1.0F);
-            int jumps = powerLevel - 1 + (charged ? 1 : 0) + (over ? 2 : 0);
+            int jumps = powerLevel - 1 + (charged ? 1 : 0) + (over ? 2 : 0) + (com.jayptucker.heroesevolved.amplify.Amplification.surged(player) ? 1 : 0);
             Set<UUID> struck = new HashSet<>();
             Vec3 from = hand;
             LivingEntity current = target;

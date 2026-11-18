@@ -237,6 +237,9 @@ public final class HeroesEvolvedConfig {
                 hydroOctopusEnergyCost, hydroOctopusCooldownTicks, hydroRiderEnergyCost, hydroRiderCooldownTicks,
                 hydroMaelstromEnergyCost, hydroMaelstromCooldownTicks;
         public final ModConfigSpec.IntValue hydroStrikeEnergyCost, hydroFlourishEnergyCost, hydroDodgeEnergyCost, hydroDodgeCooldownTicks;
+        public final ModConfigSpec.IntValue ampSuperchargeEnergyCost, ampSuperchargeCooldownTicks, ampLightningEnergyCost,
+                ampLightningCooldownTicks, ampShockEnergyCost, ampShockCooldownTicks, ampJumpstartEnergyCost,
+                ampJumpstartCooldownTicks, ampThousandEnergyCost, ampThousandCooldownTicks;
         public final ModConfigSpec.IntValue styleStrikeEnergyCost, styleFlourishEnergyCost, styleDodgeEnergyCost, styleDodgeCooldownTicks;
         public final ModConfigSpec.BooleanValue pyroWorldFire;
         public final ModConfigSpec.BooleanValue gridAffectMachines, gridAffectCreate, gridAffectCarriedItems;
@@ -973,6 +976,19 @@ public final class HeroesEvolvedConfig {
                         .defineInRange("dodgeEnergyCost", 8, 0, 100);
                 hydroDodgeCooldownTicks = builder.comment("Ticks between two dodges.")
                         .defineInRange("dodgeCooldownTicks", 18, 0, 20 * 60);
+                builder.pop();
+
+                builder.push("powerAmplification");
+                ampSuperchargeEnergyCost = energy(builder, "supercharge", 12);
+                ampSuperchargeCooldownTicks = cooldown(builder, "supercharge", 20 * 4);
+                ampLightningEnergyCost = energy(builder, "redLightning", 8);
+                ampLightningCooldownTicks = cooldown(builder, "redLightning", 16);
+                ampShockEnergyCost = energy(builder, "shockTherapy", 14);
+                ampShockCooldownTicks = cooldown(builder, "shockTherapy", 20 * 6);
+                ampJumpstartEnergyCost = energy(builder, "jumpstart", 16);
+                ampJumpstartCooldownTicks = cooldown(builder, "jumpstart", 20 * 5);
+                ampThousandEnergyCost = energy(builder, "aThousandTimes", 85);
+                ampThousandCooldownTicks = cooldown(builder, "aThousandTimes", 20 * 70);
                 builder.pop();
 
                 builder.comment("The fighting styles of Superspeed, Quake, Cryokinesis, Density, Regeneration, Invisibility",

@@ -18,5 +18,7 @@ public abstract class FinisherOutlineMixin {
         Entity self = (Entity) (Object) this;
         if (com.jayptucker.heroesevolved.client.ClientGodMode.enabled(self.getUUID())) cir.setReturnValue(0xFFD700);
         else if (self.level().isClientSide && FinisherClient.outlined(self)) cir.setReturnValue(FinisherClient.GLISTEN);
+        // An overcharged telepath hears every mind near (Power Amplification): outlined in red.
+        else if (self.level().isClientSide && com.jayptucker.heroesevolved.client.ClientAmp.sees(self)) cir.setReturnValue(com.jayptucker.heroesevolved.client.ClientAmp.OUTLINE);
     }
 }

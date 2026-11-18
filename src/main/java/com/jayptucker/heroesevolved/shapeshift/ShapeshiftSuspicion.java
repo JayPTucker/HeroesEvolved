@@ -87,6 +87,7 @@ public final class ShapeshiftSuspicion {
     public static void raise(ServerPlayer player, float amount) {
         ShapeshiftService.Morph m = ShapeshiftService.wearing(player);
         if (m == null || amount <= 0) return;
+        if (com.jayptucker.heroesevolved.amplify.Amplification.surged(player)) amount *= .5F;
         amount = ShapeshiftSkills.suspicionGain(player, amount, m.form.person());
         if (amount <= 0) return;
         m.suspicion = Math.min(FULL, m.suspicion + amount);

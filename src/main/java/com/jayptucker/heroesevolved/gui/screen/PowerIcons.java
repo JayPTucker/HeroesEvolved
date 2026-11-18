@@ -21,7 +21,8 @@ public final class PowerIcons {
             Map.entry("phasing", Items.CHORUS_FRUIT), Map.entry("empathic_mimicry", Items.AMETHYST_SHARD),
             Map.entry("technopathy", Items.COMPARATOR), Map.entry("matter_assembly", Items.STONECUTTER),
             Map.entry("vibe", Items.ECHO_SHARD), Map.entry("shapeshifting", Items.ARMADILLO_SCUTE),
-            Map.entry("hydrokinesis", Items.HEART_OF_THE_SEA));
+            Map.entry("hydrokinesis", Items.HEART_OF_THE_SEA),
+            Map.entry("power_amplification", Items.REDSTONE));
 
     public static ItemStack emblem(String power) { return new ItemStack(EMBLEMS.getOrDefault(power, Items.NETHER_STAR)); }
 }

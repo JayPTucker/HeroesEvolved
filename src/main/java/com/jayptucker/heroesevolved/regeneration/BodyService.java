@@ -281,6 +281,13 @@ public final class BodyService {
         }
     }
 
+    /** Shock Therapy (Power Amplification) jolts a downed body back up at once. Returns whether it was down. */
+    public static boolean revive(ServerPlayer player) {
+        if (!isDowned(player)) return false;
+        standUp(player, false);
+        return true;
+    }
+
     /** Gets her back up: limbs whole, some health back, and out of whatever hazard she fell in. */
     private static void standUp(ServerPlayer player, boolean gaveUp) {
         Body body = body(player);

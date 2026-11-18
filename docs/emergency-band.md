@@ -110,10 +110,11 @@ again, and players are warned.
 | --- | --- |
 | A speedster's containment run (the Cyclone key near him) | Holds the heat in. Ten seconds held, building to a climax, and he is cool, as for a radioactive player. **Needs the whole velocity suit:** without it the speedster burns up on the ring for three and a half seconds, then burns away, and he still goes off. |
 | A radioactive player crouching within 3 blocks | Draws his heat into themselves. Eight seconds of it and he is cool, but they take on 48 Core, enough to run them Hot. They are immune to his heat, and his waves don't throw them. |
-| Freezing him (Cryokinesis) or stopping his time (Space-Time) | Pauses the countdown for as long as it lasts. Near the end his near-field reaches as far as Ice Blast, so a cryokinetic needs a suit. |
+| Holding Ice Blast on him (Cryokinesis) | Holds the countdown while the stream stays on him, and never hurts him. Twelve seconds of unbroken contact and he is cool, as for a radioactive player; looking away starts the twelve seconds again. Near the end his near-field reaches as far as Ice Blast, so a cryokinetic needs a suit. |
+| Freezing him solid (Cryokinesis) or stopping his time (Space-Time) | Pauses the countdown for as long as it lasts. |
 | Carrying him well away from the village | He still goes off, but where he is, not among his neighbours. Whoever carries him needs a suit, or Regeneration. |
 
-**Hurting him makes it worse.** Blows don't hurt him: each takes ten seconds off the countdown, at most once a second.
+**Hurting him makes it worse.** Blows don't hurt him: each takes ten seconds off the countdown, at most once a second. Cold from a cryokinetic is not a blow and takes nothing off.
 If he dies anyway (by `/kill`, for instance), he goes off at once.
 
 **The end.**

@@ -136,7 +136,7 @@ public final class TelekinesisService {
         LivingEntity target = findGripTarget(player);
         if (target == null) return false;
         GRIPS.put(player.getUUID(), new Grip(new Owner(player), target, powerLevel,
-                now(player) + 20L * (6 + Math.clamp(powerLevel, 1, 5))));
+                now(player) + 20L * (6 + Math.clamp(powerLevel, 1, 5)) * (com.jayptucker.heroesevolved.amplify.Amplification.surged(player) ? 2 : 1)));
         AbilityEffects.send(player.serverLevel(), Kind.TK_GRIP, hand(player), target.getBoundingBox().getCenter(),
                 Math.max(.6, target.getBbWidth()));
         ArmPosePayload.show(player, ArmPose.KINETIC_HOLD, 20);

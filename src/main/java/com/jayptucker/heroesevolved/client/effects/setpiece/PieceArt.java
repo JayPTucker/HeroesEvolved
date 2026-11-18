@@ -44,6 +44,9 @@ final class PieceArt {
             case DENSITY_PASS, DENSITY_PRIMED, DENSITY_AMBUSH, DENSITY_DOOR, DENSITY_HARDEN, DENSITY_REBOUND, DENSITY_PILE,
                     DENSITY_SINK_MARK, DENSITY_SINKHOLE, DENSITY_ENTOMB, DENSITY_UPROOT, DENSITY_FADE, DENSITY_GRASP, DENSITY_DROP,
                     DENSITY_SLIP -> DensityArt.draw(c, a, t);
+            case AMP_ZAP, AMP_SURGE, AMP_OVERCHARGE, AMP_BOLT, AMP_BEAM, AMP_BURST, AMP_SHOCK, AMP_JUMP, AMP_GATHER, AMP_WAVE,
+                    AMP_THREAD, AMP_BURNOUT, AMP_WILD, AMP_DOOR, AMP_DOME, AMP_STORM, AMP_AWAKEN, AMP_BACKLASH,
+                    FINISH_JUICE, FINISH_RED_WAVE, FINISH_REVERSE -> AmpArt.draw(c, a, t);
             case GROUND_ZERO -> ElementArt.groundZero(c, a, t);
             case CONTAINMENT_DOME -> ElementArt.containment(c, a, t);
             case REACTOR_HEARTH -> ElementArt.reactor(c, a, t);

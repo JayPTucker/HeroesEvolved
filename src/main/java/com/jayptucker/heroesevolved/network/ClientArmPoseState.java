@@ -39,7 +39,8 @@ public final class ClientArmPoseState {
                 || pose == ArmPose.VIBE_GUARD || pose == ArmPose.VIBE_CHANNEL || pose == ArmPose.REGEN_STREAM || pose == ArmPose.REGEN_EMBRACE || pose == ArmPose.REGEN_BRACE
                 || pose == ArmPose.DENSITY_BRACE
                 || pose == ArmPose.WATER_OCTOPUS || pose == ArmPose.WATER_SURF || pose == ArmPose.WATER_CALL
-                || pose == ArmPose.WATER_PUSH;
+                || pose == ArmPose.WATER_PUSH
+                || pose == ArmPose.AMP_CUP || pose == ArmPose.AMP_RAISE || pose == ArmPose.AMP_SHOW;
         long began = continuous && previous != null && previous.pose == pose && previous.endMillis > now
                 ? previous.startMillis : now;
         POSES.put(entityId, new Entry(pose, began, now + durationTicks * 50L));

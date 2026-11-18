@@ -27,6 +27,8 @@ public final class SuggestionService {
         Vec3 point=command==0?p.pick(20,0,false).getLocation():command==2?m.position().add(m.position().subtract(p.position()).normalize().scale(12)):p.position();
         ORDERS.put(m.getUUID(),new Order(p,m,command,point,now+TelepathySkills.suggestionTicks(p,m,200)));m.setTarget(null);m.getNavigation().stop();TelepathyFocus.strain(p,5);
     }
+    /** Shock Therapy (Power Amplification) jolts a creature out of a telepath's command. Returns whether it was under one. */
+    public static boolean release(Mob m){Order o=ORDERS.remove(m.getUUID());if(o==null)return false;m.getNavigation().stop();return true;}
     // Clearing a target must remain possible: cancelling a null target preserves the old attacker.
     public static boolean forbidden(Mob m,LivingEntity target){if(target==null)return false;Order o=ORDERS.get(m.getUUID());return o!=null&&(o.command!=4||target==o.owner||target instanceof net.minecraft.world.entity.player.Player);}
     public static void tick(MinecraftServer server){

@@ -147,6 +147,7 @@ public final class SonicService {
 
     public static void addResonance(ServerPlayer player, int amount) {
         Meter m = METERS.computeIfAbsent(player.getUUID(), ignored -> new Meter());
+        if (amount > 0 && com.jayptucker.heroesevolved.amplify.Amplification.surged(player)) amount *= 2;
         m.value = Math.clamp(m.value + amount, 0, MAX_RESONANCE);
         if (amount > 0) m.lastGain = now(player);
         syncMeter(player);
@@ -229,6 +230,7 @@ public final class SonicService {
         var clip = level.clip(new ClipContext(origin, origin.add(aim.scale(range)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
         double length = clip.getType() == HitResult.Type.BLOCK ? origin.distanceTo(clip.getLocation()) : range;
         if (clip.getType() == HitResult.Type.BLOCK) {
+            com.jayptucker.heroesevolved.amplify.AmpHooks.shatter(player, clip.getBlockPos());
             for (int x = -1; x <= 1; x++) for (int y = -1; y <= 1; y++)
                 com.jayptucker.heroesevolved.expansion.PowerReactions.resonate(level, clip.getBlockPos().offset(x, y, 0), now(player) + 160);
         }
@@ -244,7 +246,7 @@ public final class SonicService {
             if (++affected > 64) break;
             hit(player, target, damage);
             push(target, target.getDeltaMovement().add(aim.scale(sustained ? .35 : .9)).add(0, .12, 0));
-            if (focused) ring(player, target);
+            if (focused || com.jayptucker.heroesevolved.amplify.Amplification.surged(player)) ring(player, target);
         }
         if (affected > 0) addResonance(player, sustained ? Math.min(3, affected) : Math.min(12, affected * 4));
         Note note = NOTES.get(player.getUUID());

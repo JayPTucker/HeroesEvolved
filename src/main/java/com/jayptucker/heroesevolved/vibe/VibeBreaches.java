@@ -174,7 +174,8 @@ public final class VibeBreaches {
             this.kind = kind;
             this.sanctuary = sanctuary;
             started = entry.level().getGameTime();
-            lifetime = kind == Kind.GLIMPSE ? GLIMPSE_LIFETIME : kind == Kind.FREQUENCY ? FAR_LIFETIME : LIFETIME;
+            lifetime = (kind == Kind.GLIMPSE ? GLIMPSE_LIFETIME : kind == Kind.FREQUENCY ? FAR_LIFETIME : LIFETIME)
+                    * (com.jayptucker.heroesevolved.amplify.Amplification.surged(owner) ? 2 : 1);
             id = ++serial & 0x3FFFFFFF;
             views = views();
         }
@@ -385,7 +386,7 @@ public final class VibeBreaches {
     /** The extra stamina a press will cost: the distance to a frequency picked on the wheel. */
     public static int travelCost(AbilityUseContext context) {
         Integer pick = VibeFrequencies.picked(context.player(), false);
-        if (pick == null || pick == -1) return 0;
+        if (pick == null || pick == -1 || com.jayptucker.heroesevolved.amplify.Amplification.surged(context.player())) return 0;
         var frequency = pick == VibeFrequencies.VISION ? VibeVisions.spot(context.player()) : VibeFrequencies.get(context.player(), pick);
         return frequency == null ? 0 : VibeFrequencies.travel(context.player(), frequency);
     }
@@ -476,7 +477,16 @@ public final class VibeBreaches {
     }
 
     private static Mouth frequencyExit(ServerPlayer player, ServerLevel level, VibeFrequencies.Frequency frequency) {
-        Vec3 saved = frequency.feet();
+        // An overcharged breach overshoots (Power Amplification), unless nothing fits out there.
+        Vec3 aimed = com.jayptucker.heroesevolved.amplify.Amplification.overshoot(player, frequency.feet());
+        if (aimed != frequency.feet()) {
+            Mouth wide = frequencyExit(player, level, frequency, aimed);
+            if (wide != null) return wide;
+        }
+        return frequencyExit(player, level, frequency, frequency.feet());
+    }
+
+    private static Mouth frequencyExit(ServerPlayer player, ServerLevel level, VibeFrequencies.Frequency frequency, Vec3 saved) {
         BlockPos base = BlockPos.containing(saved);
         for (BlockPos cell : BlockPos.spiralAround(base, 3, Direction.EAST, Direction.SOUTH)) {
             Vec3 column = saved.add(cell.getX() - base.getX(), 0, cell.getZ() - base.getZ());

@@ -26,7 +26,8 @@ public final class GiftNames {
             Map.entry("invisibility", "Invisibility"), Map.entry("phasing", "Density"),
             Map.entry("empathic_mimicry", "Empathic Mimicry"), Map.entry("technopathy", "Technopathy"),
             Map.entry("matter_assembly", "Matter Assembly"), Map.entry("vibe", "Vibe"),
-            Map.entry("shapeshifting", "Shapeshifting"), Map.entry("hydrokinesis", "Hydrokinesis"));
+            Map.entry("shapeshifting", "Shapeshifting"), Map.entry("hydrokinesis", "Hydrokinesis"),
+            Map.entry("power_amplification", "Power Amplification"));
 
     private static final Map<String, String[]> EPITHETS = Map.ofEntries(
             Map.entry("regeneration", new String[]{"the Unkillable", "Bloodmend", "the Undying"}),
@@ -48,7 +49,8 @@ public final class GiftNames {
             Map.entry("matter_assembly", new String[]{"the Shaper", "Shardsmith", "the Maker"}),
             Map.entry("vibe", new String[]{"the Breacher", "Riftseer", "the Tuned"}),
             Map.entry("shapeshifting", new String[]{"the Many-Faced", "Skinchanger", "the Masked"}),
-            Map.entry("hydrokinesis", new String[]{"the Tidecaller", "Wavebreaker", "the Drowned"}));
+            Map.entry("hydrokinesis", new String[]{"the Tidecaller", "Wavebreaker", "the Drowned"}),
+            Map.entry("power_amplification", new String[]{"the Sidekick", "Redhand", "the Supercharger"}));
 
     private GiftNames() {}
 

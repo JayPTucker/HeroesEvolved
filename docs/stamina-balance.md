@@ -193,6 +193,16 @@ each level after (21 at Level 15, 28 Evolved), plus training and story notes, ag
 | 4 | `hydro_wave_rider` | 6 | 20 | 6s | 22 / 8s, Level 6 | 6 s of surfing |
 | 5 | `hydro_maelstrom` | 15 | 79 | 59s | 95 / 75s, Level 15 | a waterspout that drags and drowns |
 
+### Power Amplification
+
+| Key | Move | Level | Stamina | Cooldown | Was | Pays for |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | `amp_supercharge` | 1 | 14 | 4.25s |  | 15 s Surge on an ally (+25% harm, -25% cost and cooldowns); held, an Overcharge (50 Charge) |
+| 2 | `amp_red_lightning` | 1 | 11 | 1s |  | a bolt of 4 + tier (more with Charge), or a beam through a line |
+| 3 | `amp_shock_therapy` | 3 | 14 | 2s |  | clears mind control, stuns and slows; stands a downed friend up |
+| 4 | `amp_jumpstart` | 6 | 16 | 2.5s |  | doors, levers, furnaces x4 for 30 s, batteries, a mount x2 |
+| 5 | `amp_thousand_times` | 15 | 60 | 45s |  | every ally within 10 blocks overcharged, no backlash |
+
 ### Technopathy
 
 | Key | Move | Level | Stamina | Cooldown | Was | Pays for |
@@ -302,7 +312,7 @@ recovery, so a long exchange of blows is paid for.
 ## Finishers
 
 Every finisher costs 8 stamina and shares one 3 s cooldown across all powers; a finished
-foe gives 10 stamina back. Entries: `finisher_pyrokinesis`, `finisher_time_manipulation`, `finisher_telepathy`, `finisher_electrokinesis`, `finisher_hydrokinesis`, `finisher_cryokinesis`, `finisher_quake`, `finisher_sonic_resonance`, `finisher_radiation`, `finisher_superspeed`, `finisher_flight`, `finisher_telekinesis`, `finisher_phasing`, `finisher_invisibility`, `finisher_regeneration`, `finisher_vibe`, `finisher_technopathy`, `finisher_matter_assembly`, `finisher_empathic_mimicry`, `finisher_shapeshifting`.
+foe gives 10 stamina back. Entries: `finisher_pyrokinesis`, `finisher_time_manipulation`, `finisher_telepathy`, `finisher_electrokinesis`, `finisher_hydrokinesis`, `finisher_cryokinesis`, `finisher_quake`, `finisher_sonic_resonance`, `finisher_radiation`, `finisher_superspeed`, `finisher_flight`, `finisher_telekinesis`, `finisher_phasing`, `finisher_invisibility`, `finisher_regeneration`, `finisher_vibe`, `finisher_technopathy`, `finisher_matter_assembly`, `finisher_empathic_mimicry`, `finisher_shapeshifting`, `finisher_power_amplification`.
 
 ## Skill-tree and class abilities
 
@@ -498,4 +508,13 @@ and 0.75.
 | hydrokinesis | Tsunami | class:offense | 38 (was 40) | 17s (was 13s) |
 | hydrokinesis | Tidal Dome | class:defense | 28 | 13s |
 | hydrokinesis | Healing Spring | class:support | 27 (was 26) | 12.25s (was 12s) |
+| power_amplification | Partner | skill | 13 (was 10) | 5s |
+| power_amplification | Hold Hands | skill | 23 (was 22) | 10s |
+| power_amplification | Van Full | skill | 20 | 8s |
+| power_amplification | Overcharge the Enemy | skill | 24 | 12s |
+| power_amplification | Burnout | skill | 19 (was 18) | 10s |
+| power_amplification | Doorbuster | skill | 18 (was 16) | 8s |
+| power_amplification | Lightning Cannon | class:offense | 37 (was 38) | 16.75s (was 15s) |
+| power_amplification | Lights Back On | class:defense | 27 (was 26) | 13s |
+| power_amplification | Got Your Back | class:support | 24 (was 22) | 12s |
 

@@ -19,6 +19,7 @@ public final class SkillCatalog {
             if (style) return com.jayptucker.heroesevolved.styles.StyleSkills.action(this);
             if (power.equals("vibe")) return com.jayptucker.heroesevolved.vibe.VibeSkills.action(this);
             if (power.equals("hydrokinesis")) return com.jayptucker.heroesevolved.hydro.HydroSkills.action(this);
+            if (power.equals("power_amplification")) return com.jayptucker.heroesevolved.amplify.AmpSkills.action(this);
             if (power.equals("shapeshifting")) return com.jayptucker.heroesevolved.shapeshift.ShapeshiftSkills.action(this);
             if (power.equals("flight")) return com.jayptucker.heroesevolved.flight.FlightSkillService.action(this);
             if (power.equals("telekinesis")) return com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.action(this);

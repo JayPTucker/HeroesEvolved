@@ -176,8 +176,8 @@ public final class HydroService {
     public static Draw draw(ServerPlayer player, int amount) {
         Tide tide = tide(player);
         float boost = boost(player);
-        if (player.isInWaterOrBubble() || tide.water >= amount) {
-            if (!player.isInWaterOrBubble()) tide.water -= amount;
+        if (player.isInWaterOrBubble() || tide.water >= amount || com.jayptucker.heroesevolved.amplify.Amplification.surged(player)) {
+            if (!player.isInWaterOrBubble() && !com.jayptucker.heroesevolved.amplify.Amplification.surged(player)) tide.water -= amount;
             return new Draw(boost, false);
         }
         tide.water = 0;
@@ -198,7 +198,7 @@ public final class HydroService {
 
     /** The sea strengthens its own: a quarter more in water, a tenth more in rain. */
     public static float boost(ServerPlayer player) {
-        return player.isInWaterOrBubble() ? 1.25F : player.isInWaterRainOrBubble() ? 1.1F : 1;
+        return player.isInWaterOrBubble() || com.jayptucker.heroesevolved.amplify.Amplification.surged(player) ? 1.25F : player.isInWaterRainOrBubble() ? 1.1F : 1;
     }
 
     /** Water needs the power to answer and somewhere it can exist: the Nether boils it all away. */

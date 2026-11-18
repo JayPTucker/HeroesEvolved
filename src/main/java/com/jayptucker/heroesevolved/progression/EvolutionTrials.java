@@ -37,6 +37,7 @@ public final class EvolutionTrials {
             Map.entry("vibe", new Trial("Catch 40 hostile projectiles in a Breach Guard", 40)),
             Map.entry("shapeshifting", new Trial("Spend 30 minutes in disguise among your shape's own kind", 1800)),
             Map.entry("hydrokinesis", new Trial("Carry 60 enemies away on your waves", 60)),
+            Map.entry("power_amplification", new Trial("Supercharge allies 60 times", 60)),
             Map.entry("matter_assembly", new Trial("Strike enemies 40 times with assembled Shards", 40))
     );
 

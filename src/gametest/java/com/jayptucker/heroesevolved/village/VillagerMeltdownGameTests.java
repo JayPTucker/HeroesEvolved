@@ -220,6 +220,54 @@ public final class VillagerMeltdownGameTests {
         });
     }
 
+    @GameTest(template = "rewind_empty", timeoutTicks = 320, batch = "village.meltdown.ice")
+    public static void aHeldIceBlastCoolsHimWithoutHurtingHim(GameTestHelper helper) {
+        Villager him = villager(helper, 500, 0);
+        ServerPlayer cryo = holder(helper, him.position().add(0, 0, -5), ModAbilities.CRYOKINESIS_ID, 1);
+        float health = him.getHealth();
+        VillagerMeltdown.Meltdown m;
+        try {
+            cryo.setData(ModDataAttachments.POWER_INTRO_HISTORY,
+                    cryo.getData(ModDataAttachments.POWER_INTRO_HISTORY).with(ModAbilities.CRYOKINESIS_ID));
+            com.jayptucker.heroesevolved.radiation.MeltdownFieldGameTests.suit(cryo, false);
+            m = VillagerMeltdown.start(him, 1000);
+            int before = m.fuse();
+            com.jayptucker.heroesevolved.cryo.CryoService.coldHit(cryo, him, 3);
+            helper.assertTrue(m.fuse() == before, "Cold is not a blow: it takes no time off (" + m.fuse() + ")");
+            helper.onEachTick(() -> aimAt(cryo, him.getBoundingBox().getCenter()));
+            aimAt(cryo, him.getBoundingBox().getCenter());
+            helper.assertTrue(com.jayptucker.heroesevolved.ability.service.AbilityUseService.activateAssignedAction(cryo,
+                            com.jayptucker.heroesevolved.ability.AbilitySlot.PRIMARY, false)
+                            == com.jayptucker.heroesevolved.ability.AbilityUseResult.SUCCESS, "Ice Blast starts on him");
+        } catch (RuntimeException e) { cleanup(cryo, him); throw e; }
+        int fuse = m.fuse();
+        // Past Ice Blast's ordinary eight seconds, the stream is still on him and his countdown hasn't moved.
+        helper.runAfterDelay(200, () -> {
+            try {
+                helper.assertTrue(com.jayptucker.heroesevolved.cryo.CryoBlastService.isStreaming(cryo),
+                        "Held on him, Ice Blast doesn't stop at its usual eight seconds");
+                helper.assertTrue(VillagerMeltdown.critical(him) && m.fuse() >= fuse - 5,
+                        "While the stream is on him his countdown waits: " + m.fuse() + " of " + fuse);
+            } catch (RuntimeException e) { cleanup(cryo, him); throw e; }
+        });
+        helper.runAfterDelay(275, () -> {
+            try {
+                helper.assertTrue(!VillagerMeltdown.critical(him), "Twelve seconds of cold and the heat is gone out of him");
+                helper.assertTrue(him.isAlive() && him.getHealth() == health, "And he was never hurt (" + him.getHealth() + ")");
+                helper.succeed();
+            } finally {
+                com.jayptucker.heroesevolved.cryo.CryoService.stopAll(cryo);
+                cleanup(cryo, him);
+            }
+        });
+    }
+
+    private static void aimAt(ServerPlayer p, Vec3 point) {
+        Vec3 delta = point.subtract(p.getEyePosition());
+        p.setYRot((float) Math.toDegrees(Math.atan2(-delta.x, delta.z)));
+        p.setXRot((float) -Math.toDegrees(Math.atan2(delta.y, delta.horizontalDistance())));
+    }
+
     @GameTest(template = "rewind_empty", timeoutTicks = 60, batch = "village.meltdown.safe")
     public static void villagersCarriedToTheSafePointCountAndStay(GameTestHelper helper) {
         Villager him = villager(helper, 500, 0), neighbour = villager(helper, 500, 3);

@@ -146,6 +146,11 @@ public final class AbilityUseService {
             return AbilityUseResult.UNKNOWN_ABILITY;
         }
 
+        // A supercharge's backlash can switch a power off for a moment (a telepath deafened by a thousand minds).
+        if (com.jayptucker.heroesevolved.amplify.Amplification.locked(player, powerId)) {
+            return AbilityUseResult.CANNOT_USE;
+        }
+
         Optional<AbilityAction> action = Optional.ofNullable(chooser.apply(powerId));
 
         if (action.isEmpty()) {
@@ -159,7 +164,8 @@ public final class AbilityUseService {
 
         Component actionName = Component.translatable(abilityAction.definition().displayNameKey());
 
-        if (!abilityAction.definition().isUnlockedAt(powerLevel)) {
+        // Breakthrough (Power Amplification): a partner on a Surge reaches one tier above what they've unlocked.
+        if (!abilityAction.definition().isUnlockedAt(powerLevel + com.jayptucker.heroesevolved.amplify.Amplification.tierBonus(player))) {
             PowerFeedback.explain(player, actionName.copy().append(Component.literal(
                     " unlocks at Level " + PowerLevels.levelForTier(abilityAction.definition().unlockLevel())
                             + " (you're Level " + PlayerProgressionService.getPowerLevel(player) + ").")));
@@ -227,12 +233,18 @@ public final class AbilityUseService {
             return AbilityUseResult.INSUFFICIENT_ENERGY;
         }
 
+        // Overcharge the Enemy (Power Amplification): an overloaded body's move goes wild instead.
+        if (com.jayptucker.heroesevolved.amplify.Amplification.misfire(player)) {
+            return AbilityUseResult.CANNOT_USE;
+        }
+
         mark = PowerSounds.mark();
         if (abilityAction.activate(context)
                 != AbilityActivationResult.SUCCESS) {
             return AbilityUseResult.ACTIVATION_REJECTED;
         }
         PowerSounds.used(player, powerId, abilityAction, PowerSounds.Phase.PRESS, mark);
+        com.jayptucker.heroesevolved.amplify.Amplification.powerUsed(player, abilityAction.definition().unlockLevel() >= 5);
 
         AbilityEffects.onAction(
                 player, powerId, abilityAction.definition().id().getPath());

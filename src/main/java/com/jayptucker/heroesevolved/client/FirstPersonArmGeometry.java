@@ -17,6 +17,10 @@ public final class FirstPersonArmGeometry {
 
     public static void pose(PoseStack stack, HumanoidArm arm, ArmPose pose, float time, float poseAge) {
         float side = arm == HumanoidArm.RIGHT ? 1 : -1;
+        if (AmpPoses.owns(pose)) {
+            AmpPoses.first(stack, arm, side, pose, time, poseAge);
+            return;
+        }
         if (switch (pose) {
             case VIBE_PALM, VIBE_OPEN, VIBE_READ, VIBE_GUARD, VIBE_LOCK, VIBE_LANCE, VIBE_CROSS, VIBE_STEP, VIBE_CHANNEL, VIBE_HOP, VIBE_RIFT -> true;
             default -> false;

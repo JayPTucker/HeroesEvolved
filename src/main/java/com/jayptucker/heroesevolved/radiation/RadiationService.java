@@ -116,6 +116,7 @@ public final class RadiationService {
 
     /** Raises Critical Mass. At 100% containment begins to fail. */
     public static void addMass(ServerPlayer player, int amount) {
+        if (amount > 0 && com.jayptucker.heroesevolved.amplify.Amplification.surged(player)) amount = amount * 3 / 2;
         int mass = Math.min(MAXIMUM_MASS, mass(player) + amount);
         player.setData(ModDataAttachments.PLAYER_RADIATION_STRESS, mass);
         syncVisuals(player);

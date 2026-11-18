@@ -193,6 +193,20 @@ public final class SpaceTimeService {
         history.addLast(new Moment(tick, Anchor.capture(p), p.getHealth(), p.getRemainingFireTicks()));
         while (history.size() > 25 || !history.isEmpty() && history.getFirst().tick < tick - 120) history.removeFirst();
     }
+    /** Where a player stood {@code ticksAgo} ago in this world, and the health they had then (Power Amplification's Daphne's run). */
+    public record Past(Vec3 position, float health) {}
+
+    public static Past past(ServerPlayer p, int ticksAgo) {
+        var history = HISTORY.get(p.getUUID());
+        if (history == null || history.isEmpty()) return null;
+        long cutoff = now(p) - ticksAgo;
+        String here = p.level().dimension().location().toString();
+        Moment best = null;
+        for (Moment m : history) if (m.tick <= cutoff && m.place.dimension.equals(here)) best = m;
+        if (best == null) best = history.stream().filter(m -> m.place.dimension.equals(here)).findFirst().orElse(null);
+        return best == null ? null : new Past(best.place.position(), best.health);
+    }
+
     private static Moment personalTarget(ServerPlayer p) {
         var history = HISTORY.get(p.getUUID()); if (history == null || history.isEmpty()) return null;
         long cutoff = now(p) - 100;

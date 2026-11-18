@@ -78,7 +78,8 @@ public final class PowerIntroService {
             Map.entry("matter_assembly", new Spec(50, 40, 0xE7B771, ArmPose.TWO_HANDS, Kind.MATTER_WEAVE, Kind.MATTER_SHIELD)),
             Map.entry("vibe", new Spec(28, 25, 0x46BDFF, ArmPose.VIBE_READ, null, null)),
             Map.entry("shapeshifting", new Spec(30, 25, 0x8FCFC6, ArmPose.TEMPLE, null, null)),
-            Map.entry("hydrokinesis", new Spec(30, 30, 0x3CC2D6, ArmPose.WATER_CALL, null, null)));
+            Map.entry("hydrokinesis", new Spec(30, 30, 0x3CC2D6, ArmPose.WATER_CALL, null, null)),
+            Map.entry("power_amplification", new Spec(30, 25, 0xE0263A, ArmPose.AMP_CUP, null, null)));
     private static final Map<UUID, Session> SESSIONS = new HashMap<>();
     private static final Map<UUID, Integer> SOFT_LANDINGS = new HashMap<>();
     /** Allies an awakening is saving, shielded until this game tick. */
@@ -299,6 +300,7 @@ public final class PowerIntroService {
             case "technopathy" -> SoundEvents.COMPARATOR_CLICK;
             case "vibe" -> SoundEvents.AMETHYST_BLOCK_RESONATE;
             case "hydrokinesis" -> SoundEvents.CONDUIT_ACTIVATE;
+            case "power_amplification" -> SoundEvents.BEACON_ACTIVATE;
             case "shapeshifting" -> SoundEvents.ILLUSIONER_MIRROR_MOVE;
             case "matter_assembly" -> SoundEvents.DEEPSLATE_PLACE;
             default -> SoundEvents.WIND_CHARGE_BURST.value();
@@ -433,6 +435,10 @@ public final class PowerIntroService {
             case "hydrokinesis" -> {
                 LivingEntity saved = ward ? session.ward : player;
                 com.jayptucker.heroesevolved.hydro.HydroService.awaken(player, saved, Danger.threats(player, saved, 10));
+            }
+            case "power_amplification" -> {
+                LivingEntity saved = ward ? session.ward : player;
+                com.jayptucker.heroesevolved.amplify.AmpService.awaken(player, saved, Danger.threats(player, saved, 10));
             }
         }
         // Every other power reaches across to the ally it woke for, and ends their fight too.
