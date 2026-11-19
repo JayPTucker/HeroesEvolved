@@ -1,6 +1,7 @@
 package com.jayptucker.heroesevolved.story.night;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
+import com.jayptucker.heroesevolved.story.bunker.BunkerLayout.Scene;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
 import com.jayptucker.heroesevolved.company.CompanyAgentEntity;
@@ -108,26 +109,25 @@ public final class NightThreeService {
     static final float TK_AGENT_DAMAGE = 9, TK_PLAYER_DAMAGE = 4;
 
     /** The generator hall, where runners arrive: lit, humming, and nobody on watch. */
-    public static final Vec3 ARRIVAL = spot(9.5, 1, 4.5);
+    public static final Vec3 ARRIVAL = spot(Scene.arrival(2));
     /** Inside Gray's cage. */
-    public static final Vec3 CAGE = spot(-4.5, 1, 14.5);
+    public static final Vec3 CAGE = spot(Scene.CAGE);
     /** On the floor in front of Pod 14. */
-    public static final Vec3 POD_FRONT = spot(4.5, 1, 32.5);
-    /** Gray's way from his cage to Pod 14: out of the cell, down the corridor, along the east pods. */
-    static final List<Vec3> ROUTE = List.of(spot(-3.5, 1, 14.5), spot(-1.5, 1, 14.5), spot(0.5, 1, 16.5), spot(0.5, 1, 19.5),
-            spot(4.5, 1, 21.5), spot(4.5, 1, 30.5), POD_FRONT);
+    public static final Vec3 POD_FRONT = spot(Scene.POD_FRONT);
+    /** Gray's way from his cage to Pod 14: through his bars, up the aisle, along the west corridor, across the commons and down the hall. */
+    static final List<Vec3> ROUTE = Scene.GRAY_ROUTE.stream().map(NightThreeService::spot).toList();
 
     private record Post(Role role, Vec3 at, float yaw, String name) {}
 
-    /** Where the night watch stands: records, the security checkpoint, the corridor, the stasis hall, and the quiet by Pod 14. */
+    /** Where the night watch stands: records, the airlock and its booth, the commons, the stasis hall, and the quiet by Pod 14. */
     private static final List<Post> POSTS = List.of(
-            new Post(Role.GUARD, spot(1.5, 1, 9.5), 180, "Company guard"),
-            new Post(Role.GUARD, spot(-7.5, 1, 4.5), 90, "Company guard"),
-            new Post(Role.GUARD, spot(-11.5, 1, 6.5), -90, "Company guard"),
+            new Post(Role.GUARD, spot(19.5, 1, 11.5), 90, "Company guard"),
+            new Post(Role.GUARD, spot(-1.5, 1, 7.5), 0, "Company guard"),
+            new Post(Role.GUARD, spot(4.5, 1, 7.5), 90, "Company guard"),
             new Post(Role.GUARD, spot(0.5, 1, 16.5), 0, "Company guard"),
-            new Post(Role.GUARD, spot(-3.5, 1, 22.5), 0, "Company guard"),
-            new Post(Role.GUARD, spot(2.5, 1, 34.5), 180, "Company guard"),
-            new Post(Role.SUPPRESSOR, spot(2.5, 1, 31.5), 180, "The man in the gray suit"));
+            new Post(Role.GUARD, spot(-3.5, 1, 40.5), 0, "Company guard"),
+            new Post(Role.GUARD, spot(4.5, 1, 64.5), 180, "Company guard"),
+            new Post(Role.SUPPRESSOR, spot(4.5, 1, 60.5), 180, "The man in the gray suit"));
 
     public enum Outcome { NIGHT, KEPT, TAKEN }
 
@@ -158,6 +158,8 @@ public final class NightThreeService {
         BlockPos origin = NightThreeBunker.ORIGIN;
         return new Vec3(origin.getX() + x, origin.getY() + y, origin.getZ() + z);
     }
+
+    private static Vec3 spot(Vec3 offset) { return spot(offset.x, offset.y, offset.z); }
 
     // ------------------------------------------------------------------
     // Who is where
@@ -814,7 +816,7 @@ public final class NightThreeService {
     }
 
     /** Where the {@code slot}th runner arrives: a row across the generator hall, then a second row behind it. */
-    static Vec3 slot(int slot) { return slot < 6 ? spot(7.5 + slot, 1, 4.5) : spot(1.5 + slot, 1, 3.5); }
+    static Vec3 slot(int slot) { return spot(Scene.arrival(slot)); }
     static List<Vec3> postSpots() { return POSTS.stream().map(Post::at).toList(); }
     static SylarEntity gray() { return run == null ? null : run.gray; }
     static List<CompanyAgentEntity> agents() { return run == null ? List.of() : List.copyOf(run.agents); }

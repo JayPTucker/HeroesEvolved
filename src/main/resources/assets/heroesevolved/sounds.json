@@ -1081,5 +1081,38 @@
       "heroesevolved:power/vibe/end_1",
       "heroesevolved:power/vibe/end_2"
     ]
+  },
+  "story_sealed": {
+    "subtitle": "subtitles.heroesevolved.story_sealed",
+    "sounds": [
+      {
+        "name": "heroesevolved:story/story_sealed"
+      }
+    ]
+  },
+  "story_years": {
+    "subtitle": "subtitles.heroesevolved.story_years",
+    "sounds": [
+      {
+        "name": "heroesevolved:story/story_years"
+      }
+    ]
+  },
+  "story_ward": {
+    "subtitle": "subtitles.heroesevolved.story_ward",
+    "sounds": [
+      {
+        "name": "heroesevolved:story/story_ward"
+      }
+    ]
+  },
+  "story_wake_music": {
+    "subtitle": "subtitles.heroesevolved.story_wake_music",
+    "sounds": [
+      {
+        "name": "heroesevolved:story/story_wake_music",
+        "stream": true
+      }
+    ]
   }
 }

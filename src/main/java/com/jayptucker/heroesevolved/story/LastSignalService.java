@@ -144,7 +144,7 @@ public final class LastSignalService {
                 || player.level() != player.getServer().overworld()) return;
         BlockPos pos = event.getPos();
         BunkerData bunker = BunkerData.get(player.getServer());
-        if (hasBunker(player) && bunker.built && pos.equals(BunkerBuilder.receiverPos(bunker.origin))
+        if (hasBunker(player) && bunker.built && pos.equals(BunkerBuilder.receiverPos(bunker))
                 && BunkerBuilder.isReceiver(player.serverLevel().getBlockState(pos))) {
             accept(event);
             receive(player, bunker);
@@ -194,7 +194,7 @@ public final class LastSignalService {
                 }
                 data.leads.put(player.getUUID(), lead);
                 data.setDirty();
-                chime(player.serverLevel(), BunkerBuilder.receiverPos(bunker.origin));
+                chime(player.serverLevel(), BunkerBuilder.receiverPos(bunker));
                 tell(player, "RELAY STATION: Two pods occupied. Life support failing. Requesting extraction.");
                 // Isaac painted this call before the Last Day; Bennet filed his canvas with the receiver.
                 com.jayptucker.heroesevolved.expansion.PropheticPainting.giveSignal(player);
@@ -443,7 +443,7 @@ public final class LastSignalService {
         if (!bunker.built) return;
         LastSignalData data = LastSignalData.get(server);
         ServerLevel home = server.overworld();
-        List<BlockPos> positions = BunkerBuilder.survivorPositions(bunker.origin);
+        List<BlockPos> positions = BunkerBuilder.survivorPositions(bunker);
         for (int i = 0; i < positions.size(); i++) {
             BlockPos pos = positions.get(i);
             int bit = 1 << i;

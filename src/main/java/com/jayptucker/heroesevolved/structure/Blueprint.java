@@ -49,6 +49,12 @@ public final class Blueprint {
     public int depth() { return layers.isEmpty() ? 0 : layers.getFirst().size(); }
     public int width() { return depth() == 0 ? 0 : layers.getFirst().getFirst().length(); }
 
+    /** Whether the mod ships a blueprint called {@code name}. */
+    public static boolean exists(String name) {
+        if (CACHE.containsKey(name)) return true;
+        return Blueprint.class.getResource("/data/heroesevolved/blueprints/" + name + ".blueprint") != null;
+    }
+
     /** Loads {@code data/heroesevolved/blueprints/<name>.blueprint} from the mod jar, once. */
     public static Blueprint load(String name) {
         return CACHE.computeIfAbsent(name, key -> {

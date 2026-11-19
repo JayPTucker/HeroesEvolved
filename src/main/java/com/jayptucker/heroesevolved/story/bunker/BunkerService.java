@@ -53,6 +53,10 @@ public final class BunkerService {
     private static final int ALARM_RED = 0x55FF1010;
     /** True from a sleeper's alarm until the last sleeper waking with them is out of their pod. */
     private static boolean alarmed;
+    /** Set when a sleeper's pod opens, cleared when they leave the bunker: their waking music plays until then. */
+    public static final String MUSIC = "heroesevolved_bunker_music";
+    /** Those whose client has been told to play it (and hasn't since left the Overworld or logged out). */
+    private static final Set<UUID> PLAYING = new HashSet<>();
 
     private BunkerService() {}
 
@@ -64,6 +68,7 @@ public final class BunkerService {
         if (!data.built) {
             data.origin = BunkerBuilder.build(server.overworld());
             data.built = true;
+            data.design = BunkerLayout.STASIS_DESIGN;
             data.layout = BunkerData.LAYOUT;
             data.powered = false;
             data.setDirty();
@@ -84,13 +89,21 @@ public final class BunkerService {
         MinecraftServer server = player.getServer();
         BunkerData data = ensureBuilt(server);
         ServerLevel overworld = server.overworld();
-        // Pod 14 is Claire Bennet's, the one her father sealed her in on the Last Day: nobody else sleeps there.
+        // Pod 14 is Claire Bennet's, the one her father sealed her in on the Last Day: nobody else sleeps there. The ward's
+        // private pod is only ever its one sleeper's (HelixWard).
+        BunkerLayout layout = data.layout();
         int index = data.pod(player.getUUID(), BunkerBuilder.PODS, com.jayptucker.heroesevolved.story.night.NightThreeBunker.CLAIRE);
-        BlockPos base = data.origin.offset(BunkerBuilder.podOffset(index));
-        if (!overworld.getBlockState(base).is(ModBlocks.CRYOCHAMBER.get())) BunkerBuilder.placePod(overworld, data.origin, index, true);
+        if (index >= layout.pods()) {
+            // A ward sleeper in a bunker without the ward: the hall instead.
+            data.pods.remove(player.getUUID());
+            index = data.pod(player.getUUID(), BunkerBuilder.PODS, com.jayptucker.heroesevolved.story.night.NightThreeBunker.CLAIRE);
+        }
+        if (index == BunkerLayout.LAB_POD) HelixWard.dose(player);
+        BlockPos base = data.origin.offset(layout.podOffset(index));
+        if (!overworld.getBlockState(base).is(ModBlocks.CRYOCHAMBER.get())) BunkerBuilder.placePod(overworld, data.origin, layout, index, true);
         if (player.level() != overworld) player.teleportTo(overworld, base.getX() + .5, base.getY(), base.getZ() + .5, 0, 0);
         CryoChamberService.enter(player, base, RELEASE + 5);
-        BunkerBuilder.labelPod(overworld, data.origin, index, player.getGameProfile().getName(), false);
+        BunkerBuilder.labelPod(overworld, data, index, player.getGameProfile().getName(), false);
         SESSIONS.put(player.getUUID(), 0);
         return true;
     }
@@ -141,11 +154,12 @@ public final class BunkerService {
         }
         BunkerData bunker = BunkerData.get(server);
         if (!bunker.built) return;
+        if (server.overworld().getGameTime() % 10 == 0) music(server, bunker);
         emergency(server, bunker);
         BunkerPower.tick(server.overworld(), bunker);
         if (server.overworld().getGameTime() % 20 == 0) {
             BunkerBuilder.upgrade(server.overworld(), bunker);
-            BunkerBuilder.releaseClaire(server.overworld(), bunker.origin);
+            BunkerBuilder.releaseClaire(server.overworld(), bunker);
             // Nobody waking or about to (a server restarted mid-waking, or a veteran only told where the
             // bunker is): the power comes back.
             if (!bunker.powered && !BunkerPower.switching() && !alarmed && SESSIONS.keySet().stream().allMatch(STEPPED_OUT::contains))
@@ -153,7 +167,7 @@ public final class BunkerService {
             // Every sleeper's name over their pod, including those who woke before the nameplates did this.
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 Integer pod = bunker.pods.get(player.getUUID());
-                if (pod != null && pod != com.jayptucker.heroesevolved.story.night.NightThreeBunker.CLAIRE) BunkerBuilder.labelPod(server.overworld(), bunker.origin, pod, player.getGameProfile().getName(),
+                if (pod != null && pod != com.jayptucker.heroesevolved.story.night.NightThreeBunker.CLAIRE) BunkerBuilder.labelPod(server.overworld(), bunker, pod, player.getGameProfile().getName(),
                         !SESSIONS.containsKey(player.getUUID()) || STEPPED_OUT.contains(player.getUUID()));
             }
         }
@@ -182,6 +196,12 @@ public final class BunkerService {
             player.setData(ModDataAttachments.BUNKER_AWOKEN, true);
             caption(player, "bunker_3");
             award(player);
+            boolean ward = HelixWard.sleeper(player.getServer(), player);
+            if (ward) {
+                // Alone in the Helix Ward: told only that something is different, as the Eclipse's chosen are.
+                caption(player, "bunker_ward");
+                player.sendSystemMessage(Component.translatable("bunker.heroesevolved.ward").withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC));
+            }
         }
         if (age > RELEASE && !out && outOfPod(player)) {
             stepOut(player);
@@ -199,7 +219,7 @@ public final class BunkerService {
         BunkerData data = BunkerData.get(server);
         Integer index = data.pods.get(player.getUUID());
         if (index == null || player.level() != server.overworld()) return true;
-        return !CryoChamberService.isInside(player) && !player.blockPosition().equals(data.origin.offset(BunkerBuilder.podOffset(index)));
+        return !CryoChamberService.isInside(player) && !player.blockPosition().equals(data.origin.offset(data.layout().podOffset(index)));
     }
 
     /**
@@ -208,11 +228,13 @@ public final class BunkerService {
      */
     private static void stepOut(ServerPlayer player) {
         STEPPED_OUT.add(player.getUUID());
+        // The waking's music, until they find their way out (music()); it begins once the alarm is over.
+        player.getPersistentData().putBoolean(MUSIC, true);
         HEARING.add(player.getUUID());
         ScreenTintPayload.send(player, ALARM_RED, 0, ScreenTintPayload.Style.PULSE);
         BunkerData data = BunkerData.get(player.getServer());
         Integer pod = data.pods.get(player.getUUID());
-        if (pod != null) BunkerBuilder.labelPod(player.getServer().overworld(), data.origin, pod, player.getGameProfile().getName(), true);
+        if (pod != null) BunkerBuilder.labelPod(player.getServer().overworld(), data, pod, player.getGameProfile().getName(), true);
     }
 
     /**
@@ -227,14 +249,14 @@ public final class BunkerService {
             for (ServerPlayer listener : server.overworld().players()) {
                 UUID id = listener.getUUID();
                 boolean inPod = SESSIONS.containsKey(id) && !STEPPED_OUT.contains(id);
-                if (inPod || HEARING.contains(id) || !BunkerBuilder.inside(data.origin, listener.blockPosition())) continue;
+                if (inPod || HEARING.contains(id) || !BunkerBuilder.inside(data, listener.blockPosition())) continue;
                 HEARING.add(id);
                 cue(listener, TimeIntroPayload.BUNKER_HALL_ALARM);
             }
         }
         for (UUID id : List.copyOf(HEARING)) {
             ServerPlayer listener = server.getPlayerList().getPlayer(id);
-            if (listener != null && listener.level() == server.overworld() && BunkerBuilder.inside(data.origin, listener.blockPosition())) continue;
+            if (listener != null && listener.level() == server.overworld() && BunkerBuilder.inside(data, listener.blockPosition())) continue;
             HEARING.remove(id);
             if (listener != null) cue(listener, TimeIntroPayload.BUNKER_QUIET);
         }
@@ -248,6 +270,43 @@ public final class BunkerService {
             HEARING.clear();
         }
     }
+
+    /**
+     * The waking's music: it plays for each woken sleeper, from the end of the alarm, while they are anywhere in the bunker
+     * (its rooms, the stairwell and the ruined lobby at its top); the moment they step out of all that into the world it
+     * fades away and they earn "What happened...?". Started again after a relog or a trip out of the Overworld if they are still inside.
+     */
+    private static void music(MinecraftServer server, BunkerData data) {
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) music(player, data);
+    }
+
+    /** One player's waking music: start it inside the bunker once the alarm is over, fade it (and award the advancement) once they are out. */
+    public static void music(ServerPlayer player, BunkerData data) {
+        MinecraftServer server = player.getServer();
+        if (!player.getPersistentData().getBoolean(MUSIC)) return;
+        UUID id = player.getUUID();
+        if (player.level() != server.overworld()) { PLAYING.remove(id); return; }
+        if (withinBunker(data, player.blockPosition())) {
+            // Not over the alarm: it starts when the alarm stops and the lights come back.
+            if (!alarmed && PLAYING.add(id)) cue(player, TimeIntroPayload.BUNKER_MUSIC);
+            return;
+        }
+        player.getPersistentData().remove(MUSIC);
+        PLAYING.remove(id);
+        cue(player, TimeIntroPayload.BUNKER_EXIT);
+        AdvancementHolder advancement = server.getAdvancements().get(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "what_happened"));
+        if (advancement != null) player.getAdvancements().award(advancement, "granted");
+    }
+
+    /** The bunker's rooms with a little rock round them, and the column of the stairwell and the lobby over the vault. */
+    public static boolean withinBunker(BunkerData data, BlockPos pos) {
+        BlockPos at = pos.subtract(data.origin);
+        if (data.layout().bounds().inflatedBy(3).isInside(at)) return true;
+        return at.getX() >= -7 && at.getX() <= 19 && at.getZ() >= -14 && at.getZ() <= 4 && at.getY() >= -3 && at.getY() <= 120;
+    }
+
+    /** For tests: whether the waking's music is still due to play for {@code player}. */
+    public static boolean musicPlaying(ServerPlayer player) { return player.getPersistentData().getBoolean(MUSIC); }
 
     private static void cue(ServerPlayer player, int stage) {
         PacketDistributor.sendToPlayer(player, new TimeIntroPayload(stage));
@@ -267,12 +326,14 @@ public final class BunkerService {
         SESSIONS.remove(event.getEntity().getUUID());
         STEPPED_OUT.remove(event.getEntity().getUUID());
         HEARING.remove(event.getEntity().getUUID());
+        PLAYING.remove(event.getEntity().getUUID());
     }
 
     @SubscribeEvent public static void stopping(ServerStoppingEvent event) {
         SESSIONS.clear();
         STEPPED_OUT.clear();
         HEARING.clear();
+        PLAYING.clear();
         alarmed = false;
         BunkerPower.reset();
     }

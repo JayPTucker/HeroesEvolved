@@ -133,7 +133,9 @@ public final class NightThreeGameTests {
         }
         h.assertTrue(found.isEmpty(), "The bunker in the past has nothing that came later: " + found);
         h.assertTrue(lamps > 0, "The lights are on");
-        h.assertTrue(night.getBlockState(NightThreeBunker.at(4, 12, 34)).is(Blocks.DEEPSLATE_BRICKS), "The stasis hall's ceiling is whole where the cave broke in later");
+        var collapse = com.jayptucker.heroesevolved.story.bunker.BunkerLayout.Scene.COLLAPSE;
+        h.assertTrue(night.getBlockState(NightThreeBunker.at(collapse.getX(), collapse.getY(), collapse.getZ())).is(Blocks.DEEPSLATE_BRICKS),
+                "The stasis hall's ceiling is whole where it came down later");
 
         // Everywhere the night puts someone, they can stand.
         for (int i = 0; i < NightThreeService.MAX_RUNNERS; i++)

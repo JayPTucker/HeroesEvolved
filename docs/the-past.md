@@ -15,7 +15,7 @@ Primatech relay stations generate far apart in rings around the world origin, li
 
 ## Existing worlds
 
-Existing bunkers receive the receiver and recovery rooms where the original fixtures are still in place; the old copper receiver becomes the radio console, and the ground round an existing ruined lobby is graded the same way. Look for relay stations in newly generated terrain. Previously earned story books, advancements, discovery rewards, and past outcomes remain in the save. Books from the earlier bunker layout and retired Hourglass Annex, Avenue at 6:14, and Night Three episodes remain valid discoveries when found. The game recovers players whose saves still place them in one of those visits.
+Bunkers built before the Sublevel 4 rebuild (November 2026) keep their original rooms, and the players who sleep in them keep their pods; only new worlds get the rebuilt bunker and the Helix Ward. Existing bunkers receive the receiver and recovery rooms where the original fixtures are still in place; the old copper receiver becomes the radio console, and the ground round an existing ruined lobby is graded the same way. Look for relay stations in newly generated terrain. Previously earned story books, advancements, discovery rewards, and past outcomes remain in the save. Books from the earlier bunker layout and retired Hourglass Annex, Avenue at 6:14, and Night Three episodes remain valid discoveries when found. The game recovers players whose saves still place them in one of those visits.
 
 ## The first five minutes
 
@@ -26,7 +26,10 @@ New players first live [the Last Day](the-last-day.md), which ends with them sea
    beams across the hall. The facility alarm whoops in time with the red pulse, muffled through the
    lid, while the pod's own warning beeps quicken toward release.
 2. **37,620 days.** The pod's counter: 103 years. Frost on the glass. The pod holds you while the revival protocol runs.
-3. **You are awake.** The pod chimes and hisses open (about 5.5 seconds in) and you earn **Wake Up**.
+3. **You are awake.** The pod chimes and hisses open (about 5.5 seconds in), the waking's music begins, and you earn **Wake Up**.
+   Once you are out of the pod and the alarm is over, the waking's music fades in and plays for as long as you are in
+   the bunker, its stair or the ruined lobby at its top. Step out into the world and it fades away, and you earn
+   **What happened...?**
 4. **The power comes back.** The alarm holds until you step out of the pod. Then it cuts off, a breaker
    slams, and the bunker's lights click on in a wave from the generator, down the hall from its door to
    its far wall. The beacons keep turning.
@@ -36,24 +39,53 @@ Every new player wakes this way, in the pod assigned to them (the same number th
 lights go out, and everyone already in the bunker hears the alarm until the last sleeper is out of their
 pod, when the power comes back for all of them.
 
-A lectern in the middle of the chamber holds the orientation log. The receiver in the records room gives directions to the relay ruins.
+A chest in the hall's aisle holds the orientation log. The receiver in Records gives directions to the relay ruins.
+
+## Sublevel 4
+
+The bunker is Primatech's Sublevel 4 as it stood a hundred and three years after the Last Day. Everything the years did to
+it has a reason: the copper has gone green, most of all where water came in; the blast cracked the ceilings and brought
+part of the stasis hall's down; a cave burst through the commons' wall, and the azalea in the commons' planter lived on
+its water and grew into a tree; moss and roots creep out from it; some lights died, some glass broke, and cobwebs fill the
+corners nobody cleaned. The Company kept its notes in chests. Open one to read what's inside (it counts as a discovery,
+as reading a lectern does).
 
 | Room | What is in it |
 | --- | --- |
-| **Stasis hall** | Fourteen Cryochambers under copper galleries, alarm beacons, the orientation log, and Isaac Mendez's painting of the explosion on the far wall. Glow berries light the end where a cave broke through the ceiling |
-| **Records room** | The signal receiver on the east desk: a Simple Radio receiver with a transmitter stacked on it, a speaker and a microphone, the operator's chair in front. Noah Bennet's lockdown order, filing cabinets, and a chest with bread, apples and torches |
-| **Lab** (east of the corridor) | A long bench of instruments (a Centrifuge and a Synthesis Station among them), the Helixite assay log, specimen tubes, a lit specimen tank, and a chest with a Helixite Shard, Empty Syringes, bottles and a donated blood sample |
-| **Infirmary** (west of the corridor) | Two cots, medical storage and a screened recovery area, opening through an arch into a west ward with two more cots. Mara and Ivo recover here after the rescue |
-| **Generator hall** (east of records) | A cold reactor, fourteen power cells and a catwalk |
-| **Security** (west of records) | The checkpoint, lockers, emergency gear and a marked maintenance hatch |
-| **Maintenance bay** | Down the ladder from security are a workbench, a map desk, a cot and storage |
-| **The vault and the stair** (north of records) | The vault door the Last Day's survivors came through, stuck open a hundred years, cracked and grown over with vines, moss and roots. Behind it a switchback stair climbs to a ruined lobby at world spawn, where it comes up through a railed slot in the floor under the old SUBLEVEL 4 sign. The lobby stands at the ground's middle height over its footprint, and the land round it is graded to meet its floor (cut back where a hill rose, filled where it fell away, trees cleared), so it sits in a clearing on the surface rather than in a pit. Glow lichen and glow berries light the way. (A world too shallow for the stair, such as a superflat one, gets a ladder to a hatch instead.) |
+| **Airlock** (behind the vault) | The vault's hazard-striped door, a decontamination arch with spray nozzles and a drain, emergency lockers, and the security booth: a desk, the security chest, and a maintenance hatch in its floor. Moss and vines have come in through the vault |
+| **Commons** (the middle) | A two-storey rotunda: a gallery ring reached by two stairs, a chandelier of light boxes under a stepped ceiling, mess tables, a serving line and a reading lounge. A lush cave broke through its north-west wall: the planter's azalea is a tree now, grown up through the fallen gallery, and glow berries hang from the ceiling over it |
+| **Stasis hall** (south of the commons) | Fourteen Cryochambers in arched niches, each with its copper pipes and nameplate, under catwalks on both walls joined at each end. The orientation log in the aisle, a grand stair up to the far balcony, and Isaac Mendez's painting of the explosion, Exhibit 1, high on the far wall over the analysts' station. Part of the ceiling came down over the west side, roots and dripstone hanging through the hole. Pod 14 stands open with Claire's note in a chest beside it, and a trail of old blood leads from it to containment |
+| **Records and comms** (east) | The signal receiver on the north desk: a Simple Radio receiver with a transmitter on it, a speaker and a microphone, the operator's chair. Filing cabinets, the records chest (bread, apples, torches), a planning table, a window onto the generator's core, and Noah Bennet's corner with his lockdown order |
+| **Generator hall** (east) | The core, a column of light behind glass and copper; fourteen power cells (three still charged, one blown and scorched); a catwalk round three walls; the main breaker by the door. The power comes back from here |
+| **Infirmary** (west) | Four screened cots with monitors, medical cabinets, a sink and an operating table under its lamp. Mara and Ivo recover here after the rescue |
+| **Containment** (west) | Six barred cells and a watch desk. Cell 3 was Gabriel Gray's: the bars he unmade on the third night are still gone |
+| **Maintenance** (under the airlock) | Down the hatch in the security booth: a workbench, a map desk, a cot, storage, and Noah Bennet's own notes on Sublevel 4-R |
+| **Sublevel 4-R, the Helix Ward** (behind the blast door off the east corridor) | See below |
+| **The vault and the stair** (north of the airlock) | The vault door the Last Day's survivors came through, stuck open a hundred years, cracked and grown over with vines, moss and roots. Behind it a switchback stair climbs to a ruined lobby at world spawn, where it comes up through a railed slot in the floor under the old SUBLEVEL 4 sign. The lobby stands at the ground's middle height over its footprint, and the land round it is graded to meet its floor (cut back where a hill rose, filled where it fell away, trees cleared), so it sits in a clearing on the surface rather than in a pit. Glow lichen and glow berries light the way. (A world too shallow for the stair, such as a superflat one, gets a ladder to a hatch instead.) |
 
 The bunker is built once, about 32 blocks below world spawn, the first time any player joins. Its books give more context about the Company, the sleepers, and Odessa.
 
+## The Helix Ward
+
+Behind a blast door off the east corridor, jammed since the blast brought the passage behind it down, is Sublevel 4-R:
+one private pod on a frosted dais under a copper crown, the Formula bench, a specimen tank, and the office of Dr. A. Weir,
+who sealed its one sleeper in at 6:11 PM on the Last Day and never left.
+
+- **Who sleeps there.** When two or more new players live the Last Day together, one of them, drawn at random, is
+  carried to the ward instead of the hall, given a dose, and sealed in its pod. Someone who lives the day alone is never
+  chosen, and once the ward has had its sleeper nobody else ever goes there.
+- **What it gives them.** A random power (any power nobody has yet, Space-Time included), dormant: it wakes in danger like
+  any other. They are only told that something in their blood is waiting.
+- **Waking there.** The usual waking (the alarm, the counter, the power cut and its return), alone, as *SUBJECT 15*,
+  to the same music as everyone else. The blast door won't open from either side.
+- **The way out.** Weir's journal says how: up the ladder to the mezzanine, where a copper duct (crouch to fit) runs through the rock and comes
+  out on the stasis hall's east catwalk, over the others as they wake. Anyone in the hall can climb in the same way;
+  Bennet's notes in maintenance tell where the vent is.
+
 **Existing worlds:** players who have already played more than two minutes, or who already have an
-awakened power, are not put in a pod. They get a chat message saying where the bunker is instead. An earlier bunker receives compatible additions the first time someone comes near the stasis hall; its rooms, ladder
-and hatch otherwise stay as they were built.
+awakened power, are not put in a pod. They get a chat message saying where the bunker is instead. A bunker built before
+the rebuild keeps its rooms, ladder and hatch as they were built, receives compatible additions the first time someone
+comes near its stasis hall, and has no Helix Ward.
 Disable the spawn bunker with `bunker.enabled = false` in the common config.
 
 ## The Cryochamber
@@ -71,7 +103,7 @@ A two-block stasis pod. The bunker's pods are real Cryochambers, and players can
   The vial is the one item you can use inside.
 - Only one sleeper per pod. It drops as an item when the bottom half is broken.
 
-Regenerate the bunker tour screenshots with:
+Regenerate the bunker tour screenshots with (the preview wakes its player in the Helix Ward):
 
 ```bash
 ./gradlew runClient --init-script tools/bunker-preview.init.gradle

@@ -36,6 +36,33 @@ need: the same job, mood, length, tempo and rough spectrum, with our own synthes
 - **Record provenance.** Note in the generator which reference a new sound answers and that nothing was taken from it.
   `tools/verify-skill-content.py` already checks the custom sounds' provenance.
 
+## Reusable patterns from the story cues
+
+The Last Day's pods and the bunker's waking have four short music cues (`tools/generate-story-cues.py`, `ModSounds.STORY_*`,
+played once by `IntroDirector.cue` on the music channel when a `TimeIntroPayload` stage arrives): `story_sealed`
+(PROLOGUE_POD), `story_years` (PROLOGUE_YEARS, with the *103 years later* title), `story_ward` (PROLOGUE_WARD, sealed in the Helix Ward), and the waking's `story_wake_music`, a seamless 128-beat loop that `client/sound/BunkerMusic` fades in once the
+player is out of the pod and the alarm is over (BUNKER_MUSIC) and fades away when `BunkerService.music` sees them leave
+the bunker (BUNKER_EXIT, with the *What happened...?* advancement). The wake music is designed to the shape of the reference track the user picked (`Individual Layers and Alternate Encodings`,
+Music_03: D minor, about 92 bpm, roots D-F-D-C, a hush at 35 to 55 s and its peak near 60 s) with our own chords and motif, and two swells inside it follow the user's Score 01 stingers: a rise to the peak at 1.5 to 2.5 s,
+sung by a synthesized choir (`sung`: additive voices shaped by vowel formants, ~5.5 Hz vibrato) round C5 to E5, where
+the references' voices sit (round vowels, most energy near 300 Hz).
+- **A loop has no seam when its tail wraps round.** Render one loop plus a tail, add the tail onto the head (the last
+  chord, the pulse and the reverb ring on into the start), make the loudness arc end where it begins, and skip the end
+  fade (`finish(..., loop=True)`). Its length is a whole number of chords and beats (16 chords, 128 beats).
+- **Music never starts under an alarm.** It waits for the alarm to end and fades in (`BunkerMusic`, 4 s), and fades out
+  (5 s) rather than cutting.
+
+- **Design to the library's numbers.** The library's stingers and short cues measure 3 to 10 seconds, -18 to -23 dBFS RMS,
+  a peak one to three seconds in, a two to three second decay, mid-heavy (centroid 0.7 to 2 kHz), roots on D, A and E.
+  The first renders came out 3 to 5 dB loud: normalising only the band above 150 Hz ignores a cue's low end, so the
+  targets there sit about 3 dB under the full-band goal. Measure ours with the same script before shipping.
+- **A thump's click can own the envelope.** `story_sealed` first peaked at 0.1 s with a 0.5 s decay and a 2.5 kHz centroid:
+  the knock under its thump was louder than the pad. Keep the knock just audible and let the pad carry the peak.
+- **Write long OGGs in blocks.** libsndfile's Vorbis encoder overflowed the stack (exit 0xC00000FD, no message) when
+  handed the 80-second track in one `sf.write`; `finish` now writes 4096 frames at a time.
+- **Music steps aside for a cue.** `IntroDirector.cue` stops the vanilla background track first, so a beat never plays
+  under a song.
+
 ## Reusable patterns from the power sounds
 
 Every power got a palette of original synthesized cues in November 2026 (`sounds/PowerSounds`, `sounds/PowerCue`, made by

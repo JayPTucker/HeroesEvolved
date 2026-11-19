@@ -1797,5 +1797,15 @@
   "action.heroesevolved.amp_lightning_cannon": "Lightning Cannon",
   "action.heroesevolved.amp_lightning_cannon.desc": "Cup your hands for two seconds, then fire a beam three blocks wide and 18 long that knocks down everything in its path (10 + 2 x level). With this class, every Supercharge you give arms your next red lightning at full strength.",
   "action.heroesevolved.amp_lights_back_on": "Lights Back On",
-  "action.heroesevolved.amp_lights_back_on.desc": "Jolt every friend within eight blocks (you too) out of mind control, stuns and slows, and jumpstart every furnace and battery there."
+  "action.heroesevolved.amp_lights_back_on.desc": "Jolt every friend within eight blocks (you too) out of mind control, stuns and slows, and jumpstart every furnace and battery there.",
+  "subtitles.heroesevolved.story_sealed": "Music: the cold closes in",
+  "subtitles.heroesevolved.story_years": "Music: years pass",
+  "subtitles.heroesevolved.story_ward": "Music: something in your blood",
+  "intro.heroesevolved.bunker_ward.charge": "SUBJECT 15.",
+  "intro.heroesevolved.bunker_ward.charge_subtitle": "A pod on its own, in a ward of its own. Nobody else woke here.",
+  "bunker.heroesevolved.ward": "There's a sting in your arm that wasn't there when you went under. Something in your blood is waiting.",
+  "prologue.heroesevolved.pod_ward": "You come to behind frosted glass, somewhere small and white. Nobody else is here. A needle's sting fades from your arm.",
+  "subtitles.heroesevolved.story_wake_music": "Music: waking",
+  "advancement.heroesevolved.what_happened.title": "What happened...?",
+  "advancement.heroesevolved.what_happened.description": "Climb out of the stasis bunker into a world a hundred and three years on"
 }

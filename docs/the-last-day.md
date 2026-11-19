@@ -60,13 +60,16 @@ in the pod with the same number.
    > I know you don't understand. This is for your own good.
 
    He raises a Company taser and fires at each of you in turn.
-6. **The pods.** You come to sealed in your own pod, labelled with your name.
+6. **The pods.** You come to sealed in your own pod, labelled with your name, as a short music cue falls away. If two or
+   more of you lived the day together and the Helix Ward is still waiting for its one sleeper, one of you, drawn at
+   random, comes to somewhere else: a small white ward on your own, a needle's sting fading from your arm (see
+   [the Helix Ward](the-past.md#the-helix-ward)).
    - Screaming far above, and the ground shaking harder and harder.
    - Claire, through the glass of Pod 14: *"Uncle Peter... please..."*
    - One terrible blow through the rock. Every light in the hall dies, then stutters back (about a third stay dark), and
      stone breaks from the ceiling and comes down the aisle in a haze of dust. Then silence.
    - The pod hums on. Frost creeps across your sight, and everything goes black.
-   - **103 years later...**
+   - **103 years later...**, over a slow swell of music.
 7. **Waking.** The bunker under spawn wakes you in the pod with the same number (*STASIS FAILURE*, the alarm, and the
    pod counter reading 37,620 days), and the story carries on as [The Last Signal](the-past.md).
 
@@ -140,6 +143,7 @@ Commands:
 - `/heroesevolved prologue replay <players>`: live the day again from the apartment.
 - `/heroesevolved prologue skip <players>`: wake them in the bunker now.
 - `/heroesevolved prologue jump <evening|light|safe|noah|pods> [ticks]`: for previews.
+- The admin menu's **To cryopod** (Player tab, Admin row): the day jumps to everyone sealed in their pods and plays on to the waking; pressed while the city is still being built, the day starts there.
 
 ## For developers
 

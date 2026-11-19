@@ -133,6 +133,14 @@ public final class ModSounds {
                 ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, id)));
     }
 
+    /** Story music (tools/generate-story-cues.py): sealed in a pod, 103 years later, the Helix Ward, and the waking. */
+    public static final Supplier<SoundEvent> STORY_SEALED = story("story_sealed"), STORY_YEARS = story("story_years"),
+            STORY_WARD = story("story_ward"), STORY_WAKE_MUSIC = story("story_wake_music");
+
+    private static Supplier<SoundEvent> story(String name) {
+        return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, name)));
+    }
+
     public static void register(IEventBus modEventBus) {
         SOUND_EVENTS.register(modEventBus);
     }

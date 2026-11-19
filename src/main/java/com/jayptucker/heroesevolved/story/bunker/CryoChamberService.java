@@ -82,7 +82,7 @@ public final class CryoChamberService {
     /** The first look inside Pod 14 in the present turns up what Claire left in it. */
     private static boolean claireNote(ServerPlayer player, ServerLevel level, BlockPos base) {
         BunkerData data = BunkerData.get(level.getServer());
-        if (!data.built || !BunkerBuilder.isClaires(level, data.origin, base) || player.getPersistentData().getBoolean("heroesevolved_claire_note")) return false;
+        if (!data.built || !BunkerBuilder.isClaires(level, data, base) || player.getPersistentData().getBoolean("heroesevolved_claire_note")) return false;
         player.getPersistentData().putBoolean("heroesevolved_claire_note", true);
         player.sendSystemMessage(Component.translatable("cryochamber.heroesevolved.claire_note").withStyle(ChatFormatting.AQUA));
         return true;

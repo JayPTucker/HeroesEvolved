@@ -58,7 +58,8 @@ public record AdminActionPayload(
         INCIDENT_RENEGADE,
         INCIDENT_GUARDIAN,
         INCIDENT_MELTDOWN,
-        RAID_STOP
+        RAID_STOP,
+        SKIP_TO_POD
     }
 
     public static final Type<AdminActionPayload> TYPE =

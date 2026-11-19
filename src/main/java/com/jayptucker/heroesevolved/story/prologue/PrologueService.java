@@ -16,6 +16,8 @@ import com.jayptucker.heroesevolved.story.actor.StoryActorEntity;
 import com.jayptucker.heroesevolved.story.actor.StoryActorEntity.Role;
 import com.jayptucker.heroesevolved.story.bunker.BunkerBuilder;
 import com.jayptucker.heroesevolved.story.bunker.BunkerData;
+import com.jayptucker.heroesevolved.story.bunker.BunkerLayout;
+import com.jayptucker.heroesevolved.story.bunker.HelixWard;
 import com.jayptucker.heroesevolved.story.bunker.BunkerService;
 import com.jayptucker.heroesevolved.story.bunker.CryoChamberBlock;
 import com.jayptucker.heroesevolved.story.bunker.CryoChamberService;
@@ -83,7 +85,8 @@ import java.util.UUID;
  *   <li><b>The pods.</b> You come to sealed in your own pod. Screaming far above, the ground shaking, one terrible blow,
  *   silence. The pod hums on, frost creeps across your sight, and it all goes black. <i>103 years later...</i></li>
  * </ol>
- * Then the bunker under spawn wakes you, in the pod with the same number ({@link BunkerService#handOff}).
+ * Then the bunker under spawn wakes you, in the pod with the same number ({@link BunkerService#handOff}). One of a group
+ * may be drawn for the sealed Helix Ward instead ({@link HelixWard}): carried to its private pod and dosed.
  */
 public final class PrologueService {
     public static final String TAG = "heroesevolved_last_day";
@@ -135,6 +138,8 @@ public final class PrologueService {
         boolean sealed;
         /** The evening's clock tick the light appears at, once everyone has reached the beacon (-1 until then). */
         int lightAt = -1;
+        /** The one drawn for the Helix Ward's private pod when the light appeared, if anyone was. */
+        UUID ward;
     }
 
     private record Bubble(Display.TextDisplay display, int until) {}
@@ -145,6 +150,8 @@ public final class PrologueService {
     /** The last word each waiting player was given, so they hear only when it changes. */
     private static final Map<UUID, String> NOTICE = new java.util.HashMap<>();
     private static boolean forced;
+    /** An admin asked for the next day to start at the pods (toPods while the city was still being built). */
+    private static boolean podsNext;
 
     private PrologueService() {}
 
@@ -282,7 +289,11 @@ public final class PrologueService {
         if (cityData.ready()) LastDayData.get(city).build(city);
         holdWaiting(server, cityData);
         if (run == null) {
-            if (!WAITING.isEmpty() && cityData.ready() && !TimeIntroService.sceneRunning() && !AvenueService.running()) start(server, city);
+            if (!WAITING.isEmpty() && cityData.ready() && !TimeIntroService.sceneRunning() && !AvenueService.running()) {
+                start(server, city);
+                if (podsNext && run != null) skipTo(server, "pods", 0);
+                podsNext = false;
+            }
             return;
         }
         Run current = run;
@@ -401,18 +412,15 @@ public final class PrologueService {
         vault(city, true);
         vaultSound(city, true);
         BlockPos origin = LastDayData.origin();
+        // The Company's list: one of a group is drawn for the Helix Ward (never someone living the day alone).
+        current.ward = HelixWard.draw(BunkerData.get(server), List.copyOf(current.members.keySet()), city.random);
         // Down below: guards at the head of the stair, by the vault and along the way to the stasis hall, and the Bennets
         // by Pod 14.
         agent(city, new Vec3(CityGrid.STAIR_X0 - .5, CityGrid.STREET_Y + 1, CityGrid.STAIR_Z1 + 2.5), 160);
-        agent(city, at(origin, -1.5, 1, -1.5), 160);
-        agent(city, at(origin, -2.5, 1, -5.5), 180);
-        agent(city, at(origin, -1.5, 1, 2.5), 160);   // just inside Records, beside the door (not in the desk)
-        agent(city, at(origin, 0.5, 1, 15.5), 0);
-        agent(city, at(origin, -1.5, 1, 19.5), 0);
-        agent(city, at(origin, 2.5, 1, 19.5), 0);
-        // Noah stands just past the hall's lectern (the orientation log at 0 1 26), by his daughter.
-        current.noah = StoryActorEntity.spawn(city, Role.NOAH, at(origin, 0.5, 1, 28.5), 0, TAG);
-        current.claire = StoryActorEntity.spawn(city, Role.CLAIRE, at(origin, 1.5, 1, 27.5), 180, TAG);
+        for (int i = 0; i < BunkerLayout.Scene.GUARDS.size(); i++)
+            agent(city, at(origin, BunkerLayout.Scene.GUARDS.get(i)), BunkerLayout.Scene.GUARD_YAW[i]);
+        current.noah = StoryActorEntity.spawn(city, Role.NOAH, at(origin, BunkerLayout.Scene.NOAH), 0, TAG);
+        current.claire = StoryActorEntity.spawn(city, Role.CLAIRE, at(origin, BunkerLayout.Scene.CLAIRE), 180, TAG);
         if (current.claire != null) current.claire.pose(StoryActorEntity.Pose.PLEAD);
         if (current.noah != null && current.claire != null) current.noah.face(current.claire.position());
         forEach(server, current, (player, member) ->
@@ -532,7 +540,7 @@ public final class PrologueService {
         if (pending || !gathered && current.age < 600) return;
         // Anyone still dawdling in the corridor is brought into the hall.
         forEach(server, current, (player, member) -> {
-            if (!member.stowed && !inHall(player, origin)) player.teleportTo(origin.getX() + .5, origin.getY() + 1, origin.getZ() + 20.5);
+            if (!member.stowed && !inHall(player, origin)) gather(player, origin);
         });
         boolean watchers = current.members.values().stream().anyMatch(m -> !m.stowed);
         if (watchers) forEach(server, current, (player, member) -> { if (!member.stowed) cue(player, TimeIntroPayload.PROLOGUE_NOAH); });
@@ -570,10 +578,10 @@ public final class PrologueService {
         StoryActorEntity noah = current.noah, claire = current.claire;
         // Nobody leaves the hall while it happens.
         forEach(server, current, (player, member) -> {
-            if (!member.stowed && !inHall(player, origin)) player.teleportTo(origin.getX() + .5, origin.getY() + 1, origin.getZ() + 20.5);
+            if (!member.stowed && !inHall(player, origin)) gather(player, origin);
         });
         if (noah == null || claire == null) { if (t > 20) next(current, Phase.PODS); return; }
-        BlockPos podBase = origin.offset(BunkerBuilder.podOffset(CLAIRE));
+        BlockPos podBase = origin.offset(BunkerLayout.STASIS.podOffset(CLAIRE));
         Vec3 inPod = CryoChamberBlock.standing(podBase);
         Vec3 front = inPod.add(-1.3, 0, 0);
         switch (t) {
@@ -598,24 +606,13 @@ public final class PrologueService {
                 say(server, current, claire, "Dad, please! Don't do this!", true);
             }
             case 275 -> noah.pose(StoryActorEntity.Pose.SHOVE);
-            case 279 -> {
-                // He pushes her in and seals the pod.
-                BlockState state = city.getBlockState(podBase);
-                float yaw = state.hasProperty(CryoChamberBlock.FACING) ? CryoChamberBlock.yaw(state.getValue(CryoChamberBlock.FACING)) : 270;
-                claire.place(inPod, yaw);
-                claire.pose(StoryActorEntity.Pose.PLEAD);
-                if (state.getBlock() instanceof CryoChamberBlock) CryoChamberBlock.setOpen(city, podBase, false);
-                city.playSound(null, podBase, SoundEvents.IRON_DOOR_CLOSE, SoundSource.BLOCKS, 1, 0.6F);
-                city.playSound(null, podBase, SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.7F, 1.6F);
-                city.playSound(null, podBase, SoundEvents.PLAYER_HURT_FREEZE, SoundSource.BLOCKS, 0.8F, 0.8F);
-                city.sendParticles(net.minecraft.core.particles.ParticleTypes.SNOWFLAKE, inPod.x, inPod.y + 1, inPod.z, 30, .3, .6, .3, .02);
-                signPod(city, CLAIRE, "SUBJECT 14", "C. BENNET", "STASIS", "SEALED");
-            }
+            // He pushes her in and seals the pod.
+            case 279 -> sealClaire(city, claire, origin);
             case 290 -> { noah.pose(StoryActorEntity.Pose.HAND_ON_GLASS); noah.face(inPod.add(0, 1.4, 0)); }
             case 300 -> say(server, current, noah, "I'll come back for you. I promise.", false);
             case 350 -> {
                 noah.pose(StoryActorEntity.Pose.IDLE);
-                noah.walkTo(at(origin, 0.5, 1, 23.5), 0.5);
+                noah.walkTo(at(origin, BunkerLayout.Scene.NOAH_TURN), 0.5);
             }
             case 400 -> {
                 Vec3 crowd = watchersCentre(server, current);
@@ -641,6 +638,22 @@ public final class PrologueService {
         if (t >= 455 && current.targets.isEmpty() && t >= current.nextShot + 30) next(current, Phase.PODS);
     }
 
+    /** Claire in Pod 14, its lid shut and its sign set. */
+    private static void sealClaire(ServerLevel city, StoryActorEntity claire, BlockPos origin) {
+        BlockPos podBase = origin.offset(BunkerLayout.STASIS.podOffset(CLAIRE));
+        Vec3 inPod = CryoChamberBlock.standing(podBase);
+        BlockState state = city.getBlockState(podBase);
+        float yaw = state.hasProperty(CryoChamberBlock.FACING) ? CryoChamberBlock.yaw(state.getValue(CryoChamberBlock.FACING)) : 270;
+        claire.place(inPod, yaw);
+        claire.pose(StoryActorEntity.Pose.PLEAD);
+        if (state.getBlock() instanceof CryoChamberBlock) CryoChamberBlock.setOpen(city, podBase, false);
+        city.playSound(null, podBase, SoundEvents.IRON_DOOR_CLOSE, SoundSource.BLOCKS, 1, 0.6F);
+        city.playSound(null, podBase, SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.7F, 1.6F);
+        city.playSound(null, podBase, SoundEvents.PLAYER_HURT_FREEZE, SoundSource.BLOCKS, 0.8F, 0.8F);
+        city.sendParticles(net.minecraft.core.particles.ParticleTypes.SNOWFLAKE, inPod.x, inPod.y + 1, inPod.z, 30, .3, .6, .3, .02);
+        signPod(city, CLAIRE, "SUBJECT 14", "C. BENNET", "STASIS", "SEALED");
+    }
+
     /** His stun gun: the barbs, the current, the floor. */
     private static void shoot(ServerLevel city, StoryActorEntity noah, ServerPlayer player, Member member, int after) {
         noah.face(player.getEyePosition());
@@ -658,12 +671,20 @@ public final class PrologueService {
         player.sendSystemMessage(Component.translatable("prologue.heroesevolved.shot").withStyle(ChatFormatting.AQUA));
     }
 
-    /** Sealed in their own pod: the number they will wake under, 103 years from now. */
+    /**
+     * Sealed in their own pod: the number they will wake under, 103 years from now. The one drawn for the Helix Ward is
+     * carried to its private pod instead and given the dose there; the ward is theirs for good.
+     */
     private static void seal(ServerLevel city, ServerPlayer player, Member member, boolean blink) {
         BlockPos origin = LastDayData.origin();
-        member.pod = BunkerData.get(player.getServer()).pod(player.getUUID(), BunkerBuilder.PODS, CLAIRE);
-        BlockPos base = origin.offset(BunkerBuilder.podOffset(member.pod));
-        if (!city.getBlockState(base).is(ModBlocks.CRYOCHAMBER.get())) BunkerBuilder.placePod(city, origin, member.pod, true);
+        BunkerData data = BunkerData.get(player.getServer());
+        if (run != null && player.getUUID().equals(run.ward) && data.labOpen()) {
+            data.claimLab(player.getUUID());
+            HelixWard.dose(player);
+        }
+        member.pod = data.pod(player.getUUID(), BunkerBuilder.PODS, CLAIRE);
+        BlockPos base = origin.offset(BunkerLayout.STASIS.podOffset(member.pod));
+        if (!city.getBlockState(base).is(ModBlocks.CRYOCHAMBER.get())) BunkerBuilder.placePod(city, origin, BunkerLayout.STASIS, member.pod, true);
         CryoChamberService.enter(player, base, 20 * 60 * 10);
         signPod(city, member.pod, String.format("SUBJECT %02d", member.pod + 1), player.getGameProfile().getName(), "STASIS", "SEALED");
         member.stowed = true;
@@ -687,8 +708,9 @@ public final class PrologueService {
                 ScreenTintPayload.send(player, 0xC0000000, 0, ScreenTintPayload.Style.EDGE);
                 if (!member.stowed) seal(city, player, member, true);
                 else ScreenTintPayload.send(player, 0xFF000000, 30, ScreenTintPayload.Style.FLASH);
-                cue(player, TimeIntroPayload.PROLOGUE_POD);
-                player.sendSystemMessage(Component.translatable("prologue.heroesevolved.pod").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
+                cue(player, member.pod == BunkerLayout.LAB_POD ? TimeIntroPayload.PROLOGUE_WARD : TimeIntroPayload.PROLOGUE_POD);
+                player.sendSystemMessage(Component.translatable(member.pod == BunkerLayout.LAB_POD ? "prologue.heroesevolved.pod_ward"
+                        : "prologue.heroesevolved.pod").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
             });
         }
         // The ground shakes harder and harder; dust sifts from the ceiling.
@@ -696,7 +718,7 @@ public final class PrologueService {
             float k = (t - 20) / 150F;
             forEach(server, current, (player, member) -> PacketDistributor.sendToPlayer(player, new CameraShakePayload(0.04F + 0.18F * k, 24)));
             for (int i = 0; i < 6; i++) {
-                Vec3 at = at(origin, -4 + city.random.nextInt(9), 11, 20 + city.random.nextInt(13));
+                Vec3 at = at(origin, -5 + city.random.nextInt(11), 10, BunkerLayout.Scene.RUBBLE_Z0 + city.random.nextInt(28));
                 city.sendParticles(new net.minecraft.core.particles.BlockParticleOption(net.minecraft.core.particles.ParticleTypes.FALLING_DUST,
                         net.minecraft.world.level.block.Blocks.DEEPSLATE.defaultBlockState()), at.x, at.y, at.z, 6, 1.5, 0.1, 1.5, 0);
             }
@@ -732,6 +754,7 @@ public final class PrologueService {
         }
         if (t == 395) {
             forEach(server, current, (player, member) -> {
+                cue(player, TimeIntroPayload.PROLOGUE_YEARS);
                 player.connection.send(new ClientboundSetTitlesAnimationPacket(20, 70, 15));
                 player.connection.send(new ClientboundSetTitleTextPacket(Component.translatable("prologue.heroesevolved.years_later")
                         .withStyle(ChatFormatting.WHITE)));
@@ -752,11 +775,13 @@ public final class PrologueService {
     private static void quake(ServerLevel city, Run current, BlockPos origin, int k) {
         if (k == 0) {
             current.lamps.clear();
-            for (BlockPos pos : BlockPos.betweenClosed(origin.offset(-7, 1, 18), origin.offset(7, 13, 40))) {
+            var hall = BunkerLayout.Scene.HALL;
+            for (BlockPos pos : BlockPos.betweenClosed(origin.offset(hall.minX(), hall.minY(), hall.minZ()), origin.offset(hall.maxX(), hall.maxY(), hall.maxZ()))) {
                 BlockState state = city.getBlockState(pos);
-                if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT)
-                        && state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT)
-                        || state.getBlock() instanceof net.minecraft.world.level.block.LanternBlock)
+                // Every light the bunker's power feeds (froglights, bulbs, lanterns, rods), and its beacons.
+                if (com.jayptucker.heroesevolved.story.bunker.BunkerPower.off(state) != null
+                        || state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT)
+                        && state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT))
                     current.lamps.put(pos.immutable(), state);
             }
         }
@@ -767,8 +792,8 @@ public final class PrologueService {
                 boolean on = k >= 6 && (k >= 70 ? !broken : city.random.nextFloat() < 0.25F + 0.6F * k / 70F);
                 light(city, lamp.getKey(), lamp.getValue(), on);
             }
-            if (k == 0) city.playSound(null, origin.offset(0, 4, 26), SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS, 1.2F, 0.6F);
-            if (k % 8 == 4) city.playSound(null, origin.offset(0, 6, 22 + city.random.nextInt(16)), SoundEvents.REDSTONE_TORCH_BURNOUT, SoundSource.BLOCKS, 0.6F, 0.8F + city.random.nextFloat() * 0.5F);
+            if (k == 0) city.playSound(null, origin.offset(0, 4, 50), SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS, 1.2F, 0.6F);
+            if (k % 8 == 4) city.playSound(null, origin.offset(0, 6, 38 + city.random.nextInt(28)), SoundEvents.REDSTONE_TORCH_BURNOUT, SoundSource.BLOCKS, 0.6F, 0.8F + city.random.nextFloat() * 0.5F);
         }
         // Rubble: a burst at the blow, then a trickle, down the aisle between the rows of pods.
         int pieces = k == 0 ? 9 : k <= 60 && k % 6 == 0 ? 1 + city.random.nextInt(2) : 0;
@@ -776,14 +801,15 @@ public final class PrologueService {
                 net.minecraft.world.level.block.Blocks.GRAVEL.defaultBlockState(),
                 net.minecraft.world.level.block.Blocks.DEEPSLATE_TILES.defaultBlockState()};
         for (int i = 0; i < pieces; i++) {
-            int x = origin.getX() - 3 + city.random.nextInt(7), z = origin.getZ() + 20 + city.random.nextInt(16);
+            int x = origin.getX() + BunkerLayout.Scene.RUBBLE_X0 + city.random.nextInt(BunkerLayout.Scene.RUBBLE_X1 - BunkerLayout.Scene.RUBBLE_X0 + 1);
+            int z = origin.getZ() + BunkerLayout.Scene.RUBBLE_Z0 + city.random.nextInt(BunkerLayout.Scene.RUBBLE_Z1 - BunkerLayout.Scene.RUBBLE_Z0 + 1);
             BlockPos at = null;
-            for (int y = origin.getY() + 2; y <= origin.getY() + 13; y++) {
+            for (int y = origin.getY() + 2; y <= origin.getY() + 11; y++) {
                 BlockPos pos = new BlockPos(x, y, z);
                 if (!city.getBlockState(pos).isAir()) break;
                 at = pos;
             }
-            if (at == null || at.getY() < origin.getY() + 4) continue;
+            if (at == null || at.getY() < origin.getY() + 3) continue;
             BlockState piece = stone[city.random.nextInt(stone.length)];
             var falling = net.minecraft.world.entity.item.FallingBlockEntity.fall(city, at, piece);
             falling.disableDrop();
@@ -794,17 +820,18 @@ public final class PrologueService {
         }
         if (k % 4 == 0 && k <= 100)
             for (int i = 0; i < 4; i++) {
-                Vec3 at = at(origin, -5 + city.random.nextInt(11), 9, 20 + city.random.nextInt(17));
+                Vec3 at = at(origin, -5 + city.random.nextInt(11), 9, BunkerLayout.Scene.RUBBLE_Z0 + city.random.nextInt(30));
                 city.sendParticles(new net.minecraft.core.particles.BlockParticleOption(net.minecraft.core.particles.ParticleTypes.FALLING_DUST,
                         net.minecraft.world.level.block.Blocks.DEEPSLATE.defaultBlockState()), at.x, at.y, at.z, 10, 1.2, .2, 1.2, 0);
             }
     }
 
-    /** Puts a hall light on or off: a bulb or lamp by its lit state, a lantern by being there or not. */
+    /** Puts a hall light on or off: as the bunker's own power-out leaves it (BunkerPower.off), or by its lit state. */
     private static void light(ServerLevel city, BlockPos pos, BlockState original, boolean on) {
-        BlockState state = original.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT)
-                ? original.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT, on)
-                : on ? original : net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
+        BlockState dark = com.jayptucker.heroesevolved.story.bunker.BunkerPower.off(original);
+        if (dark == null && original.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT))
+            dark = original.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT, false);
+        BlockState state = on ? original : dark == null ? original : dark;
         if (city.getBlockState(pos) != state) city.setBlock(pos, state, net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
     }
 
@@ -878,9 +905,20 @@ public final class PrologueService {
 
     private static Vec3 at(BlockPos origin, double x, double y, double z) { return new Vec3(origin.getX() + x, origin.getY() + y, origin.getZ() + z); }
 
+    private static Vec3 at(BlockPos origin, Vec3 offset) { return at(origin, offset.x, offset.y, offset.z); }
+
     private static boolean inHall(ServerPlayer player, BlockPos origin) {
-        return player != null && player.getY() < origin.getY() + 12 && player.getY() >= origin.getY()
-                && player.getZ() >= origin.getZ() + 18 && Math.abs(player.getX() - origin.getX() - .5) < 9;
+        if (player == null) return false;
+        var hall = BunkerLayout.Scene.HALL;
+        BlockPos at = player.blockPosition().subtract(origin);
+        return at.getY() >= 0 && at.getY() <= hall.maxY() && at.getX() >= hall.minX() && at.getX() <= hall.maxX()
+                && at.getZ() >= hall.minZ() - 1 && at.getZ() <= hall.maxZ();
+    }
+
+    /** Brings someone left outside the stasis hall to just inside its door. */
+    private static void gather(ServerPlayer player, BlockPos origin) {
+        Vec3 to = at(origin, BunkerLayout.Scene.GATHER);
+        player.teleportTo(to.x, to.y, to.z);
     }
 
     private static boolean anyInside(Run current) { return current.members.values().stream().anyMatch(m -> m.inside); }
@@ -1038,7 +1076,7 @@ public final class PrologueService {
 
     /** A pod's sign in the past bunker. */
     static void signPod(ServerLevel city, int index, String... lines) {
-        BunkerBuilder.signPod(city, LastDayData.origin(), index, net.minecraft.world.item.DyeColor.LIGHT_BLUE, lines);
+        BunkerBuilder.signPod(city, LastDayData.origin(), BunkerLayout.STASIS, index, net.minecraft.world.item.DyeColor.LIGHT_BLUE, lines);
     }
 
     /** City chunks, and the bunker's beyond the city's edge, held loaded while a run plays. */
@@ -1072,6 +1110,7 @@ public final class PrologueService {
         NOTICE.clear();
         end(server);
         forced = false;
+        podsNext = false;
     }
 
     // ------------------------------------------------------------------
@@ -1093,20 +1132,49 @@ public final class PrologueService {
                 if (run.phase.ordinal() < Phase.LIGHT.ordinal()) skipTo(server, "light", 0);
                 BlockPos origin = LastDayData.origin();
                 forEach(server, run, (player, member) -> {
-                    player.teleportTo(origin.getX() + .5, origin.getY() + 1, origin.getZ() + 20.5);
+                    gather(player, origin);
                     member.inside = true;
                     cue(player, TimeIntroPayload.PROLOGUE_UNDERGROUND);
                 });
                 run.phase = Phase.SAFE_HOUSE;
             }
             case "noah" -> { if (run.phase.ordinal() < Phase.SAFE_HOUSE.ordinal()) skipTo(server, "safe", 0); run.phase = Phase.NOAH; run.age = 0; }
-            case "pods" -> { if (run.phase.ordinal() < Phase.SAFE_HOUSE.ordinal()) skipTo(server, "safe", 0); run.phase = Phase.PODS; run.age = 0; }
+            case "pods" -> {
+                if (run.phase.ordinal() < Phase.SAFE_HOUSE.ordinal()) skipTo(server, "safe", 0);
+                // What the skipped scenes would have done: the vault shut behind them, Claire in Pod 14.
+                boolean claireOut = run.phase.ordinal() < Phase.NOAH.ordinal() || run.phase == Phase.NOAH && run.age < 279;
+                if (!run.sealed) { run.sealed = true; vault(city, false); }
+                if (claireOut && run.claire != null) sealClaire(city, run.claire, LastDayData.origin());
+                run.phase = Phase.PODS;
+                run.age = 0;
+            }
             default -> { return false; }
         }
         // The next tick counts one on, so it plays the beat at exactly {@code ticks}.
         run.age = ticks - 1;
         return true;
     }
+
+    /** What {@link #toPods} did. */
+    public enum PodJump { JUMPED, QUEUED, ALREADY, NONE }
+
+    /**
+     * The admin menu's "To cryopod": the Last Day jumps to everyone being sealed in their pods (the Helix Ward's
+     * sleeper drawn as usual), then plays on: the blast, "103 years later", and the waking in the bunker. While new
+     * players are still waiting for the city to be built, the jump is made the moment their day begins.
+     */
+    public static PodJump toPods(MinecraftServer server) {
+        if (run == null) {
+            if (WAITING.isEmpty()) return PodJump.NONE;
+            podsNext = true;
+            return PodJump.QUEUED;
+        }
+        if (run.phase == Phase.PODS) return PodJump.ALREADY;
+        return skipTo(server, "pods", 0) ? PodJump.JUMPED : PodJump.NONE;
+    }
+
+    /** Whether "To cryopod" has anything to do: a day before its pods, or new players waiting for one. */
+    public static boolean podsAhead() { return run == null ? !WAITING.isEmpty() && !podsNext : run.phase != Phase.PODS; }
 
     /** For tests: whether a member has made it down into the safe house (or been carried there). */
     public static boolean sheltered(ServerPlayer player) {
@@ -1129,6 +1197,9 @@ public final class PrologueService {
     /** For tests: ticks until the light appears because everyone reached the beacon, or -1 if not everyone has. */
     public static int lightIn() { return run == null || run.lightAt < 0 ? -1 : Math.max(0, run.lightAt - run.clock); }
 
+    /** For tests: who was drawn for the Helix Ward this run, or null. */
+    public static UUID ward() { return run == null ? null : run.ward; }
+
     /** For tests: the pod a member was sealed in, or -1. */
     public static int pod(ServerPlayer player) {
         Member member = run == null ? null : run.members.get(player.getUUID());
@@ -1141,8 +1212,8 @@ public final class PrologueService {
 
     /** Whether the past bunker under Primatech has been built, saved with the city. */
     static final class LastDayData extends SavedData {
-        /** Bumped when the bunker under Primatech must be rebuilt from the rock up. */
-        static final int LAYOUT = 1;
+        /** Bumped when the bunker under Primatech must be rebuilt from the rock up. 2: the Sublevel 4 rebuild. */
+        static final int LAYOUT = 2;
         int layout;
 
         static LastDayData get(ServerLevel city) {
@@ -1155,12 +1226,13 @@ public final class PrologueService {
 
         private static BlockPos origin;
 
-        /** The bunker's floor under the shaft: under Primatech's lobby, as deep as keeps its roof below the street. */
+        /**
+         * The bunker's floor under the shaft: under Primatech's lobby, eighteen below the street, where the stairwell
+         * blueprint ({@code lastday_stairwell}) meets the vault. The rooms keep their roof below the street
+         * ({@code PrologueGameTests.apartmentsShaftAndPodsFit}).
+         */
         static BlockPos origin() {
-            if (origin == null) {
-                int top = PastBunker.bounds(BlockPos.ZERO).maxY();
-                origin = new BlockPos(CityGrid.SHAFT_X, CityGrid.STREET_Y - 3 - top, CityGrid.SHAFT_Z);
-            }
+            if (origin == null) origin = new BlockPos(CityGrid.SHAFT_X, CityGrid.STREET_Y - 18, CityGrid.SHAFT_Z);
             return origin;
         }
 
@@ -1185,11 +1257,12 @@ public final class PrologueService {
                 for (int dy = 1; dy <= 3; dy++)
                     city.setBlock(o.offset(dx, dy, 1), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
             vault(city, false);
-            for (int i = 0; i < BunkerBuilder.PODS; i++) {
-                BlockPos base = o.offset(BunkerBuilder.podOffset(i));
-                if (!city.getBlockState(base).is(ModBlocks.CRYOCHAMBER.get())) BunkerBuilder.placePod(city, o, i, true);
+            BunkerLayout layout = BunkerLayout.STASIS;
+            for (int i = 0; i < layout.pods(); i++) {
+                BlockPos base = o.offset(layout.podOffset(i));
+                if (!city.getBlockState(base).is(ModBlocks.CRYOCHAMBER.get())) BunkerBuilder.placePod(city, o, layout, i, true);
                 else CryoChamberBlock.setOpen(city, base, true);
-                BunkerBuilder.signPod(city, o, i, net.minecraft.world.item.DyeColor.LIGHT_BLUE,
+                BunkerBuilder.signPod(city, o, layout, i, net.minecraft.world.item.DyeColor.LIGHT_BLUE,
                         String.format("SUBJECT %02d", i + 1), i == CLAIRE ? "C. BENNET" : "", "STANDBY", "");
             }
         }

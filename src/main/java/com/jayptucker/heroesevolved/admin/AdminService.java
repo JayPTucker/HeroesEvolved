@@ -95,7 +95,7 @@ public final class AdminService {
 
     private static boolean needsTarget(AdminActionPayload.Action action) {
         return switch (action) {
-            case START_ECLIPSE, STOP_ECLIPSE, ECLIPSE_TOTALITY, SYLAR_DISMISS, ELLE_DISMISS, MELTDOWN_CANCEL -> false;
+            case START_ECLIPSE, STOP_ECLIPSE, ECLIPSE_TOTALITY, SYLAR_DISMISS, ELLE_DISMISS, MELTDOWN_CANCEL, SKIP_TO_POD -> false;
             default -> true;
         };
     }
@@ -232,6 +232,12 @@ public final class AdminService {
                 admin.teleportTo(target.serverLevel(), target.getX(), target.getY(), target.getZ(), target.getYRot(), target.getXRot());
                 yield "Teleported to " + name + ".";
             }
+            case SKIP_TO_POD -> switch (com.jayptucker.heroesevolved.story.prologue.PrologueService.toPods(admin.getServer())) {
+                case JUMPED -> "The Last Day skips ahead: everyone is sealed in their cryopods.";
+                case QUEUED -> "The city is still being built: the Last Day will start at the cryopods.";
+                case ALREADY -> "Everyone is already in their cryopods.";
+                case NONE -> "No Last Day is playing. It starts when a new player joins.";
+            };
             case OPEN, REFRESH -> "";
         };
     }
@@ -400,6 +406,7 @@ public final class AdminService {
         }
 
         if (!VillagerMeltdown.all().isEmpty()) flags |= AdminStatePayload.World.MELTDOWN;
+        if (com.jayptucker.heroesevolved.story.prologue.PrologueService.podsAhead()) flags |= AdminStatePayload.World.LAST_DAY;
         String village = VillagerMeltdown.describe() + " Queued incidents: " + com.jayptucker.heroesevolved.village.VillageIncidents.pending() + ".";
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             var raid = p.serverLevel().getRaidAt(p.blockPosition());

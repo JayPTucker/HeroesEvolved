@@ -142,14 +142,19 @@ public final class IntroDirector {
                 underground();
                 instruct("prologue_hall", -1);
             }
-            case TimeIntroPayload.PROLOGUE_POD -> {
+            case TimeIntroPayload.PROLOGUE_POD, TimeIntroPayload.PROLOGUE_WARD -> {
                 IntroScene.underground = true;
                 if (!IntroScene.prologue) { IntroScene.active = IntroScene.prologue = true; }
                 if (siren == null) siren = sirens();
                 PanicSounds.panic(now);
                 underground();
                 TimeIntroCaption.clearHint();
+                cue(stage == TimeIntroPayload.PROLOGUE_WARD ? ModSounds.STORY_WARD : ModSounds.STORY_SEALED);
             }
+            case TimeIntroPayload.PROLOGUE_YEARS -> cue(ModSounds.STORY_YEARS);
+            // Out of the pod and the alarm over: the waking's music plays until the way out, and fades away there.
+            case TimeIntroPayload.BUNKER_MUSIC -> com.jayptucker.heroesevolved.client.sound.BunkerMusic.start();
+            case TimeIntroPayload.BUNKER_EXIT -> com.jayptucker.heroesevolved.client.sound.BunkerMusic.exit();
             case TimeIntroPayload.PROLOGUE_BLAST -> {
                 // Through rock and steel: one deep blow, and then the city goes quiet.
                 stop(blast);
@@ -303,6 +308,17 @@ public final class IntroDirector {
     private static Loop play(Loop sound) {
         Minecraft.getInstance().getSoundManager().play(sound);
         return sound;
+    }
+
+    /**
+     * A story beat's music cue (tools/generate-story-cues.py), once, on the music channel: whatever background track the
+     * game was playing steps aside for it.
+     */
+    private static void cue(Supplier<SoundEvent> sound) {
+        Minecraft mc = Minecraft.getInstance();
+        mc.getMusicManager().stopPlaying();
+        mc.getSoundManager().play(new SimpleSoundInstance(sound.get().getLocation(), SoundSource.MUSIC, 1, 1,
+                SoundInstance.createUnseededRandom(), false, 0, SoundInstance.Attenuation.NONE, 0, 0, 0, true));
     }
 
     /** The city's air-raid sirens, made live (CitySiren): they wind up from rest and never loop. */

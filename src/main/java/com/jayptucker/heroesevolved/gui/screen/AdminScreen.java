@@ -184,7 +184,10 @@ public final class AdminScreen extends Screen {
         buttons(x, y + ROW * 5, w,
                 button("God: " + (target.godMode() ? "ON" : "OFF"), "Prevent all damage and death; highlighted gold while enabled.", Action.TOGGLE_GOD_MODE, 0, true),
                 button("Bring here", "Teleport this player to your position and dimension.", Action.BRING_HERE, 0,
-                        minecraft != null && minecraft.player != null && !minecraft.player.getUUID().equals(target.id())));
+                        minecraft != null && minecraft.player != null && !minecraft.player.getUUID().equals(target.id())),
+                button("To cryopod", "The Last Day (a new world's prologue) skips straight to everyone being sealed in their"
+                        + " cryopods, then plays on to the waking in the bunker. Pressed while the city is still being built,"
+                        + " the day starts there.", Action.SKIP_TO_POD, 0, state.world().has(World.LAST_DAY)));
     }
 
     private void addPowerRow(AdminStatePayload state, AdminStatePayload.PlayerEntry target, int x, int y, int w) {

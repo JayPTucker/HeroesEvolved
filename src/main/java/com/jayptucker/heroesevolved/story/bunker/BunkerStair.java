@@ -138,14 +138,27 @@ final class BunkerStair {
             for (int x = FLIGHT_X0; x <= FLIGHT_X1; x++) {
                 int p = east ? x - FLIGHT_X0 : FLIGHT_X1 - x, k = p - (LONGEST - 1 - length);
                 int walk = from + Math.max(k, 0);
+                // Wear grows with height, toward the surface the blast and the weather came from: treads chipped to rubble
+                // stone, moss on the top flights, stone fallen along one side. The middle of the lane always stays clear, and
+                // nothing lies on a tread itself (a carpet on a step stops you climbing it).
+                double worn = Math.min(1, Math.max(0, walk / (double) Math.max(1, top - 1)));
+                Direction rise = east ? Direction.EAST : Direction.WEST;
                 for (int z = lane[0]; z <= lane[1]; z++) {
-                    if (k > 0) set(x, walk, z, Blocks.POLISHED_DEEPSLATE_STAIRS.defaultBlockState()
-                            .setValue(StairBlock.FACING, east ? Direction.EAST : Direction.WEST));
-                    else set(x, walk, z, FLOOR);
+                    int n = noise(x, walk, z, 3) % 100;
+                    if (k > 0) {
+                        net.minecraft.world.level.block.Block tread = n < 45 * worn * worn ? (n % 2 == 0 && worn > 0.6
+                                ? Blocks.MOSSY_COBBLESTONE_STAIRS : Blocks.COBBLED_DEEPSLATE_STAIRS) : Blocks.POLISHED_DEEPSLATE_STAIRS;
+                        set(x, walk, z, tread.defaultBlockState().setValue(StairBlock.FACING, rise));
+                    } else set(x, walk, z, n < 40 * worn ? Blocks.COBBLED_DEEPSLATE.defaultBlockState() : FLOOR);
                     // Four blocks of headroom; over the last flight the well stays open to the sky, the slot in the lobby floor.
                     for (int y = walk + 1; y <= (last ? top + 3 : walk + 4); y++) set(x, y, z, AIR);
-                    // Wear: moss creeping down from the light near the top, the odd cracked tread.
-                    if (walk >= top - 9 && noise(x, walk, z, 3) % 4 == 0) set(x, walk + 1, z, Blocks.MOSS_CARPET);
+                    // Fallen stone heaped against the wall side of the lane only.
+                    boolean edge = z == (east ? lane[0] : lane[1]);
+                    if (edge && noise(x, walk, z, 4) % 100 < 55 * worn) {
+                        int pile = noise(x, walk, z, 5) % 3;
+                        set(x, walk + 1, z, pile == 0 ? Blocks.COBBLED_DEEPSLATE.defaultBlockState()
+                                : pile == 1 ? Blocks.TUFF.defaultBlockState() : Blocks.COBBLED_DEEPSLATE_SLAB.defaultBlockState());
+                    }
                 }
                 // The light the well has now: glow lichen on both walls every other step, and glow berries hanging on vines
                 // that came down through the cracks in the ceiling every third.

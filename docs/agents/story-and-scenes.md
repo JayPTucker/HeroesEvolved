@@ -31,9 +31,9 @@ player sees is in [docs/the-last-day.md](../../docs/the-last-day.md).
   real blast for the vision.
 - **Stragglers are carried, not killed.** At the deadline an agent darts anyone outside (`Tranquilizer` trail and
   go-under blur), and they skip to their pod. Nobody holds the group up.
-- **The bunker as it was.** `story/bunker/PastBunker.build(level, origin)` builds the stasis bunker from the same
-  blueprints with every light on and nothing grown in (`past(layer, state)`). Night Three and the prologue both use
-  it. Build it once below anything the city rebuilds, and reset only its pods and doors each run.
+- **The bunker as it was.** `story/bunker/PastBunker.rooms(level, origin)` builds the stasis bunker from the
+  `stasis_*_past` blueprints: new copper, every light on, nothing grown in. Night Three and the prologue both use it.
+  Build its rock once below anything the city rebuilds, and reset only its rooms, pods and doors each run.
 - **A way in for a crowd under a deadline is a stair, not a ladder.** The safe house is reached by a 3-wide switchback
   (blueprint `lastday_stairwell`); the city draws only its top step and a railed slot in the lobby floor
   (`Landmarks.safeHouse`), so a city rebuild never touches the part underground. A game test walks the route cell by
@@ -113,7 +113,54 @@ no longer ends in fog over grey concrete. What the player sees is in [docs/the-l
   spawns monsters at light level 0, so `CityMonsters` cancels every natural monster spawn there: every sealed dark room
   and the space behind each building's rooms would otherwise breed zombies during the Last Day.
 
-## Reusable patterns from the bunker rework
+## Reusable patterns from the Sublevel 4 rebuild
+
+The bunker was rebuilt from scratch in November 2026 with a new layout (airlock, commons, stasis hall, records,
+generator, infirmary, containment, maintenance, and the sealed Helix Ward with one private pod). What the player sees is in
+[docs/the-past.md](../the-past.md#sublevel-4).
+
+- **One geometry class, two designs.** `story/bunker/BunkerLayout` holds every room, pod, nameplate, receiver, survivor
+  spot, the generator and Claire's chest, and `BunkerLayout.Scene` the Last Day's and Night Three's spots in the hall.
+  `BunkerData.design` says which design a world's bunker was built with (`LEGACY`, the original rooms, for saves without
+  the field), and everything that touches the present bunker asks `data.layout()`; the past is always `STASIS`. Old worlds'
+  sleepers kept their pods because nothing hard-codes a coordinate any more. Add a spot to the layout, never to a caller.
+- **Draw the past and the present from one script.** The rooms are drawn by `tools/generate-bunker.py`: the bunker as
+  built, then a copy aged by 103 years, written as `stasis_<room>_past` and `stasis_<room>`. A block-by-block remap of one
+  blueprint (`PastBunker.past`, the old way) can't move a prop, cut a hole or drop rubble, and an overlay of `_` cells
+  escapes `BlueprintPlacementGameTests` (everything beside a keep cell is only a note). Two full blueprints are each
+  validated and placed in full. Marker cells are protected from aging, and a game test checks both twins keep them.
+- **Slice rooms by ownership.** The script draws every room into one grid in bunker coordinates; each cell belongs to the
+  room that drew it last, and a room's blueprint holds only its own cells (`_` elsewhere), so shared walls never
+  disagree and no marker is placed twice. The room boxes come out of the script (it prints the `Room` lines for
+  `BunkerLayout`).
+- **Every change the years made has a cause.** Copper oxidises by zone (most near the cave's water, least in the sealed,
+  dry ward); cracks gather where the blast came through the ceiling and round the breach; moss thins with distance from
+  the cave; the planter's azalea became the tree. Random noise on its own reads as noise.
+- **Check the dark before the game does.** `py -3 tools/generate-bunker.py --light` propagates block light through the
+  present and the past (slabs and closed trapdoors block it vertically, stairs and full blocks entirely) and lists every
+  floor cell a monster could spawn on, by room. The in-game `BUNKER_DARK` only prints the first few cells of a long list.
+  It found containment's cells, the ward's corner under the mezzanine and the floor under the far balcony.
+- **Cobwebs hang three clear blocks up.** The first pass put webs in the ward's two-high escape vent and at head height on
+  the mezzanine; `cobwebs()` now wants three air cells beneath.
+- **The bunker stays 13 high.** The Last Day's stairwell is a fixed blueprint that meets the vault 18 below Odessa's
+  street, so `LastDayData.origin()` is pinned there and the rooms must keep their roof under the street. Under Odessa the
+  rock poured round the past bunker stops at the rooms' ceilings (`PastBunker.rock`): above them start the city's cellars
+  and subway steps.
+- **One sleeper apart.** `HelixWard.draw` picks from the Last Day's group when the light appears (never a lone player,
+  never when `BunkerData.labOpen()` is false, which includes legacy bunkers); `seal` claims the ward (`claimLab`, pod index
+  `LAB_POD`) and doses them (`HelixWard.dose`: a random rollable power, dormant). `BunkerService.begin` doses again if a
+  crash skipped it, and sends the ward's own captions and music cue.
+- **Logs go in chests, not on lecterns.** `BunkerBuilder.finish` puts a `@log:<id>` book in a chest's middle slot,
+  `BunkerBuilder.log` reads it back from a chest or a lectern, and opening a chest with a story note in it counts as
+  reading it (`StoryDiscoveryEvents`).
+- **A new block needs fresh facts.** `tools/blueprint.py validate` and its support rules read `tools/block-facts.json.gz`;
+  after adding or removing a block, run `tools/structure-gametest.init.gradle` and copy `build/block-facts.json.gz` over it.
+- **Long edit scripts go in files.** On this machine a long heredoc passed to the shell failed with `ENAMETOOLONG` and
+  another with a quoting error; write the script with the file tool and run it.
+
+## Reusable patterns from the bunker rework (the original rooms)
+
+These are about the original rooms (`BunkerLayout.LEGACY`), which worlds built before the rebuild still have.
 
 The stasis bunker (`story/bunker/`) was reworked in November 2026: the lab and infirmary grew, the plain rooms gained
 structure, and the way out became the Last Day's own vault and stair, a hundred years on. What the player sees is in

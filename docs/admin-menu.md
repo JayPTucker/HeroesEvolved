@@ -24,11 +24,17 @@ The player's card shows:
 | Mastery | +100, +1k, +10k, or **Reset** to Level 1. |
 | Energy | **Refill**, or turn **Unlimited** energy on and off. |
 | Tools | Reset **Cooldowns**, **Full Heal**, or **Go To** them (teleports you). |
-| Admin | Toggle **God** mode, or **Bring here** (teleport them to your position and dimension). |
+| Admin | Toggle **God** mode, **Bring here** (teleport them to your position and dimension), or **To cryopod** (below). |
 
 God mode prevents all damage and death, including void damage. It is saved through relogs and respawns, and can be
 turned off in the same menu. Enabled players have a gold outline visible to everyone and gold names in the player list.
 God mode leaves game mode, stamina costs, cooldowns and scoreboard teams alone.
+
+**To cryopod** is for a new world's prologue, the Last Day. It jumps the whole day to everyone being sealed in
+their cryopods: the vault shuts, Claire is in Pod 14, and the Helix Ward's sleeper is drawn as usual. Then it plays on:
+the blast, "103 years later", and the waking in the bunker. Press it while the city is still being built (the black
+screen on a new world) and the day starts at the pods. It acts on everyone in the Last Day, not only the chosen player,
+and is greyed out when there is no day left to skip. `/heroesevolved prologue jump pods` does the same.
 
 **Dormant** replaces the existing power without playing an awakening. It can awaken naturally later, or with **Awaken**.
 Both grant buttons respect unique power ownership: they cannot take a power another player still holds.

@@ -4,6 +4,7 @@ import com.jayptucker.heroesevolved.registry.ModBlocks;
 import com.jayptucker.heroesevolved.registry.ModEntities;
 import com.jayptucker.heroesevolved.story.AvenueService;
 import com.jayptucker.heroesevolved.story.bunker.BunkerBuilder;
+import com.jayptucker.heroesevolved.story.bunker.BunkerLayout;
 import com.jayptucker.heroesevolved.story.bunker.BunkerData;
 import com.jayptucker.heroesevolved.story.bunker.BunkerService;
 import com.jayptucker.heroesevolved.story.bunker.CryoChamberService;
@@ -182,7 +183,8 @@ public final class PrologueGameTests {
                     pods[1] = PrologueService.pod(players[1]);
                     helper.assertTrue(pods[1] >= 0 && pods[1] != PrologueService.CLAIRE, "Never in Claire's pod: " + pods[1]);
                     BlockPos o = PrologueService.LastDayData.origin();
-                    players[0].teleportTo(city, o.getX() + .5, o.getY() + 1, o.getZ() + 21.5, 0, 0);
+                    Vec3 inside = BunkerLayout.Scene.GATHER.add(0, 0, 3);
+                    players[0].teleportTo(city, o.getX() + inside.x, o.getY() + inside.y, o.getZ() + inside.z, 0, 0);
                 }))
                 .thenIdle(3)
                 .thenExecute(() -> guard(cleanup, () -> {
@@ -192,7 +194,7 @@ public final class PrologueGameTests {
                 }))
                 .thenIdle(10)
                 .thenExecute(() -> guard(cleanup, () -> {
-                    BlockPos claire = PrologueService.LastDayData.origin().offset(BunkerBuilder.podOffset(PrologueService.CLAIRE));
+                    BlockPos claire = PrologueService.LastDayData.origin().offset(BunkerLayout.STASIS.podOffset(PrologueService.CLAIRE));
                     helper.assertTrue(city.getBlockState(claire).is(ModBlocks.CRYOCHAMBER.get())
                             && !city.getBlockState(claire).getValue(com.jayptucker.heroesevolved.story.bunker.CryoChamberBlock.OPEN),
                             "Noah seals Claire in Pod 14");
@@ -204,6 +206,23 @@ public final class PrologueGameTests {
                     helper.assertTrue(CryoChamberService.isInside(players[0]), "Everyone is sealed in");
                     pods[0] = PrologueService.pod(players[0]);
                     helper.assertTrue(pods[0] >= 0 && pods[0] != pods[1] && pods[0] != PrologueService.CLAIRE, "Each has their own pod");
+                    // Two lived the day together: if the Helix Ward was still waiting, one of them was drawn for it, sealed in its
+                    // private pod and dosed with a dormant power; the other is in the hall.
+                    java.util.UUID ward = PrologueService.ward();
+                    if (ward != null) {
+                        int sealed = 0;
+                        for (int i = 0; i < 2; i++) {
+                            boolean drawn = players[i].getUUID().equals(ward);
+                            helper.assertTrue((pods[i] == BunkerLayout.LAB_POD) == drawn, "Only the one drawn sleeps in the ward: " + pods[i]);
+                            if (drawn) {
+                                sealed++;
+                                var power = com.jayptucker.heroesevolved.ability.service.PlayerAbilityService.getData(players[i]).assignedPower();
+                                helper.assertTrue(power.isPresent() && !power.get().getValue().isUnlocked(), "The ward's sleeper carries a dormant power: " + power);
+                                helper.assertTrue(BunkerData.get(server).lab.equals(ward) && !BunkerData.get(server).labOpen(), "The ward is theirs for good");
+                            }
+                        }
+                        helper.assertTrue(sealed == 1, "Exactly one of the two is in the ward");
+                    }
                 }))
                 // The hall's chunks were forced when the day began, but under a full suite's load they can still be waking
                 // up here, and rubble dropped into a chunk that isn't entity-ticking hangs where nobody can see it.
@@ -214,11 +233,14 @@ public final class PrologueGameTests {
                     // The blow has reached the hall: stone down the aisle, and lights out.
                     BlockPos o = PrologueService.LastDayData.origin();
                     int rubble = 0, dark = 0, lit = 0;
-                    for (BlockPos pos : BlockPos.betweenClosed(o.offset(-7, 1, 18), o.offset(7, 13, 40))) {
+                    var hall = BunkerLayout.Scene.HALL;
+                    for (BlockPos pos : BlockPos.betweenClosed(o.offset(hall.minX(), hall.minY(), hall.minZ()), o.offset(hall.maxX(), hall.maxY(), hall.maxZ()))) {
                         var state = city.getBlockState(pos);
                         if (state.is(Blocks.COBBLED_DEEPSLATE) || state.is(Blocks.GRAVEL) || state.is(Blocks.DEEPSLATE_TILES)) rubble++;
-                        if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT))
-                            if (state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT)) lit++; else dark++;
+                        // A light the blast put out stands as the bunker's power-out state does (BunkerPower.off).
+                        if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT)
+                                && !state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT) || state.is(Blocks.SMOOTH_QUARTZ)) dark++;
+                        else if (com.jayptucker.heroesevolved.story.bunker.BunkerPower.off(state) != null) lit++;
                     }
                     rubble += city.getEntities(EntityType.FALLING_BLOCK, PrologueService::isScene).size();
                     helper.assertTrue(rubble >= 3, "Rubble comes down from the ceiling when the blast hits: " + rubble);
@@ -238,6 +260,56 @@ public final class PrologueGameTests {
                     helper.assertTrue(city.getEntities(ModEntities.STORY_ACTOR.get(), e -> true).isEmpty()
                             && city.getEntities(EntityType.VILLAGER, PrologueService::isScene).isEmpty(), "The city is cleared for the next");
                     helper.assertTrue(city.getForcedChunks().isEmpty(), "The city's chunks are let go");
+                }))
+                .thenExecute(cleanup)
+                .thenSucceed();
+    }
+
+    /**
+     * The admin menu's "To cryopod": pressed in the apartments, the day jumps to the pods (the vault shut, Claire
+     * sealed in Pod 14, the player in their own pod), then plays on to the waking in the bunker.
+     */
+    @GameTest(template = "rewind_empty", batch = "PrologueGameTests.skipToPod", timeoutTicks = 2400)
+    public static void skipToCryopodSealsEveryoneAndPlaysOn(GameTestHelper helper) {
+        var server = helper.getLevel().getServer();
+        ServerLevel city = server.getLevel(TimeIntroService.DIMENSION);
+        helper.assertTrue(city != null, "The city dimension loads");
+        ServerPlayer[] players = new ServerPlayer[1];
+        Runnable cleanup = () -> { for (ServerPlayer p : players) if (p != null) remove(p); };
+        helper.startSequence()
+                .thenWaitUntil(() -> helper.assertTrue(FractureCity.get(city).ready() && !TimeIntroService.sceneRunning()
+                        && !AvenueService.running() && !PrologueService.running(), "Waiting for the city"))
+                .thenExecute(() -> {
+                    helper.assertTrue(PrologueService.toPods(server) == PrologueService.PodJump.NONE, "Nothing to skip with no day playing");
+                    players[0] = player(helper, Vec3.atBottomCenterOf(helper.absolutePos(new BlockPos(3, 2, 3))), "lastday-skipper");
+                    PrologueService.join(players[0]);
+                })
+                .thenIdle(5)
+                .thenExecute(() -> guard(cleanup, () -> {
+                    helper.assertTrue(PrologueService.phase().equals("apartment"), "The day begins in the apartments");
+                    helper.assertTrue(PrologueService.podsAhead(), "The menu offers the skip");
+                    helper.assertTrue(PrologueService.toPods(server) == PrologueService.PodJump.JUMPED, "The skip jumps the day");
+                }))
+                .thenIdle(5)
+                .thenExecute(() -> guard(cleanup, () -> {
+                    helper.assertTrue(PrologueService.phase().equals("pods"), "Straight to the pods: " + PrologueService.phase());
+                    helper.assertTrue(!PrologueService.podsAhead(), "Nothing left to skip");
+                    helper.assertTrue(CryoChamberService.isInside(players[0]), "Sealed in a cryopod");
+                    helper.assertTrue(PrologueService.pod(players[0]) >= 0 && PrologueService.pod(players[0]) != PrologueService.CLAIRE,
+                            "In their own pod: " + PrologueService.pod(players[0]));
+                    helper.assertTrue(!PrologueService.vaultOpen(city), "The vault is shut behind them");
+                    BlockPos claire = PrologueService.LastDayData.origin().offset(BunkerLayout.STASIS.podOffset(PrologueService.CLAIRE));
+                    helper.assertTrue(city.getBlockState(claire).is(ModBlocks.CRYOCHAMBER.get())
+                            && !city.getBlockState(claire).getValue(com.jayptucker.heroesevolved.story.bunker.CryoChamberBlock.OPEN),
+                            "Claire is sealed in Pod 14 too");
+                    helper.assertTrue(PrologueService.toPods(server) == PrologueService.PodJump.ALREADY, "A second press does nothing");
+                    PrologueService.skipTo(server, "pods", 490);
+                }))
+                .thenIdle(20)
+                .thenExecute(() -> guard(cleanup, () -> {
+                    helper.assertTrue(!PrologueService.running(), "The day is over");
+                    helper.assertTrue(players[0].level() == server.overworld() && BunkerService.isAwakening(players[0]),
+                            "103 years later, the usual waking in the bunker");
                 }))
                 .thenExecute(cleanup)
                 .thenSucceed();
@@ -347,8 +419,9 @@ public final class PrologueGameTests {
     /** Every chunk of the stasis hall (where the blast's rubble falls) is entity-ticking. */
     private static boolean hallTicking(ServerLevel city) {
         BlockPos o = PrologueService.LastDayData.origin();
-        for (int x = (o.getX() - 7) >> 4; x <= (o.getX() + 7) >> 4; x++)
-            for (int z = (o.getZ() + 18) >> 4; z <= (o.getZ() + 40) >> 4; z++)
+        var hall = BunkerLayout.Scene.HALL;
+        for (int x = (o.getX() + hall.minX()) >> 4; x <= (o.getX() + hall.maxX()) >> 4; x++)
+            for (int z = (o.getZ() + hall.minZ()) >> 4; z <= (o.getZ() + hall.maxZ()) >> 4; z++)
                 if (!city.isPositionEntityTicking(new BlockPos(x << 4, o.getY(), z << 4))) return false;
         return true;
     }

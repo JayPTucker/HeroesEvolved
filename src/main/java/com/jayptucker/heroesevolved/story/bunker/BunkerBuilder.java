@@ -23,15 +23,19 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import java.util.List;
 
 /**
- * Builds the Odessa stasis bunker once, under world spawn: room blueprints for records (with the generator room east
- * and security west, and maintenance under security), a corridor with a lab and an infirmary off it, and the stasis hall
- * with fourteen Cryochambers; then the way out north of records, the vault and the switchback stair up to a ruined lobby
- * on the surface ({@link BunkerStair}). Coordinates are relative to the bunker floor directly below spawn (where a shallow
- * world's ladder shaft comes down), with +Z running away from the stair.
+ * Builds the Odessa stasis bunker once, under world spawn: Sublevel 4 as {@link BunkerLayout#STASIS} lays it out (the
+ * airlock behind the vault, the commons, the stasis hall with fourteen Cryochambers, records, the generator, the
+ * infirmary and containment, maintenance under the airlock, and the sealed Helix Ward with its one private pod), then the
+ * way out north of the airlock: the vault and the switchback stair up to a ruined lobby on the surface
+ * ({@link BunkerStair}). Coordinates are relative to the bunker floor directly below spawn, in front of the vault, with +Z
+ * running away from the stair.
+ * <p>
+ * Worlds built before the rebuild keep their bunker ({@link BunkerLayout#LEGACY}); the room constants below and
+ * {@link #upgrade} are theirs.
  */
 public final class BunkerBuilder {
-    /** Fourteen pods: seven along each long wall of the chamber. */
-    public static final int PODS = 14;
+    /** Fourteen pods in the hall: seven along each long wall. New sleepers are spread over these (the lab's is chosen). */
+    public static final int PODS = BunkerLayout.HALL_PODS;
     private static final BlockState WALL = Blocks.DEEPSLATE_TILES.defaultBlockState(),
             AIR = Blocks.AIR.defaultBlockState();
 
@@ -46,6 +50,8 @@ public final class BunkerBuilder {
     /** A room blueprint and where its anchor lands, relative to the bunker floor under the shaft. */
     public record Room(String blueprint, BlockPos at) {}
 
+    // The original bunker's rooms (BunkerLayout.LEGACY), kept for the worlds that have them.
+
     static final Room RECORDS = new Room("bunker_records", new BlockPos(0, 0, 1));
     static final Room CORRIDOR = new Room("bunker_corridor", new BlockPos(0, 0, 11));
     static final Room LAB = new Room("bunker_lab", new BlockPos(2, 0, 11));
@@ -53,11 +59,11 @@ public final class BunkerBuilder {
     public static final Room CHAMBER = new Room("bunker_chamber", new BlockPos(0, 0, 18));
     static final Room SECURITY = new Room("bunker_security", new BlockPos(-14, 0, 1));
 
-    /** The rooms on the bunker's main level. */
+    /** The original bunker's rooms on its main level. */
     public static final List<Room> ROOMS = List.of(RECORDS, CORRIDOR, LAB, INFIRMARY, CHAMBER,
             new Room("bunker_generator", new BlockPos(5, 0, 1)),
             SECURITY);
-    /** Maintenance under the security checkpoint. */
+    /** The original bunker's maintenance room, under its security checkpoint. */
     public static final Room OFFICE = new Room("bunker_office", new BlockPos(-14, -6, 3));
 
     /** The receiver: Simple Radio's, or the copper box an older bunker was built with. */
@@ -84,17 +90,10 @@ public final class BunkerBuilder {
             }
     }
 
-    public static BlockPos receiverPos(BlockPos origin) {
-        return markerPositions(origin, RECORDS, "signal:receiver").getFirst();
-    }
+    public static BlockPos receiverPos(BunkerData data) { return data.origin.offset(data.layout().receiver()); }
 
-    public static List<BlockPos> survivorPositions(BlockPos origin) {
-        return markerPositions(origin, INFIRMARY, "signal:survivor");
-    }
-
-    private static List<BlockPos> markerPositions(BlockPos origin, Room room, String marker) {
-        BlockPos at = origin.offset(room.at());
-        return Blueprint.load(room.blueprint()).markerOffsets(marker).stream().map(at::offset).toList();
+    public static List<BlockPos> survivorPositions(BunkerData data) {
+        return data.layout().survivors().stream().map(data.origin::offset).toList();
     }
     /**
      * Exhibit 1: Isaac's explosion over the city, on the hall's far wall above the analysts' desk.
@@ -125,7 +124,7 @@ public final class BunkerBuilder {
      * since part of it is a painting. Returns true once the bunker is up to date.
      */
     public static boolean upgrade(ServerLevel level, BunkerData data) {
-        if (!data.built || data.layout >= BunkerData.LAYOUT) return true;
+        if (!data.built || data.layout >= BunkerData.LAYOUT || data.layout().stasis()) return true;
         var chamber = Blueprint.load(CHAMBER.blueprint());
         BlockPos at = data.origin.offset(CHAMBER.at());
         BlockPos painting = at.offset(chamber.markerOffsets(EXHIBIT_ONE).getFirst());
@@ -212,11 +211,10 @@ public final class BunkerBuilder {
      * Puts a sleeper's name on the nameplate over their pod: revival in progress while they wake, revived
      * once they are out. Only touches a loaded sign, and only when its words change.
      */
-    public static void labelPod(ServerLevel level, BlockPos origin, int index, String name, boolean revived) {
-        var cells = com.jayptucker.heroesevolved.structure.Blueprint.load(CHAMBER.blueprint())
-                .markerOffsets(String.format("sign:pod%02d", index + 1));
-        if (cells.isEmpty()) return;
-        BlockPos pos = origin.offset(CHAMBER.at()).offset(cells.getFirst());
+    public static void labelPod(ServerLevel level, BunkerData data, int index, String name, boolean revived) {
+        BlockPos cell = data.layout().podSign(index);
+        if (cell == null) return;
+        BlockPos pos = data.origin.offset(cell);
         if (!level.isLoaded(pos) || !level.getBlockState(pos).is(Blocks.SPRUCE_WALL_SIGN)
                 || !(level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.SignBlockEntity sign)
                 || !sign.isWaxed()) return;
@@ -239,46 +237,60 @@ public final class BunkerBuilder {
      * woke decades early and left; her note waits on a lectern beside the pod ({@link #claireLectern}). Kept that way
      * every time the bunker is near, so nothing seals it again, and the note is put back if someone takes it.
      */
-    public static void releaseClaire(ServerLevel level, BlockPos origin) {
+    public static void releaseClaire(ServerLevel level, BunkerData data) {
         int claire = com.jayptucker.heroesevolved.story.night.NightThreeBunker.CLAIRE;
-        BlockPos base = origin.offset(podOffset(claire));
+        BlockPos origin = data.origin;
+        BunkerLayout layout = data.layout();
+        BlockPos base = origin.offset(layout.podOffset(claire));
         if (!level.isLoaded(base)) return;
         BlockState state = level.getBlockState(base);
-        if (!(state.getBlock() instanceof CryoChamberBlock)) placePod(level, origin, claire, true);
+        if (!(state.getBlock() instanceof CryoChamberBlock)) placePod(level, origin, layout, claire, true);
         else if (!state.getValue(CryoChamberBlock.OPEN)) CryoChamberBlock.setOpen(level, base, true);
         CryoChamberBlock.setCracked(level, base, true);
-        BlockPos lectern = claireLectern(origin);
+        // Her note, beside the pod: in a chest in the rebuilt bunker, on a lectern in an older one.
+        BlockPos lectern = claireLectern(data);
         BlockState stand = level.getBlockState(lectern);
         if (stand.isAir() || stand.canBeReplaced())
-            level.setBlock(lectern, net.minecraft.world.level.block.Blocks.LECTERN.defaultBlockState()
-                    .setValue(LecternBlock.FACING, net.minecraft.core.Direction.NORTH), Block.UPDATE_ALL);
+            level.setBlock(lectern, layout.stasis()
+                    ? Blocks.CHEST.defaultBlockState().setValue(net.minecraft.world.level.block.ChestBlock.FACING, net.minecraft.core.Direction.NORTH)
+                    : net.minecraft.world.level.block.Blocks.LECTERN.defaultBlockState().setValue(LecternBlock.FACING, net.minecraft.core.Direction.NORTH),
+                    Block.UPDATE_ALL);
         if (level.getBlockEntity(lectern) instanceof LecternBlockEntity desk && !desk.hasBook()) {
             level.setBlock(lectern, level.getBlockState(lectern).setValue(LecternBlock.HAS_BOOK, true), Block.UPDATE_ALL);
             if (level.getBlockEntity(lectern) instanceof LecternBlockEntity filled) filled.setBook(BunkerLogs.claireNote());
         }
-        var cells = com.jayptucker.heroesevolved.structure.Blueprint.load(CHAMBER.blueprint()).markerOffsets("sign:pod14");
-        if (cells.isEmpty()) return;
-        BlockPos pos = origin.offset(CHAMBER.at()).offset(cells.getFirst());
+        if (level.getBlockEntity(lectern) instanceof ChestBlockEntity box && box.isEmpty()) box.setItem(13, BunkerLogs.claireNote());
+        BlockPos cell = layout.podSign(claire);
+        if (cell == null) return;
+        BlockPos pos = origin.offset(cell);
         if (level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.SignBlockEntity sign
                 && !sign.getFrontText().getMessage(2, false).getString().equals("RELEASED"))
-            signPod(level, origin, claire, net.minecraft.world.item.DyeColor.LIGHT_BLUE, "SUBJECT 14", "C. BENNET", "RELEASED", "");
+            signPod(level, origin, layout, claire, net.minecraft.world.item.DyeColor.LIGHT_BLUE, "SUBJECT 14", "C. BENNET", "RELEASED", "");
     }
 
-    /** The lectern beside Pod 14 (chamber cell 11 1 15), read from the step in front of the pod. */
-    public static BlockPos claireLectern(BlockPos origin) { return origin.offset(4, 1, 33); }
+    /** The book in a log's place: on a lectern (an older bunker) or in a chest (the rebuilt one), or empty. */
+    public static ItemStack log(ServerLevel level, BlockPos pos) {
+        if (level.getBlockEntity(pos) instanceof LecternBlockEntity lectern) return lectern.getBook();
+        if (level.getBlockEntity(pos) instanceof ChestBlockEntity chest)
+            for (int i = 0; i < chest.getContainerSize(); i++)
+                if (chest.getItem(i).is(Items.WRITTEN_BOOK)) return chest.getItem(i);
+        return ItemStack.EMPTY;
+    }
+
+    /** Where Claire's note waits beside Pod 14, read from the step in front of the pod. */
+    public static BlockPos claireLectern(BunkerData data) { return data.origin.offset(data.layout().claireLectern()); }
 
     /** Whether {@code base} is Claire's pod in the bunker under spawn. */
-    public static boolean isClaires(ServerLevel level, BlockPos origin, BlockPos base) {
+    public static boolean isClaires(ServerLevel level, BunkerData data, BlockPos base) {
         return level.dimension() == net.minecraft.world.level.Level.OVERWORLD
-                && base.equals(origin.offset(podOffset(com.jayptucker.heroesevolved.story.night.NightThreeBunker.CLAIRE)));
+                && base.equals(data.origin.offset(data.layout().podOffset(com.jayptucker.heroesevolved.story.night.NightThreeBunker.CLAIRE)));
     }
 
     /** Writes up to four lines on pod {@code index}'s sign, whatever it said before. */
-    public static void signPod(ServerLevel level, BlockPos origin, int index, net.minecraft.world.item.DyeColor color, String... lines) {
-        var cells = com.jayptucker.heroesevolved.structure.Blueprint.load(CHAMBER.blueprint())
-                .markerOffsets(String.format("sign:pod%02d", index + 1));
-        if (cells.isEmpty()) return;
-        BlockPos pos = origin.offset(CHAMBER.at()).offset(cells.getFirst());
+    public static void signPod(ServerLevel level, BlockPos origin, BunkerLayout layout, int index, net.minecraft.world.item.DyeColor color, String... lines) {
+        BlockPos cell = layout.podSign(index);
+        if (cell == null) return;
+        BlockPos pos = origin.offset(cell);
         if (!level.isLoaded(pos) || !(level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.SignBlockEntity sign)) return;
         var text = new net.minecraft.world.level.block.entity.SignText().setColor(color).setHasGlowingText(true);
         for (int i = 0; i < 4; i++) text = text.setMessage(i, net.minecraft.network.chat.Component.literal(i < lines.length ? lines[i] : ""));
@@ -288,38 +300,15 @@ public final class BunkerBuilder {
         level.sendBlockUpdated(pos, level.getBlockState(pos), level.getBlockState(pos), Block.UPDATE_CLIENTS);
     }
 
-    /** The space the bunker's rooms take up, relative to its origin (the floor under the shaft). */
-    private static net.minecraft.world.level.levelgen.structure.BoundingBox bounds;
+    /** Whether {@code pos} is inside the bunker under spawn. */
+    public static boolean inside(BunkerData data, BlockPos pos) { return data.layout().inside(data.origin, pos); }
 
-    /** Whether {@code pos} is inside the bunker whose origin is {@code origin}. */
-    public static boolean inside(BlockPos origin, BlockPos pos) {
-        if (bounds == null) {
-            var box = new net.minecraft.world.level.levelgen.structure.BoundingBox(BlockPos.ZERO);
-            var rooms = new java.util.ArrayList<>(ROOMS);
-            rooms.add(OFFICE);
-            for (Room room : rooms) {
-                var blueprint = com.jayptucker.heroesevolved.structure.Blueprint.load(room.blueprint());
-                box.encapsulate(room.at().offset(blueprint.offset(0, 0, 0, net.minecraft.world.level.block.Rotation.NONE)));
-                box.encapsulate(room.at().offset(blueprint.offset(blueprint.width() - 1, blueprint.height() - 1, blueprint.depth() - 1,
-                        net.minecraft.world.level.block.Rotation.NONE)));
-            }
-            bounds = box;
-        }
-        return bounds.isInside(pos.subtract(origin));
-    }
-
-    /** Pod {@code index}'s base block, relative to the bunker origin. */
-    public static BlockPos podOffset(int index) {
-        return new BlockPos(index < 7 ? -5 : 5, 1, 20 + 2 * (index % 7));
-    }
-
-    public static Direction podFacing(int index) { return index < 7 ? Direction.EAST : Direction.WEST; }
-
-    /** Builds the bunker below the world's spawn and returns its origin (the floor below the shaft). */
+    /** Builds the bunker below the world's spawn ({@link BunkerLayout#STASIS}) and returns its origin (the floor below the shaft). */
     public static BlockPos build(ServerLevel level) {
         BlockPos spawn = level.getSharedSpawnPos();
-        for (int cx = (spawn.getX() - 16) >> 4; cx <= (spawn.getX() + 24) >> 4; cx++)
-            for (int cz = (spawn.getZ() - 20) >> 4; cz <= (spawn.getZ() + 40) >> 4; cz++) level.getChunk(cx, cz);
+        var box = BunkerLayout.STASIS.bounds();
+        for (int cx = (spawn.getX() + Math.min(box.minX(), -4) - 2) >> 4; cx <= (spawn.getX() + Math.max(box.maxX(), 16) + 2) >> 4; cx++)
+            for (int cz = (spawn.getZ() - 12) >> 4; cz <= (spawn.getZ() + box.maxZ() + 2) >> 4; cz++) level.getChunk(cx, cz);
         // The ground the ruined lobby stands on: the middle height of its whole footprint, not one column's, so on a
         // hillside it sits on the slope instead of in a pit cut down to wherever spawn happened to be lowest.
         int surface = BunkerStair.groundLevel(level, spawn);
@@ -349,14 +338,16 @@ public final class BunkerBuilder {
     }
 
     /** Marker hooks: books for the lecterns and contents for the chests. */
-    private void finish(String marker, BlockPos pos) {
+    private void finish(String marker, BlockPos pos) { finish(level, marker, pos); }
+
+    /** Fills a placed marker: a book on a lectern, supplies in a chest. Also used for the bunkers of the past. */
+    public static void finish(ServerLevel level, String marker, BlockPos pos) {
+        if (marker.startsWith("log:") && level.getBlockEntity(pos) instanceof ChestBlockEntity box) {
+            // A chest: the book lies in the middle of it.
+            box.setItem(13, log(marker.substring(4)));
+        }
         if (marker.startsWith("log:") && level.getBlockEntity(pos) instanceof LecternBlockEntity lectern) {
-            ItemStack book = switch (marker.substring(4)) {
-                case "orientation" -> BunkerLogs.orientation();
-                case "lockdown" -> BunkerLogs.lockdown();
-                case "helixite" -> BunkerLogs.helixite();
-                default -> ItemStack.EMPTY;
-            };
+            ItemStack book = log(marker.substring(4));
             level.setBlock(pos, level.getBlockState(pos).setValue(LecternBlock.HAS_BOOK, true), Block.UPDATE_CLIENTS);
             if (level.getBlockEntity(pos) instanceof LecternBlockEntity filled) filled.setBook(book);
         }
@@ -375,6 +366,18 @@ public final class BunkerBuilder {
         }
     }
 
+    /** The book a {@code log:<id>} marker holds. */
+    private static ItemStack log(String id) {
+        return switch (id) {
+            case "orientation" -> BunkerLogs.orientation();
+            case "lockdown" -> BunkerLogs.lockdown();
+            case "helixite" -> BunkerLogs.helixite();
+            case "weir" -> BunkerLogs.weir();
+            case "bennet4r" -> BunkerLogs.bennetOnTheWard();
+            default -> ItemStack.EMPTY;
+        };
+    }
+
     /** A recorded donation kept in the lab's reagent chest. */
     static ItemStack donatedSample() {
         ItemStack sample = new ItemStack(ModItems.BLOOD_SAMPLE.get());
@@ -382,10 +385,10 @@ public final class BunkerBuilder {
         return sample;
     }
 
-    /** Places pod {@code index}, sealed, with its lamp, cap and pipework. Also used to repair a pod. */
-    public static void placePod(ServerLevel level, BlockPos origin, int index, boolean open) {
-        BlockPos base = origin.offset(podOffset(index));
-        BlockState pod = ModBlocks.CRYOCHAMBER.get().defaultBlockState().setValue(CryoChamberBlock.FACING, podFacing(index))
+    /** Places pod {@code index}, open or sealed. Also used to repair a pod. */
+    public static void placePod(ServerLevel level, BlockPos origin, BunkerLayout layout, int index, boolean open) {
+        BlockPos base = origin.offset(layout.podOffset(index));
+        BlockState pod = ModBlocks.CRYOCHAMBER.get().defaultBlockState().setValue(CryoChamberBlock.FACING, layout.podFacing(index))
                 .setValue(CryoChamberBlock.OPEN, open);
         level.setBlock(base, pod, Block.UPDATE_CLIENTS);
         level.setBlock(base.above(), pod.setValue(CryoChamberBlock.HALF, net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER),
@@ -406,10 +409,12 @@ public final class BunkerBuilder {
                     .setValue(TrapDoorBlock.FACING, Direction.SOUTH));
         }
 
-        // The rooms are blueprints in data/heroesevolved/blueprints; see the minecraft-building skill.
-        for (Room room : ROOMS) room(room.blueprint(), room.at().getX(), room.at().getY(), room.at().getZ());
-        if (origin.getY() + OFFICE.at().getY() > level.getMinBuildHeight())
-            room(OFFICE.blueprint(), OFFICE.at().getX(), OFFICE.at().getY(), OFFICE.at().getZ());
+        // The rooms are blueprints drawn by tools/generate-bunker.py; see the minecraft-building skill.
+        BunkerLayout layout = BunkerLayout.STASIS;
+        for (Room room : layout.rooms()) room(room.blueprint(), room.at().getX(), room.at().getY(), room.at().getZ());
+        for (Room room : layout.deep())
+            if (origin.getY() + room.at().getY() > level.getMinBuildHeight())
+                room(room.blueprint(), room.at().getX(), room.at().getY(), room.at().getZ());
         // The way out, as the Last Day's survivors came in: the vault behind records, stuck open and grown over, and a
         // switchback stair up to a ruined lobby on the surface (BunkerStair).
         if (stair) BunkerStair.build(level, origin, top);
