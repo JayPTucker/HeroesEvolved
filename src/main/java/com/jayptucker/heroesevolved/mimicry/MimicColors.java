@@ -22,6 +22,9 @@ public final class MimicColors {
         return index < 0 ? POWERS.indexOf("empathic_mimicry") : index;
     }
 
+    /** The power path at {@code index} (as {@link #index} gives it), or null. */
+    public static String power(int index) { return index >= 0 && index < POWERS.size() ? POWERS.get(index) : null; }
+
     public static int color(int index) { return index >= 0 && index < COLORS.length ? COLORS[index] : 0xE8C27A; }
 
     public static int color(String power) { return color(index(power)); }

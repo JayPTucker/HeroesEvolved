@@ -328,4 +328,6 @@ numbers as constants at the top of its entity class and in its doc.
       batch, cleaning up their players on failure ([testing.md](../../../docs/agents/testing.md)).
 - [ ] A preview that photographs every telegraph and every phase (`tools/watchmaker-preview.init.gradle`,
       `tools/elle-preview.init.gradle`), and the shots shown to the user.
+- [ ] Right in JEI and Jade ([compat.md](../../../docs/agents/compat.md)'s checklist): a real name, its drops with info
+      pages, effect entities hidden from Jade, and any disguise or vanishing answered by the questions Jade asks.
 - [ ] `docs/<boss>.md`, the AGENTS.md row, and the lessons added to [references/sylar-and-elle.md](references/sylar-and-elle.md).

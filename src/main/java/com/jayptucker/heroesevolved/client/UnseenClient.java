@@ -27,6 +27,14 @@ public final class UnseenClient {
 
     public static boolean hidden(int entity) { return HIDDEN.contains(entity); }
 
+    /**
+     * Whether this client must not see {@code entity} where it really stands: hidden (Fade, Vanishing Touch) or
+     * moving faster than time ({@code TimeVeilClient}). Anything that names what you look at (Jade) asks this.
+     */
+    public static boolean concealed(net.minecraft.world.entity.Entity entity) {
+        return entity != null && (hidden(entity.getId()) || com.jayptucker.heroesevolved.client.effects.TimeVeilClient.hidden(entity));
+    }
+
     @SubscribeEvent public static void render(RenderLivingEvent.Pre<?, ?> event) {
         var mc = Minecraft.getInstance();
         if (HIDDEN.contains(event.getEntity().getId())) event.setCanceled(true);

@@ -302,6 +302,21 @@ public final class MorphClient {
         if (who instanceof Player || who instanceof Double) return;
         ShapeshiftForm face = FORMS.get(who.getId());
         if (face == null) return;
+        LivingEntity standIn = facing(who, face);
+        if (standIn == null) return;
+        event.setCanceled(true);
+        float partial = event.getPartialTick();
+        drawingFor = who.getId();
+        try {
+            Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(standIn).render(standIn,
+                    Mth.lerp(partial, who.yRotO, who.getYRot()), partial, event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight());
+        } finally {
+            drawingFor = -1;
+        }
+    }
+
+    /** The face {@code who} (a creature, not a player) wears, made on first use and posed as {@code who}; null if it can't be. */
+    private static @Nullable LivingEntity facing(LivingEntity who, ShapeshiftForm face) {
         Map<String, LivingEntity> mine = STAND_INS.computeIfAbsent(who.getId(), id -> new HashMap<>());
         LivingEntity standIn = mine.get(face.key());
         if (standIn == null) {
@@ -311,11 +326,10 @@ public final class MorphClient {
                 try { made = face.type().create(who.level()); } catch (RuntimeException e) { made = null; }
                 if (made instanceof LivingEntity living) { if (living instanceof Mob mob) mob.setNoAi(true); standIn = living; }
             }
-            if (standIn == null) return;
+            if (standIn == null) return null;
             standIn.setSilent(true);
             mine.put(face.key(), standIn);
         }
-        event.setCanceled(true);
         standIn.setPosRaw(who.getX(), who.getY(), who.getZ());
         standIn.xo = who.xo; standIn.yo = who.yo; standIn.zo = who.zo;
         standIn.setYRot(who.getYRot()); standIn.yRotO = who.yRotO;
@@ -326,14 +340,38 @@ public final class MorphClient {
         standIn.tickCount = who.tickCount;
         standIn.hurtTime = who.hurtTime;
         standIn.walkAnimation.setSpeed(who.walkAnimation.speed());
-        float partial = event.getPartialTick();
-        drawingFor = who.getId();
-        try {
-            Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(standIn).render(standIn,
-                    Mth.lerp(partial, who.yRotO, who.getYRot()), partial, event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight());
-        } finally {
-            drawingFor = -1;
+        return standIn;
+    }
+
+    /**
+     * What this client sees in {@code who}'s place, or null when it looks like itself: the body drawn for a shapeshifter
+     * (their form, or a person's double), for a creature wearing a borrowed face, or for a Decoy. It stands where
+     * {@code who} stands and has the same share of its health. Anything that names what you look at (Jade) asks this,
+     * so it names the disguise and never the one inside.
+     */
+    public static @Nullable LivingEntity seenAs(Entity who) {
+        if (who == null || who instanceof Double) return null;
+        LivingEntity standIn = null;
+        if (who instanceof com.jayptucker.heroesevolved.shapeshift.ShapeDecoy decoy) {
+            standIn = com.jayptucker.heroesevolved.entity.client.ShapeDecoyRenderer.standIn(decoy);
+            if (standIn != null) {
+                standIn.setPosRaw(decoy.getX(), decoy.getY(), decoy.getZ());
+                standIn.setYRot(decoy.getYRot()); standIn.yBodyRot = decoy.yBodyRot; standIn.yHeadRot = decoy.yHeadRot;
+            }
+        } else if (who instanceof Player player) {
+            ShapeshiftForm form = shown(player, TRANSITIONS.get(player.getId()), 0);
+            if (form != null) {
+                standIn = standIn(player, form);
+                if (standIn != null) copyPose(standIn, player);
+            }
+        } else if (who instanceof LivingEntity living) {
+            ShapeshiftForm face = FORMS.get(living.getId());
+            if (face != null) standIn = facing(living, face);
         }
+        if (standIn == null) return null;
+        if (who instanceof LivingEntity living && living.getMaxHealth() > 0)
+            standIn.setHealth(standIn.getMaxHealth() * Mth.clamp(living.getHealth() / living.getMaxHealth(), 0, 1));
+        return standIn;
     }
 
     /** Your own double's name tag stays hidden from you, as your own name tag is. */

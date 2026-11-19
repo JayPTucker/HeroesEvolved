@@ -44,6 +44,7 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 | Meltdown hazards, protective suits, HUD ring gauges | [hazards-and-suits.md](docs/agents/hazards-and-suits.md) |
 | Sounds, music, OGG files, voice chat | [audio.md](docs/agents/audio.md): start from the user's reference library it describes (`C:\Users\jaypa\OneDrive\Desktop\Gemini Heroes Reborn Audio`), never ship any of it; [powers/telepathy.md](docs/agents/powers/telepathy.md) for voice chat |
 | Costs, cooldowns, drains, unlock levels | "Stamina and balance" below, and [docs/stamina-balance.md](docs/stamina-balance.md) |
+| Adding or changing any item, block, entity, mob, machine, recipe or disguise; JEI or Jade themselves | [compat.md](docs/agents/compat.md) (its checklist) |
 | Writing, running or fixing game tests | [testing.md](docs/agents/testing.md) |
 | Screenshots of anything in game | [previews.md](docs/agents/previews.md) |
 
@@ -75,7 +76,8 @@ Shared systems with player docs: [fighting-styles.md](docs/fighting-styles.md), 
 [classes.md](docs/classes.md), [skill-trees.md](docs/skill-trees.md), [progression.md](docs/progression.md),
 [power-intros.md](docs/power-intros.md), [power-sounds.md](docs/power-sounds.md), [gifted-mobs.md](docs/gifted-mobs.md),
 [sylar.md](docs/sylar.md), [elle-bishop.md](docs/elle-bishop.md), [company-agents.md](docs/company-agents.md),
-[emergency-band.md](docs/emergency-band.md), [the-last-day.md](docs/the-last-day.md), [the-past.md](docs/the-past.md).
+[emergency-band.md](docs/emergency-band.md), [the-last-day.md](docs/the-last-day.md), [the-past.md](docs/the-past.md),
+[jei-and-jade.md](docs/jei-and-jade.md).
 
 ## Pyrokinesis is the bar for movement and fighting
 
@@ -96,7 +98,8 @@ body. See [fighting-styles.md](docs/agents/fighting-styles.md) and [docs/pyrokin
   `ability` (actions, use, balance), `combat` (fighting styles, finishers), `skills` and `styles` (trees, classes),
   `energy` (stamina), `progression`, `intro` (awakenings), `effects` and `client/effects` (set pieces; each power's art
   is `client/effects/setpiece/<Power>Art`), `network`, `story` (prologue, bunker, Sylar, Elle, actors), `gifted`,
-  `village`, `radio`, `weapons`, `dampener`, `hazard`, `structure` (blueprints), `mixin`.
+  `village`, `radio`, `weapons`, `dampener`, `hazard`, `structure` (blueprints), `mixin`, `compat` (the optional JEI
+  and Jade plugins).
 - `src/main/resources/data/heroesevolved/`: `blueprints/`, `power_balance.json`, `skill_trees.json`, tags, damage types.
 - `src/gametest/` (game tests) and `src/uitest/` (preview drivers) load only through init scripts in `tools/`, so they
   never ship in the jar.
@@ -153,8 +156,9 @@ Each rule cost a bug once. The file in brackets has the story and the code to co
 - **Player-caused damage obeys PvP.** A hazard (meltdown heat, friction) is nobody's blow, so it hurts friends too. Pick
   a hit's damage type on purpose: a landing that used `playerAttack` once counted as a punch for another power's
   passive ([powers/regeneration.md](docs/agents/powers/regeneration.md)).
-- **Another mod is touched by one guarded class** (`TaczLink`, `RadioLink`, `MindVoice`): every call in try/catch,
-  a `broken` flag, and a fallback, so an update to that mod never crashes ours.
+- **Another mod is touched by one guarded class** (`TaczLink`, `RadioLink`, `MindVoice`; an optional mod gets one
+  plugin package, `compat/jei`, `compat/jade`): every call in try/catch, a `broken` flag, and a fallback, so an update
+  to that mod never crashes ours.
 - **Small Java traps that bit:** start "last time" fields at `-1000`, not `Long.MIN_VALUE` (the subtraction overflows);
   never change a set while walking it (walk `List.copyOf`); check `brain.hasMemoryValue` before `getMemory`; a helper
   named like a base-class method can silently call the base one (`pay` in `ComboStyle`).
@@ -212,6 +216,10 @@ Every cost, cooldown, per-second drain and unlock tier is set in one place. The 
 
 - **Photograph it** if anyone will see it ([previews.md](docs/agents/previews.md)), look at every shot, and show the
   user. Run the focused tests, then the whole suite before calling it done.
+- **Make it show right in JEI and Jade.** Anything new a player can hold, place, meet or craft (an item, block,
+  entity, mob, machine, recipe) or that changes how something looks (a disguise, hiding, a stand-in body) goes through
+  the checklist at the top of [compat.md](docs/agents/compat.md) in the same change: names, the creative tab, hiding
+  what can't be had, info pages, recipe categories, Jade's hidden types, and the disguise questions Jade asks.
 - **Update the player doc** (`docs/<topic>.md`): what the player sees, in plain words, with tables for moves.
 - **Add what you learned to the agent notes for that area,** not to this file: a "Reusable patterns" bullet that says
   what failed, why, and the class to copy. Put a rule here only if it applies to every task, and keep this file under

@@ -31,6 +31,9 @@ public final class CentrifugeBlockEntity extends BaseContainerBlockEntity implem
     private NonNullList<ItemStack> items = NonNullList.withSize(3, ItemStack.EMPTY);
     private int progress, charge;
 
+    /** How far the current spin has got, 0 to 1 (Jade's progress bar). */
+    public float spun() { return Math.clamp(progress / (float) SPIN_TICKS, 0, 1); }
+
     private final ContainerData data = new ContainerData() {
         @Override public int get(int index) { return switch (index) { case 0 -> progress; case 1 -> SPIN_TICKS; default -> charge; }; }
         @Override public void set(int index, int value) { if (index == 0) progress = value; else if (index == 2) charge = value; }

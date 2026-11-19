@@ -39,6 +39,9 @@ public final class SynthesisStationBlockEntity extends BaseContainerBlockEntity 
     private static final int[] TOP = {INGREDIENT}, BOTTOM = {0, 1, 2}, SIDES = {0, 1, 2, FUEL};
     private NonNullList<ItemStack> items = NonNullList.withSize(5, ItemStack.EMPTY);
     private int brewTime, fuel;
+
+    /** How far the current brew has got, 0 to 1 (Jade's progress bar); brewTime counts down from BREW_TICKS. */
+    public float brewed() { return brewTime > 0 ? Math.clamp(1 - brewTime / (float) BREW_TICKS, 0, 1) : 0; }
     private Item brewing = Items.AIR;
 
     private final ContainerData data = new ContainerData() {

@@ -118,6 +118,8 @@ Item icons: a base and an overlay too, 16x16, from character masks (see `sprite(
   items to the `minecraft:{head,chest,leg,foot}_armor` and `enchantable/*` tags.
 - The rest of a new set: the items (`hazard/SuitItems`, `SuitArmorItem`), item models and icons, `en_us.json` names, and
   a recipe (the Suit Fabricator's `SuitPatterns`, matched by tag so other mods' materials work, or a normal recipe).
+  JEI's Suit Fabricator page reads `SuitPatterns`, so a new pattern shows there by itself; anything else goes through
+  the checklist in [compat.md](../../../docs/agents/compat.md).
 - If the set protects against something, add a `Suits.Kind` and answer through `Suits` (a quarter a piece); never add a
   special case in the hazard's own code.
 - Mobs and armor stands draw the same model through the same `IClientItemExtensions`; check both in the preview.

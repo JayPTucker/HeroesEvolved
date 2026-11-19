@@ -30,6 +30,11 @@ repositories {
     // Simple Voice Chat's API (henkelmax).
     maven { url = "https://maven.maxhenkel.de/repository/public" }
     // The two required mods themselves, from Modrinth, for development runs and for reading Simple Radio's radios.
+    // JEI's API and mod jar, and the config library the mod jar needs (mezz).
+    exclusiveContent {
+        forRepository { maven { url = "https://maven.blamejared.com" } }
+        filter { includeGroup "mezz.jei"; includeGroup "net.mezzdev.config" }
+    }
     exclusiveContent {
         forRepository { maven { url = "https://api.modrinth.com/maven" } }
         filter { includeGroup "maven.modrinth" }
@@ -137,12 +142,14 @@ dependencies {
     compileOnly "maven.modrinth:timeless-and-classics-zero:${tacz_version}"
     localRuntime "maven.modrinth:timeless-and-classics-zero:${tacz_version}"
 
-    // Example optional mod dependency with JEI
-    // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
-    // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
-    // compileOnly "mezz.jei:jei-${mc_version}-neoforge-api:${jei_version}"
-    // We add the full version to localRuntime, not runtimeOnly, so that we do not publish a dependency on it
-    // localRuntime "mezz.jei:jei-${mc_version}-neoforge:${jei_version}"
+    // Optional mods: JEI and Jade. Compiled against only (the plugins in compat/jei and compat/jade are found by their
+    // annotations, and nothing else touches them), and present in dev runs and previews. -PnoJei / -PnoJade leave one
+    // out, to check the mod still loads without it.
+    compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
+    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
+    compileOnly "maven.modrinth:jade:${jade_version}"
+    if (!project.hasProperty('noJei')) localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
+    if (!project.hasProperty('noJade')) localRuntime "maven.modrinth:jade:${jade_version}"
 
     // Example mod dependency using a mod jar from ./libs with a flat dir repository
     // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar

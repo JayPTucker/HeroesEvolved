@@ -27,7 +27,8 @@ public final class ShapeDecoyRenderer extends EntityRenderer<ShapeDecoy> {
         shadowRadius = .45F;
     }
 
-    private static LivingEntity standIn(ShapeDecoy decoy) {
+    /** The body drawn for {@code decoy}, made on first use; null if it can't be. */
+    public static LivingEntity standIn(ShapeDecoy decoy) {
         if (decoy.standIn instanceof LivingEntity existing) return existing;
         ShapeshiftForm form = decoy.form();
         if (form == null || !(decoy.level() instanceof ClientLevel level)) return null;

@@ -90,6 +90,31 @@ public final class TimeVeilClient {
         return entity != mc.player && STANDS.containsKey(entity.getUUID());
     }
 
+    /** Where a look meets a veiled player's still stand-in. */
+    public record StandHit(Player player, Vec3 at) {}
+
+    /**
+     * The first stand-in (not your own) that the segment from {@code from} to {@code to} meets, or null: what you see
+     * standing there is that player, so Jade names them there.
+     */
+    public static StandHit standOn(Vec3 from, Vec3 to) {
+        Minecraft mc = Minecraft.getInstance();
+        if (STANDS.isEmpty() || mc.level == null || mc.player == null) return null;
+        StandHit best = null;
+        double nearest = Double.MAX_VALUE;
+        for (var entry : STANDS.entrySet()) {
+            Stand stand = entry.getValue();
+            if (entry.getKey().equals(mc.player.getUUID()) || !stand.dimension.equals(mc.level.dimension().location())) continue;
+            Player player = mc.level.getPlayerByUUID(entry.getKey());
+            if (player == null) continue;
+            var hit = new AABB(stand.at.add(-.3, 0, -.3), stand.at.add(.3, 1.8, .3)).clip(from, to);
+            if (hit.isEmpty() || from.distanceToSqr(hit.get()) >= nearest) continue;
+            nearest = from.distanceToSqr(hit.get());
+            best = new StandHit(player, hit.get());
+        }
+        return best;
+    }
+
     @SubscribeEvent public static void render(RenderLivingEvent.Pre<?, ?> event) {
         if (hidden(event.getEntity())) event.setCanceled(true);
     }

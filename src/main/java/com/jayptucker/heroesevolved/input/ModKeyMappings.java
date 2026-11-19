@@ -7,6 +7,8 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.client.settings.IKeyConflictContext;
+import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import org.lwjgl.glfw.GLFW;
 
 @EventBusSubscriber(
@@ -15,8 +17,27 @@ import org.lwjgl.glfw.GLFW;
         bus = EventBusSubscriber.Bus.MOD
 )
 public final class ModKeyMappings {
+    /**
+     * Where our keys count: in the world, and in our own hold-to-open wheels, whose screens watch the key that opened
+     * them. Never in any other screen, so NeoForge never hands R (the wheel) or O (admin) to us while JEI's R (show
+     * recipe) or Ctrl+O (hide the list), or another mod's menu key, is in use. The Controls screen still marks two
+     * bindings on one key red whatever their contexts; that is only a warning.
+     */
+    public static final IKeyConflictContext PLAY = new IKeyConflictContext() {
+        @Override public boolean isActive() {
+            var screen = net.minecraft.client.Minecraft.getInstance().screen;
+            return screen == null || screen instanceof com.jayptucker.heroesevolved.gui.screen.AbilityWheelScreen
+                    || screen instanceof com.jayptucker.heroesevolved.gui.screen.MemoryWheelScreen;
+        }
+
+        @Override public boolean conflicts(IKeyConflictContext other) {
+            return other == this || other == KeyConflictContext.IN_GAME || other == KeyConflictContext.UNIVERSAL;
+        }
+    };
+
     public static final KeyMapping OPEN_POWERS = new KeyMapping(
             "key.heroesevolved.open_powers",
+            PLAY,
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_P,
             "key.categories.heroesevolved"
@@ -24,6 +45,7 @@ public final class ModKeyMappings {
 
     public static final KeyMapping ABILITY_1 = new KeyMapping(
             "key.heroesevolved.ability_1",
+            PLAY,
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_G,
             "key.categories.heroesevolved"
@@ -31,6 +53,7 @@ public final class ModKeyMappings {
 
     public static final KeyMapping ABILITY_2 = new KeyMapping(
             "key.heroesevolved.ability_2",
+            PLAY,
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_H,
             "key.categories.heroesevolved"
@@ -38,6 +61,7 @@ public final class ModKeyMappings {
 
     public static final KeyMapping ABILITY_3 = new KeyMapping(
             "key.heroesevolved.ability_3",
+            PLAY,
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_Z,
             "key.categories.heroesevolved"
@@ -45,6 +69,7 @@ public final class ModKeyMappings {
 
     public static final KeyMapping ABILITY_4 = new KeyMapping(
             "key.heroesevolved.ability_4",
+            PLAY,
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_X,
             "key.categories.heroesevolved"
@@ -53,6 +78,7 @@ public final class ModKeyMappings {
     // V is unbound in vanilla; C and X are its hotbar save/load keys.
     public static final KeyMapping ABILITY_5 = new KeyMapping(
             "key.heroesevolved.ability_5",
+            PLAY,
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_V,
             "key.categories.heroesevolved"
@@ -67,6 +93,7 @@ public final class ModKeyMappings {
     /** Hold to open the ability wheel; tap to recast the last ability. R is unbound in vanilla. */
     public static final KeyMapping ABILITY_WHEEL = new KeyMapping(
             "key.heroesevolved.ability_wheel",
+            PLAY,
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_R,
             "key.categories.heroesevolved"
@@ -78,6 +105,7 @@ public final class ModKeyMappings {
      */
     public static final KeyMapping MEMORY_WHEEL = new KeyMapping(
             "key.heroesevolved.memory_wheel",
+            PLAY,
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_B,
             "key.categories.heroesevolved"
@@ -92,6 +120,7 @@ public final class ModKeyMappings {
     // J is unbound in vanilla.
     public static final KeyMapping OPEN_JOURNAL = new KeyMapping(
             "key.heroesevolved.open_journal",
+            PLAY,
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_J,
             "key.categories.heroesevolved"
@@ -100,6 +129,7 @@ public final class ModKeyMappings {
     /** Operators only; the server rejects anyone else's request. */
     public static final KeyMapping OPEN_ADMIN = new KeyMapping(
             "key.heroesevolved.open_admin",
+            PLAY,
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_O,
             "key.categories.heroesevolved"
@@ -111,6 +141,7 @@ public final class ModKeyMappings {
      */
     public static final KeyMapping FINISHER = new KeyMapping(
             "key.heroesevolved.finisher",
+            PLAY,
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_C,
             "key.categories.heroesevolved"
@@ -120,7 +151,7 @@ public final class ModKeyMappings {
     }
 
     private static KeyMapping unbound(String name) {
-        return new KeyMapping(name, InputConstants.Type.KEYSYM,
+        return new KeyMapping(name, PLAY, InputConstants.Type.KEYSYM,
                 InputConstants.UNKNOWN.getValue(), "key.categories.heroesevolved");
     }
 
