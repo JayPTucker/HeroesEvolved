@@ -137,6 +137,13 @@ public final class ModSounds {
     public static final Supplier<SoundEvent> STORY_SEALED = story("story_sealed"), STORY_YEARS = story("story_years"),
             STORY_WARD = story("story_ward"), STORY_WAKE_MUSIC = story("story_wake_music");
 
+    /**
+     * The Last Day (tools/generate-lastday-music.py): the evening's music and the fight's layer over it (two stems of one
+     * loop, played together), the ringing in your ears after the wave, and the crash of every window bursting at once.
+     */
+    public static final Supplier<SoundEvent> LASTDAY_EVENING = story("lastday_evening"), LASTDAY_RUN = story("lastday_run"),
+            LASTDAY_RINGING = story("lastday_ringing"), LASTDAY_SHATTER = story("lastday_shatter");
+
     private static Supplier<SoundEvent> story(String name) {
         return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, name)));
     }

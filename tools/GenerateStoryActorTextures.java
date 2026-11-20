@@ -12,10 +12,17 @@ import java.util.Random;
  *   patterned tie.</li>
  *   <li>Claire Bennet: her cheerleading uniform: long wavy blonde hair, a white V-neck top with a gold crest, red long
  *   sleeves, a red pleated skirt with a white and gold hem, white sneakers.</li>
- *   <li>Peter Petrelli: dark hair falling over his brow, a black jacket over a grey shirt, dark jeans.</li>
- *   <li>Ted Sprague: short brown hair, stubble, a scorched work shirt; and an emissive layer of light coming up through
- *   his skin, drawn with the eyes render type (black is nothing, light is added).</li>
+ *   <li>Peter Petrelli: dark chin-length hair parted just off centre, falling either side of his face, the fringe over one
+ *   eye; all in black: an open jacket over a black tee, dark jeans, black boots.</li>
+ *   <li>Sylar: short near-black hair, heavy dark brows angled down toward the nose, dark stubble; a long charcoal coat
+ *   over a dark grey collared shirt, dark trousers, and the watchmaker's silver watch on his wrist. Also the boss's skin
+ *   (story/sylar).</li>
+ *   <li>Ted Sprague: a brown trucker cap (mesh at the back), shaggy brown hair to the jaw, a full beard, an open red-brown
+ *   plaid flannel over a brown tee, worn jeans and work boots; and an emissive layer of light coming up through his skin,
+ *   drawn with the eyes render type (black is nothing, light is added).</li>
  * </ul>
+ * The three of them follow the user's references for the characters' general look (hair, build, the colours and cut of
+ * their clothes); every pixel is drawn here.
  *
  * <pre>java tools/GenerateStoryActorTextures.java</pre>
  */
@@ -26,6 +33,7 @@ public final class GenerateStoryActorTextures {
         write(noah(), "noah_bennet.png");
         write(claire(), "claire_bennet.png");
         write(peter(), "peter_petrelli.png");
+        write(sylar(), "sylar.png");
         write(ted(), "ted_sprague.png");
         write(tedGlow(), "ted_sprague_glow.png");
         write(glassesFrame(), "../item/horn_rimmed_glasses_frame.png");
@@ -294,40 +302,209 @@ public final class GenerateStoryActorTextures {
         return image;
     }
 
+    /** A flannel check: dark bands every four pixels both ways (darker where they cross), a pale thread beside them. */
+    private static void plaid(BufferedImage image, int x0, int y0, int x1, int y1, int base, int band, int thread) {
+        for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++) {
+            if ((image.getRGB(x, y) >>> 24) == 0) continue;
+            boolean bx = Math.floorMod(x - x0, 4) == 1, by = Math.floorMod(y - y0, 4) == 1;
+            int c = bx && by ? shade(band, -16) : bx || by ? band : base;
+            if (Math.floorMod(x - x0, 4) == 3 && Math.floorMod(y - y0, 2) == 0) c = thread;
+            image.setRGB(x, y, c);
+        }
+    }
+
+    /** Clears a box of the outer layer to see-through, so only what's drawn on it afterwards stands proud. */
+    private static void clearLayer(BufferedImage image, int x, int y, int width, int depth, int height) {
+        int clear = 0;
+        fill(image, x + depth, y, x + depth + 2 * width - 1, y + depth - 1, clear);
+        fill(image, x, y + depth, x + 2 * (depth + width) - 1, y + depth + height - 1, clear);
+    }
+
+    /**
+     * Peter Petrelli: dark chin-length hair parted just off centre and falling either side of his face to the jaw, the
+     * fringe swept down over his right eye; fair skin, dark eyes; all in black, an open jacket over a black tee, dark
+     * jeans and black boots. The hair's volume and the strands framing his face are on the outer layer.
+     */
     private static BufferedImage peter() {
         Random random = new Random(2006);
-        int skin = rgb(228, 190, 162), jacket = rgb(30, 30, 34), shirt = rgb(120, 122, 126), jeans = rgb(42, 48, 64);
-        BufferedImage image = figure(skin, jacket, 12, jeans, rgb(36, 30, 26));
-        int hair = rgb(38, 30, 26);
-        shortHair(image, hair, 2);
-        // A heavy fringe falling over one eye.
-        fill(image, 9, 10, 13, 10, hair); image.setRGB(9, 11, hair);
-        fill(image, 0, 9, 7, 12, hair); fill(image, 16, 9, 23, 12, hair); fill(image, 24, 13, 31, 14, hair);
-        face(image, skin, hair, rgb(84, 64, 44), rgb(178, 124, 112));
-        image.setRGB(9, 11, hair);
-        // The grey shirt under the open jacket.
-        fill(image, 22, 20, 25, 31, shirt);
-        for (int[] arm : ARMS) fill(image, arm[0], arm[1] + 4 + 11, arm[0] + 15, arm[1] + 4 + 11, skin);
+        int skin = rgb(232, 196, 170), jacket = rgb(22, 22, 26), tee = rgb(44, 44, 50), jeans = rgb(34, 38, 50), boot = rgb(18, 16, 16);
+        BufferedImage image = figure(skin, jacket, 12, jeans, boot);
+        int hair = rgb(48, 34, 28), dark = rgb(30, 21, 17), light = rgb(76, 56, 42);
+        // The head: hair over the crown, all down the back to the neck, and over the ears to the jaw on both sides.
+        fill(image, 8, 0, 15, 7, hair);
+        fill(image, 24, 8, 31, 15, hair);
+        fill(image, 0, 8, 7, 14, hair); fill(image, 16, 8, 23, 14, hair);
+        for (int x = 0; x <= 31; x++) for (int y = 8; y <= 15; y++)
+            if ((x < 8 || x > 15) && (image.getRGB(x, y) == hair) && (x * 3 + y) % 5 == 0) image.setRGB(x, y, dark);
+        for (int x = 8; x <= 15; x++) image.setRGB(x, (x * 5) % 8, light);
+        face(image, skin, dark, rgb(66, 46, 32), rgb(178, 126, 112));
+        // The front: the parting just off centre, the fringe falling across his brow and over his right eye, the sides
+        // framing his face down to the jaw.
+        fill(image, 8, 8, 15, 8, hair);
+        fill(image, 8, 9, 10, 9, hair); fill(image, 13, 9, 15, 9, hair);
+        image.setRGB(11, 9, shade(skin, -10)); image.setRGB(12, 9, skin);
+        image.setRGB(9, 10, hair); image.setRGB(10, 10, dark); image.setRGB(8, 10, hair); image.setRGB(15, 10, hair);
+        for (int y = 11; y <= 13; y++) { image.setRGB(8, y, hair); image.setRGB(15, y, hair); }
+        image.setRGB(8, 14, dark); image.setRGB(15, 14, dark);
+        image.setRGB(9, 11, dark);   // the fringe's tip across his right eye
+        // Outer layer: strands framing the face and lying over the crown, sides and back; the face itself clear.
+        clearLayer(image, HAT_X, HAT_Y, 8, 8, 8);
+        fill(image, 40, 0, 47, 7, hair);
+        fill(image, 32, 8, 39, 13, hair); fill(image, 48, 8, 55, 13, hair); fill(image, 56, 8, 63, 15, hair);
+        fill(image, 40, 8, 47, 8, hair); fill(image, 40, 9, 42, 9, hair); fill(image, 45, 9, 47, 9, hair);
+        for (int y = 10; y <= 13; y++) { image.setRGB(40, y, hair); image.setRGB(47, y, hair); }
+        image.setRGB(41, 10, dark);
+        for (int x = 32; x <= 63; x++) for (int y = 0; y <= 15; y++) {
+            int c = image.getRGB(x, y);
+            if ((c >>> 24) != 0 && (x + y * 3) % 6 == 0) image.setRGB(x, y, dark);
+            if ((c >>> 24) != 0 && (x * 2 + y) % 9 == 0) image.setRGB(x, y, light);
+        }
+        // The black tee under the open jacket, the jacket's edges catching the light, its hem.
+        fill(image, 22, 20, 25, 31, tee);
+        fill(image, 21, 20, 21, 31, shade(jacket, 16)); fill(image, 26, 20, 26, 31, shade(jacket, 16));
+        fill(image, 22, 20, 25, 20, skin); image.setRGB(22, 21, skin); image.setRGB(25, 21, skin);
+        fill(image, 16, 31, 39, 31, shade(jacket, -6));
+        // Collar and lapel edges standing off the jacket.
+        fill(image, 20, 36, 21, 38, shade(jacket, 10)); fill(image, 26, 36, 27, 38, shade(jacket, 10));
+        image.setRGB(21, 39, jacket); image.setRGB(26, 39, jacket);
+        // Cuffs and hands; a worn seam down the jeans; boots.
+        for (int[] arm : ARMS) {
+            fill(image, arm[0], arm[1] + 4 + 10, arm[0] + 15, arm[1] + 4 + 10, shade(jacket, 8));
+            fill(image, arm[0], arm[1] + 4 + 11, arm[0] + 15, arm[1] + 4 + 11, skin);
+        }
+        for (int[] leg : LEGS) {
+            fill(image, leg[0] + 5, leg[1] + 4, leg[0] + 5, leg[1] + 12, shade(jeans, 12));
+            fill(image, leg[0], leg[1] + 13, leg[0] + 15, leg[1] + 15, boot);
+        }
         weave(image, random, 16, 20, 39, 31, 3);
-        weave(image, random, 0, 20, 15, 31, 2);
-        weave(image, random, 0, 0, 31, 15, 3);
+        weave(image, random, 0, 20, 15, 31, 3);
+        weave(image, random, 16, 52, 31, 63, 3);
+        weave(image, random, 40, 20, 55, 31, 2);
+        weave(image, random, 32, 52, 47, 63, 2);
         return image;
     }
 
+    /**
+     * Sylar: short near-black hair, a little ruffled on top; heavy dark brows angled down toward the nose over dark eyes;
+     * dark stubble on the jaw, chin and lip; a long charcoal coat (its skirts over the thighs on the outer layer) open
+     * over a dark grey collared shirt; dark trousers, black shoes; the watchmaker's silver watch on his left wrist.
+     */
+    private static BufferedImage sylar() {
+        Random random = new Random(1942);
+        int skin = rgb(210, 168, 140), coat = rgb(28, 29, 34), shirt = rgb(62, 64, 70), trousers = rgb(30, 31, 36), shoe = rgb(15, 15, 17);
+        BufferedImage image = figure(skin, coat, 12, trousers, shoe);
+        int hair = rgb(24, 19, 17), dark = rgb(12, 10, 9), light = rgb(48, 40, 36);
+        int stubble = rgb(138, 108, 94), stubbleDark = rgb(116, 90, 80);
+        // Hair: the crown, cut short at the sides (above the ears) and the back.
+        fill(image, 8, 0, 15, 7, hair);
+        for (int x = 8; x <= 15; x++) image.setRGB(x, (x * 3) % 8, x % 2 == 0 ? light : dark);
+        fill(image, 24, 8, 31, 12, hair); fill(image, 25, 13, 30, 13, stubbleDark);
+        fill(image, 0, 8, 7, 10, hair); fill(image, 16, 8, 23, 10, hair);
+        // The front: a low hairline with a slight peak, a few strands ruffled forward.
+        fill(image, 8, 8, 15, 8, hair);
+        image.setRGB(8, 9, hair); image.setRGB(15, 9, hair); image.setRGB(11, 9, hair); image.setRGB(12, 9, dark);
+        face(image, skin, dark, rgb(40, 30, 24), rgb(150, 100, 90));
+        // The brows: heavy and dark, the inner ends low over the eyes; the eyes dark and close-set.
+        fill(image, 9, 10, 10, 10, dark); fill(image, 13, 10, 14, 10, dark);
+        image.setRGB(8, 10, hair); image.setRGB(15, 10, hair);
+        image.setRGB(10, 11, rgb(26, 20, 16)); image.setRGB(13, 11, rgb(26, 20, 16));
+        image.setRGB(9, 11, rgb(226, 222, 212)); image.setRGB(14, 11, rgb(226, 222, 212));
+        // Stubble: the jaw, the chin, the upper lip, and down the sides of the face.
+        for (int x = 8; x <= 15; x++) { image.setRGB(x, 15, stubbleDark); if (x < 10 || x > 13) image.setRGB(x, 14, stubble); }
+        fill(image, 10, 13, 13, 13, stubble);
+        fill(image, 10, 14, 13, 14, rgb(140, 92, 84));
+        image.setRGB(8, 13, stubble); image.setRGB(15, 13, stubble);
+        fill(image, 0, 14, 7, 15, stubble); fill(image, 16, 14, 23, 15, stubble);
+        // The shirt's collar and front under the open coat, the coat's edges and its belt line.
+        fill(image, 22, 20, 25, 31, shirt);
+        image.setRGB(22, 20, shade(shirt, 24)); image.setRGB(25, 20, shade(shirt, 24));
+        fill(image, 23, 20, 24, 20, skin);
+        for (int y = 22; y <= 30; y += 3) image.setRGB(24, y, rgb(30, 30, 34));
+        fill(image, 21, 20, 21, 31, shade(coat, 14)); fill(image, 26, 20, 26, 31, shade(coat, 14));
+        // Coat collar standing up on the outer layer, and its skirts over the thighs.
+        clearLayer(image, JACKET_X, JACKET_Y, 8, 4, 12);
+        fill(image, 20, 36, 21, 39, shade(coat, 8)); fill(image, 26, 36, 27, 39, shade(coat, 8));
+        fill(image, 16, 44, 39, 47, coat);
+        for (int[] pants : PANTS) {
+            clearLayer(image, pants[0], pants[1], 4, 4, 12);
+            fill(image, pants[0], pants[1] + 4, pants[0] + 15, pants[1] + 9, coat);
+            fill(image, pants[0], pants[1] + 9, pants[0] + 15, pants[1] + 9, shade(coat, -8));
+        }
+        // Cuffs, hands, and the watch: a silver face on the left wrist.
+        for (int[] arm : ARMS) {
+            fill(image, arm[0], arm[1] + 4 + 10, arm[0] + 15, arm[1] + 4 + 10, shade(coat, -6));
+            fill(image, arm[0], arm[1] + 4 + 11, arm[0] + 15, arm[1] + 4 + 11, skin);
+        }
+        fill(image, 36, 62, 39, 62, rgb(70, 70, 74));
+        fill(image, 37, 62, 38, 62, rgb(176, 172, 160)); image.setRGB(37, 62, rgb(226, 220, 196));
+        weave(image, random, 16, 20, 39, 31, 2);
+        weave(image, random, 0, 20, 15, 31, 2);
+        weave(image, random, 16, 52, 31, 63, 2);
+        weave(image, random, 40, 20, 55, 31, 2);
+        weave(image, random, 32, 52, 47, 63, 2);
+        weave(image, random, 0, 0, 31, 7, 2);
+        return image;
+    }
+
+    /**
+     * Ted Sprague, as the user's reference shows him: a brown trucker cap with a mesh back pulled low; shaggy brown hair to
+     * the jaw sticking out under it; a full brown beard; an open red-brown plaid flannel over a brown tee; worn blue jeans;
+     * brown work boots. The cap's crown and band are on the outer layer.
+     */
     private static BufferedImage ted() {
         Random random = new Random(1977);
-        int skin = rgb(236, 176, 150), shirt = rgb(112, 120, 92), trousers = rgb(70, 64, 54);
-        BufferedImage image = figure(skin, shirt, 4, trousers, rgb(60, 44, 30));
-        shortHair(image, rgb(96, 70, 48), 1);
-        face(image, skin, rgb(80, 60, 40), rgb(90, 80, 60), rgb(190, 110, 100));
-        // Stubble along the jaw, and skin flushed red from the heat.
-        for (int x = 9; x <= 14; x++) image.setRGB(x, 15, rgb(170, 120, 104));
-        image.setRGB(9, 13, rgb(240, 150, 130)); image.setRGB(14, 13, rgb(240, 150, 130));
-        // Scorch marks on the shirt, open at the collar.
-        fill(image, 23, 20, 24, 22, skin);
-        for (int i = 0; i < 14; i++) image.setRGB(16 + random.nextInt(24), 21 + random.nextInt(10), rgb(46, 40, 30));
-        weave(image, random, 16, 20, 39, 31, 4);
-        weave(image, random, 0, 20, 15, 31, 3);
+        int skin = rgb(224, 176, 148), tee = rgb(94, 66, 46), jeans = rgb(56, 68, 92), boot = rgb(74, 50, 32);
+        int flannel = rgb(120, 58, 46), band = rgb(70, 36, 30), thread = rgb(156, 128, 96);
+        BufferedImage image = figure(skin, flannel, 12, jeans, boot);
+        int hair = rgb(104, 74, 50), hairDark = rgb(78, 54, 36), beard = rgb(96, 66, 44), beardDark = rgb(72, 48, 32);
+        int cap = rgb(92, 64, 44), capDark = rgb(62, 42, 28), mesh = rgb(150, 132, 108);
+        // Hair under the cap: shaggy at the sides and the back, down past the ears to the jaw.
+        fill(image, 8, 0, 15, 7, hair);
+        fill(image, 0, 8, 7, 15, hair); fill(image, 16, 8, 23, 15, hair); fill(image, 24, 8, 31, 15, hair);
+        for (int x = 0; x <= 31; x++) for (int y = 8; y <= 15; y++)
+            if ((x < 8 || x > 15) && (x + y * 2) % 4 == 0) image.setRGB(x, y, hairDark);
+        fill(image, 8, 8, 15, 9, hair);
+        image.setRGB(8, 10, hair); image.setRGB(15, 10, hair);
+        face(image, skin, hairDark, rgb(84, 72, 54), rgb(150, 92, 82));
+        // A full beard: the cheeks, the jaw and the chin, a moustache over the mouth.
+        image.setRGB(8, 11, hair); image.setRGB(15, 11, hair);
+        fill(image, 8, 12, 9, 15, beard); fill(image, 14, 12, 15, 15, beard);
+        fill(image, 10, 13, 13, 13, beardDark);
+        image.setRGB(10, 14, beard); image.setRGB(13, 14, beard);
+        fill(image, 11, 14, 12, 14, rgb(122, 72, 64));
+        fill(image, 8, 15, 15, 15, beardDark);
+        for (int x = 8; x <= 15; x++) if (x % 3 == 0) image.setRGB(x, 15, beard);
+        fill(image, 0, 12, 7, 15, beard); fill(image, 16, 12, 23, 15, beard);
+        // The cap on the outer layer: the crown, a band round the head, the mesh at the back, the brim's shadow over his eyes.
+        clearLayer(image, HAT_X, HAT_Y, 8, 8, 8);
+        fill(image, 40, 0, 47, 7, cap);
+        for (int x = 40; x <= 47; x++) image.setRGB(x, 3, capDark);
+        fill(image, 32, 8, 63, 10, cap);
+        fill(image, 56, 8, 63, 10, mesh);
+        for (int x = 56; x <= 63; x++) for (int y = 8; y <= 10; y++) if ((x + y) % 2 == 0) image.setRGB(x, y, capDark);
+        fill(image, 40, 10, 47, 10, capDark);
+        fill(image, 43, 8, 44, 9, rgb(176, 150, 106));   // the patch on the front
+        // Hair sticking out under the cap at the back and sides.
+        for (int x = 32; x <= 63; x++) if (x < 40 || x > 47) image.setRGB(x, 11 + (x % 3 == 0 ? 1 : 0), hair);
+        // The flannel: checked all over the shirt and sleeves, open down the front over the brown tee, the collar open.
+        plaid(image, 16, 20, 39, 31, flannel, band, thread);
+        for (int[] arm : ARMS) plaid(image, arm[0], arm[1], arm[0] + 15, arm[1] + 4 + 10, flannel, band, thread);
+        fill(image, 22, 20, 25, 31, tee);
+        fill(image, 23, 20, 24, 21, skin);
+        fill(image, 21, 20, 21, 31, shade(flannel, 18)); fill(image, 26, 20, 26, 31, shade(flannel, 18));
+        clearLayer(image, JACKET_X, JACKET_Y, 8, 4, 12);
+        fill(image, 20, 36, 21, 38, flannel); fill(image, 26, 36, 27, 38, flannel);
+        image.setRGB(21, 36, thread); image.setRGB(26, 36, thread);
+        for (int[] arm : ARMS) fill(image, arm[0], arm[1] + 4 + 11, arm[0] + 15, arm[1] + 4 + 11, skin);
+        // Worn jeans (paler down the thighs), brown boots.
+        for (int[] leg : LEGS) {
+            fill(image, leg[0], leg[1] + 5, leg[0] + 15, leg[1] + 8, shade(jeans, 14));
+            fill(image, leg[0], leg[1] + 13, leg[0] + 15, leg[1] + 15, boot);
+            fill(image, leg[0], leg[1] + 15, leg[0] + 15, leg[1] + 15, shade(boot, -24));
+        }
+        weave(image, random, 0, 20, 15, 31, 4);
+        weave(image, random, 16, 52, 31, 63, 4);
+        weave(image, random, 22, 20, 25, 31, 3);
         weave(image, random, 0, 0, 31, 15, 3);
         return image;
     }

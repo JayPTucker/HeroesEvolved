@@ -27,6 +27,8 @@ public final class BunkerData extends SavedData {
     public final Map<UUID, Integer> pods = new HashMap<>();
     /** Which bunker was built: 1 the original rooms ({@link BunkerLayout#LEGACY}), 2 the Sublevel 4 rebuild ({@link BunkerLayout#STASIS}). */
     public int design = BunkerLayout.STASIS_DESIGN;
+    /** The skulls outside the vault and on the stair have been laid ({@link BunkerStair#remains}), once per bunker. */
+    public boolean remains;
     /** The one sleeper sealed in the private pod in 4-R, once someone has been; nobody else ever is. */
     public @org.jetbrains.annotations.Nullable UUID lab;
 
@@ -70,6 +72,7 @@ public final class BunkerData extends SavedData {
         tag.putInt("layout", layout);
         tag.putBoolean("powered", powered);
         tag.putInt("design", design);
+        tag.putBoolean("remains", remains);
         if (lab != null) tag.putUUID("lab", lab);
         CompoundTag assigned = new CompoundTag();
         pods.forEach((id, pod) -> assigned.putInt(id.toString(), pod));
@@ -87,6 +90,7 @@ public final class BunkerData extends SavedData {
         // A bunker saved before the rebuild was built with the original rooms.
         data.design = tag.contains("design") ? tag.getInt("design") : 1;
         if (tag.hasUUID("lab")) data.lab = tag.getUUID("lab");
+        data.remains = tag.getBoolean("remains");
         CompoundTag assigned = tag.getCompound("pods");
         for (String key : assigned.getAllKeys()) data.pods.put(UUID.fromString(key), assigned.getInt(key));
         return data;

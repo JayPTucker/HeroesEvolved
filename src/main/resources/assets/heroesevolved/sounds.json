@@ -1114,5 +1114,39 @@
         "stream": true
       }
     ]
+  },
+  "lastday_evening": {
+    "subtitle": "subtitles.heroesevolved.lastday_evening",
+    "sounds": [
+      {
+        "name": "heroesevolved:story/lastday_evening",
+        "stream": true
+      }
+    ]
+  },
+  "lastday_run": {
+    "subtitle": "subtitles.heroesevolved.lastday_run",
+    "sounds": [
+      {
+        "name": "heroesevolved:story/lastday_run",
+        "stream": true
+      }
+    ]
+  },
+  "lastday_ringing": {
+    "subtitle": "subtitles.heroesevolved.lastday_ringing",
+    "sounds": [
+      {
+        "name": "heroesevolved:story/lastday_ringing"
+      }
+    ]
+  },
+  "lastday_shatter": {
+    "subtitle": "subtitles.heroesevolved.lastday_shatter",
+    "sounds": [
+      {
+        "name": "heroesevolved:story/lastday_shatter"
+      }
+    ]
   }
 }

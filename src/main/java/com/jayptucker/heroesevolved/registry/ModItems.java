@@ -94,6 +94,12 @@ public final class ModItems {
     public static final DeferredItem<com.jayptucker.heroesevolved.item.HornRimmedGlassesItem> HORN_RIMMED_GLASSES = ITEMS.register("horn_rimmed_glasses",
             () -> new com.jayptucker.heroesevolved.item.HornRimmedGlassesItem(new Item.Properties().stacksTo(1)));
 
+    /**
+     * The Company's stun gun as Noah Bennet and his guards carry it in a scene (the Last Day's tasing): a prop with its own
+     * boxy yellow model, not a working weapon. The usable taser is the TaCZ Company Taser (weapons/PowerWeapons).
+     */
+    public static final DeferredItem<Item> STUN_GUN = ITEMS.register("stun_gun", () -> new Item(new Item.Properties().stacksTo(1)));
+
     /** What Elle Bishop leaves when she is beaten: three charges of stored lightning, refilled from machines. */
     public static final DeferredItem<com.jayptucker.heroesevolved.story.elle.ElleCapacitorItem> ELLES_CAPACITOR = ITEMS.register("elles_capacitor",
             () -> new com.jayptucker.heroesevolved.story.elle.ElleCapacitorItem(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC)));

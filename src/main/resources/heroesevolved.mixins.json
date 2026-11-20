@@ -57,7 +57,8 @@
     "TitleScreenMixin",
     "TitleButtonMixin",
     "TitleIconButtonMixin",
-    "IllagerCastPoseMixin"
+    "IllagerCastPoseMixin",
+    "SoundEngineDuckMixin"
   ],
   "injectors": {
     "defaultRequire": 1

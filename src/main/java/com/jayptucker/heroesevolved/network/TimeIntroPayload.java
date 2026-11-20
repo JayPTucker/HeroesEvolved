@@ -43,6 +43,11 @@ public record TimeIntroPayload(int stage, java.util.List<Integer> players) imple
             PROLOGUE_YEARS = 29;
     /** The waking's music, fading in and looping until the player leaves the bunker, then fading away (client/sound/BunkerMusic). */
     public static final int BUNKER_MUSIC = 30, BUNKER_EXIT = 31;
+    /**
+     * The Last Day after the wave, the instruction line as it changes: dig out whoever is trapped, lift them, carry them,
+     * get to the stair; and before the doors open, go down to the lobby.
+     */
+    public static final int PROLOGUE_DIG = 32, PROLOGUE_LIFT = 33, PROLOGUE_CARRYING = 34, PROLOGUE_GO = 35, PROLOGUE_LOBBY = 36;
     public static final Type<TimeIntroPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(
             HeroesEvolved.MOD_ID, "time_intro"));
     public static final StreamCodec<RegistryFriendlyByteBuf, TimeIntroPayload> STREAM_CODEC =

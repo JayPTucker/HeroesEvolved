@@ -102,6 +102,9 @@ public final class BunkerService {
         BlockPos base = data.origin.offset(layout.podOffset(index));
         if (!overworld.getBlockState(base).is(ModBlocks.CRYOCHAMBER.get())) BunkerBuilder.placePod(overworld, data.origin, layout, index, true);
         if (player.level() != overworld) player.teleportTo(overworld, base.getX() + .5, base.getY(), base.getZ() + .5, 0, 0);
+        // Whoever died in it in the hundred and three years is gone from it (if their chunk isn't loaded yet, the next
+        // second's PodSleepers.present takes them, under the waking's blindness).
+        PodSleepers.clear(overworld, data, index);
         CryoChamberService.enter(player, base, RELEASE + 5);
         BunkerBuilder.labelPod(overworld, data, index, player.getGameProfile().getName(), false);
         SESSIONS.put(player.getUUID(), 0);
@@ -157,9 +160,20 @@ public final class BunkerService {
         if (server.overworld().getGameTime() % 10 == 0) music(server, bunker);
         emergency(server, bunker);
         BunkerPower.tick(server.overworld(), bunker);
+        // Whoever walks up to Pod 14 finds what Claire left there.
+        if (server.overworld().getGameTime() % 5 == 0)
+            for (ServerPlayer player : server.overworld().players()) CryoChamberService.noticeClaire(player, bunker);
         if (server.overworld().getGameTime() % 20 == 0) {
             BunkerBuilder.upgrade(server.overworld(), bunker);
             BunkerBuilder.releaseClaire(server.overworld(), bunker);
+            // The pods nobody woke in still hold Odessa's people, dead a long time.
+            PodSleepers.present(server.overworld(), bunker);
+            // And the ones the vault was shut on lie outside it and on the stair: laid once, in new bunkers and old.
+            if (!bunker.remains && BunkerStair.loaded(server.overworld(), bunker.origin)) {
+                BunkerStair.remains(server.overworld(), bunker.origin);
+                bunker.remains = true;
+                bunker.setDirty();
+            }
             // Nobody waking or about to (a server restarted mid-waking, or a veteran only told where the
             // bunker is): the power comes back.
             if (!bunker.powered && !BunkerPower.switching() && !alarmed && SESSIONS.keySet().stream().allMatch(STEPPED_OUT::contains))

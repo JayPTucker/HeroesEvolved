@@ -176,11 +176,51 @@ public final class BunkerAndPowersGameTests {
         ((ChestBlockEntity) overworld.getBlockEntity(note)).clearContent();
         BunkerBuilder.releaseClaire(overworld, data);
         h.assertTrue(!BunkerBuilder.log(overworld, note).isEmpty(), "...and is put back if someone takes it");
+        // Walking up to Pod 14 turns up Claire's note, once; no right-click needed.
+        ServerPlayer walker = player(h, null, 1);
+        walker.getPersistentData().remove(CryoChamberService.CLAIRE_NOTE);
+        Vec3 front = Vec3.atBottomCenterOf(claire).add(-1.6, 0, 0);
+        walker.setPos(front);
+        h.assertTrue(CryoChamberService.noticeClaire(walker, data), "Walking up to Pod 14 finds what Claire left");
+        h.assertTrue(!CryoChamberService.noticeClaire(walker, data), "...once");
+        // The pods nobody has a claim on hold Odessa's people, dead a long time; nobody's pod holds anyone else.
+        java.util.Set<Long> podChunks = new java.util.HashSet<>();
+        for (int i = 0; i < com.jayptucker.heroesevolved.story.bunker.BunkerLayout.HALL_PODS; i++)
+            podChunks.add(net.minecraft.world.level.ChunkPos.asLong(data.origin.offset(layout.podOffset(i))));
+        java.util.List<Long> forcedPods = new java.util.ArrayList<>();
+        for (long c : podChunks)
+            if (overworld.setChunkForced(net.minecraft.world.level.ChunkPos.getX(c), net.minecraft.world.level.ChunkPos.getZ(c), true)) forcedPods.add(c);
         // Exhibit 1 hangs on the far wall, seventy blocks from the vault: its chunk's entities must be loaded to see it.
         BlockPos exhibit = data.origin.offset(layout.marker(BunkerBuilder.EXHIBIT_ONE).getFirst());
         boolean forced = overworld.setChunkForced(exhibit.getX() >> 4, exhibit.getZ() >> 4, true);
         h.succeedWhen(() -> {
             h.assertTrue(overworld.isPositionEntityTicking(exhibit), "Waiting for the far wall's chunk");
+            for (long c : podChunks)
+                h.assertTrue(overworld.areEntitiesLoaded(c), "Waiting for the hall's pods to load");
+            com.jayptucker.heroesevolved.story.bunker.PodSleepers.present(overworld, data);
+            for (int i = 0; i < com.jayptucker.heroesevolved.story.bunker.BunkerLayout.HALL_PODS; i++) {
+                BlockPos base = data.origin.offset(layout.podOffset(i));
+                boolean someone = com.jayptucker.heroesevolved.story.bunker.PodSleepers.occupied(overworld, base);
+                if (!com.jayptucker.heroesevolved.story.bunker.PodSleepers.hallPod(i) || data.pods.containsValue(i)) {
+                    h.assertTrue(!someone, "Pod " + (i + 1) + " is someone's, or Claire's: nobody else in it");
+                    continue;
+                }
+                h.assertTrue(someone, "Pod " + (i + 1) + ", nobody's, holds a body");
+                var plate = overworld.getBlockEntity(data.origin.offset(layout.podSign(i)));
+                h.assertTrue(plate instanceof net.minecraft.world.level.block.entity.SignBlockEntity sign
+                                && sign.getFrontText().getMessage(2, false).getString().equals("DECEASED")
+                                && sign.getFrontText().getMessage(3, false).getString().equals("CAUSE UNKNOWN"),
+                        "...its nameplate: deceased, cause unknown");
+            }
+            com.jayptucker.heroesevolved.story.bunker.PodSleepers.present(overworld, data);
+            int bodies = overworld.getEntitiesOfClass(net.minecraft.world.entity.npc.Villager.class,
+                    new net.minecraft.world.phys.AABB(data.origin).inflate(30, 6, 80),
+                    v -> v.getTags().contains(com.jayptucker.heroesevolved.story.bunker.PodSleepers.TAG)).size();
+            long free = java.util.stream.IntStream.range(0, com.jayptucker.heroesevolved.story.bunker.BunkerLayout.HALL_PODS)
+                    .filter(i -> com.jayptucker.heroesevolved.story.bunker.PodSleepers.hallPod(i) && !data.pods.containsValue(i)).count();
+            h.assertTrue(bodies == free, "One body to a pod, never two: " + bodies + " for " + free);
+            for (long c : forcedPods) overworld.setChunkForced(net.minecraft.world.level.ChunkPos.getX(c), net.minecraft.world.level.ChunkPos.getZ(c), false);
+            forcedPods.clear();
             h.assertTrue(explosions(overworld, data.origin).size() == 1 && explosions(overworld, data.origin).getFirst().survives(),
                     "Isaac's explosion, Exhibit 1, hangs whole above the balcony: " + explosions(overworld, data.origin));
             h.assertTrue(exhibitOne(overworld, data).equals("EXHIBIT 1"), "Its label reads EXHIBIT 1: " + exhibitOne(overworld, data));
@@ -370,11 +410,26 @@ public final class BunkerAndPowersGameTests {
             for (BlockPos beacon : beacons)
                 h.assertTrue(overworld.getBlockState(beacon).getValue(com.jayptucker.heroesevolved.story.bunker.AlarmBeaconBlock.LIT), "The beacons still turn");
         };
-        // A bunker some earlier test already lit goes dark the way it does for each new sleeper.
-        if (data.powered || BunkerPower.switching()) BunkerPower.cut(overworld, data);
-        dark.run();
-        h.assertTrue(BunkerPower.start(overworld, data) && !BunkerPower.start(overworld, data), "The breaker closes once");
+        // Every light's chunk loaded first: the power only reaches what is loaded (as in play, where the bunker is round the
+        // sleeper), and reading an unloaded light loads it from disk as an earlier test left it. The bunker test before this
+        // one lets go of the far wall's chunk, which once failed this test with a lamp still lit there.
+        java.util.Set<Long> chunks = new java.util.HashSet<>();
+        lights.keySet().forEach(pos -> chunks.add(net.minecraft.world.level.ChunkPos.asLong(pos)));
+        java.util.List<Long> held = new java.util.ArrayList<>();
+        for (long c : chunks)
+            if (overworld.setChunkForced(net.minecraft.world.level.ChunkPos.getX(c), net.minecraft.world.level.ChunkPos.getZ(c), true)) held.add(c);
+        Runnable release = () -> {
+            for (long c : held) overworld.setChunkForced(net.minecraft.world.level.ChunkPos.getX(c), net.minecraft.world.level.ChunkPos.getZ(c), false);
+            held.clear();
+        };
         h.startSequence()
+                .thenWaitUntil(() -> lights.keySet().forEach(pos -> h.assertTrue(overworld.isLoaded(pos), "Waiting for the bunker's lights to load")))
+                .thenExecute(() -> {
+                    // A bunker some earlier test already lit goes dark the way it does for each new sleeper.
+                    if (data.powered || BunkerPower.switching()) BunkerPower.cut(overworld, data);
+                    try { dark.run(); } catch (RuntimeException e) { release.run(); throw e; }
+                    h.assertTrue(BunkerPower.start(overworld, data) && !BunkerPower.start(overworld, data), "The breaker closes once");
+                })
                 .thenWaitUntil(lit)
                 .thenExecute(() -> {
                     // The next sleeper wakes: the power fails again, every light at once, and comes back the same way.
@@ -384,6 +439,7 @@ public final class BunkerAndPowersGameTests {
                     h.assertTrue(BunkerPower.start(overworld, data), "The breaker closes again");
                 })
                 .thenWaitUntil(lit)
+                .thenExecute(release)
                 .thenSucceed();
     }
 

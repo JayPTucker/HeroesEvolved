@@ -179,7 +179,8 @@ public final class SetPieceClient {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || ACTIVE.isEmpty() && !SpeedArt.live() && !RewindArt.live() && !FlightArt.live()
                 && !PyroArt.live() && !ShapeArt.live() && !HydroArt.live() && !CryoConstructArt.live(mc.level) && !ClientProjectileTime.hasControlledShots()
-                && !com.jayptucker.heroesevolved.client.effects.intro.SkyFightArt.live() && !TakedownArt.live() && !GiftArt.live() && !VillageArt.flaresLive()
+                && !com.jayptucker.heroesevolved.client.effects.intro.LastDayArt.live() && !com.jayptucker.heroesevolved.client.effects.intro.GuideArt.live()
+                && !TakedownArt.live() && !GiftArt.live() && !VillageArt.flaresLive()
                 && !SlowTimeArt.live() && !AmpArt.live()) return;
         if (world != mc.level) { ACTIVE.clear(); world = mc.level; }
         Vec3 camera = event.getCamera().getPosition();
@@ -238,7 +239,8 @@ public final class SetPieceClient {
             ShapeArt.drawLive(c);
             HydroArt.drawLive(c);
             TakedownArt.drawLive(c);
-            com.jayptucker.heroesevolved.client.effects.intro.SkyFightArt.drawLive(c);
+            com.jayptucker.heroesevolved.client.effects.intro.LastDayArt.drawLive(c);
+            com.jayptucker.heroesevolved.client.effects.intro.GuideArt.drawLive(c);
             GiftArt.drawLive(c);
             VillageArt.flares(c);
             CryoConstructArt.draw(c);

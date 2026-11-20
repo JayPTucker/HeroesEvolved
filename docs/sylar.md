@@ -211,7 +211,7 @@ The hunt preview intentionally bypasses the saved chapter and cooldown waits.
 `tools/generate-sylars-watch-icon.py` draws the watch's item icon.
 
 The original 64x64 skin and mechanical watch audio are reproducible with
-`tools/generate-sylar-skin.py` and `tools/generate-sylar-watch.py`. Existing power
+`java tools/GenerateStoryActorTextures.java` (the skin, shared with the Last Day's Sylar) and `tools/generate-sylar-watch.py`. Existing power
 and cinematic audio assets are preserved.
 
 ## Verification

@@ -24,6 +24,13 @@ rounds, waits two seconds, and changes magazines when he runs dry. Come within s
 one cartridge that locks you up for a second and a half, then back to the pistol while it recharges. Tased himself,
 he does nothing until it wears off. If TaCZ can't make the guns he falls back to the dart rifle.
 
+### Holstered
+
+A scene's guards can stand easy with their gun in a **holster on the right hip** (barrel down along the thigh, the grip
+by his hand) and empty hands, until the trouble starts: then he draws, with the creak of leather and the click of the
+slide. On the Last Day, Primatech's agents keep their pistols holstered all evening and draw the moment Peter and Sylar's
+fight begins.
+
 ### Tranquilizer darts
 
 Each dart that lands adds a dose of **Tranquilized** for ten seconds, and each dose makes you slower.

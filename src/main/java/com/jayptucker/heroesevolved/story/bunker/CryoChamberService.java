@@ -60,9 +60,14 @@ public final class CryoChamberService {
         var state = level.getBlockState(base);
         if (!(state.getBlock() instanceof CryoChamberBlock)) return false;
         if (player.isShiftKeyDown() && CryoEvents.hasAwakenedCryokinesis(player)) return charge(player, base);
-        if (claireNote(player, level, base)) return true;
         Occupant mine = OCCUPANTS.get(player.getUUID());
         if (mine != null && mine.base.equals(base)) return exit(player);
+        if (PodSleepers.occupied(level, base)) {
+            // One of Odessa's people: asleep on the Last Day, long dead in the present. The pod stays shut on them.
+            player.displayClientMessage(Component.translatable(level.dimension() == Level.OVERWORLD
+                    ? "cryochamber.heroesevolved.deceased" : "cryochamber.heroesevolved.occupied"), true);
+            return false;
+        }
         if (occupied(level, base)) {
             player.displayClientMessage(Component.translatable("cryochamber.heroesevolved.occupied"), true);
             return false;
@@ -79,11 +84,19 @@ public final class CryoChamberService {
         return true;
     }
 
-    /** The first look inside Pod 14 in the present turns up what Claire left in it. */
-    private static boolean claireNote(ServerPlayer player, ServerLevel level, BlockPos base) {
-        BunkerData data = BunkerData.get(level.getServer());
-        if (!data.built || !BunkerBuilder.isClaires(level, data, base) || player.getPersistentData().getBoolean("heroesevolved_claire_note")) return false;
-        player.getPersistentData().putBoolean("heroesevolved_claire_note", true);
+    /** Set on a player once they have walked up to Pod 14 in the present and seen what Claire left. */
+    public static final String CLAIRE_NOTE = "heroesevolved_claire_note";
+
+    /**
+     * Walking up to Pod 14 in the present turns up what Claire left in it, once: within three blocks of the pod, on its
+     * level. It used to wait for a right-click on the pod, which nobody thought to do.
+     */
+    public static boolean noticeClaire(ServerPlayer player, BunkerData data) {
+        if (!data.built || player.level() != player.getServer().overworld() || player.getPersistentData().getBoolean(CLAIRE_NOTE)) return false;
+        Vec3 pod = Vec3.atBottomCenterOf(data.origin.offset(data.layout().podOffset(com.jayptucker.heroesevolved.story.night.NightThreeBunker.CLAIRE)));
+        double dx = player.getX() - pod.x, dz = player.getZ() - pod.z;
+        if (dx * dx + dz * dz > 9 || Math.abs(player.getY() - pod.y) > 2) return false;
+        player.getPersistentData().putBoolean(CLAIRE_NOTE, true);
         player.sendSystemMessage(Component.translatable("cryochamber.heroesevolved.claire_note").withStyle(ChatFormatting.AQUA));
         return true;
     }

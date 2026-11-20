@@ -67,7 +67,18 @@ public final class TimeIntroEvents {
             AvenueService.knockOut(player);
         }
     }
+    /** "ready" typed in chat in the Last Day's lobby says you're ready to go out (the message still goes to chat). */
+    @SubscribeEvent public static void chat(net.neoforged.neoforge.event.ServerChatEvent event) {
+        com.jayptucker.heroesevolved.story.prologue.PrologueService.chat(event.getPlayer(), event.getRawText());
+    }
     @SubscribeEvent public static void spawn(EntityJoinLevelEvent event) {
+        // Gravel that slides and lands on something it can't rest on would drop itself as an item; not in the city.
+        if (!event.getLevel().isClientSide() && TimeIntroService.isCity(event.getLevel())
+                && event.getEntity() instanceof net.minecraft.world.entity.item.ItemEntity item && item.getOwner() == null
+                && (item.getItem().is(net.minecraft.world.item.Items.GRAVEL) || item.getItem().is(net.minecraft.world.item.Items.FLINT))) {
+            event.setCanceled(true);
+            return;
+        }
         // Server only. The event also fires as a client receives each entity, and a client knows neither the
         // scene tags nor the vision's crowd, so it would turn away everyone on the avenue and in the vision.
         if (!event.getLevel().isClientSide() && TimeIntroService.isCity(event.getLevel()) && event.getEntity() instanceof Mob
@@ -75,20 +86,40 @@ public final class TimeIntroEvents {
                 && !(AvenueService.running() && AvenueService.isScene(event.getEntity()))) event.setCanceled(true);
     }
     @SubscribeEvent public static void breaking(BlockEvent.BreakEvent event) {
-        if (TimeIntroService.isCity(event.getPlayer().level())) event.setCanceled(true);
+        if (!TimeIntroService.isCity(event.getPlayer().level())) return;
+        // The Last Day's rubble, on someone who needs digging out, is the one thing anyone may break.
+        if (event.getPlayer() instanceof ServerPlayer player && com.jayptucker.heroesevolved.story.prologue.PrologueService.mayBreak(player, event.getPos())) return;
+        event.setCanceled(true);
+    }
+    /** Nothing broken in the city drops anything (the Last Day's gravel included): it's a memory, not a quarry. */
+    @SubscribeEvent public static void drops(net.neoforged.neoforge.event.level.BlockDropsEvent event) {
+        if (TimeIntroService.isCity(event.getLevel())) event.setCanceled(true);
     }
     @SubscribeEvent public static void placing(BlockEvent.EntityPlaceEvent event) {
         if (event.getEntity() != null && TimeIntroService.isCity(event.getEntity().level())) event.setCanceled(true);
     }
     @SubscribeEvent public static void rightBlock(PlayerInteractEvent.RightClickBlock event) {
-        // A runner may set down someone they are carrying; nobody uses the city's blocks.
-        if (event.getEntity() instanceof ServerPlayer player && AvenueService.isRunner(player)
-                && EntityCarryService.isCarrying(player)) return;
-        if (TimeIntroService.isCity(event.getLevel())) {
-            // Trying your own apartment door on the Last Day says you're ready to go out.
-            if (event.getEntity() instanceof ServerPlayer player) com.jayptucker.heroesevolved.story.prologue.PrologueService.useBlock(player, event.getPos());
+        // On the Last Day, sneak and right-click beside someone dug out of the rubble to lift them.
+        if (event.getEntity() instanceof ServerPlayer player && event.getHand() == net.minecraft.world.InteractionHand.MAIN_HAND
+                && com.jayptucker.heroesevolved.story.prologue.PrologueService.lift(player, event.getHitVec().getLocation())) {
             event.setCanceled(true);
-            event.setCancellationResult(InteractionResult.FAIL);
+            event.setCancellationResult(InteractionResult.SUCCESS);
+            return;
+        }
+        // A runner may set down someone they are carrying; nobody uses the city's blocks.
+        if (event.getEntity() instanceof ServerPlayer player && (AvenueService.isRunner(player)
+                || com.jayptucker.heroesevolved.story.prologue.PrologueService.isMember(player)) && EntityCarryService.isCarrying(player)) return;
+        if (TimeIntroService.isCity(event.getLevel())) {
+            // Trying the Arms' street doors before everyone is ready says who the lobby is waiting for; on the Last Day any
+            // other wooden door or gate opens and shuts by hand (the day logs it and puts it back). Nothing else is used.
+            boolean opened;
+            if (event.getEntity() instanceof ServerPlayer player)
+                opened = !com.jayptucker.heroesevolved.story.prologue.PrologueService.useBlock(player, event.getPos())
+                        && com.jayptucker.heroesevolved.story.prologue.PrologueService.useDoor(player, event.getPos());
+            else opened = event.getLevel().isClientSide()
+                    && com.jayptucker.heroesevolved.story.prologue.PrologueService.openableByHand(event.getLevel().getBlockState(event.getPos()));
+            event.setCanceled(true);
+            event.setCancellationResult(opened ? InteractionResult.SUCCESS : InteractionResult.FAIL);
         }
     }
     @SubscribeEvent public static void rightItem(PlayerInteractEvent.RightClickItem event) {
@@ -97,8 +128,18 @@ public final class TimeIntroEvents {
             event.setCancellationResult(InteractionResult.FAIL);
         }
     }
-    @SubscribeEvent public static void interact(PlayerInteractEvent.EntityInteract event) {
+    /** Before the ordinary carry's own handler, so the city decides what may be lifted (and how) first. */
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public static void interact(PlayerInteractEvent.EntityInteract event) {
         if (event.getEntity() instanceof ServerPlayer player && AvenueService.isRunner(player)) return;
+        // On the Last Day, someone dug out of the rubble is lifted (sneak and right-click), never traded with.
+        if (event.getEntity() instanceof ServerPlayer player && com.jayptucker.heroesevolved.story.prologue.PrologueService.isVictim(event.getTarget())) {
+            boolean lifted = event.getHand() == net.minecraft.world.InteractionHand.MAIN_HAND
+                    && com.jayptucker.heroesevolved.story.prologue.PrologueService.lift(player, event.getTarget().position());
+            event.setCanceled(true);
+            event.setCancellationResult(lifted ? InteractionResult.SUCCESS : InteractionResult.FAIL);
+            return;
+        }
         if (TimeIntroService.isCity(event.getLevel())) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.FAIL);

@@ -17,7 +17,7 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("107")
+        event.registrar("108")
             .playToClient(GodModePayload.TYPE, GodModePayload.STREAM_CODEC, GodModePayload::handle)
             .playToClient(MobTimePayload.TYPE, MobTimePayload.STREAM_CODEC, MobTimePayload::handle)
             .playToClient(SuperchargedPayload.TYPE, SuperchargedPayload.STREAM_CODEC, SuperchargedPayload::handle)
@@ -91,6 +91,8 @@ public final class ModPayloads {
             .playToClient(FrozenEntityPayload.TYPE, FrozenEntityPayload.STREAM_CODEC, FrozenEntityPayload::handle)
             .playToClient(PowerIntroPayload.TYPE, PowerIntroPayload.STREAM_CODEC, PowerIntroPayload::handle)
             .playToClient(TimeIntroPayload.TYPE, TimeIntroPayload.STREAM_CODEC, TimeIntroPayload::handle)
+            .playToClient(LastDayGuidePayload.TYPE, LastDayGuidePayload.STREAM_CODEC, LastDayGuidePayload::handle)
+            .playToClient(DazePayload.TYPE, DazePayload.STREAM_CODEC, DazePayload::handle)
             .playToClient(GridFieldPayload.TYPE, GridFieldPayload.STREAM_CODEC, GridFieldPayload::handle)
             .playToServer(
                 ReleaseAbilitySlotPayload.TYPE,

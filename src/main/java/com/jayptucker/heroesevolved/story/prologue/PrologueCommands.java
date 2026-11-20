@@ -17,7 +17,8 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import java.util.Collection;
 
 /**
- * {@code /lastday ready}: anyone in the Last Day's apartments says they are ready to go out (the chat button runs it).
+ * {@code /lastday ready}: anyone in the Last Day's lobby says they are ready to go out (the chat button runs it).
+ * {@code /lastday go}: once the ready ones have waited long enough, go out without whoever hasn't readied.
  * {@code /heroesevolved prologue replay|skip <players>} and {@code /heroesevolved prologue jump <phase> [ticks]}: for
  * admins and previews.
  */
@@ -30,6 +31,10 @@ public final class PrologueCommands {
         event.getDispatcher().register(Commands.literal("lastday")
                 .then(Commands.literal("ready").executes(context -> {
                     PrologueService.ready(context.getSource().getPlayerOrException());
+                    return 1;
+                }))
+                .then(Commands.literal("go").executes(context -> {
+                    PrologueService.goWithout(context.getSource().getPlayerOrException());
                     return 1;
                 })));
         event.getDispatcher().register(Commands.literal("heroesevolved")

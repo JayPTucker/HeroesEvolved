@@ -275,12 +275,14 @@ public final class HeroesEvolvedConfig {
             prologueEnabled = builder.comment("Before waking in the bunker, new players live the Last Day: they wake in their apartment in Odessa,",
                             "run for the Primatech safe house when the light appears, and are sealed in their pods. Needs the bunker.")
                     .define("prologue", true);
-            prologueReadySeconds = builder.comment("How long the prologue waits in the apartments for everyone to be ready, after the latest arrival.")
-                    .defineInRange("prologueReadySeconds", 60, 5, 600);
+            prologueReadySeconds = builder.comment("How long the ready players in the lobby wait for the rest before they're offered to go on without them.",
+                            "Nothing starts on its own: everyone must say they're ready, or the ready ones choose to go.")
+                    .defineInRange("prologueReadySeconds", 120, 5, 600);
             prologueEveningSeconds = builder.comment("How long players explore Odessa's ordinary evening before the light appears.")
                     .defineInRange("prologueEveningSeconds", 180, 10, 1800);
-            prologueRunSeconds = builder.comment("How long players have to reach the safe house once the light appears, before Company agents dart them.")
-                    .defineInRange("prologueRunSeconds", 120, 20, 600);
+            prologueRunSeconds = builder.comment("How long players have to reach the safe house once the light appears, before Company agents dart them.",
+                            "Never shorter than the fight, the wave and a minute and ten seconds after it (about 129 seconds).")
+                    .defineInRange("prologueRunSeconds", 150, 20, 600);
             builder.pop();
             builder.push("sylar");
             sylarEnabled = builder.comment("Enable the unique Sylar storyline hunter in the Overworld.").define("enabled", true);

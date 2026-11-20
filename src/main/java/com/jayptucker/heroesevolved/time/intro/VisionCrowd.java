@@ -58,6 +58,10 @@ public final class VisionCrowd {
         final Vec3 spot;
         final int group;
         int leg;
+        /** Knocked flat by the Last Day's wave until this tick of the crowd's clock (-1 standing). */
+        int downUntil = -1;
+        /** Gone down the stair: handed to whoever takes them below ({@link #shelter(Vec3, Vec3, java.util.function.Consumer)}). */
+        boolean below;
         Person(Villager body, Role role, Vec3 spot, int group) { this.body = body; this.role = role; this.spot = spot; this.group = group; }
     }
 
@@ -116,7 +120,41 @@ public final class VisionCrowd {
      * When the sirens start, people run for shelter instead of just away: down their street to the road along
      * {@code runToZ}, along it to {@code door}, in, and down the stair at {@code stair}, where they are gone from the street.
      */
-    public void shelter(Vec3 door, Vec3 stair) { shelterDoor = door; shelterStair = stair; }
+    public void shelter(Vec3 door, Vec3 stair) { shelter(door, stair, null); }
+
+    /** Who takes the runners at the head of the stair and leads them down ({@code null}: they are gone from the street). */
+    private java.util.function.Consumer<Villager> below;
+
+    /**
+     * As {@link #shelter(Vec3, Vec3)}, but at the head of the stair each runner is handed to {@code below} (the Last Day's
+     * shelter, which leads them down to the safe house) and the crowd lets go of them.
+     */
+    public void shelter(Vec3 door, Vec3 stair, java.util.function.Consumer<Villager> below) {
+        shelterDoor = door; shelterStair = stair; this.below = below;
+    }
+
+    /** When the light really came (the Last Day's comes early once everyone has shopped): stare and run from then. */
+    public void timing(Timing timing) { this.timing = timing; }
+
+    /**
+     * The Last Day's wave has reached everyone within {@code front} of ground zero: knocked off their feet and thrown down,
+     * they lie there until {@code until} on the crowd's clock, then get up (and run, if the sirens have started).
+     */
+    public void knockDown(float front, int until) {
+        for (Person p : people) {
+            if (p.downUntil != -1 || !p.body.isAlive() || IntroBlast.distance(p.body.getX(), p.body.getZ()) > front) continue;
+            p.downUntil = until;
+            Vec3 away = p.body.position().subtract(IntroBlast.CENTER).multiply(1, 0, 1);
+            away = away.lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : away.normalize();
+            p.body.getBrain().eraseMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.WALK_TARGET);
+            p.body.getNavigation().stop();
+            p.body.setDeltaMovement(away.scale(0.7).add(0, 0.25, 0));
+            p.body.setNoAi(true);
+            p.body.setPose(net.minecraft.world.entity.Pose.SLEEPING);
+            float yaw = (float) Math.toDegrees(Math.atan2(-away.x, away.z));
+            p.body.setYRot(yaw); p.body.setYBodyRot(yaw);
+        }
+    }
     private Timing timing;
     private int shift;
 
@@ -210,8 +248,16 @@ public final class VisionCrowd {
         });
         if (ticks >= timing.detonation()) { talks.clear(); return; }
         boolean stare = ticks >= timing.glow(), run = ticks >= timing.siren();
-        if (ticks % 5 == 0)
-            for (int i = 0; i < people.size(); i++) steer(people.get(i), i, ticks, stare, run);
+        for (Person p : people)
+            if (p.downUntil >= 0 && ticks >= p.downUntil && p.body.isAlive()) {
+                p.downUntil = -2;
+                p.body.setNoAi(false);
+                p.body.setPose(net.minecraft.world.entity.Pose.STANDING);
+            }
+        if (ticks % 5 == 0) {
+            for (int i = 0; i < people.size(); i++) if (people.get(i).downUntil < 0) steer(people.get(i), i, ticks, stare, run);
+            people.removeIf(p -> p.below);
+        }
         if (!stare) converse(city, ticks, visitors, tag);
         else {
             talks.clear();
@@ -228,12 +274,17 @@ public final class VisionCrowd {
     /**
      * One runner's way to shelter, a leg at a time (a villager can only plan about forty blocks ahead): down (or up) their
      * street to the road before the shelter, along it toward the door, through the door, and to the head of the stair,
-     * where they go below and leave the street.
+     * where they go below: handed on to whoever leads them down, or gone from the street.
      */
-    private void runForShelter(Villager body, Brain<Villager> brain, int i) {
+    private void runForShelter(Person person, Brain<Villager> brain, int i) {
+        Villager body = person.body;
         brain.eraseMemory(MemoryModuleType.LOOK_TARGET);
         double x = body.getX(), z = body.getZ();
-        if (body.position().distanceToSqr(shelterStair) < 4) { body.discard(); return; }
+        if (body.position().distanceToSqr(shelterStair) < 4) {
+            if (below == null) body.discard();
+            else { person.below = true; below.accept(body); }
+            return;
+        }
         BlockPos target;
         boolean atRoad = Math.abs(z - timing.runToZ()) <= 3;
         if (z > shelterDoor.z - 1.5 && Math.abs(x - shelterDoor.x) < 10) target = BlockPos.containing(shelterStair);
@@ -253,7 +304,7 @@ public final class VisionCrowd {
         if (!body.isAlive()) return;
         var brain = body.getBrain();
         if (run && shelterDoor != null) {
-            runForShelter(body, brain, i);
+            runForShelter(person, brain, i);
             return;
         }
         if (run) {

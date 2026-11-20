@@ -156,6 +156,9 @@ public final class BunkerLayout {
         public static final BoundingBox HALL = new BoundingBox(-10, 1, 33, 10, 11, 69);
         /** Just inside the hall from the commons: where anyone left outside it is brought. */
         public static final Vec3 GATHER = new Vec3(0.5, 1, 37.5);
+        /** Where the Last Day's rescued are laid down, either side of the aisle just inside the hall (nudged to open floor). */
+        public static final List<Vec3> RESCUED = List.of(new Vec3(-2.5, 1, 40.5), new Vec3(3.5, 1, 40.5), new Vec3(-2.5, 1, 43.5),
+                new Vec3(3.5, 1, 43.5), new Vec3(-2.5, 1, 46.5), new Vec3(3.5, 1, 46.5));
         /** Noah and Claire by Pod 14 when the survivors come in, and where Noah turns to face them. */
         public static final Vec3 NOAH = new Vec3(4.5, 1, 58.5), CLAIRE = new Vec3(5.5, 1, 59.5), NOAH_TURN = new Vec3(4.5, 1, 55.5);
         /** The guards below: by the vault, in the airlock, in the commons and at the hall's door. */

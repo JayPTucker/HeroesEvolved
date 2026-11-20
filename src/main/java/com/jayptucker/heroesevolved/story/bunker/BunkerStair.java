@@ -75,6 +75,33 @@ final class BunkerStair {
                 }
     }
 
+    /**
+     * The ones the vault was shut on, on the Last Day ({@code story/prologue/LastDayShelter}): skulls on the landing outside
+     * the vault, pressed up to the door, and here and there down the stair, on its landings and the level ends of its
+     * flights (never on a tread, where a step must stay clear), under cover (not in the open slot or the lobby). Only into
+     * air with a solid floor under it and the stair's four blocks of headroom over it, so it can be run on a bunker built
+     * before them, or on one with no stair, without breaking anything: {@code BunkerService} runs it once for every bunker
+     * ({@link BunkerData#remains}).
+     */
+    static void remains(ServerLevel level, BlockPos origin) {
+        Builder b = new Builder(level, origin);
+        // At the door: those who were pounding on it when the light came.
+        int[][] door = {{-1, -1, 1}, {1, -3, 7}, {2, -3, 13}, {0, -2, 3}};
+        for (int[] d : door) b.skull(d[0], 1, d[1], d[2], false);
+        // Down the stair, the ones who sat down where they were and waited: about one floor cell in sixteen.
+        int height = Math.min(level.getMaxBuildHeight() - origin.getY() - 1, 160);
+        for (int x = X0 + 1; x <= X1 - 1; x++)
+            for (int z = Z0 + 1; z <= Z1 - 1; z++)
+                for (int y = 1; y < height; y++)
+                    if (b.noise(x, y, z, 17) % 16 == 0) b.skull(x, y, z, b.noise(x, y, z, 19) % 16, true);
+    }
+
+    /** Whether the stairwell's ground is loaded round a bunker at {@code origin}, so {@link #remains} can be run there. */
+    static boolean loaded(ServerLevel level, BlockPos origin) {
+        return level.isLoaded(origin.offset(X0, 0, Z0)) && level.isLoaded(origin.offset(X1, 0, Z0))
+                && level.isLoaded(origin.offset(X0, 0, Z1)) && level.isLoaded(origin.offset(X1, 0, Z1));
+    }
+
     /** Builds the stairwell, the vault and the ruined lobby for a bunker whose surface is {@code top} above its floor. */
     static void build(ServerLevel level, BlockPos origin, int top) {
         Builder b = new Builder(level, origin);
@@ -194,6 +221,25 @@ final class BunkerStair {
                 set(edgeX, floor + 3, middle - 1, lichen(toWall));
                 set(edgeX, floor + 3, middle + 1, lichen(toWall));
             }
+        }
+
+        /**
+         * A skull lying on the floor at {@code x, y, z}, turned {@code rotation} sixteenths from facing south: only in air,
+         * on a floor whose top is solid (never a tread); {@code strict}, only with the stair's headroom over it and no sky
+         * (the vault's own landing has roots and vines hanging in its headroom, and is under cover anyway).
+         */
+        void skull(int x, int y, int z, int rotation, boolean strict) {
+            BlockState here = get(x, y, z);
+            if (!here.isAir()) return;
+            cursor.set(origin.getX() + x, origin.getY() + y - 1, origin.getZ() + z);
+            BlockPos floor = cursor.immutable();
+            if (!level.getBlockState(floor).isFaceSturdy(level, floor, Direction.UP)) return;
+            if (strict) {
+                for (int up = 1; up <= 3; up++) if (!get(x, y + up, z).isAir()) return;
+                if (level.canSeeSky(floor.above())) return;
+            }
+            set(x, y, z, Blocks.SKELETON_SKULL.defaultBlockState().setValue(net.minecraft.world.level.block.SkullBlock.ROTATION,
+                    Math.floorMod(rotation, 16)));
         }
 
         BlockState lichen(Direction wall) {

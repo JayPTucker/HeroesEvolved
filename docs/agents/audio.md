@@ -38,6 +38,8 @@ need: the same job, mood, length, tempo and rough spectrum, with our own synthes
 
 ## Reusable patterns from the story cues
 
+(The Last Day's own music is in the next section.)
+
 The Last Day's pods and the bunker's waking have four short music cues (`tools/generate-story-cues.py`, `ModSounds.STORY_*`,
 played once by `IntroDirector.cue` on the music channel when a `TimeIntroPayload` stage arrives): `story_sealed`
 (PROLOGUE_POD), `story_years` (PROLOGUE_YEARS, with the *103 years later* title), `story_ward` (PROLOGUE_WARD, sealed in the Helix Ward), and the waking's `story_wake_music`, a seamless 128-beat loop that `client/sound/BunkerMusic` fades in once the
@@ -62,6 +64,34 @@ the references' voices sit (round vowels, most energy near 300 Hz).
   handed the 80-second track in one `sf.write`; `finish` now writes 4096 frames at a time.
 - **Music steps aside for a cue.** `IntroDirector.cue` stops the vanilla background track first, so a beat never plays
   under a song.
+
+## Reusable patterns from the Last Day's music
+
+The Last Day has two stems of one loop (`tools/generate-lastday-music.py`: `lastday_evening`, `lastday_run`), the crash
+of every window bursting (`lastday_shatter`) and the ringing in your ears after it (`lastday_ringing`), played by
+`client/sound/LastDayMusic` and `client/DazeView`. The user picked two layers of the library's Music_06 as the reference.
+
+- **Stems that join at any moment are started together.** Both loops are exactly 96 beats (24 bars at 75 bpm, 76.8 s)
+  on one chord chart; `LastDayMusic.start` plays both in the same tick, the fight's layer silent (`canStartSilent`, or a
+  zero-volume sound never starts), and only its volume moves when the fight begins. Starting the second stem later would
+  land it anywhere in the bar.
+- **Measure ours with the reference's own script.** The first action layer measured a 206 Hz centroid against the
+  reference's 442 (all drums and bass, almost nothing above 1 kHz); louder, brighter hats and ostinato and stronger brass
+  brought it to 364 Hz with a similar band split. The bed matched at the first try (130 against 164 Hz, -21.7 against
+  -21.8 dBFS). `finish` normalises the band above 150 Hz, so a bass-heavy bed reads 2 to 3 dB louder full-band than its
+  target: aim the target that much lower.
+- **Reverb with filters, not Python loops.** `fast_reverb` is the story cues' Schroeder room built from `lfilter` combs and
+  allpasses: two 80-second stems render in about 30 seconds.
+- **Muffling the world without touching settings.** See `DazeView` in [story-and-scenes.md](story-and-scenes.md): the
+  ringing plays on the master channel, which the duck leaves alone, and so do the wave's rumble (`WaveRumble`) and the
+  screams heard while out cold (`PanicSounds.dazed`).
+- **Distortion from our own recordings, made live.** `PanicSounds.Dazed` reads the same CC0 crowd and scream clips as the
+  panic, slowed to about two thirds with a wandering rate, low-passed at a drifting 600 to 900 Hz, through a big reverb,
+  swelling with a 70 bpm double-thump pulse. `WaveRumble` is pure synthesis: a sub-bass sine rising from 32 to 48 Hz,
+  low-passed noise for the ground, band-passed noise for the roar, and sparse rattles, all building to the moment of
+  impact. Nothing from the reference library is in either.
+- **A dimension change stops every sound** (`Minecraft.setLevel` calls `soundManager.stop()`). A cue that must finish
+  plays before a teleport across dimensions, not across it.
 
 ## Reusable patterns from the power sounds
 
