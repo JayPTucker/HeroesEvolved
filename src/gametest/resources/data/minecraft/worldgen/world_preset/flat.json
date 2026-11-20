@@ -103,7 +103,7 @@
         }
       }
     },
-    "heroesevolved:watchmaker_shop": {
+    "heroesevolved:the_collection": {
       "type": "heroesevolved:lockdown",
       "generator": {
         "type": "minecraft:flat",
@@ -116,7 +116,7 @@
         }
       }
     },
-    "heroesevolved:primatech_substation": {
+    "heroesevolved:level_five": {
       "type": "heroesevolved:lockdown",
       "generator": {
         "type": "minecraft:flat",

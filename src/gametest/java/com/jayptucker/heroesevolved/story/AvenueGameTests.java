@@ -7,7 +7,7 @@ import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.expansion.FacilityData;
 import com.jayptucker.heroesevolved.progression.StoryDiscoveries;
 import com.jayptucker.heroesevolved.story.sylar.SylarEntity;
-import com.jayptucker.heroesevolved.story.sylar.SylarStoryData;
+import com.jayptucker.heroesevolved.story.sylar.SylarData;
 import com.jayptucker.heroesevolved.time.intro.FractureCity;
 import com.jayptucker.heroesevolved.time.intro.TimeIntroService;
 import com.mojang.authlib.GameProfile;
@@ -95,8 +95,6 @@ public final class AvenueGameTests {
     public static void theAvenueWritesItsOutcomeIntoThePresent(GameTestHelper h) {
         MinecraftServer server = h.getLevel().getServer();
         AvenueData data = AvenueData.get(server);
-        SylarStoryData sylar = SylarStoryData.get(server);
-        boolean knewHeat = sylar.knows(ModAbilities.RADIATION_ID);
         data.forgetAll();
         try {
             h.assertTrue(StoryDiscoveries.ORDER.stream().filter(note -> note.place() == StoryDiscoveries.Place.PAST)
@@ -116,15 +114,15 @@ public final class AvenueGameTests {
             h.assertTrue(everyone.contains("All twenty-four"), "Saving everyone reads differently: " + everyone);
 
             ServerPlayer p = awakened(h);
-            sylar.learn(ModAbilities.RADIATION_ID);
+            h.assertTrue(SylarData.holds(server, ModAbilities.RADIATION_ID), "Before anyone keeps him from it, Sprague's case is full");
             AvenueService.reward(p, twelve.subList(0, 3), true);
             h.assertTrue(PastRecords.has(p, PastRecords.DOOR) && PastRecords.has(p, PastRecords.WHY_YOU) && PastRecords.has(p, PastRecords.ADDENDUM),
                     "Coming home with people saved and Gray kept away writes Bennet's order, Gray's addendum and Hiro's last note");
             h.assertTrue(p.getInventory().items.stream().filter(stack -> stack.has(DataComponents.WRITTEN_BOOK_CONTENT)).count() == 3,
                     "The records are in the runner's hands");
             h.assertTrue(data.best(p.getUUID()).equals(new AvenueData.Best(3, true, 1)), "The evening is remembered: " + data.best(p.getUUID()));
-            h.assertTrue(data.grayNeverSaw() && !sylar.knows(ModAbilities.RADIATION_ID),
-                    "Gray never saw the light, so the watchmaker in the present never learned Sprague's heat");
+            h.assertTrue(data.grayNeverSaw() && !SylarData.holds(server, ModAbilities.RADIATION_ID),
+                    "Gray never saw the light, so Sprague's case in his Collection stands dark");
 
             AvenueService.reward(p, twelve.subList(0, 1), false);
             h.assertTrue(data.best(p.getUUID()).equals(new AvenueData.Best(3, true, 2)) && data.grayNeverSaw(),
@@ -134,7 +132,6 @@ public final class AvenueGameTests {
             h.succeed();
         } finally {
             data.forgetAll();
-            if (knewHeat) sylar.learn(ModAbilities.RADIATION_ID);
         }
     }
 
@@ -250,7 +247,6 @@ public final class AvenueGameTests {
                     h.assertTrue(!AvenueService.grayTurned(), "Blows land at most every two seconds");
                     AvenueService.gray().hurt(player[0].damageSources().playerAttack(player[0]), 4);
                     h.assertTrue(AvenueService.grayTurned() && !AvenueService.grayWatched(), "Three blows turn Gray back from the light");
-                    SylarStoryData.get(server).learn(ModAbilities.RADIATION_ID);
                     AvenueService.setTicks(AvenueService.LIGHT_TICK - 2);
                 })
                 .thenExecuteAfter(4, () -> {
@@ -268,7 +264,7 @@ public final class AvenueGameTests {
                                 "The present remembers: " + data.best(p.getUUID()));
                         h.assertTrue(PastRecords.has(p, PastRecords.DOOR) && PastRecords.has(p, PastRecords.WHY_YOU)
                                 && PastRecords.has(p, PastRecords.ADDENDUM), "The past is written into the runner's hands");
-                        h.assertTrue(!SylarStoryData.get(server).knows(ModAbilities.RADIATION_ID), "Sylar never learned the heat");
+                        h.assertTrue(!SylarData.holds(server, ModAbilities.RADIATION_ID), "Sylar never learned the heat: its case stands dark");
                         h.assertTrue(!city.getBlockState(new BlockPos(0, 65, 92)).is(Blocks.WHITE_CONCRETE)
                                 && city.getEntities((Entity) null, new net.minecraft.world.phys.AABB(-96, 60, -96, 96, 120, 96), AvenueService::isScene).isEmpty(),
                                 "The street is put back and everyone from the evening is gone");

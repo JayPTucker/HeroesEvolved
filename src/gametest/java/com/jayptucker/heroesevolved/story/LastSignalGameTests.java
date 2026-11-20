@@ -39,7 +39,7 @@ public final class LastSignalGameTests {
         ServerPlayer player = new FakePlayer(level, new GameProfile(UUID.randomUUID(), "signal-test"));
 
         var bunker = BunkerService.ensureBuilt(server);
-        BlockPos receiver = BunkerBuilder.receiverPos(bunker.origin);
+        BlockPos receiver = BunkerBuilder.receiverPos(bunker);
         player.setPos(Vec3.atBottomCenterOf(receiver));
         h.assertTrue(!LastSignalService.atSite(player), "The bunker and relay station are distinct places");
         // The flat test world disables naturally generated structures, so a receiver may have no bearing.

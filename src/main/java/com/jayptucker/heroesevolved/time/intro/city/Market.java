@@ -28,15 +28,42 @@ public final class Market {
     }
 
     /**
-     * The Last Day's beacon: in the middle of the avenue in front of the market, where everyone gathers with their
-     * groceries. The light appears up the avenue twenty seconds after the last of them gets here.
+     * The middle of the avenue in front of the market, where everyone waits with their groceries and the day's fight comes
+     * down: the rubble, the wave and the burst windows are timed and placed from here.
      */
     public static Vec3 beacon() { return new Vec3(4, Y, (Z0 + Z1) / 2.0 + .5); }
 
-    /** Whether someone has reached the beacon (or gone into the shop beside it). */
+    /**
+     * The Last Day's checkpoint: on the shop floor in front of the checkout counter, where the errand's groceries are
+     * picked up. The light appears up the avenue twenty seconds after the last of them has been here.
+     */
+    public static Vec3 checkout() { return new Vec3(X0 + 3.5, Y + 1, Z0 + 3.5); }
+
+    /** Whether someone has reached the checkout: inside the shop, within a few steps of the counter. */
     public static boolean arrived(Vec3 pos) {
+        Vec3 c = checkout();
+        double dx = pos.x - c.x, dz = pos.z - c.z;
+        return inside(pos) && dx * dx + dz * dz <= 16;
+    }
+
+    /** Whether someone is out front: on the avenue in front of the market, where everyone waits for the others. */
+    public static boolean outFront(Vec3 pos) {
         double dx = pos.x - beacon().x, dz = pos.z - beacon().z;
-        return dx * dx + dz * dz <= 36 && pos.y < Y + 6 || inside(pos);
+        return dx * dx + dz * dz <= 36 && pos.y < Y + 6;
+    }
+
+    /** The lower half of every door on the shop's street floor (for tests and previews). */
+    public static java.util.List<BlockPos> doors(net.minecraft.world.level.BlockGetter level) {
+        java.util.List<BlockPos> out = new java.util.ArrayList<>();
+        for (int x = X0; x <= X1; x++)
+            for (int z = Z0; z <= Z1; z++) {
+                if (x != X0 && x != X1 && z != Z0 && z != Z1) continue;
+                BlockPos pos = new BlockPos(x, Y + 1, z);
+                BlockState state = level.getBlockState(pos);
+                if (state.getBlock() instanceof DoorBlock && state.getValue(DoorBlock.HALF)
+                        == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER) out.add(pos);
+            }
+        return out;
     }
 
     /** The middle of its avenue front, on the sidewalk. */

@@ -40,12 +40,10 @@ public record AdminActionPayload(
         STOP_ECLIPSE,
         // Added for the events tab; new actions go last so the ordinals above never move.
         ECLIPSE_TOTALITY,
-        SYLAR_STALK,
-        SYLAR_HUNT,
+        SYLAR_TICKET,
+        SYLAR_NEXT,
+        SYLAR_FIGHT,
         SYLAR_DISMISS,
-        ELLE_OMENS,
-        ELLE_ARRIVE,
-        ELLE_DISMISS,
         MELTDOWN_START,
         MELTDOWN_CANCEL,
         RAID_START,
@@ -58,7 +56,8 @@ public record AdminActionPayload(
         INCIDENT_RENEGADE,
         INCIDENT_GUARDIAN,
         INCIDENT_MELTDOWN,
-        RAID_STOP
+        RAID_STOP,
+        SKIP_TO_POD
     }
 
     public static final Type<AdminActionPayload> TYPE =

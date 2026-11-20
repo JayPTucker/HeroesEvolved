@@ -4,6 +4,7 @@ import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.story.bunker.BunkerBuilder;
 import com.jayptucker.heroesevolved.story.bunker.BunkerBuilder.Room;
 import com.jayptucker.heroesevolved.story.bunker.BunkerData;
+import com.jayptucker.heroesevolved.story.bunker.BunkerLayout;
 import com.jayptucker.heroesevolved.story.bunker.CryoChamberBlock;
 import com.jayptucker.heroesevolved.structure.Blueprint;
 import net.minecraft.core.BlockPos;
@@ -55,12 +56,12 @@ public final class NightThreeBunker {
     public static BlockPos at(int x, int y, int z) { return ORIGIN.offset(x, y, z); }
 
     /** Pod 14's base block in the past. */
-    public static BlockPos pod() { return ORIGIN.offset(BunkerBuilder.podOffset(CLAIRE)); }
+    public static BlockPos pod() { return ORIGIN.offset(BunkerLayout.STASIS.podOffset(CLAIRE)); }
 
-    /** The east side of Gray's cage: the bars he unmakes on the third night. */
+    /** The front of Gray's cell in containment: the bars he unmakes on the third night. */
     public static List<BlockPos> cageBars() {
         List<BlockPos> bars = new ArrayList<>();
-        for (int y = 1; y <= 3; y++) for (int z = 14; z <= 15; z++) bars.add(at(-4, y, z));
+        for (BlockPos bar : BunkerLayout.Scene.CAGE_BARS) bars.add(ORIGIN.offset(bar));
         return bars;
     }
 
@@ -104,12 +105,10 @@ public final class NightThreeBunker {
 
     /** Pod 14's sign, before anyone drew her blood. */
     private static void signPod(ServerLevel level) {
-        for (BlockPos offset : Blueprint.load("bunker_chamber").markerOffsets("sign:pod14")) {
-            BlockPos pos = ORIGIN.offset(0, 0, 18).offset(offset);
-            if (level.getBlockEntity(pos) instanceof SignBlockEntity sign) {
-                sign.setText(text(DyeColor.LIGHT_BLUE, "SUBJECT 14", "C. BENNET", "STASIS SEALED", "NIGHT 3"), true);
-                sign.setChanged();
-            }
+        BlockPos cell = BunkerLayout.STASIS.podSign(CLAIRE);
+        if (cell != null && level.getBlockEntity(ORIGIN.offset(cell)) instanceof SignBlockEntity sign) {
+            sign.setText(text(DyeColor.LIGHT_BLUE, "SUBJECT 14", "C. BENNET", "STASIS SEALED", "NIGHT 3"), true);
+            sign.setChanged();
         }
     }
 
@@ -138,16 +137,18 @@ public final class NightThreeBunker {
         if (!bunker.built) return;
         ServerLevel overworld = server.overworld();
         BlockPos origin = bunker.origin;
-        BunkerBuilder.placePod(overworld, origin, CLAIRE, false);
-        for (Room room : BunkerBuilder.ROOMS) {
+        BunkerLayout layout = bunker.layout();
+        BunkerBuilder.placePod(overworld, origin, layout, CLAIRE, false);
+        for (Room room : layout.all()) {
             Blueprint blueprint = Blueprint.load(room.blueprint());
             for (BlockPos offset : blueprint.cellsMatching(state -> state.is(Blocks.REDSTONE_WIRE))) {
                 BlockPos pos = origin.offset(room.at()).offset(offset);
                 if (overworld.getBlockState(pos).is(Blocks.REDSTONE_WIRE)) overworld.setBlock(pos, AIR, Block.UPDATE_ALL);
             }
         }
-        for (BlockPos offset : Blueprint.load("bunker_chamber").markerOffsets("sign:pod14")) {
-            BlockPos pos = origin.offset(0, 0, 18).offset(offset);
+        BlockPos cell = layout.podSign(CLAIRE);
+        if (cell != null) {
+            BlockPos pos = origin.offset(cell);
             if (overworld.getBlockEntity(pos) instanceof SignBlockEntity sign) {
                 sign.setText(text(DyeColor.LIGHT_BLUE, "SUBJECT 14", "C. BENNET", "STILL ASLEEP", "DO NOT OPEN"), true);
                 sign.setChanged();

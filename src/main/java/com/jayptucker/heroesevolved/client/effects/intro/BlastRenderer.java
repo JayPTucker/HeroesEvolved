@@ -81,6 +81,22 @@ final class BlastRenderer {
         }
         float end = Math.min(200, vanillaEnd);
         float start = end * 0.55F;
+        if (IntroScene.prologue) {
+            // Once Ted's wave has gone by, the air is full of dust and grit: thick at first, thinning but never clear.
+            float since = IntroScene.sinceLight(0);
+            if (since >= 0) {
+                float passed = since - (com.jayptucker.heroesevolved.story.prologue.PrologueTimeline.WAVE
+                        + com.jayptucker.heroesevolved.story.prologue.PrologueTimeline.arrival(distance));
+                float dust = smooth(-6, 30, passed) * (0.35F + 0.65F * (float) Math.exp(-Math.max(0, passed) / 500));
+                if (dust > 0) {
+                    FOG[0] = Mth.lerp(dust * 0.8F, FOG[0], 0.55F);
+                    FOG[1] = Mth.lerp(dust * 0.8F, FOG[1], 0.49F);
+                    FOG[2] = Mth.lerp(dust * 0.8F, FOG[2], 0.41F);
+                    end = Mth.lerp(dust, end, 52);
+                    start = Mth.lerp(dust, start, 3);
+                }
+            }
+        }
         double gap = gap(t, distance);
         if (gap < 90) {
             // The air ahead of the wall is already full of dust.

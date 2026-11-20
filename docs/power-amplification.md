@@ -111,12 +111,12 @@ Three lanes of six. In each lane the 2nd and 5th are active skills and the 6th i
 2. **Van Full** *(active).* A burst that hits everyone within five blocks (6 + tier, up to 3 more with Charge), double
    where you're closed in (most rays from your eyes meet a block within five). It leaves foes at half a heart, stunned
    for five seconds.
-3. **Opposite Current.** With 20 Charge or more, lightning aimed at you (an Electrokinetic's, Elle's, a storm's) is
+3. **Opposite Current.** With 20 Charge or more, lightning aimed at you (an Electrokinetic's, a storm's) is
    halved, and the half you don't take becomes Charge.
 4. **Burn Through.** Red lightning breaks the constructs in its path (ice walls, force barriers and bridges) and hits a
    player behind a Lens Shield twice as hard.
 5. **Overcharge the Enemy** *(active).* Pour red energy into a powered foe within 16 blocks. Its next move goes wild: the
-   move is lost, the caster takes 4, and a gifted mob's power lashes its own side. Sylar and Elle are stalled instead.
+   move is lost, the caster takes 4, and a gifted mob's power lashes its own side. Sylar is stalled instead.
 6. **The Second Coming** *(capstone).* Stop holding back: red lightning, Van Full and Lightning Cannon hit twice as hard
    and kill, and a supercharged friend in a beam's path takes it too.
 

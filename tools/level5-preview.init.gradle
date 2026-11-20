@@ -1,0 +1,27 @@
+// The client photographs how you meet Sylar with uitest/LevelFivePreview: the hatch in Gray's old cell, Level 5's
+// corridor, the prisoner behind his glass and his talk, the watch list, the release lever and the glass falling out,
+// and him behind you at dusk, into build/level5-preview/screenshots/. Never bundled into the mod JAR.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('levelFivePreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/level5-preview')
+                        programArguments.addAll('--width', '1280', '--height', '800')
+                        systemProperty('heroes.preview.level5', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('levelFivePreviewClasses')) }
+            // Pass when every scene ran (PREVIEW_DONE), not on the exit code the closing halt leaves.
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

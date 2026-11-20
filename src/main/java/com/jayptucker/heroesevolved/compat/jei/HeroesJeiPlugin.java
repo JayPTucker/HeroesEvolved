@@ -62,7 +62,6 @@ public final class HeroesJeiPlugin implements IModPlugin {
             info(registration, ModItems.BLOOD_SAMPLE.get(), "blood_sample");
             info(registration, ModItems.FORMULA_VIAL.get(), "formula_vial");
             info(registration, ModItems.SYLARS_WATCH.get(), "sylars_watch");
-            info(registration, ModItems.ELLES_CAPACITOR.get(), "elles_capacitor");
             info(registration, ModItems.EMP_GRENADE.get(), "emp_grenade");
             info(registration, SuitItems.SUIT_FABRICATOR_ITEM.get(), "suit_fabricator");
         });

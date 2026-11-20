@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    { "item": "minecraft:paper" },
+    { "item": "heroesevolved:brass_movement" },
+    { "item": "minecraft:ink_sac" }
+  ],
+  "result": { "id": "heroesevolved:repair_ticket", "count": 1 }
+}

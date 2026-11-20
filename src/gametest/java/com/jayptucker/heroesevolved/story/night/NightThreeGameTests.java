@@ -13,8 +13,7 @@ import com.jayptucker.heroesevolved.story.AvenueData;
 import com.jayptucker.heroesevolved.story.PastRecords;
 import com.jayptucker.heroesevolved.story.bunker.CryoChamberBlock;
 import com.jayptucker.heroesevolved.story.sylar.SylarEntity;
-import com.jayptucker.heroesevolved.story.sylar.SylarStoryData;
-import com.jayptucker.heroesevolved.story.sylar.SylarStoryService;
+import com.jayptucker.heroesevolved.story.sylar.SylarData;
 import com.mojang.authlib.GameProfile;
 import io.netty.channel.embedded.EmbeddedChannel;
 import net.minecraft.core.BlockPos;
@@ -133,7 +132,9 @@ public final class NightThreeGameTests {
         }
         h.assertTrue(found.isEmpty(), "The bunker in the past has nothing that came later: " + found);
         h.assertTrue(lamps > 0, "The lights are on");
-        h.assertTrue(night.getBlockState(NightThreeBunker.at(4, 12, 34)).is(Blocks.DEEPSLATE_BRICKS), "The stasis hall's ceiling is whole where the cave broke in later");
+        var collapse = com.jayptucker.heroesevolved.story.bunker.BunkerLayout.Scene.COLLAPSE;
+        h.assertTrue(night.getBlockState(NightThreeBunker.at(collapse.getX(), collapse.getY(), collapse.getZ())).is(Blocks.DEEPSLATE_BRICKS),
+                "The stasis hall's ceiling is whole where it came down later");
 
         // Everywhere the night puts someone, they can stand.
         for (int i = 0; i < NightThreeService.MAX_RUNNERS; i++)
@@ -164,15 +165,12 @@ public final class NightThreeGameTests {
         MinecraftServer server = source.getServer();
         ServerLevel night = server.getLevel(NightThreeBunker.DIMENSION);
         NightThreeData data = NightThreeData.get(server);
-        SylarStoryData sylar = SylarStoryData.get(server);
-        boolean knewRegeneration = sylar.knows(ModAbilities.REGENERATION_ID);
         Vec3 origin = Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(3, 2, 3)));
         ServerPlayer[] player = new ServerPlayer[1];
         h.startSequence()
                 .thenWaitUntil(() -> h.assertTrue(!NightThreeService.running(), "Waiting for the bunker"))
                 .thenExecute(() -> {
                     data.forgetAll();
-                    sylar.learn(ModAbilities.REGENERATION_ID);
                     ServerPlayer p = runner(h, origin, "night-runner");
                     player[0] = p;
                     h.assertTrue(!NightThreeService.enter(p), "The third night waits until you have lived to see 6:15");
@@ -221,16 +219,14 @@ public final class NightThreeGameTests {
                         h.assertTrue(!data.tickets.containsKey(p.getUUID()), "The ticket is spent");
                         h.assertTrue(data.best(p.getUUID()).kept() && data.podKept(), "The present remembers: " + data.best(p.getUUID()));
                         h.assertTrue(PastRecords.has(p, PastRecords.POD_FOURTEEN), "Claire's letter is in the runner's hands");
-                        h.assertTrue(!sylar.knows(ModAbilities.REGENERATION_ID)
-                                        && "story.heroesevolved.sylar.no_regen".equals(SylarStoryService.outOfReach(server, ModAbilities.REGENERATION_ID)),
-                                "The watchmaker never took Claire's gift, and can't take regeneration now");
+                        h.assertTrue(!SylarData.holds(server, ModAbilities.REGENERATION_ID),
+                                "Sylar never took Claire's gift: its case in his Collection stands dark");
                         h.assertTrue(night.getEntities((Entity) null, AABB.encapsulatingFullBlocks(
                                         new BlockPos(-40, 40, -20), new BlockPos(40, 100, 60)), NightThreeService::isScene).isEmpty(),
                                 "Everyone from the night is gone");
                         h.succeed();
                     } finally {
                         data.forgetAll();
-                        if (knewRegeneration) sylar.learn(ModAbilities.REGENERATION_ID);
                         remove(p);
                     }
                 });
@@ -241,15 +237,12 @@ public final class NightThreeGameTests {
         MinecraftServer server = h.getLevel().getServer();
         ServerLevel night = server.getLevel(NightThreeBunker.DIMENSION);
         NightThreeData data = NightThreeData.get(server);
-        SylarStoryData sylar = SylarStoryData.get(server);
-        boolean knewRegeneration = sylar.knows(ModAbilities.REGENERATION_ID);
         Vec3 origin = Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(3, 2, 3)));
         ServerPlayer[] player = new ServerPlayer[1];
         h.startSequence()
                 .thenWaitUntil(() -> h.assertTrue(!NightThreeService.running(), "Waiting for the bunker"))
                 .thenExecute(() -> {
                     data.forgetAll();
-                    sylar.learn(ModAbilities.REGENERATION_ID);
                     ServerPlayer p = runner(h, origin, "night-loser");
                     player[0] = p;
                     AvenueData.get(server).record(p.getUUID(), 1, false);
@@ -275,12 +268,10 @@ public final class NightThreeGameTests {
                         h.assertTrue(data.best(p.getUUID()).runs() == 1 && !data.best(p.getUUID()).kept() && !data.podKept(),
                                 "A night Gray wins changes nothing in the present");
                         h.assertTrue(!PastRecords.has(p, PastRecords.POD_FOURTEEN), "No letter is written");
-                        h.assertTrue(sylar.knows(ModAbilities.REGENERATION_ID) && SylarStoryService.outOfReach(server, ModAbilities.REGENERATION_ID) == null,
-                                "The watchmaker still has Claire's gift");
+                        h.assertTrue(SylarData.holds(server, ModAbilities.REGENERATION_ID), "Sylar still has Claire's gift in its case");
                         h.succeed();
                     } finally {
                         data.forgetAll();
-                        if (!knewRegeneration) sylar.forget(ModAbilities.REGENERATION_ID);
                         remove(p);
                     }
                 });
@@ -302,8 +293,6 @@ public final class NightThreeGameTests {
     public static void theLetterAndTheWorldChangeOnlyOnce(GameTestHelper h) {
         MinecraftServer server = h.getLevel().getServer();
         NightThreeData data = NightThreeData.get(server);
-        SylarStoryData sylar = SylarStoryData.get(server);
-        boolean knewRegeneration = sylar.knows(ModAbilities.REGENERATION_ID);
         data.forgetAll();
         try {
             h.assertTrue(StoryDiscoveries.ORDER.getLast().title().equals(PastRecords.POD_FOURTEEN)
@@ -328,7 +317,6 @@ public final class NightThreeGameTests {
             h.succeed();
         } finally {
             data.forgetAll();
-            if (knewRegeneration) sylar.learn(ModAbilities.REGENERATION_ID);
         }
     }
 }

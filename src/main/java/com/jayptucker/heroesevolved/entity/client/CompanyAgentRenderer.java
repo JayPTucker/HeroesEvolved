@@ -23,7 +23,8 @@ public final class CompanyAgentRenderer extends HumanoidMobRenderer<CompanyAgent
         super(context, new PlayerModel<>(context.bakeLayer(ModelLayers.PLAYER), false) {
             @Override public void setupAnim(CompanyAgentEntity entity, float limbSwing, float limbAmount, float age, float yaw, float pitch) {
                 rightArmPose = entity.aiming() ? HumanoidModel.ArmPose.CROSSBOW_HOLD
-                        : entity.role() == CompanyAgentEntity.Role.GUARD ? HumanoidModel.ArmPose.ITEM : HumanoidModel.ArmPose.EMPTY;
+                        : entity.role() == CompanyAgentEntity.Role.GUARD && !entity.getMainHandItem().isEmpty() ? HumanoidModel.ArmPose.ITEM
+                        : HumanoidModel.ArmPose.EMPTY;
                 leftArmPose = HumanoidModel.ArmPose.EMPTY;
                 super.setupAnim(entity, limbSwing, limbAmount, age, yaw, pitch);
                 if (entity.role() == CompanyAgentEntity.Role.SUPPRESSOR && !entity.outCold() && !entity.isAggressive()) {
@@ -34,6 +35,40 @@ public final class CompanyAgentRenderer extends HumanoidMobRenderer<CompanyAgent
                 }
             }
         }, .45F);
+        addLayer(new Holster(this, context.getItemInHandRenderer()));
+    }
+
+    /**
+     * A holstered gun on his right hip, barrel down along the thigh and grip up by his hand, so you can see he's armed
+     * before he draws (the Last Day's agents until the fight starts).
+     */
+    private static final class Holster extends net.minecraft.client.renderer.entity.layers.RenderLayer<CompanyAgentEntity, PlayerModel<CompanyAgentEntity>> {
+        private final net.minecraft.client.renderer.ItemInHandRenderer items;
+
+        Holster(net.minecraft.client.renderer.entity.RenderLayerParent<CompanyAgentEntity, PlayerModel<CompanyAgentEntity>> parent,
+                net.minecraft.client.renderer.ItemInHandRenderer items) {
+            super(parent);
+            this.items = items;
+        }
+
+        @Override public void render(PoseStack pose, net.minecraft.client.renderer.MultiBufferSource buffers, int light, CompanyAgentEntity agent,
+                                     float limbSwing, float limbAmount, float partial, float age, float yaw, float pitch) {
+            net.minecraft.world.item.ItemStack gun = agent.holstered();
+            if (gun.isEmpty() || agent.outCold()) return;
+            pose.pushPose();
+            getParentModel().body.translateAndRotate(pose);
+            // Held as a right hand would hold it with the arm swung back level: the same transform the held-item layer
+            // uses, less the arm's own swing, puts the grip at the hand and the barrel straight down. The pivot is set so
+            // the grip lands at the right hip, just outside the jacket; it sways a little with the leg's stride.
+            float stride = getParentModel().rightLeg.xRot * 0.25F;
+            pose.translate(-4.3F / 16F, 9.4F / 16F, -0.66F);
+            pose.mulPose(Axis.XP.rotation(stride));
+            pose.mulPose(Axis.YP.rotationDegrees(180));
+            pose.translate(1F / 16F, 0.125F, -0.625F);
+            pose.scale(0.85F, 0.85F, 0.85F);
+            items.renderItem(agent, gun, net.minecraft.world.item.ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, false, pose, buffers, light);
+            pose.popPose();
+        }
     }
 
     @Override public ResourceLocation getTextureLocation(CompanyAgentEntity entity) {

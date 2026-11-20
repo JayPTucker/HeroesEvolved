@@ -79,6 +79,8 @@ public class CompanyAgentEntity extends PathfinderMob {
     private static final EntityDataAccessor<Integer> ROLE = SynchedEntityData.defineId(CompanyAgentEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> AIMING = SynchedEntityData.defineId(CompanyAgentEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> OUT_COLD = SynchedEntityData.defineId(CompanyAgentEntity.class, EntityDataSerializers.BOOLEAN);
+    /** The gun in his hip holster while his hands are empty (empty once he has drawn it), drawn by every client. */
+    private static final EntityDataAccessor<ItemStack> HOLSTER = SynchedEntityData.defineId(CompanyAgentEntity.class, EntityDataSerializers.ITEM_STACK);
 
     private BlockPos post;
     private boolean nonLethal;
@@ -129,7 +131,32 @@ public class CompanyAgentEntity extends PathfinderMob {
         builder.define(ROLE, 0);
         builder.define(AIMING, false);
         builder.define(OUT_COLD, false);
+        builder.define(HOLSTER, ItemStack.EMPTY);
     }
+
+    /**
+     * Holsters the gun in his hand: his hands go empty and it sits on his right hip, where everyone sees it, until
+     * {@link #draw}. A scene's guard keeps it there until the trouble starts (the Last Day's agents until the fight).
+     */
+    public void holster() {
+        ItemStack held = getMainHandItem();
+        if (held.isEmpty() || role() != Role.GUARD) return;
+        entityData.set(HOLSTER, held);
+        setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+    }
+
+    /** Draws the holstered gun: back in his hand, with the sound of it clearing leather. */
+    public void draw() {
+        ItemStack gun = holstered();
+        if (gun.isEmpty()) return;
+        entityData.set(HOLSTER, ItemStack.EMPTY);
+        setItemSlot(EquipmentSlot.MAINHAND, gun);
+        level().playSound(null, getX(), getY(), getZ(), SoundEvents.ARMOR_EQUIP_LEATHER.value(), SoundSource.HOSTILE, 0.8F, 1.2F);
+        level().playSound(null, getX(), getY(), getZ(), SoundEvents.ARMOR_EQUIP_IRON.value(), SoundSource.HOSTILE, 0.5F, 1.5F);
+    }
+
+    /** The gun on his hip, or empty if he isn't wearing one there. */
+    public ItemStack holstered() { return entityData.get(HOLSTER); }
 
     @Override protected void registerGoals() {
         goalSelector.addGoal(0, new FloatGoal(this));
@@ -164,6 +191,7 @@ public class CompanyAgentEntity extends PathfinderMob {
     private void arm() {
         pistol = ItemStack.EMPTY;
         taser = ItemStack.EMPTY;
+        entityData.set(HOLSTER, ItemStack.EMPTY);
         if (role() == Role.GUARD && !nonLethal) {
             pistol = PowerWeapons.gun(PowerWeapons.AGENT_PISTOL);
             taser = PowerWeapons.gun(PowerWeapons.TASER);
@@ -190,6 +218,9 @@ public class CompanyAgentEntity extends PathfinderMob {
 
     public BlockPos post() { return post; }
     public boolean aiming() { return entityData.get(AIMING); }
+
+    /** Raises his weapon (both hands, to the shoulder) or lowers it, for a scene that moves him itself. */
+    public void aiming(boolean up) { entityData.set(AIMING, up); }
     public boolean outCold() { return entityData.get(OUT_COLD); }
     public boolean nonLethal() { return nonLethal; }
     public void setNonLethal(boolean nonLethal) {

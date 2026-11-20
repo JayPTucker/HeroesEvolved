@@ -26,14 +26,32 @@ public final class SylarVoice {
     private SylarVoice() {}
 
     /** Something he says, in his own voice. */
-    public static void say(ServerPlayer player, String key, Object... args) {
-        queue(player, new Line(Component.literal("Sylar: ").withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD)
-                .append(Component.translatable(key, args).withStyle(ChatFormatting.RED)), true));
-    }
+    public static void say(ServerPlayer player, String key, Object... args) { queue(player, new Line(speech(key, args), true)); }
 
     /** What the player notices. */
-    public static void narrate(ServerPlayer player, String key, Object... args) {
-        queue(player, new Line(Component.translatable(key, args).withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC), false));
+    public static void narrate(ServerPlayer player, String key, Object... args) { queue(player, new Line(notice(key, args), false)); }
+
+    /**
+     * A line of his said now, ahead of anything waiting: a scene's beat that can't wait its turn (the man behind you, the
+     * prisoner's talk, which paces itself). Queued lines then wait their gap after it.
+     */
+    public static void sayNow(ServerPlayer player, String key, Object... args) { now(player, speech(key, args)); }
+
+    /** What the player notices, now (see {@link #sayNow}). */
+    public static void narrateNow(ServerPlayer player, String key, Object... args) { now(player, notice(key, args)); }
+
+    private static Component speech(String key, Object... args) {
+        return Component.literal("Sylar: ").withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD)
+                .append(Component.translatable(key, args).withStyle(ChatFormatting.RED));
+    }
+
+    private static Component notice(String key, Object... args) {
+        return Component.translatable(key, args).withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC);
+    }
+
+    private static void now(ServerPlayer player, Component text) {
+        player.sendSystemMessage(text);
+        LAST.put(player.getUUID(), player.getServer().overworld().getGameTime());
     }
 
     /** A warning that cannot wait: on the action bar at once, and never queued. */

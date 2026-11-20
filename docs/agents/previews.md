@@ -152,8 +152,8 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | `projectile-preview.init.gradle` | projectile ranges | |
 | `weapons-preview.init.gradle`, `dampener-preview.init.gradle` | the TaCZ guns and EMP grenade; the Ability Dampener and Nullifier | |
 | **Bosses, mobs and events** | | |
-| `watchmaker-preview.init.gradle`, `sylar-preview.init.gradle` | Sylar in his shop, phase by phase; the older field fight | |
-| `elle-preview.init.gradle` | Elle's omens, arrival and fight | |
+| `sylar-preview.init.gradle` | Sylar's Collection: the ticket, the hall, every telegraph assembling and landing, each phase, the backfire, Appraisal, the light, Claire's case, his death | |
+| `level5-preview.init.gradle` | How you meet Sylar: the hatch in Cell 3, Level 5's corridor, the prisoner behind glass and his talk in chat, the watch list, the release lever, the glass falling out, him behind you at dusk, the Collection | A fixed camera only draws the player in third person: set `THIRD_PERSON_BACK` before `TempestCamera.fix` when the player should be in shot |
 | `gifted-preview.init.gradle` | gifted mobs, sigils, poses, a turn, flares, a crater | |
 | `meltdown-preview.init.gradle`, `containment-preview.init.gradle`, `live-run-preview.init.gradle` | a villager meltdown; a speedster containing a blast | |
 | `eclipse-preview.init.gradle` | the Eclipse moon | |

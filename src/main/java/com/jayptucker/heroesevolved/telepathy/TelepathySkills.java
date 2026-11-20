@@ -127,7 +127,7 @@ public final class TelepathySkills {
     /** Bosses keep their weapons and can't be talked round. */
     public static boolean boss(LivingEntity t) {
         return t instanceof EnderDragon || t instanceof WitherBoss || t instanceof Warden
-                || t instanceof com.jayptucker.heroesevolved.story.sylar.SylarEntity || t instanceof com.jayptucker.heroesevolved.story.elle.ElleEntity;
+                || t.getType().is(net.neoforged.neoforge.common.Tags.EntityTypes.BOSSES);
     }
 
     // ------------------------------------------------------------------

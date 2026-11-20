@@ -1,0 +1,27 @@
+// Runs only Sylar's game tests (story/sylar: the Collection, his moves, phases, rules and rewards), with the shared test
+// helpers at the package root, in a world of their own. Test code is excluded from the release jar.
+//   ./gradlew runGameTestServer --init-script tools/sylar-gametest.init.gradle
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def tests = sourceSets.create('sylarTest') {
+                java.srcDir('src/gametest/java')
+                java.include('com/jayptucker/heroesevolved/story/sylar/**')
+                java.include('com/jayptucker/heroesevolved/*.java')
+                resources.srcDir('src/gametest/resources')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(tests) } }
+                runs { gameTestServer { gameDirectory = project.file('build/sylar-test-world') } }
+            }
+            tasks.named('runGameTestServer') {
+                dependsOn(tasks.named('sylarTestClasses'))
+                def staleWorld = project.file('build/sylar-test-world/world')
+                def staleConfig = project.file('build/sylar-test-world/config/heroesevolved-common.toml')
+                doFirst { staleWorld.deleteDir(); staleConfig.delete() }
+            }
+        }
+    }
+}

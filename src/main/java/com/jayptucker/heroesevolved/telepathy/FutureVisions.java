@@ -179,8 +179,7 @@ public final class FutureVisions {
      */
     private static String otherwordlyThought(LivingEntity mind, ServerPlayer reader) {
         if (mind instanceof com.jayptucker.heroesevolved.story.sylar.SylarEntity sylar) {
-            return sylar.hunting() ? "Every heartbeat becomes a measurement. He is learning your pattern. "
-                    + "Break his concentration before the ticking stops."
+            return sylar.fighting() ? sylar.mindLine()
                     : "A watchmaker's patience. A hunger with no end. He has been following the trail your power leaves behind.";
         }
         // Reading whoever carries the glowing man's heat now.

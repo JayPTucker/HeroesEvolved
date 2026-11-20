@@ -17,7 +17,7 @@ became a three-phase kit in November 2026: the power of whoever you are near (Le
   Cryokinesis, Technopathy, Matter Assembly). A new power with an ownership gate needs one of these, or Echoes of it
   fail. Switching sets, logging out or changing dimension runs `forget`, which ends every held borrowed action.
 - **One question: who has a power.** `MimicryService.imprintOf(mimic, entity)` answers for players, gifted villagers,
-  the meltdown villager, Sylar and Elle. Attunement, touch, Sense Powers and the stamina passive all use it, so a new
+  the meltdown villager and Sylar (whatever stands in his cases). Attunement, touch, Sense Powers and the stamina passive all use it, so a new
   powered NPC is one more branch there.
 - **Keep the old API when the model changes.** The memory became near + kept + channel, but `current()`, `powers()`,
   `remember(player, power, tier)` and `recall(player, step)` still work, so a dozen callers and tests didn't change.

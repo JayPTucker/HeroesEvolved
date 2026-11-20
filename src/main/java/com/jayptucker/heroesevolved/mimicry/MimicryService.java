@@ -224,14 +224,12 @@ public final class MimicryService {
             ResourceLocation power = power(other);
             return copyable(power) ? new Imprint(power, other.getGameProfile().getName(), Optional.of(other.getUUID()), "player") : null;
         }
-        if (source instanceof com.jayptucker.heroesevolved.story.sylar.SylarEntity) {
-            List<ResourceLocation> learned = sylarLearned(mimic);
+        if (source instanceof com.jayptucker.heroesevolved.story.sylar.SylarEntity sylar) {
+            List<ResourceLocation> learned = sylarLearned(sylar);
             // The same mimic always feels the same one of his stolen powers, so being near him doesn't flicker.
             ResourceLocation power = learned.get(Math.floorMod(mimic.getUUID().hashCode(), learned.size()));
             return new Imprint(power, "Sylar", Optional.of(source.getUUID()), "sylar");
         }
-        if (source instanceof com.jayptucker.heroesevolved.story.elle.ElleEntity)
-            return new Imprint(ModAbilities.ELECTROKINESIS_ID, "Elle Bishop", Optional.of(source.getUUID()), "elle");
         // A gifted mob (a guardian, a renegade, a raid's champion): its power, or whatever a gifted mimic last copied.
         var gifted = com.jayptucker.heroesevolved.gifted.Gift.read(source);
         if (gifted != null) {
@@ -248,9 +246,9 @@ public final class MimicryService {
         return null;
     }
 
-    private static List<ResourceLocation> sylarLearned(ServerPlayer mimic) {
-        List<ResourceLocation> learned = new ArrayList<>(com.jayptucker.heroesevolved.story.sylar.SylarStoryData
-                .get(mimic.getServer()).learned().stream().filter(MimicryService::copyable).toList());
+    /** What Sylar holds: his telekinesis, and whatever stands whole in his cases. */
+    private static List<ResourceLocation> sylarLearned(com.jayptucker.heroesevolved.story.sylar.SylarEntity sylar) {
+        List<ResourceLocation> learned = new ArrayList<>(sylar.collection().stream().filter(MimicryService::copyable).toList());
         if (learned.isEmpty()) learned.add(ModAbilities.TELEKINESIS_ID);
         learned.sort(java.util.Comparator.comparing(ResourceLocation::toString));
         return learned;
@@ -334,10 +332,10 @@ public final class MimicryService {
         LAST_TOUCH.put(player.getUUID(), new Touch(target.getUUID(), now));
         int capacity = keepCapacity(player);
         if (capacity == 0) setNear(player, imprint, true);
-        else if (target instanceof com.jayptucker.heroesevolved.story.sylar.SylarEntity
+        else if (target instanceof com.jayptucker.heroesevolved.story.sylar.SylarEntity sylar
                 && SkillTreeService.has(player, "empathic_mimicry_sylars_mirror")) {
-            // Sylar's Mirror: touching him keeps everything he has stolen that there is room for.
-            for (ResourceLocation power : sylarLearned(player))
+            // Sylar's Mirror: touching him keeps everything in his collection that there is room for.
+            for (ResourceLocation power : sylarLearned(sylar))
                 keep(player, new Imprint(power, "Sylar", Optional.of(target.getUUID()), "sylar"), capacity);
         } else keep(player, imprint, capacity);
         MimicVisuals.imprint(player, target, imprint.power(), true);

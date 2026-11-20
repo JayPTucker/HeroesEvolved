@@ -36,12 +36,10 @@ public final class HeroesEvolvedConfig {
     }
 
     public static final class Common {
-        public final ModConfigSpec.BooleanValue sylarEnabled, sylarCanAcquirePowers;
+        public final ModConfigSpec.BooleanValue sylarEnabled, sylarCanStealPowers;
         public final ModConfigSpec.BooleanValue bunkerEnabled, prologueEnabled;
         public final ModConfigSpec.IntValue prologueEveningSeconds, prologueRunSeconds, prologueReadySeconds;
-        public final ModConfigSpec.IntValue sylarFirstEncounterSeconds, sylarSightingIntervalSeconds, sylarHuntIntervalSeconds;
-        public final ModConfigSpec.BooleanValue elleEnabled;
-        public final ModConfigSpec.IntValue elleFirstVisitDays, elleOmenTicks, elleRevisitDays;
+        public final ModConfigSpec.IntValue sylarTicketPowerLevel, sylarFightMinutes;
         public final ModConfigSpec.IntValue maximumLevel;
         public final ModConfigSpec.LongValue baseMasteryPerLevel;
         public final ModConfigSpec.LongValue masteryIncreasePerLevel;
@@ -275,33 +273,23 @@ public final class HeroesEvolvedConfig {
             prologueEnabled = builder.comment("Before waking in the bunker, new players live the Last Day: they wake in their apartment in Odessa,",
                             "run for the Primatech safe house when the light appears, and are sealed in their pods. Needs the bunker.")
                     .define("prologue", true);
-            prologueReadySeconds = builder.comment("How long the prologue waits in the apartments for everyone to be ready, after the latest arrival.")
-                    .defineInRange("prologueReadySeconds", 60, 5, 600);
+            prologueReadySeconds = builder.comment("How long the ready players in the lobby wait for the rest before they're offered to go on without them.",
+                            "Nothing starts on its own: everyone must say they're ready, or the ready ones choose to go.")
+                    .defineInRange("prologueReadySeconds", 120, 5, 600);
             prologueEveningSeconds = builder.comment("How long players explore Odessa's ordinary evening before the light appears.")
                     .defineInRange("prologueEveningSeconds", 180, 10, 1800);
-            prologueRunSeconds = builder.comment("How long players have to reach the safe house once the light appears, before Company agents dart them.")
-                    .defineInRange("prologueRunSeconds", 120, 20, 600);
+            prologueRunSeconds = builder.comment("How long players have to reach the safe house once the light appears, before Company agents dart them.",
+                            "Never shorter than the fight, the wave and a minute and ten seconds after it (about 129 seconds).")
+                    .defineInRange("prologueRunSeconds", 150, 20, 600);
             builder.pop();
             builder.push("sylar");
-            sylarEnabled = builder.comment("Enable the unique Sylar storyline hunter in the Overworld.").define("enabled", true);
-            sylarCanAcquirePowers = builder.comment("Allow completed, interruptible encounters to teach Sylar NPC copies; player roles remain exclusive.")
-                    .define("canAcquirePowers", true);
-            sylarFirstEncounterSeconds = builder.comment("Minimum grace after an awakened player becomes eligible, before the first ominous hint.")
-                    .defineInRange("firstEncounterSeconds", 300, 60, 86400);
-            sylarSightingIntervalSeconds = builder.comment("Minimum pause between the early story beats (the ticking, the sightings, his first words); up to four minutes of random delay is added.")
-                    .defineInRange("sightingIntervalSeconds", 600, 60, 86400);
-            sylarHuntIntervalSeconds = builder.comment("Minimum pause between hunts once he has started hunting a player; up to five minutes of random delay is added. Defeating him gives the whole world an hour.")
-                    .defineInRange("huntIntervalSeconds", 1500, 120, 86400);
-            builder.pop();
-            builder.push("elle");
-            elleEnabled = builder.comment("The Company sends Elle Bishop for awakened players. The day before she comes, lights flicker,",
-                            "redstone misfires and machines switch themselves on and off around them.").define("enabled", true);
-            elleFirstVisitDays = builder.comment("Minecraft days a player has had a power (after the relay rescue) before her first visit; the last of them is the day of omens.")
-                    .defineInRange("firstVisitDays", 3, 1, 1000);
-            elleOmenTicks = builder.comment("How long the omens run before she arrives, in ticks (24000 is one Minecraft day).")
-                    .defineInRange("omenTicks", 24000, 200, 2_400_000);
-            elleRevisitDays = builder.comment("Minecraft days after she is beaten before the Company tries again (two days after a lost fight).")
-                    .defineInRange("revisitDays", 7, 1, 1000);
+            sylarEnabled = builder.comment("Sylar's story: his Repair Ticket and the fight in his Collection.").define("enabled", true);
+            sylarCanStealPowers = builder.comment("Let his Appraisal put a player's power in one of his cases until the case breaks or the fight ends.")
+                    .define("canStealPowers", true);
+            sylarTicketPowerLevel = builder.comment("The Power Level at which the story leaves his first Repair Ticket in an awakened player's pocket.")
+                    .defineInRange("ticketPowerLevel", 8, 1, 20);
+            sylarFightMinutes = builder.comment("How long a fight in the Collection may run before he closes up.")
+                    .defineInRange("fightMinutes", 10, 2, 60);
             builder.pop();
             builder.push("progression");
 

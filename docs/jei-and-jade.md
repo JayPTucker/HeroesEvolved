@@ -20,7 +20,7 @@ of the screen that names what you are looking at). Neither is needed: install ei
   and Centrifuge pages, JEI's **+** button moves the materials in from your inventory; at the fabricator you still
   pick the pattern yourself.
 - **Information pages** (JEI's "i" page; press U on the item) say where to find what can't be crafted: Helixite and
-  lead ore, blood samples, the Formula, Sylar's Watch, Elle's Capacitor, and where the EMP grenade is made.
+  lead ore, blood samples, the Formula, Sylar's Watch, and where the EMP grenade is made.
 - **Keys.** The mod's keys only work in the world and JEI's only in menus, so they never fire together: R opens the
   ability wheel in the world and shows a recipe in a menu, and O opens the admin menu while JEI keeps Ctrl+O. The
   Controls screen still shows keys that two mods share in red; that is only a warning.

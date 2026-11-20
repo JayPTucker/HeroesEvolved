@@ -87,19 +87,13 @@ public final class ModEntities {
     public static final DeferredHolder<EntityType<?>, EntityType<com.jayptucker.heroesevolved.story.sylar.SylarEntity>> SYLAR =
             ENTITY_TYPES.register("sylar", id -> EntityType.Builder.<com.jayptucker.heroesevolved.story.sylar.SylarEntity>of(
                     com.jayptucker.heroesevolved.story.sylar.SylarEntity::new, MobCategory.MISC)
-                    .sized(.6F, 1.8F).noSave().noSummon().clientTrackingRange(96).updateInterval(3).build(id.toString()));
+                    .sized(.6F, 1.8F).noSave().noSummon().clientTrackingRange(96).updateInterval(2).build(id.toString()));
 
     /** Company agents: guards with tranquilizer rifles, and the Suppressor. Summonable for testing and building scenes. */
     public static final DeferredHolder<EntityType<?>, EntityType<com.jayptucker.heroesevolved.company.CompanyAgentEntity>> COMPANY_AGENT =
             ENTITY_TYPES.register("company_agent", id -> EntityType.Builder.<com.jayptucker.heroesevolved.company.CompanyAgentEntity>of(
                     com.jayptucker.heroesevolved.company.CompanyAgentEntity::new, MobCategory.MISC)
                     .sized(.6F, 1.8F).clientTrackingRange(64).updateInterval(2).build(id.toString()));
-
-    /** Elle Bishop, sent by the Company: the boss of Primatech's test floor (story/elle). */
-    public static final DeferredHolder<EntityType<?>, EntityType<com.jayptucker.heroesevolved.story.elle.ElleEntity>> ELLE =
-            ENTITY_TYPES.register("elle_bishop", id -> EntityType.Builder.<com.jayptucker.heroesevolved.story.elle.ElleEntity>of(
-                    com.jayptucker.heroesevolved.story.elle.ElleEntity::new, MobCategory.MISC)
-                    .sized(.6F, 1.8F).noSave().noSummon().clientTrackingRange(96).updateInterval(2).build(id.toString()));
 
     /** Noah, Claire, Peter and Ted, as scenes move them (story/actor). Never saved. */
     public static final DeferredHolder<EntityType<?>, EntityType<com.jayptucker.heroesevolved.story.actor.StoryActorEntity>> STORY_ACTOR =
@@ -128,7 +122,6 @@ public final class ModEntities {
         event.put(TEMPORAL_ECHO.get(), TemporalEchoEntity.createAttributes().build());
         event.put(SYLAR.get(), com.jayptucker.heroesevolved.story.sylar.SylarEntity.createAttributes().build());
         event.put(COMPANY_AGENT.get(), com.jayptucker.heroesevolved.company.CompanyAgentEntity.createAttributes().build());
-        event.put(ELLE.get(), com.jayptucker.heroesevolved.story.elle.ElleEntity.createAttributes().build());
         event.put(STORY_ACTOR.get(), com.jayptucker.heroesevolved.story.actor.StoryActorEntity.createAttributes().build());
         event.put(SHAPE_DECOY.get(), com.jayptucker.heroesevolved.shapeshift.ShapeDecoy.createAttributes().build());
     }

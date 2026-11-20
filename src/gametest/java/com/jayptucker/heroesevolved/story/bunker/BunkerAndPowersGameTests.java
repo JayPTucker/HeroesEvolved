@@ -111,67 +111,148 @@ public final class BunkerAndPowersGameTests {
         var server = h.getLevel().getServer();
         BunkerData data = BunkerService.ensureBuilt(server);
         var overworld = server.overworld();
-        for (int i = 0; i < BunkerBuilder.PODS; i++) {
-            var state = overworld.getBlockState(data.origin.offset(BunkerBuilder.podOffset(i)));
-            h.assertTrue(state.is(ModBlocks.CRYOCHAMBER.get()), "Missing pod " + i);
+        var layout = data.layout();
+        h.assertTrue(layout.stasis() && layout.hasLab(), "A new bunker is Sublevel 4 as rebuilt, with the Helix Ward");
+        for (int i = 0; i < layout.pods(); i++) {
+            var state = overworld.getBlockState(data.origin.offset(layout.podOffset(i)));
+            h.assertTrue(state.is(ModBlocks.CRYOCHAMBER.get()) && state.getValue(com.jayptucker.heroesevolved.story.bunker.CryoChamberBlock.FACING) == layout.podFacing(i),
+                    "Pod " + i + " stands where BunkerLayout says, facing " + layout.podFacing(i) + ": " + state);
         }
-        h.assertTrue(overworld.getBlockEntity(data.origin.offset(0, 1, 26)) instanceof LecternBlockEntity lectern && lectern.hasBook(),
-                "The orientation log waits on the chamber lectern");
+        h.assertTrue(overworld.getBlockState(data.origin.offset(layout.orientation())).is(Blocks.CHEST)
+                        && BunkerBuilder.log(overworld, data.origin.offset(layout.orientation())).getHoverName().getString().contains("Orientation"),
+                "The orientation log waits in a chest in the hall's aisle");
         h.assertTrue(BunkerData.get(server).built && BunkerService.ensureBuilt(server).origin.equals(data.origin), "The bunker is built only once");
-        BlockPos receiver = BunkerBuilder.receiverPos(data.origin);
+        BlockPos receiver = BunkerBuilder.receiverPos(data);
         h.assertTrue(BunkerBuilder.isReceiver(overworld.getBlockState(receiver)) && !overworld.getBlockState(receiver).is(Blocks.WAXED_WEATHERED_CUT_COPPER),
                 "The radio receiver stands on the records desk");
-        h.assertTrue(BunkerBuilder.survivorPositions(data.origin).size() == 2
-                        && BunkerBuilder.survivorPositions(data.origin).stream().allMatch(pos ->
+        h.assertTrue(BunkerBuilder.survivorPositions(data).size() == 2
+                        && BunkerBuilder.survivorPositions(data).stream().allMatch(pos ->
                                 overworld.getBlockState(pos).isAir() && overworld.getBlockState(pos.above()).isAir()),
                 "Both recovery spots have room to stand");
-        BlockPos grayCot = data.origin.offset(-6, 1, 14);
-        h.assertTrue(overworld.getBlockState(grayCot).is(Blocks.GRAY_BED)
-                        && overworld.getBlockState(grayCot).getValue(BlockStateProperties.BED_PART) == BedPart.FOOT
-                        && overworld.getBlockState(grayCot.south()).is(Blocks.GRAY_BED)
-                        && overworld.getBlockState(grayCot.south()).getValue(BlockStateProperties.BED_PART) == BedPart.HEAD,
-                "The original cot has a connected foot and head");
-        h.assertTrue(overworld.getBlockEntity(data.origin.offset(8, 1, 14)) instanceof ChestBlockEntity lab
+        // The Helix Ward: Weir's journal on his lectern, the blast door jammed, and the vent open through to the hall.
+        h.assertTrue(BunkerBuilder.log(overworld, data.origin.offset(layout.marker("log:weir").getFirst())).getHoverName().getString().contains("Attending"),
+                "Dr. Weir's journal waits in his office");
+        for (int x = 14; x <= 16; x++)
+            h.assertTrue(!overworld.getBlockState(data.origin.offset(x, 1, 24)).isAir() && overworld.getBlockState(data.origin.offset(x, 1, 23)).is(Blocks.IRON_BLOCK),
+                    "The blast door to 4-R is shut and the passage behind it full of stone at x " + x);
+        // The ward's vent: a slab floor under a solid top, a block and a half to crouch through, all the way to the hall.
+        for (int x = 10; x <= 13; x++) {
+            BlockPos duct = data.origin.offset(x, 7, 46);
+            var floor = overworld.getBlockState(duct);
+            h.assertTrue(floor.getBlock() instanceof net.minecraft.world.level.block.SlabBlock
+                            && floor.getValue(net.minecraft.world.level.block.SlabBlock.TYPE) == net.minecraft.world.level.block.state.properties.SlabType.BOTTOM
+                            && overworld.getBlockState(duct.above()).getCollisionShape(overworld, duct.above()).isEmpty()
+                            && !overworld.getBlockState(duct.above(2)).getCollisionShape(overworld, duct.above(2)).isEmpty(),
+                    "The ward's vent is a crawl-height duct at " + x);
+        }
+        h.assertTrue(!overworld.getBlockState(data.origin.offset(8, 6, 46)).isAir() && !overworld.getBlockState(data.origin.offset(14, 6, 46)).isAir(),
+                "...with the catwalk at one end and the mezzanine at the other");
+        h.assertTrue(overworld.getBlockEntity(data.origin.offset(layout.marker("loot:lab").getFirst())) instanceof ChestBlockEntity lab
                         && lab.getItem(6).is(ModItems.BLOOD_SAMPLE.get())
                         && lab.getItem(6).getOrDefault(ModItems.BLOOD_PURITY.get(),
                                 new com.jayptucker.heroesevolved.formula.BloodPurity(false, 1, "")).donated(),
                 "The lab offers a donated Formula sample");
-        h.assertTrue(overworld.getBlockState(data.origin.offset(-12, 0, 9)).getBlock() instanceof net.minecraft.world.level.block.TrapDoorBlock,
-                "The maintenance hatch is still in the security room");
-        h.assertTrue(overworld.getBlockState(data.origin.offset(-12, 1, 9)).isAir(), "The hatch is marked and exposed");
-        boolean deepEnough = data.origin.getY() - 6 > overworld.getMinBuildHeight();   // shallow worlds have no room below
+        h.assertTrue(overworld.getBlockState(data.origin.offset(4, 0, 9)).getBlock() instanceof net.minecraft.world.level.block.TrapDoorBlock,
+                "The maintenance hatch is in the security booth's floor");
+        h.assertTrue(overworld.getBlockState(data.origin.offset(4, 1, 9)).isAir(), "The hatch is marked and exposed");
+        boolean deepEnough = data.origin.getY() - 8 > overworld.getMinBuildHeight();   // shallow worlds have no room below
         if (deepEnough) {
-            h.assertTrue(overworld.getBlockState(data.origin.offset(-12, -1, 9)).is(Blocks.LADDER), "A ladder goes down from the hatch");
-            h.assertTrue(overworld.getBlockState(data.origin.offset(-7, -5, 7)).is(Blocks.CRAFTING_TABLE), "The maintenance bay has a workbench");
+            h.assertTrue(overworld.getBlockState(data.origin.offset(4, -1, 9)).is(Blocks.LADDER), "A ladder goes down from the hatch");
+            h.assertTrue(overworld.getBlockState(data.origin.offset(6, -7, 2)).is(Blocks.CRAFTING_TABLE), "The maintenance bay has a workbench");
+            h.assertTrue(BunkerBuilder.log(overworld, data.origin.offset(layout.marker("log:bennet4r").getFirst())).getHoverName().getString().contains("Not for the Files"),
+                    "Bennet's notes on 4-R wait in maintenance");
         }
-        h.assertTrue(explosions(overworld, data.origin).size() == 1 && explosions(overworld, data.origin).getFirst().survives(),
-                "Isaac's explosion, Exhibit 1, hangs whole above the dead screen: " + explosions(overworld, data.origin));
-        h.assertTrue(exhibitOne(overworld, data).equals("EXHIBIT 1"), "Its label reads EXHIBIT 1: " + exhibitOne(overworld, data));
         // Pod 14: Claire's, open, clawed through from inside, with her note on a lectern beside it (put back if taken).
-        BunkerBuilder.releaseClaire(overworld, data.origin);
-        BlockPos claire = data.origin.offset(BunkerBuilder.podOffset(com.jayptucker.heroesevolved.story.night.NightThreeBunker.CLAIRE));
+        BunkerBuilder.releaseClaire(overworld, data);
+        BlockPos claire = data.origin.offset(layout.podOffset(com.jayptucker.heroesevolved.story.night.NightThreeBunker.CLAIRE));
         for (BlockPos half : new BlockPos[] {claire, claire.above()})
             h.assertTrue(overworld.getBlockState(half).is(ModBlocks.CRYOCHAMBER.get())
                             && overworld.getBlockState(half).getValue(com.jayptucker.heroesevolved.story.bunker.CryoChamberBlock.OPEN)
                             && overworld.getBlockState(half).getValue(com.jayptucker.heroesevolved.story.bunker.CryoChamberBlock.CRACKED),
                     "Pod 14 stands open, its glass clawed through: " + overworld.getBlockState(half));
-        BlockPos note = BunkerBuilder.claireLectern(data.origin);
-        h.assertTrue(overworld.getBlockEntity(note) instanceof LecternBlockEntity desk && desk.hasBook()
-                && desk.getBook().getHoverName().getString().contains("Whoever Wakes Next"), "Claire's note waits on the lectern beside her pod");
-        ((LecternBlockEntity) overworld.getBlockEntity(note)).clearContent();
-        BunkerBuilder.releaseClaire(overworld, data.origin);
-        h.assertTrue(overworld.getBlockEntity(note) instanceof LecternBlockEntity again && again.hasBook(), "...and is put back if someone takes it");
-        h.succeed();
+        BlockPos note = BunkerBuilder.claireLectern(data);
+        h.assertTrue(BunkerBuilder.log(overworld, note).getHoverName().getString().contains("Whoever Wakes Next"),
+                "Claire's note waits in the chest beside her pod");
+        ((ChestBlockEntity) overworld.getBlockEntity(note)).clearContent();
+        BunkerBuilder.releaseClaire(overworld, data);
+        h.assertTrue(!BunkerBuilder.log(overworld, note).isEmpty(), "...and is put back if someone takes it");
+        // Walking up to Pod 14 turns up Claire's note, once; no right-click needed.
+        ServerPlayer walker = player(h, null, 1);
+        walker.getPersistentData().remove(CryoChamberService.CLAIRE_NOTE);
+        Vec3 front = Vec3.atBottomCenterOf(claire).add(-1.6, 0, 0);
+        walker.setPos(front);
+        h.assertTrue(CryoChamberService.noticeClaire(walker, data), "Walking up to Pod 14 finds what Claire left");
+        h.assertTrue(!CryoChamberService.noticeClaire(walker, data), "...once");
+        // The pods nobody has a claim on hold Odessa's people, dead a long time; nobody's pod holds anyone else.
+        java.util.Set<Long> podChunks = new java.util.HashSet<>();
+        for (int i = 0; i < com.jayptucker.heroesevolved.story.bunker.BunkerLayout.HALL_PODS; i++)
+            podChunks.add(net.minecraft.world.level.ChunkPos.asLong(data.origin.offset(layout.podOffset(i))));
+        java.util.List<Long> forcedPods = new java.util.ArrayList<>();
+        for (long c : podChunks)
+            if (overworld.setChunkForced(net.minecraft.world.level.ChunkPos.getX(c), net.minecraft.world.level.ChunkPos.getZ(c), true)) forcedPods.add(c);
+        // Exhibit 1 hangs on the far wall, seventy blocks from the vault: its chunk's entities must be loaded to see it.
+        BlockPos exhibit = data.origin.offset(layout.marker(BunkerBuilder.EXHIBIT_ONE).getFirst());
+        boolean forced = overworld.setChunkForced(exhibit.getX() >> 4, exhibit.getZ() >> 4, true);
+        h.succeedWhen(() -> {
+            h.assertTrue(overworld.isPositionEntityTicking(exhibit), "Waiting for the far wall's chunk");
+            for (long c : podChunks)
+                h.assertTrue(overworld.areEntitiesLoaded(c), "Waiting for the hall's pods to load");
+            com.jayptucker.heroesevolved.story.bunker.PodSleepers.present(overworld, data);
+            for (int i = 0; i < com.jayptucker.heroesevolved.story.bunker.BunkerLayout.HALL_PODS; i++) {
+                BlockPos base = data.origin.offset(layout.podOffset(i));
+                boolean someone = com.jayptucker.heroesevolved.story.bunker.PodSleepers.occupied(overworld, base);
+                if (!com.jayptucker.heroesevolved.story.bunker.PodSleepers.hallPod(i) || data.pods.containsValue(i)) {
+                    h.assertTrue(!someone, "Pod " + (i + 1) + " is someone's, or Claire's: nobody else in it");
+                    continue;
+                }
+                h.assertTrue(someone, "Pod " + (i + 1) + ", nobody's, holds a body");
+                var plate = overworld.getBlockEntity(data.origin.offset(layout.podSign(i)));
+                h.assertTrue(plate instanceof net.minecraft.world.level.block.entity.SignBlockEntity sign
+                                && sign.getFrontText().getMessage(2, false).getString().equals("DECEASED")
+                                && sign.getFrontText().getMessage(3, false).getString().equals("CAUSE UNKNOWN"),
+                        "...its nameplate: deceased, cause unknown");
+            }
+            com.jayptucker.heroesevolved.story.bunker.PodSleepers.present(overworld, data);
+            int bodies = overworld.getEntitiesOfClass(net.minecraft.world.entity.npc.Villager.class,
+                    new net.minecraft.world.phys.AABB(data.origin).inflate(30, 6, 80),
+                    v -> v.getTags().contains(com.jayptucker.heroesevolved.story.bunker.PodSleepers.TAG)).size();
+            long free = java.util.stream.IntStream.range(0, com.jayptucker.heroesevolved.story.bunker.BunkerLayout.HALL_PODS)
+                    .filter(i -> com.jayptucker.heroesevolved.story.bunker.PodSleepers.hallPod(i) && !data.pods.containsValue(i)).count();
+            h.assertTrue(bodies == free, "One body to a pod, never two: " + bodies + " for " + free);
+            for (long c : forcedPods) overworld.setChunkForced(net.minecraft.world.level.ChunkPos.getX(c), net.minecraft.world.level.ChunkPos.getZ(c), false);
+            forcedPods.clear();
+            h.assertTrue(explosions(overworld, data.origin).size() == 1 && explosions(overworld, data.origin).getFirst().survives(),
+                    "Isaac's explosion, Exhibit 1, hangs whole above the balcony: " + explosions(overworld, data.origin));
+            h.assertTrue(exhibitOne(overworld, data).equals("EXHIBIT 1"), "Its label reads EXHIBIT 1: " + exhibitOne(overworld, data));
+            if (forced) overworld.setChunkForced(exhibit.getX() >> 4, exhibit.getZ() >> 4, false);
+        });
     }
 
     private static java.util.List<net.minecraft.world.entity.decoration.Painting> explosions(net.minecraft.server.level.ServerLevel level, BlockPos origin) {
-        return level.getEntitiesOfClass(net.minecraft.world.entity.decoration.Painting.class, new net.minecraft.world.phys.AABB(origin).inflate(20, 14, 45),
+        return level.getEntitiesOfClass(net.minecraft.world.entity.decoration.Painting.class,
+                new net.minecraft.world.phys.AABB(origin.offset(-40, -10, -12).getCenter(), origin.offset(45, 16, 75).getCenter()),
                 painting -> painting.getVariant().is(ResourceLocation.fromNamespaceAndPath("heroesevolved", "explosion")));
     }
 
     private static BlockPos chamberCell(BunkerData data, String marker) {
-        return data.origin.offset(BunkerBuilder.CHAMBER.at())
-                .offset(com.jayptucker.heroesevolved.structure.Blueprint.load(BunkerBuilder.CHAMBER.blueprint()).markerOffsets(marker).getFirst());
+        return data.origin.offset(data.layout().marker(marker).getFirst());
+    }
+
+    /**
+     * A bunker as worlds built before the Sublevel 4 rebuild have it, placed apart from the real one with its own data:
+     * the original rooms on emergency power, as they were built.
+     */
+    private static BunkerData legacyBunker(net.minecraft.server.level.ServerLevel level, BlockPos origin) {
+        BunkerData data = new BunkerData();
+        data.built = true;
+        data.design = 1;
+        data.origin = origin;
+        data.layout = BunkerData.LAYOUT;
+        data.powered = false;
+        for (var room : com.jayptucker.heroesevolved.story.bunker.BunkerLayout.LEGACY.all())
+            com.jayptucker.heroesevolved.structure.Blueprint.load(room.blueprint()).place(level, origin.offset(room.at()),
+                    net.minecraft.world.level.block.Rotation.NONE, Integer.MAX_VALUE - 1, BunkerPower::unpowered);
+        return data;
     }
 
     /** The first line on Exhibit 1's label, or what stands there instead. */
@@ -188,8 +269,27 @@ public final class BunkerAndPowersGameTests {
     @GameTest(template = "rewind_empty", batch = "bunker.upgrade", timeoutTicks = 400)
     public static void anOlderBunkerHangsExhibitOneInTheScreensPlace(GameTestHelper h) {
         var server = h.getLevel().getServer();
-        BunkerData data = BunkerService.ensureBuilt(server);
         var overworld = server.overworld();
+        // Off to the side of the real bunker, in chunks forced and loaded first so its paintings can be hung and found.
+        BlockPos origin = BunkerService.ensureBuilt(server).origin.offset(160, 0, 0);
+        var min = new ChunkPos(origin.offset(-14, 0, 0));
+        var max = new ChunkPos(origin.offset(15, 0, 40));
+        var forced = new java.util.ArrayList<ChunkPos>();
+        for (int x = min.x; x <= max.x; x++)
+            for (int z = min.z; z <= max.z; z++)
+                if (overworld.setChunkForced(x, z, true)) forced.add(new ChunkPos(x, z));
+        h.startSequence()
+                .thenWaitUntil(() -> {
+                    for (int x = min.x; x <= max.x; x++)
+                        for (int z = min.z; z <= max.z; z++)
+                            h.assertTrue(overworld.isPositionEntityTicking(new BlockPos(x << 4, origin.getY(), z << 4)), "Waiting for the older bunker's chunks");
+                })
+                .thenExecute(() -> upgradeAnOlderBunker(h, overworld, legacyBunker(overworld, origin), forced));
+    }
+
+    private static void upgradeAnOlderBunker(GameTestHelper h, net.minecraft.server.level.ServerLevel overworld, BunkerData data,
+                                             java.util.List<ChunkPos> forced) {
+        h.assertTrue(!data.layout().stasis(), "An older bunker keeps the original rooms");
         var chamber = com.jayptucker.heroesevolved.structure.Blueprint.load(BunkerBuilder.CHAMBER.blueprint());
         BlockPos at = data.origin.offset(BunkerBuilder.CHAMBER.at());
         java.util.function.Function<BlockPos, BlockPos> cell = grid ->
@@ -236,15 +336,9 @@ public final class BunkerAndPowersGameTests {
         overworld.setBlock(oldBeacon, ModBlocks.ALARM_BEACON.get().defaultBlockState(), 3);
         BlockPos oldLamp = cell.apply(BunkerBuilder.EXHIBIT_LIGHTS.getFirst()).above();
         overworld.setBlock(oldLamp, Blocks.REDSTONE_LAMP.defaultBlockState(), 3);
-        BlockPos receiver = BunkerBuilder.receiverPos(data.origin);
+        BlockPos receiver = BunkerBuilder.receiverPos(data);
         overworld.setBlock(receiver, Blocks.BLACK_STAINED_GLASS_PANE.defaultBlockState(), 3);
         data.layout = 2;
-        var min = new ChunkPos(data.origin.offset(-14, 0, 0));
-        var max = new ChunkPos(data.origin.offset(15, 0, 40));
-        var forced = new java.util.ArrayList<ChunkPos>();
-        for (int x = min.x; x <= max.x; x++)
-            for (int z = min.z; z <= max.z; z++)
-                if (overworld.setChunkForced(x, z, true)) forced.add(new ChunkPos(x, z));
         h.succeedWhen(() -> {
             h.assertTrue(BunkerBuilder.upgrade(overworld, data), "The upgrade waits for the rooms to load");
             h.assertTrue(data.layout == BunkerData.LAYOUT, "The bunker is up to date: layout " + data.layout);
@@ -273,9 +367,9 @@ public final class BunkerAndPowersGameTests {
     /** Every light the bunker's rooms have, as world positions with the state it has when the power is on. */
     private static java.util.Map<BlockPos, net.minecraft.world.level.block.state.BlockState> bunkerLights(net.minecraft.server.level.ServerLevel level, BunkerData data) {
         java.util.Map<BlockPos, net.minecraft.world.level.block.state.BlockState> lights = new java.util.LinkedHashMap<>();
-        var rooms = new java.util.ArrayList<>(BunkerBuilder.ROOMS);
-        // On a shallow world there is no room for the office.
-        if (data.origin.getY() + BunkerBuilder.OFFICE.at().getY() > level.getMinBuildHeight()) rooms.add(BunkerBuilder.OFFICE);
+        var rooms = new java.util.ArrayList<>(data.layout().rooms());
+        // On a shallow world there is no room for maintenance.
+        for (var deep : data.layout().deep()) if (data.origin.getY() + deep.at().getY() > level.getMinBuildHeight()) rooms.add(deep);
         for (var room : rooms)
             com.jayptucker.heroesevolved.structure.Blueprint.load(room.blueprint()).statesMatching(state -> BunkerPower.off(state) != null)
                     .forEach((cell, on) -> lights.put(data.origin.offset(room.at()).offset(cell), on));
@@ -294,10 +388,10 @@ public final class BunkerAndPowersGameTests {
         var lights = bunkerLights(overworld, data);
         h.assertTrue(lights.size() > 20, "The bunker's lights are found from its blueprints: " + lights.size());
         var beacons = new java.util.ArrayList<BlockPos>();
-        for (var room : BunkerBuilder.ROOMS)
+        for (var room : data.layout().rooms())
             com.jayptucker.heroesevolved.structure.Blueprint.load(room.blueprint()).markerOffsets(BunkerBuilder.BEACON)
                     .forEach(cell -> beacons.add(data.origin.offset(room.at()).offset(cell)));
-        h.assertTrue(beacons.size() == 3, "Three alarm beacons: " + beacons.size());
+        h.assertTrue(beacons.size() >= 10, "Alarm beacons in every room: " + beacons.size());
         for (BlockPos beacon : beacons) {
             var state = overworld.getBlockState(beacon);
             h.assertTrue(state.is(ModBlocks.ALARM_BEACON.get()) && state.getValue(com.jayptucker.heroesevolved.story.bunker.AlarmBeaconBlock.LIT)
@@ -316,11 +410,26 @@ public final class BunkerAndPowersGameTests {
             for (BlockPos beacon : beacons)
                 h.assertTrue(overworld.getBlockState(beacon).getValue(com.jayptucker.heroesevolved.story.bunker.AlarmBeaconBlock.LIT), "The beacons still turn");
         };
-        // A bunker some earlier test already lit goes dark the way it does for each new sleeper.
-        if (data.powered || BunkerPower.switching()) BunkerPower.cut(overworld, data);
-        dark.run();
-        h.assertTrue(BunkerPower.start(overworld, data) && !BunkerPower.start(overworld, data), "The breaker closes once");
+        // Every light's chunk loaded first: the power only reaches what is loaded (as in play, where the bunker is round the
+        // sleeper), and reading an unloaded light loads it from disk as an earlier test left it. The bunker test before this
+        // one lets go of the far wall's chunk, which once failed this test with a lamp still lit there.
+        java.util.Set<Long> chunks = new java.util.HashSet<>();
+        lights.keySet().forEach(pos -> chunks.add(net.minecraft.world.level.ChunkPos.asLong(pos)));
+        java.util.List<Long> held = new java.util.ArrayList<>();
+        for (long c : chunks)
+            if (overworld.setChunkForced(net.minecraft.world.level.ChunkPos.getX(c), net.minecraft.world.level.ChunkPos.getZ(c), true)) held.add(c);
+        Runnable release = () -> {
+            for (long c : held) overworld.setChunkForced(net.minecraft.world.level.ChunkPos.getX(c), net.minecraft.world.level.ChunkPos.getZ(c), false);
+            held.clear();
+        };
         h.startSequence()
+                .thenWaitUntil(() -> lights.keySet().forEach(pos -> h.assertTrue(overworld.isLoaded(pos), "Waiting for the bunker's lights to load")))
+                .thenExecute(() -> {
+                    // A bunker some earlier test already lit goes dark the way it does for each new sleeper.
+                    if (data.powered || BunkerPower.switching()) BunkerPower.cut(overworld, data);
+                    try { dark.run(); } catch (RuntimeException e) { release.run(); throw e; }
+                    h.assertTrue(BunkerPower.start(overworld, data) && !BunkerPower.start(overworld, data), "The breaker closes once");
+                })
                 .thenWaitUntil(lit)
                 .thenExecute(() -> {
                     // The next sleeper wakes: the power fails again, every light at once, and comes back the same way.
@@ -330,7 +439,66 @@ public final class BunkerAndPowersGameTests {
                     h.assertTrue(BunkerPower.start(overworld, data), "The breaker closes again");
                 })
                 .thenWaitUntil(lit)
+                .thenExecute(release)
                 .thenSucceed();
+    }
+
+    /**
+     * The Helix Ward takes one of a group sealed together, never someone who lived the Last Day alone, only once, and
+     * never in a bunker built before the rebuild; its sleeper carries a random power, dormant.
+     */
+    /** The waking's music plays while a woken sleeper is in the bunker, and leaving it ends the music with "What happened...?". */
+    @GameTest(template = "rewind_empty", batch = "bunker.music", timeoutTicks = 400)
+    public static void theWakingMusicPlaysUntilTheyLeaveTheBunker(GameTestHelper h) {
+        var server = h.getLevel().getServer();
+        BunkerData data = BunkerService.ensureBuilt(server);
+        var overworld = server.overworld();
+        FakePlayer sleeper = new FakePlayer(overworld, new GameProfile(java.util.UUID.randomUUID(), "music-sleeper"));
+        sleeper.getPersistentData().putBoolean(BunkerService.MUSIC, true);
+        // In the stasis hall, and up in the ruined lobby: still the bunker.
+        for (BlockPos inside : new BlockPos[] {data.origin.offset(0, 1, 50), data.origin.offset(6, 30, -4)}) {
+            sleeper.setPos(Vec3.atBottomCenterOf(inside));
+            BunkerService.music(sleeper, data);
+            h.assertTrue(BunkerService.musicPlaying(sleeper), "The music plays on inside the bunker at " + inside);
+        }
+        // Out past the lobby into the world.
+        sleeper.setPos(Vec3.atBottomCenterOf(data.origin.offset(60, 34, -40)));
+        BunkerService.music(sleeper, data);
+        h.assertTrue(!BunkerService.musicPlaying(sleeper), "Leaving the bunker ends the music");
+        var advancement = server.getAdvancements().get(ResourceLocation.fromNamespaceAndPath("heroesevolved", "what_happened"));
+        // (A fake player ignores awards, so only check the advancement is there to earn, after Wake Up.)
+        h.assertTrue(advancement != null && advancement.value().parent().map(id -> id.getPath().equals("wake_up")).orElse(false),
+                "What happened...? is loaded, after Wake Up");
+        h.succeed();
+    }
+
+    @GameTest(template = "rewind_empty", batch = "bunker.ward")
+    public static void theWardTakesOneOfAGroupOnceAndDosesThem(GameTestHelper h) {
+        var random = net.minecraft.util.RandomSource.create(7);
+        BunkerData fresh = new BunkerData();
+        java.util.UUID a = java.util.UUID.randomUUID(), b = java.util.UUID.randomUUID();
+        h.assertTrue(com.jayptucker.heroesevolved.story.bunker.HelixWard.draw(fresh, java.util.List.of(a), random) == null,
+                "Nobody who lives the day alone is drawn");
+        java.util.UUID drawn = com.jayptucker.heroesevolved.story.bunker.HelixWard.draw(fresh, java.util.List.of(a, b), random);
+        h.assertTrue(drawn != null && (drawn.equals(a) || drawn.equals(b)), "One of a group is drawn");
+        fresh.claimLab(drawn);
+        h.assertTrue(fresh.pods.get(drawn) == com.jayptucker.heroesevolved.story.bunker.BunkerLayout.LAB_POD
+                && com.jayptucker.heroesevolved.story.bunker.HelixWard.draw(fresh, java.util.List.of(a, b), random) == null, "...and only ever one");
+        BunkerData old = new BunkerData();
+        old.built = true;
+        old.design = 1;
+        h.assertTrue(com.jayptucker.heroesevolved.story.bunker.HelixWard.draw(old, java.util.List.of(a, b), random) == null,
+                "A bunker built before the rebuild has no ward to fill");
+        FakePlayer sleeper = new FakePlayer(h.getLevel(), new GameProfile(java.util.UUID.randomUUID(), "ward-sleeper"));
+        try {
+            h.assertTrue(com.jayptucker.heroesevolved.story.bunker.HelixWard.dose(sleeper), "The dose gives a power");
+            var power = com.jayptucker.heroesevolved.ability.service.PlayerAbilityService.getData(sleeper).assignedPower();
+            h.assertTrue(power.isPresent() && !power.get().getValue().isUnlocked(), "...that sleeps until danger wakes it: " + power);
+            h.assertTrue(!com.jayptucker.heroesevolved.story.bunker.HelixWard.dose(sleeper), "Nobody is dosed twice");
+        } finally {
+            com.jayptucker.heroesevolved.PowerOwnershipTestSupport.release(sleeper);
+        }
+        h.succeed();
     }
 
     /** A sleeper's name goes on the nameplate over their pod: revival in progress, then revived. */
@@ -343,9 +511,9 @@ public final class BunkerAndPowersGameTests {
         java.util.function.Supplier<String> words = () -> overworld.getBlockEntity(plate) instanceof net.minecraft.world.level.block.entity.SignBlockEntity sign
                 ? java.util.stream.IntStream.range(0, 4).mapToObj(i -> sign.getFrontText().getMessage(i, false).getString())
                         .collect(java.util.stream.Collectors.joining("|")) : overworld.getBlockState(plate).toString();
-        BunkerBuilder.labelPod(overworld, data.origin, 4, "Tester", false);
+        BunkerBuilder.labelPod(overworld, data, 4, "Tester", false);
         h.assertTrue(words.get().equals("SUBJECT 05|Tester|REVIVAL|IN PROGRESS"), "While Tester wakes: " + words.get());
-        BunkerBuilder.labelPod(overworld, data.origin, 4, "Tester", true);
+        BunkerBuilder.labelPod(overworld, data, 4, "Tester", true);
         h.assertTrue(words.get().equals("SUBJECT 05|Tester|REVIVED|"), "Once Tester is out: " + words.get());
         h.succeed();
     }
@@ -353,20 +521,36 @@ public final class BunkerAndPowersGameTests {
     /** Every shipped blueprint parses against the real block registry, and the bunker's markers are all there. */
     @GameTest(template = "rewind_empty", batch = "blueprints")
     public static void blueprintsLoadWithTheirMarkers(GameTestHelper h) {
-        for (String name : new String[] {"bunker_chamber", "bunker_records", "bunker_corridor", "bunker_lab", "bunker_cell",
-                "bunker_generator", "bunker_security", "bunker_office"}) {
-            var blueprint = com.jayptucker.heroesevolved.structure.Blueprint.load(name);
-            h.assertTrue(blueprint.width() > 0 && blueprint.height() > 0 && blueprint.depth() > 0, "Empty blueprint " + name);
-        }
+        var legacy = com.jayptucker.heroesevolved.story.bunker.BunkerLayout.LEGACY;
+        var stasis = com.jayptucker.heroesevolved.story.bunker.BunkerLayout.STASIS;
+        for (var layout : java.util.List.of(legacy, stasis))
+            for (var room : layout.all()) {
+                var blueprint = com.jayptucker.heroesevolved.structure.Blueprint.load(room.blueprint());
+                h.assertTrue(blueprint.width() > 0 && blueprint.height() > 0 && blueprint.depth() > 0, "Empty blueprint " + room.blueprint());
+            }
+        // The original pods stay where older worlds' sleepers were assigned them.
         var chamber = com.jayptucker.heroesevolved.structure.Blueprint.load("bunker_chamber");
-        var pods = chamber.markerOffsets("pod");
-        h.assertTrue(pods.size() == BunkerBuilder.PODS, "The chamber must hold " + BunkerBuilder.PODS + " pods, found " + pods.size());
-        for (int i = 0; i < BunkerBuilder.PODS; i++) {
-            BlockPos expected = BunkerBuilder.podOffset(i).offset(0, 0, -18);
-            h.assertTrue(pods.contains(expected), "Pod " + i + " moved; saved pod assignments depend on " + expected);
+        for (int i = 0; i < BunkerBuilder.PODS; i++)
+            h.assertTrue(chamber.markerOffsets("pod").contains(legacy.podOffset(i).offset(0, 0, -18)), "Legacy pod " + i + " moved");
+        // Sublevel 4: every pod where BunkerLayout says (saved assignments and the Last Day's pod numbers depend on it).
+        var pods = stasis.marker("pod");
+        h.assertTrue(pods.size() == stasis.pods(), "Fifteen pods: fourteen in the hall and the ward's, found " + pods.size());
+        for (int i = 0; i < stasis.pods(); i++)
+            h.assertTrue(pods.contains(stasis.podOffset(i)), "Pod " + i + " is not at " + stasis.podOffset(i) + "; pods are " + pods);
+        for (int i = 0; i < stasis.pods(); i++) h.assertTrue(stasis.podSign(i) != null, "Pod " + i + " has its nameplate");
+        // Every room as it was has the same marked cells as the room now (the past is built from the _past twins).
+        for (var room : stasis.all()) {
+            var now = com.jayptucker.heroesevolved.structure.Blueprint.load(room.blueprint());
+            if (!com.jayptucker.heroesevolved.structure.Blueprint.exists(room.blueprint() + "_past")) {
+                h.assertTrue(room.blueprint().equals("stasis_cave"), "Only the cave has no past: " + room.blueprint());
+                continue;
+            }
+            var then = com.jayptucker.heroesevolved.structure.Blueprint.load(room.blueprint() + "_past");
+            h.assertTrue(then.width() == now.width() && then.height() == now.height() && then.depth() == now.depth(),
+                    room.blueprint() + " and its past are the same size");
+            for (String marker : java.util.List.of("pod", "beacon", "log:orientation", "log:lockdown", "log:helixite", "log:weir", "signal:receiver"))
+                h.assertTrue(now.markerOffsets(marker).equals(then.markerOffsets(marker)), room.blueprint() + " keeps its " + marker + " in the past");
         }
-        h.assertTrue(chamber.markerOffsets("log:orientation").equals(java.util.List.of(new BlockPos(0, 1, 8))),
-                "The orientation lectern must stay in the middle of the chamber");
         h.succeed();
     }
 

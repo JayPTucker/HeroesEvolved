@@ -28,6 +28,7 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 | `tools/perception-projectile-gametest.init.gradle` | Perception and projectiles, with real TaCZ entity ticks |
 | `tools/projectile-gametest.init.gradle` | long range, obstruction and projectile lifetimes |
 | `tools/radiation-gametest.init.gradle` | radiation, the first awakening and crater recovery |
+| `tools/sylar-gametest.init.gradle` | Sylar's Collection and how you meet him (`story/sylar`: the fight, Level 5, the list), with the root test helpers |
 | `tools/structure-gametest.init.gradle` | `structure` by default, or `-PtestPackages=a,b` |
 | `tools/telepathy-gametest.init.gradle` | Telepathy |
 | `tools/temporal-gametest.init.gradle` | voice and shared-time rules, `TimeFlowGameTests` |
@@ -56,8 +57,8 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
   the stasis hall's, forced when the day starts, were still waking under the suite's load: the test now waits for all ten
   of the cast and for every hall chunk to be entity-ticking before the blast, and counts the deepslate tiles the blast
   drops as rubble too.
-- **Sylar's and the speedster tornado's tests race chunk loading.** They have failed with no code change, sometimes
-  twice running. Re-run them alone before blaming a change.
+- **The speedster tornado's tests race chunk loading** (as the retired Sylar hunt tests did). They have failed with no
+  code change, sometimes twice running. Re-run them alone before blaming a change.
 <!-- from Telepathy -->
 - **Local full-suite runs start from the default config.** A forward speed of 15 left in
   `build/rewind-gametest-world/config` since October made both Skyburst tests fail locally and nowhere else (a tap
@@ -67,15 +68,15 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 - **Tests that wait on a chunk wait for it.** A freshly loaded chunk can take seconds to start entity-ticking while the
   suite runs, and a test FakePlayer moving out of its arena leaves no player to keep chunks ticking. Sylar's boss bar and
   the meltdown crowd now wait for `isPositionEntityTicking` before their clock starts; the flight rescue measures the
-  flyer while the ally is carried; the anchored tornado's far cow stands inside the arena's barrier walls; Elle's conduit
-  test has 400 ticks for her pocket floor to come alive.
+  flyer while the ally is carried; the anchored tornado's far cow stands inside the arena's barrier walls; Sylar's tests wait
+  for every corner of his hall to come alive.
 - **Pocket dimensions hide players at first.** For a few seconds after an arena dimension is built, a player in a chunk
   that isn't entity-ticking yet is invisible to `getEntitiesOfClass`. Wait for every corner of the room
-  (`ElleGameTests.ready`), not just the boss's chunk.
+  (`SylarCollectionGameTests.ready`), not just the boss's chunk.
 
 ## Clean up, or break every later test
 
-<!-- from the Watchmaker -->
+<!-- from the Watchmaker (retired) -->
 - **Test gotchas.** `FakePlayer` ignores `awardStat` (set stats with `getStats().setValue`). Wrap every sequence step in
   a guard that removes the test's players on failure: a test that dies mid-sequence leaves its players owning their
   powers, and every later test that grants those powers fails (34 failures once).
@@ -169,7 +170,7 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 | Two players and a carry | `RescueGameTests.carriable` |
 | A hurtable test player | `SpaceTimeSkillsGameTests`, `QuakeReworkGameTests` |
 | Voice-chat routes without audio | `TelepathyReworkGameTests` (`nearVoices` shrinks the range to five blocks) |
-| A boss arena in a pocket dimension | `ElleGameTests.ready` |
+| A boss arena in a pocket dimension | `SylarCollectionGameTests` (`ready`, `open`, `guard`) |
 | Every scripted actor standing on a floor | `PrologueGameTests.standing`, `PrologueGameTests.walkable` |
 | Every blueprint placing cleanly | `BlueprintPlacementGameTests`, `BunkerAndPowersGameTests.blueprintsLoadWithTheirMarkers` |
 | Every balance entry being a real action | `PowerBalanceGameTests`, `BalanceDumpGameTests` |

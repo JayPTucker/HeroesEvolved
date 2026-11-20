@@ -39,7 +39,11 @@ public record SetPiecePayload(int piece, Vec3 origin, Vec3 target, float scale, 
 
     /** Shows {@code piece} to everyone close enough to see it. */
     public static void send(ServerLevel level, Piece piece, Vec3 origin, Vec3 target, float scale, Entity bound, int delay) {
-        int seed = level.random.nextInt();
+        sendSeeded(level, piece, origin, target, scale, bound, delay, level.random.nextInt());
+    }
+
+    /** Shows {@code piece} with a seed chosen by the caller (a piece that carries a number in it, such as a colour). */
+    public static void sendSeeded(ServerLevel level, Piece piece, Vec3 origin, Vec3 target, float scale, Entity bound, int delay, int seed) {
         SetPiecePayload payload = new SetPiecePayload(piece.ordinal(), origin, target, scale, bound == null ? -1 : bound.getId(), seed, Math.max(0, delay));
         double range = 128 + scale * 4;
         for (ServerPlayer viewer : level.players())

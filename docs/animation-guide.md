@@ -116,7 +116,7 @@ geyser) follow it, each with its own character. Not every power should: a telepa
    | Superspeed | `FFC640` gold, `FFF4C8` hot core, `FF8C1E` amber, pale `DBE6F5` wind, warm dust, soot |
    | Space-Time | `FFD27A` gold, `E8A43C` amber (slowed), `9A7CFF` violet, `5B3FD1` deep, `F4EBFF` pale core, `C9C2FF` ice (stopped) |
    | Invisibility (force fields) | `9CC8FF` field, `E8F4FF` edge, `3F6FD8` deep halo, `B6A2FF` sheen, `1E2A44` stress cracks (all in `ForceArt`) |
-   | Elle Bishop (boss) | `2E6BD8` halo, `7FD4FF` arc, `F2FBFF` core (her current); `E0894A` copper, `FFD7A8` hot copper (the room's banks and conduits); `1A1E24` scorch (all in `ElleArt`) |
+   | Sylar (boss) | `C9A24A` brass, `6E5220` deep brass, `FFE7A8` gilt (every schematic); `4B2F8F`, `B9A6FF`, `EDE6FF` (his telekinesis); each stolen power in its own colour (all in `SylarArt`) |
    | Flight | `535A5A` shadow, `D2D4CE` vapor, `DCDDD5` condensation, `F6F4EC` core (all in `FlightArt`; Tempest's storm uses `DBDBD2` cloud and `EEEDE3` wind) |
    | Vibe | `07162F` void, `183B80` depth, `3096FF` blue, `90E6FF` ice, `EDFAFF` white core, `837CE8` ghost (combat echoes) (all in `VibeArt`) |
    | Pyrokinesis | `A32813` edge, `F76A13` body, `FFBE42` gold (ember fire); `38409E`, `447EF4`, `74CCF3` (blue fire); `493833` soot (all in `PyroArt`) |

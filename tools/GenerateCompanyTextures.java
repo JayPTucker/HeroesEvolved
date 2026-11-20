@@ -8,7 +8,7 @@ import java.util.Random;
  * Draws the Company's original textures: a guard's skin (black suit, white shirt, dark tie, sunglasses,
  * earpiece), the Suppressor's (grey suit, open collar, shaved head), and the 18x18 Tranquilized effect icon
  * (a pale dart). Pixel placement follows the standard 64x64 player UV layout, as
- * tools/generate-sylar-skin.py does. No downloaded assets.
+ * tools/GenerateStoryActorTextures.java does. No downloaded assets.
  *
  * <pre>java tools/GenerateCompanyTextures.java</pre>
  */

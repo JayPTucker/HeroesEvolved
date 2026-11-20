@@ -744,7 +744,6 @@ public final class AmpService {
         float amount = event.getAmount();
         Entity attacker = event.getSource().getEntity();
         if (AmpSkills.has(p, AmpSkills.OPPOSITE_CURRENT) && a.charge >= 20 && (event.getSource().is(DamageTypeTags.IS_LIGHTNING)
-                || attacker instanceof com.jayptucker.heroesevolved.story.elle.ElleEntity
                 || attacker instanceof ServerPlayer shooter && electro(shooter)
                 || attacker instanceof LivingEntity mob && ModAbilities.ELECTROKINESIS_ID.equals(GiftedMobs.powerOf(mob)))) {
             float halved = amount * .5F;
@@ -775,8 +774,7 @@ public final class AmpService {
     /** Whether a body carries a power: a player with one, a gifted mob, or a story fighter. */
     public static boolean powered(LivingEntity e) {
         if (e instanceof ServerPlayer player) return PlayerAbilityService.getData(player).assignedPower().filter(x -> x.getValue().isUnlocked()).isPresent();
-        return GiftedMobs.isGifted(e) || e instanceof com.jayptucker.heroesevolved.story.sylar.SylarEntity
-                || e instanceof com.jayptucker.heroesevolved.story.elle.ElleEntity;
+        return GiftedMobs.isGifted(e) || e instanceof com.jayptucker.heroesevolved.story.sylar.SylarEntity;
     }
 
     @SubscribeEvent

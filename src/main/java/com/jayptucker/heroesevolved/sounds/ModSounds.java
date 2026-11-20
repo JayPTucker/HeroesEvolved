@@ -108,6 +108,9 @@ public final class ModSounds {
             SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "nuclear_charge")));
     public static final Supplier<SoundEvent> SYLAR_WATCH = SOUND_EVENTS.register("sylar_watch", () ->
             SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "sylar_watch")));
+    /** The record of Sylar's theme (tools/generate-sylar-music.py), a rare re-fight drop played by a jukebox. */
+    public static final Supplier<SoundEvent> MUSIC_DISC_THE_COLLECTION = SOUND_EVENTS.register("music_disc.the_collection", () ->
+            SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "music_disc.the_collection")));
 
     public static final Supplier<SoundEvent> VIBE_PULSE = vibeSound("vibe_pulse");
     public static final Supplier<SoundEvent> VIBE_BREACH = vibeSound("vibe_breach");
@@ -131,6 +134,21 @@ public final class ModSounds {
     private static Supplier<SoundEvent> vibeSound(String id) {
         return SOUND_EVENTS.register(id, () -> SoundEvent.createVariableRangeEvent(
                 ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, id)));
+    }
+
+    /** Story music (tools/generate-story-cues.py): sealed in a pod, 103 years later, the Helix Ward, and the waking. */
+    public static final Supplier<SoundEvent> STORY_SEALED = story("story_sealed"), STORY_YEARS = story("story_years"),
+            STORY_WARD = story("story_ward"), STORY_WAKE_MUSIC = story("story_wake_music");
+
+    /**
+     * The Last Day (tools/generate-lastday-music.py): the evening's music and the fight's layer over it (two stems of one
+     * loop, played together), the ringing in your ears after the wave, and the crash of every window bursting at once.
+     */
+    public static final Supplier<SoundEvent> LASTDAY_EVENING = story("lastday_evening"), LASTDAY_RUN = story("lastday_run"),
+            LASTDAY_RINGING = story("lastday_ringing"), LASTDAY_SHATTER = story("lastday_shatter");
+
+    private static Supplier<SoundEvent> story(String name) {
+        return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, name)));
     }
 
     public static void register(IEventBus modEventBus) {

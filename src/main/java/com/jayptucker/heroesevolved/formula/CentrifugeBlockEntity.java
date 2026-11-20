@@ -62,7 +62,6 @@ public final class CentrifugeBlockEntity extends BaseContainerBlockEntity implem
                 centrifuge.progress = 0;
                 centrifuge.charge = 0;
                 level.playSound(null, pos, SoundEvents.BREWING_STAND_BREW, SoundSource.BLOCKS, 1, 0.7F);
-                LabBlock.attractAttention(level, pos);
             } else if (centrifuge.progress % 40 == 1) {
                 level.playSound(null, pos, SoundEvents.BEACON_AMBIENT, SoundSource.BLOCKS, 0.4F, 1.6F);
             }

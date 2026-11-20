@@ -7,9 +7,9 @@ import net.minecraft.world.phys.Vec3;
  * Peter Petrelli and Sylar fighting in the sky near Kirby Plaza while Ted Sprague burns below: passes that meet in a
  * clash and fly apart, then Peter catches Sylar and hurls him into a tower, and dives to Ted.
  * <p>
- * One path for every viewer. The Time vision moves the real actors along it from the vantage (TimeIntroService); the
- * Last Day draws it on each client from far down the avenue ({@code client/effects/intro/SkyFightArt}), timed from the
- * light appearing, so it works however far the server sends entities. Ticks are counted from the scene's own start.
+ * The Time vision moves the real actors along it from the vantage (VisionFight); the Last Day's own fight
+ * ({@code story/prologue/LastDayFight}) uses its passes over the plaza before it comes down the avenue. Ticks are counted
+ * from the scene's own start.
  */
 public final class SkyFight {
     /** How far the loser of a pass is thrown back (then kept inside the script's open sky). */
@@ -46,14 +46,6 @@ public final class SkyFight {
      */
     public static final Script VISION = new Script(10, 44, 4, new Vec3(4, 90, -58), 3.5, 11,
             new Vec3(-1, 82, -74), new Vec3(9, 100, -44), new Vec3(-5.5, 92, -45));
-    /**
-     * The Last Day, seen from far off: a long fight from just after the light appears, while everyone runs. It turns over
-     * the plaza's west side (open sky above y 72 from x -1 to 30, z -92 to -60), within the sky that can be seen between
-     * the two towers south of the plaza from far down the avenue (x -6 to 14), and Sylar goes into the face of the tower
-     * west of the plaza.
-     */
-    public static final Script LAST_DAY = new Script(120, 80, 12, new Vec3(8, 97, -78), 6.5, 4.55,
-            new Vec3(-1, 85, -90), new Vec3(18, 108, -62), new Vec3(-3, 98, -84.5));
 
     private SkyFight() {}
 
@@ -63,13 +55,13 @@ public final class SkyFight {
     private static double angle(int k) { return k * 2.4 + 0.6; }
 
     /** Where Peter starts pass {@code k} (and ends pass {@code k - 1}). */
-    static Vec3 peterStart(Script s, int k) {
+    public static Vec3 peterStart(Script s, int k) {
         double a = angle(k);
         return s.inside(s.centre().add(Math.cos(a) * s.rx(), Math.sin(k * 1.7) * 3, Math.sin(a) * s.rz()));
     }
 
     /** Where Sylar starts pass {@code k}: across from Peter, a little higher. */
-    static Vec3 sylarStart(Script s, int k) {
+    public static Vec3 sylarStart(Script s, int k) {
         double a = angle(k);
         return s.inside(s.centre().add(-Math.cos(a) * s.rx(), 2 - Math.sin(k * 1.7) * 1.8, -Math.sin(a) * s.rz()));
     }

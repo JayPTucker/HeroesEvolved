@@ -31,7 +31,7 @@ public final class PowerRules {
                 && !TimeIntroService.blocksPowers(player)
                 && !com.jayptucker.heroesevolved.company.SuppressorField.suppresses(player)
                 && !com.jayptucker.heroesevolved.dampener.Dampening.dampened(player)
-                && !com.jayptucker.heroesevolved.story.sylar.WatchmakerArena.stolen(player)
+                && !com.jayptucker.heroesevolved.story.sylar.CollectionArena.stolen(player)
                 && !com.jayptucker.heroesevolved.regeneration.BodyService.isDowned(player);
     }
     public static void rewinding(ServerPlayer player, boolean active) {

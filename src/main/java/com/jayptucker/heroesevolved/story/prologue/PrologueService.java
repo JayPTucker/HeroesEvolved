@@ -16,6 +16,8 @@ import com.jayptucker.heroesevolved.story.actor.StoryActorEntity;
 import com.jayptucker.heroesevolved.story.actor.StoryActorEntity.Role;
 import com.jayptucker.heroesevolved.story.bunker.BunkerBuilder;
 import com.jayptucker.heroesevolved.story.bunker.BunkerData;
+import com.jayptucker.heroesevolved.story.bunker.BunkerLayout;
+import com.jayptucker.heroesevolved.story.bunker.HelixWard;
 import com.jayptucker.heroesevolved.story.bunker.BunkerService;
 import com.jayptucker.heroesevolved.story.bunker.CryoChamberBlock;
 import com.jayptucker.heroesevolved.story.bunker.CryoChamberService;
@@ -73,8 +75,9 @@ import java.util.UUID;
  *   Everyone meets in the lobby downstairs; the street doors open when all of you are there (or a minute after the
  *   last of you woke).</li>
  *   <li><b>Evening.</b> The doors open. Odessa is having an ordinary evening; its people talk about their day. You're
- *   sent for groceries at the City Market, up the avenue, by a column of light in the street in front of it; twenty
- *   seconds after the last of you gets there, the light appears (or when the evening's time is up).</li>
+ *   sent for groceries at the City Market, up the avenue: the thread of light leads in at its door to the checkout
+ *   counter, then back out front. Twenty seconds after the last of you has been to the counter, the light appears (or
+ *   when the evening's time is up). Wooden doors open and shut by hand all day ({@link #useDoor}).</li>
  *   <li><b>The light.</b> Far up the avenue, a man begins to glow. Sirens. Primatech opens its doors and its agents wave
  *   people in. Get down the stair in the lobby, through the vault, before the light grows too bright: it surges, again and again, but you
  *   never see it go. Whoever is still out when time runs out is darted by an agent and carried down.</li>
@@ -83,7 +86,8 @@ import java.util.UUID;
  *   <li><b>The pods.</b> You come to sealed in your own pod. Screaming far above, the ground shaking, one terrible blow,
  *   silence. The pod hums on, frost creeps across your sight, and it all goes black. <i>103 years later...</i></li>
  * </ol>
- * Then the bunker under spawn wakes you, in the pod with the same number ({@link BunkerService#handOff}).
+ * Then the bunker under spawn wakes you, in the pod with the same number ({@link BunkerService#handOff}). One of a group
+ * may be drawn for the sealed Helix Ward instead ({@link HelixWard}): carried to its private pod and dosed.
  */
 public final class PrologueService {
     public static final String TAG = "heroesevolved_last_day";
@@ -107,7 +111,10 @@ public final class PrologueService {
     static final class Member {
         final UUID id;
         final int unit;
-        boolean ready, inside, stowed, shot, shopped;
+        /** Said they're ready, standing in the lobby; told how to (the chat button) once each time they come down. */
+        boolean ready, prompted, inside, stowed, shot, shopped;
+        /** The instruction line they were last given (a TimeIntroPayload stage), so it's sent only when it changes. */
+        int hint = -1;
         int dartedAt = -1, pod = -1;
         Member(UUID id, int unit) { this.id = id; this.unit = unit; }
     }
@@ -119,22 +126,45 @@ public final class PrologueService {
         final Map<UUID, Member> members = new LinkedHashMap<>();
         final int ready = 20 * HeroesEvolvedConfig.COMMON.prologueReadySeconds.get();
         final int evening = 20 * HeroesEvolvedConfig.COMMON.prologueEveningSeconds.get();
-        final int run = 20 * HeroesEvolvedConfig.COMMON.prologueRunSeconds.get();
+        /** The light's run: never shorter than the fight, the wave and a minute and a half to get down. */
+        final int run = PrologueTimeline.run(20 * HeroesEvolvedConfig.COMMON.prologueRunSeconds.get());
+        /** Ticks since the light appeared (-1 before it), whatever phase the day is in, and the evening clock it came at. */
+        int sinceLight = -1, lightClock;
+        /** The fight's facades, the people the rubble catches, the wave, the thread of light, and what the day broke. */
+        LastDayFight.Facades facades = LastDayFight.Facades.GUESS;
+        LastDayRescue rescue;
+        LastDayWave wave = new LastDayWave();
+        /** The buildings coming apart after the wave. */
+        final LastDayCrumble crumble = new LastDayCrumble();
+        final LastDayGuide guide = new LastDayGuide();
+        final LastDayDamage damage = new LastDayDamage();
+        /** Odessa's people who come down Primatech's stair after the sirens: into the hall, shut out, then the pods. */
+        final LastDayShelter shelter = new LastDayShelter();
+        /** The agents have drawn their guns; the sirens have started; the vault stands open. */
+        boolean drawn, sirens, vaultOpen;
         VisionCrowd crowd;
         StoryActorEntity noah, claire;
         final List<CompanyAgentEntity> agents = new ArrayList<>();
         final List<Bubble> bubbles = new ArrayList<>();
-        /** Noah's targets in order, and when he fires at the next. */
-        final List<UUID> targets = new ArrayList<>();
+        /** Who is to be stunned, by whom, and when the last shot was fired. */
+        final List<Tase> tases = new ArrayList<>();
         int nextShot;
+        /** How far the farthest shooter stood from whoever they stunned: tests check they walked up first. */
+        double firedFrom = -1;
         /** The stasis hall's lights as they were when the blow came, for the flicker. */
         final Map<BlockPos, BlockState> lamps = new java.util.HashMap<>();
         /** Claire's pleas while people come down: how many she has made, and when the next may come. */
         int pleas, nextPlea;
-        /** The vault at the foot of the stair has shut behind the last of them. */
+        /** The vault at the foot of the stair has shut behind the last of them, and the safe house's age when it did. */
         boolean sealed;
+        int sealedAt = -1;
         /** The evening's clock tick the light appears at, once everyone has reached the beacon (-1 until then). */
         int lightAt = -1;
+        /** The one drawn for the Helix Ward's private pod when the light appeared, if anyone was. */
+        UUID ward;
+        /** When the first of them said they were ready (-1 until then), and whether the vote to go on has been offered. */
+        int firstReady = -1;
+        boolean voteOffered;
     }
 
     private record Bubble(Display.TextDisplay display, int until) {}
@@ -145,6 +175,8 @@ public final class PrologueService {
     /** The last word each waiting player was given, so they hear only when it changes. */
     private static final Map<UUID, String> NOTICE = new java.util.HashMap<>();
     private static boolean forced;
+    /** An admin asked for the next day to start at the pods (toPods while the city was still being built). */
+    private static boolean podsNext;
 
     private PrologueService() {}
 
@@ -200,36 +232,164 @@ public final class PrologueService {
         return current.phase == Phase.APARTMENT || current.phase == Phase.EVENING && current.evening - current.clock >= LATE_JOIN_TICKS;
     }
 
-    /** Ready to go out: by the chat button or by trying the apartment door. */
+    /**
+     * Ready to go out: the chat button ({@code /lastday ready}) or typing "ready", standing in the lobby. When it's
+     * everyone, the street doors open; until then the ready ones are told to wait for their friends.
+     */
     public static void ready(ServerPlayer player) {
         Member member = run == null ? null : run.members.get(player.getUUID());
         if (member == null || run.phase != Phase.APARTMENT || member.ready) return;
+        if (!Apartments.inLobby(player.position())) {
+            player.sendSystemMessage(Component.translatable("prologue.heroesevolved.ready_downstairs").withStyle(ChatFormatting.GRAY));
+            return;
+        }
         member.ready = true;
-        // Only worth a line when others are still getting up; when it's everyone, the door simply opens.
+        if (run.firstReady < 0) run.firstReady = run.age;
         long waiting = run.members.values().stream().filter(m -> !m.ready).count();
-        if (waiting > 0) player.sendSystemMessage(Component.translatable("prologue.heroesevolved.waiting_for", waiting).withStyle(ChatFormatting.GRAY));
+        if (waiting == 0) return;   // Everyone: the doors simply open on the next tick.
+        player.sendSystemMessage(Component.translatable("prologue.heroesevolved.wait_for_friends", waiting).withStyle(ChatFormatting.GOLD));
+        // The others hear who is waiting on them.
+        Component word = Component.translatable("prologue.heroesevolved.is_ready", player.getGameProfile().getName(),
+                run.members.size() - waiting, run.members.size()).withStyle(ChatFormatting.GRAY);
+        forEach(player.getServer(), run, (other, m) -> { if (other != player) other.sendSystemMessage(word); });
+    }
+
+    /** Whether a member may break this block: only the rubble the fight brought down on someone. */
+    public static boolean mayBreak(ServerPlayer player, BlockPos pos) {
+        return run != null && run.rescue != null && run.members.containsKey(player.getUUID()) && run.rescue.breakable(pos);
+    }
+
+    /** Whether {@code target} is one of the people the rubble caught. */
+    public static boolean isVictim(Entity target) {
+        if (run == null || run.rescue == null) return false;
+        for (LastDayRescue.Victim v : run.rescue.victims) if (v.body == target) return true;
+        return false;
     }
 
     /**
+     * Sneak and right-click someone freed from the rubble, or the ground beside them: they're lifted into the member's
+     * arms. Trying while they're still buried says to dig them out first. True if it was handled (lifted or told why not).
+     */
+    public static boolean lift(ServerPlayer player, Vec3 near) {
+        if (run == null || run.rescue == null || !run.members.containsKey(player.getUUID()) || !player.isShiftKeyDown()
+                || com.jayptucker.heroesevolved.entity.EntityCarryService.isCarrying(player)) return false;
+        LastDayRescue.Victim free = run.rescue.near(near, 2.5, LastDayRescue.State.FREE);
+        if (free != null && player.position().distanceToSqr(free.body.position()) <= 4.5 * 4.5) {
+            if (run.rescue.lift(player, free)) return true;
+            player.displayClientMessage(Component.translatable("prologue.heroesevolved.no_room"), true);
+            return true;
+        }
+        LastDayRescue.Victim buried = run.rescue.near(near, 2.5, LastDayRescue.State.PINNED);
+        if (buried == null) return false;
+        player.sendSystemMessage(Component.translatable("prologue.heroesevolved.dig_first", buried.shortName()).withStyle(ChatFormatting.GRAY));
+        return true;
+    }
+
+    /** Whether a member has someone in their arms (so they may set them down on the city's blocks). */
+    public static boolean carrying(ServerPlayer player) {
+        return run != null && run.members.containsKey(player.getUUID()) && com.jayptucker.heroesevolved.entity.EntityCarryService.isCarrying(player);
+    }
+
+    /** "ready", typed in chat in the lobby, counts as the button. True if it was taken that way. */
+    public static boolean chat(ServerPlayer player, String message) {
+        Member member = run == null ? null : run.members.get(player.getUUID());
+        if (member == null || run.phase != Phase.APARTMENT || member.ready) return false;
+        String said = message.trim().toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z' ]", "");
+        if (!READY_WORDS.contains(said)) return false;
+        ready(player);
+        return member.ready;
+    }
+
+    private static final Set<String> READY_WORDS = Set.of("ready", "im ready", "i'm ready", "rdy", "ready up", "lets go", "let's go");
+
+    /**
+     * Ready players who have waited this long for the rest may go without them ({@code /lastday go}): the doors open, and
+     * whoever is still upstairs follows when they come down.
+     */
+    public static void goWithout(ServerPlayer player) {
+        Member member = run == null ? null : run.members.get(player.getUUID());
+        if (member == null || run.phase != Phase.APARTMENT || !member.ready || !run.voteOffered) return;
+        Component word = Component.translatable("prologue.heroesevolved.went_without", player.getGameProfile().getName()).withStyle(ChatFormatting.GRAY);
+        forEach(player.getServer(), run, (p, m) -> p.sendSystemMessage(word));
+        evening(player.getServer(), city(player.getServer()), run, true);
+    }
+
+    /** The lobby's line: where you are, and the button to say you're ready (or type it). */
+    private static Component readyPrompt(boolean alone) {
+        Component button = Component.translatable("prologue.heroesevolved.ready_button").withStyle(style -> style
+                .withColor(ChatFormatting.GREEN).withBold(true)
+                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/lastday ready"))
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable("prologue.heroesevolved.ready_hover"))));
+        return Component.translatable(alone ? "prologue.heroesevolved.lobby_alone" : "prologue.heroesevolved.lobby", button)
+                .withStyle(ChatFormatting.GOLD);
+    }
+
+    /** The vote to go on without whoever hasn't readied. */
+    private static Component votePrompt(long waiting) {
+        Component button = Component.translatable("prologue.heroesevolved.go_button").withStyle(style -> style
+                .withColor(ChatFormatting.YELLOW).withBold(true)
+                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/lastday go"))
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable("prologue.heroesevolved.go_hover"))));
+        return Component.translatable("prologue.heroesevolved.vote", waiting, button).withStyle(ChatFormatting.GRAY);
+    }
+
+    /** Whether a hand can open or shut this: a wooden door or a fence gate (iron needs power; the vault is iron). */
+    public static boolean openableByHand(BlockState state) {
+        return state.getBlock() instanceof DoorBlock door && door.type().canOpenByHand()
+                || state.getBlock() instanceof net.minecraft.world.level.block.FenceGateBlock;
+    }
+
+    /**
+     * Someone living the day opening or shutting a door (or a gate) with their own hand, as anywhere else in the game.
+     * Logged with the day's damage, so the next day finds every door as the city left it. True if it moved.
+     */
+    public static boolean useDoor(ServerPlayer player, BlockPos pos) {
+        Run current = run;
+        if (current == null || !current.members.containsKey(player.getUUID())) return false;
+        ServerLevel city = player.serverLevel();
+        BlockState state = city.getBlockState(pos);
+        if (!openableByHand(state)) return false;
+        float pitch = city.random.nextFloat() * 0.1F + 0.9F;
+        boolean open;
+        if (state.getBlock() instanceof DoorBlock door) {
+            // Both halves, written as one: the log writes without neighbour updates, so neither half would follow the other.
+            BlockPos lower = state.getValue(DoorBlock.HALF) == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER ? pos : pos.below();
+            BlockState low = city.getBlockState(lower), up = city.getBlockState(lower.above());
+            if (low.getBlock() != door || up.getBlock() != door) return false;
+            open = !low.getValue(DoorBlock.OPEN);
+            current.damage.set(city, lower, low.setValue(DoorBlock.OPEN, open));
+            current.damage.set(city, lower.above(), up.setValue(DoorBlock.OPEN, open));
+            city.playSound(null, pos, open ? door.type().doorOpen() : door.type().doorClose(), SoundSource.BLOCKS, 1, pitch);
+        } else {
+            var gate = net.minecraft.world.level.block.FenceGateBlock.OPEN;
+            var facing = net.minecraft.world.level.block.FenceGateBlock.FACING;
+            open = !state.getValue(gate);
+            BlockState next = state.setValue(gate, open);
+            // A gate swings away from whoever opens it, as in vanilla.
+            if (open && state.getValue(facing) == player.getDirection().getOpposite()) next = next.setValue(facing, player.getDirection());
+            current.damage.set(city, pos, next);
+            city.playSound(null, pos, open ? SoundEvents.FENCE_GATE_OPEN : SoundEvents.FENCE_GATE_CLOSE, SoundSource.BLOCKS, 1, pitch);
+        }
+        city.gameEvent(player, open ? net.minecraft.world.level.gameevent.GameEvent.BLOCK_OPEN : net.minecraft.world.level.gameevent.GameEvent.BLOCK_CLOSE, pos);
+        return true;
+    }
+
+    /** For tests: whether the day has changed this block (and will put it back). */
+    public static boolean changedToday(BlockPos pos) { return run != null && run.damage.changed(pos); }
+
+    /**
      * A right-click on a block in the city. Before the evening the Arms' street doors are shut: trying them says who
-     * the lobby is still waiting for. True if it was handled.
+     * the lobby is still waiting for, and how to say you're ready. True if it was handled.
      */
     public static boolean useBlock(ServerPlayer player, BlockPos pos) {
         Member member = run == null ? null : run.members.get(player.getUUID());
         if (member == null || run.phase != Phase.APARTMENT) return false;
         boolean front = Apartments.frontDoors().stream().anyMatch(door -> pos.equals(door) || pos.equals(door.above()));
         if (!front) return false;
-        player.sendSystemMessage(Component.translatable("prologue.heroesevolved.front_locked", upstairs(player.getServer(), run))
-                .withStyle(ChatFormatting.GRAY));
+        long waiting = run.members.values().stream().filter(m -> !m.ready).count();
+        if (!member.ready) player.sendSystemMessage(readyPrompt(run.members.size() == 1));
+        else player.sendSystemMessage(Component.translatable("prologue.heroesevolved.front_locked", waiting).withStyle(ChatFormatting.GRAY));
         return true;
-    }
-
-    /** How many of the run are not yet in the lobby. */
-    private static long upstairs(MinecraftServer server, Run current) {
-        return current.members.values().stream().filter(m -> {
-            ServerPlayer p = server.getPlayerList().getPlayer(m.id);
-            return !m.ready && (p == null || !Apartments.inLobby(p.position()));
-        }).count();
     }
 
     private static void add(ServerPlayer player, Run current) {
@@ -282,12 +442,20 @@ public final class PrologueService {
         if (cityData.ready()) LastDayData.get(city).build(city);
         holdWaiting(server, cityData);
         if (run == null) {
-            if (!WAITING.isEmpty() && cityData.ready() && !TimeIntroService.sceneRunning() && !AvenueService.running()) start(server, city);
+            if (!WAITING.isEmpty() && cityData.ready() && !TimeIntroService.sceneRunning() && !AvenueService.running()) {
+                start(server, city);
+                if (podsNext && run != null) skipTo(server, "pods", 0);
+                podsNext = false;
+            }
             return;
         }
         Run current = run;
         current.age++;
         if (current.phase.ordinal() >= Phase.EVENING.ordinal()) current.clock++;
+        // The light's own clock runs from the light on, whatever phase the day is in (a jump sets it with the phase's age).
+        if (current.phase.ordinal() >= Phase.LIGHT.ordinal()) current.sinceLight++;
+        // One new route map a tick, in every phase.
+        current.guide.tick();
         current.members.values().removeIf(member -> {
             ServerPlayer player = server.getPlayerList().getPlayer(member.id);
             if (player == null) return true;
@@ -307,6 +475,8 @@ public final class PrologueService {
         });
         if (current.crowd != null && current.phase.ordinal() <= Phase.SAFE_HOUSE.ordinal())
             current.crowd.tick(city, current.clock, aboveGround(server, current), TAG);
+        if (current.phase.ordinal() >= Phase.LIGHT.ordinal() && current.phase.ordinal() <= Phase.NOAH.ordinal())
+            current.shelter.tick(city, current.guide, vaultGoal(), hallGoal(), current.vaultOpen && !current.sealed, listeners(server, current));
         switch (current.phase) {
             case APARTMENT -> apartment(server, city, current);
             case EVENING -> evening(server, city, current);
@@ -327,7 +497,8 @@ public final class PrologueService {
     private static void start(MinecraftServer server, ServerLevel city) {
         run = new Run();
         force(city, true);
-        // A previous run's leftovers, even after a crash.
+        // A previous run's leftovers, even after a crash: its rubble and broken windows, its people.
+        LastDayDamage.recover(city);
         List<Entity> stale = new ArrayList<>();
         for (Entity entity : city.getAllEntities()) if (isScene(entity)) stale.add(entity);
         stale.forEach(Entity::discard);
@@ -344,16 +515,119 @@ public final class PrologueService {
         if (run.members.isEmpty()) end(server);
     }
 
+    /**
+     * Everyone meets in the lobby and says they're ready (the chat button, or typing it). Coming down gives you the
+     * button; going back up takes your word back. Nothing moves on a timer: once the ready ones have waited
+     * {@code prologueReadySeconds} for the rest, they're offered the choice to go on without them.
+     */
     private static void apartment(MinecraftServer server, ServerLevel city, Run current) {
-        // Whoever reaches the lobby is ready; they hear how many are still upstairs.
         forEach(server, current, (player, member) -> {
-            if (member.ready || !Apartments.inLobby(player.position())) return;
-            member.ready = true;
-            long waiting = upstairs(server, current);
-            if (waiting > 0) player.sendSystemMessage(Component.translatable("prologue.heroesevolved.waiting_for", waiting).withStyle(ChatFormatting.GRAY));
+            boolean lobby = Apartments.inLobby(player.position());
+            if (lobby && !member.prompted && !member.ready) {
+                member.prompted = true;
+                player.sendSystemMessage(readyPrompt(current.members.size() == 1));
+                player.playNotifySound(SoundEvents.NOTE_BLOCK_HAT.value(), SoundSource.PLAYERS, 0.4F, 1.4F);
+            } else if (!lobby && member.ready && current.age % 10 == 0) {
+                member.ready = member.prompted = false;
+                player.sendSystemMessage(Component.translatable("prologue.heroesevolved.unready").withStyle(ChatFormatting.GRAY));
+            } else if (!lobby && !member.ready) member.prompted = false;
+            // The thread of light down the stairwell to the lobby, until they're there.
+            if (current.age % 10 == 0) {
+                current.guide.guide(city, player, lobby ? null : lobbyGoal());
+                if (!lobby) hint(player, member, TimeIntroPayload.PROLOGUE_LOBBY);
+            }
         });
         boolean everyone = current.members.values().stream().allMatch(m -> m.ready);
-        if (everyone || current.age - current.lastJoin >= current.ready) evening(server, city, current, true);
+        if (everyone) { evening(server, city, current, true); return; }
+        // Someone isn't coming down: after a while, the ready ones may go on without them.
+        boolean anyReady = current.members.values().stream().anyMatch(m -> m.ready);
+        if (!anyReady) { current.firstReady = -1; current.voteOffered = false; return; }
+        if (current.firstReady < 0) current.firstReady = current.age;
+        if (!current.voteOffered && current.age - Math.max(current.firstReady, current.lastJoin) >= current.ready) {
+            current.voteOffered = true;
+            long waiting = current.members.values().stream().filter(m -> !m.ready).count();
+            forEach(server, current, (player, member) -> { if (member.ready) player.sendSystemMessage(votePrompt(waiting)); });
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Where the thread of light leads
+    // ------------------------------------------------------------------
+
+    /** The lobby of the Odessa Arms, from anywhere in the building. */
+    private static LastDayGuide.Goal lobbyGoal() {
+        return new LastDayGuide.Goal(BlockPos.containing(Apartments.lobby()), new BoundingBox(Apartments.X0 - 1, Apartments.Y,
+                Apartments.Z0 - 1, Apartments.X0 + Apartments.SIZE, Apartments.Y + Apartments.STOREY * (Apartments.FLOORS + 1) + 2,
+                Apartments.Z0 + Apartments.DEPTH));
+    }
+
+    /** Odessa's streets where the members roam, at street level (the Arms' lobby and Primatech's included). */
+    private static final BoundingBox STREETS = new BoundingBox(ROAM_X0, CityGrid.STREET_Y, ROAM_Z0, ROAM_X1, CityGrid.STREET_Y + 3,
+            Math.min(ROAM_Z1, CityGrid.MAX));
+
+    private static LastDayGuide.Goal street(Vec3 at) { return new LastDayGuide.Goal(BlockPos.containing(at), STREETS); }
+
+    /** The head of the stair in Primatech's lobby. */
+    private static LastDayGuide.Goal stairHead() { return new LastDayGuide.Goal(new BlockPos(CityGrid.STAIR_X0 - 1, CityGrid.STREET_Y + 1, 110), STREETS); }
+
+    /** Down the stair to the vault, from anywhere on it. */
+    private static LastDayGuide.Goal vaultGoal() {
+        BlockPos o = LastDayData.origin();
+        return new LastDayGuide.Goal(BlockPos.containing(landing()), new BoundingBox(o.getX() - 4, o.getY(), o.getZ() - 8,
+                o.getX() + 16, CityGrid.STREET_Y + 2, o.getZ() + 4));
+    }
+
+    /** Through the bunker to the stasis hall. */
+    private static LastDayGuide.Goal hallGoal() {
+        BlockPos o = LastDayData.origin();
+        return new LastDayGuide.Goal(BlockPos.containing(at(o, BunkerLayout.Scene.GATHER)), PastBunker.bounds(o));
+    }
+
+    /** Whether someone is on the stair under Primatech's lobby, below the street. */
+    private static boolean onStair(ServerPlayer player) {
+        return player.getY() < CityGrid.STREET_Y - 0.5 && stairwell().isInside(player.blockPosition());
+    }
+
+    /**
+     * Where a member's thread leads once the light is up: nowhere while they watch and while they're down; then to the
+     * nearest person still under the rubble, or freed and waiting to be lifted; with someone in their arms, or nobody
+     * left to help, to Primatech's stair and down it; and below, to the hall.
+     */
+    private static LastDayGuide.Goal lightGoal(Run current, ServerPlayer player, Member member) {
+        int t = current.sinceLight;
+        if (member.dartedAt >= 0 || member.stowed) return null;
+        if (member.inside) return inHall(player, LastDayData.origin()) ? null : hallGoal();
+        if (current.wave.downNow(player, t)) return null;
+        LastDayRescue rescue = current.rescue;
+        boolean carrying = rescue != null && rescue.carrying(player);
+        if (!carrying && rescue != null && t >= LastDayFight.pinnedAt(0)) {
+            LastDayRescue.Victim trapped = rescue.nearestPinned(player.position());
+            if (trapped == null) trapped = rescue.nearestFree(player.position());
+            if (trapped != null) return street(trapped.spot);
+        }
+        if (t < PrologueTimeline.SHELTER && !carrying) return null;
+        return onStair(player) ? vaultGoal() : stairHead();
+    }
+
+    /**
+     * What the line tells a member to do once they're up after the wave: dig out whoever is trapped (or lift whoever is
+     * free), carry them down, or just get to the stair once it's open. -1 for nothing new.
+     */
+    private static int lightHint(Run current, ServerPlayer player, Member member) {
+        int t = current.sinceLight;
+        if (member.inside || member.dartedAt >= 0 || member.stowed || !current.wave.reached(player) || current.wave.downNow(player, t)) return -1;
+        LastDayRescue rescue = current.rescue;
+        if (rescue != null && rescue.carrying(player)) return TimeIntroPayload.PROLOGUE_CARRYING;
+        if (rescue != null && rescue.nearestPinned(player.position()) != null) return TimeIntroPayload.PROLOGUE_DIG;
+        if (rescue != null && rescue.nearestFree(player.position()) != null) return TimeIntroPayload.PROLOGUE_LIFT;
+        return t >= PrologueTimeline.SHELTER ? TimeIntroPayload.PROLOGUE_GO : -1;
+    }
+
+    /** Sends a member a new instruction line, if it changed. */
+    private static void hint(ServerPlayer player, Member member, int stage) {
+        if (stage < 0 || stage == member.hint) return;
+        member.hint = stage;
+        cue(player, stage);
     }
 
     /** The doors open on an ordinary evening. */
@@ -363,12 +637,16 @@ public final class PrologueService {
         current.clock = 0;
         doors(city, Apartments.doors(), true);
         doors(city, Apartments.frontDoors(), true);
+        // The doors opened: the way out of the Arms is new.
+        current.guide.forget();
         current.crowd = VisionCrowd.spawn(city, TAG, TimeIntroService.CROWD_SIZE, new VisionCrowd.Timing(current.evening,
                 current.evening + PrologueTimeline.SIRENS, Integer.MAX_VALUE, (int) ENTRANCE.z - 4, ROAM_Z0), 0);
         // An ordinary evening goes at an ordinary pace: fewer conversations, with pauses between lines.
         if (current.crowd != null) current.crowd.calm();
         // When the sirens go, Odessa's people run for Primatech too: in through its doors and down the stair.
-        if (current.crowd != null) current.crowd.shelter(ENTRANCE, new Vec3(CityGrid.STAIR_X0 + .5, CityGrid.STREET_Y, CityGrid.STAIR_Z0 + 1.5));
+        // At the head of the stair they're handed on (LastDayShelter), and go on down into the safe house.
+        if (current.crowd != null) current.crowd.shelter(ENTRANCE, new Vec3(CityGrid.STAIR_X0 + .5, CityGrid.STREET_Y, CityGrid.STAIR_Z0 + 1.5),
+                current.shelter::take);
         // The Company's men on Primatech's door: "Guards on every door at Primatech." "For a paper company?"
         for (double dx : new double[] {-2.5, 2.5}) agent(city, ENTRANCE.add(dx, 0, 0), 180);
         forEach(server, current, (player, member) -> {
@@ -378,50 +656,100 @@ public final class PrologueService {
     }
 
     private static void evening(MinecraftServer server, ServerLevel city, Run current) {
-        // The errand: groceries from the City Market. A column of light in the middle of the avenue in front of it shows
-        // everyone where to go; when the last of them gets there, the light comes twenty seconds later.
+        // The errand: groceries from the City Market. The thread of light shows everyone the way up the avenue, in at the
+        // door and down to the checkout counter, then back out front to wait; when the last of them has been to the counter,
+        // the light comes twenty seconds later.
         if (current.age % 10 == 0) {
-            Vec3 beacon = com.jayptucker.heroesevolved.time.intro.city.Market.beacon();
-            SetPiecePayload.send(city, Piece.VILLAGE_SAFE, beacon, beacon.add(0, 1, 0), 3, null);
+            Vec3 checkout = com.jayptucker.heroesevolved.time.intro.city.Market.checkout();
+            Vec3 outFront = com.jayptucker.heroesevolved.time.intro.city.Market.beacon().add(0, 1, 0);
             forEach(server, current, (player, member) -> {
-                if (member.shopped || !com.jayptucker.heroesevolved.time.intro.city.Market.arrived(player.position())) return;
-                member.shopped = true;
-                player.sendSystemMessage(Component.translatable("prologue.heroesevolved.groceries").withStyle(ChatFormatting.GOLD));
-                player.playNotifySound(SoundEvents.BUNDLE_INSERT, SoundSource.PLAYERS, 0.8F, 1);
+                if (!member.shopped && com.jayptucker.heroesevolved.time.intro.city.Market.arrived(player.position())) {
+                    member.shopped = true;
+                    player.sendSystemMessage(Component.translatable("prologue.heroesevolved.groceries").withStyle(ChatFormatting.GOLD));
+                    player.playNotifySound(SoundEvents.BUNDLE_INSERT, SoundSource.PLAYERS, 0.8F, 1);
+                }
+                current.guide.guide(city, player, !member.shopped ? street(checkout)
+                        : com.jayptucker.heroesevolved.time.intro.city.Market.outFront(player.position()) ? null : street(outFront));
             });
             if (current.lightAt < 0 && current.members.values().stream().allMatch(m -> m.shopped)) current.lightAt = current.clock + LIGHT_DELAY;
         }
         if (current.clock >= current.evening || current.lightAt >= 0 && current.clock >= current.lightAt) light(server, city, current, true);
     }
 
-    /** Far up the avenue, a man begins to glow. */
+    /**
+     * Far up the avenue, a man begins to glow. The vault below stays shut until the sirens: first the fight, the rubble
+     * and the wave ({@link LastDayFight}, {@link PrologueTimeline}).
+     */
     private static void light(MinecraftServer server, ServerLevel city, Run current, boolean begin) {
         current.phase = Phase.LIGHT;
         current.age = 0;
-        vault(city, true);
-        vaultSound(city, true);
+        current.sinceLight = 0;
+        current.lightClock = current.clock;
         BlockPos origin = LastDayData.origin();
+        // The Company's list: one of a group is drawn for the Helix Ward (never someone living the day alone).
+        current.ward = HelixWard.draw(BunkerData.get(server), List.copyOf(current.members.keySet()), city.random);
+        // The facades the fight will tear at, read before anything breaks; and the people on the sidewalks under them.
+        current.facades = LastDayFight.find(city);
+        current.rescue = LastDayRescue.start(city, current.facades, current.members.size(), current.damage, TAG);
+        // Odessa's people stare from now, and run when the sirens go.
+        if (current.crowd != null) current.crowd.timing(new VisionCrowd.Timing(current.clock, current.clock + PrologueTimeline.SIRENS,
+                Integer.MAX_VALUE, (int) ENTRANCE.z - 4, ROAM_Z0));
         // Down below: guards at the head of the stair, by the vault and along the way to the stasis hall, and the Bennets
         // by Pod 14.
         agent(city, new Vec3(CityGrid.STAIR_X0 - .5, CityGrid.STREET_Y + 1, CityGrid.STAIR_Z1 + 2.5), 160);
-        agent(city, at(origin, -1.5, 1, -1.5), 160);
-        agent(city, at(origin, -2.5, 1, -5.5), 180);
-        agent(city, at(origin, -1.5, 1, 2.5), 160);   // just inside Records, beside the door (not in the desk)
-        agent(city, at(origin, 0.5, 1, 15.5), 0);
-        agent(city, at(origin, -1.5, 1, 19.5), 0);
-        agent(city, at(origin, 2.5, 1, 19.5), 0);
-        // Noah stands just past the hall's lectern (the orientation log at 0 1 26), by his daughter.
-        current.noah = StoryActorEntity.spawn(city, Role.NOAH, at(origin, 0.5, 1, 28.5), 0, TAG);
-        current.claire = StoryActorEntity.spawn(city, Role.CLAIRE, at(origin, 1.5, 1, 27.5), 180, TAG);
+        for (int i = 0; i < BunkerLayout.Scene.GUARDS.size(); i++)
+            agent(city, at(origin, BunkerLayout.Scene.GUARDS.get(i)), BunkerLayout.Scene.GUARD_YAW[i]);
+        current.noah = StoryActorEntity.spawn(city, Role.NOAH, at(origin, BunkerLayout.Scene.NOAH), 0, TAG);
+        current.claire = StoryActorEntity.spawn(city, Role.CLAIRE, at(origin, BunkerLayout.Scene.CLAIRE), 180, TAG);
         if (current.claire != null) current.claire.pose(StoryActorEntity.Pose.PLEAD);
         if (current.noah != null && current.claire != null) current.noah.face(current.claire.position());
-        forEach(server, current, (player, member) ->
-                PacketDistributor.sendToPlayer(player, new TimeIntroPayload(TimeIntroPayload.PROLOGUE_LIGHT, List.of(current.run))));
+        forEach(server, current, (player, member) -> lightCue(player, current));
+    }
+
+    /** The light's cue: the run's length, how far into it we are, and the fight's facades, so every client draws the same. */
+    private static void lightCue(ServerPlayer player, Run current) {
+        List<Integer> data = new ArrayList<>(List.of(current.run, Math.max(0, current.sinceLight)));
+        data.addAll(current.facades.encode());
+        PacketDistributor.sendToPlayer(player, new TimeIntroPayload(TimeIntroPayload.PROLOGUE_LIGHT, data));
     }
 
     private static void light(MinecraftServer server, ServerLevel city, Run current) {
         int t = current.age;
-        if (t == PrologueTimeline.SIRENS) forEach(server, current, (player, member) -> cue(player, TimeIntroPayload.PROLOGUE_SIRENS));
+        // The fight begins: the Company's men draw.
+        if (t >= LastDayFight.ACTION && !current.drawn) {
+            current.drawn = true;
+            current.agents.forEach(CompanyAgentEntity::draw);
+        }
+        if (t >= PrologueTimeline.SIRENS && !current.sirens) {
+            current.sirens = true;
+            forEach(server, current, (player, member) -> cue(player, TimeIntroPayload.PROLOGUE_SIRENS));
+        }
+        // The vault opens with the sirens, and the stair counts as shelter from then.
+        if (t >= PrologueTimeline.SHELTER && !current.vaultOpen) {
+            current.vaultOpen = true;
+            vault(city, true);
+            vaultSound(city, true);
+            current.guide.forget();
+        }
+        rescue(server, city, current);
+        // Ted's wave: the windows, and everyone thrown flat.
+        List<ServerPlayer> everyone = new ArrayList<>();
+        forEach(server, current, (player, member) -> { if (member.dartedAt < 0 && !member.stowed) everyone.add(player); });
+        current.wave.tick(city, t, everyone, p -> {
+            Member m = current.members.get(p.getUUID());
+            return m != null && m.inside || p.getY() < CityGrid.STREET_Y - 4;
+        }, current.damage, current.crowd, current.clock);
+        // And after it, the city coming apart round everyone still on the street.
+        List<ServerPlayer> street = new ArrayList<>();
+        forEach(server, current, (player, member) -> {
+            if (member.dartedAt < 0 && !member.inside && !member.stowed && player.getY() > CityGrid.STREET_Y - 4) street.add(player);
+        });
+        current.crumble.tick(city, t, street, current.damage, pos -> spared(current, pos), TAG);
+        // The street changed under the thread's maps: drawn again now and then, not every tick.
+        if (current.crumble.changed && t % 40 == 0) {
+            current.crumble.changed = false;
+            current.guide.forget();
+        }
         // The surges: a flash and a tremor for everyone still in the open, a shudder through the rock for the rest.
         for (int i = 0; i < PrologueTimeline.surges(); i++) {
             if (t != PrologueTimeline.surgeTick(i, current.run)) continue;
@@ -434,19 +762,19 @@ public final class PrologueService {
                 } else PacketDistributor.sendToPlayer(player, new CameraShakePayload(0.03F + 0.06F * power, 20));
             });
         }
-        // Where to go: a column of light over Primatech's doors, and the agents calling people in.
-        if (t % 10 == 0) {
-            SetPiecePayload.send(city, Piece.VILLAGE_SAFE, ENTRANCE, ENTRANCE.add(0, 1, 0), 3, null);
-            Vec3 head = new Vec3(CityGrid.STAIR_X0 + .5, CityGrid.STREET_Y, (CityGrid.STAIR_Z0 + CityGrid.STAIR_Z1) / 2.0 + .5);
-            SetPiecePayload.send(city, Piece.VILLAGE_SAFE, head, head.add(0, 1, 0), 2, null);
-        }
-        // The agents call people in once the sirens start: a few calls, spaced out, each said once.
-        String[] calls = {"Inside! Get inside, now!", "Down the stairs in the lobby! Go!", "Don't look at it! Move!"};
-        int call = (t - PrologueTimeline.SIRENS) / 400;
-        if (t >= PrologueTimeline.SIRENS && (t - PrologueTimeline.SIRENS) % 400 == 0 && call < calls.length && !current.agents.isEmpty())
+        // The agents call people in once everyone is back on their feet: a few calls, spaced out, each said once.
+        String[] calls = {"Inside! Get inside, now!", "Bring them with you! Down the stairs in the lobby!", "Don't look at it! Move!"};
+        int callsFrom = PrologueTimeline.WAVE + PrologueTimeline.DAZE + 40;
+        int call = (t - callsFrom) / 400;
+        if (t >= callsFrom && (t - callsFrom) % 400 == 0 && call < calls.length && !current.agents.isEmpty())
             shout(server, current, current.agents.get(call % 2), calls[call]);
-        sheltered(server, city, current);
+        if (t >= PrologueTimeline.SHELTER) sheltered(server, city, current);
         darts(server, city, current);
+        // The thread of light, and the line saying what to do: to whoever is trapped, then to the stair.
+        if (t % 10 == 0) forEach(server, current, (player, member) -> {
+            current.guide.guide(city, player, lightGoal(current, player, member));
+            hint(player, member, lightHint(current, player, member));
+        });
         // Claire, below, already begging.
         if (current.claire != null && anyInside(current) && current.pleas < CLAIRE_PLEAS.length && current.age >= current.nextPlea) {
             say(server, current, current.claire, CLAIRE_PLEAS[current.pleas], false);
@@ -455,10 +783,50 @@ public final class PrologueService {
         }
         boolean everyoneSafe = current.members.values().stream().allMatch(m -> m.inside || m.stowed);
         if (t >= current.run) {
-            // Time's up: whoever is still outside is darted where they stand.
+            // Time's up: whoever is still outside is darted where they stand, and whoever they couldn't reach is lost.
+            if (t == current.run && current.rescue != null) current.rescue.deadline(listeners(server, current), p -> { Member m = current.members.get(p.getUUID()); return m != null && m.inside; });
             forEach(server, current, (player, member) -> { if (!member.inside && member.dartedAt < 0) dart(city, current, player, member); });
         }
-        if (everyoneSafe || t >= current.run + 60) next(current, Phase.SAFE_HOUSE);
+        if (everyoneSafe && t >= PrologueTimeline.SHELTER || t >= current.run + 60) {
+            if (t < current.run && current.rescue != null) current.rescue.deadline(listeners(server, current), p -> { Member m = current.members.get(p.getUUID()); return m != null && m.inside; });
+            next(current, Phase.SAFE_HOUSE);
+        }
+    }
+
+    /** The people under the rubble: what the fight does to them, and what the players do for them. */
+    private static void rescue(MinecraftServer server, ServerLevel city, Run current) {
+        if (current.rescue == null || current.sinceLight < 0) return;
+        BlockPos origin = LastDayData.origin();
+        current.rescue.inHall = p -> inHall(p, origin);
+        int before = current.rescue.rubble.size();
+        current.rescue.tick(city, current.sinceLight, p -> {
+            Member m = current.members.get(p.getUUID());
+            return m != null && m.inside;
+        }, k -> rescuedSpot(city, k), listeners(server, current));
+        // New stone in the street: the thread's maps go round it.
+        if (current.rescue.rubble.size() != before) current.guide.forget();
+    }
+
+    /** Cells the crumbling city leaves alone: round the people under the rubble, and their stone. */
+    private static boolean spared(Run current, BlockPos pos) {
+        if (current.rescue == null) return false;
+        if (current.rescue.rubble.contains(pos)) return true;
+        for (LastDayRescue.Victim v : current.rescue.victims)
+            if (Math.abs(pos.getX() + .5 - v.spot.x) < 3.5 && Math.abs(pos.getZ() + .5 - v.spot.z) < 4.5 && pos.getY() < CityGrid.STREET_Y + 4) return true;
+        return false;
+    }
+
+    /** Where the {@code k}th person carried down is laid in the stasis hall. */
+    private static Vec3 rescuedSpot(ServerLevel city, int k) {
+        List<Vec3> spots = BunkerLayout.Scene.RESCUED;
+        Vec3 spot = at(LastDayData.origin(), spots.get(Math.floorMod(k, spots.size())));
+        return LastDayRescue.standable(city, spot);
+    }
+
+    private static List<ServerPlayer> listeners(MinecraftServer server, Run current) {
+        List<ServerPlayer> out = new ArrayList<>();
+        forEach(server, current, (player, member) -> out.add(player));
+        return out;
     }
 
     /** On to the next phase, whose first tick (age 0) plays on the next server tick. */
@@ -480,16 +848,14 @@ public final class PrologueService {
         });
         // Down is the only way: nobody climbs back up into the light.
         forEach(server, current, (player, member) -> {
-            if (member.inside && !member.stowed && player.level() == city && player.getY() > CityGrid.STREET_Y - 3) {
-                Vec3 to = landing();
-                player.teleportTo(to.x, to.y, to.z);
-            }
+            if (member.inside && !member.stowed && player.level() == city && player.getY() > CityGrid.STREET_Y - 3) move(player, landing());
         });
     }
 
     /** A dart from an agent behind them; the world goes dark; they are carried down and sealed in. */
     private static void dart(ServerLevel city, Run current, ServerPlayer player, Member member) {
         member.dartedAt = current.clock;
+        if (com.jayptucker.heroesevolved.entity.EntityCarryService.isCarrying(player)) com.jayptucker.heroesevolved.entity.EntityCarryService.release(player);
         Vec3 look = player.getLookAngle().multiply(1, 0, 1);
         if (look.lengthSqr() < 1e-4) look = new Vec3(0, 0, 1);
         Vec3 behind = player.position().subtract(look.normalize().scale(4));
@@ -522,18 +888,27 @@ public final class PrologueService {
     private static void safeHouse(MinecraftServer server, ServerLevel city, Run current) {
         sheltered(server, city, current);
         darts(server, city, current);
+        rescue(server, city, current);
+        if (current.age % 10 == 0) forEach(server, current, (player, member) -> current.guide.guide(city, player,
+                member.inside && !member.stowed && !inHall(player, LastDayData.origin()) ? hallGoal() : null));
         BlockPos origin = LastDayData.origin();
         sealVault(server, city, current, origin);
+        // Anyone still standing by the vault, listening to them, is moved on.
+        if (current.sealedAt >= 0 && current.age == current.sealedAt + 140 && current.members.values().stream()
+                .anyMatch(m -> m.inside && !m.stowed && !inHall(server.getPlayerList().getPlayer(m.id), origin)))
+            shout(server, current, null, "Keep moving! Down the hall, all of you! Don't look back!");
         boolean gathered = current.members.values().stream().allMatch(m -> m.stowed
                 || m.inside && inHall(server.getPlayerList().getPlayer(m.id), origin));
         boolean pending = current.members.values().stream().anyMatch(m -> m.dartedAt >= 0 && !m.stowed);
         // Said once each, not on a loop, while the last of them come in.
         if (current.age == 60 && current.claire != null) say(server, current, current.claire, "Peter's still out there! There has to be another way!", false);
         if (pending || !gathered && current.age < 600) return;
-        // Anyone still dawdling in the corridor is brought into the hall.
+        // Anyone still dawdling in the corridor is brought into the hall, and whoever they carried is laid down there.
+        if (current.rescue != null) current.rescue.layAll(k -> rescuedSpot(city, k));
         forEach(server, current, (player, member) -> {
-            if (!member.stowed && !inHall(player, origin)) player.teleportTo(origin.getX() + .5, origin.getY() + 1, origin.getZ() + 20.5);
+            if (!member.stowed && !inHall(player, origin)) gather(player, origin);
         });
+        current.guide.clear(listeners(server, current));
         boolean watchers = current.members.values().stream().anyMatch(m -> !m.stowed);
         if (watchers) forEach(server, current, (player, member) -> { if (!member.stowed) cue(player, TimeIntroPayload.PROLOGUE_NOAH); });
         next(current, watchers ? Phase.NOAH : Phase.PODS);
@@ -552,15 +927,50 @@ public final class PrologueService {
         if (!through && current.age < 200) return;
         forEach(server, current, (player, member) -> {
             if (member.inside && !member.stowed && player.getZ() <= origin.getZ() + 1.2)
-                player.teleportTo(origin.getX() + .5, origin.getY() + 1, origin.getZ() + 3.5);
+                move(player, new Vec3(origin.getX() + .5, origin.getY() + 1, origin.getZ() + 3.5));
         });
         current.sealed = true;
+        current.sealedAt = current.age;
+        // The guard by the door steps back through as it swings.
+        for (CompanyAgentEntity agent : current.agents)
+            if (agent.isAlive() && agent.getZ() <= origin.getZ() + 1.2 && agent.getY() < CityGrid.STREET_Y - 4)
+                agent.teleportTo(origin.getX() - 1.5, origin.getY() + 1, origin.getZ() + 4.5);
         vault(city, false);
         vaultSound(city, false);
+        // Too soon: whoever is still on the stair is shut out, pounding on the steel.
+        current.shelter.shut(city);
+        shout(server, current, null, "That's all we can take! Seal it!");
+        shout(server, current, null, "You! Don't stop! Move down the hall, now!");
         forEach(server, current, (player, member) -> {
             if (member.inside && !member.stowed) PacketDistributor.sendToPlayer(player, new CameraShakePayload(0.12F, 14));
         });
         if (current.claire != null) say(server, current, current.claire, "No... no, no, no. Dad, they shut it!", false);
+    }
+
+    /**
+     * Noah's scene by Pod 14, in ticks from its start: slow enough to read every line before the next (four to six seconds
+     * a line). After "for your own good" he draws the stun gun and walks up to them; alone, he does it himself; with more
+     * than one, he orders his guards in, and each walks up to someone and fires.
+     */
+    public static final int NOAH_PLEA = 0, NOAH_LISTEN = 100, NOAH_HEAL = 200, NOAH_UNCLE = 320, NOAH_NOBODY = 430, NOAH_KNEW = 540,
+            NOAH_PLEASE = 650, NOAH_SHOVE = 730, NOAH_SEAL = 734, NOAH_GLASS = 750, NOAH_PROMISE = 790, NOAH_TURN = 880,
+            NOAH_OWN_GOOD = 960, NOAH_APPROACH = 1050, NOAH_ORDER = 1190;
+    /** How close the one firing walks up before raising the stun gun, how long the aim, and how long they'll walk at most. */
+    static final double TASE_REACH = 2.0;
+    static final int TASE_AIM = 30, TASE_WALK = 140;
+    /**
+     * How briskly Noah walks up to them: a mob's walk goes with the square of its speed, and at the scene's usual 0.5
+     * he covered about a block a second and fired from eight blocks off.
+     */
+    static final double STRIDE = 0.95;
+
+    /** Someone to be stunned, and who fires: Noah or one of his guards. */
+    private static final class Tase {
+        final net.minecraft.world.entity.LivingEntity shooter;
+        final UUID target;
+        int began = -1, aimAt = -1;
+        boolean fired;
+        Tase(net.minecraft.world.entity.LivingEntity shooter, UUID target) { this.shooter = shooter; this.target = target; }
     }
 
     /** The scene by Pod 14. */
@@ -568,102 +978,232 @@ public final class PrologueService {
         int t = current.age;
         BlockPos origin = LastDayData.origin();
         StoryActorEntity noah = current.noah, claire = current.claire;
-        // Nobody leaves the hall while it happens.
+        // Nobody leaves the hall while it happens: anyone who tries is brought back in.
         forEach(server, current, (player, member) -> {
-            if (!member.stowed && !inHall(player, origin)) player.teleportTo(origin.getX() + .5, origin.getY() + 1, origin.getZ() + 20.5);
+            if (!member.stowed && !inHall(player, origin)) {
+                gather(player, origin);
+                player.displayClientMessage(Component.translatable("prologue.heroesevolved.no_way_out"), true);
+            }
         });
         if (noah == null || claire == null) { if (t > 20) next(current, Phase.PODS); return; }
-        BlockPos podBase = origin.offset(BunkerBuilder.podOffset(CLAIRE));
+        BlockPos podBase = origin.offset(BunkerLayout.STASIS.podOffset(CLAIRE));
         Vec3 inPod = CryoChamberBlock.standing(podBase);
         Vec3 front = inPod.add(-1.3, 0, 0);
         switch (t) {
-            case 0 -> {
+            case NOAH_PLEA -> {
                 claire.face(noah.position()); claire.pose(StoryActorEntity.Pose.PLEAD);
                 noah.face(claire.position());
                 say(server, current, claire, "Dad, I don't want to go, please! I can stop this!", true);
             }
-            case 60 -> say(server, current, noah, "Claire-bear. Listen to me. You have to get in.", false);
-            case 115 -> say(server, current, claire, "I can heal! Whatever it does to me, I'll heal. Let me go up there and help Peter!", true);
-            case 150 -> say(server, current, claire, "He's my uncle! He'll die up there if I'm not with him!", true);
-            case 180 -> {
+            case NOAH_LISTEN -> say(server, current, noah, "Claire-bear. Listen to me. You have to get in.", false);
+            case NOAH_HEAL -> say(server, current, claire, "I can heal! Whatever it does to me, I'll heal. Let me go up there and help Peter!", true);
+            case NOAH_UNCLE -> say(server, current, claire, "He's my uncle! He'll die up there if I'm not with him!", true);
+            case NOAH_NOBODY -> {
                 say(server, current, noah, "Nobody walks away from that. Not even you.", false);
                 claire.pose(StoryActorEntity.Pose.IDLE);
                 claire.walkTo(front, 0.45);
                 noah.walkTo(front.add(-1.2, 0, -0.6), 0.45);
             }
-            case 215 -> say(server, current, noah, "Peter knew what he was walking into. I won't lose you too.", false);
-            case 245 -> {
+            case NOAH_KNEW -> say(server, current, noah, "Peter knew what he was walking into. I won't lose you too.", false);
+            case NOAH_PLEASE -> {
                 claire.face(noah.position()); claire.pose(StoryActorEntity.Pose.PLEAD);
                 noah.face(claire.position());
                 say(server, current, claire, "Dad, please! Don't do this!", true);
             }
-            case 275 -> noah.pose(StoryActorEntity.Pose.SHOVE);
-            case 279 -> {
-                // He pushes her in and seals the pod.
-                BlockState state = city.getBlockState(podBase);
-                float yaw = state.hasProperty(CryoChamberBlock.FACING) ? CryoChamberBlock.yaw(state.getValue(CryoChamberBlock.FACING)) : 270;
-                claire.place(inPod, yaw);
-                claire.pose(StoryActorEntity.Pose.PLEAD);
-                if (state.getBlock() instanceof CryoChamberBlock) CryoChamberBlock.setOpen(city, podBase, false);
-                city.playSound(null, podBase, SoundEvents.IRON_DOOR_CLOSE, SoundSource.BLOCKS, 1, 0.6F);
-                city.playSound(null, podBase, SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.7F, 1.6F);
-                city.playSound(null, podBase, SoundEvents.PLAYER_HURT_FREEZE, SoundSource.BLOCKS, 0.8F, 0.8F);
-                city.sendParticles(net.minecraft.core.particles.ParticleTypes.SNOWFLAKE, inPod.x, inPod.y + 1, inPod.z, 30, .3, .6, .3, .02);
-                signPod(city, CLAIRE, "SUBJECT 14", "C. BENNET", "STASIS", "SEALED");
-            }
-            case 290 -> { noah.pose(StoryActorEntity.Pose.HAND_ON_GLASS); noah.face(inPod.add(0, 1.4, 0)); }
-            case 300 -> say(server, current, noah, "I'll come back for you. I promise.", false);
-            case 350 -> {
+            case NOAH_SHOVE -> noah.pose(StoryActorEntity.Pose.SHOVE);
+            // He pushes her in and seals the pod.
+            case NOAH_SEAL -> sealClaire(city, claire, origin);
+            case NOAH_GLASS -> { noah.pose(StoryActorEntity.Pose.HAND_ON_GLASS); noah.face(inPod.add(0, 1.4, 0)); }
+            case NOAH_PROMISE -> say(server, current, noah, "I'll come back for you. I promise.", false);
+            case NOAH_TURN -> {
                 noah.pose(StoryActorEntity.Pose.IDLE);
-                noah.walkTo(at(origin, 0.5, 1, 23.5), 0.5);
+                noah.walkTo(at(origin, BunkerLayout.Scene.NOAH_TURN), 0.5);
             }
-            case 400 -> {
+            case NOAH_OWN_GOOD -> {
                 Vec3 crowd = watchersCentre(server, current);
                 if (crowd != null) noah.face(crowd.add(0, 1.5, 0));
                 say(server, current, noah, "I know you don't understand. This is for your own good.", false);
             }
-            case 455 -> {
-                noah.setItemInHand(InteractionHand.MAIN_HAND, PowerWeapons.gun(PowerWeapons.TASER));
-                noah.pose(StoryActorEntity.Pose.AIM);
-                current.targets.clear();
-                current.members.values().stream().filter(m -> !m.stowed).forEach(m -> current.targets.add(m.id));
-                current.nextShot = t + 16;
+            case NOAH_APPROACH -> {
+                // He draws the stun gun and walks up to them.
+                noah.setItemInHand(InteractionHand.MAIN_HAND, new net.minecraft.world.item.ItemStack(com.jayptucker.heroesevolved.registry.ModItems.STUN_GUN.get()));
+                city.playSound(null, noah.blockPosition(), SoundEvents.ARMOR_EQUIP_LEATHER.value(), SoundSource.HOSTILE, 0.8F, 1.1F);
+                Vec3 crowd = watchersCentre(server, current);
+                if (crowd != null) noah.walkTo(short_(noah.position(), crowd, TASE_REACH), STRIDE);
+            }
+            case NOAH_ORDER -> {
+                Vec3 crowd = watchersCentre(server, current);
+                com.jayptucker.heroesevolved.HeroesEvolved.LOGGER.debug("Last Day: Noah gives the order {} blocks from them",
+                        crowd == null ? "?" : String.format("%.1f", noah.position().distanceTo(crowd)));
+                order(server, city, current, noah);
             }
             default -> { }
         }
-        if (t >= 455 && t >= current.nextShot && !current.targets.isEmpty()) {
-            UUID id = current.targets.removeFirst();
-            ServerPlayer player = server.getPlayerList().getPlayer(id);
-            Member member = current.members.get(id);
-            if (player != null && member != null) shoot(city, noah, player, member, current.targets.size());
-            current.nextShot = t + 14;
+        if (t >= NOAH_ORDER) {
+            boolean done = tase(server, city, current, t);
+            if (done && t >= current.nextShot + 40) next(current, Phase.PODS);
         }
-        if (t >= 455 && current.targets.isEmpty() && t >= current.nextShot + 30) next(current, Phase.PODS);
     }
 
-    /** His stun gun: the barbs, the current, the floor. */
-    private static void shoot(ServerLevel city, StoryActorEntity noah, ServerPlayer player, Member member, int after) {
-        noah.face(player.getEyePosition());
-        Vec3 look = noah.getLookAngle();
-        Vec3 muzzle = noah.getEyePosition().add(look.scale(0.7)).add(0, -0.3, 0);
+    /** {@code to}, less {@code by} blocks along the way from {@code from}: where to stop short of someone. */
+    private static Vec3 short_(Vec3 from, Vec3 to, double by) {
+        Vec3 d = to.subtract(from).multiply(1, 0, 1);
+        double len = d.length();
+        return len <= by ? from : from.add(d.scale((len - by) / len));
+    }
+
+    /**
+     * Who fires at whom: alone, Noah does it himself; with more than one of them, he calls his guards in, and each guard
+     * takes someone (in turn, if there are more of them than guards).
+     */
+    private static void order(MinecraftServer server, ServerLevel city, Run current, StoryActorEntity noah) {
+        current.tases.clear();
+        List<UUID> targets = new ArrayList<>();
+        current.members.values().stream().filter(m -> !m.stowed).forEach(m -> targets.add(m.id));
+        if (targets.isEmpty()) return;
+        if (targets.size() == 1) {
+            say(server, current, noah, "Hold still. It'll be over in a second.", false);
+            current.tases.add(new Tase(noah, targets.getFirst()));
+            return;
+        }
+        say(server, current, noah, "Guards! Take them down. Gently.", true);
+        BoundingBox bunker = PastBunker.bounds(LastDayData.origin());
+        Vec3 crowd = watchersCentre(server, current);
+        List<CompanyAgentEntity> guards = new ArrayList<>(current.agents.stream()
+                .filter(a -> !a.isRemoved() && !a.outCold() && bunker.isInside(a.blockPosition())).toList());
+        if (crowd != null) guards.sort(java.util.Comparator.comparingDouble(a -> a.distanceToSqr(crowd)));
+        if (guards.isEmpty()) {
+            for (UUID id : targets) current.tases.add(new Tase(noah, id));
+            return;
+        }
+        for (CompanyAgentEntity guard : guards) {
+            guard.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND,
+                    new net.minecraft.world.item.ItemStack(com.jayptucker.heroesevolved.registry.ModItems.STUN_GUN.get()));
+        }
+        for (int i = 0; i < targets.size(); i++) current.tases.add(new Tase(guards.get(i % guards.size()), targets.get(i)));
+    }
+
+    /**
+     * Every tasing, a step at a time: the one firing walks up to their target (following them round the hall), raises the
+     * stun gun, holds it a moment, and fires. One at a time for each shooter. True once every shot has been fired.
+     */
+    private static boolean tase(MinecraftServer server, ServerLevel city, Run current, int t) {
+        boolean done = true;
+        java.util.Set<net.minecraft.world.entity.LivingEntity> busy = new java.util.HashSet<>();
+        int left = (int) current.tases.stream().filter(x -> !x.fired).count();
+        for (Tase tase : current.tases) {
+            if (tase.fired) continue;
+            done = false;
+            if (!busy.add(tase.shooter)) continue;   // this one has someone else to deal with first
+            ServerPlayer player = server.getPlayerList().getPlayer(tase.target);
+            Member member = current.members.get(tase.target);
+            if (player == null || member == null || member.stowed) { tase.fired = true; continue; }
+            if (tase.began < 0) tase.began = t;
+            Vec3 at = player.position();
+            // A walk ends a block or so short of where it was aimed (and one that short never starts), so an arm's length
+            // and a block and a half count as there.
+            boolean close = tase.shooter.position().distanceToSqr(at) <= (TASE_REACH + 1.5) * (TASE_REACH + 1.5);
+            if (tase.aimAt < 0) {
+                if (close || t - tase.began >= TASE_WALK) {
+                    tase.aimAt = t;
+                    com.jayptucker.heroesevolved.HeroesEvolved.LOGGER.debug("Last Day: {} raises the stun gun at {} from {} blocks, {} ticks after the order",
+                            tase.shooter.getName().getString(), player.getName().getString(), String.format("%.1f", tase.shooter.distanceTo(player)), t - NOAH_ORDER);
+                    aim(tase.shooter, player, true);
+                    city.playSound(null, tase.shooter.blockPosition(), SoundEvents.CROSSBOW_LOADING_END.value(), SoundSource.HOSTILE, 0.7F, 1.6F);
+                } else walk(tase.shooter, at, t);
+                continue;
+            }
+            face(tase.shooter, player.getEyePosition());
+            if (t - tase.aimAt < TASE_AIM) continue;
+            current.firedFrom = Math.max(current.firedFrom, tase.shooter.distanceTo(player));
+            shoot(city, tase.shooter, player, member, left - 1);
+            aim(tase.shooter, player, false);
+            tase.fired = true;
+            left--;
+            current.nextShot = t;
+        }
+        return done;
+    }
+
+    /** One step closer to someone: Noah walks there, a guard is moved a stride at a time (he has no will of his own). */
+    private static void walk(net.minecraft.world.entity.LivingEntity shooter, Vec3 to, int t) {
+        Vec3 stop = short_(shooter.position(), to, TASE_REACH);
+        if (shooter instanceof StoryActorEntity actor) {
+            if (t % 10 == 0) actor.walkTo(stop, STRIDE);
+            return;
+        }
+        Vec3 d = stop.subtract(shooter.position()).multiply(1, 0, 1);
+        if (d.lengthSqr() < 0.01) return;
+        Vec3 step = d.length() > 0.16 ? d.normalize().scale(0.16) : d;
+        shooter.move(net.minecraft.world.entity.MoverType.SELF, step);
+        face(shooter, to.add(0, 1.5, 0));
+    }
+
+    /** Turns the shooter, body and head, toward {@code at}. */
+    private static void face(net.minecraft.world.entity.LivingEntity shooter, Vec3 at) {
+        if (shooter instanceof StoryActorEntity actor) { actor.face(at); return; }
+        Vec3 d = at.subtract(shooter.position());
+        float yaw = (float) Math.toDegrees(Math.atan2(-d.x, d.z));
+        shooter.setYRot(yaw); shooter.setYBodyRot(yaw); shooter.setYHeadRot(yaw);
+    }
+
+    /** The stun gun raised (Noah's arm straight out, a guard's two-handed hold), or lowered again. */
+    private static void aim(net.minecraft.world.entity.LivingEntity shooter, ServerPlayer at, boolean up) {
+        face(shooter, at.getEyePosition());
+        if (shooter instanceof StoryActorEntity actor) actor.pose(up ? StoryActorEntity.Pose.AIM : StoryActorEntity.Pose.IDLE);
+        else if (shooter instanceof CompanyAgentEntity agent) agent.aiming(up);
+    }
+
+    /** Claire in Pod 14, its lid shut and its sign set. */
+    private static void sealClaire(ServerLevel city, StoryActorEntity claire, BlockPos origin) {
+        BlockPos podBase = origin.offset(BunkerLayout.STASIS.podOffset(CLAIRE));
+        // On the pod's floor, her feet in its base plate, and held there: stood on the plate, her head met the lid.
+        Vec3 inPod = Vec3.atBottomCenterOf(podBase);
+        BlockState state = city.getBlockState(podBase);
+        float yaw = state.hasProperty(CryoChamberBlock.FACING) ? CryoChamberBlock.yaw(state.getValue(CryoChamberBlock.FACING)) : 270;
+        claire.place(inPod, yaw);
+        claire.setNoGravity(true);
+        claire.setDeltaMovement(Vec3.ZERO);
+        claire.pose(StoryActorEntity.Pose.SEALED);
+        if (state.getBlock() instanceof CryoChamberBlock) CryoChamberBlock.setOpen(city, podBase, false);
+        city.playSound(null, podBase, SoundEvents.IRON_DOOR_CLOSE, SoundSource.BLOCKS, 1, 0.6F);
+        city.playSound(null, podBase, SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.7F, 1.6F);
+        city.playSound(null, podBase, SoundEvents.PLAYER_HURT_FREEZE, SoundSource.BLOCKS, 0.8F, 0.8F);
+        city.sendParticles(net.minecraft.core.particles.ParticleTypes.SNOWFLAKE, inPod.x, inPod.y + 1, inPod.z, 30, .3, .6, .3, .02);
+        signPod(city, CLAIRE, "SUBJECT 14", "C. BENNET", "STASIS", "SEALED");
+    }
+
+    /** The stun gun: the barbs, the current, the floor. */
+    private static void shoot(ServerLevel city, net.minecraft.world.entity.LivingEntity shooter, ServerPlayer player, Member member, int after) {
+        face(shooter, player.getEyePosition());
+        Vec3 look = player.getEyePosition().subtract(shooter.getEyePosition()).normalize();
+        Vec3 muzzle = shooter.getEyePosition().add(look.scale(0.7)).add(0, -0.3, 0);
         SetPiecePayload.send(city, Piece.GUN_TASER, muzzle, player.position().add(0, 1.1, 0), 1, player);
-        city.playSound(null, noah.blockPosition(), SoundEvents.FIREWORK_ROCKET_BLAST, SoundSource.HOSTILE, 0.7F, 1.8F);
+        city.playSound(null, shooter.blockPosition(), SoundEvents.FIREWORK_ROCKET_BLAST, SoundSource.HOSTILE, 0.7F, 1.8F);
         city.playSound(null, player.blockPosition(), SoundEvents.BEEHIVE_WORK, SoundSource.HOSTILE, 1, 2);
         member.shot = true;
         player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 120, 6, false, false));
         ScreenTintPayload.send(player, 0xD0B8DCFF, 12, ScreenTintPayload.Style.FLASH);
-        // Dark until the pods, however many are shot after them (14 ticks apart, then the pause before the blink).
-        ScreenTintPayload.send(player, 0xFF000000, 120 + 14 * after, ScreenTintPayload.Style.HOLD);
+        // Dark until the pods, however many are still to be shot after them (each walk, aim and shot, then the pause).
+        ScreenTintPayload.send(player, 0xFF000000, 160 + (TASE_WALK + TASE_AIM) * after, ScreenTintPayload.Style.HOLD);
         PacketDistributor.sendToPlayer(player, new CameraShakePayload(0.35F, 18));
         player.sendSystemMessage(Component.translatable("prologue.heroesevolved.shot").withStyle(ChatFormatting.AQUA));
     }
 
-    /** Sealed in their own pod: the number they will wake under, 103 years from now. */
+    /**
+     * Sealed in their own pod: the number they will wake under, 103 years from now. The one drawn for the Helix Ward is
+     * carried to its private pod instead and given the dose there; the ward is theirs for good.
+     */
     private static void seal(ServerLevel city, ServerPlayer player, Member member, boolean blink) {
         BlockPos origin = LastDayData.origin();
-        member.pod = BunkerData.get(player.getServer()).pod(player.getUUID(), BunkerBuilder.PODS, CLAIRE);
-        BlockPos base = origin.offset(BunkerBuilder.podOffset(member.pod));
-        if (!city.getBlockState(base).is(ModBlocks.CRYOCHAMBER.get())) BunkerBuilder.placePod(city, origin, member.pod, true);
+        BunkerData data = BunkerData.get(player.getServer());
+        if (run != null && player.getUUID().equals(run.ward) && data.labOpen()) {
+            data.claimLab(player.getUUID());
+            HelixWard.dose(player);
+        }
+        member.pod = data.pod(player.getUUID(), BunkerBuilder.PODS, CLAIRE);
+        BlockPos base = origin.offset(BunkerLayout.STASIS.podOffset(member.pod));
+        if (!city.getBlockState(base).is(ModBlocks.CRYOCHAMBER.get())) BunkerBuilder.placePod(city, origin, BunkerLayout.STASIS, member.pod, true);
         CryoChamberService.enter(player, base, 20 * 60 * 10);
         signPod(city, member.pod, String.format("SUBJECT %02d", member.pod + 1), player.getGameProfile().getName(), "STASIS", "SEALED");
         member.stowed = true;
@@ -671,6 +1211,13 @@ public final class PrologueService {
         player.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
         ScreenTintPayload.send(player, 0xFF000000, blink ? 30 : 400, blink ? ScreenTintPayload.Style.FLASH : ScreenTintPayload.Style.HOLD);
     }
+
+    /**
+     * The pods' last beats, in ticks from the blink: the title "103 years later..." and its music, then the waking. The
+     * waking waits for the music (story_years, nine and a half seconds) to finish: it takes them to the bunker under spawn,
+     * another dimension, and the client stops every sound on the way.
+     */
+    public static final int PODS_YEARS = 395, PODS_WAKE = PODS_YEARS + 190;
 
     /** Sealed in, as the city dies above them. */
     private static void pods(MinecraftServer server, ServerLevel city, Run current) {
@@ -680,6 +1227,10 @@ public final class PrologueService {
             if (current.noah != null) { current.noah.discard(); current.noah = null; }
             current.agents.forEach(Entity::discard);
             current.agents.clear();
+            // Those the players carried down stay below (into the pods, after the players have theirs).
+            List<net.minecraft.world.entity.npc.Villager> saved = current.rescue != null ? current.rescue.takeSaved() : List.of();
+            if (current.rescue != null) current.rescue.discard();
+            current.guide.clear(listeners(server, current));
             // They blink, and they are in their pods: the shot ones and the darted ones together.
             forEach(server, current, (player, member) -> {
                 // Whatever dark they went under in lifts for the blink (a zero-length tint cancels its match).
@@ -687,16 +1238,20 @@ public final class PrologueService {
                 ScreenTintPayload.send(player, 0xC0000000, 0, ScreenTintPayload.Style.EDGE);
                 if (!member.stowed) seal(city, player, member, true);
                 else ScreenTintPayload.send(player, 0xFF000000, 30, ScreenTintPayload.Style.FLASH);
-                cue(player, TimeIntroPayload.PROLOGUE_POD);
-                player.sendSystemMessage(Component.translatable("prologue.heroesevolved.pod").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
+                cue(player, member.pod == BunkerLayout.LAB_POD ? TimeIntroPayload.PROLOGUE_WARD : TimeIntroPayload.PROLOGUE_POD);
+                player.sendSystemMessage(Component.translatable(member.pod == BunkerLayout.LAB_POD ? "prologue.heroesevolved.pod_ward"
+                        : "prologue.heroesevolved.pod").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
             });
+            // And Odessa's people in the pods nobody else was given (LastDayShelter): a hundred and three years later,
+            // those pods still hold them (PodSleepers).
+            current.shelter.seal(city, BunkerData.get(server), saved);
         }
         // The ground shakes harder and harder; dust sifts from the ceiling.
         if (t > 20 && t < 170 && t % 20 == 0) {
             float k = (t - 20) / 150F;
             forEach(server, current, (player, member) -> PacketDistributor.sendToPlayer(player, new CameraShakePayload(0.04F + 0.18F * k, 24)));
             for (int i = 0; i < 6; i++) {
-                Vec3 at = at(origin, -4 + city.random.nextInt(9), 11, 20 + city.random.nextInt(13));
+                Vec3 at = at(origin, -5 + city.random.nextInt(11), 10, BunkerLayout.Scene.RUBBLE_Z0 + city.random.nextInt(28));
                 city.sendParticles(new net.minecraft.core.particles.BlockParticleOption(net.minecraft.core.particles.ParticleTypes.FALLING_DUST,
                         net.minecraft.world.level.block.Blocks.DEEPSLATE.defaultBlockState()), at.x, at.y, at.z, 6, 1.5, 0.1, 1.5, 0);
             }
@@ -728,16 +1283,18 @@ public final class PrologueService {
         }
         if (t == 320 || t == 345 || t == 365) {
             int alpha = t == 320 ? 0x50 : t == 345 ? 0x90 : 0xFF;
-            forEach(server, current, (player, member) -> ScreenTintPayload.send(player, alpha << 24, 400 - t + 120, ScreenTintPayload.Style.HOLD));
+            forEach(server, current, (player, member) -> ScreenTintPayload.send(player, alpha << 24, PODS_WAKE + 20 - t, ScreenTintPayload.Style.HOLD));
         }
-        if (t == 395) {
+        if (t == PODS_YEARS) {
             forEach(server, current, (player, member) -> {
-                player.connection.send(new ClientboundSetTitlesAnimationPacket(20, 70, 15));
+                cue(player, TimeIntroPayload.PROLOGUE_YEARS);
+                // Over the swell and the chime as the counter turns, gone as the chord dies away.
+                player.connection.send(new ClientboundSetTitlesAnimationPacket(20, 130, 30));
                 player.connection.send(new ClientboundSetTitleTextPacket(Component.translatable("prologue.heroesevolved.years_later")
                         .withStyle(ChatFormatting.WHITE)));
             });
         }
-        if (t >= 500) {
+        if (t >= PODS_WAKE) {
             forEach(server, current, (player, member) -> handOff(player, member));
             current.members.clear();
             end(server);
@@ -752,11 +1309,13 @@ public final class PrologueService {
     private static void quake(ServerLevel city, Run current, BlockPos origin, int k) {
         if (k == 0) {
             current.lamps.clear();
-            for (BlockPos pos : BlockPos.betweenClosed(origin.offset(-7, 1, 18), origin.offset(7, 13, 40))) {
+            var hall = BunkerLayout.Scene.HALL;
+            for (BlockPos pos : BlockPos.betweenClosed(origin.offset(hall.minX(), hall.minY(), hall.minZ()), origin.offset(hall.maxX(), hall.maxY(), hall.maxZ()))) {
                 BlockState state = city.getBlockState(pos);
-                if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT)
-                        && state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT)
-                        || state.getBlock() instanceof net.minecraft.world.level.block.LanternBlock)
+                // Every light the bunker's power feeds (froglights, bulbs, lanterns, rods), and its beacons.
+                if (com.jayptucker.heroesevolved.story.bunker.BunkerPower.off(state) != null
+                        || state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT)
+                        && state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT))
                     current.lamps.put(pos.immutable(), state);
             }
         }
@@ -767,8 +1326,8 @@ public final class PrologueService {
                 boolean on = k >= 6 && (k >= 70 ? !broken : city.random.nextFloat() < 0.25F + 0.6F * k / 70F);
                 light(city, lamp.getKey(), lamp.getValue(), on);
             }
-            if (k == 0) city.playSound(null, origin.offset(0, 4, 26), SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS, 1.2F, 0.6F);
-            if (k % 8 == 4) city.playSound(null, origin.offset(0, 6, 22 + city.random.nextInt(16)), SoundEvents.REDSTONE_TORCH_BURNOUT, SoundSource.BLOCKS, 0.6F, 0.8F + city.random.nextFloat() * 0.5F);
+            if (k == 0) city.playSound(null, origin.offset(0, 4, 50), SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS, 1.2F, 0.6F);
+            if (k % 8 == 4) city.playSound(null, origin.offset(0, 6, 38 + city.random.nextInt(28)), SoundEvents.REDSTONE_TORCH_BURNOUT, SoundSource.BLOCKS, 0.6F, 0.8F + city.random.nextFloat() * 0.5F);
         }
         // Rubble: a burst at the blow, then a trickle, down the aisle between the rows of pods.
         int pieces = k == 0 ? 9 : k <= 60 && k % 6 == 0 ? 1 + city.random.nextInt(2) : 0;
@@ -776,14 +1335,15 @@ public final class PrologueService {
                 net.minecraft.world.level.block.Blocks.GRAVEL.defaultBlockState(),
                 net.minecraft.world.level.block.Blocks.DEEPSLATE_TILES.defaultBlockState()};
         for (int i = 0; i < pieces; i++) {
-            int x = origin.getX() - 3 + city.random.nextInt(7), z = origin.getZ() + 20 + city.random.nextInt(16);
+            int x = origin.getX() + BunkerLayout.Scene.RUBBLE_X0 + city.random.nextInt(BunkerLayout.Scene.RUBBLE_X1 - BunkerLayout.Scene.RUBBLE_X0 + 1);
+            int z = origin.getZ() + BunkerLayout.Scene.RUBBLE_Z0 + city.random.nextInt(BunkerLayout.Scene.RUBBLE_Z1 - BunkerLayout.Scene.RUBBLE_Z0 + 1);
             BlockPos at = null;
-            for (int y = origin.getY() + 2; y <= origin.getY() + 13; y++) {
+            for (int y = origin.getY() + 2; y <= origin.getY() + 11; y++) {
                 BlockPos pos = new BlockPos(x, y, z);
                 if (!city.getBlockState(pos).isAir()) break;
                 at = pos;
             }
-            if (at == null || at.getY() < origin.getY() + 4) continue;
+            if (at == null || at.getY() < origin.getY() + 3) continue;
             BlockState piece = stone[city.random.nextInt(stone.length)];
             var falling = net.minecraft.world.entity.item.FallingBlockEntity.fall(city, at, piece);
             falling.disableDrop();
@@ -794,23 +1354,25 @@ public final class PrologueService {
         }
         if (k % 4 == 0 && k <= 100)
             for (int i = 0; i < 4; i++) {
-                Vec3 at = at(origin, -5 + city.random.nextInt(11), 9, 20 + city.random.nextInt(17));
+                Vec3 at = at(origin, -5 + city.random.nextInt(11), 9, BunkerLayout.Scene.RUBBLE_Z0 + city.random.nextInt(30));
                 city.sendParticles(new net.minecraft.core.particles.BlockParticleOption(net.minecraft.core.particles.ParticleTypes.FALLING_DUST,
                         net.minecraft.world.level.block.Blocks.DEEPSLATE.defaultBlockState()), at.x, at.y, at.z, 10, 1.2, .2, 1.2, 0);
             }
     }
 
-    /** Puts a hall light on or off: a bulb or lamp by its lit state, a lantern by being there or not. */
+    /** Puts a hall light on or off: as the bunker's own power-out leaves it (BunkerPower.off), or by its lit state. */
     private static void light(ServerLevel city, BlockPos pos, BlockState original, boolean on) {
-        BlockState state = original.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT)
-                ? original.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT, on)
-                : on ? original : net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
+        BlockState dark = com.jayptucker.heroesevolved.story.bunker.BunkerPower.off(original);
+        if (dark == null && original.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT))
+            dark = original.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT, false);
+        BlockState state = on ? original : dark == null ? original : dark;
         if (city.getBlockState(pos) != state) city.setBlock(pos, state, net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
     }
 
     /** Out of the Last Day and into the bunker under spawn, 103 years later. */
     private static void handOff(ServerPlayer player, Member member) {
         player.setTicksFrozen(0);
+        if (player.getForcedPose() == net.minecraft.world.entity.Pose.SLEEPING) player.setForcedPose(null);
         player.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
         if (CryoChamberService.isInside(player)) CryoChamberService.release(player);
         cue(player, TimeIntroPayload.PROLOGUE_END);
@@ -825,6 +1387,9 @@ public final class PrologueService {
         if (current == null) return;
         ServerLevel city = city(server);
         if (current.crowd != null) current.crowd.discard();
+        if (current.rescue != null) current.rescue.discard();
+        current.shelter.discard();
+        current.crumble.discard();
         current.bubbles.forEach(b -> b.display.discard());
         current.agents.forEach(Entity::discard);
         if (current.noah != null) current.noah.discard();
@@ -835,6 +1400,8 @@ public final class PrologueService {
             stale.forEach(Entity::discard);
             doors(city, Apartments.doors(), false);
             vault(city, false);
+            // The rubble, the torn facades and every burst window, as they were.
+            current.damage.restore(city);
             force(city, false);
         }
     }
@@ -878,9 +1445,25 @@ public final class PrologueService {
 
     private static Vec3 at(BlockPos origin, double x, double y, double z) { return new Vec3(origin.getX() + x, origin.getY() + y, origin.getZ() + z); }
 
+    private static Vec3 at(BlockPos origin, Vec3 offset) { return at(origin, offset.x, offset.y, offset.z); }
+
     private static boolean inHall(ServerPlayer player, BlockPos origin) {
-        return player != null && player.getY() < origin.getY() + 12 && player.getY() >= origin.getY()
-                && player.getZ() >= origin.getZ() + 18 && Math.abs(player.getX() - origin.getX() - .5) < 9;
+        if (player == null) return false;
+        var hall = BunkerLayout.Scene.HALL;
+        BlockPos at = player.blockPosition().subtract(origin);
+        return at.getY() >= 0 && at.getY() <= hall.maxY() && at.getX() >= hall.minX() && at.getX() <= hall.maxX()
+                && at.getZ() >= hall.minZ() - 1 && at.getZ() <= hall.maxZ();
+    }
+
+    /** Brings someone left outside the stasis hall to just inside its door. */
+    private static void gather(ServerPlayer player, BlockPos origin) { move(player, at(origin, BunkerLayout.Scene.GATHER)); }
+
+    /** Moves a member within the city, and whoever is in their arms with them. */
+    private static void move(ServerPlayer player, Vec3 to) {
+        com.jayptucker.heroesevolved.entity.EntityCarryService.travelWithCargo(player, player.serverLevel(), to, player.getYRot(), () -> {
+            player.teleportTo(to.x, to.y, to.z);
+            return true;
+        });
     }
 
     private static boolean anyInside(Run current) { return current.members.values().stream().anyMatch(m -> m.inside); }
@@ -922,6 +1505,8 @@ public final class PrologueService {
         agent.setInvulnerable(true);
         agent.setPersistenceRequired();
         agent.addTag(TAG);
+        // Until the fight starts nobody draws: the Company's men stand easy, guns on their hips.
+        if (run != null && !run.drawn) agent.holster();
         if (!city.addFreshEntity(agent)) return null;
         if (run != null) run.agents.add(agent);
         return agent;
@@ -1038,7 +1623,7 @@ public final class PrologueService {
 
     /** A pod's sign in the past bunker. */
     static void signPod(ServerLevel city, int index, String... lines) {
-        BunkerBuilder.signPod(city, LastDayData.origin(), index, net.minecraft.world.item.DyeColor.LIGHT_BLUE, lines);
+        BunkerBuilder.signPod(city, LastDayData.origin(), BunkerLayout.STASIS, index, net.minecraft.world.item.DyeColor.LIGHT_BLUE, lines);
     }
 
     /** City chunks, and the bunker's beyond the city's edge, held loaded while a run plays. */
@@ -1064,6 +1649,7 @@ public final class PrologueService {
         // Leaving mid-day: back to the start next time, unless they were already asleep.
         if (CryoChamberService.isInside(player)) CryoChamberService.release(player);
         player.setTicksFrozen(0);
+        if (player.getForcedPose() == net.minecraft.world.entity.Pose.SLEEPING) player.setForcedPose(null);
         if (run.members.isEmpty()) end(player.getServer());
     }
 
@@ -1072,6 +1658,7 @@ public final class PrologueService {
         NOTICE.clear();
         end(server);
         forced = false;
+        podsNext = false;
     }
 
     // ------------------------------------------------------------------
@@ -1093,20 +1680,59 @@ public final class PrologueService {
                 if (run.phase.ordinal() < Phase.LIGHT.ordinal()) skipTo(server, "light", 0);
                 BlockPos origin = LastDayData.origin();
                 forEach(server, run, (player, member) -> {
-                    player.teleportTo(origin.getX() + .5, origin.getY() + 1, origin.getZ() + 20.5);
+                    gather(player, origin);
                     member.inside = true;
                     cue(player, TimeIntroPayload.PROLOGUE_UNDERGROUND);
                 });
                 run.phase = Phase.SAFE_HOUSE;
             }
             case "noah" -> { if (run.phase.ordinal() < Phase.SAFE_HOUSE.ordinal()) skipTo(server, "safe", 0); run.phase = Phase.NOAH; run.age = 0; }
-            case "pods" -> { if (run.phase.ordinal() < Phase.SAFE_HOUSE.ordinal()) skipTo(server, "safe", 0); run.phase = Phase.PODS; run.age = 0; }
+            case "pods" -> {
+                if (run.phase.ordinal() < Phase.SAFE_HOUSE.ordinal()) skipTo(server, "safe", 0);
+                // What the skipped scenes would have done: the vault shut behind them, Claire in Pod 14.
+                boolean claireOut = run.phase.ordinal() < Phase.NOAH.ordinal() || run.phase == Phase.NOAH && run.age < NOAH_SEAL;
+                if (!run.sealed) { run.sealed = true; vault(city, false); }
+                if (claireOut && run.claire != null) sealClaire(city, run.claire, LastDayData.origin());
+                run.phase = Phase.PODS;
+                run.age = 0;
+            }
             default -> { return false; }
         }
         // The next tick counts one on, so it plays the beat at exactly {@code ticks}.
         run.age = ticks - 1;
+        if (run.phase == Phase.LIGHT) {
+            run.sinceLight = ticks - 1;
+            // Every client's drawing of the fight runs from the light's start: move it to match.
+            Run jumped = run;
+            forEach(server, jumped, (player, member) -> {
+                jumped.sinceLight = ticks;
+                lightCue(player, jumped);
+                jumped.sinceLight = ticks - 1;
+            });
+        }
         return true;
     }
+
+    /** What {@link #toPods} did. */
+    public enum PodJump { JUMPED, QUEUED, ALREADY, NONE }
+
+    /**
+     * The admin menu's "To cryopod": the Last Day jumps to everyone being sealed in their pods (the Helix Ward's
+     * sleeper drawn as usual), then plays on: the blast, "103 years later", and the waking in the bunker. While new
+     * players are still waiting for the city to be built, the jump is made the moment their day begins.
+     */
+    public static PodJump toPods(MinecraftServer server) {
+        if (run == null) {
+            if (WAITING.isEmpty()) return PodJump.NONE;
+            podsNext = true;
+            return PodJump.QUEUED;
+        }
+        if (run.phase == Phase.PODS) return PodJump.ALREADY;
+        return skipTo(server, "pods", 0) ? PodJump.JUMPED : PodJump.NONE;
+    }
+
+    /** Whether "To cryopod" has anything to do: a day before its pods, or new players waiting for one. */
+    public static boolean podsAhead() { return run == null ? !WAITING.isEmpty() && !podsNext : run.phase != Phase.PODS; }
 
     /** For tests: whether a member has made it down into the safe house (or been carried there). */
     public static boolean sheltered(ServerPlayer player) {
@@ -1129,6 +1755,89 @@ public final class PrologueService {
     /** For tests: ticks until the light appears because everyone reached the beacon, or -1 if not everyone has. */
     public static int lightIn() { return run == null || run.lightAt < 0 ? -1 : Math.max(0, run.lightAt - run.clock); }
 
+    /** For tests: the people the rubble catches (their bodies), in order. */
+    public static List<net.minecraft.world.entity.npc.Villager> victims() {
+        return run == null || run.rescue == null ? List.of() : run.rescue.victims.stream().map(v -> v.body).toList();
+    }
+
+    /** For tests: how each of them is ("waiting", "pinned", "free", "carried", "saved", "lost"). */
+    public static List<String> victimStates() {
+        return run == null || run.rescue == null ? List.of()
+                : run.rescue.victims.stream().map(v -> v.state.name().toLowerCase(java.util.Locale.ROOT)).toList();
+    }
+
+    /** For tests: the stone holding victim {@code i} down. */
+    public static List<BlockPos> pins(int i) {
+        return run == null || run.rescue == null || i >= run.rescue.victims.size() ? List.of() : List.copyOf(run.rescue.victims.get(i).pins);
+    }
+
+    /** For tests: how far the farthest stun gun was from its target when it fired (-1 before any has). */
+    public static double firedFrom() { return run == null ? -1 : run.firedFrom; }
+
+    /** For tests: how many of Odessa's people have reached the stasis hall (or the commons), and how many are shut out. */
+    public static int gathered() { return run == null ? 0 : run.shelter.gathered(); }
+
+    public static int shutOut() { return run == null ? 0 : run.shelter.shutOut(); }
+
+    /** For tests: someone from the street at {@code at}, handed straight to the shelter to be led down. */
+    public static net.minecraft.world.entity.npc.Villager shelterSomeone(ServerLevel city, Vec3 at) {
+        if (run == null) return null;
+        var villager = LastDayShelter.person(city, run.shelter.people.size());
+        if (villager == null) return null;
+        villager.moveTo(at.x, at.y, at.z, 90, 0);
+        if (!city.addFreshEntity(villager)) return null;
+        run.shelter.take(villager);
+        return villager;
+    }
+
+    /** For tests and previews: how long this day's light lasts before the agents dart whoever is still out. */
+    public static int runTicks() { return run == null ? PrologueTimeline.run(20 * HeroesEvolvedConfig.COMMON.prologueRunSeconds.get()) : run.run; }
+
+    /** For tests: how many blocks the crumbling city has torn loose, and how many it has landed or strewn as rubble. */
+    public static int crumbled() { return run == null ? 0 : run.crumble.loosened; }
+    public static int strewn() { return run == null ? 0 : run.crumble.landed; }
+
+    /** For tests: the first block the crumbling city tore loose, or null. */
+    public static BlockPos firstCrumbled() { return run == null ? null : run.crumble.first; }
+
+    /** For tests: how many shards of glass lie about, and the first pane the wave burst. */
+    public static int shards() { return run == null ? 0 : run.wave.shards(); }
+    public static BlockPos firstWindow() { return run == null ? null : run.wave.firstWindow; }
+
+    /** For previews: where to stand to look at the nearest hole the wave tore in a facade (null if there's none). */
+    public static Vec3[] nearestHole(Vec3 from) {
+        if (run == null) return null;
+        LastDayCrumble c = run.crumble;
+        int best = -1;
+        for (int i = 0; i < c.holes.size(); i++)
+            if (best < 0 || c.holes.get(i).distToCenterSqr(from) < c.holes.get(best).distToCenterSqr(from)) best = i;
+        if (best < 0) return null;
+        Vec3 hole = Vec3.atCenterOf(c.holes.get(best));
+        net.minecraft.core.Direction out = c.holeFacing.get(best);
+        Vec3 eye = hole.add(out.getStepX() * 8, 2, out.getStepZ() * 8);
+        return new Vec3[] {eye, hole};
+    }
+
+    /** For previews: what the day has broken round a point. */
+    public static String damageNear(Vec3 at, double r) { return run == null ? "no day" : run.damage.near(city(serverOf()), at, r); }
+
+    private static MinecraftServer serverOf() { return net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer(); }
+
+    /** For tests: how many windows the wave has burst. */
+    public static int windowsBroken() { return run == null ? 0 : run.wave.windows(); }
+
+    /** For tests: whether the wave has this player on the ground right now. */
+    public static boolean dazed(ServerPlayer player) { return run != null && run.wave.downNow(player, run.sinceLight); }
+
+    /** For tests: the Company's men above and below. */
+    public static List<CompanyAgentEntity> agents() { return run == null ? List.of() : List.copyOf(run.agents); }
+
+    /** For tests: the facades the fight tore at, as found when the light came. */
+    public static LastDayFight.Facades facades() { return run == null ? LastDayFight.Facades.GUESS : run.facades; }
+
+    /** For tests: who was drawn for the Helix Ward this run, or null. */
+    public static UUID ward() { return run == null ? null : run.ward; }
+
     /** For tests: the pod a member was sealed in, or -1. */
     public static int pod(ServerPlayer player) {
         Member member = run == null ? null : run.members.get(player.getUUID());
@@ -1141,8 +1850,8 @@ public final class PrologueService {
 
     /** Whether the past bunker under Primatech has been built, saved with the city. */
     static final class LastDayData extends SavedData {
-        /** Bumped when the bunker under Primatech must be rebuilt from the rock up. */
-        static final int LAYOUT = 1;
+        /** Bumped when the bunker under Primatech must be rebuilt from the rock up. 2: the Sublevel 4 rebuild. */
+        static final int LAYOUT = 2;
         int layout;
 
         static LastDayData get(ServerLevel city) {
@@ -1155,12 +1864,13 @@ public final class PrologueService {
 
         private static BlockPos origin;
 
-        /** The bunker's floor under the shaft: under Primatech's lobby, as deep as keeps its roof below the street. */
+        /**
+         * The bunker's floor under the shaft: under Primatech's lobby, eighteen below the street, where the stairwell
+         * blueprint ({@code lastday_stairwell}) meets the vault. The rooms keep their roof below the street
+         * ({@code PrologueGameTests.apartmentsShaftAndPodsFit}).
+         */
         static BlockPos origin() {
-            if (origin == null) {
-                int top = PastBunker.bounds(BlockPos.ZERO).maxY();
-                origin = new BlockPos(CityGrid.SHAFT_X, CityGrid.STREET_Y - 3 - top, CityGrid.SHAFT_Z);
-            }
+            if (origin == null) origin = new BlockPos(CityGrid.SHAFT_X, CityGrid.STREET_Y - 18, CityGrid.SHAFT_Z);
             return origin;
         }
 
@@ -1185,11 +1895,12 @@ public final class PrologueService {
                 for (int dy = 1; dy <= 3; dy++)
                     city.setBlock(o.offset(dx, dy, 1), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
             vault(city, false);
-            for (int i = 0; i < BunkerBuilder.PODS; i++) {
-                BlockPos base = o.offset(BunkerBuilder.podOffset(i));
-                if (!city.getBlockState(base).is(ModBlocks.CRYOCHAMBER.get())) BunkerBuilder.placePod(city, o, i, true);
+            BunkerLayout layout = BunkerLayout.STASIS;
+            for (int i = 0; i < layout.pods(); i++) {
+                BlockPos base = o.offset(layout.podOffset(i));
+                if (!city.getBlockState(base).is(ModBlocks.CRYOCHAMBER.get())) BunkerBuilder.placePod(city, o, layout, i, true);
                 else CryoChamberBlock.setOpen(city, base, true);
-                BunkerBuilder.signPod(city, o, i, net.minecraft.world.item.DyeColor.LIGHT_BLUE,
+                BunkerBuilder.signPod(city, o, layout, i, net.minecraft.world.item.DyeColor.LIGHT_BLUE,
                         String.format("SUBJECT %02d", i + 1), i == CLAIRE ? "C. BENNET" : "", "STANDBY", "");
             }
         }

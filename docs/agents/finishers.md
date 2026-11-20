@@ -18,6 +18,10 @@ doc.
   something the player can't count on (another mob, a construct, a resource at full); make that a bonus on top of a
   move that always works.
 
+- **A boss is finished at its phase thresholds, through one hook.** `Takedowns.PhaseFinishable` (Sylar): a synced
+  window decides the glisten on both sides, and the finisher's blow goes to `phaseFinished` instead of killing (from
+  `strike`, and again after `land` in case a finisher hurt it another way; the boss ignores the second call). The
+  engine's hold sets NoAI on the boss for the move, which simply pauses its fight for a second or two.
 - **The name.**
   - The fighting styles already call their third combo strike a "finisher", so the code says *takedown*
     (`Takedowns`, `Takedowns.Finisher`, `Takedowns.Run`).

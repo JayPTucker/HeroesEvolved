@@ -175,8 +175,7 @@ ownership persistence all stay correct without changes.
 
 ### Story and admin hooks
 
-- **Sylar's attention:** each Centrifuge or Synthesis Station run raises his interest in nearby
-  players, and he may stalk a Regeneration owner who has been drained repeatedly.
+- **Sylar's attention** (retired November 2026: Sylar no longer stalks; he leaves a ticket, see [sylar.md](sylar.md)).
 - **Hourglass Annex:** a successful rescue also rewards one Regenerative Blood Sample (Donated),
   so servers without an active Regeneration owner still have a way in.
 - Commands: `/heroesevolved formula give <player> <item>`,

@@ -43,6 +43,21 @@ public final class EntityCarryService {
      * also raises bigger things overhead. Bosses are never carried.
      */
     public static boolean canPickUp(ServerPlayer player, Entity target, double reach, boolean lift) {
+        return canPickUp(player, target, reach, lift, true);
+    }
+
+    /**
+     * A scene's own lift (the Last Day's people dug out of the rubble): an ordinary pickup within reach, but someone lying
+     * at your feet among the stones needn't be in clear sight of your eyes.
+     */
+    public static boolean pickUpBeside(ServerPlayer player, Entity target) {
+        if (target == null) return false;
+        recover(target);
+        if (!canPickUp(player, target, ORDINARY_REACH, false, false)) return false;
+        return attach(player, target);
+    }
+
+    private static boolean canPickUp(ServerPlayer player, Entity target, double reach, boolean lift, boolean sight) {
         if (target == null || !CarryGeometry.liftable(target, lift) || target.getType().is(net.neoforged.neoforge.common.Tags.EntityTypes.BOSSES)
                 || target instanceof com.jayptucker.heroesevolved.story.sylar.SylarEntity) return false;
         if (target == player || !Double.isFinite(reach) || reach <= 0
@@ -57,8 +72,8 @@ public final class EntityCarryService {
         double range = Math.min(reach, MAX_REACH);
         if (player.getEyePosition().distanceToSqr(center) > range * range) return false;
         return CarryGeometry.fits(player, target, CarryGeometry.position(player, target))
-                && player.serverLevel().clip(new ClipContext(player.getEyePosition(), center,
-                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player)).getType() == HitResult.Type.MISS;
+                && (!sight || player.serverLevel().clip(new ClipContext(player.getEyePosition(), center,
+                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player)).getType() == HitResult.Type.MISS);
     }
 
     /** Skyhook uses the full seven-block reach; ordinary interaction supplies its shorter reach. */
@@ -105,9 +120,14 @@ public final class EntityCarryService {
     }
 
     public static boolean isBeingCarried(Entity entity) {
+        return carrierOf(entity) != null;
+    }
+
+    /** Who has {@code entity} in their arms, or null. */
+    public static ServerPlayer carrierOf(Entity entity) {
         UUID carrier = CARRIERS_BY_CARGO.get(entity.getUUID());
         Carry carry = carrier == null ? null : active(carrier);
-        return carry != null && carry.cargo == entity;
+        return carry != null && carry.cargo == entity ? carry.carrier : null;
     }
 
     public static void tick(ServerPlayer player) {

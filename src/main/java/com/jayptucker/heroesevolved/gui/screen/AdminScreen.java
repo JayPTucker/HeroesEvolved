@@ -24,7 +24,7 @@ import java.util.UUID;
  * <ul>
  *   <li><b>Player:</b> the chosen player's power, level, Mastery, energy, where they are and how far the stories have
  *   got with them; give or remove powers, set levels, refill, heal, go to them.</li>
- *   <li><b>World &amp; Events:</b> the Eclipse, the two bosses (Sylar the Watchmaker and Elle Bishop), village events
+ *   <li><b>World &amp; Events:</b> the Eclipse, Sylar's Collection, village events
  *   (a meltdown or a raid near the chosen player) and the emergency band, each with a status line and its controls.</li>
  * </ul>
  * Every button is a request; the server checks permission and replies with fresh state, which redraws this screen.
@@ -46,7 +46,7 @@ public final class AdminScreen extends Screen {
     private static final int ACCENT = 0xFFC51E32;
     private static final int GOOD = 0xFF92D66C;
     private static final int IDLE = 0xFF5A4248;
-    private static final int GOLD = 0xFFE8B84A, SYLAR = 0xFFD8454F, ELLE = 0xFF6FB8FF, VILLAGE = 0xFF8FD16A, RADIO = 0xFF5FD3C8;
+    private static final int GOLD = 0xFFE8B84A, SYLAR = 0xFFD8454F, VILLAGE = 0xFF8FD16A, RADIO = 0xFF5FD3C8;
 
     enum Tab { PLAYER, WORLD }
 
@@ -184,7 +184,10 @@ public final class AdminScreen extends Screen {
         buttons(x, y + ROW * 5, w,
                 button("God: " + (target.godMode() ? "ON" : "OFF"), "Prevent all damage and death; highlighted gold while enabled.", Action.TOGGLE_GOD_MODE, 0, true),
                 button("Bring here", "Teleport this player to your position and dimension.", Action.BRING_HERE, 0,
-                        minecraft != null && minecraft.player != null && !minecraft.player.getUUID().equals(target.id())));
+                        minecraft != null && minecraft.player != null && !minecraft.player.getUUID().equals(target.id())),
+                button("To cryopod", "The Last Day (a new world's prologue) skips straight to everyone being sealed in their"
+                        + " cryopods, then plays on to the waking in the bunker. Pressed while the city is still being built,"
+                        + " the day starts there.", Action.SKIP_TO_POD, 0, state.world().has(World.LAST_DAY)));
     }
 
     private void addPowerRow(AdminStatePayload state, AdminStatePayload.PlayerEntry target, int x, int y, int w) {
@@ -310,21 +313,14 @@ public final class AdminScreen extends Screen {
                         Action.ECLIPSE_TOTALITY, 0, !world.has(World.TOTALITY)),
                 button("Stop", "End the Eclipse now.", Action.STOP_ECLIPSE, 0, world.has(World.ECLIPSE)));
         y += SECTION;
-        // Sylar, the Watchmaker.
+        // Sylar's Collection.
         buttons(x, y, w,
-                button("Stalk", "He finds the chosen player's trail and watches from a distance.", Action.SYLAR_STALK, 0,
+                button("Next", "Move the prisoner's story on a step: wake him (the hatch and his list), cross out the next name, open his cell, or send him to the chosen player.",
+                        Action.SYLAR_NEXT, 0, someone && !world.has(World.SYLAR)),
+                button("Ticket", "Put a Repair Ticket in the chosen player's pocket: a fight with him whenever they read it.", Action.SYLAR_TICKET, 0, someone),
+                button("Fight", "Take the chosen player and everyone near them into his Collection now.", Action.SYLAR_FIGHT, 0,
                         someone && !world.has(World.SYLAR)),
-                button("Hunt", "He comes for the chosen player now; the fight moves to his clock shop.", Action.SYLAR_HUNT, 0,
-                        someone && !world.has(World.SYLAR)),
-                button("Dismiss", "He withdraws and everyone goes home.", Action.SYLAR_DISMISS, 0, world.has(World.SYLAR)));
-        y += SECTION;
-        // Elle Bishop.
-        buttons(x, y, w,
-                button("Omens", "A day of flickering lights and misfiring redstone around the chosen player; she comes when it ends.",
-                        Action.ELLE_OMENS, 0, someone && !world.has(World.ELLE)),
-                button("Arrive", "The lights go out and she comes for the chosen player now.", Action.ELLE_ARRIVE, 0,
-                        someone && !world.has(World.ELLE)),
-                button("Dismiss", "She leaves and everyone goes home.", Action.ELLE_DISMISS, 0, world.has(World.ELLE)));
+                button("End", "Close the Collection and send everyone home.", Action.SYLAR_DISMISS, 0, world.has(World.SYLAR)));
         y += SECTION;
         // Village events near the chosen player.
         buttons(x, y, w,
@@ -442,9 +438,8 @@ public final class AdminScreen extends Screen {
         }
         section(graphics, x, y, w, "ECLIPSE", GOLD, world.has(World.ECLIPSE), world.eclipse());
         section(graphics, x, y + SECTION, w, "SYLAR", SYLAR, world.has(World.SYLAR), world.sylar());
-        section(graphics, x, y + SECTION * 2, w, "ELLE", ELLE, world.has(World.ELLE), world.elle());
-        section(graphics, x, y + SECTION * 3, w, "VILLAGE", VILLAGE, world.has(World.MELTDOWN) || world.has(World.RAID), world.village());
-        section(graphics, x, y + SECTION * 4, w, "RADIO", RADIO, world.has(World.ON_AIR), world.radio());
+        section(graphics, x, y + SECTION * 2, w, "VILLAGE", VILLAGE, world.has(World.MELTDOWN) || world.has(World.RAID), world.village());
+        section(graphics, x, y + SECTION * 3, w, "RADIO", RADIO, world.has(World.ON_AIR), world.radio());
     }
 
     /** A section's heading: a dot (lit while it is going on), its name, and its status line beside it. */

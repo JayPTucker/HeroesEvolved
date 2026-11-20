@@ -27,8 +27,6 @@ import java.util.List;
  * player put there is touched. A bunker built before this was lit ({@link BunkerData#powered} is true).
  */
 public final class BunkerPower {
-    /** Where the power comes from, bunker-relative: the generator room's floor. */
-    private static final BlockPos GENERATOR = new BlockPos(10, 1, 6);
     /** The breaker's clunk comes first, then the lights follow the wiring out at a block a tick. */
     private static final int FIRST = 6;
     private static final double TICKS_PER_BLOCK = 1.0;
@@ -65,7 +63,7 @@ public final class BunkerPower {
      */
     public static boolean start(ServerLevel level, BunkerData data) {
         if (!data.built || data.powered || switching()) return false;
-        BlockPos generator = data.origin.offset(GENERATOR);
+        BlockPos generator = data.origin.offset(data.layout().generator());
         long now = level.getGameTime();
         forEachFixture(data, (pos, on) -> {
             long delay = FIRST + Math.round(Math.sqrt(pos.distSqr(generator)) * TICKS_PER_BLOCK);
@@ -94,9 +92,7 @@ public final class BunkerPower {
 
     /** Every light in the bunker's rooms: where it is, and how it stands with the power on. */
     static void forEachFixture(BunkerData data, java.util.function.BiConsumer<BlockPos, BlockState> each) {
-        List<BunkerBuilder.Room> rooms = new ArrayList<>(BunkerBuilder.ROOMS);
-        rooms.add(BunkerBuilder.OFFICE);
-        for (BunkerBuilder.Room room : rooms) {
+        for (BunkerBuilder.Room room : data.layout().all()) {
             BlockPos at = data.origin.offset(room.at());
             Blueprint.load(room.blueprint()).statesMatching(state -> off(state) != null).forEach((cell, on) -> each.accept(at.offset(cell), on));
         }

@@ -167,7 +167,7 @@
         {
           "id": "quake_surgical_silence",
           "name": "Master Incision",
-          "description": "Surgical Fracture reaches ordinary material up to hardness 4. This precise technique does not add fresh Sylar attention.",
+          "description": "Surgical Fracture reaches ordinary material up to hardness 4. This precise technique makes no sound.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -3298,7 +3298,7 @@
         {
           "id": "empathic_mimicry_sylars_mirror",
           "name": "Sylar's Mirror",
-          "description": "Touching Sylar keeps everything he has stolen that you have room for, and you can keep one more set.",
+          "description": "Touching Sylar keeps everything in his collection that you have room for, and you can keep one more set.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -4833,7 +4833,7 @@
         {
           "id": "amp_1_2",
           "name": "Opposite Current",
-          "description": "Red lightning grounds out blue: with 20 Charge or more, lightning aimed at you (an Electrokinetic's, Elle's, a storm's) is halved, and the half you don't take becomes Charge.",
+          "description": "Red lightning grounds out blue: with 20 Charge or more, lightning aimed at you (an Electrokinetic's or a storm's) is halved, and the half you don't take becomes Charge.",
           "icon": "minecraft:lightning_rod",
           "level": 3,
           "cost": 1,
@@ -4851,7 +4851,7 @@
         {
           "id": "amp_overcharge_enemy",
           "name": "Overcharge the Enemy",
-          "description": "Pour red energy into a powered foe within 16 blocks (a player with a power, a gifted mob, Sylar or Elle). Its next move goes wild: it misfires, hurts the one who cast it and lashes at its own side.",
+          "description": "Pour red energy into a powered foe within 16 blocks (a player with a power, a gifted mob or Sylar). Its next move goes wild: it misfires, hurts the one who cast it and lashes at its own side.",
           "icon": "minecraft:redstone_torch",
           "level": 4,
           "cost": 2,

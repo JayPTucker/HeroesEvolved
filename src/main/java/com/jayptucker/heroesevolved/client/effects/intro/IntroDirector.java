@@ -3,6 +3,7 @@ package com.jayptucker.heroesevolved.client.effects.intro;
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.client.sound.BunkerAlarm;
 import com.jayptucker.heroesevolved.client.sound.CitySiren;
+import com.jayptucker.heroesevolved.client.sound.LastDayMusic;
 import com.jayptucker.heroesevolved.client.sound.PanicSounds;
 import com.jayptucker.heroesevolved.client.sound.SynthSound;
 import com.jayptucker.heroesevolved.gui.TimeIntroCaption;
@@ -122,17 +123,26 @@ public final class IntroDirector {
                 IntroScene.arrival = now;
                 PanicSounds.preload();
                 instruct("prologue_evening", 600);
+                // The evening's music: the bed now, the fight's layer when the fight starts.
+                LastDayMusic.start();
             }
             case TimeIntroPayload.PROLOGUE_LIGHT -> {
-                if (!IntroScene.prologue) { clear(); IntroScene.active = IntroScene.prologue = true; IntroScene.arrival = now; }
-                IntroScene.light = now;
+                boolean fresh = !IntroScene.prologue || IntroScene.light < 0;
+                if (!IntroScene.prologue) { clear(); IntroScene.active = IntroScene.prologue = true; IntroScene.arrival = now; LastDayMusic.start(); }
+                // The run's length, how far into the light we already are (a late cue, a jump), and the fight's facades.
                 if (!players.isEmpty()) IntroScene.run = Math.max(1, players.getFirst());
+                IntroScene.light = now - (players.size() > 1 ? players.get(1) : 0);
+                IntroScene.facades = com.jayptucker.heroesevolved.story.prologue.LastDayFight.Facades.decode(players, 2);
                 if (hum == null) hum = play(new Loop(() -> SoundEvents.BEACON_AMBIENT, SoundSource.AMBIENT, 0.1F, 0.6F));
-                // First just the light; where to go comes with the sirens.
-                TimeIntroCaption.showKey("intro.heroesevolved.prologue_light", true);
+                // The screams heard while knocked out by the wave come from the panic recordings: read them now.
+                PanicSounds.preload();
+                // First just the light; what to do comes after the wave.
+                if (fresh) {
+                    TimeIntroCaption.showKey("intro.heroesevolved.prologue_light", true);
+                    TimeIntroCaption.clearHint();
+                }
             }
             case TimeIntroPayload.PROLOGUE_SIRENS -> {
-                if (!IntroScene.underground) instruct("prologue_run", -1);
                 if (siren == null) siren = sirens();
                 PanicSounds.panic(now);
                 if (IntroScene.underground) underground();
@@ -142,14 +152,21 @@ public final class IntroDirector {
                 underground();
                 instruct("prologue_hall", -1);
             }
-            case TimeIntroPayload.PROLOGUE_POD -> {
+            case TimeIntroPayload.PROLOGUE_POD, TimeIntroPayload.PROLOGUE_WARD -> {
                 IntroScene.underground = true;
+                LastDayMusic.stop();
+                GuideArt.reset();
                 if (!IntroScene.prologue) { IntroScene.active = IntroScene.prologue = true; }
                 if (siren == null) siren = sirens();
                 PanicSounds.panic(now);
                 underground();
                 TimeIntroCaption.clearHint();
+                cue(stage == TimeIntroPayload.PROLOGUE_WARD ? ModSounds.STORY_WARD : ModSounds.STORY_SEALED);
             }
+            case TimeIntroPayload.PROLOGUE_YEARS -> cue(ModSounds.STORY_YEARS);
+            // Out of the pod and the alarm over: the waking's music plays until the way out, and fades away there.
+            case TimeIntroPayload.BUNKER_MUSIC -> com.jayptucker.heroesevolved.client.sound.BunkerMusic.start();
+            case TimeIntroPayload.BUNKER_EXIT -> com.jayptucker.heroesevolved.client.sound.BunkerMusic.exit();
             case TimeIntroPayload.PROLOGUE_BLAST -> {
                 // Through rock and steel: one deep blow, and then the city goes quiet.
                 stop(blast);
@@ -159,7 +176,13 @@ public final class IntroDirector {
                 stop(hum); hum = null;
                 PanicSounds.stop();
             }
-            case TimeIntroPayload.PROLOGUE_NOAH -> TimeIntroCaption.clearHint();
+            case TimeIntroPayload.PROLOGUE_NOAH -> { TimeIntroCaption.clearHint(); LastDayMusic.exit(); }
+            // After the wave, what to do as it changes: dig out whoever is trapped, lift them, carry them, get to the stair.
+            case TimeIntroPayload.PROLOGUE_DIG -> instruct("prologue_dig", -1);
+            case TimeIntroPayload.PROLOGUE_LIFT -> instruct("prologue_carry", -1);
+            case TimeIntroPayload.PROLOGUE_CARRYING -> instruct("prologue_carrying", -1);
+            case TimeIntroPayload.PROLOGUE_GO -> { if (!IntroScene.underground) instruct("prologue_run", -1); }
+            case TimeIntroPayload.PROLOGUE_LOBBY -> instruct("prologue_lobby", -1);
             case TimeIntroPayload.PROLOGUE_END -> { clear(); TimeIntroCaption.clearHint(); }
             default -> { }
         }
@@ -203,6 +226,7 @@ public final class IntroDirector {
         if (siren != null) siren.set(0.16F, 0.92F);
         if (hum != null) hum.set(0.03F, 0.5F);
         PanicSounds.muffle(true);
+        LastDayMusic.underground();
     }
 
     private static void clear() {
@@ -210,6 +234,10 @@ public final class IntroDirector {
         siren = null;
         hum = roar = blast = null;
         PanicSounds.stop();
+        LastDayMusic.stop();
+        LastDayArt.reset();
+        WaveApproach.reset();
+        GuideArt.reset();
         CityShatter.reset();
         RewindSigil.reset();
         CrowdRewind.reset();
@@ -227,7 +255,14 @@ public final class IntroDirector {
         if (mc.level == null || !TimeIntroService.isCity(mc.level)) { clear(); return; }
         float t = IntroScene.t(0);
         CityShatter.tick(t);
-        if (IntroScene.prologue) PanicSounds.tick(mc);
+        if (IntroScene.prologue) {
+            PanicSounds.tick(mc);
+            LastDayArt.tick();
+            // The big wave coming: its rumble, and the head turned to it before it hits.
+            WaveApproach.tick();
+            // The fight starts: its music comes up over the evening's.
+            if (IntroScene.sinceLight(0) >= com.jayptucker.heroesevolved.story.prologue.LastDayFight.ACTION) LastDayMusic.action();
+        }
         if (IntroScene.vision) {
             PanicSounds.tick(mc);
             CrowdRewind.record(mc);
@@ -288,6 +323,7 @@ public final class IntroDirector {
             BlastRenderer.opaque(camera, t, event.getFrustum());
             CityShatter.render(camera, t, mc.renderBuffers().bufferSource());
             CrowdRewind.render(camera, partial, event.getPoseStack(), mc.renderBuffers().bufferSource());
+            LastDayArt.render(camera, partial, event.getPoseStack(), mc.renderBuffers().bufferSource());
         } else if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_PARTICLES) {
             BlastRenderer.veil(camera, t, event.getCamera().rotation());
             BlastRenderer.glowing(camera, t);
@@ -303,6 +339,17 @@ public final class IntroDirector {
     private static Loop play(Loop sound) {
         Minecraft.getInstance().getSoundManager().play(sound);
         return sound;
+    }
+
+    /**
+     * A story beat's music cue (tools/generate-story-cues.py), once, on the music channel: whatever background track the
+     * game was playing steps aside for it.
+     */
+    private static void cue(Supplier<SoundEvent> sound) {
+        Minecraft mc = Minecraft.getInstance();
+        mc.getMusicManager().stopPlaying();
+        mc.getSoundManager().play(new SimpleSoundInstance(sound.get().getLocation(), SoundSource.MUSIC, 1, 1,
+                SoundInstance.createUnseededRandom(), false, 0, SoundInstance.Attenuation.NONE, 0, 0, 0, true));
     }
 
     /** The city's air-raid sirens, made live (CitySiren): they wind up from rest and never loop. */

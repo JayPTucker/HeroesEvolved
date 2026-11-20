@@ -1,11 +1,13 @@
 {
   "replace": false,
   "values": [
-    {"id": "#c:bosses", "required": false},
+    {
+      "id": "#c:bosses",
+      "required": false
+    },
     "minecraft:warden",
     "minecraft:elder_guardian",
     "heroesevolved:sylar",
-    "heroesevolved:elle_bishop",
     "heroesevolved:story_actor",
     "heroesevolved:shape_decoy"
   ]

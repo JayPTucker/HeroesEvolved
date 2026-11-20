@@ -27,6 +27,8 @@ public final class IntroScene {
     static boolean prologue, underground;
     static long light = -1;
     static int run = 1800;
+    /** The fight's facades, as the server found them when the light came (story/prologue/LastDayFight). */
+    static com.jayptucker.heroesevolved.story.prologue.LastDayFight.Facades facades = com.jayptucker.heroesevolved.story.prologue.LastDayFight.Facades.GUESS;
     /** The prologue's clock: always long before the flash. */
     private static final float NEVER = -100000;
     static float frozenAt;
@@ -40,6 +42,7 @@ public final class IntroScene {
         vision = false;
         prologue = underground = false;
         arrival = detonation = freeze = light = -1;
+        facades = com.jayptucker.heroesevolved.story.prologue.LastDayFight.Facades.GUESS;
         frozenAt = 0;
     }
 

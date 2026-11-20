@@ -16,7 +16,7 @@ public final class BunkerData extends SavedData {
     /**
      * Bumped when the layout changes. Older bunkers receive targeted updates ({@link BunkerBuilder#upgrade}).
      * 2 and 3: Exhibit 1. 4: alarm beacons. 5: the signal receiver and recovery rooms. 6: the receiver is a Simple Radio
-     * console.
+     * console. Bunkers built since the Sublevel 4 rebuild ({@link #design} 2) start at the latest layout and take no updates.
      */
     public static final int LAYOUT = 6;
     public boolean built;
@@ -25,9 +25,27 @@ public final class BunkerData extends SavedData {
     /** The main power: off in a new bunker until its first sleeper steps out of a pod (see {@link BunkerPower}). */
     public boolean powered;
     public final Map<UUID, Integer> pods = new HashMap<>();
+    /** Which bunker was built: 1 the original rooms ({@link BunkerLayout#LEGACY}), 2 the Sublevel 4 rebuild ({@link BunkerLayout#STASIS}). */
+    public int design = BunkerLayout.STASIS_DESIGN;
+    /** The skulls outside the vault and on the stair have been laid ({@link BunkerStair#remains}), once per bunker. */
+    public boolean remains;
+    /** The one sleeper sealed in the private pod in 4-R, once someone has been; nobody else ever is. */
+    public @org.jetbrains.annotations.Nullable UUID lab;
 
     public static BunkerData get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(new Factory<>(BunkerData::new, BunkerData::load), NAME);
+    }
+
+    public BunkerLayout layout() { return BunkerLayout.of(this); }
+
+    /** Whether the private pod in 4-R can still take its one sleeper: this bunker has it, and nobody has slept in it. */
+    public boolean labOpen() { return (!built || design >= BunkerLayout.STASIS_DESIGN) && lab == null; }
+
+    /** Seals {@code player} in the private pod for good: it is theirs, and no one else's. */
+    public void claimLab(UUID player) {
+        lab = player;
+        pods.put(player, BunkerLayout.LAB_POD);
+        setDirty();
     }
 
     /** The pod this sleeper wakes in: their own if they have one, otherwise the first unused, then round-robin. */
@@ -53,6 +71,9 @@ public final class BunkerData extends SavedData {
         tag.putLong("origin", origin.asLong());
         tag.putInt("layout", layout);
         tag.putBoolean("powered", powered);
+        tag.putInt("design", design);
+        tag.putBoolean("remains", remains);
+        if (lab != null) tag.putUUID("lab", lab);
         CompoundTag assigned = new CompoundTag();
         pods.forEach((id, pod) -> assigned.putInt(id.toString(), pod));
         tag.put("pods", assigned);
@@ -66,6 +87,10 @@ public final class BunkerData extends SavedData {
         data.layout = tag.getInt("layout");
         // Bunkers saved before the power could be out were built with their lights on.
         data.powered = !tag.contains("powered") || tag.getBoolean("powered");
+        // A bunker saved before the rebuild was built with the original rooms.
+        data.design = tag.contains("design") ? tag.getInt("design") : 1;
+        if (tag.hasUUID("lab")) data.lab = tag.getUUID("lab");
+        data.remains = tag.getBoolean("remains");
         CompoundTag assigned = tag.getCompound("pods");
         for (String key : assigned.getAllKeys()) data.pods.put(UUID.fromString(key), assigned.getInt(key));
         return data;

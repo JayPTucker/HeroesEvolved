@@ -18,12 +18,13 @@ public final class StoryDiscoveryEvents {
         if (event.getEntity() instanceof ServerPlayer player) StoryDiscoveries.tick(player);
     }
 
-    /** Reading a note on a lectern counts too. */
+    /** Reading a note on a lectern counts too, and so does opening the chest a note lies in. */
     @SubscribeEvent
     public static void lectern(PlayerInteractEvent.RightClickBlock event) {
-        if (event.getEntity() instanceof ServerPlayer player
-                && player.level().getBlockEntity(event.getPos()) instanceof LecternBlockEntity lectern) {
-            StoryDiscoveries.found(player, lectern.getBook());
-        }
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (player.level().getBlockEntity(event.getPos()) instanceof LecternBlockEntity lectern) StoryDiscoveries.found(player, lectern.getBook());
+        if (player.level().getBlockEntity(event.getPos()) instanceof net.minecraft.world.level.block.entity.ChestBlockEntity chest)
+            for (int i = 0; i < chest.getContainerSize(); i++)
+                if (chest.getItem(i).is(net.minecraft.world.item.Items.WRITTEN_BOOK)) StoryDiscoveries.found(player, chest.getItem(i));
     }
 }

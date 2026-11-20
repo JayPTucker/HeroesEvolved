@@ -73,7 +73,7 @@ Your level decides which forms you can learn:
 | 6 | **Players**, illagers, and odd bodies | any player, pillager, vindicator, enderman, piglin, blaze, guardian, phantom |
 | 10 | Large forms | iron golem, ravager, evoker, witch, hoglin, piglin brute, ghast |
 | 15 | Minibosses and story people you have met | warden, elder guardian, Company agents |
-| 20 (Evolved) | Bosses | wither; Sylar and Elle (looks only, never their powers) |
+| 20 (Evolved) | Bosses | wither; Sylar (looks only, never his powers) |
 
 The Ender Dragon is left out because it is built from several separate parts.
 

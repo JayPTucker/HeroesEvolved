@@ -2,14 +2,15 @@
 
 Fill this in before writing code, show it to the user, and turn it into the boss's player doc (`docs/<boss>.md`) when
 the boss is built. Every heading needs an answer; "none" is an answer only where the skill allows it. Sylar's and
-Elle's docs ([sylar.md](../../../../docs/sylar.md), [elle-bishop.md](../../../../docs/elle-bishop.md)) are filled-in
+doc ([sylar.md](../../../../docs/sylar.md)) is a filled-in
 examples.
 
 ## Who
 
 - **Character source** (the Heroes series page it adapts) and what is ours: lines, look, numbers, moves.
 - **What they want from the player**, in one sentence.
-- **The one idea every attack speaks in** (Sylar: a clock running down; Elle: current crawls before it bites).
+- **The one idea every attack speaks in** (Sylar: he sees how it works, so every telegraph is a brass schematic
+  that assembles as the move lands).
 - **Palette**: three to five colours with hex codes, and which are the boss's and which the room's.
 - **Voice**: a line for meeting them, each phase, each kind of power, a steal or grab, a stagger, a flight, a defeat.
 

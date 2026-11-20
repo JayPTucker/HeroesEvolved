@@ -132,6 +132,13 @@ public final class StoryActorRenderer extends HumanoidMobRenderer<StoryActorEnti
                         rightArm.xRot = -1.1F; rightArm.yRot = -0.35F;
                         head.xRot = 0.55F; head.yRot = 0.2F;
                     }
+                    case SEALED -> {
+                        // Shut in a pod: both palms on the glass in front, no higher than the waist, so the hands stop at
+                        // the glass (a pod's front is under half a block from its middle); trembling.
+                        rightArm.xRot = -0.47F + shake; leftArm.xRot = -0.47F - shake;
+                        rightArm.yRot = -0.18F; leftArm.yRot = 0.18F;
+                        head.xRot = -0.12F;
+                    }
                     default -> { return; }
                 }
                 rightSleeve.copyFrom(rightArm); leftSleeve.copyFrom(leftArm); jacket.copyFrom(body); hat.copyFrom(head);
@@ -152,6 +159,12 @@ public final class StoryActorRenderer extends HumanoidMobRenderer<StoryActorEnti
         super.render(actor, yaw, partial, pose, buffers, light);
         pose.popPose();
     }
+
+    /**
+     * Player-sized, as a player is drawn (the player renderer's own 15/16): a mob's renderer draws the model two blocks
+     * tall, and Claire's head came out through the lid of her pod.
+     */
+    @Override protected void scale(StoryActorEntity actor, PoseStack pose, float partial) { pose.scale(0.9375F, 0.9375F, 0.9375F); }
 
     /** In the air: lie along the line of flight (as an elytra flyer does), or spin end over end when thrown. */
     @Override protected void setupRotations(StoryActorEntity actor, PoseStack pose, float bob, float yBodyRot, float partial, float scale) {

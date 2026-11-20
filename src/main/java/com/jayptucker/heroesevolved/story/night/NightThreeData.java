@@ -20,8 +20,8 @@ import java.util.UUID;
  */
 public final class NightThreeData extends SavedData {
     public static final String NAME = "heroesevolved_night_three";
-    /** Bumped when the past bunker's layout changes, so it is built again. */
-    public static final int LAYOUT = 1;
+    /** Bumped when the past bunker's layout changes, so it is built again. 2: the Sublevel 4 rebuild. */
+    public static final int LAYOUT = 2;
 
     /** One player's record of the third night. */
     public record Best(boolean kept, int runs) {

@@ -36,7 +36,18 @@ public record TimeIntroPayload(int stage, java.util.List<Integer> players) imple
     public static final int PROLOGUE_APARTMENT = 19, PROLOGUE_EVENING = 20, PROLOGUE_LIGHT = 21, PROLOGUE_SIRENS = 22,
             PROLOGUE_UNDERGROUND = 23, PROLOGUE_POD = 24, PROLOGUE_BLAST = 25, PROLOGUE_END = 26,
             /** Noah's scene begins: the objective line steps aside for the dialogue. */
-            PROLOGUE_NOAH = 27;
+            PROLOGUE_NOAH = 27,
+            /** Sealed in the Helix Ward's private pod instead of the hall (in place of PROLOGUE_POD). */
+            PROLOGUE_WARD = 28,
+            /** "103 years later...": the title over the black. */
+            PROLOGUE_YEARS = 29;
+    /** The waking's music, fading in and looping until the player leaves the bunker, then fading away (client/sound/BunkerMusic). */
+    public static final int BUNKER_MUSIC = 30, BUNKER_EXIT = 31;
+    /**
+     * The Last Day after the wave, the instruction line as it changes: dig out whoever is trapped, lift them, carry them,
+     * get to the stair; and before the doors open, go down to the lobby.
+     */
+    public static final int PROLOGUE_DIG = 32, PROLOGUE_LIFT = 33, PROLOGUE_CARRYING = 34, PROLOGUE_GO = 35, PROLOGUE_LOBBY = 36;
     public static final Type<TimeIntroPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(
             HeroesEvolved.MOD_ID, "time_intro"));
     public static final StreamCodec<RegistryFriendlyByteBuf, TimeIntroPayload> STREAM_CODEC =

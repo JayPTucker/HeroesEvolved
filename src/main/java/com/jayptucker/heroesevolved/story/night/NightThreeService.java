@@ -1,7 +1,7 @@
 package com.jayptucker.heroesevolved.story.night;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
-import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
+import com.jayptucker.heroesevolved.story.bunker.BunkerLayout.Scene;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
 import com.jayptucker.heroesevolved.company.CompanyAgentEntity;
 import com.jayptucker.heroesevolved.company.CompanyAgentEntity.Role;
@@ -20,8 +20,6 @@ import com.jayptucker.heroesevolved.sounds.ModSounds;
 import com.jayptucker.heroesevolved.story.AvenueData;
 import com.jayptucker.heroesevolved.story.PastRecords;
 import com.jayptucker.heroesevolved.story.sylar.SylarEntity;
-import com.jayptucker.heroesevolved.story.sylar.SylarPowers;
-import com.jayptucker.heroesevolved.story.sylar.SylarStoryData;
 import com.jayptucker.heroesevolved.time.intro.TimeIntroService;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -108,26 +106,25 @@ public final class NightThreeService {
     static final float TK_AGENT_DAMAGE = 9, TK_PLAYER_DAMAGE = 4;
 
     /** The generator hall, where runners arrive: lit, humming, and nobody on watch. */
-    public static final Vec3 ARRIVAL = spot(9.5, 1, 4.5);
+    public static final Vec3 ARRIVAL = spot(Scene.arrival(2));
     /** Inside Gray's cage. */
-    public static final Vec3 CAGE = spot(-4.5, 1, 14.5);
+    public static final Vec3 CAGE = spot(Scene.CAGE);
     /** On the floor in front of Pod 14. */
-    public static final Vec3 POD_FRONT = spot(4.5, 1, 32.5);
-    /** Gray's way from his cage to Pod 14: out of the cell, down the corridor, along the east pods. */
-    static final List<Vec3> ROUTE = List.of(spot(-3.5, 1, 14.5), spot(-1.5, 1, 14.5), spot(0.5, 1, 16.5), spot(0.5, 1, 19.5),
-            spot(4.5, 1, 21.5), spot(4.5, 1, 30.5), POD_FRONT);
+    public static final Vec3 POD_FRONT = spot(Scene.POD_FRONT);
+    /** Gray's way from his cage to Pod 14: through his bars, up the aisle, along the west corridor, across the commons and down the hall. */
+    static final List<Vec3> ROUTE = Scene.GRAY_ROUTE.stream().map(NightThreeService::spot).toList();
 
     private record Post(Role role, Vec3 at, float yaw, String name) {}
 
-    /** Where the night watch stands: records, the security checkpoint, the corridor, the stasis hall, and the quiet by Pod 14. */
+    /** Where the night watch stands: records, the airlock and its booth, the commons, the stasis hall, and the quiet by Pod 14. */
     private static final List<Post> POSTS = List.of(
-            new Post(Role.GUARD, spot(1.5, 1, 9.5), 180, "Company guard"),
-            new Post(Role.GUARD, spot(-7.5, 1, 4.5), 90, "Company guard"),
-            new Post(Role.GUARD, spot(-11.5, 1, 6.5), -90, "Company guard"),
+            new Post(Role.GUARD, spot(19.5, 1, 11.5), 90, "Company guard"),
+            new Post(Role.GUARD, spot(-1.5, 1, 7.5), 0, "Company guard"),
+            new Post(Role.GUARD, spot(4.5, 1, 7.5), 90, "Company guard"),
             new Post(Role.GUARD, spot(0.5, 1, 16.5), 0, "Company guard"),
-            new Post(Role.GUARD, spot(-3.5, 1, 22.5), 0, "Company guard"),
-            new Post(Role.GUARD, spot(2.5, 1, 34.5), 180, "Company guard"),
-            new Post(Role.SUPPRESSOR, spot(2.5, 1, 31.5), 180, "The man in the gray suit"));
+            new Post(Role.GUARD, spot(-3.5, 1, 40.5), 0, "Company guard"),
+            new Post(Role.GUARD, spot(4.5, 1, 64.5), 180, "Company guard"),
+            new Post(Role.SUPPRESSOR, spot(4.5, 1, 60.5), 180, "The man in the gray suit"));
 
     public enum Outcome { NIGHT, KEPT, TAKEN }
 
@@ -158,6 +155,8 @@ public final class NightThreeService {
         BlockPos origin = NightThreeBunker.ORIGIN;
         return new Vec3(origin.getX() + x, origin.getY() + y, origin.getZ() + z);
     }
+
+    private static Vec3 spot(Vec3 offset) { return spot(offset.x, offset.y, offset.z); }
 
     // ------------------------------------------------------------------
     // Who is where
@@ -458,7 +457,7 @@ public final class NightThreeService {
         current.castTarget = target;
         current.castTicks = 0;
         gray.getNavigation().stop();
-        gray.scenePose(SylarPowers.Pose.ONE_HAND);
+        gray.scenePose(SylarEntity.Pose.ONE_HAND);
         gray.level().playSound(null, gray.getX(), gray.getY(), gray.getZ(), SoundEvents.ILLUSIONER_PREPARE_MIRROR, SoundSource.HOSTILE, 0.8F, 0.6F);
         if (target == current.suppressor && current.ticks - current.lastReach > 200) {
             current.lastReach = current.ticks;
@@ -470,7 +469,7 @@ public final class NightThreeService {
         current.castTarget = null;
         current.castTicks = 0;
         current.nextCast = Math.max(current.nextCast, current.ticks + TK_RECOVER);
-        gray.scenePose(SylarPowers.Pose.NONE);
+        gray.scenePose(SylarEntity.Pose.NONE);
     }
 
     private static void tickCast(ServerLevel night, Run current, SylarEntity gray) {
@@ -499,7 +498,7 @@ public final class NightThreeService {
         current.castTarget = null;
         current.castTicks = 0;
         current.nextCast = current.ticks + TK_COOLDOWN;
-        gray.scenePose(SylarPowers.Pose.NONE);
+        gray.scenePose(SylarEntity.Pose.NONE);
     }
 
     /** He won't stay in the quiet: back out the way he came, away from the man who makes it. */
@@ -552,7 +551,7 @@ public final class NightThreeService {
         gray.getNavigation().stop();
         Vec3 pod = Vec3.atCenterOf(NightThreeBunker.pod().above());
         gray.getLookControl().setLookAt(pod.x, pod.y, pod.z);
-        gray.scenePose(SylarPowers.Pose.TWO_HANDS);
+        gray.scenePose(SylarEntity.Pose.TWO_HANDS);
         if (current.channel == 0) broadcast(server, current, "Gray reaches Pod 14 and lays both hands on the glass, the way he'd open the back of a watch.", ChatFormatting.DARK_PURPLE);
         current.channel++;
         if (current.channel % 20 == 1) {
@@ -581,7 +580,7 @@ public final class NightThreeService {
         if (current.castTarget != null) cancelCast(current, gray);
         if (current.channel > 0) current.channel = Math.max(0, current.channel - CHANNEL_SETBACK);
         gray.getNavigation().stop();
-        gray.scenePose(SylarPowers.Pose.NONE);
+        gray.scenePose(SylarEntity.Pose.NONE);
         Vec3 away = gray.position().subtract(runner.position()).multiply(1, 0, 1);
         away = away.lengthSqr() < 1.0E-4 ? new Vec3(0, 0, -1) : away.normalize();
         gray.setDeltaMovement(away.scale(0.8).add(0, 0.3, 0));
@@ -606,7 +605,7 @@ public final class NightThreeService {
         if (gray != null) {
             gray.removeTag(CompanyAgentEntity.LOOSE_TAG);
             gray.getNavigation().stop();
-            gray.scenePose(outcome == Outcome.KEPT ? SylarPowers.Pose.CROUCH : SylarPowers.Pose.NONE);
+            gray.scenePose(outcome == Outcome.KEPT ? SylarEntity.Pose.CROUCH : SylarEntity.Pose.NONE);
             if (outcome == Outcome.KEPT) gray.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, RETURN_DELAY + 20, 6, false, false));
         }
         // The night is over: the watch stands down, and nobody else is darted before the pull home.
@@ -663,9 +662,9 @@ public final class NightThreeService {
             NightThreeBunker.resealPresent(server);
             tell(player, "In the present, Pod 14 in the stasis hall is sealed again. Someone is still asleep in it.", ChatFormatting.AQUA);
         }
-        if (SylarStoryData.get(server).forget(ModAbilities.REGENERATION_ID))
-            tell(player, "In the present, the watchmaker's wounds stop closing on their own. Whatever has kept him alive all these years, "
-                    + "it was never Claire's gift.", ChatFormatting.DARK_PURPLE);
+        if (firstInWorld)
+            tell(player, "In the present, the case in Sylar's collection marked twelve o'clock stands dark and empty. Whatever has kept him "
+                    + "alive all these years, it was never Claire's gift.", ChatFormatting.DARK_PURPLE);
     }
 
     private static void award(ServerPlayer player, String path) {
@@ -814,7 +813,7 @@ public final class NightThreeService {
     }
 
     /** Where the {@code slot}th runner arrives: a row across the generator hall, then a second row behind it. */
-    static Vec3 slot(int slot) { return slot < 6 ? spot(7.5 + slot, 1, 4.5) : spot(1.5 + slot, 1, 3.5); }
+    static Vec3 slot(int slot) { return spot(Scene.arrival(slot)); }
     static List<Vec3> postSpots() { return POSTS.stream().map(Post::at).toList(); }
     static SylarEntity gray() { return run == null ? null : run.gray; }
     static List<CompanyAgentEntity> agents() { return run == null ? List.of() : List.copyOf(run.agents); }

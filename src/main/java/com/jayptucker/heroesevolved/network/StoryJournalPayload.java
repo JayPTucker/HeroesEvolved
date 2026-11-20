@@ -6,7 +6,8 @@ import com.jayptucker.heroesevolved.progression.StoryDiscoveries;
 import com.jayptucker.heroesevolved.story.LastSignalService;
 import com.jayptucker.heroesevolved.story.LastSignalService.Phase;
 import com.jayptucker.heroesevolved.story.StoryLead;
-import com.jayptucker.heroesevolved.story.sylar.SylarStoryData;
+import com.jayptucker.heroesevolved.story.sylar.SylarData;
+import com.jayptucker.heroesevolved.story.sylar.SylarGeometry;
 import com.jayptucker.heroesevolved.telepathy.FutureVisions;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -32,6 +33,7 @@ public record StoryJournalPayload(
         int sylarChapter,
         int sylarDefeats,
         List<String> sylarLearned,
+        List<String> sylarList,
         Phase signalPhase,
         BlockPos signalLocation,
         int signalRescued
@@ -54,6 +56,7 @@ public record StoryJournalPayload(
                 buffer.writeVarInt(payload.sylarChapter);
                 buffer.writeVarInt(payload.sylarDefeats);
                 STRINGS.encode(buffer, payload.sylarLearned);
+                STRINGS.encode(buffer, payload.sylarList);
                 buffer.writeEnum(payload.signalPhase);
                 buffer.writeBoolean(payload.signalLocation != null);
                 if (payload.signalLocation != null) buffer.writeBlockPos(payload.signalLocation);
@@ -61,12 +64,17 @@ public record StoryJournalPayload(
             }, buffer -> new StoryJournalPayload(buffer.readUtf(512), STRINGS.decode(buffer),
                     buffer.readVarInt(), STRINGS.decode(buffer), buffer.readVarInt(),
                     buffer.readBoolean(), buffer.readVarInt(), buffer.readVarInt(),
-                    buffer.readVarInt(), STRINGS.decode(buffer), buffer.readEnum(Phase.class),
+                    buffer.readVarInt(), STRINGS.decode(buffer), STRINGS.decode(buffer), buffer.readEnum(Phase.class),
                     buffer.readBoolean() ? buffer.readBlockPos() : null, buffer.readVarInt()));
 
     /** Gathers everything the journal shows for this player. */
     public static StoryJournalPayload of(ServerPlayer player) {
-        SylarStoryData sylar = SylarStoryData.get(player.getServer());
+        SylarData sylar = SylarData.get(player.getServer());
+        int wins = sylar.wins(player.getUUID());
+        // Chapters: 0 nothing yet, 1 he is awake in Level 5, 2 his cell is open, 3 someone has beaten him, 4 you have.
+        int chapter = wins > 0 ? 4 : sylar.stage();
+        List<String> collection = chapter == 0 ? List.of() : SylarGeometry.CASES.stream().filter(java.util.Objects::nonNull)
+                .filter(power -> SylarData.holds(player.getServer(), power)).map(ResourceLocation::toString).toList();
         return new StoryJournalPayload(
                 StoryLead.next(player),
                 StoryDiscoveries.recovered(player),
@@ -75,9 +83,10 @@ public record StoryJournalPayload(
                 FutureVisions.fragmentCount(),
                 player.getData(ModDataAttachments.PLAYER_SEEN_FUTURE_CITY.get()),
                 player.getData(ModDataAttachments.TEMPORAL_STORY),
-                sylar.trail(player.getUUID()).chapter,
-                sylar.defeats(),
-                sylar.learned().stream().map(ResourceLocation::toString).sorted().toList(),
+                chapter,
+                wins,
+                collection,
+                com.jayptucker.heroesevolved.story.sylar.SylarStory.journal(player.getServer(), player),
                 LastSignalService.phase(player),
                 LastSignalService.location(player),
                 LastSignalService.rescued(player)

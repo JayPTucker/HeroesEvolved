@@ -7,14 +7,12 @@ import com.jayptucker.heroesevolved.entity.EntityCarryService;
 import com.jayptucker.heroesevolved.expansion.PropheticPainting;
 import com.jayptucker.heroesevolved.network.StoryJournalPayload;
 import com.jayptucker.heroesevolved.progression.StoryDiscoveries;
-import com.jayptucker.heroesevolved.registry.ModEntities;
 import com.jayptucker.heroesevolved.story.bunker.BunkerBuilder;
 import com.jayptucker.heroesevolved.story.bunker.BunkerData;
 import com.jayptucker.heroesevolved.story.bunker.BunkerLogs;
 import com.jayptucker.heroesevolved.story.bunker.BunkerPower;
 import com.jayptucker.heroesevolved.story.bunker.BunkerService;
 import com.jayptucker.heroesevolved.story.bunker.CryoChamberBlock;
-import com.jayptucker.heroesevolved.story.sylar.SylarEntity;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -75,8 +73,6 @@ public final class LastSignalService {
         final SignalSite site;
         final List<ServerPlayer> present = new ArrayList<>();
         final List<Sleeper> sleepers = new ArrayList<>();
-        SylarEntity gray;
-        long grayArrival;
         long lastVisit;
 
         Expedition(SignalSite site) {
@@ -133,18 +129,12 @@ public final class LastSignalService {
         return EXPEDITIONS.computeIfAbsent(site.origin(), ignored -> new Expedition(site));
     }
 
-    /** The station encounter includes players who have never awakened a power. */
-    public static boolean targetable(ServerPlayer player) {
-        return player.isAlive() && !player.isCreative() && !player.isSpectator()
-                && EXPEDITIONS.values().stream().anyMatch(run -> run.gray != null && run.present.contains(player));
-    }
-
     @SubscribeEvent public static void console(PlayerInteractEvent.RightClickBlock event) {
         if (!(event.getEntity() instanceof ServerPlayer player)
                 || player.level() != player.getServer().overworld()) return;
         BlockPos pos = event.getPos();
         BunkerData bunker = BunkerData.get(player.getServer());
-        if (hasBunker(player) && bunker.built && pos.equals(BunkerBuilder.receiverPos(bunker.origin))
+        if (hasBunker(player) && bunker.built && pos.equals(BunkerBuilder.receiverPos(bunker))
                 && BunkerBuilder.isReceiver(player.serverLevel().getBlockState(pos))) {
             accept(event);
             receive(player, bunker);
@@ -194,7 +184,7 @@ public final class LastSignalService {
                 }
                 data.leads.put(player.getUUID(), lead);
                 data.setDirty();
-                chime(player.serverLevel(), BunkerBuilder.receiverPos(bunker.origin));
+                chime(player.serverLevel(), BunkerBuilder.receiverPos(bunker));
                 tell(player, "RELAY STATION: Two pods occupied. Life support failing. Requesting extraction.");
                 // Isaac painted this call before the Last Day; Bennet filed his canvas with the receiver.
                 com.jayptucker.heroesevolved.expansion.PropheticPainting.giveSignal(player);
@@ -374,23 +364,10 @@ public final class LastSignalService {
             run.sleepers.add(new Sleeper(villager));
             run.site.level().addFreshEntity(villager);
         }
-        if (HeroesEvolvedConfig.COMMON.sylarEnabled.get()) {
-            run.grayArrival = run.site.level().getGameTime() + 120;
-            run.site.level().playSound(null, run.site.at("gray"), SoundEvents.IRON_DOOR_CLOSE, SoundSource.BLOCKS, 1, 0.8F);
-        }
     }
 
     private static void tickExpedition(Expedition run, long now) {
         spawnSleepers(run);
-        if (run.grayArrival != 0 && now >= run.grayArrival) {
-            run.grayArrival = 0;
-            bringGray(run);
-        }
-        if (run.gray != null && run.gray.isAlive() && !run.gray.isRemoved()
-                && run.present.stream().noneMatch(player -> player.getUUID().equals(run.gray.quarry()))) {
-            run.present.stream().filter(LastSignalService::targetable)
-                    .min(Comparator.comparingDouble(run.gray::distanceToSqr)).ifPresent(run.gray::retarget);
-        }
         for (Sleeper sleeper : run.sleepers) guide(run, sleeper);
     }
 
@@ -421,29 +398,13 @@ public final class LastSignalService {
         }
     }
 
-    private static void bringGray(Expedition run) {
-        Vec3 at = Vec3.atBottomCenterOf(run.site.at("gray"));
-        ServerPlayer target = run.present.stream().filter(player -> !player.isCreative() && !player.isSpectator())
-                .min(Comparator.comparingDouble(player -> player.distanceToSqr(at))).orElse(null);
-        if (target == null) return;
-        SylarEntity gray = ModEntities.SYLAR.get().create(run.site.level());
-        if (gray == null) return;
-        gray.addTag(ACTOR);
-        gray.setPos(at);
-        if (!run.site.level().addFreshEntity(gray)) return;
-        run.gray = gray;
-        gray.hunt(target);
-        run.site.level().playSound(null, gray.blockPosition(), SoundEvents.IRON_DOOR_OPEN, SoundSource.BLOCKS, 1, 0.8F);
-        announce(run, "Gray: I heard the signal too.");
-    }
-
     private static void placeSurvivors(MinecraftServer server) {
         if (!HeroesEvolvedConfig.COMMON.bunkerEnabled.get()) return;
         BunkerData bunker = BunkerData.get(server);
         if (!bunker.built) return;
         LastSignalData data = LastSignalData.get(server);
         ServerLevel home = server.overworld();
-        List<BlockPos> positions = BunkerBuilder.survivorPositions(bunker.origin);
+        List<BlockPos> positions = BunkerBuilder.survivorPositions(bunker);
         for (int i = 0; i < positions.size(); i++) {
             BlockPos pos = positions.get(i);
             int bit = 1 << i;
@@ -512,7 +473,6 @@ public final class LastSignalService {
             EntityCarryService.releaseEntity(sleeper.villager);
             sleeper.villager.discard();
         }
-        if (run.gray != null) run.gray.discard();
     }
 
     private static void tell(ServerPlayer player, String message) {

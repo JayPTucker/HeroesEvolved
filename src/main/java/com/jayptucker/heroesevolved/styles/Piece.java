@@ -76,18 +76,25 @@ public enum Piece {
     CRYO_BLAST(6), CRYO_QUENCH(17), CRYO_CAST(14),
     // A villager in meltdown (re-sent every ten ticks; scale is how far gone, +2 while held) and his village's safe point
     VILLAGE_MELTDOWN(12), VILLAGE_SAFE(12),
-    // Sylar's shop, the Watchmaker's arena: its clocks (re-sent every second; scale is the phase, +10 while he runs), the
-    // glint of his exposed watch and its cracking, his telegraphs (each a dial whose hand reaches twelve as it lands) and
-    // what they do, his grab, the rings of stopped time, the doors locking, the pull into and out of the shop, the drop
-    WATCH_ARENA(24), WATCH_EXPOSED(12), WATCH_CRACK(40), WATCH_SLAM_MARK(30), WATCH_SLAM(30), WATCH_ICE_MARK(30),
-    WATCH_ICE_WALL(24), WATCH_RAIL_MARK(24), WATCH_RAIL_ARC(16), WATCH_GRAB_MARK(16), WATCH_HOLD(12), WATCH_TAKE(36),
-    WATCH_RINGS_MARK(36), WATCH_RINGS(32), WATCH_DOORS(30), WATCH_PULL(30), WATCH_DROP(40),
-    // Elle Bishop on Primatech's test floor: the room's live grid (re-sent every second, bound to her), her charge and
-    // shield (re-sent every ten ticks), each telegraph and what it does, a bank shorting, a siphon and its backfire,
-    // the conduits, her reboot, the storm, the phase changes, her arrival in the dark, the omens, the drop
-    ELLE_ARENA(24), ELLE_AURA(12), ELLE_AIM(16), ELLE_BOLT(10), ELLE_RING_MARK(24), ELLE_RING(14), ELLE_SIPHON(60),
-    ELLE_BACKFIRE(36), ELLE_CONDUIT_MARK(24), ELLE_CONDUIT(12), ELLE_REBOOT(60), ELLE_STRIKE_MARK(30), ELLE_STRIKE(14),
-    ELLE_ORB(48), ELLE_SHORT(20), ELLE_PHASE(30), ELLE_ARRIVE(60), ELLE_OMEN(16), ELLE_DROP(40),
+    // The story's scripted fights (the Last Day's sky fight, the Space-Time vision), drawn by StoryArt: a forked lightning
+    // bolt (origin the hand, target where it lands, scale its thickness) and a telekinetic grip (origin the held body,
+    // target the hand, scale how hard it holds, bound to whoever is held)
+    STORY_BOLT(10), STORY_GRIP(12),
+    // Sylar in the Collection (story/sylar), drawn by SylarArt. Every telegraph is a brass schematic that assembles as the
+    // move lands, so each _MARK lasts exactly its move's windup; seeded pieces carry a MimicColors index in their seed.
+    // The room (re-sent every second, bound to him; scale the phase): specimens in their cases, the thread to the case he
+    // draws on, his loupe, the lights and the great movement overhead. A locked case mending itself. Then each move's
+    // telegraph and what it does (see SylarMoves for what origin, target and scale carry), Appraisal's hold (bound to the
+    // held player; scale the progress, seed colour * 100 + how hard they have fought) and the theft into a case, a
+    // stolen power going home, a backfire, his broken concentration, a phase change (scale the new phase), the pillars
+    // rising, the shove, the fold into and out of the hall (bound to each player; scale 1 leaving, 2 arriving, 3 home),
+    // and his death (scale the cases still standing, as a bit mask)
+    SYLAR_ROOM(24), SYLAR_LOCK(16), SYLAR_HURL_MARK(24), SYLAR_IMPACT(26), SYLAR_REEL_MARK(12), SYLAR_REEL(10),
+    SYLAR_LATTICE_MARK(24), SYLAR_LATTICE(14), SYLAR_ICE_MARK(28), SYLAR_ICE(34), SYLAR_FAULT_MARK(20), SYLAR_FAULT(24),
+    SYLAR_RING_MARK(20), SYLAR_RING(46), SYLAR_HAND_MARK(30), SYLAR_HAND(40), SYLAR_BLUR_MARK(24), SYLAR_BLUR(10),
+    SYLAR_HOURS_MARK(60), SYLAR_HOURS(36), SYLAR_LIGHT_MARK(60), SYLAR_LIGHT(40), SYLAR_FIZZLE(30), SYLAR_APPRAISE_MARK(16),
+    SYLAR_HOLD(12), SYLAR_TAKE(36), SYLAR_RELEASE(30), SYLAR_YOURS_MARK(16), SYLAR_YOURS(12), SYLAR_BACKFIRE(36),
+    SYLAR_STAGGER(30), SYLAR_PHASE(40), SYLAR_COVER(40), SYLAR_SHOVE(10), SYLAR_ARRIVE(30), SYLAR_DEATH(60),
     // The power-themed TaCZ guns: the heat gun's flame, the cold gun's frost streak (scale 0) and burst (scale 1), and a
     // taser's barbs and current (bound to whoever they bit)
     GUN_HEAT(8), GUN_FROST(12), GUN_TASER(16),

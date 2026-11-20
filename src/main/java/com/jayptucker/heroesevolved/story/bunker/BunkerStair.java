@@ -75,6 +75,33 @@ final class BunkerStair {
                 }
     }
 
+    /**
+     * The ones the vault was shut on, on the Last Day ({@code story/prologue/LastDayShelter}): skulls on the landing outside
+     * the vault, pressed up to the door, and here and there down the stair, on its landings and the level ends of its
+     * flights (never on a tread, where a step must stay clear), under cover (not in the open slot or the lobby). Only into
+     * air with a solid floor under it and the stair's four blocks of headroom over it, so it can be run on a bunker built
+     * before them, or on one with no stair, without breaking anything: {@code BunkerService} runs it once for every bunker
+     * ({@link BunkerData#remains}).
+     */
+    static void remains(ServerLevel level, BlockPos origin) {
+        Builder b = new Builder(level, origin);
+        // At the door: those who were pounding on it when the light came.
+        int[][] door = {{-1, -1, 1}, {1, -3, 7}, {2, -3, 13}, {0, -2, 3}};
+        for (int[] d : door) b.skull(d[0], 1, d[1], d[2], false);
+        // Down the stair, the ones who sat down where they were and waited: about one floor cell in sixteen.
+        int height = Math.min(level.getMaxBuildHeight() - origin.getY() - 1, 160);
+        for (int x = X0 + 1; x <= X1 - 1; x++)
+            for (int z = Z0 + 1; z <= Z1 - 1; z++)
+                for (int y = 1; y < height; y++)
+                    if (b.noise(x, y, z, 17) % 16 == 0) b.skull(x, y, z, b.noise(x, y, z, 19) % 16, true);
+    }
+
+    /** Whether the stairwell's ground is loaded round a bunker at {@code origin}, so {@link #remains} can be run there. */
+    static boolean loaded(ServerLevel level, BlockPos origin) {
+        return level.isLoaded(origin.offset(X0, 0, Z0)) && level.isLoaded(origin.offset(X1, 0, Z0))
+                && level.isLoaded(origin.offset(X0, 0, Z1)) && level.isLoaded(origin.offset(X1, 0, Z1));
+    }
+
     /** Builds the stairwell, the vault and the ruined lobby for a bunker whose surface is {@code top} above its floor. */
     static void build(ServerLevel level, BlockPos origin, int top) {
         Builder b = new Builder(level, origin);
@@ -138,14 +165,27 @@ final class BunkerStair {
             for (int x = FLIGHT_X0; x <= FLIGHT_X1; x++) {
                 int p = east ? x - FLIGHT_X0 : FLIGHT_X1 - x, k = p - (LONGEST - 1 - length);
                 int walk = from + Math.max(k, 0);
+                // Wear grows with height, toward the surface the blast and the weather came from: treads chipped to rubble
+                // stone, moss on the top flights, stone fallen along one side. The middle of the lane always stays clear, and
+                // nothing lies on a tread itself (a carpet on a step stops you climbing it).
+                double worn = Math.min(1, Math.max(0, walk / (double) Math.max(1, top - 1)));
+                Direction rise = east ? Direction.EAST : Direction.WEST;
                 for (int z = lane[0]; z <= lane[1]; z++) {
-                    if (k > 0) set(x, walk, z, Blocks.POLISHED_DEEPSLATE_STAIRS.defaultBlockState()
-                            .setValue(StairBlock.FACING, east ? Direction.EAST : Direction.WEST));
-                    else set(x, walk, z, FLOOR);
+                    int n = noise(x, walk, z, 3) % 100;
+                    if (k > 0) {
+                        net.minecraft.world.level.block.Block tread = n < 45 * worn * worn ? (n % 2 == 0 && worn > 0.6
+                                ? Blocks.MOSSY_COBBLESTONE_STAIRS : Blocks.COBBLED_DEEPSLATE_STAIRS) : Blocks.POLISHED_DEEPSLATE_STAIRS;
+                        set(x, walk, z, tread.defaultBlockState().setValue(StairBlock.FACING, rise));
+                    } else set(x, walk, z, n < 40 * worn ? Blocks.COBBLED_DEEPSLATE.defaultBlockState() : FLOOR);
                     // Four blocks of headroom; over the last flight the well stays open to the sky, the slot in the lobby floor.
                     for (int y = walk + 1; y <= (last ? top + 3 : walk + 4); y++) set(x, y, z, AIR);
-                    // Wear: moss creeping down from the light near the top, the odd cracked tread.
-                    if (walk >= top - 9 && noise(x, walk, z, 3) % 4 == 0) set(x, walk + 1, z, Blocks.MOSS_CARPET);
+                    // Fallen stone heaped against the wall side of the lane only.
+                    boolean edge = z == (east ? lane[0] : lane[1]);
+                    if (edge && noise(x, walk, z, 4) % 100 < 55 * worn) {
+                        int pile = noise(x, walk, z, 5) % 3;
+                        set(x, walk + 1, z, pile == 0 ? Blocks.COBBLED_DEEPSLATE.defaultBlockState()
+                                : pile == 1 ? Blocks.TUFF.defaultBlockState() : Blocks.COBBLED_DEEPSLATE_SLAB.defaultBlockState());
+                    }
                 }
                 // The light the well has now: glow lichen on both walls every other step, and glow berries hanging on vines
                 // that came down through the cracks in the ceiling every third.
@@ -181,6 +221,25 @@ final class BunkerStair {
                 set(edgeX, floor + 3, middle - 1, lichen(toWall));
                 set(edgeX, floor + 3, middle + 1, lichen(toWall));
             }
+        }
+
+        /**
+         * A skull lying on the floor at {@code x, y, z}, turned {@code rotation} sixteenths from facing south: only in air,
+         * on a floor whose top is solid (never a tread); {@code strict}, only with the stair's headroom over it and no sky
+         * (the vault's own landing has roots and vines hanging in its headroom, and is under cover anyway).
+         */
+        void skull(int x, int y, int z, int rotation, boolean strict) {
+            BlockState here = get(x, y, z);
+            if (!here.isAir()) return;
+            cursor.set(origin.getX() + x, origin.getY() + y - 1, origin.getZ() + z);
+            BlockPos floor = cursor.immutable();
+            if (!level.getBlockState(floor).isFaceSturdy(level, floor, Direction.UP)) return;
+            if (strict) {
+                for (int up = 1; up <= 3; up++) if (!get(x, y + up, z).isAir()) return;
+                if (level.canSeeSky(floor.above())) return;
+            }
+            set(x, y, z, Blocks.SKELETON_SKULL.defaultBlockState().setValue(net.minecraft.world.level.block.SkullBlock.ROTATION,
+                    Math.floorMod(rotation, 16)));
         }
 
         BlockState lichen(Direction wall) {

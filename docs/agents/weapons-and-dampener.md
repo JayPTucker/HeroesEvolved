@@ -43,7 +43,7 @@ player sees is in [docs/ability-dampener.md](../../docs/ability-dampener.md).
 
 - **One question for "is this power switched off".** `Dampening.dampened(entity)` covers a live field and a round's
   `DAMPENED` effect. `PowerRules.canActWithoutPreservation` asks it beside the Suppressor and the Eclipse, so every key,
-  sustained power and passive goes quiet with no per-power code. NPCs with powers (Sylar, Elle) and
+  sustained power and passive goes quiet with no per-power code. NPCs with powers (Sylar) and
   `MimicryService.imprintOf` ask it too. A new way to block powers is one more branch there.
 - **A timed status as a mob effect.** The round's hold is a real `MobEffect` (`ModItems.DAMPENED`): it syncs, shows an
   icon, refreshes rather than stacks, and survives milk (`fillEffectCures` left empty). Prefer this to a hand-rolled map

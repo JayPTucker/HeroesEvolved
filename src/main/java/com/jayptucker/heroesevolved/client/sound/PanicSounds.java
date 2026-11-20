@@ -352,6 +352,119 @@ public final class PanicSounds {
     }
 
     // ------------------------------------------------------------------
+    // Heard while knocked senseless
+    // ------------------------------------------------------------------
+
+    /**
+     * The screaming as someone knocked out cold by the Last Day's wave hears it, for {@code holdTicks} and then fading
+     * as they come to (two seconds more): the crowd and single screams from the same recordings, slowed and wavering,
+     * smeared, under water, swelling and sinking with their pulse. On the master channel, so the ringing's muffling
+     * ({@code mixin/SoundEngineDuckMixin}) leaves it alone. Null if the recordings aren't read yet.
+     */
+    public static SynthSound dazed(int holdTicks) {
+        preload();
+        Clips ready = clips;
+        if (ready == null) return null;
+        SynthSound sound = new SynthSound(id("panic_dazed"), "subtitles.heroesevolved.crowd_panic", SoundSource.MASTER,
+                () -> new Dazed(ready, holdTicks));
+        sound.set(0.85F, 1);
+        return sound;
+    }
+
+    /** Slowed, wavering, muffled screams over a smeared crowd, pulsing like a heartbeat. */
+    static final class Dazed extends PcmStream {
+        private static final int RATE = 44100;
+        private final Clips clips;
+        private final float crowdStep, screamStep;
+        private final double[] position = new double[6];
+        private final float[][] source = new float[6][];
+        private final float[] rate = new float[6], gain = new float[6], left = new float[6], right = new float[6];
+        private final int[] age = new int[6], length = new int[6];
+        private final Random random = new Random();
+        private final Dsp.Wander wow = new Dsp.Wander(RATE, 0.6F, 7), murk = new Dsp.Wander(RATE, 0.35F, 11);
+        private final Dsp.LowPass lowLeft = new Dsp.LowPass(RATE, 800), lowRight = new Dsp.LowPass(RATE, 800);
+        private final Dsp.Reverb room = new Dsp.Reverb(RATE, 1.8F, 3.2F, 0.6F);
+        private final float[] wet = new float[2];
+        private final int hold, total;
+        private int at, untilNext;
+
+        Dazed(Clips clips, int holdTicks) {
+            super(RATE, 2);
+            this.clips = clips;
+            crowdStep = clips.crowdRate / (float) RATE;
+            screamStep = clips.screamRate / (float) RATE;
+            hold = holdTicks * RATE / 20;
+            total = hold + 2 * RATE;
+        }
+
+        @Override protected int render(float[] out, int frames) {
+            for (int i = 0; i < frames; i++) {
+                if (at >= total) return i;
+                if (--untilNext <= 0) {
+                    spawn();
+                    untilNext = (int) (RATE * (0.15F + 0.3F * random.nextFloat()));
+                }
+                // Everything slowed to about two thirds, and wavering as the head swims.
+                float warp = 0.62F + 0.07F * wow.next();
+                float l = 0, r = 0, send = 0;
+                for (int g = 0; g < source.length; g++) {
+                    float[] clip = source[g];
+                    if (clip == null) continue;
+                    int k = (int) position[g];
+                    if (k + 1 >= clip.length || age[g] >= length[g]) { source[g] = null; continue; }
+                    float f = (float) (position[g] - k);
+                    float sample = clip[k] + (clip[k + 1] - clip[k]) * f;
+                    position[g] += rate[g] * warp;
+                    float u = age[g]++ / (float) length[g];
+                    float v = sample * gain[g] * Dsp.ramp(u, 0, 0.25F) * (1 - Dsp.ramp(u, 0.7F, 1));
+                    l += v * left[g];
+                    r += v * right[g];
+                    send += v;
+                }
+                // Under water: the top of every sound gone, how much drifting.
+                float cutoff = 620 + 300 * murk.next();
+                lowLeft.set(cutoff);
+                lowRight.set(cutoff);
+                room.run(send * 0.5F, wet);
+                // The pulse: a double thump at seventy a minute, everything swelling with it.
+                float beat = (at / (float) RATE * 1.17F) % 1F;
+                float thump = (float) Math.exp(-beat * 10) + (beat > 0.17F ? 0.6F * (float) Math.exp(-(beat - 0.17F) * 10) : 0);
+                float pulse = 0.5F + 0.5F * Math.min(1, thump);
+                float envelope = Dsp.ramp(at, 0, RATE * 0.3F) * (1 - Dsp.ramp(at, hold, total));
+                out[2 * i] = Dsp.soft(lowLeft.run(l + wet[0] * 0.8F) * pulse * envelope * 1.6F);
+                out[2 * i + 1] = Dsp.soft(lowRight.run(r + wet[1] * 0.8F) * pulse * envelope * 1.6F);
+                at++;
+            }
+            return frames;
+        }
+
+        /** Another stretch of the crowd, or one scream, somewhere off to the side. */
+        private void spawn() {
+            int slot = -1;
+            for (int g = 0; g < source.length; g++) if (source[g] == null) { slot = g; break; }
+            if (slot < 0) return;
+            boolean scream = !clips.screams.isEmpty() && (clips.crowd.isEmpty() || random.nextFloat() < 0.45F);
+            List<float[]> from = scream ? clips.screams : clips.crowd;
+            if (from.isEmpty()) return;
+            float[] clip = from.get(random.nextInt(from.size()));
+            float step = (scream ? screamStep : crowdStep) * (0.9F + 0.2F * random.nextFloat());
+            int len = scream ? (int) ((clip.length - 2) / (step * 0.7F)) : (int) (RATE * (1.4F + 1.4F * random.nextFloat()));
+            len = Math.min(len, (int) ((clip.length - 2) / (step * 0.7F) * 0.95F));
+            if (len < RATE / 5) return;
+            double start = scream ? 0 : random.nextFloat() * Math.max(0, clip.length - 2 - len * step * 0.7F);
+            float pan = random.nextFloat() * 1.6F - 0.8F;
+            source[slot] = clip;
+            position[slot] = start;
+            rate[slot] = step;
+            gain[slot] = scream ? 0.5F + 0.25F * random.nextFloat() : 0.45F + 0.2F * random.nextFloat();
+            left[slot] = (float) Math.cos((pan + 1) * Math.PI / 4);
+            right[slot] = (float) Math.sin((pan + 1) * Math.PI / 4);
+            age[slot] = 0;
+            length[slot] = len;
+        }
+    }
+
+    // ------------------------------------------------------------------
     // One person running
     // ------------------------------------------------------------------
 

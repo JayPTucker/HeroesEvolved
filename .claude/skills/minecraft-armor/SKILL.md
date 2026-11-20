@@ -20,9 +20,9 @@ rules are in [docs/agents/previews.md](../../../docs/agents/previews.md). What t
 ## Is it armor at all?
 
 - **Armor** is an item in an armor slot that anyone (a player, an armor stand, a mob) can wear and take off. This skill.
-- **A character's look** (Sylar, Elle, the Company's agents, story actors) is a skin drawn by a generator:
-  `tools/generate-sylar-skin.py`, `tools/GenerateElleTextures.java`, `tools/GenerateCompanyTextures.java`,
-  `tools/GenerateStoryActorTextures.java`. Change the generator, never the PNG. A boss's costume belongs here, not in
+- **A character's look** (Sylar, the Company's agents, story actors) is a skin drawn by a generator:
+  `tools/GenerateCompanyTextures.java`,
+  `tools/GenerateStoryActorTextures.java` (Noah, Claire, Peter, Ted, and Sylar for both the story and the boss). Change the generator, never the PNG. A boss's costume belongs here, not in
   an armor model (see the bosses skill, [../minecraft-bosses/SKILL.md](../minecraft-bosses/SKILL.md)).
 - **A prop on the face or head** (glasses, a headset, a hat) is an item with a 3D model drawn by the head item layer,
   `Equipable` in the head slot: `item/HornRimmedGlassesItem` is the pattern. Painting it into an 8-pixel face reads as

@@ -1081,5 +1081,118 @@
       "heroesevolved:power/vibe/end_1",
       "heroesevolved:power/vibe/end_2"
     ]
+  },
+  "story_sealed": {
+    "subtitle": "subtitles.heroesevolved.story_sealed",
+    "sounds": [
+      {
+        "name": "heroesevolved:story/story_sealed"
+      }
+    ]
+  },
+  "story_years": {
+    "subtitle": "subtitles.heroesevolved.story_years",
+    "sounds": [
+      {
+        "name": "heroesevolved:story/story_years"
+      }
+    ]
+  },
+  "story_ward": {
+    "subtitle": "subtitles.heroesevolved.story_ward",
+    "sounds": [
+      {
+        "name": "heroesevolved:story/story_ward"
+      }
+    ]
+  },
+  "story_wake_music": {
+    "subtitle": "subtitles.heroesevolved.story_wake_music",
+    "sounds": [
+      {
+        "name": "heroesevolved:story/story_wake_music",
+        "stream": true
+      }
+    ]
+  },
+  "lastday_evening": {
+    "subtitle": "subtitles.heroesevolved.lastday_evening",
+    "sounds": [
+      {
+        "name": "heroesevolved:story/lastday_evening",
+        "stream": true
+      }
+    ]
+  },
+  "lastday_run": {
+    "subtitle": "subtitles.heroesevolved.lastday_run",
+    "sounds": [
+      {
+        "name": "heroesevolved:story/lastday_run",
+        "stream": true
+      }
+    ]
+  },
+  "lastday_ringing": {
+    "subtitle": "subtitles.heroesevolved.lastday_ringing",
+    "sounds": [
+      {
+        "name": "heroesevolved:story/lastday_ringing"
+      }
+    ]
+  },
+  "lastday_shatter": {
+    "subtitle": "subtitles.heroesevolved.lastday_shatter",
+    "sounds": [
+      {
+        "name": "heroesevolved:story/lastday_shatter"
+      }
+    ]
+  },
+  "sylar_viewing": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/sylar_viewing",
+        "stream": true
+      }
+    ]
+  },
+  "sylar_unlocked": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/sylar_unlocked",
+        "stream": true
+      }
+    ]
+  },
+  "sylar_masterwork": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/sylar_masterwork",
+        "stream": true
+      }
+    ]
+  },
+  "sylar_stinger": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/sylar_stinger"
+      }
+    ]
+  },
+  "sylar_last_chord": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/sylar_last_chord"
+      }
+    ]
+  },
+  "music_disc.the_collection": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/sylar_record",
+        "stream": true
+      }
+    ]
   }
 }

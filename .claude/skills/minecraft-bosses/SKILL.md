@@ -1,6 +1,6 @@
 ---
 name: minecraft-bosses
-description: Design and build mobs that fight with powers, mini-bosses, story bosses and world events for the Heroes Evolved mod, to the standard of L_Ender's Cataclysm and Apotheosis - arenas, readable telegraphs, phases that change the room, weak windows, answers from other powers, anti-cheese rules (damage caps, range falloff, idle healing, leashes), party scaling, minions, boss music, death scenes, rewards that unlock the next thing, and re-fights. Use this whenever the task involves a boss, mini-boss, gifted or powered mob, villain, enemy with a power, raid champion, arena fight, boss bar, boss music, boss drop, or changing Sylar, Elle Bishop, renegades or gifted mobs, even if the user just says "make a villain", "add a fight", "make this enemy harder" or "add another boss like Sylar".
+description: Design and build mobs that fight with powers, mini-bosses, story bosses and world events for the Heroes Evolved mod, to the standard of L_Ender's Cataclysm and Apotheosis - arenas, readable telegraphs, phases that change the room, weak windows, answers from other powers, anti-cheese rules (damage caps, range falloff, idle healing, leashes), party scaling, minions, boss music, death scenes, rewards that unlock the next thing, and re-fights. Use this whenever the task involves a boss, mini-boss, gifted or powered mob, villain, enemy with a power, raid champion, arena fight, boss bar, boss music, boss drop, or changing Sylar, renegades or gifted mobs, even if the user just says "make a villain", "add a fight", "make this enemy harder" or "add another boss like Sylar".
 ---
 
 # Bosses and powered mobs for Heroes Evolved
@@ -8,8 +8,8 @@ description: Design and build mobs that fight with powers, mini-bosses, story bo
 A boss here is a set piece the player remembers: a place built for the fight, one idea that every attack speaks in, a
 telegraph for every hit, phases that change the room, a way to turn the fight around, and a reward that opens the next
 thing. The bar is [L_Ender's Cataclysm](references/boss-mods.md) for the fight itself and
-[Apotheosis](references/boss-mods.md#apotheosis) for mini-bosses that turn up anywhere. Our own Sylar and Elle are the
-worked examples: read [references/sylar-and-elle.md](references/sylar-and-elle.md) before writing any boss, and
+[Apotheosis](references/boss-mods.md#apotheosis) for mini-bosses that turn up anywhere. Our own Sylar (his Collection) is the
+worked example: read [references/built-bosses.md](references/built-bosses.md) before writing any boss, and
 [references/gifted-mobs.md](references/gifted-mobs.md) before any powered mob.
 
 Read these too:
@@ -19,7 +19,7 @@ Read these too:
 - [docs/agents/testing.md](../../../docs/agents/testing.md) and [docs/agents/previews.md](../../../docs/agents/previews.md)
   before testing or photographing one.
 - What the player sees of the existing ones: [docs/sylar.md](../../../docs/sylar.md),
-  [docs/elle-bishop.md](../../../docs/elle-bishop.md), [docs/gifted-mobs.md](../../../docs/gifted-mobs.md),
+  [docs/gifted-mobs.md](../../../docs/gifted-mobs.md),
   [docs/company-agents.md](../../../docs/company-agents.md).
 
 ## Decisions the user has made
@@ -33,7 +33,7 @@ These are settled (November 2026). Don't reopen them; ask only about what they l
   reference library (see "Music" below).
 - **Every new boss has, by default:** a per-hit and per-second damage cap with falloff for distant attackers, healing
   and a walk home when nobody fights it, health that scales with the number of players, and a death scene before the
-  drop. Sylar and Elle predate these; bringing them up to it is open work.
+  drop. Sylar's Collection (November 2026) has all of them; copy it.
 
 ## Two layers
 
@@ -43,9 +43,9 @@ These are settled (November 2026). Don't reopen them; ask only about what they l
   carry a power (`GiftedMobs.mayCarry`): powers belong to people.
 - **Bosses are set pieces (Cataclysm).** A place built for the fight, a way in the player chooses or the story brings,
   phases that change the room, and a reward that gates something. One entity class per boss
-  (`story/sylar/SylarEntity`, `story/elle/ElleEntity`), one arena class (`WatchmakerArena`, `PrimatechArena`), one moves
-  class (`WatchmakerMoves`, `ElleMoves`), one geometry class shared with the art (`PrimatechGeometry`), one art class
-  (`WatchmakerArt`, `ElleArt`), one voice class (`SylarVoice`, `ElleVoice`).
+  (`story/sylar/SylarEntity`), one arena class (`CollectionArena`), one moves class (`SylarMoves`), one geometry class
+  shared with the art (`SylarGeometry`), one art class (`SylarArt`), one voice class (`SylarVoice`), one saved-data class
+  (`SylarData`), one music class (`client/sound/SylarMusic`).
 - **Minions sit between them.** Guards cleared before a boss, followers that answer a phase change
   (`GiftedMob.follower`, tagged `GiftedMobs.FOLLOWER` so they never roll gifts of their own).
 
@@ -84,9 +84,8 @@ build notes are in [references/gifted-mobs.md](references/gifted-mobs.md). Exten
   records (windup, cooldown, range, sight, telegraph/pulse/execute) built on the power's own effects (`AbilityEffects`
   kinds, set pieces such as `HYDRO_WHIP`, `VIBE_LOCK`, `SHIFT_LUNGE`) and services that take any `LivingEntity`
   (`CryoService.freezeSolid`, `DensityService.embed`, `HydroService.soak`, `RadiationService.irradiate`). Every power
-  has two moves and a signature; Empathic Mimicry borrows its foe's (`GiftedMob.copy`). Sylar's `SylarPowers` is the
-  older, Sylar-only version of the same idea. A boss's own moves are written the same way (`WatchmakerMoves`,
-  `ElleMoves`).
+  has two moves and a signature; Empathic Mimicry borrows its foe's (`GiftedMob.copy`). A boss's own moves are written
+  the same way (`SylarMoves.Move`: windup, cooldown, the case it draws on, start, pulse, land, cancel).
 
 ## The workflow
 
@@ -94,10 +93,12 @@ Work in this order, and write the design down before the code. [references/boss-
 is the template; the finished brief becomes the boss's player doc, `docs/<boss>.md`.
 
 1. **The idea.** Who they are (adapted from the Heroes series, but every line, look and number our own), what they want
-   from the player, and **one idea every attack speaks in**: Sylar's is a clock running down (every telegraph is a dial
-   whose hand reaches twelve as the move lands); Elle's is "current crawls before it bites" (a thin jittering filament
+   from the player, and **one idea every attack speaks in**: Sylar's is "he sees how it works" (every telegraph is a
+   brass schematic whose parts slide together and seat as the move lands; the retired Watchmaker's was a clock running
+   down, and Elle's "current crawls before it bites", a thin jittering filament
    that tightens and brightens, then lands as the same shape, thick and white). Pick the boss's palette with it.
-2. **How the story brings them.** Foreshadowing first (Elle's omens all the day before; Sylar's ladder of sightings),
+2. **How the story brings them.** Foreshadowing first, over days of play if you can (Sylar is a prisoner in Level 5
+   while the names on his list are crossed out one a night, until his cell stands open and he comes up behind you),
    then the pull into the arena. Anyone within 16 blocks of the player comes too.
 3. **The arena** (below): a pocket dimension rebuilt every fight, whose features are the counterplay.
 4. **Moves, phases, weak windows and answers** (below), as tables.
@@ -105,25 +106,27 @@ is the template; the finished brief becomes the boss's player doc, `docs/<boss>.
 6. **Ending, reward, re-fight, music, death scene** (below).
 7. **Build**, then **game tests** for every rule and **a preview** that photographs every telegraph and phase.
 8. **Docs**: `docs/<boss>.md`, a row in AGENTS.md's tables, and lessons in
-   [references/sylar-and-elle.md](references/sylar-and-elle.md) (rename it when a third boss joins).
+   [references/built-bosses.md](references/built-bosses.md).
 
 ## The arena
 
 - **A pocket dimension rebuilt from a blueprint before every fight**, so whatever the last fight broke is whole again
-  (`WatchmakerArena.enter`, `PrimatechArena`). Save each player's way home first, move them in, spawn a fresh boss there
+  (`CollectionArena.open`). Save each player's way home first (in saved data, so a restart still sends them back),
+  move them in, spawn a fresh boss there
   (a mob changing dimension becomes a new entity), and send everyone back exactly where they stood when it ends.
 - **Register the dimension** in `data/heroesevolved/dimension` and in the game-test world preset
   (`src/gametest/resources/data/minecraft/worldgen/world_preset/flat.json`), or tests get null.
 - **Keep its chunks force-loaded once built.** A freshly loaded pocket chunk takes about three seconds before its
   entities tick, and players standing in it are invisible to `getEntitiesOfClass` meanwhile.
 - **Moving players in and out must not end the encounter**: mark the fight's own teleports
-  (`WatchmakerArena.moving(player)`) so dimension-change handlers skip them.
-- **The room is the counterplay.** Cover to break line of sight (Sylar's four columns), machines to switch off (Elle's six
-  breaker banks), safe floor (Elle's rubber mats), a way out that closes in the next phase (Sylar's front door), places
+  (`CollectionArena.moving(player)`) so dimension-change handlers skip them.
+- **The room is the counterplay.** Things to break (Sylar's cases: the one he draws from backfires, the one holding your
+  power gives it back), cover to break line of sight (the pillars of his last phase, the rubble of his own throws),
+  floor that changes (ice that stays slick), machines to switch off (Elle's breaker banks, retired), places
   that change (the clocks speed up, the lights go out). Design the arena with the moves, not before or after.
 - **One geometry class holds every position** the fight and the drawing use, and the blueprint's markers are checked
-  against it by a game test (`PrimatechGeometry` and the `@breaker:N`, `@conduit:N`, `@mat` markers).
-- **Poll the arena's switches; don't listen for clicks.** Read the room's state each tick (`PrimatechArena.pollBanks`),
+  against it by a game test (`SylarGeometry` and the `@case:N`, `@cover:N`, `@spawn:*` markers).
+- **Poll the arena's switches; don't listen for clicks.** Read the room's state each tick (`SylarEntity.pollCases`),
   so a lever pulled by hand, a broken lever, or a player's EMP over a bank all count the same.
 - **Size.** Our arenas are 19 to 25 blocks across and 9 or more high: room to dodge a 3.5-block slam, small enough that
   every move reaches. A boss that flies or charges needs more.
@@ -137,11 +140,11 @@ animation alone: players fight in first person and from behind cover.
 
 | Kind of move | Windup | Ours | Cataclysm |
 | --- | --- | --- | --- |
-| Quick, at one player | 0.3 to 0.8 s | Sylar's grab lane 0.8 s, Elle's arc bolt 0.8 s, ball lightning 0.6 s | Remnant's bite (the head drops) |
-| Area at a spot | 1.0 to 1.5 s | Sylar's floor slam 1.5 s, Elle's ground current 1.2 s and storm 1.5 s | Monstrosity's ground smash (both fists lift) |
-| A line or lane | 0.6 to 1.5 s | Sylar's rail lightning 1.2 s, ice wall 1.5 s; Elle's conduit surge 1.2 s | Maledictus's halberds (marks on the floor) |
-| Whole arena, with a safe spot | 1.8 to 4 s | Sylar's rings of stopped time 1.8 s (stand in the gap) | Ignis's ultimate (about 4 s), Harbinger's Death Laser (hide behind a wall) |
-| Something the player must stop | 3 s | Elle's siphon and reboot | Leviathan's rush (hit it during the roar) |
+| Quick, at one player | 0.3 to 0.8 s | Sylar's Reel In 0.6 s, Appraisal 0.8 s, Your Own 0.8 s | Remnant's bite (the head drops) |
+| Area at a spot | 1.0 to 1.5 s | Sylar's Hurl 1.2 s, Icefall 1.4 s, Resonance 1.0 s | Monstrosity's ground smash (both fists lift) |
+| A line or lane | 0.6 to 1.5 s | Sylar's Arc Lattice 1.2 s, Fault Line 1.0 s, Blur 1.2 s, the Second Hand 1.5 s | Maledictus's halberds (marks on the floor) |
+| Whole arena, with a safe spot | 1.8 to 4 s | Sylar's Every Hour 3 s (stand in a gold hour), the Light at 6:14 3 s (hide behind a pillar) | Ignis's ultimate (about 4 s), Harbinger's Death Laser (hide behind a wall) |
+| Something the player must stop | 3 s | Sylar's Appraisal hold (struggle, or a friend's charged hit); Claire's case while he is down | Leviathan's rush (hit it during the roar) |
 
 - **The telegraph fills as the move arrives.** A hand reaching twelve, a ring tightening: the windup is exactly the
   marker's length, and both read the same constant (`ElectroGeometry.STRIKE_DELAY`, each move's `ticks`).
@@ -151,10 +154,10 @@ animation alone: players fight in first person and from behind cover.
   telegraph.
 - **A rotation, not a dice roll.** Never the same move twice in a row; the rest between moves shrinks each phase; a
   global hold-off that a move's end can only lengthen (`Math.max`), so tests' and previews' hold-offs survive.
-- **Area moves that aim at "you" aim at each fighter** (Elle's storm rings everyone, plus two at random), so a party
+- **Area moves that aim at "you" aim at each fighter** (Sylar's Icefall rings everyone; Arc Lattice strings a line through each), so a party
   can't stand behind one player.
 - **Stop pillaring.** Cataclysm's Ender Guardian pulls down anyone three blocks above it. Have at least one move that
-  reaches a player who climbs out of reach (Sylar's pin and throw, Elle's storm from the ceiling).
+  reaches a player who climbs out of reach (Sylar's Reel In; his Resonance climbs the walls).
 
 ## Phases
 
@@ -165,9 +168,9 @@ animation alone: players fight in first person and from behind cover.
   the counterplay (Cataclysm's Ender Guardian loses its helmet, so arrows work from then on).
 - **A short, readable transition.** A shove that throws everyone back, a set piece, a line of voice, then the new
   phase. Keep it to one to three seconds of invulnerability; Cataclysm's longest (ten seconds) feels like a cutscene.
-- **Finishers at phase thresholds** (planned, not built): Sylar and Elle glisten at their thresholds instead of at low
-  health, and a finisher there forces the phase change with a long stagger ([docs/finishers.md](../../../docs/finishers.md),
-  "Bosses").
+- **Finishers at phase thresholds:** a boss glistens just above its thresholds instead of at low health, and a
+  finisher there forces the phase change with a long stagger, or kills in its last tenth. Implement
+  `Takedowns.PhaseFinishable` as Sylar does ([docs/finishers.md](../../../docs/finishers.md), "Bosses").
 
 ## Weak windows and answers
 
@@ -175,9 +178,9 @@ Every boss has all four kinds of window. Cataclysm's best fights are remembered 
 
 | Window | Ours | Elsewhere |
 | --- | --- | --- |
-| **Skill**: interrupt a windup | A heavy hit during a windup breaks it; Sylar's watch shows while he winds up, and a charged hit cracks it and staggers him for three seconds (`SylarEntity.exposed`) | Mowzie's Ferrous Wroughtnaut can only be hurt from behind after its overhead slam sticks its axe in the floor |
+| **Skill**: interrupt a windup | Sylar's loupe glints while he winds up; a charged hit breaks his concentration: the move is gone and he reels (`SylarEntity.breakConcentration`) | Mowzie's Ferrous Wroughtnaut can only be hurt from behind after its overhead slam sticks its axe in the floor |
 | **Rhythm**: spent after a big move | After a signature a gifted mob is `GiftedMob.spent` and takes half again | Cataclysm's Netherite Monstrosity is open for two seconds while it stands; the Leviathan stuns itself if hit during its rush windup |
-| **Room**: use the arena | Pull the bank Elle is drinking from: a backfire (16% of her health through her shield, a three-second stun) | Cataclysm's Harbinger is stunned only by the factory's EMPs; Ignis's shield breaks when you return three of its fireballs |
+| **Room**: use the arena | Break the case Sylar is drawing from: a backfire (a tenth of his health through the caps, a three-second stagger), and that power is gone | Cataclysm's Harbinger is stunned only by the factory's EMPs; Ignis's shield breaks when you return three of its fireballs |
 | **Power**: an answer from another power | An Ability Dampener switches a gifted mob's power off (`Dampening.dampened`); Blackout or an EMP over a bank cuts it | Cataclysm's Harbinger and EMPs |
 
 - **A stagger is a reward:** the boss reels, its windup and any hold end, and every hit does more for a few seconds.
@@ -199,8 +202,7 @@ Every boss has all four kinds of window. Cataclysm's best fights are remembered 
 | Shapeshifting | its shape needs Evolved, and gives looks, never powers |
 
 - **Put every boss in `c:bosses`** (`data/c/tags/entity_type/bosses.json`) so all of these apply at once, and ask the
-  tag, not `instanceof`. Sylar and Elle are not in the tag yet (November 2026): only `unfinishable`, carrying (Sylar
-  only) and Telepathy name them by class, so Elle can still be frozen solid, embedded or carried.
+  tag, not `instanceof`. Sylar is in it (`data/c/tags/entity_type/bosses.json`); Telepathy's Drop It asks the tag.
 
 ## Fight rules (on by default)
 
@@ -217,9 +219,9 @@ numbers as constants at the top of its entity class and in its doc.
 | **Party scaling** | none | max health × (1 + 0.5 × (fighters − 1)), up to × 3 |
 | **Death scene** | the Harbinger overloads and explodes | two to four seconds, then the drop (below) |
 
-- **Where:** in the boss's `hurt` override, after its own reductions (Elle's shield), before `super.hurt`. Keep a short
+- **Where:** in the boss's `hurt` override, after its own reductions, before `super.hurt` (`SylarEntity.hurt`). Keep a short
   ring of recent damage for the per-second cap.
-- **Designed counterplay is exempt.** Elle's backfire, the cracked-watch bonus and a phase finisher are meant to take a
+- **Designed counterplay is exempt.** Sylar's backfire, Claire's case and a phase finisher are meant to take a
   big bite; pass them through a flag. `BYPASSES_INVULNERABILITY` (`/kill`) is always exempt.
 - **Range falloff measures the attacker,** `source.getEntity()`, not the projectile or beam, at the moment of the hit.
 - **Scaling counts fighters when the arena closes** (everyone pulled in), raises max health if someone joins later
@@ -242,27 +244,28 @@ numbers as constants at the top of its entity class and in its doc.
 
 ## How it ends
 
-- **Every boss has a table of outcomes** (see Sylar's and Elle's docs): beaten, everyone down, time up, and a flight if
+- **Every boss has a table of outcomes** (see Sylar's doc): beaten, everyone down, time up, and a flight if
   the boss can run. Each sets the story's next step and when the boss can come again.
 - **A death scene before the drop.** Two to four seconds: the boss is invulnerable and its AI is off, the room reacts
-  in the boss's idea (Sylar's clocks stop, Elle's banks blow out), the music ends on its last chord, then the drop
+  in the boss's idea (everything Sylar held streams out of him and his cases shatter), the music ends on its last chord, then the drop
   lands where the boss fell. Record who struck the killing blow first. Nothing (a key release, a logout, a second blow)
   may end the scene early or leave the boss invulnerable; copy "Hold a death back for its animation" in
   [power-interactions.md](../../../docs/agents/power-interactions.md).
-- **Close the arena a few seconds later** (`WatchmakerArena.close(server, delay)`), give back everything the fight took
+- **Close the arena a few seconds later** (`CollectionArena.close(server, delay)`), give back everything the fight took
   (a stolen power, a held player), and send everyone home together.
 
 ## Rewards and re-fights
 
 - **The first kill drops something unique** in the world, named for the boss: Sylar's Watch (go back five seconds, once a
-  life), Elle's Capacitor (a bolt, three charges, recharged from machines). Make the item use the boss's idea.
+  life) and Gray's Ledger (his catalogue, written to the story's outcomes). Make the item use the boss's idea.
 - **The first kill also opens the next thing**, the way Cataclysm's boss materials craft the eye that finds the next
   structure: a Journal lead to the next boss or place, a material the next piece of gear needs, a key. A boss that only
   drops loot is a missed beat. Write what it opens in the brief.
 - **Re-fights.** From the drop and other materials, craft an item that opens the boss's arena again (Cataclysm: Burning
   Ashes on the Altar of Fire, the Boss Respawner, a thrown eye). A re-fight runs the same arena, phases and rules, but
   not the story: no foreshadowing, no story outcome, no second unique item for the same player. It drops the boss's
-  material and a small chance (Cataclysm: 10%) of something rare, such as a record of its theme. Sylar and Elle don't
+  material and a small chance (Cataclysm: 10%) of something rare, such as a record of its theme. Sylar's re-fight is a
+  Repair Ticket crafted from his Brass Movement; he doesn't
   have re-fight items yet.
 
 ## Music
@@ -288,9 +291,9 @@ numbers as constants at the top of its entity class and in its doc.
 ## Voice, bar and feel
 
 - **A boss bar** (`ServerBossEvent`, `NOTCHED_10`) for everyone within 48 blocks, its colour and name changing each
-  phase. A second resource (Cataclysm's rage meter, Elle's live banks) can ride in the bar's name ("Banks 4/6").
+  phase. A second resource (Cataclysm's rage meter, Sylar's standing cases) can ride in the bar's name ("9 cases").
 - **A paced voice.** Everything the boss says and every line about them goes through one queue per player, at least eight
-  seconds apart, narration giving way to speech (`SylarVoice`, `ElleVoice`). Warnings the player must act on now
+  seconds apart, narration giving way to speech (`SylarVoice`). Warnings the player must act on now
   ("She's drinking bank 3. Pull its breaker!") are the one thing that goes to the action bar.
 - **A line for every power** the player could have, and for every phase, steal, recovery, flight and fall.
 - **Feel it.** `CameraShakePayload.sendAround` on slams and phase changes, a fixed-range sound for anything heard across
@@ -301,10 +304,11 @@ numbers as constants at the top of its entity class and in its doc.
 - **State lives on the entity and in saved data**: a mini-boss's gift and siege in its persistent data; a boss's story
   progress in saved data per player (`SylarStoryData`, `CompanyVisitData`). A restart mid-fight closes the arena and
   sends everyone home; it never leaves a player in a pocket dimension or without a power the fight took.
-- **Taking a power for a fight** is one check (`WatchmakerArena.stolen(player)` in `PowerRules.canActWithoutPreservation`)
+- **Taking a power for a fight** is one check (`CollectionArena.stolen(player)` in `PowerRules.canActWithoutPreservation`)
   that the arena's close clears, so the power always comes back.
-- **A scene stand-in** for arrivals (Elle stepping out of the dark) is the same entity with `scene(true)`: no AI, no bar,
-  invulnerable, discarded when the player is taken.
+- **A scene stand-in** is the same entity, not fighting: Sylar is the story's actor on the avenue, on Night Three, in his
+  cell in Level 5 and behind you (`SylarEntity.actor(true)`), with no bar, invulnerable, discarded when the player is
+  taken.
 
 ## Checklist
 
@@ -324,10 +328,16 @@ numbers as constants at the top of its entity class and in its doc.
 - [ ] A boss bar, a paced voice, lines for every power and phase.
 - [ ] Saved state that survives an unloaded chunk and a restart.
 - [ ] Can't be cheesed by the obvious trap (lava, a pillar, a golem farm, a doorway it can't fit through).
-- [ ] Game tests for every rule (`ElleGameTests`, `WatchmakerGameTests`, `GiftedMobGameTests` show how), run in their own
+- [ ] Game tests for every rule (`SylarCollectionGameTests`, `GiftedMobGameTests` show how), run in their own
       batch, cleaning up their players on failure ([testing.md](../../../docs/agents/testing.md)).
+<<<<<<< HEAD
 - [ ] A preview that photographs every telegraph and every phase (`tools/watchmaker-preview.init.gradle`,
       `tools/elle-preview.init.gradle`), and the shots shown to the user.
 - [ ] Right in JEI and Jade ([compat.md](../../../docs/agents/compat.md)'s checklist): a real name, its drops with info
       pages, effect entities hidden from Jade, and any disguise or vanishing answered by the questions Jade asks.
 - [ ] `docs/<boss>.md`, the AGENTS.md row, and the lessons added to [references/sylar-and-elle.md](references/sylar-and-elle.md).
+=======
+- [ ] A preview that photographs every telegraph and every phase (`tools/sylar-preview.init.gradle`), and the shots
+      shown to the user.
+- [ ] `docs/<boss>.md`, the AGENTS.md row, and the lessons added to [references/built-bosses.md](references/built-bosses.md).
+>>>>>>> origin/main
