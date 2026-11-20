@@ -1,0 +1,419 @@
+# Primatech Level 5, under the bunker's containment block: Sylar's cell (story/sylar/LevelFive).
+# Drafted by tools/draft-level-five.py: change the script, not this file.
+# @spawn:arrival, @exit (the lift's button), @glass (his cell's front), @pod, @spawn:prisoner, @sign:list0/head (headers), @sign:list1..4 (the list, in reading order), @lever, @sign:release.
+name: level_five
+anchor: 7 1 39
+palette:
+  A = deepslate
+  B = deepslate_tiles
+  C = cracked_deepslate_tiles
+  D = polished_deepslate
+  E = polished_deepslate @spawn:prisoner
+  F = polished_deepslate @spawn:arrival
+  G = heroesevolved:cryochamber[facing=south,half=lower,open=true] @pod
+  H = dark_oak_slab[type=top]
+  I = polished_blackstone_brick_stairs[facing=east]
+  J = polished_blackstone_bricks
+  K = glass @glass
+  L = iron_bars
+  M = skeleton_skull[rotation=6]
+  N = heroesevolved:cryochamber[facing=west,half=lower,open=true]
+  O = iron_block
+  P = heroesevolved:cryochamber[facing=south,half=upper,open=true]
+  Q = chain[axis=y]
+  R = candle[candles=2,lit=false]
+  S = dark_oak_wall_sign[facing=east] @sign:list4
+  T = dark_oak_wall_sign[facing=east] @sign:list2
+  U = lever[face=wall,facing=west,powered=false] @lever
+  V = heroesevolved:cryochamber[facing=west,half=upper,open=true]
+  W = stone_button[face=wall,facing=north] @exit
+  X = dark_oak_wall_sign[facing=east] @sign:list3
+  Y = dark_oak_wall_sign[facing=east] @sign:list1
+  Z = dark_oak_wall_sign[facing=west] @sign:release
+  a = dark_oak_wall_sign[facing=east] @sign:head
+  b = dark_oak_wall_sign[facing=east] @sign:list0
+  c = cobweb
+  d = dark_oak_wall_sign[facing=north] @sign:lift
+  e = soul_lantern[hanging=true]
+  f = deepslate_bricks
+  g = waxed_exposed_copper_bulb[lit=true]
+signs:
+  lift white = LIFT | TO SUBLEVEL 4 | CONTAINMENT
+  list0 red glow = PRIMATECH | LEVEL 5 | WATCH LIST |
+  head red glow = EVOLVED | PERSONS | AT LARGE |
+  list1 white = 
+  list2 white = 
+  list3 white = 
+  list4 white = 
+  release red glow = CELL 5-1 | RELEASE | TWO KEYS | REQUIRED
+
+# rock
+layer 0:
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAA
+
+# floor
+layer 1:
+BBBBBBBBBBBBBBB
+CDDDDDDDDDDDDDC
+BDDDDDDDDDDDDDB
+BDDDDDDDDDDDDDB
+BDDDDDDEDDDDDDB
+BDDDDDDDDDDDDDB
+BDDDDDDDDDDDDDB
+BDDDDDDDDDDDDDB
+CDDDDDDDDDDDDDC
+BDDDDDDDDDDDDDB
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+CDDDDDBBBDDDDDC
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+CDDDDDBBBDDDDDC
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+CDDDDDBBBDDDDDC
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+CDDDDDBBBDDDDDC
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+BDDDDDBFBDDDDDB
+BDDDDDBBBDDDDDB
+BDDDDDBBBDDDDDB
+BDDDDDDDDDDDDDB
+CCCCCCCCCCCCCCC
+
+# walls, cells and his cell
+layer 2:
+BBBBBBBBBBBBBBB
+B......G......B
+B..........HH.B
+B...I......HH.B
+B..........HH.B
+B.............B
+C.............C
+B.............B
+B.............B
+BJJKKKKKKKKKJJB
+BBBBB.....BBBBB
+BBBBB.....BBBBB
+B...L.....L...B
+C...L.....L...C
+B.M.L.....L...B
+B...L.....L...B
+BBBBB.....BBBBB
+B...L.....L...B
+B.........L...B
+B...L.....L...B
+C...L.....L...C
+BBBBB.....BBBBB
+B...L.....L...B
+B...L.....L.N.B
+B...L.....L...B
+B...L.....L...B
+BBBBB.....BBBBB
+C...L.....L...C
+B...L.........B
+B...L.........B
+B...L.....L...B
+BBBBB.....BBBBB
+B.............B
+B.............B
+C.............C
+B.............B
+B.............B
+B.............B
+B.............B
+B.............B
+B.............B
+C.............C
+B......D......B
+BBBBBBOOOBBBBBB
+
+layer 3:
+BBBBBBBBBBBBBBB
+B......P......B
+B...........Q.B
+B..........R..B
+C.............C
+B.............B
+B.............B
+B.............B
+B.............B
+BJJKKKKKKKKKJJB
+BBBBBS....BBBBB
+CBBBBT...UBBBBC
+B...L.....L...B
+B...L.....L...B
+B...L.....L...B
+B...L.....L...B
+BBBBB.....BBBBB
+B...L.....L...B
+C.........L...C
+B...L.....L...B
+B...L.....L...B
+BBBBB.....BBBBB
+B...L.....L...B
+B...L.....L.V.B
+B...L.....L...B
+C...L.....L...C
+BBBBB.....BBBBB
+B...L.....L...B
+B...L.........B
+B...L.........B
+B...L.....L...B
+BBBBB.....BBBBB
+C.............C
+B.............B
+B.............B
+B.............B
+B.............B
+B.............B
+B.............B
+C.............C
+B.............B
+B.............B
+B........W....B
+BBBBBBOOOBBBBBB
+
+layer 4:
+BBBBBBBBBBBBBBB
+B.............B
+C.............C
+B.............B
+B.............B
+B.............B
+B.............B
+B.............B
+B.............B
+CJJKKKKKKKKKJJC
+BBBBBX....BBBBB
+BBBBBY...ZBBBBB
+B...L.....L...B
+B...L.....L...B
+B...L.....L...B
+B...L.....L...B
+CBBBB.....BBBBC
+B...L.....L...B
+B.........L...B
+B...L.....L...B
+B...L.....L...B
+BBBBB.....BBBBB
+B...L.....L...B
+C...L.....L...C
+B...L.....L...B
+B...L.....L...B
+BBBBB.....BBBBB
+B...L.....L...B
+B...L.........B
+B...L.........B
+C...L.....L...C
+BBBBB.....BBBBB
+B.............B
+B.............B
+B.............B
+B.............B
+B.............B
+C.............C
+B.............B
+B.............B
+B.............B
+B.............B
+B.............B
+BBBBBBOOOBBBBBB
+
+layer 5:
+CCCCCCCCCCCCCCC
+B.............B
+B.............B
+B.............B
+B.............B
+B.............B
+B.............B
+C.............C
+B.............B
+BJJJJJJJJJJJJJB
+BBBBBa....BBBBB
+BBBBBb....BBBBB
+Bc..J.....J...B
+B...J.....J...B
+C...J.....J...C
+B...J.....J...B
+BBBBB.....BBBBB
+B...J.....J..cB
+B...J.....J...B
+B...J.....J...B
+B...J.....J...B
+CBBBB.....BBBBC
+Bc..J.....J...B
+B...J.....J...B
+B...J.....J...B
+B...J.....J...B
+BBBBB.....BBBBB
+B...J.....J..cB
+C...J.....J...C
+B...J.....J...B
+B...J.....J...B
+BBBBB.....BBBBB
+B.............B
+B.............B
+B.............B
+C.............C
+B.............B
+B.............B
+B.............B
+B.............B
+B.............B
+B.............B
+C......d......C
+BBBBBBBBBBBBBBB
+
+layer 6:
+BBBBBBBBBBBBBBB
+B.............B
+B.............B
+B.............B
+B.............B
+C......e......C
+B.............B
+B.............B
+B.............B
+BJJJJJJJJJJJJJB
+BBBBB.....BBBBB
+BBBBB.....BBBBB
+C...B.....B...C
+B...B.....B...B
+B...B.....B...B
+B...B.....B...B
+BBBBB.....BBBBB
+B...B.....B...B
+B...B.....B...B
+C...B.....B...C
+B...B.....B...B
+BBBBB.....BBBBB
+B...B.....B...B
+B...B.....B...B
+B...B.....B...B
+B...B.....B...B
+CBBBB.....BBBBC
+B...B.....B...B
+B...B.....B...B
+B...B.....B...B
+B...B.....B...B
+BBBBB.....BBBBB
+B.............B
+C.............C
+B.............B
+B.............B
+B.............B
+B.............B
+B.............B
+B.............B
+C.............C
+B.............B
+B.............B
+BBBBBBBBBBBBBBB
+
+layer 7:
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff
+ffffgfffffgffff
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff
+fffffffgfffffff
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff
+fffffffgfffffff
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff
+fffffffgfffffff
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff
+fffffffgfffffff
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff
+fffffffgfffffff
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff
+fffffffgfffffff
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff
+fffffffffffffff

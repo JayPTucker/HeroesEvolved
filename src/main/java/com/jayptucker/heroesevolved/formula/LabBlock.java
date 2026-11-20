@@ -72,13 +72,6 @@ public final class LabBlock extends BaseEntityBlock {
         super.onRemove(state, level, pos, newState, movedByPiston);
     }
 
-    /** Lab work draws the watchmaker's attention to anyone nearby who already has a power. */
-    static void attractAttention(Level level, BlockPos pos) {
-        if (level instanceof net.minecraft.server.level.ServerLevel server)
-            for (var player : server.getPlayers(p -> p.blockPosition().closerThan(pos, 16)))
-                com.jayptucker.heroesevolved.story.sylar.SylarStoryService.notice(player);
-    }
-
     static void setLit(Level level, BlockPos pos, BlockState state, boolean lit) {
         if (state.getValue(LIT) != lit) level.setBlock(pos, state.setValue(LIT, lit), Block.UPDATE_ALL);
     }

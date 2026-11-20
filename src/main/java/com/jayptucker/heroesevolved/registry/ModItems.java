@@ -100,9 +100,19 @@ public final class ModItems {
      */
     public static final DeferredItem<Item> STUN_GUN = ITEMS.register("stun_gun", () -> new Item(new Item.Properties().stacksTo(1)));
 
-    /** What Elle Bishop leaves when she is beaten: three charges of stored lightning, refilled from machines. */
-    public static final DeferredItem<com.jayptucker.heroesevolved.story.elle.ElleCapacitorItem> ELLES_CAPACITOR = ITEMS.register("elles_capacitor",
-            () -> new com.jayptucker.heroesevolved.story.elle.ElleCapacitorItem(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC)));
+    /** Gray &amp; Sons' repair ticket: "Ready for collection." Read it to be taken into Sylar's Collection (story/sylar). */
+    public static final DeferredItem<com.jayptucker.heroesevolved.story.sylar.RepairTicketItem> REPAIR_TICKET = ITEMS.register("repair_ticket",
+            () -> new com.jayptucker.heroesevolved.story.sylar.RepairTicketItem(new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON)));
+
+    /** The record of Sylar's theme: a rare drop when he is beaten again (story/sylar). */
+    public static final DeferredItem<Item> MUSIC_DISC_THE_COLLECTION = ITEMS.register("music_disc_the_collection",
+            () -> new Item(new Item.Properties().stacksTo(1).rarity(Rarity.RARE).jukeboxPlayable(net.minecraft.resources.ResourceKey.create(
+                    net.minecraft.core.registries.Registries.JUKEBOX_SONG,
+                    net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(com.jayptucker.heroesevolved.HeroesEvolved.MOD_ID, "the_collection")))));
+
+    /** What every fight with Sylar leaves: the brass works of a watch, for crafting another Repair Ticket. */
+    public static final DeferredItem<Item> BRASS_MOVEMENT = ITEMS.register("brass_movement",
+            () -> new Item(new Item.Properties().rarity(Rarity.UNCOMMON)));
 
     /** A TaCZ-crafted EMP grenade (weapons/EmpGrenade): thrown, it kills redstone, machines and Create shafts nearby. */
     public static final DeferredItem<com.jayptucker.heroesevolved.weapons.EmpGrenade.GrenadeItem> EMP_GRENADE = ITEMS.register("emp_grenade",
@@ -127,6 +137,9 @@ public final class ModItems {
                         output.accept(BUFFERED_SALINE.get());
                         output.accept(UNSTABLE_COMPOUND.get());
                         output.accept(SYLARS_WATCH.get());
+                        output.accept(REPAIR_TICKET.get());
+                        output.accept(BRASS_MOVEMENT.get());
+                        output.accept(MUSIC_DISC_THE_COLLECTION.get());
                         output.accept(HORN_RIMMED_GLASSES.get());
                         output.accept(EMP_GRENADE.get());
                         output.accept(ABILITY_DAMPENER.get());
@@ -136,7 +149,6 @@ public final class ModItems {
                         output.accept(fullDampener);
                         ItemStack nullifier = com.jayptucker.heroesevolved.dampener.Nullifier.charged();
                         if (!nullifier.isEmpty()) output.accept(nullifier);
-                        output.accept(com.jayptucker.heroesevolved.story.elle.ElleCapacitorItem.charged(new ItemStack(ELLES_CAPACITOR.get()), 3));
                         for (boolean donated : new boolean[] {true, false}) {
                             BloodPurity purity = new BloodPurity(donated, 3, "Creative");
                             for (Item item : new Item[] {BLOOD_SAMPLE.get(), ISOLATED_CATALYST.get(), FORMULA_VIAL.get()}) {

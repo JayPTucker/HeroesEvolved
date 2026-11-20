@@ -248,7 +248,6 @@ public final class AbilityUseService {
 
         AbilityEffects.onAction(
                 player, powerId, abilityAction.definition().id().getPath());
-        if (!abilityAction.definition().id().getPath().equals("quake_seamfinder") || !com.jayptucker.heroesevolved.skills.SkillTreeService.has(player, "quake_surgical_silence")) com.jayptucker.heroesevolved.story.sylar.SylarStoryService.notice(player);
         com.jayptucker.heroesevolved.effects.ArmPoseActions.onAction(
                 player, abilityAction.definition().id().getPath());
 

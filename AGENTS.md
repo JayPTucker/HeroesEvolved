@@ -74,7 +74,7 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 Shared systems with player docs: [fighting-styles.md](docs/fighting-styles.md), [finishers.md](docs/finishers.md),
 [classes.md](docs/classes.md), [skill-trees.md](docs/skill-trees.md), [progression.md](docs/progression.md),
 [power-intros.md](docs/power-intros.md), [power-sounds.md](docs/power-sounds.md), [gifted-mobs.md](docs/gifted-mobs.md),
-[sylar.md](docs/sylar.md), [elle-bishop.md](docs/elle-bishop.md), [company-agents.md](docs/company-agents.md),
+[sylar.md](docs/sylar.md), [company-agents.md](docs/company-agents.md),
 [emergency-band.md](docs/emergency-band.md), [the-last-day.md](docs/the-last-day.md), [the-past.md](docs/the-past.md).
 
 ## Pyrokinesis is the bar for movement and fighting
@@ -95,7 +95,7 @@ body. See [fighting-styles.md](docs/agents/fighting-styles.md) and [docs/pyrokin
   Amplification) and shared ones:
   `ability` (actions, use, balance), `combat` (fighting styles, finishers), `skills` and `styles` (trees, classes),
   `energy` (stamina), `progression`, `intro` (awakenings), `effects` and `client/effects` (set pieces; each power's art
-  is `client/effects/setpiece/<Power>Art`), `network`, `story` (prologue, bunker, Sylar, Elle, actors), `gifted`,
+  is `client/effects/setpiece/<Power>Art`), `network`, `story` (prologue, bunker, Sylar and his Collection, actors), `gifted`,
   `village`, `radio`, `weapons`, `dampener`, `hazard`, `structure` (blueprints), `mixin`.
 - `src/main/resources/data/heroesevolved/`: `blueprints/`, `power_balance.json`, `skill_trees.json`, tags, damage types.
 - `src/gametest/` (game tests) and `src/uitest/` (preview drivers) load only through init scripts in `tools/`, so they
@@ -129,7 +129,7 @@ Each rule cost a bug once. The file in brackets has the story and the code to co
 - **Add a style, not a second system.** A new vortex is a style of the shared tornado; a new fighting style is one
   class on `FightingStyles`; a finisher is one object on `Takedowns`; a gifted mob uses `GiftedMobs.bestow`.
 - **The server and the drawing share their numbers.** Positions, reaches and telegraph timings live in one geometry
-  class per power (`PyroGeometry`, `ElectroGeometry`, `PrimatechGeometry`) that both the server and the art read, so a
+  class per power (`PyroGeometry`, `ElectroGeometry`, `SylarGeometry`) that both the server and the art read, so a
   warning ring fills exactly as the hit lands and fire leaves the hand the player sees.
 - **Every area hit is telegraphed** before it lands, and its spot is fixed when the windup starts, so moving beats it.
 - **Held things tick on the server tick and keep their `ServerPlayer`,** not a UUID: game-test players and other mods'

@@ -109,7 +109,13 @@ public final class JournalScreen extends HeroScreen {
             case RECORDS -> j.records().size() + " of " + j.recordTotal() + " found";
             case DREAMS -> j.memories().size() + " of " + j.memoryTotal() + " heard";
             case WAY_BACK -> Integer.bitCount(j.temporalMilestones() & 31) + " of " + MILESTONES.length;
-            case WATCHMAKER -> j.sylarChapter() == 0 ? "nothing yet" : "chapter " + Math.min(5, j.sylarChapter());
+            case WATCHMAKER -> switch (j.sylarChapter()) {
+                case 0 -> "nothing yet";
+                case 1 -> "the prisoner";
+                case 2 -> "his cell is open";
+                case 3 -> "beaten";
+                default -> "beaten " + j.sylarDefeats() + "x";
+            };
         };
     }
 
@@ -156,17 +162,40 @@ public final class JournalScreen extends HeroScreen {
                 }
             }
             case WATCHMAKER -> {
-                add(out, Component.literal(switch (Math.max(0, Math.min(5, j.sylarChapter()))) {
+                add(out, Component.literal(switch (Math.max(0, Math.min(4, j.sylarChapter()))) {
                     case 0 -> "Nothing has happened... yet.";
-                    case 1 -> "You have heard a faint ticking that wasn't there before.";
-                    case 2 -> "A man in a dark coat has been watching you from a distance.";
-                    case 3 -> "He spoke to you. A quiet voice, a watchmaker's patience. His name was Gabriel Gray, once. He calls himself Sylar.";
-                    case 4 -> "He has hunted you. He studies people before he takes what they have, and every power he takes, he uses.";
-                    default -> "He keeps coming back for you. He remembers how you fight. You are not prey to him any more; you are the one he cannot finish.";
+                    case 1 -> "A hatch has opened in the floor of Cell 3, Gabriel Gray's old cell in the bunker's containment block. Below it is "
+                            + "Level 5, where the Company kept him, and he is still there, behind glass, a hundred and three years later. "
+                            + "By his cell, their watch list is being crossed out, one name a night. Stay near the people on it after dark.";
+                    case 2 -> "His cell is open. Every name above yours is crossed out, and he is coming for you: at night, wherever you are, "
+                            + "or at once if you go down to Level 5. Anyone near you when he takes you comes too.";
+                    case 3 -> "Someone beat him in his Collection. A brass movement from his watch makes a Repair Ticket, if you want to meet him yourself.";
+                    default -> "You beat him in his Collection. Break the case he draws from and his own power turns on him; "
+                            + "a brass movement from his watch makes a Repair Ticket for another fight.";
                 }), j.sylarChapter() == 0 ? MUTED : TEXT, wrap, 0);
+                if (!j.sylarList().isEmpty()) {
+                    gap(out);
+                    heading(out, "THE WATCH LIST");
+                    for (String row : j.sylarList()) {
+                        if (row.length() < 2) continue;
+                        char mark = row.charAt(0);
+                        String text = row.substring(2);
+                        Component line = switch (mark) {
+                            case 'x', 'X', 'g' -> Component.literal(text).withStyle(ChatFormatting.STRIKETHROUGH);
+                            case 'y' -> Component.literal(text + "  (you)").withStyle(ChatFormatting.BOLD);
+                            default -> Component.literal(text);
+                        };
+                        int color = switch (mark) {
+                            case 'x', 'g' -> MUTED;
+                            case 'X' -> BAD;
+                            default -> TEXT;
+                        };
+                        add(out, line, color, wrap, 4);
+                    }
+                }
                 if (!j.sylarLearned().isEmpty()) {
                     gap(out);
-                    heading(out, "POWERS HE HAS TAKEN");
+                    heading(out, "HIS COLLECTION");
                     for (String id : j.sylarLearned()) {
                         ResourceLocation power = ResourceLocation.tryParse(id);
                         add(out, Component.literal("• " + (power == null ? id : Component.translatable("ability." + power.getNamespace() + "." + power.getPath()).getString())), BAD, wrap, 4);
@@ -174,7 +203,7 @@ public final class JournalScreen extends HeroScreen {
                 }
                 if (j.sylarDefeats() > 0) {
                     gap(out);
-                    add(out, Component.literal("He has been driven off " + j.sylarDefeats() + (j.sylarDefeats() == 1 ? " time." : " times.")), TEXT, wrap, 0);
+                    add(out, Component.literal("You have beaten him " + j.sylarDefeats() + (j.sylarDefeats() == 1 ? " time." : " times.")), TEXT, wrap, 0);
                 }
             }
         }

@@ -47,8 +47,8 @@ I B I     B = block of copper
 
 A Primatech pistol (TaCZ's Desert Eagle frame, repainted slate with a pale battery cell) that fires **dampener
 rounds**. Whoever a round hits loses their power: **8 seconds** for a player, 10 for anything else. A second hit
-refreshes the time, it doesn't stack. Milk doesn't wash it out. A round also breaks Sylar's hold and cuts short Sylar's
-or Elle Bishop's windup, and leaves them with only their fists (or her footwork) until it wears off. An Empathic Mimic
+refreshes the time, it doesn't stack. Milk doesn't wash it out. A round also cuts short Sylar's windup and leaves him
+only his hands (no move from his cases) until it wears off. An Empathic Mimic
 finds nothing to copy in a dampened body.
 
 It does almost no damage (2). It is for shutting a power off, not for killing.
@@ -78,7 +78,7 @@ of redstone.
 ## For builders and modders
 
 - `dampener/Dampening.dampened(entity)` is the one question: inside a live field, or struck by a round. `PowerRules`
-  asks it for players; Sylar, Elle and `MimicryService.imprintOf` ask it too.
+  asks it for players; Sylar and `MimicryService.imprintOf` ask it too.
 - `dampener/AbilityDampenerBlockEntity` holds the battery (exposed on every side through NeoForge's
   `Capabilities.EnergyStorage.BLOCK`) and pays the upkeep each tick. The field is live only while it has paid this tick
   or the last, so a stall (an EMP) drops it with no extra bookkeeping.

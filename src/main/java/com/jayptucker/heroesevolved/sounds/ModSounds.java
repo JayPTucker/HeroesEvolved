@@ -108,6 +108,9 @@ public final class ModSounds {
             SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "nuclear_charge")));
     public static final Supplier<SoundEvent> SYLAR_WATCH = SOUND_EVENTS.register("sylar_watch", () ->
             SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "sylar_watch")));
+    /** The record of Sylar's theme (tools/generate-sylar-music.py), a rare re-fight drop played by a jukebox. */
+    public static final Supplier<SoundEvent> MUSIC_DISC_THE_COLLECTION = SOUND_EVENTS.register("music_disc.the_collection", () ->
+            SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "music_disc.the_collection")));
 
     public static final Supplier<SoundEvent> VIBE_PULSE = vibeSound("vibe_pulse");
     public static final Supplier<SoundEvent> VIBE_BREACH = vibeSound("vibe_breach");

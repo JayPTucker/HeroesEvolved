@@ -143,11 +143,11 @@ final class VisionFight {
         Vec3 p = peter.position().add(0, 1.1, 0), q = sylar.position().add(0, 1.1, 0), mid = p.add(q).scale(0.5);
         if (SkyFight.peterWins(k)) {
             SetPiecePayload.send(city, Piece.FLIGHT_SKYBURST, mid, mid.add(q.subtract(p).normalize()), 4, null);
-            SetPiecePayload.send(city, Piece.ELLE_BOLT, p.add(peter.getLookAngle().scale(0.6)), q, 1.2F, null);
+            SetPiecePayload.send(city, Piece.STORY_BOLT, p.add(peter.getLookAngle().scale(0.6)), q, 1.2F, null);
             city.playSound(null, BlockPos.containing(mid), SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.HOSTILE, 3, 1.4F);
             city.playSound(null, BlockPos.containing(mid), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.HOSTILE, 3, 1.3F);
         } else {
-            SetPiecePayload.send(city, Piece.WATCH_HOLD, p, sylar.getEyePosition(), 0.3F, peter);
+            SetPiecePayload.send(city, Piece.STORY_GRIP, p, sylar.getEyePosition(), 0.3F, peter);
             city.playSound(null, BlockPos.containing(mid), SoundEvents.EVOKER_CAST_SPELL, SoundSource.HOSTILE, 3, 0.6F);
         }
         shake(0.05F, 10);

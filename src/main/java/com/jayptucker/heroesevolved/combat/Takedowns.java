@@ -99,6 +99,19 @@ public final class Takedowns {
     /** On a player a finisher holds up ({@link #hover}), for the same reason. */
     private static final String FLOATING = "heroesevolved_finisher_floating";
 
+    /**
+     * A boss finished at its own phase thresholds instead of at low health (Sylar). It glistens while
+     * {@link #finishWindow} is true (synced, so the client's glisten and the server agree), and the finisher's blow is
+     * replaced by {@link #phaseFinished}: the boss decides what a finish does to it (force the next phase with a long
+     * stagger, or, at its very end, the killing blow). The finisher's own animation plays as usual.
+     */
+    public interface PhaseFinishable {
+        /** Whether it can be finished now. */
+        boolean finishWindow();
+        /** A finisher's blow lands on it, struck by {@code player}. Called once per finish. */
+        void phaseFinished(ServerPlayer player);
+    }
+
     /** One power's finisher. */
     public interface Finisher {
         ResourceLocation power();
@@ -260,6 +273,7 @@ public final class Takedowns {
      */
     public static boolean looksFinishable(Player viewer, LivingEntity target, boolean pvp) {
         if (target == viewer || !target.isAlive() || target.isRemoved() || target.isInvulnerable() || target.isSpectator()) return false;
+        if (target instanceof PhaseFinishable boss) return boss.finishWindow();
         if (target.getType().is(UNFINISHABLE) || target instanceof AbstractVillager) return false;
         if (target instanceof Player other) {
             if (!pvp || other.isCreative() || other.isAlliedTo(viewer)) return false;
@@ -274,6 +288,8 @@ public final class Takedowns {
 
     /** Whether {@code player} may finish {@code target} now (not checking reach, cost or cooldown). */
     public static boolean finishable(ServerPlayer player, LivingEntity target) {
+        if (target instanceof PhaseFinishable boss)
+            return target.isAlive() && boss.finishWindow() && finishing(target) == null && StyleHits.hostile(player, target);
         boolean pvp = target instanceof Player other && player.canHarmPlayer(other);
         boolean hunting = target instanceof Mob mob && mob.getTarget() == player;
         // A creature hunting this player counts even if it isn't a monster and the client hasn't seen it turn.
@@ -448,6 +464,12 @@ public final class Takedowns {
     public static void strike(Run run, java.util.function.Consumer<Float> hit) {
         LivingEntity target = run.target;
         if (!target.isAlive()) return;
+        // A boss finished at a phase threshold takes the finish its own way, not as a killing blow.
+        if (target instanceof PhaseFinishable boss) {
+            boss.phaseFinished(run.player);
+            run.overkill = 0;
+            return;
+        }
         UUID holder = SpaceTimeService.holder(target);
         if (holder != null && !holder.equals(run.player.getUUID())) TimeStopService.release(run.player.getServer(), holder, target);
         float before = target.getHealth();
@@ -649,6 +671,8 @@ public final class Takedowns {
         // Let go before the blow: the foe falls the way it is hit.
         restoreAi(run);
         run.finisher.land(run);
+        // A finisher that hurt a phase boss some other way than strike() still finishes it (the boss ignores a second call).
+        if (run.target instanceof PhaseFinishable boss && run.target.isAlive()) boss.phaseFinished(run.player);
         boolean dead = !run.target.isAlive() || run.target.getHealth() <= 0;
         // A blow stored in your own stopped time lands when time resumes: the finisher still counts.
         boolean stored = run.target.isAlive() && TimeStopService.hasStored(run.player.getUUID(), run.target);

@@ -1,7 +1,6 @@
 package com.jayptucker.heroesevolved.story;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
-import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
 import com.jayptucker.heroesevolved.effects.AbilityEffects;
 import com.jayptucker.heroesevolved.entity.EntityCarryService;
@@ -14,7 +13,6 @@ import com.jayptucker.heroesevolved.network.TimeIntroPayload;
 import com.jayptucker.heroesevolved.registry.ModEntities;
 import com.jayptucker.heroesevolved.sounds.ModSounds;
 import com.jayptucker.heroesevolved.story.sylar.SylarEntity;
-import com.jayptucker.heroesevolved.story.sylar.SylarStoryData;
 import com.jayptucker.heroesevolved.time.intro.FractureCity;
 import com.jayptucker.heroesevolved.time.intro.TimeIntroService;
 import net.minecraft.ChatFormatting;
@@ -577,9 +575,8 @@ public final class AvenueService {
             tell(player, "Gabriel Gray never saw the light. He never learned how Sprague's heat works.", ChatFormatting.DARK_PURPLE);
             if (!PastRecords.has(player, PastRecords.ADDENDUM)) PastRecords.give(player, PastRecords.addendum());
             award(player, "story/he_never_saw_it");
-            SylarStoryData sylar = SylarStoryData.get(server);
-            if (sylar.forget(ModAbilities.RADIATION_ID))
-                tell(player, "In the present, the watchmaker reaches for Sprague's heat and finds nothing he understands. He never did.", ChatFormatting.DARK_PURPLE);
+            if (!before.grayKept())
+                tell(player, "In the present, the case in Sylar's collection marked six o'clock stands dark and empty. He never understood the light.", ChatFormatting.DARK_PURPLE);
         } else if (!before.grayKept()) {
             tell(player, "Gray saw the light up close, and somewhere in him a watchmaker understood it. You could walk back and stop him.", ChatFormatting.DARK_PURPLE);
         }

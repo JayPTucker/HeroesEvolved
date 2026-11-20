@@ -68,7 +68,7 @@ key ends them with a short, showy move that belongs to your power alone.
   - **No choosing.** Instead of picking one finisher per power on the Powers page, the key picks at random among all
     three each time.
   - **Bosses.** Bosses, the Warden, the elder guardian and story actors are in the `heroesevolved:unfinishable`
-    entity tag and never glisten. Phase finishers for Sylar and Elle are still to come.
+    entity tag and never glisten, except at a boss's own phase thresholds (Sylar; see "Bosses" below).
   - **Who glistens.** Monsters, creatures that are fighting (vanilla's aggressive flag), anything hunting you, and
     players where PvP is on.
   - **Sound.** Each finisher opens with its power's `HEAVY` cue and layers vanilla sounds; the kill lands with a
@@ -98,7 +98,7 @@ renamed "combo ender" in its docs and tooltips so players never confuse the two.
 - **The threshold.** A creature can be finished when its health is at or below `max(4, 20% of max health)`,
   capped at 12 health, so a zombie glistens at 4 and a ravager (100) at 12.
 - **Who can't be finished.**
-  - Bosses (Sylar, Elle, the Wither, the Ender Dragon, the Warden) can't be finished; see "Bosses" below.
+  - Bosses (the Wither, the Ender Dragon, the Warden) can't be finished; Sylar only at his thresholds (see "Bosses" below).
   - Players only where PvP is allowed, at 20% of max health.
   - Allies and pets, by the shared friend rule (`StyleOps.isFriend`).
   - Anything already held by a Still World, a cage or a bubble *can* be finished. Being set up for it is half the
@@ -147,12 +147,14 @@ renamed "combo ender" in its docs and tooltips so players never confuse the two.
 
 ### Bosses
 
-- Sylar and Elle glisten at the thresholds of their own phases (`SylarEntity.PHASE_TWO`, `PHASE_THREE`) instead of
-  at low health.
-- A finisher at a phase threshold doesn't kill. It plays a short version of the move, deals 15% of max health and
-  forces the phase change at once with a longer stagger (Sylar's cracked-watch stagger).
-- At the very end (Sylar's chase at a tenth, Elle's last bank), the finisher is the killing blow, with its full
-  animation.
+- Sylar glistens in the last 6% of his health above each of his phase thresholds (two thirds and one third), and in
+  his last tenth, instead of at low health.
+- A finisher there plays in full, but doesn't kill: it takes 15% of his health (through his damage caps), forces the
+  next phase at once, and leaves him reeling for five seconds once its transition is over.
+- In his last tenth the finisher is the killing blow (if Claire's case still stands, her gift still gets him back up
+  once, unless the case breaks).
+- Built on one hook in the engine, `Takedowns.PhaseFinishable`: a boss says when it glistens (a synced flag, so the
+  client's glisten agrees) and what a finish does to it; the finisher's own blow is replaced by that.
 
 ### Mimicry and Shapeshifting
 
@@ -745,7 +747,7 @@ It only works well with another angry mob nearby to turn the foe on; alone, the 
      power's `MimicColors` colour for someone powered).
   3. (16–22) The threads snap straight, and a pulse runs into your chest.
   4. (22–26) The foe goes still, and you open your hand outward.
-- **Twist.** A powered foe (a gifted villager, a player with a power, Sylar or Elle at their end) is imprinted at
+- **Twist.** A powered foe (a gifted villager, a player with a power, Sylar at his end) is imprinted at
   once: their power becomes a kept set, no touch needed.
 - **Reward.** That kept set; otherwise a jump in attunement to any powered person within 10 blocks.
 - **Drawn with.** Attunement's threads and the "taking a set" pulse from `MimicArt`, thinned near the camera.
@@ -892,7 +894,6 @@ from finishers").
   - Balance in `tools/balance.py`, tests in `TakedownGameTests`, and photographs with `tools/finisher-preview.init.gradle`.
 - **Still to do.**
   - **A way to choose** (the Powers page row from the plan), if random turns out not to be enough.
-  - **Boss phase finishers** for Sylar and Elle.
   - **Bespoke synthesized sounds** per finisher.
   - **Pose overrides on the foe** (Cut Strings' dance on posed limbs) and **client hit-stop** (Late Thunder's freeze).
   - **Duets.**

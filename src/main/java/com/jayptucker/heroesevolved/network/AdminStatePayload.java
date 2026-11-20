@@ -25,9 +25,9 @@ public record AdminStatePayload(
      * What is going on in the world, one line each, for the events tab. {@code flags} says which of the bosses and
      * events are running, so the menu can offer to end them.
      */
-    public record World(String eclipse, String sylar, String elle, String village, String radio, int flags) {
-        public static final int ECLIPSE = 1, TOTALITY = 2, SYLAR = 4, ELLE = 8, MELTDOWN = 16, RAID = 32, ON_AIR = 64, LAST_DAY = 128;
-        public static final World NONE = new World("", "", "", "", "", 0);
+    public record World(String eclipse, String sylar, String village, String radio, int flags) {
+        public static final int ECLIPSE = 1, TOTALITY = 2, SYLAR = 4, MELTDOWN = 16, RAID = 32, ON_AIR = 64, LAST_DAY = 128;
+        public static final World NONE = new World("", "", "", "", 0);
 
         public boolean has(int flag) { return (flags & flag) != 0; }
 
@@ -35,13 +35,12 @@ public record AdminStatePayload(
                 (buffer, w) -> {
                     buffer.writeUtf(w.eclipse(), 256);
                     buffer.writeUtf(w.sylar(), 256);
-                    buffer.writeUtf(w.elle(), 256);
                     buffer.writeUtf(w.village(), 256);
                     buffer.writeUtf(w.radio(), 256);
                     buffer.writeVarInt(w.flags());
                 },
                 buffer -> new World(buffer.readUtf(256), buffer.readUtf(256), buffer.readUtf(256),
-                        buffer.readUtf(256), buffer.readUtf(256), buffer.readVarInt()));
+                        buffer.readUtf(256), buffer.readVarInt()));
     }
 
     public record PlayerEntry(

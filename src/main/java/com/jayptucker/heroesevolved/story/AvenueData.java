@@ -51,7 +51,7 @@ public final class AvenueData extends SavedData {
     }
 
     /** For the game tests: forget every evening, so one test's change to the world can't leak into another. */
-    void forgetAll() {
+    public void forgetAll() {
         best.clear();
         grayNeverSaw = false;
         worldBest = 0;

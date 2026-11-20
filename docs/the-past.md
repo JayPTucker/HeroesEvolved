@@ -6,12 +6,12 @@ You wake in the Company’s Odessa stasis bunker 103 years after the city burned
 
 1. Search the Overworld for the rare Company relay ruins. For a bearing, use the receiver in the bunker's records room after the lights come back. It records the live distress call and coordinates on **The Last Signal** page of the Journal (**J**).
 2. Make your way to the relay ruins and follow the yellow markings. Activate the relay console to open the way to the stasis annex.
-3. Use the isolator, then the coolant control. Once life support is stable, use **Mara** and **Ivo** to have them follow you, or sneak-use to carry them. Bring both from their pods to the extraction platform. Gabriel Gray approaches through the service route.
+3. Use the isolator, then the coolant control. Once life support is stable, use **Mara** and **Ivo** to have them follow you, or sneak-use to carry them. Bring both from their pods to the extraction platform.
 4. Use the extraction console once both sleepers reach the platform. Walk out of the station and return to the bunker. Speak with Mara and Ivo in the infirmary to hear their account and record their testimony in the Journal.
 
 Primatech relay stations generate far apart in rings around the world origin, like strongholds. The campaign can be played with or without an awakened power, and you can find a station by exploring even if the bunker is disabled. The receiver's Journal entry shows the **X** and **Z** coordinates it found. After opening the annex, an electrical cast aimed near the isolator can cut the feed, and a cold cast aimed near the coolant valve can stabilize life support.
 
-**Records**, **Dreams**, **The Way Back**, and **The Watchmaker** track optional discoveries, telepathic fragments, temporal milestones, and Sylar encounters. The first time the bunker's receiver records the call, it also hands over Isaac Mendez's canvas of The Last Signal: a shareable painting of the sleepers that changes when the rescue succeeds.
+**Records**, **Dreams**, **The Way Back**, and **The Watchmaker** track optional discoveries, telepathic fragments, temporal milestones, and Sylar's story (the prisoner in Level 5, his watch list with its crossed-out names, his collection, and how often you have beaten him). The first time the bunker's receiver records the call, it also hands over Isaac Mendez's canvas of The Last Signal: a shareable painting of the sleepers that changes when the rescue succeeds.
 
 ## Existing worlds
 
@@ -58,7 +58,7 @@ as reading a lectern does).
 | **Records and comms** (east) | The signal receiver on the north desk: a Simple Radio receiver with a transmitter on it, a speaker and a microphone, the operator's chair. Filing cabinets, the records chest (bread, apples, torches), a planning table, a window onto the generator's core, and Noah Bennet's corner with his lockdown order |
 | **Generator hall** (east) | The core, a column of light behind glass and copper; fourteen power cells (three still charged, one blown and scorched); a catwalk round three walls; the main breaker by the door. The power comes back from here |
 | **Infirmary** (west) | Four screened cots with monitors, medical cabinets, a sink and an operating table under its lamp. Mara and Ivo recover here after the rescue |
-| **Containment** (west) | Six barred cells and a watch desk. Cell 3 was Gabriel Gray's: the bars he unmade on the third night are still gone |
+| **Containment** (west) | Six barred cells and a watch desk. Cell 3 was Gabriel Gray's: the bars he unmade on the third night are still gone. Once his story begins, a hatch in its floor leads down to Level 5, where the Company kept him afterwards (see [Sylar](sylar.md)) |
 | **Maintenance** (under the airlock) | Down the hatch in the security booth: a workbench, a map desk, a cot, storage, and Noah Bennet's own notes on Sublevel 4-R |
 | **Sublevel 4-R, the Helix Ward** (behind the blast door off the east corridor) | See below |
 | **The vault and the stair** (north of the airlock) | The vault door the Last Day's survivors came through, stuck open a hundred years, cracked and grown over with vines, moss and roots. Behind it a switchback stair climbs to a ruined lobby at world spawn, where it comes up through a railed slot in the floor under the old SUBLEVEL 4 sign. The lobby stands at the ground's middle height over its footprint, and the land round it is graded to meet its floor (cut back where a hill rose, filled where it fell away, trees cleared), so it sits in a clearing on the surface rather than in a pit. Glow lichen and glow berries light the way. (A world too shallow for the stair, such as a superflat one, gets a ladder to a hatch instead.) |

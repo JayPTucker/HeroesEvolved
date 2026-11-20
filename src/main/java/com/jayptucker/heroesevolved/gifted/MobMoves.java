@@ -43,7 +43,7 @@ import java.util.List;
  * sound), then what the power does, in that power's own colours. Two ordinary moves for every power and a signature for
  * Epic and Mythic mobs. Empathic Mimicry has none of its own: a mimic uses the moves of whatever power it copied.
  * <p>
- * Modelled on Sylar's ({@code story/sylar/SylarPowers}), but for any {@link Mob} and either side: an evil gift's foes are
+ * Like a boss's own moves ({@code story/sylar/SylarMoves}), but for any {@link Mob} and either side: an evil gift's foes are
  * players, villagers, golems and pets; a good gift's (a village guardian's) are monsters and evil gifts.
  */
 public final class MobMoves {

@@ -23,11 +23,10 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import com.jayptucker.heroesevolved.radio.EmergencyBand;
-import com.jayptucker.heroesevolved.story.elle.CompanyVisitData;
-import com.jayptucker.heroesevolved.story.elle.ElleStoryService;
-import com.jayptucker.heroesevolved.story.sylar.SylarStoryData;
-import com.jayptucker.heroesevolved.story.sylar.SylarStoryService;
-import com.jayptucker.heroesevolved.story.sylar.WatchmakerArena;
+import com.jayptucker.heroesevolved.story.sylar.CollectionArena;
+import com.jayptucker.heroesevolved.story.sylar.SylarCommands;
+import com.jayptucker.heroesevolved.story.sylar.SylarData;
+import com.jayptucker.heroesevolved.story.sylar.SylarEvents;
 import com.jayptucker.heroesevolved.village.VillagerMeltdown;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.ai.village.poi.PoiManager;
@@ -95,7 +94,7 @@ public final class AdminService {
 
     private static boolean needsTarget(AdminActionPayload.Action action) {
         return switch (action) {
-            case START_ECLIPSE, STOP_ECLIPSE, ECLIPSE_TOTALITY, SYLAR_DISMISS, ELLE_DISMISS, MELTDOWN_CANCEL, SKIP_TO_POD -> false;
+            case START_ECLIPSE, STOP_ECLIPSE, ECLIPSE_TOTALITY, SYLAR_DISMISS, MELTDOWN_CANCEL, SKIP_TO_POD -> false;
             default -> true;
         };
     }
@@ -185,29 +184,20 @@ public final class AdminService {
             case ECLIPSE_TOTALITY -> EclipseService.beginTotality(admin.getServer())
                     ? "Totality: every power falls silent."
                     : "It is already totality.";
-            case SYLAR_STALK -> SylarStoryService.start(target, false)
-                    ? "Sylar has found " + name + "'s trail."
-                    : sylarRefused(target);
-            case SYLAR_HUNT -> SylarStoryService.start(target, true)
-                    ? "Sylar is coming for " + name + ". The ambush begins in six seconds."
-                    : sylarRefused(target);
+            case SYLAR_TICKET -> {
+                com.jayptucker.heroesevolved.story.sylar.RepairTicketItem.give(target);
+                yield "A Repair Ticket is in " + name + "'s pocket.";
+            }
+            case SYLAR_NEXT -> com.jayptucker.heroesevolved.story.sylar.SylarStory.next(target);
+            case SYLAR_FIGHT -> {
+                var refused = CollectionArena.refusal(target);
+                if (refused != null) yield refused.getString();
+                yield CollectionArena.open(target) != null ? name + " is in the Collection. Gray & Sons is open." : "The Collection couldn't be opened.";
+            }
             case SYLAR_DISMISS -> {
-                boolean was = SylarStoryService.hunter() != null;
-                SylarStoryService.dismiss(admin.getServer());
-                yield was ? "Sylar has withdrawn." : "Sylar isn't in the world.";
-            }
-            case ELLE_OMENS -> {
-                if (!ElleStoryService.eligible(target)) yield elleRefused(target);
-                ElleStoryService.beginOmens(target);
-                yield "The day of omens has begun for " + name + ". Elle arrives when it ends.";
-            }
-            case ELLE_ARRIVE -> ElleStoryService.arrive(target)
-                    ? "The lights go out around " + name + ". She's here."
-                    : elleRefused(target);
-            case ELLE_DISMISS -> {
-                boolean was = ElleStoryService.elle() != null;
-                ElleStoryService.dismiss(admin.getServer());
-                yield was ? "Elle has gone." : "Elle isn't here.";
+                boolean was = CollectionArena.open();
+                CollectionArena.end(admin.getServer(), CollectionArena.Outcome.ABANDONED);
+                yield was ? "Gray & Sons is closed; everyone is going home." : "No fight is on.";
             }
             case MELTDOWN_START -> {
                 int seconds = Math.clamp(request.value(), MELTDOWN_MIN, MELTDOWN_MAX);
@@ -240,27 +230,6 @@ public final class AdminService {
             };
             case OPEN, REFRESH -> "";
         };
-    }
-
-    private static String sylarRefused(ServerPlayer target) {
-        if (SylarStoryService.hunter() != null) return "Sylar is already in the world.";
-        if (!SylarStoryService.eligible(target)) return target.getName().getString() + " can't be hunted now (" + why(target) + ").";
-        return "Sylar found nowhere safe to watch " + target.getName().getString() + " from. Try somewhere more open.";
-    }
-
-    private static String elleRefused(ServerPlayer target) {
-        if (ElleStoryService.elle() != null) return "Elle is already here.";
-        return target.getName().getString() + " can't be visited now (" + why(target) + ").";
-    }
-
-    /** The first reason a boss would turn this player down. */
-    private static String why(ServerPlayer target) {
-        if (target.isCreative() || target.isSpectator()) return "they're in Creative or Spectator";
-        if (target.level().getDifficulty() == net.minecraft.world.Difficulty.PEACEFUL) return "the world is on Peaceful";
-        if (PlayerAbilityService.getData(target).assignedPower().filter(e -> e.getValue().isUnlocked()).isEmpty()) return "they have no awakened power";
-        if (EclipseService.arePowersSuppressed(target)) return "it's totality, and powers are silent";
-        if (!target.level().dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return "they aren't in the Overworld";
-        return "they're asleep, or in another story";
     }
 
     /** A vanilla raid on the village nearest the player, as if they had walked in with Bad Omen. */
@@ -381,29 +350,8 @@ public final class AdminService {
         if (EclipseService.isActive(server)) flags |= AdminStatePayload.World.ECLIPSE;
         if (EclipseService.isTotality(server)) flags |= AdminStatePayload.World.TOTALITY;
 
-        String sylar;
-        if (SylarStoryService.hunter() != null) {
-            flags |= AdminStatePayload.World.SYLAR;
-            sylar = WatchmakerArena.locked() ? "In the fight, in his shop." : "In the world, hunting.";
-        } else sylar = "Not in the world.";
-        sylar += " Beaten " + SylarStoryData.get(server).defeats() + " times.";
-
-        String elle;
-        long now = server.overworld().getGameTime();
-        if (ElleStoryService.elle() != null) {
-            flags |= AdminStatePayload.World.ELLE;
-            var e = ElleStoryService.elle();
-            elle = "On the test floor: " + Math.round(e.getHealth()) + "/" + Math.round(e.getMaxHealth()) + " health.";
-        } else {
-            elle = "Not here.";
-            for (ServerPlayer p : server.getPlayerList().getPlayers()) {
-                var visit = CompanyVisitData.get(server).visit(p.getUUID());
-                if (visit.omens(now)) {
-                    elle = "Omens around " + p.getName().getString() + "; she arrives in " + Math.max(0, (visit.arriveAt - now) / 20) + "s.";
-                    break;
-                }
-            }
-        }
+        if (CollectionArena.sylar() != null) flags |= AdminStatePayload.World.SYLAR;
+        String sylar = SylarCommands.status(server);
 
         if (!VillagerMeltdown.all().isEmpty()) flags |= AdminStatePayload.World.MELTDOWN;
         if (com.jayptucker.heroesevolved.story.prologue.PrologueService.podsAhead()) flags |= AdminStatePayload.World.LAST_DAY;
@@ -424,7 +372,7 @@ public final class AdminService {
             radio = EmergencyBand.FREQUENCY + " FM on air: " + (calls == 0 ? "quiet." : calls + (calls == 1 ? " call." : " calls."));
         } else radio = "Radio mod not answering: calls go out as subtitles only.";
 
-        return new AdminStatePayload.World(EclipseService.describe(server).getString(), sylar, elle, village, radio, flags);
+        return new AdminStatePayload.World(EclipseService.describe(server).getString(), sylar, village, radio, flags);
     }
 
     private static AdminStatePayload.PlayerEntry describe(
@@ -457,13 +405,14 @@ public final class AdminService {
         );
     }
 
-    /** How far Sylar and the Company have got with them. */
+    /** Where Sylar's story stands with them. */
     private static String story(ServerPlayer player) {
         MinecraftServer server = player.getServer();
         if (server == null) return "";
-        var trail = SylarStoryData.get(server).trail(player.getUUID());
-        var visit = CompanyVisitData.get(server).visit(player.getUUID());
-        return "Sylar chapter " + trail.chapter + "/" + SylarStoryData.MAX_CHAPTER + "   Company visits " + visit.visits
-                + (visit.beaten > 0 ? " (" + visit.beaten + " won)" : "");
+        SylarData data = SylarData.get(server);
+        int wins = data.wins(player.getUUID());
+        String[] stages = {"asleep", "awake in Level 5", "out of his cell", "beaten"};
+        return "Sylar: " + stages[Math.clamp(data.stage(), 0, 3)] + (data.listed().containsKey(player.getUUID()) ? ", on his list" : "")
+                + (wins > 0 ? ", beaten " + wins + "x" : "");
     }
 }

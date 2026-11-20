@@ -1148,5 +1148,51 @@
         "name": "heroesevolved:story/lastday_shatter"
       }
     ]
+  },
+  "sylar_viewing": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/sylar_viewing",
+        "stream": true
+      }
+    ]
+  },
+  "sylar_unlocked": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/sylar_unlocked",
+        "stream": true
+      }
+    ]
+  },
+  "sylar_masterwork": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/sylar_masterwork",
+        "stream": true
+      }
+    ]
+  },
+  "sylar_stinger": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/sylar_stinger"
+      }
+    ]
+  },
+  "sylar_last_chord": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/sylar_last_chord"
+      }
+    ]
+  },
+  "music_disc.the_collection": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/sylar_record",
+        "stream": true
+      }
+    ]
   }
 }

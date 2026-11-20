@@ -202,7 +202,7 @@ public final class AmpSkills {
         return blocked >= total * .6;
     }
 
-    /** A powered foe in sight: a player with a power (where PvP allows), a gifted mob, Sylar or Elle. */
+    /** A powered foe in sight: a player with a power (where PvP allows), a gifted mob or Sylar. */
     static LivingEntity poweredFoe(ServerPlayer p, double range) {
         return Targeting.livingEntityInRange(p, range, ClipContext.Fluid.NONE, e -> StyleOps.isFoe(p, e) && AmpService.powered(e));
     }
@@ -212,7 +212,7 @@ public final class AmpSkills {
         if (foe == null) return false;
         Amplification.markWild(foe, WILD_TICKS);
         // Story fighters cast through their own code; the overload stalls them instead.
-        if (foe instanceof com.jayptucker.heroesevolved.story.sylar.SylarEntity || foe instanceof com.jayptucker.heroesevolved.story.elle.ElleEntity)
+        if (foe instanceof com.jayptucker.heroesevolved.story.sylar.SylarEntity)
             foe.addEffect(new MobEffectInstance(ModItems.DAMPENED, 40, 0));
         AmpService.zap(p, foe, 1.4F);
         SetPiecePayload.send(p.serverLevel(), Piece.AMP_BURNOUT, foe.position(), foe.getEyePosition(), Math.max(.6F, foe.getBbHeight()), foe, 1);

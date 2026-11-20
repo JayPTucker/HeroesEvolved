@@ -103,7 +103,7 @@ public final class TelepathyService {
     /** A creature's surface thoughts, as Matt might hear them. */
     public static String thoughtsOf(LivingEntity target, ServerPlayer reader) {
         if (target instanceof com.jayptucker.heroesevolved.story.sylar.SylarEntity sylar) {
-            return sylar.hunting() ? "A patient, terrible hunger. He is studying the pattern of your ability."
+            return sylar.fighting() ? sylar.mindLine()
                     : "A watchmaker counting heartbeats. He knows you are different. He wants to understand why.";
         }
         int health = Math.round(100.0F * target.getHealth() / target.getMaxHealth());

@@ -93,6 +93,34 @@ of every window bursting (`lastday_shatter`) and the ringing in your ears after 
 - **A dimension change stops every sound** (`Minecraft.setLevel` calls `soundManager.stop()`). A cue that must finish
   plays before a teleport across dimensions, not across it.
 
+## Reusable patterns from Sylar's theme
+
+Sylar's boss theme (`tools/generate-sylar-music.py`: three phase loops, a stinger, a last chord and the record in
+`sounds/music/sylar_*.ogg`, played by `client/sound/SylarMusic` and, for the record, a jukebox) is modelled on the
+library's gameplay score states (Score 04's Exploration, Combat and Stealth, and the Combat states of Scores 06
+and 08). What the player hears is in [sylar.md](../sylar.md#music).
+
+- **Import the synthesis, don't copy it.** The generator loads `generate-story-cues.py` and `generate-lastday-music.py` as
+  modules (both guard their `__main__`) for their voices, choir, drums, ostinato, brass, reverb and `finish`, and points
+  `finish` at another folder by setting `cues.OUT`.
+- **Phase loops are one chart.** All three loops are the same 24 bars (D minor, 68 bpm, 84.7 s) in three 8-bar
+  sections, each adding layers to the last, so any can follow any; the music manager swaps them when the phase changes
+  and the stinger covers the cut. The record joins eight bars of each, the stinger at the turns and the last chord,
+  each part levelled first (`level_to`) so the joins match.
+- **Measure more than loudness and brightness.** Beside length, tempo, key, RMS and centroid, compare a five-band
+  split (sub, low, low-mid, 1 to 4 kHz, top), the percussive share (median-filter HPSS on the spectrogram), onsets a
+  second under 200 Hz and over 3 kHz, crest factor and the 4-second loudness arc. The first theme matched the
+  reference's tempo and key but had a third of its 1 to 4 kHz energy and half its high onsets; a kit (taiko-style drums
+  with a bright slap, toms, claps, shaker, cymbal swells and crashes at the section turns, clockwork anvils) and
+  brighter strings brought the action loops to 621 and 708 Hz centroids and 6.8 high onsets a second, inside the
+  reference Combat states' range. The scripts are scratch work, not kept: rebuild them from this list.
+- **A drum's long body reads as tone, not percussion.** Pushing a slow-decaying sine kick up lowered the percussive
+  share; a shorter body with more skin and slap raised it. Pitched layers (strings, bass, choir) always count against it.
+- **Check a spectrogram sheet** of ours stacked over a reference, with a peak lane marking samples over 0.75: it shows
+  section crashes, gaps, clicks and clipping at a glance.
+- **The game's music channel, not a sound.** `SelectMusicEvent` returns the phase's `Music` (min and max delay 0, replace
+  current) while the local player is in the hall, and null (silence) before he wakes and after his last chord.
+
 ## Reusable patterns from the power sounds
 
 Every power got a palette of original synthesized cues in November 2026 (`sounds/PowerSounds`, `sounds/PowerCue`, made by

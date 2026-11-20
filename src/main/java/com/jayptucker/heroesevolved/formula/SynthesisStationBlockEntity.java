@@ -117,7 +117,6 @@ public final class SynthesisStationBlockEntity extends BaseContainerBlockEntity 
         }
         ingredient.shrink(1);
         level.playSound(null, pos, SoundEvents.BREWING_STAND_BREW, SoundSource.BLOCKS, 1, formula ? 0.6F : 1.2F);
-        if (formula) LabBlock.attractAttention(level, pos);
     }
 
     @Override protected Component getDefaultName() { return Component.translatable("block.heroesevolved.synthesis_station"); }

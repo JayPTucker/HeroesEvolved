@@ -17,8 +17,8 @@ anyone, never claims a player's power, and a mimic can't copy Mimicry itself.
 - **Touching someone.** Hit them, or right-click them with an empty hand (not sneaking: sneak + use is a carry).
   Below Level 6 a touch attunes at once. From Level 6 it **keeps** their set and channels it; when you are full,
   the oldest kept set lets go. A kept set remembers who it came from.
-- **Who has a power:** players, **gifted villagers** (below), the radioactive villager of a meltdown, Sylar (you
-  get one of the powers he has stolen) and Elle Bishop (Electrokinesis).
+- **Who has a power:** players, **gifted villagers** (below), the radioactive villager of a meltdown, and Sylar (you
+  get one of the powers in his collection).
 
 ## Echoes: your five keys
 
@@ -42,7 +42,7 @@ With an empty hand, Peter fights in the style of the power he is channelling (ne
 your kept sets follow, then the empty places still to fill (or the Level that opens them).
 
 - Each set shows its power, the face of whoever it came from (or a mark: an emerald for a villager, a clock for
-  Sylar, a lightning rod for Elle) and a rim in that power's colour. The channeled set's rim breathes.
+  Sylar) and a rim in that power's colour. The channeled set's rim breathes.
 - **Flick and let go** to channel a set. **Right-click** a kept set to let it go.
 - **Tap B** to step to the next set without opening the wheel.
 
@@ -98,7 +98,7 @@ From Power Level 3, a foe low enough to finish glistens gold. Press **C** near i
 
 - **Channeling a power,** you finish with that power's finisher (Dragon Coil, Lights Out and the rest). With nothing channeled, you have your own:
 - **What you see.** Your hand goes to your heart and three gold threads sag between the foe and your chest, draw tight while you feel what it felt, and snap straight. A pulse runs along them into your chest and blooms there as the foe goes still.
-- **A foe with a power** (a gifted villager, a player, Sylar or Elle) is imprinted at once: its power becomes a kept set, no touch needed.
+- **A foe with a power** (a gifted villager, a player or Sylar) is imprinted at once: its power becomes a kept set, no touch needed.
 
 Each press of C plays one of three at random, never the one you used last. Take It In is described above; the two alternates give the same reward.
 

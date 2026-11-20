@@ -1,4 +1,6 @@
-// The Sylar boss fight photographed at dusk in a flat world. Never bundled into the mod JAR.
+// The client photographs Sylar's Collection with uitest/SylarCollectionPreview: the ticket, the hall, every telegraph
+// while it assembles and as it lands, each phase, the backfire, Appraisal, the light, Claire's case and his death, into
+// build/sylar-preview/screenshots/. Never bundled into the mod JAR.
 allprojects {
     plugins.withId('net.neoforged.moddev') {
         afterEvaluate {
@@ -12,12 +14,14 @@ allprojects {
                 runs {
                     client {
                         gameDirectory = project.file('build/sylar-preview')
-                        programArguments.addAll('--width', '1100', '--height', '800')
+                        programArguments.addAll('--width', '1280', '--height', '800')
                         systemProperty('heroes.preview.sylar', 'true')
                     }
                 }
             }
             tasks.named('runClient') { dependsOn(tasks.named('sylarPreviewClasses')) }
+            // Pass when every scene ran (PREVIEW_DONE), not on the exit code the closing halt leaves.
+            apply from: rootProject.file('tools/preview-result.gradle')
         }
     }
 }

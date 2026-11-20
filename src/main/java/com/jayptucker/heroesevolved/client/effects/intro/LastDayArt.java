@@ -42,7 +42,7 @@ import java.util.Set;
  *   Induced Radioactivity's colours, further and harder each time: a hot ring racing over the street, a sickly one behind
  *   it, a wall of heat haze and dust. Then the big one, which crosses the whole city.</li>
  *   <li>Peter and Sylar as themselves (their own skins and poses), Peter trailing condensation and Sylar dark smoke, their
- *   clashes drawn with the powers' own pieces: Flight's pressure fronts, Elle's lightning, the Watchmaker's grip.</li>
+ *   clashes drawn with the powers' own pieces: Flight's pressure fronts, a lightning bolt, Sylar's grip.</li>
  *   <li>The chunks Sylar tears out of the facades, tumbling through the air, and the stone and glass that come down on the
  *   sidewalk where they hit.</li>
  * </ul>
@@ -158,16 +158,16 @@ public final class LastDayArt {
                 Vec3 a = p.add(0, 1.1, 0), b = s.add(0, 1.1, 0);
                 if (beat.peterWins()) {
                     SetPieceClient.play(Piece.FLIGHT_SKYBURST, at.add(0, 1, 0), at.add(0, 1, 0).add(b.subtract(a).normalize()), 4, -1, beat.ordinal());
-                    SetPieceClient.play(Piece.ELLE_BOLT, a, b, 1.2F, -1, beat.ordinal());
+                    SetPieceClient.play(Piece.STORY_BOLT, a, b, 1.2F, -1, beat.ordinal());
                     hear(at, SoundEvents.LIGHTNING_BOLT_IMPACT, 1.4F, 1.4F, ear, t);
                 } else {
-                    SetPieceClient.play(Piece.WATCH_HOLD, a, b, 0.3F, -1, beat.ordinal());
+                    SetPieceClient.play(Piece.STORY_GRIP, a, b, 0.3F, -1, beat.ordinal());
                     hear(at, SoundEvents.EVOKER_CAST_SPELL, 1.4F, 0.6F, ear, t);
                 }
                 hear(at, SoundEvents.GENERIC_EXPLODE.value(), 1.2F, 1.3F, ear, t);
             }
             case GRIPPED -> {
-                if (s != null) SetPieceClient.play(Piece.WATCH_HOLD, s.add(0, 1.2, 0), p.add(0, 1, 0), 0.4F, -1, 3);
+                if (s != null) SetPieceClient.play(Piece.STORY_GRIP, s.add(0, 1.2, 0), p.add(0, 1, 0), 0.4F, -1, 3);
                 hear(at, SoundEvents.EVOKER_CAST_SPELL, 1.5F, 0.5F, ear, t);
             }
             case HURLED_DOWN -> {
@@ -180,14 +180,14 @@ public final class LastDayArt {
             case BOLT -> {
                 if (s == null) return;
                 Vec3 hand = p.add(0, 1.3, 0), chest = s.add(0, 1.1, 0);
-                SetPieceClient.play(Piece.ELLE_BOLT, hand, chest, 1.4F, -1, 17);
+                SetPieceClient.play(Piece.STORY_BOLT, hand, chest, 1.4F, -1, 17);
                 SetPieceClient.play(Piece.FLIGHT_SKYBURST, at.add(0, 1, 0), at.add(0, 1, 0).add(chest.subtract(hand).normalize()), 4.5F, -1, 17);
                 hear(at, SoundEvents.LIGHTNING_BOLT_THUNDER, 0.9F, 1.6F, ear, t);
                 hear(at, SoundEvents.LIGHTNING_BOLT_IMPACT, 1.6F, 1.2F, ear, t);
             }
             case TORN_1, TORN_2 -> {
                 int which = beat == Beat.TORN_1 ? 0 : 1;
-                if (s != null) SetPieceClient.play(Piece.WATCH_HOLD, s.add(0, 1.2, 0), at, 0.5F, -1, 21 + which);
+                if (s != null) SetPieceClient.play(Piece.STORY_GRIP, s.add(0, 1.2, 0), at, 0.5F, -1, 21 + which);
                 hear(at, SoundEvents.EVOKER_CAST_SPELL, 1.6F, 0.55F, ear, t);
             }
             case FLUNG_1, FLUNG_2 -> {

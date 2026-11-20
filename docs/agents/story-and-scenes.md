@@ -16,6 +16,14 @@ player sees is in [docs/the-last-day.md](../../docs/the-last-day.md).
   the arms. The script drives it with `walkTo`, `face`, `place` and `say` (chat as `<Name>` plus a speech bubble).
   Spawn with a scene tag and remove by it. Add a role and a skin in `tools/GenerateStoryActorTextures.java` for the
   next character; don't write another entity.
+- **Sylar is his own entity, actor and boss in one.** The avenue at 6:14 and Night Three move a `SylarEntity` that
+  isn't fighting (no goals, no bar): they pose him with `scenePose(SylarEntity.Pose)` (the old `SylarPowers.Pose` is
+  gone) and walk him with his navigation. `actor(true)` makes him a still, unhurtable actor who watches the nearest
+  player (the prisoner in Level 5, the man behind you), `foldAway()` removes him with his fold, and `begin` ends both.
+  The Last Day's sky fight draws him as a `StoryActorEntity` instead. He no longer visits the relay. What his boss
+  fight is and how the past changes it: [sylar.md](../sylar.md) and the bosses skill's
+  [built-bosses.md](../../.claude/skills/minecraft-bosses/references/built-bosses.md). His fight reads the past's own
+  records (`AvenueData.grayNeverSaw`, `NightThreeData.podKept`); never copy an outcome into his data.
 - **A scene that hands off to the real game.** The prologue ends by calling `BunkerService.handOff`, which runs the
   normal wake-up in the pod the player was sealed in. The prologue pod index *is* `BunkerData.pod(uuid, …)`, so the
   number matches 103 years later. Pod 14 (Claire's) is excluded everywhere.
@@ -64,7 +72,7 @@ player sees is in [docs/the-last-day.md](../../docs/the-last-day.md).
   run's room rebuild. `PrologueGameTests` checks rubble and dark lights after the blast.
 - **One path, two ways of seeing it.** The sky fight (`time/intro/SkyFight`) is pure maths: positions and moves at any
   tick for a `Script` (start, pass length, passes). The vision moves real actors along it (`VisionFight`, with the powers'
-  own pieces: `FLIGHT_SKYBURST`, `ELLE_BOLT`, `WATCH_HOLD`, `FLIGHT_IMPACT`, `TIME_SNAP`); the Last Day's own fight
+  own pieces: `FLIGHT_SKYBURST`, `STORY_BOLT`, `STORY_GRIP` (drawn by `StoryArt`), `FLIGHT_IMPACT`, `TIME_SNAP`); the Last Day's own fight
   (`LastDayFight`, see the rework below) uses its plaza passes and draws everything on each client from the light's start,
   because a dedicated server only sends entities within its view distance and the plaza is 130 blocks from the market.
 - **Probe the city before choreographing over it.** The towers' real faces and heights decided the fight's centre, its
@@ -86,6 +94,42 @@ player sees is in [docs/the-last-day.md](../../docs/the-last-day.md).
 - **Returning a group together.** The vision's `together(...)` lands everyone in a ring of open standing spots round
   the traveler's return point, falling back to each player's own ticket if the traveler's is gone. Reuse it for any
   scene that should end with the party side by side.
+
+## Reusable patterns from the prisoner and the list (how you meet Sylar)
+
+`story/sylar/SylarStory` runs it, `story/sylar/LevelFive` is the place, `SylarData` keeps the state (its stage, the
+list's `Entry`s, the hatch, visits); what the player sees is in [sylar.md](../sylar.md).
+
+- **A story told over nights counts nights, not ticks.** `SylarStory.nightOf(clock)` is `floorDiv(clock - 13000,
+  24000)`: it turns over at dusk, so a night slept through still advances it, and the story compares it with the last
+  night it handled (`SylarData.lastNight`). `clock` is the day time, or game time when the daylight cycle is off.
+  Admin steps and tests set `lastNight` themselves (tests freeze it at 1,000,000 so no real dusk interferes).
+- **Name people lazily.** The list's villages are found once (`VillageIncidents.find`), but their villagers aren't
+  loaded then: the first time a player comes within 48 blocks, a villager there takes the name and a dormant gift
+  (`SylarStory.assign`, preferring one who already has a gift). Whatever happened to the name meanwhile (crossed out,
+  given back) is applied then, and again by `EntityJoinLevelEvent` whenever that villager loads later. Keep the state
+  on the entry, never only on the entity.
+- **A protector counts at the moment it matters.** A player within 24 blocks of a listed villager when the night turns
+  spares them that night (`SylarStory.cross` takes the next unguarded name), and hears something pass. A creative or
+  spectating player doesn't count (`SylarEntity.counts`).
+- **A held actor, not a searched one.** The prisoner is spawned into a freshly loaded, force-loaded chunk, which hides
+  its entities from `getEntitiesOfClass` for a few seconds; the first test failed and every Level 5 tick would have
+  spawned another. `LevelFive.prisoner` keeps him in a field and searches only as a fallback (discarding extras).
+- **A conversation paces itself.** `SylarVoice`'s queue keeps three lines and drops narration when full, so a scene
+  with more to say keeps its own list (`SylarStory.Talk`: one line every seven seconds while the player stays near the
+  glass) and sends with `SylarVoice.sayNow` / `narrateNow`, which also hold back the queue's next line.
+- **Story text on a wall.** Sign text is a `Component`, so `STRIKETHROUGH` and colours work per line
+  (`LevelFive.signs` from `SylarStory.listLines`); in a dark room give it glowing text, or it can't be read.
+  Waxed weathered copper bulbs give only light 8; exposed ones give 12.
+- **A place built once, kept whole.** Level 5 is a pocket dimension built the first time anyone goes down, again when
+  `LevelFive.VERSION` passes `SylarData.levelFiveBuilt`; `refresh` then sets the glass, lever, list and prisoner from the
+  story's stage. It can't be broken or built on outside creative (`BreakEvent`, `EntityPlaceEvent`, and
+  `ExplosionEvent.Detonate` cleared), nor can the hatch above. Its blueprint is drafted by `tools/draft-level-five.py`.
+- **A fight that sends you home sends you where you were taken.** A story fight started in Level 5 ends in Level 5, so
+  "he comes when you step out of the lift" must not fire again on the way back: `SylarStory` remembers who he has come
+  for this visit (`CAME`), cleared only by taking the lift down again.
+- **Tests keep the story's blocks to themselves.** Set `SylarData.hatch` to the test's own floor before waking him, or
+  the hatch lands in whatever bunker the shared test world has built.
 
 ## Reusable patterns from the Last Day rework (ready-up, the fight, the rescue, the wave)
 

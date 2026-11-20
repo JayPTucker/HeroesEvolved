@@ -128,8 +128,10 @@ public final class SkillUiPreview {
             com.jayptucker.heroesevolved.network.ClientJournalState.update(new com.jayptucker.heroesevolved.network.StoryJournalPayload(
                     "Two occupied pods are calling from an old Company site. Find the relay ruins in the Overworld.",
                     java.util.List.of("Stasis Wing: Orientation", "Lockdown Order 7", "Assay: Helixite"), 9,
-                    java.util.List.of("A man was glowing in the street. Like the sun had come down.", "Everyone ran south."), 5, true, 0b00011, 3, 1,
+                    java.util.List.of("A man was glowing in the street. Like the sun had come down.", "Everyone ran south."), 5, true, 0b00011, 4, 1,
                     java.util.List.of("heroesevolved:telekinesis"),
+                    java.util.List.of("x|R. Calder", "s|C. Bennet", "X|Hollis Ashby (Sonic Resonance), a village near 120, -340",
+                            "o|Marta Vance (Flight), a village near -400, 210", "y|Dev", "g|Gabriel Gray"),
                     com.jayptucker.heroesevolved.story.LastSignalService.Phase.RECEIVED,
                     new net.minecraft.core.BlockPos(1742, 72, -930), 0));
             com.jayptucker.heroesevolved.gui.screen.JournalScreen.openAt(0);

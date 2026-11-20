@@ -634,7 +634,7 @@ public final class ShapeshiftService {
         return com.jayptucker.heroesevolved.events.EclipseService.arePowersSuppressed(player)
                 || com.jayptucker.heroesevolved.company.SuppressorField.suppresses(player)
                 || com.jayptucker.heroesevolved.dampener.Dampening.dampened(player)
-                || com.jayptucker.heroesevolved.story.sylar.WatchmakerArena.stolen(player);
+                || com.jayptucker.heroesevolved.story.sylar.CollectionArena.stolen(player);
     }
 
     // ---- Talking to clients and players ----

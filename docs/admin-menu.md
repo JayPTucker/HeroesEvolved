@@ -47,8 +47,7 @@ cut short to read all of it. Buttons that can't do anything right now are greyed
 | Section | Buttons | Acts on |
 | --- | --- | --- |
 | **Eclipse** | **Start** (from first contact), **Totality** (straight to it), **Stop** | the world |
-| **Sylar** (the Watchmaker) | **Stalk** (he finds their trail), **Hunt** (he comes now; the fight is in his clock shop), **Dismiss** | the chosen player |
-| **Elle** (Elle Bishop) | **Omens** (a day of flickering lights before she comes), **Arrive** (she comes now), **Dismiss** | the chosen player |
+| **Sylar** (the prisoner and his Collection) | **Next** (move his story on a step: wake him for them, cross out the next name on his list, open his cell, or send him to them now), **Ticket** (a Repair Ticket in their pocket), **Fight** (into his Collection now, with everyone near them), **End** (close it; everyone goes home) | the chosen player |
 | **Village** | **Meltdown** (one minute) or **20 s**, in the villager nearest them; **Raid** on the nearest village; **End** every meltdown | the chosen player's surroundings (64 blocks) |
 | **Radio** | **Give tuned radio**: a walkie-talkie already on 101.10 FM | the chosen player |
 
@@ -66,15 +65,9 @@ Incidents search around the chosen player within the server's configured inciden
 They begin once the village and its villagers load. The village status includes the number of queued incidents;
 **Refresh** updates the status. **Main events** returns to the original controls.
 
-Sylar and Elle refuse a player who can't take part. The player needs:
+**Fight** is refused while another fight is on in the Collection, or when Sylar is disabled in the config; the message
+says which.
 
-- an awakened power;
-- Survival or Adventure mode (not Creative), in the Overworld, on a difficulty above Peaceful;
-- to be outside the power intro and the vision of the past;
-- for it not to be totality.
-
-The message above the hotbar says which of these failed.
-
-The same things have commands: `/heroesevolved eclipse …`, `/heroesevolved sylar …`, `/heroesevolved elle …` and
-`/heroesevolved eclipse meltdown [seconds]`. See [The Eclipse](eclipse.md), [Sylar](sylar.md),
-[Elle Bishop](elle-bishop.md) and [The emergency band](emergency-band.md).
+The same things have commands: `/heroesevolved eclipse …`, `/heroesevolved sylar …` and
+`/heroesevolved eclipse meltdown [seconds]`. See [The Eclipse](eclipse.md), [Sylar](sylar.md) and
+[The emergency band](emergency-band.md).
