@@ -61,3 +61,10 @@ hundreds of blocks from a player (`village/VillageIncidents`). Built in November
   move from telegraph to landing at once; `Renegades.hurry` brings a renegade's next turn forward. A raid can be built in
   a test (`new Raid(id, level, center)`, `setLeader`, `joinRaid`). Mark test mobs `ROLLED` and give test villagers a null
   gift, or the rolls make the test random. Kill a mini-boss in a test with a player's blow: anything else is capped.
+- **A gift that wakes too strong is a world event, not a mob.** A storm's gift (Pyrokinesis, Flight, Cryokinesis) waking
+  good may overload instead of guarding (`Renegades.awaken` asks `Overloads.wake`; calmed, it ends in
+  `Renegades.guard`): a wildfire, a supercell or a blizzard round the villager, answered by reaching them. Its patterns
+  are in [village-events.md](../../../../docs/agents/village-events.md) ("overloads").
+- **A Suppressor silences gifted mobs.** `Dampening.dampened` asks `SuppressorField`, so a gifted mob within 9 blocks of
+  an awake Suppressor has only its hands, the way a convoy keeps its prisoner quiet
+  ([company-notices.md](../../../../docs/company-notices.md)).

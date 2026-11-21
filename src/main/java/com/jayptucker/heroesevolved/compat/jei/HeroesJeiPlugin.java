@@ -58,6 +58,7 @@ public final class HeroesJeiPlugin implements IModPlugin {
         });
         guard("info", () -> {
             info(registration, ModItems.HELIXITE_SHARD.get(), "helixite", ModItems.HELIXITE_ORE.get(), ModItems.DEEPSLATE_HELIXITE_ORE.get());
+            info(registration, ModItems.HELIXITE_METEORITE.get(), "helixite_meteorite");
             info(registration, SuitItems.RAW_LEAD.get(), "lead", SuitItems.LEAD_ORE_ITEM.get(), SuitItems.DEEPSLATE_LEAD_ORE_ITEM.get());
             info(registration, ModItems.BLOOD_SAMPLE.get(), "blood_sample");
             info(registration, ModItems.FORMULA_VIAL.get(), "formula_vial");

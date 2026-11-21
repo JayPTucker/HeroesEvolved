@@ -90,6 +90,57 @@ public final class TornadoWind {
         }
     }
 
+    /**
+     * One tick of a storm's tornado (an overload's supercell), drawn {@code scale} times the shared shape's size. It is
+     * nobody's: it takes anyone it reaches except those {@code spared}, and hurts with {@code source}. Inside
+     * {@code calm} of its wall's radius is the eye, still; the wall whirls what it holds up its side and, high up, throws it
+     * out, to fall.
+     */
+    public static void storm(ServerLevel level, Vec3 center, float built, float ring, float scale, double pull, float damage,
+                             float calm, java.util.function.Predicate<Entity> spared, net.minecraft.world.damagesource.DamageSource source,
+                             Set<UUID> caught, long now) {
+        float height = TornadoShape.height(built) * scale, lift = TornadoShape.lift(built) * scale;
+        AABB reach = new AABB(center, center).inflate(pull, 0, pull).expandTowards(0, height + 4, 0).move(0, -4, 0);
+        for (Entity e : level.getEntities((Entity) null, reach, e -> e.isAlive() && !e.isSpectator()
+                && (e instanceof LivingEntity || e instanceof ItemEntity || e instanceof Projectile) && !spared.test(e))) {
+            Vec3 radial = e.position().subtract(center).multiply(1, 0, 1);
+            double distance = radial.length();
+            if (distance > pull) continue;
+            float h = (float) (e.getY() - center.y), up = Math.max(0, h);
+            float wall = TornadoShape.radius(up / scale, height / scale, ring) * scale;
+            // The eye: still air, nothing taken.
+            if (distance < wall * calm && h > -2 && h < height) { caught.remove(e.getUUID()); e.fallDistance = 0; continue; }
+            Vec3 out = distance < 1.0E-3 ? new Vec3(1, 0, 0) : radial.scale(1 / distance);
+            Vec3 around = new Vec3(-out.z, 0, out.x);
+            boolean held = distance <= wall + (up < 3 ? 3.5 : 2.5) * scale && h > -3 && h < height + 2;
+            if (e instanceof Projectile shot) {
+                if (held) push(shot, out.scale(1.2).add(0, 0.15, 0));
+                continue;
+            }
+            double resist = e instanceof LivingEntity living
+                    ? Math.max(0.3, 1 - living.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE) * 0.6) : 1;
+            if (!held) {
+                double k = 1 - distance / pull;
+                Vec3 draw = out.scale(-(0.1 + 0.3 * k)).add(around.scale(0.1 + 0.2 * k)).scale(resist);
+                Vec3 v = e.getDeltaMovement();
+                push(e, new Vec3(v.x * 0.4 + draw.x, v.y + (e.onGround() ? 0.05 * k : 0), v.z * 0.4 + draw.z));
+                continue;
+            }
+            if (h > height * 0.55F) {
+                // High in the wall it lets go: flung out, and left to fall.
+                caught.remove(e.getUUID());
+                push(e, out.scale(1.3 * resist).add(around.scale(0.6)).add(0, 0.25, 0));
+                continue;
+            }
+            caught.add(e.getUUID());
+            double toward = Math.clamp((wall - distance) * 0.12, -0.35, 0.35);
+            double rise = h < lift ? 0.32 : 0.12 + 0.05 * Math.sin((now + e.getId()) * 0.3);
+            push(e, around.scale(0.9 * resist).add(out.scale(toward)).add(0, rise * resist, 0));
+            e.fallDistance = 0;
+            if (e instanceof LivingEntity living && damage > 0 && now % 10 == 0) living.hurt(source, damage);
+        }
+    }
+
     public static boolean exposed(ServerPlayer owner, Vec3 center, Entity target) {
         Vec3 body = target.getBoundingBox().getCenter();
         Vec3 eye = new Vec3(center.x, Math.max(center.y + .3, body.y), center.z);

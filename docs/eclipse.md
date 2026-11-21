@@ -15,6 +15,9 @@ The schedule follows the day clock, not a tick counter. Sleeping skips nights bu
 A server that starts mid-Eclipse joins it in progress, so the peak still lands at noon. Winding
 time back with `/time set` lets an earlier Eclipse day fire again; a day never hosts two.
 
+The night before each Eclipse day is a **starfall night**: meteors fall, some near players, leaving Helixite
+Meteorite in their craters, and now and then a great one comes down on a village (see [Starfall](meteor-shower.md)).
+
 ## Phases
 
 | Phase | Default length | What happens |

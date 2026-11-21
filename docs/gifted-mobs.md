@@ -33,6 +33,9 @@ When a villager's gift wakes, it goes one of two ways (50% each, `villages.gifte
   wear a crown of crimson thorns. Then they lay siege to their own village.
 - A **radioactive** gift that wakes good can't be held by anyone good: that villager melts down
   ([the emergency band](emergency-band.md#a-villagers-meltdown)).
+- A **storm's** gift (Pyrokinesis, Flight, Cryokinesis) that wakes good may wake too strong to hold (40%,
+  `villages.overloadChance`): an overload, a wildfire, a supercell or a blizzard round them, until someone calms them.
+  Calmed, they guard their village as above ([Overloads](overloads.md)).
 
 ## A renegade's siege
 

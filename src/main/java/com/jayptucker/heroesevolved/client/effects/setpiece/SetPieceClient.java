@@ -180,7 +180,7 @@ public final class SetPieceClient {
         if (mc.level == null || ACTIVE.isEmpty() && !SpeedArt.live() && !RewindArt.live() && !FlightArt.live()
                 && !PyroArt.live() && !ShapeArt.live() && !HydroArt.live() && !CryoConstructArt.live(mc.level) && !ClientProjectileTime.hasControlledShots()
                 && !com.jayptucker.heroesevolved.client.effects.intro.LastDayArt.live() && !com.jayptucker.heroesevolved.client.effects.intro.GuideArt.live()
-                && !TakedownArt.live() && !GiftArt.live() && !VillageArt.flaresLive()
+                && !TakedownArt.live() && !GiftArt.live() && !VillageArt.flaresLive() && !OverloadArt.live() && !MeteorArt.live()
                 && !SlowTimeArt.live() && !AmpArt.live()) return;
         if (world != mc.level) { ACTIVE.clear(); world = mc.level; }
         Vec3 camera = event.getCamera().getPosition();
@@ -243,6 +243,8 @@ public final class SetPieceClient {
             com.jayptucker.heroesevolved.client.effects.intro.GuideArt.drawLive(c);
             GiftArt.drawLive(c);
             VillageArt.flares(c);
+            OverloadArt.drawLive(c);
+            MeteorArt.drawLive(c);
             CryoConstructArt.draw(c);
             TemporalProjectileArt.draw(c);
             SlowTimeArt.drawLive(c);

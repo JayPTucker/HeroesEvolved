@@ -19,6 +19,10 @@ public final class HazardDamage {
     public static final ResourceKey<DamageType> MELTDOWN = key("meltdown");
     /** A speedster's own friction at speeds their clothes can't take. */
     public static final ResourceKey<DamageType> FRICTION = key("friction");
+    /** A storm that is nobody's blow: an overload's tornado wall ({@code village/overload/Supercell}). Armor counts. */
+    public static final ResourceKey<DamageType> OVERLOAD = key("overload");
+    /** A meteor landing ({@code meteor/Meteors}): an explosion, so blast protection and armor count. */
+    public static final ResourceKey<DamageType> METEOR = key("meteor");
 
     private static ResourceKey<DamageType> key(String path) {
         return ResourceKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, path));

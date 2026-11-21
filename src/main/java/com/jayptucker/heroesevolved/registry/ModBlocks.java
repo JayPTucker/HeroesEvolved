@@ -42,6 +42,14 @@ public final class ModBlocks {
             () -> new DropExperienceBlock(UniformInt.of(4, 8), BlockBehaviour.Properties.ofFullCopy(Blocks.DEEPSLATE_DIAMOND_ORE)
                     .lightLevel(state -> 3).sound(SoundType.AMETHYST)));
 
+    /**
+     * Helixite fallen from the sky on a starfall night ({@code meteor/Meteors}): a glowing lump at the bottom of a
+     * meteor's crater, richer than the ore.
+     */
+    public static final DeferredBlock<DropExperienceBlock> HELIXITE_METEORITE = BLOCKS.register("helixite_meteorite",
+            () -> new DropExperienceBlock(UniformInt.of(5, 10), BlockBehaviour.Properties.ofFullCopy(Blocks.DEEPSLATE_DIAMOND_ORE)
+                    .lightLevel(state -> 9).emissiveRendering((state, level, pos) -> true).sound(SoundType.AMETHYST)));
+
     /** Spins Regeneration blood into the Formula's catalyst. Built with Helixite. */
     public static final DeferredBlock<LabBlock> CENTRIFUGE = BLOCKS.register("centrifuge",
             () -> new LabBlock(BlockBehaviour.Properties.of().strength(3.5F).requiresCorrectToolForDrops()

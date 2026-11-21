@@ -703,6 +703,17 @@ final class PyroArt {
         return level != null && level.players().stream().anyMatch(p -> ClientFlightVisualState.isPyroFlight(p.getId()));
     }
 
+    /**
+     * Pyrokinesis's own ember flame, for fire that is the power but not a player's move: an overload's wildfire
+     * ({@code OverloadArt}). Draw it in the soft and glow passes only.
+     */
+    static void emberFlame(Canvas c, Vec3 base, Vec3 tip, float width, float phase, float alpha) {
+        flame(c, base, tip, width, phase, alpha, EMBER);
+    }
+
+    /** The ember palette's edge, body and gold, for drawing that sits beside {@link #emberFlame}. */
+    static float[][] emberColors() { return new float[][] {EMBER.edge(), EMBER.body(), EMBER.gold()}; }
+
     static void drawLive(Canvas c) {
         if (c.solid()) return;
         for (Player player : c.level.players()) {

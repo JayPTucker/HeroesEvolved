@@ -154,7 +154,8 @@ public final class Renegades {
      */
     public static Mob awaken(Villager villager, boolean evil) {
         if (!(villager.level() instanceof ServerLevel level) || villager.isBaby() || !villager.isAlive() || GiftedMobs.isGifted(villager)
-                || VillagerMeltdown.critical(villager) || turning(villager)) return null;
+                || VillagerMeltdown.critical(villager) || com.jayptucker.heroesevolved.village.overload.Overloads.critical(villager)
+                || turning(villager)) return null;
         ResourceLocation power = GiftedVillagers.gift(villager);
         if (power == null) {
             power = GiftedMobs.randomPower(villager.getRandom());
@@ -163,6 +164,17 @@ public final class Renegades {
         if (evil) return turn(villager, power, Rarity.roll(villager.getRandom(), Rarity.RARE));
         if (power.equals(ModAbilities.RADIATION_ID))
             return VillagerMeltdown.start(villager, HeroesEvolvedConfig.COMMON.villagerMeltdownFuseTicks.get()) != null ? villager : null;
+        // A storm's gift may wake stronger than they can hold: an overload, until someone calms them.
+        if (com.jayptucker.heroesevolved.village.overload.Overloads.wake(villager, power)) return villager;
+        return guard(villager, power);
+    }
+
+    /**
+     * {@code villager}'s gift wakes good and under control: they guard their village with it. Also how a calmed overload
+     * ends ({@code village/overload/Overloads}). Returns the villager.
+     */
+    public static Mob guard(Villager villager, ResourceLocation power) {
+        if (!(villager.level() instanceof ServerLevel level) || !villager.isAlive() || GiftedMobs.isGifted(villager)) return null;
         BlockPos bell = Villages.bell(level, villager.blockPosition());
         GiftedMob g = GiftedMobs.bestow(villager, power, Rarity.roll(villager.getRandom(), Rarity.UNCOMMON), false, Gift.Origin.GUARDIAN, bell, null);
         Vec3 at = villager.position();
@@ -370,6 +382,12 @@ public final class Renegades {
         for (UUID id : t.village)
             if (t.level.getEntity(id) instanceof Villager v && v.isAlive())
                 t.level.playSound(null, v.blockPosition(), SoundEvents.VILLAGER_CELEBRATE, SoundSource.NEUTRAL, 1, 1);
+        if (alive > 0) {
+            Gift gift = Gift.read(t.renegade);
+            com.jayptucker.heroesevolved.village.VillageMemory.record(t.level, t.bell, gift != null ? gift.name() : "a renegade",
+                    com.jayptucker.heroesevolved.village.VillageMemory.Outcome.SAVED,
+                    source.getEntity() instanceof ServerPlayer killer ? killer : null, watching, alive, t.village.size());
+        }
         for (ServerPlayer p : watching) {
             if (alive > 0) {
                 p.addEffect(new MobEffectInstance(MobEffects.HERO_OF_THE_VILLAGE, 20 * 60 * 20, alive * 2 >= t.village.size() ? 1 : 0, false, false, true));
@@ -385,6 +403,9 @@ public final class Renegades {
     private static void fallen(Terror t) {
         List<ServerPlayer> watching = watchers(t);
         finish(t);
+        Gift gift = Gift.read(t.renegade);
+        com.jayptucker.heroesevolved.village.VillageMemory.record(t.level, t.bell, gift != null ? gift.name() : "a renegade",
+                com.jayptucker.heroesevolved.village.VillageMemory.Outcome.FALLEN, null, watching, 0, t.village.size());
         for (ServerPlayer p : watching)
             p.sendSystemMessage(Component.literal("The village has fallen.").withStyle(ChatFormatting.DARK_RED));
     }

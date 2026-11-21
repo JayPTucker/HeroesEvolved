@@ -30,7 +30,8 @@ The Formula + an Empty Syringe in your inventory ──(use)──► injection
 | **Synthesis Station** | 2 glass and 1 **Helixite Shard** on top, a brewing stand in the middle, surrounded by 5 copper ingots |
 
 A full lab costs **3 Helixite Shards**, and every three Formulas cost one more (see below).
-Helixite is about a quarter as common as diamonds; see [Pyrokinesis and Helixite](pyrokinesis.md#helixite).
+Helixite is about a quarter as common as diamonds; see [Pyrokinesis and Helixite](pyrokinesis.md#helixite). Starfall
+nights bring more down from the sky ([Starfall](meteor-shower.md)).
 
 ## Getting blood
 

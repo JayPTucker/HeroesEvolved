@@ -197,11 +197,13 @@ public final class VillagerMeltdown {
         SetPiecePayload.send(level, Piece.RAD_EMP, v.position(), v.position().add(0, 1, 0), 9, null);
         level.playSound(null, v.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.NEUTRAL, 2.0F, 0.6F);
         level.playSound(null, v.blockPosition(), SoundEvents.VILLAGER_CELEBRATE, SoundSource.NEUTRAL, 1.0F, 1.0F);
-        for (ServerPlayer p : watchers(m)) {
+        List<ServerPlayer> watching = watchers(m);
+        for (ServerPlayer p : watching) {
             p.addEffect(new MobEffectInstance(MobEffects.HERO_OF_THE_VILLAGE, 20 * 60 * 40, 0, false, false, true));
             p.sendSystemMessage(Component.literal((by != null ? by.getName().getString() : "Someone")
                     + " stopped the meltdown. Everyone lived.").withStyle(ChatFormatting.GREEN));
         }
+        VillageMemory.record(level, m.bell, "a meltdown", VillageMemory.Outcome.SAVED, by, watching, m.village.size(), m.village.size());
     }
 
     /** How far from someone the admin tools look for a villager to wake. */
@@ -353,7 +355,6 @@ public final class VillagerMeltdown {
         for (Villager v : List.copyOf(RESUMING)) resume(v);
         RESUMING.clear();
         eclipse(server);
-        bubbles(server);
         for (Meltdown m : List.copyOf(MELTDOWNS.values())) if (m.level.getServer() == server) tick(m);
     }
 
@@ -445,24 +446,12 @@ public final class VillagerMeltdown {
     /** Who of his village is at the safe point now. Those who get there stay huddled there until it is over. */
     /** Villagers this close to him scream and run. */
     public static final double FLEE_RANGE = 20;
-    /** How fast they run: Odessa's crowd ran from the light at the same pace. */
-    static final float FLEE_SPEED = 0.95F;
     /** A shout every this many ticks, from someone running near a player; it hangs over them this long. */
     static final int SHOUT_EVERY = 26, SHOUT_TICKS = 50;
     /** What they shout as they run. The first is always the first line. */
     static final String[] SHOUTS = {"It's happening again!", "The prophecy was true!!", "He's glowing like the sun!",
             "Run! Get away from him!", "Not again! Not again!", "The eclipse did this to him!", "Where are my children?!",
             "Don't look at the light!", "Make for the green light!", "Somebody help us!", "The sky warned us!", "Keep running!"};
-    /**
-     * Bubbles carry this tag. One that loads again later (saved riding its speaker when a chunk unloaded, or across a
-     * restart) is not in {@link #LIVE}, so it is turned away.
-     */
-    static final String BUBBLE_TAG = HeroesEvolved.MOD_ID + "_meltdown_bubble";
-    private static final Set<UUID> LIVE = new HashSet<>();
-
-    private record Bubble(net.minecraft.world.entity.Display.TextDisplay display, Entity speaker, String text, long until) {}
-    private static final List<Bubble> BUBBLES = new ArrayList<>();
-
     /**
      * Everyone near him runs, the way Odessa's crowd ran from the light: away from him at a sprint, shouting, with
      * screams riding the runners on the client ({@code PanicSounds.village}). Anyone asleep wakes to it. Those already
@@ -474,14 +463,7 @@ public final class VillagerMeltdown {
         for (Villager v : m.level.getEntitiesOfClass(Villager.class, him.getBoundingBox().inflate(FLEE_RANGE),
                 v -> v != him && v.isAlive() && !m.safeNow.contains(v.getUUID()) && !EntityCarryService.isBeingCarried(v)
                         && v.distanceToSqr(him) <= FLEE_RANGE * FLEE_RANGE)) {
-            if (v.isSleeping()) v.stopSleeping();
-            Vec3 away = v.position().subtract(him.position()).multiply(1, 0, 1);
-            if (away.lengthSqr() < 1.0E-4) away = new Vec3(v.getRandom().nextDouble() - 0.5, 0, v.getRandom().nextDouble() - 0.5);
-            Vec3 to = him.position().add(away.normalize().scale(FLEE_RANGE + 8));
-            var brain = v.getBrain();
-            brain.setMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.WALK_TARGET,
-                    new net.minecraft.world.entity.ai.memory.WalkTarget(BlockPos.containing(to), FLEE_SPEED, 2));
-            brain.eraseMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.LOOK_TARGET);
+            Shouts.runFrom(v, him.position(), FLEE_RANGE + 8);
             running.add(v);
         }
         if (now >= m.nextShout && !running.isEmpty()) {
@@ -489,44 +471,14 @@ public final class VillagerMeltdown {
                     .anyMatch(p -> !p.isSpectator() && p.distanceToSqr(v) <= 32 * 32)).toList();
             if (!heard.isEmpty()) {
                 Villager who = heard.get(m.level.random.nextInt(heard.size()));
-                say(m.level, who, m.shouts++ == 0 ? SHOUTS[0] : SHOUTS[1 + m.level.random.nextInt(SHOUTS.length - 1)], now);
+                Shouts.say(m.level, who, m.shouts++ == 0 ? SHOUTS[0] : SHOUTS[1 + m.level.random.nextInt(SHOUTS.length - 1)], SHOUT_TICKS);
             }
             m.nextShout = now + SHOUT_EVERY;
         }
     }
 
-    /** Words over a runner's head for a couple of seconds. */
-    private static void say(ServerLevel level, Entity speaker, String text, long now) {
-        BUBBLES.removeIf(b -> {
-            if (b.speaker != speaker) return false;
-            b.display.discard();
-            LIVE.remove(b.display.getUUID());
-            return true;
-        });
-        var display = com.jayptucker.heroesevolved.effects.SpeechBubble.show(level, speaker, text, true, BUBBLE_TAG,
-                d -> LIVE.add(d.getUUID()));
-        if (display == null) return;
-        BUBBLES.add(new Bubble(display, speaker, text, now + SHOUT_TICKS));
-    }
-
-    /** Bubbles over their time, or whose speaker is gone, are taken down. */
-    private static void bubbles(MinecraftServer server) {
-        long now = server.overworld().getGameTime();
-        BUBBLES.removeIf(b -> {
-            if (now < b.until && b.speaker.isAlive() && !b.speaker.isRemoved() && !b.display.isRemoved()) return false;
-            b.display.discard();
-            LIVE.remove(b.display.getUUID());
-            return true;
-        });
-    }
-
     /** The words being shouted right now, and by whom (for tests). */
-    public static List<String> shouting(Entity speaker) {
-        List<String> out = new ArrayList<>();
-        for (Bubble b : BUBBLES)
-            if (b.speaker == speaker && !b.display.isRemoved()) out.add(b.text);
-        return out;
-    }
+    public static List<String> shouting(Entity speaker) { return Shouts.shouting(speaker); }
 
     /**
      * Who of his village is at the safe point now. Those who get there stay huddled there until it is over. Everyone of
@@ -613,6 +565,8 @@ public final class VillagerMeltdown {
         ENDING.remove(m);
         int alive = survivors(m);
         boolean everyone = alive == m.village.size();
+        VillageMemory.record(m.level, m.bell, "a meltdown", m.village.size() > 0 && alive == 0 ? VillageMemory.Outcome.FALLEN
+                : everyone ? VillageMemory.Outcome.SAVED : VillageMemory.Outcome.HIT, null, watching, alive, m.village.size());
         for (ServerPlayer p : watching) {
             if (p.isRemoved()) continue;
             if (everyone && p.isAlive()) p.addEffect(new MobEffectInstance(MobEffects.HERO_OF_THE_VILLAGE, 20 * 60 * 20, 0, false, false, true));
@@ -671,12 +625,6 @@ public final class VillagerMeltdown {
 
     @SubscribeEvent
     public static void joined(EntityJoinLevelEvent event) {
-        // A shout left over from before a restart (it was saved riding its speaker): gone.
-        if (event.getEntity() instanceof net.minecraft.world.entity.Display.TextDisplay d && d.getTags().contains(BUBBLE_TAG)
-                && !LIVE.contains(d.getUUID())) {
-            event.setCanceled(true);
-            return;
-        }
         if (!event.getLevel().isClientSide() && event.getEntity() instanceof Villager v && v.getPersistentData().contains(TAG))
             RESUMING.add(v);
     }
@@ -771,9 +719,7 @@ public final class VillagerMeltdown {
         MELTDOWNS.clear();
         ENDING.clear();
         RESUMING.clear();
-        BUBBLES.forEach(b -> b.display.discard());
-        BUBBLES.clear();
-        LIVE.clear();
+        Shouts.clear();
         awakenAt = Long.MIN_VALUE;
         lastPhase = null;
     }

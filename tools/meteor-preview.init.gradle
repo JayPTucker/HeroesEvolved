@@ -1,0 +1,27 @@
+// The client photographs Starfall with uitest/MeteorPreview: the night's streaks, a falling star coming down onto its
+// ring, its landing and crater, the ring by day, a great meteor on a village (pushed aside, landing, its crater) and a
+// falling star cracked apart, into build/meteor-preview/screenshots/. Never bundled into the mod JAR.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('meteorPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/meteor-preview')
+                        programArguments.addAll('--width', '1280', '--height', '800')
+                        systemProperty('heroes.preview.meteor', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('meteorPreviewClasses')) }
+            // Pass when every scene ran (PREVIEW_DONE), not on the exit code the closing halt leaves.
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

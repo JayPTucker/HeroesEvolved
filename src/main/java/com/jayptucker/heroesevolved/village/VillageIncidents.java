@@ -42,7 +42,7 @@ import java.util.List;
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class VillageIncidents {
     /** What happens when the village is ready. */
-    public enum Kind { AWAKENING, RENEGADE, GUARDIAN, MELTDOWN }
+    public enum Kind { AWAKENING, RENEGADE, GUARDIAN, MELTDOWN, OVERLOAD, METEOR }
 
     /** A village being loaded for an incident. */
     private static final class Pending {
@@ -154,8 +154,15 @@ public final class VillageIncidents {
     /** The village is here: pick who it happens to. */
     private static void start(Pending p) {
         BlockPos bell = Villages.bell(p.level, p.center);
+        if (p.kind == Kind.METEOR) {
+            // Nobody in the village causes this one: a great meteor comes down on its bell.
+            com.jayptucker.heroesevolved.meteor.Meteors.great(p.level, bell, HeroesEvolvedConfig.COMMON.meteorGreatTicks.get());
+            HeroesEvolved.LOGGER.info("Village incident METEOR at {}", bell);
+            return;
+        }
         List<Villager> adults = new ArrayList<>(Villages.members(p.level, bell).stream()
-                .filter(v -> !v.isBaby() && !GiftedMobs.isGifted(v) && !VillagerMeltdown.critical(v)).toList());
+                .filter(v -> !v.isBaby() && !GiftedMobs.isGifted(v) && !VillagerMeltdown.critical(v)
+                        && !com.jayptucker.heroesevolved.village.overload.Overloads.critical(v)).toList());
         if (adults.isEmpty()) {
             HeroesEvolved.LOGGER.info("Village incident at {} found nobody to happen to", bell);
             return;
@@ -168,6 +175,15 @@ public final class VillageIncidents {
             case RENEGADE -> Renegades.awaken(who, true);
             case GUARDIAN -> Renegades.awaken(who, false);
             case MELTDOWN -> VillagerMeltdown.start(adults.getFirst(), HeroesEvolvedConfig.COMMON.villagerMeltdownFuseTicks.get());
+            case METEOR -> { }
+            case OVERLOAD -> {
+                // Someone whose dormant gift has a storm goes first; otherwise the first of them, with a storm's gift.
+                Villager eye = adults.stream().filter(v -> com.jayptucker.heroesevolved.village.overload.Storm.of(GiftedVillagers.gift(v)) != null)
+                        .findFirst().orElse(adults.getFirst());
+                var storm = com.jayptucker.heroesevolved.village.overload.Storm.of(GiftedVillagers.gift(eye));
+                if (storm == null) storm = com.jayptucker.heroesevolved.village.overload.Storm.byId(p.level.random.nextInt(com.jayptucker.heroesevolved.village.overload.Storm.values().length));
+                com.jayptucker.heroesevolved.village.overload.Overloads.start(eye, storm, HeroesEvolvedConfig.COMMON.overloadTicks.get());
+            }
         }
         HeroesEvolved.LOGGER.info("Village incident {} at {}", p.kind, bell);
     }
@@ -196,7 +212,8 @@ public final class VillageIncidents {
         for (ServerPlayer p : level.players()) {
             if (p.isSpectator()) continue;
             for (Villager v : level.getEntitiesOfClass(Villager.class, p.getBoundingBox().inflate(128),
-                    v -> v.isAlive() && !v.isBaby() && GiftedVillagers.gift(v) != null && !GiftedMobs.isGifted(v) && !VillagerMeltdown.critical(v)))
+                    v -> v.isAlive() && !v.isBaby() && GiftedVillagers.gift(v) != null && !GiftedMobs.isGifted(v) && !VillagerMeltdown.critical(v)
+                            && !com.jayptucker.heroesevolved.village.overload.Overloads.critical(v)))
                 if (!gifted.contains(v)) gifted.add(v);
         }
         Collections.shuffle(gifted, new java.util.Random(level.random.nextLong()));

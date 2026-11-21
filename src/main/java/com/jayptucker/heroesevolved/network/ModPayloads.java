@@ -17,7 +17,7 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("109")
+        event.registrar("112")
             .playToClient(GodModePayload.TYPE, GodModePayload.STREAM_CODEC, GodModePayload::handle)
             .playToClient(MobTimePayload.TYPE, MobTimePayload.STREAM_CODEC, MobTimePayload::handle)
             .playToClient(SuperchargedPayload.TYPE, SuperchargedPayload.STREAM_CODEC, SuperchargedPayload::handle)
@@ -52,6 +52,10 @@ public final class ModPayloads {
             .playToClient(IllusionPayload.TYPE, IllusionPayload.STREAM_CODEC, IllusionPayload::handle)
             .playToClient(GiftedMobPayload.TYPE, GiftedMobPayload.STREAM_CODEC, GiftedMobPayload::handle)
             .playToClient(DistressPayload.TYPE, DistressPayload.STREAM_CODEC, DistressPayload::handle)
+            .playToClient(OverloadPayload.TYPE, OverloadPayload.STREAM_CODEC, OverloadPayload::handle)
+            .playToClient(MeteorPayload.TYPE, MeteorPayload.STREAM_CODEC, MeteorPayload::handle)
+            .playToClient(StarfallPayload.TYPE, StarfallPayload.STREAM_CODEC, StarfallPayload::handle)
+            .playToClient(CompanyAttentionPayload.TYPE, CompanyAttentionPayload.STREAM_CODEC, CompanyAttentionPayload::handle)
             .playToClient(MindStatePayload.TYPE, MindStatePayload.STREAM_CODEC, MindStatePayload::handle)
             .playToServer(MindInputPayload.TYPE, MindInputPayload.STREAM_CODEC, MindInputPayload::handle)
             .playBidirectional(MindTypingPayload.TYPE, MindTypingPayload.STREAM_CODEC, MindTypingPayload::handle)

@@ -287,7 +287,14 @@ public enum Piece {
     EARTH_STANCE(16), EARTH_LIFT(14), EARTH_THROW(8), EARTH_SHATTER(16), EARTH_SHACKLE(20), EARTH_CRUSH(14), EARTH_TUNNEL(16),
     EARTH_PILLAR(14), EARTH_WALL(14), EARTH_SHOVE(10), EARTH_MOUNTAIN_MARK(15), EARTH_MOUNTAIN(12), EARTH_MOUNTAIN_SLAM(30),
     EARTH_GAUNTLET(16), EARTH_AVALANCHE(20), EARTH_TENT(20), EARTH_SURF(12), EARTH_STOMP(24), EARTH_LISTEN(12), EARTH_CLAW(8),
-    EARTH_SLAB(12), EARTH_SPIKES(16), EARTH_SLIDE(14);
+    EARTH_SLAB(12), EARTH_SPIKES(16), EARTH_SLIDE(14),
+    // Overloads (village/overload), drawn by OverloadArt: a wildfire's ember (origin above the eye, target where it lands;
+    // its ring glows OverloadGeometry.EMBER_WARNING ticks, then it burns EMBER_BURN; scale its radius), the Firestorm's wall
+    // rushing out (scale its reach), and the Deep Freeze's white wave (scale its reach).
+    OVERLOAD_EMBER(130), OVERLOAD_FIRESTORM(40), OVERLOAD_DEEP_FREEZE(40),
+    // Starfall (meteor/), drawn by MeteorArt: a meteor landing (origin where it landed; scale its blast) and one cracked
+    // apart in the sky by a sonic (origin where it broke; scale its rock's radius).
+    METEOR_IMPACT(44), METEOR_SHATTER(30);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

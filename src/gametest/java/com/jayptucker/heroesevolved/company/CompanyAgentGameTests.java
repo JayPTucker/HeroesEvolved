@@ -74,6 +74,14 @@ public final class CompanyAgentGameTests {
         CompanyAgentEntity guard = agent(h, CompanyAgentEntity.Role.GUARD, true, new BlockPos(1, 2, 1));
         // A listed player in survival, standing still in the open six blocks away.
         ServerPlayer p = new FakePlayer(h.getLevel(), new GameProfile(UUID.randomUUID(), "company-target"));
+        // Listed players are sent the time every 20 ticks, and NeoForge first asks their connection which channels it
+        // has: a fake player's has no netty channel, so that question must be answered here or the server crashes.
+        new net.minecraft.server.network.ServerGamePacketListenerImpl(h.getLevel().getServer(),
+                new net.minecraft.network.Connection(net.minecraft.network.protocol.PacketFlow.SERVERBOUND), p,
+                net.minecraft.server.network.CommonListenerCookie.createInitial(p.getGameProfile(), false)) {
+            @Override public boolean hasChannel(net.minecraft.resources.ResourceLocation channel) { return false; }
+            @Override public void send(net.minecraft.network.protocol.Packet<?> packet) { }
+        };
         p.setPos(Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(7, 2, 1))));
         p.xo = p.getX(); p.zo = p.getZ();
         h.getLevel().addNewPlayer(p);

@@ -68,10 +68,30 @@ public final class GiftedCommands {
                 .then(Commands.literal("guardian").executes(c -> awaken(c, Boolean.FALSE)))
                 .then(Commands.literal("wake").executes(c -> awaken(c, null)))
                 .then(Commands.literal("calm").executes(c -> {
-                    int n = Renegades.cancelAll();
-                    c.getSource().sendSuccess(() -> Component.literal("Ended " + n + " siege(s)."), true);
-                    return n;
+                    int n = Renegades.cancelAll(), storms = com.jayptucker.heroesevolved.village.overload.Overloads.cancelAll();
+                    c.getSource().sendSuccess(() -> Component.literal("Ended " + n + " siege(s) and " + storms + " overload(s)."), true);
+                    return n + storms;
                 }))
+                .then(Commands.literal("memory").executes(c -> {
+                    var lines = com.jayptucker.heroesevolved.village.VillageMemory.describe(c.getSource().getLevel(), net.minecraft.core.BlockPos.containing(c.getSource().getPosition()));
+                    for (String line : lines) c.getSource().sendSuccess(() -> Component.literal(line), false);
+                    return lines.size();
+                }))
+                .then(Commands.literal("forget").executes(c -> {
+                    boolean done = com.jayptucker.heroesevolved.village.VillageMemory.forget(c.getSource().getLevel(), net.minecraft.core.BlockPos.containing(c.getSource().getPosition()));
+                    c.getSource().sendSuccess(() -> Component.literal(done ? "The village has forgotten." : "No remembered village near here."), true);
+                    return done ? 1 : 0;
+                }))
+                .then(Commands.literal("overload")
+                        .executes(c -> overload(c, null))
+                        .then(Commands.argument("storm", StringArgumentType.word())
+                                .suggests((c, b) -> SharedSuggestionProvider.suggest(Arrays.stream(com.jayptucker.heroesevolved.village.overload.Storm.values())
+                                        .map(s -> s.name().toLowerCase()), b))
+                                .executes(c -> {
+                                    var storm = com.jayptucker.heroesevolved.village.overload.Storm.named(StringArgumentType.getString(c, "storm"));
+                                    if (storm == null) { c.getSource().sendFailure(Component.literal("Unknown storm: wildfire, supercell or blizzard.")); return 0; }
+                                    return overload(c, storm);
+                                })))
                 .then(Commands.literal("incident")
                         .executes(c -> incident(c, VillageIncidents.Kind.AWAKENING))
                         .then(Commands.argument("kind", StringArgumentType.word())
@@ -83,6 +103,15 @@ public final class GiftedCommands {
                                     catch (IllegalArgumentException e) { c.getSource().sendFailure(Component.literal("Unknown incident.")); return 0; }
                                     return incident(c, kind);
                                 })));
+    }
+
+    /** The nearest grown villager within 64 blocks overloads into {@code storm} (null: from their gift, or at random). */
+    private static int overload(CommandContext<CommandSourceStack> c, com.jayptucker.heroesevolved.village.overload.Storm storm) {
+        var o = com.jayptucker.heroesevolved.village.overload.Overloads.startNear(c.getSource().getLevel(), c.getSource().getPosition(), storm,
+                com.jayptucker.heroesevolved.config.HeroesEvolvedConfig.COMMON.overloadTicks.get());
+        if (o == null) { c.getSource().sendFailure(Component.literal("No grown villager within 64 blocks who could overload.")); return 0; }
+        c.getSource().sendSuccess(() -> Component.literal("A " + o.storm().title.toLowerCase() + " is growing round a villager."), true);
+        return 1;
     }
 
     private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, String> power() {

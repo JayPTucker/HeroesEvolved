@@ -17,6 +17,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -87,6 +88,10 @@ public class CompanyAgentEntity extends PathfinderMob {
     private final Map<UUID, Integer> shouted = new HashMap<>();
     /** An armed guard's two guns; whichever he isn't holding is on his belt. */
     private ItemStack pistol = ItemStack.EMPTY, taser = ItemStack.EMPTY;
+    /** On an errand ({@code CompanyOps}): where he is walking (null: standing), how fast, and whom he faces. */
+    private Vec3 walkTo;
+    private double walkSpeed = 1;
+    private Entity facing;
 
     public CompanyAgentEntity(EntityType<? extends CompanyAgentEntity> type, Level level) {
         super(type, level);
@@ -163,6 +168,7 @@ public class CompanyAgentEntity extends PathfinderMob {
         goalSelector.addGoal(1, new DartGoal());
         goalSelector.addGoal(1, new GunGoal());
         goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.15, true));
+        goalSelector.addGoal(3, new ErrandGoal());
         goalSelector.addGoal(3, new MoveTowardsRestrictionGoal(this, 0.9));
         goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.55));
         goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8));
@@ -228,10 +234,39 @@ public class CompanyAgentEntity extends PathfinderMob {
         arm();
     }
 
-    /** Strangers are stopped; anyone in creative or spectating, or just put under, is left alone. */
+    /**
+     * Strangers are stopped; anyone in creative or spectating, or just put under, is left alone. An agent on an errand in
+     * the open world stops only whom his operation says ({@code CompanyOps.stops}).
+     */
     private boolean wouldStop(LivingEntity target) {
-        return target instanceof ServerPlayer player && !player.isCreative() && !player.isSpectator() && !Tranquilizer.spared(player);
+        if (!(target instanceof ServerPlayer player) || player.isCreative() || player.isSpectator() || Tranquilizer.spared(player)) return false;
+        return !onErrand() || CompanyOps.stops(this, player);
     }
+
+    // ------------------------------------------------------------------
+    // Errands
+    // ------------------------------------------------------------------
+
+    /** Whether he is out on one of the Company's operations ({@code CompanyOps}) rather than standing a post. */
+    public boolean onErrand() { return getTags().contains(CompanyOps.AGENT_TAG); }
+
+    /** On an errand: walks to {@code to} at {@code speed} (a navigation speed), unless he is fighting. */
+    public void walkTo(Vec3 to, double speed) {
+        walkTo = to;
+        walkSpeed = speed;
+        facing = null;
+    }
+
+    /** On an errand: stands where he is. */
+    public void stopWalking() {
+        walkTo = null;
+        getNavigation().stop();
+    }
+
+    /** On an errand and standing: faces {@code entity} (null: whatever he likes). */
+    public void face(Entity entity) { facing = entity; }
+
+    public Vec3 walkingTo() { return walkTo; }
 
     // ------------------------------------------------------------------
     // Going down
@@ -421,7 +456,13 @@ public class CompanyAgentEntity extends PathfinderMob {
         @Override public boolean canUse() { return usable(); }
         @Override public boolean canContinueToUse() { return usable(); }
         @Override public boolean requiresUpdateEveryTick() { return true; }
-        @Override public void start() { aim = 0; fired = 0; holster(pistol); }
+        @Override public void start() {
+            aim = 0;
+            fired = 0;
+            // A gun on his hip comes out first.
+            if (!holstered().isEmpty()) entityData.set(HOLSTER, ItemStack.EMPTY);
+            holster(pistol);
+        }
         @Override public void stop() { aim = 0; entityData.set(AIMING, false); }
 
         /** Puts {@code gun} in his hand (the other goes on his belt) and starts the draw. */
@@ -487,6 +528,35 @@ public class CompanyAgentEntity extends PathfinderMob {
             fired = 0;
             cooldown = PISTOL_COOLDOWN;
             entityData.set(AIMING, false);
+        }
+    }
+
+    /**
+     * An errand's walking: to where his operation sends him, or standing still (facing whom it says), so he doesn't
+     * wander off mid-question. Any fight comes first.
+     */
+    final class ErrandGoal extends Goal {
+        private int repath;
+
+        ErrandGoal() { setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK)); }
+
+        @Override public boolean canUse() { return onErrand() && !outCold() && getTarget() == null; }
+        @Override public boolean canContinueToUse() { return canUse(); }
+        @Override public boolean requiresUpdateEveryTick() { return true; }
+        @Override public void start() { repath = 0; }
+        @Override public void stop() { getNavigation().stop(); }
+
+        @Override public void tick() {
+            if (facing != null && facing.isAlive()) getLookControl().setLookAt(facing, 30, 30);
+            if (walkTo == null || distanceToSqr(walkTo) <= 1.5) {
+                if (!getNavigation().isDone()) getNavigation().stop();
+                return;
+            }
+            if (facing == null) getLookControl().setLookAt(walkTo.x, walkTo.y + getEyeHeight(), walkTo.z);
+            if (--repath <= 0 || getNavigation().isDone()) {
+                repath = 10;
+                getNavigation().moveTo(walkTo.x, walkTo.y, walkTo.z, walkSpeed);
+            }
         }
     }
 

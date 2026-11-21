@@ -26,6 +26,12 @@ public record SpeedCyclonePayload(int entity, Vec3 center, float radius, int age
     public static final int CONTAIN_FAIL = 3;
     /** Hydrokinesis's Maelstrom: a waterspout, its funnel drawn as spray and green-blue water over a whirlpool. */
     public static final int HYDRO = 4;
+    /**
+     * An overload's supercell ({@code village/overload/Supercell}): nobody's, a storm's dark funnel. Its radius is the
+     * ring times the storm's scale, so the client draws the shared shape {@code radius / OverloadGeometry.RING} times
+     * its size.
+     */
+    public static final int STORM = 5;
     public static final Type<SpeedCyclonePayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "speed_cyclone"));
     public static final StreamCodec<RegistryFriendlyByteBuf, SpeedCyclonePayload> STREAM_CODEC = StreamCodec.of((buf, p) -> {
         buf.writeVarInt(p.entity);
@@ -48,6 +54,12 @@ public record SpeedCyclonePayload(int entity, Vec3 center, float radius, int age
     /** Tells everyone within sight of the ring (and the runner) how it stands. */
     public static void send(ServerLevel level, ServerPlayer runner, Vec3 center, float radius, int age, int tornadoAge, boolean ended,
                             boolean free, int style) {
+        send(level, (net.minecraft.world.entity.Entity) runner, center, radius, age, tornadoAge, ended, free, style);
+    }
+
+    /** As above, for a tornado whose owner is not a player (an overload's, owned by the villager at its eye). */
+    public static void send(ServerLevel level, net.minecraft.world.entity.Entity runner, Vec3 center, float radius, int age, int tornadoAge,
+                            boolean ended, boolean free, int style) {
         SpeedCyclonePayload payload = new SpeedCyclonePayload(runner.getId(), center, radius, age, tornadoAge, ended, free, style);
         for (ServerPlayer viewer : level.players())
             if (viewer == runner || viewer.position().distanceToSqr(center) <= 160 * 160)

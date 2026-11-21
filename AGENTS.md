@@ -39,7 +39,7 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 | Any structure, room, city block, arena, or Java that places scenery block by block | **the building skill**: [.claude/skills/minecraft-building/SKILL.md](.claude/skills/minecraft-building/SKILL.md) |
 | Anything worn (armor, suits, helmets, costumes) | **the armor skill**: [.claude/skills/minecraft-armor/SKILL.md](.claude/skills/minecraft-armor/SKILL.md) |
 | The Last Day, Odessa, the bunker, story actors, scripted scenes | [story-and-scenes.md](docs/agents/story-and-scenes.md) |
-| Village distress calls, the radio, villager meltdowns | [village-events.md](docs/agents/village-events.md) |
+| Village distress calls, the radio, villager meltdowns, overloads, Starfall (meteors), what villages remember, scars, rebuilding, the Company noticing players (attention, investigators, convoys, raids) | [village-events.md](docs/agents/village-events.md) |
 | TaCZ guns, Forge Energy machines, the Ability Dampener | [weapons-and-dampener.md](docs/agents/weapons-and-dampener.md) |
 | Meltdown hazards, protective suits, HUD ring gauges | [hazards-and-suits.md](docs/agents/hazards-and-suits.md) |
 | Sounds, music, OGG files, voice chat | [audio.md](docs/agents/audio.md): start from the user's reference library it describes (`C:\Users\jaypa\OneDrive\Desktop\Gemini Heroes Reborn Audio`), never ship any of it; [powers/telepathy.md](docs/agents/powers/telepathy.md) for voice chat |
@@ -75,14 +75,11 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 Shared systems with player docs: [fighting-styles.md](docs/fighting-styles.md), [finishers.md](docs/finishers.md),
 [classes.md](docs/classes.md), [skill-trees.md](docs/skill-trees.md), [progression.md](docs/progression.md),
 [power-intros.md](docs/power-intros.md), [power-sounds.md](docs/power-sounds.md), [gifted-mobs.md](docs/gifted-mobs.md),
-<<<<<<< HEAD
-[sylar.md](docs/sylar.md), [elle-bishop.md](docs/elle-bishop.md), [company-agents.md](docs/company-agents.md),
-[emergency-band.md](docs/emergency-band.md), [the-last-day.md](docs/the-last-day.md), [the-past.md](docs/the-past.md),
-[jei-and-jade.md](docs/jei-and-jade.md).
-=======
 [sylar.md](docs/sylar.md), [company-agents.md](docs/company-agents.md),
-[emergency-band.md](docs/emergency-band.md), [the-last-day.md](docs/the-last-day.md), [the-past.md](docs/the-past.md).
->>>>>>> origin/main
+[emergency-band.md](docs/emergency-band.md), [overloads.md](docs/overloads.md), [meteor-shower.md](docs/meteor-shower.md),
+[lasting-consequences.md](docs/lasting-consequences.md), [company-notices.md](docs/company-notices.md),
+[the-last-day.md](docs/the-last-day.md),
+[the-past.md](docs/the-past.md), [jei-and-jade.md](docs/jei-and-jade.md).
 
 ## Pyrokinesis is the bar for movement and fighting
 
@@ -102,14 +99,9 @@ body. See [fighting-styles.md](docs/agents/fighting-styles.md) and [docs/pyrokin
   Amplification) and shared ones:
   `ability` (actions, use, balance), `combat` (fighting styles, finishers), `skills` and `styles` (trees, classes),
   `energy` (stamina), `progression`, `intro` (awakenings), `effects` and `client/effects` (set pieces; each power's art
-<<<<<<< HEAD
-  is `client/effects/setpiece/<Power>Art`), `network`, `story` (prologue, bunker, Sylar, Elle, actors), `gifted`,
-  `village`, `radio`, `weapons`, `dampener`, `hazard`, `structure` (blueprints), `mixin`, `compat` (the optional JEI
-  and Jade plugins).
-=======
   is `client/effects/setpiece/<Power>Art`), `network`, `story` (prologue, bunker, Sylar and his Collection, actors), `gifted`,
-  `village`, `radio`, `weapons`, `dampener`, `hazard`, `structure` (blueprints), `mixin`.
->>>>>>> origin/main
+  `village` (with `village/overload`, the storms), `meteor` (Starfall), `company` (Company agents, attention and its operations), `radio`, `weapons`, `dampener`, `hazard`, `structure` (blueprints),
+  `mixin`, `compat` (the optional JEI and Jade plugins).
 - `src/main/resources/data/heroesevolved/`: `blueprints/`, `power_balance.json`, `skill_trees.json`, tags, damage types.
 - `src/gametest/` (game tests) and `src/uitest/` (preview drivers) load only through init scripts in `tools/`, so they
   never ship in the jar.

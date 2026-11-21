@@ -67,7 +67,12 @@ are as mortal as anyone.
 
 summon a guard and a Suppressor, standing watch where they appear. From code, `CompanyAgentEntity.create(type, level, role, position, yaw, nonLethal)`
 returns an agent at his post that hasn't been added to the world yet, so a scene can tag him first.
-Agents fire on any Sylar tagged `heroesevolved_loose`. `Tranquilizer.onGoingUnder` lets a place decide
+Agents fire on any Sylar tagged `heroesevolved_loose`.
+
+In the open world, agents come out on the Company's own errands when it notices a player: an investigator who asks
+villagers questions, a convoy that takes a gifted villager, a raid with a Suppressor
+([The Company notices](company-notices.md)). An agent on an errand stops only whom his operation says, and walks where it
+sends him. A Suppressor's quiet also switches off gifted mobs' powers (`Dampening.dampened` asks `SuppressorField`). `Tranquilizer.onGoingUnder` lets a place decide
 what going under means there, and `Tranquilizer.onDeflect` lets a target turn darts aside.
 
 

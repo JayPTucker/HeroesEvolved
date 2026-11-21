@@ -66,6 +66,7 @@ public final class ModItems {
 
     public static final DeferredItem<?> HELIXITE_ORE = ITEMS.registerSimpleBlockItem(ModBlocks.HELIXITE_ORE);
     public static final DeferredItem<?> DEEPSLATE_HELIXITE_ORE = ITEMS.registerSimpleBlockItem(ModBlocks.DEEPSLATE_HELIXITE_ORE);
+    public static final DeferredItem<?> HELIXITE_METEORITE = ITEMS.registerSimpleBlockItem(ModBlocks.HELIXITE_METEORITE);
     public static final DeferredItem<?> CENTRIFUGE = ITEMS.registerSimpleBlockItem(ModBlocks.CENTRIFUGE);
     public static final DeferredItem<?> SYNTHESIS_STATION = ITEMS.registerSimpleBlockItem(ModBlocks.SYNTHESIS_STATION);
     public static final DeferredItem<net.minecraft.world.item.DoubleHighBlockItem> CRYOCHAMBER = ITEMS.register("cryochamber",
@@ -129,6 +130,7 @@ public final class ModItems {
                         output.accept(HELIXITE_SHARD.get());
                         output.accept(HELIXITE_ORE.get());
                         output.accept(DEEPSLATE_HELIXITE_ORE.get());
+                        output.accept(HELIXITE_METEORITE.get());
                         output.accept(CENTRIFUGE.get());
                         output.accept(SYNTHESIS_STATION.get());
                         output.accept(CRYOCHAMBER.get());

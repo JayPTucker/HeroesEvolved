@@ -34,7 +34,9 @@ public final class SpeedArt {
             STORM_LIT = {0.7F, 0.71F, 0.76F}, VIOLET = {0.6F, 0.49F, 1}, DEEP = {0.36F, 0.25F, 0.82F},
             PALE = {0.96F, 0.92F, 1}, CYAN = {0.55F, 0.85F, 1},
             TEMPEST_CLOUD = rgb(0xDBDBD2), TEMPEST_WIND = rgb(0xEEEDE3),
-            SPOUT_WATER = rgb(0x3C9CC4), SPOUT_SPRAY = rgb(0xE4F6FA);
+            SPOUT_WATER = rgb(0x3C9CC4), SPOUT_SPRAY = rgb(0xE4F6FA),
+            // An overload's supercell: a storm's dark, green-grey funnel over a brown dust skirt.
+            SUPERCELL_FUNNEL = rgb(0x5E6A66), SUPERCELL_DUST = rgb(0x7A6A58), SUPERCELL_WIND = rgb(0xC9D3CE);
     private static final float[][] DEBRIS = {{0.42F, 0.3F, 0.2F}, {0.5F, 0.5F, 0.5F}, {0.36F, 0.52F, 0.2F}, {0.55F, 0.4F, 0.25F}, {0.3F, 0.28F, 0.26F}};
 
     private SpeedArt() {}
@@ -201,95 +203,112 @@ public final class SpeedArt {
     private static void tornado(Canvas c, SpeedCyclone.View v, long now) {
         float built = v.built(now, c.partial), gone = v.gone(now, c.partial);
         float collapse = gone < 0 ? 0 : Mth.clamp(gone / SpeedCyclone.TORNADO_FADE, 0, 1);
-        float height = TornadoShape.height(built), grow = Mth.clamp(built / TornadoShape.GROW, 0, 1);
+        // An overload's supercell is the same funnel drawn bigger: its radius is the ring times its scale.
+        boolean storm = v.style == com.jayptucker.heroesevolved.network.SpeedCyclonePayload.STORM;
+        float s = storm ? Math.max(1, v.radius / com.jayptucker.heroesevolved.village.overload.OverloadGeometry.RING) : 1;
+        float ring = storm ? com.jayptucker.heroesevolved.village.overload.OverloadGeometry.RING : v.radius;
+        float height = TornadoShape.height(built) * s, grow = Mth.clamp(built / TornadoShape.GROW, 0, 1);
         float f = Mth.clamp(built / 8, 0, 1) * (1 - collapse * collapse);
         if (f <= 0.003F) return;
         Vec3 o = v.at(c.partial);
-        float ring = v.radius;
         int seed = v.entity * 17;
         // A speedster winds lightning through the funnel. A flyer winds strips of condensation.
         boolean sky = v.style == com.jayptucker.heroesevolved.network.SpeedCyclonePayload.FLIGHT;
         // A hydrokinetic's Maelstrom is a waterspout: a funnel of spinning water and spray over its whirlpool.
         boolean water = v.style == com.jayptucker.heroesevolved.network.SpeedCyclonePayload.HYDRO;
-        float[] strand = sky ? TEMPEST_WIND : water ? SPOUT_SPRAY : GOLD;
+        float[] strand = sky ? TEMPEST_WIND : water ? SPOUT_SPRAY : storm ? SUPERCELL_WIND : GOLD;
+        float[] skin = sky ? TEMPEST_CLOUD : water ? SPOUT_WATER : storm ? SUPERCELL_FUNNEL : FUNNEL;
         if (sky) FlightArt.tempest(c, o, built, f);
         if (water) HydroArt.waterspout(c, o, built, f, ring, height, collapse);
         if (c.soft()) {
             // The funnel's skin: see-through, streaked in spirals that wind up it as it turns.
             final float h0 = height, cut = collapse;
             float twist = built * 0.35F;
-            c.revolve(o, height, u -> TornadoShape.radius(u * h0, h0, ring), sky ? TEMPEST_CLOUD : water ? SPOUT_WATER : FUNNEL,
-                    (sky ? .38F : water ? .5F : .55F) * f,
+            c.revolve(o, height, u -> wall(u * h0, h0, ring, s), skin,
+                    (sky ? .38F : water ? .5F : storm ? .7F : .55F) * f,
                     (theta, u) -> smooth(cut * 1.15F - 0.1F, cut * 1.15F + 0.05F, u)
                             * (0.45F + 0.55F * Mth.abs(sin(theta * 3 - u * 9 + twist))) * (0.6F + 0.4F * u));
-            int layers = 16;
+            int layers = storm ? 20 : 16;
             for (int i = 0; i < layers; i++) {
                 float u = (i + 0.5F) / layers, h = u * height;
                 float gate = smooth(collapse * 1.15F - 0.1F, collapse * 1.15F + 0.05F, u);
-                float alpha = 0.36F * f * gate;
+                float alpha = (storm ? 0.46F : 0.36F) * f * gate;
                 if (alpha < 0.01F) continue;
-                float wall = TornadoShape.radius(h, height, ring);
-                int n = 6 + (int) (wall * 1.4F);
+                float wall = wall(h, height, ring, s);
+                int n = 6 + (int) (wall * (storm ? 1.1F : 1.4F));
                 float spin = built * (0.5F - 0.32F * u) + i * 0.7F;
                 CloudMesh.Shade shade = Shades.smoke(c, water ? mix(SPOUT_WATER, SPOUT_SPRAY, Mth.clamp(u * 1.6F, 0, 1))
+                        : storm ? mix(SUPERCELL_DUST, SUPERCELL_FUNNEL, Mth.clamp(u * 1.4F, 0, 1))
                         : mix(DUST_DARK, sky ? TEMPEST_CLOUD : CLOUD, Mth.clamp(u * 1.3F, 0, 1)), 0);
                 for (int j = 0; j < n; j++) {
                     float ang = j * TWO_PI / n + spin + hash(seed + i, j) * 0.5F;
-                    float s = (0.5F + wall * 0.2F) * (0.8F + hash(seed + i, j + 20) * 0.45F);
-                    float rr = wall + (hash(seed + i, j + 40) - 0.3F) * s * 0.6F;
+                    float sz = (0.5F + wall * 0.2F) * (0.8F + hash(seed + i, j + 20) * 0.45F);
+                    float rr = wall + (hash(seed + i, j + 40) - 0.3F) * sz * 0.6F;
                     float y = h + (hash(seed + i, j + 60) - 0.5F) * height / layers * 1.1F;
-                    c.cloud(o.add(cos(ang) * rr, y, sin(ang) * rr), s * 1.15F, s * 0.6F, s * 1.15F, i * 7 + j, ang,
+                    c.cloud(o.add(cos(ang) * rr, y, sin(ang) * rr), sz * 1.15F, sz * 0.6F, sz * 1.15F, i * 7 + j, ang,
                             sky || water ? alpha * .72F : alpha, shade);
                 }
             }
-            for (int k = 0; k < 16; k++) wallStreak(c, o, height, ring, built, seed, k, 0.3F * f, collapse);
+            for (int k = 0; k < (storm ? 22 : 16); k++) wallStreak(c, o, height, ring, s, built, seed, k, 0.3F * f, collapse);
             if (collapse < 0.5F) {
-                CloudMesh.Shade dust = Shades.smoke(c, water ? SPOUT_SPRAY : DUST, 0);
-                for (int j = 0; j < 14; j++) {
-                    float ang = j * TWO_PI / 14 + built * 0.35F + hash(seed, j + 300);
-                    float rr = ring * (0.7F + hash(seed, j + 320) * 0.5F), s = (0.9F + hash(seed, j + 340) * 0.6F) * (0.5F + 0.5F * grow);
-                    c.cloud(o.add(cos(ang) * rr, s * 0.25, sin(ang) * rr), s * 1.4F, s * 0.38F, s * 1.4F, j + 3, ang, 0.22F * f * (1 - collapse * 2), dust);
+                // The dust skirt where it feeds at the ground: a storm's is wide and brown.
+                CloudMesh.Shade dust = Shades.smoke(c, water ? SPOUT_SPRAY : storm ? SUPERCELL_DUST : DUST, 0);
+                int skirt = storm ? 22 : 14;
+                for (int j = 0; j < skirt; j++) {
+                    float ang = j * TWO_PI / skirt + built * 0.35F + hash(seed, j + 300);
+                    float rr = ring * s * (0.7F + hash(seed, j + 320) * (storm ? 0.9F : 0.5F));
+                    float sz = (0.9F + hash(seed, j + 340) * 0.6F) * (0.5F + 0.5F * grow) * s;
+                    c.cloud(o.add(cos(ang) * rr, sz * 0.25, sin(ang) * rr), sz * 1.4F, sz * 0.38F, sz * 1.4F, j + 3, ang,
+                            (storm ? 0.32F : 0.22F) * f * (1 - collapse * 2), dust);
                 }
             }
-            CloudMesh.Shade storm = Shades.smoke(c, sky ? TEMPEST_CLOUD : water ? SPOUT_SPRAY : STORM_LIT, 0);
+            CloudMesh.Shade lid = Shades.smoke(c, sky ? TEMPEST_CLOUD : water ? SPOUT_SPRAY : storm ? SUPERCELL_FUNNEL : STORM_LIT, 0);
             for (int j = 0; j < 14; j++) {
                 float ang = j * TWO_PI / 14 + built * 0.08F + hash(seed, j + 400);
-                float rr = TornadoShape.TOP * (0.5F + hash(seed, j + 420) * 0.55F) * grow, s = 1.8F + hash(seed, j + 440) * 1.2F;
-                c.cloud(o.add(cos(ang) * rr, height + 0.2 + hash(seed, j + 460) * 1.0, sin(ang) * rr), s * 1.3F, s * 0.38F, s * 1.3F, j + 5, ang, 0.36F * f * grow, storm);
+                float rr = TornadoShape.TOP * s * (0.5F + hash(seed, j + 420) * 0.55F) * grow, sz = (1.8F + hash(seed, j + 440) * 1.2F) * s;
+                c.cloud(o.add(cos(ang) * rr, height + 0.2 + hash(seed, j + 460) * 1.0, sin(ang) * rr), sz * 1.3F, sz * 0.38F, sz * 1.3F,
+                        j + 5, ang, 0.36F * f * grow, lid);
             }
         }
         if (c.glow()) {
-            for (int k = 0; k < 3; k++) innerHelix(c, o, height, ring, built, k, !sky && !water && k == 0 ? HOT : strand,
-                    (sky ? .22F : water ? .3F : .55F) * f, collapse);
+            for (int k = 0; k < 3; k++) innerHelix(c, o, height, ring, s, built, k, !sky && !water && !storm && k == 0 ? HOT : strand,
+                    (sky ? .22F : water ? .3F : storm ? .16F : .55F) * f, collapse);
             int flick = (int) (built / 3);
-            if (!sky && !water && hash(seed, flick) < 0.45F && collapse < 0.6F) {
+            if (!sky && !water && !storm && hash(seed, flick) < 0.45F && collapse < 0.6F) {
                 float h0 = hash(seed, flick + 1) * height * 0.75F, h1 = h0 + 2 + hash(seed, flick + 2) * 5;
                 float a0 = hash(seed, flick + 3) * TWO_PI, a1 = a0 + 0.8F + hash(seed, flick + 4) * 1.5F;
-                float r0 = TornadoShape.radius(h0, height, ring) * 0.75F, r1 = TornadoShape.radius(h1, height, ring) * 0.75F;
+                float r0 = wall(h0, height, ring, s) * 0.75F, r1 = wall(h1, height, ring, s) * 0.75F;
                 c.bolt(o.add(cos(a0) * r0, h0, sin(a0) * r0), o.add(cos(a1) * r1, h1, sin(a1) * r1), seed + flick, 0.6F, 0.06F, HOT, 0.9F * f);
             }
-            c.glow(o.add(0, height * 0.5, 0), height * 0.35F, strand, 0.05F * f);
+            if (!storm) c.glow(o.add(0, height * 0.5, 0), height * 0.35F, strand, 0.05F * f);
         }
         if (c.solid() && !water) {
-            for (int d = 0; d < 34; d++) {
+            int pieces = storm ? 60 : 34;
+            for (int d = 0; d < pieces; d++) {
                 float u = (hash(seed, d + 100) + built * 0.004F * (1 + hash(seed, d + 130))) % 1;
                 if (u < collapse) continue;
-                float h = u * height * 0.92F, wall = TornadoShape.radius(h, height, ring) * (0.85F + hash(seed, d + 160) * 0.25F);
-                float ang = hash(seed, d + 190) * TWO_PI + built * (0.55F - 0.35F * u), s = 0.12F + hash(seed, d + 220) * 0.28F;
-                c.box(o.add(cos(ang) * wall, h, sin(ang) * wall), s, s * 0.6F, s * 0.8F, ang * 1.7F, built * 0.2F + d, d, DEBRIS[d % DEBRIS.length], 1);
+                float h = u * height * 0.92F, wall = wall(h, height, ring, s) * (0.85F + hash(seed, d + 160) * 0.25F);
+                float ang = hash(seed, d + 190) * TWO_PI + built * (0.55F - 0.35F * u);
+                float sz = (0.12F + hash(seed, d + 220) * 0.28F) * (storm ? 1.6F : 1);
+                c.box(o.add(cos(ang) * wall, h, sin(ang) * wall), sz, sz * 0.6F, sz * 0.8F, ang * 1.7F, built * 0.2F + d, d, DEBRIS[d % DEBRIS.length], 1);
             }
         }
     }
 
+    /** The funnel's wall {@code h} up, for the shared shape drawn {@code s} times its size. */
+    private static float wall(float h, float height, float ring, float s) {
+        return TornadoShape.radius(h / s, height / s, ring) * s;
+    }
+
     /** A pale streak spiralling up the funnel wall. */
-    private static void wallStreak(Canvas c, Vec3 o, float height, float ring, float built, int seed, int k, float alpha, float collapse) {
+    private static void wallStreak(Canvas c, Vec3 o, float height, float ring, float s, float built, int seed, int k, float alpha, float collapse) {
         float u0 = hash(seed, k + 500) * 0.6F, a0 = hash(seed, k + 520) * TWO_PI;
         int n = 16;
         double[] x = new double[n + 1], y = new double[n + 1], z = new double[n + 1];
         float[] a = new float[n + 1], w = new float[n + 1];
         for (int i = 0; i <= n; i++) {
             float q = i / (float) n, u = u0 + q * 0.4F, h = u * height;
-            float wall = TornadoShape.radius(h, height, ring) * 0.96F, ang = a0 + q * 2.5F + built * (0.5F - 0.3F * u);
+            float wall = wall(h, height, ring, s) * 0.96F, ang = a0 + q * 2.5F + built * (0.5F - 0.3F * u);
             x[i] = o.x + cos(ang) * wall; y[i] = o.y + h; z[i] = o.z + sin(ang) * wall;
             a[i] = u < collapse ? 0 : alpha * sin(q * PI); w[i] = 0.35F + wall * 0.04F;
         }
@@ -297,15 +316,15 @@ public final class SpeedArt {
     }
 
     /** A strand of the runner's lightning wound up the inside of the funnel. */
-    private static void innerHelix(Canvas c, Vec3 o, float height, float ring, float built, int k, float[] col, float alpha, float collapse) {
+    private static void innerHelix(Canvas c, Vec3 o, float height, float ring, float s, float built, int k, float[] col, float alpha, float collapse) {
         int n = 40;
         double[] x = new double[n + 1], y = new double[n + 1], z = new double[n + 1];
         float[] a = new float[n + 1], w = new float[n + 1];
         for (int i = 0; i <= n; i++) {
             float u = i / (float) n, h = u * height * 0.95F;
-            float wall = TornadoShape.radius(h, height, ring) * 0.55F, ang = k * TWO_PI / 3 + h * 0.35F + built * 0.4F;
+            float wall = wall(h, height, ring, s) * 0.55F, ang = k * TWO_PI / 3 + h * 0.35F / s + built * 0.4F;
             x[i] = o.x + cos(ang) * wall; y[i] = o.y + h; z[i] = o.z + sin(ang) * wall;
-            a[i] = u < collapse ? 0 : alpha * sin(u * PI); w[i] = 0.1F;
+            a[i] = u < collapse ? 0 : alpha * sin(u * PI); w[i] = 0.1F * s;
         }
         c.ribbon(x, y, z, a, w, col);
     }

@@ -239,6 +239,8 @@ two shards for the Centrifuge, one for the Synthesis Station, and one for each b
   level 3), so you can spot it in a dark cave.
 - **Mining:** iron pickaxe or better. Drops one **Helixite Shard** plus experience. Fortune adds
   more shards; Silk Touch gives the ore block.
+- **From the sky:** on starfall nights, the night before every Eclipse, falling stars leave **Helixite
+  Meteorite** in their craters: two to four shards a block (see [Starfall](meteor-shower.md)).
 - **How rare:** two vein attempts per chunk, of up to four blocks, and veins exposed to air are
   often discarded. That works out to **about a quarter as common as diamonds**. An hour of
   deepslate strip-mining should find roughly 6–12 shards.

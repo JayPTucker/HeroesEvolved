@@ -282,6 +282,8 @@ public final class AbilityUseService {
         PlayerPowerSyncService.sync(player);
 
         com.jayptucker.heroesevolved.expansion.FacilityService.onPowerUse(player, abilityAction.definition().id().getPath());
+        // Big moves people see get talked about, and the Company listens (company/CompanyAttention).
+        com.jayptucker.heroesevolved.company.CompanyAttention.seen(player, abilityAction.definition().id().getPath(), energyCost);
         return requiresOverexertion
                 ? AbilityUseResult.OVEREXERTED_SUCCESS
                 : AbilityUseResult.SUCCESS;

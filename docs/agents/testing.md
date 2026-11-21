@@ -24,7 +24,10 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 | `tools/combat-target-gametest.init.gradle` | who powers may target |
 | `tools/elements-gametest.init.gradle` | Hydrokinesis in the Nether, Pyrokinesis in the rain |
 | `tools/fighting-gametest.init.gradle` | `FightingStylesGameTests` |
-| `tools/gifted-gametest.init.gradle` | gifted mobs, village events, nuclear blasts, mimicry |
+| `tools/structure-gametest.init.gradle -PtestPackages=company` | The Company: agents, attention, investigators, convoys, raids (`CompanyAgentGameTests`, `CompanyNoticeGameTests`) |
+| `tools/structure-gametest.init.gradle -PtestPackages=village/ConsequenceGameTests.java` | What villages remember, scars, rebuilding (a single file works as a package) |
+| `tools/structure-gametest.init.gradle -PtestPackages=meteor` | Starfall's meteors (`meteor/MeteorGameTests`), in a world of their own |
+| `tools/gifted-gametest.init.gradle` | gifted mobs, village events (overloads too: `-PtestPackages=village/overload` with the structure script runs only those), nuclear blasts, mimicry |
 | `tools/perception-projectile-gametest.init.gradle` | Perception and projectiles, with real TaCZ entity ticks |
 | `tools/projectile-gametest.init.gradle` | long range, obstruction and projectile lifetimes |
 | `tools/radiation-gametest.init.gradle` | radiation, the first awakening and crater recovery |
@@ -112,6 +115,15 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 <!-- from Telepathy -->
 - **Test players must be in the player list** when the code looks them up by id: links and routes resolve members with
   `getPlayerList().getPlayer`. The test fixture adds and removes them by reflection, as `RegenerationGameTests` does.
+- **A listed FakePlayer crashes the server at the next time sync** unless its connection answers `hasChannel`. Every 20
+  ticks NeoForge's `synchronizeTime` asks each listed player's connection whether it has the custom time channel, and a
+  `FakePlayer`'s connection has no netty channel (a `NullPointerException` in `ChannelAttributes`). A test that keeps a
+  listed player past a 20-tick boundary gives it a connection of its own that answers: `CompanyAgentGameTests`' aim test
+  makes a `ServerGamePacketListenerImpl` with a bare `Connection` and overrides `hasChannel(ResourceLocation)` (false)
+  and `send` (nothing). It used to pass only when the guard fired before the boundary.
+- **Never clean up in a `finally` inside `succeedWhen`.** It retries until the checks pass, so the first failure's cleanup
+  runs and the retry then fails on the cleaned-up state, hiding the real cause (an attention reading 0.0 instead of a
+  missed step). Assert, then clean up at the end of the lambda.
 <!-- from Regeneration -->
 - **Tests.** `RegenerationGameTests`' fixture puts the FakePlayer in the player list, so features ticked through
   `getPlayerList().getPlayer` (the downed timer, Shared Blood's lookup) work; reuse it. A cow's 10 health caps any

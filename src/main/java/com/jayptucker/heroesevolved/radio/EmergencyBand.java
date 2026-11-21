@@ -51,7 +51,7 @@ public final class EmergencyBand {
     static final int SAMPLE_RATE = 48000, SAMPLES_PER_TICK = SAMPLE_RATE / 20;
 
     /** What kind of trouble: the flare's colour on the client (by ordinal; append new kinds at the end). */
-    public enum Trouble { OTHER, MELTDOWN, RENEGADE, RAID }
+    public enum Trouble { OTHER, MELTDOWN, RENEGADE, RAID, WILDFIRE, SUPERCELL, BLIZZARD, METEOR, COMPANY }
 
     /** One call going out. */
     public static final class Call {
@@ -66,11 +66,15 @@ public final class EmergencyBand {
         final Random noise;
         float low;
         final Set<UUID> told = new HashSet<>();
+        /** The village calling, by name (village/VillageMemory), or null where there is no village. */
+        final String place;
         Call(UUID id, ServerLevel level, BlockPos at, Trouble trouble, Component words, long until, Object transmitter) {
             this.id = id; this.level = level; this.at = at; this.trouble = trouble; this.words = words; this.until = until;
             this.transmitter = transmitter;
             this.noise = new Random(id.getLeastSignificantBits());
+            this.place = com.jayptucker.heroesevolved.village.VillageMemory.name(level, at);
         }
+        public String place() { return place; }
         public UUID id() { return id; }
         public BlockPos at() { return at; }
         public Trouble trouble() { return trouble; }
@@ -185,7 +189,7 @@ public final class EmergencyBand {
 
     private static void tell(ServerPlayer p, Call c, Set<UUID> told) {
         if (!told.add(p.getUUID())) return;
-        p.displayClientMessage(Component.literal("📻 " + FREQUENCY + " FM  ").withStyle(ChatFormatting.DARK_AQUA)
+        p.displayClientMessage(Component.literal("📻 " + FREQUENCY + " FM  " + (c.place == null ? "" : c.place + ": ")).withStyle(ChatFormatting.DARK_AQUA)
                 .append(c.words.copy().withStyle(ChatFormatting.WHITE))
                 .append(Component.literal("  (" + where(p, c) + ")").withStyle(ChatFormatting.GRAY)), true);
     }
@@ -217,7 +221,7 @@ public final class EmergencyBand {
     private static void announce(Call c) {
         for (ServerPlayer p : inRange(c)) {
             if (!c.told.add(p.getUUID())) continue;
-            p.sendSystemMessage(Component.literal("📻 Distress call: ").withStyle(ChatFormatting.RED, ChatFormatting.BOLD)
+            p.sendSystemMessage(Component.literal("📻 Distress call" + (c.place == null ? "" : " from " + c.place) + ": ").withStyle(ChatFormatting.RED, ChatFormatting.BOLD)
                     .append(c.words.copy().withStyle(ChatFormatting.WHITE))
                     .append(Component.literal("  (" + where(p, c) + "). Follow the flare, or tune a radio to " + FREQUENCY + " FM.")
                             .withStyle(ChatFormatting.GRAY)));

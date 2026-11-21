@@ -97,6 +97,8 @@ final class PieceArt {
             case SHIELD_BRACE -> ShieldArt.draw(c, a, t);
             case VILLAGE_MELTDOWN, VILLAGE_SAFE -> VillageArt.draw(c, a, t);
             case GIFT_AWAKEN, GIFT_TURN, GIFT_UNBOUND -> GiftArt.draw(c, a, t);
+            case OVERLOAD_EMBER, OVERLOAD_FIRESTORM, OVERLOAD_DEEP_FREEZE -> OverloadArt.draw(c, a, t);
+            case METEOR_IMPACT, METEOR_SHATTER -> MeteorArt.draw(c, a, t);
             case CRYO_BLAST, CRYO_QUENCH, CRYO_CAST, CRYO_TERRAIN_FROST -> CryoBlastArt.draw(c, a, t);
             case RAD_HEAT, RAD_LEAP, RAD_SLAM, RAD_ZONE, RAD_EMP, RAD_BEAM, RAD_CHARGE, RAD_LANCE -> RadiationArt.draw(c, a, t);
             case RAD_SHOCK, RAD_FIELD, RAD_FLAKE, RAD_DISINTEGRATE -> HazardArt.draw(c, a, t);

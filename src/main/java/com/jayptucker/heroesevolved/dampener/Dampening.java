@@ -58,6 +58,8 @@ public final class Dampening {
     /** True if {@code entity}'s power is dampened: by a field, or by a round. Server side for fields. */
     public static boolean dampened(Entity entity) {
         if (entity instanceof LivingEntity living && living.hasEffect(ModItems.DAMPENED)) return true;
+        // A Suppressor's quiet is a dampening field that walks (a convoy's prisoner, a gifted mob near a raid).
+        if (com.jayptucker.heroesevolved.company.SuppressorField.suppresses(entity)) return true;
         return field(entity) != null;
     }
 

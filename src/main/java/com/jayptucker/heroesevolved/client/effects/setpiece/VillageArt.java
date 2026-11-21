@@ -84,8 +84,12 @@ final class VillageArt {
     // Distress flares, drawn live over every village calling for help
     // ------------------------------------------------------------------
 
-    /** Each kind of trouble's flare (by {@code EmergencyBand.Trouble} ordinal): other, meltdown, renegade, raid. */
-    private static final float[][] FLARE = {rgb(0xFFB040), rgb(0xFFC650), rgb(0xE0303A), rgb(0xB45AFF)};
+    /**
+     * Each kind of trouble's flare (by {@code EmergencyBand.Trouble} ordinal): other, meltdown, renegade, raid, and the
+     * three overloads (wildfire ember orange, supercell slate green, blizzard ice blue), and a great meteor (Helixite teal).
+     */
+    private static final float[][] FLARE = {rgb(0xFFB040), rgb(0xFFC650), rgb(0xE0303A), rgb(0xB45AFF),
+            rgb(0xFF5A14), rgb(0x7FA58E), rgb(0x9FDCFF), rgb(0x3CE0C8), rgb(0x8EA6C8)};
     /** The flare climbs this high; beyond {@link #FAR} it is drawn nearer and smaller, so it looks the same. */
     private static final float FLARE_HEIGHT = 150, FAR = 320;
 

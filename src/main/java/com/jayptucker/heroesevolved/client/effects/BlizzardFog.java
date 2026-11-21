@@ -37,7 +37,20 @@ public final class BlizzardFog {
         STORMS.put(payload.owner(), new Storm(payload.center(), Math.clamp(payload.radius(), 1, 32),
                 level.getGameTime() + Math.clamp(payload.ticks(), 1, 40)));
     }
-    private static void clear() { STORMS.clear(); world = null; strength = 0; }
+    /**
+     * An overload's blizzard ({@code village/overload/Blizzard}): a whiteout {@code thickness} strong at its eye,
+     * thinning to nothing at {@code radius}. Kept apart from the cryokinetic's own storms, which other drawing reads.
+     */
+    private record Whiteout(Vec3 center, float radius, float thickness, long expires) {}
+    private static final Map<Integer, Whiteout> WHITEOUTS = new HashMap<>();
+
+    public static void whiteout(int id, Vec3 center, float radius, float thickness, long expires) {
+        if (!Double.isFinite(center.lengthSqr()) || !Float.isFinite(radius) || radius <= 0) return;
+        if (WHITEOUTS.size() >= 16 && !WHITEOUTS.containsKey(id)) return;
+        WHITEOUTS.put(id, new Whiteout(center, Math.min(radius, 96), Mth.clamp(thickness, 0, 1), expires));
+    }
+
+    private static void clear() { STORMS.clear(); WHITEOUTS.clear(); world = null; strength = 0; }
     @SubscribeEvent public static void logout(ClientPlayerNetworkEvent.LoggingOut event) { clear(); }
     @SubscribeEvent public static void tick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
@@ -50,6 +63,20 @@ public final class BlizzardFog {
             float inside = delta.y < -6 ? 0 : (float) ((storm.radius
                     - Math.sqrt(delta.x * delta.x + delta.z * delta.z + above * above)) / 1.5);
             desired = Math.max(desired, Mth.clamp(inside, 0, 1));
+        }
+        WHITEOUTS.values().removeIf(w -> mc.level.getGameTime() >= w.expires);
+        float far = mc.options.getEffectiveRenderDistance() * 16;
+        for (Whiteout w : WHITEOUTS.values()) {
+            Vec3 delta = mc.player.position().subtract(w.center);
+            if (delta.y < -12) continue;
+            double d = Math.sqrt(delta.x * delta.x + delta.z * delta.z);
+            // Thickest near the eye, gone at the edge; under a roof the snow can't reach you, so half as thick.
+            float k = (float) (1 - Mth.clamp((d - w.radius * 0.2) / (w.radius * 0.8), 0, 1));
+            if (!mc.level.canSeeSky(mc.player.blockPosition().above())) k *= 0.5F;
+            k *= 0.7F + 0.3F * w.thickness;
+            // As how far you can see: about ten blocks at the eye, opening out to the view's own at the edge.
+            float sight = 10 + (far - 10) * (1 - k) * (1 - k);
+            if (k > 0 && far > sight) desired = Math.max(desired, Mth.clamp((far - sight) / (far - 8), 0, 1));
         }
         strength = Mth.lerp(0.35F, strength, desired * com.jayptucker.heroesevolved.config.ClientVisualSettings.FOG.get().floatValue());
         if (strength < 0.005F) strength = 0;

@@ -1,0 +1,27 @@
+// The client photographs overloads with uitest/OverloadPreview: a wildfire, a supercell and a blizzard, each grown out
+// of its own little village (the storm early and late, its centre, someone calming them, the break's warning and the
+// break), into build/overload-preview/screenshots/. Never bundled into the mod JAR.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('overloadPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/overload-preview')
+                        programArguments.addAll('--width', '1280', '--height', '800')
+                        systemProperty('heroes.preview.overload', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('overloadPreviewClasses')) }
+            // Pass when every scene ran (PREVIEW_DONE), not on the exit code the closing halt leaves.
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

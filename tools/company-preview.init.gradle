@@ -1,0 +1,27 @@
+// The client photographs the Company noticing a player with uitest/CompanyPreview: an investigator in a village (walking
+// in, asking, the answer, his notes), a convoy (setting out, marching, its flare from afar, freed), a raid at dusk, and
+// the HUD's attention ring at each band, into build/company-preview/screenshots/. Never bundled into the mod JAR.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('companyPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/company-preview')
+                        programArguments.addAll('--width', '1280', '--height', '800')
+                        systemProperty('heroes.preview.company', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('companyPreviewClasses')) }
+            // Pass when every scene ran (PREVIEW_DONE), not on the exit code the closing halt leaves.
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

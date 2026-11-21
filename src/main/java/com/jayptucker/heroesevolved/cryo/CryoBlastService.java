@@ -102,6 +102,8 @@ public final class CryoBlastService {
             }
             if (age < 2) continue;
             Contact contact = trace(player, stream.level);
+            // On a wildfire's heart, the cold holds the fire back while it lasts.
+            if (contact.target != null) com.jayptucker.heroesevolved.village.overload.Overloads.cooled(contact.target);
             LivingEntity reactor = reactorAt(contact.target);
             boolean critical = reactor instanceof ServerPlayer hot ? RadiationService.critical(hot) : reactor != null;
             if (age >= MAX_TICKS && (reactor == null || reactor != stream.reactor

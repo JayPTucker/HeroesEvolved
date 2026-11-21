@@ -1,11 +1,17 @@
 # The emergency band and village emergencies
 
-Villages in trouble call for help, and the calls carry hundreds of blocks. Three kinds of trouble call:
+Villages in trouble call for help, and the calls carry hundreds of blocks. Six kinds of trouble call:
 
 - **A meltdown:** a villager whose gift is Induced Radioactivity, and who can't hold it (below).
+- **An overload:** a villager whose gift woke too strong to hold, at the centre of their own storm: a wildfire, a
+  supercell or a blizzard (see [Overloads](overloads.md)).
 - **A renegade:** a villager whose gift turned them evil; they become an illager and lay siege to their own village (see
   [Gifted mobs](gifted-mobs.md)).
 - **A raid:** raiders at the village, for as long as the raid lasts.
+- **A great meteor:** on a starfall night, one coming down on the village in two minutes (see [Starfall](meteor-shower.md)).
+  Its flare is Helixite teal.
+- **The Company:** agents walking someone with a gift out of the village (see [The Company notices](company-notices.md)).
+  Its flare is steel blue, and the call says which way they went.
 
 ## Required mods
 
@@ -23,13 +29,15 @@ In development, Gradle fetches all three: `runClient` and the test server run wi
 
 **Without a radio.** Everyone within 768 blocks (`villages.distressRange`) of a village that starts calling:
 
-- gets a line in chat: `📻 Distress call: Help! Hollis the Ashen has turned on us! 7 of 9 still alive. (north-east, 412
-  blocks). Follow the flare, or tune a radio to 101.10 FM.`, and hears a bell toll faintly from that direction;
+- gets a line in chat, naming the village: `📻 Distress call from Ashford: Help! Hollis the Ashen has turned on us! 7 of 9
+  still alive. (north-east, 412 blocks). Follow the flare, or tune a radio to 101.10 FM.`, and hears a bell toll faintly
+  from that direction;
 - sees a **flare** over the village: a tall column of light, wide enough to pick out from hundreds of blocks, with a
   flare shell climbing it every two seconds and bursting into a ring at the top. Its colour says what the trouble is:
   amber for a meltdown, crimson for a renegade, violet for a raid. It stays visible however far off it is (past about
   320 blocks it is drawn nearer the camera and smaller in proportion, so it covers the same part of the sky and the far
-  plane never clips it), and thins out once you are in the village;
+  plane never clips it), and thins out once you are in the village (an overload's flare is ember orange for a wildfire,
+  slate green for a supercell and ice blue for a blizzard);
 - is reminded every thirty seconds, above the hotbar, which way and how far it is.
 
 Players who ride into range after a call started are told then.
@@ -134,7 +142,11 @@ a restart its village isn't held loaded again until a player goes there, and its
 ## Admin commands
 
 - `/heroesevolved eclipse meltdown [seconds]` wakes a meltdown in the nearest grown villager within 64 blocks.
-- `/heroesevolved village incident [awakening|renegade|guardian|meltdown]` starts an incident in a village up to 640
-  blocks away; it begins once the village has loaded.
+- `/heroesevolved village incident [awakening|renegade|guardian|meltdown|overload|meteor]` starts an incident in a village up
+  to 640 blocks away; it begins once the village has loaded.
+- `/heroesevolved village overload [wildfire|supercell|blizzard]` overloads the nearest grown villager within 64 blocks
+  ([Overloads](overloads.md)).
 - `/heroesevolved village turn|guardian|wake` wakes the nearest grown villager's gift evil, good, or by the usual roll.
 - `/heroesevolved village calm` ends every renegade's siege (the renegades stay).
+- `/heroesevolved village memory` and `village forget`: what the nearest village remembers, and making it forget
+  ([Lasting consequences](lasting-consequences.md)).

@@ -85,5 +85,41 @@ deepslate = host(29, 74, 8, True)
 crystals(deepslate, 17)
 png(textures / "block/deepslate_helixite_ore.png", deepslate)
 
+def meteorite():
+    # Helixite fallen from the sky: a fused black crust, glassy where it melted, split by glowing teal veins with a
+    # little violet deep in them. Its veins wander across the tile edges so neighbouring blocks read as one lump.
+    rng = random.Random(41)
+    pixels = []
+    for y in range(16):
+        row = []
+        for x in range(16):
+            shade = 34 + rng.randint(-8, 8)
+            if (x * 3 + y * 5) % 11 == 0:
+                shade += 10  # glassy glints in the crust
+            row.append([shade, shade - 2, shade + 2, 255])
+        pixels.append(row)
+    veins = [[(0, 5), (3, 6), (6, 8), (9, 7), (12, 9), (15, 10)],
+             [(4, 0), (5, 3), (7, 5), (6, 8)],
+             [(9, 15), (10, 12), (12, 9)],
+             [(1, 15), (2, 12), (4, 11), (6, 8)]]
+    for vein in veins:
+        for (x0, y0), (x1, y1) in zip(vein, vein[1:]):
+            steps = max(abs(x1 - x0), abs(y1 - y0))
+            for i in range(steps + 1):
+                x = x0 + round((x1 - x0) * i / max(1, steps))
+                y = y0 + round((y1 - y0) * i / max(1, steps))
+                pixels[y][x] = [*CRYSTAL[2], 255]
+                for dx, dy in ((1, 0), (0, 1)):
+                    px, py = x + dx, y + dy
+                    if px < 16 and py < 16 and pixels[py][px][0] < 80:
+                        pixels[py][px] = [*CRYSTAL[1], 255]
+    for x, y in ((6, 8), (12, 9), (4, 11)):
+        pixels[y][x] = [*CRYSTAL[3], 255]
+    for x, y in ((7, 5), (10, 12)):
+        pixels[y][x] = [*VIOLET, 255]
+    return pixels
+
+
 png(textures / "item/helixite_shard.png", shard())
-print("PASS: wrote helixite_ore, deepslate_helixite_ore and helixite_shard textures")
+png(textures / "block/helixite_meteorite.png", meteorite())
+print("PASS: wrote helixite_ore, deepslate_helixite_ore, helixite_meteorite and helixite_shard textures")

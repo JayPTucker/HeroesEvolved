@@ -97,6 +97,14 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.IntValue villageIncidentRange;
         public final ModConfigSpec.IntValue distressRange;
         public final ModConfigSpec.IntValue renegadeKillSeconds;
+        public final ModConfigSpec.DoubleValue overloadChance;
+        public final ModConfigSpec.IntValue overloadTicks;
+        public final ModConfigSpec.BooleanValue meteorShowers;
+        public final ModConfigSpec.IntValue meteorSeconds;
+        public final ModConfigSpec.DoubleValue meteorGreatChance;
+        public final ModConfigSpec.IntValue meteorGreatTicks;
+        public final ModConfigSpec.BooleanValue companyNotices;
+        public final ModConfigSpec.DoubleValue companyAttentionScale;
         public final ModConfigSpec.IntValue vibeVisionMinutes;
 
         // Awakening
@@ -529,6 +537,50 @@ public final class HeroesEvolvedConfig {
                 renegadeKillSeconds = builder
                         .comment("A renegade takes one of its village every this many seconds while nobody stops it. Ten villagers give players several minutes to arrive.")
                         .defineInRange("renegadeKillSeconds", 45, 5, 600);
+
+                overloadChance = builder
+                        .comment("Chance that a gift waking good overloads instead of making its villager a guardian, if it is a power with a storm (Pyrokinesis: a wildfire; Flight: a supercell; Cryokinesis: a blizzard). The storm grows round them until someone reaches them and calms them down.")
+                        .defineInRange("overloadChance", 0.4D, 0.0D, 1.0D);
+
+                overloadTicks = builder
+                        .comment("How long (in ticks) an overload's storm grows before it breaks over its village. Four minutes by default.")
+                        .defineInRange("overloadTicks", 4800, 200, 72_000);
+
+                builder.pop();
+
+                builder.push("meteors");
+
+                meteorShowers = builder
+                        .comment("Starfall: on the night before every Eclipse, meteors fall. Falling stars come down near players, each marked on the ground for thirty seconds, and leave craters with Helixite Meteorite; now and then a great one comes down on a village.")
+                        .define("showers", true);
+
+                meteorSeconds = builder
+                        .comment("On a starfall night, about how many seconds apart falling stars come down near each player.")
+                        .defineInRange("meteorSeconds", 60, 10, 3_600);
+
+                meteorGreatChance = builder
+                        .comment("Chance, each starfall night, that a great meteor comes down on a village near a player.")
+                        .defineInRange("greatChance", 0.35D, 0.0D, 1.0D);
+
+                meteorGreatTicks = builder
+                        .comment("How long (in ticks) a great meteor takes to fall: the time players have to push it aside, hold it, break it up or clear the village.")
+                        .defineInRange("greatTicks", 2400, 200, 12_000);
+
+                builder.pop();
+
+                builder.push("company");
+
+                companyNotices = builder
+                        .comment("The Company notices: big moves that villagers see, and village troubles ended in front of everyone, raise the Company's attention on a player. As it rises an agent comes to ask questions, then a convoy takes a gifted villager, then agents raid the player's home at night with a Suppressor. Quiet days lower it.")
+                        .define("notices", true);
+
+                companyAttentionScale = builder
+                        .comment("Multiplies everything that raises the Company's attention (0.5: it takes twice as much to be noticed).")
+                        .defineInRange("attentionScale", 1.0D, 0.0D, 10.0D);
+
+                builder.pop();
+
+                builder.push("villages");
 
                 vibeVisionMinutes = builder
                         .comment("A Vibe user gets at most one uncontrollable vision every this many minutes: always when an ally more than 40 blocks away (within 12 chunks) drops below three hearts, sometimes when a village there is in trouble or about to be. 0 turns visions off.")
