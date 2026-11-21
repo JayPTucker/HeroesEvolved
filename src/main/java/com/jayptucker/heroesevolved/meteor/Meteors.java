@@ -107,6 +107,9 @@ public final class Meteors {
     private static Meteor launch(ServerLevel level, Vec3 start, Vec3 land, boolean great, int fall, BlockPos bell) {
         Meteor m = new Meteor(++sequence, level, great, start, land, fall, bell);
         ACTIVE.put(m.id, m);
+        // Where it lands stays loaded until it has (a player who walks off doesn't leave it falling into nothing, and its
+        // crater is never carved by loading chunks in a hurry): a great one holds its whole village, a falling star its spot.
+        if (!great) VillageTickets.hold(level, BlockPos.containing(land), key(m), VillageTickets.SPOT);
         if (great) {
             gather(m);
             VillageTickets.hold(level, bell, key(m));
@@ -144,6 +147,8 @@ public final class Meteors {
         if (!ACTIVE.containsKey(m.id)) return;
         if (!m.held) m.elapsed++;
         if (m.elapsed >= m.fall) { impact(m); return; }
+        // Pushed aside, it lands somewhere else: its spot's ticket goes with it.
+        if (!m.great && now % 20 == 0) VillageTickets.hold(m.level, BlockPos.containing(m.land), key(m), VillageTickets.SPOT);
         int left = m.left();
         if (m.great) {
             if (now % GATHER_EVERY == 0) gather(m);
@@ -463,7 +468,7 @@ public final class Meteors {
     private static void finish(Meteor m) {
         ACTIVE.remove(m.id);
         if (m.call != null) EmergencyBand.end(m.call);
-        if (m.great) VillageTickets.release(key(m));
+        VillageTickets.release(key(m));
         m.bar.removeAllPlayers();
         for (UUID id : m.village) if (m.level.getEntity(id) instanceof Villager v) v.removeEffect(MobEffects.GLOWING);
         sync(m, true);

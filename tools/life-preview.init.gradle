@@ -1,0 +1,27 @@
+// The client photographs the living radio and gifted villagers at work with uitest/LifePreview: the bunker's radios,
+// each power's village job, a favour asked and done, and the villages' chatter with a radio in hand, into
+// build/life-preview/screenshots/. Never bundled into the mod JAR.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('lifePreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/life-preview')
+                        programArguments.addAll('--width', '1280', '--height', '800')
+                        systemProperty('heroes.preview.life', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('lifePreviewClasses')) }
+            // Pass when every scene ran (PREVIEW_DONE), not on the exit code the closing halt leaves.
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

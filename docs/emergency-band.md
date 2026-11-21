@@ -49,6 +49,9 @@ hear every call in the same world, however far:
 - **As a subtitle** above the hotbar every three seconds: what the village is saying, plus which way it is and how far,
   for example `101.10 FM  Mayday! … 3:42  (north-east, 212 blocks)`.
 
+Between calls the villages talk on 101.10 too: news, weather, favours, small talk ([The living radio](living-radio.md)).
+The bunker's Records chest holds tuned walkie-talkies, one for every two players who wake there.
+
 The call goes out from the village's bell, through Simple Radio's own transmitters. If Simple Radio can't be reached (a
 version it doesn't understand, say), radio listeners fall back to subtitles within 96 blocks; the chat line, reminders
 and flare don't need the radio mod.
@@ -71,8 +74,14 @@ from a point a few hundred blocks off in a random direction so it isn't always t
 been visited is generated and loaded for it.
 
 - **Every 20 minutes** (`villages.villageIncidentMinutes`) there is a 50% chance (`villages.villageIncidentChance`) that
-  a gifted villager somewhere wakes. Half the time they turn on their village.
-- **As each Eclipse leaves,** up to three dormant gifts in villages near players wake, and one more somewhere farther off.
+  a gifted villager somewhere wakes. Half the time they turn on their village. In multiplayer the roll is made for each
+  group of players (players within 256 blocks of one another, or linked through others), so friends together share one
+  and players far apart each get their own, as often as someone playing alone.
+- **As each Eclipse leaves,** up to three dormant gifts in villages near each group of players wake, and one more
+  somewhere farther off for each group.
+- **One trouble at a time.** A village already calling for help (for anything: a meltdown, a siege, a raid, an overload,
+  a meteor, the Company) gets nothing more until it is over: an incident due there is skipped, a dormant gift there
+  stays asleep, and the Company waits.
 - **The Eclipse's meltdown** (20%, `eclipse.villagerMeltdownChance`) happens in a village found the same way.
 
 ## A villager's meltdown

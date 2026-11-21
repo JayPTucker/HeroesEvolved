@@ -301,6 +301,10 @@ no longer ends in fog over grey concrete. What the player sees is in [docs/the-l
 
 ## Reusable patterns from the Sublevel 4 rebuild
 
+- **The Records supply chest also gets radios** (`BunkerRadios`, one tuned walkie-talkie for every two sleepers), added
+  on waking rather than in `BunkerBuilder.finish`, which fills the past's twins too ([village-events.md](village-events.md),
+  "the living radio").
+
 The bunker was rebuilt from scratch in November 2026 with a new layout (airlock, commons, stasis hall, records,
 generator, infirmary, containment, maintenance, and the sealed Helix Ward with one private pod). What the player sees is in
 [docs/the-past.md](../the-past.md#sublevel-4).

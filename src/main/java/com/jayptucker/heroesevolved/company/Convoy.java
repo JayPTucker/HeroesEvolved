@@ -43,9 +43,11 @@ public final class Convoy extends CompanyOps.Op {
     public static final double LENGTH = 160, PACE = 0.045, KEEP_UP = 3.5;
     /** The lead agent warns you inside {@link #WARN}; inside {@link #CLOSE}, a power used inside {@link #LOUD_REACH}, or a blow, and it fights. */
     public static final double WARN = 14, CLOSE = 6, LOUD_REACH = 20, FIGHT_REACH = 32;
-    /** Nobody within {@link #AWAY} of it for {@link #AWAY_TICKS}: it gets away. */
-    public static final double AWAY = 128;
-    public static final int AWAY_TICKS = 2400, GUARDS = 3, CALM_TICKS = 200;
+    public static final int GUARDS = 3, CALM_TICKS = 200;
+    /** It calls up one more agent for each player past the first who fights it, up to this many in all. */
+    public static final int MOST_GUARDS = 6;
+    /** Its road ticket moves on every this many blocks, so the ground ahead of it is always loaded. */
+    public static final double ROAD_STEP = 16;
 
     final BlockPos bell;
     final String village;
@@ -58,7 +60,8 @@ public final class Convoy extends CompanyOps.Op {
     double along;
     Stage stage = Stage.MARCHING;
     boolean alerted, warned, giftBack;
-    int awayFor, calmFor;
+    int calmFor;
+    Vec3 road;
     EmergencyBand.Call call;
     ServerPlayer hero;
 
@@ -84,7 +87,9 @@ public final class Convoy extends CompanyOps.Op {
      * {@code subject}). Null if there is nobody to take or the subject already has an operation.
      */
     public static Convoy start(ServerLevel level, ServerPlayer subject, BlockPos bell, Vec3 heading) {
-        if (CompanyOps.current(subject) != null) return null;
+        // Never into a village already calling for help.
+        if (CompanyOps.current(subject) != null || com.jayptucker.heroesevolved.radio.EmergencyBand.troubled(level, bell)
+                || !CompanyOps.prepare(level, bell, subject)) return null;
         Villager prisoner = pick(level, bell);
         if (prisoner == null) return null;
         Convoy op = new Convoy(level, subject, bell);
@@ -107,6 +112,10 @@ public final class Convoy extends CompanyOps.Op {
         op.heading = heading.multiply(1, 0, 1).normalize();
         op.start = prisoner.position();
         op.center = op.start;
+        // Its village stays loaded (to remember how it ended), and so does the road under it as it walks.
+        op.keep(bell, "village");
+        op.road = op.center;
+        op.keep(BlockPos.containing(op.center), "road");
         if (prisoner.isSleeping()) prisoner.stopSleeping();
         CompanyOps.LIVE.add(prisoner.getUUID());
         prisoner.addTag(CompanyOps.PRISONER_TAG);
@@ -121,7 +130,7 @@ public final class Convoy extends CompanyOps.Op {
             op.callOff();
             return null;
         }
-        int ticks = (int) (LENGTH / PACE) + AWAY_TICKS;
+        int ticks = (int) (LENGTH / PACE) + 2400;
         op.call = EmergencyBand.call(level, bell, EmergencyBand.Trouble.COMPANY, Component.literal("They've taken " + op.who
                 + "! Men in dark suits are walking them out of " + op.village + " to the " + compass(op.heading) + "!"), ticks);
         Shouts.say(level, prisoner, "Let go of me!", 60);
@@ -194,6 +203,7 @@ public final class Convoy extends CompanyOps.Op {
         if (over) return;
         if (alerted) {
             stage = Stage.FIGHTING;
+            if (age % 100 == 0) backup();
             hold(prisoner, prisoner.position());
             boolean anyone = false;
             for (ServerPlayer p : level.players()) if (fightable(p)) anyone = true;
@@ -206,10 +216,11 @@ public final class Convoy extends CompanyOps.Op {
             return;
         }
         march(standing);
-        boolean near = false;
-        for (ServerPlayer p : level.players()) if (!p.isSpectator() && p.distanceToSqr(center) <= AWAY * AWAY) near = true;
-        awayFor = near ? 0 : awayFor + 1;
-        if (along >= LENGTH || awayFor >= AWAY_TICKS) taken();
+        if (center.distanceToSqr(road) >= ROAD_STEP * ROAD_STEP) {
+            road = center;
+            keep(BlockPos.containing(center), "road");
+        }
+        if (along >= LENGTH) taken();
     }
 
     private void march(List<CompanyAgentEntity> standing) {
@@ -269,6 +280,27 @@ public final class Convoy extends CompanyOps.Op {
             a.stopWalking();
             if (a.getTarget() == null) a.setTarget(p);
         }
+        backup();
+    }
+
+    /**
+     * Backup up the road: one more agent for each player past the first who is fighting it, up to {@link #MOST_GUARDS},
+     * so a party doesn't walk through what one player has to work for.
+     */
+    void backup() {
+        List<ServerPlayer> fighting = new ArrayList<>();
+        for (ServerPlayer p : level.players()) if (fightable(p)) fighting.add(p);
+        int want = Math.min(MOST_GUARDS, GUARDS + Math.max(0, fighting.size() - 1));
+        int added = 0;
+        while (guards.size() < want && !fighting.isEmpty()) {
+            Vec3 ahead = CompanyOps.ground(level, center.x + heading.x * 10 + (guards.size() - 3) * 1.5, center.z + heading.z * 10, center.y);
+            CompanyAgentEntity g = spawn(CompanyAgentEntity.Role.GUARD, ahead, CompanyOps.yaw(ahead, center));
+            if (g == null) break;
+            guards.add(g);
+            g.setTarget(fighting.get(added % fighting.size()));
+            added++;
+        }
+        if (added > 0) speak(guards.getLast(), "Backup's here. Keep them off the package!", 32);
     }
 
     @Override boolean stops(CompanyAgentEntity agent, ServerPlayer p) { return alerted && fightable(p); }
@@ -297,8 +329,8 @@ public final class Convoy extends CompanyOps.Op {
     private void free() {
         stage = Stage.FREED;
         release();
-        // Nobody good can hold Induced Radioactivity: that gift stays asleep.
-        if (!GiftedMobs.isGifted(prisoner) && !power.equals(ModAbilities.RADIATION_ID)) Renegades.guard(prisoner, power);
+        // Nobody good can hold Induced Radioactivity: that gift stays asleep. Their home is their village, not the road.
+        if (!GiftedMobs.isGifted(prisoner) && !power.equals(ModAbilities.RADIATION_ID)) Renegades.guard(prisoner, power, bell);
         Shouts.talk(level, prisoner, "Thank you! I thought I'd never see " + village + " again.", 100);
         Vec3 at = prisoner.position();
         List<ItemStack> spoils = new ArrayList<>();
@@ -349,8 +381,16 @@ public final class Convoy extends CompanyOps.Op {
         prisoner.getBrain().eraseMemory(MemoryModuleType.WALK_TARGET);
     }
 
+    /** The prisoner unloaded (or gone to another level) counts as losing track of them too. */
+    @Override boolean lostTrack() { return super.lostTrack() || CompanyOps.lost(prisoner); }
+
     @Override void callOff() {
         if (prisoner != null && !prisoner.isRemoved()) release();
+        else if (prisoner != null) {
+            // Unloaded with their chunk: they are let go when they load (CompanyOps.joined), not taken.
+            prisoner.removeTag(CompanyOps.PRISONER_TAG);
+            CompanyOps.LIVE.remove(prisoner.getUUID());
+        }
         if (call != null) EmergencyBand.end(call);
         super.callOff();
     }

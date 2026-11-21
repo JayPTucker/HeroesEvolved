@@ -92,8 +92,9 @@ public final class Rebuild extends SavedData {
 
     /** The village survived: it starts rebuilding at the next morning. */
     public static void begin(ServerLevel level, Site s) {
+        // The next morning on the calendar: a night slept through brings it straight on.
         long time = level.getDayTime() % 24_000;
-        s.startAt = level.getGameTime() + Math.floorMod(WORK_FROM - time, 24_000);
+        s.startAt = Days.clock(level) + Math.floorMod(WORK_FROM - time, 24_000);
         get(level).setDirty();
     }
 
@@ -117,7 +118,7 @@ public final class Rebuild extends SavedData {
     /** One working pass on a site, in daylight once it may start: its people come to it, and a few blocks go back. */
     static void work(ServerLevel level, Rebuild data, Site s) {
         long now = level.getGameTime(), time = level.getDayTime() % 24_000;
-        if (!s.started() || now < s.startAt || time < WORK_FROM || time > WORK_TO || !level.hasChunkAt(s.center)) return;
+        if (!s.started() || Days.clock(level) < s.startAt || time < WORK_FROM || time > WORK_TO || !level.hasChunkAt(s.center)) return;
         if (now % 100 == 0) builders(level, s);
         step(level, data, s, s.perPass());
     }
@@ -187,13 +188,13 @@ public final class Rebuild extends SavedData {
 
     /** Lets a site start now and runs {@code passes} working passes, whatever the time (tests, previews). */
     public static void hurry(ServerLevel level, Site s, int passes) {
-        s.startAt = level.getGameTime();
+        s.startAt = Days.clock(level);
         for (int i = 0; i < passes && get(level).sites.contains(s); i++) step(level, get(level), s, s.perPass());
     }
 
     /** Lets a site start now and puts it back as far as {@code fraction} of the way, whatever the time (previews). */
     public static void hurryTo(ServerLevel level, Site s, float fraction) {
-        s.startAt = level.getGameTime();
+        s.startAt = Days.clock(level);
         int target = Math.round(s.positions.size() * Math.max(0, Math.min(1, fraction)));
         if (target > s.next) step(level, get(level), s, Integer.MAX_VALUE == target ? target : target - s.next);
     }

@@ -268,24 +268,33 @@ public final class VillagerMeltdownGameTests {
         p.setXRot((float) -Math.toDegrees(Math.atan2(delta.y, delta.horizontalDistance())));
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 60, batch = "village.meltdown.safe")
+    @GameTest(template = "rewind_empty", timeoutTicks = 200, batch = "village.meltdown.safe")
     public static void villagersCarriedToTheSafePointCountAndStay(GameTestHelper helper) {
         Villager him = villager(helper, 500, 0), neighbour = villager(helper, 500, 3);
         VillagerMeltdown.Meltdown m = VillagerMeltdown.start(him, 1000);
-        var chunk = new net.minecraft.world.level.ChunkPos(BlockPos.containing(m.safe()));
+        BlockPos safe = BlockPos.containing(m.safe());
+        var chunk = new net.minecraft.world.level.ChunkPos(safe);
         helper.getLevel().setChunkForced(chunk.x, chunk.z, true);
-        try {
-            helper.getLevel().getChunk(chunk.x, chunk.z);
-            helper.assertTrue(m.safe().subtract(him.position()).horizontalDistance() >= VillagerMeltdown.SAFE_DISTANCE - 1,
-                    "The safe point is out of the blast's reach, with room to spare: " + m.safe().subtract(him.position()).horizontalDistance());
-            neighbour.teleportTo(m.safe().x, m.safe().y, m.safe().z);
-        } catch (RuntimeException e) { helper.getLevel().setChunkForced(chunk.x, chunk.z, false); cleanup(null, him, neighbour); throw e; }
-        helper.runAfterDelay(25, () -> {
-            try {
-                helper.assertTrue(m.safeCount() == 1, "A villager at the safe point counts as safe: " + m.safeCount());
-                helper.assertTrue(neighbour.getAttribute(Attributes.MOVEMENT_SPEED).getValue() <= 1.0E-6, "And stays huddled there");
-                helper.succeed();
-            } finally { helper.getLevel().setChunkForced(chunk.x, chunk.z, false); cleanup(null, him, neighbour); }
+        helper.assertTrue(m.safe().subtract(him.position()).horizontalDistance() >= VillagerMeltdown.SAFE_DISTANCE - 1,
+                "The safe point is out of the blast's reach, with room to spare: " + m.safe().subtract(him.position()).horizontalDistance());
+        // A freshly forced chunk takes a moment before its entities tick (and can be found): carry them there only once
+        // it does. Teleporting at once only passed when the chunk happened to be ready in time.
+        // (Its entities loaded is what lets the meltdown find them; these villagers float above the build limit, where
+        // nothing counts as ticking, so ask about the chunk, not the position.)
+        long[] carried = {-1};
+        helper.onEachTick(() -> {
+            if (carried[0] < 0 && helper.getLevel().getChunkSource().hasChunk(chunk.x, chunk.z)
+                    && helper.getLevel().areEntitiesLoaded(chunk.toLong())) {
+                neighbour.teleportTo(m.safe().x, m.safe().y, m.safe().z);
+                carried[0] = helper.getTick();
+            }
+        });
+        helper.succeedWhen(() -> {
+            helper.assertTrue(carried[0] >= 0 && helper.getTick() >= carried[0] + 25, "Not carried there yet, or not long enough");
+            helper.assertTrue(m.safeCount() == 1, "A villager at the safe point counts as safe: " + m.safeCount());
+            helper.assertTrue(neighbour.getAttribute(Attributes.MOVEMENT_SPEED).getValue() <= 1.0E-6, "And stays huddled there");
+            helper.getLevel().setChunkForced(chunk.x, chunk.z, false);
+            cleanup(null, him, neighbour);
         });
     }
 

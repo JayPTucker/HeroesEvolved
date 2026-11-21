@@ -65,6 +65,11 @@ hundreds of blocks from a player (`village/VillageIncidents`). Built in November
   good may overload instead of guarding (`Renegades.awaken` asks `Overloads.wake`; calmed, it ends in
   `Renegades.guard`): a wildfire, a supercell or a blizzard round the villager, answered by reaching them. Its patterns
   are in [village-events.md](../../../../docs/agents/village-events.md) ("overloads").
+- **Hostile gifts scale with the party.** `GiftedMob.party` adds half their health per extra player fighting within 32
+  blocks (up to three times), transient, keeping the health share, rising only mid-fight; guardians don't scale.
+- **Guardians work between fights.** `GiftedMob.idle` hands a good gifted villager to `village/GiftedWork` (each
+  power's village job) and `village/Favours`; patterns in [village-events.md](../../../../docs/agents/village-events.md)
+  ("gifted villagers at work").
 - **A Suppressor silences gifted mobs.** `Dampening.dampened` asks `SuppressorField`, so a gifted mob within 9 blocks of
   an awake Suppressor has only its hands, the way a convoy keeps its prisoner quiet
   ([company-notices.md](../../../../docs/company-notices.md)).

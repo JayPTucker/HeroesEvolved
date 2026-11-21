@@ -42,7 +42,7 @@ public final class Scars extends SavedData {
     static final int EVERY = 100, SPOTS = 48;
     static final long DAY = 24_000;
 
-    /** One scar: where, how big, when it was made (game time), and, for a track, the points it ran through. */
+    /** One scar: where, how big, when it was made (on the calendar, village/Days), and, for a track, the points it ran through. */
     public static final class Scar {
         final Kind kind;
         final BlockPos center;
@@ -55,7 +55,7 @@ public final class Scars extends SavedData {
         public int radius() { return radius; }
         public List<BlockPos> points() { return List.copyOf(points); }
         /** How many days have gone by since it was made. */
-        public float days(long now) { return (now - made) / (float) DAY; }
+        public float days(long now) { return Math.max(0, now - made) / (float) DAY; }
         int healed() { return kind == Kind.CRATER ? CRATER_DAYS : kind == Kind.BURN ? BURN_DAYS : TRACK_DAYS; }
     }
 
@@ -76,7 +76,7 @@ public final class Scars extends SavedData {
     public static Scar burn(ServerLevel level, BlockPos center, int radius) { return add(level, Kind.BURN, center, radius); }
 
     private static Scar add(ServerLevel level, Kind kind, BlockPos center, int radius) {
-        Scar s = new Scar(kind, center.immutable(), radius, level.getGameTime());
+        Scar s = new Scar(kind, center.immutable(), radius, Days.clock(level));
         Scars data = get(level);
         data.scars.add(s);
         data.setDirty();
@@ -99,6 +99,12 @@ public final class Scars extends SavedData {
     /** The track {@code key} is finished: it heals from now. */
     public static void endTrack(String key) { MAKING.remove(key); }
 
+    /** Forgets {@code s} (it heals no further; tests). */
+    public static void forget(ServerLevel level, Scar s) {
+        get(level).scars.remove(s);
+        get(level).setDirty();
+    }
+
     @SubscribeEvent
     public static void tick(ServerTickEvent.Post event) {
         MinecraftServer server = event.getServer();
@@ -106,7 +112,8 @@ public final class Scars extends SavedData {
         for (ServerLevel level : server.getAllLevels()) {
             Scars data = level.getDataStorage().get(new Factory<>(Scars::new, Scars::load), NAME);
             if (data == null || data.scars.isEmpty()) continue;
-            long now = level.getGameTime();
+            // Days on the calendar, slept nights included (village/Days).
+            long now = Days.clock(level);
             for (Scar s : List.copyOf(data.scars)) {
                 if (!level.hasChunkAt(s.center)) continue;
                 heal(level, s, now);
@@ -192,7 +199,7 @@ public final class Scars extends SavedData {
 
     /** Runs {@code passes} passes of healing on {@code s} now (tests, previews). */
     public static void heal(ServerLevel level, Scar s, int passes) {
-        for (int i = 0; i < passes; i++) heal(level, s, level.getGameTime());
+        for (int i = 0; i < passes; i++) heal(level, s, Days.clock(level));
     }
 
     @Override

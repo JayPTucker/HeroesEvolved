@@ -479,4 +479,174 @@ public final class CompanyNoticeGameTests {
             h.succeed();
         } finally { cleanup(h, null, agent, v); }
     }
+
+    // ------------------------------------------------------------------
+    // Chunks that aren't loaded
+    // ------------------------------------------------------------------
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 60, batch = "company.unloadedescort")
+    public static void anEscortWhoseChunksUnloadIsLostNotBeaten(GameTestHelper h) {
+        BlockPos bell = bell(h);
+        Villager v = villager(h, at(h, 4, 6), false);
+        ServerPlayer p = player(h, spot(h, 6, -40), "Wren", null);
+        CompanyAttention.set(p, 55);
+        Convoy op = Convoy.start(h.getLevel(), p, bell, new Vec3(1, 0, 0));
+        h.assertTrue(op != null, "They take someone");
+        h.runAfterDelay(2, () -> { for (CompanyAgentEntity a : op.agents()) a.remove(Entity.RemovalReason.UNLOADED_TO_CHUNK); });
+        h.runAfterDelay(4, () -> {
+            h.assertTrue(op.over() && op.stage() != Convoy.Stage.FREED, "Unloaded is not beaten: called off, not freed (" + op.stage() + ")");
+            h.assertTrue(VillageMemory.of(h.getLevel(), bell).history().stream().noneMatch(e -> e.what().equals("the Company")),
+                    "Nothing for the village to remember");
+            h.assertTrue(near(CompanyAttention.of(p), 55), "Nobody gets the credit: " + CompanyAttention.of(p));
+            h.assertTrue(!v.getTags().contains(CompanyOps.PRISONER_TAG), "Their prisoner is let go");
+            h.succeed();
+            cleanup(h, bell, v, p);
+        });
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 60, batch = "company.unloadedprisoner")
+    public static void aPrisonerWhoseChunkUnloadsIsNotRecordedAsDead(GameTestHelper h) {
+        BlockPos bell = bell(h);
+        Villager v = villager(h, at(h, 4, 6), false);
+        ServerPlayer p = player(h, spot(h, 6, -40), "Wren", null);
+        Convoy op = Convoy.start(h.getLevel(), p, bell, new Vec3(1, 0, 0));
+        h.assertTrue(op != null, "They take someone");
+        h.runAfterDelay(2, () -> v.remove(Entity.RemovalReason.UNLOADED_TO_CHUNK));
+        h.runAfterDelay(4, () -> {
+            h.assertTrue(op.over() && op.stage() != Convoy.Stage.TAKEN, "Called off (" + op.stage() + ")");
+            h.assertTrue(VillageMemory.of(h.getLevel(), bell).history().stream().noneMatch(e -> e.what().equals("the Company")),
+                    "Not remembered as taken or lost");
+            h.assertTrue(op.agents().stream().allMatch(Entity::isRemoved), "The agents leave");
+            h.succeed();
+            cleanup(h, bell, p);
+        });
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 60, batch = "company.tickets")
+    public static void operationsKeepTheirPlaceLoadedAndLetGoWhenDone(GameTestHelper h) {
+        BlockPos bell = bell(h);
+        Villager v = villager(h, at(h, 4, 6), false);
+        ServerPlayer p = player(h, spot(h, 6, -40), "Wren", null);
+        Convoy op = Convoy.start(h.getLevel(), p, bell, new Vec3(1, 0, 0));
+        h.assertTrue(op != null, "They take someone");
+        h.assertTrue(com.jayptucker.heroesevolved.village.VillageTickets.held(op.key() + "village")
+                && com.jayptucker.heroesevolved.village.VillageTickets.held(op.key() + "road"), "Its village and its road are held loaded");
+        h.runAfterDelay(2, () -> op.hurry(40));
+        h.runAfterDelay(4, () -> {
+            var road = com.jayptucker.heroesevolved.village.VillageTickets.at(op.key() + "road");
+            h.assertTrue(road != null && road.equals(new net.minecraft.world.level.ChunkPos(BlockPos.containing(op.center()))),
+                    "The road's ticket walks with it: " + road + " at " + op.center());
+            CompanyOps.callOffAll();
+            h.assertTrue(!com.jayptucker.heroesevolved.village.VillageTickets.held(op.key() + "village")
+                    && !com.jayptucker.heroesevolved.village.VillageTickets.held(op.key() + "road"), "Done: let go");
+            h.succeed();
+            cleanup(h, bell, v, p);
+        });
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 40, batch = "company.prepare")
+    public static void anOperationWaitsUntilItsPlaceHasLoaded(GameTestHelper h) {
+        ServerPlayer p = player(h, spot(h, 6, 6), "Wren", null);
+        BlockPos far = h.absolutePos(new BlockPos(90_000, 2, 0));
+        try {
+            h.assertTrue(!CompanyOps.ready(h.getLevel(), far), "Nobody is anywhere near there");
+            h.assertTrue(Investigation.start(h.getLevel(), p, far, far, null) == null, "So nobody is sent yet");
+            h.assertTrue(com.jayptucker.heroesevolved.village.VillageTickets.held("company:prep:" + p.getUUID()), "But it starts loading");
+            h.assertTrue(CompanyOps.current(p) == null, "And nothing is under way");
+            h.succeed();
+        } finally { cleanup(h, null, p); }
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 60, batch = "company.freedhome")
+    public static void aPrisonerFreedOnTheRoadStillGuardsTheirOwnVillage(GameTestHelper h) {
+        BlockPos bell = bell(h);
+        Villager v = villager(h, at(h, 4, 6), false);
+        GiftedVillagers.give(v, ModAbilities.PYROKINESIS_ID);
+        ServerPlayer p = player(h, spot(h, 6, -40), "Wren", null);
+        Convoy op = Convoy.start(h.getLevel(), p, bell, new Vec3(1, 0, 0));
+        h.assertTrue(op != null, "They take someone");
+        h.runAfterDelay(2, () -> {
+            // A long way down the road, out of their village's reach.
+            v.teleportTo(v.getX() + 100, v.getY(), v.getZ());
+            killAll(op.agents(), p);
+        });
+        h.runAfterDelay(4, () -> {
+            h.assertTrue(op.stage() == Convoy.Stage.FREED && GiftedMobs.isGood(v), "Freed, a guardian");
+            h.assertTrue(bell.equals(GiftedMobs.of(v).gift().home()), "Of their own village: " + GiftedMobs.of(v).gift().home());
+            h.succeed();
+            cleanup(h, bell, v, p);
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // Multiplayer and singleplayer
+    // ------------------------------------------------------------------
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 60, batch = "company.sharedhome")
+    public static void friendsWhoShareAHomeShareOneRaid(GameTestHelper h) {
+        ServerPlayer a = player(h, spot(h, 6, 6), "Wren", null), b = player(h, spot(h, 8, 6), "Ash", null);
+        CompanyAttention.set(a, 90);
+        CompanyAttention.set(b, 90);
+        b.setRespawnPosition(net.minecraft.world.level.Level.OVERWORLD, at(h, 7, 7), 0, true, false);
+        Raid op = Raid.start(h.getLevel(), a, at(h, 6, 6), spot(h, 3, 3));
+        h.assertTrue(op != null, "A raid on their home");
+        h.assertTrue(CompanyOps.consider(b, 18_000) == null, "One raid at a shared home at a time");
+        op.now();
+        h.runAfterDelay(3, () -> killAll(op.agents(), a));
+        h.runAfterDelay(5, () -> {
+            h.assertTrue(op.stage() == Raid.Stage.BEATEN, "Beaten (" + op.stage() + ")");
+            h.assertTrue(near(CompanyAttention.of(a), CompanyAttention.RAID_BEATEN) && near(CompanyAttention.of(b), CompanyAttention.RAID_BEATEN),
+                    "It counts for both who fought it: " + CompanyAttention.of(a) + ", " + CompanyAttention.of(b));
+            h.succeed();
+            cleanup(h, null, a, b);
+        });
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 40, batch = "company.sleep")
+    public static void lyingDownWhileHuntedBringsTheRaid(GameTestHelper h) {
+        ServerPlayer p = player(h, spot(h, 6, 6), "Wren", null);
+        try {
+            CompanyAttention.set(p, 90);
+            var event = net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(
+                    new net.neoforged.neoforge.event.entity.player.CanPlayerSleepEvent(p, at(h, 6, 6), null));
+            h.assertTrue(event.getProblem() == net.minecraft.world.entity.player.Player.BedSleepingProblem.OTHER_PROBLEM, "No sleep tonight");
+            h.assertTrue(CompanyOps.current(p) instanceof Raid r && r.home().equals(at(h, 6, 6)), "The raid comes to the bed");
+            var again = net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(
+                    new net.neoforged.neoforge.event.entity.player.CanPlayerSleepEvent(p, at(h, 6, 6), null));
+            h.assertTrue(again.getProblem() != null, "Nor while it's on");
+            h.succeed();
+        } finally { cleanup(h, null, p); }
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 60, batch = "company.backup")
+    public static void aConvoyCallsBackupForEachExtraPlayer(GameTestHelper h) {
+        BlockPos bell = bell(h);
+        Villager v = villager(h, at(h, 3, 6), false);
+        ServerPlayer p = player(h, spot(h, 6, -40), "Wren", null);
+        Convoy op = Convoy.start(h.getLevel(), p, bell, new Vec3(1, 0, 0));
+        h.assertTrue(op != null, "They take someone");
+        Vec3 c = op.center();
+        ServerPlayer a = player(h, c.add(0, 0, 3), "A", null), b = player(h, c.add(2, 0, 4), "B", null), d = player(h, c.add(-2, 0, 4), "D", null);
+        h.runAfterDelay(8, () -> {
+            h.assertTrue(op.alerted(), "Too close: alarmed");
+            h.assertTrue(op.guards().size() == Convoy.GUARDS + 2, "Three players: two more agents (" + op.guards().size() + ")");
+            h.succeed();
+            cleanup(h, bell, v, p, a, b, d);
+        });
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 40, batch = "company.decay")
+    public static void quietDaysAreCalendarDays(GameTestHelper h) {
+        var f = new CompanyAttention.File();
+        f.attention = 40;
+        f.lastSeen = 0;
+        h.assertTrue(!CompanyAttention.decay(f, CompanyAttention.QUIET, CompanyAttention.QUIET) && near(f.attention, 40), "The first quiet day costs nothing");
+        // A night slept through: half a day passes on the calendar at once.
+        CompanyAttention.decay(f, CompanyAttention.QUIET + 12_000, 12_000);
+        h.assertTrue(near(f.attention, 35), "Half a calendar day, half the fall: " + f.attention);
+        f.lastSeen = 30_000;
+        CompanyAttention.decay(f, 1_000, -50_000);
+        h.assertTrue(f.lastSeen == 1_000, "Time set back moves last seen with it");
+        h.succeed();
+    }
 }

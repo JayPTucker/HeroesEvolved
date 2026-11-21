@@ -25,7 +25,8 @@ When a villager's gift wakes, it goes one of two ways (50% each, `villages.gifte
 
 - **A guardian.** They stay a villager and defend their village with their power: they go for monsters, raiders and
   evil gifts near them, never people, villagers, golems or animals. Light spirals up them into a halo of pale gold, and
-  nearby players are told who now guards the village. Their name shows when you look at them.
+  nearby players are told who now guards the village. Their name shows when you look at them. Between fights they use
+  their power for the village's work and ask for favours ([Gifted villagers at work](gifted-villagers.md)).
 - **A renegade.** The gift goes to their head. Crimson cracks climb them, a ring of crimson closes in on them, and they
   turn into an **illager** carrying the same power: a vindicator for the hand-to-hand powers (Superspeed, Density,
   Regeneration, Quake, Shapeshifting), an illusioner for the mind's (Telepathy, Invisibility, Space-Time, Mimicry,
@@ -68,6 +69,11 @@ count its rarity.
 
 Damage also scales with difficulty (Easy ×0.75, Hard ×1.25). Gifted mobs move faster than their kind (15–30%) and never
 despawn.
+
+**More players, more of it.** A hostile gifted mob (a renegade, a raid champion, a patrol leader, a wild one) gains half
+its health again for each player past the first fighting it within 32 blocks, up to three times its health with five,
+keeping its share of health as it grows, and never shrinking mid-fight. A while after the fight it is itself again.
+Guardians don't grow: they fight for you.
 
 ## How they fight
 

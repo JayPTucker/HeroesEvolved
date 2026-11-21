@@ -140,6 +140,20 @@ public final class VillageMemory extends SavedData {
         return v;
     }
 
+    /** Every village remembered in {@code level}. */
+    public static List<Village> all(ServerLevel level) { return List.copyOf(get(level).villages.values()); }
+
+    /**
+     * {@code p} did the village round {@code at} a kindness (a favour): it thinks {@code by} better of them. Not an event
+     * in its history, and no memorial.
+     */
+    public static void thanked(ServerLevel level, BlockPos at, ServerPlayer p, int by) {
+        if (!Villages.hasBell(level, at)) return;
+        Village v = of(level, Villages.bell(level, at));
+        thank(v, p, by);
+        get(level).setDirty();
+    }
+
     /** The remembered village whose bell is nearest {@code at} (within a village's reach), or null. */
     public static Village near(ServerLevel level, BlockPos at) {
         Village best = null;

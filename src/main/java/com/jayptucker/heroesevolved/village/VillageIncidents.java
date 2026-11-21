@@ -63,6 +63,8 @@ public final class VillageIncidents {
     /** Once loaded, a moment for its villagers to arrive. */
     static final int SETTLE = 40;
     private static long nextRoll = -1;
+    /** Players this close to one another count as together: one roll between them. */
+    public static final int GROUP_RADIUS = 256;
     private static EclipseTimeline.Phase lastPhase;
     private static int sequence;
 
@@ -72,9 +74,12 @@ public final class VillageIncidents {
      * Starts an incident of {@code kind} in a village near a random player (within the configured range). False if
      * there is no player or no village to be found; the incident itself begins once the village has loaded.
      */
-    public static boolean request(MinecraftServer server, Kind kind) {
+    public static boolean request(MinecraftServer server, Kind kind) { return request(server, server.overworld().players(), kind); }
+
+    /** As {@link #request(MinecraftServer, Kind)}, near one of {@code among} (a group of players). */
+    public static boolean request(MinecraftServer server, List<ServerPlayer> among, Kind kind) {
         ServerLevel level = server.overworld();
-        List<ServerPlayer> players = new ArrayList<>(level.players().stream().filter(p -> !p.isSpectator()).toList());
+        List<ServerPlayer> players = new ArrayList<>(among.stream().filter(p -> !p.isSpectator() && p.level() == level).toList());
         if (players.isEmpty()) return false;
         Collections.shuffle(players, new java.util.Random(level.random.nextLong()));
         for (ServerPlayer p : players) {
@@ -128,7 +133,10 @@ public final class VillageIncidents {
         if (nextRoll < 0 || nextRoll - now > minutes * 1200L) nextRoll = now + minutes * 1200L;
         if (now < nextRoll) return;
         nextRoll = now + minutes * 1200L;
-        if (overworld.random.nextDouble() < HeroesEvolvedConfig.COMMON.villageIncidentChance.get()) request(server, Kind.AWAKENING);
+        // One roll for each group of players: friends together share theirs, players far apart each get their own, as
+        // often as anyone playing alone would (events/PlayerGroups).
+        for (List<ServerPlayer> group : com.jayptucker.heroesevolved.events.PlayerGroups.of(overworld, GROUP_RADIUS))
+            if (overworld.random.nextDouble() < HeroesEvolvedConfig.COMMON.villageIncidentChance.get()) request(server, group, Kind.AWAKENING);
     }
 
     private static void tick(Pending p) {
@@ -154,6 +162,11 @@ public final class VillageIncidents {
     /** The village is here: pick who it happens to. */
     private static void start(Pending p) {
         BlockPos bell = Villages.bell(p.level, p.center);
+        // One trouble at a time: a village already calling for help gets nothing more piled on it.
+        if (com.jayptucker.heroesevolved.radio.EmergencyBand.troubled(p.level, bell)) {
+            HeroesEvolved.LOGGER.info("Village incident {} at {} skipped: the village is already in trouble", p.kind, bell);
+            return;
+        }
         if (p.kind == Kind.METEOR) {
             // Nobody in the village causes this one: a great meteor comes down on its bell.
             com.jayptucker.heroesevolved.meteor.Meteors.great(p.level, bell, HeroesEvolvedConfig.COMMON.meteorGreatTicks.get());
@@ -162,7 +175,8 @@ public final class VillageIncidents {
         }
         List<Villager> adults = new ArrayList<>(Villages.members(p.level, bell).stream()
                 .filter(v -> !v.isBaby() && !GiftedMobs.isGifted(v) && !VillagerMeltdown.critical(v)
-                        && !com.jayptucker.heroesevolved.village.overload.Overloads.critical(v)).toList());
+                        && !com.jayptucker.heroesevolved.village.overload.Overloads.critical(v)
+                        && !v.getTags().contains(com.jayptucker.heroesevolved.company.CompanyOps.PRISONER_TAG)).toList());
         if (adults.isEmpty()) {
             HeroesEvolved.LOGGER.info("Village incident at {} found nobody to happen to", bell);
             return;
@@ -202,25 +216,36 @@ public final class VillageIncidents {
         lastPhase = phase;
         if (phase != EclipseTimeline.Phase.DEPARTURE) return;
         wakeNear(server, 3);
-        request(server, Kind.AWAKENING);
+        for (List<ServerPlayer> group : com.jayptucker.heroesevolved.events.PlayerGroups.of(server.overworld(), GROUP_RADIUS))
+            request(server, group, Kind.AWAKENING);
     }
 
-    /** Wakes up to {@code most} dormant gifts in villages within 128 blocks of a player. How many woke. */
+    /**
+     * Wakes up to {@code most} dormant gifts in villages within 128 blocks of each group of players (so each group sees
+     * as many as a player alone would). Never in a village already in trouble. How many woke.
+     */
     public static int wakeNear(MinecraftServer server, int most) {
         ServerLevel level = server.overworld();
-        List<Villager> gifted = new ArrayList<>();
-        for (ServerPlayer p : level.players()) {
-            if (p.isSpectator()) continue;
-            for (Villager v : level.getEntitiesOfClass(Villager.class, p.getBoundingBox().inflate(128),
-                    v -> v.isAlive() && !v.isBaby() && GiftedVillagers.gift(v) != null && !GiftedMobs.isGifted(v) && !VillagerMeltdown.critical(v)
-                            && !com.jayptucker.heroesevolved.village.overload.Overloads.critical(v)))
-                if (!gifted.contains(v)) gifted.add(v);
-        }
-        Collections.shuffle(gifted, new java.util.Random(level.random.nextLong()));
         int woke = 0;
-        for (Villager v : gifted) {
-            if (woke >= most) break;
-            if (Renegades.awaken(v) != null) woke++;
+        List<Villager> done = new ArrayList<>();
+        for (List<ServerPlayer> group : com.jayptucker.heroesevolved.events.PlayerGroups.of(level, GROUP_RADIUS)) {
+            List<Villager> gifted = new ArrayList<>();
+            for (ServerPlayer p : group)
+                for (Villager v : level.getEntitiesOfClass(Villager.class, p.getBoundingBox().inflate(128),
+                        v -> v.isAlive() && !v.isBaby() && GiftedVillagers.gift(v) != null && !GiftedMobs.isGifted(v) && !VillagerMeltdown.critical(v)
+                                && !com.jayptucker.heroesevolved.village.overload.Overloads.critical(v)
+                                && !v.getTags().contains(com.jayptucker.heroesevolved.company.CompanyOps.PRISONER_TAG)
+                                && !com.jayptucker.heroesevolved.radio.EmergencyBand.troubled(level, v.blockPosition())))
+                    if (!gifted.contains(v) && !done.contains(v)) gifted.add(v);
+            Collections.shuffle(gifted, new java.util.Random(level.random.nextLong()));
+            int here = 0;
+            for (Villager v : gifted) {
+                if (here >= most) break;
+                // One awakening per village: the first may already be calling for help.
+                if (com.jayptucker.heroesevolved.radio.EmergencyBand.troubled(level, v.blockPosition())) continue;
+                if (Renegades.awaken(v) != null) { here++; done.add(v); }
+            }
+            woke += here;
         }
         return woke;
     }

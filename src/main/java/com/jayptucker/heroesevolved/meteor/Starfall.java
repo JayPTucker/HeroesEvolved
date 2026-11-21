@@ -36,6 +36,8 @@ public final class Starfall {
     public static final long DUSK = 13_000, DAWN = 23_000;
     /** A great meteor comes this long into the night, at the earliest, and this much later at the latest. */
     static final int GREAT_EARLIEST = 1_200, GREAT_SPREAD = 3_000;
+    /** Players this close share falling stars. */
+    public static final double SHARE = 96;
 
     private static boolean forced, on;
     private static long greatAt = -1;
@@ -78,7 +80,10 @@ public final class Starfall {
             if (p.isSpectator()) continue;
             long next = NEXT.computeIfAbsent(p.getUUID(), id -> now + (long) (mean * (0.3 + level.random.nextDouble() * 0.7)));
             if (now < next) continue;
-            NEXT.put(p.getUUID(), now + (long) (mean * (0.5 + level.random.nextDouble())));
+            long again = now + (long) (mean * (0.5 + level.random.nextDouble()));
+            // Everyone near shares this star: friends together see as many as one player alone.
+            for (ServerPlayer q : level.players())
+                if (!q.isSpectator() && q.distanceToSqr(p) <= SHARE * SHARE) NEXT.put(q.getUUID(), Math.max(NEXT.getOrDefault(q.getUUID(), 0L), again));
             near(p);
         }
     }
@@ -115,6 +120,17 @@ public final class Starfall {
             return Meteors.drop(level, Vec3.atBottomCenterOf(top));
         }
         return null;
+    }
+
+    /**
+     * Nobody sleeps through a starfall: in singleplayer sleep would skip the one night it comes, and in multiplayer it
+     * would skip it for everyone. Refused like any bed that can't be slept in, with the reason.
+     */
+    @SubscribeEvent
+    public static void sleep(net.neoforged.neoforge.event.entity.player.CanPlayerSleepEvent event) {
+        if (event.getProblem() != null || event.getLevel() != event.getEntity().getServer().overworld() || !active(event.getEntity().getServer())) return;
+        event.setProblem(net.minecraft.world.entity.player.Player.BedSleepingProblem.OTHER_PROBLEM);
+        event.getEntity().displayClientMessage(Component.literal("Stars are falling: the sky's too bright to sleep.").withStyle(ChatFormatting.AQUA), true);
     }
 
     @SubscribeEvent

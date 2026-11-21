@@ -107,6 +107,8 @@ public final class BunkerService {
         PodSleepers.clear(overworld, data, index);
         CryoChamberService.enter(player, base, RELEASE + 5);
         BunkerBuilder.labelPod(overworld, data, index, player.getGameProfile().getName(), false);
+        // One radio on the emergency band for every two sleepers (BunkerRadios).
+        BunkerRadios.joined(overworld, data, player.getUUID());
         SESSIONS.put(player.getUUID(), 0);
         return true;
     }
@@ -139,6 +141,7 @@ public final class BunkerService {
                     SESSIONS.remove(id);
                     BunkerData data = ensureBuilt(server);
                     player.setData(ModDataAttachments.BUNKER_AWOKEN, true);
+                    BunkerRadios.joined(server.overworld(), data, player.getUUID());
                     player.sendSystemMessage(Component.translatable("bunker.heroesevolved.rumor",
                             data.origin.getX(), data.origin.getZ(), StoryLead.journalKey()).withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
                     continue;
@@ -166,6 +169,8 @@ public final class BunkerService {
         if (server.overworld().getGameTime() % 20 == 0) {
             BunkerBuilder.upgrade(server.overworld(), bunker);
             BunkerBuilder.releaseClaire(server.overworld(), bunker);
+            // Radios owed to sleepers counted while the chest wasn't loaded (or before there were radios at all).
+            BunkerRadios.stock(server.overworld(), bunker);
             // The pods nobody woke in still hold Odessa's people, dead a long time.
             PodSleepers.present(server.overworld(), bunker);
             // And the ones the vault was shut on lie outside it and on the stair: laid once, in new bunkers and old.

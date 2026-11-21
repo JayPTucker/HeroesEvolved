@@ -174,8 +174,12 @@ public final class Renegades {
      * ends ({@code village/overload/Overloads}). Returns the villager.
      */
     public static Mob guard(Villager villager, ResourceLocation power) {
+        return villager.level() instanceof ServerLevel level ? guard(villager, power, Villages.bell(level, villager.blockPosition())) : null;
+    }
+
+    /** As {@link #guard(Villager, ResourceLocation)}, guarding the village round {@code bell} (somewhere they aren't now). */
+    public static Mob guard(Villager villager, ResourceLocation power, BlockPos bell) {
         if (!(villager.level() instanceof ServerLevel level) || !villager.isAlive() || GiftedMobs.isGifted(villager)) return null;
-        BlockPos bell = Villages.bell(level, villager.blockPosition());
         GiftedMob g = GiftedMobs.bestow(villager, power, Rarity.roll(villager.getRandom(), Rarity.UNCOMMON), false, Gift.Origin.GUARDIAN, bell, null);
         Vec3 at = villager.position();
         SetPiecePayload.send(level, Piece.GIFT_AWAKEN, at, at.add(0, 1, 0), MimicColors.index(power.getPath()) + .25F, villager);

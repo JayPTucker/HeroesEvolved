@@ -59,7 +59,8 @@ Memorials stand on open ground near the bell and never replace anything built.
 | A track | a supercell | Where the funnel went, the grass and flowers are torn up. They come back over three days. |
 
 Healing goes on only while the place is loaded, and catches up when it is: a crater left alone for a week is healed when
-you return.
+you return. Days are calendar days, so nights slept through count, and a rebuild that starts "the next morning" starts
+when you wake.
 
 ## Rebuilding
 

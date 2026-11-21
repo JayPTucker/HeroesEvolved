@@ -55,12 +55,14 @@ public final class GiftedVillagers {
     /** The tell: a mote now and then for anyone, a glow that only a mimic sees. Awakened gifts show for themselves. */
     @SubscribeEvent public static void tick(ServerTickEvent.Post event) {
         if (event.getServer().overworld().getGameTime() % 60 != 0) return;
+        // Each villager's mote once, however many players are near it (it is sent to all of them).
+        java.util.Set<AbstractVillager> shown = new java.util.HashSet<>();
         for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
             boolean mimic = MimicryService.isMimic(player);
             for (AbstractVillager villager : player.serverLevel().getEntitiesOfClass(AbstractVillager.class, player.getBoundingBox().inflate(24),
                     v -> gift(v) != null && !GiftedMobs.isGifted(v))) {
                 if (mimic) PrivateGlow.glow(player, villager, 30);
-                if (villager.getRandom().nextInt(3) == 0)
+                if (shown.add(villager) && villager.getRandom().nextInt(3) == 0)
                     player.serverLevel().sendParticles(ParticleTypes.END_ROD, villager.getX(), villager.getY() + 1.9, villager.getZ(),
                             1, .2, .1, .2, .005);
             }

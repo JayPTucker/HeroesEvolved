@@ -24,6 +24,8 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 | `tools/combat-target-gametest.init.gradle` | who powers may target |
 | `tools/elements-gametest.init.gradle` | Hydrokinesis in the Nether, Pyrokinesis in the rain |
 | `tools/fighting-gametest.init.gradle` | `FightingStylesGameTests` |
+| `tools/structure-gametest.init.gradle -PtestPackages=radio/LivingRadioGameTests.java,village/GiftedWorkGameTests.java` | The living radio (bunker radios, chatter, the voice) and gifted villagers at work (every job, the courier, favours) |
+| `tools/structure-gametest.init.gradle -PtestPackages=village/WorldEventBalanceGameTests.java` | World events in multiplayer and singleplayer: player groups, one trouble per village, party scaling, starfall and sleep, calendar days |
 | `tools/structure-gametest.init.gradle -PtestPackages=company` | The Company: agents, attention, investigators, convoys, raids (`CompanyAgentGameTests`, `CompanyNoticeGameTests`) |
 | `tools/structure-gametest.init.gradle -PtestPackages=village/ConsequenceGameTests.java` | What villages remember, scars, rebuilding (a single file works as a package) |
 | `tools/structure-gametest.init.gradle -PtestPackages=meteor` | Starfall's meteors (`meteor/MeteorGameTests`), in a world of their own |
@@ -121,6 +123,15 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
   listed player past a 20-tick boundary gives it a connection of its own that answers: `CompanyAgentGameTests`' aim test
   makes a `ServerGamePacketListenerImpl` with a bare `Connection` and overrides `hasChannel(ResourceLocation)` (false)
   and `send` (nothing). It used to pass only when the guard fired before the boundary.
+- **Above the build limit nothing is ticking.** The meltdown tests float villagers at y 500; `isPositionEntityTicking`
+  is false there whatever the chunk. Teleporting into a freshly forced chunk before its entities have loaded only passed
+  when it happened to be ready (it failed every time in the smaller gifted suite): wait for `hasChunk` and
+  `areEntitiesLoaded(chunk)` first (`VillagerMeltdownGameTests.villagersCarriedToTheSafePointCountAndStay`).
+- **Sleeping in a test:** post `new CanPlayerSleepEvent(player, bedPos, null)` on `NeoForge.EVENT_BUS` and read
+  `getProblem()` (`WorldEventBalanceGameTests`, `CompanyNoticeGameTests.lyingDownWhileHuntedBringsTheRaid`).
+- **Unloading in a test:** `entity.remove(Entity.RemovalReason.UNLOADED_TO_CHUNK)` stands in for a chunk unloading
+  under it (`CompanyNoticeGameTests`' unloaded escort and prisoner). A position 90,000 blocks out is never ticking, for a
+  "not loaded yet" case; release any ticket it starts (`CompanyOps.callOffAll` clears prep tickets).
 - **Never clean up in a `finally` inside `succeedWhen`.** It retries until the checks pass, so the first failure's cleanup
   runs and the retry then fails on the cleaned-up state, hiding the real cause (an attention reading 0.0 instead of a
   missed step). Assert, then clean up at the end of the lambda.

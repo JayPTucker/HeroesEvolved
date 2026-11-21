@@ -39,7 +39,7 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 | Any structure, room, city block, arena, or Java that places scenery block by block | **the building skill**: [.claude/skills/minecraft-building/SKILL.md](.claude/skills/minecraft-building/SKILL.md) |
 | Anything worn (armor, suits, helmets, costumes) | **the armor skill**: [.claude/skills/minecraft-armor/SKILL.md](.claude/skills/minecraft-armor/SKILL.md) |
 | The Last Day, Odessa, the bunker, story actors, scripted scenes | [story-and-scenes.md](docs/agents/story-and-scenes.md) |
-| Village distress calls, the radio, villager meltdowns, overloads, Starfall (meteors), what villages remember, scars, rebuilding, the Company noticing players (attention, investigators, convoys, raids) | [village-events.md](docs/agents/village-events.md) |
+| Village distress calls, the radio, villager meltdowns, overloads, Starfall (meteors), what villages remember, scars, rebuilding, the Company noticing players (attention, investigators, convoys, raids), the living radio, gifted villagers' work and favours | [village-events.md](docs/agents/village-events.md) |
 | TaCZ guns, Forge Energy machines, the Ability Dampener | [weapons-and-dampener.md](docs/agents/weapons-and-dampener.md) |
 | Meltdown hazards, protective suits, HUD ring gauges | [hazards-and-suits.md](docs/agents/hazards-and-suits.md) |
 | Sounds, music, OGG files, voice chat | [audio.md](docs/agents/audio.md): start from the user's reference library it describes (`C:\Users\jaypa\OneDrive\Desktop\Gemini Heroes Reborn Audio`), never ship any of it; [powers/telepathy.md](docs/agents/powers/telepathy.md) for voice chat |
@@ -78,6 +78,7 @@ Shared systems with player docs: [fighting-styles.md](docs/fighting-styles.md), 
 [sylar.md](docs/sylar.md), [company-agents.md](docs/company-agents.md),
 [emergency-band.md](docs/emergency-band.md), [overloads.md](docs/overloads.md), [meteor-shower.md](docs/meteor-shower.md),
 [lasting-consequences.md](docs/lasting-consequences.md), [company-notices.md](docs/company-notices.md),
+[living-radio.md](docs/living-radio.md), [gifted-villagers.md](docs/gifted-villagers.md),
 [the-last-day.md](docs/the-last-day.md),
 [the-past.md](docs/the-past.md), [jei-and-jade.md](docs/jei-and-jade.md).
 
@@ -161,6 +162,10 @@ Each rule cost a bug once. The file in brackets has the story and the code to co
 - **Another mod is touched by one guarded class** (`TaczLink`, `RadioLink`, `MindVoice`; an optional mod gets one
   plugin package, `compat/jei`, `compat/jade`): every call in try/catch, a `broken` flag, and a fallback, so an update
   to that mod never crashes ours.
+- **An entity removed by unloading is not dead.** `isRemoved()` is true for an entity whose chunk unloaded; ask
+  `getRemovalReason().shouldDestroy()` before treating it as killed, keep an event's place loaded with
+  `VillageTickets.hold` while it runs, and never read or write blocks where `hasChunkAt` is false
+  ([village-events.md](docs/agents/village-events.md), "unloaded chunks").
 - **Small Java traps that bit:** start "last time" fields at `-1000`, not `Long.MIN_VALUE` (the subtraction overflows);
   never change a set while walking it (walk `List.copyOf`); check `brain.hasMemoryValue` before `getMemory`; a helper
   named like a base-class method can silently call the base one (`pay` in `ComboStyle`).

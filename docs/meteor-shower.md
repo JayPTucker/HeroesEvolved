@@ -5,6 +5,11 @@ marked on the ground well before it lands, and leave a crater with a lump of **H
 sky-fallen form of the crystal the Formula lab and the Ability Dampener are built from. Now and then a great one comes down
 on a village, and players have two minutes to push it aside, hold it back, break it up or get everyone out.
 
+Nobody can sleep while stars are falling ("the sky's too bright to sleep"): a night slept through would skip the
+shower, for one player alone or for a whole server. Players within 96 blocks of one another share their falling stars,
+so a group sees as many as someone alone; players far apart each get their own. The great meteor is one a night for the
+whole server (on 35% of starfall nights), near a random player.
+
 Code: `meteor/` (`Starfall` schedules the night, `Meteors` runs every meteor, `MeteorGeometry` holds the numbers the
 drawing shares), art in `client/effects/setpiece/MeteorArt`. Tests: `MeteorGameTests`
 (`./gradlew runGameTestServer --init-script tools/structure-gametest.init.gradle -PtestPackages=meteor`).
@@ -67,7 +72,9 @@ of light runs from you to it while you work on it, and the bar says what is happ
 | Quake | Not looking up but down: crouch within 8 blocks of the middle of the ring to brace the ground. Five seconds of bracing, in all, and the ground holds: no crater, and half the blast. |
 | Anyone | Carry the village out of the ring (sneak + use). |
 
-Pushed clear of the village, it still lands, but where it can do no harm, and its meteorite is yours. Craters heal over
+Pushed clear of the village, it still lands, but where it can do no harm, and its meteorite is yours. Where any meteor
+will land stays loaded until it has landed, so one you walk away from still leaves its crater and meteorite to come back
+to. Craters heal over
 the next days, and a village a great meteor hit rebuilds ([Lasting consequences](lasting-consequences.md)). Anything you do
 to a great meteor also works on an ordinary falling star.
 

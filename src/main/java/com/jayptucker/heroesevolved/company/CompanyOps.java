@@ -3,6 +3,7 @@ package com.jayptucker.heroesevolved.company;
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.registry.ModEntities;
 import com.jayptucker.heroesevolved.village.Shouts;
+import com.jayptucker.heroesevolved.village.VillageTickets;
 import com.jayptucker.heroesevolved.village.Villages;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -55,6 +56,8 @@ public final class CompanyOps {
     public static final long AFTER_INVESTIGATION = 12_000, AFTER_OP = 24_000;
     /** A convoy sets out from a village within this of its subject; a raid comes when they are this close to home. */
     public static final int CONVOY_REACH = 160, HOME_REACH = 64;
+    /** Homes this close are the same home, for raids. */
+    public static final double SHARED_HOME = 96;
     private static final int CONSIDER_EVERY = 200;
 
     /** One operation: whom it is about, the agents it brought, and how it goes. */
@@ -63,6 +66,7 @@ public final class CompanyOps {
         final ServerPlayer subject;
         final List<CompanyAgentEntity> agents = new ArrayList<>();
         final long started;
+        final int id = ++sequence;
         int age;
         boolean over;
 
@@ -70,6 +74,21 @@ public final class CompanyOps {
             this.level = level;
             this.subject = subject;
             this.started = level.getGameTime();
+        }
+
+        /** Its tickets' keys start with this. */
+        String key() { return "company:" + id + ":"; }
+
+        /**
+         * Keeps the chunks round {@code at} loaded and ticking for as long as it runs (a village's worth), under
+         * {@code part}; keeping the same part somewhere else moves it. Released when it ends.
+         */
+        void keep(BlockPos at, String part) { VillageTickets.hold(level, at, key() + part); }
+
+        /** Whether one of its people has been unloaded (or left the level) rather than killed: it can't go on. */
+        boolean lostTrack() {
+            for (CompanyAgentEntity a : agents) if (lost(a)) return true;
+            return false;
         }
 
         public abstract Kind kind();
@@ -99,6 +118,7 @@ public final class CompanyOps {
         void finish(long rest) {
             if (over) return;
             over = true;
+            VillageTickets.releaseAll(key());
             CompanyAttention.File f = CompanyAttention.file(subject);
             f.nextOp = Math.max(f.nextOp, level.getServer().overworld().getGameTime() + rest);
             CompanyAttention.get(level.getServer()).setDirty();
@@ -152,6 +172,10 @@ public final class CompanyOps {
     private record Pending(ServerPlayer subject, ServerLevel level, BlockPos site, BlockPos bell, long due) {}
 
     private static final List<Op> OPS = new ArrayList<>();
+    private static int sequence;
+    private static final String PREP = "company:prep:";
+    /** Players whose next operation's place is loading, and until when its ticket stays. */
+    private static final java.util.Map<UUID, Long> PREPARING = new java.util.HashMap<>();
     private static final List<Pending> PENDING = new ArrayList<>();
     /** Agents and prisoners of live operations. */
     static final Set<UUID> LIVE = new HashSet<>();
@@ -193,8 +217,39 @@ public final class CompanyOps {
         return op != null && op.stops(agent, p);
     }
 
-    /** Down: dead, gone, or out cold. */
-    static boolean downed(CompanyAgentEntity a) { return !a.isAlive() || a.isRemoved() || a.outCold(); }
+    /**
+     * Down: dead, discarded, or out cold. An agent whose chunk was unloaded (or who changed level) is not down, only
+     * {@linkplain #lost lost}: treating unloading as death once freed a convoy's prisoner, with its rewards, when its
+     * escort's chunks unloaded.
+     */
+    static boolean downed(CompanyAgentEntity a) {
+        if (a.isRemoved()) return a.getRemovalReason() != null && a.getRemovalReason().shouldDestroy();
+        return !a.isAlive() || a.outCold();
+    }
+
+    /** Removed from the level without being destroyed: unloaded with its chunk, or gone to another level. */
+    public static boolean lost(Entity e) {
+        return e != null && e.isRemoved() && (e.getRemovalReason() == null || !e.getRemovalReason().shouldDestroy());
+    }
+
+    /** Whether {@code at} is loaded and ticking entities: somewhere an operation can begin. */
+    public static boolean ready(ServerLevel level, BlockPos at) { return level.isPositionEntityTicking(at); }
+
+    /**
+     * Whether an operation for {@code p} can begin at {@code at} now. If it isn't loaded and ticking yet, a ticket starts
+     * loading it (for a minute) and this says no; asking again shortly says yes.
+     */
+    static boolean prepare(ServerLevel level, BlockPos at, ServerPlayer p) {
+        String key = PREP + p.getUUID();
+        if (ready(level, at)) {
+            VillageTickets.release(key);
+            PREPARING.remove(p.getUUID());
+            return true;
+        }
+        VillageTickets.hold(level, at, key);
+        PREPARING.put(p.getUUID(), level.getServer().overworld().getGameTime() + 1200);
+        return false;
+    }
 
     /** {@code p} used a power: news to any operation near them. True if an agent saw it (and it counts against them). */
     static boolean powerUsed(ServerPlayer p, int cost) {
@@ -217,7 +272,11 @@ public final class CompanyOps {
         ServerLevel level = p.serverLevel();
         long now = level.getServer().overworld().getGameTime();
         if (now < CompanyAttention.file(p).nextOp || !Villages.hasBell(level, site)) return;
-        PENDING.add(new Pending(p, level, site.immutable(), Villages.bell(level, site), now + INVESTIGATOR_DELAY));
+        BlockPos bell = Villages.bell(level, site);
+        // One investigator to a village at a time (two players noticed there don't bring two).
+        for (Pending q : PENDING) if (q.bell.equals(bell)) return;
+        for (Op op : OPS) if (!op.over && op instanceof Investigation i && i.bell.equals(bell)) return;
+        PENDING.add(new Pending(p, level, site.immutable(), bell, now + INVESTIGATOR_DELAY));
     }
 
     /** An investigation waiting to start for {@code p} (tests). */
@@ -255,12 +314,15 @@ public final class CompanyOps {
                 if (!night(timeOfDay)) return null;
                 BlockPos home = home(p);
                 if (home != null && home.distSqr(p.blockPosition()) > (long) HOME_REACH * HOME_REACH) return null;
-                return Raid.start(level, p, home != null ? home : p.blockPosition(), null);
+                BlockPos at = home != null ? home : p.blockPosition();
+                // Friends who share a home share its raid: one at a time there, whoever it is for.
+                if (Raid.near(level, at, SHARED_HOME) != null) return null;
+                return prepare(level, at, p) ? Raid.start(level, p, at, null) : null;
             }
             case WATCHED -> {
                 if (!day(timeOfDay)) return null;
                 BlockPos bell = convoyVillage(p);
-                return bell == null ? null : Convoy.start(level, p, bell, null);
+                return bell == null || !prepare(level, bell, p) ? null : Convoy.start(level, p, bell, null);
             }
             default -> { return null; }
         }
@@ -283,6 +345,13 @@ public final class CompanyOps {
         for (Op op : List.copyOf(OPS)) {
             if (op.over) { forget(op); continue; }
             if (op.subjectGone()) { op.callOff(); forget(op); continue; }
+            if (op.lostTrack()) {
+                // Its tickets hold its place loaded, so this is rare: an agent pushed out of it, or a restart's edge.
+                HeroesEvolved.LOGGER.info("Company {} for {} lost track of its people; called off", op.kind(), op.subject.getName().getString());
+                op.callOff();
+                forget(op);
+                continue;
+            }
             op.age++;
             op.tick();
             if (op.over) forget(op);
@@ -290,8 +359,17 @@ public final class CompanyOps {
         long now = server.overworld().getGameTime();
         PENDING.removeIf(q -> {
             if (q.subject.isRemoved() || now > q.due + 48_000) return true;
-            if (now < q.due || !day(q.level) || current(q.subject) != null) return false;
+            // He waits while the village has trouble of its own.
+            if (now < q.due || !day(q.level) || current(q.subject) != null
+                    || com.jayptucker.heroesevolved.radio.EmergencyBand.troubled(q.level, q.site)) return false;
+            // The village it happened in may be a long way from anyone now: load it first, then send him.
+            if (!prepare(q.level, q.site, q.subject)) return false;
             Investigation.start(q.level, q.subject, q.site, q.bell, null);
+            return true;
+        });
+        PREPARING.entrySet().removeIf(e -> {
+            if (now < e.getValue()) return false;
+            VillageTickets.release(PREP + e.getKey());
             return true;
         });
         if (now % CONSIDER_EVERY == 0) for (ServerPlayer p : server.getPlayerList().getPlayers()) consider(p);
@@ -314,6 +392,8 @@ public final class CompanyOps {
             n++;
         }
         PENDING.clear();
+        VillageTickets.releaseAll(PREP);
+        PREPARING.clear();
         return n;
     }
 
@@ -336,6 +416,30 @@ public final class CompanyOps {
         if (op != null) op.down(a, event.getSource());
     }
 
+    /**
+     * Sleep would carry a Hunted player past the night their raid comes (in singleplayer, every night): so lying down
+     * is when it comes. Nobody sleeps while a raid is under way nearby either, as with monsters near a bed.
+     */
+    @SubscribeEvent
+    public static void sleep(net.neoforged.neoforge.event.entity.player.CanPlayerSleepEvent event) {
+        if (event.getProblem() != null || !(event.getLevel() instanceof ServerLevel level)) return;
+        ServerPlayer p = event.getEntity();
+        BlockPos bed = event.getPos();
+        Raid nearby = Raid.near(level, bed, SHARED_HOME);
+        if (nearby != null && nearby.stage() != Raid.Stage.BEATEN) {
+            event.setProblem(net.minecraft.world.entity.player.Player.BedSleepingProblem.OTHER_PROBLEM);
+            p.displayClientMessage(Component.literal("You can't sleep with men in suits outside.").withStyle(ChatFormatting.RED), true);
+            return;
+        }
+        if (!CompanyAttention.noticeable(p) || current(p) != null || CompanyAttention.band(p) != CompanyAttention.Band.HUNTED
+                || level.getServer().overworld().getGameTime() < CompanyAttention.file(p).nextOp) return;
+        Raid raid = Raid.start(level, p, bed, null);
+        if (raid == null) return;
+        event.setProblem(net.minecraft.world.entity.player.Player.BedSleepingProblem.OTHER_PROBLEM);
+        p.sendSystemMessage(Component.literal("As you lie down, you hear it: someone outside, moving quietly.")
+                .withStyle(ChatFormatting.DARK_AQUA, ChatFormatting.ITALIC));
+    }
+
     /** A convoy whose agent is hurt by a player is alarmed, all of it at once. */
     @SubscribeEvent
     public static void hurt(LivingDamageEvent.Post event) {
@@ -347,6 +451,7 @@ public final class CompanyOps {
     public static void stop(ServerStoppingEvent event) { clear(); }
 
     public static void clear() {
+        PREPARING.clear();
         OPS.clear();
         PENDING.clear();
         LIVE.clear();

@@ -111,6 +111,8 @@ public final class CompanyAttention extends SavedData {
     public static void set(ServerPlayer p, float value) {
         File f = file(p);
         f.attention = Math.clamp(value, 0, MAX);
+        // Set outright (an admin, a raid's end): the file is current, so quiet days count from now.
+        f.lastSeen = p.server.overworld().getDayTime();
         get(p.server).setDirty();
         changed(p, f);
     }
@@ -125,7 +127,8 @@ public final class CompanyAttention extends SavedData {
         float gain = (float) (by * HeroesEvolvedConfig.COMMON.companyAttentionScale.get());
         f.attention = Math.min(MAX, f.attention + gain);
         long now = p.server.overworld().getGameTime();
-        f.lastSeen = now;
+        // When they were last seen is on the calendar (village/Days): quiet days are days, slept nights included.
+        f.lastSeen = p.server.overworld().getDayTime();
         if (site != null) {
             f.site = site.immutable();
             f.siteAt = now;
@@ -239,12 +242,11 @@ public final class CompanyAttention extends SavedData {
         if (now % TICK_EVERY != 0) return;
         CompanyAttention data = server.overworld().getDataStorage().get(new Factory<>(CompanyAttention::new, CompanyAttention::load), NAME);
         if (data == null) return;
+        long clock = server.overworld().getDayTime();
+        long step = lastClock < 0 ? 0 : clock - lastClock;
+        lastClock = clock;
         boolean dirty = false;
-        for (File f : data.files.values()) {
-            if (f.attention <= 0 || now - f.lastSeen < QUIET) continue;
-            f.attention = Math.max(0, f.attention - QUIET_FALL * TICK_EVERY / QUIET);
-            dirty = true;
-        }
+        for (File f : data.files.values()) if (decay(f, clock, step)) dirty = true;
         if (dirty) data.setDirty();
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             File f = data.files.get(p.getUUID());
@@ -252,10 +254,32 @@ public final class CompanyAttention extends SavedData {
         }
     }
 
+    /** The calendar time the last decay pass ran at (-1: none yet this run). */
+    private static long lastClock = -1;
+
+    /**
+     * Brings {@code f} down for the calendar time {@code step} that has passed up to {@code clock}, counting only what came
+     * after its first quiet day. Time set back (an admin) moves "last seen" back with it. True if it changed.
+     */
+    static boolean decay(File f, long clock, long step) {
+        if (step < 0) {
+            if (f.lastSeen > clock) { f.lastSeen = clock; return true; }
+            return false;
+        }
+        long quietFrom = f.lastSeen + QUIET;
+        if (f.attention <= 0 || clock <= quietFrom || step == 0) return false;
+        long counted = Math.min(step, clock - quietFrom);
+        f.attention = Math.max(0, f.attention - QUIET_FALL * counted / QUIET);
+        return true;
+    }
+
+    @SubscribeEvent
+    public static void stopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) { lastClock = -1; }
+
     /** Ages {@code p}'s file by {@code ticks} of quiet (tests). */
     public static void quiet(ServerPlayer p, long ticks) {
         File f = file(p);
-        long now = p.server.overworld().getGameTime();
+        long now = p.server.overworld().getDayTime();
         long quietFor = Math.max(0, ticks - Math.max(0, QUIET - (now - f.lastSeen)));
         f.lastSeen = Math.min(f.lastSeen, now - QUIET);
         f.attention = Math.max(0, f.attention - QUIET_FALL * quietFor / QUIET);

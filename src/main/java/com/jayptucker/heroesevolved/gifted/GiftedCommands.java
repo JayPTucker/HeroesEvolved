@@ -72,6 +72,21 @@ public final class GiftedCommands {
                     c.getSource().sendSuccess(() -> Component.literal("Ended " + n + " siege(s) and " + storms + " overload(s)."), true);
                     return n + storms;
                 }))
+                .then(Commands.literal("work").executes(c -> {
+                    var v = guardian(c.getSource());
+                    if (v == null) { c.getSource().sendFailure(Component.literal("No guardian (a villager with a good gift) within 32 blocks.")); return 0; }
+                    boolean doing = com.jayptucker.heroesevolved.village.GiftedWork.now(v);
+                    c.getSource().sendSuccess(() -> Component.literal(v.getName().getString() + " (" + com.jayptucker.heroesevolved.village.GiftedWork.job(v).title
+                            + (doing ? ") goes to work." : ") has nothing to do just now.")), true);
+                    return doing ? 1 : 0;
+                }))
+                .then(Commands.literal("favour").executes(c -> {
+                    var v = guardian(c.getSource());
+                    if (v == null) { c.getSource().sendFailure(Component.literal("No guardian (a villager with a good gift) within 32 blocks.")); return 0; }
+                    var f = com.jayptucker.heroesevolved.village.Favours.ask(v, com.jayptucker.heroesevolved.village.GiftedWork.job(v));
+                    c.getSource().sendSuccess(() -> Component.literal(v.getName().getString() + " asks for " + f.describe() + " (pays " + f.reward() + " emeralds)."), true);
+                    return 1;
+                }))
                 .then(Commands.literal("memory").executes(c -> {
                     var lines = com.jayptucker.heroesevolved.village.VillageMemory.describe(c.getSource().getLevel(), net.minecraft.core.BlockPos.containing(c.getSource().getPosition()));
                     for (String line : lines) c.getSource().sendSuccess(() -> Component.literal(line), false);
@@ -211,5 +226,15 @@ public final class GiftedCommands {
         source.sendSuccess(() -> Component.literal("Incident (" + kind.name().toLowerCase() + ") at the village near " + village.getX() + ", "
                 + village.getZ() + " (" + distance + " blocks); it starts once the village has loaded."), true);
         return 1;
+    }
+
+    /** The good gifted villager nearest the command's source, within 32 blocks, or null. */
+    private static net.minecraft.world.entity.npc.Villager guardian(net.minecraft.commands.CommandSourceStack source) {
+        net.minecraft.world.entity.npc.Villager best = null;
+        var at = source.getPosition();
+        for (var v : source.getLevel().getEntitiesOfClass(net.minecraft.world.entity.npc.Villager.class,
+                new net.minecraft.world.phys.AABB(at, at).inflate(32), GiftedMobs::isGood))
+            if (best == null || v.distanceToSqr(at) < best.distanceToSqr(at)) best = v;
+        return best;
     }
 }

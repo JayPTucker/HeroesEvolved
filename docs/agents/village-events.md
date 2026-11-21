@@ -207,3 +207,121 @@ An attention meter per player (`company/CompanyAttention`, overworld `SavedData`
 - **Reward from what is there:** agents' gear (`PowerWeapons.ammo` for taser cartridges and Dampener rounds,
   `PowerWeapons.gun(DAMPENER_GUN)`) is empty without TaCZ, so `CompanyOps.drop` skips empty stacks; no new items, nothing
   for JEI or Jade.
+
+## Reusable patterns from the living radio
+
+Villages chatting on 101.10 between calls (`radio/BandChatter`) and the bunker's tuned radios
+(`story/bunker/BunkerRadios`). Built November 2026. What the player sees: [living-radio.md](../living-radio.md).
+
+- **One news board.** Anything that happened and is worth talking about calls `BandChatter.news(level, at, line,
+  ticks)`; the village nearest `at` says it. State that is already queryable (a village's history, open favours,
+  guardians, renegades, live Company operations, live distress calls, weather, Starfall, the Eclipse) is read when a
+  beat is picked, not posted: posting a favour as news as well counted it twice, and favours drowned out everything else.
+- **Weighted, newest first, never twice running.** Each beat collects every possible line with a weight (a live call
+  8, posted news 6, fresh history 4, the Company 5, renegades 3, small talk 1) and drops the last 16 lines said.
+- **Who hears it is Simple Radio's question.** `BandChatter.listeners` reuses `RadioLink.listeners` (a held radio's
+  owner, or players within 8 blocks of a radio block), the same as distress subtitles. Chatter goes to chat (one line
+  per beat), not the action bar. `beat(level, listeners)` takes the list, so tests pass their own player.
+- **A voice without words.** `BandChatter.Voice` synthesizes a radio murmur: a buzz at a speaking pitch through two
+  vowel resonators, cut into syllables, band-limited to 300 Hz to 3 kHz, over static, with squelch clicks, softly
+  limited (`tanh`) so it never clips (it did at first: a test checks the peak). Pushed through a transmitter opened at the
+  bell for the line's length, like a distress call's SOS.
+- **Bunker radios are counted, not rolled.** `BunkerRadios.owed(players)` is one for every two (rounded up);
+  `BunkerData.counted` (with `pods`) holds who has woken or been told, `BunkerData.radios` how many went in. `stock`
+  runs on each waking and every second from the bunker tick, so radios owed while the chest wasn't loaded (or from worlds
+  older than the radios) arrive later. The chest is found from the room blueprints' `loot:records` marker, never in
+  `BunkerBuilder.finish` (which also fills the past's bunkers). A chest gone or full leaves the radio on the floor.
+
+## Reusable patterns from gifted villagers at work
+
+Guardians using their powers for village work (`village/GiftedWork`) and asking favours (`village/Favours`). Built
+November 2026. What the player sees: [gifted-villagers.md](../gifted-villagers.md).
+
+- **Hook the idle path, not a new tick.** `GiftedMob.idle` calls `GiftedWork.tick` for a good gifted villager with no
+  foe, so a fight, sleep, a Suppressor or a Dampener (all of which return earlier in `GiftedMob.tickInTime`) stops work
+  with no checks of its own. What must happen during a fight (the lookout's shout) goes before the fight:
+  `GiftedWork.alarm`, from `tickInTime`.
+- **One job per power, through one `switch`.** `GiftedWork.job(power)` maps every power to a `Job` (a test checks every
+  gift has one); each job is a `begin` case (find a target) and an `act` case (the power's existing effect, then a real
+  change at the middle of the act). Reuse each power's own `AbilityEffects` kind or set piece; no new art.
+- **Drive villagers through their brain.** Walking is `WALK_TARGET` set every tick; standing is erasing it, stopping
+  navigation and setting `LOOK_TARGET`. A villager walked up to a workstation may take it as their job site (the
+  smith becomes an armorer): that's vanilla, and fine.
+- **Flight is the entity's own position, with AI off.** The courier flies by `setPos` each tick with `setNoAi` and
+  `setNoGravity`; both are saved with the entity, so a tag (`GiftedWork.COURIER_TAG`) marks a flight and the join handler
+  puts any tagged villager back on its feet. Out of sight (no player within 128 blocks) or where the way ahead isn't
+  entity-ticking, the courier is parked invisible above home for a few minutes and flies back in from that direction,
+  rather than walking into unloaded chunks and never coming back.
+- **A preview or test holds a guardian from work** with `GiftedWork.pause(v, ticks)` and starts a job with
+  `GiftedWork.now(v)`; guardians start working the moment they exist.
+- **Favours live on the villager** (`persistentData`), lapse after two days, and are done through
+  `PlayerInteractEvent.EntityInteract` (cancelled with `SUCCESS` so the trade screen doesn't open); without the items
+  the interaction falls through to trading. Thanks go through `VillageMemory.thanked` (standing, no history entry or
+  memorial) and a small vanilla gossip.
+
+## Reusable patterns for chunks that aren't loaded
+
+Every world event and village system was audited for unloaded and non-ticking chunks in November 2026. The rules, and
+where each lives:
+
+- **Removed is not dead.** An entity whose chunk unloads is removed with `UNLOADED_TO_CHUNK` (`shouldDestroy()` false).
+  `CompanyOps.downed` once treated it as killed, which would have freed a convoy's prisoner, with rewards, when its
+  escort's chunks unloaded, and recorded an unloaded prisoner as dead. Ask `CompanyOps.lost(entity)` (removed, not
+  destroyed): an operation that loses track of its people is called off with no outcome. `Overloads.tick` does the same
+  (an unloaded villager pauses the storm; it resumes from their saved data when they load).
+- **Hold the place while something happens there.** `VillageTickets.hold(level, at, key[, distance])` keeps chunks
+  loaded and entity-ticking (a village's worth by default, `SPOT` for one place); holding the same key elsewhere moves it,
+  `releaseAll(prefix)` lets go of an operation's tickets. Overloads, sieges, raids and great meteors held one already;
+  falling stars now hold their landing (moved with a push), investigations their village, convoys their village and a
+  road ticket that moves every 16 blocks with them, raids the home. Release on every ending, including called off.
+- **Load before you spawn.** `CompanyOps.prepare(level, at, player)` says yes only when `at` is entity-ticking;
+  otherwise it holds a prep ticket (a minute) and says no, and the caller tries again (pending investigations every
+  tick, `consider` every ten seconds). Spawning into an unloaded chunk puts an entity at the wrong height and outside
+  everything that ticks.
+- **Never touch blocks where `hasChunkAt` is false:** a read loads the chunk synchronously. Wildfire, supercell,
+  blizzard, craters (`Meteors.floorUnder`), scars, rebuilding and memorials (`VillageMemory.spot`, `ruin`) all check;
+  temporary snow and ice melt when their chunk next loads (`TemporaryBlocks`, recovered by `CryoEvents.chunkLoaded`).
+- **Timers that catch up, not tick.** Scars and rebuilds store when they began and work out how far along they should
+  be when loaded (`Scars.heal`), so a crater left alone for a week is healed on return. Attention decays by game time
+  for players who are offline.
+- **Gifted mobs tick only where entities tick** (`GiftedMobs.tick` checks `isPositionEntityTicking`), so guardians never
+  work at the frozen edge of loaded terrain. Anything that moves an entity itself (the courier's flight) checks the
+  next position is entity-ticking first, or it freezes mid-air at the border.
+- **Flags saved on an entity are restored when it loads.** `NoAI`, `NoGravity` and `Invisible` are saved: the courier
+  carries `GiftedWork.COURIER_TAG` while any are set, and `GiftedWork.joined` puts a tagged villager back on its feet.
+  Company agents and prisoners carry tags so leftovers are turned away or let go on load (`CompanyOps.joined`).
+- **Things that end up away come home.** A guardian more than `GiftedWork.HOME_REACH` from their bell walks home while
+  seen and is moved home when nobody is near and home is ticking (`GiftedWork.goHome`); a freed prisoner's home is set
+  to their own bell (`Renegades.guard(villager, power, bell)`), not wherever they were freed.
+- **What reads only loaded things says so.** The radio's chatter reads saved state (village history, posted news) for
+  any village in range, but guardians and favours only for loaded villages (`getEntitiesOfClass`); bunker radios wait
+  until the Records chest is loaded (`BunkerRadios.stock`, retried every second).
+
+## Reusable patterns for multiplayer and singleplayer
+
+Every world event was checked for collisions, multiplayer scaling and sleep in November 2026.
+
+- **One trouble at a time, asked in one place.** `EmergencyBand.troubled(level, at)` (a live distress call within a
+  village's reach) is whether a village is already in trouble; every event that can start in a village asks it: village
+  incidents (at start, after loading), Eclipse awakenings, convoys, investigators (who wait). A new village event asks it
+  too, and its own call is what makes the village troubled for the others.
+- **Roll by group, not by player.** `events/PlayerGroups.of(level, radius)` links players within `radius` of one another;
+  village incidents and Eclipse awakenings roll once per group (256 blocks), so friends together don't multiply events
+  and players apart each get the singleplayer rate. Timers kept per player share instead: when a falling star comes near
+  one player, everyone within `Starfall.SHARE` has their timer pushed back with it.
+- **Dedupe what players share.** One raid per home (`Raid.near` within `CompanyOps.SHARED_HOME`), with its outcome
+  applied to everyone there who fought it (`Raid.settle`); one investigator per village (pending or under way). Per-player
+  loops that broadcast (particles, sounds) draw each thing once (`GiftedVillagers.tick`'s `shown` set).
+- **Fights scale with who is in them.** Hostile gifted mobs gain `GiftedMob.PARTY_EACH` of their health per extra
+  fighter within 32 blocks, up to `PARTY_MOST`, as a transient modifier that keeps the health share and only rises
+  mid-fight (`GiftedMob.party`). A convoy calls backup per extra fighter (`Convoy.backup`); a raid adds a guard per extra
+  player at home. Co-operative events (calming an overload, pushing a meteor) are meant to be easier with friends and
+  already add helpers up.
+- **Sleep must not skip an event.** A night event either blocks sleep (`Starfall.sleep`, `CompanyOps.sleep` while a raid
+  is on) or happens when the player lies down (`CompanyOps.sleep` starts a due raid), through `CanPlayerSleepEvent`
+  with `OTHER_PROBLEM` and an action-bar reason, as vanilla's bed refusals read. Only act when `getProblem()` is null
+  (vanilla would let them sleep).
+- **Days are calendar days.** Anything a player is told lasts "days" counts on `village/Days.clock` (the overworld's
+  time of day, which sleep moves on, and the clock village memories and the Eclipse use): scars, rebuild starts, quiet
+  days, favours. Pacing rests (an operation's cooldown, fuses) stay in game ticks. `Days.since` never goes negative when
+  an admin sets the time back.

@@ -73,16 +73,19 @@ public final class Investigation extends CompanyOps.Op {
      * {@code from} (null: thirty blocks out, on the far side from them). Null if they already have an operation.
      */
     public static Investigation start(ServerLevel level, ServerPlayer subject, BlockPos site, BlockPos bell, Vec3 from) {
-        if (CompanyOps.current(subject) != null) return null;
+        if (CompanyOps.current(subject) != null || !CompanyOps.prepare(level, site, subject)) return null;
         Investigation op = new Investigation(level, subject, site, bell);
+        // The village stays loaded while he is there, wherever the player has gone.
+        op.keep(bell, "village");
         Vec3 spot = Vec3.atBottomCenterOf(site);
         if (from == null) {
             double angle = Math.atan2(spot.z - subject.getZ(), spot.x - subject.getX()) + (level.random.nextDouble() - 0.5);
             from = CompanyOps.out(level, spot, angle, START_DISTANCE);
+            if (!CompanyOps.ready(level, BlockPos.containing(from))) from = CompanyOps.out(level, spot, angle, 12);
         }
         op.exit = from;
         op.agent = op.spawn(CompanyAgentEntity.Role.GUARD, from, CompanyOps.yaw(from, spot));
-        if (op.agent == null) return null;
+        if (op.agent == null) { op.finish(0); return null; }
         // His gun on his hip, his notebook in his hand.
         op.agent.holster();
         op.agent.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.WRITABLE_BOOK));
@@ -282,6 +285,8 @@ public final class Investigation extends CompanyOps.Op {
             line = "The man in the dark suit closes his notebook and leaves " + village + ". He has what he came for.";
         }
         tell(spot(), 96, line);
+        com.jayptucker.heroesevolved.radio.BandChatter.news(level, site, "A man in a suit came asking about "
+                + subject.getName().getString() + ". He's gone now. Didn't say where.", 48_000);
         CompanyOps.leave(agent);
         finish(CompanyOps.AFTER_INVESTIGATION);
     }

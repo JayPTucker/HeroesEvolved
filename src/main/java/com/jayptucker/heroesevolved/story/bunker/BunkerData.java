@@ -31,6 +31,10 @@ public final class BunkerData extends SavedData {
     public boolean remains;
     /** The one sleeper sealed in the private pod in 4-R, once someone has been; nobody else ever is. */
     public @org.jetbrains.annotations.Nullable UUID lab;
+    /** Everyone told of the bunker or woken in it ({@link BunkerRadios} counts these with {@link #pods}). */
+    public final java.util.Set<UUID> counted = new java.util.HashSet<>();
+    /** Radios put in the Records supply chest so far ({@link BunkerRadios}). */
+    public int radios;
 
     public static BunkerData get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(new Factory<>(BunkerData::new, BunkerData::load), NAME);
@@ -77,6 +81,10 @@ public final class BunkerData extends SavedData {
         CompoundTag assigned = new CompoundTag();
         pods.forEach((id, pod) -> assigned.putInt(id.toString(), pod));
         tag.put("pods", assigned);
+        net.minecraft.nbt.ListTag told = new net.minecraft.nbt.ListTag();
+        for (UUID id : counted) told.add(net.minecraft.nbt.NbtUtils.createUUID(id));
+        tag.put("counted", told);
+        tag.putInt("radios", radios);
         return tag;
     }
 
@@ -93,6 +101,8 @@ public final class BunkerData extends SavedData {
         data.remains = tag.getBoolean("remains");
         CompoundTag assigned = tag.getCompound("pods");
         for (String key : assigned.getAllKeys()) data.pods.put(UUID.fromString(key), assigned.getInt(key));
+        for (net.minecraft.nbt.Tag t : tag.getList("counted", net.minecraft.nbt.Tag.TAG_INT_ARRAY)) data.counted.add(net.minecraft.nbt.NbtUtils.loadUUID(t));
+        data.radios = tag.getInt("radios");
         return data;
     }
 }

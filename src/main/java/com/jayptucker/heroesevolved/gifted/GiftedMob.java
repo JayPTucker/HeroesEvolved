@@ -142,6 +142,9 @@ public final class GiftedMob {
         tickFlurry(now);
         if (grownUntil > 0 && now >= grownUntil) { grownUntil = 0; MobMoves.shrink(mob); }
         passives(now);
+        if (now % 40 == 0) party(now);
+        // A lookout shouts when monsters come near, fighting or not (village/GiftedWork).
+        if (mob instanceof Villager v && !gift.evil() && now % 40 == 0) com.jayptucker.heroesevolved.village.GiftedWork.alarm(v, gift.power(), gift.home());
         if (now % 10 == 0) { tickBar(); sync(); }
         if (com.jayptucker.heroesevolved.dampener.Dampening.dampened(mob)) {
             if (casting != null) cancelCast(true);
@@ -150,7 +153,8 @@ public final class GiftedMob {
         if (com.jayptucker.heroesevolved.cryo.CryoService.isFrozen(mob) || com.jayptucker.heroesevolved.time.TimeStopService.isStopped(mob)) return;
         if (staggered()) { mob.getNavigation().stop(); return; }
         if (gift.rarity().boss() && !unbound && mob.getHealth() <= mob.getMaxHealth() / 2) unbind();
-        LivingEntity target = target();
+        // A courier in the air (or away over the horizon) has the post to deliver, not a fight.
+        LivingEntity target = mob.getTags().contains(com.jayptucker.heroesevolved.village.GiftedWork.COURIER_TAG) ? null : target();
         if (casting != null) { tickCast(); return; }
         if (target == null) { idle(now); return; }
         lastCombat = now;
@@ -170,6 +174,39 @@ public final class GiftedMob {
         }
     }
 
+    /** Its extra health for the players fighting it, now (0: none). */
+    float party;
+    private static final ResourceLocation PARTY = ResourceLocation.fromNamespaceAndPath(com.jayptucker.heroesevolved.HeroesEvolved.MOD_ID, "gifted_party");
+    /** Each player past the first who fights it adds half its health again, up to three times in all. */
+    public static final float PARTY_EACH = 0.5F, PARTY_MOST = 2.0F;
+
+    public float party() { return party; }
+
+    /**
+     * A hostile gift grows with the players fighting it (within 32 blocks, while the fight is on), keeping its share of
+     * health, and never shrinks mid-fight; a while after the fight it is itself again. A guardian doesn't: it fights for
+     * the players, not against them.
+     */
+    private void party(int now) {
+        if (!gift.evil()) return;
+        boolean fighting = now - lastCombat < 200 || now - lastDamaged < 200;
+        float want = party;
+        if (fighting) {
+            int n = 0;
+            for (ServerPlayer p : near(32)) if (!p.isCreative() && !p.isSpectator() && p.isAlive()) n++;
+            want = Math.max(party, Math.min(PARTY_MOST, PARTY_EACH * Math.max(0, n - 1)));
+        } else if (now - lastCombat > 600 && now - lastDamaged > 600) want = 0;
+        if (want == party) return;
+        var health = mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH);
+        if (health == null) return;
+        float share = mob.getHealth() / mob.getMaxHealth();
+        party = want;
+        if (want <= 0) health.removeModifier(PARTY);
+        else health.addOrUpdateTransientModifier(new net.minecraft.world.entity.ai.attributes.AttributeModifier(PARTY, want,
+                net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+        mob.setHealth(Math.max(1, share * mob.getMaxHealth()));
+    }
+
     private void passives(int now) {
         // Regeneration heals as it fights; everyone else heals once the fight has been over a while (or, for a
         // renegade, once it has walked home), so leaving and coming back doesn't win a fight.
@@ -182,6 +219,8 @@ public final class GiftedMob {
 
     /** No foe in sight: a renegade walks home; anyone else does whatever it was doing. */
     private void idle(int now) {
+        // A villager whose gift is good works for their village with it (village/GiftedWork).
+        if (mob instanceof Villager v && !gift.evil()) { com.jayptucker.heroesevolved.village.GiftedWork.tick(v, gift.power(), gift.home()); return; }
         if (gift.home() == null || mob instanceof Villager || now % 40 != 0) return;
         if (mob.blockPosition().distSqr(gift.home()) > 28 * 28) mob.getNavigation().moveTo(gift.home().getX() + .5, gift.home().getY(), gift.home().getZ() + .5, 1.0);
     }

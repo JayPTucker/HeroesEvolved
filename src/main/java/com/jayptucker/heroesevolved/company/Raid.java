@@ -48,8 +48,9 @@ public final class Raid extends CompanyOps.Op {
 
     /** A raid on {@code subject} at {@code home}, coming from {@code from} (null: {@link #DISTANCE} out, wherever there's ground). */
     public static Raid start(ServerLevel level, ServerPlayer subject, BlockPos home, Vec3 from) {
-        if (CompanyOps.current(subject) != null) return null;
+        if (CompanyOps.current(subject) != null || !CompanyOps.prepare(level, home, subject)) return null;
         Raid op = new Raid(level, subject, home, from);
+        op.keep(home, "home");
         CompanyOps.add(op);
         op.tell(Vec3.atCenterOf(home), 64, "Out in the dark, a radio crackles. A calm voice: \"All teams, the house is lit. Suppressor goes in first.\"");
         level.playSound(null, home, SoundEvents.NOTE_BLOCK_HAT.value(), SoundSource.HOSTILE, 0.6F, 0.5F);
@@ -59,6 +60,25 @@ public final class Raid extends CompanyOps.Op {
     private void to(Stage next) {
         stage = next;
         stageAge = 0;
+    }
+
+    /** A raid under way within {@code r} of {@code at}, or null. */
+    public static Raid near(ServerLevel level, BlockPos at, double r) {
+        for (CompanyOps.Op op : CompanyOps.all())
+            if (op instanceof Raid raid && !raid.over() && raid.level == level && raid.home.distSqr(at) <= r * r) return raid;
+        return null;
+    }
+
+    /**
+     * Its subject's attention is left at {@code value}; with {@code everyone}, so is that of anyone else at home who fought
+     * it (a shared base's raid counts for all who were there), never raised.
+     */
+    private void settle(float value, boolean everyone) {
+        CompanyAttention.set(subject, value);
+        if (!everyone) return;
+        for (ServerPlayer p : level.players())
+            if (p != subject && !p.isSpectator() && !p.isCreative() && p.distanceToSqr(Vec3.atCenterOf(home)) <= REACH * REACH
+                    && CompanyAttention.of(p) > value) CompanyAttention.set(p, value);
     }
 
     /** Skips the warning (tests, previews). */
@@ -117,15 +137,15 @@ public final class Raid extends CompanyOps.Op {
         List<CompanyAgentEntity> standing = standing();
         if (standing.isEmpty()) { beaten(); return; }
         if (subject.isDeadOrDying()) {
-            withdraw(CompanyAttention.RAID_WON, "They check you're down, then pull back into the dark.");
+            withdraw(CompanyAttention.RAID_WON, false, "They check you're down, then pull back into the dark.");
             return;
         }
         if (byNight && !CompanyOps.night(level)) {
-            withdraw(CompanyAttention.RAID_DAWN, "Dawn comes up grey. The agents pull back into the trees and are gone.");
+            withdraw(CompanyAttention.RAID_DAWN, true, "Dawn comes up grey. The agents pull back into the trees and are gone.");
             return;
         }
         if (subject.level() != level || subject.distanceToSqr(Vec3.atCenterOf(home)) > GONE * GONE) {
-            withdraw(-1, "Out in the dark, someone says \"Not tonight.\" The agents fade back the way they came.");
+            withdraw(-1, false, "Out in the dark, someone says \"Not tonight.\" The agents fade back the way they came.");
             return;
         }
         if (stageAge % 10 != 0) return;
@@ -145,20 +165,24 @@ public final class Raid extends CompanyOps.Op {
 
     private void beaten() {
         to(Stage.BEATEN);
-        CompanyAttention.set(subject, CompanyAttention.RAID_BEATEN);
+        settle(CompanyAttention.RAID_BEATEN, true);
         List<ItemStack> spoils = new ArrayList<>();
         spoils.add(PowerWeapons.gun(PowerWeapons.DAMPENER_GUN));
         spoils.add(PowerWeapons.ammo(PowerWeapons.DAMPENER_ROUND, 6));
         spoils.add(PowerWeapons.ammo(PowerWeapons.TASER_CARTRIDGE, 4));
         CompanyOps.drop(level, lastSuppressor != null ? lastSuppressor : Vec3.atCenterOf(home), spoils);
         tell(Vec3.atCenterOf(home), 96, "The last of them goes down. Out in the dark, an engine starts and drives away.");
+        com.jayptucker.heroesevolved.radio.BandChatter.news(level, home, "Gunfire out at " + subject.getName().getString()
+                + "'s place last night. They say the men in suits came off worst.", 48_000);
         finish(CompanyOps.AFTER_OP);
     }
 
     /** They pull back the way they came; attention is left at {@code value} (or as it is, if negative). */
-    private void withdraw(float value, String line) {
-        if (value >= 0) CompanyAttention.set(subject, value);
+    private void withdraw(float value, boolean everyone, String line) {
+        if (value >= 0) settle(value, everyone);
         tell(Vec3.atCenterOf(home), 96, line);
+        com.jayptucker.heroesevolved.radio.BandChatter.news(level, home, "Lights and gunfire out at " + subject.getName().getString()
+                + "'s place last night. Nobody's saying what it was.", 48_000);
         to(Stage.WITHDRAWING);
     }
 }

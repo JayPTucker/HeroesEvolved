@@ -113,6 +113,16 @@ public final class EmergencyBand {
 
     public static boolean live(Call call) { return CALLS.contains(call); }
 
+    /**
+     * Whether the village round {@code at} is calling for help already, for anything (a meltdown, a siege, a raid, an
+     * overload, a meteor, the Company): one trouble at a time in a village. Every world event asks this before it starts.
+     */
+    public static boolean troubled(ServerLevel level, BlockPos at) {
+        long r = com.jayptucker.heroesevolved.village.Villages.RADIUS;
+        for (Call c : CALLS) if (c.level == level && c.at.distSqr(at) <= r * r) return true;
+        return false;
+    }
+
     /** A walkie-talkie tuned to the emergency band, or an empty stack if the radio mod can't make one. */
     public static net.minecraft.world.item.ItemStack radio() { return RadioLink.tuned(FREQUENCY); }
 
