@@ -187,6 +187,11 @@ public final class BunkerAndPowersGameTests {
         java.util.Set<Long> podChunks = new java.util.HashSet<>();
         for (int i = 0; i < com.jayptucker.heroesevolved.story.bunker.BunkerLayout.HALL_PODS; i++)
             podChunks.add(net.minecraft.world.level.ChunkPos.asLong(data.origin.offset(layout.podOffset(i))));
+        // The whole hall and a block round it, so its skulls can be laid.
+        var hall = BunkerLayout.Scene.HALL;
+        for (int x = hall.minX() - 2; x <= hall.maxX() + 2; x += 4)
+            for (int z = hall.minZ() - 2; z <= hall.maxZ() + 2; z += 4)
+                podChunks.add(net.minecraft.world.level.ChunkPos.asLong(data.origin.offset(x, 0, z)));
         java.util.List<Long> forcedPods = new java.util.ArrayList<>();
         for (long c : podChunks)
             if (overworld.setChunkForced(net.minecraft.world.level.ChunkPos.getX(c), net.minecraft.world.level.ChunkPos.getZ(c), true)) forcedPods.add(c);
@@ -205,20 +210,47 @@ public final class BunkerAndPowersGameTests {
                     h.assertTrue(!someone, "Pod " + (i + 1) + " is someone's, or Claire's: nobody else in it");
                     continue;
                 }
-                h.assertTrue(someone, "Pod " + (i + 1) + ", nobody's, holds a body");
+                boolean keeps = com.jayptucker.heroesevolved.story.bunker.PodSleepers.keeps(data.origin, i);
+                var condition = overworld.getBlockState(base).getValue(CryoChamberBlock.CONDITION);
                 var plate = overworld.getBlockEntity(data.origin.offset(layout.podSign(i)));
+                h.assertTrue(someone == keeps, "Pod " + (i + 1) + ": a body only in the pods that kept one");
+                h.assertTrue(keeps ? condition == CryoChamberBlock.Condition.FROSTED : condition.wrecked(),
+                        "Pod " + (i + 1) + " is frosted over its body, or wrecked and empty: " + condition);
                 h.assertTrue(plate instanceof net.minecraft.world.level.block.entity.SignBlockEntity sign
-                                && sign.getFrontText().getMessage(2, false).getString().equals("DECEASED")
-                                && sign.getFrontText().getMessage(3, false).getString().equals("CAUSE UNKNOWN"),
-                        "...its nameplate: deceased, cause unknown");
+                                && sign.getFrontText().getMessage(2, false).getString().equals(keeps ? "DECEASED" : "POD BREACHED")
+                                && sign.getFrontText().getMessage(3, false).getString().equals(keeps ? "CAUSE UNKNOWN" : "NO REMAINS"),
+                        "...and its nameplate says which");
             }
             com.jayptucker.heroesevolved.story.bunker.PodSleepers.present(overworld, data);
             int bodies = overworld.getEntitiesOfClass(net.minecraft.world.entity.npc.Villager.class,
                     new net.minecraft.world.phys.AABB(data.origin).inflate(30, 6, 80),
                     v -> v.getTags().contains(com.jayptucker.heroesevolved.story.bunker.PodSleepers.TAG)).size();
-            long free = java.util.stream.IntStream.range(0, com.jayptucker.heroesevolved.story.bunker.BunkerLayout.HALL_PODS)
-                    .filter(i -> com.jayptucker.heroesevolved.story.bunker.PodSleepers.hallPod(i) && !data.pods.containsValue(i)).count();
-            h.assertTrue(bodies == free, "One body to a pod, never two: " + bodies + " for " + free);
+            long kept = java.util.stream.IntStream.range(0, com.jayptucker.heroesevolved.story.bunker.BunkerLayout.HALL_PODS)
+                    .filter(i -> com.jayptucker.heroesevolved.story.bunker.PodSleepers.keeps(data.origin, i) && !data.pods.containsValue(i)).count();
+            h.assertTrue(bodies == kept, "One body to a kept pod, never two: " + bodies + " for " + kept);
+            long allKept = java.util.stream.IntStream.range(0, com.jayptucker.heroesevolved.story.bunker.BunkerLayout.HALL_PODS)
+                    .filter(i -> com.jayptucker.heroesevolved.story.bunker.PodSleepers.keeps(data.origin, i)).count();
+            h.assertTrue(allKept == 7, "About half the hall's thirteen pods keep their sleeper: " + allKept);
+            // No village event can see them, even with a bell right over the bunker.
+            overworld.getEntitiesOfClass(net.minecraft.world.entity.npc.Villager.class, new net.minecraft.world.phys.AABB(data.origin).inflate(30, 6, 80),
+                    com.jayptucker.heroesevolved.village.Villagers::inStasis).forEach(body -> {
+                h.assertTrue(!com.jayptucker.heroesevolved.village.Villages.belongs(overworld, body.blockPosition(), body),
+                        "A body in a pod belongs to no village");
+                h.assertTrue(!body.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.GLOWING, 40)),
+                        "...and no effect takes on it");
+            });
+            h.assertTrue(com.jayptucker.heroesevolved.village.Villages.members(overworld, data.origin.offset(0, 1, 50)).stream()
+                    .noneMatch(com.jayptucker.heroesevolved.village.Villagers::inStasis), "A village over the hall doesn't count them");
+            // The rooms have their skulls, and none of them lies in front of a pod.
+            BunkerBones.strew(overworld, data);
+            int skulls = 0;
+            for (BlockPos pos : BlockPos.betweenClosed(data.origin.offset(-10, 1, 33), data.origin.offset(10, 4, 69)))
+                if (overworld.getBlockState(pos).is(net.minecraft.world.level.block.Blocks.SKELETON_SKULL)) {
+                    skulls++;
+                    for (Direction side : Direction.Plane.HORIZONTAL)
+                        h.assertTrue(!(overworld.getBlockState(pos.relative(side)).getBlock() instanceof CryoChamberBlock), "A skull blocks a pod's front at " + pos);
+                }
+            h.assertTrue(skulls > 0, "Skulls lie about the stasis hall");
             for (long c : forcedPods) overworld.setChunkForced(net.minecraft.world.level.ChunkPos.getX(c), net.minecraft.world.level.ChunkPos.getZ(c), false);
             forcedPods.clear();
             h.assertTrue(explosions(overworld, data.origin).size() == 1 && explosions(overworld, data.origin).getFirst().survives(),

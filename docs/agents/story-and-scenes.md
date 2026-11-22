@@ -253,11 +253,23 @@ and Ted's wave knocking everyone flat. What the player sees is in [docs/the-last
   seal and one more 7 seconds later if a player is still out of the hall.
 - **Bodies in pods are villagers with no AI, kept in step with the claims.** `PodSleepers` is the one place for them, in
   the past and the present: `NoAI` (so they don't fall, wander or get pushed), invulnerable, silent, scaled, tagged, and
-  never traded with (`PlayerInteractEvent.EntityInteract` cancelled). The present's bodies are put in every hall pod with
-  no claim in `BunkerData.pods` and taken out of any pod that gets one (`PodSleepers.present`, every second, and
-  `clear` when a waking begins). It acts only where `ServerLevel.areEntitiesLoaded` holds for the pod's chunk: a chunk's
-  blocks load before its entities, and a body checked for too early would be put in twice. The same nameplate name per
-  pod (`PodSleepers.name`) on the Last Day and in the present.
+  never traded with (`PlayerInteractEvent.EntityInteract` cancelled). In the present, about half the hall pods with no
+  claim in `BunkerData.pods` keep a body (`PodSleepers.keeps`, picked per wall from the bunker's origin, so it is stable in
+  a world and differs between worlds); the rest are wrecked. Any pod that gets a claim is emptied and made whole
+  (`PodSleepers.present`, every second, and `clear` when a waking begins). It acts only where
+  `ServerLevel.areEntitiesLoaded` holds for the pod's chunk: a chunk's blocks load before its entities, and a body checked
+  for too early would be put in twice. The same nameplate name per pod (`PodSleepers.name`) on the Last Day and in the present.
+- **A pod's condition is one block state.** `CryoChamberBlock.CONDITION` is `sound`, `frosted`, `shattered` or `sprung`.
+  `tools/GenerateCryoPodAssets.java` writes its textures, models and the block state file; a variant key leaves out the
+  properties that don't change the drawing. A wrecked pod has no door in its shape and refuses use.
+- **Frost on a body needs no sync.** Tags don't reach the client, but `isNoAi` does and so does the block it stands in:
+  `render/PodFrostLayer` draws on a no-AI villager in a frosted pod, so the Last Day's sleepers stay clean. Hide only the
+  model's `hat` part for an overlay. Its transparent brim otherwise turns into a plate round the head, and
+  `VillagerModel.hatVisible(false)` hides the whole head.
+- **Skulls are laid per room, once.** `BunkerBones.strew` runs when a room's whole box is loaded and records it in
+  `BunkerData.strewn`, so old worlds get them too and a skull someone moved never comes back. A skull goes only against a
+  wall, never on or beside a pod, door or block entity, and never in a one-wide gap or bend: it is wider than the space a
+  player has left to pass it, and a low ceiling stops them stepping over it.
 - **Something noticed is noticed on approach.** Claire's note waited for a right-click on Pod 14 that nobody thought to
   give. `CryoChamberService.noticeClaire` runs from the bunker's tick every five ticks for players within three blocks;
   the right-click is an ordinary pod again.

@@ -694,6 +694,7 @@
   "cryochamber.heroesevolved.entered": "The pod seals. Your respawn point is set here. Sneak to step out.",
   "cryochamber.heroesevolved.occupied": "Someone is already sleeping in this pod.",
   "cryochamber.heroesevolved.deceased": "The seal holds. Whoever is inside has been dead a long time.",
+  "cryochamber.heroesevolved.wrecked": "The pod is wrecked. Whoever slept here is long gone.",
   "cryochamber.heroesevolved.locked": "The revival protocol is still running. The door won't open yet.",
   "cryochamber.heroesevolved.charged": "You flood the pod with cold. It will heal faster for five minutes.",
   "intro.heroesevolved.bunker_1.charge": "STASIS FAILURE",

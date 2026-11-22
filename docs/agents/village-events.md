@@ -4,6 +4,11 @@ Distress calls over Simple Radio, the villager meltdown and keeping far villages
 
 Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 
+**People in stasis pods are never part of a village event.** A village can stand right over the bunker, and a box search
+finds the bodies 32 blocks down. `Villages.belongs` already refuses them, so `Villages.members` is safe. Any new search
+with `getEntitiesOfClass(Villager.class, ...)` that counts, picks, moves, names or wakes someone must also ask
+`Villagers.inStasis`.
+
 ## Reusable patterns from village distress calls (radio and meltdowns)
 
 Villages call for help over Simple Radio, and the first event that calls is a villager's meltdown (`radio/`,

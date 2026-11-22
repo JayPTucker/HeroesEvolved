@@ -26,12 +26,13 @@ import java.util.List;
 /**
  * Odessa's people in the stasis pods. On the Last Day, those who made it down under Primatech are sealed in the pods
  * nobody else was given ({@code story/prologue/LastDayShelter}). A hundred and three years later, in the bunker under
- * spawn, those pods still hold them: every hall pod no sleeper has woken in has a body in it, head bowed, under a red
- * nameplate, deceased, cause unknown. Only Pod 14 (Claire's) is ever left empty.
+ * spawn, about half of the hall's pods no sleeper has woken in still hold them ({@link #keeps}): frosted over, head bowed,
+ * under a red nameplate, deceased, cause unknown. The other half failed, and stand wrecked and empty.
  * <p>
  * A sleeper is a villager with no will (no AI, so it never moves, falls or is pushed), never hurt, silent, a little
  * smaller than a villager is (a pod is under two blocks inside), and tagged so it is found again and never traded with.
- * The present's bodies are kept in step with who has a pod ({@link #present}): a new sleeper's pod is emptied for them.
+ * No village event counts, picks or moves one ({@link com.jayptucker.heroesevolved.village.Villagers#inStasis}). The
+ * present's bodies are kept in step with who has a pod ({@link #present}): a new sleeper's pod is emptied and made whole.
  */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class PodSleepers {
@@ -55,6 +56,29 @@ public final class PodSleepers {
 
     /** The hall pods anyone could be sealed in: every one but Claire's. */
     public static boolean hallPod(int index) { return index >= 0 && index < BunkerLayout.HALL_PODS && index != NightThreeBunker.CLAIRE; }
+
+    /**
+     * Whether pod {@code index} of the bunker at {@code origin} still holds someone, if nobody has claimed it: about half
+     * of each wall's pods, a different half in each world, the same one every time in this one.
+     */
+    public static boolean keeps(BlockPos origin, int index) {
+        if (!hallPod(index)) return false;
+        int first = index < BunkerLayout.HALL_PODS / 2 ? 0 : BunkerLayout.HALL_PODS / 2;
+        List<Integer> wall = new java.util.ArrayList<>();
+        for (int i = first; i < first + BunkerLayout.HALL_PODS / 2; i++) if (hallPod(i)) wall.add(i);
+        wall.sort(java.util.Comparator.comparingInt(i -> mix(origin, i)));
+        return wall.indexOf(index) < (wall.size() + 1) / 2;
+    }
+
+    /** How pod {@code index} failed, if it did. */
+    private static CryoChamberBlock.Condition wreck(BlockPos origin, int index) {
+        return (mix(origin, index + 100) & 1) == 0 ? CryoChamberBlock.Condition.SHATTERED : CryoChamberBlock.Condition.SPRUNG;
+    }
+
+    private static int mix(BlockPos origin, int index) {
+        long h = (origin.asLong() ^ index * 0x9E3779B97F4A7C15L) * 0xBF58476D1CE4E5B9L;
+        return (int) (h ^ h >>> 31);
+    }
 
     /** The space inside pod {@code base}. */
     private static AABB inside(BlockPos base) { return new AABB(base).expandTowards(0, 1, 0).deflate(0.05); }
@@ -106,9 +130,10 @@ public final class PodSleepers {
     }
 
     /**
-     * The bunker under spawn, a hundred and three years on: a body in every hall pod nobody has a claim on, under a red
-     * nameplate, and none in a pod that is someone's. Only where the pod's chunk and its entities are loaded, so a body is
-     * never put in twice. Run every second while the bunker is built.
+     * The bunker under spawn, a hundred and three years on. Of the hall pods nobody has a claim on, those that {@link #keeps
+     * keep} their sleeper hold a frosted body under a red nameplate, and the rest stand wrecked and empty; a pod that is
+     * someone's is whole and holds nobody else. Only where the pod's chunk and its entities are loaded, so a body is never
+     * put in twice. Run every second while the bunker is built, which also brings older worlds' full halls round to this.
      */
     public static void present(ServerLevel level, BunkerData data) {
         if (!data.built) return;
@@ -120,8 +145,17 @@ public final class PodSleepers {
             if (!(level.getBlockState(base).getBlock() instanceof CryoChamberBlock)) continue;
             List<Villager> there = in(level, base);
             if (data.pods.containsValue(i)) {
-                // Someone's pod: theirs, and nobody else in it.
+                // Someone's pod: theirs, whole, and nobody else in it.
                 there.forEach(Entity::discard);
+                CryoChamberBlock.setCondition(level, base, CryoChamberBlock.Condition.SOUND);
+                continue;
+            }
+            if (!keeps(data.origin, i)) {
+                // This one failed, long ago: nobody in it, its door no longer shutting on anything.
+                there.forEach(Entity::discard);
+                CryoChamberBlock.setOpen(level, base, true);
+                CryoChamberBlock.setCondition(level, base, wreck(data.origin, i));
+                plate(level, data, layout, i, "POD BREACHED", "NO REMAINS");
                 continue;
             }
             if (there.isEmpty()) {
@@ -129,31 +163,56 @@ public final class PodSleepers {
                 if (body == null) continue;
                 seal(level, data.origin, layout, i, body, true);
                 if (!level.addFreshEntity(body)) continue;
-            } else if (there.size() > 1) {
-                there.subList(1, there.size()).forEach(Entity::discard);
+            } else {
+                if (there.size() > 1) there.subList(1, there.size()).forEach(Entity::discard);
+                still(there.getFirst());
             }
+            CryoChamberBlock.setOpen(level, base, false);
+            CryoChamberBlock.setCondition(level, base, CryoChamberBlock.Condition.FROSTED);
             // Its plate says so, whenever it doesn't yet: a plate whose chunk wasn't loaded when the body was put in (or
             // one a waking relabelled before the pod was given back) is caught up here.
-            plate(level, data, layout, i);
+            plate(level, data, layout, i, "DECEASED", "CAUSE UNKNOWN");
         }
     }
 
-    /** Pod {@code index}'s nameplate in the present: deceased, cause unknown, if it doesn't already say so. */
-    private static void plate(ServerLevel level, BunkerData data, BunkerLayout layout, int index) {
+    /** Whatever reached a body saved before they were out of every event's reach: no flames, and no gift to wake. */
+    private static void still(Villager body) {
+        body.clearFire();
+        if (com.jayptucker.heroesevolved.mimicry.GiftedVillagers.gift(body) != null)
+            com.jayptucker.heroesevolved.mimicry.GiftedVillagers.give(body, null);
+    }
+
+    /** Pod {@code index}'s nameplate in the present, if it doesn't already say {@code state}. */
+    private static void plate(ServerLevel level, BunkerData data, BunkerLayout layout, int index, String state, String detail) {
         BlockPos cell = layout.podSign(index);
         if (cell == null) return;
         BlockPos pos = data.origin.offset(cell);
         if (!level.isLoaded(pos) || !(level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.SignBlockEntity sign)) return;
         var text = sign.getFrontText();
-        if (text.getMessage(2, false).getString().equals("DECEASED") && text.getMessage(1, false).getString().equals(name(index))) return;
+        if (text.getMessage(2, false).getString().equals(state) && text.getMessage(1, false).getString().equals(name(index))) return;
         BunkerBuilder.signPod(level, data.origin, layout, index, DyeColor.RED,
-                String.format("SUBJECT %02d", index + 1), name(index), "DECEASED", "CAUSE UNKNOWN");
+                String.format("SUBJECT %02d", index + 1), name(index), state, detail);
     }
 
-    /** Empties pod {@code index} of the bunker under spawn for the sleeper who has just been given it. */
+    /** Empties pod {@code index} of the bunker under spawn for the sleeper who has just been given it, and makes it whole. */
     public static void clear(ServerLevel level, BunkerData data, int index) {
         BlockPos base = data.origin.offset(data.layout().podOffset(index));
-        if (level.isLoaded(base)) in(level, base).forEach(Entity::discard);
+        if (!level.isLoaded(base)) return;
+        in(level, base).forEach(Entity::discard);
+        CryoChamberBlock.setCondition(level, base, CryoChamberBlock.Condition.SOUND);
+    }
+
+    /** Nothing lingers on a body in stasis: no potion, poison, glow or radiation an event would put on it. */
+    @SubscribeEvent
+    public static void noEffects(net.neoforged.neoforge.event.entity.living.MobEffectEvent.Applicable event) {
+        if (com.jayptucker.heroesevolved.village.Villagers.inStasis(event.getEntity()))
+            event.setResult(net.neoforged.neoforge.event.entity.living.MobEffectEvent.Applicable.Result.DO_NOT_APPLY);
+    }
+
+    /** Nor does lightning make a witch of one. */
+    @SubscribeEvent
+    public static void noChange(net.neoforged.neoforge.event.entity.living.LivingConversionEvent.Pre event) {
+        if (com.jayptucker.heroesevolved.village.Villagers.inStasis(event.getEntity())) event.setCanceled(true);
     }
 
     /** Nobody trades with, or leads off, the dead (or the sleeping). */

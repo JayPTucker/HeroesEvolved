@@ -174,7 +174,8 @@ public final class CompanyAttention extends SavedData {
         if (hidden(p)) return 0;
         int n = 0;
         for (Villager v : p.serverLevel().getEntitiesOfClass(Villager.class, p.getBoundingBox().inflate(SEEN_REACH),
-                v -> v.isAlive() && !v.isSleeping() && v.distanceToSqr(p) <= SEEN_REACH * SEEN_REACH))
+                v -> v.isAlive() && !v.isSleeping() && !com.jayptucker.heroesevolved.village.Villagers.inStasis(v)
+                        && v.distanceToSqr(p) <= SEEN_REACH * SEEN_REACH))
             if (v.hasLineOfSight(p)) n++;
         return n;
     }

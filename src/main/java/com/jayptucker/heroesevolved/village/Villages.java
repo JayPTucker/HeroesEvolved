@@ -39,6 +39,7 @@ public final class Villages {
 
     /** Near the bell, or living, working or meeting in the village. */
     public static boolean belongs(ServerLevel level, BlockPos bell, Villager v) {
+        if (Villagers.inStasis(v)) return false;
         if (v.blockPosition().distSqr(bell) <= (long) RADIUS * RADIUS) return true;
         var brain = v.getBrain();
         for (var place : PLACES) {

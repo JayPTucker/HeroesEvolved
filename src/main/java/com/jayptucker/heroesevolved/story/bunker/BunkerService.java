@@ -171,8 +171,10 @@ public final class BunkerService {
             BunkerBuilder.releaseClaire(server.overworld(), bunker);
             // Radios owed to sleepers counted while the chest wasn't loaded (or before there were radios at all).
             BunkerRadios.stock(server.overworld(), bunker);
-            // The pods nobody woke in still hold Odessa's people, dead a long time.
+            // About half the pods nobody woke in still hold Odessa's people, frosted over; the rest failed.
             PodSleepers.present(server.overworld(), bunker);
+            // And what is left of the others lies about the rooms, each room strewn once.
+            BunkerBones.strew(server.overworld(), bunker);
             // And the ones the vault was shut on lie outside it and on the stair: laid once, in new bunkers and old.
             if (!bunker.remains && BunkerStair.loaded(server.overworld(), bunker.origin)) {
                 BunkerStair.remains(server.overworld(), bunker.origin);

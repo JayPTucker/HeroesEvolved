@@ -107,6 +107,14 @@ public final class Villagers {
         if (link != null) link.leaving(villager);
     }
 
+    /**
+     * Sealed in a stasis pod. The one question every village event asks before it counts, picks, moves, wakes or names
+     * anyone: a body in a pod is not part of any village, even with a village right over the bunker.
+     */
+    public static boolean inStasis(net.minecraft.world.entity.Entity entity) {
+        return entity.getTags().contains(com.jayptucker.heroesevolved.story.bunker.PodSleepers.TAG);
+    }
+
     /** A body a scene is using: replacing it would take it out of the scene. */
     public static boolean isActor(Villager villager) {
         if (villager.isNoAi()) return true;     // standing where a scene put them (the facility's captives)
