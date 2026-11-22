@@ -167,9 +167,9 @@ public final class Markets {
             BlockPos at = null;
             Direction facing = null;
             search:
-            for (int r = 4; r <= 14; r++)
-                for (int i = 0; i < 16; i++) {
-                    double a = (i + r * 0.6) * Math.PI * 2 / 16;
+            for (int r = 4; r <= 20; r++)
+                for (int i = 0; i < 24; i++) {
+                    double a = (i + r * 0.6) * Math.PI * 2 / 24;
                     int x = v.bell.getX() + (int) Math.round(Math.cos(a) * r), z = v.bell.getZ() + (int) Math.round(Math.sin(a) * r);
                     Direction f = Direction.getNearest((float) (v.bell.getX() - x), 0F, (float) (v.bell.getZ() - z));
                     BlockPos c = fit(level, v.bell, x, z, f);
@@ -239,7 +239,7 @@ public final class Markets {
                     if (!s.isAir() && !(s.canBeReplaced() && s.getFluidState().isEmpty()) || PlayerBuilt.is(level, q)) return null;
                 }
             }
-        return level.canSeeSky(o.above(3)) ? o : null;
+        return o;
     }
 
     /** Puts up a stall at {@code o}: posts at its corners, a barrel counter with a lantern, a striped canopy. */

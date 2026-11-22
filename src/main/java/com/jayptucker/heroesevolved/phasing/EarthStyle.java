@@ -66,7 +66,7 @@ public final class EarthStyle extends ComboStyle {
         boolean gauntlet = rear || loaded;
         BlockState rock = rock(p);
         if (target != null) {
-            float damage = (2.4F + .35F * level) * (gauntlet ? 1.4F : 1) * (loaded ? 1.5F : 1) * DensityService.rooted(p);
+            float damage = (.8F + .2F * level) * (gauntlet ? 1.4F : 1) * (loaded ? 1.5F : 1) * DensityService.rooted(p);
             StyleHits.hurt(p, target, damage);
             StyleHits.shove(target, p.getLookAngle().multiply(1, 0, 1).normalize().scale(gauntlet ? .55 : .2).add(0, .06, 0));
             Stones.dust(world(p), rock, target.getBoundingBox().getCenter(), 6, .25);
@@ -87,7 +87,7 @@ public final class EarthStyle extends ComboStyle {
         for (LivingEntity target : StyleHits.foes(p, p.position().add(fwd.scale(SLAB_REACH * .5)), SLAB_REACH * .6)) {
             Vec3 to = target.position().subtract(p.position());
             if (to.multiply(1, 0, 1).normalize().dot(fwd) < .5) continue;
-            StyleHits.hurt(p, target, (4.5F + level) * DensityService.rooted(p));
+            StyleHits.hurt(p, target, (.8F + .2F * level) * DensityService.rooted(p));
             StyleHits.shove(target, fwd.scale(1.1).add(0, .35, 0));
             // The slab is drawn stopping against the nearest body it struck.
             stop = Math.min(stop, Math.max(.4, to.horizontalDistance() - 1.6 - target.getBbWidth() * .5 - .2));
@@ -106,7 +106,7 @@ public final class EarthStyle extends ComboStyle {
         for (LivingEntity target : StyleHits.foes(p, feet, STOMP_RADIUS + 1)) {
             if (Math.abs(target.getY() - feet.y) > 1.5
                     || target.position().subtract(feet).horizontalDistance() > STOMP_RADIUS + target.getBbWidth() * .5) continue;
-            StyleHits.hurt(p, target, (2 + .4F * level) * DensityService.rooted(p));
+            StyleHits.hurt(p, target, (.6F + .2F * level) * DensityService.rooted(p));
             target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 3));
             StyleHits.shove(target, new Vec3(0, .35, 0));
         }
@@ -159,7 +159,7 @@ public final class EarthStyle extends ComboStyle {
             BlockPos ground = EarthGeometry.ground(attacker.level(), attacker.position().add(0, .5, 0));
             if (ground != null && EarthGeometry.earth(attacker.level().getBlockState(ground), false))
                 Earthworks.pillarAt(p, ground.above(), Direction.UP, 2, attacker.level().getBlockState(ground),
-                        (1.5F + DensityService.tier(p) * .5F) * DensityService.rooted(p));
+                        (.5F + DensityService.tier(p) * .2F) * DensityService.rooted(p));
         }
         pose(p, ArmPose.EARTH_RAISE, 8);
         say(p, "density.heroesevolved.neutral_jing");

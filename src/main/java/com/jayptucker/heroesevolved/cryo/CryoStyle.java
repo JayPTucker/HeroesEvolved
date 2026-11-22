@@ -72,7 +72,7 @@ public final class CryoStyle extends ComboStyle {
         LivingEntity target = StyleHits.aimed(p, JAB_REACH, .5);
         Vec3 end = target != null ? target.getBoundingBox().getCenter() : StyleHits.reach(p, p.getEyePosition(), aim, 2.5);
         if (target != null) {
-            float damage = (2 + .4F * level) * (loaded ? 1.6F : 1);
+            float damage = (.8F + .2F * level) * (loaded ? 1.2F : 1);
             if (loaded) CryoService.shatterHit(p, target, damage * 2);
             else cold(p, target, damage, 0);
             StyleHits.shove(target, aim.scale(.22).add(0, .05, 0));
@@ -91,7 +91,7 @@ public final class CryoStyle extends ComboStyle {
         Vec3 forward = StyleHits.level(p);
         Vec3 base = target != null ? target.position() : p.position().add(forward.scale(2.5));
         if (target != null) {
-            cold(p, target, 4 + level, 25);
+            cold(p, target, 1 + .5F * level, 25);
             StyleHits.shove(target, new Vec3(0, 1.0, 0).add(forward.scale(.25)));
         }
         AbilityEffects.send(world(p), Kind.CRYO_ICE_GROWTH, base, base.add(0, 2.6, 0), 1.6);
@@ -107,7 +107,7 @@ public final class CryoStyle extends ComboStyle {
         for (LivingEntity target : StyleHits.foes(p, feet, FROST_RADIUS + 1)) {
             if (Math.abs(target.getY() - feet.y) > 1.5
                     || target.position().subtract(feet).horizontalDistance() > FROST_RADIUS + target.getBbWidth() * .5) continue;
-            cold(p, target, 2 + .4F * level, 30);
+            cold(p, target, .6F + .2F * level, 30);
             target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60, 2));
             StyleHits.away(target, feet, StyleHits.level(p), .35, .15);
         }

@@ -213,13 +213,13 @@ public final class StyleRuntime {
         }
         if (melee) {
             if (active(victim, Ward.EMBER)) {
-                attacker.igniteForSeconds(4);
-                attacker.hurt(victim.damageSources().onFire(), 3);
+                attacker.igniteForSeconds(1);
+                attacker.hurt(victim.damageSources().onFire(), .125F);
             }
             WardState faraday = state(victim, Ward.FARADAY);
             if (faraday != null && faraday.source != null) {
                 attacker.invulnerableTime = 0;
-                attacker.hurt(victim.damageSources().indirectMagic(faraday.source, faraday.source), 4);
+                attacker.hurt(victim.damageSources().indirectMagic(faraday.source, faraday.source), .5F);
                 attacker.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 30, 2));
             }
         }

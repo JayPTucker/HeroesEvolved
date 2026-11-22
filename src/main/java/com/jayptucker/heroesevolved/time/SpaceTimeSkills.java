@@ -323,7 +323,7 @@ public final class SpaceTimeSkills {
         boolean linger = has(p, THOUSAND_CUTS);
         int span = targets.size() * TimeGeometry.EDGE_STEP + 4 + (linger ? TimeGeometry.EDGE_LINGER : 0);
         for (LivingEntity t : targets) hold(p, t, span);
-        EDGES.put(p.getUUID(), new Edge(p, targets, 6 + tier, linger ? 2 : 1, linger, now(p) + 1));
+        EDGES.put(p.getUUID(), new Edge(p, targets, 2 + tier, linger ? 2 : 1, linger, now(p) + 1));
         ServerLevel level = p.serverLevel();
         TimeGhostPayload.echo(p, p.position(), p.yBodyRot, 20, 0);
         ScreenTintPayload.send(p, 0x40506A90, 10, ScreenTintPayload.Style.FLASH);

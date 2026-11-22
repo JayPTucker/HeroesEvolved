@@ -83,7 +83,7 @@ public final class TelekineticArsenalService {
         if (arsenal == null || arsenal.shards.size() >= 12) return false;
         Vec3 at = player.getEyePosition().add(side(player).scale(.65)).add(0, -.25, 0);
         Shard shard = new Shard(player.serverLevel(), at, 0, .42F);
-        shard.damage = 8;
+        shard.damage = 10;
         shard.pierces = TelekinesisSkillService.has(player, "0_2") ? 2 : 1;
         shard.speed = 2.3;
         arsenal.shards.add(shard);

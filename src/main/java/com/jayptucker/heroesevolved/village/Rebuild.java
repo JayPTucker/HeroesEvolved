@@ -54,12 +54,15 @@ public final class Rebuild extends SavedData {
         int base = Integer.MIN_VALUE;
         /** For a home being rebuilt bigger: how many of the first entries take the old house down (top first). */
         int clear;
+        /** Putting back what was broken in one of the village's buildings (village/Repairs). */
+        boolean mend;
         /** What a growth site builds, so the village can rebuild it bigger one day (village/Projects.Home), and the old
          * home it replaces, if any. */
         Projects.Home home, replaces;
         Site(BlockPos bell, BlockPos center) { this.bell = bell; this.center = center; }
         public boolean growth() { return growth; }
         public int clearing() { return clear; }
+        public boolean mending() { return mend; }
         public Projects.Home home() { return home; }
         public Projects.Home replaces() { return replaces; }
         public BlockPos bell() { return bell; }
@@ -138,6 +141,24 @@ public final class Rebuild extends SavedData {
         return s;
     }
 
+    /**
+     * Putting back what's missing from one of the village's buildings (village/Repairs): {@code positions} with their
+     * {@code states}, lowest first, into empty space only. It starts now if it's working hours, else in the morning.
+     */
+    public static Site mend(ServerLevel level, BlockPos bell, BlockPos center, List<BlockPos> positions, List<BlockState> states) {
+        Site s = new Site(bell.immutable(), center.immutable());
+        s.mend = true;
+        s.positions.addAll(positions);
+        s.states.addAll(states);
+        Rebuild data = get(level);
+        data.sites.add(s);
+        long time = level.getDayTime() % 24_000;
+        if (time >= WORK_FROM && time < WORK_TO) s.startAt = Days.clock(level);
+        else begin(level, s);
+        data.setDirty();
+        return s;
+    }
+
     /** The village survived: it starts rebuilding at the next morning. */
     public static void begin(ServerLevel level, Site s) {
         // The next morning on the calendar: a night slept through brings it straight on.
@@ -167,7 +188,8 @@ public final class Rebuild extends SavedData {
     static void work(ServerLevel level, Rebuild data, Site s) {
         long now = level.getGameTime(), time = level.getDayTime() % 24_000;
         if (!s.started() || Days.clock(level) < s.startAt || time < WORK_FROM || time > WORK_TO || !level.hasChunkAt(s.center)) return;
-        if (now % 100 == 0) builders(level, s);
+        // Nobody works through trouble, and with nobody left in the village nobody builds at all.
+        if (com.jayptucker.heroesevolved.radio.EmergencyBand.troubled(level, s.bell) || !Workers.direct(level, s)) return;
         step(level, data, s, s.perPass());
     }
 
@@ -180,6 +202,7 @@ public final class Rebuild extends SavedData {
             s.next++;
             if (!level.hasChunkAt(p)) continue;
             BlockState now = level.getBlockState(p);
+            BlockState was = now;
             if (s.next <= s.clear) {
                 // Taking the old house down: no neighbour updates, so nothing pops off as items while it comes apart;
                 // what was in its chests is left on the ground.
@@ -188,6 +211,7 @@ public final class Rebuild extends SavedData {
                 level.removeBlockEntity(p);
                 level.setBlock(p, state, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
                 placed++;
+                if (placed == 1) Workers.placed(level, s, p, state, was);
                 if (placed == 1 && level.random.nextInt(3) == 0)
                     level.playSound(null, p, now.getSoundType().getBreakSound(), SoundSource.BLOCKS, 0.8F, 0.9F);
                 continue;
@@ -209,6 +233,7 @@ public final class Rebuild extends SavedData {
                 if (joined != state) level.setBlock(p, joined, Block.UPDATE_CLIENTS);
             }
             placed++;
+            if (placed == 1) Workers.placed(level, s, p, state, was);
             if (placed == 1 && level.random.nextInt(3) == 0)
                 level.playSound(null, p, state.getSoundType().getPlaceSound(), SoundSource.BLOCKS, 0.8F, 0.9F);
         }
@@ -271,6 +296,24 @@ public final class Rebuild extends SavedData {
 
     private static void finish(ServerLevel level, Rebuild data, Site s) {
         settle(level, s.positions);
+        Workers.done(level, s);
+        if (s.mend) {
+            // Anything that hangs on something put back after it (a torch, a lantern) gets a second try.
+            for (int i = 0; i < s.positions.size(); i++) {
+                BlockPos p = s.positions.get(i);
+                BlockState want = s.states.get(i);
+                if (level.hasChunkAt(p) && level.getBlockState(p).isAir() && want.canSurvive(level, p) && !PlayerBuilt.cleared(level, p))
+                    level.setBlock(p, want, Block.UPDATE_ALL);
+            }
+            data.sites.remove(s);
+            data.setDirty();
+            String name = VillageMemory.of(level, s.bell).name();
+            level.playSound(null, s.center, SoundEvents.VILLAGER_CELEBRATE, SoundSource.NEUTRAL, 1.2F, 1);
+            for (ServerPlayer p : level.players())
+                if (p.blockPosition().distSqr(s.center) <= 96 * 96)
+                    p.sendSystemMessage(Component.literal(name + " has mended what was broken.").withStyle(ChatFormatting.GREEN));
+            return;
+        }
         if (s.growth) {
             data.sites.remove(s);
             data.setDirty();
@@ -313,6 +356,7 @@ public final class Rebuild extends SavedData {
             t.putInt("next", s.next);
             t.putLong("startAt", s.startAt);
             t.putInt("clear", s.clear);
+            t.putBoolean("mend", s.mend);
             if (s.home != null) t.put("home", s.home.save());
             if (s.replaces != null) t.put("replaces", s.replaces.save());
             // A palette of states and, for each block, its position and palette index.
@@ -348,6 +392,7 @@ public final class Rebuild extends SavedData {
             s.base = t.contains("base") ? t.getInt("base") : Integer.MIN_VALUE;
             s.startAt = t.getLong("startAt");
             s.clear = t.getInt("clear");
+            s.mend = t.getBoolean("mend");
             if (t.contains("home")) s.home = Projects.Home.load(t.getCompound("home"));
             if (t.contains("replaces")) s.replaces = Projects.Home.load(t.getCompound("replaces"));
             List<BlockState> palette = new ArrayList<>();

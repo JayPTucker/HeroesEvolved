@@ -1,0 +1,28 @@
+// The client runs the village systems on real generated villages with uitest/RealVillagePreview: one of each kind
+// (plains, desert, savanna, snowy, taiga) in a normal world, its board, tier, own houses, one rebuilt bigger, a market and
+// a town house, every pane, stair and door checked, into build/real-village-preview/screenshots/. Never bundled into the
+// mod JAR.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('realVillagePreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/real-village-preview')
+                        programArguments.addAll('--width', '1280', '--height', '800')
+                        systemProperty('heroes.preview.realvillages', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('realVillagePreviewClasses')) }
+            // Pass when every scene ran (PREVIEW_DONE), not on the exit code the closing halt leaves.
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

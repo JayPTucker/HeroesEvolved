@@ -167,7 +167,7 @@ public final class ExpansionSkills {
                     ElectroGeometry.show(p.serverLevel(), Piece.ELECTRO_SINK_BURST, floor, floor, 1, null);
                     int forks = 0;
                     for (var t : enemies(p, old.center, 7)) if (ElectroService.hostile(p, t)) {
-                        t.hurt(p.damageSources().playerAttack(p), Math.min(16, old.charge[0]) + 2);
+                        t.hurt(p.damageSources().playerAttack(p), Math.min(16, old.charge[0]) * .5F + 4);
                         if (forks < 8) ElectroGeometry.show(p.serverLevel(), Piece.ELECTRO_ARC, tip, t.getBoundingBox().getCenter(), .8, null, 2 + forks++);
                     }
                     p.serverLevel().playSound(null, BlockPos.containing(tip), SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, .9F, 1.3F);

@@ -80,14 +80,14 @@ public final class VibeStyle extends ComboStyle {
         Vec3 end = target != null ? target.getBoundingBox().getCenter() : StyleHits.reach(p, eye, aim, 3);
         show(p, Piece.VIBE_GATHER, palm, end, 1, p);
         if (target != null) {
-            StyleHits.hurt(p, target, 2 + .4F * level);
+            StyleHits.hurt(p, target, .6F + .15F * level);
             StyleHits.shove(target, aim.scale(.4).add(0, .1, 0));
             show(p, Piece.VIBE_HIT, end, end.add(aim), .6, null);
             // The vibration carries on through the body it hit.
             Vec3 flat = aim.multiply(1, 0, 1).normalize();
             for (LivingEntity behind : StyleHits.foes(p, end.add(flat.scale(RING_REACH * .5)), RING_REACH)) {
                 if (behind == target || behind.position().subtract(target.position()).dot(flat) < .3) continue;
-                StyleHits.hurt(p, behind, 1 + .3F * level);
+                StyleHits.hurt(p, behind, .3F + .1F * level);
                 Vec3 at = behind.getBoundingBox().getCenter();
                 show(p, Piece.VIBE_HIT, at, at.add(flat), .45, null);
                 break;
@@ -111,7 +111,7 @@ public final class VibeStyle extends ComboStyle {
         Vec3 toward = p.position().subtract(target.position()).multiply(1, 0, 1);
         toward = toward.lengthSqr() < .01 ? forward.reverse() : toward.normalize();
         Vec3 back = target.position().subtract(toward.scale(target.getBbWidth() * .5 + .6)).add(0, target.getBbHeight() * .5, 0);
-        StyleHits.hurt(p, target, 3.5F + level);
+        StyleHits.hurt(p, target, 1.5F + .5F * level);
         StyleHits.shove(target, toward.scale(1.15).add(0, .35, 0));
         show(p, Piece.VIBE_KICK, foot, back, 1, p);
         StyleHits.sound(p, ModSounds.VIBE_SHUT.get(), .9F, 1.1F);
@@ -127,7 +127,7 @@ public final class VibeStyle extends ComboStyle {
             Vec3 delta = target.position().subtract(feet);
             double along = delta.dot(forward), across = Math.abs(delta.dot(StyleHits.right(forward)));
             if (along < .3 || along > SEAM_LENGTH || across > SEAM_WIDTH + target.getBbWidth() * .5 || Math.abs(delta.y) > 1.5) continue;
-            StyleHits.hurt(p, target, 2.5F + .5F * level);
+            StyleHits.hurt(p, target, .8F + .2F * level);
             StyleHits.shove(target, new Vec3(0, .55, 0).add(forward.scale(.15)));
             target.addEffect(new net.minecraft.world.effect.MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 30, 1, false, true));
             if (++struck >= 8) break;
@@ -143,7 +143,7 @@ public final class VibeStyle extends ComboStyle {
         toward = toward.lengthSqr() < .01 ? StyleHits.level(p).reverse() : toward.normalize();
         Vec3 back = marked.position().subtract(toward.scale(marked.getBbWidth() * .5 + .6)).add(0, marked.getBbHeight() * .5, 0);
         Vec3 palm = StyleHits.hand(p, 1, rear);
-        StyleHits.hurt(p, marked, 4 + level);
+        StyleHits.hurt(p, marked, 1.5F + .5F * level);
         StyleHits.shove(marked, toward.scale(.9).add(0, .3, 0));
         show(p, Piece.VIBE_KICK, palm, back, 1, p);
         show(p, Piece.VIBE_HIT, back, back.add(toward), .9, null);

@@ -375,7 +375,7 @@ public final class GiftedMobs {
             mob.spawnAtLocation(weapon);
         }
         if (source.getEntity() instanceof ServerPlayer killer) {
-            com.jayptucker.heroesevolved.progression.MasteryService.awardRescue(killer, 10L << r.ordinal());
+            com.jayptucker.heroesevolved.progression.MasteryService.awardHostileMobKill(killer, mob);
             killer.sendSystemMessage(Component.literal("You defeated ").withStyle(ChatFormatting.GRAY)
                     .append(Component.literal(g.gift.name()).withStyle(r.color))
                     .append(Component.literal(" (" + r.title + " " + g.gift.powerName() + ").").withStyle(ChatFormatting.GRAY)));

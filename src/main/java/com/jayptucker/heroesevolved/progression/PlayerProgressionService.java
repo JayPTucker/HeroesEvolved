@@ -41,7 +41,7 @@ public final class PlayerProgressionService {
                     player.setData(ModDataAttachments.POWER_JOURNEY,
                             player.getData(ModDataAttachments.POWER_JOURNEY).evolve(e.getKey().getPath())));
         }
-        PlayerProgressionData updatedData = new PlayerProgressionData(PowerLevels.masteryFor(level));
+        PlayerProgressionData updatedData = getData(player).withMastery(PowerLevels.masteryFor(level));
         player.setData(ModDataAttachments.PLAYER_PROGRESSION.get(), updatedData);
         rememberSkillLevel(player);
         return updatedData;
@@ -76,7 +76,7 @@ public final class PlayerProgressionService {
         Objects.requireNonNull(player, "Player cannot be null.");
 
         long mastery = PowerLevels.masteryFor(PowerLevels.levelForTier(level));
-        PlayerProgressionData updatedData = new PlayerProgressionData(mastery);
+        PlayerProgressionData updatedData = getData(player).withMastery(mastery);
 
         player.setData(
                 ModDataAttachments.PLAYER_PROGRESSION.get(),

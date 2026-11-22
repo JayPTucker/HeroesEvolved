@@ -159,7 +159,7 @@ public final class SingularityService {
                 move(living, velocity);
                 living.resetFallDistance();
                 if (tear && distance <= CORE_RADIUS) {
-                    living.hurt(hole.owner.damageSources().playerAttack(hole.owner), 3.0F + hole.powerLevel * 0.5F);
+                    living.hurt(hole.owner.damageSources().playerAttack(hole.owner), .6F + hole.powerLevel * .1F);
                     living.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 30, 2));
                 }
             } else if (entity instanceof Projectile projectile) {
@@ -190,7 +190,7 @@ public final class SingularityService {
         Vec3 center = hole.center;
         ServerPlayer owner = hole.owner;
         AbilityEffects.send(level, Kind.TIME_SINGULARITY_COLLAPSE, center, center.add(DISK_NORMAL), COLLAPSE_RADIUS);
-        float damage = 8.0F + hole.powerLevel;
+        float damage = 3 + .5F * hole.powerLevel;
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, new AABB(center, center).inflate(COLLAPSE_RADIUS),
                 target -> ExpansionSkills.hostile(owner, target) && !pinned(target)
                         && target.getBoundingBox().getCenter().distanceToSqr(center) <= COLLAPSE_RADIUS * COLLAPSE_RADIUS)) {

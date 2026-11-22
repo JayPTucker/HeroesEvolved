@@ -237,6 +237,303 @@ DAMAGE_CHANGES = [
                       "(about 21 per target at Level 6) from a slot-4 key."),
 ]
 
+# November 2026 damage audit. These are measurements of the Java implementations, NOT desired damage inferred
+# from their names. Damage is the full sequence on one representative target at the unlock tier. `extra` is
+# separately weighted damage (burns, sickness, unequal chain hops). Utility has an explicit reserve; pure utility
+# never gets damage invented for it. Temporary buffs, prepared statuses, banked incoming damage, spent secondary
+# resources and optional upgrades remain conditional rewards, recorded in `note`, rather than assumed free damage.
+# Class offense's compulsory 10% is included. Armour/resistance is not: this compares outgoing damage.
+DAMAGE_AUDIT = {}
+
+
+def reviewed(action, source, formula, before=0, after=None, *, n=1, factor=1, extra=0, old_extra=None,
+             ctrl=0, util=0, blocks=0, cost=None, note=""):
+    if action in DAMAGE_AUDIT:
+        raise ValueError(f"Duplicate damage review: {action}")
+    DAMAGE_AUDIT[action] = dict(source=source, formula=formula, before=before, after=before if after is None else after,
+                                n=n, factor=factor, extra=extra, old_extra=extra if old_extra is None else old_extra,
+                                ctrl=ctrl, util=util, blocks=blocks, cost=cost, note=note)
+
+
+def utility_reviews(source, entries):
+    for action, effect in entries:
+        reviewed(action, source, "0: " + effect)
+
+
+# Tree actives and signatures. Tiers below come from each node's `level`, not its row or its current user's level.
+reviewed("quake_0_1", "quake/QuakeSkills#land", "7+tier -> 10+tier; airborne x2", 9, 12, factor=.75, ctrl=1)
+reviewed("quake_fault_script", "expansion/ExpansionSkills#fault", "6, once per UUID along the entire fault", 6, n=3, factor=.75, ctrl=.25)
+reviewed("quake_counterforce", "expansion/ExpansionSkills#release", "min(16,stored+3); cap 24 with Stolen Thunder", 3, n=2, util=8,
+         note="Stored incoming damage is earned by bracing; it is not a flat 16 damage cast.")
+reviewed("quake_2_1", "quake/QuakeSkills#step", "4+tier/2", 5, n=2, blocks=6, util=3)
+utility_reviews("quake/QuakeSkills; expansion/ExpansionSkills", [("quake_1_1", "Vibration Shell deflects shots"), ("quake_seamfinder", "fractures blocks, no creature damage")])
+reviewed("flight_2_1", "flight/FlightSkillService#tickThermal", "2 -> 6 on the single updraft; second pulse needs an upgrade", 2, 6, n=2, factor=.75, ctrl=1, util=6)
+reviewed("flight_thunderclap", "flight/FlightSkillService#tickVacuum", "4+Momentum*.05 -> 7+Momentum*.05", 4, 7, n=3, factor=.75, ctrl=1, util=5)
+utility_reviews("flight/FlightSkillService", [("flight_0_1", "rush to and rescue a friend"), ("flight_sky_catch", "Wind Sanctuary shields friends"),
+    ("flight_1_1", "Barrel Roll evades and redirects shots"), ("flight_tailwind", "Jetstream carries friends and shoves foes, no damage")])
+reviewed("cryokinesis_0_1", "cryo/CryoCombatSkills#tickForge", "6+tier -> 8+tier; one forged lance", 8, 10, factor=.75, util=6)
+reviewed("cryokinesis_1_1", "cryo/CryoCombatSkills#release", "plates*(3+stored/8); five shards at no stored damage", 15, n=1, factor=.85, util=4,
+         note="Spread can split the five shards; absorbed damage increases each shard. Armour is a second benefit.")
+reviewed("cryokinesis_2_1", "cryo/CryoCombatSkills#tick", "2 -> 5 in Cold Snap's single wave", 2, 5, n=3, factor=.75, util=12,
+         note="Cold buildup has a utility reserve; a 2/3-second solid freeze requires existing frost.")
+reviewed("cryokinesis_brittle_constellation", "cryo/CryoTechniqueService#tickStars", "4 -> 6 per unique hop (strong: 7 -> 9)", 4, 6, n=3, factor=.85, util=8)
+utility_reviews("cryo/CryoTechniqueService", [("cryokinesis_rime_loom", "lays rime and chills; no direct hit"), ("cryokinesis_stillheart", "heals and protects in a cocoon")])
+reviewed("electrokinesis_0_1", "skills/SkillActionService#activate", "8+tier on primary, two hops of 4", 10, n=1, extra=3.2, util=0,
+         note="Two weaker hops count at +40% each: 2*4*.4. Slow is soft control, not a root.")
+reviewed("electrokinesis_circuit_thread", "expansion/ExpansionSkills#activate", "5+tier, one hit per UUID across all conductors", 8, n=2)
+reviewed("electrokinesis_ground_sink", "expansion/ExpansionSkills#activate", "2+min(16,charge) -> 4+.5*min(16,charge)", 2, 4, n=3, util=20, cost=40,
+         note="Plant AND discharge each pay 20; 20 of that buys projectile absorption. Charge is absorbed incoming damage.")
+reviewed("electrokinesis_arc_lattice", "expansion/ExpansionSkills#tick", "6 once per UUID (10 with Storm Geometry)", 6, n=2, util=8, cost=28,
+         note="At least two paid anchors (14 each) are needed for a damaging wire; adding anchors resets its hit set and pays again.")
+reviewed("electrokinesis_blackout", "electro/BlackoutService#release", "5+tier; one release after windup", 9, n=3, factor=.75, util=20,
+         note="Machines are shut down and Charge is gathered; darkness/slow are utility, not hard control.")
+utility_reviews("skills/SkillActionService#activate", [("electrokinesis_1_1", "Static Screen reflects shots"), ("electrokinesis_2_1", "Overcharge fills Charge and grants speed/haste")])
+reviewed("telekinesis_0_1", "telekinesis/TelekineticArsenalService#lance", "8 -> 10; one spear (second pierce needs a skill)", 8, 10)
+reviewed("telekinesis_kinetic_volley", "telekinesis/TelekineticArsenalService#volley", "3 shards * 4, delayed 11 ticks apart", 12, factor=.85,
+         note="Five Fragments adds two shards; Iron Rain adds a 2-damage splash to bodies not hit directly.")
+utility_reviews("telekinesis/TelekinesisSkillService", [("telekinesis_remote_hand", "remote interaction/weapon handling"), ("telekinesis_1_1", "Gravity Well pulls, no direct damage"),
+    ("telekinesis_2_1", "Vector Step moves the caster"), ("telekinesis_force_bubble", "Force Bubble reflects and repels")])
+utility_reviews("telepathy/TelepathySkills", [("telepathy_0_1", "Drop It disarms"), ("telepathy_persuasion", "persuades or frightens one mind"),
+    ("telepathy_1_1", "Far Hearing relays voices"), ("telepathy_memory_walk", "replays a memory"), ("telepathy_2_1", "Dream Double draws attention and frightens on contact"), ("telepathy_hive_link", "links willing voices")])
+reviewed("regeneration_0_1", "regeneration/RegenSkills#bloodletting", "4+tier to undead; same amount heals bonded friends", 6, n=2, util=6)
+reviewed("regeneration_2_1", "regeneration/RegenSkills#damage", "AMBUSH_DAMAGE=6 on the next blow after standing", 6, util=10,
+         note="Only the added 6 is bought by Play Dead; the normal blow has its own cost.")
+utility_reviews("regeneration/RegenSkills; expansion/AdvancedTechniques", [("regeneration_take_the_wound", "takes a friend's wound"), ("regeneration_1_1", "Adrenal Rush heals and buffs"),
+    ("regeneration_adaptation", "learns damage types"), ("regeneration_revive", "revives a downed friend")])
+reviewed("time_manipulation_shared_blink", "time/SpaceTimeSkills#edge", "6+tier -> 2+tier, one cut per target", 9, 5, n=3, ctrl=.8, blocks=12,
+         note="EDGE_STEP=4; three targets are held for 16 ticks. Thousand Cuts adds a cut and linger after buying its upgrade.")
+reviewed("time_manipulation_singularity", "time/SingularityService#pull,collapse", "9*(3+.5*tier) + (8+tier) collapse -> 9*(.6+.1*tier) + (3+.5*tier)",
+         45, 9, n=3, factor=.6, extra=5*.75, old_extra=12*.75, ctrl=1.5, util=5,
+         note="Ticks 10..90: nine tears; tick 100 collapses. Pull is partial control (1.5 s equivalent), not a 5 s root; core falloff tops at 1.")
+utility_reviews("time/SpaceTimeSkills", [("time_manipulation_0_1", "Selective Stasis holds one body"), ("time_manipulation_stasis_seal", "Stasis Seal holds/throws stopped time"),
+    ("time_manipulation_1_1", "Spatial Anchor saves a return point"), ("time_manipulation_2_1", "Second Chance rewinds health/position"),
+    ("time_manipulation_accelerate", "Fast Forward accelerates existing burns/poison; those were paid by their source, heals friends and ages mobs")])
+reviewed("radiation_0_1", "radiation/RadiationSkills#lance", "8+tier -> 4+.5*tier; 7 s stage-I sickness adds 3.5", 10, 5, n=2, extra=3.5*.6,
+         note="Venting 15 Core doubles the lance and adds another sickness stage; Core and existing sickness are conditional resources.")
+reviewed("radiation_heat_vent", "radiation/RadiationSkills#heatVent", "3+vented/5 -> 1.5+vented/30; 4 s burning", 3, 1.5, n=2, extra=4*.6, util=3,
+         note="Core vented is additional payment; Chain Vent detonates a previously dosed foe.")
+utility_reviews("radiation/RadiationSkills", [("radiation_1_1", "Lead Skin reduces harm"), ("radiation_reactor_core", "Reactor Core toggles heat gain"),
+    ("radiation_2_1", "Decontaminate cleans sickness/ground"), ("radiation_glowing_path", "Glowing Path lays fallout; see its ground tick in NuclearFallout (separate audit below)")])
+reviewed("sonic_resonance_0_1", "sonic/SonicSkills#focused", "9+tier, one target; leaves Ringing", 11, util=2)
+reviewed("sonic_resonance_1_1", "sonic/SonicSkills#dissonant", "3 (6 on a foe already drawn by a separately paid Note)", 3, n=3, util=12)
+reviewed("sonic_resonance_shatter_note", "sonic/SonicSkills#shatter", "4; one burst", 4, n=3, util=2)
+utility_reviews("sonic/SonicSkills", [("sonic_resonance_echo_map", "Echo Map locates entities"), ("sonic_resonance_2_1", "Resonant Guard reflects shots"), ("sonic_resonance_quiet_zone", "Quiet Zone silences")])
+reviewed("superspeed_1_1", "speed/SpeedService#skill", "6+tier, plus a swept rush up to 18.4 blocks", 8, blocks=18.4, util=1)
+reviewed("superspeed_lightning_throw", "expansion/AdvancedTechniques#activate", "6+Momentum/10; requires at least 30 Momentum", 9,
+         note="Spends ALL banked Momentum (30..100): 9..16 damage; Charged Throw's extra hops require another upgrade.")
+utility_reviews("speed/SpeedService; expansion/AdvancedTechniques", [("superspeed_0_1", "Reflex Focus evades projectiles, each evasion pays again"), ("superspeed_mirage", "Speed Mirage distracts; Time Remnant damage is a separate purchased upgrade"),
+    ("superspeed_2_1", "Slipstream Rescue carries a friend"), ("superspeed_perception", "Perception slows the world")])
+reviewed("pyrokinesis_0_1", "pyro/PyroService#skill", "6+tier plus 5 s burn; lash movement itself does no second hit", 8, extra=5*.6)
+reviewed("pyrokinesis_ember_mine", "pyro/PyroService#detonate", "6+tier plus 5 s burn; exactly 30% high, retained", 9, n=2, factor=.75, extra=5*.6)
+reviewed("pyrokinesis_1_1", "pyro/PyroService#tickMantles", "8 pulses of 1.5 -> .1, plus up to 10 s of continually refreshed burning", 12, .8, n=2, factor=.6, extra=10*.6, util=8)
+reviewed("pyrokinesis_blue_lance", "pyro/PyroService#blueLance,tickLances", "(8+tier)*1.5 + two 2.5 trails -> (3+.5*tier)*1.5 + two .75 trails; 6 s burn", 21.5, 8.25, n=2, extra=6*.6,
+         note="Blue Lance is ALWAYS blue, including at zero Heat; its 1.5 multiplier must be counted. Thirteen-tick trail pulses every six ticks.")
+reviewed("pyrokinesis_phoenix", "pyro/PhoenixService#strike,graze", "7+tier on up to 3 distinct hunted foes, 6 s burn; grazes are 3 + 3 s burn", 11, n=3, factor=.75, extra=6*.6, util=10,
+         note="Hunts different UUIDs; cannot repeatedly strike one foe. Blue Heat multiplies direct damage by 1.25; return heals the owner.")
+utility_reviews("pyro/PyroService", [("pyrokinesis_2_1", "Cauterizing Flame heals/cleanses"), ("pyrokinesis_fire_shepherd", "Fire Shepherd retrieves existing fire as Heat")])
+reviewed("invisibility_2_1", "invisibility/ForceFieldService#pinpoint", "6+tier; launches a foe", 8, ctrl=.5)
+reviewed("invisibility_cloak_field", "invisibility/ForceFieldService#kineticShell,finishCrush", "(6+2*tier+1.5*held) -> same*.12 for Shell bubbles only; hold up to 3 s", 16.5, 1.98, n=4, factor=.75, ctrl=3,
+         note="Representative crush after 3 s; core Bubble keeps its own damage. Tight Seal and Unseen Force are optional multipliers.")
+utility_reviews("invisibility/InvisibilitySkills; invisibility/ForceFieldService; invisibility/InvisibilityService", [("invisibility_0_1", "Vanishing Touch hides another body"), ("invisibility_smoke_and_mirrors", "Vanishing Squad hides friends"),
+    ("invisibility_1_1", "Force Barrier builds a shield"), ("invisibility_pickpocket", "Force Disc carries the caster")])
+reviewed("phasing_0_1", "phasing/Stones#damage,gauntlet", "4+tier; one gauntlet grabs or pins", 6, ctrl=3)
+reviewed("phasing_phase_carry", "phasing/Stones#damage,avalanche", "five*(5+tier) -> five*(.8+.2*tier)", 40, 7, n=3, factor=.85, util=3,
+         note="Five boulders have independent hit sets: one body can be hit five times. Root/material are conditional multipliers.")
+reviewed("phasing_1_1", "phasing/DensitySkills#rebound", "min(18,4+.6*stored); 4 before receiving blows", 4, n=2, util=8,
+         note="Stone Skin's stored damage is paid by receiving blows; its shield gets a utility reserve.")
+reviewed("phasing_phase_fall", "phasing/Earthworks#tickSurf", "3+.5*tier once per UUID over the entire surf", 4.5, n=2, blocks=12, util=4)
+utility_reviews("phasing/DensitySkills; phasing/DensityService", [("phasing_phase_lock", "Quicksand roots; no direct hit"), ("phasing_2_1", "Tunnel moves underground; surface punch belongs to the same move")])
+reviewed("empathic_mimicry_0_1", "mimicry/MimicryService#skill", "6+tier; one Borrowed Strike", 8, util=2)
+utility_reviews("mimicry/MimicryService", [("empathic_mimicry_sense_powers", "detects powers"), ("empathic_mimicry_1_1", "Empathic Surge heals/buffs"),
+    ("empathic_mimicry_overcharge", "strengthens a copied move, which still pays its own stamina"), ("empathic_mimicry_2_1", "Calm de-aggros"), ("empathic_mimicry_absorb_pain", "takes an ally's pain")])
+reviewed("technopathy_sentry_seal", "technopathy/TechnopathyService#trip", "6+tier; one trip per crossing", 8, n=1, factor=.75, util=7,
+         note="Seal watches a route and trips it; disarms/slow are utility. Re-arming the seal costs another use.")
+reviewed("technopathy_domino_engine", "technopathy/TechnopathyService#engine", "8+tier; engineHit deduplicates bodies across the entire route", 11, n=2, factor=.75, util=6)
+utility_reviews("technopathy/TechnopathyService", [("technopathy_batch_instruction", "operates linked devices"), ("technopathy_delayed_instruction", "queues an instruction"),
+    ("technopathy_kill_switch", "stops devices"), ("technopathy_winchline", "winches the player to the network")])
+reviewed("matter_assembly_scattershot", "assembly/MatterAssemblyService#activate,firePaid", "five*(5+.5*tier) -> five*(1.8+.2*tier); fan can overlap on one body", 30, 11, n=1, factor=.85,
+         note="Five shards are separate projectiles. Material is also spent, but stamina still limits their damage.")
+reviewed("matter_assembly_faultline", "assembly/MatterAssemblyService#tick", "5 for each raised block that intersects the body", 5, n=3, factor=.75, ctrl=.5, util=6,
+         note="A body can overlap adjacent cells; see repeated-cell fix in the implementation.")
+utility_reviews("assembly/MatterAssemblyService", [("matter_assembly_switchback", "builds a route"), ("matter_assembly_drawbridge", "raises a bridge"),
+    ("matter_assembly_shelter", "builds shelter"), ("matter_assembly_cradle", "rescues and supports a friend")])
+reviewed("vibe_0_1", "vibe/VibeService#release", "7+1.5*tier; travelling narrow wave", 10, factor=.75, util=2)
+reviewed("vibe_reverb", "vibe/VibeService#release", "7+1.5*tier; both palms SHARE the UUID hit set", 13, n=2, factor=.75)
+reviewed("vibe_prism_lock", "vibe/VibeService#tickLock", "4+tier; one Rift Fall; previously Read adds 4", 8, n=3, factor=.75, ctrl=1,
+         note="Prism Lock's delay/slow has a control reserve; Read bonus needs a separate cast.")
+reviewed("vibe_rift_beast", "vibe/VibeBeast#summon; vanilla HoglinBase#hurtAndThrowTarget", "45 s / 2 s attack interval; attack attribute 6+tier -> 1.8+.1*tier; random roll f/2+nextInt(int(f))", 22*9.5, 22*1.6, factor=.6, util=10,
+         note="Unlock tier 4: 900 ticks, 22 complete 40-tick attack cycles; one continuously reachable foe, no baby bonus. Pet also tanks and commands.")
+utility_reviews("vibe/VibeBreaches; vibe/VibeSight", [("vibe_1_1", "Glimpse leaves the body to scout"), ("vibe_flashstep", "Flashstep travels through a breach"), ("vibe_2_1", "Co-Vibe shares a read")])
+utility_reviews("shapeshift/ShapeshiftSkills", [("shapeshifting_0_1", "Quick Change bypasses a form swap"), ("shapeshifting_shed", "Shed cleanses and drops a decoy"),
+    ("shapeshifting_1_1", "Hybrid borrows form traits; Instinct's attacks pay their own cost"), ("shapeshifting_chimera", "Chimera borrows traits; Instinct pays separately"),
+    ("shapeshifting_apex_form", "Apex doubles attack attributes for its duration; base damage comes from the separately paid form/Instinct or weapon"),
+    ("shapeshifting_2_1", "Borrowed Face disguises the caster"), ("shapeshifting_doppelganger", "Doppelganger copies a body and hides the caster")])
+reviewed("hydro_0_1", "hydro/HydroSkills#burst", "6+tier; one marked Geyser", 8, n=2, factor=.75, ctrl=.75)
+reviewed("hydro_pressure_jet", "hydro/HydroSkills#tickJet", "19*(1.5+.25*tier) -> 19*(.65+.1*tier) over 40 ticks, ages 2..38", 47.5, 19.95, n=1, factor=.6,
+         note="The 40-tick endpoint exits before hitting. Water depletion can weaken it; full water is the baseline.")
+reviewed("hydro_water_spout", "hydro/HydroSkills#tickSpout", "5+tier on the landing; no damage from the rising pillar", 9, n=2, factor=.75, blocks=8, util=2)
+utility_reviews("hydro/HydroSkills", [("hydro_1_1", "Tide Wall swallows shots"), ("hydro_2_1", "Healing Water heals/cleanses"), ("hydro_rain_call", "Rain Call refills water and wets the area")])
+reviewed("amp_1_1", "amplify/AmpSkills#vanFull", "6+tier+spent/10 -> spent/30; enclosure and Second Coming x2 each", 8, 0, n=2, ctrl=5,
+         note="The five-second area stun already uses the 20-stamina budget. Extra damage now needs spent Charge; nonlethal health-1 cap remains.")
+reviewed("amp_doorbuster", "amplify/AmpSkills#doorbuster", "3 -> 1.5 around the broken door; three-second stun", 3, 1.5, n=1, ctrl=3, util=6)
+utility_reviews("amplify/AmpSkills", [("amp_0_1", "Partner bonds an ally"), ("amp_hold_hands", "shares a separately paid Surge"),
+    ("amp_overcharge_enemy", "makes the next enemy power misfire; damage depends on that power"), ("amp_2_1", "Burnout disables a power or projector")])
+
+# All three classes of every power, including the classes which cannot deal damage.
+for action, old, new, factor, n, ctrl, util, blocks, extra, old_extra in [
+    ("radiation_ground_zero",22,7.8,.75*1.1,3,0,0,0,4*.6,4*.6),
+    ("radiation_containment_dome",8,2.4,.6,2,0,15,0,5.5*.6,23*.6),
+    ("time_manipulation_hour_hand",15,9,.75*1.1,3,0,0,0,0,0),
+    ("pyrokinesis_sunfall",18,8.25,.75*1.1,3,0,0,0,5*.6,5*.6),
+    ("cryokinesis_hailstorm",40.5,14.4,.6*1.1,3,0,0,0,0,0),
+    ("electrokinesis_tesla_spire",66,13.8,.6*1.1,3,0,2,0,0,0),
+    ("quake_fissure_maw",16,10,.75*1.1,3,.5,0,0,0,0),
+    ("flight_tempest_drill",15,7.25,1.1,2,0,0,18,0,0),
+    ("telekinesis_implosion",18,8.25,.75*1.1,3,1.1,0,0,0,0),
+    ("telekinesis_debris_halo",51,5.95,.6,3,0,12,0,0,0),
+    ("telepathy_psychic_storm",24.5,9.8,.6*1.1,3,0,8,0,0,0),
+    ("regeneration_vital_burst",16,4.5,1.1,3,0,10,0,0,0),
+    ("sonic_resonance_resonance_cascade",18,9.25,.75*1.1,3,0,3,0,0,0),
+    ("superspeed_lightning_flurry",8,8,.85*1.1,3,0,4,0,0,0),
+    ("invisibility_shadow_strike",16.5,5,1.1,3,0,10,0,0,0),
+    ("phasing_phase_eruption",16,10,.75*1.1,3,.5,0,0,0,0),
+    ("empathic_mimicry_prismatic_overflow",13,6.75,1.1,3,0,0,0,3*.6,3*.6),
+    ("technopathy_drone_swarm",40,12.5,.6*1.1,3,0,0,0,0,0),
+    ("technopathy_firewall",33,8.25,.6,2,0,12,0,0,0),
+    ("matter_assembly_forge_cannon",40,11.75,.85*1.1,2,0,0,0,0,0),
+    ("vibe_crosswave",11.5,11.5,.75*1.1,3,0,0,0,0,0),
+    ("shapeshifting_many_hands",8,8,1.1,3,0,0,0,0,0),
+    ("hydro_tsunami",16,11,.75*1.1,3,.5,0,0,0,0),
+    ("amp_lightning_cannon",16,7,.75*1.1,3,3,0,0,0,0),
+]:
+    reviewed(action, "styles/StyleCasts (or the power's delegated class cast)", {
+        "radiation_ground_zero":"10+2*tier+12*falloff -> 4+.6*tier+4*falloff; representative falloff .5; 8 s stage-I sickness",
+        "radiation_containment_dome":"8 direct pulses 1 -> .3; repeating dose capped at stage I, 11 s exposure including tail",
+        "cryokinesis_hailstorm":"9 pulses (16..80 step 8): 3+.5*tier -> 1+.2*tier",
+        "electrokinesis_tesla_spire":"12 pulses (10..120 step 10): 4+.5*tier -> .7+.15*tier",
+        "telekinesis_debris_halo":"17 pulses (0..160 step 10): 3 -> .35; blocks shots",
+        "telepathy_psychic_storm":"7 pulses (0..120 step 20): 2+.5*tier -> .5+.3*tier",
+        "technopathy_drone_swarm":"10 pulses (15..150 step 15): 2.5+.5*tier -> .8+.15*tier",
+        "technopathy_firewall":"11 contacts (0..200 step 20): 3 -> .75; blocks shots",
+        "matter_assembly_forge_cannon":"5 pulses (8,13,18,23,28): 5+tier -> 1.6+.25*tier",
+        "superspeed_lightning_flurry":"5+tier once per mark, up to 6 marks; no repeated hit per mark",
+        "shapeshifting_many_hands":"5+tier once per mark, up to 5 marks",
+        "vibe_crosswave":"7+1.5*tier, both waves share struck UUIDs",
+    }.get(action, f"unlock-tier total {old:g} -> {new:g}; see the named cast's Java expression"),
+             old, new, factor=factor, n=n, ctrl=ctrl, util=util, blocks=blocks, extra=extra, old_extra=old_extra)
+utility_reviews("styles/StyleCasts; styles/StyleRuntime (class wards)", [
+    ("quake_stone_rampart","blocks shots and repels"), ("quake_bedrock_stance","resistance and knockback immunity"),
+    ("flight_gale_wall","reflects and repels"), ("flight_formation_flight","flight support buffs"),
+    ("cryokinesis_crystal_bastion","blocks shots and repels"), ("cryokinesis_aurora_veil","heals and soft-slows"),
+    ("electrokinesis_faraday_cage","reflects shots; melee retaliation is reviewed separately below"), ("electrokinesis_jumpstart","heals and cleanses"),
+    ("telekinesis_gathering_hand","gathers and protects friends"), ("telepathy_blind_spot","prevents target acquisition"), ("telepathy_hive_mind","shares wounds/voices"),
+    ("regeneration_undying","prevents death and heals"), ("regeneration_lifebloom","heals/cleanses"),
+    ("time_manipulation_time_loop","restores health and cleanses"), ("time_manipulation_borrowed_time","buffs speed/haste and restores stamina"),
+    ("radiation_reactor_hearth","regeneration, absorption and stamina"), ("sonic_resonance_silence_dome","slows shots and weakens"), ("sonic_resonance_battle_hymn","buffs strength/speed"),
+    ("superspeed_phase_blur","evades incoming blows"), ("superspeed_relay_run","brings allies home and buffs speed"),
+    ("pyrokinesis_ember_shroud","blocks shots/fire; melee retaliation reviewed separately below"), ("pyrokinesis_hearthfire","heals and grants fire resistance"),
+    ("invisibility_refraction_cloak","hides and refracts shots"), ("invisibility_prism_haze","hides/heals friends, blinds foes"),
+    ("phasing_dense_bulwark","resistance and knockback immunity"), ("phasing_phase_field","shelters friends in stone"),
+    ("empathic_mimicry_empathic_ward","negates three hits"), ("empathic_mimicry_kindred_light","heals/cleanses"),
+    ("technopathy_overclock","buffs speed/haste and restores stamina"), ("matter_assembly_bulwark_lattice","absorption and projectile defense"), ("matter_assembly_mending_lattice","absorption/regeneration"),
+    ("vibe_mirror","reflects a separately supplied projectile; no fixed damage"), ("vibe_sanctuary","opens a sheltering breach"),
+    ("shapeshifting_plate_mail","damage reduction and a decoy"), ("shapeshifting_masquerade","disguises friends"),
+    ("hydro_tidal_dome","blocks shots, protects friends, soft-slows foes"), ("hydro_healing_spring","heals and cleanses"),
+    ("amp_lights_back_on","cleanses allies and jumpstarts devices"), ("amp_got_your_back","rushes to and Surges a friend")])
+
+# Every fighting move is reviewed separately, even when two hands share a formula or two moves share a price.
+# Knockback impulses are not a multi-second root; only sustained lifts/holds get the hard-control rate.
+# A dodge's price covers motion/evasion plus its conditional counter; a free loaded strike belongs to that dodge.
+STYLE_FILES = {"pyrokinesis":"pyro/PyroCombat", "electrokinesis":"electro/ElectroCombat", "hydrokinesis":"hydro/HydroCombat",
+               "superspeed":"speed/SpeedStyle", "quake":"quake/QuakeStyle", "cryokinesis":"cryo/CryoStyle",
+               "phasing":"phasing/EarthStyle", "regeneration":"regeneration/RegenStyle", "invisibility":"invisibility/ForceStyle",
+               "telekinesis":"telekinesis/KineticStyle", "vibe":"vibe/VibeStyle"}
+for power, strike_old, strike_new, fin_old, fin_new, low_old, low_new in [
+    ("pyrokinesis",2.4,1,5,.8,3.5,.8), ("electrokinesis",2.4,1,5,1.2,3.5,1.2),
+    ("hydrokinesis",2.4,1,10.5,2.55,3.5,1.2), ("superspeed",3.9,1.17,5,1.2,3,1),
+    ("quake",2.4,1,5,1.6,3.5,1.6), ("cryokinesis",2.4,1,6,2,2.8,1),
+    ("phasing",2.75,1,6.5,1.2,2.8,1), ("regeneration",3.5,1,6,2,4,1.6),
+    ("invisibility",2.4,1,5,1.2,3.5,1.2), ("telekinesis",2.3,.6,7.9,1.8,2.3,1.2),
+    ("vibe",2.4,.75,5.5,2.5,3.5,1.2),
+]:
+    source = STYLE_FILES[power]
+    factor = .85 if power == "superspeed" else 1
+    # Puppeteer also inflicts .5x on the thrown body and .8x on a second body in a collision.
+    extra, old_extra = ((.6*.5 + .4*.6*.8), (1.5 + .4*2.3*.8)) if power == "telekinesis" else \
+                       ((.4*.4), (.4*1.3)) if power == "vibe" else (0, 0)
+    for hand in ("lead", "rear"):
+        reviewed(f"style_{power}_{hand}", source, {
+            "pyrokinesis":"2+.4*tier + 2 s ignition -> .8+.2*tier, no normal-jab ignition; loaded ignition remains",
+            "hydrokinesis":"2+.4*tier -> .8+.2*tier; full-water baseline",
+            "superspeed":"3*(1+.3*tier) -> 3*(.3+.09*tier); all three invulnerability-reset hits land",
+            "telekinesis":"2+.3*tier -> .5+.1*tier; collision adds .5x to body and .8x to next foe",
+            "vibe":"2+.4*tier -> .6+.15*tier; secondary 1+.3*tier -> .3+.1*tier, counted at 40%",
+        }.get(power, f"unlock-tier hit {strike_old:g} -> {strike_new:g}; optional resource/counter multipliers retained"),
+                 strike_old, strike_new, factor=factor, extra=extra,
+                 old_extra=old_extra + (2*.6 if power == "pyrokinesis" else 0), cost=2)
+    fin_cost = STYLE_OVERRIDES.get((power,"finisher"), 5)
+    fin_n = 1 if power in ("superspeed","cryokinesis","regeneration","telekinesis","vibe","hydrokinesis") else 3
+    low_n = 1 if power == "regeneration" else 3
+    reviewed(f"style_{power}_flourish", source, {
+        "pyrokinesis":"3+tier + 4 s ignition -> .4+.2*tier + 1 s ignition",
+        "hydrokinesis":"5 daggers*(1.5+.3*tier) -> 5*(.35+.08*tier); all five may hit one body",
+        "telekinesis":"lift 1.5+.2*tier + slam 4+tier -> .4+.1*tier + .8+.2*tier; hangs 9 ticks",
+    }.get(power, f"unlock-tier finisher {fin_old:g} -> {fin_new:g}"), fin_old, fin_new,
+             n=fin_n, factor=.85 if power in ("hydrokinesis","telekinesis") else 1,
+             ctrl=.45 if power == "telekinesis" else .5 if power == "cryokinesis" else 0,
+             util=2.5 if power == "superspeed" else 1 if power in ("electrokinesis","phasing","regeneration") else 0,
+             extra=.6 if power == "pyrokinesis" else 0, old_extra=4*.6 if power == "pyrokinesis" else 0, cost=fin_cost)
+    reviewed(f"style_{power}_low", source, f"unlock-tier low strike {low_old:g} -> {low_new:g}", low_old, low_new,
+             n=low_n, util=1 if power in ("electrokinesis","cryokinesis","phasing","regeneration","vibe","superspeed") else 0,
+             extra=.6 if power == "pyrokinesis" else 0, old_extra=3*.6 if power == "pyrokinesis" else 0, cost=fin_cost)
+    for move in ("dodge", "back_dodge", "counter"):
+        # Counters are contingent on a successful paid evasion/brace. Their loaded strike is not a new free cast.
+        reviewed(f"style_{power}_{move}", source, {
+            "pyrokinesis":"side step 0; back flip 3+.6*tier + 1 s ignition (was 3 s); counter loads a 2.2x rear fist",
+            "electrokinesis":"side step 0; Flashback 3+.6*tier; counter 1.6x spark + three .7x chain hops",
+            "hydrokinesis":"Flow Step 0; back Geyser 3+.6*tier; counter 1.6x lash and pull",
+            "superspeed":"skids deal 0; conditional Too Slow is 6*(.9+.3*tier)",
+            "quake":"dodges deal 0; Rebound (4+tier)*power plus a loaded 1.8x palm",
+            "cryokinesis":"dodges deal 0; counter freezes one attacker and loads a 3.2x shatter jab",
+            "phasing":"slides deal 0; Neutral Jing pillar (PILLAR_DAMAGE+tier)*Root, then a 1.5x claw",
+            "regeneration":"braces deal 0; Payback adds .8*banked incoming damage",
+            "invisibility":"dodges deal 0; counter fires five shards (.8+.2*tier each)",
+            "telekinesis":"dodges deal 0; counter holds attacker 30 ticks and loads a 2x swat",
+            "vibe":"hop 0; Fold Back 3+.6*tier; counter from behind 4+tier",
+        }[power], cost=STYLE_OVERRIDES.get((power, "back_dodge" if move == "back_dodge" else "dodge"), 11 if move == "back_dodge" else 8),
+                 note="Motion/evasion/brace and a successful counter share this paid budget; counter damage is conditional, not a zero-cost standalone attack.")
+
+
+def damage_reviews(trees):
+    """Fail closed on missing/obsolete reviews; render all measurements, not just the fixes."""
+    nodes = {}
+    for tree in trees:
+        power = tree["power"]
+        for branch, lane in enumerate(tree["branches"]):
+            for row, node in enumerate(lane):
+                if node.get("active", row == 1):
+                    nodes[node.get("id", f"{power}_{branch}_{row}")] = node
+        nodes.update({node["id"]: node for node in tree.get("styles", [])})
+    expected = set(nodes) | {f"style_{p}_{m}" for p in STYLE_POWERS for m in ("lead","rear","flourish","low","dodge","back_dodge","counter")}
+    missing, obsolete = expected - DAMAGE_AUDIT.keys(), DAMAGE_AUDIT.keys() - expected
+    if missing or obsolete:
+        raise ValueError(f"Damage review coverage: missing {sorted(missing)}, obsolete {sorted(obsolete)}")
+    rows = []
+    for action, a in DAMAGE_AUDIT.items():
+        cost = a["cost"] if a["cost"] is not None else nodes[action]["energy"]
+        spread = 1 + .4 * min(max(a["n"], 1) - 1, 4)
+        reserve = value(n=a["n"], ctrl=a["ctrl"], util=a["util"], blocks=a["blocks"])
+        budget = max(0, (cost - reserve) / (2 * spread))
+        old = a["before"] * a["factor"] + a["old_extra"]
+        new = a["after"] * a["factor"] + a["extra"]
+        error = abs(new / budget - 1) if budget > 1e-6 else (0 if new == 0 else math.inf)
+        changed = old != new
+        if (old or new) and error > .300001:
+            raise ValueError(f"{action}: damage {new:g}, implied {budget:g}, error {error:.1%}")
+        rows.append(a | dict(action=action, cost=cost, tier=nodes.get(action, {}).get("level", 1 if action.endswith(("_lead","_rear")) else 2),
+                             budget=budget, old=old, new=new, reserve=reserve, changed=changed))
+    return rows
+
 
 def cost_of(a, slot):
     if a["fixed"] is not None:

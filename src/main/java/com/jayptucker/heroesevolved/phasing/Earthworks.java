@@ -363,7 +363,7 @@ public final class Earthworks {
         BlockPos center = EarthGeometry.ground(p.level(), point.add(0, 1, 0));
         if (center == null) return false;
         BlockState ground = p.level().getBlockState(center);
-        float damage = (10 + 2 * tier) * DensityService.rooted(p);
+        float damage = (7 + tier) * DensityService.rooted(p);
         for (int i = 0; i < 6; i++) {
             BlockPos at = i == 0 ? center : center.offset(Math.round(Mth.cos(i * Mth.TWO_PI / 5) * 2), 0, Math.round(Mth.sin(i * Mth.TWO_PI / 5) * 2));
             BlockPos ground2 = EarthGeometry.ground(p.level(), Vec3.atBottomCenterOf(at).add(0, 1.5, 0));

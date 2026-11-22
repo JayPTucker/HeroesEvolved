@@ -19,7 +19,8 @@ public final class MasteryEvents {
     @SubscribeEvent
     public static void onLivingDeath(LivingDeathEvent event) {
         LivingEntity dead = event.getEntity();
-        if (!(dead instanceof Enemy)) {
+        if (!(dead instanceof Enemy) && !com.jayptucker.heroesevolved.gifted.GiftedMobs.isEvil(dead)
+                && !dead.getType().is(net.neoforged.neoforge.common.Tags.EntityTypes.BOSSES)) {
             return;
         }
         // Powers often kill indirectly (a slam, a fall, a fire): the last
@@ -39,7 +40,7 @@ public final class MasteryEvents {
             return;
         }
         if (target instanceof Enemy || target instanceof ServerPlayer) {
-            MasteryService.awardPowerHit(player, event.getNewDamage());
+            MasteryService.awardPowerHit(player, target, event.getNewDamage());
         }
     }
 

@@ -4,13 +4,16 @@ A village does well or badly by what happens to it, and it shows. One that is sa
 grows: it posts what it wants to build on a notice board by its bell, and once players bring the materials, new houses,
 farms and workshops go up in its own style and newcomers arrive. As it grows it goes from a hamlet to a village to a
 town, rebuilds its homes bigger, and puts up two-storey town houses. Villages and towns hold a market once a week and
-will build you a home of your own. A village never touches what you build. A thriving one becomes a haven. One that is hit and left alone
+will build you a home of your own. You can watch its people at work: carrying what they've gathered to the board,
+building, and mending whatever gets broken. A village never touches what you build. A thriving one becomes a haven. One that is hit and left alone
 declines: people leave and the place looks tired.
 
 Code: `village/Growth` (how a village is doing, and what that does to it), `village/Projects` (the notice board and what
 it asks for, tiers and rebuilding homes), `village/Styles` (the town houses in each kind's colours). Tests:
-`village/Homes` (a home of your own), `village/Markets` (market days), `village/PlayerBuilt` (what players put down).
-Tests: `VillageGrowthGameTests`, `VillageProjectGameTests`, `VillageUpgradeGameTests`, `VillageLifeGameTests`.
+`village/Homes` (a home of your own), `village/Markets` (market days), `village/PlayerBuilt` (what players put down),
+`village/Workers` (gathering and building crews), `village/Repairs` (mending what was broken). Tests:
+`VillageGrowthGameTests`, `VillageProjectGameTests`, `VillageUpgradeGameTests`, `VillageLifeGameTests`,
+`VillageWorkGameTests`.
 
 ## How a village is doing
 
@@ -74,12 +77,28 @@ How big a place is decides what it builds. Its size is its beds plus twice what 
 
 | Size | Tier | It can build |
 | --- | --- | --- |
-| under 8 | **Hamlet** | small houses, farms, animal pens |
-| 8 to 19 | **Village** | also bigger houses, stables and every workshop (butcher, smiths, armourer, fletcher, shepherd, fisher, tannery, mapmaker, mason), and **rebuilding a small home bigger** |
+| under 5 | **Hamlet** | small houses, farms, animal pens |
+| 5 to 19 | **Village** | also bigger houses, stables and every workshop (butcher, smiths, armourer, fletcher, shepherd, fisher, tannery, mapmaker, mason), and **rebuilding a small home bigger** |
 | 20 or more | **Town** | also big houses, large farms, libraries and temples, **town houses** (two storeys), and **rebuilding a home with a second storey** |
 
 Most ordinary villages start as villages; a new one, or one that lost most of its people, starts as a hamlet. When a
 place grows into the next tier, everyone near hears it ("Ashford has grown into a town.") and the radio talks about it.
+
+### The village gathers too
+
+You don't have to bring everything. Each day, in daylight, a village gathers a share of what its project still needs
+itself, and one of its people carries it to the board's chest (you'll see them walking over with a log or a stack of
+cobblestone in their arms); when they get there the signs count it. How much depends on how it is doing and how many
+people it has:
+
+| The village | A day's share (with five or more people) |
+| --- | --- |
+| Thriving | a fifth of what's still needed |
+| Steady | an eighth |
+| Struggling | a twentieth |
+
+With fewer people it gathers less. Days nobody was about catch up when someone comes back, up to three. So a village
+builds on its own in time; what you bring makes it happen sooner.
 
 ### Projects
 
@@ -120,14 +139,40 @@ Each is built in its village's colours: oak in the plains, spruce in the taiga a
 cobblestone), acacia on the savanna (with orange plaster), birch and sandstone in the desert.
 
 A village never posts the same kind twice running. Once everything is in, its builders start in the morning: they pick
-open, level ground 20 to 48 blocks from the bell and put the building up over two days of daylight, the way they rebuild
+open ground 20 to 48 blocks from the bell (level if they can find it; on a slope of up to three blocks they dig into
+the high side and lay a foundation of cobblestone, or sandstone in the desert, on the low side) and put the building up
+over two days of daylight, the way they rebuild
 after a meteor ([Rebuilding](lasting-consequences.md#rebuilding)). If there's no room yet, the board says "Finding room"
 and it keeps looking. When it's done, a newcomer moves in for each bed (up to two), the radio says so ("Ashford's got a
 new house up by the east road. Welcome the Hallorans."), and the next morning the board posts the next project. A village
 builds (or rebuilds) up to 16 things in all.
 
-A building never goes where anything was built, on water, or on ground more than a block out of level. Boards and
+A building never goes where anything was built, on water, or on ground more than three blocks out of level. Boards and
 buildings only appear where `mobGriefing` allows.
+
+### Watching them build
+
+Up to three of the village's people crew each building site through the day. They walk to the block going down next,
+look at it and hold it in their arms, and it goes down beside them with a puff of dust; now and then one of them calls
+out ("Hand me those planks!", "Mind your head!"). A site with nobody left in its village to build it waits, and nobody
+works while the village is in trouble.
+
+## Mending what was broken
+
+A village knows its buildings as they were built: its own houses, its meeting point, wells and lamps, and what it built
+since. Whatever goes missing from one later (an explosion, a fire, a storm, a power, a renegade's attack), its people
+rebuild, a building at a time, the same way they build: the crew, the dust, two days at most. It looks itself over every
+thirty seconds or so, and at once after an explosion nearby; it waits for any fire to go out first.
+
+- **Only while anyone is left.** A village with nobody left (one that fell) mends nothing.
+- **Three or more blocks gone from a building** before it bothers (eight if it is struggling: a struggling village's
+  broken windows stay broken).
+- **What was missing when the village was first known is how it was,** not damage.
+- **Never your work:** blocks you put down stay, a gap you broke by hand (a window you knocked out, a wall you opened)
+  stays open, and your own home is yours to mend.
+
+The radio says so when it starts ("Ashford's patching up what was broken."), and everyone near hears when it's done.
+
 
 ## What you build is yours
 

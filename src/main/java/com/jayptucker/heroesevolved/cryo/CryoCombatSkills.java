@@ -207,7 +207,7 @@ public final class CryoCombatSkills {
             long age = forge.level.getGameTime() - forge.began;
             if (age < 12) { if (age % 2 == 0) forgeEffect(forge, (float)age / 12); continue; }
             FORGES.remove(forge.owner.getUUID());
-            if (SHOTS.size() < MAX_SHOTS) SHOTS.add(new Shot(forge.owner, palm(forge.owner), forge.owner.getLookAngle(), true, 6 + forge.tier, ProjectileRanges.CRYSTAL_LANCE));
+            if (SHOTS.size() < MAX_SHOTS) SHOTS.add(new Shot(forge.owner, palm(forge.owner), forge.owner.getLookAngle(), true, 8 + forge.tier, ProjectileRanges.CRYSTAL_LANCE));
             forge.level.playSound(null, forge.owner.blockPosition(), SoundEvents.TRIDENT_THROW.value(), SoundSource.PLAYERS, .9F, 1.5F);
         }
         for (Shot shot : List.copyOf(SHOTS)) {
@@ -242,7 +242,7 @@ public final class CryoCombatSkills {
                 if (CryoService.isFrozen(target)) CryoService.shatterHit(snap.owner, target, 4);
                 else {
                     int frost = CryoService.frostAmount(target);
-                    CryoService.coldHit(snap.owner, target, 2);
+                    CryoService.coldHit(snap.owner, target, 5);
                     CryoService.chill(target, 45, snap.owner);
                     if (frost >= 40) CryoService.freezeSolid(target, target instanceof ServerPlayer ? 40 : 60, snap.owner);
                 }

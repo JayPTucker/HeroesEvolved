@@ -90,6 +90,7 @@ public final class ForceFieldService {
     private static final class Bubble {
         final ServerPlayer owner; final LivingEntity target; final ServerLevel level; final boolean shelter; final long began;
         long until, crushAt = -1, rollUntil = -1; Vec3 anchor, roll; boolean unseen;
+        float crushScale = 1;
         final Set<Integer> rolledOver = new HashSet<>();
         Bubble(ServerPlayer owner, LivingEntity target, boolean shelter, long began, long until) {
             this.owner = owner; this.target = target; this.level = (ServerLevel) target.level(); this.shelter = shelter;
@@ -489,7 +490,7 @@ public final class ForceFieldService {
         LivingEntity t = b.target;
         ServerPlayer p = b.owner;
         double held = Math.min(6, (b.crushAt - b.began) / 20.0);
-        float damage = (float) ((6 + 2 * level(p) + 1.5 * held) * (has(p, InvisibilitySkills.TIGHT_SEAL) ? 1.5 : 1));
+        float damage = (float) ((6 + 2 * level(p) + 1.5 * held) * b.crushScale * (has(p, InvisibilitySkills.TIGHT_SEAL) ? 1.5 : 1));
         Vec3 centre = ForceGeometry.bubbleCentre(t);
         endBubble(b, true);
         hurt(p, t, damage, b.unseen);
@@ -670,7 +671,10 @@ public final class ForceFieldService {
         if (foes.isEmpty()) return false;
         boolean unseen = unseenCast(p);
         int ticks = has(p, InvisibilitySkills.TIGHT_SEAL) ? SHELL_TICKS * 5 / 3 : SHELL_TICKS;
-        for (LivingEntity t : foes) contain(p, t, ticks, unseen);
+        for (LivingEntity t : foes) {
+            contain(p, t, ticks, unseen);
+            BUBBLES.get(t.getUUID()).crushScale = .12F;
+        }
         ArmPosePayload.show(p, ArmPose.FORCE_BUBBLE, 16);
         cast(p, unseen);
         return true;

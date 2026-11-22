@@ -114,7 +114,8 @@ public final class VibeBeast {
         var health = body.getAttribute(Attributes.MAX_HEALTH);
         if (health != null) health.addPermanentModifier(new AttributeModifier(id("rift_beast_health"), 6 * tier, AttributeModifier.Operation.ADD_VALUE));
         var attack = body.getAttribute(Attributes.ATTACK_DAMAGE);
-        if (attack != null) attack.addPermanentModifier(new AttributeModifier(id("rift_beast_attack"), tier, AttributeModifier.Operation.ADD_VALUE));
+        // This is a 45-second summon at unlock, not a single hoglin hit. Budget its entire hunt.
+        if (attack != null) attack.setBaseValue(1.8 + .1 * tier);
         body.setHealth(body.getMaxHealth());
         LIVE.add(body.getUUID());
         if (!level.addFreshEntity(body)) {

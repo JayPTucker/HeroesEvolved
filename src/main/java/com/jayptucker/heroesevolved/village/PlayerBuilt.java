@@ -28,24 +28,49 @@ import java.util.Collection;
 public final class PlayerBuilt {
     private PlayerBuilt() {}
 
-    /** The marked positions in one chunk. */
+    /** The marked positions in one chunk: what players put down, and where they broke something by hand. */
     public static final class Marks {
         final LongOpenHashSet cells = new LongOpenHashSet();
+        final LongOpenHashSet cleared = new LongOpenHashSet();
     }
 
-    public static final IAttachmentSerializer<LongArrayTag, Marks> SERIALIZER = new IAttachmentSerializer<>() {
+    public static final IAttachmentSerializer<net.minecraft.nbt.CompoundTag, Marks> SERIALIZER = new IAttachmentSerializer<>() {
         @Override
-        public Marks read(IAttachmentHolder holder, LongArrayTag tag, HolderLookup.Provider provider) {
+        public Marks read(IAttachmentHolder holder, net.minecraft.nbt.CompoundTag tag, HolderLookup.Provider provider) {
             Marks m = new Marks();
-            for (long cell : tag.getAsLongArray()) m.cells.add(cell);
+            for (long cell : tag.getLongArray("placed")) m.cells.add(cell);
+            for (long cell : tag.getLongArray("cleared")) m.cleared.add(cell);
             return m;
         }
 
         @Override
-        public LongArrayTag write(Marks marks, HolderLookup.Provider provider) {
-            return marks.cells.isEmpty() ? null : new LongArrayTag(marks.cells.toLongArray());
+        public net.minecraft.nbt.CompoundTag write(Marks marks, HolderLookup.Provider provider) {
+            if (marks.cells.isEmpty() && marks.cleared.isEmpty()) return null;
+            net.minecraft.nbt.CompoundTag t = new net.minecraft.nbt.CompoundTag();
+            t.putLongArray("placed", marks.cells.toLongArray());
+            t.putLongArray("cleared", marks.cleared.toLongArray());
+            return t;
         }
     };
+
+    /** Where each player last started breaking a block by hand, and when (to tell a hand-break from an explosion). */
+    private static final java.util.Map<java.util.UUID, long[]> HITTING = new java.util.HashMap<>();
+
+    /**
+     * Whether a player broke what stood at {@code pos} by hand and nothing has been put there since: a village leaves the
+     * gap (a window knocked out, a wall opened up) rather than mending it.
+     */
+    public static boolean cleared(Level level, BlockPos pos) {
+        if (!level.hasChunkAt(pos)) return false;
+        Marks marks = level.getChunkAt(pos).getExistingDataOrNull(ModDataAttachments.PLAYER_BUILT);
+        return marks != null && marks.cleared.contains(pos.asLong()) && level.getBlockState(pos).isAir();
+    }
+
+    @SubscribeEvent
+    public static void hitting(net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.LeftClickBlock event) {
+        if (event.getLevel().isClientSide()) return;
+        HITTING.put(event.getEntity().getUUID(), new long[]{event.getPos().asLong(), event.getLevel().getGameTime()});
+    }
 
     /** Whether a player put down what stands at {@code pos} (false where the chunk isn't loaded: nothing acts there). */
     public static boolean is(Level level, BlockPos pos) {
@@ -78,8 +103,8 @@ public final class PlayerBuilt {
     public static void placed(BlockEvent.EntityPlaceEvent event) {
         if (!(event.getEntity() instanceof Player) || !(level(event.getLevel()) instanceof Level level) || level.isClientSide) return;
         if (event instanceof BlockEvent.EntityMultiPlaceEvent multi)
-            for (var snapshot : multi.getReplacedBlockSnapshots()) mark(level, snapshot.getPos());
-        else mark(level, event.getPos());
+            for (var snapshot : multi.getReplacedBlockSnapshots()) { mark(level, snapshot.getPos()); uncleared(level, snapshot.getPos()); }
+        else { mark(level, event.getPos()); uncleared(level, event.getPos()); }
     }
 
     /**
@@ -94,6 +119,24 @@ public final class PlayerBuilt {
         LevelChunk chunk = level.getChunkAt(pos);
         Marks marks = chunk.getExistingDataOrNull(ModDataAttachments.PLAYER_BUILT);
         if (marks != null && marks.cells.remove(pos.asLong())) chunk.setUnsaved(true);
+        // Broken by a player's own hand just now: remembered, so the village leaves the gap.
+        long now = level.getGameTime();
+        for (long[] hit : HITTING.values())
+            if (hit[0] == pos.asLong() && now - hit[1] <= 100) {
+                if (chunk.getData(ModDataAttachments.PLAYER_BUILT).cleared.add(pos.asLong())) chunk.setUnsaved(true);
+                break;
+            }
+    }
+
+    private static void uncleared(Level level, BlockPos pos) {
+        LevelChunk chunk = level.getChunkAt(pos);
+        Marks marks = chunk.getExistingDataOrNull(ModDataAttachments.PLAYER_BUILT);
+        if (marks != null && marks.cleared.remove(pos.asLong())) chunk.setUnsaved(true);
+    }
+
+    /** Remembers {@code pos} as broken by a player's hand (tests). */
+    public static void clearedByHand(Level level, BlockPos pos) {
+        if (level.hasChunkAt(pos) && level.getChunkAt(pos).getData(ModDataAttachments.PLAYER_BUILT).cleared.add(pos.asLong())) level.getChunkAt(pos).setUnsaved(true);
     }
 
     /** Forgets every mark between {@code a} and {@code b} (tests that reuse ground, admin). */
@@ -106,10 +149,12 @@ public final class PlayerBuilt {
                 LevelChunk chunk = level.getChunk(cx, cz);
                 Marks marks = chunk.getExistingDataOrNull(ModDataAttachments.PLAYER_BUILT);
                 if (marks == null) continue;
-                if (marks.cells.removeIf(l -> {
+                java.util.function.LongPredicate inside = l -> {
                     int x = BlockPos.getX(l), y = BlockPos.getY(l), z = BlockPos.getZ(l);
                     return x >= x0 && x <= x1 && y >= y0 && y <= y1 && z >= z0 && z <= z1;
-                })) chunk.setUnsaved(true);
+                };
+                boolean a1 = marks.cells.removeIf(inside::test), a2 = marks.cleared.removeIf(inside::test);
+                if (a1 || a2) chunk.setUnsaved(true);
             }
     }
 

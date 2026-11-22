@@ -45,8 +45,8 @@ import java.util.List;
 public final class Growth {
     public enum Mood { THRIVING, STEADY, STRUGGLING }
     public static final int THRIVING = 8, RECENT_DAYS = 10, WEAR_EVERY = 2, LEAVE_EVERY = 3, FEWEST = 3;
-    /** A house goes this far from the bell. */
-    public static final int NEAREST = 20, FURTHEST = 48;
+    /** A house goes this far from the bell, on ground at most {@link #SLOPE} blocks out of level. */
+    public static final int NEAREST = 20, FURTHEST = 48, SLOPE = 3;
     private static final String[] FAMILIES = {"Halloran", "Pike", "Ashby", "Corrigan", "Mott", "Fenwick", "Larue", "Dunmore", "Quill", "Brand"};
     private static boolean templatesBroken;
 
@@ -160,6 +160,7 @@ public final class Growth {
         if (projects) {
             Projects.consider(level, v);
             Markets.consider(level, v);
+            Repairs.consider(level, v);
         }
         switch (mood(level, v)) {
             case STRUGGLING -> {
@@ -238,7 +239,18 @@ public final class Growth {
                 states.add(b.state());
             }
             BlockPos center = corner.offset(rotated(template, rotation).getX() / 2, 0, rotated(template, rotation).getZ() / 2);
-            Rebuild.Site site = Rebuild.plan(level, v.bell, center, origin.getY(), positions, states);
+            // On a slope: dig first, then the foundation, then the house.
+            List<BlockPos> dig = new ArrayList<>(), fill = new ArrayList<>();
+            List<BlockState> fillStates = new ArrayList<>();
+            grade(level, v, corner, rotated(template, rotation), dig, fill, fillStates);
+            Rebuild.Site site;
+            if (dig.isEmpty() && fill.isEmpty()) site = Rebuild.plan(level, v.bell, center, origin.getY(), positions, states);
+            else {
+                fill.addAll(positions);
+                fillStates.addAll(states);
+                List<BlockState> air = new ArrayList<>(java.util.Collections.nCopies(dig.size(), Blocks.AIR.defaultBlockState()));
+                site = Rebuild.replan(level, v.bell, center, origin.getY(), dig, air, fill, fillStates);
+            }
             site.home = new Projects.Home(id, origin, rotation);
             Rebuild.begin(level, site);
             HeroesEvolved.LOGGER.info("Village {} will build {} at {}", v.name, id, origin);
@@ -405,19 +417,29 @@ public final class Growth {
     /** Where a house of {@code template}'s footprint fits: open, level ground, a block clear all round. Its corner, or null. */
     static BlockPos spot(ServerLevel level, BlockPos bell, StructureTemplate template, Rotation rotation) {
         net.minecraft.core.Vec3i size = template.getSize(rotation);
-        for (int ring = NEAREST; ring <= FURTHEST; ring += 4)
-            for (int i = 0; i < 12; i++) {
-                double a = (i + level.random.nextDouble() * 0.5) * Math.PI * 2 / 12;
-                int x0 = bell.getX() + (int) Math.round(Math.cos(a) * ring), z0 = bell.getZ() + (int) Math.round(Math.sin(a) * ring);
-                BlockPos corner = fits(level, x0, z0, size);
-                if (corner != null) return corner;
-            }
+        // Level ground first; then gentle slopes, which the builders dig into and lay a foundation on.
+        for (int slope : new int[]{1, SLOPE})
+            for (int ring = NEAREST; ring <= FURTHEST; ring += 3)
+                for (int i = 0; i < 20; i++) {
+                    double a = (i + level.random.nextDouble() * 0.5) * Math.PI * 2 / 20;
+                    int x0 = bell.getX() + (int) Math.round(Math.cos(a) * ring), z0 = bell.getZ() + (int) Math.round(Math.sin(a) * ring);
+                    BlockPos corner = fits(level, x0, z0, size, slope);
+                    if (corner != null) return corner;
+                }
         return null;
     }
 
-    /** The corner to build a footprint of {@code size} from at {@code x0, z0}, if the ground there will take it. */
-    static BlockPos fits(ServerLevel level, int x0, int z0, net.minecraft.core.Vec3i size) {
+    /** The corner to build a footprint of {@code size} from at {@code x0, z0}, if the ground there is level enough. */
+    static BlockPos fits(ServerLevel level, int x0, int z0, net.minecraft.core.Vec3i size) { return fits(level, x0, z0, size, 1); }
+
+    /**
+     * The corner (at the floor's height) to build a footprint of {@code size} from at {@code x0, z0}, if the ground there is
+     * natural and at most {@code slope} out of level: the floor goes at its middle height, the ground above it is dug away
+     * and the ground below gets a foundation ({@link #grade}). Nothing but air or plants may stand above the ground.
+     */
+    static BlockPos fits(ServerLevel level, int x0, int z0, net.minecraft.core.Vec3i size, int slope) {
         int low = Integer.MAX_VALUE, high = Integer.MIN_VALUE;
+        List<Integer> heights = new ArrayList<>();
         for (int dx = -1; dx <= size.getX(); dx++)
             for (int dz = -1; dz <= size.getZ(); dz++) {
                 BlockPos column = new BlockPos(x0 + dx, 0, z0 + dz);
@@ -428,17 +450,48 @@ public final class Growth {
                 if (!natural(g) || !level.getFluidState(ground).isEmpty() || !level.getFluidState(top).isEmpty() || PlayerBuilt.is(level, ground)) return null;
                 low = Math.min(low, ground.getY());
                 high = Math.max(high, ground.getY());
-                if (high - low > 1) return null;
+                heights.add(ground.getY());
+                if (high - low > slope) return null;
             }
-        // Clear all the way up: nothing but air, grass, flowers or snow where the house will stand.
+        java.util.Collections.sort(heights);
+        int base = slope <= 1 ? low : heights.get(heights.size() / 2);
+        // Clear all the way up: nothing but air, grass, flowers or snow above the ground, and only natural ground (never
+        // anything a player put down) between it and the floor where the builders dig.
         for (int dx = -1; dx <= size.getX(); dx++)
-            for (int dz = -1; dz <= size.getZ(); dz++)
-                for (int dy = 1; dy <= size.getY(); dy++) {
-                    BlockPos p = new BlockPos(x0 + dx, low + dy, z0 + dz);
+            for (int dz = -1; dz <= size.getZ(); dz++) {
+                int ground = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, new BlockPos(x0 + dx, 0, z0 + dz)).getY() - 1;
+                for (int y = base + 1; y <= base + size.getY(); y++) {
+                    BlockPos p = new BlockPos(x0 + dx, y, z0 + dz);
                     BlockState s = level.getBlockState(p);
-                    if (!s.isAir() && !(s.canBeReplaced() && s.getFluidState().isEmpty()) || PlayerBuilt.is(level, p)) return null;
+                    if (PlayerBuilt.is(level, p)) return null;
+                    if (y <= ground ? !natural(s) : !s.isAir() && !(s.canBeReplaced() && s.getFluidState().isEmpty())) return null;
                 }
-        return new BlockPos(x0, low, z0);
+            }
+        return new BlockPos(x0, base, z0);
+    }
+
+    /**
+     * Readies sloping ground for a building of {@code size} at {@code corner} (its floor's height): the ground standing above
+     * the floor is dug away (into {@code dig}), and under the footprint the ground below it is built up with a foundation
+     * of the village's stone (into {@code fill}, lowest first). Nothing to do on level ground.
+     */
+    static void grade(ServerLevel level, VillageMemory.Village v, BlockPos corner, net.minecraft.core.Vec3i size,
+                      List<BlockPos> dig, List<BlockPos> fill, List<BlockState> fillStates) {
+        int base = corner.getY();
+        BlockState foundation = (kind(level, v.bell).equals("desert") ? Blocks.SANDSTONE : Blocks.COBBLESTONE).defaultBlockState();
+        for (int dx = -1; dx <= size.getX(); dx++)
+            for (int dz = -1; dz <= size.getZ(); dz++) {
+                int x = corner.getX() + dx, z = corner.getZ() + dz;
+                int ground = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, new BlockPos(x, 0, z)).getY() - 1;
+                if (ground > base && !level.getBlockState(new BlockPos(x, ground + 1, z)).isAir()) dig.add(new BlockPos(x, ground + 1, z));
+                for (int y = ground; y > base; y--) dig.add(new BlockPos(x, y, z));
+                // Dug down: the ground's own top (grass, snow, sand) goes back on, not bare earth.
+                BlockState top = level.getBlockState(new BlockPos(x, ground, z));
+                if (ground > base && natural(top)) { fill.add(new BlockPos(x, base, z)); fillStates.add(top); }
+                boolean inside = dx >= 0 && dz >= 0 && dx < size.getX() && dz < size.getZ();
+                if (inside) for (int y = ground + 1; y < base; y++) { fill.add(new BlockPos(x, y, z)); fillStates.add(foundation); }
+            }
+        dig.sort(Comparator.<BlockPos>comparingInt(BlockPos::getY).reversed());
     }
 
     /** Ground a house may stand on (and replace its top with): soil, sand, snow or stone, not a path or anything built. */

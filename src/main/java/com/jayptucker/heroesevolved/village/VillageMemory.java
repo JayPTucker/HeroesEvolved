@@ -103,6 +103,9 @@ public final class VillageMemory extends SavedData {
         final java.util.Set<UUID> waking = new java.util.HashSet<>();
         /** Its market, while one is on (village/Markets), the day it last held one and the day it last told the radio. */
         Markets.Market market;
+        /** What was already missing from its buildings when it was first looked over (village/Repairs): how it was, not damage. */
+        final java.util.Set<Long> unbuilt = new java.util.HashSet<>();
+        boolean baselined;
         long marketHeld = -1, marketNews = -1;
         public Markets.Market market() { return market; }
         public Map<UUID, Homes.Owned> owned() { return Map.copyOf(owned); }
@@ -555,6 +558,7 @@ public final class VillageMemory extends SavedData {
         get(level).villages.remove(v.bell.asLong());
         get(level).setDirty();
         Projects.forgotten(v.bell);
+        Repairs.forgotten(v.bell);
         return true;
     }
 
@@ -627,6 +631,8 @@ public final class VillageMemory extends SavedData {
             if (v.market != null) t.put("market", v.market.save());
             t.putLong("market_held", v.marketHeld);
             t.putLong("market_news", v.marketNews);
+            t.putLongArray("unbuilt", v.unbuilt.stream().mapToLong(Long::longValue).toArray());
+            t.putBoolean("baselined", v.baselined);
             list.add(t);
         }
         tag.put("villages", list);
@@ -677,6 +683,8 @@ public final class VillageMemory extends SavedData {
             if (t.contains("market")) v.market = Markets.Market.load(t.getCompound("market"));
             v.marketHeld = t.contains("market_held") ? t.getLong("market_held") : -1;
             v.marketNews = t.contains("market_news") ? t.getLong("market_news") : -1;
+            for (long u : t.getLongArray("unbuilt")) v.unbuilt.add(u);
+            v.baselined = t.getBoolean("baselined");
             data.villages.put(v.bell.asLong(), v);
         }
         return data;

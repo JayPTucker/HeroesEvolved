@@ -59,7 +59,7 @@ public final class QuakeStyle extends ComboStyle {
         LivingEntity target = StyleHits.aimed(p, PALM_REACH, .7);
         Vec3 end = target != null ? target.getBoundingBox().getCenter() : StyleHits.reach(p, p.getEyePosition(), aim, PALM_REACH);
         if (target != null) {
-            press(p, target, (2 + .4F * level) * QuakeKit.power(p) * (loaded ? 1.8F : 1));
+            press(p, target, (.8F + .2F * level) * QuakeKit.power(p) * (loaded ? 1.8F : 1));
             StyleHits.shove(target, aim.scale(loaded ? 1.0 : .55).add(0, .15, 0));
             AbilityEffects.send(world(p), Kind.QUAKE_CONTACT, end.subtract(aim.scale(.3)), end.add(aim), loaded ? 1.2 : .7);
         }
@@ -79,7 +79,7 @@ public final class QuakeStyle extends ComboStyle {
             if (distance > DOUBLE_REACH + target.getBbWidth() * .5 || distance > .8
                     && delta.scale(1 / distance).dot(forward) < Math.cos(Math.toRadians(DOUBLE_HALF_ANGLE))
                     || !StyleHits.exposed(p, chest, target.getBoundingBox().getCenter())) continue;
-            press(p, target, (3 + level) * QuakeKit.power(p));
+            press(p, target, (1 + .3F * level) * QuakeKit.power(p));
             StyleHits.shove(target, forward.scale(1.35).add(0, .4, 0));
             if (++struck >= 8) break;
         }
@@ -97,7 +97,7 @@ public final class QuakeStyle extends ComboStyle {
         for (LivingEntity target : StyleHits.foes(p, feet, GROUND_RADIUS + 1)) {
             if (Math.abs(target.getY() - feet.y) > 1.5
                     || target.position().subtract(feet).horizontalDistance() > GROUND_RADIUS + target.getBbWidth() * .5) continue;
-            press(p, target, (2.5F + .5F * level) * QuakeKit.power(p));
+            press(p, target, (1 + .3F * level) * QuakeKit.power(p));
             StyleHits.shove(target, new Vec3(0, .7, 0).add(target.position().subtract(feet).multiply(1, 0, 1).normalize().scale(.2)));
         }
         for (int i = 0; i < 4; i++) {
@@ -141,7 +141,7 @@ public final class QuakeStyle extends ComboStyle {
         Vec3 chest = StyleHits.chest(p);
         if (attacker != null && attacker.distanceToSqr(p) < 10 * 10) {
             int level = Math.max(1, com.jayptucker.heroesevolved.progression.PlayerProgressionService.getLevel(p));
-            press(p, attacker, (4 + level) * QuakeKit.power(p));
+            press(p, attacker, (.8F + .2F * level) * QuakeKit.power(p));
             StyleHits.away(attacker, p.position(), StyleHits.level(p), .9, .35);
             AbilityEffects.send(world(p), Kind.QUAKE_RINGS, chest, attacker.getBoundingBox().getCenter(), .8);
         }

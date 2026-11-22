@@ -77,11 +77,11 @@ import java.util.UUID;
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class Projects {
     /** The board stands this far from the bell. */
-    public static final int BOARD_NEAREST = 5, BOARD_FURTHEST = 12;
+    public static final int BOARD_NEAREST = 5, BOARD_FURTHEST = 18;
     /** A village builds (or rebuilds) at most this many things. */
     public static final int MOST = 16;
     /** Where a village's tier starts, counting a bed as 1 and each thing it has built as 2. */
-    public static final int VILLAGE_FROM = 8, TOWN_FROM = 20;
+    public static final int VILLAGE_FROM = 5, TOWN_FROM = 20;
     /** The most of any one material a project asks for. */
     public static final int MOST_OF_ONE = 160;
     /** Anyone this close to the board hears what it's for, once a project. */
@@ -186,6 +186,33 @@ public final class Projects {
         for (BlockPos p : BlockPos.betweenClosed(box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ()))
             if (PlayerBuilt.is(level, p)) return true;
         return false;
+    }
+
+    /**
+     * Every building {@code v} has as it was built, to mend (village/Repairs): its structure's own rigid pieces (houses,
+     * its meeting point, wells, lamps; not its streets, which follow the ground) and what it built itself, less what it
+     * tore down to rebuild and the homes players own.
+     */
+    public static List<Home> pieces(ServerLevel level, VillageMemory.Village v) {
+        List<Home> found = new ArrayList<>();
+        try {
+            var start = level.structureManager().getStructureWithPieceAt(v.bell, net.minecraft.tags.StructureTags.VILLAGE);
+            if (start.isValid())
+                for (var piece : start.getPieces())
+                    if (piece instanceof net.minecraft.world.level.levelgen.structure.PoolElementStructurePiece pe
+                            && pe.getElement().getProjection() == net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool.Projection.RIGID) {
+                        ResourceLocation id = templateOf(pe.getElement());
+                        if (id != null && !id.getPath().contains("/streets/")) found.add(new Home(id, pe.getPosition(), pe.getRotation()));
+                    }
+        } catch (RuntimeException e) {
+            HeroesEvolved.LOGGER.debug("Couldn't read the village structure at {}", v.bell, e);
+        }
+        found.addAll(v.homes);
+        java.util.Set<Long> owned = new java.util.HashSet<>();
+        for (var o : v.owned.values()) owned.add(o.home().origin().asLong());
+        found.removeIf(h -> v.replaced.contains(h.origin().asLong()) || owned.contains(h.origin().asLong())
+                || h.origin().distSqr(v.bell) > (long) (Villages.RADIUS + 32) * (Villages.RADIUS + 32));
+        return found;
     }
 
     /** How much of a home must still stand for the village to rebuild it rather than leave it be. */
@@ -298,8 +325,8 @@ public final class Projects {
         int turn = (int) Math.floorMod(bell.asLong() * 31, 16);
         for (int pass = 0; pass < 2; pass++)
             for (int r = BOARD_NEAREST; r <= BOARD_FURTHEST; r++)
-                for (int i = 0; i < 16; i++) {
-                    double a = (i + turn) * Math.PI * 2 / 16;
+                for (int i = 0; i < 24; i++) {
+                    double a = (i + turn) * Math.PI * 2 / 24;
                     int x0 = bell.getX() + (int) Math.round(Math.cos(a) * r), z0 = bell.getZ() + (int) Math.round(Math.sin(a) * r);
                     Direction facing = Direction.getNearest((float) (bell.getX() - x0), 0F, (float) (bell.getZ() - z0));
                     Board b = fit(level, bell, x0, z0, facing, pass == 1);
@@ -331,7 +358,7 @@ public final class Projects {
                     if (!s.isAir() && !(s.canBeReplaced() && s.getFluidState().isEmpty()) || PlayerBuilt.is(level, b.at(x, dy, z))) return null;
                 }
             }
-        return level.canSeeSky(b.at(0, 4, 0)) ? b : null;
+        return b;
     }
 
     /** Puts up (or mends) {@code v}'s board: every piece that's missing, where nothing else stands in its way. */
@@ -386,6 +413,8 @@ public final class Projects {
         Home upgrade;
         /** Who it is a home for (village/Homes), or null: a home for a player is built with nothing to gather. */
         UUID owner;
+        /** The last calendar day the village gathered for it itself (village/Workers); -1 until it starts. */
+        long gathered = -1;
         final Set<UUID> givers = new LinkedHashSet<>(), told = new HashSet<>();
 
         public ResourceLocation template() { return template; }
@@ -429,6 +458,7 @@ public final class Projects {
             t.putBoolean("no_room", noRoom);
             if (upgrade != null) t.put("upgrade", upgrade.save());
             if (owner != null) t.putUUID("owner", owner);
+            t.putLong("gathered", gathered);
             ListTag g = new ListTag(), k = new ListTag();
             for (UUID u : givers) g.add(NbtUtils.createUUID(u));
             for (UUID u : told) k.add(NbtUtils.createUUID(u));
@@ -453,6 +483,7 @@ public final class Projects {
             p.noRoom = t.getBoolean("no_room");
             if (t.contains("upgrade")) p.upgrade = Home.load(t.getCompound("upgrade"));
             if (t.hasUUID("owner")) p.owner = t.getUUID("owner");
+            p.gathered = t.contains("gathered") ? t.getLong("gathered") : -1;
             for (Tag u : t.getList("givers", Tag.TAG_INT_ARRAY)) p.givers.add(NbtUtils.loadUUID(u));
             for (Tag u : t.getList("told", Tag.TAG_INT_ARRAY)) p.told.add(NbtUtils.loadUUID(u));
             return p.template == null ? null : p;
@@ -859,6 +890,7 @@ public final class Projects {
         Homes.tick(level, v);
         if (p != null) {
             if (p.stage == Stage.GATHERING) collect(level, v, null);
+            if (p.stage == Stage.GATHERING) Workers.gather(level, v);
             if (p.stage == Stage.READY && (now - p.lastTry >= RETRY || now < p.lastTry)) start(level, v);
             if (p.stage == Stage.BUILDING && !Growth.building(level, v)) { p.stage = Stage.READY; p.lastTry = -1000; }
             if (p.stage == Stage.GATHERING) tell(level, v, p);
