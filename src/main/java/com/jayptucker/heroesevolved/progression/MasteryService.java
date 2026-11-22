@@ -7,6 +7,9 @@ import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.config.HeroesEvolvedConfig;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
+import com.jayptucker.heroesevolved.data.ModDataAttachments;
+import com.jayptucker.heroesevolved.gifted.Gift;
+import com.jayptucker.heroesevolved.gifted.GiftedMobs;
 import com.jayptucker.heroesevolved.network.PlayerPowerSyncService;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -19,6 +22,8 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayDeque;
@@ -37,12 +42,11 @@ import java.util.UUID;
  * your power, defeating one within three seconds of using it, and saving an
  * ally earn the most; defeats scale with the foe's toughness, with
  * diminishing returns for farming one type. Stamina spent still earns a
- * little (half a point per point by default), so practice counts but never
- * outpaces energy regeneration. Story notes and a small trickle for active,
- * non-AFK play round it out.</p>
+ * little, with hits and spending sharing a six-Mastery allowance per active minute.
+ * Exploration and active play are independent sources; repeated local kills stop paying.
+ * The reward ledger persists, so a farm cannot reset it by reconnecting.</p>
  *
- * <p>The short-lived trackers intentionally reset after a server restart;
- * only the player's earned Mastery is persistent.</p>
+ * <p>Only timestamps and fractional payments reset on logout. No unused offline time is rewarded.</p>
  */
 public final class MasteryService {
     private static final long ACTIVE_WINDOW_TICKS = 20L * 30L;
@@ -51,14 +55,15 @@ public final class MasteryService {
     public static final long POWER_WINDOW_TICKS = 60L;
     private static final long HIT_INTERVAL_TICKS = 10L;
     private static final int KILL_POWER_BONUS_PERCENT = 50;
+    public static final int EXPLORATION_MASTERY = 60, EXPLORATION_SIZE = 128, ENCOUNTER_SIZE = 256;
+    private static final String KILL_REWARDED = "heroesevolved_mastery_rewarded";
+    private static final String HIT_REWARDED = "heroesevolved_mastery_hit_damage";
 
     private static final Map<UUID, Long> LAST_POWER_USE = new HashMap<>();
     private static final Map<UUID, Long> LAST_HIT_AWARD = new HashMap<>();
 
     private static final Map<UUID, ActiveTimeTracker> ACTIVE_TIME_TRACKERS =
             new HashMap<>();
-    private static final Map<UUID, Map<EntityType<?>, Deque<Long>>>
-            MOB_KILL_TIMES = new HashMap<>();
     // Fractional Mastery carried between small energy spends, so a power
     // that drains 1 energy at a time still earns its fair share.
     private static final Map<UUID, Double> ENERGY_MASTERY_REMAINDER =
@@ -68,7 +73,7 @@ public final class MasteryService {
     }
 
     public static void tickActiveTime(ServerPlayer player) {
-        if (!hasAwakenedPower(player)) {
+        if (!hasAwakenedPower(player) || !player.isAlive() || player.isSpectator()) {
             return;
         }
 
@@ -77,13 +82,14 @@ public final class MasteryService {
                 player.getUUID(),
                 ignored -> new ActiveTimeTracker(
                         player.position(),
-                        gameTime,
+                        gameTime - ACTIVE_WINDOW_TICKS - 1,
                         gameTime
                 )
         );
 
-        if (player.position().distanceToSqr(tracker.lastPosition())
-                >= MINIMUM_ACTIVE_MOVEMENT_SQUARED) {
+        boolean moved = player.position().distanceToSqr(tracker.lastPosition())
+                >= MINIMUM_ACTIVE_MOVEMENT_SQUARED;
+        if (moved) {
             tracker = tracker.withActivity(player.position(), gameTime);
         }
 
@@ -91,15 +97,18 @@ public final class MasteryService {
                 .activeMasteryIntervalTicks
                 .get();
 
-        if (gameTime - tracker.lastAwardGameTime() >= intervalTicks
-                && gameTime - tracker.lastActivityGameTime()
-                <= ACTIVE_WINDOW_TICKS) {
-            awardMastery(
-                    player,
-                    HeroesEvolvedConfig.COMMON.activeMasteryAmount.get()
-            );
-            tracker = tracker.withAward(gameTime);
+        // Count only observed active ticks. A reconnect or a long AFK gap cannot cash in wall-clock time.
+        long elapsed = Math.clamp(gameTime - tracker.lastAwardGameTime(), 0, 20);
+        if (gameTime - tracker.lastActivityGameTime() <= ACTIVE_WINDOW_TICKS && elapsed > 0) {
+            PlayerProgressionData data = PlayerProgressionService.getData(player);
+            boolean interval = data.activeTicks() / intervalTicks != (data.activeTicks() + elapsed) / intervalTicks;
+            player.setData(ModDataAttachments.PLAYER_PROGRESSION, data.active(elapsed, interval));
+            if (interval) awardMastery(player, HeroesEvolvedConfig.COMMON.activeMasteryAmount.get());
         }
+        tracker = tracker.withAward(gameTime);
+
+        // One new region per active minute, never a reward for repeatedly crossing a border or teleporting back.
+        if (moved) explore(player);
 
         ACTIVE_TIME_TRACKERS.put(player.getUUID(), tracker);
     }
@@ -116,7 +125,6 @@ public final class MasteryService {
         if (hasAwakenedPower(player)) {
             long now = player.serverLevel().getGameTime();
             LAST_POWER_USE.put(player.getUUID(), now);
-            markActivity(player, now);
         }
     }
 
@@ -130,13 +138,21 @@ public final class MasteryService {
      * A hit on an enemy (a hostile mob, or another player) landed while the
      * power was in use: one Mastery per two damage, up to 6, at most twice a second.
      */
-    public static void awardPowerHit(ServerPlayer player, float damage) {
-        if (damage <= 0 || !hasAwakenedPower(player) || !usedPowerRecently(player)) return;
+    public static void awardPowerHit(ServerPlayer player, LivingEntity target, float damage) {
+        if (damage <= 0 || !hasAwakenedPower(player) || !usedPowerRecently(player) || !rewardable(target)
+                || localKills(player, target) >= HeroesEvolvedConfig.COMMON.mobKillMaximumRewardedKills.get()) return;
         long now = player.serverLevel().getGameTime();
         Long last = LAST_HIT_AWARD.get(player.getUUID());
         if (last != null && now - last < HIT_INTERVAL_TICKS) return;
         LAST_HIT_AWARD.put(player.getUUID(), now);
-        awardMastery(player, Math.clamp(Math.round(damage / 2.0F), 1, 6));
+        // Healing the same captive cannot generate fresh practice. The budget is shared by all attackers.
+        float already = target.getPersistentData().getFloat(HIT_REWARDED);
+        float fresh = Math.max(0, Math.min(damage, target.getMaxHealth() - already));
+        target.getPersistentData().putFloat(HIT_REWARDED, already + fresh);
+        if (fresh > 0) {
+            markActivity(player, now);
+            awardPractice(player, Math.clamp(Math.round(fresh / 2.0F), 1, 6));
+        }
     }
 
     /** Saving someone with your power: healing a dying ally, catching a falling one. */
@@ -161,42 +177,79 @@ public final class MasteryService {
         long whole = (long) Math.floor(earned);
         ENERGY_MASTERY_REMAINDER.put(player.getUUID(), earned - whole);
 
-        markActivity(player, player.serverLevel().getGameTime());
         if (whole > 0) {
-            awardMastery(player, whole);
+            awardPractice(player, whole);
         }
+    }
+
+    private static void awardPractice(ServerPlayer player, long amount) {
+        PlayerProgressionData data = PlayerProgressionService.getData(player);
+        int earned = (int) Math.min(amount, data.practiceLeft());
+        if (earned <= 0) return;
+        player.setData(ModDataAttachments.PLAYER_PROGRESSION, data.practice(earned));
+        awardMastery(player, earned);
+    }
+
+    private static String region(LivingEntity entity, int size) {
+        return entity.level().dimension().location() + "|" + Math.floorDiv(entity.getBlockX(), size)
+                + "|" + Math.floorDiv(entity.getBlockZ(), size);
+    }
+
+    /** Claims the current region only when active movement and a fresh exploration allowance meet. */
+    private static void explore(ServerPlayer player) {
+        PlayerProgressionData data = PlayerProgressionService.getData(player);
+        String place = region(player, EXPLORATION_SIZE);
+        if (!data.explorationReady() || data.explored().contains(place) || data.explored().size() >= PlayerProgressionData.MAX_PLACES) return;
+        player.setData(ModDataAttachments.PLAYER_PROGRESSION, data.explore(place));
+        awardMastery(player, EXPLORATION_MASTERY);
+    }
+
+    private static String encounter(LivingEntity target) {
+        return region(target, ENCOUNTER_SIZE) + "|" + net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(target.getType());
+    }
+
+    private static int localKills(ServerPlayer player, LivingEntity target) {
+        return PlayerProgressionService.getData(player).encounters().getOrDefault(encounter(target), 0);
+    }
+
+    private static boolean boss(LivingEntity target) {
+        Gift gift = Gift.read(target);
+        return target.getType().is(net.neoforged.neoforge.common.Tags.EntityTypes.BOSSES)
+                || gift != null && gift.evil() && gift.rarity().boss();
+    }
+
+    /** One eligibility rule for hits, kills and the gifted reward callback. Spawn provenance is saved by NeoForge. */
+    public static boolean rewardable(LivingEntity target) {
+        if (target instanceof ServerPlayer || target.getPersistentData().getBoolean(GiftedMobs.FOLLOWER)
+                || target.getPersistentData().contains("heroesevolved_rift_beast")) return false;
+        Gift gift = Gift.read(target);
+        if (!(target instanceof Enemy) && !(gift != null && gift.evil()) && !boss(target)) return false;
+        if (target instanceof Mob mob && mob.getSpawnType() != null) {
+            return switch (mob.getSpawnType().name()) {
+                case "SPAWNER", "TRIAL_SPAWNER", "SPAWN_EGG", "DISPENSER", "COMMAND", "BREEDING", "REINFORCEMENT" -> false;
+                case "MOB_SUMMONED" -> boss(target);
+                case "CONVERSION" -> gift != null && gift.evil() && gift.origin() == Gift.Origin.RENEGADE;
+                default -> true;
+            };
+        }
+        return true;
     }
 
     public static void awardHostileMobKill(
             ServerPlayer player,
             LivingEntity monster
     ) {
-        if (!hasAwakenedPower(player)) {
+        if (!hasAwakenedPower(player) || !rewardable(monster) || monster.getPersistentData().getBoolean(KILL_REWARDED)) {
             return;
         }
-
-        long gameTime = player.serverLevel().getGameTime();
-        Map<EntityType<?>, Deque<Long>> killsByType = MOB_KILL_TIMES
-                .computeIfAbsent(player.getUUID(), ignored -> new HashMap<>());
-        Deque<Long> killTimes = killsByType.computeIfAbsent(
-                monster.getType(),
-                ignored -> new ArrayDeque<>()
-        );
-        long windowStart = gameTime - HeroesEvolvedConfig.COMMON
-                .mobKillWindowTicks
-                .get();
-
-        while (!killTimes.isEmpty() && killTimes.peekFirst() <= windowStart) {
-            killTimes.removeFirst();
-        }
-
-        int maximumRewardedKills = HeroesEvolvedConfig.COMMON
-                .mobKillMaximumRewardedKills
-                .get();
-
-        if (killTimes.size() >= maximumRewardedKills) {
-            return;
-        }
+        PlayerProgressionData data = PlayerProgressionService.getData(player);
+        String place = encounter(monster);
+        int kills = data.encounters().getOrDefault(place, 0);
+        if (kills >= HeroesEvolvedConfig.COMMON.mobKillMaximumRewardedKills.get()
+                || !data.encounters().containsKey(place) && data.encounters().size() >= PlayerProgressionData.MAX_PLACES) return;
+        // The mob's flag also prevents the death event and gifted loot callback from paying twice.
+        monster.getPersistentData().putBoolean(KILL_REWARDED, true);
+        player.setData(ModDataAttachments.PLAYER_PROGRESSION, data.encounter(place));
 
         // Tougher foes are worth more: a zombie (20 health) earns the base
         // rate, an enderman twice that, a Warden twenty-five times.
@@ -206,7 +259,10 @@ public final class MasteryService {
         int fullRewardLimit = HeroesEvolvedConfig.COMMON
                 .mobKillFullRewardLimit
                 .get();
-        int awardedMastery = killTimes.size() < fullRewardLimit
+        Gift gift = Gift.read(monster);
+        if (gift != null && gift.evil()) fullReward += 10 << gift.rarity().ordinal();
+        if (boss(monster)) fullReward = Math.max(120, fullReward * 4);
+        int awardedMastery = kills < fullRewardLimit
                 ? fullReward
                 : Math.max(1, fullReward / 2);
         // Defeating it with your power is worth half again, and counts
@@ -216,9 +272,8 @@ public final class MasteryService {
             EvolutionTrials.defeated(player);
         }
 
-        killTimes.addLast(gameTime);
-        markActivity(player, gameTime);
-        awardMastery(player, awardedMastery);
+        markActivity(player, player.serverLevel().getGameTime());
+        if (awardedMastery > 0) awardMastery(player, awardedMastery);
     }
 
     /** Operator grant from the admin menu; obeys level-up rules. */
@@ -230,7 +285,6 @@ public final class MasteryService {
 
     public static void forgetPlayer(UUID playerId) {
         ACTIVE_TIME_TRACKERS.remove(playerId);
-        MOB_KILL_TIMES.remove(playerId);
         ENERGY_MASTERY_REMAINDER.remove(playerId);
         LAST_POWER_USE.remove(playerId);
         LAST_HIT_AWARD.remove(playerId);

@@ -166,7 +166,7 @@ public final class HydroCombat {
         if (target == null) target = HydroService.firstInTube(player, eye, aim, eye.distanceTo(hit.getLocation()), .5);
         Vec3 end = target != null ? target.getBoundingBox().getCenter() : hit.getLocation();
         if (target != null) {
-            float damage = (2 + .4F * level) * draw.power() * (loaded ? 1.6F : 1);
+            float damage = (.8F + .2F * level) * draw.power() * (loaded ? 1.6F : 1);
             if (SkillTreeService.has(player, "hydro_brine_edge") && CryoService.isFrozen(target)) damage *= 2;
             HydroService.hit(player, target, damage);
             if (loaded) {
@@ -204,7 +204,7 @@ public final class HydroCombat {
         Vec3 eye = player.getEyePosition(), aim = player.getLookAngle().normalize();
         Vec3 hands = HydroGeometry.hand(player, 1, true).lerp(HydroGeometry.hand(player, 1, false), .5);
         boolean brine = SkillTreeService.has(player, "hydro_brine_edge");
-        float damage = (1.5F + .3F * level) * draw.power();
+        float damage = (.35F + .08F * level) * draw.power();
         int count = draw.thin() ? 3 : HydroGeometry.DAGGERS;
         for (int i = 0; i < count; i++) {
             double angle = Math.toRadians((i - (count - 1) / 2.0) * HydroGeometry.DAGGER_SPREAD);
@@ -234,7 +234,7 @@ public final class HydroCombat {
         HydroService.Draw draw = HydroService.draw(player, 5);
         Vec3 feet = player.position();
         double radius = HydroGeometry.WHEEL_RADIUS;
-        float damage = (2.5F + .5F * level) * draw.power();
+        float damage = (.8F + .2F * level) * draw.power();
         int struck = 0;
         for (LivingEntity target : HydroService.enemies(player, feet.add(0, .8, 0), radius + 1)) {
             if (Math.abs(target.getY() - feet.y) > 1.6
@@ -308,7 +308,7 @@ public final class HydroCombat {
     /** A column of water bursts up where the vault began: whoever is on it or just in front goes up with it. */
     private static void geyser(ServerPlayer player, int level, Vec3 from, Vec3 forward) {
         Vec3 center = from.add(forward.scale(.8));
-        float damage = 3 + .6F * level;
+        float damage = 1.5F + .25F * level;
         for (LivingEntity target : HydroService.enemies(player, center.add(0, .8, 0), HydroGeometry.VAULT_RADIUS + 1)) {
             if (target.position().subtract(center).horizontalDistance() > HydroGeometry.VAULT_RADIUS + target.getBbWidth() * .5
                     || Math.abs(target.getY() - from.y) > 2) continue;

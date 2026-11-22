@@ -864,7 +864,7 @@ public final class PyroService {
             if (along < 0 || along > length + 0.5 || delta.subtract(aim.scale(along)).length() > 0.9 + target.getBbWidth() / 2
                     || !exposed(player, eye, target.getBoundingBox().getCenter())) continue;
             if (++struck > 8) break;
-            burn(player, target, (8 + powerLevel) * BLUE_MULTIPLIER, 6);
+            burn(player, target, (3 + .5F * powerLevel) * BLUE_MULTIPLIER, 6);
         }
         if (hit.getType() == HitResult.Type.BLOCK) {
             if (quenching(level, hit.getBlockPos())) steam(player, level, hit.getLocation());
@@ -981,7 +981,7 @@ public final class PyroService {
                 double along = delta.dot(aim);
                 if (along < 0 || along > reach || delta.subtract(aim.scale(along)).lengthSqr() > 1.1) continue;
                 if (!exposed(lance.owner, lance.start, target.getBoundingBox().getCenter())) continue;
-                burn(lance.owner, target, 2.5F, 3);
+                burn(lance.owner, target, .75F, 3);
                 if (++struck >= 8) break;
             }
             PyroGeometry.show(lance.level, Piece.PYRO_LANCE, lance.start, contact.getLocation(), 1, true, null);
@@ -1077,7 +1077,7 @@ public final class PyroService {
                         2.55, isBlue(owner), owner);
                 if (now % 20 == 0) {
                     for (LivingEntity target : enemies(owner, owner.position(), 2.5))
-                        if (visibleFrom(owner.serverLevel(), owner.position(), target)) burn(owner, target, 1.5F, 3);
+                        if (visibleFrom(owner.serverLevel(), owner.position(), target)) burn(owner, target, .1F, 3);
                 }
             }
         }

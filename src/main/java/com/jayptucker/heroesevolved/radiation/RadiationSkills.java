@@ -95,7 +95,7 @@ public final class RadiationSkills {
         var hit = level.clip(new ClipContext(eye, eye.add(look.scale(reach)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
         Vec3 end = hit.getType() == HitResult.Type.BLOCK ? hit.getLocation() : eye.add(look.scale(reach));
         boolean charged = RadiationService.vent(p, 15) == 15;
-        float damage = (8 + tier) * (charged ? 2 : 1) * RadiationService.multiplier(p);
+        float damage = (4 + .5F * tier) * (charged ? 2 : 1) * RadiationService.multiplier(p);
         int struck = 0;
         for (Entity e : level.getEntities(p, new AABB(eye, end).inflate(1), Entity::isAlive)) {
             if (!(e instanceof LivingEntity t) || !RadiationService.hostile(p, t)) continue;
@@ -170,7 +170,7 @@ public final class RadiationSkills {
             Vec3 to = t.getBoundingBox().getCenter().subtract(eye);
             if (to.length() > 9 || to.length() > 1.2 && to.normalize().dot(aim) < 0.6) continue;
             t.invulnerableTime = 0;
-            t.hurt(p.damageSources().indirectMagic(p, p), 3 + vented / 5F);
+            t.hurt(p.damageSources().indirectMagic(p, p), 1.5F + vented / 30F);
             t.igniteForSeconds(4);
             double resist = Math.max(0.2, 1 - t.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE));
             t.setDeltaMovement(new Vec3(aim.x, 0, aim.z).normalize().scale((0.6 + vented / 30.0) * resist).add(0, 0.35 * resist, 0));
@@ -220,7 +220,7 @@ public final class RadiationSkills {
         if (until == null || now(p) > until) return;
         if (source.getDirectEntity() instanceof LivingEntity attacker && attacker == source.getEntity()
                 && RadiationService.hostile(p, attacker)) {
-            RadiationService.irradiate(attacker, p, 1, 120);
+            RadiationSickness.dose(attacker, p, 1, 120, 0);
         }
     }
 

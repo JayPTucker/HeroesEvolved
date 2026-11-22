@@ -493,7 +493,7 @@ public final class FlightSkillService {
                 target.resetFallDistance();
                 target.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 80, 0));
             } else if (hostile(player, target)) {
-                target.hurt(player.damageSources().playerAttack(player), 2);
+                target.hurt(player.damageSources().playerAttack(player), 6);
                 push(target, target.getDeltaMovement().multiply(.2, 0, .2).add(0, 1.05, 0));
             }
         }
@@ -562,7 +562,7 @@ public final class FlightSkillService {
         }
         state.vacuum = null;
         double momentum = FlightDynamicsService.consumeMomentum(player);
-        float damage = (float) (4 + momentum * .05);
+        float damage = (float) (7 + momentum * .05);
         pressureWave(player, center, vacuum.radius, damage, 1 + momentum * .005);
         if (SkillTreeService.has(player, "flight_sound_barrier"))
             scheduleBloom(state, center, vacuum.radius, damage);

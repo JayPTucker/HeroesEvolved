@@ -97,6 +97,17 @@ public final class GiftedCommands {
                         .then(Commands.literal("next").executes(c -> project(c.getSource(), "next")))
                         .then(Commands.literal("board").executes(c -> project(c.getSource(), "board")))
                         .then(Commands.literal("rebuild").executes(c -> project(c.getSource(), "rebuild"))))
+                .then(Commands.literal("market")
+                        .executes(c -> market(c.getSource(), false))
+                        .then(Commands.literal("end").executes(c -> market(c.getSource(), true))))
+                .then(Commands.literal("home").executes(c -> {
+                    var p = c.getSource().getPlayerOrException();
+                    var v = com.jayptucker.heroesevolved.village.VillageMemory.near(c.getSource().getLevel(), p.blockPosition());
+                    if (v == null) { c.getSource().sendFailure(Component.literal("No remembered village near here.")); return 0; }
+                    com.jayptucker.heroesevolved.village.Homes.order(c.getSource().getLevel(), v, p.getUUID(), p.getName().getString());
+                    c.getSource().sendSuccess(() -> Component.literal(v.name() + " will build you a home."), true);
+                    return 1;
+                }))
                 .then(Commands.literal("forget").executes(c -> {
                     boolean done = com.jayptucker.heroesevolved.village.VillageMemory.forget(c.getSource().getLevel(), net.minecraft.core.BlockPos.containing(c.getSource().getPosition()));
                     c.getSource().sendSuccess(() -> Component.literal(done ? "The village has forgotten." : "No remembered village near here."), true);
@@ -263,6 +274,24 @@ public final class GiftedCommands {
         }
         String line = com.jayptucker.heroesevolved.village.Projects.describe(level, v);
         source.sendSuccess(() -> Component.literal(v.name() + ": " + line), true);
+        return 1;
+    }
+
+    /** {@code village market [end]}: opens the nearest village's market now (any day), or packs it up. */
+    private static int market(net.minecraft.commands.CommandSourceStack source, boolean end) {
+        var level = source.getLevel();
+        var v = com.jayptucker.heroesevolved.village.VillageMemory.near(level, net.minecraft.core.BlockPos.containing(source.getPosition()));
+        if (v == null) { source.sendFailure(Component.literal("No remembered village near here.")); return 0; }
+        if (end) {
+            com.jayptucker.heroesevolved.village.Markets.close(level, v, false);
+            source.sendSuccess(() -> Component.literal(v.name() + "'s market is packed up."), true);
+            return 1;
+        }
+        var tier = com.jayptucker.heroesevolved.village.Projects.tier(level, v);
+        boolean opened = com.jayptucker.heroesevolved.village.Markets.open(level, v,
+                tier == com.jayptucker.heroesevolved.village.Projects.Tier.HAMLET ? com.jayptucker.heroesevolved.village.Projects.Tier.VILLAGE : tier);
+        if (!opened) { source.sendFailure(Component.literal(v.name() + " has a market on already, or no room for a stall.")); return 0; }
+        source.sendSuccess(() -> Component.literal(v.name() + " opens its market: " + v.market().kinds().size() + " stalls."), true);
         return 1;
     }
 }

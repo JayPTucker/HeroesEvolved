@@ -84,7 +84,7 @@ public final class StyleCasts {
                     if (age != 30) return;
                     for (LivingEntity t : foes(p, point, radius)) {
                         double d = t.position().distanceTo(point);
-                        hurt(p, t, (float) (10 + 2 * lvl + 12 * (1 - d / radius)));
+                        hurt(p, t, (float) (4 + .6 * lvl + 4 * (1 - d / radius)));
                         RadiationService.irradiate(t, p, 1, 160);
                         shove(t, point, 1.3, 0.5);
                     }
@@ -101,7 +101,7 @@ public final class StyleCasts {
                 sound(level, at, SoundEvents.BEACON_ACTIVATE, 1, 1.3F);
                 StyleRuntime.run(p, 160, age -> {
                     if (destroy(p, at.add(0, 1, 0), radius + 0.5) > 0) sound(level, at, SoundEvents.SHIELD_BLOCK, 0.6F, 1.6F);
-                    if (age % 20 == 10) for (LivingEntity t : foes(p, at, radius)) { magic(p, t, 1); RadiationService.irradiate(t, p, 1, 60); }
+                    if (age % 20 == 10) for (LivingEntity t : foes(p, at, radius)) { magic(p, t, .3F); com.jayptucker.heroesevolved.radiation.RadiationSickness.dose(t, p, 1, 60, 0); }
                 }, () -> sound(level, at, SoundEvents.BEACON_DEACTIVATE, 1, 1.3F));
             }
             case "reactor_hearth" -> {
@@ -135,7 +135,7 @@ public final class StyleCasts {
                         if (clock < 0) clock += Mth.TWO_PI;
                         if (clock > sweep) continue;
                         struck.add(t);
-                        hurt(p, t, 9 + 2 * lvl);
+                        hurt(p, t, 6 + lvl);
                         effect(t, MobEffects.MOVEMENT_SLOWDOWN, 60, 1);
                         Vec3 tangent = new Vec3(-d.z, 0, d.x).normalize();
                         push(t, tangent.scale(-0.8).add(0, 0.25, 0));
@@ -173,7 +173,7 @@ public final class StyleCasts {
                     if (age == STARFALL_FALL / 2) sound(level, point.add(0, 8, 0), SoundEvents.FIREWORK_ROCKET_LAUNCH, 2.0F, 0.5F);
                     if (age != STARFALL_FALL) return;
                     for (LivingEntity t : foes(p, point, radius)) {
-                        hurt(p, t, 12 + 2 * lvl);
+                        hurt(p, t, 6 + .75F * lvl);
                         t.igniteForSeconds(5);
                         shove(t, point, 1.0, 0.6);
                     }
@@ -215,7 +215,7 @@ public final class StyleCasts {
                 StyleRuntime.run(p, 84, age -> {
                     if (age < 16 || age % 8 != 0) return;
                     for (LivingEntity t : foes(p, point, radius)) {
-                        hurt(p, t, 3 + lvl * 0.5F);
+                        hurt(p, t, 1 + lvl * .2F);
                         effect(t, MobEffects.MOVEMENT_SLOWDOWN, 40, 1);
                         t.setTicksFrozen(Math.min(t.getTicksRequiredToFreeze() + 40, t.getTicksFrozen() + 30));
                     }
@@ -258,7 +258,7 @@ public final class StyleCasts {
                     int n = 0;
                     for (LivingEntity t : foes(p, point, reach)) {
                         if (n++ >= 3) break;
-                        hurt(p, t, 4 + lvl * 0.5F);
+                        hurt(p, t, .7F + lvl * .15F);
                         effect(t, MobEffects.MOVEMENT_SLOWDOWN, 20, 2);
                         piece(p, Piece.TESLA_ZAP, crown, t.getEyePosition().subtract(0, 0.4, 0), 1, null);
                     }
@@ -313,7 +313,7 @@ public final class StyleCasts {
                         double along = d.dot(f), off = d.dot(side);
                         if (thrown.contains(t) || along < 0 || along > reach || Math.abs(off) > 2) continue;
                         thrown.add(t);
-                        hurt(p, t, 10 + 2 * lvl);
+                        hurt(p, t, 7 + lvl);
                         push(t, side.scale(Math.signum(off == 0 ? 1 : off) * 0.5).add(0, 1.0, 0));
                     }
                     if (age % 4 == 0) sound(level, at.add(f.scale(reach)), SoundEvents.STONE_BREAK, 1.2F, 0.6F);
@@ -365,7 +365,7 @@ public final class StyleCasts {
                     p.fallDistance = 0;
                     for (LivingEntity t : foes(p, p.position(), 2.5)) {
                         if (!hit.add(t)) continue;
-                        hurt(p, t, 9 + 2 * lvl);
+                        hurt(p, t, 5 + .75F * lvl);
                         Vec3 side = t.position().subtract(p.position()).multiply(1, 0, 1);
                         push(t, (side.lengthSqr() < 1e-3 ? new Vec3(0, 0, 1) : side.normalize()).scale(1.2).add(0, 0.5, 0));
                     }
@@ -402,7 +402,7 @@ public final class StyleCasts {
                         for (LivingEntity t : foes(p, core, radius)) push(t, core.subtract(t.position()).scale(0.14).add(0, 0.04, 0));
                         return;
                     }
-                    for (LivingEntity t : foes(p, core, 3.5)) { hurt(p, t, 12 + 2 * lvl); push(t, new Vec3(0, -1.2, 0)); }
+                    for (LivingEntity t : foes(p, core, 3.5)) { hurt(p, t, 6 + .75F * lvl); push(t, new Vec3(0, -1.2, 0)); }
                     sound(level, point, SoundEvents.GENERIC_EXPLODE.value(), 1.2F, 0.6F);
                     CameraShakePayload.sendAround(level, point, 20, 0.2F, 15);
                 });
@@ -412,7 +412,7 @@ public final class StyleCasts {
                 sound(level, at, SoundEvents.GRAVEL_BREAK, 1.5F, 0.6F);
                 StyleRuntime.run(p, 160, age -> {
                     destroy(p, p.position().add(0, 1.2, 0), 3.2);
-                    if (age % 10 == 0) for (LivingEntity t : foes(p, p.position(), 2.8)) { hurt(p, t, 3); shove(t, p.position(), 0.8, 0.3); }
+                    if (age % 10 == 0) for (LivingEntity t : foes(p, p.position(), 2.8)) { hurt(p, t, .35F); shove(t, p.position(), 0.8, 0.3); }
                 });
             }
             case "gathering_hand" -> {
@@ -441,7 +441,7 @@ public final class StyleCasts {
                     if (age % 20 != 0) return;
                     List<LivingEntity> caught = foes(p, point, radius);
                     for (LivingEntity t : caught) {
-                        magic(p, t, 2 + lvl * 0.5F);
+                        magic(p, t, .5F + lvl * .3F);
                         // Every second in the storm threads a mind a little deeper.
                         com.jayptucker.heroesevolved.telepathy.TelepathySkills.stormThread(p, t);
                         effect(t, MobEffects.CONFUSION, 80, 0);
@@ -480,7 +480,7 @@ public final class StyleCasts {
                 sound(level, at, SoundEvents.WARDEN_HEARTBEAT, 2, 1);
                 StyleRuntime.run(p, 6, age -> { if (age == 6) sound(level, at, SoundEvents.WARDEN_HEARTBEAT, 2, 1.1F); });
                 int hits = 0;
-                for (LivingEntity t : foes(p, at, radius)) { hurt(p, t, 10 + 2 * lvl); hits++; }
+                for (LivingEntity t : foes(p, at, radius)) { hurt(p, t, 3 + .5F * lvl); hits++; }
                 heal(p, Math.min(10, hits * 2));
             }
             case "undying" -> {
@@ -514,7 +514,7 @@ public final class StyleCasts {
                     if (age % 4 == 0 && age < 16) sound(level, point, SoundEvents.NOTE_BLOCK_CHIME.value(), 1.2F, 0.6F + age * 0.06F);
                     if (age != 16) return;
                     for (LivingEntity t : foes(p, point, radius)) {
-                        hurt(p, t, 12 + 2 * lvl);
+                        hurt(p, t, 7 + .75F * lvl);
                         effect(t, MobEffects.MOVEMENT_SLOWDOWN, 40, 3);
                         effect(t, MobEffects.WEAKNESS, 60, 0);
                     }
@@ -592,7 +592,7 @@ public final class StyleCasts {
                     Vec3 behind = t.position().subtract(facingOf(t).scale(1.1));
                     piece(p, Piece.SHADOW_STRIKE, p.position(), behind, 1, null);
                     p.teleportTo(behind.x, behind.y, behind.z);
-                    hurt(p, t, (8 + lvl) * 1.5F);
+                    hurt(p, t, 3.5F + .5F * lvl);
                     sound(level, behind, SoundEvents.PLAYER_ATTACK_SWEEP, 1, 1.6F);
                 }, () -> effect(p, MobEffects.INVISIBILITY, 60, 0));
             }
@@ -665,7 +665,7 @@ public final class StyleCasts {
                 int remembered = Math.max(1, com.jayptucker.heroesevolved.mimicry.MimicryService.memory(p).powers().size());
                 piece(p, Piece.PRISMATIC_OVERFLOW, at, at, radius, null);
                 for (LivingEntity t : foes(p, at, radius)) {
-                    hurt(p, t, 8 + 2 * remembered + lvl);
+                    hurt(p, t, 4 + .5F * remembered + .75F * lvl);
                     t.igniteForSeconds(3);
                     effect(t, MobEffects.MOVEMENT_SLOWDOWN, 60, 0);
                     effect(t, MobEffects.GLOWING, 100, 0);
@@ -699,7 +699,7 @@ public final class StyleCasts {
                         double ang = (age / 15.0 + n) * 2.1;
                         Vec3 from = p.position().add(Math.cos(ang) * 1.8, 2, Math.sin(ang) * 1.8);
                         piece(p, Piece.DRONE_SHOT, from, t.getEyePosition().subtract(0, 0.3, 0), 1, null);
-                        hurt(p, t, 2.5F + lvl * 0.5F);
+                        hurt(p, t, .8F + lvl * .15F);
                         n++;
                     }
                     if (n > 0) sound(level, p.position(), SoundEvents.DISPENSER_LAUNCH, 0.5F, 2);
@@ -718,7 +718,7 @@ public final class StyleCasts {
                     for (LivingEntity t : foes(p, centre, 3.5)) {
                         Vec3 d = t.position().subtract(centre);
                         if (Math.abs(d.dot(f)) > 1 || Math.abs(d.dot(side)) > 2.6) continue;
-                        if (age - stung.getOrDefault(t, -40) >= 20) { hurt(p, t, 3); stung.put(t, age); }
+                        if (age - stung.getOrDefault(t, -40) >= 20) { hurt(p, t, .75F); stung.put(t, age); }
                         push(t, f.scale(0.7).add(0, 0.15, 0));
                     }
                 });
@@ -744,7 +744,7 @@ public final class StyleCasts {
                     Vec3 muzzle = p.position().add(0, 1.9, 0).add(new Vec3(-facing(p).z, 0, facing(p).x).scale(0.7))
                             .add(target.subtract(p.getEyePosition()).normalize().scale(1.3));
                     piece(p, Piece.FORGE_SLUG, muzzle, target, 1, null);
-                    for (LivingEntity t : foes(p, target, 1.6)) hurt(p, t, 5 + lvl);
+                    for (LivingEntity t : foes(p, target, 1.6)) hurt(p, t, 1.6F + .25F * lvl);
                     sound(level, muzzle, SoundEvents.AMETHYST_BLOCK_BREAK, 1, 1.4F);
                 });
             }

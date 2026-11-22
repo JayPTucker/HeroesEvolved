@@ -49,7 +49,7 @@ The newest news first: something that happened in the last few days is more like
 | The weather and the sky | rain, thunder, nightfall, a starfall night, an Eclipse under way |
 | Travellers and the road | "A caravan's on the road to Ashford." / "The caravan to Ashford never arrived. Renegades, they say." / "Ashford took in a family off the road. Nobody's saying who from." ([Travellers](travellers.md)) |
 | Marks nobody explained | "Scorch marks out past Ashford again. Nobody saw who." ([Power traces](power-traces.md)) |
-| How the village is doing | "Ashford is gathering for a library. The list's up on the board by the bell." / "Ashford's a proper town now. Who'd have thought it." / "Ashford has rebuilt a home by the east road, bigger than it was." / "Ashford's got a new house up by the east road. Welcome the Hallorans." / "Times are hard in Thornstead." ([Villages that grow](village-growth.md)) |
+| How the village is doing | "Ashford is gathering for a library. The list's up on the board by the bell." / "Ashford's a proper town now. Who'd have thought it." / "Market day in Ashford tomorrow. Bring your emeralds." / "Ashford's building a house for Alex. Someone's settling down." / "Ashford has rebuilt a home by the east road, bigger than it was." / "Ashford's got a new house up by the east road. Welcome the Hallorans." / "Times are hard in Thornstead." ([Villages that grow](village-growth.md)) |
 | Small talk | prices, lost animals, gossip, the harvest |
 
 A village only talks about what it would know: its own news, its neighbours' within the radio's reach, and things that

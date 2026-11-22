@@ -173,7 +173,7 @@ public final class AmpSkills {
         float spent = AmpService.spend(p, 30);
         boolean enclosed = enclosed(level, p.getEyePosition());
         boolean lethal = has(p, SECOND_COMING);
-        float damage = (6 + AmpService.tier(p) + spent / 10F) * (enclosed ? 2 : 1) * (lethal ? 2 : 1);
+        float damage = (spent / 30F) * (enclosed ? 2 : 1) * (lethal ? 2 : 1);
         int hit = 0;
         for (LivingEntity e : StyleOps.foes(p, p.position(), VAN_RADIUS)) {
             float dealt = lethal ? damage : Math.min(damage, e.getHealth() - 1);
@@ -266,7 +266,7 @@ public final class AmpSkills {
         for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, new AABB(at, at).inflate(2.5), e -> e != p && e.isAlive())) {
             if (StyleOps.isFoe(p, e)) {
                 e.invulnerableTime = 0;
-                e.hurt(p.damageSources().indirectMagic(p, p), 3);
+                e.hurt(p.damageSources().indirectMagic(p, p), 1.5F);
             }
             AmpService.stun(e, 60);
             StyleOps.shove(e, p.position(), .7, .2);
@@ -334,7 +334,7 @@ public final class AmpSkills {
         Vec3 end = StyleHits.reach(p, eye, aim, CANNON_LENGTH);
         AmpService.burnThrough(p, eye, end);
         int hit = 0;
-        float damage = 10 + 2 * AmpService.tier(p);
+        float damage = 4 + AmpService.tier(p);
         for (LivingEntity e : AmpService.line(p, eye, aim, eye.distanceTo(end), CANNON_WIDTH, has(p, SECOND_COMING))) {
             AmpService.redHit(p, e, damage, 60);
             StyleHits.shove(e, aim.scale(1.4).add(0, .45, 0));

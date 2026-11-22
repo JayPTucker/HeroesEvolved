@@ -58,7 +58,7 @@ public final class ForceStyle extends ComboStyle {
         LivingEntity target = StyleHits.aimed(p, JAB_REACH, .55);
         Vec3 end = target != null ? target.getBoundingBox().getCenter() : StyleHits.reach(p, p.getEyePosition(), aim, 3);
         if (target != null) {
-            StyleHits.hurt(p, target, 2 + .4F * level);
+            StyleHits.hurt(p, target, .8F + .2F * level);
             StyleHits.shove(target, aim.scale(.45).add(0, .1, 0));
         }
         show(p, Piece.STYLE_LENS_JAB, fist, end, target != null ? 1 : .6, p);
@@ -76,7 +76,7 @@ public final class ForceStyle extends ComboStyle {
             Vec3 stop = StyleHits.reach(p, eye, dir, 14);
             LivingEntity target = StyleHits.firstInTube(p, eye, dir, eye.distanceTo(stop), .35, false);
             if (target != null) {
-                StyleHits.hurt(p, target, 2 + .4F * level);
+                StyleHits.hurt(p, target, .4F + .1F * level);
                 StyleHits.shove(target, dir.scale(.35).add(0, .1, 0));
             }
             show(p, Piece.STYLE_SHARDS, fist, target != null ? target.getBoundingBox().getCenter() : stop, 1, p);
@@ -95,7 +95,7 @@ public final class ForceStyle extends ComboStyle {
             if (distance > BURST_REACH + target.getBbWidth() * .5 || distance > .8
                     && delta.scale(1 / distance).dot(forward) < Math.cos(Math.toRadians(BURST_HALF_ANGLE))
                     || !StyleHits.exposed(p, chest, target.getBoundingBox().getCenter())) continue;
-            StyleHits.hurt(p, target, 3 + level);
+            StyleHits.hurt(p, target, .8F + .2F * level);
             StyleHits.shove(target, forward.scale(1.4).add(0, .35, 0));
             if (++struck >= 8) break;
         }
@@ -111,7 +111,7 @@ public final class ForceStyle extends ComboStyle {
         for (LivingEntity target : StyleHits.foes(p, feet, SLAM_RADIUS + 1)) {
             if (Math.abs(target.getY() - feet.y) > 1.5
                     || target.position().subtract(feet).horizontalDistance() > SLAM_RADIUS + target.getBbWidth() * .5) continue;
-            StyleHits.hurt(p, target, 2.5F + .5F * level);
+            StyleHits.hurt(p, target, .8F + .2F * level);
             StyleHits.away(target, feet, StyleHits.level(p), .8, .35);
         }
         show(p, Piece.STYLE_FIELD_SLAM, feet, feet, SLAM_RADIUS, null);

@@ -242,7 +242,7 @@ public final class Stones {
     /** The damage a rock lands: 6 + tier for a stone at the unlock tier, scaled by its share, its size and the Root. */
     static float damage(Rock rock) {
         float base = (ROCK_DAMAGE + rock.tier) * rock.share * (1 + .8F * rock.growth);
-        if (rock.kind == Kind.AVALANCHE) base = 5 + rock.tier;
+        if (rock.kind == Kind.AVALANCHE) base = .8F + .2F * rock.tier;
         if (rock.kind == Kind.GAUNTLET) base = 4 + rock.tier;
         boolean know = SkillTreeService.has(rock.owner, DensitySkills.KNOW_STONE);
         if (know && rock.material == Material.HEAVY) base *= 1.4F;

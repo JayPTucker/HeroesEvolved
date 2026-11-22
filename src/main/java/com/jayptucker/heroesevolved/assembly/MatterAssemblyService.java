@@ -67,6 +67,7 @@ public final class MatterAssemblyService {
     private static final class Job {
         final ServerPlayer owner; final ServerLevel level; final ArrayDeque<BlockPos> pending;
         final List<BlockPos> built = new ArrayList<>(); final int duration; final String type;
+        final Set<UUID> struck = new HashSet<>();
         Job(ServerPlayer owner, Collection<BlockPos> shape, int duration, String type) {
             this.owner = owner; level = owner.serverLevel(); pending = new ArrayDeque<>(new LinkedHashSet<>(shape));
             this.duration = duration; this.type = type;
@@ -133,7 +134,7 @@ public final class MatterAssemblyService {
             case "switchback" -> begin(p, route(p, 14, true, false), 600, action);
             case "drawbridge" -> drawbridge(p);
             case "shard_lance" -> firePaid(p, com.jayptucker.heroesevolved.amplify.Amplification.surged(p) ? 2 : 1, 3, 8 + c.abilityLevel() * 1.2F);
-            case "scattershot" -> firePaid(p, 5, 5, 5 + c.abilityLevel() * .5F);
+            case "scattershot" -> firePaid(p, 5, 5, 1.8F + c.abilityLevel() * .2F);
             case "cage" -> cage(p);
             case "cathedral" -> cathedral(p);
             case "faultline" -> begin(p, faultline(p), 140, action);
@@ -175,7 +176,7 @@ public final class MatterAssemblyService {
             job.built.add(pos); placed++;
             if (job.type.equals("faultline")) {
                 for (LivingEntity target : enemies(job.owner, Vec3.atCenterOf(pos), 1.65)) {
-                    if (!visible(job.owner, Vec3.atCenterOf(pos).add(0, 1.2, 0), target)) continue;
+                    if (!visible(job.owner, Vec3.atCenterOf(pos).add(0, 1.2, 0), target) || !job.struck.add(target.getUUID())) continue;
                     if (target.hurt(job.owner.damageSources().playerAttack(job.owner), 5)) {
                         target.setDeltaMovement(target.getDeltaMovement().add(0, .65, 0)); target.hurtMarked = true;
                     }

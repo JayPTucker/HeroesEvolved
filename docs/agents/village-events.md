@@ -462,3 +462,63 @@ Villages doing well or badly (`village/Growth`), building with `Rebuild`. Built 
   reading either. `VillageProjectGameTests` covers neighbouring bells, double chests and collection without a player.
 - **Decline is gentle and reversible:** a few panes, cobwebs and moss every two days, someone unseen leaving every three
   (never someone gifted, never below three), and it stops once the score climbs back to steady.
+
+## Reusable patterns from homes, markets and what players build
+
+A home of your own (`village/Homes`), market days (`village/Markets`) and leaving players' blocks alone
+(`village/PlayerBuilt`). Built November 2026. What the player sees: [village-growth.md](../village-growth.md).
+
+- **What a player put down is one question:** `PlayerBuilt.is(level, pos)`. Marks live on the chunk (a
+  `ModDataAttachments.PLAYER_BUILT` attachment, saved with it), set on `BlockEvent.EntityPlaceEvent` from any `Player`
+  (fake players too). Every block write in `village/` asks it: growth sites and their footprints (`Growth.fits`, `room`),
+  `Rebuild.step` (both kinds of site, and taking a house down), settling, wear, the board's footprint and mending,
+  stalls, scars healing, a fallen village's ruin, memorials, guardians lighting forges and harvesting. A home with any
+  mark in its box is never offered for rebuilding (`Projects.touched`). Meteors and storms are hazards, not the village,
+  and don't ask.
+- **Clear a mark when its block goes, not when someone asks to break it.** `BreakEvent` is also posted as a probe
+  (`WorldMutationPolicy.canEdit`), so it can't clear marks. `BlockEvent.NeighborNotifyEvent` with an air state fires on
+  real removals; `is` also drops a mark it finds on air. Without the first, a broken block's mark carried over to
+  whatever stood there next (a village's wall counted as the player's).
+- **A home of your own is a project with an owner and nothing to gather** (`Project.owner`, posted `READY`), queued in
+  `Village.orders` ahead of the village's own projects. On finishing (`Homes.built`): every block is marked as the
+  player's, each bed's POI is released from any villager (their `HOME` memory erased) and taken
+  (`PoiManager.take`, saved with the POI), and the bed becomes the owner's respawn (`setRespawnPosition`), or on their
+  next pass online (`Village.waking`). Work out "starts now or waits" before posting the order: posting it makes the
+  board busy.
+- **Board signs are buttons:** `PlayerInteractEvent.RightClickBlock` on a board sign is cancelled and answered
+  (`Homes.clicked`); a second click within ten seconds says yes (`OFFERS`).
+- **Market traders are vanilla wandering traders with no AI** (they stay at their stall and face the customers), tagged
+  `Markets.TAG` and turned away on load if not live, like travellers. A saved market lost its traders on restart:
+  `consider` takes it down and sets it up again. Prices are set when stocked (`cost`, `pays` by mood); a friend's
+  discount is each offer's `setSpecialPriceDiff`, set on `EntityInteract` before the trade screen opens.
+- **Stalls stand on the ground and apart.** `Markets.fit` read the first stall's canopy as ground and stacked a second
+  stall on it; ground may not be a stall block (`stallBlock`), and stalls keep five blocks apart. Taking a stall down
+  removes only stall blocks it recorded, top first, without neighbour updates, and never a marked one.
+
+## Reusable patterns from villagers at work and mending
+
+Gathering and building crews (`village/Workers`), mending what was broken (`village/Repairs`), and what real generated
+villages showed (`uitest/RealVillagePreview`). Built November 2026.
+
+- **Test on real villages, not only flat ground.** The first real-world run (`tools/real-village-preview.init.gradle`)
+  found what the flat tests couldn't: ordinary villages of 13 to 17 buildings counted as hamlets (under 8 beds; now 5),
+  town houses found level ground in one village of five (now `Growth.fits` takes slopes up to `SLOPE` and `grade` digs
+  and lays a foundation), and a taiga square had no room for a board under its spruces (the heightmap already ignores
+  leaves; the sky check is gone, and the search reaches 18 blocks).
+- **A village's buildings as they were built are its structure's rigid pieces** (`Projects.pieces`: houses, meeting
+  point, decor; streets follow the ground and are left out) plus `Village.homes`. `Repairs.missing` compares each with
+  the world: a template block where there's now air, fire or a plant. **Baseline first** (`Village.unbuilt`): what was
+  missing when a village was first looked over (generation quirks, processors) is never "repaired".
+- **A hand-break is told from an explosion** by `PlayerInteractEvent.LeftClickBlock` just before the block's
+  `NeighborNotifyEvent` (within 100 ticks): `PlayerBuilt.cleared` keeps the gap; a player's placement there forgets it.
+- **Mend sites** (`Rebuild.mend`, `Site.mend`) put template states into empty space only, start now in working hours,
+  never clear rubble (that's the meteor's), and say "has mended what was broken". A struggling village needs eight
+  missing blocks, so `Growth.wear` isn't undone the next minute.
+- **A site needs its people:** `Rebuild.work` asks `Workers.direct`, which picks up to three members as the crew (every
+  100 ticks), walks them to the next block (`WALK_TARGET`), points them at it (`LOOK_TARGET` with a `BlockPosTracker`) and
+  puts the block's item in their hand (villagers draw their main hand in crossed arms; drop chance 0). No members, no
+  work; nobody works while `EmergencyBand.troubled`. `Workers.placed` makes block dust (`levelEvent(2001, ...)`) and the
+  odd shout through `Shouts.talk`. Hands are emptied when the site is done or the working day ends.
+- **Gathering is a share a day** (`Workers.gather`): by mood and people (`rate`), catching up at most three missed days,
+  carried by a villager with the material in hand (`CARRYING`, given on arrival or after `CARRY` ticks). `Project.gathered`
+  saves the day; a home for a player gathers nothing.

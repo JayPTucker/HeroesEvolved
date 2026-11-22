@@ -277,8 +277,8 @@ public final class CryoTechniqueService {
             if(target.level()!=chain.level||!ExpansionSkills.hostile(chain.owner,target)||target.position().distanceToSqr(chain.source)>144
                     ||!visible(chain.level,chain.source,target)){CHAINS.remove(chain);continue;}
             boolean prepared=CryoService.frostAmount(target)>=40;
-            if(CryoService.isFrozen(target))CryoService.shatterHit(chain.owner,target,chain.strong?7:4);
-            else CryoService.coldHit(chain.owner,target,chain.strong?7:4);
+            if(CryoService.isFrozen(target))CryoService.shatterHit(chain.owner,target,chain.strong?9:6);
+            else CryoService.coldHit(chain.owner,target,chain.strong?9:6);
             CryoService.chill(target,35,chain.owner);
             if(chain.strong&&prepared&&target instanceof Mob&&target.isAlive())CryoService.freezeSolid(target,40,chain.owner);
             AbilityEffects.send(chain.level,Kind.CRYO_CONSTELLATION,chain.source,target.getEyePosition(),1);

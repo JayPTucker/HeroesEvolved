@@ -178,7 +178,7 @@ public final class ElectroCombat {
         LivingEntity target = loaded == null ? null : grounded(player, loaded);
         if (target == null) target = seek(player, eye, aim, length);
         Vec3 fist = ElectroGeometry.fist(player, 1, rear);
-        float damage = 2 + .4F * level + (ElectroService.charge(player) >= ElectroService.CHARGED ? 1 : 0);
+        float damage = .8F + .2F * level + (ElectroService.charge(player) >= ElectroService.CHARGED ? 1 : 0);
         if (loaded != null) damage *= 1.6F;
         Vec3 end;
         if (target != null) {
@@ -256,7 +256,7 @@ public final class ElectroCombat {
         Vec3 palms = ElectroGeometry.clap(player, 1, forward);
         boolean overcharged = ElectroService.spendOvercharge(player);
         double reach = ElectroGeometry.CLAP_REACH * (overcharged ? 1.5 : 1);
-        float damage = (3 + level) * (overcharged ? 1.6F : 1);
+        float damage = (.8F + .2F * level) * (overcharged ? 1.6F : 1);
         int struck = 0;
         for (LivingEntity target : world.getEntitiesOfClass(LivingEntity.class, new AABB(palms, palms).inflate(reach + 1),
                 e -> e != player && ElectroService.hostile(player, e))) {
@@ -283,7 +283,7 @@ public final class ElectroCombat {
         ServerLevel world = player.serverLevel();
         Vec3 feet = player.position();
         double radius = ElectroGeometry.GROUND_RADIUS;
-        float damage = 2.5F + .5F * level;
+        float damage = .8F + .2F * level;
         int struck = 0;
         for (LivingEntity target : world.getEntitiesOfClass(LivingEntity.class, new AABB(feet, feet).inflate(radius + 1, 2, radius + 1),
                 e -> e != player && ElectroService.hostile(player, e))) {

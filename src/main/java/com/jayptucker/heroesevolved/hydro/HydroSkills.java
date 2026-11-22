@@ -162,7 +162,7 @@ public final class HydroSkills {
         LivingEntity target = HydroService.firstInTube(player, eye, aim, length, .5);
         Vec3 end = target != null ? target.getBoundingBox().getCenter() : hit.getLocation();
         if (target != null) {
-            HydroService.hit(player, target, (1.5F + .25F * jet.level) * HydroService.boost(player));
+            HydroService.hit(player, target, (.65F + .1F * jet.level) * HydroService.boost(player));
             HydroService.push(target, aim.scale(.42).add(0, .08, 0).add(target.getDeltaMovement().scale(.3)));
         } else if (age % 6 == 0) HydroService.douse(player, end, 1);
         Vec3 palms = HydroGeometry.hand(player, 1, true).lerp(HydroGeometry.hand(player, 1, false), .5);
@@ -457,7 +457,7 @@ public final class HydroSkills {
                 HydroService.Draw draw = HydroService.draw(player, 30);
                 HydroService.roll(player, HydroGeometry.level(player.getLookAngle(), player.getYRot()), Piece.HYDRO_TSUNAMI,
                         HydroGeometry.TSUNAMI_REACH, HydroGeometry.TSUNAMI_HALF_WIDTH * (draw.thin() ? .8 : 1),
-                        (10 + 2 * lvl) * draw.power(), draw.thin(), player.position());
+                        (8 + lvl) * draw.power(), draw.thin(), player.position());
                 ArmPosePayload.show(player, ArmPose.WATER_HEAVE, 16);
                 HydroService.sound(player, SoundEvents.GENERIC_SPLASH, 1.8F, .45F);
                 CameraShakePayload.sendAround(player.serverLevel(), player.position(), 24, .35F, 10);

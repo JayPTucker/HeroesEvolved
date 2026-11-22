@@ -74,7 +74,7 @@ import java.util.UUID;
  */
 @EventBusSubscriber(modid = "heroesevolved", value = Dist.CLIENT)
 public final class RoadsPreview {
-    private static final int PHOTOS = 21;
+    private static final int PHOTOS = 25;
     private static boolean started;
     private static int ticks, age, photos;
     private static String pending;
@@ -162,16 +162,20 @@ public final class RoadsPreview {
         net.minecraft.core.Direction front = template == null ? net.minecraft.core.Direction.NORTH
                 : s.home().rotation().rotate(Growth.front(template, s.home().template()));
         Vec3 c = Vec3.atBottomCenterOf(s.center()).add(0, 1, 0);
-        Vec3 look = c.add(0, up * 0.5 + 1.5, 0);
+        clearView(mc, c.add(0, up * 0.5 + 1.5, 0), Math.atan2(front.getStepZ(), front.getStepX()), back, up - up * 0.5 - 1.5, 6);
+    }
+
+    /** A camera {@code back} out from {@code look} at {@code base} radians, {@code up} above it, turned until its view is clear. */
+    private static void clearView(Minecraft mc, Vec3 look, double base, double back, double up, double near) {
+        Vec3 c = look;
         var level = mc.getSingleplayerServer().overworld();
-        double base = Math.atan2(front.getStepZ(), front.getStepX());
         // From the front, turning a little each way until nothing (another house) stands between the camera and it.
         for (double turn : new double[]{0.35, -0.35, 0.8, -0.8, 1.3, -1.3, 0, Math.PI}) {
             double a = base + turn;
             Vec3 at = c.add(Math.cos(a) * back, up, Math.sin(a) * back);
             var hit = level.clip(new net.minecraft.world.level.ClipContext(at, look, net.minecraft.world.level.ClipContext.Block.COLLIDER,
                     net.minecraft.world.level.ClipContext.Fluid.NONE, net.minecraft.world.phys.shapes.CollisionContext.empty()));
-            if (hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS || hit.getLocation().distanceTo(look) < 6) {
+            if (hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS || hit.getLocation().distanceTo(look) < near) {
                 camera(mc, at, look);
                 return;
             }
@@ -442,8 +446,48 @@ public final class RoadsPreview {
                 camera(mc, new Vec3(1100.5 - 30, -38, -30.5), new Vec3(1100.5, -58, 6.5));
             });
             case 742 -> shot("20-grown-village");
+            // ---- Market day, and a home of your own ----
+            case 744 -> server(mc, p -> {
+                ServerLevel level = p.serverLevel();
+                var v = VillageMemory.of(level, new BlockPos(1100, -59, 0));
+                v.setBuiltForPreview(10);
+                boolean opened = com.jayptucker.heroesevolved.village.Markets.open(level, v, com.jayptucker.heroesevolved.village.Projects.Tier.TOWN);
+                System.out.println("ROADS_PREVIEW market " + opened + " " + (v.market() == null ? "" : v.market().kinds() + " at " + v.market().stalls()));
+                move(p, new Vec3(1100.5, -60, -16.5), 0, 0);
+                camera(mc, new Vec3(1100.5 + 16, -48, -16.5), new Vec3(1100.5, -59, 0.5));
+            });
+            case 764 -> shot("21-market-day");
+            case 766 -> server(mc, p -> {
+                var v = VillageMemory.of(p.serverLevel(), new BlockPos(1100, -59, 0));
+                if (v.market() == null || v.market().stalls().isEmpty()) return;
+                BlockPos stall = v.market().stalls().getFirst();
+                var trader = com.jayptucker.heroesevolved.village.Markets.traders(p.serverLevel(), v).getFirst();
+                Vec3 front = Vec3.directionFromRotation(0, trader.getYRot());
+                clearView(mc, Vec3.atBottomCenterOf(stall).add(0, 1.2, 0), Math.atan2(front.z, front.x), 4.0, 0.5, 1.2);
+            });
+            case 786 -> shot("22-market-stall");
+            case 788 -> server(mc, p -> {
+                ServerLevel level = p.serverLevel();
+                var v = VillageMemory.of(level, new BlockPos(1100, -59, 0));
+                com.jayptucker.heroesevolved.village.Markets.close(level, v, false);
+                com.jayptucker.heroesevolved.village.VillageMemory.thanked(level, v.bell(), p, 3);
+                if (v.board() != null) boardCamera(mc, p, v.board());
+                com.jayptucker.heroesevolved.village.Homes.ask(level, v, p);
+                com.jayptucker.heroesevolved.village.Homes.ask(level, v, p);
+                site = Rebuild.all(level).stream().filter(s -> s.growth() && s.bell().equals(v.bell())).findFirst().orElse(null);
+                System.out.println("ROADS_PREVIEW home site " + (site == null ? "NONE" : site.center() + " " + site.home()));
+                mc.options.hideGui = false;
+            });
+            case 808 -> shot("23-asking-for-a-home");
+            case 810 -> server(mc, p -> {
+                mc.options.hideGui = false;
+                if (site == null) return;
+                Rebuild.hurry(p.serverLevel(), site, 100_000);
+                houseCamera(mc, site, 13, 7);
+            });
+            case 830 -> shot("24-your-home");
             // ---- A village that struggles ----
-            case 746 -> server(mc, p -> {
+            case 834 -> server(mc, p -> {
                 mc.options.hideGui = true;
                 ServerLevel level = p.serverLevel();
                 BlockPos bell = village(level, 1300, 0, 4, 8);
@@ -463,8 +507,8 @@ public final class RoadsPreview {
                     camera(mc, w.add(out.scale(-3.5)).add(out.z * 2, 1.0, -out.x * 2), w);
                 } else camera(mc, new Vec3(1316.5, -57.5, 4.5), new Vec3(1311.5, -59, 10.5));
             });
-            case 776 -> shot("21-struggling");
-            case 796 -> {
+            case 864 -> shot("25-struggling");
+            case 884 -> {
                 System.out.println("ROADS_PREVIEW_RESULT " + (photos >= PHOTOS ? "PASS" : "FAIL") + ": " + photos + " photos");
                 if (photos < PHOTOS) PreviewQuiet.report("ROADS_PREVIEW FAIL only " + photos + " photos");
                 PreviewQuiet.quit();

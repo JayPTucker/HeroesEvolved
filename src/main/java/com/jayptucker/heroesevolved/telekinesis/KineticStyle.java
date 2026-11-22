@@ -71,7 +71,7 @@ public final class KineticStyle extends ComboStyle {
         if (target == null) target = StyleHits.aimed(p, SWAT_REACH, .9);
         Vec3 forward = StyleHits.level(p), side = StyleHits.right(forward).scale(rear ? 1 : -1);
         if (target != null) {
-            float damage = (2 + .3F * level) * (loaded ? 2 : 1);
+            float damage = (.5F + .1F * level) * (loaded ? 2 : 1);
             StyleHits.hurt(p, target, damage);
             Vec3 throwing = side.scale(loaded ? 1.6 : .9).add(forward.scale(loaded ? .6 : .15)).add(0, .3, 0);
             // A swat lets go of a gripped body: the throw is the release.
@@ -93,9 +93,9 @@ public final class KineticStyle extends ComboStyle {
         LivingEntity target = StyleHits.aimed(p, SWAT_REACH, .9);
         if (target != null) {
             // The grip crushes as it lifts; the slam does the rest.
-            StyleHits.hurt(p, target, 1.5F + .2F * level);
+            StyleHits.hurt(p, target, .4F + .1F * level);
             StyleHits.shove(target, new Vec3(0, .85, 0));
-            lifts.add(new Lift(p, target, now(p) + LIFT_HANG, 4 + level));
+            lifts.add(new Lift(p, target, now(p) + LIFT_HANG, .8F + .2F * level));
             AbilityEffects.send(world(p), Kind.TK_GRIP, target.position(), target.getEyePosition(), 1.2);
             SetPiecePayload.send(world(p), Piece.STYLE_TK_GRASP, target.position(), target.position(), LIFT_HANG, target);
             AbilityEffects.send(world(p), Kind.TK_LAUNCH, target.position(), target.position().add(0, 1, 0), 1);
@@ -108,7 +108,7 @@ public final class KineticStyle extends ComboStyle {
     private void repulse(ServerPlayer p, int level) {
         Vec3 feet = p.position();
         for (LivingEntity target : StyleHits.foes(p, feet.add(0, 1, 0), REPULSE_RADIUS + 1)) {
-            StyleHits.hurt(p, target, 1.5F + .4F * level);
+            StyleHits.hurt(p, target, .8F + .2F * level);
             StyleHits.away(target, feet, StyleHits.level(p), 1.0, .4);
         }
         AbilityEffects.send(world(p), Kind.TK_WAVE, feet.add(0, .6, 0), feet.add(0, 1.6, 0), REPULSE_RADIUS);
@@ -158,7 +158,7 @@ public final class KineticStyle extends ComboStyle {
                     e -> e != t.body && e != t.owner && StyleHits.hostile(t.owner, e))) {
                 if (!t.struck.add(other.getUUID())) continue;
                 StyleHits.hurt(t.owner, other, t.damage * .8F);
-                StyleHits.hurt(t.owner, t.body, 1.5F);
+                StyleHits.hurt(t.owner, t.body, t.damage * .5F);
                 StyleHits.shove(other, t.body.getDeltaMovement().scale(.7).add(0, .25, 0));
                 AbilityEffects.send((ServerLevel) other.level(), Kind.TK_IMPACT, other.getBoundingBox().getCenter(),
                         other.getBoundingBox().getCenter().add(t.body.getDeltaMovement()), 1.2);

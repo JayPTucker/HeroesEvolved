@@ -77,11 +77,11 @@ import java.util.UUID;
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class Projects {
     /** The board stands this far from the bell. */
-    public static final int BOARD_NEAREST = 5, BOARD_FURTHEST = 12;
+    public static final int BOARD_NEAREST = 5, BOARD_FURTHEST = 18;
     /** A village builds (or rebuilds) at most this many things. */
     public static final int MOST = 16;
     /** Where a village's tier starts, counting a bed as 1 and each thing it has built as 2. */
-    public static final int VILLAGE_FROM = 8, TOWN_FROM = 20;
+    public static final int VILLAGE_FROM = 5, TOWN_FROM = 20;
     /** The most of any one material a project asks for. */
     public static final int MOST_OF_ONE = 160;
     /** Anyone this close to the board hears what it's for, once a project. */
@@ -173,8 +173,45 @@ public final class Projects {
         }
         found.addAll(v.homes);
         found.removeIf(h -> v.replaced.contains(h.origin().asLong()) || h.origin().distSqr(v.bell) > (long) Villages.RADIUS * Villages.RADIUS);
-        found.removeIf(h -> standing(level, v, h) < STANDING);
+        found.removeIf(h -> standing(level, v, h) < STANDING || touched(level, h));
         found.sort(java.util.Comparator.comparingDouble(h -> h.origin().distSqr(v.bell)));
+        return found;
+    }
+
+    /** Whether a player has put anything down in or on home {@code h} (it is then theirs too: never torn down). */
+    static boolean touched(ServerLevel level, Home h) {
+        StructureTemplate t = level.getStructureManager().get(h.template()).orElse(null);
+        if (t == null) return true;
+        var box = t.getBoundingBox(new net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings().setRotation(h.rotation()), h.origin());
+        for (BlockPos p : BlockPos.betweenClosed(box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ()))
+            if (PlayerBuilt.is(level, p)) return true;
+        return false;
+    }
+
+    /**
+     * Every building {@code v} has as it was built, to mend (village/Repairs): its structure's own rigid pieces (houses,
+     * its meeting point, wells, lamps; not its streets, which follow the ground) and what it built itself, less what it
+     * tore down to rebuild and the homes players own.
+     */
+    public static List<Home> pieces(ServerLevel level, VillageMemory.Village v) {
+        List<Home> found = new ArrayList<>();
+        try {
+            var start = level.structureManager().getStructureWithPieceAt(v.bell, net.minecraft.tags.StructureTags.VILLAGE);
+            if (start.isValid())
+                for (var piece : start.getPieces())
+                    if (piece instanceof net.minecraft.world.level.levelgen.structure.PoolElementStructurePiece pe
+                            && pe.getElement().getProjection() == net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool.Projection.RIGID) {
+                        ResourceLocation id = templateOf(pe.getElement());
+                        if (id != null && !id.getPath().contains("/streets/")) found.add(new Home(id, pe.getPosition(), pe.getRotation()));
+                    }
+        } catch (RuntimeException e) {
+            HeroesEvolved.LOGGER.debug("Couldn't read the village structure at {}", v.bell, e);
+        }
+        found.addAll(v.homes);
+        java.util.Set<Long> owned = new java.util.HashSet<>();
+        for (var o : v.owned.values()) owned.add(o.home().origin().asLong());
+        found.removeIf(h -> v.replaced.contains(h.origin().asLong()) || owned.contains(h.origin().asLong())
+                || h.origin().distSqr(v.bell) > (long) (Villages.RADIUS + 32) * (Villages.RADIUS + 32));
         return found;
     }
 
@@ -288,8 +325,8 @@ public final class Projects {
         int turn = (int) Math.floorMod(bell.asLong() * 31, 16);
         for (int pass = 0; pass < 2; pass++)
             for (int r = BOARD_NEAREST; r <= BOARD_FURTHEST; r++)
-                for (int i = 0; i < 16; i++) {
-                    double a = (i + turn) * Math.PI * 2 / 16;
+                for (int i = 0; i < 24; i++) {
+                    double a = (i + turn) * Math.PI * 2 / 24;
                     int x0 = bell.getX() + (int) Math.round(Math.cos(a) * r), z0 = bell.getZ() + (int) Math.round(Math.sin(a) * r);
                     Direction facing = Direction.getNearest((float) (bell.getX() - x0), 0F, (float) (bell.getZ() - z0));
                     Board b = fit(level, bell, x0, z0, facing, pass == 1);
@@ -314,13 +351,14 @@ public final class Projects {
                     boolean ok = Growth.natural(g) || paved && (g.is(Blocks.DIRT_PATH) || g.isFaceSturdy(level, ground, Direction.UP));
                     if (!ok || !level.getFluidState(ground).isEmpty() || g.is(Blocks.FARMLAND)) return null;
                 }
-                // The board itself, and room to stand in front of it.
+                // The board itself, and room to stand in front of it; never on or over anything a player put down.
+                if (z <= 1 && PlayerBuilt.is(level, ground)) return null;
                 for (int dy = 0; dy <= (z == 2 ? 1 : 3); dy++) {
                     BlockState s = level.getBlockState(b.at(x, dy, z));
-                    if (!s.isAir() && !(s.canBeReplaced() && s.getFluidState().isEmpty())) return null;
+                    if (!s.isAir() && !(s.canBeReplaced() && s.getFluidState().isEmpty()) || PlayerBuilt.is(level, b.at(x, dy, z))) return null;
                 }
             }
-        return level.canSeeSky(b.at(0, 4, 0)) ? b : null;
+        return b;
     }
 
     /** Puts up (or mends) {@code v}'s board: every piece that's missing, where nothing else stands in its way. */
@@ -331,7 +369,7 @@ public final class Projects {
             if (!level.hasChunkAt(c.pos())) continue;
             BlockState now = level.getBlockState(c.pos());
             if (now.is(c.state().getBlock())) continue;
-            if (!now.isAir() && !(now.canBeReplaced() && now.getFluidState().isEmpty())) continue;
+            if (!now.isAir() && !(now.canBeReplaced() && now.getFluidState().isEmpty()) || PlayerBuilt.is(level, c.pos())) continue;
             if (c.state().is(Blocks.CHEST) || c.state().getBlock() instanceof WallSignBlock) {
                 if (!c.state().canSurvive(level, c.pos())) continue;
             }
@@ -373,10 +411,15 @@ public final class Projects {
         boolean noRoom;
         /** The home it rebuilds bigger, or null for a new building. */
         Home upgrade;
+        /** Who it is a home for (village/Homes), or null: a home for a player is built with nothing to gather. */
+        UUID owner;
+        /** The last calendar day the village gathered for it itself (village/Workers); -1 until it starts. */
+        long gathered = -1;
         final Set<UUID> givers = new LinkedHashSet<>(), told = new HashSet<>();
 
         public ResourceLocation template() { return template; }
         public Home upgrade() { return upgrade; }
+        public UUID owner() { return owner; }
         public String title() { return title; }
         public Stage stage() { return stage; }
         public int beds() { return beds; }
@@ -414,6 +457,8 @@ public final class Projects {
             t.putLong("finished", finished);
             t.putBoolean("no_room", noRoom);
             if (upgrade != null) t.put("upgrade", upgrade.save());
+            if (owner != null) t.putUUID("owner", owner);
+            t.putLong("gathered", gathered);
             ListTag g = new ListTag(), k = new ListTag();
             for (UUID u : givers) g.add(NbtUtils.createUUID(u));
             for (UUID u : told) k.add(NbtUtils.createUUID(u));
@@ -437,6 +482,8 @@ public final class Projects {
             p.finished = t.getLong("finished");
             p.noRoom = t.getBoolean("no_room");
             if (t.contains("upgrade")) p.upgrade = Home.load(t.getCompound("upgrade"));
+            if (t.hasUUID("owner")) p.owner = t.getUUID("owner");
+            p.gathered = t.contains("gathered") ? t.getLong("gathered") : -1;
             for (Tag u : t.getList("givers", Tag.TAG_INT_ARRAY)) p.givers.add(NbtUtils.loadUUID(u));
             for (Tag u : t.getList("told", Tag.TAG_INT_ARRAY)) p.told.add(NbtUtils.loadUUID(u));
             return p.template == null ? null : p;
@@ -775,6 +822,9 @@ public final class Projects {
             if (site == null) p.upgrade = null;
         }
         if (site == null && p.upgrade == null) site = Growth.grow(level, v, p.template);
+        // A home for a player has no house to fall back on; if its design has no room, any small house of the kind will do.
+        if (site == null && p.owner != null) site = Growth.grow(level, v);
+        if (site != null && p.owner != null && site.home() != null) p.template = site.home().template();
         if (site == null) {
             p.noRoom = true;
             VillageMemory.get(level).setDirty();
@@ -788,9 +838,10 @@ public final class Projects {
     }
 
     /** The building is up ({@link Growth#built}): the project is done, and those who gave are thanked. */
-    static void built(ServerLevel level, VillageMemory.Village v) {
+    static void built(ServerLevel level, VillageMemory.Village v, Rebuild.Site site) {
         Project p = v.project;
         if (p == null || p.stage != Stage.BUILDING) return;
+        if (p.owner != null) Homes.built(level, v, site, p.owner);
         p.stage = Stage.DONE;
         p.finished = Days.today(level);
         VillageMemory.get(level).setDirty();
@@ -831,9 +882,15 @@ public final class Projects {
         }
         grown(level, v);
         Project p = v.project;
-        if ((p == null || p.stage == Stage.DONE && day > p.finished) && v.houses < MOST) p = post(level, v);
+        // Homes players asked for come first; then the village's own projects.
+        if (p == null || p.stage == Stage.DONE && day > p.finished) {
+            if (!v.orders.isEmpty()) p = Homes.post(level, v);
+            else if (v.houses < MOST) p = post(level, v);
+        }
+        Homes.tick(level, v);
         if (p != null) {
             if (p.stage == Stage.GATHERING) collect(level, v, null);
+            if (p.stage == Stage.GATHERING) Workers.gather(level, v);
             if (p.stage == Stage.READY && (now - p.lastTry >= RETRY || now < p.lastTry)) start(level, v);
             if (p.stage == Stage.BUILDING && !Growth.building(level, v)) { p.stage = Stage.READY; p.lastTry = -1000; }
             if (p.stage == Stage.GATHERING) tell(level, v, p);

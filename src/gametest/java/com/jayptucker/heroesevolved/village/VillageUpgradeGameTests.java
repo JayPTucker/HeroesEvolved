@@ -54,6 +54,8 @@ public final class VillageUpgradeGameTests {
     private static BlockPos meadow(GameTestHelper h) {
         ServerLevel level = h.getLevel();
         BlockPos center = h.absolutePos(new BlockPos(6, 0, 6)).atY(300);
+        // Ground reused from earlier tests may carry marks from blocks a test player put down there.
+        PlayerBuilt.clear(level, center.offset(-R - 16, -2, -R - 16), center.offset(R + 16, 30, R + 16));
         for (int dx = -R; dx <= R; dx++) for (int dz = -R; dz <= R; dz++) level.setBlock(center.offset(dx, 0, dz), Blocks.GRASS_BLOCK.defaultBlockState(), 2);
         BlockPos bell = center.above();
         level.setBlockAndUpdate(bell, Blocks.BELL.defaultBlockState().setValue(BellBlock.ATTACHMENT, BellAttachType.FLOOR));

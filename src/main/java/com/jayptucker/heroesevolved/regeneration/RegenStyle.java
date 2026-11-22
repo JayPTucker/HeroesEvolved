@@ -66,7 +66,7 @@ public final class RegenStyle extends ComboStyle {
     private void swing(ServerPlayer p, Fighter f, int level, boolean rear, boolean loaded) {
         LivingEntity target = StyleHits.aimed(p, SWING_REACH, .6);
         Vec3 fist = StyleHits.hand(p, 1, rear);
-        float damage = (3 + .5F * level) * rage(p) + (loaded ? (float) f.banked * PAYBACK : 0);
+        float damage = (.8F + .2F * level) * rage(p) + (loaded ? (float) f.banked * PAYBACK : 0);
         if (target != null) {
             StyleHits.hurt(p, target, damage);
             StyleHits.shove(target, StyleHits.level(p).scale(loaded ? .9 : .4).add(StyleHits.right(StyleHits.level(p))
@@ -87,7 +87,7 @@ public final class RegenStyle extends ComboStyle {
     private void headbutt(ServerPlayer p, int level) {
         LivingEntity target = StyleHits.aimed(p, SWING_REACH, .6);
         if (target != null) {
-            StyleHits.hurt(p, target, (4 + level) * rage(p));
+            StyleHits.hurt(p, target, (1 + .5F * level) * rage(p));
             target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 40, 1));
             target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 2));
             target.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 60, 0));
@@ -106,7 +106,7 @@ public final class RegenStyle extends ComboStyle {
         StyleMotion.dash(p, forward.scale(1.3), .05, 4, 6, false, false);
         LivingEntity target = StyleHits.firstInTube(p, p.getEyePosition().add(0, -.8, 0), forward, TACKLE_REACH, .7, false);
         if (target != null) {
-            StyleHits.hurt(p, target, (3 + .5F * level) * rage(p));
+            StyleHits.hurt(p, target, (1 + .3F * level) * rage(p));
             StyleHits.shove(target, forward.scale(1.0).add(0, .35, 0));
             target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 30, 3));
             SetPiecePayload.send(world(p), Piece.REGEN_IMPACT, target.position(), target.position(), 1.2F, null);

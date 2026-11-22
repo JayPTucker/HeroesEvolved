@@ -118,7 +118,7 @@ public final class QuakeSkills {
         if (!t.isAlive() || t.level() != p.level()) return;
         ServerLevel level = p.serverLevel();
         boolean airborne = !t.onGround() && !t.isInWater();
-        float damage = (7 + l.tier) * QuakeKit.power(p) * (airborne ? 2 : 1);
+        float damage = (10 + l.tier) * QuakeKit.power(p) * (airborne ? 2 : 1);
         t.invulnerableTime = 0;
         if (t.hurt(p.damageSources().playerAttack(p), damage)) QuakeKit.landed(p, t);
         QuakeService.setVelocity(t, airborne ? new Vec3(0, -2.2, 0) : new Vec3(0, 1.15, 0));

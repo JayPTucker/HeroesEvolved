@@ -180,8 +180,8 @@ public final class PyroCombat {
         Vec3 end = target != null ? target.getBoundingBox().getCenter() : hit.getLocation();
         if (target != null) {
             boolean burning = target.isOnFire();
-            float damage = PyroService.scaled(player, 2 + .4F * level) * (loaded ? 2.2F : 1);
-            PyroService.burn(player, target, damage, loaded ? 5 : 2);
+            float damage = PyroService.scaled(player, .8F + .2F * level) * (loaded ? 2.2F : 1);
+            PyroService.burn(player, target, damage, loaded ? 1 : 0);
             PyroService.push(target, aim.scale(loaded ? .75 : .22).add(0, loaded ? .26 : .06, 0));
             if (loaded && burning) {
                 for (LivingEntity nearby : PyroService.enemies(player, target.position(), 2.5))
@@ -210,7 +210,7 @@ public final class PyroCombat {
     private static void roundhouse(ServerPlayer player, int level) {
         ServerLevel world = player.serverLevel();
         Vec3 hip = PyroGeometry.hip(player, 1), forward = PyroGeometry.level(player.getLookAngle(), player.getYRot());
-        float damage = PyroService.scaled(player, 3 + level);
+        float damage = PyroService.scaled(player, .4F + .2F * level);
         int struck = 0;
         for (LivingEntity target : PyroService.enemies(player, hip, PyroGeometry.KICK_REACH + 1)) {
             AABB box = target.getBoundingBox();
@@ -218,7 +218,7 @@ public final class PyroCombat {
                     PyroGeometry.KICK_HALF_ANGLE, target.position())
                     || box.maxY < hip.y - 1.2 || box.minY > hip.y + 1.6
                     || !PyroService.exposed(player, hip, box.getCenter())) continue;
-            PyroService.burn(player, target, damage, 4);
+            PyroService.burn(player, target, damage, 1);
             Vec3 out = target.position().subtract(player.position()).multiply(1, 0, 1);
             out = out.lengthSqr() < 1e-4 ? forward : out.normalize();
             PyroService.push(target, out.scale(.75).add(forward.scale(.2)).add(0, .28, 0));
@@ -238,13 +238,13 @@ public final class PyroCombat {
         ServerLevel world = player.serverLevel();
         Vec3 feet = player.position();
         double radius = PyroGeometry.SWEEP_RADIUS;
-        float damage = PyroService.scaled(player, 2.5F + .5F * level);
+        float damage = PyroService.scaled(player, .4F + .2F * level);
         int struck = 0;
         for (LivingEntity target : PyroService.enemies(player, feet, radius + 1)) {
             if (Math.abs(target.getY() - feet.y) > 1.5
                     || target.position().subtract(feet).horizontalDistance() > radius + target.getBbWidth() * .5
                     || !PyroService.exposed(player, feet.add(0, .4, 0), target.getBoundingBox().getCenter())) continue;
-            PyroService.burn(player, target, damage, 3);
+            PyroService.burn(player, target, damage, 1);
             Vec3 out = target.position().subtract(feet).multiply(1, 0, 1);
             out = out.lengthSqr() < 1e-4 ? PyroGeometry.level(player.getLookAngle(), player.getYRot()) : out.normalize();
             PyroService.push(target, out.scale(.6).add(0, .42, 0));
@@ -310,7 +310,7 @@ public final class PyroCombat {
     /** The feet sweep up and over as the body flips back: an arc of fire rises through everything in front. */
     private static void flipKick(ServerPlayer player, int level, Vec3 forward) {
         Vec3 hip = PyroGeometry.hip(player, 1);
-        float damage = PyroService.scaled(player, 3 + .6F * level);
+        float damage = PyroService.scaled(player, 1 + .3F * level);
         int struck = 0;
         for (LivingEntity target : PyroService.enemies(player, hip, PyroGeometry.FLIP_REACH + 1)) {
             AABB box = target.getBoundingBox();
@@ -318,7 +318,7 @@ public final class PyroCombat {
                     PyroGeometry.FLIP_HALF_ANGLE, target.position())
                     || box.maxY < hip.y - 1.4 || box.minY > hip.y + 3
                     || !PyroService.exposed(player, hip, box.getCenter())) continue;
-            PyroService.burn(player, target, damage, 3);
+            PyroService.burn(player, target, damage, 1);
             PyroService.push(target, forward.scale(.3).add(0, .72, 0));
             if (++struck >= 8) break;
         }

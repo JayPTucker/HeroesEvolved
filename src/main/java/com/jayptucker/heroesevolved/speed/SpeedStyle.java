@@ -91,7 +91,7 @@ public final class SpeedStyle extends ComboStyle {
         LivingEntity target = StyleHits.aimed(p, JAB_REACH, .55);
         Vec3 fist = StyleHits.hand(p, 1, rear);
         if (target != null) {
-            float each = (1 + .3F * level) * (loaded ? 1.6F : 1);
+            float each = (.3F + .09F * level) * (loaded ? 1.6F : 1);
             for (int i = 0; i < JAB_BLOWS; i++) {
                 StyleHits.hurt(target, p.damageSources().playerAttack(p), each);
                 double angle = (i - 1) * .55;
@@ -133,7 +133,7 @@ public final class SpeedStyle extends ComboStyle {
             SKIDS.put(p.getUUID(), new Skid(now(p), BLITZ_TICKS, direction, null, .45F, from));
         }
         if (target != null) {
-            StyleHits.hurt(p, target, 3 + level);
+            StyleHits.hurt(p, target, .8F + .2F * level);
             StyleHits.shove(target, direction.scale(.85).add(0, .35, 0));
             AbilityEffects.send(world(p), Kind.SPEED_STRIKE, from, target.getBoundingBox().getCenter(), 1.1);
             CameraShakePayload.sendAround(world(p), target.position(), 10, .14F, 4);
@@ -149,7 +149,7 @@ public final class SpeedStyle extends ComboStyle {
         StyleMotion.dash(p, forward.scale(1.2), .05, 3, 6, false, false);
         for (LivingEntity target : StyleHits.foes(p, from.add(forward.scale(1.5)), 3.4)) {
             if (Math.abs(target.getY() - from.y) > 1.5) continue;
-            StyleHits.hurt(p, target, 2 + .5F * level);
+            StyleHits.hurt(p, target, .6F + .2F * level);
             StyleHits.shove(target, new Vec3(0, .45, 0).add(forward.scale(.2)));
             target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 30, 2));
         }
@@ -165,7 +165,7 @@ public final class SpeedStyle extends ComboStyle {
         for (int i = 0; i < BARRAGE_BLOWS; i++) {
             double angle = i * Math.PI * 2 / BARRAGE_BLOWS;
             Vec3 spot = center.add(Math.cos(angle) * 1.6, 0, Math.sin(angle) * 1.6);
-            StyleHits.hurt(target, p.damageSources().playerAttack(p), .9F + .3F * level);
+            StyleHits.hurt(target, p.damageSources().playerAttack(p), .18F + .06F * level);
             AbilityEffects.send(world(p), Kind.SPEED_IMPACT, spot.add(0, 1.4, 0), target.getEyePosition(), .7);
         }
         AbilityEffects.send(world(p), Kind.SPEED_MIRAGE, center, center, 2);
