@@ -39,11 +39,26 @@ public final class CityCanvas {
     private final Map<BlockPos, SignText> signs = new LinkedHashMap<>();
     private final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
-    public CityCanvas(ServerLevel level, int x0, int z0, int x1, int z1) {
+    /** On a canvas that only plans, what would have been written, and nothing touches the level. */
+    private final Map<BlockPos, BlockState> plan;
+
+    public CityCanvas(ServerLevel level, int x0, int z0, int x1, int z1) { this(level, x0, z0, x1, z1, null); }
+
+    private CityCanvas(ServerLevel level, int x0, int z0, int x1, int z1, Map<BlockPos, BlockState> plan) {
         this.level = level;
         this.x0 = Math.min(x0, x1); this.z0 = Math.min(z0, z1);
         this.x1 = Math.max(x0, x1); this.z1 = Math.max(z0, z1);
+        this.plan = plan;
     }
+
+    /** A canvas that writes nothing and remembers every block drawn on it, for drawing a piece of the city somewhere else. */
+    public static CityCanvas plan(ServerLevel level, int x0, int z0, int x1, int z1) {
+        return new CityCanvas(level, x0, z0, x1, z1, new LinkedHashMap<>());
+    }
+    /** What a {@link #plan} canvas was given, last write per cell (air included). */
+    public Map<BlockPos, BlockState> planned() { return plan; }
+    /** The words of the signs drawn on a {@link #plan} canvas. */
+    public Map<BlockPos, SignText> plannedSigns() { return signs; }
 
     public boolean in(int x, int z) { return x >= x0 && x <= x1 && z >= z0 && z <= z1; }
     /** Whether any of the rectangle lies on this canvas. */
@@ -53,6 +68,7 @@ public final class CityCanvas {
 
     public void set(int x, int y, int z, BlockState state) {
         if (!in(x, z) || level.isOutsideBuildHeight(y)) return;
+        if (plan != null) { plan.put(new BlockPos(x, y, z), state); return; }
         cursor.set(x, y, z);
         level.setBlock(cursor, state, FLAGS);
         if (x == x0 || x == x1 || z == z0 || z == z1) edge.add(cursor.immutable());

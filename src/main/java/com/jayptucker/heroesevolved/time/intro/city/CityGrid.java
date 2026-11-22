@@ -23,6 +23,11 @@ public final class CityGrid {
      * {@code lastday_stairwell}).
      */
     public static final int STAIR_X0 = 8, STAIR_X1 = 15, STAIR_Z0 = 109, STAIR_Z1 = 111;
+    /** Primatech Paper's lot (its forecourt and sidewalks) and the walls standing on it. The present's ruin is drawn from these too. */
+    public static final int PRIMATECH_LOT_X0 = MIN + 3 * BLOCK + 8, PRIMATECH_LOT_X1 = MIN + 4 * BLOCK + 31,
+            PRIMATECH_LOT_Z0 = MIN + TERMINUS_BZ * BLOCK + 8, PRIMATECH_LOT_Z1 = MIN + TERMINUS_BZ * BLOCK + 31,
+            PRIMATECH_X0 = PRIMATECH_LOT_X0 + 3, PRIMATECH_X1 = PRIMATECH_LOT_X1 - 3,
+            PRIMATECH_Z0 = PRIMATECH_LOT_Z0 + 4, PRIMATECH_Z1 = PRIMATECH_LOT_Z1 - 3;
 
     private CityGrid() {}
 
