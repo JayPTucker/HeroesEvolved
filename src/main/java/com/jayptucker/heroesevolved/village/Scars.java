@@ -164,7 +164,7 @@ public final class Scars extends SavedData {
         else if (state.is(Blocks.DIRT) && days >= 3.5F && open && level.canSeeSky(at.above())) to = Blocks.GRASS_BLOCK.defaultBlockState();
         else if (state.is(Blocks.COBBLED_DEEPSLATE) && days >= 4) to = Blocks.MOSSY_COBBLESTONE.defaultBlockState();
         else if (state.is(Blocks.GRASS_BLOCK) && days >= 4 && open) { flower(level, at.above(), random, 0.45F); return; }
-        if (to != null) level.setBlock(at, to, Block.UPDATE_ALL);
+        if (to != null && !PlayerBuilt.is(level, at)) level.setBlock(at, to, Block.UPDATE_ALL);
     }
 
     /** Burnt or torn-up ground blooms: grass and flowers come up on the open grass there, thicker than they were. */
@@ -183,7 +183,7 @@ public final class Scars extends SavedData {
 
     /** Something growing at {@code at}, if it is empty: mostly grass, sometimes a flower. */
     private static void flower(ServerLevel level, BlockPos at, RandomSource random, float chance) {
-        if (!level.getBlockState(at).isAir() || random.nextFloat() > chance) return;
+        if (!level.getBlockState(at).isAir() || random.nextFloat() > chance || PlayerBuilt.is(level, at.below())) return;
         float roll = random.nextFloat();
         BlockState plant = roll < 0.55F ? Blocks.SHORT_GRASS.defaultBlockState() : roll < 0.68F ? Blocks.POPPY.defaultBlockState()
                 : roll < 0.8F ? Blocks.CORNFLOWER.defaultBlockState() : roll < 0.9F ? Blocks.OXEYE_DAISY.defaultBlockState()

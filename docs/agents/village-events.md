@@ -462,3 +462,35 @@ Villages doing well or badly (`village/Growth`), building with `Rebuild`. Built 
   reading either. `VillageProjectGameTests` covers neighbouring bells, double chests and collection without a player.
 - **Decline is gentle and reversible:** a few panes, cobwebs and moss every two days, someone unseen leaving every three
   (never someone gifted, never below three), and it stops once the score climbs back to steady.
+
+## Reusable patterns from homes, markets and what players build
+
+A home of your own (`village/Homes`), market days (`village/Markets`) and leaving players' blocks alone
+(`village/PlayerBuilt`). Built November 2026. What the player sees: [village-growth.md](../village-growth.md).
+
+- **What a player put down is one question:** `PlayerBuilt.is(level, pos)`. Marks live on the chunk (a
+  `ModDataAttachments.PLAYER_BUILT` attachment, saved with it), set on `BlockEvent.EntityPlaceEvent` from any `Player`
+  (fake players too). Every block write in `village/` asks it: growth sites and their footprints (`Growth.fits`, `room`),
+  `Rebuild.step` (both kinds of site, and taking a house down), settling, wear, the board's footprint and mending,
+  stalls, scars healing, a fallen village's ruin, memorials, guardians lighting forges and harvesting. A home with any
+  mark in its box is never offered for rebuilding (`Projects.touched`). Meteors and storms are hazards, not the village,
+  and don't ask.
+- **Clear a mark when its block goes, not when someone asks to break it.** `BreakEvent` is also posted as a probe
+  (`WorldMutationPolicy.canEdit`), so it can't clear marks. `BlockEvent.NeighborNotifyEvent` with an air state fires on
+  real removals; `is` also drops a mark it finds on air. Without the first, a broken block's mark carried over to
+  whatever stood there next (a village's wall counted as the player's).
+- **A home of your own is a project with an owner and nothing to gather** (`Project.owner`, posted `READY`), queued in
+  `Village.orders` ahead of the village's own projects. On finishing (`Homes.built`): every block is marked as the
+  player's, each bed's POI is released from any villager (their `HOME` memory erased) and taken
+  (`PoiManager.take`, saved with the POI), and the bed becomes the owner's respawn (`setRespawnPosition`), or on their
+  next pass online (`Village.waking`). Work out "starts now or waits" before posting the order: posting it makes the
+  board busy.
+- **Board signs are buttons:** `PlayerInteractEvent.RightClickBlock` on a board sign is cancelled and answered
+  (`Homes.clicked`); a second click within ten seconds says yes (`OFFERS`).
+- **Market traders are vanilla wandering traders with no AI** (they stay at their stall and face the customers), tagged
+  `Markets.TAG` and turned away on load if not live, like travellers. A saved market lost its traders on restart:
+  `consider` takes it down and sets it up again. Prices are set when stocked (`cost`, `pays` by mood); a friend's
+  discount is each offer's `setSpecialPriceDiff`, set on `EntityInteract` before the trade screen opens.
+- **Stalls stand on the ground and apart.** `Markets.fit` read the first stall's canopy as ground and stacked a second
+  stall on it; ground may not be a stall block (`stallBlock`), and stalls keep five blocks apart. Taking a stall down
+  removes only stall blocks it recorded, top first, without neighbour updates, and never a marked one.

@@ -25,7 +25,7 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 | `tools/elements-gametest.init.gradle` | Hydrokinesis in the Nether, Pyrokinesis in the rain |
 | `tools/fighting-gametest.init.gradle` | `FightingStylesGameTests` |
 | `tools/structure-gametest.init.gradle -PtestPackages=radio/LivingRadioGameTests.java,village/GiftedWorkGameTests.java` | The living radio (bunker radios, chatter, the voice) and gifted villagers at work (every job, the courier, favours) |
-| `tools/structure-gametest.init.gradle -PtestPackages=trace,travel,village/VillageGrowthGameTests.java,village/VillageProjectGameTests.java,village/VillageUpgradeGameTests.java` | Power traces, travellers on the road (and the Company's pursuit), villages that grow, notice boards and projects, tiers, rebuilt homes and town houses |
+| `tools/structure-gametest.init.gradle -PtestPackages=trace,travel,village/VillageGrowthGameTests.java,village/VillageProjectGameTests.java,village/VillageUpgradeGameTests.java,village/VillageLifeGameTests.java` | Power traces, travellers on the road (and the Company's pursuit), villages that grow, notice boards and projects, tiers, rebuilt homes and town houses, player blocks left alone, homes of your own, market days |
 | `tools/structure-gametest.init.gradle -PtestPackages=village/WorldEventBalanceGameTests.java` | World events in multiplayer and singleplayer: player groups, one trouble per village, party scaling, starfall and sleep, calendar days |
 | `tools/structure-gametest.init.gradle -PtestPackages=company` | The Company: agents, attention, investigators, convoys, raids (`CompanyAgentGameTests`, `CompanyNoticeGameTests`) |
 | `tools/structure-gametest.init.gradle -PtestPackages=village/ConsequenceGameTests.java` | What villages remember, scars, rebuilding (a single file works as a package) |
@@ -128,6 +128,9 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
   is false there whatever the chunk. Teleporting into a freshly forced chunk before its entities have loaded only passed
   when it happened to be ready (it failed every time in the smaller gifted suite): wait for `hasChunk` and
   `areEntitiesLoaded(chunk)` first (`VillagerMeltdownGameTests.villagersCarriedToTheSafePointCountAndStay`).
+- **Player marks outlive a test.** `PlayerBuilt` marks sit on the chunk, and later batches reuse test positions: a test
+  that lays ground clears the marks in its box first (`PlayerBuilt.clear`), or a stall or house refuses ground an
+  earlier test's player "built" (it flaked one run in three).
 - **Room for a village house in a test:** the arena is too small and has a ceiling; lay an open grass platform at y 300
   (nothing above it) and put the bell on it (`VillageGrowthGameTests.aThrivingVillageBuildsOneOfItsOwnHouses`), then
   clear the box afterwards.

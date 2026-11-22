@@ -48,6 +48,10 @@ public final class ModDataAttachments {
     /** Set when a power was awakened by the Formula rather than by nature. */
     public static final Supplier<AttachmentType<Boolean>> FORMULA_BORN =
             ATTACHMENTS.register("formula_born", () -> AttachmentType.<Boolean>builder(() -> false).serialize(Codec.BOOL).copyOnDeath().build());
+    /** On a chunk: the blocks in it players put down, which villages leave alone (village/PlayerBuilt). */
+    public static final Supplier<AttachmentType<com.jayptucker.heroesevolved.village.PlayerBuilt.Marks>> PLAYER_BUILT =
+            ATTACHMENTS.register("player_built", () -> AttachmentType.builder(com.jayptucker.heroesevolved.village.PlayerBuilt.Marks::new)
+                    .serialize(com.jayptucker.heroesevolved.village.PlayerBuilt.SERIALIZER).build());
 
     private ModDataAttachments() {
 

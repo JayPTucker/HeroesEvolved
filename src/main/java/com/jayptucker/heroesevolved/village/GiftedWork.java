@@ -425,7 +425,7 @@ public final class GiftedWork {
     /** The forge lit: it stays lit (a furnace with nothing burning keeps the look until something changes it). */
     static void light(ServerLevel level, BlockPos at) {
         BlockState s = level.getBlockState(at);
-        if (!unlit(s)) return;
+        if (!unlit(s) || PlayerBuilt.is(level, at)) return;
         level.setBlock(at, s.setValue(BlockStateProperties.LIT, true), Block.UPDATE_ALL);
         level.sendParticles(ParticleTypes.FLAME, at.getX() + .5, at.getY() + .8, at.getZ() + .5, 8, 0.25, 0.2, 0.25, 0.01);
     }
@@ -489,6 +489,7 @@ public final class GiftedWork {
             BlockState s = level.getBlockState(p);
             if (!(s.getBlock() instanceof CropBlock c) || !c.isMaxAge(s)) continue;
             BlockPos q = p.immutable();
+            if (PlayerBuilt.is(level, q)) continue;   // a player's own crops are theirs to harvest
             level.destroyBlock(q, true, v);
             level.setBlock(q, c.getStateForAge(0), Block.UPDATE_ALL);
             AbilityEffects.send(level, Kind.TK_GATHER, Vec3.atCenterOf(q), Vec3.atCenterOf(q).add(0, 1.5, 0), 0.6);

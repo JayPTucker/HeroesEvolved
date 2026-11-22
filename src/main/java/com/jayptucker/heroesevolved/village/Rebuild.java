@@ -183,7 +183,7 @@ public final class Rebuild extends SavedData {
             if (s.next <= s.clear) {
                 // Taking the old house down: no neighbour updates, so nothing pops off as items while it comes apart;
                 // what was in its chests is left on the ground.
-                if (now.isAir() && state.isAir() || now == state || now.getDestroySpeed(level, p) < 0) continue;
+                if (now.isAir() && state.isAir() || now == state || now.getDestroySpeed(level, p) < 0 || PlayerBuilt.is(level, p)) continue;
                 if (level.getBlockEntity(p) instanceof net.minecraft.world.Container box) net.minecraft.world.Containers.dropContents(level, p, box);
                 level.removeBlockEntity(p);
                 level.setBlock(p, state, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
@@ -192,6 +192,8 @@ public final class Rebuild extends SavedData {
                     level.playSound(null, p, now.getSoundType().getBreakSound(), SoundSource.BLOCKS, 0.8F, 0.9F);
                 continue;
             }
+            // Never over anything a player put down, even a flower or a carpet.
+            if (PlayerBuilt.is(level, p)) continue;
             if (s.growth) {
                 // A new house goes over grass and flowers, and its lowest layer over the soil; never over anything built.
                 boolean soil = p.getY() == s.base && Growth.natural(now);
@@ -231,7 +233,7 @@ public final class Rebuild extends SavedData {
         // Twice, so rubble that landed on rubble goes too.
         for (int pass = 0; pass < 2; pass++)
         for (BlockPos p : BlockPos.betweenClosed(s.center.offset(-r, -r, -r), s.center.offset(r, r / 2, r))) {
-            if (!level.hasChunkAt(p) || built.contains(p)) continue;
+            if (!level.hasChunkAt(p) || built.contains(p) || PlayerBuilt.is(level, p)) continue;
             BlockState state = level.getBlockState(p);
             if (scorched(state) && level.getBlockState(p.above()).isAir() && !level.getBlockState(p.below()).isAir())
                 level.setBlock(p.immutable(), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
@@ -260,7 +262,7 @@ public final class Rebuild extends SavedData {
         for (BlockPos p : positions) {
             if (!level.hasChunkAt(p)) continue;
             BlockState now = level.getBlockState(p);
-            if (!settles(now)) continue;
+            if (!settles(now) || PlayerBuilt.is(level, p)) continue;
             BlockState joined = Block.updateFromNeighbourShapes(now, level, p);
             if (joined != now) { level.setBlock(p, joined, Block.UPDATE_CLIENTS); changed++; }
         }

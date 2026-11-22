@@ -97,6 +97,16 @@ public final class VillageMemory extends SavedData {
         final List<Projects.Home> homes = new ArrayList<>();
         final java.util.Set<Long> replaced = new java.util.HashSet<>();
         int tier = -1;
+        /** Homes players asked it for (village/Homes), in order; the homes they own; owners still to be told it's ready. */
+        final List<UUID> orders = new ArrayList<>();
+        final Map<UUID, Homes.Owned> owned = new HashMap<>();
+        final java.util.Set<UUID> waking = new java.util.HashSet<>();
+        /** Its market, while one is on (village/Markets), the day it last held one and the day it last told the radio. */
+        Markets.Market market;
+        long marketHeld = -1, marketNews = -1;
+        public Markets.Market market() { return market; }
+        public Map<UUID, Homes.Owned> owned() { return Map.copyOf(owned); }
+        public List<UUID> orders() { return List.copyOf(orders); }
         Village(BlockPos bell) { this.bell = bell; }
         public Projects.Board board() { return board; }
         public Projects.Project project() { return project; }
@@ -324,10 +334,11 @@ public final class VillageMemory extends SavedData {
                 if (Math.abs(at.getY() - v.bell.getY()) > 4) continue;
                 BlockPos below = at.below();
                 if (!level.getBlockState(below).isFaceSturdy(level, below, Direction.UP) || !level.getFluidState(below).isEmpty()) continue;
+                if (PlayerBuilt.is(level, below)) continue;   // never on a player's floor
                 boolean room = true;
                 for (int y = 0; y < height; y++) {
                     BlockState s = level.getBlockState(at.above(y));
-                    if (!s.isAir() && !(s.canBeReplaced() && s.getFluidState().isEmpty())) { room = false; break; }
+                    if (!s.isAir() && !(s.canBeReplaced() && s.getFluidState().isEmpty()) || PlayerBuilt.is(level, at.above(y))) { room = false; break; }
                 }
                 if (!room) continue;
                 boolean touching = false;
@@ -414,10 +425,11 @@ public final class VillageMemory extends SavedData {
             if (s.isAir()) {
                 // A cobweb in a corner: under a roof, against a wall.
                 if (random.nextFloat() < 0.04F && !level.getBlockState(p.above()).isAir() && walls(level, p) >= 1
-                        && !level.canSeeSky(p)) { level.setBlock(p.immutable(), Blocks.COBWEB.defaultBlockState(), 3); changed++; }
+                        && !level.canSeeSky(p) && !PlayerBuilt.is(level, p.above())) { level.setBlock(p.immutable(), Blocks.COBWEB.defaultBlockState(), 3); changed++; }
                 continue;
             }
             if (s.is(Blocks.BELL) || level.getBlockEntity(p) != null && !(s.getBlock() instanceof BedBlock)) continue;
+            if (PlayerBuilt.is(level, p)) continue;   // what players built near it doesn't fall with it
             BlockState to = null;
             if (s.getBlock() instanceof DoorBlock) {
                 if (s.getValue(DoorBlock.HALF) == DoubleBlockHalf.LOWER) to = Blocks.AIR.defaultBlockState();
@@ -532,6 +544,7 @@ public final class VillageMemory extends SavedData {
         if (!v.fallen) out.add("  Doing: " + Growth.mood(level, v).name().toLowerCase() + " (score " + Growth.score(level, v) + "), "
                 + v.houses + " new building(s), " + v.sheltered + " family(ies) taken in" + (Growth.haven(level, v) ? ", a haven" : ""));
         if (!v.fallen) out.add("  " + Projects.describe(level, v));
+        out.addAll(Homes.describe(v));
         return out;
     }
 
@@ -602,6 +615,18 @@ public final class VillageMemory extends SavedData {
             t.put("homes", homes);
             t.putLongArray("replaced", v.replaced.stream().mapToLong(Long::longValue).toArray());
             t.putInt("tier", v.tier);
+            ListTag orders = new ListTag();
+            for (UUID id : v.orders) orders.add(NbtUtils.createUUID(id));
+            t.put("orders", orders);
+            ListTag owned = new ListTag();
+            v.owned.forEach((id, o) -> { CompoundTag ot = o.save(); ot.putUUID("owner", id); owned.add(ot); });
+            t.put("owned", owned);
+            ListTag waking = new ListTag();
+            for (UUID id : v.waking) waking.add(NbtUtils.createUUID(id));
+            t.put("waking", waking);
+            if (v.market != null) t.put("market", v.market.save());
+            t.putLong("market_held", v.marketHeld);
+            t.putLong("market_news", v.marketNews);
             list.add(t);
         }
         tag.put("villages", list);
@@ -642,6 +667,16 @@ public final class VillageMemory extends SavedData {
             for (Tag h : t.getList("homes", Tag.TAG_COMPOUND)) { var home = Projects.Home.load((CompoundTag) h); if (home != null) v.homes.add(home); }
             for (long r : t.getLongArray("replaced")) v.replaced.add(r);
             v.tier = t.contains("tier") ? t.getInt("tier") : -1;
+            for (Tag id : t.getList("orders", Tag.TAG_INT_ARRAY)) v.orders.add(NbtUtils.loadUUID(id));
+            for (Tag o : t.getList("owned", Tag.TAG_COMPOUND)) {
+                CompoundTag ot = (CompoundTag) o;
+                Homes.Owned home = Homes.Owned.load(ot);
+                if (home != null && ot.hasUUID("owner")) v.owned.put(ot.getUUID("owner"), home);
+            }
+            for (Tag id : t.getList("waking", Tag.TAG_INT_ARRAY)) v.waking.add(NbtUtils.loadUUID(id));
+            if (t.contains("market")) v.market = Markets.Market.load(t.getCompound("market"));
+            v.marketHeld = t.contains("market_held") ? t.getLong("market_held") : -1;
+            v.marketNews = t.contains("market_news") ? t.getLong("market_news") : -1;
             data.villages.put(v.bell.asLong(), v);
         }
         return data;

@@ -133,7 +133,11 @@ public final class Growth {
         boolean projects = !(server instanceof net.minecraft.gametest.framework.GameTestServer);
         if (projects) discover(level);
         for (VillageMemory.Village v : VillageMemory.all(level)) {
-            if (v.fallen || !level.isPositionEntityTicking(v.bell) || EmergencyBand.troubled(level, v.bell)) continue;
+            if (v.fallen || !level.isPositionEntityTicking(v.bell)) continue;
+            if (EmergencyBand.troubled(level, v.bell)) {
+                if (v.market != null) Markets.close(level, v, true);   // the traders don't stay for trouble
+                continue;
+            }
             consider(level, v, projects);
         }
     }
@@ -153,7 +157,10 @@ public final class Growth {
 
     static void consider(ServerLevel level, VillageMemory.Village v, boolean projects) {
         long day = level.getDayTime() / Days.DAY + 1;
-        if (projects) Projects.consider(level, v);
+        if (projects) {
+            Projects.consider(level, v);
+            Markets.consider(level, v);
+        }
         switch (mood(level, v)) {
             case STRUGGLING -> {
                 if (day - v.lastWear >= WEAR_EVERY) {
@@ -382,12 +389,14 @@ public final class Growth {
             if (low - base < 2) {
                 // It stands here: natural ground at its floor (or a block below), and nothing in the way.
                 BlockPos g = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, column).below();
-                if (g.getY() < base - 1 || g.getY() > base || !natural(level.getBlockState(g)) || !level.getFluidState(g.above()).isEmpty()) return false;
+                if (g.getY() < base - 1 || g.getY() > base || !natural(level.getBlockState(g)) || !level.getFluidState(g.above()).isEmpty()
+                        || PlayerBuilt.is(level, g)) return false;
                 from = base + 1;
             }
             for (int y = from; y <= high; y++) {
-                BlockState s = level.getBlockState(new BlockPos(x, y, z));
-                if (!s.isAir() && !(s.canBeReplaced() && s.getFluidState().isEmpty())) return false;
+                BlockPos at = new BlockPos(x, y, z);
+                BlockState s = level.getBlockState(at);
+                if (!s.isAir() && !(s.canBeReplaced() && s.getFluidState().isEmpty()) || PlayerBuilt.is(level, at)) return false;
             }
         }
         return true;
@@ -416,7 +425,7 @@ public final class Growth {
                 BlockPos top = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, column);
                 BlockPos ground = top.below();
                 BlockState g = level.getBlockState(ground);
-                if (!natural(g) || !level.getFluidState(ground).isEmpty() || !level.getFluidState(top).isEmpty()) return null;
+                if (!natural(g) || !level.getFluidState(ground).isEmpty() || !level.getFluidState(top).isEmpty() || PlayerBuilt.is(level, ground)) return null;
                 low = Math.min(low, ground.getY());
                 high = Math.max(high, ground.getY());
                 if (high - low > 1) return null;
@@ -427,7 +436,7 @@ public final class Growth {
                 for (int dy = 1; dy <= size.getY(); dy++) {
                     BlockPos p = new BlockPos(x0 + dx, low + dy, z0 + dz);
                     BlockState s = level.getBlockState(p);
-                    if (!s.isAir() && !(s.canBeReplaced() && s.getFluidState().isEmpty())) return null;
+                    if (!s.isAir() && !(s.canBeReplaced() && s.getFluidState().isEmpty()) || PlayerBuilt.is(level, p)) return null;
                 }
         return new BlockPos(x0, low, z0);
     }
@@ -476,8 +485,10 @@ public final class Growth {
         Projects.Project project = v.project() != null && v.project().stage() == Projects.Stage.BUILDING ? v.project() : null;
         boolean rebuilt = s.replaces() != null;
         String what = project == null ? "a new house" : Projects.lower(project.title());
-        int beds = project == null ? 1 : Math.min(2, project.beds());
-        Projects.built(level, v);
+        int beds = project == null ? 1 : project.owner() != null ? 0 : Math.min(2, project.beds());
+        boolean home = project != null && project.owner() != null;
+        Projects.built(level, v, s);
+        if (home) return;   // Homes.built has told the owner and the radio
         for (int i = 0; i < beds; i++) {
             Villager newcomer = EntityType.VILLAGER.create(level);
             if (newcomer == null) break;
@@ -513,7 +524,7 @@ public final class Growth {
         var r = level.random;
         for (int i = 0; i < 2000 && (panes < 3 || webs < 3 || moss < 6); i++) {
             BlockPos p = bell.offset(r.nextInt(65) - 32, r.nextInt(13) - 4, r.nextInt(65) - 32);
-            if (!level.hasChunkAt(p)) continue;
+            if (!level.hasChunkAt(p) || PlayerBuilt.is(level, p) || PlayerBuilt.is(level, p.above())) continue;
             BlockState s = level.getBlockState(p);
             if (panes < 3 && s.is(Blocks.GLASS_PANE)) { level.setBlock(p, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL); panes++; }
             else if (moss < 6 && s.is(Blocks.COBBLESTONE)) { level.setBlock(p, Blocks.MOSSY_COBBLESTONE.defaultBlockState(), Block.UPDATE_ALL); moss++; }
