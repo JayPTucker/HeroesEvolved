@@ -55,6 +55,11 @@ When a villager's gift wakes, it goes one of two ways (50% each, `villages.gifte
 
 The siege is saved on the renegade, so it carries on through a restart or an unloaded chunk.
 
+Every renegade, besieging or not, leaves a trail of its power's marks behind it, which fade over a day. A telepath (or
+anyone with Vibe, Mimicry or Space-Time Manipulation) notices it ("Vesna Stormcaller passed near here not long ago."),
+and crouching by a mark tells anyone which way it went ("Vesna Stormcaller passed this way, heading east, about an hour ago.").
+See [Power traces](power-traces.md).
+
 ## Rarity
 
 Like Apotheosis's bosses, every gifted mob is graded. Its name is in its rarity's colour, and the beads on its sigil

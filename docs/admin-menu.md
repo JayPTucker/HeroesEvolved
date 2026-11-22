@@ -1,73 +1,73 @@
-# The admin menu
+# The admin console
 
-`/heroesevolved admin` opens the operator tools (permission level 2, the same as the other `/heroesevolved`
-commands). The server checks permission again for every button, logs each one to the console, and shows the result
-above the hotbar.
+Press the admin key (O by default), or run `/heroesevolved admin`. Permission level 2 is required. Every button is
+checked again on the server and every change is logged. The result stays at the bottom of the console; hover it to read
+a long message. State refreshes every two seconds, and **Refresh** updates it immediately.
 
-Online players are listed on the left, with you first. Scroll the list with the mouse wheel; hover a name to see that
-player's power, level and position. The chosen player is who the buttons act on, in both tabs.
+Choose an online player on the left. Their name stays in the footer so it is clear who receives a power, travels, or
+becomes the centre of an event. Scroll the player list independently from the page. The console fits smaller windows
+and larger GUI scales: scroll the main page, or use Page Up / Page Down, to reach its remaining controls.
 
-## Player
+## Players
 
-The player's card shows:
+The player card shows their current power and whether it is awake, Power Level, Mastery, stamina, dimension and position.
 
-- their power, and whether it is awake;
-- their level, with a bar of Mastery toward the next one;
-- their energy, with a bar;
-- where they are;
-- how far the stories have got with them (Sylar's chapter, and Company visits and wins).
-
-| Row | Buttons |
+| Section | Controls |
 | --- | --- |
-| Power | Pick a power with the arrows, then **Give** it (awakened), give it **Dormant** (unawakened), or **Remove** theirs. |
-| Level | Step down or up, jump to 1, 10, 15 or 20; **Awaken** a dormant power with its awakening scene. |
-| Mastery | +100, +1k, +10k, or **Reset** to Level 1. |
-| Energy | **Refill**, or turn **Unlimited** energy on and off. |
-| Tools | Reset **Cooldowns**, **Full Heal**, or **Go To** them (teleports you). |
-| Admin | Toggle **God** mode, **Bring here** (teleport them to your position and dimension), or **To cryopod** (below). |
+| Power assignment | Choose a power with the arrows. **Give awake** replaces their power already awakened; **Dormant** assigns it without a scene; **Remove** takes it away. Both grant options respect unique ownership. |
+| Progression | Adjust Power Level by one or jump to 1, 10, 15 or 20. Grant 100, 1,000 or 10,000 Mastery. **Awaken** starts a dormant power's scene. **Reset progress** returns them to Level 1 with zero Mastery. |
+| Recovery and travel | Refill stamina, restore health and food, teleport to the player or bring them to you, including across dimensions. |
 
-God mode prevents all damage and death, including void damage. It is saved through relogs and respawns, and can be
-turned off in the same menu. Enabled players have a gold outline visible to everyone and gold names in the player list.
-God mode leaves game mode, stamina costs, cooldowns and scoreboard teams alone.
+## Events
 
-**To cryopod** is for a new world's prologue, the Last Day. It jumps the whole day to everyone being sealed in
-their cryopods: the vault shuts, Claire is in Pod 14, and the Helix Ward's sleeper is drawn as usual. Then it plays on:
-the blast, "103 years later", and the waking in the bunker. Press it while the city is still being built (the black
-screen on a new world) and the day starts at the pods. It acts on everyone in the Last Day, not only the chosen player,
-and is greyed out when there is no day left to skip. `/heroesevolved prologue jump pods` does the same.
+Pick an event on the left, then use its controls on the right. An asterisk and **ACTIVE / QUEUED** identify a running
+event or a queued start. The card gives its current status and states whether cancellation affects the selected village
+or the whole server. Scroll the event list to find more entries on a small screen; scroll the details to reach controls.
 
-**Dormant** replaces the existing power without playing an awakening. It can awaken naturally later, or with **Awaken**.
-Both grant buttons respect unique power ownership: they cannot take a power another player still holds.
-
-## World & Events
-
-Each section has a status line and its controls. Its dot is lit while it is going on. Hover a status line that is
-cut short to read all of it. Buttons that can't do anything right now are greyed out.
-
-| Section | Buttons | Acts on |
+| Event | Manual start options | Cancel |
 | --- | --- | --- |
-| **Eclipse** | **Start** (from first contact), **Totality** (straight to it), **Stop** | the world |
-| **Sylar** (the prisoner and his Collection) | **Next** (move his story on a step: wake him for them, cross out the next name on his list, open his cell, or send him to them now), **Ticket** (a Repair Ticket in their pocket), **Fight** (into his Collection now, with everyone near them), **End** (close it; everyone goes home) | the chosen player |
-| **Village** | **Meltdown** (one minute) or **20 s**, in the villager nearest them; **Raid** on the nearest village; **End** every meltdown | the chosen player's surroundings (64 blocks) |
-| **Radio** | **Give tuned radio**: a walkie-talkie already on 101.10 FM | the chosen player |
+| Eclipse | First contact or immediate totality | Ends the server's Eclipse and restores powers. |
+| Villager meltdown | 60 seconds, 20 seconds, or find a village using the configured incident range | Ends all live meltdowns and queued meltdown starts; clears the delayed Eclipse meltdown. |
+| Village awakenings | Random gift, hostile renegade or friendly awakening | Stops all sieges, in-progress turns and queued awakenings. Existing guardians and surviving hostile mobs remain. |
+| Overload storms | Wildfire, Supercell or Blizzard in a nearby villager; **Find village** queues a random storm farther away | Ends all overloads and queued overload starts without declaring a victory or failure. |
+| Starfall shower | Start the shower in the Overworld, whatever the time | Stops the shower, live meteors and queued great meteors. A naturally scheduled shower stays off for the rest of that night; future nights still work. |
+| Falling meteors | Falling star nearby, great meteor at the selected player's location, or find a village for a great meteor | Cancels all falling and queued meteors. To stop further scheduled stars too, cancel the Starfall shower. |
+| Village raid | Starts at a loaded village bell within 64 blocks of the selected player | Stops the raid at their position or nearby bell. Surviving raiders remain. |
+| Company operations | Investigator, prisoner convoy or home raid | Recalls all operations, releases prisoners and clears queued investigations. Attention and future automatic scheduling remain. |
 
-Use **Village incidents** for the newer village events:
+Nearby meltdown and overload starts need an eligible grown villager within 64 blocks. Village incident searches prefer
+a loaded bell nearby, then search within the configured incident range (640 blocks by default). Queued incidents begin
+when the village and its villagers are loaded; cancelling them releases their loading tickets before they can start.
+Company convoys need a suitable loaded village and prisoner. Refused starts explain why in the footer.
 
-| Control | Result |
+## Story
+
+| Scene | Controls |
 | --- | --- |
-| **Awakening** | A gifted villager awakens naturally, potentially becoming a renegade. |
-| **Renegade** | A hostile gifted villager begins besieging its village. |
-| **Guardian** | A friendly gifted villager awakens to protect its village. |
-| **Meltdown** | Find and load a village, then begin a meltdown using the configured fuse. |
-| **Start raid** / **Stop raid** | Start at the nearest village; stop the raid at the chosen player's position. Surviving raiders remain. |
+| Sylar's Collection | Start a fight for the selected player and nearby companions; cancel sends every fighter home. **Advance story** moves the prisoner/list story one step. **Give Repair Ticket** gives the rematch item. |
+| The Last Day | Enrol the selected player, or cancel their participation and wake them in the bunker. **Jump all to pods** skips the shared day to everyone being sealed in their cryopods, then plays the blast and waking. It also works while the city is being prepared. |
+| Hourglass Annex | **Prepare annex**, then **Enter annex** once its construction is ready. Cancel returns the selected visitor. |
+| The avenue | Enter the playable avenue mission; cancel returns all runners. Operator entry bypasses the usual story unlock. |
+| Night Three | Enter the past bunker; cancel returns all runners. Operator entry bypasses the usual story unlock. |
+| Odessa vision | Replay the awakening vision for the selected player without changing their power. It waits for the city to be available. Cancel returns all vision viewers and stops queued visions and gathers. |
 
-Incidents search around the chosen player within the server's configured incident range (640 blocks by default).
-They begin once the village and its villagers load. The village status includes the number of queued incidents;
-**Refresh** updates the status. **Main events** returns to the original controls.
+Scene availability still matters: a player already in another scene, a full encounter, a city still preparing, or a
+disabled Sylar fight can refuse entry. Cancellation uses each scene's normal return path.
 
-**Fight** is refused while another fight is on in the Collection, or when Sylar is disabled in the config; the message
-says which.
+## Debug
 
-The same things have commands: `/heroesevolved eclipse …`, `/heroesevolved sylar …` and
-`/heroesevolved eclipse meltdown [seconds]`. See [The Eclipse](eclipse.md), [Sylar](sylar.md) and
-[The emergency band](emergency-band.md).
+Live diagnostics show the selected dimension, server tick and clocks, queued incidents, active storms, meltdowns,
+sieges, turning villagers, meteors, Company operations, distress calls, radio connection and story status.
+
+| Tool | Result |
+| --- | --- |
+| God mode | Toggles complete protection from damage and death, including the void. Saved through relogs and respawns; gold outline and player-list name while enabled. |
+| Free stamina | Toggles unlimited stamina for the selected player. |
+| Reset cooldowns | Clears their ability cooldowns. |
+| Cancel awakening | Cancels their awakening; time visions have separate controls under Story. |
+| Give tuned radio | Gives a walkie-talkie on 101.10 FM. |
+| Company attention | Clear, Noticed, Watched or Hunted presets for the selected player. Cancel current operations separately under Events. |
+| Cancel all events | Server-wide cleanup: world events, queued incidents, Company operations, vanilla raids (including villages with nobody nearby), active stories and awakenings. |
+
+Cancellation does not reverse terrain damage, remove established guardians or surviving raiders, or disable future
+automatic event scheduling. Village growth and expansion tools are managed separately.

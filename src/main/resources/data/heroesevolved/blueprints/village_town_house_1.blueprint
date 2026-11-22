@@ -1,0 +1,185 @@
+# A town house villages build at the Town tier (village/Projects): front gable to the street, stone
+# ground floor, jettied timber-frame upper floor. Drawn facing north; village/Styles recolours it per
+# village kind. Exported with to-nbt to structure/village/town_house_1.nbt: export again after any change.
+name: village_town_house_1
+anchor: 0 0 0
+palette:
+  A = cobblestone
+  B = oak_planks
+  C = oak_log[axis=y]
+  D = mossy_cobblestone
+  E = oak_door[facing=south,half=lower,hinge=left]
+  F = crafting_table
+  G = oak_stairs[facing=north,half=bottom]
+  H = chest[facing=east]
+  I = oak_fence
+  J = furnace[facing=east]
+  K = oak_stairs[facing=south,half=bottom]
+  L = barrel[facing=up]
+  M = glass_pane
+  N = oak_door[facing=south,half=upper,hinge=left]
+  O = oak_pressure_plate
+  P = oak_stairs[facing=south,half=top]
+  Q = lantern[hanging=true]
+  R = oak_log[axis=x]
+  S = oak_log[axis=z]
+  T = potted_red_tulip
+  U = potted_cornflower
+  V = white_terracotta
+  W = red_carpet
+  X = red_bed[facing=south,part=foot]
+  Y = white_bed[facing=south,part=foot]
+  Z = red_bed[facing=south,part=head]
+  a = white_bed[facing=south,part=head]
+  b = dark_oak_stairs[facing=east,half=bottom]
+  c = dark_oak_stairs[facing=west,half=bottom]
+  d = chain[axis=y]
+  e = dark_oak_slab[type=bottom]
+
+# footing and floor
+layer 0:
+_________
+_________
+_AAAAAAA_
+_ABBBBBA_
+_ABBBBBA_
+_ABBBBBA_
+_ABBBBBA_
+_ABBBBBA_
+_AAAAAAA_
+_________
+
+layer 1:
+_________
+_________
+_CADEAAC_
+_AF....A_
+_A.G..BD_
+_AHI..BA_
+_DJK..BA_
+_AL...GA_
+_CDAAADC_
+_________
+
+layer 2:
+_________
+_________
+_CMANAMC_
+_A.....A_
+_A....BA_
+_M.O..BM_
+_A....GA_
+_A.....A_
+_CAAMAAC_
+_________
+
+layer 3:
+_________
+_P___Q_P_
+_CAAAAAC_
+_A.....A_
+_A....BA_
+_A..Q.GA_
+_A.....A_
+_A.....A_
+_CAAAAAC_
+_________
+
+# upper floor and beams
+layer 4:
+___P_P___
+_CRRRRRC_
+_SBBBBBS_
+_SBBBBBS_
+_SBBBBGS_
+_SBBBB.S_
+_SBBBB.S_
+_SBBBB.S_
+_CRRRRRC_
+_________
+
+layer 5:
+___T_U___
+_CVMCMVC_
+_VH....V_
+_V.WW..V_
+_V.WW..V_
+_C...I.C_
+_VXY.I.V_
+_VZa.I.V_
+_CVVCVVC_
+_________
+
+layer 6:
+_________
+_CVMCMVC_
+_V.....V_
+_M.....M_
+_V.....V_
+_C.....C_
+_V.....V_
+_M.....M_
+_CVMCMVC_
+_________
+
+# top plate, eaves
+layer 7:
+b_______c
+bCRRCRRCc
+bS.....Sc
+bS.....Sc
+bS.....Sc
+bC.....Cc
+bS.....Sc
+bS.....Sc
+bCRRCRRCc
+b_______c
+
+layer 8:
+_b_____c_
+_bVVCVVc_
+_b.....c_
+_b.....c_
+_b.....c_
+_b.....c_
+_b.....c_
+_b.....c_
+_bVVCVVc_
+_b_____c_
+
+layer 9:
+__b___c__
+__bVMVc__
+__b...c__
+__b...c__
+__b.Q.c__
+__b...c__
+__b...c__
+__b...c__
+__bVMVc__
+__b___c__
+
+layer 10:
+___b_c___
+___bVc___
+___b.c___
+___b.c___
+___bdc___
+___b.c___
+___b.c___
+___b.c___
+___bVc___
+___b_c___
+
+# ridge
+layer 11:
+____e____
+____e____
+____e____
+____e____
+____e____
+____e____
+____e____
+____e____
+____e____
+____e____

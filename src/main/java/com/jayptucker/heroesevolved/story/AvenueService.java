@@ -160,12 +160,17 @@ public final class AvenueService {
     // ------------------------------------------------------------------
 
     public static boolean enter(ServerPlayer player) {
+        return enter(player, false);
+    }
+
+    /** Operator-menu entry; the caller checks the requesting operator, who may be managing another player. */
+    public static boolean enter(ServerPlayer player, boolean operator) {
         MinecraftServer server = player.getServer();
         ServerLevel city = server.getLevel(TimeIntroService.DIMENSION);
         if (city == null || !PowerRules.canAct(player) || player.isPassenger() || player.isSpectator()
                 || TimeIntroService.isCity(player.level()) || FacilityService.atSite(player)
                 || com.jayptucker.heroesevolved.story.night.NightThreeService.inNight(player)) return false;
-        if (!unlocked(player)) {
+        if (!operator && !unlocked(player)) {
             tell(player, "The avenue isn't open to you yet. Hiro's key is in the Hourglass Annex: bring Mara and Ivo out alive first.");
             return false;
         }

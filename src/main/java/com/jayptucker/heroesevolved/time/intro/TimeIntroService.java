@@ -1,6 +1,7 @@
 package com.jayptucker.heroesevolved.time.intro;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
+import com.jayptucker.heroesevolved.story.prologue.PrologueService;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.effects.AbilityEffects;
@@ -478,16 +479,39 @@ public final class TimeIntroService {
     }
 
     public static void shutdown(MinecraftServer server) {
-        TimeGather.cancelAll(server);
+        cancelVision(server);
         AvenueService.shutdown(server);
+        configured = false;
+    }
+
+    /** Queues one operator-selected viewer without changing their power or fetching other players. */
+    public static boolean replay(ServerPlayer player) {
+        if (isVisiting(player) || isQueued(player) || isCity(player.level()) || TimeGather.gathering(player)
+                || PrologueService.isMember(player) || PrologueService.isWaiting(player)
+                || com.jayptucker.heroesevolved.story.night.NightThreeService.inNight(player)
+                || com.jayptucker.heroesevolved.expansion.FacilityService.atSite(player)) return false;
+        QUEUE.add(new Request(player.getUUID(), List.of(player.getUUID()), Map.of()));
+        return true;
+    }
+
+    /** Cancels the vision and its pending gathers without closing the separate avenue mission. */
+    public static void cancelVision(MinecraftServer server) {
+        TimeGather.cancelAll(server);
+        // A completed gather may still be queued for the city; its passengers already need their return points.
+        for (Request request : List.copyOf(QUEUE)) for (var origin : request.origins.entrySet()) {
+            ServerPlayer player = server.getPlayerList().getPlayer(origin.getKey());
+            if (player == null) continue;
+            player.setData(ModDataAttachments.TIME_INTRO_VISIT, origin.getValue());
+            returnHome(player, false);
+        }
         ServerLevel city = server.getLevel(DIMENSION);
         if (scene != null && city != null) finish(server, city, false);
         for (ServerPlayer player : List.copyOf(server.getPlayerList().getPlayers())) {
-            if (isVisiting(player) || isCity(player.level())) returnHome(player, false);
+            if (isVisiting(player) || isCity(player.level()) && !AvenueService.isRunner(player)
+                    && !PrologueService.isMember(player)) returnHome(player, false);
         }
         QUEUE.clear();
         scene = null;
-        configured = false;
     }
 
     private static void finish(MinecraftServer server, ServerLevel city, boolean completed) {

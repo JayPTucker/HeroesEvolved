@@ -34,7 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
-/** The admin menu's two tabs, before and during a meltdown, photographed 1500 blocks from spawn. */
+/** Operator console at normal and compact GUI scales, including actual button requests and cleanup. */
 @EventBusSubscriber(modid = "heroesevolved", value = Dist.CLIENT)
 public final class AdminPreview {
     private static boolean started;
@@ -59,6 +59,9 @@ public final class AdminPreview {
         if (!started && ticks > 40 && mc.screen != null && mc.getOverlay() == null) {
             started = true;
             mc.options.pauseOnLostFocus = false;
+            mc.options.guiScale().set(2);
+            mc.resizeDisplay();
+            mc.options.chatVisibility().set(net.minecraft.world.entity.player.ChatVisiblity.HIDDEN);
             var rules = new GameRules();
             rules.getRule(GameRules.RULE_DAYLIGHT).set(false, null);
             rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, null);
@@ -100,25 +103,65 @@ public final class AdminPreview {
             case 165 -> act(mc, AdminActionPayload.Action.TOGGLE_GOD_MODE, 0);
             case 170 -> { AdminScreen.showPlayer(); onServer(mc, AdminService::open); }
             case 185 -> shot("1-player");
+            case 186 -> scrollBottom(mc);
+            case 187 -> shot("12-player-tools");
+            case 188 -> { if (mc.screen instanceof AdminScreen s) s.mouseScrolled(s.width - 25, s.height / 2.0, 0, 100); }
             case 190 -> { AdminScreen.showWorld(); if (mc.screen instanceof AdminScreen s) s.onStateUpdated(); }
             case 198 -> shot("2-world");
-            case 205 -> act(mc, AdminActionPayload.Action.MELTDOWN_START, 60);
+            case 205 -> { AdminScreen.showEvent("meltdown"); if (mc.screen instanceof AdminScreen s) s.onStateUpdated(); }
+            case 215 -> click(mc, "60 seconds");
             case 245 -> act(mc, AdminActionPayload.Action.REFRESH, 0);
-            case 255 -> shot("3-world-meltdown");
+            case 255 -> { check(mc, "meltdown", true); shot("3-world-meltdown"); }
             case 258 -> { AdminScreen.showIncidents(); if (mc.screen instanceof AdminScreen s) s.onStateUpdated(); }
             case 259 -> shot("5-incidents");
             case 260 -> act(mc, AdminActionPayload.Action.MELTDOWN_CANCEL, 0);
             case 266 -> act(mc, AdminActionPayload.Action.GIVE_RADIO, 0);
-            case 270 -> { AdminScreen.showWorld(); act(mc, AdminActionPayload.Action.ECLIPSE_TOTALITY, 0); }
+            case 270 -> { AdminScreen.showEvent("overload"); act(mc, AdminActionPayload.Action.STOP_ECLIPSE, 0); }
+            case 275 -> click(mc, "Blizzard");
             case 290 -> act(mc, AdminActionPayload.Action.REFRESH, 0);
-            case 300 -> shot("4-world-totality");
+            case 300 -> { check(mc, "overload", true); shot("4-overload"); }
             case 305 -> onServer(mc, p -> System.out.println("ADMIN_RADIO " + p.getInventory().items.stream()
                     .filter(s -> !s.isEmpty()).map(s -> s.getItem() + " " + s.getComponents()).toList()));
-            case 306 -> { act(mc, AdminActionPayload.Action.STOP_ECLIPSE, 0); mc.options.hideGui = true; mc.setScreen(null); mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_BACK); }
-            case 310 -> shot("6-god-outline");
-            case 315 -> PreviewQuiet.quit();
+            case 310 -> click(mc, "Cancel event");
+            case 325 -> { AdminScreen.showDebug(); if (mc.screen instanceof AdminScreen s) s.onStateUpdated(); }
+            case 335 -> { check(mc, "overload", false); shot("6-debug"); }
+            case 340 -> scrollBottom(mc);
+            case 345 -> shot("7-debug-tools");
+            case 350 -> click(mc, "Cancel all events");
+            case 370 -> { AdminScreen.showStory(); if (mc.screen instanceof AdminScreen s) s.onStateUpdated(); }
+            case 380 -> shot("8-story");
+            case 390 -> { AdminScreen.showPlayer(); mc.options.guiScale().set(3); mc.resizeDisplay(); if (mc.screen instanceof AdminScreen s) s.onStateUpdated(); }
+            case 400 -> shot("9-compact-player");
+            case 405 -> { AdminScreen.showEvent("company"); if (mc.screen instanceof AdminScreen s) s.onStateUpdated(); }
+            case 415 -> shot("10-compact-events");
+            case 420 -> scrollBottom(mc);
+            case 425 -> shot("11-compact-controls");
+            case 430 -> PreviewQuiet.quit();
             default -> { }
         }
+    }
+
+    private static void scrollBottom(Minecraft mc) {
+        if (mc.screen instanceof AdminScreen s) s.mouseScrolled(s.width - 25, s.height / 2.0, 0, -100);
+    }
+
+    private static void click(Minecraft mc, String label) {
+        if (!(mc.screen instanceof AdminScreen s)) { PreviewQuiet.report("ADMIN_INPUT FAIL: screen closed for " + label); return; }
+        for (int attempt = 0; attempt < 40; attempt++) {
+            for (var child : s.children()) if (child instanceof net.minecraft.client.gui.components.Button b
+                    && b.getMessage().getString().equals(label) && b.active) {
+                s.mouseClicked(b.getX() + b.getWidth() / 2.0, b.getY() + 10, 0);
+                PreviewQuiet.report("ADMIN_INPUT PASS: " + label); return;
+            }
+            s.mouseScrolled(s.width - 25, s.height / 2.0, 0, -1);
+        }
+        PreviewQuiet.report("ADMIN_INPUT FAIL: missing button " + label);
+    }
+
+    private static void check(Minecraft mc, String id, boolean active) {
+        boolean actual = com.jayptucker.heroesevolved.network.ClientAdminState.get().events().stream()
+                .anyMatch(e -> e.id().equals(id) && e.active());
+        PreviewQuiet.report("ADMIN_STATE " + (actual == active ? "PASS" : "FAIL") + ": " + id + " active=" + actual);
     }
 
     @SubscribeEvent public static void render(RenderFrameEvent.Post e) {

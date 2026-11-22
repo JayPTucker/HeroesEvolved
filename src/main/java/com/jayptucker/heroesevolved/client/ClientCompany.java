@@ -15,7 +15,7 @@ public final class ClientCompany {
     /** Shown from this much attention, or while an operation is under way. */
     public static final float SHOW = 5;
     private static final int GREY = 0xFF9AA3AE, STEEL = 0xFF7FA7D8, AMBER = 0xFFFFB43A, RED = 0xFFFF3B2E, PALE = 0xFFFFE6DC;
-    private static final String[] DOING = {"", "ASKING", "CONVOY", "RAID"};
+    private static final String[] DOING = {"", "ASKING", "CONVOY", "RAID", "CHASE"};
     private static float attention;
     private static int op;
 

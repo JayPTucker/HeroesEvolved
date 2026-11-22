@@ -86,4 +86,160 @@ public final class AdminGameTests {
             helper.succeed();
         } finally { remove(player); }
     }
+
+    @GameTest(template = "rewind_empty", batch = "admin.events.queues", timeoutTicks = 40)
+    public static void cancellingQueuedIncidentsReleasesTheirTickets(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var at = helper.absolutePos(new BlockPos(6, 2, 6));
+        var kinds = com.jayptucker.heroesevolved.village.VillageIncidents.Kind.values();
+        try {
+            for (var kind : kinds) com.jayptucker.heroesevolved.village.VillageIncidents.requestAt(level, at, kind);
+            AdminEvents.cancel(level.getServer(), null, "meltdown");
+            helper.assertTrue(com.jayptucker.heroesevolved.village.VillageIncidents.pending(
+                    com.jayptucker.heroesevolved.village.VillageIncidents.Kind.MELTDOWN) == 0, "Meltdown cannot begin after cancellation");
+            for (String id : new String[]{"gifts", "overload", "meteors"}) AdminEvents.cancel(level.getServer(), null, id);
+            helper.assertTrue(com.jayptucker.heroesevolved.village.VillageIncidents.pending() == 0, "All queued event kinds are cancellable");
+            helper.succeed();
+        } finally { com.jayptucker.heroesevolved.village.VillageIncidents.cancel(kinds); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "admin.events.storms", timeoutTicks = 40)
+    public static void everyOverloadCanStartAndCancelWithoutAnOutcome(GameTestHelper helper) {
+        var p = player(helper);
+        var v = net.minecraft.world.entity.EntityType.VILLAGER.create(helper.getLevel());
+        v.setPos(p.position().add(2, 0, 0)); v.setNoAi(true);
+        v.getPersistentData().putBoolean(com.jayptucker.heroesevolved.gifted.GiftedMobs.ROLLED, true);
+        helper.getLevel().addFreshEntity(v);
+        try {
+            for (int variant = 0; variant < 3; variant++) {
+                AdminEvents.start(helper.getLevel().getServer(), p, "overload", variant);
+                helper.assertTrue(com.jayptucker.heroesevolved.village.overload.Overloads.critical(v), "Storm starts through the admin dispatcher: " + variant);
+                AdminEvents.cancel(helper.getLevel().getServer(), p, "overload");
+                helper.assertTrue(!com.jayptucker.heroesevolved.village.overload.Overloads.critical(v), "Storm is gone");
+                helper.assertTrue(v.isAlive() && !v.getPersistentData().contains(com.jayptucker.heroesevolved.village.overload.Overloads.TAG), "Villager survives without resumable storm state");
+            }
+            helper.succeed();
+        } finally { com.jayptucker.heroesevolved.village.overload.Overloads.cancel(v); v.discard(); remove(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "admin.events.naturalshower", timeoutTicks = 40)
+    public static void cancellingNaturalStarfallKeepsItOffUntilAnotherNight(GameTestHelper helper) {
+        var server = helper.getLevel().getServer(); var level = server.overworld(); long clock = level.getDayTime();
+        try {
+            int interval = com.jayptucker.heroesevolved.data.EclipseCalendar.intervalDays();
+            level.setDayTime((interval - 2) * 24_000L + 14_000);
+            helper.assertTrue(com.jayptucker.heroesevolved.meteor.Starfall.active(server), "The shower is naturally scheduled");
+            AdminEvents.cancel(server, null, "starfall");
+            helper.assertTrue(!com.jayptucker.heroesevolved.meteor.Starfall.active(server), "A natural shower stays cancelled");
+            com.jayptucker.heroesevolved.meteor.Starfall.force(server, true);
+            helper.assertTrue(com.jayptucker.heroesevolved.meteor.Starfall.active(server), "An operator can restart it immediately");
+            AdminEvents.cancel(server, null, "starfall");
+            level.setDayTime((2 * interval - 2) * 24_000L + 14_000);
+            helper.assertTrue(com.jayptucker.heroesevolved.meteor.Starfall.active(server), "Cancellation does not disable future showers");
+            helper.succeed();
+        } finally { level.setDayTime(clock); com.jayptucker.heroesevolved.meteor.Starfall.force(server, false); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "admin.events.turning", timeoutTicks = 40)
+    public static void cancellingAnAwakeningUnrootsTheTurningVillager(GameTestHelper helper) {
+        var v = net.minecraft.world.entity.EntityType.VILLAGER.create(helper.getLevel());
+        v.setPos(helper.absolutePos(new BlockPos(5, 2, 5)).getCenter());
+        helper.getLevel().addFreshEntity(v);
+        try {
+            double speed = v.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+            com.jayptucker.heroesevolved.gifted.Renegades.turn(v, ModAbilities.PYROKINESIS_ID, com.jayptucker.heroesevolved.gifted.Rarity.RARE);
+            helper.assertTrue(com.jayptucker.heroesevolved.gifted.Renegades.turning(v), "Awakening is in flight");
+            AdminEvents.cancel(helper.getLevel().getServer(), null, "gifts");
+            helper.assertTrue(!com.jayptucker.heroesevolved.gifted.Renegades.turning(v), "Conversion is cancelled");
+            helper.assertTrue(v.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED) == speed, "Villager can move again");
+            helper.succeed();
+        } finally { com.jayptucker.heroesevolved.gifted.Renegades.cancelAll(); v.discard(); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "admin.events.permissions", timeoutTicks = 40)
+    public static void untrustedClientsCannotStartOrCancelEvents(GameTestHelper helper) {
+        var p = player(helper); var server = helper.getLevel().getServer();
+        try {
+            com.jayptucker.heroesevolved.meteor.Starfall.force(server, true);
+            for (var action : new AdminActionPayload.Action[]{AdminActionPayload.Action.EVENT_CANCEL,
+                    AdminActionPayload.Action.CANCEL_ALL_EVENTS, AdminActionPayload.Action.SET_ATTENTION, AdminActionPayload.Action.CANCEL_INTRO})
+                AdminService.handle(p, new AdminActionPayload(action, p.getUUID(), "starfall", 100));
+            helper.assertTrue(com.jayptucker.heroesevolved.meteor.Starfall.active(server), "Unauthorized cancellation has no effect");
+            helper.assertTrue(com.jayptucker.heroesevolved.company.CompanyAttention.of(p) == 0, "Unauthorized debug changes have no effect");
+            AdminService.handle(p, new AdminActionPayload(AdminActionPayload.Action.EVENT_START, p.getUUID(), "eclipse", 0));
+            helper.assertTrue(!com.jayptucker.heroesevolved.events.EclipseService.isActive(server), "Unauthorized start has no effect");
+            helper.assertTrue(AdminEvents.start(server, p, "overload", 999).equals("Unknown event or start option."), "Malformed variants are rejected");
+            helper.succeed();
+        } finally { com.jayptucker.heroesevolved.meteor.Starfall.force(server, false); remove(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "admin.events.remoteraid", timeoutTicks = 40)
+    public static void globalCleanupFindsRaidsWithoutNearbyPlayers(GameTestHelper helper) {
+        var p = player(helper);
+        var raid = helper.getLevel().getRaids().createOrExtendRaid(p, helper.absolutePos(new BlockPos(5, 2, 5)));
+        try {
+            helper.assertTrue(raid != null, "Raid fixture starts");
+            p.setPos(p.position().add(1000, 0, 0));
+            helper.assertTrue(helper.getLevel().getRaidAt(p.blockPosition()) == null, "No player is standing in the raid");
+            helper.assertTrue(AdminEvents.cancelAllRaids(helper.getLevel().getServer()) > 0 && raid.isStopped(), "Global cleanup stops the distant raid");
+            helper.succeed();
+        } finally { if (raid != null) raid.stop(); remove(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "admin.events.codec", timeoutTicks = 40)
+    public static void catalogueAndFeedbackSurviveTheNetworkCodec(GameTestHelper helper) {
+        var p = player(helper);
+        var buffer = new net.minecraft.network.RegistryFriendlyByteBuf(io.netty.buffer.Unpooled.buffer(), helper.getLevel().registryAccess());
+        try {
+            var server = helper.getLevel().getServer();
+            var state = new com.jayptucker.heroesevolved.network.AdminStatePayload(false, false, 20,
+                    java.util.List.of(ModAbilities.SUPERSPEED_ID.toString()), java.util.List.of(),
+                    com.jayptucker.heroesevolved.network.AdminStatePayload.World.NONE,
+                    AdminEvents.describe(server, p), AdminEvents.diagnostics(server, p), "Cancelled event; queued starts released.");
+            com.jayptucker.heroesevolved.network.AdminStatePayload.STREAM_CODEC.encode(buffer, state);
+            helper.assertTrue(state.equals(com.jayptucker.heroesevolved.network.AdminStatePayload.STREAM_CODEC.decode(buffer)), "The complete catalogue, scopes, diagnostics and result round-trip");
+            helper.succeed();
+        } finally { buffer.release(); remove(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "admin.events.vision", timeoutTicks = 40)
+    public static void replayedVisionCanBeCancelledBeforeItStartsWithoutGrantingAPower(GameTestHelper helper) {
+        var p = player(helper); var server = helper.getLevel().getServer();
+        try {
+            String result = AdminEvents.start(server, p, "vision", 0);
+            helper.assertTrue(result.startsWith("Queued") && com.jayptucker.heroesevolved.time.intro.TimeIntroService.isQueued(p), "Operator can queue the vision without a power");
+            helper.assertTrue(!PlayerAbilityService.getData(p).hasAssignedPower(), "Replay never grants or replaces the player's power");
+            AdminEvents.cancel(server, p, "vision");
+            helper.assertTrue(!com.jayptucker.heroesevolved.time.intro.TimeIntroService.isQueued(p), "Cancelled vision cannot start later");
+            helper.succeed();
+        } finally { com.jayptucker.heroesevolved.time.intro.TimeIntroService.cancelVision(server); remove(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "admin.events.selectedtarget", timeoutTicks = 40)
+    public static void authorizedRequestsUseTheSelectedPlayerAndRejectAnOfflineTarget(GameTestHelper helper) {
+        var admin = player(helper); var target = player(helper); var server = helper.getLevel().getServer();
+        var list = server.getPlayerList();
+        java.util.Map<UUID, net.minecraft.server.level.ServerPlayer> lookup;
+        try {
+            var field = net.minecraft.server.players.PlayerList.class.getDeclaredField("playersByUUID"); field.setAccessible(true);
+            @SuppressWarnings("unchecked") var index = (java.util.Map<UUID, net.minecraft.server.level.ServerPlayer>) field.get(list);
+            lookup = index;
+        } catch (ReflectiveOperationException e) { throw new AssertionError(e); }
+        list.getOps().add(new net.minecraft.server.players.ServerOpListEntry(admin.getGameProfile(), 4, false));
+        lookup.put(target.getUUID(), target);
+        try {
+            helper.assertTrue(AdminService.isAdmin(admin), "Operator fixture has permission");
+            AdminService.handle(admin, new AdminActionPayload(AdminActionPayload.Action.SET_ATTENTION, target.getUUID(), "", 500));
+            helper.assertTrue(com.jayptucker.heroesevolved.company.CompanyAttention.of(target) == 100
+                    && com.jayptucker.heroesevolved.company.CompanyAttention.of(admin) == 0, "Debug controls affect the selected player and clamp input");
+            lookup.remove(target.getUUID());
+            AdminService.handle(admin, new AdminActionPayload(AdminActionPayload.Action.TOGGLE_GOD_MODE, target.getUUID(), "", 0));
+            helper.assertTrue(!GodModeService.enabled(target) && !GodModeService.enabled(admin), "Offline selection never falls back to the operator");
+            helper.succeed();
+        } finally {
+            lookup.remove(target.getUUID()); list.getOps().remove(admin.getGameProfile());
+            com.jayptucker.heroesevolved.company.CompanyAttention.forget(target);
+            remove(admin); remove(target);
+        }
+    }
 }

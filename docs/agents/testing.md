@@ -25,6 +25,7 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 | `tools/elements-gametest.init.gradle` | Hydrokinesis in the Nether, Pyrokinesis in the rain |
 | `tools/fighting-gametest.init.gradle` | `FightingStylesGameTests` |
 | `tools/structure-gametest.init.gradle -PtestPackages=radio/LivingRadioGameTests.java,village/GiftedWorkGameTests.java` | The living radio (bunker radios, chatter, the voice) and gifted villagers at work (every job, the courier, favours) |
+| `tools/structure-gametest.init.gradle -PtestPackages=trace,travel,village/VillageGrowthGameTests.java,village/VillageProjectGameTests.java,village/VillageUpgradeGameTests.java` | Power traces, travellers on the road (and the Company's pursuit), villages that grow, notice boards and projects, tiers, rebuilt homes and town houses |
 | `tools/structure-gametest.init.gradle -PtestPackages=village/WorldEventBalanceGameTests.java` | World events in multiplayer and singleplayer: player groups, one trouble per village, party scaling, starfall and sleep, calendar days |
 | `tools/structure-gametest.init.gradle -PtestPackages=company` | The Company: agents, attention, investigators, convoys, raids (`CompanyAgentGameTests`, `CompanyNoticeGameTests`) |
 | `tools/structure-gametest.init.gradle -PtestPackages=village/ConsequenceGameTests.java` | What villages remember, scars, rebuilding (a single file works as a package) |
@@ -127,6 +128,9 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
   is false there whatever the chunk. Teleporting into a freshly forced chunk before its entities have loaded only passed
   when it happened to be ready (it failed every time in the smaller gifted suite): wait for `hasChunk` and
   `areEntitiesLoaded(chunk)` first (`VillagerMeltdownGameTests.villagersCarriedToTheSafePointCountAndStay`).
+- **Room for a village house in a test:** the arena is too small and has a ceiling; lay an open grass platform at y 300
+  (nothing above it) and put the bell on it (`VillageGrowthGameTests.aThrivingVillageBuildsOneOfItsOwnHouses`), then
+  clear the box afterwards.
 - **Sleeping in a test:** post `new CanPlayerSleepEvent(player, bedPos, null)` on `NeoForge.EVENT_BUS` and read
   `getProblem()` (`WorldEventBalanceGameTests`, `CompanyNoticeGameTests.lyingDownWhileHuntedBringsTheRaid`).
 - **Unloading in a test:** `entity.remove(Entity.RemovalReason.UNLOADED_TO_CHUNK)` stands in for a chunk unloading

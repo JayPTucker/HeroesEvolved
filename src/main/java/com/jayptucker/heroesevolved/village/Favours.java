@@ -148,6 +148,7 @@ public final class Favours {
                 .withStyle(ChatFormatting.GREEN));
         v.getGossips().add(p.getUUID(), GossipType.MINOR_POSITIVE, 10);
         VillageMemory.thanked(level, v.blockPosition(), p, 1);
+        Growth.kindness(level, v.blockPosition());
         return true;
     }
 

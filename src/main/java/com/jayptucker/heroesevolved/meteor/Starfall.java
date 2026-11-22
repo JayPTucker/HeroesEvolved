@@ -40,6 +40,7 @@ public final class Starfall {
     public static final double SHARE = 96;
 
     private static boolean forced, on;
+    private static long cancelledNight = -1;
     private static long greatAt = -1;
     private static final Map<UUID, Long> NEXT = new HashMap<>();
 
@@ -53,12 +54,15 @@ public final class Starfall {
 
     /** Whether the shower is falling now (its night, or an admin's). */
     public static boolean active(MinecraftServer server) {
-        return forced || HeroesEvolvedConfig.COMMON.meteorShowers.get() && night(server.overworld().getDayTime());
+        long clock = server.overworld().getDayTime();
+        return forced || HeroesEvolvedConfig.COMMON.meteorShowers.get() && night(clock)
+                && EclipseCalendar.day(clock) != cancelledNight;
     }
 
     /** Starts or stops a starfall now, whatever the night (admins, previews). */
     public static void force(MinecraftServer server, boolean start) {
         forced = start;
+        cancelledNight = start ? -1 : EclipseCalendar.day(server.overworld().getDayTime());
         update(server);
     }
 
@@ -146,6 +150,7 @@ public final class Starfall {
     @SubscribeEvent
     public static void stop(ServerStoppingEvent event) {
         forced = false;
+        cancelledNight = -1;
         on = false;
         greatAt = -1;
         NEXT.clear();

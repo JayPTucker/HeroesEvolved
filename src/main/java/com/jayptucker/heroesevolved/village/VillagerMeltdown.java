@@ -219,6 +219,9 @@ public final class VillagerMeltdown {
 
     /** Ends every meltdown with nothing happening. How many there were. */
     public static int cancelAll() {
+        awakenAt = Long.MIN_VALUE;
+        for (Villager v : List.copyOf(RESUMING)) resume(v);
+        RESUMING.clear();
         List<Meltdown> all = all();
         for (Meltdown m : all) finish(m);
         return all.size();

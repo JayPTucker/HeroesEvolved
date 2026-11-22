@@ -37,6 +37,39 @@ public final class HeroesEvolvedCommands {
                         .then(com.jayptucker.heroesevolved.gifted.GiftedCommands.village())
                         .then(com.jayptucker.heroesevolved.meteor.MeteorCommands.meteor())
                         .then(com.jayptucker.heroesevolved.company.CompanyCommands.company())
+                        .then(net.minecraft.commands.Commands.literal("travel")
+                                .then(travel("pedlar", com.jayptucker.heroesevolved.travel.Party.Kind.PEDLAR))
+                                .then(travel("healer", com.jayptucker.heroesevolved.travel.Party.Kind.HEALER))
+                                .then(travel("caravan", com.jayptucker.heroesevolved.travel.Party.Kind.CARAVAN))
+                                .then(travel("refugees", com.jayptucker.heroesevolved.travel.Party.Kind.REFUGEES))
+                                .then(net.minecraft.commands.Commands.literal("clear").executes(c -> {
+                                    int n = com.jayptucker.heroesevolved.travel.Travellers.clearAll();
+                                    c.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal(n + " party(ies) sent on their way."), true);
+                                    return n;
+                                })))
+                        .then(net.minecraft.commands.Commands.literal("trace")
+                                .then(net.minecraft.commands.Commands.literal("list").executes(c -> {
+                                    var level = c.getSource().getLevel();
+                                    var at = net.minecraft.core.BlockPos.containing(c.getSource().getPosition());
+                                    long now = com.jayptucker.heroesevolved.village.Days.clock(level);
+                                    int n = 0;
+                                    for (var t : com.jayptucker.heroesevolved.trace.Traces.all(level)) {
+                                        if (t.at().distSqr(at) > 64 * 64) continue;
+                                        n++;
+                                        String line = t.kind().name().toLowerCase() + " at " + t.at().toShortString() + ", " + t.name()
+                                                + ", " + Math.round(t.strength(now) * 100) + "%" + (t.seen() ? ", seen" : "") + (t.trail() ? ", trail" : "");
+                                        c.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal(line), false);
+                                    }
+                                    int found = n;
+                                    c.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal(found + " trace(s) within 64 blocks."), false);
+                                    return n;
+                                }))
+                                .then(net.minecraft.commands.Commands.literal("clear").executes(c -> {
+                                    int n = com.jayptucker.heroesevolved.trace.Traces.clear(c.getSource().getLevel(),
+                                            net.minecraft.core.BlockPos.containing(c.getSource().getPosition()), 64);
+                                    c.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal("Cleared " + n + " trace(s)."), true);
+                                    return n;
+                                })))
                         .then(Commands.literal("admin")
                                 .executes(context -> {
                                     com.jayptucker.heroesevolved.admin.AdminService
@@ -458,5 +491,19 @@ public final class HeroesEvolvedCommands {
                 HeroesEvolved.MOD_ID,
                 abilityName
         );
+    }
+
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<net.minecraft.commands.CommandSourceStack> travel(String name,
+            com.jayptucker.heroesevolved.travel.Party.Kind kind) {
+        return net.minecraft.commands.Commands.literal(name).executes(c -> {
+            var party = com.jayptucker.heroesevolved.travel.Travellers.start(c.getSource().getPlayerOrException(), kind);
+            if (party == null) {
+                c.getSource().sendFailure(net.minecraft.network.chat.Component.literal("No village within 256 blocks for them to head for, or no open road near you."));
+                return 0;
+            }
+            c.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal("A " + name + " party is on the road to the village at "
+                    + party.bell().toShortString() + "."), true);
+            return 1;
+        });
     }
 }

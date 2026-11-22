@@ -157,6 +157,8 @@ public final class GiftedWork {
     /** From {@code GiftedMob.idle}, every tick: a good gifted villager with no foe in sight. */
     public static void tick(Villager v, ResourceLocation power, BlockPos home) {
         if (!(v.level() instanceof ServerLevel level) || v.isBaby()) return;
+        // A traveller (a passing healer) works for their party on the road, not for a village (travel/Travellers).
+        if (v.getTags().contains(com.jayptucker.heroesevolved.travel.Travellers.TAG)) return;
         Work w = WORK.computeIfAbsent(v, k -> new Work(job(power)));
         if (w.stage == Stage.FLYING) { fly(level, v, w); return; }
         if (v.isSleeping() || v.getTags().contains(com.jayptucker.heroesevolved.company.CompanyOps.PRISONER_TAG)) { rest(level, w); return; }

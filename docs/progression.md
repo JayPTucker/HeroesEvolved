@@ -44,12 +44,16 @@ Mastery comes from using your power for something:
 - **Stamina spent** still counts, at half a point per point (config `powerUseMasteryPerEnergy`).
 - A small trickle for active, non-AFK play.
 
+Held powers earn Mastery for the stamina they actually spend. A Surge's drain discount also reduces that practice
+reward, and unlimited energy earns none, including any fraction that would otherwise carry into a later spend.
+
 ## Stamina
 
 The stamina bar grows with Power Level: 100 at Level 1 and 4 more each level (176 at Level 20), and every move
 costs 4% less for each level since it unlocked, up to 30% off. It recovers 3 a
 second at Level 1, a little faster each level, and twice as fast out of combat; a move pauses recovery for 1.5 s.
 Costs, cooldowns and unlock levels for every power are in [Stamina and balance](stamina-balance.md).
+Overexertion spends the last fraction of stamina too; spending less than one point still starts the recovery pause.
 
 ## Ability ranks
 

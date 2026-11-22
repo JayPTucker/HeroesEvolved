@@ -284,6 +284,8 @@ public final class AbilityUseService {
         com.jayptucker.heroesevolved.expansion.FacilityService.onPowerUse(player, abilityAction.definition().id().getPath());
         // Big moves people see get talked about, and the Company listens (company/CompanyAttention).
         com.jayptucker.heroesevolved.company.CompanyAttention.seen(player, abilityAction.definition().id().getPath(), energyCost);
+        // And it leaves a mark where it was used (trace/Traces).
+        com.jayptucker.heroesevolved.trace.Traces.left(player, abilityAction.definition().id().getPath(), energyCost);
         return requiresOverexertion
                 ? AbilityUseResult.OVEREXERTED_SUCCESS
                 : AbilityUseResult.SUCCESS;

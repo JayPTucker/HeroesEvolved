@@ -454,10 +454,20 @@ public final class Renegades {
     }
 
     public static int cancelAll() {
+        int turning = TURNING.size();
+        for (Turning t : List.copyOf(TURNING)) {
+            var speed = t.villager.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+            if (speed != null) speed.removeModifier(TURN_ROOT);
+        }
+        TURNING.clear();
+        for (Mob m : List.copyOf(RESUMING)) m.getPersistentData().remove(TAG);
+        RESUMING.clear();
         List<Terror> all = all();
         for (Terror t : all) finish(t);
-        return all.size();
+        return all.size() + turning;
     }
+
+    public static int turningCount() { return TURNING.size(); }
 
     /** Off the map for now: the call stops; its data still has the siege. */
     private static void pause(Terror t) {

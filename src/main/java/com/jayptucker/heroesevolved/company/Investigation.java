@@ -277,9 +277,13 @@ public final class Investigation extends CompanyOps.Op {
         if (wiped) {
             CompanyAttention.lower(subject, CompanyAttention.WIPED);
             line = "The man in the dark suit leaves " + village + " with an empty notebook, and no idea why he came.";
-        } else if (covered && !sawPower && !fought) {
+        } else if (covered && !sawPower && !fought && !com.jayptucker.heroesevolved.trace.Traces.fresh(level, subject.getUUID(), site, 32, 0.3F)) {
             CompanyAttention.lower(subject, CompanyAttention.COVERED);
             line = village + "'s people told the man in the dark suit nothing. He leaves with an empty notebook.";
+        } else if (covered && !sawPower && !fought) {
+            // The village said nothing, but what they left behind them did (trace/Traces).
+            CompanyAttention.raise(subject, CompanyAttention.FILED, null, "an investigator read the traces");
+            line = "The villagers said nothing. The ground said plenty. The man in the dark suit leaves " + village + " with his notes.";
         } else {
             CompanyAttention.raise(subject, CompanyAttention.FILED, null, "an investigator filed his notes");
             line = "The man in the dark suit closes his notebook and leaves " + village + ". He has what he came for.";

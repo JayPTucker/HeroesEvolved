@@ -36,14 +36,14 @@ public final class PlayerEnergyService {
 
     /** Per-player bookkeeping that isn't saved: the pause, the drain rate and what was last sent. */
     private static final class State {
-        long pausedUntil = Long.MIN_VALUE;
+        long pausedUntil = -1000;
         double drainedThisTick, drainRate;
         /** The last second of drains, a tick a slot, for powers that drain in steps (every half second, every second). */
         final double[] window = new double[20];
         int slot;
         float sentStamina = -1, sentRegen = -1, sentDrain = -1;
         int sentMax = -1, sentFlags = -1;
-        long sentAt = Long.MIN_VALUE;
+        long sentAt = -1000;
     }
 
     private PlayerEnergyService() {
@@ -255,17 +255,17 @@ public final class PlayerEnergyService {
         }
     }
 
-    /** Takes up to {@code requestedAmount} (overexertion spends whatever is left). Pauses recovery. */
+    /** Takes up to {@code requestedAmount}, including the last fraction. Returns whole points spent; pauses recovery. */
     public static int consumeUpTo(ServerPlayer player, int requestedAmount) {
         validateAmount(requestedAmount);
         if (hasUnlimitedEnergy(player)) return 0;
         // Normal ability use needs the full cost. Overexertion instead takes every remaining point of energy.
         double current = getStamina(player);
-        int consumed = (int) Math.min(Math.floor(current + 1e-6), requestedAmount);
+        double consumed = Math.min(current, requestedAmount);
         if (consumed > 0) {
             setStamina(player, current - consumed);
             pause(player);
         }
-        return consumed;
+        return (int) Math.floor(consumed + 1e-6);
     }
 }

@@ -57,7 +57,9 @@ public final class StaminaDrain {
     /** Stamina per second every held power of this player is taking. */
     public static double rate(ServerPlayer player) {
         Map<String, Drain> drains = DRAINS.get(player.getUUID());
-        return drains == null ? 0 : drains.values().stream().mapToDouble(Drain::perSecond).sum();
+        return drains == null || PlayerEnergyService.hasUnlimitedEnergy(player) ? 0
+                : drains.values().stream().mapToDouble(Drain::perSecond).sum()
+                        * com.jayptucker.heroesevolved.amplify.Amplification.drain(player);
     }
 
     public static boolean holdsRecovery(ServerPlayer player) {
@@ -85,13 +87,16 @@ public final class StaminaDrain {
                     empty.add(drain);
                     continue;
                 }
+                double before = PlayerEnergyService.getStamina(player);
                 if (!PlayerEnergyService.drain(player, drain.perSecond() / 20.0D * com.jayptucker.heroesevolved.amplify.Amplification.drain(player))) {
                     stop(player, drain.id());
                     empty.add(drain);
                     continue;
                 }
-                // Mastery is earned on stamina spent, a whole point at a time.
-                double owed = MASTERY.merge(player.getUUID(), drain.perSecond() / 20.0D, Double::sum);
+                // Mastery follows the payment, including Surge's discount and unlimited energy spending nothing.
+                double spent = before - PlayerEnergyService.getStamina(player);
+                if (spent <= 0) continue;
+                double owed = MASTERY.merge(player.getUUID(), spent, Double::sum);
                 if (owed >= 1) {
                     MASTERY.put(player.getUUID(), owed - (int) owed);
                     com.jayptucker.heroesevolved.progression.MasteryService.awardEnergySpent(player, (int) owed);

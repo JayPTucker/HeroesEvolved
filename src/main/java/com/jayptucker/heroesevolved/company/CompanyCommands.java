@@ -56,7 +56,8 @@ public final class CompanyCommands {
         return Math.round(a);
     }
 
-    private static int start(CommandContext<CommandSourceStack> c, String name, ServerPlayer p) throws CommandSyntaxException {
+    /** Shared by the command and the operator menu. */
+    public static CompanyOps.Op startFor(String name, ServerPlayer p) {
         var level = p.serverLevel();
         BlockPos at = p.blockPosition();
         CompanyOps.Op op = switch (name) {
@@ -72,6 +73,11 @@ public final class CompanyCommands {
                 yield r;
             }
         };
+        return op;
+    }
+
+    private static int start(CommandContext<CommandSourceStack> c, String name, ServerPlayer p) throws CommandSyntaxException {
+        CompanyOps.Op op = startFor(name, p);
         if (op == null) {
             c.getSource().sendFailure(Component.literal("The Company can't do that now (already busy with " + p.getName().getString()
                     + ", or no village near enough with someone to take)."));

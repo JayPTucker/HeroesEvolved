@@ -1,0 +1,27 @@
+// The client photographs power traces, travellers on the road and villages that grow with uitest/RoadsPreview: marks
+// and their reading, a trail, a pedlar, a healer, a caravan and its ambush, refugees and their settling, a house going
+// up and finished, and a struggling village, into build/roads-preview/screenshots/. Never bundled into the mod JAR.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('roadsPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/roads-preview')
+                        programArguments.addAll('--width', '1280', '--height', '800')
+                        systemProperty('heroes.preview.roads', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('roadsPreviewClasses')) }
+            // Pass when every scene ran (PREVIEW_DONE), not on the exit code the closing halt leaves.
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

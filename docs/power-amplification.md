@@ -50,6 +50,7 @@ For 15 seconds, everything the ally hits hits 25% harder; their powers cost 25% 
 faster; their held powers (flights, Still World, beams, toggles) drain half as fast; and their own power gets its bigger
 version (below). A pet or a friendly gifted villager can be surged too: it hits harder, and a gifted mob casts twice as
 fast. Two amplifiers never stack on one ally: the Surge is refreshed, not doubled.
+The stamina HUD shows the discounted drain while a held power is surged; its practice Mastery follows the stamina paid.
 
 ### An Overcharge
 

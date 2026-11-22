@@ -93,6 +93,8 @@ public final class HeroesEvolvedConfig {
         public final ModConfigSpec.DoubleValue giftedRaidChampionChance;
         public final ModConfigSpec.DoubleValue giftedWildChance;
         public final ModConfigSpec.IntValue villageIncidentMinutes;
+        public final ModConfigSpec.IntValue travellerMinutes;
+        public final ModConfigSpec.DoubleValue travellerChance;
         public final ModConfigSpec.DoubleValue villageIncidentChance;
         public final ModConfigSpec.IntValue villageIncidentRange;
         public final ModConfigSpec.IntValue distressRange;
@@ -525,6 +527,14 @@ public final class HeroesEvolvedConfig {
                 villageIncidentChance = builder
                         .comment("Chance, each villageIncidentMinutes, of a village incident.")
                         .defineInRange("villageIncidentChance", 0.5D, 0.0D, 1.0D);
+
+                travellerMinutes = builder
+                        .comment("Every this many minutes, each group of players may meet travellers on the road (a pedlar, a healer, a caravan or refugees) heading for a village within 256 blocks. 0 turns them off.")
+                        .defineInRange("travellerMinutes", 10, 0, 1_440);
+
+                travellerChance = builder
+                        .comment("Chance, each travellerMinutes, that a group of players meets travellers.")
+                        .defineInRange("travellerChance", 0.4D, 0.0D, 1.0D);
 
                 villageIncidentRange = builder
                         .comment("How far from a player (in blocks) a village incident may happen. Its village is kept loaded while it lasts.")

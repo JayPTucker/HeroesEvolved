@@ -99,5 +99,9 @@ Run through this on the in-game screenshots before calling a build done. The use
 - **"It looks fine" isn't "it stays".** A torch, plant or lantern with nothing to hold it is drawn happily until the
   first block update beside it, often when a player walks in. The Isaac studio's vines hung on window bars, the signal
   site's bracket lanterns on sideways chains, the ruins' grass on planks; all looked right in screenshots.
+- **A structure template placed from Java must turn its blocks too.** `processBlockInfos` turns positions only; every
+  turned village house had stairs facing the wrong way and unjoined panes until `Growth.blocks` rotated each state and
+  `Rebuild` settled the shapes (see `docs/agents/village-events.md`). Rotate states and settle whenever code places a
+  template block by block.
 - **Clearing a footprint cuts trees.** Remove the loose leaves in a ring round anything that clears ground, or they hang
   in the air until they decay.

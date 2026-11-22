@@ -20,6 +20,10 @@ in [docs/power-amplification.md](../../../docs/power-amplification.md).
   in `AbilityRanks.cooldown`, plus held drains in `StaminaDrain` (`Amplification.drain`). `AbilityUseService` also asks
   `locked` (a backlash switching a power off), `tierBonus` (Breakthrough) and `misfire` (Overcharge the Enemy), and tells
   `powerUsed` after every press so amplifiers near feel it as Charge; `GiftedMob` does the same for its moves.
+- **Report and reward the payment after discounts.** `StaminaDrain.rate` once reported the undiscounted rate, while
+  its Mastery accumulator counted that same rate even under a Surge or unlimited energy. Apply `Amplification.drain`
+  to the reported rate and accumulate the exact stamina removed by each payment. Free spends add no fraction to cash
+  in later (`energy/StaminaAccountingGameTests`).
 - **What a power can't do on its own is done from outside it** (`AmpTuned`): Daphne's run uses Space-Time's history
   (`SpaceTimeService.past`), the storm calls `ElectroService.shock`, the flash freeze `CryoService.freezeSolid`, the dome
   and the ghost party cancel damage in the same incoming hook. Backlashes are effects, a stamina drain or a `lock`.

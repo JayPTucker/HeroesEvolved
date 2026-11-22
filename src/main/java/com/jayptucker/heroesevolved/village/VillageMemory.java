@@ -84,7 +84,28 @@ public final class VillageMemory extends SavedData {
         final List<BlockPos> memorials = new ArrayList<>();
         final List<UUID> busts = new ArrayList<>();
         final List<UUID> told = new ArrayList<>();
+        /** How it is growing (village/Growth): houses it built, families it took in, kindnesses done it (their days),
+         * and the days it last grew, wore or lost someone. */
+        int houses, sheltered;
+        final List<Long> kindness = new ArrayList<>();
+        long firstDay = -1, lastGrowth = -100, lastWear = -100, lastLeave = -100;
+        /** Its notice board and what it is gathering for (village/Projects). */
+        Projects.Board board;
+        Projects.Project project;
+        /** The homes it built itself (so it can rebuild them bigger), the homes it has torn down to rebuild, and the tier
+         * it last told anyone it was (-1: not yet). */
+        final List<Projects.Home> homes = new ArrayList<>();
+        final java.util.Set<Long> replaced = new java.util.HashSet<>();
+        int tier = -1;
         Village(BlockPos bell) { this.bell = bell; }
+        public Projects.Board board() { return board; }
+        public Projects.Project project() { return project; }
+        /** Sets how many things it has built, which moves its tier (previews). */
+        public void setBuiltForPreview(int built) { houses = built; }
+        /** The homes it built itself (previews). */
+        public List<Projects.Home> homesForPreview() { return List.copyOf(homes); }
+        public int houses() { return houses; }
+        public int sheltered() { return sheltered; }
 
         public BlockPos bell() { return bell; }
         public String name() { return name; }
@@ -134,6 +155,7 @@ public final class VillageMemory extends SavedData {
         if (v == null) {
             v = new Village(bell.immutable());
             v.name = nameFor(bell);
+            v.firstDay = level.getDayTime() / 24_000 + 1;
             data.villages.put(bell.asLong(), v);
             data.setDirty();
         }
@@ -507,6 +529,9 @@ public final class VillageMemory extends SavedData {
             out.add("  Day " + e.day + ": " + e.what + ", " + e.outcome.name().toLowerCase() + ", " + e.alive + " of " + e.total + " lived"
                     + (e.hero == null ? "" : ", ended by " + e.hero));
         v.standing.forEach((id, s) -> out.add("  Owes " + v.names.getOrDefault(id, id.toString()) + ": " + s));
+        if (!v.fallen) out.add("  Doing: " + Growth.mood(level, v).name().toLowerCase() + " (score " + Growth.score(level, v) + "), "
+                + v.houses + " new building(s), " + v.sheltered + " family(ies) taken in" + (Growth.haven(level, v) ? ", a haven" : ""));
+        if (!v.fallen) out.add("  " + Projects.describe(level, v));
         return out;
     }
 
@@ -516,6 +541,7 @@ public final class VillageMemory extends SavedData {
         if (v == null) return false;
         get(level).villages.remove(v.bell.asLong());
         get(level).setDirty();
+        Projects.forgotten(v.bell);
         return true;
     }
 
@@ -562,6 +588,20 @@ public final class VillageMemory extends SavedData {
             ListTag told = new ListTag();
             for (UUID id : v.told) told.add(NbtUtils.createUUID(id));
             t.put("told", told);
+            t.putInt("houses", v.houses);
+            t.putInt("sheltered", v.sheltered);
+            t.putLongArray("kindness", v.kindness.stream().mapToLong(Long::longValue).toArray());
+            t.putLong("first_day", v.firstDay);
+            t.putLong("last_growth", v.lastGrowth);
+            t.putLong("last_wear", v.lastWear);
+            t.putLong("last_leave", v.lastLeave);
+            if (v.board != null) t.put("board", v.board.save());
+            if (v.project != null) t.put("project", v.project.save());
+            ListTag homes = new ListTag();
+            for (Projects.Home h : v.homes) homes.add(h.save());
+            t.put("homes", homes);
+            t.putLongArray("replaced", v.replaced.stream().mapToLong(Long::longValue).toArray());
+            t.putInt("tier", v.tier);
             list.add(t);
         }
         tag.put("villages", list);
@@ -590,6 +630,18 @@ public final class VillageMemory extends SavedData {
             for (Tag m : t.getList("memorials", Tag.TAG_LONG)) v.memorials.add(BlockPos.of(((net.minecraft.nbt.LongTag) m).getAsLong()));
             for (Tag id : t.getList("busts", Tag.TAG_INT_ARRAY)) v.busts.add(NbtUtils.loadUUID(id));
             for (Tag id : t.getList("told", Tag.TAG_INT_ARRAY)) v.told.add(NbtUtils.loadUUID(id));
+            v.houses = t.getInt("houses");
+            v.sheltered = t.getInt("sheltered");
+            for (long d : t.getLongArray("kindness")) v.kindness.add(d);
+            v.firstDay = t.contains("first_day") ? t.getLong("first_day") : -1;
+            v.lastGrowth = t.contains("last_growth") ? t.getLong("last_growth") : -100;
+            v.lastWear = t.contains("last_wear") ? t.getLong("last_wear") : -100;
+            v.lastLeave = t.contains("last_leave") ? t.getLong("last_leave") : -100;
+            if (t.contains("board")) v.board = Projects.Board.load(t.getCompound("board"));
+            if (t.contains("project")) v.project = Projects.Project.load(t.getCompound("project"));
+            for (Tag h : t.getList("homes", Tag.TAG_COMPOUND)) { var home = Projects.Home.load((CompoundTag) h); if (home != null) v.homes.add(home); }
+            for (long r : t.getLongArray("replaced")) v.replaced.add(r);
+            v.tier = t.contains("tier") ? t.getInt("tier") : -1;
             data.villages.put(v.bell.asLong(), v);
         }
         return data;

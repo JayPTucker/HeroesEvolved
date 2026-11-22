@@ -3,9 +3,9 @@ package com.jayptucker.heroesevolved.gui.screen;
 import com.jayptucker.heroesevolved.network.AdminActionPayload;
 import com.jayptucker.heroesevolved.network.AdminActionPayload.Action;
 import com.jayptucker.heroesevolved.network.AdminStatePayload;
-import com.jayptucker.heroesevolved.network.AdminStatePayload.World;
+import com.jayptucker.heroesevolved.network.AdminStatePayload.EventEntry;
+import com.jayptucker.heroesevolved.network.AdminStatePayload.PlayerEntry;
 import com.jayptucker.heroesevolved.network.ClientAdminState;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
@@ -19,486 +19,247 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Operator tools, in two tabs beside the list of online players.
- * <ul>
- *   <li><b>Player:</b> the chosen player's power, level, Mastery, energy, where they are and how far the stories have
- *   got with them; give or remove powers, set levels, refill, heal, go to them.</li>
- *   <li><b>World &amp; Events:</b> the Eclipse, Sylar's Collection, village events
- *   (a meltdown or a raid near the chosen player) and the emergency band, each with a status line and its controls.</li>
- * </ul>
- * Every button is a request; the server checks permission and replies with fresh state, which redraws this screen.
- */
+/** Operator console. Server-owned event state, independent target selection and scrollable pages. */
 public final class AdminScreen extends Screen {
-    private static final int MAX_WIDTH = 440, MAX_HEIGHT = 260;
-    private static final int LIST_WIDTH = 108;
-    private static final int ROW = 20;
-    private static final int LABEL_WIDTH = 46;
-    private static final int SECTION = 32;
-
-    private static final int BORDER = 0xFF6B101D;
-    private static final int BACKGROUND = 0xF016090D;
-    private static final int INSET = 0xFF22101A;
-    private static final int RULE = 0xFF3A1A24;
-    private static final int TITLE = 0xFFFFD7DC;
-    private static final int TEXT = 0xFFE9D9DC;
-    private static final int MUTED = 0xFFB89A9F;
-    private static final int ACCENT = 0xFFC51E32;
-    private static final int GOOD = 0xFF92D66C;
-    private static final int IDLE = 0xFF5A4248;
-    private static final int GOLD = 0xFFE8B84A, SYLAR = 0xFFD8454F, VILLAGE = 0xFF8FD16A, RADIO = 0xFF5FD3C8;
-
-    enum Tab { PLAYER, WORLD }
-
-    // Kept across redraws so a state refresh keeps the same selection.
-    private static UUID selectedPlayer;
-    private static int selectedPowerIndex;
-    private static int playerScroll;
-    private static boolean incidentsPage;
+    private static final int BG = 0xFF11171E, PANEL = 0xFF19222C, RULE = 0xFF303E4C;
+    private static final int TEXT = 0xFFE5EDF4, MUTED = 0xFF99ADBE, GOLD = 0xFFF2C66D;
+    private static final int TEAL = 0xFF68D8C5, RED = 0xFFEF8A87;
+    private enum Tab { PLAYER, EVENTS, STORY, DEBUG }
     private static Tab tab = Tab.PLAYER;
+    private static UUID selectedPlayer;
+    private static int powerIndex, playerScroll, eventScroll;
+    private static String selectedEvent = "eclipse";
+    private final int[] scroll = new int[4];
+    private int left, top, panelWidth, panelHeight, sidebar, bodyTop, bodyBottom, maxScroll, refreshTicks;
+    private String lastEvent = "";
+    private String feedback = "Select a player. Event cards show where their controls act.";
+    private final List<Label> labels = new ArrayList<>();
+    private record Label(int x, int y, int width, String text, int colour) {}
 
-    /** Status lines drawn this frame, and their full text for hovering when cut short. */
-    private record Line(int x, int y, int width, String text) {}
-    private final List<Line> lines = new ArrayList<>();
-
-    private int left, top, panelWidth, panelHeight;
-
-    public AdminScreen() {
-        super(Component.literal("Heroes Evolved Admin"));
-    }
-
-    /** Called by ClientAdminState whenever the server sends new data. */
-    public void onStateUpdated() {
-        rebuildWidgets();
-    }
-
-    /** For previews: which tab shows. */
-    public static void show(Tab which) { tab = which; }
-    public static void showWorld() { tab = Tab.WORLD; incidentsPage = false; }
-    public static void showIncidents() { tab = Tab.WORLD; incidentsPage = true; }
+    public AdminScreen() { super(Component.literal("Heroes Evolved | Admin")); }
     public static void showPlayer() { tab = Tab.PLAYER; }
-
-    private int contentX() { return left + LIST_WIDTH + 18; }
-    private int contentWidth() { return panelWidth - LIST_WIDTH - 26; }
-    private int visiblePlayers() { return Math.max(3, (panelHeight - 74) / 20); }
-
-    @Override
-    protected void init() {
-        panelWidth = Math.min(MAX_WIDTH, width - 12);
-        panelHeight = Math.min(MAX_HEIGHT, height - 8);
-        left = (width - panelWidth) / 2;
-        top = (height - panelHeight) / 2;
-        AdminStatePayload state = ClientAdminState.get();
-        ensureSelection(state);
-        addHeader();
-        addPlayerList(state, left + 8, top + 48);
-        AdminStatePayload.PlayerEntry target = selectedEntry(state);
-        if (tab == Tab.PLAYER) {
-            if (target != null) addPlayerTab(state, target);
-        } else addWorldTab(state, target);
+    public static void showWorld() { tab = Tab.EVENTS; selectedEvent = "eclipse"; }
+    public static void showIncidents() { showEvent("gifts"); }
+    public static void showDebug() { tab = Tab.DEBUG; }
+    public static void showStory() { tab = Tab.STORY; selectedEvent = "sylar"; }
+    public static void showEvent(String id) { selectedEvent = id; tab = Tab.EVENTS; }
+    public void onStateUpdated() {
+        String focused = getFocused() instanceof Button b ? b.getMessage().getString() : "";
+        if (!ClientAdminState.get().feedback().isEmpty()) feedback = ClientAdminState.get().feedback();
+        rebuildWidgets();
+        if (!focused.isEmpty()) for (var child : children())
+            if (child instanceof Button b && b.active && b.getMessage().getString().equals(focused)) { setFocused(b); break; }
+    }
+    private int x() { return left + sidebar + 18; }
+    private int w() { return panelWidth - sidebar - 30; }
+    private int y(int offset) { return bodyTop + offset - scroll[tab.ordinal()]; }
+    private PlayerEntry target() {
+        return ClientAdminState.get().players().stream().filter(p -> p.id().equals(selectedPlayer)).findFirst().orElse(null);
     }
 
-    // ------------------------------------------------------------------
-    // Header: tabs, refresh, close
-    // ------------------------------------------------------------------
-
-    private void addHeader() {
-        int y = top + 6;
-        int x = contentX();
-        tabButton("Player", Tab.PLAYER, x, y, 64, "The chosen player's power, level, energy and tools.");
-        tabButton("World & Events", Tab.WORLD, x + 66, y, 96, "The Eclipse, the bosses, village events and the emergency band.");
-        addRenderableWidget(Button.builder(Component.literal("⟳"), button -> send(Action.REFRESH))
-                .tooltip(Tooltip.create(Component.literal("Refresh"))).bounds(left + panelWidth - 48, y, 20, 18).build());
-        addRenderableWidget(Button.builder(Component.literal("✕"), button -> onClose())
-                .tooltip(Tooltip.create(Component.literal("Close"))).bounds(left + panelWidth - 26, y, 20, 18).build());
-    }
-
-    private void tabButton(String label, Tab which, int x, int y, int w, String tip) {
-        boolean on = tab == which;
-        Button button = Button.builder(Component.literal(label).withStyle(on ? ChatFormatting.GOLD : ChatFormatting.GRAY), b -> {
-                    tab = which;
-                    rebuildWidgets();
-                })
-                .tooltip(Tooltip.create(Component.literal(tip))).bounds(x, y, w, 18).build();
-        button.active = !on;
-        addRenderableWidget(button);
-    }
-
-    // ------------------------------------------------------------------
-    // Players
-    // ------------------------------------------------------------------
-
-    private void addPlayerList(AdminStatePayload state, int x, int y) {
-        List<AdminStatePayload.PlayerEntry> players = state.players();
-        int visible = visiblePlayers();
-        playerScroll = Math.clamp(playerScroll, 0, Math.max(0, players.size() - visible));
-        for (int row = 0; row < visible && playerScroll + row < players.size(); row++) {
-            AdminStatePayload.PlayerEntry entry = players.get(playerScroll + row);
-            boolean selected = entry.id().equals(selectedPlayer);
-            Component label = Component.literal((selected ? "▶ " : "") + entry.name())
-                    .withStyle(entry.godMode() ? ChatFormatting.GOLD : selected ? ChatFormatting.YELLOW : ChatFormatting.WHITE);
-            Component tip = Component.literal(entry.name() + "\n").withStyle(ChatFormatting.BOLD)
-                    .append(Component.literal((entry.powerId().isEmpty() ? "No power" : powerName(entry.powerId()).getString())
-                            + "  Level " + entry.level() + "\n" + entry.whereabouts() + (entry.godMode() ? "\nGod mode ON" : "")).withStyle(ChatFormatting.GRAY));
-            addRenderableWidget(Button.builder(label, button -> {
-                        selectedPlayer = entry.id();
-                        rebuildWidgets();
-                    })
-                    .tooltip(Tooltip.create(tip)).bounds(x, y + row * 20, LIST_WIDTH, 18).build());
+    @Override protected void init() {
+        panelWidth = Math.min(740, width - 12); panelHeight = Math.min(420, height - 12);
+        left = (width - panelWidth) / 2; top = (height - panelHeight) / 2;
+        sidebar = panelWidth < 480 ? 92 : 118;
+        bodyTop = top + 72; bodyBottom = top + panelHeight - 38;
+        labels.clear(); maxScroll = 0;
+        var state = ClientAdminState.get();
+        if (state.players().stream().noneMatch(p -> p.id().equals(selectedPlayer)))
+            selectedPlayer = state.players().isEmpty() ? null : state.players().getFirst().id();
+        button("Refresh", left + panelWidth - 88, top + 9, 55, () -> send(Action.REFRESH), true, false, "Refresh; also updates every two seconds.");
+        button("X", left + panelWidth - 29, top + 9, 20, this::onClose, true, false, "Close (Esc)");
+        String[] names = {"Players", "Events", "Story", "Debug"}; int each = (w() - 9) / 4;
+        for (Tab t : Tab.values()) button(names[t.ordinal()], x() + t.ordinal() * (each + 3), top + 40, each,
+                () -> { tab = t; eventScroll = 0; rebuildWidgets(); }, true, tab == t, names[t.ordinal()] + " controls");
+        int visible = Math.max(1, (bodyBottom - top - 70) / 28);
+        playerScroll = Math.clamp(playerScroll, 0, Math.max(0, state.players().size() - visible));
+        for (int i = 0; i < visible && playerScroll + i < state.players().size(); i++) {
+            var p = state.players().get(playerScroll + i);
+            button(p.name(), left + 8, top + 70 + i * 28, sidebar - 4, () -> {
+                selectedPlayer = p.id(); send(Action.REFRESH); rebuildWidgets();
+            }, true, p.id().equals(selectedPlayer), p.name() + " | Level " + p.level() + "\n" + powerName(p.powerId()) + "\n" + p.whereabouts());
         }
-        if (players.size() > visible) {
-            int arrowsY = y + visible * 20 + 2;
-            addRenderableWidget(Button.builder(Component.literal("▲"), button -> { playerScroll--; rebuildWidgets(); })
-                    .bounds(x, arrowsY, LIST_WIDTH / 2 - 1, 14).build());
-            addRenderableWidget(Button.builder(Component.literal("▼"), button -> { playerScroll++; rebuildWidgets(); })
-                    .bounds(x + LIST_WIDTH / 2 + 1, arrowsY, LIST_WIDTH / 2 - 1, 14).build());
+        switch (tab) {
+            case PLAYER -> { if (target() != null) player(target(), state); }
+            case EVENTS, STORY -> events(state);
+            case DEBUG -> debug(state);
         }
+        int old = scroll[tab.ordinal()]; scroll[tab.ordinal()] = Math.clamp(old, 0, maxScroll);
+        if (old != scroll[tab.ordinal()]) rebuildWidgets();
     }
 
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (mouseX >= left && mouseX < left + LIST_WIDTH + 14 && scrollY != 0) {
-            playerScroll -= (int) Math.signum(scrollY);
-            rebuildWidgets();
-            return true;
+    private void player(PlayerEntry p, AdminStatePayload state) {
+        label(0, p.name() + " / Level " + p.level() + " of " + state.maximumLevel(), GOLD);
+        label(15, powerName(p.powerId()) + (p.powerId().isEmpty() ? "" : p.awakened() ? " (awake)" : " (dormant)"), TEXT);
+        label(30, "Mastery " + NumberFormat.getIntegerInstance().format(p.mastery()) + " / " + NumberFormat.getIntegerInstance().format(p.masteryForNextLevel()), MUTED);
+        label(44, "Stamina " + (p.unlimitedEnergy() ? "unlimited" : p.energy() + " / " + p.maximumEnergy()), TEAL);
+        label(59, p.whereabouts(), MUTED); heading(81, "POWER ASSIGNMENT");
+        if (!state.powers().isEmpty()) {
+            powerIndex = Math.floorMod(powerIndex, state.powers().size()); String power = state.powers().get(powerIndex);
+            body("<", x(), 97, 22, () -> { powerIndex--; rebuildWidgets(); }, true, "Previous power");
+            body(powerName(power), x() + 25, 97, w() - 50, () -> { powerIndex++; rebuildWidgets(); }, true,
+                    "Choose power " + (powerIndex + 1) + " / " + state.powers().size() + ". Click to cycle forward.");
+            body(">", x() + w() - 22, 97, 22, () -> { powerIndex++; rebuildWidgets(); }, true, "Next power");
+            row(122, spec("Give awake", Action.GIVE_POWER, power, 0, true, "Replace with the chosen awakened power. Unique ownership applies."),
+                    spec("Dormant", Action.GIVE_DORMANT_POWER, power, 0, true, "Assign without an awakening scene."),
+                    spec("Remove", Action.REMOVE_POWER, !p.powerId().isEmpty(), "Remove their power."));
         }
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        heading(154, "PROGRESSION");
+        int[] levels = {p.level() - 1, 1, 10, 15, 20, p.level() + 1}; String[] names = {"-1", "Lv 1", "10", "15", "20", "+1"};
+        Spec[] buttons = new Spec[6];
+        for (int i = 0; i < 6; i++) buttons[i] = spec(names[i], Action.SET_LEVEL, "", levels[i],
+                levels[i] >= 1 && levels[i] <= state.maximumLevel() && levels[i] != p.level(), "Set Power Level to " + levels[i] + ".");
+        row(170, buttons);
+        row(195, spec("+100", Action.ADD_MASTERY, "", 100, true, "Grant 100 Mastery."), spec("+1,000", Action.ADD_MASTERY, "", 1000, true, "Grant 1,000 Mastery."), spec("+10,000", Action.ADD_MASTERY, "", 10000, true, "Grant 10,000 Mastery."));
+        row(220, spec("Awaken", Action.AWAKEN, !p.powerId().isEmpty() && !p.awakened(), "Awaken with their first scene."), spec("Reset progress", Action.RESET_PROGRESS, true, "Reset this player's Power Level to 1 and Mastery to zero."));
+        heading(252, "RECOVERY & TRAVEL");
+        row(268, spec("Refill stamina", Action.REFILL_ENERGY, true, "Fill stamina."), spec("Full heal", Action.FULL_HEAL, true, "Restore health and food; clear effects and fire."));
+        boolean other = minecraft != null && minecraft.player != null && !minecraft.player.getUUID().equals(p.id());
+        row(293, spec("Go to player", Action.TELEPORT_TO, other, "Teleport yourself to this player and dimension."), spec("Bring here", Action.BRING_HERE, other, "Teleport them to your position and dimension."));
+        extent(320);
     }
 
-    // ------------------------------------------------------------------
-    // The Player tab
-    // ------------------------------------------------------------------
-
-    /** Where the Player tab's rows start, under the player's card. */
-    private int playerRowsY() { return top + 107; }
-
-    private void addPlayerTab(AdminStatePayload state, AdminStatePayload.PlayerEntry target) {
-        int x = contentX() + LABEL_WIDTH;
-        int w = contentWidth() - LABEL_WIDTH;
-        int y = playerRowsY();
-        addPowerRow(state, target, x, y, w);
-        addLevelRow(state, target, x, y + ROW, w);
-        addMasteryRow(x, y + ROW * 2, w);
-        addEnergyRow(target, x, y + ROW * 3, w);
-        addToolsRow(target, x, y + ROW * 4, w);
-        buttons(x, y + ROW * 5, w,
-                button("God: " + (target.godMode() ? "ON" : "OFF"), "Prevent all damage and death; highlighted gold while enabled.", Action.TOGGLE_GOD_MODE, 0, true),
-                button("Bring here", "Teleport this player to your position and dimension.", Action.BRING_HERE, 0,
-                        minecraft != null && minecraft.player != null && !minecraft.player.getUUID().equals(target.id())),
-                button("To cryopod", "The Last Day (a new world's prologue) skips straight to everyone being sealed in their"
-                        + " cryopods, then plays on to the waking in the bunker. Pressed while the city is still being built,"
-                        + " the day starts there.", Action.SKIP_TO_POD, 0, state.world().has(World.LAST_DAY)));
-    }
-
-    private void addPowerRow(AdminStatePayload state, AdminStatePayload.PlayerEntry target, int x, int y, int w) {
-        List<String> powers = state.powers();
-        if (powers.isEmpty()) return;
-        selectedPowerIndex = Math.floorMod(selectedPowerIndex, powers.size());
-        String power = powers.get(selectedPowerIndex);
-        int name = w - 16 - 16 - 40 - 50 - 54 - 6;
-        addRenderableWidget(Button.builder(Component.literal("◀"), button -> { selectedPowerIndex--; rebuildWidgets(); })
-                .bounds(x, y, 14, 20).build());
-        addRenderableWidget(Button.builder(powerName(power), button -> { selectedPowerIndex++; rebuildWidgets(); })
-                .tooltip(Tooltip.create(Component.literal("Click or use the arrows to pick a power (" + (selectedPowerIndex + 1)
-                        + " of " + powers.size() + ").")))
-                .bounds(x + 16, y, name, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("▶"), button -> { selectedPowerIndex++; rebuildWidgets(); })
-                .bounds(x + 18 + name, y, 14, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Give").withStyle(ChatFormatting.GREEN),
-                        button -> send(Action.GIVE_POWER, power, 0))
-                .tooltip(Tooltip.create(Component.literal("Replace their power with this one, already awakened.")))
-                .bounds(x + 34 + name, y, 40, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Dormant"), button -> send(Action.GIVE_DORMANT_POWER, power, 0))
-                .tooltip(Tooltip.create(Component.literal("Replace their power with this one, unawakened. They can awaken it naturally or with Awaken.")))
-                .bounds(x + 76 + name, y, 52, 20).build());
-        Button remove = Button.builder(Component.literal("Remove"), button -> send(Action.REMOVE_POWER))
-                .tooltip(Tooltip.create(Component.literal("Take their power away.")))
-                .bounds(x + 130 + name, y, 50, 20).build();
-        remove.active = !target.powerId().isEmpty();
-        addRenderableWidget(remove);
-    }
-
-    private void addLevelRow(AdminStatePayload state, AdminStatePayload.PlayerEntry target, int x, int y, int w) {
-        // Power Level 1 to 20: a step down, the start of each stage, a step up.
-        int max = state.maximumLevel();
-        int[] levels = {target.level() - 1, 1, 10, 15, 20, target.level() + 1};
-        String[] labels = {"−", "1", "10", "15", "20", "+"};
-        for (int i = 0; i < levels.length; i++) {
-            int chosen = Math.clamp(levels[i], 1, max);
-            Button button = Button.builder(Component.literal(labels[i]), ignored -> send(Action.SET_LEVEL, "", chosen))
-                    .tooltip(Tooltip.create(Component.literal("Set to Level " + chosen + ".")))
-                    .bounds(x + i * 24, y, 22, 20).build();
-            button.active = target.level() != chosen && levels[i] <= max && levels[i] >= 1;
-            addRenderableWidget(button);
+    private void events(AdminStatePayload state) {
+        var entries = state.events().stream().filter(e -> e.story() == (tab == Tab.STORY)).toList();
+        if (entries.isEmpty()) { label(0, "Waiting for event state...", MUTED); return; }
+        EventEntry event = entries.stream().filter(e -> e.id().equals(selectedEvent)).findFirst().orElse(entries.getFirst());
+        selectedEvent = event.id(); int listW = panelWidth < 480 ? 96 : 124;
+        int visible = Math.max(1, (bodyBottom - bodyTop - 16) / 25);
+        if (!lastEvent.equals(selectedEvent)) {
+            int index = entries.indexOf(event);
+            if (index < eventScroll || index >= eventScroll + visible) eventScroll = Math.max(0, index - visible + 1);
+            lastEvent = selectedEvent;
         }
-        int at = x + levels.length * 24 + 2;
-        Button awaken = Button.builder(Component.literal("Awaken"), button -> send(Action.AWAKEN))
-                .tooltip(Tooltip.create(Component.literal("Wake their dormant power now, with its first-awakening scene.")))
-                .bounds(at, y, x + w - at, 20).build();
-        awaken.active = !target.powerId().isEmpty() && !target.awakened();
-        addRenderableWidget(awaken);
-    }
-
-    private void addMasteryRow(int x, int y, int w) {
-        int third = (w - 70) / 3;
-        int[] amounts = {100, 1_000, 10_000};
-        String[] labels = {"+100", "+1k", "+10k"};
-        for (int i = 0; i < 3; i++) {
-            int amount = amounts[i];
-            addRenderableWidget(Button.builder(Component.literal(labels[i]), button -> send(Action.ADD_MASTERY, "", amount))
-                    .tooltip(Tooltip.create(Component.literal("Give " + NumberFormat.getIntegerInstance().format(amount) + " Mastery.")))
-                    .bounds(x + i * (third + 2), y, third, 20).build());
+        eventScroll = Math.clamp(eventScroll, 0, Math.max(0, entries.size() - visible));
+        for (int i = 0; i < visible && eventScroll + i < entries.size(); i++) {
+            EventEntry e = entries.get(eventScroll + i);
+            button((e.active() ? "* " : "") + e.title(), x(), bodyTop + i * 25, listW, () -> {
+                selectedEvent = e.id(); scroll[tab.ordinal()] = 0; rebuildWidgets();
+            }, true, e.id().equals(event.id()), e.title() + "\n" + e.status());
         }
-        addRenderableWidget(Button.builder(Component.literal("Reset").withStyle(ChatFormatting.RED), button -> send(Action.RESET_PROGRESS))
-                .tooltip(Tooltip.create(Component.literal("Back to Level 1 with no Mastery.")))
-                .bounds(x + 3 * (third + 2), y, w - 3 * (third + 2), 20).build());
-    }
-
-    private void addEnergyRow(AdminStatePayload.PlayerEntry target, int x, int y, int w) {
-        addRenderableWidget(Button.builder(Component.literal("Refill"), button -> send(Action.REFILL_ENERGY))
-                .tooltip(Tooltip.create(Component.literal("Fill their energy to the top."))).bounds(x, y, 60, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Unlimited: " + (target.unlimitedEnergy() ? "ON" : "OFF"))
-                                .withStyle(target.unlimitedEnergy() ? ChatFormatting.GREEN : ChatFormatting.WHITE),
-                        button -> send(Action.TOGGLE_UNLIMITED_ENERGY))
-                .tooltip(Tooltip.create(Component.literal("Abilities cost them nothing while this is on.")))
-                .bounds(x + 62, y, w - 62, 20).build());
-    }
-
-    private void addToolsRow(AdminStatePayload.PlayerEntry target, int x, int y, int w) {
-        int third = (w - 4) / 3;
-        addRenderableWidget(Button.builder(Component.literal("Cooldowns"), button -> send(Action.RESET_COOLDOWNS))
-                .tooltip(Tooltip.create(Component.literal("Reset every cooldown."))).bounds(x, y, third, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Full Heal"), button -> send(Action.FULL_HEAL))
-                .tooltip(Tooltip.create(Component.literal("Health, food, no effects, no fire."))).bounds(x + third + 2, y, third, 20).build());
-        Button go = Button.builder(Component.literal("Go To"), button -> send(Action.TELEPORT_TO))
-                .tooltip(Tooltip.create(Component.literal("Teleport yourself to them.")))
-                .bounds(x + 2 * (third + 2), y, w - 2 * (third + 2), 20).build();
-        go.active = minecraft == null || minecraft.player == null || !minecraft.player.getUUID().equals(target.id());
-        addRenderableWidget(go);
-    }
-
-    // ------------------------------------------------------------------
-    // The World & Events tab
-    // ------------------------------------------------------------------
-
-    /** Where the World tab's sections start, under the "acts on" line. */
-    private int worldY() { return top + 48; }
-
-    private void addWorldTab(AdminStatePayload state, AdminStatePayload.PlayerEntry target) {
-        World world = state.world();
-        int x = contentX();
-        int w = contentWidth();
-        int y = worldY() + 12;
-        boolean someone = target != null;
-
-        addRenderableWidget(Button.builder(Component.literal(incidentsPage ? "◀ Main events" : "Village incidents ▶"), b -> {
-            incidentsPage = !incidentsPage; rebuildWidgets();
-        }).bounds(x, top + panelHeight - 24, w, 20).build());
-        if (incidentsPage) {
-            buttons(x, y, w,
-                    button("Awakening", "Queue a natural gifted-villager awakening near the chosen player; it may become a renegade.", Action.INCIDENT_AWAKENING, 0, someone),
-                    button("Renegade", "Queue a hostile gifted villager besieging a village near the chosen player.", Action.INCIDENT_RENEGADE, 0, someone));
-            buttons(x, y + SECTION, w,
-                    button("Guardian", "Queue a friendly gifted village guardian near the chosen player.", Action.INCIDENT_GUARDIAN, 0, someone),
-                    button("Meltdown", "Find and load a village in the configured incident range, then start its meltdown.", Action.INCIDENT_MELTDOWN, 0, someone));
-            buttons(x, y + SECTION * 2, w,
-                    button("Start raid", "Start a raid at the village nearest the chosen player.", Action.RAID_START, 0, someone),
-                    button("Stop raid", "Stop the active raid at the chosen player's current position. Surviving raiders remain.", Action.RAID_STOP, 0, someone));
-            return;
+        labels.add(new Label(x(), bodyBottom - 11, listW, entries.size() + " events | scroll", MUTED));
+        int dx = x() + listW + 12, dw = w() - listW - 12, at = 0;
+        at = wrap(dx, at, dw, event.title(), GOLD) + 5;
+        at = wrap(dx, at, dw, event.active() ? "ACTIVE / QUEUED" : "IDLE", event.active() ? TEAL : MUTED) + 8;
+        at = wrap(dx, at, dw, event.scope(), MUTED) + 10;
+        at = wrap(dx, at, dw, event.status(), TEXT) + 12;
+        for (int i = 0; i < event.starts().size(); i++) {
+            int variant = i;
+            body(event.starts().get(i), dx, at, dw, () -> send(Action.EVENT_START, event.id(), variant), event.canStart(), "Start " + event.starts().get(i) + ". " + event.scope()); at += 25;
         }
-        // The Eclipse.
-        buttons(x, y, w,
-                button("Start", "A full Eclipse from first contact.", Action.START_ECLIPSE, 0, !world.has(World.ECLIPSE)),
-                button("Totality", "Straight to totality: dormant powers are handed out and every power falls silent.",
-                        Action.ECLIPSE_TOTALITY, 0, !world.has(World.TOTALITY)),
-                button("Stop", "End the Eclipse now.", Action.STOP_ECLIPSE, 0, world.has(World.ECLIPSE)));
-        y += SECTION;
-        // Sylar's Collection.
-        buttons(x, y, w,
-                button("Next", "Move the prisoner's story on a step: wake him (the hatch and his list), cross out the next name, open his cell, or send him to the chosen player.",
-                        Action.SYLAR_NEXT, 0, someone && !world.has(World.SYLAR)),
-                button("Ticket", "Put a Repair Ticket in the chosen player's pocket: a fight with him whenever they read it.", Action.SYLAR_TICKET, 0, someone),
-                button("Fight", "Take the chosen player and everyone near them into his Collection now.", Action.SYLAR_FIGHT, 0,
-                        someone && !world.has(World.SYLAR)),
-                button("End", "Close the Collection and send everyone home.", Action.SYLAR_DISMISS, 0, world.has(World.SYLAR)));
-        y += SECTION;
-        // Village events near the chosen player.
-        buttons(x, y, w,
-                button("Meltdown", "The villager nearest the chosen player starts to glow: one minute.", Action.MELTDOWN_START, 60, someone),
-                button("20 s", "A quick meltdown: twenty seconds.", Action.MELTDOWN_START, 20, someone),
-                button("Raid", "A vanilla raid on the village nearest the chosen player.", Action.RAID_START, 0, someone),
-                button("End", "End every meltdown with nothing happening.", Action.MELTDOWN_CANCEL, 0, world.has(World.MELTDOWN)));
-        y += SECTION;
-        // The emergency band.
-        buttons(x, y, w,
-                button("Give tuned radio", "Give the chosen player a walkie-talkie tuned to 101.10 FM.", Action.GIVE_RADIO, 0,
-                        someone && world.has(World.ON_AIR)));
-    }
-
-    private record Spec(String label, String tip, Action action, int value, boolean active) {}
-
-    private static Spec button(String label, String tip, Action action, int value, boolean active) {
-        return new Spec(label, tip, action, value, active);
-    }
-
-    /** A row of buttons sharing the width evenly. */
-    private void buttons(int x, int y, int w, Spec... specs) {
-        int gap = 2, each = (w - gap * (specs.length - 1)) / specs.length;
-        for (int i = 0; i < specs.length; i++) {
-            Spec s = specs[i];
-            int bx = x + i * (each + gap), bw = i == specs.length - 1 ? x + w - bx : each;
-            Button b = Button.builder(Component.literal(s.label()).withStyle(s.action() == Action.TOGGLE_GOD_MODE && s.label().endsWith("ON") ? ChatFormatting.GOLD : ChatFormatting.WHITE), button -> send(s.action(), "", s.value()))
-                    .tooltip(Tooltip.create(Component.literal(s.tip()))).bounds(bx, y, bw, 20).build();
-            b.active = s.active();
-            addRenderableWidget(b);
+        body("Cancel event", dx, at + 5, dw, () -> send(Action.EVENT_CANCEL, event.id(), 0), true, "Cancel this event and its queued starts. " + event.scope()); at += 35;
+        if (event.id().equals("sylar")) {
+            body("Advance story", dx, at, dw, () -> send(Action.SYLAR_NEXT), target() != null, "Advance the prisoner's story one step."); at += 25;
+            body("Give Repair Ticket", dx, at, dw, () -> send(Action.SYLAR_TICKET), target() != null, "Give this player a Collection rematch ticket."); at += 25;
         }
-    }
-
-    // ------------------------------------------------------------------
-    // Drawing
-    // ------------------------------------------------------------------
-
-    @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        graphics.fill(0, 0, width, height, 0x70000000);
-        graphics.fill(left - 1, top - 1, left + panelWidth + 1, top + panelHeight + 1, BORDER);
-        graphics.fill(left, top, left + panelWidth, top + panelHeight, BACKGROUND);
-        // Title bar and the list's inset.
-        graphics.fill(left, top, left + panelWidth, top + 29, 0xFF1E0C12);
-        graphics.fill(left, top + 29, left + panelWidth, top + 30, BORDER);
-        graphics.fill(left + 4, top + 34, left + LIST_WIDTH + 12, top + panelHeight - 4, INSET);
-
-        graphics.drawString(font, Component.literal("HEROES EVOLVED").withStyle(ChatFormatting.BOLD), left + 10, top + 7, TITLE, false);
-        graphics.drawString(font, "Operator tools", left + 10, top + 17, ACCENT, false);
-
-        AdminStatePayload state = ClientAdminState.get();
-        AdminStatePayload.PlayerEntry target = selectedEntry(state);
-        graphics.drawString(font, "PLAYERS  " + state.players().size(), left + 10, top + 37, MUTED, false);
-        lines.clear();
-        if (tab == Tab.PLAYER) {
-            if (target == null) graphics.drawString(font, "No players online.", contentX(), top + 40, MUTED, false);
-            else drawPlayer(graphics, target, state.maximumLevel());
-        } else drawWorld(graphics, state.world(), target);
-
-        super.render(graphics, mouseX, mouseY, partialTick);
-        // A status line cut short shows in full on hover.
-        for (Line l : lines)
-            if (mouseX >= l.x && mouseX < l.x + l.width && mouseY >= l.y - 1 && mouseY < l.y + 9)
-                graphics.renderTooltip(font, font.split(Component.literal(l.text), 220), mouseX, mouseY);
-    }
-
-    private void drawPlayer(GuiGraphics graphics, AdminStatePayload.PlayerEntry target, int maximumLevel) {
-        NumberFormat numbers = NumberFormat.getIntegerInstance();
-        int x = contentX(), w = contentWidth(), y = top + 38;
-        graphics.drawString(font, Component.literal(target.name()).withStyle(ChatFormatting.BOLD), x, y, target.godMode() ? GOLD : TITLE, false);
-        Component power = target.powerId().isEmpty() ? Component.literal("No power")
-                : powerName(target.powerId()).copy().append(Component.literal(target.awakened() ? "  Awakened" : "  Dormant"));
-        int powerWidth = font.width(power);
-        graphics.drawString(font, power, x + w - powerWidth, y, target.awakened() ? GOOD : MUTED, false);
-
-        // Level and Mastery, with a bar to the next level.
-        y += 13;
-        boolean maxed = target.level() >= maximumLevel;
-        String mastery = maxed ? numbers.format(target.mastery()) + " Mastery (max)"
-                : numbers.format(target.mastery()) + " / " + numbers.format(target.masteryForNextLevel()) + " Mastery";
-        graphics.drawString(font, "Level " + target.level() + "/" + maximumLevel, x, y, TEXT, false);
-        graphics.drawString(font, mastery, x + w - font.width(mastery), y, MUTED, false);
-        bar(graphics, x, y + 10, w, maxed ? 1 : target.masteryForNextLevel() <= 0 ? 0
-                : (float) target.mastery() / target.masteryForNextLevel(), GOLD);
-
-        // Energy, with its bar.
-        y += 17;
-        String energy = target.unlimitedEnergy() ? "Energy  Unlimited" : "Energy  " + target.energy() + " / " + target.maximumEnergy();
-        graphics.drawString(font, energy, x, y, TEXT, false);
-        bar(graphics, x, y + 10, w, target.unlimitedEnergy() ? 1 : target.maximumEnergy() <= 0 ? 0
-                : (float) target.energy() / target.maximumEnergy(), target.unlimitedEnergy() ? GOOD : ACCENT);
-
-        // Where they are, and the stories.
-        y += 17;
-        status(graphics, x, y, w, target.whereabouts(), MUTED);
-        status(graphics, x, y + 10, w, target.story(), MUTED);
-
-        graphics.fill(x, playerRowsY() - 5, x + w, playerRowsY() - 4, RULE);
-        String[] labels = {"Power", "Level", "Mastery", "Energy", "Tools", "Admin"};
-        for (int row = 0; row < labels.length; row++)
-            graphics.drawString(font, labels[row], x, playerRowsY() + 6 + row * ROW, MUTED, false);
-    }
-
-    private void drawWorld(GuiGraphics graphics, World world, AdminStatePayload.PlayerEntry target) {
-        int x = contentX(), w = contentWidth(), y = worldY();
-        String acts = target == null ? "No player chosen: only world-wide controls work." : "Player events act on " + target.name() + ".";
-        graphics.drawString(font, acts, x, top + 36, target == null ? ACCENT : MUTED, false);
-        y += 2;
-        if (incidentsPage) {
-            section(graphics, x, y, w, "GIFTS", GOLD, false, "Awakenings and hostile renegades");
-            section(graphics, x, y + SECTION, w, "VILLAGE", VILLAGE, world.has(World.MELTDOWN), world.village());
-            section(graphics, x, y + SECTION * 2, w, "RAIDS", SYLAR, world.has(World.RAID), "Controls use the chosen player's village.");
-            status(graphics, x, y + SECTION * 3, w, "Incidents start after the village loads; refresh for status.", MUTED);
-            return;
+        if (event.id().equals("prologue")) {
+            body("Jump all to pods", dx, at, dw, () -> send(Action.SKIP_TO_POD), state.world().has(AdminStatePayload.World.LAST_DAY), "Skip the shared Last Day to the cryopods."); at += 25;
         }
-        section(graphics, x, y, w, "ECLIPSE", GOLD, world.has(World.ECLIPSE), world.eclipse());
-        section(graphics, x, y + SECTION, w, "SYLAR", SYLAR, world.has(World.SYLAR), world.sylar());
-        section(graphics, x, y + SECTION * 2, w, "VILLAGE", VILLAGE, world.has(World.MELTDOWN) || world.has(World.RAID), world.village());
-        section(graphics, x, y + SECTION * 3, w, "RADIO", RADIO, world.has(World.ON_AIR), world.radio());
+        extent(at + 5);
     }
 
-    /** A section's heading: a dot (lit while it is going on), its name, and its status line beside it. */
-    private void section(GuiGraphics graphics, int x, int y, int w, String name, int colour, boolean on, String text) {
-        graphics.fill(x, y + 2, x + 5, y + 7, on ? colour : IDLE);
-        graphics.drawString(font, Component.literal(name).withStyle(ChatFormatting.BOLD), x + 9, y, colour, false);
-        int at = x + 9 + 52;
-        status(graphics, at, y, x + w - at, text, on ? TEXT : MUTED);
-        if (y > worldY() + 4) graphics.fill(x, y - 5, x + w, y - 4, RULE);
+    private void debug(AdminStatePayload state) {
+        heading(0, "LIVE SERVER DIAGNOSTICS"); int at = 18;
+        for (String line : state.diagnostics()) at = wrap(x(), at, w(), line, MUTED) + 4;
+        at += 9; heading(at, "SELECTED PLAYER / TESTING"); at += 18;
+        var p = target(); boolean player = p != null;
+        row(at, spec("God: " + (player && p.godMode() ? "ON" : "OFF"), Action.TOGGLE_GOD_MODE, player, "Prevent all damage and death. Gold outline while enabled."), spec("Free stamina: " + (player && p.unlimitedEnergy() ? "ON" : "OFF"), Action.TOGGLE_UNLIMITED_ENERGY, player, "Toggle unlimited stamina.")); at += 25;
+        row(at, spec("Reset cooldowns", Action.RESET_COOLDOWNS, player, "Clear all ability cooldowns."), spec("Cancel awakening", Action.CANCEL_INTRO, player, "Cancel this player's awakening. Cancel time visions under Story.")); at += 25;
+        row(at, spec("Give tuned radio", Action.GIVE_RADIO, player, "Give a walkie-talkie on 101.10 FM.")); at += 32;
+        heading(at, "COMPANY ATTENTION"); at += 17;
+        row(at, spec("Clear", Action.SET_ATTENTION, "", 0, player, "Set attention to zero. Cancel operations under Events."), spec("Noticed", Action.SET_ATTENTION, "", 25, player, "Set attention to 25."), spec("Watched", Action.SET_ATTENTION, "", 50, player, "Set attention to 50."), spec("Hunted", Action.SET_ATTENTION, "", 100, player, "Set attention to 100.")); at += 34;
+        heading(at, "EVENT CLEANUP / ENTIRE SERVER"); at += 17;
+        at = wrap(x(), at, w(), "Stops world events, queued incidents and stories. Existing terrain damage and surviving mobs remain.", RED) + 7;
+        row(at, spec("Cancel all events", Action.CANCEL_ALL_EVENTS, true, "Server-wide cleanup including queued village starts and Company operations.")); extent(at + 28);
     }
 
-    /** A line of text cut to fit, with "…", that shows in full on hover. */
-    private void status(GuiGraphics graphics, int x, int y, int w, String text, int colour) {
-        if (text == null || text.isEmpty()) return;
-        String shown = text;
-        if (font.width(text) > w) shown = font.plainSubstrByWidth(text, w - font.width("…")) + "…";
-        graphics.drawString(font, shown, x, y, colour, false);
-        if (!shown.equals(text)) lines.add(new Line(x, y, w, text));
+    private record Spec(String text, Action action, String argument, int value, boolean active, String tip) {}
+    private Spec spec(String text, Action action, boolean active, String tip) { return spec(text, action, "", 0, active, tip); }
+    private Spec spec(String text, Action action, String arg, int value, boolean active, String tip) { return new Spec(text, action, arg, value, active, tip); }
+    private void row(int offset, Spec... specs) {
+        int each = (w() - 4 * (specs.length - 1)) / specs.length;
+        for (int i = 0; i < specs.length; i++) { Spec s = specs[i]; body(s.text(), x() + i * (each + 4), offset, each, () -> send(s.action(), s.argument(), s.value()), s.active(), s.tip()); }
     }
-
-    private static void bar(GuiGraphics graphics, int x, int y, int w, float fraction, int colour) {
-        graphics.fill(x, y, x + w, y + 3, 0xFF2E1820);
-        graphics.fill(x, y, x + Math.round(w * Math.clamp(fraction, 0, 1)), y + 3, colour);
+    private void heading(int offset, String text) { label(offset, text, TEAL); }
+    private void label(int offset, String text, int colour) { labels.add(new Label(x(), y(offset), w(), text, colour)); }
+    private int wrap(int x, int offset, int width, String text, int colour) {
+        for (var line : font.split(Component.literal(text), width)) {
+            StringBuilder plain = new StringBuilder();
+            line.accept((index, style, cp) -> { plain.appendCodePoint(cp); return true; });
+            labels.add(new Label(x, y(offset), width, plain.toString(), colour)); offset += 11;
+        }
+        return offset;
     }
-
-    // ------------------------------------------------------------------
-
-    private void ensureSelection(AdminStatePayload state) {
-        boolean stillOnline = state.players().stream().anyMatch(entry -> entry.id().equals(selectedPlayer));
-        if (!stillOnline) selectedPlayer = state.players().isEmpty() ? null : state.players().getFirst().id();
+    private void extent(int height) { maxScroll = Math.max(0, height - bodyBottom + bodyTop); }
+    private void body(String text, int x, int offset, int width, Runnable pressed, boolean active, String tip) {
+        int y = y(offset); if (y >= bodyTop && y + 21 <= bodyBottom) button(text, x, y, width, pressed, active, false, tip);
     }
-
-    private static AdminStatePayload.PlayerEntry selectedEntry(AdminStatePayload state) {
-        return state.players().stream().filter(entry -> entry.id().equals(selectedPlayer)).findFirst().orElse(null);
+    private void button(String text, int x, int y, int width, Runnable pressed, boolean active, boolean selected, String tip) {
+        var button = new ConsoleButton(x, y, width, Component.literal(text), b -> pressed.run(), selected);
+        button.active = active; button.setTooltip(Tooltip.create(Component.literal(tip))); addRenderableWidget(button);
     }
-
-    private static Component powerName(String powerId) {
-        ResourceLocation id = ResourceLocation.tryParse(powerId);
-        return id == null ? Component.literal(powerId) : Component.translatable("ability." + id.getNamespace() + "." + id.getPath());
+    @Override public void tick() { if (++refreshTicks >= 40) { refreshTicks = 0; send(Action.REFRESH); } }
+    @Override public boolean keyPressed(int key, int scan, int modifiers) {
+        int change = switch (key) { case 266 -> -(bodyBottom - bodyTop); case 267 -> bodyBottom - bodyTop; default -> 0; };
+        if (change != 0) { scroll[tab.ordinal()] = Math.clamp(scroll[tab.ordinal()] + change, 0, maxScroll); rebuildWidgets(); return true; }
+        return super.keyPressed(key, scan, modifiers);
     }
-
-    private void send(Action action) {
-        send(action, "", 0);
+    @Override public boolean mouseScrolled(double mx, double my, double dx, double dy) {
+        if (dy == 0 || my < bodyTop || my >= bodyBottom) return super.mouseScrolled(mx, my, dx, dy);
+        if (mx >= left && mx < x()) playerScroll -= (int) Math.signum(dy);
+        else if ((tab == Tab.EVENTS || tab == Tab.STORY) && mx >= x() && mx < x() + (panelWidth < 480 ? 96 : 124)) eventScroll -= (int) Math.signum(dy);
+        else if (mx >= x() && mx < x() + w()) scroll[tab.ordinal()] = Math.clamp(scroll[tab.ordinal()] - (int) (dy * 24), 0, maxScroll);
+        else return super.mouseScrolled(mx, my, dx, dy);
+        rebuildWidgets(); return true;
     }
-
+    @Override public void render(GuiGraphics g, int mx, int my, float dt) {
+        g.fill(0, 0, width, height, 0xA0000000);
+        g.fill(left - 1, top - 1, left + panelWidth + 1, top + panelHeight + 1, RULE);
+        g.fill(left, top, left + panelWidth, top + panelHeight, BG);
+        g.fill(left, top, left + panelWidth, top + 34, PANEL); g.fill(left, top, left + 3, top + 34, TEAL);
+        g.drawString(font, "HEROES EVOLVED", left + 11, top + 8, TEXT, false);
+        g.drawString(font, "ADMIN CONSOLE", left + 11, top + 21, TEAL, false);
+        g.fill(left + 5, top + 38, left + sidebar + 8, bodyBottom, PANEL);
+        g.drawString(font, "ONLINE / " + ClientAdminState.get().players().size(), left + 10, top + 45, MUTED, false);
+        g.drawString(font, "Choose target", left + 10, top + 57, MUTED, false);
+        g.enableScissor(x(), bodyTop, x() + w(), bodyBottom);
+        for (Label l : labels) if (l.y + 9 >= bodyTop && l.y < bodyBottom) g.drawString(font, font.plainSubstrByWidth(l.text, l.width), l.x, l.y, l.colour, false);
+        g.disableScissor();
+        if (maxScroll > 0) {
+            int track = bodyBottom - bodyTop, thumb = Math.max(16, track * track / (track + maxScroll));
+            int sy = bodyTop + (track - thumb) * scroll[tab.ordinal()] / maxScroll;
+            g.fill(left + panelWidth - 7, bodyTop, left + panelWidth - 5, bodyBottom, RULE);
+            g.fill(left + panelWidth - 7, sy, left + panelWidth - 5, sy + thumb, TEAL);
+        }
+        g.fill(left + 8, bodyBottom + 6, left + panelWidth - 8, bodyBottom + 7, RULE);
+        g.drawString(font, (target() == null ? "No target" : "Target: " + target().name()) + " | Live / 2s", left + 10, bodyBottom + 11, TEAL, false);
+        g.drawString(font, font.plainSubstrByWidth(feedback, panelWidth - 22), left + 10, bodyBottom + 23, TEXT, false);
+        super.render(g, mx, my, dt);
+        if (my >= bodyBottom + 21 && my < bodyBottom + 34 && mx >= left && mx < left + panelWidth) g.renderTooltip(font, font.split(Component.literal(feedback), Math.min(350, panelWidth - 24)), mx, my);
+        for (Label l : labels) if (l.y >= bodyTop && l.y + 9 < bodyBottom && font.width(l.text) > l.width && mx >= l.x && mx < l.x + l.width && my >= l.y && my < l.y + 10) g.renderTooltip(font, font.split(Component.literal(l.text), 260), mx, my);
+    }
+    private static String powerName(String power) {
+        if (power.isEmpty()) return "No power assigned";
+        var id = ResourceLocation.tryParse(power); return id == null ? power : Component.translatable("ability." + id.getNamespace() + "." + id.getPath()).getString();
+    }
+    private void send(Action action) { send(action, "", 0); }
     private void send(Action action, String argument, int value) {
-        UUID target = selectedPlayer == null
-                ? (minecraft == null || minecraft.player == null ? new UUID(0L, 0L) : minecraft.player.getUUID())
-                : selectedPlayer;
+        UUID target = selectedPlayer != null ? selectedPlayer : minecraft != null && minecraft.player != null ? minecraft.player.getUUID() : new UUID(0, 0);
         PacketDistributor.sendToServer(new AdminActionPayload(action, target, argument, value));
     }
-
-    @Override
-    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // The panel draws its own dim backdrop; skip the world blur.
-    }
-
-    @Override
-    public boolean isPauseScreen() {
-        return false;
+    @Override public void renderBackground(GuiGraphics g, int mx, int my, float dt) {}
+    @Override public boolean isPauseScreen() { return false; }
+    private static final class ConsoleButton extends Button {
+        private final boolean selected;
+        ConsoleButton(int x, int y, int width, Component label, OnPress pressed, boolean selected) { super(x, y, width, 21, label, pressed, DEFAULT_NARRATION); this.selected = selected; }
+        @Override protected void renderWidget(GuiGraphics g, int mx, int my, float dt) {
+            g.fill(getX(), getY(), getX() + width, getY() + height, selected ? 0xFF26483F : isHoveredOrFocused() && active ? 0xFF344958 : PANEL);
+            g.fill(getX(), getY() + height - 1, getX() + width, getY() + height, selected ? TEAL : RULE);
+            if (selected) g.fill(getX(), getY(), getX() + 2, getY() + height, TEAL);
+            var font = net.minecraft.client.Minecraft.getInstance().font; String text = getMessage().getString();
+            if (font.width(text) > width - 8) text = font.plainSubstrByWidth(text, Math.max(1, width - 15)) + "…";
+            boolean cleanup = getMessage().getString().startsWith("Cancel") || getMessage().getString().equals("Remove") || getMessage().getString().equals("Reset progress");
+            g.drawCenteredString(font, text, getX() + width / 2, getY() + 6, !active ? 0xFF61707C : selected ? TEAL : cleanup ? RED : TEXT);
+        }
     }
 }

@@ -92,6 +92,11 @@ public final class GiftedCommands {
                     for (String line : lines) c.getSource().sendSuccess(() -> Component.literal(line), false);
                     return lines.size();
                 }))
+                .then(Commands.literal("project")
+                        .then(Commands.literal("fill").executes(c -> project(c.getSource(), "fill")))
+                        .then(Commands.literal("next").executes(c -> project(c.getSource(), "next")))
+                        .then(Commands.literal("board").executes(c -> project(c.getSource(), "board")))
+                        .then(Commands.literal("rebuild").executes(c -> project(c.getSource(), "rebuild"))))
                 .then(Commands.literal("forget").executes(c -> {
                     boolean done = com.jayptucker.heroesevolved.village.VillageMemory.forget(c.getSource().getLevel(), net.minecraft.core.BlockPos.containing(c.getSource().getPosition()));
                     c.getSource().sendSuccess(() -> Component.literal(done ? "The village has forgotten." : "No remembered village near here."), true);
@@ -236,5 +241,28 @@ public final class GiftedCommands {
                 new net.minecraft.world.phys.AABB(at, at).inflate(32), GiftedMobs::isGood))
             if (best == null || v.distanceToSqr(at) < best.distanceToSqr(at)) best = v;
         return best;
+    }
+
+    /** {@code village project fill|next|board}: bring everything the nearest village asks for, post its next project, or put its board up now. */
+    private static int project(net.minecraft.commands.CommandSourceStack source, String what) {
+        var level = source.getLevel();
+        var v = com.jayptucker.heroesevolved.village.VillageMemory.near(level, net.minecraft.core.BlockPos.containing(source.getPosition()));
+        if (v == null) { source.sendFailure(Component.literal("No remembered village near here.")); return 0; }
+        switch (what) {
+            case "fill" -> com.jayptucker.heroesevolved.village.Projects.fill(level, v);
+            case "next" -> com.jayptucker.heroesevolved.village.Projects.post(level, v);
+            case "rebuild" -> {
+                var tier = com.jayptucker.heroesevolved.village.Projects.tier(level, v);
+                if (tier == com.jayptucker.heroesevolved.village.Projects.Tier.HAMLET
+                        || !com.jayptucker.heroesevolved.village.Projects.rebuild(level, v, tier)) {
+                    source.sendFailure(Component.literal(v.name() + " is " + tier.label.toLowerCase() + " with no home it can rebuild bigger."));
+                    return 0;
+                }
+            }
+            default -> com.jayptucker.heroesevolved.village.Projects.consider(level, v);
+        }
+        String line = com.jayptucker.heroesevolved.village.Projects.describe(level, v);
+        source.sendSuccess(() -> Component.literal(v.name() + ": " + line), true);
+        return 1;
     }
 }

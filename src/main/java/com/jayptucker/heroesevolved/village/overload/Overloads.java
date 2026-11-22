@@ -468,6 +468,8 @@ public final class Overloads {
 
     /** Ends every overload with nothing happening. How many there were. */
     public static int cancelAll() {
+        for (Villager v : List.copyOf(RESUMING)) resume(v);
+        RESUMING.clear();
         List<Overload> all = all();
         for (Overload o : all) finish(o);
         return all.size();

@@ -72,6 +72,9 @@ closes over it.
 
 A meltdown's crater is too big to rebuild: it is there for good.
 
+A village also grows or declines with how it is treated: saved, guarded and helped, it needs less from players for the projects
+on its notice board, builds and takes in newcomers; hit and left alone, it wears and loses people ([Villages that grow](village-growth.md)).
+
 ## Admin
 
 - `/heroesevolved village memory` describes the nearest village: its name, its history, who it thanks.

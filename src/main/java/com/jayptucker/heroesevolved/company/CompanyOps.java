@@ -49,7 +49,7 @@ import java.util.UUID;
 public final class CompanyOps {
     public static final String AGENT_TAG = HeroesEvolved.MOD_ID + "_company_errand";
     public static final String PRISONER_TAG = HeroesEvolved.MOD_ID + "_company_prisoner";
-    public enum Kind { NONE, INVESTIGATION, CONVOY, RAID }
+    public enum Kind { NONE, INVESTIGATION, CONVOY, RAID, PURSUIT }
     /** An investigator arrives this long after the move that brought him. */
     public static final int INVESTIGATOR_DELAY = 1200;
     /** The rest after an operation before the next one. */
@@ -445,6 +445,7 @@ public final class CompanyOps {
     public static void hurt(LivingDamageEvent.Post event) {
         if (!(event.getEntity() instanceof CompanyAgentEntity a) || !(event.getSource().getEntity() instanceof ServerPlayer p)) return;
         if (of(a) instanceof Convoy c) c.hurt(p);
+        else if (of(a) instanceof Pursuit u) u.hurt(p);
     }
 
     @SubscribeEvent
@@ -477,7 +478,7 @@ public final class CompanyOps {
      * Somewhere to stand near {@code (x, z)}, close to height {@code nearY}: down from a little above it to the first
      * floor with headroom, or up out of the ground if that is solid. Unloaded ground answers {@code nearY}.
      */
-    static Vec3 ground(ServerLevel level, double x, double z, double nearY) {
+    public static Vec3 ground(ServerLevel level, double x, double z, double nearY) {
         BlockPos column = BlockPos.containing(x, nearY, z);
         if (!level.hasChunkAt(column)) return new Vec3(x, nearY, z);
         int y0 = (int) Math.floor(nearY) + 2;

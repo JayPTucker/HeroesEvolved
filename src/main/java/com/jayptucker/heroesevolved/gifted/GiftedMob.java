@@ -143,6 +143,8 @@ public final class GiftedMob {
         if (grownUntil > 0 && now >= grownUntil) { grownUntil = 0; MobMoves.shrink(mob); }
         passives(now);
         if (now % 40 == 0) party(now);
+        // A hostile gift on the move leaves a trail players can follow (trace/Traces).
+        if (gift.evil() && now % 100 == 0) com.jayptucker.heroesevolved.trace.Traces.trail(mob, gift);
         // A lookout shouts when monsters come near, fighting or not (village/GiftedWork).
         if (mob instanceof Villager v && !gift.evil() && now % 40 == 0) com.jayptucker.heroesevolved.village.GiftedWork.alarm(v, gift.power(), gift.home());
         if (now % 10 == 0) { tickBar(); sync(); }

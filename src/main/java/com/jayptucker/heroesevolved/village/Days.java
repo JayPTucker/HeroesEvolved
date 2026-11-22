@@ -16,6 +16,9 @@ public final class Days {
     /** Now, on the calendar. */
     public static long clock(ServerLevel level) { return level.getServer().overworld().getDayTime(); }
 
+    /** Today's number on the calendar, counting from day 1. */
+    public static long today(ServerLevel level) { return clock(level) / DAY + 1; }
+
     /**
      * Days since {@code since} on the calendar; never negative (an admin who sets the time back makes it now). Fractional.
      */

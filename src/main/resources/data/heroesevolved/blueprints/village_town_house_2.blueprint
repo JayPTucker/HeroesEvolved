@@ -1,0 +1,198 @@
+# A town house villages build at the Town tier (village/Projects): side gable, brick ground floor, plank
+# upper floor in a log frame, deepslate-tile roof and a chimney. Drawn facing north; village/Styles
+# recolours it per village kind. Exported with to-nbt to structure/village/town_house_2.nbt.
+name: village_town_house_2
+anchor: 0 0 0
+palette:
+  A = cobblestone
+  B = spruce_planks
+  C = oak_log[axis=y]
+  D = bricks
+  E = oak_door[facing=south,half=lower,hinge=left]
+  F = bookshelf
+  G = furnace[facing=west]
+  H = oak_stairs[facing=north,half=bottom]
+  I = barrel[facing=up]
+  J = oak_fence
+  K = oak_stairs[facing=south,half=bottom]
+  L = crafting_table
+  M = oak_planks
+  N = oak_stairs[facing=west,half=bottom]
+  O = glass_pane
+  P = oak_door[facing=south,half=upper,hinge=left]
+  Q = oak_pressure_plate
+  R = dark_oak_trapdoor[facing=north,half=top,open=false]
+  S = lantern[hanging=true]
+  T = flowering_azalea_leaves[persistent=true]
+  U = oak_log[axis=x]
+  V = oak_log[axis=z]
+  W = blue_bed[facing=south,part=foot]
+  X = yellow_bed[facing=south,part=foot]
+  Y = chest[facing=west]
+  Z = blue_bed[facing=south,part=head]
+  a = yellow_bed[facing=south,part=head]
+  b = blue_carpet
+  c = deepslate_tile_stairs[facing=south,half=bottom]
+  d = deepslate_tile_stairs[facing=north,half=bottom]
+  e = chain[axis=y]
+  f = deepslate_tile_slab[type=bottom]
+  g = campfire[lit=true,signal_fire=false,facing=north]
+
+# footing and floor
+layer 0:
+___________
+_AAAAAAAAA_
+_ABBBBBBBA_
+_ABBBBBBBA_
+_ABBBBBBBAA
+_ABBBBBBBA_
+_ABBBBBBBA_
+_AAAAAAAAA_
+___________
+
+layer 1:
+___________
+_CDDDEDDDC_
+_DF.....GD_
+_D.H....ID_
+_D.J.....DA
+_D.K.....D_
+_DL..MMMND_
+_CDDDDDDDC_
+___________
+
+layer 2:
+___________
+_COODPDOOC_
+_D.......D_
+_D.......D_
+_O.Q.....OA
+_D.......D_
+_D...MMN.D_
+_CDODDDODC_
+___________
+
+layer 3:
+____RRR____
+_CDDDDDDDC_
+_D.......D_
+_D...S...D_
+_D.......DA
+_D.......D_
+_D...MN..D_
+_CDDDDDDDC_
+___________
+
+# upper floor and beams
+layer 4:
+__TT__TT___
+_CUUUUUUUC_
+_VMMMMMMMV_
+_VMMMMMMMV_
+_VMMMMMMMVA
+_VMMMMMMMV_
+_VMMMN...V_
+_CUUUUUUUC_
+___________
+
+layer 5:
+___________
+_CMOMCMOMC_
+_MWX....YM_
+_MZabb...M_
+_M..bb...MA
+_M....JJJM_
+_M.......M_
+_CMMMCMMMC_
+___________
+
+layer 6:
+___________
+_CMOMCMOMC_
+_M.......M_
+_M.......M_
+_O.......OA
+_M.......M_
+_M.......M_
+_CMOMCMOMC_
+___________
+
+# eaves
+layer 7:
+ccccccccccc
+_CMMMCMMMC_
+_M.......M_
+_M.......M_
+_M.......MA
+_M.......M_
+_M.......M_
+_CMMMCMMMC_
+ddddddddddd
+
+layer 8:
+___________
+ccccccccccc
+_M.......M_
+_M.......M_
+_C.......CA
+_M.......M_
+_M.......M_
+ddddddddddd
+___________
+
+layer 9:
+___________
+___________
+ccccccccccc
+_M.......M_
+_O...S...MA
+_M.......M_
+ddddddddddd
+___________
+___________
+
+layer 10:
+___________
+___________
+___________
+ccccccccccc
+_M...e...MA
+ddddddddddd
+___________
+___________
+___________
+
+# ridge
+layer 11:
+___________
+___________
+___________
+___________
+ffffffffffA
+___________
+___________
+___________
+___________
+
+layer 12:
+___________
+___________
+___________
+___________
+__________A
+___________
+___________
+___________
+___________
+
+# chimney top
+layer 13:
+___________
+___________
+___________
+___________
+__________g
+___________
+___________
+___________
+___________

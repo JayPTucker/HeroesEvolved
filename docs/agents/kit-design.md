@@ -100,6 +100,15 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 | A chain of teleports behind targets | a ticked sequence | [powers/time.md](powers/time.md) (Moment's Edge) |
 | A vortex, whirlpool or storm | a new style of the shared tornado | [powers/flight.md](powers/flight.md), [powers/hydrokinesis.md](powers/hydrokinesis.md) (Maelstrom) |
 
+## Reusable patterns from stamina bookkeeping
+
+- **A never-started pause still goes into a packet.** `PlayerEnergyService.State` once used `Long.MIN_VALUE` for
+  `pausedUntil`: subtracting the current time overflowed, sending a 2,147,483,647-tick recovery countdown on a fresh
+  sync (and 1,000 on a refusal). Use a safe negative timestamp for both it and `sentAt`.
+- **Spending up to a cost includes the final fraction.** `PlayerEnergyService.consumeUpTo` once floored stamina before
+  paying, so overexertion kept 0.75 stamina and never paused recovery. Subtract the exact payment and return whole
+  points only for callers that use that count. `energy/StaminaAccountingGameTests` checks both packets and payments.
+
 ## Drawing it
 
 Read [animation-guide.md](../animation-guide.md) first; these are the code patterns behind it.

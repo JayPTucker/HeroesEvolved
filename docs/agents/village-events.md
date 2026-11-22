@@ -70,6 +70,14 @@ Villages call for help over Simple Radio, and the first event that calls is a vi
 
 ## Reusable patterns from overloads (storms round a villager)
 
+- **Operator cancellation includes starts that have not ticked yet.** Cancelling only active events let queued village
+  incidents start afterwards, and `Starfall.force(false)` previously left a natural shower on. The admin console uses
+  `admin/AdminEvents` for its server-owned catalogue and lifecycle dispatch: `VillageIncidents.cancel` releases queued
+  tickets, storm/meltdown cancellation drains their resume queues, `Renegades.cancelAll` removes a turning villager's
+  movement root, and `Starfall` suppresses the cancelled calendar night while allowing future nights. Add an event's
+  start variants, scope, status and cancellation there together. `AdminGameTests` covers these paths; `AdminPreview`
+  clicks real buttons and photographs normal and compact layouts.
+
 A villager whose gift wakes too strong to hold, at the centre of their own storm (`village/overload/`: `Overloads` runs
 them, a `Weather` per `Storm` says what each does, `OverloadGeometry` holds every number the server and the drawing
 share; art in `client/effects/setpiece/OverloadArt`). Built November 2026. What the player sees: [overloads.md](../overloads.md).
@@ -325,3 +333,132 @@ Every world event was checked for collisions, multiplayer scaling and sleep in N
   time of day, which sleep moves on, and the clock village memories and the Eclipse use): scars, rebuild starts, quiet
   days, favours. Pacing rests (an operation's cooldown, fuses) stay in game ticks. `Days.since` never goes negative when
   an admin sets the time back.
+
+## Reusable patterns from power traces
+
+Marks left where powers were used (`trace/Traces`, a per-level `SavedData`). Built November 2026. What the player sees:
+[power-traces.md](../power-traces.md).
+
+- **Fed from the same place as attention:** `AbilityUseService` calls `Traces.left` after `CompanyAttention.seen`; the
+  stamina a move cost decides faint (15+) or strong (30+), so the balance table decides what leaves a mark. Hostile gifted
+  mobs leave trails from `GiftedMob.tickInTime` (every 100 ticks, a mark every 6 blocks, with its heading).
+- **Fresh, not piled:** a mark of the same owner and kind within 5 blocks is made fresh rather than added (trails are
+  never merged: each mark has its own owner id). At most 600 a level; the oldest go first.
+- **Fade by the calendar** (`village/Days`), with rain adding wear; a mark's strength is worked out when asked, so an
+  unloaded mark has faded by the right amount when it loads.
+- **Drawn per player** (`sendParticles(player, ...)`), so a reader sees more and further than anyone else; each mark gets
+  its power's particle plus a lingering coloured dust mote. The power's own particles alone (static sparks) were too
+  small and short-lived to see a trail from a few blocks off.
+- **Read once:** crouch-reading and a reader's passing notice are remembered per player and mark (a trail per creature),
+  or every tick would repeat it. Readers are asked through `FightingStyles.hasPower`.
+- **Reading keys include the dimension and what can be learned.** Trace ids are local to a level: global deduplication
+  without the dimension silenced unrelated marks after travelling. `Traces.read` scopes both kinds of feedback by
+  dimension and lets a newly gained reading power reveal the owner of a mark already examined without it.
+- **Fresh evidence uses fresh witnesses.** `Traces.leave` resets `seen` to the latest use's witnesses when freshening
+  a mark; OR-ing the old flag let an earlier witnessed use hide every later unseen one. `Traces.sweepNow` also checks
+  the initial strength: a brand-new faint mark is exactly 0.5 strong, which once passed the strong-evidence threshold.
+  `PowerTraceGameTests` covers both cases and reading across dimensions or after gaining a reading power.
+- **The Company sweep** runs once a calendar day over players' unseen strong marks near villages; an investigator asks
+  `Traces.fresh` before a covering village can fool him.
+
+## Reusable patterns from travellers on the road
+
+Parties walking between villages (`travel/Travellers`, `travel/Party` and its kinds; the Company's hunt is
+`company/Pursuit`). Built November 2026. What the player sees: [travellers.md](../travellers.md).
+
+- **One walking party, four kinds.** `Party` moves a point along a straight road at a walking pace, waiting for its
+  lead, and walks each member to a slot round it (villagers through `WALK_TARGET`, a wandering trader through
+  `setWanderTarget`, llamas on leads following their drover); a kind overrides `intro`, `business`, `arrive`, `fell`.
+- **Travellers live where players are.** Parties hold no tickets: nobody within 160 blocks for two minutes and the party
+  is gone (it reached its village unseen). Their people carry `Travellers.TAG` and are turned away on load if not live,
+  as Company agents are; a family that settles is released (`Travellers.release(mob, false)`) and stays.
+- **End the whole journey when a member unloads.** Treating an unloaded drover as dead dropped cargo; keeping a partial
+  party left it walking against stale entity references. `Party.tick` asks `CompanyOps.lost` before checking deaths,
+  ends quietly through `gone`, and `Party.over` releases every member from `Travellers.LIVE`, including dead ones.
+  `Refugees.gone` cancels its pursuit too; `Pursuit.lostTrack` also checks the family, and a hunt's last capture sends
+  its agents away. `TravellerLifecycleGameTests` and `PursuitLifecycleGameTests` cover unloading and every ending.
+- **Rolled per group** like incidents, one party per group's roads at a time, only where there is a village to head for,
+  appearing out of sight (40 to 70 blocks off, 24 from anyone) on ground that ticks.
+- **Danger only with someone there.** A caravan's ambush rolls only after a player has walked with it 30 seconds;
+  refugees are pursued only once a player has met them. Rewards go to whoever was within reach at the end.
+- **A Company hunt that isn't about attention** is still a `CompanyOps.Op` (`Pursuit`, kind `PURSUIT`), so its agents
+  get the errand rules, tickets, the leftover check and the HUD for free. Its subject is the player the family asked.
+  Agents need a gap between takes and catch a player with them once a pursuit, or a huddled family went at once and the
+  penalty doubled.
+- **Recheck a capture target after the previous agent acts.** `Pursuit.tick` walks a snapshot of the family, but an
+  earlier agent can remove someone in that same tick. Skip dead or removed targets inside the loop, or both agents
+  count the same refugee as taken (`PursuitLifecycleGameTests.twoAgentsCannotTakeTheSameRefugee`).
+- **A gifted traveller isn't a guardian at work:** `GiftedWork.tick` skips anyone tagged a traveller. A power run
+  directly from a party's tick must still ask `Dampening.dampened`: `Healer.business` once bypassed the gifted-mob
+  gate and kept mending under suppression (`TravellerLifecycleGameTests.aDampenedHealerCannotMendUntilTheirGiftReturns`).
+- **Pedlars are vanilla wandering traders** with their stock replaced (`getOffers().clear()` then our `MerchantOffer`s);
+  goods that need TaCZ are only offered when `PowerWeapons.ammo` returns something.
+
+## Reusable patterns from villages that grow
+
+Villages doing well or badly (`village/Growth`), building with `Rebuild`. Built November 2026. What the player sees:
+[village-growth.md](../village-growth.md).
+
+- **Score from what is remembered and what is there:** `VillageMemory` history (recent saves and hits, the Company), live
+  guardians, kindnesses (favours done, caravans delivered: `Growth.kindness`), families taken in (`Growth.sheltered`),
+  and peaceful days. Counters live on `VillageMemory.Village` and are saved with it.
+- **Growth is player-fed: the notice board** (`village/Projects`). A village builds only what its board asked for and
+  players filled; its mood sets how much it gathers itself (`Projects.share`: half, a quarter, nothing). Board and
+  project live on `VillageMemory.Village` (`board`, `project`) and save with it. Projects are the kind's templates under
+  `village/<kind>/houses/`, found by `StructureTemplateManager.listTemplates()` and named by `Projects.plan`; what one
+  asks for is counted from its own blocks (`Projects.materials`: wood in planks, glass in panes, furniture and job
+  blocks by what they're made of, soil, plants and snow skipped). Add a material as a `Material` branch in both
+  `add` (template to need) and `worth` (item to credit).
+- **Signs are black text only.** Dark green for finished lines was tried and couldn't be read on oak planks; finished
+  lines say "Done (N)" instead. Lines are fitted to the sign's 90-pixel width with `Projects.width`, an estimate of the
+  game's font.
+- **The chest is polled and hooked.** `PlayerContainerEvent.Close` collects at once and credits the closer; the 200-tick
+  pass collects hopper deliveries. Find the village by the chest that was opened (every board's chest compared with the
+  menu's container, `CompoundContainer.contains` for a double chest), never by the player's nearest bell.
+- **Boards go up only in real worlds.** On the game-test server every test's bell would get a board on its floor within
+  ten seconds, so `Growth.tick` skips `Projects` and `discover` there (`server instanceof GameTestServer`); tests call
+  `Projects.consider` themselves. Per-bell retry maps are cleared by `VillageMemory.forget` (`Projects.forgotten`):
+  later batches reuse test positions, and a stale "looked recently" entry stopped the next test's board.
+- **Placing a template from Java: turn the blocks, not only the positions.** `StructureTemplate.processBlockInfos`
+  moves positions and runs processors but leaves every state as drawn; vanilla's `placeInWorld` then calls
+  `state.mirror(...).rotate(...)` and makes a settling pass (`Block.updateFromNeighbourShapes`). `Growth.blocks` did
+  neither, so every turned village house had stairs facing the wrong way and panes joined to nothing. It now rotates each
+  state, `Rebuild.step` re-shapes panes, fences, walls and stairs as they're placed (`Rebuild.settles`: never doors,
+  beds or tall plants, whose other half would vanish), and `Rebuild.settle` runs over a finished building.
+  `VillageUpgradeGameTests` compares a turned house with vanilla's placement and checks every pane and stair.
+- **A turned template grows from its origin, not its corner.** `spot`/`fits` check a footprint from a corner; with a
+  rotation the template's blocks run the other way from its origin, so it was built partly on unchecked ground. Convert
+  with `Growth.originFor` (the minimum of `template.getBoundingBox(settings, ZERO)`).
+- **A template's floor-layer air digs trenches.** Vanilla houses carry air round their walls in layer 0; placed over
+  grass it left a one-block groove beside the house. `Rebuild.step` never places air at or below a growth site's base.
+- **Tiers** (`Projects.tier`): beds (`PoiTypes.HOME` within the village) plus twice what it built; hamlet under 8,
+  village under 20, town from 20. Each `Plan` names the tier it needs; `Projects.grown` announces growing (never
+  shrinking), remembered in `Village.tier`.
+- **Rebuilding a home** (`Growth.upgrade`): homes are the village structure's own pieces
+  (`structureManager().getStructureWithPieceAt(bell, StructureTags.VILLAGE)`, each `PoolElementStructurePiece`'s
+  template read from `SinglePoolElement.template` by reflection, with its `toString` as a fallback) plus the ones it
+  built (`Village.homes`, recorded from each growth site's `home`), less the ones torn down (`Village.replaced`), and only
+  those still at least 60% standing. The new house faces the street the old one did: a vanilla house's front is its one
+  jigsaw's facing (`Growth.front`), ours face north. The site clears the old house top first with no neighbour updates
+  (nothing pops off; chests drop their contents), then builds (`Rebuild.replan`, `Site.clear`). **Offer only what fits
+  now** (`Growth.upgradeFits`, a dry run of the same search): the preview once posted a bigger house with a neighbour in
+  the way. If it no longer fits when everything's in, `Projects.start` builds the same design new.
+- **Our own village buildings** are blueprints exported with `to-nbt` to `structure/village/town_house_N.nbt`, drawn in
+  oak and cobblestone facing north, and recoloured per kind by `Styles` (a name swap keeping every property).
+  `VillageUpgradeGameTests.theTownHouseTemplatesMatchTheirBlueprints` fails if an export is stale.
+- **Villages are remembered when players come near** (`Growth.discover`, a bell POI within 64 blocks with villagers),
+  not only when something happens there, or a peaceful village would never get a board.
+- **New houses are the village's own vanilla templates** (`minecraft:village/<kind>/houses/<kind>_small_house_N`, the
+  kind from the biome's `HAS_VILLAGE_*` tag), read through `StructureTemplate.palettes` by reflection and
+  `processBlockInfos(..., template)` with `JigsawReplacementProcessor`, then built over two days by a growth
+  `Rebuild.Site` (`Rebuild.plan`, from `Growth.grow(level, v, id)`, which tries all four turns): lowest first, over grass and flowers, its lowest layer over the soil, never over
+  anything built. Drop the template's air where the world is already air, or it counts as work and the house finishes
+  early (it did: at "45%" it looked done). If reflection ever fails, villages simply don't build (logged once).
+- **Ground for a house:** `Growth.fits` wants natural ground within a block of level across the footprint plus a margin,
+  no fluid, and nothing but air or plants up to the house's height. Paths and farmland aren't natural.
+- **The donation chest identifies its village.** Choosing the player's nearest remembered bell missed contributions
+  whenever another village was closer. `Projects.closed` matches the menu's real chest to a board; `donationChest`
+  uses vanilla's `ChestBlock.getContainer` to collect both halves of a double chest, checking both chunks before
+  reading either. `VillageProjectGameTests` covers neighbouring bells, double chests and collection without a player.
+- **Decline is gentle and reversible:** a few panes, cobwebs and moss every two days, someone unseen leaving every three
+  (never someone gifted, never below three), and it stops once the score climbs back to steady.

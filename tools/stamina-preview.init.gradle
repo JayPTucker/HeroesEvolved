@@ -18,6 +18,7 @@ allprojects {
                 }
             }
             tasks.named('runClient') { dependsOn(tasks.named('staminaPreviewClasses')) }
+            apply from: rootProject.file('tools/preview-result.gradle')
         }
     }
 }

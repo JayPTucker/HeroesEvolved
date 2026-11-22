@@ -49,7 +49,19 @@ public final class Rebuild extends SavedData {
         final List<BlockState> states = new ArrayList<>();
         int next;
         long startAt = Long.MAX_VALUE;
+        /** A new house the village is putting up (village/Growth), not damage it is mending; its lowest layer's height. */
+        boolean growth;
+        int base = Integer.MIN_VALUE;
+        /** For a home being rebuilt bigger: how many of the first entries take the old house down (top first). */
+        int clear;
+        /** What a growth site builds, so the village can rebuild it bigger one day (village/Projects.Home), and the old
+         * home it replaces, if any. */
+        Projects.Home home, replaces;
         Site(BlockPos bell, BlockPos center) { this.bell = bell; this.center = center; }
+        public boolean growth() { return growth; }
+        public int clearing() { return clear; }
+        public Projects.Home home() { return home; }
+        public Projects.Home replaces() { return replaces; }
         public BlockPos bell() { return bell; }
         public BlockPos center() { return center; }
         public int size() { return positions.size(); }
@@ -84,6 +96,42 @@ public final class Rebuild extends SavedData {
         // Lowest first, and from the middle out, so it goes up from the ground as it was built.
         found.sort(Comparator.<BlockPos>comparingInt(BlockPos::getY).thenComparingDouble(p -> p.distSqr(center)));
         for (BlockPos p : found) { s.positions.add(p); s.states.add(level.getBlockState(p)); }
+        Rebuild data = get(level);
+        data.sites.add(s);
+        data.setDirty();
+        return s;
+    }
+
+    /**
+     * A new house to put up at {@code center} (village/Growth): {@code blocks} in the order they go up, its lowest layer at
+     * {@code base} (which may replace the soil it stands on). It starts the next morning ({@link #begin}).
+     */
+    public static Site plan(ServerLevel level, BlockPos bell, BlockPos center, int base, List<BlockPos> positions, List<BlockState> states) {
+        Site s = new Site(bell.immutable(), center.immutable());
+        s.growth = true;
+        s.base = base;
+        s.positions.addAll(positions);
+        s.states.addAll(states);
+        Rebuild data = get(level);
+        data.sites.add(s);
+        data.setDirty();
+        return s;
+    }
+
+    /**
+     * A home rebuilt bigger: {@code clear} (the old house, top first, each to the state given: air, or ground where its
+     * floor was) comes down, then {@code positions} go up as {@link #plan} builds them.
+     */
+    public static Site replan(ServerLevel level, BlockPos bell, BlockPos center, int base, List<BlockPos> clear, List<BlockState> cleared,
+                              List<BlockPos> positions, List<BlockState> states) {
+        Site s = new Site(bell.immutable(), center.immutable());
+        s.growth = true;
+        s.base = base;
+        s.clear = clear.size();
+        s.positions.addAll(clear);
+        s.states.addAll(cleared);
+        s.positions.addAll(positions);
+        s.states.addAll(states);
         Rebuild data = get(level);
         data.sites.add(s);
         data.setDirty();
@@ -132,8 +180,32 @@ public final class Rebuild extends SavedData {
             s.next++;
             if (!level.hasChunkAt(p)) continue;
             BlockState now = level.getBlockState(p);
-            if (!now.isAir() && !(now.canBeReplaced() && !now.getFluidState().isEmpty()) && !scorched(now)) continue;
+            if (s.next <= s.clear) {
+                // Taking the old house down: no neighbour updates, so nothing pops off as items while it comes apart;
+                // what was in its chests is left on the ground.
+                if (now.isAir() && state.isAir() || now == state || now.getDestroySpeed(level, p) < 0) continue;
+                if (level.getBlockEntity(p) instanceof net.minecraft.world.Container box) net.minecraft.world.Containers.dropContents(level, p, box);
+                level.removeBlockEntity(p);
+                level.setBlock(p, state, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
+                placed++;
+                if (placed == 1 && level.random.nextInt(3) == 0)
+                    level.playSound(null, p, now.getSoundType().getBreakSound(), SoundSource.BLOCKS, 0.8F, 0.9F);
+                continue;
+            }
+            if (s.growth) {
+                // A new house goes over grass and flowers, and its lowest layer over the soil; never over anything built.
+                boolean soil = p.getY() == s.base && Growth.natural(now);
+                if (!now.isAir() && !now.canBeReplaced() && !soil) continue;
+                if (state.isAir() && now.isAir()) continue;
+                // A template's air in its floor layer (yards, gaps round the walls) would dig trenches in the ground.
+                if (state.isAir() && p.getY() <= s.base) continue;
+            } else if (!now.isAir() && !(now.canBeReplaced() && !now.getFluidState().isEmpty()) && !scorched(now)) continue;
             level.setBlock(p, state, Block.UPDATE_ALL);
+            // Panes, fences, walls and stairs join to what is already there; what comes later joins them in turn.
+            if (s.growth && settles(state)) {
+                BlockState joined = Block.updateFromNeighbourShapes(state, level, p);
+                if (joined != state) level.setBlock(p, joined, Block.UPDATE_CLIENTS);
+            }
             placed++;
             if (placed == 1 && level.random.nextInt(3) == 0)
                 level.playSound(null, p, state.getSoundType().getPlaceSound(), SoundSource.BLOCKS, 0.8F, 0.9F);
@@ -175,7 +247,34 @@ public final class Rebuild extends SavedData {
         }
     }
 
+    /** Blocks whose shape comes from their neighbours, and safe to re-shape alone (not doors, beds or tall plants). */
+    public static boolean settles(BlockState s) {
+        var b = s.getBlock();
+        return b instanceof net.minecraft.world.level.block.CrossCollisionBlock || b instanceof net.minecraft.world.level.block.WallBlock
+                || b instanceof net.minecraft.world.level.block.StairBlock || b instanceof net.minecraft.world.level.block.FenceGateBlock;
+    }
+
+    /** Vanilla's settling pass over a finished building: every pane, fence, wall and stair joins what is round it. */
+    public static int settle(ServerLevel level, List<BlockPos> positions) {
+        int changed = 0;
+        for (BlockPos p : positions) {
+            if (!level.hasChunkAt(p)) continue;
+            BlockState now = level.getBlockState(p);
+            if (!settles(now)) continue;
+            BlockState joined = Block.updateFromNeighbourShapes(now, level, p);
+            if (joined != now) { level.setBlock(p, joined, Block.UPDATE_CLIENTS); changed++; }
+        }
+        return changed;
+    }
+
     private static void finish(ServerLevel level, Rebuild data, Site s) {
+        settle(level, s.positions);
+        if (s.growth) {
+            data.sites.remove(s);
+            data.setDirty();
+            Growth.built(level, s);
+            return;
+        }
         clearRubble(level, s);
         data.sites.remove(s);
         data.setDirty();
@@ -207,8 +306,13 @@ public final class Rebuild extends SavedData {
             t.putLong("bell", s.bell.asLong());
             t.putLong("center", s.center.asLong());
             t.putInt("radius", s.radius);
+            t.putBoolean("growth", s.growth);
+            t.putInt("base", s.base);
             t.putInt("next", s.next);
             t.putLong("startAt", s.startAt);
+            t.putInt("clear", s.clear);
+            if (s.home != null) t.put("home", s.home.save());
+            if (s.replaces != null) t.put("replaces", s.replaces.save());
             // A palette of states and, for each block, its position and palette index.
             List<BlockState> palette = new ArrayList<>();
             long[] positions = new long[s.positions.size()];
@@ -238,7 +342,12 @@ public final class Rebuild extends SavedData {
             Site s = new Site(BlockPos.of(t.getLong("bell")), BlockPos.of(t.getLong("center")));
             s.next = t.getInt("next");
             s.radius = t.getInt("radius");
+            s.growth = t.getBoolean("growth");
+            s.base = t.contains("base") ? t.getInt("base") : Integer.MIN_VALUE;
             s.startAt = t.getLong("startAt");
+            s.clear = t.getInt("clear");
+            if (t.contains("home")) s.home = Projects.Home.load(t.getCompound("home"));
+            if (t.contains("replaces")) s.replaces = Projects.Home.load(t.getCompound("replaces"));
             List<BlockState> palette = new ArrayList<>();
             for (Tag p : t.getList("palette", Tag.TAG_COMPOUND)) palette.add(NbtUtils.readBlockState(blocks, (CompoundTag) p));
             long[] positions = t.getLongArray("positions");

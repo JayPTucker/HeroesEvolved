@@ -19,8 +19,28 @@ public record AdminStatePayload(
         int maximumLevel,
         List<String> powers,
         List<PlayerEntry> players,
-        World world
+        World world,
+        List<EventEntry> events,
+        List<String> diagnostics,
+        String feedback
 ) implements CustomPacketPayload {
+    public AdminStatePayload(boolean openScreen, boolean eclipseActive, int maximumLevel, List<String> powers,
+                             List<PlayerEntry> players, World world) {
+        this(openScreen, eclipseActive, maximumLevel, powers, players, world, List.of(), List.of(), "");
+    }
+
+    /** Server-owned catalogue: every event has explicit scope and a matching cancellation path. */
+    public record EventEntry(String id, String title, boolean story, String scope, String status,
+                             boolean active, boolean canStart, List<String> starts) {
+        public static final StreamCodec<RegistryFriendlyByteBuf, EventEntry> STREAM_CODEC = StreamCodec.of(
+                (b, e) -> {
+                    b.writeUtf(e.id(), 64); b.writeUtf(e.title(), 64); b.writeBoolean(e.story());
+                    b.writeUtf(e.scope(), 128); b.writeUtf(e.status(), 1024);
+                    b.writeBoolean(e.active()); b.writeBoolean(e.canStart());
+                    b.writeCollection(e.starts(), (buf, s) -> buf.writeUtf(s, 64));
+                }, b -> new EventEntry(b.readUtf(64), b.readUtf(64), b.readBoolean(), b.readUtf(128), b.readUtf(1024),
+                        b.readBoolean(), b.readBoolean(), b.readList(buf -> buf.readUtf(64))));
+    }
     /**
      * What is going on in the world, one line each, for the events tab. {@code flags} says which of the bosses and
      * events are running, so the menu can offer to end them.
@@ -103,21 +123,19 @@ public record AdminStatePayload(
     public static final StreamCodec<
             RegistryFriendlyByteBuf,
             AdminStatePayload
-    > STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.BOOL,
-            AdminStatePayload::openScreen,
-            ByteBufCodecs.BOOL,
-            AdminStatePayload::eclipseActive,
-            ByteBufCodecs.VAR_INT,
-            AdminStatePayload::maximumLevel,
-            ByteBufCodecs.stringUtf8(256).apply(ByteBufCodecs.list(64)),
-            AdminStatePayload::powers,
-            PlayerEntry.STREAM_CODEC.apply(ByteBufCodecs.list(512)),
-            AdminStatePayload::players,
-            World.STREAM_CODEC,
-            AdminStatePayload::world,
-            AdminStatePayload::new
-    );
+    > STREAM_CODEC = StreamCodec.of((b, s) -> {
+        b.writeBoolean(s.openScreen()); b.writeBoolean(s.eclipseActive()); b.writeVarInt(s.maximumLevel());
+        ByteBufCodecs.stringUtf8(256).apply(ByteBufCodecs.list(64)).encode(b, s.powers());
+        PlayerEntry.STREAM_CODEC.apply(ByteBufCodecs.list(512)).encode(b, s.players());
+        World.STREAM_CODEC.encode(b, s.world());
+        EventEntry.STREAM_CODEC.apply(ByteBufCodecs.list(64)).encode(b, s.events());
+        ByteBufCodecs.stringUtf8(1024).apply(ByteBufCodecs.list(64)).encode(b, s.diagnostics());
+        b.writeUtf(s.feedback(), 1024);
+    }, b -> new AdminStatePayload(b.readBoolean(), b.readBoolean(), b.readVarInt(),
+            ByteBufCodecs.stringUtf8(256).apply(ByteBufCodecs.list(64)).decode(b),
+            PlayerEntry.STREAM_CODEC.apply(ByteBufCodecs.list(512)).decode(b), World.STREAM_CODEC.decode(b),
+            EventEntry.STREAM_CODEC.apply(ByteBufCodecs.list(64)).decode(b),
+            ByteBufCodecs.stringUtf8(1024).apply(ByteBufCodecs.list(64)).decode(b), b.readUtf(1024)));
 
     @Override
     public Type<? extends CustomPacketPayload> type() {

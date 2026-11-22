@@ -205,6 +205,18 @@ public final class VillageIncidents {
     /** Villages waiting to load (tests). */
     public static int pending() { return PENDING.size(); }
 
+    public static int pending(Kind kind) {
+        return (int) PENDING.stream().filter(p -> p.kind == kind).count();
+    }
+
+    /** Cancels queued starts and releases their loading tickets before they can become live events. */
+    public static int cancel(Kind... kinds) {
+        var selected = java.util.Set.of(kinds);
+        int count = 0;
+        for (Pending p : List.copyOf(PENDING)) if (selected.contains(p.kind)) { drop(p); count++; }
+        return count;
+    }
+
     // ------------------------------------------------------------------
     // The Eclipse stirs gifts
     // ------------------------------------------------------------------

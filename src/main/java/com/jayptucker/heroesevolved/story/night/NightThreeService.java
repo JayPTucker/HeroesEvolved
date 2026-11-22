@@ -179,11 +179,16 @@ public final class NightThreeService {
     // ------------------------------------------------------------------
 
     public static boolean enter(ServerPlayer player) {
+        return enter(player, false);
+    }
+
+    /** Operator-menu entry; the caller checks the requesting operator, who may be managing another player. */
+    public static boolean enter(ServerPlayer player, boolean operator) {
         MinecraftServer server = player.getServer();
         ServerLevel night = server.getLevel(NightThreeBunker.DIMENSION);
         if (night == null || !PowerRules.canAct(player) || player.isPassenger() || player.isSpectator()
                 || inNight(player) || TimeIntroService.isCity(player.level()) || FacilityService.atSite(player)) return false;
-        if (!unlocked(player)) {
+        if (!operator && !unlocked(player)) {
             tell(player, "That night isn't open to you yet. Live to see 6:15 on the avenue first.");
             return false;
         }

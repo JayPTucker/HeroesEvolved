@@ -19,7 +19,8 @@ Each player has a Company attention from 0 to 100, shown as a ring under the abi
 | 50 to 79 | **Watched**: takes a gifted villager from a village near you | amber, "WATCHED" |
 | 80 to 100 | **Hunted**: raids your home at night with a Suppressor | red, "HUNTED" |
 
-While an operation is under way the ring says so ("ASKING", "CONVOY", "RAID"). Crossing into each band, and falling
+While an operation is under way the ring says so ("ASKING", "CONVOY", "RAID", or "CHASE" while agents hunt refugees you
+met on the road: [Travellers](travellers.md)). Crossing into each band, and falling
 back below Noticed, gets one line in chat.
 
 ### What raises it
@@ -33,6 +34,8 @@ back below Noticed, gets one line in chat.
 | An investigator getting away with what he learnt | +10 |
 | Killing an investigator | +20 |
 | Freeing a convoy's prisoner | +10 (on top of ending the village's trouble) |
+
+What your powers leave behind near a village is found later, even where nobody saw it: see [Power traces](power-traces.md).
 
 **Seen** means a villager who is awake, within 32 blocks and has a clear line to you. Nothing counts if you are hidden
 (Invisibility's cloak, or invisible), and nothing counts outside the overworld. Small moves (anything under 30 stamina),

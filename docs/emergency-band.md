@@ -158,4 +158,6 @@ a restart its village isn't held loaded again until a player goes there, and its
 - `/heroesevolved village turn|guardian|wake` wakes the nearest grown villager's gift evil, good, or by the usual roll.
 - `/heroesevolved village calm` ends every renegade's siege (the renegades stay).
 - `/heroesevolved village memory` and `village forget`: what the nearest village remembers, and making it forget
+- `/heroesevolved village project board|fill|next|rebuild`: the nearest village's notice board now, everything its project
+  needs, or its next project ([Villages that grow](village-growth.md))
   ([Lasting consequences](lasting-consequences.md)).

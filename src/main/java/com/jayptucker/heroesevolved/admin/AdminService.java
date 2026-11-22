@@ -16,8 +16,6 @@ import com.jayptucker.heroesevolved.progression.MasteryService;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionData;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.progression.PowerLevels;
-import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -26,11 +24,7 @@ import com.jayptucker.heroesevolved.radio.EmergencyBand;
 import com.jayptucker.heroesevolved.story.sylar.CollectionArena;
 import com.jayptucker.heroesevolved.story.sylar.SylarCommands;
 import com.jayptucker.heroesevolved.story.sylar.SylarData;
-import com.jayptucker.heroesevolved.story.sylar.SylarEvents;
 import com.jayptucker.heroesevolved.village.VillagerMeltdown;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.entity.ai.village.poi.PoiManager;
-import net.minecraft.world.entity.ai.village.poi.PoiTypes;
 
 import java.util.Comparator;
 import java.util.List;
@@ -55,7 +49,7 @@ public final class AdminService {
     }
 
     public static void open(ServerPlayer admin) {
-        sendState(admin, true);
+        sendState(admin, true, admin, "");
     }
 
     public static void handle(ServerPlayer admin, AdminActionPayload request) {
@@ -75,7 +69,8 @@ public final class AdminService {
         AdminActionPayload.Action action = request.action();
         if (action == AdminActionPayload.Action.OPEN
                 || action == AdminActionPayload.Action.REFRESH) {
-            sendState(admin, action == AdminActionPayload.Action.OPEN);
+            sendState(admin, action == AdminActionPayload.Action.OPEN,
+                    server.getPlayerList().getPlayer(request.target()), "");
             return;
         }
 
@@ -87,20 +82,17 @@ public final class AdminService {
         HeroesEvolved.LOGGER.info("[Admin] {} -> {} on {}: {}",
                 admin.getName().getString(), action,
                 target == null ? "-" : target.getName().getString(), result);
-        admin.displayClientMessage(Component.literal(result)
-                .withStyle(ChatFormatting.GOLD), true);
-        sendState(admin, false);
+        sendState(admin, false, target, result);
     }
 
     private static boolean needsTarget(AdminActionPayload.Action action) {
         return switch (action) {
-            case START_ECLIPSE, STOP_ECLIPSE, ECLIPSE_TOTALITY, SYLAR_DISMISS, MELTDOWN_CANCEL, SKIP_TO_POD -> false;
+            case START_ECLIPSE, STOP_ECLIPSE, ECLIPSE_TOTALITY, SYLAR_DISMISS, MELTDOWN_CANCEL, SKIP_TO_POD,
+                    EVENT_START, EVENT_CANCEL, CANCEL_ALL_EVENTS -> false;
             default -> true;
         };
     }
 
-    /** Raids and meltdowns look for a village this far from the chosen player. */
-    private static final int VILLAGE_REACH = 64;
     /** The longest and shortest meltdown the menu starts, in seconds. */
     private static final int MELTDOWN_MIN = 5, MELTDOWN_MAX = 600;
 
@@ -111,6 +103,28 @@ public final class AdminService {
     ) {
         String name = target == null ? "" : target.getName().getString();
         return switch (request.action()) {
+            case EVENT_START -> AdminEvents.start(admin.getServer(), target, request.argument(), request.value());
+            case EVENT_CANCEL -> AdminEvents.cancel(admin.getServer(), target, request.argument());
+            case CANCEL_ALL_EVENTS -> {
+                for (var event : AdminEvents.describe(admin.getServer(), target))
+                    if (!event.id().equals("prologue") && !event.id().equals("raid")) AdminEvents.cancel(admin.getServer(), target, event.id());
+                for (var player : List.copyOf(admin.getServer().getPlayerList().getPlayers())) {
+                    com.jayptucker.heroesevolved.expansion.FacilityService.leave(player);
+                    com.jayptucker.heroesevolved.intro.PowerIntroService.forget(player);
+                    AdminEvents.cancel(admin.getServer(), player, "prologue");
+                }
+                AdminEvents.cancelAllRaids(admin.getServer());
+                com.jayptucker.heroesevolved.time.intro.TimeIntroService.shutdown(admin.getServer());
+                yield "Cancelled world events, queued incidents and active stories. Surviving mobs and existing world damage remain.";
+            }
+            case SET_ATTENTION -> {
+                com.jayptucker.heroesevolved.company.CompanyAttention.set(target, Math.clamp(request.value(), 0, 100));
+                yield "Set " + name + "'s Company attention to " + Math.clamp(request.value(), 0, 100) + ".";
+            }
+            case CANCEL_INTRO -> {
+                com.jayptucker.heroesevolved.intro.PowerIntroService.forget(target);
+                yield "Cancelled " + name + "'s awakening. Time visions have their own Story controls.";
+            }
             case GIVE_POWER -> givePower(target, request.argument(), false);
             case GIVE_DORMANT_POWER -> givePower(target, request.argument(), true);
             case TOGGLE_GOD_MODE -> {
@@ -123,16 +137,11 @@ public final class AdminService {
                 target.teleportTo(admin.serverLevel(), admin.getX(), admin.getY(), admin.getZ(), admin.getYRot(), admin.getXRot());
                 yield "Brought " + name + " here.";
             }
-            case INCIDENT_AWAKENING -> incident(target, com.jayptucker.heroesevolved.village.VillageIncidents.Kind.AWAKENING);
-            case INCIDENT_RENEGADE -> incident(target, com.jayptucker.heroesevolved.village.VillageIncidents.Kind.RENEGADE);
-            case INCIDENT_GUARDIAN -> incident(target, com.jayptucker.heroesevolved.village.VillageIncidents.Kind.GUARDIAN);
-            case INCIDENT_MELTDOWN -> incident(target, com.jayptucker.heroesevolved.village.VillageIncidents.Kind.MELTDOWN);
-            case RAID_STOP -> {
-                var raid = target.serverLevel().getRaidAt(target.blockPosition());
-                if (raid == null || !raid.isActive()) yield "No active raid at " + name + "'s position.";
-                raid.stop();
-                yield "Stopped the raid at " + name + "'s position. Surviving raiders remain.";
-            }
+            case INCIDENT_AWAKENING -> AdminEvents.incident(target, com.jayptucker.heroesevolved.village.VillageIncidents.Kind.AWAKENING);
+            case INCIDENT_RENEGADE -> AdminEvents.incident(target, com.jayptucker.heroesevolved.village.VillageIncidents.Kind.RENEGADE);
+            case INCIDENT_GUARDIAN -> AdminEvents.incident(target, com.jayptucker.heroesevolved.village.VillageIncidents.Kind.GUARDIAN);
+            case INCIDENT_MELTDOWN -> AdminEvents.incident(target, com.jayptucker.heroesevolved.village.VillageIncidents.Kind.MELTDOWN);
+            case RAID_STOP -> AdminEvents.cancel(admin.getServer(), target, "raid");
             case REMOVE_POWER -> PlayerAbilityService.removeAssignedAbility(target)
                     ? "Removed " + name + "'s power."
                     : name + " has no power to remove.";
@@ -205,11 +214,8 @@ public final class AdminService {
                         ? "A villager near " + name + " has started to glow: " + seconds + " seconds."
                         : "No grown villager within " + VillagerMeltdown.NEAR + " blocks of " + name + ".";
             }
-            case MELTDOWN_CANCEL -> {
-                int ended = VillagerMeltdown.cancelAll();
-                yield ended == 0 ? "No meltdown is under way." : "Ended " + ended + " meltdown" + (ended == 1 ? "." : "s.");
-            }
-            case RAID_START -> raid(target);
+            case MELTDOWN_CANCEL -> AdminEvents.cancel(admin.getServer(), target, "meltdown");
+            case RAID_START -> AdminEvents.start(admin.getServer(), target, "raid", 0);
             case GIVE_RADIO -> {
                 var radio = EmergencyBand.radio();
                 if (radio.isEmpty()) yield "The radio mod couldn't make a radio.";
@@ -230,27 +236,6 @@ public final class AdminService {
             };
             case OPEN, REFRESH -> "";
         };
-    }
-
-    /** A vanilla raid on the village nearest the player, as if they had walked in with Bad Omen. */
-    private static String raid(ServerPlayer target) {
-        var level = target.serverLevel();
-        BlockPos bell = level.getPoiManager().findClosest(poi -> poi.is(PoiTypes.MEETING), target.blockPosition(),
-                VILLAGE_REACH, PoiManager.Occupancy.ANY).orElse(null);
-        if (bell == null) return "No village within " + VILLAGE_REACH + " blocks of " + target.getName().getString() + ".";
-        if (level.getRaidAt(bell) != null) return "That village is already being raided.";
-        var raid = level.getRaids().createOrExtendRaid(target, bell);
-        return raid != null ? "A raid is coming for the village at " + bell.getX() + ", " + bell.getZ() + "."
-                : "The raid couldn't start there (Peaceful, or raids are off).";
-    }
-
-    private static String incident(ServerPlayer target, com.jayptucker.heroesevolved.village.VillageIncidents.Kind kind) {
-        var level = target.serverLevel();
-        int range = com.jayptucker.heroesevolved.config.HeroesEvolvedConfig.COMMON.villageIncidentRange.get();
-        BlockPos village = com.jayptucker.heroesevolved.village.VillageIncidents.find(level, target.blockPosition(), range, level.random);
-        if (village == null) return "No village within " + range + " blocks of " + target.getName().getString() + ".";
-        com.jayptucker.heroesevolved.village.VillageIncidents.requestAt(level, village, kind);
-        return "Queued " + kind.name().toLowerCase(java.util.Locale.ROOT) + " at " + village.getX() + ", " + village.getZ() + "; starts after the village loads.";
     }
 
     private static String givePower(ServerPlayer target, String powerName, boolean dormant) {
@@ -314,7 +299,8 @@ public final class AdminService {
         PlayerPowerSyncService.sync(target);
     }
 
-    private static void sendState(ServerPlayer admin, boolean openScreen) {
+    private static void sendState(ServerPlayer admin, boolean openScreen, ServerPlayer target, String feedback) {
+        if (!isAdmin(admin)) return;
         MinecraftServer server = admin.getServer();
         if (server == null) {
             return;
@@ -340,7 +326,10 @@ public final class AdminService {
                 maximumLevel,
                 powers,
                 players,
-                world(server)
+                world(server),
+                AdminEvents.describe(server, target),
+                AdminEvents.diagnostics(server, target),
+                feedback
         ));
     }
 
