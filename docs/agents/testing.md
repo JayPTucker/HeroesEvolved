@@ -206,3 +206,4 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 | Every class ability casting alone | `ClassAbilityGameTests.everyClassAbilityCasts` |
 | One generated test per power from a table | `AmplificationGameTests.BOOSTED` (a `@GameTestGenerator`; see [powers/amplification.md](powers/amplification.md)) |
 | A real player that area searches can find | `AmplificationGameTests.findable` (`addNewPlayer`, then `removePlayerImmediately`) |
+| Something that needs a custom dimension | the game-test server loads only the vanilla dimensions, so `TemporalSnapshotService.beginSnapshot` refuses there. Plant a map entry instead (`WorldCloseGameTests`) |

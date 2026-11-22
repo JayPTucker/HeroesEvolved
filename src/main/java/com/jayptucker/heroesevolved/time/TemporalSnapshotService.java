@@ -149,6 +149,13 @@ public final class TemporalSnapshotService {
     }
 
     /**
+     * The world is closing. A build holds this world's levels, and in singleplayer its owner comes back with the same id,
+     * so a build left here would copy from a stopped world and hang the next one. The player's data still says "forming",
+     * so {@link #resumeInterruptedBuild} starts it again the next time they log in to this world.
+     */
+    public static void worldClosing() { ACTIVE_BUILDS.clear(); }
+
+    /**
      * A snapshot interrupted by its owner logging out or a server restart
      * is still marked as forming. Copy it again so the owner is not left
      * with a cooldown and a Past that can never be entered.

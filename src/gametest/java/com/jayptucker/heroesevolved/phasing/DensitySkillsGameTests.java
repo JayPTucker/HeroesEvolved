@@ -291,7 +291,7 @@ public final class DensitySkillsGameTests {
         var p = bender(h, new BlockPos(5, 2, 5), DensitySkills.SURF);
         try {
             h.assertTrue(Earthworks.surf(p, 5) && Earthworks.surfing(p), "The ground carries you");
-            h.assertTrue(p.hasEffect(MobEffects.MOVEMENT_SPEED) && p.getAttributeValue(Attributes.STEP_HEIGHT) >= 1.5, "Fast, and a block at a step");
+            h.assertTrue(p.getAttributeValue(Attributes.MOVEMENT_SPEED) > .15 && p.getAttributeValue(Attributes.STEP_HEIGHT) >= 1.5, "Fast, and a block at a step");
             h.succeed();
         } finally { done(p); }
     }
@@ -320,6 +320,101 @@ public final class DensitySkillsGameTests {
                     h.succeed();
                 } finally { done(p, attacker, t); }
             });
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "density.fixes.surf")
+    public static void endingEarthSurfLeavesYourOwnSpeedAlone(GameTestHelper h) {
+        floor(h, Blocks.STONE);
+        var p = bender(h, new BlockPos(5, 2, 5), DensitySkills.SURF);
+        try {
+            p.addEffect(new net.minecraft.world.effect.MobEffectInstance(MobEffects.MOVEMENT_SPEED, 400, 1));
+            double own = p.getAttributeValue(Attributes.MOVEMENT_SPEED);
+            h.assertTrue(Earthworks.surf(p, 5) && p.getAttributeValue(Attributes.MOVEMENT_SPEED) > own, "The surf adds to your speed");
+            h.assertTrue(Earthworks.surf(p, 5) && !Earthworks.surfing(p), "Pressed again, the surf ends");
+            h.assertTrue(p.hasEffect(MobEffects.MOVEMENT_SPEED), "Your own Speed effect is still there");
+            h.assertTrue(Math.abs(p.getAttributeValue(Attributes.MOVEMENT_SPEED) - own) < 1.0E-6, "And only the surf's speed is gone");
+            h.succeed();
+        } finally { done(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "density.fixes.stance", timeoutTicks = 60)
+    public static void aLentStanceEndsAndAChosenOneStays(GameTestHelper h) {
+        floor(h, Blocks.STONE);
+        var lent = bender(h, new BlockPos(3, 2, 5), DensitySkills.HARDEN);
+        var chosen = bender(h, new BlockPos(8, 2, 5), DensitySkills.HARDEN);
+        try {
+            DensityService.setNotch(lent, DensityService.FULL_DENSE, 10);
+            DensityService.stanceKey(chosen, false);
+            DensityService.setNotch(chosen, DensityService.FULL_DENSE, 10);
+            h.assertTrue(DensityService.stance(lent) && DensityService.stance(chosen), "Both are in Horse Stance");
+        } catch (RuntimeException e) { done(lent); done(chosen); throw e; }
+        h.runAfterDelay(14, () -> {
+            try {
+                h.assertTrue(!DensityService.stance(lent), "A stance a move lent you ends with the move");
+                h.assertTrue(DensityService.stance(chosen), "A stance you chose stays yours");
+                h.succeed();
+            } finally { done(lent); done(chosen); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "density.fixes.boss.glove", timeoutTicks = 80, skyAccess = true)
+    public static void aBossTakesTheGauntletButIsNotGripped(GameTestHelper h) {
+        floor(h, Blocks.STONE);
+        var p = bender(h, new BlockPos(5, 2, 2), DensitySkills.GAUNTLET);
+        var boss = mob(h, EntityType.WITHER, new BlockPos(5, 2, 8));
+        Vec3 start = boss.position();
+        long[] hitAt = {-1};
+        try {
+            look(p, boss);
+            h.assertTrue(Stones.gauntlet(p, 5), "The glove flies");
+        } catch (RuntimeException e) { done(p, boss); throw e; }
+        h.succeedWhen(() -> {
+            if (hitAt[0] < 0) {
+                h.assertTrue(boss.getHealth() < 100, "The glove lands");
+                hitAt[0] = h.getTick();
+            }
+            h.assertTrue(h.getTick() >= hitAt[0] + 6, "Give a grip time to pull");
+            h.assertTrue(!Stones.pinned(boss), "A boss is never pinned");
+            h.assertTrue(boss.position().subtract(start).horizontalDistance() < 1, "Or dragged to the bender");
+            done(p, boss);
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "density.fixes.boss.mountain", timeoutTicks = 140, skyAccess = true)
+    public static void theRisingMountainLeavesABossOnTheGround(GameTestHelper h) {
+        floor(h, Blocks.STONE);
+        var p = bender(h, new BlockPos(1, 2, 1), DensitySkills.GAUNTLET);
+        var boss = mob(h, EntityType.WITHER, new BlockPos(7, 2, 7));
+        double ground = boss.getY();
+        try {
+            p.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, Vec3.atCenterOf(h.absolutePos(new BlockPos(7, 1, 7))));
+            h.assertTrue(Earthworks.mountain(p, 5), "The ground cracks in a ring");
+        } catch (RuntimeException e) { done(p, boss); throw e; }
+        h.runAfterDelay(EarthGeometry.MOUNTAIN_WARN + 20, () -> {
+            try {
+                h.assertTrue(Earthworks.raising(p), "The mountain is up");
+                h.assertTrue(Math.abs(boss.getY() - ground) < .6, "The boss did not ride it: " + (boss.getY() - ground));
+                h.succeed();
+            } finally { done(p, boss); }
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "density.fixes.boss.barrage", timeoutTicks = 60, skyAccess = true)
+    public static void aPillarBarrageHurtsABossWithoutThrowingIt(GameTestHelper h) {
+        floor(h, Blocks.STONE);
+        var p = bender(h, new BlockPos(1, 2, 1), DensitySkills.GAUNTLET);
+        var boss = mob(h, EntityType.WITHER, new BlockPos(7, 2, 7));
+        double ground = boss.getY();
+        try {
+            h.assertTrue(Earthworks.barrage(p, boss.position(), 5, 3), "The columns erupt");
+            h.assertTrue(boss.getHealth() < 100, "The boss is hurt");
+        } catch (RuntimeException e) { done(p, boss); throw e; }
+        h.runAfterDelay(14, () -> {
+            try {
+                h.assertTrue(Math.abs(boss.getY() - ground) < .6, "But not thrown: " + (boss.getY() - ground));
+                h.succeed();
+            } finally { done(p, boss); }
         });
     }
 }

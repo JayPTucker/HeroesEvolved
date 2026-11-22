@@ -78,6 +78,7 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 | Voice chat or chat as someone | `MindVoice`, `ServerChatEvent` | [powers/telepathy.md](powers/telepathy.md), [powers/shapeshifting.md](powers/shapeshifting.md) |
 | An out-of-body view | a spectator on a leash, with a double | [powers/vibe.md](powers/vibe.md) (visions) |
 | State that must not outlive the power | clear it after the change, not before | [awakenings.md](awakenings.md) (`HydroService.powerChanged`) |
+| A static list that holds a `ServerLevel` | clear it on `ServerStoppingEvent`, not only on logout. A singleplayer player comes back with the same id, and the next world's server thread would tick the entry and wait forever on the closed world's chunks | `QuakeEvents`, `TemporalSnapshotEvents` |
 | A finisher | `Takedowns.Finisher` | [finishers.md](finishers.md) |
 | One power to change every other power's numbers | each power asks `Amplification.surged` where it decides its own number; shared bonuses in shared paths (`AbilityRanks`, `StaminaDrain`) | [powers/amplification.md](powers/amplification.md) |
 | A status every client can draw on someone else | its own payload, sent on change and on `StartTracking` (vanilla syncs only your own effects) | [powers/amplification.md](powers/amplification.md) (`SuperchargedPayload`) |

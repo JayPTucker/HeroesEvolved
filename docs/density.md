@@ -45,7 +45,7 @@ tiger-crane tradition (Toph fights in Southern Praying Mantis instead). Five of 
 | H | 1 (Level 1) | **Rock Strike** | A stomp tears a stone up out of the ground in front of you and it hangs at your chest. **Hold the key** and it grows into a boulder over most of a second. **Press again** to punch it at what you look at (it allows for the drop and finds an enemy in sight): 6 + level damage for a stone, nearly twice that for a boulder, plus a throw. The punch is free and waits on no cooldown. Unthrown, it drops after a couple of seconds. A boulder rolls on through the first body it hits. |
 | Z | 2 (Level 3) | **Earth Shackle** | Stone climbs the legs of the enemy you look at (within 8 blocks, standing on earth) and holds it in the ground for 3 + level seconds, half again on mud or clay or if it is Soaked. It can still fight but takes 50% more damage, and struggles free sooner if it fights the ground. **Press again** at it: **Crush**, 4 + level damage and a second and a half longer, free. |
 | X | 3 (Level 6) | **Pillar** | A column of stone punches out of the earth you aim at (within 20 blocks), out of a floor or out of a wall, a block a tick (looking at a foe, it rises under the foe's feet): 3 blocks (4 from tier 3, 5 at tier 5), 4 + level damage to what it hits, and it throws it. Aimed at your own feet, it throws **you** up, and the landing hurts nothing. **Shift + X: Wall.** A wall five wide and three high rises from the ground two blocks in front of you in three ticks, and stands ten seconds. Shots stop on it. **Press X again facing it** (free): the **shove** drives it forward eight blocks as a battering ram, climbing a step or dropping with the ground, 5 + level to everything it hits. |
-| V | 5 (Level 15) | **Rising Mountain** | The ground cracks in a ring where you aim (up to 24 blocks, radius 3.5; looking at a foe, centred under it) while a jade arc fills round it like a dial: three quarters of a second to get off it. Then the disc tears free and rises up to seven blocks **while you hold the key**, with everyone standing on it. Let go (or hold it two and a half seconds at the top) and it **slams** down: 8 + 2 per level to everyone on it, slowed, and a shockwave round the rim for everyone near. |
+| V | 5 (Level 15) | **Rising Mountain** | The ground cracks in a ring where you aim (up to 24 blocks, radius 3.5; looking at a foe, centred under it) while a jade arc fills round it like a dial: three quarters of a second to get off it. Then the disc tears free and rises up to seven blocks **while you hold the key**, with everyone standing on it. Let go (or hold it two and a half seconds at the top) and it **slams** down: 8 + 2 per level to everyone on it, slowed, and a shockwave round the rim for everyone near. Bosses stay on the ground: they take the slam but never ride the disc. |
 
 **Evolved trial:** move 2,000 blocks of earth: every block a rock flies (a quarter of it), every block of a pillar or wall
 raised or shoved, every block tunnelled or surfed.
@@ -78,7 +78,7 @@ so anything already bought stays bought (each slot now holds its earthbending no
 | Node | Kind | What it does |
 | --- | --- | --- |
 | **Stacked Stones** | Passive | Rock Strike lifts three stone discs instead of one stone. Each press throws the next disc, free, for a little over half a stone's damage. |
-| **Earth Gauntlet** | Active | A glove of stone flies at the enemy you look at within 18 blocks: 4 + level, and it grabs them. With a wall within four blocks behind them it **pins** them to it for two and a half seconds; otherwise it **drags** them back to you. |
+| **Earth Gauntlet** | Active | A glove of stone flies at the enemy you look at within 18 blocks: 4 + level, and it grabs them. With a wall within four blocks behind them it **pins** them to it for two and a half seconds; otherwise it **drags** them back to you. A boss takes the hit, but the glove breaks on it instead of gripping it. |
 | **Know Your Stone** | Passive | Sand blinds for two seconds; gravel bursts off your fist as three pellets; deepslate, basalt and obsidian hit 40% harder but fly slower; mud and clay slow what they hit. |
 | **Avalanche** | Active | Five boulders tear out of the ground in a line ahead of you, one after another, and roll on over the ground for 16 blocks: 5 + level to everything in the way, thrown forward and up. |
 | **Shatterpoint** | Passive | A rock that breaks against a wall bursts into a fan of five stone shards that fly back off it, each about a third of the rock. |
@@ -89,7 +89,7 @@ so anything already bought stays bought (each slot now holds its earthbending no
 | Node | Kind | What it does |
 | --- | --- | --- |
 | **Sei Ping Ma** | Passive | Root fills half again as fast, and in Horse Stance it never drains, not even in the air. |
-| **Stone Skin → Rebound** | Active | Plates of ground climb onto you and hold Horse Stance for six seconds, free, banking the weight of every blow you take. Press again: it all comes back out of the ground as a shockwave (radius 3 to 6, 4 to 18 damage). |
+| **Stone Skin → Rebound** | Active | Plates of ground climb onto you and hold Horse Stance for six seconds, free, banking the weight of every blow you take. Press again: it all comes back out of the ground as a shockwave (radius 3 to 6, 4 to 18 damage). If Stone Skin put you in Horse Stance, you stand back up when it ends. If you were already in stance, you stay in it. |
 | **Pile Driver** | Passive | In Horse Stance a punch drives a standing enemy knee-deep for a second and a half (each enemy once every 8 s), and your shockwaves (a stance landing, Rebound, the mountain's rim) root what they hit instead of throwing it. |
 | **Quicksand** | Active | Press down on a point up to 16 blocks away (or under the foe you look at): after half a second's warning ring the earth there turns to quicksand for three seconds, and every enemy in it, or who walks in, sinks waist-deep for two. |
 | **Set in Stone** | Passive | Enemies you hold in the ground can't struggle free, and each blow you land on one in stance holds it a second longer (up to four). |
@@ -122,7 +122,7 @@ so anything already bought stays bought (each slot now holds its earthbending no
 | Role | Class ability |
 | --- | --- |
 | Offense | **Pillar Barrage**: a fan of stone columns erupts round a point up to 20 blocks away; foes within 3.5 blocks take 10 + 2 per tier and are thrown into the air. |
-| Defense | **Unmoving Mountain**: Horse Stance, free, for 8 seconds, set so deep that nothing moves you and you take far less damage, but you are slow. |
+| Defense | **Unmoving Mountain**: Horse Stance, free, for 8 seconds, set so deep that nothing moves you and you take far less damage, but you are slow. When it ends you stand back up, unless you were already in Horse Stance. |
 | Support | **Earth Tent**: a dome of rock closes over you and the friends beside you for 8 seconds. Shots stop on it, and those inside take less harm. Break a block of it to leave early. |
 
 ## Finishers: Six Feet, Rock Clap, Heavy Hand

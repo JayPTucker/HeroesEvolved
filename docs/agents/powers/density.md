@@ -100,6 +100,15 @@ still match (each node slot now holds its earthbending node).
 - **Photographs:** `tools/earth-preview.init.gradle` (`uitest/EarthPreview`, flag `heroes.preview.earth`) stages every
   scene on force-loaded overworld grass and shoots into `build/earth-preview/screenshots/`.
 
+- **A stance a move lends ends with the move.** `setNotch` with free ticks marks the stance `lent` only if the player
+  was standing normally. Without that, Stone Skin, Unmoving Mountain and the awakening left the player in a stance that
+  began draining stamina when the free time ran out. Pressing the stance key makes it the player's own.
+- **Bosses go through `DensityService.immovable`.** The earth hurts them but doesn't grip, pin, carry, lift or throw them.
+  Any new move that relocates a body asks it first. A construct cell a boss stands in stays open, because
+  `TemporaryBlocks.place` refuses an occupied cell.
+- **Earth Surf's speed is its own transient modifier (`earth_surf_speed`).** It used to add and remove the Speed effect,
+  which deleted any Speed the player already had. A temporary boost must never remove a shared effect it didn't create.
+
 ## Patterns kept from the earlier Density tree
 
 - **The core asks the tree where the moves meet.** Every shockwave asks `DensitySkills.crater` (Pile Driver roots instead

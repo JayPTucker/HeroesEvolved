@@ -32,6 +32,11 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 /** Mirrors authorised player block edits from a snapshot into its present. */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class TemporalSnapshotEvents {
+    @SubscribeEvent
+    public static void onServerStopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
+        TemporalSnapshotService.worldClosing();
+    }
+
     private TemporalSnapshotEvents() {
     }
 

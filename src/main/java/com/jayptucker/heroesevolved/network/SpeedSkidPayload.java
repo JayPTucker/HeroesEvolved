@@ -22,6 +22,10 @@ public record SpeedSkidPayload() implements CustomPacketPayload {
     @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
     public static void handle(SpeedSkidPayload payload, IPayloadContext context) {
-        if (context.player() instanceof ServerPlayer runner) SpeedService.skidStop(runner);
+        if (context.player() instanceof ServerPlayer sender) {
+            // The body's controller skids it, as with every other speedster input; a controlled body can't.
+            ServerPlayer runner = com.jayptucker.heroesevolved.telepathy.PossessionService.actionActor(sender);
+            if (runner != null) SpeedService.skidStop(runner);
+        }
     }
 }
