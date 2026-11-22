@@ -38,7 +38,7 @@ builds. The old six blanket stamina/damage/cooldown nodes now unlock specific in
 | Branch | Node | What it changes |
 | --- | --- | --- |
 | Fine Manipulation | Soft Landing | Gently released friendly creatures gain five seconds of Slow Falling. |
-| Fine Manipulation | Vector Lance | Launch a visible, fast stone lance for eight damage, up to forty blocks. |
+| Fine Manipulation | Vector Lance | Launch a visible, fast stone lance for ten damage, up to forty blocks. |
 | Fine Manipulation | Thread the Needle | The lance can pierce its first creature and strike a second. |
 | Fine Manipulation | Remote Hand | Pull a visible loose item or operate an eligible switch, door, gate or bell within twenty-four blocks. |
 | Fine Manipulation | Long Reach | Remote Hand reaches forty-eight blocks; Grip reaches eight blocks farther. |

@@ -27,8 +27,8 @@ Telekinesis.
 | Move | What happens |
 | --- | --- |
 | **Jab** (lead, rear) | Three blows too fast to see, each from a slightly different angle with an afterimage at each, 4.5 blocks. |
-| **Blitz** (finisher) | A streak of gold closes the gap to the foe in front (up to 9 blocks) and you skid to a stop square in front of them as the blow lands (3 + level) and drives them back. You never end up behind them. |
-| **Skid Sweep** (low) | A slide in under them that takes their legs (2 + ½ level) and slows them. |
+| **Blitz** (finisher) | A streak of gold closes the gap to the foe in front (up to 9 blocks) and you skid to a stop square in front of them as the blow lands (0.8 + 0.2 × level) and drives them back. You never end up behind them. |
+| **Skid Sweep** (low) | A slide in under them that takes their legs (0.6 + 0.2 × level) and slows them. |
 | **Skid Turn** (left, right) | You're thrown sideways at speed, about five blocks, crouched low and leaning away from the slide with your trailing hand flat on the ground, sliding the last stretch to a stop. |
 | **Skid Stop** (back) | You're thrown backward, turn side-on and drop to one knee with your lead hand dragging on the ground in front, sliding to a halt about six blocks back (eight and a half from level 2). |
 | **Too Slow** (counter) | Six blows from afterimages circling the attacker. |
@@ -87,7 +87,7 @@ Indestructible, Reckless adds to every blow.
 
 | Move | What happens |
 | --- | --- |
-| **Hook / Haymaker** (lead, rear) | A heavy swing, 4 blocks, 3 + ½ level times her rage. |
+| **Hook / Haymaker** (lead, rear) | A heavy swing, 4 blocks, 0.8 + 0.2 × level times her rage. |
 | **Headbutt** (finisher) | The foe reels: weak, slowed and dizzy for a few seconds. It costs her two health. |
 | **Tackle** (low) | Shoulder down, she charges; the first foe in 5 blocks is bowled over and slowed. |
 | **Brace** (any direction) | She doesn't dodge. For most of a second, every blow she takes lands at half strength. |

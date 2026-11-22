@@ -207,7 +207,7 @@ public final class CryoCombatGameTests {
         h.runAfterDelay(16,()->{
             try {
                 h.assertTrue(CryoService.frostAmount(far)>0 && !CryoService.isFrozen(near) && !CryoService.isFrozen(far),"Fresh targets receive Frost and need preparation before a solid freeze");
-                h.assertTrue(Math.abs(near.getHealth()-98)<.01 && Math.abs(far.getHealth()-98)<.01,"A single front cannot repeatedly damage a target");h.succeed();
+                h.assertTrue(Math.abs(near.getHealth()-95)<.01 && Math.abs(far.getHealth()-95)<.01,"A single front cannot repeatedly damage a target");h.succeed();
             }finally{near.discard();far.discard();clean(p);}
         });
     }

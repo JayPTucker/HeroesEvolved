@@ -494,7 +494,8 @@ public final class RadiationGameTests {
                 helper.assertTrue(restored != null && restored.getItem(0).is(net.minecraft.world.item.Items.DIAMOND)
                         && restored.getItem(0).getCount() == 3, "Rewinding the crater must preserve original container contents");
                 helper.assertTrue(helper.getLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
-                        new net.minecraft.world.phys.AABB(chest).inflate(5)).isEmpty(), "Restored container contents must not duplicate as loose drops");
+                        new net.minecraft.world.phys.AABB(chest).inflate(5),
+                        item -> item.getItem().is(net.minecraft.world.item.Items.DIAMOND)).isEmpty(), "Restored container contents must not duplicate as loose drops");
                 helper.succeed();
             } finally { com.jayptucker.heroesevolved.time.TimeRewindBlocks.forget(watcher.getUUID()); remove(source); remove(watcher); }
         });

@@ -47,9 +47,9 @@ fights the ordinary way. Each strike takes a little water; with none, the water 
 
 | Strike | Level | What happens | Stamina |
 | --- | --- | --- | --- |
-| **Lash** | 1 | The lead hand flicks a lash of water up from the hip and out along your aim, 7 blocks: 2 + 0.4 × level damage, and it soaks. | 2 |
+| **Lash** | 1 | The lead hand flicks a lash of water up from the hip and out along your aim, 7 blocks: 0.8 + 0.2 × level damage, and it soaks. | 2 |
 | **Backhand** | 1 | The rear hand sweeps a lash across from the far shoulder. Lashes alternate while you keep clicking. | 2 |
-| **Ice Daggers** | 2 | The third click of a combo. Both hands draw back and thrust out, freezing the water into five daggers thrown in a fan, 40 blocks: 1.5 + 0.3 × level each, and they slow. (Three daggers when pulled from the air.) | 5 |
+| **Ice Daggers** | 2 | The third click of a combo. Both hands draw back and thrust out, freezing the water into five daggers thrown in a fan, 40 blocks: 0.35 + 0.08 × level each, and they slow. (Three daggers when pulled from the air.) | 5 |
 | **Water Wheel** | 2 | **Crouch and click.** A ring of water whirled round your waist in one full turn, 4 blocks: everyone in reach is knocked away and soaked, and nearby fires go out. | 5 |
 
 ### Dodges (double-tap a direction)
@@ -148,7 +148,7 @@ on a low stance, and the vault is a backflip. Calls raise both arms and circle t
 
 | Class ability | Role | What it does |
 | --- | --- | --- |
-| **Tsunami** | Offense | A great wave nine blocks wide rolls 48 blocks ahead, carrying everything before it (10 + 2 × level). |
+| **Tsunami** | Offense | A great wave nine blocks wide rolls 48 blocks ahead, carrying everything before it (8 + level). |
 | **Tidal Dome** | Defense | A dome of clear water over you for six seconds, ripples running round it and foam at its foot. It swallows shots from outside; friends inside gain Resistance and enemies inside are slowed and Soaked. |
 | **Healing Spring** | Support | A clear pool wells up at your feet with a little fountain, light lifting off it, for eight seconds: friends standing in it heal and lose their fire, poison and wither. |
 

@@ -332,11 +332,13 @@ public final class AmplificationGameTests {
                 }
             }
             h.assertTrue(AmpSkills.enclosed(level, amp.getEyePosition()), "A small stone room is closed in");
-            LivingEntity foe = pillager(h, amp, 1, 4);
+            LivingEntity foe = pillager(h, amp, 1, 4), weak = pillager(h, amp, -1, 1.5F);
             AmpSkills.vanFull(amp);
-            h.assertTrue(foe.isAlive() && foe.getHealth() <= 1.01F, "Van Full knocks out rather than kills");
+            h.assertTrue(Math.abs(foe.getHealth() - 2) < .01F, "30 Charge deals 1, doubled in a closed room: " + foe.getHealth());
+            h.assertTrue(weak.isAlive() && Math.abs(weak.getHealth() - 1) < .01F, "Van Full knocks out rather than kills: " + weak.getHealth());
             for (BlockPos pos : walls) level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
             foe.discard();
+            weak.discard();
             cleanup(h);
             h.succeed();
         });

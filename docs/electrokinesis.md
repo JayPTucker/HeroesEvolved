@@ -47,9 +47,9 @@ item fights the ordinary way.
 
 | Strike | Level | What happens | Stamina |
 | --- | --- | --- | --- |
-| **Spark Jab** | 1 | The lead fist snaps out and a spark leaps from the knuckles. Lightning finds the nearest body within about a block of your aim, out to 12 blocks: 2 + 0.4 × level damage (+1 when Charged), and a jolt. With nothing to hit, it cracks against a block or dies in the air. | 2 |
+| **Spark Jab** | 1 | The lead fist snaps out and a spark leaps from the knuckles. Lightning finds the nearest body within about a block of your aim, out to 12 blocks: 0.8 + 0.2 × level damage (+1 when Charged), and a jolt. With nothing to hit, it cracks against a block or dies in the air. | 2 |
 | **Spark Cross** | 1 | The same from the rear fist. Sparks alternate jab, cross, jab while you keep clicking. | 2 |
-| **Thunderclap** | 2 | The third click of a combo. Both palms swing in and slam together in front of your chest: a fan of forks blows across a 6-block cone, 3 + level damage, throwing foes back and locking their legs for 1.5 s. **At full Charge** it spends it all: 9 blocks and 60% more damage. | 5 |
+| **Thunderclap** | 2 | The third click of a combo. Both palms swing in and slam together in front of your chest: a fan of forks blows across a 6-block cone, 0.8 + 0.2 × level damage, throwing foes back and locking their legs for 1.5 s. **At full Charge** it spends it all: 9 blocks and 60% more damage. | 5 |
 | **Grounding Strike** | 2 | **Crouch and click.** You drop to one knee and drive your palm into the floor: a ring of current runs out 4.5 blocks along the ground, all round you, jolting and slowing everyone on it. | 5 |
 
 - Every hit feeds Charge like the rest of the kit.

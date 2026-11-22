@@ -274,7 +274,7 @@ public final class FightingStylesGameTests {
             float first = foe.getHealth();
             foe.invulnerableTime = 0;
             RegenStyle.STYLE.strike(p);
-            h.assertTrue(first - foe.getHealth() > 3 + .5F * 2 + 4, "Payback returns what she took on top of the swing");
+            h.assertTrue(first - foe.getHealth() > .8F + .2F * 2 + 4, "Payback returns what she took on top of the swing");
         });
         forget(p);
         foe.discard();

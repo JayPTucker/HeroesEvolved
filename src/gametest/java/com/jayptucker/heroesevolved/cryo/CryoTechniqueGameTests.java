@@ -201,7 +201,7 @@ public final class CryoTechniqueGameTests {
         h.runAfterDelay(2,()->h.assertTrue(second.getHealth()==before,"The connection has a real visible travel delay"));
         h.runAfterDelay(12,()->{
             try {
-                h.assertTrue(second.getHealth()==before-4&&CryoTechniqueService.chainCount()==0&&CryoTechniqueService.linkedCount(p)==0,"The staged fracture arrives exactly once and spends its network");h.succeed();
+                h.assertTrue(second.getHealth()==before-6&&CryoTechniqueService.chainCount()==0&&CryoTechniqueService.linkedCount(p)==0,"The staged fracture arrives exactly once and spends its network");h.succeed();
             }finally{first.discard();second.discard();clean(p);}
         });
     }

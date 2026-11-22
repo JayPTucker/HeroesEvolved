@@ -179,8 +179,8 @@ public final class SpaceTimeSkillsGameTests {
         h.runAfterDelay(14, () -> {
             try {
                 h.assertTrue(!SpaceTimeSkills.cutting(p), "The edge has finished");
-                h.assertTrue(near(full - first.getHealth(), 11) && near(full - second.getHealth(), 11),
-                        "Each enemy feels its cut (6 + level) when time resumes: " + (full - first.getHealth()) + ", " + (full - second.getHealth()));
+                h.assertTrue(near(full - first.getHealth(), 7) && near(full - second.getHealth(), 7),
+                        "Each enemy feels its cut (2 + level) when time resumes: " + (full - first.getHealth()) + ", " + (full - second.getHealth()));
                 h.assertTrue(p.position().distanceTo(second.position()) < 2.5, "You land by the last one");
                 h.succeed();
             } finally { done(p, first, second); }

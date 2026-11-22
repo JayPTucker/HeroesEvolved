@@ -224,16 +224,21 @@ public final class MeteorGameTests {
         helper.runAfterDelay(8, () -> {
             try {
                 helper.assertTrue(Meteors.get(m.id()) == null, "Cracked through, the great meteor is gone");
-                long stars = Meteors.all().stream().filter(x -> !x.great() && x.land().distanceTo(land) <= MeteorGeometry.SHARD_SPREAD + 1).count();
+                long stars = Meteors.all().stream().filter(x -> onRing(x, land)).count();
                 helper.assertTrue(stars >= MeteorGeometry.SHARDS, "It falls as " + MeteorGeometry.SHARDS + " falling stars round its ring: " + stars
                         + " (" + before + " before)");
                 helper.assertTrue(!EmergencyBand.live(m.call()), "Its own call ends");
                 helper.succeed();
             } finally {
-                for (Meteor x : Meteors.all()) if (!x.great() && x.land().distanceTo(land) <= MeteorGeometry.SHARD_SPREAD + 1) Meteors.cancel(x);
+                for (Meteor x : Meteors.all()) if (onRing(x, land)) Meteors.cancel(x);
                 cleanup(m, singer);
             }
         });
+    }
+
+    /** A falling star from this great meteor's ring. Across the ground only: a star lands on whatever is tallest there. */
+    private static boolean onRing(Meteor star, Vec3 land) {
+        return !star.great() && Math.hypot(star.land().x - land.x, star.land().z - land.z) <= MeteorGeometry.SHARD_SPREAD + 1;
     }
 
     @GameTest(template = "rewind_empty", timeoutTicks = 200, batch = "meteor.brace")

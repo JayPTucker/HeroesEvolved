@@ -190,7 +190,7 @@ feels them all at once.
 | **Behind You** | Passive | Fold Space aimed at an enemy lands you just behind it, facing it (round its side if its back is to a wall). Your next hit on it within two seconds lands 50% harder, or twice as hard if it is held in stopped time. |
 | **Spatial Anchor** | Active (16 stamina, 3.25 s) | Shift + key plants a gold clock on safe ground. Press normally to return to it within 512 blocks in the same world, bringing up to three friends beside you (teammates, players crouching, your own pets), each in the same place beside you. The destination survives relogging and death, but must be loaded and clear. |
 | **Snap Shut** | Passive | The hole Fold Space leaves behind snaps shut: enemies within 3 blocks of where you stood are dragged into it, take 3 damage and are slowed. The **Singularity** hangs from this node. |
-| **Moment's Edge** | Technique (27 stamina, 12 s) | Time stops for a heartbeat. You fold from enemy to enemy, up to three within 12 blocks (nearest first, then nearest to that one), cutting each for 6 + level and landing behind the last. They feel every cut at once when time resumes. |
+| **Moment's Edge** | Technique (27 stamina, 12 s) | Time stops for a heartbeat. You fold from enemy to enemy, up to three within 12 blocks (nearest first, then nearest to that one), cutting each for 2 + level and landing behind the last. They feel every cut at once when time resumes. |
 | **Long Edge** | Upgrade | Moment's Edge reaches 20 blocks and five enemies. |
 | **Thousand Cuts** | Capstone | Moment's Edge cuts each enemy twice, and they stay stopped for two seconds after the last cut: every blow you add waits and lands with the rest. |
 
@@ -219,8 +219,8 @@ feels them all at once.
 
 Wayfinder's signature ability hangs under **Accelerated Force Mastery**, after Spatial Anchor (Level 10, 3 points, 51 stamina, 35 s cooldown). Space folds to a point where you aim (up to 24 blocks, held clear of the surface).
 
-- **For five seconds** a black core with a photon ring and a turning accretion disk (hot gold inside, violet outside) hangs in the air. Every enemy within 10 blocks is dragged into a spiralling orbit, faster the closer it falls; anything within 1.6 blocks of the core takes 3 + half your level every half second and is slowed. Hostile arrows and fireballs bend into it and vanish. Loose items and experience drift in. Dust is torn off the ground below (cosmetic only: no block is ever touched).
-- **Then it collapses:** rings pinch to a point, a flash, and a shockwave throws everything within 8 blocks outward for 8 + level (less at the edge). What it swallowed is set at your feet.
+- **For five seconds** a black core with a photon ring and a turning accretion disk (hot gold inside, violet outside) hangs in the air. Every enemy within 10 blocks is dragged into a spiralling orbit, faster the closer it falls; anything within 1.6 blocks of the core takes 0.6 + a tenth of your level every half second and is slowed. Hostile arrows and fireballs bend into it and vanish. Loose items and experience drift in. Dust is torn off the ground below (cosmetic only: no block is ever touched).
+- **Then it collapses:** rings pinch to a point, a flash, and a shockwave throws everything within 8 blocks outward for 3 + half your level (less at the edge). What it swallowed is set at your feet.
 - Bosses feel 15% of the pull, knockback resistance weakens it, allies feel none, and creatures held in Selective Stasis or a cryo cocoon stay where they are.
 
 ## Story: The Way Back
