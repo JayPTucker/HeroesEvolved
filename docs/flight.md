@@ -148,3 +148,7 @@ release/cost/cooldown, cancellation, dive wind-up, collision/cover and fall-prot
 The existing four wheel-control tests continue to cover level caps, braking and resets.
 `FlightSkillGameTests` additionally checks purchases and save compatibility, all six optional
 techniques, linked passive upgrades, projectile/team/cover rules, cancellation and respec cleanup.
+
+## Damage and stamina
+
+Tempest costs its startup stamina plus **12 stamina per second**, from the windup until it ends. Exhaustion ends the vortex. Thermal Column hits for 6; Vacuum Clap hits for 7 + 0.05 per Momentum spent. Full formulas and unlock-tier comparisons are in [Stamina and balance](stamina-balance.md#every-damage-review).

@@ -13,15 +13,20 @@ import java.util.*;
 /** Bounded, expiring mind threads. A thread read to 60 shows a player's awakened power, once. */
 public final class TelepathyFocus {
     private static final Map<UUID,Mind> MINDS=new HashMap<>();
+    /** Read Mind's action id and its fallback stamina a second while the read is held. */
+    private static final String READ_ID="telepathy_read_mind";
+    private static final double READ_DRAIN=2;
     private static final class Thread { final LivingEntity target; int focus; long until; boolean known; Thread(LivingEntity t){target=t;} }
     private static final class Mind { ServerPlayer owner; final LinkedHashMap<UUID,Thread> threads=new LinkedHashMap<>(); LivingEntity reading; int tier, strain; long since; }
     public static boolean start(ServerPlayer p,int tier) {
         LivingEntity target=TelepathyService.mindInSight(p,24); if(target==null){TelepathyService.readMind(p,tier);return false;} if(PossessionService.occupied(p))return false;
         Mind m=MINDS.computeIfAbsent(p.getUUID(),k->new Mind()); m.owner=p; m.reading=target;m.tier=tier;m.since=p.serverLevel().getGameTime();
+        // A held read is paid for as long as it is held.
+        com.jayptucker.heroesevolved.energy.StaminaDrain.start(p,READ_ID,com.jayptucker.heroesevolved.ability.PowerBalance.drain(READ_ID,READ_DRAIN),false,()->{Mind held=MINDS.get(p.getUUID());if(held!=null)held.reading=null;com.jayptucker.heroesevolved.network.ArmPosePayload.clear(p);});
         TelepathyService.readMind(p,tier); return true;
     }
     public static boolean reading(ServerPlayer p){Mind m=MINDS.get(p.getUUID());return m!=null&&m.reading!=null;}
-    public static void stop(ServerPlayer p){Mind m=MINDS.get(p.getUUID());if(m!=null)m.reading=null;com.jayptucker.heroesevolved.network.ArmPosePayload.clear(p);}
+    public static void stop(ServerPlayer p){Mind m=MINDS.get(p.getUUID());if(m!=null)m.reading=null;com.jayptucker.heroesevolved.energy.StaminaDrain.stop(p,READ_ID);com.jayptucker.heroesevolved.network.ArmPosePayload.clear(p);}
     public static int focus(ServerPlayer p,LivingEntity t){Mind m=MINDS.get(p.getUUID());Thread f=m==null?null:m.threads.get(t.getUUID());return f==null?0:f.focus;}
     public static int strain(ServerPlayer p){Mind m=MINDS.get(p.getUUID());return m==null?0:m.strain;}
     public static List<LivingEntity> targets(ServerPlayer p){Mind m=MINDS.get(p.getUUID());return m==null?List.of():m.threads.values().stream().filter(t->t.focus>=30 && t.target.isAlive() && t.target.level()==p.level()).map(t->t.target).toList();}
@@ -36,7 +41,7 @@ public final class TelepathyFocus {
     }
     /** Every mind threaded to at least {@code min} Focus, wherever it is in the player's level. */
     public static List<LivingEntity> threads(ServerPlayer p,int min){Mind m=MINDS.get(p.getUUID());return m==null?List.of():m.threads.values().stream().filter(t->t.focus>=min && t.target.isAlive() && t.target.level()==p.level()).map(t->t.target).toList();}
-    public static void forget(ServerPlayer p){MINDS.remove(p.getUUID());PacketDistributor.sendToPlayer(p,new MindStatePayload(0,-1,0,0,0,0,0,0));}
+    public static void forget(ServerPlayer p){MINDS.remove(p.getUUID());com.jayptucker.heroesevolved.energy.StaminaDrain.stop(p,READ_ID);PacketDistributor.sendToPlayer(p,new MindStatePayload(0,-1,0,0,0,0,0,0));}
     public static void tick(MinecraftServer server){
         for(var e:List.copyOf(MINDS.entrySet())) {
             ServerPlayer p=e.getValue().owner;if(p==null){MINDS.remove(e.getKey());continue;}
@@ -54,6 +59,8 @@ public final class TelepathyFocus {
                     if(now%6==0)AbilityEffects.send(p.serverLevel(),Kind.MIND_LINK,p.getEyePosition(),t.getEyePosition(),.4+f.focus/100.0);
                 }
             }
+            // The read ended on its own (lost sight, six seconds, overload): so does its drain.
+            if(m.reading==null)com.jayptucker.heroesevolved.energy.StaminaDrain.stop(p,READ_ID);
             if(now%20==0) {
                 // Shared Burden: linked friends carry half of it.
                 boolean shared=TelepathySkills.sharesBurden(p);

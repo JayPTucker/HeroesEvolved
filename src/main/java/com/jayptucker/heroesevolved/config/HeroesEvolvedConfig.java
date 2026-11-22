@@ -312,7 +312,7 @@ public final class HeroesEvolvedConfig {
             baseMasteryPerLevel = builder
                     .comment("Mastery required to advance from level 1 to level 2. "
                             + "With the defaults the curve is 800 / 2400 / 4800 / 8000 "
-                            + "total, roughly 2-3 hours of active play to reach level 5.")
+                            + "total for tiers 2-5 (Power Levels 3/6/10/15). Progress now combines active time, exploration and encounters.")
                     .defineInRange(
                             "masteryForLevelTwo",
                             800L,
@@ -332,7 +332,7 @@ public final class HeroesEvolvedConfig {
             masteryPerEnergySpent = builder
                     .comment("Mastery earned per point of energy spent on powers. Using a power "
                             + "on something (hitting and defeating enemies, saving allies, finding "
-                            + "story notes) earns more; plain stamina spent counts for less.")
+                            + "story notes) earns more. Spending and hits share a persistent limit of 6 practice Mastery per active minute.")
                     .defineInRange("powerUseMasteryPerEnergy", 0.5D, 0.0D, 100.0D);
 
             activeMasteryIntervalTicks = builder
@@ -341,23 +341,23 @@ public final class HeroesEvolvedConfig {
 
             activeMasteryAmount = builder
                     .comment("Mastery awarded for each active-time interval.")
-                    .defineInRange("activeMasteryPerInterval", 3, 1, 1_000);
+                    .defineInRange("activeMasteryPerInterval", 12, 1, 1_000);
 
             mobKillMasteryPerTenHealth = builder
                     .comment("Mastery for a hostile-mob kill per 10 points of the mob's "
-                            + "maximum health (a zombie earns this once, a Warden 25 times).")
+                            + "maximum health (a zombie earns twice this, a Warden 50 times). Bosses give at least 120 and four times the health reward.")
                     .defineInRange("mobKillMasteryPerTenHealth", 3, 0, 1_000);
 
             mobKillWindowTicks = builder
-                    .comment("Rolling window used to reduce repeated kills of the same hostile-mob type.")
+                    .comment("Legacy key, no longer used: encounter quotas persist per type and 256-block region, without a time reset.")
                     .defineInRange("mobKillWindowTicks", 20 * 60 * 10, 20, 20 * 60 * 60);
 
             mobKillFullRewardLimit = builder
-                    .comment("Same-type kills in the rolling window that grant full Mastery before diminishing returns.")
+                    .comment("Same-type kills per 256-block region that grant full Mastery before half rewards; saved across sessions.")
                     .defineInRange("mobKillFullRewardLimit", 6, 1, 1_000);
 
             mobKillMaximumRewardedKills = builder
-                    .comment("Maximum same-type kills in the rolling window that can grant any Mastery.")
+                    .comment("Lifetime rewarded same-type kills per 256-block region. Spawners, eggs and followers never grant Mastery.")
                     .defineInRange("mobKillMaximumRewardedKills", 12, 1, 1_000);
 
             builder.pop();

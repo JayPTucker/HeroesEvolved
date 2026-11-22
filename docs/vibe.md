@@ -186,3 +186,7 @@ Each press of C plays one of three at random, never the one you used last. Off F
 
 - **Breach Drop.** A breach opens flat under the foe; it falls through, and the breach snaps shut over it.
 - **Point Blank.** Both palms on the foe, wave fronts gathering in them, and a Vibe Blast goes straight through it and out of its back.
+
+## Damage and stamina
+
+The Rift Beast stays for 45 seconds. Its smaller repeated attacks are priced across that whole hunt, rather than treating the summon as a single hit. Full formulas and unlock-tier comparisons are in [Stamina and balance](stamina-balance.md#every-damage-review).

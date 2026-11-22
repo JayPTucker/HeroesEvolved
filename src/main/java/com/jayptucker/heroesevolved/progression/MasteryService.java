@@ -20,15 +20,11 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.ArrayDeque;
-import java.util.Comparator;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,11 +47,16 @@ import java.util.UUID;
 public final class MasteryService {
     private static final long ACTIVE_WINDOW_TICKS = 20L * 30L;
     private static final double MINIMUM_ACTIVE_MOVEMENT_SQUARED = 4.0D;
+    /**
+     * A player at the keyboard turns their view. Water loops, minecart tracks and autoclickers move a body or
+     * break blocks at a fixed look, so movement and building only count as play when the view has turned too.
+     */
+    private static final float MINIMUM_LOOK_DEGREES = 2.0F;
     /** A hit or defeat within this long of using a power counts as done with it. */
     public static final long POWER_WINDOW_TICKS = 60L;
     private static final long HIT_INTERVAL_TICKS = 10L;
     private static final int KILL_POWER_BONUS_PERCENT = 50;
-    public static final int EXPLORATION_MASTERY = 60, EXPLORATION_SIZE = 128, ENCOUNTER_SIZE = 256;
+    public static final int EXPLORATION_MASTERY = 30, EXPLORATION_SIZE = 128, ENCOUNTER_SIZE = 256;
     private static final String KILL_REWARDED = "heroesevolved_mastery_rewarded";
     private static final String HIT_REWARDED = "heroesevolved_mastery_hit_damage";
 
@@ -82,15 +83,17 @@ public final class MasteryService {
                 player.getUUID(),
                 ignored -> new ActiveTimeTracker(
                         player.position(),
+                        player.getYRot(),
+                        player.getXRot(),
                         gameTime - ACTIVE_WINDOW_TICKS - 1,
                         gameTime
                 )
         );
 
         boolean moved = player.position().distanceToSqr(tracker.lastPosition())
-                >= MINIMUM_ACTIVE_MOVEMENT_SQUARED;
+                >= MINIMUM_ACTIVE_MOVEMENT_SQUARED && tracker.looked(player);
         if (moved) {
-            tracker = tracker.withActivity(player.position(), gameTime);
+            tracker = tracker.withActivity(player, gameTime);
         }
 
         int intervalTicks = HeroesEvolvedConfig.COMMON
@@ -114,8 +117,8 @@ public final class MasteryService {
     }
 
     /**
-     * Records that a power was used, which counts as activity for the
-     * active-play trickle. Mastery itself comes from the energy spent; see
+     * Records that a power was used. Casting into empty air does not keep the active-play clock running.
+     * Practice Mastery comes from the energy spent; see
      * {@link #awardEnergySpent}.
      */
     public static void markPowerUse(
@@ -135,8 +138,8 @@ public final class MasteryService {
     }
 
     /**
-     * A hit on an enemy (a hostile mob, or another player) landed while the
-     * power was in use: one Mastery per two damage, up to 6, at most twice a second.
+     * Fresh damage to an eligible enemy while the power was in use: one Mastery per two damage,
+     * at most twice a second and sharing the six-point practice allowance. PvP gives no Mastery.
      */
     public static void awardPowerHit(ServerPlayer player, LivingEntity target, float damage) {
         if (damage <= 0 || !hasAwakenedPower(player) || !usedPowerRecently(player) || !rewardable(target)
@@ -159,10 +162,11 @@ public final class MasteryService {
     public static void awardRescue(ServerPlayer player, long amount) {
         if (amount <= 0 || !hasAwakenedPower(player)) return;
         markPowerUse(player, null);
+        markActivity(player, player.serverLevel().getGameTime());
         awardMastery(player, amount);
     }
 
-    /** The main Mastery source: energy genuinely spent on a power. */
+    /** Bounded practice: energy genuinely spent on a power, sharing the hit allowance. */
     public static void awardEnergySpent(ServerPlayer player, int energySpent) {
         // Test-mode unlimited energy spends nothing, so it earns nothing.
         if (energySpent <= 0 || !hasAwakenedPower(player)
@@ -264,7 +268,7 @@ public final class MasteryService {
         if (boss(monster)) fullReward = Math.max(120, fullReward * 4);
         int awardedMastery = kills < fullRewardLimit
                 ? fullReward
-                : Math.max(1, fullReward / 2);
+                : fullReward / 2;
         // Defeating it with your power is worth half again, and counts
         // toward the Evolved trial.
         if (usedPowerRecently(player)) {
@@ -290,6 +294,16 @@ public final class MasteryService {
         LAST_HIT_AWARD.remove(playerId);
     }
 
+    /**
+     * Real building/interaction counts as playtime, without granting practice or combat rewards. An autoclicker
+     * at a fixed look (a cobblestone generator, a lever) is not play, so the view must have turned since last time.
+     */
+    public static void activity(ServerPlayer player) {
+        if (!hasAwakenedPower(player)) return;
+        ActiveTimeTracker tracker = ACTIVE_TIME_TRACKERS.get(player.getUUID());
+        if (tracker == null || tracker.looked(player)) markActivity(player, player.serverLevel().getGameTime());
+    }
+
     private static boolean hasAwakenedPower(ServerPlayer player) {
         Optional<Map.Entry<ResourceLocation, AbilityProgress>> assignment =
                 PlayerAbilityService.getData(player).assignedPower();
@@ -302,13 +316,15 @@ public final class MasteryService {
                 player.getUUID(),
                 ignored -> new ActiveTimeTracker(
                         player.position(),
+                        player.getYRot(),
+                        player.getXRot(),
                         gameTime,
                         gameTime
                 )
         );
         ACTIVE_TIME_TRACKERS.put(
                 player.getUUID(),
-                tracker.withActivity(player.position(), gameTime)
+                tracker.withActivity(player, gameTime)
         );
     }
 
@@ -406,12 +422,16 @@ public final class MasteryService {
 
     private record ActiveTimeTracker(
             Vec3 lastPosition,
+            float lastYaw,
+            float lastPitch,
             long lastActivityGameTime,
             long lastAwardGameTime
     ) {
-        private ActiveTimeTracker withActivity(Vec3 position, long gameTime) {
+        private ActiveTimeTracker withActivity(ServerPlayer player, long gameTime) {
             return new ActiveTimeTracker(
-                    position,
+                    player.position(),
+                    player.getYRot(),
+                    player.getXRot(),
                     gameTime,
                     lastAwardGameTime
             );
@@ -420,9 +440,17 @@ public final class MasteryService {
         private ActiveTimeTracker withAward(long gameTime) {
             return new ActiveTimeTracker(
                     lastPosition,
+                    lastYaw,
+                    lastPitch,
                     lastActivityGameTime,
                     gameTime
             );
+        }
+
+        /** Has the view turned since the last counted activity? */
+        private boolean looked(ServerPlayer player) {
+            return Math.abs(net.minecraft.util.Mth.wrapDegrees(player.getYRot() - lastYaw))
+                    + Math.abs(player.getXRot() - lastPitch) >= MINIMUM_LOOK_DEGREES;
         }
     }
 }

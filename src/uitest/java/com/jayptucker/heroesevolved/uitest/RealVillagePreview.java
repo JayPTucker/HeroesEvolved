@@ -126,14 +126,17 @@ public final class RealVillagePreview {
             SCRIPT.add((Step) (mc, p) -> blowUp(mc, p));
             SCRIPT.add(30);
             SCRIPT.add(new Shot(name + "-7-blown-up"));
+            SCRIPT.add((Step) (mc, p) -> askForRepairs(mc, p));
+            SCRIPT.add(30);
+            SCRIPT.add(new Shot(name + "-8-asking-for-repairs"));
             SCRIPT.add((Step) (mc, p) -> mend(mc, p));
             SCRIPT.add(300);
-            SCRIPT.add(new Shot(name + "-8-mending"));
+            SCRIPT.add(new Shot(name + "-9-mending"));
             SCRIPT.add((Step) (mc, p) -> mended(mc, p));
             SCRIPT.add(30);
-            SCRIPT.add(new Shot(name + "-9-mended"));
+            SCRIPT.add(new Shot(name + "-10-mended"));
             SCRIPT.add((Step) (mc, p) -> summary(p));
-            expected += 9;
+            expected += 10;
         }
     }
 
@@ -282,16 +285,32 @@ public final class RealVillagePreview {
         return true;
     }
 
-    /** The village notices and its people go to work on it. */
-    private static boolean mend(Minecraft mc, ServerPlayer p) {
+    /** The village notices and asks on its board for what it needs to put it back. */
+    private static boolean askForRepairs(Minecraft mc, ServerPlayer p) {
         if (village == null || target == null) return true;
         ServerLevel level = p.serverLevel();
         var missing = com.jayptucker.heroesevolved.village.Repairs.missing(level, village, target);
-        site = com.jayptucker.heroesevolved.village.Repairs.check(level, village);
-        // In a real world the village may have seen the blast and planned the mending itself already.
-        if (site == null) site = Rebuild.all(level).stream().filter(s -> s.mending() && target.equals(s.home())).findFirst().orElse(null);
-        notes.add("blown up: " + missing.size() + " blocks missing; mending " + (site == null ? "NOT PLANNED" : site.size() + " blocks"));
-        if (site == null && missing.size() >= 3) fail("nothing planned to mend " + missing.size() + " missing blocks");
+        var repair = com.jayptucker.heroesevolved.village.Repairs.check(level, village);
+        // In a real world the village may have seen the blast and asked already.
+        if (repair == null && village.project() != null && village.project().repair()) repair = village.project();
+        notes.add("blown up: " + missing.size() + " blocks missing; board asks " + (repair == null ? "NOTHING" : repair.need()));
+        if (repair == null && missing.size() >= 3) fail("the board doesn't ask for " + missing.size() + " missing blocks");
+        if (village.board() != null) {
+            var b = village.board();
+            camera(mc, Vec3.atBottomCenterOf(b.at(0, 0, 4)).add(0, 1.62, 0), Vec3.atCenterOf(b.at(0, 1, 1)).add(0, 0.5, 0));
+        }
+        return true;
+    }
+
+    /** Everything's brought; its people go to work on it. */
+    private static boolean mend(Minecraft mc, ServerPlayer p) {
+        if (village == null || target == null) return true;
+        ServerLevel level = p.serverLevel();
+        if (village.project() != null && village.project().repair()) Projects.fill(level, village);
+        site = Rebuild.all(level).stream().filter(s -> s.mending() && target.equals(s.home())).findFirst().orElse(null);
+        notes.add("mending " + (site == null ? "NOT PLANNED" : site.size() + " blocks"));
+        if (site == null && com.jayptucker.heroesevolved.village.Repairs.missing(level, village, target).size() >= 3) fail("nothing planned to mend");
+        else if (site != null) houseCamera(mc, level, site, 13, 6);
         return true;
     }
 

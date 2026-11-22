@@ -238,3 +238,7 @@ Each press of C plays one of three at random, never the one you used last. Last 
 
 - **Coffin.** Ice grows up over the foe from its feet in tall leaning shards and seals it in a frosted shell. One jab, and the coffin bursts: shards are thrown out and skid away over the ground, and snow falls where it stood.
 - **Icicle Ring.** A ring of icicles rises round the foe, then leans in until their points meet over its head. It freezes where it stands in a burst of frost, and the icicles crumble.
+
+## Damage and stamina
+
+Crystal Lance hits for 8 + tier, Cold Snap for 5, and Brittle Constellation fractures for 6 (9 with its stronger chain upgrade), before freezing and shattering bonuses. Full formulas and unlock-tier comparisons are in [Stamina and balance](stamina-balance.md#every-damage-review).

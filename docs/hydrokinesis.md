@@ -57,7 +57,7 @@ fights the ordinary way. Each strike takes a little water; with none, the water 
 | Dodge | Level | What happens | Stamina |
 | --- | --- | --- | --- |
 | **Flow Step** | 1 | **Double-tap left or right.** You skate about 5 blocks sideways on a sheet of water, low and fast, throwing a fan of spray. | 8 |
-| **Geyser Vault** | 2 | **Double-tap back.** A geyser bursts up where you stand and throws you up and over backward. Anyone on it or just in front is launched with the column (3 + 0.6 × level). At level 1, back is a plain Flow Step. | 11 |
+| **Geyser Vault** | 2 | **Double-tap back.** A geyser bursts up where you stand and throws you up and over backward. Anyone on it or just in front is launched with the column (1.5 + 0.25 × level). At level 1, back is a plain Flow Step. | 11 |
 
 - **Evasion:** for the first 8 ticks of a dodge, blows from creatures, players and projectiles miss you. Your landing is
   cushioned for two seconds.
@@ -180,3 +180,7 @@ Each press of C plays one of three at random, never the one you used last. Break
   Spirit Water) and `ElectroCombatGameTests.lightningHitsTheSoakedHarder`.
 - Photographs: `./gradlew runClient --init-script tools/hydro-preview.init.gradle` saves every move into
   `build/hydro-preview/screenshots/`.
+
+## Damage and stamina
+
+Maelstrom costs its startup stamina plus **12 stamina per second**, from the windup until it ends. Exhaustion ends it. Pressure Jet deals 0.65 + 0.1 per tier on each of its 19 tenth-second contacts. Full formulas and unlock-tier comparisons are in [Stamina and balance](stamina-balance.md#every-damage-review).

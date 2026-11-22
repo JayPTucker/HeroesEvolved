@@ -66,7 +66,7 @@ public final class EarthStyle extends ComboStyle {
         boolean gauntlet = rear || loaded;
         BlockState rock = rock(p);
         if (target != null) {
-            float damage = (.8F + .2F * level) * (gauntlet ? 1.4F : 1) * (loaded ? 1.5F : 1) * DensityService.rooted(p);
+            float damage = (.7F + .15F * level) * (gauntlet ? 1.4F : 1) * (loaded ? 1.5F : 1) * DensityService.rooted(p);
             StyleHits.hurt(p, target, damage);
             StyleHits.shove(target, p.getLookAngle().multiply(1, 0, 1).normalize().scale(gauntlet ? .55 : .2).add(0, .06, 0));
             Stones.dust(world(p), rock, target.getBoundingBox().getCenter(), 6, .25);

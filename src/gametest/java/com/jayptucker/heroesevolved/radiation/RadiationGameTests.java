@@ -584,6 +584,30 @@ public final class RadiationGameTests {
         } catch (RuntimeException e) { remove(player); throw e; }
     }
 
+    @GameTest(template = "rewind_empty", batch = "radiation.emission_drain")
+    public static void meltdownBeamPaysStaminaEverySecondItIsHeld(GameTestHelper helper) {
+        ServerPlayer player = player(helper, 410, false);
+        try {
+            player.setData(ModDataAttachments.PLAYER_UNLIMITED_ENERGY, false);
+            com.jayptucker.heroesevolved.progression.PlayerProgressionService.setLevel(player, 15);
+            com.jayptucker.heroesevolved.energy.PlayerEnergyService.restore(player, com.jayptucker.heroesevolved.energy.PlayerEnergyService.getMaximumEnergy(player));
+            RadiationService.addMass(player, 70 - RadiationService.mass(player));
+            helper.assertTrue(RadiationService.startEmission(player, 4), "The beam starts on the key");
+            helper.assertTrue(com.jayptucker.heroesevolved.energy.StaminaDrain.active(player, "radiation_meltdown_beam"), "A held beam drains stamina");
+            double before = com.jayptucker.heroesevolved.energy.PlayerEnergyService.getStamina(player);
+            for (int i = 0; i < 20; i++) com.jayptucker.heroesevolved.energy.StaminaDrain.tick(helper.getLevel().getServer());
+            double perSecond = com.jayptucker.heroesevolved.ability.PowerBalance.drain("radiation_meltdown_beam", 12);
+            helper.assertTrue(Math.abs(before - com.jayptucker.heroesevolved.energy.PlayerEnergyService.getStamina(player) - perSecond) < .0001,
+                    "A second of beam costs " + perSecond + " stamina");
+            com.jayptucker.heroesevolved.energy.PlayerEnergyService.drain(player, com.jayptucker.heroesevolved.energy.PlayerEnergyService.getStamina(player) - .01);
+            com.jayptucker.heroesevolved.energy.StaminaDrain.tick(helper.getLevel().getServer());
+            helper.assertTrue(!RadiationService.isEmitting(player), "An empty bar ends the beam");
+            helper.assertTrue(RadiationService.startEmission(player, 4) && RadiationService.stopEmission(player)
+                    && !com.jayptucker.heroesevolved.energy.StaminaDrain.active(player, "radiation_meltdown_beam"), "Stopping the beam ends its drain");
+            helper.succeed();
+        } finally { com.jayptucker.heroesevolved.energy.StaminaDrain.forget(player); remove(player); }
+    }
+
     @GameTest(template = "rewind_empty", timeoutTicks = 80, batch = "radiation.emission")
     public static void controlledEmissionVentsCoreWhileHeld(GameTestHelper helper) {
         ServerPlayer player = player(helper, 400, false);

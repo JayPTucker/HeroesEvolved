@@ -65,7 +65,11 @@ build notes are in [references/gifted-mobs.md](references/gifted-mobs.md). Exten
   they save with the mob, re-applying is harmless and a cleanse removes exactly them. Persistence required: a named mob
   must not despawn.
 - **A guaranteed prize.** Its own weapon, named for it and enchanted by rarity (set the slot's drop chance to 0 and drop
-  the prize yourself), emeralds, experience and Mastery for the killer (`GiftedMobs.reward`).
+  the prize yourself), emeralds, experience and Mastery for the killer (`GiftedMobs.reward`). A boss gets the boss
+  Mastery reward (at least 120, or four times its toughness reward, before the power bonus) only if
+  `MasteryService.boss` knows it: add a story boss to `data/c/tags/entity_type/bosses.json`, or give a gifted one a
+  boss-rarity `Gift`. Its minions and summons (`MOB_SUMMONED`, `REINFORCEMENT`, followers) pay nothing, so a boss
+  can't be kept alive as a Mastery farm (`MasteryService.rewardable`).
 - **Every move is read.** A ring at the feet fills over the windup (`GiftArt.cast`), the hands glow where the move leaves
   them, illagers raise their arms (`mixin/IllagerCastPoseMixin`). Marked moves (thunderstrike, firestorm, geyser,
   frequency lock) fix their spot when the windup starts (`GiftedMob.mark`).

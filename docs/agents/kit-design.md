@@ -109,6 +109,20 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 - **Spending up to a cost includes the final fraction.** `PlayerEnergyService.consumeUpTo` once floored stamina before
   paying, so overexertion kept 0.75 stamina and never paused recovery. Subtract the exact payment and return whole
   points only for callers that use that count. `energy/StaminaAccountingGameTests` checks both packets and payments.
+- **Anything that runs while its key is held pays while it runs.** Every action that overrides `release` (or a
+  `SimpleAction` built with `.release`) and keeps going between press and release needs a per-second cost: a
+  `StaminaDrain.start` with `PowerBalance.drain(id, fallback)`, stopped on every path that ends it (release, Shift-stop,
+  `stopAll`/`forget`, `clear`, and the drain's own `onEmpty`), or a `PlayerEnergyService.drain` on its pulse. Cyclone once
+  skipped its first three seconds and its anchored storm, Wind Arms, Tempest and Maelstrom paid only to start, and the
+  Meltdown Beam (`RadiationService.startEmission`) and Read Mind (`TelepathyFocus.start`) were free for as long as they
+  were held. Put the rate in `tools/balance.py` as `drain=`, and test a paid second plus an empty bar ending it
+  (`energy/HeldWindGameTests`, `meltdownBeamPaysStaminaEverySecondItIsHeld`). Hold-to-charge moves that fire once on
+  release (spears, Inferno, Crescendo, Rock Strike) are one cast and don't drain.
+- **Damage answers to its stamina.** `tools/balance.py` keeps a `DAMAGE_AUDIT` entry for every tree active, signature,
+  class ability and fighting-style move, measured from the Java (the full sequence on one target at the unlock tier,
+  pulses and hops counted, invulnerability resets checked), and fails if one is missing or more than 30% off what its
+  cost buys. A new or reworked move adds its `reviewed(...)` line in the same change; fix a miss by changing the
+  damage in code, not by inventing a utility reserve.
 
 ## Drawing it
 

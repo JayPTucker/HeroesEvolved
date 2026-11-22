@@ -16,6 +16,14 @@ public final class MasteryEvents {
     private MasteryEvents() {
     }
 
+    @SubscribeEvent public static void built(net.neoforged.neoforge.event.level.BlockEvent.BreakEvent event) {
+        if (event.getPlayer() instanceof ServerPlayer player) MasteryService.activity(player);
+    }
+
+    @SubscribeEvent public static void interacted(net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickBlock event) {
+        if (event.getEntity() instanceof ServerPlayer player) MasteryService.activity(player);
+    }
+
     @SubscribeEvent
     public static void onLivingDeath(LivingDeathEvent event) {
         LivingEntity dead = event.getEntity();

@@ -307,11 +307,14 @@ public final class Rebuild extends SavedData {
             }
             data.sites.remove(s);
             data.setDirty();
-            String name = VillageMemory.of(level, s.bell).name();
+            VillageMemory.Village v = VillageMemory.of(level, s.bell);
             level.playSound(null, s.center, SoundEvents.VILLAGER_CELEBRATE, SoundSource.NEUTRAL, 1.2F, 1);
-            for (ServerPlayer p : level.players())
-                if (p.blockPosition().distSqr(s.center) <= 96 * 96)
-                    p.sendSystemMessage(Component.literal(name + " has mended what was broken.").withStyle(ChatFormatting.GREEN));
+            if (!Repairs.mending(level, v)) {
+                for (ServerPlayer p : level.players())
+                    if (p.blockPosition().distSqr(s.center) <= 96 * 96)
+                        p.sendSystemMessage(Component.literal(v.name() + " has mended what was broken.").withStyle(ChatFormatting.GREEN));
+                Projects.mended(level, v);
+            }
             return;
         }
         if (s.growth) {

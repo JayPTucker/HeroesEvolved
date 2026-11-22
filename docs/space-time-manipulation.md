@@ -219,8 +219,8 @@ feels them all at once.
 
 Wayfinder's signature ability hangs under **Accelerated Force Mastery**, after Spatial Anchor (Level 10, 3 points, 51 stamina, 35 s cooldown). Space folds to a point where you aim (up to 24 blocks, held clear of the surface).
 
-- **For five seconds** a black core with a photon ring and a turning accretion disk (hot gold inside, violet outside) hangs in the air. Every enemy within 10 blocks is dragged into a spiralling orbit, faster the closer it falls; anything within 1.6 blocks of the core takes 0.6 + a tenth of your level every half second and is slowed. Hostile arrows and fireballs bend into it and vanish. Loose items and experience drift in. Dust is torn off the ground below (cosmetic only: no block is ever touched).
-- **Then it collapses:** rings pinch to a point, a flash, and a shockwave throws everything within 8 blocks outward for 3 + half your level (less at the edge). What it swallowed is set at your feet.
+- **For five seconds** a black core with a photon ring and a turning accretion disk (hot gold inside, violet outside) hangs in the air. Every enemy within 10 blocks is dragged into a spiralling orbit, faster the closer it falls; anything within 1.6 blocks of the core takes 0.6 + 0.1 per tier every half second and is slowed. Hostile arrows and fireballs bend into it and vanish. Loose items and experience drift in. Dust is torn off the ground below (cosmetic only: no block is ever touched).
+- **Then it collapses:** rings pinch to a point, a flash, and a shockwave throws everything within 8 blocks outward for 3 + 0.5 per tier (less at the edge). What it swallowed is set at your feet.
 - Bosses feel 15% of the pull, knockback resistance weakens it, allies feel none, and creatures held in Selective Stasis or a cryo cocoon stay where they are.
 
 ## Story: The Way Back

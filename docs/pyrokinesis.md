@@ -267,3 +267,7 @@ climbing, banking, real-travel Momentum, wheel braking, steady level-five hover 
 level-three drift. It also checks double-tap Jump, Cinder Spear hits and Shift + flight-key
 Meteor Dive impact, and captures the poses, flame trails, Cinder Spear, Sunfall and Meteor Dive. Run it with
 `./gradlew runClient --offline --init-script tools/pyro-preview.init.gradle` under Java 21.
+
+## Damage and stamina
+
+Blue Lance hits for (3 + 0.5 per tier) × 1.5; its seam hits for 0.5 every four ticks. Heat Mantle deals 0.1 each second plus refreshed burning. Firebending kicks ignite for one second; ordinary jabs do not ignite. The loaded Counterflame still multiplies a jab by 2.2. Full formulas and unlock-tier comparisons are in [Stamina and balance](stamina-balance.md#every-damage-review).

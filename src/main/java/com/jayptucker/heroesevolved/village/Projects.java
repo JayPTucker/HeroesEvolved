@@ -415,6 +415,10 @@ public final class Projects {
         UUID owner;
         /** The last calendar day the village gathered for it itself (village/Workers); -1 until it starts. */
         long gathered = -1;
+        /** The broken buildings it puts back (village/Repairs), or empty for a building project. */
+        final List<Home> repairs = new ArrayList<>();
+        public List<Home> repairs() { return List.copyOf(repairs); }
+        public boolean repair() { return !repairs.isEmpty(); }
         final Set<UUID> givers = new LinkedHashSet<>(), told = new HashSet<>();
 
         public ResourceLocation template() { return template; }
@@ -459,6 +463,9 @@ public final class Projects {
             if (upgrade != null) t.put("upgrade", upgrade.save());
             if (owner != null) t.putUUID("owner", owner);
             t.putLong("gathered", gathered);
+            ListTag fix = new ListTag();
+            for (Home broken : repairs) fix.add(broken.save());
+            t.put("repairs", fix);
             ListTag g = new ListTag(), k = new ListTag();
             for (UUID u : givers) g.add(NbtUtils.createUUID(u));
             for (UUID u : told) k.add(NbtUtils.createUUID(u));
@@ -484,6 +491,7 @@ public final class Projects {
             if (t.contains("upgrade")) p.upgrade = Home.load(t.getCompound("upgrade"));
             if (t.hasUUID("owner")) p.owner = t.getUUID("owner");
             p.gathered = t.contains("gathered") ? t.getLong("gathered") : -1;
+            for (Tag broken : t.getList("repairs", Tag.TAG_COMPOUND)) { Home home = Home.load((CompoundTag) broken); if (home != null) p.repairs.add(home); }
             for (Tag u : t.getList("givers", Tag.TAG_INT_ARRAY)) p.givers.add(NbtUtils.loadUUID(u));
             for (Tag u : t.getList("told", Tag.TAG_INT_ARRAY)) p.told.add(NbtUtils.loadUUID(u));
             return p.template == null ? null : p;
@@ -810,10 +818,76 @@ public final class Projects {
         start(level, v);
     }
 
+    public static final String MENDING = "Mending the damage";
+
+    /**
+     * Something was broken in {@code v} (village/Repairs): it asks on its board for what it needs to put {@code broken}
+     * back, {@code needs} as the buildings were made, less its own share. A project it was gathering for is set aside
+     * (with what it had) until the mending is done; a repair already gathering takes the new damage in. While anything is
+     * being built it waits. The repair project, or null.
+     */
+    public static Project repair(ServerLevel level, VillageMemory.Village v, List<Home> broken, EnumMap<Material, Float> needs) {
+        Project p = v.project;
+        float share = share(Growth.mood(level, v));
+        if (p != null && p.repair()) {
+            if (p.stage != Stage.GATHERING) return null;
+            boolean added = false;
+            for (Home h : broken) if (!p.repairs.contains(h)) { p.repairs.add(h); added = true; }
+            if (!added) return p;
+            needs.forEach((m, n) -> p.need.merge(m, Math.max(1, Math.round(n * share)), (a, b) -> Math.min(MOST_OF_ONE, a + b)));
+            VillageMemory.get(level).setDirty();
+            signs(level, v);
+            return p;
+        }
+        if (p != null && (p.stage == Stage.READY || p.stage == Stage.BUILDING)) return null;
+        if (p != null && p.stage == Stage.GATHERING) v.paused = p;
+        Project r = new Project();
+        r.template = broken.getFirst().template();
+        r.title = MENDING;
+        r.repairs.addAll(broken);
+        r.posted = Days.today(level);
+        needs.forEach((m, n) -> { if (n > 0.5F) r.need.put(m, Math.max(1, Math.min(MOST_OF_ONE, Math.round(n * share)))); });
+        if (r.need.isEmpty()) r.need.put(Material.PLANKS, 1);
+        v.project = r;
+        VillageMemory.get(level).setDirty();
+        BandChatter.news(level, v.bell, v.name + " needs help mending what was broken. The list's up on the board by the bell.", (int) Days.DAY);
+        signs(level, v);
+        return r;
+    }
+
+    /**
+     * {@code v}'s mending is all done (village/Repairs): the repair project is finished, those who gave are thanked, and
+     * whatever it set aside comes back to the board as it was.
+     */
+    static void mended(ServerLevel level, VillageMemory.Village v) {
+        Project p = v.project;
+        if (p == null || !p.repair() || p.stage == Stage.DONE || Repairs.mending(level, v)) return;
+        p.stage = Stage.DONE;
+        p.finished = Days.today(level);
+        for (UUID u : p.givers)
+            if (level.getPlayerByUUID(u) instanceof ServerPlayer giver) {
+                VillageMemory.thanked(level, v.bell, giver, 2);
+                giver.sendSystemMessage(Component.literal(v.name + " thanks you for helping it mend what was broken.").withStyle(ChatFormatting.GREEN));
+            }
+        if (v.paused != null) { v.project = v.paused; v.paused = null; }
+        VillageMemory.get(level).setDirty();
+        signs(level, v);
+    }
+
     /** Plans the building's site ({@link Growth#grow}); false if there's no room yet (it tries again later). */
     static boolean start(ServerLevel level, VillageMemory.Village v) {
         Project p = v.project;
         p.lastTry = level.getGameTime();
+        if (p.repair()) {
+            // Everything's in: a crew on each broken building (what's missing now, which may be more than when it asked).
+            int sites = 0;
+            for (Home h : p.repairs) if (Repairs.plan(level, v, h) != null) sites++;
+            p.stage = Stage.BUILDING;
+            VillageMemory.get(level).setDirty();
+            if (sites == 0) mended(level, v);
+            signs(level, v);
+            return true;
+        }
         Rebuild.Site site = null;
         if (p.upgrade != null) {
             // Rebuilt where it stands if it still stands and there's still room; if not (it burnt, or something was built
@@ -884,7 +958,8 @@ public final class Projects {
         Project p = v.project;
         // Homes players asked for come first; then the village's own projects.
         if (p == null || p.stage == Stage.DONE && day > p.finished) {
-            if (!v.orders.isEmpty()) p = Homes.post(level, v);
+            if (v.paused != null) { p = v.project = v.paused; v.paused = null; VillageMemory.get(level).setDirty(); }
+            else if (!v.orders.isEmpty()) p = Homes.post(level, v);
             else if (v.houses < MOST) p = post(level, v);
         }
         Homes.tick(level, v);
@@ -892,7 +967,8 @@ public final class Projects {
             if (p.stage == Stage.GATHERING) collect(level, v, null);
             if (p.stage == Stage.GATHERING) Workers.gather(level, v);
             if (p.stage == Stage.READY && (now - p.lastTry >= RETRY || now < p.lastTry)) start(level, v);
-            if (p.stage == Stage.BUILDING && !Growth.building(level, v)) { p.stage = Stage.READY; p.lastTry = -1000; }
+            if (p.stage == Stage.BUILDING && p.repair() && !Repairs.mending(level, v)) mended(level, v);
+            else if (p.stage == Stage.BUILDING && !p.repair() && !Growth.building(level, v)) { p.stage = Stage.READY; p.lastTry = -1000; }
             if (p.stage == Stage.GATHERING) tell(level, v, p);
         }
         signs(level, v);
@@ -919,8 +995,8 @@ public final class Projects {
         for (ServerPlayer pl : level.players()) {
             if (pl.isSpectator() || pl.blockPosition().distSqr(v.board.origin) > TELL * TELL || !p.told.add(pl.getUUID())) continue;
             VillageMemory.get(level).setDirty();
-            pl.sendSystemMessage(Component.literal(v.name + "'s notice board: the village is gathering for " + lower(p.title)
-                    + ". Leave what it needs in the chest below the signs.").withStyle(ChatFormatting.GRAY));
+            pl.sendSystemMessage(Component.literal(v.name + "'s notice board: " + (p.repair() ? "the village needs help mending what was broken"
+                    : "the village is gathering for " + lower(p.title)) + ". Leave what it needs in the chest below the signs.").withStyle(ChatFormatting.GRAY));
         }
     }
 
@@ -1008,6 +1084,11 @@ public final class Projects {
             case GATHERING -> Math.min(99, (int) Math.floor(p.fraction() * 100)) + "% gathered";
             case READY -> p.noRoom ? "Finding room" : "Starts at dawn";
             case BUILDING -> {
+                if (p.repair()) {
+                    int done = 0, all = 0;
+                    for (Rebuild.Site s : Rebuild.all(level)) if (s.mend && s.bell().equals(v.bell)) { done += s.done(); all += s.size(); }
+                    yield all == 0 ? "Mending" : done == 0 ? "Starts at dawn" : "Mending: " + Math.min(99, done * 100 / all) + "%";
+                }
                 for (Rebuild.Site s : Rebuild.all(level))
                     if (s.growth() && s.bell().equals(v.bell) && s.size() > 0)
                         yield s.started() && s.done() > 0 ? "Building: " + Math.min(99, s.done() * 100 / s.size()) + "%" : "Starts at dawn";

@@ -68,7 +68,7 @@ item fights the ordinary way.
   cushioned for a moment after.
 - **Ground Out:** the first blow you evade gives 15 Charge and grounds the attacker. A corona snaps round you and your
   rear fist crackles; your next click within two seconds is a free cross whose spark runs through that attacker,
-  wherever they are within 16 blocks, at 60% more damage, then leaps on to up to three foes near them.
+  wherever they are within 16 blocks, at 50% more damage, then leaps on to up to three foes near them.
 
 ### How it looks
 

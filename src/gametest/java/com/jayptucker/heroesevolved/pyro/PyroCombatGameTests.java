@@ -87,7 +87,8 @@ public final class PyroCombatGameTests {
             h.assertTrue(PyroCombat.next(p) == PyroCombat.Strike.JAB, "A fresh combo opens with the jab");
             float full = foe.getHealth();
             h.assertTrue(PyroCombat.strike(p) == 1, "An empty-handed click throws fire");
-            h.assertTrue(foe.getHealth() < full && !foe.isOnFire(), "The jab's fist of fire hurts the foe without igniting it");
+            h.assertTrue(Math.abs(full - foe.getHealth() - (.8F + .2F * 2)) < .01F && !foe.isOnFire(),
+                    "An ordinary jab deals its balanced direct hit; ignition belongs to kicks and the loaded counter");
             h.assertTrue(PyroCombat.strike(p) == 0, "A second click straight away is too soon");
             h.assertTrue(PyroCombat.next(p) == PyroCombat.Strike.CROSS, "The rear fist follows the jab");
         } catch (RuntimeException | AssertionError e) { PyroService.forget(p); throw e; }
@@ -101,7 +102,7 @@ public final class PyroCombatGameTests {
             float before = foe.getHealth();
             foe.setDeltaMovement(Vec3.ZERO);
             h.assertTrue(PyroCombat.strike(p) == 1, "The roundhouse is thrown");
-            h.assertTrue(foe.getHealth() < before, "The kicked crescent burns the foe");
+            h.assertTrue(foe.getHealth() < before && foe.isOnFire(), "The kicked crescent hits and ignites the foe");
             h.assertTrue(foe.getDeltaMovement().z > .3, "The crescent throws the foe away");
             h.assertTrue(PyroCombat.next(p) == PyroCombat.Strike.JAB, "After the kick the combo starts again");
             PyroService.forget(p);
@@ -172,7 +173,8 @@ public final class PyroCombatGameTests {
             float full = foe.getHealth();
             h.assertTrue(PyroCombat.strike(p) == 1, "The counter is thrown");
             float dealt = full - foe.getHealth();
-            h.assertTrue(dealt >= (.8F + .2F * 2) * 2, "A Counterflame cross is a fireball, " + dealt);
+            h.assertTrue(Math.abs(dealt - (.8F + .2F * 2) * 2.2F) < .01F,
+                    "A Counterflame cross keeps its 2.2x multiplier on the balanced jab, " + dealt);
             h.assertTrue(!PyroCombat.isLoaded(p), "Throwing it spends the Counterflame");
         } catch (RuntimeException | AssertionError e) { PyroService.forget(p); throw e; }
         later(h, p, PyroCombat.EVADE_TICKS + 2, () -> {

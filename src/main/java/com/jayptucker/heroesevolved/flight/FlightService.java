@@ -89,6 +89,7 @@ public final class FlightService {
     }
 
     public static void stopForPowerRemoval(ServerPlayer player) {
+        com.jayptucker.heroesevolved.energy.StaminaDrain.stop(player, "flight_cyclone");
         if (hasActiveSession(player)) endSession(player, false);
         else {
             FlightDynamicsService.forget(player);
@@ -166,6 +167,8 @@ public final class FlightService {
                 Math.atan2(fromCenter.z, fromCenter.x),
                 HeroesEvolvedConfig.COMMON.flightCycloneDurationSeconds.get() * 20,
                 CYCLONE_ASCENT_TICKS, TEMPEST_WINDUP_TICKS, strength));
+        com.jayptucker.heroesevolved.energy.StaminaDrain.start(player, "flight_cyclone",
+                com.jayptucker.heroesevolved.ability.PowerBalance.drain("flight_cyclone", 12), false, () -> cancelCyclone(player));
         setPlayerVelocity(player, Vec3.ZERO);
         syncTempest(player, ACTIVE_CYCLONES.get(player.getUUID()), false);
         player.serverLevel().playSound(null, player.blockPosition(),
@@ -178,6 +181,7 @@ public final class FlightService {
 
     /** Shift + V always cancels for free, including during the wind-up. */
     public static boolean cancelCyclone(ServerPlayer player) {
+        com.jayptucker.heroesevolved.energy.StaminaDrain.stop(player, "flight_cyclone");
         CycloneState cyclone = ACTIVE_CYCLONES.remove(player.getUUID());
         if (cyclone == null) return false;
         syncTempest(player, cyclone, true);
@@ -347,8 +351,7 @@ public final class FlightService {
 
         // Vapor is reconstructed on clients from the existing synchronized flight pose.
 
-        // Cyclone already charges a large, one-time activation cost. It must
-        // not also trigger Flight's sustained drain and overexert its owner.
+        // Tempest pays its own wind upkeep through StaminaDrain; never also charge ordinary cruise here.
         if (cycloneActive) {
             return;
         }
@@ -487,6 +490,7 @@ public final class FlightService {
         player.resetFallDistance();
         if (--cyclone.remainingTicks > 0) return true;
         launchCycloneTargets(player, cyclone);
+        com.jayptucker.heroesevolved.energy.StaminaDrain.stop(player, "flight_cyclone");
         ACTIVE_CYCLONES.remove(player.getUUID());
         syncTempest(player, cyclone, true);
         player.setData(ModDataAttachments.PLAYER_FLIGHT.get(),
@@ -670,6 +674,7 @@ public final class FlightService {
                 PlayerFlightData.empty()
         );
         syncTempest(player, ACTIVE_CYCLONES.remove(player.getUUID()), true);
+        com.jayptucker.heroesevolved.energy.StaminaDrain.stop(player, "flight_cyclone");
         FlightDynamicsService.forget(player);
         player.resetFallDistance();
 

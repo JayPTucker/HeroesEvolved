@@ -79,6 +79,9 @@ public final class RadiationService {
 
     public static final int HOT = 40, CRITICAL = 80;
     private static final int EMISSION_MIN_TICKS = 8, EMISSION_MAX_TICKS = 100, ZONE_TICKS = 160;
+    /** Controlled Emission's action id and its fallback stamina a second while the beam is held. */
+    private static final String EMISSION_ID = "radiation_meltdown_beam";
+    private static final double EMISSION_DRAIN = 12;
 
     private static final class Emission {
         final ServerPlayer player; final int level; final long started; final net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension;
@@ -375,6 +378,10 @@ public final class RadiationService {
             return false;
         }
         EMISSIONS.put(player.getUUID(), new Emission(player, powerLevel, player.serverLevel().getGameTime()));
+        // Held for as long as it is paid for: the beam vents Core AND drains stamina every tick it runs.
+        com.jayptucker.heroesevolved.energy.StaminaDrain.start(player, EMISSION_ID,
+                com.jayptucker.heroesevolved.ability.PowerBalance.drain(EMISSION_ID, EMISSION_DRAIN), false,
+                () -> { if (EMISSIONS.remove(player.getUUID()) != null) endEmission(player); });
         ArmPosePayload.show(player, ArmPose.TWO_HANDS, EMISSION_MAX_TICKS + 10);
         player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.RESPAWN_ANCHOR_CHARGE, SoundSource.PLAYERS, 1.0F, 1.6F);
         return true;
@@ -395,6 +402,7 @@ public final class RadiationService {
     }
 
     private static void endEmission(ServerPlayer player) {
+        com.jayptucker.heroesevolved.energy.StaminaDrain.stop(player, EMISSION_ID);
         ArmPosePayload.clear(player);
         player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 1.0F, 1.6F);
     }
@@ -795,6 +803,7 @@ public final class RadiationService {
 
     public static void stopAll(ServerPlayer player) {
         if (EMISSIONS.remove(player.getUUID()) != null) ArmPosePayload.clear(player);
+        com.jayptucker.heroesevolved.energy.StaminaDrain.stop(player, EMISSION_ID);
         RadiationLeap.forget(player);
         RadiationSkills.forget(player);
         ZONES.removeIf(zone -> zone.owner.equals(player.getUUID()));
@@ -816,7 +825,9 @@ public final class RadiationService {
 
     public static void clear() {
         RadiationDecay.clearAll();
-        BREACHES.clear(); DETONATIONS.clear(); LAST_HURT.clear(); EMISSIONS.clear(); ZONES.clear(); CHARGE_DAMAGE.clear();
+        BREACHES.clear(); DETONATIONS.clear(); LAST_HURT.clear();
+        for (Emission e : List.copyOf(EMISSIONS.values())) com.jayptucker.heroesevolved.energy.StaminaDrain.stop(e.player, EMISSION_ID);
+        EMISSIONS.clear(); ZONES.clear(); CHARGE_DAMAGE.clear();
         LAST_HELD.clear();
         RadiationSickness.clear();
         RadiationLeap.clear();

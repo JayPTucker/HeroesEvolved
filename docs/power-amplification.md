@@ -109,9 +109,9 @@ Three lanes of six. In each lane the 2nd and 5th are active skills and the 6th i
 ### Red Lightning (fighting alone)
 
 1. **Bigger Ball.** The ball grows twice as fast once you hold 50 Charge, and bolts and beams reach four blocks farther.
-2. **Van Full** *(active).* A burst that hits everyone within five blocks (up to 1 damage, for spending 30 Charge), double
-   where you're closed in (most rays from your eyes meet a block within five). It never takes a foe below half a heart, and stuns them
-   for five seconds.
+2. **Van Full** *(active).* A burst stuns everyone within five blocks for five seconds. It spends up to 30 Charge for damage
+   equal to Charge spent / 30, doubled where you're closed in (most rays from your eyes meet a block within five).
+   Damage leaves at least half a heart. With no Charge, the stun still works but deals no damage.
 3. **Opposite Current.** With 20 Charge or more, lightning aimed at you (an Electrokinetic's, a storm's) is
    halved, and the half you don't take becomes Charge.
 4. **Burn Through.** Red lightning breaks the constructs in its path (ice walls, force barriers and bridges) and hits a

@@ -143,6 +143,11 @@ public final class VillageWorkGameTests {
             h.assertTrue(!v.baselined, "Nobody lives there: it doesn't even look");
             people(h, bell.offset(2, 0, 2), 3);
             h.assertTrue(Repairs.check(level, v) == null && v.baselined, "First it learns how it was");
+            // It's gathering for something, and has some of it in.
+            Projects.consider(level, v);
+            Projects.Project before = v.project();
+            h.assertTrue(before != null && before.stage() == Projects.Stage.GATHERING, "Gathering for its next project");
+            before.have.put(Projects.Material.PLANKS, 5F);
             // Knock a hole in it (an explosion would), and a window out by hand.
             List<BlockPos> walls = new ArrayList<>();
             for (BlockPos p : built.positions) {
@@ -156,9 +161,22 @@ public final class VillageWorkGameTests {
             // What hung on those walls (a torch) may have fallen too: that's missing as well.
             h.assertTrue(gone.containsAll(walls.subList(0, walls.size() - 1)) && !gone.contains(byHand), "The holes are missing; the one broken by hand is left be: " + gone.size()
                     + " of " + walls + " missing " + gone + " in " + home.template().getPath());
-            Rebuild.Site mend = Repairs.check(level, v);
-            h.assertTrue(mend != null && mend.mending() && mend.size() == gone.size(), "It plans the mending: " + (mend == null ? "none" : mend.size()));
+            // It asks on the board for what it needs to put that back, and sets the other project aside.
+            Projects.Project repair = Repairs.check(level, v);
+            h.assertTrue(repair != null && repair.repair() && v.project() == repair && repair.title().equals(Projects.MENDING)
+                    && repair.stage() == Projects.Stage.GATHERING, "A repair project on the board");
+            h.assertTrue(repair.need().getOrDefault(Projects.Material.PLANKS, 0) + repair.need().getOrDefault(Projects.Material.STONE, 0) > 0,
+                    "Asking for what the walls were made of: " + repair.need());
+            h.assertTrue(v.paused == before, "The other project waits");
+            h.assertTrue(Repairs.check(level, v) == repair, "Looking again changes nothing");
+            h.assertTrue(Rebuild.all(level).stream().noneMatch(Rebuild.Site::mending), "Nothing mended until it has what it needs");
+            Projects.fill(level, v);
+            Rebuild.Site mend = Rebuild.all(level).stream().filter(x -> x.mending() && x.bell().equals(bell)).findFirst().orElse(null);
+            h.assertTrue(repair.stage() == Projects.Stage.BUILDING && mend != null && mend.size() == gone.size(),
+                    "Once it has, its people mend it: " + (mend == null ? "none" : mend.size()));
             Rebuild.hurry(level, mend, 10_000);
+            h.assertTrue(repair.stage() == Projects.Stage.DONE && v.project() == before && v.paused == null
+                    && Math.abs(before.have(Projects.Material.PLANKS) - 5) < 1e-3, "Then the other project comes back as it was");
             for (BlockPos p : walls.subList(0, 5)) h.assertTrue(!level.getBlockState(p).isAir(), "Mended at " + p.toShortString());
             h.assertTrue(level.getBlockState(byHand).isAir(), "The player's gap stays");
             h.assertTrue(Repairs.missing(level, v, home).isEmpty() || Repairs.missing(level, v, home).equals(List.of()), "Whole again");
