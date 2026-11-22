@@ -222,7 +222,7 @@ public final class FacilityService {
         }
     }
     private static UUID spawn(ServerLevel level, double x, double z, String name) {
-        Villager v = EntityType.VILLAGER.create(level); v.setPos(x, 65, z); v.setCustomName(Component.literal(name)); v.setCustomNameVisible(true); v.setPersistenceRequired(); v.setNoAi(true); level.addFreshEntity(v); return v.getUUID();
+        Villager v = com.jayptucker.heroesevolved.village.Villagers.actor(level); v.setPos(x, 65, z); v.setCustomName(Component.literal(name)); v.setCustomNameVisible(true); v.setPersistenceRequired(); v.setNoAi(true); level.addFreshEntity(v); return v.getUUID();
     }
     private static Block blockAt(int x, int y, int z) {
         if (y == 64 && x >= 10 && x <= 18 && z >= 12 && z <= 18) return (x + z) % 2 == 0 ? Blocks.YELLOW_CONCRETE : Blocks.BLACK_CONCRETE;

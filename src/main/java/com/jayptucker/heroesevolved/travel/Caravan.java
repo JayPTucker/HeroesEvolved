@@ -61,7 +61,8 @@ public final class Caravan extends Party {
             l.moveTo(spot.x + 1.5, spot.y, spot.z + 1.5, 0, 0);
             l.setChest(true);
             l.setTamed(true);
-            if (Travellers.add(level, v) == null || Travellers.add(level, l) == null) return null;
+            v = Travellers.add(level, v);
+            if (v == null || Travellers.add(level, l) == null) return null;
             l.setLeashedTo(v, true);
             c.drovers.add(v);
             c.llamas.add(l);

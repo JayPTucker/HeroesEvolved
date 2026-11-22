@@ -3,7 +3,8 @@
 How Heroes Evolved works with the two optional "what is this" mods the modpack ships: JEI (recipes and items) and
 Jade (the overlay naming what you look at). What the player sees: [jei-and-jade.md](../jei-and-jade.md).
 
-Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
+Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md). The third optional mod, Minecraft Comes Alive,
+changes the world rather than describing it and has its own notes: [mca.md](mca.md).
 
 ## When you add anything JEI or Jade can see
 

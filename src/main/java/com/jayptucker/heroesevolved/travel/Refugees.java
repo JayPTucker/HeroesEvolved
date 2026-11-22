@@ -54,7 +54,8 @@ public final class Refugees extends Party {
             v.moveTo(at.x + i, at.y, at.z, 0, 0);
             v.getPersistentData().putBoolean(GiftedMobs.ROLLED, true);
             if (i == n - 1) v.setBaby(true);
-            if (Travellers.add(level, v) == null) return null;
+            v = Travellers.add(level, v);
+            if (v == null) return null;
             r.family.add(v);
             r.members.add(v);
         }

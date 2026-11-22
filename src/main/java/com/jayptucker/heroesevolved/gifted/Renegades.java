@@ -254,6 +254,7 @@ public final class Renegades {
         Vec3 at = villager.position();
         level.playSound(null, at.x, at.y, at.z, SoundEvents.ZOMBIE_VILLAGER_CONVERTED, SoundSource.HOSTILE, 1.4F, .6F);
         villager.setCustomName(null);
+        com.jayptucker.heroesevolved.village.Villagers.leaving(villager);
         Raider renegade = villager.convertTo(illager(t.power), false);
         if (renegade == null) return null;
         net.neoforged.neoforge.event.EventHooks.onLivingConvert(villager, renegade);

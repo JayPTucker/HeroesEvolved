@@ -1,0 +1,25 @@
+// Villagers with Minecraft Comes Alive (uitest/McaPreview). Never bundled into the mod JAR. Needs -Pmca, which puts MCA in
+// the run:  ./gradlew runClient --init-script tools/mca-preview.init.gradle -Pmca
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('mcaPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/mca-preview')
+                        programArguments.addAll('--width', '1100', '--height', '700')
+                        systemProperty('heroes.preview.mca', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('mcaPreviewClasses')) }
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

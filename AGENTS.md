@@ -45,6 +45,7 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 | Sounds, music, OGG files, voice chat | [audio.md](docs/agents/audio.md): start from the user's reference library it describes (`C:\Users\jaypa\OneDrive\Desktop\Gemini Heroes Reborn Audio`), never ship any of it; [powers/telepathy.md](docs/agents/powers/telepathy.md) for voice chat |
 | Costs, cooldowns, drains, unlock levels | "Stamina and balance" below, and [docs/stamina-balance.md](docs/stamina-balance.md) |
 | Adding or changing any item, block, entity, mob, machine, recipe or disguise; JEI or Jade themselves | [compat.md](docs/agents/compat.md) (its checklist) |
+| Spawning, replacing or special-casing a villager; Minecraft Comes Alive | [mca.md](docs/agents/mca.md). **Never `EntityType.VILLAGER.create` plus `addFreshEntity`:** use `Villagers.actor` or `Villagers.enter` |
 | Writing, running or fixing game tests | [testing.md](docs/agents/testing.md) |
 | Screenshots of anything in game | [previews.md](docs/agents/previews.md) |
 
@@ -81,7 +82,8 @@ Shared systems with player docs: [fighting-styles.md](docs/fighting-styles.md), 
 [living-radio.md](docs/living-radio.md), [gifted-villagers.md](docs/gifted-villagers.md), [power-traces.md](docs/power-traces.md),
 [travellers.md](docs/travellers.md), [village-growth.md](docs/village-growth.md),
 [the-last-day.md](docs/the-last-day.md),
-[the-past.md](docs/the-past.md), [jei-and-jade.md](docs/jei-and-jade.md).
+[the-past.md](docs/the-past.md), [jei-and-jade.md](docs/jei-and-jade.md),
+[minecraft-comes-alive.md](docs/minecraft-comes-alive.md).
 
 ## Pyrokinesis is the bar for movement and fighting
 

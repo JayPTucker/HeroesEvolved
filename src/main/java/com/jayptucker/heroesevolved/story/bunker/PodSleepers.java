@@ -98,7 +98,7 @@ public final class PodSleepers {
 
     /** A new body for pod {@code index}: one of Odessa's people, in an ordinary robe, not a child. */
     public static Villager body(ServerLevel level, int index) {
-        Villager villager = EntityType.VILLAGER.create(level);
+        Villager villager = com.jayptucker.heroesevolved.village.Villagers.actor(level);
         if (villager == null) return null;
         villager.setVillagerData(villager.getVillagerData().setType(LOOKS[Math.floorMod(index * 3 + 1, LOOKS.length)])
                 .setProfession(VillagerProfession.NONE));
