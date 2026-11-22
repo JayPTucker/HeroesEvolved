@@ -319,11 +319,12 @@ public final class BunkerService {
         if (advancement != null) player.getAdvancements().award(advancement, "granted");
     }
 
-    /** The bunker's rooms with a little rock round them, and the column of the stairwell and the lobby over the vault. */
+    /** The bunker's rooms with a little rock round them, and the column of the stairwell and Primatech's ruin over the vault. */
     public static boolean withinBunker(BunkerData data, BlockPos pos) {
         BlockPos at = pos.subtract(data.origin);
         if (data.layout().bounds().inflatedBy(3).isInside(at)) return true;
-        return at.getX() >= -7 && at.getX() <= 19 && at.getZ() >= -14 && at.getZ() <= 4 && at.getY() >= -3 && at.getY() <= 120;
+        return at.getX() >= PrimatechRuin.LOT_X0 - 3 && at.getX() <= PrimatechRuin.LOT_X1 + 3 && at.getZ() >= PrimatechRuin.LOT_Z0 - 3
+                && at.getZ() <= PrimatechRuin.LOT_Z1 + 3 && at.getY() >= -3 && at.getY() <= 120;
     }
 
     /** For tests: whether the waking's music is still due to play for {@code player}. */

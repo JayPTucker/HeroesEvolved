@@ -58,7 +58,16 @@ public final class BunkerPreview {
             new Shot("pods-04-east-far", -1, 2, 62, -152, 6),
             new Shot("pods-05-floor", 0, 3, 50, 180, 38),
             new Shot("bunker-17-commons", 0, 1, 31, 180, -14),
-            new Shot("bunker-26-infirmary", -24, 1, 21, 90, 2));
+            new Shot("bunker-26-infirmary", -24, 1, 21, 90, 2),
+            // Primatech's ruin: from far off on each side, from the forecourt, and coming up the stair.
+            new Shot("ruin-01-front", -2, 16, -44, 0, 14, true),
+            new Shot("ruin-02-northeast", 42, 20, -34, 50, 20, true),
+            new Shot("ruin-03-northwest", -46, 22, -30, -55, 22, true),
+            new Shot("ruin-04-back", 0, 20, 42, 180, 18, true),
+            new Shot("ruin-05-doors", -2, 32, -17, 0, -12),
+            new Shot("ruin-06-top-of-stair", -1, 32, -6, -90, 14),
+            new Shot("ruin-07-inside-doors", -2, 32, -6, 150, 2),
+            new Shot("ruin-08-overhead", 0, 58, -2, 0, 89, true));
     private static final int TOUR_START = 300, STEP = 30;
     /** Close on one pod of each kind, whichever this world's are: after the tour, while the lights are still on. */
     private static final List<CryoChamberBlock.Condition> CLOSE = List.of(CryoChamberBlock.Condition.FROSTED,
@@ -158,8 +167,17 @@ public final class BunkerPreview {
             BlockPos o = BunkerData.get(server).origin;
             int surface = server.overworld().getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, o.getX(), o.getZ());
             var rooms = com.jayptucker.heroesevolved.story.bunker.PastBunker.bounds(o);
-            System.out.println("BUNKER_AUDIT\n" + com.jayptucker.heroesevolved.time.intro.city.CityAudit.run(server.overworld(),
-                    rooms.minX(), rooms.minY(), o.getZ() - 11, rooms.maxX(), surface + 16, rooms.maxZ()));
+            var audit = com.jayptucker.heroesevolved.time.intro.city.CityAudit.run(server.overworld(),
+                    rooms.minX(), rooms.minY(), o.getZ() - 11, rooms.maxX(), surface + 16, rooms.maxZ());
+            System.out.println("BUNKER_AUDIT\n" + audit);
+            audit.found().forEach((kind, cells) -> {
+                if (kind.startsWith("floating")) for (BlockPos cell : cells)
+                    System.out.println("BUNKER_FLOATING " + cell.toShortString() + " " + server.overworld().getBlockState(cell));
+            });
+            // The ruin alone, from its floor up, with what monsters could find in it.
+            int ruinFloor = o.getY() + 31;
+            System.out.println("RUIN_AUDIT\n" + com.jayptucker.heroesevolved.time.intro.city.CityAudit.run(server.overworld(),
+                    o.getX() - 31, ruinFloor, o.getZ() - 14, o.getX() + 28, ruinFloor + 48, o.getZ() + 13, true));
             // Dark floor only inside what the bunker built (its rooms, then the stairwell), not the caves round it.
             System.out.println("BUNKER_DARK rooms\n" + com.jayptucker.heroesevolved.time.intro.city.CityAudit.run(server.overworld(),
                     rooms.minX() + 2, rooms.minY() + 2, rooms.minZ() + 2, rooms.maxX() - 2, rooms.maxY() - 2, rooms.maxZ() - 2, true));

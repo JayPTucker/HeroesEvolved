@@ -360,6 +360,26 @@ generator, infirmary, containment, maintenance, and the sealed Helix Ward with o
 - **Long edit scripts go in files.** On this machine a long heredoc passed to the shell failed with `ENAMETOOLONG` and
   another with a quoting error; write the script with the file tool and run it.
 
+## Reusable patterns from Primatech's ruin (the surface over the bunker)
+
+`story/bunker/PrimatechRuin` is what a new world has at spawn: Odessa's Primatech Paper, collapsed. What the player sees is in
+[the-past.md](../the-past.md#the-first-five-minutes).
+
+- **A ruin of a building is that building's plan, brought down.** `Landmarks.primatechPlan` draws the real Primatech on a
+  `CityCanvas.plan` canvas, which remembers every block and writes nothing; the ruin moves it over the stair and collapses it.
+  A change to Primatech reaches the ruin by itself. A hand-drawn "lobby" only ever looked like the entrance to something.
+- **Cut a building by a height per column, then drop what no longer holds.** `standing(u, v)` gives the skyline, whole bays
+  lose a storey so the top is broken and not a slope, and `holdUp` floods from the floor and removes whatever came loose.
+- **Take the partitions out.** `Building` closes off the middle of each floor with a solid ring. In a cut-away that ring reads
+  as a stepped grey cone inside the wings. The ruin keeps the outer walls and floors and adds columns.
+- **Keep what names it.** The doors, the sign and the ends of the canopy are protected from the collapse. The canopy's middle
+  is gone on purpose: whole, it hides the sign from anyone standing on the forecourt.
+- **The world's spawn is inside the build.** A respawn lands on top of whatever stands within ten blocks of spawn, so the middle
+  stays low and the tall wings stand outside that radius. `PrimatechRuinGameTests` checks this and walks the way out.
+- **The heightmap counts trees as ground.** Grading from `MOTION_BLOCKING_NO_LEAVES` left every trunk in the ring as a stump
+  with grass on top. `BunkerStair.land` walks down past logs, leaves and plants to the real ground, and `looseLeaves` removes
+  any piece of a tree that no longer reaches a trunk on the ground, branches included.
+
 ## Reusable patterns from the bunker rework (the original rooms)
 
 These are about the original rooms (`BunkerLayout.LEGACY`), which worlds built before the rebuild still have.
@@ -368,7 +388,7 @@ The stasis bunker (`story/bunker/`) was reworked in November 2026: the lab and i
 structure, and the way out became the Last Day's own vault and stair, a hundred years on. What the player sees is in
 [docs/the-past.md](../../docs/the-past.md).
 
-- **The way out is drawn in code.** `BunkerStair` builds the vault, the switchback and the ruined lobby at spawn, because
+- **The way out is drawn in code.** `BunkerStair` builds the vault, the switchback and (through `PrimatechRuin`) the ruined building at spawn, because
   its depth depends on the terrain (about 31 blocks on a normal world). Two lanes (the south one beside the vault, the
   north one behind a divider) climb along x 3..12 and turn on landings at both ends; the number and length of flights
   are worked out from the depth, so the last step is always the lobby's floor. The top flight stays open to the sky as

@@ -307,8 +307,8 @@ public final class BunkerBuilder {
     public static BlockPos build(ServerLevel level) {
         BlockPos spawn = level.getSharedSpawnPos();
         var box = BunkerLayout.STASIS.bounds();
-        for (int cx = (spawn.getX() + Math.min(box.minX(), -4) - 2) >> 4; cx <= (spawn.getX() + Math.max(box.maxX(), 16) + 2) >> 4; cx++)
-            for (int cz = (spawn.getZ() - 12) >> 4; cz <= (spawn.getZ() + box.maxZ() + 2) >> 4; cz++) level.getChunk(cx, cz);
+        for (int cx = (spawn.getX() + Math.min(box.minX(), BunkerStair.REACH_X0) - 2) >> 4; cx <= (spawn.getX() + Math.max(box.maxX(), BunkerStair.REACH_X1) + 2) >> 4; cx++)
+            for (int cz = (spawn.getZ() + BunkerStair.REACH_Z0 - 2) >> 4; cz <= (spawn.getZ() + Math.max(box.maxZ(), BunkerStair.REACH_Z1) + 2) >> 4; cz++) level.getChunk(cx, cz);
         // The ground the ruined lobby stands on: the middle height of its whole footprint, not one column's, so on a
         // hillside it sits on the slope instead of in a pit cut down to wherever spawn happened to be lowest.
         int surface = BunkerStair.groundLevel(level, spawn);

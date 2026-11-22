@@ -15,7 +15,7 @@ Primatech relay stations generate far apart in rings around the world origin, li
 
 ## Existing worlds
 
-Bunkers built before the Sublevel 4 rebuild (November 2026) keep their original rooms, and the players who sleep in them keep their pods; only new worlds get the rebuilt bunker and the Helix Ward. Existing bunkers receive the receiver and recovery rooms where the original fixtures are still in place; the old copper receiver becomes the radio console, and the ground round an existing ruined lobby is graded the same way. Look for relay stations in newly generated terrain. Previously earned story books, advancements, discovery rewards, and past outcomes remain in the save. Books from the earlier bunker layout and retired Hourglass Annex, Avenue at 6:14, and Night Three episodes remain valid discoveries when found. The game recovers players whose saves still place them in one of those visits.
+Bunkers built before the Sublevel 4 rebuild (November 2026) keep their original rooms, and the players who sleep in them keep their pods; only new worlds get the rebuilt bunker and the Helix Ward. Existing bunkers receive the receiver and recovery rooms where the original fixtures are still in place; the old copper receiver becomes the radio console, and the ground round an existing ruined lobby is graded the same way. Only new worlds get the collapsed Primatech building over the stair. Look for relay stations in newly generated terrain. Previously earned story books, advancements, discovery rewards, and past outcomes remain in the save. Books from the earlier bunker layout and retired Hourglass Annex, Avenue at 6:14, and Night Three episodes remain valid discoveries when found. The game recovers players whose saves still place them in one of those visits.
 
 ## The first five minutes
 
@@ -28,7 +28,7 @@ New players first live [the Last Day](the-last-day.md), which ends with them sea
 2. **37,620 days.** The pod's counter: 103 years. Frost on the glass. The pod holds you while the revival protocol runs.
 3. **You are awake.** The pod chimes and hisses open (about 5.5 seconds in), the waking's music begins, and you earn **Wake Up**.
    Once you are out of the pod and the alarm is over, the waking's music fades in and plays for as long as you are in
-   the bunker, its stair or the ruined lobby at its top. Step out into the world and it fades away, and you earn
+   the bunker, its stair or the ruin of Primatech Paper at its top. Step out into the world and it fades away, and you earn
    **What happened...?**
 4. **The power comes back.** The alarm holds until you step out of the pod. Then it cuts off, a breaker
    slams, and the bunker's lights click on in a wave from the generator, down the hall from its door to
@@ -38,6 +38,11 @@ Every new player wakes this way, in the pod assigned to them (the same number th
 ("SUBJECT 03 / name / REVIVAL IN PROGRESS", then "REVIVED"). Their waking cuts the main power again: the
 lights go out, and everyone already in the bunker hears the alarm until the last sleeper is out of their
 pod, when the power comes back for all of them.
+
+The stair comes up inside what is left of **Primatech Paper**, the building you ran into on the Last Day. The light came
+down the avenue and took out its middle: two broken wings still stand, up to about eight storeys, with a great heap of
+fallen floors, the roof's machine room and its mast between them. The lobby's railed stair, its green copper doors and the
+PRIMATECH PAPER CO. sign are still there, and the way from the stair out through those doors is clear.
 
 A chest in the hall's aisle holds the orientation log. The receiver in Records gives directions to the relay ruins.
 
