@@ -219,12 +219,13 @@ public final class ProgressionReworkGameTests {
     public static void usingThePowerOnSomethingEarnsMastery(GameTestHelper h) {
         var p = player(h, ModAbilities.QUAKE_ID, 1);
         long start = PlayerProgressionService.getData(p).mastery();
-        MasteryService.awardPowerHit(p, 10);
+        var target = net.minecraft.world.entity.EntityType.PILLAGER.create(h.getLevel());
+        MasteryService.awardPowerHit(p, target, 10);
         h.assertTrue(PlayerProgressionService.getData(p).mastery() == start, "A plain hit without the power earns nothing");
         MasteryService.markPowerUse(p, ModAbilities.QUAKE_ID);
-        MasteryService.awardPowerHit(p, 10);
+        MasteryService.awardPowerHit(p, target, 10);
         h.assertTrue(PlayerProgressionService.getData(p).mastery() == start + 5, "A power hit earns one per two damage");
-        MasteryService.awardPowerHit(p, 10);
+        MasteryService.awardPowerHit(p, target, 10);
         h.assertTrue(PlayerProgressionService.getData(p).mastery() == start + 5, "Hits are counted at most twice a second");
         MasteryService.awardRescue(p, 15);
         h.assertTrue(PlayerProgressionService.getData(p).mastery() == start + 20, "Saving someone earns Mastery");

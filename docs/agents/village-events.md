@@ -511,6 +511,13 @@ villages showed (`uitest/RealVillagePreview`). Built November 2026.
   missing when a village was first looked over (generation quirks, processors) is never "repaired".
 - **A hand-break is told from an explosion** by `PlayerInteractEvent.LeftClickBlock` just before the block's
   `NeighborNotifyEvent` (within 100 ticks): `PlayerBuilt.cleared` keeps the gap; a player's placement there forgets it.
+- **Repairs go through the board.** `Repairs.check` turns damage into a repair project (`Projects.repair`,
+  `Project.repairs`, titled `Projects.MENDING`) asking for what the missing blocks were made of (`Projects.add` over
+  `Repairs.wanted`). A gathering project is parked in `Village.paused` with its progress and restored by
+  `Projects.mended` the moment the last mend site finishes; a building or ready project makes repairs wait; new damage
+  while gathering merges into the same project. Only once it has everything does `Projects.start` plan the mend sites
+  (`Repairs.plan`, from what's missing then). A repair project's `BUILDING` stage ends when no mend site is left
+  (`Repairs.mending`), not by `Growth.building`.
 - **Mend sites** (`Rebuild.mend`, `Site.mend`) put template states into empty space only, start now in working hours,
   never clear rubble (that's the meteor's), and say "has mended what was broken". A struggling village needs eight
   missing blocks, so `Growth.wear` isn't undone the next minute.

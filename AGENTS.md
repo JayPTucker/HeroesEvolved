@@ -44,6 +44,7 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 | Meltdown hazards, protective suits, HUD ring gauges | [hazards-and-suits.md](docs/agents/hazards-and-suits.md) |
 | Sounds, music, OGG files, voice chat | [audio.md](docs/agents/audio.md): start from the user's reference library it describes (`C:\Users\jaypa\OneDrive\Desktop\Gemini Heroes Reborn Audio`), never ship any of it; [powers/telepathy.md](docs/agents/powers/telepathy.md) for voice chat |
 | Costs, cooldowns, drains, unlock levels | "Stamina and balance" below, and [docs/stamina-balance.md](docs/stamina-balance.md) |
+| Mastery, Power Levels, max stamina, anything that rewards play (and stopping farms) | [progression.md](docs/agents/progression.md) |
 | Adding or changing any item, block, entity, mob, machine, recipe or disguise; JEI or Jade themselves | [compat.md](docs/agents/compat.md) (its checklist) |
 | Writing, running or fixing game tests | [testing.md](docs/agents/testing.md) |
 | Screenshots of anything in game | [previews.md](docs/agents/previews.md) |

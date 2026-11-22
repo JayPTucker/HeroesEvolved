@@ -567,6 +567,29 @@ public final class TelepathyReworkGameTests {
         } finally { clean(a, b, c); }
     }
 
+    @GameTest(template = "rewind_empty", batch = "telepathy.read_drain")
+    public static void holdingReadMindPaysEverySecondAndLetsGoWhenEmpty(GameTestHelper h) {
+        Actor a = telepath(h, 2, "reader"), b = telepath(h, 6, "read");
+        try {
+            a.player.setData(ModDataAttachments.PLAYER_UNLIMITED_ENERGY, false);
+            PlayerEnergyService.restore(a.player, PlayerEnergyService.getMaximumEnergy(a.player));
+            h.assertTrue(TelepathyFocus.start(a.player, 5), "Read Mind finds the player");
+            h.assertTrue(com.jayptucker.heroesevolved.energy.StaminaDrain.active(a.player, "telepathy_read_mind"), "A held read drains");
+            double before = PlayerEnergyService.getStamina(a.player);
+            for (int i = 0; i < 20; i++) com.jayptucker.heroesevolved.energy.StaminaDrain.tick(h.getLevel().getServer());
+            double perSecond = com.jayptucker.heroesevolved.ability.PowerBalance.drain("telepathy_read_mind", 2);
+            h.assertTrue(Math.abs(before - PlayerEnergyService.getStamina(a.player) - perSecond) < .0001,
+                    "A second of reading costs " + perSecond + " stamina");
+            TelepathyFocus.stop(a.player);
+            h.assertTrue(!com.jayptucker.heroesevolved.energy.StaminaDrain.active(a.player, "telepathy_read_mind"), "Letting go ends the drain");
+            h.assertTrue(TelepathyFocus.start(a.player, 5), "A second read");
+            PlayerEnergyService.drain(a.player, PlayerEnergyService.getStamina(a.player) - .01);
+            com.jayptucker.heroesevolved.energy.StaminaDrain.tick(h.getLevel().getServer());
+            h.assertTrue(!TelepathyFocus.reading(a.player), "An empty bar breaks the read");
+            h.succeed();
+        } finally { com.jayptucker.heroesevolved.energy.StaminaDrain.forget(a.player); clean(a, b); }
+    }
+
     @GameTest(template = "rewind_empty", batch = "telepathy.minds_eye")
     public static void mindsEyeShowsWhatTheyCarryAndSayButNeverLetsGo(GameTestHelper h) {
         Actor a = telepath(h, 2, "eye"), b = telepath(h, 6, "carrier");

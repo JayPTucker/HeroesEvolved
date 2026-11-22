@@ -981,7 +981,7 @@ public final class PyroService {
                 double along = delta.dot(aim);
                 if (along < 0 || along > reach || delta.subtract(aim.scale(along)).lengthSqr() > 1.1) continue;
                 if (!exposed(lance.owner, lance.start, target.getBoundingBox().getCenter())) continue;
-                burn(lance.owner, target, .75F, 3);
+                burn(lance.owner, target, .5F, 3);
                 if (++struck >= 8) break;
             }
             PyroGeometry.show(lance.level, Piece.PYRO_LANCE, lance.start, contact.getLocation(), 1, true, null);

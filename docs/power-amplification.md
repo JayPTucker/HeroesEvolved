@@ -109,9 +109,9 @@ Three lanes of six. In each lane the 2nd and 5th are active skills and the 6th i
 ### Red Lightning (fighting alone)
 
 1. **Bigger Ball.** The ball grows twice as fast once you hold 50 Charge, and bolts and beams reach four blocks farther.
-2. **Van Full** *(active).* A burst that hits everyone within five blocks (6 + tier, up to 3 more with Charge), double
-   where you're closed in (most rays from your eyes meet a block within five). It leaves foes at half a heart, stunned
-   for five seconds.
+2. **Van Full** *(active).* A burst stuns everyone within five blocks for five seconds. It spends up to 30 Charge for damage
+   equal to Charge spent / 30, doubled where you're closed in (most rays from your eyes meet a block within five).
+   Damage leaves at least half a heart. With no Charge, the stun still works but deals no damage.
 3. **Opposite Current.** With 20 Charge or more, lightning aimed at you (an Electrokinetic's, a storm's) is
    halved, and the half you don't take becomes Charge.
 4. **Burn Through.** Red lightning breaks the constructs in its path (ice walls, force barriers and bridges) and hits a
@@ -140,7 +140,7 @@ Three lanes of six. In each lane the 2nd and 5th are active skills and the 6th i
 - **Got Your Back** (support). A dash to your partner's side, or the nearest friend, pet or friendly villager within
   16 blocks, and a Surge on arrival. With nobody to reach, a six-block dash ahead with your next red lightning at full
   strength.
-- **Lightning Cannon** (offense). Two seconds with cupped hands, then a beam three blocks wide and 18 long (10 + 2 x tier)
+- **Lightning Cannon** (offense). Two seconds with cupped hands, then a beam three blocks wide and 18 long (4 + tier)
   that knocks down everything in its path. While you have this class, every Supercharge you give arms your next red
   lightning at full strength.
 - **Lights Back On** (defense). Shock Therapy on every friend within eight blocks (you too), and every furnace and battery

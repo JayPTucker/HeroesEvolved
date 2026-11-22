@@ -268,7 +268,7 @@ public final class SpeedContainment {
             r.debt -= owed;
             int have = PlayerEnergyService.getEnergy(p);
             int paid = Math.min(have, owed);
-            if (paid > 0) PlayerEnergyService.tryConsume(p, paid);
+            if (paid > 0) PlayerEnergyService.drain(p, paid);
             int unpaid = owed - paid;
             if (unpaid > 0) {
                 float burn = unpaid / staminaPerHeat(r.tier) * healthPerHeat(r.tier);

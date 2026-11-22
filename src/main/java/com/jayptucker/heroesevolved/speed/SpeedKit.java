@@ -60,8 +60,8 @@ public final class SpeedKit {
     public static final double CYCLONE_RADIUS = 6.5;
     /**
      * Hold Cyclone this long and the ring rises into a tornado. Keep holding while it stands for {@code TORNADO_ANCHOR}
-     * ticks (stamina each second) and it is anchored: let go and it stands on its own, without you, until
-     * {@code TORNADO_STAND} ticks after it rose. Let go before that and it comes down at once.
+     * ticks and it is anchored: let go and it stands without you, until {@code TORNADO_STAND} ticks after it rose.
+     * The owned vortex pays upkeep every tick, including after anchoring. Let go before anchoring and it comes down.
      */
     public static final int TORNADO_HOLD = 30, TORNADO_ANCHOR = 60, TORNADO_STAND = 600, TORNADO_ENERGY = 4;
     /** How far the tornado draws things in, in blocks. */
@@ -70,7 +70,7 @@ public final class SpeedKit {
      * A Cyclone's speed is set with the scroll wheel while it runs, from 1 to the runner's fastest run setting, starting
      * at their current one. Up to {@link #VACUUM_UP_TO} it is a vacuum: the air is dragged out of the ring, so whatever is
      * caught can't breathe, burns out and is held where it is, and it never rises; held, it lasts up to
-     * {@link #VACUUM_TICKS} ticks (stamina each second past the first three). Faster, it is the wind that drags them round
+     * {@link #VACUUM_TICKS} ticks (upkeep from its first tick). Faster, it is the wind that drags them round
      * and up and, held, rises into a tornado, unless a radioactive player or a villager in meltdown is inside the ring:
      * nobody lifts a reactor into the wind.
      */
@@ -269,6 +269,9 @@ public final class SpeedKit {
         c.held = held;
         c.speed = SpeedService.speedStep(p);
         CYCLONES.put(p.getUUID(), c);
+        if (held) com.jayptucker.heroesevolved.energy.StaminaDrain.start(p, "speed_cyclone",
+                com.jayptucker.heroesevolved.ability.PowerBalance.drain("speed_cyclone", TORNADO_ENERGY), false,
+                () -> { Cyclone ended = CYCLONES.remove(p.getUUID()); if (ended != null) release(ended, now(p)); });
         status(c);
         p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), SoundSource.PLAYERS, 1.0F, 0.7F);
         sync(c, now(p), false);
@@ -369,7 +372,7 @@ public final class SpeedKit {
             if (!c.free && (!PowerRules.canAct(p) || p.level() != c.level || p.isRemoved() || !p.isAlive())) {
                 // An anchored tornado outlasts its runner; anything else ends with them.
                 if (built >= TORNADO_ANCHOR && !p.isRemoved()) letGo(c, now);
-                else { CYCLONES.remove(entry.getKey()); statusOver(p); sync(c, now, true); continue; }
+                else { CYCLONES.remove(entry.getKey()); com.jayptucker.heroesevolved.energy.StaminaDrain.stop(p, "speed_cyclone"); statusOver(p); sync(c, now, true); continue; }
             }
             if (c.tornado < 0 && c.held && age >= TORNADO_HOLD && !vacuum(c)) {
                 if (reactorInside(c)) {
@@ -381,16 +384,7 @@ public final class SpeedKit {
             // A ring lasts three seconds; held, a vacuum (or a ring a reactor keeps down) lasts as long as it is paid for.
             boolean lingers = c.held && (vacuum(c) || c.reactor);
             if (c.tornado < 0 && age >= (lingers ? VACUUM_TICKS : CYCLONE_TICKS)) { CYCLONES.remove(entry.getKey()); release(c, now); continue; }
-            if (c.tornado < 0 && lingers && age > CYCLONE_TICKS && age % 20 == 0 && !PlayerEnergyService.drain(p, TORNADO_ENERGY)) {
-                CYCLONES.remove(entry.getKey()); release(c, now); continue;
-            }
             if (built >= TORNADO_STAND) { CYCLONES.remove(entry.getKey()); release(c, now); continue; }
-            if (built >= 0 && built < TORNADO_ANCHOR) {
-                // The key is never trusted to come back up, and holding the wind up costs stamina until it is anchored.
-                if (built > 0 && built % 20 == 0 && !PlayerEnergyService.drain(p, TORNADO_ENERGY)) {
-                    CYCLONES.remove(entry.getKey()); release(c, now); continue;
-                }
-            }
             if (built == TORNADO_ANCHOR) anchor(c);
             if (!c.free) {
                 // You are the wind, running the ring: your body stays at its eye.
@@ -477,7 +471,7 @@ public final class SpeedKit {
         com.jayptucker.heroesevolved.network.CameraShakePayload.sendAround(c.level, o, 24, 0.35F, 30);
     }
 
-    /** Held long enough, the tornado is anchored: it will stand on its own now, and holding it costs nothing more. */
+    /** Held long enough, the tornado is anchored: it can stand without its runner, while its upkeep is paid. */
     private static void anchor(Cyclone c) {
         Vec3 o = c.center;
         c.level.playSound(null, o.x, o.y + 6, o.z, SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.PLAYERS, 0.9F, 0.7F);
@@ -501,6 +495,7 @@ public final class SpeedKit {
 
     /** The ring breaks (or the tornado comes down): everything it carried is thrown up and out. */
     private static void release(Cyclone c, long now) {
+        com.jayptucker.heroesevolved.energy.StaminaDrain.stop(c.player, "speed_cyclone");
         boolean tornado = c.tornado >= 0;
         if (!c.free) statusOver(c.player);
         for (UUID id : c.caught) {
@@ -574,10 +569,11 @@ public final class SpeedKit {
     }
 
     static void forget(ServerPlayer p) {
+        com.jayptucker.heroesevolved.energy.StaminaDrain.stop(p, "speed_cyclone");
         CHAINS.remove(p.getUUID()); HITS.remove(p.getUUID()); SpeedWindArms.forget(p); SpeedContainment.forget(p); SpeedFriction.forget(p);
         Cyclone c = CYCLONES.remove(p.getUUID());
         if (c != null) { statusOver(p); sync(c, now(p), true); }
     }
 
-    static void clear() { CHAINS.clear(); HITS.clear(); CYCLONES.clear(); SpeedWindArms.clear(); SpeedContainment.clear(); SpeedFriction.clear(); }
+    static void clear() { for (Cyclone c : List.copyOf(CYCLONES.values())) com.jayptucker.heroesevolved.energy.StaminaDrain.stop(c.player, "speed_cyclone"); CHAINS.clear(); HITS.clear(); CYCLONES.clear(); SpeedWindArms.clear(); SpeedContainment.clear(); SpeedFriction.clear(); }
 }

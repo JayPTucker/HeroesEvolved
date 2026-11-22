@@ -334,7 +334,17 @@ public final class AmplificationGameTests {
             h.assertTrue(AmpSkills.enclosed(level, amp.getEyePosition()), "A small stone room is closed in");
             LivingEntity foe = pillager(h, amp, 1, 4);
             AmpSkills.vanFull(amp);
-            h.assertTrue(foe.isAlive() && foe.getHealth() <= 1.01F, "Van Full knocks out rather than kills");
+            h.assertTrue(foe.isAlive() && Math.abs(foe.getHealth() - 2) < .01F,
+                    "The enclosed burst spends 30 Charge for 2 damage; the rest of its budget buys the stun");
+            h.assertTrue(foe.hasEffect(MobEffects.MOVEMENT_SLOWDOWN)
+                    && foe.getEffect(MobEffects.MOVEMENT_SLOWDOWN).getDuration() == 100, "The five-second knockout remains");
+            foe.setHealth(1.5F);
+            AmpSkills.vanFull(amp);
+            h.assertTrue(foe.isAlive() && Math.abs(foe.getHealth() - 1) < .01F, "The charged burst still leaves the last health point");
+            AmpService.spend(amp, 100);
+            foe.setHealth(4);
+            AmpSkills.vanFull(amp);
+            h.assertTrue(foe.getHealth() == 4, "Without Charge, Van Full supplies control without free damage");
             for (BlockPos pos : walls) level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
             foe.discard();
             cleanup(h);

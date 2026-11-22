@@ -52,8 +52,11 @@ public final class Repairs {
         check(level, v);
     }
 
-    /** Looks {@code v} over now and plans mending its worst-hit building. The site, or null. Tests call it directly. */
-    public static Rebuild.Site check(ServerLevel level, VillageMemory.Village v) {
+    /**
+     * Looks {@code v} over now: if anything was broken, it asks for what it needs to put it back on its notice board (a
+     * repair project, {@link Projects#repair}). The project, or null. Tests call it directly.
+     */
+    public static Projects.Project check(ServerLevel level, VillageMemory.Village v) {
         List<Projects.Home> pieces = Projects.pieces(level, v);
         if (!v.baselined) {
             for (Projects.Home h : pieces) for (BlockPos p : missing(level, v, h)) v.unbuilt.add(p.asLong());
@@ -63,33 +66,57 @@ public final class Repairs {
         }
         List<Rebuild.Site> mending = new ArrayList<>();
         for (Rebuild.Site s : Rebuild.all(level)) if (s.mend && s.bell().equals(v.bell)) mending.add(s);
-        if (mending.size() >= MOST_SITES) return null;
         int from = Growth.mood(level, v) == Growth.Mood.STRUGGLING ? STRUGGLING_FROM : FROM;
-        Projects.Home worst = null;
-        List<BlockPos> worstMissing = List.of();
+        Map<Projects.Home, List<BlockPos>> damage = new java.util.LinkedHashMap<>();
+        java.util.EnumMap<Projects.Material, Float> needs = new java.util.EnumMap<>(Projects.Material.class);
         for (Projects.Home h : pieces) {
             if (mending.stream().anyMatch(s -> h.equals(s.home()))) continue;
             List<BlockPos> missing = missing(level, v, h);
-            if (missing.size() >= from && missing.size() > worstMissing.size() && !burning(level, h)) { worst = h; worstMissing = missing; }
+            if (missing.size() < from || burning(level, h)) continue;
+            damage.put(h, missing);
+            Map<BlockPos, BlockState> want = wanted(level, v, h);
+            for (BlockPos p : missing) if (want.get(p) != null) Projects.add(needs, want.get(p));
         }
-        if (worst == null) return null;
-        StructureTemplate t = level.getStructureManager().get(worst.template()).orElse(null);
-        if (t == null) return null;
+        if (damage.isEmpty()) return null;
+        return Projects.repair(level, v, List.copyOf(damage.keySet()), needs);
+    }
+
+    /** What {@code h} was built of, block by block, in its village's colours. */
+    static Map<BlockPos, BlockState> wanted(ServerLevel level, VillageMemory.Village v, Projects.Home h) {
         Map<BlockPos, BlockState> want = new HashMap<>();
-        var blocks = Growth.blocks(level, t, worst.origin(), worst.rotation());
-        if (blocks == null) return null;
-        Growth.restyle(level, v, worst.template(), blocks);
+        StructureTemplate t = level.getStructureManager().get(h.template()).orElse(null);
+        if (t == null) return want;
+        var blocks = Growth.blocks(level, t, h.origin(), h.rotation());
+        if (blocks == null) return want;
+        Growth.restyle(level, v, h.template(), blocks);
         for (var b : blocks) want.put(b.pos(), b.state());
-        List<BlockPos> positions = new ArrayList<>(worstMissing);
+        return want;
+    }
+
+    /**
+     * Plans putting back what's missing from {@code h} now (its repair project has everything): a mend site its people
+     * build. Null if nothing's missing any more.
+     */
+    public static Rebuild.Site plan(ServerLevel level, VillageMemory.Village v, Projects.Home h) {
+        List<BlockPos> positions = new ArrayList<>(missing(level, v, h));
+        if (positions.isEmpty()) return null;
+        StructureTemplate t = level.getStructureManager().get(h.template()).orElse(null);
+        if (t == null) return null;
+        Map<BlockPos, BlockState> want = wanted(level, v, h);
         positions.sort(Comparator.<BlockPos>comparingInt(BlockPos::getY).thenComparingInt(BlockPos::getX).thenComparingInt(BlockPos::getZ));
         List<BlockState> states = new ArrayList<>();
         for (BlockPos p : positions) states.add(want.get(p));
-        var box = t.getBoundingBox(new StructurePlaceSettings().setRotation(worst.rotation()), worst.origin());
+        var box = t.getBoundingBox(new StructurePlaceSettings().setRotation(h.rotation()), h.origin());
         Rebuild.Site site = Rebuild.mend(level, v.bell, box.getCenter(), positions, states);
-        site.home = worst;
-        BandChatter.news(level, v.bell, v.name + "'s patching up what was broken. Everyone's lending a hand.", (int) Days.DAY);
-        HeroesEvolved.LOGGER.info("Village {} will mend {} blocks of {} at {}", v.name, positions.size(), worst.template(), worst.origin());
+        site.home = h;
+        HeroesEvolved.LOGGER.info("Village {} will mend {} blocks of {} at {}", v.name, positions.size(), h.template(), h.origin());
         return site;
+    }
+
+    /** Whether {@code v} has mending under way. */
+    public static boolean mending(ServerLevel level, VillageMemory.Village v) {
+        for (Rebuild.Site s : Rebuild.all(level)) if (s.mend && s.bell().equals(v.bell)) return true;
+        return false;
     }
 
     /** What's gone from {@code h} since it was built: where it had a block and now there's nothing (or fire). */

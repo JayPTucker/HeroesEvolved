@@ -219,7 +219,7 @@ public final class RadiationSkills {
         Long until = LEAD_SKIN.get(p.getUUID());
         if (until == null || now(p) > until) return;
         if (source.getDirectEntity() instanceof LivingEntity attacker && attacker == source.getEntity()
-                && RadiationService.hostile(p, attacker)) {
+                && RadiationService.hostile(p, attacker) && !attacker.hasEffect(com.jayptucker.heroesevolved.registry.ModItems.RADIATION_SICKNESS)) {
             RadiationSickness.dose(attacker, p, 1, 120, 0);
         }
     }

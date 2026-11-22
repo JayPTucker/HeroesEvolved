@@ -79,7 +79,7 @@ Node IDs are unchanged, so earlier purchases carry over.
 | Node | What it does |
 | --- | --- |
 | **Live Fault** | A Fault Line (or Upheaval) that runs under an enemy you are Resonating breaks the resonance at once, with Shatter's blow, and throws them twice as high. |
-| **Seismic Lance** (active) | An uppercut, and a moment later a column of earth bursts up under one enemy within 24 blocks (a ring marks its feet first): 7 + level, thrown straight up. An enemy already in the air is smashed back down instead, for double. |
+| **Seismic Lance** (active) | An uppercut, and a moment later a column of earth bursts up under one enemy within 24 blocks (a ring marks its feet first): 10 + level, thrown straight up. An enemy already in the air is smashed back down instead, for double. |
 | **Deep Roots** | Earthquake's fissures run half again as far, and Fault Lines climb one-block steps and cross deeper drops instead of stopping. |
 | **Fault Script** (technique) | Trail a hand along the ground and write a twelve-step fault ahead of you. It glows brighter until it erupts two seconds later, hitting each enemy once. A Shockwave fired along it sets it off at once. |
 | **Short Fuse** | Fault Script erupts after one second. |

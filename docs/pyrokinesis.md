@@ -53,9 +53,9 @@ slower one starts it again. Clicking at a block you're close enough to dig still
 
 | Strike | Level | What happens | Stamina |
 | --- | --- | --- | --- |
-| **Jab** | 1 | Your lead fist snaps out and a fist of fire flies 16 blocks along your aim. It hits the first enemy in its path for 2 + 0.4 × level fire damage, sets them burning for 2 s and knocks them back a little. | 2 |
+| **Jab** | 1 | Your lead fist snaps out and a fist of fire flies 16 blocks along your aim. It hits the first enemy in its path for 0.8 + 0.2 × level fire damage and knocks them back a little. | 2 |
 | **Cross** | 1 | The same from your rear fist. At level 1 the jab and cross simply alternate. | 2 |
-| **Roundhouse** | 2 | The third strike. Your rear leg swings round at hip height and throws a crescent of fire 7 blocks out, 110° wide. Everything in it takes 3 + level, burns for 4 s and is thrown away from you. | 5 |
+| **Roundhouse** | 2 | The third strike. Your rear leg swings round at hip height and throws a crescent of fire 7 blocks out, 110° wide. Everything in it takes 0.4 + 0.2 × level, burns for 1 s and is thrown away from you. | 5 |
 | **Sweep kick** | 2 | **Crouch and click.** You drop low and sweep one leg through a full turn. A ring of fire rolls out 4 blocks across the ground, burning and tripping everyone round you, front and back. | 5 |
 
 - Strikes follow Heat like the rest of the kit: blue fire hits 50% harder.
@@ -267,3 +267,7 @@ climbing, banking, real-travel Momentum, wheel braking, steady level-five hover 
 level-three drift. It also checks double-tap Jump, Cinder Spear hits and Shift + flight-key
 Meteor Dive impact, and captures the poses, flame trails, Cinder Spear, Sunfall and Meteor Dive. Run it with
 `./gradlew runClient --offline --init-script tools/pyro-preview.init.gradle` under Java 21.
+
+## Damage and stamina
+
+Blue Lance hits for (3 + 0.5 per tier) × 1.5; its seam hits for 0.5 every four ticks. Heat Mantle deals 0.1 each second plus refreshed burning. Firebending kicks ignite for one second; ordinary jabs do not ignite. The loaded Counterflame still multiplies a jab by 2.2. Full formulas and unlock-tier comparisons are in [Stamina and balance](stamina-balance.md#every-damage-review).

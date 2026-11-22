@@ -150,3 +150,7 @@ saved node identities. The full suite runs with
 
 The preview `./gradlew runClient --init-script tools/invisibility-preview.init.gradle` casts every base action
 and tree ability 600+ blocks from spawn and saves screenshots to `build/invisibility-preview/screenshots/`.
+
+## Damage and stamina
+
+Kinetic Shell can hold four foes, so each of its bubbles crushes for 12% of the single-target Bubble formula. The ordinary Bubble retains its full crush. Full formulas and unlock-tier comparisons are in [Stamina and balance](stamina-balance.md#every-damage-review).

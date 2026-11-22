@@ -80,7 +80,7 @@ so anything already bought stays bought (each slot now holds its earthbending no
 | **Stacked Stones** | Passive | Rock Strike lifts three stone discs instead of one stone. Each press throws the next disc, free, for a little over half a stone's damage. |
 | **Earth Gauntlet** | Active | A glove of stone flies at the enemy you look at within 18 blocks: 4 + level, and it grabs them. With a wall within four blocks behind them it **pins** them to it for two and a half seconds; otherwise it **drags** them back to you. |
 | **Know Your Stone** | Passive | Sand blinds for two seconds; gravel bursts off your fist as three pellets; deepslate, basalt and obsidian hit 40% harder but fly slower; mud and clay slow what they hit. |
-| **Avalanche** | Active | Five boulders tear out of the ground in a line ahead of you, one after another, and roll on over the ground for 16 blocks: 5 + level to everything in the way, thrown forward and up. |
+| **Avalanche** | Active | Five boulders tear out of the ground in a line ahead of you, one after another, and roll on over the ground for 16 blocks: 0.8 + 0.2 per level to everything in the way, thrown forward and up. |
 | **Shatterpoint** | Passive | A rock that breaks against a wall bursts into a fan of five stone shards that fly back off it, each about a third of the rock. |
 | **Metalbending** | Capstone | Iron, copper and gold count as earth to stand on and bend; iron doors and trapdoors open to your bare hand; your rocks hit an armored foe 1 harder for each piece of armor it wears. |
 
@@ -100,7 +100,7 @@ so anything already bought stays bought (each slot now holds its earthbending no
 | Node | Kind | What it does |
 | --- | --- | --- |
 | **Seismic Sense** | Passive | Stand still in Horse Stance and the ground tells you who walks on it: every footstep within 20 blocks shows as a ripple, through walls, once a second. |
-| **Tunnel** | Active | Drop into the ground and move through it, feeling the footsteps above. Breath runs out in about ten seconds (sixteen at tier 5); run out and the ground throws you out, hurt. Press it again (free, whatever its cooldown) or press Horse Stance to surface, with an uppercut (6 + level, thrown up) for anyone standing over you. Coming out into a cave or off a cliff ends it on its own. |
+| **Tunnel** | Active | Drop into the ground and move through it, feeling the footsteps above. Breath runs out in about ten seconds (sixteen at tier 5); run out and the ground throws you out, hurt. Press it again (free, whatever its cooldown) or press Horse Stance to surface, with an uppercut (3 + level, thrown up) for anyone standing over you. Coming out into a cave or off a cliff ends it on its own. |
 | **Grasp from Below** | Passive | Rock Strike while you tunnel grabs the nearest enemy standing above you by the ankles: waist-deep for two seconds, no healing. |
 | **Earth Surf** | Active | A wave of ground carries you along at speed for six seconds and climbs a block at a step; anyone in your way is bowled over for 3 + half your level. |
 | **Uproot** | Passive | Surfacing from a tunnel under an enemy you hold in the ground tears it out: the uppercut deals double and throws twice as high. Anyone you surface under can't heal for two seconds. |
@@ -121,7 +121,7 @@ so anything already bought stays bought (each slot now holds its earthbending no
 
 | Role | Class ability |
 | --- | --- |
-| Offense | **Pillar Barrage**: a fan of stone columns erupts round a point up to 20 blocks away; foes within 3.5 blocks take 10 + 2 per tier and are thrown into the air. |
+| Offense | **Pillar Barrage**: a fan of stone columns erupts round a point up to 20 blocks away; foes within 3.5 blocks take 7 + tier and are thrown into the air. |
 | Defense | **Unmoving Mountain**: Horse Stance, free, for 8 seconds, set so deep that nothing moves you and you take far less damage, but you are slow. |
 | Support | **Earth Tent**: a dome of rock closes over you and the friends beside you for 8 seconds. Shots stop on it, and those inside take less harm. Break a block of it to leave early. |
 

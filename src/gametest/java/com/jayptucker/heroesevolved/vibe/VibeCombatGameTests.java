@@ -291,7 +291,8 @@ public final class VibeCombatGameTests {
             VibeStyle.STYLE.counter(p, p.damageSources().mobAttack(attacker));
             h.assertTrue(VibeStyle.STYLE.loaded(p), "A dodged blow loads the next strike");
             h.assertTrue(VibeStyle.STYLE.strike(p) == 1, "The loaded strike is thrown");
-            h.assertTrue(attacker.getHealth() <= 24 - 9 + .01, "It lands from behind for 4 + level: " + attacker.getHealth());
+            h.assertTrue(Math.abs(attacker.getHealth() - (24 - (1.5F + .5F * 5))) < .01F,
+                    "It lands from behind for 1.5 + half the tier: " + attacker.getHealth());
             h.assertTrue(attacker.getDeltaMovement().z < 0, "and throws the attacker toward the viber");
         });
     }

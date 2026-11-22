@@ -261,7 +261,7 @@ public final class DensitySkillsGameTests {
             h.assertTrue(DensitySkills.grasp(p, 5) && DensityService.embedded(t), "Grasped by the ankles");
             float before = t.getHealth();
             h.assertTrue(DensityService.sinkOrSurface(p, 5), "Up again");
-            h.assertTrue(!DensityService.embedded(t) && before - t.getHealth() >= 2 * (6 + 5) - .01F, "Torn out for double: " + (before - t.getHealth()));
+            h.assertTrue(!DensityService.embedded(t) && Math.abs(before - t.getHealth() - 2 * (3 + 5)) < .01F, "Torn out for double the balanced uppercut: " + (before - t.getHealth()));
             h.succeed();
         } finally { done(p, t); }
     }

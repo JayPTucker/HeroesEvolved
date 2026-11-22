@@ -272,9 +272,12 @@ public final class FightingStylesGameTests {
             h.assertTrue(taken > 0 && taken <= 4.01F, "A braced blow lands at half strength, " + taken);
             h.assertTrue(RegenStyle.STYLE.loaded(p), "And loads Payback");
             float first = foe.getHealth();
+            float banked = (float) RegenStyle.STYLE.fighter(p).banked;
+            float swing = (.8F + .2F * 2) * (1 + .5F * (1 - p.getHealth() / p.getMaxHealth()));
             foe.invulnerableTime = 0;
             RegenStyle.STYLE.strike(p);
-            h.assertTrue(first - foe.getHealth() > 3 + .5F * 2 + 4, "Payback returns what she took on top of the swing");
+            h.assertTrue(Math.abs(first - foe.getHealth() - swing - banked * .8F) < .02F,
+                    "Payback returns 80% of banked impact on top of the balanced swing");
         });
         forget(p);
         foe.discard();

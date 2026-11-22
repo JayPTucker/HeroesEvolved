@@ -693,6 +693,8 @@ public final class HydroService {
         storm.thin = draw.thin();
         storm.dimension = player.level().dimension();
         tide.storm = storm;
+        com.jayptucker.heroesevolved.energy.StaminaDrain.start(player, "hydro_maelstrom",
+                com.jayptucker.heroesevolved.ability.PowerBalance.drain("hydro_maelstrom", 12), false, () -> endMaelstrom(player));
         HydroGeometry.show(player.serverLevel(), Piece.HYDRO_WHIRLPOOL, point, point, HydroGeometry.SPOUT_RING, draw.thin(), null);
         ArmPosePayload.show(player, ArmPose.WATER_CALL, 12);
         sound(player.serverLevel(), point, SoundEvents.BUBBLE_COLUMN_WHIRLPOOL_INSIDE, 1.6F, .6F);
@@ -713,6 +715,7 @@ public final class HydroService {
 
     /** Shift: bring the waterspout down now, as a Deluge. */
     public static boolean endMaelstrom(ServerPlayer player) {
+        com.jayptucker.heroesevolved.energy.StaminaDrain.stop(player, "hydro_maelstrom");
         Tide tide = TIDES.get(player.getUUID());
         if (tide == null || tide.storm == null) return false;
         Storm storm = tide.storm;
@@ -728,6 +731,7 @@ public final class HydroService {
         Storm storm = tide.storm;
         long age = now - storm.start;
         if (!player.level().dimension().equals(storm.dimension) || !canBend(player)) {
+            com.jayptucker.heroesevolved.energy.StaminaDrain.stop(player, "hydro_maelstrom");
             tide.storm = null;
             sync(player, true);
             return;
@@ -906,6 +910,7 @@ public final class HydroService {
 
     /** Death, logout, a new dimension or losing the power: everything running stops. Water Skin wakes full. */
     public static void forget(ServerPlayer player) {
+        com.jayptucker.heroesevolved.energy.StaminaDrain.stop(player, "hydro_maelstrom");
         Tide tide = TIDES.get(player.getUUID());
         if (tide != null) {
             if (tide.ride != null) endRide(player);
@@ -926,6 +931,7 @@ public final class HydroService {
         Tide tide = TIDES.get(player.getUUID());
         if (tide == null || !player.isAlive()) return;
         if (!isHydrokinetic(player) && !com.jayptucker.heroesevolved.mimicry.MimicryService.isBorrowingHydrokinesis(player)) {
+            com.jayptucker.heroesevolved.energy.StaminaDrain.stop(player, "hydro_maelstrom");
             if (tide.ride != null) endRide(player);
             tide.octopus = null;
             tide.storm = null;
@@ -946,6 +952,7 @@ public final class HydroService {
     }
 
     public static void clear() {
+        for (Tide tide : TIDES.values()) if (tide.player != null) com.jayptucker.heroesevolved.energy.StaminaDrain.stop(tide.player, "hydro_maelstrom");
         TIDES.clear();
         WAVES.clear();
         HydroSkills.clear();

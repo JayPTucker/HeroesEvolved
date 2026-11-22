@@ -44,6 +44,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DUMP = ROOT / "build/rewind-gametest-world/build/balance/actions.json"
 TABLE = ROOT / "src/main/resources/data/heroesevolved/power_balance.json"
 TREES = ROOT / "src/main/resources/data/heroesevolved/skill_trees.json"
+LANG = ROOT / "src/main/resources/assets/heroesevolved/lang/en_us.json"
 DOC = ROOT / "docs/stamina-balance.md"
 # What each core action cost before this model (November 2026), for the doc's "Was" column. Frozen: never regenerated.
 BEFORE = json.loads((ROOT / "tools/balance-before.json").read_text(encoding="utf-8"))
@@ -75,7 +76,7 @@ def act(action, power, tier, role, note, fixed=None, cd=None, drain=None, per_bl
 
 
 # --- Telepathy
-act("telepathy_read_mind", "telepathy", 1, "basic", "held read; builds Focus", util=8)
+act("telepathy_read_mind", "telepathy", 1, "basic", "held read; builds Focus; 2 a second while held (up to 6 s)", util=8, drain=2)
 act("telepathy_suggestion", "telepathy", 2, "heavy", "a 5 s command on one mind", ctrl=5, util=6)
 act("telepathy_mind_link", "telepathy", 3, "skill", "links willing minds (no damage)", util=18)
 act("telepathy_puppet", "telepathy", 4, "ultimate", "about 10 s in control of a body", ctrl=10, util=10)
@@ -85,8 +86,9 @@ act("speed_accelerate", "superspeed", 1, "basic", "toggle; 3 a second while runn
 act("speed_blitz", "superspeed", 1, "quick", "four blows of 2.5 after a 22-block rush (a gap-closer: half its distance counts)",
     dmg=10 * .85, blocks=11, cd=2.5)
 act("speed_snatch", "superspeed", 2, "skill", "takes items, shots and a weapon", util=16)
-act("speed_cyclone", "superspeed", 3, "heavy", "3 s of wind: 1.2 + 0.3/tier every half second, lift, no air",
-    dmg=(1.2 + .3 * 3) * 6 * .6, n=3, ctrl=2)
+act("speed_cyclone", "superspeed", 3, "heavy", "3 s of wind: 1.2 + 0.3/tier every half second, lift, no air; "
+    "4/s throughout the owned vortex, including its first ticks and anchored storm; Wind Arms on the same key also drains 4/s",
+    dmg=(1.2 + .3 * 3) * 6 * .6, n=3, ctrl=2, drain=4)
 act("speed_lightspeed", "superspeed", 5, "ultimate", "8 + tier + Momentum/5 to everything on a 48-block line",
     dmg=15, n=3, blocks=48, ult=True)
 # --- Regeneration
@@ -101,7 +103,7 @@ act("flight_toggle", "flight", 1, "basic", "toggle; 4 a second cruising, 9 boost
 act("flight_launch", "flight", 1, "quick", "Skyburst: a dash of up to 20 blocks", blocks=20, util=3)
 act("flight_dive_bomb", "flight", 2, "skill", "5 + tier + Momentum on landing, a pressure wave", dmg=7, n=3)
 act("flight_skyward_grab", "flight", 3, "skill", "seize and carry, then a throw", ctrl=3, dmg=5, util=2)
-act("flight_cyclone", "flight", 5, "ultimate", "Tempest: lifts and bursts everything round its eye", dmg=8, n=4, ctrl=3, ult=True)
+act("flight_cyclone", "flight", 5, "ultimate", "Tempest: lifts and bursts everything round its eye; 12/s while the storm runs", dmg=8, n=4, ctrl=3, ult=True, drain=12)
 # --- Electrokinesis
 act("electro_chain_lightning", "electrokinesis", 1, "basic", "4 + 1.5/tier, chaining at 75%", dmg=5.5, n=2)
 act("electro_ball_lightning", "electrokinesis", 2, "skill", "an orb that lashes (3 + tier) and bursts (5 + tier)", dmg=12 * .75, n=2)
@@ -137,7 +139,7 @@ act("hydro_water_whip", "hydrokinesis", 1, "basic", "4 + tier along your aim", d
 act("hydro_crashing_wave", "hydrokinesis", 1, "skill", "5 + tier to what it carries", dmg=6, n=3)
 act("hydro_octopus_form", "hydrokinesis", 2, "heavy", "10 s: arms lash (6 + tier), shots swallowed, a third off blows", util=30)
 act("hydro_wave_rider", "hydrokinesis", 3, "skill", "6 s of surfing", blocks=30, util=8)
-act("hydro_maelstrom", "hydrokinesis", 5, "ultimate", "a waterspout that drags and drowns", dmg=10, n=4, ctrl=3, ult=True)
+act("hydro_maelstrom", "hydrokinesis", 5, "ultimate", "a waterspout that drags and drowns; 12/s while the storm runs", dmg=10, n=4, ctrl=3, ult=True, drain=12)
 # --- Power Amplification
 act("amp_supercharge", "power_amplification", 1, "skill", "15 s Surge on an ally (+25% harm, -25% cost and cooldowns); held, an Overcharge (50 Charge)",
     util=14)
@@ -178,7 +180,7 @@ for i in range(1, 6):
 act("radiation_radiant_touch", "radiation", 1, "basic", "a cone of 3 + tier to up to six", dmg=4, n=3)
 act("radiation_pulse", "radiation", 2, "skill", "Fission Leap: a blast and a launch; the slam is free", dmg=6, n=2, blocks=8)
 act("radiation_emp", "radiation", 3, "heavy", "kills machines for 10 s, shoves, reveals, vents Core", util=20)
-act("radiation_meltdown_beam", "radiation", 4, "skill", "a held beam that spends Core", fixed=18, cd=6)
+act("radiation_meltdown_beam", "radiation", 4, "skill", "a held beam that spends Core; 12 a second while held (up to 5 s)", fixed=18, cd=6, drain=12)
 act("radiation_exploding_man", "radiation", 5, "ultimate", "Critical Mass: a 24-block nuclear blast after 25 s", fixed=120, cd=300)
 # --- Density (earthbending)
 act("phasing_shift", "phasing", 1, "basic", "Horse Stance toggle; holding it drains 3.3 a second (half with Wait and Listen). "
@@ -272,8 +274,8 @@ reviewed("flight_thunderclap", "flight/FlightSkillService#tickVacuum", "4+Moment
 utility_reviews("flight/FlightSkillService", [("flight_0_1", "rush to and rescue a friend"), ("flight_sky_catch", "Wind Sanctuary shields friends"),
     ("flight_1_1", "Barrel Roll evades and redirects shots"), ("flight_tailwind", "Jetstream carries friends and shoves foes, no damage")])
 reviewed("cryokinesis_0_1", "cryo/CryoCombatSkills#tickForge", "6+tier -> 8+tier; one forged lance", 8, 10, factor=.75, util=6)
-reviewed("cryokinesis_1_1", "cryo/CryoCombatSkills#release", "plates*(3+stored/8); five shards at no stored damage", 15, n=1, factor=.85, util=4,
-         note="Spread can split the five shards; absorbed damage increases each shard. Armour is a second benefit.")
+reviewed("cryokinesis_1_1", "cryo/CryoCombatSkills#release,impact; cryo/CryoService#coldHit", "six shards of 3+stored/8; equal simultaneous hits respect ordinary invulnerability", 3, n=2, factor=.75, util=20,
+         note="Unlike StyleOps and HydroService, coldHit does NOT reset invulnerability: a close fan cannot deal 6*3 to one body. Stored incoming damage is conditional.")
 reviewed("cryokinesis_2_1", "cryo/CryoCombatSkills#tick", "2 -> 5 in Cold Snap's single wave", 2, 5, n=3, factor=.75, util=12,
          note="Cold buildup has a utility reserve; a 2/3-second solid freeze requires existing frost.")
 reviewed("cryokinesis_brittle_constellation", "cryo/CryoTechniqueService#tickStars", "4 -> 6 per unique hop (strong: 7 -> 9)", 4, 6, n=3, factor=.85, util=8)
@@ -326,8 +328,8 @@ utility_reviews("speed/SpeedService; expansion/AdvancedTechniques", [("superspee
 reviewed("pyrokinesis_0_1", "pyro/PyroService#skill", "6+tier plus 5 s burn; lash movement itself does no second hit", 8, extra=5*.6)
 reviewed("pyrokinesis_ember_mine", "pyro/PyroService#detonate", "6+tier plus 5 s burn; exactly 30% high, retained", 9, n=2, factor=.75, extra=5*.6)
 reviewed("pyrokinesis_1_1", "pyro/PyroService#tickMantles", "8 pulses of 1.5 -> .1, plus up to 10 s of continually refreshed burning", 12, .8, n=2, factor=.6, extra=10*.6, util=8)
-reviewed("pyrokinesis_blue_lance", "pyro/PyroService#blueLance,tickLances", "(8+tier)*1.5 + two 2.5 trails -> (3+.5*tier)*1.5 + two .75 trails; 6 s burn", 21.5, 8.25, n=2, extra=6*.6,
-         note="Blue Lance is ALWAYS blue, including at zero Heat; its 1.5 multiplier must be counted. Thirteen-tick trail pulses every six ticks.")
+reviewed("pyrokinesis_blue_lance", "pyro/PyroService#blueLance,tickLances", "(8+tier)*1.5 + up to four 2.5 trails -> (3+.5*tier)*1.5 + up to four .5 trails; 6 s burn", 26.5, 8.75, n=2, extra=6*.6,
+         note="Blue Lance is ALWAYS blue, including at zero Heat; its 1.5 multiplier must be counted. Thirteen-tick trail pulses on global ticks divisible by four (three or four pulses).")
 reviewed("pyrokinesis_phoenix", "pyro/PhoenixService#strike,graze", "7+tier on up to 3 distinct hunted foes, 6 s burn; grazes are 3 + 3 s burn", 11, n=3, factor=.75, extra=6*.6, util=10,
          note="Hunts different UUIDs; cannot repeatedly strike one foe. Blue Heat multiplies direct damage by 1.25; return heals the owner.")
 utility_reviews("pyro/PyroService", [("pyrokinesis_2_1", "Cauterizing Flame heals/cleanses"), ("pyrokinesis_fire_shepherd", "Fire Shepherd retrieves existing fire as Heat")])
@@ -351,10 +353,10 @@ reviewed("technopathy_sentry_seal", "technopathy/TechnopathyService#trip", "6+ti
 reviewed("technopathy_domino_engine", "technopathy/TechnopathyService#engine", "8+tier; engineHit deduplicates bodies across the entire route", 11, n=2, factor=.75, util=6)
 utility_reviews("technopathy/TechnopathyService", [("technopathy_batch_instruction", "operates linked devices"), ("technopathy_delayed_instruction", "queues an instruction"),
     ("technopathy_kill_switch", "stops devices"), ("technopathy_winchline", "winches the player to the network")])
-reviewed("matter_assembly_scattershot", "assembly/MatterAssemblyService#activate,firePaid", "five*(5+.5*tier) -> five*(1.8+.2*tier); fan can overlap on one body", 30, 11, n=1, factor=.85,
-         note="Five shards are separate projectiles. Material is also spent, but stamina still limits their damage.")
+reviewed("matter_assembly_scattershot", "assembly/MatterAssemblyService#activate,firePaid,tickShard", "five projectiles of 5+.5*tier; simultaneous equal hits respect invulnerability", 6, n=3, factor=.75,
+         note="tickShard does NOT reset invulnerability: ordinary close overlap deals 6, not 30, to one body. Five rays can hit different bodies; material is also spent.")
 reviewed("matter_assembly_faultline", "assembly/MatterAssemblyService#tick", "5 for each raised block that intersects the body", 5, n=3, factor=.75, ctrl=.5, util=6,
-         note="A body can overlap adjacent cells; see repeated-cell fix in the implementation.")
+         note="Sixteen cells, four immediately then up to 24/tick: overlapping cells use ordinary invulnerability and cannot multiply the equal 5-damage hit.")
 utility_reviews("assembly/MatterAssemblyService", [("matter_assembly_switchback", "builds a route"), ("matter_assembly_drawbridge", "raises a bridge"),
     ("matter_assembly_shelter", "builds shelter"), ("matter_assembly_cradle", "rescues and supports a friend")])
 reviewed("vibe_0_1", "vibe/VibeService#release", "7+1.5*tier; travelling narrow wave", 10, factor=.75, util=2)
@@ -416,6 +418,18 @@ for action, old, new, factor, n, ctrl, util, blocks, extra, old_extra in [
         "technopathy_drone_swarm":"10 pulses (15..150 step 15): 2.5+.5*tier -> .8+.15*tier",
         "technopathy_firewall":"11 contacts (0..200 step 20): 3 -> .75; blocks shots",
         "matter_assembly_forge_cannon":"5 pulses (8,13,18,23,28): 5+tier -> 1.6+.25*tier",
+        "time_manipulation_hour_hand":"9+2*tier -> 6+tier, one sweep per UUID",
+        "pyrokinesis_sunfall":"12+2*tier -> 6+.75*tier, plus five seconds burning",
+        "quake_fissure_maw":"10+2*tier -> 7+tier, thrown set deduplicates the racing fissure",
+        "flight_tempest_drill":"9+2*tier -> 5+.75*tier, hit set deduplicates the 18-block dash",
+        "telekinesis_implosion":"12+2*tier -> 6+.75*tier after a 22-tick pull",
+        "regeneration_vital_burst":"10+2*tier -> 3+.5*tier; heals 2 per foe (capped 10) and also costs 4 health",
+        "sonic_resonance_resonance_cascade":"12+2*tier -> 7+.75*tier after 16 ticks",
+        "invisibility_shadow_strike":"(8+tier)*1.5 -> 3.5+.5*tier, once per mark; three marks maximum",
+        "phasing_phase_eruption":"10+2*tier -> 7+tier in Earthworks.barrage; the decorative columns deal zero",
+        "empathic_mimicry_prismatic_overflow":"8+2*remembered+tier -> 4+.5*remembered+.75*tier; minimum remembered=1, plus 3 s burn",
+        "hydro_tsunami":"10+2*tier -> 8+tier; one hit per rolling wave's struck UUID set",
+        "amp_lightning_cannon":"10+2*tier -> 4+tier; redHit also stuns for 60 ticks",
         "superspeed_lightning_flurry":"5+tier once per mark, up to 6 marks; no repeated hit per mark",
         "shapeshifting_many_hands":"5+tier once per mark, up to 5 marks",
         "vibe_crosswave":"7+1.5*tier, both waves share struck UUIDs",
@@ -452,7 +466,7 @@ for power, strike_old, strike_new, fin_old, fin_new, low_old, low_new in [
     ("pyrokinesis",2.4,1,5,.8,3.5,.8), ("electrokinesis",2.4,1,5,1.2,3.5,1.2),
     ("hydrokinesis",2.4,1,10.5,2.55,3.5,1.2), ("superspeed",3.9,1.17,5,1.2,3,1),
     ("quake",2.4,1,5,1.6,3.5,1.6), ("cryokinesis",2.4,1,6,2,2.8,1),
-    ("phasing",2.75,1,6.5,1.2,2.8,1), ("regeneration",3.5,1,6,2,4,1.6),
+    ("phasing",2.75,.85,6.5,1.2,2.8,1), ("regeneration",3.5,1,6,2,4,1.6),
     ("invisibility",2.4,1,5,1.2,3.5,1.2), ("telekinesis",2.3,.6,7.9,1.8,2.3,1.2),
     ("vibe",2.4,.75,5.5,2.5,3.5,1.2),
 ]:
@@ -502,6 +516,69 @@ for power, strike_old, strike_new, fin_old, fin_new, low_old, low_new in [
             "vibe":"hop 0; Fold Back 3+.6*tier; counter from behind 4+tier",
         }[power], cost=STYLE_OVERRIDES.get((power, "back_dodge" if move == "back_dodge" else "dodge"), 11 if move == "back_dodge" else 8),
                  note="Motion/evasion/brace and a successful counter share this paid budget; counter damage is conditional, not a zero-cost standalone attack.")
+
+
+def amended_review(action, *args, **kwargs):
+    """Replace an opening classification after following its delegated/retaliatory damage path."""
+    if action not in DAMAGE_AUDIT:
+        raise ValueError(f"Not previously reviewed: {action}")
+    del DAMAGE_AUDIT[action]
+    reviewed(action, *args, **kwargs)
+
+
+amended_review("radiation_glowing_path", "radiation/RadiationSkills#tick; radiation/RadiationService#tick; radiation/RadiationSickness#applyEffectTick",
+               "8 s laying 5 s patches; sickness capped at amplifier 2 (1.5/s); overlapping patches do not deal separate direct hits", 13*1.5, n=2, factor=.6,
+               note="Upper bound 13 s including the last patch's sickness tail; first stages are weaker. Half-Life/Catastrophe are optional upgrades.")
+amended_review("radiation_1_1", "radiation/RadiationSkills#onHurt", "repeated doses stacking to amplifier 5 -> stage-I dose only when not already sick; at most 13 s stage I including tail", 36, 6.5,
+               factor=.6, util=16, note="Retaliation no longer refreshes its own pulse timer on every melee blow or climbs to stage VI. Lead Skin still protects its owner.")
+amended_review("phasing_2_1", "phasing/DensityService#surface", "6+tier -> 3+tier on surfacing; Uproot doubles a previously embedded target", 8, 5, n=2, ctrl=.5, util=4)
+DAMAGE_AUDIT["phasing_0_1"]["ctrl"] = 2.5  # A wall pin is 50 ticks; an unobstructed drag is only 14.
+amended_review("electrokinesis_faraday_cage", "styles/StyleRuntime#incoming", "4 -> .5 per incoming melee hit; 6 s ward, representative 2 attacks/s", 12*4, 12*.5,
+               util=14, note="The 30-tick slowness is soft control; all twelve possible representative retaliations are counted, plus projectile defense.")
+amended_review("pyrokinesis_ember_shroud", "styles/StyleRuntime#incoming", "3 -> .125 per incoming melee hit; ignition 4 -> 1 s, 8 s ward at 2 attacks/s", 16*3, 16*.125,
+               extra=8*.6, old_extra=11*.6, util=12, note="Refreshed burning is one ongoing burn, not sixteen independent four-second burns.")
+
+for power, old, new, factor, extra, old_extra, ctrl, blocks in [
+    ("pyrokinesis", 2.4*2.2, 1*2.2, 1, .6, 5*.6, 0, 4.8),
+    ("electrokinesis", 2.4*1.6*1.84, 1*1.5*1.84, 1, 0, 0, 0, 4.5),
+    ("hydrokinesis", 2.4*1.6, 1*1.6, 1, 0, 0, .25, 4.6),
+    ("superspeed", 6*1.2, 6*.24, .85, 0, 0, 0, 5),
+    ("quake", 5+2.4*1.8, 1+1*1.8, 1, 0, 0, 0, 4),
+    ("cryokinesis", 2.4*1.6*2, 1*1.2*2, 1, 0, 0, .1, 4),
+    ("phasing", 2+2.75*1.4*1.5, .7+.85*1.4*1.5, 1, 0, 0, 0, 3.5),
+    ("invisibility", 5*2.4, 5*.5, .85, 0, 0, 0, 4),
+    ("telekinesis", 4.6+1.5+.4*4.6*.8, 1.2+.6+.4*1.2*.8, 1, 0, 0, .1, 4),
+    ("vibe", 5, 2, 1, 0, 0, 0, 3.6),
+]:
+    amended_review(f"style_{power}_counter", STYLE_FILES[power], {
+        "pyrokinesis":"loaded (.8+.2*tier)*2.2; ignition 5 -> 1 s (normal strike's old base 2+.4*tier)",
+        "electrokinesis":"loaded (2+.4*tier)*1.6 -> (.8+.2*tier)*1.5; three .7x hops add .84x at 40% spread",
+        "hydrokinesis":"loaded (2+.4*tier)*1.6 -> (.8+.2*tier)*1.6, plus a short pull",
+        "superspeed":"6*(.9+.3*tier) -> 6*(.18+.06*tier)",
+        "quake":"Rebound 4+tier -> .8+.2*tier PLUS a loaded 1.8x palm",
+        "cryokinesis":"loaded (2+.4*tier)*1.6*2 -> (.8+.2*tier)*1.2*2; hitting shatters and ENDS the 40-tick freeze",
+        "phasing":"pillar 1.5+.5*tier -> .5+.2*tier PLUS (.7+.15*tier)*1.4 gauntlet*1.5 loaded; Root is conditional",
+        "invisibility":"five shards*(2+.4*tier) -> five*(.4+.1*tier), StyleHits resets invulnerability for each",
+        "telekinesis":"loaded swat 2x base; body collision 1.5 -> .5x damage and a second foe .8x, weighted .4; swat ENDS the grip",
+        "vibe":"4+tier -> 1.5+.5*tier, from a tear behind the attacker",
+    }[power], old, new, factor=factor, extra=extra, old_extra=old_extra, ctrl=ctrl, blocks=blocks,
+         cost=STYLE_OVERRIDES.get((power,"dodge"),8),
+         note="Includes the paid dodge's travel. Full freeze/grip duration and immediate loaded release are alternatives, not additive control. Counter requires a successfully evaded blow.")
+for power, old, new, factor, extra, old_extra, ctrl, blocks in [
+    ("pyrokinesis",4.2,1.6,1,.6,1.8,0,4.5), ("electrokinesis",4.2,4.2,.75,0,0,0,4.5),
+    ("hydrokinesis",4.2,2,1,0,0,.5,4.5), ("vibe",4.2,4.2,.75,0,0,0,4),
+]:
+    amended_review(f"style_{power}_back_dodge", STYLE_FILES[power], {
+        "pyrokinesis":"flip 3+.6*tier -> 1+.3*tier; ignition 3 -> 1 s",
+        "electrokinesis":"Flashback 3+.6*tier after a delayed public static burst",
+        "hydrokinesis":"Geyser Vault 3+.6*tier -> 1.5+.25*tier",
+        "vibe":"Fold Back 3+.6*tier after its 12-tick warning",
+    }[power], old, new, n=2, factor=factor, extra=extra, old_extra=old_extra, ctrl=ctrl, blocks=blocks, cost=11,
+         note="The immediate special back-dodge attack; a successful evasion may additionally earn the counter reviewed separately.")
+
+DAMAGE_AUDIT["style_phasing_lead"]["formula"] = "2.4+.35*tier -> .7+.15*tier, times Root"
+DAMAGE_AUDIT["style_phasing_rear"].update(before=2.75*1.4, after=.85*1.4,
+    formula="(2.4+.35*tier)*1.4 -> (.7+.15*tier)*1.4; the rear hand always wears its gauntlet, times Root")
 
 
 def damage_reviews(trees):
@@ -601,6 +678,90 @@ SKILL_BANDS = {"early": (12, 26, 20), "late": (14, 32, 24), "signature": (45, 60
 CLASS_BANDS = {"offense": (28, 40, 34), "defense": (22, 34, 28), "support": (22, 34, 28)}
 LANE_LEVELS = [1, 2, 3, 3, 4, 5]
 
+# Player-facing formulas belong beside the reviewed damage, so regeneration cannot restore old numbers.
+DESCRIPTION_EDITS = {
+    "quake_0_1": [("7 + level damage", "10 + level damage")],
+    "quake_fissure_maw": [("10 + 2 per tier", "7 + tier")],
+    "flight_tempest_drill": [("9 + 2 per tier", "5 + 0.75 per tier")],
+    "electrokinesis_ground_sink": [("discharge up to 16 stored damage nearby", "discharge nearby for 4 + half the stored damage, using up to 16 stored damage")],
+    "electrokinesis_tesla_spire": [("4 damage each", "0.7 + 0.15 per tier damage each")],
+    "electrokinesis_faraday_cage": [("shocked for 4", "shocked for 0.5")],
+    "telekinesis_0_1": [("deals 8 damage", "deals 10 damage")],
+    "telekinesis_implosion": [("12 + 2 per tier", "6 + 0.75 per tier")],
+    "regeneration_vital_burst": [("10 + 2 per tier", "3 + 0.5 per tier")],
+    "time_manipulation_shared_blink": [("6 + level", "2 + level")],
+    "time_manipulation_hour_hand": [("9 + 2 per tier", "6 + tier")],
+    "radiation_0_1": [("8 + level damage", "4 + 0.5 per level damage")],
+    "radiation_1_1": [("anything that hits you in melee meanwhile is dosed", "melee attackers without Radiation Sickness receive a first-stage dose; further hits do not stack or refresh it")],
+    "radiation_ground_zero": [("10 + 2 per tier, plus up to 12", "4 + 0.6 per tier, plus up to 4")],
+    "sonic_resonance_resonance_cascade": [("12 + 2 per tier", "7 + 0.75 per tier")],
+    "pyrokinesis_blue_lance": [("(8 + level) x 1.5", "(3 + 0.5 per level) x 1.5"), ("2.5 damage every four ticks", "0.5 damage every four ticks")],
+    "pyrokinesis_sunfall": [("12 + 2 per tier", "6 + 0.75 per tier")],
+    "invisibility_cloak_field": [("One press of Crush closes them all.", "One press of Crush closes them all, each dealing 12% of a single Bubble's crush damage.")],
+    "invisibility_shadow_strike": [("for half again as much as usual", "for 3.5 + 0.5 per tier damage each")],
+    "phasing_phase_carry": [("for 5 + level", "for 0.8 + 0.2 per level")],
+    "phasing_phase_eruption": [("10 + 2 per tier", "7 + tier")],
+    "empathic_mimicry_prismatic_overflow": [("8 + 2 per remembered power + tier", "4 + 0.5 per remembered power + 0.75 per tier")],
+    "matter_assembly_forge_cannon": [("5 + tier", "1.6 + 0.25 per tier")],
+    "vibe_rift_beast": [("half a minute", "45 seconds")],
+    "hydro_tsunami": [("10 + 2 x level", "8 + level")],
+    "amp_1_1": [("everyone within five blocks takes 6 + level (more with Charge), double where you're closed in", "everyone within five blocks is stunned for five seconds. It spends up to 30 Charge for damage equal to Charge spent / 30, doubled where you're closed in"), ("foes left at half a heart are stunned for five seconds", "damage leaves at least half a heart")],
+    "amp_lightning_cannon": [("10 + 2 x level", "4 + level")],
+}
+DESCRIPTION_DETAILS = {
+    "flight_2_1": "The updraft deals 6 damage.",
+    "flight_thunderclap": "The burst deals 7 + 0.05 per Momentum spent.",
+    "cryokinesis_0_1": "The lance deals 8 + tier damage.",
+    "cryokinesis_2_1": "The front deals 5 damage before shattering bonuses.",
+    "cryokinesis_brittle_constellation": "Each fracture deals 6 damage, or 9 with the stronger chain upgrade.",
+    "cryokinesis_hailstorm": "Each of nine hail strikes deals 1 + 0.2 per tier damage.",
+    "telekinesis_debris_halo": "Each half-second contact deals 0.35 damage.",
+    "telepathy_psychic_storm": "Each one-second pulse deals 0.5 + 0.3 per tier damage.",
+    "time_manipulation_singularity": "Core tears deal 0.6 + 0.1 per tier each half-second; collapse deals 3 + 0.5 per tier before falloff.",
+    "radiation_heat_vent": "The hit deals 1.5 + Core vented / 30, plus four seconds of burning.",
+    "radiation_containment_dome": "Contacts deal 0.3 each second, with sickness capped at its first stage.",
+    "pyrokinesis_1_1": "The aura deals 0.1 damage each second and keeps enemies burning.",
+    "pyrokinesis_ember_shroud": "Melee retaliation deals 0.125 damage and ignites for one second.",
+    "phasing_2_1": "The uppercut deals 3 + tier damage.",
+    "technopathy_drone_swarm": "Each volley deals 0.8 + 0.15 per tier damage per target.",
+    "technopathy_firewall": "Contacts deal 0.75 damage, at most once each second.",
+    "hydro_pressure_jet": "Each tenth-second contact deals 0.65 + 0.1 per tier damage.",
+    "amp_doorbuster": "The blast deals 1.5 damage.",
+}
+CORE_DESCRIPTION_DETAILS = {
+    "speed_cyclone": "Cyclone and Wind Arms drain 4 stamina per second from the start; an anchored tornado keeps charging until it ends. Exhaustion ends the wind.",
+    "flight_cyclone": "Tempest drains 12 stamina per second, including its windup, and ends if stamina runs out.",
+    "hydro_maelstrom": "Maelstrom drains 12 stamina per second, including its windup, and ends if stamina runs out.",
+}
+
+
+def normalize_descriptions(trees, language):
+    nodes = {}
+    for tree in trees:
+        for b, lane in enumerate(tree["branches"]):
+            for row, node in enumerate(lane):
+                nodes[node.get("id", f"{tree['power']}_{b}_{row}")] = node
+        nodes.update({node["id"]: node for node in tree.get("styles", [])})
+    for action, edits in DESCRIPTION_EDITS.items():
+        text = nodes[action]["description"]
+        for old, new in edits:
+            if old in text:
+                text = text.replace(old, new)
+            elif new not in text:
+                raise ValueError(f"Description changed underneath the damage review: {action}: {old}")
+        nodes[action]["description"] = text
+        language[f"action.heroesevolved.{action}.desc"] = text
+    for action, detail in DESCRIPTION_DETAILS.items():
+        text = nodes[action]["description"]
+        if detail not in text:
+            text += " " + detail
+        nodes[action]["description"] = text
+        language[f"action.heroesevolved.{action}.desc"] = text
+    for action, detail in CORE_DESCRIPTION_DETAILS.items():
+        key = f"action.heroesevolved.{action}.desc"
+        if detail not in language[key]:
+            language[key] += " " + detail
+
 
 def pull(old, lo, hi, centre):
     return int(max(lo, min(hi, round(.7 * old + .3 * centre))))
@@ -643,7 +804,7 @@ def normalize_skills(trees):
     return changes
 
 
-def doc(rows, dump, skill_changes):
+def doc(rows, dump, skill_changes, reviews):
     lines = []
     w = lines.append
     w("# Stamina and balance")
@@ -655,6 +816,7 @@ def doc(rows, dump, skill_changes):
     w("## The bar")
     w("")
     w("- **Size:** 100 at Power Level 1, 4 more each level: 136 at Level 10, 156 at 15, 176 at 20.")
+    w("  Leveling is the permanent max-stamina upgrade path for every power; it does not require a particular item or build.")
     w("- **Practice:** a move costs 4% less for every Power Level since it unlocked, up to 30% off (eight levels")
     w("  later). A Level 1 move is at the cap by Level 9; an ultimate that opened at Level 15 is 16% off at Level 19.")
     w("  The table's numbers below are full price; the HUD and menus show what you actually pay. Rank III's 10% stacks")
@@ -739,6 +901,10 @@ def doc(rows, dump, skill_changes):
     w("")
     for action, why in DAMAGE_CHANGES:
         w(f"- **{action}**: {why}")
+    for r in reviews:
+        if r["changed"]:
+            w(f"- **{r['action']}**: {r['formula']}. Weighted damage at unlock: {r['old']:.3g} -> {r['new']:.3g}; "
+              f"budget {r['budget']:.3g} from {r['cost']:g} stamina. Code: `{r['source']}`.")
     w("")
     w("## Core moves")
     w("")
@@ -791,6 +957,31 @@ def doc(rows, dump, skill_changes):
         c = f"{ncd / 20:g}s" if ocd == ncd else f"{ncd / 20:g}s (was {ocd / 20:g}s)"
         w(f"| {power} | {name} | {kind} | {e} | {c} |")
     w("")
+    w("## Every damage review")
+    w("")
+    w(f"Checked {sum(not r['action'].startswith('style_') for r in reviews)} tree actives, signatures and class abilities, "
+      f"and {sum(r['action'].startswith('style_') for r in reviews)} fighting-style moves across all 21 powers.")
+    w("Each complete sequence is measured at its unlock tier, before optional upgrades, stored-resource bonuses, armor or resistance.")
+    w("Offense classes include their compulsory 10% damage bonus. Typical targets are one for a single hit, two for a narrow")
+    w("fan or small patch, and three for a broad area; a four-body Shell uses four. The per-move assumptions are below.")
+    w("Damage is weighted before comparison: direct x1, repeated damage over time x0.6, flurries x0.85, telegraphed hits x0.75.")
+    w("Burning is counted once across its refreshed duration. Simultaneous equal projectiles which respect ordinary damage immunity")
+    w("are not counted as invulnerability-reset flurries. Multi-part paid actions include every paid activation in their stamina.")
+    w("The damage budget is (stamina - utility - travel - 3 x control-seconds x spread) / (2 x spread), with spread = 1 + 0.4 x extra targets.")
+    w("Only differences strictly greater than 30% are fixed. Pure information, movement, shielding and enhancements of separately paid")
+    w("attacks are recorded as utility rather than assigned invented flat damage. A counter shares the paid dodge's budget and requires")
+    w("a successful evasion; full holding time and an immediate shattering/releasing blow are alternative uses of the same control.")
+    w("")
+    w("| Move | Tier | Stamina | Targets | Control (s) | Utility / travel | Weighted damage / budget | Result | Formula and code |")
+    w("| --- | --- | --- | --- | --- | --- | --- | --- | --- |")
+    for r in reviews:
+        damaging = bool(r["old"] or r["new"])
+        result = "changed" if r["changed"] else "within 30%" if damaging else "utility / conditional"
+        damage = f"{r['new']:.3g} / {r['budget']:.3g}" if damaging else "—"
+        travel = f"{r['util']:g} / {r['blocks']:g} blocks"
+        detail = (r["formula"] + (". " + r["note"] if r["note"] else "")).replace("|", "/")
+        w(f"| `{r['action']}` | {r['tier']} | {r['cost']:g} | {r['n']:g} | {r['ctrl']:g} | {travel} | {damage} | {result} | {detail} (`{r['source']}`) |")
+    w("")
     return "\n".join(lines)
 
 
@@ -800,10 +991,14 @@ def main():
     rows = core_table(dump)
     table = json.dumps(rows, indent=2) + "\n"
     trees = json.loads(TREES.read_text(encoding="utf-8"))
+    language = json.loads(LANG.read_text(encoding="utf-8"))
     skill_changes = normalize_skills(trees)
+    normalize_descriptions(trees, language)
+    reviews = damage_reviews(trees)
     trees_text = json.dumps(trees, indent=2, ensure_ascii=False) + "\n"
-    doc_text = doc(rows, dump, skill_changes) + "\n"
-    stale = [p for p, t in ((TABLE, table), (TREES, trees_text), (DOC, doc_text))
+    language_text = json.dumps(language, indent=2, ensure_ascii=False) + "\n"
+    doc_text = doc(rows, dump, skill_changes, reviews) + "\n"
+    stale = [p for p, t in ((TABLE, table), (TREES, trees_text), (LANG, language_text), (DOC, doc_text))
              if not p.exists() or p.read_text(encoding="utf-8") != t]
     if check:
         for p in stale:
@@ -811,6 +1006,7 @@ def main():
         sys.exit(1 if stale else 0)
     TABLE.write_text(table, encoding="utf-8")
     TREES.write_text(trees_text, encoding="utf-8")
+    LANG.write_text(language_text, encoding="utf-8")
     DOC.write_text(doc_text, encoding="utf-8")
     for r in rows:
         if r.get("role") not in ("style", "finisher"):

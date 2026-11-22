@@ -7,8 +7,9 @@
     "cooldown": 15,
     "base_energy": 10,
     "base_cooldown": 20,
+    "drain": 2,
     "role": "basic",
-    "note": "held read; builds Focus"
+    "note": "held read; builds Focus; 2 a second while held (up to 6 s)"
   },
   {
     "power": "telepathy",
@@ -95,8 +96,9 @@
     "cooldown": 340,
     "base_energy": 30,
     "base_cooldown": 240,
+    "drain": 4,
     "role": "heavy",
-    "note": "3 s of wind: 1.2 + 0.3/tier every half second, lift, no air"
+    "note": "3 s of wind: 1.2 + 0.3/tier every half second, lift, no air; 4/s throughout the owned vortex, including its first ticks and anchored storm; Wind Arms on the same key also drains 4/s"
   },
   {
     "power": "superspeed",
@@ -216,8 +218,9 @@
     "cooldown": 1040,
     "base_energy": 55,
     "base_cooldown": 600,
+    "drain": 12,
     "role": "ultimate",
-    "note": "Tempest: lifts and bursts everything round its eye"
+    "note": "Tempest: lifts and bursts everything round its eye; 12/s while the storm runs"
   },
   {
     "power": "electrokinesis",
@@ -547,8 +550,9 @@
     "cooldown": 1180,
     "base_energy": 95,
     "base_cooldown": 1500,
+    "drain": 12,
     "role": "ultimate",
-    "note": "a waterspout that drags and drowns"
+    "note": "a waterspout that drags and drowns; 12/s while the storm runs"
   },
   {
     "power": "power_amplification",
@@ -911,8 +915,9 @@
     "cooldown": 120,
     "base_energy": 25,
     "base_cooldown": 120,
+    "drain": 12,
     "role": "skill",
-    "note": "a held beam that spends Core"
+    "note": "a held beam that spends Core; 12 a second while held (up to 5 s)"
   },
   {
     "power": "radiation",

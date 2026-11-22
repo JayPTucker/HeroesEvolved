@@ -179,7 +179,7 @@ public final class ElectroCombat {
         if (target == null) target = seek(player, eye, aim, length);
         Vec3 fist = ElectroGeometry.fist(player, 1, rear);
         float damage = .8F + .2F * level + (ElectroService.charge(player) >= ElectroService.CHARGED ? 1 : 0);
-        if (loaded != null) damage *= 1.6F;
+        if (loaded != null) damage *= 1.5F;
         Vec3 end;
         if (target != null) {
             end = target.getBoundingBox().getCenter();

@@ -92,6 +92,8 @@ public final class VillageMemory extends SavedData {
         /** Its notice board and what it is gathering for (village/Projects). */
         Projects.Board board;
         Projects.Project project;
+        /** The project it set aside to ask for repairs, with what it had gathered (village/Repairs). */
+        Projects.Project paused;
         /** The homes it built itself (so it can rebuild them bigger), the homes it has torn down to rebuild, and the tier
          * it last told anyone it was (-1: not yet). */
         final List<Projects.Home> homes = new ArrayList<>();
@@ -614,6 +616,7 @@ public final class VillageMemory extends SavedData {
             t.putLong("last_leave", v.lastLeave);
             if (v.board != null) t.put("board", v.board.save());
             if (v.project != null) t.put("project", v.project.save());
+            if (v.paused != null) t.put("paused", v.paused.save());
             ListTag homes = new ListTag();
             for (Projects.Home h : v.homes) homes.add(h.save());
             t.put("homes", homes);
@@ -670,6 +673,7 @@ public final class VillageMemory extends SavedData {
             v.lastLeave = t.contains("last_leave") ? t.getLong("last_leave") : -100;
             if (t.contains("board")) v.board = Projects.Board.load(t.getCompound("board"));
             if (t.contains("project")) v.project = Projects.Project.load(t.getCompound("project"));
+            if (t.contains("paused")) v.paused = Projects.Project.load(t.getCompound("paused"));
             for (Tag h : t.getList("homes", Tag.TAG_COMPOUND)) { var home = Projects.Home.load((CompoundTag) h); if (home != null) v.homes.add(home); }
             for (long r : t.getLongArray("replaced")) v.replaced.add(r);
             v.tier = t.contains("tier") ? t.getInt("tier") : -1;

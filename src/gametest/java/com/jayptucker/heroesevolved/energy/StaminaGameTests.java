@@ -37,6 +37,12 @@ public final class StaminaGameTests {
         var p = new FakePlayer(h.getLevel(), new GameProfile(UUID.randomUUID(), "stamina-test")) {
             @Override public void teleportTo(double x, double y, double z) { super.teleportTo(x, y, z); absMoveTo(x, y, z, getYRot(), getXRot()); }
         };
+        p.connection = new net.minecraft.server.network.ServerGamePacketListenerImpl(p.getServer(),
+                new net.minecraft.network.Connection(net.minecraft.network.protocol.PacketFlow.SERVERBOUND), p,
+                net.minecraft.server.network.CommonListenerCookie.createInitial(p.getGameProfile(), false)) {
+            @Override public boolean hasChannel(net.minecraft.resources.ResourceLocation id) { return false; }
+            @Override public void send(net.minecraft.network.protocol.Packet<?> packet) {}
+        };
         p.setPos(Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(2, 2, 2))));
         p.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty()
                 .assignDormant(ModAbilities.TIME_MANIPULATION_ID).unlock(ModAbilities.TIME_MANIPULATION_ID));

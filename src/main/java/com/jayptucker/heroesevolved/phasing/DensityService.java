@@ -543,7 +543,7 @@ public final class DensityService {
                 boolean torn = uproot && embedded(above);
                 if (torn) release(above);
                 above.invulnerableTime = 0;
-                above.hurt(p.damageSources().playerAttack(p), (6 + tier) * (torn ? 2 : 1));
+                above.hurt(p.damageSources().playerAttack(p), (3 + tier) * (torn ? 2 : 1));
                 above.setDeltaMovement(above.getDeltaMovement().add(0, torn ? 2.0 : 1.0, 0)); above.hurtMarked = true;
                 if (uproot) DensitySkills.uprooted(p, above, torn);
                 if (above instanceof ServerPlayer other) other.connection.send(new ClientboundSetEntityMotionPacket(other));

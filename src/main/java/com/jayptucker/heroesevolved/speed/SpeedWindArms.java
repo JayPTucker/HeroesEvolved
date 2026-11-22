@@ -96,6 +96,9 @@ public final class SpeedWindArms {
     public static boolean start(ServerPlayer p) {
         if (active(p) || p.isPassenger() || p.isSpectator()) return false;
         ARMS.put(p.getUUID(), new Arms(p, now(p)));
+        // Both modes on the Cyclone key share the balance table's wind upkeep.
+        com.jayptucker.heroesevolved.energy.StaminaDrain.start(p, "speed_wind_arms",
+                com.jayptucker.heroesevolved.ability.PowerBalance.drain("speed_cyclone", 4), false, () -> stop(p));
         ArmPosePayload.show(p, ArmPose.WIND_ARMS, MAX_TICKS + 5);
         p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.BREEZE_CHARGE, SoundSource.PLAYERS, .8F, 1.4F);
         blow(p, ARMS.get(p.getUUID()), 0);
@@ -104,6 +107,7 @@ public final class SpeedWindArms {
 
     /** Lets the arms stop. A lift ends in a gentle float down. */
     public static boolean stop(ServerPlayer p) {
+        com.jayptucker.heroesevolved.energy.StaminaDrain.stop(p, "speed_wind_arms");
         Arms a = ARMS.remove(p.getUUID());
         if (a == null) return false;
         ArmPosePayload.clear(p);
@@ -259,7 +263,7 @@ public final class SpeedWindArms {
                 1.2F + level.random.nextFloat() * .3F);
     }
 
-    static void forget(ServerPlayer p) { ARMS.remove(p.getUUID()); }
+    static void forget(ServerPlayer p) { com.jayptucker.heroesevolved.energy.StaminaDrain.stop(p, "speed_wind_arms"); ARMS.remove(p.getUUID()); }
 
-    static void clear() { ARMS.clear(); }
+    static void clear() { for (Arms a : List.copyOf(ARMS.values())) com.jayptucker.heroesevolved.energy.StaminaDrain.stop(a.player, "speed_wind_arms"); ARMS.clear(); }
 }

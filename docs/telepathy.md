@@ -14,7 +14,7 @@ deeply. Voices heard inside the head are distorted to sound like thoughts. See
 
 ## Core controls
 
-- **Read Mind:** hold to establish Focus, hear surface thoughts, and see a target's current prey.
+- **Read Mind:** hold to establish Focus, hear surface thoughts, and see a target's current prey. Holding it costs 2 stamina a second (up to six seconds a read), and it lets go when the bar is empty.
   Release to stop reading. Fine violet filaments and an iris around the target show the connection.
   Two fingers go to the temple while the other hand reaches toward the mind.
   - **A player's power.** Read a player to 60 Focus and their mind gives up the power that has woken in

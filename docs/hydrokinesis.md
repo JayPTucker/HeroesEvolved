@@ -47,9 +47,9 @@ fights the ordinary way. Each strike takes a little water; with none, the water 
 
 | Strike | Level | What happens | Stamina |
 | --- | --- | --- | --- |
-| **Lash** | 1 | The lead hand flicks a lash of water up from the hip and out along your aim, 7 blocks: 2 + 0.4 × level damage, and it soaks. | 2 |
+| **Lash** | 1 | The lead hand flicks a lash of water up from the hip and out along your aim, 7 blocks: 0.8 + 0.2 × level damage, and it soaks. | 2 |
 | **Backhand** | 1 | The rear hand sweeps a lash across from the far shoulder. Lashes alternate while you keep clicking. | 2 |
-| **Ice Daggers** | 2 | The third click of a combo. Both hands draw back and thrust out, freezing the water into five daggers thrown in a fan, 40 blocks: 1.5 + 0.3 × level each, and they slow. (Three daggers when pulled from the air.) | 5 |
+| **Ice Daggers** | 2 | The third click of a combo. Both hands draw back and thrust out, freezing the water into five daggers thrown in a fan, 40 blocks: 0.35 + 0.08 × level each, and they slow. (Three daggers when pulled from the air.) | 5 |
 | **Water Wheel** | 2 | **Crouch and click.** A ring of water whirled round your waist in one full turn, 4 blocks: everyone in reach is knocked away and soaked, and nearby fires go out. | 5 |
 
 ### Dodges (double-tap a direction)
@@ -57,7 +57,7 @@ fights the ordinary way. Each strike takes a little water; with none, the water 
 | Dodge | Level | What happens | Stamina |
 | --- | --- | --- | --- |
 | **Flow Step** | 1 | **Double-tap left or right.** You skate about 5 blocks sideways on a sheet of water, low and fast, throwing a fan of spray. | 8 |
-| **Geyser Vault** | 2 | **Double-tap back.** A geyser bursts up where you stand and throws you up and over backward. Anyone on it or just in front is launched with the column (3 + 0.6 × level). At level 1, back is a plain Flow Step. | 11 |
+| **Geyser Vault** | 2 | **Double-tap back.** A geyser bursts up where you stand and throws you up and over backward. Anyone on it or just in front is launched with the column (1.5 + 0.25 × level). At level 1, back is a plain Flow Step. | 11 |
 
 - **Evasion:** for the first 8 ticks of a dodge, blows from creatures, players and projectiles miss you. Your landing is
   cushioned for two seconds.
@@ -148,7 +148,7 @@ on a low stance, and the vault is a backflip. Calls raise both arms and circle t
 
 | Class ability | Role | What it does |
 | --- | --- | --- |
-| **Tsunami** | Offense | A great wave nine blocks wide rolls 48 blocks ahead, carrying everything before it (10 + 2 × level). |
+| **Tsunami** | Offense | A great wave nine blocks wide rolls 48 blocks ahead, carrying everything before it (8 + level). |
 | **Tidal Dome** | Defense | A dome of clear water over you for six seconds, ripples running round it and foam at its foot. It swallows shots from outside; friends inside gain Resistance and enemies inside are slowed and Soaked. |
 | **Healing Spring** | Support | A clear pool wells up at your feet with a little fountain, light lifting off it, for eight seconds: friends standing in it heal and lose their fire, poison and wither. |
 
@@ -180,3 +180,7 @@ Each press of C plays one of three at random, never the one you used last. Break
   Spirit Water) and `ElectroCombatGameTests.lightningHitsTheSoakedHarder`.
 - Photographs: `./gradlew runClient --init-script tools/hydro-preview.init.gradle` saves every move into
   `build/hydro-preview/screenshots/`.
+
+## Damage and stamina
+
+Maelstrom costs its startup stamina plus **12 stamina per second**, from the windup until it ends. Exhaustion ends it. Pressure Jet deals 0.65 + 0.1 per tier on each of its 19 tenth-second contacts. Full formulas and unlock-tier comparisons are in [Stamina and balance](stamina-balance.md#every-damage-review).

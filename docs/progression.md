@@ -32,24 +32,24 @@ spend on top.
 
 ## Mastery
 
-Mastery comes from using your power for something:
+Mastery combines active playtime, exploration and real encounters. Existing Mastery and levels are kept when a world updates.
 
-- **Hitting enemies** (hostile mobs, or other players) within three seconds of using your power: one
-  Mastery per two damage, up to 6, at most twice a second.
-- **Defeating enemies**: scaled by the foe's toughness, half again more if you used your power in the
-  last three seconds, with diminishing returns for farming one mob type.
-- **Saving someone**: Blood Gift on a badly hurt ally, Second Life, taking a bonded friend's wound,
-  Flight's rescue catch.
-- **Story notes**: 40 each.
-- **Stamina spent** still counts, at half a point per point (config `powerUseMasteryPerEnergy`).
-- A small trickle for active, non-AFK play.
+| Source | Default reward and limit |
+| --- | --- |
+| Active playtime | 12 Mastery per active minute. Moving, fighting, building and interacting count; standing still and casting into empty air do not keep the clock active. Movement and building only count when you also turn your view, so being carried round a water loop or a minecart track, or an autoclicker at a cobblestone generator, earns nothing. Offline time gives nothing. |
+| Exploration | 30 Mastery for a new 128-block region, at most one per active minute. Returning to the same region gives nothing. Each dimension has its own regions. |
+| Enemy defeats | 3 Mastery per 10 maximum health, with 50% more after recent power use. For each mob type in a 256-block region, the first six kills pay fully, the next six pay half, then kills and hit practice there give nothing. These limits survive death and relogging. |
+| Boss defeats | At least 120 Mastery before the recent-power bonus, or four times the toughness reward if higher. Gifted bosses also include their rarity reward. The local encounter limit still applies. |
+| Power practice | Hits and stamina spent share a budget of 6 Mastery per active minute. Hits earn one per two fresh damage; healing a captive cannot create fresh damage. Stamina earns half a point per point actually spent. |
+| Rescues and story | Genuine rescues reward Mastery; each first-read story note gives 40. |
 
-Held powers earn Mastery for the stamina they actually spend. A Surge's drain discount also reduces that practice
-reward, and unlimited energy earns none, including any fraction that would otherwise carry into a later spend.
+Spawner and trial-spawner mobs, spawn eggs, command summons, bred mobs, reinforcements and friendly summons give no combat Mastery. Ordinary mob farms cannot level you indefinitely: their encounter allowance runs out and waiting or relogging does not reset it. Explore and take on new encounters to keep progressing.
+
+Held powers use the practice budget for the stamina they actually spend. Surge discounts reduce that reward too, and unlimited energy earns none. Active playtime replenishes practice and exploration allowances; spending stamina alone does not.
 
 ## Stamina
 
-The stamina bar grows with Power Level: 100 at Level 1 and 4 more each level (176 at Level 20), and every move
+The stamina bar grows with Power Level: 100 at Level 1 and 4 more each level (136 at Level 10, 176 at Level 20). Leveling is a permanent way for every power to gain maximum stamina, and every move
 costs 4% less for each level since it unlocked, up to 30% off. It recovers 3 a
 second at Level 1, a little faster each level, and twice as fast out of combat; a move pauses recovery for 1.5 s.
 Costs, cooldowns and unlock levels for every power are in [Stamina and balance](stamina-balance.md).

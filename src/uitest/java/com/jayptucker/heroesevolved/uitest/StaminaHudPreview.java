@@ -134,7 +134,27 @@ public final class StaminaHudPreview {
                 System.out.println("STAMINA_PREVIEW refused " + AbilityUseService.activateAssignedAction(p, AbilitySlot.TERTIARY, false));
             });
             case 382 -> capture = "stamina-6-refused.png";
-            case 400 -> PreviewQuiet.quit();
+            case 400 -> server(mc, p -> {
+                var power = ModAbilities.SUPERSPEED_ID;
+                p.setData(ModDataAttachments.POWER_INTRO_HISTORY, p.getData(ModDataAttachments.POWER_INTRO_HISTORY).with(power));
+                com.jayptucker.heroesevolved.ability.service.PlayerAbilityService.replaceWithAbility(p, power);
+                PlayerProgressionService.setPowerLevel(p, 20);
+                com.jayptucker.heroesevolved.cooldown.CooldownService.clearAll(p);
+                PlayerEnergyService.restore(p, 999);
+                com.jayptucker.heroesevolved.network.PlayerPowerSyncService.sync(p);
+                PlayerEnergyService.sendNow(p);
+            });
+            case 410 -> ModKeyMappings.ABILITY_4.setDown(true);
+            case 430 -> server(mc, p -> {
+                boolean paid = StaminaDrain.active(p, "speed_cyclone")
+                        && com.jayptucker.heroesevolved.speed.SpeedKit.cycloning(p)
+                        && PlayerEnergyService.getStamina(p) < PlayerEnergyService.getMaximumEnergy(p);
+                PreviewQuiet.report("STAMINA_PREVIEW held Cyclone " + (paid ? "PASS" : "FAIL"));
+                if (paid) PlayerEnergyService.sendNow(p);
+            });
+            case 434 -> capture = "stamina-7-held-cyclone.png";
+            case 440 -> ModKeyMappings.ABILITY_4.setDown(false);
+            case 450 -> PreviewQuiet.quit();
             default -> { }
         }
     }

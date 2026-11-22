@@ -160,9 +160,19 @@ works while the village is in trouble.
 ## Mending what was broken
 
 A village knows its buildings as they were built: its own houses, its meeting point, wells and lamps, and what it built
-since. Whatever goes missing from one later (an explosion, a fire, a storm, a power, a renegade's attack), its people
-rebuild, a building at a time, the same way they build: the crew, the dust, two days at most. It looks itself over every
-thirty seconds or so, and at once after an explosion nearby; it waits for any fire to go out first.
+since. Whatever goes missing from one later (an explosion, a fire, a storm, a power, a renegade's attack), it asks for
+help putting back, on its notice board: a project called **Mending the damage**, listing what the broken parts were
+made of (less the village's own share, as for any project). It looks itself over every thirty seconds or so, and at
+once after an explosion nearby; it waits for any fire to go out first.
+
+- **The board is the village's to use for it.** A project it was gathering for is set aside, with everything already
+  given, and comes straight back to the board, as it was, when the mending is done. If it's in the middle of building
+  something, the repairs wait until that's up. More damage while it's still asking is added to the same list.
+- **Fill it like any project.** Put the materials in the chest and the signs count them; its people also gather their
+  own share each day and carry it to the board, so it gets there without you, just more slowly.
+- **Then they rebuild,** a crew on each broken building, the same way they build: the dust, the shouts, two days at most.
+  It puts back what's missing when the work starts, even if more was broken after it asked. Everyone who gave is
+  thanked.
 
 - **Only while anyone is left.** A village with nobody left (one that fell) mends nothing.
 - **Three or more blocks gone from a building** before it bothers (eight if it is struggling: a struggling village's
@@ -171,7 +181,8 @@ thirty seconds or so, and at once after an explosion nearby; it waits for any fi
 - **Never your work:** blocks you put down stay, a gap you broke by hand (a window you knocked out, a wall you opened)
   stays open, and your own home is yours to mend.
 
-The radio says so when it starts ("Ashford's patching up what was broken."), and everyone near hears when it's done.
+The radio says so when it asks ("Ashford needs help mending what was broken. The list's up on the board by the bell."),
+and everyone near hears when it's done.
 
 
 ## What you build is yours
