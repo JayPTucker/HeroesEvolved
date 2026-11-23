@@ -5,6 +5,10 @@ live the evening the city ended. You wake in your own apartment, walk its street
 Noah Bennet seals you in a pod "for your own good". Then the [usual waking](the-past.md#the-first-five-minutes) begins,
 in the pod with the same number.
 
+When you emerge from a newly built bunker in the present, you can retrace these same streets through Odessa's ruins.
+The buildings keep their original locations; the surviving rooms hold scavenged supplies and civilian journals from
+the first days after the blast. See [the surface ruins](the-past.md#the-first-five-minutes).
+
 ## What happens
 
 1. **Your apartment.** You wake in the **Odessa Arms**, a brick walk-up a block west of Primatech Paper, with a fire

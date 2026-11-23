@@ -169,8 +169,9 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | **Story and places** | | |
 | `prologue-preview.init.gradle`, `time-city-preview.init.gradle` | the Last Day beat by beat; Odessa (prints `CITY_AUDIT`) | |
 | `bunker-preview.init.gradle`, `night-three-preview.init.gradle` | the bunker tour (prints `BUNKER_AUDIT`, `BUNKER_DARK`); Night Three | |
+| `odessa-ruins-preview.init.gradle` | Present-day Odessa around a new bunker in normal terrain: skyline, hills, buried rooms, woodland edges, streets, cache contents, signed and unfinished journals | Checks block supports at each district's footing and all journal pages with the actual font; 15 photographs. `-Ponly=04-odessa-arms,07-church` selects tour shots; the three inventory/book shots always run |
 | `blueprint-preview.init.gradle` | one blueprint, from four corners, the top and inside | `-Pblueprint=<name>`, `-Pcut=<layer>` |
-| `ruins-preview.init.gradle`, `signal-site-preview.init.gradle` | the story ruins; the Last Signal site | |
+| `ruins-preview.init.gradle`, `signal-site-preview.init.gradle` | the story ruins; the Last Signal site | Ruins: `-Pocean` places all four on separate natural seabed sites and photographs flooded rooms and surface salvage; the fixture's barrel carries a real civilian journal |
 | `unwritten-world-preview.init.gradle` | A Future Unwritten's world fixture | |
 | **Interface and gear** | | |
 | `stamina-preview.init.gradle`, `gauge-preview.init.gradle` | the stamina bar; the HUD ring gauges | |

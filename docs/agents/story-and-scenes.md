@@ -380,6 +380,54 @@ generator, infirmary, containment, maintenance, and the sealed Helix Ward with o
   with grass on top. `BunkerStair.land` walks down past logs, leaves and plants to the real ground, and `looseLeaves` removes
   any piece of a tree that no longer reaches a trunk on the ground, branches included.
 
+## Reusable patterns from present-day Odessa
+
+### Scattered ruins
+
+- The four `ruins_*` blueprints now come from `tools/generate-scattered-ruins.py`. They are distinct 21-block plots:
+  the burnt kitchen and timber ribs, collapsed masonry and chimney, Bennet's surviving upper room with a walkable
+  stair and fallen east wing, and Isaac's loft with both paintings. Keep existing loot table IDs and painting markers;
+  regenerate every NBT export after changes. `tools/ruins-preview.init.gradle` photographs them.
+- Ordinary ruins use 48-chunk placement regions (separation 20), story houses 96 (separation 40), keeping the old salts.
+  These are candidate regions, not guaranteed distances or a promise of one ruin per region: biome checks still apply.
+- Their jigsaw pools use `ancient_ruins`: protected blocks followed by `RuinsWaterProcessor`. The terrain tag keeps
+  soil, stone, tree trunks and leaves; air cells must not carve hills flat. **Water must not be protected** or it prevents
+  the ruin from being placed underwater. Keep construction in ordinary masonry
+  and timber rather than turning sparse discoveries into metal, quartz or gem quarries.
+- **Anchor in the seabed, not the water surface.** All four structures project onto `OCEAN_FLOOR_WG`;
+  `OdessaRuins.ground` likewise ignores water. `RuinWater.flooded` leaves rooms flooded, waterlogs compatible blocks
+  and removes terrestrial foliage. The processor raises barrels (including inventory or lazy loot NBT) and selected
+  loose wooden slabs to the first air cell above their water column. Append salvage after air cells, respect the
+  current generation chunk's full-height clipping box, and never break through ice or a roof. Ordinary loot chests stay
+  below. Odessa chooses each cache's floating position before filling it, records the raised journal position and skips
+  the cupboard pedestal over water; `RuinWater.driftwood` supplies nearby boards. Nothing ticks or replenishes salvage.
+  `ScatteredRuinsGameTests` checks deep water, per-chunk placement, journals, lazy loot and an actual flooded city district.
+  Use `tools/ruins-preview.init.gradle -Pocean` for natural seabed and surface photographs.
+
+### Shared city patterns
+
+- **A city plan can be read without building it.** `CityCanvas.plan` must skip both `clearColumn` and `finish`, not
+  just `set`: the first attempt at reusing `CityDraw` could clear the source world's columns. `OdessaRuins` and
+  `OdessaDecay` reuse the original blocks and signs with `PrimatechRuin.DX/DZ`, keeping the avenue and every landmark
+  in the same horizontal place as the Last Day. `OdessaRuinsGameTests.planningTheCityNeverTouchesTheWorld` guards this.
+- **Let hills bury ruins; do not grade a whole city.** A common floor made a rectangular plateau with grass steps
+  round it. `OdessaRuins.Terrain` snapshots each block before placement, picks a footing from the lower quartile of
+  the lot, and keeps every original soil block and rooted tree. Only exposed downhill foundations are filled; road
+  fragments follow the real surface and fade at the edges. Test an actual hill and trunk, not just a flat fixture.
+- **Ruins must not be ore deposits.** `RuinMaterials.safe` is shared by the city, Primatech's ruin and its surface
+  stair rails. It substitutes masonry or timber for metals, gems, quartz, storage blocks and valuable machinery,
+  preserving stair, slab and door properties. Both city and Primatech tests scan the finished blocks for violations;
+  supplies and personal keepsakes belong in the modest caches instead.
+- **Settle across batches after all neighbours exist.** `OdessaRuins` builds nearest-first, saves both its construction
+  and seam-cleanup cursors, and never redraws a finished block. A restart also keeps journal positions and emptied
+  inventories. Clear both halves of displaced tall plants; settle hanging vines top-down as well as floor props
+  bottom-up. Disconnected small branches and rubble fall away, while connected terrain and rooted trees stay.
+- **Photograph terrain at each district's height.** `tools/odessa-ruins-preview.init.gradle` includes hills, the edge,
+  street views, actual cache contents and both book formats, and checks every page with the real font. Audit the
+  districts from their own footings: a single box down to a far valley reports untouched caves under the high lots.
+  `CityAudit` must check whether **any** cell of a component touches the audit edge, not just its first cell: a canopy
+  or beam can be rooted just outside the box. The regression also checks a truly detached internal block still fails.
+
 ## Reusable patterns from the bunker rework (the original rooms)
 
 These are about the original rooms (`BunkerLayout.LEGACY`), which worlds built before the rebuild still have.

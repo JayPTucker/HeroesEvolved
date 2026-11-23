@@ -87,7 +87,7 @@ public final class CityCanvas {
 
     /** Empties a column from {@code from} up to whatever stands there now. */
     public void clearColumn(int x, int z, int from) {
-        if (!in(x, z)) return;
+        if (plan != null || !in(x, z)) return;
         int top = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE, x, z);
         for (int y = from; y < top; y++) {
             cursor.set(x, y, z);
@@ -111,6 +111,7 @@ public final class CityCanvas {
      * chunk, was built: every block on this patch's edge also asks its neighbour across the edge to join it again.
      */
     public void finish() {
+        if (plan != null) return;
         BlockPos.MutableBlockPos near = new BlockPos.MutableBlockPos();
         for (BlockPos pos : edge)
             for (Direction side : Direction.Plane.HORIZONTAL) {

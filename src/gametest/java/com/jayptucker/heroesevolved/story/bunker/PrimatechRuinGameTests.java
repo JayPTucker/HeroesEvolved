@@ -54,6 +54,9 @@ public final class PrimatechRuinGameTests {
         var audit = CityAudit.run(level, origin.getX() + PrimatechRuin.LOT_X0 - 1, origin.getY() + FLOOR, origin.getZ() + PrimatechRuin.LOT_Z0 - 1,
                 origin.getX() + PrimatechRuin.LOT_X1 + 1, origin.getY() + FLOOR + HEIGHT, origin.getZ() + PrimatechRuin.LOT_Z1 + 1);
         h.assertTrue(audit.total() == 0, "Nothing in the ruin hangs or can't stay: " + audit);
+        for (BlockPos p : BlockPos.betweenClosed(origin.getX() + PrimatechRuin.LOT_X0, origin.getY() + FLOOR, origin.getZ() + PrimatechRuin.LOT_Z0,
+                origin.getX() + PrimatechRuin.LOT_X1, origin.getY() + FLOOR + HEIGHT, origin.getZ() + PrimatechRuin.LOT_Z1))
+            h.assertTrue(!RuinMaterials.valuable(level.getBlockState(p)), "Primatech has no farmable resource blocks: " + p);
         h.succeed();
     }
 

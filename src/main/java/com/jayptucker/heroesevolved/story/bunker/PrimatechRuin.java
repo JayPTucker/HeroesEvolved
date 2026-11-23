@@ -41,7 +41,7 @@ final class PrimatechRuin {
     private PrimatechRuin() {}
 
     /** From Odessa's coordinates to the bunker's: the stair's slot in the lobby floor lands on the bunker's top flight. */
-    private static final int DX = 3 - CityGrid.STAIR_X0, DZ = -7 - CityGrid.STAIR_Z0;
+    static final int DX = 3 - CityGrid.STAIR_X0, DZ = -7 - CityGrid.STAIR_Z0;
     static final int LOT_X0 = CityGrid.PRIMATECH_LOT_X0 + DX, LOT_X1 = CityGrid.PRIMATECH_LOT_X1 + DX,
             LOT_Z0 = CityGrid.PRIMATECH_LOT_Z0 + DZ, LOT_Z1 = CityGrid.PRIMATECH_LOT_Z1 + DZ;
     static final int WALL_X0 = CityGrid.PRIMATECH_X0 + DX, WALL_X1 = CityGrid.PRIMATECH_X1 + DX,
@@ -270,7 +270,7 @@ final class PrimatechRuin {
         void set(int x, int y, int z, BlockState state) {
             BlockPos pos = at(x, y, z);
             if (level.isOutsideBuildHeight(pos) || level.getBlockState(pos).is(Blocks.BEDROCK)) return;
-            level.setBlock(pos, state, FLAGS);
+            level.setBlock(pos, RuinMaterials.safe(state), FLAGS);
         }
         void set(int x, int y, int z, Block block) { set(x, y, z, block.defaultBlockState()); }
         BlockState get(int x, int y, int z) { return level.getBlockState(at(x, y, z)); }

@@ -41,8 +41,29 @@ pod, when the power comes back for all of them.
 
 The stair comes up inside what is left of **Primatech Paper**, the building you ran into on the Last Day. The light came
 down the avenue and took out its middle: two broken wings still stand, up to about eight storeys, with a great heap of
-fallen floors, the roof's machine room and its mast between them. The lobby's railed stair, its green copper doors and the
+fallen floors, the roof's machine room and its mast between them. The lobby's railed stair, its weathered doors and the
 PRIMATECH PAPER CO. sign are still there, and the way from the stair out through those doors is clear.
+
+Outside is **Odessa, 103 years later**. The streets and buildings occupy the same places as on the Last Day: the
+Odessa Arms is west of Primatech, the avenue runs north past the City Market and Odessa Square to Kirby Plaza, and
+the church, city hall, Commons and broken towers still mark their old blocks. Floors have collapsed, windows have
+burst, and vines spill down the surviving walls. The hills and woods remain: rising soil buries lower storeys, trees
+grow through former rooms, and only the downhill sides expose their old foundations. Broken stretches of paving
+follow the slopes and fade into the undergrowth at the city's edge. There is no flat city platform or cleared border.
+
+Search the surviving rooms and cupboards for small supplies, personal keepsakes and **eight civilian journals**.
+Some are signed books; others are unfinished books and quills. Their entries follow the days immediately after the
+blast, when people still waited for rescue, shared dwindling supplies and tried to keep one another alive. A few
+leave directions to another shelter or cache. These are optional discoveries; you can take the books and ordinary
+loot with you. Scavenged containers stay empty.
+
+The surface ruins use ordinary weathered stone, timber, plaster and terracotta. They contain no recoverable metal,
+gem, ore or storage blocks, valuable machinery, quartz or bookshelves to strip for resources; any supplies are in
+the small loot caches.
+
+The city ruins are built with **new bunkers** in normal worlds, beginning with the blocks closest to Primatech.
+Existing saves keep their surrounding terrain. Shallow worlds that use the bunker's ladder and hatch keep that
+entrance. Photograph the ruined city with `tools/odessa-ruins-preview.init.gradle`.
 
 A chest in the hall's aisle holds the orientation log. The receiver in Records gives directions to the relay ruins.
 
@@ -126,11 +147,18 @@ forests, savannas, taigas, snowy plains and deserts, and each has a chest to sca
 
 | Ruin | How common | What happened | What's inside |
 | --- | --- | --- | --- |
-| **Burnt house** | common | A timber-frame home that burned from the kitchen outward. Only the charred frame stands | Scavenged supplies, sometimes a survivor's note |
-| **Collapsed house** | common | A brick house the blast wave pushed over. The west wall and chimney still stand | Scavenged supplies, sometimes a survivor's note |
-| **The Bennet house** | rare | The fire took the east wing; a young oak grows there now. Claire's room survived upstairs, and the burnt-out car is still in the driveway | Claire's note for her dad, and his spare glasses |
-| **Isaac Mendez's studio** | rare | A brick loft with a collapsed corner. His painting of the man who was the bomb hangs on the wall, with a study of the black sun opposite | Isaac's note about the painting that came true |
+| **Burnt house** | uncommon | A timber-frame home that burned from the kitchen outward. Only the charred frame stands | Scavenged supplies, sometimes a survivor's note |
+| **Collapsed house** | uncommon | A brick house the blast wave pushed over. The west wall and chimney still stand | Scavenged supplies, sometimes a survivor's note |
+| **The Bennet house** | very rare | The fire took the east wing; a young oak grows there now. Claire's room survived upstairs, and the burnt-out car is still in the driveway | Claire's note for her dad, and his spare glasses |
+| **Isaac Mendez's studio** | very rare | A brick loft with a collapsed corner. His painting of the man who was the bomb hangs on the wall, with a study of the black sun opposite | Isaac's note about the painting that came true |
 | **Primatech relay station** | stronghold-like rarity | A ruined Company relay above a buried stasis annex | The Last Signal rescue, starting at the relay console |
+
+The rebuilt ruins have broken silhouettes, mossy foundations, rooted trees and usable interiors: Claire's upstairs room has a surviving stair, and Isaac's loft still holds both paintings. Their world-generation processor preserves native soil, stone and trees, allowing hills to bury parts of the old rooms. Ordinary ruins use 48-chunk candidate regions (previously 18), and the named houses use 96 (previously 48): roughly 86% and 75% fewer candidate sites respectively, before biome checks. Existing structures remain; the rebuild and rarity changes apply in newly generated terrain.
+
+Where the old city or a scattered ruin reaches water, its foundations lie on the seabed and its rooms are flooded.
+Barrels rise to the surface with their contents intact, accompanied by broken wooden boards; ordinary loot chests
+remain below for divers to find. Ice and surviving ceilings can trap salvage underwater. This affects new generation;
+existing buildings and player containers are left in place.
 
 The survivor notes and the two story notes point back toward Odessa and the bunker. Find one with
 `/locate structure heroesevolved:ruins_bennet_house` (or `ruins_isaac_studio`, `ruins_burnt_house`,

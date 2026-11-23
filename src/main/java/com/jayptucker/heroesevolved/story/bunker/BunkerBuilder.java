@@ -417,7 +417,10 @@ public final class BunkerBuilder {
                 room(room.blueprint(), room.at().getX(), room.at().getY(), room.at().getZ());
         // The way out, as the Last Day's survivors came in: the vault behind records, stuck open and grown over, and a
         // switchback stair up to a ruined lobby on the surface (BunkerStair).
-        if (stair) BunkerStair.build(level, origin, top);
+        if (stair) {
+            BunkerStair.build(level, origin, top);
+            OdessaRuins.start(level, origin, surface - 1);
+        }
     }
 
 }

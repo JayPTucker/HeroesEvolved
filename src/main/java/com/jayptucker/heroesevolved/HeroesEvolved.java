@@ -33,6 +33,7 @@ public final class HeroesEvolved {
         ModSounds.register(modEventBus);
         ModParticles.register(modEventBus);
         ModEntities.register(modEventBus);
+        com.jayptucker.heroesevolved.structure.RuinsWorldgen.register(modEventBus);
         com.jayptucker.heroesevolved.registry.ModItems.register(modEventBus);
         modEventBus.addListener(com.jayptucker.heroesevolved.time.TaczAmmoRecovery::setup);
         com.jayptucker.heroesevolved.weapons.PowerWeapons.init();

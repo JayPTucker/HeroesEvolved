@@ -1,0 +1,6 @@
+{
+  "processors": [
+    {"processor_type": "minecraft:protected_blocks", "value": "#heroesevolved:ruins_preserve_terrain"},
+    {"processor_type": "heroesevolved:ruins_water"}
+  ]
+}

@@ -7,7 +7,7 @@
         "element_type": "minecraft:single_pool_element",
         "location": "heroesevolved:ruins/bennet_house",
         "projection": "rigid",
-        "processors": "minecraft:empty"
+        "processors": "heroesevolved:ancient_ruins"
       }
     }
   ]

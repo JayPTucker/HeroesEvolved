@@ -1,4 +1,4 @@
-// Story ruins photographed in a flat world. Never bundled into the mod JAR.
+// Story ruins photographed with their terrain processor in a normal world. Never bundled into the mod JAR.
 allprojects {
     plugins.withId('net.neoforged.moddev') {
         afterEvaluate {
@@ -14,10 +14,12 @@ allprojects {
                         gameDirectory = project.file('build/ruins-preview')
                         programArguments.addAll('--width', '1100', '--height', '800')
                         systemProperty('heroes.preview.ruins', 'true')
+                        systemProperty('heroes.preview.ruins.ocean', providers.gradleProperty('ocean').isPresent().toString())
                     }
                 }
             }
             tasks.named('runClient') { dependsOn(tasks.named('ruinsPreviewClasses')) }
+            apply from: rootProject.file('tools/preview-result.gradle')
         }
     }
 }
