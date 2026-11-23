@@ -115,13 +115,13 @@ public final class VillageUpgradeGameTests {
                 Rebuild.Site site = Growth.grow(level, v, id);
                 h.assertTrue(site != null && site.home() != null, "Room for " + id);
                 Rebuild.hurry(level, site, 100_000);
-                List<String> faults = faults(level, box(site.center(), 9, 15));
+                // A later house can stand near the first: only inspect this building's cells, or a neighbour's bed
+                // inside the old nine-block radius makes a correct two-bed home fail depending on the random layout.
+                List<BlockPos> built = List.copyOf(new java.util.LinkedHashSet<>(site.positions));
+                List<String> faults = faults(level, built);
                 h.assertTrue(faults.isEmpty(), id + " stands clean: " + faults);
                 int beds = 0, upstairs = 0;
-                // Count inside this house's own bounds: the wider box above can reach the bed of the house next door.
-                var bounds = level.getStructureManager().get(id).orElseThrow()
-                        .getBoundingBox(new StructurePlaceSettings().setRotation(site.home().rotation()), site.home().origin());
-                for (BlockPos p : BlockPos.betweenClosed(bounds.minX(), bounds.minY(), bounds.minZ(), bounds.maxX(), bounds.maxY(), bounds.maxZ())) {
+                for (BlockPos p : built) {
                     BlockState s = level.getBlockState(p);
                     if (s.getBlock() instanceof BedBlock && s.getValue(BedBlock.PART) == net.minecraft.world.level.block.state.properties.BedPart.FOOT) {
                         beds++;

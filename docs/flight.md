@@ -47,6 +47,8 @@ through a group and follow its finale with another pass.
   carries up to 192 blocks. Everyone within 64 blocks feels a brief tremor that weakens with distance.
   The dash sustains thrust before easing into cruise and stops short of obstacles. Skyhook traces the
   catch and holds cargo in your arms or overhead through flight, then sends a smaller collar with the throw.
+  Carrying keeps the normal horizontal flying pose above speed level 1; the load follows your body's pitch and bank
+  while your arms hold it securely. Iron golems are too heavy for Skyhook.
 - Meteor Drop starts in an upright brace, tips into the plunge and fans pressure fronts along
   the surface it strikes. Tempest draws its 20-block reach on the ground as bands spiral
   inward. Its warning gives targets one second to escape before the pull begins.

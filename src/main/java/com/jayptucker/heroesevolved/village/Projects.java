@@ -77,7 +77,7 @@ import java.util.UUID;
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class Projects {
     /** The board stands this far from the bell. */
-    public static final int BOARD_NEAREST = 5, BOARD_FURTHEST = 18;
+    public static final int BOARD_NEAREST = 5, BOARD_FURTHEST = 28;
     /** A village builds (or rebuilds) at most this many things. */
     public static final int MOST = 16;
     /** Where a village's tier starts, counting a bed as 1 and each thing it has built as 2. */
@@ -277,6 +277,8 @@ public final class Projects {
         public BlockPos chest() { return at(0, 0, 1); }
         /** Sign {@code i}: 0 to 2 along the top row from the left, 3 to 5 along the bottom. */
         public BlockPos sign(int i) { return at(i % 3 - 1, i < 3 ? 2 : 1, 1); }
+        /** Reverse face, numbered from that reader's left: current work and future builds. */
+        public BlockPos statusSign(int i) { return at(1 - i % 3, i < 3 ? 2 : 1, -1); }
 
         CompoundTag save() {
             CompoundTag t = new CompoundTag();
@@ -316,6 +318,7 @@ public final class Projects {
         cells.add(new Cell(b.at(-2, 3, 0), lantern));
         cells.add(new Cell(b.at(2, 3, 0), lantern));
         for (int i = 0; i < 6; i++) cells.add(new Cell(b.sign(i), w.sign().defaultBlockState().setValue(WallSignBlock.FACING, b.facing)));
+        for (int i = 0; i < 6; i++) cells.add(new Cell(b.statusSign(i), w.sign().defaultBlockState().setValue(WallSignBlock.FACING, b.facing.getOpposite())));
         cells.add(new Cell(b.chest(), Blocks.CHEST.defaultBlockState().setValue(ChestBlock.FACING, b.facing)));
         return cells;
     }
@@ -343,17 +346,17 @@ public final class Projects {
         if (Math.abs(y - bell.getY()) > 3) return null;
         Board b = new Board(new BlockPos(x0, y, z0), facing);
         for (int x = -2; x <= 2; x++)
-            for (int z = 0; z <= 2; z++) {
+            for (int z = -2; z <= 2; z++) {
                 BlockPos ground = b.at(x, -1, z);
                 if (!level.hasChunkAt(ground)) return null;
-                if (z <= 1) {
+                if (Math.abs(z) <= 1) {
                     BlockState g = level.getBlockState(ground);
                     boolean ok = Growth.natural(g) || paved && (g.is(Blocks.DIRT_PATH) || g.isFaceSturdy(level, ground, Direction.UP));
                     if (!ok || !level.getFluidState(ground).isEmpty() || g.is(Blocks.FARMLAND)) return null;
                 }
                 // The board itself, and room to stand in front of it; never on or over anything a player put down.
-                if (z <= 1 && PlayerBuilt.is(level, ground)) return null;
-                for (int dy = 0; dy <= (z == 2 ? 1 : 3); dy++) {
+                if (Math.abs(z) <= 1 && PlayerBuilt.is(level, ground)) return null;
+                for (int dy = 0; dy <= (Math.abs(z) == 2 ? 1 : 3); dy++) {
                     BlockState s = level.getBlockState(b.at(x, dy, z));
                     if (!s.isAir() && !(s.canBeReplaced() && s.getFluidState().isEmpty()) || PlayerBuilt.is(level, b.at(x, dy, z))) return null;
                 }
@@ -669,12 +672,26 @@ public final class Projects {
 
     /** Posts {@code v}'s next project (a home first, never the same kind twice running), or null if it can't. */
     public static Project post(ServerLevel level, VillageMemory.Village v) {
+        Project p = v.planned != null ? v.planned : choose(level, v);
+        if (p == null) return null;
+        v.planned = null;
+        v.project = p;
+        p.posted = Days.today(level);
+        future(level, v);
+        VillageMemory.get(level).setDirty();
+        BandChatter.news(level, v.bell, v.name + " is gathering for " + lower(p.title) + ". The list's up on the board by the bell.", (int) Days.DAY);
+        signs(level, v);
+        return p;
+    }
+
+    /** Choose once, then save it: what the board announces is what will actually be built next. */
+    private static Project choose(ServerLevel level, VillageMemory.Village v) {
         Tier tier = tier(level, v);
         List<Option> all = options(level, v, tier);
         String last = v.project == null ? null : v.project.title;
         List<Option> pick = new ArrayList<>();
         for (Option o : all)
-            if ((v.houses > 0 || o.plan.title.equals("A new house") || o.old != null) && !o.plan.title.equals(last)) pick.add(o);
+            if ((v.houses > 0 || v.project != null || o.plan.title.equals("A new house") || o.old != null) && !o.plan.title.equals(last)) pick.add(o);
         if (pick.isEmpty()) pick.addAll(all);
         while (!pick.isEmpty()) {
             int total = 0;
@@ -685,13 +702,17 @@ public final class Projects {
             pick.remove(chosen);
             Project p = project(level, v, chosen.plan, chosen.old);
             if (p == null) continue;
-            v.project = p;
-            VillageMemory.get(level).setDirty();
-            BandChatter.news(level, v.bell, v.name + " is gathering for " + lower(p.title) + ". The list's up on the board by the bell.", (int) Days.DAY);
-            signs(level, v);
             return p;
         }
         return null;
+    }
+
+    private static void future(ServerLevel level, VillageMemory.Village v) {
+        int committed = v.project != null && !v.project.repair() && v.project.stage != Stage.DONE ? 1 : 0;
+        if (v.planned == null && v.houses + committed < MOST) {
+            v.planned = choose(level, v);
+            VillageMemory.get(level).setDirty();
+        }
     }
 
     /**
@@ -963,6 +984,7 @@ public final class Projects {
             else if (v.houses < MOST) p = post(level, v);
         }
         Homes.tick(level, v);
+        future(level, v);
         if (p != null) {
             if (p.stage == Stage.GATHERING) collect(level, v, null);
             if (p.stage == Stage.GATHERING) Workers.gather(level, v);
@@ -1037,15 +1059,18 @@ public final class Projects {
     public static void signs(ServerLevel level, VillageMemory.Village v) {
         if (v.board == null) return;
         Component[][] text = text(level, v);
-        for (int i = 0; i < 6; i++) {
-            BlockPos at = v.board.sign(i);
+        Component[][] schedule = schedule(level, v);
+        for (int i = 0; i < 12; i++) {
+            BlockPos at = i < 6 ? v.board.sign(i) : v.board.statusSign(i - 6);
+            Component[] lines = i < 6 ? text[i] : schedule[i - 6];
             if (!level.hasChunkAt(at) || !(level.getBlockEntity(at) instanceof SignBlockEntity sign)) continue;
+            if (PlayerBuilt.is(level, at)) continue;
             SignText now = sign.getFrontText();
             boolean same = true;
-            for (int j = 0; j < 4; j++) if (!now.getMessage(j, false).equals(text[i][j])) same = false;
+            for (int j = 0; j < 4; j++) if (!now.getMessage(j, false).equals(lines[j])) same = false;
             if (same) continue;
             SignText t = new SignText().setColor(DyeColor.BLACK);
-            for (int j = 0; j < 4; j++) t = t.setMessage(j, text[i][j]);
+            for (int j = 0; j < 4; j++) t = t.setMessage(j, lines[j]);
             sign.setText(t, true);
             sign.setWaxed(true);
         }
@@ -1076,7 +1101,54 @@ public final class Projects {
             lines[sign][line + 1] = Component.literal(p.has(m) ? "Done (" + need + ")" : have + " / " + need);
             k++;
         }
+        if (lines[5][3].getString().isEmpty()) lines[5][3] = Component.literal("Plans on back");
         return lines;
+    }
+
+    /** The board's reverse face: work now, paths, paused work and the actual saved build queue. */
+    public static Component[][] schedule(ServerLevel level, VillageMemory.Village v) {
+        Component[][] lines = new Component[6][4];
+        for (Component[] sign : lines) java.util.Arrays.fill(sign, Component.empty());
+        lines[0][0] = Component.literal(v.name).withStyle(ChatFormatting.BOLD);
+        lines[0][1] = Component.literal("Build schedule");
+        lines[0][2] = Component.literal("Current & future");
+        lines[0][3] = Component.literal(tier(level, v).label);
+        if (v.project != null) notice(lines[1], "Current build", v.project.title, status(level, v, v.project));
+        else notice(lines[1], "Current build", "No project", v.houses >= MOST ? "All complete" : "Planning");
+        List<Rebuild.Site> paths = Rebuild.all(level).stream().filter(s -> s.paving && s.bell().equals(v.bell)).toList();
+        long pending = v.homes.stream().filter(h -> Paths.needsConnection(level, v, h)).count();
+        String pathStatus = paths.isEmpty() ? pending > 0 ? "Finding a route" : "Connected" : siteStatus(level, paths.getFirst(), "Paving");
+        notice(lines[2], "Village paths", pending + " awaiting paths", pathStatus);
+        int slot = 3;
+        if (v.paused != null) notice(lines[slot++], "After repairs", v.paused.title, "On hold");
+        List<String> queued = new ArrayList<>();
+        for (UUID owner : v.orders)
+            if (v.project == null || !owner.equals(v.project.owner)) queued.add("A home for " + v.names.getOrDefault(owner, "a newcomer"));
+        if (v.planned != null) queued.add(v.planned.title);
+        for (int i = 0; i < queued.size() && slot < 6; i++, slot++) {
+            String state = i == queued.size() - 1 && v.planned != null ? "Planned" : "Queued";
+            if (slot == 5 && i + 1 < queued.size()) state = "+ " + (queued.size() - i - 1) + " more queued";
+            notice(lines[slot], "Future build " + (i + 1), queued.get(i), state);
+        }
+        if (slot < 6) notice(lines[slot], "Future builds", "No more queued", v.houses >= MOST ? "All complete" : "Updated daily");
+        return lines;
+    }
+
+    private static void notice(Component[] lines, String label, String title, String status) {
+        lines[0] = Component.literal(label);
+        List<String> titleLines = wrap(title, 2);
+        for (int i = 0; i < titleLines.size(); i++) lines[i + 1] = Component.literal(titleLines.get(i));
+        lines[3] = Component.literal(status);
+    }
+
+    static String siteStatus(ServerLevel level, Rebuild.Site site, String verb) {
+        if (com.jayptucker.heroesevolved.radio.EmergencyBand.troubled(level, site.bell)) return "Paused: trouble";
+        if (Days.clock(level) < site.startAt) return "Starts at dawn";
+        long time = Math.floorMod(level.getDayTime(), Days.DAY);
+        if (time < Rebuild.WORK_FROM || time > Rebuild.WORK_TO) return "Paused: night";
+        if (Villages.members(level, site.bell).stream().noneMatch(x -> !x.isBaby() && !x.isSleeping() && !x.isTrading())) return "Awaiting crew";
+        if (site.clear > site.done()) return "Clearing: " + site.done() * 100 / site.clear + "%";
+        return verb + ": " + Math.min(99, site.done() * 100 / Math.max(1, site.size())) + "%";
     }
 
     static String status(ServerLevel level, VillageMemory.Village v, Project p) {
@@ -1091,7 +1163,7 @@ public final class Projects {
                 }
                 for (Rebuild.Site s : Rebuild.all(level))
                     if (s.growth() && s.bell().equals(v.bell) && s.size() > 0)
-                        yield s.started() && s.done() > 0 ? "Building: " + Math.min(99, s.done() * 100 / s.size()) + "%" : "Starts at dawn";
+                        yield siteStatus(level, s, "Building");
                 yield "Building";
             }
             case DONE -> "Finished!";

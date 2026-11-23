@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.monster.AbstractIllager;
 import net.minecraft.world.entity.monster.AbstractSkeleton;
 import net.minecraft.world.entity.monster.Witch;
@@ -59,6 +60,8 @@ public final class CarryGeometry {
 
     /** Whether {@code held} can be carried at all: in the arms, or overhead when {@code lift} allows it. */
     public static boolean liftable(Entity held, boolean lift) {
+        // Fitting in the hold does not make an iron body light enough to lift, even with Skyhook.
+        if (held instanceof IronGolem) return false;
         double w = held.getBbWidth(), h = held.getBbHeight();
         return w <= ARMS_WIDTH + 1.0E-4 && h <= ARMS_HEIGHT + 1.0E-4 || lift && w <= LIFT_WIDTH && h <= LIFT_HEIGHT;
     }

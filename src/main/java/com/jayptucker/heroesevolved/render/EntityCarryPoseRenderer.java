@@ -9,6 +9,7 @@ import com.mojang.math.Axis;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -44,7 +45,8 @@ public final class EntityCarryPoseRenderer {
     public static void onRenderLivingPre(RenderLivingEvent.Pre<?, ?> event) {
         LivingEntity entity = event.getEntity();
         // A carrier faces what it is holding: its body turns with its head.
-        if (CarryVisuals.isCarrying(entity)) {
+        if (CarryVisuals.isCarrying(entity)
+                && !(entity instanceof Player player && FlightPoseRenderer.frame(player, event.getPartialTick()) != null)) {
             CARRIER_YAWS.put(entity.getId(), new BodyYaw(entity.yBodyRot, entity.yBodyRotO));
             entity.yBodyRot = entity.getYRot();
             entity.yBodyRotO = entity.yRotO;
@@ -80,11 +82,16 @@ public final class EntityCarryPoseRenderer {
         // In the carrier's own view, keep the hold below the crosshair like the first-person hands.
         if (hold != CarryGeometry.Hold.OVERHEAD && CarryVisuals.isLocalFirstPersonCarrier(carrier))
             local = local.add(0, -.24, .31);
-        Vec3 pivot = renderPosition(carrier, partialTick).add(CarryGeometry.rotate(local, carrierYaw));
-        Vec3 offset = pivot.subtract(renderPosition(entity, partialTick));
+        Vec3 offset = renderPosition(carrier, partialTick).subtract(renderPosition(entity, partialTick));
 
         poseStack.pushPose();
         poseStack.translate(offset.x, offset.y, offset.z);
+        if (carrier instanceof Player player && !CarryVisuals.isLocalFirstPersonCarrier(carrier)) {
+            var flight = FlightPoseRenderer.frame(player, partialTick);
+            if (flight != null) flight.applyToCarry(poseStack, carrierYaw);
+        }
+        Vec3 pivot = CarryGeometry.rotate(local, carrierYaw);
+        poseStack.translate(pivot.x, pivot.y, pivot.z);
         // Into the carrier's frame: x to their left, y up, z forward.
         poseStack.mulPose(Axis.YP.rotationDegrees(-carrierYaw));
         switch (hold) {

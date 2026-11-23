@@ -405,16 +405,23 @@ public final class EntityCarryGameTests {
         golem.setPersistenceRequired(); golem.setPos(p.position().add(0, 0, 2.5)); h.getLevel().addFreshEntity(golem);
         Mob pig = EntityType.PIG.create(h.getLevel());
         pig.setPersistenceRequired(); pig.setPos(p.position().add(1, 0, 2)); h.getLevel().addFreshEntity(pig);
+        Mob horse = EntityType.HORSE.create(h.getLevel());
+        horse.setPersistenceRequired(); horse.setPos(p.position().add(-2, 0, 2)); h.getLevel().addFreshEntity(horse);
         try {
             h.assertTrue(!EntityCarryService.canPickUp(p, golem, EntityCarryService.ORDINARY_REACH), "An iron golem is far too big for your arms");
+            h.assertTrue(!EntityCarryService.canPickUp(p, golem, 7, true) && !EntityCarryService.pickUp(p, golem),
+                    "An iron golem is too heavy even for Skyhook");
+            h.assertTrue(!golem.isPassenger() && !golem.isInvulnerable() && p.getPassengers().isEmpty(),
+                    "Refusing a heavy mob must leave its flags and the carrier's hands untouched");
             h.assertTrue(EntityCarryService.canPickUp(p, pig, EntityCarryService.ORDINARY_REACH), "A pig is not");
             h.assertTrue(EntityCarryService.pickUp(p, pig, EntityCarryService.ORDINARY_REACH), "Picked up");
             h.assertTrue(anchor(pig).hold() == CarryGeometry.Hold.CRADLE, "A pig is held against the chest");
             EntityCarryService.release(p);
-            h.assertTrue(EntityCarryService.pickUp(p, golem), "Skyhook's strength lifts the golem");
-            h.assertTrue(anchor(golem).hold() == CarryGeometry.Hold.OVERHEAD && golem.getY() > p.getY() + p.getBbHeight(), "Up over your head");
+            h.assertTrue(!EntityCarryService.canPickUp(p, horse, EntityCarryService.ORDINARY_REACH), "A horse needs Skyhook's larger hold");
+            h.assertTrue(EntityCarryService.pickUp(p, horse), "Skyhook lifts eligible larger animals");
+            h.assertTrue(anchor(horse).hold() == CarryGeometry.Hold.OVERHEAD && horse.getY() > p.getY() + p.getBbHeight(), "Up over your head");
             h.succeed();
-        } finally { cleanup(p, golem, pig); }
+        } finally { cleanup(p, golem, pig, horse); }
     }
 
     @GameTest(template = "rewind_empty", batch = "carry.bridal")

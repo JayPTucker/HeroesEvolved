@@ -86,6 +86,7 @@ public final class Renegades {
         final Set<UUID> village = new LinkedHashSet<>();
         final Set<UUID> dead = new HashSet<>();
         long startedAt, nextKill;
+        long nextShout = -1000;
         EmergencyBand.Call call;
         Terror(Mob renegade, ServerLevel level, BlockPos bell, long startedAt, long nextKill) {
             this.renegade = renegade; this.level = level; this.bell = bell; this.startedAt = startedAt; this.nextKill = nextKill;
@@ -244,6 +245,7 @@ public final class Renegades {
                 net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
         villager.getNavigation().stop();
         TURNING.add(new Turning(villager, power, rarity, name, bell, level.getGameTime() + TURN_TICKS));
+        frighten(level, bell, villager, true);
         return villager;
     }
 
@@ -274,6 +276,7 @@ public final class Renegades {
             if (t.villager.getServer() != server) continue;
             // Killed or gone while turning: nothing becomes of it.
             if (t.villager.isRemoved() || !t.villager.isAlive()) { TURNING.remove(t); continue; }
+            if (t.villager.level().getGameTime() % 5 == 0) frighten((ServerLevel) t.villager.level(), t.bell, t.villager, false);
             if (t.villager.level().getGameTime() < t.at) continue;
             TURNING.remove(t);
             convert(t);
@@ -295,6 +298,8 @@ public final class Renegades {
                 (int) Math.max(200, TIME_LIMIT - (now - t.startedAt) + 200));
         if (fresh) {
             ring(t);
+            frighten(level, bell, renegade, true);
+            t.nextShout = now + 80;
             Gift gift = Gift.read(renegade);
             for (ServerPlayer p : watchers(t))
                 p.sendSystemMessage(Component.literal((gift != null ? gift.name() : "A villager") + " has turned on their own village!")
@@ -334,6 +339,8 @@ public final class Renegades {
         if (!t.village.isEmpty() && alive == 0) { fallen(t); return; }
         if (now - t.startedAt > TIME_LIMIT) { quiet(t); return; }
         if (now % RING_EVERY == 0) ring(t);
+        frighten(t.level, t.bell, r, now >= t.nextShout);
+        if (now >= t.nextShout) t.nextShout = now + 80;
         // Its turn has come: it goes hunting for one of them.
         if (now >= t.nextKill && (r.getTarget() == null || !(r.getTarget() instanceof AbstractVillager))) hunt(t);
         if (t.call != null) t.call.say(words(t));
@@ -357,6 +364,18 @@ public final class Renegades {
         var state = t.level.getBlockState(t.bell);
         if (state.is(Blocks.BELL) && state.getBlock() instanceof BellBlock bell) bell.attemptToRing(t.renegade, t.level, t.bell, null);
         else t.level.playSound(null, t.bell, SoundEvents.BELL_BLOCK, SoundSource.BLOCKS, 2, 1);
+    }
+
+    /** React from the first flash of an uncontrolled gift, and keep the village sheltered while it is loose. */
+    private static void frighten(ServerLevel level, BlockPos bell, LivingEntity danger, boolean shout) {
+        Villager speaker = null;
+        for (Villager v : Villages.members(level, bell)) {
+            if (v == danger || !v.isAlive() || com.jayptucker.heroesevolved.entity.EntityCarryService.isBeingCarried(v)) continue;
+            com.jayptucker.heroesevolved.village.Shouts.shelterOrRun(v, danger.position(), 24, false);
+            if (speaker == null && v.distanceToSqr(danger) <= 32 * 32) speaker = v;
+        }
+        if (shout && speaker != null)
+            com.jayptucker.heroesevolved.village.Shouts.say(level, speaker, "Get inside! Their gift's out of control!", 70);
     }
 
     private static Component words(Terror t) {

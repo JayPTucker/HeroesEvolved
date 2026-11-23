@@ -110,9 +110,17 @@ abilities will meet. Reuse these instead of starting again. What the player sees
 - **Carrying survives packet order.** `CarryAnchorEntity` syncs both endpoint IDs (`CARRIER_ID`, `CARGO_ID`).
   The client re-links the passenger chain once both entities exist, because the passenger packet can arrive
   before either entity has spawned. Seats come from `anchor.seatPosition(carrier)`; fast moves check them with
-  `EntityCarryService.canTravelTo`. Carried loads skip the dash pose and keep the upright carry frame.
+  `EntityCarryService.canTravelTo`.
   A carried player's own camera is moved each frame to the seat worked out from the carrier's interpolated
   position and facing (`mixin/CarriedCameraMixin`); placed from the passenger's once-a-tick position, it jolted.
+- **Carry the load through the same body frame.** Skipping `FlightPoseRenderer` while carrying left the flyer upright
+  at every speed. `FlightPoseRenderer.frame` now supplies one cached, eased `BodyPose` per render time to the flyer,
+  `EntityCarryPoseRenderer` and `CarriedCameraMixin`. Apply its pitch and bank about the flyer's pivot to the load as
+  well as the flyer; do not overwrite the flight body's yaw with the upright carry yaw. Camera offsets rotate the eyes
+  before subtracting eye height, so a carried player's view stays with the drawn head. First-person carriers keep the
+  low cargo frame. `tools/flight-carry-preview.init.gradle` photographs villagers and pigs accelerating and turning.
+- **Size is not weight.** `CarryGeometry.liftable` rejects iron golems before checking hold dimensions, including
+  Skyhook's larger hold. Keep weight exceptions here so normal pickup and Flight use the same rule.
 
 ### Sound and feel
 

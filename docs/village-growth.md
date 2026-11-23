@@ -9,9 +9,10 @@ building, and mending whatever gets broken. A village never touches what you bui
 declines: people leave and the place looks tired.
 
 Code: `village/Growth` (how a village is doing, and what that does to it), `village/Projects` (the notice board and what
-it asks for, tiers and rebuilding homes), `village/Styles` (the town houses in each kind's colours). Tests:
+it asks for, tiers and rebuilding homes), `village/Styles` (the town houses in each kind's colours),
 `village/Homes` (a home of your own), `village/Markets` (market days), `village/PlayerBuilt` (what players put down),
-`village/Workers` (gathering and building crews), `village/Repairs` (mending what was broken). Tests:
+`village/Workers` (gathering and building crews), `village/Repairs` (mending what was broken),
+`village/Paths` (paving connections to completed homes). Tests:
 `VillageGrowthGameTests`, `VillageProjectGameTests`, `VillageUpgradeGameTests`, `VillageLifeGameTests`,
 `VillageWorkGameTests`.
 
@@ -45,6 +46,15 @@ says what the village is gathering for and how far along it is:
 | --- | --- |
 | Top left | The village's name, the project ("A new house"), its tier ("- Village -", when the project's name fits on one line), and how much is in ("40% gathered", "Starts at dawn", "Building: 45%", "Finished!") |
 | The other five | Each material and how much: "Planks" / "64 / 114", or "Done (114)" once it's all in |
+
+Walk round the board for its **build schedule**: six more signs on the reverse face show the current build and its
+status, the village's paths, any project set aside for repairs, homes people have ordered, and the village's next
+planned building. Each future build says **Queued**, **Planned**, or **On hold**. The next design is saved: it becomes
+the next project after repairs and ordered homes. If the queue
+fills the signs, the last sign also counts the remaining orders. Both faces accept clicks to ask for a home.
+
+Work statuses distinguish gathering, finding room, waiting for dawn, clearing an old building, building, waiting for
+a crew, pausing at night or during trouble, and finishing. The material list stays on the chest side.
 
 The first time you come within 10 blocks of a board during a project, you're told what it's for: "Ashford's notice board:
 the village is gathering for a new house. Leave what it needs in the chest below the signs." The signs are waxed, so
@@ -152,10 +162,30 @@ buildings only appear where `mobGriefing` allows.
 
 ### Watching them build
 
+When an entrance's bottom stair would be buried level with the street, the builders lift the house one block and
+support its floor. The tread stays visible and usable from the path. An entrance already above the street keeps its
+height; its approach gets the steps it needs. Rebuilding a home follows the same rule.
+
 Up to three of the village's people crew each building site through the day. They walk to the block going down next,
 look at it and hold it in their arms, and it goes down beside them with a puff of dust; now and then one of them calls
 out ("Hand me those planks!", "Mind your head!"). A site with nobody left in its village to build it waits, and nobody
 works while the village is in trouble.
+
+### Paths to new homes
+
+Once a new or rebuilt home is finished, its villagers automatically pave a connection from its front door to the
+square by the bell, keeping existing village paving along the way. This includes homes built for players and homes
+completed before paths were added. Paving needs no extra donation: a crew carries shovels and works during daylight, through the same construction
+system as the houses. The board's schedule reports **Paving**, **Starts at dawn**, **Awaiting crew**, **Paused: night**,
+**Paused: trouble**, or **Connected**.
+
+Paths follow gentle steps in the land and go round water, farmland, buildings and players' blocks. Soil becomes dirt
+path; other natural ground gets gravel, or sandstone in a desert village. Existing doorstep blocks and paving stay.
+The crew clears grass and flowers from its route. If there is no safe connection, the board says **Finding a route**
+and the village tries again later. Raised cottages get a supported approach step where their own entrance stairs stop
+short of the ground. Anything a player puts in the way after work is planned also stays, and the village
+looks for another route. Paving pauses when `mobGriefing` is off, nobody is left to work, or its chunks are unloaded;
+its progress survives reloading the world.
 
 ## Mending what was broken
 

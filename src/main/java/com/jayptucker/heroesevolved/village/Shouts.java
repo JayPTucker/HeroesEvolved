@@ -81,8 +81,39 @@ public final class Shouts {
         if (away.lengthSqr() < 1.0E-4) away = new Vec3(v.getRandom().nextDouble() - 0.5, 0, v.getRandom().nextDouble() - 0.5);
         Vec3 to = from.add(away.normalize().scale(distance));
         var brain = v.getBrain();
+        brain.eraseMemory(MemoryModuleType.HIDING_PLACE);
+        brain.eraseMemory(MemoryModuleType.HEARD_BELL_TIME);
+        brain.setActiveActivityIfPossible(net.minecraft.world.entity.schedule.Activity.IDLE);
         brain.setMemory(MemoryModuleType.WALK_TARGET, new WalkTarget(BlockPos.containing(to), RUN_SPEED, 2));
         brain.eraseMemory(MemoryModuleType.LOOK_TARGET);
+    }
+
+    /** A roofed home away from the danger, otherwise an escape outward. Blizzard shelter may be inside its reach. */
+    public static boolean shelterOrRun(Villager v, Vec3 from, double danger, boolean shelterInside) {
+        if (!(v.level() instanceof ServerLevel level) || !v.isAlive()
+                || com.jayptucker.heroesevolved.entity.EntityCarryService.isBeingCarried(v)) return false;
+        var brain = v.getBrain();
+        if (brain.hasMemoryValue(MemoryModuleType.HOME)) {
+            var home = brain.getMemory(MemoryModuleType.HOME).orElseThrow();
+            BlockPos pos = home.pos();
+            Vec3 homeAt = Vec3.atCenterOf(pos);
+            boolean away = homeAt.subtract(v.position()).dot(v.position().subtract(from)) >= 0;
+            if (home.dimension().equals(level.dimension()) && level.hasChunkAt(pos)
+                    && level.getBlockState(pos).getBlock() instanceof net.minecraft.world.level.block.BedBlock
+                    && level.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, pos).getY() > pos.getY() + 1
+                    && (shelterInside || away && homeAt.distanceToSqr(from) > danger * danger)) {
+                if (v.isSleeping()) v.stopSleeping();
+                brain.setMemory(MemoryModuleType.HEARD_BELL_TIME, level.getGameTime());
+                brain.setMemory(MemoryModuleType.HIDING_PLACE, home);
+                brain.setActiveActivityIfPossible(net.minecraft.world.entity.schedule.Activity.HIDE);
+                brain.eraseMemory(MemoryModuleType.LOOK_TARGET);
+                if (v.distanceToSqr(homeAt) > 4) brain.setMemory(MemoryModuleType.WALK_TARGET, new WalkTarget(pos, RUN_SPEED, 1));
+                else { brain.eraseMemory(MemoryModuleType.WALK_TARGET); v.getNavigation().stop(); }
+                return true;
+            }
+        }
+        if (v.distanceToSqr(from) <= (danger + 6) * (danger + 6)) runFrom(v, from, danger + 8);
+        return false;
     }
 
     @SubscribeEvent

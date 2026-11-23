@@ -15,14 +15,19 @@ What you carry is held in front of you, in your arms, and is drawn where your ar
 | --- | --- | --- |
 | A person: a player, villager, illager, witch, zombie, skeleton or piglin | **In your arms** | A bridal carry. They lie back across both arms, head toward your left shoulder and knees over your right arm. A carried player's arm goes up around your neck. Your arms reach forward under them. |
 | Anything else your size or smaller (up to 1 block wide and 2.1 tall): a pig, sheep, cow, cat, chicken | **Against your chest** | Held in both arms, facing your left. |
-| Bigger, up to 2 blocks wide and 3 tall (an iron golem, a horse) | **Overhead** | **Only Flight's Skyhook** has the strength. It goes up over your head, arms raised. |
+| Bigger, up to 2 blocks wide and 3 tall (such as a horse) | **Overhead** | **Only Flight's Skyhook** has the strength. It goes up over your head, arms raised. |
 
 Your own hands can't pick up anything bigger than you, and you get a "Too big to carry" message
-when you try. Bosses, Sylar included, can't be carried at all. Left-handed carriers are mirrored.
+when you try. Iron golems are too heavy to carry, even with Skyhook. Bosses, Sylar included, can't be carried
+at all. Left-handed carriers are mirrored.
 
 While you carry something your body turns with your view. The cargo model follows your position and
 facing every frame, including during flight. You can look down to see cargo in your arms in first person.
 You can still click the ground to set it down, mine and use items.
+
+During Flight, speed level 1 keeps you upright. Above level 1, you ease into the normal horizontal flying
+pose with your arms still supporting the mob. Your cargo follows the same pitch and bank through acceleration,
+turns and Skyburst, then returns upright with you when you brake to a hover.
 
 A carried player's camera is where their head is drawn, in front of your left shoulder. It follows your smoothed
 position and facing every frame (`mixin/CarriedCameraMixin`), the same way their body is drawn, so it doesn't
@@ -56,6 +61,7 @@ can attach cargo as soon as both entities are in view. A carried player keeps th
 ./gradlew build
 ./gradlew runGameTestServer --init-script tools/rewind-gametest.init.gradle
 ./gradlew runClient --init-script tools/carry-preview.init.gradle
+./gradlew runClient --init-script tools/flight-carry-preview.init.gradle
 ```
 
 Fourteen carry gametests use real server players. They cover:
@@ -64,8 +70,10 @@ Fourteen carry gametests use real server players. They cover:
 - Movement and turning without repeated player teleports, and view clearance.
 - Placement, and external dismounts and mounts.
 - Lifecycle cleanup, restoring the original state, and recovering saved state.
-- The size limits (a pig in your arms, a golem only overhead with Skyhook).
+- The size limits (a pig in your arms, a horse overhead with Skyhook) and iron golems refused even by Skyhook.
 - The bridal hold, with the carried player's head in front of your left shoulder.
 
 The preview captures both viewpoints, plus third-person shots of the bridal and chest holds, under
 `build/carry-preview/screenshots/`.
+The Flight carry preview captures villagers and pigs through hover, acceleration, fast flight, turns,
+first person, Skyburst and braking in `build/flight-carry-preview/screenshots/`.

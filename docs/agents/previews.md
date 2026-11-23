@@ -128,6 +128,7 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | `electro-preview.init.gradle`, `lightning-preview.init.gradle` | Electrokinesis, and its lightning style | |
 | `skill-anim-preview.init.gradle` | Electrokinesis and Superspeed skills | |
 | `flight-preview.init.gradle`, `rework-preview.init.gradle` | Flight maneuvers; Tempest, a standing tornado, Matter Assembly, Starfall | |
+| `flight-carry-preview.init.gradle` | Villagers and pigs carried through hover, acceleration, horizontal cruise, turns, first person, Skyburst and braking | Checks horizontal cruise and retained carry links; 16 photographs |
 | `hydro-preview.init.gradle` | Hydrokinesis: kit, waterbending, tree, classes | |
 | `invisibility-preview.init.gradle` | Fade and the force fields | |
 | `mimicry-preview.init.gradle` | attunement, touch, switching, the memory wheel | |

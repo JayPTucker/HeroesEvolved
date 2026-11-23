@@ -2,10 +2,12 @@ package com.jayptucker.heroesevolved.mixin;
 
 import com.jayptucker.heroesevolved.entity.CarryAnchorEntity;
 import com.jayptucker.heroesevolved.entity.CarryGeometry;
+import com.jayptucker.heroesevolved.render.FlightPoseRenderer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
@@ -35,8 +37,15 @@ public abstract class CarriedCameraMixin {
         Vec3 carrierAt = new Vec3(Mth.lerp(partialTick, carrier.xOld, carrier.getX()), Mth.lerp(partialTick, carrier.yOld, carrier.getY()),
                 Mth.lerp(partialTick, carrier.zOld, carrier.getZ()));
         float yaw = Mth.rotLerp(partialTick, carrier.yRotO, carrier.getYRot());
-        Vec3 seat = carrierAt.add(CarryGeometry.rotate(CarryGeometry.seat(anchor.hold(), carrier.getBbWidth(), carrier.getBbHeight(),
-                entity.getBbWidth(), entity.getBbHeight(), entity.getEyeHeight(), CarryGeometry.side(carrier)), yaw));
+        Vec3 offset = CarryGeometry.rotate(CarryGeometry.seat(anchor.hold(), carrier.getBbWidth(), carrier.getBbHeight(),
+                entity.getBbWidth(), entity.getBbHeight(), entity.getEyeHeight(), CarryGeometry.side(carrier)), yaw);
+        if (carrier instanceof Player player) {
+            var flight = FlightPoseRenderer.frame(player, partialTick);
+            // Rotate the eyes with the drawn body, while leaving the recipient's view level and under their control.
+            if (flight != null) offset = flight.carryPosition(offset.add(0, entity.getEyeHeight(), 0), yaw)
+                    .subtract(0, entity.getEyeHeight(), 0);
+        }
+        Vec3 seat = carrierAt.add(offset);
         Vec3 drawn = new Vec3(Mth.lerp(partialTick, entity.xOld, entity.getX()), Mth.lerp(partialTick, entity.yOld, entity.getY()),
                 Mth.lerp(partialTick, entity.zOld, entity.getZ()));
         Vec3 shift = seat.subtract(drawn);

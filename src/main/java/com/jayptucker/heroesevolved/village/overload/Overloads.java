@@ -310,7 +310,11 @@ public final class Overloads {
         List<Villager> danger = new ArrayList<>();
         for (UUID id : o.village) {
             if (!(o.level.getEntity(id) instanceof Villager v) || !v.isAlive() || EntityCarryService.isBeingCarried(v)) continue;
-            if (v.distanceToSqr(o.eye()) > reach * reach || !endangered(o, v)) continue;
+            if (v.distanceToSqr(o.eye()) > reach * reach || !endangered(o, v)) {
+                if (v.getBrain().hasMemoryValue(net.minecraft.world.entity.ai.memory.MemoryModuleType.HIDING_PLACE))
+                    Shouts.shelterOrRun(v, o.eye(), reach, o.storm == Storm.BLIZZARD);
+                continue;
+            }
             danger.add(v);
             v.addEffect(new MobEffectInstance(MobEffects.GLOWING, 20, 0, false, false, false));
         }

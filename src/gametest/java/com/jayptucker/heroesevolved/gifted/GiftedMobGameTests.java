@@ -175,6 +175,10 @@ public final class GiftedMobGameTests {
         UUID id = villager.getUUID();
         try {
             helper.assertTrue(Renegades.awaken(villager, true) == villager && Renegades.turning(villager), "The gift begins to turn them");
+            helper.assertTrue(!com.jayptucker.heroesevolved.village.Shouts.shouting(neighbour).isEmpty(), "The neighbour screams from the first uncontrolled flash");
+            helper.assertTrue(neighbour.getBrain().hasMemoryValue(net.minecraft.world.entity.ai.memory.MemoryModuleType.WALK_TARGET)
+                    && neighbour.getBrain().getMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.WALK_TARGET).orElseThrow().getSpeedModifier() >= .9F,
+                    "Without a safe home the neighbour immediately runs away");
             helper.assertTrue(!villager.isRemoved() && Renegades.turnedFrom(id) == null,
                     "While the cracks climb they are still a villager: the swap waits for the flash");
             helper.assertTrue(Renegades.awaken(villager, true) == null, "and a turning villager can't be woken twice");

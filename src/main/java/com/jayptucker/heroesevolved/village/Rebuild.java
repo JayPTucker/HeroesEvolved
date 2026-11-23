@@ -56,6 +56,8 @@ public final class Rebuild extends SavedData {
         int clear;
         /** Putting back what was broken in one of the village's buildings (village/Repairs). */
         boolean mend;
+        /** Paving the connection from a finished home to its village (village/Paths). */
+        boolean paving;
         /** What a growth site builds, so the village can rebuild it bigger one day (village/Projects.Home), and the old
          * home it replaces, if any. */
         Projects.Home home, replaces;
@@ -63,6 +65,7 @@ public final class Rebuild extends SavedData {
         public boolean growth() { return growth; }
         public int clearing() { return clear; }
         public boolean mending() { return mend; }
+        public boolean paving() { return paving; }
         public Projects.Home home() { return home; }
         public Projects.Home replaces() { return replaces; }
         public BlockPos bell() { return bell; }
@@ -159,6 +162,20 @@ public final class Rebuild extends SavedData {
         return s;
     }
 
+    static Site path(ServerLevel level, BlockPos bell, Projects.Home home, List<BlockPos> positions, List<BlockState> states) {
+        Site s = new Site(bell.immutable(), positions.getFirst());
+        s.paving = true;
+        s.home = home;
+        s.positions.addAll(positions);
+        s.states.addAll(states);
+        get(level).sites.add(s);
+        begin(level, s);
+        long time = Math.floorMod(level.getDayTime(), 24_000);
+        if (time >= WORK_FROM && time < WORK_TO) s.startAt = Days.clock(level);
+        get(level).setDirty();
+        return s;
+    }
+
     /** The village survived: it starts rebuilding at the next morning. */
     public static void begin(ServerLevel level, Site s) {
         // The next morning on the calendar: a night slept through brings it straight on.
@@ -187,7 +204,9 @@ public final class Rebuild extends SavedData {
     /** One working pass on a site, in daylight once it may start: its people come to it, and a few blocks go back. */
     static void work(ServerLevel level, Rebuild data, Site s) {
         long now = level.getGameTime(), time = level.getDayTime() % 24_000;
+        if (!level.getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_MOBGRIEFING)) return;
         if (!s.started() || Days.clock(level) < s.startAt || time < WORK_FROM || time > WORK_TO || !level.hasChunkAt(s.center)) return;
+        if (s.next < s.size() && !level.hasChunkAt(s.positions.get(s.next))) return;
         // Nobody works through trouble, and with nobody left in the village nobody builds at all.
         if (com.jayptucker.heroesevolved.radio.EmergencyBand.troubled(level, s.bell) || !Workers.direct(level, s)) return;
         step(level, data, s, s.perPass());
@@ -199,10 +218,17 @@ public final class Rebuild extends SavedData {
         while (s.next < s.positions.size() && placed < count) {
             BlockPos p = s.positions.get(s.next);
             BlockState state = s.states.get(s.next);
+            if (!level.hasChunkAt(p)) break; // Keep pending work for when its chunk loads again.
             s.next++;
-            if (!level.hasChunkAt(p)) continue;
             BlockState now = level.getBlockState(p);
             BlockState was = now;
+            if (s.paving) {
+                if (!Paths.canPave(level, p, state)) continue;
+                level.setBlock(p, state, Block.UPDATE_ALL);
+                placed++;
+                if (placed == 1) Workers.placed(level, s, p, state, was);
+                continue;
+            }
             if (s.next <= s.clear) {
                 // Taking the old house down: no neighbour updates, so nothing pops off as items while it comes apart;
                 // what was in its chests is left on the ground.
@@ -297,6 +323,18 @@ public final class Rebuild extends SavedData {
     private static void finish(ServerLevel level, Rebuild data, Site s) {
         settle(level, s.positions);
         Workers.done(level, s);
+        if (s.paving) {
+            data.sites.remove(s);
+            data.setDirty();
+            VillageMemory.Village v = VillageMemory.of(level, s.bell);
+            boolean whole = true;
+            for (int i = 0; i < s.size(); i++)
+                if (!level.hasChunkAt(s.positions.get(i)) || !s.states.get(i).isAir()
+                        && !level.getBlockState(s.positions.get(i)).is(s.states.get(i).getBlock())) whole = false;
+            if (whole) Paths.connected(level, v, s.home);
+            Projects.signs(level, v);
+            return;
+        }
         if (s.mend) {
             // Anything that hangs on something put back after it (a torch, a lantern) gets a second try.
             for (int i = 0; i < s.positions.size(); i++) {
@@ -360,6 +398,7 @@ public final class Rebuild extends SavedData {
             t.putLong("startAt", s.startAt);
             t.putInt("clear", s.clear);
             t.putBoolean("mend", s.mend);
+            t.putBoolean("paving", s.paving);
             if (s.home != null) t.put("home", s.home.save());
             if (s.replaces != null) t.put("replaces", s.replaces.save());
             // A palette of states and, for each block, its position and palette index.
@@ -396,6 +435,7 @@ public final class Rebuild extends SavedData {
             s.startAt = t.getLong("startAt");
             s.clear = t.getInt("clear");
             s.mend = t.getBoolean("mend");
+            s.paving = t.getBoolean("paving");
             if (t.contains("home")) s.home = Projects.Home.load(t.getCompound("home"));
             if (t.contains("replaces")) s.replaces = Projects.Home.load(t.getCompound("replaces"));
             List<BlockState> palette = new ArrayList<>();

@@ -109,7 +109,8 @@ public final class VillageWorkGameTests {
         long time = level.getDayTime();
         try {
             var v = VillageMemory.of(level, bell);
-            Rebuild.Site site = Growth.grow(level, v);
+            Rebuild.Site site = Growth.grow(level, v, net.minecraft.resources.ResourceLocation.withDefaultNamespace("village/plains/houses/plains_small_house_1"));
+            h.assertTrue(site != null && site.home().origin().getY() == bell.getY(), "A ground-level entrance stair raises the house one block above the soil");
             level.setDayTime(Days.DAY * (level.getDayTime() / Days.DAY) + 6_000);
             site.startAt = Days.clock(level);
             for (int i = 0; i < 5; i++) Rebuild.work(level, Rebuild.get(level), site);
@@ -120,12 +121,44 @@ public final class VillageWorkGameTests {
             h.assertTrue(Workers.crew(level, site).size() == Workers.CREW, "A crew of " + Workers.CREW + ": " + Workers.crew(level, site).size());
             h.assertTrue(crew.stream().anyMatch(x -> !x.getItemBySlot(EquipmentSlot.MAINHAND).isEmpty()), "Holding what goes down next");
             Rebuild.hurry(level, site, 100_000);
+            var template = level.getStructureManager().get(site.home().template()).orElseThrow();
+            h.assertTrue(!Growth.buriedEntrance(level, Growth.blocks(level, template, site.home().origin(), site.home().rotation()),
+                    site.home().rotation().rotate(Growth.front(template, site.home().template()))), "The finished entrance's bottom tread is exposed");
             h.assertTrue(crew.stream().allMatch(x -> x.getItemBySlot(EquipmentSlot.MAINHAND).isEmpty()), "Hands empty when it's done");
             h.succeed();
         } finally {
             level.setDayTime(time);
             clear(h, bell);
         }
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 100, batch = "work.shelter")
+    public static void villagersHideInSafeHomesAndFleeWhenTheirHomeIsInDanger(GameTestHelper h) {
+        ServerLevel level = h.getLevel();
+        BlockPos bell = meadow(h, 0);
+        try {
+            Villager v = people(h, bell.offset(4, 0, 0), 1).getFirst();
+            BlockPos bed = bell.offset(24, 0, 0);
+            var foot = Blocks.RED_BED.defaultBlockState().setValue(net.minecraft.world.level.block.BedBlock.FACING, net.minecraft.core.Direction.SOUTH);
+            level.setBlock(bed, foot, 2);
+            level.setBlock(bed.south(), foot.setValue(net.minecraft.world.level.block.BedBlock.PART, net.minecraft.world.level.block.state.properties.BedPart.HEAD), 2);
+            for (BlockPos p : BlockPos.betweenClosed(bed.offset(-2, 3, -2), bed.offset(2, 3, 3))) level.setBlock(p, Blocks.OAK_PLANKS.defaultBlockState(), 2);
+            var home = net.minecraft.core.GlobalPos.of(level.dimension(), bed.south());
+            var brain = v.getBrain();
+            brain.setMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.HOME, home);
+            h.assertTrue(Shouts.shelterOrRun(v, Vec3.atCenterOf(bell), 12, false), "A roofed home away from the power is shelter");
+            h.assertTrue(brain.hasMemoryValue(net.minecraft.world.entity.ai.memory.MemoryModuleType.HIDING_PLACE)
+                    && brain.getMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.WALK_TARGET).orElseThrow().getTarget().currentBlockPosition().equals(home.pos()), "They run to their own home and hide");
+            v.setPos(Vec3.atCenterOf(home.pos()));
+            h.assertTrue(Shouts.shelterOrRun(v, Vec3.atCenterOf(bell), 12, false)
+                    && !brain.hasMemoryValue(net.minecraft.world.entity.ai.memory.MemoryModuleType.WALK_TARGET), "Once inside they stay sheltered");
+            Vec3 danger = Vec3.atCenterOf(home.pos());
+            h.assertTrue(!Shouts.shelterOrRun(v, danger, 12, false), "A home inside the danger is not shelter");
+            h.assertTrue(!brain.hasMemoryValue(net.minecraft.world.entity.ai.memory.MemoryModuleType.HIDING_PLACE)
+                    && brain.getMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.WALK_TARGET).orElseThrow().getTarget().currentPosition().distanceTo(danger) > 12, "They abandon that hiding place and run clear");
+            h.assertTrue(Shouts.shelterOrRun(v, danger, 12, true), "A roofed home still shelters a blizzard");
+            h.succeed();
+        } finally { clear(h, bell); }
     }
 
     @GameTest(template = "rewind_empty", timeoutTicks = 100, batch = "work.mend")

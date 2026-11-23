@@ -40,6 +40,11 @@ When a villager's gift wakes, it goes one of two ways (50% each, `villages.gifte
 
 ## A renegade's siege
 
+The neighbours react from the first uncontrolled flash: they shout, scream and scatter. A villager with a roofed home
+away from the danger runs there and stays inside. Anyone whose home is too close, destroyed or absent runs away from
+the power instead. If the danger moves toward a hiding place, they leave it and escape again. Calm awakenings that
+produce a guardian leave the village at peace.
+
 - **The bell rings** and the village hides; it rings again every thirty seconds. Raiders near the bell glow.
 - **A distress call** goes out: a line in chat for everyone within 768 blocks, a crimson flare over the village that can
   be seen from hundreds of blocks away, and the words on 101.10 FM. The village stays loaded until it is over.
