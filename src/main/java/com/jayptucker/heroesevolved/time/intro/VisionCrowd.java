@@ -218,7 +218,7 @@ public final class VisionCrowd {
     }
 
     private Person add(ServerLevel city, String tag, int i, Vec3 at, Role role, int group) {
-        Villager villager = EntityType.VILLAGER.create(city);
+        Villager villager = com.jayptucker.heroesevolved.village.Villagers.actor(city);
         if (villager == null) return null;
         villager.moveTo(at.x, at.y, at.z, city.random.nextFloat() * 360, 0);
         villager.setVillagerData(villager.getVillagerData().setType(LOOKS[i % LOOKS.length])

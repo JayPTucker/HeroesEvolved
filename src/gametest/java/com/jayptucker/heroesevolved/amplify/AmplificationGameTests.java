@@ -332,7 +332,7 @@ public final class AmplificationGameTests {
                 }
             }
             h.assertTrue(AmpSkills.enclosed(level, amp.getEyePosition()), "A small stone room is closed in");
-            LivingEntity foe = pillager(h, amp, 1, 4);
+            LivingEntity foe = pillager(h, amp, 1, 4), weak = pillager(h, amp, -1, 1.5F);
             AmpSkills.vanFull(amp);
             h.assertTrue(foe.isAlive() && Math.abs(foe.getHealth() - 2) < .01F,
                     "The enclosed burst spends 30 Charge for 2 damage; the rest of its budget buys the stun");
@@ -347,6 +347,7 @@ public final class AmplificationGameTests {
             h.assertTrue(foe.getHealth() == 4, "Without Charge, Van Full supplies control without free damage");
             for (BlockPos pos : walls) level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
             foe.discard();
+            weak.discard();
             cleanup(h);
             h.succeed();
         });

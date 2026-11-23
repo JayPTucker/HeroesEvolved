@@ -29,6 +29,8 @@ public final class BunkerData extends SavedData {
     public int design = BunkerLayout.STASIS_DESIGN;
     /** The skulls outside the vault and on the stair have been laid ({@link BunkerStair#remains}), once per bunker. */
     public boolean remains;
+    /** The rooms (by blueprint) whose skulls have been laid ({@link BunkerBones}), each once. */
+    public final java.util.Set<String> strewn = new java.util.HashSet<>();
     /** The one sleeper sealed in the private pod in 4-R, once someone has been; nobody else ever is. */
     public @org.jetbrains.annotations.Nullable UUID lab;
     /** Everyone told of the bunker or woken in it ({@link BunkerRadios} counts these with {@link #pods}). */
@@ -77,6 +79,9 @@ public final class BunkerData extends SavedData {
         tag.putBoolean("powered", powered);
         tag.putInt("design", design);
         tag.putBoolean("remains", remains);
+        net.minecraft.nbt.ListTag bones = new net.minecraft.nbt.ListTag();
+        for (String room : strewn) bones.add(net.minecraft.nbt.StringTag.valueOf(room));
+        tag.put("strewn", bones);
         if (lab != null) tag.putUUID("lab", lab);
         CompoundTag assigned = new CompoundTag();
         pods.forEach((id, pod) -> assigned.putInt(id.toString(), pod));
@@ -99,6 +104,7 @@ public final class BunkerData extends SavedData {
         data.design = tag.contains("design") ? tag.getInt("design") : 1;
         if (tag.hasUUID("lab")) data.lab = tag.getUUID("lab");
         data.remains = tag.getBoolean("remains");
+        for (net.minecraft.nbt.Tag room : tag.getList("strewn", net.minecraft.nbt.Tag.TAG_STRING)) data.strewn.add(room.getAsString());
         CompoundTag assigned = tag.getCompound("pods");
         for (String key : assigned.getAllKeys()) data.pods.put(UUID.fromString(key), assigned.getInt(key));
         for (net.minecraft.nbt.Tag t : tag.getList("counted", net.minecraft.nbt.Tag.TAG_INT_ARRAY)) data.counted.add(net.minecraft.nbt.NbtUtils.loadUUID(t));

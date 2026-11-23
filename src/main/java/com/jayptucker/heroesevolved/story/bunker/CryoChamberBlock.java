@@ -49,6 +49,24 @@ public final class CryoChamberBlock extends Block {
     /** Pod 14 in the present: frost on the glass, clawed through from the inside (BunkerBuilder.releaseClaire). */
     public static final BooleanProperty CRACKED = BooleanProperty.create("cracked");
 
+    /** What a hundred and three years did to a pod nobody woke in ({@link PodSleepers#present}). */
+    public enum Condition implements net.minecraft.util.StringRepresentable {
+        SOUND("sound"),
+        /** Still sealed on whoever is in it, the glass furred with frost. */
+        FROSTED("frosted"),
+        /** Wrecked: the glass blown out, teeth of it left in the frame. */
+        SHATTERED("shattered"),
+        /** Wrecked: the door torn off one hinge and hanging out into the aisle. */
+        SPRUNG("sprung");
+
+        private final String name;
+        Condition(String name) { this.name = name; }
+        @Override public String getSerializedName() { return name; }
+        public boolean wrecked() { return this == SHATTERED || this == SPRUNG; }
+    }
+
+    public static final EnumProperty<Condition> CONDITION = EnumProperty.create("condition", Condition.class);
+
     /** Shapes for a pod whose front faces north; rotated for the other facings. */
     private static final Map<Direction, VoxelShape[]> SHAPES = new EnumMap<>(Direction.class);
 
@@ -77,18 +95,20 @@ public final class CryoChamberBlock extends Block {
     public CryoChamberBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(HALF, DoubleBlockHalf.LOWER)
-                .setValue(OPEN, true).setValue(CHARGED, false).setValue(CRACKED, false));
+                .setValue(OPEN, true).setValue(CHARGED, false).setValue(CRACKED, false).setValue(CONDITION, Condition.SOUND));
     }
 
     @Override protected MapCodec<? extends Block> codec() { return CODEC; }
 
     @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, HALF, OPEN, CHARGED, CRACKED);
+        builder.add(FACING, HALF, OPEN, CHARGED, CRACKED, CONDITION);
     }
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        int index = (state.getValue(HALF) == DoubleBlockHalf.UPPER ? 2 : 0) + (state.getValue(OPEN) ? 0 : 1);
+        // A wrecked pod has no door to bump into, whatever its open state says.
+        boolean doorless = state.getValue(OPEN) || state.getValue(CONDITION).wrecked();
+        int index = (state.getValue(HALF) == DoubleBlockHalf.UPPER ? 2 : 0) + (doorless ? 0 : 1);
         return SHAPES.get(state.getValue(FACING))[index];
     }
 
@@ -118,6 +138,21 @@ public final class CryoChamberBlock extends Block {
             if (state.getBlock() instanceof CryoChamberBlock && state.getValue(CRACKED) != cracked)
                 level.setBlock(pos, state.setValue(CRACKED, cracked), Block.UPDATE_ALL);
         }
+    }
+
+    /** Sets what the years did to both halves together. */
+    public static void setCondition(Level level, BlockPos base, Condition condition) {
+        for (BlockPos pos : new BlockPos[] {base, base.above()}) {
+            BlockState state = level.getBlockState(pos);
+            if (state.getBlock() instanceof CryoChamberBlock && state.getValue(CONDITION) != condition)
+                level.setBlock(pos, state.setValue(CONDITION, condition), Block.UPDATE_ALL);
+        }
+    }
+
+    /** Whether {@code pos} is part of a pod frosted over on whoever is sealed in it. */
+    public static boolean frosted(BlockGetter level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        return state.getBlock() instanceof CryoChamberBlock && state.getValue(CONDITION) == Condition.FROSTED;
     }
 
     public static void setCharged(Level level, BlockPos base, boolean charged) {

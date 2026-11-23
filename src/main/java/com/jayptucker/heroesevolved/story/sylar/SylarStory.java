@@ -338,7 +338,8 @@ public final class SylarStory {
             Vec3 middle = Vec3.atBottomCenterOf(entry.village);
             Villager best = null;
             for (Villager v : overworld.getEntitiesOfClass(Villager.class, new AABB(middle, middle).inflate(80, 64, 80),
-                    v -> v.isAlive() && !v.isBaby() && !v.hasCustomName() && !GiftedMobs.isGifted(v) && !v.getTags().contains(LISTED_TAG))) {
+                    v -> v.isAlive() && !v.isBaby() && !v.hasCustomName() && !GiftedMobs.isGifted(v) && !v.getTags().contains(LISTED_TAG)
+                            && !com.jayptucker.heroesevolved.village.Villagers.inStasis(v))) {
                 if (best == null) { best = v; continue; }
                 boolean gifted = GiftedVillagers.gift(v) != null, bestGifted = GiftedVillagers.gift(best) != null;
                 if (gifted != bestGifted ? gifted : v.distanceToSqr(middle) < best.distanceToSqr(middle)) best = v;

@@ -9,7 +9,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import java.util.List;
 
 /** The places people in Odessa would give directions by. All original designs. */
-final class Landmarks {
+public final class Landmarks {
     private Landmarks() {}
     private static final int Y = CityGrid.STREET_Y;
 
@@ -498,9 +498,8 @@ final class Landmarks {
     // ------------------------------------------------------------------
 
     static void primatech(List<Feature> out) {
-        int bz = CityGrid.TERMINUS_BZ;
-        int sx0 = CityGrid.originX(3) + 8, sx1 = CityGrid.originX(4) + 31, sz0 = CityGrid.originZ(bz) + 8, sz1 = CityGrid.originZ(bz) + 31;
-        int x0 = sx0 + 3, x1 = sx1 - 3, z0 = sz0 + 4, z1 = sz1 - 3;
+        int sx0 = CityGrid.PRIMATECH_LOT_X0, sx1 = CityGrid.PRIMATECH_LOT_X1, sz0 = CityGrid.PRIMATECH_LOT_Z0, sz1 = CityGrid.PRIMATECH_LOT_Z1;
+        int x0 = CityGrid.PRIMATECH_X0, x1 = CityGrid.PRIMATECH_X1, z0 = CityGrid.PRIMATECH_Z0, z1 = CityGrid.PRIMATECH_Z1;
         Building.Look look = new Building.Look(Blocks.WHITE_CONCRETE, Blocks.LIGHT_GRAY_CONCRETE, Blocks.WHITE_CONCRETE, null,
                 Blocks.BLACK_STAINED_GLASS_PANE, Blocks.GLASS_PANE, false, Blocks.SEA_LANTERN, Blocks.POLISHED_ANDESITE,
                 Blocks.LIGHT_GRAY_CONCRETE, Blocks.WHITE_CONCRETE, null, 3, 0.45, Building.Ground.LOBBY,
@@ -527,6 +526,19 @@ final class Landmarks {
                         .setValue(net.minecraft.world.level.block.BannerBlock.ROTATION, 8));
             }
         }));
+    }
+
+    /**
+     * Primatech Paper as Odessa draws it, on a canvas that only remembers: the present's ruin at spawn collapses this very
+     * building ({@code story/bunker/PrimatechRuin}), so a change to the one reaches the other.
+     */
+    public static CityCanvas primatechPlan(net.minecraft.server.level.ServerLevel level) {
+        CityCanvas plan = CityCanvas.plan(level, CityGrid.PRIMATECH_LOT_X0, CityGrid.PRIMATECH_LOT_Z0,
+                CityGrid.PRIMATECH_LOT_X1, CityGrid.PRIMATECH_LOT_Z1);
+        List<Feature> features = new java.util.ArrayList<>();
+        primatech(features);
+        features.forEach(feature -> feature.draw().accept(plan));
+        return plan;
     }
 
     /**

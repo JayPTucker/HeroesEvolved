@@ -179,7 +179,8 @@ public final class Overloads {
     /** Overloads the nearest grown villager within {@link #NEAR} of {@code at}; {@code storm} null picks from their gift. */
     public static Overload startNear(ServerLevel level, Vec3 at, Storm storm, int fuse) {
         Villager villager = level.getEntitiesOfClass(Villager.class, new AABB(at, at).inflate(NEAR),
-                        v -> v.isAlive() && !v.isBaby() && !critical(v) && !GiftedMobs.isGifted(v))
+                        v -> v.isAlive() && !v.isBaby() && !critical(v) && !GiftedMobs.isGifted(v)
+                                && !com.jayptucker.heroesevolved.village.Villagers.inStasis(v))
                 .stream().min(Comparator.comparingDouble(v -> v.distanceToSqr(at))).orElse(null);
         if (villager == null) return null;
         if (storm == null) storm = Storm.of(GiftedVillagers.gift(villager));

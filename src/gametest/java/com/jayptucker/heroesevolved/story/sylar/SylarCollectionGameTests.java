@@ -420,6 +420,8 @@ public final class SylarCollectionGameTests {
             sylar[0] = open(helper, fighter);
             sylar[0].setHealth(sylar[0].getMaxHealth() * 0.6F);
         } catch (RuntimeException | AssertionError error) { remove(fighter); throw error; }
+        // Phase two summons an echo that can kill this 20-health fighter mid-windup and end the fight: this test is about Appraisal alone.
+        helper.onEachTick(() -> { if (!sylar[0].isRemoved()) sylar[0].dissolveEchoes((ServerLevel) sylar[0].level(), -1); });
         helper.startSequence()
                 .thenWaitUntil(() -> helper.assertTrue(ready(sylar[0]), "The hall comes alive"))
                 .thenExecuteAfter(SylarEntity.TRANSITION_TWO + 5, guard(() -> {

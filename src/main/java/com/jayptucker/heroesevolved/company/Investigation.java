@@ -176,7 +176,8 @@ public final class Investigation extends CompanyOps.Op {
     private Villager next() {
         Villager best = null;
         for (Villager v : level.getEntitiesOfClass(Villager.class, agent.getBoundingBox().inflate(ASK_REACH + 16),
-                v -> v.isAlive() && !v.isBaby() && !v.isSleeping() && !asked.contains(v) && v.distanceToSqr(spot()) <= ASK_REACH * ASK_REACH
+                v -> v.isAlive() && !v.isBaby() && !v.isSleeping() && !com.jayptucker.heroesevolved.village.Villagers.inStasis(v)
+                        && !asked.contains(v) && v.distanceToSqr(spot()) <= ASK_REACH * ASK_REACH
                         && !v.getTags().contains(CompanyOps.PRISONER_TAG)))
             if (best == null || v.distanceToSqr(agent) < best.distanceToSqr(agent)) best = v;
         return best;

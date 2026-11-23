@@ -224,7 +224,8 @@ public final class GiftedCommands {
     }
 
     private static int awaken(CommandContext<CommandSourceStack> c, Boolean evil) {
-        Villager v = nearest(c.getSource(), Villager.class, 64, x -> !x.isBaby() && !GiftedMobs.isGifted(x));
+        Villager v = nearest(c.getSource(), Villager.class, 64, x -> !x.isBaby() && !GiftedMobs.isGifted(x)
+                && !com.jayptucker.heroesevolved.village.Villagers.inStasis(x));
         if (v == null) { c.getSource().sendFailure(Component.literal("No grown, ungifted villager within 64 blocks.")); return 0; }
         Mob became = evil == null ? Renegades.awaken(v) : Renegades.awaken(v, evil);
         if (became == null) { c.getSource().sendFailure(Component.literal("Their gift couldn't wake.")); return 0; }

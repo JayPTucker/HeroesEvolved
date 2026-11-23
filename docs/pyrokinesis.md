@@ -53,7 +53,7 @@ slower one starts it again. Clicking at a block you're close enough to dig still
 
 | Strike | Level | What happens | Stamina |
 | --- | --- | --- | --- |
-| **Jab** | 1 | Your lead fist snaps out and a fist of fire flies 16 blocks along your aim. It hits the first enemy in its path for 0.8 + 0.2 × level fire damage and knocks them back a little. | 2 |
+| **Jab** | 1 | Your lead fist snaps out and a fist of fire flies 16 blocks along your aim. It hits the first enemy in its path for 0.8 + 0.2 × level fire damage and knocks them back a little, without setting them alight. | 2 |
 | **Cross** | 1 | The same from your rear fist. At level 1 the jab and cross simply alternate. | 2 |
 | **Roundhouse** | 2 | The third strike. Your rear leg swings round at hip height and throws a crescent of fire 7 blocks out, 110° wide. Everything in it takes 0.4 + 0.2 × level, burns for 1 s and is thrown away from you. | 5 |
 | **Sweep kick** | 2 | **Crouch and click.** You drop low and sweep one leg through a full turn. A ring of fire rolls out 4 blocks across the ground, burning and tripping everyone round you, front and back. | 5 |

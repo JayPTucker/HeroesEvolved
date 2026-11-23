@@ -266,7 +266,7 @@ final class LastDayShelter {
 
     /** Someone else from the street, as the crowd's people look. */
     static Villager person(ServerLevel city, int k) {
-        Villager villager = EntityType.VILLAGER.create(city);
+        Villager villager = com.jayptucker.heroesevolved.village.Villagers.actor(city);
         if (villager == null) return null;
         VillagerType[] looks = {VillagerType.PLAINS, VillagerType.TAIGA, VillagerType.SAVANNA, VillagerType.DESERT, VillagerType.SWAMP};
         VillagerProfession[] jobs = {VillagerProfession.NONE, VillagerProfession.FARMER, VillagerProfession.LIBRARIAN, VillagerProfession.BUTCHER};

@@ -421,7 +421,7 @@ public final class LastSignalService {
     }
 
     private static Villager sleeper(ServerLevel level, BlockPos pos, String name, String tag) {
-        Villager villager = EntityType.VILLAGER.create(level);
+        Villager villager = com.jayptucker.heroesevolved.village.Villagers.actor(level);
         villager.setPos(Vec3.atBottomCenterOf(pos));
         villager.setCustomName(Component.literal(name));
         villager.setCustomNameVisible(true);

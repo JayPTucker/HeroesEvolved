@@ -97,6 +97,8 @@ public final class DensityService {
         final ServerPlayer player;
         int notch, applied = Integer.MIN_VALUE, sentRoot = Integer.MIN_VALUE, sentBreath = Integer.MIN_VALUE;
         boolean sentStance;
+        /** The stance was given by a move for its free time (Stone Skin, Unmoving Mountain, the awakening): it ends with it. */
+        boolean lent;
         long freeUntil;
         Vec3 last;
         boolean sunk;
@@ -166,6 +168,9 @@ public final class DensityService {
         return gravity != null && gravity.hasModifier(SUNK);
     }
 
+    /** Bosses: the earth can hurt them, but it doesn't hold, drag, lift or carry them. */
+    public static boolean immovable(Entity e) { return e.getType().is(Tags.EntityTypes.BOSSES); }
+
     public static boolean embedded(Entity e) { return EMBEDDED.containsKey(e.getUUID()); }
     /** Where the ground's surface is round a body held in it (its feet if it isn't held). */
     public static Vec3 surfaceOf(Entity e) {
@@ -219,6 +224,7 @@ public final class DensityService {
         // Underground, the stance key brings you up (with the uppercut).
         if (s.sunk) return surface(p, true);
         if (shift) return DensitySkills.stomp(p);
+        s.lent = false;
         set(p, s, s.notch == NEUTRAL ? FULL_DENSE : NEUTRAL);
         return true;
     }
@@ -227,7 +233,10 @@ public final class DensityService {
     public static void setNotch(ServerPlayer p, int notch, int freeTicks) {
         State s = state(p);
         if (s.sunk) return;
+        boolean already = s.notch > 0;
         set(p, s, notch > 0 ? FULL_DENSE : NEUTRAL);
+        if (notch <= 0) s.lent = false;
+        else if (freeTicks > 0 && !already) s.lent = true;
         if (freeTicks > 0) s.freeUntil = Math.max(s.freeUntil, now(p) + freeTicks);
     }
 
@@ -371,7 +380,7 @@ public final class DensityService {
 
     /** As above, sinking no deeper than {@code maxDepth} blocks (Entombed buries a body right under). */
     public static boolean embed(LivingEntity target, Entity owner, int ticks, boolean entombed, double fraction, double maxDepth) {
-        if (!(target.level() instanceof ServerLevel level) || embedded(target) || target.getType().is(Tags.EntityTypes.BOSSES)
+        if (!(target.level() instanceof ServerLevel level) || embedded(target) || immovable(target)
                 || target.isPassenger() || target.getBbHeight() > 4) return false;
         double depth = Math.min(maxDepth, target.getBbHeight() * fraction);
         Vec3 at = target.position().subtract(0, depth, 0);
@@ -493,7 +502,7 @@ public final class DensityService {
         s.breath = BREATH;
         s.sunkSafe = from;
         // Standing underground: the stance's own modifiers would fight the zero gravity that keeps you level.
-        s.notch = NEUTRAL; s.applied = Integer.MIN_VALUE; apply(p, s);
+        s.notch = NEUTRAL; s.lent = false; s.applied = Integer.MIN_VALUE; apply(p, s);
         modifier(p, Attributes.GRAVITY, SUNK, -1, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
         modifier(p, Attributes.MOVEMENT_SPEED, SUNK_SLOW, -0.3 + tier * 0.04, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
         p.teleportTo(p.serverLevel(), to.x, to.y, to.z, p.getYRot(), p.getXRot());
@@ -544,7 +553,7 @@ public final class DensityService {
                 if (torn) release(above);
                 above.invulnerableTime = 0;
                 above.hurt(p.damageSources().playerAttack(p), (3 + tier) * (torn ? 2 : 1));
-                above.setDeltaMovement(above.getDeltaMovement().add(0, torn ? 2.0 : 1.0, 0)); above.hurtMarked = true;
+                if (!immovable(above)) { above.setDeltaMovement(above.getDeltaMovement().add(0, torn ? 2.0 : 1.0, 0)); above.hurtMarked = true; }
                 if (uproot) DensitySkills.uprooted(p, above, torn);
                 if (above instanceof ServerPlayer other) other.connection.send(new ClientboundSetEntityMotionPacket(other));
                 level.playSound(null, above.blockPosition(), SoundEvents.PLAYER_ATTACK_KNOCKBACK, SoundSource.PLAYERS, 1, 0.6F);
@@ -665,6 +674,7 @@ public final class DensityService {
             if (s.sunk) tickSunk(p, s, now);
             else tickRoot(p, s);
             s.last = p.position();
+            if (s.lent && now >= s.freeUntil) { s.lent = false; set(p, s, NEUTRAL); }
             if (s.notch > 0 && now >= s.freeUntil) {
                 // Horse Stance is held: it pays as it goes, and a bender too tired to hold it stands up.
                 double perSecond = PowerBalance.scaledDrain("phasing_shift", 3.3) * (SkillTreeService.has(p, DensitySkills.LISTEN) ? .5 : 1);

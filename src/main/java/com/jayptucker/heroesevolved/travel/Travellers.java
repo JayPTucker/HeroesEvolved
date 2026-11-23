@@ -129,11 +129,13 @@ public final class Travellers {
         mob.addTag(TAG);
         mob.setPersistenceRequired();
         LIVE.add(mob.getUUID());
-        if (!level.addFreshEntity(mob)) {
-            LIVE.remove(mob.getUUID());
-            return null;
-        }
-        return mob;
+        // A villager may come back as another object (Minecraft Comes Alive's human), with the same UUID.
+        @SuppressWarnings("unchecked")
+        T joined = mob instanceof net.minecraft.world.entity.npc.Villager v
+                ? (T) com.jayptucker.heroesevolved.village.Villagers.enter(level, v)
+                : level.addFreshEntity(mob) ? mob : null;
+        if (joined == null) LIVE.remove(mob.getUUID());
+        return joined;
     }
 
     /** No longer travelling: let go (to stay where they are, settled), or gone from the world. */

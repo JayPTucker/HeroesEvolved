@@ -15,7 +15,7 @@ Primatech relay stations generate far apart in rings around the world origin, li
 
 ## Existing worlds
 
-Bunkers built before the Sublevel 4 rebuild (November 2026) keep their original rooms, and the players who sleep in them keep their pods; only new worlds get the rebuilt bunker and the Helix Ward. Existing bunkers receive the receiver and recovery rooms where the original fixtures are still in place; the old copper receiver becomes the radio console, and the ground round an existing ruined lobby is graded the same way. Look for relay stations in newly generated terrain. Previously earned story books, advancements, discovery rewards, and past outcomes remain in the save. Books from the earlier bunker layout and retired Hourglass Annex, Avenue at 6:14, and Night Three episodes remain valid discoveries when found. The game recovers players whose saves still place them in one of those visits.
+Bunkers built before the Sublevel 4 rebuild (November 2026) keep their original rooms, and the players who sleep in them keep their pods; only new worlds get the rebuilt bunker and the Helix Ward. Existing bunkers receive the receiver and recovery rooms where the original fixtures are still in place; the old copper receiver becomes the radio console, and the ground round an existing ruined lobby is graded the same way. Only new worlds get the collapsed Primatech building over the stair. Look for relay stations in newly generated terrain. Previously earned story books, advancements, discovery rewards, and past outcomes remain in the save. Books from the earlier bunker layout and retired Hourglass Annex, Avenue at 6:14, and Night Three episodes remain valid discoveries when found. The game recovers players whose saves still place them in one of those visits.
 
 ## The first five minutes
 
@@ -28,7 +28,7 @@ New players first live [the Last Day](the-last-day.md), which ends with them sea
 2. **37,620 days.** The pod's counter: 103 years. Frost on the glass. The pod holds you while the revival protocol runs.
 3. **You are awake.** The pod chimes and hisses open (about 5.5 seconds in), the waking's music begins, and you earn **Wake Up**.
    Once you are out of the pod and the alarm is over, the waking's music fades in and plays for as long as you are in
-   the bunker, its stair or the ruined lobby at its top. Step out into the world and it fades away, and you earn
+   the bunker, its stair or the ruin of Primatech Paper at its top. Step out into the world and it fades away, and you earn
    **What happened...?**
 4. **The power comes back.** The alarm holds until you step out of the pod. Then it cuts off, a breaker
    slams, and the bunker's lights click on in a wave from the generator, down the hall from its door to
@@ -39,6 +39,11 @@ Every new player wakes this way, in the pod assigned to them (the same number th
 lights go out, and everyone already in the bunker hears the alarm until the last sleeper is out of their
 pod, when the power comes back for all of them.
 
+The stair comes up inside what is left of **Primatech Paper**, the building you ran into on the Last Day. The light came
+down the avenue and took out its middle: two broken wings still stand, up to about eight storeys, with a great heap of
+fallen floors, the roof's machine room and its mast between them. The lobby's railed stair, its green copper doors and the
+PRIMATECH PAPER CO. sign are still there, and the way from the stair out through those doors is clear.
+
 A chest in the hall's aisle holds the orientation log. The receiver in Records gives directions to the relay ruins.
 
 ## Sublevel 4
@@ -47,14 +52,15 @@ The bunker is Primatech's Sublevel 4 as it stood a hundred and three years after
 it has a reason: the copper has gone green, most of all where water came in; the blast cracked the ceilings and brought
 part of the stasis hall's down; a cave burst through the commons' wall, and the azalea in the commons' planter lived on
 its water and grew into a tree; moss and roots creep out from it; some lights died, some glass broke, and cobwebs fill the
-corners nobody cleaned. The Company kept its notes in chests. Open one to read what's inside (it counts as a discovery,
+corners nobody cleaned. Skulls lie against the walls and in the corners of every room, where people slumped and never got
+up. The Company kept its notes in chests. Open one to read what's inside (it counts as a discovery,
 as reading a lectern does).
 
 | Room | What is in it |
 | --- | --- |
 | **Airlock** (behind the vault) | The vault's hazard-striped door, a decontamination arch with spray nozzles and a drain, emergency lockers, and the security booth: a desk, the security chest, and a maintenance hatch in its floor. Moss and vines have come in through the vault |
 | **Commons** (the middle) | A two-storey rotunda: a gallery ring reached by two stairs, a chandelier of light boxes under a stepped ceiling, mess tables, a serving line and a reading lounge. A lush cave broke through its north-west wall: the planter's azalea is a tree now, grown up through the fallen gallery, and glow berries hang from the ceiling over it |
-| **Stasis hall** (south of the commons) | Fourteen Cryochambers in arched niches, each with its copper pipes and nameplate, under catwalks on both walls joined at each end. The orientation log in the aisle, a grand stair up to the far balcony, and Isaac Mendez's painting of the explosion, Exhibit 1, high on the far wall over the analysts' station. Part of the ceiling came down over the west side, roots and dripstone hanging through the hole. Pod 14 stands open with Claire's note in a chest beside it (walking up to it tells you so), and a trail of old blood leads from it to containment. Every pod that is nobody's still holds one of Odessa's people from the Last Day, dead behind the glass under a red *DECEASED / CAUSE UNKNOWN* plate |
+| **Stasis hall** (south of the commons) | Fourteen Cryochambers in arched niches, each with its copper pipes and nameplate, under catwalks on both walls joined at each end. The orientation log in the aisle, a grand stair up to the far balcony, and Isaac Mendez's painting of the explosion, Exhibit 1, high on the far wall over the analysts' station. Part of the ceiling came down over the west side, roots and dripstone hanging through the hole. Pod 14 stands open with Claire's note in a chest beside it (walking up to it tells you so), and a trail of old blood leads from it to containment. About half of the pods that are nobody's still hold one of Odessa's people from the Last Day, frosted over behind furred glass under a red *DECEASED / CAUSE UNKNOWN* plate. The rest failed long ago and stand empty and rusted under a *POD BREACHED / NO REMAINS* plate, their glass blown out or their door hanging off one hinge, and can't be used. Which is which differs from world to world. A pod that becomes a new sleeper's is whole again when they wake in it. No village event touches the people in the pods: they are never counted, chosen, moved or woken |
 | **Records and comms** (east) | The signal receiver on the north desk: a Simple Radio receiver with a transmitter on it, a speaker and a microphone, the operator's chair. Filing cabinets, the records chest (bread, apples, torches), a planning table, a window onto the generator's core, and Noah Bennet's corner with his lockdown order |
 | **Generator hall** (east) | The core, a column of light behind glass and copper; fourteen power cells (three still charged, one blown and scorched); a catwalk round three walls; the main breaker by the door. The power comes back from here |
 | **Infirmary** (west) | Four screened cots with monitors, medical cabinets, a sink and an operating table under its lamp. Mara and Ivo recover here after the rescue |

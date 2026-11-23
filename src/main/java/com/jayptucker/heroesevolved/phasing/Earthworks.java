@@ -238,16 +238,18 @@ public final class Earthworks {
             if (c.shape != Shape.TENT) for (LivingEntity e : c.level.getEntitiesOfClass(LivingEntity.class, new AABB(cell).inflate(.02))) {
                 // Only a construct that hurts (a pillar) marks what it hit: a wall's rise must leave its shove a clean slate.
                 boolean strike = e != c.owner && c.damage > 0 && ExpansionSkills.hostile(c.owner, e) && c.struck.add(e.getUUID());
+                // A boss is hurt but stays put, and the construct stops against it.
+                boolean fixed = DensityService.immovable(e);
                 if (c.shape == Shape.PILLAR && c.facing == Direction.UP) {
                     // Whatever stands on a rising pillar rides it up, and is thrown off the top.
-                    carry(e, new Vec3(e.getX(), cell.getY() + 1.02, e.getZ()));
+                    if (!fixed) carry(e, new Vec3(e.getX(), cell.getY() + 1.02, e.getZ()));
                     if (strike) StyleHits.hurt(e, c.owner.damageSources().playerAttack(c.owner), c.damage);
                 } else {
                     Vec3 to = e.position().add(push.multiply(1.05, 0, 1.05)).add(0, c.facing.getAxis().isVertical() ? push.y * 1.05 : 0, 0);
-                    if (com.jayptucker.heroesevolved.speed.SpeedService.safe(e, to)) carry(e, to);
+                    if (!fixed && com.jayptucker.heroesevolved.speed.SpeedService.safe(e, to)) carry(e, to);
                     if (strike) {
                         StyleHits.hurt(e, c.owner.damageSources().playerAttack(c.owner), c.damage);
-                        StyleHits.shove(e, push.scale(1.1).add(0, .35, 0));
+                        if (!fixed) StyleHits.shove(e, push.scale(1.1).add(0, .35, 0));
                     }
                 }
             }
@@ -269,7 +271,7 @@ public final class Earthworks {
         if (c.facing != Direction.UP) return;
         BlockPos top = c.cells.get(c.cells.size() - 1);
         for (LivingEntity e : c.level.getEntitiesOfClass(LivingEntity.class, new AABB(top.above()).inflate(.3, .6, .3))) {
-            if (e == c.owner && !c.launchSelf) continue;
+            if (e == c.owner && !c.launchSelf || DensityService.immovable(e)) continue;
             double up = .9 + .1 * c.cells.size();
             e.setDeltaMovement(e.getDeltaMovement().multiply(1, 0, 1).add(0, up, 0));
             e.hurtMarked = true;
@@ -304,6 +306,7 @@ public final class Earthworks {
                 if (e == c.owner) continue;
                 if (ExpansionSkills.hostile(c.owner, e) && c.struck.add(e.getUUID()))
                     StyleHits.hurt(e, c.owner.damageSources().playerAttack(c.owner), c.damage);
+                if (DensityService.immovable(e)) continue;
                 Vec3 to = e.position().add(push.scale(1.2));
                 if (com.jayptucker.heroesevolved.speed.SpeedService.safe(e, to)) carry(e, to);
                 StyleHits.shove(e, push.scale(1.3).add(0, .4, 0));
@@ -374,7 +377,7 @@ public final class Earthworks {
         }
         for (LivingEntity t : ExpansionSkills.enemies(p, point, radius)) {
             StyleHits.hurt(t, p.damageSources().playerAttack(p), damage);
-            StyleHits.shove(t, new Vec3(0, 1.1, 0));
+            if (!DensityService.immovable(t)) StyleHits.shove(t, new Vec3(0, 1.1, 0));
         }
         CameraShakePayload.sendAround(p.serverLevel(), point, 16, .4F, 8);
         return true;
@@ -513,7 +516,7 @@ public final class Earthworks {
         }
         // Everyone standing on the disc rides it up (a foot within half a block of its top, so a mid-step body counts).
         for (LivingEntity e : m.level.getEntitiesOfClass(LivingEntity.class, new AABB(m.center, m.center).inflate(r, 1.5, r),
-                e -> e != m.owner && Math.abs(e.getY() - m.center.y) < .5 && !e.isPassenger()
+                e -> e != m.owner && !DensityService.immovable(e) && Math.abs(e.getY() - m.center.y) < .5 && !e.isPassenger()
                         && e.position().subtract(m.center).horizontalDistance() <= r)) {
             m.riders.add(e);
             m.riderOffsets.add(e.position().subtract(m.center));
@@ -569,6 +572,7 @@ public final class Earthworks {
     // ------------------------------------------------------------------
 
     private static final ResourceLocation SURF_STEP = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "earth_surf_step");
+    private static final ResourceLocation SURF_SPEED = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "earth_surf_speed");
     private record Surf(ServerPlayer player, long until, int tier, Set<UUID> struck) {}
 
     public static boolean surfing(ServerPlayer p) { return SURFS.containsKey(p.getUUID()); }
@@ -578,7 +582,8 @@ public final class Earthworks {
         if (SURFS.remove(p.getUUID()) != null) { endSurf(p); return true; }
         if (DensityService.footing(p) == null || !p.onGround()) { p.displayClientMessage(Component.translatable("density.heroesevolved.need_ground"), true); return false; }
         SURFS.put(p.getUUID(), new Surf(p, now(p) + 120, tier, new HashSet<>()));
-        p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 120, 2, false, false));
+        AttributeInstance speed = p.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (speed != null) speed.addOrUpdateTransientModifier(new AttributeModifier(SURF_SPEED, .6, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
         AttributeInstance step = p.getAttribute(Attributes.STEP_HEIGHT);
         if (step != null) step.addOrUpdateTransientModifier(new AttributeModifier(SURF_STEP, 1, AttributeModifier.Operation.ADD_VALUE));
         ArmPosePayload.show(p, ArmPose.EARTH_SURF, 12);
@@ -588,7 +593,8 @@ public final class Earthworks {
     }
 
     private static void endSurf(ServerPlayer p) {
-        p.removeEffect(MobEffects.MOVEMENT_SPEED);
+        AttributeInstance speed = p.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (speed != null) speed.removeModifier(SURF_SPEED);
         AttributeInstance step = p.getAttribute(Attributes.STEP_HEIGHT);
         if (step != null) step.removeModifier(SURF_STEP);
     }

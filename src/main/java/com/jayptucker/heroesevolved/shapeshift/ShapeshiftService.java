@@ -323,6 +323,7 @@ public final class ShapeshiftService {
      * off, the form isn't remembered, or a pick came less than half a second ago.
      */
     public static boolean choose(ServerPlayer player, String id) {
+        if (com.jayptucker.heroesevolved.telepathy.PossessionService.locked(player)) return false;
         if (!owns(player) || !com.jayptucker.heroesevolved.ability.service.PowerRules.canAct(player)) return false;
         long now = player.serverLevel().getGameTime();
         Long last = LAST_CHOICE.get(player.getUUID());

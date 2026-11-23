@@ -171,8 +171,10 @@ public final class BunkerService {
             BunkerBuilder.releaseClaire(server.overworld(), bunker);
             // Radios owed to sleepers counted while the chest wasn't loaded (or before there were radios at all).
             BunkerRadios.stock(server.overworld(), bunker);
-            // The pods nobody woke in still hold Odessa's people, dead a long time.
+            // About half the pods nobody woke in still hold Odessa's people, frosted over; the rest failed.
             PodSleepers.present(server.overworld(), bunker);
+            // And what is left of the others lies about the rooms, each room strewn once.
+            BunkerBones.strew(server.overworld(), bunker);
             // And the ones the vault was shut on lie outside it and on the stair: laid once, in new bunkers and old.
             if (!bunker.remains && BunkerStair.loaded(server.overworld(), bunker.origin)) {
                 BunkerStair.remains(server.overworld(), bunker.origin);
@@ -317,11 +319,12 @@ public final class BunkerService {
         if (advancement != null) player.getAdvancements().award(advancement, "granted");
     }
 
-    /** The bunker's rooms with a little rock round them, and the column of the stairwell and the lobby over the vault. */
+    /** The bunker's rooms with a little rock round them, and the column of the stairwell and Primatech's ruin over the vault. */
     public static boolean withinBunker(BunkerData data, BlockPos pos) {
         BlockPos at = pos.subtract(data.origin);
         if (data.layout().bounds().inflatedBy(3).isInside(at)) return true;
-        return at.getX() >= -7 && at.getX() <= 19 && at.getZ() >= -14 && at.getZ() <= 4 && at.getY() >= -3 && at.getY() <= 120;
+        return at.getX() >= PrimatechRuin.LOT_X0 - 3 && at.getX() <= PrimatechRuin.LOT_X1 + 3 && at.getZ() >= PrimatechRuin.LOT_Z0 - 3
+                && at.getZ() <= PrimatechRuin.LOT_Z1 + 3 && at.getY() >= -3 && at.getY() <= 120;
     }
 
     /** For tests: whether the waking's music is still due to play for {@code player}. */

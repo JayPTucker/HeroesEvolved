@@ -45,6 +45,7 @@ public final class GiftedVillagers {
 
     @SubscribeEvent public static void join(EntityJoinLevelEvent event) {
         if (event.getLevel().isClientSide() || !(event.getEntity() instanceof AbstractVillager villager)) return;
+        if (com.jayptucker.heroesevolved.village.Villagers.inStasis(villager)) return;
         CompoundTag data = villager.getPersistentData();
         if (data.getBoolean(ROLLED)) return;
         data.putBoolean(ROLLED, true);
@@ -60,7 +61,7 @@ public final class GiftedVillagers {
         for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
             boolean mimic = MimicryService.isMimic(player);
             for (AbstractVillager villager : player.serverLevel().getEntitiesOfClass(AbstractVillager.class, player.getBoundingBox().inflate(24),
-                    v -> gift(v) != null && !GiftedMobs.isGifted(v))) {
+                    v -> gift(v) != null && !GiftedMobs.isGifted(v) && !com.jayptucker.heroesevolved.village.Villagers.inStasis(v))) {
                 if (mimic) PrivateGlow.glow(player, villager, 30);
                 if (shown.add(villager) && villager.getRandom().nextInt(3) == 0)
                     player.serverLevel().sendParticles(ParticleTypes.END_ROD, villager.getX(), villager.getY() + 1.9, villager.getZ(),

@@ -95,7 +95,7 @@ final class LastDayRescue {
         List<Vec3> spots = LastDayFight.victims(facades, count(players));
         for (int i = 0; i < spots.size(); i++) {
             Vec3 spot = pileSpot(city, spots.get(i));
-            Villager body = EntityType.VILLAGER.create(city);
+            Villager body = com.jayptucker.heroesevolved.village.Villagers.actor(city);
             if (body == null) continue;
             body.moveTo(spot.x, spot.y, spot.z, 180, 0);
             body.setYHeadRot(180);

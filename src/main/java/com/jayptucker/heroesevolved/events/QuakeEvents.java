@@ -27,6 +27,7 @@ public final class QuakeEvents {
     @SubscribeEvent
     public static void onServerStopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
         com.jayptucker.heroesevolved.quake.QuakeBlockPressure.clearAll();
+        QuakeService.worldClosing();
     }
 
     /** Vibration Cushion: Quake absorbs her landings. */

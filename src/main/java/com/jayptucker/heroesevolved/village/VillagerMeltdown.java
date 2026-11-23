@@ -212,7 +212,7 @@ public final class VillagerMeltdown {
     /** Wakes it in the nearest grown villager within {@link #NEAR} blocks of {@code at}. Null if there is none. */
     public static Meltdown startNear(ServerLevel level, Vec3 at, int fuse) {
         Villager villager = level.getEntitiesOfClass(Villager.class, new net.minecraft.world.phys.AABB(at, at).inflate(NEAR),
-                        v -> v.isAlive() && !v.isBaby() && !critical(v))
+                        v -> v.isAlive() && !v.isBaby() && !critical(v) && !Villagers.inStasis(v))
                 .stream().min(java.util.Comparator.comparingDouble(v -> v.distanceToSqr(at))).orElse(null);
         return villager == null ? null : start(villager, fuse);
     }
@@ -334,6 +334,7 @@ public final class VillagerMeltdown {
 
     /** Near the bell, in the blast's reach of him, or living, working or meeting in the village. */
     static boolean belongs(Meltdown m, Villager v) {
+        if (Villagers.inStasis(v)) return false;
         if (v.blockPosition().distSqr(m.bell) <= (long) VILLAGE_RADIUS * VILLAGE_RADIUS) return true;
         double blast = NuclearFallout.RADIUS + 8;
         if (v.distanceToSqr(m.villager) <= blast * blast) return true;
@@ -464,7 +465,7 @@ public final class VillagerMeltdown {
         Villager him = m.villager;
         List<Villager> running = new ArrayList<>();
         for (Villager v : m.level.getEntitiesOfClass(Villager.class, him.getBoundingBox().inflate(FLEE_RANGE),
-                v -> v != him && v.isAlive() && !m.safeNow.contains(v.getUUID()) && !EntityCarryService.isBeingCarried(v)
+                v -> v != him && v.isAlive() && !Villagers.inStasis(v) && !m.safeNow.contains(v.getUUID()) && !EntityCarryService.isBeingCarried(v)
                         && v.distanceToSqr(him) <= FLEE_RANGE * FLEE_RANGE)) {
             Shouts.runFrom(v, him.position(), FLEE_RANGE + 8);
             running.add(v);
@@ -704,7 +705,7 @@ public final class VillagerMeltdown {
         for (Player p : players) {
             if (p.isSpectator()) continue;
             List<Villager> near = level.getEntitiesOfClass(Villager.class, p.getBoundingBox().inflate(96),
-                    v -> v.isAlive() && !v.isBaby() && !critical(v) && level.getPoiManager().findClosest(poi -> poi.is(PoiTypes.MEETING),
+                    v -> v.isAlive() && !v.isBaby() && !critical(v) && !Villagers.inStasis(v) && level.getPoiManager().findClosest(poi -> poi.is(PoiTypes.MEETING),
                             v.blockPosition(), VILLAGE_RADIUS, PoiManager.Occupancy.ANY).isPresent());
             if (near.isEmpty()) continue;
             Meltdown m = start(near.get(level.random.nextInt(near.size())), HeroesEvolvedConfig.COMMON.villagerMeltdownFuseTicks.get());

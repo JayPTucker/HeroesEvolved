@@ -547,7 +547,7 @@ public final class Growth {
             if (newcomer == null) break;
             BlockPos at = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, s.center().offset(i * 2, 0, -4));
             newcomer.moveTo(at.getX() + .5, at.getY(), at.getZ() + .5, 0, 0);
-            level.addFreshEntity(newcomer);
+            Villagers.enter(level, newcomer);
         }
         String family = FAMILIES[level.random.nextInt(FAMILIES.length)];
         String where = compass(s.bell(), s.center());

@@ -244,7 +244,7 @@ public final class VillageIncidents {
             List<Villager> gifted = new ArrayList<>();
             for (ServerPlayer p : group)
                 for (Villager v : level.getEntitiesOfClass(Villager.class, p.getBoundingBox().inflate(128),
-                        v -> v.isAlive() && !v.isBaby() && GiftedVillagers.gift(v) != null && !GiftedMobs.isGifted(v) && !VillagerMeltdown.critical(v)
+                        v -> v.isAlive() && !v.isBaby() && !Villagers.inStasis(v) && GiftedVillagers.gift(v) != null && !GiftedMobs.isGifted(v) && !VillagerMeltdown.critical(v)
                                 && !com.jayptucker.heroesevolved.village.overload.Overloads.critical(v)
                                 && !v.getTags().contains(com.jayptucker.heroesevolved.company.CompanyOps.PRISONER_TAG)
                                 && !com.jayptucker.heroesevolved.radio.EmergencyBand.troubled(level, v.blockPosition())))

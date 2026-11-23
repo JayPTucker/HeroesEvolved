@@ -37,7 +37,8 @@ public final class MimicCommands {
             return 0;
         }
         Vec3 at = source.getPosition();
-        Villager villager = source.getLevel().getEntitiesOfClass(Villager.class, new net.minecraft.world.phys.AABB(at, at).inflate(16))
+        Villager villager = source.getLevel().getEntitiesOfClass(Villager.class, new net.minecraft.world.phys.AABB(at, at).inflate(16),
+                        v -> !com.jayptucker.heroesevolved.village.Villagers.inStasis(v))
                 .stream().min(Comparator.comparingDouble(v -> v.distanceToSqr(at))).orElse(null);
         if (villager == null) {
             source.sendFailure(Component.literal("No villager within 16 blocks."));

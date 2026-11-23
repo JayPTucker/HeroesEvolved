@@ -93,6 +93,15 @@ public final class QuakeService {
     private QuakeService() {
     }
 
+    /**
+     * The world is closing. A wave outlives its owner (it is not theirs to stop), so it must go here: left in the list, the
+     * next singleplayer world would tick it against this world's stopped chunk source and wait for it forever.
+     */
+    public static void worldClosing() { WAVES.clear(); }
+
+    /** How many waves are travelling (for tests). */
+    static int waves() { return WAVES.size(); }
+
     // ------------------------------------------------------------------
     // Shockwave
     // ------------------------------------------------------------------
@@ -440,7 +449,7 @@ public final class QuakeService {
         MasteryService.markPowerUse(player, ModAbilities.QUAKE_ID);
     }
 
-    private static void impact(
+    static void impact(
             ServerPlayer player,
             int powerLevel,
             double power,

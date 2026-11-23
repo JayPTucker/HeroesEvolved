@@ -277,7 +277,7 @@ public final class AvenueService {
     }
 
     private static Villager person(ServerLevel city, double x, double z, float yaw, String name, int look, boolean child) {
-        Villager villager = EntityType.VILLAGER.create(city);
+        Villager villager = com.jayptucker.heroesevolved.village.Villagers.actor(city);
         if (villager == null) return null;
         villager.moveTo(x, 64, z, yaw, 0);
         villager.setYHeadRot(yaw);

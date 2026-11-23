@@ -375,7 +375,7 @@ public final class MimicryService {
 
     /** Channels the set in wheel slot {@code slot} (the near set first, then the kept ones). */
     public static boolean choose(ServerPlayer player, int slot) {
-        if (!isMimic(player)) return false;
+        if (!isMimic(player) || com.jayptucker.heroesevolved.telepathy.PossessionService.locked(player)) return false;
         Memory memory = memory(player);
         List<Imprint> slots = memory.slots();
         if (slot < 0 || slot >= slots.size() || slot == memory.selectedSlot()) return false;
@@ -394,6 +394,7 @@ public final class MimicryService {
 
     /** Lets a kept set go (the near set can't be forgotten: it is whoever you are next to). */
     public static boolean forgetSlot(ServerPlayer player, int slot) {
+        if (com.jayptucker.heroesevolved.telepathy.PossessionService.locked(player)) return false;
         Memory memory = memory(player);
         int index = memory.near().isPresent() ? slot - 1 : slot;
         if (index < 0 || index >= memory.kept().size()) return false;

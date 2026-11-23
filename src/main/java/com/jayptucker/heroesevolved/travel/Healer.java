@@ -37,7 +37,8 @@ public final class Healer extends Party {
         if (v == null) return null;
         v.moveTo(at.x, at.y, at.z, level.random.nextFloat() * 360, 0);
         v.getPersistentData().putBoolean(GiftedMobs.ROLLED, true);
-        if (Travellers.add(level, v) == null) return null;
+        v = Travellers.add(level, v);
+        if (v == null) return null;
         GiftedMobs.bestow(v, ModAbilities.REGENERATION_ID, Rarity.UNCOMMON, false, Gift.Origin.GUARDIAN, null, null);
         h.healer = v;
         h.members.add(v);

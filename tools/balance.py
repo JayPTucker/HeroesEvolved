@@ -507,13 +507,13 @@ for power, strike_old, strike_new, fin_old, fin_new, low_old, low_new in [
             "electrokinesis":"side step 0; Flashback 3+.6*tier; counter 1.6x spark + three .7x chain hops",
             "hydrokinesis":"Flow Step 0; back Geyser 3+.6*tier; counter 1.6x lash and pull",
             "superspeed":"skids deal 0; conditional Too Slow is 6*(.9+.3*tier)",
-            "quake":"dodges deal 0; Rebound (4+tier)*power plus a loaded 1.8x palm",
-            "cryokinesis":"dodges deal 0; counter freezes one attacker and loads a 3.2x shatter jab",
+            "quake":"dodges deal 0; Rebound (.8+.2*tier)*power plus a loaded 1.8x palm",
+            "cryokinesis":"dodges deal 0; counter freezes one attacker and loads a 2.4x shatter jab",
             "phasing":"slides deal 0; Neutral Jing pillar (PILLAR_DAMAGE+tier)*Root, then a 1.5x claw",
             "regeneration":"braces deal 0; Payback adds .8*banked incoming damage",
             "invisibility":"dodges deal 0; counter fires five shards (.8+.2*tier each)",
             "telekinesis":"dodges deal 0; counter holds attacker 30 ticks and loads a 2x swat",
-            "vibe":"hop 0; Fold Back 3+.6*tier; counter from behind 4+tier",
+            "vibe":"hop 0; Fold Back 3+.6*tier; counter from behind 1.5+.5*tier",
         }[power], cost=STYLE_OVERRIDES.get((power, "back_dodge" if move == "back_dodge" else "dodge"), 11 if move == "back_dodge" else 8),
                  note="Motion/evasion/brace and a successful counter share this paid budget; counter damage is conditional, not a zero-cost standalone attack.")
 

@@ -4,6 +4,11 @@ Distress calls over Simple Radio, the villager meltdown and keeping far villages
 
 Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 
+**People in stasis pods are never part of a village event.** A village can stand right over the bunker, and a box search
+finds the bodies 32 blocks down. `Villages.belongs` already refuses them, so `Villages.members` is safe. Any new search
+with `getEntitiesOfClass(Villager.class, ...)` that counts, picks, moves, names or wakes someone must also ask
+`Villagers.inStasis`.
+
 ## Reusable patterns from village distress calls (radio and meltdowns)
 
 Villages call for help over Simple Radio, and the first event that calls is a villager's meltdown (`radio/`,
@@ -144,6 +149,8 @@ players, `Meteors` runs every meteor and its answers, `MeteorGeometry` holds eve
   fire move (an overload's wildfire, a crater's rim).
 - **Testing.** The `rewind_empty` arena's stone floor is at `absolutePos` y 1 with air under it: stand things at y 2. A
   test can stage a meteor anywhere in its fall (`Meteors.hurry`, `fallen`) and set its `crack` to the edge of breaking.
+  Measure a star's landing across the ground only: it lands on the tallest thing in its column, which in the suite can be
+  a neighbouring test's arena, so a 3D distance can miss stars on the ring and leave them falling after cleanup.
 
 ## Reusable patterns from lasting consequences
 

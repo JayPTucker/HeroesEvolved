@@ -118,7 +118,10 @@ public final class VillageUpgradeGameTests {
                 List<String> faults = faults(level, box(site.center(), 9, 15));
                 h.assertTrue(faults.isEmpty(), id + " stands clean: " + faults);
                 int beds = 0, upstairs = 0;
-                for (BlockPos p : box(site.center(), 9, 15)) {
+                // Count inside this house's own bounds: the wider box above can reach the bed of the house next door.
+                var bounds = level.getStructureManager().get(id).orElseThrow()
+                        .getBoundingBox(new StructurePlaceSettings().setRotation(site.home().rotation()), site.home().origin());
+                for (BlockPos p : BlockPos.betweenClosed(bounds.minX(), bounds.minY(), bounds.minZ(), bounds.maxX(), bounds.maxY(), bounds.maxZ())) {
                     BlockState s = level.getBlockState(p);
                     if (s.getBlock() instanceof BedBlock && s.getValue(BedBlock.PART) == net.minecraft.world.level.block.state.properties.BedPart.FOOT) {
                         beds++;

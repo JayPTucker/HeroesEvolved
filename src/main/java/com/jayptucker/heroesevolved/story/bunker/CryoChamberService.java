@@ -59,6 +59,10 @@ public final class CryoChamberService {
         ServerLevel level = player.serverLevel();
         var state = level.getBlockState(base);
         if (!(state.getBlock() instanceof CryoChamberBlock)) return false;
+        if (state.getValue(CryoChamberBlock.CONDITION).wrecked()) {
+            player.displayClientMessage(Component.translatable("cryochamber.heroesevolved.wrecked"), true);
+            return false;
+        }
         if (player.isShiftKeyDown() && CryoEvents.hasAwakenedCryokinesis(player)) return charge(player, base);
         Occupant mine = OCCUPANTS.get(player.getUUID());
         if (mine != null && mine.base.equals(base)) return exit(player);

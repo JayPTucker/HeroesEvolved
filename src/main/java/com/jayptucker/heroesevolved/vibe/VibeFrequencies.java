@@ -243,6 +243,7 @@ public final class VibeFrequencies {
 
     /** A click on the wheel. Breaches and glimpses go through the normal press, so they pay and cool down as one. */
     public static void choose(ServerPlayer player, int op, int slot, String name) {
+        if (com.jayptucker.heroesevolved.telepathy.PossessionService.locked(player)) return;
         if (!VibeService.nativePower(player) || !VibeBreaches.canOpen(player)) return;
         if (!(op == FrequencyChoicePayload.BREACH && slot == -1) && (slot < 0 || slot >= slots(player))) {
             VibeBreaches.fail(player, "slot_locked");

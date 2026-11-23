@@ -1,244 +1,68 @@
 {
   "variants": {
-    "charged=true,cracked=false,facing=north,half=lower,open=true": {
-      "model": "heroesevolved:block/cryochamber_lower_open"
-    },
-    "charged=true,cracked=true,facing=north,half=lower,open=true": {
-      "model": "heroesevolved:block/cryochamber_lower_open_cracked"
-    },
-    "charged=false,cracked=false,facing=north,half=lower,open=true": {
-      "model": "heroesevolved:block/cryochamber_lower_open"
-    },
-    "charged=false,cracked=true,facing=north,half=lower,open=true": {
-      "model": "heroesevolved:block/cryochamber_lower_open_cracked"
-    },
-    "charged=true,cracked=false,facing=north,half=lower,open=false": {
-      "model": "heroesevolved:block/cryochamber_lower_closed"
-    },
-    "charged=true,cracked=true,facing=north,half=lower,open=false": {
-      "model": "heroesevolved:block/cryochamber_lower_closed_cracked"
-    },
-    "charged=false,cracked=false,facing=north,half=lower,open=false": {
-      "model": "heroesevolved:block/cryochamber_lower_closed"
-    },
-    "charged=false,cracked=true,facing=north,half=lower,open=false": {
-      "model": "heroesevolved:block/cryochamber_lower_closed_cracked"
-    },
-    "charged=true,cracked=false,facing=north,half=upper,open=true": {
-      "model": "heroesevolved:block/cryochamber_upper_open"
-    },
-    "charged=true,cracked=true,facing=north,half=upper,open=true": {
-      "model": "heroesevolved:block/cryochamber_upper_open_cracked"
-    },
-    "charged=false,cracked=false,facing=north,half=upper,open=true": {
-      "model": "heroesevolved:block/cryochamber_upper_open"
-    },
-    "charged=false,cracked=true,facing=north,half=upper,open=true": {
-      "model": "heroesevolved:block/cryochamber_upper_open_cracked"
-    },
-    "charged=true,cracked=false,facing=north,half=upper,open=false": {
-      "model": "heroesevolved:block/cryochamber_upper_closed"
-    },
-    "charged=true,cracked=true,facing=north,half=upper,open=false": {
-      "model": "heroesevolved:block/cryochamber_upper_closed_cracked"
-    },
-    "charged=false,cracked=false,facing=north,half=upper,open=false": {
-      "model": "heroesevolved:block/cryochamber_upper_closed"
-    },
-    "charged=false,cracked=true,facing=north,half=upper,open=false": {
-      "model": "heroesevolved:block/cryochamber_upper_closed_cracked"
-    },
-    "charged=true,cracked=false,facing=east,half=lower,open=true": {
-      "model": "heroesevolved:block/cryochamber_lower_open",
-      "y": 90
-    },
-    "charged=true,cracked=true,facing=east,half=lower,open=true": {
-      "model": "heroesevolved:block/cryochamber_lower_open_cracked",
-      "y": 90
-    },
-    "charged=false,cracked=false,facing=east,half=lower,open=true": {
-      "model": "heroesevolved:block/cryochamber_lower_open",
-      "y": 90
-    },
-    "charged=false,cracked=true,facing=east,half=lower,open=true": {
-      "model": "heroesevolved:block/cryochamber_lower_open_cracked",
-      "y": 90
-    },
-    "charged=true,cracked=false,facing=east,half=lower,open=false": {
-      "model": "heroesevolved:block/cryochamber_lower_closed",
-      "y": 90
-    },
-    "charged=true,cracked=true,facing=east,half=lower,open=false": {
-      "model": "heroesevolved:block/cryochamber_lower_closed_cracked",
-      "y": 90
-    },
-    "charged=false,cracked=false,facing=east,half=lower,open=false": {
-      "model": "heroesevolved:block/cryochamber_lower_closed",
-      "y": 90
-    },
-    "charged=false,cracked=true,facing=east,half=lower,open=false": {
-      "model": "heroesevolved:block/cryochamber_lower_closed_cracked",
-      "y": 90
-    },
-    "charged=true,cracked=false,facing=east,half=upper,open=true": {
-      "model": "heroesevolved:block/cryochamber_upper_open",
-      "y": 90
-    },
-    "charged=true,cracked=true,facing=east,half=upper,open=true": {
-      "model": "heroesevolved:block/cryochamber_upper_open_cracked",
-      "y": 90
-    },
-    "charged=false,cracked=false,facing=east,half=upper,open=true": {
-      "model": "heroesevolved:block/cryochamber_upper_open",
-      "y": 90
-    },
-    "charged=false,cracked=true,facing=east,half=upper,open=true": {
-      "model": "heroesevolved:block/cryochamber_upper_open_cracked",
-      "y": 90
-    },
-    "charged=true,cracked=false,facing=east,half=upper,open=false": {
-      "model": "heroesevolved:block/cryochamber_upper_closed",
-      "y": 90
-    },
-    "charged=true,cracked=true,facing=east,half=upper,open=false": {
-      "model": "heroesevolved:block/cryochamber_upper_closed_cracked",
-      "y": 90
-    },
-    "charged=false,cracked=false,facing=east,half=upper,open=false": {
-      "model": "heroesevolved:block/cryochamber_upper_closed",
-      "y": 90
-    },
-    "charged=false,cracked=true,facing=east,half=upper,open=false": {
-      "model": "heroesevolved:block/cryochamber_upper_closed_cracked",
-      "y": 90
-    },
-    "charged=true,cracked=false,facing=south,half=lower,open=true": {
-      "model": "heroesevolved:block/cryochamber_lower_open",
-      "y": 180
-    },
-    "charged=true,cracked=true,facing=south,half=lower,open=true": {
-      "model": "heroesevolved:block/cryochamber_lower_open_cracked",
-      "y": 180
-    },
-    "charged=false,cracked=false,facing=south,half=lower,open=true": {
-      "model": "heroesevolved:block/cryochamber_lower_open",
-      "y": 180
-    },
-    "charged=false,cracked=true,facing=south,half=lower,open=true": {
-      "model": "heroesevolved:block/cryochamber_lower_open_cracked",
-      "y": 180
-    },
-    "charged=true,cracked=false,facing=south,half=lower,open=false": {
-      "model": "heroesevolved:block/cryochamber_lower_closed",
-      "y": 180
-    },
-    "charged=true,cracked=true,facing=south,half=lower,open=false": {
-      "model": "heroesevolved:block/cryochamber_lower_closed_cracked",
-      "y": 180
-    },
-    "charged=false,cracked=false,facing=south,half=lower,open=false": {
-      "model": "heroesevolved:block/cryochamber_lower_closed",
-      "y": 180
-    },
-    "charged=false,cracked=true,facing=south,half=lower,open=false": {
-      "model": "heroesevolved:block/cryochamber_lower_closed_cracked",
-      "y": 180
-    },
-    "charged=true,cracked=false,facing=south,half=upper,open=true": {
-      "model": "heroesevolved:block/cryochamber_upper_open",
-      "y": 180
-    },
-    "charged=true,cracked=true,facing=south,half=upper,open=true": {
-      "model": "heroesevolved:block/cryochamber_upper_open_cracked",
-      "y": 180
-    },
-    "charged=false,cracked=false,facing=south,half=upper,open=true": {
-      "model": "heroesevolved:block/cryochamber_upper_open",
-      "y": 180
-    },
-    "charged=false,cracked=true,facing=south,half=upper,open=true": {
-      "model": "heroesevolved:block/cryochamber_upper_open_cracked",
-      "y": 180
-    },
-    "charged=true,cracked=false,facing=south,half=upper,open=false": {
-      "model": "heroesevolved:block/cryochamber_upper_closed",
-      "y": 180
-    },
-    "charged=true,cracked=true,facing=south,half=upper,open=false": {
-      "model": "heroesevolved:block/cryochamber_upper_closed_cracked",
-      "y": 180
-    },
-    "charged=false,cracked=false,facing=south,half=upper,open=false": {
-      "model": "heroesevolved:block/cryochamber_upper_closed",
-      "y": 180
-    },
-    "charged=false,cracked=true,facing=south,half=upper,open=false": {
-      "model": "heroesevolved:block/cryochamber_upper_closed_cracked",
-      "y": 180
-    },
-    "charged=true,cracked=false,facing=west,half=lower,open=true": {
-      "model": "heroesevolved:block/cryochamber_lower_open",
-      "y": 270
-    },
-    "charged=true,cracked=true,facing=west,half=lower,open=true": {
-      "model": "heroesevolved:block/cryochamber_lower_open_cracked",
-      "y": 270
-    },
-    "charged=false,cracked=false,facing=west,half=lower,open=true": {
-      "model": "heroesevolved:block/cryochamber_lower_open",
-      "y": 270
-    },
-    "charged=false,cracked=true,facing=west,half=lower,open=true": {
-      "model": "heroesevolved:block/cryochamber_lower_open_cracked",
-      "y": 270
-    },
-    "charged=true,cracked=false,facing=west,half=lower,open=false": {
-      "model": "heroesevolved:block/cryochamber_lower_closed",
-      "y": 270
-    },
-    "charged=true,cracked=true,facing=west,half=lower,open=false": {
-      "model": "heroesevolved:block/cryochamber_lower_closed_cracked",
-      "y": 270
-    },
-    "charged=false,cracked=false,facing=west,half=lower,open=false": {
-      "model": "heroesevolved:block/cryochamber_lower_closed",
-      "y": 270
-    },
-    "charged=false,cracked=true,facing=west,half=lower,open=false": {
-      "model": "heroesevolved:block/cryochamber_lower_closed_cracked",
-      "y": 270
-    },
-    "charged=true,cracked=false,facing=west,half=upper,open=true": {
-      "model": "heroesevolved:block/cryochamber_upper_open",
-      "y": 270
-    },
-    "charged=true,cracked=true,facing=west,half=upper,open=true": {
-      "model": "heroesevolved:block/cryochamber_upper_open_cracked",
-      "y": 270
-    },
-    "charged=false,cracked=false,facing=west,half=upper,open=true": {
-      "model": "heroesevolved:block/cryochamber_upper_open",
-      "y": 270
-    },
-    "charged=false,cracked=true,facing=west,half=upper,open=true": {
-      "model": "heroesevolved:block/cryochamber_upper_open_cracked",
-      "y": 270
-    },
-    "charged=true,cracked=false,facing=west,half=upper,open=false": {
-      "model": "heroesevolved:block/cryochamber_upper_closed",
-      "y": 270
-    },
-    "charged=true,cracked=true,facing=west,half=upper,open=false": {
-      "model": "heroesevolved:block/cryochamber_upper_closed_cracked",
-      "y": 270
-    },
-    "charged=false,cracked=false,facing=west,half=upper,open=false": {
-      "model": "heroesevolved:block/cryochamber_upper_closed",
-      "y": 270
-    },
-    "charged=false,cracked=true,facing=west,half=upper,open=false": {
-      "model": "heroesevolved:block/cryochamber_upper_closed_cracked",
-      "y": 270
-    }
+    "condition=sound,cracked=false,facing=north,half=lower,open=true": { "model": "heroesevolved:block/cryochamber_lower_open" },
+    "condition=sound,cracked=true,facing=north,half=lower,open=true": { "model": "heroesevolved:block/cryochamber_lower_open_cracked" },
+    "condition=frosted,facing=north,half=lower,open=true": { "model": "heroesevolved:block/cryochamber_lower_open_frosted" },
+    "condition=sound,cracked=false,facing=north,half=lower,open=false": { "model": "heroesevolved:block/cryochamber_lower_closed" },
+    "condition=sound,cracked=true,facing=north,half=lower,open=false": { "model": "heroesevolved:block/cryochamber_lower_closed_cracked" },
+    "condition=frosted,facing=north,half=lower,open=false": { "model": "heroesevolved:block/cryochamber_lower_closed_frosted" },
+    "condition=shattered,facing=north,half=lower": { "model": "heroesevolved:block/cryochamber_lower_shattered" },
+    "condition=sprung,facing=north,half=lower": { "model": "heroesevolved:block/cryochamber_lower_sprung" },
+    "condition=sound,cracked=false,facing=north,half=upper,open=true": { "model": "heroesevolved:block/cryochamber_upper_open" },
+    "condition=sound,cracked=true,facing=north,half=upper,open=true": { "model": "heroesevolved:block/cryochamber_upper_open_cracked" },
+    "condition=frosted,facing=north,half=upper,open=true": { "model": "heroesevolved:block/cryochamber_upper_open_frosted" },
+    "condition=sound,cracked=false,facing=north,half=upper,open=false": { "model": "heroesevolved:block/cryochamber_upper_closed" },
+    "condition=sound,cracked=true,facing=north,half=upper,open=false": { "model": "heroesevolved:block/cryochamber_upper_closed_cracked" },
+    "condition=frosted,facing=north,half=upper,open=false": { "model": "heroesevolved:block/cryochamber_upper_closed_frosted" },
+    "condition=shattered,facing=north,half=upper": { "model": "heroesevolved:block/cryochamber_upper_shattered" },
+    "condition=sprung,facing=north,half=upper": { "model": "heroesevolved:block/cryochamber_upper_sprung" },
+    "condition=sound,cracked=false,facing=east,half=lower,open=true": { "model": "heroesevolved:block/cryochamber_lower_open", "y": 90 },
+    "condition=sound,cracked=true,facing=east,half=lower,open=true": { "model": "heroesevolved:block/cryochamber_lower_open_cracked", "y": 90 },
+    "condition=frosted,facing=east,half=lower,open=true": { "model": "heroesevolved:block/cryochamber_lower_open_frosted", "y": 90 },
+    "condition=sound,cracked=false,facing=east,half=lower,open=false": { "model": "heroesevolved:block/cryochamber_lower_closed", "y": 90 },
+    "condition=sound,cracked=true,facing=east,half=lower,open=false": { "model": "heroesevolved:block/cryochamber_lower_closed_cracked", "y": 90 },
+    "condition=frosted,facing=east,half=lower,open=false": { "model": "heroesevolved:block/cryochamber_lower_closed_frosted", "y": 90 },
+    "condition=shattered,facing=east,half=lower": { "model": "heroesevolved:block/cryochamber_lower_shattered", "y": 90 },
+    "condition=sprung,facing=east,half=lower": { "model": "heroesevolved:block/cryochamber_lower_sprung", "y": 90 },
+    "condition=sound,cracked=false,facing=east,half=upper,open=true": { "model": "heroesevolved:block/cryochamber_upper_open", "y": 90 },
+    "condition=sound,cracked=true,facing=east,half=upper,open=true": { "model": "heroesevolved:block/cryochamber_upper_open_cracked", "y": 90 },
+    "condition=frosted,facing=east,half=upper,open=true": { "model": "heroesevolved:block/cryochamber_upper_open_frosted", "y": 90 },
+    "condition=sound,cracked=false,facing=east,half=upper,open=false": { "model": "heroesevolved:block/cryochamber_upper_closed", "y": 90 },
+    "condition=sound,cracked=true,facing=east,half=upper,open=false": { "model": "heroesevolved:block/cryochamber_upper_closed_cracked", "y": 90 },
+    "condition=frosted,facing=east,half=upper,open=false": { "model": "heroesevolved:block/cryochamber_upper_closed_frosted", "y": 90 },
+    "condition=shattered,facing=east,half=upper": { "model": "heroesevolved:block/cryochamber_upper_shattered", "y": 90 },
+    "condition=sprung,facing=east,half=upper": { "model": "heroesevolved:block/cryochamber_upper_sprung", "y": 90 },
+    "condition=sound,cracked=false,facing=south,half=lower,open=true": { "model": "heroesevolved:block/cryochamber_lower_open", "y": 180 },
+    "condition=sound,cracked=true,facing=south,half=lower,open=true": { "model": "heroesevolved:block/cryochamber_lower_open_cracked", "y": 180 },
+    "condition=frosted,facing=south,half=lower,open=true": { "model": "heroesevolved:block/cryochamber_lower_open_frosted", "y": 180 },
+    "condition=sound,cracked=false,facing=south,half=lower,open=false": { "model": "heroesevolved:block/cryochamber_lower_closed", "y": 180 },
+    "condition=sound,cracked=true,facing=south,half=lower,open=false": { "model": "heroesevolved:block/cryochamber_lower_closed_cracked", "y": 180 },
+    "condition=frosted,facing=south,half=lower,open=false": { "model": "heroesevolved:block/cryochamber_lower_closed_frosted", "y": 180 },
+    "condition=shattered,facing=south,half=lower": { "model": "heroesevolved:block/cryochamber_lower_shattered", "y": 180 },
+    "condition=sprung,facing=south,half=lower": { "model": "heroesevolved:block/cryochamber_lower_sprung", "y": 180 },
+    "condition=sound,cracked=false,facing=south,half=upper,open=true": { "model": "heroesevolved:block/cryochamber_upper_open", "y": 180 },
+    "condition=sound,cracked=true,facing=south,half=upper,open=true": { "model": "heroesevolved:block/cryochamber_upper_open_cracked", "y": 180 },
+    "condition=frosted,facing=south,half=upper,open=true": { "model": "heroesevolved:block/cryochamber_upper_open_frosted", "y": 180 },
+    "condition=sound,cracked=false,facing=south,half=upper,open=false": { "model": "heroesevolved:block/cryochamber_upper_closed", "y": 180 },
+    "condition=sound,cracked=true,facing=south,half=upper,open=false": { "model": "heroesevolved:block/cryochamber_upper_closed_cracked", "y": 180 },
+    "condition=frosted,facing=south,half=upper,open=false": { "model": "heroesevolved:block/cryochamber_upper_closed_frosted", "y": 180 },
+    "condition=shattered,facing=south,half=upper": { "model": "heroesevolved:block/cryochamber_upper_shattered", "y": 180 },
+    "condition=sprung,facing=south,half=upper": { "model": "heroesevolved:block/cryochamber_upper_sprung", "y": 180 },
+    "condition=sound,cracked=false,facing=west,half=lower,open=true": { "model": "heroesevolved:block/cryochamber_lower_open", "y": 270 },
+    "condition=sound,cracked=true,facing=west,half=lower,open=true": { "model": "heroesevolved:block/cryochamber_lower_open_cracked", "y": 270 },
+    "condition=frosted,facing=west,half=lower,open=true": { "model": "heroesevolved:block/cryochamber_lower_open_frosted", "y": 270 },
+    "condition=sound,cracked=false,facing=west,half=lower,open=false": { "model": "heroesevolved:block/cryochamber_lower_closed", "y": 270 },
+    "condition=sound,cracked=true,facing=west,half=lower,open=false": { "model": "heroesevolved:block/cryochamber_lower_closed_cracked", "y": 270 },
+    "condition=frosted,facing=west,half=lower,open=false": { "model": "heroesevolved:block/cryochamber_lower_closed_frosted", "y": 270 },
+    "condition=shattered,facing=west,half=lower": { "model": "heroesevolved:block/cryochamber_lower_shattered", "y": 270 },
+    "condition=sprung,facing=west,half=lower": { "model": "heroesevolved:block/cryochamber_lower_sprung", "y": 270 },
+    "condition=sound,cracked=false,facing=west,half=upper,open=true": { "model": "heroesevolved:block/cryochamber_upper_open", "y": 270 },
+    "condition=sound,cracked=true,facing=west,half=upper,open=true": { "model": "heroesevolved:block/cryochamber_upper_open_cracked", "y": 270 },
+    "condition=frosted,facing=west,half=upper,open=true": { "model": "heroesevolved:block/cryochamber_upper_open_frosted", "y": 270 },
+    "condition=sound,cracked=false,facing=west,half=upper,open=false": { "model": "heroesevolved:block/cryochamber_upper_closed", "y": 270 },
+    "condition=sound,cracked=true,facing=west,half=upper,open=false": { "model": "heroesevolved:block/cryochamber_upper_closed_cracked", "y": 270 },
+    "condition=frosted,facing=west,half=upper,open=false": { "model": "heroesevolved:block/cryochamber_upper_closed_frosted", "y": 270 },
+    "condition=shattered,facing=west,half=upper": { "model": "heroesevolved:block/cryochamber_upper_shattered", "y": 270 },
+    "condition=sprung,facing=west,half=upper": { "model": "heroesevolved:block/cryochamber_upper_sprung", "y": 270 }
   }
 }

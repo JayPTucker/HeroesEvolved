@@ -268,7 +268,8 @@ public final class VillagerMeltdownGameTests {
         p.setXRot((float) -Math.toDegrees(Math.atan2(delta.y, delta.horizontalDistance())));
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 200, batch = "village.meltdown.safe")
+    // Chunks load in real time while test ticks run flat out, so allow far more ticks than the carry needs (under the 1000-tick fuse).
+    @GameTest(template = "rewind_empty", timeoutTicks = 800, batch = "village.meltdown.safe")
     public static void villagersCarriedToTheSafePointCountAndStay(GameTestHelper helper) {
         Villager him = villager(helper, 500, 0), neighbour = villager(helper, 500, 3);
         VillagerMeltdown.Meltdown m = VillagerMeltdown.start(him, 1000);

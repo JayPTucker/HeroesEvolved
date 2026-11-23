@@ -329,6 +329,11 @@ public final class Stones {
     }
 
     private static void grab(Rock glove, LivingEntity t) {
+        // A boss takes the blow, and the glove breaks on it.
+        if (DensityService.immovable(t)) {
+            shatter(glove, t.getBoundingBox().getCenter(), glove.vel.normalize().reverse(), false);
+            return;
+        }
         ServerPlayer p = glove.owner;
         Vec3 along = glove.vel.multiply(1, 0, 1).normalize();
         // A wall within four blocks behind them: pinned to it. Otherwise dragged back to the bender.
