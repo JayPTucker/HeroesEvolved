@@ -47,6 +47,8 @@ for the Company's guards (`weapons/`, art in `client/effects/setpiece/WeaponArt`
   TaCZ discards a round after `life - 1` travel ticks: at 80 blocks/second the gun needs a 0.25-second lifetime for
   sixteen blocks, not 0.20. `WeaponGameTests.theFreezeBlastCannotPassThroughCover` checks real hits at fourteen
   blocks and no damage/Frost at eighteen, above the arena lid so its walls cannot hide a range error.
+  Lifetime alone varies with entity tick order: `TaczLink.coldInRange` also checks actual body and terrain contacts
+  against the round's original position. Freeze assertions start from the observed freeze, not a fixed test tick.
 
 ## Reusable patterns from the Ability Dampener
 

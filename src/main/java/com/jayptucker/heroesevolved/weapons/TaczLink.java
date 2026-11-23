@@ -82,6 +82,10 @@ final class TaczLink {
         }
         var from = bullet.position();
         var target = event.getHurtEntity().getBoundingBox().clip(from, from.add(bullet.getDeltaMovement()));
+        if (!coldInRange(bullet, target.orElseGet(() -> event.getHurtEntity().getBoundingBox().getCenter()))) {
+            event.setCanceled(true);
+            return;
+        }
         // A speedster's Wind Arms turn the round back before it lands.
         if (target.isPresent() && com.jayptucker.heroesevolved.speed.SpeedWindArms.catchShot(level, bullet, from, target.get())) {
             event.setCanceled(true);
@@ -115,6 +119,7 @@ final class TaczLink {
         if (broken || !(event.getLevel() instanceof ServerLevel level)) return;
         try {
             var ammo = event.getAmmo();
+            if (!coldInRange(ammo, event.getHitResult().getLocation())) return;
             PowerWeapons.hitBlock(level, event.getHitResult(), ammo.getOwner(), ammo.getGunId());
         } catch (Throwable t) {
             fail("block", t);
@@ -271,6 +276,21 @@ final class TaczLink {
                     && PowerWeapons.COLD_GUN.equals(bullet.getGunId());
         } catch (Throwable t) {
             fail("cold bullet", t);
+            return false;
+        }
+    }
+
+    /** TaCZ's lifetime is tick based; enforce the cold stream's distance at its actual contact too. */
+    private static boolean coldInRange(Entity round, Vec3 at) {
+        if (!coldBullet(round)) return true;
+        try {
+            if (bulletOrigin == null) {
+                bulletOrigin = field(com.tacz.guns.entity.EntityKineticBullet.class, "startPos");
+            }
+            Vec3 origin = (Vec3) bulletOrigin.get(round);
+            return origin != null && origin.distanceToSqr(at) <= PowerWeapons.COLD_RANGE * PowerWeapons.COLD_RANGE;
+        } catch (Throwable t) {
+            fail("cold range", t);
             return false;
         }
     }

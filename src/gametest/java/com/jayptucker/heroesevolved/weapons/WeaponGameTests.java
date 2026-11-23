@@ -227,7 +227,10 @@ public final class WeaponGameTests {
         int[] shots = {0}, frozenAt = {-1}, roundsAtStop = {-1};
         h.onEachTick(() -> {
             if (stand.tickCount <= 12 || stand.tickCount % 2 != 0) return;
-            if (CryoService.isFrozen(pig) && frozenAt[0] < 0) frozenAt[0] = stand.tickCount;
+            if (CryoService.isFrozen(pig) && frozenAt[0] < 0) {
+                frozenAt[0] = stand.tickCount;
+                h.runAfterDelay(8, () -> h.assertTrue(CryoService.isFrozen(pig), "Continued cold does not shatter its own shell"));
+            }
             if (frozenAt[0] < 0 || stand.tickCount < frozenAt[0] + 12) {
                 if (PowerWeapons.fire(stand, pig.getBoundingBox().getCenter()).equals("SUCCESS")) shots[0]++;
             } else if (roundsAtStop[0] < 0) roundsAtStop[0] = PowerWeapons.rounds(stand.getMainHandItem());
@@ -248,8 +251,6 @@ public final class WeaponGameTests {
             h.assertTrue(PowerWeapons.fire(stand, pig.getBoundingBox().getCenter()).equals("NO_AMMO"), "An empty cell cannot fire");
             CryoService.releaseEntity(pig); pig.discard(); stand.discard(); h.succeed();
         });
-        // Check while the beam is still landing on the prepared shell, rather than only its final state.
-        h.runAfterDelay(38, () -> h.assertTrue(CryoService.isFrozen(pig), "Continued cold does not shatter its own shell"));
     }
 
     @GameTest(template = "rewind_empty", batch = "weapons.freeze_cover", timeoutTicks = 180)
