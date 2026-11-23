@@ -89,6 +89,9 @@ public final class OverexertionService {
             player,
             new OverexertionEffectPayload(nauseaDurationTicks)
         );
+        com.jayptucker.heroesevolved.network.SetPiecePayload.sendSeeded(player.serverLevel(),
+                com.jayptucker.heroesevolved.styles.Piece.OVEREXERTION, player.position(), player.getEyePosition(),
+                1, player, 0, nauseaDurationTicks);
 
         // Generic damage has no attacker, because the player caused it to themselves.
         player.hurt(player.damageSources().generic(), damage);

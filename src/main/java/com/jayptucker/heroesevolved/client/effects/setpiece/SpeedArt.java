@@ -214,6 +214,7 @@ public final class SpeedArt {
         int seed = v.entity * 17;
         // A speedster winds lightning through the funnel. A flyer winds strips of condensation.
         boolean sky = v.style == com.jayptucker.heroesevolved.network.SpeedCyclonePayload.FLIGHT;
+        if (sky) f *= smooth(0, com.jayptucker.heroesevolved.flight.FlightService.TEMPEST_WINDUP_TICKS, built);
         // A hydrokinetic's Maelstrom is a waterspout: a funnel of spinning water and spray over its whirlpool.
         boolean water = v.style == com.jayptucker.heroesevolved.network.SpeedCyclonePayload.HYDRO;
         float[] strand = sky ? TEMPEST_WIND : water ? SPOUT_SPRAY : storm ? SUPERCELL_WIND : GOLD;
@@ -282,7 +283,7 @@ public final class SpeedArt {
             }
             if (!storm) c.glow(o.add(0, height * 0.5, 0), height * 0.35F, strand, 0.05F * f);
         }
-        if (c.solid() && !water) {
+        if (c.solid() && !water && !sky) {
             int pieces = storm ? 60 : 34;
             for (int d = 0; d < pieces; d++) {
                 float u = (hash(seed, d + 100) + built * 0.004F * (1 + hash(seed, d + 130))) % 1;

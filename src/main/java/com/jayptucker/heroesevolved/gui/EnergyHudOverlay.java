@@ -217,15 +217,19 @@ public final class EnergyHudOverlay {
     private static void renderOverexertionBorder(GuiGraphics guiGraphics) {
         float intensity = ClientOverexertionState.getIntensity();
         if (intensity <= 0.0F) return;
-        int thickness = 8;
-        int alpha = (int) (150 * intensity);
-        int color = (alpha << 24) | 0x8A000D;
         int width = guiGraphics.guiWidth();
         int height = guiGraphics.guiHeight();
-        // Four translucent crimson strips create a non-intrusive screen edge.
-        guiGraphics.fill(0, 0, width, thickness, color);
-        guiGraphics.fill(0, height - thickness, width, height, color);
-        guiGraphics.fill(0, 0, thickness, height, color);
-        guiGraphics.fill(width - thickness, 0, width, height, color);
+        float time = Minecraft.getInstance().level.getGameTime();
+        float pulse = .78F + .22F * (float) Math.pow(Math.max(0, Math.sin(time * .19)), 4);
+        int depth = Math.max(20, Math.min(width, height) / 9);
+        for (int i = 0; i < depth; i++) {
+            float falloff = 1 - i / (float) depth;
+            int alpha = (int) (58 * intensity * pulse * falloff * falloff);
+            int color = alpha << 24 | 0x611525;
+            guiGraphics.fill(i, i, width - i, i + 1, color);
+            guiGraphics.fill(i, height - i - 1, width - i, height - i, color);
+            guiGraphics.fill(i, i + 1, i + 1, height - i - 1, color);
+            guiGraphics.fill(width - i - 1, i + 1, width - i, height - i - 1, color);
+        }
     }
 }

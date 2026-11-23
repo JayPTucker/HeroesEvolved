@@ -72,6 +72,7 @@ public final class SylarEntity extends PathfinderMob implements Enemy, com.jaypt
     private static final EntityDataAccessor<Integer> OPEN = SynchedEntityData.defineId(SylarEntity.class, EntityDataSerializers.INT);
     /** Synced flags: fighting, winding a move up, reeling, spent, dying, downed, hovering. */
     public static final int FIGHTING = 1, CASTING = 2, STAGGERED = 4, SPENT = 8, DYING = 16, DOWNED = 32, HOVERING = 64, FINISHABLE = 128;
+    private static final int CATCHING = 256;
 
     /** How he holds himself: drawn by {@code SylarRenderer} (arms) and readable by scenes. */
     public enum Pose { NONE, ONE_HAND, TWO_HANDS, RAISED, CROUCH, STAGGER, HOLD, KNEEL }
@@ -204,7 +205,11 @@ public final class SylarEntity extends PathfinderMob implements Enemy, com.jaypt
     public int flags() { return entityData.get(FLAGS); }
     public boolean is(int flag) { return (flags() & flag) != 0; }
     public boolean fighting() { return is(FIGHTING); }
-    public Pose castPose() { return Pose.values()[Math.clamp(entityData.get(POSE), 0, Pose.values().length - 1)]; }
+    public Pose castPose() {
+        Pose pose = Pose.values()[Math.clamp(entityData.get(POSE), 0, Pose.values().length - 1)];
+        return pose == Pose.NONE && is(CATCHING) ? Pose.ONE_HAND : pose;
+    }
+    void catching(boolean active) { flag(CATCHING, active); }
     /** For scenes that move him by hand: how he holds himself, so a windup reads. */
     public void scenePose(Pose pose) { entityData.set(POSE, pose.ordinal()); }
     public String casting() { return casting == null ? "" : casting.id(); }

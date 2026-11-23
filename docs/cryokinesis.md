@@ -86,14 +86,15 @@ These are the default keys; optional learned skills can replace them as usual.
 | --- | --- | --- | --- |
 | G | 1 | **Ice Blast** | Hold to aim a two-handed, 12-block stream of ice. It uses stamina while held and lasts up to eight seconds per cast. |
 | H | 2 | **Glacial Sculpt** | Aim at a clear surface to grow a faceted frost wall. **Shift + H** makes a three-block-wide staircase you can walk up. Aiming at an owned construct reshapes it for eight stamina, with a two-second settling time, even while the new-wall cast is recovering. |
-| Z | 3 | **Glacier Ride** | Toggle skating on a growing ice ribbon. Look and movement keys steer. Hold **Space** to climb or **Shift** to descend at your current speed. **S** brakes and Sprint accelerates. Press Z again to step off safely. |
+| Z | 3 | **Glacier Ride** | Hold to skate on a growing ice ribbon; release to step off safely. Look and movement keys steer. Hold **Space** to climb or **Shift** to descend at your current speed. **S** brakes and Sprint accelerates. |
 | X | 4 | **Crystal Prison** | Concentrate cold around a target within twelve blocks. An unprepared cast adds Frost; prepared Frost forms a prison. Press again to shatter that shell, with a short hostile burst around it. |
 | V | 5 | **Whiteout** | Aim a growing winter field. A one-second wind-up precedes Frost, snow and rising ice spires. **Shift + V** deliberately collapses the prepared ice and frozen enemies after the wind-up. |
 
 Glacier Ride begins on a supported surface and crosses limited gaps. The ribbon forms
 half-block steps ahead of the skater on climbs and descents. It follows their momentum through turns and can widen into
 a route for companions. Solid obstructions, exhausted stamina, loss of the power and invalid
-terrain end the ride safely. Ride controls and speed are displayed on screen.
+terrain end the ride safely. There is no fixed four-second cutoff: a paid hold continues until you release it.
+Ride controls and speed are displayed on screen. Frozen creatures keep a still pose, including their legs.
 
 A combat sequence is **Ice Blast → Glacial Sculpt → Glacier Ride → Crystal Prison → shatter**.
 Whiteout prepares a larger battlefield: cold links the ice, the field grows, and the final

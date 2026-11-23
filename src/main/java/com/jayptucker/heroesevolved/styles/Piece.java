@@ -294,7 +294,8 @@ public enum Piece {
     OVERLOAD_EMBER(130), OVERLOAD_FIRESTORM(40), OVERLOAD_DEEP_FREEZE(40),
     // Starfall (meteor/), drawn by MeteorArt: a meteor landing (origin where it landed; scale its blast) and one cracked
     // apart in the sky by a sonic (origin where it broke; scale its rock's radius).
-    METEOR_IMPACT(44), METEOR_SHATTER(30);
+    METEOR_IMPACT(44), METEOR_SHATTER(30),
+    OVEREXERTION(6000);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

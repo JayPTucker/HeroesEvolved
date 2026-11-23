@@ -63,7 +63,7 @@ public final class SpeedKit {
      * ticks and it is anchored: let go and it stands without you, until {@code TORNADO_STAND} ticks after it rose.
      * The owned vortex pays upkeep every tick, including after anchoring. Let go before anchoring and it comes down.
      */
-    public static final int TORNADO_HOLD = 30, TORNADO_ANCHOR = 60, TORNADO_STAND = 600, TORNADO_ENERGY = 4;
+    public static final int TORNADO_HOLD = 190, TORNADO_ANCHOR = 60, TORNADO_STAND = 600, TORNADO_ENERGY = 4;
     /** How far the tornado draws things in, in blocks. */
     public static final double TORNADO_PULL = 24;
     /**
@@ -83,6 +83,7 @@ public final class SpeedKit {
     private record Hits(ServerPlayer player, LivingEntity target, float damage, int left, long next) {}
     private static final class Cyclone {
         final ServerPlayer player; final ServerLevel level; final Vec3 center; long start; final int tier;
+        final float phase;
         final Set<UUID> caught = new HashSet<>();
         /** The key is still down; the tick its tornado began to rise, or -1; the runner has left it standing alone. */
         boolean held, free; long tornado = -1;
@@ -90,6 +91,7 @@ public final class SpeedKit {
         int speed = 1, sentMode = -1; boolean reactor;
         Cyclone(ServerPlayer player, ServerLevel level, Vec3 center, long start, int tier) {
             this.player = player; this.level = level; this.center = center; this.start = start; this.tier = tier;
+            phase = (player.getYRot() + 90) * (float) Math.PI / 180;
         }
     }
 
@@ -382,12 +384,21 @@ public final class SpeedKit {
                 } else { c.reactor = false; rise(c, now); built = 0; }
             }
             // A ring lasts three seconds; held, a vacuum (or a ring a reactor keeps down) lasts as long as it is paid for.
-            boolean lingers = c.held && (vacuum(c) || c.reactor);
-            if (c.tornado < 0 && age >= (lingers ? VACUUM_TICKS : CYCLONE_TICKS)) { CYCLONES.remove(entry.getKey()); release(c, now); continue; }
+            boolean lingers = c.held;
+            int ringTicks = vacuum(c) || c.reactor ? VACUUM_TICKS : TORNADO_HOLD + 1;
+            if (c.tornado < 0 && age >= (lingers ? ringTicks : CYCLONE_TICKS)) { CYCLONES.remove(entry.getKey()); release(c, now); continue; }
             if (built >= TORNADO_STAND) { CYCLONES.remove(entry.getKey()); release(c, now); continue; }
             if (built == TORNADO_ANCHOR) anchor(c);
             if (!c.free) {
-                // You are the wind, running the ring: your body stays at its eye.
+                // The visible runner is also the body enemies can hit.
+                Vec3 next = CycloneGeometry.runner(c.center, CYCLONE_RADIUS, c.phase, age);
+                Vec3 swept = SpeedService.swept(p, next.subtract(p.position()));
+                if (swept.distanceToSqr(next) > .04) {
+                    CYCLONES.remove(entry.getKey()); release(c, now); continue;
+                }
+                p.teleportTo(c.level, next.x, next.y, next.z, p.getYRot(), p.getXRot());
+                p.setPos(next);
+                push(p, Vec3.ZERO);
                 p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 3, 6, false, false, false));
                 p.fallDistance = 0;
             }
@@ -420,7 +431,7 @@ public final class SpeedKit {
             living.fallDistance = 0;
             // Balanced to its stamina (tools/balance.py): 1.2 + 0.3 a tier every half second, about 12 a target at Level 6,
             // a little more at the top speeds.
-            if (age % 10 == 0) SpeedService.hit(p, living, (1.2F + c.tier * 0.3F) * (0.85F + 0.05F * c.speed) * (living instanceof ServerPlayer ? 0.6F : 1));
+            if (age % 10 == 0 && (!c.held || age >= TORNADO_HOLD - 30)) SpeedService.hit(p, living, (1.2F + c.tier * 0.3F) * (0.85F + 0.05F * c.speed) * (living instanceof ServerPlayer ? 0.6F : 1));
         }
     }
 

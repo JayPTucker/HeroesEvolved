@@ -15,11 +15,13 @@ public final class ShapeshiftingAbility implements Ability {
     // Unlock numbers are tiers (1 to 5: Power Level 1, 3, 6, 10 and 15), not Power Levels.
     private static final Map<AbilitySlot, AbilityAction> ACTIONS = Map.of(
             AbilitySlot.PRIMARY, SimpleAction.builder("shapeshift_morph", 1).cost(() -> 0, () -> 20)
+                    .recovery((c, ticks) -> ShapeshiftService.recovery(c.player(), ticks))
                     .followUp(c -> !c.modifierHeld() && ShapeshiftService.revertOnPress(c.player()))
                     .activate(c -> c.modifierHeld() ? ShapeshiftService.openWheel(c.player()) : ShapeshiftService.study(c.player()))
                     .build(),
             // Each form's own attack; it pays its own stamina and keeps a cooldown per move.
             AbilitySlot.SECONDARY, SimpleAction.builder("shapeshift_instinct", 2).cost(() -> 0, () -> 6)
+                    .recovery((c, ticks) -> com.jayptucker.heroesevolved.shapeshift.ShapeshiftInstinct.recovery(c.player(), ticks))
                     .activate(c -> com.jayptucker.heroesevolved.shapeshift.ShapeshiftInstinct.use(c.player()))
                     .build(),
             AbilitySlot.TERTIARY, SimpleAction.builder("shapeshift_decoy", 3).cost(() -> 16, () -> 200)

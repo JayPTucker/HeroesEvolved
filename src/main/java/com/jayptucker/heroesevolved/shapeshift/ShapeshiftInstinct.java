@@ -95,6 +95,14 @@ public final class ShapeshiftInstinct {
     private static final List<Later> LATER = new ArrayList<>();
 
     private ShapeshiftInstinct() {}
+    public static com.jayptucker.heroesevolved.ability.AbilityAction.Recovery recovery(ServerPlayer player, int ticks) {
+        long end = com.jayptucker.heroesevolved.cooldown.CooldownService.getExpirationGameTime(player,
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("heroesevolved", "shapeshift_instinct"));
+        InstinctMove move = move(player);
+        var moves = READY.get(player.getUUID());
+        long own = moves == null ? 0 : moves.getOrDefault(move, 0L);
+        return new com.jayptucker.heroesevolved.ability.AbilityAction.Recovery(Math.max(end, own), own > end ? move.cooldown : ticks);
+    }
 
     /** The move the Instinct key makes for this player right now. */
     public static InstinctMove move(ServerPlayer player) {

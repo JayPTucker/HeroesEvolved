@@ -161,3 +161,7 @@ Read [animation-guide.md](../animation-guide.md) first; these are the code patte
 | A sound heard far away | a fixed-range event matched in `sounds.json` | [powers/flight.md](powers/flight.md) |
 | A tremor | `CameraShakePayload.sendAround` | [powers/flight.md](powers/flight.md) |
 | A cue only the user hears | a sound packet to one player | [audio.md](audio.md) |
+
+- **An action with its own recovery exposes it through `AbilityAction.recovery`.** Generic cooldown snapshots
+  alone hid Morph's exposure lock and Instinct's per-form waits. `PlayerPowerSyncService` uses the returned end and
+  duration for keyed and wheel loadouts; keep the same question when another action owns an internal recovery.

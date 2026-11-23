@@ -82,3 +82,9 @@ player sees is in [docs/ability-dampener.md](../../docs/ability-dampener.md).
   fades, checks the block's `ACTIVE` state so it vanishes the moment power is cut, and draws its foot on the ground: the
   edge a player must cross is what matters. Rings that close inward read as "power swallowed"; every other power's rings
   open outward.
+
+- **Sylar catches the swept bullet before TaCZ's damage callback.** `story/sylar/SylarProjectiles` checks the full
+  next-tick segment, ordinary projectile impacts and `TaczLink`'s guarded damage hook, because a fast TaCZ round can
+  cross his catch volume in one tick. Hold the actual projectile for 12 ticks with `TemporalProjectilePayload`, then
+  return it with Sylar as owner. Dampening, staggering, transitions or death release it on its original course;
+  test the whole swept segment against cover before catching.

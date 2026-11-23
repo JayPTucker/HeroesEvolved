@@ -35,6 +35,34 @@ public final class ShapeDecoy extends PathfinderMob implements IEntityWithComple
     private @Nullable net.minecraft.world.phys.Vec3 walk;
     /** Whether its burst confuses everything near it (Hollow Crowd), not just whoever struck it. */
     private boolean wide;
+    private boolean speedster;
+    private net.minecraft.world.phys.Vec3 speedCenter;
+    private int lane;
+    public boolean speedster() { return speedster; }
+    /** The same targetable double, running as a speed mirage instead of standing as a shed shell. */
+    public void setupSpeed(Player player, int ticks, int lane) {
+        setup(ShapeshiftForm.of(player.getGameProfile()), player, ticks, null, false);
+        speedster = true; speedCenter = player.position(); this.lane = lane;
+    }
+
+    private void runMirage() {
+        double phase = lane * Math.PI * 2 / 3 + tickCount * .24;
+        var goal = speedCenter.add(Math.cos(phase) * (3 + lane), 0, Math.sin(phase) * (3 + lane));
+        var desired = goal.subtract(position()).multiply(1, 0, 1);
+        if (desired.lengthSqr() < .001) return;
+        desired = desired.normalize().scale(Math.min(1.1, desired.length()));
+        var next = com.jayptucker.heroesevolved.speed.SpeedService.swept(this, desired);
+        var step = next.subtract(position());
+        if (step.horizontalDistanceSqr() < .01) { lane = (lane + 1) % 3; return; }
+        walk = step;
+        step();
+        float yaw = (float) Math.toDegrees(Math.atan2(-step.x, step.z));
+        setYRot(yaw); setYBodyRot(yaw); setYHeadRot(yaw);
+        if (tickCount % 3 == 0) com.jayptucker.heroesevolved.effects.AbilityEffects.send(
+                (net.minecraft.server.level.ServerLevel) level(),
+                com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind.SPEED_TRAIL,
+                position().subtract(step), position(), .6);
+    }
     /** On the client: the body drawn for it, made on first draw (see {@code ShapeDecoyRenderer}). */
     public @Nullable Object standIn;
 
@@ -94,7 +122,7 @@ public final class ShapeDecoy extends PathfinderMob implements IEntityWithComple
             }
             return;
         }
-        if (walk != null) step();
+        if (speedster) runMirage(); else if (walk != null) step();
         if (--life <= 0 || owner == null) ShapeshiftTricks.burst(this, null);
     }
 
@@ -116,11 +144,13 @@ public final class ShapeDecoy extends PathfinderMob implements IEntityWithComple
     @Override public void writeSpawnData(RegistryFriendlyByteBuf buffer) {
         ByteBufCodecs.optional(ShapeshiftForm.STREAM_CODEC).encode(buffer, Optional.ofNullable(form));
         buffer.writeVarInt(life);
+        buffer.writeBoolean(speedster);
     }
 
     @Override public void readSpawnData(RegistryFriendlyByteBuf buffer) {
         form = ByteBufCodecs.optional(ShapeshiftForm.STREAM_CODEC).decode(buffer).orElse(null);
         life = buffer.readVarInt();
+        speedster = buffer.readBoolean();
         refreshDimensions();
     }
 }

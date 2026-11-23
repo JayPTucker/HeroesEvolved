@@ -169,7 +169,6 @@ public final class FlightService {
                 CYCLONE_ASCENT_TICKS, TEMPEST_WINDUP_TICKS, strength));
         com.jayptucker.heroesevolved.energy.StaminaDrain.start(player, "flight_cyclone",
                 com.jayptucker.heroesevolved.ability.PowerBalance.drain("flight_cyclone", 12), false, () -> cancelCyclone(player));
-        setPlayerVelocity(player, Vec3.ZERO);
         syncTempest(player, ACTIVE_CYCLONES.get(player.getUUID()), false);
         player.serverLevel().playSound(null, player.blockPosition(),
                 SoundEvents.BREEZE_CHARGE, SoundSource.PLAYERS, 1.0F, 0.75F);
@@ -440,7 +439,7 @@ public final class FlightService {
         if (cyclone.age % 2 == 0) syncTempest(player, cyclone, false);
         if (cyclone.windupTicks > 0) {
             // The funnel touches down and starts to rise while the flyer gathers the wind.
-            setPlayerVelocity(player, Vec3.ZERO);
+            setPlayerVelocity(player, player.getDeltaMovement().scale(.72));
             player.resetFallDistance();
             cyclone.windupTicks--;
             return true;
@@ -448,7 +447,7 @@ public final class FlightService {
         // Looking steers it across the ground; forward input and wheel speed never override its orbit.
         Vec3 candidate = cyclone.center.add(horizontalLookDirection(player).scale(0.16D));
         Vec3 landed = ground(player.serverLevel(), candidate, 3, 12);
-        if (landed != null) cyclone.center = landed;
+        if (landed != null) cyclone.center = cyclone.center.lerp(landed, .25);
         if (cyclone.ascentTicksRemaining > 0 || !cyclone.orbiting && Math.abs(cyclone.center.y + CYCLONE_ORBIT_HEIGHT - player.getY()) > 1.5) {
             double ascent = cyclone.center.y + CYCLONE_ORBIT_HEIGHT - player.getY();
             Vec3 approach = new Vec3(0, Math.clamp(ascent * .35, -3, 1.4), 0);
@@ -468,13 +467,16 @@ public final class FlightService {
                 cyclone.orbiting = true;
             }
             double speed = Math.min(orbitRadius * HeroesEvolvedConfig.COMMON.flightCycloneOrbitSpeed.get() * 3.0D, TEMPEST_ORBIT_SPEED);
+            double entry = Math.clamp(++cyclone.orbitTicks / 24D, 0, 1);
+            speed *= .15 + .85 * entry * entry * (3 - 2 * entry);
             double angle = cyclone.angleRadians, next = angle + speed / orbitRadius;
             Vec3 ideal = cyclone.center.add(Math.cos(angle) * orbitRadius, CYCLONE_ORBIT_HEIGHT, Math.sin(angle) * orbitRadius);
             Vec3 ahead = cyclone.center.add(Math.cos(next) * orbitRadius, CYCLONE_ORBIT_HEIGHT, Math.sin(next) * orbitRadius);
             Vec3 correction = ideal.subtract(player.position()).scale(0.3D);
             if (correction.length() > 1.2D) correction = correction.normalize().scale(1.2D);
             Vec3 orbit = ahead.subtract(ideal).add(correction);
-            setPlayerVelocity(player, SpeedService.swept(player, orbit).subtract(player.position()));
+            Vec3 smoothOrbit = player.getDeltaMovement().lerp(orbit, .28);
+            setPlayerVelocity(player, SpeedService.swept(player, smoothOrbit).subtract(player.position()));
             cyclone.angleRadians = next;
         }
         PlayerFlightData flightData = player.getData(ModDataAttachments.PLAYER_FLIGHT.get());
@@ -767,6 +769,7 @@ public final class FlightService {
         int age;
         /** The flyer has started circling (the ideal point round the funnel is now theirs to follow). */
         boolean orbiting;
+        int orbitTicks;
         final java.util.Set<UUID> caught = new java.util.HashSet<>();
         final double strength;
         CycloneState(Vec3 center, double angleRadians, int remainingTicks,

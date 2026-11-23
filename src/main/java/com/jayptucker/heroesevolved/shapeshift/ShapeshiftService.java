@@ -155,6 +155,13 @@ public final class ShapeshiftService {
     }
 
     public static boolean studying(ServerPlayer player) { return STUDIES.containsKey(player.getUUID()); }
+    public static com.jayptucker.heroesevolved.ability.AbilityAction.Recovery recovery(ServerPlayer player, int ticks) {
+        long end = com.jayptucker.heroesevolved.cooldown.CooldownService.getExpirationGameTime(player, id("shapeshift_morph"));
+        long lock = ShapeshiftSuspicion.lockedUntil(player);
+        long choice = LAST_CHOICE.getOrDefault(player.getUUID(), -1000L) + CHOICE_GAP;
+        if (lock > end) return new com.jayptucker.heroesevolved.ability.AbilityAction.Recovery(lock, ShapeshiftSuspicion.EXPOSED_LOCK);
+        return new com.jayptucker.heroesevolved.ability.AbilityAction.Recovery(Math.max(end, choice), Math.max(ticks, CHOICE_GAP));
+    }
 
     /** The shape worn before the current one (null: their own body, or none at all). */
     static @Nullable ShapeshiftForm previous(ServerPlayer player) {

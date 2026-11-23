@@ -105,6 +105,7 @@ public final class PlayerPowerSyncService {
                     com.jayptucker.heroesevolved.skills.SkillTreeService.cooldown(player, power,
                             com.jayptucker.heroesevolved.ability.PowerBalance.cooldown(id, action.cooldownTicks(preview))));
             int uses = com.jayptucker.heroesevolved.ability.service.AbilityRanks.uses(player, power, action);
+            var recovery = action.recovery(preview, cooldown);
             // An Echo shows the copied ability it would perform (its name and its icon).
             var shown = com.jayptucker.heroesevolved.mimicry.MimicryService.shown(player, action);
             int alternateCooldown = 0;
@@ -118,8 +119,8 @@ public final class PlayerPowerSyncService {
             }
             entries.add(new LoadoutPayload.Entry(entry.key(), shown == null ? id.getPath() : shown.id().getPath(),
                     shown == null ? action.definition().displayNameKey() : shown.displayNameKey(), tier >= unlockTier,
-                    com.jayptucker.heroesevolved.progression.PowerLevels.levelForTier(unlockTier), energy, cooldown,
-                    CooldownService.getExpirationGameTime(player, action.cooldownId(preview)),
+                    com.jayptucker.heroesevolved.progression.PowerLevels.levelForTier(unlockTier), energy, recovery.ticks(),
+                    recovery.until(),
                     com.jayptucker.heroesevolved.ability.service.AbilityRanks.rank(uses), uses, alternateCooldown, alternateCooldownEnd));
         }
         var build = com.jayptucker.heroesevolved.skills.SkillTreeService.seedWheel(player, power, entries);
@@ -205,7 +206,7 @@ public final class PlayerPowerSyncService {
                 slot,
                 shown == null ? action.definition().displayNameKey() : shown.displayNameKey(),
                 unlocked,
-                CooldownService.getExpirationGameTime(player, actionId),
+                action.recovery(preview, 0).until(),
                 unlockLevel,
                 com.jayptucker.heroesevolved.ability.service.AbilityRanks.energy(player, preview.abilityId(), action, com.jayptucker.heroesevolved.skills.SkillTreeService.activationCost(player, preview.abilityId(), com.jayptucker.heroesevolved.ability.PowerBalance.energy(actionId, action.energyCost(preview)))),
                 com.jayptucker.heroesevolved.skills.SkillTreeService.cooldown(player, preview.abilityId(), com.jayptucker.heroesevolved.ability.PowerBalance.cooldown(actionId, action.cooldownTicks(preview)))

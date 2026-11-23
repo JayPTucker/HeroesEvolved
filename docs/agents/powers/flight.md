@@ -134,3 +134,8 @@ abilities will meet. Reuse these instead of starting again. What the player sees
   it stops the local player moving and reporting their position.
 - **Speed tuning lives in one place.** `FlightSpeedControl.speed(step, max)` maps wheel steps to cruise speed;
   Skyburst's numbers are constants at the top of `FlightDynamicsService`.
+
+- **Ease both ends of Tempest's entry.** Zeroing velocity in `startCyclone` defeated gradual windup deceleration.
+  Keep incoming velocity, damp it during gathering, then ease angular speed and blend swept orbit motion over
+  24 ticks. `FlightVaporClient` samples boot anchors from `FlightPoseRenderer.frame`, including pitch and bank;
+  look-only offsets detached the trails from a turning body.

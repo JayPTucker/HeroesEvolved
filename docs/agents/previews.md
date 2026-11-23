@@ -173,6 +173,7 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | `blueprint-preview.init.gradle` | one blueprint, from four corners, the top and inside | `-Pblueprint=<name>`, `-Pcut=<layer>` |
 | `ruins-preview.init.gradle`, `signal-site-preview.init.gradle` | the story ruins; the Last Signal site | Ruins: `-Pocean` places all four on separate natural seabed sites and photographs flooded rooms and surface salvage; the fixture's barrel carries a real civilian journal |
 | `unwritten-world-preview.init.gradle` | A Future Unwritten's world fixture | |
+| `trello-fixes-preview.init.gradle` | Frozen poses, Morph cooldown, held Glacier Ride, moving Speed Mirage copies, Cyclone hitbox, Tempest entry and boot trails, overexertion, Sylar catching/returning TaCZ rounds and the guide's street detour | Real key holds and release checks; 22 photographs in `build/trello-fixes-preview/screenshots/` |
 | **Interface and gear** | | |
 | `stamina-preview.init.gradle`, `gauge-preview.init.gradle` | the stamina bar; the HUD ring gauges | |
 | `skill-ui-preview.init.gradle`, `inventory-preview.init.gradle`, `admin-preview.init.gradle` | the skill screen; the inventory button; the admin menu | |

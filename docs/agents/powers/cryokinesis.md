@@ -29,3 +29,8 @@ obsidian. What the player sees is in [docs/cryokinesis.md](../../../docs/cryokin
 - **Photographs:** `tools/terrain-frost-preview.init.gradle` (`uitest/TerrainFrostPreview`, flag
   `heroes.preview.terrainfrost`) holds the real Ice Blast key on stone, obsidian, water and lava, breaks the ice by hand,
   and logs each patch's blocks and progress (`TERRAIN_SHOT`) into `build/terrain-frost-preview/`.
+
+- **A frozen animation needs a frozen interpolation value.** Cancelling mob ticks still replayed the previous
+  walking step every render frame. `TemporalMobAnimationMixin` returns partial tick 1 for `FrozenVisuals.isFrozen`,
+  holding the last pose. Glacier Ride keeps its actual `ServerPlayer` and ticks through `CryoRideService.tickAll`
+  once per server tick; the action's release hook ends the ride, so a held key has no short lifetime.

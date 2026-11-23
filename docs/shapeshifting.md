@@ -27,7 +27,8 @@
 >   rate and fight with the form's own blow.
 > - **Instinct (Level 3):** the second key is your form's own attack, as in the [Instinct table](#core-abilities).
 >   It is Lunge in your own body and Familiar in a person's. Each move pays its own stamina and keeps its own
->   cooldown, so switching forms never waits on another form's attack. Every move is drawn in the plate language.
+>   cooldown, so switching forms never waits on another form's attack. The HUD counts down the current form's
+>   recovery, and Morph shows its actual exposure lock or settling time. Every move is drawn in the plate language.
 > - **Decoy (Level 6), Reflection (Level 10), Nightmare (Level 15):** as in the [core abilities](#core-abilities).
 >   - **Decoy:** the shell is a real body, so mobs really chase it and hit it. It wears your shape (your own face
 >     if you wear none), with a seam split down its back, the one clue it is empty.

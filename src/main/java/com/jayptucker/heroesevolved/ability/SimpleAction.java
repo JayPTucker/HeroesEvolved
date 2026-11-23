@@ -27,6 +27,7 @@ public final class SimpleAction implements AbilityAction {
     private final Predicate<AbilityUseContext> followUp;
     private final java.util.function.Consumer<AbilityUseContext> release;
     private final java.util.function.ToIntFunction<AbilityUseContext> travel;
+    private final java.util.function.BiFunction<AbilityUseContext, Integer, Recovery> recovery;
 
     private SimpleAction(Builder builder) {
         definition = new AbilityActionDefinition(
@@ -45,6 +46,7 @@ public final class SimpleAction implements AbilityAction {
         followUp = builder.followUp;
         release = builder.release;
         travel = builder.travel;
+        recovery = builder.recovery;
     }
 
     public static Builder builder(String path, int unlockLevel) {
@@ -86,6 +88,9 @@ public final class SimpleAction implements AbilityAction {
     @Override public void release(AbilityUseContext context) { release.accept(context); }
 
     @Override public int travelCost(AbilityUseContext context) { return travel.applyAsInt(context); }
+    @Override public Recovery recovery(AbilityUseContext context, int ticks) {
+        return recovery == null ? AbilityAction.super.recovery(context, ticks) : recovery.apply(context, ticks);
+    }
 
     @Override
     public AbilityActivationResult activate(AbilityUseContext context) {
@@ -106,6 +111,10 @@ public final class SimpleAction implements AbilityAction {
         private Predicate<AbilityUseContext> followUp = context -> false;
         private java.util.function.Consumer<AbilityUseContext> release = context -> {};
         private java.util.function.ToIntFunction<AbilityUseContext> travel = context -> 0;
+        private java.util.function.BiFunction<AbilityUseContext, Integer, Recovery> recovery;
+        public Builder recovery(java.util.function.BiFunction<AbilityUseContext, Integer, Recovery> recovery) {
+            this.recovery = recovery; return this;
+        }
 
         private Builder(String path, int unlockLevel) {
             this.path = path;

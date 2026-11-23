@@ -1,0 +1,22 @@
+// Photographs the Bugs & Fixes changes in one loaded staging area.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('trelloFixPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs { client {
+                    gameDirectory = project.file('build/trello-fixes-preview')
+                    programArguments.addAll('--width', '1280', '--height', '900')
+                    systemProperty('heroes.preview.trellofixes', 'true')
+                } }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('trelloFixPreviewClasses')) }
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

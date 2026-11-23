@@ -165,3 +165,8 @@ Shapeshifting (`shapeshift/`, stand-ins in `client/MorphClient`, art in `client/
   - To photograph what only a foe sees, the driver sends the foe's private piece to the local player.
   - A front camera behind a standing mob ends up inside it: move the player clear first.
   - Fixed cameras (`side()`) only see what is staged in front of them.
+
+- **The HUD must read the lock that actually refuses the action.** Morph exposure and per-form Instinct recoveries
+  were invisible because only the generic action cooldown was synced. `AbilityAction.Recovery` (optional on
+  `SimpleAction.Builder`) supplies the actual end and duration; `ShapeshiftService.recovery` includes exposure and
+  wheel settling, and `ShapeshiftInstinct.recovery` reads the current form. Sync after a wheel choice or exposure.

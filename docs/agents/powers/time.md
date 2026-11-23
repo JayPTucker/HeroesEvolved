@@ -132,3 +132,9 @@ Slowed and stopped time were reworked in November 2026 so the whole world shows 
   speedster wading through Perception into `build/slowtime-preview/screenshots/`. It drives the real player with
   `keyUp`/`keySprint.setDown` and runs a side camera alongside with `TempestCamera.fix` each tick. Tests:
   `TimeFlowGameTests` (in `tools/temporal-gametest.init.gradle`).
+
+- **A recorded past is consumed on entry, after its echoes are spawned.** Clearing it earlier loses the cast;
+  clearing only on return permits repeat visits. `TemporalSnapshotService.enter` keeps the return trip in visit
+  data and empties the recording. `TemporalRevenge` saves eligible deaths, actual death drops and pending returns;
+  an echoed killer's defeat claims a death once, invalidates its tagged originals, then delivers in the present.
+  Player/item ticks, container opening and machine transfers purge invalidated stacks even after unloading.

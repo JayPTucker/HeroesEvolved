@@ -37,3 +37,12 @@ the core's standard in November 2026. What the player sees is in [docs/superspee
   - Particles exist only on clients, so each client blows them itself: `client/effects/WindArmsAir` walks the particle
     engine (`mixin/ParticleEngineAccess`, `mixin/ParticleWindAccess`) for every player in the `WIND_ARMS` pose, using the
     same `SpeedWindArms.inFunnel` test as the server. This is how to make any power move smoke, spores or dust.
+
+- **A visible runner must be hittable there.** Cyclone formerly drew a puppet on the rim while leaving the body
+  at the eye. `CycloneGeometry` now supplies its eased opening and laps to the server; the player is swept round
+  that path, and `SpeedCyclone` draws at the actual body. A blocked lap ends safely. Tornado windup is 190 ticks;
+  tap duration stays 60, and the longer windup does not add eight seconds of ring damage. Test inflow with horizontal
+  distance: measuring 3D distance counted the funnel's successful lift as failed pulling (`SpeedRunGameTests`).
+- **Targetable mirages reuse `ShapeDecoy`.** `AdvancedTechniques.Mirage` keeps the owner and three speedster decoys,
+  whose `runMirage` moves through swept, terrain-aware steps. They reuse the player's profile and Jade disguise
+  question. `ShapeshiftTricks.burst` branches before shapeshifter confusion or damage: a struck speed copy only bursts.

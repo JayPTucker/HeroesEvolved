@@ -82,6 +82,10 @@ final class TaczLink {
         }
         var from = bullet.position();
         var target = event.getHurtEntity().getBoundingBox().clip(from, from.add(bullet.getDeltaMovement()));
+        if (com.jayptucker.heroesevolved.story.sylar.SylarProjectiles.intercept(level, bullet, from,
+                target.orElseGet(() -> event.getHurtEntity().getBoundingBox().getCenter()))) {
+            event.setCanceled(true); return;
+        }
         if (!coldInRange(bullet, target.orElseGet(() -> event.getHurtEntity().getBoundingBox().getCenter()))) {
             event.setCanceled(true);
             return;

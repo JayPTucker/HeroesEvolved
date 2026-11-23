@@ -127,6 +127,7 @@ public final class TemporalSnapshotService {
         TemporalChestService.clearSnapshotHistory(player);
         TemporalErasureSavedData.get(server).clearSnapshot(player.getUUID());
         player.setData(ModDataAttachments.PLAYER_TEMPORAL_SNAPSHOT.get(), data);
+        TemporalRevenge.get(server).recorded(player, data);
 
         ACTIVE_BUILDS.put(
                 player.getUUID(),
@@ -224,6 +225,8 @@ public final class TemporalSnapshotService {
         TemporalEchoService.spawnSnapshotEchoes(
                 player.getUUID(), snapshotLevel, data
         );
+        player.setData(ModDataAttachments.PLAYER_TEMPORAL_SNAPSHOT.get(), PlayerTemporalSnapshotData.empty());
+        TemporalRevenge.get(player.getServer()).entered(player.getUUID());
         return true;
     }
 
@@ -442,7 +445,7 @@ public final class TemporalSnapshotService {
                 .toList();
     }
 
-    private static int snapshotWidthBlocks() {
+    static int snapshotWidthBlocks() {
         return HeroesEvolvedConfig.COMMON.timeSnapshotWidthChunks.get() * 16;
     }
 

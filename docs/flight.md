@@ -4,7 +4,7 @@ Flight is an aerial momentum kit. Build airspeed in cruise, brake and redirect i
 Skyburst, catch someone with Skyhook, or spend your speed on a Meteor Drop or Tempest.
 Double-tap Jump toggles Flight and the mouse wheel sets cruise speed. The highest setting
 cruises at 3 blocks a tick by default. The pilot banks into turns, and releasing Forward
-brakes toward a hover.
+brakes toward a hover. Tempest slows your incoming motion gradually, gathers its cloud from a small funnel, and eases you into the banked orbit. Its twin condensation trails follow your boots through the turn.
 
 Unlocking Flight grants fall-damage immunity, even with flying toggled off or during an Eclipse.
 

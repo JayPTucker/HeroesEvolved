@@ -166,6 +166,8 @@ public final class TemporalEchoService {
         }
 
         if (context != null && echo.level() instanceof ServerLevel level) {
+            if (killer instanceof ServerPlayer)
+                TemporalRevenge.get(level.getServer()).defeated(level.getServer(), context.snapshotOwnerId(), echo.getProfileId());
             TemporalParadoxService.onEchoKilled(
                     context.snapshotOwnerId(), context.data(), level,
                     echo.position()

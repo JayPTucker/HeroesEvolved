@@ -3,6 +3,12 @@ package com.jayptucker.heroesevolved.ability;
 import net.minecraft.resources.ResourceLocation;
 
 public interface AbilityAction {
+    record Recovery(long until, int ticks) {}
+    /** The recovery actually blocking this action, including a power's internal move or exposure timer. */
+    default Recovery recovery(AbilityUseContext context, int balancedTicks) {
+        return new Recovery(com.jayptucker.heroesevolved.cooldown.CooldownService.getExpirationGameTime(
+                context.player(), cooldownId(context)), balancedTicks);
+    }
     AbilityActionDefinition definition();
 
     boolean canUse(AbilityUseContext context);

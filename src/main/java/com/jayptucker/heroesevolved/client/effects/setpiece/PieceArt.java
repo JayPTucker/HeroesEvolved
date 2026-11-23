@@ -8,6 +8,7 @@ final class PieceArt {
 
     static void draw(Canvas c, Active a, float t) {
         switch (a.piece()) {
+            case OVEREXERTION -> OverexertionArt.draw(c, a, t);
             case FLIGHT_RELEASE, FLIGHT_SKYBURST, FLIGHT_IMPACT, FLIGHT_RESCUE, FLIGHT_SHELTER,
                     FLIGHT_CURRENT, FLIGHT_THERMAL_MARK, FLIGHT_THERMAL_RISE, FLIGHT_INTERCEPT,
                     TEMPEST_DRILL, GALE_WALL, FORMATION_FLIGHT -> FlightArt.draw(c, a, t);

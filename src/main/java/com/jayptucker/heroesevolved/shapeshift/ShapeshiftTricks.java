@@ -132,6 +132,13 @@ public final class ShapeshiftTricks {
     static void burst(ShapeDecoy decoy, @Nullable Entity by) {
         if (decoy.isRemoved()) return;
         ServerLevel level = (ServerLevel) decoy.level();
+        if (decoy.speedster()) {
+            com.jayptucker.heroesevolved.effects.AbilityEffects.send(level,
+                    com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind.SPEED_BURST,
+                    decoy.position(), decoy.position().add(0, 1, 0), .7);
+            decoy.discard();
+            return;
+        }
         SetPiecePayload.send(level, Piece.SHIFT_DECOY_BURST, decoy.position(), decoy.position().add(0, decoy.getBbHeight(), 0),
                 by != null ? 1 : 0, null);
         level.playSound(null, decoy.getX(), decoy.getY(), decoy.getZ(), by != null ? SoundEvents.SHIELD_BREAK : SoundEvents.ARMOR_EQUIP_CHAIN.value(),

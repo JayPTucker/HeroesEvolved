@@ -453,3 +453,9 @@ structure, and the way out became the Last Day's own vault and stair, a hundred 
   existing worlds keep their rooms, ladder and hatch.
 - **Audit the bunker too.** The bunker preview prints `BUNKER_AUDIT` for the rooms, the stairwell and the lobby. It
   photographs the vault, the stairwell, the slot and the lobby (`bunker-18` to `bunker-21`).
+
+- **The guide starts in the player's reachable cell.** Choosing a cheaper goal-distance cell across a wall sent
+  the thread through unrelated doors. `LastDayGuide.nearest` uses the actual cell first, then visible nearby cells;
+  its weighted distance map penalizes doors and stores legal parent steps rather than guessing a downhill neighbour.
+  `GuideRouteGameTests` checks street preference without losing necessary doors. `IntroDirector` guards the final
+  blast cue once per prologue; `LastDayWave` and `LastDayCrumble` must not add shelter or masonry explosion booms.
