@@ -57,6 +57,12 @@ final class TaczLink {
             NeoForge.EVENT_BUS.addListener(EntityHurtByGunEvent.Post.class, TaczLink::hurt);
             NeoForge.EVENT_BUS.addListener(GunShootEvent.class, TaczLink::shot);
             NeoForge.EVENT_BUS.addListener(AmmoHitBlockEvent.class, TaczLink::block);
+            NeoForge.EVENT_BUS.addListener(net.neoforged.neoforge.event.tick.PlayerTickEvent.Post.class, event -> {
+                if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
+                    prepareCold(player.getMainHandItem());
+                    prepareCold(player.getOffhandItem());
+                }
+            });
             listening = true;
         } catch (Throwable t) {
             fail("listen", t);
@@ -138,6 +144,18 @@ final class TaczLink {
         } catch (Throwable t) {
             fail("ammo", t);
             return ItemStack.EMPTY;
+        }
+    }
+
+    /** Saved carbines retain their id and ammo, but must adopt the new held-trigger mode when equipped. */
+    static void prepareCold(ItemStack stack) {
+        if (broken || stack.isEmpty()) return;
+        try {
+            IGun gun = IGun.getIGunOrNull(stack);
+            if (gun != null && PowerWeapons.COLD_GUN.equals(gun.getGunId(stack)) && gun.getFireMode(stack) != FireMode.AUTO)
+                gun.setFireMode(stack, FireMode.AUTO);
+        } catch (Throwable t) {
+            fail("prepare Freeze Gun", t);
         }
     }
 
@@ -242,6 +260,17 @@ final class TaczLink {
             return entity instanceof com.tacz.guns.entity.EntityKineticBullet;
         } catch (Throwable t) {
             fail("bullet", t);
+            return false;
+        }
+    }
+
+    static boolean coldBullet(@Nullable Entity entity) {
+        if (broken || entity == null) return false;
+        try {
+            return entity instanceof com.tacz.guns.entity.EntityKineticBullet bullet
+                    && PowerWeapons.COLD_GUN.equals(bullet.getGunId());
+        } catch (Throwable t) {
+            fail("cold bullet", t);
             return false;
         }
     }

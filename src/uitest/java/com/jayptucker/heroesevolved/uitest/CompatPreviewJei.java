@@ -29,6 +29,22 @@ public final class CompatPreviewJei implements IModPlugin {
 
     static boolean ready() { return runtime != null; }
 
+    static void showFreezeGun() {
+        var focus = runtime.getJeiHelpers().getFocusFactory().createFocus(RecipeIngredientRole.OUTPUT,
+                VanillaTypes.ITEM_STACK, com.jayptucker.heroesevolved.weapons.PowerWeapons.gun(
+                        com.jayptucker.heroesevolved.weapons.PowerWeapons.COLD_GUN));
+        var category = runtime.getRecipeManager().createRecipeCategoryLookup().limitFocus(List.of(focus)).get()
+                .filter(c -> c.getRecipeType().getUid().getPath().contains("gun_smith_table")).findFirst();
+        PreviewQuiet.report("FREEZE_GUN " + (category.isPresent() ? "PASS" : "FAIL") + " JEI workbench recipe");
+        category.ifPresent(c -> showFocused(c, focus));
+    }
+
+    private static <T> void showFocused(mezz.jei.api.recipe.category.IRecipeCategory<T> category,
+                                        mezz.jei.api.recipe.IFocus<ItemStack> focus) {
+        var recipes = runtime.getRecipeManager().createRecipeLookup(category.getRecipeType()).limitFocus(List.of(focus)).get().toList();
+        runtime.getRecipesGui().showRecipes(category, recipes, List.of(focus));
+    }
+
     /** Filters the list to our mod and reports what shows and what must not. */
     static void filterOurs() {
         runtime.getIngredientFilter().setFilterText("@heroesevolved");

@@ -92,7 +92,8 @@ public final class CryoEvents {
 
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
-        boolean freezing = event.getSource().is(DamageTypeTags.IS_FREEZING);
+        boolean freezing = event.getSource().is(DamageTypeTags.IS_FREEZING)
+                || com.jayptucker.heroesevolved.weapons.PowerWeapons.isColdBullet(event.getSource().getDirectEntity());
 
         // Tracy cannot freeze, but heat is her weakness.
         if (event.getEntity() instanceof ServerPlayer victim && hasAwakenedCryokinesis(victim)

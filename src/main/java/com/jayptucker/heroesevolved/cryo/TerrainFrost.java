@@ -24,7 +24,7 @@ import java.util.Map;
 
 /**
  * Sustained cold turns terrain into ice. Each hit (an Ice Blast pulse, a Crystal Lance, a Frost Armor shard, a Cryo
- * Carbine bolt) cools the exposed 3 x 3 patch round the impact: the aimed block fastest, its edges at two thirds and its
+ * Gun pulse) cools the exposed 3 x 3 patch round the impact: the aimed block fastest, its edges at two thirds and its
  * corners at half, and no neighbour may finish before the aimed block has. Harder blocks need more cold
  * ({@code 20 + 8 * sqrt(hardness)}: stone 30, obsidian 77). Solids become brittle frost that thaws back after
  * {@link #THAW_TICKS} unless broken; water becomes ice and lava obsidian, for good.
@@ -62,8 +62,9 @@ public final class TerrainFrost {
         spread(level, hit, caster, lance ? 12 : 4);
     }
 
-    public static void carbine(ServerLevel level, BlockHitResult hit, Entity shooter) {
-        spread(level, hit, shooter, 6);
+    /** Ten pulses a second: the held gun cools terrain at the same rate as the base Ice Blast. */
+    public static void freezeGun(ServerLevel level, BlockHitResult hit, Entity shooter) {
+        spread(level, hit, shooter, 2);
     }
 
     private static void spread(ServerLevel level, BlockHitResult hit, Entity actor, int amount) {

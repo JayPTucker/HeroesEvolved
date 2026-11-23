@@ -151,6 +151,7 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | `finisher-preview.init.gradle` | the glisten, the prompt and every finisher | `-Ponly=telepathy` or `-Ponly=hearth,phoenix_kick` |
 | `projectile-preview.init.gradle` | projectile ranges | |
 | `weapons-preview.init.gradle`, `dampener-preview.init.gradle` | the TaCZ guns and EMP grenade; the Ability Dampener and Nullifier | |
+| `freeze-gun-preview.init.gradle` | The Freeze Gun model and continuous blast: first person, side/front, freeze, release, terrain, night, Minimal particles and JEI workbench recipe | Holds TaCZ's real trigger in survival; checks charge use and release; eleven photographs |
 | **Bosses, mobs and events** | | |
 | `sylar-preview.init.gradle` | Sylar's Collection: the ticket, the hall, every telegraph assembling and landing, each phase, the backfire, Appraisal, the light, Claire's case, his death | |
 | `level5-preview.init.gradle` | How you meet Sylar: the hatch in Cell 3, Level 5's corridor, the prisoner behind glass and his talk in chat, the watch list, the release lever, the glass falling out, him behind you at dusk, the Collection | A fixed camera only draws the player in third person: set `THIRD_PERSON_BACK` before `TempestCamera.fix` when the player should be in shot |

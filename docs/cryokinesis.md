@@ -29,7 +29,7 @@ held indefinitely, and cold-immune creatures resist the freeze.
 
 ## Freezing terrain
 
-Hold **Ice Blast** on a surface or land repeated **Cryo Carbine** shots on it. A patch
+Hold **Ice Blast** or the **Freeze Gun** on a surface. A patch
 of frost grows across the exposed **3 × 3** area around the hit. The block under your
 aim freezes first. Cold builds two-thirds as fast along its edges and half as fast at the
 corners, and no neighbour finishes before the block you aim at.

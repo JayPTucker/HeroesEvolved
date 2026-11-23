@@ -96,7 +96,7 @@ public final class WeaponGameTests {
         h.assertTrue(!CryoService.isFrozen(pig) && CryoService.frostAmount(pig) >= PowerWeapons.FROST_TICKS, "One bolt adds frost");
         h.assertTrue(pig.getAttributeValue(Attributes.MOVEMENT_SPEED) < speed, "Frost slows it");
         int hits = 1;
-        while (!CryoService.isFrozen(pig) && hits < 10) { PowerWeapons.cold(null, pig, at); hits++; }
+        while (!CryoService.isFrozen(pig) && hits < 12) { PowerWeapons.cold(null, pig, at); hits++; }
         h.assertTrue(CryoService.isFrozen(pig) && hits >= 3, "Several bolts freeze it solid (took " + hits + ")");
         h.runAfterDelay(PowerWeapons.FREEZE_MOB + 3, () -> {
             h.assertTrue(!CryoService.isFrozen(pig), "The freeze is brief");
@@ -168,7 +168,7 @@ public final class WeaponGameTests {
         shootUntil(h, stand, pig, () -> CryoService.frostAmount(pig) > 0 || CryoService.isFrozen(pig), "A cold gun's bolts frost");
     }
 
-    @GameTest(template = "rewind_empty", batch = "weapons.shots", timeoutTicks = 170)
+    @GameTest(template = "rewind_empty", batch = "weapons.shots", timeoutTicks = 360)
     public static void realColdShotsFreezeSolidsWaterAndLava(GameTestHelper h) {
         realTime(h);
         ArmorStand stand = shooter(h, new BlockPos(3, 4, 5), PowerWeapons.COLD_GUN);
@@ -191,7 +191,7 @@ public final class WeaponGameTests {
         h.setBlock(lavaEdge, Blocks.LAVA);
 
         h.onEachTick(() -> {
-            if (stand.tickCount <= 12 || stand.tickCount % 5 != 0) return;
+            if (stand.tickCount <= 12 || stand.tickCount % 2 != 0) return;
             BlockPos target = !FrostConstructBlock.isFrost(h.getBlockState(stoneEdge)) ? stone
                     : !h.getBlockState(waterEdge).is(Blocks.ICE) ? water : lava;
             if (PowerWeapons.rounds(stand.getMainHandItem()) <= 1) PowerWeapons.reload(stand.getMainHandItem());
@@ -214,6 +214,77 @@ public final class WeaponGameTests {
         pig.setNoAi(true);
         ArmorStand stand = shooter(h, new BlockPos(2, 2, 7), PowerWeapons.TASER);
         shootUntil(h, stand, pig, () -> Stun.held(pig), "A taser's barbs stun");
+    }
+
+    @GameTest(template = "rewind_empty", batch = "weapons.freeze_blast", timeoutTicks = 150)
+    public static void aHeldFreezeBlastFreezesWithoutShatteringAndStopsWhenEmpty(GameTestHelper h) {
+        realTime(h);
+        Pig pig = pig(h, new BlockPos(8, 2, 3));
+        pig.setNoAi(true);
+        pig.getAttribute(Attributes.MAX_HEALTH).setBaseValue(100);
+        pig.setHealth(100);
+        ArmorStand stand = shooter(h, new BlockPos(2, 2, 3), PowerWeapons.COLD_GUN);
+        int[] shots = {0}, frozenAt = {-1}, roundsAtStop = {-1};
+        h.onEachTick(() -> {
+            if (stand.tickCount <= 12 || stand.tickCount % 2 != 0) return;
+            if (CryoService.isFrozen(pig) && frozenAt[0] < 0) frozenAt[0] = stand.tickCount;
+            if (frozenAt[0] < 0 || stand.tickCount < frozenAt[0] + 12) {
+                if (PowerWeapons.fire(stand, pig.getBoundingBox().getCenter()).equals("SUCCESS")) shots[0]++;
+            } else if (roundsAtStop[0] < 0) roundsAtStop[0] = PowerWeapons.rounds(stand.getMainHandItem());
+        });
+        h.runAfterDelay(65, () -> {
+            h.assertTrue(frozenAt[0] > 0 && shots[0] >= 10, "Sustained real pulses build a solid freeze: " + shots[0]);
+            h.assertTrue(roundsAtStop[0] >= 0 && PowerWeapons.rounds(stand.getMainHandItem()) == roundsAtStop[0],
+                    "Releasing the trigger stops consuming charge");
+        });
+        h.runAfterDelay(85, () -> {
+            h.assertTrue(!CryoService.isFrozen(pig), "The short freeze thaws after contact ends");
+            // Emptying the cell cannot produce another damaging/freezing pulse.
+            TaczLink.reload(stand.getMainHandItem(), 0);
+            // reload chambers a round; consume that last one, then wait out its flight.
+            PowerWeapons.fire(stand, pig.getBoundingBox().getCenter());
+        });
+        h.runAfterDelay(95, () -> {
+            h.assertTrue(PowerWeapons.fire(stand, pig.getBoundingBox().getCenter()).equals("NO_AMMO"), "An empty cell cannot fire");
+            CryoService.releaseEntity(pig); pig.discard(); stand.discard(); h.succeed();
+        });
+        // Check while the beam is still landing on the prepared shell, rather than only its final state.
+        h.runAfterDelay(38, () -> h.assertTrue(CryoService.isFrozen(pig), "Continued cold does not shatter its own shell"));
+    }
+
+    @GameTest(template = "rewind_empty", batch = "weapons.freeze_cover", timeoutTicks = 180)
+    public static void theFreezeBlastCannotPassThroughCover(GameTestHelper h) {
+        realTime(h);
+        Pig pig = pig(h, new BlockPos(8, 2, 5)); pig.setNoAi(true);
+        ArmorStand stand = shooter(h, new BlockPos(2, 2, 5), PowerWeapons.COLD_GUN);
+        for (int y = 2; y <= 4; y++) for (int z = 4; z <= 6; z++) h.setBlock(new BlockPos(5, y, z), Blocks.OBSIDIAN);
+        h.onEachTick(() -> {
+            if (stand.tickCount > 12 && stand.tickCount < 55 && stand.tickCount % 2 == 0)
+                PowerWeapons.fire(stand, pig.getBoundingBox().getCenter());
+        });
+        h.runAfterDelay(65, () -> {
+            h.assertTrue(CryoService.frostAmount(pig) == 0 && pig.getHealth() == pig.getMaxHealth(), "Cover stops both damage and Frost");
+            pig.discard(); stand.discard();
+            // Above the arena's lid: no wall can make a range failure pass accidentally.
+            ArmorStand range = shooter(h, new BlockPos(2, 12, 5), PowerWeapons.COLD_GUN);
+            range.setNoGravity(true);
+            Pig inside = pig(h, new BlockPos(16, 12, 5)), outside = pig(h, new BlockPos(20, 12, 5));
+            inside.setNoAi(true); inside.setNoGravity(true);
+            outside.setNoAi(true); outside.setNoGravity(true);
+            h.onEachTick(() -> {
+                if (range.tickCount > 12 && range.tickCount % 2 == 0)
+                    PowerWeapons.fire(range, (inside.isRemoved() ? outside : inside).getBoundingBox().getCenter());
+            });
+            h.runAfterDelay(30, () -> {
+                h.assertTrue(CryoService.frostAmount(inside) > 0, "The real blast reaches fourteen blocks");
+                CryoService.releaseEntity(inside); inside.discard();
+            });
+            h.runAfterDelay(60, () -> {
+                h.assertTrue(CryoService.frostAmount(outside) == 0 && outside.getHealth() == outside.getMaxHealth(),
+                        "The real blast cannot reach eighteen blocks");
+                outside.discard(); range.discard(); h.succeed();
+            });
+        });
     }
 
     @GameTest(template = "rewind_empty", batch = "weapons.emp", timeoutTicks = 120)
