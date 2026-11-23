@@ -908,3 +908,13 @@ a successful evasion; full holding time and an immediate shattering/releasing bl
 | `style_hydrokinesis_back_dodge` | 2 | 11 | 2 | 0.5 | 0 / 4.5 blocks | 2 / 1.9 | changed | Geyser Vault 3+.6*tier -> 1.5+.25*tier. The immediate special back-dodge attack; a successful evasion may additionally earn the counter reviewed separately. (`hydro/HydroCombat`) |
 | `style_vibe_back_dodge` | 2 | 11 | 2 | 0 | 0 / 4 blocks | 3.15 / 2.71 | within 30% | Fold Back 3+.6*tier after its 12-tick warning. The immediate special back-dodge attack; a successful evasion may additionally earn the counter reviewed separately. (`vibe/VibeStyle`) |
 
+## End portal offerings
+
+Power Level 16 or higher; begin with at least 95% stamina. One offering drains the entire remaining bar over 8 seconds, without rank, cost-scale or Supercharge discounts.
+Two touching frames need an offering each. A completed offering lasts 120 seconds, so a lone player can recover and charge the neighbor. Held recovery is stopped only while channeling.
+See [the End portal](end-portal.md). These world-ritual values also generate `end_portal_ritual.json`.
+
+## End battle grounding
+
+An altar overload takes 3 seconds of one person's channeling at 8 stamina per second. Partners share the charge and pay for their own held time. Recovery pauses while channeling; release, movement, damage or suppression ends the channel. These values generate `end_battle_ritual.json`; see [The Living Seal](the-living-seal.md).
+

@@ -89,6 +89,9 @@ public final class ModSounds {
     public static final Supplier<SoundEvent> SKYBURST_BOOM = SOUND_EVENTS.register("skyburst_boom", () ->
             SoundEvent.createFixedRangeEvent(ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "skyburst_boom"), 192));
 
+    public static final Supplier<SoundEvent> MUSIC_CONTAINMENT = story("music_disc.containment");
+
+    public static final Supplier<SoundEvent> MUSIC_INHERITANCE = story("music_disc.inheritance");
     private ModSounds() {
     }
     public static final Supplier<SoundEvent> SONIC_CRY = SOUND_EVENTS.register("sonic_cry", () ->

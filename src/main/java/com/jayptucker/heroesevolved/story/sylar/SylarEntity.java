@@ -75,7 +75,7 @@ public final class SylarEntity extends PathfinderMob implements Enemy, com.jaypt
     private static final int CATCHING = 256;
 
     /** How he holds himself: drawn by {@code SylarRenderer} (arms) and readable by scenes. */
-    public enum Pose { NONE, ONE_HAND, TWO_HANDS, RAISED, CROUCH, STAGGER, HOLD, KNEEL }
+    public enum Pose { NONE, ONE_HAND, TWO_HANDS, RAISED, CROUCH, STAGGER, HOLD, KNEEL, RUPTURE }
 
     // ------------------------------------------------------------------
     // The rules of his fight (the bosses skill's defaults, tuned to the Collection)
@@ -193,6 +193,18 @@ public final class SylarEntity extends PathfinderMob implements Enemy, com.jaypt
     // ------------------------------------------------------------------
 
     public int phase() { return entityData.get(PHASE); }
+    /** The End's continuation shares the character, never the Collection's runtime state. */
+    public boolean inheritance() { return is(512); }
+    public void beginInheritance() {
+        actor=false;entityData.set(FLAGS,512|FIGHTING);entityData.set(CASES,0);entityData.set(PHASE,1);
+        setNoGravity(true);getNavigation().stop();getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(1);
+    }
+    public void inheritancePose(int phase,Pose pose,boolean casting,boolean dying,boolean finishable) {
+        entityData.set(PHASE,phase);scenePose(pose);
+        entityData.set(FLAGS,512|FIGHTING|(casting?CASTING:0)|(dying?DYING:0)|(finishable?FINISHABLE:0)|HOVERING);
+    }
+    public boolean inheritanceDamage(DamageSource source,float amount) { return super.hurt(source,amount); }
+    public void inheritanceDeath(DamageSource source) { entityData.set(FLAGS,512|DYING);super.die(source); }
     /** The cases that hold something and stand whole, a bit per hour. */
     public int cases() { return entityData.get(CASES); }
     public boolean caseWhole(int hour) { return (cases() >> hour & 1) != 0; }
@@ -224,6 +236,7 @@ public final class SylarEntity extends PathfinderMob implements Enemy, com.jaypt
      * he makes comes out of one.
      */
     public String mindLine() {
+        if(inheritance())return com.jayptucker.heroesevolved.endgame.EndBattle.mindLine();
         int h = drawing();
         if (h >= 0) {
             ResourceLocation power = stolenPower[h] != null ? stolenPower[h] : SylarGeometry.CASES.get(h);
@@ -367,6 +380,7 @@ public final class SylarEntity extends PathfinderMob implements Enemy, com.jaypt
 
     @Override protected void customServerAiStep() {
         super.customServerAiStep();
+        if(inheritance()){getNavigation().stop();setDeltaMovement(Vec3.ZERO);fallDistance=0;return;}
         if (level() instanceof ServerLevel actorLevel && actor()) { tickActor(actorLevel); return; }
         if (!(level() instanceof ServerLevel level) || !fighting()) return;
         fightTicks++;
@@ -701,6 +715,7 @@ public final class SylarEntity extends PathfinderMob implements Enemy, com.jaypt
     private boolean bypass;
 
     @Override public boolean hurt(DamageSource source, float amount) {
+        if(inheritance())return com.jayptucker.heroesevolved.endgame.EndBattle.sylarHit(this,source,amount);
         if (!level().isClientSide && actor() && !source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
             // He is here to talk. A hand moves, and whoever struck at him is somewhere else.
             if (source.getEntity() instanceof LivingEntity attacker)
@@ -858,6 +873,7 @@ public final class SylarEntity extends PathfinderMob implements Enemy, com.jaypt
 
     @Override public void die(DamageSource source) {
         super.die(source);
+        if(inheritance())return;
         if (!level().isClientSide && fighting() && level() instanceof ServerLevel level)
             CollectionArena.defeated(level.getServer(), this, killer != null ? killer
                     : source.getEntity() instanceof Player p ? p.getUUID() : null);
@@ -903,6 +919,7 @@ public final class SylarEntity extends PathfinderMob implements Enemy, com.jaypt
      * still stands, still gets him back up).
      */
     @Override public void phaseFinished(ServerPlayer player) {
+        if(inheritance()){com.jayptucker.heroesevolved.endgame.EndBattle.finishSylar(this,player);return;}
         if (!(level() instanceof ServerLevel level) || !fighting() || dying >= 0 || finishedAt == tickCount) return;
         finishedAt = tickCount;
         lastHurt = fightTicks;

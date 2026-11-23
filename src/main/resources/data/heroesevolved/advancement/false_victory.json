@@ -1,0 +1,23 @@
+{
+  "parent": "minecraft:end/kill_dragon",
+  "display": {
+    "icon": {
+      "id": "minecraft:dragon_breath"
+    },
+    "title": {
+      "translate": "advancement.heroesevolved.false_victory"
+    },
+    "description": {
+      "translate": "advancement.heroesevolved.false_victory.desc"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "observed": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

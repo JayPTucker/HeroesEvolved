@@ -63,6 +63,14 @@ public final class HeroesJeiPlugin implements IModPlugin {
             info(registration, ModItems.BLOOD_SAMPLE.get(), "blood_sample");
             info(registration, ModItems.FORMULA_VIAL.get(), "formula_vial");
             info(registration, ModItems.SYLARS_WATCH.get(), "sylars_watch");
+            info(registration, ModItems.FRACTURED_STAR.get(), "fractured_star");
+            info(registration, ModItems.INHERITANCE_CORE.get(), "inheritance_core");
+            info(registration, ModItems.ANCHOR_OF_RETURN.get(), "anchor_of_return");
+            info(registration, ModItems.WORLDLINE_SIGIL.get(), "worldline_sigil");
+            info(registration, ModItems.MUSIC_DISC_INHERITANCE.get(), "inheritance_record");
+            info(registration, ModItems.BREACH_SEED.get(), "breach_seed");
+            info(registration, ModItems.MUSIC_DISC_CONTAINMENT.get(), "containment");
+            info(registration, net.minecraft.world.item.Items.ENDER_EYE, "end_portal");
             info(registration, ModItems.EMP_GRENADE.get(), "emp_grenade");
             info(registration, SuitItems.SUIT_FABRICATOR_ITEM.get(), "suit_fabricator");
         });

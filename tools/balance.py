@@ -46,6 +46,13 @@ TABLE = ROOT / "src/main/resources/data/heroesevolved/power_balance.json"
 TREES = ROOT / "src/main/resources/data/heroesevolved/skill_trees.json"
 LANG = ROOT / "src/main/resources/assets/heroesevolved/lang/en_us.json"
 DOC = ROOT / "docs/stamina-balance.md"
+PORTAL_TUNING = ROOT / "src/main/resources/data/heroesevolved/end_portal_ritual.json"
+END_BATTLE_TUNING = ROOT / "src/main/resources/data/heroesevolved/end_battle_ritual.json"
+END_BATTLE = dict(channel_ticks=60, drain_per_second=8)
+# A world ritual pays an exact bar, rather than an action discounted by rank or Supercharge.
+# The first offering can be remembered while a lone player recovers and moves to its neighbor.
+END_PORTAL = dict(minimum_power_level=16, channel_ticks=160, memory_ticks=2400,
+                  opening_ticks=40, starting_stamina_fraction=0.95)
 # What each core action cost before this model (November 2026), for the doc's "Was" column. Frozen: never regenerated.
 BEFORE = json.loads((ROOT / "tools/balance-before.json").read_text(encoding="utf-8"))
 
@@ -982,6 +989,22 @@ def doc(rows, dump, skill_changes, reviews):
         detail = (r["formula"] + (". " + r["note"] if r["note"] else "")).replace("|", "/")
         w(f"| `{r['action']}` | {r['tier']} | {r['cost']:g} | {r['n']:g} | {r['ctrl']:g} | {travel} | {damage} | {result} | {detail} (`{r['source']}`) |")
     w("")
+    w("## End portal offerings")
+    w("")
+    w(f"Power Level {END_PORTAL['minimum_power_level']} or higher; begin with at least "
+      f"{END_PORTAL['starting_stamina_fraction']:.0%} stamina. One offering drains the entire remaining bar "
+      f"over {END_PORTAL['channel_ticks'] / 20:g} seconds, without rank, cost-scale or Supercharge discounts.")
+    w(f"Two touching frames need an offering each. A completed offering lasts {END_PORTAL['memory_ticks'] / 20:g} "
+      "seconds, so a lone player can recover and charge the neighbor. Held recovery is stopped only while channeling.")
+    w("See [the End portal](end-portal.md). These world-ritual values also generate `end_portal_ritual.json`.")
+    w("")
+    w("## End battle grounding")
+    w("")
+    w(f"An altar overload takes {END_BATTLE['channel_ticks'] / 20:g} seconds of one person's channeling at "
+      f"{END_BATTLE['drain_per_second']:g} stamina per second. Partners share the charge and pay for their own held time. "
+      "Recovery pauses while channeling; release, movement, damage or suppression ends the channel. "
+      "These values generate `end_battle_ritual.json`; see [The Living Seal](the-living-seal.md).")
+    w("")
     return "\n".join(lines)
 
 
@@ -998,7 +1021,9 @@ def main():
     trees_text = json.dumps(trees, indent=2, ensure_ascii=False) + "\n"
     language_text = json.dumps(language, indent=2, ensure_ascii=False) + "\n"
     doc_text = doc(rows, dump, skill_changes, reviews) + "\n"
-    stale = [p for p, t in ((TABLE, table), (TREES, trees_text), (LANG, language_text), (DOC, doc_text))
+    portal_text = json.dumps(END_PORTAL, indent=2) + "\n"
+    end_battle_text = json.dumps(END_BATTLE, indent=2) + "\n"
+    stale = [p for p, t in ((TABLE, table), (TREES, trees_text), (LANG, language_text), (DOC, doc_text), (PORTAL_TUNING, portal_text), (END_BATTLE_TUNING, end_battle_text))
              if not p.exists() or p.read_text(encoding="utf-8") != t]
     if check:
         for p in stale:
@@ -1008,6 +1033,8 @@ def main():
     TREES.write_text(trees_text, encoding="utf-8")
     LANG.write_text(language_text, encoding="utf-8")
     DOC.write_text(doc_text, encoding="utf-8")
+    PORTAL_TUNING.write_text(portal_text, encoding="utf-8")
+    END_BATTLE_TUNING.write_text(end_battle_text, encoding="utf-8")
     for r in rows:
         if r.get("role") not in ("style", "finisher"):
             print(f"{r['action']:34} T{r['unlock']}  {r['energy']:>4}  {r.get('cooldown', 0) / 20:>6g}s")

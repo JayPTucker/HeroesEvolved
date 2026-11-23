@@ -35,6 +35,8 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 | Finishers | [finishers.md](docs/agents/finishers.md) |
 | Awakenings, intros, saving someone in danger | [awakenings.md](docs/agents/awakenings.md) |
 | Two powers acting on each other | [power-interactions.md](docs/agents/power-interactions.md) |
+| Opening the End portal, shared channeling or a solo offering | [power-interactions.md](docs/agents/power-interactions.md), "End portal offerings", and [end-portal.md](docs/end-portal.md) |
+| The native End Dragon, Inheritance Sylar, grounding altars, End checkpoints or the rupture finale | The bosses skill, its [built-bosses.md](.claude/skills/minecraft-bosses/references/built-bosses.md), "The Living Seal", and [the-living-seal.md](docs/the-living-seal.md) |
 | Any mob that fights with a power, a mini-boss, a boss or a world event | **the bosses skill**: [.claude/skills/minecraft-bosses/SKILL.md](.claude/skills/minecraft-bosses/SKILL.md) |
 | Any structure, room, city block, arena, or Java that places scenery block by block | **the building skill**: [.claude/skills/minecraft-building/SKILL.md](.claude/skills/minecraft-building/SKILL.md) |
 | Scattered Overworld ruins (burnt/collapsed houses, Bennet house, Isaac's studio), their rarity, terrain blending or submerged salvage | The building skill, then [story-and-scenes.md](docs/agents/story-and-scenes.md), "Scattered ruins". Edit `tools/generate-scattered-ruins.py`, regenerate and re-export all four NBT templates; keep loot and painting markers. Rarity lives in `worldgen/structure_set/ruins.json` and `story_ruins.json`; structures use `OCEAN_FLOOR_WG` and `RuinsWaterProcessor` for flooded rooms and floating salvage |
@@ -79,11 +81,13 @@ Shared systems with player docs: [fighting-styles.md](docs/fighting-styles.md), 
 [classes.md](docs/classes.md), [skill-trees.md](docs/skill-trees.md), [progression.md](docs/progression.md),
 [power-intros.md](docs/power-intros.md), [power-sounds.md](docs/power-sounds.md), [gifted-mobs.md](docs/gifted-mobs.md),
 [sylar.md](docs/sylar.md), [company-agents.md](docs/company-agents.md),
+[wither.md](docs/wither.md) (Containment Failure: the summoning breach and flight-sized cage),
+[the-living-seal.md](docs/the-living-seal.md) (the native End Dragon and Sylar's Inheritance finale),
 [emergency-band.md](docs/emergency-band.md), [overloads.md](docs/overloads.md), [meteor-shower.md](docs/meteor-shower.md),
 [lasting-consequences.md](docs/lasting-consequences.md), [company-notices.md](docs/company-notices.md),
 [living-radio.md](docs/living-radio.md), [gifted-villagers.md](docs/gifted-villagers.md), [power-traces.md](docs/power-traces.md),
 [travellers.md](docs/travellers.md), [village-growth.md](docs/village-growth.md),
-[the-last-day.md](docs/the-last-day.md),
+[the-last-day.md](docs/the-last-day.md), [end-portal.md](docs/end-portal.md),
 [the-past.md](docs/the-past.md), [jei-and-jade.md](docs/jei-and-jade.md),
 [minecraft-comes-alive.md](docs/minecraft-comes-alive.md).
 

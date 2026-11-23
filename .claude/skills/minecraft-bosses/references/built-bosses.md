@@ -7,6 +7,68 @@ hold, so they are kept below. What the player sees: [sylar.md](../../../../docs/
 
 Part of the notes for coding agents: start at [AGENTS.md](../../../../AGENTS.md).
 
+## The Living Seal: reusable patterns
+
+- **Keep the native progression owner.** `endgame/EndBattle` controls the native multipart Dragon, redirects parent-body
+  ability hits to its head path, captures death XP, and defers `EndDragonFight.setDragonKilled` until Inheritance ends.
+  Freezing the native fight tick at a saved Sylar checkpoint prevents its missing-Dragon watchdog from respawning one.
+  Release the original completion once; never imitate its egg, gateway or exit with block placement.
+- **Effective health must survive the attribute ceiling.** `EndDamage` scales damage units when a party's pool exceeds
+  vanilla's 1000-health limit. Preserve the fraction on join; otherwise a late fighter silently heals the boss.
+- **Force-loaded does not mean entity-ticking yet.** `Encounter.discoverCrystals` polls the native spike bounding boxes
+  during startup. A one-time constructor query missed crystals in waking chunks. Tests use explicit fixture references
+  until those chunks are ticking; ordinary player builds' decorative crystals outside the pillars remain unrelated.
+- **Snapshot only owned scenery.** `EndScenery` refuses occupied footprints and block entities, records before/after
+  states durably, restores only matching after-states, and releases only its own force-load tickets. Regenerate both
+  altar/refuge blueprints with `generate-end-arena.py`; the real preview checks lighting with `CityAudit`.
+- **A floor wave needs a jumpable height and the actual floor.** A fixed y=64 wave floated over End slopes, and a
+  1.8-block hit height exceeded a normal jump. `EndGeometry.waveHeight` follows the terrain on server and client;
+  `WAVE_HEIGHT` is .8. `EndBattleGameTests.ordinaryJumpClearsTerrainFollowingPressureWave` checks both outcomes.
+- **Airborne ultimates need reachable shelter.** `EndMoves.warn` fixes a safe orbit seven blocks from each fighter,
+  besides the room sector and real cover. Put the sector away from the primary target's initial location, or a solo
+  player standing still automatically evades the ultimate. Sampled radiation/amplification use the same 70-tick warning.
+- **Separate the character's worldline from his earlier story.** `SylarEntity.inheritance` reuses the entity, poses and
+  renderer while keeping Collection state, Claire/Ted outcomes and earlier wins intact. A broken echo prism cancels
+  the sampled pattern; it never removes the player's real gift.
+- **Make the body crack before hiding it.** `SylarRenderer` draws generated emissive cracks on both base and outer
+  PlayerModel UVs (base-only cracks were occluded by the coat). `BodyCopies` hides the real model precisely at
+  `EndGeometry.RUPTURE_TICK`; `EndRuptureArt` uses the prologue's `CloudMesh` through `Canvas.cloud` for the ability wave.
+  The server waits the complete eight seconds before progression and rewards; its blast is visual and leaves builds intact.
+- **Keep victory art on the encounter clock.** The release reads `EndClientState.age`, so a slowed boss animation does
+  not desynchronize the detonation, the 3.6-second score impact and the server's reward beat. `EndBattleMusic` uses
+  six original 100 BPM arrangements and 48-tick bar transitions; restart silent stems after volume or sound reload.
+- **Unloaded is not defeated.** The encounter checks `getRemovalReason().shouldDestroy()` before treating a removed
+  Inheritance actor as dead. Unloading abandons the attempt and retains its checkpoint, without rewards. The focused
+  tests also complete native progression and use the crafted Worldline Sigil against the real four-crystal respawn.
+- **End a boss's hazards when its scene begins.** `Encounter.clearHazards` discards bolts and waves on Dragon death,
+  absorption and victory; `EndMoves.hit` also refuses cinematic stages. Reflected `EndBolt` damage retains its player
+  source and uses the existing `FlightSkillService.hostile` rule, so disabled PvP and allies remain protected.
+- **Return beside a saved source portal.** The home saved on End entry can be inside its portal block. `returnHome`
+  finds adjacent walkable ground when needed and sets portal cooldown, instead of immediately sending the player back.
+
+## Containment Failure: reusable patterns
+
+- **Replace the construction before the vanilla explosion.** `wither/WitherEvents.formed` intercepts a newly made
+  invulnerable native Wither in `EntityJoinLevelEvent`; saved and ordinary command-spawned Withers are untouched. A
+  second construction refunds its ingredients. The integration test builds the real soul-sand T and skull pattern.
+- **Keep retreat useful without providing a firing nest.** `WitherArena` pairs a persistent source breach with a
+  solid, sheltered return alcove; `sheltered` excludes both outgoing damage and boss targeting there. Abandonment
+  rebuilds the next attempt. Saved homes and death/prize stashes survive a restart. Release only chunk tickets owned
+  by the encounter; an operator's pre-existing tickets survive cleanup.
+- **Flight needs a volume and an opponent.** `WitherGeometry` and `generate-wither-arena.py` share checked markers in
+  an 81-block floor, 46-block flight space and 48-block ribs. The boss approaches airborne opponents between casts,
+  while marked origins stay fixed. Lit rib ledges eliminate upper dark floors without filling the central airspace.
+- **A canceled warning must stay canceled.** `WITHER_CANCEL` outlives every Wither warning, so an interrupted marker
+  cannot reappear when its shorter backfire animation expires. `WitherArt` reads the same windup and radius as hits.
+- **A ray with no entity needs an empty collision context.** Passing `(Entity)null` to the 1.21.1 `ClipContext`
+  constructor throws in `CollisionContext.of`; use `CollisionContext.empty()` for world-only cover rays.
+- **A broad-phase box is not a circular impact.** `RiftSkull.onHit` filters nearby entities by distance from their
+  hitbox to the impact, so square corners cannot hit outside the warning. `WitherMoves` fixes both ends of a lunge's
+  actual three-dimensional path when it starts; aiming the drawing at a flier and the server at the floor was wrong.
+- **Preview after the transfer settles.** A fixed camera installed before an Overworld teleport photographed only
+  sky even though source blocks existed on the client. `WitherPreview` reasserts its shot after the transfer and uses
+  creative flight plus an ability update for airborne photos, so the player does not fall out of the staged lane.
+
 ## Sylar's Collection: the classes
 
 | Class | Job |

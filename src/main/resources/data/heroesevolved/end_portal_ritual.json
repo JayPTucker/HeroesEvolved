@@ -1,0 +1,7 @@
+{
+  "minimum_power_level": 16,
+  "channel_ticks": 160,
+  "memory_ticks": 2400,
+  "opening_ticks": 40,
+  "starting_stamina_fraction": 0.95
+}

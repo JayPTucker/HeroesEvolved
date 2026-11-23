@@ -1,0 +1,24 @@
+// Real ability-key holds, solo offerings and a visible co-op partner. Test driver never ships in the mod jar.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('endPortalPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/end-portal-preview')
+                        programArguments.addAll('--width', '1400', '--height', '1000')
+                        systemProperty('heroes.preview.endportal', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('endPortalPreviewClasses')) }
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

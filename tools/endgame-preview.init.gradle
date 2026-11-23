@@ -1,0 +1,22 @@
+// Real native End island, all six phases and every sampled gift. Test driver never ships.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview=sourceSets.create('endgamePreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs { client {
+                    gameDirectory=project.file('build/endgame-preview')
+                    programArguments.addAll('--width','1600','--height','1000')
+                    systemProperty('heroes.preview.endgame','true')
+                } }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('endgamePreviewClasses')) }
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

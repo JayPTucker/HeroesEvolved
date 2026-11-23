@@ -295,7 +295,16 @@ public enum Piece {
     // Starfall (meteor/), drawn by MeteorArt: a meteor landing (origin where it landed; scale its blast) and one cracked
     // apart in the sky by a sonic (origin where it broke; scale its rock's radius).
     METEOR_IMPACT(44), METEOR_SHATTER(30),
-    OVEREXERTION(6000);
+    OVEREXERTION(6000),
+    // End portal offerings: origin the center's surface, target the eye, bound to a channeling player.
+    // Seed: power colour in bits 0..4, paid channel ticks above it. OPEN packs the pair's colours in five bits each.
+    END_PORTAL_DORMANT(24), END_PORTAL_CHANNEL(14), END_PORTAL_IMPRINT(14), END_PORTAL_OPEN(54), END_PORTAL_CANCEL(18),
+    WITHER_FORM(125), WITHER_BREACH(14), WITHER_AURA(14), WITHER_WARNING(80), WITHER_PULSE(110),
+    WITHER_IMPACT(24), WITHER_NOVA(24), WITHER_BACKFIRE(36), WITHER_PHASE(50), WITHER_DEATH(80), WITHER_CANCEL(84),
+    END_BATTLE_FIELD(14), END_BATTLE_WARNING(130), END_BATTLE_CHANNEL(14), END_BATTLE_CANCEL(150),
+    END_BATTLE_GROUNDED(50), END_BATTLE_PHASE(60), END_BATTLE_ABSORB(200), END_BATTLE_RELEASE(180),
+    END_BATTLE_REFUGE(14), END_BATTLE_BACKFIRE(40), END_BATTLE_STRIKE(20), END_BATTLE_NOVA(30),
+    END_BATTLE_IMPACT(24), END_BATTLE_WAVE(180), END_BATTLE_DASH(16), END_BATTLE_BOLT(10);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

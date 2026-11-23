@@ -17,6 +17,14 @@ public final class FirstPersonArmGeometry {
 
     public static void pose(PoseStack stack, HumanoidArm arm, ArmPose pose, float time, float poseAge) {
         float side = arm == HumanoidArm.RIGHT ? 1 : -1;
+        if (pose == ArmPose.PORTAL_CHANNEL) {
+            float reach = net.minecraft.util.Mth.clamp(poseAge / 10, 0, 1);
+            stack.translate(side * (.42 - .1 * reach), -.31, -.32);
+            stack.mulPose(Axis.XP.rotationDegrees(-94 + 2 * Mth.sin(time * .12F)));
+            stack.mulPose(Axis.YP.rotationDegrees(side * 6));
+            stack.mulPose(Axis.ZP.rotationDegrees(side * -8));
+            return;
+        }
         if (AmpPoses.owns(pose)) {
             AmpPoses.first(stack, arm, side, pose, time, poseAge);
             return;

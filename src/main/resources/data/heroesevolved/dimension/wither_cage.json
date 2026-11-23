@@ -1,0 +1,13 @@
+{
+  "type": "heroesevolved:wither_cage",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "layers": [],
+      "lakes": false,
+      "features": false,
+      "structure_overrides": [],
+      "biome": "minecraft:the_void"
+    }
+  }
+}

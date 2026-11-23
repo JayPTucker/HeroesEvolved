@@ -29,6 +29,7 @@ public final class PowerRules {
                 && !com.jayptucker.heroesevolved.story.bunker.CryoChamberService.isInside(player)
                 && !EclipseService.arePowersSuppressed(player) && !PowerIntroService.isActive(player)
                 && !TimeIntroService.blocksPowers(player)
+                && !com.jayptucker.heroesevolved.endgame.EndBattle.interference(player)
                 && !com.jayptucker.heroesevolved.company.SuppressorField.suppresses(player)
                 && !com.jayptucker.heroesevolved.dampener.Dampening.dampened(player)
                 && !com.jayptucker.heroesevolved.story.sylar.CollectionArena.stolen(player)

@@ -9,6 +9,15 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 
 ## Running one
 
+- **Endgame:** `tools/endgame-preview.init.gradle` photographs the native End island, both temporary ruins, every
+  Dragon move, all six phases, absorption, all 21 sampled gifts and Sylar's rupture at close and island-wide distances.
+  Its driver is `endgame/EndgamePreview`; photos are in `build/endgame-preview/screenshots/`. Both ruin lighting audits
+  must be clean. The final death photos show the actual emissive PlayerModel, the white flash and the ability wave.
+
+- **Wither:** `tools/wither-preview.init.gradle` photographs the native summoning replacement, hinged ribs, swallowing
+  heads, breach, 81-block arena, every warning, three phases, anchor backfire, aerial lanes and death. Its driver is
+  `uitest/WitherPreview`; photos go to `build/wither-preview/screenshots/`. It runs `CityAudit` including upper rib ledges.
+
 - `./gradlew runClient --init-script tools/<name>-preview.init.gradle [-P<option>]`. Each script loads its driver from
   `src/uitest/java/com/jayptucker/heroesevolved/uitest/` (never shipped in the jar), sets its own
   `heroes.preview.<flag>` system property, and runs the client in its own folder under `build/`, so it never touches a
@@ -167,6 +176,7 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | `meltdown-preview.init.gradle`, `containment-preview.init.gradle`, `live-run-preview.init.gradle` | a villager meltdown; a speedster containing a blast | |
 | `eclipse-preview.init.gradle` | the Eclipse moon | |
 | **Story and places** | | |
+| `end-portal-preview.init.gradle` | Dormant frame, paired offerings from both sides, first-person palms, stamina drain, opening membrane and iris, solo water offering, remembered eye at night, natural recovery and a solo opening | Uses real local ability-key holds and a visible server-side partner. Reports Level 15 refusal, co-op opening, one offering waiting, natural solo recovery and solo opening. Fourteen photographs in `build/end-portal-preview/screenshots/` |
 | `prologue-preview.init.gradle`, `time-city-preview.init.gradle` | the Last Day beat by beat; Odessa (prints `CITY_AUDIT`) | |
 | `bunker-preview.init.gradle`, `night-three-preview.init.gradle` | the bunker tour (prints `BUNKER_AUDIT`, `BUNKER_DARK`); Night Three | |
 | `odessa-ruins-preview.init.gradle` | Present-day Odessa around a new bunker in normal terrain: skyline, hills, buried rooms, woodland edges, streets, cache contents, signed and unfinished journals | Checks block supports at each district's footing and all journal pages with the actual font; 15 photographs. `-Ponly=04-odessa-arms,07-church` selects tour shots; the three inventory/book shots always run |

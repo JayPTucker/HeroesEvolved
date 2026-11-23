@@ -141,6 +141,13 @@ public final class ModItems {
                         output.accept(SYLARS_WATCH.get());
                         output.accept(REPAIR_TICKET.get());
                         output.accept(BRASS_MOVEMENT.get());
+                        output.accept(ModItems.INHERITANCE_CORE.get());
+                        output.accept(ModItems.ANCHOR_OF_RETURN.get());
+                        output.accept(ModItems.WORLDLINE_SIGIL.get());
+                        output.accept(ModItems.MUSIC_DISC_INHERITANCE.get());
+                        output.accept(ModItems.FRACTURED_STAR.get());
+                        output.accept(ModItems.BREACH_SEED.get());
+                        output.accept(ModItems.MUSIC_DISC_CONTAINMENT.get());
                         output.accept(MUSIC_DISC_THE_COLLECTION.get());
                         output.accept(HORN_RIMMED_GLASSES.get());
                         output.accept(EMP_GRENADE.get());
@@ -162,6 +169,19 @@ public final class ModItems {
                     })
                     .build());
 
+    public static final DeferredItem<Item> FRACTURED_STAR = ITEMS.registerSimpleItem("fractured_star", new Item.Properties().rarity(Rarity.RARE).fireResistant());
+    public static final DeferredItem<com.jayptucker.heroesevolved.wither.BreachSeedItem> BREACH_SEED = ITEMS.register("breach_seed",
+            () -> new com.jayptucker.heroesevolved.wither.BreachSeedItem(new Item.Properties().stacksTo(16).rarity(Rarity.RARE)));
+    public static final DeferredItem<Item> MUSIC_DISC_CONTAINMENT = ITEMS.registerSimpleItem("music_disc_containment",
+            new Item.Properties().stacksTo(1).rarity(Rarity.RARE).jukeboxPlayable(net.minecraft.resources.ResourceKey.create(
+                    net.minecraft.core.registries.Registries.JUKEBOX_SONG,
+                    net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("heroesevolved", "containment"))));
+    public static final DeferredItem<Item> INHERITANCE_CORE = ITEMS.registerSimpleItem("inheritance_core", new Item.Properties().rarity(Rarity.EPIC).fireResistant());
+    public static final DeferredItem<Item> ANCHOR_OF_RETURN = ITEMS.registerSimpleItem("anchor_of_return", new Item.Properties().stacksTo(1).rarity(Rarity.EPIC).fireResistant());
+    public static final DeferredItem<com.jayptucker.heroesevolved.endgame.WorldlineSigilItem> WORLDLINE_SIGIL = ITEMS.register("worldline_sigil",
+            () -> new com.jayptucker.heroesevolved.endgame.WorldlineSigilItem(new Item.Properties().stacksTo(16).rarity(Rarity.EPIC)));
+    public static final DeferredItem<Item> MUSIC_DISC_INHERITANCE = ITEMS.registerSimpleItem("music_disc_inheritance", new Item.Properties().stacksTo(1).rarity(Rarity.RARE)
+            .jukeboxPlayable(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.JUKEBOX_SONG,net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("heroesevolved","inheritance"))));
     private ModItems() {}
 
     public static void register(IEventBus modEventBus) {

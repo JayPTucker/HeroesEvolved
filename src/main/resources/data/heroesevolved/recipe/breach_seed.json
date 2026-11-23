@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "ESE",
+    "SFS",
+    "ESE"
+  ],
+  "key": {
+    "E": {
+      "item": "minecraft:echo_shard"
+    },
+    "S": {
+      "item": "minecraft:soul_sand"
+    },
+    "F": {
+      "item": "heroesevolved:fractured_star"
+    }
+  },
+  "result": {
+    "id": "heroesevolved:breach_seed",
+    "count": 1
+  }
+}

@@ -34,16 +34,22 @@ public final class AbilityUseService {
 
     /** Forwards a key release to the assigned power's action in that slot. */
     public static void releaseAssignedAction(ServerPlayer player, AbilitySlot slot) {
+        if (com.jayptucker.heroesevolved.endgame.EndChannel.release(player, "slot:" + slot)) return;
+        if (com.jayptucker.heroesevolved.endportal.EndPortalRitual.release(player, "slot:" + slot)) return;
         release(player, power -> com.jayptucker.heroesevolved.skills.SkillTreeService.actions(player, power).get(slot));
     }
 
     /** A release of ability key {@code key} (1 to 8). */
     public static void releaseKey(ServerPlayer player, int key) {
+        if (com.jayptucker.heroesevolved.endgame.EndChannel.release(player, "key:" + key)) return;
+        if (com.jayptucker.heroesevolved.endportal.EndPortalRitual.release(player, "key:" + key)) return;
         release(player, power -> Loadout.onKey(player, power, key));
     }
 
     /** A release of an action cast from the wheel. */
     public static void releaseAction(ServerPlayer player, String actionKey) {
+        if (com.jayptucker.heroesevolved.endgame.EndChannel.release(player, "action:" + actionKey)) return;
+        if (com.jayptucker.heroesevolved.endportal.EndPortalRitual.release(player, "action:" + actionKey)) return;
         release(player, power -> Loadout.resolve(player, power, actionKey));
     }
 
@@ -59,16 +65,26 @@ public final class AbilityUseService {
 
     /** Presses ability key 1 to 5 by its slot. */
     public static AbilityUseResult activateAssignedAction(ServerPlayer player, AbilitySlot slot, boolean allowOverexertion) {
+        AbilityUseResult endCharge = com.jayptucker.heroesevolved.endgame.EndChannel.press(player, "slot:" + slot);
+        if (endCharge != null) return endCharge;
+        AbilityUseResult ritual = com.jayptucker.heroesevolved.endportal.EndPortalRitual.press(player, "slot:" + slot);
+        if (ritual != null) return ritual;
         return activate(player, power -> com.jayptucker.heroesevolved.skills.SkillTreeService.actions(player, power).get(slot), allowOverexertion);
     }
 
     /** Presses ability key {@code key} (1 to 8): whatever action the player put on it. */
     public static AbilityUseResult activateKey(ServerPlayer player, int key, boolean allowOverexertion) {
+        AbilityUseResult endCharge = com.jayptucker.heroesevolved.endgame.EndChannel.press(player, "key:" + key);
+        if (endCharge != null) return endCharge;
+        AbilityUseResult ritual = com.jayptucker.heroesevolved.endportal.EndPortalRitual.press(player, "key:" + key);
+        if (ritual != null) return ritual;
         return activate(player, power -> Loadout.onKey(player, power, key), allowOverexertion);
     }
 
     /** Casts an action by its action key, as the ability wheel does. */
     public static AbilityUseResult activateAction(ServerPlayer player, String actionKey, boolean allowOverexertion) {
+        // Wheel selections are momentary casts, with no held key to release. They keep their usual behavior.
+        if (com.jayptucker.heroesevolved.endgame.EndChannel.active(player) || com.jayptucker.heroesevolved.endportal.EndPortalRitual.channeling(player)) return AbilityUseResult.CANNOT_USE;
         return activate(player, power -> Loadout.resolve(player, power, actionKey), allowOverexertion);
     }
 

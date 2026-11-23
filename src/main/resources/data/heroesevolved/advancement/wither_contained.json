@@ -1,0 +1,19 @@
+{
+  "parent": "heroesevolved:wither_anomaly",
+  "display": {
+    "icon": {
+      "id": "heroesevolved:fractured_star"
+    },
+    "title": "Containment Restored",
+    "description": "Silence the hungry star beyond the breach.",
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "observed": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

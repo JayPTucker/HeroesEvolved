@@ -1,0 +1,8 @@
+{
+  "sound_event": "heroesevolved:music_disc.containment",
+  "description": {
+    "translate": "jukebox_song.heroesevolved.containment"
+  },
+  "length_in_seconds": 60,
+  "comparator_output": 13
+}

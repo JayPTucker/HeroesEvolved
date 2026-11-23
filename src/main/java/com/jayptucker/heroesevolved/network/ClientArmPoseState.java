@@ -41,7 +41,8 @@ public final class ClientArmPoseState {
                 || pose == ArmPose.EARTH_SURF || pose == ArmPose.EARTH_LISTEN
                 || pose == ArmPose.WATER_OCTOPUS || pose == ArmPose.WATER_SURF || pose == ArmPose.WATER_CALL
                 || pose == ArmPose.WATER_PUSH
-                || pose == ArmPose.AMP_CUP || pose == ArmPose.AMP_RAISE || pose == ArmPose.AMP_SHOW;
+                || pose == ArmPose.AMP_CUP || pose == ArmPose.AMP_RAISE || pose == ArmPose.AMP_SHOW
+                || pose == ArmPose.PORTAL_CHANNEL;
         long began = continuous && previous != null && previous.pose == pose && previous.endMillis > now
                 ? previous.startMillis : now;
         POSES.put(entityId, new Entry(pose, began, now + durationTicks * 50L));

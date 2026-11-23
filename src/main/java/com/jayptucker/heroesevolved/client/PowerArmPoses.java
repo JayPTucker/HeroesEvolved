@@ -137,6 +137,23 @@ public final class PowerArmPoses {
         // Inward rotation is negative for the right arm and positive for the left.
         float inward = rightHanded ? -1.0F : 1.0F;
 
+        if (pose == ArmPose.PORTAL_CHANNEL && entity instanceof Player portalPlayer) {
+            var channel = SetPieceClient.boundTo(com.jayptucker.heroesevolved.styles.Piece.END_PORTAL_CHANNEL, id);
+            if (channel != null) {
+                float partial = Mth.clamp(ageInTicks - entity.tickCount, 0, 1);
+                Vec3 focus = com.jayptucker.heroesevolved.endportal.PortalGeometry.focus(channel.target(), channel.origin());
+                frostArm(model.rightArm, portalPlayer, partial, focus, 1);
+                frostArm(model.leftArm, portalPlayer, partial, focus, -1);
+                float effort = .02F * Mth.sin(ageInTicks * .7F);
+                model.rightArm.zRot += effort; model.leftArm.zRot -= effort;
+                set(model.rightLeg, -.07F, .08F, .07F);
+                set(model.leftLeg, .08F, -.08F, -.07F);
+                model.rightPants.copyFrom(model.rightLeg); model.leftPants.copyFrom(model.leftLeg);
+                model.rightSleeve.copyFrom(model.rightArm); model.leftSleeve.copyFrom(model.leftArm);
+                return;
+            }
+        }
+
         if (AmpPoses.owns(pose)) {
             AmpPoses.third(model, pose, id, ageInTicks, aimX, aimY, main, rightHanded ? model.leftArm : model.rightArm, inward);
             model.rightSleeve.copyFrom(model.rightArm);
