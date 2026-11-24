@@ -10,6 +10,9 @@ End portal. Its instructions show your current key bindings. **Key bindings…**
 Scroll, use the arrow buttons, or use Up/Down and Page Up/Page Down to read; Left/Right changes topic.
 Growing stronger also shows your own Evolved trial and progress after awakening.
 
+**The Hungry Cage** explains the Wither's Power Level 16 entry requirement, solo play, attack chains, three-hit
+stance breaks, jumpable pressure, seven-second anchor feeds and the return breach. It can be read before entering.
+
 ## Occasional field notes
 
 A small card introduces useful controls and explains an unusual rule when you encounter it. Each note appears once
@@ -44,6 +47,8 @@ their rewards remain available alongside them.
 ## Operator tools
 
 Operators can open the admin console with **O** (or their rebound admin key), or `/heroesevolved admin`.
+Story includes **Wither: Containment Failure**: open a breach near the selected player, enter an eligible fighter,
+advance the encounter's phase, read its live status or cancel and return every fighter safely.
 Debug includes **Replay tips** for the selected player and **Give civilian journal** for a random recovered notebook.
 The **Commands** tab searches the live server's registered mod commands, including village projects, traces,
 blueprints and Mimicry tools. Select a template to open it in chat, replace its argument placeholders and submit it

@@ -119,13 +119,14 @@ public final class WitherGameTests {
     public static void solidCoverStopsNovaAndDoorwayCannotSnipe(GameTestHelper h){clean(h);try{
         ServerPlayer p=player(h,16);var b=fight(h,p);ServerLevel l=(ServerLevel)b.level();b.setPos(WitherGeometry.floor().add(0,1,0));p.setPos(WitherGeometry.floor().add(0,0,9));
         for(int x=-3;x<=3;x++)for(int y=0;y<8;y++)l.setBlock(WitherGeometry.ORIGIN.offset(x,y+3,5),Blocks.BLACKSTONE.defaultBlockState(),3);
-        float health=p.getHealth();b.start(WitherGeometry.Move.HORIZON);for(int i=0;i<60;i++)b.tick();h.assertTrue(p.getHealth()==health,"Real cover blocks star discharge");
+        float health=p.getHealth();b.start(WitherGeometry.Move.HORIZON);for(int i=0;i<WitherGeometry.Move.HORIZON.windup;i++)b.tick();h.assertTrue(p.getHealth()==health,"Real cover blocks the released star discharge");
         p.setPos(WitherGeometry.exit());float hp=b.getHealth();h.assertTrue(!b.hurt(b.damageSources().playerAttack(p),20)&&b.getHealth()==hp,"Return alcove cannot be used to snipe");
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_08")
     public static void heavyInterruptAndPhaseFinishers(GameTestHelper h){clean(h);try{
-        ServerPlayer p=player(h,16);var b=fight(h,p);p.setPos(b.position().add(0,0,6));b.start(WitherGeometry.Move.TETHER);WitherEvents.swing(p);b.hurt(b.damageSources().playerAttack(p),4);
-        h.assertTrue(b.casting==null&&b.stagger>0,"Charged melee interrupts ordinary windup");
+        ServerPlayer p=player(h,16);var b=fight(h,p);p.setPos(b.position().add(0,0,6));b.start(WitherGeometry.Move.TETHER);
+        for(int i=0;i<3;i++){b.clock+=8;WitherEvents.swing(p);b.invulnerableTime=0;b.hurt(b.damageSources().playerAttack(p),4);}
+        h.assertTrue(b.casting==null&&b.stagger>0,"Three charged hits crack the stance and interrupt the chain");
         b.setHealth(b.getMaxHealth()*.7F);b.phaseFinished(p);h.assertTrue(b.phase()==2&&b.stagger==100,"Phase finisher earns long stagger");
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_09")
@@ -205,9 +206,95 @@ public final class WitherGameTests {
     public static void lungeFollowsItsMarkedAirLane(GameTestHelper h){clean(h);try{
         ServerPlayer p=player(h,16);var b=fight(h,p);b.setPos(WitherGeometry.floor().add(0,25,0));p.setPos(b.position().add(0,0,14));
         float health=p.getHealth();b.start(WitherGeometry.Move.LUNGE);Vec3 mark=b.marks.getFirst(),from=b.castFrom;
-        for(int i=0;i<WitherGeometry.Move.LUNGE.windup;i++)b.tick();
-        h.assertTrue(b.position().add(0,1,0).distanceTo(mark)<.5,"Actual swept lunge follows fixed warning endpoint");
-        h.assertTrue(b.getY()>WitherGeometry.floor().y+24&&p.getHealth()<health,"Lunge engages a flying opponent without dropping to ground");
-        h.assertTrue(Math.abs(from.y-mark.y)<.01,"Level flight produces a level warning lane");
+        for(int i=0;i<WitherGeometry.Move.LUNGE.windup+WitherGeometry.LUNGE_TICKS;i++)b.tick();
+        h.assertTrue(b.position().add(0,3,0).distanceTo(mark)<.5,"Actual swept lunge follows fixed warning endpoint");
+        h.assertTrue(b.getY()>WitherGeometry.floor().y+20&&p.getHealth()<health,"Lunge engages a flying opponent without dropping to ground");
+        h.assertTrue(Math.abs(from.y-mark.y)<3,"Warning commits to the opponent's aerial body height");
     }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_17")
+    public static void activeBossClosesDistanceAndChainsAttacks(GameTestHelper h){clean(h);try{
+        var p=player(h,16);var b=fight(h,p);b.still(false);b.rest=0;p.setPos(WitherGeometry.floor().add(0,0,27));double initial=b.distanceTo(p),closest=initial;
+        for(int i=0;i<600;i++){p.setHealth(20);b.tick();closest=Math.min(closest,b.distanceTo(p));}
+        h.assertTrue(closest<initial-8,"Active pursuit closes a meaningful part of the arena");h.assertTrue(b.attacksLanded()>=8,"Thirty seconds contains multiple complete attack chains");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_18")
+    public static void phaseChainsChangeTheirJobsAndBodyHasBossScale(GameTestHelper h){clean(h);try{
+        var b=fight(h,player(h,16));h.assertTrue(b.getBbHeight()>8&&b.getBbWidth()>5,"Arena creature is visibly and physically imposing");
+        var close=List.of(WitherGeometry.chain(1,0,false));var far=List.of(WitherGeometry.chain(1,0,true));
+        h.assertTrue(close.getFirst()==WitherGeometry.Move.BITE&&far.getFirst()==WitherGeometry.Move.LUNGE,"Close and distant fighters get different openings");
+        h.assertTrue(List.of(WitherGeometry.chain(2,0,false)).contains(WitherGeometry.Move.RAKE)&&List.of(WitherGeometry.chain(3,0,false)).contains(WitherGeometry.Move.HORIZON),"Later phases add distinct linked threats");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_19")
+    public static void chargeTravelsOverTicksAndCannotHitOnePlayerRepeatedly(GameTestHelper h){clean(h);try{
+        var p=player(h,16);var b=fight(h,p);p.setPos(WitherGeometry.floor().add(0,0,22));b.start(WitherGeometry.Move.LUNGE);Vec3 initial=b.position();
+        for(int i=0;i<WitherGeometry.Move.LUNGE.windup;i++)b.tick();h.assertTrue(b.position().distanceTo(initial)<.01&&b.motionTicks>0,"Windup starts a committed motion rather than teleporting");
+        for(int i=0;i<WitherGeometry.LUNGE_TICKS;i++){Vec3 before=b.position();b.tick();h.assertTrue(b.position().distanceTo(before)<=3.61,"Every charge step fits native motion bounds");}
+        h.assertTrue(b.motionTicks==0&&b.spent>0&&b.motionHit.size()<=1,"Charge brakes into recovery and hits a fighter at most once");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_20")
+    public static void slamReallyLiftsAndLandsAtItsFixedMark(GameTestHelper h){clean(h);try{
+        var p=player(h,16);var b=fight(h,p);p.setPos(WitherGeometry.floor().add(0,0,12));double start=b.getY();b.start(WitherGeometry.Move.SLAM);Vec3 fixed=b.marks.getFirst();
+        for(int i=0;i<WitherGeometry.Move.SLAM.windup;i++)b.tick();h.assertTrue(b.getY()>start+8&&p.getHealth()==20,"Body lifts before descent and cannot hit early");
+        p.setPos(p.position().add(12,0,0));for(int i=0;i<WitherGeometry.SLAM_TICKS;i++)b.tick();h.assertTrue(b.position().distanceTo(fixed.add(0,.3,0))<.5&&p.getHealth()==20,"Slam lands on the original warning and a dodge works");
+        b.setPos(WitherGeometry.floor().add(0,.35,0));p.setPos(WitherGeometry.floor().add(0,0,12));b.start(WitherGeometry.Move.SLAM);
+        for(int i=0;i<WitherGeometry.Move.SLAM.windup;i++)b.tick();p.serverLevel().setBlock(p.blockPosition().above(4),Blocks.BLACKSTONE.defaultBlockState(),3);
+        for(int i=0;i<WitherGeometry.SLAM_TICKS;i++)b.tick();h.assertTrue(b.getY()>p.getY()+3&&p.getHealth()==20,"A blocked descent cannot deliver a phantom impact through cover");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_21")
+    public static void ordinaryJumpClearsPulse(GameTestHelper h){clean(h);try{
+        var p=player(h,16);var b=fight(h,p);p.setPos(WitherGeometry.floor().add(0,1.15,12));b.start(WitherGeometry.Move.PULSE);for(int i=0;i<50;i++)b.tick();h.assertTrue(p.getHealth()==20,"Normal jump height clears the pressure front");
+        p.setPos(WitherGeometry.floor().add(0,0,12));b.start(WitherGeometry.Move.PULSE);for(int i=0;i<50;i++)b.tick();h.assertTrue(p.getHealth()<20,"Standing in the same lane is struck");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_22")
+    public static void anchorRemainsCounterableAfterItsInitialAttack(GameTestHelper h){clean(h);try{
+        var p=player(h,16);var b=fight(h,p);b.start(WitherGeometry.Move.RAIN);int anchor=b.anchor();for(int i=0;i<80;i++)b.tick();
+        h.assertTrue(b.casting==null&&b.anchor()==anchor,"Feed remains visible beyond the short rain windup");h.assertTrue(b.backfire(anchor,p)&&b.stagger>0,"A solo fighter can reach the focus and still backfire it");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_23")
+    public static void oneHeavyHitCannotKeepBossPermanentlyInterrupted(GameTestHelper h){clean(h);try{
+        var p=player(h,16);var b=fight(h,p);p.setPos(b.position().add(0,0,6));b.start(WitherGeometry.Move.VERDICT);WitherEvents.swing(p);b.hurt(b.damageSources().playerAttack(p),4);
+        h.assertTrue(b.casting==WitherGeometry.Move.VERDICT&&b.stance()==1,"Single routine charged hit cracks stance without deleting the attack");
+        b.clock+=8;b.invulnerableTime=0;WitherEvents.swing(p);b.hurt(b.damageSources().playerAttack(p),4);b.clock+=8;b.invulnerableTime=0;WitherEvents.swing(p);b.hurt(b.damageSources().playerAttack(p),4);
+        h.assertTrue(b.casting==null&&b.stagger>0&&b.stance()==0,"Sustained coordinated pressure earns a true chain break");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_24")
+    public static void exposedRainWarnsAllSkullLandingPositions(GameTestHelper h){clean(h);try{
+        var p=player(h,16);var b=fight(h,p);b.start(WitherGeometry.Move.RAIN);h.assertTrue(b.marks.size()==3,"Solo rain has a readable small constellation");var fixed=List.copyOf(b.marks);
+        h.assertTrue(fixed.stream().anyMatch(mark->mark.distanceTo(p.position().add(0,.8,0))<.01),"Rain threatens the original position, so standing still is not a free safe spot");
+        for(int i=0;i<WitherGeometry.Move.RAIN.windup;i++)b.tick();h.assertTrue(b.skulls.size()==fixed.size(),"Each released skull had its own warning");
+        for(int i=0;i<fixed.size();i++)h.assertTrue(b.skulls.get(i).position().multiply(1,0,1).distanceTo(fixed.get(i).multiply(1,0,1))<.01,"Skull falls on the committed horizontal mark");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_25")
+    public static void largePartyPreservesEffectiveHealthAboveAttributeCeiling(GameTestHelper h){clean(h);try{
+        var p=player(h,16);var b=fight(h,p);b.setHealth(220);for(int i=0;i<4;i++)WitherArena.enter(player(h,16));
+        h.assertTrue(b.getMaxHealth()==1000&&Math.abs(b.getHealth()/b.getMaxHealth()-.5)<.001&&b.effectiveHealth==1320,"Five fighters keep the full effective pool and existing health fraction");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_26")
+    public static void anchorGlassHasRealReachableOpenFaces(GameTestHelper h){clean(h);try{
+        var p=player(h,16);var b=fight(h,p);for(BlockPos anchor:WitherGeometry.ANCHORS){
+            Vec3 eye=Vec3.atCenterOf(anchor).add(0,-.88,2.4);var hit=p.serverLevel().clip(new net.minecraft.world.level.ClipContext(eye,Vec3.atCenterOf(anchor),net.minecraft.world.level.ClipContext.Block.COLLIDER,net.minecraft.world.level.ClipContext.Fluid.NONE,net.minecraft.world.phys.shapes.CollisionContext.empty()));
+            h.assertTrue(hit.getBlockPos().equals(anchor),"A fighter on the approach plate can actually target the glass, not its housing");
+        }
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_27")
+    public static void sideHeadShotWarnsThenUsesItsCommittedTarget(GameTestHelper h){clean(h);try{
+        var p=player(h,16);var b=fight(h,p);p.setPos(WitherGeometry.floor().add(10,0,12));Vec3 target=p.position().add(0,.8,0);b.startSideShot(1,target);Vec3 mouth=b.sideOrigin;
+        for(int i=0;i<WitherGeometry.HEAD_WINDUP-1;i++)b.tick();h.assertTrue(b.skulls.isEmpty(),"Independent side head does not fire before its cue finishes");p.setPos(p.position().add(6,0,0));b.tick();
+        h.assertTrue(b.skulls.size()==1&&b.skulls.getFirst().position().distanceTo(mouth)<.01,"Skull comes from the actual prepared mouth");h.assertTrue(b.skulls.getFirst().getDeltaMovement().normalize().dot(target.subtract(mouth).normalize())>.999,"Projectile uses the fixed warning, not a late retarget");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_28",timeoutTicks=180)
+    public static void adminCatalogueAndPermissionChecksCoverWither(GameTestHelper h){clean(h);try{
+        var p=player(h,16);var entries=com.jayptucker.heroesevolved.admin.AdminEvents.describe(p.getServer(),p);var entry=entries.stream().filter(e->e.id().equals("wither")).findFirst().orElseThrow();
+        h.assertTrue(entry.starts().size()==3&&entry.scope().contains("all fighters"),"Console exposes scoped start, entry and phase controls");
+        com.jayptucker.heroesevolved.admin.AdminService.handle(p,new com.jayptucker.heroesevolved.network.AdminActionPayload(com.jayptucker.heroesevolved.network.AdminActionPayload.Action.EVENT_START,p.getUUID(),"wither",0));
+        h.assertTrue(!WitherArena.busy(p.getServer()),"An untrusted event payload cannot create a breach");ready(h);
+        com.jayptucker.heroesevolved.admin.AdminService.handle(p,new com.jayptucker.heroesevolved.network.AdminActionPayload(com.jayptucker.heroesevolved.network.AdminActionPayload.Action.EVENT_CANCEL,p.getUUID(),"wither",0));
+        h.assertTrue(WitherArena.busy(p.getServer()),"An untrusted event payload cannot cancel another party's encounter");
+        h.assertTrue(com.jayptucker.heroesevolved.admin.AdminEvents.start(p.getServer(),p,"wither",999).equals("Unknown event or start option."),"Unknown variants are rejected");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_29",timeoutTicks=180)
+    public static void cancellationAlsoStopsQueuedFormation(GameTestHelper h){clean(h);var p=player(h,16);
+        h.assertTrue(WitherArena.start(p.serverLevel(),p.position().add(7,0,0),0),"Formation queued");WitherArena.reset(p.getServer(),false);
+        h.runAtTickTime(145,()->{try{h.assertTrue(!WitherArena.busy(p.getServer())&&!WitherArena.ready(),"Cancelled queued formation cannot reopen a breach");}finally{clean(h);}h.succeed();});
+    }
 }

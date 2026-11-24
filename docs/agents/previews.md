@@ -17,6 +17,9 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 - **Wither:** `tools/wither-preview.init.gradle` photographs the native summoning replacement, hinged ribs, swallowing
   heads, breach, 81-block arena, every warning, three phases, anchor backfire, aerial lanes and death. Its driver is
   `uitest/WitherPreview`; photos go to `build/wither-preview/screenshots/`. It runs `CityAudit` including upper rib ledges.
+  `tools/wither-rework-preview.init.gradle` adds articulated attack/release poses, independent side-head shots, all
+  three phases, 37 seconds of unpaused pursuit with real movement input, the Wither Guide and clicks on actual admin
+  start/entry/phase/cancel controls. Driver: `wither/WitherReworkPreview`; photos: `build/wither-rework-preview/screenshots/`.
 
 - `./gradlew runClient --init-script tools/<name>-preview.init.gradle [-P<option>]`. Each script loads its driver from
   `src/uitest/java/com/jayptucker/heroesevolved/uitest/` (never shipped in the jar), sets its own

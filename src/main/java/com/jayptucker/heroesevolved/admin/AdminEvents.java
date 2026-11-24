@@ -72,6 +72,9 @@ public final class AdminEvents {
                 + "Cancel recalls agents, releases prisoners and clears queued operations.",
                 !CompanyOps.all().isEmpty() || player && CompanyOps.pending(target), player,
                 "Investigate", "Convoy", "Home raid"));
+        out.add(entry("wither", "Wither: Containment Failure", true, near + " / phase and cancel: all fighters",
+                com.jayptucker.heroesevolved.wither.WitherArena.status(server),com.jayptucker.heroesevolved.wither.WitherArena.busy(server),player,
+                "Open breach", "Enter fight", "Advance phase"));
         out.add(entry("sylar", "Sylar's Collection", true, near + " / cancel: all fighters", SylarCommands.status(server),
                 CollectionArena.open(), player && !CollectionArena.open(), "Start fight"));
         out.add(entry("prologue", "The Last Day", true, player ? target.getName().getString() + " / pods: all participants" : near,
@@ -100,6 +103,7 @@ public final class AdminEvents {
         if (entry == null || variant < 0 || variant >= entry.starts().size()) return "Unknown event or start option.";
         if (!entry.canStart()) return "This event cannot start now; select an online player or cancel its current run.";
         return switch (id) {
+            case "wither" -> com.jayptucker.heroesevolved.wither.WitherArena.operatorStart(target,variant);
             case "eclipse" -> (variant == 0 ? EclipseService.start(server) : EclipseService.beginTotality(server))
                     ? "Started " + entry.starts().get(variant) + "." : "The Eclipse is already in that phase.";
             case "meltdown" -> variant == 2 ? incident(target, Kind.MELTDOWN)
@@ -155,6 +159,7 @@ public final class AdminEvents {
 
     public static String cancel(MinecraftServer server, ServerPlayer target, String id) {
         return switch (id) {
+            case "wither" -> {com.jayptucker.heroesevolved.wither.WitherArena.reset(server,false);yield "Cancelled the Wither attempt and source breach; fighters return home and keep their belongings.";}
             case "eclipse" -> EclipseService.end(server) ? "Cancelled the Eclipse." : "No Eclipse is active.";
             case "meltdown" -> "Cancelled " + (VillageIncidents.cancel(Kind.MELTDOWN) + VillagerMeltdown.cancelAll()) + " meltdown(s) / queued starts.";
             case "gifts" -> "Cancelled " + (VillageIncidents.cancel(Kind.AWAKENING, Kind.RENEGADE, Kind.GUARDIAN) + Renegades.cancelAll())

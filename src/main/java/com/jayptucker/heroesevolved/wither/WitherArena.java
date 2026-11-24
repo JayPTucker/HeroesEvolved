@@ -31,6 +31,7 @@ public final class WitherArena {
     private static ServerLevel forcedSource;
     private static ChunkPos sourceChunk;
     private static int emptyTicks, closeIn=-1;
+    private static int generation;
     private static final Map<UUID,ServerPlayer> MEMBERS=new LinkedHashMap<>();
     private static final Set<UUID> MOVING=new HashSet<>(), LEAVE_FIRST=new HashSet<>();
     private static final Map<ItemEntity,UUID> PRIZES=new HashMap<>();
@@ -41,6 +42,19 @@ public final class WitherArena {
     public static boolean moving(ServerPlayer p) { return MOVING.contains(p.getUUID()); }
     public static RiftWitherEntity boss() { return boss; }
     public static boolean ready() { return ready; }
+    public static String status(MinecraftServer server){
+        if(!busy(server))return "No Wither breach. Open one near the selected player or use the ordinary skull construction.";
+        if(boss==null)return ready?"Breach ready. Entry requires an awakened ability and Power Level 16.":"The summoning vessel is folding into the breach.";
+        return "Phase "+boss.phase()+"; "+Math.round(boss.getHealth())+" / "+Math.round(boss.getMaxHealth())+" health; "+boss.fighters().size()+" fighter(s). "
+                +(boss.dying()?"Final collapse.":boss.action()==null?"Pursuing / recovering.":boss.action().name()+"; cracked stance "+boss.stance()+" / "+WitherGeometry.STANCE_HITS+".")
+                +" Cancellation returns every fighter and clears the source breach.";
+    }
+    public static String operatorStart(ServerPlayer target,int variant){
+        if(variant==0)return start(target.serverLevel(),target.position().add(target.getLookAngle().multiply(1,0,1).normalize().scale(7)),target.getYRot())?"Forming a Wither breach near the selected player.":"A Wither breach is already open, or this dimension cannot host its source.";
+        if(variant==1)return enter(target)?"Entered the Wither fight.":"Entry refused: wait for the breach, leave any current attempt, and check awakened Power Level 16.";
+        if(variant==2&&boss!=null&&boss.fighting()&&boss.phase()<3){boss.operatorPhase();return "Advanced the live Wither to phase "+boss.phase()+".";}
+        return "No live Wither can advance to another phase.";
+    }
     public static boolean busy(MinecraftServer server) { return WitherData.get(server).source!=null; }
     public static boolean sheltered(Entity p) { return inside(p) && p.getZ()<WitherGeometry.ORIGIN.getZ()-34 && p.getZ()>WitherGeometry.ORIGIN.getZ()-42
             && Math.abs(p.getX()-WitherGeometry.ORIGIN.getX())<4 && p.getY()<WitherGeometry.floor().y+5; }
@@ -49,8 +63,9 @@ public final class WitherArena {
         MinecraftServer server=source.getServer();
         if(busy(server)||server.getLevel(WitherGeometry.DIMENSION)==null||insideDimension(source))return false;
         WitherData.get(server).source(new WitherData.Home(source.dimension(),at,yaw,0));
-        pending=true; ready=false;
+        pending=true; ready=false;int run=++generation;
         server.execute(()->{
+            if(run!=generation||WitherData.get(server).source==null)return;
             var actor=ModEntities.RIFT_WITHER.get().create(source);
             pending=false;
             if(actor==null)return;
@@ -61,6 +76,7 @@ public final class WitherArena {
     }
     private static boolean insideDimension(ServerLevel level) { return level.dimension().equals(WitherGeometry.DIMENSION); }
     public static void swallowed(RiftWitherEntity actor) {
+        if(actor!=intro||WitherData.get(actor.level().getServer()).source==null){actor.discard();return;}
         ready=true;intro=null;
         ServerLevel level=(ServerLevel)actor.level();
         for(ServerPlayer p:level.players())if(p.distanceToSqr(actor)<32*32)award(p,"wither_anomaly");
@@ -92,7 +108,7 @@ public final class WitherArena {
         if(boss==null||!boss.isAlive()) {
             boss=ModEntities.RIFT_WITHER.get().create(cage);
             if(boss==null){sendHome(p);return false;}
-            boss.moveTo(WitherGeometry.center());boss.beginFight();cage.addFreshEntity(boss);
+            boss.moveTo(WitherGeometry.floor().add(0,.35,0));boss.beginFight();cage.addFreshEntity(boss);
         }
         boss.join(p);emptyTicks=0;
         p.sendSystemMessage(Component.translatable("wither.heroesevolved.enter"));
@@ -204,6 +220,7 @@ public final class WitherArena {
     }
     /** Server stops preserve the entrance. Victory and operator/test cleanup clear it. */
     public static void reset(MinecraftServer server,boolean preserveEntrance) {
+        generation++;
         collect(server);
         for(ServerPlayer p:List.copyOf(MEMBERS.values())) {if(p.isAlive()&&inside(p))sendHome(p);else if(p.isAlive())deliver(p);}
         resetAttempt(server);

@@ -48,6 +48,21 @@ Part of the notes for coding agents: start at [AGENTS.md](../../../../AGENTS.md)
 
 ## Containment Failure: reusable patterns
 
+- **Give a large boss actual motion and a combat rhythm.** The first Wither drifted slowly, blinked its lunge and
+  never moved for its slam. `WitherGeometry.chain` provides range-sensitive phase combinations; `WitherMoves.tickMotion`
+  moves the body over multiple ticks with collision substeps, fixed endpoints and a once-per-fighter hit set. A blocked
+  descent must not damage the unreachable marked floor. `WitherReworkPreview` observes unpaused AI, beyond staged poses.
+- **Test whether the counter can physically be used.** The first anchor was enclosed on all six faces; tests removed
+  its glass directly and missed it. `anchorGlassHasRealReachableOpenFaces` casts an actual player-height block ray.
+  `generate-wither-arena.py` leaves two faces open and supports the cap independently. A seven-second feed remains
+  counterable after its initial short cast. The .8-high pulse is also tested against both grounded and jumping feet.
+- **Sync the action, aim and exposure, then animate the body.** `RiftWitherEntity` shares action/age, committed aim,
+  stance and exposure with `RiftWitherRenderer`. `WitherGeometry.head/mouth` provides server/art emission origins.
+  Independent side heads snapshot their target before firing; three spaced heavy hits earn a chain break, preventing
+  the old one-hit interruption loop. Effective party health uses damage units above vanilla's 1000-health ceiling.
+- **Cancellation must invalidate queued work.** The new console could cancel before the deferred formation actor
+  existed. `WitherArena` captures a generation at queue time and rejects stale actors in `swallowed`, so canceled
+  formations cannot reopen the encounter after their operator leaves. The real preview clicks each admin control.
 - **Replace the construction before the vanilla explosion.** `wither/WitherEvents.formed` intercepts a newly made
   invulnerable native Wither in `EntityJoinLevelEvent`; saved and ordinary command-spawned Withers are untouched. A
   second construction refunds its ingredients. The integration test builds the real soul-sand T and skull pattern.
@@ -60,6 +75,8 @@ Part of the notes for coding agents: start at [AGENTS.md](../../../../AGENTS.md)
   while marked origins stay fixed. Lit rib ledges eliminate upper dark floors without filling the central airspace.
 - **A canceled warning must stay canceled.** `WITHER_CANCEL` outlives every Wither warning, so an interrupted marker
   cannot reappear when its shorter backfire animation expires. `WitherArt` reads the same windup and radius as hits.
+  A preview must cancel on an earlier server tick than starting its next pose: `superseded` includes equal timestamps,
+  so canceling and casting in one callback hid the new warning too. `WitherReworkPreview.serverTick` separates them.
 - **A ray with no entity needs an empty collision context.** Passing `(Entity)null` to the 1.21.1 `ClipContext`
   constructor throws in `CollisionContext.of`; use `CollisionContext.empty()` for world-only cover rays.
 - **A broad-phase box is not a circular impact.** `RiftSkull.onHit` filters nearby entities by distance from their

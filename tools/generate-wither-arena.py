@@ -59,9 +59,10 @@ for i, (x,z) in enumerate(anchors):
     put(x, 5, z, 'sea_lantern')
     put(x, 6, z, f'minecraft:tinted_glass @anchor:{i}')
     for dx,dz in [(-1,0),(1,0),(0,-1),(0,1)]:
-        put(x+dx, 5, z+dz, 'polished_blackstone_bricks')
-        put(x+dx, 6, z+dz, 'polished_blackstone_bricks')
-    put(x, 7, z, 'chiseled_polished_blackstone')
+        if dz==0:
+            put(x+dx, 5, z+dz, 'polished_blackstone_bricks')
+            put(x+dx, 6, z+dz, 'polished_blackstone_bricks')
+    box(x-1, 7, z, x+1, 7, z, 'chiseled_polished_blackstone')
 
 # Return alcove, behind a real sight-breaking baffle, with a clear path on either side.
 box(-4, 0, -41, 4, 2, -33, 'polished_blackstone_bricks')

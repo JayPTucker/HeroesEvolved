@@ -1978,7 +1978,7 @@
   "item.heroesevolved.music_disc_containment": "Music Disc",
   "jukebox_song.heroesevolved.containment": "Heroes Evolved — Containment Failure",
   "wither.heroesevolved.level": "The breach refuses you. Awaken an ability and reach Power Level %s.",
-  "wither.heroesevolved.enter": "The bones were a cage. Find the anchor it feeds from. The breach behind you still leads home.",
+  "wither.heroesevolved.enter": "Watch its heads, leave the marked lanes, then punish the recovery. Follow the feeding filament to a breakable anchor. The breach behind you leads home.",
   "wither.heroesevolved.phase.2": "The Wither — The Broken Vessel",
   "wither.heroesevolved.phase.3": "The Wither — Critical Mass",
   "wither.heroesevolved.contained": "Containment Restored",
@@ -2047,5 +2047,10 @@
   "advancement.heroesevolved.inheritance": "One More Future",
   "advancement.heroesevolved.inheritance.desc": "Defeat Sylar carrying the Dragon’s inheritance.",
   "endgame.heroesevolved.won": "The borrowed light unravels. This ending belongs to you.",
-  "endgame.heroesevolved.rupture": "There is too much of it."
+  "endgame.heroesevolved.rupture": "There is too much of it.",
+  "guide.heroesevolved.wither.title": "The Hungry Cage",
+  "guide.heroesevolved.wither.1": "A Wither construction can leave an unstable breach. Enter with an awakened gift at Power Level 16 or above. Solo and cooperative attempts both work. The large room includes space for flight and a sheltered return breach; belongings dropped during the attempt return on respawn.",
+  "guide.heroesevolved.wither.2": "Watch the actual heads and ribs. The creature links short attacks before exposing its core. Charges travel along fixed marked lanes; slams lift before descending. Step aside, then attack during the braking recovery. A normal jump clears the low pressure ring.",
+  "guide.heroesevolved.wither.3": "Three spaced charged strikes during ordinary windups crack its stance and break a chain. Its chest shows the growing fractures. One routine hit is not enough. A broken stance or anchor cancels its hazards and opens a longer damage window. Its largest star discharge must be answered with cover or an anchor.",
+  "guide.heroesevolved.wither.4": "Follow the feeding filament to the lit glass anchor. It stays vulnerable across attacks long enough to reach on foot. Break it, or redirect a skull into it, to backfire the stored energy. Each of the three anchors works once per attempt. The sheltered return breach stays available; everyone retreating resets the attempt."
 }

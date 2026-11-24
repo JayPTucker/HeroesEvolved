@@ -1,0 +1,22 @@
+// Unpaused Wither AI, physical actions, original formation, real admin buttons and in-game guidance.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview=sourceSets.create('witherReworkPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs { client {
+                    gameDirectory=project.file('build/wither-rework-preview')
+                    programArguments.addAll('--width','1400','--height','1000')
+                    systemProperty('heroes.preview.witherRework','true')
+                } }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('witherReworkPreviewClasses')) }
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

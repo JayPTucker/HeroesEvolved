@@ -18,6 +18,7 @@ final class WitherArt {
     static void draw(Canvas c,Active a,float t) {
         float alpha=Math.min(smooth(0,2,t),1-smooth(a.piece().ticks-4,a.piece().ticks,t));
         Vec3 core=a.origin().add(0,2.1,0);
+        if(a.piece()!=Piece.WITHER_FORM&&a.bound(c) instanceof RiftWitherEntity body)core=WitherGeometry.core(body.getPosition(c.partial));
         switch(a.piece()) {
             case WITHER_BREACH -> gate(c,a.origin(),a.target().subtract(a.origin()).normalize(),1,alpha,c.time());
             case WITHER_FORM -> {
@@ -32,10 +33,14 @@ final class WitherArt {
                 }
             }
             case WITHER_AURA -> {
-                if(a.bound(c) instanceof RiftWitherEntity b)core=b.getPosition(c.partial).add(0,2.1,0);
+                if(a.bound(c) instanceof RiftWitherEntity b)core=WitherGeometry.core(b.getPosition(c.partial));
                 int phase=a.seed()&3;float[] tint=phase==3?RED:MINT;
                 if(c.glow()) {
-                    star(c,core,.24F+phase*.06F,tint,alpha,c.time());
+                    star(c,core,.62F+phase*.16F,tint,alpha,c.time());
+                    if(a.bound(c) instanceof RiftWitherEntity b){
+                        for(int i=0;i<3;i++)c.ring(core,new Vec3(0,0,1),.9F+i*.12F,.025F,-HALF_PI+i*.22F,HALF_PI+i*.22F,i<b.stance()?WHITE:tint,alpha*(i<b.stance()?.9F:.2F));
+                        for(int i=0;i<3;i++){Vec3 head=WitherGeometry.head(b.getPosition(c.partial),b.yBodyRot,i);star(c,head.add(Vec3.directionFromRotation(0,b.yBodyRot).scale(.85)),.12F,tint,alpha,c.time());}
+                    }
                     int index=((a.seed()>>>5)&3)-1;
                     if(index>=0) {
                         Vec3 at=Vec3.atCenterOf(WitherGeometry.ANCHORS.get(index));
@@ -45,9 +50,31 @@ final class WitherArt {
                 }
             }
             case WITHER_WARNING -> warning(c,a,t);
-            case WITHER_PULSE -> {if(c.glow()) {float radius=(float)(t*WitherGeometry.PULSE_SPEED);c.ring(a.origin(),radius,.15F,MINT,alpha*.5F);c.ring(a.origin().add(0,.08,0),radius,.025F,WHITE,alpha);}}
+            case WITHER_HEAD_WARN -> {
+                if(SetPieceClient.superseded(a,CANCEL,c.level.getGameTime())||t>WitherGeometry.HEAD_WINDUP)return;
+                if(c.glow()){float p=clamp(t/WitherGeometry.HEAD_WINDUP,0,1);star(c,a.origin(),.15F+.35F*p,MINT,alpha,t);thread(c,a.origin(),a.target(),.015F,MINT,alpha*.4F);c.ring(a.target(),UP,WitherGeometry.SKULL_RADIUS,.03F,-HALF_PI,-HALF_PI+TWO_PI*p,WHITE,alpha);}
+            }
+            case WITHER_MUZZLE -> {if(c.glow()){float fade=1-smooth(0,12,t);star(c,a.origin(),(.25F+t*.06F)*fade,WHITE,fade,t);c.ring(a.origin(),a.target().subtract(a.origin()).normalize(),.3F+t*.07F,.04F,0,TWO_PI,MINT,fade);}}
+            case WITHER_FIRE -> {
+                if(c.glow()){
+                    float envelope=(1-smooth(4,16,t));float[] tint=a.bound(c) instanceof RiftWitherEntity b&&b.phase()==3?RED:MINT;
+                    thread(c,a.origin(),a.target(),a.scale()*.5F*envelope,tint,alpha);c.line(a.origin(),a.target(),.09F*envelope,WHITE,alpha,alpha);
+                    for(int i=0;i<4;i++)c.ring(a.origin().lerp(a.target(),i/4D),a.target().subtract(a.origin()).normalize(),a.scale()*.9F,.04F,0,TWO_PI,tint,alpha*envelope);
+                }
+            }
+            case WITHER_WAKE -> {
+                if(c.glow()){Vec3 side=a.target().subtract(a.origin()).normalize().cross(UP);for(int i:new int[]{-1,1})c.line(a.origin().add(side.scale(i*2)),a.target().add(side.scale(i*2)),.15F,MINT,0,alpha*.7F);}
+            }
+            case WITHER_ARC -> {
+                if(c.glow()){float half=a.seed()==WitherGeometry.Move.BITE.ordinal()?WitherGeometry.BITE_HALF_ANGLE:WitherGeometry.RAKE_HALF_ANGLE;
+                    float angle=(float)Math.atan2(a.target().z-a.origin().z,a.target().x-a.origin().x),sweep=smooth(0,10,t);
+                    c.ring(a.origin(),UP,a.scale(),.45F,angle-half,angle-half+2*half*sweep,MINT,alpha*.45F);c.ring(a.origin(),UP,a.scale(),.065F,angle-half,angle-half+2*half*sweep,WHITE,alpha);
+                }
+            }
+            case WITHER_PULSE -> {if(c.glow()&&!SetPieceClient.superseded(a,CANCEL,c.level.getGameTime())) {float radius=(float)(t*WitherGeometry.PULSE_SPEED);c.ring(a.origin(),radius,.15F,MINT,alpha*.5F);c.ring(a.origin().add(0,.08,0),radius,.025F,WHITE,alpha);}}
             case WITHER_IMPACT,WITHER_NOVA -> {
                 if(c.glow()){float radius=(a.piece()==Piece.WITHER_NOVA?42:a.scale())*smooth(0,16,t);c.ring(a.origin(),radius,.12F,MINT,alpha);c.glow(a.origin(),Math.min(4,radius),WHITE,alpha*.3F);}
+                if(c.soft()&&a.piece()==Piece.WITHER_IMPACT)for(int i=0;i<10;i++){float angle=i*TWO_PI/10;Vec3 at=a.origin().add(cos(angle)*t*.3,.15,sin(angle)*t*.3);c.cloud(at,.5F+t*.05F,.25F+t*.02F,.5F+t*.05F,i,t*.04F,alpha*.3F,Shades.smoke(c,rgb(0x777872),0));}
             }
             case WITHER_BACKFIRE -> {if(c.glow()){thread(c,a.origin(),a.target(),.3F*alpha,WHITE,alpha);star(c,a.target(),1.3F*alpha,MINT,alpha,t);}}
             case WITHER_PHASE -> {if(c.glow()){c.ring(a.origin().add(0,.05,0),t*.8F,.12F,a.scale()>2?RED:MINT,alpha*.6F);}}
@@ -98,11 +125,19 @@ final class WitherArt {
         float p=clamp(t/move.windup,0,1),alpha=smooth(0,3,t);Vec3 from=a.origin(),to=a.target();
         if(!c.glow())return;
         switch(move) {
+            case BITE,RAKE -> {
+                if(!(a.bound(c) instanceof RiftWitherEntity b))return;
+                float reach=move==WitherGeometry.Move.BITE?WitherGeometry.BITE_REACH:WitherGeometry.RAKE_REACH,half=move==WitherGeometry.Move.BITE?WitherGeometry.BITE_HALF_ANGLE:WitherGeometry.RAKE_HALF_ANGLE;
+                float angle=(float)Math.atan2(b.aim().z-from.z,b.aim().x-from.x);
+                c.ring(from,UP,reach,.025F,angle-half,angle+half,MINT,alpha*.65F);
+                c.ring(from,UP,reach*(1-p*.35F),.04F,angle-half,angle+half,WHITE,alpha*.8F);
+                for(int side:new int[]{-1,1})c.line(from,from.add(cos(angle+side*half)*reach,0,sin(angle+side*half)*reach),.02F,MINT,0,alpha*.65F);
+            }
             case VERDICT,TETHER,LUNGE -> {
                 float width=move==WitherGeometry.Move.LUNGE?WitherGeometry.LUNGE_RADIUS:move==WitherGeometry.Move.TETHER?WitherGeometry.TETHER_RADIUS:WitherGeometry.VERDICT_RADIUS;
                 Vec3 side=to.subtract(from).normalize().cross(UP).scale(width);
-                c.line(from.add(side),to.add(side),.014F,MINT,alpha*.35F,alpha*.7F);
-                c.line(from.subtract(side),to.subtract(side),.014F,MINT,alpha*.35F,alpha*.7F);
+                c.line(from.add(side),to.add(side),.025F,MINT,alpha*.35F,alpha*.7F);
+                c.line(from.subtract(side),to.subtract(side),.025F,MINT,alpha*.35F,alpha*.7F);
                 thread(c,from,from.lerp(to,p),.03F,WHITE,alpha*.8F);
                 c.ring(to,UP,.5F,.03F,0,TWO_PI*p,MINT,alpha);
             }

@@ -18,13 +18,19 @@ for y in range(40):
         g=rand.randrange(112,153);px[x,y]=(g,g+3,g-1,255)
 for y in range(49,59):
     for x in range(9,19):
-        g=rand.randrange(92,125);px[x,y]=(g-4,g,g,255)
+        g=rand.randrange(140,179);px[x,y]=(g-6,g,g-4,255)
 draw.rectangle((10,52,12,53),fill='#111C22');draw.rectangle((16,52,18,53),fill='#111C22')
 draw.line((14,54,14,56),fill='#17242A');draw.line((11,57,17,57),fill='#17242A')
 for x in [12,14,16]:draw.point((x,58),fill='#D6DED1')
+draw.rectangle((48,46,53,48),fill='#B9C9BC')
+for x in [49,51,53]:draw.line((x,46,x,47),fill='#303C3C')
 draw.rectangle((24,65,36,70),fill='#91E6D0')
 draw.rectangle((90,0,108,12),fill='#86D7C4');draw.line((94,0,96,9),fill='#EBFFF2',width=2)
 im.save(assets/'textures/entity/rift_wither.png')
+glow=Image.new('RGBA',(128,128)); light=ImageDraw.Draw(glow)
+light.rectangle((10,52,12,53),fill='#FFFFFF'); light.rectangle((16,52,18,53),fill='#FFFFFF')
+light.rectangle((24,65,35,68),fill='#FFFFFF'); light.rectangle((94,4,97,7),fill='#FFFFFF')
+glow.save(assets/'textures/entity/rift_wither_glow.png')
 for name in ['fractured_star','breach_seed','music_disc_containment']:
     icon=Image.new('RGBA',(16,16)); d=ImageDraw.Draw(icon)
     if name=='fractured_star':
@@ -37,3 +43,13 @@ for name in ['fractured_star','breach_seed','music_disc_containment']:
         d.ellipse((1,1,14,14),fill='#1D242B',outline='#3C4C52'); d.ellipse((5,5,10,10),fill='#8AE3D7'); d.point((8,8),fill='#172033')
     icon.save(assets/f'textures/item/{name}.png')
     (assets/f'models/item/{name}.json').write_text(json.dumps({'parent':'minecraft:item/generated','textures':{'layer0':f'heroesevolved:item/{name}'}},indent=2)+'\n')
+lang_path=assets/'lang/en_us.json'; lang=json.loads(lang_path.read_text(encoding='utf-8'))
+lang.update({
+ 'guide.heroesevolved.wither.title':'The Hungry Cage',
+ 'guide.heroesevolved.wither.1':'A Wither construction can leave an unstable breach. Enter with an awakened gift at Power Level 16 or above. Solo and cooperative attempts both work. The large room includes space for flight and a sheltered return breach; belongings dropped during the attempt return on respawn.',
+ 'guide.heroesevolved.wither.2':'Watch the actual heads and ribs. The creature links short attacks before exposing its core. Charges travel along fixed marked lanes; slams lift before descending. Step aside, then attack during the braking recovery. A normal jump clears the low pressure ring.',
+ 'guide.heroesevolved.wither.3':'Three spaced charged strikes during ordinary windups crack its stance and break a chain. Its chest shows the growing fractures. One routine hit is not enough. A broken stance or anchor cancels its hazards and opens a longer damage window. Its largest star discharge must be answered with cover or an anchor.',
+ 'guide.heroesevolved.wither.4':'Follow the feeding filament to the lit glass anchor. It stays vulnerable across attacks long enough to reach on foot. Break it, or redirect a skull into it, to backfire the stored energy. Each of the three anchors works once per attempt. The sheltered return breach stays available; everyone retreating resets the attempt.',
+ 'wither.heroesevolved.enter':'Watch its heads, leave the marked lanes, then punish the recovery. Follow the feeding filament to a breakable anchor. The breach behind you leads home.'
+})
+lang_path.write_text(json.dumps(lang,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')

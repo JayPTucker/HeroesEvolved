@@ -22,58 +22,76 @@ public final class WitherMoves {
     private WitherMoves() {}
     public static void warn(RiftWitherEntity b,WitherGeometry.Move move) {
         ServerLevel level=(ServerLevel)b.level();
-        b.castFrom=b.position().add(0,2.1,0);
+        b.castFrom=b.core();
         if(move==WitherGeometry.Move.VERDICT) {
             var aimed=List.copyOf(b.marks);b.marks.clear();
             for(Vec3 mark:aimed) {
                 Vec3 side=mark.subtract(b.castFrom).normalize().cross(new Vec3(0,1,0));
                 for(int i=-1;i<=1;i++) {
                     if(i!=0&&(b.burnt()&(1<<(i<0?0:1)))!=0)continue;
-                    b.marks.add(mark.add(side.scale(i*2.8)));
+                    Vec3 end=mark.add(side.scale(i*3.5));b.marks.add(end);b.origins.add(WitherGeometry.mouth(b.position(),b.lockedYaw,i+1==3?0:i+1,end));
                 }
+            }
+        } else if(move==WitherGeometry.Move.RAIN){
+            var aimed=List.copyOf(b.marks);b.marks.clear();for(Vec3 mark:aimed)for(int i=0;i<3;i++){
+                double angle=i*Math.PI*2/3,radius=i==0?0:WitherGeometry.RAIN_SPREAD;b.marks.add(mark.add(Math.cos(angle)*radius,0,Math.sin(angle)*radius));
             }
         } else if(move==WitherGeometry.Move.LUNGE||move==WitherGeometry.Move.SLAM||move==WitherGeometry.Move.TETHER) {
             if(b.marks.size()>1)b.marks.subList(1,b.marks.size()).clear();
         }
-        if(move==WitherGeometry.Move.SLAM)b.marks.replaceAll(p->new Vec3(p.x,WitherGeometry.floor().y,p.z));
+        if(move==WitherGeometry.Move.SLAM){b.marks.replaceAll(p->new Vec3(p.x,WitherGeometry.floor().y,p.z));b.motionFrom=b.position();}
+        if(move==WitherGeometry.Move.TETHER&&!b.marks.isEmpty())b.castFrom=WitherGeometry.mouth(b.position(),b.lockedYaw,0,b.marks.getFirst());
         if(move==WitherGeometry.Move.LUNGE&&!b.marks.isEmpty()) {
             // Commit to the same three-dimensional lane that is drawn, including an airborne target's height.
-            b.castFrom=b.position().add(0,1,0);
+            b.castFrom=b.position().add(0,3,0);
             Vec3 delta=b.marks.getFirst().add(0,.2,0).subtract(b.castFrom);
             if(delta.length()>WitherGeometry.LUNGE_REACH)delta=delta.normalize().scale(WitherGeometry.LUNGE_REACH);
-            b.marks.set(0,b.castFrom.add(delta));
+            Vec3 end=b.castFrom.add(delta);b.marks.set(0,new Vec3(end.x,Math.max(WitherGeometry.floor().y+3.3,end.y),end.z));
         }
-        if(move==WitherGeometry.Move.HORIZON||move==WitherGeometry.Move.PULSE)
+        if(move==WitherGeometry.Move.HORIZON||move==WitherGeometry.Move.PULSE||move==WitherGeometry.Move.BITE||move==WitherGeometry.Move.RAKE)
             SetPiecePayload.sendSeeded(level,Piece.WITHER_WARNING,b.castFrom,WitherGeometry.floor(),1,b,0,move.ordinal());
-        else for(Vec3 mark:b.marks)SetPiecePayload.sendSeeded(level,Piece.WITHER_WARNING,b.castFrom,mark,1,b,0,move.ordinal());
-        level.playSound(null,b.blockPosition(),SoundEvents.WITHER_AMBIENT,SoundSource.HOSTILE,.8F,.65F+b.phase()*.07F);
+        else for(int i=0;i<b.marks.size();i++)SetPiecePayload.sendSeeded(level,Piece.WITHER_WARNING,move==WitherGeometry.Move.VERDICT?b.origins.get(i):b.castFrom,b.marks.get(i),1,b,0,move.ordinal());
+        var cue=switch(move){case BITE,RAKE->SoundEvents.SKELETON_STEP;case VERDICT,RAIN->SoundEvents.AMETHYST_BLOCK_RESONATE;case HORIZON,PULSE->SoundEvents.BEACON_POWER_SELECT;default->SoundEvents.WITHER_AMBIENT;};
+        level.playSound(null,b.blockPosition(),cue,SoundSource.HOSTILE,.8F,.55F+b.phase()*.07F);
+    }
+    public static void windup(RiftWitherEntity b,WitherGeometry.Move move){
+        if(move!=WitherGeometry.Move.SLAM||b.marks.isEmpty())return;double progress=1-b.windup/(double)move.windup;
+        Vec3 wanted=b.motionFrom.lerp(b.marks.getFirst().add(0,12,0),Math.min(1,progress*1.25));Vec3 delta=wanted.subtract(b.position());
+        if(delta.length()>1.2)delta=delta.normalize().scale(1.2);
+        if(b.level().noCollision(b,b.getBoundingBox().move(delta)))b.setPos(b.position().add(delta));
+    }
+    public static void sideShot(RiftWitherEntity b,Vec3 from,Vec3 to){
+        ServerLevel level=(ServerLevel)b.level();var skull=ModEntities.RIFT_SKULL.get().create(level);if(skull==null)return;
+        skull.setOwner(b);skull.setPos(from);skull.setDeltaMovement(to.subtract(from).normalize().scale(.72));skull.accelerationPower=.01;level.addFreshEntity(skull);b.skulls.add(skull);
+        SetPiecePayload.send(level,Piece.WITHER_MUZZLE,from,to,1,b);level.playSound(null,from.x,from.y,from.z,SoundEvents.WITHER_SHOOT,SoundSource.HOSTILE,.75F,.9F);
     }
     public static boolean seen(ServerLevel level,Vec3 from,Vec3 to) {
         return level.clip(new ClipContext(from,to,ClipContext.Block.COLLIDER,ClipContext.Fluid.NONE,net.minecraft.world.phys.shapes.CollisionContext.empty())).getType()==HitResult.Type.MISS;
     }
-    public static void hit(RiftWitherEntity b,ServerPlayer p,float amount) {
-        if(WitherArena.sheltered(p)||!p.isAlive())return;
+    public static boolean hit(RiftWitherEntity b,ServerPlayer p,float amount) {
+        if(!b.fighting()||WitherArena.sheltered(p)||!p.isAlive())return false;
         p.invulnerableTime=0;
-        if(p.hurt(b.damageSources().mobAttack(b),amount))p.addEffect(new MobEffectInstance(MobEffects.WITHER,60));
+        boolean landed=p.hurt(b.damageSources().mobAttack(b),amount);if(landed)p.addEffect(new MobEffectInstance(MobEffects.WITHER,60));return landed;
     }
     public static void land(RiftWitherEntity b,WitherGeometry.Move move) {
         ServerLevel level=(ServerLevel)b.level();float damage=6+b.phase();
         switch(move) {
             case VERDICT -> {
-                for(ServerPlayer p:b.fighters())for(Vec3 mark:b.marks)
-                    if(WitherGeometry.lineDistance(b.castFrom,mark,p.position().add(0,.8,0))<WitherGeometry.VERDICT_RADIUS
-                            &&seen(level,b.castFrom,p.getEyePosition())) {hit(b,p,damage);break;}
+                for(ServerPlayer p:b.fighters())for(int i=0;i<b.marks.size();i++)
+                    if(WitherGeometry.lineDistance(b.origins.get(i),b.marks.get(i),p.position().add(0,.8,0))<WitherGeometry.VERDICT_RADIUS
+                            &&seen(level,b.origins.get(i),p.getEyePosition())) {hit(b,p,damage);break;}
+                for(int i=0;i<b.marks.size();i++)SetPiecePayload.sendSeeded(level,Piece.WITHER_FIRE,b.origins.get(i),b.marks.get(i),WitherGeometry.VERDICT_RADIUS,b,0,move.ordinal());
             }
             case RAIN -> {
-                for(Vec3 mark:b.marks) {
+                int index=0;for(Vec3 mark:b.marks) {
                     var skull=ModEntities.RIFT_SKULL.get().create(level);if(skull==null)continue;
-                    skull.setOwner(b);skull.setPos(mark.add(0,WitherGeometry.RAIN_HEIGHT,0));skull.setDeltaMovement(0,-.7,0);skull.accelerationPower=.03;
-                    level.addFreshEntity(skull);
+                    skull.setOwner(b);skull.setPos(mark.add(0,WitherGeometry.RAIN_HEIGHT+(index++%3)*1.2,0));skull.setDeltaMovement(0,-.7,0);skull.accelerationPower=.03;
+                    level.addFreshEntity(skull);b.skulls.add(skull);
                 }
             }
             case PULSE -> {
                 b.waveAge=0;b.waveHit.clear();b.waveCenter=new Vec3(b.castFrom.x,WitherGeometry.floor().y+.05,b.castFrom.z);
-                SetPiecePayload.send(level,Piece.WITHER_PULSE,b.waveCenter,b.waveCenter,1,null);
+                SetPiecePayload.send(level,Piece.WITHER_PULSE,b.waveCenter,b.waveCenter,1,b);
             }
             case TETHER -> {
                 if(b.marks.isEmpty())break;
@@ -81,25 +99,20 @@ public final class WitherMoves {
                         &&seen(level,b.castFrom,p.getEyePosition())) {
                     hit(b,p,5);p.setDeltaMovement(b.castFrom.subtract(p.position()).normalize().scale(1.1).add(0,.2,0));p.hurtMarked=true;
                 }
+                SetPiecePayload.sendSeeded(level,Piece.WITHER_FIRE,b.castFrom,b.marks.getFirst(),WitherGeometry.TETHER_RADIUS,b,0,move.ordinal());
             }
             case LUNGE -> {
                 if(b.marks.isEmpty())break;
-                Vec3 from=b.castFrom.add(0,-1,0),target=b.marks.getFirst().add(0,-1,0);
-                Vec3 delta=target.subtract(from);
-                Vec3 end=from;
-                for(double t=.03;t<=1;t+=.03) {
-                    Vec3 at=from.add(delta.scale(t));
-                    if(!level.noCollision(b,b.getBoundingBox().move(at.subtract(b.position()))))break;
-                    end=at;
-                }
-                b.setPos(end);
-                for(ServerPlayer p:b.fighters())if(WitherGeometry.lineDistance(from.add(0,1,0),end.add(0,1,0),p.position().add(0,.8,0))<WitherGeometry.LUNGE_RADIUS)hit(b,p,damage+2);
-                SetPiecePayload.send(level,Piece.WITHER_IMPACT,end,end,3,b);
+                b.motion=move;b.motionTicks=WitherGeometry.LUNGE_TICKS;b.motionStep=0;b.motionFrom=b.position();b.motionTo=b.marks.getFirst().add(0,-3,0);b.motionHit.clear();
             }
             case SLAM -> {
-                if(b.marks.isEmpty())break;Vec3 at=b.marks.getFirst();
-                for(ServerPlayer p:b.fighters())if(p.position().distanceTo(at)<WitherGeometry.SLAM_RADIUS)hit(b,p,damage+2);
-                SetPiecePayload.send(level,Piece.WITHER_IMPACT,at,at,4,null);
+                if(b.marks.isEmpty())break;b.motion=move;b.motionTicks=WitherGeometry.SLAM_TICKS;b.motionStep=0;b.motionFrom=b.position();b.motionTo=b.marks.getFirst().add(0,.3,0);b.motionHit.clear();
+            }
+            case BITE,RAKE -> {
+                float reach=move==WitherGeometry.Move.BITE?WitherGeometry.BITE_REACH:WitherGeometry.RAKE_REACH;
+                float angle=move==WitherGeometry.Move.BITE?WitherGeometry.BITE_HALF_ANGLE:WitherGeometry.RAKE_HALF_ANGLE;
+                for(ServerPlayer p:b.fighters())if(WitherGeometry.inArc(b.castFrom,p.position(),b.lockedYaw,reach,angle)&&Math.abs(p.getY()+.8-b.castFrom.y)<4.2&&seen(level,b.castFrom,p.getEyePosition()))hit(b,p,move==WitherGeometry.Move.BITE?7:9);
+                Vec3 direction=Vec3.directionFromRotation(0,b.lockedYaw);SetPiecePayload.sendSeeded(level,Piece.WITHER_ARC,b.castFrom,b.castFrom.add(direction),reach,b,0,move.ordinal());
             }
             case HORIZON -> {
                 for(ServerPlayer p:b.fighters())if(seen(level,b.castFrom,p.getEyePosition()))hit(b,p,14);
@@ -114,9 +127,25 @@ public final class WitherMoves {
         double radius=++b.waveAge*WitherGeometry.PULSE_SPEED;
         for(ServerPlayer p:b.fighters()) {
             double d=p.position().multiply(1,0,1).distanceTo(b.waveCenter.multiply(1,0,1));
-            if(Math.abs(d-radius)<1.1&&p.getY()<b.waveCenter.y+1.4&&b.waveHit.add(p.getUUID()))hit(b,p,6+b.phase());
+            if(Math.abs(d-radius)<1.1&&Math.abs(p.getY()-b.waveCenter.y)<WitherGeometry.WAVE_HEIGHT&&b.waveHit.add(p.getUUID()))hit(b,p,6+b.phase());
         }
         if(b.waveAge>=110)b.waveAge=-1;
+    }
+    public static void tickMotion(RiftWitherEntity b){
+        ServerLevel level=(ServerLevel)b.level();Vec3 before=b.position();double p=++b.motionStep/(double)(b.motion==WitherGeometry.Move.LUNGE?WitherGeometry.LUNGE_TICKS:WitherGeometry.SLAM_TICKS);
+        double ease=b.motion==WitherGeometry.Move.SLAM?p*p:p*p*(3-2*p);Vec3 desired=b.motionFrom.lerp(b.motionTo,ease),delta=desired.subtract(before),end=before;
+        if(delta.length()>3.6)delta=delta.normalize().scale(3.6);
+        for(int i=1;i<=12;i++){Vec3 next=before.add(delta.scale(i/12D));if(!level.noCollision(b,b.getBoundingBox().move(next.subtract(before))))break;end=next;}
+        b.setPos(end);
+        if(b.motion==WitherGeometry.Move.LUNGE){
+            for(ServerPlayer player:b.fighters())if(!b.motionHit.contains(player.getUUID())&&WitherGeometry.lineDistance(before.add(0,3,0),end.add(0,3,0),player.position().add(0,.8,0))<WitherGeometry.LUNGE_RADIUS){b.motionHit.add(player.getUUID());if(hit(b,player,8+b.phase())){player.setDeltaMovement(b.motionTo.subtract(b.motionFrom).normalize().scale(.9).add(0,.25,0));player.hurtMarked=true;}}
+            SetPiecePayload.send(level,Piece.WITHER_WAKE,before.add(0,3,0),end.add(0,3,0),3,b);
+        }
+        if(--b.motionTicks<=0||end.distanceToSqr(before.add(delta))>.05){
+            if(b.motion==WitherGeometry.Move.SLAM&&end.distanceTo(b.motionTo)<1){Vec3 at=b.motionTo;for(ServerPlayer player:b.fighters())if(player.position().distanceTo(at)<WitherGeometry.SLAM_RADIUS)hit(b,player,8+b.phase());
+                SetPiecePayload.send(level,Piece.WITHER_IMPACT,at,at,WitherGeometry.SLAM_RADIUS,null);CameraShakePayload.sendAround(level,at,80,.45F,22);level.playSound(null,at.x,at.y,at.z,SoundEvents.GENERIC_EXPLODE.value(),SoundSource.HOSTILE,1,.65F);}
+            b.motionTicks=0;b.motion=null;b.spent=80;b.recovery=12;
+        }
     }
     public static void minions(RiftWitherEntity b,int phase) {
         ServerLevel level=(ServerLevel)b.level();int count=phase==2?Math.min(3,1+b.fighters().size()/2):b.fighters().size()>2?1:0;

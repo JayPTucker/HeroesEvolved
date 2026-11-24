@@ -36,30 +36,44 @@ Crossing the outer bounds returns you to the entrance ledge instead of dropping 
 
 | Phase | Health | What changes |
 | --- | --- | --- |
-| **Threefold Hunger** | 100-67% | A hovering, intact cage; marked skull rain, three sight lines, an expanding pulse and a tether. Its chest opens before its heavy attacks. |
-| **Broken Vessel** | 67-33% | Its ribs spread, it fights lower, cracks light the dais, and skeletal flankers appear. Adds a committed lunge and a ground slam with a long recovery. |
-| **Critical Mass** | 33-0% | Its chest stays open, fragments orbit the exposed star, the room's channels blaze, and its final score gains a doubled pulse. Adds an arena-wide star discharge: hide behind solid cover. |
+| **Threefold Hunger** | 100-67% | The towering cage pursues and circles, linking bites, lunges, beams, skull rain, pulses and tethers in short chains. |
+| **Broken Vessel** | 67-33% | Its ribs spread, cracks light the dais, and skeletal flankers appear. Sweeps and actual rising slams join longer chains. |
+| **Critical Mass** | 33-0% | Hot fractures expose the star, the room's channels blaze, and its final score gains a doubled pulse. Discharges lead into pursuit and pressure; solid cover still matters. |
+
+Inside the arena its body stands **8.4 blocks tall**, with hinged ribs, articulated jaws and a trailing spine. Its
+heads aim and recoil, its ribs brace for charges, and the whole vessel rises and descends for a slam. It fights near
+the floor against grounded players and climbs toward flying opponents. The summoning-site body keeps its smaller form.
+
+Attacks come in short chains with a fresh, fixed warning before each follow-up. Step through the gaps, then punish
+the exposed core at the end of a chain. Side heads sometimes prepare a separate skull during the main attack: a
+mouth light and fixed aiming thread warn before it fires. Its attention rotates between fighters in a party.
 
 | Move | Warning | Answer |
 | --- | --- | --- |
-| **Threefold Verdict** | Three fixed mint lines assemble through the fighters before they fire | Step off the lines or put solid cover between you and its heads |
-| **Hollow Rain** | An iris marks each fighter's position, then skulls descend toward those fixed spots | Move; redirect a skull with a suitable defensive power |
-| **Starved Pulse** | A ring charges at its feet, then rolls outward | Jump the passing ring, take height, or use a defense |
+| **Maw Snap** | The main jaw draws back above a short, fixed crescent | Move sideways or back out of its reach |
+| **Threefold Verdict** | Three mouths charge along fixed mint lanes, then visibly fire | Step off the lines or put solid cover between you and its heads |
+| **Hollow Rain** | One iris marks your position and two flank it, then staggered skulls descend | Move through the gaps; redirect a skull with a suitable defensive power |
+| **Starved Pulse** | A ring charges at its feet, then rolls outward | A normal jump clears the low front; height and defenses also work |
 | **Grave Tether** | A thread tightens between a head and a marked position | Break sight or leave its narrow path before the pull lands |
-| **Ribbreaker** | A broad lane marks a committed lunge | Step aside; attack during its recovery |
-| **Ossuary Slam** | The chest flares and a broad ring fills where it will land | Leave the ring, then punish its recovery |
+| **Ribbreaker** | The ribs brace into a prow over a broad, fixed 3D lane; the body then charges along it | Step aside; attack during its braking recovery |
+| **Ossuary Slam** | The body lifts and folds above a broad landing ring, then descends | Leave the ring, then punish its recovery |
+| **Rib Reaping** | The opened ribs wind back over a wide, fixed crescent | Get behind it or leave the marked arc |
 | **Event Horizon** | A three-second chest charge sends rays outward, ending at real cover | Hide behind a pillar or interrupt the feeding anchor |
 
 ## Turn its hunger against it
 
-One anchor lights while it feeds a heavy move. Its glass can be broken while it is lit; breaking inactive glass does
-nothing. The active anchor backfires into the Wither, taking a tenth of its health through its normal damage caps and
-leaving its core exposed. A skull striking the active anchor can do the same. No particular power is required.
+An unused anchor near a fighter lights while it feeds a heavy move. Its filament remains active for **seven seconds**,
+including after the first attack, so there is time to reach it on foot. Approach the open front or back face and
+break its lit glass; inactive glass repairs itself. The anchor backfires into the Wither, taking a tenth of its
+health through its normal damage caps, canceling the chain and leaving its core exposed. A skull striking the active
+anchor can do the same. Each of the three anchors can be spent once per attempt. No particular power is required.
 
-A charged melee hit, critical arrow or heavy single hit can interrupt an ordinary windup. Heavy moves leave a spent
-window with increased damage. Phase finishers force the next phase and earn a long stagger; in the final tenth they
-can finish the Wither. Its warning positions are fixed before attacks land, and its telegraph shapes share the
-server's geometry.
+**Three spaced heavy hits** crack its stance and interrupt an ordinary chain. Fully charged melee strikes, critical
+arrows and single hits of at least eight damage count. Keep pressure on it: cracks fade when left alone, and a
+successful break gives it a brief resistance to another. The three visible core marks show progress. Event Horizon
+must be answered with cover or an anchor. Exposed recoveries take increased damage. Phase finishers force the next
+phase and earn a long stagger; in the final tenth they can finish the Wither. Its warning positions are fixed before
+attacks land, and its telegraph shapes share the server's geometry.
 
 | Powers | Their place in the fight |
 | --- | --- |
@@ -83,3 +97,9 @@ and strings for the broken cage, and an urgent final pulse around a distorted ch
 bar with a short stinger; its death ends on a last chord. It follows the Music slider and is heard inside the arena.
 The Gemini: Heroes Reborn library is a reference for structure, texture and dynamics; none of its recordings or
 melodies is included in the mod.
+
+The in-game Guide has a **The Hungry Cage** topic for entry, chains, stance and anchor counterplay. Operators can
+select **Wither: Containment Failure** in the admin console's Story tab to open a breach near the selected player,
+enter an eligible player, advance the active phase or cancel the encounter. Live status names the current attack,
+stance, health and fighters. Phase changes and cancellation affect the entire encounter; cancellation returns fighters
+and also stops a queued formation.
