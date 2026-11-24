@@ -1978,7 +1978,7 @@
   "item.heroesevolved.music_disc_containment": "Music Disc",
   "jukebox_song.heroesevolved.containment": "Heroes Evolved — Containment Failure",
   "wither.heroesevolved.level": "The breach refuses you. Awaken an ability and reach Power Level %s.",
-  "wither.heroesevolved.enter": "Watch its heads, leave the marked lanes, then punish the recovery. Follow the feeding filament to a breakable anchor. The breach behind you leads home.",
+  "wither.heroesevolved.enter": "Read its body, then step off the mark. Punish it when it slumps. Bait its charge into a pillar. Break a lit pylon to turn its hunger back on it. The breach behind you leads home.",
   "wither.heroesevolved.phase.2": "The Wither — The Broken Vessel",
   "wither.heroesevolved.phase.3": "The Wither — Critical Mass",
   "wither.heroesevolved.contained": "Containment Restored",
@@ -2049,8 +2049,8 @@
   "endgame.heroesevolved.won": "The borrowed light unravels. This ending belongs to you.",
   "endgame.heroesevolved.rupture": "There is too much of it.",
   "guide.heroesevolved.wither.title": "The Hungry Cage",
-  "guide.heroesevolved.wither.1": "A Wither construction can leave an unstable breach. Enter with an awakened gift at Power Level 16 or above. Solo and cooperative attempts both work. The large room includes space for flight and a sheltered return breach; belongings dropped during the attempt return on respawn.",
-  "guide.heroesevolved.wither.2": "Watch the actual heads and ribs. The creature links short attacks before exposing its core. Charges travel along fixed marked lanes; slams lift before descending. Step aside, then attack during the braking recovery. A normal jump clears the low pressure ring.",
-  "guide.heroesevolved.wither.3": "Three spaced charged strikes during ordinary windups crack its stance and break a chain. Its chest shows the growing fractures. One routine hit is not enough. A broken stance or anchor cancels its hazards and opens a longer damage window. Its largest star discharge must be answered with cover or an anchor.",
-  "guide.heroesevolved.wither.4": "Follow the feeding filament to the lit glass anchor. It stays vulnerable across attacks long enough to reach on foot. Break it, or redirect a skull into it, to backfire the stored energy. Each of the three anchors works once per attempt. The sheltered return breach stays available; everyone retreating resets the attempt."
+  "guide.heroesevolved.wither.1": "A Wither construction leaves an unstable breach instead of a Wither. Walk into it with an awakened gift at Power Level 16 or above, alone or with friends. Inside is the Ossuary: a walled floor under a giant fossil ribcage, with room to fly. The breach behind you is a sheltered way home, and anything you drop comes back when you respawn.",
+  "guide.heroesevolved.wither.2": "Read its body. The center head coils before it snaps; an arm cocks across its chest before it rakes; both fists climb overhead before the slam; the claws dig in before bone spires burst along a crack; the cage opens before the star discharges. Every hit is also marked on the floor or in the air, and the mark never moves: step off it. A normal jump clears the rolling shock of thrown-up floor.",
+  "guide.heroesevolved.wither.3": "After a chain it slumps with its chest open and takes half again as much damage. Three spaced charged strikes during its windups break its stance. From the second phase it charges along a lane; stand in front of a pillar and step aside, and it crashes into the stone and is stunned for several seconds. Its final discharge reaches everyone it can see: put a pillar between you and the star.",
+  "guide.heroesevolved.wither.4": "When it winds up a heavy move, the nearest unused anchor pylon lights and a filament runs to the star. It stays lit for seven seconds. Break the glass in the pylon's open face, or bounce a skull into it, and the stored hunger backfires: a tenth of its health, its chain cancelled and its core exposed. Each pylon works once per attempt. If everyone leaves, it heals and the next attempt starts fresh."
 }
