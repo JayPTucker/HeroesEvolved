@@ -4,9 +4,28 @@ Flight is an aerial momentum kit. Build airspeed in cruise, brake and redirect i
 Skyburst, catch someone with Skyhook, or spend your speed on a Meteor Drop or Tempest.
 Double-tap Jump toggles Flight and the mouse wheel sets cruise speed. The highest setting
 cruises at 3 blocks a tick by default. The pilot banks into turns, and releasing Forward
-brakes toward a hover. Tempest slows your incoming motion gradually, gathers its cloud from a small funnel, and eases you into the banked orbit. Its twin condensation trails follow your boots through the turn.
+brakes toward a hover. Double-tap Strafe Left or Right in the air to **Barrel Roll** that way. Tempest slows your incoming motion gradually, gathers its cloud from a small funnel, and eases you into the banked orbit. Its twin condensation trails follow your boots through the turn.
 
 Unlocking Flight grants fall-damage immunity, even with flying toggled off or during an Eclipse.
+
+## Barrel Roll
+
+Every flyer can Barrel Roll from Level 1. It costs no skill points and takes no key or wheel position.
+
+- **How to do it:** while flying, double-tap **Strafe Left** (A) to roll left or **Strafe Right** (D) to roll right. It
+  follows your Controls settings, so a rebound strafe key works too.
+- **What it does:** a 0.6-second corkscrew that carries your entry speed. The first hostile projectile you deflect in a
+  roll banks 15 Momentum. Solid walls stop the roll.
+- **Cost:** 19 stamina and a 5-second cooldown, before the usual practice discounts. A double-tap during the cooldown
+  does nothing and costs nothing, so ordinary steering never nags you. Without the stamina, the bar flashes and you
+  don't roll. A roll never overexerts you.
+- **On the HUD:** while you're in the air, a **ROLL** ring sits beside your Flight ring. **OK** means a double-tap will
+  roll. After a roll the ring refills with a countdown. **LOW** means you're short on stamina, and **-** means another
+  maneuver is under way.
+- **When it won't fire:** on the ground, out of flight, with a menu or chat open, or in the middle of another maneuver.
+
+If you bought Barrel Roll before it became free, its 2 skill points are back in your pool. A key that held it returns to
+its normal ability, or stays empty if you had moved that ability to another key, and its wheel position is free again.
 
 ## Momentum
 
@@ -61,7 +80,8 @@ through a group and follow its finale with another pass.
 
 ## Purchasable skills
 
-All eighteen nodes have been redesigned. The six active techniques can replace any of your
+All eighteen nodes have been redesigned. Seventeen are bought; Barrel Roll is free and shown
+in the tree as innate. The five purchasable active techniques can replace any of your
 five ability keys. Purchases retain their saved IDs and point costs. Each branch has its own
 play loop; opening and mastery nodes no longer grant blanket cost, damage or cooldown bonuses.
 The normal one-capstone limit still applies.
@@ -82,8 +102,8 @@ The normal one-capstone limit still applies.
 | Skill | Type | Level / points | Effect |
 | --- | --- | --- | --- |
 | **Ram Air** | Passive | 1 / 1 | Build Momentum 30% faster during real forward flight at a faster wheel setting. |
-| **Barrel Roll** | Active | 2 / 2 | Carry your entry speed into a 0.6-second corkscrew. The first hostile projectile you deflect banks 15 Momentum. Shift + key rolls left. Solid walls stop the roll. |
-| **Vector Control** | Passive | 3 / 2 | Skyburst fully coils in 0.9 seconds instead of 1.5, letting you redirect your airspeed sooner. |
+| **Barrel Roll** | Innate | 1 / free | Every flyer has it: double-tap Strafe Left or Right while flying. See [Barrel Roll](#barrel-roll). |
+| **Vector Control** | Passive | 3 / 2 | Needs Ram Air. Skyburst fully coils in 0.9 seconds instead of 1.5, letting you redirect your airspeed sooner. |
 | **Jetstream** | Active | 2 / 2 | Lay a 12-block wind lane for 8 seconds. Friends gain Speed II, Jump Boost and Slow Falling; enemies are carried along it. Solid terrain clips its reach. Shift + key dismisses it. |
 | **Draft Rider** | Passive | 3 / 1 | Jetstream reaches 20 blocks. While you are flying, the first friend other than you to ride a current banks 20 Momentum for you, once per cast. |
 | **Slipstream Echo** | Capstone | 5 / 3 | A Skyburst that spends at least 50 Momentum leaves an 8-block wind lane for 4 seconds, letting friends follow your launch. |
@@ -148,8 +168,9 @@ The preview creates a separate flat world and writes staged screenshots to
 `build/flight-preview/screenshots/`. Flight GameTests cover Momentum, Skyburst range and wall stops, Skyhook attachment, input
 release/cost/cooldown, cancellation, dive wind-up, collision/cover and fall-protection expiry.
 The existing four wheel-control tests continue to cover level caps, braking and resets.
-`FlightSkillGameTests` additionally checks purchases and save compatibility, all six optional
+`FlightSkillGameTests` additionally checks purchases and save compatibility, all six
 techniques, linked passive upgrades, projectile/team/cover rules, cancellation and respec cleanup.
+Game tests never press a key, so `tools/flight-roll-preview.init.gradle` presses the real strafe keys.
 
 ## Damage and stamina
 

@@ -160,6 +160,7 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | `construct-preview.init.gradle`, `signature-preview.init.gradle` | particle constructs; signature abilities at night | `-PconstructWeaveOnly` |
 | **Combat** | | |
 | `fighting-preview.init.gradle` | every shared fighting style | `-Ponly=telekinesis,quake`, `-Pinput` (presses the real keys and prints `INPUT_RESULT`) |
+| `flight-roll-preview.init.gradle` | Flight's Barrel Roll on the real strafe keys: both directions, near misses, chat, the ground, a rebound key, its card in the tree, and its HUD ring ready, recharging and low | Prints `ROLL_INPUT` lines and fails on any wrong case |
 | `style-preview.init.gradle` | every class ability's set piece | |
 | `finisher-preview.init.gradle` | the glisten, the prompt and every finisher | `-Ponly=telepathy` or `-Ponly=hearth,phoenix_kick` |
 | `projectile-preview.init.gradle` | projectile ranges | |

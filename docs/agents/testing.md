@@ -44,7 +44,8 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 - **The other checks GitHub runs:** `./gradlew build`, `python3 tools/blueprint.py validate` over every blueprint, and
   `python3 tools/verify-skill-content.py`. Run `py -3 tools/balance.py --check` too whenever costs change.
 - **Game tests call the server directly.** They never press a key, so a broken click, double-tap or key binding passes
-  every test. The fighting preview's `-Pinput` run is the only check of real input (see [previews.md](previews.md)).
+  every test. The fighting preview's `-Pinput` run and `flight-roll-preview` are the checks of real input (see
+  [previews.md](previews.md)).
 
 ## Before you blame your change
 
@@ -80,6 +81,10 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 - **Pocket dimensions hide players at first.** For a few seconds after an arena dimension is built, a player in a chunk
   that isn't entity-ticking yet is invisible to `getEntitiesOfClass`. Wait for every corner of the room
   (`SylarCollectionGameTests.ready`), not just the boss's chunk.
+- **Wait for every distant target, including a later replacement.** The frozen-villager story test could miss its
+  first mind at 30 blocks or its second at 35, depending on chunk alignment. `CryoGameTests.frozenVillagersKeepTelepathyStoryProgress`
+  holds the path's chunks and waits for both villagers in the real entity query before reading. It releases only its
+  own tickets and cleans up on timeout too. A direct entity reference does not prove that targeting can see it.
 
 ## Clean up, or break every later test
 

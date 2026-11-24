@@ -781,7 +781,7 @@ def normalize_skills(trees):
         for b, lane in enumerate(tree["branches"]):
             for tier, n in enumerate(lane):
                 nid = n.get("id", f"{power}_{b}_{tier}")
-                level = 4 if n.get("signature") else LANE_LEVELS[min(tier, 5)]
+                level = 1 if n.get("innate") else 4 if n.get("signature") else LANE_LEVELS[min(tier, 5)]
                 n["level"] = level
                 active = n.get("active", tier == 1)
                 if not active:

@@ -305,11 +305,12 @@
         },
         {
           "name": "Barrel Roll",
-          "description": "Corkscrew for 0.6 seconds, carrying your entry speed. Deflect a hostile projectile to bank 15 Momentum once per roll. Shift + key rolls left. Solid walls stop the roll.",
+          "description": "Double-tap Strafe Left or Right in flight to corkscrew that way for 0.6 seconds, keeping your speed. Deflect a hostile shot to bank 15 Momentum once per roll. Walls stop it.",
+          "innate": true,
           "energy": 19,
           "cooldown": 100,
           "icon": "minecraft:elytra",
-          "level": 2,
+          "level": 1,
           "mechanic": "barrel_roll",
           "design_energy": 18,
           "design_cooldown": 100

@@ -171,6 +171,11 @@ public final class ModPayloads {
                 FlightForwardInputPayload.TYPE,
                 FlightForwardInputPayload.STREAM_CODEC,
                 FlightForwardInputPayload::handle
+            )
+            .playToServer(
+                FlightRollPayload.TYPE,
+                FlightRollPayload.STREAM_CODEC,
+                FlightRollPayload::handle
             );
     }
 }

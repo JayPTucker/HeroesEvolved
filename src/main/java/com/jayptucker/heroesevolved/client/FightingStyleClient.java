@@ -36,8 +36,7 @@ public final class FightingStyleClient {
     private static final int DOUBLE_TAP = 6;
     /** The client sends no faster than the quickest strike the server allows. */
     private static final int STRIKE_EVERY = 4;
-    private static final boolean[] WAS_DOWN = new boolean[3];
-    private static final long[] LAST_PRESS = {Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE};
+    private static final DoubleTaps TAPS = new DoubleTaps(3, DOUBLE_TAP);
     private static long lastStrike = Long.MIN_VALUE;
 
     private FightingStyleClient() {}
@@ -78,25 +77,11 @@ public final class FightingStyleClient {
     public static void tick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         if (!free(mc) || !ClientVisualSettings.STYLE_DODGES.get() || !styled()) {
-            java.util.Arrays.fill(WAS_DOWN, false);
-            java.util.Arrays.fill(LAST_PRESS, Long.MIN_VALUE);
+            TAPS.reset();
             return;
         }
         KeyMapping[] keys = {mc.options.keyLeft, mc.options.keyRight, mc.options.keyDown};
-        long now = mc.level.getGameTime();
-        for (int i = 0; i < keys.length; i++) {
-            boolean down = keys[i].isDown();
-            if (down && !WAS_DOWN[i]) {
-                if (LAST_PRESS[i] != Long.MIN_VALUE && now - LAST_PRESS[i] <= DOUBLE_TAP && now >= LAST_PRESS[i]) {
-                    PacketDistributor.sendToServer(new FightingStylePayload(FightingStylePayload.DODGE, i));
-                    LAST_PRESS[i] = Long.MIN_VALUE;
-                } else {
-                    LAST_PRESS[i] = now;
-                }
-                // Tapping another direction in between starts the count again.
-                for (int j = 0; j < keys.length; j++) if (j != i) LAST_PRESS[j] = Long.MIN_VALUE;
-            }
-            WAS_DOWN[i] = down;
-        }
+        TAPS.poll(keys, mc.level.getGameTime(),
+                i -> PacketDistributor.sendToServer(new FightingStylePayload(FightingStylePayload.DODGE, i)));
     }
 }

@@ -56,6 +56,15 @@ public final class WheelLoadout {
         return updated;
     }
 
+    /** Takes actions off the wheel. Their positions count as never used, so the next learned skill can fill them. */
+    public static Map<String, String> without(Map<String, String> slots, java.util.Set<String> gone) {
+        var updated = new HashMap<>(slots);
+        for (int slot = 1; slot <= SLOTS; slot++)
+            if (gone.contains(updated.getOrDefault(position(slot), ""))) updated.remove(position(slot));
+        if (gone.contains(quickCast(updated))) updated.remove(QUICK_CAST);
+        return updated;
+    }
+
     public static Map<String, String> place(Map<String, String> slots, int slot, String actionKey) {
         var updated = new HashMap<>(slots);
         if (slot == TAP) {

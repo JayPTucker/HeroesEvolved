@@ -54,4 +54,9 @@ public final class ClientLoadout {
     public static LoadoutPayload.Entry entry(String actionKey) {
         return state.entries().stream().filter(e -> e.actionKey().equals(actionKey)).findFirst().orElse(null);
     }
+
+    /** A skill this power has with no key (Flight's Barrel Roll), or null. */
+    public static LoadoutPayload.Entry innate(String actionKey) {
+        return state.innate().stream().filter(e -> e.actionKey().equals(actionKey)).findFirst().orElse(null);
+    }
 }

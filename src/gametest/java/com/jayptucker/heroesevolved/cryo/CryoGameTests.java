@@ -200,12 +200,36 @@ public final class CryoGameTests {
         });
     }
 
-    @GameTest(template = "rewind_empty", timeoutTicks = 100, batch = "CryoGameTests.frozenVillagersKeepTelepathyStoryProgress")
+    @GameTest(template = "rewind_empty", timeoutTicks = 200, batch = "CryoGameTests.frozenVillagersKeepTelepathyStoryProgress")
     public static void frozenVillagersKeepTelepathyStoryProgress(GameTestHelper helper) {
         ServerPlayer player = player(helper, 55);
         Villager first = target(helper, EntityType.VILLAGER, player.position().add(0, 0, 30));
         Villager second = target(helper, EntityType.VILLAGER, player.position().add(0, 0, 35));
-        try {
+        first.setNoAi(true); second.setNoAi(true);
+        // Both minds are outside the small template's normal chunk coverage. A direct reference can exist
+        // before ProjectileUtil's entity query can see it, including the second mind after the first succeeds.
+        var forced = new java.util.HashSet<net.minecraft.world.level.ChunkPos>();
+        for (int z = 0; z <= 40; z += 8) {
+            var chunk = new net.minecraft.world.level.ChunkPos(player.blockPosition().offset(0, 0, z));
+            if (!helper.getLevel().getForcedChunks().contains(chunk.toLong())) {
+                helper.getLevel().setChunkForced(chunk.x, chunk.z, true); forced.add(chunk);
+            }
+            helper.getLevel().getChunk(chunk.x, chunk.z);
+        }
+        boolean[] cleaned = {false};
+        Runnable cleanup = () -> {
+            if (cleaned[0]) return;
+            cleaned[0] = true; remove(player, first, second);
+            for (var chunk : forced) helper.getLevel().setChunkForced(chunk.x, chunk.z, false);
+        };
+        helper.runAfterDelay(180, () -> {
+            if (!cleaned[0]) { cleanup.run(); helper.fail("Both distant minds must become queryable before checking story progress"); }
+        });
+        helper.startSequence().thenWaitUntil(() -> {
+            var visible = helper.getLevel().getEntities(player,
+                    new net.minecraft.world.phys.AABB(player.position(), second.position()).inflate(2), Entity::isAlive);
+            helper.assertTrue(visible.contains(first) && visible.contains(second), "Wait for both distant minds' chunks");
+        }).thenExecute(() -> { try {
             CryoService.freezeSolid(first, 80, player);
             aim(player, first);
             helper.assertTrue(TelepathyService.readMind(player, 1), "Telepathy must reach thirty blocks and read a frozen villager");
@@ -216,8 +240,8 @@ public final class CryoGameTests {
             aim(player, second);
             TelepathyService.readMind(player, 1);
             helper.assertTrue(player.getData(ModDataAttachments.PLAYER_STORY_PROGRESS) == 2, "A new mind must advance the existing story");
-            helper.succeed();
-        } finally { remove(player, first, second); }
+        } finally { cleanup.run(); }
+        }).thenSucceed();
     }
 
     @GameTest(template = "rewind_empty", timeoutTicks = 100, batch = "CryoGameTests.rangedBlastsLightningAndPushReachBeyondOldLimits")

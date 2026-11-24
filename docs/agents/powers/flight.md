@@ -1,6 +1,6 @@
 # Flight: notes for agents
 
-Skyburst, Tempest, Skyhook and the six optional skills (`flight/`, art in `client/effects/setpiece/FlightArt`). Many patterns here (dashes faster than 3.9 blocks a tick, swept moves, the shared tornado, phase flags, carrying) are used by other powers. What the player sees: [flight.md](../../flight.md), [carrying.md](../../carrying.md).
+Skyburst, Tempest, Skyhook, the innate Barrel Roll and five purchasable active skills (`flight/`, art in `client/effects/setpiece/FlightArt`). Many patterns here (dashes faster than 3.9 blocks a tick, swept moves, the shared tornado, phase flags, carrying) are used by other powers. What the player sees: [flight.md](../../flight.md), [carrying.md](../../carrying.md).
 
 Part of the notes for coding agents: start at [AGENTS.md](../../../AGENTS.md).
 
@@ -41,6 +41,29 @@ abilities will meet. Reuse these instead of starting again. What the player sees
 - **Client-owned nudges stay on the client.** When something should shift a player without interrupting their
   own momentum (the speedster's ledge drop in `client/SpeedLedge`), do it on their client. A server teleport
   or a vanilla motion packet replaces the client's velocity outright.
+
+### Barrel Roll is an innate node
+
+- **An innate node** (`"innate": true` in `skill_trees.json`, `SkillCatalog.Node.innate`) is a tree node every holder of
+  the power has for free, fired by its own input. `flight_1_1` keeps its id, row, cost, cooldown and balance entry, so
+  the tree stays eighteen nodes with six actions, and Vector Control's parent still exists.
+  - `SkillTreeService.has` answers true for it. `purchase`, `Loadout.available` and `Loadout.resolve` refuse it, so it
+    can't be bought, bound or cast from a forged wheel packet. A child's parent check goes through
+    `SkillCatalog.satisfied`, which looks past an innate parent to the node above it (Vector Control still needs Ram Air).
+  - **Old saves heal in `SkillTreeService.build`** through `SkillCatalog.withoutInnate`: the purchase comes off (refunding
+    its points), keys go back to their default or empty if that default moved (`Loadout.without`), and wheel positions
+    are freed (`WheelLoadout.without`).
+  - `balance.py` sets an innate node's unlock level to 1. It is still `active` there, so its cost stays in the table.
+- **The input** is `client/FlightRollClient`, on the shared `client/DoubleTaps` that fighting-style dodges also use. It
+  reads `keyLeft` and `keyRight`, so rebinding works, and sends only `FlightRollPayload(side)`.
+- **`FlightSkillService.requestRoll` decides.** It pays through `AbilityUseService.activateInnate`, so stamina, cooldown,
+  ranks, sounds and suppression match any other action. It checks `canUse` and the cooldown first and returns quietly,
+  because a double-tapped strafe is often just steering and a "still recovering" message on it would be a nag.
+- **The HUD ring.** An innate node has no key tile, so `LoadoutPayload.innate` carries its live cost and cooldown
+  (`PlayerPowerSyncService.innate`), and `FlightRollClient.gauges` adds a ROLL ring. `status()` checks in the server's
+  order so OK means a tap would roll. Any later innate node gets the payload entry for free.
+- The roll needs a live flight session. The old key-bound version started one if you were merely airborne; on a movement
+  key that would turn a jump plus a strafe into a takeoff.
 
 ### Choosing targets
 

@@ -14,13 +14,14 @@ import java.util.List;
 
 /**
  * The player's own power at a glance: Power Level and its progress, the Evolved trial, story points,
- * every ability they can cast, the direct key bindings and the saved wheel layout.
+ * every ability they can cast, the direct key bindings and the saved wheel layout. {@code innate} holds skills every
+ * holder has with no key or wheel position (Flight's Barrel Roll), so the HUD can still show their cooldown.
  */
 public record LoadoutPayload(int level, long masteryInto, long masteryNeeded, boolean evolved, String trial, int trialProgress,
                              int trialGoal, int storyPoints, List<Entry> entries, List<String> keys,
-                             String power, List<String> wheel, String quickCast) implements CustomPacketPayload {
+                             String power, List<String> wheel, String quickCast, List<Entry> innate) implements CustomPacketPayload {
     public static final LoadoutPayload EMPTY = new LoadoutPayload(1, 0, 1, false, "", 0, 1, 0,
-            List.of(), List.of(), "", List.of(), "");
+            List.of(), List.of(), "", List.of(), "", List.of());
     /**
      * One castable ability. {@code actionKey} is how it is cast and bound; {@code path} its action id;
      * {@code unlockLevel} the Power Level it unlocks at; {@code cooldownEnd} in game time.
@@ -39,28 +40,19 @@ public record LoadoutPayload(int level, long masteryInto, long masteryNeeded, bo
             (b, v) -> {
                 b.writeVarInt(v.level); b.writeVarLong(v.masteryInto); b.writeVarLong(v.masteryNeeded); b.writeBoolean(v.evolved);
                 b.writeUtf(v.trial, 200); b.writeVarInt(v.trialProgress); b.writeVarInt(v.trialGoal); b.writeVarInt(v.storyPoints);
-                b.writeVarInt(v.entries.size());
-                for (Entry e : v.entries) {
-                    b.writeUtf(e.actionKey, 96); b.writeUtf(e.path, 96); b.writeUtf(e.nameKey, 160); b.writeBoolean(e.unlocked);
-                    b.writeVarInt(e.unlockLevel); b.writeVarInt(e.energy); b.writeVarInt(e.cooldownTicks); b.writeVarLong(e.cooldownEnd);
-                    b.writeVarInt(e.rank); b.writeVarInt(e.uses);
-                    b.writeVarInt(e.alternateCooldownTicks); b.writeVarLong(e.alternateCooldownEnd);
-                }
+                writeEntries(b, v.entries);
                 b.writeVarInt(v.keys.size());
                 for (String key : v.keys) b.writeUtf(key, 96);
                 b.writeUtf(v.power, 96);
                 b.writeVarInt(v.wheel.size());
                 for (String slot : v.wheel) b.writeUtf(slot, 96);
                 b.writeUtf(v.quickCast, 96);
+                writeEntries(b, v.innate);
             },
             b -> {
                 int level = b.readVarInt(); long into = b.readVarLong(), needed = b.readVarLong(); boolean evolved = b.readBoolean();
                 String trial = b.readUtf(200); int progress = b.readVarInt(), goal = b.readVarInt(), story = b.readVarInt();
-                int count = Math.min(64, b.readVarInt());
-                List<Entry> entries = new ArrayList<>();
-                for (int i = 0; i < count; i++) entries.add(new Entry(b.readUtf(96), b.readUtf(96), b.readUtf(160), b.readBoolean(),
-                        b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readVarLong(), b.readVarInt(), b.readVarInt(),
-                        b.readVarInt(), b.readVarLong()));
+                List<Entry> entries = readEntries(b);
                 int keys = Math.min(Loadout.KEYS, b.readVarInt());
                 List<String> bound = new ArrayList<>();
                 for (int i = 0; i < keys; i++) bound.add(b.readUtf(96));
@@ -69,8 +61,27 @@ public record LoadoutPayload(int level, long masteryInto, long masteryNeeded, bo
                 List<String> wheel = new ArrayList<>();
                 for (int i = 0; i < slots; i++) wheel.add(b.readUtf(96));
                 return new LoadoutPayload(level, into, needed, evolved, trial, progress, goal, story,
-                        List.copyOf(entries), List.copyOf(bound), power, List.copyOf(wheel), b.readUtf(96));
+                        entries, List.copyOf(bound), power, List.copyOf(wheel), b.readUtf(96), readEntries(b));
             });
+
+    private static void writeEntries(RegistryFriendlyByteBuf b, List<Entry> entries) {
+        b.writeVarInt(entries.size());
+        for (Entry e : entries) {
+            b.writeUtf(e.actionKey, 96); b.writeUtf(e.path, 96); b.writeUtf(e.nameKey, 160); b.writeBoolean(e.unlocked);
+            b.writeVarInt(e.unlockLevel); b.writeVarInt(e.energy); b.writeVarInt(e.cooldownTicks); b.writeVarLong(e.cooldownEnd);
+            b.writeVarInt(e.rank); b.writeVarInt(e.uses);
+            b.writeVarInt(e.alternateCooldownTicks); b.writeVarLong(e.alternateCooldownEnd);
+        }
+    }
+
+    private static List<Entry> readEntries(RegistryFriendlyByteBuf b) {
+        int count = Math.min(64, b.readVarInt());
+        List<Entry> entries = new ArrayList<>();
+        for (int i = 0; i < count; i++) entries.add(new Entry(b.readUtf(96), b.readUtf(96), b.readUtf(160), b.readBoolean(),
+                b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readVarLong(), b.readVarInt(), b.readVarInt(),
+                b.readVarInt(), b.readVarLong()));
+        return List.copyOf(entries);
+    }
 
     @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
