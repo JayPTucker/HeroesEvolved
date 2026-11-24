@@ -14,12 +14,17 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
   Its driver is `endgame/EndgamePreview`; photos are in `build/endgame-preview/screenshots/`. Both ruin lighting audits
   must be clean. The final death photos show the actual emissive PlayerModel, the white flash and the ability wave.
 
-- **Wither:** `tools/wither-preview.init.gradle` photographs the native summoning replacement, hinged ribs, swallowing
-  heads, breach, 81-block arena, every warning, three phases, anchor backfire, aerial lanes and death. Its driver is
-  `uitest/WitherPreview`; photos go to `build/wither-preview/screenshots/`. It runs `CityAudit` including upper rib ledges.
-  `tools/wither-rework-preview.init.gradle` adds articulated attack/release poses, independent side-head shots, all
-  three phases, 37 seconds of unpaused pursuit with real movement input, the Wither Guide and clicks on actual admin
-  start/entry/phase/cancel controls. Driver: `wither/WitherReworkPreview`; photos: `build/wither-rework-preview/screenshots/`.
+- **Wither:** `tools/wither-preview.init.gradle` photographs the story: the native construction knitting together, the
+  seam splitting behind it and tearing open, the Wither dragged backwards through, the standing breach, the arrival out
+  of a tear over the Ossuary's dais (first person), the Ossuary from above, the entrance and the wall, the death scene,
+  the detonation (the camera's player holds a shield power so the blast can be seen, then is knocked flat by
+  `WitherArena.blast`), blackout, blinking awake under the vault, the exit where it died, and the home breach slamming
+  shut. Driver: `uitest/WitherPreview`; photos: `build/wither-preview/screenshots/`. It runs `CityAudit` over the cage
+  (its dark-floor count is wall tops and the foundation rim: the cage's void biome spawns nothing).
+  `tools/wither-rework-preview.init.gradle` photographs every move's warning and landing (a charge staged into a
+  pillar), all three phases, 37 seconds of unpaused pursuit with real movement input, the Wither Guide and clicks on
+  the actual admin start/entry/phase/cancel controls. Driver: `wither/WitherReworkPreview`; photos:
+  `build/wither-rework-preview/screenshots/`.
 
 - `./gradlew runClient --init-script tools/<name>-preview.init.gradle [-P<option>]`. Each script loads its driver from
   `src/uitest/java/com/jayptucker/heroesevolved/uitest/` (never shipped in the jar), sets its own

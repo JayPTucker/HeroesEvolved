@@ -37,6 +37,12 @@ public final class SpeedFriction {
     /** Blocks a tick above which friction builds heat. */
     public static final double FRICTION_PACE = 1.85;
     public static final float SMOKE = 25, SCORCH = 50, BURN = 70, MAX = 100;
+    /**
+     * Heat a tick from a Cyclone run at the runner's fastest setting; one setting below it heats half as fast, and
+     * anything slower (the vacuum included) builds none and cools. A three-second ring at the top setting smokes but
+     * doesn't burn; holding it there for a tornado starts burning after about four seconds.
+     */
+    public static final float CYCLONE_TOP_HEAT = 0.9F;
     /** Heat a Lightspeed streak adds. */
     public static final float LIGHTSPEED_HEAT = 60;
 
@@ -79,10 +85,25 @@ public final class SpeedFriction {
 
     /** One tick of friction for a runner running {@code pace} blocks a tick (exposed for tests). */
     static void run(ServerPlayer p, double pace, long now) {
+        heat(p, pace > FRICTION_PACE ? (float) (0.9 + 2.2 * (pace - FRICTION_PACE) / FRICTION_PACE) : 0, now);
+    }
+
+    /**
+     * Heat a tick from a Cyclone at {@code setting} of the runner's {@code fastest}. The laps are a fixed path round a
+     * 6.5-block ring (about 55 blocks a second at every setting), so measuring them as a run burned even the slowest
+     * vacuum in under two seconds. The setting is what the runner chose, so it decides the heat.
+     */
+    public static float cycloneHeat(int setting, int fastest) {
+        if (setting <= SpeedKit.VACUUM_UP_TO) return 0;
+        int below = fastest - setting;
+        return below <= 0 ? CYCLONE_TOP_HEAT : below == 1 ? CYCLONE_TOP_HEAT / 2 : 0;
+    }
+
+    /** One tick of friction that adds {@code gain} heat, or cools if it is 0 (exposed for tests). */
+    static void heat(ServerPlayer p, float gain, long now) {
         Heat h = HEATS.computeIfAbsent(p.getUUID(), id -> fresh(p));
         float protect = Suits.friction(p);
-        if (pace > FRICTION_PACE && p.isAlive()) {
-            float gain = (float) (0.9 + 2.2 * (pace - FRICTION_PACE) / FRICTION_PACE);
+        if (gain > 0 && p.isAlive()) {
             h.heat = Math.min(MAX, h.heat + gain * (1 - protect));
             if (protect > 0) Suits.scuff(p, gain * protect * 0.1F);
         } else {
@@ -129,8 +150,15 @@ public final class SpeedFriction {
             h.last = p.position();
             // Teleports, dashes and rides aren't running: Blitz and the like add no friction.
             if (step > 8 || p.isPassenger()) step = 0;
-            h.pace = h.pace * 0.6 + step * 0.4;
-            run(p, running ? h.pace : 0, now);
+            int cyclone = SpeedKit.cycloneSpeed(p);
+            if (cyclone > 0) {
+                // Laps round the ring aren't a run (see cycloneHeat), and must not linger in the pace afterwards.
+                h.pace = 0;
+                heat(p, cycloneHeat(cyclone, SpeedService.maximumSpeedStep(p)), now);
+            } else {
+                h.pace = h.pace * 0.6 + step * 0.4;
+                run(p, running ? h.pace : 0, now);
+            }
             if (h.heat <= 0 && !running) HEATS.remove(p.getUUID());
         }
         HEATS.keySet().removeIf(id -> server.getPlayerList().getPlayer(id) == null);

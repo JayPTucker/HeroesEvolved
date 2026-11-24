@@ -235,6 +235,7 @@ public final class RiftWitherModel extends HierarchicalModel<RiftWitherEntity> {
             Move action = e.action();
             if (action != null && state == RiftWitherEntity.STATE_NONE) move(e, p, action, e.actionAge(partial), e.actionVariant());
             switch (state) {
+                case RiftWitherEntity.STATE_ARRIVE -> arrive(p, age, e.age() + partial);
                 case RiftWitherEntity.STATE_SPENT -> spent(p, age, stateAge);
                 case RiftWitherEntity.STATE_STAGGER -> stagger(p, age, stateAge);
                 case RiftWitherEntity.STATE_CRASH -> crash(p, age, stateAge);
@@ -261,7 +262,7 @@ public final class RiftWitherModel extends HierarchicalModel<RiftWitherEntity> {
     }
 
     private void move(RiftWitherEntity e, Pose p, Move move, float t, int variant) {
-        float w = move.windup;
+        float w = e.actionWindup();
         Vec3 aim = e.aim();
         switch (move) {
             case BITE -> {
@@ -394,6 +395,25 @@ public final class RiftWitherModel extends HierarchicalModel<RiftWitherEntity> {
                     p.jaw[i] = k(t, 0, .1F, w - 3, 1.05F, hold, .9F, hold + 10, .1F);
                 }
             }
+            case BROOD -> {
+                // It grips its own ribcage and heaves; the center head rears, then retches the brood out.
+                float heave = t < w ? Mth.sin(t * 1.3F) * .12F * t / w : 0;
+                p.chestX += k(t, 0, 0, w - 6, -.35F, w, .45F, w + 6, .35F, w + 18, 0) + heave;
+                p.open += k(t, 0, 0, w - 8, 1.1F, w, 1.5F, w + 10, 1.2F, w + 20, 0) + heave * 2;
+                p.coreScale += k(t, 0, 0, w, .6F, w + 14, 0);
+                for (int s = 0; s < 2; s++) {
+                    p.shoulderX[s] += k(t, 0, 0, w - 8, -.55F, w + 14, 0);
+                    p.shoulderZ[s] += k(t, 0, 0, w - 8, -.2F, w + 14, 0);
+                    p.elbow[s] += k(t, 0, 0, w - 8, -1.35F, w + 14, 0);
+                    p.curl[s] += k(t, 0, 0, w - 8, 1.25F, w + 14, 0);
+                }
+                p.aimWeight[0] = 1;
+                p.headUp[0] += k(t, 0, 0, w - 6, 4, w, -2, w + 8, -1, w + 18, 0);
+                p.headFwd[0] += k(t, 0, 0, w - 6, -3, w, 7, w + 8, 6, w + 18, 0);
+                p.headPitch[0] += k(t, 0, 0, w - 6, -.7F, w, .45F, w + 18, 0);
+                p.jaw[0] = k(t, 0, .1F, w - 6, .5F, w - 1, 1.25F, w + 10, 1.2F, w + 16, .1F);
+                for (int i = 1; i < 3; i++) { p.jaw[i] = k(t, 0, .1F, w - 4, .7F, w + 10, .1F); p.headPitch[i] += k(t, 0, 0, w - 4, -.4F, w + 14, 0); }
+            }
             case HORIZON -> {
                 float tremble = t < w ? Mth.sin(t * 3.1F) * .05F * Math.min(1, t / w) : 0;
                 p.hipsY += k(t, 0, 0, w - 10, 5, w + 2, 3, w + 22, 0);
@@ -461,37 +481,94 @@ public final class RiftWitherModel extends HierarchicalModel<RiftWitherEntity> {
         for (int s = 0; s < 2; s++) { p.shoulderZ[s] += 1.2F * in; p.shoulderX[s] += -.5F * in; p.curl[s] -= .6F * in; }
         for (int i = 0; i < 3; i++) { p.headPitch[i] += -.9F * in + tremble * 3; p.jaw[i] = 1.2F * in + .1F; p.headUp[i] += 2 * in; }
     }
+    /**
+     * The summoning site: it knits together hunched, rears and roars at whoever built it, twists to look at the seam
+     * splitting behind it, digs its claws in against the pull with its tail already drawn into the tear, and is yanked
+     * backwards through, arms flung out toward the people it is being torn away from.
+     */
     private void intro(RiftWitherEntity e, Pose p, float t) {
-        p.open = ease(28, 60, t) * 1.6F;
-        p.hipsY += 4 * ease(0, 30, t);
-        for (int i = 0; i < 3; i++) {
-            float pull = ease(66 + i * 12, 84 + i * 12, t);
-            p.headShrink[i] = pull;
-            p.jaw[i] = .2F + .9F * ease(50 + i * 12, 66 + i * 12, t) * (1 - pull);
-            p.headPitch[i] += -.6F * ease(30, 60, t) * (1 - pull);
+        float form = ease(0, WitherGeometry.FORM_END, t);
+        float rear = ease(WitherGeometry.FORM_END - 2, WitherGeometry.FORM_END + 10, t) * (1 - ease(WitherGeometry.SEAM + 2, WitherGeometry.SEAM + 14, t));
+        float look = ease(WitherGeometry.SEAM, WitherGeometry.SPLIT + 4, t) * (1 - ease(WitherGeometry.PULL - 2, WitherGeometry.PULL + 6, t));
+        float resist = ease(WitherGeometry.PULL - 4, WitherGeometry.PULL + 8, t) * (1 - ease(WitherGeometry.YANK, WitherGeometry.YANK + 3, t));
+        float yank = ease(WitherGeometry.YANK, WitherGeometry.YANK + 5, t);
+        float tremble = Mth.sin(t * 2.1F) * .04F * (rear + resist);
+        // Knitting together: hunched over, ribs drawn in, arms curled to the chest.
+        p.chestX += .6F * (1 - form) + .55F * resist + .35F * yank - .55F * rear + tremble;
+        p.hipsY += -3 * (1 - form) - 1.5F * resist;
+        p.open = Mth.lerp(form, -.3F, p.open) + 1.2F * rear + .5F * resist + .9F * yank;
+        p.coreScale = .4F + .6F * form + .6F * rear + .3F * resist;
+        for (int s = 0; s < 2; s++) {
+            p.shoulderX[s] += -.4F * (1 - form) - .5F * rear - 1.15F * resist - 1.9F * yank;
+            p.shoulderZ[s] += -.2F * (1 - form) + 1.25F * rear + .25F * resist + .55F * yank;
+            p.elbow[s] += -1.2F * (1 - form) - .45F * resist - .2F * yank;
+            p.curl[s] += .8F * (1 - form) - .5F * rear + 1.25F * resist - .6F * yank;
         }
-        for (int s = 0; s < 2; s++) p.shoulderZ[s] += 1.1F * ease(30, 60, t);
-        p.coreScale = 1 + ease(40, 100, t) * 1.5F;
+        Vec3 gate = e.gate();
+        for (int i = 0; i < 3; i++) {
+            p.headPitch[i] += .5F * (1 - form) - 1.0F * rear + .25F * resist + tremble * 3;
+            p.headUp[i] += 2 * rear - 2 * (1 - form);
+            p.headFwd[i] += 2.5F * resist + 4 * yank;
+            p.jaw[i] = .1F + 1.15F * rear + .95F * resist + 1.1F * yank * (1 - ease(WitherGeometry.YANK + 10, WitherGeometry.THROUGH, t));
+            if (look > .3F && gate != null) { p.headLook[i] = gate; p.aimWeight[i] = 1; }
+        }
+        // Its tail goes first: drawn straight back into the tear.
+        float drawn = Math.max(resist, yank);
+        for (int i = 0; i < 4; i++) {
+            tail[i].xRot -= (i == 0 ? .9F : .25F) * drawn;
+            tail[i].yRot *= 1 - drawn;
+        }
     }
+    /** Out of the arrival tear: falling with arms thrown up, a crouching landing, then a roar at the room. */
+    private void arrive(Pose p, float age, float t) {
+        float fall = ease(WitherGeometry.ARRIVAL_OPEN - 2, WitherGeometry.ARRIVAL_OPEN + 4, t) * (1 - ease(WitherGeometry.ARRIVAL_LAND - 2, WitherGeometry.ARRIVAL_LAND, t));
+        float land = k(t, 0, 0, WitherGeometry.ARRIVAL_LAND - 1, 0, WitherGeometry.ARRIVAL_LAND + 1, 1, WitherGeometry.ARRIVAL_LAND + 6, 1, WitherGeometry.ARRIVAL_LAND + 10, 0);
+        float roar = ease(WitherGeometry.ARRIVAL_LAND + 6, WitherGeometry.ARRIVAL_LAND + 12, t) * (1 - ease(WitherGeometry.ARRIVAL_TICKS - 8, WitherGeometry.ARRIVAL_TICKS, t));
+        float tremble = Mth.sin(age * 2.2F) * .035F * roar;
+        p.chestX += -.2F * fall + .55F * land - .55F * roar + tremble;
+        p.hipsY += -4 * land + 2 * roar;
+        p.open += .6F * fall + .3F * land + 1.35F * roar;
+        p.coreScale += .4F * roar;
+        for (int s = 0; s < 2; s++) {
+            p.shoulderX[s] += -1.3F * fall - .7F * land - .45F * roar;
+            p.shoulderZ[s] += 1.2F * fall + .3F * land + 1.25F * roar;
+            p.elbow[s] += -.3F * fall + .45F * land;
+            p.curl[s] += -.6F * fall + 1.1F * land - .6F * roar;
+        }
+        for (int i = 0; i < 3; i++) {
+            p.headPitch[i] += .55F * fall + .3F * land - 1.0F * roar + tremble * 3;
+            p.headUp[i] += 2 * roar - 2 * land;
+            p.jaw[i] = .1F + .5F * fall + 1.2F * roar;
+        }
+        for (int i = 0; i < 4; i++) tail[i].xRot -= .7F * fall * (i == 0 ? 1 : .4F);
+    }
+    /**
+     * Dying: it thrashes; its ribs burst outward; it rises with its arms thrown wide and its heads screaming at the vault
+     * while the star swells; then it curls round the star as everything is drawn back in, and is gone in the blast.
+     */
     private void death(RiftWitherEntity e, Pose p, float t) {
-        float thrash = k(t, 0, 0, 4, 1, 26, 1, 34, 0), sink = ease(40, 66, t);
-        p.chestX += -.5F * k(t, 0, 0, 8, 1, 30, 1, 44, -.4F);
-        p.open += k(t, 0, 0, 24, .6F, 34, 2.4F);
-        p.ribBurst = ease(30, 42, t);
-        p.coreScale = 1 + k(t, 0, .4F, 30, 1.6F, 42, 2.6F, 60, 0);
-        p.hipsY -= 16 * sink;
+        float thrash = k(t, 0, 0, 4, 1, 26, 1, 32, 0);
+        float swell = ease(WitherGeometry.RIBS_BURST, WitherGeometry.RIBS_BURST + 16, t) * (1 - ease(WitherGeometry.IMPLODE - 2, WitherGeometry.IMPLODE + 6, t));
+        float curl = ease(WitherGeometry.IMPLODE - 2, WitherGeometry.DETONATE - 4, t);
+        float tremble = Mth.sin(t * 2.6F) * (.03F + .05F * swell + .06F * curl);
+        p.chestX += -.5F * thrash - .45F * swell + .55F * curl + tremble;
+        p.open += .6F * thrash + 2.2F * swell - .5F * curl;
+        p.ribBurst = ease(WitherGeometry.RIBS_BURST, WitherGeometry.RIBS_BURST + 8, t) * (1 - .8F * curl);
+        p.coreScale = 1 + .5F * thrash + 2.4F * ease(WitherGeometry.RIBS_BURST, WitherGeometry.IMPLODE, t) * (1 - curl) + .2F * curl;
+        p.hipsY += 1.5F * swell;
         p.shed = true;
         for (int s = 0; s < 2; s++) {
-            p.shoulderZ[s] += (.8F + Mth.sin(t * .9F + s * 2) * .6F * thrash) - 1.1F * sink;
-            p.shoulderX[s] += Mth.sin(t * .7F + s) * .7F * thrash + .9F * sink;
+            p.shoulderZ[s] += (.8F + Mth.sin(t * .9F + s * 2) * .6F) * thrash + 1.45F * swell - .5F * curl;
+            p.shoulderX[s] += Mth.sin(t * .7F + s) * .7F * thrash - .4F * swell - 1.0F * curl;
+            p.elbow[s] += -1.5F * curl;
+            p.curl[s] += -.7F * swell + 1.4F * curl;
         }
         for (int i = 0; i < 3; i++) {
             p.headSway[i] += Mth.sin(t * 1.1F + i * 2.2F) * .7F * thrash;
-            p.headPitch[i] += -.8F * thrash + 1.1F * ease(38 + i * 4, 56 + i * 4, t);
-            p.headUp[i] -= 8 * ease(38 + i * 4, 56 + i * 4, t);
-            p.jaw[i] = 1.2F * thrash + .5F * sink;
+            p.headPitch[i] += -.8F * thrash - 1.05F * swell + 1.0F * curl + tremble * 4;
+            p.headUp[i] += 2 * swell - 4 * curl;
+            p.jaw[i] = 1.2F * thrash + 1.25F * swell + .3F * curl;
         }
-        p.scaleAll = 1 - .55F * ease(52, 70, t);
     }
 
     private void apply(RiftWitherEntity e, Pose p, float age, float partial) {
@@ -504,7 +581,7 @@ public final class RiftWitherModel extends HierarchicalModel<RiftWitherEntity> {
         yoke.zRot += p.yokeZ;
         yoke.yRot += p.chestY * .4F;
         root.xScale = root.yScale = root.zScale = p.scaleAll;
-        core.xScale = core.yScale = core.zScale = Math.max(.05F, p.coreScale * (1 - (e.mode() == 1 ? ease(100, 118, e.age() + partial) : 0)));
+        core.xScale = core.yScale = core.zScale = Math.max(.05F, p.coreScale);
         core.xRot = age * .05F;
         core.yRot = age * .07F;
         core.zRot = age * .03F;

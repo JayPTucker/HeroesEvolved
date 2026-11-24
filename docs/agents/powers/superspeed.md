@@ -43,6 +43,11 @@ the core's standard in November 2026. What the player sees is in [docs/superspee
   that path, and `SpeedCyclone` draws at the actual body. A blocked lap ends safely. Tornado windup is 190 ticks;
   tap duration stays 60, and the longer windup does not add eight seconds of ring damage. Test inflow with horizontal
   distance: measuring 3D distance counted the funnel's successful lift as failed pulling (`SpeedRunGameTests`).
+- **Scripted movement is not a run for friction.** Once the body really laps the ring, `SpeedFriction` measured the
+  laps (a fixed 2.7 blocks a tick at every setting, over `FRICTION_PACE`) and burned even a vacuum in under two
+  seconds. While a Cyclone holds the runner, heat comes from `SpeedFriction.cycloneHeat(setting, fastest)` instead
+  (none at the vacuum or below the top two settings) and the smoothed pace is zeroed so the laps don't linger after.
+  Any other move that carries the body on a set path (a finisher's glide, a rescue) should do the same.
 - **Targetable mirages reuse `ShapeDecoy`.** `AdvancedTechniques.Mirage` keeps the owner and three speedster decoys,
   whose `runMirage` moves through swept, terrain-aware steps. They reuse the player's profile and Jade disguise
   question. `ShapeshiftTricks.burst` branches before shapeshifter confusion or damage: a struck speed copy only bursts.

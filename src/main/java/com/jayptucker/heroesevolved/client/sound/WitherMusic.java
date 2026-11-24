@@ -16,12 +16,18 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.SelectMusicEvent;
 
-/** Three original 96 BPM loops. Phase changes crossfade at the next 50-tick bar; retreat fades the score. */
+/**
+ * "The Hungry Cage": three original 100 bpm loops on one chart (tools/generate-wither-music.py). Phase changes play a
+ * stinger and cross to the next loop on the next 48-tick bar; retreat fades the score. Its death silences the fight, and
+ * the last chord rises out of the ringing once the star detonates.
+ */
 @EventBusSubscriber(modid=HeroesEvolved.MOD_ID,value=Dist.CLIENT)
 public final class WitherMusic {
     private static Stem current;
     private static int phase,requested,beat;
     private static boolean ended;
+    /** One bar at 100 bpm, in ticks. */
+    private static final int BAR=48;
     private WitherMusic(){}
     private static SoundEvent sound(String name){return SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("heroesevolved","wither_"+name));}
     @SubscribeEvent public static void select(SelectMusicEvent event){
@@ -33,7 +39,8 @@ public final class WitherMusic {
         RiftWitherEntity boss=inside?mc.level.getEntitiesOfClass(RiftWitherEntity.class,new AABB(mc.player.blockPosition()).inflate(130),e->e.fighting()||e.dying()).stream().findFirst().orElse(null):null;
         if(boss==null){if(current!=null){current.fade=true;current=null;}phase=requested=beat=0;if(!inside)ended=false;return;}
         if(boss.dying()) {
-            if(!ended){ended=true;if(current!=null){current.fade=true;current=null;}mc.getSoundManager().play(SimpleSoundInstance.forMusic(sound("last_chord")));}
+            if(current!=null){current.fade=true;current=null;}
+            if(!ended&&boss.deathAge(0)>=WitherGeometry.DETONATE){ended=true;mc.getSoundManager().play(SimpleSoundInstance.forMusic(sound("last_chord")));}
             return;
         }
         ended=false;
@@ -43,7 +50,7 @@ public final class WitherMusic {
         if(boss.phase()!=phase&&requested!=boss.phase()){
             requested=boss.phase();mc.getSoundManager().play(SimpleSoundInstance.forMusic(sound("stinger")));
         }
-        if(++beat%50==0&&requested>phase)switchTo(mc,requested);
+        if(++beat%BAR==0&&requested>phase)switchTo(mc,requested);
     }
     private static void switchTo(Minecraft mc,int next){
         if(current!=null)current.fade=true;

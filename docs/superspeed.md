@@ -190,7 +190,10 @@ orange streams spiral out of their body to the wall, with green motes pulled aft
 
 Faster than about 37 blocks a second (run settings 5 and 6, or a lower one with plenty of Momentum) your body heats
 from friction, and Lightspeed adds a burst of it: smoke, then flames at your feet and your skin scorching away, then
-burns every half-second until you ease off. It cools in a second or two at ordinary speeds. Each piece of the velocity
+burns every half-second until you ease off. It cools in a second or two at ordinary speeds. A **Cyclone** heats you by
+its speed setting, not by how fast its laps carry you: a vacuum or any slower wind builds none, the setting one below
+your fastest heats slowly, and your fastest about as fast as a hard run (a tapped ring smokes but doesn't burn; holding
+it there for a tornado starts burning after about four seconds). Each piece of the velocity
 suit keeps a quarter of it off; the whole suit, all of it. A **heat ring** beside Momentum shows the heat climbing toward
 the scorch and burn notches, and a **skin ring** how much of your skin has burnt away. Your body heals a little on its own (faster at
 higher tiers, paid for in hunger) and your burnt skin grows back in a few seconds. See

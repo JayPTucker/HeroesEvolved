@@ -74,7 +74,7 @@ public final class AdminEvents {
                 "Investigate", "Convoy", "Home raid"));
         out.add(entry("wither", "Wither: Containment Failure", true, near + " / phase and cancel: all fighters",
                 com.jayptucker.heroesevolved.wither.WitherArena.status(server),com.jayptucker.heroesevolved.wither.WitherArena.busy(server),player,
-                "Open breach", "Enter fight", "Advance phase"));
+                "Open breach", "Enter fight", "Advance phase", "Finish it"));
         out.add(entry("sylar", "Sylar's Collection", true, near + " / cancel: all fighters", SylarCommands.status(server),
                 CollectionArena.open(), player && !CollectionArena.open(), "Start fight"));
         out.add(entry("prologue", "The Last Day", true, player ? target.getName().getString() + " / pods: all participants" : near,

@@ -23,7 +23,7 @@ public final class ModEntityRenderers {
                 com.jayptucker.heroesevolved.client.block.AlarmBeaconRenderer::new);
         event.registerEntityRenderer(ModEntities.END_BOLT.get(), net.minecraft.client.renderer.entity.ThrownItemRenderer::new);
         event.registerEntityRenderer(ModEntities.RIFT_WITHER.get(), RiftWitherRenderer::new);
-        event.registerEntityRenderer(ModEntities.RIFT_SKULL.get(), net.minecraft.client.renderer.entity.WitherSkullRenderer::new);
+        event.registerEntityRenderer(ModEntities.RIFT_SKULL.get(), RiftSkullRenderer::new);
         event.registerEntityRenderer(ModEntities.SYLAR.get(), SylarRenderer::new);
         event.registerEntityRenderer(ModEntities.COMPANY_AGENT.get(), CompanyAgentRenderer::new);
         event.registerEntityRenderer(ModEntities.SHAPE_DECOY.get(), ShapeDecoyRenderer::new);

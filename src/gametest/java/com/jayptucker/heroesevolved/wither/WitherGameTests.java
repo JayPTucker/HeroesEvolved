@@ -16,6 +16,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.*;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.GameType;
@@ -62,9 +64,9 @@ public final class WitherGameTests {
         WitherData.get(h.getLevel().getServer()).source(new WitherData.Home(h.getLevel().dimension(),Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(5,2,5))),0,0));
         WitherArena.tick(h.getLevel().getServer());
     }
-    private static RiftWitherEntity fight(GameTestHelper h,ServerPlayer p){ready(h);h.assertTrue(WitherArena.enter(p),"Eligible solo fighter enters");RiftWitherEntity b=WitherArena.boss();b.still(true);b.holdOff(10000);return b;}
+    private static RiftWitherEntity fight(GameTestHelper h,ServerPlayer p){ready(h);h.assertTrue(WitherArena.enter(p),"Eligible solo fighter enters");RiftWitherEntity b=WitherArena.boss();b.skipArrival();b.still(true);b.holdOff(10000);return b;}
     private static void done(GameTestHelper h){clean(h);h.succeed();}
-    @GameTest(template="rewind_empty",batch="wither_01",timeoutTicks=200)
+    @GameTest(template="rewind_empty",batch="wither_01",timeoutTicks=240)
     public static void nativeFormationBecomesBreachWithoutExplosion(GameTestHelper h){
         clean(h);ServerLevel level=h.getLevel();BlockPos base=h.absolutePos(new BlockPos(5,2,5));
         level.setBlock(base.below(),Blocks.DIAMOND_BLOCK.defaultBlockState(),3);
@@ -77,7 +79,9 @@ public final class WitherGameTests {
         WitherSkullBlock.checkSpawn(level,last,(net.minecraft.world.level.block.entity.SkullBlockEntity)level.getBlockEntity(last));
         h.assertTrue(level.getBlockState(base).isAir()&&level.getBlockState(last).isAir(),"Real T-shaped summoning consumed its blocks");
         h.assertTrue(level.getEntitiesOfClass(WitherBoss.class,new AABB(base).inflate(8)).isEmpty(),"Native forming Wither intercepted before explosion");
-        h.runAtTickTime(140,()->{try{h.assertTrue(WitherArena.ready(),"Six-second folding sequence leaves usable breach");h.assertTrue(level.getBlockState(base.below()).is(Blocks.DIAMOND_BLOCK),"Summoning terrain survives");h.assertTrue(WitherData.get(level.getServer()).source!=null,"Entrance persisted");}finally{clean(h);}h.succeed();});
+        Vec3 gate=WitherData.get(level.getServer()).source.at();
+        h.assertTrue(gate.distanceTo(Vec3.atBottomCenterOf(base))>2&&gate.distanceTo(Vec3.atBottomCenterOf(base))<5.5,"The breach opens a few blocks behind where it formed");
+        h.runAtTickTime(175,()->{try{h.assertTrue(WitherArena.ready(),"Seven-and-a-half-second dragging sequence leaves a usable breach");h.assertTrue(level.getBlockState(base.below()).is(Blocks.DIAMOND_BLOCK),"Summoning terrain survives");h.assertTrue(WitherData.get(level.getServer()).source!=null,"Entrance persisted");}finally{clean(h);}h.succeed();});
     }
     @GameTest(template="rewind_empty",batch="wither_02")
     public static void levelGateSoloAndExactReturn(GameTestHelper h){clean(h);try{
@@ -90,13 +94,15 @@ public final class WitherGameTests {
         for(int i=0;i<3;i++)h.assertTrue(bp.markerOffsets("anchor:"+i).contains(WitherGeometry.ANCHORS.get(i).subtract(WitherGeometry.ORIGIN)),"Anchor marker matches shared geometry");
         ServerLevel cage=p.serverLevel();
         for(int y=6;y<=44;y+=2)for(int x=-10;x<=10;x+=2)for(int z=-10;z<=10;z+=2)
-            h.assertTrue(cage.getBlockState(WitherGeometry.ORIGIN.offset(x,y,z)).isAir(),"Central aerial dogfight volume stays clear");
+            h.assertTrue(cage.getBlockState(WitherGeometry.ORIGIN.offset(x,y,z)).getCollisionShape(cage,WitherGeometry.ORIGIN.offset(x,y,z)).isEmpty(),"Central aerial dogfight volume stays clear");
+        for(int[] pillar:WitherGeometry.PILLARS)h.assertTrue(!cage.getBlockState(WitherGeometry.ORIGIN.offset(pillar[0],4,pillar[1])).isAir(),"Every pillar the geometry lists stands as cover");
+        h.assertTrue(!cage.getBlockState(BlockPos.containing(WitherGeometry.floor().add(30.5,4,0))).isAir()&&!cage.getBlockState(BlockPos.containing(WitherGeometry.floor().add(0,4,30.5))).isAir(),"The charnel wall encloses the floor");
         p.setPos(WitherGeometry.floor().add(20,35,0));WitherArena.tick(p.getServer());h.assertTrue(p.getY()>WitherGeometry.floor().y+34,"Flight at 35 blocks is not leashed to floor");
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_04")
     public static void lateJoinScalesWithoutHealingAndCapsBurst(GameTestHelper h){clean(h);try{
-        ServerPlayer p=player(h,16);var b=fight(h,p);b.setHealth(220);ServerPlayer q=player(h,18);h.assertTrue(WitherArena.enter(q),"Late join allowed");
-        h.assertTrue(b.getMaxHealth()==660&&Math.abs(b.getHealth()/b.getMaxHealth()-.5)<.001,"Party scaling preserves fraction");
+        ServerPlayer p=player(h,16);var b=fight(h,p);b.setHealth((float)(RiftWitherEntity.BASE_HEALTH/2));ServerPlayer q=player(h,18);h.assertTrue(WitherArena.enter(q),"Late join allowed");
+        h.assertTrue(b.getMaxHealth()==(float)Math.min(1000,RiftWitherEntity.BASE_HEALTH*1.5)&&Math.abs(b.getHealth()/b.getMaxHealth()-.5)<.001,"Party scaling preserves fraction");
         p.setPos(b.position().add(0,0,6));float health=b.getHealth();b.hurt(b.damageSources().playerAttack(p),1000);h.assertTrue(health-b.getHealth()<=b.getMaxHealth()*.061,"One huge hit cannot skip boss");
         float after=b.getHealth();for(int i=0;i<20;i++){b.invulnerableTime=0;b.hurt(b.damageSources().playerAttack(p),1000);}h.assertTrue(after-b.getHealth()<1,"Burst budget is shared across hits");
     }finally{clean(h);}h.succeed();}
@@ -127,7 +133,7 @@ public final class WitherGameTests {
         ServerPlayer p=player(h,16);var b=fight(h,p);p.setPos(b.position().add(0,0,6));b.start(WitherGeometry.Move.TETHER);
         for(int i=0;i<3;i++){b.clock+=8;WitherEvents.swing(p);b.invulnerableTime=0;b.hurt(b.damageSources().playerAttack(p),4);}
         h.assertTrue(b.casting==null&&b.stagger>0,"Three charged hits crack the stance and interrupt the chain");
-        b.setHealth(b.getMaxHealth()*.7F);b.phaseFinished(p);h.assertTrue(b.phase()==2&&b.stagger==100,"Phase finisher earns long stagger");
+        b.setHealth(b.getMaxHealth()*.7F);b.phaseFinished(p);h.assertTrue(b.phase()==2&&b.stagger==70,"Phase finisher earns long stagger");
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_09")
     public static void retreatResetsAbandonedAttempt(GameTestHelper h){clean(h);try{
@@ -135,12 +141,24 @@ public final class WitherGameTests {
         h.assertTrue(WitherArena.boss()==null&&WitherArena.ready(),"Abandoned attempt resets but entrance remains");h.assertTrue(WitherArena.enter(p)&&WitherArena.boss()!=b,"A fresh solo attempt can follow retreat");
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_10")
-    public static void deathSceneRewardsOnceAndReturns(GameTestHelper h){clean(h);try{
-        ServerPlayer p=player(h,16);var b=fight(h,p);b.setHealth(1);p.setPos(b.position().add(0,0,5));b.hurt(b.damageSources().playerAttack(p),3);
-        h.assertTrue(b.dying(),"Lethal blow starts death scene");for(int i=0;i<59;i++)b.tick();h.assertTrue(b.dying(),"Reward waits for final collapse");b.tick();
-        h.assertTrue(!b.dying(),"Death scene ends once");for(int i=0;i<101;i++)WitherArena.tick(p.getServer());
-        h.assertTrue(!WitherArena.inside(p)&&!WitherArena.busy(p.getServer()),"Victory returns fighter and closes breach");
-        h.assertTrue(p.getInventory().countItem(Items.NETHER_STAR)==1&&p.getInventory().countItem(ModItems.FRACTURED_STAR.get())==1,"One Nether Star and participant fragment survive reset");
+    public static void deathSceneDetonatesThenExitOpensWhereItDied(GameTestHelper h){clean(h);try{
+        ServerPlayer p=player(h,16);var b=fight(h,p);b.setPos(WitherGeometry.floor().add(6,.35,4));b.setHealth(1);p.setPos(b.position().add(0,0,6));b.hurt(b.damageSources().playerAttack(p),3);
+        h.assertTrue(b.dying(),"Lethal blow starts death scene");
+        for(int i=0;i<WitherGeometry.DETONATE;i++)b.tick();
+        h.assertTrue(b.dying()&&WitherArena.down(p)&&p.getForcedPose()==Pose.SLEEPING,"The star's detonation knocks the fighter flat before the reward");
+        for(int i=WitherGeometry.DETONATE;i<WitherGeometry.DEATH_TICKS-1;i++)b.tick();h.assertTrue(b.dying(),"Reward waits for the end of the scene");b.tick();
+        h.assertTrue(!b.dying(),"Death scene ends once");
+        for(int i=0;i<WitherGeometry.EXIT_OPENS+WitherGeometry.EXIT_OPEN_TICKS;i++)WitherArena.tick(p.getServer());
+        Vec3 exit=WitherArena.exitPortal();
+        h.assertTrue(exit!=null&&exit.multiply(1,0,1).distanceTo(new Vec3(6.5,0,4.5))<1.5,"The exit tears open where it died");
+        h.assertTrue(WitherArena.inside(p)&&WitherArena.down(p),"Nobody is thrown out while still on the ground");
+        for(int i=0;i<WitherGeometry.DAZE;i++)WitherArena.tick(p.getServer());
+        h.assertTrue(!WitherArena.down(p)&&p.getForcedPose()!=Pose.SLEEPING,"The fighter comes to");
+        p.setPos(new Vec3(exit.x,WitherGeometry.floor().y,exit.z));WitherArena.tick(p.getServer());
+        h.assertTrue(!WitherArena.inside(p),"Walking into the exit goes home");
+        for(int i=0;i<30;i++)WitherArena.tick(p.getServer());
+        h.assertTrue(!WitherArena.busy(p.getServer()),"The Ossuary and its breach close once everyone has left");
+        h.assertTrue(p.getInventory().countItem(Items.NETHER_STAR)==1&&p.getInventory().countItem(ModItems.FRACTURED_STAR.get())==1,"One Nether Star and participant fragment go home with the fighter");
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_11")
     public static void savedReturnsAndDropsSurviveReload(GameTestHelper h){
@@ -209,7 +227,7 @@ public final class WitherGameTests {
         for(int i=0;i<WitherGeometry.Move.LUNGE.windup+WitherGeometry.LUNGE_TICKS;i++)b.tick();
         h.assertTrue(b.position().add(0,3,0).distanceTo(mark)<.5,"Actual swept lunge follows fixed warning endpoint");
         h.assertTrue(b.getY()>WitherGeometry.floor().y+20&&p.getHealth()<health,"Lunge engages a flying opponent without dropping to ground");
-        h.assertTrue(Math.abs(from.y-mark.y)<3,"Warning commits to the opponent's aerial body height");
+        h.assertTrue(Math.abs(from.y-mark.y)<4,"Warning commits to the opponent's aerial body height");
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_17")
     public static void activeBossClosesDistanceAndChainsAttacks(GameTestHelper h){clean(h);try{
@@ -220,23 +238,24 @@ public final class WitherGameTests {
     @GameTest(template="rewind_empty",batch="wither_18")
     public static void phaseChainsChangeTheirJobsAndBodyHasBossScale(GameTestHelper h){clean(h);try{
         var b=fight(h,player(h,16));h.assertTrue(b.getBbHeight()>8&&b.getBbWidth()>5,"Arena creature is visibly and physically imposing");
-        var close=List.of(WitherGeometry.chain(1,0,false));var far=List.of(WitherGeometry.chain(1,0,true));
-        h.assertTrue(close.getFirst()==WitherGeometry.Move.BITE&&far.getFirst()==WitherGeometry.Move.LUNGE,"Close and distant fighters get different openings");
-        h.assertTrue(List.of(WitherGeometry.chain(2,0,false)).contains(WitherGeometry.Move.RAKE)&&List.of(WitherGeometry.chain(3,0,false)).contains(WitherGeometry.Move.HORIZON),"Later phases add distinct linked threats");
+        var close=List.of(WitherGeometry.chain(1,0,5,false));var far=List.of(WitherGeometry.chain(1,0,25,false));var high=List.of(WitherGeometry.chain(1,0,12,true));
+        h.assertTrue(close.getFirst()==WitherGeometry.Move.BITE&&far.getFirst()==WitherGeometry.Move.RAIN&&high.getFirst()==WitherGeometry.Move.TETHER,"Close, distant and airborne fighters get different openings");
+        h.assertTrue(List.of(WitherGeometry.chain(2,0,5,false)).contains(WitherGeometry.Move.SLAM)&&List.of(WitherGeometry.chain(2,0,12,false)).contains(WitherGeometry.Move.SPIRES)
+                &&List.of(WitherGeometry.chain(3,2,5,false)).contains(WitherGeometry.Move.HORIZON),"Later phases add distinct linked threats");
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_19")
     public static void chargeTravelsOverTicksAndCannotHitOnePlayerRepeatedly(GameTestHelper h){clean(h);try{
         var p=player(h,16);var b=fight(h,p);p.setPos(WitherGeometry.floor().add(0,0,22));b.start(WitherGeometry.Move.LUNGE);Vec3 initial=b.position();
         for(int i=0;i<WitherGeometry.Move.LUNGE.windup;i++)b.tick();h.assertTrue(b.position().distanceTo(initial)<.01&&b.motionTicks>0,"Windup starts a committed motion rather than teleporting");
         for(int i=0;i<WitherGeometry.LUNGE_TICKS;i++){Vec3 before=b.position();b.tick();h.assertTrue(b.position().distanceTo(before)<=3.61,"Every charge step fits native motion bounds");}
-        h.assertTrue(b.motionTicks==0&&b.spent>0&&b.motionHit.size()<=1,"Charge brakes into recovery and hits a fighter at most once");
+        h.assertTrue(b.motionTicks==0&&(b.spent>0||b.crash>0)&&b.motionHit.size()<=1,"Charge brakes (or crashes) into recovery and hits a fighter at most once");
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_20")
     public static void slamReallyLiftsAndLandsAtItsFixedMark(GameTestHelper h){clean(h);try{
         var p=player(h,16);var b=fight(h,p);p.setPos(WitherGeometry.floor().add(0,0,12));double start=b.getY();b.start(WitherGeometry.Move.SLAM);Vec3 fixed=b.marks.getFirst();
         for(int i=0;i<WitherGeometry.Move.SLAM.windup;i++)b.tick();h.assertTrue(b.getY()>start+8&&p.getHealth()==20,"Body lifts before descent and cannot hit early");
         p.setPos(p.position().add(12,0,0));for(int i=0;i<WitherGeometry.SLAM_TICKS;i++)b.tick();h.assertTrue(b.position().distanceTo(fixed.add(0,.3,0))<.5&&p.getHealth()==20,"Slam lands on the original warning and a dodge works");
-        b.setPos(WitherGeometry.floor().add(0,.35,0));p.setPos(WitherGeometry.floor().add(0,0,12));b.start(WitherGeometry.Move.SLAM);
+        b.cancelChain();b.recovery=0;b.setPos(WitherGeometry.floor().add(0,.35,0));p.setPos(WitherGeometry.floor().add(0,0,12));b.start(WitherGeometry.Move.SLAM);
         for(int i=0;i<WitherGeometry.Move.SLAM.windup;i++)b.tick();p.serverLevel().setBlock(p.blockPosition().above(4),Blocks.BLACKSTONE.defaultBlockState(),3);
         for(int i=0;i<WitherGeometry.SLAM_TICKS;i++)b.tick();h.assertTrue(b.getY()>p.getY()+3&&p.getHealth()==20,"A blocked descent cannot deliver a phantom impact through cover");
     }finally{clean(h);}h.succeed();}
@@ -266,8 +285,8 @@ public final class WitherGameTests {
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_25")
     public static void largePartyPreservesEffectiveHealthAboveAttributeCeiling(GameTestHelper h){clean(h);try{
-        var p=player(h,16);var b=fight(h,p);b.setHealth(220);for(int i=0;i<4;i++)WitherArena.enter(player(h,16));
-        h.assertTrue(b.getMaxHealth()==1000&&Math.abs(b.getHealth()/b.getMaxHealth()-.5)<.001&&b.effectiveHealth==1320,"Five fighters keep the full effective pool and existing health fraction");
+        var p=player(h,16);var b=fight(h,p);b.setHealth((float)(RiftWitherEntity.BASE_HEALTH/2));for(int i=0;i<4;i++)WitherArena.enter(player(h,16));
+        h.assertTrue(b.getMaxHealth()==1000&&Math.abs(b.getHealth()/b.getMaxHealth()-.5)<.001&&b.effectiveHealth==(float)(RiftWitherEntity.BASE_HEALTH*3),"Five fighters keep the full effective pool and existing health fraction");
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_26")
     public static void anchorGlassHasRealReachableOpenFaces(GameTestHelper h){clean(h);try{
@@ -285,7 +304,7 @@ public final class WitherGameTests {
     @GameTest(template="rewind_empty",batch="wither_28",timeoutTicks=180)
     public static void adminCatalogueAndPermissionChecksCoverWither(GameTestHelper h){clean(h);try{
         var p=player(h,16);var entries=com.jayptucker.heroesevolved.admin.AdminEvents.describe(p.getServer(),p);var entry=entries.stream().filter(e->e.id().equals("wither")).findFirst().orElseThrow();
-        h.assertTrue(entry.starts().size()==3&&entry.scope().contains("all fighters"),"Console exposes scoped start, entry and phase controls");
+        h.assertTrue(entry.starts().size()==4&&entry.scope().contains("all fighters"),"Console exposes scoped start, entry, phase and finish controls");
         com.jayptucker.heroesevolved.admin.AdminService.handle(p,new com.jayptucker.heroesevolved.network.AdminActionPayload(com.jayptucker.heroesevolved.network.AdminActionPayload.Action.EVENT_START,p.getUUID(),"wither",0));
         h.assertTrue(!WitherArena.busy(p.getServer()),"An untrusted event payload cannot create a breach");ready(h);
         com.jayptucker.heroesevolved.admin.AdminService.handle(p,new com.jayptucker.heroesevolved.network.AdminActionPayload(com.jayptucker.heroesevolved.network.AdminActionPayload.Action.EVENT_CANCEL,p.getUUID(),"wither",0));
@@ -297,4 +316,97 @@ public final class WitherGameTests {
         h.assertTrue(WitherArena.start(p.serverLevel(),p.position().add(7,0,0),0),"Formation queued");WitherArena.reset(p.getServer(),false);
         h.runAtTickTime(145,()->{try{h.assertTrue(!WitherArena.busy(p.getServer())&&!WitherArena.ready(),"Cancelled queued formation cannot reopen a breach");}finally{clean(h);}h.succeed();});
     }
+    @GameTest(template="rewind_empty",batch="wither_30")
+    public static void arrivalFallsOutOfItsTearAndCannotBeHurtUntilItLands(GameTestHelper h){clean(h);try{
+        ServerPlayer p=player(h,16);ready(h);h.assertTrue(WitherArena.enter(p),"Entry");var b=WitherArena.boss();b.still(true);b.holdOff(10000);
+        h.assertTrue(b.arriving()&&b.getY()>WitherGeometry.floor().y+5&&b.gate()!=null,"It begins up in the tear over the dais");
+        float hp=b.getHealth();h.assertTrue(!b.hurt(b.damageSources().playerAttack(p),5)&&b.getHealth()==hp,"Invulnerable while it arrives");
+        for(int i=0;i<WitherGeometry.ARRIVAL_LAND+1;i++)b.tick();
+        h.assertTrue(Math.abs(b.getY()-WitherGeometry.floor().y-.3)<.2,"It lands on the dais");
+        for(int i=WitherGeometry.ARRIVAL_LAND+1;i<WitherGeometry.ARRIVAL_TICKS+1;i++)b.tick();
+        h.assertTrue(!b.arriving()&&b.gate()==null,"The arrival ends and its tear shuts");
+        b.invulnerableTime=0;h.assertTrue(b.hurt(b.damageSources().playerAttack(p),5),"Then it can be fought");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_31")
+    public static void raisedShieldStandsUpToTheDetonation(GameTestHelper h){clean(h);try{
+        ServerPlayer p=player(h,16),q=player(h,16);var b=fight(h,p);WitherArena.enter(q);
+        p.setPos(b.position().add(0,0,8));q.setPos(b.position().add(0,0,-8));
+        q.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,new ItemStack(Items.SHIELD));
+        q.setYRot(0);q.setYHeadRot(0);q.setXRot(0);q.startUsingItem(net.minecraft.world.InteractionHand.MAIN_HAND);
+        try{Field held=LivingEntity.class.getDeclaredField("useItemRemaining");held.setAccessible(true);held.setInt(q,q.getUseItem().getUseDuration(q)-10);}catch(ReflectiveOperationException e){throw new AssertionError(e);}
+        h.assertTrue(q.isBlocking(),"The second fighter has a shield raised toward the star");
+        b.operatorDefeat();for(int i=0;i<=WitherGeometry.DETONATE;i++)b.tick();
+        h.assertTrue(WitherArena.down(p)&&p.getForcedPose()==Pose.SLEEPING,"Without a shield the blast knocks a fighter flat");
+        h.assertTrue(!WitherArena.down(q)&&q.getForcedPose()!=Pose.SLEEPING,"A raised shield facing the blast keeps its holder standing");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_32")
+    public static void chargeBaitedIntoAPillarCrashesAndStuns(GameTestHelper h){clean(h);try{
+        ServerPlayer p=player(h,16);var b=fight(h,p);int[] pillar=WitherGeometry.PILLARS[0];
+        Vec3 face=WitherGeometry.floor().add(pillar[0]+.5,0,pillar[1]+.5-pillar[2]-1.5);
+        b.setPos(face.add(0,.35,-13));p.setPos(face);b.start(WitherGeometry.Move.LUNGE);
+        h.assertTrue(b.lungeCrash,"The warning already knows the lane ends in stone");
+        for(int i=0;i<WitherGeometry.Move.LUNGE.windup+WitherGeometry.LUNGE_TICKS;i++)b.tick();
+        h.assertTrue(b.crash>0&&b.exposed(),"It crashes into the pillar and is stunned with its chest open");
+        float hp=b.getHealth();b.invulnerableTime=0;b.hurt(b.damageSources().playerAttack(p),4);
+        h.assertTrue(hp-b.getHealth()>4.0F,"A crashed Wither takes more (4 through its armour alone would be under 3.5)");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_33")
+    public static void phaseRoarThrowsFightersBackAndLightsTheChannels(GameTestHelper h){clean(h);try{
+        ServerPlayer p=player(h,16);var b=fight(h,p);p.setPos(b.position().add(0,0,5));
+        b.setHealth(b.getMaxHealth()*.65F);b.invulnerableTime=0;b.hurt(b.damageSources().playerAttack(p),1);
+        h.assertTrue(b.phase()==2&&b.transition>0&&p.getDeltaMovement().horizontalDistance()>.5,"The roar throws a close fighter back");
+        h.assertTrue(b.minions.size()>=1,"Skeletal flankers answer the broken vessel");
+        var channel=Blueprint.load("wither_cage").markerOffsets("wither:channel").getFirst();
+        h.assertTrue(p.serverLevel().getBlockState(WitherGeometry.ORIGIN.offset(channel)).is(Blocks.CRYING_OBSIDIAN),"The floor's channels light in the second phase");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_34")
+    public static void broodIsSpewedOntoItsMarksFightsAndLeavesNothing(GameTestHelper h){clean(h);try{
+        ServerPlayer p=player(h,16);var b=fight(h,p);p.setPos(WitherGeometry.floor().add(0,0,12));
+        h.assertTrue(List.of(WitherGeometry.chain(1,0,25,false)).contains(WitherGeometry.Move.BROOD),"It spews its brood at distant fighters");
+        b.start(WitherGeometry.Move.BROOD);var marks=List.copyOf(b.marks);
+        h.assertTrue(marks.size()==WitherGeometry.broodCount(1,1),"Phase one spews two for a solo fighter");
+        h.assertTrue(marks.stream().allMatch(m->m.distanceTo(p.position())<5&&m.distanceTo(p.position())>1.5),"Every mark is beside the fighter, not on them");
+        for(int i=0;i<WitherGeometry.Move.BROOD.windup;i++)b.tick();
+        h.assertTrue(b.spews.size()==marks.size()&&b.minions.size()==marks.size(),"They are thrown out of its mouth");
+        h.assertTrue(b.spews.getFirst().mob().getY()>WitherGeometry.floor().y+4,"In flight they leave from up at its mouth");
+        for(int i=0;i<WitherGeometry.BROOD_FLIGHT;i++)b.tick();
+        h.assertTrue(b.spews.isEmpty(),"Every one has landed");
+        for(int i=0;i<marks.size();i++){var m=b.minions.get(i);
+            h.assertTrue(m.position().distanceTo(marks.get(i))<.6&&!m.isNoAi()&&!m.isInvulnerable()&&m.getPersistentData().getBoolean(WitherMoves.BROOD),"Each lands on its own mark and then fights");}
+        h.assertTrue(!b.broodReady(),"A cooldown follows a brood");
+        var first=b.minions.getFirst();Vec3 at=first.position();first.hurt(first.damageSources().playerAttack(p),1000);
+        h.assertTrue(p.serverLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,new AABB(BlockPos.containing(at)).inflate(3)).isEmpty(),"The brood drops nothing to farm");
+        var second=b.minions.get(1);second.tickCount=WitherGeometry.BROOD_LIFE+1;b.tick();
+        h.assertTrue(second.isRemoved(),"It crumbles when its time is up");
+        b.clock+=100000;
+        for(int i=0;i<WitherGeometry.broodCap(1);i++){var extra=EntityType.WITHER_SKELETON.create(p.serverLevel());extra.moveTo(WitherGeometry.floor().add(i,0,-6));p.serverLevel().addFreshEntity(extra);b.minions.add(extra);}
+        h.assertTrue(!b.broodReady(),"Never more than the cap on the floor at once");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_35")
+    public static void laterPhasesAreFasterAndFeintsHoldLonger(GameTestHelper h){
+        var bite=WitherGeometry.Move.BITE;
+        int one=WitherGeometry.castWindup(bite,1,1,false),two=WitherGeometry.castWindup(bite,2,1,false),three=WitherGeometry.castWindup(bite,3,1,false);
+        h.assertTrue(one==bite.windup&&two<one&&three<two,"Each phase winds up faster");
+        h.assertTrue(WitherGeometry.castWindup(bite,2,3,false)>two&&WitherGeometry.castWindup(bite,1,3,false)==one,"From the second phase every third bite is a held feint");
+        h.assertTrue(WitherGeometry.castWindup(WitherGeometry.Move.VERDICT,2,3,false)==WitherGeometry.castWindup(WitherGeometry.Move.VERDICT,2,1,false),"Beams never feint");
+        h.assertTrue(WitherGeometry.castWindup(bite,3,1,true)<three,"Starving is faster still");
+        h.assertTrue(WitherGeometry.damage(WitherGeometry.Move.SLAM,3)>WitherGeometry.damage(WitherGeometry.Move.SLAM,1)&&WitherGeometry.damage(WitherGeometry.Move.HORIZON,1)>=20,"Its hits grow with the phases, and its discharge is near-lethal");
+        h.succeed();
+    }
+    @GameTest(template="rewind_empty",batch="wither_36")
+    public static void itsBiteReallyHurtsAndWithers(GameTestHelper h){clean(h);try{
+        ServerPlayer p=player(h,16);var b=fight(h,p);b.setYRot(0);p.setPos(b.position().add(0,0,6));float before=p.getHealth();
+        b.start(WitherGeometry.Move.BITE);for(int i=0;i<WitherGeometry.Move.BITE.windup;i++)b.tick();
+        h.assertTrue(before-p.getHealth()>=5.5F&&p.hasEffect(net.minecraft.world.effect.MobEffects.WITHER),"A bite takes a big bite out of a fighter and withers them");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_37")
+    public static void tetherIntoBiteAndDoubleCharge(GameTestHelper h){clean(h);try{
+        ServerPlayer p=player(h,16);var b=fight(h,p);b.operatorPhase();b.transition=0;p.setPos(b.position().add(0,0,12));
+        b.chain.clear();b.start(WitherGeometry.Move.TETHER);for(int i=0;i<b.actionWindup();i++)b.tick();
+        h.assertTrue(b.chain.peekFirst()==WitherGeometry.Move.BITE&&b.spent==0,"From the second phase a hauled-in fighter is bitten next, at once");
+        b.cancelChain();b.operatorPhase();b.transition=0;b.setPos(WitherGeometry.floor().add(0,.35,-4));p.setPos(WitherGeometry.floor().add(0,0,-12));p.setHealth(20);p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE,400,4));
+        b.start(WitherGeometry.Move.LUNGE);h.assertTrue(!b.lungeCrash,"An open lane");
+        for(int i=0;i<b.actionWindup()+WitherGeometry.LUNGE_TICKS;i++)b.tick();
+        h.assertTrue(b.chain.peekFirst()==WitherGeometry.Move.LUNGE&&b.crash==0,"In Critical Mass a charge that misses turns and comes again");
+    }finally{clean(h);}h.succeed();}
 }

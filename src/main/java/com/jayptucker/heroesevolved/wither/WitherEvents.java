@@ -46,6 +46,13 @@ public final class WitherEvents {
         RiftWitherEntity boss=WitherArena.boss();
         if(boss==null||boss.anchor()<0||!event.getPos().equals(WitherGeometry.ANCHORS.get(boss.anchor())))event.setCanceled(true);
     }
+    /** The Wither's brood leaves nothing behind: no skulls, bones or swords, and no experience. */
+    @SubscribeEvent(priority=EventPriority.HIGH) public static void broodDrops(LivingDropsEvent event) {
+        if(event.getEntity().getPersistentData().getBoolean(WitherMoves.BROOD)){event.getDrops().clear();event.setCanceled(true);}
+    }
+    @SubscribeEvent public static void broodExperience(net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent event) {
+        if(event.getEntity().getPersistentData().getBoolean(WitherMoves.BROOD))event.setDroppedExperience(0);
+    }
     @SubscribeEvent(priority=EventPriority.LOW) public static void drops(LivingDropsEvent event) {
         if(event.isCanceled()||!(event.getEntity() instanceof ServerPlayer p)||!WitherArena.inside(p))return;
         for(ItemEntity drop:event.getDrops())WitherData.get(p.getServer()).stash(p.getUUID(),drop.getItem(),p.registryAccess());

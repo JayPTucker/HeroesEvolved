@@ -299,14 +299,20 @@ public enum Piece {
     // End portal offerings: origin the center's surface, target the eye, bound to a channeling player.
     // Seed: power colour in bits 0..4, paid channel ticks above it. OPEN packs the pair's colours in five bits each.
     END_PORTAL_DORMANT(24), END_PORTAL_CHANNEL(14), END_PORTAL_IMPRINT(14), END_PORTAL_OPEN(54), END_PORTAL_CANCEL(18),
-    WITHER_FORM(125), WITHER_BREACH(14), WITHER_AURA(14), WITHER_WARNING(80), WITHER_PULSE(110),
-    WITHER_IMPACT(24), WITHER_NOVA(24), WITHER_BACKFIRE(36), WITHER_PHASE(50), WITHER_DEATH(80), WITHER_CANCEL(84),
+    WITHER_FORM(158), WITHER_BREACH(14), WITHER_AURA(14), WITHER_WARNING(80), WITHER_PULSE(90),
+    WITHER_IMPACT(24), WITHER_NOVA(24), WITHER_BACKFIRE(36), WITHER_PHASE(50), WITHER_DEATH(116), WITHER_CANCEL(84),
     END_BATTLE_FIELD(14), END_BATTLE_WARNING(130), END_BATTLE_CHANNEL(14), END_BATTLE_CANCEL(150),
     END_BATTLE_GROUNDED(50), END_BATTLE_PHASE(60), END_BATTLE_ABSORB(200), END_BATTLE_RELEASE(180),
     END_BATTLE_REFUGE(14), END_BATTLE_BACKFIRE(40), END_BATTLE_STRIKE(20), END_BATTLE_NOVA(30),
     END_BATTLE_IMPACT(24), END_BATTLE_WAVE(180), END_BATTLE_DASH(16), END_BATTLE_BOLT(10),
     WITHER_FIRE(16), WITHER_WAKE(18), WITHER_ARC(20), WITHER_HEAD_WARN(48), WITHER_MUZZLE(12),
-    FUTURE_OMEN(26), FUTURE_BREACH(14), FUTURE_SHUT(26);
+    FUTURE_OMEN(26), FUTURE_BREACH(14), FUTURE_SHUT(26),
+    // The Wither, continued: a stance crack across its chest (seed: cracks so far), one Bone Spires crack (origin the
+    // creature, target the mark; its spires burst in order), the death detonation (origin the star, scale its radius),
+    // the tear it drops out of over the dais, and the exit tearing open where it died (origin center, target + normal).
+    WITHER_CRACK(16), WITHER_SPIRES(80), WITHER_DETONATE(150), WITHER_TEAR(70), WITHER_OPEN(60),
+    // A skeleton of its brood thrown from its mouth (origin) onto its mark (target), seed the phase.
+    WITHER_SPEW(30);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

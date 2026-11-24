@@ -95,6 +95,23 @@ helpers first.
   back opens, and only a hit there hurts it; when it pulls the axe free the window closes and a counter follows. One
   readable window, earned by baiting the big move, is the whole fight. Sylar's cracked watch is our version.
 
+## Bosses'Rise
+
+[Bosses'Rise](https://modrinth.com/mod/bossesrise) (BlockFactoryStudio; NeoForge 1.21.1, Forge 1.20.1) brings five
+Souls-like bosses (the Infernal Dragon, the Underworld Knight, the Yeti, the Kraken and more), each in its own hand-built
+structure generated across the world, with multi-phase movesets, its own equipment and new mobs round each boss's
+region. The user named it as a bar in November 2026, when the Wither was "too easy". What to take from it:
+
+- **Souls-like means you win by reading, not tanking.** Hits that hurt (a quarter to a half of a player's health),
+  short recoveries, combos that punish a panicked dodge, and windows that are earned. A boss a player can out-heal or
+  out-trade isn't a Souls-like boss, however good it looks.
+- **Every boss has its own boss bar, built from its own shapes** (from its gallery): the Underworld Knight's bar is a
+  great sword; the Infernal Dragon's sits between two dragon wings with its head as the emblem; the Yeti's has icy
+  claws at each end and its face over the middle. The bar is the one piece of a boss the player watches all fight, so
+  it carries the boss's look. Ours: `client/WitherBossBar` (a bone bar with the three skulls as its emblem).
+- **A region, not just a room.** Its arenas are structures in the world with their own creatures round them: a place to
+  find, learn and come back to.
+
 ## Apotheosis
 
 - **Bosses as a layer over the whole world**: a small chance that a spawn is a named, graded boss with better gear and
@@ -121,3 +138,5 @@ helpers first.
   [Coral Golem](https://www.minecraft-guides.com/mod/cataclysm/wiki/coral-golem/)).
 - [Ferrous Wroughtnaut](https://www.minecraft-guides.com/mod/mowzies-mobs/wiki/ferrous-wroughtnaut/) (Mowzie's Mobs).
 - [Apotheosis's bosses](https://www.minecraft-guides.com/mod/apotheosis/wiki/apothic-bosses/).
+- [Bosses'Rise on Modrinth](https://modrinth.com/mod/bossesrise) and [its gallery](https://modrinth.com/mod/bossesrise/gallery)
+  (description and screenshots, read November 2026).
