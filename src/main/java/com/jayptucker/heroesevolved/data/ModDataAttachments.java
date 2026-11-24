@@ -21,6 +21,10 @@ public final class ModDataAttachments {
     private static final DeferredRegister<AttachmentType<?>> ATTACHMENTS =
         DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, HeroesEvolved.MOD_ID);
 
+    public static final Supplier<AttachmentType<com.jayptucker.heroesevolved.guidance.GuidanceData>> GUIDANCE =
+            ATTACHMENTS.register("guidance", () -> AttachmentType.builder(com.jayptucker.heroesevolved.guidance.GuidanceData::empty)
+                    .serialize(com.jayptucker.heroesevolved.guidance.GuidanceData.CODEC).copyOnDeath().build());
+
     public static final Supplier<AttachmentType<PlayerAbilityData>> PLAYER_ABILITIES =
         ATTACHMENTS.register("player_abilities", () ->
             AttachmentType.<PlayerAbilityData>builder(PlayerAbilityData::empty)

@@ -128,6 +128,15 @@ public final class AdminPreview {
             case 340 -> scrollBottom(mc);
             case 345 -> shot("7-debug-tools");
             case 350 -> click(mc, "Cancel all events");
+            case 355 -> { if (mc.screen instanceof AdminScreen s) s.mouseScrolled(s.width - 25, s.height / 2.0, 0, 100); }
+            case 356 -> click(mc, "Replay tips");
+            case 360 -> click(mc, "Give civilian journal");
+            case 366 -> onServer(mc, p -> {
+                var data = p.getData(ModDataAttachments.GUIDANCE);
+                boolean book = p.getInventory().items.stream().anyMatch(s -> s.is(net.minecraft.world.item.Items.WRITABLE_BOOK)
+                        && s.get(net.minecraft.core.component.DataComponents.WRITABLE_BOOK_CONTENT) != null);
+                PreviewQuiet.report("ADMIN_GUIDANCE " + (data.enabled() && data.seen() == 0 && book ? "PASS" : "FAIL") + ": reset receipts and actual journal delivery");
+            });
             case 370 -> { AdminScreen.showStory(); if (mc.screen instanceof AdminScreen s) s.onStateUpdated(); }
             case 380 -> shot("8-story");
             case 390 -> { AdminScreen.showPlayer(); mc.options.guiScale().set(3); mc.resizeDisplay(); if (mc.screen instanceof AdminScreen s) s.onStateUpdated(); }
@@ -136,7 +145,38 @@ public final class AdminPreview {
             case 415 -> shot("10-compact-events");
             case 420 -> scrollBottom(mc);
             case 425 -> shot("11-compact-controls");
-            case 430 -> PreviewQuiet.quit();
+            case 430 -> { AdminScreen.showCommands(); if (mc.screen instanceof AdminScreen s) s.onStateUpdated(); }
+            case 440 -> {
+                var commands = com.jayptucker.heroesevolved.network.ClientAdminState.get().commands();
+                PreviewQuiet.report("ADMIN_COMMANDS " + (commands.stream().anyMatch(c -> c.startsWith("/heroesevolved village project"))
+                        && commands.stream().anyMatch(c -> c.startsWith("/heroesevolved mimic gift")) ? "PASS" : "FAIL") + ": live registered commands " + commands.size());
+                shot("13-compact-commands");
+            }
+            case 445 -> {
+                if (mc.screen instanceof AdminScreen s) {
+                    var search = s.children().stream().filter(c -> c instanceof net.minecraft.client.gui.components.EditBox).findFirst().orElse(null);
+                    s.setFocused(search);
+                    for (char letter : "trace".toCharArray()) s.charTyped(letter, 0);
+                }
+            }
+            case 450 -> {
+                if (mc.screen instanceof AdminScreen s) {
+                    long visible = s.children().stream().filter(c -> c instanceof net.minecraft.client.gui.components.Button b && b.getMessage().getString().startsWith("/heroesevolved trace ")).count();
+                    PreviewQuiet.report("ADMIN_COMMAND_FILTER " + (visible == 2 ? "PASS" : "FAIL") + ": " + visible + " trace commands after typing");
+                }
+                shot("14-compact-command-search");
+            }
+            case 455 -> { mc.options.guiScale().set(2); mc.resizeDisplay(); }
+            case 460 -> shot("15-command-search");
+            case 465 -> click(mc, "/heroesevolved trace list");
+            case 470 -> {
+                boolean editor = mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen
+                        && mc.screen.children().stream().anyMatch(c -> c instanceof net.minecraft.client.gui.components.EditBox box
+                        && box.getValue().equals("/heroesevolved trace list"));
+                PreviewQuiet.report("ADMIN_COMMAND_TEMPLATE " + (editor ? "PASS" : "FAIL") + ": opened in chat without submitting");
+                shot("16-command-template");
+            }
+            case 475 -> PreviewQuiet.quit();
             default -> { }
         }
     }

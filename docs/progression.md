@@ -1,5 +1,8 @@
 # Power Levels, keys and the ability wheel
 
+The hero menu's **Guide** tab explains controls, skill assignments and progression in game, including your current
+Evolved trial. Optional field notes introduce these rules as you play; see [Player guidance](player-guidance.md).
+
 ## Power Level 1 to 20
 
 Your power grows from Level 1 to 20 in five stages, as it does in the show:

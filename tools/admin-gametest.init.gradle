@@ -5,7 +5,7 @@ allprojects {
         afterEvaluate {
             def tests = sourceSets.create('adminTest') {
                 java.srcDir('src/gametest/java')
-                java.include('com/jayptucker/heroesevolved/admin/AdminGameTests.java')
+                java.include('com/jayptucker/heroesevolved/admin/**')
                 java.include('com/jayptucker/heroesevolved/*.java')
                 resources.srcDir('src/gametest/resources')
                 compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output

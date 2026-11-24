@@ -1,5 +1,8 @@
 # The Last Signal
 
+For controls and a repeatable starting point, open the hero menu's **Guide** tab. [Civilian journals](player-guidance.md)
+found while scavenging can also hint at the dangers beyond the bunker.
+
 You wake in the Company’s Odessa stasis bunker 103 years after the city burned. You were there: on [the Last Day](the-last-day.md) you ran for this bunker when the light appeared, and Noah Bennet sealed you in a pod for your own good. At 6:14 PM Ted Sprague lost control downtown, and the stasis pods kept their occupants alive. The [Space-Time Manipulation awakening](time-manipulation-intro.md) lets its owner and nearby companions stand on the avenue, witness the explosion, and see the city run backwards before returning home.
 
 ## Follow the signal

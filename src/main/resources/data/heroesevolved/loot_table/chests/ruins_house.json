@@ -246,6 +246,22 @@
           "weight": 3
         }
       ]
+    },
+    {
+      "name": "heroesevolved:survivor_journals",
+      "rolls": 1,
+      "conditions": [
+        {
+          "condition": "minecraft:random_chance",
+          "chance": 0.4
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:loot_table",
+          "value": "heroesevolved:chests/survivor_journals"
+        }
+      ]
     }
   ]
 }

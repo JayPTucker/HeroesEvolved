@@ -48,6 +48,7 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 | Sounds, music, OGG files, voice chat | [audio.md](docs/agents/audio.md): start from the user's reference library it describes (`C:\Users\jaypa\OneDrive\Desktop\Gemini Heroes Reborn Audio`), never ship any of it; [powers/telepathy.md](docs/agents/powers/telepathy.md) for voice chat |
 | Costs, cooldowns, drains, unlock levels | "Stamina and balance" below, and [docs/stamina-balance.md](docs/stamina-balance.md) |
 | Mastery, Power Levels, max stamina, anything that rewards play (and stopping farms) | [progression.md](docs/agents/progression.md) |
+| Player guidance, the Guide tab, contextual tips, civilian journals, admin controls or debug commands | [guidance-and-admin.md](docs/agents/guidance-and-admin.md), [player-guidance.md](docs/player-guidance.md) |
 | Adding or changing any item, block, entity, mob, machine, recipe or disguise; JEI or Jade themselves | [compat.md](docs/agents/compat.md) (its checklist) |
 | Spawning, replacing or special-casing a villager; Minecraft Comes Alive | [mca.md](docs/agents/mca.md). **Never `EntityType.VILLAGER.create` plus `addFreshEntity`:** use `Villagers.actor` or `Villagers.enter` |
 | Writing, running or fixing game tests | [testing.md](docs/agents/testing.md) |
@@ -230,6 +231,16 @@ Every cost, cooldown, per-second drain and unlock tier is set in one place. The 
 
 ## Finishing a piece of work
 
+- **Keep player guidance current in the same change.** Every new or changed player-facing feature needs an entry or
+  updated explanation in the in-game Guide/tip system: update the relevant Guide topic, ability card or item help
+  and make sure the Guide points players to it. Explain hidden inputs, prerequisites and recovery from refusal.
+  Add a one-time contextual note only when timing helps; use original civilian journals or dialogue for discoveries
+  and boss counterplay without spoiling the story. Read [guidance-and-admin.md](docs/agents/guidance-and-admin.md).
+- **Keep the admin console current in the same change.** New debug commands belong under `/heroesevolved` so the
+  live Commands tab discovers them automatically. A new command root must also enter `AdminCommands` and its tests.
+  New events, bosses, state or debug operations need appropriate admin controls, live status, target/scope labels,
+  permission checks and cancellation/reset paths. Extend `AdminEvents` / `AdminService` / `AdminScreen`, rather than
+  leaving a command-only feature behind. Test the server checks and click/photograph the actual menu controls.
 - **Photograph it** if anyone will see it ([previews.md](docs/agents/previews.md)), look at every shot, and show the
   user. Run the focused tests, then the whole suite before calling it done.
 - **Make it show right in JEI and Jade.** Anything new a player can hold, place, meet or craft (an item, block,

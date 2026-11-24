@@ -187,5 +187,6 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | **Interface and gear** | | |
 | `stamina-preview.init.gradle`, `gauge-preview.init.gradle` | the stamina bar; the HUD ring gauges | |
 | `skill-ui-preview.init.gradle`, `inventory-preview.init.gradle`, `admin-preview.init.gradle` | the skill screen; the inventory button; the admin menu | |
+| `guidance-preview.init.gradle` | Every Guide topic at two GUI scales, each field note, rebound/unbound controls and every civilian journal page | `-Plive` checks real login sync, hint receipts and the Tips button; see [guidance-and-admin.md](guidance-and-admin.md) |
 | `compat-preview.init.gradle` | JEI and Jade with our content; checks what Jade targets and that our keys and JEI's are never live together ([compat.md](compat.md)) | `-PnoJei -PnoJade` (the same scenes without them) |
 | `suit-preview.init.gradle`, `body-preview.init.gradle`, `carry-preview.init.gradle` | protective suits; severed limbs and the downed body; carrying | |
