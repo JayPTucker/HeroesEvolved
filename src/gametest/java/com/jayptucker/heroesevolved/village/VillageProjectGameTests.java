@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.npc.Villager;
@@ -106,10 +107,155 @@ public final class VillageProjectGameTests {
             h.assertTrue(line(level, b.sign(1), 0).equals("Planks") && line(level, b.sign(1), 1).equals("0 / " + p.need(Projects.Material.PLANKS)),
                     "Each material and how much: " + line(level, b.sign(1), 0) + " " + line(level, b.sign(1), 1));
             h.assertTrue(level.getBlockEntity(b.sign(0)) instanceof SignBlockEntity s && s.isWaxed(), "Waxed, so nobody rewrites it");
+            // A two-sided board needs a clearing; a crowded centre must not prevent the village from getting one.
+            clear(h, bell);
+            bell = meadow(h);
+            for (int x = -20; x <= 20; x++) for (int z = -20; z <= 20; z++)
+                if ((x != 0 || z != 0) && x * x + z * z <= 400)
+                    for (int y = 0; y < 5; y++) level.setBlock(bell.offset(x, y, z), Blocks.STONE.defaultBlockState(), 2);
+            v = VillageMemory.of(level, bell);
+            Projects.consider(level, v);
+            h.assertTrue(v.board() != null && Projects.whole(level, v), "It finds a clearing beyond the crowded centre");
+            h.assertTrue(v.board().origin().distSqr(bell.atY(v.board().origin().getY())) > 18 * 18, "The board can search past the old eighteen-block limit");
             h.succeed();
         } finally {
             clear(h, bell);
         }
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 60, batch = "projects.plans")
+    public static void theReverseBoardShowsTheSavedFutureBuildAndQueuedHomes(GameTestHelper h) {
+        ServerLevel level = h.getLevel();
+        BlockPos bell = meadow(h);
+        long time = level.getDayTime();
+        try {
+            var v = VillageMemory.of(level, bell);
+            Projects.consider(level, v);
+            Projects.Project next = v.planned;
+            h.assertTrue(next != null && !next.title().equals(v.project().title()), "A definite next design is announced");
+            for (int i = 0; i < 6; i++) {
+                BlockPos at = v.board().statusSign(i);
+                h.assertTrue(level.getBlockState(at).getValue(WallSignBlock.FACING) == v.board().facing().getOpposite()
+                        && level.getBlockState(at).canSurvive(level, at), "Reverse sign faces its reader and is supported");
+                h.assertTrue(level.getBlockEntity(at) instanceof SignBlockEntity s && s.isWaxed(), "Schedule is waxed");
+            }
+            h.assertTrue(line(level, v.board().statusSign(1), 3).equals("0% gathered"), "The current build has a status");
+            h.assertTrue(line(level, v.board().statusSign(3), 3).equals("Planned"), "The future build has a status");
+            var saved = VillageMemory.get(level).save(new net.minecraft.nbt.CompoundTag(), level.registryAccess());
+            var roundTrip = VillageMemory.load(saved, level.registryAccess()).save(new net.minecraft.nbt.CompoundTag(), level.registryAccess());
+            h.assertTrue(saved.equals(roundTrip), "The announced plan and village survive saving and loading");
+            // A paid order waits for the current project; it must immediately appear before the ordinary plan.
+            v.project.have.put(Projects.Material.PLANKS, 1F);
+            UUID owner = UUID.randomUUID();
+            Homes.order(level, v, owner, "Alex");
+            h.assertTrue(line(level, v.board().statusSign(3), 3).equals("Queued")
+                    && line(level, v.board().statusSign(3), 1).equals("A home for Alex"), "An ordered home is queued on the board");
+            h.assertTrue(line(level, v.board().statusSign(4), 3).equals("Planned"), "The saved village project still follows it");
+            saved = VillageMemory.get(level).save(new net.minecraft.nbt.CompoundTag(), level.registryAccess());
+            roundTrip = VillageMemory.load(saved, level.registryAccess()).save(new net.minecraft.nbt.CompoundTag(), level.registryAccess());
+            h.assertTrue(saved.equals(roundTrip), "Queued owners' names and order survive reload too");
+            v.orders.clear();
+            Projects.fill(level, v);
+            for (Rebuild.Site s : Rebuild.all(level)) if (s.growth() && s.bell().equals(bell)) Rebuild.hurry(level, s, 100_000);
+            level.setDayTime(time + Days.DAY);
+            Projects.consider(level, v);
+            h.assertTrue(v.project() == next, "The project actually posted is the one the board promised");
+            for (Component[] sign : Projects.schedule(level, v)) for (Component line : sign)
+                h.assertTrue(Projects.width(line.getString()) <= Projects.SIGN_WIDTH, "Schedule text fits: " + line.getString());
+            h.succeed();
+        } finally { level.setDayTime(time); clear(h, bell); }
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 100, batch = "projects.paths")
+    public static void aFinishedHomeGetsASavedPathAndItsCrewPavesIt(GameTestHelper h) {
+        ServerLevel level = h.getLevel();
+        BlockPos bell = meadow(h);
+        long time = level.getDayTime();
+        var rule = level.getGameRules().getRule(GameRules.RULE_MOBGRIEFING);
+        boolean grief = rule.get();
+        try {
+            var v = VillageMemory.of(level, bell);
+            Projects.consider(level, v);
+            // This cottage's door is three blocks above its base, with only one entrance stair in the template.
+            var raised = ResourceLocation.withDefaultNamespace("village/plains/houses/plains_small_house_8");
+            v.project = Projects.project(level, v, new Projects.Plan(raised, "A new house", 4, Projects.Tier.HAMLET), null);
+            Projects.fill(level, v);
+            Rebuild.Site house = Rebuild.all(level).stream().filter(s -> s.growth() && s.bell().equals(bell)).findFirst().orElseThrow();
+            Rebuild.hurry(level, house, 100_000);
+            Rebuild.Site path = Rebuild.all(level).stream().filter(s -> s.paving() && s.bell().equals(bell)).findFirst().orElse(null);
+            h.assertTrue(path != null && path.size() > 4, "Finishing a house automatically schedules its connection");
+            var saved = Rebuild.get(level).save(new net.minecraft.nbt.CompoundTag(), level.registryAccess());
+            var restored = Rebuild.load(saved, level.registryAccess());
+            h.assertTrue(restored.save(new net.minecraft.nbt.CompoundTag(), level.registryAccess()).equals(saved), "Paving and its progress survive reload");
+            level.setDayTime(Days.DAY * (time / Days.DAY) + 6_000);
+            path.startAt = Days.clock(level);
+            rule.set(false, level.getServer());
+            Rebuild.work(level, Rebuild.get(level), path);
+            h.assertTrue(path.done() == 0, "Turning mobGriefing off pauses an existing paving job");
+            rule.set(true, level.getServer());
+            for (Villager x : level.getEntitiesOfClass(Villager.class, new AABB(bell).inflate(60))) x.discard();
+            Rebuild.work(level, Rebuild.get(level), path);
+            h.assertTrue(path.done() == 0, "No villagers means no paving");
+            Villager builder = net.minecraft.world.entity.EntityType.VILLAGER.create(level);
+            builder.moveTo(Vec3.atBottomCenterOf(path.center().above()));
+            builder.setNoAi(true);
+            builder.getPersistentData().putBoolean(com.jayptucker.heroesevolved.gifted.GiftedMobs.ROLLED, true);
+            level.addFreshEntity(builder);
+            Rebuild.work(level, Rebuild.get(level), path);
+            h.assertTrue(path.done() > 0, "A villager starts paving through the normal worker path");
+            Rebuild.hurry(level, path, 100_000);
+            h.assertTrue(v.connected.contains(house.home().origin().asLong()), "The finished connection is remembered");
+            for (int i = 0; i < path.size(); i++)
+                h.assertTrue(level.getBlockState(path.positions.get(i)).is(path.states.get(i).getBlock()), "Paved at " + path.positions.get(i));
+            h.assertTrue(line(level, v.board().statusSign(2), 3).equals("Connected"), "The board reports the finished path");
+            h.succeed();
+        } finally { rule.set(grief, level.getServer()); level.setDayTime(time); clear(h, bell); }
+    }
+
+    @GameTest(template = "rewind_empty", timeoutTicks = 100, batch = "projects.rotatedpaths")
+    public static void pathsFindRotatedDoorsAndGoAroundWaterCropsAndPlayerWork(GameTestHelper h) {
+        ServerLevel level = h.getLevel();
+        BlockPos bell = meadow(h);
+        try {
+            var v = VillageMemory.of(level, bell);
+            var id = Projects.TOWN_HOUSES.getFirst();
+            var template = level.getStructureManager().get(id).orElseThrow();
+            for (var rotation : net.minecraft.world.level.block.Rotation.values()) {
+                BlockPos origin = Growth.originFor(template, rotation, bell.offset(20, -1, -5));
+                var settings = new net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings().setRotation(rotation);
+                template.placeInWorld(level, origin, origin, settings, level.random, 2);
+                var home = new Projects.Home(id, origin, rotation);
+                Rebuild.Site owned = new Rebuild.Site(bell, origin);
+                owned.home = home;
+                for (var b : Growth.blocks(level, template, origin, rotation))
+                    if (!b.state().is(Blocks.STRUCTURE_VOID)) owned.positions.add(b.pos());
+                Homes.built(level, v, owned, UUID.randomUUID());
+                List<BlockPos> route = Paths.route(level, bell, home);
+                h.assertTrue(route.size() > 5, "A route from the owned front door and porch at " + rotation);
+                BlockPos obstacle = route.get(route.size() / 2);
+                level.setBlock(obstacle, Blocks.FARMLAND.defaultBlockState(), 2);
+                level.setBlock(obstacle.above(), Blocks.WHEAT.defaultBlockState(), 2);
+                BlockPos water = route.get(route.size() / 2 + 1);
+                level.setBlock(water, Blocks.WATER.defaultBlockState(), 2);
+                BlockPos player = route.get(route.size() / 2 - 1);
+                PlayerBuilt.mark(level, player);
+                List<BlockPos> detour = Paths.route(level, bell, home);
+                h.assertTrue(!detour.isEmpty() && !detour.contains(obstacle) && !detour.contains(water) && !detour.contains(player), "A continuous detour avoids all three");
+                Rebuild.Site path = Paths.plan(level, v, home);
+                h.assertTrue(path != null, "Paving can be planned");
+                BlockPos late = path.positions.get(path.size() / 2);
+                level.setBlock(late, Blocks.DIAMOND_BLOCK.defaultBlockState(), 2);
+                PlayerBuilt.mark(level, late);
+                Rebuild.hurry(level, path, 100_000);
+                h.assertTrue(level.getBlockState(late).is(Blocks.DIAMOND_BLOCK) && level.getBlockState(player).is(Blocks.GRASS_BLOCK)
+                        && level.getBlockState(water).is(Blocks.WATER) && level.getBlockState(obstacle).is(Blocks.FARMLAND), "Existing and late player work, crops and water stay");
+                h.assertTrue(!v.connected.contains(home.origin().asLong()), "An obstructed connection remains pending for another route");
+                clear(h, bell);
+                bell = meadow(h);
+                v = VillageMemory.of(level, bell);
+            }
+            h.succeed();
+        } finally { clear(h, bell); }
     }
 
     @GameTest(template = "rewind_empty", timeoutTicks = 60, batch = "projects.plans")

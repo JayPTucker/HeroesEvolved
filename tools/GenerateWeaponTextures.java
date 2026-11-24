@@ -16,7 +16,8 @@ import java.util.stream.Stream;
 import java.util.zip.ZipFile;
 
 /**
- * Paints the power-themed TaCZ guns. Each gun borrows the shape and animations of one of TaCZ's own models (by
+ * Generates the Freeze Gun's original model and paints the power-themed TaCZ guns. The other guns borrow the shape
+ * and animations of one of TaCZ's own models (by
  * resource location, never copied), so this reads that model's geometry from the TaCZ jar and paints a new texture
  * onto its UV layout: every face gets its part's colour (body, grip, barrel, magazine, detail, glow) from the gun's
  * palette, shaded by which way it faces, with a dark panel line round its edge. No pixel of TaCZ's own textures is
@@ -50,7 +51,7 @@ public final class GenerateWeaponTextures {
         Path jar = args.length > 0 ? Path.of(args[0]) : findJar();
         try (ZipFile zip = new ZipFile(jar.toFile())) {
             gun(zip, "gun/p90_geo", HEAT, "heat_gun");
-            gun(zip, "gun/aug_geo", COLD, "cold_gun");
+            freezeGun();
             gun(zip, "gun/cz75_geo", TASER, "taser");
             gun(zip, "gun/deagle_geo", NULLIFIER, "dampener_gun");
             ammo(zip, HEAT, "fuel_cell");
@@ -239,6 +240,11 @@ public final class GenerateWeaponTextures {
             if (found == null) throw new IOException("No " + entry + " in the TaCZ jar");
             String text;
             try (InputStream in = zip.getInputStream(found)) { text = new String(in.readAllBytes(), StandardCharsets.UTF_8); }
+            return readText(text);
+        }
+
+        @SuppressWarnings("unchecked")
+        static Model readText(String text) {
             Map<String, Object> root = (Map<String, Object>) new Json(text).value();
             Map<String, Object> geometry = (Map<String, Object>) ((List<Object>) root.get("minecraft:geometry")).get(0);
             Map<String, Object> description = (Map<String, Object>) geometry.get("description");
@@ -378,4 +384,95 @@ public final class GenerateWeaponTextures {
 
         private void skip() { while (i < s.length() && Character.isWhitespace(s.charAt(i))) i++; }
     }
+    /** Original industrial cold blaster. Only TaCZ's pistol animation/hand anchor convention is reused. */
+    private static void freezeGun() throws IOException {
+        StringBuilder boxes = new StringBuilder();
+        coldBox(boxes, -1.45, 4.3, -4.8, 2.9, 3.7, 7.6, Part.BODY);
+        coldBox(boxes, -1.05, 0.4, 0, 2.1, 4.2, 2.7, Part.GRIP);
+        coldBox(boxes, -1.25, 0, -.2, 2.5, .6, 3, Part.DETAIL);
+        // Open trigger guard, pressure gauge and insulated upper spine.
+        coldBox(boxes, -.55, 2.7, -3, 1.1, .5, 3.4, Part.DETAIL);
+        coldBox(boxes, -.55, 2.7, -3, 1.1, 1.7, .45, Part.DETAIL);
+        coldBox(boxes, -.2, 3.4, -1.1, .4, 1.1, .4, Part.DETAIL);
+        coldBox(boxes, -1, 8, -7.8, 2, .65, 9, Part.GRIP);
+        coldBox(boxes, -1.65, 5.1, 1, 3.3, 2.2, 2.2, Part.DETAIL);
+        coldBox(boxes, -1.5, 7.3, .1, 3, .35, 1.3, Part.GLOW);
+        // Broad pressure chamber, with an eight-sided silhouette and visible cyan core between fins.
+        coldBox(boxes, -1.5, 4.7, -11.8, 3, 3.3, 7, Part.MAG);
+        coldBox(boxes, -2, 5.2, -11.8, 4, 2.3, 7, Part.MAG);
+        for (int i = 0; i < 6; i++) {
+            double z = -5.5 - i * 1.05;
+            coldBox(boxes, -2.3, 5, z, 4.6, 2.7, .38, Part.BARREL);
+            coldBox(boxes, -1.65, 4.35, z, 3.3, .65, .38, Part.BARREL);
+            coldBox(boxes, -1.65, 7.7, z, 3.3, .65, .38, Part.BARREL);
+        }
+        // Four prongs surround a recessed emitter; no long rifle barrel or scope.
+        coldBox(boxes, -1.7, 4.35, -13.4, 3.4, 4, 1.2, Part.DETAIL);
+        coldBox(boxes, -2.3, 5, -13.4, 4.6, 2.7, 1.2, Part.DETAIL);
+        coldBox(boxes, -1.2, 5.1, -13.52, 2.4, 2.5, .18, Part.GLOW);
+        for (int s : new int[]{-1, 1}) {
+            coldBox(boxes, s < 0 ? -2.3 : 1.55, 5.1, -14.5, .75, 2.5, 1.8, Part.BODY);
+            coldBox(boxes, s < 0 ? -2.32 : 2.17, 5.55, -13.8, .16, 1.4, 7.2, Part.GLOW);
+            coldBox(boxes, s < 0 ? -1.55 : 1.1, 4, -8, .45, .55, 8.6, Part.DETAIL);
+        }
+        coldBox(boxes, -.8, 8.35, -12.9, 1.6, .45, 1.8, Part.BODY);
+        coldBox(boxes, -.8, 3.9, -12.9, 1.6, .45, 1.8, Part.BODY);
+        String anchors = """
+            {"name":"root","pivot":[0,3.875,1.275]},
+            {"name":"main","parent":"root","pivot":[0,4,1]},
+            {"name":"righthand","parent":"main","pivot":[6,19,-4]},
+            {"name":"righthand_pos","parent":"righthand","pivot":[0,8,-4]},
+            {"name":"mag_and_lefthand","parent":"root","pivot":[0,1.6,2.725]},
+            {"name":"lefthand","parent":"mag_and_lefthand","pivot":[-6,19,-4]},
+            {"name":"lefthand_pos","parent":"lefthand","pivot":[0,8,-4]},
+            {"name":"CZ75","parent":"main","pivot":[0,4,1]},
+            {"name":"slide","parent":"CZ75","pivot":[0,6.2,-4]},
+            {"name":"muzzle_flash","parent":"CZ75","pivot":[0,6.2,-14.5]},
+            {"name":"muzzle_pos","parent":"CZ75","pivot":[0,6.2,-14.5]},
+            {"name":"scope_pos","parent":"CZ75","pivot":[0,8.8,2]},
+            {"name":"camera","pivot":[1.125,8.75,11.5]},
+            {"name":"positioning","pivot":[0,0,0]},
+            {"name":"thirdperson_hand","parent":"positioning","pivot":[0,4.75,0]},
+            {"name":"fixed","parent":"positioning","pivot":[0,4,-5],"rotation":[0,90,0]},
+            {"name":"ground","parent":"positioning","pivot":[0,-2,-5]},
+            {"name":"view","pivot":[0,0,0]},
+            {"name":"iron_view","parent":"view","pivot":[0,9.3,14]},
+            {"name":"idle_view","parent":"view","pivot":[3.2,10.3,17.5]},
+            {"name":"mag_and_bullet","parent":"mag_and_lefthand","pivot":[0,1.6,2.725]},
+            {"name":"magazine","parent":"mag_and_bullet","pivot":[0,1.6,2.725]},
+            """;
+        StringBuilder cell = new StringBuilder();
+        coldBox(cell, -.8, .3, .4, 1.6, 3.7, 1.6, Part.MAG);
+        String json = "{\"format_version\":\"1.12.0\",\"minecraft:geometry\":[{\"description\":{"
+                + "\"identifier\":\"geometry.heroesevolved.freeze_gun\",\"texture_width\":128,\"texture_height\":128,"
+                + "\"visible_bounds_width\":3,\"visible_bounds_height\":3,\"visible_bounds_offset\":[0,0.5,0]},\"bones\":["
+                + anchors + "{\"name\":\"mag_standard\",\"parent\":\"magazine\",\"pivot\":[0,1.6,2.725],\"cubes\":[" + cell + "]},"
+                + "{\"name\":\"default_gun\",\"parent\":\"CZ75\",\"pivot\":[0,4,1],\"cubes\":[" + boxes + "]}]}]}";
+        Path modelPath = Path.of("src/main/resources/assets/heroesevolved/geo_models/gun/cold_gun_geo.json");
+        Files.createDirectories(modelPath.getParent());
+        Files.writeString(modelPath, json + "\n");
+        Model geo = Model.readText(json);
+        // Read explicit part ids from the generated cubes instead of guessing them from the root bone.
+        for (Cube c : geo.cubes) c.part = Part.values()[(int) (c.faces.values().iterator().next()[0] / 16)];
+        write(paint(geo, COLD, 2), ROOT + "gun/uv/cold_gun.png");
+        write(side(geo, COLD, 64, 64, 4), ROOT + "gun/slot/cold_gun.png");
+        write(side(geo, COLD, 384, 128, 10), ROOT + "gun/hud/cold_gun.png");
+    }
+
+    private static void coldBox(StringBuilder out, double x, double y, double z, double w, double h, double d, Part part) {
+        if (!out.isEmpty()) out.append(',');
+        out.append("{\"origin\":[").append(x).append(',').append(y).append(',').append(z)
+                .append("],\"size\":[").append(w).append(',').append(h).append(',').append(d).append("],\"uv\":{");
+        boolean first = true;
+        for (String face : List.of("north", "south", "east", "west", "up", "down")) {
+            if (!first) out.append(',');
+            first = false;
+            // Six material tiles, one independent row per face, so directional shading cannot overwrite another face.
+            int row = List.of("north", "south", "east", "west", "up", "down").indexOf(face);
+            out.append('"').append(face).append("\":{\"uv\":[").append(part.ordinal() * 16).append(',')
+                    .append(row * 16).append("],\"uv_size\":[16,16]}");
+        }
+        out.append("}}");
+    }
+
 }

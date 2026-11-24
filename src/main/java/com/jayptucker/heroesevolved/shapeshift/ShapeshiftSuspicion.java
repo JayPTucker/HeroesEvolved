@@ -65,6 +65,7 @@ public final class ShapeshiftSuspicion {
         Long until = LOCKED.get(player.getUUID());
         return until != null && player.serverLevel().getGameTime() < until;
     }
+    public static long lockedUntil(ServerPlayer player) { return LOCKED.getOrDefault(player.getUUID(), 0L); }
 
     static void tellLocked(ServerPlayer player) {
         long left = LOCKED.getOrDefault(player.getUUID(), 0L) - player.serverLevel().getGameTime();
@@ -112,6 +113,7 @@ public final class ShapeshiftSuspicion {
         ShapeshiftService.breakForm(player, "exposed");
         player.addEffect(new MobEffectInstance(MobEffects.GLOWING, EXPOSED_GLOW, 0, false, false));
         LOCKED.put(player.getUUID(), player.serverLevel().getGameTime() + EXPOSED_LOCK);
+        com.jayptucker.heroesevolved.network.PlayerPowerSyncService.sync(player);
         if (!person)
             for (Mob mob : player.serverLevel().getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(WATCH_RANGE),
                     mob -> mob.isAlive() && kin.equals(ShapeshiftForms.kin(mob))))
@@ -204,6 +206,7 @@ public final class ShapeshiftSuspicion {
         if (!player.isAlive() || !ShapeshiftService.morphed(player) || damage < ShapeshiftSkills.heavyBlow(player) * player.getMaxHealth()) return false;
         ShapeshiftService.breakForm(player, "broken");
         LOCKED.put(player.getUUID(), player.serverLevel().getGameTime() + BROKEN_LOCK);
+        com.jayptucker.heroesevolved.network.PlayerPowerSyncService.sync(player);
         return true;
     }
 }

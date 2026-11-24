@@ -125,17 +125,17 @@ final class Blizzard implements Weather {
     }
 
     /** Everyone of the village goes indoors, as when the bell rings for a raid (and stays while it lasts). */
-    private static void indoors(Overload o, long now) {
+    private void indoors(Overload o, long now) {
         for (UUID id : o.village)
             if (o.level.getEntity(id) instanceof Villager v && v.isAlive() && !v.isSleeping())
-                v.getBrain().setMemory(MemoryModuleType.HEARD_BELL_TIME, now);
+                com.jayptucker.heroesevolved.village.Shouts.shelterOrRun(v, o.eye(), reach(o) + 6, true);
     }
 
     @Override
     public void villagers(Overload o, List<Villager> inDanger) {
         // Caught out in it: home, at a run.
         long now = o.level.getGameTime();
-        for (Villager v : inDanger) v.getBrain().setMemory(MemoryModuleType.HEARD_BELL_TIME, now);
+        for (Villager v : inDanger) com.jayptucker.heroesevolved.village.Shouts.shelterOrRun(v, o.eye(), reach(o) + 6, true);
     }
 
     /**

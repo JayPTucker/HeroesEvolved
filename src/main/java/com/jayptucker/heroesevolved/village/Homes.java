@@ -142,6 +142,7 @@ public final class Homes {
         v.names.put(owner, name);
         VillageMemory.get(level).setDirty();
         if (!busy(v)) post(level, v);
+        Projects.signs(level, v);
         BandChatter.news(level, v.bell, v.name + "'s building a house for " + name + ". Someone's settling down.", (int) Days.DAY);
     }
 
@@ -234,7 +235,7 @@ public final class Homes {
     static VillageMemory.Village boardOf(ServerLevel level, BlockPos pos) {
         VillageMemory.Village v = VillageMemory.near(level, pos);
         if (v == null || v.board == null) return null;
-        for (int i = 0; i < 6; i++) if (v.board.sign(i).equals(pos)) return v;
+        for (int i = 0; i < 6; i++) if (v.board.sign(i).equals(pos) || v.board.statusSign(i).equals(pos)) return v;
         return null;
     }
 

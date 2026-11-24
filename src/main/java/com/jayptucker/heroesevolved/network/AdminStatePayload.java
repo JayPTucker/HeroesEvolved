@@ -22,8 +22,13 @@ public record AdminStatePayload(
         World world,
         List<EventEntry> events,
         List<String> diagnostics,
-        String feedback
+        String feedback,
+        List<String> commands
 ) implements CustomPacketPayload {
+    public AdminStatePayload(boolean openScreen, boolean eclipseActive, int maximumLevel, List<String> powers,
+                             List<PlayerEntry> players, World world, List<EventEntry> events, List<String> diagnostics, String feedback) {
+        this(openScreen, eclipseActive, maximumLevel, powers, players, world, events, diagnostics, feedback, List.of());
+    }
     public AdminStatePayload(boolean openScreen, boolean eclipseActive, int maximumLevel, List<String> powers,
                              List<PlayerEntry> players, World world) {
         this(openScreen, eclipseActive, maximumLevel, powers, players, world, List.of(), List.of(), "");
@@ -131,11 +136,13 @@ public record AdminStatePayload(
         EventEntry.STREAM_CODEC.apply(ByteBufCodecs.list(64)).encode(b, s.events());
         ByteBufCodecs.stringUtf8(1024).apply(ByteBufCodecs.list(64)).encode(b, s.diagnostics());
         b.writeUtf(s.feedback(), 1024);
+        ByteBufCodecs.stringUtf8(1024).apply(ByteBufCodecs.list(1024)).encode(b, s.commands());
     }, b -> new AdminStatePayload(b.readBoolean(), b.readBoolean(), b.readVarInt(),
             ByteBufCodecs.stringUtf8(256).apply(ByteBufCodecs.list(64)).decode(b),
             PlayerEntry.STREAM_CODEC.apply(ByteBufCodecs.list(512)).decode(b), World.STREAM_CODEC.decode(b),
             EventEntry.STREAM_CODEC.apply(ByteBufCodecs.list(64)).decode(b),
-            ByteBufCodecs.stringUtf8(1024).apply(ByteBufCodecs.list(64)).decode(b), b.readUtf(1024)));
+            ByteBufCodecs.stringUtf8(1024).apply(ByteBufCodecs.list(64)).decode(b), b.readUtf(1024),
+            ByteBufCodecs.stringUtf8(1024).apply(ByteBufCodecs.list(1024)).decode(b)));
 
     @Override
     public Type<? extends CustomPacketPayload> type() {

@@ -41,7 +41,7 @@ public final class FightingStyleClient {
 
     private FightingStyleClient() {}
 
-    private static boolean styled() {
+    public static boolean styled() {
         if (ClientPowerState.getSnapshot().abilities().stream().anyMatch(a -> a.unlocked() && STYLED.contains(a.abilityId())))
             return true;
         // An empath fights with the style of whatever power they are channeling.

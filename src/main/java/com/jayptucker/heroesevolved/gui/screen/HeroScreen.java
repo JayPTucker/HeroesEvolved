@@ -32,7 +32,7 @@ public abstract class HeroScreen extends Screen {
     public static final int OFFENSE = 0xFFE3685A, DEFENSE = 0xFF5FA8E0, SUPPORT = 0xFF7ACB6A, UTILITY = 0xFFB8A99A;
 
     public enum Tab {
-        LOADOUT("LOADOUT"), TREE("SKILL TREE"), CLASS("CLASS"), JOURNAL("JOURNAL"), SETTINGS("SETTINGS");
+        LOADOUT("LOADOUT"), TREE("SKILL TREE"), CLASS("CLASS"), JOURNAL("JOURNAL"), GUIDE("GUIDE"), SETTINGS("SETTINGS");
         final String label;
         Tab(String label) { this.label = label; }
     }
@@ -60,6 +60,7 @@ public abstract class HeroScreen extends Screen {
         Screen root = parent;
         switch (tab) {
             case JOURNAL -> JournalScreen.open(root);
+            case GUIDE -> minecraft.setScreen(new GuideScreen(root));
             case SETTINGS -> minecraft.setScreen(new EffectsSettingsScreen(this));
             default -> {
                 if (this instanceof PowersScreen powers) powers.page(tab);

@@ -15,6 +15,8 @@ public abstract class TemporalMobAnimationMixin {
     @ModifyVariable(method = "render(Lnet/minecraft/world/entity/LivingEntity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
             at = @At("HEAD"), argsOnly = true, ordinal = 1)
     private float heroes$slowPose(float value, LivingEntity entity, float yaw, float partial, PoseStack poses, MultiBufferSource buffers, int light) {
+        // Its tick is paused, so vanilla's partial tick would replay the last step every frame.
+        if (com.jayptucker.heroesevolved.client.effects.FrozenVisuals.isFrozen(entity)) return 1;
         return entity instanceof Mob mob ? ClientMobTime.partial(mob, value) : value;
     }
 }

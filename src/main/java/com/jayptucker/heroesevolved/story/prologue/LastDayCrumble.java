@@ -227,7 +227,6 @@ final class LastDayCrumble {
             city.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, c.x, c.y, c.z, 10, 1.2, 1.2, 1.2, 0.02);
             city.playSound(null, at, SoundEvents.STONE_BREAK, SoundSource.BLOCKS, 3, 0.5F);
             city.playSound(null, at, SoundEvents.GRAVEL_BREAK, SoundSource.BLOCKS, 2.5F, 0.6F);
-            city.playSound(null, at, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.BLOCKS, 1.2F, 0.45F);
             for (ServerPlayer q : players)
                 if (q.distanceToSqr(c) < 28 * 28) PacketDistributor.sendToPlayer(q, new CameraShakePayload(0.12F, 12));
             if (smoke.size() < 12) smoke.add(new BlockPos(x, CityGrid.STREET_Y, z));

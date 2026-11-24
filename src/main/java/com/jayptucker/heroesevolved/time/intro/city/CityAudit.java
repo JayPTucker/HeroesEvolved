@@ -125,12 +125,14 @@ public final class CityAudit {
         for (int i = solid.nextSetBit(0); i >= 0; i = solid.nextSetBit(i + 1)) {
             if (reached.get(i) || seen.get(i)) continue;
             int size = 0;
+            boolean touchesEdge = false;
             queue.add(i);
             seen.set(i);
             while (!queue.isEmpty()) {
                 int k = queue.poll();
                 size++;
                 int y = k % h, z = (k / h) % d, x = k / h / d;
+                if (x == 0 || x == w - 1 || z == 0 || z == d - 1) touchesEdge = true;
                 for (int[] s : steps) {
                     int nx = x + s[0], ny = y + s[1], nz = z + s[2];
                     if (nx < 0 || nx >= w || nz < 0 || nz >= d || ny < 0 || ny >= h) continue;
@@ -140,7 +142,7 @@ public final class CityAudit {
             }
             int y = i % h, z = (i / h) % d, x = i / h / d;
             // A piece cut off by the edge of the audited patch may be held from outside it.
-            if (x == 0 || x == w - 1 || z == 0 || z == d - 1) continue;
+            if (touchesEdge) continue;
             flag(size == 1 ? "floating block" : "floating piece", new BlockPos(x0 + x, bottom + y, z0 + z));
         }
     }

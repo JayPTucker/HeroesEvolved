@@ -1,0 +1,22 @@
+// Real Minecraft rendering of every guide topic and field note at large and small GUI scales.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('guidancePreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs { client {
+                    gameDirectory = project.file(project.hasProperty('live') ? 'build/guidance-live-preview' : 'build/guidance-preview')
+                    systemProperty(project.hasProperty('live') ? 'heroes.preview.guidanceLive' : 'heroes.preview.guidance', 'true')
+                    programArguments.addAll('--width', '1100', '--height', '800')
+                } }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('guidancePreviewClasses')) }
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

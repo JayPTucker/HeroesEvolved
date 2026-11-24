@@ -8,8 +8,10 @@ import com.jayptucker.heroesevolved.network.AdminStatePayload.PlayerEntry;
 import com.jayptucker.heroesevolved.network.ClientAdminState;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -24,12 +26,14 @@ public final class AdminScreen extends Screen {
     private static final int BG = 0xFF11171E, PANEL = 0xFF19222C, RULE = 0xFF303E4C;
     private static final int TEXT = 0xFFE5EDF4, MUTED = 0xFF99ADBE, GOLD = 0xFFF2C66D;
     private static final int TEAL = 0xFF68D8C5, RED = 0xFFEF8A87;
-    private enum Tab { PLAYER, EVENTS, STORY, DEBUG }
+    private enum Tab { PLAYER, EVENTS, STORY, DEBUG, COMMANDS }
     private static Tab tab = Tab.PLAYER;
     private static UUID selectedPlayer;
     private static int powerIndex, playerScroll, eventScroll;
     private static String selectedEvent = "eclipse";
-    private final int[] scroll = new int[4];
+    private final int[] scroll = new int[Tab.values().length];
+    private String commandFilter = "";
+    private EditBox commandSearch;
     private int left, top, panelWidth, panelHeight, sidebar, bodyTop, bodyBottom, maxScroll, refreshTicks;
     private String lastEvent = "";
     private String feedback = "Select a player. Event cards show where their controls act.";
@@ -41,12 +45,16 @@ public final class AdminScreen extends Screen {
     public static void showWorld() { tab = Tab.EVENTS; selectedEvent = "eclipse"; }
     public static void showIncidents() { showEvent("gifts"); }
     public static void showDebug() { tab = Tab.DEBUG; }
+    public static void showCommands() { tab = Tab.COMMANDS; }
     public static void showStory() { tab = Tab.STORY; selectedEvent = "sylar"; }
     public static void showEvent(String id) { selectedEvent = id; tab = Tab.EVENTS; }
     public void onStateUpdated() {
+        boolean editing = commandSearch != null && getFocused() == commandSearch;
+        int cursor = editing ? commandSearch.getCursorPosition() : 0;
         String focused = getFocused() instanceof Button b ? b.getMessage().getString() : "";
         if (!ClientAdminState.get().feedback().isEmpty()) feedback = ClientAdminState.get().feedback();
         rebuildWidgets();
+        if (editing && commandSearch != null) { setFocused(commandSearch); commandSearch.setCursorPosition(cursor); }
         if (!focused.isEmpty()) for (var child : children())
             if (child instanceof Button b && b.active && b.getMessage().getString().equals(focused)) { setFocused(b); break; }
     }
@@ -68,7 +76,7 @@ public final class AdminScreen extends Screen {
             selectedPlayer = state.players().isEmpty() ? null : state.players().getFirst().id();
         button("Refresh", left + panelWidth - 88, top + 9, 55, () -> send(Action.REFRESH), true, false, "Refresh; also updates every two seconds.");
         button("X", left + panelWidth - 29, top + 9, 20, this::onClose, true, false, "Close (Esc)");
-        String[] names = {"Players", "Events", "Story", "Debug"}; int each = (w() - 9) / 4;
+        String[] names = {"Players", "Events", "Story", "Debug", "Commands"}; int each = (w() - 3 * (names.length - 1)) / names.length;
         for (Tab t : Tab.values()) button(names[t.ordinal()], x() + t.ordinal() * (each + 3), top + 40, each,
                 () -> { tab = t; eventScroll = 0; rebuildWidgets(); }, true, tab == t, names[t.ordinal()] + " controls");
         int visible = Math.max(1, (bodyBottom - top - 70) / 28);
@@ -83,6 +91,7 @@ public final class AdminScreen extends Screen {
             case PLAYER -> { if (target() != null) player(target(), state); }
             case EVENTS, STORY -> events(state);
             case DEBUG -> debug(state);
+            case COMMANDS -> commands(state);
         }
         int old = scroll[tab.ordinal()]; scroll[tab.ordinal()] = Math.clamp(old, 0, maxScroll);
         if (old != scroll[tab.ordinal()]) rebuildWidgets();
@@ -166,11 +175,38 @@ public final class AdminScreen extends Screen {
         row(at, spec("God: " + (player && p.godMode() ? "ON" : "OFF"), Action.TOGGLE_GOD_MODE, player, "Prevent all damage and death. Gold outline while enabled."), spec("Free stamina: " + (player && p.unlimitedEnergy() ? "ON" : "OFF"), Action.TOGGLE_UNLIMITED_ENERGY, player, "Toggle unlimited stamina.")); at += 25;
         row(at, spec("Reset cooldowns", Action.RESET_COOLDOWNS, player, "Clear all ability cooldowns."), spec("Cancel awakening", Action.CANCEL_INTRO, player, "Cancel this player's awakening. Cancel time visions under Story.")); at += 25;
         row(at, spec("Give tuned radio", Action.GIVE_RADIO, player, "Give a walkie-talkie on 101.10 FM.")); at += 32;
+        heading(at, "PLAYER GUIDANCE"); at += 17;
+        row(at, spec("Replay tips", Action.RESET_GUIDANCE, player, "Enable tips and clear this player's saved field-note receipts."),
+                spec("Give civilian journal", Action.GIVE_SURVIVOR_JOURNAL, player, "Give one of the recovered Book and Quills from the live loot table.")); at += 32;
         heading(at, "COMPANY ATTENTION"); at += 17;
         row(at, spec("Clear", Action.SET_ATTENTION, "", 0, player, "Set attention to zero. Cancel operations under Events."), spec("Noticed", Action.SET_ATTENTION, "", 25, player, "Set attention to 25."), spec("Watched", Action.SET_ATTENTION, "", 50, player, "Set attention to 50."), spec("Hunted", Action.SET_ATTENTION, "", 100, player, "Set attention to 100.")); at += 34;
         heading(at, "EVENT CLEANUP / ENTIRE SERVER"); at += 17;
         at = wrap(x(), at, w(), "Stops world events, queued incidents and stories. Existing terrain damage and surviving mobs remain.", RED) + 7;
         row(at, spec("Cancel all events", Action.CANCEL_ALL_EVENTS, true, "Server-wide cleanup including queued village starts and Company operations.")); extent(at + 28);
+    }
+
+    private void commands(AdminStatePayload state) {
+        commandSearch = new EditBox(font, x(), bodyTop, w(), 20, Component.literal("Filter mod commands"));
+        commandSearch.setMaxLength(96);
+        commandSearch.setValue(commandFilter);
+        commandSearch.setHint(Component.literal("Search commands…"));
+        commandSearch.setResponder(value -> {
+            int cursor = commandSearch.getCursorPosition();
+            commandFilter = value; scroll[Tab.COMMANDS.ordinal()] = 0;
+            rebuildWidgets(); setFocused(commandSearch); commandSearch.setCursorPosition(cursor);
+        });
+        addRenderableWidget(commandSearch);
+        String filter = commandFilter.toLowerCase(java.util.Locale.ROOT);
+        var commands = state.commands().stream().filter(c -> c.toLowerCase(java.util.Locale.ROOT).contains(filter)).toList();
+        labels.add(new Label(x(), bodyTop + 26, w(), commands.size() + " commands | edit in chat; runs as you", MUTED));
+        int at = 44;
+        for (String command : commands) {
+            if (at - scroll[Tab.COMMANDS.ordinal()] >= 44)
+                body(command, x(), at, w(), () -> minecraft.setScreen(new ChatScreen(command)), true,
+                        command + "\nOpen in chat; replace <arguments> and press Enter. Uses your location and permission, not the selected player's.");
+            at += 25;
+        }
+        extent(at + 3);
     }
 
     private record Spec(String text, Action action, String argument, int value, boolean active, String tip) {}

@@ -67,12 +67,13 @@ public final class HeldWindGameTests {
         } finally { cleanup(p); }
     }
 
-    @GameTest(template = "rewind_empty", batch = "heldwind.anchor", timeoutTicks = 140)
+    @GameTest(template = "cryo_rework_arena", batch = "heldwind.anchor", timeoutTicks = 320)
     public static void anchoringNeverMakesContinuedCycloneUpkeepFree(GameTestHelper h) {
         var p = player(h, ModAbilities.SUPERSPEED_ID);
+        p.setPos(Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(16, 2, 16))));
         h.assertTrue(SpeedKit.cyclone(p, 3, true), "The held Cyclone starts");
         for (int i = 0; i < 8; i++) SpeedKit.cycloneSpeed(p, 1);
-        h.runAfterDelay(100, () -> {
+        h.runAfterDelay(SpeedKit.TORNADO_HOLD + SpeedKit.TORNADO_ANCHOR + 10, () -> {
             try {
                 h.assertTrue(SpeedKit.tornado(p), "A fast held ring rose into a tornado");
                 paidSecond(h, p, PowerBalance.drain("speed_cyclone", 4));

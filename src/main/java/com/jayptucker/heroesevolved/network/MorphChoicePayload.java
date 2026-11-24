@@ -20,7 +20,10 @@ public record MorphChoicePayload(String form) implements CustomPacketPayload {
 
     public static void handle(MorphChoicePayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
-            if (context.player() instanceof ServerPlayer player) ShapeshiftService.choose(player, payload.form);
+            if (context.player() instanceof ServerPlayer player) {
+                ShapeshiftService.choose(player, payload.form);
+                PlayerPowerSyncService.sync(player);
+            }
         });
     }
 }

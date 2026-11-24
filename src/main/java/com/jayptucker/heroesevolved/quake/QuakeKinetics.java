@@ -88,6 +88,7 @@ public final class QuakeKinetics {
     static void detonate(ServerPlayer owner, Entity entity) {
         Level level = entity.level();
         Vec3 at = entity.position();
+        if (entity instanceof com.jayptucker.heroesevolved.endgame.EndBolt bolt) { bolt.disrupt(owner); return; }
         if (entity instanceof EndCrystal crystal) {
             crystal.hurt(owner.damageSources().playerAttack(owner), 1);
             return;

@@ -88,3 +88,7 @@ Meltdowns became dangerous to stand near and a speedster's top speeds dangerous 
   blast. Use it for any "meet here" marker that must not land on a roof.
 - **Textures:** `py -3 tools/generate-suit-textures.py` draws lead, the bench, the materials, both suits (worn and
   icons) and the ember body.
+
+- **Overexertion is a bound face effect, not a spray of blood.** `OverexertionArt` follows the living eye and view
+  direction in the SOFT pass, with a small nose streak, sparse drops and eased ends; it hides in the owner's first
+  person. The private HUD uses fading vignette bands in `EnergyHudOverlay`, and its packet enqueues client work.

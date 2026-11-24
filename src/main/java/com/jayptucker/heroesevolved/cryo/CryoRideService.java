@@ -54,6 +54,7 @@ public final class CryoRideService {
         int age, speedStep = 1, surface, groundTop, lastSlope;
         double unsupported;
         long inputAt;
+        long tickedAt = -1000;
         Ride(ServerPlayer p, int supportHeight) {
             player = p; level = p.serverLevel(); priorNoGravity = p.isNoGravity();
             direction = horizontal(p); previous = p.position();
@@ -218,6 +219,8 @@ public final class CryoRideService {
     public static void tick(ServerPlayer p) {
         Ride r = RIDES.get(p.getUUID());
         if (r == null) return;
+        if (r.tickedAt == r.level.getGameTime()) return;
+        r.tickedAt = r.level.getGameTime();
         if (r.level != p.level() || !canStart(p)) { stop(p, true); return; }
         r.age++;
         if (r.level.getGameTime() - r.inputAt > 10) { r.forward = r.strafe = 0; r.rise = r.descend = r.sprint = false; }
@@ -263,6 +266,10 @@ public final class CryoRideService {
                 CryoService.chill(enemy, 20, p);
         }
         if (r.age % 5 == 0) sync(p);
+    }
+    /** Held rides also run for fake players, which have no level-driven player tick. */
+    public static void tickAll() {
+        for (Ride ride : List.copyOf(RIDES.values())) tick(ride.player);
     }
     public static void stop(ServerPlayer p, boolean safe) {
         Ride r = RIDES.remove(p.getUUID());

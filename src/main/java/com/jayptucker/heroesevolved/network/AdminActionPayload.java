@@ -62,7 +62,9 @@ public record AdminActionPayload(
         EVENT_CANCEL,
         CANCEL_ALL_EVENTS,
         SET_ATTENTION,
-        CANCEL_INTRO
+        CANCEL_INTRO,
+        RESET_GUIDANCE,
+        GIVE_SURVIVOR_JOURNAL
     }
 
     public static final Type<AdminActionPayload> TYPE =

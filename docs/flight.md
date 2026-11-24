@@ -4,7 +4,7 @@ Flight is an aerial momentum kit. Build airspeed in cruise, brake and redirect i
 Skyburst, catch someone with Skyhook, or spend your speed on a Meteor Drop or Tempest.
 Double-tap Jump toggles Flight and the mouse wheel sets cruise speed. The highest setting
 cruises at 3 blocks a tick by default. The pilot banks into turns, and releasing Forward
-brakes toward a hover. Double-tap Strafe Left or Right in the air to **Barrel Roll** that way.
+brakes toward a hover. Double-tap Strafe Left or Right in the air to **Barrel Roll** that way. Tempest slows your incoming motion gradually, gathers its cloud from a small funnel, and eases you into the banked orbit. Its twin condensation trails follow your boots through the turn.
 
 Unlocking Flight grants fall-damage immunity, even with flying toggled off or during an Eclipse.
 
@@ -66,6 +66,8 @@ through a group and follow its finale with another pass.
   carries up to 192 blocks. Everyone within 64 blocks feels a brief tremor that weakens with distance.
   The dash sustains thrust before easing into cruise and stops short of obstacles. Skyhook traces the
   catch and holds cargo in your arms or overhead through flight, then sends a smaller collar with the throw.
+  Carrying keeps the normal horizontal flying pose above speed level 1; the load follows your body's pitch and bank
+  while your arms hold it securely. Iron golems are too heavy for Skyhook.
 - Meteor Drop starts in an upright brace, tips into the plunge and fans pressure fronts along
   the surface it strikes. Tempest draws its 20-block reach on the ground as bands spiral
   inward. Its warning gives targets one second to escape before the pull begins.

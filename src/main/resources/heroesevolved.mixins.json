@@ -28,7 +28,14 @@
     "ProjectileAccess",
     "ArrowAccess",
     "BreachEntityDataAccess",
-    "CryoCarbineBulletMixin"
+    "CryoCarbineBulletMixin",
+    "EnderEyeRitualMixin",
+    "EndDragonAccess",
+    "EndFightAccess",
+    "EndDragonBattleMixin",
+    "EndDragonHoverMixin",
+    "EndFightBattleMixin",
+    "EndCrystalBattleMixin"
   ],
   "client": [
     "TemporalMobAnimationMixin",

@@ -182,6 +182,7 @@ public final class TemporalEntityEchoService {
         }
 
         UUID presentId = pastEntity.data.entityId();
+        if (killer != null) TemporalRevenge.get(server).defeated(server, pastEntity.ownerId, presentId);
         TemporalErasureSavedData.get(server).erase(pastEntity.ownerId, presentId);
 
         ServerLevel present = server.getLevel(ResourceKey.create(

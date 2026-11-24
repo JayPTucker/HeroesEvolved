@@ -1,5 +1,8 @@
 # Power Levels, keys and the ability wheel
 
+The hero menu's **Guide** tab explains controls, skill assignments and progression in game, including your current
+Evolved trial. Optional field notes introduce these rules as you play; see [Player guidance](player-guidance.md).
+
 ## Power Level 1 to 20
 
 Your power grows from Level 1 to 20 in five stages, as it does in the show:
@@ -117,7 +120,7 @@ Newly learned abilities can fill unused positions. You can also put a keyed abil
   as beams and screams) until you let go of the mouse.
 - **Tap R** to use the pinned ability. With no pin, it recasts your last wheel pick. The R tile
   on the HUD shows which move a tap will cast.
-- Shift works as usual for overexerting.
+- Shift works as usual for overexerting. Overexertion fades in as a soft, pulsing red edge to your view. Other people can see a small nosebleed that follows your face and fades away as you recover.
 
 The wheel shows each favorite's icon and cooldown. Highlight an ability to see its name, stamina
 cost and rank. Like any open menu, it stops your movement while it is open.

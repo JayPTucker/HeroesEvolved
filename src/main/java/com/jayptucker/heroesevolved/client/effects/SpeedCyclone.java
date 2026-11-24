@@ -84,6 +84,8 @@ public final class SpeedCyclone {
         /** Where it is between ticks. */
         public Vec3 at(float partial) { return previous.lerp(center, partial); }
         public float angle(float age) {
+            if (style == SpeedCyclonePayload.SPEED)
+                return com.jayptucker.heroesevolved.speed.CycloneGeometry.angle(phase, age);
             // A containment run goes round about twice as fast as any Cyclone.
             boolean contain = style == SpeedCyclonePayload.CONTAIN || style == SpeedCyclonePayload.CONTAIN_FAIL;
             float lap = contain ? LAP_SPEED * 2.1F : LAP_SPEED;
@@ -102,6 +104,8 @@ public final class SpeedCyclone {
         }
         /** Where the runner is on the ring at this age. */
         public Vec3 runner(float age) {
+            if (style == SpeedCyclonePayload.SPEED)
+                return com.jayptucker.heroesevolved.speed.CycloneGeometry.runner(center, radius, phase, age);
             float a = angle(age);
             return center.add(Mth.cos(a) * radius, 0, Mth.sin(a) * radius);
         }
@@ -236,7 +240,8 @@ public final class SpeedCyclone {
                 Puppet puppet = v.puppet;
                 puppet.dress(owner);
                 float age = v.age(now, partial), angle = v.angle(age), yaw = yaw(angle);
-                Vec3 at = v.runner(age).add(0, owner.getY() - v.center.y > 0 ? Math.min(0.5, owner.getY() - v.center.y) : 0, 0);
+                Vec3 at = v.style == SpeedCyclonePayload.SPEED ? owner.getPosition(partial)
+                        : v.runner(age).add(0, owner.getY() - v.center.y > 0 ? Math.min(0.5, owner.getY() - v.center.y) : 0, 0);
                 place(puppet, at, yaw);
                 pose.pushPose();
                 pose.translate(at.x - camera.x, at.y - camera.y, at.z - camera.z);

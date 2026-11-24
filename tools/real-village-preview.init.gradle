@@ -17,6 +17,7 @@ allprojects {
                         gameDirectory = project.file('build/real-village-preview')
                         programArguments.addAll('--width', '1280', '--height', '800')
                         systemProperty('heroes.preview.realvillages', 'true')
+                        systemProperty('heroes.preview.realvillages.only', project.findProperty('only') ?: '')
                     }
                 }
             }

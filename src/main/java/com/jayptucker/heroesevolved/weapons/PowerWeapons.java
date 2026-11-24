@@ -32,8 +32,8 @@ import java.util.function.UnaryOperator;
  * <ul>
  *   <li><b>Heat gun</b>: a short stream of fire. Every round sets the target alight and keeps it burning a little
  *   longer, up to five seconds, and thaws anything frozen. A weak Pyrokinesis.</li>
- *   <li><b>Cold gun</b>: frost bolts. Each adds frost (slower and slower); the fifth or so freezes the target
- *   solid for two seconds (one for a player). A weak Cryokinesis. Repeated bolts also freeze terrain.</li>
+ *   <li><b>Freeze Gun</b>: a held, short-range cold blast. Its pulses build Frost and briefly freeze a target,
+ *   without shattering their own shell. Sustained contact also freezes terrain.</li>
  *   <li><b>Taser</b>: one cartridge at a time, eight blocks. A hit locks the target's muscles: barely moving, no
  *   jumping, no landing blows (see {@link Stun}). A weak Electrokinesis hit.</li>
  *   <li><b>Nullifier</b>: dampener rounds made from the Forge Energy in its own battery, not from ammo items. A hit
@@ -51,8 +51,8 @@ public final class PowerWeapons {
     /** Burning time each heat round adds, and the most it can build to. */
     public static final int HEAT_TICKS = 20, HEAT_MAX = 100;
     /** Frost each cold round adds, and how long its freeze holds a creature or a player. */
-    public static final int FROST_TICKS = 30, FREEZE_MOB = 40, FREEZE_PLAYER = 20;
-    public static final double HEAT_RANGE = 10, COLD_RANGE = 40, TASER_RANGE = 8;
+    public static final int FROST_TICKS = 18, FREEZE_MOB = 40, FREEZE_PLAYER = 20;
+    public static final double HEAT_RANGE = 10, COLD_RANGE = 16, TASER_RANGE = 8;
 
     private PowerWeapons() {}
 
@@ -66,6 +66,9 @@ public final class PowerWeapons {
 
     /** Whether {@code entity} is a gun's bullet in flight. */
     public static boolean isBullet(Entity entity) { return TaczLink.bullet(entity); }
+
+    /** Cold pulses are freezing damage, so continued contact cannot shatter the shell it just made. */
+    public static boolean isColdBullet(@Nullable Entity entity) { return TaczLink.coldBullet(entity); }
 
     public static boolean bulletObstructed(Projectile round, Vec3 from, Vec3 to) {
         return TaczLink.bulletObstructed(round, from, to);
@@ -87,7 +90,7 @@ public final class PowerWeapons {
 
     /** A loaded gun: a full magazine and a round chambered. Empty if TaCZ doesn't know the id. */
     public static ItemStack gun(ResourceLocation id) {
-        ItemStack gun = TaczLink.gun(id, magazine(id), id.equals(HEAT_GUN));
+        ItemStack gun = TaczLink.gun(id, magazine(id), id.equals(HEAT_GUN) || id.equals(COLD_GUN));
         if (id.equals(DAMPENER_GUN) && !gun.isEmpty()) com.jayptucker.heroesevolved.dampener.Nullifier.prepare(gun);
         return gun;
     }
@@ -111,7 +114,7 @@ public final class PowerWeapons {
     /** A magazine's worth for our guns and the agents' pistol. */
     public static int magazine(ResourceLocation id) {
         if (id.equals(HEAT_GUN)) return 40;
-        if (id.equals(COLD_GUN)) return 15;
+        if (id.equals(COLD_GUN)) return 40;
         if (id.equals(TASER)) return 1;
         if (id.equals(DAMPENER_GUN)) return com.jayptucker.heroesevolved.dampener.DampenerGeometry.MAGAZINE;
         return 17;
@@ -149,7 +152,7 @@ public final class PowerWeapons {
     // Hooks from TaczLink
     // ------------------------------------------------------------------
 
-    /** A shot left the muzzle: the heat gun's flame and the cold gun's frost streak, and their sounds. */
+    /** A paid pulse left the muzzle. TaCZ's automatic trigger supplies the held blast's cadence. */
     static void shot(LivingEntity shooter, ResourceLocation gun) {
         if (!(shooter.level() instanceof ServerLevel level)) return;
         if (gun.equals(HEAT_GUN)) {
@@ -157,9 +160,9 @@ public final class PowerWeapons {
             if (shooter.tickCount % 3 == 0)
                 level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(), SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, 0.35F, 1.5F);
         } else if (gun.equals(COLD_GUN)) {
-            SetPiecePayload.send(level, Piece.GUN_FROST, muzzle(shooter), reach(shooter, COLD_RANGE, ClipContext.Fluid.ANY), 0, shooter);
-            level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(), SoundEvents.POWDER_SNOW_BREAK, SoundSource.PLAYERS, 1.0F, 1.6F);
-            level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(), SoundEvents.GLASS_BREAK, SoundSource.PLAYERS, 0.35F, 1.9F);
+            SetPiecePayload.send(level, Piece.GUN_FROST, muzzle(shooter), coldEnd(shooter), 0, shooter);
+            level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(), SoundEvents.POWDER_SNOW_BREAK,
+                    SoundSource.PLAYERS, .45F, 1.25F);
         } else if (gun.equals(TASER)) {
             level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(), SoundEvents.TRIDENT_THROW.value(), SoundSource.PLAYERS, 0.6F, 1.8F);
         } else if (gun.equals(DAMPENER_GUN)) {
@@ -183,7 +186,7 @@ public final class PowerWeapons {
     static void hitBlock(ServerLevel level, BlockHitResult hit, @Nullable Entity owner, ResourceLocation gun) {
         if (!gun.equals(COLD_GUN)) return;
         SetPiecePayload.send(level, Piece.GUN_FROST, hit.getLocation(), hit.getLocation(), 1, null);
-        TerrainFrost.carbine(level, hit, owner);
+        TerrainFrost.freezeGun(level, hit, owner);
     }
 
     // ------------------------------------------------------------------
@@ -199,7 +202,7 @@ public final class PowerWeapons {
 
     /** A cold round: frost that builds, then a short freeze. Cryokinetics shrug it off, as they do real frost. */
     public static void cold(@Nullable LivingEntity attacker, LivingEntity target, Vec3 at) {
-        if (!(target.level() instanceof ServerLevel level)) return;
+        if (!(target.level() instanceof ServerLevel level) || !allowed(attacker, target)) return;
         SetPiecePayload.send(level, Piece.GUN_FROST, at, at, 1, null);
         if (CryoService.isFrozen(target)) return;
         if (CryoService.frostAmount(target) + FROST_TICKS >= target.getTicksRequiredToFreeze())
@@ -230,6 +233,21 @@ public final class PowerWeapons {
         Vec3 look = shooter.getLookAngle();
         Vec3 right = Vec3.directionFromRotation(0, shooter.getYRot() + 90);
         return shooter.getEyePosition().add(look.scale(0.7)).add(right.scale(0.28)).add(0, -0.22, 0);
+    }
+
+    /** Stop the visible stream on the first body as well as walls and liquids, just like its cold rounds. */
+    private static Vec3 coldEnd(LivingEntity shooter) {
+        Vec3 eye = shooter.getEyePosition(), end = reach(shooter, COLD_RANGE, ClipContext.Fluid.ANY);
+        double nearest = eye.distanceToSqr(end);
+        for (Entity entity : shooter.level().getEntities(shooter,
+                shooter.getBoundingBox().expandTowards(end.subtract(eye)).inflate(1), e -> e.isPickable() && !e.isSpectator())) {
+            var hit = entity.getBoundingBox().clip(eye, end);
+            if (hit.isPresent() && eye.distanceToSqr(hit.get()) < nearest) {
+                end = hit.get();
+                nearest = eye.distanceToSqr(end);
+            }
+        }
+        return end;
     }
 
     /** Where a straight shot along the look would stop: the first block, or {@code range} away. */

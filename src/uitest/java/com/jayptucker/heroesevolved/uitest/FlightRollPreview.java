@@ -204,7 +204,8 @@ public final class FlightRollPreview {
             CooldownService.clearAll(p);
             PlayerPowerSyncService.sync(p);
         });
-        if (t >= 76 && t <= 84) server(mc, p -> PlayerEnergyService.drain(p, Math.max(0, PlayerEnergyService.getStamina(p) - 2)));
+        // Below the roll's cost but not empty: an empty bar drops you out of flight, and then there is no ring at all.
+        if (t >= 76 && t <= 84) server(mc, p -> PlayerEnergyService.drain(p, Math.max(0, PlayerEnergyService.getStamina(p) - 10)));
         if (t == 86) hud("low on stamina", FlightRollClient.RollStatus.LOW, "hud-low.png");
         if (t == 100) {
             int total = CASES.size() + 3;

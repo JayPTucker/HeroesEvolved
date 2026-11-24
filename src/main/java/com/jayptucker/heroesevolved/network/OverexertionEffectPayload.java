@@ -37,6 +37,6 @@ public record OverexertionEffectPayload(
     ) {
         // The client stores only the visual timer.
         // The server remains responsible for damage and potion effects.
-        ClientOverexertionState.start(payload.durationTicks());
+        context.enqueueWork(() -> ClientOverexertionState.start(payload.durationTicks()));
     }
 }

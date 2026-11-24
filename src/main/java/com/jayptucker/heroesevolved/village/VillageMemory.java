@@ -94,6 +94,10 @@ public final class VillageMemory extends SavedData {
         Projects.Project project;
         /** The project it set aside to ask for repairs, with what it had gathered (village/Repairs). */
         Projects.Project paused;
+        /** The village's announced next building, promoted after repairs and homes on order. */
+        Projects.Project planned;
+        /** Finished homes whose connecting paths have been paved. */
+        final java.util.Set<Long> connected = new java.util.HashSet<>();
         /** The homes it built itself (so it can rebuild them bigger), the homes it has torn down to rebuild, and the tier
          * it last told anyone it was (-1: not yet). */
         final List<Projects.Home> homes = new ArrayList<>();
@@ -617,6 +621,8 @@ public final class VillageMemory extends SavedData {
             if (v.board != null) t.put("board", v.board.save());
             if (v.project != null) t.put("project", v.project.save());
             if (v.paused != null) t.put("paused", v.paused.save());
+            if (v.planned != null) t.put("planned", v.planned.save());
+            t.putLongArray("connected", v.connected.stream().mapToLong(Long::longValue).toArray());
             ListTag homes = new ListTag();
             for (Projects.Home h : v.homes) homes.add(h.save());
             t.put("homes", homes);
@@ -625,6 +631,9 @@ public final class VillageMemory extends SavedData {
             ListTag orders = new ListTag();
             for (UUID id : v.orders) orders.add(NbtUtils.createUUID(id));
             t.put("orders", orders);
+            CompoundTag orderNames = new CompoundTag();
+            for (UUID id : v.orders) orderNames.putString(id.toString(), v.names.getOrDefault(id, "a newcomer"));
+            t.put("order_names", orderNames);
             ListTag owned = new ListTag();
             v.owned.forEach((id, o) -> { CompoundTag ot = o.save(); ot.putUUID("owner", id); owned.add(ot); });
             t.put("owned", owned);
@@ -674,10 +683,15 @@ public final class VillageMemory extends SavedData {
             if (t.contains("board")) v.board = Projects.Board.load(t.getCompound("board"));
             if (t.contains("project")) v.project = Projects.Project.load(t.getCompound("project"));
             if (t.contains("paused")) v.paused = Projects.Project.load(t.getCompound("paused"));
+            if (t.contains("planned")) v.planned = Projects.Project.load(t.getCompound("planned"));
+            for (long home : t.getLongArray("connected")) v.connected.add(home);
             for (Tag h : t.getList("homes", Tag.TAG_COMPOUND)) { var home = Projects.Home.load((CompoundTag) h); if (home != null) v.homes.add(home); }
             for (long r : t.getLongArray("replaced")) v.replaced.add(r);
             v.tier = t.contains("tier") ? t.getInt("tier") : -1;
             for (Tag id : t.getList("orders", Tag.TAG_INT_ARRAY)) v.orders.add(NbtUtils.loadUUID(id));
+            CompoundTag orderNames = t.getCompound("order_names");
+            for (UUID id : v.orders)
+                if (orderNames.contains(id.toString())) v.names.put(id, orderNames.getString(id.toString()));
             for (Tag o : t.getList("owned", Tag.TAG_COMPOUND)) {
                 CompoundTag ot = (CompoundTag) o;
                 Homes.Owned home = Homes.Owned.load(ot);

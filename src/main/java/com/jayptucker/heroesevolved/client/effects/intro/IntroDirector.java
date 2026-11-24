@@ -43,6 +43,7 @@ public final class IntroDirector {
     private static Loop hum, roar;
     private static Loop blast;
     private static boolean rewindHeard;
+    private static boolean prologueBlastHeard;
 
     private IntroDirector() {}
 
@@ -168,6 +169,8 @@ public final class IntroDirector {
             case TimeIntroPayload.BUNKER_MUSIC -> com.jayptucker.heroesevolved.client.sound.BunkerMusic.start();
             case TimeIntroPayload.BUNKER_EXIT -> com.jayptucker.heroesevolved.client.sound.BunkerMusic.exit();
             case TimeIntroPayload.PROLOGUE_BLAST -> {
+                if (prologueBlastHeard) break;
+                prologueBlastHeard = true;
                 // Through rock and steel: one deep blow, and then the city goes quiet.
                 stop(blast);
                 blast = play(new Loop(ModSounds.NUCLEAR_BLAST, SoundSource.AMBIENT, 0.55F, 0.62F));
@@ -230,6 +233,7 @@ public final class IntroDirector {
     }
 
     private static void clear() {
+        prologueBlastHeard = false;
         stop(siren); stop(hum); stop(roar); stop(blast);
         siren = null;
         hum = roar = blast = null;

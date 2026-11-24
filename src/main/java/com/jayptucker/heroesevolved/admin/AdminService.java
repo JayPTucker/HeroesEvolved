@@ -125,6 +125,22 @@ public final class AdminService {
                 com.jayptucker.heroesevolved.intro.PowerIntroService.forget(target);
                 yield "Cancelled " + name + "'s awakening. Time visions have their own Story controls.";
             }
+            case RESET_GUIDANCE -> {
+                target.setData(com.jayptucker.heroesevolved.data.ModDataAttachments.GUIDANCE,
+                        com.jayptucker.heroesevolved.guidance.GuidanceData.empty());
+                com.jayptucker.heroesevolved.guidance.GuidanceService.sync(target);
+                yield "Enabled tips and reset " + name + "'s field-note history. Notes wait for quiet play.";
+            }
+            case GIVE_SURVIVOR_JOURNAL -> {
+                var key = net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE,
+                        ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "chests/survivor_journals"));
+                var params = new net.minecraft.world.level.storage.loot.LootParams.Builder(target.serverLevel())
+                        .withParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.ORIGIN, target.position())
+                        .create(net.minecraft.world.level.storage.loot.parameters.LootContextParamSets.CHEST);
+                var books = target.getServer().reloadableRegistries().getLootTable(key).getRandomItems(params);
+                for (var book : books) if (!target.getInventory().add(book)) target.drop(book, false);
+                yield books.isEmpty() ? "No journal in the configured survivor loot table." : "Gave " + name + " a recovered civilian journal.";
+            }
             case GIVE_POWER -> givePower(target, request.argument(), false);
             case GIVE_DORMANT_POWER -> givePower(target, request.argument(), true);
             case TOGGLE_GOD_MODE -> {
@@ -329,7 +345,8 @@ public final class AdminService {
                 world(server),
                 AdminEvents.describe(server, target),
                 AdminEvents.diagnostics(server, target),
-                feedback
+                feedback,
+                AdminCommands.describe(admin)
         ));
     }
 

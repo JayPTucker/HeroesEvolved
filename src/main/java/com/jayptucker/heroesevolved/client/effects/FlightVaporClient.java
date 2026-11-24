@@ -48,14 +48,17 @@ public final class FlightVaporClient {
             }
             int interval = HeroesEvolvedConfig.COMMON.flightTrailIntervalTicks.get();
             if (world.getGameTime() % interval != 0) continue;
-            Vec3 travel = FlightVisualGeometry.travel(player);
-            Vec3 axis = travel.lengthSqr() > .05
-                    ? travel.normalize() : FlightVisualGeometry.direction(player, cyclone, 1);
             // Yaw supplies a stable lateral axis even during a vertical climb.
             double yaw = Math.toRadians(FlightVisualGeometry.yaw(player, cyclone, 1));
             Vec3 right = new Vec3(Math.cos(yaw), 0, Math.sin(yaw));
-            Vec3 feet = FlightVisualGeometry.feet(player.position(), axis, true);
-            Sample next = new Sample(feet.subtract(right.scale(.18)), feet.add(right.scale(.18)), player.position());
+            var frame = com.jayptucker.heroesevolved.render.FlightPoseRenderer.frame(player, 0);
+            Vec3 left = new Vec3(0, .05, 0).subtract(right.scale(.18));
+            Vec3 rightFoot = new Vec3(0, .05, 0).add(right.scale(.18));
+            if (frame != null) {
+                left = frame.carryPosition(left, frame.yaw());
+                rightFoot = frame.carryPosition(rightFoot, frame.yaw());
+            }
+            Sample next = new Sample(player.position().add(left), player.position().add(rightFoot), player.position());
             Sample previous = PREVIOUS.put(player.getUUID(), next);
             if (previous == null || previous.position.distanceToSqr(next.position) > 144) continue;
             double speed = previous.position.distanceTo(next.position) / interval;

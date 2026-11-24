@@ -14,7 +14,6 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,10 +38,12 @@ final class LastDayGuide {
         final BoundingBox box;
         final int nx, ny, nz;
         final int[] dist;
+        final BlockPos[] next;
         Field(BlockPos goal, BoundingBox box) {
             this.goal = goal; this.box = box;
             nx = box.getXSpan(); ny = box.getYSpan(); nz = box.getZSpan();
             dist = new int[nx * ny * nz];
+            next = new BlockPos[dist.length];
             java.util.Arrays.fill(dist, Integer.MAX_VALUE);
         }
         boolean inside(int x, int y, int z) { return box.isInside(x, y, z); }
@@ -90,7 +91,7 @@ final class LastDayGuide {
             f = flood(city, goal);
             fields.put(goal, f);
         }
-        BlockPos start = nearest(f, BlockPos.containing(from));
+        BlockPos start = nearest(city, f, from);
         if (start == null) return List.of();
         List<BlockPos> cells = new ArrayList<>();
         BlockPos at = start;
@@ -125,7 +126,9 @@ final class LastDayGuide {
     }
 
     /** The cell nearest {@code pos} (within two blocks) that the map reaches. */
-    private static BlockPos nearest(Field f, BlockPos pos) {
+    private static BlockPos nearest(ServerLevel city, Field f, Vec3 from) {
+        BlockPos pos = BlockPos.containing(from);
+        if (f.at(pos.getX(), pos.getY(), pos.getZ()) != Integer.MAX_VALUE) return pos;
         BlockPos best = null;
         int bestD = Integer.MAX_VALUE;
         for (int dy = -2; dy <= 2; dy++)
@@ -133,7 +136,13 @@ final class LastDayGuide {
                 for (int dz = -2; dz <= 2; dz++) {
                     int d = f.at(pos.getX() + dx, pos.getY() + dy, pos.getZ() + dz);
                     if (d == Integer.MAX_VALUE) continue;
-                    int score = d + 4 * (Math.abs(dx) + Math.abs(dy) + Math.abs(dz));
+                    BlockPos candidate = pos.offset(dx, dy, dz);
+                    Vec3 target = Vec3.atBottomCenterOf(candidate).add(0, floor(city, candidate) + .2, 0);
+                    if (city.clip(new net.minecraft.world.level.ClipContext(from.add(0, .2, 0), target,
+                            net.minecraft.world.level.ClipContext.Block.COLLIDER,
+                            net.minecraft.world.level.ClipContext.Fluid.NONE, net.minecraft.world.phys.shapes.CollisionContext.empty())).getType()
+                            != net.minecraft.world.phys.HitResult.Type.MISS) continue;
+                    int score = 10000 * (Math.abs(dx) + Math.abs(dy) + Math.abs(dz)) + d;
                     if (score < bestD) { bestD = score; best = pos.offset(dx, dy, dz); }
                 }
         return best;
@@ -142,16 +151,7 @@ final class LastDayGuide {
     private static final int[][] STEPS = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
 
     private static BlockPos downhill(Field f, BlockPos at) {
-        int here = f.at(at.getX(), at.getY(), at.getZ());
-        BlockPos best = null;
-        int bestD = here;
-        for (int[] s : STEPS)
-            for (int dy = -1; dy <= 1; dy++) {
-                int x = at.getX() + s[0], y = at.getY() + dy, z = at.getZ() + s[1];
-                int d = f.at(x, y, z);
-                if (d < bestD) { bestD = d; best = new BlockPos(x, y, z); }
-            }
-        return best;
+        return f.next[f.index(at.getX(), at.getY(), at.getZ())];
     }
 
     /** The walking distance from the goal to every standing cell in its box: a breadth-first flood, a step up or down at a time. */
@@ -170,25 +170,30 @@ final class LastDayGuide {
             }
         BlockPos g = nearestStanding(f, stand, goal.at());
         if (g == null) return f;
-        ArrayDeque<int[]> queue = new ArrayDeque<>();
+        // Prefer the street to shortcuts through unrelated rooms. Required doors remain reachable.
+        var queue = new java.util.PriorityQueue<int[]>(java.util.Comparator.comparingInt(c -> c[3]));
         f.dist[f.index(g.getX(), g.getY(), g.getZ())] = 0;
-        queue.add(new int[] {g.getX(), g.getY(), g.getZ()});
+        queue.add(new int[] {g.getX(), g.getY(), g.getZ(), 0});
         int reached = 0;
         while (!queue.isEmpty()) {
             int[] c = queue.poll();
             int d = f.dist[f.index(c[0], c[1], c[2])];
+            if (c[3] != d) continue;
             reached++;
             for (int[] s : STEPS)
                 for (int dy = -1; dy <= 1; dy++) {
                     int x = c[0] + s[0], y = c[1] + dy, z = c[2] + s[1];
                     if (!f.inside(x, y, z)) continue;
                     int i = f.index(x, y, z);
-                    if (!stand[i] || f.dist[i] != Integer.MAX_VALUE) continue;
+                    if (!stand[i]) continue;
                     // A step up needs headroom over the lower cell; a step down, over the cell stepped from.
                     if (dy == 1 && !(f.inside(c[0], c[1] + 2, c[2]) && clearHead(city, pos.set(c[0], c[1] + 2, c[2])))) continue;
                     if (dy == -1 && !clearHead(city, pos.set(x, y + 2, z))) continue;
-                    f.dist[i] = d + (dy == 0 ? 1 : 2);
-                    queue.add(new int[] {x, y, z});
+                    int cost = d + (dy == 0 ? 1 : 2) + (city.getBlockState(pos.set(x, y, z)).getBlock() instanceof DoorBlock ? 12 : 0);
+                    if (cost >= f.dist[i]) continue;
+                    f.dist[i] = cost;
+                    f.next[i] = new BlockPos(c[0], c[1], c[2]);
+                    queue.add(new int[] {x, y, z, cost});
                 }
         }
         HeroesEvolved.LOGGER.debug("Last Day guide: {} cells to {} in {} ms", reached, goal.at().toShortString(), (System.nanoTime() - began) / 1_000_000);

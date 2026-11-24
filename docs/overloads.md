@@ -1,5 +1,9 @@
 # Overloads: storms with a person at the centre
 
+Neighbours scream as they escape an uncontrolled gift. They seek their own roofed homes beyond the dangerous area,
+or run outward if they have no safe home. In a blizzard, a roofed home can shelter them within the storm. They remain
+sheltered while the power is out of control; if their home becomes unsafe, they flee instead.
+
 Sometimes a villager's gift wakes stronger than they can hold, and their power turns into weather around them. A
 pyrokinetic becomes the heart of a wildfire, a flyer the eye of a tornado, a cryokinetic the middle of a blizzard. They
 don't mean it and can't stop it. The storm grows for four minutes and then breaks over their village, unless someone

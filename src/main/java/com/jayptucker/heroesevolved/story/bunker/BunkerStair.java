@@ -445,7 +445,7 @@ final class BunkerStair {
                 for (int z : new int[] {lane[0] - 1, lane[1] + 1}) {
                     if (z == PrimatechRuin.WALL_Z0) continue;     // the building's front wall is that side's guard
                     set(x, y, z, Blocks.POLISHED_BLACKSTONE);
-                    set(x, y + 1, z, Blocks.IRON_BARS);
+                    set(x, y + 1, z, RuinMaterials.safe(Blocks.IRON_BARS.defaultBlockState()));
                 }
             // The head of the stair is at the landing end the flight climbs toward; the other end is railed off.
             int head = east ? FLIGHT_X1 + 1 : FLIGHT_X0 - 1, foot = east ? FLIGHT_X0 - 1 : FLIGHT_X1 + 1;
@@ -453,7 +453,7 @@ final class BunkerStair {
                 set(head, y, z, (z - lane[0]) % 2 == 0 ? Blocks.YELLOW_CONCRETE : Blocks.BLACK_CONCRETE);
                 set(head, y + 1, z, AIR);
                 set(foot, y, z, Blocks.POLISHED_BLACKSTONE);
-                set(foot, y + 1, z, Blocks.IRON_BARS);
+                set(foot, y + 1, z, RuinMaterials.safe(Blocks.IRON_BARS.defaultBlockState()));
             }
             int postZ = lane[1] + 1, postX = head;
             set(postX, y + 1, postZ, Blocks.POLISHED_BLACKSTONE);

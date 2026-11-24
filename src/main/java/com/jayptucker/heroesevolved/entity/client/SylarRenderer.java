@@ -8,6 +8,12 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.HumanoidMobRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import com.jayptucker.heroesevolved.endgame.*;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.entity.layers.RenderLayer;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 
 /**
  * Human silhouette, dark coat, watchmaker's hands. How he holds himself says what is coming: one hand out to draw on a
@@ -22,6 +28,12 @@ public final class SylarRenderer extends HumanoidMobRenderer<SylarEntity, Player
             @Override public void setupAnim(SylarEntity entity, float limbSwing, float limbAmount, float age, float yaw, float pitch) {
                 super.setupAnim(entity, limbSwing, limbAmount, age, yaw, pitch);
                 switch (entity.castPose()) {
+                    case RUPTURE -> {
+                        float t=EndClientState.age(age-(int)age),open=Mth.clamp(t/EndGeometry.RUPTURE_TICK,0,1);
+                        body.xRot=-.12F-.13F*open;head.xRot=-.45F-.35F*open;
+                        rightArm.xRot=-.5F;leftArm.xRot=-.5F;rightArm.zRot=.45F+open*.5F;leftArm.zRot=-.45F-open*.5F;
+                        rightLeg.zRot=.08F;leftLeg.zRot=-.08F;
+                    }
                     case ONE_HAND -> { rightArm.xRot = -1.5F; rightArm.yRot = -.1F; }
                     case TWO_HANDS -> { rightArm.xRot = -1.45F; leftArm.xRot = -1.45F; rightArm.yRot = -.25F; leftArm.yRot = .25F; }
                     case RAISED -> { rightArm.xRot = -2.9F; leftArm.xRot = -2.9F; rightArm.zRot = .25F; leftArm.zRot = -.25F; }
@@ -52,6 +64,14 @@ public final class SylarRenderer extends HumanoidMobRenderer<SylarEntity, Player
                 rightPants.copyFrom(rightLeg); leftPants.copyFrom(leftLeg);
             }
         }, .45F);
+        addLayer(new RenderLayer<SylarEntity,PlayerModel<SylarEntity>>(this){
+            @Override public void render(PoseStack poses,MultiBufferSource buffers,int light,SylarEntity entity,float swing,float amount,float partial,float age,float yaw,float pitch){
+                if(!entity.inheritance()||EndClientState.view().stage()!=EndBattle.VICTORY)return;
+                float t=EndClientState.age(partial);if(t<4||t>=EndGeometry.RUPTURE_TICK)return;
+                int frame=Math.clamp((int)t/18,0,3);ResourceLocation cracks=ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID,"textures/entity/sylar_rupture_"+frame+".png");
+                getParentModel().renderToBuffer(poses,buffers.getBuffer(RenderType.eyes(cracks)),15728880,OverlayTexture.NO_OVERLAY,-1);
+            }
+        });
     }
 
     @Override public ResourceLocation getTextureLocation(SylarEntity entity) { return SKIN; }

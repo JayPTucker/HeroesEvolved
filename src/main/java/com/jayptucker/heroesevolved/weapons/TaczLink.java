@@ -57,6 +57,12 @@ final class TaczLink {
             NeoForge.EVENT_BUS.addListener(EntityHurtByGunEvent.Post.class, TaczLink::hurt);
             NeoForge.EVENT_BUS.addListener(GunShootEvent.class, TaczLink::shot);
             NeoForge.EVENT_BUS.addListener(AmmoHitBlockEvent.class, TaczLink::block);
+            NeoForge.EVENT_BUS.addListener(net.neoforged.neoforge.event.tick.PlayerTickEvent.Post.class, event -> {
+                if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
+                    prepareCold(player.getMainHandItem());
+                    prepareCold(player.getOffhandItem());
+                }
+            });
             listening = true;
         } catch (Throwable t) {
             fail("listen", t);
@@ -76,6 +82,14 @@ final class TaczLink {
         }
         var from = bullet.position();
         var target = event.getHurtEntity().getBoundingBox().clip(from, from.add(bullet.getDeltaMovement()));
+        if (com.jayptucker.heroesevolved.story.sylar.SylarProjectiles.intercept(level, bullet, from,
+                target.orElseGet(() -> event.getHurtEntity().getBoundingBox().getCenter()))) {
+            event.setCanceled(true); return;
+        }
+        if (!coldInRange(bullet, target.orElseGet(() -> event.getHurtEntity().getBoundingBox().getCenter()))) {
+            event.setCanceled(true);
+            return;
+        }
         // A speedster's Wind Arms turn the round back before it lands.
         if (target.isPresent() && com.jayptucker.heroesevolved.speed.SpeedWindArms.catchShot(level, bullet, from, target.get())) {
             event.setCanceled(true);
@@ -109,6 +123,7 @@ final class TaczLink {
         if (broken || !(event.getLevel() instanceof ServerLevel level)) return;
         try {
             var ammo = event.getAmmo();
+            if (!coldInRange(ammo, event.getHitResult().getLocation())) return;
             PowerWeapons.hitBlock(level, event.getHitResult(), ammo.getOwner(), ammo.getGunId());
         } catch (Throwable t) {
             fail("block", t);
@@ -138,6 +153,18 @@ final class TaczLink {
         } catch (Throwable t) {
             fail("ammo", t);
             return ItemStack.EMPTY;
+        }
+    }
+
+    /** Saved carbines retain their id and ammo, but must adopt the new held-trigger mode when equipped. */
+    static void prepareCold(ItemStack stack) {
+        if (broken || stack.isEmpty()) return;
+        try {
+            IGun gun = IGun.getIGunOrNull(stack);
+            if (gun != null && PowerWeapons.COLD_GUN.equals(gun.getGunId(stack)) && gun.getFireMode(stack) != FireMode.AUTO)
+                gun.setFireMode(stack, FireMode.AUTO);
+        } catch (Throwable t) {
+            fail("prepare Freeze Gun", t);
         }
     }
 
@@ -242,6 +269,32 @@ final class TaczLink {
             return entity instanceof com.tacz.guns.entity.EntityKineticBullet;
         } catch (Throwable t) {
             fail("bullet", t);
+            return false;
+        }
+    }
+
+    static boolean coldBullet(@Nullable Entity entity) {
+        if (broken || entity == null) return false;
+        try {
+            return entity instanceof com.tacz.guns.entity.EntityKineticBullet bullet
+                    && PowerWeapons.COLD_GUN.equals(bullet.getGunId());
+        } catch (Throwable t) {
+            fail("cold bullet", t);
+            return false;
+        }
+    }
+
+    /** TaCZ's lifetime is tick based; enforce the cold stream's distance at its actual contact too. */
+    private static boolean coldInRange(Entity round, Vec3 at) {
+        if (!coldBullet(round)) return true;
+        try {
+            if (bulletOrigin == null) {
+                bulletOrigin = field(com.tacz.guns.entity.EntityKineticBullet.class, "startPos");
+            }
+            Vec3 origin = (Vec3) bulletOrigin.get(round);
+            return origin != null && origin.distanceToSqr(at) <= PowerWeapons.COLD_RANGE * PowerWeapons.COLD_RANGE;
+        } catch (Throwable t) {
+            fail("cold range", t);
             return false;
         }
     }

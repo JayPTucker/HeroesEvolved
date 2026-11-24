@@ -12,6 +12,8 @@ every number here are our own.
 brass: parts float apart and slide together, and the move lands as the last part seats. What you see is exactly when and
 where it lands.
 
+Sylar catches incoming TaCZ rounds in a telekinetic grip just before they reach him. The bullets hang for a little over half a second, then fly back at their shooter. Solid cover blocks the catch; staggering or suppressing him breaks his control and lets a held round continue on its original course.
+
 ## How you meet him: the prisoner and the list
 
 Sylar doesn't stalk you. He *collects*, and for a hundred and three years the Company has kept him where he can't:

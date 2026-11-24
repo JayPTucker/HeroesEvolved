@@ -5,6 +5,10 @@ live the evening the city ended. You wake in your own apartment, walk its street
 Noah Bennet seals you in a pod "for your own good". Then the [usual waking](the-past.md#the-first-five-minutes) begins,
 in the pod with the same number.
 
+When you emerge from a newly built bunker in the present, you can retrace these same streets through Odessa's ruins.
+The buildings keep their original locations; the surviving rooms hold scavenged supplies and civilian journals from
+the first days after the blast. See [the surface ruins](the-past.md#the-first-five-minutes).
+
 ## What happens
 
 1. **Your apartment.** You wake in the **Odessa Arms**, a brick walk-up a block west of Primatech Paper, with a fire
@@ -134,10 +138,12 @@ in the pod with the same number.
 7. **Waking.** The bunker under spawn wakes you in the pod with the same number (*STASIS FAILURE*, the alarm, and the
    pod counter reading 37,620 days), and the story carries on as [The Last Signal](the-past.md).
 
+The final blast is heard once. Falling masonry has its own stone and gravel sounds; reaching shelter does not replay the explosion.
+
 ### The thread of light
 
 A kind of clairvoyance shows you the way: a thin, pale blue-white thread of light at waist height, as if you could already
-see where you'll walk. It follows the real route (down stairwells, round corners, through open doors), starts a couple
+see where you'll walk. It follows the real route (down stairwells, round corners, through doors you can open), prefers the street to shortcuts through unrelated rooms, starts a couple
 of steps ahead of you, is brightest near you and thins away into the distance, with slow pulses running along it toward
 the goal, where it gathers into a soft glow on the ground. Each player has their own, and it changes as the day does:
 

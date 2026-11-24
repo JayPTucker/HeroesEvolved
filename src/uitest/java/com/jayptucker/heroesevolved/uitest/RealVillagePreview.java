@@ -101,6 +101,8 @@ public final class RealVillagePreview {
                 BuiltinStructures.VILLAGE_SAVANNA, BuiltinStructures.VILLAGE_SNOWY, BuiltinStructures.VILLAGE_TAIGA);
         for (ResourceKey<Structure> key : kinds) {
             String name = key.location().getPath().replace("village_", "");
+            String only = System.getProperty("heroes.preview.realvillages.only", "");
+            if (!only.isEmpty() && !only.equals(name)) continue;
             SCRIPT.add((Step) (mc, p) -> find(p, key, name));
             SCRIPT.add(20);
             SCRIPT.add((Step) (mc, p) -> arrived(p));
@@ -181,6 +183,15 @@ public final class RealVillagePreview {
         if (!Projects.whole(level, village)) fail("the board isn't whole");
         notes.add("tier " + Projects.tier(level, village) + ", growth kind " + kindOf(level) + ", project " + (village.project() == null ? "none" : village.project().title()));
         var b = village.board();
+        // The board keeps the village's plants; keep the preview lens out of a tall fern in the reader's clearing.
+        BlockPos lens = b.at(0, 0, 4);
+        for (int y = 0; y < 2; y++) {
+            BlockPos at = lens.above(y);
+            BlockState state = level.getBlockState(at);
+            if (state.canBeReplaced() && state.getFluidState().isEmpty()
+                    && !com.jayptucker.heroesevolved.village.PlayerBuilt.is(level, at))
+                level.setBlock(at, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+        }
         p.teleportTo(level, b.at(0, 0, 6).getX() + .5, b.origin().getY(), b.at(0, 0, 6).getZ() + .5, b.facing().getOpposite().toYRot(), 0);
         camera(mc, Vec3.atBottomCenterOf(b.at(0, 0, 4)).add(0, 1.62, 0), Vec3.atCenterOf(b.at(0, 1, 1)).add(0, 0.5, 0));
         return true;

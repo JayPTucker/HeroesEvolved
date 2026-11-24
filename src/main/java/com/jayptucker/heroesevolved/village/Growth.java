@@ -136,6 +136,7 @@ public final class Growth {
             if (v.fallen || !level.isPositionEntityTicking(v.bell)) continue;
             if (EmergencyBand.troubled(level, v.bell)) {
                 if (v.market != null) Markets.close(level, v, true);   // the traders don't stay for trouble
+                if (projects) Projects.signs(level, v);
                 continue;
             }
             consider(level, v, projects);
@@ -161,6 +162,7 @@ public final class Growth {
             Projects.consider(level, v);
             Markets.consider(level, v);
             Repairs.consider(level, v);
+            Paths.consider(level, v);
         }
         switch (mood(level, v)) {
             case STRUGGLING -> {
@@ -225,11 +227,18 @@ public final class Growth {
             BlockPos origin = originFor(template, rotation, corner);
             List<StructureTemplate.StructureBlockInfo> blocks = blocks(level, template, origin, rotation);
             if (blocks == null) return null;
+            if (buriedEntrance(level, blocks, rotation.rotate(front(template, id)))) {
+                corner = corner.above();
+                origin = origin.above();
+                blocks = blocks(level, template, origin, rotation);
+                if (blocks == null) return null;
+            }
             restyle(level, v, id, blocks);
             List<BlockPos> positions = new ArrayList<>();
             List<BlockState> states = new ArrayList<>();
+            BlockPos anchor = origin;
             blocks.sort(Comparator.<StructureTemplate.StructureBlockInfo>comparingInt(b -> b.pos().getY())
-                    .thenComparingDouble(b -> b.pos().distSqr(origin)));
+                    .thenComparingDouble(b -> b.pos().distSqr(anchor)));
             for (StructureTemplate.StructureBlockInfo b : blocks) {
                 if (b.state().is(Blocks.STRUCTURE_VOID) || b.state().is(Blocks.JIGSAW)) continue;
                 // The house's empty rooms are work only where they clear grass or flowers; over air there's nothing to do,
@@ -260,6 +269,31 @@ public final class Growth {
     }
 
     private static net.minecraft.core.Vec3i rotated(StructureTemplate t, Rotation r) { return t.getSize(r); }
+
+    /** An entrance's bottom tread must sit above the street, so its low half is exposed. */
+    static boolean buriedEntrance(ServerLevel level, List<StructureTemplate.StructureBlockInfo> blocks, net.minecraft.core.Direction front) {
+        java.util.Map<BlockPos, BlockState> states = new java.util.HashMap<>();
+        for (var b : blocks) states.put(b.pos(), b.state());
+        for (var b : blocks) {
+            if (!(b.state().getBlock() instanceof net.minecraft.world.level.block.DoorBlock)
+                    || b.state().getValue(net.minecraft.world.level.block.DoorBlock.HALF)
+                    != net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER) continue;
+            BlockPos step = b.pos().relative(front).below();
+            BlockState tread = states.get(step);
+            if (tread == null || !(tread.getBlock() instanceof net.minecraft.world.level.block.StairBlock)
+                    || tread.getValue(net.minecraft.world.level.block.StairBlock.HALF)
+                    != net.minecraft.world.level.block.state.properties.Half.BOTTOM) continue;
+            for (int out = 1; out <= 3; out++) {
+                BlockPos street = step.relative(front, out);
+                if (!level.hasChunkAt(street)) return false;
+                BlockState ground = level.getBlockState(street), head = level.getBlockState(street.above());
+                if (!head.isAir() && !(head.canBeReplaced() && head.getFluidState().isEmpty())) continue;
+                if (ground.isAir() || ground.canBeReplaced()) break; // Already above the street.
+                if (natural(ground) || ground.is(Blocks.DIRT_PATH) || ground.isFaceSturdy(level, street, net.minecraft.core.Direction.UP)) return true;
+            }
+        }
+        return false;
+    }
 
     /** The origin to place {@code template} turned by {@code rotation} from, so its footprint starts at {@code corner}. */
     static BlockPos originFor(StructureTemplate template, Rotation rotation, BlockPos corner) {
@@ -350,8 +384,16 @@ public final class Growth {
                 BlockPos origin = originFor(next, turn, corner);
                 List<StructureTemplate.StructureBlockInfo> newBlocks = blocks(level, next, origin, turn);
                 if (newBlocks == null) return null;
+                int floor = base;
+                if (buriedEntrance(level, newBlocks, facing)) {
+                    corner = corner.above();
+                    origin = origin.above();
+                    floor++;
+                    newBlocks = blocks(level, next, origin, turn);
+                    if (newBlocks == null) return null;
+                }
                 restyle(level, v, target, newBlocks);
-                if (!room(level, newBlocks, minX, maxX, minZ, maxZ, base)) continue;
+                if (!room(level, newBlocks, minX, maxX, minZ, maxZ, floor)) continue;
                 if (!plan) return DRY_RUN;
                 // Down first, top first; the old floor goes back to ground for the new one to stand on.
                 BlockState ground = kind(level, v.bell).equals("desert") ? Blocks.SAND.defaultBlockState() : Blocks.GRASS_BLOCK.defaultBlockState();
@@ -362,8 +404,9 @@ public final class Growth {
                 for (BlockPos p : clear) cleared.add(p.getY() == base ? ground : Blocks.AIR.defaultBlockState());
                 List<BlockPos> positions = new ArrayList<>();
                 List<BlockState> states = new ArrayList<>();
+                BlockPos anchor = corner;
                 newBlocks.sort(Comparator.<StructureTemplate.StructureBlockInfo>comparingInt(b -> b.pos().getY())
-                        .thenComparingDouble(b -> b.pos().distSqr(corner)));
+                        .thenComparingDouble(b -> b.pos().distSqr(anchor)));
                 for (var b : newBlocks) {
                     if (b.state().is(Blocks.STRUCTURE_VOID) || b.state().is(Blocks.JIGSAW)) continue;
                     if (b.state().isAir() && level.getBlockState(b.pos()).isAir() && !oldCells.contains(b.pos())) continue;
@@ -372,7 +415,7 @@ public final class Growth {
                     states.add(b.state());
                 }
                 BlockPos center = corner.offset(sx / 2, 0, sz / 2);
-                Rebuild.Site site = Rebuild.replan(level, v.bell, center, base, clear, cleared, positions, states);
+                Rebuild.Site site = Rebuild.replan(level, v.bell, center, floor, clear, cleared, positions, states);
                 site.home = new Projects.Home(target, origin, turn);
                 site.replaces = old;
                 Rebuild.begin(level, site);
@@ -532,8 +575,10 @@ public final class Growth {
         if (s.replaces() != null) {
             v.replaced.add(s.replaces().origin().asLong());
             v.homes.removeIf(h -> h.origin().equals(s.replaces().origin()));
+            for (Rebuild.Site old : Rebuild.all(level))
+                if (old.paving && s.replaces().equals(old.home)) { Workers.done(level, old); Rebuild.drop(level, old); }
         }
-        if (s.home() != null) v.homes.add(s.home());
+        if (s.home() != null) { v.homes.add(s.home()); v.connected.remove(s.home().origin().asLong()); }
         VillageMemory.get(level).setDirty();
         Projects.Project project = v.project() != null && v.project().stage() == Projects.Stage.BUILDING ? v.project() : null;
         boolean rebuilt = s.replaces() != null;
@@ -541,6 +586,7 @@ public final class Growth {
         int beds = project == null ? 1 : project.owner() != null ? 0 : Math.min(2, project.beds());
         boolean home = project != null && project.owner() != null;
         Projects.built(level, v, s);
+        if (s.home() != null) Paths.plan(level, v, s.home());
         if (home) return;   // Homes.built has told the owner and the radio
         for (int i = 0; i < beds; i++) {
             Villager newcomer = EntityType.VILLAGER.create(level);

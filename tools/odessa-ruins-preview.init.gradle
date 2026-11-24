@@ -1,0 +1,25 @@
+// Present-day Odessa around the real bunker in a fresh normal world.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('odessaRuinsPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/odessa-ruins-preview')
+                        programArguments.addAll('--width', '1500', '--height', '950')
+                        systemProperty('heroes.preview.odessaruins', 'true')
+                        systemProperty('heroes.preview.odessaruins.only', (project.findProperty('only') ?: '').toString())
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('odessaRuinsPreviewClasses')) }
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

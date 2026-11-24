@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " C ",
+    "CIC",
+    " C "
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:end_crystal"
+    },
+    "I": {
+      "item": "heroesevolved:inheritance_core"
+    }
+  },
+  "result": {
+    "id": "heroesevolved:worldline_sigil",
+    "count": 1
+  }
+}

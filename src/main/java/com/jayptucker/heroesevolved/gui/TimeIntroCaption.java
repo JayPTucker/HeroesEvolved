@@ -22,6 +22,7 @@ public final class TimeIntroCaption {
     private static String lastCaption;
     private static int lastCaptionAt = -REPEAT_TICKS;
     private static String lastHint;
+    private static int lastStoryAt = -1000;
 
     private TimeIntroCaption() {}
 
@@ -50,6 +51,7 @@ public final class TimeIntroCaption {
         if (translationKey.equals(lastCaption) && now - lastCaptionAt < REPEAT_TICKS) return;
         lastCaption = translationKey;
         lastCaptionAt = now;
+        lastStoryAt = now;
         MutableComponent line = Component.translatable(translationKey).withStyle(Style.EMPTY.withColor(CAPTION).withBold(true));
         if (I18n.exists(translationKey + "_subtitle"))
             line.append(Component.literal("  ").append(Component.translatable(translationKey + "_subtitle")
@@ -68,10 +70,17 @@ public final class TimeIntroCaption {
         String plain = text.getString();
         if (plain.equals(lastHint)) return;
         lastHint = plain;
+        lastStoryAt = Minecraft.getInstance().gui.getGuiTicks();
         Minecraft.getInstance().gui.getChat().addMessage(Component.literal("» ").append(text)
                 .withStyle(Style.EMPTY.withColor(INSTRUCTION)));
     }
 
     /** The current instruction is done with: the next one is written even if it reads the same. */
     public static void clearHint() { lastHint = null; }
+
+    /** Give narration and scene instructions time to breathe before optional field notes. */
+    public static boolean recent() {
+        int age = Minecraft.getInstance().gui.getGuiTicks() - lastStoryAt;
+        return age >= 0 && age < 200;
+    }
 }

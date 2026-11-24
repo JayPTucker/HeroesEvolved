@@ -65,9 +65,10 @@ public final class SpeedRunGameTests {
         return mob;
     }
 
-    @GameTest(template = "rewind_empty", batch = "speedrun.tornado", timeoutTicks = 140)
+    @GameTest(template = "cryo_rework_arena", batch = "speedrun.tornado", timeoutTicks = 320)
     public static void heldCycloneRisesIntoATornadoAndLetsGoOnRelease(GameTestHelper h) {
         var p = runner(h, 4, false);
+        p.setPos(Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(16, 2, 16))));
         // A mob without AI is never moved by its velocity, so this one has its AI.
         var caught = mob(h, EntityType.VINDICATOR, p, 5, 0, true);
         double ground = caught.getY();
@@ -91,24 +92,31 @@ public final class SpeedRunGameTests {
         });
     }
 
-    @GameTest(template = "rewind_empty", batch = "speedrun.tornado.anchored", timeoutTicks = 320)
+    @GameTest(template = "cryo_rework_arena", batch = "speedrun.tornado.anchored", timeoutTicks = 520)
     public static void anAnchoredTornadoStandsAloneDrawsThingsInAndTakesTheirAir(GameTestHelper h) {
         var p = runner(h, 4, false);
+        p.setPos(Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(16, 2, 16))));
+        PlayerEnergyService.setUnlimitedEnergy(p, true);
         Vec3 center = p.position();
         var near = mob(h, EntityType.VINDICATOR, p, 4, 0, true);
         // Well outside the funnel's reach (it holds what is within about seven blocks at the ground), inside its pull,
         // and inside the arena: a cow beyond the barrier walls is held back by them, not by the tornado.
         var far = mob(h, EntityType.COW, p, 7, 7, true);
-        double farStart = far.position().distanceTo(center);
+        double farStart = far.position().subtract(center).horizontalDistance();
         h.assertTrue(SpeedKit.cyclone(p, 4, true), "The cyclone starts with the key held");
         h.runAfterDelay(SpeedKit.TORNADO_HOLD + SpeedKit.TORNADO_ANCHOR + 2, () -> {
             h.assertTrue(SpeedKit.tornado(p), "It rose");
+            // The longer wind-up gives a cow time to wander; stage the pull's subject when that phase begins.
+            far.setPos(center.add(7, 0, 7));
+            far.setDeltaMovement(Vec3.ZERO);
             SpeedKit.releaseCyclone(p);
             h.assertTrue(SpeedKit.cycloning(p) && SpeedKit.standing(p), "Held three seconds after it rose, letting go leaves it standing on its own");
             h.assertTrue(!p.hasEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN), "And the runner is free to go");
             h.runAfterDelay(60, () -> {
-                h.assertTrue(far.position().distanceTo(center) < farStart - 2, "It draws things in from far off: "
-                        + farStart + " -> " + far.position().distanceTo(center));
+                // The funnel also lifts its catch: measure inflow across the ground, independently of that lift.
+                double farDistance = far.position().subtract(center).horizontalDistance();
+                h.assertTrue(farDistance < farStart - 2, "It draws things in from far off: "
+                        + farStart + " -> " + farDistance + ", height " + (far.getY() - center.y));
                 h.assertTrue(near.getAirSupply() < near.getMaxAirSupply(), "What it carries cannot breathe: " + near.getAirSupply());
                 h.runAfterDelay(120, () -> {
                     try {
@@ -120,16 +128,17 @@ public final class SpeedRunGameTests {
         });
     }
 
-    @GameTest(template = "rewind_empty", batch = "speedrun.tap", timeoutTicks = 100)
+    @GameTest(template = "cryo_rework_arena", batch = "speedrun.tap", timeoutTicks = 100)
     public static void aQuickPressStaysARing(GameTestHelper h) {
         var p = runner(h, 4, false);
+        p.setPos(Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(16, 2, 16))));
         h.assertTrue(SpeedKit.cyclone(p, 4, true), "The cyclone starts");
         h.runAfterDelay(5, () -> {
             SpeedKit.releaseCyclone(p);
             h.assertTrue(SpeedKit.cycloning(p), "Letting go early does not cut the ring short");
-            h.runAfterDelay(SpeedKit.TORNADO_HOLD, () -> {
+            h.runAfterDelay(30, () -> {
                 h.assertTrue(SpeedKit.cycloning(p) && !SpeedKit.tornado(p), "It never rises");
-                h.runAfterDelay(SpeedKit.CYCLONE_TICKS - SpeedKit.TORNADO_HOLD - 5 + 3, () -> {
+                h.runAfterDelay(SpeedKit.CYCLONE_TICKS - 30 - 5 + 3, () -> {
                     try {
                         h.assertTrue(!SpeedKit.cycloning(p), "It breaks after its three seconds");
                         h.succeed();

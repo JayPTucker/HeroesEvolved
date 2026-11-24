@@ -160,6 +160,7 @@ public final class BunkerService {
         }
         BunkerData bunker = BunkerData.get(server);
         if (!bunker.built) return;
+        OdessaRuins.get(server.overworld()).tickBuild(server.overworld());
         if (server.overworld().getGameTime() % 10 == 0) music(server, bunker);
         emergency(server, bunker);
         BunkerPower.tick(server.overworld(), bunker);

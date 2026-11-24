@@ -177,18 +177,18 @@ public final class Workers {
         for (UUID id : crew.builders) {
             if (!(level.getEntity(id) instanceof Villager v) || !v.isAlive()) continue;
             double a = i++ * Math.PI * 2 / CREW + (now / 200) % 6;
-            BlockPos stand = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-                    next.offset((int) Math.round(Math.cos(a) * 2.5), 0, (int) Math.round(Math.sin(a) * 2.5)));
+            BlockPos column = next.offset((int) Math.round(Math.cos(a) * 2.5), 0, (int) Math.round(Math.sin(a) * 2.5));
+            BlockPos stand = level.hasChunkAt(column) ? level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, column) : next.above();
             walk(v, stand, 0.55F);
             v.getBrain().setMemory(MemoryModuleType.LOOK_TARGET, new BlockPosTracker(next));
-            Item hold = state.isAir() ? Items.IRON_SHOVEL : state.getBlock().asItem();
+            Item hold = s.paving || state.isAir() ? Items.IRON_SHOVEL : state.getBlock().asItem();
             if (hold == Items.AIR) hold = Items.IRON_AXE;
             if (v.distanceToSqr(next.getX() + .5, next.getY(), next.getZ() + .5) <= 36) {
                 v.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(hold));
                 v.setDropChance(EquipmentSlot.MAINHAND, 0);
             }
         }
-        return true;
+        return i > 0;
     }
 
     /** A block went down (or came away) on {@code s}: dust and its sound where a builder can be seen, and now and then a shout. */

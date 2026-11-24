@@ -11,7 +11,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 /**
- * While a villager in meltdown is near you, the villagers running from him scream as Odessa's crowd did: the same
+ * While an uncontrolled gift is near you, villagers escaping or heading for shelter scream as Odessa's crowd did: the same
  * recorded voices, each riding one runner ({@link PanicSounds#village}).
  */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID, value = Dist.CLIENT)
@@ -31,6 +31,22 @@ public final class VillagePanic {
             double d = at.distanceToSqr(mc.player.position());
             if (d < best) { best = d; nearest = at; }
         }
-        if (nearest != null) PanicSounds.village(mc, nearest);
+        for (Vec3 at : SetPieceClient.where(Piece.GIFT_TURN)) {
+            double d = at.distanceToSqr(mc.player.position());
+            if (d < best) { best = d; nearest = at; }
+        }
+        for (var storm : com.jayptucker.heroesevolved.client.ClientOverloads.views()) {
+            if (storm.ended() || storm.dying()) continue;
+            double d = storm.eye.distanceToSqr(mc.player.position());
+            double heard = HEARD + storm.reach();
+            if (d < heard * heard && (nearest == null || d < best)) { best = d; nearest = storm.eye; }
+        }
+        for (var flare : com.jayptucker.heroesevolved.client.ClientDistress.all()) {
+            if (flare.kind() != com.jayptucker.heroesevolved.radio.EmergencyBand.Trouble.RENEGADE.ordinal()) continue;
+            double d = flare.at().distanceToSqr(mc.player.position());
+            double heard = HEARD + com.jayptucker.heroesevolved.village.Villages.RADIUS;
+            if (d < heard * heard && (nearest == null || d < best)) { best = d; nearest = flare.at(); }
+        }
+        if (nearest != null) PanicSounds.village(mc, mc.player.position());
     }
 }

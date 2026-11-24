@@ -63,6 +63,8 @@ final class JadeClient {
             registration.hideTarget(ModEntities.CARRY_ANCHOR.get());
             registration.hideTarget(ModEntities.TEMPORAL_GHOST_BLOCK.get());
             registration.hideTarget(ModEntities.QUAKE_DEBRIS.get());
+            registration.hideTarget(ModEntities.RIFT_SKULL.get());
+            registration.hideTarget(ModEntities.END_BOLT.get());
         });
         HeroesJadePlugin.guard("disguises", () -> registration.addRayTraceCallback(JadeClient::seen));
         HeroesJadePlugin.guard("gifted", () -> registration.registerEntityComponent(Gifted.INSTANCE, LivingEntity.class));

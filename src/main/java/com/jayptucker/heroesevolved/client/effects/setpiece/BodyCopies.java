@@ -106,6 +106,18 @@ public final class BodyCopies {
     /** The rules, one per piece, timed by the same beats as the server ({@link FinisherBeats}). */
     private static Plan plan(Active a, LivingEntity entity, float t) {
         switch (a.piece()) {
+            case END_BATTLE_RELEASE -> {
+                var v=com.jayptucker.heroesevolved.endgame.EndClientState.view();
+                float age=v.stage()==com.jayptucker.heroesevolved.endgame.EndBattle.VICTORY?com.jayptucker.heroesevolved.endgame.EndClientState.age(0):t;
+                return age>=com.jayptucker.heroesevolved.endgame.EndGeometry.RUPTURE_TICK?new Plan(true,List.of()):Plan.NONE;
+            }
+            case END_BATTLE_DASH -> {
+                if(entity instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon||t>5
+                        ||SetPieceClient.superseded(a,java.util.Set.of(com.jayptucker.heroesevolved.styles.Piece.END_BATTLE_DASH),entity.level().getGameTime()))return Plan.NONE;
+                // Real posed bodies mark the path already travelled, never a silhouette ahead of the hit.
+                Vec3 offset=a.origin().subtract(entity.getPosition(0));
+                return new Plan(false,List.of(new Copy(offset,Float.NaN,.42F,.62F,.85F,false,true)));
+            }
             case FINISH_MONUMENT -> {
                 // Stone from the moment the plates close, lifted on its plinth; gone once it crumbles.
                 if (t < FinisherBeats.MONUMENT_SHUT) return Plan.NONE;

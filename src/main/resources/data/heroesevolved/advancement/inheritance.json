@@ -1,0 +1,23 @@
+{
+  "parent": "heroesevolved:false_victory",
+  "display": {
+    "icon": {
+      "id": "heroesevolved:inheritance_core"
+    },
+    "title": {
+      "translate": "advancement.heroesevolved.inheritance"
+    },
+    "description": {
+      "translate": "advancement.heroesevolved.inheritance.desc"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "observed": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

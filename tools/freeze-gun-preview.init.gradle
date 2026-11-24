@@ -1,0 +1,24 @@
+// Real TaCZ trigger input, the original cold-blaster model and the sustained freezing stream.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('freezeGunPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/freeze-gun-preview')
+                        programArguments.addAll('--width', '1200', '--height', '800')
+                        systemProperty('heroes.preview.freezegun', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('freezeGunPreviewClasses')) }
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

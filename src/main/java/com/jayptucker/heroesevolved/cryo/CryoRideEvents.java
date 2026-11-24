@@ -8,14 +8,14 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID)
 public final class CryoRideEvents {
     private CryoRideEvents() {}
-    @SubscribeEvent public static void tick(PlayerTickEvent.Post event) {
-        if (event.getEntity() instanceof ServerPlayer p) CryoRideService.tick(p);
+    @SubscribeEvent public static void tick(ServerTickEvent.Post event) {
+        CryoRideService.tickAll();
     }
     @SubscribeEvent public static void tracking(PlayerEvent.StartTracking event) {
         if (event.getEntity() instanceof ServerPlayer viewer && event.getTarget() instanceof ServerPlayer rider)

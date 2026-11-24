@@ -9,7 +9,7 @@ All of them are crafted at TaCZ's **gun smith table**, in its usual tabs.
 | Weapon | Tab | Materials | What it does |
 | --- | --- | --- | --- |
 | **Thermal Projector** (heat gun) | SMG | 20 iron, 12 copper, 4 blaze rods, 2 magma cream | A short stream of fire, about ten blocks long, at ten rounds a second. Every round that lands sets the target alight and keeps it burning a second longer, up to five seconds. It thaws anything frozen. |
-| **Cryo Carbine** (cold gun) | Rifle | 24 iron, 8 packed ice, 2 blue ice, 2 diamonds | Frost bolts, one a time, accurate to forty blocks. Each bolt adds frost: the target is slower with every hit, and about the fifth freezes it solid for two seconds (one for a player). Repeated shots freeze a patch around the impact, turning solid blocks brittle, water into ice, and lava into obsidian. |
+| **Freeze Gun** | Pistol | 24 iron, 8 packed ice, 2 blue ice, 2 diamonds | Hold fire for a continuous blue-white cold blast reaching sixteen blocks. Sustained contact slows a target, then freezes it solid for two seconds (one for a player). The stream freezes terrain around its impact: solid blocks become brittle ice, water becomes ice, and lava becomes obsidian. |
 | **Company Taser** | Pistol | 8 iron, 6 copper, 8 redstone, 2 yellow dye | One cartridge, eight blocks. A hit locks the target up: barely moving, no jumping and no landing blows for two and a half seconds (a second and a half for a player). |
 | **EMP Grenade** (×2) | Explosives | 4 iron, 6 copper, 1 block of redstone, 2 gunpowder | Throw it (use). It sticks where it lands, beeps for a second, and pulses. |
 | **Nullifier** (dampener pistol) | Pistol | 16 iron, 8 copper, 4 Helixite shards, 6 amethyst shards, 1 block of redstone | Dampener rounds, six to a magazine: whoever one hits loses their power for eight seconds. It is charged with Forge Energy, not loaded with ammo. See [ability-dampener.md](ability-dampener.md). |
@@ -23,19 +23,25 @@ from the RF in its battery):
 | Cryo Cell | 1 iron, 1 packed ice, 4 snowballs | 10 |
 | Taser Cartridge | 2 copper, 2 redstone, 2 string | 4 |
 
-The guns load, reload, aim and inspect like TaCZ's own: they borrow the shapes and animations of TaCZ's P90 (the
-Thermal Projector), AUG (the Cryo Carbine) and CZ75 (the taser), painted in their own colours (soot and copper with
-an orange fuel cell; white ceramic with a cyan cryo cell; safety yellow). They fire with a muffled report; the
-Projector roars and the Carbine cracks like ice.
+The guns load, reload, aim and inspect with TaCZ's controls. The Thermal Projector borrows its P90 shape and the
+taser its CZ75 shape, painted in soot and copper or safety yellow.
+
+The Freeze Gun has its own compact industrial blaster model: a silver pressure housing, a dark pistol grip,
+exposed cooling fins, a cyan chamber and a broad, pronged emitter. A narrow blue-white core carries rolling frost
+mist and ice chips from the muzzle to the first target or surface. Its firing sound is a soft rush of cold.
+It has no scope, long rifle barrel or bolt cycle. Hold the trigger to keep spraying; release it to stop.
+Forty Cryo Cell charges supply about four seconds of continuous fire before reloading.
+Previously crafted cold guns become Freeze Guns when equipped, retaining their ammunition and recipe.
 
 ## How they compare with the powers
 
 - **Heat gun vs Pyrokinesis.** The burn tops out at five seconds and there is no spreading fire, no Firestorm, no
   Heat to build. Like Pyrokinesis it undoes cold: a frozen target thaws at the first round.
 - **Cold gun vs Cryokinesis.** The same frost: the same slowing, the same frost overlay, the same ice shell that
-  shatters when hit. But a gun's freeze is shorter (two seconds for a creature, one for a player, against four and a
+  shatters under a physical blow. Continued cold from the gun preserves its shell. A gun's freeze is shorter (two seconds for a creature, one for a player, against four and a
   bit from the power), and a Cryokinetic is immune to it, as to all frost. Terrain frost works the same way as
-  [Ice Blast](cryokinesis.md#freezing-terrain). Stone takes five direct hits, and obsidian takes thirteen.
+  [Ice Blast](cryokinesis.md#freezing-terrain). Aimed stone takes about a second and a half of contact; its surrounding
+  patch takes about three seconds. Cover stops the blast, and reduced particle settings retain its visible core.
 - **Taser vs Electrokinesis.** One target, one shot, then a reload. An Electrokinetic shrugs off half of it.
 - **EMP grenade vs the EMP.** The same pulse as Induced Radioactivity's EMP and Electrokinesis's Blackout
   (`GridDisruption.emp`), smaller: ten blocks for eight seconds instead of sixteen for ten. Redstone dies, and with it
@@ -66,7 +72,8 @@ there.
   grenade, and `weapons/TaczLink` is the only class that touches TaCZ.
 - `PowerWeapons.gun(id)` makes a loaded TaCZ gun; `PowerWeapons.draw(mob)` and `PowerWeapons.fire(mob, at)` let any
   creature shoot one.
-- The textures and icons are drawn by `tools/GenerateWeaponTextures.java` from the borrowed models' geometry (no
+- The Freeze Gun's original geometry, textures and matching inventory/HUD icons are generated by
+  `tools/GenerateWeaponTextures.java`. The other guns are painted from the borrowed models' geometry (no
   pixel of TaCZ's own textures is used):
 
 ```bash
@@ -79,4 +86,11 @@ preview stages a firing range 1500 blocks from spawn:
 
 ```bash
 ./gradlew runClient --init-script tools/weapons-preview.init.gradle
+```
+
+The Freeze Gun has a dedicated survival preview that holds TaCZ's actual trigger, checks freezing and charge use,
+and photographs first person, side/front views, daylight, night, Minimal particles, terrain contact and its JEI recipe:
+
+```bash
+./gradlew runClient --init-script tools/freeze-gun-preview.init.gradle
 ```

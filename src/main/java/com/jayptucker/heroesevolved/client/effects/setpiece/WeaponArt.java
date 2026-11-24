@@ -12,14 +12,14 @@ import static net.minecraft.util.Mth.*;
 
 /**
  * The power-themed TaCZ guns, drawn in one shape language: a tapered ribbon from the muzzle. The heat gun's is a
- * short rolling tongue of flame; the cold gun's a pale streak led by an ice shard, which breaks into a star of shards
+ * short rolling tongue of flame; the cold gun's a continuous blue-white pressure stream with rolling mist and chips
  * where it lands; the taser's two thin wires, sagging slightly, with current crawling along them and over whoever the
  * barbs bit. The palettes echo the powers they imitate (Pyrokinesis's embers, Cryokinesis's ice, Electrokinesis's
  * ions) but run thinner and shorter: these are machines, not powers.
  */
 final class WeaponArt {
     private static final float[] EMBER_EDGE = rgb(0xA32813), EMBER = rgb(0xF76A13), EMBER_GOLD = rgb(0xFFBE42);
-    private static final float[] ICE = rgb(0xA6D3E5), MIST = rgb(0xDCEBF1), ICE_WHITE = rgb(0xF4FAFC);
+    private static final float[] ICE = rgb(0xA6D3E5), MIST = rgb(0xDCEBF1), ICE_WHITE = rgb(0xF4FAFC), COLD_BLUE = rgb(0x329FDB);
     private static final float[] WIRE = rgb(0x2A2A2E), ION = rgb(0x84D5FF), ION_CORE = rgb(0xEAF5FF);
     private static final Vec3 UP = new Vec3(0, 1, 0);
 
@@ -86,25 +86,37 @@ final class WeaponArt {
     // ------------------------------------------------------------------
 
     private static void frost(Canvas c, Active a, float t) {
-        Vec3 path = a.target().subtract(a.origin());
+        if (SetPieceClient.superseded(a, java.util.Set.of(com.jayptucker.heroesevolved.styles.Piece.GUN_FROST), c.level.getGameTime())) return;
         Vec3 at = muzzle(c, a.bound(c), a.origin());
-        Vec3 end = at.add(path);
-        float flight = (float) clamp(path.length() / 9, 1, 5);
-        float front = smooth(0, flight, t), tail = smooth(flight * 0.4F, flight + 5, t);
-        float alpha = fade(t, a.piece().ticks, 0.5F, 5);
-        Vec3 head = at.lerp(end, front), back = at.lerp(end, tail);
+        Vec3 end = a.target(), path = end.subtract(at);
+        if (path.lengthSqr() < .01) return;
+        Vec3 dir = path.normalize(), right = side(dir), up = dir.cross(right);
+        float alpha = fade(t, 6, .3F, 2);
+        if (alpha < .01F) return;
+        float time = (c.level.getGameTime() % 2400 + c.partial);
+        Vec3 head = at.lerp(end, smooth(0, 1.5F, t));
         if (c.glow()) {
-            c.glow(at, 0.18F, ICE_WHITE, alpha * (1 - smooth(0, 3, t)) * 0.7F);
-            if (t < flight + 1) c.glow(head, 0.28F, ICE, alpha * 0.5F);
+            // A broad cyan halo, a blue body, then a thin white pressure core.
+            c.line(at, head, .17F, COLD_BLUE, 0, alpha * .2F);
+            c.line(at, head, .065F, ICE, 0, alpha * .5F);
+            c.line(at, head, .018F, ICE_WHITE, 0, alpha * .8F);
+            c.glow(at, .24F, ICE, alpha * .5F);
+            c.glow(head, .35F, ICE, alpha * .25F);
             return;
         }
-        if (head.distanceToSqr(back) > 0.01) {
-            c.line(back, head, 0.07F, MIST, 0, alpha * 0.55F);
-            c.line(back, head, 0.025F, ICE_WHITE, 0, alpha * 0.8F);
-        }
-        if (t < flight + 0.5F) {
-            Vec3 dir = path.normalize();
-            c.shard(head.subtract(dir.scale(0.35)), head.add(dir.scale(0.15)), 0.06F, 5, t * 0.4F, ICE, alpha * 0.8F);
+        c.line(at, head, .12F, ICE, 0, alpha * .2F);
+        int count = minimal() ? 7 : 18;
+        for (int i = 0; i < count; i++) {
+            float p = frac(i / (float) count + time * .09F);
+            float angle = i * 2.4F + time * .1F;
+            double spread = .025 + .13 * p;
+            Vec3 center = at.lerp(head, p).add(right.scale(cos(angle) * spread)).add(up.scale(sin(angle) * spread));
+            float opacity = alpha * smooth(0, .12F, p) * (1 - smooth(.85F, 1, p));
+            float radius = .12F + .24F * p, stretch = .15F;
+            c.cloud(center, radius + stretch * (float) Math.abs(dir.x), radius + stretch * (float) Math.abs(dir.y),
+                    radius + stretch * (float) Math.abs(dir.z), i, time * .02F, opacity * .2F, Shades.smoke(c, MIST, 0));
+            if (!minimal() && i % 3 == 0)
+                c.shard(center, center.add(dir.scale(.18)), .025F, 4, angle, ICE_WHITE, opacity * .7F);
         }
     }
 
@@ -112,17 +124,17 @@ final class WeaponArt {
         Vec3 at = a.origin();
         float grow = smooth(0, 3, t), alpha = fade(t, a.piece().ticks, 0.5F, 7);
         if (c.glow()) {
-            c.glow(at, 0.45F * grow, ICE_WHITE, alpha * 0.45F);
+            c.glow(at, 0.3F * grow, ICE, alpha * 0.15F);
             return;
         }
-        int count = minimal() ? 4 : 7;
+        int count = minimal() ? 3 : 5;
         for (int i = 0; i < count; i++) {
             float yaw = TWO_PI * hash(a.seed(), i), pitch = (hash(a.seed(), i + 20) - 0.3F) * 1.6F;
             Vec3 dir = new Vec3(cos(yaw) * cos(pitch), sin(pitch), sin(yaw) * cos(pitch));
             float length = (0.25F + 0.3F * hash(a.seed(), i + 40)) * grow;
-            c.shard(at, at.add(dir.scale(length)), 0.045F + 0.03F * hash(a.seed(), i + 60), 4, i, ICE, alpha * 0.85F);
+            c.shard(at, at.add(dir.scale(length)), 0.025F + 0.02F * hash(a.seed(), i + 60), 4, i, ICE, alpha * 0.4F);
         }
-        c.ring(at, 0.2F + 0.5F * grow, 0.05F, MIST, alpha * 0.5F * (1 - grow * 0.5F));
+        c.ring(at, 0.2F + 0.5F * grow, 0.025F, MIST, alpha * 0.2F * (1 - grow * 0.5F));
     }
 
     // ------------------------------------------------------------------

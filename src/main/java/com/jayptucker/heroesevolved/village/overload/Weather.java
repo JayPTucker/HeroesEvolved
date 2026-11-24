@@ -35,7 +35,7 @@ interface Weather {
 
     /** Its village's people in its reach: by default they run from the eye. */
     default void villagers(Overload o, List<Villager> inDanger) {
-        for (Villager v : inDanger) com.jayptucker.heroesevolved.village.Shouts.runFrom(v, o.eye(), reach(o) + 10);
+        for (Villager v : inDanger) com.jayptucker.heroesevolved.village.Shouts.shelterOrRun(v, o.eye(), reach(o) + 6, false);
     }
 
     default void save(Overload o, CompoundTag tag) {}

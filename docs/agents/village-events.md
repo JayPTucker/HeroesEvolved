@@ -536,3 +536,35 @@ villages showed (`uitest/RealVillagePreview`). Built November 2026.
 - **Gathering is a share a day** (`Workers.gather`): by mood and people (`rate`), catching up at most three missed days,
   carried by a villager with the material in hand (`CARRYING`, given on arrival or after `CARRY` ticks). `Project.gathered`
   saves the day; a home for a player gathers nothing.
+- **A home's path is another saved construction site** (`Paths`, `Rebuild.path`, `Site.paving`), scheduled after the
+  building finishes. Find the rotated lower front door and search walkable, loaded ground all the way to the bell
+  square; an isolated doorstep or half-finished path must not count as a connection. Pave only natural ground,
+  leaving doorsteps, crops, fluids and player marks alone, and recheck at placement. A route blocked after planning is
+  retried, not marked connected. `Village.connected` remembers completed homes; `Paths.needsConnection` asks for beds,
+  because `Village.homes` also records farms and workshops. Crews hold shovels and use the usual daylight/trouble rules.
+  A player's finished porch may be walked across inside that owned home's footprint, but never repaved: refusing even
+  to walk on the protected doorstep would leave an otherwise reachable player's home disconnected.
+  Plains small house 8 has a two-block foundation and one stair: `Paths.surface` can plan one supported approach block
+  over natural ground when the step down is too large. Prefer existing ground first, or the search raises every path.
+- **A wall sign's back is hidden by its support.** The build schedule uses six extra wall signs on the reverse face
+  (`Board.statusSign`), facing outward and numbered from that reader's left. `Projects.schedule` keeps current work,
+  paving and future orders separate from the donation list; the footprint checks room on both sides. Save the next
+  actual design in `Village.planned`, then promote it after paused repairs and ordered homes: choosing again when it
+  posts would break what the board promised. Queue owners' names need saving even without a reputation entry
+  (`VillageMemory.order_names`). `VillageProjectGameTests` covers the queue, reloads, paving and all four rotations;
+  `RoadsPreview` photographs both faces and finished connections.
+  The two-sided board may need a wider clearing: `Projects.BOARD_FURTHEST` reaches 28 blocks without clearing trees.
+  Check a crowded taiga with `tools/real-village-preview.init.gradle -Ponly=taiga`; a flat meadow never exposed this.
+- **Audit the building's own cells.** The town-house test once counted three beds in a correct two-bed home because
+  its nine-block inspection radius included a neighbour. `VillageUpgradeGameTests` now checks `Site.positions` for
+  beds, joined panes, stair shapes and door halves; random placement can put another building just outside a footprint.
+- **An entrance tread at soil height is buried.** `Growth.buriedEntrance` compares the rotated lower door's outside
+  bottom stair with the street; new construction and upgrades lift the floor one block when needed. Do not raise an
+  already elevated cottage again (small house 8 needs its approach repaired instead). Keep the lifted base in
+  `Rebuild.Site.base` and grade against it; the preview photographs the exposed bottom tread at eye height.
+- **One shelter-or-escape decision.** `Shouts.shelterOrRun` uses the villager's loaded, roofed HOME bed, outside the
+  danger and in the escape direction; blizzards allow roofs within their reach. It sets HIDING_PLACE, HIDE and a fast
+  WALK_TARGET, then holds them indoors. `runFrom` clears the bell/hiding memories, or vanilla sends an evacuee back
+  into the unsafe house. Renegades respond from the turning flash and throughout their siege; overloads keep safe
+  hiding places refreshed after people leave the storm's reach. `VillagePanic` reuses the positional panic voices for
+  turns, renegade distress and live storms, following nearby moving villagers rather than only the event's centre.

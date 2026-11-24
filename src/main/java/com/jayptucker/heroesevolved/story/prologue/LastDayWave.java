@@ -88,7 +88,7 @@ final class LastDayWave {
                 // Through a hundred feet of rock: the floor jumps, dust sifts down.
                 down.put(p.getUUID(), t);
                 PacketDistributor.sendToPlayer(p, new CameraShakePayload(0.35F, 30));
-                p.playNotifySound(SoundEvents.GENERIC_EXPLODE.value(), SoundSource.AMBIENT, 0.8F, 0.45F);
+                // The pod sequence owns the single underground blast cue.
                 continue;
             }
             knock(p, t);

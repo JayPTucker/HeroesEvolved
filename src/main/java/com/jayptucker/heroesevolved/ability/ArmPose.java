@@ -239,5 +239,7 @@ public enum ArmPose {
      *  closed. Surf: knees bent, arms out for balance (held). Listen: stance, palms flat toward the ground (held). Crush: a
      *  raised fist clenched hard. Tent: both arms swept up and apart. Slide: braced side-on, the leading palm low. */
     EARTH_STANCE, EARTH_LIFT, EARTH_STRIKE, EARTH_STOMP, EARTH_RAISE, EARTH_WALL, EARTH_SHOVE, EARTH_HEAVE, EARTH_SLAM,
-    EARTH_CLAW, EARTH_GAUNTLET, EARTH_SURF, EARTH_LISTEN, EARTH_CRUSH, EARTH_TENT, EARTH_SLIDE_LEFT, EARTH_SLIDE_RIGHT
+    EARTH_CLAW, EARTH_GAUNTLET, EARTH_SURF, EARTH_LISTEN, EARTH_CRUSH, EARTH_TENT, EARTH_SLIDE_LEFT, EARTH_SLIDE_RIGHT,
+    /** Both palms reaching down toward a filled End portal eye; held while an offering is paid. */
+    PORTAL_CHANNEL
 }

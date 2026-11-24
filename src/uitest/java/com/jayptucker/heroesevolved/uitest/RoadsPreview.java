@@ -74,13 +74,15 @@ import java.util.UUID;
  */
 @EventBusSubscriber(modid = "heroesevolved", value = Dist.CLIENT)
 public final class RoadsPreview {
-    private static final int PHOTOS = 25;
+    private static final int PHOTOS = 31;
     private static boolean started;
     private static int ticks, age, photos;
     private static String pending;
     private static Caravan caravan;
     private static Refugees refugees;
     private static Rebuild.Site site;
+    private static Villager sheltering;
+    private static BlockPos shelterBed;
 
     private static boolean on() { return Boolean.getBoolean("heroes.preview.roads"); }
 
@@ -508,7 +510,99 @@ public final class RoadsPreview {
                 } else camera(mc, new Vec3(1316.5, -57.5, 4.5), new Vec3(1311.5, -59, 10.5));
             });
             case 864 -> shot("25-struggling");
-            case 884 -> {
+            case 884 -> server(mc, p -> {
+                mc.options.hideGui = true;
+                var v = VillageMemory.of(p.serverLevel(), new BlockPos(1100, -59, 0));
+                com.jayptucker.heroesevolved.village.Homes.order(p.serverLevel(), v, UUID.randomUUID(), "Alex");
+                com.jayptucker.heroesevolved.village.Homes.order(p.serverLevel(), v, UUID.randomUUID(), "Robin");
+                com.jayptucker.heroesevolved.village.Projects.consider(p.serverLevel(), v);
+                var b = v.board();
+                move(p, Vec3.atBottomCenterOf(b.at(0, 0, -5)), b.facing().toYRot(), 10);
+                camera(mc, Vec3.atBottomCenterOf(b.at(0, 0, -4)).add(0, 1.62, 0), Vec3.atCenterOf(b.at(0, 1, -1)).add(0, .5, 0));
+            });
+            case 908 -> shot("26-build-schedule");
+            case 912 -> server(mc, p -> {
+                var level = p.serverLevel();
+                var bell = new BlockPos(1100, -59, 0);
+                var paths = Rebuild.all(level).stream().filter(s -> s.paving() && s.bell().equals(bell)).toList();
+                int paved = 0;
+                for (var path : paths) { paved += path.size(); Rebuild.hurry(level, path, 100_000); }
+                System.out.println("ROADS_PATHS " + (paved > 0 ? "PASS" : "FAIL") + ": " + paths.size() + " connections, " + paved + " work blocks");
+                if (paved == 0) PreviewQuiet.report("ROADS_PATHS FAIL no connections planned");
+                var v = VillageMemory.of(level, bell);
+                var home = v.homesForPreview().getLast();
+                var c = Vec3.atCenterOf(home.origin());
+                var middle = c.add(Vec3.atCenterOf(bell)).scale(.5);
+                move(p, middle.add(0, 20, -28), 0, 35);
+                camera(mc, middle.add(5, 24, -28), middle.add(0, -1, 0));
+                site = paths.isEmpty() ? null : paths.getLast();
+            });
+            case 936 -> shot("27-paved-connections");
+            case 940 -> server(mc, p -> {
+                if (site == null) return;
+                var level = p.serverLevel();
+                var home = site.home();
+                var template = level.getStructureManager().get(home.template()).orElseThrow();
+                var box = template.getBoundingBox(new net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings()
+                        .setRotation(home.rotation()), home.origin());
+                BlockPos door = null;
+                for (BlockPos at : BlockPos.betweenClosed(box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ()))
+                    if (level.getBlockState(at).getBlock() instanceof DoorBlock && level.getBlockState(at).getValue(DoorBlock.HALF) == DoubleBlockHalf.LOWER)
+                        door = at.immutable();
+                if (door == null) { PreviewQuiet.report("ROADS_PATHS FAIL no front door"); return; }
+                Direction front = home.rotation().rotate(Growth.front(template, home.template()));
+                move(p, Vec3.atCenterOf(door).add(front.getStepX() * 18, 8, front.getStepZ() * 18), front.getOpposite().toYRot(), 10);
+                clearView(mc, Vec3.atBottomCenterOf(door).add(0, 1.2, 0), Math.atan2(front.getStepZ(), front.getStepX()), 9, .42, .5);
+            });
+            case 964 -> shot("28-path-at-home");
+            case 968 -> server(mc, p -> {
+                var level = p.serverLevel();
+                BlockPos bell = village(level, 1500, 0, 4, 8);
+                var v = VillageMemory.of(level, bell);
+                site = Growth.grow(level, v, net.minecraft.resources.ResourceLocation.withDefaultNamespace("village/plains/houses/plains_small_house_1"));
+                if (site == null) { PreviewQuiet.report("ROADS_ENTRANCE FAIL no house"); return; }
+                Rebuild.hurry(level, site, 100_000);
+                for (var path : Rebuild.all(level)) if (path.paving() && path.bell().equals(bell)) Rebuild.hurry(level, path, 100_000);
+                houseCamera(mc, site, 9, 1.62);
+                move(p, Vec3.atCenterOf(site.center()).add(18, 6, 18), 0, 10);
+            });
+            case 1000 -> shot("29-visible-entrance-steps");
+            case 1004 -> server(mc, p -> {
+                var level = p.serverLevel();
+                var bell = new BlockPos(1500, -59, 0);
+                // A home away from the uncontrolled power, with an ordinary villager allowed to seek it naturally.
+                house(level, 1532, -5, true);
+                shelterBed = new BlockPos(1534, -60, -4);
+                var people = com.jayptucker.heroesevolved.village.Villages.members(level, bell);
+                sheltering = people.getFirst();
+                sheltering.setPos(Vec3.atBottomCenterOf(bell.offset(4, -1, 0)));
+                sheltering.setNoAi(false);
+                sheltering.getBrain().setMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.HOME,
+                        net.minecraft.core.GlobalPos.of(level.dimension(), shelterBed));
+                for (var v : people) if (v != sheltering) {
+                    v.setNoAi(false);
+                    v.getBrain().eraseMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.HOME);
+                }
+                Villager source = EntityType.VILLAGER.create(level);
+                source.moveTo(Vec3.atBottomCenterOf(bell.offset(0, -1, 2)));
+                source.setNoAi(true);
+                source.getPersistentData().putBoolean(GiftedMobs.ROLLED, true);
+                level.addFreshEntity(source);
+                com.jayptucker.heroesevolved.mimicry.GiftedVillagers.give(source, ModAbilities.PYROKINESIS_ID);
+                Renegades.awaken(source, true);
+                move(p, Vec3.atCenterOf(bell).add(14, 7, -24), 0, 10);
+                camera(mc, Vec3.atCenterOf(bell).add(3, 2.5, -12), Vec3.atCenterOf(bell).add(3, 1, 1));
+            });
+            case 1012 -> shot("30-uncontrolled-gift-panic");
+            case 1380 -> server(mc, p -> {
+                boolean home = sheltering != null && sheltering.distanceToSqr(Vec3.atCenterOf(shelterBed)) <= 9;
+                System.out.println("ROADS_SHELTER " + (home ? "PASS" : "FAIL") + ": villager at " + (sheltering == null ? "none" : sheltering.position()) + ", home " + shelterBed);
+                if (!home) PreviewQuiet.report("ROADS_SHELTER FAIL villager did not reach home");
+                move(p, Vec3.atCenterOf(shelterBed).add(12, 6, 12), 0, 10);
+                camera(mc, new Vec3(1535.3, -58.5, -3.5), sheltering.position().add(0, 1, 0));
+            });
+            case 1406 -> shot("31-sheltered-at-home");
+            case 1430 -> {
                 System.out.println("ROADS_PREVIEW_RESULT " + (photos >= PHOTOS ? "PASS" : "FAIL") + ": " + photos + " photos");
                 if (photos < PHOTOS) PreviewQuiet.report("ROADS_PREVIEW FAIL only " + photos + " photos");
                 PreviewQuiet.quit();

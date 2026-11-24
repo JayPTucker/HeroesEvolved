@@ -31,6 +31,7 @@ public final class CryokinesisAbility implements Ability {
             AbilitySlot.TERTIARY, SimpleAction.builder("cryo_ice_wall",3)
                     .cost(()->25,()->100).canUse(c->CryoRideService.canStart(c.player()))
                     .activate(c->CryoRideService.toggle(c.player(),c.abilityLevel()))
+                    .release(c->CryoRideService.stop(c.player(),true))
                     .deactivateOnPress(c->true).deactivate(c->{if(!CryoRideService.isRiding(c.player()))return false;CryoRideService.stop(c.player(),true);return true;}).build(),
             AbilitySlot.QUATERNARY, SimpleAction.builder("cryo_glacial_spikes",4)
                     .cost(COMMON.cryoFreezeEnergyCost::get,COMMON.cryoFreezeCooldownTicks::get)

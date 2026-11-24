@@ -1194,5 +1194,133 @@
         "stream": true
       }
     ]
+  },
+  "wither_hunger": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/wither_hunger",
+        "stream": true
+      }
+    ]
+  },
+  "wither_vessel": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/wither_vessel",
+        "stream": true
+      }
+    ]
+  },
+  "wither_critical": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/wither_critical",
+        "stream": true
+      }
+    ]
+  },
+  "wither_last_chord": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/wither_last_chord",
+        "stream": true
+      }
+    ]
+  },
+  "wither_stinger": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/wither_stinger",
+        "stream": true
+      }
+    ]
+  },
+  "music_disc.containment": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/wither_record",
+        "stream": true
+      }
+    ]
+  },
+  "end_tethered": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/end_tethered",
+        "stream": true
+      }
+    ]
+  },
+  "end_riftstorm": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/end_riftstorm",
+        "stream": true
+      }
+    ]
+  },
+  "end_dying_star": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/end_dying_star",
+        "stream": true
+      }
+    ]
+  },
+  "end_inheritance": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/end_inheritance",
+        "stream": true
+      }
+    ]
+  },
+  "end_collector": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/end_collector",
+        "stream": true
+      }
+    ]
+  },
+  "end_one_more_future": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/end_one_more_future",
+        "stream": true
+      }
+    ]
+  },
+  "end_false_victory": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/end_false_victory",
+        "stream": true
+      }
+    ]
+  },
+  "end_phase_break": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/end_phase_break",
+        "stream": true
+      }
+    ]
+  },
+  "end_last_light": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/end_last_light",
+        "stream": true
+      }
+    ]
+  },
+  "music_disc.inheritance": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/end_record",
+        "stream": true
+      }
+    ]
   }
 }

@@ -61,7 +61,8 @@ public final class AdvancedTechniques {
     private static final Map<UUID, Long> ADAPTING = new HashMap<>();
     /** The kinds of harm each adapting body has learned, newest last: one, or three with Callus. */
     private static final Map<UUID, List<String>> ADAPTED_TO = new HashMap<>();
-    private static final Map<UUID, Long> MIRAGES = new HashMap<>();
+    private record Mirage(ServerPlayer owner, long until, List<com.jayptucker.heroesevolved.shapeshift.ShapeDecoy> copies) {}
+    private static final Map<UUID, Mirage> MIRAGES = new HashMap<>();
     /** Perception: the world around a runner moves at a fraction of its speed. */
     private record Perception(ServerPlayer owner, long until, double radius, int interval) {}
     private static final Map<UUID, Perception> PERCEPTION = new HashMap<>();
@@ -172,10 +173,21 @@ public final class AdvancedTechniques {
             }
             // ---------------- Superspeed ----------------
             case "mirage" -> {
-                MIRAGES.put(p.getUUID(), now + (has(p, "superspeed_lingering_mirage") ? 200 : 120));
+                Mirage old = MIRAGES.remove(p.getUUID());
+                if (old != null) old.copies.forEach(Entity::discard);
+                int life = has(p, "superspeed_lingering_mirage") ? 200 : 120;
+                List<com.jayptucker.heroesevolved.shapeshift.ShapeDecoy> copies = new ArrayList<>();
+                for (int i = 0; i < 3; i++) {
+                    var copy = com.jayptucker.heroesevolved.registry.ModEntities.SHAPE_DECOY.get().create(level);
+                    if (copy == null) continue;
+                    copy.setupSpeed(p, life, i);
+                    copy.moveTo(p.getX(), p.getY(), p.getZ(), p.getYRot(), 0);
+                    if (level.addFreshEntity(copy)) copies.add(copy);
+                }
+                if (copies.isEmpty()) return false;
+                MIRAGES.put(p.getUUID(), new Mirage(p, now + life, List.copyOf(copies)));
                 for (Mob mob : level.getEntitiesOfClass(Mob.class, p.getBoundingBox().inflate(16), m -> m.getTarget() == p)) {
-                    mob.setTarget(null);
-                    mob.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60, 1));
+                    mob.setTarget(copies.get(Math.floorMod(mob.getId(), copies.size())));
                 }
                 // Afterimages tear loose all round you (re-sent while the mirage lasts, in the tick).
                 AbilityEffects.send(level, Kind.SPEED_MIRAGE, p.position(), p.getEyePosition(), 1);
@@ -361,9 +373,18 @@ public final class AdvancedTechniques {
 
         // Superspeed: mirages hold attention, perception slows (or stops) what flies at you.
         for (var entry : List.copyOf(MIRAGES.entrySet())) {
-            ServerPlayer p = server.getPlayerList().getPlayer(entry.getKey());
-            if (p == null || now >= entry.getValue()) { MIRAGES.remove(entry.getKey()); continue; }
-            if (now % 5 == 0) AbilityEffects.send(p.serverLevel(), Kind.SPEED_MIRAGE, p.position(), p.getEyePosition(), 1);
+            Mirage mirage = entry.getValue();
+            ServerPlayer p = mirage.owner;
+            if (now >= mirage.until || p.isRemoved() || !PowerRules.canAct(p) || !SpeedService.awakened(p)
+                    || mirage.copies.stream().allMatch(Entity::isRemoved)
+                    || mirage.copies.getFirst().level() != p.level()) {
+                mirage.copies.forEach(Entity::discard); MIRAGES.remove(entry.getKey()); continue;
+            }
+            if (now % 10 == 0) for (Mob mob : p.serverLevel().getEntitiesOfClass(Mob.class,
+                    p.getBoundingBox().inflate(16), m -> m.getTarget() == p)) {
+                var copy = mirage.copies.stream().filter(c -> !c.isRemoved()).findFirst().orElse(null);
+                if (copy != null) mob.setTarget(copy);
+            }
             if (has(p, "superspeed_time_remnant") && now % 20 == 0)
                 for (LivingEntity t : enemies(p, p.position(), 4)) {
                     t.hurt(p.damageSources().playerAttack(p), 2);
@@ -398,7 +419,10 @@ public final class AdvancedTechniques {
         LivingEntity target = event.getNewAboutToBeSetTarget();
         if (target == null) return;
         if (target instanceof ServerPlayer player && MIRAGES.containsKey(player.getUUID()) && event.getEntity().distanceToSqr(player) > 4) {
-            event.setCanceled(true);
+            var mirage = MIRAGES.get(player.getUUID());
+            var copy = mirage.copies.stream().filter(c -> !c.isRemoved()).min(
+                    java.util.Comparator.comparingDouble(c -> c.distanceToSqr(event.getEntity()))).orElse(null);
+            if (copy != null) event.setNewAboutToBeSetTarget(copy);
             return;
         }
     }
@@ -455,6 +479,7 @@ public final class AdvancedTechniques {
 
     @SubscribeEvent public static void stopping(ServerStoppingEvent event) {
         ZONES.clear(); ADAPTING.clear(); ADAPTED_TO.clear();
+        for (Mirage mirage : MIRAGES.values()) mirage.copies.forEach(Entity::discard);
         MIRAGES.clear(); PERCEPTION.clear();
         COOLDOWNS.clear(); sharing = 0;
     }

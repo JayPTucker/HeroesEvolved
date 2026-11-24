@@ -9,6 +9,15 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 
 ## Running one
 
+- **Endgame:** `tools/endgame-preview.init.gradle` photographs the native End island, both temporary ruins, every
+  Dragon move, all six phases, absorption, all 21 sampled gifts and Sylar's rupture at close and island-wide distances.
+  Its driver is `endgame/EndgamePreview`; photos are in `build/endgame-preview/screenshots/`. Both ruin lighting audits
+  must be clean. The final death photos show the actual emissive PlayerModel, the white flash and the ability wave.
+
+- **Wither:** `tools/wither-preview.init.gradle` photographs the native summoning replacement, hinged ribs, swallowing
+  heads, breach, 81-block arena, every warning, three phases, anchor backfire, aerial lanes and death. Its driver is
+  `uitest/WitherPreview`; photos go to `build/wither-preview/screenshots/`. It runs `CityAudit` including upper rib ledges.
+
 - `./gradlew runClient --init-script tools/<name>-preview.init.gradle [-P<option>]`. Each script loads its driver from
   `src/uitest/java/com/jayptucker/heroesevolved/uitest/` (never shipped in the jar), sets its own
   `heroes.preview.<flag>` system property, and runs the client in its own folder under `build/`, so it never touches a
@@ -128,6 +137,7 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | `electro-preview.init.gradle`, `lightning-preview.init.gradle` | Electrokinesis, and its lightning style | |
 | `skill-anim-preview.init.gradle` | Electrokinesis and Superspeed skills | |
 | `flight-preview.init.gradle`, `rework-preview.init.gradle` | Flight maneuvers; Tempest, a standing tornado, Matter Assembly, Starfall | |
+| `flight-carry-preview.init.gradle` | Villagers and pigs carried through hover, acceleration, horizontal cruise, turns, first person, Skyburst and braking | Checks horizontal cruise and retained carry links; 16 photographs |
 | `hydro-preview.init.gradle` | Hydrokinesis: kit, waterbending, tree, classes | |
 | `invisibility-preview.init.gradle` | Fade and the force fields | |
 | `mimicry-preview.init.gradle` | attunement, touch, switching, the memory wheel | |
@@ -152,6 +162,7 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | `finisher-preview.init.gradle` | the glisten, the prompt and every finisher | `-Ponly=telepathy` or `-Ponly=hearth,phoenix_kick` |
 | `projectile-preview.init.gradle` | projectile ranges | |
 | `weapons-preview.init.gradle`, `dampener-preview.init.gradle` | the TaCZ guns and EMP grenade; the Ability Dampener and Nullifier | |
+| `freeze-gun-preview.init.gradle` | The Freeze Gun model and continuous blast: first person, side/front, freeze, release, terrain, night, Minimal particles and JEI workbench recipe | Holds TaCZ's real trigger in survival; checks charge use and release; eleven photographs |
 | **Bosses, mobs and events** | | |
 | `sylar-preview.init.gradle` | Sylar's Collection: the ticket, the hall, every telegraph assembling and landing, each phase, the backfire, Appraisal, the light, Claire's case, his death | |
 | `level5-preview.init.gradle` | How you meet Sylar: the hatch in Cell 3, Level 5's corridor, the prisoner behind glass and his talk in chat, the watch list, the release lever, the glass falling out, him behind you at dusk, the Collection | A fixed camera only draws the player in third person: set `THIRD_PERSON_BACK` before `TempestCamera.fix` when the player should be in shot |
@@ -166,13 +177,17 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | `meltdown-preview.init.gradle`, `containment-preview.init.gradle`, `live-run-preview.init.gradle` | a villager meltdown; a speedster containing a blast | |
 | `eclipse-preview.init.gradle` | the Eclipse moon | |
 | **Story and places** | | |
+| `end-portal-preview.init.gradle` | Dormant frame, paired offerings from both sides, first-person palms, stamina drain, opening membrane and iris, solo water offering, remembered eye at night, natural recovery and a solo opening | Uses real local ability-key holds and a visible server-side partner. Reports Level 15 refusal, co-op opening, one offering waiting, natural solo recovery and solo opening. Fourteen photographs in `build/end-portal-preview/screenshots/` |
 | `prologue-preview.init.gradle`, `time-city-preview.init.gradle` | the Last Day beat by beat; Odessa (prints `CITY_AUDIT`) | |
 | `bunker-preview.init.gradle`, `night-three-preview.init.gradle` | the bunker tour (prints `BUNKER_AUDIT`, `BUNKER_DARK`); Night Three | |
+| `odessa-ruins-preview.init.gradle` | Present-day Odessa around a new bunker in normal terrain: skyline, hills, buried rooms, woodland edges, streets, cache contents, signed and unfinished journals | Checks block supports at each district's footing and all journal pages with the actual font; 15 photographs. `-Ponly=04-odessa-arms,07-church` selects tour shots; the three inventory/book shots always run |
 | `blueprint-preview.init.gradle` | one blueprint, from four corners, the top and inside | `-Pblueprint=<name>`, `-Pcut=<layer>` |
-| `ruins-preview.init.gradle`, `signal-site-preview.init.gradle` | the story ruins; the Last Signal site | |
+| `ruins-preview.init.gradle`, `signal-site-preview.init.gradle` | the story ruins; the Last Signal site | Ruins: `-Pocean` places all four on separate natural seabed sites and photographs flooded rooms and surface salvage; the fixture's barrel carries a real civilian journal |
 | `unwritten-world-preview.init.gradle` | A Future Unwritten's world fixture | |
+| `trello-fixes-preview.init.gradle` | Frozen poses, Morph cooldown, held Glacier Ride, moving Speed Mirage copies, Cyclone hitbox, Tempest entry and boot trails, overexertion, Sylar catching/returning TaCZ rounds and the guide's street detour | Real key holds and release checks; 22 photographs in `build/trello-fixes-preview/screenshots/` |
 | **Interface and gear** | | |
 | `stamina-preview.init.gradle`, `gauge-preview.init.gradle` | the stamina bar; the HUD ring gauges | |
 | `skill-ui-preview.init.gradle`, `inventory-preview.init.gradle`, `admin-preview.init.gradle` | the skill screen; the inventory button; the admin menu | |
+| `guidance-preview.init.gradle` | Every Guide topic at two GUI scales, each field note, rebound/unbound controls and every civilian journal page | `-Plive` checks real login sync, hint receipts and the Tips button; see [guidance-and-admin.md](guidance-and-admin.md) |
 | `compat-preview.init.gradle` | JEI and Jade with our content; checks what Jade targets and that our keys and JEI's are never live together ([compat.md](compat.md)) | `-PnoJei -PnoJade` (the same scenes without them) |
 | `suit-preview.init.gradle`, `body-preview.init.gradle`, `carry-preview.init.gradle` | protective suits; severed limbs and the downed body; carrying | |

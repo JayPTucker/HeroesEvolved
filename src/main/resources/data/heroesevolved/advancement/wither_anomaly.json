@@ -1,0 +1,19 @@
+{
+  "parent": "minecraft:nether/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:wither_skeleton_skull"
+    },
+    "title": "Well, That's Not Normal...",
+    "description": "Witness the Wither swallow its own cage.",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "observed": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

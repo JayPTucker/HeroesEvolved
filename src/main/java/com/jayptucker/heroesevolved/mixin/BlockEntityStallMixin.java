@@ -14,6 +14,17 @@ public abstract class BlockEntityStallMixin {
     @WrapWithCondition(method = "tickBlockEntities",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/entity/TickingBlockEntity;tick()V"))
     private boolean heroesevolved$stallMachine(TickingBlockEntity ticker) {
+        if ((Object) this instanceof ServerLevel level
+                && com.jayptucker.heroesevolved.time.TemporalRevenge.get(level.getServer()).hasRedeemed()) {
+            if (level.getBlockEntity(ticker.getPos()) instanceof net.minecraft.world.Container container)
+                com.jayptucker.heroesevolved.time.TemporalRevenge.clean(level.getServer(), container);
+            // A hopper may pull from a chest that never ticks. Clear invalidated history before any transfer.
+            for (var direction : net.minecraft.core.Direction.values()) {
+                var pos = ticker.getPos().relative(direction);
+                if (level.hasChunkAt(pos) && level.getBlockEntity(pos) instanceof net.minecraft.world.Container container)
+                    com.jayptucker.heroesevolved.time.TemporalRevenge.clean(level.getServer(), container);
+            }
+        }
         return !((Object) this instanceof ServerLevel level && GridDisruption.stalled(level, ticker.getPos()));
     }
 }
