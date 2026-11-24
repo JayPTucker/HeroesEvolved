@@ -44,7 +44,8 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 - **The other checks GitHub runs:** `./gradlew build`, `python3 tools/blueprint.py validate` over every blueprint, and
   `python3 tools/verify-skill-content.py`. Run `py -3 tools/balance.py --check` too whenever costs change.
 - **Game tests call the server directly.** They never press a key, so a broken click, double-tap or key binding passes
-  every test. The fighting preview's `-Pinput` run is the only check of real input (see [previews.md](previews.md)).
+  every test. The fighting preview's `-Pinput` run and `flight-roll-preview` are the checks of real input (see
+  [previews.md](previews.md)).
 
 ## Before you blame your change
 

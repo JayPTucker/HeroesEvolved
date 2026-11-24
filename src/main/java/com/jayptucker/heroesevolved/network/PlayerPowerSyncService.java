@@ -94,34 +94,8 @@ public final class PlayerPowerSyncService {
         var trial = com.jayptucker.heroesevolved.progression.EvolutionTrials.trial(power.getPath());
         AbilityUseContext preview = previewContext(player, false);
         List<LoadoutPayload.Entry> entries = new java.util.ArrayList<>();
-        for (var entry : com.jayptucker.heroesevolved.skills.Loadout.available(player, power)) {
-            AbilityAction action = entry.action();
-            ResourceLocation id = action.definition().id();
-            int unlockTier = entry.node() != null ? entry.node().level() : action.definition().unlockLevel();
-            int energy = com.jayptucker.heroesevolved.ability.service.AbilityRanks.energy(player, power, action,
-                    com.jayptucker.heroesevolved.skills.SkillTreeService.activationCost(player, power,
-                            com.jayptucker.heroesevolved.ability.PowerBalance.energy(id, action.energyCost(preview))));
-            int cooldown = com.jayptucker.heroesevolved.ability.service.AbilityRanks.cooldown(player, power, action,
-                    com.jayptucker.heroesevolved.skills.SkillTreeService.cooldown(player, power,
-                            com.jayptucker.heroesevolved.ability.PowerBalance.cooldown(id, action.cooldownTicks(preview))));
-            int uses = com.jayptucker.heroesevolved.ability.service.AbilityRanks.uses(player, power, action);
-            // An Echo shows the copied ability it would perform (its name and its icon).
-            var shown = com.jayptucker.heroesevolved.mimicry.MimicryService.shown(player, action);
-            int alternateCooldown = 0;
-            long alternateCooldownEnd = 0;
-            if (id.getPath().equals("temporal_snapshot")) {
-                var alternate = previewContext(player, true);
-                alternateCooldown = com.jayptucker.heroesevolved.ability.service.AbilityRanks.cooldown(player, power, action,
-                        com.jayptucker.heroesevolved.skills.SkillTreeService.cooldown(player, power,
-                                com.jayptucker.heroesevolved.ability.PowerBalance.cooldown(id, action.cooldownTicks(alternate))));
-                alternateCooldownEnd = CooldownService.getExpirationGameTime(player, action.cooldownId(alternate));
-            }
-            entries.add(new LoadoutPayload.Entry(entry.key(), shown == null ? id.getPath() : shown.id().getPath(),
-                    shown == null ? action.definition().displayNameKey() : shown.displayNameKey(), tier >= unlockTier,
-                    com.jayptucker.heroesevolved.progression.PowerLevels.levelForTier(unlockTier), energy, cooldown,
-                    CooldownService.getExpirationGameTime(player, action.cooldownId(preview)),
-                    com.jayptucker.heroesevolved.ability.service.AbilityRanks.rank(uses), uses, alternateCooldown, alternateCooldownEnd));
-        }
+        for (var entry : com.jayptucker.heroesevolved.skills.Loadout.available(player, power))
+            entries.add(entry(player, power, tier, preview, entry));
         var build = com.jayptucker.heroesevolved.skills.SkillTreeService.seedWheel(player, power, entries);
         List<String> keys = new java.util.ArrayList<>();
         for (int key = 1; key <= com.jayptucker.heroesevolved.skills.Loadout.KEYS; key++)
@@ -132,7 +106,46 @@ public final class PlayerPowerSyncService {
         return new LoadoutPayload(level, Math.max(0, Math.min(mastery, next) - here), Math.max(0, next - here), evolved, trial.description(),
                 Math.min(trial.goal(), com.jayptucker.heroesevolved.progression.EvolutionTrials.progress(player, power.getPath())), trial.goal(),
                 com.jayptucker.heroesevolved.skills.SkillTreeService.storyPoints(player), List.copyOf(entries), List.copyOf(keys),
-                power.getPath(), wheel, wheel.contains(quickCast) ? quickCast : "");
+                power.getPath(), wheel, wheel.contains(quickCast) ? quickCast : "", innate(player, power));
+    }
+
+    /** Skills this power has with no key (Flight's Barrel Roll), with their live cost and cooldown for the HUD. */
+    public static List<LoadoutPayload.Entry> innate(ServerPlayer player, ResourceLocation power) {
+        if (PlayerAbilityService.getData(player).assignedPower().isEmpty()) return List.of();
+        int tier = PlayerProgressionService.getLevel(player);
+        AbilityUseContext preview = previewContext(player, false);
+        return com.jayptucker.heroesevolved.skills.Loadout.innate(power).stream()
+                .map(entry -> entry(player, power, tier, preview, entry)).toList();
+    }
+
+    private static LoadoutPayload.Entry entry(ServerPlayer player, ResourceLocation power, int tier, AbilityUseContext preview,
+                                              com.jayptucker.heroesevolved.skills.Loadout.Entry entry) {
+        AbilityAction action = entry.action();
+        ResourceLocation id = action.definition().id();
+        int unlockTier = entry.node() != null ? entry.node().level() : action.definition().unlockLevel();
+        int energy = com.jayptucker.heroesevolved.ability.service.AbilityRanks.energy(player, power, action,
+                com.jayptucker.heroesevolved.skills.SkillTreeService.activationCost(player, power,
+                        com.jayptucker.heroesevolved.ability.PowerBalance.energy(id, action.energyCost(preview))));
+        int cooldown = com.jayptucker.heroesevolved.ability.service.AbilityRanks.cooldown(player, power, action,
+                com.jayptucker.heroesevolved.skills.SkillTreeService.cooldown(player, power,
+                        com.jayptucker.heroesevolved.ability.PowerBalance.cooldown(id, action.cooldownTicks(preview))));
+        int uses = com.jayptucker.heroesevolved.ability.service.AbilityRanks.uses(player, power, action);
+        // An Echo shows the copied ability it would perform (its name and its icon).
+        var shown = com.jayptucker.heroesevolved.mimicry.MimicryService.shown(player, action);
+        int alternateCooldown = 0;
+        long alternateCooldownEnd = 0;
+        if (id.getPath().equals("temporal_snapshot")) {
+            var alternate = previewContext(player, true);
+            alternateCooldown = com.jayptucker.heroesevolved.ability.service.AbilityRanks.cooldown(player, power, action,
+                    com.jayptucker.heroesevolved.skills.SkillTreeService.cooldown(player, power,
+                            com.jayptucker.heroesevolved.ability.PowerBalance.cooldown(id, action.cooldownTicks(alternate))));
+            alternateCooldownEnd = CooldownService.getExpirationGameTime(player, action.cooldownId(alternate));
+        }
+        return new LoadoutPayload.Entry(entry.key(), shown == null ? id.getPath() : shown.id().getPath(),
+                shown == null ? action.definition().displayNameKey() : shown.displayNameKey(), tier >= unlockTier,
+                com.jayptucker.heroesevolved.progression.PowerLevels.levelForTier(unlockTier), energy, cooldown,
+                CooldownService.getExpirationGameTime(player, action.cooldownId(preview)),
+                com.jayptucker.heroesevolved.ability.service.AbilityRanks.rank(uses), uses, alternateCooldown, alternateCooldownEnd);
     }
 
     private static List<AbilityActionSnapshot> createActionSnapshots(

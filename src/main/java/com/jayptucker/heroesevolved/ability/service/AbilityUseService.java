@@ -72,6 +72,15 @@ public final class AbilityUseService {
         return activate(player, power -> Loadout.resolve(player, power, actionKey), allowOverexertion);
     }
 
+    /**
+     * Fires a skill every holder of the power has, on an input of its own rather than a key. It pays, cools down and
+     * ranks up like any other action. Never overexerts: nobody chooses that by tapping a movement key.
+     */
+    public static AbilityUseResult activateInnate(ServerPlayer player, AbilityAction action) {
+        String id = action.definition().id().getPath();
+        return activate(player, power -> com.jayptucker.heroesevolved.skills.SkillCatalog.innate(power.getPath(), id) ? action : null, false);
+    }
+
     private static AbilityUseResult activate(
             ServerPlayer player,
             Function<ResourceLocation, AbilityAction> chooser,

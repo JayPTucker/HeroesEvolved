@@ -74,7 +74,7 @@ public final class SkillUiPreview {
         com.jayptucker.heroesevolved.network.ClientLoadout.update(new com.jayptucker.heroesevolved.network.LoadoutPayload(10, 640, 800, false,
                 "Defeat 60 enemies with your power", 0, 60, 2, entries,
                 java.util.List.of("base:PRIMARY", "base:SECONDARY", "base:TERTIARY", "base:QUATERNARY", "base:QUINARY", "pyrokinesis_blue_lance", "pyrokinesis_sunfall", ""),
-                "pyrokinesis", java.util.List.of(quick, "", "pyrokinesis_ember_mine", "", "base:PRIMARY", "", "", ""), quick));
+                "pyrokinesis", java.util.List.of(quick, "", "pyrokinesis_ember_mine", "", "base:PRIMARY", "", "", ""), quick, java.util.List.of()));
     }
 
     @SubscribeEvent public static void rendered(RenderFrameEvent.Post event) {

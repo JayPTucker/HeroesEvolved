@@ -147,7 +147,7 @@ public final class PowersScreen extends HeroScreen {
         List<SkillCatalog.Node> nodes = new ArrayList<>(SkillCatalog.styles(path));
         nodes.addAll(SkillCatalog.nodes(path));
         for (SkillCatalog.Node node : nodes) {
-            if (!node.active() || !learned.contains(node.id())) continue;
+            if (!node.active() || node.innate() || !learned.contains(node.id())) continue;
             LoadoutPayload.Entry entry = ClientLoadout.entry(node.id());
             list.add(new Ability(node.id(), Component.literal(node.name()), Component.literal(node.description()),
                     roleOf(node.role(), node.description()), node.style() ? "Class ability" : node.signature() ? "Signature skill" : "Learned skill",
@@ -412,7 +412,8 @@ public final class PowersScreen extends HeroScreen {
         for (SkillCatalog.Node n : nodes) {
             if (n.prerequisite().isEmpty() || !at.containsKey(n.prerequisite())) continue;
             int[] c = at.get(n.id()), p = at.get(n.prerequisite());
-            int color = learned.contains(n.id()) ? 0xFFD08A4A : LINE;
+            boolean lit = n.innate() ? SkillCatalog.satisfied(n.power(), learned, n.prerequisite()) : learned.contains(n.id());
+            int color = lit ? 0xFFD08A4A : LINE;
             int px = p[0] + HEX_W / 2, cx = c[0] + HEX_W / 2, mid = (p[1] + HEX_H + c[1]) / 2;
             g.fill(px - 1, p[1] + HEX_H - 2, px + 1, mid + 1, color);
             g.fill(Math.min(px, cx) - 1, mid - 1, Math.max(px, cx) + 1, mid + 1, color);
@@ -421,7 +422,7 @@ public final class PowersScreen extends HeroScreen {
         SkillCatalog.Node selected = null;
         for (SkillCatalog.Node n : nodes) {
             int[] c = at.get(n.id());
-            boolean has = learned.contains(n.id());
+            boolean has = n.innate() || learned.contains(n.id());
             boolean canLearn = canLearn(n, awake, has, level, learned, points, capstoneTaken);
             ResourceLocation sprite = has ? HEX_LEARNED : canLearn ? HEX_OPEN : HEX_LOCKED;
             g.blitSprite(sprite, c[0], c[1], HEX_W, HEX_H);
@@ -458,7 +459,7 @@ public final class PowersScreen extends HeroScreen {
     }
 
     private static boolean canLearn(SkillCatalog.Node n, boolean awake, boolean has, int level, Set<String> learned, int points, boolean capstoneTaken) {
-        return awake && !has && level >= PowerLevels.levelForTier(n.level()) && (n.prerequisite().isEmpty() || learned.contains(n.prerequisite()))
+        return awake && !has && level >= PowerLevels.levelForTier(n.level()) && SkillCatalog.satisfied(n.power(), learned, n.prerequisite())
                 && points >= n.cost() && !(n.capstone() && capstoneTaken);
     }
 
@@ -466,10 +467,10 @@ public final class PowersScreen extends HeroScreen {
                           Set<String> learned, int level, int points, boolean capstoneTaken) {
         panel(g, x, y, w, h);
         String path = n.power();
-        boolean has = learned.contains(n.id()), canLearn = canLearn(n, awake, has, level, learned, points, capstoneTaken);
+        boolean has = n.innate() || learned.contains(n.id()), canLearn = canLearn(n, awake, has, level, learned, points, capstoneTaken);
         AbilityIcons.draw(g, n.power(), n.id(), x + 6, y + 6, 16);
         int after = paragraph(g, Component.literal(n.name()).withStyle(ChatFormatting.BOLD), x + 26, y + 6, w - 32, 2, TEXT);
-        String kind = n.capstone() ? "Capstone (one per build)" : n.signature() ? "Signature ability" : n.active() ? "Active skill" : "Passive skill";
+        String kind = n.innate() ? "Passive" : n.capstone() ? "Capstone (one per build)" : n.signature() ? "Signature ability" : n.active() ? "Active skill" : "Passive skill";
         int py = Math.max(after, y + 16);
         if (n.active()) {
             String role = roleOf(n.role(), n.description());
@@ -477,23 +478,27 @@ public final class PowersScreen extends HeroScreen {
             g.drawString(font, ellipsis(kind, w - 36 - pw), x + 30 + pw, py + 1, MUTED, false);
         } else g.drawString(font, kind, x + 26, py + 1, MUTED, false);
         int cy = py + 14;
-        String facts = SkillCatalog.branchName(path, n.branch()) + "  ·  " + n.cost() + (n.cost() == 1 ? " point" : " points")
+        String facts = n.innate() ? SkillCatalog.branchName(path, n.branch()) + "  ·  Free"
+                : SkillCatalog.branchName(path, n.branch()) + "  ·  " + n.cost() + (n.cost() == 1 ? " point" : " points")
                 + "  ·  Level " + PowerLevels.levelForTier(n.level());
         cy = paragraph(g, Component.literal(facts), x + 6, cy, w - 12, 2, GOLD);
         if (n.active()) { g.drawString(font, n.energy() + " stamina  ·  " + seconds(n.cooldown()) + " cooldown", x + 6, cy, GOLD, false); cy += 10; }
-        if (!n.prerequisite().isEmpty()) {
+        if (!n.prerequisite().isEmpty() && !n.innate()) {
             String parent = SkillCatalog.find(path, n.prerequisite()).map(SkillCatalog.Node::name).orElse("its parent");
-            cy = paragraph(g, Component.literal("After " + parent), x + 6, cy, w - 12, 1, learned.contains(n.prerequisite()) ? MUTED : RED);
+            cy = paragraph(g, Component.literal("After " + parent), x + 6, cy, w - 12, 1, SkillCatalog.satisfied(path, learned, n.prerequisite()) ? MUTED : RED);
         }
         int buttonsY = y + h - 18, respecY = buttonsY;
         boolean anyLearned = !learned.isEmpty();
         if (anyLearned) buttonsY -= 16;
-        Component status = has ? Component.literal(n.active() ? "Learned. Put it on a key on the Loadout page." : "Learned.").withStyle(ChatFormatting.GREEN)
+        var keys = net.minecraft.client.Minecraft.getInstance().options;
+        Component status = n.innate() ? Component.literal("Always yours. Double-tap " + keys.keyLeft.getTranslatedKeyMessage().getString()
+                        + " or " + keys.keyRight.getTranslatedKeyMessage().getString() + " while flying.").withStyle(ChatFormatting.GREEN)
+                : has ? Component.literal(n.active() ? "Learned. Put it on a key on the Loadout page." : "Learned.").withStyle(ChatFormatting.GREEN)
                 : canLearn ? Component.literal("Ready to learn.").withStyle(ChatFormatting.AQUA)
                 : n.capstone() && capstoneTaken ? Component.literal("You already chose a capstone.").withStyle(ChatFormatting.RED)
                 : !awake ? Component.literal("Your power hasn't woken yet.").withStyle(ChatFormatting.RED)
                 : level < PowerLevels.levelForTier(n.level()) ? Component.literal("Reach Level " + PowerLevels.levelForTier(n.level()) + ".").withStyle(ChatFormatting.RED)
-                : !n.prerequisite().isEmpty() && !learned.contains(n.prerequisite()) ? Component.literal("Learn the skill above it first.").withStyle(ChatFormatting.RED)
+                : !SkillCatalog.satisfied(path, learned, n.prerequisite()) ? Component.literal("Learn the skill above it first.").withStyle(ChatFormatting.RED)
                 : Component.literal("Needs " + n.cost() + " points.").withStyle(ChatFormatting.RED);
         List<FormattedCharSequence> statusLines = font.split(status, w - 12);
         int statusY = buttonsY - 4 - statusLines.size() * 10;
@@ -501,7 +506,7 @@ public final class PowersScreen extends HeroScreen {
         for (FormattedCharSequence line : statusLines) { g.drawString(font, line, x + 6, statusY, TEXT, false); statusY += 10; }
         if (!has) button(g, x + 6, buttonsY, w - 12, 14, Component.literal(canLearn ? "LEARN  ·  " + n.cost() + (n.cost() == 1 ? " POINT" : " POINTS") : "LOCKED")
                 .withStyle(ChatFormatting.BOLD), canLearn && !pending, canLearn, mouseX, mouseY, () -> buy(n.id()));
-        else button(g, x + 6, buttonsY, w - 12, 14, Component.literal("LEARNED"), false, true, mouseX, mouseY, () -> { });
+        else button(g, x + 6, buttonsY, w - 12, 14, Component.literal(n.innate() ? "INNATE" : "LEARNED"), false, true, mouseX, mouseY, () -> { });
         if (anyLearned) button(g, x + 6, respecY, w - 12, 14, Component.literal(font.width("RESPEC (refund all)") < w - 20 ? "RESPEC (refund all)" : "RESPEC"), !pending, false, mouseX, mouseY,
                 () -> { pending = true; PacketDistributor.sendToServer(new SkillTreeActionPayload(SkillTreeActionPayload.Operation.RESPEC, "", AbilitySlot.PRIMARY)); });
     }

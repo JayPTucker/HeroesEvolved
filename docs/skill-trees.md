@@ -18,7 +18,7 @@ between the first three):
 - **Class**: choose how you play your power, Offense, Defense or Support. See [Classes](classes.md).
 - **Journal** and **Settings** open the story journal and the effects settings.
 
-Flight has a fully redesigned eighteen-node tree: see [Flight](flight.md#purchasable-skills) for Sky Guard, Jetstream and Stormbreaker. Its passives change specific mechanics instead of granting the generic stat bonuses below.
+Flight has a fully redesigned eighteen-node tree: see [Flight](flight.md#purchasable-skills) for Sky Guard, Jetstream and Stormbreaker. Its passives change specific mechanics instead of granting the generic stat bonuses below. Its **Barrel Roll** is innate: every flyer has it for free on a double-tapped Strafe Left or Right, so it costs no points and takes no key or wheel position.
 
 Telekinesis also replaces all eighteen nodes with interaction-based progression. See [Telekinesis](telekinesis.md) for physical fragments, aimed fields, projectile counterattacks and the Fine Manipulation, Kinetic Arsenal and Bastion branches. Its old blanket stat bonuses no longer apply.
 
@@ -65,7 +65,7 @@ free. Other costs round up to at least one.
 | Power | Control skill | Force skill | Survival skill |
 | --- | --- | --- | --- |
 | Quake | Seismic Lance | Aftershock | Fault Step |
-| Flight | Rescue Rush | Barrel Roll | Thermal Lance |
+| Flight | Rescue Rush | Barrel Roll (innate) | Thermal Lance |
 | Cryokinesis | Crystal Lance | Frost Armor | Cold Snap |
 | Electrokinesis | Arc Lance | Static Screen | Overcharge |
 | Telekinesis | Vector Lance | Gravity Well | Vector Step |

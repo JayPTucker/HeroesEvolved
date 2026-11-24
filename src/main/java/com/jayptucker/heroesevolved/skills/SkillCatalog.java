@@ -11,7 +11,8 @@ import java.util.*;
 public final class SkillCatalog {
     public record Node(String id, String power, int branch, int tier, String name, String description,
                        int energy, int cooldown, int cost, int level, boolean active, String prerequisite,
-                       String mechanic, boolean capstone, String icon, boolean signature, String role, boolean style) {
+                       String mechanic, boolean capstone, String icon, boolean signature, String role, boolean style,
+                       boolean innate) {
         /** Branch index of the class abilities, which sit beside the three branches. */
         public static final int STYLE_BRANCH = 3;
         public ResourceLocation actionId() { return ResourceLocation.fromNamespaceAndPath("heroesevolved", id); }
@@ -52,6 +53,8 @@ public final class SkillCatalog {
     /** The roles a class ability can play. */
     public static final List<String> ROLES = List.of("offense", "defense", "support");
     private static final Map<String, List<Node>> STYLES = new HashMap<>();
+    /** Each power's innate nodes: every holder has them, free, on an input of their own instead of a key. */
+    private static final Map<String, Set<String>> INNATE = new HashMap<>();
     public static String branchName(String power, int branch) {
         return BRANCHES.getOrDefault(power, List.of("Control", "Force", "Survival")).get(branch);
     }
@@ -83,7 +86,8 @@ public final class SkillCatalog {
                                 n.has("icon") ? n.get("icon").getAsString() : "",
                                 // A signature ability is a showpiece beyond the eighteen-node tree: always active, never a capstone.
                                 n.has("signature") && n.get("signature").getAsBoolean(),
-                                n.has("role") ? n.get("role").getAsString() : "", false));
+                                n.has("role") ? n.get("role").getAsString() : "", false,
+                                n.has("innate") && n.get("innate").getAsBoolean()));
                         parent = id; tier++;
                     }
                     if (tier < 1 || tier > 12) throw new IllegalStateException("Invalid branch length");
@@ -99,16 +103,18 @@ public final class SkillCatalog {
                                 n.get("description").getAsString(), n.get("energy").getAsInt(), n.get("cooldown").getAsInt(),
                                 n.has("cost") ? n.get("cost").getAsInt() : 3, n.has("level") ? n.get("level").getAsInt() : 3, true, "",
                                 n.get("mechanic").getAsString(), false, n.has("icon") ? n.get("icon").getAsString() : "", false,
-                                n.get("role").getAsString(), true));
+                                n.get("role").getAsString(), true, false));
                     }
                 }
                 if (styles.stream().anyMatch(n -> !ROLES.contains(n.role)) || styles.stream().map(Node::role).distinct().count() != styles.size()
                         || styles.stream().anyMatch(sn -> nodes.stream().anyMatch(n -> n.id.equals(sn.id))))
                     throw new IllegalStateException("Invalid class abilities: " + power);
                 STYLES.put(power, List.copyOf(styles));
+                INNATE.put(power, nodes.stream().filter(Node::innate).map(Node::id).collect(java.util.stream.Collectors.toUnmodifiableSet()));
                 if (branch != 3 || nodes.stream().map(Node::id).distinct().count() != nodes.size()
                         || nodes.stream().anyMatch(n -> n.cost < 1 || n.level < 1 || !n.prerequisite.isEmpty() && nodes.stream().noneMatch(parent -> parent.id.equals(n.prerequisite) && parent.tier < n.tier))
                         || nodes.stream().anyMatch(n -> n.signature && (!n.active || n.capstone))
+                        || nodes.stream().anyMatch(n -> n.innate && (!n.active || n.capstone || n.signature))
                         || result.put(power, List.copyOf(nodes)) != null)
                     throw new IllegalStateException("Invalid skill tree: " + power);
             }
@@ -133,7 +139,28 @@ public final class SkillCatalog {
         return all(power).stream().filter(n -> n.id.equals(id)).findFirst();
     }
     public static int spent(String power, SkillTreeData.Build build) {
-        return all(power).stream().filter(n -> build.learned().contains(n.id)).mapToInt(Node::cost).sum();
+        return all(power).stream().filter(n -> !n.innate && build.learned().contains(n.id)).mapToInt(Node::cost).sum();
+    }
+    public static boolean innate(String power, String id) { return INNATE.getOrDefault(power, Set.of()).contains(id); }
+    /** Whether a node's parent is met. An innate parent is always owned, so the node above it is what counts. */
+    public static boolean satisfied(String power, Set<String> learned, String prerequisite) {
+        if (prerequisite.isEmpty() || learned.contains(prerequisite)) return true;
+        return find(power, prerequisite).filter(Node::innate)
+                .map(parent -> satisfied(power, learned, parent.prerequisite)).orElse(false);
+    }
+    /**
+     * A save from before a skill became innate: its purchase comes off, which refunds the points, and it leaves the
+     * keys and the wheel. Returns the same build when there is nothing to change.
+     */
+    public static SkillTreeData.Build withoutInnate(String power, SkillTreeData.Build build) {
+        Set<String> innate = INNATE.getOrDefault(power, Set.of());
+        if (innate.isEmpty() || build.learned().stream().noneMatch(innate::contains)
+                && build.slots().values().stream().noneMatch(innate::contains)
+                && build.wheel().values().stream().noneMatch(innate::contains)) return build;
+        Set<String> learned = new HashSet<>(build.learned());
+        learned.removeAll(innate);
+        return new SkillTreeData.Build(build.highestLevel(), learned, Loadout.without(build.slots(), innate),
+                build.training(), WheelLoadout.without(build.wheel(), innate));
     }
     public static int available(String power, SkillTreeData.Build build) { return available(power, build, 0); }
     /** With {@code storyPoints} from notes the player has found (see PowerJourney). */

@@ -77,6 +77,7 @@ public final class AbilitySlotHudOverlay {
         strain(gauges);
         regrowth(gauges);
         flight(gauges);
+        com.jayptucker.heroesevolved.client.FlightRollClient.gauges(gauges);
         com.jayptucker.heroesevolved.client.PyroFlightClient.gauges(gauges);
         com.jayptucker.heroesevolved.client.OpticalClient.gauges(gauges);
         com.jayptucker.heroesevolved.client.TelepathyClient.gauges(gauges);

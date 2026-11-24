@@ -1,0 +1,26 @@
+// Presses the real strafe keys for Flight's Barrel Roll with uitest/FlightRollPreview: both directions, near misses, chat,
+// the ground and a rebound key. Prints ROLL_INPUT lines; shots go to build/flight-roll-preview/screenshots/.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('flightRollPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/flight-roll-preview')
+                        programArguments.addAll('--width', '1100', '--height', '800')
+                        systemProperty('heroes.preview.flightroll', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('flightRollPreviewClasses')) }
+            // Pass when every case ran (PREVIEW_DONE), not on the exit code the closing halt leaves.
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

@@ -646,7 +646,7 @@ a successful evasion; full holding time and an immediate shattering/releasing bl
 | `flight_thunderclap` | 3 | 28 | 3 | 1 | 5 / 0 blocks | 5.25 / 4.89 | changed | 4+Momentum*.05 -> 7+Momentum*.05 (`flight/FlightSkillService#tickVacuum`) |
 | `flight_0_1` | 2 | 20 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: rush to and rescue a friend (`flight/FlightSkillService`) |
 | `flight_sky_catch` | 3 | 27 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Wind Sanctuary shields friends (`flight/FlightSkillService`) |
-| `flight_1_1` | 2 | 19 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Barrel Roll evades and redirects shots (`flight/FlightSkillService`) |
+| `flight_1_1` | 1 | 19 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Barrel Roll evades and redirects shots (`flight/FlightSkillService`) |
 | `flight_tailwind` | 3 | 24 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Jetstream carries friends and shoves foes, no damage (`flight/FlightSkillService`) |
 | `cryokinesis_0_1` | 2 | 24 | 1 | 0 | 6 / 0 blocks | 7.5 / 9 | changed | 6+tier -> 8+tier; one forged lance (`cryo/CryoCombatSkills#tickForge`) |
 | `cryokinesis_1_1` | 2 | 26 | 2 | 0 | 20 / 0 blocks | 2.25 / 2.14 | within 30% | six shards of 3+stored/8; equal simultaneous hits respect ordinary invulnerability. Unlike StyleOps and HydroService, coldHit does NOT reset invulnerability: a close fan cannot deal 6*3 to one body. Stored incoming damage is conditional. (`cryo/CryoCombatSkills#release,impact; cryo/CryoService#coldHit`) |

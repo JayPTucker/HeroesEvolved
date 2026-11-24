@@ -17,7 +17,7 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("113")
+        event.registrar("114")
             .playToClient(GodModePayload.TYPE, GodModePayload.STREAM_CODEC, GodModePayload::handle)
             .playToClient(MobTimePayload.TYPE, MobTimePayload.STREAM_CODEC, MobTimePayload::handle)
             .playToClient(SuperchargedPayload.TYPE, SuperchargedPayload.STREAM_CODEC, SuperchargedPayload::handle)
@@ -168,6 +168,11 @@ public final class ModPayloads {
                 FlightForwardInputPayload.TYPE,
                 FlightForwardInputPayload.STREAM_CODEC,
                 FlightForwardInputPayload::handle
+            )
+            .playToServer(
+                FlightRollPayload.TYPE,
+                FlightRollPayload.STREAM_CODEC,
+                FlightRollPayload::handle
             );
     }
 }

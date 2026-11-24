@@ -1,16 +1,22 @@
 package com.jayptucker.heroesevolved.flight;
 
 import com.jayptucker.heroesevolved.ability.AbilityAction;
+import com.jayptucker.heroesevolved.ability.AbilityUseContext;
+import com.jayptucker.heroesevolved.ability.AbilityUseResult;
 import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.SimpleAction;
 import com.jayptucker.heroesevolved.ability.Targeting;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
+import com.jayptucker.heroesevolved.ability.service.AbilityUseService;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
+import com.jayptucker.heroesevolved.ability.service.PowerFeedback;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
+import com.jayptucker.heroesevolved.cooldown.CooldownService;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.network.ArmPosePayload;
 import com.jayptucker.heroesevolved.network.FlightVisualSyncService;
 import com.jayptucker.heroesevolved.network.SetPiecePayload;
+import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.skills.SkillCatalog;
 import com.jayptucker.heroesevolved.skills.SkillTreeService;
 import com.jayptucker.heroesevolved.speed.SpeedService;
@@ -44,6 +50,8 @@ import java.util.UUID;
 
 /** Six distinct purchasable Flight techniques and their bounded, transient fields. */
 public final class FlightSkillService {
+    /** Barrel Roll: every flyer's passive, on a double-tapped strafe key. Its id is the old skill node's. */
+    public static final String ROLL = "flight_1_1";
     private static final int TARGET_LIMIT = 64;
     private static final int ROLL_TICKS = 12;
     private static final int VACUUM_TICKS = 8;
@@ -55,12 +63,32 @@ public final class FlightSkillService {
 
     private FlightSkillService() {}
 
-    public static AbilityAction action(SkillCatalog.Node node) {
+    public static AbilityAction action(SkillCatalog.Node node) { return action(node, 1); }
+
+    private static AbilityAction action(SkillCatalog.Node node, int rollSide) {
         return SimpleAction.builder(node.id(), node.level()).cost(node::energy, node::cooldown)
                 .canUse(c -> canUse(c.player(), node.id()))
-                .activate(c -> activate(c.player(), node.id()))
-                // Shift on an initial Barrel Roll chooses left; pressing it again can abort the roll.
+                .activate(c -> node.id().equals(ROLL) ? canUse(c.player(), ROLL) && roll(c.player(), rollSide)
+                        : activate(c.player(), node.id()))
                 .deactivate(c -> cancel(c.player(), node.id())).build();
+    }
+
+    /**
+     * A double-tapped strafe key: {@code side} -1 rolls left, 1 rolls right. The client only asks; this decides. A tap
+     * that can't roll (not flying, mid-maneuver, still cooling down) does nothing and says nothing, because it is
+     * also just a player steering. Only running out of stamina is reported, through the normal path.
+     */
+    public static AbilityUseResult requestRoll(ServerPlayer player, int side) {
+        if (side != -1 && side != 1) return AbilityUseResult.CANNOT_USE;
+        var node = SkillCatalog.find("flight", ROLL).orElse(null);
+        if (node == null) return AbilityUseResult.CANNOT_USE;
+        AbilityAction action = action(node, side);
+        var context = new AbilityUseContext(player, ModAbilities.FLIGHT_ID, PlayerProgressionService.getLevel(player), false);
+        if (!action.canUse(context) || CooldownService.isOnCooldown(player, action.cooldownId(context)))
+            return AbilityUseResult.CANNOT_USE;
+        AbilityUseResult result = AbilityUseService.activateInnate(player, action);
+        PowerFeedback.report(player, result);
+        return result;
     }
 
     public static boolean canUse(ServerPlayer player, String id) {
@@ -68,7 +96,7 @@ public final class FlightSkillService {
         return switch (id) {
             case "flight_0_1" -> rescueTarget(player) != null;
             case "flight_sky_catch", "flight_2_1" -> groundAim(player, 20) != null;
-            case "flight_1_1" -> !player.onGround() && !isLaunching(player);
+            case "flight_1_1" -> FlightService.hasActiveSession(player) && !player.onGround() && !isLaunching(player);
             case "flight_tailwind" -> laneEnd(player, body(player), horizontal(player),
                     SkillTreeService.has(player, "flight_jetstream") ? 20 : 12).distanceToSqr(body(player)) >= 1;
             case "flight_thunderclap" -> !isLaunching(player);
@@ -81,7 +109,7 @@ public final class FlightSkillService {
         return switch (id) {
             case "flight_0_1" -> rescue(player);
             case "flight_sky_catch" -> sanctuary(player);
-            case "flight_1_1" -> roll(player);
+            case "flight_1_1" -> roll(player, 1);
             case "flight_tailwind" -> jetstream(player);
             case "flight_2_1" -> thermal(player);
             case "flight_thunderclap" -> vacuum(player);
@@ -360,11 +388,10 @@ public final class FlightSkillService {
                 sanctuary.center, sanctuary.center, (float) SANCTUARY_RADIUS, null);
     }
 
-    private static boolean roll(ServerPlayer player) {
-        if (!FlightService.hasActiveSession(player)) FlightService.startFlightSession(player, 0);
+    private static boolean roll(ServerPlayer player, int side) {
         State state = state(player);
         double speed = Math.clamp(player.getDeltaMovement().length(), 1.65, 2.7);
-        state.roll = new Roll(horizontal(player), player.isShiftKeyDown() ? -1 : 1, speed);
+        state.roll = new Roll(horizontal(player), side, speed);
         ArmPosePayload.show(player, ArmPose.FLIGHT_ROLL, ROLL_TICKS);
         FlightVisualSyncService.syncToTrackingPlayers(player);
         player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.BREEZE_JUMP,

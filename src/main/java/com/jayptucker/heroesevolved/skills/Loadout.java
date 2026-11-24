@@ -62,7 +62,15 @@ public final class Loadout {
         }
         var build = SkillTreeService.build(player, power);
         for (SkillCatalog.Node node : SkillCatalog.all(power.getPath()))
-            if (node.active() && build.learned().contains(node.id())) entries.add(new Entry(node.id(), node.action(), null, node));
+            if (node.active() && !node.innate() && build.learned().contains(node.id())) entries.add(new Entry(node.id(), node.action(), null, node));
+        return entries;
+    }
+
+    /** The skills every holder of the power has with no key or wheel position. */
+    public static List<Entry> innate(ResourceLocation power) {
+        List<Entry> entries = new ArrayList<>();
+        for (SkillCatalog.Node node : SkillCatalog.all(power.getPath()))
+            if (node.innate()) entries.add(new Entry(node.id(), node.action(), null, node));
         return entries;
     }
 
@@ -80,7 +88,7 @@ public final class Loadout {
         }
         var build = SkillTreeService.build(player, power);
         return SkillCatalog.find(power.getPath(), actionKey)
-                .filter(node -> node.active() && build.learned().contains(node.id()))
+                .filter(node -> node.active() && !node.innate() && build.learned().contains(node.id()))
                 .map(SkillCatalog.Node::action).orElse(null);
     }
 
@@ -111,6 +119,21 @@ public final class Loadout {
             if (fallback.equals(placed) || !fallback.isEmpty() && boundElsewhere(slots, other, fallback)) slots.put(saveName(other), "");
         }
         return slots;
+    }
+
+    /**
+     * Takes actions that can no longer be bound off every key. Each key goes back to its default, or empty if that
+     * default has since moved to another key, so no action ends up on two keys.
+     */
+    public static Map<String, String> without(Map<String, String> slots, java.util.Set<String> gone) {
+        var updated = new java.util.HashMap<>(slots);
+        for (int key = 1; key <= KEYS; key++) {
+            if (!gone.contains(binding(updated, key))) continue;
+            updated.remove(saveName(key));
+            String fallback = defaultFor(key);
+            if (!fallback.isEmpty() && boundElsewhere(updated, key, fallback)) updated.put(saveName(key), "");
+        }
+        return updated;
     }
 
     private static String binding(Map<String, String> slots, int key) {

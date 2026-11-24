@@ -464,7 +464,7 @@
   "action.heroesevolved.flight_0_1": "Rescue Rush",
   "action.heroesevolved.flight_0_1.desc": "Rush to a visible teammate or your tamed pet within 18 blocks, reset their fall and grant 8 seconds of Slow Falling plus two hearts of absorption.",
   "action.heroesevolved.flight_1_1": "Barrel Roll",
-  "action.heroesevolved.flight_1_1.desc": "Corkscrew for 0.6 seconds, carrying your entry speed. Deflect a hostile projectile to bank 15 Momentum once per roll. Shift + key rolls left. Solid walls stop the roll.",
+  "action.heroesevolved.flight_1_1.desc": "Double-tap Strafe Left or Right in flight to corkscrew that way for 0.6 seconds, keeping your speed. Deflect a hostile shot to bank 15 Momentum once per roll. Walls stop it.",
   "action.heroesevolved.flight_2_1": "Thermal Lance",
   "action.heroesevolved.flight_2_1.desc": "Aim at solid ground within 20 blocks. After 0.4 seconds, a 3.5-block-radius updraft lifts and damages enemies and cushions allies. Fly into your own column to gain a lift and 20 Momentum once per cast. Shift + key cancels the warning. The updraft deals 6 damage.",
   "action.heroesevolved.cryokinesis_0_1": "Crystal Lance",

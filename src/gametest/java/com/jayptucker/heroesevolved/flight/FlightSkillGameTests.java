@@ -9,9 +9,11 @@ import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.cooldown.CooldownService;
 import com.jayptucker.heroesevolved.events.EclipseService;
+import com.jayptucker.heroesevolved.skills.Loadout;
 import com.jayptucker.heroesevolved.skills.SkillCatalog;
 import com.jayptucker.heroesevolved.skills.SkillTreeData;
 import com.jayptucker.heroesevolved.skills.SkillTreeService;
+import com.jayptucker.heroesevolved.skills.WheelLoadout;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.mojang.authlib.GameProfile;
 import com.mojang.serialization.JsonOps;
@@ -75,6 +77,7 @@ public final class FlightSkillGameTests {
 
     private static void learn(ServerPlayer p, String... upgrades) {
         var ids = new HashSet<>(ACTIVES);
+        ids.remove(ROLL); // Innate: nobody buys it.
         ids.addAll(Set.of(upgrades));
         p.setData(ModDataAttachments.SKILL_TREES, SkillTreeData.empty().with(ModAbilities.FLIGHT_ID.toString(),
                 new SkillTreeData.Build(5, ids, Map.of(), 6)));
@@ -155,6 +158,10 @@ public final class FlightSkillGameTests {
                 int slot = 0;
                 for (var node : nodes) {
                     if (node.branch() != branch) continue;
+                    if (node.innate()) {
+                        h.assertTrue(!SkillTreeService.purchase(p, node.id()), "An innate node is never bought: " + node.id());
+                        continue;
+                    }
                     h.assertTrue(SkillTreeService.purchase(p, node.id()), "A complete single-branch build must remain purchasable: " + node.id());
                     if (node.active()) h.assertTrue(SkillTreeService.equip(p, AbilitySlot.values()[slot++], node.id()), "Purchased actions must equip");
                 }
@@ -240,13 +247,13 @@ public final class FlightSkillGameTests {
         Arrow hostile = arrow(h, shooter, p.position().add(0, 1, 1), new Vec3(0, 0, -1));
         Arrow friendly = arrow(h, p, p.position().add(.5, 1, 1), new Vec3(0, 0, -1));
         try {
-            cast(h, p, ROLL);
+            h.assertTrue(FlightSkillService.requestRoll(p, 1) == AbilityUseResult.SUCCESS, "A double-tapped Strafe Right rolls");
             h.assertTrue(FlightSkillService.isRolling(p), "Barrel Roll starts a distinct short movement state");
             tick(p, 3);
             h.assertTrue(p.getDeltaMovement().length() > .5 && FlightSkillService.rollProgress(p) > 0,
                     "The roll has real movement and progresses its animation");
             h.assertTrue(p.getDeltaMovement().x < -.01,
-                    "Facing south at yaw zero, the default roll must move right toward negative X as documented");
+                    "Facing south at yaw zero, Strafe Right must roll toward negative X");
             h.assertTrue(hostile.getDeltaMovement().z > 0,
                     "The roll deflects an incoming hostile shot");
             h.assertTrue(friendly.getDeltaMovement().z == -1, "The roll must leave the caster's own shots alone");
@@ -254,14 +261,114 @@ public final class FlightSkillGameTests {
                     "The first real projectile deflection rewards the pilot");
             tick(p, 16);
             h.assertTrue(!FlightSkillService.isRolling(p), "The roll must end instead of retaining forced movement indefinitely");
-            p.setShiftKeyDown(true);
-            cast(h, p, ROLL); tick(p, 3);
-            h.assertTrue(p.getDeltaMovement().x > .01,
-                    "Holding Shift reverses the same Node action into a left roll toward positive X");
+            CooldownService.clearAll(p);
+            h.assertTrue(FlightSkillService.requestRoll(p, -1) == AbilityUseResult.SUCCESS, "A double-tapped Strafe Left rolls");
+            tick(p, 3);
+            h.assertTrue(p.getDeltaMovement().x > .01, "Strafe Left must roll the other way, toward positive X");
             tick(p, 16);
-            h.assertTrue(!FlightSkillService.isRolling(p), "The reversed roll also finishes its movement state");
+            h.assertTrue(!FlightSkillService.isRolling(p), "The left roll also finishes its movement state");
             h.succeed();
-        } finally { p.setShiftKeyDown(false); cleanup(p, shooter, hostile, friendly); }
+        } finally { cleanup(p, shooter, hostile, friendly); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "flight.roll_passive")
+    public static void everyFlyerRollsWithoutBuyingItOrGivingUpAKey(GameTestHelper h) {
+        ServerPlayer p = player(h);
+        PlayerProgressionService.setLevel(p, 1);
+        try {
+            int points = SkillCatalog.available("flight", SkillTreeService.build(p, ModAbilities.FLIGHT_ID));
+            h.assertTrue(!SkillTreeService.purchase(p, ROLL), "The roll is not for sale");
+            h.assertTrue(SkillCatalog.available("flight", SkillTreeService.build(p, ModAbilities.FLIGHT_ID)) == points,
+                    "Trying to buy it spends nothing");
+            h.assertTrue(!SkillTreeService.equip(p, AbilitySlot.PRIMARY, ROLL), "The roll cannot take an ability key");
+            h.assertTrue(!SkillTreeService.bindWheel(p, "flight", 1, ROLL), "The roll cannot take a wheel position");
+            h.assertTrue(Loadout.available(p, ModAbilities.FLIGHT_ID).stream().noneMatch(e -> e.key().equals(ROLL)),
+                    "The roll is not listed among bindable abilities");
+            h.assertTrue(AbilityUseService.activateAction(p, ROLL, false) == AbilityUseResult.ACTION_NOT_ASSIGNED,
+                    "A forged wheel cast cannot reach the roll");
+            FlightService.toggleFlight(p);
+            double before = PlayerEnergyService.getStamina(p);
+            h.assertTrue(FlightSkillService.requestRoll(p, 1) == AbilityUseResult.SUCCESS && FlightSkillService.isRolling(p),
+                    "A level-one flyer with no skills can roll");
+            double afterRoll = PlayerEnergyService.getStamina(p);
+            h.assertTrue(afterRoll < before, "The roll still pays its stamina");
+            var hud = com.jayptucker.heroesevolved.network.PlayerPowerSyncService.innate(p, ModAbilities.FLIGHT_ID);
+            h.assertTrue(hud.size() == 1 && hud.get(0).actionKey().equals(ROLL) && hud.get(0).cooldownTicks() > 0
+                    && hud.get(0).cooldownEnd() > p.level().getGameTime(), "The HUD is told the roll is recharging");
+            tick(p, 16);
+            h.assertTrue(!FlightSkillService.isRolling(p), "The roll ends");
+            h.assertTrue(FlightSkillService.requestRoll(p, -1) == AbilityUseResult.CANNOT_USE && !FlightSkillService.isRolling(p),
+                    "The roll still has its cooldown");
+            h.assertTrue(PlayerEnergyService.getStamina(p) == afterRoll, "A tap during the cooldown costs nothing");
+            PlayerProgressionService.setLevel(p, 5);
+            h.assertTrue(!SkillTreeService.purchase(p, "flight_1_2"), "Vector Control still needs Ram Air, above the innate roll");
+            h.assertTrue(SkillTreeService.purchase(p, "flight_1_0") && SkillTreeService.purchase(p, "flight_1_2"),
+                    "With Ram Air bought, the innate roll counts as Vector Control's parent");
+            h.succeed();
+        } finally { cleanup(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "flight.roll_refusals")
+    public static void aDoubleTapThatCannotRollDoesNothing(GameTestHelper h) {
+        ServerPlayer p = player(h);
+        ServerPlayer other = player(h);
+        other.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty()
+                .assignDormant(ModAbilities.QUAKE_ID).unlock(ModAbilities.QUAKE_ID));
+        try {
+            double full = PlayerEnergyService.getStamina(p);
+            h.assertTrue(FlightSkillService.requestRoll(p, 1) == AbilityUseResult.CANNOT_USE && !FlightService.hasActiveSession(p),
+                    "In the air without flying, a tap neither rolls nor starts a flight");
+            h.assertTrue(PlayerEnergyService.getStamina(p) == full, "A refused tap costs nothing");
+            h.assertTrue(FlightSkillService.requestRoll(other, 1) == AbilityUseResult.CANNOT_USE && !FlightSkillService.isRolling(other),
+                    "A forged request from another power does nothing");
+            FlightService.toggleFlight(p);
+            p.setOnGround(true);
+            h.assertTrue(FlightSkillService.requestRoll(p, 1) == AbilityUseResult.CANNOT_USE && !FlightSkillService.isRolling(p),
+                    "A flyer standing on the ground cannot roll");
+            p.setOnGround(false);
+            h.assertTrue(FlightSkillService.requestRoll(p, 0) == AbilityUseResult.CANNOT_USE
+                            && FlightSkillService.requestRoll(p, 7) == AbilityUseResult.CANNOT_USE && !FlightSkillService.isRolling(p),
+                    "A forged direction is refused");
+            PlayerEnergyService.consumeUpTo(p, PlayerEnergyService.getEnergy(p));
+            float health = p.getHealth();
+            h.assertTrue(FlightSkillService.requestRoll(p, 1) == AbilityUseResult.INSUFFICIENT_ENERGY && !FlightSkillService.isRolling(p),
+                    "Without the stamina the roll is refused");
+            h.assertTrue(p.getHealth() == health, "A movement key never overexerts");
+            h.succeed();
+        } finally { cleanup(p); cleanup(other); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "flight.roll_old_saves")
+    public static void aSaveThatBoughtBarrelRollGetsItsPointsAndKeysBack(GameTestHelper h) {
+        ServerPlayer p = player(h);
+        String power = ModAbilities.FLIGHT_ID.toString();
+        try {
+            // Key 1 holds the roll, and key 1's own ability was moved to key 6.
+            var old = new SkillTreeData.Build(5, Set.of("flight_1_0", ROLL, "flight_1_2"),
+                    Map.of("PRIMARY", ROLL, "KEY6", "base:PRIMARY"), 6,
+                    Map.of("position_1", ROLL, "position_2", JETSTREAM, "tap", ROLL, "initialized", ""));
+            int spentBefore = SkillCatalog.nodes("flight").stream().filter(n -> old.learned().contains(n.id()))
+                    .mapToInt(SkillCatalog.Node::cost).sum();
+            // Through the save format, as a real old world would arrive.
+            var encoded = SkillTreeData.CODEC.encodeStart(JsonOps.INSTANCE, SkillTreeData.empty().with(power, old)).getOrThrow();
+            p.setData(ModDataAttachments.SKILL_TREES, SkillTreeData.CODEC.parse(JsonOps.INSTANCE, encoded).getOrThrow());
+            var build = SkillTreeService.build(p, ModAbilities.FLIGHT_ID);
+            h.assertTrue(build.learned().equals(Set.of("flight_1_0", "flight_1_2")), "The purchase comes off, the others stay");
+            h.assertTrue(SkillCatalog.spent("flight", build) == spentBefore - 2, "Its two points come back");
+            h.assertTrue(p.getData(ModDataAttachments.SKILL_TREES).build(power).equals(build), "The cleaned build is saved");
+            h.assertTrue(Loadout.binding(build, 1).isEmpty() && Loadout.keyOf(build, "base:PRIMARY") == 6,
+                    "Key 1 empties rather than putting one ability on two keys");
+            var wheel = WheelLoadout.positions(build.wheel());
+            h.assertTrue(wheel.get(0).isEmpty() && wheel.get(1).equals(JETSTREAM) && WheelLoadout.quickCast(build.wheel()).isEmpty(),
+                    "The roll leaves the wheel and its quick cast; other positions stay");
+            h.assertTrue(WheelLoadout.initialized(build.wheel()), "The wheel keeps its saved layout");
+            var simple = Loadout.without(Map.of("SECONDARY", ROLL), Set.of(ROLL));
+            h.assertTrue(Loadout.binding(new SkillTreeData.Build(5, Set.of(), simple), 2).equals("base:SECONDARY"),
+                    "A key whose own ability is free gets it back");
+            FlightService.toggleFlight(p);
+            h.assertTrue(FlightSkillService.requestRoll(p, 1) == AbilityUseResult.SUCCESS, "The old owner still rolls");
+            h.succeed();
+        } finally { cleanup(p); }
     }
 
     @GameTest(template = "rewind_empty", batch = "flight.jetstream")

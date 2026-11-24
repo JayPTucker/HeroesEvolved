@@ -16,12 +16,12 @@ public final class SkillTreeService {
     private SkillTreeService() {}
     public static SkillTreeData.Build build(ServerPlayer player, ResourceLocation power) {
         SkillTreeData data = player.getData(ModDataAttachments.SKILL_TREES);
-        var build = data.build(power.toString());
+        var saved = data.build(power.toString());
+        var build = SkillCatalog.withoutInnate(power.getPath(), saved);
         int highest = Math.max(build.highestLevel(), PlayerProgressionService.getPowerLevel(player));
-        if (highest != build.highestLevel()) {
+        if (highest != build.highestLevel())
             build = new SkillTreeData.Build(highest, build.learned(), build.slots(), build.training(), build.wheel());
-            player.setData(ModDataAttachments.SKILL_TREES, data.with(power.toString(), build));
-        }
+        if (build != saved) player.setData(ModDataAttachments.SKILL_TREES, data.with(power.toString(), build));
         return build;
     }
     public static boolean purchase(ServerPlayer player, String nodeId) {
@@ -29,11 +29,11 @@ public final class SkillTreeService {
         if (assignment.isEmpty() || !assignment.get().getValue().isUnlocked() || !PowerRules.canAct(player)) return false;
         ResourceLocation power = assignment.get().getKey();
         var node = SkillCatalog.find(power.getPath(), nodeId).orElse(null);
-        if (node == null) return false;
+        if (node == null || node.innate()) return false;
         var build = build(player, power);
         if (node.style()) return chooseStyle(player, power, node, build);
         if (build.learned().contains(node.id()) || PlayerProgressionService.getLevel(player) < node.level()
-                || !node.prerequisite().isEmpty() && !build.learned().contains(node.prerequisite())
+                || !SkillCatalog.satisfied(power.getPath(), build.learned(), node.prerequisite())
                 || SkillCatalog.available(power.getPath(), build, storyPoints(player)) < node.cost()) return false;
         if (node.capstone() && SkillCatalog.nodes(power.getPath()).stream().anyMatch(n -> n.capstone() && build.learned().contains(n.id()))) return false;
         Set<String> learned = new HashSet<>(build.learned()); learned.add(node.id());
@@ -190,7 +190,8 @@ public final class SkillTreeService {
     }
     public static boolean has(ServerPlayer player, String id) {
         return PlayerAbilityService.getData(player).assignedPower().filter(e -> e.getValue().isUnlocked())
-                .map(e -> build(player, e.getKey()).learned().contains(id)).orElse(false);
+                .map(e -> SkillCatalog.innate(e.getKey().getPath(), id) || build(player, e.getKey()).learned().contains(id))
+                .orElse(false);
     }
     public static void awardTraining(ServerPlayer player) {
         PlayerAbilityService.getData(player).assignedPower().ifPresent(e -> {
