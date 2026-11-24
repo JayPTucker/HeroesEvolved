@@ -114,6 +114,7 @@ public final class AdminService {
                     AdminEvents.cancel(admin.getServer(), player, "prologue");
                 }
                 AdminEvents.cancelAllRaids(admin.getServer());
+                com.jayptucker.heroesevolved.story.future.FutureWarning.cancelAll(admin.getServer());
                 com.jayptucker.heroesevolved.time.intro.TimeIntroService.shutdown(admin.getServer());
                 yield "Cancelled world events, queued incidents and active stories. Surviving mobs and existing world damage remain.";
             }

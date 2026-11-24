@@ -119,6 +119,7 @@ final class PieceArt {
             case MATTER_RISE -> AssemblyArt.rise(c, a, t);
             case SENTINEL -> AssemblyArt.sentinel(c, a, t);
             case STORY_BOLT, STORY_GRIP -> StoryArt.draw(c, a, t);
+            case FUTURE_OMEN, FUTURE_BREACH, FUTURE_SHUT -> FutureWarningArt.draw(c, a, t);
             case SYLAR_ROOM, SYLAR_LOCK, SYLAR_HURL_MARK, SYLAR_IMPACT, SYLAR_REEL_MARK, SYLAR_REEL, SYLAR_LATTICE_MARK,
                     SYLAR_LATTICE, SYLAR_ICE_MARK, SYLAR_ICE, SYLAR_FAULT_MARK, SYLAR_FAULT, SYLAR_RING_MARK, SYLAR_RING,
                     SYLAR_HAND_MARK, SYLAR_HAND, SYLAR_BLUR_MARK, SYLAR_BLUR, SYLAR_HOURS_MARK, SYLAR_HOURS, SYLAR_LIGHT_MARK,

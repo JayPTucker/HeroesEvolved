@@ -180,6 +180,7 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | `meltdown-preview.init.gradle`, `containment-preview.init.gradle`, `live-run-preview.init.gradle` | a villager meltdown; a speedster containing a blast | |
 | `eclipse-preview.init.gradle` | the Eclipse moon | |
 | **Story and places** | | |
+| `future-warning-preview.init.gradle` | The future-self omen, smooth first-person turn, reaching double, light pulling them back, snap and aftermath; actual admin start/cancel/reset controls at two scales and the Guide | Ten photographs in `build/future-warning-preview/screenshots/`; gameplay suite: `-PtestPackages=story/future` |
 | `end-portal-preview.init.gradle` | Dormant frame, paired offerings from both sides, first-person palms, stamina drain, opening membrane and iris, solo water offering, remembered eye at night, natural recovery and a solo opening | Uses real local ability-key holds and a visible server-side partner. Reports Level 15 refusal, co-op opening, one offering waiting, natural solo recovery and solo opening. Fourteen photographs in `build/end-portal-preview/screenshots/` |
 | `prologue-preview.init.gradle`, `time-city-preview.init.gradle` | the Last Day beat by beat; Odessa (prints `CITY_AUDIT`) | |
 | `bunker-preview.init.gradle`, `night-three-preview.init.gradle` | the bunker tour (prints `BUNKER_AUDIT`, `BUNKER_DARK`); Night Three | |

@@ -90,6 +90,13 @@ public final class AdminEvents {
         out.add(entry("vision", "Odessa vision", true, near + " / cancel: all vision viewers", "Replay the awakening vision for this player without changing their power. It waits until Odessa is available.",
                 TimeIntroService.sceneRunning() || player && (TimeIntroService.isQueued(target)
                 || com.jayptucker.heroesevolved.time.intro.TimeGather.gathering(target)), player, "Replay vision"));
+        out.add(entry("futurewarning", "Future-self warning", true, near + " / cancel: this player (no selection: server)",
+                com.jayptucker.heroesevolved.story.future.FutureWarning.status(server, target),
+                player ? com.jayptucker.heroesevolved.story.future.FutureWarning.active(target)
+                        || com.jayptucker.heroesevolved.story.future.FutureWarning.pending(target)
+                        : com.jayptucker.heroesevolved.story.future.FutureWarningData.get(server).pendingCount() > 0,
+                player && !com.jayptucker.heroesevolved.story.future.FutureWarning.active(target),
+                "Omen, then one day", "Warning now", "Reset encounter"));
         return List.copyOf(out);
     }
 
@@ -140,6 +147,15 @@ public final class AdminEvents {
             case "avenue" -> AvenueService.enter(target, true) ? "Entered the avenue." : "Avenue entry refused: city preparing, scene busy, or player unavailable.";
             case "night" -> NightThreeService.enter(target, true) ? "Entered Night Three." : "Night Three entry refused: scene busy or player unavailable.";
             case "vision" -> TimeIntroService.replay(target) ? "Queued the Odessa vision for this player." : "This player is already in a scene or queued for a vision.";
+            case "futurewarning" -> {
+                if (variant == 2) {
+                    com.jayptucker.heroesevolved.story.future.FutureWarning.cancel(target, true);
+                    yield "Reset this player's warning; they may be chosen again.";
+                }
+                yield com.jayptucker.heroesevolved.story.future.FutureWarning.start(target, variant == 1)
+                        ? "Started " + entry.starts().get(variant) + " for " + target.getName().getString() + "."
+                        : "Warning refused: player busy or unsafe, or no clear space behind them. Try standing on dry, open ground in the Overworld.";
+            }
             default -> "Unknown event.";
         };
     }
@@ -182,6 +198,11 @@ public final class AdminEvents {
             case "avenue" -> { AvenueService.shutdown(server); yield "Cancelled the avenue; all runners return home."; }
             case "night" -> { NightThreeService.shutdown(server); yield "Cancelled Night Three; all runners return home."; }
             case "vision" -> { TimeIntroService.cancelVision(server); yield "Cancelled the vision and pending gathers; viewers return home."; }
+            case "futurewarning" -> {
+                if (target == null) com.jayptucker.heroesevolved.story.future.FutureWarning.cancelAll(server);
+                else com.jayptucker.heroesevolved.story.future.FutureWarning.cancel(target, false);
+                yield "Cancelled the warning and its saved pending encounter; reset to allow another natural visit.";
+            }
             default -> "Unknown event.";
         };
     }

@@ -4,6 +4,21 @@ The Last Day prologue, story actors, the Odessa city build and the bunker rework
 
 Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 
+## Reusable patterns from the future-self warning
+
+What the player sees: [future-self-warning.md](../future-self-warning.md). `story/future/FutureWarning` reuses the
+traveler actor and its player skin; the focused suite is `-PtestPackages=story/future`, and
+`tools/future-warning-preview.init.gradle` photographs the encounter, Guide and real operator buttons.
+
+- **Persist the appointment, not the actor.** `FutureWarningData` keeps the original recipient and due calendar/game
+  clocks. Reconnecting or restarting before completion replays the warning; only completion or explicit cancellation
+  consumes it. Global cancellation must consume offline recipients too. `FutureWarning.deliver` retries safe starts;
+  `suspend` removes the actor, releases the look and chunk ticket while retaining the saved appointment.
+- **A flat tear needs a withdrawal cutoff.** Moving a double behind a membrane left its body visible to side-on viewers
+  after it had gone through. `FutureWarning` hides it eight ticks before the snap, and `FutureWarningArt` terminates the
+  pulling beams inside the opening. Put a front preview camera between the observer and the opening: behind their head,
+  the observer's own body hides the double. The preview's turn check uses the real player's look vector.
+
 ## Reusable patterns from the Last Day (the playable prologue)
 
 Every new player now lives the evening Odessa ended before waking in the bunker (`story/prologue/PrologueService`,

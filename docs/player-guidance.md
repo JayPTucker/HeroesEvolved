@@ -13,6 +13,9 @@ Growing stronger also shows your own Evolved trial and progress after awakening.
 **The Hungry Cage** explains the Wither's Power Level 16 entry requirement, solo play, attack chains, three-hit
 stance breaks, jumpable pressure, seven-second anchor feeds and the return breach. It can be read before entering.
 
+Following leads also describes the [warning from a future self](future-self-warning.md): a flickering breach can
+return a day later with a visitor's warning. It needs no input or owned power and waits while its recipient is unavailable.
+
 ## Occasional field notes
 
 A small card introduces useful controls and explains an unusual rule when you encounter it. Each note appears once
@@ -50,6 +53,8 @@ Operators can open the admin console with **O** (or their rebound admin key), or
 Story includes **Wither: Containment Failure**: open a breach near the selected player, enter an eligible fighter,
 advance the encounter's phase, read its live status or cancel and return every fighter safely.
 Debug includes **Replay tips** for the selected player and **Give civilian journal** for a random recovered notebook.
+Story includes **Future-self warning** with omen, immediate warning, live status, cancellation and reset for the selected
+player. Cancel all events also clears saved warnings for offline players.
 The **Commands** tab searches the live server's registered mod commands, including village projects, traces,
 blueprints and Mimicry tools. Select a template to open it in chat, replace its argument placeholders and submit it
 when ready. These commands use the operator's location and explicit arguments; selecting a player in the sidebar

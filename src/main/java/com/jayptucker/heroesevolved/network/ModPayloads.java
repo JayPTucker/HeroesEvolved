@@ -17,7 +17,8 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("121")
+        event.registrar("122")
+            .playToClient(FutureLookPayload.TYPE, FutureLookPayload.STREAM_CODEC, FutureLookPayload::handle)
             .playToClient(GuidanceStatePayload.TYPE, GuidanceStatePayload.STREAM_CODEC, GuidanceStatePayload::handle)
             .playToServer(GuidanceActionPayload.TYPE, GuidanceActionPayload.STREAM_CODEC, GuidanceActionPayload::handle)
             .playToClient(EndBattlePayload.TYPE, EndBattlePayload.STREAM_CODEC, EndBattlePayload::handle)
