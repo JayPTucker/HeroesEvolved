@@ -13,6 +13,10 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
   Dragon move, all six phases, absorption, all 21 sampled gifts and Sylar's rupture at close and island-wide distances.
   Its driver is `endgame/EndgamePreview`; photos are in `build/endgame-preview/screenshots/`. Both ruin lighting audits
   must be clean. The final death photos show the actual emissive PlayerModel, the white flash and the ability wave.
+  `tools/dragon-preview.init.gradle` runs the same driver for the Dragon alone (about 1,700 ticks, photos in
+  `build/dragon-preview/screenshots/`): every air and ground move with the player standing on the island, the
+  landing, the Seal Rush charge, each phase's body particles, The Unmaking and a crash. `focus()` and `between()` frame
+  shots from the island's middle so the obsidian towers stay behind the action.
 
 - **Wither:** `tools/wither-preview.init.gradle` photographs the native summoning replacement, hinged ribs, swallowing
   heads, breach, 81-block arena, every warning, three phases, anchor backfire, aerial lanes and death. Its driver is

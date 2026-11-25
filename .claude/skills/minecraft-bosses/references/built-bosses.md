@@ -9,6 +9,46 @@ Part of the notes for coding agents: start at [AGENTS.md](../../../../AGENTS.md)
 
 ## The Living Seal: reusable patterns
 
+- **A flying boss must commit its body, not hover and cast.** The first version locked the Dragon in vanilla's
+  HOVERING phase, circled it 54 blocks out and froze it in mid-air for every windup (a null fly target stops vanilla
+  flight dead), while thin lines fired from its head. Players called it garbage. `endgame/DragonBrain` now owns the body:
+  vanilla steering only for circling close over the party (`flyTarget`, a lead point on an orbit round the fighters),
+  and exact cubic `Leg`s for everything committed (line up during the windup, dive through the mark, the breath run,
+  the landing drop, the lunge, the take-off climb, the crash). A leg sets position and yaw each tick and leaves the
+  multipart neck and tail to trail behind from vanilla's position history, which is what makes it look alive.
+- **Land the flier.** Cataclysm's bosses are remembered for their ground windows. The Dragon lands on a fighter after
+  two or three air moves (`AIR_MOVES`), fights on foot choosing by where people stand (tail behind, bite ahead, scorch
+  in the cone, gust when close; `DragonBrain.next`), and takes off on a timer or when nobody stays near
+  (`IDLE_TAKEOFF`). `grounded` doubles as the client's sitting pose through the hover mixin's `isSitting`.
+- **Paint the ground, terrain-following, at Cataclysm scale.** `EndBattleArt.strip` and `sector` sample
+  `EndGeometry.waveHeight` per vertex, draw a faint footprint of the whole danger, a bright fill that completes at
+  `EndGeometry.arrival(move)` (windup plus the dive's approach or the landing's drop), hot edges, and a white flash
+  (seed role 1) when it lands. Fill lanes from their start, arcs from the body outward, circles from the centre.
+- **A part hit is a design choice.** Vanilla quarters every non-head part. `EndDragonBattleMixin.heroes$partHit` routes
+  part hits through `EndBattle.dragonPartHit` (head 1.2, body 0.75) before vanilla's own sitting/take-off logic can run;
+  ability hits on the whole entity count at face value.
+- **Never fly a committed path through stone.** `DragonBrain.clear` turns a dive or run lane until both halves have a
+  clear line past the obsidian towers.
+- **Committed legs survive a cancel.** A phase change or a stagger calls `cancelCast`; `DragonBrain.cancel` drops only
+  line-up legs, so a dive, drop or crash always finishes instead of leaving the body hanging with its sitting pose.
+- **Leave no safe distance.** The landed Dragon's moves reached 16 blocks at most, and nothing counted someone at 16
+  to 24 as "gone" (`IDLE_TAKEOFF` watches 24), so standing just out of reach was a free wait. Seal Rush
+  (`DragonBrain.lane`, `rush`) charges a fixed lane at anyone 12 to 30 blocks off. Give every grounded boss an answer
+  for each ring of distance (close, mid, far, up high), and check the gaps between their ranges.
+- **A ground lane walks the real terrain.** `DragonBrain.lane` steps a block at a time and stops at void (an empty
+  column, `height <= minBuildHeight`), a step of more than 2.5 blocks, a tower top or anything blocking a line two
+  blocks up; the charge must reach past its target or it isn't chosen. Its test forces the End chunks and flattens a
+  strip first, because other tests leave altars and markers standing at the island's middle.
+- **Pause the ground timer during a move.** `grounded` counted down through windups and charges, so a long move
+  chosen late could outlast the landing and leave the body "airborne" while standing, with no take-off ever chosen.
+  It now counts only while nothing is cast and no leg runs.
+- **A phase must show on the body.** Tether colours alone weren't seen. `DragonBrain.aura` sends forced particles to
+  the party from the native parts (`EnderDragonPart.name`: wings stream torn space in phase two, wings, head and
+  body shed embers in phase three), and `phaseChange` flashes a ground shockwave.
+- **Settle the body before photographing it.** The native model banks with the yaw change in its position history;
+  an instant turn in a preview rolls it onto its side for half a second. `EndgamePreview.face()` turns it a few ticks
+  before the move, and `focus()` frames shots from the island's middle so the obsidian towers stay behind the action.
+
 - **Keep the native progression owner.** `endgame/EndBattle` controls the native multipart Dragon, redirects parent-body
   ability hits to its head path, captures death XP, and defers `EndDragonFight.setDragonKilled` until Inheritance ends.
   Freezing the native fight tick at a saved Sylar checkpoint prevents its missing-Dragon watchdog from respawning one.

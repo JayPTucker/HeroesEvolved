@@ -18,11 +18,19 @@ public abstract class EndDragonBattleMixin {
         var dragon=(EnderDragon)(Object)this;
         if(!EndBattle.rawDragon()&&EndBattle.nativeDragon(dragon))ci.setReturnValue(EndBattle.dragonHit(dragon,source,amount));
     }
+    /** Ability hits on the whole body count at face value; vanilla would route them to a part. */
     @Inject(method="hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z",at=@At("HEAD"),cancellable=true)
     private void heroes$powerHit(DamageSource source,float amount,CallbackInfoReturnable<Boolean> ci){
         var dragon=(EnderDragon)(Object)this;
-        if(EndBattle.nativeDragon(dragon))ci.setReturnValue(dragon.hurt(dragon.head,source,amount));
+        if(EndBattle.nativeDragon(dragon))ci.setReturnValue(!dying(dragon)&&EndBattle.dragonHit(dragon,source,amount));
     }
+    /** Blows on a part: the head is the weak point and the rest takes most of a hit, not vanilla's quarter. */
+    @Inject(method="hurt(Lnet/minecraft/world/entity/boss/EnderDragonPart;Lnet/minecraft/world/damagesource/DamageSource;F)Z",at=@At("HEAD"),cancellable=true)
+    private void heroes$partHit(net.minecraft.world.entity.boss.EnderDragonPart part,DamageSource source,float amount,CallbackInfoReturnable<Boolean> ci){
+        var dragon=(EnderDragon)(Object)this;
+        if(!EndBattle.rawDragon()&&EndBattle.nativeDragon(dragon))ci.setReturnValue(!dying(dragon)&&EndBattle.dragonPartHit(dragon,part,source,amount));
+    }
+    private static boolean dying(EnderDragon dragon){return dragon.getPhaseManager().getCurrentPhase().getPhase()==net.minecraft.world.entity.boss.enderdragon.phases.EnderDragonPhase.DYING;}
     @Inject(method="checkCrystals",at=@At("HEAD"),cancellable=true)
     private void heroes$feeding(CallbackInfo ci){var d=(EnderDragon)(Object)this;if(EndBattle.managed(d)){d.nearestCrystal=null;ci.cancel();}}
     @Inject(method="checkWalls",at=@At("HEAD"),cancellable=true)

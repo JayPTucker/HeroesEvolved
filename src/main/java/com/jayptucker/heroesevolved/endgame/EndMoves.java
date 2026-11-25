@@ -31,10 +31,8 @@ public final class EndMoves {
         default->Pattern.STONE;
     };}
     public static int windup(EndGeometry.Move move,int sampled){return move==EndGeometry.Move.PATTERN&&pattern(sampled)==Pattern.NOVA?EndGeometry.Move.ENDINGS.windup:move.windup;}
+    /** Sylar's rotation. The Dragon chooses by where it is and where you stand ({@link DragonBrain#next}). */
     public static EndGeometry.Move[] rotation(int stage,int phase,boolean sampled){
-        if(stage==EndBattle.DRAGON)return phase==1?new EndGeometry.Move[]{EndGeometry.Move.BREATH,EndGeometry.Move.STARS,EndGeometry.Move.WINGBREAK,EndGeometry.Move.HARPOON}:
-                phase==2?new EndGeometry.Move[]{EndGeometry.Move.RIFT_CHARGE,EndGeometry.Move.BLOOM,EndGeometry.Move.BREATH,EndGeometry.Move.STARS,EndGeometry.Move.WINGBREAK,EndGeometry.Move.HARPOON}:
-                new EndGeometry.Move[]{EndGeometry.Move.UNMAKING,EndGeometry.Move.RIFT_CHARGE,EndGeometry.Move.STARS,EndGeometry.Move.BLOOM,EndGeometry.Move.BREATH,EndGeometry.Move.HARPOON};
         return phase==1?new EndGeometry.Move[]{EndGeometry.Move.NEEDLE,EndGeometry.Move.STONE,EndGeometry.Move.READ,EndGeometry.Move.PATTERN,EndGeometry.Move.REVERSAL}:
                 phase==2?new EndGeometry.Move[]{EndGeometry.Move.WORLDLINE_STEP,EndGeometry.Move.READ,EndGeometry.Move.PATTERN,EndGeometry.Move.EVENTIDE,EndGeometry.Move.STONE,EndGeometry.Move.NEEDLE}:
                 new EndGeometry.Move[]{EndGeometry.Move.ENDINGS,EndGeometry.Move.READ,EndGeometry.Move.PATTERN,EndGeometry.Move.WORLDLINE_STEP,EndGeometry.Move.EVENTIDE,EndGeometry.Move.NEEDLE};
@@ -68,10 +66,12 @@ public final class EndMoves {
         case BREATH->Pattern.FAN;case NEEDLE->Pattern.LATTICE;case STARS,STONE,BLOOM->Pattern.IMPACT;
         case WINGBREAK,EVENTIDE->Pattern.RING;case HARPOON,REVERSAL->Pattern.SIPHON;case RIFT_CHARGE,WORLDLINE_STEP->Pattern.CHARGE;
         case UNMAKING,ENDINGS->Pattern.NOVA;case READ->Pattern.MIND;case PATTERN->pattern(sampled);
+        case DESCENT,BITE,TAIL,SCORCH,ROAR,TAKEOFF,RUSH->Pattern.IMPACT;
     };}
     public static Pattern shape(int seed){return shape(move(seed),power(seed));}
     public static void warn(EndBattle.Encounter e,EndGeometry.Move move){
         List<ServerPlayer> fighters=e.fighters();if(fighters.isEmpty())return;
+        if(e.stage==EndBattle.DRAGON&&e.brain!=null&&e.brain.warn(move))return;
         if(move==EndGeometry.Move.READ){e.sampled=PlayerAbilityService.getData(fighters.get(e.rotation%fighters.size())).assignedPower().map(p->MimicColors.index(p.getKey().getPath())).orElse(3);}
         Pattern shape=shape(move,e.sampled);int power=move==EndGeometry.Move.PATTERN||move==EndGeometry.Move.READ?e.sampled:-1;
         for(ServerPlayer p:fighters)e.marks.add(p.position().add(0,.9,0));
@@ -102,6 +102,10 @@ public final class EndMoves {
         sound(e,e.castFrom,move==EndGeometry.Move.UNMAKING||move==EndGeometry.Move.ENDINGS?SoundEvents.BEACON_POWER_SELECT:SoundEvents.AMETHYST_BLOCK_RESONATE,.8F,.6F+e.phase*.1F);
     }
     public static void land(EndBattle.Encounter e,EndGeometry.Move move){
+        if(e.stage==EndBattle.DRAGON&&e.brain!=null){if(!e.brain.land(move))landShape(e,move);e.brain.landed(move);return;}
+        landShape(e,move);
+    }
+    private static void landShape(EndBattle.Encounter e,EndGeometry.Move move){
         Pattern shape=shape(move,e.sampled);int power=move==EndGeometry.Move.PATTERN?e.sampled:-1;float damage=e.stage==EndBattle.DRAGON?7+e.phase:6+e.phase;
         if(move==EndGeometry.Move.READ){e.spawnPrism();return;}
         switch(shape){

@@ -30,7 +30,7 @@ public final class GuidancePreview {
     private static final List<Shot> shots = new ArrayList<>();
     private static boolean begun;
     private static int ticks, frame, index;
-    private static final String[] TOPICS = {"start", "controls", "growth", "combat", "world", "gear", "portal", "trouble"};
+    private static final String[] TOPICS = {"start", "controls", "growth", "combat", "world", "gear", "portal", "wither", "dragon", "trouble"};
 
     @SubscribeEvent public static void tick(ClientTickEvent.Post e) {
         if (!Boolean.getBoolean("heroes.preview.guidance") || begun) return;

@@ -63,6 +63,12 @@ public final class EndBattleGameTests {
         e.still(true);dragon.aiStep();e.holdOff(10000);return e;
     }
     private static void done(GameTestHelper h){clean(h);h.succeed();}
+    /** Stand a player on the island's real surface. */
+    static void stand(EndBattle.Encounter e,ServerPlayer p,double x,double z){p.setPos(x,e.brain.ground(x,z),z);p.setDeltaMovement(Vec3.ZERO);}
+    /** Put the Dragon down on the surface facing yaw, as a landing leaves it. */
+    static Vec3 landed(EndBattle.Encounter e,double x,double z,float yaw){
+        Vec3 at=new Vec3(x,e.brain.ground(x,z),z);e.brain.cancelAll();e.dragon.setPos(at);e.dragon.setYRot(yaw);e.grounded=200;return at;
+    }
     @GameTest(template="rewind_empty",batch="endgame_01",timeoutTicks=400)
     public static void nativeDragonAcceptsSoloAndPreservesMultipartIdentity(GameTestHelper h){clean(h);try{
         ServerPlayer p=player(h,15);h.assertTrue(!EndBattle.eligible(p),"Level 15 refused");PlayerProgressionService.setPowerLevel(p,16);var e=fight(h,p);
@@ -88,10 +94,14 @@ public final class EndBattleGameTests {
         h.assertTrue(e.grounded==240&&e.dragon.getHealth()<health&&e.level.getBlockState(marker).is(Blocks.DIAMOND_BLOCK),"Grounding hurts boss without native explosion");
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="endgame_04",timeoutTicks=400)
-    public static void movingBeatsFixedAirborneLanes(GameTestHelper h){clean(h);try{
-        var p=player(h,16);var e=fight(h,p);p.setPos(16.5,90,15.5);e.start(EndGeometry.Move.BREATH);var fixed=List.copyOf(e.marks);p.setPos(30,90,15.5);float hp=p.getHealth();
-        for(int i=0;i<36;i++)e.tick();h.assertTrue(p.getHealth()==hp&&e.marks.equals(fixed),"Airborne warning stays fixed and can be dodged");
-        p.setPos(fixed.get(0).add(0,-.9,0));e.start(EndGeometry.Move.BREATH);for(int i=0;i<36;i++)e.tick();h.assertTrue(p.getHealth()<hp,"Lane reaches airborne player");
+    public static void breathRunIsFixedDodgeableAndLeavesBurningPools(GameTestHelper h){clean(h);try{
+        var p=player(h,16);var e=fight(h,p);stand(e,p,16.5,15.5);e.start(EndGeometry.Move.BREATH);var fixed=List.copyOf(e.marks);
+        h.assertTrue(fixed.size()==EndGeometry.RUN_POOLS&&EndGeometry.stripDistance(e.brain.runA,e.brain.runB,p.position())<.6,"The run's strip is laid through the fighter");
+        Vec3 side=new Vec3(-e.brain.dir.z,0,e.brain.dir.x);Vec3 away=p.position().add(side.scale(12));stand(e,p,away.x,away.z);float hp=p.getHealth();
+        for(int i=0;i<EndGeometry.Move.BREATH.windup+EndGeometry.RUN_TICKS+2;i++)e.tick();
+        h.assertTrue(p.getHealth()==hp&&e.marks.equals(fixed),"The strip stays where it was marked and stepping off it is safe");
+        h.assertTrue(e.brain.pools.size()==EndGeometry.RUN_POOLS&&!e.brain.busy(),"The Dragon really flew the strip and left every pool");
+        Vec3 pool=fixed.get(EndGeometry.RUN_POOLS/2).add(0,-.9,0);stand(e,p,pool.x,pool.z);for(int i=0;i<21;i++)e.tick();h.assertTrue(p.getHealth()<hp,"A pool keeps burning anyone who stands in it");
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="endgame_05",timeoutTicks=400)
     public static void novaOffersReachableAirborneSafeOrbit(GameTestHelper h){clean(h);try{
@@ -157,7 +167,7 @@ public final class EndBattleGameTests {
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="endgame_14",timeoutTicks=400)
     public static void ordinaryWindupsInterruptButNovaKeepsFullWarning(GameTestHelper h){clean(h);try{
-        var p=player(h,16);var e=fight(h,p);p.setPos(e.dragon.position().add(0,0,8));e.grounded=200;e.start(EndGeometry.Move.BREATH);e.dragon.hurt(e.dragon.damageSources().playerAttack(p),8);
+        var p=player(h,16);var e=fight(h,p);p.setPos(e.dragon.position().add(0,0,-8));e.grounded=200;e.start(EndGeometry.Move.BITE);e.dragon.hurt(e.dragon.damageSources().playerAttack(p),8);
         h.assertTrue(e.casting==null&&e.stagger>0,"Heavy strike interrupts ordinary windup");e.clock+=120;e.stagger=0;e.dragon.invulnerableTime=0;e.start(EndGeometry.Move.UNMAKING);e.dragon.hurt(e.dragon.damageSources().playerAttack(p),8);h.assertTrue(e.casting==EndGeometry.Move.UNMAKING,"Ultimate keeps committed warning");
         e.startAbsorption(new Vec3(0,90,0));e.beginSylar();e.transition=e.stagger=0;e.clock+=120;e.sampled=6;e.start(EndGeometry.Move.PATTERN);e.sylar.invulnerableTime=0;e.sylar.hurt(e.sylar.damageSources().playerAttack(p),8);h.assertTrue(e.casting==EndGeometry.Move.PATTERN,"Sampled radiation has same ultimate rule");
     }finally{clean(h);}h.succeed();}
@@ -187,9 +197,16 @@ public final class EndBattleGameTests {
         h.assertTrue(p.isAlive()&&p.getOffhandItem().isEmpty()&&p.getY()>50,"Fatal void fall consumes anchor and returns player alive");
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="endgame_19",timeoutTicks=400)
-    public static void sweepHitsAirborneTargetOnlyOnce(GameTestHelper h){clean(h);try{
-        var p=player(h,16);var e=fight(h,p);p.setPos(30,90,0);e.start(EndGeometry.Move.RIFT_CHARGE);for(int i=0;i<60;i++)e.tick();
-        h.assertTrue(p.getHealth()<20&&p.getHealth()>=10,"Swept Dragon body hits crossing airborne target once");h.assertTrue(e.chargeTicks==0&&e.spent>0,"Charge exposes recovery");
+    public static void riftdiveFliesThroughItsMarkAndHitsOnce(GameTestHelper h){clean(h);try{
+        var p=player(h,16);var e=fight(h,p);stand(e,p,30.5,.5);e.start(EndGeometry.Move.RIFT_CHARGE);Vec3 spot=e.brain.spot;
+        h.assertTrue(spot.multiply(1,0,1).distanceTo(p.position().multiply(1,0,1))<.6,"The dive marks the ground under its target");
+        int whole=EndGeometry.arrival(EndGeometry.Move.RIFT_CHARGE)+EndGeometry.DIVE_PULLOUT+2;
+        for(int i=0;i<whole;i++)e.tick();
+        h.assertTrue(p.getHealth()<20&&p.getHealth()>=20-11,"The body and the slam hit the marked fighter exactly once");
+        h.assertTrue(!e.brain.busy()&&e.dragon.position().multiply(1,0,1).distanceTo(spot.multiply(1,0,1))>20,"It flew through the mark and pulled out beyond it");
+        p.setHealth(20);stand(e,p,30.5,.5);e.dragon.setPos(.5,90,.5);e.start(EndGeometry.Move.RIFT_CHARGE);Vec3 side=new Vec3(-e.brain.dir.z,0,e.brain.dir.x);
+        Vec3 away=p.position().add(side.scale(EndGeometry.DIVE_RADIUS+EndGeometry.DIVE_IMPACT));stand(e,p,away.x,away.z);
+        for(int i=0;i<whole;i++)e.tick();h.assertTrue(p.getHealth()==20,"Stepping sideways off the marked lane beats the dive");
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="endgame_20",timeoutTicks=400)
     public static void finishingVictoryReleasesNativeExitAndPaysOnce(GameTestHelper h){clean(h);try{
@@ -251,4 +268,69 @@ public final class EndBattleGameTests {
         var hostile=com.jayptucker.heroesevolved.registry.ModEntities.END_BOLT.get().create(e.level);hostile.setOwner(e.dragon);hostile.setPos(q.position());hostile.onHit(new EntityHitResult(q));
         h.assertTrue(q.getHealth()<20,"The boss's original bolt still hits fighters");
     }finally{h.getLevel().getServer().setPvpAllowed(pvp);clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="endgame_28",timeoutTicks=400)
+    public static void descentSlamsOnlyTheMarkedCircleThenFightsOnFoot(GameTestHelper h){clean(h);try{
+        var p=player(h,16);var e=fight(h,p);stand(e,p,20.5,.5);e.start(EndGeometry.Move.DESCENT);Vec3 spot=e.brain.spot;
+        stand(e,p,spot.x+EndGeometry.LAND_RADIUS+2,spot.z);for(int i=0;i<EndGeometry.arrival(EndGeometry.Move.DESCENT)+2;i++)e.tick();
+        h.assertTrue(p.getHealth()==20,"Outside the gold circle is safe");
+        h.assertTrue(e.grounded>0&&e.dragon.position().distanceTo(spot)<1&&!e.brain.busy(),"It lands exactly on the mark and stays down to fight");
+        h.assertTrue(e.view().grounded()>0,"Clients are told it is down, so it sits instead of flapping");
+        e.grounded=0;e.dragon.setPos(.5,90,.5);stand(e,p,20.5,.5);e.start(EndGeometry.Move.DESCENT);for(int i=0;i<EndGeometry.arrival(EndGeometry.Move.DESCENT)+2;i++)e.tick();
+        h.assertTrue(p.getHealth()<20,"Staying in the circle is hit by the landing");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="endgame_29",timeoutTicks=400)
+    public static void tailSweepsBehindAndBiteReachesAhead(GameTestHelper h){clean(h);try{
+        var p=player(h,16);var e=fight(h,p);Vec3 body=landed(e,10.5,.5,0);Vec3 ahead=EndGeometry.forward(0);
+        stand(e,p,body.x-ahead.x*8,body.z-ahead.z*8);e.start(EndGeometry.Move.TAIL);for(int i=0;i<=EndGeometry.Move.TAIL.windup;i++)e.tick();
+        h.assertTrue(p.getHealth()<20,"The tail sweeps the arc behind it");
+        p.setHealth(20);body=landed(e,10.5,.5,0);e.clock+=200;stand(e,p,body.x+ahead.x*8,body.z+ahead.z*8);e.start(EndGeometry.Move.TAIL);for(int i=0;i<=EndGeometry.Move.TAIL.windup;i++)e.tick();
+        h.assertTrue(p.getHealth()==20,"Standing in front of it is safe from the tail");
+        body=landed(e,10.5,.5,0);stand(e,p,body.x+ahead.x*9,body.z+ahead.z*9);e.start(EndGeometry.Move.BITE);for(int i=0;i<=EndGeometry.Move.BITE.windup;i++)e.tick();
+        h.assertTrue(p.getHealth()<20,"The bite reaches along the lane ahead");
+        for(int i=0;i<12;i++)e.tick();h.assertTrue(e.dragon.position().distanceTo(body)<.05,"The lunge returns the body to where it stood");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="endgame_30",timeoutTicks=400)
+    public static void groundedDragonTakesFullDamageAndItsHeadIsTheWeakPoint(GameTestHelper h){clean(h);try{
+        var p=player(h,16);var e=fight(h,p);p.setPos(e.dragon.position().add(0,0,10));
+        float hp=e.dragon.getHealth();e.dragon.hurt(e.dragon.damageSources().playerAttack(p),10);float air=hp-e.dragon.getHealth();
+        e.clock+=40;e.grounded=200;e.dragon.invulnerableTime=0;hp=e.dragon.getHealth();e.dragon.hurt(e.dragon.damageSources().playerAttack(p),10);float ground=hp-e.dragon.getHealth();
+        e.clock+=40;e.dragon.invulnerableTime=0;hp=e.dragon.getHealth();e.dragon.head.hurt(e.dragon.damageSources().playerAttack(p),10);float head=hp-e.dragon.getHealth();
+        e.clock+=40;e.dragon.invulnerableTime=0;hp=e.dragon.getHealth();e.dragon.getSubEntities()[6].hurt(e.dragon.damageSources().playerAttack(p),10);float wing=hp-e.dragon.getHealth();
+        h.assertTrue(Math.abs(air-10*EndGeometry.AIR_DAMAGE)<.01&&Math.abs(ground-10)<.01,"In the air it takes "+air+", on the ground "+ground);
+        h.assertTrue(Math.abs(head-10*EndGeometry.HEAD_DAMAGE)<.01&&Math.abs(wing-10*EndGeometry.BODY_DAMAGE)<.01,"Head takes "+head+", a wing "+wing);
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="endgame_31",timeoutTicks=400)
+    public static void dragonHuntsThenLandsThenTakesOff(GameTestHelper h){clean(h);try{
+        var p=player(h,16);var e=fight(h,p);stand(e,p,20.5,.5);
+        h.assertTrue(e.brain.next()==EndGeometry.Move.RIFT_CHARGE,"It opens in the air with a dive");
+        e.brain.airMoves=EndGeometry.AIR_MOVES[0];h.assertTrue(e.brain.next()==EndGeometry.Move.DESCENT,"After its air moves it comes down");
+        Vec3 body=landed(e,10.5,.5,0);Vec3 ahead=EndGeometry.forward(0);e.brain.last=null;
+        stand(e,p,body.x-ahead.x*8,body.z-ahead.z*8);h.assertTrue(e.brain.next()==EndGeometry.Move.TAIL,"Someone behind it gets the tail");
+        stand(e,p,body.x+ahead.x*8,body.z+ahead.z*8);h.assertTrue(e.brain.next()==EndGeometry.Move.BITE,"Someone in front gets the bite");
+        e.grounded=EndGeometry.Move.TAKEOFF.windup;h.assertTrue(e.brain.next()==EndGeometry.Move.TAKEOFF,"Its time on the ground ends with a take-off");
+        e.start(EndGeometry.Move.TAKEOFF);for(int i=0;i<=EndGeometry.Move.TAKEOFF.windup+26;i++)e.tick();
+        h.assertTrue(e.grounded==0&&e.dragon.getY()>body.y+15&&e.brain.cycle==1,"It climbs away and starts a new hunt");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="endgame_32",timeoutTicks=400)
+    public static void sealRushChargesWhoeverStandsOutOfReach(GameTestHelper h){clean(h);
+        // The charge only runs over loaded island, so keep the fight's ground loaded.
+        var level=end(h);for(int x=0;x<=3;x++)for(int z=-1;z<=0;z++)level.setChunkForced(x,z,true);try{
+        var p=player(h,16);var e=fight(h,p);Vec3 body=landed(e,10.5,.5,0);e.brain.last=null;int run=EndGeometry.Move.RUSH.windup+EndGeometry.RUSH_TICKS+2;
+        // A flat stretch of island for the lane (other tests leave altars and markers standing here).
+        int top=(int)Math.floor(e.data.floor)-1;
+        for(int x=4;x<=44;x++)for(int z=-6;z<=6;z++){level.setBlock(new BlockPos(x,top,z),Blocks.END_STONE.defaultBlockState(),2);for(int y=top+1;y<=top+12;y++)level.setBlock(new BlockPos(x,y,z),Blocks.AIR.defaultBlockState(),2);}
+        body=landed(e,10.5,.5,0);stand(e,p,body.x+20,body.z);var chosen=e.brain.next();
+        h.assertTrue(chosen==EndGeometry.Move.RUSH,"Someone out of reach at its side gets charged (chose "+chosen+", lane "+e.brain.lane(p)+")");
+        e.start(EndGeometry.Move.RUSH);Vec3 end=e.target;
+        h.assertTrue(end!=null&&end.x>body.x+20&&Math.abs(end.z-body.z)<.5,"The lane runs through them and on past");
+        int ground=e.grounded;for(int i=0;i<run;i++)e.tick();
+        h.assertTrue(p.getHealth()<20,"Standing in the marked lane is a hit");
+        h.assertTrue(e.dragon.position().multiply(1,0,1).distanceTo(end.multiply(1,0,1))<.5,"It skids to a stop at the lane's end");
+        h.assertTrue(ground-e.grounded<=3,"Its time on the ground waits while a ground move plays out ("+(ground-e.grounded)+" of "+run+" ticks spent)");
+        p.setHealth(20);body=landed(e,10.5,.5,0);e.brain.last=null;e.clock+=200;stand(e,p,body.x+20,body.z);e.start(EndGeometry.Move.RUSH);
+        stand(e,p,body.x+20,body.z+7);for(int i=0;i<run;i++)e.tick();
+        h.assertTrue(p.getHealth()==20,"Stepping out of the lane once it is marked beats the charge");
+        body=landed(e,10.5,.5,0);e.brain.last=null;stand(e,p,body.x+8,body.z);
+        h.assertTrue(e.brain.next()!=EndGeometry.Move.RUSH,"Close enough to turn and bite, it does not charge");
+    }finally{for(int x=0;x<=3;x++)for(int z=-1;z<=0;z++)level.setChunkForced(x,z,false);clean(h);}h.succeed();}
 }

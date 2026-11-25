@@ -17,7 +17,7 @@ import java.util.List;
 
 /** Always available, including before awakening. Teaches inputs and signposts discoveries without solving the story. */
 public final class GuideScreen extends HeroScreen {
-    private static final String[] TOPICS = {"start", "controls", "growth", "combat", "world", "gear", "portal", "wither", "trouble"};
+    private static final String[] TOPICS = {"start", "controls", "growth", "combat", "world", "gear", "portal", "wither", "dragon", "trouble"};
     private int topic, scroll, maximumScroll;
 
     public GuideScreen(Screen parent) { super(Component.translatable("guide.heroesevolved.title"), parent); }

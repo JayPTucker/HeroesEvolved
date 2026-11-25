@@ -84,6 +84,10 @@ public final class EndBattle {
         if(!ensure(dragon,source))return false;
         return current.hit(dragon,source,incoming,true);
     }
+    /** A blow on one of the body's parts: the head is the weak point, the rest takes less (vanilla's quarter is replaced). */
+    public static boolean dragonPartHit(EnderDragon dragon,net.minecraft.world.entity.boss.EnderDragonPart part,DamageSource source,float incoming){
+        return dragonHit(dragon,source,incoming*(part==dragon.head?EndGeometry.HEAD_DAMAGE:EndGeometry.BODY_DAMAGE));
+    }
     public static boolean sylarHit(SylarEntity sylar,DamageSource source,float incoming){return current!=null&&current.sylar==sylar&&current.hit(sylar,source,incoming,false);}
     public static boolean interference(ServerPlayer p){return current!=null&&current.level==p.level()&&current.suppressed.getOrDefault(p.getUUID(),-1000)>current.clock;}
     public static void finishSylar(SylarEntity sylar,ServerPlayer p){
@@ -180,7 +184,7 @@ public final class EndBattle {
     }
     public static final class Encounter {
         public final ServerLevel level;public final EndData data;
-        public final EnderDragon dragon;public SylarEntity sylar;
+        public final EnderDragon dragon;public SylarEntity sylar;public final DragonBrain brain;
         public final Map<UUID,ServerPlayer> party=new LinkedHashMap<>();
         final EndDamage damage=new EndDamage();final ServerBossEvent bar=new ServerBossEvent(Component.literal("The Living Seal"),BossEvent.BossBarColor.PURPLE,BossEvent.BossBarOverlay.NOTCHED_10);
         final List<EndCrystal> crystals=new ArrayList<>();EndCrystal prism;float prismHealth;
@@ -193,7 +197,7 @@ public final class EndBattle {
         final Set<UUID> chargeHit=new HashSet<>();Vec3 chargeFrom=Vec3.ZERO,chargeTo=Vec3.ZERO;
         DamageSource killingBlow;UUID killer;
         Encounter(ServerLevel level,EndData data,EnderDragon dragon){
-            this.level=level;this.data=data;this.dragon=dragon;EndScenery.hold(level);EndScenery.build(level,data);
+            this.level=level;this.data=data;this.dragon=dragon;brain=dragon==null?null:new DragonBrain(this);EndScenery.hold(level);EndScenery.build(level,data);
             if(dragon!=null){
                 stage=DRAGON;data.stage=DRAGON;dragon.setNoAi(false);dragon.setSilent(false);dragon.getPhaseManager().setPhase(EnderDragonPhase.HOVERING);
                 damage.scale(dragon,EndGeometry.DRAGON_HEALTH,1);dragon.setHealth(dragon.getMaxHealth());dragon.setCustomName(Component.translatable("endgame.heroesevolved.dragon.1"));
@@ -230,7 +234,7 @@ public final class EndBattle {
         }
         void ground(ServerPlayer p){
             if(stage!=DRAGON)return;EndCrystal old=feed();if(old!=null)old.discard();crystalCursor++;active=(active+1)%4;
-            cancelCast();grounded=EndGeometry.GROUND_TICKS;stagger=40;spent=100;dragon.nearestCrystal=null;
+            cancelCast();brain.crash();grounded=EndGeometry.GROUND_TICKS;stagger=EndGeometry.CRASH_STUN;spent=100;dragon.nearestCrystal=null;
             roomDamage(.05F,p);SetPiecePayload.send(level,Piece.END_BATTLE_GROUNDED,dragon.position(),EndGeometry.center(data.floor),1,dragon);
             ServerPlayer heard=p!=null?p:party.values().stream().findFirst().orElse(null);
             if(heard!=null)SylarVoice.narrate(heard,"endgame.heroesevolved.grounded");
@@ -246,7 +250,7 @@ public final class EndBattle {
             if(source.is(DamageTypeTags.IS_FALL)||source.is(DamageTypes.IN_WALL)||source.is(DamageTypes.DROWN)||source.is(DamageTypes.CRAMMING))return false;
             boolean heavy=charged(source,incoming);
             float bonus=bypass?1:stagger>0?1.35F:spent>0?1.5F:1;
-            if(isDragon&&grounded==0&&!bypass)bonus*=.45F;
+            if(isDragon&&grounded==0&&!bypass)bonus*=EndGeometry.AIR_DAMAGE;
             float amount=damage.amount(boss,source,incoming,clock,bonus,bypass);
             if(source.is(DamageTypeTags.BYPASSES_INVULNERABILITY))amount=incoming;
             if(amount<=0)return false;
@@ -257,7 +261,10 @@ public final class EndBattle {
             if(!landed)return false;
             if(!bypass)damage.paid(clock,amount);lastHurt=clock;
             if(source.getEntity() instanceof Player p)killer=p.getUUID();
-            if(heavy&&casting!=null&&EndMoves.shape(EndMoves.seed(casting,sampled,0))!=EndMoves.Pattern.NOVA&&clock-lastInterrupt>=100){lastInterrupt=clock;cancelCast();stagger=50;rest=Math.max(rest,60);}
+            if(heavy&&casting!=null&&EndMoves.shape(EndMoves.seed(casting,sampled,0))!=EndMoves.Pattern.NOVA&&(!isDragon||DragonBrain.interruptible(casting))&&clock-lastInterrupt>=100){
+                lastInterrupt=clock;cancelCast();stagger=50;rest=Math.max(rest,60);
+                if(isDragon)level.playSound(null,boss.getX(),boss.getY(),boss.getZ(),SoundEvents.ENDER_DRAGON_HURT,SoundSource.HOSTILE,5,.6F);
+            }
             if(lethal){killingBlow=source;if(isDragon){stage=DRAGON_DEATH;data.stage=DRAGON_DEATH;data.checkpoint=SYLAR;data.changed();cancelCast();clearHazards();dragon.setHealth(1);dragon.getPhaseManager().setPhase(EnderDragonPhase.DYING);}else startVictory();}
             else phaseChange();return true;
         }
@@ -265,7 +272,7 @@ public final class EndBattle {
             if(boss()==null)return;float fraction=boss().getHealth()/boss().getMaxHealth();int next=fraction>2/3F?1:fraction>1/3F?2:3;
             if(next<=phase)return;phase=next;transition=EndGeometry.TRANSITION_TICKS;cancelCast();rest=Math.max(rest,80);EndScenery.phase(level,data,phase);
             SetPiecePayload.send(level,Piece.END_BATTLE_PHASE,EndGeometry.center(data.floor),boss().position(),stage<=2?phase:phase+3,boss());
-            CameraShakePayload.sendAround(level,boss().position(),180,.32F,28);updateBar();
+            CameraShakePayload.sendAround(level,boss().position(),180,.32F,28);updateBar();if(stage==DRAGON&&brain!=null)brain.phaseChange();
             for(ServerPlayer p:party.values())SylarVoice.narrate(p,"endgame.heroesevolved.phase."+(stage<=2?"dragon.":"sylar.")+phase);
         }
         public boolean finishWindow(){
@@ -279,15 +286,9 @@ public final class EndBattle {
         }
         void cancelCast(){
             if(casting!=null&&boss()!=null)SetPiecePayload.send(level,Piece.END_BATTLE_CANCEL,boss().position(),boss().position(),1,boss());
-            casting=null;windup=0;chargeTicks=0;if(sylar!=null)sylar.inheritancePose(phase,SylarEntity.Pose.NONE,false,false,finishWindow());
+            casting=null;windup=0;chargeTicks=0;if(brain!=null&&stage==DRAGON)brain.cancel();if(sylar!=null)sylar.inheritancePose(phase,SylarEntity.Pose.NONE,false,false,finishWindow());
         }
-        Vec3 flyTarget(){
-            if(still||casting!=null||transition>0||stagger>0||chargeTicks>0)return null;
-            if(grounded>0)return EndGeometry.center(data.floor).add(0,4,0);
-            double angle=clock*.008;double height=data.floor+24;
-            if(!fighters().isEmpty())height=Math.clamp(fighters().getFirst().getY()+12,data.floor+20,data.floor+65);
-            return new Vec3(Math.cos(angle)*54,height,Math.sin(angle)*54);
-        }
+        Vec3 flyTarget(){return brain==null?null:brain.flyTarget();}
         void spawnPrism(){
             if(prism!=null)prism.discard();prism=EntityType.END_CRYSTAL.create(level);if(prism==null)return;
             Vec3 at=data.anchors.get(Math.floorMod(rotation,data.anchors.size())).add(0,.4,0);prism.setPos(at);prism.setShowBottom(false);
@@ -352,13 +353,15 @@ public final class EndBattle {
             if(boss==null||!boss.isAlive()){if(stage==SYLAR)startVictory();return;}
             if(!inArena(boss)||boss.getY()<data.floor-8||boss.getY()>data.floor+EndGeometry.FLIGHT_HEIGHT){
                 boss.setPos(EndGeometry.center(data.floor).add(0,stage==DRAGON?24:4,0));boss.setDeltaMovement(Vec3.ZERO);cancelCast();rest=Math.max(rest,60);
+                if(stage==DRAGON){brain.cancelAll();grounded=0;}
             }
             phaseChange();if(stage==DRAGON&&clock<=100&&clock%10==0)discoverCrystals();EndMoves.tick(this);
-            if(stage==DRAGON){if(dragon.getPhaseManager().getCurrentPhase().getPhase()!=EnderDragonPhase.HOVERING)dragon.getPhaseManager().setPhase(EnderDragonPhase.HOVERING);if(grounded>0)grounded--;}
+            if(stage==DRAGON)brain.tick();
             if(clock%20==0&&clock-lastHurt>=200&&fighters().isEmpty())boss.heal(boss.getMaxHealth()*.05F);
             if(transition>0){transition--;return;}if(stagger>0){stagger--;return;}if(spent>0)spent--;
-            if(casting!=null){if(--windup<=0){var move=casting;casting=null;EndMoves.land(this,move);rest=Math.max(rest,move.rest);if(move==EndGeometry.Move.UNMAKING||move==EndGeometry.Move.ENDINGS||move==EndGeometry.Move.STONE)spent=100;}return;}
+            if(casting!=null){if(--windup<=0){var move=casting;casting=null;EndMoves.land(this,move);rest=Math.max(rest,stage==DRAGON?brain.rest(move):move.rest);if(move==EndGeometry.Move.UNMAKING||move==EndGeometry.Move.ENDINGS||move==EndGeometry.Move.STONE)spent=100;}return;}
             if(chargeTicks>0)return;
+            if(stage==DRAGON&&brain.busy())return;
             if(stage==SYLAR){
                 sylar.inheritancePose(phase,SylarEntity.Pose.NONE,false,false,finishWindow());
                 if(!still&&!fighters().isEmpty()){
@@ -368,6 +371,7 @@ public final class EndBattle {
                 }
             }
             if(still||fighters().isEmpty()||--rest>0)return;
+            if(stage==DRAGON){var next=brain.next();if(next==null)rest=6;else start(next);return;}
             var moves=EndMoves.rotation(stage,phase,sampled>=0);var next=moves[rotation++%moves.length];
             if(next==EndGeometry.Move.PATTERN&&(sampled<0||prism==null))next=EndGeometry.Move.NEEDLE;
             start(next);
@@ -400,7 +404,7 @@ public final class EndBattle {
             bar.removeAllPlayers();EndScenery.restore(level,data);EndScenery.release(level);data.changed();
             for(ServerPlayer p:level.players())PacketDistributor.sendToPlayer(p,new EndBattlePayload(EndView.EMPTY));
         }
-        void clearHazards(){for(EndBolt bolt:List.copyOf(bolts))bolt.discard();bolts.clear();waves.clear();suppressed.clear();}
+        void clearHazards(){for(EndBolt bolt:List.copyOf(bolts))bolt.discard();bolts.clear();waves.clear();suppressed.clear();if(brain!=null){brain.clearPools();brain.cancelAll();}}
     }
     private static void award(ServerPlayer p,String id){var a=p.getServer().getAdvancements().get(ResourceLocation.fromNamespaceAndPath("heroesevolved",id));if(a!=null)p.getAdvancements().award(a,"observed");}
 }

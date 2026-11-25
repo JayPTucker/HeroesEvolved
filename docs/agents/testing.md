@@ -49,6 +49,12 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 
 ## Before you blame your change
 
+<!-- from the Living Seal rework, November 2026 -->
+- **The endgame package's server can hang after passing.** On this Windows machine,
+  `-PtestPackages=endgame` logs "All N required tests passed", then "Saving worlds", and never exits (the commit before
+  the Dragon rework, `18b8775`, hangs the same way). Run it with a `timeout`, read the log for "required tests passed"
+  rather than trusting the exit code, and stop the leftover `java.exe` (match `*<your build folder>*` in its command
+  line, never the shared Gradle daemon) before the next run.
 <!-- from rescue awakenings -->
 - **The suite is order-sensitive.** Adding or renaming test batches reshuffles the run order, and about eight older
   tests (conduits, Sylar's escape, rapid punches, Long Winter, Fault, the Sentry Seal) then fail on power-ownership

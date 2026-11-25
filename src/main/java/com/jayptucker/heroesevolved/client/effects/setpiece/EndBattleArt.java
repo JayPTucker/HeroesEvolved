@@ -40,6 +40,7 @@ final class EndBattleArt {
             case END_BATTLE_NOVA -> {if(c.glow()){float r=t*8;for(int i=0;i<3;i++)c.ring(a.origin(),i==0?UP:i==1?new Vec3(1,0,0):new Vec3(0,0,1),r,.18F,0,TWO_PI,PALE,alpha*.55F);c.glow(a.origin(),3,VIOLET,alpha*.5F);}}
             case END_BATTLE_WAVE -> {if(c.glow())wave(c,a.origin(),(float)(t*EndGeometry.WAVE_SPEED),alpha);}
             case END_BATTLE_DASH -> {if(c.glow()){Vec3 delta=a.target().subtract(a.origin());Vec3 side=perpendicular(delta);for(int i=-1;i<=1;i++)c.line(a.origin().add(side.scale(i*a.scale()*.7)),a.target().add(side.scale(i*a.scale()*.7)),.12F*alpha,CYAN,0,alpha*.5F);}}
+            case END_BATTLE_POOL -> pool(c,a,t);
             case END_BATTLE_BOLT -> {Vec3 at=a.at(c);float[] tint=rgb(MimicColors.color(a.seed()-1));if(c.solid())c.shard(at.add(0,.5,0),at.add(0,-.5,0),.24F,4,t*.08F,PALE,1);if(c.glow()){star(c,at,.6F,tint,alpha,c.time());c.line(at,at.add(0,2,0),.11F,tint,alpha,0);}}
             default -> {}
         }
@@ -97,7 +98,9 @@ final class EndBattleArt {
     }
     private static void warning(Canvas c,Active a,float t){
         if(SetPieceClient.superseded(a,CANCEL,c.level.getGameTime()))return;
-        EndGeometry.Move move=EndMoves.move(a.seed());if(move==null)return;int power=EndMoves.power(a.seed());int duration=EndMoves.windup(move,power);if(t>duration||t<0)return;
+        EndGeometry.Move move=EndMoves.move(a.seed());if(move==null)return;
+        if(DRAGON.contains(move)){dragonWarning(c,a,t,move);return;}
+        int power=EndMoves.power(a.seed());int duration=EndMoves.windup(move,power);if(t>duration||t<0)return;
         float p=clamp(t/duration,0,1),alpha=smooth(0,3,t);float[] tint=power<0?VIOLET:rgb(MimicColors.color(power));
         Vec3 from=a.origin(),to=a.target();var shape=EndMoves.shape(a.seed());
         if(shape==EndMoves.Pattern.NOVA){
@@ -126,6 +129,102 @@ final class EndBattleArt {
             if(shape==EndMoves.Pattern.SPIRAL){Vec3[] points=new Vec3[25];for(int i=0;i<25;i++){float k=i/24F,ang=k*TWO_PI*2+t*.05F;points[i]=to.add(cos(ang)*radius*(1-k),k*3,sin(ang)*radius*(1-k));}c.ribbon(points,.05F,CYAN,alpha*.7F,0);}
         }
     }
+    // ------------------------------------------------------------------ the Dragon's ground warnings
+    // Cataclysm-scale decals that hug the terrain: a faint footprint of the whole danger at once, a bright fill that
+    // grows to cover it exactly as the hit arrives (EndGeometry.arrival), hot edges, and a white flash when it lands.
+
+    private static final Set<EndGeometry.Move> DRAGON=java.util.EnumSet.of(EndGeometry.Move.RIFT_CHARGE,EndGeometry.Move.BREATH,EndGeometry.Move.WINGBREAK,
+            EndGeometry.Move.DESCENT,EndGeometry.Move.BITE,EndGeometry.Move.TAIL,EndGeometry.Move.SCORCH,EndGeometry.Move.ROAR,EndGeometry.Move.TAKEOFF,EndGeometry.Move.RUSH);
+    private static final float[] BREATH=rgb(0xD35BFF),EMBER=rgb(0xFF5A6E),WHITE=rgb(0xFFFFFF);
+
+    private static void dragonWarning(Canvas c,Active a,float t,EndGeometry.Move move){
+        boolean flash=EndMoves.role(a.seed())==1;int duration=EndGeometry.arrival(move);
+        if(t<0||(flash?t>12:t>duration+1))return;
+        float p=flash?1:clamp(t/duration,0,1),alpha=flash?1-t/12F:smooth(0,3,t);
+        float[] tint=switch(move){case BITE,TAIL,RUSH->EMBER;case BREATH,SCORCH->BREATH;case DESCENT,ROAR->GOLD;default->VIOLET;};
+        if(flash)tint=WHITE;
+        Vec3 o=a.origin(),to=a.target();
+        switch(move){
+            case RIFT_CHARGE -> {
+                strip(c,o,to,EndGeometry.DIVE_RADIUS,p,tint,alpha,true);
+                Vec3 mid=o.lerp(to,.5);sector(c,mid,to.subtract(o),EndGeometry.DIVE_IMPACT,PI,p,flash?WHITE:EMBER,alpha*.9F);
+                if(!flash&&c.glow()){Vec3 sky=ground(c,mid).add(0,26,0);c.line(sky,ground(c,mid).add(0,.2,0),.06F+.1F*p,EMBER,alpha*.15F,alpha*.8F);}
+            }
+            case BREATH -> strip(c,o,to,EndGeometry.RUN_RADIUS,p,tint,alpha,true);
+            case BITE -> strip(c,o,to,EndGeometry.BITE_RADIUS,p,tint,alpha,true);
+            case RUSH -> strip(c,o,to,EndGeometry.RUSH_RADIUS,p,tint,alpha,true);
+            case TAIL -> sector(c,o,to.subtract(o),EndGeometry.TAIL_RADIUS,EndGeometry.TAIL_HALF,p,tint,alpha);
+            case SCORCH -> sector(c,o,to.subtract(o),EndGeometry.SCORCH_RADIUS,EndGeometry.SCORCH_HALF,p,tint,alpha);
+            case DESCENT -> {
+                sector(c,o,new Vec3(1,0,0),EndGeometry.LAND_RADIUS,PI,p,tint,alpha);
+                if(!flash&&c.glow()){Vec3 g=ground(c,o);for(int i=0;i<6;i++){float ang=i*TWO_PI/6+c.time()*.01F;c.line(g.add(cos(ang)*EndGeometry.LAND_RADIUS*1.3,.15,sin(ang)*EndGeometry.LAND_RADIUS*1.3),g.add(cos(ang)*EndGeometry.LAND_RADIUS*(1-p*.6),.15,sin(ang)*EndGeometry.LAND_RADIUS*(1-p*.6)),.12F,GOLD,alpha*.2F,alpha*.9F);}}
+            }
+            case ROAR -> sector(c,o,new Vec3(1,0,0),EndGeometry.ROAR_RADIUS,PI,p,tint,alpha*.8F);
+            case TAKEOFF -> sector(c,o,new Vec3(1,0,0),EndGeometry.TAKEOFF_RADIUS,PI,p,tint,alpha*.8F);
+            case WINGBREAK -> {
+                // The wing buffet's wave rolls outward after this; the warning gathers in toward the body.
+                if(c.glow())for(int i=0;i<3;i++){float r=3+(1-((p+i/3F)%1F))*9;ringOnGround(c,o,r,.09F,PALE,alpha*.75F);}
+                if(c.glow())ringOnGround(c,o,3,.12F,VIOLET,alpha);
+            }
+            default -> {}
+        }
+    }
+    private static Vec3 ground(Canvas c,Vec3 at){return new Vec3(at.x,EndGeometry.waveHeight(c.level,at.x,at.z,at.y)+.02,at.z);}
+    private static Vec3 ground(Canvas c,double x,double z,double fallback){return new Vec3(x,EndGeometry.waveHeight(c.level,x,z,fallback)+.02,z);}
+    /** A lane on the ground from a to b, filling from a toward b. */
+    private static void strip(Canvas c,Vec3 a,Vec3 b,float radius,float p,float[] tint,float alpha,boolean chevrons){
+        Vec3 d=b.subtract(a).multiply(1,0,1);double len=d.length();if(len<.1)return;Vec3 f=d.scale(1/len),s=new Vec3(-f.z,0,f.x);
+        int n=Math.max(2,(int)Math.ceil(len/1.5));Vec3[] left=new Vec3[n+1],right=new Vec3[n+1];
+        for(int i=0;i<=n;i++){Vec3 m=a.add(d.scale(i/(double)n));left[i]=ground(c,m.x+s.x*radius,m.z+s.z*radius,a.y);right[i]=ground(c,m.x-s.x*radius,m.z-s.z*radius,a.y);}
+        if(c.soft())for(int i=0;i<n;i++){
+            boolean lit=(i+1)/(float)n<=p+1e-4F;float fill=lit?.34F:.09F;
+            c.tri(left[i],right[i],right[i+1],tint,alpha*fill,alpha*fill,alpha*fill);c.tri(left[i],right[i+1],left[i+1],tint,alpha*fill,alpha*fill,alpha*fill);
+        }
+        if(!c.glow())return;
+        Vec3[] l=new Vec3[n+1],r=new Vec3[n+1];for(int i=0;i<=n;i++){l[i]=left[i].add(0,.03,0);r[i]=right[i].add(0,.03,0);}
+        c.ribbon(l,.09F,tint,alpha*.9F,alpha*.9F);c.ribbon(r,.09F,tint,alpha*.9F,alpha*.9F);
+        c.line(left[0].add(0,.03,0),right[0].add(0,.03,0),.09F,tint,alpha,alpha);c.line(left[n].add(0,.03,0),right[n].add(0,.03,0),.09F,tint,alpha,alpha);
+        int k=Math.min(n,Math.round(p*n));c.line(left[k].add(0,.05,0),right[k].add(0,.05,0),.16F,PALE,alpha,alpha);
+        if(chevrons)for(int i=1;i<n;i+=3){
+            Vec3 m=ground(c,a.x+d.x*i/n,a.z+d.z*i/n,a.y).add(0,.05,0),tip=m.add(f.scale(1.1)),w1=m.add(s.scale(radius*.45)),w2=m.subtract(s.scale(radius*.45));
+            float lit=i/(float)n<=p?1:.35F;c.line(w1,tip,.07F,PALE,alpha*lit*.7F,alpha*lit*.7F);c.line(w2,tip,.07F,PALE,alpha*lit*.7F,alpha*lit*.7F);
+        }
+    }
+    /** A sector of {@code half} radians either side of {@code dir} (a disc when half is PI), filling outward from the centre. */
+    private static void sector(Canvas c,Vec3 at,Vec3 dir,float radius,float half,float p,float[] tint,float alpha){
+        Vec3 f=dir.multiply(1,0,1);f=f.lengthSqr()<1e-6?new Vec3(1,0,0):f.normalize();
+        int m=Math.clamp((int)(half*2*radius/1.6F),8,56),n=Math.clamp((int)(radius/2),3,9);
+        Vec3[][] grid=new Vec3[n+1][m+1];
+        for(int j=0;j<=n;j++)for(int i=0;i<=m;i++){float ang=-half+2*half*i/m;double r=radius*j/(double)n;Vec3 v=f.yRot(ang).scale(r);grid[j][i]=ground(c,at.x+v.x,at.z+v.z,at.y);}
+        if(c.soft())for(int j=0;j<n;j++){
+            boolean lit=(j+1)/(float)n<=p+1e-4F;float fill=lit?.32F:.08F;
+            for(int i=0;i<m;i++){c.tri(grid[j][i],grid[j+1][i],grid[j+1][i+1],tint,alpha*fill,alpha*fill,alpha*fill);c.tri(grid[j][i],grid[j+1][i+1],grid[j][i+1],tint,alpha*fill,alpha*fill,alpha*fill);}
+        }
+        if(!c.glow())return;
+        Vec3[] rim=new Vec3[m+1],front=new Vec3[m+1];int k=Math.min(n,Math.round(p*n));
+        for(int i=0;i<=m;i++){rim[i]=grid[n][i].add(0,.03,0);float ang=-half+2*half*i/m;Vec3 v=f.yRot(ang).scale(radius*p);front[i]=ground(c,at.x+v.x,at.z+v.z,at.y).add(0,.05,0);}
+        c.ribbon(rim,.11F,tint,alpha,alpha);if(p>.02F)c.ribbon(front,.15F,PALE,alpha,alpha);
+        if(half<PI-.01F){Vec3[] l=new Vec3[n+1],r=new Vec3[n+1];for(int j=0;j<=n;j++){l[j]=grid[j][0].add(0,.03,0);r[j]=grid[j][m].add(0,.03,0);}c.ribbon(l,.09F,tint,alpha*.9F,alpha*.9F);c.ribbon(r,.09F,tint,alpha*.9F,alpha*.9F);}
+    }
+    private static void ringOnGround(Canvas c,Vec3 at,float radius,float width,float[] tint,float alpha){
+        Vec3[] rim=new Vec3[49];for(int i=0;i<rim.length;i++){float ang=i*TWO_PI/48;rim[i]=ground(c,at.x+cos(ang)*radius,at.z+sin(ang)*radius,at.y).add(0,.04,0);}
+        c.ribbon(rim,width,tint,alpha,alpha);
+    }
+    /** A breath pool: a churning violet disc that fades as it runs out. */
+    private static void pool(Canvas c,Active a,float t){
+        int life=Math.max(1,a.seed());if(t>life)return;float alpha=Math.min(smooth(0,4,t),1-smooth(life-18,life,t)),r=a.scale()*(.7F+.3F*smooth(0,6,t));
+        Vec3 at=a.origin();
+        if(c.soft()){
+            int m=28;Vec3 g=ground(c,at);Vec3[] rim=new Vec3[m+1];
+            for(int i=0;i<=m;i++){float ang=i*TWO_PI/m;float wob=1+.08F*sin(ang*3+c.time()*.08F);rim[i]=ground(c,at.x+cos(ang)*r*wob,at.z+sin(ang)*r*wob,at.y).add(0,.02,0);}
+            for(int i=0;i<m;i++)c.tri(g.add(0,.03,0),rim[i],rim[i+1],BREATH,alpha*.42F,alpha*.18F,alpha*.18F);
+        }
+        if(c.glow()){
+            ringOnGround(c,at,r,.08F,BREATH,alpha*.85F);ringOnGround(c,at,r*(.4F+.15F*sin(c.time()*.12F)),.05F,PALE,alpha*.35F);
+            for(int i=0;i<3;i++){float ang=i*TWO_PI/3+c.time()*.04F;Vec3 p=ground(c,at.x+cos(ang)*r*.5,at.z+sin(ang)*r*.5,at.y);c.line(p,p.add(0,.6+.4*sin(c.time()*.1F+i),0),.07F,BREATH,alpha*.5F,0);}
+        }
+    }
+
     private static void tube(Canvas c,Vec3 from,Vec3 to,float radius,float[] tint,float alpha,float progress){
         Vec3 dir=to.subtract(from).normalize(),side=perpendicular(dir),up=side.cross(dir).normalize();if(!c.glow())return;
         for(int i=0;i<4;i++){float angle=i*HALF_PI;Vec3 off=side.scale(cos(angle)*radius).add(up.scale(sin(angle)*radius));c.line(from.add(off),to.add(off),.016F,tint,alpha*.23F,alpha*.6F);}
