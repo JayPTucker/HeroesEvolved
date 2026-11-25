@@ -82,6 +82,12 @@ nodes, nine poses and ten pieces. What the player sees is in [docs/space-time-ma
   reads `heroes.preview.time`, and two drivers on one flag fight over the camera and the world. A back camera always hides
   the creature you aim at behind your body; use first person or put the target close for a front shot. If the run fails
   with "Failed to locate a primary monitor", the Mac's display is asleep: `caffeinate -u -d -t 600` wakes it.
+- **Rewind puts blocks back from journals of before-images, not snapshots.** `TimeRewindBlocks` keeps one journal per
+  time user (or fast enough speedster): every real block change within `RECORDING_RADIUS` (64 blocks) of where they
+  are, or of anywhere they have been within the journal's retention (`(REWIND_SECONDS + 1) * 20` ticks, never more
+  than 64 s), capped at `MAX_CHANGES` (524,288). Items a change drops (container contents included) are tracked as
+  loose drops so the restore can take them back. `mixin/LevelBlockRewindMixin` wraps `Level.setBlock` to feed it, so a
+  new system that changes blocks needs nothing extra unless it bypasses `setBlock`.
 
 ## Reusable patterns from slowed time (bent time as thick air)
 

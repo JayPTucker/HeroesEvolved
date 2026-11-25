@@ -48,13 +48,9 @@ six optional techniques, a first-awakening sequence and their own Evolved trial.
 See [the skill guide](docs/skill-trees.md) for the original optional skills,
 point costs, prerequisites and loadout controls.
 
-See [Sylar](docs/sylar.md) for the watchmaker: a slow story told one beat at a time, and a boss
-fight where every power he has taken is a real, telegraphed move. Three phases, a boss bar, and he
-may run when he is losing.
-
-See [Elle Bishop](docs/elle-bishop.md) for the Company's boss: the day before she comes, lights flicker, redstone
-misfires and machines switch themselves on and off around you. Then she fights you on Primatech's test floor,
-where every capacitor bank you short out thins her shield, and pulling one she is drinking from backfires into her.
+See [Sylar](docs/sylar.md) for the watchmaker: a prisoner in Level 5 whose watch list loses a name each
+night, and a boss fight in his Collection where every power he has taken is a real, telegraphed move,
+in three phases.
 
 See [Superspeed](docs/superspeed.md) for the reworked speedster, inspired by Daphne Millbrook and the Flash. Momentum crackles,
 buffets and breaks the sound barrier. Blitz chains from enemy to enemy, Snatch takes everything in a
@@ -95,7 +91,7 @@ See [Electrokinesis](docs/electrokinesis.md) for the rebuilt lightning kit: Char
 See [Telepathy](docs/telepathy.md) for Mind Threads, command suggestions, shared sight, real-body
 Puppet possession with an arrow-key resistance struggle, and private Dreamweaver illusions.
 
-See [Telekinesis](docs/telekinesis.md) for the rebuilt physical force kit and all eighteen skills: orbiting fragments, staggered volleys, Iron Rain, precise grips, projectile catches and aimed force fields. [Power workshop](docs/power-workshop.md) records the original redesign proposals and remaining Mimicry directions.
+See [Telekinesis](docs/telekinesis.md) for the rebuilt physical force kit and all eighteen skills: orbiting fragments, staggered volleys, Iron Rain, precise grips, projectile catches and aimed force fields.
 
 See [Pyrokinesis and Helixite](docs/pyrokinesis.md) for the fire power, its real-fire rules,
 reactions with Cryokinesis, Flight and Superspeed, and the new Helixite crystal ore. Pyrokinetics also
@@ -113,8 +109,8 @@ companions to Odessa at 6:14 to watch Peter Petrelli try to stop Ted Sprague, wi
 run backwards, and land together beside the traveller.
 
 See [Invisibility](docs/invisibility.md) for Exposure, optical doubles, shared concealment and
-its eighteen redesigned skills. [Phasing](docs/new-powers.md) and [Empathic Mimicry](docs/empathic-mimicry.md) record the
-other added powers and the techniques introduced to the original trees.
+its eighteen redesigned skills. See [Density](docs/density.md) and [Empathic Mimicry](docs/empathic-mimicry.md) for two
+of the added powers, and [the skill guide](docs/skill-trees.md) for the techniques added to the original trees.
 
 See [The Formula](docs/formula.md) for awakening unclaimed powers without waiting for an
 Eclipse: draw Regeneration blood (donated or forced), spin it in a Centrifuge, synthesize

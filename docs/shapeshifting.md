@@ -44,8 +44,7 @@
 >   Reflection and Nightmare raise Suspicion when your kind sees them; the tree's skills and the classes don't yet.
 > - **Already here:** a dampener round, a Suppressor or an Eclipse drops the form at once.
 
-Shapeshifting is the infiltration power the [expansion roadmap](expansion-roadmap.md#shapeshifting-infiltrator--mimic--identity)
-asks for. In *Heroes* it belongs to James Martin, and later Sylar. You study a creature or a person, ripple
+Shapeshifting is the infiltration power. In *Heroes* it belongs to James Martin, and later Sylar. You study a creature or a person, ripple
 into their shape, and walk among their kind. Mobs of your form's kind leave you alone, and you take their
 body: its size, strength, speed and weaknesses. Bigger and deadlier forms open at higher levels. Wearing
 another player's face lets you speak as them in chat, with safeguards (see [Speaking as someone else](#speaking-as-someone-else)).

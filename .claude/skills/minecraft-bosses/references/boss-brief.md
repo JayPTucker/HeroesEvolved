@@ -28,9 +28,9 @@ examples.
 
 ## Moves
 
-| Move | Phase | Telegraph (what the player sees and hears, and how long) | What it does | How to answer it |
-| --- | --- | --- | --- | --- |
-| | | | | |
+| Move | Phase | Range | Opening pose and signal (ticks) | Strike, end pose, window (ticks) | Sound and mark | What it does | How to answer it |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| | | | | | | | |
 
 Plus: the signature, the whole-arena move and its safe spot, the move that reaches a player who pillars, touch damage.
 
@@ -46,6 +46,21 @@ Plus: the signature, the whole-arena move and its safe spot, the move that reach
 - **Rhythm** (spent after a big move):
 - **Room** (using the arena):
 - **Power** (an answer from another power):
+
+## Locks (what it asks of the player)
+
+Two or three per phase ([fight-design.md](fight-design.md), section 2). Each needs at least three power answers in
+different roles, and one slow answer anyone has.
+
+| Phase | Lock (what it looks like) | Power answers, and how well | The slow answer | What answering it pays |
+| --- | --- | --- | --- | --- |
+| | | | | |
+
+Then every power against every phase: no power sits a phase out.
+
+| Power | Phase 1 | Phase 2 | Phase 3 |
+| --- | --- | --- | --- |
+| (all 21, one row each) | its strong answer | | |
 
 ## What each power does to them
 

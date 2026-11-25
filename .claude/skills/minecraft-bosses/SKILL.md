@@ -10,8 +10,11 @@ telegraph for every hit, phases that change the room, a way to turn the fight ar
 thing. The bar is [L_Ender's Cataclysm](references/boss-mods.md) for the fight itself,
 [Bosses'Rise](references/boss-mods.md#bossesrise) for Souls-like difficulty (won by reading, never by tanking) and a
 boss bar built from each boss's own shapes, and [Apotheosis](references/boss-mods.md#apotheosis) for mini-bosses that
-turn up anywhere. Our own Sylar (his Collection) is the
-worked example: read [references/built-bosses.md](references/built-bosses.md) before writing any boss, and
+turn up anywhere. **Read [references/fight-design.md](references/fight-design.md) first**: the design method
+distilled from those and five more boss mods (Bosses of Mass Destruction, Wither Reincarnated, Beyond Bosses 2, Epic
+Fight: Bosses of Miracle, Souls-like Bosses) and from action games: locks that every power can open, the five phases
+of an attack, Souls-like numbers. Our own Sylar (his Collection) is the worked example: read
+[references/built-bosses.md](references/built-bosses.md) before writing any boss, and
 [references/gifted-mobs.md](references/gifted-mobs.md) before any powered mob.
 
 Read these too:
@@ -33,6 +36,11 @@ These are settled (November 2026). Don't reopen them; ask only about what they l
   eyes and altars).
 - **Every boss has its own theme music**, original and synthesized, changing at each phase, made from the user's
   reference library (see "Music" below).
+- **Powers must be needed** (November 25, 2026): "good animations, and fight scenes the abilities are actually
+  useful for, to where you'll need them to beat these monsters." A boss is not beaten with a sword and armour alone,
+  and every one of the 21 powers can beat it its own way: each phase is built from locks with several power answers
+  and one slow answer anyone has, and every move is animated in five readable phases
+  ([fight-design.md](references/fight-design.md), sections 2 and 3).
 - **Every new boss has, by default:** a per-hit and per-second damage cap with falloff for distant attackers, healing
   and a walk home when nobody fights it, health that scales with the number of players, and a death scene before the
   drop. Sylar's Collection (November 2026) has all of them; copy it.
@@ -100,9 +108,9 @@ is the template; the finished brief becomes the boss's player doc, `docs/<boss>.
 
 1. **The idea.** Who they are (adapted from the Heroes series, but every line, look and number our own), what they want
    from the player, and **one idea every attack speaks in**: Sylar's is "he sees how it works" (every telegraph is a
-   brass schematic whose parts slide together and seat as the move lands; the retired Watchmaker's was a clock running
-   down, and Elle's "current crawls before it bites", a thin jittering filament
-   that tightens and brightens, then lands as the same shape, thick and white). Pick the boss's palette with it.
+   brass schematic whose parts slide together and seat as the move lands); the Wither's is "a broken cage around a
+   hungry star" (everything it does is a tear in the world or the star's hunger pulling at one, drawn in breach, bone,
+   star light and soot). Pick the boss's palette with it.
 2. **How the story brings them.** Foreshadowing first, over days of play if you can (Sylar is a prisoner in Level 5
    while the names on his list are crossed out one a night, until his cell stands open and he comes up behind you),
    then the pull into the arena. Anyone within 16 blocks of the player comes too.
@@ -128,12 +136,13 @@ is the template; the finished brief becomes the boss's player doc, `docs/<boss>.
   (`CollectionArena.moving(player)`) so dimension-change handlers skip them.
 - **The room is the counterplay.** Things to break (Sylar's cases: the one he draws from backfires, the one holding your
   power gives it back), cover to break line of sight (the pillars of his last phase, the rubble of his own throws),
-  floor that changes (ice that stays slick), machines to switch off (Elle's breaker banks, retired), places
-  that change (the clocks speed up, the lights go out). Design the arena with the moves, not before or after.
+  floor that changes (ice that stays slick), machines to switch off, places that change (the lights go out, the
+  floor tears). Design the arena with the moves, not before or after, and from the locks in
+  [fight-design.md](references/fight-design.md), section 2: each feature is a lock some powers open fast.
 - **One geometry class holds every position** the fight and the drawing use, and the blueprint's markers are checked
   against it by a game test (`SylarGeometry` and the `@case:N`, `@cover:N`, `@spawn:*` markers).
 - **Poll the arena's switches; don't listen for clicks.** Read the room's state each tick (`SylarEntity.pollCases`),
-  so a lever pulled by hand, a broken lever, or a player's EMP over a bank all count the same.
+  so a lever pulled by hand, a broken lever, or a player's EMP all count the same.
 - **Size.** Our arenas are 19 to 25 blocks across and 9 or more high: room to dodge a 3.5-block slam, small enough that
   every move reaches. A boss that flies or charges needs more.
 
@@ -142,11 +151,13 @@ is the template; the finished brief becomes the boss's player doc, `docs/<boss>.
 Four to six moves in the first phase, one or two more each phase, a signature, and in the last phase one move that
 covers the whole arena with a safe spot to find. **Every move is read before it lands**: a pose, a marker on the ground
 or in the air in the boss's palette, and a sound when the windup starts, then the move. Never rely on the body's
-animation alone: players fight in first person and from behind cover.
+animation alone: players fight in first person and from behind cover. The tick floors (a reaction window of 8
+ticks or more, an area mark of 12 or more) and the five phases of every move are in
+[fight-design.md](references/fight-design.md), section 3.
 
 | Kind of move | Windup | Ours | Cataclysm |
 | --- | --- | --- | --- |
-| Quick, at one player | 0.3 to 0.8 s | Sylar's Reel In 0.6 s, Appraisal 0.8 s, Your Own 0.8 s | Remnant's bite (the head drops) |
+| Quick, at one player | 0.4 to 0.8 s (8 ticks at least) | Sylar's Reel In 0.6 s, Appraisal 0.8 s, Your Own 0.8 s | Remnant's bite (the head drops) |
 | Area at a spot | 1.0 to 1.5 s | Sylar's Hurl 1.2 s, Icefall 1.4 s, Resonance 1.0 s | Monstrosity's ground smash (both fists lift) |
 | A line or lane | 0.6 to 1.5 s | Sylar's Arc Lattice 1.2 s, Fault Line 1.0 s, Blur 1.2 s, the Second Hand 1.5 s | Maledictus's halberds (marks on the floor) |
 | Whole arena, with a safe spot | 1.8 to 4 s | Sylar's Every Hour 3 s (stand in a gold hour), the Light at 6:14 3 s (hide behind a pillar) | Ignis's ultimate (about 4 s), Harbinger's Death Laser (hide behind a wall) |
@@ -319,6 +330,13 @@ numbers as constants at the top of its entity class and in its doc.
 ## Checklist
 
 - [ ] A brief from [references/boss-brief.md](references/boss-brief.md): the idea, the palette, the story's way in.
+- [ ] Locks in every phase, each with at least three power answers in different roles and a slow answer anyone has;
+      a power × phase table where every one of the 21 powers has a strong answer in every phase; the answers in one
+      table in code that the fight, the art, the Guide and a game test all read
+      ([fight-design.md](references/fight-design.md), section 2).
+- [ ] Every move's opening pose, signal, strike, end pose and window set in ticks (reaction windows 8 ticks or more,
+      area marks 12 or more), distinct from every other move by pose and sound, with contact feedback (a held pose on
+      heavy hits, camera shake, knockback, debris, layered sound) (section 3).
 - [ ] Graded (`Rarity`) for a mini-boss, or a deliberate one-off boss; named; announced.
 - [ ] An arena rebuilt every fight, its dimension registered for tests, its chunks force-loaded, its features the
       counterplay, its positions in one geometry class checked against the blueprint.

@@ -1,9 +1,10 @@
 # Built bosses: what they taught
 
-Lessons from the bosses this mod has built. **Sylar's Collection** (`story/sylar/`, November 2026) is the live one and
-the example to copy; the Watchmaker (Sylar's old clock-shop fight) and Elle Bishop (the Company's boss on Primatech's test
-floor) were retired when the Collection replaced them, and their code is in git history before it. Their lessons still
-hold, so they are kept below. What the player sees: [sylar.md](../../../../docs/sylar.md).
+Lessons from the bosses this mod has built: the Living Seal (the End Dragon), Containment Failure (the Wither) and
+**Sylar's Collection** (`story/sylar/`), the fullest example to copy. Two older fights (the Watchmaker and Elle
+Bishop) were retired when the Collection replaced them; their code is in git history, and what they taught that
+still holds is in the skill's rules or under "From the retired fights". What the player sees: [sylar.md](../../../../docs/sylar.md),
+[wither.md](../../../../docs/wither.md), [the-living-seal.md](../../../../docs/the-living-seal.md).
 
 Part of the notes for coding agents: start at [AGENTS.md](../../../../AGENTS.md).
 
@@ -184,8 +185,8 @@ nothing like Cataclysm": a scaled vanilla Wither in an empty 81-block disc with 
 - **Make the room's machines the boss's move list.** Each case holds one power and powers one move; while a move winds up,
   its case is open and breaking it backfires. Players who learn the room take the boss apart, and the fight gets easier
   as they play well. A case he isn't drawing on mends at once (`pollCases` restores the glass), so nobody can strip the
-  room in the first ten seconds. Poll the blocks each tick, as Elle's banks were polled: a fist, an explosion or a
-  power's block-breaking all count the same.
+  room in the first ten seconds. Poll the blocks each tick rather than listening for clicks or breaks: a fist, an
+  explosion, a lever thrown by hand or a power's block-breaking all count the same.
 - **Put what the boss takes from a player somewhere the party can reach.** Appraisal's stolen power goes into an empty
   case that stays open; breaking it gives the power back. A theft becomes a room objective, not a timer.
 - **Let the story's outcomes show in the room.** Claire's and Sprague's cases are full or dark by asking
@@ -233,45 +234,12 @@ nothing like Cataclysm": a scaled vanilla Wither in an empty 81-block disc with 
   weights) and runs with `tools/sylar-gametest.init.gradle`, which includes the root test helpers that
   `structure-gametest`'s package filter leaves out.
 
-## From the Watchmaker (retired)
+## From the retired fights
 
-- **An arena is a pocket dimension rebuilt every fight.** Build the blueprint, save each player's way home, move them in,
-  spawn a new boss there (a mob changing dimension becomes a new entity), and send everyone home on close.
-- **Moving players in and out must not end the encounter**: mark the fight's own teleports (`moving(player)`).
-- **Keep an arena's chunks force-loaded once built**, or a boss spawned there stands frozen for three seconds.
-- **The game-test world lists its dimensions by hand** (`src/gametest/resources/data/minecraft/worldgen/world_preset/flat.json`).
-- **Store anything a move needs later in its own field**: his next move's `mark()` once overwrote the rings' centre and
-  dragged them across the room.
-- **No fists during a windup**: clear the melee target while casting.
-- **Read the swing record on every hit**, or one charged swing carries over to the next.
-- **Taking a power for a fight is one check** in `PowerRules.canActWithoutPreservation` that the arena's close clears.
-- **Walls rise after the shove**: `TemporaryBlocks.place` skips occupied cells, so raise a wall two ticks after pushing
-  people off its line.
+The Watchmaker's and Elle Bishop's lessons now live in the skill's own rules (the arena, moves and fight rules in
+[SKILL.md](../SKILL.md)) and in [kit-design.md](../../../../docs/agents/kit-design.md). Two are written only here:
 
-## From Elle Bishop (retired)
-
-- **Foreshadowing that puts everything back**: change only block states you can restore, queue each restoration, and
-  restore everything on server stop.
-- **Never probe with `WorldMutationPolicy.canEdit`** for something that breaks nothing: it posts a `BreakEvent`.
-- **Poll the arena's switches; don't listen for clicks.** A lever by hand, a broken lever and a player's EMP all count.
-- **One geometry class, checked against the blueprint's markers** by a game test.
-- **Send state for drawing through synced entity data, not `scale`.**
-- **Cut a travelling piece short with `superseded`** when a later piece bound to the same entity arrives.
-- **Freshly forced pocket chunks hide their entities** for a few seconds: tests wait for every corner of the room.
-- **A move's end mustn't shorten a longer hold-off** (`Math.max`), so tests' and previews' hold-offs survive.
-
-## Where the Collection stands against the skill's defaults (November 2026)
-
-| Default | The Collection |
-| --- | --- |
-| `c:bosses` | yes |
-| Per-hit and per-second caps, falloff, non-player blows | 6% / 4% per 20 ticks; full to 24 blocks, none past 36; others 3 a blow |
-| Idle healing and leash | 5% a second after ten quiet seconds with nobody in sight; back to the dais if thrown out |
-| Party scaling | +50% per extra fighter, up to x3 |
-| Death scene | yes, three seconds |
-| Theme music | three phase loops, a stinger, a last chord |
-| A drop that opens the next thing | Sylar's Watch and Gray's Ledger (whose last line points onward; the next boss isn't built) |
-| Re-fight item | the Repair Ticket, crafted from a Brass Movement |
-| Minions | echoes (one at phase two, one more per two extra fighters; more at phase three in a party), bound to their cases; and his hazards (rubble, blue ice, the cracks) |
-| Finishers at phase thresholds | yes: 6% windows above two thirds and one third, and his last tenth |
-| A rare re-fight drop | the record of his theme, one in ten per fighter |
+- **Read the swing record on every hit**, or one charged swing carries over to the next (`SylarEvents.SWINGS`, set
+  before the swing resets the attack meter).
+- **Foreshadowing in the world must put everything back**: change only block states you can restore, queue each
+  restoration, and restore everything on server stop.
