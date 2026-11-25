@@ -88,43 +88,73 @@ Part of the notes for coding agents: start at [AGENTS.md](../../../../AGENTS.md)
 
 ## Containment Failure: reusable patterns
 
-- **Give a large boss actual motion and a combat rhythm.** The first Wither drifted slowly, blinked its lunge and
-  never moved for its slam. `WitherGeometry.chain` provides range-sensitive phase combinations; `WitherMoves.tickMotion`
-  moves the body over multiple ticks with collision substeps, fixed endpoints and a once-per-fighter hit set. A blocked
-  descent must not damage the unreachable marked floor. `WitherReworkPreview` observes unpaused AI, beyond staged poses.
-- **Test whether the counter can physically be used.** The first anchor was enclosed on all six faces; tests removed
-  its glass directly and missed it. `anchorGlassHasRealReachableOpenFaces` casts an actual player-height block ray.
-  `generate-wither-arena.py` leaves two faces open and supports the cap independently. A seven-second feed remains
-  counterable after its initial short cast. The .8-high pulse is also tested against both grounded and jumping feet.
-- **Sync the action, aim and exposure, then animate the body.** `RiftWitherEntity` shares action/age, committed aim,
-  stance and exposure with `RiftWitherRenderer`. `WitherGeometry.head/mouth` provides server/art emission origins.
-  Independent side heads snapshot their target before firing; three spaced heavy hits earn a chain break, preventing
-  the old one-hit interruption loop. Effective party health uses damage units above vanilla's 1000-health ceiling.
-- **Cancellation must invalidate queued work.** The new console could cancel before the deferred formation actor
-  existed. `WitherArena` captures a generation at queue time and rejects stale actors in `swallowed`, so canceled
-  formations cannot reopen the encounter after their operator leaves. The real preview clicks each admin control.
-- **Replace the construction before the vanilla explosion.** `wither/WitherEvents.formed` intercepts a newly made
-  invulnerable native Wither in `EntityJoinLevelEvent`; saved and ordinary command-spawned Withers are untouched. A
-  second construction refunds its ingredients. The integration test builds the real soul-sand T and skull pattern.
-- **Keep retreat useful without providing a firing nest.** `WitherArena` pairs a persistent source breach with a
-  solid, sheltered return alcove; `sheltered` excludes both outgoing damage and boss targeting there. Abandonment
-  rebuilds the next attempt. Saved homes and death/prize stashes survive a restart. Release only chunk tickets owned
-  by the encounter; an operator's pre-existing tickets survive cleanup.
-- **Flight needs a volume and an opponent.** `WitherGeometry` and `generate-wither-arena.py` share checked markers in
-  an 81-block floor, 46-block flight space and 48-block ribs. The boss approaches airborne opponents between casts,
-  while marked origins stay fixed. Lit rib ledges eliminate upper dark floors without filling the central airspace.
-- **A canceled warning must stay canceled.** `WITHER_CANCEL` outlives every Wither warning, so an interrupted marker
-  cannot reappear when its shorter backfire animation expires. `WitherArt` reads the same windup and radius as hits.
-  A preview must cancel on an earlier server tick than starting its next pose: `superseded` includes equal timestamps,
-  so canceling and casting in one callback hid the new warning too. `WitherReworkPreview.serverTick` separates them.
-- **A ray with no entity needs an empty collision context.** Passing `(Entity)null` to the 1.21.1 `ClipContext`
-  constructor throws in `CollisionContext.of`; use `CollisionContext.empty()` for world-only cover rays.
-- **A broad-phase box is not a circular impact.** `RiftSkull.onHit` filters nearby entities by distance from their
-  hitbox to the impact, so square corners cannot hit outside the warning. `WitherMoves` fixes both ends of a lunge's
-  actual three-dimensional path when it starts; aiming the drawing at a flier and the server at the floor was wrong.
-- **Preview after the transfer settles.** A fixed camera installed before an Overworld teleport photographed only
-  sky even though source blocks existed on the client. `WitherPreview` reasserts its shot after the transfer and uses
-  creative flight plus an ability update for airborne photos, so the player does not fall out of the staged lane.
+The Wither (`wither/`: `RiftWitherEntity`, `WitherMoves`, `WitherGeometry`, `WitherArena`, `WitherEvents`; art in
+`client/effects/setpiece/WitherArt` and `WitherFloorWave`; body in `entity/client/RiftWitherModel`; score in
+`tools/generate-wither-music.py`). Rebuilt in November 2026 after the user called the first version "low quality and
+nothing like Cataclysm": a scaled vanilla Wither in an empty 81-block disc with hairline effects and a muddy score.
+
+- **A boss is a body first.** The rebuild's biggest win was a real creature: `RiftWitherModel` is a hierarchical model
+  (yoke, stretching IK necks, hinged ribs, clawed arms, a tail with follow-through) whose bones end exactly at
+  `WitherGeometry`'s anchors, posed by keyframe curves (`k(t, ...)`) on synced action age, and drawn with two emissive
+  layers (eyes and star; fractures that brighten each phase). Scaling a vanilla model up never reads as a boss.
+- **Give a large boss actual motion and a combat rhythm.** `WitherGeometry.chain` picks range-sensitive phase chains;
+  `WitherMoves.tickMotion` moves the body over several ticks with collision substeps, fixed endpoints and a
+  once-per-fighter hit set. A blocked descent must not damage the unreachable marked floor.
+- **Make the room's counterplay visible in the warning.** Ribbreaker sweeps the real body along its lane when the windup
+  starts (`WitherMoves.warn`); if stone is in the way the warning draws a burst glyph there, so baiting it into a pillar
+  is something a player can plan. A hovering boss is snagged by any 1-high block, so the generator keeps rubble against
+  pillar plinths and remains at the wall's foot, never loose on the fighting floor.
+- **Real floor, no entities.** The rolling pulse lifts the actual floor blocks in a ring (`WitherFloorWave`, a
+  `RenderLevelStageEvent` renderer reading the running `WITHER_PULSE` pieces), each by `WitherGeometry.lift`, the same
+  height the server's hit uses, so "jump it" is honest. One-off chunks (slams, crashes, the death's ribs) are
+  `QuakeDebrisEntity`, which never removes or places a block.
+- **A body passing through a breach.** The breach's near-black fill is drawn after entities, so whatever is behind its
+  plane is hidden from the front; the renderer also shrinks the body by how far its feet are behind the plane
+  (`RiftWitherEntity.gateDepth`, synced gate position and yaw; `RiftWitherRenderer.size`). The same pair does the
+  summoning-site swallow and the arrival out of a tear over the dais. The tunnel behind a breach recedes away from the
+  camera, so it has depth from either side.
+- **"Too easy" is a numbers problem first.** The first rebuild looked right and the user still called it too easy: 440
+  health (25 s at the damage cap), 6 to 14 a hit, 11 attacks in 37 s, a 2.6 s slump after every chain. The harder pass
+  (`WitherGeometry.castWindup`, `restScale`, `spentTicks`, `damage`) raised health to 720, roughly doubled damage with
+  +15% a phase and Wither II, cut windups 14% and 26% in later phases, made every third bite, rake, slam and charge a
+  feint that holds its coil (synced as `ACTION_WINDUP`, so the warning and the pose still fill exactly to the hit),
+  added combos through the chain (`quickFollow`: tether into bite, a missed charge turning back), and reached 18 attacks
+  in the same 37 s. Measure attacks a minute and damage a hit before and after, and test the feints and combos.
+- **A boss bar built from the boss** (Bosses'Rise): `client/WitherBossBar` cancels `CustomizeGuiOverlayEvent.BossEventProgress`
+  for the Wither's bar names only and draws a generated bone frame and skull emblem, tinting the fill and the eyes
+  with the phase colour and keeping a trail of health just lost.
+- **Minions a boss throws should land where the warning said.** Bone Brood flies each wither skeleton on the shared
+  `WitherGeometry.spewArc` with its AI off and invulnerable, sets it down exactly on its mark, then turns its AI on
+  (`WitherMoves.Spew`); the art draws the same arc. Every summoned body is tagged (`WitherMoves.BROOD`): drops and
+  experience are cancelled, its own skulls pass it by, it crumbles after 30 s, and a cap per party plus a per-phase
+  cooldown (`RiftWitherEntity.broodReady`, skipped in the chain when not ready) keep the floor from flooding.
+- **A dragged actor needs its chunks.** The summoning-site Wither is pulled several blocks; force the 3x3 chunks round
+  the breach while the encounter runs, and give the intro a watchdog on the arena clock so a stalled actor still
+  leaves the breach usable (`WitherArena.tick`).
+- **Fake players are not in the level's list.** The first detonation looped `level.players()` and missed every game-test
+  fighter. Area effects that must reach the whole fight ask the boss's party too (`RiftWitherEntity.everyone`).
+- **Time an encounter on its own clock.** `WitherArena.clock` advances once per `tick`, so the exit's opening, the
+  knock-downs and the close can be stepped in a test by calling `tick`, which game time can't be.
+- **Server reads don't wait for sync.** `exposed()` read synced state that only updates on the next tick, so a crash on a
+  move's last tick looked unexposed; on the server it reads its own fields.
+- **A death scene can end the fight with a set piece.** Thrash, ribs burst, rise and swell, drink the room in, detonate
+  (`WitherMoves.deathTick`): `WitherArena.blast` knocks every unshielded player flat with the Last Day's `DazePayload`
+  (blackout, ringing, blinking awake) and holds them down; a raised shield facing it or a `NuclearShields` power holds.
+  The exit tears open where it died while they are still down, and the prizes are thrown out of it.
+- **Test whether the counter can physically be used.** `anchorGlassHasRealReachableOpenFaces` casts an actual
+  player-height block ray at each pylon's glass through its open faces.
+- **Cancellation must invalidate queued work.** `WitherArena` captures a generation when it queues the formation actor
+  and rejects stale actors in `swallowed`.
+- **Replace the construction before the vanilla explosion.** `WitherEvents.formed` intercepts a newly made invulnerable
+  native Wither in `EntityJoinLevelEvent`; a second construction refunds its ingredients.
+- **Keep retreat useful without providing a firing nest.** A sheltered return alcove behind a baffle: `sheltered`
+  excludes both outgoing damage and targeting there. Release only chunk tickets the encounter took.
+- **A canceled warning must stay canceled.** `WITHER_CANCEL` outlives every Wither warning; cancel on an earlier server
+  tick than starting the next pose (`superseded` includes equal timestamps).
+- **A ray with no entity needs an empty collision context** (`CollisionContext.empty()`), and **a broad-phase box is not
+  a circular impact** (`RiftSkull.onHit` measures from each hitbox to the impact).
+- **Preview after the transfer settles,** and stage tears and bodies with a fixed `TempestCamera` shot per beat
+  (`WitherPreview` for the story beats, `WitherReworkPreview` for every move and the live AI).
 
 ## Sylar's Collection: the classes
 

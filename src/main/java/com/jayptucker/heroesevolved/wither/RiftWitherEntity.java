@@ -39,15 +39,18 @@ import java.util.*;
  * backfires its own hunger.
  */
 public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFinishable {
-    public static final double BASE_HEALTH = 440, PARTY_STEP = .5, PARTY_MAX = 3;
-    public static final float HIT_CAP = .06F, SECOND_CAP = .04F, BACKFIRE = .1F;
-    public static final int STATE_NONE = 0, STATE_SPENT = 1, STATE_STAGGER = 2, STATE_CRASH = 3, STATE_ROAR = 4;
-    public static final int TRANSITION_TICKS = 40;
+    public static final double BASE_HEALTH = 720, PARTY_STEP = .5, PARTY_MAX = 3;
+    public static final float HIT_CAP = .06F, SECOND_CAP = .035F, BACKFIRE = .1F;
+    public static final int STATE_NONE = 0, STATE_SPENT = 1, STATE_STAGGER = 2, STATE_CRASH = 3, STATE_ROAR = 4, STATE_ARRIVE = 5;
+    public static final int TRANSITION_TICKS = WitherGeometry.TRANSITION_TICKS;
     private static final EntityDataAccessor<Integer> MODE = data(EntityDataSerializers.INT), AGE = data(EntityDataSerializers.INT),
             PHASE = data(EntityDataSerializers.INT), ANCHOR = data(EntityDataSerializers.INT), BURNT = data(EntityDataSerializers.INT),
             ACTION = data(EntityDataSerializers.INT), STANCE = data(EntityDataSerializers.INT), STATE = data(EntityDataSerializers.INT),
-            SIDE_HEAD = data(EntityDataSerializers.INT);
+            SIDE_HEAD = data(EntityDataSerializers.INT), ACTION_WINDUP = data(EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> FINISH = data(EntityDataSerializers.BOOLEAN);
+    /** The breach it is passing through (the summoning site's, or the arrival tear), and that breach's facing; yaw 999 when none. */
+    private static final EntityDataAccessor<org.joml.Vector3f> GATE = data(EntityDataSerializers.VECTOR3);
+    private static final EntityDataAccessor<Float> GATE_YAW = data(EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> AIM_X = data(EntityDataSerializers.FLOAT), AIM_Y = data(EntityDataSerializers.FLOAT), AIM_Z = data(EntityDataSerializers.FLOAT),
             SIDE_X = data(EntityDataSerializers.FLOAT), SIDE_Y = data(EntityDataSerializers.FLOAT), SIDE_Z = data(EntityDataSerializers.FLOAT);
     private static <T> EntityDataAccessor<T> data(net.minecraft.network.syncher.EntityDataSerializer<T> type) { return SynchedEntityData.defineId(RiftWitherEntity.class, type); }
@@ -63,14 +66,19 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
     final List<Mob> minions = new ArrayList<>();
     final List<WitherMoves.Ripple> ripples = new ArrayList<>();
     final List<WitherMoves.Spire> spires = new ArrayList<>();
+    final List<WitherMoves.Spew> spews = new ArrayList<>();
     final Set<UUID> beamHit = new HashSet<>();
+    final List<Vec3[]> beams = new ArrayList<>();
     Move casting, motion;
-    int windup, rest = 50, transition, stagger, spent, crash, rotation, beamTicks;
+    int windup, rest = 50, transition, stagger, spent, crash, rotation, beamTicks, arrival;
     int clock, lastHurt = -1000, lastInterrupt = -1000, lastStance = -1000, recovery, feedTicks, motionTicks, motionStep, attacksLanded;
-    int nextHeadShot, actionTicks, serial, variant;
+    int nextHeadShot, nextBrood = 200, actionTicks, serial, variant, casts, lungeStreak;
+    /** A move's landing asks for its follow-up at once (a tethered fighter bitten; a missed charge turning back). */
+    boolean quickFollow;
     float lockedYaw, effectiveHealth = (float) BASE_HEALTH;
     Vec3 motionFrom = Vec3.ZERO, motionTo = Vec3.ZERO, velocity = Vec3.ZERO, castFrom = Vec3.ZERO, sideOrigin = Vec3.ZERO, sideTarget = Vec3.ZERO;
-    boolean bypass, still;
+    boolean bypass, still, lungeCrash;
+    private Vec3 introFrom = Vec3.ZERO;
     private UUID focus;
     private DamageSource killingBlow;
     private UUID killer;
@@ -87,14 +95,15 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
     }
     public static AttributeSupplier.Builder createAttributes() {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, BASE_HEALTH).add(Attributes.MOVEMENT_SPEED, .26)
-                .add(Attributes.KNOCKBACK_RESISTANCE, 1).add(Attributes.ARMOR, 6).add(Attributes.FOLLOW_RANGE, 64);
+                .add(Attributes.KNOCKBACK_RESISTANCE, 1).add(Attributes.ARMOR, 6).add(Attributes.ARMOR_TOUGHNESS, 2).add(Attributes.FOLLOW_RANGE, 64);
     }
     @Override protected void registerGoals() {}
     @Override protected void defineSynchedData(SynchedEntityData.Builder b) {
         super.defineSynchedData(b);
         b.define(MODE, 0); b.define(AGE, 0); b.define(PHASE, 1); b.define(ANCHOR, -1); b.define(BURNT, 0); b.define(FINISH, false);
-        b.define(ACTION, -1); b.define(STANCE, 0); b.define(STATE, 0); b.define(SIDE_HEAD, -1);
+        b.define(ACTION, -1); b.define(STANCE, 0); b.define(STATE, 0); b.define(SIDE_HEAD, -1); b.define(ACTION_WINDUP, 20);
         b.define(AIM_X, 0F); b.define(AIM_Y, 0F); b.define(AIM_Z, 0F); b.define(SIDE_X, 0F); b.define(SIDE_Y, 0F); b.define(SIDE_Z, 0F);
+        b.define(GATE, new org.joml.Vector3f()); b.define(GATE_YAW, 999F);
     }
 
     // ---- What everyone can read ----
@@ -108,19 +117,36 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
     public UUID killer() { return killer; }
     public Move action() { int id = entityData.get(ACTION); return id < 0 ? null : Move.values()[(id & 31) % Move.values().length]; }
     public int actionVariant() { int id = entityData.get(ACTION); return id < 0 ? 0 : (id >> 5) & 7; }
+    /** This cast's windup (feints and later phases change it): the pose and the warning both run on it. */
+    public int actionWindup() { return entityData.get(ACTION_WINDUP); }
+    /** Its last fifteen percent: faster still. */
+    public boolean starving() { return fighting() && getHealth() / getMaxHealth() < WitherGeometry.STARVING; }
     /** Ticks since the current action began: the server's count, or the client's own clock with the frame's fraction. */
     public float actionAge(float partial) { return level().isClientSide ? tickCount - actionStamp + partial : actionTicks; }
     public int actionAge() { return (int) actionAge(0); }
     public int state() { return entityData.get(STATE); }
     public float stateAge(float partial) { return tickCount - stateStamp + partial; }
     public int stance() { return entityData.get(STANCE); }
-    public boolean exposed() { int s = state(); return s == STATE_SPENT || s == STATE_STAGGER || s == STATE_CRASH; }
+    public boolean exposed() {
+        if (!level().isClientSide) return crash > 0 || stagger > 0 || spent > 0 && casting == null && motionTicks == 0 && recovery == 0;
+        int s = state(); return s == STATE_SPENT || s == STATE_STAGGER || s == STATE_CRASH;
+    }
     public Vec3 aim() { return new Vec3(entityData.get(AIM_X), entityData.get(AIM_Y), entityData.get(AIM_Z)); }
     public int sideHead() { int id = entityData.get(SIDE_HEAD); return id < 0 ? -1 : id & 3; }
     public float sideAge(float partial) { return level().isClientSide ? tickCount - sideStamp + partial : sideTicks; }
     public int sideAge() { return (int) sideAge(0); }
     public Vec3 sideAim() { return new Vec3(entityData.get(SIDE_X), entityData.get(SIDE_Y), entityData.get(SIDE_Z)); }
     public float deathAge(float partial) { return level().isClientSide ? tickCount - deathStamp + partial : age(); }
+    /** The breach it is passing through, or null. */
+    public Vec3 gate() { return entityData.get(GATE_YAW) > 900 ? null : new Vec3(entityData.get(GATE)); }
+    /** The side of that breach it came from (or is going to): the breach's normal. */
+    public Vec3 gateNormal() { return WitherGeometry.forward(entityData.get(GATE_YAW)); }
+    /** How far behind its breach's plane the body is: above zero, it is being swallowed (or not yet out). */
+    public double gateDepth(float partial) {
+        Vec3 gate = gate();
+        return gate == null ? -1 : -getPosition(partial).subtract(gate).dot(gateNormal());
+    }
+    public boolean arriving() { return arrival > 0 || state() == STATE_ARRIVE; }
     public Vec3 core() { return WitherGeometry.core(position()); }
     public float modelScale() { return mode() == 1 ? WitherGeometry.INTRO_SCALE : WitherGeometry.ARENA_SCALE; }
     public float leanForward(float partial) { return Mth.lerp(partial, leanO, lean); }
@@ -132,10 +158,33 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
         return people.stream().filter(p -> p.getUUID().equals(focus)).findFirst().orElse(people.isEmpty() ? null : people.getFirst());
     }
     public int attacksLanded() { return attacksLanded; }
+    /** Whether it may spew its brood now: off cooldown, and room on the floor for more. */
+    public boolean broodReady() {
+        return clock >= nextBrood && minions.size() + spews.size() < WitherGeometry.broodCap(Math.max(1, fighters().size()));
+    }
     public void still(boolean value) { still = value; }
     public void holdOff(int ticks) { rest = Math.max(rest, ticks); }
-    public void beginIntro() { entityData.set(MODE, 1); entityData.set(AGE, 0); }
-    public void beginFight() { entityData.set(MODE, 2); refreshDimensions(); setHealth(getMaxHealth()); rest = 45; bar.setProgress(1); }
+    /** At the summoning site: formed facing {@code yaw}, with its breach about to open at {@code gate} behind it. */
+    public void beginIntro(Vec3 gate, float yaw) {
+        entityData.set(MODE, 1); entityData.set(AGE, 0);
+        entityData.set(GATE, gate.toVector3f()); entityData.set(GATE_YAW, yaw);
+        introFrom = position();
+    }
+    /** In the Ossuary: it falls out of a tear above the dais, lands and roars before the first chain. */
+    public void beginFight() {
+        entityData.set(MODE, 2); refreshDimensions(); setHealth(getMaxHealth()); rest = 45; bar.setProgress(1);
+        arrival = WitherGeometry.ARRIVAL_TICKS;
+        entityData.set(STATE, STATE_ARRIVE); entityData.set(AGE, 0);
+        entityData.set(GATE, WitherGeometry.arrivalGate().toVector3f()); entityData.set(GATE_YAW, 180F);
+        setPos(WitherGeometry.arrivalPath(0));
+        setYRot(180); setYHeadRot(180); yBodyRot = 180;
+    }
+    /** Tests and staged previews start on the dais at once. */
+    public void skipArrival() {
+        if (arrival <= 0) return;
+        arrival = 0; entityData.set(GATE_YAW, 999F); entityData.set(STATE, STATE_NONE);
+        setPos(WitherGeometry.floor().add(0, .35, 0));
+    }
 
     private int sideTicks;
 
@@ -171,6 +220,16 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
         bar.addPlayer(p);
         bar.setProgress(getHealth() / getMaxHealth());
     }
+    /**
+     * Everyone in the Ossuary the blast and the death's pull reach: the level's players and the fight's own party, which
+     * holds game-test and other mods' fake players the level's list does not.
+     */
+    public List<ServerPlayer> everyone() {
+        Set<ServerPlayer> all = new LinkedHashSet<>();
+        for (ServerPlayer p : ((ServerLevel) level()).players()) if (!p.isSpectator() && p.isAlive()) all.add(p);
+        for (ServerPlayer p : party.values()) if (p.isAlive() && !p.isRemoved() && p.level() == level() && !p.isSpectator()) all.add(p);
+        return List.copyOf(all);
+    }
     public List<ServerPlayer> fighters() {
         return party.values().stream().filter(p -> p.isAlive() && !p.isRemoved() && p.level() == level() && !p.isSpectator() && !WitherArena.sheltered(p)).toList();
     }
@@ -191,6 +250,15 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
             return;
         }
         if (!fighting()) return;
+        if (arrival > 0) {
+            int t = WitherGeometry.ARRIVAL_TICKS - arrival;
+            entityData.set(AGE, t);
+            WitherMoves.arrivalTick(this, t);
+            if (t == WitherGeometry.ARRIVAL_SHUT) entityData.set(GATE_YAW, 999F);
+            if (--arrival == 0) { entityData.set(STATE, STATE_NONE); entityData.set(GATE_YAW, 999F); }
+            bar.setProgress(1);
+            return;
+        }
         if (sideHead() >= 0) {
             sideTicks++;
             if (sideTicks == WitherGeometry.HEAD_WINDUP) WitherMoves.sideShot(this, sideOrigin, sideTarget);
@@ -206,7 +274,7 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
         WitherMoves.tickHazards(this);
         skulls.removeIf(Entity::isRemoved);
         minions.removeIf(m -> !m.isAlive());
-        if (casting == null && motionTicks == 0 && recovery == 0 && action() != null && actionTicks > (action().windup + 34)) entityData.set(ACTION, -1);
+        if (casting == null && motionTicks == 0 && recovery == 0 && action() != null && actionTicks > (actionWindup() + 30)) entityData.set(ACTION, -1);
         if (fighters().isEmpty()) { idle(level); return; }
         if (outside()) { setPos(WitherGeometry.floor().add(0, .3, 0)); velocity = Vec3.ZERO; cancelChain(); }
         if (transition > 0) { WitherMoves.roarTick(this, TRANSITION_TICKS - transition); transition--; return; }
@@ -222,9 +290,10 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
                 casting = null;
                 WitherMoves.land(this, move);
                 attacksLanded++;
-                recovery = move == Move.HORIZON ? 24 : move == Move.VERDICT ? WitherGeometry.VERDICT_FIRE + 4 : move == Move.SPIRES ? 14 : 8;
-                rest = Math.max(rest, move.rest);
-                if (chain.isEmpty()) spent = Math.max(spent, phase() == 1 ? 52 : phase() == 2 ? 44 : 36);
+                recovery = move == Move.HORIZON ? 20 : move == Move.VERDICT ? WitherGeometry.VERDICT_FIRE + 2 : move == Move.SPIRES ? 10 : 6;
+                rest = Math.max(rest, Math.round(move.rest * WitherGeometry.restScale(phase()) * (starving() ? .6F : 1)));
+                if (quickFollow) { quickFollow = false; rest = 0; recovery = Math.min(recovery, 4); }
+                else if (chain.isEmpty()) spent = Math.max(spent, Math.round(WitherGeometry.spentTicks(phase()) * (starving() ? .7F : 1)));
             }
             return;
         }
@@ -239,16 +308,59 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
             boolean high = foe.getY() > WitherGeometry.floor().y + 6 && foe.getY() > getY() + 4;
             chain.addAll(List.of(WitherGeometry.chain(phase(), rotation++, horizontal(foe), high)));
         }
-        start(chain.removeFirst());
+        Move next = chain.removeFirst();
+        // The brood waits its turn, and never floods the floor: skip it for the chain's next move.
+        if (next == Move.BROOD && !broodReady()) {
+            if (chain.isEmpty()) { rest = Math.max(rest, 6); return; }
+            next = chain.removeFirst();
+        }
+        start(next);
     }
+    /**
+     * The summoning site: it knits together and roars at whoever built it; a seam splits the air behind it and tears
+     * wide; the breach drags at it while it digs in; then it is yanked backwards through, and the breach convulses shut
+     * to the size of a door.
+     */
     private void introTick(ServerLevel level) {
         int age = age() + 1;
         entityData.set(AGE, age);
+        Vec3 gate = gate(), back = gateNormal().scale(-1);
+        if (gate == null) gate = position().add(back.scale(4)).add(0, WitherGeometry.GATE_LIFT, 0);
+        Vec3 ground = new Vec3(gate.x, introFrom.y, gate.z);
         if (age == 1) {
-            SetPiecePayload.send(level, Piece.WITHER_FORM, position(), position().add(0, 1.8, 0), 1, this);
-            level.playSound(null, blockPosition(), SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, .8F, .55F);
+            SetPiecePayload.send(level, Piece.WITHER_FORM, position(), gate, 1, this);
+            level.playSound(null, blockPosition(), SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 1F, .55F);
         }
-        if (age == 45) CameraShakePayload.sendAround(level, position(), 32, .25F, 40);
+        if (age == WitherGeometry.FORM_END + 2) {
+            level.playSound(null, getX(), getY() + 3, getZ(), SoundEvents.WITHER_AMBIENT, SoundSource.HOSTILE, 3F, .5F);
+            CameraShakePayload.sendAround(level, position(), 32, .3F, 24);
+        }
+        if (age == WitherGeometry.SEAM) level.playSound(null, gate.x, gate.y, gate.z, SoundEvents.AMETHYST_BLOCK_BREAK, SoundSource.HOSTILE, 3F, .5F);
+        if (age == WitherGeometry.SPLIT) {
+            level.playSound(null, gate.x, gate.y, gate.z, SoundEvents.PORTAL_TRIGGER, SoundSource.HOSTILE, 2F, .45F);
+            level.playSound(null, gate.x, gate.y, gate.z, SoundEvents.GLASS_BREAK, SoundSource.HOSTILE, 2F, .4F);
+            CameraShakePayload.sendAround(level, gate, 40, .4F, 20);
+        }
+        if (age > WitherGeometry.PULL && age <= WitherGeometry.YANK) {
+            // It digs in against the pull: dragged back in jerks, claws scraping.
+            float k = WitherGeometry.smooth(WitherGeometry.PULL, WitherGeometry.YANK, age);
+            setPos(introFrom.add(back.scale(.9 * k + .12 * Math.sin(age * 1.7) * k)));
+            if (age % 6 == 0) level.playSound(null, getX(), getY(), getZ(), SoundEvents.BONE_BLOCK_STEP, SoundSource.HOSTILE, 2F, .5F);
+        }
+        if (age == WitherGeometry.YANK) {
+            level.playSound(null, getX(), getY() + 3, getZ(), SoundEvents.WITHER_HURT, SoundSource.HOSTILE, 3F, .45F);
+            introFrom = position();
+        }
+        if (age > WitherGeometry.YANK && age <= WitherGeometry.THROUGH) {
+            float k = (age - WitherGeometry.YANK) / (float) (WitherGeometry.THROUGH - WitherGeometry.YANK);
+            Vec3 end = ground.add(back.scale(WitherGeometry.SWALLOW_DEPTH));
+            setPos(introFrom.lerp(end, k * k));
+        }
+        if (age == WitherGeometry.THROUGH) {
+            level.playSound(null, gate.x, gate.y, gate.z, SoundEvents.ENDERMAN_TELEPORT, SoundSource.HOSTILE, 2.5F, .4F);
+            level.playSound(null, gate.x, gate.y, gate.z, SoundEvents.RESPAWN_ANCHOR_DEPLETE.value(), SoundSource.HOSTILE, 2.5F, .6F);
+            CameraShakePayload.sendAround(level, gate, 40, .5F, 24);
+        }
         if (age >= WitherGeometry.INTRO_TICKS) WitherArena.swallowed(this);
     }
     /** Nobody to fight: it drifts home over the dais and mends after ten quiet seconds. */
@@ -264,7 +376,7 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
     }
     private double horizontal(Entity e) { return Math.sqrt(e.position().subtract(position()).horizontalDistanceSqr()); }
     private void syncState() {
-        int s = transition > 0 ? STATE_ROAR : crash > 0 ? STATE_CRASH : stagger > 0 ? STATE_STAGGER
+        int s = arrival > 0 ? STATE_ARRIVE : transition > 0 ? STATE_ROAR : crash > 0 ? STATE_CRASH : stagger > 0 ? STATE_STAGGER
                 : spent > 0 && casting == null && motionTicks == 0 && recovery == 0 ? STATE_SPENT : STATE_NONE;
         if (s != state()) entityData.set(STATE, s);
     }
@@ -276,13 +388,13 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
         Vec3 to = foe.position().subtract(position()).multiply(1, 0, 1);
         double distance = to.length();
         Vec3 dir = distance < 1e-3 ? Vec3.directionFromRotation(0, getYRot()) : to.scale(1 / distance);
-        double preferred = phase() == 1 ? 7 : phase() == 2 ? 6 : 5;
+        double preferred = phase() == 1 ? 6 : phase() == 2 ? 5 : 4.5;
         Vec3 side = new Vec3(-dir.z, 0, dir.x).scale(rotation % 2 == 0 ? 1 : -1);
         Vec3 wanted = Vec3.ZERO;
         if (distance > preferred + 1) wanted = dir.scale(Math.min(distance - preferred, 1)).add(side.scale(.35));
         else if (distance < preferred - 2.5) wanted = dir.scale(-.5).add(side.scale(.5));
         else wanted = side.scale(.6);
-        double speed = (distance > 18 ? .5 : .26) + phase() * .04;
+        double speed = (distance > 14 ? .64 : .36) + phase() * .05 + (starving() ? .08 : 0);
         if (spent > 0) speed *= .25;
         speed *= Math.clamp(getAttributeValue(Attributes.MOVEMENT_SPEED) / .26, .2, 1.6);
         wanted = wanted.lengthSqr() > 1e-4 ? wanted.normalize().scale(speed) : Vec3.ZERO;
@@ -291,7 +403,7 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
         wanted = wanted.add(0, Math.clamp(hover - getY(), -.35, .35), 0);
         velocity = velocity.lerp(wanted, .14);
         move(velocity);
-        float rate = phase() == 1 ? 5 : phase() == 2 ? 7 : 9;
+        float rate = phase() == 1 ? 7 : phase() == 2 ? 9 : 12;
         turn(yawTo(foe.position()), spent > 0 ? rate * .4F : rate);
     }
     /** Moves by {@code delta}, sliding along walls rather than sticking to them. */
@@ -322,7 +434,7 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
     }
 
     void cancelChain() {
-        casting = null; chain.clear(); motionTicks = 0; motion = null; recovery = 0; velocity = Vec3.ZERO; beamTicks = 0;
+        casting = null; chain.clear(); motionTicks = 0; motion = null; recovery = 0; velocity = Vec3.ZERO; beamTicks = 0; beams.clear();
         entityData.set(ACTION, -1); entityData.set(SIDE_HEAD, -1);
         clearHazards();
         SetPiecePayload.send((ServerLevel) level(), Piece.WITHER_CANCEL, position(), position(), 1, this);
@@ -342,12 +454,15 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
     }
     public void start(Move move) {
         if (!fighting() || dying()) return;
-        casting = move; windup = move.windup; marks.clear(); origins.clear(); motionTicks = 0; motion = null; recovery = 0; velocity = Vec3.ZERO;
+        casting = move; windup = WitherGeometry.castWindup(move, phase(), casts++, starving()); marks.clear();
+        lungeStreak = move == Move.LUNGE ? lungeStreak + 1 : 0;
+        entityData.set(ACTION_WINDUP, windup); origins.clear(); motionTicks = 0; motion = null; recovery = 0; velocity = Vec3.ZERO;
         for (ServerPlayer p : fighters()) marks.add(p.position().add(0, .8, 0));
         ServerPlayer foe = focus();
         Vec3 aim = foe == null ? position().add(Vec3.directionFromRotation(0, getYRot()).scale(10)) : foe.position().add(0, .8, 0);
         lockedYaw = yawTo(aim);
         if (move == Move.RAKE) variant ^= 1;
+        if (move == Move.BROOD) nextBrood = clock + WitherGeometry.broodCooldown(phase());
         entityData.set(AIM_X, (float) aim.x); entityData.set(AIM_Y, (float) aim.y); entityData.set(AIM_Z, (float) aim.z);
         serial = (serial + 1) & 255;
         entityData.set(ACTION, move.ordinal() | (variant << 5) | (serial << 8));
@@ -359,7 +474,7 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
             if (!people.isEmpty()) {
                 ServerPlayer other = people.get(Math.floorMod(rotation + 1, people.size()));
                 startSideShot(rotation % 2 + 1, other.position().add(0, .8, 0));
-                nextHeadShot = clock + (phase() == 1 ? 110 : phase() == 2 ? 95 : 80);
+                nextHeadShot = clock + WitherGeometry.headShotGap(phase());
             }
         }
     }
@@ -389,7 +504,7 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
         feedTicks = 0;
         cancelChain();
         entityData.set(STANCE, 0);
-        stagger = 60; spent = 0; rest = Math.max(rest, 70);
+        stagger = 48; spent = 0; rest = Math.max(rest, 56);
         var at = Vec3.atCenterOf(WitherGeometry.ANCHORS.get(index));
         level().setBlock(WitherGeometry.ANCHORS.get(index), Blocks.AIR.defaultBlockState(), 3);
         SetPiecePayload.send((ServerLevel) level(), Piece.WITHER_BACKFIRE, at, core(), 1, this);
@@ -422,11 +537,19 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
         WitherArena.phase(next);
     }
     public void operatorPhase() { if (fighting() && phase() < 3) { setHealth(getMaxHealth() * (phase() == 1 ? .65F : .32F)); phaseChanged(); } }
+    /** Operator control: straight to the death scene, its detonation and the exit, credited to the first fighter. */
+    public void operatorDefeat() {
+        if (!fighting()) return;
+        skipArrival(); transition = 0;
+        ServerPlayer p = fighters().stream().findFirst().orElse(null);
+        if (p != null) killer = p.getUUID();
+        beginDeath(p == null ? damageSources().generic() : damageSources().playerAttack(p));
+    }
 
     @Override public boolean hurt(DamageSource source, float amount) {
         if (level().isClientSide) return false;
         if (source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) return super.hurt(source, amount);
-        if (!fighting() || transition > 0 || !Float.isFinite(amount) || amount <= 0) return false;
+        if (!fighting() || transition > 0 || arrival > 0 || !Float.isFinite(amount) || amount <= 0) return false;
         if (source.is(DamageTypeTags.IS_FALL) || source.is(DamageTypes.IN_WALL) || source.is(DamageTypes.DROWN) || source.is(DamageTypes.CRAMMING)) return false;
         if (source.getEntity() != null && WitherArena.sheltered(source.getEntity())) return false;
         boolean swing = source.getEntity() instanceof Player p && WitherEvents.fullSwing(p);
@@ -435,8 +558,8 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
             amount /= Math.max(1, effectiveHealth / getMaxHealth());
             if (source.getEntity() instanceof Player p) amount *= p.distanceTo(this) <= 48 ? 1 : Math.clamp((80 - p.distanceTo(this)) / 32, 0, 1);
             else amount = Math.min(3, amount);
-            if (crash > 0 || spent > 0 && casting == null) amount *= 1.5F;
-            else if (stagger > 0) amount *= 1.25F;
+            if (crash > 0 || spent > 0 && casting == null) amount *= 1.35F;
+            else if (stagger > 0) amount *= 1.2F;
             amount = Math.min(amount, Math.max(10, getMaxHealth() * HIT_CAP));
             while (!recent.isEmpty() && clock - recent.peekFirst()[0] >= 20) recent.removeFirst();
             if (!recent.isEmpty()) {
@@ -461,7 +584,7 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
                 lastInterrupt = clock;
                 cancelChain();
                 entityData.set(STANCE, 0);
-                stagger = 50; spent = 0; rest = Math.max(rest, 45);
+                stagger = 36; spent = 0; rest = Math.max(rest, 32);
                 level().playSound(null, getX(), getY(), getZ(), SoundEvents.SKELETON_HURT, SoundSource.HOSTILE, 2.5F, .45F);
                 CameraShakePayload.sendAround((ServerLevel) level(), position(), 32, .3F, 14);
             }
@@ -477,7 +600,8 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
         clearHazards();
         SetPiecePayload.send((ServerLevel) level(), Piece.WITHER_DEATH, position(), core(), 1, this);
         level().playSound(null, blockPosition(), SoundEvents.WITHER_DEATH, SoundSource.HOSTILE, 1.4F, .6F);
-        bar.setName(Component.translatable("wither.heroesevolved.contained"));
+        bar.setName(Component.translatable("wither.heroesevolved.collapsing"));
+        bar.setColor(BossEvent.BossBarColor.WHITE);
     }
     @Override public void die(DamageSource source) {
         boolean reward = fighting() || dying();
@@ -489,11 +613,13 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
     @Override public void remove(RemovalReason reason) { clearMinions(); clearHazards(); bar.removeAllPlayers(); super.remove(reason); }
     private void clearHazards() {
         for (var skull : List.copyOf(skulls)) skull.discard();
-        skulls.clear(); ripples.clear(); spires.clear(); beamTicks = 0;
+        for (var spew : List.copyOf(spews)) { spew.mob().discard(); minions.remove(spew.mob()); }
+        spews.clear();
+        skulls.clear(); ripples.clear(); spires.clear(); beams.clear(); beamTicks = 0;
     }
     private void clearMinions() { for (Mob minion : List.copyOf(minions)) minion.discard(); minions.clear(); }
     private boolean window() {
-        if (!fighting() || transition > 0) return false;
+        if (!fighting() || transition > 0 || arrival > 0) return false;
         float fraction = getHealth() / getMaxHealth();
         return phase() == 1 ? fraction <= 2 / 3F + .06F && fraction > 2 / 3F : phase() == 2 ? fraction <= 1 / 3F + .06F && fraction > 1 / 3F : fraction <= .1F;
     }
@@ -503,6 +629,6 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
         if (phase() == 3) { killer = p.getUUID(); beginDeath(damageSources().playerAttack(p)); return; }
         setHealth(Math.max(1, getMaxHealth() * (phase() == 1 ? 2 / 3F : 1 / 3F) - getMaxHealth() * .06F));
         phaseChanged();
-        stagger = 100;
+        stagger = 70;
     }
 }

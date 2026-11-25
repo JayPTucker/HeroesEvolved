@@ -7,8 +7,10 @@ description: Design and build mobs that fight with powers, mini-bosses, story bo
 
 A boss here is a set piece the player remembers: a place built for the fight, one idea that every attack speaks in, a
 telegraph for every hit, phases that change the room, a way to turn the fight around, and a reward that opens the next
-thing. The bar is [L_Ender's Cataclysm](references/boss-mods.md) for the fight itself and
-[Apotheosis](references/boss-mods.md#apotheosis) for mini-bosses that turn up anywhere. Our own Sylar (his Collection) is the
+thing. The bar is [L_Ender's Cataclysm](references/boss-mods.md) for the fight itself,
+[Bosses'Rise](references/boss-mods.md#bossesrise) for Souls-like difficulty (won by reading, never by tanking) and a
+boss bar built from each boss's own shapes, and [Apotheosis](references/boss-mods.md#apotheosis) for mini-bosses that
+turn up anywhere. Our own Sylar (his Collection) is the
 worked example: read [references/built-bosses.md](references/built-bosses.md) before writing any boss, and
 [references/gifted-mobs.md](references/gifted-mobs.md) before any powered mob.
 

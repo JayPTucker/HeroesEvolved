@@ -39,22 +39,30 @@ public final class RiftWitherRenderer extends MobRenderer<RiftWitherEntity, Rift
         return 0xFF000000 | Mth.clamp(r, 0, 255) << 16 | Mth.clamp(g, 0, 255) << 8 | Mth.clamp(b, 0, 255);
     }
     @Override public ResourceLocation getTextureLocation(RiftWitherEntity entity) { return SKIN; }
+    @Override public boolean shouldRender(RiftWitherEntity e, net.minecraft.client.renderer.culling.Frustum frustum, double x, double y, double z) {
+        return size(e, 0) > .01F && super.shouldRender(e, frustum, x, y, z);
+    }
     @Override public void render(RiftWitherEntity e, float yaw, float partial, PoseStack poses, MultiBufferSource buffers, int light) {
-        if (e.deathTime > 0) return;
+        if (e.deathTime > 0 || size(e, partial) <= .01F) return;
         super.render(e, yaw, partial, poses, buffers, light);
     }
     @Override protected float getFlipDegrees(RiftWitherEntity entity) { return 0; }
     @Override protected boolean shouldShowName(RiftWitherEntity entity) { return false; }
     @Override protected void scale(RiftWitherEntity e, PoseStack poses, float partial) {
-        float size;
-        if (e.mode() == 1) {
-            float t = e.age() + partial;
-            size = WitherGeometry.INTRO_SCALE * (.25F + .75F * ease(0, 28, t)) * (1 - .97F * ease(104, 120, t));
-        } else {
-            size = e.modelScale();
-            if (e.fighting() && e.tickCount < 30) size *= .15F + .85F * ease(0, 30, e.tickCount + partial);
-        }
+        float size = size(e, partial);
         poses.scale(size, size, size);
+    }
+    /**
+     * Its drawn size: knitting together at the summoning site; shrinking away into the depth of a breach once its feet
+     * pass behind the breach's plane (and growing out of the arrival tear the same way); gone once its star detonates.
+     */
+    static float size(RiftWitherEntity e, float partial) {
+        float size = e.modelScale();
+        if (e.mode() == 1) size *= .25F + .75F * ease(0, WitherGeometry.FORM_END, e.age() + partial);
+        if (e.dying() && e.deathAge(partial) >= WitherGeometry.DETONATE) return 0;
+        double depth = e.gateDepth(partial);
+        if (depth > 0) size *= (float) Math.pow(Math.max(0, 1 - depth / WitherGeometry.SWALLOW_DEPTH), 1.3);
+        return size;
     }
     private static float ease(float a, float b, float x) { float t = Mth.clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); }
 }

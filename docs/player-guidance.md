@@ -10,8 +10,10 @@ End portal. Its instructions show your current key bindings. **Key bindings…**
 Scroll, use the arrow buttons, or use Up/Down and Page Up/Page Down to read; Left/Right changes topic.
 Growing stronger also shows your own Evolved trial and progress after awakening.
 
-**The Hungry Cage** explains the Wither's Power Level 16 entry requirement, solo play, attack chains, three-hit
-stance breaks, jumpable pressure, seven-second anchor feeds and the return breach. It can be read before entering.
+**The Hungry Cage** explains the breach the Wither is dragged through, its Power Level 16 entry requirement, solo play,
+reading its body, fixed marks, jumpable rolling floor, three-hit stance breaks, baiting its charge into a pillar,
+seven-second anchor feeds, the death blast (raise a shield or be thrown flat) and the exit torn open where it died. It
+can be read before entering.
 
 Following leads also describes the [warning from a future self](future-self-warning.md): a flickering breach can
 return a day later with a visitor's warning. It needs no input or owned power and waits while its recipient is unavailable.
@@ -51,7 +53,8 @@ their rewards remain available alongside them.
 
 Operators can open the admin console with **O** (or their rebound admin key), or `/heroesevolved admin`.
 Story includes **Wither: Containment Failure**: open a breach near the selected player, enter an eligible fighter,
-advance the encounter's phase, read its live status or cancel and return every fighter safely.
+advance the encounter's phase, finish it (the death scene, detonation and exit), read its live status or cancel and
+return every fighter safely.
 Debug includes **Replay tips** for the selected player and **Give civilian journal** for a random recovered notebook.
 Story includes **Future-self warning** with omen, immediate warning, live status, cancellation and reset for the selected
 player. Cancel all events also clears saved warnings for offline players.

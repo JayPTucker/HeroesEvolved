@@ -23,9 +23,11 @@ public final class RiftSkull extends WitherSkull {
             if(at.distanceTo(Vec3.atCenterOf(WitherGeometry.ANCHORS.get(i)))<WitherGeometry.SKULL_RADIUS
                     &&boss.backfire(i,getOwner() instanceof ServerPlayer p?p:null)) {discard();return;}
         for(LivingEntity target:level.getEntitiesOfClass(LivingEntity.class,getBoundingBox().inflate(WitherGeometry.SKULL_RADIUS),e->e.isAlive()&&e!=getOwner()
+                &&!(getOwner() instanceof RiftWitherEntity&&e.getPersistentData().getBoolean(WitherMoves.BROOD))
                 &&e.getBoundingBox().distanceToSqr(at)<=WitherGeometry.SKULL_RADIUS*WitherGeometry.SKULL_RADIUS)) {
             if(target instanceof ServerPlayer p&&WitherArena.sheltered(p))continue;
-            target.hurt(damageSources().witherSkull(this,getOwner()),target instanceof RiftWitherEntity?12:7);
+            float damage=boss==null?8:WitherGeometry.damage(WitherGeometry.Move.RAIN,boss.phase());
+            target.hurt(damageSources().witherSkull(this,getOwner()),target instanceof RiftWitherEntity?12:damage);
         }
         SetPiecePayload.send(level,Piece.WITHER_IMPACT,at,at,2,null);discard();
     }

@@ -7,11 +7,12 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The Ossuary, the creature's body and every attack's shape, in one place: the server's hits, the renderer's rest pose
- * and the telegraphs all read these numbers, so a warning is exactly what lands.
+ * The Ossuary, the creature's body, its breaches and every attack's shape, in one place: the server's hits, the
+ * renderer's rest pose and the telegraphs all read these numbers, so a warning is exactly what lands.
  *
  * <p>Body points are written in model pixels (as {@code RiftWitherModel} builds them): x to the model's side, up from the
  * ground, and forward (the model's -z). {@link #point} turns them into the world for any yaw and scale.
@@ -20,22 +21,78 @@ public final class WitherGeometry {
     public static final ResourceKey<Level> DIMENSION = ResourceKey.create(Registries.DIMENSION,
             ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "wither_cage"));
     public static final BlockPos ORIGIN = new BlockPos(0, 64, 0);
-    public static final int INTRO_TICKS = 120, DEATH_TICKS = 70, MINIMUM_LEVEL = 16;
+    public static final int MINIMUM_LEVEL = 16;
 
     // ---- The Ossuary (tools/generate-wither-arena.py draws the same numbers) ----
-    /** Walkable floor radius, the wall ring's outer radius, the dome's height and the leash for fighters who fly out. */
+    /** Walkable floor radius, the wall ring's outer radius, the vault's usable height and the leash for fliers. */
     public static final double RADIUS = 29, WALL = 31, FLIGHT_HEIGHT = 44, LEASH = 37;
+    /** The ossuary wall's height above the floor; the giant ribs spring from its top. */
+    public static final int WALL_HEIGHT = 10;
     public static final List<BlockPos> ANCHORS = List.of(ORIGIN.offset(-20, 6, -12), ORIGIN.offset(20, 6, -12), ORIGIN.offset(0, 6, 23));
     /** Broken pillars: real cover from Event Horizon and what Ribbreaker crashes into. x, z, half width, height above floor. */
     public static final int[][] PILLARS = {{-15, 6, 2, 12}, {15, 6, 2, 11}, {-9, -15, 1, 9}, {9, -15, 1, 10}, {-10, 17, 1, 8}, {10, 17, 1, 9}};
     public static Vec3 floor() { return Vec3.atBottomCenterOf(ORIGIN.above(3)); }
     public static Vec3 center() { return floor().add(0, 7, 0); }
     public static Vec3 entrance() { return floor().add(0, 0, -25); }
-    public static Vec3 exit() { return floor().add(0, 1.6, -37); }
+    /** The return breach in the entrance alcove, behind the wall. */
+    public static Vec3 exit() { return floor().add(0, GATE_LIFT, -37); }
+
+    // ---- Breaches: the summoning site's tear, the return alcove and the exit left where it died ----
+    /** A walk-through breach's half width and half height, and how high its center hangs above the ground. */
+    public static final float GATE_W = 1.25F, GATE_H = 2.15F, GATE_LIFT = 2.25F;
+    /** Torn wide while the Wither is dragged through it at the summoning site. */
+    public static final float WIDE_W = 2.7F, WIDE_H = 3.9F;
+    /** The tear it drops out of over the dais when a fight begins. */
+    public static final float ARRIVAL_W = 3.3F, ARRIVAL_H = 5.4F;
+    public static Vec3 arrivalGate() { return floor().add(0, 11.5, 4); }
+    public static Vec3 arrivalNormal() { return new Vec3(0, 0, -1); }
+
+    /**
+     * The summoning site, in ticks: the body knits, rears and roars; a seam splits the air behind it and tears wide; the
+     * breach drags at it while it digs in; it is yanked backwards through; the breach convulses down to walking size.
+     */
+    public static final int FORM_END = 30, SEAM = 44, SPLIT = 56, OPENED = 72, PULL = 64, YANK = 96, THROUGH = 124,
+            SEALED = 142, INTRO_TICKS = 150;
+    /** How far behind the plane it falls before it is gone. */
+    public static final float SWALLOW_DEPTH = 4;
+    /** Over the dais: the tear opens, it falls out, lands, roars; then the fight. */
+    public static final int ARRIVAL_OPEN = 14, ARRIVAL_LAND = 30, ARRIVAL_SHUT = 44, ARRIVAL_TICKS = 64;
+
+    /** The breach's size at the summoning site at {@code t}: {width, height, open 0..1}. */
+    public static float[] introGate(float t) {
+        if (t < SEAM) return new float[]{0, 0, 0};
+        float seam = smooth(SEAM, SPLIT, t), open = smooth(SPLIT, OPENED, t), close = smooth(THROUGH + 2, SEALED, t);
+        float w = WIDE_W + (GATE_W - WIDE_W) * close, h = (WIDE_H * (.35F + .65F * seam)) + (GATE_H - WIDE_H) * close;
+        return new float[]{w, h, Math.max(.02F * seam, open)};
+    }
+    /** The arrival tear over the dais at {@code t} ticks into the fight's opening: {width, height, open 0..1}. */
+    public static float[] arrivalGateSize(float t) {
+        float open = smooth(0, ARRIVAL_OPEN, t) * (1 - smooth(ARRIVAL_SHUT - 8, ARRIVAL_SHUT, t));
+        return new float[]{ARRIVAL_W, ARRIVAL_H, open};
+    }
+    /** Where the arriving body's feet are: it falls out of the tear onto the dais. */
+    public static Vec3 arrivalPath(float t) {
+        Vec3 gate = arrivalGate(), start = gate.add(0, -HEIGHT / 2, 3), end = floor().add(0, .3, 0);
+        if (t <= ARRIVAL_OPEN) return start;
+        float k = Math.clamp((t - ARRIVAL_OPEN) / (ARRIVAL_LAND - ARRIVAL_OPEN), 0, 1);
+        return new Vec3(lerp(k, start.x, end.x), lerp(k * k, start.y, end.y), lerp((float) Math.sqrt(k), start.z, end.z));
+    }
+
+    /**
+     * The death scene, in ticks: it thrashes; its ribs burst; it rises and the star swells, light breaking out through
+     * every fracture; the star drinks everything back in; then it detonates. The exit opens where it died while
+     * everyone is still on the ground.
+     */
+    public static final int RIBS_BURST = 30, IMPLODE = 80, DETONATE = 96, DEATH_TICKS = 110, EXIT_OPENS = 40, EXIT_OPEN_TICKS = 34;
+    /** The blast: how far it knocks people down, how long they stay down, how much of it they're out cold. */
+    public static final float BLAST_RADIUS = 64;
+    public static final int DAZE = 150, BLACKOUT = 50;
+    /** How long the exit stays open after a victory before the Ossuary closes on its own. */
+    public static final int EXIT_LINGER = 2400;
 
     // ---- The body ----
     /** Model scale in the arena and at the summoning site. The arena body stands a little under ten blocks tall. */
-    public static final float ARENA_SCALE = 1.8F, INTRO_SCALE = .9F;
+    public static final float ARENA_SCALE = 1.8F, INTRO_SCALE = 1.1F;
     public static final float WIDTH = 5.2F, HEIGHT = 8.8F;
     /** Rest-pose anchors in model pixels {x, up, forward}. The model's bones are built to end exactly here. */
     public static final float[] HIPS = {0, 16, -2}, CORE = {0, 43, 4}, YOKE = {0, 54, -2};
@@ -63,42 +120,92 @@ public final class WitherGeometry {
         return head.add(dir.scale(MOUTH_REACH[index] * ARENA_SCALE / 16)).add(0, -.2, 0);
     }
     public static Vec3 hand(Vec3 feet, float yaw, int side) { return point(feet, yaw, HAND[side]); }
+    public static Vec3 forward(float yaw) { double r = Math.toRadians(yaw); return new Vec3(-Math.sin(r), 0, Math.cos(r)); }
 
     // ---- Moves ----
-    /** Windups are each telegraph's length; rest is the pause a move adds before the next. */
+    /**
+     * Windups are each telegraph's length in the first phase (later phases and feints change it per cast:
+     * {@link #castWindup}); rest is the pause a move adds before the next, shortened each phase ({@link #restScale}).
+     */
     public enum Move {
-        VERDICT(26, 14), RAIN(22, 10), PULSE(24, 10), TETHER(20, 12), LUNGE(24, 12), SLAM(28, 18), HORIZON(64, 22),
-        BITE(14, 8), RAKE(18, 12), SPIRES(20, 12);
+        VERDICT(22, 12), RAIN(20, 8), PULSE(22, 8), TETHER(16, 10), LUNGE(20, 10), SLAM(24, 14), HORIZON(56, 18),
+        BITE(12, 6), RAKE(16, 10), SPIRES(18, 10), BROOD(22, 12);
         public final int windup, rest;
         Move(int windup, int rest) { this.windup = windup; this.rest = rest; }
         /** Moves that draw on an anchor while they wind up, so the room's counter is lit. */
         public boolean feeds() { return this == RAIN || this == SLAM || this == HORIZON || this == SPIRES || this == LUNGE; }
     }
-    public static final int HEAD_WINDUP = 16, FEED_TICKS = 140, STANCE_HITS = 3;
-    /** Maw Snap: the center head strikes down a short lane. */
-    public static final float BITE_REACH = 9, BITE_RADIUS = 1.7F;
+    public static final int HEAD_WINDUP = 16, FEED_TICKS = 140, STANCE_HITS = 3, TRANSITION_TICKS = 40;
+    /** Maw Snap: the center head strikes down a short lane in front of it. */
+    public static final float BITE_REACH = 9, BITE_RADIUS = 1.7F, BITE_START = 2;
     /** Rending Claw: one arm sweeps a wide arc. */
     public static final float RAKE_REACH = 10.5F, RAKE_HALF_ANGLE = 1.25F;
-    /** Threefold Verdict: three beams held for {@code VERDICT_FIRE} ticks. */
-    public static final float VERDICT_RADIUS = 1.15F, VERDICT_SPREAD = 3.6F;
+    /** Threefold Verdict: three beams held for {@code VERDICT_FIRE} ticks, ending at the first solid block. */
+    public static final float VERDICT_RADIUS = 1.15F, VERDICT_SPREAD = 3.6F, VERDICT_LENGTH = 34;
     public static final int VERDICT_FIRE = 10;
     /** Hollow Rain: burning skulls dropped onto marked circles. */
     public static final float SKULL_RADIUS = 2.3F, RAIN_HEIGHT = 12, RAIN_SPREAD = 4;
-    public static final float TETHER_RADIUS = 1.1F;
+    /** Grave Tether: a hooked thread down a narrow fixed lane; whoever it catches is hauled in. */
+    public static final float TETHER_RADIUS = 1.1F, TETHER_LENGTH = 30;
     /** Starved Pulse and every slam's aftershock: a ring of the real floor thrown up. A normal jump clears it. */
     public static final float PULSE_SPEED = .7F, PULSE_REACH = 26, WAVE_HEIGHT = .8F, WAVE_FRONT = 1.1F;
     public static final int PULSE_ECHO = 14;
     /** Ribbreaker: a charge along a fixed lane; a wall or pillar in the way stops it dead and leaves it stunned. */
-    public static final float LUNGE_RADIUS = 3, LUNGE_REACH = 26, CRASH_MARGIN = 3;
-    public static final int LUNGE_TICKS = 14, CRASH_TICKS = 70;
+    public static final float LUNGE_RADIUS = 3, LUNGE_REACH = 26, LUNGE_OVERSHOOT = 8, LUNGE_LIFT = 3;
+    public static final int LUNGE_TICKS = 14, CRASH_TICKS = 50;
     /** Ossuary Slam: it rises, then both fists come down; the shock rolls out from where they land. */
-    public static final float SLAM_RADIUS = 5.5F, SLAM_RISE = 7, SLAM_WAVE = 18;
+    public static final float SLAM_RADIUS = 5.5F, SLAM_RISE = 9, SLAM_WAVE = 18;
     public static final int SLAM_TICKS = 10;
     /** Bone Spires: a crack runs to each fighter's mark, and spires burst from it in order. */
     public static final float SPIRE_RADIUS = 1.25F, SPIRE_HEIGHT = 3.6F, SPIRE_STEP = 1.6F, SPIRE_REACH = 24;
     public static final int SPIRE_RATE = 2, SPIRE_LINGER = 26;
+    /**
+     * Bone Brood: wither skeletons retched up out of its chest and thrown in arcs onto marked spots beside each fighter.
+     * Whoever stands on a mark when one lands is hurt; they crumble after {@code BROOD_LIFE} ticks or when it dies.
+     */
+    public static final float BROOD_LAND = 1.6F, BROOD_BESIDE = 2.6F;
+    public static final int BROOD_FLIGHT = 16, BROOD_LIFE = 600;
+    /** How many it spews at once, and how many may stand at a time, for a party of {@code fighters}. */
+    public static int broodCount(int phase, int fighters) { return Math.min(4, (phase == 1 ? 2 : 3) + (fighters - 1) / 2); }
+    public static int broodCap(int fighters) { return Math.min(8, 3 + fighters); }
+    /** Ticks between broods in each phase. */
+    public static int broodCooldown(int phase) { return phase == 1 ? 480 : phase == 2 ? 360 : 260; }
+    /** A spewed skeleton's flight from the mouth to its mark at {@code k} (0 to 1): a high arc. */
+    public static Vec3 spewArc(Vec3 from, Vec3 to, float k) {
+        double rise = 4 + from.distanceTo(to) * .25;
+        return from.lerp(to, k).add(0, 4 * rise * k * (1 - k), 0);
+    }
     /** Event Horizon: the star drinks for three seconds, then shines on everyone it can see. */
-    public static final float HORIZON_PULL = .045F;
+    public static final float HORIZON_PULL = .045F, HORIZON_REACH = 70;
+
+    // ---- How hard it is (Souls-like: it is won by reading it, never by out-healing or out-trading it) ----
+    /** Below this share of its health it is Starving: faster still. */
+    public static final float STARVING = .15F;
+    /**
+     * Each move's windup for one cast: shorter each phase and when Starving, and from the second phase every third bite,
+     * rake, slam and charge is a feint that holds its coil half again as long, so a panicked dodge is punished. The
+     * warning fills over exactly this, and the body holds its pose for it.
+     */
+    public static int castWindup(Move move, int phase, int cast, boolean starving) {
+        float scale = phase <= 1 ? 1 : phase == 2 ? .86F : .74F;
+        if (starving) scale *= .88F;
+        boolean feintable = move == Move.BITE || move == Move.RAKE || move == Move.SLAM || move == Move.LUNGE;
+        if (phase >= 2 && feintable && cast % 3 == 0) scale *= 1.45F;
+        return Math.max(6, Math.round(move.windup * scale));
+    }
+    /** How much of a move's rest it keeps in each phase, and how long it slumps after a whole chain. */
+    public static float restScale(int phase) { return phase <= 1 ? .7F : phase == 2 ? .5F : .35F; }
+    public static int spentTicks(int phase) { return phase <= 1 ? 34 : phase == 2 ? 24 : 16; }
+    /** Ticks between side-head skulls in each phase. */
+    public static int headShotGap(int phase) { return phase <= 1 ? 80 : phase == 2 ? 60 : 45; }
+    /** What each move does to whoever it catches, before armour: a quarter to most of an unarmoured player's health. */
+    public static float damage(Move move, int phase) {
+        float base = switch (move) {
+            case BITE -> 11; case RAKE -> 13; case VERDICT -> 9; case RAIN -> 8; case PULSE -> 9; case TETHER -> 7;
+            case LUNGE -> 14; case SLAM -> 16; case SPIRES -> 9; case HORIZON -> 22; case BROOD -> 6;
+        };
+        return base * (1 + .15F * (Math.max(1, phase) - 1));
+    }
 
     /**
      * The chain it opens on a fighter: what reaches them from where they are, then follow-ups that punish the usual
@@ -116,13 +223,13 @@ public final class WitherGeometry {
         };
         if (distance < 18) return switch (phase) {
             case 1 -> odd ? new Move[]{Move.PULSE, Move.BITE} : new Move[]{Move.VERDICT, Move.RAIN};
-            case 2 -> odd ? new Move[]{Move.SLAM, Move.RAKE} : new Move[]{Move.SPIRES, Move.VERDICT};
+            case 2 -> odd ? new Move[]{Move.SLAM, Move.BROOD, Move.RAKE} : new Move[]{Move.SPIRES, Move.VERDICT};
             default -> odd ? new Move[]{Move.SPIRES, Move.SLAM, Move.RAKE} : new Move[]{Move.VERDICT, Move.SPIRES, Move.PULSE};
         };
         return switch (phase) {
-            case 1 -> odd ? new Move[]{Move.VERDICT, Move.TETHER} : new Move[]{Move.RAIN, Move.TETHER};
-            case 2 -> odd ? new Move[]{Move.RAIN, Move.SPIRES} : new Move[]{Move.LUNGE, Move.RAKE};
-            default -> odd ? new Move[]{Move.RAIN, Move.VERDICT, Move.SPIRES} : new Move[]{Move.LUNGE, Move.SLAM, Move.RAKE};
+            case 1 -> odd ? new Move[]{Move.VERDICT, Move.TETHER} : new Move[]{Move.RAIN, Move.BROOD};
+            case 2 -> odd ? new Move[]{Move.BROOD, Move.RAIN, Move.SPIRES} : new Move[]{Move.LUNGE, Move.RAKE};
+            default -> odd ? new Move[]{Move.BROOD, Move.VERDICT, Move.SPIRES} : new Move[]{Move.LUNGE, Move.SLAM, Move.RAKE};
         };
     }
 
@@ -139,16 +246,29 @@ public final class WitherGeometry {
         double t = Math.clamp(point.subtract(a).dot(d) / Math.max(1e-7, d.lengthSqr()), 0, 1);
         return point.distanceTo(a.add(d.scale(t)));
     }
+    /** Maw Snap's lane on the floor: from just in front of its chest to the full reach along its committed yaw. */
+    public static Vec3[] biteLane(Vec3 feet, float yaw) {
+        Vec3 ahead = forward(yaw), base = new Vec3(feet.x, floor().y, feet.z);
+        return new Vec3[]{base.add(ahead.scale(BITE_START)), base.add(ahead.scale(BITE_REACH))};
+    }
     /** The spires' centers along one crack, nearest the creature first. */
     public static List<Vec3> spires(Vec3 from, Vec3 mark) {
         Vec3 flat = new Vec3(mark.x - from.x, 0, mark.z - from.z);
         double length = Math.min(SPIRE_REACH, flat.length() + 4);
         Vec3 dir = flat.lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : flat.normalize();
-        java.util.ArrayList<Vec3> out = new java.util.ArrayList<>();
+        List<Vec3> out = new ArrayList<>();
         for (double d = 3; d <= length; d += SPIRE_STEP) out.add(new Vec3(from.x, floor().y, from.z).add(dir.scale(d)));
         return out;
     }
     /** The ripple's ring at {@code age} ticks: a pressure front {@link #WAVE_HEIGHT} high. */
-    public static double ripple(int age, float speed) { return age * speed; }
+    public static double ripple(float age, float speed) { return age * speed; }
+    /** How high the thrown-up floor stands {@code offset} blocks ahead of (+) or behind (-) a ripple's front. */
+    public static float lift(double offset) {
+        if (Math.abs(offset) >= WAVE_FRONT) return 0;
+        float c = (float) Math.cos(offset / WAVE_FRONT * Math.PI / 2);
+        return WAVE_HEIGHT * c * c;
+    }
+    public static float smooth(float a, float b, float x) { float t = Math.clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); }
+    private static double lerp(float k, double a, double b) { return a + (b - a) * k; }
     private WitherGeometry() {}
 }

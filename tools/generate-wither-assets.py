@@ -176,6 +176,82 @@ for (fx, fy) in ((8, 8),):
 sk.save(assets / 'textures/entity/rift_skull.png')
 sg.save(assets / 'textures/entity/rift_skull_glow.png')
 
+# ---- its boss bar (client/WitherBossBar): a bone bar with rib teeth, knuckled ends and three skulls as its emblem ----
+# 256 x 48. The bar's channel is x 24..232, y 30..36 (filled in code with the phase's colour); the eyes are a separate
+# white map the code tints with the same colour, so they burn mint, violet or ember with the phase.
+BAR_W, BAR_H = 256, 48
+bar = Image.new('RGBA', (BAR_W, BAR_H), (0, 0, 0, 0)); bp = bar.load()
+eyes = Image.new('RGBA', (BAR_W, BAR_H), (0, 0, 0, 0)); ep = eyes.load()
+OUT, DARKB, MID, LIGHT, HI = (16, 14, 14, 255), (92, 84, 70, 255), (168, 158, 134, 255), (212, 203, 178, 255), (236, 230, 210, 255)
+def bpx(x, y, c):
+    if 0 <= x < BAR_W and 0 <= y < BAR_H: bp[x, y] = c
+def shade(x, y, top, bottom):
+    t = (y - top) / max(1, bottom - top)
+    return HI if t < .15 else LIGHT if t < .45 else MID if t < .8 else DARKB
+# The shaft: an outlined bone tube round a dark channel.
+for x in range(20, 237):
+    for y in range(27, 40):
+        edge = y in (27, 39) or x in (20, 236)
+        bpx(x, y, OUT if edge else shade(x, y, 27, 39))
+for x in range(23, 234):
+    for y in range(29, 38):
+        bpx(x, y, OUT if y in (29, 37) or x in (23, 233) else (8, 9, 12, 255))
+# Rib teeth along the top and bottom, curving toward the middle like a ribcage.
+for x in range(28, 230, 9):
+    lean = -1 if x < 128 else 1
+    for k in range(4):
+        bpx(x + lean * (k // 2), 26 - k, LIGHT if k < 3 else MID); bpx(x + 1 + lean * (k // 2), 26 - k, MID)
+        bpx(x - lean * (k // 2), 40 + k, MID); bpx(x + 1 - lean * (k // 2), 40 + k, DARKB)
+# Knuckled ends, like the heads of two long bones.
+for cx in (11, 244):
+    for oy in (-4, 4):
+        cy = 33 + oy
+        for x in range(cx - 7, cx + 8):
+            for y in range(cy - 6, cy + 7):
+                d = ((x - cx) ** 2 + (y - cy) ** 2) ** .5
+                if d <= 6.4: bpx(x, y, OUT if d > 5.4 else shade(x, y, cy - 6, cy + 6))
+# Three skulls over the middle: the center one larger, crowned with small horns.
+def skull(cx, top, w, h, horns):
+    for x in range(cx - w // 2, cx + w // 2 + 1):
+        for y in range(top, top + h):
+            u = (x - cx) / (w / 2); v = (y - top) / h
+            inside = u * u + (max(0, v - .55) / .45) ** 2 * .6 <= 1 and not (v > .78 and abs(u) > .62)
+            if inside:
+                border = u * u + (max(0, v - .55) / .45) ** 2 * .6 > .72 or y == top
+                bpx(x, y, OUT if border else shade(x, y, top, top + h))
+    ew = max(2, w // 5); ey = top + h * 45 // 100
+    for side in (-1, 1):
+        ex = cx + side * (w // 4) - (ew // 2 if side < 0 else ew // 2 - 1)
+        for x in range(ex, ex + ew):
+            for y in range(ey, ey + ew):
+                bpx(x, y, (6, 6, 8, 255)); ep[x, y] = (255, 255, 255, 255)
+    bpx(cx, ey + ew + 1, OUT); bpx(cx - 1, ey + ew + 1, OUT)
+    for x in range(cx - w // 3, cx + w // 3 + 1, 2): bpx(x, top + h - 2, OUT)
+    if horns:
+        # Two horns, thick at the root, curving out and up.
+        for side in (-1, 1):
+            for k in range(7):
+                hx = cx + side * (w // 2 - 4 + (k + 1) // 2 + (k > 3)); hy = top + 3 - k
+                bpx(hx, hy, OUT if k == 6 else MID if k > 2 else LIGHT)
+                if k < 5: bpx(hx - side, hy, DARKB if k > 2 else MID)
+                if k < 2: bpx(hx - 2 * side, hy, OUT)
+skull(128, 4, 18, 18, True)
+for nx in (108, 148):
+    # A short neck of two vertebrae down to the bar.
+    for y in range(22, 27):
+        for x in (nx - 1, nx, nx + 1):
+            bpx(x, y, OUT if x != nx or y in (22, 24, 26) else MID)
+skull(108, 10, 13, 13, False)
+skull(148, 10, 13, 13, False)
+# The star: a small gem where the emblem meets the bar, lit with the eyes.
+for x in range(124, 133):
+    for y in range(22, 31):
+        if abs(x - 128) + abs(y - 26) <= 4:
+            bpx(x, y, OUT if abs(x - 128) + abs(y - 26) == 4 else (40, 44, 48, 255)); ep[x, y] = (255, 255, 255, 255) if abs(x - 128) + abs(y - 26) < 4 else ep[x, y]
+(assets / 'textures/gui').mkdir(parents=True, exist_ok=True)
+bar.save(assets / 'textures/gui/wither_bar.png')
+eyes.save(assets / 'textures/gui/wither_bar_eyes.png')
+
 for name in ['fractured_star', 'breach_seed', 'music_disc_containment']:
     icon = Image.new('RGBA', (16, 16)); d = ImageDraw.Draw(icon)
     if name == 'fractured_star':
@@ -192,11 +268,15 @@ for name in ['fractured_star', 'breach_seed', 'music_disc_containment']:
 lang_path = assets / 'lang/en_us.json'; lang = json.loads(lang_path.read_text(encoding='utf-8'))
 lang.update({
     'guide.heroesevolved.wither.title': 'The Hungry Cage',
-    'guide.heroesevolved.wither.1': 'A Wither construction leaves an unstable breach instead of a Wither. Walk into it with an awakened gift at Power Level 16 or above, alone or with friends. Inside is the Ossuary: a walled floor under a giant fossil ribcage, with room to fly. The breach behind you is a sheltered way home, and anything you drop comes back when you respawn.',
-    'guide.heroesevolved.wither.2': 'Read its body. The center head coils before it snaps; an arm cocks across its chest before it rakes; both fists climb overhead before the slam; the claws dig in before bone spires burst along a crack; the cage opens before the star discharges. Every hit is also marked on the floor or in the air, and the mark never moves: step off it. A normal jump clears the rolling shock of thrown-up floor.',
-    'guide.heroesevolved.wither.3': 'After a chain it slumps with its chest open and takes half again as much damage. Three spaced charged strikes during its windups break its stance. From the second phase it charges along a lane; stand in front of a pillar and step aside, and it crashes into the stone and is stunned for several seconds. Its final discharge reaches everyone it can see: put a pillar between you and the star.',
-    'guide.heroesevolved.wither.4': 'When it winds up a heavy move, the nearest unused anchor pylon lights and a filament runs to the star. It stays lit for seven seconds. Break the glass in the pylon\'s open face, or bounce a skull into it, and the stored hunger backfires: a tenth of its health, its chain cancelled and its core exposed. Each pylon works once per attempt. If everyone leaves, it heals and the next attempt starts fresh.',
+    'guide.heroesevolved.wither.1': 'Build a Wither and it never gets loose: it is dragged backwards through a tear in the air behind it, and the tear stays as a breach. Walk into it with an awakened gift at Power Level 16 or above, alone or with friends. Inside is the Ossuary, a walled floor under a giant fossil ribcage with room to fly; the Wither falls out of a second tear over the dais to meet you. The breach in the entrance alcove is a sheltered way home, and anything you drop comes back when you respawn.',
+    'guide.heroesevolved.wither.2': 'Read its body. The center head coils before it snaps; an arm cocks across its chest before it rakes; both fists climb overhead before the slam; the claws dig in before bone spires burst along a crack; it heaves and retches before it spews wither skeletons onto circles beside you (they crumble in thirty seconds and drop nothing); the cage opens before the star discharges. Every hit is also marked on the floor or in the air, and the mark never moves: step off it. From the second phase some moves are feints that hold their coil longer: dodge when the mark fills, not when the body moves. A normal jump clears the rolling ring of thrown-up floor.',
+    'guide.heroesevolved.wither.3': 'After a chain it slumps with its chest open and takes half again as much damage. Three spaced charged strikes during its windups break its stance. From the second phase it charges along a lane; if the lane ends in stone the warning shows a burst there: stand in front of a pillar, step aside, and it crashes and is stunned. Its final discharge reaches everyone it can see: put a pillar between you and the star.',
+    'guide.heroesevolved.wither.4': 'When it winds up a heavy move, the nearest unused anchor pylon lights and a filament runs to the star for seven seconds: break the glass in the pylon\'s open face, or bounce a skull into it, and its hunger backfires. When it dies, its star swells, drinks everything in and detonates: raise a shield toward it (or let a shield-making power hold it) or you are thrown flat, ears ringing, until you come to. The way out tears open where it died, with its prizes. If everyone leaves mid-fight, it heals and the next attempt starts fresh.',
     'wither.heroesevolved.enter': 'Read its body, then step off the mark. Punish it when it slumps. Bait its charge into a pillar. Break a lit pylon to turn its hunger back on it. The breach behind you leads home.',
+    'wither.heroesevolved.collapsing': 'The Wither — Its Star Is Collapsing',
+    'wither.heroesevolved.blast': 'The star goes off like a wall of light. You are on your back before you hear it.',
+    'wither.heroesevolved.braced': 'Your shield takes the blast. You slide back, still standing.',
+    'wither.heroesevolved.come_to': 'You come to. Where it died, the air has torn open: the way out.',
 })
 lang_path.write_text(json.dumps(lang, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
 print('wrote rift_wither, glow, cracks, rift_skull, icons and guide text')

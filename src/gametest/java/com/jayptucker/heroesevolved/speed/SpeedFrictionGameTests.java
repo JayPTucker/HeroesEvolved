@@ -46,6 +46,36 @@ public final class SpeedFrictionGameTests {
         }
     }
 
+    @GameTest(template = "rewind_empty", timeoutTicks = 20, batch = "speed.cyclone_friction")
+    public static void aCyclonesHeatFollowsItsSettingNotItsLaps(GameTestHelper helper) {
+        Vec3 at = Vec3.atBottomCenterOf(helper.absolutePos(new BlockPos(5, 2, 5)));
+        ServerPlayer slow = MeltdownFieldGameTests.player(helper, at, ModAbilities.SUPERSPEED_ID);
+        ServerPlayer top = MeltdownFieldGameTests.player(helper, at.add(2, 0, 0), ModAbilities.SUPERSPEED_ID);
+        try {
+            int fastest = 6;
+            helper.assertTrue(SpeedFriction.cycloneHeat(1, fastest) == 0 && SpeedFriction.cycloneHeat(2, fastest) == 0,
+                    "A vacuum builds no friction");
+            helper.assertTrue(SpeedFriction.cycloneHeat(4, fastest) == 0, "Nor a wind below the top two settings");
+            helper.assertTrue(SpeedFriction.cycloneHeat(5, fastest) > 0 && SpeedFriction.cycloneHeat(5, fastest) < SpeedFriction.cycloneHeat(6, fastest),
+                    "One below the top heats, half as fast as the top");
+            long now = helper.getLevel().getGameTime();
+            // A whole held vacuum (ten seconds) and a three-second ring at the top setting.
+            for (int i = 0; i < 200; i++) SpeedFriction.heat(slow, SpeedFriction.cycloneHeat(1, fastest), now + i);
+            for (int i = 0; i < 60; i++) SpeedFriction.heat(top, SpeedFriction.cycloneHeat(fastest, fastest), now + i);
+            helper.assertTrue(SpeedFriction.heat(slow) == 0 && slow.getHealth() == slow.getMaxHealth(), "Ten seconds of vacuum: no heat, no burn");
+            helper.assertTrue(SpeedFriction.heat(top) < SpeedFriction.BURN && top.getHealth() == top.getMaxHealth(),
+                    "A tapped ring at the top setting smokes but doesn't burn (" + SpeedFriction.heat(top) + ")");
+            for (int i = 60; i < 140; i++) SpeedFriction.heat(top, SpeedFriction.cycloneHeat(fastest, fastest), now + i);
+            helper.assertTrue(SpeedFriction.heat(top) >= SpeedFriction.BURN, "Held at the top setting for a tornado, it does burn");
+            helper.succeed();
+        } finally {
+            for (ServerPlayer p : new ServerPlayer[] {slow, top}) {
+                SpeedFriction.forget(p);
+                p.serverLevel().removePlayerImmediately(p, Entity.RemovalReason.DISCARDED);
+            }
+        }
+    }
+
     @GameTest(template = "rewind_empty", timeoutTicks = 20, batch = "speed.heal")
     public static void aSpeedsterHealsALittleFasterAtHigherTiers(GameTestHelper helper) {
         Vec3 at = Vec3.atBottomCenterOf(helper.absolutePos(new BlockPos(5, 2, 5)));

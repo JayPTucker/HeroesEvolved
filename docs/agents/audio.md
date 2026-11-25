@@ -141,3 +141,21 @@ Every power got a palette of original synthesized cues in November 2026 (`sounds
   0.8 because Vorbis overshoots, and check the files with numbers and a spectrogram sheet before wiring them in.
 - **Private cues.** A stealthy move's cue goes to its user alone as a `ClientboundSoundPacket` (`PowerSounds.play(...,
   alone)`).
+
+## Reusable patterns from the Wither's theme
+
+`tools/generate-wither-music.py` ("The Hungry Cage": three phase loops, stinger, last chord, record) imports Sylar's kit
+and orchestra (`generate-sylar-music.py`, guarded `__main__`) and adds bone rattles, chain clanks, a growling staccato
+bass and a rising sub. What the player hears is in [wither.md](../wither.md#music-the-hungry-cage).
+
+- **The first score failed on numbers anyone could have measured.** It measured a 137 Hz centroid, 78% of its energy at
+  60 to 250 Hz, under 1% above 1 kHz and 25% percussion, and its three phases measured alike: a drone with thumps, which
+  the user heard as "so bad". The library's Combat states measure a 310 to 860 Hz centroid, 5 to 10% at 1 to 4 kHz and
+  34 to 44% percussion. The rebuild measures 406, 649 and 767 Hz for its three phases with 2 to 8% at 1 to 4 kHz.
+  Measure every loop against a reference before wiring it in, and make each phase measurably different.
+- **`finish` squashes anything that peaks over 0.78** with a tanh, so a drum-heavy loop normalised on the band above
+  150 Hz came out 3 dB louder and flattened. Pick targets that leave every loop unlimited (peak under 0.75), stepping up
+  a little per phase; the Wither's land at -21.0, -20.8 and -20.0 dBFS.
+- **Hold the last chord for the moment it belongs to.** `WitherMusic` silences the fight when the death scene starts and
+  plays the last chord at the detonation, so it rises out of the `DazeView` ringing instead of under the death throes.
+
