@@ -21,7 +21,7 @@ Abilities rank up with use. Purchases and loadouts persist across death and relo
 All eighteen powers have trees: Quake, Flight, Cryokinesis, Electrokinesis,
 Telekinesis, Telepathy, Regeneration, Time Manipulation, Radiation, Sonic
 Resonance, Superspeed, Pyrokinesis, Invisibility, Density (Phasing) and
-Empathic Mimicry, Technopathy, Matter Assembly and [Vibe](docs/vibe.md). Sonic Resonance's cries are original synthesized sound design, including a
+Empathic Mimicry, Matter Assembly and [Vibe](docs/vibe.md). Sonic Resonance's cries are original synthesized sound design, including a
 positional sustained scream that stops when you release its key.
 
 Three powers also have a **signature ability**, a showpiece hung under one branch's Mastery at Level 10:
@@ -32,15 +32,14 @@ accretion disk that drags enemies into orbit, swallows shots and collapses in a 
 to heal you).
 
 Electric powers reach real machines from other mods. EMPs drain and stop anything storing Forge Energy
-(Mekanism, Thermal, Powah, ...) and seize Create's shafts; lightning charges FE machines; Technopathy enrols
-and shuts them down. No machine mod is required. See [Powers and machines](docs/machines.md).
+(Mekanism, Thermal, Powah, ...) and seize Create's shafts; lightning charges FE machines; Electrokinesis's Kill Switch
+shuts one down, and Remote Hand works levers and doors from afar. No machine mod is required. See [Powers and machines](docs/machines.md).
 
 Machines can fight back: an RF-powered [Ability Dampener](docs/ability-dampener.md) holds a field where no power
 works, and the Nullifier, a TaCZ pistol charged with RF instead of loaded with ammo, fires rounds that switch a power
 off for a few seconds.
 
-See [Technopathy](docs/technopathy.md) for physical relay networks, remote mechanisms,
-prepared traps, stolen projectile trajectories and Machine City. See
+See
 [Matter Assembly](docs/matter-assembly.md) for paid temporary walls, bridges, cages,
 ricocheting Shards, rescue floors and Cathedral Engine. Both have five core actions,
 six optional techniques, a first-awakening sequence and their own Evolved trial.

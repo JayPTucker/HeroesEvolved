@@ -167,6 +167,23 @@ final class ElectroArt {
             }
             case ELECTRO_ANCHOR -> anchor(c, at, clock, fade(t, a.piece().ticks, 2, 2), seed);
             case ELECTRO_WIRE -> wire(c, at, end, clock, fade(t, a.piece().ticks, 2, 2), seed);
+            case ELECTRO_DEVICE -> device(c, at, t, a.piece().ticks, size >= 1.5F);
+            case ELECTRO_JAM -> jam(c, a.bound(c), t, a.piece().ticks, clock, seed);
+            case ELECTRO_HAUL -> {
+                // Counterweight: the line runs from the reaching hand to the anchor, current flowing out along it.
+                if (owner == null) break;
+                taut(c, hand(c, owner, .74), at, fade(t, a.piece().ticks, 2, 2), clock, seed);
+                corona(c, at, .13F, clock, fade(t, a.piece().ticks, 2, 2), seed);
+            }
+            case ELECTRO_REEL -> {
+                // Winchline: from the lattice anchor to the body it caught, the current running back to the anchor.
+                net.minecraft.world.entity.Entity body = a.bound(c);
+                if (body == null) break;
+                Vec3 chest = body.getPosition(c.partial).add(0, body.getBbHeight() * .55, 0);
+                float f = fade(t, a.piece().ticks, 2, 2);
+                taut(c, chest, at, f, clock, seed);
+                ring(c, chest, UP, Math.max(.35F, body.getBbWidth() * .75F), .045F, clock * .8F, TWO_PI - .9F, f * .8F);
+            }
             case JUMPSTART -> {
                 Vec3 heart = ElectroGeometry.chest(end);
                 fork(c, ElectroGeometry.chest(at), heart, .07F, alpha * (1 - smooth(4, 9, t)), seed, 2);
@@ -521,6 +538,86 @@ final class ElectroArt {
             Vec3 at = points[Math.min(n, (int) (bead * n))];
             c.glow(at, .3F, ION, alpha * .8F);
             c.glow(at, .1F, CORE, alpha);
+        }
+    }
+
+    /**
+     * The device a Remote Hand or Kill Switch bolt reached (machine nodes, {@code electro/ElectroMachines}). Worked: the
+     * block's edges flare and settle, as Circuit Thread lights a conductor. Killed: the same edges lit, then a dark line
+     * runs down the block from the top and every edge above it goes out, until the whole machine is dead.
+     */
+    private static void device(Canvas c, Vec3 center, float t, float life, boolean killed) {
+        float alpha = fade(t, life, 1, 5);
+        float lit = alpha * (.45F + .55F * (1 - smooth(2, 8, t)));
+        double top = center.y + .52, bottom = center.y - .52;
+        double line = killed ? top - (top - bottom) * smooth(2, 12, t) : bottom - 1;
+        Vec3 o = center.subtract(.52, .52, .52);
+        int[][] edges = {{0, 1}, {2, 3}, {4, 5}, {6, 7}, {0, 2}, {1, 3}, {4, 6}, {5, 7}, {0, 4}, {1, 5}, {2, 6}, {3, 7}};
+        for (int[] e : edges) {
+            Vec3 p = o.add((e[0] & 1) * 1.04, (e[0] >> 1 & 1) * 1.04, (e[0] >> 2 & 1) * 1.04);
+            Vec3 q = o.add((e[1] & 1) * 1.04, (e[1] >> 1 & 1) * 1.04, (e[1] >> 2 & 1) * 1.04);
+            boolean dead = Math.min(p.y, q.y) >= line - .01;
+            if (dead) {
+                // Dark is matter, not light: drawn in the soft pass so it shows over a bright sky.
+                if (c.soft()) c.line(p, q, .05F, SHADOW, alpha * .75F, alpha * .75F);
+                continue;
+            }
+            if (c.soft()) c.line(p, q, .07F, INDIGO, lit * .45F, lit * .45F);
+            if (c.glow()) {
+                c.line(p, q, .03F, BLUE, lit * .8F, lit * .8F);
+                c.line(p, q, .011F, CORE, lit, lit);
+            }
+        }
+        if (killed && t < 13) {
+            // The edge of the dark: a thin bright ring sweeping down the block.
+            float sweep = alpha * (1 - smooth(10, 13, t));
+            Vec3 a = new Vec3(o.x, line, o.z), b = a.add(1.04, 0, 0), d = a.add(1.04, 0, 1.04), e = a.add(0, 0, 1.04);
+            stroke(c, new Vec3[]{a, b, d, e, a}, .022F, sweep);
+        }
+    }
+
+    /**
+     * Dead Trigger: the gun in a body's hand spitting sparks. Short forks snap out of the hand in every direction and
+     * die, round a small knot of current, while the jam lasts (re-sent, two-tick fades).
+     */
+    private static void jam(Canvas c, net.minecraft.world.entity.Entity body, float t, float life, float clock, int seed) {
+        if (body == null) return;
+        Vec3 hand;
+        if (body instanceof Player p) hand = hand(c, p, .55);
+        else {
+            float yaw = net.minecraft.util.Mth.rotLerp(c.partial, body instanceof net.minecraft.world.entity.LivingEntity l ? l.yBodyRotO : body.yRotO,
+                    body instanceof net.minecraft.world.entity.LivingEntity l2 ? l2.yBodyRot : body.getYRot()) * net.minecraft.util.Mth.DEG_TO_RAD;
+            Vec3 forward = new Vec3(-sin(yaw), 0, cos(yaw)), right = new Vec3(-cos(yaw), 0, -sin(yaw));
+            hand = body.getPosition(c.partial).add(0, body.getBbHeight() * .55, 0).add(forward.scale(.42)).add(right.scale(.34));
+        }
+        float alpha = fade(t, life, 2, 2);
+        corona(c, hand, .09F, clock * 1.6F, alpha * .85F, seed);
+        int sparks = minimal() ? 1 : 3;
+        for (int i = 0; i < sparks; i++) {
+            float cycle = (t + i * 2.3F) / 5F, u = frac(cycle);
+            int k = (int) cycle;
+            float yaw = TWO_PI * hash(seed + k * 31, i), pitch = (hash(seed + k * 31, i + 7) - .3F) * 1.6F;
+            Vec3 out = new Vec3(cos(yaw) * cos(pitch), sin(pitch), sin(yaw) * cos(pitch)).scale(.25 + .4 * hash(seed + k * 31, i + 3));
+            fork(c, hand, hand.add(out.scale(smooth(0, .35F, u))), .022F, alpha * (1 - u), seed + i * 13 + k * 7, 0);
+        }
+        if (c.glow()) c.glow(hand, .22F, ION, alpha * (.5F + .3F * sin(clock * 5)));
+    }
+
+    /** A line of current pulled dead straight between two points, beads of light running along it from {@code from} to {@code to}. */
+    private static void taut(Canvas c, Vec3 from, Vec3 to, float alpha, float clock, int seed) {
+        double length = from.distanceTo(to);
+        if (length < .1 || alpha < .01F) return;
+        int n = clamp((int) (length * 2), 4, 48);
+        Vec3[] points = new Vec3[n + 1];
+        for (int i = 0; i <= n; i++) points[i] = from.lerp(to, i / (float) n);
+        stroke(c, points, .032F, alpha);
+        if (!c.glow()) return;
+        int beads = minimal() ? 1 : 3;
+        for (int i = 0; i < beads; i++) {
+            float u = frac(clock * .7F + i / (float) beads + hash(seed, i));
+            Vec3 bead = from.lerp(to, u);
+            c.glow(bead, .24F, ION, alpha * .7F);
+            c.glow(bead, .08F, CORE, alpha);
         }
     }
 

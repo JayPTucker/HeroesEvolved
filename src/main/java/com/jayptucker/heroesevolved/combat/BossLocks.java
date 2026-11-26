@@ -32,7 +32,7 @@ import java.util.*;
  * player; every power has a <em>key</em> to some of them, and everyone has the slow answer (plain weapons, cover, milk).
  *
  * <p>A key reaches its lock one of four ways ({@link Channel}): the power's own hits count for more against the lock's
- * target; an aimed use of the power answers it (a technopath overrides a heart like a circuit); the power's kit already
+ * target; an aimed use of the power answers it (an empath severs a heart from what feeds it); the power's kit already
  * does it (Wind Arms turns skulls, a cryokinetic freezes a skeleton solid, a shield holds a blast); or a power used in
  * the moment the blow lands carries its user out of it. Plain weapons are the fallback, never the plan.
  */
@@ -100,8 +100,6 @@ public final class BossLocks {
         put(ModAbilities.MIMICRY_ID, k(Lock.SHIELD, Role.SEVER, S, AIMED), k(Lock.ROOM_WEAPON, Role.SEVER, S, AIMED));
         put(ModAbilities.SHAPESHIFTING_ID, k(Lock.SHIELD, Role.BREAK, S, HITS), k(Lock.BODIES, Role.TURN, G, KIT),
                 k(Lock.ROOM_WEAPON, Role.BREAK, S, HITS), k(Lock.WEAK_POINT, Role.REACH, S, HITS));
-        put(ModAbilities.TECHNOPATHY_ID, k(Lock.SHIELD, Role.SWITCH_OFF, S, AIMED), k(Lock.BODIES, Role.TURN, G, KIT),
-                k(Lock.ROOM_WEAPON, Role.SWITCH_OFF, S, AIMED));
         put(ModAbilities.MATTER_ASSEMBLY_ID, k(Lock.SHIELD, Role.REACH, G, HITS), k(Lock.PROJECTILES, Role.WALL, S, KIT),
                 k(Lock.BODIES, Role.TURN, S, KIT), k(Lock.UNBLOCKABLE, Role.BRACE, S, KIT), k(Lock.WEAK_POINT, Role.REACH, G, HITS));
         put(ModAbilities.VIBE_ID, k(Lock.SHIELD, Role.SWITCH_OFF, S, AIMED), k(Lock.ROOM_WEAPON, Role.SWITCH_OFF, S, AIMED),

@@ -65,7 +65,7 @@ public final class ConstructPreview {
         if (++worldTicks == 1) mc.getSingleplayerServer().execute(() -> {
             var player = mc.getSingleplayerServer().getPlayerList().getPlayer(mc.player.getUUID());
             player.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty()
-                    .assignDormant(ModAbilities.TECHNOPATHY_ID).unlock(ModAbilities.TECHNOPATHY_ID));
+                    .assignDormant(ModAbilities.MATTER_ASSEMBLY_ID).unlock(ModAbilities.MATTER_ASSEMBLY_ID));
             player.serverLevel().setDayTime(12800);
             player.teleportTo(player.serverLevel(), 300.5, -60, -5.5, 0, 4);
             for (int x = 295; x <= 306; x++) for (int z = -1; z <= 9; z++)
@@ -82,14 +82,6 @@ public final class ConstructPreview {
         if (weaveOnly && worldTicks < 200) return;
         if (weaveOnly && worldTicks >= 220) { PreviewQuiet.quit(); return; }
         switch (weaveOnly ? worldTicks + 150 : worldTicks) {
-            case 200 -> effect(Kind.TECH_LINK, CENTER.add(-2.6, -.2, -2.5), CENTER.add(1.3, .5, 1), 1);
-            case 204 -> pending = "construct-1-tech-link.png";
-            case 235 -> effect(Kind.TECH_PULSE, CENTER.add(0, -.9, 0), CENTER, 4.5F);
-            case 241 -> pending = "construct-2-tech-pulse.png";
-            case 270 -> effect(Kind.TECH_SCAN, mc.player.getEyePosition(), CENTER, 8);
-            case 278 -> pending = "construct-3-tech-scan.png";
-            case 310 -> effect(Kind.TECH_CAGE, CENTER.add(-2, 0, 0), CENTER, 2);
-            case 315 -> pending = "construct-4-tech-cage.png";
             case 350 -> {
                 mc.getSingleplayerServer().execute(() -> mc.getSingleplayerServer().overworld()
                         .setBlock(BlockPos.containing(CENTER), Blocks.SMOOTH_STONE.defaultBlockState(), 3));
@@ -104,11 +96,7 @@ public final class ConstructPreview {
             case 430 -> pending = "construct-7-matter-collapse.png";
             case 465 -> effect(Kind.MATTER_SHIELD, CENTER, CENTER.add(0, 0, -1), 3);
             case 469 -> pending = "construct-8-matter-shield.png";
-            case 500 -> {
-                mc.options.particles().set(ParticleStatus.MINIMAL);
-                effect(Kind.TECH_CAGE, CENTER, CENTER, 2);
-            }
-            case 504 -> pending = "construct-9-tech-minimal.png";
+            case 500 -> mc.options.particles().set(ParticleStatus.MINIMAL);
             case 535 -> effect(Kind.MATTER_SHIELD, CENTER, CENTER.add(0, 0, -1), 3);
             case 539 -> pending = "construct-10-matter-minimal.png";
             case 565 -> PreviewQuiet.quit();

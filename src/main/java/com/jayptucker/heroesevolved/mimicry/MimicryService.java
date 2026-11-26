@@ -80,7 +80,8 @@ public final class MimicryService {
      */
     public record Imprint(ResourceLocation power, String name, Optional<UUID> origin, String kind) {
         public static final Codec<Imprint> CODEC = RecordCodecBuilder.create(i -> i.group(
-                ResourceLocation.CODEC.fieldOf("power").forGetter(Imprint::power),
+                // A retired power (Technopathy) loads as the one that took it over.
+                com.jayptucker.heroesevolved.ability.registry.RetiredPowers.CODEC.fieldOf("power").forGetter(Imprint::power),
                 Codec.STRING.optionalFieldOf("name", "").forGetter(Imprint::name),
                 net.minecraft.core.UUIDUtil.CODEC.optionalFieldOf("origin").forGetter(Imprint::origin),
                 Codec.STRING.optionalFieldOf("kind", "memory").forGetter(Imprint::kind)).apply(i, Imprint::new));
@@ -96,7 +97,7 @@ public final class MimicryService {
                 Imprint.CODEC.optionalFieldOf("near").forGetter(Memory::near),
                 Imprint.CODEC.listOf().optionalFieldOf("kept", List.of()).forGetter(Memory::kept),
                 Codec.INT.optionalFieldOf("channel", -1).forGetter(Memory::channel),
-                ResourceLocation.CODEC.listOf().optionalFieldOf("powers", List.of()).forGetter(m -> List.of()),
+                com.jayptucker.heroesevolved.ability.registry.RetiredPowers.CODEC.listOf().optionalFieldOf("powers", List.of()).forGetter(m -> List.of()),
                 Codec.INT.optionalFieldOf("active", 0).forGetter(m -> 0)).apply(i, Memory::load));
 
         private static Memory load(Optional<Imprint> near, List<Imprint> kept, int channel,
@@ -493,10 +494,6 @@ public final class MimicryService {
         Borrowing state = BORROWING.get(player.getUUID());
         return state != null && state.player == player && state.level == player.serverLevel()
                 && state.used.containsKey(ModAbilities.CRYOKINESIS_ID);
-    }
-
-    public static boolean isBorrowingTechnopathy(ServerPlayer player) {
-        return isBorrowingConstructPower(player, ModAbilities.TECHNOPATHY_ID);
     }
 
     public static boolean isBorrowingVibe(ServerPlayer player) {

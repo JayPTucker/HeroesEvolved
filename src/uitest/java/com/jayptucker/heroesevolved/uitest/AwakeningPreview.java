@@ -77,7 +77,6 @@ public final class AwakeningPreview {
             new Scene("phasing", Danger.FIGHT, "Losing a fight"),
             new Scene("empathic_mimicry", Danger.FIGHT, "Losing a fight"),
             new Scene("regeneration", Danger.FIGHT, "Losing a fight"),
-            new Scene("technopathy", Danger.FIGHT, "Losing a fight"),
             new Scene("matter_assembly", Danger.FIGHT, "Losing a fight"),
             new Scene("vibe", Danger.FIGHT, "Losing a fight"),
             new Scene("shapeshifting", Danger.FIGHT, "Losing a fight"),

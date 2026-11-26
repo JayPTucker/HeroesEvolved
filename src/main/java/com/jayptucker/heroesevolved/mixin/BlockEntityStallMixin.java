@@ -8,7 +8,7 @@ import net.minecraft.world.level.block.entity.TickingBlockEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-/** Machines inside an electromagnetic pulse (and ones a technopath shut off) skip their ticks. */
+/** Machines inside an electromagnetic pulse (and ones an electrokinetic shut off with Kill Switch) skip their ticks. */
 @Mixin(Level.class)
 public abstract class BlockEntityStallMixin {
     @WrapWithCondition(method = "tickBlockEntities",

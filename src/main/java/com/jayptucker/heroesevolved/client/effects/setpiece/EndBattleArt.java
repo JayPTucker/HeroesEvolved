@@ -125,7 +125,7 @@ final class EndBattleArt {
         if(c.glow()){
             c.ring(to,UP,radius,.07F,-HALF_PI,-HALF_PI+TWO_PI*p,PALE,alpha*.85F);star(c,to,.12F+.2F*p,tint,alpha,t);
             if(shape==EndMoves.Pattern.STONE){Vec3 at=to.add(0,5*(1-p),0);c.shard(at.add(-.6,-.4,0),at.add(.5,.6,0),.8F,5,t*.04F,GOLD,alpha*.55F);}
-            if(shape==EndMoves.Pattern.EMP||shape==EndMoves.Pattern.MIND){c.ring(to,new Vec3(1,0,0),radius*(1-p*.8F),.04F,0,TWO_PI,tint,alpha*.7F);}
+            if(shape==EndMoves.Pattern.MIND){c.ring(to,new Vec3(1,0,0),radius*(1-p*.8F),.04F,0,TWO_PI,tint,alpha*.7F);}
             if(shape==EndMoves.Pattern.SPIRAL){Vec3[] points=new Vec3[25];for(int i=0;i<25;i++){float k=i/24F,ang=k*TWO_PI*2+t*.05F;points[i]=to.add(cos(ang)*radius*(1-k),k*3,sin(ang)*radius*(1-k));}c.ribbon(points,.05F,CYAN,alpha*.7F,0);}
         }
     }

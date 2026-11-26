@@ -89,9 +89,11 @@ public final class ElectroService {
     private static final class Charge { int value; long lastGain; int tier; }
     private static final class Hold {
         final ServerPlayer player; final int level; final long started; final ResourceKey<Level> dimension;
+        /** Shift was held as the key went down: a tap at a device switches it off (Remote Hand, Kill Switch). */
+        final boolean off;
         boolean streaming, empowered; LivingEntity target;
-        Hold(ServerPlayer player, int level, long started) {
-            this.player = player; this.level = level; this.started = started; this.dimension = player.level().dimension();
+        Hold(ServerPlayer player, int level, long started, boolean off) {
+            this.player = player; this.level = level; this.started = started; this.dimension = player.level().dimension(); this.off = off;
         }
     }
     private record Strike(UUID owner, ServerLevel level, Vec3 at, long due, int powerLevel, boolean water) {}
@@ -220,9 +222,12 @@ public final class ElectroService {
     }
 
     /** The Chain Lightning key went down. A quick release fires the bolt; holding on becomes Live Current. */
-    public static void press(ServerPlayer player, int powerLevel) {
+    public static void press(ServerPlayer player, int powerLevel) { press(player, powerLevel, false); }
+
+    /** As {@link #press(ServerPlayer, int)}; {@code off} when Shift was held, so a tap at a device switches it off. */
+    public static void press(ServerPlayer player, int powerLevel, boolean off) {
         if (!canStartCast(player)) return;
-        HOLDS.put(player.getUUID(), new Hold(player, powerLevel, player.serverLevel().getGameTime()));
+        HOLDS.put(player.getUUID(), new Hold(player, powerLevel, player.serverLevel().getGameTime(), off));
         ArmPosePayload.show(player, ArmPose.ELECTRO_DRAW, TAP_TICKS + 1);
         Vec3 palm = handPosition(player);
         show(player.serverLevel(), Piece.ELECTRO_DRAW, palm, palm, 1, player);
@@ -233,7 +238,7 @@ public final class ElectroService {
         Hold hold = HOLDS.remove(player.getUUID());
         if (hold == null) return;
         if (hold.streaming) endStream(player);
-        else if (PowerRules.canAct(player) && hold.dimension.equals(player.level().dimension())) chainLightning(player, hold.level);
+        else if (PowerRules.canAct(player) && hold.dimension.equals(player.level().dimension())) chainLightning(player, hold.level, hold.off);
     }
 
     /** Shift + key while streaming: stop at once. */
@@ -251,7 +256,13 @@ public final class ElectroService {
     }
 
     /** A forked bolt from the fingertips that leaps between foes. Charged adds a leap; Overcharged adds two and hits harder. */
-    public static void chainLightning(ServerPlayer player, int powerLevel) {
+    public static void chainLightning(ServerPlayer player, int powerLevel) { chainLightning(player, powerLevel, false); }
+
+    /**
+     * As {@link #chainLightning(ServerPlayer, int)}. A bolt that ends on a block can work it instead of charging it
+     * ({@link ElectroMachines#struck}: Remote Hand and Kill Switch); {@code off} is Shift.
+     */
+    public static void chainLightning(ServerPlayer player, int powerLevel, boolean off) {
         ServerLevel level = player.serverLevel();
         Vec3 hand = handPosition(player);
         Vec3 eye = player.getEyePosition(), aim = player.getLookAngle();
@@ -274,7 +285,7 @@ public final class ElectroService {
             show(level, Piece.ELECTRO_ARC, hand, hit.getLocation(), 1, player);
             if (hit.getType() == HitResult.Type.BLOCK) {
                 show(level, Piece.ELECTRO_PULSE, hit.getLocation(), hit.getLocation(), 1.2, null, 2);
-                energize(level, hit.getBlockPos(), player, COMMON.gridLightningCharge.get());
+                if (!ElectroMachines.struck(player, hit, off)) energize(level, hit.getBlockPos(), player, COMMON.gridLightningCharge.get());
             }
             flashLight(level, hit.getLocation(), 3);
         } else {
@@ -964,6 +975,7 @@ public final class ElectroService {
         STRIKES.removeIf(strike -> strike.owner.equals(id));
         SCARS.removeIf(scar -> scar.owner.equals(id));
         CHARGE.remove(id);
+        ElectroMachines.forget(player);
     }
 
     /** Server stopping: put out every lightning flash and drop all state. */
@@ -1007,6 +1019,8 @@ public final class ElectroService {
         } finally {
             powerDamageDepth--;
         }
+        // Dead Trigger: the current fries the gun in their hand.
+        ElectroMachines.jolted(player, target);
         addCharge(player, continuous ? 2 : 3);
         if (target.level() instanceof ServerLevel level) {
             level.sendParticles(net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK, target.getX(),

@@ -105,7 +105,6 @@ effects: Pyrokinesis's fire, Electrokinesis's forks, Quake's rings):
 | Telepathy | dominate (monsters turn on you; a guardian turns monsters on each other), mind spike | mind crush |
 | Invisibility | vanish and strike from behind, force push | force bubble (held, then crushed) |
 | Density | reach through armour, embed in the floor | phase ambush (rises under you) |
-| Technopathy | stolen arrows, a pulse that jams what you hold | overload cage (marked) |
 | Matter Assembly | crossfire (marked), shield | shard storm (marked) |
 | Regeneration | reckless lunge, blood mend (heals it and its side) | sever; and a mini-boss **gets back up once** |
 | Hydrokinesis | water whip (pulls), drench | geyser (marked) |

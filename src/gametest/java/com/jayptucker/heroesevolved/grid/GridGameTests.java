@@ -7,7 +7,6 @@ import com.jayptucker.heroesevolved.electro.ElectroService;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.radiation.RadiationService;
-import com.jayptucker.heroesevolved.technopathy.TechnopathyService;
 import com.mojang.authlib.GameProfile;
 import io.netty.channel.embedded.EmbeddedChannel;
 import net.minecraft.core.BlockPos;
@@ -37,7 +36,7 @@ import java.util.UUID;
 /**
  * Electricity reaching real machines: pulses drain and stop anything exposing Forge Energy (the same
  * capability lookup Mekanism and Thermal machines answer), lightning charges them, carried energy items
- * are drained, and Technopathy treats powered machines as part of a circuit.
+ * are drained, and a Kill Switch shuts one machine down and lets it wake as it was.
  */
 @GameTestHolder("heroesevolved")
 @PrefixGameTestTemplate(false)
@@ -175,13 +174,11 @@ public final class GridGameTests {
         } finally { pillager.discard(); }
     }
 
-    @GameTest(template = "rewind_empty", batch = "grid.technopathy")
-    public static void technopathyEnrolsAndKillsPoweredMachines(GameTestHelper h) {
-        ServerPlayer p = player(h, ModAbilities.TECHNOPATHY_ID, 5);
+    @GameTest(template = "rewind_empty", batch = "grid.killswitch")
+    public static void aStalledMachineWakesOnItsOwn(GameTestHelper h) {
+        ServerPlayer p = player(h, ModAbilities.ELECTROKINESIS_ID, 5);
         BlockEntity cell = machine(h, new BlockPos(6, 2, 3), Blocks.BARREL);
-        h.assertFalse(TechnopathyService.isNode(h.getLevel(), cell.getBlockPos()), "An unpowered barrel is not a relay");
         TestMachines.consumer(cell, 10_000, 0);
-        h.assertTrue(TechnopathyService.isNode(h.getLevel(), cell.getBlockPos()), "A powered machine relays a Handshake");
         h.assertTrue(GridDisruption.stall(p, h.getLevel(), cell.getBlockPos(), 20) && GridDisruption.stalled(h.getLevel(), cell.getBlockPos()),
                 "Kill Switch shuts a machine down");
         h.assertFalse(GridDisruption.stall(p, h.getLevel(), h.absolutePos(new BlockPos(5, 2, 5)), 20), "Plain blocks cannot be shut down");

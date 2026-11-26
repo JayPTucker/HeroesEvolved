@@ -83,6 +83,9 @@ player sees is in [docs/ability-dampener.md](../../docs/ability-dampener.md).
   edge a player must cross is what matters. Rings that close inward read as "power swallowed"; every other power's rings
   open outward.
 
+- **A jammed gun is a status, not a flag.** Electrokinesis's Dead Trigger puts `ModItems.JAMMED` on whoever holds the
+  gun; `TaczLink` cancels its shot, fire and reload events on both sides while `Jamming.jammed` says so. Any new way
+  to stop a gun is one more branch in `Jamming`, not a second check in `TaczLink`.
 - **Sylar catches the swept bullet before TaCZ's damage callback.** `story/sylar/SylarProjectiles` checks the full
   next-tick segment, ordinary projectile impacts and `TaczLink`'s guarded damage hook, because a fast TaCZ round can
   cross his catch volume in one tick. Hold the actual projectile for 12 ticks with `TemporalProjectilePayload`, then

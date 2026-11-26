@@ -887,42 +887,6 @@
       "heroesevolved:power/superspeed/dodge_2"
     ]
   },
-  "power.technopathy.cast": {
-    "subtitle": "subtitles.heroesevolved.power.technopathy.cast",
-    "sounds": [
-      "heroesevolved:power/technopathy/cast_1",
-      "heroesevolved:power/technopathy/cast_2",
-      "heroesevolved:power/technopathy/cast_3"
-    ]
-  },
-  "power.technopathy.heavy": {
-    "subtitle": "subtitles.heroesevolved.power.technopathy.heavy",
-    "sounds": [
-      "heroesevolved:power/technopathy/heavy_1",
-      "heroesevolved:power/technopathy/heavy_2"
-    ]
-  },
-  "power.technopathy.charge": {
-    "subtitle": "subtitles.heroesevolved.power.technopathy.charge",
-    "sounds": [
-      "heroesevolved:power/technopathy/charge_1"
-    ]
-  },
-  "power.technopathy.impact": {
-    "subtitle": "subtitles.heroesevolved.power.technopathy.impact",
-    "sounds": [
-      "heroesevolved:power/technopathy/impact_1",
-      "heroesevolved:power/technopathy/impact_2",
-      "heroesevolved:power/technopathy/impact_3"
-    ]
-  },
-  "power.technopathy.end": {
-    "subtitle": "subtitles.heroesevolved.power.technopathy.end",
-    "sounds": [
-      "heroesevolved:power/technopathy/end_1",
-      "heroesevolved:power/technopathy/end_2"
-    ]
-  },
   "power.telekinesis.cast": {
     "subtitle": "subtitles.heroesevolved.power.telekinesis.cast",
     "sounds": [

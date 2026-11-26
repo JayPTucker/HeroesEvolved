@@ -32,3 +32,38 @@ skills, each with its own arm pose and set piece (November 2026). What the playe
   straight down it) but not for the caster's own first-person view, where the hand is always beside the camera.
 - **Telegraphs share their timing.** `ElectroGeometry.STRIKE_DELAY` and `SURGE_TICKS` drive both the server's delay and
   the warning ring's build, so the marker always fills exactly as the bolt lands.
+
+## Reusable patterns from absorbing Technopathy (November 2026)
+
+Technopathy was retired and its best ideas became six Electrokinesis nodes (`electro/ElectroMachines`): Remote Hand,
+Kill Switch, Dead Trigger, Return to Sender, Counterweight and Winchline. They replaced the tree's six flat stat nodes
+and kept their positional IDs (`electrokinesis_0_0`, `_0_2`, `_1_0`, `_1_2`, `_2_0`, `_2_2`), so saved builds still
+match; Electrokinesis is now on `SkillTreeService.bonus`'s no-stat list.
+
+- **Retiring a power is one table.** `ability/registry/RetiredPowers` maps a removed power to its successor (Technopathy
+  to Electrokinesis; Precognition to none). Every loader of a saved power id asks it: a player's power
+  (`PowerOwnershipEvents.retired` gives the successor when it is unclaimed, else a random unclaimed power, keeping
+  awake, Evolved and Power Level), a gifted mob's `Gift.read`, Sylar's watch list (`SylarData.load`) and Mimicry's
+  `Imprint` codec (`RetiredPowers.CODEC`). Removing enum constants that go over the network (`Piece`, `Kind`) means a
+  protocol bump in `ModPayloads`. Shared colour lists (`MimicColors`) are indexed on both sides from code, so dropping
+  an entry needs no migration.
+- **Extra meanings on an existing key, not new keys.** Shift + press first runs the action's `deactivate`; when that
+  returns false (nothing to stop) the normal activation runs with `modifierHeld`. Chain Lightning records Shift at press
+  (`Hold.off`) for the tap's release; Ride the Lightning reads it in `activate` and tries Counterweight first. Both still
+  pay their own cost and cooldown.
+- **Work a device the way a hand would.** `ElectroMachines.permitted` checks build rights, height, border,
+  `mayInteract` and posts a `RightClickBlock` (claim mods cancel it). It never posts a `BreakEvent`, which the old
+  Technopathy did through `WorldMutationPolicy.canEdit` (that records echoes and mirrors snapshots). Doors are worked
+  from their lower half, both halves are checked, and nothing closes on a living body.
+- **Is this gun jammed: one question.** `weapons/Jamming.jammed` reads a real `MobEffect` (`ModItems.JAMMED`), so it
+  syncs to the jammed player's own client. `TaczLink` cancels `GunShootEvent`, `GunFireEvent` and `GunReloadEvent` on
+  **both** sides (a player's shot starts on their client); TaCZ then reports `FORGE_EVENT_CANCEL`. The Company guard's
+  `GunGoal` stops while jammed, so his melee takes over.
+- **A screen that returns shots needs the swept step.** `ElectroMachines.screenCatch` tests each projectile's whole
+  step against every live Static Screen (`SkillActionService.screens`) in `EntityTickEvent.Pre`, `ProjectileImpactEvent`
+  and `TaczLink`'s pre-hurt hook. Check the step to the screen's edge with a plain block clip: TaCZ's
+  `bulletObstructed` also counts entities on the path and refused clean catches. A turned round is remembered so it is
+  not caught twice, and its new course goes to clients with `TemporalProjectilePayload` (as `SylarProjectiles` does).
+- **Game-test arenas are walled.** `rewind_empty` is 12 x 6 x 12 inside a barrier. A test round started outside it is
+  rightly refused by the cover check; stage shots inside. Drive catch functions directly (as the Vibe and Quake tests
+  do) rather than waiting for a bare TaCZ round to tick.

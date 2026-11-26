@@ -208,6 +208,11 @@ public final class ExpansionSkills {
     }
     public static boolean has(ServerPlayer p, String id) { return SkillTreeService.has(p, id); }
     public static boolean preserved(Entity entity) { return CryoTechniqueService.preserved(entity); }
+    /** The anchors of {@code p}'s live Arc Lattice (Counterweight can haul you to one), or none. */
+    public static List<Vec3> latticeAnchors(ServerPlayer p) {
+        Lattice l = LATTICES.get(p.getUUID());
+        return l == null || l.level != p.level() || l.until <= now(p) ? List.of() : l.anchors;
+    }
     public static int activeFields() { return FAULTS.size() + SINKS.size() + LATTICES.size() + CryoTechniqueService.activeFields(); }
     public static List<BlockPos> conductorNetwork(ServerLevel level, BlockPos start) {
         return conductorNetwork(level, start, false);
@@ -337,6 +342,8 @@ public final class ExpansionSkills {
                         || !l.struck.add(t.getUUID())) continue;
                 PowerReactions.electric(l.owner, t); t.hurt(l.owner.damageSources().playerAttack(l.owner), has(l.owner, "electrokinesis_storm_geometry") ? 10 : 6);
                 FacilityService.technique(l.owner, t.blockPosition(), "current");
+                // Winchline: the wire that caught them reels them toward its anchor.
+                com.jayptucker.heroesevolved.electro.ElectroMachines.caught(l.owner, t, l.anchors);
             }
         }
     }

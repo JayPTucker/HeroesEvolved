@@ -162,20 +162,6 @@ final class WardRelease {
                 AbilityEffects.send(level, Kind.BLOOD_THREAD, owner.getEyePosition(), ward.getEyePosition(), 1.5);
                 AbilityEffects.send(level, Kind.REGEN_AWAKEN_RELEASE, ward.position(), ward.getEyePosition(), 4);
             }
-            case "technopathy" -> {
-                // A diagnostic lock on their attackers, and every arrow in flight at them turned aside.
-                for (LivingEntity threat : threats) {
-                    threat.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 2));
-                    PrivateGlow.glow(owner, threat, 160);
-                    AbilityEffects.send(level, Kind.TECH_LINK, owner.getEyePosition(), threat.getEyePosition(), .8);
-                }
-                for (Projectile shot : level.getEntitiesOfClass(Projectile.class, ward.getBoundingBox().inflate(8),
-                        shot -> shot.getDeltaMovement().dot(ward.position().subtract(shot.position())) > 0)) {
-                    shot.setDeltaMovement(new Vec3(0, -0.1, 0));
-                    shot.hurtMarked = true;
-                }
-                AbilityEffects.send(level, Kind.TECH_PULSE, ward.position(), ward.getEyePosition(), 6);
-            }
             case "matter_assembly" -> {
                 // Shove them back; a lattice rises round the ward once the space is clear (aftermath).
                 for (LivingEntity threat : Danger.threats(owner, ward, 7)) shove(threat, ward.position(), 1.4, 0.3);

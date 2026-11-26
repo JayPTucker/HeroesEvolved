@@ -84,7 +84,6 @@ switches it all off, as it does every power.
 | Invisibility (force fields) | A Lens Shield holds twice the Pressure. | **A dome for everyone:** a dome six blocks across over where you stood; friends inside take no harm from outside it. *Backlash:* it takes all your stamina. |
 | Regeneration | Rapid Mending heals half again as much. | **The passive answered:** your healing spills over to friends within four blocks. *Backlash:* your Regrowth is spent. |
 | Induced Radioactivity | The Core fills half again as fast: amplifying a radioactive friend is a risk. | **The Core pours out:** every second, foes within eight blocks are dosed and ten Core vents. *Backlash:* 40 Core floods back. |
-| Technopathy | Control reaches twice as far. | **The whole grid answers:** every furnace and battery within 32 blocks is jumpstarted. *Backlash:* a third of them stall. |
 | Matter Assembly | Every Shard Lance volley fires one more shard. | **Shard orbit:** a shard flies at the nearest foe every half second. *Backlash:* you're worn out (weakness). |
 | Empathic Mimicry | Attunement is instant. | **Free echoes:** your Echoes cost nothing and have no cooldown. *Backlash:* they go quiet for eight seconds. |
 | Shapeshifting | Suspicion builds half as fast. | **Apex now:** you grow half again in size and hit half again as hard. *Backlash:* Shapeshifting won't answer for six seconds. |

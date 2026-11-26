@@ -447,6 +447,8 @@ public class CompanyAgentEntity extends PathfinderMob {
         private boolean usable() {
             LivingEntity target = getTarget();
             if (!armed() || outCold() || target == null || !target.isAlive()) return false;
+            // A fried gun (Dead Trigger) won't fire: he puts it down and swings it instead.
+            if (com.jayptucker.heroesevolved.weapons.Jamming.jammed(CompanyAgentEntity.this)) return false;
             double d = distanceToSqr(target);
             // Taser spent and someone in his face: he puts the gun down and hits them.
             if (d <= CLOSE * CLOSE && taserCooldown > 0) return false;

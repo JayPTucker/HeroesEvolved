@@ -34,7 +34,6 @@ key ends them with a short, showy move that belongs to your power alone.
   | Regeneration | Paid in Full | No Pain, Grip | `regeneration/RegenFinishers` |
   | Induced Radioactivity | Chain Reaction | Half-Life, Pocket Sun | `radiation/RadiationFinishers` |
   | Vibe | Off Frequency | Breach Drop, Point Blank | `vibe/VibeFinishers` |
-  | Technopathy | Hard Reset | Kill Switch, Overclock | `technopathy/TechnoFinishers` |
   | Matter Assembly | Monument | Hammer, Shard Orbit | `assembly/AssemblyFinishers` |
   | Empathic Mimicry | Take It In (or the channeled power's three) | Echo, Borrowed Strength | `mimicry/MimicFinishers` |
   | Shapeshifting | Unmade | Apex Bite, Its Own Face | `shapeshift/ShapeFinishers` |
@@ -371,19 +370,6 @@ style.
 - **Pose.** Both hands apart opening the breaches, then the clap.
 - **Rule.** It has no real dimension change. The foe is moved with the same anchor the other finishers use.
 
-### Technopathy: **Grounded**
-
-- **What happens.**
-  1. You snap your fingers.
-  2. Every enrolled node within 16 blocks lights up, and a line of current runs along the circuit to the foe's feet.
-  3. Cables of light whip up from the ground and bind them.
-  4. The circuit closes on them with a loud relay click.
-- **Art.** Tripwire's visible lines and lit block edges along the path. With no circuit enrolled, a single short line
-  runs from your hand.
-- **Pose.** A finger snap, then a palm turned down.
-- **Rule.** With a big enrolled circuit it looks spectacular (every lamp in range flickers), which rewards the
-  power's setup play.
-
 ### Matter Assembly: **Iron Maiden**
 
 - **What happens.**
@@ -452,7 +438,6 @@ All the shared rules above still apply (the threshold, the hold, half damage, in
 | Regeneration | Paid in Full | The punch adds what you suffered | +30 Regrowth |
 | Induced Radioactivity | Chain Reaction | During a Meltdown warning: an emergency vent | −25 Core |
 | Vibe | Off Frequency | Marked foes are hit by the copies | Breach Guard ready again |
-| Technopathy | Hard Reset | Domino Engine runs the ripple as recoil | Circuit enrolment renewed |
 | Matter Assembly | Monument | (none) | Three free Shards |
 | Empathic Mimicry | Take It In | Powered foes are imprinted at once | A kept set, or attunement |
 | Shapeshifting | Unmade | In a kin shape, no Suspicion | The foe's form, unstudied |
@@ -711,21 +696,6 @@ It only works well with another angry mob nearby to turn the foe on; alone, the 
 - **Drawn with.** Three client-side copies of the foe's model with tinted overlays, and `VibeArt`'s seam pop for
   each blink.
 
-### Technopathy: **Hard Reset**
-
-- **Why it fits.** The finisher is as big as the circuit you built: setup play pays off.
-- **Beats.**
-  1. (0–6) You put a palm on the nearest metal or redstone. If you have a circuit, it lights.
-  2. (6–18) A ripple runs through every enrolled control within 16 blocks toward the foe: lamps flicker, doors and
-     trapdoors bang, levers flip. These are real block states, put back after 2 seconds.
-  3. (18–24) The last node fires a Tripwire line taut through the foe.
-  4. (24–30) Every lamp goes out at once, then comes back on. The foe is down.
-- **Twist.** With no circuit, the line runs from your own hand, short and plain. With Domino Engine learned, the
-  ripple is a real recoil running node to node, and it hits other foes along the way.
-- **Reward.** Your circuit's enrolment is renewed for two minutes.
-- **Drawn with.** Remote Hand's rules (enrolled controls only, only where you may edit) and the restore pattern from
-  `CompanyOmens` (put back only if the block is still the same kind). The Tripwire line and lit block edges draw it.
-
 ### Matter Assembly: **Monument**
 
 - **Why it fits.** Matter folds into shapes. This one is a statue of the foe, and then it's material again.
@@ -885,7 +855,7 @@ from finishers").
   - The payloads: `FinisherPayload` (the key), `FinisherStatePayload` (which finisher you have, whether it's on, PvP,
     reach) and `FinisherRunPayload` (start and end, for the camera).
   - `client/FinisherClient`: the glisten, the prompt, the key and the camera.
-  - A `FINISH_*` piece per finisher in its power's art class (Technopathy's in the new `CircuitArt`), and
+  - A `FINISH_*` piece per finisher in its power's art class, and
     `TakedownArt`'s live glints.
   - `BodyCopies`: a body drawn in stone, as tinted copies, sunk, greyed to ash, worn by someone else, or hidden, driven
     by the pieces bound to it (Monument, Off Frequency, Hall of Mirrors, Unmade, Unwound, Half-Life, Breach Drop, Heavy

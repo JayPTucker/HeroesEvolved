@@ -19,14 +19,14 @@ import java.util.*;
 
 /** One fixed geometric language for all six phases. Sampled gifts have distinct shapes and effects, not just tints. */
 public final class EndMoves {
-    public enum Pattern { FAN,IMPACT,LATTICE,SPIRAL,NOVA,FAULT,RING,CHARGE,STONE,MIND,EMP,FRAME,SIPHON,PRISM,SEQUENCE }
+    public enum Pattern { FAN,IMPACT,LATTICE,SPIRAL,NOVA,FAULT,RING,CHARGE,STONE,MIND,FRAME,SIPHON,PRISM,SEQUENCE }
     public static String powerPath(int index){String path=MimicColors.power(index);return path==null?"telekinesis":path;}
     public static Component powerName(int index){return Component.translatable("ability.heroesevolved."+powerPath(index));}
     public static Pattern pattern(int index){return switch(powerPath(index)){
         case "pyrokinesis"->Pattern.FAN;case "cryokinesis"->Pattern.IMPACT;case "electrokinesis","invisibility"->Pattern.LATTICE;
         case "hydrokinesis","flight"->Pattern.SPIRAL;case "radiation","power_amplification"->Pattern.NOVA;
         case "quake","phasing"->Pattern.FAULT;case "sonic_resonance"->Pattern.RING;case "superspeed","shapeshifting"->Pattern.CHARGE;
-        case "telepathy"->Pattern.MIND;case "technopathy"->Pattern.EMP;case "matter_assembly"->Pattern.FRAME;
+        case "telepathy"->Pattern.MIND;case "matter_assembly"->Pattern.FRAME;
         case "regeneration"->Pattern.SIPHON;case "vibe"->Pattern.PRISM;case "time_manipulation","empathic_mimicry"->Pattern.SEQUENCE;
         default->Pattern.STONE;
     };}
@@ -52,7 +52,6 @@ public final class EndMoves {
             case "electrokinesis"->{p.addEffect(new MobEffectInstance(MobEffects.GLOWING,60));p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN,25));}
             case "hydrokinesis"->{HydroService.soak(p,160);p.clearFire();}
             case "telepathy"->p.addEffect(new MobEffectInstance(MobEffects.WEAKNESS,60));
-            case "technopathy"->{e.suppressed.put(p.getUUID(),e.clock+40);p.sendSystemMessage(Component.translatable("endgame.heroesevolved.interference"));}
             case "phasing","quake"->{p.setDeltaMovement(p.getDeltaMovement().add(0,.55,0));p.hurtMarked=true;}
             default->{}
         }
@@ -113,7 +112,7 @@ public final class EndMoves {
                 for(ServerPlayer p:e.fighters())for(Vec3 mark:e.marks)if(EndGeometry.segmentDistance(e.castFrom,mark,p.position().add(0,.9,0))<EndGeometry.LANE_RADIUS&&seen(e.level,e.castFrom,p.getEyePosition())){hit(e,p,damage,power);break;}
                 for(Vec3 mark:e.marks)SetPiecePayload.sendSeeded(e.level,Piece.END_BATTLE_STRIKE,e.castFrom,mark,1,e.boss(),0,seed(move,power,0));
             }
-            case IMPACT,STONE,MIND,EMP,SPIRAL -> {
+            case IMPACT,STONE,MIND,SPIRAL -> {
                 if(move==EndGeometry.Move.STARS){for(Vec3 mark:e.marks)bolt(e,mark.add(0,12,0),new Vec3(0,-.8,0),power);}
                 else for(Vec3 mark:e.marks)impact(e,mark,damage,power,EndGeometry.IMPACT_RADIUS);
             }

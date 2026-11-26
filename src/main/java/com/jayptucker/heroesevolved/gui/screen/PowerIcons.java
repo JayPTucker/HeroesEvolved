@@ -19,7 +19,7 @@ public final class PowerIcons {
             Map.entry("superspeed", Items.SUGAR),
             Map.entry("pyrokinesis", Items.BLAZE_POWDER), Map.entry("invisibility", Items.GLASS_PANE),
             Map.entry("phasing", Items.CHORUS_FRUIT), Map.entry("empathic_mimicry", Items.AMETHYST_SHARD),
-            Map.entry("technopathy", Items.COMPARATOR), Map.entry("matter_assembly", Items.STONECUTTER),
+            Map.entry("matter_assembly", Items.STONECUTTER),
             Map.entry("vibe", Items.ECHO_SHARD), Map.entry("shapeshifting", Items.ARMADILLO_SCUTE),
             Map.entry("hydrokinesis", Items.HEART_OF_THE_SEA),
             Map.entry("power_amplification", Items.REDSTONE));

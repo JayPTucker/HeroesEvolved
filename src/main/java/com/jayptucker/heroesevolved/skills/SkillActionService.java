@@ -29,6 +29,17 @@ import java.util.*;
 public final class SkillActionService {
     private record Field(ServerPlayer owner, Vec3 center, String power, long until) {}
     private static final Map<UUID, Field> FIELDS = new HashMap<>();
+    /** A live Static Screen (Electrokinesis's branch-one field): who raised it, and where it stands. */
+    public record Screen(ServerPlayer owner, Vec3 center) {}
+
+    /** Every live Static Screen in {@code level}, for the shots it catches ({@code electro/ElectroMachines}). */
+    public static List<Screen> screens(net.minecraft.server.level.ServerLevel level) {
+        if (FIELDS.isEmpty()) return List.of();
+        List<Screen> screens = new ArrayList<>();
+        for (Field f : FIELDS.values())
+            if (f.power.equals("electrokinesis") && f.owner.level() == level && !f.owner.isRemoved()) screens.add(new Screen(f.owner, f.center));
+        return screens;
+    }
     private SkillActionService() {}
     private static boolean hostile(ServerPlayer source, LivingEntity target) {
         return target != source && target.isAlive() && !target.isSpectator() && !source.isAlliedTo(target)
@@ -47,7 +58,6 @@ public final class SkillActionService {
     public static boolean canUse(AbilityUseContext c, int branch) {
         if (c.abilityId().getPath().equals("electrokinesis")) return ElectroService.canStartCast(c.player())
                 && (branch != 0 || arcLanceTarget(c.player()) != null);
-        if (c.abilityId().getPath().equals("technopathy")) return com.jayptucker.heroesevolved.technopathy.TechnopathyService.canUse(c);
         if (c.abilityId().getPath().equals("matter_assembly")) return com.jayptucker.heroesevolved.assembly.MatterAssemblyService.canUse(c, "matter_assembly_" + branch + "_1");
         if (c.abilityId().getPath().equals("cryokinesis")) return com.jayptucker.heroesevolved.cryo.CryoCombatSkills.canUse(c, branch);
         if (c.abilityId().getPath().equals("telekinesis")) return com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.canUse(c.player(), "telekinesis_" + branch + "_1");
@@ -70,7 +80,6 @@ public final class SkillActionService {
         LivingEntity target = branch == 0 ? power.equals("electrokinesis") ? arcLanceTarget(p) : aimed(p, false) : null;
         int level = c.abilityLevel();
         switch (power) {
-            case "technopathy" -> { return com.jayptucker.heroesevolved.technopathy.TechnopathyService.skill(c, branch); }
             case "matter_assembly" -> { return com.jayptucker.heroesevolved.assembly.MatterAssemblyService.activate(c, "matter_assembly_" + branch + "_1"); }
             case "quake" -> { return com.jayptucker.heroesevolved.quake.QuakeSkills.skill(c, branch); }
             case "flight" -> { return com.jayptucker.heroesevolved.flight.FlightSkillService.activate(p, "flight_" + branch + "_1"); }

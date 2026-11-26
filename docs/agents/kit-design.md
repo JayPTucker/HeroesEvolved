@@ -66,11 +66,13 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 | One power acting on another | a small API on the other power | [power-interactions.md](power-interactions.md) |
 | A defence another power provides | a map of power to shield | [power-interactions.md](power-interactions.md) (`NuclearShields`) |
 | What a power does to a boss's lock (a ward, a heart, a curse, a blast) | one table of keys, `combat/BossLocks` | the bosses skill's [built-bosses.md](../../.claude/skills/minecraft-bosses/references/built-bosses.md) |
+| To stop a gun firing for a while | a real `MobEffect`, TaCZ events cancelled on both sides | [powers/electrokinesis.md](powers/electrokinesis.md) (`Jamming`) |
+| Take a power out of the mod | one successor table every loader asks | [powers/electrokinesis.md](powers/electrokinesis.md) (`RetiredPowers`) |
 | To switch another power off for a while | a refusal in `AbilityUseService` | [powers/vibe.md](powers/vibe.md) (desync), [weapons-and-dampener.md](weapons-and-dampener.md) (`Dampening.dampened`) |
 | Every kind of stop to store blows the same way | `SpaceTimeService.holder` | [powers/time.md](powers/time.md) |
 | A cost that can kill, and a special death | stamina, then health; a custom damage type | [power-interactions.md](power-interactions.md), [hazards-and-suits.md](hazards-and-suits.md) |
 | Respect cover | raycast from the effect | [powers/flight.md](powers/flight.md) (`TornadoWind.exposed`) |
-| Deflect or catch shots | one entry point for every case | [powers/quake.md](powers/quake.md) (`QuakeKinetics.disrupt`), [powers/invisibility.md](powers/invisibility.md), [powers/superspeed.md](powers/superspeed.md) (Wind Arms) |
+| Deflect or catch shots | one entry point for every case | [powers/quake.md](powers/quake.md) (`QuakeKinetics.disrupt`), [powers/invisibility.md](powers/invisibility.md), [powers/superspeed.md](powers/superspeed.md) (Wind Arms), [powers/electrokinesis.md](powers/electrokinesis.md) (`ElectroMachines.screenCatch`) |
 | Catch bullets that cross a block a tick | sample the step, three hooks | [powers/quake.md](powers/quake.md), [powers/vibe.md](powers/vibe.md) |
 | Temporary blocks that survive a crash | `cryo/TemporaryBlocks` | [powers/invisibility.md](powers/invisibility.md), [powers/cryokinesis.md](powers/cryokinesis.md) |
 | To hold a creature | re-anchor it every tick | [powers/invisibility.md](powers/invisibility.md) (bubble), [powers/density.md](powers/density.md) |

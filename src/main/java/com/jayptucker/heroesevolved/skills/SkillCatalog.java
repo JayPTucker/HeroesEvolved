@@ -24,10 +24,6 @@ public final class SkillCatalog {
             if (power.equals("shapeshifting")) return com.jayptucker.heroesevolved.shapeshift.ShapeshiftSkills.action(this);
             if (power.equals("flight")) return com.jayptucker.heroesevolved.flight.FlightSkillService.action(this);
             if (power.equals("telekinesis")) return com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.action(this);
-            if (power.equals("technopathy")) return SimpleAction.builder(id, level()).cost(() -> energy, () -> cooldown)
-                    .canUse(com.jayptucker.heroesevolved.technopathy.TechnopathyService::canUse)
-                    .activate(c -> mechanic.isEmpty() ? com.jayptucker.heroesevolved.technopathy.TechnopathyService.skill(c, branch)
-                            : com.jayptucker.heroesevolved.technopathy.TechnopathyService.technique(c, mechanic)).build();
             if (power.equals("matter_assembly")) return SimpleAction.builder(id, level()).cost(() -> energy, () -> cooldown)
                     .canUse(c -> com.jayptucker.heroesevolved.assembly.MatterAssemblyService.canUse(c, mechanic.isEmpty() ? id : mechanic))
                     .activate(c -> com.jayptucker.heroesevolved.assembly.MatterAssemblyService.activate(c, mechanic.isEmpty() ? id : mechanic)).build();

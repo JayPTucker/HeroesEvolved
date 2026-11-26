@@ -127,8 +127,6 @@ each level after (21 at Level 15, 28 Evolved), plus training and story notes, ag
 - **invisibility_shadow_strike**: (8+tier)*1.5 -> 3.5+.5*tier, once per mark; three marks maximum. Weighted damage at unlock: 18.2 -> 5.5; budget 5.83 from 31 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
 - **phasing_phase_eruption**: 10+2*tier -> 7+tier in Earthworks.barrage; the decorative columns deal zero. Weighted damage at unlock: 13.2 -> 8.25; budget 7.86 from 31 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
 - **empathic_mimicry_prismatic_overflow**: 8+2*remembered+tier -> 4+.5*remembered+.75*tier; minimum remembered=1, plus 3 s burn. Weighted damage at unlock: 16.1 -> 9.23; budget 9.72 from 35 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
-- **technopathy_drone_swarm**: 10 pulses (15..150 step 15): 2.5+.5*tier -> .8+.15*tier. Weighted damage at unlock: 26.4 -> 8.25; budget 8.61 from 31 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
-- **technopathy_firewall**: 11 contacts (0..200 step 20): 3 -> .75; blocks shots. Weighted damage at unlock: 19.8 -> 4.95; budget 5 from 26 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
 - **matter_assembly_forge_cannon**: 5 pulses (8,13,18,23,28): 5+tier -> 1.6+.25*tier. Weighted damage at unlock: 37.4 -> 11; budget 11.1 from 31 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
 - **hydro_tsunami**: 10+2*tier -> 8+tier; one hit per rolling wave's struck UUID set. Weighted damage at unlock: 13.2 -> 9.08; budget 9.81 from 38 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
 - **amp_lightning_cannon**: 10+2*tier -> 4+tier; redHit also stuns for 60 ticks. Weighted damage at unlock: 13.2 -> 5.78; budget 5.78 from 37 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
@@ -305,16 +303,6 @@ each level after (21 at Level 15, 28 Evolved), plus training and story notes, ag
 | 4 | `amp_jumpstart` | 6 | 16 | 2.5s |  | doors, levers, furnaces x4 for 30 s, batteries, a mount x2 |
 | 5 | `amp_thousand_times` | 15 | 60 | 45s |  | every ally within 10 blocks overcharged, no backlash |
 
-### Technopathy
-
-| Key | Move | Level | Stamina | Cooldown | Was | Pays for |
-| --- | --- | --- | --- | --- | --- | --- |
-| 1 | `technopathy_handshake` | 1 | 8 | 0.75s | 8 / 1s, Level 1 | enrols a network |
-| 2 | `technopathy_remote_hand` | 1 | 5 | 0.6s | 5 / 0.6s, Level 1 | works a linked device |
-| 3 | `technopathy_tripwire` | 3 | 16 | 4.75s | 20 / 3.5s, Level 3 | a trap: 6 + tier and a stumble |
-| 4 | `technopathy_intercept` | 6 | 24 | 11s | 30 / 12s, Level 6 | 10 s of arrow diversion |
-| 5 | `technopathy_machine_city` | 15 | 75 | 56s | 85 / 60s, Level 15 | 12 s of a defended district |
-
 ### Shapeshifting
 
 | Key | Move | Level | Stamina | Cooldown | Was | Pays for |
@@ -414,7 +402,7 @@ recovery, so a long exchange of blows is paid for.
 ## Finishers
 
 Every finisher costs 8 stamina and shares one 3 s cooldown across all powers; a finished
-foe gives 10 stamina back. Entries: `finisher_pyrokinesis`, `finisher_time_manipulation`, `finisher_telepathy`, `finisher_electrokinesis`, `finisher_hydrokinesis`, `finisher_cryokinesis`, `finisher_quake`, `finisher_sonic_resonance`, `finisher_radiation`, `finisher_superspeed`, `finisher_flight`, `finisher_telekinesis`, `finisher_phasing`, `finisher_invisibility`, `finisher_regeneration`, `finisher_vibe`, `finisher_technopathy`, `finisher_matter_assembly`, `finisher_empathic_mimicry`, `finisher_shapeshifting`, `finisher_power_amplification`.
+foe gives 10 stamina back. Entries: `finisher_pyrokinesis`, `finisher_time_manipulation`, `finisher_telepathy`, `finisher_electrokinesis`, `finisher_hydrokinesis`, `finisher_cryokinesis`, `finisher_quake`, `finisher_sonic_resonance`, `finisher_radiation`, `finisher_superspeed`, `finisher_flight`, `finisher_telekinesis`, `finisher_phasing`, `finisher_invisibility`, `finisher_regeneration`, `finisher_vibe`, `finisher_matter_assembly`, `finisher_empathic_mimicry`, `finisher_shapeshifting`, `finisher_power_amplification`.
 
 ## Skill-tree and class abilities
 
@@ -563,15 +551,6 @@ and 0.75.
 | empathic_mimicry | Prismatic Overflow | class:offense | 35 | 18s |
 | empathic_mimicry | Empathic Ward | class:defense | 26 (was 25) | 19.5s (was 24s) |
 | empathic_mimicry | Kindred Light | class:support | 26 (was 25) | 19.5s (was 20s) |
-| technopathy | Batch Instruction | skill | 17 (was 16) | 4s |
-| technopathy | Delayed Instruction | skill | 18 (was 16) | 5s |
-| technopathy | Sentry Seal | skill | 19 (was 18) | 5s |
-| technopathy | Kill Switch | skill | 21 (was 20) | 7s |
-| technopathy | Winchline | skill | 20 | 5s |
-| technopathy | Domino Engine | skill | 30 (was 32) | 9s |
-| technopathy | Drone Swarm | class:offense | 31 (was 30) | 23.25s (was 24s) |
-| technopathy | Firewall | class:defense | 26 (was 25) | 19.5s (was 22s) |
-| technopathy | Overclock | class:support | 26 (was 25) | 19.5s (was 24s) |
 | matter_assembly | Switchback | skill | 20 | 6s |
 | matter_assembly | Drawbridge | skill | 20 (was 18) | 4s (was 3s) |
 | matter_assembly | Scattershot | skill | 21 (was 22) | 5s |
@@ -622,7 +601,7 @@ and 0.75.
 
 ## Every damage review
 
-Checked 194 tree actives, signatures and class abilities, and 77 fighting-style moves across all 21 powers.
+Checked 185 tree actives, signatures and class abilities, and 77 fighting-style moves across all 20 powers.
 Each complete sequence is measured at its unlock tier, before optional upgrades, stored-resource bonuses, armor or resistance.
 Offense classes include their compulsory 10% damage bonus. Typical targets are one for a single hit, two for a narrow
 fan or small patch, and three for a broad area; a four-body Shell uses four. The per-move assumptions are below.
@@ -726,12 +705,6 @@ a successful evasion; full holding time and an immediate shattering/releasing bl
 | `empathic_mimicry_overcharge` | 3 | 17 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: strengthens a copied move, which still pays its own stamina (`mimicry/MimicryService`) |
 | `empathic_mimicry_2_1` | 2 | 19 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Calm de-aggros (`mimicry/MimicryService`) |
 | `empathic_mimicry_absorb_pain` | 3 | 21 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: takes an ally's pain (`mimicry/MimicryService`) |
-| `technopathy_sentry_seal` | 2 | 19 | 1 | 0 | 7 / 0 blocks | 6 / 6 | within 30% | 6+tier; one trip per crossing. Seal watches a route and trips it; disarms/slow are utility. Re-arming the seal costs another use. (`technopathy/TechnopathyService#trip`) |
-| `technopathy_domino_engine` | 3 | 30 | 2 | 0 | 6 / 0 blocks | 8.25 / 8.57 | within 30% | 8+tier; engineHit deduplicates bodies across the entire route (`technopathy/TechnopathyService#engine`) |
-| `technopathy_batch_instruction` | 2 | 17 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: operates linked devices (`technopathy/TechnopathyService`) |
-| `technopathy_delayed_instruction` | 3 | 18 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: queues an instruction (`technopathy/TechnopathyService`) |
-| `technopathy_kill_switch` | 3 | 21 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: stops devices (`technopathy/TechnopathyService`) |
-| `technopathy_winchline` | 2 | 20 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: winches the player to the network (`technopathy/TechnopathyService`) |
 | `matter_assembly_scattershot` | 2 | 21 | 3 | 0 | 0 / 0 blocks | 4.5 / 5.83 | within 30% | five projectiles of 5+.5*tier; simultaneous equal hits respect invulnerability. tickShard does NOT reset invulnerability: ordinary close overlap deals 6, not 30, to one body. Five rays can hit different bodies; material is also spent. (`assembly/MatterAssemblyService#activate,firePaid,tickShard`) |
 | `matter_assembly_faultline` | 3 | 27 | 3 | 0.5 | 6 / 0 blocks | 3.75 / 5.08 | within 30% | 5 for each raised block that intersects the body. Sixteen cells, four immediately then up to 24/tick: overlapping cells use ordinary invulnerability and cannot multiply the equal 5-damage hit. (`assembly/MatterAssemblyService#tick`) |
 | `matter_assembly_switchback` | 2 | 20 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: builds a route (`assembly/MatterAssemblyService`) |
@@ -781,8 +754,6 @@ a successful evasion; full holding time and an immediate shattering/releasing bl
 | `invisibility_shadow_strike` | 3 | 31 | 3 | 0 | 10 / 0 blocks | 5.5 / 5.83 | changed | (8+tier)*1.5 -> 3.5+.5*tier, once per mark; three marks maximum (`styles/StyleCasts (or the power's delegated class cast)`) |
 | `phasing_phase_eruption` | 3 | 31 | 3 | 0.5 | 0 / 0 blocks | 8.25 / 7.86 | changed | 10+2*tier -> 7+tier in Earthworks.barrage; the decorative columns deal zero (`styles/StyleCasts (or the power's delegated class cast)`) |
 | `empathic_mimicry_prismatic_overflow` | 3 | 35 | 3 | 0 | 0 / 0 blocks | 9.23 / 9.72 | changed | 8+2*remembered+tier -> 4+.5*remembered+.75*tier; minimum remembered=1, plus 3 s burn (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `technopathy_drone_swarm` | 3 | 31 | 3 | 0 | 0 / 0 blocks | 8.25 / 8.61 | changed | 10 pulses (15..150 step 15): 2.5+.5*tier -> .8+.15*tier (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `technopathy_firewall` | 3 | 26 | 2 | 0 | 12 / 0 blocks | 4.95 / 5 | changed | 11 contacts (0..200 step 20): 3 -> .75; blocks shots (`styles/StyleCasts (or the power's delegated class cast)`) |
 | `matter_assembly_forge_cannon` | 3 | 31 | 2 | 0 | 0 / 0 blocks | 11 / 11.1 | changed | 5 pulses (8,13,18,23,28): 5+tier -> 1.6+.25*tier (`styles/StyleCasts (or the power's delegated class cast)`) |
 | `vibe_crosswave` | 3 | 34 | 3 | 0 | 0 / 0 blocks | 9.49 / 9.44 | within 30% | 7+1.5*tier, both waves share struck UUIDs (`styles/StyleCasts (or the power's delegated class cast)`) |
 | `shapeshifting_many_hands` | 3 | 34 | 3 | 0 | 0 / 0 blocks | 8.8 / 9.44 | within 30% | 5+tier once per mark, up to 5 marks (`styles/StyleCasts (or the power's delegated class cast)`) |
@@ -814,7 +785,6 @@ a successful evasion; full holding time and an immediate shattering/releasing bl
 | `phasing_phase_field` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: shelters friends in stone (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
 | `empathic_mimicry_empathic_ward` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: negates three hits (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
 | `empathic_mimicry_kindred_light` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: heals/cleanses (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `technopathy_overclock` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: buffs speed/haste and restores stamina (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
 | `matter_assembly_bulwark_lattice` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: absorption and projectile defense (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
 | `matter_assembly_mending_lattice` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: absorption/regeneration (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
 | `vibe_mirror` | 3 | 27 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: reflects a separately supplied projectile; no fixed damage (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |

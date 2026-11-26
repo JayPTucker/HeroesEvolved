@@ -530,7 +530,7 @@ public final class AmpService {
         return true;
     }
 
-    /** Jumpstart's machines, without a hand on them (Lights Back On, Technopathy's overcharge): furnaces and batteries near. */
+    /** Jumpstart's machines, without a hand on them (Lights Back On): furnaces and batteries near. */
     static int jumpMachines(ServerPlayer p, Vec3 center, int radius, int ticks) {
         ServerLevel level = p.serverLevel();
         int started = 0;

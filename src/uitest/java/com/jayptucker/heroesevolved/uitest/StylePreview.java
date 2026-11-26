@@ -88,9 +88,6 @@ public final class StylePreview {
         shot(Piece.PRISMATIC_OVERFLOW, Place.STAGE, 7, 8);
         shot(Piece.EMPATHIC_WARD, Place.BOUND, 1, 40);
         shot(Piece.KINDRED_LIGHT, Place.BOUND, 1, 12);
-        shot(Piece.DRONE_SWARM, Place.BOUND, 1, 40);
-        shot(Piece.FIREWALL, Place.FACE, 1, 30);
-        shot(Piece.OVERCLOCK, Place.BOUND, 1, 40);
         shot(Piece.FORGE_CANNON, Place.BOUND, 1, 14);
         shot(Piece.BULWARK_LATTICE, Place.BOUND, 1, 40);
         shot(Piece.MENDING_LATTICE, Place.BOUND, 1, 20);
@@ -174,7 +171,7 @@ public final class StylePreview {
                 case AIMED -> { origin = STAGE.add(-5, 0, -5); target = STAGE; }
                 case LINE -> { origin = STAGE.add(-Math.max(5, s.scale / 2), 0, 0); target = STAGE.add(Math.max(5, s.scale / 2), 0, 0); }
                 case FACE -> {
-                    origin = s.piece == Piece.FIREWALL ? STAGE.add(0, 0, 2.5) : s.piece == Piece.SHADOW_STRIKE ? STAGE.add(0, 0, 4) : STAGE;
+                    origin = s.piece == Piece.SHADOW_STRIKE ? STAGE.add(0, 0, 4) : STAGE;
                     target = origin.add(toCamera);
                 }
                 case BOUND -> {

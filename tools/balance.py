@@ -156,12 +156,6 @@ act("amp_shock_therapy", "power_amplification", 2, "quick", "clears mind control
 act("amp_jumpstart", "power_amplification", 3, "quick", "doors, levers, furnaces x4 for 30 s, batteries, a mount x2", util=14)
 act("amp_thousand_times", "power_amplification", 5, "ultimate", "every ally within 10 blocks overcharged, no backlash",
     util=45, ult=True)
-# --- Technopathy
-act("technopathy_handshake", "technopathy", 1, "basic", "enrols a network", util=8)
-act("technopathy_remote_hand", "technopathy", 1, "basic", "works a linked device", fixed=5, cd=.6)
-act("technopathy_tripwire", "technopathy", 2, "skill", "a trap: 6 + tier and a stumble", dmg=8 * .75, util=4)
-act("technopathy_intercept", "technopathy", 3, "heavy", "10 s of arrow diversion", util=24)
-act("technopathy_machine_city", "technopathy", 5, "ultimate", "12 s of a defended district", util=60, ult=True)
 # --- Shapeshifting
 act("shapeshift_morph", "shapeshifting", 1, "basic", "a form pays its own size cost and drain", fixed=0, cd=1)
 act("shapeshift_instinct", "shapeshifting", 2, "basic", "each form's move pays its own cost", fixed=0, cd=.3)
@@ -236,7 +230,7 @@ STYLE_DODGE_COOLDOWN_OVERRIDES = {"superspeed": 14}
 # finisher. A kill gives 10 stamina back, so a finished fight costs less than one ended by swinging.
 FINISHER_POWERS = ["pyrokinesis", "time_manipulation", "telepathy", "electrokinesis", "hydrokinesis", "cryokinesis", "quake",
                    "sonic_resonance", "radiation", "superspeed", "flight", "telekinesis", "phasing", "invisibility",
-                   "regeneration", "vibe", "technopathy", "matter_assembly", "empathic_mimicry", "shapeshifting",
+                   "regeneration", "vibe", "matter_assembly", "empathic_mimicry", "shapeshifting",
                    "power_amplification"]
 FINISHER = (8, 60)  # stamina, cooldown in ticks
 
@@ -355,11 +349,6 @@ utility_reviews("phasing/DensitySkills; phasing/DensityService", [("phasing_phas
 reviewed("empathic_mimicry_0_1", "mimicry/MimicryService#skill", "6+tier; one Borrowed Strike", 8, util=2)
 utility_reviews("mimicry/MimicryService", [("empathic_mimicry_sense_powers", "detects powers"), ("empathic_mimicry_1_1", "Empathic Surge heals/buffs"),
     ("empathic_mimicry_overcharge", "strengthens a copied move, which still pays its own stamina"), ("empathic_mimicry_2_1", "Calm de-aggros"), ("empathic_mimicry_absorb_pain", "takes an ally's pain")])
-reviewed("technopathy_sentry_seal", "technopathy/TechnopathyService#trip", "6+tier; one trip per crossing", 8, n=1, factor=.75, util=7,
-         note="Seal watches a route and trips it; disarms/slow are utility. Re-arming the seal costs another use.")
-reviewed("technopathy_domino_engine", "technopathy/TechnopathyService#engine", "8+tier; engineHit deduplicates bodies across the entire route", 11, n=2, factor=.75, util=6)
-utility_reviews("technopathy/TechnopathyService", [("technopathy_batch_instruction", "operates linked devices"), ("technopathy_delayed_instruction", "queues an instruction"),
-    ("technopathy_kill_switch", "stops devices"), ("technopathy_winchline", "winches the player to the network")])
 reviewed("matter_assembly_scattershot", "assembly/MatterAssemblyService#activate,firePaid,tickShard", "five projectiles of 5+.5*tier; simultaneous equal hits respect invulnerability", 6, n=3, factor=.75,
          note="tickShard does NOT reset invulnerability: ordinary close overlap deals 6, not 30, to one body. Five rays can hit different bodies; material is also spent.")
 reviewed("matter_assembly_faultline", "assembly/MatterAssemblyService#tick", "5 for each raised block that intersects the body", 5, n=3, factor=.75, ctrl=.5, util=6,
@@ -407,8 +396,6 @@ for action, old, new, factor, n, ctrl, util, blocks, extra, old_extra in [
     ("invisibility_shadow_strike",16.5,5,1.1,3,0,10,0,0,0),
     ("phasing_phase_eruption",16,10,.75*1.1,3,.5,0,0,0,0),
     ("empathic_mimicry_prismatic_overflow",13,6.75,1.1,3,0,0,0,3*.6,3*.6),
-    ("technopathy_drone_swarm",40,12.5,.6*1.1,3,0,0,0,0,0),
-    ("technopathy_firewall",33,8.25,.6,2,0,12,0,0,0),
     ("matter_assembly_forge_cannon",40,11.75,.85*1.1,2,0,0,0,0,0),
     ("vibe_crosswave",11.5,11.5,.75*1.1,3,0,0,0,0,0),
     ("shapeshifting_many_hands",8,8,1.1,3,0,0,0,0,0),
@@ -422,8 +409,6 @@ for action, old, new, factor, n, ctrl, util, blocks, extra, old_extra in [
         "electrokinesis_tesla_spire":"12 pulses (10..120 step 10): 4+.5*tier -> .7+.15*tier",
         "telekinesis_debris_halo":"17 pulses (0..160 step 10): 3 -> .35; blocks shots",
         "telepathy_psychic_storm":"7 pulses (0..120 step 20): 2+.5*tier -> .5+.3*tier",
-        "technopathy_drone_swarm":"10 pulses (15..150 step 15): 2.5+.5*tier -> .8+.15*tier",
-        "technopathy_firewall":"11 contacts (0..200 step 20): 3 -> .75; blocks shots",
         "matter_assembly_forge_cannon":"5 pulses (8,13,18,23,28): 5+tier -> 1.6+.25*tier",
         "time_manipulation_hour_hand":"9+2*tier -> 6+tier, one sweep per UUID",
         "pyrokinesis_sunfall":"12+2*tier -> 6+.75*tier, plus five seconds burning",
@@ -456,7 +441,7 @@ utility_reviews("styles/StyleCasts; styles/StyleRuntime (class wards)", [
     ("invisibility_refraction_cloak","hides and refracts shots"), ("invisibility_prism_haze","hides/heals friends, blinds foes"),
     ("phasing_dense_bulwark","resistance and knockback immunity"), ("phasing_phase_field","shelters friends in stone"),
     ("empathic_mimicry_empathic_ward","negates three hits"), ("empathic_mimicry_kindred_light","heals/cleanses"),
-    ("technopathy_overclock","buffs speed/haste and restores stamina"), ("matter_assembly_bulwark_lattice","absorption and projectile defense"), ("matter_assembly_mending_lattice","absorption/regeneration"),
+    ("matter_assembly_bulwark_lattice","absorption and projectile defense"), ("matter_assembly_mending_lattice","absorption/regeneration"),
     ("vibe_mirror","reflects a separately supplied projectile; no fixed damage"), ("vibe_sanctuary","opens a sheltering breach"),
     ("shapeshifting_plate_mail","damage reduction and a decoy"), ("shapeshifting_masquerade","disguises friends"),
     ("hydro_tidal_dome","blocks shots, protects friends, soft-slows foes"), ("hydro_healing_spring","heals and cleanses"),
@@ -730,8 +715,6 @@ DESCRIPTION_DETAILS = {
     "pyrokinesis_1_1": "The aura deals 0.1 damage each second and keeps enemies burning.",
     "pyrokinesis_ember_shroud": "Melee retaliation deals 0.125 damage and ignites for one second.",
     "phasing_2_1": "The uppercut deals 3 + tier damage.",
-    "technopathy_drone_swarm": "Each volley deals 0.8 + 0.15 per tier damage per target.",
-    "technopathy_firewall": "Contacts deal 0.75 damage, at most once each second.",
     "hydro_pressure_jet": "Each tenth-second contact deals 0.65 + 0.1 per tier damage.",
     "amp_doorbuster": "The blast deals 1.5 damage.",
 }
@@ -967,7 +950,7 @@ def doc(rows, dump, skill_changes, reviews):
     w("## Every damage review")
     w("")
     w(f"Checked {sum(not r['action'].startswith('style_') for r in reviews)} tree actives, signatures and class abilities, "
-      f"and {sum(r['action'].startswith('style_') for r in reviews)} fighting-style moves across all 21 powers.")
+      f"and {sum(r['action'].startswith('style_') for r in reviews)} fighting-style moves across all 20 powers.")
     w("Each complete sequence is measured at its unlock tier, before optional upgrades, stored-resource bonuses, armor or resistance.")
     w("Offense classes include their compulsory 10% damage bonus. Typical targets are one for a single hit, two for a narrow")
     w("fan or small patch, and three for a broad area; a four-body Shell uses four. The per-move assumptions are below.")

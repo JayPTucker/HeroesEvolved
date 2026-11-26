@@ -70,7 +70,6 @@ read={
  'invisibility':'Empty space has edges. I can borrow those too.',
  'phasing':'You ask stone to remember a different shape. It seems willing.',
  'empathic_mimicry':'You carry the people you have met. I carry what they could have been.',
- 'technopathy':'Every system believes its own instructions. That is a useful weakness.',
  'matter_assembly':'Pieces become a prison so easily. Watch the corners.',
  'time_manipulation':'You move between moments. I have learned to leave something in each one.',
  'vibe':'A world can split along a very fine line. Here is mine.',

@@ -45,7 +45,7 @@ roared. It comes **warded**: a lattice of mint light over its ribs, fed by a thr
 ## Your power is how you win
 
 It is not beaten with a sword and armour. Every phase puts two or three **locks** in front of you, and every one of the
-twenty-one powers opens at least one of them well in every phase. Plain weapons (blades, arrows, bullets) are the slow
+twenty powers opens at least one of them well in every phase. Plain weapons (blades, arrows, bullets) are the slow
 answer anyone has: they do half to a heart and 60% to its body, while a power's blows (a fighting style's fists
 included) do it all, and a power whose answer is its blows does two and a half times as much (or nearly twice) to the
 lock. Some powers answer a lock outright instead: **look straight at it and use your power** (any move of 8 stamina or
@@ -169,7 +169,6 @@ What each power does to it (the fight, the glints, the Guide and the tests all r
 | Invisibility | Force fields send skulls back; breaks hearts (good) | Bubbles hold the brood | Its shield holds the discharge |
 | Empathic Mimicry | Turns a heart's hunger back on it (aimed) | Turns a feeding heart's hunger back (aimed) | Turns a feeding heart's hunger back (aimed); and whatever its channelled power answers |
 | Shapeshifting | A form's body tears hearts out (blows) | Breaks a feeding heart (blows); walks among the brood (good) | A tall or flying form reaches the star (blows) |
-| Technopathy | Overrides hearts like circuits (aimed) | Overrides a feeding heart (aimed); turns the brood (good) | Overrides a feeding heart (aimed) |
 | Matter Assembly | Foldwall stops skulls; Skywalk to the hearts (good) | Sentinel Engine turns on the brood | Its shield holds the discharge; Skywalk to the star (good) |
 | Vibe | Desyncs hearts (aimed) | Desyncs a feeding heart (aimed) | Hops out of the discharge through a breach |
 | Power Amplification | Overloads hearts (aimed) | Overloads a feeding heart (aimed); lifts the Mark (aimed, good) | Overloads a feeding heart (aimed) |

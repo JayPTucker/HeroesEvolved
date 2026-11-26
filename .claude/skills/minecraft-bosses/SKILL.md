@@ -38,7 +38,7 @@ These are settled (November 2026). Don't reopen them; ask only about what they l
   reference library (see "Music" below).
 - **Powers must be needed** (November 25, 2026): "good animations, and fight scenes the abilities are actually
   useful for, to where you'll need them to beat these monsters." A boss is not beaten with a sword and armour alone,
-  and every one of the 21 powers can beat it its own way: each phase is built from locks with several power answers
+  and every one of the 20 powers can beat it its own way: each phase is built from locks with several power answers
   and one slow answer anyone has, and every move is animated in five readable phases
   ([fight-design.md](references/fight-design.md), sections 2 and 3).
 - **Every new boss has, by default:** a per-hit and per-second damage cap with falloff for distant attackers, healing
@@ -332,7 +332,7 @@ numbers as constants at the top of its entity class and in its doc.
 
 - [ ] A brief from [references/boss-brief.md](references/boss-brief.md): the idea, the palette, the story's way in.
 - [ ] Locks in every phase, each with at least three power answers in different roles and a slow answer anyone has;
-      a power × phase table where every one of the 21 powers has a strong answer in every phase; the answers in
+      a power × phase table where every one of the 20 powers has a strong answer in every phase; the answers in
       `combat/BossLocks`, which the fight, the art, the Guide and a game test all read
       ([fight-design.md](references/fight-design.md), section 2).
 - [ ] Every move's opening pose, signal, strike, end pose and window set in ticks (reaction windows 8 ticks or more,

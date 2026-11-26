@@ -29,7 +29,7 @@ import java.util.*;
 public final class SkillTreeGameTests {
     private static final List<String> POWERS = List.of("quake", "flight", "cryokinesis", "electrokinesis", "telekinesis",
             "telepathy", "regeneration", "time_manipulation", "radiation", "sonic_resonance", "superspeed", "pyrokinesis",
-            "invisibility", "phasing", "empathic_mimicry", "technopathy", "matter_assembly", "vibe", "shapeshifting", "hydrokinesis",
+            "invisibility", "phasing", "empathic_mimicry", "matter_assembly", "vibe", "shapeshifting", "hydrokinesis",
             "power_amplification");
     private static ResourceLocation id(String power) { return ResourceLocation.fromNamespaceAndPath("heroesevolved", power); }
     private static ServerPlayer player(GameTestHelper h, String power, int level) {
@@ -46,7 +46,6 @@ public final class SkillTreeGameTests {
         com.jayptucker.heroesevolved.flight.FlightService.stopForPowerRemoval(p);
         com.jayptucker.heroesevolved.flight.FlightSkillService.forget(p);
         com.jayptucker.heroesevolved.invisibility.InvisibilityService.forget(p);
-        com.jayptucker.heroesevolved.technopathy.TechnopathyService.forget(p);
         com.jayptucker.heroesevolved.assembly.MatterAssemblyService.forget(p);
         com.jayptucker.heroesevolved.phasing.DensityService.forget(p);
     }
@@ -172,14 +171,14 @@ public final class SkillTreeGameTests {
     }
     @GameTest(template="rewind_empty", batch="skills.bonuses")
     public static void skillBonusesApplyToCostsCooldownsAndAttacks(GameTestHelper h) {
-        // Electrokinesis keeps the generic stat nodes; Quake, Sonic and others traded theirs for interactions.
-        var p = player(h, "electrokinesis", 5); var victim = target(h, p);
+        // Superspeed keeps the generic stat nodes; Electrokinesis, Quake, Sonic and others traded theirs for interactions.
+        var p = player(h, "superspeed", 5); var victim = target(h, p);
         try {
-            for (int branch : new int[]{0,1}) for (int tier = 0; tier < 3; tier++) h.assertTrue(SkillTreeService.purchase(p, "electrokinesis_" + branch + "_" + tier), "Build must fit in the points a Level 15 power has");
-            h.assertTrue(SkillTreeService.activationCost(p, id("electrokinesis"), 40) == 30, "Control mastery should reduce activation stamina by 25%");
+            for (int branch : new int[]{0,1}) for (int tier = 0; tier < 3; tier++) h.assertTrue(SkillTreeService.purchase(p, "superspeed_" + branch + "_" + tier), "Build must fit in the points a Level 15 power has");
+            h.assertTrue(SkillTreeService.activationCost(p, id("superspeed"), 40) == 30, "Control mastery should reduce activation stamina by 25%");
             float before = victim.getHealth(); victim.hurt(p.damageSources().playerAttack(p), 4);
             h.assertTrue(before - victim.getHealth() >= 4.9F, "Force mastery should increase outgoing attack damage by 25%");
-            h.assertTrue(SkillCatalog.available("electrokinesis", SkillTreeService.build(p, id("electrokinesis")))
+            h.assertTrue(SkillCatalog.available("superspeed", SkillTreeService.build(p, id("superspeed")))
                     == com.jayptucker.heroesevolved.progression.PowerLevels.points(15) - 10, "Specializing in two branches spends ten points");
             h.succeed();
         } finally { victim.discard(); cleanup(p); }
@@ -189,7 +188,7 @@ public final class SkillTreeGameTests {
         for (String power : POWERS) {
             // These physical/stateful kits have dedicated travel, field and lifecycle tests.
             // Density's actives throw a glove that lands later and tunnel into earth the arena may not have.
-            if (Set.of("flight", "telekinesis", "telepathy", "cryokinesis", "technopathy", "matter_assembly", "invisibility", "vibe", "shapeshifting", "hydrokinesis", "power_amplification", "phasing").contains(power)) continue;
+            if (Set.of("flight", "telekinesis", "telepathy", "cryokinesis", "matter_assembly", "invisibility", "vibe", "shapeshifting", "hydrokinesis", "power_amplification", "phasing").contains(power)) continue;
             var p = player(h, power, 5);
             try {
                 for (int branch = 0; branch < 3; branch++) {

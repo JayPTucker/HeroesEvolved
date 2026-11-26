@@ -136,7 +136,7 @@ public final class AmpPreview {
                 ModAbilities.VIBE_ID, ModAbilities.FLIGHT_ID, ModAbilities.PYROKINESIS_ID, ModAbilities.ELECTROKINESIS_ID,
                 ModAbilities.HYDROKINESIS_ID, ModAbilities.CRYOKINESIS_ID, ModAbilities.QUAKE_ID, ModAbilities.SONIC_RESONANCE_ID,
                 ModAbilities.TELEKINESIS_ID, ModAbilities.PHASING_ID, ModAbilities.INVISIBILITY_ID, ModAbilities.REGENERATION_ID,
-                ModAbilities.RADIATION_ID, ModAbilities.TECHNOPATHY_ID, ModAbilities.MATTER_ASSEMBLY_ID, ModAbilities.MIMICRY_ID,
+                ModAbilities.RADIATION_ID, ModAbilities.MATTER_ASSEMBLY_ID, ModAbilities.MIMICRY_ID,
                 ModAbilities.SHAPESHIFTING_ID))
             SCENES.add(new Scene("boost-" + power.getPath(), power, (p, ally) -> {
                 AmpService.surge(p, ally);

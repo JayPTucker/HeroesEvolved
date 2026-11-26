@@ -33,7 +33,6 @@ public final class EvolutionTrials {
             Map.entry("sonic_resonance", new Trial("Catch 40 enemies in the burst of a Resonant Note", 40)),
             Map.entry("phasing", new Trial("Move 2,000 blocks of earth", 2000)),
             Map.entry("quake", new Trial("Push through it: land 40 quake hits while at 80 Strain or more", 40)),
-            Map.entry("technopathy", new Trial("Intercept 40 hostile projectiles with your network", 40)),
             Map.entry("vibe", new Trial("Catch 40 hostile projectiles in a Breach Guard", 40)),
             Map.entry("shapeshifting", new Trial("Spend 30 minutes in disguise among your shape's own kind", 1800)),
             Map.entry("hydrokinesis", new Trial("Carry 60 enemies away on your waves", 60)),

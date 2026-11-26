@@ -704,9 +704,11 @@
     "branches": [
       [
         {
-          "name": "Voltage Control",
-          "description": "Reduce activation stamina costs by 10%.",
-          "level": 1
+          "name": "Remote Hand",
+          "description": "Tap Chain Lightning at a lever, button, door, trapdoor, fence gate or copper bulb and current works it. Shift + tap turns it off or closes it, and never closes a door on anyone standing in it. A device touching a conductor answers through the whole network, up to 48 blocks of it.",
+          "level": 1,
+          "active": false,
+          "mechanic": "remote_hand"
         },
         {
           "name": "Arc Lance",
@@ -718,9 +720,11 @@
           "design_cooldown": 100
         },
         {
-          "name": "Voltage Control Mastery",
-          "description": "Reduce activation stamina costs by another 15% (25% total).",
-          "level": 3
+          "name": "Kill Switch",
+          "description": "Shift + tap Chain Lightning at a powered machine (anything holding Forge Energy, or Create machinery) to shut it off for five seconds; it wakes exactly as it was. An Ability Dampener's field drops while its projector is dead.",
+          "level": 3,
+          "active": false,
+          "mechanic": "kill_switch"
         },
         {
           "id": "electrokinesis_circuit_thread",
@@ -760,9 +764,11 @@
       ],
       [
         {
-          "name": "High Voltage",
-          "description": "Increase your outgoing attack damage by 10% while your awakened power is active.",
-          "level": 1
+          "name": "Dead Trigger",
+          "description": "Your lightning fries the gun in a target's hand: Chain Lightning, Live Current and your Spark strikes jam a TaCZ gun for three seconds. It won't fire or reload, and a jammed Company guard swings it like a club instead.",
+          "level": 1,
+          "active": false,
+          "mechanic": "dead_trigger"
         },
         {
           "name": "Static Screen",
@@ -774,9 +780,11 @@
           "design_cooldown": 220
         },
         {
-          "name": "High Voltage Mastery",
-          "description": "Increase outgoing attack damage by another 15% (25% total). Suppressed during an Eclipse.",
-          "level": 3
+          "name": "Return to Sender",
+          "description": "Static Screen also catches bullets, and sends every shot it catches back at whoever fired it when the way is clear. The returned shot is yours.",
+          "level": 3,
+          "active": false,
+          "mechanic": "return_to_sender"
         },
         {
           "id": "electrokinesis_ground_sink",
@@ -832,9 +840,11 @@
       ],
       [
         {
-          "name": "Quick Circuit",
-          "description": "Reduce ability cooldowns by 10%.",
-          "level": 1
+          "name": "Counterweight",
+          "description": "Shift + Ride the Lightning while aiming at iron, copper, chain, a rail, a lightning rod or your own lattice anchor within 24 blocks: current magnetises you and a line hauls you there, up walls too. You land without fall damage.",
+          "level": 1,
+          "active": false,
+          "mechanic": "counterweight"
         },
         {
           "name": "Overcharge",
@@ -846,9 +856,11 @@
           "design_cooldown": 220
         },
         {
-          "name": "Quick Circuit Mastery",
-          "description": "Reduce ability cooldowns by another 15% (25% total).",
-          "level": 3
+          "name": "Winchline",
+          "description": "An Arc Lattice wire that catches someone reels them toward its nearest anchor for a second. Cover or a wall in the way snaps the line.",
+          "level": 3,
+          "active": false,
+          "mechanic": "winchline"
         },
         {
           "id": "electrokinesis_arc_lattice",
@@ -3468,243 +3480,6 @@
         "icon": "minecraft:glow_berries",
         "design_energy": 25,
         "design_cooldown": 400
-      }
-    ]
-  },
-  {
-    "power": "technopathy",
-    "branch_names": [
-      "OPERATOR",
-      "SENTINEL",
-      "KINETIC LOGIC"
-    ],
-    "branches": [
-      [
-        {
-          "id": "technopathy_air_gap",
-          "name": "Air Gap",
-          "description": "Handshake can bridge one empty block between physical conductors. The gap must actually be empty; walls cannot become cables.",
-          "active": false,
-          "level": 1,
-          "cost": 1
-        },
-        {
-          "id": "technopathy_batch_instruction",
-          "name": "Batch Instruction",
-          "description": "Send ON / OPEN to up to six linked controls. Hold Shift for OFF / CLOSED. Every real device checks its owner's permission separately.",
-          "active": true,
-          "level": 2,
-          "cost": 2,
-          "mechanic": "tech_batch_instruction",
-          "energy": 17,
-          "cooldown": 80,
-          "design_energy": 16,
-          "design_cooldown": 80
-        },
-        {
-          "id": "technopathy_safety_interlock",
-          "name": "Safety Interlock",
-          "description": "Remote commands refuse to close doors, gates and trapdoors occupied by any living body. Build an evacuation corridor without closing it on the people using it.",
-          "active": false,
-          "level": 3,
-          "cost": 1
-        },
-        {
-          "id": "technopathy_delayed_instruction",
-          "name": "Delayed Instruction",
-          "description": "Queue the aimed linked control to toggle in three seconds. Shift queues OFF / CLOSED. An intervening manual command cancels your instruction.",
-          "active": true,
-          "level": 3,
-          "cost": 2,
-          "mechanic": "tech_delayed_instruction",
-          "energy": 18,
-          "cooldown": 100,
-          "design_energy": 16,
-          "design_cooldown": 100
-        },
-        {
-          "id": "technopathy_echo_instruction",
-          "name": "Echo Instruction",
-          "description": "Delayed Instructions return their devices to the previous state two seconds after firing. A later manual command or replacement block is never overwritten.",
-          "active": false,
-          "level": 4,
-          "cost": 2
-        },
-        {
-          "id": "technopathy_clockwork",
-          "name": "Clockwork",
-          "description": "Your Delayed Instruction fans out across six linked controls, firing one every eight ticks. Echo Instruction makes the whole sequence unwind after each step.",
-          "active": false,
-          "level": 5,
-          "cost": 3,
-          "capstone": true
-        }
-      ],
-      [
-        {
-          "id": "technopathy_motion_sensor",
-          "name": "Motion Sensor",
-          "description": "Tripwire reads a moving body's recent path as well as its current position. Fast intruders can no longer simply skip through a thin line between checks.",
-          "active": false,
-          "level": 1,
-          "cost": 1
-        },
-        {
-          "id": "technopathy_sentry_seal",
-          "name": "Sentry Seal",
-          "description": "Prepare a three-block proximity trap above a linked relay for thirty seconds. Its first hostile intruder is slammed back and briefly slowed; incoming arrows are intercepted when it fires.",
-          "active": true,
-          "level": 2,
-          "cost": 2,
-          "mechanic": "tech_sentry_seal",
-          "energy": 19,
-          "cooldown": 100,
-          "design_energy": 18,
-          "design_cooldown": 100
-        },
-        {
-          "id": "technopathy_interrupt_request",
-          "name": "Interrupt Request",
-          "description": "Triggered relay traps interrupt eating, bow drawing and other held item use, and break an intruder's sprint. They do not suppress an entire ability set.",
-          "active": false,
-          "level": 3,
-          "cost": 1
-        },
-        {
-          "id": "technopathy_kill_switch",
-          "name": "Kill Switch",
-          "description": "Switch an active linked controller OFF / CLOSED for five seconds, then safely restore its original state. The command never resurrects a broken or replaced device.",
-          "active": true,
-          "level": 3,
-          "cost": 2,
-          "mechanic": "tech_kill_switch",
-          "energy": 21,
-          "cooldown": 140,
-          "design_energy": 20,
-          "design_cooldown": 140
-        },
-        {
-          "id": "technopathy_black_box",
-          "name": "Black Box",
-          "description": "A real hostile arrow interception saves one spare trap charge. Your next Tripwire can stop two different intruders instead of one. The spare cannot be stockpiled.",
-          "active": false,
-          "level": 4,
-          "cost": 2
-        },
-        {
-          "id": "technopathy_airlock",
-          "name": "Airlock",
-          "description": "When a relay trap catches an intruder, nearby enrolled open doors, gates and trapdoors close for three seconds, then return to their original state. Build an actual containment corridor.",
-          "active": false,
-          "level": 5,
-          "cost": 3,
-          "capstone": true
-        }
-      ],
-      [
-        {
-          "id": "technopathy_flywheel",
-          "name": "Flywheel",
-          "description": "Hostile arrow interceptions store up to three packets of momentum. Your next triggered relay trap spends them for a stronger physical recoil instead of adding free damage.",
-          "active": false,
-          "level": 1,
-          "cost": 1
-        },
-        {
-          "id": "technopathy_winchline",
-          "name": "Winchline",
-          "description": "A linked relay winches the nearest visible hostile within seven blocks towards itself for up to three seconds. Cover and collision break the tether.",
-          "active": true,
-          "level": 2,
-          "cost": 2,
-          "mechanic": "tech_winchline",
-          "energy": 20,
-          "cooldown": 100,
-          "design_energy": 20,
-          "design_cooldown": 100
-        },
-        {
-          "id": "technopathy_counterweight",
-          "name": "Counterweight",
-          "description": "Hold Shift with Winchline to pull yourself towards the aimed relay instead. Vault along a prepared route without teleporting, phasing or leaving flight flags behind.",
-          "active": false,
-          "level": 3,
-          "cost": 1
-        },
-        {
-          "id": "technopathy_domino_engine",
-          "name": "Domino Engine",
-          "description": "Send a fast mechanical recoil through twelve enrolled relays, one every four ticks. Each enemy can be struck only once by the sequence. Prepare a cable-lined corridor before the fight.",
-          "active": true,
-          "level": 3,
-          "cost": 2,
-          "mechanic": "tech_domino_engine",
-          "energy": 30,
-          "cooldown": 180,
-          "design_energy": 32,
-          "design_cooldown": 180
-        },
-        {
-          "id": "technopathy_recoil_circuit",
-          "name": "Recoil Circuit",
-          "description": "Domino Engine pushes targets along the arriving relay link rather than radially away. Your circuit's physical layout becomes a knockback conveyor.",
-          "active": false,
-          "level": 4,
-          "cost": 2
-        },
-        {
-          "id": "technopathy_return_to_sender",
-          "name": "Return to Sender",
-          "description": "Intercept can send an arrow back at its hostile shooter when the return route is clear. The arrow becomes your shot; damage, cover, friendly fire and server PvP rules still apply.",
-          "active": false,
-          "level": 5,
-          "cost": 3,
-          "capstone": true
-        }
-      ]
-    ],
-    "styles": [
-      {
-        "id": "technopathy_drone_swarm",
-        "role": "offense",
-        "name": "Drone Swarm",
-        "description": "Six drones of light circle you for 8 seconds, shooting the three nearest foes in sight within 12 blocks every three quarters of a second. Each volley deals 0.8 + 0.15 per tier damage per target.",
-        "energy": 31,
-        "cooldown": 465,
-        "cost": 3,
-        "level": 3,
-        "mechanic": "drone_swarm",
-        "icon": "minecraft:observer",
-        "design_energy": 30,
-        "design_cooldown": 480
-      },
-      {
-        "id": "technopathy_firewall",
-        "role": "defense",
-        "name": "Firewall",
-        "description": "Raise a hologram wall 5 blocks wide in front of you for 10 seconds. It deletes projectiles that cross it and burns and throws back anyone who tries. Contacts deal 0.75 damage, at most once each second.",
-        "energy": 26,
-        "cooldown": 390,
-        "cost": 3,
-        "level": 3,
-        "mechanic": "firewall",
-        "icon": "minecraft:target",
-        "design_energy": 25,
-        "design_cooldown": 440
-      },
-      {
-        "id": "technopathy_overclock",
-        "role": "support",
-        "name": "Overclock",
-        "description": "Overclock everyone near you: you and friends within 12 blocks work much faster and move faster for 10 seconds, and regain 10 stamina.",
-        "energy": 26,
-        "cooldown": 390,
-        "cost": 3,
-        "level": 3,
-        "mechanic": "overclock",
-        "icon": "minecraft:comparator",
-        "design_energy": 25,
-        "design_cooldown": 480
       }
     ]
   },

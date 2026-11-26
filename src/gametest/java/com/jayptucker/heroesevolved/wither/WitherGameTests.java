@@ -425,8 +425,8 @@ public final class WitherGameTests {
         var all=List.of(ModAbilities.PYROKINESIS_ID,ModAbilities.CRYOKINESIS_ID,ModAbilities.ELECTROKINESIS_ID,ModAbilities.HYDROKINESIS_ID,ModAbilities.SUPERSPEED_ID,
                 ModAbilities.FLIGHT_ID,ModAbilities.QUAKE_ID,ModAbilities.SONIC_RESONANCE_ID,ModAbilities.TELEPATHY_ID,ModAbilities.TELEKINESIS_ID,ModAbilities.TIME_MANIPULATION_ID,
                 ModAbilities.RADIATION_ID,ModAbilities.REGENERATION_ID,ModAbilities.PHASING_ID,ModAbilities.INVISIBILITY_ID,ModAbilities.MIMICRY_ID,ModAbilities.SHAPESHIFTING_ID,
-                ModAbilities.TECHNOPATHY_ID,ModAbilities.MATTER_ASSEMBLY_ID,ModAbilities.VIBE_ID,ModAbilities.AMPLIFICATION_ID);
-        h.assertTrue(com.jayptucker.heroesevolved.combat.BossLocks.powers().containsAll(all)&&all.size()==21,"The lock table knows all twenty-one powers");
+                ModAbilities.MATTER_ASSEMBLY_ID,ModAbilities.VIBE_ID,ModAbilities.AMPLIFICATION_ID);
+        h.assertTrue(com.jayptucker.heroesevolved.combat.BossLocks.powers().containsAll(all)&&all.size()==20,"The lock table knows all twenty powers");
         for(var power:all)for(int phase=1;phase<=3;phase++){
             boolean strong=false;
             for(var lock:WitherGeometry.locks(phase)){var key=com.jayptucker.heroesevolved.combat.BossLocks.key(power,lock);strong|=key!=null&&key.strong();}
@@ -464,16 +464,16 @@ public final class WitherGameTests {
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_41",timeoutTicks=200)
     public static void aimedPowersAnswerAHeart(GameTestHelper h){clean(h);
-        ServerPlayer tech=player(h,16,ModAbilities.TECHNOPATHY_ID);var b=warded(h,tech);var heart=b.hearts[2];
+        ServerPlayer tech=player(h,16,ModAbilities.MIMICRY_ID);var b=warded(h,tech);var heart=b.hearts[2];
         h.runAtTickTime(100,()->{try{
         tech.setPos(WitherGeometry.heart(2).add(0,-2.5,-7));look(tech,heart.aimPoint());float max=heart.getMaxHealth();
-        com.jayptucker.heroesevolved.combat.BossLocks.used(tech,ModAbilities.TECHNOPATHY_ID,"test",20);
-        h.assertTrue(Math.abs(max*(1-com.jayptucker.heroesevolved.combat.BossLocks.STRONG_AIMED)-heart.getHealth())<.01,"A technopath overrides a heart it looks at: two fifths at once ("+heart.getHealth()+" of "+max+", lock "+heart.lock()+", key "+com.jayptucker.heroesevolved.combat.BossLocks.key(tech,com.jayptucker.heroesevolved.combat.BossLocks.Lock.SHIELD)+", level "+(tech.level()==heart.level())+", eye "+tech.getEyePosition()+" look "+tech.getLookAngle()+" heart "+heart.aimPoint()+")");
-        float after=heart.getHealth();com.jayptucker.heroesevolved.combat.BossLocks.used(tech,ModAbilities.TECHNOPATHY_ID,"test",20);
+        com.jayptucker.heroesevolved.combat.BossLocks.used(tech,ModAbilities.MIMICRY_ID,"test",20);
+        h.assertTrue(Math.abs(max*(1-com.jayptucker.heroesevolved.combat.BossLocks.STRONG_AIMED)-heart.getHealth())<.01,"An empath severs a heart it looks at: two fifths at once ("+heart.getHealth()+" of "+max+", lock "+heart.lock()+", key "+com.jayptucker.heroesevolved.combat.BossLocks.key(tech,com.jayptucker.heroesevolved.combat.BossLocks.Lock.SHIELD)+", level "+(tech.level()==heart.level())+", eye "+tech.getEyePosition()+" look "+tech.getLookAngle()+" heart "+heart.aimPoint()+")");
+        float after=heart.getHealth();com.jayptucker.heroesevolved.combat.BossLocks.used(tech,ModAbilities.MIMICRY_ID,"test",20);
         h.assertTrue(heart.getHealth()==after,"The same heart can't be answered again at once");
-        tech.setPos(WitherGeometry.heart(1).add(0,-2.5,7));look(tech,b.hearts[1].aimPoint());com.jayptucker.heroesevolved.combat.BossLocks.used(tech,ModAbilities.TECHNOPATHY_ID,"test",2);
+        tech.setPos(WitherGeometry.heart(1).add(0,-2.5,7));look(tech,b.hearts[1].aimPoint());com.jayptucker.heroesevolved.combat.BossLocks.used(tech,ModAbilities.MIMICRY_ID,"test",2);
         h.assertTrue(b.hearts[1].getHealth()==b.hearts[1].getMaxHealth(),"A trifling use (under eight stamina) is not an answer");
-        look(tech,tech.position().add(0,0,-10));com.jayptucker.heroesevolved.combat.BossLocks.used(tech,ModAbilities.TECHNOPATHY_ID,"test",20);
+        look(tech,tech.position().add(0,0,-10));com.jayptucker.heroesevolved.combat.BossLocks.used(tech,ModAbilities.MIMICRY_ID,"test",20);
         h.assertTrue(b.hearts[1].getHealth()==b.hearts[1].getMaxHealth(),"It must be aimed at the heart");
         ServerPlayer pyro=player(h,16);WitherArena.enter(pyro);pyro.setPos(tech.position());look(pyro,b.hearts[1].aimPoint());
         com.jayptucker.heroesevolved.combat.BossLocks.used(pyro,ModAbilities.PYROKINESIS_ID,"test",20);

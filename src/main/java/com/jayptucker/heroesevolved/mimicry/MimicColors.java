@@ -9,10 +9,10 @@ import java.util.List;
 public final class MimicColors {
     private static final List<String> POWERS = List.of("quake", "flight", "electrokinesis", "telekinesis", "telepathy",
             "cryokinesis", "radiation", "sonic_resonance", "superspeed", "regeneration", "pyrokinesis", "invisibility",
-            "phasing", "empathic_mimicry", "technopathy", "matter_assembly", "time_manipulation", "vibe", "shapeshifting",
+            "phasing", "empathic_mimicry", "matter_assembly", "time_manipulation", "vibe", "shapeshifting",
             "hydrokinesis", "power_amplification");
     private static final int[] COLORS = {0xB1E9FA, 0xF6F4EC, 0x60B5FF, 0xBC86F5, 0xA070FF, 0xBFEFFF, 0xFF781C,
-            0xE5CB78, 0xFFBE45, 0xFFD89B, 0xFF8A2A, 0x9CC8FF, 0x9FE3D6, 0xE8C27A, 0x60E0C1, 0xE7B771, 0x9A7CFF, 0x46BDFF, 0x8FCFC6, 0x3CC2D6, 0xE0263A};
+            0xE5CB78, 0xFFBE45, 0xFFD89B, 0xFF8A2A, 0x9CC8FF, 0x9FE3D6, 0xE8C27A, 0xE7B771, 0x9A7CFF, 0x46BDFF, 0x8FCFC6, 0x3CC2D6, 0xE0263A};
 
     private MimicColors() {}
 

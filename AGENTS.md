@@ -1,7 +1,7 @@
 # Notes for coding agents
 
 Heroes Evolved is a Minecraft 1.21.1 NeoForge mod (Java 21, mod id `heroesevolved`, package
-`com.jayptucker.heroesevolved`): twenty-one player powers with skill trees, classes, fighting styles and finishers, story
+`com.jayptucker.heroesevolved`): twenty player powers with skill trees, classes, fighting styles and finishers, story
 bosses, gifted mobs, village emergencies and a playable prologue. It needs TaCZ, Simple Voice Chat and Simple Radio
 (with Lexiconfig) on both sides.
 
@@ -76,7 +76,7 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 | Superspeed | [powers/superspeed.md](docs/agents/powers/superspeed.md) | [superspeed.md](docs/superspeed.md) |
 | Telepathy | [powers/telepathy.md](docs/agents/powers/telepathy.md) | [telepathy.md](docs/telepathy.md) |
 | Vibe | [powers/vibe.md](docs/agents/powers/vibe.md) | [vibe.md](docs/vibe.md) |
-| Telekinesis, Technopathy, Matter Assembly | none yet: read [kit-design.md](docs/agents/kit-design.md) | [telekinesis.md](docs/telekinesis.md), [technopathy.md](docs/technopathy.md), [matter-assembly.md](docs/matter-assembly.md) |
+| Telekinesis, Matter Assembly | none yet: read [kit-design.md](docs/agents/kit-design.md) | [telekinesis.md](docs/telekinesis.md), [matter-assembly.md](docs/matter-assembly.md) |
 
 Shared systems with player docs: [fighting-styles.md](docs/fighting-styles.md), [finishers.md](docs/finishers.md),
 [classes.md](docs/classes.md), [skill-trees.md](docs/skill-trees.md), [progression.md](docs/progression.md),
@@ -106,7 +106,7 @@ body. See [fighting-styles.md](docs/agents/fighting-styles.md) and [docs/pyrokin
 
 - `src/main/java/com/jayptucker/heroesevolved/`: a package per power (`pyro`, `cryo`, `electro`, `hydro`, `speed`,
   `flight`, `quake`, `sonic`, `telepathy`, `telekinesis`, `time`, `radiation`, `regeneration`, `phasing` for Density,
-  `invisibility`, `mimicry`, `shapeshift`, `technopathy`, `assembly` for Matter Assembly, `vibe`, `amplify` for Power
+  `invisibility`, `mimicry`, `shapeshift`, `assembly` for Matter Assembly, `vibe`, `amplify` for Power
   Amplification) and shared ones:
   `ability` (actions, use, balance), `combat` (fighting styles, finishers), `skills` and `styles` (trees, classes),
   `energy` (stamina), `progression`, `intro` (awakenings), `effects` and `client/effects` (set pieces; each power's art
@@ -140,7 +140,7 @@ Each rule cost a bug once. The file in brackets has the story and the code to co
 
 - **One question, one place.** Who is a friend (`isFriend` / `hostile`), who holds a creature in stopped time
   (`SpaceTimeService.holder`), who has a power (`MimicryService.imprintOf`), is this power switched off
-  (`Dampening.dampened`), does a suit protect (`Suits`), what can a power answer (`Danger.answers`), what a power does to a boss's lock
+  (`Dampening.dampened`), is this gun jammed (`Jamming.jammed`), does a suit protect (`Suits`), what can a power answer (`Danger.answers`), what a power does to a boss's lock
   (`BossLocks.key`). Add a branch to
   the existing question; never write a second copy ([kit-design.md](docs/agents/kit-design.md)).
 - **Add a style, not a second system.** A new vortex is a style of the shared tornado; a new fighting style is one

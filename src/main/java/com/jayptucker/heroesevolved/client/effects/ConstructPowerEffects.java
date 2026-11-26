@@ -8,15 +8,14 @@ import net.minecraft.world.phys.Vec3;
 import static com.jayptucker.heroesevolved.client.effects.PowerParticle.Shape.*;
 
 /**
- * Technopathy draws routed circuits, not lightning; assembly draws discrete courses of material,
- * not spell circles. Every endpoint is recorded in world space and every piece expires in at most
- * 32 ticks. All pieces share the ordinary ability particle budget, including delayed pieces.
+ * Matter Assembly draws discrete courses of material, not spell circles. Every endpoint is recorded in world space
+ * and every piece expires in at most 32 ticks. All pieces share the ordinary ability particle budget, including
+ * delayed pieces.
  */
 final class ConstructPowerEffects {
     private static final Vec3 UP = new Vec3(0, 1, 0);
     private static final Vec3 X = new Vec3(1, 0, 0);
     private static final Vec3 Z = new Vec3(0, 0, 1);
-    private static final int CYAN = 0x67E8EB, GREEN = 0xB5F799, CIRCUIT = 0x23777F;
     private static final int SLATE = 0x89908D, STONE = 0xB6A68D, AMBER = 0xEDB76C, SEAM = 0xFFF0C5;
 
     private ConstructPowerEffects() {}
@@ -24,8 +23,7 @@ final class ConstructPowerEffects {
     static boolean play(ClientLevel level, Kind kind, Vec3 origin, Vec3 target,
                         float scale, boolean detail, int density) {
         switch (kind) {
-            case TECH_LINK, TECH_PULSE, TECH_SCAN, TECH_CAGE,
-                    MATTER_WEAVE, MATTER_SHARD, MATTER_COLLAPSE, MATTER_SHIELD -> { }
+            case MATTER_WEAVE, MATTER_SHARD, MATTER_COLLAPSE, MATTER_SHIELD -> { }
             default -> { return false; }
         }
         if (!valid(origin) || !valid(target)
@@ -34,10 +32,6 @@ final class ConstructPowerEffects {
         boolean rich = detail && density >= 16;
         Brush brush = new Brush(level, rich ? 76 : detail ? 48 : 28);
         switch (kind) {
-            case TECH_LINK -> link(brush, origin, limit(origin, target, 128), size, detail, rich);
-            case TECH_PULSE -> pulse(brush, origin, Math.clamp(size, 1, 10), detail, rich);
-            case TECH_SCAN -> scan(brush, target, Math.clamp(size, 1, 16), detail, rich);
-            case TECH_CAGE -> cage(brush, target, Math.clamp(size, .6F, 5), detail, rich);
             case MATTER_WEAVE -> weave(brush, origin, target, Math.clamp(size, .4F, 1.8F), detail, rich);
             case MATTER_SHARD -> shard(brush, origin, limit(origin, target, 12), Math.clamp(size, .4F, 1.8F), detail);
             case MATTER_COLLAPSE -> collapse(brush, origin, Math.clamp(size, .7F, 8), detail, rich);
@@ -45,103 +39,6 @@ final class ConstructPowerEffects {
             default -> { }
         }
         return true;
-    }
-
-    /** Three orthogonal legs carry a visible data packet into a square terminal. */
-    private static void link(Brush b, Vec3 from, Vec3 to, float scale, boolean detail, boolean rich) {
-        Vec3 direction = direction(from, to), right = right(direction), vertical = right.cross(direction).normalize();
-        Vec3 first = new Vec3(to.x, from.y, from.z);
-        Vec3 second = new Vec3(to.x, to.y, from.z);
-        Vec3[] points = {from, first, second, to};
-        for (int i = 0; i < 3; i++) {
-            if (points[i].distanceToSqr(points[i + 1]) < .002) continue;
-            b.trace(points[i], points[i + 1], i * 2, detail);
-            if (rich) {
-                Vec3 offset = right.scale(.09);
-                b.line(points[i].add(offset), points[i + 1].add(offset), .009F, 15, i * 2, GREEN, .32F);
-            }
-        }
-        terminal(b, from, right, vertical, .12 + scale * .045, 0, CYAN, detail);
-        terminal(b, to, right, vertical, .19 + scale * .07, 5, GREEN, detail);
-    }
-
-    /** The surge steps along eight etched, right-angle tracks instead of expanding as a ring. */
-    private static void pulse(Brush b, Vec3 center, float radius, boolean detail, boolean rich) {
-        center = center.add(0, .065, 0);
-        int branches = detail ? 8 : 4;
-        terminal(b, center, X, Z, .22, 0, GREEN, false);
-        for (int i = 0; i < branches; i++) {
-            Vec3 outward = cardinal(i), sideways = UP.cross(outward);
-            double handed = i < 4 ? 1 : -1;
-            Vec3 start = center.add(sideways.scale(handed * .19));
-            Vec3 elbow = start.add(outward.scale(radius * .38));
-            Vec3 corner = elbow.add(sideways.scale(handed * radius * .19));
-            Vec3 end = corner.add(outward.scale(radius * .52));
-            b.line(start, elbow, .025F, 16, 0, CYAN, .67F);
-            b.line(elbow, corner, .025F, 16, 2, CYAN, .67F);
-            b.line(corner, end, .021F, 16, 4, GREEN, .73F);
-            b.packet(corner, end, .038F, 9, 4, GREEN);
-            if (rich) {
-                Vec3 branch = elbow.add(outward.scale(-.1)).add(sideways.scale(-handed * radius * .18));
-                b.line(elbow, branch, .012F, 14, 3, CIRCUIT, .65F);
-                terminal(b, end, X, Z, .11, 6, GREEN, false);
-            }
-        }
-    }
-
-    /** Parallel scan bars resolve through a cuboid with separated corner brackets. */
-    private static void scan(Brush b, Vec3 center, float radius, boolean detail, boolean rich) {
-        double span = Math.clamp(.65 + radius * .075, .8, 1.8);
-        double height = span * .72;
-        brackets(b, center, X, Z, span, span, .26, 18, CYAN, .63F);
-        int rows = detail ? 7 : 3;
-        for (int row = 0; row < rows; row++) {
-            double t = row / (double) Math.max(1, rows - 1);
-            double y = -height + 2 * height * t;
-            Vec3 left = center.add(-span, y, -span), right = center.add(span, y, -span);
-            int delay = row * 2;
-            b.line(left, right, .014F, 12, delay, row % 2 == 0 ? CYAN : GREEN, .49F);
-            b.line(right, center.add(span, y, span), .011F, 12, delay, CIRCUIT, .56F);
-            if (rich) b.line(center.add(-span, y, span), center.add(span, y, span), .011F, 12, delay, GREEN, .24F);
-        }
-        for (int i = 0; i < 4; i++) {
-            double x = (i & 1) == 0 ? -span : span, z = (i & 2) == 0 ? -span : span;
-            b.line(center.add(x, -height, z), center.add(x, height, z), .017F, 22, i, CYAN, .43F);
-        }
-        if (rich) {
-            // Sparse reach indicators show the real search extent without a radius-sized solid box.
-            for (int i = 0; i < 4; i++) {
-                Vec3 end = center.add(cardinal(i).scale(radius));
-                Vec3 side = UP.cross(cardinal(i)).scale(.24);
-                b.line(end.subtract(side), end.add(side), .02F, 16, 5, GREEN, .6F);
-                b.line(end, end.subtract(cardinal(i).scale(.42)), .02F, 16, 5, GREEN, .6F);
-            }
-        }
-    }
-
-    /** A relay trap is a grounded node cage; it never follows the player or the camera. */
-    private static void cage(Brush b, Vec3 center, float radius, boolean detail, boolean rich) {
-        double half = radius * .72, low = -.45, high = Math.clamp(radius, .9, 2.3);
-        Vec3 bottom = center.add(0, low, 0), top = center.add(0, high, 0);
-        rectangle(b, bottom, X, Z, half, half, .018F, 18, 0, CIRCUIT, .7F);
-        rectangle(b, top, X, Z, half, half, .023F, 18, 3, CYAN, .6F);
-        for (int i = 0; i < 4; i++) {
-            double x = (i & 1) == 0 ? -half : half, z = (i & 2) == 0 ? -half : half;
-            Vec3 base = bottom.add(x, 0, z), tip = top.add(x, 0, z);
-            b.line(base, tip, .025F, 18, i, CYAN, .58F);
-            b.packet(base, tip, .045F, 13, i, GREEN);
-            if (detail) terminal(b, base, X, Z, .13, i, GREEN, false);
-        }
-        if (rich) {
-            // Small horizontal offsets make the face traces look like connected boards.
-            for (int i = 0; i < 4; i++) {
-                Vec3 out = cardinal(i), side = UP.cross(out);
-                Vec3 mid = center.add(out.scale(half)).add(0, high * .4, 0);
-                Vec3 corner = mid.add(side.scale(half * .35));
-                b.line(mid.subtract(side.scale(half * .4)), corner, .013F, 17, 2, GREEN, .42F);
-                b.line(corner, corner.add(0, high * .25, 0), .013F, 17, 3, GREEN, .42F);
-            }
-        }
     }
 
     /** Courses click into place; the actual server-owned blocks remain visible between the seams. */
@@ -269,17 +166,6 @@ final class ConstructPowerEffects {
         b.line(d, a, thickness, life, delay, color, alpha);
     }
 
-    private static void brackets(Brush b, Vec3 at, Vec3 horizontal, Vec3 vertical,
-                                 double width, double height, double fraction,
-                                 int life, int color, float alpha) {
-        for (int i = 0; i < 4; i++) {
-            double x = (i & 1) == 0 ? -1 : 1, y = (i & 2) == 0 ? -1 : 1;
-            Vec3 corner = at.add(horizontal.scale(x * width)).add(vertical.scale(y * height));
-            b.line(corner, corner.subtract(horizontal.scale(x * width * fraction)), .022F, life, 0, color, alpha);
-            b.line(corner, corner.subtract(vertical.scale(y * height * fraction)), .022F, life, 0, color, alpha);
-        }
-    }
-
     private static Vec3 cardinal(int index) {
         return switch (index & 3) { case 0 -> X; case 1 -> Z; case 2 -> X.scale(-1); default -> Z.scale(-1); };
     }
@@ -325,18 +211,6 @@ final class ConstructPowerEffects {
             remaining--;
             AbilityEffectRenderer.add(new PowerParticle(level, CRYSTAL, at, axis, start * 1.25F, end * 1.25F,
                     life, delay, color, alpha).moving(velocity));
-        }
-
-        private void packet(Vec3 from, Vec3 to, float size, int life, int delay, int color) {
-            if (from.distanceToSqr(to) < .002) return;
-            crystal(from, to.subtract(from).normalize(), size, size * .6F, life, delay,
-                    color, .95F, to.subtract(from).scale(1.0 / life));
-        }
-
-        private void trace(Vec3 from, Vec3 to, int delay, boolean detail) {
-            line(from, to, .022F, 17, delay, CYAN, .73F);
-            if (detail) line(from, to, .063F, 17, delay, CIRCUIT, .23F);
-            packet(from, to, .038F, 12, delay, GREEN);
         }
     }
 }

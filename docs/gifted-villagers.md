@@ -19,7 +19,7 @@ in between. A guardian fighting, asleep, or near a Suppressor or a Dampener does
 | Flight | **Courier** | Flies the post to the nearest other village within 256 blocks and back, high over the roofs. If the way there isn't loaded, they fly off over the horizon and come back from that way a few minutes later. With no other village, they fly the post round their own. |
 | Superspeed | **Post runner** | Runs the post from house to house in a blur. |
 | Regeneration | **Healer** | Finds hurt villagers, golems and animals and mends them. |
-| Electrokinesis, Technopathy | **Golem keeper** | Charges the village's iron golem with an arc, healing it. |
+| Electrokinesis | **Golem keeper** | Charges the village's iron golem with an arc, healing it. |
 | Telekinesis, Matter Assembly | **Harvester** | Lifts ripe crops out of the fields and replants them. |
 | Quake, Density | **Tiller** | Sends a slow tremor through the fields: crops near it come on a stage. |
 | Sonic Resonance | **Bell ringer** | Rings the village bell at dawn, and at dusk to call everyone home. |

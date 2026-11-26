@@ -38,7 +38,7 @@ public final class ElectrokinesisAbility implements Ability {
                 @Override public boolean canUse(AbilityUseContext c) { return ElectroService.canStartCast(c.player()); }
                 @Override public AbilityActivationResult activate(AbilityUseContext c) {
                     // The key is down: a quick release fires Chain Lightning, holding becomes Live Current.
-                    ElectroService.press(c.player(), c.abilityLevel());
+                    ElectroService.press(c.player(), c.abilityLevel(), c.modifierHeld());
                     return AbilityActivationResult.SUCCESS;
                 }
                 @Override public void release(AbilityUseContext c) { ElectroService.release(c.player()); }
@@ -58,7 +58,9 @@ public final class ElectrokinesisAbility implements Ability {
             AbilitySlot.QUATERNARY, SimpleAction.builder("electro_ride_the_lightning", 4)
                     .cost(COMMON.electroRideEnergyCost::get, COMMON.electroRideCooldownTicks::get)
                     .canUse(c -> !c.player().isPassenger() && ElectroService.canStartCast(c.player()))
-                    .activate(c -> ElectroService.rideTheLightning(c.player(), c.abilityLevel()))
+                    // Counterweight: Shift + Ride at metal hauls you to it instead of blinking.
+                    .activate(c -> c.modifierHeld() && com.jayptucker.heroesevolved.electro.ElectroMachines.counterweight(c.player())
+                            || ElectroService.rideTheLightning(c.player(), c.abilityLevel()))
                     .build(),
             AbilitySlot.QUINARY, SimpleAction.builder("electro_storm_surge", 5)
                     .cost(COMMON.electroStormEnergyCost::get, COMMON.electroStormCooldownTicks::get)

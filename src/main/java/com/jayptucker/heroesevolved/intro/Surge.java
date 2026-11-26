@@ -42,7 +42,6 @@ public final class Surge {
             "sonic_resonance", List.of(AbilitySlot.PRIMARY, AbilitySlot.PRIMARY, AbilitySlot.PRIMARY, AbilitySlot.PRIMARY),
             "telepathy", List.of(AbilitySlot.QUINARY, AbilitySlot.SECONDARY, AbilitySlot.SECONDARY),
             "matter_assembly", List.of(AbilitySlot.SECONDARY, AbilitySlot.SECONDARY, AbilitySlot.SECONDARY, AbilitySlot.QUATERNARY),
-            "technopathy", List.of(AbilitySlot.QUATERNARY, AbilitySlot.TERTIARY),
             "shapeshifting", List.of(AbilitySlot.TERTIARY, AbilitySlot.QUATERNARY));
 
     private static final int STYLE_TICKS = 80, KIT_STEP = 14, SWITCH_EVERY = 3;

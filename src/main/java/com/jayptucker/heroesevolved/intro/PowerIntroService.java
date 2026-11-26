@@ -74,7 +74,6 @@ public final class PowerIntroService {
             Map.entry("invisibility", new Spec(40, 40, 0xCFD8E0, ArmPose.ARMS_WIDE, Kind.OPTIC_FADE, Kind.OPTIC_BURST)),
             Map.entry("phasing", new Spec(40, 40, 0x9FE3D6, ArmPose.TWO_HANDS, Kind.DENSITY_GHOST, Kind.DENSITY_RIPPLE)),
             Map.entry("empathic_mimicry", new Spec(50, 40, 0xE8C27A, ArmPose.TEMPLE, Kind.PROPHECY_THREAD, Kind.PSYCHIC_AWAKEN_RELEASE)),
-            Map.entry("technopathy", new Spec(50, 40, 0x60E0C1, ArmPose.TEMPLE, Kind.TECH_LINK, Kind.TECH_SCAN)),
             Map.entry("matter_assembly", new Spec(50, 40, 0xE7B771, ArmPose.TWO_HANDS, Kind.MATTER_WEAVE, Kind.MATTER_SHIELD)),
             Map.entry("vibe", new Spec(28, 25, 0x46BDFF, ArmPose.VIBE_READ, null, null)),
             Map.entry("shapeshifting", new Spec(30, 25, 0x8FCFC6, ArmPose.TEMPLE, null, null)),
@@ -297,7 +296,6 @@ public final class PowerIntroService {
             case "invisibility" -> SoundEvents.ILLUSIONER_PREPARE_MIRROR;
             case "phasing" -> SoundEvents.RESPAWN_ANCHOR_CHARGE;
             case "empathic_mimicry" -> SoundEvents.ENCHANTMENT_TABLE_USE;
-            case "technopathy" -> SoundEvents.COMPARATOR_CLICK;
             case "vibe" -> SoundEvents.AMETHYST_BLOCK_RESONATE;
             case "hydrokinesis" -> SoundEvents.CONDUIT_ACTIVATE;
             case "power_amplification" -> SoundEvents.BEACON_ACTIVATE;
@@ -418,11 +416,6 @@ public final class PowerIntroService {
                 repelEnemies(player, 6, 0, 1.0);
             }
             case "empathic_mimicry" -> releaseMimicry(session);
-            case "technopathy" -> {
-                com.jayptucker.heroesevolved.technopathy.TechnopathyService.awaken(player);
-                // Everything that was attacking them is read like a machine, and seized like one.
-                WardRelease.apply("technopathy", player, player);
-            }
             case "matter_assembly" -> com.jayptucker.heroesevolved.assembly.MatterAssemblyService.awaken(player);
             case "vibe" -> {
                 LivingEntity saved = ward ? session.ward : player;

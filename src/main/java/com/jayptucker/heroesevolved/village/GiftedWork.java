@@ -128,7 +128,7 @@ public final class GiftedWork {
         if (power.equals(ModAbilities.FLIGHT_ID)) return Job.COURIER;
         if (power.equals(ModAbilities.SUPERSPEED_ID)) return Job.POST;
         if (power.equals(ModAbilities.REGENERATION_ID)) return Job.HEALER;
-        if (power.equals(ModAbilities.ELECTROKINESIS_ID) || power.equals(ModAbilities.TECHNOPATHY_ID)) return Job.KEEPER;
+        if (power.equals(ModAbilities.ELECTROKINESIS_ID)) return Job.KEEPER;
         if (power.equals(ModAbilities.TELEKINESIS_ID) || power.equals(ModAbilities.MATTER_ASSEMBLY_ID)) return Job.HARVESTER;
         if (power.equals(ModAbilities.QUAKE_ID) || power.equals(ModAbilities.PHASING_ID)) return Job.TILLER;
         if (power.equals(ModAbilities.SONIC_RESONANCE_ID)) return Job.BELL;

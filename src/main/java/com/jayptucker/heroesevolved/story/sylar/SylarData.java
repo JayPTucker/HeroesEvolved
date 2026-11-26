@@ -148,7 +148,7 @@ public final class SylarData extends SavedData {
         if (tag.contains("hatch")) data.hatch = BlockPos.of(tag.getLong("hatch"));
         for (Tag t : tag.getList("list", Tag.TAG_COMPOUND)) {
             CompoundTag e = (CompoundTag) t;
-            ResourceLocation power = ResourceLocation.tryParse(e.getString("power"));
+            ResourceLocation power = com.jayptucker.heroesevolved.ability.registry.RetiredPowers.current(ResourceLocation.tryParse(e.getString("power")));
             if (power == null) continue;
             Entry entry = new Entry(e.getString("name"), power, e.contains("village") ? BlockPos.of(e.getLong("village")) : null);
             if (e.hasUUID("villager")) entry.villager = e.getUUID("villager");

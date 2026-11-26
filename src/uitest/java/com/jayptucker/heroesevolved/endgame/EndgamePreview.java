@@ -176,7 +176,7 @@ public final class EndgamePreview {
             case 2258 -> capture="29-all-the-endings.png";
             default -> {}
         }
-        // Photograph the server-selected geometry for every one of the twenty-one powers.
+        // Photograph the server-selected geometry for every one of the twenty powers.
         int late=age-SHIFT;
         if(late>=2330&&late<2330+21*85){int i=(late-2330)/85,at=(late-2330)%85;
             if(at==0){camera(22,81,32,7,74,15);final int index=i;server(p->{var e=EndBattle.current();e.sylar.setPos(.5,72,8);e.sampled=index;e.transition=e.stagger=0;e.start(EndGeometry.Move.PATTERN);});}

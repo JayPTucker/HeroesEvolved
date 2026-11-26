@@ -9,7 +9,7 @@ import java.util.List;
 
 import static com.jayptucker.heroesevolved.client.effects.setpiece.Canvas.*;
 
-/** Life, foresight, empathy, machines and assembled matter (minds are drawn by TelepathyArt). */
+/** Life, foresight, empathy and assembled matter (minds are drawn by TelepathyArt). */
 final class MindArt {
     private MindArt() {}
 
@@ -141,86 +141,6 @@ final class MindArt {
             c.ring(o.add(0, p * 2.6, 0), 0.75F - p * 0.25F, 0.07F, hue(k / 4F), 0.9F * Mth.sin(p * Mth.PI));
         }
         c.glow(o.add(0, 1, 0), 1.5F, WHITE, 0.25F * (1 - t / life));
-    }
-
-    // ------------------------------------------------------------------
-    // Technopathy
-    // ------------------------------------------------------------------
-
-    private static Vec3 drone(Vec3 o, int i, float t) {
-        float ang = i * Mth.TWO_PI / 6 + t * 0.09F * (i % 2 == 0 ? 1 : -1), rr = 1.6F + (i % 3) * 0.3F;
-        return o.add(Mth.cos(ang) * rr, 1.7 + (i % 2) * 0.5 + Mth.sin(t * 0.2F + i) * 0.12, Mth.sin(ang) * rr);
-    }
-
-    /** Six little drones of light wheel round them, trailing. */
-    static void drones(Canvas c, Active a, float t) {
-        if (!c.glow()) return;
-        float f = fade(t, a.piece().ticks, 8, 14);
-        Vec3 o = a.at(c);
-        for (int i = 0; i < 6; i++) {
-            Vec3 p = drone(o, i, t);
-            Vec3 ahead = drone(o, i, t + 1).subtract(p).normalize().scale(0.22);
-            Vec3 side = ahead.cross(UP).normalize().scale(0.13);
-            c.tri(p.add(ahead), p.subtract(ahead.scale(0.6)).add(side), p.subtract(ahead.scale(0.6)).subtract(side), HOLO, f, 0.6F * f, 0.6F * f);
-            c.glow(p, 0.3F, HOLO, 0.5F * f);
-            Vec3[] trail = new Vec3[6];
-            for (int k = 0; k < 6; k++) trail[k] = drone(o, i, t - k * 0.8F);
-            c.ribbon(trail, 0.04F, HOLO, 0.6F * f, 0);
-        }
-    }
-
-    /** One drone's shot: a thin line of light and a spark where it lands. */
-    static void droneShot(Canvas c, Active a, float t) {
-        if (!c.glow()) return;
-        float f = 1 - t / a.piece().ticks;
-        c.line(a.origin(), a.target(), 0.05F, HOLO, f, f);
-        c.glow(a.target(), 0.6F, WHITE, f);
-    }
-
-    /** A hologram wall stands before them: a lit grid, glyphs scrolling down it, a hexagon frame. */
-    static void firewall(Canvas c, Active a, float t) {
-        if (!c.glow()) return;
-        float life = a.piece().ticks, f = fade(t, life, 6, 14);
-        float flicker = t < 8 && hash(a.seed(), (int) t) < 0.4F ? 0.3F : 1;
-        Vec3 d = a.facing(), side = new Vec3(-d.z, 0, d.x);
-        Vec3 centre = a.origin().add(d.scale(2.5)).add(0, 1.5, 0);
-        float w = 2.5F, h = 1.5F, al = f * flicker;
-        for (int i = 0; i <= 10; i++) {
-            float u = -w + i * w * 2 / 10;
-            c.line(centre.add(side.scale(u)).add(0, -h, 0), centre.add(side.scale(u)).add(0, h, 0), 0.025F, HOLO, 0.5F * al, 0.5F * al);
-        }
-        for (int j = 0; j <= 6; j++) {
-            float v = -h + j * h * 2 / 6;
-            c.line(centre.add(side.scale(-w)).add(0, v, 0), centre.add(side.scale(w)).add(0, v, 0), 0.025F, HOLO, 0.5F * al, 0.5F * al);
-        }
-        for (int col = 0; col < 12; col++) {
-            float u = -w + (col + 0.5F) * w * 2 / 12, speed = 0.04F + hash(a.seed(), col) * 0.05F;
-            for (int g = 0; g < 3; g++) {
-                float v = h - ((t * speed + g / 3F + hash(a.seed(), col + 20)) % 1) * h * 2;
-                c.line(centre.add(side.scale(u)).add(0, v, 0), centre.add(side.scale(u)).add(0, v - 0.18, 0), 0.04F, WHITE, 0.8F * al, 0.2F * al);
-            }
-        }
-        Vec3[] frame = {centre.add(side.scale(-w)).add(0, -h, 0), centre.add(side.scale(w)).add(0, -h, 0), centre.add(side.scale(w)).add(0, h, 0),
-                centre.add(side.scale(-w)).add(0, h, 0), centre.add(side.scale(-w)).add(0, -h, 0)};
-        c.ribbon(frame, 0.07F, HOLO, al, al);
-        c.ribbon(frame, 0.3F, HOLO_DEEP, 0.4F * al, 0.4F * al);
-    }
-
-    /** Rings of data turn round a friend, segment by segment, numbers rising off them. */
-    static void overclock(Canvas c, Active a, float t) {
-        if (!c.glow()) return;
-        float f = fade(t, a.piece().ticks, 6, 16);
-        Vec3 o = a.at(c).add(0, 1, 0);
-        for (int k = 0; k < 2; k++) {
-            Vec3 axis = new Vec3(Mth.sin(k * 1.3F + 0.4F), 1, Mth.cos(k * 1.3F)).normalize();
-            float spin = t * (k == 0 ? 0.12F : -0.09F);
-            for (int s = 0; s < 6; s++) c.ring(o, axis, 0.95F + k * 0.15F, 0.04F, spin + s * Mth.TWO_PI / 6, spin + s * Mth.TWO_PI / 6 + 0.7F, HOLO, 0.85F * f);
-        }
-        for (int i = 0; i < 8; i++) {
-            float k = (t * 0.03F + hash(a.seed(), i)) % 1, ang = hash(a.seed(), i + 10) * Mth.TWO_PI;
-            Vec3 p = o.add(Mth.cos(ang) * 0.7, -0.8 + k * 2.6, Mth.sin(ang) * 0.7);
-            c.line(p, p.add(0, 0.12, 0), 0.03F, WHITE, f * (1 - k), f * (1 - k));
-        }
     }
 
     // ------------------------------------------------------------------

@@ -43,6 +43,10 @@ public final class ModItems {
     public static final DeferredHolder<MobEffect, MobEffect> DAMPENED = EFFECTS.register("dampened",
             com.jayptucker.heroesevolved.dampener.Dampening.Effect::new);
 
+    /** A gun fried by an electrokinetic's Dead Trigger: it won't fire or reload. See weapons/Jamming. */
+    public static final DeferredHolder<MobEffect, MobEffect> JAMMED = EFFECTS.register("jammed",
+            com.jayptucker.heroesevolved.weapons.Jamming.Effect::new);
+
     /** Drenched by a hydrokinetic: no fire, more from lightning, less from burns. See hydro/Soaked. */
     public static final DeferredHolder<MobEffect, MobEffect> SOAKED = EFFECTS.register("soaked",
             com.jayptucker.heroesevolved.hydro.Soaked::new);

@@ -60,6 +60,7 @@ public final class FirstPersonArmGeometry {
         }
         if (switch (pose) {
             case ELECTRO_RIDE, ELECTRO_CUP, ELECTRO_LANCE, ELECTRO_TOUCH, ELECTRO_OVERCHARGE, ELECTRO_GROUND, ELECTRO_POINT,
+                    ELECTRO_HAUL, ELECTRO_REEL,
                     SPEED_GUARD, SPEED_SPLIT, SPEED_LUNGE, SPEED_THROW, SPEED_ESCORT, SPEED_STILL,
                     MIMIC_TOUCH, MIMIC_SHIFT,
                     SONIC_CRY, SONIC_SCREAM, SONIC_PLUCK, SONIC_CLENCH, SONIC_WALL, SONIC_SHOVE, SONIC_VAULT, SONIC_DIVE,
@@ -552,6 +553,18 @@ public final class FirstPersonArmGeometry {
                 float flick = (float) Math.sin(Math.min(1, age / 4) * Math.PI);
                 if (main) { spread = .28F; height = -.36F; depth = -.5F - .05F * flick; pitch = -92 + 8 * flick; yaw = 6; }
                 else { spread = .56F; height = -.62F; pitch = -50; }
+            }
+            case ELECTRO_HAUL -> {
+                // The hand thrown out to the centre of the view, fingers spread at the metal.
+                float reach = smooth(age / 3);
+                if (main) { spread = .3F - .1F * reach; height = -.34F; depth = -.4F - .2F * reach; pitch = -92; yaw = 10 * reach; }
+                else { spread = .6F; height = -.7F; pitch = -40; }
+            }
+            case ELECTRO_REEL -> {
+                // The fist yanked back and down toward the edge of the view.
+                float yank = smooth(age / 3);
+                if (main) { spread = .36F + .08F * yank; height = -.38F - .12F * yank; depth = -.5F + .22F * yank; pitch = -85 + 30 * yank; roll = -side * 20 * yank; }
+                else { spread = .5F; height = -.55F; depth = -.45F; pitch = -80; }
             }
             case MIMIC_TOUCH -> {
                 // The palm pressed forward, flat, into the person in front of you.

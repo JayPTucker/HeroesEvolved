@@ -117,7 +117,7 @@ public final class Amplification {
     /** 0 not supercharged, 1 a Surge, 2 an Overcharge. */
     public static int level(Entity entity) { return overcharged(entity) ? 2 : surged(entity) ? 1 : 0; }
 
-    /** How much farther a supercharged power reaches (Fold Space, Read Mind, Technopathy's control). */
+    /** How much farther a supercharged power reaches (Fold Space, Read Mind). */
     public static double reach(Entity entity) { return surged(entity) ? 2 : 1; }
 
     /** The stamina a supercharged player pays for a move of {@code power}. */

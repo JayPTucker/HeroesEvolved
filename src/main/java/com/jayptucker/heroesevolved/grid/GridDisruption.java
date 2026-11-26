@@ -99,7 +99,7 @@ public final class GridDisruption {
     private record ClientField(ResourceKey<Level> dimension, BlockPos center, int radius, long until) {}
 
     private static final List<Field> FIELDS = new ArrayList<>();
-    /** Single machines shut down on purpose (Technopathy's Kill Switch), per level, until a game time. */
+    /** Single machines shut down on purpose (Electrokinesis's Kill Switch), per level, until a game time. */
     private static final Map<ServerLevel, Map<BlockPos, Long>> STALLS = new HashMap<>();
     /** The client's copy of nearby fields; only Create's rotation reads it. */
     private static volatile List<ClientField> client = List.of();
@@ -255,7 +255,7 @@ public final class GridDisruption {
     }
 
     /**
-     * Shuts one machine down for {@code ticks} (Technopathy's Kill Switch; the Company's omens with no source).
+     * Shuts one machine down for {@code ticks} (Electrokinesis's Kill Switch; the Company's omens with no source).
      * False if it is not a machine.
      */
     public static boolean stall(@Nullable ServerPlayer source, ServerLevel level, BlockPos pos, int ticks) {

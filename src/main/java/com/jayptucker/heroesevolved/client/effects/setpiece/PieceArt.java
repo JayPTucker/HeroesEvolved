@@ -29,6 +29,7 @@ final class PieceArt {
                     SUNFALL, EMBER_SHROUD, HEARTHFIRE, PYRO_JAB, PYRO_KICK, PYRO_SWEEP_KICK, PYRO_JET_STEP, PYRO_FLIP,
                     PYRO_COUNTER, FINISH_DRAGON, FINISH_PHOENIX, FINISH_HEARTH -> PyroArt.draw(c, a, t);
             case ELECTRO_DRAW, ELECTRO_ARC, ELECTRO_CURRENT, ELECTRO_ORB, ELECTRO_PRIME, ELECTRO_WARN,
+                    ELECTRO_DEVICE, ELECTRO_JAM, ELECTRO_HAUL, ELECTRO_REEL,
                     ELECTRO_STRIKE, ELECTRO_PULSE, ELECTRO_RIDE, ELECTRO_SCAR, ELECTRO_COIL, ELECTRO_SIPHON,
                     ELECTRO_BLACKOUT, ELECTRO_AURA, ELECTRO_FIELD, ELECTRO_SCREEN,
                     TESLA_SPIRE, TESLA_ZAP, FARADAY_CAGE, JUMPSTART, ELECTRO_LANCE, ELECTRO_THREAD,
@@ -92,10 +93,6 @@ final class PieceArt {
             case PRISMATIC_OVERFLOW -> MindArt.overflow(c, a, t);
             case EMPATHIC_WARD -> MindArt.ward(c, a, t);
             case KINDRED_LIGHT -> MindArt.kindred(c, a, t);
-            case DRONE_SWARM -> MindArt.drones(c, a, t);
-            case DRONE_SHOT -> MindArt.droneShot(c, a, t);
-            case FIREWALL -> MindArt.firewall(c, a, t);
-            case OVERCLOCK -> MindArt.overclock(c, a, t);
             case FORGE_CANNON -> MindArt.cannon(c, a, t);
             case FORGE_SLUG -> MindArt.slug(c, a, t);
             case BULWARK_LATTICE -> MindArt.lattice(c, a, t);
@@ -152,7 +149,6 @@ final class PieceArt {
             case FINISH_PAID -> RegenArt.finisher(c, a, t);
             case FINISH_CHAIN -> RadiationArt.finisher(c, a, t);
             case FINISH_FREQUENCY -> VibeArt.finisher(c, a, t);
-            case FINISH_RESET -> CircuitArt.draw(c, a, t);
             case FINISH_MONUMENT -> AssemblyArt.finisher(c, a, t);
             case FINISH_TAKE -> MimicArt.finisher(c, a, t);
             case FINISH_UNMADE -> ShapeArt.unmade(c, a, t);
@@ -172,7 +168,6 @@ final class PieceArt {
             case FINISH_NO_PAIN, FINISH_GRIP -> RegenArt.alternates(c, a, t);
             case FINISH_HALF_LIFE, FINISH_POCKET_SUN -> RadiationArt.alternates(c, a, t);
             case FINISH_BREACH, FINISH_POINT_BLANK -> VibeArt.alternates(c, a, t);
-            case FINISH_KILL_SWITCH, FINISH_OVERCLOCK -> CircuitArt.alternates(c, a, t);
             case FINISH_HAMMER, FINISH_ORBIT -> AssemblyArt.alternates(c, a, t);
             case FINISH_ECHO, FINISH_BORROW -> MimicArt.alternates(c, a, t);
             case FINISH_APEX, FINISH_FACE -> ShapeArt.alternates(c, a, t);

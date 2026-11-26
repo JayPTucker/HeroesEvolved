@@ -4,6 +4,7 @@ import com.jayptucker.heroesevolved.PowerOwnershipTestSupport;
 import com.jayptucker.heroesevolved.ability.data.PlayerAbilityData;
 import com.jayptucker.heroesevolved.ability.registry.AbilityRegistry;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
+import com.jayptucker.heroesevolved.ability.registry.RetiredPowers;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.data.PowerOwnershipSavedData;
@@ -62,6 +63,70 @@ public final class PowerOwnershipGameTests {
                     && !waiting.getKey().equals(power.getKey()), "A dormant owner gets a different, still-dormant power");
             helper.succeed();
         } finally { remove(awake); remove(dormant); }
+    }
+    @GameTest(template = "rewind_empty", batch = "ownership.successor", timeoutTicks = 50)
+    public static void technopathyBecomesElectrokinesisWhenItIsFree(GameTestHelper helper) {
+        ServerPlayer awake = player(helper), dormant = player(helper), late = player(helper);
+        var removed = RetiredPowers.TECHNOPATHY;
+        try {
+            helper.assertTrue(!AbilityRegistry.ABILITIES.containsKey(removed), "Technopathy is no longer a power");
+            var ownership = PowerOwnershipSavedData.get(awake.getServer());
+            ownership.release(ModAbilities.ELECTROKINESIS_ID);
+            awake.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty().assignDormant(removed).unlock(removed));
+            awake.setData(ModDataAttachments.POWER_JOURNEY, awake.getData(ModDataAttachments.POWER_JOURNEY).evolve(removed.getPath()));
+            ownership.claim(removed, awake.getUUID());
+            PowerOwnershipEvents.login(new PlayerEvent.PlayerLoggedInEvent(awake));
+            var power = PlayerAbilityService.getData(awake).assignedPower().orElseThrow();
+            helper.assertTrue(power.getKey().equals(ModAbilities.ELECTROKINESIS_ID) && power.getValue().isUnlocked(),
+                    "An awakened technopath wakes as an electrokinetic: " + power.getKey());
+            helper.assertTrue(ownership.owner(ModAbilities.ELECTROKINESIS_ID).orElseThrow().equals(awake.getUUID()), "Electrokinesis is theirs alone");
+            helper.assertTrue(awake.getData(ModDataAttachments.POWER_JOURNEY).isEvolved("electrokinesis"), "Evolved carries over");
+            helper.assertTrue(ownership.owner(removed).isEmpty(), "Technopathy's claim is released");
+
+            // Electrokinesis now has an owner: the next technopath gets some other unclaimed power, still awake.
+            late.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty().assignDormant(removed).unlock(removed));
+            PowerOwnershipEvents.login(new PlayerEvent.PlayerLoggedInEvent(late));
+            var other = PlayerAbilityService.getData(late).assignedPower().orElseThrow();
+            helper.assertTrue(AbilityRegistry.ABILITIES.containsKey(other.getKey()) && other.getValue().isUnlocked()
+                    && !other.getKey().equals(ModAbilities.ELECTROKINESIS_ID), "With Electrokinesis taken, another real power wakes: " + other.getKey());
+
+            // A dormant technopath stays dormant, and gets Electrokinesis when it is free.
+            PlayerAbilityService.removeAssignedAbility(awake);
+            ownership.release(ModAbilities.ELECTROKINESIS_ID);
+            dormant.setData(ModDataAttachments.PLAYER_ABILITIES, PlayerAbilityData.empty().assignDormant(removed));
+            PowerOwnershipEvents.login(new PlayerEvent.PlayerLoggedInEvent(dormant));
+            var waiting = PlayerAbilityService.getData(dormant).assignedPower().orElseThrow();
+            helper.assertTrue(waiting.getKey().equals(ModAbilities.ELECTROKINESIS_ID) && !waiting.getValue().isUnlocked(),
+                    "A dormant technopath holds a dormant Electrokinesis: " + waiting.getKey());
+            helper.succeed();
+        } finally { remove(awake); remove(dormant); remove(late); }
+    }
+    @GameTest(template = "rewind_empty", batch = "ownership.retired", timeoutTicks = 50)
+    public static void savedGiftsWatchListsAndMemoriesOfATechnopathLoadAsElectrokinesis(GameTestHelper helper) {
+        var removed = RetiredPowers.TECHNOPATHY;
+        // A gifted mob saved with Technopathy.
+        var mob = helper.spawn(net.minecraft.world.entity.EntityType.ZOMBIE, new BlockPos(2, 2, 2));
+        CompoundTag gift = new CompoundTag();
+        gift.putString("power", removed.toString()); gift.putInt("rarity", 0); gift.putString("name", "the Tinker"); gift.putString("origin", "WILD");
+        mob.getPersistentData().put(com.jayptucker.heroesevolved.gifted.Gift.TAG, gift);
+        var read = com.jayptucker.heroesevolved.gifted.Gift.read(mob);
+        helper.assertTrue(read != null && read.power().equals(ModAbilities.ELECTROKINESIS_ID), "A saved gifted technopath is an electrokinetic");
+        // Sylar's watch list.
+        CompoundTag sylar = new CompoundTag(); ListTag list = new ListTag(); CompoundTag entry = new CompoundTag();
+        entry.putString("name", "Wirewhisper"); entry.putString("power", removed.toString()); list.add(entry); sylar.put("list", list);
+        var data = com.jayptucker.heroesevolved.story.sylar.SylarData.load(sylar, helper.getLevel().registryAccess());
+        helper.assertTrue(data.list().size() == 1 && data.list().getFirst().power.equals(ModAbilities.ELECTROKINESIS_ID),
+                "Sylar's watch list remembers the name, now an electrokinetic");
+        // A mimic's memories, the current form and the oldest plain list.
+        CompoundTag imprint = new CompoundTag(); imprint.putString("power", removed.toString()); imprint.putString("kind", "player");
+        var decoded = com.jayptucker.heroesevolved.mimicry.MimicryService.Imprint.CODEC.parse(NbtOps.INSTANCE, imprint).getOrThrow();
+        helper.assertTrue(decoded.power().equals(ModAbilities.ELECTROKINESIS_ID), "A remembered technopath is an echo of Electrokinesis");
+        CompoundTag legacy = new CompoundTag(); ListTag powers = new ListTag(); powers.add(StringTag.valueOf(removed.toString())); legacy.put("powers", powers);
+        var memory = com.jayptucker.heroesevolved.mimicry.MimicryService.Memory.CODEC.parse(NbtOps.INSTANCE, legacy).getOrThrow();
+        helper.assertTrue(memory.current().equals(ModAbilities.ELECTROKINESIS_ID), "An old plain-list memory loads the same way");
+        helper.assertTrue(RetiredPowers.current(ModAbilities.PYROKINESIS_ID).equals(ModAbilities.PYROKINESIS_ID)
+                && RetiredPowers.current(RetiredPowers.PRECOGNITION).equals(RetiredPowers.PRECOGNITION), "Other ids are left alone");
+        helper.succeed();
     }
     @GameTest(template = "rewind_empty", batch = "ownership.admin", timeoutTicks = 50)
     public static void adminCanGiveAPowerItsLastOwnerNoLongerHas(GameTestHelper helper) {

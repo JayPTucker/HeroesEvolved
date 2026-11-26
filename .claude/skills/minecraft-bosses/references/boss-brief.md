@@ -60,7 +60,7 @@ Then every power against every phase: no power sits a phase out.
 
 | Power | Phase 1 | Phase 2 | Phase 3 |
 | --- | --- | --- | --- |
-| (all 21, one row each) | its strong answer | | |
+| (all 20, one row each) | its strong answer | | |
 
 ## What each power does to them
 

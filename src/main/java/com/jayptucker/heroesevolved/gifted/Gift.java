@@ -40,7 +40,8 @@ public record Gift(ResourceLocation power, Rarity rarity, boolean evil, String n
         CompoundTag data = entity.getPersistentData();
         if (!data.contains(TAG)) return null;
         CompoundTag tag = data.getCompound(TAG);
-        ResourceLocation power = ResourceLocation.tryParse(tag.getString("power"));
+        // A retired power (Technopathy) loads as the one that took it over.
+        ResourceLocation power = com.jayptucker.heroesevolved.ability.registry.RetiredPowers.current(ResourceLocation.tryParse(tag.getString("power")));
         if (power == null) return null;
         Origin origin;
         try { origin = Origin.valueOf(tag.getString("origin")); } catch (IllegalArgumentException e) { origin = Origin.WILD; }

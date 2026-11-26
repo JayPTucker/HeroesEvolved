@@ -49,10 +49,13 @@ Electrokinesis's lightning pushes power *into* anything that stores FE:
 
 A machine inside an active pulse takes no charge: the field eats the current.
 
-## Technopathy
+## Electrokinesis's Kill Switch
 
-- **Handshake** enrols powered machines (FE or Create) as relays, alongside copper, iron and redstone.
-- **Kill Switch** aimed at an enrolled machine shuts it down for five seconds, then it wakes as it was.
+- **Kill Switch** (Electrokinesis's tree): **Shift + tap Chain Lightning** at a powered machine (FE or Create) shuts it
+  down for five seconds, then it wakes as it was. An Ability Dampener's projector is a machine too: kill it from outside
+  its field and the field drops until it wakes.
+- **Remote Hand** works the controls a machine room is built from: tap Chain Lightning at a lever, button, door,
+  trapdoor, gate or copper bulb, or at a conductor to reach every control it touches.
 
 ## Protection and limits
 
@@ -77,6 +80,6 @@ Bounds: 128 machines per pulse, 32 fields at once, 64 single-machine shutdowns, 
 
 `src/gametest/java/com/jayptucker/heroesevolved/grid/GridGameTests.java` gives furnaces, barrels and
 compasses a real Forge Energy capability **in the test world only** (`TestMachines`) and checks draining,
-the per-machine cap, stalling and waking, lightning charging, Storm Surge, carried items, Technopathy and
+the per-machine cap, stalling and waking, lightning charging, Storm Surge, carried items, the Kill Switch and
 redstone. Create's seizing is not covered by automated tests (Create is not a dependency); try it in a
 dev instance with Create installed.

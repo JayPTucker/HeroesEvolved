@@ -242,6 +242,18 @@ public final class PowerArmPoses {
                 set(main, aimX - flick, aimY, -.05F * inward);
                 set(rightHanded ? model.leftArm : model.rightArm, .18F, -inward * .45F, -.55F * inward);
             }
+            case ELECTRO_HAUL -> {
+                // Counterweight: the arm thrown dead straight at the metal, the other swept back as the body follows.
+                float reach = smooth(ClientArmPoseState.ageTicks(id) / 3F);
+                set(main, Mth.lerp(reach, -.5F, aimX), aimY, -.04F * inward);
+                set(rightHanded ? model.leftArm : model.rightArm, .55F * reach, -inward * .25F, -.45F * inward);
+            }
+            case ELECTRO_REEL -> {
+                // Winchline: the fist yanked back to the shoulder, the elbow driven behind, the other hand forward.
+                float yank = smooth(ClientArmPoseState.ageTicks(id) / 3F);
+                set(main, Mth.lerp(yank, aimX, -.55F), aimY + inward * .35F * yank, -.35F * inward * yank);
+                set(rightHanded ? model.leftArm : model.rightArm, -.9F, -inward * .3F, .1F * inward);
+            }
             case MIMIC_TOUCH -> {
                 // An open palm laid flat on the person in front of you; the other hand held at the heart.
                 float reach = smooth(ClientArmPoseState.ageTicks(id) / 3F);

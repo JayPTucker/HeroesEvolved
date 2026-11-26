@@ -36,8 +36,6 @@ public enum Piece {
     PHASE_ERUPTION(34), DENSE_BULWARK(160), PHASE_FIELD(160),
     // Empathic Mimicry
     PRISMATIC_OVERFLOW(34), EMPATHIC_WARD(160), KINDRED_LIGHT(44),
-    // Technopathy
-    DRONE_SWARM(160), DRONE_SHOT(6), FIREWALL(200), OVERCLOCK(200),
     // Matter Assembly
     FORGE_CANNON(44), FORGE_SLUG(8), BULWARK_LATTICE(160), MENDING_LATTICE(64),
     // Induced Radioactivity's Critical Mass, drawn as the vision's blast
@@ -260,7 +258,7 @@ public enum Piece {
     // The other finishers, each in its power's art (see each finisher class for what origin, target, scale and seed carry).
     FINISH_SHORT(28), FINISH_BREAKER(34), FINISH_WARMTH(30), FINISH_THUNDER(30), FINISH_DOWNBURST(34), FINISH_BEAT(30),
     FINISH_ENCORE(34), FINISH_STRINGS(32), FINISH_SIXFEET(34), FINISH_MIRRORS(32), FINISH_PAID(30), FINISH_CHAIN(30),
-    FINISH_FREQUENCY(30), FINISH_RESET(14), FINISH_MONUMENT(36), FINISH_TAKE(30), FINISH_UNMADE(34),
+    FINISH_FREQUENCY(30), FINISH_MONUMENT(36), FINISH_TAKE(30), FINISH_UNMADE(34),
     // The alternate finishers, two per power, each in its power's art; each finisher class says what origin, target,
     // scale, binding and seed carry.
     FINISH_PHOENIX(30), FINISH_HEARTH(32), FINISH_STOPPED(34), FINISH_UNWOUND(32), FINISH_PRESSURE(30), FINISH_THOUGHT(32),
@@ -268,7 +266,7 @@ public enum Piece {
     FINISH_FISTS(28), FINISH_FLICK(28), FINISH_CLAP(26), FINISH_UPDRAFT(36), FINISH_FAULT(30), FINISH_SHATTER(28),
     FINISH_NOTE(30), FINISH_SILENCE(32), FINISH_CRUSH(28), FINISH_TOSS(34), FINISH_PHASE(28), FINISH_HEAVY(30),
     FINISH_BUBBLE_CRUSH(30), FINISH_LENS(26), FINISH_NO_PAIN(32), FINISH_GRIP(28), FINISH_HALF_LIFE(34),
-    FINISH_POCKET_SUN(34), FINISH_BREACH(30), FINISH_POINT_BLANK(26), FINISH_KILL_SWITCH(30), FINISH_OVERCLOCK(28),
+    FINISH_POCKET_SUN(34), FINISH_BREACH(30), FINISH_POINT_BLANK(26),
     FINISH_HAMMER(30), FINISH_ORBIT(30), FINISH_ECHO(28), FINISH_BORROW(16), FINISH_APEX(30), FINISH_FACE(30),
     // Power Amplification, drawn by AmpArt (red lightning: crimson bodies in the soft pass, hot rims and pale cores in
     // glow). A zap from the hand to an ally (bound to the amplifier; seed the ally's id); the crackle climbing an ally as a
@@ -325,7 +323,11 @@ public enum Piece {
     // Its other ways to fight: a Breach Step's tear (origin its center, target + its normal; seed 1 the one it leaves by),
     // the Bone Cage (origin the center on the floor, scale its radius; seed 0 holding someone, 2 empty, 1 shattered by a
     // power, 3 sinking), and a Starving Well (origin the star, scale its blast radius, seed its age; re-sent as it drifts).
-    WITHER_STEP(20), WITHER_CAGE(52), WITHER_WELL(3);
+    WITHER_STEP(20), WITHER_CAGE(52), WITHER_WELL(3),
+    // Electrokinesis's machine nodes (electro/ElectroMachines): a device the current reached (scale 1 worked, 2 killed);
+    // a jammed gun spitting sparks (bound to its holder, re-sent while it lasts); Counterweight's taut line from the hand
+    // to the anchor (bound to the hauled player) and Winchline's from the anchor to the reeled body (bound to them).
+    ELECTRO_DEVICE(16), ELECTRO_JAM(12), ELECTRO_HAUL(12), ELECTRO_REEL(12);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

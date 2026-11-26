@@ -63,7 +63,7 @@ public final class WitherLocksPreview {
         Vec3 floor=WitherGeometry.floor();
         switch(age){
             case 104 -> server(PrologueService::skip);
-            case 115 -> server(p->{CryoChamberService.release(p);p.removeAllEffects();WitherArena.reset(p.getServer(),false);p.teleportTo(p.getServer().overworld(),150.5,-60,150.5,0,0);power(p,ModAbilities.TECHNOPATHY_ID);});
+            case 115 -> server(p->{CryoChamberService.release(p);p.removeAllEffects();WitherArena.reset(p.getServer(),false);p.teleportTo(p.getServer().overworld(),150.5,-60,150.5,0,0);power(p,ModAbilities.MIMICRY_ID);});
             case 140 -> server(p->PreviewQuiet.report("WITHER_LOCKS_BREACH "+WitherArena.operatorStart(p,0)));
             case 330 -> server(p->{PreviewQuiet.report("WITHER_LOCKS_ENTER "+WitherArena.operatorStart(p,1));var b=boss();b.skipArrival();b.still(true);b.holdOff(100000);p.setGameMode(GameType.SURVIVAL);p.getAbilities().invulnerable=true;});
             // The ward: a lattice over its ribs and a thread from each heart in its pylon.
@@ -71,13 +71,13 @@ public final class WitherLocksPreview {
             case 460 -> capture="01-warded-by-three-hearts.png";
             case 470 -> {look(floor.add(-8,5,2),floor.add(0,5,0));}
             case 480 -> capture="02-the-star-ward.png";
-            // A heart in its cradle, as a technopath sees it: the turning diamond only their power shows.
+            // A heart in its cradle, as an empath sees it: the turning diamond only a power with a key to it shows.
             case 490 -> {var c=WitherGeometry.heartCenter(0);look(c.add(0,.7,4.6),c);server(p->at(p,c.add(1,-2.5,9),c));}
             case 505 -> capture="03-heart-and-its-glint.png";
             case 515 -> {var c=WitherGeometry.heartCenter(2);look(c.add(-4.6,1.2,-6.5),c.add(0,-.6,-2.8));server(p->at(p,new Vec3(c.x,floor.y,c.z-6),c));}
-            case 525 -> server(p->{before=boss().hearts[2].getHealth();BossLocks.used(p,ModAbilities.TECHNOPATHY_ID,"preview",20);
+            case 525 -> server(p->{before=boss().hearts[2].getHealth();BossLocks.used(p,ModAbilities.MIMICRY_ID,"preview",20);
                 PreviewQuiet.report("WITHER_LOCKS_AIMED "+(boss().hearts[2]!=null&&boss().hearts[2].getHealth()<before?"PASS":"FAIL")+" "+before+" -> "+(boss().hearts[2]==null?0:boss().hearts[2].getHealth()));});
-            case 528 -> capture="04-technopath-overrides-a-heart.png";
+            case 528 -> capture="04-empath-severs-a-heart.png";
             case 545 -> {var c=WitherGeometry.heartCenter(2);look(c.add(0,.5,-4.2),c);}
             case 552 -> capture="05-heart-cracked.png";
             case 556 -> server(p->{var h=boss().hearts[2];h.take(h.getHealth()+1,p);});

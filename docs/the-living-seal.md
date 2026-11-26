@@ -96,7 +96,7 @@ back; in the air it hangs there for two seconds.
 | **Skill** | A charged hit (a full swing, a critical arrow or any blow of 8 or more) during a windup cancels the move and staggers it for 2.5 seconds, once every 5 seconds. Its landing, take-off and The Unmaking can't be broken. |
 | **Rhythm** | On the ground it takes full damage and its head 120%; its time on the ground pauses while a ground move plays out, so every landing gives the same openings. After The Unmaking it is spent (half again as much damage) and lands for two seconds longer. A dive doesn't stop it: it pulls straight back out, so save your burst for the landing. |
 | **Room** | One tower crystal feeds it, healing it slowly while it flies. Break that crystal, or overload the lit altar, and it **crashes out of the sky** where it is: it lies stunned for 7.5 seconds taking 35% more damage, then fights on foot for a few seconds more before taking off. |
-| **Power** | The table under "The twenty-one powers" below. |
+| **Power** | The table under "The twenty powers" below. |
 
 Its native contact hits are gone: the body hurts only through its warned moves, so it can't silently punch through a
 windup. Its body follows a planned path for every committed move, and turns its lanes so no dive or run passes
@@ -117,7 +117,7 @@ making the party kill the Dragon again. The Dragon's experience is saved and pay
 
 The existing Sylar entity gains a separate endgame mode; his Collection fight retains its own rules and history.
 Here he fights across the island, combines Dragon geometry with familiar power gestures, and reads the gifts brought
-against him. His voice addresses each of the twenty-one powers. The first glimpse is a human silhouette inside a
+against him. His voice addresses each of the twenty powers. The first glimpse is a human silhouette inside a
 Dragon-sized web of energy, not an enlarged ordinary zombie.
 
 | Phase | Health | What changes |
@@ -147,7 +147,7 @@ the warning; standing still in the original marked position is not automatically
 ## The light breaks
 
 Sylar's final death lasts eight seconds. He arches back, his arms spread and white fractures widen across his actual
-face, coat and limbs. His chest splits into light-edged fragments. Rays of the twenty-one gifts pour out through the
+face, coat and limbs. His chest splits into light-edged fragments. Rays of the twenty gifts pour out through the
 cracks, growing into a brilliant white core.
 
 At 3.6 seconds his silhouette breaks apart. A huge three-dimensional energy wave races across and beyond the island,
@@ -157,7 +157,7 @@ fire and smoke. The light disperses, then the saved experience, rewards and nati
 
 The victory wave leaves players and their builds intact. The existing reduced-flashing option softens its flash.
 
-## The twenty-one powers
+## The twenty powers
 
 Every gift can power a ground altar. These are also the shapes he can sample; none is an instant win or a permanent
 loss of the player's abilities.
@@ -177,7 +177,6 @@ loss of the player's abilities.
 | Telepathy | Marked psychic pressure; reading him gives a hint about the next sampled pattern |
 | Invisibility | Crossing force lines; force fields and cover can answer attacks |
 | Density | Angular, heavy lanes; neither boss can be embedded or carried away |
-| Technopathy | A short-lived interference bloom; the marked focus is a room objective even for a machine specialist |
 | Matter Assembly | A converging frame of stone fragments; constructed defenses can break sight |
 | Regeneration | A breakable siphon line; healing and rescue remain valuable in a long fight |
 | Shapeshifting | A spectral pounce along a fixed lane; the Dragon's multipart shape remains excluded |
@@ -217,7 +216,7 @@ references. No recording or melody from that library is shipped. Each loop is me
 seams; all music follows the Music slider.
 
 Tests cover native multipart damage, conduit charging and cancellation, all shapes in the air and on foot, party
-scaling beyond the attribute limit, all twenty-one patterns, weak windows, checkpoint recovery, preserved player
+scaling beyond the attribute limit, all twenty patterns, weak windows, checkpoint recovery, preserved player
 blocks, death drops, vanilla progression and reward duplication. A real client preview photographs every warning,
 phase, the absorption, aerial combat, prism backfire and the ending.
 

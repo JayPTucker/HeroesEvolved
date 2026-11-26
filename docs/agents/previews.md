@@ -10,7 +10,7 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 ## Running one
 
 - **Endgame:** `tools/endgame-preview.init.gradle` photographs the native End island, both temporary ruins, every
-  Dragon move, all six phases, absorption, all 21 sampled gifts and Sylar's rupture at close and island-wide distances.
+  Dragon move, all six phases, absorption, all 20 sampled gifts and Sylar's rupture at close and island-wide distances.
   Its driver is `endgame/EndgamePreview`; photos are in `build/endgame-preview/screenshots/`. Both ruin lighting audits
   must be clean. The final death photos show the actual emissive PlayerModel, the white flash and the ability wave.
   `tools/dragon-preview.init.gradle` runs the same driver for the Dragon alone (about 1,700 ticks, photos in
@@ -29,7 +29,7 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
   pillar), all three phases, 37 seconds of unpaused pursuit with real movement input, the Wither Guide and clicks on
   the actual admin start/entry/phase/cancel controls. Driver: `wither/WitherReworkPreview`; photos:
   `build/wither-rework-preview/screenshots/`. `tools/wither-locks-preview.init.gradle` photographs its locks as a
-  technopath and then a pyrokinetic sees them: the ward and its hearts with the glint, an aimed override, a heart
+  empath and then a pyrokinetic sees them: the ward and its hearts with the glint, an aimed sever, a heart
   shattering and re-forming, the ward breaking, a feeding heart, the brood carrying bone back, the Hunger Mark, the
   open star, the discharge's last moment and a dodge out of it, the Guide's per-power lines and the admin status. It
   reports PASS or FAIL for the override, the ward, the mending and the dodge. Driver: `wither/WitherLocksPreview`;

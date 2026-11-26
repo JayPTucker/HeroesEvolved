@@ -687,51 +687,6 @@ public final class StyleCasts {
                 }
                 sound(level, at, SoundEvents.PLAYER_LEVELUP, 0.6F, 1.6F);
             }
-            // ---------------------------------------------------------- Technopathy
-            case "drone_swarm" -> {
-                piece(p, Piece.DRONE_SWARM, at, at, 1, p);
-                sound(level, at, SoundEvents.BEACON_ACTIVATE, 0.8F, 2);
-                StyleRuntime.run(p, 160, age -> {
-                    if (age < 10 || age % 15 != 0) return;
-                    int n = 0;
-                    for (LivingEntity t : foes(p, p.position(), 12)) {
-                        if (n >= 3 || !p.hasLineOfSight(t)) continue;
-                        double ang = (age / 15.0 + n) * 2.1;
-                        Vec3 from = p.position().add(Math.cos(ang) * 1.8, 2, Math.sin(ang) * 1.8);
-                        piece(p, Piece.DRONE_SHOT, from, t.getEyePosition().subtract(0, 0.3, 0), 1, null);
-                        hurt(p, t, .8F + lvl * .15F);
-                        n++;
-                    }
-                    if (n > 0) sound(level, p.position(), SoundEvents.DISPENSER_LAUNCH, 0.5F, 2);
-                });
-            }
-            case "firewall" -> {
-                Vec3 centre = at.add(f.scale(2.5)), side = new Vec3(-f.z, 0, f.x);
-                piece(p, Piece.FIREWALL, at, at.add(f), 1, null);
-                sound(level, centre, SoundEvents.BEACON_ACTIVATE, 1, 1.8F);
-                java.util.Map<LivingEntity, Integer> stung = new java.util.HashMap<>();
-                StyleRuntime.run(p, 200, age -> {
-                    for (Projectile shot : incoming(p, centre.add(0, 1.5, 0), 4)) {
-                        Vec3 d = shot.position().subtract(centre);
-                        if (Math.abs(d.dot(f)) < 1.2 && Math.abs(d.dot(side)) < 2.6 && d.y > -0.5 && d.y < 3.5) shot.discard();
-                    }
-                    for (LivingEntity t : foes(p, centre, 3.5)) {
-                        Vec3 d = t.position().subtract(centre);
-                        if (Math.abs(d.dot(f)) > 1 || Math.abs(d.dot(side)) > 2.6) continue;
-                        if (age - stung.getOrDefault(t, -40) >= 20) { hurt(p, t, .75F); stung.put(t, age); }
-                        push(t, f.scale(0.7).add(0, 0.15, 0));
-                    }
-                });
-            }
-            case "overclock" -> {
-                for (LivingEntity friend : friends(p, at, 12)) {
-                    effect(friend, MobEffects.DIG_SPEED, 200, 1);
-                    effect(friend, MobEffects.MOVEMENT_SPEED, 200, 0);
-                    if (friend instanceof ServerPlayer fp) com.jayptucker.heroesevolved.energy.PlayerEnergyService.restore(fp, 10);
-                    piece(p, Piece.OVERCLOCK, friend.position(), friend.position(), 1, friend);
-                }
-                sound(level, at, SoundEvents.BEACON_POWER_SELECT, 1, 2);
-            }
             // ---------------------------------------------------------- Matter Assembly
             case "forge_cannon" -> {
                 LivingEntity mark = Targeting.livingEntityInSight(p, 32, t -> isFoe(p, t));

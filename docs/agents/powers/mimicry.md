@@ -14,7 +14,7 @@ became a three-phase kit in November 2026: the power of whoever you are near (Le
 - **Borrow a power by running its real actions.** An Echo (`MimicryService.echo`) wraps the copied power's own
   `AbilityAction` for the same slot and calls it inside `invoke(...)`, which marks the call as borrowed. Powers whose
   native gates check ownership ask `MimicryService.isBorrowingX(player)` (Flight, Pyrokinesis, Invisibility,
-  Cryokinesis, Technopathy, Matter Assembly). A new power with an ownership gate needs one of these, or Echoes of it
+  Cryokinesis, Matter Assembly). A new power with an ownership gate needs one of these, or Echoes of it
   fail. Switching sets, logging out or changing dimension runs `forget`, which ends every held borrowed action.
 - **One question: who has a power.** `MimicryService.imprintOf(mimic, entity)` answers for players, gifted villagers,
   the meltdown villager and Sylar (whatever stands in his cases). Attunement, touch, Sense Powers and the stamina passive all use it, so a new

@@ -175,7 +175,8 @@ def catalog():
             entries[node["id"]] = power
     balance = json.loads((DATA / "power_balance.json").read_text(encoding="utf-8"))
     for action in balance:
-        if not action["action"].startswith("style_"):
+        # Fighting-style moves and finishers have no ability icon: neither sits on a key, the wheel or a tree.
+        if not action["action"].startswith(("style_", "finisher_")):
             entries[action["action"]] = action["power"]
     return entries
 

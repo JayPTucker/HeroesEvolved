@@ -650,8 +650,7 @@ public final class BunkerAndPowersGameTests {
         int tried = 0;
         for (var power : AbilityRegistry.ABILITIES.keySet()) {
             // Physical kits use dedicated target/state/resource fixtures, including real learned actions.
-            if (power.equals(ModAbilities.FLIGHT_ID) || power.equals(ModAbilities.TECHNOPATHY_ID)
-                    || power.equals(ModAbilities.MATTER_ASSEMBLY_ID)) continue;
+            if (power.equals(ModAbilities.FLIGHT_ID) || power.equals(ModAbilities.MATTER_ASSEMBLY_ID)) continue;
             for (var node : SkillCatalog.nodes(power.getPath())) {
                 // Signature abilities run for seconds over a wide area; SignatureAbilityGameTests covers them with cleanup.
                 if (!node.active() || node.mechanic().isEmpty() || node.signature()) continue;

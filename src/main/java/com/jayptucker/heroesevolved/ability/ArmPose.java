@@ -241,5 +241,8 @@ public enum ArmPose {
     EARTH_STANCE, EARTH_LIFT, EARTH_STRIKE, EARTH_STOMP, EARTH_RAISE, EARTH_WALL, EARTH_SHOVE, EARTH_HEAVE, EARTH_SLAM,
     EARTH_CLAW, EARTH_GAUNTLET, EARTH_SURF, EARTH_LISTEN, EARTH_CRUSH, EARTH_TENT, EARTH_SLIDE_LEFT, EARTH_SLIDE_RIGHT,
     /** Both palms reaching down toward a filled End portal eye; held while an offering is paid. */
-    PORTAL_CHANNEL
+    PORTAL_CHANNEL,
+    /** Electrokinesis's Counterweight: the arm thrown straight along the aim at the metal, fingers spread, the other
+     *  swept back as the line hauls the body after it. Winchline: the fist yanked back to the shoulder, reeling. */
+    ELECTRO_HAUL, ELECTRO_REEL
 }

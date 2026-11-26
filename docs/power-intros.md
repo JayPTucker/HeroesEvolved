@@ -67,7 +67,7 @@ in turn, the edges of sight pulse red, and the power's own moves come out.
   Palm, the Ice Skater, Tiger and Crane, Force Palm, the Puppeteer.
 - **The rest fire their own kit**, one move at each attacker in turn: Sonic Resonance four
   tapped Cries, Telepathy a Nightmare and two Suggestions, Matter Assembly three Shard Lances and
-  a Cage, Technopathy an Intercept and a Tripwire, Shapeshifting a Decoy and a Reflection.
+  a Cage, Shapeshifting a Decoy and a Reflection.
 - Stamina is topped up while it lasts, and nothing is paid or put on cooldown. When it lets go,
   an action-bar line says so and control comes back. Superspeed, Flight and Vibe (whose releases
   carry the ward out), Regeneration (whose Reckless Brawler pays in blood, right after the heal), Radiation, Empathic Mimicry and Space-Time have no surge.
@@ -140,7 +140,6 @@ across to an ally ward (`intro/WardRelease`):
 | Electrokinesis | Lightning strikes up to eight of their attackers. |
 | Telekinesis | Their attackers are flung away and the ward is lifted out and brought to the owner. |
 | Regeneration | The ward is healed in full and cleansed. |
-| Technopathy | A diagnostic lock slows their attackers, and arrows in flight at the ward drop. |
 | Matter Assembly | Attackers are shoved back, then a copper lattice rises round the ward for eight seconds. |
 | Time Manipulation | Time stops round the ward first (above); they are shielded through the stop and the whole vision, and on a completed return they get the second wind again and the monsters round them fall a heartbeat behind. |
 
@@ -163,7 +162,6 @@ across to an ally ward (`intro/WardRelease`):
 | Telekinesis | Two seconds of inward motes and a concentrating violet field. | Nearby mobs and loose items briefly levitate, cosmetic stones rise from the ground, then everything is pushed outward: threats are hurled hard (5 damage), everything else is set aside with a brief slow fall. Primed TNT is lifted too. |
 | Regeneration | Two and a half seconds of wounds healing amid red-to-gold particles. | Full health, harmful-status removal, extinguished fire, and a healing bloom reaching non-hostile living entities within eight blocks. |
 | Time Manipulation | In a danger awakening, eight seconds of stopped time first (above). Then a walkable vision of Odessa in its last half-minute. The owner is shielded while the city is prepared. | Sprague's glow, the sirens and the panicking crowd, a 3D fireball and mushroom cloud, and a shock wave that wrecks the streets on its way to you; a few blocks short, time stops and the whole explosion runs backwards. See `time-manipulation-intro.md`. On a completed return home the owner gets the second wind, and nearby monsters lose their target and are left a heartbeat behind (heavily slowed and weakened for five seconds). |
-| Technopathy | Cyan diagnostic routes resolve around the owner while nearby mechanisms begin to make sense. | A circuit scan and hostile-projectile rejection pulse, and a diagnostic lock on every threat within twelve blocks (Slowness III, glowing for the owner) with shots in flight dropped; no free network mastery or Evolved trial progress. |
 | Matter Assembly | Amber construction lines and fragments assemble around the owner's hands. | A recoil pulse shoves threats back, then a copper lattice rises round the owner for eight seconds. Paid construction starts with the actual ability keys. |
 
 Each new composition has its own charge and release particle kinds. Primary

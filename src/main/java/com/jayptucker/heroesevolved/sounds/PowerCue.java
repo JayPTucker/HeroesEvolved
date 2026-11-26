@@ -39,7 +39,7 @@ public enum PowerCue {
     public static final List<String> POWERS = List.of(
             "cryokinesis", "electrokinesis", "flight", "hydrokinesis", "invisibility", "matter_assembly",
             "empathic_mimicry", "phasing", "pyrokinesis", "quake", "radiation", "regeneration", "shapeshifting",
-            "sonic_resonance", "superspeed", "technopathy", "telekinesis", "telepathy", "time_manipulation", "vibe");
+            "sonic_resonance", "superspeed", "telekinesis", "telepathy", "time_manipulation", "vibe");
 
     /** Powers with a fighting style, which alone have STRIKE and DODGE cues. */
     public static final Set<String> STYLED = Set.of(

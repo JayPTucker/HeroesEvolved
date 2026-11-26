@@ -129,9 +129,24 @@ How each skill looks:
 
 The styles have their own pieces too: Tesla Spire's mast and zaps, Faraday Cage's struts, and Jumpstart's heart rings.
 
+### Machines and magnetism
+
+Each branch opens on a node that changes a move you already have, and its Mastery adds a second one. (These six took
+the place of the old flat stamina, damage and cooldown bonuses, and carry what used to be Technopathy: a technopath in
+an older world wakes up as an electrokinetic if Electrokinesis is free.)
+
+| Node | Branch, level | How you use it | What it does | What you see |
+| --- | --- | --- | --- | --- |
+| **Remote Hand** | Conductor, 1 | Tap Chain Lightning at a lever, button, door, trapdoor, fence gate or copper bulb. Shift + tap to turn it off or close it. | Current works the device, through every protection a hand would need. Tap a copper, iron or chain conductor instead and current runs through it (up to 48 connected blocks) to every control it touches, up to six: all ON / OPEN, or with Shift all OFF / CLOSED. It never closes a door on anyone standing in it. | The bolt lands, current crawls along the conductor, and each device's edges light up as it switches. |
+| **Kill Switch** | Conductor, 3 | Shift + tap Chain Lightning at a powered machine. | Anything holding Forge Energy, or Create machinery, shuts off for five seconds and then wakes exactly as it was. An Ability Dampener's projector is a machine too: kill it from outside its field and the field drops until it wakes. A plain tap still charges a machine. | The machine's edges light, then a bright line sweeps down it from the top and everything above it goes dark. |
+| **Dead Trigger** | Groundkeeper, 1 | Automatic. | Chain Lightning, Live Current and your Spark strikes jam the gun in a target's hand for three seconds (the **Jammed** effect): it won't fire or reload. A jammed Company guard puts his pistol or taser down and swings it instead. On players it obeys PvP. | Short sparks spit from the gun hand round a knot of current for as long as the jam lasts. |
+| **Return to Sender** | Groundkeeper, 3 | Raise Static Screen. | The screen catches bullets as well as arrows, the moment they cross its edge, and sends every shot back at whoever fired it when there's a clear line to them (otherwise straight back the way it came). A returned shot is yours. | A fork of lightning throws the shot back off the screen's edge. |
+| **Counterweight** | Storm Geometry, 1 | Shift + Ride the Lightning, aimed at iron, copper, chain, a rail, a lightning rod, an anvil, a lantern or one of your own lattice anchors within 24 blocks. | A magnetic line hauls you there at speed, up walls too, and lifts you a little as you arrive so you can catch a ledge. You take no fall damage from the haul or just after it. Aimed at anything else, Shift + Ride blinks as usual. | Your arm is thrown straight at the metal and a taut line of current joins your hand to it, beads of light running out along it. |
+| **Winchline** | Storm Geometry, 3 | Arc Lattice. | A wire that catches someone reels them toward its nearest anchor for a second. A wall or cover between them snaps the line. | A taut line from the anchor to the body, a ring of current round them, and your fist yanked back. |
+
 ### Signature: Blackout
 
-Groundkeeper's signature ability hangs under **High Voltage Mastery** (Level 10, 3 points, 45 stamina,
+Groundkeeper's signature ability hangs under **Return to Sender** (Level 10, 3 points, 45 stamina,
 30 s cooldown). Elle drinks the grid.
 
 1. **The siphon (1 s).** She lifts her arms and every powered thing within 12 blocks throws an arc into her

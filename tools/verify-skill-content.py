@@ -11,7 +11,7 @@ lang = json.loads((assets / "lang/en_us.json").read_text(encoding="utf-8"))
 sounds = json.loads((assets / "sounds.json").read_text(encoding="utf-8"))
 expected = {"quake", "flight", "cryokinesis", "electrokinesis", "telekinesis", "telepathy",
             "regeneration", "time_manipulation", "radiation", "sonic_resonance", "superspeed", "pyrokinesis",
-            "invisibility", "phasing", "empathic_mimicry", "technopathy", "matter_assembly", "vibe", "shapeshifting", "hydrokinesis",
+            "invisibility", "phasing", "empathic_mimicry", "matter_assembly", "vibe", "shapeshifting", "hydrokinesis",
             "power_amplification"}
 assert {t["power"] for t in trees} == expected and len(trees) == len(expected)
 nodes = 0
@@ -71,8 +71,7 @@ lookups = 0
 for java in source.rglob("*.java"):
     text = java.read_text(encoding="utf-8")
     # These services' local has() helpers add a prefix; direct full ids remain valid too.
-    prefix = {"telekinesis": "telekinesis_", "assembly": "matter_assembly_",
-              "technopathy": "technopathy_"}.get(java.parent.name, "")
+    prefix = {"telekinesis": "telekinesis_", "assembly": "matter_assembly_"}.get(java.parent.name, "")
     for match in re.finditer(r'\bhas\(\s*[\w.()]+\s*,\s*"([a-z0-9_]+)"\s*\)', text):
         key = match.group(1)
         full = key if key.startswith(prefix) else prefix + key

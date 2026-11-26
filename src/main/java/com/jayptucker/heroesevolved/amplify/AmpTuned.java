@@ -44,7 +44,7 @@ import java.util.List;
  *   (Pyrokinesis), one more chain (Electrokinesis), free water and the sea's boost (Hydrokinesis), longer freezes
  *   (Cryokinesis), Strain and its power (Quake), Resonance, Ringing and shattering (Sonic Resonance), a longer Grip
  *   (Telekinesis), a longer Stone Skin (Density), twice the Pressure (Invisibility), a stronger Rapid Mending (Regeneration),
- *   a faster-filling Core (Induced Radioactivity), Technopathy's reach, an extra Shard (Matter Assembly), instant
+ *   a faster-filling Core (Induced Radioactivity), an extra Shard (Matter Assembly), instant
  *   attunement and free Echoes (Empathic Mimicry), and slower Suspicion (Shapeshifting).</li>
  *   <li>Done here: Momentum, Daphne's run, the thousand voices, the storm, refilling water, the flash freeze, the
  *   levitation, the shelter of ground, the dome, the spilling heal, the Core pouring out, the grid answering, the shard orbit,
@@ -95,10 +95,6 @@ final class AmpTuned {
             case "sonic_resonance" -> com.jayptucker.heroesevolved.sonic.SonicService.addResonance(p, 100);
             case "telekinesis" -> lift(p);
             case "phasing", "invisibility" -> b.at = p.position();
-            case "technopathy" -> {
-                int started = AmpService.jumpMachines(p, p.position(), (int) GRID_RADIUS, 400);
-                p.displayClientMessage(Component.translatable("amp.heroesevolved.grid", started).withStyle(ChatFormatting.RED), true);
-            }
             case "shapeshifting" -> apex(p, true);
             case "time_manipulation" -> tell(p, "time");
             case "superspeed" -> tell(p, "speed");
@@ -196,7 +192,6 @@ final class AmpTuned {
             case "regeneration" -> com.jayptucker.heroesevolved.regeneration.RegenerationService.addRegrowth(p,
                     -Math.round(com.jayptucker.heroesevolved.regeneration.RegenerationService.regrowth(p) * scale));
             case "radiation" -> com.jayptucker.heroesevolved.radiation.RadiationService.addMass(p, Math.round(40 * scale));
-            case "technopathy" -> burnOut(p, scale);
             case "matter_assembly" -> p.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 6 * ticks, 0));
             case "empathic_mimicry" -> Amplification.lock(p, b.power, 8 * ticks);
             case "shapeshifting" -> Amplification.lock(p, b.power, 6 * ticks);
@@ -335,20 +330,6 @@ final class AmpTuned {
             if (damage != null) damage.removeModifier(APEX_DAMAGE);
         }
         p.refreshDimensions();
-    }
-
-    /** The grid answered too hard: a third of the machines round the technopath stall. */
-    private static void burnOut(ServerPlayer p, float scale) {
-        ServerLevel level = p.serverLevel();
-        BlockPos base = p.blockPosition();
-        int checked = 0;
-        for (BlockPos pos : BlockPos.betweenClosed(base.offset(-16, -6, -16), base.offset(16, 6, 16))) {
-            if (checked > 24) break;
-            if (level.getBlockEntity(pos) == null || !AmpService.jumpstarted(level, pos)) continue;
-            checked++;
-            if (p.getRandom().nextFloat() < .34F * scale)
-                com.jayptucker.heroesevolved.grid.GridDisruption.stall(p, level, pos.immutable(), 200);
-        }
     }
 
     /** Sonic Resonance overcharged: a Cry breaks glass, ice and stone where it lands. */

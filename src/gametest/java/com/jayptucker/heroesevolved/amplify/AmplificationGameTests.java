@@ -536,7 +536,6 @@ public final class AmplificationGameTests {
             boosted(ModAbilities.RADIATION_ID, NONE, NONE,
                     both((h, a, f, b) -> h.assertTrue(!f.isAlive() || com.jayptucker.heroesevolved.radiation.RadiationSickness.stage(f) > 0, "The Core pours out: the foe is dosed"),
                             (h, a, f, b) -> h.assertTrue(com.jayptucker.heroesevolved.radiation.RadiationService.mass(a) >= 40, "Backlash: 40 Core floods back"))),
-            boosted(ModAbilities.TECHNOPATHY_ID, NONE, NONE, NONE),
             boosted(ModAbilities.MATTER_ASSEMBLY_ID, NONE, NONE, effect(MobEffects.WEAKNESS, "you're worn out")),
             boosted(ModAbilities.MIMICRY_ID, NONE,
                     (h, a, f, b) -> h.assertTrue(Amplification.cost(a, ModAbilities.MIMICRY_ID, ResourceLocation.fromNamespaceAndPath(com.jayptucker.heroesevolved.HeroesEvolved.MOD_ID, "mimicry_echo_1")) == 0

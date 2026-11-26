@@ -4,6 +4,8 @@ import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.tacz.guns.api.entity.IGunOperator;
 import com.tacz.guns.api.entity.ShootResult;
 import com.tacz.guns.api.event.common.EntityHurtByGunEvent;
+import com.tacz.guns.api.event.common.GunFireEvent;
+import com.tacz.guns.api.event.common.GunReloadEvent;
 import com.tacz.guns.api.event.common.GunShootEvent;
 import com.tacz.guns.api.event.server.AmmoHitBlockEvent;
 import com.tacz.guns.api.item.IGun;
@@ -56,6 +58,8 @@ final class TaczLink {
             NeoForge.EVENT_BUS.addListener(EntityHurtByGunEvent.Pre.class, TaczLink::vibeIntercept);
             NeoForge.EVENT_BUS.addListener(EntityHurtByGunEvent.Post.class, TaczLink::hurt);
             NeoForge.EVENT_BUS.addListener(GunShootEvent.class, TaczLink::shot);
+            NeoForge.EVENT_BUS.addListener(GunFireEvent.class, TaczLink::fire);
+            NeoForge.EVENT_BUS.addListener(GunReloadEvent.class, TaczLink::reloading);
             NeoForge.EVENT_BUS.addListener(AmmoHitBlockEvent.class, TaczLink::block);
             NeoForge.EVENT_BUS.addListener(net.neoforged.neoforge.event.tick.PlayerTickEvent.Post.class, event -> {
                 if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
@@ -95,7 +99,13 @@ final class TaczLink {
             event.setCanceled(true);
             return;
         }
-        if (target.isPresent() && com.jayptucker.heroesevolved.vibe.VibeService.intercept(level, bullet, from, target.get()))
+        if (target.isPresent() && com.jayptucker.heroesevolved.vibe.VibeService.intercept(level, bullet, from, target.get())) {
+            event.setCanceled(true);
+            return;
+        }
+        // An electrokinetic's Static Screen with Return to Sender sends the round back at whoever fired it.
+        if (com.jayptucker.heroesevolved.electro.ElectroMachines.screenCatch(level, bullet, from,
+                target.orElseGet(() -> event.getHurtEntity().getBoundingBox().getCenter())))
             event.setCanceled(true);
     }
 
@@ -109,8 +119,28 @@ final class TaczLink {
         }
     }
 
+    /** A jammed gun (Dead Trigger, {@link Jamming}) stays silent. Checked on both sides, since a player's shot starts on their client. */
+    private static boolean jammed(LivingEntity shooter) {
+        try {
+            return Jamming.jammed(shooter);
+        } catch (Throwable t) {
+            fail("jam", t);
+            return false;
+        }
+    }
+
+    private static void fire(GunFireEvent event) {
+        if (!broken && jammed(event.getShooter())) event.setCanceled(true);
+    }
+
+    private static void reloading(GunReloadEvent event) {
+        if (!broken && jammed(event.getEntity())) event.setCanceled(true);
+    }
+
     private static void shot(GunShootEvent event) {
-        if (broken || event.getLogicalSide() != LogicalSide.SERVER) return;
+        if (broken) return;
+        if (jammed(event.getShooter())) { event.setCanceled(true); return; }
+        if (event.getLogicalSide() != LogicalSide.SERVER) return;
         try {
             ResourceLocation id = gunId(event.getGunItemStack());
             if (id != null) PowerWeapons.shot(event.getShooter(), id);

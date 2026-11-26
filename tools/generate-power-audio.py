@@ -958,44 +958,6 @@ def superspeed():
 PENTA = (880, 990, 1110, 1320, 1480, 1760, 1980, 2220, 2640)
 
 
-def technopathy():
-    def blip(t, f, at, d=.04):
-        return lp(square(np.full(len(t), f)), 6000) * env(t, .002, d, at) * (t >= at)
-
-    def data(t, start, end):
-        return crush(white(len(t)), 9, 3) * ((t >= start) & (t <= end)) * .2
-
-    def cast(k):
-        t = T(.6)
-        seq = sum(blip(t, rng.choice(PENTA) * k, i * .055) for i in range(5))
-        return reverb(seq * .4 + data(t, .02, .06) + data(t, .2, .23), .3, .25, 9000)
-
-    def heavy(k):
-        t = T(1.6)
-        sweep_ = lp(saw(path(t, [(0, 80 * k), (.9, 640 * k)])), 4000) * swell(t, .9, 1.4) * .4
-        arp = sum(blip(t, PENTA[i % len(PENTA)] * k, .45 + i * .06, .06) for i in range(9)) * .3
-        return reverb(sweep_ + arp + thump(t, 70, 32, .4, .95) * 1.1, .7, .35, 8000)
-
-    def charge(k):
-        t = T(1.3)
-        rise = ramp(t, 0, 1.25, 1.2)
-        carrier = path(t, [(0, 900 * k), (1.3, 1900 * k)])
-        modem = tone(carrier * (1 + .08 * np.sin(phase(path(t, [(0, 2), (1.3, 30)])))))
-        return reverb(lp(np.sign(modem) * .3 + modem * .5, 5000) * rise * .6 + data(t, 0, 1.3) * rise, .4, .25, 9000)
-
-    def impact(k):
-        t = T(.4)
-        glitch = crush(white(len(t)), 14, 2) * (np.sin(2 * np.pi * 40 * t) > 0) * env(t, .001, .08)
-        return glitch * .8 + thump(t, 120, 50, .06) * .8 + lp(square(path(t, [(0, 1760 * k), (.2, 440 * k)])), 5000) * env(t, .002, .07) * .3
-
-    def end(k):
-        t = T(.8)
-        down = lp(saw(path(t, [(0, 600 * k), (.75, 40 * k)])), path(t, [(0, 4000), (.75, 300)]).mean()) * env(t, .01, .3) * .5
-        return reverb(down + lp(square(path(t, [(0, 880 * k), (.15, 220 * k)])), 4000) * env(t, .002, .1) * .3, .4, .25, 8000)
-
-    return dict(cast=cast, heavy=heavy, charge=charge, impact=impact, end=end)
-
-
 def telekinesis():
     def thrum(t, freq):
         freq = np.broadcast_to(np.asarray(freq, dtype=float), t.shape)
@@ -1153,7 +1115,7 @@ POWERS = dict(
     cryokinesis=cryokinesis, electrokinesis=electrokinesis, flight=flight, hydrokinesis=hydrokinesis,
     invisibility=invisibility, matter_assembly=matter_assembly, empathic_mimicry=empathic_mimicry, phasing=phasing,
     pyrokinesis=pyrokinesis, quake=quake, radiation=radiation, regeneration=regeneration, shapeshifting=shapeshifting,
-    sonic_resonance=sonic_resonance, superspeed=superspeed, technopathy=technopathy, telekinesis=telekinesis,
+    sonic_resonance=sonic_resonance, superspeed=superspeed, telekinesis=telekinesis,
     telepathy=telepathy, time_manipulation=time_manipulation, vibe=vibe)
 
 VARIANTS = {"cast": 3, "impact": 3, "strike": 3, "dodge": 2, "heavy": 2, "charge": 1, "end": 2}
@@ -1175,7 +1137,6 @@ SUBTITLES = {
     "shapeshifting": ("Plates ripple", "Body transforms", "Plates shift", "Plates clank", "Plates settle", None, None),
     "sonic_resonance": ("Note rings", "Chord swells", "Note builds", "Glass rings", "Sound hushes", None, None),
     "superspeed": ("Speedster zips", "Sonic boom", "Speed builds", "Blur strike lands", "Speedster slows", "Blur punches", "Speedster blurs"),
-    "technopathy": ("Data chirps", "Machines power up", "Signal warbles", "Signal glitches", "Machines power down", None, None),
     "telekinesis": ("Telekinesis thrums", "Telekinetic implosion", "Telekinesis builds", "Telekinetic blow", "Telekinesis releases", "Telekinetic swat", "Telekinetic slide"),
     "telepathy": ("Minds whisper", "Psychic storm", "Whispers build", "Psychic stab", "Whispers fade", None, None),
     "time_manipulation": ("Clock ticks", "Clock tolls", "Ticking quickens", "Time cracks", "Ticking slows", None, None),

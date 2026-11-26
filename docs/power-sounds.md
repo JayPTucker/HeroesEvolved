@@ -33,7 +33,6 @@ Each power has its own material, so you can tell who is fighting by ear:
 | Shapeshifting | rippling plates, a brass clank, a growl when the body changes |
 | Sonic Resonance | a bowed cello note with glassy partials |
 | Superspeed | zips, a sonic crack, blur punches |
-| Technopathy | data chirps, modem warbles, glitches, power-ups and power-downs |
 | Telekinesis | a low thrum, implosions, kinetic thumps |
 | Telepathy | whispers and bells |
 | Space-Time | clockwork ticking and a toll |

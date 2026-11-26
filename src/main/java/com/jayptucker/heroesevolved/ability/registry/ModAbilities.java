@@ -59,10 +59,6 @@ public final class ModAbilities {
     public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.PyrokinesisAbility> PYROKINESIS =
             ABILITIES.register(PYROKINESIS_ID.getPath(), com.jayptucker.heroesevolved.ability.types.PyrokinesisAbility::new);
 
-    public static final ResourceLocation TECHNOPATHY_ID = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "technopathy");
-    public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.TechnopathyAbility> TECHNOPATHY =
-            ABILITIES.register(TECHNOPATHY_ID.getPath(), com.jayptucker.heroesevolved.ability.types.TechnopathyAbility::new);
-
     public static final ResourceLocation MATTER_ASSEMBLY_ID = ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "matter_assembly");
     public static final DeferredHolder<Ability, com.jayptucker.heroesevolved.ability.types.MatterAssemblyAbility> MATTER_ASSEMBLY =
             ABILITIES.register(MATTER_ASSEMBLY_ID.getPath(), com.jayptucker.heroesevolved.ability.types.MatterAssemblyAbility::new);

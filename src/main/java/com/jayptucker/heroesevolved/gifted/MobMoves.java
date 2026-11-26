@@ -75,7 +75,7 @@ public final class MobMoves {
             CRYO = ModAbilities.CRYOKINESIS_ID, PYRO = ModAbilities.PYROKINESIS_ID, RAD = ModAbilities.RADIATION_ID,
             QUAKE = ModAbilities.QUAKE_ID, SPEED = ModAbilities.SUPERSPEED_ID, TIME = ModAbilities.TIME_MANIPULATION_ID,
             SONIC = ModAbilities.SONIC_RESONANCE_ID, FLIGHT = ModAbilities.FLIGHT_ID, MIND = ModAbilities.TELEPATHY_ID,
-            FORCE = ModAbilities.INVISIBILITY_ID, DENSITY = ModAbilities.PHASING_ID, TECH = ModAbilities.TECHNOPATHY_ID,
+            FORCE = ModAbilities.INVISIBILITY_ID, DENSITY = ModAbilities.PHASING_ID,
             MATTER = ModAbilities.MATTER_ASSEMBLY_ID, REGEN = ModAbilities.REGENERATION_ID, HYDRO = ModAbilities.HYDROKINESIS_ID,
             VIBE = ModAbilities.VIBE_ID, SHIFT = ModAbilities.SHAPESHIFTING_ID, AMP = ModAbilities.AMPLIFICATION_ID;
 
@@ -557,54 +557,6 @@ public final class MobMoves {
                         hurt(g, t, 9 * p);
                         push(t, new Vec3(0, 1.2, 0));
                         sound(l, at, SoundEvents.DEEPSLATE_BREAK, 1.2F, .7F);
-                    }),
-
-            // ---- Technopathy: stolen arrows, a pulse that jams weapons, an overload cage ----
-            m("stolen_trajectory", TECH, 24, 240, 0, 18, true, Pose.CAST,
-                    (g, l, t, p) -> sound(l, g.mob.position(), SoundEvents.COMPARATOR_CLICK, 1.2F, .6F),
-                    (g, l, t, p) -> AbilityEffects.send(l, Kind.TECH_CAGE, g.mob.position(), chest(g.mob), 2),
-                    (g, l, t, p) -> {
-                        // The warning gives a bow user time to stop firing into the field.
-                        for (var shot : l.getEntitiesOfClass(net.minecraft.world.entity.projectile.AbstractArrow.class, g.mob.getBoundingBox().inflate(7),
-                                arrow -> arrow.getOwner() instanceof LivingEntity shooter && foe(g, shooter) && !arrow.onGround()
-                                        && arrow.getDeltaMovement().lengthSqr() > .01).stream().limit(6).toList()) {
-                            AbilityEffects.send(l, Kind.TECH_LINK, hand(g.mob), shot.position(), 1);
-                            shot.setOwner(g.mob);
-                            shot.setDeltaMovement(chest(t).subtract(shot.position()).normalize().scale(1.5));
-                            shot.hurtMarked = true;
-                        }
-                        AbilityEffects.send(l, Kind.TECH_LINK, hand(g.mob), chest(t), 1);
-                        hurt(g, t, 3 * p);
-                        sound(l, g.mob.position(), SoundEvents.IRON_TRAPDOOR_CLOSE, .8F, 1.4F);
-                    }),
-            m("tech_pulse", TECH, 12, 180, 0, 10, false, Pose.CAST,
-                    (g, l, t, p) -> sound(l, g.mob.position(), SoundEvents.COMPARATOR_CLICK, 1, 1.6F),
-                    NOTHING,
-                    (g, l, t, p) -> {
-                        AbilityEffects.send(l, Kind.TECH_PULSE, g.mob.position(), g.mob.position().add(0, 1, 0), 8);
-                        for (LivingEntity e : foes(g, g.mob.position(), 8)) {
-                            hurt(g, e, 3 * p);
-                            e.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, 100, 1));
-                            // Whatever you are holding jams for three seconds.
-                            if (e instanceof Player player && !player.getMainHandItem().isEmpty())
-                                player.getCooldowns().addCooldown(player.getMainHandItem().getItem(), 60);
-                        }
-                        sound(l, g.mob.position(), SoundEvents.IRON_TRAPDOOR_CLOSE, 1, .6F);
-                    }),
-            sig("overload", TECH, 26, 400, 2, 16, true, Pose.CAST,
-                    (g, l, t, p) -> { g.mark(t.position()); sound(l, t.position(), SoundEvents.IRON_TRAPDOOR_CLOSE, 1, .5F); },
-                    (g, l, t, p) -> AbilityEffects.send(l, Kind.TECH_CAGE, g.mark(), g.mark().add(0, 1, 0), 2),
-                    (g, l, t, p) -> {
-                        Vec3 at = g.mark();
-                        for (int i = 0; i < 5; i++) g.later(i * 10, () -> {
-                            AbilityEffects.send(l, Kind.TECH_CAGE, at, at.add(0, 1, 0), 2.6);
-                            for (LivingEntity e : foes(g, at, 3.2)) {
-                                AbilityEffects.send(l, Kind.TECH_LINK, at.add(0, 2.5, 0), chest(e), 1);
-                                hurt(g, e, 3 * p);
-                                e.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 20, 1));
-                            }
-                            sound(l, at, SoundEvents.COMPARATOR_CLICK, 1, 2);
-                        });
                     }),
 
             // ---- Matter Assembly: a crossfire, a shield, a storm of shards ----

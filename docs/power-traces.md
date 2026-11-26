@@ -21,7 +21,7 @@ Every power leaves its own kind of mark:
 | --- | --- | --- |
 | Pyrokinesis | scorch | embers and smoke |
 | Cryokinesis | frost | snowflakes |
-| Electrokinesis, Technopathy | static | crackling sparks |
+| Electrokinesis | static | crackling sparks |
 | Hydrokinesis | damp | drips |
 | Quake, Density | crack | dust |
 | Induced Radioactivity | glow | a faint green |

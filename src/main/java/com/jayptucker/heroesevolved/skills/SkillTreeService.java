@@ -179,7 +179,7 @@ public final class SkillTreeService {
         if (power.equals(ModAbilities.FLIGHT_ID) || power.equals(ModAbilities.TELEKINESIS_ID)
                 || power.equals(ModAbilities.PYROKINESIS_ID) || power.equals(ModAbilities.RADIATION_ID)
                 || power.equals(ModAbilities.INVISIBILITY_ID) || power.equals(ModAbilities.CRYOKINESIS_ID)
-                || power.equals(ModAbilities.TECHNOPATHY_ID) || power.equals(ModAbilities.MATTER_ASSEMBLY_ID)
+                || power.equals(ModAbilities.ELECTROKINESIS_ID) || power.equals(ModAbilities.MATTER_ASSEMBLY_ID)
                 || power.equals(ModAbilities.SONIC_RESONANCE_ID) || power.equals(ModAbilities.QUAKE_ID)
                 || power.equals(ModAbilities.REGENERATION_ID) || power.equals(ModAbilities.VIBE_ID)
                 || power.equals(ModAbilities.TELEPATHY_ID) || power.equals(ModAbilities.TIME_MANIPULATION_ID)
@@ -220,7 +220,6 @@ public final class SkillTreeService {
         if (power.equals(ModAbilities.HYDROKINESIS_ID)) com.jayptucker.heroesevolved.hydro.HydroService.forget(player);
         if (power.equals(ModAbilities.AMPLIFICATION_ID)) com.jayptucker.heroesevolved.amplify.AmpService.forget(player);
         if (power.equals(ModAbilities.SHAPESHIFTING_ID)) com.jayptucker.heroesevolved.shapeshift.ShapeshiftSkills.forget(player);
-        if (power.equals(ModAbilities.TECHNOPATHY_ID)) com.jayptucker.heroesevolved.technopathy.TechnopathyService.forget(player);
         if (power.equals(ModAbilities.MATTER_ASSEMBLY_ID)) com.jayptucker.heroesevolved.assembly.MatterAssemblyService.forget(player);
         if (power.equals(ModAbilities.FLIGHT_ID)) {
             com.jayptucker.heroesevolved.flight.FlightSkillService.forget(player);
