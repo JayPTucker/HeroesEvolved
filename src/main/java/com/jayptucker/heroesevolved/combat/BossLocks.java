@@ -38,9 +38,13 @@ import java.util.*;
  */
 public final class BossLocks {
     /** The kinds of lock (the skill's lock table). A boss's phase is built from two or three of them. */
-    public enum Lock { SHIELD, PROJECTILES, BODIES, ROOM_WEAPON, CURSE, UNBLOCKABLE, WEAK_POINT }
+    public enum Lock { SHIELD, PROJECTILES, BODIES, ROOM_WEAPON, CURSE, UNBLOCKABLE, WEAK_POINT,
+        /** It flies, climbs or stands where blows can't follow (the Living Seal in the air). Appended: keep ordinals. */
+        OUT_OF_REACH }
     /** What the power does to the lock. Each has a line in the Guide ({@code lock.heroesevolved.role.*}). */
-    public enum Role { BREAK, SWITCH_OFF, SEVER, SEND_BACK, WALL, CLEAR, HOLD, TURN, CLEANSE, BRACE, DODGE, STOP, OUTLAST, REACH, HIT_THERE, OVERLOAD }
+    public enum Role { BREAK, SWITCH_OFF, SEVER, SEND_BACK, WALL, CLEAR, HOLD, TURN, CLEANSE, BRACE, DODGE, STOP, OUTLAST, REACH, HIT_THERE, OVERLOAD,
+        /** Drag a flier out of the sky (out of reach). Appended: keep ordinals. */
+        BRING_DOWN }
     public enum Strength { GOOD, STRONG }
     public enum Channel { HITS, AIMED, KIT, TIMED }
     public record Key(Lock lock, Role role, Strength strength, Channel channel) {
@@ -67,49 +71,66 @@ public final class BossLocks {
         Strength S = Strength.STRONG, G = Strength.GOOD;
         Channel HITS = Channel.HITS, AIMED = Channel.AIMED, KIT = Channel.KIT, TIMED = Channel.TIMED;
         put(ModAbilities.PYROKINESIS_ID, k(Lock.SHIELD, Role.BREAK, S, HITS), k(Lock.BODIES, Role.CLEAR, S, KIT),
-                k(Lock.ROOM_WEAPON, Role.BREAK, S, HITS), k(Lock.UNBLOCKABLE, Role.DODGE, S, TIMED), k(Lock.WEAK_POINT, Role.REACH, S, HITS));
+                k(Lock.ROOM_WEAPON, Role.BREAK, S, HITS), k(Lock.UNBLOCKABLE, Role.DODGE, S, TIMED), k(Lock.WEAK_POINT, Role.REACH, S, HITS),
+                k(Lock.OUT_OF_REACH, Role.REACH, S, HITS));
         put(ModAbilities.CRYOKINESIS_ID, k(Lock.SHIELD, Role.BREAK, G, HITS), k(Lock.PROJECTILES, Role.WALL, S, KIT),
                 k(Lock.BODIES, Role.HOLD, S, KIT), k(Lock.ROOM_WEAPON, Role.BREAK, G, HITS), k(Lock.UNBLOCKABLE, Role.BRACE, S, KIT),
-                k(Lock.WEAK_POINT, Role.REACH, G, HITS));
+                k(Lock.WEAK_POINT, Role.REACH, G, HITS),
+                k(Lock.OUT_OF_REACH, Role.BRING_DOWN, S, AIMED));
         put(ModAbilities.ELECTROKINESIS_ID, k(Lock.SHIELD, Role.SWITCH_OFF, S, HITS), k(Lock.BODIES, Role.CLEAR, G, KIT),
-                k(Lock.ROOM_WEAPON, Role.SWITCH_OFF, S, HITS), k(Lock.WEAK_POINT, Role.HIT_THERE, S, HITS));
+                k(Lock.ROOM_WEAPON, Role.SWITCH_OFF, S, HITS), k(Lock.WEAK_POINT, Role.HIT_THERE, S, HITS),
+                k(Lock.OUT_OF_REACH, Role.HIT_THERE, S, HITS));
         put(ModAbilities.HYDROKINESIS_ID, k(Lock.SHIELD, Role.BREAK, S, HITS), k(Lock.BODIES, Role.HOLD, G, KIT),
-                k(Lock.CURSE, Role.CLEANSE, S, AIMED), k(Lock.WEAK_POINT, Role.HIT_THERE, S, HITS));
+                k(Lock.CURSE, Role.CLEANSE, S, AIMED), k(Lock.WEAK_POINT, Role.HIT_THERE, S, HITS),
+                k(Lock.OUT_OF_REACH, Role.HIT_THERE, S, HITS));
         put(ModAbilities.SUPERSPEED_ID, k(Lock.SHIELD, Role.BREAK, G, HITS), k(Lock.PROJECTILES, Role.SEND_BACK, S, KIT),
-                k(Lock.BODIES, Role.CLEAR, S, KIT), k(Lock.ROOM_WEAPON, Role.REACH, G, HITS), k(Lock.UNBLOCKABLE, Role.DODGE, S, TIMED));
+                k(Lock.BODIES, Role.CLEAR, S, KIT), k(Lock.ROOM_WEAPON, Role.REACH, G, HITS), k(Lock.UNBLOCKABLE, Role.DODGE, S, TIMED),
+                k(Lock.OUT_OF_REACH, Role.REACH, S, HITS));
         put(ModAbilities.FLIGHT_ID, k(Lock.SHIELD, Role.REACH, G, HITS), k(Lock.PROJECTILES, Role.WALL, S, KIT),
-                k(Lock.BODIES, Role.HOLD, S, KIT), k(Lock.UNBLOCKABLE, Role.DODGE, S, TIMED), k(Lock.WEAK_POINT, Role.REACH, S, HITS));
+                k(Lock.BODIES, Role.HOLD, S, KIT), k(Lock.UNBLOCKABLE, Role.DODGE, S, TIMED), k(Lock.WEAK_POINT, Role.REACH, S, HITS),
+                k(Lock.OUT_OF_REACH, Role.REACH, S, HITS));
         put(ModAbilities.QUAKE_ID, k(Lock.SHIELD, Role.BREAK, S, HITS), k(Lock.PROJECTILES, Role.SEND_BACK, G, KIT),
-                k(Lock.BODIES, Role.CLEAR, S, KIT), k(Lock.ROOM_WEAPON, Role.BREAK, S, HITS));
+                k(Lock.BODIES, Role.CLEAR, S, KIT), k(Lock.ROOM_WEAPON, Role.BREAK, S, HITS),
+                k(Lock.OUT_OF_REACH, Role.BRING_DOWN, G, AIMED));
         put(ModAbilities.SONIC_RESONANCE_ID, k(Lock.SHIELD, Role.BREAK, S, HITS), k(Lock.PROJECTILES, Role.SEND_BACK, G, KIT),
-                k(Lock.BODIES, Role.CLEAR, S, KIT), k(Lock.UNBLOCKABLE, Role.BRACE, S, KIT));
+                k(Lock.BODIES, Role.CLEAR, S, KIT), k(Lock.UNBLOCKABLE, Role.BRACE, S, KIT),
+                k(Lock.OUT_OF_REACH, Role.HIT_THERE, S, HITS));
         put(ModAbilities.TELEPATHY_ID, k(Lock.SHIELD, Role.SEVER, S, AIMED), k(Lock.BODIES, Role.TURN, G, KIT),
-                k(Lock.CURSE, Role.SEVER, S, AIMED), k(Lock.ROOM_WEAPON, Role.SEVER, S, AIMED));
+                k(Lock.CURSE, Role.SEVER, S, AIMED), k(Lock.ROOM_WEAPON, Role.SEVER, S, AIMED),
+                k(Lock.OUT_OF_REACH, Role.BRING_DOWN, G, AIMED));
         put(ModAbilities.TELEKINESIS_ID, k(Lock.SHIELD, Role.BREAK, S, HITS), k(Lock.PROJECTILES, Role.SEND_BACK, S, KIT),
-                k(Lock.BODIES, Role.HOLD, S, KIT), k(Lock.UNBLOCKABLE, Role.BRACE, S, KIT), k(Lock.WEAK_POINT, Role.HIT_THERE, G, HITS));
+                k(Lock.BODIES, Role.HOLD, S, KIT), k(Lock.UNBLOCKABLE, Role.BRACE, S, KIT), k(Lock.WEAK_POINT, Role.HIT_THERE, G, HITS),
+                k(Lock.OUT_OF_REACH, Role.BRING_DOWN, S, AIMED));
         put(ModAbilities.TIME_MANIPULATION_ID, k(Lock.SHIELD, Role.STOP, G, AIMED), k(Lock.PROJECTILES, Role.SEND_BACK, S, KIT),
-                k(Lock.CURSE, Role.CLEANSE, S, AIMED), k(Lock.ROOM_WEAPON, Role.STOP, G, AIMED), k(Lock.UNBLOCKABLE, Role.STOP, S, TIMED));
+                k(Lock.CURSE, Role.CLEANSE, S, AIMED), k(Lock.ROOM_WEAPON, Role.STOP, G, AIMED), k(Lock.UNBLOCKABLE, Role.STOP, S, TIMED),
+                k(Lock.OUT_OF_REACH, Role.BRING_DOWN, G, AIMED));
         put(ModAbilities.RADIATION_ID, k(Lock.SHIELD, Role.BREAK, S, HITS), k(Lock.BODIES, Role.CLEAR, S, KIT),
-                k(Lock.ROOM_WEAPON, Role.BREAK, G, HITS), k(Lock.WEAK_POINT, Role.HIT_THERE, S, HITS));
+                k(Lock.ROOM_WEAPON, Role.BREAK, G, HITS), k(Lock.WEAK_POINT, Role.HIT_THERE, S, HITS),
+                k(Lock.OUT_OF_REACH, Role.HIT_THERE, S, HITS));
         put(ModAbilities.REGENERATION_ID, k(Lock.SHIELD, Role.SEVER, S, AIMED), k(Lock.CURSE, Role.CLEANSE, S, AIMED),
                 k(Lock.ROOM_WEAPON, Role.SEVER, G, AIMED), k(Lock.UNBLOCKABLE, Role.OUTLAST, S, KIT));
         put(ModAbilities.PHASING_ID, k(Lock.SHIELD, Role.BREAK, S, HITS), k(Lock.PROJECTILES, Role.WALL, G, KIT),
-                k(Lock.BODIES, Role.HOLD, S, KIT), k(Lock.UNBLOCKABLE, Role.WALL, S, KIT), k(Lock.WEAK_POINT, Role.REACH, G, HITS));
+                k(Lock.BODIES, Role.HOLD, S, KIT), k(Lock.UNBLOCKABLE, Role.WALL, S, KIT), k(Lock.WEAK_POINT, Role.REACH, G, HITS),
+                k(Lock.OUT_OF_REACH, Role.BRING_DOWN, S, AIMED));
         put(ModAbilities.INVISIBILITY_ID, k(Lock.SHIELD, Role.BREAK, G, HITS), k(Lock.PROJECTILES, Role.SEND_BACK, S, KIT),
-                k(Lock.BODIES, Role.HOLD, S, KIT), k(Lock.UNBLOCKABLE, Role.BRACE, S, KIT));
+                k(Lock.BODIES, Role.HOLD, S, KIT), k(Lock.UNBLOCKABLE, Role.BRACE, S, KIT),
+                k(Lock.OUT_OF_REACH, Role.BRING_DOWN, S, AIMED));
         put(ModAbilities.MIMICRY_ID, k(Lock.SHIELD, Role.SEVER, S, AIMED), k(Lock.ROOM_WEAPON, Role.SEVER, S, AIMED));
         put(ModAbilities.SHAPESHIFTING_ID, k(Lock.SHIELD, Role.BREAK, S, HITS), k(Lock.BODIES, Role.TURN, G, KIT),
-                k(Lock.ROOM_WEAPON, Role.BREAK, S, HITS), k(Lock.WEAK_POINT, Role.REACH, S, HITS));
+                k(Lock.ROOM_WEAPON, Role.BREAK, S, HITS), k(Lock.WEAK_POINT, Role.REACH, S, HITS),
+                k(Lock.OUT_OF_REACH, Role.REACH, G, HITS));
         put(ModAbilities.MATTER_ASSEMBLY_ID, k(Lock.SHIELD, Role.REACH, G, HITS), k(Lock.PROJECTILES, Role.WALL, S, KIT),
-                k(Lock.BODIES, Role.TURN, S, KIT), k(Lock.UNBLOCKABLE, Role.BRACE, S, KIT), k(Lock.WEAK_POINT, Role.REACH, G, HITS));
+                k(Lock.BODIES, Role.TURN, S, KIT), k(Lock.UNBLOCKABLE, Role.BRACE, S, KIT), k(Lock.WEAK_POINT, Role.REACH, G, HITS),
+                k(Lock.OUT_OF_REACH, Role.REACH, S, HITS));
         put(ModAbilities.VIBE_ID, k(Lock.SHIELD, Role.SWITCH_OFF, S, AIMED), k(Lock.ROOM_WEAPON, Role.SWITCH_OFF, S, AIMED),
-                k(Lock.UNBLOCKABLE, Role.DODGE, S, TIMED));
+                k(Lock.UNBLOCKABLE, Role.DODGE, S, TIMED),
+                k(Lock.OUT_OF_REACH, Role.REACH, G, HITS));
         put(ModAbilities.AMPLIFICATION_ID, k(Lock.SHIELD, Role.OVERLOAD, S, AIMED), k(Lock.CURSE, Role.CLEANSE, G, AIMED),
                 k(Lock.ROOM_WEAPON, Role.OVERLOAD, S, AIMED));
     }
 
     /** Curses a cleansing key lifts: real effects, so milk and every power that clears effects lift them too. */
-    public static List<Holder<MobEffect>> curses() { return List.of(ModItems.HUNGERING); }
+    public static List<Holder<MobEffect>> curses() { return List.of(ModItems.HUNGERING, ModItems.RIFTBRAND); }
 
     private BossLocks() {}
 

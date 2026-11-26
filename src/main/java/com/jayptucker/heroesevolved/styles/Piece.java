@@ -334,7 +334,14 @@ public enum Piece {
     // a Kaleidoscope's mirrors; one step of a Shard in flight (scale its brightness); a ricochet (target the face's
     // normal); Matter flying home (scale how many, bound to the owner).
     MATTER_PANEL(22), MATTER_PLATE(14), MATTER_PAD(12), MATTER_PAD_PLACE(18), MATTER_LAUNCH(16), MATTER_KALEIDO(140),
-    MATTER_SHARD(4), MATTER_BOUNCE(10), MATTER_RETURN(24);
+    MATTER_SHARD(4), MATTER_BOUNCE(10), MATTER_RETURN(24),
+    // The Living Seal (endgame/SealFight, drawn by SealArt; numbers in SealGeometry): a warning on the ground or in the
+    // air (seed: the move, bit 5 the landing flash, the ticks its fill runs from bit 6; scale a radius); an aimed power
+    // reaching a knot or dragging it down, and Riftbrand's thread (origin the hand or the branded, target the lock; seed
+    // the role and bit 5 strong); a knot or its stance cracking (seed 0..16 how far; scale 2 a knot breaking, 3 a tower
+    // crystal); the Seal shattering off its chest (scale 1 a phase, 2 a backfire, 3 the star cracking); a fighter a power
+    // carried out of The Unmaking (bound to them; seed the role).
+    END_SEAL_WARNING(130), END_SEAL_KEY(18), END_SEAL_CRACK(16), END_SEAL_SHATTER(46), END_SEAL_SPARED(22);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

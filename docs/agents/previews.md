@@ -19,10 +19,13 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
   Dragon move, all six phases, absorption, all 20 sampled gifts and Sylar's rupture at close and island-wide distances.
   Its driver is `endgame/EndgamePreview`; photos are in `build/endgame-preview/screenshots/`. Both ruin lighting audits
   must be clean. The final death photos show the actual emissive PlayerModel, the white flash and the ability wave.
-  `tools/dragon-preview.init.gradle` runs the same driver for the Dragon alone (about 1,700 ticks, photos in
-  `build/dragon-preview/screenshots/`): every air and ground move with the player standing on the island, the
-  landing, the Seal Rush charge, each phase's body particles, The Unmaking and a crash. `focus()` and `between()` frame
-  shots from the island's middle so the obsidian towers stay behind the action.
+  `tools/dragon-preview.init.gradle` runs the same driver for the Dragon alone (about 1,600 ticks, photos in
+  `build/dragon-preview/screenshots/`): the Living Seal and its rings, a knot close-up, every move's opening pose and
+  strike (Starfall, Riftdive, Severing Breath, Descent, Bite, Tail Sweep, Wing Buffet, Seal Rush, Scorch, Roar, Rift Leap,
+  The Unmaking), the Seal shattering, the boss bar (the one shot with the HUD on), a feeding knot, a bring-down, Riftbrand
+  and each phase. `sky()` frames a flying Dragon from low behind the player so the marks and the body share the shot;
+  `profile()` frames its chest side-on from whichever side has a clear view (the altars' pillars stand close to where it
+  lands), so its poses read.
 
 - **Wither:** `tools/wither-preview.init.gradle` photographs the story: the native construction knitting together, the
   seam splitting behind it and tearing open, the Wither dragged backwards through, the standing breach, the arrival out

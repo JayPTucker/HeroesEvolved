@@ -99,20 +99,23 @@ public final class GuideScreen extends HeroScreen {
             lines.addAll(font.split(text(key), room));
             lines.add(FormattedCharSequence.EMPTY);
         }
-        if (id.equals("wither") && power() != null && power().unlocked()) {
+        boolean wither = id.equals("wither"), seal = id.equals("dragon");
+        if ((wither || seal) && power() != null && power().unlocked()) {
             // What this player's own power answers in each phase (combat/BossLocks, the table the fight reads).
-            lines.addAll(font.split(Component.translatable("guide.heroesevolved.wither.yours", Component.translatable(
+            String boss = wither ? "wither" : "seal";
+            lines.addAll(font.split(Component.translatable("guide.heroesevolved." + id + ".yours", Component.translatable(
                     "ability." + power().abilityId().getNamespace() + "." + power().abilityId().getPath())), room));
             for (int phase = 1; phase <= 3; phase++) {
-                lines.addAll(font.split(Component.translatable("wither.heroesevolved.phase_name." + phase), room));
-                for (var lock : com.jayptucker.heroesevolved.wither.WitherGeometry.locks(phase)) {
+                lines.addAll(font.split(Component.translatable(wither ? "wither.heroesevolved.phase_name." + phase : "endgame.heroesevolved.dragon.phase_name." + phase), room));
+                for (var lock : wither ? com.jayptucker.heroesevolved.wither.WitherGeometry.locks(phase) : com.jayptucker.heroesevolved.endgame.SealGeometry.locks(phase)) {
                     var key = com.jayptucker.heroesevolved.combat.BossLocks.key(power().abilityId(), lock);
                     if (key == null) continue;
                     String name = lock.name().toLowerCase(java.util.Locale.ROOT), role = key.role().name().toLowerCase(java.util.Locale.ROOT);
                     String how = lock == com.jayptucker.heroesevolved.combat.BossLocks.Lock.CURSE ? "cleanse"
+                            : key.role() == com.jayptucker.heroesevolved.combat.BossLocks.Role.BRING_DOWN ? "bring_down." + key.strength().name().toLowerCase(java.util.Locale.ROOT)
                             : key.channel().name().toLowerCase(java.util.Locale.ROOT) + "." + key.strength().name().toLowerCase(java.util.Locale.ROOT);
-                    lines.addAll(font.split(Component.translatable("guide.heroesevolved.wither.key",
-                            Component.translatable("lock.heroesevolved.wither." + name), Component.translatable("lock.heroesevolved.role." + role),
+                    lines.addAll(font.split(Component.translatable("guide.heroesevolved." + id + ".key",
+                            Component.translatable("lock.heroesevolved." + boss + "." + name), Component.translatable("lock.heroesevolved.role." + role),
                             Component.translatable("lock.heroesevolved.channel." + how)), room));
                 }
             }

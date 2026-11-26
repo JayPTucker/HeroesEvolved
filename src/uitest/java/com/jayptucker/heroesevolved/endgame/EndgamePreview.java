@@ -27,6 +27,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.*;
+import com.jayptucker.heroesevolved.combat.BossLocks;
 import java.nio.file.Files;
 import java.util.function.Consumer;
 
@@ -34,7 +35,7 @@ import java.util.function.Consumer;
 public final class EndgamePreview {
     private static boolean started;private static int startup,age;private static String capture;
     /** The Dragon's section runs SHIFT ticks; Sylar's beats keep their original numbers after it. */
-    private static final int SHIFT=390;
+    private static final int SHIFT=310;
     private static void server(Consumer<ServerPlayer> task){var mc=Minecraft.getInstance();var id=mc.player.getUUID();mc.getSingleplayerServer().execute(()->{try{task.accept(mc.getSingleplayerServer().getPlayerList().getPlayer(id));}catch(Throwable e){e.printStackTrace();PreviewQuiet.report("ENDGAME_PREVIEW FAIL "+e);}});}
     private static void camera(double x,double y,double z,double tx,double ty,double tz){Minecraft.getInstance().options.setCameraType(CameraType.THIRD_PERSON_BACK);TempestCamera.fix(new Vec3(x,y,z),new Vec3(tx,ty,tz));}
     private static void mark(EndGeometry.Move move){server(p->{var e=EndBattle.current();e.transition=e.stagger=0;e.start(move);});}
@@ -49,12 +50,30 @@ public final class EndgamePreview {
         if(dragons.isEmpty()){focus(0,0,back,up);return;}Vec3 mid=mc.player.position().lerp(dragons.getFirst().position(),.5);
         focus(mid.x-mc.player.getX(),mid.z-mc.player.getZ(),back,up);
     }
-    /** Turn the landed Dragon toward the player a little before a ground move, so its body has settled (an instant turn banks the native model). */
-    private static void face(){server(p->{var e=EndBattle.current();e.grounded=Math.max(e.grounded,200);e.brain.cancelAll();float yaw=EndGeometry.yaw(p.position().subtract(e.dragon.position()));e.dragon.setYRot(yaw);e.dragon.setYHeadRot(yaw);e.dragon.yBodyRot=yaw;});}
-    /** An air move from the Dragon's starting perch over the island. */
-    private static void air(EndGeometry.Move move){server(p->{var e=EndBattle.current();e.brain.cancelAll();e.grounded=0;e.dragon.setPos(.5,89,.5);e.dragon.setDeltaMovement(Vec3.ZERO);e.transition=e.stagger=0;e.start(move);});}
-    /** A ground move with the landed Dragon turned toward the player. */
-    private static void ground(EndGeometry.Move move){server(p->{var e=EndBattle.current();e.grounded=Math.max(e.grounded,200);e.transition=e.stagger=0;e.start(move);});}
+    private static EnderDragon dragon(){var mc=Minecraft.getInstance();var all=mc.level.getEntitiesOfClass(EnderDragon.class,mc.player.getBoundingBox().inflate(160));return all.isEmpty()?null:all.getFirst();}
+    /** Low behind the player, looking up past them at the Dragon in the sky, so the marks and the body share the frame. */
+    private static void sky(double back,double up){
+        var mc=Minecraft.getInstance();var d=dragon();if(d==null){focus(0,0,back,up);return;}
+        Vec3 p=mc.player.position(),away=p.subtract(d.position()).multiply(1,0,1);away=away.lengthSqr()<1?new Vec3(1,0,0):away.normalize();
+        Vec3 cam=p.add(away.scale(back)).add(0,up,0),look=p.lerp(SealGeometry.chest(d),.42);camera(cam.x,cam.y,cam.z,look.x,look.y,look.z);
+    }
+    /** Side-on to the Dragon's chest, a little ahead of it, so its pose reads in profile. */
+    private static void profile(double dist,double up){
+        var d=dragon();if(d==null)return;Vec3 f=SealGeometry.forward(d.getYRot()),side=new Vec3(-f.z,0,f.x),chest=SealGeometry.chest(d);
+        // Whichever side has a clear view of the chest (an altar's pillars stand close to where it lands).
+        Vec3 cam=null;
+        for(double k:new double[]{1,-1,.6,-.6}){Vec3 at=chest.add(side.scale(dist*k)).add(f.scale(dist*.45)).add(0,up,0);
+            var hit=Minecraft.getInstance().level.clip(new net.minecraft.world.level.ClipContext(at,chest,net.minecraft.world.level.ClipContext.Block.VISUAL,net.minecraft.world.level.ClipContext.Fluid.NONE,net.minecraft.world.phys.shapes.CollisionContext.empty()));
+            if(hit.getType()==net.minecraft.world.phys.HitResult.Type.MISS){cam=at;break;}}
+        if(cam==null)cam=chest.add(0,dist,0).add(f.scale(dist*.5));
+        camera(cam.x,cam.y,cam.z,chest.x,chest.y-1,chest.z);
+    }
+    /** Put the Dragon down where it is, turned toward the player a little before a ground move, so its body has settled (an instant turn banks the native model). */
+    private static void face(){server(p->{var e=EndBattle.current();Vec3 at=e.dragon.position();float yaw=SealGeometry.yaw(p.position().subtract(at));e.seal.landAt(new Vec3(at.x,e.seal.ground(at.x,at.z),at.z),yaw);e.transition=0;});}
+    /** An air move from the Dragon's perch over the island. */
+    private static void air(SealGeometry.Move move){server(p->{var e=EndBattle.current();e.seal.liftTo(new Vec3(.5,89,.5));e.transition=0;e.seal.start(move);});}
+    /** A ground move with the landed Dragon. */
+    private static void ground(SealGeometry.Move move){server(p->{var e=EndBattle.current();e.transition=0;e.seal.crash=0;e.seal.stagger=0;e.seal.slump=0;e.seal.chain.clear();e.seal.start(move);});}
     private static void phase(int phase){server(p->{var e=EndBattle.current();e.boss().setHealth(e.boss().getMaxHealth()*(phase==2?.6F:.25F));e.phaseChange();});}
     @SubscribeEvent public static void tick(ClientTickEvent.Post event){
         if(!Boolean.getBoolean("heroes.preview.endgame"))return;var mc=Minecraft.getInstance();
@@ -76,7 +95,7 @@ public final class EndgamePreview {
             EnderDragon dragon=EntityType.ENDER_DRAGON.create(l);dragon.setPos(.5,89,.5);dragon.setDragonFight(f);a.heroes$dragonUUID(dragon.getUUID());l.addFreshEntity(dragon);
             var e=EndBattle.begin(dragon,java.util.List.of(p));e.still(true);e.holdOff(10000);
             // Stand on the island, so the Dragon's ground moves mark the surface under the player.
-            p.getAbilities().flying=false;p.onUpdateAbilities();p.teleportTo(l,17,e.brain.ground(17,21),21,0,0);
+            p.getAbilities().flying=false;p.onUpdateAbilities();p.teleportTo(l,17,e.seal.ground(17,21),21,0,0);
             PreviewQuiet.report("ENDGAME_STAGE "+p.level().dimension()+" "+p.position()+" floor="+l.getBlockState(new BlockPos(0,63,0))+" altar="+e.data.anchors);
         });}
         switch(age){
@@ -88,65 +107,99 @@ public final class EndgamePreview {
             case 390 -> camera(90,75,18,76,66,0);
             case 415 -> capture="03-refuge-and-return.png";
             // The Living Seal: every air move, the landing, every ground move and each phase, around a player standing on the island.
-            case 440 -> focus(0,0,26,20);
-            case 465 -> capture="04-tethered-sky.png";
-            case 490 -> air(EndGeometry.Move.RIFT_CHARGE);
-            case 510 -> capture="05-riftdive-marked.png";
-            case 530 -> capture="06-riftdive-climb.png";
-            case 541 -> capture="07-riftdive-impact.png";
-            case 600 -> air(EndGeometry.Move.BREATH);
-            case 625 -> capture="08-breath-run-marked.png";
-            case 652 -> capture="09-breath-run.png";
-            case 680 -> capture="10-breath-pools.png";
-            case 720 -> {focus(0,0,22,16);air(EndGeometry.Move.STARS);}
-            case 742 -> capture="11-starfall-marked.png";
-            case 760 -> capture="12-starfall-shards.png";
-            case 800 -> air(EndGeometry.Move.DESCENT);
-            case 806 -> server(p->{var e=EndBattle.current();Vec3 at=e.brain.spot.add(10,0,-8);p.teleportTo(p.serverLevel(),at.x,e.brain.ground(at.x,at.z),at.z,0,0);});
-            case 812 -> focus(-5,4,26,18);
-            case 830 -> capture="13-descent-marked.png";
-            case 845 -> capture="14-descent-slam.png";
-            case 865 -> {focus(-5,4,22,14);face();}
-            case 880 -> ground(EndGeometry.Move.BITE);
-            case 890 -> capture="15-bite-lane.png";
-            case 905 -> face();
-            case 920 -> ground(EndGeometry.Move.TAIL);
-            case 938 -> capture="16-tail-sweep-marked.png";
-            case 945 -> capture="17-tail-whip.png";
-            // Seal Rush: back off out of its reach and it charges down a lane through you.
-            case 955 -> server(p->{var e=EndBattle.current();Vec3 d=p.position().subtract(e.dragon.position()).multiply(1,0,1).normalize();Vec3 at=e.dragon.position().add(d.scale(20));p.teleportTo(p.serverLevel(),at.x,e.brain.ground(at.x,at.z),at.z,0,0);});
-            case 958 -> between(30,20);
-            case 960 -> ground(EndGeometry.Move.RUSH);
-            case 980 -> capture="17a-seal-rush-marked.png";
-            case 993 -> capture="17b-seal-rush-charge.png";
-            case 1010 -> between(22,14);
-            case 1060 -> {phase(2);server(p->EndBattle.current().grounded=300);}
-            case 1115 -> capture="18-riftstorm-on-foot.png";
-            case 1125 -> face();
-            case 1140 -> ground(EndGeometry.Move.SCORCH);
-            case 1162 -> capture="19-scorch-cone.png";
-            case 1172 -> capture="20-scorch-breath.png";
-            case 1195 -> face();
-            case 1210 -> ground(EndGeometry.Move.WINGBREAK);
-            case 1226 -> capture="21-wing-gust-gathers.png";
-            case 1245 -> capture="22-wing-wave.png";
-            case 1280 -> {phase(3);server(p->EndBattle.current().grounded=300);}
-            case 1335 -> capture="23-dying-star.png";
-            case 1345 -> {between(28,20);face();}
-            case 1360 -> ground(EndGeometry.Move.ROAR);
-            case 1382 -> capture="24-roar-marked.png";
-            case 1392 -> capture="25-roar.png";
-            case 1405 -> face();
-            case 1420 -> ground(EndGeometry.Move.TAKEOFF);
-            case 1432 -> capture="26-takeoff-marked.png";
-            case 1452 -> capture="27-takeoff-climb.png";
-            case 1480 -> {camera(40,104,48,9,85,8);air(EndGeometry.Move.UNMAKING);}
-            case 1525 -> capture="28-unmaking-safe-orbit.png";
-            case 1580 -> {server(p->{var e=EndBattle.current();e.brain.cancelAll();e.grounded=0;e.dragon.setPos(e.brain.spot.add(0,30,0));e.dragon.setDeltaMovement(new Vec3(.6,0,.2));e.ground(p);});}
-            case 1582 -> between(30,22);
-            case 1588 -> capture="29-crash-falling.png";
-            case 1615 -> capture="30-crashed-stunned.png";
-            case 1660 -> {if(Boolean.getBoolean("heroes.preview.dragon"))PreviewQuiet.quit();}
+            // The Living Seal: every move's opening pose and strike, its locks and each phase, round a player on the island.
+            case 440 -> sky(18,9);
+            case 465 -> capture="04-the-living-seal.png";
+            case 466 -> {var d=dragon();if(d!=null){Vec3 c=SealGeometry.chest(d);camera(c.x+9,c.y+3,c.z+9,c.x,c.y,c.z);}}
+            case 469 -> capture="04b-the-seals-rings.png";
+            case 470 -> server(p->{var e=EndBattle.current();Vec3 k=e.seal.knotAt(0);p.teleportTo(p.serverLevel(),k.x-9,e.seal.ground(k.x-9,k.z+3),k.z+3,0,0);});
+            case 478 -> {var k=EndClientState.view().seal().at();if(!k.isEmpty()){Vec3 at=k.get(0).add(0,.6,0);camera(at.x-4.5,at.y+1.5,at.z+3.5,at.x,at.y,at.z);}}
+            case 490 -> capture="05-seal-knot.png";
+            case 495 -> server(p->p.teleportTo(p.serverLevel(),17,EndBattle.current().seal.ground(17,21),21,0,0));
+            case 500 -> air(SealGeometry.Move.STARFALL);
+            case 503 -> sky(18,9);
+            case 512 -> capture="06-starfall-rears.png";
+            case 531 -> capture="07-starfall-shards.png";
+            case 560 -> air(SealGeometry.Move.RIFTDIVE);
+            case 575 -> capture="08-riftdive-climbs.png";
+            case 594 -> capture="09-riftdive-dive.png";
+            case 603 -> capture="10-riftdive-slam.png";
+            case 650 -> air(SealGeometry.Move.BREATH);
+            case 654 -> sky(18,9);
+            case 668 -> capture="11-breath-draws-back.png";
+            case 690 -> capture="12-breath-run.png";
+            case 730 -> {focus(0,0,26,20);air(SealGeometry.Move.DESCENT);}
+            case 745 -> capture="13-descent-glides-in.png";
+            case 772 -> capture="14-descent-lands.png";
+            case 790 -> face();
+            case 796 -> profile(15,2);
+            case 800 -> ground(SealGeometry.Move.BITE);
+            case 806 -> capture="15-bite-coils.png";
+            case 811 -> capture="16-bite-strikes.png";
+            case 830 -> {server(p->{var e=EndBattle.current();Vec3 back=SealGeometry.forward(e.dragon.getYRot()).scale(-7);Vec3 at=e.dragon.position().add(back);p.teleportTo(p.serverLevel(),at.x,e.seal.ground(at.x,at.z),at.z,0,0);});}
+            case 834 -> {profile(16,4);ground(SealGeometry.Move.TAIL);}
+            case 845 -> capture="17-tail-coils.png";
+            case 851 -> capture="18-tail-whips.png";
+            case 870 -> face();
+            case 876 -> profile(17,3);
+            case 880 -> ground(SealGeometry.Move.BUFFET);
+            case 892 -> capture="19-buffet-wings-high.png";
+            case 899 -> capture="20-buffet-slams.png";
+            case 920 -> server(p->{var e=EndBattle.current();Vec3 d=p.position().subtract(e.dragon.position()).multiply(1,0,1).normalize();Vec3 at=e.dragon.position().add(d.scale(20));p.teleportTo(p.serverLevel(),at.x,e.seal.ground(at.x,at.z),at.z,0,0);});
+            case 924 -> {between(30,20);face();}
+            case 932 -> ground(SealGeometry.Move.RUSH);
+            case 944 -> capture="21-rush-digs-in.png";
+            case 958 -> capture="22-rush-charges.png";
+            case 980 -> profile(16,4);
+            case 984 -> server(p->EndBattle.current().seal.operatorBreak());
+            case 987 -> capture="23-the-seal-shatters.png";
+            case 1004 -> capture="24-crashed.png";
+            case 1030 -> {phase(2);server(p->EndBattle.current().grounded=400);}
+            case 1056 -> profile(18,4);
+            case 1060 -> capture="25-riftstorm.png";
+            case 1062 -> mc.options.hideGui=false;
+            case 1066 -> capture="26-boss-bar.png";
+            case 1068 -> mc.options.hideGui=true;
+            case 1075 -> air(SealGeometry.Move.BREATH);
+            case 1080 -> {var v=EndClientState.view().seal();int f=v.feeding();if(f>=0){Vec3 at=v.at().get(f);camera(at.x-10,at.y+6,at.z+10,at.x*.5,at.y+8,at.z*.5);}}
+            case 1092 -> capture="27-knot-feeding.png";
+            case 1110 -> server(p->EndBattle.current().seal.interrupt());
+            case 1114 -> server(p->{var e=EndBattle.current();e.seal.liftTo(new Vec3(.5,89,.5));e.seal.answered(p,new BossLocks.Key(BossLocks.Lock.OUT_OF_REACH,BossLocks.Role.BRING_DOWN,BossLocks.Strength.STRONG,BossLocks.Channel.AIMED));});
+            case 1116 -> sky(18,8);
+            case 1118 -> capture="28-dragging-it-down.png";
+            case 1124 -> server(p->EndBattle.current().seal.answered(p,new BossLocks.Key(BossLocks.Lock.OUT_OF_REACH,BossLocks.Role.BRING_DOWN,BossLocks.Strength.STRONG,BossLocks.Channel.AIMED)));
+            case 1130 -> capture="29-dragged-falling.png";
+            case 1150 -> capture="30-dragged-down.png";
+            case 1180 -> face();
+            case 1186 -> profile(16,3);
+            case 1190 -> ground(SealGeometry.Move.SCORCH);
+            case 1204 -> capture="31-scorch-rears.png";
+            case 1214 -> capture="32-scorch-breathes.png";
+            case 1230 -> server(p->EndBattle.current().seal.brand(p));
+            case 1239 -> capture="33-riftbrand.png";
+            case 1260 -> {phase(3);server(p->{p.removeEffect(com.jayptucker.heroesevolved.registry.ModItems.RIFTBRAND);EndBattle.current().grounded=400;});}
+            case 1296 -> profile(11,2);
+            case 1300 -> capture="34-dying-star.png";
+            case 1310 -> face();
+            case 1316 -> profile(18,3);
+            case 1320 -> ground(SealGeometry.Move.ROAR);
+            case 1333 -> capture="35-roar-rears.png";
+            case 1342 -> capture="36-roar.png";
+            case 1360 -> server(p->{var e=EndBattle.current();Vec3 d=p.position().subtract(e.dragon.position()).multiply(1,0,1).normalize();Vec3 at=e.dragon.position().add(d.scale(24));p.teleportTo(p.serverLevel(),at.x,e.seal.ground(at.x,at.z),at.z,0,0);});
+            case 1364 -> {between(32,22);face();}
+            case 1372 -> ground(SealGeometry.Move.LEAP);
+            case 1381 -> capture="37-leap-crouches.png";
+            case 1391 -> capture="38-leap-arcs.png";
+            case 1398 -> capture="39-leap-lands.png";
+            case 1420 -> {camera(40,104,48,9,85,8);ground(SealGeometry.Move.UNMAKING);}
+            case 1465 -> capture="40-the-unmaking.png";
+            case 1455 -> {var c=EndClientState.view().center();camera(c.x+13,c.y+30,c.z+13,c.x,c.y+38,c.z);}
+            case 1460 -> capture="40b-unmaking-close.png";
+            case 1461 -> camera(40,104,48,9,85,8);
+            case 1491 -> capture="41-unmaking-blast.png";
+            case 1505 -> between(30,22);
+            case 1530 -> capture="42-exhausted.png";
+            case 1580 -> {if(Boolean.getBoolean("heroes.preview.dragon"))PreviewQuiet.quit();}
             default -> {}
         }
         // Sylar: Inheritance, after the Dragon.

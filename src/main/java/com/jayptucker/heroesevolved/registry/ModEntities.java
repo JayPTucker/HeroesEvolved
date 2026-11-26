@@ -95,6 +95,11 @@ public final class ModEntities {
                     com.jayptucker.heroesevolved.wither.RiftSkull::new, MobCategory.MISC)
                     .sized(.3125F, .3125F).noSave().noSummon().clientTrackingRange(128).updateInterval(1).build(id.toString()));
 
+    /** A Seal Knot at a grounding altar: the Living Seal's ward and its feeding anchors. */
+    public static final DeferredHolder<EntityType<?>, EntityType<com.jayptucker.heroesevolved.endgame.SealKnot>> SEAL_KNOT =
+            ENTITY_TYPES.register("seal_knot", id -> EntityType.Builder.<com.jayptucker.heroesevolved.endgame.SealKnot>of(
+                    com.jayptucker.heroesevolved.endgame.SealKnot::new, MobCategory.MISC)
+                    .sized(1.2F, 1.2F).noSave().noSummon().fireImmune().clientTrackingRange(160).updateInterval(2).build(id.toString()));
     public static final DeferredHolder<EntityType<?>, EntityType<com.jayptucker.heroesevolved.endgame.EndBolt>> END_BOLT =
             ENTITY_TYPES.register("end_bolt", id -> EntityType.Builder.<com.jayptucker.heroesevolved.endgame.EndBolt>of(
                     com.jayptucker.heroesevolved.endgame.EndBolt::new, MobCategory.MISC)
@@ -140,6 +145,7 @@ public final class ModEntities {
         event.put(TEMPORAL_ECHO.get(), TemporalEchoEntity.createAttributes().build());
         event.put(RIFT_WITHER.get(), com.jayptucker.heroesevolved.wither.RiftWitherEntity.createAttributes().build());
         event.put(HUNGER_HEART.get(), com.jayptucker.heroesevolved.wither.HungerHeart.createAttributes().build());
+        event.put(SEAL_KNOT.get(), com.jayptucker.heroesevolved.endgame.SealKnot.createAttributes().build());
         event.put(SYLAR.get(), com.jayptucker.heroesevolved.story.sylar.SylarEntity.createAttributes().build());
         event.put(COMPANY_AGENT.get(), com.jayptucker.heroesevolved.company.CompanyAgentEntity.createAttributes().build());
         event.put(STORY_ACTOR.get(), com.jayptucker.heroesevolved.story.actor.StoryActorEntity.createAttributes().build());

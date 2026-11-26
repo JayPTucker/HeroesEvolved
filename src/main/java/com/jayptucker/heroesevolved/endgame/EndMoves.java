@@ -4,7 +4,6 @@ import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.hydro.HydroService;
 import com.jayptucker.heroesevolved.mimicry.MimicColors;
 import com.jayptucker.heroesevolved.network.*;
-import com.jayptucker.heroesevolved.registry.ModEntities;
 import com.jayptucker.heroesevolved.story.sylar.SylarEntity;
 import com.jayptucker.heroesevolved.styles.Piece;
 import net.minecraft.network.chat.Component;
@@ -31,7 +30,7 @@ public final class EndMoves {
         default->Pattern.STONE;
     };}
     public static int windup(EndGeometry.Move move,int sampled){return move==EndGeometry.Move.PATTERN&&pattern(sampled)==Pattern.NOVA?EndGeometry.Move.ENDINGS.windup:move.windup;}
-    /** Sylar's rotation. The Dragon chooses by where it is and where you stand ({@link DragonBrain#next}). */
+    /** Sylar's rotation. The Dragon chooses its chains by where you stand (SealFight.choose). */
     public static EndGeometry.Move[] rotation(int stage,int phase,boolean sampled){
         return phase==1?new EndGeometry.Move[]{EndGeometry.Move.NEEDLE,EndGeometry.Move.STONE,EndGeometry.Move.READ,EndGeometry.Move.PATTERN,EndGeometry.Move.REVERSAL}:
                 phase==2?new EndGeometry.Move[]{EndGeometry.Move.WORLDLINE_STEP,EndGeometry.Move.READ,EndGeometry.Move.PATTERN,EndGeometry.Move.EVENTIDE,EndGeometry.Move.STONE,EndGeometry.Move.NEEDLE}:
@@ -62,15 +61,12 @@ public final class EndMoves {
     public static int role(int seed){return seed>>>10;}
     public static EndGeometry.Move move(int seed){return EndGeometry.Move.byId(seed&31);}
     private static Pattern shape(EndGeometry.Move move,int sampled){return switch(move){
-        case BREATH->Pattern.FAN;case NEEDLE->Pattern.LATTICE;case STARS,STONE,BLOOM->Pattern.IMPACT;
-        case WINGBREAK,EVENTIDE->Pattern.RING;case HARPOON,REVERSAL->Pattern.SIPHON;case RIFT_CHARGE,WORLDLINE_STEP->Pattern.CHARGE;
-        case UNMAKING,ENDINGS->Pattern.NOVA;case READ->Pattern.MIND;case PATTERN->pattern(sampled);
-        case DESCENT,BITE,TAIL,SCORCH,ROAR,TAKEOFF,RUSH->Pattern.IMPACT;
+        case NEEDLE->Pattern.LATTICE;case STONE->Pattern.IMPACT;case EVENTIDE->Pattern.RING;case REVERSAL->Pattern.SIPHON;
+        case WORLDLINE_STEP->Pattern.CHARGE;case ENDINGS->Pattern.NOVA;case READ->Pattern.MIND;case PATTERN->pattern(sampled);
     };}
     public static Pattern shape(int seed){return shape(move(seed),power(seed));}
     public static void warn(EndBattle.Encounter e,EndGeometry.Move move){
         List<ServerPlayer> fighters=e.fighters();if(fighters.isEmpty())return;
-        if(e.stage==EndBattle.DRAGON&&e.brain!=null&&e.brain.warn(move))return;
         if(move==EndGeometry.Move.READ){e.sampled=PlayerAbilityService.getData(fighters.get(e.rotation%fighters.size())).assignedPower().map(p->MimicColors.index(p.getKey().getPath())).orElse(3);}
         Pattern shape=shape(move,e.sampled);int power=move==EndGeometry.Move.PATTERN||move==EndGeometry.Move.READ?e.sampled:-1;
         for(ServerPlayer p:fighters)e.marks.add(p.position().add(0,.9,0));
@@ -98,10 +94,9 @@ public final class EndMoves {
         }else if(shape==Pattern.RING){e.castFrom=new Vec3(e.boss().getX(),e.data.floor+.1,e.boss().getZ());SetPiecePayload.sendSeeded(e.level,Piece.END_BATTLE_WARNING,e.castFrom,e.castFrom,1,e.boss(),0,seed(move,power,0));}
         else {int index=0;for(Vec3 mark:e.marks)SetPiecePayload.sendSeeded(e.level,Piece.END_BATTLE_WARNING,e.castFrom,mark,1,e.boss(),shape==Pattern.SEQUENCE?index++%3*EndGeometry.ECHO_GAP:0,seed(move,power,0));}
         if(e.sylar!=null)e.sylar.inheritancePose(e.phase,shape==Pattern.CHARGE?SylarEntity.Pose.CROUCH:shape==Pattern.NOVA?SylarEntity.Pose.RAISED:shape==Pattern.SIPHON||shape==Pattern.MIND?SylarEntity.Pose.ONE_HAND:SylarEntity.Pose.TWO_HANDS,true,false,e.finishWindow());
-        sound(e,e.castFrom,move==EndGeometry.Move.UNMAKING||move==EndGeometry.Move.ENDINGS?SoundEvents.BEACON_POWER_SELECT:SoundEvents.AMETHYST_BLOCK_RESONATE,.8F,.6F+e.phase*.1F);
+        sound(e,e.castFrom,move==EndGeometry.Move.ENDINGS?SoundEvents.BEACON_POWER_SELECT:SoundEvents.AMETHYST_BLOCK_RESONATE,.8F,.6F+e.phase*.1F);
     }
     public static void land(EndBattle.Encounter e,EndGeometry.Move move){
-        if(e.stage==EndBattle.DRAGON&&e.brain!=null){if(!e.brain.land(move))landShape(e,move);e.brain.landed(move);return;}
         landShape(e,move);
     }
     private static void landShape(EndBattle.Encounter e,EndGeometry.Move move){
@@ -112,10 +107,7 @@ public final class EndMoves {
                 for(ServerPlayer p:e.fighters())for(Vec3 mark:e.marks)if(EndGeometry.segmentDistance(e.castFrom,mark,p.position().add(0,.9,0))<EndGeometry.LANE_RADIUS&&seen(e.level,e.castFrom,p.getEyePosition())){hit(e,p,damage,power);break;}
                 for(Vec3 mark:e.marks)SetPiecePayload.sendSeeded(e.level,Piece.END_BATTLE_STRIKE,e.castFrom,mark,1,e.boss(),0,seed(move,power,0));
             }
-            case IMPACT,STONE,MIND,SPIRAL -> {
-                if(move==EndGeometry.Move.STARS){for(Vec3 mark:e.marks)bolt(e,mark.add(0,12,0),new Vec3(0,-.8,0),power);}
-                else for(Vec3 mark:e.marks)impact(e,mark,damage,power,EndGeometry.IMPACT_RADIUS);
-            }
+            case IMPACT,STONE,MIND,SPIRAL -> {for(Vec3 mark:e.marks)impact(e,mark,damage,power,EndGeometry.IMPACT_RADIUS);}
             case RING -> {int n=move==EndGeometry.Move.EVENTIDE?3:1;for(int i=0;i<n;i++)e.waves.add(new Wave(e.castFrom,-i*12,damage,power));}
             case SIPHON -> {
                 for(ServerPlayer p:e.fighters())for(Vec3 mark:e.marks)if(EndGeometry.segmentDistance(e.castFrom,mark,p.position().add(0,.9,0))<EndGeometry.TETHER_RADIUS&&seen(e.level,e.castFrom,p.getEyePosition())){
@@ -135,9 +127,6 @@ public final class EndMoves {
         }
         CameraShakePayload.sendAround(e.level,e.boss().position(),180,shape==Pattern.NOVA?.4F:.13F,14);
         sound(e,e.boss().position(),shape==Pattern.NOVA?SoundEvents.ENDER_DRAGON_GROWL:SoundEvents.BREEZE_WIND_CHARGE_BURST.value(),.8F,.7F);
-    }
-    private static void bolt(EndBattle.Encounter e,Vec3 at,Vec3 velocity,int power){
-        EndBolt bolt=ModEntities.END_BOLT.get().create(e.level);if(bolt==null)return;bolt.setOwner(e.boss());bolt.setPos(at);bolt.setDeltaMovement(velocity);bolt.accelerationPower=.01;bolt.power(power);e.level.addFreshEntity(bolt);e.bolts.add(bolt);
     }
     static void impact(EndBattle.Encounter e,Vec3 at,float damage,int power,float radius){
         for(ServerPlayer p:e.fighters())if(p.getBoundingBox().distanceToSqr(at)<radius*radius)hit(e,p,damage,power);
@@ -159,7 +148,7 @@ public final class EndMoves {
         if(e.chargeTicks>0){
             LivingEntity boss=e.boss();Vec3 from=boss.position(),wanted=e.chargeFrom.lerp(e.chargeTo,++e.chargeStep/(double)EndGeometry.CHARGE_TICKS);Vec3 delta=wanted.subtract(from);Vec3 end=from;
             for(double f=.1;f<=1.0001;f+=.1){Vec3 at=from.add(delta.scale(f));if(!e.level.noCollision(boss,boss.getBoundingBox().move(at.subtract(from))))break;end=at;}
-            boss.setPos(end);boss.setDeltaMovement(Vec3.ZERO);float radius=e.stage==EndBattle.DRAGON?EndGeometry.CHARGE_RADIUS:EndGeometry.SYLAR_CHARGE_RADIUS;
+            boss.setPos(end);boss.setDeltaMovement(Vec3.ZERO);float radius=EndGeometry.SYLAR_CHARGE_RADIUS;
             for(ServerPlayer p:e.fighters())if(!e.chargeHit.contains(p.getUUID())&&EndGeometry.segmentDistance(from.add(0,e.stage==EndBattle.DRAGON?3:1,0),end.add(0,e.stage==EndBattle.DRAGON?3:1,0),p.position().add(0,.9,0))<radius){e.chargeHit.add(p.getUUID());hit(e,p,9+e.phase,e.sampled);}
             SetPiecePayload.send(e.level,Piece.END_BATTLE_DASH,from,end,e.stage==EndBattle.DRAGON?6:1,boss);
             if(--e.chargeTicks==0||end.distanceToSqr(wanted)>.3){e.chargeTicks=0;e.spent=100;e.rest=Math.max(e.rest,90);}
@@ -169,13 +158,6 @@ public final class EndMoves {
             for(ServerPlayer p:e.fighters())if(p.isShiftKeyDown()&&p.position().multiply(1,0,1).distanceToSqr(at.multiply(1,0,1))<9&&p.getY()<e.data.floor+60){Vec3 velocity=p.getDeltaMovement().multiply(.8,1,.8);p.setDeltaMovement(velocity.x,Math.min(1.2,velocity.y+.18),velocity.z);p.fallDistance=0;p.hurtMarked=true;}
         }
         if(e.prism!=null){if(e.prism.isRemoved())e.breakPrism(null);else if(e.sylar!=null&&e.clock%10==0)e.prism.setBeamTarget(e.sylar.blockPosition().above());}
-        EndCrystalFeed.update(e);
-    }
-    private static final class EndCrystalFeed {
-        static void update(EndBattle.Encounter e){
-            if(e.stage!=EndBattle.DRAGON||e.clock%10!=0)return;var feeding=e.feed();
-            for(var crystal:e.crystals)if(!crystal.isRemoved())crystal.setBeamTarget(crystal==feeding?e.dragon.blockPosition().above(2):null);
-        }
     }
     private static void sound(EndBattle.Encounter e,Vec3 at,SoundEvent event,float volume,float pitch){
         for(ServerPlayer p:e.party.values())if(p.level()==e.level)p.playNotifySound(event,SoundSource.HOSTILE,volume,pitch);

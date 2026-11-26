@@ -82,11 +82,23 @@ public final class EndBattle {
     }
     public static boolean dragonHit(EnderDragon dragon,DamageSource source,float incoming){
         if(!ensure(dragon,source))return false;
-        return current.hit(dragon,source,incoming,true);
+        return current.hit(dragon,source,incoming,true,null);
     }
-    /** A blow on one of the body's parts: the head is the weak point, the rest takes less (vanilla's quarter is replaced). */
+    /** A blow on one of the body's parts: the Living Seal weighs it (its head is the weak point; vanilla's quarter is replaced). */
     public static boolean dragonPartHit(EnderDragon dragon,net.minecraft.world.entity.boss.EnderDragonPart part,DamageSource source,float incoming){
-        return dragonHit(dragon,source,incoming*(part==dragon.head?EndGeometry.HEAD_DAMAGE:EndGeometry.BODY_DAMAGE));
+        if(!ensure(dragon,source))return false;
+        return current.hit(dragon,source,incoming,true,part);
+    }
+    /** The Living Seal as a lock target (EnderDragonLockMixin): out of reach while it flies. */
+    public static com.jayptucker.heroesevolved.combat.BossLocks.Lock dragonLock(EnderDragon dragon){
+        return current!=null&&current.dragon==dragon&&current.seal!=null?current.seal.lock():null;
+    }
+    public static void dragonAnswered(EnderDragon dragon,ServerPlayer player,com.jayptucker.heroesevolved.combat.BossLocks.Key key){
+        if(current!=null&&current.dragon==dragon&&current.seal!=null)current.seal.answered(player,key);
+    }
+    /** The native body's own hurt, past every rule (the fight has already weighed the blow). */
+    static boolean reallyHurt(EnderDragon dragon,DamageSource source,float amount){
+        rawDragon=true;try{return ((EndDragonAccess)dragon).heroes$reallyHurt(source,amount);}finally{rawDragon=false;}
     }
     public static boolean sylarHit(SylarEntity sylar,DamageSource source,float incoming){return current!=null&&current.sylar==sylar&&current.hit(sylar,source,incoming,false);}
     public static boolean interference(ServerPlayer p){return current!=null&&current.level==p.level()&&current.suppressed.getOrDefault(p.getUUID(),-1000)>current.clock;}
@@ -124,8 +136,9 @@ public final class EndBattle {
         }
         if(!current.crystals.contains(crystal))return null;
         if(source.is(DamageTypeTags.BYPASSES_INVULNERABILITY))return null;
-        if(current.stage!=DRAGON||crystal!=current.feed()||!(source.getEntity() instanceof ServerPlayer p)||!eligible(p)||sheltered(p))return false;
-        current.ground(p);return true;
+        // A tower crystal feeds its altar's knot; anyone in the fight may break it (no blast).
+        if(current.stage!=DRAGON||!(source.getEntity() instanceof ServerPlayer p)||!eligible(p)||sheltered(p))return false;
+        current.seal.crystalBroken(crystal,p);return true;
     }
     public static boolean prism(Entity e){return current!=null&&current.prism==e||e.getPersistentData().getBoolean("heroesevolved_end_prism");}
     public static void tick(MinecraftServer server){
@@ -141,6 +154,56 @@ public final class EndBattle {
             }
         }
         if(current!=null){for(ServerPlayer p:level.players())if(eligible(p)&&inArena(p))current.join(p);current.tick();}
+    }
+    // ---------------------------------------------------------------- the admin console (admin/AdminEvents)
+
+    /** One line for the admin menu: what stage the End is at and what the Living Seal is doing. */
+    public static String status(MinecraftServer server){
+        EndData data=EndData.get(server);
+        if(current==null)return data.checkpoint==SYLAR&&!data.completed?"Sylar checkpoint saved: the next eligible arrival starts a fresh Inheritance attempt."
+                :data.completed?"The End is complete. Start summons a fresh Dragon fight on the main island.":"No End fight. Start brings the selected player to the main island and wakes the Dragon.";
+        var e=current;
+        String who=e.fighters().size()+" fighter(s)";
+        if(e.stage==DRAGON&&e.dragon!=null&&e.seal!=null){
+            var s=e.seal;float units=e.damage.units(e.dragon);
+            return "The Living Seal, phase "+e.phase+"; "+Math.round(e.dragon.getHealth()*units)+" / "+Math.round(e.damage.effective())+" health; "+who+". "
+                    +String.format(java.util.Locale.ROOT,"Scaled for a party worth %.2f (its blows x%.2f, warnings x%.2f). ",s.partyWeight(),
+                    com.jayptucker.heroesevolved.combat.BossScaling.blowScale(s.fightersAverage()),com.jayptucker.heroesevolved.combat.BossScaling.windupScale(s.fightersAverage()))
+                    +(e.phase==1?(s.shattered?"Seal shattered. ":"Seal: "+s.warding()+" / 4 knots warding (gate at "+Math.round(SealGeometry.SEAL_GATE*100)+"%). "):s.feeding>=0?"Drinking from knot "+s.feeding+". ":"Knots sleeping. ")
+                    +(s.crash>0?"Crashed, stunned. ":s.airborne()?"Hunting in the air"+(s.drag>0?String.format(java.util.Locale.ROOT," (dragged %.0f%%)",s.drag*100):"")+". ":"On the ground. ")
+                    +(s.casting!=null?s.casting.name()+" winding up"+(s.feint?" (feint)":"")+"; ":"")+"stance "+s.stance+" / "+SealGeometry.STANCE_HITS+". Cancel ends the attempt; fighters keep their belongings.";
+        }
+        String stage=switch(e.stage){case DRAGON_DEATH->"The Dragon is dying";case ABSORPTION->"Sylar is taking its light";case SYLAR->"Sylar's Inheritance, phase "+e.phase;case VICTORY->"The light breaks";default->"Complete";};
+        return stage+(e.boss()!=null?"; "+Math.round(e.boss().getHealth())+" / "+Math.round(e.boss().getMaxHealth())+" health":"")+"; "+who+".";
+    }
+    /** The admin menu's starts: wake the Dragon, advance a phase, break its locks, ground it, finish the Dragon. */
+    public static String operatorStart(ServerPlayer target,int variant){
+        var server=target.getServer();ServerLevel end=server.getLevel(Level.END);
+        if(end==null)return "This server has no End dimension.";
+        if(variant==0){
+            if(active())return "An End fight is already running; cancel it first.";
+            if(!eligible(target))return "The End answers awakened players at Power Level "+EndGeometry.MIN_LEVEL+" or above; raise the selected player's level first.";
+            var fight=end.getDragonFight();if(fight==null)return "The End here has no dragon fight.";
+            if(target.level()!=end){double y=EndGeometry.waveHeight(end,17,21,65);end.getChunk(BlockPos.containing(17,y,21));place(target,end,new Vec3(17.5,y,21.5),target.getYRot(),0);}
+            Entity body=fight.getDragonUUID()==null?null:end.getEntity(fight.getDragonUUID());
+            EnderDragon dragon=body instanceof EnderDragon d&&d.isAlive()?d:null;
+            if(dragon==null){
+                var access=(EndFightAccess)fight;access.heroes$needsScan(false);access.heroes$dragonKilled(false);
+                dragon=EntityType.ENDER_DRAGON.create(end);if(dragon==null)return "Could not create the Dragon.";
+                dragon.setPos(.5,89,.5);dragon.setDragonFight(fight);access.heroes$dragonUUID(dragon.getUUID());end.addFreshEntity(dragon);
+                EndData.get(server).completed=false;
+            }
+            begin(dragon,List.of(target));return "The Living Seal wakes over the main island.";
+        }
+        var e=current;
+        if(e==null||e.boss()==null||e.stage!=DRAGON&&e.stage!=SYLAR)return "No live End boss.";
+        switch(variant){
+            case 1->{if(e.phase>=3)return "Already in the last phase.";e.boss().setHealth(e.boss().getMaxHealth()*(e.phase==1?.6F:.27F));e.phaseChange();return "Advanced to phase "+e.phase+".";}
+            case 2->{if(e.stage!=DRAGON)return "Sylar has no knots.";return e.seal.operatorBreak();}
+            case 3->{if(e.stage!=DRAGON)return "Only the Dragon can be grounded.";e.seal.interrupt();e.seal.crashDown(SealGeometry.CRASH_TICKS);return "The Dragon crashes to the island, stunned.";}
+            case 4->{if(e.stage!=DRAGON)return "The Dragon has already fallen.";e.dragonDown(e.dragon.damageSources().magic());return "The Dragon falls; Sylar comes for its light.";}
+            default->{return "Unknown start option.";}
+        }
     }
     public static void returnHome(ServerPlayer p){
         var data=EndData.get(p.getServer());var home=data.home(p.getUUID());ServerLevel level=home==null?null:p.getServer().getLevel(home.dimension());
@@ -184,7 +247,7 @@ public final class EndBattle {
     }
     public static final class Encounter {
         public final ServerLevel level;public final EndData data;
-        public final EnderDragon dragon;public SylarEntity sylar;public final DragonBrain brain;
+        public final EnderDragon dragon;public SylarEntity sylar;public final SealFight seal;
         public final Map<UUID,ServerPlayer> party=new LinkedHashMap<>();
         final EndDamage damage=new EndDamage();final ServerBossEvent bar=new ServerBossEvent(Component.literal("The Living Seal"),BossEvent.BossBarColor.PURPLE,BossEvent.BossBarOverlay.NOTCHED_10);
         final List<EndCrystal> crystals=new ArrayList<>();EndCrystal prism;float prismHealth;
@@ -197,11 +260,11 @@ public final class EndBattle {
         final Set<UUID> chargeHit=new HashSet<>();Vec3 chargeFrom=Vec3.ZERO,chargeTo=Vec3.ZERO;
         DamageSource killingBlow;UUID killer;
         Encounter(ServerLevel level,EndData data,EnderDragon dragon){
-            this.level=level;this.data=data;this.dragon=dragon;brain=dragon==null?null:new DragonBrain(this);EndScenery.hold(level);EndScenery.build(level,data);
+            this.level=level;this.data=data;this.dragon=dragon;seal=dragon==null?null:new SealFight(this);EndScenery.hold(level);EndScenery.build(level,data);
             if(dragon!=null){
                 stage=DRAGON;data.stage=DRAGON;dragon.setNoAi(false);dragon.setSilent(false);dragon.getPhaseManager().setPhase(EnderDragonPhase.HOVERING);
-                damage.scale(dragon,EndGeometry.DRAGON_HEALTH,1);dragon.setHealth(dragon.getMaxHealth());dragon.setCustomName(Component.translatable("endgame.heroesevolved.dragon.1"));
-                discoverCrystals();
+                damage.scaleTo(dragon,SealGeometry.BASE_HEALTH*com.jayptucker.heroesevolved.combat.BossScaling.healthScale(1));dragon.setHealth(dragon.getMaxHealth());dragon.setCustomName(Component.translatable("endgame.heroesevolved.dragon.1"));
+                discoverCrystals();seal.formKnots();
             }else{stage=ABSORPTION;data.stage=ABSORPTION;}
             updateBar();data.changed();
         }
@@ -212,12 +275,13 @@ public final class EndBattle {
         public void join(ServerPlayer p){
             if(!eligible(p)||p.level()!=level)return;
             boolean added=party.put(p.getUUID(),p)==null;data.participants.add(p.getUUID());bar.addPlayer(p);
-            if(added){if(boss()!=null&&stage!=ABSORPTION&&stage!=VICTORY)damage.scale(boss(),stage<=DRAGON_DEATH?EndGeometry.DRAGON_HEALTH:EndGeometry.SYLAR_HEALTH,party.size());
+            if(stage==DRAGON&&seal!=null)seal.join(p);
+            if(added){if(boss()!=null&&stage==SYLAR)damage.scale(boss(),EndGeometry.SYLAR_HEALTH,party.size());
                 SylarVoice.narrate(p,"endgame.heroesevolved.arrive");data.changed();}
         }
+        /** The tower crystal feeding the knot nearest the Dragon, for the view's beam (the knots are fed by SealFight). */
         public EndCrystal feed(){
-            if(crystals.isEmpty())return null;
-            for(int i=0;i<crystals.size();i++){EndCrystal c=crystals.get((crystalCursor+i)%crystals.size());if(!c.isRemoved())return c;}return null;
+            if(seal==null)return null;for(EndCrystal c:seal.feeders)if(c!=null&&!c.isRemoved())return c;return null;
         }
         void discoverCrystals(){
             // A player can arrive before the pillar chunks become entity-ticking. Discover their crystals as they wake.
@@ -226,69 +290,82 @@ public final class EndBattle {
                     if(!crystals.contains(crystal)){crystals.add(crystal);if(data.crystals.stream().noneMatch(at->at.distanceToSqr(crystal.position())<1))data.crystals.add(crystal.position());}
             if(crystalCursor==0)crystals.sort(Comparator.comparingDouble(c->Math.atan2(c.getZ(),c.getX())));data.changed();
         }
-        public boolean canChannel(int index){return (stage==DRAGON||stage==SYLAR)&&index>=0&&index<data.anchors.size()&&clock>=altarCooldown[index]&&(stage==SYLAR||index==active)&&transition==0;}
+        /** The altars are counter-resonators against Sylar; while the Dragon lives they hold its knots instead. */
+        public boolean canChannel(int index){return stage==SYLAR&&index>=0&&index<data.anchors.size()&&clock>=altarCooldown[index]&&transition==0;}
         public void overloaded(int index,ServerPlayer p){
             if(!canChannel(index))return;altarCooldown[index]=clock+200;charge[index]=0;
-            if(stage==DRAGON)ground(p);else{cancelCast();stagger=60;spent=100;roomDamage(.06F,p);active=(index+1)%4;
-                SetPiecePayload.send(level,Piece.END_BATTLE_BACKFIRE,data.anchors.get(index),sylar.getEyePosition(),1,sylar);}
+            cancelCast();stagger=60;spent=100;roomDamage(.06F,p);active=(index+1)%4;
+            SetPiecePayload.send(level,Piece.END_BATTLE_BACKFIRE,data.anchors.get(index),sylar.getEyePosition(),1,sylar);
         }
-        void ground(ServerPlayer p){
-            if(stage!=DRAGON)return;EndCrystal old=feed();if(old!=null)old.discard();crystalCursor++;active=(active+1)%4;
-            cancelCast();brain.crash();grounded=EndGeometry.GROUND_TICKS;stagger=EndGeometry.CRASH_STUN;spent=100;dragon.nearestCrystal=null;
-            roomDamage(.05F,p);SetPiecePayload.send(level,Piece.END_BATTLE_GROUNDED,dragon.position(),EndGeometry.center(data.floor),1,dragon);
-            ServerPlayer heard=p!=null?p:party.values().stream().findFirst().orElse(null);
-            if(heard!=null)SylarVoice.narrate(heard,"endgame.heroesevolved.grounded");
+        /** A designed bite out of the Dragon (a backfire): {@code fraction} of its health, past the caps. */
+        void bypassDragon(float fraction,ServerPlayer p){
+            if(stage!=DRAGON||dragon==null||!dragon.isAlive())return;
+            ServerPlayer credit=p!=null?p:fighters().stream().findFirst().orElse(null);
+            DamageSource source=credit==null?dragon.damageSources().magic():dragon.damageSources().indirectMagic(dragon,credit);
+            float amount=damage.effective()*fraction/Math.max(1,damage.units(dragon));
+            boolean lethal=amount>=dragon.getHealth();float actual=Math.min(amount,Math.max(0,dragon.getHealth()-1));
+            if(actual>0)reallyHurt(dragon,source,lethal?amount:actual);lastHurt=clock;
+            if(credit!=null)killer=credit.getUUID();
+            if(lethal)dragonDown(source);else phaseChange();
+        }
+        /** The Dragon falls: its native death plays, then Sylar takes its light. */
+        void dragonDown(DamageSource source){
+            killingBlow=source;stage=DRAGON_DEATH;data.stage=DRAGON_DEATH;data.checkpoint=SYLAR;data.changed();cancelCast();clearHazards();
+            dragon.setHealth(1);dragon.getPhaseManager().setPhase(EnderDragonPhase.DYING);
         }
         void roomDamage(float fraction,ServerPlayer p){
             LivingEntity boss=boss();if(boss==null||!boss.isAlive())return;
             ServerPlayer credit=p!=null?p:fighters().stream().findFirst().orElse(null);
             bypass=true;boss.invulnerableTime=0;try{hit(boss,credit==null?boss.damageSources().magic():boss.damageSources().indirectMagic(boss,credit),damage.effective()*fraction,stage==DRAGON);}finally{bypass=false;}
         }
-        boolean hit(LivingEntity boss,DamageSource source,float incoming,boolean isDragon){
-            if(stage!=(isDragon?DRAGON:SYLAR)||transition>0||boss==null||!Float.isFinite(incoming)||incoming<=0)return false;
+        boolean hit(LivingEntity boss,DamageSource source,float incoming,boolean isDragon){return hit(boss,source,incoming,isDragon,null);}
+        boolean hit(LivingEntity boss,DamageSource source,float incoming,boolean isDragon,net.minecraft.world.entity.boss.EnderDragonPart part){
+            if(stage!=(isDragon?DRAGON:SYLAR)||boss==null||!Float.isFinite(incoming)||incoming<=0)return false;
             if(source.getEntity() instanceof ServerPlayer p){if(!eligible(p)||!inArena(p)||sheltered(p)||p.level()!=level)return false;join(p);}
             if(source.is(DamageTypeTags.IS_FALL)||source.is(DamageTypes.IN_WALL)||source.is(DamageTypes.DROWN)||source.is(DamageTypes.CRAMMING))return false;
             boolean heavy=charged(source,incoming);
+            if(isDragon){
+                if(source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)){boolean landed=reallyHurt(dragon,source,incoming);if(dragon.getHealth()<=1)dragonDown(source);return landed;}
+                return seal.hurt(source,incoming,part,heavy);
+            }
+            if(transition>0)return false;
             float bonus=bypass?1:stagger>0?1.35F:spent>0?1.5F:1;
-            if(isDragon&&grounded==0&&!bypass)bonus*=EndGeometry.AIR_DAMAGE;
             float amount=damage.amount(boss,source,incoming,clock,bonus,bypass);
             if(source.is(DamageTypeTags.BYPASSES_INVULNERABILITY))amount=incoming;
             if(amount<=0)return false;
             boolean lethal=amount>=boss.getHealth();float actual=Math.min(amount,Math.max(0,boss.getHealth()-1));
-            boolean landed;
-            if(isDragon){rawDragon=true;try{landed=actual<=0||((EndDragonAccess)boss).heroes$reallyHurt(source,lethal?amount:actual);}finally{rawDragon=false;}}
-            else landed=actual<=0||((SylarEntity)boss).inheritanceDamage(source,actual);
+            boolean landed=actual<=0||((SylarEntity)boss).inheritanceDamage(source,actual);
             if(!landed)return false;
             if(!bypass)damage.paid(clock,amount);lastHurt=clock;
             if(source.getEntity() instanceof Player p)killer=p.getUUID();
-            if(heavy&&casting!=null&&EndMoves.shape(EndMoves.seed(casting,sampled,0))!=EndMoves.Pattern.NOVA&&(!isDragon||DragonBrain.interruptible(casting))&&clock-lastInterrupt>=100){
+            if(heavy&&casting!=null&&EndMoves.shape(EndMoves.seed(casting,sampled,0))!=EndMoves.Pattern.NOVA&&clock-lastInterrupt>=100){
                 lastInterrupt=clock;cancelCast();stagger=50;rest=Math.max(rest,60);
-                if(isDragon)level.playSound(null,boss.getX(),boss.getY(),boss.getZ(),SoundEvents.ENDER_DRAGON_HURT,SoundSource.HOSTILE,5,.6F);
             }
-            if(lethal){killingBlow=source;if(isDragon){stage=DRAGON_DEATH;data.stage=DRAGON_DEATH;data.checkpoint=SYLAR;data.changed();cancelCast();clearHazards();dragon.setHealth(1);dragon.getPhaseManager().setPhase(EnderDragonPhase.DYING);}else startVictory();}
+            if(lethal){killingBlow=source;startVictory();}
             else phaseChange();return true;
         }
         void phaseChange(){
             if(boss()==null)return;float fraction=boss().getHealth()/boss().getMaxHealth();int next=fraction>2/3F?1:fraction>1/3F?2:3;
-            if(next<=phase)return;phase=next;transition=EndGeometry.TRANSITION_TICKS;cancelCast();rest=Math.max(rest,80);EndScenery.phase(level,data,phase);
+            if(next<=phase)return;phase=next;transition=stage==DRAGON?SealGeometry.TRANSITION_TICKS:EndGeometry.TRANSITION_TICKS;cancelCast();rest=Math.max(rest,80);EndScenery.phase(level,data,phase);
             SetPiecePayload.send(level,Piece.END_BATTLE_PHASE,EndGeometry.center(data.floor),boss().position(),stage<=2?phase:phase+3,boss());
-            CameraShakePayload.sendAround(level,boss().position(),180,.32F,28);updateBar();if(stage==DRAGON&&brain!=null)brain.phaseChange();
+            CameraShakePayload.sendAround(level,boss().position(),180,.32F,28);updateBar();if(stage==DRAGON&&seal!=null)seal.phaseChange();
             for(ServerPlayer p:party.values())SylarVoice.narrate(p,"endgame.heroesevolved.phase."+(stage<=2?"dragon.":"sylar.")+phase);
         }
         public boolean finishWindow(){
             if(stage!=SYLAR||transition>0||sylar==null)return false;float fraction=sylar.getHealth()/sylar.getMaxHealth();
             return phase==1?fraction>2/3F&&fraction<=2/3F+.06F:phase==2?fraction>1/3F&&fraction<=1/3F+.06F:fraction<=.1F;
         }
+        /** One of Sylar's moves (the Dragon's are SealFight.start). */
         public void start(EndGeometry.Move move){
-            if(boss()==null||stage!=DRAGON&&stage!=SYLAR)return;cancelCast();casting=move;windup=EndMoves.windup(move,sampled);marks.clear();
-            castFrom=stage==DRAGON?dragon.head.getBoundingBox().getCenter():sylar.getEyePosition().add(0,-.15,0);boss().setDeltaMovement(Vec3.ZERO);
+            if(sylar==null||stage!=SYLAR)return;cancelCast();casting=move;windup=EndMoves.windup(move,sampled);marks.clear();
+            castFrom=sylar.getEyePosition().add(0,-.15,0);sylar.setDeltaMovement(Vec3.ZERO);
             EndMoves.warn(this,move);
         }
         void cancelCast(){
             if(casting!=null&&boss()!=null)SetPiecePayload.send(level,Piece.END_BATTLE_CANCEL,boss().position(),boss().position(),1,boss());
-            casting=null;windup=0;chargeTicks=0;if(brain!=null&&stage==DRAGON)brain.cancel();if(sylar!=null)sylar.inheritancePose(phase,SylarEntity.Pose.NONE,false,false,finishWindow());
+            casting=null;windup=0;chargeTicks=0;if(seal!=null&&stage==DRAGON)seal.interrupt();if(sylar!=null)sylar.inheritancePose(phase,SylarEntity.Pose.NONE,false,false,finishWindow());
         }
-        Vec3 flyTarget(){return brain==null?null:brain.flyTarget();}
+        Vec3 flyTarget(){return seal==null?null:seal.flyTarget();}
         void spawnPrism(){
             if(prism!=null)prism.discard();prism=EntityType.END_CRYSTAL.create(level);if(prism==null)return;
             Vec3 at=data.anchors.get(Math.floorMod(rotation,data.anchors.size())).add(0,.4,0);prism.setPos(at);prism.setShowBottom(false);
@@ -353,15 +430,14 @@ public final class EndBattle {
             if(boss==null||!boss.isAlive()){if(stage==SYLAR)startVictory();return;}
             if(!inArena(boss)||boss.getY()<data.floor-8||boss.getY()>data.floor+EndGeometry.FLIGHT_HEIGHT){
                 boss.setPos(EndGeometry.center(data.floor).add(0,stage==DRAGON?24:4,0));boss.setDeltaMovement(Vec3.ZERO);cancelCast();rest=Math.max(rest,60);
-                if(stage==DRAGON){brain.cancelAll();grounded=0;}
+                if(stage==DRAGON){seal.cancelAll();seal.interrupt();grounded=0;}
             }
-            phaseChange();if(stage==DRAGON&&clock<=100&&clock%10==0)discoverCrystals();EndMoves.tick(this);
-            if(stage==DRAGON)brain.tick();
+            phaseChange();if(stage==DRAGON&&clock<=100&&clock%10==0){discoverCrystals();seal.assignFeeders();}EndMoves.tick(this);
             if(clock%20==0&&clock-lastHurt>=200&&fighters().isEmpty())boss.heal(boss.getMaxHealth()*.05F);
+            if(stage==DRAGON){seal.tick();return;}
             if(transition>0){transition--;return;}if(stagger>0){stagger--;return;}if(spent>0)spent--;
-            if(casting!=null){if(--windup<=0){var move=casting;casting=null;EndMoves.land(this,move);rest=Math.max(rest,stage==DRAGON?brain.rest(move):move.rest);if(move==EndGeometry.Move.UNMAKING||move==EndGeometry.Move.ENDINGS||move==EndGeometry.Move.STONE)spent=100;}return;}
+            if(casting!=null){if(--windup<=0){var move=casting;casting=null;EndMoves.land(this,move);rest=Math.max(rest,move.rest);if(move==EndGeometry.Move.ENDINGS||move==EndGeometry.Move.STONE)spent=100;}return;}
             if(chargeTicks>0)return;
-            if(stage==DRAGON&&brain.busy())return;
             if(stage==SYLAR){
                 sylar.inheritancePose(phase,SylarEntity.Pose.NONE,false,false,finishWindow());
                 if(!still&&!fighters().isEmpty()){
@@ -371,13 +447,12 @@ public final class EndBattle {
                 }
             }
             if(still||fighters().isEmpty()||--rest>0)return;
-            if(stage==DRAGON){var next=brain.next();if(next==null)rest=6;else start(next);return;}
             var moves=EndMoves.rotation(stage,phase,sampled>=0);var next=moves[rotation++%moves.length];
             if(next==EndGeometry.Move.PATTERN&&(sampled<0||prism==null))next=EndGeometry.Move.NEEDLE;
             start(next);
         }
         public void broadcast(){var packet=new EndBattlePayload(view());for(ServerPlayer p:level.players())if(p.position().lengthSqr()<400*400)PacketDistributor.sendToPlayer(p,packet);for(ServerPlayer p:party.values())if(!level.players().contains(p)&&p.level()==level)PacketDistributor.sendToPlayer(p,packet);}
-        public EndView view(){EndCrystal feed=feed();return new EndView(stage,phase,clock,stageAge,boss()==null?-1:boss().getId(),dragon==null?-1:dragon.getId(),active,crystals.size()-(int)crystals.stream().filter(c->!c.isRemoved()).count(),casting==null?-1:casting.ordinal(),windup,grounded,sampled,charge[Math.clamp(active,0,3)],safeAngle,data.floor,castFrom,target,data.refuge,feed==null?Vec3.ZERO:feed.position(),List.copyOf(data.anchors),List.copyOf(marks));}
+        public EndView view(){EndCrystal feed=feed();return new EndView(stage,phase,clock,stageAge,boss()==null?-1:boss().getId(),dragon==null?-1:dragon.getId(),active,crystals.size()-(int)crystals.stream().filter(c->!c.isRemoved()).count(),casting==null?-1:casting.ordinal(),windup,grounded,sampled,charge[Math.clamp(active,0,3)],safeAngle,data.floor,castFrom,target,data.refuge,feed==null?Vec3.ZERO:feed.position(),List.copyOf(data.anchors),List.copyOf(marks),stage==DRAGON&&seal!=null?seal.view():SealView.EMPTY);}
         void updateBar(){bar.setName(Component.translatable("endgame.heroesevolved."+(stage<=2?"dragon.":stage==3?"absorption":stage==5?"release":stage==6?"complete":"sylar.")+(stage==3||stage>=5?"":phase)));bar.setColor(stage==VICTORY?BossEvent.BossBarColor.WHITE:phase==1?BossEvent.BossBarColor.PURPLE:phase==2?BossEvent.BossBarColor.BLUE:BossEvent.BossBarColor.RED);}
         void abandon(){
             boolean checkpoint=data.checkpoint==SYLAR;
@@ -393,7 +468,7 @@ public final class EndBattle {
             closeIn=120;bar.setProgress(0);updateBar();broadcast();
         }
         void cleanup(){
-            EndChannel.cancelAll();cancelCast();clearHazards();
+            EndChannel.cancelAll();cancelCast();clearHazards();if(seal!=null)seal.cleanup();
             if(prism!=null)prism.discard();if(sylar!=null)sylar.discard();
             for(var entry:prizes.entrySet())if(!entry.getKey().isRemoved()&&!entry.getKey().getItem().isEmpty()){data.stash(entry.getValue(),entry.getKey().getItem(),level.registryAccess());entry.getKey().discard();}prizes.clear();
             for(ServerPlayer p:party.values())if(p.isAlive())deliver(p);
@@ -404,7 +479,7 @@ public final class EndBattle {
             bar.removeAllPlayers();EndScenery.restore(level,data);EndScenery.release(level);data.changed();
             for(ServerPlayer p:level.players())PacketDistributor.sendToPlayer(p,new EndBattlePayload(EndView.EMPTY));
         }
-        void clearHazards(){for(EndBolt bolt:List.copyOf(bolts))bolt.discard();bolts.clear();waves.clear();suppressed.clear();if(brain!=null){brain.clearPools();brain.cancelAll();}}
+        void clearHazards(){for(EndBolt bolt:List.copyOf(bolts))bolt.discard();bolts.clear();waves.clear();suppressed.clear();if(seal!=null)seal.clear();}
     }
     private static void award(ServerPlayer p,String id){var a=p.getServer().getAdvancements().get(ResourceLocation.fromNamespaceAndPath("heroesevolved",id));if(a!=null)p.getAdvancements().award(a,"observed");}
 }

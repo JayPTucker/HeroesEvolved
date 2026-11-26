@@ -34,10 +34,14 @@
     "EndFightAccess",
     "EndDragonBattleMixin",
     "EndDragonHoverMixin",
+    "EnderDragonLockMixin",
+    "EnderDragonPoseMixin",
     "EndFightBattleMixin",
     "EndCrystalBattleMixin"
   ],
   "client": [
+    "EnderDragonRendererPoseMixin",
+    "DragonModelPoseMixin",
     "TemporalMobAnimationMixin",
     "TemporalParticleMixin",
     "TemporalParticleEngineMixin",

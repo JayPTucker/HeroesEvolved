@@ -2,6 +2,7 @@ package com.jayptucker.heroesevolved.wither;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.combat.BossLocks;
+import com.jayptucker.heroesevolved.combat.BossScaling;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -269,24 +270,22 @@ public final class WitherGeometry {
      * under {@code WEAKEST_GIFT}. Without an awakened power a fighter counts {@code UNGIFTED}: their only answer to its
      * locks is the slow one.
      */
-    public static final float LEVEL_STEP = .06F, WEAKEST_GIFT = .6F, UNGIFTED = .5F;
-    public static float strength(boolean gifted, int powerLevel) {
-        return gifted ? Math.clamp(1 + LEVEL_STEP * (powerLevel - BASELINE_LEVEL), WEAKEST_GIFT, 1.3F) : UNGIFTED;
-    }
+    public static final float LEVEL_STEP = BossScaling.LEVEL_STEP, WEAKEST_GIFT = BossScaling.WEAKEST_GIFT, UNGIFTED = BossScaling.UNGIFTED;
+    public static float strength(boolean gifted, int powerLevel) { return BossScaling.strength(gifted, powerLevel, BASELINE_LEVEL); }
     /**
      * Its health for a party whose strengths add up to {@code weight}: half again for each extra fighter's worth, up to
      * three times; a lone weaker fighter brings it down, never under 70%. It never shrinks during an attempt.
      */
-    public static float healthScale(float weight) { return Math.clamp(1 + .5F * (weight - 1), .7F, 3); }
+    public static float healthScale(float weight) { return BossScaling.healthScale(weight); }
     /** A heart's health the same way, up to twice. */
-    public static float heartScale(float weight) { return Math.clamp(1 + .5F * (weight - 1), .7F, 2); }
+    public static float heartScale(float weight) { return BossScaling.lockScale(weight); }
     /**
      * Its blows against the fighters in the Ossuary now, by their average strength: as listed against level-16 powers,
      * up to a tenth harder against stronger ones, down to a fifth softer against weaker ones.
      */
-    public static float blowScale(float average) { return Math.clamp(.7F + .3F * average, .8F, 1.1F); }
+    public static float blowScale(float average) { return BossScaling.blowScale(average); }
     /** Its warnings against weaker fighters run longer, by up to 15% (never shorter than listed for strong ones). */
-    public static float windupScale(float average) { return 1 + .25F * Math.clamp(1 - average, 0, .6F); }
+    public static float windupScale(float average) { return BossScaling.windupScale(average); }
     /** Its side heads fire sooner at a bigger party: 8% sooner for each extra fighter, to 70% of the gap. */
     public static float headShotScale(int fighters) { return Math.max(.7F, 1 - .08F * (Math.max(1, fighters) - 1)); }
 

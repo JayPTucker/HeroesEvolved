@@ -67,6 +67,9 @@ public final class ModItems {
     /** The Wither's Hunger Mark: its star drinks from you while it can see you. A boss curse (combat/BossLocks). */
     public static final DeferredHolder<MobEffect, MobEffect> HUNGERING = EFFECTS.register("hungering",
             () -> new MobEffect(net.minecraft.world.effect.MobEffectCategory.HARMFUL, 0xA18AE4) {});
+    /** The Living Seal's Riftbrand: while it sees you, the Seal drinks from you and mends. A boss curse (combat/BossLocks). */
+    public static final DeferredHolder<MobEffect, MobEffect> RIFTBRAND = EFFECTS.register("riftbrand",
+            () -> new MobEffect(net.minecraft.world.effect.MobEffectCategory.HARMFUL, 0xA78AF2) {});
 
     public static final DeferredItem<Item> HELIXITE_SHARD = ITEMS.registerSimpleItem("helixite_shard",
             new Item.Properties().rarity(Rarity.UNCOMMON));

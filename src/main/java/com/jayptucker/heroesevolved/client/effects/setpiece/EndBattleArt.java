@@ -49,34 +49,17 @@ final class EndBattleArt {
         EndView v=EndClientState.view();if(!v.active()||v.stage()==EndBattle.VICTORY)return;
         float[] tint=v.phase()==3?RED:v.phase()==2?CYAN:VIOLET;
         if(a.bound(c) instanceof EnderDragon dragon){
-            Vec3 chest=dragon.getPosition(c.partial).add(0,2.4,0),head=dragon.head.getPosition(c.partial).add(0,1.2,0);
-            float yaw=-dragon.getYRot()*DEG_TO_RAD;Vec3 side=new Vec3(cos(yaw),0,sin(yaw));
-            Vec3 back=chest.subtract(head).multiply(1,0,1).normalize();
-            if(c.solid())for(int i=0;i<5;i++){
-                Vec3 base=chest.add(back.scale((i-1)*1.3)).add(0,1,0);
-                c.shard(base,base.add(back.scale(.8)).add(0,1.8+v.phase()*.5,0),.6F,3,i*.2F,rgb(0x725A91),1);
-            }
-            if(c.soft()&&v.phase()>=2)for(int s:new int[]{-1,1}){
-                Vec3 root=chest.add(side.scale(s*2)),elbow=chest.add(side.scale(s*7)).add(0,2,0),tip=chest.add(side.scale(s*(13+v.phase()))).add(0,1+sin(c.time()*.12F)*2,0).add(back.scale(3));
-                c.tri(root,elbow,tip,tint,alpha*.03F,alpha*.13F,alpha*.1F);c.tri(root,tip,elbow,tint,alpha*.03F,alpha*.1F,alpha*.13F);
-            }
-            if(c.glow()){
-                star(c,chest,.9F+v.phase()*.25F,tint,alpha,c.time()*.7F);arc(c,chest,head,.065F,tint,alpha*.75F,c.time());
-                for(int i=0;i<5;i++){Vec3 rib=chest.add(new Vec3(0,0,(i-2)*1.1).yRot(-dragon.getYRot()*DEG_TO_RAD));c.ring(rib,side,2.2F,.018F,0,PI*1.5F,tint,alpha*.42F);}
-                for(int s:new int[]{-1,1}){Vec3 root=chest.add(side.scale(s*2)),tip=chest.add(side.scale(s*(12+v.phase()*2))).add(0,2+sin(c.time()*.12F)*2,2);
-                    arc(c,root,tip,.045F,tint,alpha*.55F,c.time());star(c,tip,.35F,PALE,alpha,c.time());}
-                if(v.grounded()>0)c.ring(chest,UP,3.4F,.06F,0,TWO_PI,GOLD,alpha*.8F);
-            }
+            SealArt.body(c,dragon,v,alpha);
         }else if(a.bound(c) instanceof LivingEntity boss&&v.inheritance()){
             Vec3 chest=boss.getPosition(c.partial).add(0,1.3,0);wings(c,chest,boss.getYRot(),v.phase(),alpha,c.time());
             if(c.glow()){star(c,chest,.23F+v.phase()*.07F,GOLD,alpha,c.time());c.ring(chest.add(0,1.6,0),new Vec3(0,0,1),.65F,.016F,-PI*.2F,PI*1.2F,PALE,alpha*.55F);}
         }
         if(!c.glow())return;
         for(int i=0;i<v.anchors().size();i++){
-            Vec3 focus=v.anchors().get(i);boolean lit=v.inheritance()||i==v.altar();float[] col=lit?GOLD:VIOLET;
+            Vec3 focus=v.anchors().get(i);boolean lit=v.inheritance();float[] col=lit?GOLD:VIOLET;
             star(c,focus,lit?.65F:.3F,col,alpha*(lit?.75F:.3F),c.time()*.4F);
             c.ring(focus.add(0,-3.3,0),2.1F,.024F,col,alpha*(lit?.6F:.2F));
-            if(lit){c.ring(focus,UP,1,.025F,-HALF_PI,-HALF_PI+TWO_PI*clamp(v.charge()/EndTuning.CHANNEL_TICKS,0,1),PALE,alpha);if(v.dragonFight()&&v.feed().lengthSqr()>1)arc(c,focus,v.feed(),.025F,VIOLET,alpha*.3F,c.time());}
+            if(lit)c.ring(focus,UP,1,.025F,-HALF_PI,-HALF_PI+TWO_PI*clamp(v.charge()/EndTuning.CHANNEL_TICKS,0,1),PALE,alpha);
             Vec3 lift=focus.add(6,-3.4,0);c.ring(lift,2.8F,.025F,CYAN,alpha*.45F);
             if(!minimal()){Vec3[] helix=new Vec3[33];for(int n=0;n<helix.length;n++){float k=n/32F,ang=k*TWO_PI*3-c.time()*.055F;helix[n]=lift.add(cos(ang)*1.5,k*22,sin(ang)*1.5);}c.ribbon(helix,.04F,CYAN,alpha*.35F,0);}
         }
@@ -99,7 +82,6 @@ final class EndBattleArt {
     private static void warning(Canvas c,Active a,float t){
         if(SetPieceClient.superseded(a,CANCEL,c.level.getGameTime()))return;
         EndGeometry.Move move=EndMoves.move(a.seed());if(move==null)return;
-        if(DRAGON.contains(move)){dragonWarning(c,a,t,move);return;}
         int power=EndMoves.power(a.seed());int duration=EndMoves.windup(move,power);if(t>duration||t<0)return;
         float p=clamp(t/duration,0,1),alpha=smooth(0,3,t);float[] tint=power<0?VIOLET:rgb(MimicColors.color(power));
         Vec3 from=a.origin(),to=a.target();var shape=EndMoves.shape(a.seed());
@@ -113,14 +95,14 @@ final class EndBattleArt {
         }
         if(shape==EndMoves.Pattern.RING){if(c.glow()){c.ring(from,4,.025F,PALE,alpha*.6F);c.ring(from,4*(1-p),.07F,tint,alpha);for(int i=0;i<8;i++){double ang=i*Math.PI/4;Vec3 at=from.add(Math.cos(ang)*5,0,Math.sin(ang)*5);c.line(at,at.add(0,1.8,0),.025F,GOLD,alpha*.6F,0);}}return;}
         if(shape==EndMoves.Pattern.CHARGE||shape==EndMoves.Pattern.FAN||shape==EndMoves.Pattern.LATTICE||shape==EndMoves.Pattern.FRAME||shape==EndMoves.Pattern.PRISM||shape==EndMoves.Pattern.FAULT||shape==EndMoves.Pattern.SIPHON){
-            float width=shape==EndMoves.Pattern.CHARGE?(move==EndGeometry.Move.RIFT_CHARGE?EndGeometry.CHARGE_RADIUS:EndGeometry.SYLAR_CHARGE_RADIUS):shape==EndMoves.Pattern.SIPHON?EndGeometry.TETHER_RADIUS:EndGeometry.LANE_RADIUS;
+            float width=shape==EndMoves.Pattern.CHARGE?EndGeometry.SYLAR_CHARGE_RADIUS:shape==EndMoves.Pattern.SIPHON?EndGeometry.TETHER_RADIUS:EndGeometry.LANE_RADIUS;
             tube(c,from,to,width,tint,alpha,p);
             if(c.glow()){
                 if(shape==EndMoves.Pattern.FRAME||shape==EndMoves.Pattern.LATTICE||shape==EndMoves.Pattern.PRISM)for(int i=1;i<=4;i++){Vec3 point=from.lerp(to,i/4D);c.ring(point,to.subtract(from).normalize(),width,.025F,0,shape==EndMoves.Pattern.FRAME?PI*1.5F:TWO_PI,tint,alpha*.45F);}
                 if(shape==EndMoves.Pattern.FAULT)for(int i=0;i<8;i++){Vec3 point=from.lerp(to,i/8D);c.shard(point.add(0,-1,0),point.add(0,1+2*p,0),.3F,3,i,tint,alpha*.35F);}
             }return;
         }
-        float radius=move==EndGeometry.Move.STARS?EndGeometry.BOLT_RADIUS:EndGeometry.IMPACT_RADIUS;
+        float radius=EndGeometry.IMPACT_RADIUS;
         orb(c,to,radius,tint,alpha*.45F);
         if(c.glow()){
             c.ring(to,UP,radius,.07F,-HALF_PI,-HALF_PI+TWO_PI*p,PALE,alpha*.85F);star(c,to,.12F+.2F*p,tint,alpha,t);
@@ -129,50 +111,15 @@ final class EndBattleArt {
             if(shape==EndMoves.Pattern.SPIRAL){Vec3[] points=new Vec3[25];for(int i=0;i<25;i++){float k=i/24F,ang=k*TWO_PI*2+t*.05F;points[i]=to.add(cos(ang)*radius*(1-k),k*3,sin(ang)*radius*(1-k));}c.ribbon(points,.05F,CYAN,alpha*.7F,0);}
         }
     }
-    // ------------------------------------------------------------------ the Dragon's ground warnings
+    // ------------------------------------------------------------------ ground primitives (SealArt draws with these too)
     // Cataclysm-scale decals that hug the terrain: a faint footprint of the whole danger at once, a bright fill that
-    // grows to cover it exactly as the hit arrives (EndGeometry.arrival), hot edges, and a white flash when it lands.
+    // grows to cover it exactly as the hit arrives, hot edges.
 
-    private static final Set<EndGeometry.Move> DRAGON=java.util.EnumSet.of(EndGeometry.Move.RIFT_CHARGE,EndGeometry.Move.BREATH,EndGeometry.Move.WINGBREAK,
-            EndGeometry.Move.DESCENT,EndGeometry.Move.BITE,EndGeometry.Move.TAIL,EndGeometry.Move.SCORCH,EndGeometry.Move.ROAR,EndGeometry.Move.TAKEOFF,EndGeometry.Move.RUSH);
-    private static final float[] BREATH=rgb(0xD35BFF),EMBER=rgb(0xFF5A6E),WHITE=rgb(0xFFFFFF);
-
-    private static void dragonWarning(Canvas c,Active a,float t,EndGeometry.Move move){
-        boolean flash=EndMoves.role(a.seed())==1;int duration=EndGeometry.arrival(move);
-        if(t<0||(flash?t>12:t>duration+1))return;
-        float p=flash?1:clamp(t/duration,0,1),alpha=flash?1-t/12F:smooth(0,3,t);
-        float[] tint=switch(move){case BITE,TAIL,RUSH->EMBER;case BREATH,SCORCH->BREATH;case DESCENT,ROAR->GOLD;default->VIOLET;};
-        if(flash)tint=WHITE;
-        Vec3 o=a.origin(),to=a.target();
-        switch(move){
-            case RIFT_CHARGE -> {
-                strip(c,o,to,EndGeometry.DIVE_RADIUS,p,tint,alpha,true);
-                Vec3 mid=o.lerp(to,.5);sector(c,mid,to.subtract(o),EndGeometry.DIVE_IMPACT,PI,p,flash?WHITE:EMBER,alpha*.9F);
-                if(!flash&&c.glow()){Vec3 sky=ground(c,mid).add(0,26,0);c.line(sky,ground(c,mid).add(0,.2,0),.06F+.1F*p,EMBER,alpha*.15F,alpha*.8F);}
-            }
-            case BREATH -> strip(c,o,to,EndGeometry.RUN_RADIUS,p,tint,alpha,true);
-            case BITE -> strip(c,o,to,EndGeometry.BITE_RADIUS,p,tint,alpha,true);
-            case RUSH -> strip(c,o,to,EndGeometry.RUSH_RADIUS,p,tint,alpha,true);
-            case TAIL -> sector(c,o,to.subtract(o),EndGeometry.TAIL_RADIUS,EndGeometry.TAIL_HALF,p,tint,alpha);
-            case SCORCH -> sector(c,o,to.subtract(o),EndGeometry.SCORCH_RADIUS,EndGeometry.SCORCH_HALF,p,tint,alpha);
-            case DESCENT -> {
-                sector(c,o,new Vec3(1,0,0),EndGeometry.LAND_RADIUS,PI,p,tint,alpha);
-                if(!flash&&c.glow()){Vec3 g=ground(c,o);for(int i=0;i<6;i++){float ang=i*TWO_PI/6+c.time()*.01F;c.line(g.add(cos(ang)*EndGeometry.LAND_RADIUS*1.3,.15,sin(ang)*EndGeometry.LAND_RADIUS*1.3),g.add(cos(ang)*EndGeometry.LAND_RADIUS*(1-p*.6),.15,sin(ang)*EndGeometry.LAND_RADIUS*(1-p*.6)),.12F,GOLD,alpha*.2F,alpha*.9F);}}
-            }
-            case ROAR -> sector(c,o,new Vec3(1,0,0),EndGeometry.ROAR_RADIUS,PI,p,tint,alpha*.8F);
-            case TAKEOFF -> sector(c,o,new Vec3(1,0,0),EndGeometry.TAKEOFF_RADIUS,PI,p,tint,alpha*.8F);
-            case WINGBREAK -> {
-                // The wing buffet's wave rolls outward after this; the warning gathers in toward the body.
-                if(c.glow())for(int i=0;i<3;i++){float r=3+(1-((p+i/3F)%1F))*9;ringOnGround(c,o,r,.09F,PALE,alpha*.75F);}
-                if(c.glow())ringOnGround(c,o,3,.12F,VIOLET,alpha);
-            }
-            default -> {}
-        }
-    }
-    private static Vec3 ground(Canvas c,Vec3 at){return new Vec3(at.x,EndGeometry.waveHeight(c.level,at.x,at.z,at.y)+.02,at.z);}
-    private static Vec3 ground(Canvas c,double x,double z,double fallback){return new Vec3(x,EndGeometry.waveHeight(c.level,x,z,fallback)+.02,z);}
+    static final float[] BREATH=rgb(0xD35BFF);
+    static Vec3 ground(Canvas c,Vec3 at){return new Vec3(at.x,EndGeometry.waveHeight(c.level,at.x,at.z,at.y)+.02,at.z);}
+    static Vec3 ground(Canvas c,double x,double z,double fallback){return new Vec3(x,EndGeometry.waveHeight(c.level,x,z,fallback)+.02,z);}
     /** A lane on the ground from a to b, filling from a toward b. */
-    private static void strip(Canvas c,Vec3 a,Vec3 b,float radius,float p,float[] tint,float alpha,boolean chevrons){
+    static void strip(Canvas c,Vec3 a,Vec3 b,float radius,float p,float[] tint,float alpha,boolean chevrons){
         Vec3 d=b.subtract(a).multiply(1,0,1);double len=d.length();if(len<.1)return;Vec3 f=d.scale(1/len),s=new Vec3(-f.z,0,f.x);
         int n=Math.max(2,(int)Math.ceil(len/1.5));Vec3[] left=new Vec3[n+1],right=new Vec3[n+1];
         for(int i=0;i<=n;i++){Vec3 m=a.add(d.scale(i/(double)n));left[i]=ground(c,m.x+s.x*radius,m.z+s.z*radius,a.y);right[i]=ground(c,m.x-s.x*radius,m.z-s.z*radius,a.y);}
@@ -191,7 +138,7 @@ final class EndBattleArt {
         }
     }
     /** A sector of {@code half} radians either side of {@code dir} (a disc when half is PI), filling outward from the centre. */
-    private static void sector(Canvas c,Vec3 at,Vec3 dir,float radius,float half,float p,float[] tint,float alpha){
+    static void sector(Canvas c,Vec3 at,Vec3 dir,float radius,float half,float p,float[] tint,float alpha){
         Vec3 f=dir.multiply(1,0,1);f=f.lengthSqr()<1e-6?new Vec3(1,0,0):f.normalize();
         int m=Math.clamp((int)(half*2*radius/1.6F),8,56),n=Math.clamp((int)(radius/2),3,9);
         Vec3[][] grid=new Vec3[n+1][m+1];
@@ -206,7 +153,7 @@ final class EndBattleArt {
         c.ribbon(rim,.11F,tint,alpha,alpha);if(p>.02F)c.ribbon(front,.15F,PALE,alpha,alpha);
         if(half<PI-.01F){Vec3[] l=new Vec3[n+1],r=new Vec3[n+1];for(int j=0;j<=n;j++){l[j]=grid[j][0].add(0,.03,0);r[j]=grid[j][m].add(0,.03,0);}c.ribbon(l,.09F,tint,alpha*.9F,alpha*.9F);c.ribbon(r,.09F,tint,alpha*.9F,alpha*.9F);}
     }
-    private static void ringOnGround(Canvas c,Vec3 at,float radius,float width,float[] tint,float alpha){
+    static void ringOnGround(Canvas c,Vec3 at,float radius,float width,float[] tint,float alpha){
         Vec3[] rim=new Vec3[49];for(int i=0;i<rim.length;i++){float ang=i*TWO_PI/48;rim[i]=ground(c,at.x+cos(ang)*radius,at.z+sin(ang)*radius,at.y).add(0,.04,0);}
         c.ribbon(rim,width,tint,alpha,alpha);
     }
@@ -263,15 +210,15 @@ final class EndBattleArt {
         if(c.soft())for(int i=0;i<48;i++)c.tri(at,rim[i],rim[i+1],DARK,alpha*.35F,alpha*.65F,alpha*.65F);
         if(c.glow()){c.ribbon(rim,.08F,CYAN,alpha*.8F,alpha*.8F);c.ribbon(rim,.018F,PALE,alpha,alpha);for(int i=0;i<5;i++){Vec3 p=at.add(cos(time*.03F+i)*.8,sin(time*.03F+i)*1.2,0);c.line(p,p.add(0,.18,0),.018F,GOLD,alpha*.35F,0);}}
     }
-    private static void orb(Canvas c,Vec3 at,float radius,float[] tint,float alpha){if(c.glow())for(int i=0;i<3;i++)c.ring(at,i==0?UP:i==1?new Vec3(1,0,0):new Vec3(0,0,1),radius,.024F,0,TWO_PI,tint,alpha);}
-    private static void star(Canvas c,Vec3 at,float radius,float[] tint,float alpha,float time){
+    static void orb(Canvas c,Vec3 at,float radius,float[] tint,float alpha){if(c.glow())for(int i=0;i<3;i++)c.ring(at,i==0?UP:i==1?new Vec3(1,0,0):new Vec3(0,0,1),radius,.024F,0,TWO_PI,tint,alpha);}
+    static void star(Canvas c,Vec3 at,float radius,float[] tint,float alpha,float time){
         if(!c.glow())return;for(int i=0;i<3;i++){Vec3 d=i==0?new Vec3(radius,0,0):i==1?new Vec3(0,radius,0):new Vec3(0,0,radius);c.line(at.subtract(d),at.add(d),.025F,tint,0,alpha);}c.glow(at,radius*.45F,tint,alpha*.3F);
     }
-    private static void arc(Canvas c,Vec3 from,Vec3 to,float width,float[] tint,float alpha,float time){
+    static void arc(Canvas c,Vec3 from,Vec3 to,float width,float[] tint,float alpha,float time){
         Vec3 side=perpendicular(to.subtract(from));Vec3[] path=new Vec3[13];for(int i=0;i<13;i++){float k=i/12F;path[i]=from.lerp(to,k).add(side.scale(sin(k*PI)*sin(k*TWO_PI+time*.08F)*.18));}c.ribbon(path,width,tint,alpha*.7F,alpha);
     }
-    private static Vec3 perpendicular(Vec3 direction){Vec3 side=direction.cross(UP).normalize();return side.lengthSqr()<.01?new Vec3(1,0,0):side;}
+    static Vec3 perpendicular(Vec3 direction){Vec3 side=direction.cross(UP).normalize();return side.lengthSqr()<.01?new Vec3(1,0,0):side;}
     private static float cTime(Canvas c){return c.time();}
-    private static boolean minimal(){return Minecraft.getInstance().options.particles().get()==ParticleStatus.MINIMAL;}
+    static boolean minimal(){return Minecraft.getInstance().options.particles().get()==ParticleStatus.MINIMAL;}
     private EndBattleArt(){}
 }
