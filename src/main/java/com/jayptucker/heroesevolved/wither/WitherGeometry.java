@@ -22,7 +22,8 @@ public final class WitherGeometry {
     public static final ResourceKey<Level> DIMENSION = ResourceKey.create(Registries.DIMENSION,
             ResourceLocation.fromNamespaceAndPath(HeroesEvolved.MOD_ID, "wither_cage"));
     public static final BlockPos ORIGIN = new BlockPos(0, 64, 0);
-    public static final int MINIMUM_LEVEL = 16;
+    /** The Power Level its numbers are tuned for: a fighter with a power at this level counts 1 ({@link #strength}). Anyone may enter. */
+    public static final int BASELINE_LEVEL = 16;
 
     // ---- The Ossuary (tools/generate-wither-arena.py draws the same numbers) ----
     /** Walkable floor radius, the wall ring's outer radius, the vault's usable height and the leash for fliers. */
@@ -260,6 +261,34 @@ public final class WitherGeometry {
     public static final int STAR_CRACKS = 3, STAR_WINDOW = 100, STAR_REEL = 40;
     /** The top of each phase's health: nothing it heals can lift it back into a phase already beaten. */
     public static float phaseTop(int phase) { return phase <= 1 ? 1 : phase == 2 ? 2 / 3F : 1 / 3F; }
+
+    // ---- Who it is fighting: it scales to the party's size, powers and levels ----
+    /**
+     * How much one fighter counts. With an awakened power at Power Level 16 a fighter counts 1, and each level above
+     * adds {@code LEVEL_STEP} (Evolved, at 20, counts 1.24); a lower level counts {@code LEVEL_STEP} less a level, never
+     * under {@code WEAKEST_GIFT}. Without an awakened power a fighter counts {@code UNGIFTED}: their only answer to its
+     * locks is the slow one.
+     */
+    public static final float LEVEL_STEP = .06F, WEAKEST_GIFT = .6F, UNGIFTED = .5F;
+    public static float strength(boolean gifted, int powerLevel) {
+        return gifted ? Math.clamp(1 + LEVEL_STEP * (powerLevel - BASELINE_LEVEL), WEAKEST_GIFT, 1.3F) : UNGIFTED;
+    }
+    /**
+     * Its health for a party whose strengths add up to {@code weight}: half again for each extra fighter's worth, up to
+     * three times; a lone weaker fighter brings it down, never under 70%. It never shrinks during an attempt.
+     */
+    public static float healthScale(float weight) { return Math.clamp(1 + .5F * (weight - 1), .7F, 3); }
+    /** A heart's health the same way, up to twice. */
+    public static float heartScale(float weight) { return Math.clamp(1 + .5F * (weight - 1), .7F, 2); }
+    /**
+     * Its blows against the fighters in the Ossuary now, by their average strength: as listed against level-16 powers,
+     * up to a tenth harder against stronger ones, down to a fifth softer against weaker ones.
+     */
+    public static float blowScale(float average) { return Math.clamp(.7F + .3F * average, .8F, 1.1F); }
+    /** Its warnings against weaker fighters run longer, by up to 15% (never shorter than listed for strong ones). */
+    public static float windupScale(float average) { return 1 + .25F * Math.clamp(1 - average, 0, .6F); }
+    /** Its side heads fire sooner at a bigger party: 8% sooner for each extra fighter, to 70% of the gap. */
+    public static float headShotScale(int fighters) { return Math.max(.7F, 1 - .08F * (Math.max(1, fighters) - 1)); }
 
     // ---- How hard it is (Souls-like: it is won by reading it, never by out-healing or out-trading it) ----
     /** Below this share of its health it is Starving: faster still. */

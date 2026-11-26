@@ -294,7 +294,8 @@ public final class WitherMoves {
      */
     public static boolean hit(RiftWitherEntity b, ServerPlayer p, float amount, Move move) {
         if (!b.fighting() || WitherArena.sheltered(p) || !p.isAlive() || amount <= 0) return false;
-        float total = amount * (b.starving() ? 1.1F : 1) + (move != null && WitherGeometry.heavy(move) ? p.getMaxHealth() * WitherGeometry.HEAVY_SHARE : 0);
+        float total = amount * (b.starving() ? 1.1F : 1) * b.blowScale()
+                + (move != null && WitherGeometry.heavy(move) ? p.getMaxHealth() * WitherGeometry.HEAVY_SHARE : 0);
         float hunger = total * WitherGeometry.PIERCE;
         p.invulnerableTime = 0;
         boolean landed = p.hurt(b.damageSources().mobAttack(b), total - hunger);

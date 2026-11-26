@@ -10,7 +10,7 @@ End portal. Its instructions show your current key bindings. **Key bindings…**
 Scroll, use the arrow buttons, or use Up/Down and Page Up/Page Down to read; Left/Right changes topic.
 Growing stronger also shows your own Evolved trial and progress after awakening.
 
-**The Hungry Cage** explains the breach the Wither is dragged through, its Power Level 16 entry requirement, solo play,
+**The Hungry Cage** explains the breach the Wither is dragged through, that anyone may enter (it scales to who does), solo play,
 reading its body, fixed marks, jumpable rolling floor, three-hit stance breaks, baiting its charge into a pillar,
 seven-second anchor feeds, the death blast (raise a shield or be thrown flat) and the exit torn open where it died. It
 can be read before entering.

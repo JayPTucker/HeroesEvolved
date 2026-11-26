@@ -14,14 +14,15 @@ Wither. It digs its claws into the ground and screams at you while its tail is d
 backwards through, arms flung toward you, swallowed into the dark. The breach convulses and shrinks to the size of a
 door, and stays. There is no explosion at the summoning site. Nearby witnesses earn **Well, That's Not Normal...**
 
-Walk into the breach to enter. You need an awakened ability at **Power Level 16 or higher**. A lone player can fight;
+Walk into the breach to enter. **Anyone may enter**, with or without a power, at any Power Level: the fight scales to
+who does (below). A lone player can fight;
 friends enter separately and can join late. Only one Wither encounter is open at a time; another construction while
 it is open returns its ingredients.
 
 **The return breach stays open throughout the encounter.** It waits in an alcove behind the Ossuary's wall. Retreat
 through it whenever you need to; damage from that shelter cannot hurt the boss. If everybody retreats, the Wither
-recovers and the abandoned attempt resets; the summoning-site breach remains for another try. Health grows with
-additional fighters and never shrinks during an attempt. A server restart returns fighters safely and leaves the
+recovers and the abandoned attempt resets; the summoning-site breach remains for another try. It scales to who is
+fighting it (see "Who it is fighting" below) and never weakens during an attempt. A server restart returns fighters safely and leaves the
 entrance ready. Death drops are kept for their owner and returned on respawn.
 
 ## The Ossuary
@@ -104,8 +105,8 @@ the vessel breaks are the same brood.
 ## How hard it is
 
 It is built to be won by reading it and answering it with your power, not by tanking it (the bar is Cataclysm's bosses
-and Bosses'Rise's Souls-like ones), and it assumes you have strong gear from other mods. It has **720 health** (more for
-a party; each heart has 50, more for a party). **No weapon carries the fight:** no blow takes more than 5% of its
+and Bosses'Rise's Souls-like ones), and it assumes you have strong gear from other mods. It has **720 health** against
+one fighter with an awakened power at Power Level 16, and each heart has 50 (both scale with the party, below). **No weapon carries the fight:** no blow takes more than 5% of its
 health and no second more than 2.5%, so even a flawless party with the strongest weapons needs forty seconds of clean
 damage, and its ward refuses anything below seven tenths until its hearts are broken. **No armour makes you safe:** 30%
 of every blow it lands is its star's hunger, which goes through any armour, and its heavy blows (the slam, the charge,
@@ -125,6 +126,29 @@ with a mark on the floor), strikes, and holds its end pose for a moment before i
 
 It moves faster too: it closes distance at a run, turns quicker, and when you are far away it doesn't walk to you, it
 steps through a breach and comes out behind you.
+
+### Who it is fighting
+
+It scales to how many are fighting it, whether they have powers, and their levels. Each fighter counts by their
+strength:
+
+| Fighter | Counts as |
+| --- | --- |
+| An awakened power at Power Level 16 | 1 |
+| Each Power Level above 16 | +0.06 (Evolved, at 20: 1.24) |
+| Each Power Level below 16 | -0.06, never under 0.6 |
+| No awakened power | 0.5 (blades, arrows, punched-back skulls and cover are your answers) |
+
+| What scales | How |
+| --- | --- |
+| Its health | half again for each extra fighter's worth, up to three times (a lone weaker fighter brings it down, never under 70%). It rises as fighters join, awaken or level up mid-fight, and **never falls**: leaving cannot weaken it |
+| Each heart's health | the same way, up to twice |
+| How hard it hits | by the average strength of the fighters in the Ossuary now: as listed against level-16 powers, up to a tenth harder against stronger ones, up to a fifth softer against weaker ones |
+| How long it warns | weaker fighters get up to 15% longer to read each move (never under its reading floor); strong ones get the listed time |
+| Its side heads | 8% sooner for each extra fighter, to 70% of the gap |
+| Its brood | one more skeleton for every two extra fighters, and more may stand at once (as above) |
+
+The admin console's live status shows the party's worth and the multipliers in force.
 
 Every hit also withers you (Wither II for four seconds). **Feints:** from the second phase every third bite, rake,
 slam, charge and tail holds its coil half again as long. The mark still fills exactly as the hit lands, so dodge when the mark

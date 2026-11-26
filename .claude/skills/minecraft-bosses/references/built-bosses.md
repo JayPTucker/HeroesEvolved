@@ -195,6 +195,11 @@ nothing like Cataclysm": a scaled vanilla Wither in an empty 81-block disc with 
 - **Staging: never cancel and start on the same server tick.** The first cage and well photographs lost their
   warnings because the preview's reset sent `WITHER_CANCEL` on the tick the move started (`superseded` counts equal
   timestamps). Reset a few ticks earlier.
+- **Scale to the party's strength, not its headcount.** `RiftWitherEntity.strengths` keeps each joiner at the strongest
+  they have been (`strengthOf`: awakened power or not, Power Level), re-read every five seconds so a mid-fight level-up
+  counts; health and hearts follow the sum and only rise (`rescale`), while its blows (`blowScale`), warnings
+  (`windupScale`, never under the floors) and side-head rate follow the fighters present. A test caught that a small
+  windup bonus rounds away on a short move: check it against a clearly weaker party.
 - **Every move has a floor and an end pose.** `castWindup` never goes under `floor(move)` (8 ticks for the bite,
   10 for the hook, 12 with an area mark), however fast a later phase or Starving makes it. `hold(move)` is the end
   pose before the window opens.

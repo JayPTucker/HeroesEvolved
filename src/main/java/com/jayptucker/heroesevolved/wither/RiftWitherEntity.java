@@ -44,7 +44,7 @@ import java.util.*;
  * its heavy moves and backfire when broken, and the Hunger Mark; the discharge, the exposed star, and the hearts again.
  */
 public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFinishable, BossLocks.Party {
-    public static final double BASE_HEALTH = 720, PARTY_STEP = .5, PARTY_MAX = 3;
+    public static final double BASE_HEALTH = 720;
     public static final float HIT_CAP = .05F, SECOND_CAP = .025F, BACKFIRE = .1F;
     public static final int STATE_NONE = 0, STATE_SPENT = 1, STATE_STAGGER = 2, STATE_CRASH = 3, STATE_ROAR = 4, STATE_ARRIVE = 5;
     public static final int TRANSITION_TICKS = WitherGeometry.TRANSITION_TICKS;
@@ -96,6 +96,9 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
     /** A move's landing asks for its follow-up at once (a tethered fighter bitten; a missed charge turning back). */
     boolean quickFollow;
     float lockedYaw, effectiveHealth = (float) BASE_HEALTH;
+    /** How much each fighter who has joined counts, at their strongest; whether the first fighter has set its health. */
+    final Map<UUID, Float> strengths = new HashMap<>();
+    boolean scaled;
     Vec3 motionFrom = Vec3.ZERO, motionTo = Vec3.ZERO, velocity = Vec3.ZERO, castFrom = Vec3.ZERO, sideOrigin = Vec3.ZERO, sideTarget = Vec3.ZERO;
     boolean bypass, still, lungeCrash;
     private Vec3 introFrom = Vec3.ZERO;
@@ -243,15 +246,43 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
     @Override protected void tickDeath() { if (!level().isClientSide && ++deathTime >= 2) remove(RemovalReason.KILLED); }
 
     public void join(ServerPlayer p) {
-        if (party.put(p.getUUID(), p) == null) {
-            float fraction = getHealth() / getMaxHealth();
-            double maximum = BASE_HEALTH * Math.min(PARTY_MAX, 1 + PARTY_STEP * (party.size() - 1));
-            effectiveHealth = (float) maximum;
-            getAttribute(Attributes.MAX_HEALTH).setBaseValue(Math.min(1000, maximum));
-            setHealth(getMaxHealth() * fraction);
-        }
+        party.put(p.getUUID(), p);
+        strengths.merge(p.getUUID(), strengthOf(p), Math::max);
+        rescale();
         bar.addPlayer(p);
         bar.setProgress(getHealth() / getMaxHealth());
+    }
+    /** How much this fighter counts (WitherGeometry.strength): their awakened power, if any, and their Power Level. */
+    static float strengthOf(ServerPlayer p) {
+        return WitherGeometry.strength(BossLocks.gifted(p), com.jayptucker.heroesevolved.progression.PlayerProgressionService.getPowerLevel(p));
+    }
+    /** Everyone who has joined this attempt, each at the strongest they have been. */
+    public float partyWeight() {
+        float sum = 0;
+        for (float s : strengths.values()) sum += s;
+        return Math.max(.5F, sum);
+    }
+    /** The average strength of the fighters in the Ossuary now (1 with nobody there). */
+    public float fightersAverage() {
+        var people = fighters();
+        if (people.isEmpty()) return 1;
+        float sum = 0;
+        for (ServerPlayer p : people) sum += strengthOf(p);
+        return sum / people.size();
+    }
+    public float blowScale() { return WitherGeometry.blowScale(fightersAverage()); }
+    /**
+     * Health for the party: set by the first fighter, then only raised (as more join or level up), keeping the share of
+     * health it has left. It never shrinks during an attempt, so leaving cannot weaken it.
+     */
+    private void rescale() {
+        double maximum = BASE_HEALTH * WitherGeometry.healthScale(partyWeight());
+        if (scaled && maximum <= effectiveHealth + .01) return;
+        float fraction = getHealth() / getMaxHealth();
+        effectiveHealth = (float) maximum;
+        getAttribute(Attributes.MAX_HEALTH).setBaseValue(Math.min(1000, maximum));
+        setHealth(getMaxHealth() * Math.min(1, fraction));
+        scaled = true;
     }
     /**
      * Everyone in the Ossuary the blast and the death's pull reach: the level's players and the fight's own party, which
@@ -283,6 +314,11 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
             return;
         }
         if (!fighting()) return;
+        if (clock % 100 == 0) {
+            // A fighter who levels up (or awakens) mid-fight counts for more from then on.
+            for (ServerPlayer p : fighters()) strengths.merge(p.getUUID(), strengthOf(p), Math::max);
+            rescale();
+        }
         tendHearts();
         if (arrival > 0) {
             int t = WitherGeometry.ARRIVAL_TICKS - arrival;
@@ -521,7 +557,9 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
     }
     public void start(Move move) {
         if (!fighting() || dying()) return;
-        casting = move; windup = WitherGeometry.castWindup(move, phase(), casts++, starving()); marks.clear();
+        // Weaker fighters get a little longer to read it; never under a move's floor.
+        casting = move; windup = Math.max(WitherGeometry.floor(move), Math.round(WitherGeometry.castWindup(move, phase(), casts++, starving())
+                * WitherGeometry.windupScale(fightersAverage()))); marks.clear();
         lungeStreak = move == Move.LUNGE ? lungeStreak + 1 : 0;
         entityData.set(ACTION_WINDUP, windup); origins.clear(); motionTicks = 0; motion = null; recovery = 0; velocity = Vec3.ZERO;
         for (ServerPlayer p : fighters()) marks.add(p.position().add(0, .8, 0));
@@ -541,7 +579,7 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
             if (!people.isEmpty()) {
                 ServerPlayer other = people.get(Math.floorMod(rotation + 1, people.size()));
                 startSideShot(rotation % 2 + 1, other.position().add(0, .8, 0));
-                nextHeadShot = clock + WitherGeometry.headShotGap(phase());
+                nextHeadShot = clock + Math.round(WitherGeometry.headShotGap(phase()) * WitherGeometry.headShotScale(fighters().size()));
             }
         }
     }
@@ -585,7 +623,7 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
         }
         entityData.set(HEARTS, bits);
     }
-    private float heartHealth() { return (float) (WitherGeometry.HEART_HEALTH * Math.min(2, 1 + .5 * (Math.max(1, party.size()) - 1))); }
+    private float heartHealth() { return WitherGeometry.HEART_HEALTH * WitherGeometry.heartScale(partyWeight()); }
     private void reformHearts(int state) {
         for (int i = 0; i < 3; i++) {
             if (hearts[i] != null) hearts[i].discard();
@@ -646,7 +684,7 @@ public final class RiftWitherEntity extends Monster implements Takedowns.PhaseFi
             for (HungerHeart h : hearts)
                 if (h != null && p.position().distanceTo(h.position()) < 6) {
                     startSideShot(rotation % 2 + 1, p.position().add(0, .8, 0));
-                    nextHeadShot = clock + WitherGeometry.headShotGap(phase());
+                    nextHeadShot = clock + Math.round(WitherGeometry.headShotGap(phase()) * WitherGeometry.headShotScale(fighters().size()));
                     return;
                 }
     }

@@ -93,8 +93,9 @@ public final class WitherGameTests {
     }
     @GameTest(template="rewind_empty",batch="wither_02")
     public static void levelGateSoloAndExactReturn(GameTestHelper h){clean(h);try{
-        ServerPlayer p=player(h,15);Vec3 home=p.position();ready(h);h.assertTrue(!WitherArena.enter(p),"Level 15 refused");PlayerProgressionService.setPowerLevel(p,16);
-        h.assertTrue(WitherArena.enter(p)&&WitherArena.inside(p),"Level 16 solo entry");WitherArena.sendHome(p);h.assertTrue(p.level()==h.getLevel()&&p.position().distanceTo(home)<.01,"Exact dimensional return");
+        ServerPlayer p=player(h,1);p.setData(ModDataAttachments.PLAYER_ABILITIES,PlayerAbilityData.empty());Vec3 home=p.position();ready(h);
+        h.assertTrue(WitherArena.enter(p)&&WitherArena.inside(p),"Anyone may enter: a Power Level 1 player without a power walks in");
+        h.assertTrue(Math.abs(WitherArena.boss().getMaxHealth()-(float)(RiftWitherEntity.BASE_HEALTH*WitherGeometry.healthScale(WitherGeometry.UNGIFTED)))<.5F,"...and faces a Wither eased for them");WitherArena.sendHome(p);h.assertTrue(p.level()==h.getLevel()&&p.position().distanceTo(home)<.01,"Exact dimensional return");
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_03")
     public static void arenaMarkersAndFlightVolume(GameTestHelper h){clean(h);try{
@@ -663,6 +664,34 @@ public final class WitherGameTests {
                 &&List.of(WitherGeometry.chain(3,1,12,false)).contains(WitherGeometry.Move.WELL)&&List.of(WitherGeometry.chain(1,0,5,false)).contains(WitherGeometry.Move.TAIL),"Its new ways to fight are in its chains");
         h.succeed();
     }
+    @GameTest(template="rewind_empty",batch="wither_55")
+    public static void scalesToTheFightersPowersAndLevels(GameTestHelper h){clean(h);try{
+        h.assertTrue(WitherGeometry.strength(true,16)==1&&Math.abs(WitherGeometry.strength(true,20)-1.24F)<1e-4&&WitherGeometry.strength(false,20)==WitherGeometry.UNGIFTED
+                &&WitherGeometry.strength(true,1)==WitherGeometry.WEAKEST_GIFT&&WitherGeometry.UNGIFTED<WitherGeometry.WEAKEST_GIFT,"A fighter counts 1 at level 16, more above, less below, and least without a power");
+        h.assertTrue(WitherGeometry.healthScale(1)==1&&WitherGeometry.healthScale(WitherGeometry.UNGIFTED)>=.7F&&WitherGeometry.healthScale(10)==3,"Health follows the party's worth, from 70% to three times");
+        h.assertTrue(WitherGeometry.blowScale(1)==1&&WitherGeometry.blowScale(1.24F)>1&&WitherGeometry.blowScale(WitherGeometry.UNGIFTED)<1
+                &&WitherGeometry.windupScale(1)==1&&WitherGeometry.windupScale(1.24F)==1&&WitherGeometry.windupScale(WitherGeometry.UNGIFTED)>1,"Weaker fighters are hit softer and warned longer; stronger ones are hit harder");
+        // An Evolved fighter alone faces a tougher Wither than a level-16 one would.
+        ServerPlayer strong=player(h,20);var b=fight(h,strong);
+        h.assertTrue(Math.abs(b.getMaxHealth()-(float)(RiftWitherEntity.BASE_HEALTH*1.12))<.5F,"A lone Evolved fighter faces 12% more health ("+b.getMaxHealth()+")");
+        // A fighter without a power adds less than a gifted one would.
+        ServerPlayer plain=player(h,20);plain.setData(ModDataAttachments.PLAYER_ABILITIES,PlayerAbilityData.empty());
+        plain.teleportTo(strong.serverLevel(),WitherGeometry.entrance().x,WitherGeometry.entrance().y,WitherGeometry.entrance().z,0,0);b.join(plain);
+        float weight=1.24F+WitherGeometry.UNGIFTED;
+        h.assertTrue(Math.abs(b.partyWeight()-weight)<1e-3&&Math.abs(b.effectiveHealth-(float)(RiftWitherEntity.BASE_HEALTH*WitherGeometry.healthScale(weight)))<.5F,
+                "A fighter without a power adds a little over half a fighter's health ("+b.effectiveHealth+")");
+        h.assertTrue(b.fightersAverage()<1&&b.blowScale()<1,"With a powerless fighter inside, its blows soften");
+        float before=plain.getHealth();WitherMoves.hit(b,plain,10);
+        h.assertTrue(before-plain.getHealth()<10&&before-plain.getHealth()>7,"...measurably ("+(before-plain.getHealth())+" of 10)");
+        Vec3 inside=strong.position();strong.teleportTo(h.getLevel(),0,0,0,0,0);b.start(WitherGeometry.Move.VERDICT);
+        h.assertTrue(b.actionWindup()>WitherGeometry.castWindup(WitherGeometry.Move.VERDICT,1,b.casts-1,false),"...and with only a powerless fighter inside, its warnings run longer ("+b.actionWindup()+")");
+        b.cancelChain();strong.teleportTo(plain.serverLevel(),inside.x,inside.y,inside.z,0,0);
+        // Leaving never shrinks it, and a fighter who levels up mid-fight counts for more.
+        float max=b.effectiveHealth;plain.teleportTo(h.getLevel(),0,0,0,0,0);b.clock=100;b.tick();
+        h.assertTrue(b.effectiveHealth==max,"Leaving cannot weaken it");
+        PlayerProgressionService.setPowerLevel(strong,20);strong.setData(ModDataAttachments.PLAYER_ABILITIES,PlayerAbilityData.empty().replaceWithUnlockedPower(ModAbilities.SONIC_RESONANCE_ID));
+        h.assertTrue(WitherArena.status(strong.getServer()).contains("Scaled for a party worth"),"The console shows how it is scaled");
+    }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_37")
     public static void tetherIntoBiteAndDoubleCharge(GameTestHelper h){clean(h);try{
         ServerPlayer p=player(h,16);var b=fight(h,p);b.operatorPhase();b.transition=0;p.setPos(b.position().add(0,0,12));

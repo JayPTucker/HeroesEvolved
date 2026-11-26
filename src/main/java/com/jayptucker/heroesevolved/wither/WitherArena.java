@@ -1,12 +1,10 @@
 package com.jayptucker.heroesevolved.wither;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
-import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.network.CameraShakePayload;
 import com.jayptucker.heroesevolved.network.DazePayload;
 import com.jayptucker.heroesevolved.network.ScreenTintPayload;
 import com.jayptucker.heroesevolved.network.SetPiecePayload;
-import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.radiation.NuclearShields;
 import com.jayptucker.heroesevolved.registry.ModEntities;
 import com.jayptucker.heroesevolved.registry.ModItems;
@@ -78,9 +76,11 @@ public final class WitherArena {
         if (closeIn >= 0) return "Contained. " + (exitOpen ? "The exit stands where it died; " : "The exit is tearing open; ")
                 + MEMBERS.values().stream().filter(p -> p.isAlive() && inside(p)).count() + " fighter(s) still inside. The Ossuary closes in "
                 + closeIn / 20 + " s.";
-        if (boss == null) return ready ? "Breach ready. Entry requires an awakened ability and Power Level 16." : "The Wither is forming and being dragged into its breach.";
+        if (boss == null) return ready ? "Breach ready. Anyone may enter; the fight scales to who does." : "The Wither is forming and being dragged into its breach.";
         long marked = boss.fighters().stream().filter(p -> p.hasEffect(com.jayptucker.heroesevolved.registry.ModItems.HUNGERING)).count();
         return "Phase " + boss.phase() + "; " + Math.round(boss.getHealth()) + " / " + Math.round(boss.getMaxHealth()) + " health; " + boss.fighters().size() + " fighter(s). "
+                + String.format(java.util.Locale.ROOT, "Scaled for a party worth %.2f (health x%.2f, its blows x%.2f, warnings x%.2f). ",
+                        boss.partyWeight(), WitherGeometry.healthScale(boss.partyWeight()), boss.blowScale(), WitherGeometry.windupScale(boss.fightersAverage()))
                 + (boss.ward ? "Star Ward up: " + boss.wardHearts() + " / 3 hearts feed it (gate at " + Math.round(WitherGeometry.WARD_GATE * 100) + "%). "
                 : boss.phase() == 1 ? "Ward broken. " : "Hearts: " + (3 - Integer.bitCount(boss.burnt())) + " / 3 unspent" + (boss.anchor() >= 0 ? ", heart " + boss.anchor() + " feeding" : "") + ". ")
                 + (marked > 0 ? marked + " marked. " : "") + (boss.minions.isEmpty() ? "" : boss.minions.size() + " brood. ")
@@ -91,7 +91,7 @@ public final class WitherArena {
     public static String operatorStart(ServerPlayer target, int variant) {
         if (variant == 0) return start(target.serverLevel(), target.position().add(target.getLookAngle().multiply(1, 0, 1).normalize().scale(7)), target.getYRot())
                 ? "Forming a Wither breach near the selected player." : "A Wither breach is already open, or this dimension cannot host its source.";
-        if (variant == 1) return enter(target) ? "Entered the Wither fight." : "Entry refused: wait for the breach, leave any current attempt, and check awakened Power Level 16.";
+        if (variant == 1) return enter(target) ? "Entered the Wither fight." : "Entry refused: wait for the breach to open and leave any current attempt.";
         if (variant == 2 && boss != null && boss.fighting() && boss.phase() < 3) { boss.operatorPhase(); return "Advanced the live Wither to phase " + boss.phase() + "."; }
         if (variant == 3 && boss != null && boss.fighting()) { boss.operatorDefeat(); return "The Wither's star is collapsing: death scene, detonation and exit."; }
         if (variant == 4) return boss != null && boss.operatorBreakWard() ? "The Star Ward shatters: the Wither is thrown down, and its hearts stay dark this phase."
@@ -156,19 +156,15 @@ public final class WitherArena {
 
     // ---------------------------------------------------------------- in and out
 
+    /** Anyone may enter, with or without a power, at any Power Level: the fight scales to who does (WitherGeometry.strength). */
     public static boolean eligible(ServerPlayer p) {
-        return p.isAlive() && !p.isSpectator() && PlayerProgressionService.getPowerLevel(p) >= WitherGeometry.MINIMUM_LEVEL
-                && PlayerAbilityService.getData(p).assignedPower().filter(e -> e.getValue().isUnlocked()).isPresent();
+        return p.isAlive() && !p.isSpectator();
     }
     public static boolean enter(ServerPlayer p) {
         MinecraftServer server = p.getServer();
         var data = WitherData.get(server);
         if (!ready || data.source == null || closeIn >= 0 || inside(p) || boss != null && boss.dying()) return false;
-        if (!eligible(p)) {
-            if (!LEAVE_FIRST.contains(p.getUUID())) p.sendSystemMessage(Component.translatable("wither.heroesevolved.level", WitherGeometry.MINIMUM_LEVEL));
-            LEAVE_FIRST.add(p.getUUID());
-            return false;
-        }
+        if (!eligible(p)) return false;
         ServerLevel cage = server.getLevel(WitherGeometry.DIMENSION);
         if (cage == null) return false;
         if (!built) {
@@ -188,7 +184,8 @@ public final class WitherArena {
         }
         boss.join(p);
         emptyTicks = 0;
-        p.sendSystemMessage(Component.translatable("wither.heroesevolved.enter").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
+        p.sendSystemMessage(Component.translatable(com.jayptucker.heroesevolved.combat.BossLocks.gifted(p) ? "wither.heroesevolved.enter"
+                : "wither.heroesevolved.enter_ungifted").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
         return true;
     }
     private static void holdCage(ServerLevel level, boolean hold) {
