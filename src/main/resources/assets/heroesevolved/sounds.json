@@ -1235,6 +1235,14 @@
       }
     ]
   },
+  "wither_aftermath": {
+    "sounds": [
+      {
+        "name": "heroesevolved:music/wither_aftermath",
+        "stream": true
+      }
+    ]
+  },
   "music_disc.containment": {
     "sounds": [
       {

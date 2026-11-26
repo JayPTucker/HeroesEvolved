@@ -31,6 +31,14 @@ public final class WitherEvents {
         if(!WitherArena.start(level,wither.position(),wither.getYRot()))level.getServer().execute(()->{
             for(ItemStack stack:List.of(new ItemStack(Items.SOUL_SAND,4),new ItemStack(Items.WITHER_SKELETON_SKULL,3)))
                 level.addFreshEntity(new ItemEntity(level,wither.getX(),wither.getY(),wither.getZ(),stack));
+            // Say why the build fell apart, to whoever built it: one breach at a time, or not from inside the cage.
+            var open=WitherData.get(level.getServer()).source;
+            var why=WitherArena.inside(wither)?net.minecraft.network.chat.Component.translatable("wither.heroesevolved.refused.inside")
+                    :open!=null?net.minecraft.network.chat.Component.translatable("wither.heroesevolved.refused.open",
+                            (int)Math.floor(open.at().x)+", "+(int)Math.floor(open.at().y)+", "+(int)Math.floor(open.at().z),open.dimension().location().getPath().replace('_',' '))
+                    :net.minecraft.network.chat.Component.translatable("wither.heroesevolved.refused.cannot");
+            for(ServerPlayer p:level.getEntitiesOfClass(ServerPlayer.class,wither.getBoundingBox().inflate(16)))
+                p.sendSystemMessage(why.copy().withStyle(net.minecraft.ChatFormatting.GRAY,net.minecraft.ChatFormatting.ITALIC));
         });
     }
     @SubscribeEvent public static void tick(ServerTickEvent.Post event){WitherArena.tick(event.getServer());}
@@ -43,8 +51,7 @@ public final class WitherEvents {
     static boolean fullSwing(Player p){Long time=SWINGS.remove(p.getUUID());return time!=null&&p.level().getGameTime()-time<=1;}
     @SubscribeEvent public static void block(BlockEvent.BreakEvent event) {
         if(!(event.getLevel() instanceof ServerLevel level)||!level.dimension().equals(WitherGeometry.DIMENSION)||event.getPlayer().isCreative())return;
-        RiftWitherEntity boss=WitherArena.boss();
-        if(boss==null||boss.anchor()<0||!event.getPos().equals(WitherGeometry.ANCHORS.get(boss.anchor())))event.setCanceled(true);
+        event.setCanceled(true);
     }
     /** The Wither's brood leaves nothing behind: no skulls, bones or swords, and no experience. */
     @SubscribeEvent(priority=EventPriority.HIGH) public static void broodDrops(LivingDropsEvent event) {
@@ -69,6 +76,9 @@ public final class WitherEvents {
             WitherData.get(p.getServer()).clearHome(p.getUUID());WitherArena.deliver(p);
         }
     }
-    @SubscribeEvent public static void logout(PlayerEvent.PlayerLoggedOutEvent event){SWINGS.remove(event.getEntity().getUUID());}
-    @SubscribeEvent public static void stop(ServerStoppingEvent event){WitherArena.reset(event.getServer(),true);SWINGS.clear();}
+    @SubscribeEvent public static void logout(PlayerEvent.PlayerLoggedOutEvent event){
+        SWINGS.remove(event.getEntity().getUUID());
+        if(event.getEntity() instanceof ServerPlayer p)com.jayptucker.heroesevolved.combat.BossLocks.forget(p);
+    }
+    @SubscribeEvent public static void stop(ServerStoppingEvent event){WitherArena.reset(event.getServer(),true);SWINGS.clear();com.jayptucker.heroesevolved.combat.BossLocks.clear();}
 }

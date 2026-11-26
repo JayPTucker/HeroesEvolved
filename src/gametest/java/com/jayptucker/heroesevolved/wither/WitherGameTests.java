@@ -14,6 +14,7 @@ import net.minecraft.gametest.framework.*;
 import net.minecraft.network.Connection;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.*;
+import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.LivingEntity;
@@ -40,6 +41,9 @@ public final class WitherGameTests {
     private static ServerPlayer player(GameTestHelper h,int level){
         return player(h,level,false);
     }
+    private static ServerPlayer player(GameTestHelper h,int level,net.minecraft.resources.ResourceLocation power){
+        ServerPlayer p=player(h,level,false);p.setData(ModDataAttachments.PLAYER_ABILITIES,PlayerAbilityData.empty().replaceWithUnlockedPower(power));return p;
+    }
     private static ServerPlayer player(GameTestHelper h,int level,boolean real){
         GameProfile profile=new GameProfile(UUID.randomUUID(),"CageTester");
         // FakePlayer.die deliberately does nothing: death/drop integration needs an actual ServerPlayer.
@@ -64,7 +68,11 @@ public final class WitherGameTests {
         WitherData.get(h.getLevel().getServer()).source(new WitherData.Home(h.getLevel().dimension(),Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(5,2,5))),0,0));
         WitherArena.tick(h.getLevel().getServer());
     }
-    private static RiftWitherEntity fight(GameTestHelper h,ServerPlayer p){ready(h);h.assertTrue(WitherArena.enter(p),"Eligible solo fighter enters");RiftWitherEntity b=WitherArena.boss();b.skipArrival();b.still(true);b.holdOff(10000);return b;}
+    /** The fight without its ward, for tests of everything else. */
+    private static RiftWitherEntity fight(GameTestHelper h,ServerPlayer p){RiftWitherEntity b=warded(h,p);b.unward();return b;}
+    /** The fight as it begins: warded, its three hearts in their pylons. */
+    private static RiftWitherEntity warded(GameTestHelper h,ServerPlayer p){ready(h);h.assertTrue(WitherArena.enter(p),"Eligible solo fighter enters");RiftWitherEntity b=WitherArena.boss();b.skipArrival();b.still(true);b.holdOff(10000);b.tick();return b;}
+    private static void look(ServerPlayer p,Vec3 at){p.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES,at);}
     private static void done(GameTestHelper h){clean(h);h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_01",timeoutTicks=240)
     public static void nativeFormationBecomesBreachWithoutExplosion(GameTestHelper h){
@@ -115,11 +123,19 @@ public final class WitherGameTests {
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_06")
     public static void anchorsBackfireOnceAndForcePhase(GameTestHelper h){clean(h);try{
-        ServerPlayer p=player(h,16);var b=fight(h,p);ServerLevel l=(ServerLevel)b.level();
-        l.setBlock(WitherGeometry.ANCHORS.get(0),Blocks.AIR.defaultBlockState(),3);b.tick();h.assertTrue(l.getBlockState(WitherGeometry.ANCHORS.get(0)).is(Blocks.TINTED_GLASS),"Inactive anchor repairs");
-        b.start(WitherGeometry.Move.RAIN);int index=b.anchor();float hp=b.getHealth();l.setBlock(WitherGeometry.ANCHORS.get(index),Blocks.AIR.defaultBlockState(),3);b.tick();
-        h.assertTrue(b.getHealth()<hp-b.getMaxHealth()*.085&&b.stagger>0,"Lit anchor backfires and exposes core");h.assertTrue(!b.backfire(index,p),"Spent anchor cannot be farmed");
+        ServerPlayer p=player(h,16);var b=fight(h,p);
+        b.start(WitherGeometry.Move.RAIN);h.assertTrue(b.anchor()<0,"In the first phase its hearts are its ward, not its fuel");b.cancelChain();
         b.setHealth(b.getMaxHealth()*.65F);b.invulnerableTime=0;b.hurt(b.damageSources().playerAttack(p),1);h.assertTrue(b.phase()==2&&b.transition>0,"Threshold changes phase");
+        b.transition=0;b.tick();
+        for(int i=0;i<3;i++)h.assertTrue(b.hearts[i]!=null&&b.hearts[i].state()==HungerHeart.DORMANT&&b.hearts[i].lock()==null,"The broken vessel's hearts re-form asleep");
+        float sleeping=b.hearts[0].getHealth();b.hearts[0].hurt(b.damageSources().playerAttack(p),20);h.assertTrue(b.hearts[0].getHealth()==sleeping,"A sleeping heart cannot be broken");
+        p.setPos(WitherGeometry.heart(1).add(0,-3,3));b.start(WitherGeometry.Move.RAIN);int index=b.anchor();
+        h.assertTrue(index==1&&b.hearts[index].state()==HungerHeart.FEEDING,"A heavy move lights the heart nearest its focus");
+        float hp=b.getHealth();var lit=b.hearts[index];for(int i=0;i<6&&!lit.isRemoved();i++)lit.hurt(b.damageSources().playerAttack(p),20);
+        h.assertTrue(lit.isRemoved()&&b.getHealth()<hp-b.getMaxHealth()*.07&&b.stagger>0,"A broken feeding heart backfires and exposes the core");
+        h.assertTrue(!b.backfire(index,p)&&b.hearts[index]==null,"A spent heart cannot be farmed this phase");
+        b.setHealth(b.getMaxHealth()*.32F);b.invulnerableTime=0;b.hurt(b.damageSources().playerAttack(p),1);b.transition=0;b.tick();
+        h.assertTrue(b.phase()==3&&b.burnt()==0&&b.hearts[index]!=null,"Each later phase re-forms every heart");
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_07")
     public static void solidCoverStopsNovaAndDoorwayCannotSnipe(GameTestHelper h){clean(h);try{
@@ -266,7 +282,7 @@ public final class WitherGameTests {
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_22")
     public static void anchorRemainsCounterableAfterItsInitialAttack(GameTestHelper h){clean(h);try{
-        var p=player(h,16);var b=fight(h,p);b.start(WitherGeometry.Move.RAIN);int anchor=b.anchor();for(int i=0;i<80;i++)b.tick();
+        var p=player(h,16);var b=fight(h,p);b.operatorPhase();b.transition=0;b.tick();b.start(WitherGeometry.Move.RAIN);int anchor=b.anchor();for(int i=0;i<80;i++)b.tick();
         h.assertTrue(b.casting==null&&b.anchor()==anchor,"Feed remains visible beyond the short rain windup");h.assertTrue(b.backfire(anchor,p)&&b.stagger>0,"A solo fighter can reach the focus and still backfire it");
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_23")
@@ -290,9 +306,13 @@ public final class WitherGameTests {
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_26")
     public static void anchorGlassHasRealReachableOpenFaces(GameTestHelper h){clean(h);try{
-        var p=player(h,16);var b=fight(h,p);for(BlockPos anchor:WitherGeometry.ANCHORS){
-            Vec3 eye=Vec3.atCenterOf(anchor).add(0,-.88,2.4);var hit=p.serverLevel().clip(new net.minecraft.world.level.ClipContext(eye,Vec3.atCenterOf(anchor),net.minecraft.world.level.ClipContext.Block.COLLIDER,net.minecraft.world.level.ClipContext.Fluid.NONE,net.minecraft.world.phys.shapes.CollisionContext.empty()));
-            h.assertTrue(hit.getBlockPos().equals(anchor),"A fighter on the approach plate can actually target the glass, not its housing");
+        var p=player(h,16);var b=warded(h,p);for(int i=0;i<3;i++){
+            h.assertTrue(b.hearts[i]!=null&&b.hearts[i].state()==HungerHeart.WARDING&&b.hearts[i].position().distanceTo(WitherGeometry.heart(i))<.01,"Each pylon holds a warding heart in its cradle");
+            for(Vec3 side:List.of(new Vec3(0,-.88,2.4),new Vec3(2.4,-.88,0),new Vec3(0,-.88,-2.4),new Vec3(-2.4,-.88,0))){
+                Vec3 eye=WitherGeometry.heartCenter(i).add(side);
+                var hit=p.serverLevel().clip(new net.minecraft.world.level.ClipContext(eye,WitherGeometry.heartCenter(i),net.minecraft.world.level.ClipContext.Block.COLLIDER,net.minecraft.world.level.ClipContext.Fluid.NONE,net.minecraft.world.phys.shapes.CollisionContext.empty()));
+                h.assertTrue(hit.getType()==net.minecraft.world.phys.HitResult.Type.MISS,"The cradle is open on every side: nothing between a fighter on the plate and the heart");
+            }
         }
     }finally{clean(h);}h.succeed();}
     @GameTest(template="rewind_empty",batch="wither_27")
@@ -304,7 +324,7 @@ public final class WitherGameTests {
     @GameTest(template="rewind_empty",batch="wither_28",timeoutTicks=180)
     public static void adminCatalogueAndPermissionChecksCoverWither(GameTestHelper h){clean(h);try{
         var p=player(h,16);var entries=com.jayptucker.heroesevolved.admin.AdminEvents.describe(p.getServer(),p);var entry=entries.stream().filter(e->e.id().equals("wither")).findFirst().orElseThrow();
-        h.assertTrue(entry.starts().size()==4&&entry.scope().contains("all fighters"),"Console exposes scoped start, entry, phase and finish controls");
+        h.assertTrue(entry.starts().size()==5&&entry.scope().contains("all fighters"),"Console exposes scoped start, entry, phase, finish and ward controls");
         com.jayptucker.heroesevolved.admin.AdminService.handle(p,new com.jayptucker.heroesevolved.network.AdminActionPayload(com.jayptucker.heroesevolved.network.AdminActionPayload.Action.EVENT_START,p.getUUID(),"wither",0));
         h.assertTrue(!WitherArena.busy(p.getServer()),"An untrusted event payload cannot create a breach");ready(h);
         com.jayptucker.heroesevolved.admin.AdminService.handle(p,new com.jayptucker.heroesevolved.network.AdminActionPayload(com.jayptucker.heroesevolved.network.AdminActionPayload.Action.EVENT_CANCEL,p.getUUID(),"wither",0));
@@ -389,7 +409,8 @@ public final class WitherGameTests {
         h.assertTrue(one==bite.windup&&two<one&&three<two,"Each phase winds up faster");
         h.assertTrue(WitherGeometry.castWindup(bite,2,3,false)>two&&WitherGeometry.castWindup(bite,1,3,false)==one,"From the second phase every third bite is a held feint");
         h.assertTrue(WitherGeometry.castWindup(WitherGeometry.Move.VERDICT,2,3,false)==WitherGeometry.castWindup(WitherGeometry.Move.VERDICT,2,1,false),"Beams never feint");
-        h.assertTrue(WitherGeometry.castWindup(bite,3,1,true)<three,"Starving is faster still");
+        h.assertTrue(WitherGeometry.castWindup(WitherGeometry.Move.VERDICT,3,1,true)<WitherGeometry.castWindup(WitherGeometry.Move.VERDICT,3,1,false),"Starving is faster still");
+        h.assertTrue(WitherGeometry.castWindup(bite,3,1,true)>=WitherGeometry.floor(bite),"...but never under a move's reading time");
         h.assertTrue(WitherGeometry.damage(WitherGeometry.Move.SLAM,3)>WitherGeometry.damage(WitherGeometry.Move.SLAM,1)&&WitherGeometry.damage(WitherGeometry.Move.HORIZON,1)>=20,"Its hits grow with the phases, and its discharge is near-lethal");
         h.succeed();
     }
@@ -399,6 +420,249 @@ public final class WitherGameTests {
         b.start(WitherGeometry.Move.BITE);for(int i=0;i<WitherGeometry.Move.BITE.windup;i++)b.tick();
         h.assertTrue(before-p.getHealth()>=5.5F&&p.hasEffect(net.minecraft.world.effect.MobEffects.WITHER),"A bite takes a big bite out of a fighter and withers them");
     }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_38")
+    public static void everyPowerHasAStrongAnswerInEveryPhase(GameTestHelper h){
+        var all=List.of(ModAbilities.PYROKINESIS_ID,ModAbilities.CRYOKINESIS_ID,ModAbilities.ELECTROKINESIS_ID,ModAbilities.HYDROKINESIS_ID,ModAbilities.SUPERSPEED_ID,
+                ModAbilities.FLIGHT_ID,ModAbilities.QUAKE_ID,ModAbilities.SONIC_RESONANCE_ID,ModAbilities.TELEPATHY_ID,ModAbilities.TELEKINESIS_ID,ModAbilities.TIME_MANIPULATION_ID,
+                ModAbilities.RADIATION_ID,ModAbilities.REGENERATION_ID,ModAbilities.PHASING_ID,ModAbilities.INVISIBILITY_ID,ModAbilities.MIMICRY_ID,ModAbilities.SHAPESHIFTING_ID,
+                ModAbilities.TECHNOPATHY_ID,ModAbilities.MATTER_ASSEMBLY_ID,ModAbilities.VIBE_ID,ModAbilities.AMPLIFICATION_ID);
+        h.assertTrue(com.jayptucker.heroesevolved.combat.BossLocks.powers().containsAll(all)&&all.size()==21,"The lock table knows all twenty-one powers");
+        for(var power:all)for(int phase=1;phase<=3;phase++){
+            boolean strong=false;
+            for(var lock:WitherGeometry.locks(phase)){var key=com.jayptucker.heroesevolved.combat.BossLocks.key(power,lock);strong|=key!=null&&key.strong();}
+            h.assertTrue(strong,power+" has a strong answer in phase "+phase);
+        }
+        for(int phase=1;phase<=3;phase++)for(var lock:WitherGeometry.locks(phase)){
+            Set<com.jayptucker.heroesevolved.combat.BossLocks.Role> roles=new HashSet<>();int keys=0;
+            for(var power:all){var key=com.jayptucker.heroesevolved.combat.BossLocks.key(power,lock);if(key!=null){keys++;roles.add(key.role());}}
+            h.assertTrue(keys>=3&&roles.size()>=2,lock+" has at least three power answers in more than one role");
+        }
+        h.succeed();
+    }
+    @GameTest(template="rewind_empty",batch="wither_39")
+    public static void wardQuartersBlowsAndHoldsTheGate(GameTestHelper h){clean(h);try{
+        ServerPlayer p=player(h,16);var b=warded(h,p);p.setPos(b.position().add(0,0,6));
+        h.assertTrue(b.ward&&b.wardHearts()==3&&b.warded(),"It arrives warded by three hearts");
+        float hp=b.getHealth();b.invulnerableTime=0;b.hurt(b.damageSources().playerAttack(p),20);float warded=hp-b.getHealth();
+        b.setHealth(b.getMaxHealth()*.705F);
+        for(int i=0;i<20;i++){b.clock+=20;b.invulnerableTime=0;b.hurt(b.damageSources().playerAttack(p),40);}
+        h.assertTrue(b.getHealth()>=b.getMaxHealth()*WitherGeometry.WARD_GATE-.01F&&b.phase()==1,"The ward holds the line: it cannot be brought below seven tenths");
+        b.setHealth(b.getMaxHealth());b.clock+=40;b.unward();hp=b.getHealth();b.invulnerableTime=0;b.hurt(b.damageSources().playerAttack(p),20);float open=hp-b.getHealth();
+        h.assertTrue(warded>0&&warded<open*.3F,"While three hearts feed it, the ward takes three quarters of every blow ("+warded+" vs "+open+")");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_40")
+    public static void heartsCountPowersOverPlainWeapons(GameTestHelper h){clean(h);try{
+        ServerPlayer pyro=player(h,16),mind=player(h,16,ModAbilities.TELEPATHY_ID);var b=warded(h,pyro);WitherArena.enter(mind);
+        var heart=b.hearts[0];float max=heart.getMaxHealth();
+        heart.hurt(b.damageSources().playerAttack(pyro),4);h.assertTrue(Math.abs(max-heart.getHealth()-4*com.jayptucker.heroesevolved.combat.BossLocks.STRONG_HITS)<.01,"A pyrokinetic's blows break a heart two and a half times over");
+        float before=heart.getHealth();heart.hurt(b.damageSources().playerAttack(mind),4);h.assertTrue(Math.abs(before-heart.getHealth()-4)<.01,"Any power's blow counts in full");
+        pyro.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,new ItemStack(Items.IRON_SWORD));before=heart.getHealth();heart.hurt(b.damageSources().playerAttack(pyro),4);
+        h.assertTrue(Math.abs(before-heart.getHealth()-2)<.01,"A blade does half: plain weapons are the slow answer");
+        float boss=b.getHealth();b.invulnerableTime=0;b.hurt(b.damageSources().playerAttack(pyro),10);float blade=boss-b.getHealth();
+        pyro.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,ItemStack.EMPTY);b.clock+=40;boss=b.getHealth();b.invulnerableTime=0;b.hurt(b.damageSources().playerAttack(pyro),10);
+        h.assertTrue(blade<(boss-b.getHealth())*.7F,"Its body takes less from a blade than from a power");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_41",timeoutTicks=200)
+    public static void aimedPowersAnswerAHeart(GameTestHelper h){clean(h);
+        ServerPlayer tech=player(h,16,ModAbilities.TECHNOPATHY_ID);var b=warded(h,tech);var heart=b.hearts[2];
+        h.runAtTickTime(100,()->{try{
+        tech.setPos(WitherGeometry.heart(2).add(0,-2.5,-7));look(tech,heart.aimPoint());float max=heart.getMaxHealth();
+        com.jayptucker.heroesevolved.combat.BossLocks.used(tech,ModAbilities.TECHNOPATHY_ID,"test",20);
+        h.assertTrue(Math.abs(max*(1-com.jayptucker.heroesevolved.combat.BossLocks.STRONG_AIMED)-heart.getHealth())<.01,"A technopath overrides a heart it looks at: two fifths at once ("+heart.getHealth()+" of "+max+", lock "+heart.lock()+", key "+com.jayptucker.heroesevolved.combat.BossLocks.key(tech,com.jayptucker.heroesevolved.combat.BossLocks.Lock.SHIELD)+", level "+(tech.level()==heart.level())+", eye "+tech.getEyePosition()+" look "+tech.getLookAngle()+" heart "+heart.aimPoint()+")");
+        float after=heart.getHealth();com.jayptucker.heroesevolved.combat.BossLocks.used(tech,ModAbilities.TECHNOPATHY_ID,"test",20);
+        h.assertTrue(heart.getHealth()==after,"The same heart can't be answered again at once");
+        tech.setPos(WitherGeometry.heart(1).add(0,-2.5,7));look(tech,b.hearts[1].aimPoint());com.jayptucker.heroesevolved.combat.BossLocks.used(tech,ModAbilities.TECHNOPATHY_ID,"test",2);
+        h.assertTrue(b.hearts[1].getHealth()==b.hearts[1].getMaxHealth(),"A trifling use (under eight stamina) is not an answer");
+        look(tech,tech.position().add(0,0,-10));com.jayptucker.heroesevolved.combat.BossLocks.used(tech,ModAbilities.TECHNOPATHY_ID,"test",20);
+        h.assertTrue(b.hearts[1].getHealth()==b.hearts[1].getMaxHealth(),"It must be aimed at the heart");
+        ServerPlayer pyro=player(h,16);WitherArena.enter(pyro);pyro.setPos(tech.position());look(pyro,b.hearts[1].aimPoint());
+        com.jayptucker.heroesevolved.combat.BossLocks.used(pyro,ModAbilities.PYROKINESIS_ID,"test",20);
+        h.assertTrue(b.hearts[1].getHealth()==b.hearts[1].getMaxHealth(),"A power whose key is its blows has nothing to aim");
+    
+        }finally{clean(h);}h.succeed();});
+    }
+    @GameTest(template="rewind_empty",batch="wither_42")
+    public static void breakingAllHeartsShattersTheWardAndAHeartReforms(GameTestHelper h){clean(h);try{
+        ServerPlayer p=player(h,16);var b=warded(h,p);
+        var first=b.hearts[0];first.take(first.getMaxHealth()+1,p);
+        h.assertTrue(b.hearts[0]==null&&b.mendAt[0]>b.clock&&b.ward&&b.wardHearts()==2,"One broken heart thins the ward and starts to re-form");
+        b.clock=b.mendAt[0];b.tick();h.assertTrue(b.hearts[0]!=null&&b.hearts[0].state()==HungerHeart.WARDING,"Left alone, a broken heart re-forms while the ward stands");
+        b.setPos(WitherGeometry.floor().add(0,9,0));double high=b.getY();
+        for(int i=0;i<3;i++)b.hearts[i].take(1000,p);
+        h.assertTrue(!b.ward&&b.crash>0&&b.exposed()&&!b.warded(),"Break all three and the ward shatters, throwing it down");
+        for(int i=0;i<12;i++)b.tick();
+        h.assertTrue(b.getY()<high-5&&!b.warded(),"It falls to the floor");
+        for(int i=0;i<3;i++)h.assertTrue(b.hearts[i]==null&&b.mendAt[i]<0,"With the ward gone, the cradles stay dark for the rest of the phase");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_43",timeoutTicks=200)
+    public static void returnedSkullShattersAHeartAndHitsPastTheWard(GameTestHelper h){clean(h);
+        ServerPlayer p=player(h,16);var b=warded(h,p);ServerLevel cage=p.serverLevel();
+        h.runAtTickTime(100,()->{try{
+        var mine=ModEntities.RIFT_SKULL.get().create(cage);mine.setOwner(b);Vec3 at=WitherGeometry.heartCenter(1);mine.setPos(at);
+        mine.onHit(new BlockHitResult(at,net.minecraft.core.Direction.UP,BlockPos.containing(at),false));
+        h.assertTrue(b.hearts[1]!=null&&b.hearts[1].getHealth()==b.hearts[1].getMaxHealth(),"Its own skulls never break its hearts");
+        var back=ModEntities.RIFT_SKULL.get().create(cage);back.setOwner(p);back.setPos(at);
+        back.onHit(new BlockHitResult(at,net.minecraft.core.Direction.UP,BlockPos.containing(at),false));
+        h.assertTrue(b.hearts[1]==null&&b.wardHearts()==2,"A skull sent back shatters a heart outright");
+        float hp=b.getHealth();var into=ModEntities.RIFT_SKULL.get().create(cage);into.setOwner(p);Vec3 core=b.core();into.setPos(core);
+        into.onHit(new BlockHitResult(core,net.minecraft.core.Direction.UP,BlockPos.containing(core),false));
+        h.assertTrue(hp-b.getHealth()>=b.getMaxHealth()*WitherGeometry.RETURNED_SHARE*.9F,"A skull sent into it hits for a twenty-fifth of its health, past the ward ("+(hp-b.getHealth())+" of "+b.getMaxHealth()+")");
+    
+        }finally{clean(h);}h.succeed();});
+    }
+    @GameTest(template="rewind_empty",batch="wither_44")
+    public static void broodCarriesBoneBackToMendItInTheSecondPhase(GameTestHelper h){clean(h);try{
+        ServerPlayer p=player(h,16);var b=fight(h,p);ServerLevel cage=p.serverLevel();
+        java.util.function.Supplier<net.minecraft.world.entity.monster.WitherSkeleton> brood=()->{var s=EntityType.WITHER_SKELETON.create(cage);WitherMoves.brood(s);
+            s.moveTo(b.position().add(2.5,0,0));cage.addFreshEntity(s);b.minions.add(s);s.tickCount=WitherGeometry.BROOD_FLIGHT+WitherGeometry.BROOD_RETURN+1;return s;};
+        var early=brood.get();b.setHealth(b.getMaxHealth()*.8F);float hp=b.getHealth();b.tick();
+        h.assertTrue(!early.isRemoved()&&b.getHealth()==hp,"In the first phase its brood only fights");
+        early.discard();b.minions.clear();b.operatorPhase();b.transition=0;b.setHealth(b.getMaxHealth()*.5F);
+        var carrier=brood.get();hp=b.getHealth();b.tick();
+        h.assertTrue(carrier.isRemoved()&&!b.minions.contains(carrier)&&Math.abs(b.getHealth()-hp-b.getMaxHealth()*WitherGeometry.MEND_SHARE)<.05,"A skeleton that reaches it climbs in and mends it");
+        b.setHealth(b.getMaxHealth()*2/3F-1);brood.get();b.tick();
+        h.assertTrue(b.getHealth()<=b.getMaxHealth()*2/3F+.01,"Mending never lifts it back into a beaten phase");
+        var young=EntityType.WITHER_SKELETON.create(cage);WitherMoves.brood(young);young.moveTo(b.position().add(2.5,0,0));cage.addFreshEntity(young);b.minions.add(young);young.tickCount=10;b.tick();
+        h.assertTrue(!young.isRemoved(),"A fresh skeleton fights before it carries bone back");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_45",timeoutTicks=200)
+    public static void hungerMarkDrainsWhileSeenAndSnapsOutOfSight(GameTestHelper h){clean(h);
+        ServerPlayer p=player(h,16);var b=fight(h,p);b.operatorPhase();b.transition=0;b.setYRot(0);p.setPos(b.position().add(0,0,6));
+        h.runAtTickTime(100,()->{try{
+        b.cancelChain();b.casts=1;b.start(WitherGeometry.Move.BITE);for(int i=0;i<b.actionWindup();i++)b.tick();
+        h.assertTrue(p.hasEffect(com.jayptucker.heroesevolved.registry.ModItems.HUNGERING),"From the second phase its bite leaves the Hunger Mark");
+        p.setHealth(20);b.setHealth(b.getMaxHealth()*.5F);float hp=b.getHealth();p.invulnerableTime=0;
+        for(int i=0;i<41;i++)b.tick();
+        h.assertTrue(p.getHealth()<20&&b.getHealth()>hp,"While it can see you, its star drinks from you and heals it");
+        ServerLevel l=p.serverLevel();for(int x=-3;x<=3;x++)for(int y=0;y<6;y++)l.setBlock(BlockPos.containing(p.position().add(x,y,-1.5)),Blocks.BLACKSTONE.defaultBlockState(),3);
+        for(int i=0;i<WitherGeometry.MARK_UNSEEN+1;i++)b.tick();
+        h.assertTrue(!p.hasEffect(com.jayptucker.heroesevolved.registry.ModItems.HUNGERING),"Out of its sight long enough, the thread snaps");
+        ServerPlayer healer=player(h,16,ModAbilities.REGENERATION_ID);WitherArena.enter(healer);
+        healer.addEffect(new net.minecraft.world.effect.MobEffectInstance(com.jayptucker.heroesevolved.registry.ModItems.HUNGERING,200));
+        com.jayptucker.heroesevolved.combat.BossLocks.used(healer,ModAbilities.REGENERATION_ID,"test",20);
+        h.assertTrue(!healer.hasEffect(com.jayptucker.heroesevolved.registry.ModItems.HUNGERING),"A cleansing power lifts its own mark");
+        p.addEffect(new net.minecraft.world.effect.MobEffectInstance(com.jayptucker.heroesevolved.registry.ModItems.HUNGERING,200));
+        healer.setPos(p.position().add(0,0,4));look(healer,p.getBoundingBox().getCenter());
+        com.jayptucker.heroesevolved.combat.BossLocks.used(healer,ModAbilities.REGENERATION_ID,"test",20);
+        h.assertTrue(!p.hasEffect(com.jayptucker.heroesevolved.registry.ModItems.HUNGERING),"...or a marked friend's, by looking at them");
+    
+        }finally{clean(h);}h.succeed();});
+    }
+    @GameTest(template="rewind_empty",batch="wither_46")
+    public static void eventHorizonIsAnsweredByPower(GameTestHelper h){clean(h);try{
+        ServerPlayer pyro=player(h,16),ice=player(h,16,ModAbilities.CRYOKINESIS_ID),speed=player(h,16,ModAbilities.SUPERSPEED_ID),regen=player(h,16,ModAbilities.REGENERATION_ID);
+        var b=fight(h,pyro);for(var q:List.of(ice,speed,regen))WitherArena.enter(q);b.operatorPhase();b.transition=0;b.operatorPhase();b.transition=0;b.unward();
+        int n=0;for(var q:List.of(pyro,ice,speed,regen)){q.setPos(WitherGeometry.floor().add(-9+6*n++,0,12));q.setHealth(20);}regen.setHealth(10);
+        b.start(WitherGeometry.Move.HORIZON);int windup=b.actionWindup();
+        for(int i=0;i<windup;i++){if(i==windup-5)com.jayptucker.heroesevolved.combat.BossLocks.markUsed(speed);b.tick();}
+        h.assertTrue(ice.getHealth()==20,"A shield power holds the discharge");
+        h.assertTrue(speed.getHealth()==20,"A speedster who uses their power as it lands slips out of it");
+        h.assertTrue(regen.getHealth()>=WitherGeometry.OUTLAST_LEFT-.5F&&regen.isAlive(),"A regenerator outlasts it");
+        h.assertTrue(pyro.getHealth()<10,"A pyrokinetic who did not move in time takes it in full");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_47")
+    public static void openStarTakesMoreAndThreeBlowsCrackIt(GameTestHelper h){clean(h);try{
+        ServerPlayer p=player(h,16);var b=fight(h,p);b.operatorPhase();b.transition=0;b.operatorPhase();b.transition=0;b.unward();p.setPos(b.position().add(0,0,14));look(p,p.position().add(10,0,0));
+        ServerLevel l=p.serverLevel();
+        var wide=EntityType.ARROW.create(l);wide.setPos(b.position().add(0,1,2));float hp=b.getHealth();b.invulnerableTime=0;b.hurt(b.damageSources().arrow(wide,p),6);float body=hp-b.getHealth();
+        b.clock+=40;var onStar=EntityType.ARROW.create(l);onStar.setPos(b.core());hp=b.getHealth();b.invulnerableTime=0;b.hurt(b.damageSources().arrow(onStar,p),6);float star=hp-b.getHealth();
+        h.assertTrue(star>body*1.5F,"A shot on its open star does more ("+star+" vs "+body+")");
+        b.starHits.clear();b.cancelChain();b.start(WitherGeometry.Move.VERDICT);
+        for(int i=0;i<3;i++){b.clock+=10;b.invulnerableTime=0;b.hurt(b.damageSources().arrow(onStar,p),6);}
+        h.assertTrue(b.stagger>0&&b.casting==null,"Three blows on the star in quick succession crack it and it reels");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_48")
+    public static void wardShowsInStatusAndBreaksFromTheConsole(GameTestHelper h){clean(h);try{
+        ServerPlayer p=player(h,16);var b=warded(h,p);
+        h.assertTrue(WitherArena.status(p.getServer()).contains("Star Ward up: 3 / 3"),"Live status names the ward and its hearts");
+        h.assertTrue(WitherArena.operatorStart(p,4).contains("shatters")&&!b.ward&&b.crash>0,"The console can break its ward");
+        h.assertTrue(WitherArena.operatorStart(p,4).contains("No live Wither"),"...once");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_49")
+    public static void breachStepComesOutPastItsFocusAndShakesTheRing(GameTestHelper h){clean(h);try{
+        ServerPlayer p=player(h,16);var b=fight(h,p);p.setPos(WitherGeometry.floor().add(0,0,-12));
+        b.start(WitherGeometry.Move.STEP);Vec3 mark=b.marks.getFirst();
+        h.assertTrue(mark.z<p.getZ()-3.5&&Math.abs(mark.x-p.getX())<.5,"It marks a spot past its focus, on the far side from it ("+mark+")");
+        ServerPlayer q=player(h,16);WitherArena.enter(q);q.setPos(mark.add(.6,0,.4));
+        for(int i=0;i<b.actionWindup();i++)b.tick();
+        h.assertTrue(b.gate()!=null&&b.gateDepth(1)>1,"It is behind the far tear's plane, coming through it");
+        for(int i=0;i<WitherGeometry.STEP_TICKS;i++)b.tick();
+        h.assertTrue(b.position().distanceTo(mark.add(0,.3,0))<.2&&b.gate()==null,"It comes out on its mark, and the tear shuts behind it");
+        h.assertTrue(q.getHealth()<20&&p.getHealth()==20,"The arrival shakes whoever stands on the ring, not its focus outside it");
+        h.assertTrue(Math.abs(Mth.wrapDegrees(b.getYRot()-b.yawTo(p.position())))<30,"It comes out facing the one it stepped behind");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_50")
+    public static void tailReapSweepsItsBackAndAJumpClearsIt(GameTestHelper h){clean(h);try{
+        ServerPlayer p=player(h,16),q=player(h,16);var b=fight(h,p);WitherArena.enter(q);b.setYRot(0);b.yBodyRot=0;
+        p.setPos(b.position().add(0,-.35,-5));q.setPos(b.position().add(5,.8,0));
+        h.assertTrue(b.atItsBack(),"A fighter hugging its back is noticed, so its next chain opens with the tail");
+        b.start(WitherGeometry.Move.TAIL);float start=b.getYRot();
+        for(int i=0;i<b.actionWindup()+WitherGeometry.TAIL_TICKS;i++)b.tick();
+        h.assertTrue(p.getHealth()<20,"The tail sweeps a full circle and catches the one at its back");
+        h.assertTrue(q.getHealth()==20,"A jump clears it");
+        h.assertTrue(b.motion==null,"It spins once and stops");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_51")
+    public static void boneCageHoldsUntilAPowerBreaksIt(GameTestHelper h){clean(h);try{
+        ServerPlayer p=player(h,16);var b=fight(h,p);b.operatorPhase();b.transition=0;p.setPos(WitherGeometry.floor().add(0,0,10));
+        b.cancelChain();b.start(WitherGeometry.Move.CAGE);
+        h.assertTrue(b.marks.getFirst().distanceTo(new Vec3(p.getX(),WitherGeometry.floor().y,p.getZ()))<.01,"Its ribs are thrown round where the fighter stood when it began");
+        for(int i=0;i<b.actionWindup();i++)b.tick();
+        h.assertTrue(b.cage!=null&&b.cage.held.containsKey(p.getUUID())&&p.getHealth()<20,"Standing inside when it closes, they are caged");
+        h.assertTrue(b.chain.peekFirst()==WitherGeometry.Move.VERDICT,"Its three mouths come next for the caged");
+        Vec3 at=p.position();p.setPos(at.add(1.5,0,0));b.tick();
+        h.assertTrue(p.position().distanceTo(at)<.35,"The cage holds them where they stood");
+        com.jayptucker.heroesevolved.combat.BossLocks.markUsed(p);b.tick();
+        h.assertTrue(b.cage==null,"A power used breaks the bars at once");
+        b.cancelChain();b.start(WitherGeometry.Move.CAGE);float health=p.getHealth();
+        p.setPos(p.position().add(8,0,0));for(int i=0;i<b.actionWindup();i++)b.tick();
+        h.assertTrue(b.cage!=null&&b.cage.held.isEmpty()&&p.getHealth()==health,"Stepping out of the ring before it closes beats it");
+        for(int i=0;i<14;i++)b.tick();h.assertTrue(b.cage==null,"An empty cage sinks soon");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_52")
+    public static void starvingWellDriftsPullsAndCollapses(GameTestHelper h){clean(h);try{
+        ServerPlayer p=player(h,16);var b=fight(h,p);b.operatorPhase();b.transition=0;b.operatorPhase();b.transition=0;b.unward();
+        p.setPos(WitherGeometry.floor().add(0,0,20));b.cancelChain();b.start(WitherGeometry.Move.WELL);
+        for(int i=0;i<b.actionWindup();i++)b.tick();
+        h.assertTrue(b.wells.size()==1,"It spits a starving star");
+        var w=b.wells.getFirst();Vec3 target=p.position();double before=w.at.distanceTo(target);
+        for(int i=0;i<20;i++)b.tick();
+        h.assertTrue(w.at.distanceTo(target)<before-2,"It drifts after the fighter farthest from the Wither");
+        p.setDeltaMovement(Vec3.ZERO);w.at=new Vec3(p.getX()+4,WitherGeometry.floor().y+WitherGeometry.WELL_HEIGHT,p.getZ());b.tick();
+        h.assertTrue(p.getDeltaMovement().x>0,"It pulls whoever is near toward it");
+        ServerPlayer q=player(h,16);WitherArena.enter(q);q.setPos(p.position().add(-10,0,0));
+        w.age=WitherGeometry.WELL_LIFE-1;w.at=new Vec3(p.getX(),WitherGeometry.floor().y+WitherGeometry.WELL_HEIGHT,p.getZ());p.setHealth(20);b.tick();
+        h.assertTrue(b.wells.isEmpty()&&p.getHealth()<20&&q.getHealth()==20,"It collapses on whoever it caught, and only them");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_53")
+    public static void gearFromOtherModsCannotTrivialiseIt(GameTestHelper h){clean(h);try{
+        ServerPlayer p=player(h,16);var b=fight(h,p);
+        for(var slot:new EquipmentSlot[]{EquipmentSlot.HEAD,EquipmentSlot.CHEST,EquipmentSlot.LEGS,EquipmentSlot.FEET})
+            p.setItemSlot(slot,new ItemStack(switch(slot){case HEAD->Items.NETHERITE_HELMET;case CHEST->Items.NETHERITE_CHESTPLATE;case LEGS->Items.NETHERITE_LEGGINGS;default->Items.NETHERITE_BOOTS;}));
+        float before=p.getHealth();WitherMoves.hit(b,p,10,WitherGeometry.Move.BITE);
+        h.assertTrue(before-p.getHealth()>=10*WitherGeometry.PIERCE-.01F,"Its star's hunger goes through the best armour ("+(before-p.getHealth())+")");
+        ServerPlayer big=player(h,16);WitherArena.enter(big);big.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(100);big.setHealth(100);
+        WitherMoves.hit(b,big,16,WitherGeometry.Move.SLAM);
+        h.assertTrue(100-big.getHealth()>=16+100*WitherGeometry.HEAVY_SHARE-.5F,"A heavy blow takes a share of a big health pool too");
+        float hp=b.getHealth();b.invulnerableTime=0;b.hurt(b.damageSources().playerAttack(p),100000);
+        h.assertTrue(hp-b.getHealth()<=b.getMaxHealth()*RiftWitherEntity.HIT_CAP+.01F,"No weapon takes more than a twentieth of it in one blow");
+        float after=b.getHealth();for(int i=0;i<30;i++){b.invulnerableTime=0;b.hurt(b.damageSources().playerAttack(p),100000);}
+        h.assertTrue(after-b.getHealth()<.01F,"And nothing more in that second, however many blows");
+        h.assertTrue(1/RiftWitherEntity.SECOND_CAP>=40,"A flawless fight is at least forty seconds of damage");
+    }finally{clean(h);}h.succeed();}
+    @GameTest(template="rewind_empty",batch="wither_54")
+    public static void fasterPaceNeverCutsAWarningUnderItsFloor(GameTestHelper h){
+        for(var move:WitherGeometry.Move.values())for(int phase=1;phase<=3;phase++)for(int cast=0;cast<3;cast++)for(boolean starving:new boolean[]{false,true})
+            h.assertTrue(WitherGeometry.castWindup(move,phase,cast,starving)>=WitherGeometry.floor(move),move+" keeps its reading time in phase "+phase);
+        for(int phase=1;phase<=3;phase++)for(int turn=0;turn<6;turn++)for(double d:new double[]{4,12,25}){
+            var chain=WitherGeometry.chain(phase,turn,d,false);
+            if(chain[0]!=WitherGeometry.Move.HORIZON)h.assertTrue(chain.length>=3,"Every chain but the discharge is three moves or more");
+        }
+        h.assertTrue(WitherGeometry.restScale(1)<=.6F&&WitherGeometry.headShotGap(1)<=60&&WitherGeometry.Move.STEP.rest==0,"It rests less, its side heads fire more often, and a Breach Step strikes on");
+        h.assertTrue(List.of(WitherGeometry.chain(1,1,25,false)).contains(WitherGeometry.Move.STEP)&&List.of(WitherGeometry.chain(2,1,5,false)).contains(WitherGeometry.Move.CAGE)
+                &&List.of(WitherGeometry.chain(3,1,12,false)).contains(WitherGeometry.Move.WELL)&&List.of(WitherGeometry.chain(1,0,5,false)).contains(WitherGeometry.Move.TAIL),"Its new ways to fight are in its chains");
+        h.succeed();
+    }
     @GameTest(template="rewind_empty",batch="wither_37")
     public static void tetherIntoBiteAndDoubleCharge(GameTestHelper h){clean(h);try{
         ServerPlayer p=player(h,16);var b=fight(h,p);b.operatorPhase();b.transition=0;p.setPos(b.position().add(0,0,12));

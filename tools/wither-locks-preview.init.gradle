@@ -1,0 +1,23 @@
+// The Wither's locks (combat/BossLocks): its ward and hearts, the glints a power sees, an aimed override, the brood
+// carrying bone back, the Hunger Mark, the open star, the discharge's last moment and a dodge, and the Guide's lines.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview=sourceSets.create('witherLocksPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs { client {
+                    gameDirectory=project.file('build/wither-locks-preview')
+                    programArguments.addAll('--width','1400','--height','1000')
+                    systemProperty('heroes.preview.witherLocks','true')
+                } }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('witherLocksPreviewClasses')) }
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

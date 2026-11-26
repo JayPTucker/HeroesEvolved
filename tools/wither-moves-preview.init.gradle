@@ -1,0 +1,22 @@
+// The Wither's other ways to fight: Breach Step, Tail Reap, the Bone Cage and a Starving Well, each warned, struck and ended.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview=sourceSets.create('witherMovesPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs { client {
+                    gameDirectory=project.file('build/wither-moves-preview')
+                    programArguments.addAll('--width','1400','--height','1000')
+                    systemProperty('heroes.preview.witherMoves','true')
+                } }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('witherMovesPreviewClasses')) }
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

@@ -76,9 +76,11 @@ answers, in the one table described below, and add them to the power's agent not
   only they see, a one-time tip, a line in the boss's voice ("Fire? You think fire hurts bone?").
 - **Don't lock a boss to one power,** unless the boss is that power's own trial. Don't lock it to a vanilla tool the
   player may not carry (Bosses of Mass Destruction gates its runes on a diamond pickaxe): give that lock power answers.
-- **One question, one place.** Which power answers which lock is one table in code, the way `intro/Danger.answers`
-  says which danger a power can save someone from. The fight, the art (who sees the glint), the Guide and the tests
-  all read it. Build it with the first boss that needs it, beside `Danger`.
+- **One question, one place.** Which power answers which lock is one table in code: `combat/BossLocks` (built for the
+  Wither, November 2026), the way `intro/Danger.answers` says which danger a power can save someone from. The fight,
+  the art (who sees the glint), the Guide and the tests all read it. A new boss picks its locks from `BossLocks.Lock`,
+  makes its lock targets `BossLocks.Lockable` entities, and adds a key to the table only where a power really does
+  something new; its notes are in [built-bosses.md](built-bosses.md) ("Powers answer locks through one table").
 - **Use the fighting styles.** Our movement (Pyrokinesis's jet-step evasion, the shared `combat/FightingStyles` dodges
   and counters) must work against bosses: time melee windups so a dodge on the mark fits, let a perfect dodge or a
   shield block earn a counter (Wither Reincarnated: a charge blocked by a shield stuns the Wither), and make a boss's
@@ -147,6 +149,7 @@ preview that photographs every move's tell, strike and window, plus a frame sequ
 | A heavy hit | 13 to 21 before armour (Bosses'Rise), 16 on Normal and 24 on Hard (Obsidilith) | 11 to 22 before armour, +15% a phase; a quarter to most of an unarmoured player's health |
 | Windows | 2.5 s (Helvar's mark), 3.5 s (his stuck sword), 15 s knockdown per 100 cannon damage (the Kraken), 35 s last stand (Helvar kneels) | a stagger 1.8 to 2.4 s; a crash 2.5 s; a slump after a chain under 2 s |
 | Spam control | immune for a moment after every hit (Skor); damage gates where the crossing hit stops at the gate (Helvar) | per-hit and per-second caps; gates at phase thresholds |
+| Modded gear | armour-piercing attacks | caps as fractions of its health (a flawless fight still lasts 40 s); part of each of its blows pierces armour; heavy blows take a share of the target's maximum health |
 | Its health back | heals only to the top of its current quarter (Bosses of Mass Destruction), never heals when you leave (Bosses'Rise) | idle healing with no target; consider the quarter rule, so progress is never lost |
 
 ## 5. Stopping cheese

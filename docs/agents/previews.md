@@ -28,7 +28,15 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
   `tools/wither-rework-preview.init.gradle` photographs every move's warning and landing (a charge staged into a
   pillar), all three phases, 37 seconds of unpaused pursuit with real movement input, the Wither Guide and clicks on
   the actual admin start/entry/phase/cancel controls. Driver: `wither/WitherReworkPreview`; photos:
-  `build/wither-rework-preview/screenshots/`.
+  `build/wither-rework-preview/screenshots/`. `tools/wither-locks-preview.init.gradle` photographs its locks as a
+  technopath and then a pyrokinetic sees them: the ward and its hearts with the glint, an aimed override, a heart
+  shattering and re-forming, the ward breaking, a feeding heart, the brood carrying bone back, the Hunger Mark, the
+  open star, the discharge's last moment and a dodge out of it, the Guide's per-power lines and the admin status. It
+  reports PASS or FAIL for the override, the ward, the mending and the dodge. Driver: `wither/WitherLocksPreview`;
+  photos: `build/wither-locks-preview/screenshots/`. `tools/wither-moves-preview.init.gradle` photographs its four
+  newer moves warned, struck and ended (Breach Step, Tail Reap, the Bone Cage broken by a power, a Starving Well
+  drifting and collapsing) and reports PASS or FAIL for each. Driver: `wither/WitherMovesPreview`; photos:
+  `build/wither-moves-preview/screenshots/`.
 
 - `./gradlew runClient --init-script tools/<name>-preview.init.gradle [-P<option>]`. Each script loads its driver from
   `src/uitest/java/com/jayptucker/heroesevolved/uitest/` (never shipped in the jar), sets its own

@@ -140,7 +140,8 @@ Each rule cost a bug once. The file in brackets has the story and the code to co
 
 - **One question, one place.** Who is a friend (`isFriend` / `hostile`), who holds a creature in stopped time
   (`SpaceTimeService.holder`), who has a power (`MimicryService.imprintOf`), is this power switched off
-  (`Dampening.dampened`), does a suit protect (`Suits`), what can a power answer (`Danger.answers`). Add a branch to
+  (`Dampening.dampened`), does a suit protect (`Suits`), what can a power answer (`Danger.answers`), what a power does to a boss's lock
+  (`BossLocks.key`). Add a branch to
   the existing question; never write a second copy ([kit-design.md](docs/agents/kit-design.md)).
 - **Add a style, not a second system.** A new vortex is a style of the shared tornado; a new fighting style is one
   class on `FightingStyles`; a finisher is one object on `Takedowns`; a gifted mob uses `GiftedMobs.bestow`.

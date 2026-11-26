@@ -79,7 +79,11 @@ public final class WitherArena {
                 + MEMBERS.values().stream().filter(p -> p.isAlive() && inside(p)).count() + " fighter(s) still inside. The Ossuary closes in "
                 + closeIn / 20 + " s.";
         if (boss == null) return ready ? "Breach ready. Entry requires an awakened ability and Power Level 16." : "The Wither is forming and being dragged into its breach.";
+        long marked = boss.fighters().stream().filter(p -> p.hasEffect(com.jayptucker.heroesevolved.registry.ModItems.HUNGERING)).count();
         return "Phase " + boss.phase() + "; " + Math.round(boss.getHealth()) + " / " + Math.round(boss.getMaxHealth()) + " health; " + boss.fighters().size() + " fighter(s). "
+                + (boss.ward ? "Star Ward up: " + boss.wardHearts() + " / 3 hearts feed it (gate at " + Math.round(WitherGeometry.WARD_GATE * 100) + "%). "
+                : boss.phase() == 1 ? "Ward broken. " : "Hearts: " + (3 - Integer.bitCount(boss.burnt())) + " / 3 unspent" + (boss.anchor() >= 0 ? ", heart " + boss.anchor() + " feeding" : "") + ". ")
+                + (marked > 0 ? marked + " marked. " : "") + (boss.minions.isEmpty() ? "" : boss.minions.size() + " brood. ")
                 + (boss.dying() ? "Death scene: the star detonates." : boss.arriving() ? "Arriving through the tear." : boss.action() == null ? "Pursuing / recovering."
                 : boss.action().name() + "; cracked stance " + boss.stance() + " / " + WitherGeometry.STANCE_HITS + ".")
                 + " Cancellation returns every fighter and clears the source breach.";
@@ -90,6 +94,8 @@ public final class WitherArena {
         if (variant == 1) return enter(target) ? "Entered the Wither fight." : "Entry refused: wait for the breach, leave any current attempt, and check awakened Power Level 16.";
         if (variant == 2 && boss != null && boss.fighting() && boss.phase() < 3) { boss.operatorPhase(); return "Advanced the live Wither to phase " + boss.phase() + "."; }
         if (variant == 3 && boss != null && boss.fighting()) { boss.operatorDefeat(); return "The Wither's star is collapsing: death scene, detonation and exit."; }
+        if (variant == 4) return boss != null && boss.operatorBreakWard() ? "The Star Ward shatters: the Wither is thrown down, and its hearts stay dark this phase."
+                : "No live Wither with its ward standing.";
         return variant == 3 ? "No live Wither to defeat." : "No live Wither can advance to another phase.";
     }
     public static boolean busy(MinecraftServer server) { return WitherData.get(server).source != null; }

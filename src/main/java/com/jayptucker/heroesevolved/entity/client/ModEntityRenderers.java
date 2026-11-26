@@ -24,6 +24,8 @@ public final class ModEntityRenderers {
         event.registerEntityRenderer(ModEntities.END_BOLT.get(), net.minecraft.client.renderer.entity.ThrownItemRenderer::new);
         event.registerEntityRenderer(ModEntities.RIFT_WITHER.get(), RiftWitherRenderer::new);
         event.registerEntityRenderer(ModEntities.RIFT_SKULL.get(), RiftSkullRenderer::new);
+        // Drawn as set-piece geometry by the Wither's aura (WitherArt), which knows its state.
+        event.registerEntityRenderer(ModEntities.HUNGER_HEART.get(), net.minecraft.client.renderer.entity.NoopRenderer::new);
         event.registerEntityRenderer(ModEntities.SYLAR.get(), SylarRenderer::new);
         event.registerEntityRenderer(ModEntities.COMPANY_AGENT.get(), CompanyAgentRenderer::new);
         event.registerEntityRenderer(ModEntities.SHAPE_DECOY.get(), ShapeDecoyRenderer::new);

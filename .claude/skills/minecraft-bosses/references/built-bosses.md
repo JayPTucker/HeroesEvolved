@@ -143,7 +143,61 @@ nothing like Cataclysm": a scaled vanilla Wither in an empty 81-block disc with 
   (blackout, ringing, blinking awake) and holds them down; a raised shield facing it or a `NuclearShields` power holds.
   The exit tears open where it died while they are still down, and the prizes are thrown out of it.
 - **Test whether the counter can physically be used.** `anchorGlassHasRealReachableOpenFaces` casts an actual
-  player-height block ray at each pylon's glass through its open faces.
+  player-height block ray from all four sides of each pylon to its heart. It caught a brick under the cradle that
+  blocked two of the four faces.
+- **Powers answer locks through one table** (`combat/BossLocks`, November 25, 2026). The user's rule was that a boss is
+  beaten with powers, not a sword. Each phase is built from locks (`WitherGeometry.locks`): the Star Ward and its
+  skulls; the mending brood, the feeding hearts and the Hunger Mark; the discharge, the open star and the hearts. Every
+  power has a key with a role, a strength and a channel: its **hits** count more against the lock's target
+  (`hitFactor`: plain weapons half, a power's blows in full, a strong key 2.5x), an **aimed** use answers it
+  (`BossLocks.used`, called from `AbilityUseService` after every successful use, finds the `Lockable` the player
+  looks at), its **kit** already does it (anything that `setOwner`s a projectile returns a skull), or a use in the
+  moment (**timed**: `usedWithin`) avoids the blow. The fight, the glints (only the local player's power's keys),
+  the Guide's per-power lines and `everyPowerHasAStrongAnswerInEveryPhase` all read the table. That test caught two
+  gaps at once: Hydrokinesis with nothing strong in phase one, and a Mark with only one role.
+- **Lock targets are real entities, not blocks.** Glass in a pylon could be broken only by powers that break blocks.
+  A `HungerHeart` is a `Monster` with no AI in `c:bosses` (so it can't be frozen, lifted or embedded), so every power
+  that hits creatures hits it. It handles its own health (no invulnerability frames, a per-hit ceiling), tells
+  the boss in `heartBroken`, and is drawn by the boss's aura (`NoopRenderer`) from a synced bit field (`HEARTS`).
+- **Curses are real effects** (`ModItems.HUNGERING`, listed in `BossLocks.curses()`), so milk and every power that
+  clears effects lift them as well as the aimed cleanse.
+- **A gate makes a lock a lock.** Taking only a quarter of each blow is just a slower fight. The ward also refuses
+  any blow that would take the Wither below seven tenths (`WARD_GATE`), like Helvar's health gates. Heals never lift
+  it back into a beaten phase (`mend`, `phaseTop`).
+- **Finding a fake player near a lock.** Game-test players and other mods' fake players are not in the level's
+  entity lists. `BossLocks.Party` lets a boss hand over its own party (`RiftWitherEntity.everyone`), so a cleanse
+  aimed at an ally finds them.
+- **Lock tests wait for the pocket.** Entity queries in a freshly forced chunk return nothing for a few seconds,
+  so an aimed answer or an ally search right after `enter` finds nobody. Those tests run at tick 100.
+- **Stage aimed answers from the ground.** A preview that placed the player in mid-air saw them fall a block
+  before the use, which turned their aim 13 degrees off a heart (the window is 11). Set the feet on the floor, then
+  aim.
+- **A solid crystal is dark at night.** `Canvas.shard` lights solids by the sun, so a heart drawn in the SOLID pass
+  alone read as a grey lump under the Ossuary's night sky. Draw the same shard again in the GLOW pass as lit glass.
+- **More ways to fight, faster** (November 25, 2026). The user wanted it faster and more creative, and noted that
+  players arrive with strong gear from other mods. Four moves joined the bite, rake, beams, rain, pulse, hook, charge,
+  slam, spires, brood and discharge: **Breach Step** (a gap closer: it falls into a tear and comes out of a second
+  one past its focus, facing back; `RiftWitherEntity.step` sets `GATE`, so the renderer's existing shrink-behind-the-plane
+  draws it coming through), **Tail Reap** (a low full circle answered by a jump; `atItsBack` makes a fighter hugging
+  its back meet the tail first), **Bone Cage** (a hold that any power use breaks, `BossLocks.lastUse`; its three
+  mouths follow) and **Starving Well** (a moving hazard that pulls and collapses). Chains are three or four moves, rests
+  and slumps are shorter, side heads fire half again as often, and a far fighter is reached by a step, not a walk.
+  `fasterPaceNeverCutsAWarningUnderItsFloor` checks that no phase, feint or Starving pushes any windup under its
+  floor.
+- **Gear-proofing is three rules.** Caps as fractions of its health (5% a blow, 2.5% a second) stop one-hit kills
+  whatever the weapon; 30% of each of its blows is `heroesevolved:star_hunger` (in `bypasses_armor`), so armour can't
+  zero it; heavy blows add 5% of the target's maximum health, so extra hearts can't either. A returned skull is a
+  counter and skips the per-second budget, like a backfire.
+- **A moving hazard drawn by re-sent pieces doubles** if a piece lives longer than the gap between sends: the Starving
+  Well showed two stars until it was re-sent every 2 ticks with a 3-tick life.
+- **Holding a fake player needs `setPos` after `teleportTo`.** NeoForge's fake players ignore `teleportTo`, so the
+  cage's hold falls back to setting the position.
+- **Staging: never cancel and start on the same server tick.** The first cage and well photographs lost their
+  warnings because the preview's reset sent `WITHER_CANCEL` on the tick the move started (`superseded` counts equal
+  timestamps). Reset a few ticks earlier.
+- **Every move has a floor and an end pose.** `castWindup` never goes under `floor(move)` (8 ticks for the bite,
+  10 for the hook, 12 with an area mark), however fast a later phase or Starving makes it. `hold(move)` is the end
+  pose before the window opens.
 - **Cancellation must invalidate queued work.** `WitherArena` captures a generation when it queues the formation actor
   and rejects stale actors in `swallowed`.
 - **Replace the construction before the vanilla explosion.** `WitherEvents.formed` intercepts a newly made invulnerable
@@ -155,7 +209,9 @@ nothing like Cataclysm": a scaled vanilla Wither in an empty 81-block disc with 
 - **A ray with no entity needs an empty collision context** (`CollisionContext.empty()`), and **a broad-phase box is not
   a circular impact** (`RiftSkull.onHit` measures from each hitbox to the impact).
 - **Preview after the transfer settles,** and stage tears and bodies with a fixed `TempestCamera` shot per beat
-  (`WitherPreview` for the story beats, `WitherReworkPreview` for every move and the live AI).
+  (`WitherPreview` for the story beats, `WitherReworkPreview` for every move and the live AI, `WitherLocksPreview`
+  for the locks). For close-ups of a heart, place the camera straight down one of the cradle's open faces: from a
+  diagonal, the corner talons hide it.
 
 ## Sylar's Collection: the classes
 

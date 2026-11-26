@@ -65,6 +65,7 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 | A place an element can't work | `ability/service/Elements` | [powers/hydrokinesis.md](powers/hydrokinesis.md) |
 | One power acting on another | a small API on the other power | [power-interactions.md](power-interactions.md) |
 | A defence another power provides | a map of power to shield | [power-interactions.md](power-interactions.md) (`NuclearShields`) |
+| What a power does to a boss's lock (a ward, a heart, a curse, a blast) | one table of keys, `combat/BossLocks` | the bosses skill's [built-bosses.md](../../.claude/skills/minecraft-bosses/references/built-bosses.md) |
 | To switch another power off for a while | a refusal in `AbilityUseService` | [powers/vibe.md](powers/vibe.md) (desync), [weapons-and-dampener.md](weapons-and-dampener.md) (`Dampening.dampened`) |
 | Every kind of stop to store blows the same way | `SpaceTimeService.holder` | [powers/time.md](powers/time.md) |
 | A cost that can kill, and a special death | stamina, then health; a custom damage type | [power-interactions.md](power-interactions.md), [hazards-and-suits.md](hazards-and-suits.md) |

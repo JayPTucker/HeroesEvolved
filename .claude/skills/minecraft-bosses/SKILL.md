@@ -234,6 +234,7 @@ numbers as constants at the top of its entity class and in its doc.
 | **Idle healing** | 25 health a second with no target, paused 4 to 30 s by a melee hit | 5% of max a second once nobody has hurt it for 10 s and it has no target |
 | **Leash** | home after 20 s with no target and more than 16 blocks away | the same; walk or blink back to the arena's middle or its spawn |
 | **Party scaling** | none | max health × (1 + 0.5 × (fighters − 1)), up to × 3 |
+| **Gear from other mods** | armour-piercing attacks on several bosses | players bring strong modded weapons, armour and extra hearts (the user, November 25, 2026: "this doesn't need to be some easy 1-hit boss"). The caps (fractions of its health) already stop one-shots; also make about 30% of each of its blows an armour-piercing damage type of its own, and its heavy blows take a share of the target's maximum health (the Wither: `PIERCE` 0.3, `HEAVY_SHARE` 0.05, `WitherMoves.hit`) |
 | **Death scene** | the Harbinger overloads and explodes | two to four seconds, then the drop (below) |
 
 - **Where:** in the boss's `hurt` override, after its own reductions, before `super.hurt` (`SylarEntity.hurt`). Keep a short
@@ -331,8 +332,8 @@ numbers as constants at the top of its entity class and in its doc.
 
 - [ ] A brief from [references/boss-brief.md](references/boss-brief.md): the idea, the palette, the story's way in.
 - [ ] Locks in every phase, each with at least three power answers in different roles and a slow answer anyone has;
-      a power × phase table where every one of the 21 powers has a strong answer in every phase; the answers in one
-      table in code that the fight, the art, the Guide and a game test all read
+      a power × phase table where every one of the 21 powers has a strong answer in every phase; the answers in
+      `combat/BossLocks`, which the fight, the art, the Guide and a game test all read
       ([fight-design.md](references/fight-design.md), section 2).
 - [ ] Every move's opening pose, signal, strike, end pose and window set in ticks (reaction windows 8 ticks or more,
       area marks 12 or more), distinct from every other move by pose and sound, with contact feedback (a held pose on

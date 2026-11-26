@@ -311,6 +311,8 @@ public final class AbilityUseService {
         com.jayptucker.heroesevolved.company.CompanyAttention.seen(player, abilityAction.definition().id().getPath(), energyCost);
         // And it leaves a mark where it was used (trace/Traces).
         com.jayptucker.heroesevolved.trace.Traces.left(player, abilityAction.definition().id().getPath(), energyCost);
+        // A boss's lock the power answers by being used (an aimed key, a cleanse, a dodge in the moment): combat/BossLocks.
+        com.jayptucker.heroesevolved.combat.BossLocks.used(player, powerId, abilityAction.definition().id().getPath(), energyCost);
         return requiresOverexertion
                 ? AbilityUseResult.OVEREXERTED_SUCCESS
                 : AbilityUseResult.SUCCESS;

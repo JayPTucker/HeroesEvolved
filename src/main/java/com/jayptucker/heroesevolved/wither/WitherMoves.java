@@ -1,6 +1,8 @@
 package com.jayptucker.heroesevolved.wither;
 
+import com.jayptucker.heroesevolved.combat.BossLocks;
 import com.jayptucker.heroesevolved.entity.QuakeDebrisEntity;
+import com.jayptucker.heroesevolved.registry.ModItems;
 import com.jayptucker.heroesevolved.gifted.GiftedMobs;
 import com.jayptucker.heroesevolved.network.CameraShakePayload;
 import com.jayptucker.heroesevolved.network.SetPiecePayload;
@@ -19,6 +21,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -47,6 +50,22 @@ public final class WitherMoves {
     public static final String BROOD = "heroesevolved:wither_brood";
     /** A skeleton in flight from its mouth to a mark. */
     record Spew(net.minecraft.world.entity.monster.WitherSkeleton mob, Vec3 from, Vec3 to, int[] age) {}
+    /** The Bone Cage: its bars round {@code center}; who is held and where; until when; and when it closed (game time). */
+    static final class Cage {
+        final Vec3 center;
+        final int until;
+        final long since;
+        final Map<UUID, Vec3> held = new LinkedHashMap<>();
+        final Map<UUID, ServerPlayer> who = new LinkedHashMap<>();
+        Cage(Vec3 center, int until, long since) { this.center = center; this.until = until; this.since = since; }
+    }
+    /** A Starving Well: a small hungry star drifting after one fighter until it collapses. */
+    static final class Well {
+        Vec3 at;
+        final UUID target;
+        int age;
+        Well(Vec3 at, UUID target) { this.at = at; this.target = target; }
+    }
     /** One spire on a Bone Spires crack, bursting on clock tick {@code at}. */
     static final class Spire {
         final Vec3 base;
@@ -141,6 +160,30 @@ public final class WitherMoves {
                 }
             }
             case HORIZON -> b.castFrom = b.core();
+            case STEP -> {
+                // A tear where it stands, another past its focus; the arrival's shock ring marked on the floor.
+                // Past its focus if there is room for its body there; else to either side of them; else in front.
+                Vec3 to = null;
+                for (Vec3 at : WitherGeometry.stepTargets(b.position(), focus))
+                    if (level.noCollision(b, b.getBoundingBox().move(at.subtract(b.position())))) { to = at; break; }
+                if (to == null) to = new Vec3(b.getX(), floor.y + .3, b.getZ());
+                b.castFrom = b.position();
+                b.marks.add(new Vec3(to.x, floor.y, to.z));
+            }
+            case TAIL -> b.castFrom = new Vec3(b.getX(), floor.y, b.getZ());
+            case CAGE -> {
+                Vec3 center = new Vec3(focus.x, floor.y, focus.z);
+                b.castFrom = WitherGeometry.core(b.position(), b.lockedYaw);
+                b.marks.add(center);
+            }
+            case WELL -> {
+                // It spits the starving star at whoever stands farthest from it.
+                ServerPlayer far = b.fighters().stream().max(Comparator.comparingDouble(p -> p.distanceToSqr(b))).orElse(b.focus());
+                Vec3 at = far == null ? focus : far.position().add(0, .8, 0);
+                b.castFrom = WitherGeometry.mouth(b.position(), b.lockedYaw, 0, at);
+                b.marks.add(at);
+                b.wellTarget = far == null ? null : far.getUUID();
+            }
             case BROOD -> {
                 // A mark beside each fighter, on its side of them, and the rest in front of the cage.
                 Vec3 mouth = WitherGeometry.mouth(b.position(), b.lockedYaw, 0, focus);
@@ -165,8 +208,8 @@ public final class WitherMoves {
         }
         int seed = move.ordinal() | (b.variant << 5) | (b.lungeCrash && move == Move.LUNGE ? 1 << 6 : 0) | (Math.min(255, b.windup) << 8);
         switch (move) {
-            case PULSE, HORIZON, RAKE -> SetPiecePayload.sendSeeded(level, Piece.WITHER_WARNING, b.castFrom,
-                    b.marks.isEmpty() ? b.castFrom : b.marks.getFirst(), 1, b, 0, seed);
+            case PULSE, HORIZON, RAKE, TAIL -> SetPiecePayload.sendSeeded(level, Piece.WITHER_WARNING, b.castFrom,
+                    b.marks.isEmpty() ? b.castFrom.add(WitherGeometry.forward(b.lockedYaw)) : b.marks.getFirst(), 1, b, 0, seed);
             case SPIRES -> {}
             default -> {
                 for (int i = 0; i < b.marks.size(); i++) {
@@ -183,6 +226,10 @@ public final class WitherMoves {
             case LUNGE, SLAM -> SoundEvents.WITHER_AMBIENT;
             case TETHER -> SoundEvents.CHAIN_PLACE;
             case BROOD -> SoundEvents.WITHER_SKELETON_AMBIENT;
+            case STEP -> SoundEvents.PORTAL_TRIGGER;
+            case TAIL -> SoundEvents.BONE_BLOCK_HIT;
+            case CAGE -> SoundEvents.SKELETON_HURT;
+            case WELL -> SoundEvents.BEACON_ACTIVATE;
         };
         level.playSound(null, b.getX(), b.getY() + 4, b.getZ(), cue, SoundSource.HOSTILE, 2.2F, .55F + b.phase() * .07F);
     }
@@ -239,12 +286,38 @@ public final class WitherMoves {
         SetPiecePayload.send(level, Piece.WITHER_MUZZLE, from, to, 1, b);
         level.playSound(null, from.x, from.y, from.z, SoundEvents.WITHER_SHOOT, SoundSource.HOSTILE, 1.4F, .9F);
     }
-    public static boolean hit(RiftWitherEntity b, ServerPlayer p, float amount) {
-        if (!b.fighting() || WitherArena.sheltered(p) || !p.isAlive()) return false;
+    public static boolean hit(RiftWitherEntity b, ServerPlayer p, float amount) { return hit(b, p, amount, null); }
+    /**
+     * A blow from {@code move} (null for a light one). Most of it is a body's blow, which armour and a raised shield
+     * meet; {@link WitherGeometry#PIERCE} of it is its star's hunger, which no armour stops; a heavy move also takes
+     * {@link WitherGeometry#HEAVY_SHARE} of the target's own maximum health.
+     */
+    public static boolean hit(RiftWitherEntity b, ServerPlayer p, float amount, Move move) {
+        if (!b.fighting() || WitherArena.sheltered(p) || !p.isAlive() || amount <= 0) return false;
+        float total = amount * (b.starving() ? 1.1F : 1) + (move != null && WitherGeometry.heavy(move) ? p.getMaxHealth() * WitherGeometry.HEAVY_SHARE : 0);
+        float hunger = total * WitherGeometry.PIERCE;
         p.invulnerableTime = 0;
-        boolean landed = p.hurt(b.damageSources().mobAttack(b), amount * (b.starving() ? 1.1F : 1));
+        boolean landed = p.hurt(b.damageSources().mobAttack(b), total - hunger);
+        if (p.isAlive()) {
+            p.invulnerableTime = 0;
+            landed |= p.hurt(hunger(b), hunger);
+        }
         if (landed) p.addEffect(new MobEffectInstance(MobEffects.WITHER, 80, 1));
         return landed;
+    }
+    /** Its star's hunger: armour-piercing, credited to it. */
+    static net.minecraft.world.damagesource.DamageSource hunger(RiftWitherEntity b) {
+        return new net.minecraft.world.damagesource.DamageSource(b.level().registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.DAMAGE_TYPE)
+                .getHolderOrThrow(HUNGER), b);
+    }
+    public static final net.minecraft.resources.ResourceKey<net.minecraft.world.damagesource.DamageType> HUNGER = net.minecraft.resources.ResourceKey.create(
+            net.minecraft.core.registries.Registries.DAMAGE_TYPE, net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("heroesevolved", "star_hunger"));
+    /** From the second phase a bite or a hook leaves the Hunger Mark: its star drinks from you while it can see you. */
+    static void mark(RiftWitherEntity b, ServerPlayer p) {
+        if (b.phase() < 2 || !p.isAlive()) return;
+        p.addEffect(new MobEffectInstance(ModItems.HUNGERING, WitherGeometry.MARK_TICKS, 0));
+        b.unseen.put(p.getUUID(), 0);
+        SetPiecePayload.sendSeeded((ServerLevel) b.level(), Piece.WITHER_MARK, p.position().add(0, 1.1, 0), b.core(), 1, p, 0, 0);
     }
     private static void shove(ServerPlayer p, Vec3 from, double strength, double up) {
         Vec3 away = p.position().subtract(from).multiply(1, 0, 1);
@@ -264,7 +337,7 @@ public final class WitherMoves {
                     Vec3 body = p.position().add(0, .8, 0);
                     Vec3 flat = new Vec3(body.x, from.y, body.z);
                     if (WitherGeometry.lineDistance(from, to, flat) < WitherGeometry.BITE_RADIUS && p.getY() < WitherGeometry.floor().y + 5
-                            && seen(level, b.core(), p.getEyePosition())) hit(b, p, damage);
+                            && seen(level, b.core(), p.getEyePosition()) && hit(b, p, damage)) mark(b, p);
                 }
                 SetPiecePayload.sendSeeded(level, Piece.WITHER_ARC, from, to, WitherGeometry.BITE_RADIUS, b, 0, move.ordinal());
                 level.playSound(null, to.x, to.y, to.z, SoundEvents.EVOKER_FANGS_ATTACK, SoundSource.HOSTILE, 2F, .5F);
@@ -319,6 +392,7 @@ public final class WitherMoves {
                             && seen(level, b.castFrom, p.getEyePosition())) {
                         if (hit(b, p, damage)) {
                             caught = true;
+                            mark(b, p);
                             p.setDeltaMovement(b.castFrom.subtract(p.position()).normalize().scale(1.15).add(0, .25, 0));
                             p.hurtMarked = true;
                         }
@@ -358,8 +432,75 @@ public final class WitherMoves {
                 level.playSound(null, b.castFrom.x, b.castFrom.y, b.castFrom.z, SoundEvents.WITHER_SHOOT, SoundSource.HOSTILE, 2F, .45F);
                 level.playSound(null, b.castFrom.x, b.castFrom.y, b.castFrom.z, SoundEvents.SKELETON_AMBIENT, SoundSource.HOSTILE, 2.5F, .5F);
             }
+            case STEP -> {
+                // It falls into a tear where it stands and comes out of the one past its focus, facing back at them.
+                Vec3 to = b.marks.getFirst().add(0, .3, 0);
+                Vec3 dir = new Vec3(to.x - b.castFrom.x, 0, to.z - b.castFrom.z);
+                dir = dir.lengthSqr() < 1e-4 ? WitherGeometry.forward(b.lockedYaw) : dir.normalize();
+                // It comes out moving back toward its focus: the tear faces them, and its body starts behind it.
+                Vec3 out = dir.scale(-1), emerge = to.add(dir.scale(WitherGeometry.STEP_DEPTH));
+                float face = (float) Math.toDegrees(Math.atan2(-out.x, out.z));
+                SetPiecePayload.sendSeeded(level, Piece.WITHER_STEP, b.castFrom.add(0, WitherGeometry.HEIGHT / 2, 0), b.castFrom.add(0, WitherGeometry.HEIGHT / 2, 0).add(out), 1, b, 0, 1);
+                SetPiecePayload.sendSeeded(level, Piece.WITHER_STEP, to.add(0, WitherGeometry.HEIGHT / 2, 0), to.add(0, WitherGeometry.HEIGHT / 2, 0).add(out), 1, b, 0, 0);
+                b.step(emerge, to, face);
+                level.playSound(null, b.getX(), b.getY() + 4, b.getZ(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.HOSTILE, 2.5F, .45F);
+                level.playSound(null, to.x, to.y + 4, to.z, SoundEvents.PORTAL_TRIGGER, SoundSource.HOSTILE, 2F, .6F);
+                b.quickFollow = true;
+            }
+            case TAIL -> {
+                b.motion = move; b.motionTicks = WitherGeometry.TAIL_TICKS; b.motionStep = 0; b.motionHit.clear();
+                level.playSound(null, b.getX(), b.getY() + 2, b.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.HOSTILE, 3F, .4F);
+                level.playSound(null, b.getX(), b.getY() + 2, b.getZ(), SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), SoundSource.HOSTILE, 2F, .5F);
+            }
+            case CAGE -> {
+                Vec3 center = b.marks.getFirst();
+                Cage cage = new Cage(center, b.clock + WitherGeometry.CAGE_HOLD, level.getGameTime());
+                for (ServerPlayer p : b.fighters())
+                    if (p.position().multiply(1, 0, 1).distanceTo(center.multiply(1, 0, 1)) < WitherGeometry.CAGE_RADIUS - .3 && p.getY() - center.y < 3) {
+                        cage.held.put(p.getUUID(), p.position());
+                        cage.who.put(p.getUUID(), p);
+                        hit(b, p, damage);
+                    }
+                if (b.cage != null) releaseCage(b, false);
+                b.cage = cage;
+                SetPiecePayload.sendSeeded(level, Piece.WITHER_CAGE, center, b.castFrom, WitherGeometry.CAGE_RADIUS, b, 0, cage.held.isEmpty() ? 2 : 0);
+                for (Vec3 bar : WitherGeometry.cageBars(center)) debris(level, bar.add(0, .05, 0), 0, .6, 2, .35, (int) (bar.x * 31 + bar.z));
+                level.playSound(null, center.x, center.y, center.z, SoundEvents.BONE_BLOCK_BREAK, SoundSource.HOSTILE, 3F, .45F);
+                level.playSound(null, center.x, center.y, center.z, SoundEvents.ANVIL_LAND, SoundSource.HOSTILE, 1.5F, .5F);
+                shake = .35F;
+                // A held fighter is what it threw the cage for: its three mouths come next.
+                if (!cage.held.isEmpty()) { b.chain.addFirst(Move.VERDICT); b.quickFollow = true; }
+            }
+            case WELL -> {
+                if (b.wells.size() < 2) b.wells.add(new Well(b.castFrom, b.wellTarget));
+                SetPiecePayload.send(level, Piece.WITHER_MUZZLE, b.castFrom, b.marks.isEmpty() ? b.castFrom.add(0, -1, 0) : b.marks.getFirst(), 1, b);
+                level.playSound(null, b.castFrom.x, b.castFrom.y, b.castFrom.z, SoundEvents.WITHER_SHOOT, SoundSource.HOSTILE, 2.5F, .4F);
+                level.playSound(null, b.castFrom.x, b.castFrom.y, b.castFrom.z, SoundEvents.BEACON_POWER_SELECT, SoundSource.HOSTILE, 2F, .6F);
+            }
             case HORIZON -> {
-                for (ServerPlayer p : b.fighters()) if (seen(level, b.castFrom, p.getEyePosition())) hit(b, p, damage);
+                // It reaches everyone it can see. Cover is the slow answer; a shield holds it; a power used in the moment
+                // (a jet step, a blur, a hop through a breach, a stopped second) carries its user out; a regenerator outlasts it.
+                for (ServerPlayer p : b.fighters()) {
+                    if (!seen(level, b.castFrom, p.getEyePosition())) continue;
+                    BossLocks.Key key = BossLocks.key(p, BossLocks.Lock.UNBLOCKABLE);
+                    float taken = damage;
+                    if (key != null) {
+                        boolean spared = switch (key.role()) {
+                            case BRACE -> com.jayptucker.heroesevolved.radiation.NuclearShields.canBrace(p);
+                            case DODGE, STOP -> BossLocks.usedWithin(p, WitherGeometry.HORIZON_DODGE);
+                            default -> false;
+                        };
+                        if (spared) {
+                            SetPiecePayload.sendSeeded(level, Piece.WITHER_SPARED, p.position().add(0, 1, 0), b.castFrom, 1, p, 0, key.role().ordinal());
+                            continue;
+                        }
+                        if (key.role() == BossLocks.Role.OUTLAST) {
+                            float left = Math.max(0, p.getHealth() - WitherGeometry.OUTLAST_LEFT) / (b.starving() ? 1.1F : 1);
+                            if (left < taken) { if (left > 0) hit(b, p, left); continue; }
+                        }
+                    }
+                    hit(b, p, taken, Move.HORIZON);
+                }
                 SetPiecePayload.send(level, Piece.WITHER_NOVA, b.castFrom, b.castFrom, WitherGeometry.HORIZON_REACH, b);
                 level.playSound(null, b.getX(), b.getY() + 6, b.getZ(), SoundEvents.BEACON_DEACTIVATE, SoundSource.HOSTILE, 4F, .5F);
                 level.playSound(null, b.getX(), b.getY() + 6, b.getZ(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.HOSTILE, 3F, .6F);
@@ -380,6 +521,8 @@ public final class WitherMoves {
     /** Ribbreaker's charge and Ossuary Slam's descent: the body really travels, swept so it can't pass through stone. */
     public static void tickMotion(RiftWitherEntity b) {
         ServerLevel level = (ServerLevel) b.level();
+        if (b.motion == Move.STEP) { emerge(b, level); return; }
+        if (b.motion == Move.TAIL) { reap(b, level); return; }
         Vec3 before = b.position();
         boolean lunge = b.motion == Move.LUNGE;
         double p = ++b.motionStep / (double) (lunge ? WitherGeometry.LUNGE_TICKS : WitherGeometry.SLAM_TICKS);
@@ -397,7 +540,7 @@ public final class WitherMoves {
             for (ServerPlayer player : b.fighters())
                 if (!b.motionHit.contains(player.getUUID()) && WitherGeometry.lineDistance(a, z, player.position().add(0, .8, 0)) < WitherGeometry.LUNGE_RADIUS) {
                     b.motionHit.add(player.getUUID());
-                    if (hit(b, player, WitherGeometry.damage(Move.LUNGE, b.phase()))) {
+                    if (hit(b, player, WitherGeometry.damage(Move.LUNGE, b.phase()), Move.LUNGE)) {
                         player.setDeltaMovement(b.motionTo.subtract(b.motionFrom).normalize().scale(1.1).add(0, .35, 0));
                         player.hurtMarked = true;
                     }
@@ -418,7 +561,7 @@ public final class WitherMoves {
             Vec3 at = b.motionTo;
             for (ServerPlayer player : b.fighters())
                 if (player.position().multiply(1, 0, 1).distanceTo(at.multiply(1, 0, 1)) < WitherGeometry.SLAM_RADIUS && player.getY() < at.y + 3)
-                    if (hit(b, player, WitherGeometry.damage(Move.SLAM, b.phase()))) shove(player, at, .9, .5);
+                    if (hit(b, player, WitherGeometry.damage(Move.SLAM, b.phase()), Move.SLAM)) shove(player, at, .9, .5);
             Vec3 ground = new Vec3(at.x, WitherGeometry.floor().y + .05, at.z);
             ripple(b, ground, .8F, WitherGeometry.SLAM_WAVE, WitherGeometry.damage(Move.PULSE, b.phase()) * .8F, 0);
             SetPiecePayload.send(level, Piece.WITHER_IMPACT, ground, ground, WitherGeometry.SLAM_RADIUS, b);
@@ -431,6 +574,126 @@ public final class WitherMoves {
         b.motion = null;
         b.recovery = Math.max(b.recovery, 14);
     }
+    /** Coming out of the far tear: the body moves through the tear's plane (drawn shrinking behind it), then the shock. */
+    private static void emerge(RiftWitherEntity b, ServerLevel level) {
+        float k = ++b.motionStep / (float) WitherGeometry.STEP_TICKS;
+        b.setPos(b.motionFrom.lerp(b.motionTo, 1 - (1 - k) * (1 - k)));
+        if (b.motionStep < WitherGeometry.STEP_TICKS) return;
+        b.setPos(b.motionTo);
+        b.stepped();
+        Vec3 ground = new Vec3(b.getX(), WitherGeometry.floor().y + .05, b.getZ());
+        for (ServerPlayer p : b.fighters())
+            if (p.position().multiply(1, 0, 1).distanceTo(ground.multiply(1, 0, 1)) < WitherGeometry.STEP_RADIUS && p.getY() - ground.y < 3
+                    && hit(b, p, WitherGeometry.damage(Move.STEP, b.phase()), Move.STEP)) shove(p, ground, .9, .45);
+        SetPiecePayload.send(level, Piece.WITHER_IMPACT, ground, ground, WitherGeometry.STEP_RADIUS, b);
+        debris(level, ground, 1.5, WitherGeometry.STEP_RADIUS + .8, 12, .5, b.clock);
+        CameraShakePayload.sendAround(level, ground, 48, .45F, 14);
+        level.playSound(null, ground.x, ground.y, ground.z, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.HOSTILE, 1.8F, .7F);
+        level.playSound(null, ground.x, ground.y, ground.z, SoundEvents.WITHER_AMBIENT, SoundSource.HOSTILE, 2.5F, .55F);
+        b.motionTicks = 0; b.motion = null;
+        b.recovery = Math.max(b.recovery, WitherGeometry.hold(Move.STEP));
+    }
+    /** Tail Reap: it spins a full circle; the tail hits whoever it passes with their feet low. A jump clears it. */
+    private static void reap(RiftWitherEntity b, ServerLevel level) {
+        int step = ++b.motionStep;
+        float k = step / (float) WitherGeometry.TAIL_TICKS, eased = k * k * (3 - 2 * k);
+        float yaw = b.lockedYaw + 360 * eased;
+        b.setYRot(yaw); b.setYHeadRot(yaw); b.yBodyRot = yaw;
+        float tail = yaw + 180;
+        for (ServerPlayer p : b.fighters()) {
+            if (b.motionHit.contains(p.getUUID())) continue;
+            double d = Math.sqrt(p.position().subtract(b.position()).horizontalDistanceSqr());
+            if (d < WitherGeometry.TAIL_INNER || d > WitherGeometry.TAIL_REACH || p.getY() - WitherGeometry.floor().y >= WitherGeometry.TAIL_HEIGHT) continue;
+            if (WitherGeometry.angle(b.position(), p.position(), tail) > Math.toRadians(360F / WitherGeometry.TAIL_TICKS * .7F + 12)) continue;
+            b.motionHit.add(p.getUUID());
+            if (hit(b, p, WitherGeometry.damage(Move.TAIL, b.phase()), Move.TAIL)) shove(p, b.position(), 1.1, .5);
+        }
+        SetPiecePayload.sendSeeded(level, Piece.WITHER_ARC, new Vec3(b.getX(), WitherGeometry.floor().y, b.getZ()), b.position().add(WitherGeometry.forward(tail)),
+                WitherGeometry.TAIL_REACH, b, 0, Move.TAIL.ordinal() | (step << 5));
+        if (step % 3 == 1) level.playSound(null, b.getX(), b.getY() + 1, b.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.HOSTILE, 2F, .5F + step * .03F);
+        if (step < WitherGeometry.TAIL_TICKS) return;
+        b.motionTicks = 0; b.motion = null;
+        b.recovery = Math.max(b.recovery, WitherGeometry.hold(Move.TAIL));
+    }
+    /** The cage breaks (a fighter's power, or its time is up) or sinks; {@code shatter} throws its bars apart. */
+    static void releaseCage(RiftWitherEntity b, boolean shatter) {
+        Cage cage = b.cage;
+        if (cage == null) return;
+        b.cage = null;
+        ServerLevel level = (ServerLevel) b.level();
+        SetPiecePayload.sendSeeded(level, Piece.WITHER_CAGE, cage.center, b.core(), WitherGeometry.CAGE_RADIUS, b, 0, shatter ? 1 : 3);
+        if (shatter) {
+            for (Vec3 bar : WitherGeometry.cageBars(cage.center)) {
+                Vec3 out = bar.subtract(cage.center).normalize().scale(.25);
+                QuakeDebrisEntity.launch(level, Blocks.BONE_BLOCK.defaultBlockState(), bar.add(0, 1.4, 0), out.add(0, .35, 0));
+            }
+            level.playSound(null, cage.center.x, cage.center.y, cage.center.z, SoundEvents.BONE_BLOCK_BREAK, SoundSource.HOSTILE, 3F, .7F);
+            level.playSound(null, cage.center.x, cage.center.y, cage.center.z, SoundEvents.GLASS_BREAK, SoundSource.HOSTILE, 1.5F, .5F);
+        }
+    }
+    /** Holds the caged where they stand until a power of theirs breaks the bars or the cage's time runs out. */
+    private static void tickCage(RiftWitherEntity b) {
+        Cage cage = b.cage;
+        if (cage == null) return;
+        boolean broke = false;
+        for (var entry : List.copyOf(cage.who.entrySet())) {
+            ServerPlayer p = entry.getValue();
+            boolean power = BossLocks.lastUse(p) >= cage.since;
+            if (!p.isAlive() || p.isRemoved() || p.level() != b.level() || power) {
+                cage.who.remove(entry.getKey()); cage.held.remove(entry.getKey());
+                broke |= power;
+                continue;
+            }
+            Vec3 anchor = cage.held.get(entry.getKey());
+            p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 4, 9, false, false));
+            p.setDeltaMovement(0, Math.min(0, p.getDeltaMovement().y), 0);
+            p.hurtMarked = true;
+            if (p.position().distanceToSqr(anchor) > .09) {
+                p.teleportTo(anchor.x, anchor.y, anchor.z);
+                // Some fake players (game tests, other mods) ignore teleports: put them back by hand.
+                if (p.position().distanceToSqr(anchor) > .09) p.setPos(anchor);
+            }
+        }
+        // A power used inside breaks the bars outward; otherwise the cage sinks when its time is up (an empty one sooner).
+        if (broke && cage.who.isEmpty()) releaseCage(b, true);
+        else if (b.clock >= cage.until || cage.who.isEmpty() && b.clock >= cage.until - WitherGeometry.CAGE_HOLD + 12) releaseCage(b, false);
+    }
+    /** The wells drift after their fighters and pull everyone near; at the end of their life they collapse. */
+    private static void tickWells(RiftWitherEntity b) {
+        ServerLevel level = (ServerLevel) b.level();
+        for (Well w : List.copyOf(b.wells)) {
+            w.age++;
+            ServerPlayer target = b.fighters().stream().filter(p -> p.getUUID().equals(w.target)).findFirst().orElse(b.focus());
+            if (target != null) {
+                Vec3 want = new Vec3(target.getX(), Math.max(WitherGeometry.floor().y + WitherGeometry.WELL_HEIGHT, target.getY() + 1), target.getZ()).subtract(w.at);
+                double speed = WitherGeometry.WELL_SPEED * (b.starving() ? 1.2 : 1);
+                if (want.length() > speed) want = want.normalize().scale(speed);
+                w.at = w.at.add(want);
+            }
+            for (ServerPlayer p : b.fighters()) {
+                Vec3 pull = w.at.subtract(p.position()).multiply(1, 0, 1);
+                double d = pull.length();
+                if (d < .8 || d > WitherGeometry.WELL_PULL) continue;
+                p.setDeltaMovement(p.getDeltaMovement().add(pull.normalize().scale(.05 * (1 - d / WitherGeometry.WELL_PULL))));
+                p.hurtMarked = true;
+            }
+            if (w.age % 2 == 0) SetPiecePayload.sendSeeded(level, Piece.WITHER_WELL, w.at, w.at.add(0, -1, 0), WitherGeometry.WELL_BLAST, b, 0, w.age);
+            if (w.age % 20 == 0) level.playSound(null, w.at.x, w.at.y, w.at.z, SoundEvents.BEACON_AMBIENT, SoundSource.HOSTILE, 1.6F, .6F + w.age * .01F);
+            if (w.age < WitherGeometry.WELL_LIFE) continue;
+            b.wells.remove(w);
+            Vec3 ground = new Vec3(w.at.x, WitherGeometry.floor().y + .05, w.at.z);
+            for (ServerPlayer p : b.fighters())
+                if (p.position().multiply(1, 0, 1).distanceTo(ground.multiply(1, 0, 1)) < WitherGeometry.WELL_BLAST && Math.abs(p.getY() - w.at.y) < 3.5
+                        && hit(b, p, WitherGeometry.damage(Move.WELL, b.phase()), Move.WELL)) shove(p, ground, 1, .55);
+            SetPiecePayload.send(level, Piece.WITHER_IMPACT, ground, ground, WitherGeometry.WELL_BLAST, b);
+            SetPiecePayload.send(level, Piece.WITHER_BACKFIRE, w.at, w.at, 1, null);
+            debris(level, ground, .8, WitherGeometry.WELL_BLAST + .5, 10, .55, w.age * 7);
+            CameraShakePayload.sendAround(level, ground, 40, .45F, 14);
+            level.playSound(null, w.at.x, w.at.y, w.at.z, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.HOSTILE, 2F, .8F);
+            level.playSound(null, w.at.x, w.at.y, w.at.z, SoundEvents.BEACON_DEACTIVATE, SoundSource.HOSTILE, 2F, .6F);
+        }
+    }
+
     /** Ribbreaker hit stone: the pillar or wall bursts, and it reels with its chest open. */
     private static void crash(RiftWitherEntity b, Vec3 at) {
         ServerLevel level = (ServerLevel) b.level();
@@ -519,6 +782,9 @@ public final class WitherMoves {
         }
         for (var minion : List.copyOf(b.minions))
             if (minion.getPersistentData().getBoolean(BROOD) && minion.tickCount > WitherGeometry.BROOD_LIFE && minion.isAlive()) crumble(minion);
+        if (b.phase() >= 2) mendingBrood(b, level);
+        tickCage(b);
+        tickWells(b);
         for (Spire s : List.copyOf(b.spires)) {
             if (b.clock == s.at) {
                 for (ServerPlayer p : b.fighters())
@@ -529,6 +795,32 @@ public final class WitherMoves {
                 if ((s.at & 1) == 0) level.playSound(null, s.base.x, s.base.y, s.base.z, SoundEvents.BONE_BLOCK_PLACE, SoundSource.HOSTILE, 1.6F, .5F);
             }
             if (b.clock > s.at + WitherGeometry.SPIRE_LINGER) b.spires.remove(s);
+        }
+    }
+
+    /**
+     * From the second phase its brood carries bone back to it: a skeleton that has stood long enough walks to it, and one
+     * that reaches it climbs into its cage and mends it. Clear them, hold them or turn them before they arrive.
+     */
+    static void mendingBrood(RiftWitherEntity b, ServerLevel level) {
+        for (var minion : List.copyOf(b.minions)) {
+            if (!minion.isAlive() || !minion.getPersistentData().getBoolean(BROOD) || minion.isNoAi()
+                    || minion.tickCount < WitherGeometry.BROOD_FLIGHT + WitherGeometry.BROOD_RETURN) continue;
+            minion.setTarget(null);
+            Vec3 body = new Vec3(b.getX(), WitherGeometry.floor().y, b.getZ());
+            if (b.clock % 10 == 0) {
+                minion.getNavigation().moveTo(body.x, body.y, body.z, 1.25);
+                SetPiecePayload.sendSeeded(level, Piece.WITHER_MEND, minion.position().add(0, 1.3, 0), b.core(), 1, minion, 0, b.phase());
+            }
+            if (minion.position().multiply(1, 0, 1).distanceTo(body.multiply(1, 0, 1)) > WitherGeometry.MEND_REACH + WitherGeometry.WIDTH / 2
+                    || Math.abs(minion.getY() - b.getY()) > 5) continue;
+            b.mend(b.getMaxHealth() * WitherGeometry.MEND_SHARE);
+            if (b.stance() > 0) b.mendStance();
+            SetPiecePayload.sendSeeded(level, Piece.WITHER_MEND, minion.position().add(0, 1.3, 0), b.core(), 1, b, 0, 1 << 4 | b.phase());
+            level.playSound(null, minion.getX(), minion.getY() + 1, minion.getZ(), SoundEvents.BONE_BLOCK_PLACE, SoundSource.HOSTILE, 2F, .45F);
+            level.playSound(null, b.getX(), b.getY() + 5, b.getZ(), SoundEvents.WITHER_AMBIENT, SoundSource.HOSTILE, 1.6F, .7F);
+            b.minions.remove(minion);
+            minion.discard();
         }
     }
 

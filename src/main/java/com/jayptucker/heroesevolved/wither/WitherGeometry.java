@@ -1,6 +1,7 @@
 package com.jayptucker.heroesevolved.wither;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
+import com.jayptucker.heroesevolved.combat.BossLocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -128,12 +129,20 @@ public final class WitherGeometry {
      * {@link #castWindup}); rest is the pause a move adds before the next, shortened each phase ({@link #restScale}).
      */
     public enum Move {
-        VERDICT(22, 12), RAIN(20, 8), PULSE(22, 8), TETHER(16, 10), LUNGE(20, 10), SLAM(24, 14), HORIZON(56, 18),
-        BITE(12, 6), RAKE(16, 10), SPIRES(18, 10), BROOD(22, 12);
+        VERDICT(19, 8), RAIN(17, 6), PULSE(18, 6), TETHER(14, 6), LUNGE(18, 8), SLAM(21, 10), HORIZON(48, 14),
+        BITE(10, 4), RAKE(14, 6), SPIRES(16, 7), BROOD(18, 8),
+        /** It tears the air and steps through, out of a second tear beside its focus. */
+        STEP(16, 0),
+        /** Its tail sweeps a full circle low round it: a jump clears it. */
+        TAIL(14, 6),
+        /** Ribs torn from its chest and thrown into the floor round a fighter: a cage only a power breaks early. */
+        CAGE(18, 6),
+        /** A starving little star spat out to drift after the farthest fighter, pulling, until it collapses. */
+        WELL(16, 6);
         public final int windup, rest;
         Move(int windup, int rest) { this.windup = windup; this.rest = rest; }
         /** Moves that draw on an anchor while they wind up, so the room's counter is lit. */
-        public boolean feeds() { return this == RAIN || this == SLAM || this == HORIZON || this == SPIRES || this == LUNGE; }
+        public boolean feeds() { return this == RAIN || this == SLAM || this == HORIZON || this == SPIRES || this == LUNGE || this == CAGE || this == WELL; }
     }
     public static final int HEAD_WINDUP = 16, FEED_TICKS = 140, STANCE_HITS = 3, TRANSITION_TICKS = 40;
     /** Maw Snap: the center head strikes down a short lane in front of it. */
@@ -169,14 +178,88 @@ public final class WitherGeometry {
     public static int broodCount(int phase, int fighters) { return Math.min(4, (phase == 1 ? 2 : 3) + (fighters - 1) / 2); }
     public static int broodCap(int fighters) { return Math.min(8, 3 + fighters); }
     /** Ticks between broods in each phase. */
-    public static int broodCooldown(int phase) { return phase == 1 ? 480 : phase == 2 ? 360 : 260; }
+    public static int broodCooldown(int phase) { return phase == 1 ? 400 : phase == 2 ? 300 : 220; }
     /** A spewed skeleton's flight from the mouth to its mark at {@code k} (0 to 1): a high arc. */
     public static Vec3 spewArc(Vec3 from, Vec3 to, float k) {
         double rise = 4 + from.distanceTo(to) * .25;
         return from.lerp(to, k).add(0, 4 * rise * k * (1 - k), 0);
     }
+    /**
+     * Breach Step: a tear opens where it stands and another {@code STEP_BEHIND} blocks past its focus (the far side from
+     * it, so the focus must turn); it falls through and emerges over {@code STEP_TICKS}, and the arrival's shock hits
+     * anyone on the marked ring. It strikes on at once.
+     */
+    public static final float STEP_BEHIND = 4.5F, STEP_RADIUS = 3.4F, STEP_DEPTH = 2.6F;
+    public static final int STEP_TICKS = 6;
+    /** Tail Reap: a low full circle from just outside its body to {@code TAIL_REACH}, swept over {@code TAIL_TICKS}. */
+    public static final float TAIL_INNER = 2.4F, TAIL_REACH = 7.5F, TAIL_HEIGHT = .9F;
+    public static final int TAIL_TICKS = 8;
+    /** Bone Cage: eight ribs land on a ring round a fighter; whoever is inside is held until a power breaks the bars. */
+    public static final float CAGE_RADIUS = 3.2F;
+    public static final int CAGE_BARS = 8, CAGE_HOLD = 40;
+    /** Starving Well: it drifts after its fighter at {@code WELL_SPEED}, pulling within {@code WELL_PULL}, and collapses after {@code WELL_LIFE}. */
+    public static final float WELL_SPEED = .2F, WELL_PULL = 9, WELL_BLAST = 3.5F, WELL_HEIGHT = 1.6F;
+    public static final int WELL_LIFE = 90;
     /** Event Horizon: the star drinks for three seconds, then shines on everyone it can see. */
     public static final float HORIZON_PULL = .045F, HORIZON_REACH = 70;
+    /**
+     * Its timed answers: a power used in the last {@code HORIZON_DODGE} ticks before the discharge carries a dodging or
+     * time-stopping key out of it (the warning's last white ring shows the moment). A regenerator outlasts it with
+     * {@code OUTLAST_LEFT} health.
+     */
+    public static final int HORIZON_DODGE = 14;
+    public static final float OUTLAST_LEFT = 6;
+
+    // ---- The locks (combat/BossLocks): what each phase asks, and what answering it pays ----
+    /** The locks each phase is built from: the ward and its skulls; the brood, the feeding hearts, the mark; the discharge, the star, the hearts. */
+    public static BossLocks.Lock[] locks(int phase) {
+        return switch (Math.max(1, Math.min(3, phase))) {
+            case 1 -> new BossLocks.Lock[]{BossLocks.Lock.SHIELD, BossLocks.Lock.PROJECTILES};
+            case 2 -> new BossLocks.Lock[]{BossLocks.Lock.BODIES, BossLocks.Lock.ROOM_WEAPON, BossLocks.Lock.CURSE};
+            default -> new BossLocks.Lock[]{BossLocks.Lock.UNBLOCKABLE, BossLocks.Lock.WEAK_POINT, BossLocks.Lock.ROOM_WEAPON};
+        };
+    }
+    /**
+     * The Star Ward: the three Hunger Hearts in the pylons feed a lattice over its ribs. While three live it takes a
+     * quarter of every blow, two a half, one three quarters, and it cannot be brought below {@code WARD_GATE} of its
+     * health. A broken heart re-forms after {@code HEART_MEND} ticks while the ward stands; break all three and the ward
+     * shatters, throwing it down for {@code WARD_CRASH} ticks.
+     */
+    public static final float WARD_GATE = .7F;
+    public static final float[] WARD_TAKES = {1, .75F, .5F, .25F};
+    public static final int HEART_HEALTH = 50, HEART_MEND = 600, WARD_CRASH = 60;
+    /** A heart's cell in its pylon, two blocks tall and open on all four sides; the heart floats in it. */
+    public static Vec3 heart(int index) { return Vec3.atBottomCenterOf(ANCHORS.get(index)).add(0, .25, 0); }
+    public static Vec3 heartCenter(int index) { return heart(index).add(0, HEART_SIZE[1] / 2, 0); }
+    /** The heart's width and height. */
+    public static final float[] HEART_SIZE = {1.1F, 1.5F};
+    /** A skull a fighter sends back: it hits the Wither for this share of its health, past the ward, and shatters a heart outright. */
+    public static final float RETURNED_SHARE = .04F;
+    /** Plain weapons (blades, arrows, bullets) do this much to its body; its powers' blows do it all. */
+    public static final float PLAIN_BODY = .6F;
+    /**
+     * The mending brood (from the second phase): a skeleton that has stood {@code BROOD_RETURN} ticks walks back to it,
+     * carrying bone; one that reaches {@code MEND_REACH} of its body climbs into its cage and mends {@code MEND_SHARE} of
+     * its health (never above the top of its phase) and a crack in its stance.
+     */
+    public static final int BROOD_RETURN = 140;
+    public static final float MEND_SHARE = .03F, MEND_REACH = 3.6F;
+    /**
+     * The Hunger Mark (from the second phase): a bite or a hook leaves it for {@code MARK_TICKS}. While it can see you
+     * its star drinks {@code MARK_DRAIN} health a second from you and heals {@code MARK_FEED} of its own; out of its
+     * sight for {@code MARK_UNSEEN} ticks in a row, the thread snaps.
+     */
+    public static final int MARK_TICKS = 240, MARK_UNSEEN = 60;
+    public static final float MARK_DRAIN = 1, MARK_FEED = .005F;
+    /**
+     * The exposed star (Critical Mass): a blow that lands on the star (a shot within {@code STAR_RADIUS} of it, a blow
+     * from up at its height, or an aimed one) does {@code STAR_TAKES} as much, or what the lock table gives a power whose
+     * key is its blows there; three within {@code STAR_WINDOW} ticks crack it and it reels.
+     */
+    public static final float STAR_RADIUS = 2.2F, STAR_TAKES = 1.6F;
+    public static final int STAR_CRACKS = 3, STAR_WINDOW = 100, STAR_REEL = 40;
+    /** The top of each phase's health: nothing it heals can lift it back into a phase already beaten. */
+    public static float phaseTop(int phase) { return phase <= 1 ? 1 : phase == 2 ? 2 / 3F : 1 / 3F; }
 
     // ---- How hard it is (Souls-like: it is won by reading it, never by out-healing or out-trading it) ----
     /** Below this share of its health it is Starving: faster still. */
@@ -189,48 +272,110 @@ public final class WitherGeometry {
     public static int castWindup(Move move, int phase, int cast, boolean starving) {
         float scale = phase <= 1 ? 1 : phase == 2 ? .86F : .74F;
         if (starving) scale *= .88F;
-        boolean feintable = move == Move.BITE || move == Move.RAKE || move == Move.SLAM || move == Move.LUNGE;
+        boolean feintable = move == Move.BITE || move == Move.RAKE || move == Move.SLAM || move == Move.LUNGE || move == Move.TAIL;
         if (phase >= 2 && feintable && cast % 3 == 0) scale *= 1.45F;
-        return Math.max(6, Math.round(move.windup * scale));
+        return Math.max(floor(move), Math.round(move.windup * scale));
+    }
+    /**
+     * The shortest a move's opening pose and signal may run, however fast it gets (fight-design.md, section 3): a
+     * reaction window of 8 ticks for a quick single-target strike, 10 for the hook, 12 for anything with an area mark.
+     */
+    public static int floor(Move move) { return move == Move.BITE ? 8 : move == Move.TETHER ? 10 : 12; }
+    /**
+     * The end pose: how long the strike is held before the window opens, so a player sees it has ended (at least four
+     * ticks; five on the bite, a bait that draws a swing). Moves that travel hold after they land.
+     */
+    public static int hold(Move move) {
+        return switch (move) {
+            case HORIZON -> 20; case VERDICT -> VERDICT_FIRE + 2; case SPIRES -> 10; case BROOD, CAGE, WELL -> 8; case BITE -> 5;
+            case STEP -> 4; default -> 6;
+        };
     }
     /** How much of a move's rest it keeps in each phase, and how long it slumps after a whole chain. */
-    public static float restScale(int phase) { return phase <= 1 ? .7F : phase == 2 ? .5F : .35F; }
-    public static int spentTicks(int phase) { return phase <= 1 ? 34 : phase == 2 ? 24 : 16; }
+    public static float restScale(int phase) { return phase <= 1 ? .6F : phase == 2 ? .45F : .32F; }
+    public static int spentTicks(int phase) { return phase <= 1 ? 30 : phase == 2 ? 22 : 16; }
     /** Ticks between side-head skulls in each phase. */
-    public static int headShotGap(int phase) { return phase <= 1 ? 80 : phase == 2 ? 60 : 45; }
+    public static int headShotGap(int phase) { return phase <= 1 ? 60 : phase == 2 ? 44 : 32; }
+    /**
+     * Gear never trivialises it. Part of every blow is its star's hunger, which no armour stops ({@code PIERCE}); its
+     * heavy blows also take {@code HEAVY_SHARE} of the target's own maximum health, so extra hearts from other mods buy
+     * time, not safety. On its side, no blow takes more than {@code RiftWitherEntity.HIT_CAP} of its health and no
+     * second more than {@code SECOND_CAP}: however strong the weapon, a flawless fight lasts forty seconds.
+     */
+    public static final float PIERCE = .3F, HEAVY_SHARE = .05F;
+    public static boolean heavy(Move move) {
+        return move == Move.SLAM || move == Move.LUNGE || move == Move.HORIZON || move == Move.TAIL || move == Move.STEP || move == Move.WELL;
+    }
     /** What each move does to whoever it catches, before armour: a quarter to most of an unarmoured player's health. */
     public static float damage(Move move, int phase) {
         float base = switch (move) {
             case BITE -> 11; case RAKE -> 13; case VERDICT -> 9; case RAIN -> 8; case PULSE -> 9; case TETHER -> 7;
             case LUNGE -> 14; case SLAM -> 16; case SPIRES -> 9; case HORIZON -> 22; case BROOD -> 6;
+            case STEP -> 10; case TAIL -> 12; case CAGE -> 6; case WELL -> 14;
         };
         return base * (1 + .15F * (Math.max(1, phase) - 1));
     }
 
     /**
      * The chain it opens on a fighter: what reaches them from where they are, then follow-ups that punish the usual
-     * answer. Never one move twice in a row; Event Horizon every third chain of the last phase.
+     * answer. Three moves from the start, four later; a Breach Step closes any distance at once and strikes on; Event
+     * Horizon every third chain of the last phase. (A fighter at its back meets the tail first: {@link RiftWitherEntity}.)
      */
     public static Move[] chain(int phase, int turn, double distance, boolean high) {
         boolean odd = Math.floorMod(turn, 2) == 1;
         if (phase >= 3 && Math.floorMod(turn, 3) == 2) return new Move[]{Move.HORIZON, Move.PULSE};
-        if (high) return phase == 1 ? new Move[]{Move.TETHER, Move.VERDICT}
-                : odd ? new Move[]{Move.TETHER, Move.RAIN, Move.VERDICT} : new Move[]{Move.VERDICT, Move.TETHER, Move.LUNGE};
+        if (high) return switch (phase) {
+            case 1 -> odd ? new Move[]{Move.TETHER, Move.RAIN, Move.VERDICT} : new Move[]{Move.TETHER, Move.VERDICT, Move.RAIN};
+            case 2 -> odd ? new Move[]{Move.TETHER, Move.RAIN, Move.VERDICT} : new Move[]{Move.VERDICT, Move.TETHER, Move.LUNGE};
+            default -> odd ? new Move[]{Move.WELL, Move.TETHER, Move.VERDICT} : new Move[]{Move.VERDICT, Move.TETHER, Move.LUNGE, Move.RAIN};
+        };
         if (distance < 9) return switch (phase) {
-            case 1 -> odd ? new Move[]{Move.RAKE, Move.PULSE} : new Move[]{Move.BITE, Move.RAKE};
-            case 2 -> odd ? new Move[]{Move.BITE, Move.SPIRES} : new Move[]{Move.RAKE, Move.BITE, Move.SLAM};
-            default -> odd ? new Move[]{Move.SLAM, Move.RAKE, Move.BITE} : new Move[]{Move.RAKE, Move.BITE, Move.PULSE};
+            case 1 -> odd ? new Move[]{Move.RAKE, Move.TAIL, Move.PULSE} : new Move[]{Move.BITE, Move.RAKE, Move.TAIL};
+            case 2 -> odd ? new Move[]{Move.BITE, Move.CAGE, Move.SPIRES} : new Move[]{Move.RAKE, Move.BITE, Move.TAIL, Move.SLAM};
+            default -> odd ? new Move[]{Move.SLAM, Move.TAIL, Move.RAKE, Move.BITE} : new Move[]{Move.CAGE, Move.RAKE, Move.BITE, Move.PULSE};
         };
         if (distance < 18) return switch (phase) {
-            case 1 -> odd ? new Move[]{Move.PULSE, Move.BITE} : new Move[]{Move.VERDICT, Move.RAIN};
-            case 2 -> odd ? new Move[]{Move.SLAM, Move.BROOD, Move.RAKE} : new Move[]{Move.SPIRES, Move.VERDICT};
-            default -> odd ? new Move[]{Move.SPIRES, Move.SLAM, Move.RAKE} : new Move[]{Move.VERDICT, Move.SPIRES, Move.PULSE};
+            case 1 -> odd ? new Move[]{Move.PULSE, Move.BITE, Move.RAKE} : new Move[]{Move.VERDICT, Move.RAIN, Move.STEP};
+            case 2 -> odd ? new Move[]{Move.STEP, Move.RAKE, Move.BROOD} : new Move[]{Move.SPIRES, Move.CAGE, Move.VERDICT};
+            default -> odd ? new Move[]{Move.WELL, Move.SPIRES, Move.SLAM} : new Move[]{Move.STEP, Move.CAGE, Move.VERDICT, Move.PULSE};
         };
         return switch (phase) {
-            case 1 -> odd ? new Move[]{Move.VERDICT, Move.TETHER} : new Move[]{Move.RAIN, Move.BROOD};
-            case 2 -> odd ? new Move[]{Move.BROOD, Move.RAIN, Move.SPIRES} : new Move[]{Move.LUNGE, Move.RAKE};
-            default -> odd ? new Move[]{Move.BROOD, Move.VERDICT, Move.SPIRES} : new Move[]{Move.LUNGE, Move.SLAM, Move.RAKE};
+            case 1 -> odd ? new Move[]{Move.STEP, Move.BITE, Move.RAKE} : new Move[]{Move.RAIN, Move.BROOD, Move.STEP};
+            case 2 -> odd ? new Move[]{Move.BROOD, Move.STEP, Move.RAKE} : new Move[]{Move.LUNGE, Move.STEP, Move.BITE};
+            default -> odd ? new Move[]{Move.WELL, Move.BROOD, Move.STEP} : new Move[]{Move.LUNGE, Move.STEP, Move.TAIL, Move.RAKE};
         };
+    }
+    /** Where a Breach Step comes out: past its focus, on the far side from where it stands, inside the floor. */
+    public static Vec3 stepTarget(Vec3 from, Vec3 focus) {
+        Vec3 flat = new Vec3(focus.x - from.x, 0, focus.z - from.z);
+        Vec3 dir = flat.lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : flat.normalize();
+        Vec3 at = new Vec3(focus.x, floor().y + .3, focus.z).add(dir.scale(STEP_BEHIND));
+        Vec3 off = at.subtract(floor()).multiply(1, 0, 1);
+        if (off.length() > RADIUS - 4) at = floor().add(off.normalize().scale(RADIUS - 4)).add(0, .3, 0);
+        return at;
+    }
+    /** Where a Breach Step may come out, in order: past its focus, then to either side of them, then in front. */
+    public static List<Vec3> stepTargets(Vec3 from, Vec3 focus) {
+        Vec3 flat = new Vec3(focus.x - from.x, 0, focus.z - from.z);
+        Vec3 dir = flat.lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : flat.normalize(), side = new Vec3(-dir.z, 0, dir.x);
+        List<Vec3> out = new ArrayList<>();
+        out.add(stepTarget(from, focus));
+        for (Vec3 off : List.of(side, side.scale(-1), dir.scale(-1))) {
+            Vec3 at = new Vec3(focus.x, floor().y + .3, focus.z).add(off.scale(STEP_BEHIND + 1));
+            Vec3 d = at.subtract(floor()).multiply(1, 0, 1);
+            if (d.length() > RADIUS - 4) at = floor().add(d.normalize().scale(RADIUS - 4)).add(0, .3, 0);
+            out.add(at);
+        }
+        return out;
+    }
+    /** The cage's eight bars round {@code center} on the floor. */
+    public static List<Vec3> cageBars(Vec3 center) {
+        List<Vec3> out = new ArrayList<>();
+        for (int i = 0; i < CAGE_BARS; i++) {
+            double a = i * Math.PI * 2 / CAGE_BARS;
+            out.add(new Vec3(center.x + Math.cos(a) * CAGE_RADIUS, floor().y, center.z + Math.sin(a) * CAGE_RADIUS));
+        }
+        return out;
     }
 
     public static double angle(Vec3 from, Vec3 to, float yaw) {

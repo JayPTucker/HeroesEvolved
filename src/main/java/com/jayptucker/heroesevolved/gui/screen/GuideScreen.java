@@ -93,8 +93,29 @@ public final class GuideScreen extends HeroScreen {
     private List<FormattedCharSequence> lines(int room) {
         List<FormattedCharSequence> lines = new ArrayList<>();
         String id = TOPICS[topic];
-        for (int i = 1; i <= 4; i++) {
-            lines.addAll(font.split(text("guide.heroesevolved." + id + "." + i), room));
+        for (int i = 1; i <= 6; i++) {
+            String key = "guide.heroesevolved." + id + "." + i;
+            if (i > 4 && !net.minecraft.client.resources.language.I18n.exists(key)) break;
+            lines.addAll(font.split(text(key), room));
+            lines.add(FormattedCharSequence.EMPTY);
+        }
+        if (id.equals("wither") && power() != null && power().unlocked()) {
+            // What this player's own power answers in each phase (combat/BossLocks, the table the fight reads).
+            lines.addAll(font.split(Component.translatable("guide.heroesevolved.wither.yours", Component.translatable(
+                    "ability." + power().abilityId().getNamespace() + "." + power().abilityId().getPath())), room));
+            for (int phase = 1; phase <= 3; phase++) {
+                lines.addAll(font.split(Component.translatable("wither.heroesevolved.phase_name." + phase), room));
+                for (var lock : com.jayptucker.heroesevolved.wither.WitherGeometry.locks(phase)) {
+                    var key = com.jayptucker.heroesevolved.combat.BossLocks.key(power().abilityId(), lock);
+                    if (key == null) continue;
+                    String name = lock.name().toLowerCase(java.util.Locale.ROOT), role = key.role().name().toLowerCase(java.util.Locale.ROOT);
+                    String how = lock == com.jayptucker.heroesevolved.combat.BossLocks.Lock.CURSE ? "cleanse"
+                            : key.channel().name().toLowerCase(java.util.Locale.ROOT) + "." + key.strength().name().toLowerCase(java.util.Locale.ROOT);
+                    lines.addAll(font.split(Component.translatable("guide.heroesevolved.wither.key",
+                            Component.translatable("lock.heroesevolved.wither." + name), Component.translatable("lock.heroesevolved.role." + role),
+                            Component.translatable("lock.heroesevolved.channel." + how)), room));
+                }
+            }
             lines.add(FormattedCharSequence.EMPTY);
         }
         if (id.equals("controls")) {

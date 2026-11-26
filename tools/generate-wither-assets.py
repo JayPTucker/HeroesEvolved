@@ -1,5 +1,6 @@
 """The Wither's original skin (charred bone, pale bone, armour plate, horn, ivory and the star), its two emissive maps,
-the Fractured Star / Breach Seed / record icons, and the Guide text. No external artwork.
+the Fractured Star / Breach Seed / record icons, the Hunger Mark's effect icon, and the Guide and fight text. No external
+artwork.
 
 Layout (shared with entity/client/RiftWitherModel): 256 x 256.
   pale bone  (0..256, 0..64)     charred bone (0..256, 64..128)
@@ -265,14 +266,49 @@ for name in ['fractured_star', 'breach_seed', 'music_disc_containment']:
     icon.save(assets / f'textures/item/{name}.png')
     (assets / f'models/item/{name}.json').write_text(json.dumps({'parent': 'minecraft:item/generated', 'textures': {'layer0': f'heroesevolved:item/{name}'}}, indent=2) + '\n')
 
+# The Hunger Mark's effect icon (18 x 18): a violet thread drawn taut from a ringed eye into a white star point.
+mark = Image.new('RGBA', (18, 18)); d = ImageDraw.Draw(mark)
+d.ellipse((1, 6, 9, 14), fill='#1C1430', outline='#A18AE4')
+d.ellipse((4, 9, 6, 11), fill='#FF6F8E')
+d.line([(8, 9), (11, 7), (13, 6)], fill='#A18AE4', width=1)
+d.line([(9, 11), (12, 8), (14, 6)], fill='#6B57A8', width=1)
+for (x, y) in [(15, 4), (14, 5), (16, 5), (15, 3), (15, 6)]: d.point((x, y), fill='#E8FFF4')
+d.point((15, 5), fill='#FFFFFF')
+(assets / 'textures/mob_effect').mkdir(parents=True, exist_ok=True)
+mark.save(assets / 'textures/mob_effect/hungering.png')
+
 lang_path = assets / 'lang/en_us.json'; lang = json.loads(lang_path.read_text(encoding='utf-8'))
 lang.update({
     'guide.heroesevolved.wither.title': 'The Hungry Cage',
     'guide.heroesevolved.wither.1': 'Build a Wither and it never gets loose: it is dragged backwards through a tear in the air behind it, and the tear stays as a breach. Walk into it with an awakened gift at Power Level 16 or above, alone or with friends. Inside is the Ossuary, a walled floor under a giant fossil ribcage with room to fly; the Wither falls out of a second tear over the dais to meet you. The breach in the entrance alcove is a sheltered way home, and anything you drop comes back when you respawn.',
-    'guide.heroesevolved.wither.2': 'Read its body. The center head coils before it snaps; an arm cocks across its chest before it rakes; both fists climb overhead before the slam; the claws dig in before bone spires burst along a crack; it heaves and retches before it spews wither skeletons onto circles beside you (they crumble in thirty seconds and drop nothing); the cage opens before the star discharges. Every hit is also marked on the floor or in the air, and the mark never moves: step off it. From the second phase some moves are feints that hold their coil longer: dodge when the mark fills, not when the body moves. A normal jump clears the rolling ring of thrown-up floor.',
-    'guide.heroesevolved.wither.3': 'After a chain it slumps with its chest open and takes half again as much damage. Three spaced charged strikes during its windups break its stance. From the second phase it charges along a lane; if the lane ends in stone the warning shows a burst there: stand in front of a pillar, step aside, and it crashes and is stunned. Its final discharge reaches everyone it can see: put a pillar between you and the star.',
-    'guide.heroesevolved.wither.4': 'When it winds up a heavy move, the nearest unused anchor pylon lights and a filament runs to the star for seven seconds: break the glass in the pylon\'s open face, or bounce a skull into it, and its hunger backfires. When it dies, its star swells, drinks everything in and detonates: raise a shield toward it (or let a shield-making power hold it) or you are thrown flat, ears ringing, until you come to. The way out tears open where it died, with its prizes. If everyone leaves mid-fight, it heals and the next attempt starts fresh.',
-    'wither.heroesevolved.enter': 'Read its body, then step off the mark. Punish it when it slumps. Bait its charge into a pillar. Break a lit pylon to turn its hunger back on it. The breach behind you leads home.',
+    'guide.heroesevolved.wither.2': 'Read its body. The center head coils before it snaps; an arm cocks across its chest before it rakes; both fists climb overhead before the slam; the claws dig in before bone spires burst along a crack; it heaves and retches before it spews wither skeletons onto circles beside you (they crumble in thirty seconds and drop nothing); the cage opens before the star discharges. Every hit is also marked on the floor or in the air, and the mark never moves: step off it. When two tears open, one past you, it is about to step through and come out of that one behind you: turn and leave the ring under it. When it crouches and coils its tail, a low band all round it will be swept: jump as the white edge reaches you, and do not hug its back. When it tears ribs from its chest, they land in a ring round you: step out, or use your power to break the cage before its mouths turn on you. In Critical Mass it spits a starving black star that drifts after whoever is farthest away and collapses where it is: keep moving. From the second phase some moves are feints that hold their coil longer: dodge when the mark fills, not when the body moves. A normal jump clears the rolling ring of thrown-up floor. Good gear helps, but no weapon carries the fight and part of every blow it lands goes through any armour.',
+    'guide.heroesevolved.wither.3': 'It is not beaten with a blade. It arrives under the Star Ward, a lattice of light over its ribs fed by three Hunger Hearts floating in the bone pylons: while the ward stands it takes a quarter of every blow and cannot be brought below seven tenths of its health. Break the hearts. A broken one re-forms in thirty seconds, so keep at them; break all three and the ward shatters and throws it down with its chest open. Plain weapons do half to a heart and little to its body; a power\'s blows do it all, and some powers answer a heart outright: look for the turning diamond of light only your power sees, and see below for what yours does. Its skulls can be sent back (a punch works; Wind Arms, Bullet Catch, a force field or a quake\'s push work better): a returned skull shatters a heart and hits it past the ward.',
+    'guide.heroesevolved.wither.4': 'After a chain it slumps with its chest open and takes half again as much damage. Three spaced charged strikes during its windups break its stance. In the Broken Vessel its brood carries bone back to it: a skeleton that reaches it climbs into its cage and mends it, so clear them, hold them or turn them first. A bite or a hook leaves the Hunger Mark, a thread to its star that drinks from you while it can see you: put stone between you for three seconds, drink milk, or let a cleansing power lift it. When it winds up a heavy move a sleeping heart lights and drinks for seven seconds: break it and the hunger backfires.',
+    'guide.heroesevolved.wither.5': 'It charges along a lane; if the lane ends in stone the warning shows a burst there: stand in front of a pillar, step aside, and it crashes and is stunned. In Critical Mass its star is open: blows that land on it (shots, beams aimed straight at it, blows from up at its height) do more, and three in quick succession make it reel. Its final discharge reaches everyone it can see: hide behind a pillar, hold it on a shield power, or use your power as the white ring closes on the star to slip out (a jet step, a blur, a hop, stopped time); a regenerator outlasts it.',
+    'guide.heroesevolved.wither.6': 'When it dies, its star swells, drinks everything in and detonates: raise a shield toward it (or let a shield-making power hold it) or you are thrown flat, ears ringing, until you come to. The way out tears open where it died, with its prizes. If everyone leaves mid-fight, it heals and the next attempt starts fresh.',
+    'guide.heroesevolved.wither.yours': 'What %s does to it:',
+    'guide.heroesevolved.wither.key': '  %s. %s: %s.',
+    'wither.heroesevolved.phase_name.1': 'Threefold Hunger',
+    'wither.heroesevolved.phase_name.2': 'The Broken Vessel',
+    'wither.heroesevolved.phase_name.3': 'Critical Mass',
+    'lock.heroesevolved.wither.shield': 'The Star Ward\'s hearts',
+    'lock.heroesevolved.wither.projectiles': 'Its skulls',
+    'lock.heroesevolved.wither.bodies': 'Its mending brood',
+    'lock.heroesevolved.wither.room_weapon': 'A feeding heart',
+    'lock.heroesevolved.wither.curse': 'The Hunger Mark',
+    'lock.heroesevolved.wither.unblockable': 'Event Horizon',
+    'lock.heroesevolved.wither.weak_point': 'Its open star',
+    'entity.heroesevolved.hunger_heart': 'Hunger Heart',
+    'death.attack.heroesevolved.star_hunger': '%1$s was drunk dry by a hungry star',
+    'death.attack.heroesevolved.star_hunger.player': '%1$s was drunk dry by %2$s',
+    'effect.heroesevolved.hungering': 'Hunger Mark',
+    'wither.heroesevolved.enter': 'It comes warded. Break the three hearts in the pylons to bring its ward down, and send its skulls back; your power sees what it can answer (the Guide has the rest). The breach behind you leads home.',
+    'wither.heroesevolved.refused.open': 'The skulls will not take. A Wither breach is already open at %s (%s): only one can be open at a time. Finish or abandon that fight first (an operator can cancel it in the admin console).',
+    'wither.heroesevolved.refused.inside': 'The skulls will not take here, inside the cage.',
+    'wither.heroesevolved.refused.cannot': 'The skulls will not take: this world has no room for a Wither breach.',
+    'wither.heroesevolved.ward_broken': 'The ward shatters off its ribs and throws it down. It is open to you.',
+    'wither.heroesevolved.phase_tip.2': 'The vessel breaks. Its brood will carry bone back to mend it, and its hearts wake whenever it draws on them.',
+    'wither.heroesevolved.phase_tip.3': 'Its star burns open. Strike the star itself, and when the cage opens, get out of its sight.',
     'wither.heroesevolved.collapsing': 'The Wither — Its Star Is Collapsing',
     'wither.heroesevolved.blast': 'The star goes off like a wall of light. You are on your back before you hear it.',
     'wither.heroesevolved.braced': 'Your shield takes the blast. You slide back, still standing.',

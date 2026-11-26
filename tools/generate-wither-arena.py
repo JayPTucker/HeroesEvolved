@@ -233,18 +233,18 @@ for i, (x, y, z) in enumerate(ANCHORS):
     box(x - 2, FLOOR + 1, z - 2, x + 2, FLOOR + 1, z + 2, 'polished_blackstone')       # the approach plate
     box(x - 1, FLOOR + 2, z - 1, x + 1, FLOOR + 2, z + 1, 'chiseled_polished_blackstone')
     put(x, FLOOR + 3, z, 'sea_lantern')
-    put(x - 1, FLOOR + 3, z, 'polished_blackstone_bricks'); put(x + 1, FLOOR + 3, z, 'polished_blackstone_bricks')
-    put(x, y, z, f'minecraft:tinted_glass @anchor:{i}')
-    put(x - 1, y, z, 'polished_blackstone_bricks'); put(x + 1, y, z, 'polished_blackstone_bricks')
-    box(x - 1, y + 1, z, x + 1, y + 1, z, 'chiseled_polished_blackstone')
-    # Bone talons at the corners, curling over the glass without closing its open faces.
+    # The cradle: an open cell two blocks tall where a Hunger Heart floats (wither/HungerHeart), roofed, open on all
+    # four sides so it can be struck, aimed at or hit with a returned skull from any direction.
+    put(x, y, z, f'minecraft:air @anchor:{i}')
+    box(x - 1, y + 2, z, x + 1, y + 2, z, 'chiseled_polished_blackstone')
+    # Bone talons at the corners, curling over the heart without closing its open faces.
     for sx in (-1, 1):
         for sz in (-1, 1):
-            for yy in range(FLOOR + 2, y + 2):
+            for yy in range(FLOOR + 2, y + 3):
                 put(x + 2 * sx, yy, z + 2 * sz, bone('y'))
-            put(x + 2 * sx, y + 2, z + sz, bone('z'))
-            put(x + sx, y + 3, z + sz, 'calcite')
-    put(x, y + 3, z, bone('y'))
+            put(x + 2 * sx, y + 3, z + sz, bone('z'))
+            put(x + sx, y + 4, z + sz, 'calcite')
+    put(x, y + 4, z, bone('y'))
 
 # Scattered remains on the floor near the wall: no clutter in the fighting space.
 for k in range(26):

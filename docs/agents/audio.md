@@ -158,4 +158,22 @@ bass and a rising sub. What the player hears is in [wither.md](../wither.md#musi
   a little per phase; the Wither's land at -21.0, -20.8 and -20.0 dBFS.
 - **Hold the last chord for the moment it belongs to.** `WitherMusic` silences the fight when the death scene starts and
   plays the last chord at the detonation, so it rises out of the `DazeView` ringing instead of under the death throes.
+- **Rebuilt to the user's own picks** (November 25, 2026): two `Music_06` layers for the fight (183300580, 432375702),
+  a third for after it dies (1048779095) and Score 01's Stinger 03; the measurements are in the generator's docstring.
+  The score moved from E at 100 bpm to A minor with a Phrygian B-flat at 75 bpm driven in sixteenths (the references'
+  key and pulse, still the Wither's half-step hunger), 24 bars (76.8 s), and every loop takes the first layer's shape: a
+  hush, an impact at bar 4, a build, full stops on the last beat of bars 15 and 19 (`stops()` gates the dry mix, so the
+  reverb rings into the hole) and a rise back round. The second layer (one impact, then a throbbing drone) became the
+  section-turn `impact` plus `drone_pulse`. Threefold Hunger measures 440 Hz centroid against the reference's 444, 62%
+  against 60% at 60-250 Hz, 21% against 22% percussion; the stinger 541 Hz against 478, 67% against 74% at 250 Hz-1 kHz.
+  `WitherMusic`'s bar is now 64 ticks.
+- **A new aftermath loop** (`wither_aftermath`) plays from 130 ticks after the detonation (as the last chord fades) for as
+  long as the player is in the Ossuary, fading in over five seconds, and gives way if a new fight starts. A sound's own
+  `rise` in `WitherMusic.Stem` sets how fast it fades in.
+- **A low pulse fools the band-limited levelling.** `finish` measures above 150 Hz; with a sixteenth-note bass under
+  everything, the full-band loudness came out about 6 dB above the target and hit the limiter. Set the target from the
+  first measured render (the Wither's are now -25.8, -23.9 and -23.4 for -22.3, -21.6 and -21.4 dBFS).
+- **Slow low chords read as percussion and onsets** to the median-filter split and the flux counter: equal-tempered
+  thirds and fifths beat a few times a second in the low band. The aftermath measures 22% percussion against the
+  reference's 11% though it has no drums to speak of; judge it by the spectrogram's blocks, not that number.
 

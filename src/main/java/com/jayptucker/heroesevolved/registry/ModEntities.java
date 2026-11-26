@@ -85,6 +85,11 @@ public final class ModEntities {
             ENTITY_TYPES.register("rift_wither", id -> EntityType.Builder.<com.jayptucker.heroesevolved.wither.RiftWitherEntity>of(
                     com.jayptucker.heroesevolved.wither.RiftWitherEntity::new, MobCategory.MISC)
                     .sized(4.6F, 5F).noSave().noSummon().clientTrackingRange(128).updateInterval(1).build(id.toString()));
+    /** A Hunger Heart in one of the Ossuary's pylons: the Wither's ward and its feeding anchors. */
+    public static final DeferredHolder<EntityType<?>, EntityType<com.jayptucker.heroesevolved.wither.HungerHeart>> HUNGER_HEART =
+            ENTITY_TYPES.register("hunger_heart", id -> EntityType.Builder.<com.jayptucker.heroesevolved.wither.HungerHeart>of(
+                    com.jayptucker.heroesevolved.wither.HungerHeart::new, MobCategory.MISC)
+                    .sized(1.1F, 1.5F).noSave().noSummon().fireImmune().clientTrackingRange(128).updateInterval(2).build(id.toString()));
     public static final DeferredHolder<EntityType<?>, EntityType<com.jayptucker.heroesevolved.wither.RiftSkull>> RIFT_SKULL =
             ENTITY_TYPES.register("rift_skull", id -> EntityType.Builder.<com.jayptucker.heroesevolved.wither.RiftSkull>of(
                     com.jayptucker.heroesevolved.wither.RiftSkull::new, MobCategory.MISC)
@@ -134,6 +139,7 @@ public final class ModEntities {
     private static void registerAttributes(EntityAttributeCreationEvent event) {
         event.put(TEMPORAL_ECHO.get(), TemporalEchoEntity.createAttributes().build());
         event.put(RIFT_WITHER.get(), com.jayptucker.heroesevolved.wither.RiftWitherEntity.createAttributes().build());
+        event.put(HUNGER_HEART.get(), com.jayptucker.heroesevolved.wither.HungerHeart.createAttributes().build());
         event.put(SYLAR.get(), com.jayptucker.heroesevolved.story.sylar.SylarEntity.createAttributes().build());
         event.put(COMPANY_AGENT.get(), com.jayptucker.heroesevolved.company.CompanyAgentEntity.createAttributes().build());
         event.put(STORY_ACTOR.get(), com.jayptucker.heroesevolved.story.actor.StoryActorEntity.createAttributes().build());

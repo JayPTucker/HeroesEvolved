@@ -314,7 +314,18 @@ public enum Piece {
     // the tear it drops out of over the dais, and the exit tearing open where it died (origin center, target + normal).
     WITHER_CRACK(16), WITHER_SPIRES(80), WITHER_DETONATE(150), WITHER_TEAR(70), WITHER_OPEN(60),
     // A skeleton of its brood thrown from its mouth (origin) onto its mark (target), seed the phase.
-    WITHER_SPEW(30);
+    WITHER_SPEW(30),
+    // Its locks (combat/BossLocks). An aimed power answering a heart (origin the hand, target the heart, seed the role
+    // and bit 5 strong); a heart shattering or re-forming (origin the heart, target the star; seed its state, bit 3 a
+    // re-forming one); the Star Ward shattering off its ribs; the ward turning a blow at its gate; the Hunger Mark's
+    // thread (origin the marked fighter, bound to them; seed 1 when it snaps, 2 while unseen); a brood skeleton carrying
+    // bone back (bound to it; seed bit 4 when it climbs in); a fighter a power carried out of the discharge (seed the role).
+    WITHER_KEY(18), WITHER_HEART_BREAK(34), WITHER_WARD_BREAK(46), WITHER_WARD_HIT(12), WITHER_MARK(14), WITHER_MEND(14),
+    WITHER_SPARED(22),
+    // Its other ways to fight: a Breach Step's tear (origin its center, target + its normal; seed 1 the one it leaves by),
+    // the Bone Cage (origin the center on the floor, scale its radius; seed 0 holding someone, 2 empty, 1 shattered by a
+    // power, 3 sinking), and a Starving Well (origin the star, scale its blast radius, seed its age; re-sent as it drifts).
+    WITHER_STEP(20), WITHER_CAGE(52), WITHER_WELL(3);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

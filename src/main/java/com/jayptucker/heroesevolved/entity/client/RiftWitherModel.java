@@ -414,6 +414,81 @@ public final class RiftWitherModel extends HierarchicalModel<RiftWitherEntity> {
                 p.jaw[0] = k(t, 0, .1F, w - 6, .5F, w - 1, 1.25F, w + 10, 1.2F, w + 16, .1F);
                 for (int i = 1; i < 3; i++) { p.jaw[i] = k(t, 0, .1F, w - 4, .7F, w + 10, .1F); p.headPitch[i] += k(t, 0, 0, w - 4, -.4F, w + 14, 0); }
             }
+            case STEP -> {
+                // It gathers itself small (arms crossed over the ribs, heads tucked) to fall through its tear, then comes
+                // out of the far one flinging both arms at whoever it stepped behind.
+                float out = w + WitherGeometry.STEP_TICKS;
+                p.hipsY += k(t, 0, 0, w - 4, -3, w, -3.5F, out, 0);
+                p.chestX += k(t, 0, 0, w - 4, .45F, w, .5F, w + 2, -.1F, out, .35F, out + 14, 0);
+                p.open += k(t, 0, 0, w - 4, -.3F, out, .4F, out + 14, 0);
+                for (int s = 0; s < 2; s++) {
+                    float sign = s == 0 ? -1 : 1;
+                    p.shoulderY[s] += sign * k(t, 0, 0, w - 4, .8F, w, .85F, out - 1, -.4F, out + 14, 0);
+                    p.shoulderX[s] += k(t, 0, 0, w - 4, -.4F, w, -.45F, out - 1, -1.5F, out + 2, -1.2F, out + 14, 0);
+                    p.elbow[s] += k(t, 0, 0, w - 4, -1.3F, w, -1.35F, out - 1, .1F, out + 14, 0);
+                    p.curl[s] += k(t, 0, 0, w - 4, 1.0F, out - 1, -.5F, out + 3, .9F, out + 14, 0);
+                }
+                for (int i = 0; i < 3; i++) {
+                    p.headUp[i] += k(t, 0, 0, w - 4, -3, w, -3.5F, out, 1, out + 14, 0);
+                    p.headPitch[i] += k(t, 0, 0, w - 4, .55F, out, -.2F, out + 14, 0);
+                    p.jaw[i] = k(t, 0, .1F, w - 2, .3F, out, 1.1F, out + 10, .1F);
+                    p.aimWeight[i] = t > w ? 1 : 0;
+                }
+            }
+            case TAIL -> {
+                // It crouches on planted claws and looks back over its shoulder while the tail coils; then it spins a full
+                // circle with the tail stretched straight out and its arms thrown wide for balance.
+                float end = w + WitherGeometry.TAIL_TICKS;
+                p.hipsY += k(t, 0, 0, w - 4, -3.5F, end, -2.5F, end + 12, 0);
+                p.chestX += k(t, 0, 0, w - 4, .55F, w, .5F, end, .2F, end + 12, 0);
+                for (int s = 0; s < 2; s++) {
+                    p.shoulderX[s] += k(t, 0, 0, w - 4, -.7F, w, -.75F, w + 2, -.1F, end + 12, 0);
+                    p.shoulderZ[s] += k(t, 0, 0, w - 4, -.1F, w + 2, 1.15F, end, 1.1F, end + 12, 0);
+                    p.elbow[s] += k(t, 0, 0, w - 4, .7F, w + 2, 0, end + 12, 0);
+                    p.curl[s] += k(t, 0, 0, w - 4, 1.3F, w + 2, -.3F, end + 12, 0);
+                }
+                for (int i = 0; i < 3; i++) {
+                    p.headSway[i] += k(t, 0, 0, w - 4, i == 2 ? 1.0F : .7F, w, .9F, w + 2, 0, end + 12, 0);
+                    p.jaw[i] = k(t, 0, .1F, w - 4, .6F, end, .8F, end + 10, .1F);
+                }
+                for (int i = 0; i < 4; i++) {
+                    tail[i].yRot += k(t, 0, 0, w - 4, .45F + i * .12F, w, .5F + i * .12F, w + 2, -.15F, end, -.1F, end + 12, 0);
+                    tail[i].xRot += k(t, 0, 0, w - 4, .15F, w + 2, -.35F - i * .05F, end, -.3F, end + 12, 0);
+                }
+            }
+            case CAGE -> {
+                // It digs both hands into its own ribs and tears them out (the cage opening wide), then hurls them down.
+                p.chestX += k(t, 0, 0, w - 6, -.35F, w - 1, -.4F, w + 2, .5F, w + 16, 0);
+                p.open += k(t, 0, 0, w - 8, 1.3F, w - 1, 1.6F, w + 2, .5F, w + 16, 0);
+                p.coreScale += k(t, 0, 0, w - 4, .4F, w + 6, 0);
+                for (int s = 0; s < 2; s++) {
+                    p.shoulderX[s] += k(t, 0, 0, w - 8, -.55F, w - 1, -.8F, w + 2, 1.1F, w + 16, 0);
+                    p.shoulderZ[s] += k(t, 0, 0, w - 8, -.25F, w - 1, .5F, w + 2, .3F, w + 16, 0);
+                    p.elbow[s] += k(t, 0, 0, w - 8, -1.4F, w - 1, -1.0F, w + 2, .3F, w + 16, 0);
+                    p.curl[s] += k(t, 0, 0, w - 8, 1.3F, w - 1, 1.4F, w + 1, -.6F, w + 16, 0);
+                }
+                for (int i = 0; i < 3; i++) {
+                    p.headPitch[i] += k(t, 0, 0, w - 6, -.5F, w + 2, .4F, w + 16, 0);
+                    p.jaw[i] = k(t, 0, .1F, w - 6, .9F, w + 2, 1.1F, w + 12, .1F);
+                }
+                p.ribBurst = k(t, 0, 0, w - 2, .25F, w + 1, .45F, w + 10, 0);
+            }
+            case WELL -> {
+                // The center head rears back with its jaw wide while the star swells, then spits the starving star out.
+                p.aimWeight[0] = 1;
+                p.headUp[0] += k(t, 0, 0, w - 4, 5, w + 1, -2, w + 12, 0);
+                p.headFwd[0] += k(t, 0, 0, w - 4, -4, w + 1, 6, w + 4, 5, w + 12, 0);
+                p.headPitch[0] += k(t, 0, 0, w - 4, -.7F, w + 1, .3F, w + 12, 0);
+                p.jaw[0] = k(t, 0, .1F, w - 6, 1.25F, w + 3, 1.1F, w + 10, .1F);
+                p.open += k(t, 0, 0, w - 6, .8F, w + 2, .3F, w + 14, 0);
+                p.coreScale += k(t, 0, 0, w - 6, .9F, w, 1.3F, w + 4, 0);
+                for (int s = 0; s < 2; s++) {
+                    p.shoulderX[s] += k(t, 0, 0, w - 6, -.4F, w + 12, 0);
+                    p.elbow[s] += k(t, 0, 0, w - 6, -1.2F, w + 12, 0);
+                    p.curl[s] += k(t, 0, 0, w - 6, 1.1F, w + 12, 0);
+                }
+                for (int i = 1; i < 3; i++) p.headPitch[i] += k(t, 0, 0, w - 4, -.35F, w + 12, 0);
+            }
             case HORIZON -> {
                 float tremble = t < w ? Mth.sin(t * 3.1F) * .05F * Math.min(1, t / w) : 0;
                 p.hipsY += k(t, 0, 0, w - 10, 5, w + 2, 3, w + 22, 0);

@@ -1,6 +1,8 @@
 package com.jayptucker.heroesevolved.client.effects.setpiece;
 
 import com.jayptucker.heroesevolved.client.effects.setpiece.SetPieceClient.Active;
+import com.jayptucker.heroesevolved.combat.BossLocks;
+import com.jayptucker.heroesevolved.wither.HungerHeart;
 import com.jayptucker.heroesevolved.styles.Piece;
 import com.jayptucker.heroesevolved.wither.RiftWitherEntity;
 import com.jayptucker.heroesevolved.wither.WitherGeometry;
@@ -98,6 +100,7 @@ final class WitherArt {
             }
             case WITHER_PHASE -> phase(c, a, t);
             case WITHER_CRACK -> {
+                if (c.glow() && a.seed() >= 8) { heartCrack(c, a, t); return; }
                 if (!c.glow() || !(a.bound(c) instanceof RiftWitherEntity b)) return;
                 float fade = 1 - smooth(4, 16, t);
                 Vec3 core = b.core(), ahead = WitherGeometry.forward(b.getYRot()), side = ahead.cross(UP);
@@ -113,6 +116,28 @@ final class WitherArt {
             case WITHER_SPEW -> spew(c, a, t);
             case WITHER_DEATH -> death(c, a, t);
             case WITHER_DETONATE -> detonate(c, a, t);
+            case WITHER_KEY -> key(c, a, t);
+            case WITHER_HEART_BREAK -> heartBreak(c, a, t);
+            case WITHER_WARD_BREAK -> wardBreak(c, a, t);
+            case WITHER_WARD_HIT -> {
+                if (!c.glow() || !(a.bound(c) instanceof RiftWitherEntity b)) return;
+                float fade = 1 - smooth(0, 12, t);
+                Vec3 core = b.core();
+                for (int i = 0; i < 3; i++) c.ring(core, new Vec3(cos(i * 2.1F), .4, sin(i * 2.1F)).normalize(), 3.3F + t * .05F, .06F, 0, TWO_PI, WHITE, fade * .8F);
+                c.glow(core, 4.2F, MINT, fade * .18F);
+            }
+            case WITHER_MARK -> mark(c, a, t);
+            case WITHER_STEP -> {
+                // A Breach Step's tears: the far one stays open while it comes out, then slams shut; the near one closes.
+                boolean leaving = a.seed() == 1;
+                float open = leaving ? 1 - smooth(0, 8, t) : 1 - smooth(WitherGeometry.STEP_TICKS + 2, WitherGeometry.STEP_TICKS + 10, t);
+                gate(c, a.origin(), normal(a), STEP_W, STEP_H, Math.max(.02F, open), 1 - smooth(14, 20, t), c.time(), leaving ? 11 : 13);
+                if (!leaving && t > WitherGeometry.STEP_TICKS + 4 && t < WitherGeometry.STEP_TICKS + 16) slamFlash(c, a.origin(), normal(a), t - (WitherGeometry.STEP_TICKS + 8), 3);
+            }
+            case WITHER_CAGE -> cage(c, a, t);
+            case WITHER_WELL -> well(c, a, t);
+            case WITHER_MEND -> mend(c, a, t);
+            case WITHER_SPARED -> spared(c, a, t);
             default -> {}
         }
     }
@@ -319,10 +344,11 @@ final class WitherArt {
                         cracked ? WHITE : tint, alpha * (cracked ? .95F : .22F));
             }
         }
+        hearts(c, b, core, alpha, time);
         int index = ((a.seed() >>> 5) & 3) - 1;
         if (index >= 0 && index < WitherGeometry.ANCHORS.size()) {
             // A lit anchor: its filament drinks toward the star in pulses.
-            Vec3 at = Vec3.atCenterOf(WitherGeometry.ANCHORS.get(index));
+            Vec3 at = WitherGeometry.heartCenter(index);
             if (c.glow()) {
                 thread(c, at, core, .07F, tint, alpha * .85F, time);
                 for (int i = 0; i < 4; i++) {
@@ -330,7 +356,7 @@ final class WitherArt {
                     c.glow(at.lerp(core, u), .25F, WHITE, alpha * sin(u * PI) * .8F);
                 }
                 c.ring(at, UP, 1.3F + .15F * sin(time * .4F), .06F, 0, TWO_PI, tint, alpha);
-                c.ring(at.add(0, -2.4, 0), UP, 2.2F, .08F, 0, TWO_PI, tint, alpha * .6F);
+                c.ring(at.add(0, -2.85, 0), UP, 2.2F, .08F, 0, TWO_PI, tint, alpha * .6F);
                 c.glow(at, 1.6F, tint, alpha * .35F);
             }
         }
@@ -428,8 +454,64 @@ final class WitherArt {
                     float k = ((t * .03F + i / 3F) % 1);
                     c.ring(from, UP, 14 * (1 - k), .08F, 0, TWO_PI, tint, alpha * k * .6F);
                 }
+                // The last moment, when a power used carries a dodging or time-stopping key out of it: a white ring closes on the star.
+                float now = smooth(windup - WitherGeometry.HORIZON_DODGE, windup - WitherGeometry.HORIZON_DODGE + 2, t);
+                if (now > 0) {
+                    float k = clamp((t - (windup - WitherGeometry.HORIZON_DODGE)) / WitherGeometry.HORIZON_DODGE, 0, 1);
+                    c.ring(from, UP, 6 * (1 - k) + 2.2F, .16F, 0, TWO_PI, WHITE, alpha * now);
+                    c.ring(from, WitherGeometry.forward(0), 6 * (1 - k) + 2.2F, .1F, 0, TWO_PI, WHITE, alpha * now * .7F);
+                }
             }
             case SPIRES -> {}
+            case STEP -> {
+                // Two tears opening: one where it stands, one past you (it will come out of that one facing you), and the
+                // ring its arrival will shake.
+                Vec3 at = flat(to, floorY), dir = new Vec3(to.x - from.x, 0, to.z - from.z);
+                dir = dir.lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : dir.normalize();
+                gate(c, at.add(0, WitherGeometry.HEIGHT / 2, 0), dir.scale(-1), STEP_W, STEP_H, .04F + .96F * p, alpha, c.time(), 13);
+                gate(c, from.add(0, WitherGeometry.HEIGHT / 2, 0), dir, STEP_W * .85F, STEP_H * .9F, .04F + .7F * p, alpha * .8F, c.time(), 11);
+                target(c, at, WitherGeometry.STEP_RADIUS, p, tint, alpha * urgent);
+                if (c.soft()) c.disc(at.add(0, .01, 0), UP, WitherGeometry.STEP_RADIUS, CHAR, alpha * .3F * p, alpha * .1F);
+            }
+            case TAIL -> {
+                // A low band all round it, swept by a white edge from where the tail lies: jump it as the edge comes.
+                if (!(a.bound(c) instanceof RiftWitherEntity)) return;
+                Vec3 at = flat(from, floorY);
+                float facing = (float) Math.atan2(to.z - from.z, to.x - from.x), start = facing + PI;
+                sector(c, at, WitherGeometry.TAIL_INNER, WitherGeometry.TAIL_REACH, 0, TWO_PI, tint, alpha * .45F);
+                if (c.glow()) {
+                    c.ring(at, UP, WitherGeometry.TAIL_REACH, .1F, start, start + TWO_PI * p, WHITE, alpha * urgent);
+                    c.ring(at, UP, WitherGeometry.TAIL_INNER, .05F, 0, TWO_PI, tint, alpha * .6F);
+                    // The height a jump must clear.
+                    c.ring(at.add(0, WitherGeometry.TAIL_HEIGHT, 0), UP, WitherGeometry.TAIL_REACH * .92F, .03F, 0, TWO_PI, tint, alpha * .35F * p);
+                    Vec3 tip = at.add(cos(start) * WitherGeometry.TAIL_REACH, .3, sin(start) * WitherGeometry.TAIL_REACH);
+                    c.line(at.add(cos(start) * WitherGeometry.TAIL_INNER, .3, sin(start) * WitherGeometry.TAIL_INNER), tip, .08F, WHITE, alpha * .5F, alpha);
+                }
+            }
+            case CAGE -> {
+                // Eight rib tips breaking the floor round you, each with the arc of the rib that will land there.
+                Vec3 at = flat(to, floorY);
+                target(c, at, WitherGeometry.CAGE_RADIUS, p, BONE, alpha * urgent);
+                for (Vec3 bar : WitherGeometry.cageBars(at)) {
+                    Vec3 base = flat(bar, floorY);
+                    if (c.solid()) c.shard(base, base.add(0, .25 + .6 * p, 0), .1F, 4, 0, BONE, 1);
+                    if (c.glow()) {
+                        c.glow(base.add(0, .2, 0), .35F, tint, alpha * p);
+                        Vec3[] arc = new Vec3[13];
+                        for (int i = 0; i <= 12; i++) arc[i] = WitherGeometry.spewArc(from, base, i / 12F);
+                        c.ribbon(arc, .03F, BONE, alpha * .05F, alpha * .45F * p);
+                    }
+                }
+                if (c.soft()) c.disc(at.add(0, .01, 0), UP, WitherGeometry.CAGE_RADIUS, CHAR, alpha * .3F * p, alpha * .1F);
+            }
+            case WELL -> {
+                // A dark star swelling in its mouth, and the thread of its first drift toward the one it wants.
+                if (!c.glow()) return;
+                glowStar(c, from, .25F + .7F * p, VIOLET, alpha);
+                c.glow(from, 1.4F + p, DEEP, alpha * .5F);
+                c.line(from, to, .03F, VIOLET, alpha * .6F, alpha * .1F);
+                target(c, flat(to, floorY), WitherGeometry.WELL_BLAST * .6F, p, VIOLET, alpha * .6F);
+            }
             case BROOD -> {
                 // Where each one will land: a bone-white circle with a skull's two eyes, and the arc it will fly.
                 Vec3 at = flat(to, floorY);
@@ -604,6 +686,26 @@ final class WitherArt {
         Move move = Move.values()[Math.floorMod(a.seed() & 31, Move.values().length)];
         float[] tint = tint(phaseOf(a, c));
         float fade = 1 - smooth(6, 20, t);
+        if (move == Move.TAIL) {
+            // One step of the tail's circle: a low smear trailing its sweep, a white leading edge, dust thrown out.
+            Vec3 at = a.origin();
+            float dir = (float) Math.atan2(a.target().z - at.z, a.target().x - at.x), quick = 1 - smooth(2, 10, t);
+            float trail = TWO_PI / WitherGeometry.TAIL_TICKS * 1.3F;
+            if (c.glow()) {
+                for (int k = 0; k < 2; k++) {
+                    Vec3 ring = at.add(0, .35 + k * .3, 0);
+                    c.ring(ring, UP, WitherGeometry.TAIL_REACH * (.62F + k * .22F), .9F, dir - trail, dir, tint, quick * .28F);
+                    c.ring(ring, UP, WitherGeometry.TAIL_REACH * (.62F + k * .22F), .08F, dir - trail * .3F, dir, WHITE, quick * .9F);
+                }
+                c.line(at.add(cos(dir) * WitherGeometry.TAIL_INNER, .5, sin(dir) * WitherGeometry.TAIL_INNER),
+                        at.add(cos(dir) * WitherGeometry.TAIL_REACH, .5, sin(dir) * WitherGeometry.TAIL_REACH), .1F, WHITE, quick * .4F, quick);
+            }
+            if (c.soft()) {
+                Vec3 tip = at.add(cos(dir) * WitherGeometry.TAIL_REACH * .85, .3 + t * .03, sin(dir) * WitherGeometry.TAIL_REACH * .85);
+                c.cloud(tip, .7F + t * .05F, .35F, .7F + t * .05F, a.seed() >> 5, t * .03F, fade * .4F, Shades.smoke(c, ASH, 0));
+            }
+            return;
+        }
         if (move == Move.BITE) {
             Vec3 from = a.origin(), to = a.target(), dir = to.subtract(from).normalize(), side = dir.cross(UP);
             float snap = smooth(0, 3, t);
@@ -893,6 +995,349 @@ final class WitherArt {
                 c.line(ground.add(0, .04, 0), ground.add(cos(angle) * (6 + hash(85, i) * 7), .04, sin(angle) * (6 + hash(85, i) * 7)), .18F, CHAR, scorch * .9F, 0);
             }
         }
+    }
+
+    // ================================================================ its other ways to fight
+
+    /** A Breach Step's tear: half width and half height, tall enough for its body. */
+    private static final float STEP_W = 2.3F, STEP_H = 4.6F;
+    private static final Set<Piece> CAGE_ENDS = Set.of(Piece.WITHER_CAGE, Piece.WITHER_CANCEL, Piece.WITHER_PHASE, Piece.WITHER_DEATH, Piece.WITHER_BACKFIRE);
+
+    /**
+     * The Bone Cage: eight ribs standing round a fighter, curving in over them like a hand closing. Seed 0 holds someone
+     * (until a later cage piece ends it), 2 is empty and crumbles, 1 shatters outward (a power broke it), 3 sinks.
+     */
+    private static void cage(Canvas c, Active a, float t) {
+        int mode = a.seed();
+        boolean ending = mode == 1 || mode == 3;
+        if (!ending && SetPieceClient.superseded(a, CAGE_ENDS, c.level.getGameTime())) return;
+        Vec3 center = a.origin();
+        float rise = ending ? 1 : smooth(0, 4, t);
+        float fade = mode == 2 ? 1 - smooth(10, 18, t) : mode == 3 ? 1 - smooth(0, 10, t) : mode == 1 ? 1 - smooth(4, 14, t) : 1;
+        if (fade <= .01F) return;
+        float burst = mode == 1 ? smooth(0, 10, t) : 0, sink = mode == 3 ? smooth(0, 10, t) : 0;
+        int phase = phaseOf(a, c);
+        for (Vec3 bar : WitherGeometry.cageBars(center)) {
+            Vec3 in = center.subtract(bar).multiply(1, 0, 1).normalize();
+            Vec3 base = bar.add(in.scale(-burst * 1.5)).add(0, -sink * 3.2, 0);
+            Vec3[] pts = new Vec3[5];
+            for (int i = 0; i < 5; i++) {
+                float k = i / 4F, h = 3.4F * rise * k;
+                // Bowed in over the fighter: up and inward, the tip leaning in by over a block.
+                pts[i] = base.add(in.scale(1.5 * k * k * rise - burst * k * 2)).add(0, h + burst * k * .8, 0);
+            }
+            if (c.solid()) for (int i = 0; i < 4; i++) c.shard(pts[i], pts[i + 1], .2F - i * .035F, 5, i, i == 3 ? rgb(0xEFE8D2) : BONE, fade);
+            if (c.glow()) {
+                c.glow(pts[4], .35F, tint(phase), fade * .8F);
+                c.line(pts[0], pts[4], .03F, tint(phase), fade * .4F, fade * .7F);
+            }
+        }
+        if (c.glow()) {
+            c.ring(center.add(0, .06, 0), UP, WitherGeometry.CAGE_RADIUS, .08F, 0, TWO_PI, BONE, fade * .6F);
+            c.ring(center.add(0, 3.2 * rise, 0), UP, 1.7F, .05F, 0, TWO_PI, tint(phase), fade * .4F * (1 - burst));
+            if (mode == 1) glowStar(c, center.add(0, 1.4, 0), 1.6F * (1 - burst) + .2F, WHITE, fade);
+        }
+    }
+    /** A Starving Well (re-sent every other tick as it drifts): a black star in turning violet rings, drinking light; the ring beneath fills to its collapse. */
+    private static void well(Canvas c, Active a, float t) {
+        Vec3 at = a.origin();
+        float age = a.seed() + t, k = clamp(age / WitherGeometry.WELL_LIFE, 0, 1), fade = 1 - smooth(2, 3, t);
+        boolean last = age > WitherGeometry.WELL_LIFE - 14;
+        float time = c.level.getGameTime() + c.partial;
+        if (c.solid()) c.sphere(at, .38F + .12F * k, DARK, 1);
+        if (!c.glow()) return;
+        glowStar(c, at, .5F + .2F * sin(time * .4F), VIOLET, fade);
+        for (int i = 0; i < 3; i++) {
+            Vec3 axis = new Vec3(sin(time * .05F + i * 2), 1.4, cos(time * .05F + i * 2)).normalize();
+            c.ring(at, axis, .9F + i * .35F, .06F, 0, TWO_PI, i == 0 ? WHITE : VIOLET, fade * (.8F - i * .2F));
+        }
+        // Light drawn in from round it.
+        for (int i = 0; i < 6; i++) {
+            float u = (time * .06F + i / 6F) % 1, ang = i * TWO_PI / 6 + time * .02F;
+            Vec3 from = at.add(cos(ang) * 3.5 * (1 - u), sin(ang * 2) * .6 * (1 - u), sin(ang) * 3.5 * (1 - u));
+            c.glow(from, .15F, WHITE, fade * u);
+        }
+        Vec3 ground = flat(at, WitherGeometry.floor().y + .06);
+        target(c, ground, a.scale(), k, last ? WHITE : VIOLET, fade * (last ? .7F + .3F * sin(time * 1.5F) : .7F));
+        c.line(at, ground, .03F, VIOLET, fade * .5F, fade * .2F);
+    }
+
+    // ================================================================ the locks: hearts, ward, keys, mark, brood
+
+    private static final float[] GLASS = rgb(0x9FF5DE), SLEEP = rgb(0x3B3346), KEY_SWITCH = rgb(0x7FE0FF), KEY_SEVER = rgb(0xD6B8FF),
+            KEY_STOP = rgb(0xFFD36B), KEY_OVERLOAD = rgb(0xFF4A4A), KEY_CLEANSE = rgb(0x6FD6FF);
+    private static float[] roleTint(int role) {
+        BossLocks.Role[] roles = BossLocks.Role.values();
+        return switch (roles[Math.floorMod(role, roles.length)]) {
+            case SWITCH_OFF -> KEY_SWITCH; case SEVER -> KEY_SEVER; case STOP -> KEY_STOP; case OVERLOAD -> KEY_OVERLOAD;
+            case CLEANSE -> KEY_CLEANSE; case BRACE, WALL -> MINT; case DODGE -> WHITE; default -> WHITE;
+        };
+    }
+    /** The local player's awakened power, for the glints only they see. */
+    private static net.minecraft.resources.ResourceLocation localPower() {
+        var snap = com.jayptucker.heroesevolved.network.ClientPowerState.getSnapshot();
+        if (snap == null) return null;
+        return snap.abilities().stream().filter(x -> x.unlocked()).map(x -> x.abilityId()).findFirst().orElse(null);
+    }
+
+    /** The three hearts in their pylons, the ward they feed, and a glint on each one the local player's power answers. */
+    private static void hearts(Canvas c, RiftWitherEntity b, Vec3 core, float alpha, float time) {
+        var power = localPower();
+        int alive = 0;
+        for (int i = 0; i < 3; i++) {
+            Vec3 at = WitherGeometry.heartCenter(i);
+            int state = b.heartState(i);
+            float level = b.heartLevel(i);
+            if (state == 0) { if (b.heartMending(i)) forming(c, at, level, alpha, time, i); continue; }
+            if (state == HungerHeart.WARDING) alive++;
+            heart(c, at, state, level, tint(b.phase()), alpha, time, i);
+            if (state == HungerHeart.WARDING && c.glow()) thread(c, at, core, .045F, MINT, alpha * .55F, time + i * 17);
+            BossLocks.Lock lock = state == HungerHeart.WARDING ? BossLocks.Lock.SHIELD : state == HungerHeart.FEEDING ? BossLocks.Lock.ROOM_WEAPON : null;
+            BossLocks.Key key = lock == null ? null : BossLocks.key(power, lock);
+            if (key != null && c.glow()) glint(c, at, .85F, key, alpha, time);
+        }
+        if (b.warded()) ward(c, b, core, alive, alpha, time);
+        if (b.phase() >= 3 && c.glow()) {
+            BossLocks.Key key = BossLocks.key(power, BossLocks.Lock.WEAK_POINT);
+            if (key != null) glint(c, core, 1.5F, key, alpha * .8F, time);
+        }
+    }
+    /** A heart: a double crystal of star glass, lit by its state; cracks spread through it as it is hurt. */
+    private static void heart(Canvas c, Vec3 at, int state, float level, float[] tint, float alpha, float time, int seed) {
+        boolean asleep = state == HungerHeart.DORMANT, feeding = state == HungerHeart.FEEDING;
+        float bob = .05F * sin(time * .08F + seed), spin = time * (asleep ? .004F : .02F) + seed;
+        Vec3 mid = at.add(0, bob, 0);
+        float[] glass = asleep ? SLEEP : feeding ? WHITE : GLASS;
+        if (c.solid()) {
+            c.shard(mid, mid.add(0, .72, 0), .36F, 6, spin, glass, 1);
+            c.shard(mid, mid.add(0, -.66, 0), .36F, 6, spin, glass, 1);
+            // Two small satellite shards orbiting it.
+            for (int i = 0; i < 2; i++) {
+                float a = spin * 3 + i * PI;
+                Vec3 p = mid.add(cos(a) * .62, .15 * sin(a * 2), sin(a) * .62);
+                c.shard(p.add(0, -.14, 0), p.add(0, .16, 0), .07F, 4, a, glass, 1);
+            }
+        }
+        if (!c.glow()) return;
+        float[] col = feeding ? tint : MINT;
+        // The star's light inside the glass: the crystal glows by its own light, not the sky's.
+        if (!asleep) {
+            c.shard(mid, mid.add(0, .72, 0), .37F, 6, spin, col, alpha * .45F);
+            c.shard(mid, mid.add(0, -.66, 0), .37F, 6, spin, col, alpha * .45F);
+        }
+        glowStar(c, mid, asleep ? .22F : feeding ? .7F : .45F + .05F * sin(time * .3F + seed), col, alpha * (asleep ? .35F : 1));
+        if (!asleep) {
+            c.glow(mid, 1.6F, col, alpha * .18F);
+            c.ring(mid, new Vec3(sin(spin), 1, cos(spin)).normalize(), .8F, .03F, 0, TWO_PI, col, alpha * .7F);
+            // Its health: an arc round its foot that shortens as it breaks.
+            c.ring(mid.add(0, -.8, 0), UP, .95F, .05F, -HALF_PI, -HALF_PI + TWO_PI * Math.max(.02F, level), WHITE, alpha * .8F);
+            int cracks = Math.round((1 - level) * 8);
+            for (int i = 0; i < cracks; i++) {
+                double angle = hash(seed * 7, i) * TWO_PI;
+                Vec3 end = mid.add(cos((float) angle) * .42, (hash(seed, i * 3) - .5) * 1.1, sin((float) angle) * .42);
+                c.bolt(mid, end, seed * 13 + i, .1F, .022F, WHITE, alpha);
+            }
+        }
+    }
+    /** A broken heart re-forming: shards of light drawn in from round the cradle, closing as it nears whole. */
+    private static void forming(Canvas c, Vec3 at, float level, float alpha, float time, int seed) {
+        float r = 1.3F * (1 - level) + .15F;
+        for (int i = 0; i < 6; i++) {
+            float angle = i * TWO_PI / 6 + time * .05F + seed;
+            Vec3 p = at.add(cos(angle) * r, sin(angle * 2) * r * .3, sin(angle) * r);
+            if (c.solid()) c.shard(p, p.add(at.subtract(p).normalize().scale(.22)), .06F, 4, angle, GLASS, 1);
+            if (c.glow()) c.glow(p, .18F, MINT, alpha * (.3F + .6F * level));
+        }
+        if (c.glow()) {
+            c.ring(at, UP, r + .2F, .03F, 0, TWO_PI * level, MINT, alpha * .6F);
+            c.glow(at, .4F * level, WHITE, alpha * level);
+        }
+    }
+    /** The Star Ward: a lattice of light over its ribs, thinner for every heart that no longer feeds it. */
+    private static void ward(Canvas c, RiftWitherEntity b, Vec3 core, int alive, float alpha, float time) {
+        if (!c.glow()) return;
+        float k = Math.max(.15F, alive / 3F);
+        Vec3 ahead = WitherGeometry.forward(b.getYRot()), side = ahead.cross(UP);
+        for (int i = 0; i < 6; i++) {
+            float angle = i * PI / 6 + time * .006F;
+            Vec3 axis = side.scale(cos(angle)).add(ahead.scale(sin(angle)));
+            c.ring(core, axis, 3.3F, .025F + .02F * k, 0, TWO_PI, MINT, alpha * (.12F + .3F * k));
+        }
+        for (int j = -2; j <= 2; j++) {
+            double y = j * 1.15;
+            float r = (float) Math.sqrt(Math.max(.1, 3.3 * 3.3 - y * y));
+            c.ring(core.add(0, y, 0), UP, r, .025F, 0, TWO_PI, MINT, alpha * (.1F + .22F * k));
+        }
+        // A shimmer climbing the lattice, and the light at its heart.
+        float u = (time * .02F) % 1;
+        float y = -3 + u * 6, r = (float) Math.sqrt(Math.max(.1, 3.3 * 3.3 - y * y));
+        c.ring(core.add(0, y, 0), UP, r, .06F, 0, TWO_PI, WHITE, alpha * .35F * k * sin(u * PI));
+        c.glow(core, 4.6F, MINT, alpha * .05F * k);
+    }
+    /** What only a player whose power answers the lock sees: a turning diamond of light round it, brighter for a strong key. */
+    private static void glint(Canvas c, Vec3 at, float size, BossLocks.Key key, float alpha, float time) {
+        float[] col = roleTint(key.role().ordinal());
+        float k = key.strong() ? 1 : .55F, spin = time * .06F;
+        for (int i = 0; i < 4; i++) {
+            float a0 = spin + i * HALF_PI, a1 = a0 + HALF_PI;
+            Vec3 p0 = at.add(cos(a0) * size * 1.5, 0, sin(a0) * size * 1.5), p1 = at.add(cos(a1) * size * 1.5, 0, sin(a1) * size * 1.5);
+            c.line(p0, at.add(0, size * 1.7, 0), .02F, col, alpha * k * .8F, alpha * k * .3F);
+            c.line(p0, at.add(0, -size * 1.7, 0), .02F, col, alpha * k * .8F, alpha * k * .3F);
+            c.line(p0, p1, .025F, col, alpha * k, alpha * k);
+        }
+        c.glow(at.add(0, size * 1.9, 0), .12F, WHITE, alpha * k * (.6F + .4F * sin(time * .25F)));
+    }
+    /** An aimed key reaching a heart, in the colour of what it does: a short-circuit, a severed thread, a stopped clock, a red overload. */
+    private static void key(Canvas c, Active a, float t) {
+        float fade = 1 - smooth(6, 18, t), in = smooth(0, 2, t);
+        float[] col = roleTint(a.seed() & 31);
+        boolean strong = (a.seed() & (1 << 5)) != 0;
+        BossLocks.Role role = BossLocks.Role.values()[Math.floorMod(a.seed() & 31, BossLocks.Role.values().length)];
+        Vec3 from = a.origin(), to = a.target();
+        if (c.glow()) {
+            float width = strong ? .09F : .06F;
+            switch (role) {
+                case SWITCH_OFF, OVERLOAD -> { for (int i = 0; i < 3; i++) c.bolt(from, to, (int) (t / 2) * 11 + i * 29, .5F, width * (i == 0 ? 1 : .5F), i == 0 ? WHITE : col, fade * in); }
+                case SEVER -> {
+                    // The hunger's thread drawn out of the heart and cut through.
+                    Vec3 mid = from.lerp(to, .5);
+                    float gap = smooth(4, 12, t) * .6F;
+                    c.line(from, mid.add(from.subtract(mid).normalize().scale(gap)), width, col, in * fade, in * fade);
+                    c.line(mid.add(to.subtract(mid).normalize().scale(gap)), to, width, col, in * fade, in * fade);
+                }
+                case STOP -> {
+                    c.line(from, to, width * .6F, col, in * fade * .6F, in * fade);
+                    for (int i = 0; i < 12; i++) c.spoke(to, to.subtract(from).normalize(), i * TWO_PI / 12, .55F, .75F, .03F, col, fade);
+                    c.ring(to, to.subtract(from).normalize(), .75F, .04F, 0, TWO_PI, col, fade);
+                }
+                default -> c.line(from, to, width, col, in * fade * .5F, in * fade);
+            }
+            glowStar(c, to, (strong ? .7F : .45F) * fade, col, fade);
+            for (int i = 0; i < 2; i++) c.ring(to, UP, .5F + t * (.12F + i * .06F), .05F, 0, TWO_PI, col, fade * (1 - i * .4F));
+        }
+    }
+    /** WITHER_CRACK on a heart: white fractures across it as a blow lands. */
+    private static void heartCrack(Canvas c, Active a, float t) {
+        float fade = 1 - smooth(2, 14, t);
+        int cracks = Math.max(2, a.seed() - 8);
+        Vec3 at = a.origin();
+        for (int i = 0; i < cracks; i++) {
+            double angle = hash(a.seed(), i) * TWO_PI;
+            Vec3 end = at.add(cos((float) angle) * .55, (hash(i, a.seed()) - .5) * .9, sin((float) angle) * .55);
+            c.bolt(at, end, a.seed() * 17 + i, .12F, .03F, WHITE, fade);
+        }
+        c.glow(at, .7F * fade, WHITE, fade * .6F);
+    }
+    /** A heart shattering (its shards thrown out of the cradle and a flash down its thread), or one re-forming (light closing in). */
+    private static void heartBreak(Canvas c, Active a, float t) {
+        Vec3 at = a.origin();
+        boolean reform = (a.seed() & (1 << 3)) != 0;
+        int state = a.seed() & 3;
+        float fade = 1 - smooth(reform ? 4 : 12, reform ? 16 : 34, t);
+        float[] col = state == HungerHeart.FEEDING ? EMBER : MINT;
+        if (reform) {
+            if (c.glow()) {
+                for (int i = 0; i < 3; i++) c.ring(at, UP, Math.max(.05F, 1.6F - t * (.12F + i * .05F)), .06F, 0, TWO_PI, i == 0 ? WHITE : MINT, fade);
+                glowStar(c, at, .6F * fade, WHITE, fade);
+            }
+            return;
+        }
+        if (c.solid()) for (int i = 0; i < 12; i++) {
+            float h1 = hash(i, 71), h2 = hash(i, 93), h3 = hash(i, 17), fly = Math.min(t, 30);
+            Vec3 dir = new Vec3(h1 - .5, h3 * .8, h2 - .5).normalize();
+            Vec3 p = at.add(dir.scale(fly * .18)).add(0, -fly * fly * .006, 0);
+            c.shard(p, p.add(dir.scale(.4)), .11F, 4, t * .3F + i, i % 3 == 0 ? WHITE : GLASS, 1);
+        }
+        if (c.glow()) {
+            glowStar(c, at, 1.2F * fade + .2F, WHITE, fade);
+            for (int i = 0; i < 3; i++) c.ring(at, UP, .4F + t * (.18F + i * .1F), .07F, 0, TWO_PI, i == 0 ? WHITE : col, fade * (1 - i * .3F));
+            // The flash runs down its thread into the star.
+            float u = clamp(t / 10, 0, 1);
+            c.line(at, at.lerp(a.target(), u), .1F * fade, WHITE, fade, fade * .4F);
+            c.glow(at.lerp(a.target(), u), .5F, col, fade);
+        }
+    }
+    /** The Star Ward shattering off its ribs: the lattice bursts into glass that falls to the floor, with a white ring. */
+    private static void wardBreak(Canvas c, Active a, float t) {
+        Vec3 core = a.bound(c) instanceof RiftWitherEntity b ? b.core() : a.origin();
+        float fade = 1 - smooth(20, 46, t);
+        if (c.solid()) for (int i = 0; i < 26; i++) {
+            float h1 = hash(i, 11), h2 = hash(i, 23), h3 = hash(i, 37), fly = Math.min(t, 40);
+            Vec3 dir = new Vec3(h1 - .5, h3 - .3, h2 - .5).normalize();
+            Vec3 p = core.add(dir.scale(3.3 + fly * .2)).add(0, -fly * fly * .007, 0);
+            if (p.y < WitherGeometry.floor().y + .05) p = new Vec3(p.x, WitherGeometry.floor().y + .05, p.z);
+            c.shard(p, p.add(dir.scale(.8 + h1 * .6)), .2F, 4, t * .2F + i, i % 4 == 0 ? WHITE : GLASS, fade);
+        }
+        if (c.glow()) {
+            glowStar(c, core, 2.4F * fade + .3F, WHITE, fade);
+            for (int i = 0; i < 4; i++) c.ring(core, i % 2 == 0 ? UP : new Vec3(.3, 1, .2).normalize(), 3.3F + t * (.3F + i * .15F), .1F, 0, TWO_PI, i == 0 ? WHITE : MINT, fade * (1 - i * .2F));
+            c.glow(core, 7, MINT, fade * .2F);
+        }
+    }
+    /** The Hunger Mark: a thread from the marked fighter to the star, its pulses flowing into the star; it snaps out of sight. */
+    private static void mark(Canvas c, Active a, float t) {
+        if (!c.glow()) return;
+        var bound = a.bound(c);
+        Vec3 from = bound == null ? a.origin() : bound.getPosition(c.partial).add(0, 1.1, 0), to = a.target();
+        float time = c.level.getGameTime() + c.partial, fade = Math.min(smooth(0, 2, t), 1 - smooth(10, 14, t));
+        if (a.seed() == 1) {
+            // Snapped: both ends recoil and fade.
+            float k = smooth(0, 10, t), out = 1 - k;
+            Vec3 mid = from.lerp(to, .5);
+            c.line(from, from.lerp(mid, .6 - .5 * k), .05F, VIOLET, out, 0);
+            c.line(to, to.lerp(mid, .6 - .5 * k), .05F, VIOLET, out, 0);
+            c.glow(from, .5F, WHITE, out);
+            return;
+        }
+        boolean unseen = a.seed() == 2;
+        thread(c, from, to, unseen ? .025F : .05F, VIOLET, fade * (unseen ? .35F : .9F), time);
+        if (!unseen) for (int i = 0; i < 3; i++) {
+            float u = (time * .04F + i / 3F) % 1;
+            c.glow(from.lerp(to, u), .22F, rgb(0xFF6F8E), fade * sin(u * PI));
+        }
+        c.ring(from, UP, .5F + .05F * sin(time * .4F), .04F, 0, TWO_PI, VIOLET, fade);
+    }
+    /** A brood skeleton carrying bone back to it (a pale thread to the star), or climbing into its cage (bone drawn in, a flash). */
+    private static void mend(Canvas c, Active a, float t) {
+        boolean absorbed = (a.seed() & (1 << 4)) != 0;
+        float time = c.level.getGameTime() + c.partial;
+        if (absorbed) {
+            Vec3 core = a.bound(c) instanceof RiftWitherEntity b ? b.core() : a.target();
+            float fade = 1 - smooth(4, 14, t);
+            if (c.solid()) for (int i = 0; i < 6; i++) {
+                Vec3 p = a.origin().lerp(core, Math.min(1, t / 8F)).add(cos(i + t) * .4, sin(i * 2F) * .4, sin(i + t) * .4);
+                c.shard(p, p.add(0, .3, 0), .06F, 4, i, BONE, fade);
+            }
+            if (c.glow()) {
+                glowStar(c, core, .9F * fade, BONE, fade);
+                c.ring(core, UP, 1.2F + t * .2F, .06F, 0, TWO_PI, BONE, fade);
+            }
+            return;
+        }
+        if (!c.glow()) return;
+        var bound = a.bound(c);
+        Vec3 from = bound == null ? a.origin() : bound.getPosition(c.partial).add(0, 1.3, 0);
+        float fade = Math.min(smooth(0, 2, t), 1 - smooth(10, 14, t));
+        thread(c, from, a.target(), .05F, BONE, fade * .8F, time);
+        c.glow(from, .55F, BONE, fade * (.7F + .3F * sin(time * .3F)));
+        c.ring(from, UP, .45F, .04F, 0, TWO_PI, BONE, fade * .8F);
+        for (int i = 0; i < 2; i++) {
+            float u = (time * .05F + i * .5F) % 1;
+            c.glow(from.lerp(a.target(), u), .2F, WHITE, fade * sin(u * PI) * .8F);
+        }
+    }
+    /** A fighter a power carried out of the discharge: a shield flaring toward the star, or the white streak of a dodge. */
+    private static void spared(Canvas c, Active a, float t) {
+        if (!c.glow()) return;
+        var bound = a.bound(c);
+        Vec3 at = bound == null ? a.origin() : bound.getPosition(c.partial).add(0, 1, 0);
+        Vec3 dir = a.target().subtract(at);
+        dir = dir.lengthSqr() < 1e-4 ? UP : dir.normalize();
+        float fade = 1 - smooth(8, 22, t);
+        float[] col = roleTint(a.seed());
+        for (int i = 0; i < 4; i++) c.ring(at.add(dir.scale(.9 + i * .18)), dir, 1.2F + i * .3F + t * .04F, .1F, 0, TWO_PI, i == 0 ? WHITE : col, fade * (1 - i * .2F));
+        c.disc(at.add(dir.scale(.85)), dir, 1.2F + t * .03F, col, fade * .35F, fade * .1F);
+        c.glow(at, 2.4F, WHITE, fade * .45F);
     }
 
     // ================================================================ primitives

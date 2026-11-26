@@ -60,6 +60,9 @@ public final class ModItems {
     /** A Company tranquilizer dose; three put a player under. See Tranquilizer. */
     public static final DeferredHolder<MobEffect, MobEffect> TRANQUILIZED = EFFECTS.register("tranquilized",
             com.jayptucker.heroesevolved.company.Tranquilizer::new);
+    /** The Wither's Hunger Mark: its star drinks from you while it can see you. A boss curse (combat/BossLocks). */
+    public static final DeferredHolder<MobEffect, MobEffect> HUNGERING = EFFECTS.register("hungering",
+            () -> new MobEffect(net.minecraft.world.effect.MobEffectCategory.HARMFUL, 0xA18AE4) {});
 
     public static final DeferredItem<Item> HELIXITE_SHARD = ITEMS.registerSimpleItem("helixite_shard",
             new Item.Properties().rarity(Rarity.UNCOMMON));
