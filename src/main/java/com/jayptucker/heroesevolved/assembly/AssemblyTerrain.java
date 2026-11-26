@@ -97,7 +97,9 @@ public final class AssemblyTerrain extends SavedData {
             boolean construct = loaded && level.getBlockState(pos).is(AssemblyBlocks.MATTER.get());
             if (!construct || cell.until <= level.getGameTime()) {
                 cells.remove(pos); ownerCounts.computeIfPresent(cell.owner, (id, count) -> count <= 1 ? null : count - 1);
-                setDirty(); if (construct) level.removeBlock(pos, false);
+                setDirty();
+                // A cell that ran its time out sends its Matter home; one someone else knocked out is lost.
+                if (construct) { level.removeBlock(pos, false); MatterAssemblyService.expired(cell.owner, pos); }
             } else inspection.addLast(pos);
         }
     }

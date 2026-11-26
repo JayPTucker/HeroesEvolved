@@ -133,6 +133,9 @@ Read [animation-guide.md](../animation-guide.md) first; these are the code patte
 
 | I need... | Pattern | Read |
 | --- | --- | --- |
+| A construct the player watches assemble | blueprint, fragments from the hand, snap, sheen; the server builds on the drawing's schedule (`Job.paced`, `AssemblyGeometry.panelArrival`) | [powers/matter-assembly.md](powers/matter-assembly.md) |
+| A spendable resource orbiting the body that flies home when returned | a pool + state payload, eased client mirror, `drawLive` orbit, a return piece | [powers/matter-assembly.md](powers/matter-assembly.md) (`Matter`) |
+| A projectile that reads at speed | one short piece per server step (crystal crosses the step in a tick, tail fades), a flash piece per ricochet | [powers/matter-assembly.md](powers/matter-assembly.md) (`MATTER_SHARD`) |
 | A coherent look for a whole kit | one art class, a few primitives, one palette | [powers/flight.md](powers/flight.md) (`FlightArt`), [powers/electrokinesis.md](powers/electrokinesis.md), [powers/sonic.md](powers/sonic.md), [powers/invisibility.md](powers/invisibility.md) |
 | A variant without a new piece | a flag added to the piece's `scale` (clamped 0.05 to 64 on the client) | [powers/pyrokinesis.md](powers/pyrokinesis.md) (`BLUE_SCALE`), [powers/mimicry.md](powers/mimicry.md), [powers/shapeshifting.md](powers/shapeshifting.md) |
 | A held effect | short pieces re-sent with fades | [powers/radiation.md](powers/radiation.md), [powers/electrokinesis.md](powers/electrokinesis.md) |

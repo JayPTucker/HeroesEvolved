@@ -3495,7 +3495,7 @@
         {
           "id": "matter_assembly_load_bearing",
           "name": "Load-Bearing",
-          "description": "Landing on your own assembled matter absorbs your fall completely.",
+          "description": "Landing on your own crystal absorbs your fall completely.",
           "active": false,
           "level": 1,
           "cost": 1
@@ -3516,7 +3516,7 @@
         {
           "id": "matter_assembly_buttress",
           "name": "Buttressed Corners",
-          "description": "Foldwall gains a wing folded back at each side to cover your flanks.",
+          "description": "Standing Panels gain a wing folded back at each end, covering your flanks and giving your Shards a second angle to ricochet from.",
           "active": false,
           "level": 3,
           "cost": 2
@@ -3557,7 +3557,7 @@
         {
           "id": "matter_assembly_bank_shot",
           "name": "Bank Shot",
-          "description": "Your Shards ricochet once from your own assembled walls instead of stopping, making your cover part of your aim.",
+          "description": "Your Shards ricochet off your constructs four times instead of two, and each bounce adds 35% instead of 25%: a long trick shot round a corner hits harder than a straight one.",
           "active": false,
           "level": 1,
           "cost": 1
@@ -3578,29 +3578,29 @@
         {
           "id": "matter_assembly_recall_angle",
           "name": "Recall Angle",
-          "description": "A banked Shard can turn toward a visible enemy near the reflection point. The wall becomes a controlled firing angle.",
+          "description": "After a ricochet, a Shard turns toward a visible enemy near where it bounced. Your Panels become a firing angle round corners.",
           "active": false,
           "level": 3,
           "cost": 2
         },
         {
           "id": "matter_assembly_faultline",
-          "name": "Faultline",
-          "description": "Pillars of matter burst up in a travelling line over solid ground, launching nearby enemies upward without harming allies or replacing terrain.",
+          "name": "Kaleidoscope",
+          "description": "Snap a ring of crystal mirrors, two high and open to the sky, shut round the enemy you aim at for seven seconds. Your Shards ricochet off its walls up to eight times, so one shot fired in rattles round inside, harder every bounce.",
           "active": true,
           "level": 3,
           "cost": 2,
           "energy": 27,
           "cooldown": 180,
           "requires": "matter_assembly_bank_shot",
-          "mechanic": "faultline",
+          "mechanic": "kaleidoscope",
           "design_energy": 28,
           "design_cooldown": 180
         },
         {
           "id": "matter_assembly_unstable_lattice",
           "name": "Unstable Lattice",
-          "description": "Deliberately dismantling a shape releases up to six of its cells as outward Shards. It returns no items.",
+          "description": "Taking your constructs apart on purpose throws up to six of their cells as Shards at nearby foes instead of calling that Matter home.",
           "active": false,
           "level": 4,
           "cost": 1

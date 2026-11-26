@@ -80,7 +80,7 @@ public final class MatterAssemblyGameTests {
             int energy = PlayerEnergyService.getEnergy(p);
             h.assertTrue(AbilityUseService.activateAssignedAction(p, AbilitySlot.PRIMARY, false) == AbilityUseResult.SUCCESS, "Matter comes from the ground: no blocks needed");
             h.assertTrue(PlayerEnergyService.getEnergy(p) < energy && CooldownService.isOnCooldown(p, id("matter_assembly_barricade")), "It is paid for in stamina and cooldown");
-            h.assertTrue(!MatterAssemblyService.cells(p).isEmpty(), "The shield is real"); h.succeed();
+            h.assertTrue(MatterAssemblyService.pendingCells(p) + MatterAssemblyService.cells(p).size() == 6, "The panel is on its way, cell by cell"); h.succeed();
         } finally { cleanup(p); }
     }
     @GameTest(template="cryo_rework_arena", batch="matter.material")
@@ -97,21 +97,57 @@ public final class MatterAssemblyGameTests {
         } finally { cleanup(p); }
     }
     @GameTest(template="cryo_rework_arena", batch="matter.cover")
-    public static void wallGrowsWithCollisionFromSixCellsAndNeverReturnsLoot(GameTestHelper h) {
+    public static void panelSnapsTogetherWithCollisionCostsMatterAndNeverReturnsLoot(GameTestHelper h) {
         ServerPlayer p = player(h, 40);
-        h.assertTrue(MatterAssemblyService.activate(context(p), "barricade"), "A wall starts");
-        h.assertTrue(MatterAssemblyService.cells(p).size() == 4 && MatterAssemblyService.pendingCells(p) > 0, "The initial batch is bounded");
-        h.runAfterDelay(4, () -> {
-            try {
-                var cells = MatterAssemblyService.cells(p); h.assertTrue(cells.size() == 6 && AssemblyMaterials.count(p) == 40, "A lean six-cell shield, and no input blocks spent");
-                BlockPos cell = cells.getFirst(); h.assertTrue(!h.getLevel().getBlockState(cell).getCollisionShape(h.getLevel(), cell).isEmpty(), "The wall has real collision");
-                int drops = h.getLevel().getEntitiesOfClass(ItemEntity.class, new AABB(cell).inflate(3)).size();
-                h.getLevel().destroyBlock(cell, true, p);
-                h.assertTrue(h.getLevel().getEntitiesOfClass(ItemEntity.class, new AABB(cell).inflate(3)).size() == drops, "Mining a construct has no loot table");
-                MatterAssemblyService.dismantle(p);
-                h.assertTrue(cells.stream().allMatch(pos -> h.getLevel().getBlockState(pos).isAir()) && AssemblyMaterials.count(p) == 40, "Dismantling restores air and makes no items"); h.succeed();
-            } finally { cleanup(p); }
+        Matter.fill(p); int full = Matter.capacity(p);
+        h.assertTrue(MatterAssemblyService.activate(context(p), "barricade"), "A panel starts folding together");
+        h.assertTrue(MatterAssemblyService.cells(p).isEmpty() && MatterAssemblyService.pendingCells(p) == 6, "Nothing lands before the blueprint");
+        h.runAfterDelay(AssemblyGeometry.PANEL_DELAY + 7, () -> { try {
+            var cells = MatterAssemblyService.cells(p);
+            h.assertTrue(cells.size() == 6 && MatterAssemblyService.pendingCells(p) == 0, "One cell a tick, six in all: " + cells.size());
+            h.assertTrue(Matter.of(p) == full - 6 && AssemblyMaterials.count(p) == 40, "One Matter a cell, and no input blocks spent");
+            BlockPos cell = cells.getFirst(); h.assertTrue(!h.getLevel().getBlockState(cell).getCollisionShape(h.getLevel(), cell).isEmpty(), "The panel has real collision");
+            int drops = h.getLevel().getEntitiesOfClass(ItemEntity.class, new AABB(cell).inflate(3)).size();
+            h.getLevel().destroyBlock(cell, true, p);
+            h.assertTrue(h.getLevel().getEntitiesOfClass(ItemEntity.class, new AABB(cell).inflate(3)).size() == drops, "Mining a construct has no loot table");
+            MatterAssemblyService.dismantle(p);
+            h.assertTrue(cells.stream().allMatch(pos -> h.getLevel().getBlockState(pos).isAir()) && AssemblyMaterials.count(p) == 40, "Taking it apart restores air and makes no items");
+            h.assertTrue(Matter.of(p) == full - 1, "The five standing cells' Matter came home; the mined one is lost (" + Matter.of(p) + ")");
+            h.succeed();
+        } finally { cleanup(p); } });
+    }
+    @GameTest(template="cryo_rework_arena", batch="matter.short", timeoutTicks = 120)
+    public static void shortOfMatterAConstructBuildsAsFarAsItCanThenMatterRegrows(GameTestHelper h) {
+        ServerPlayer p = player(h, 0);
+        Matter.fill(p);
+        while (Matter.of(p) > 3) Matter.take(p);
+        h.assertTrue(MatterAssemblyService.activate(context(p), "barricade"), "Three Matter still starts a panel");
+        h.runAfterDelay(AssemblyGeometry.PANEL_DELAY + 7, () -> {
+            h.assertTrue(MatterAssemblyService.cells(p).size() == 3 && Matter.of(p) == 0, "The panel stops where the Matter runs out: " + MatterAssemblyService.cells(p).size());
+            h.assertFalse(MatterAssemblyService.activate(context(p), "cage"), "A Launch Pad needs its four Matter");
+            h.assertTrue(MatterAssemblyService.activate(context(p), "shard_lance"), "Shard Lance costs no Matter: the kit never locks");
         });
+        h.runAfterDelay(AssemblyGeometry.PANEL_DELAY + 7 + Matter.REGROW_PAUSE + Matter.REGROW_TICKS * 3 + 2, () -> {
+            try { h.assertTrue(Matter.of(p) >= 2, "Matter regrows once you stop building (" + Matter.of(p) + ")"); h.succeed(); }
+            finally { cleanup(p); }
+        });
+    }
+    @GameTest(template="cryo_rework_arena", batch="matter.panels")
+    public static void aFourthPanelTakesTheOldestApartAndItsMatterComesHome(GameTestHelper h) {
+        ServerPlayer p = player(h, 0);
+        Matter.fill(p); int full = Matter.capacity(p);
+        try {
+            for (int i = 0; i < 4; i++) {
+                p.setYRot(-60 + i * 40); p.setXRot(0);
+                h.assertTrue(MatterAssemblyService.activate(context(p), "barricade"), "Panel " + (i + 1) + " builds");
+            }
+            h.assertTrue(MatterAssemblyService.panels(p) == AssemblyGeometry.PANELS, "You keep three panels");
+        } catch (RuntimeException | AssertionError e) { cleanup(p); throw e; }
+        h.runAfterDelay(AssemblyGeometry.PANEL_DELAY + 8, () -> { try {
+            h.assertTrue(MatterAssemblyService.cells(p).size() == 18 && Matter.of(p) == full - 18,
+                    "The oldest was taken apart before it landed (" + MatterAssemblyService.cells(p).size() + " cells, " + Matter.of(p) + " Matter)");
+            h.succeed();
+        } finally { cleanup(p); } });
     }
     @GameTest(template="cryo_rework_arena", batch="matter.protection")
     public static void cancelledPlaceHooksRefundOnlyReservationAndLeaveNoLease(GameTestHelper h) {
@@ -226,8 +262,9 @@ public final class MatterAssemblyGameTests {
     public static void serverPvpDisabledPreventsCagingAndShardDamage(GameTestHelper h) {
         ServerPlayer p = player(h, 32), other = player(h, 0); other.setPos(p.position().add(0, 0, 10));
         boolean previous = p.server.isPvpAllowed(); p.server.setPvpAllowed(false);
+        h.assertTrue(SkillTreeService.purchase(p, "matter_assembly_bank_shot") && SkillTreeService.purchase(p, "matter_assembly_faultline"), "Kaleidoscope is learned");
         h.runAfterDelay(2, () -> {
-            h.assertTrue(!MatterAssemblyService.activate(context(p), "cage"), "Disabled server PvP excludes player cage targeting");
+            h.assertTrue(!MatterAssemblyService.activate(context(p), "kaleidoscope"), "Disabled server PvP excludes a player from Kaleidoscope");
             h.assertTrue(MatterAssemblyService.activate(context(p), "shard_lance"), "A projectile may still launch at world targets");
         });
         h.runAfterDelay(10, () -> {
@@ -246,6 +283,64 @@ public final class MatterAssemblyGameTests {
             try { h.assertTrue(enemy.getHealth() < 100 && h.getLevel().getBlockState(mirror).is(AssemblyBlocks.MATTER.get()), "An intact owned facet reflects the live projectile into the enemy behind the caster"); h.succeed(); }
             finally { enemy.discard(); cleanup(p); }
         });
+    }
+    @GameTest(template="cryo_rework_arena", batch="matter.ricochet")
+    public static void shardsRicochetOffYourOwnPanelsAndHitHarderForIt(GameTestHelper h) {
+        ServerPlayer p = player(h, 0); Mob enemy = target(h, p, -5);
+        BlockPos mirror = BlockPos.containing(p.getEyePosition().add(0, 0, 6));
+        h.assertTrue(AssemblyTerrain.get(h.getLevel()).place(p, mirror, 200), "A crystal facet stands ahead");
+        h.runAfterDelay(2, () -> h.assertTrue(MatterAssemblyService.activate(context(p), "shard_lance"), "The lance is fired away from its target"));
+        h.runAfterDelay(14, () -> {
+            try {
+                float expected = (8 + 5 * 1.2F) * AssemblyGeometry.bounced(1, false);
+                h.assertTrue(Math.abs((100 - enemy.getHealth()) - expected) < .6F,
+                        "Without Bank Shot it still ricochets once, a quarter harder (" + (100 - enemy.getHealth()) + " vs " + expected + ")");
+                h.succeed();
+            } finally { enemy.discard(); cleanup(p); }
+        });
+    }
+    @GameTest(template="cryo_rework_arena", batch="matter.pad")
+    public static void aLaunchPadThrowsFriendsAlongAndFoesUpAirborne(GameTestHelper h) {
+        ServerPlayer p = player(h, 0); Matter.fill(p);
+        p.setXRot(80);
+        try {
+            h.assertTrue(MatterAssemblyService.activate(context(p), "cage"), "A pad is laid where she looks");
+            h.assertTrue(MatterAssemblyService.pads(p) == 1 && Matter.of(p) == Matter.capacity(p) - AssemblyGeometry.PAD_MATTER, "It holds four Matter");
+        } catch (RuntimeException | AssertionError e) { cleanup(p); throw e; }
+        // Whatever lies under her gaze: put a foe and a friend on the plate.
+        var hit = h.getLevel().clip(new net.minecraft.world.level.ClipContext(p.getEyePosition(), p.getEyePosition().add(p.getLookAngle().scale(20)),
+                net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, p));
+        Vec3 plate = hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK ? hit.getLocation() : p.getEyePosition().add(p.getLookAngle().scale(AssemblyGeometry.PAD_AIR));
+        var foe = EntityType.ZOMBIE.create(h.getLevel()); foe.setPos(plate); foe.setNoAi(true); h.getLevel().addFreshEntity(foe);
+        ServerPlayer friend = player(h, 0); friend.setPos(plate.add(.4, 0, .4));
+        h.runAfterDelay(3, () -> {
+            try {
+                h.assertTrue(MatterAssemblyService.airborne(foe), "A foe over the pad is thrown up and counts as airborne");
+                h.assertTrue(friend.getDeltaMovement().y > .8 && Math.abs(friend.getDeltaMovement().z) > .5, "A friend is thrown up and along the way she faced: " + friend.getDeltaMovement());
+                friend.causeFallDamage(12, 1, friend.damageSources().fall());
+                h.assertTrue(friend.getHealth() == friend.getMaxHealth(), "A friend it threw lands without fall damage");
+                MatterAssemblyService.dismantle(p);
+                h.assertTrue(MatterAssemblyService.pads(p) == 0 && Matter.of(p) == Matter.capacity(p), "Taken apart, its Matter comes home");
+                h.succeed();
+            } finally { foe.discard(); cleanup(friend); cleanup(p); }
+        });
+    }
+    @GameTest(template="cryo_rework_arena", batch="matter.kaleidoscope")
+    public static void kaleidoscopeRingsAFoeInMirrorsOpenToTheSky(GameTestHelper h) {
+        ServerPlayer p = player(h, 0); Matter.fill(p); Mob enemy = target(h, p, 6);
+        h.assertTrue(SkillTreeService.purchase(p, "matter_assembly_bank_shot") && SkillTreeService.purchase(p, "matter_assembly_faultline"), "Kaleidoscope is learned");
+        try {
+            p.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, enemy.getBoundingBox().getCenter());
+            h.assertTrue(MatterAssemblyService.activate(context(p), "kaleidoscope"), "The mirrors snap shut round the foe she aims at");
+        } catch (RuntimeException | AssertionError e) { enemy.discard(); cleanup(p); throw e; }
+        h.runAfterDelay((int) AssemblyGeometry.kaleidoArrival(16) + 2, () -> { try {
+            BlockPos center = enemy.blockPosition();
+            var cells = MatterAssemblyService.cells(p);
+            h.assertTrue(!cells.isEmpty() && cells.stream().allMatch(c -> Math.abs(c.getX() - center.getX()) <= 1 && Math.abs(c.getZ() - center.getZ()) <= 1
+                    && !(c.getX() == center.getX() && c.getZ() == center.getZ())), "A ring round the foe, never on it (" + cells.size() + " cells)");
+            h.assertTrue(cells.size() == 16 && cells.stream().noneMatch(c -> c.getY() > center.getY() + 1), "Sixteen mirrors, open to the sky: no roof");
+            h.succeed();
+        } finally { enemy.discard(); cleanup(p); } });
     }
     @GameTest(template="cryo_rework_arena", batch="matter.drawbridge")
     public static void learnedDrawbridgeCanRetractOnlyItsPaidCrossing(GameTestHelper h) {

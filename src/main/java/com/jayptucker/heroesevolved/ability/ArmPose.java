@@ -244,5 +244,11 @@ public enum ArmPose {
     PORTAL_CHANNEL,
     /** Electrokinesis's Counterweight: the arm thrown straight along the aim at the metal, fingers spread, the other
      *  swept back as the line hauls the body after it. Winchline: the fist yanked back to the shoulder, reeling. */
-    ELECTRO_HAUL, ELECTRO_REEL
+    ELECTRO_HAUL, ELECTRO_REEL,
+    /** Matter Assembly, the engineer. Form: both hands raised, palms facing, framing the shape, then pushed apart as it
+     *  snaps together. Flick: the hand snapped forward from the shoulder, fingers flat, a shard leaving them. Plant:
+     *  both palms pressed down at the ground, then flicked up. Raise: both arms swept up from low to high as the turrets
+     *  rise. Stride: arms out, palms down, balancing on air. Call: an open hand drawn back to the chest, calling the
+     *  Matter home. */
+    MATTER_FORM, MATTER_FLICK, MATTER_PLANT, MATTER_RAISE, MATTER_STRIDE, MATTER_CALL
 }

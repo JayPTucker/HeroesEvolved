@@ -28,7 +28,7 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 
 | When the task involves... | Read |
 | --- | --- |
-| Any ability effect, arm pose, set piece or camera | [docs/animation-guide.md](docs/animation-guide.md) (the quality bar, tools, body anchors, how to photograph), then "Drawing it" in [kit-design.md](docs/agents/kit-design.md) |
+| Any ability effect, arm pose, set piece or camera | [docs/animation-guide.md](docs/animation-guide.md) (the quality bar, tools, body anchors, how to photograph), then "Drawing it" in [kit-design.md](docs/agents/kit-design.md). **Matter Assembly is the bar for effects** (see below) |
 | Designing, adding or reworking a power, a skill tree or a class | [kit-design.md](docs/agents/kit-design.md) (the checklist and every reusable pattern), then the power's own notes |
 | One power | its row in "Powers" below: its agent notes and its player doc |
 | A power that fights hand to hand | [fighting-styles.md](docs/agents/fighting-styles.md). **Pyrokinesis is the bar** (see below) |
@@ -76,7 +76,8 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 | Superspeed | [powers/superspeed.md](docs/agents/powers/superspeed.md) | [superspeed.md](docs/superspeed.md) |
 | Telepathy | [powers/telepathy.md](docs/agents/powers/telepathy.md) | [telepathy.md](docs/telepathy.md) |
 | Vibe | [powers/vibe.md](docs/agents/powers/vibe.md) | [vibe.md](docs/vibe.md) |
-| Telekinesis, Matter Assembly | none yet: read [kit-design.md](docs/agents/kit-design.md) | [telekinesis.md](docs/telekinesis.md), [matter-assembly.md](docs/matter-assembly.md) |
+| Matter Assembly | [powers/matter-assembly.md](docs/agents/powers/matter-assembly.md) (Matter, paced building, the effects bar) | [matter-assembly.md](docs/matter-assembly.md) |
+| Telekinesis | none yet: read [kit-design.md](docs/agents/kit-design.md) | [telekinesis.md](docs/telekinesis.md) |
 
 Shared systems with player docs: [fighting-styles.md](docs/fighting-styles.md), [finishers.md](docs/finishers.md),
 [classes.md](docs/classes.md), [skill-trees.md](docs/skill-trees.md), [progression.md](docs/progression.md),
@@ -101,6 +102,22 @@ backflips). When a power should feel physical, start from firebending: the share
 any power the same input, dodges, evasion and counters (Electrokinesis's lightning style and Hydrokinesis's
 waterbending are each one class on it, plus art and poses), and `render/FightingStylePoseRenderer` turns the whole
 body. See [fighting-styles.md](docs/agents/fighting-styles.md) and [docs/pyrokinesis.md](docs/pyrokinesis.md).
+
+## Matter Assembly is the bar for effects
+
+The user's favourite effects (November 2026) are Matter Assembly's, and new effects should be built the same way
+([powers/matter-assembly.md](docs/agents/powers/matter-assembly.md), [animation-guide.md](docs/animation-guide.md)):
+
+- **Shapes, not particles,** in one art class with one palette, and **everything leaves the visible hand** (camera
+  space in first person).
+- **Show the plan, then the build:** a thin blueprint of the shape first, pieces flying from the hand along arcs with
+  hot tails, each part snapping in with a bright seam as it lands, a sheen to finish.
+- **The server keeps the drawing's schedule.** If the drawing shows parts arriving, the server places them at those
+  ticks (a paced job and one shared timing function), so real blocks never cover the animation.
+- **A resource you can see on the body,** eased one piece at a time, that visibly flies home when it is returned.
+- **Every hit and bounce answers:** a flash on the struck face, a ring on its plane, chips thrown off it.
+- **Photograph it from the side** (`TempestCamera.fix`) with real foes present, look at every shot, and fix what reads
+  wrong (a texture that looks like crates, a step hidden behind the head) before calling it done.
 
 ## Where things are
 

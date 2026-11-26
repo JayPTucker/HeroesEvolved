@@ -1,1 +1,1 @@
-{"parent":"minecraft:block/cube_all","textures":{"all":"minecraft:block/smooth_stone"}}
+{"parent":"minecraft:block/cube_all","render_type":"minecraft:translucent","textures":{"all":"heroesevolved:block/assembled_matter"}}

@@ -82,6 +82,21 @@ Time reads as **clockwork made of light** (`client/effects/TimeEffects.java`, `s
 Lesson: **give the power rules, and let them carry meaning.** Colour, speed and direction tell the player
 what is happening (slow, stopped, backwards) without any text.
 
+### Matter Assembly: the build you watch happen
+
+The user's favourite set (November 2026), and the model for anything that builds, collects or spends.
+
+- **Matter** is a ring of amber crystal fragments orbiting the chest, two rings turning opposite ways. The count is
+  eased one fragment at a time, so spending and getting it back are visible, never a jump.
+- **A Panel shows its plan, then builds it:** thin outlines of every cell, then fragments arcing from the hand with hot
+  tails, each cell snapping solid with a flare of its seams **at the tick the server places it**, then a sheen wiping
+  across the pane. The hands frame the shape in third and first person.
+- **Shards** are crystals turning end over end with an amber tail; every ricochet flashes on the face, spreads a ring on
+  its plane and throws chips, and the Shard brightens with each bounce.
+- **A Launch Pad** is a plate of rings with chevrons running along its throw; a throw bursts a ring and a column of
+  light, and a thrown foe wears a turning reticle that says "shoot me now".
+- **Taking things apart** sends every fragment arcing home into the orbit, each with a glint.
+
 ### Pyrokinesis: the body fights
 
 Pyrokinesis has the best movement in the mod, and many (not all) powers should move like it
@@ -122,6 +137,7 @@ geyser) follow it, each with its own character. Not every power should: a telepa
    | Pyrokinesis | `A32813` edge, `F76A13` body, `FFBE42` gold (ember fire); `38409E`, `447EF4`, `74CCF3` (blue fire); `493833` soot (all in `PyroArt`) |
    | Electrokinesis | `10172D` shadow, `3D52B8` indigo, `5588FF` blue, `84D5FF` ion, `EAF5FF` core (all in `ElectroArt`, the fighting style included) |
    | Hydrokinesis | `0B3A5C` deep, `1F78B4` sea, `3CC2D6` teal, `9EE8F2` shallow (glints, healing), `F2FBFF` foam, `CDEFFF` ice (all in `HydroArt`) |
+   | Matter Assembly | `7A4513` deep amber (dark seams, soft pass), `F2A848` amber, `FFC766` honey, `FFE3A0` seam, `FFF1C8` core, `BFE8FF` ice glint (all in `AssemblyArt`; the block texture from `tools/GenerateAssemblyTextures.java`) |
 
    Flight is also a good model of a whole power built from one shape language: every Flight set piece is drawn
    by `FlightArt` from three shared primitives (a translucent `arc` sheet with a turning lip, a broken tapered

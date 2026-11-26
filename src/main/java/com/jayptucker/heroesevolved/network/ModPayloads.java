@@ -17,7 +17,7 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("127")
+        event.registrar("128")
             .playToClient(FutureLookPayload.TYPE, FutureLookPayload.STREAM_CODEC, FutureLookPayload::handle)
             .playToClient(GuidanceStatePayload.TYPE, GuidanceStatePayload.STREAM_CODEC, GuidanceStatePayload::handle)
             .playToServer(GuidanceActionPayload.TYPE, GuidanceActionPayload.STREAM_CODEC, GuidanceActionPayload::handle)
@@ -53,6 +53,7 @@ public final class ModPayloads {
             .playToClient(FinisherStatePayload.TYPE, FinisherStatePayload.STREAM_CODEC, FinisherStatePayload::handle)
             .playToClient(FinisherRunPayload.TYPE, FinisherRunPayload.STREAM_CODEC, FinisherRunPayload::handle)
             .playToClient(HydroStatePayload.TYPE, HydroStatePayload.STREAM_CODEC, HydroStatePayload::handle)
+            .playToClient(MatterStatePayload.TYPE, MatterStatePayload.STREAM_CODEC, MatterStatePayload::handle)
             .playToClient(IllusionPayload.TYPE, IllusionPayload.STREAM_CODEC, IllusionPayload::handle)
             .playToClient(GiftedMobPayload.TYPE, GiftedMobPayload.STREAM_CODEC, GiftedMobPayload::handle)
             .playToClient(DistressPayload.TYPE, DistressPayload.STREAM_CODEC, DistressPayload::handle)

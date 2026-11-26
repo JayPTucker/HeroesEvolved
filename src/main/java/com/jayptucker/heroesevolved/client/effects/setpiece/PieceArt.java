@@ -117,6 +117,15 @@ final class PieceArt {
             case OVERRUN_DEPART -> SpeedArt.depart(c, a, t);
             case OVERRUN_ARRIVE -> SpeedArt.arrive(c, a, t);
             case MATTER_RISE -> AssemblyArt.rise(c, a, t);
+            case MATTER_PANEL -> AssemblyArt.panel(c, a, t);
+            case MATTER_PLATE -> AssemblyArt.plate(c, a, t);
+            case MATTER_PAD -> AssemblyArt.pad(c, a, t, false);
+            case MATTER_PAD_PLACE -> AssemblyArt.pad(c, a, t, true);
+            case MATTER_LAUNCH -> AssemblyArt.launch(c, a, t);
+            case MATTER_KALEIDO -> AssemblyArt.kaleido(c, a, t);
+            case MATTER_SHARD -> AssemblyArt.shard(c, a, t);
+            case MATTER_BOUNCE -> AssemblyArt.bounce(c, a, t);
+            case MATTER_RETURN -> AssemblyArt.returning(c, a, t);
             case SENTINEL -> AssemblyArt.sentinel(c, a, t);
             case STORY_BOLT, STORY_GRIP -> StoryArt.draw(c, a, t);
             case FUTURE_OMEN, FUTURE_BREACH, FUTURE_SHUT -> FutureWarningArt.draw(c, a, t);

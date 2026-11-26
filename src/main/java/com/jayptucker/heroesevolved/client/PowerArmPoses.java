@@ -248,6 +248,44 @@ public final class PowerArmPoses {
                 set(main, Mth.lerp(reach, -.5F, aimX), aimY, -.04F * inward);
                 set(rightHanded ? model.leftArm : model.rightArm, .55F * reach, -inward * .25F, -.45F * inward);
             }
+            case MATTER_FORM -> {
+                // Both hands raised, palms facing, framing the shape; then pushed apart as it snaps together.
+                float age = ClientArmPoseState.ageTicks(id), frame = smooth(age / 3F), open = smooth((age - 4F) / 4F);
+                set(model.rightArm, aimX + .05F, aimY - .32F - .18F * open, .12F + .25F * open);
+                set(model.leftArm, aimX + .05F, aimY + .32F + .18F * open, -.12F - .25F * open);
+                if (frame < 1) { model.rightArm.xRot = Mth.lerp(frame, -.5F, model.rightArm.xRot); model.leftArm.xRot = Mth.lerp(frame, -.5F, model.leftArm.xRot); }
+            }
+            case MATTER_FLICK -> {
+                // The hand snapped forward from the shoulder, fingers flat; the other drawn back.
+                float age = ClientArmPoseState.ageTicks(id), snap = smooth(age / 2F), settle = smooth((age - 3F) / 5F);
+                set(main, Mth.lerp(snap, aimX + .9F, aimX) + .2F * settle, aimY, -.08F * inward);
+                set(rightHanded ? model.leftArm : model.rightArm, .35F * snap, -inward * .3F, -.3F * inward);
+            }
+            case MATTER_PLANT -> {
+                // Both palms pressed down toward the ground, then flicked up as the pad locks.
+                float age = ClientArmPoseState.ageTicks(id), press = smooth(age / 4F), flick = smooth((age - 6F) / 3F);
+                float x = Mth.lerp(press, -.6F, -.15F) - .9F * flick;
+                set(model.rightArm, x, -.2F, .35F);
+                set(model.leftArm, x, .2F, -.35F);
+            }
+            case MATTER_RAISE -> {
+                // Both arms swept up from low to high as the turrets rise round you.
+                float lift = smooth(ClientArmPoseState.ageTicks(id) / 10F);
+                set(model.rightArm, Mth.lerp(lift, .2F, -2.7F), 0, Mth.lerp(lift, .9F, .35F));
+                set(model.leftArm, Mth.lerp(lift, .2F, -2.7F), 0, Mth.lerp(lift, -.9F, -.35F));
+            }
+            case MATTER_STRIDE -> {
+                // Arms out to the sides, palms down: balancing on air.
+                float sway = Mth.sin(ageInTicks * .25F) * .08F;
+                set(model.rightArm, -.15F, 0, 1.25F + sway);
+                set(model.leftArm, -.15F, 0, -1.25F + sway);
+            }
+            case MATTER_CALL -> {
+                // An open hand held out, then drawn back to the chest: Matter, come home.
+                float pull = smooth(ClientArmPoseState.ageTicks(id) / 6F);
+                set(main, Mth.lerp(pull, aimX, -1.1F), Mth.lerp(pull, aimY, aimY + inward * .6F), -.1F * inward);
+                set(rightHanded ? model.leftArm : model.rightArm, -.2F, 0, -.2F * inward);
+            }
             case ELECTRO_REEL -> {
                 // Winchline: the fist yanked back to the shoulder, the elbow driven behind, the other hand forward.
                 float yank = smooth(ClientArmPoseState.ageTicks(id) / 3F);

@@ -9,6 +9,12 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 
 ## Running one
 
+- **Matter Assembly** (`tools/assembly-preview.init.gradle`, `uitest/AssemblyPreview`, flag `heroes.preview.assembly`):
+  25 shots of the whole kit from side cameras, with checks. It paid for four lessons that apply to any preview:
+  `TempestCamera.fix` for a side view (third-person back hides whatever the player aims at behind the head); a
+  **Peaceful** world deletes the zombies and pillagers a shot needs (use EASY, mob spawning off); `hideGui` also hides
+  the first-person hands (cancel `RenderGuiEvent.Pre` instead); zombies burn at noon (use a husk), and the first frames
+  after loading can show an unrendered sky.
 - **Endgame:** `tools/endgame-preview.init.gradle` photographs the native End island, both temporary ruins, every
   Dragon move, all six phases, absorption, all 20 sampled gifts and Sylar's rupture at close and island-wide distances.
   Its driver is `endgame/EndgamePreview`; photos are in `build/endgame-preview/screenshots/`. Both ruin lighting audits

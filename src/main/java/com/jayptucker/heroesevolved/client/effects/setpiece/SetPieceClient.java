@@ -238,6 +238,7 @@ public final class SetPieceClient {
             PyroArt.drawLive(c);
             ShapeArt.drawLive(c);
             HydroArt.drawLive(c);
+            AssemblyArt.drawLive(c);
             TakedownArt.drawLive(c);
             com.jayptucker.heroesevolved.client.effects.intro.LastDayArt.drawLive(c);
             com.jayptucker.heroesevolved.client.effects.intro.GuideArt.drawLive(c);

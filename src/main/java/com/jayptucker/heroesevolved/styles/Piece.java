@@ -327,7 +327,14 @@ public enum Piece {
     // Electrokinesis's machine nodes (electro/ElectroMachines): a device the current reached (scale 1 worked, 2 killed);
     // a jammed gun spitting sparks (bound to its holder, re-sent while it lasts); Counterweight's taut line from the hand
     // to the anchor (bound to the hauled player) and Winchline's from the anchor to the reeled body (bound to them).
-    ELECTRO_DEVICE(16), ELECTRO_JAM(12), ELECTRO_HAUL(12), ELECTRO_REEL(12);
+    ELECTRO_DEVICE(16), ELECTRO_JAM(12), ELECTRO_HAUL(12), ELECTRO_REEL(12),
+    // Matter Assembly, the engineer (assembly/MatterAssemblyService, drawn by AssemblyArt; shapes in AssemblyGeometry):
+    // a panel snapping together cell by cell (origin its base cell, target base + facing, scale its shape flags, bound
+    // to the builder); a Skywalk plate; a Launch Pad held (re-sent) and placed; a throw off a pad (bound to who flew);
+    // a Kaleidoscope's mirrors; one step of a Shard in flight (scale its brightness); a ricochet (target the face's
+    // normal); Matter flying home (scale how many, bound to the owner).
+    MATTER_PANEL(22), MATTER_PLATE(14), MATTER_PAD(12), MATTER_PAD_PLACE(18), MATTER_LAUNCH(16), MATTER_KALEIDO(140),
+    MATTER_SHARD(4), MATTER_BOUNCE(10), MATTER_RETURN(24);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

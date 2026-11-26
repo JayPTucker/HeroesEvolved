@@ -61,6 +61,7 @@ public final class FirstPersonArmGeometry {
         if (switch (pose) {
             case ELECTRO_RIDE, ELECTRO_CUP, ELECTRO_LANCE, ELECTRO_TOUCH, ELECTRO_OVERCHARGE, ELECTRO_GROUND, ELECTRO_POINT,
                     ELECTRO_HAUL, ELECTRO_REEL,
+                    MATTER_FORM, MATTER_FLICK, MATTER_PLANT, MATTER_RAISE, MATTER_STRIDE, MATTER_CALL,
                     SPEED_GUARD, SPEED_SPLIT, SPEED_LUNGE, SPEED_THROW, SPEED_ESCORT, SPEED_STILL,
                     MIMIC_TOUCH, MIMIC_SHIFT,
                     SONIC_CRY, SONIC_SCREAM, SONIC_PLUCK, SONIC_CLENCH, SONIC_WALL, SONIC_SHOVE, SONIC_VAULT, SONIC_DIVE,
@@ -559,6 +560,37 @@ public final class FirstPersonArmGeometry {
                 float reach = smooth(age / 3);
                 if (main) { spread = .3F - .1F * reach; height = -.34F; depth = -.4F - .2F * reach; pitch = -92; yaw = 10 * reach; }
                 else { spread = .6F; height = -.7F; pitch = -40; }
+            }
+            case MATTER_FORM -> {
+                // Both hands up at the edges of the view, framing the shape, then pushed out and apart.
+                float open = smooth((age - 3) / 4);
+                spread = .42F + .14F * open; height = -.3F; depth = -.45F - .12F * open; pitch = -95; yaw = -side * (10 + 14 * open); roll = side * 20;
+            }
+            case MATTER_FLICK -> {
+                // The main hand snaps forward to the centre; the other stays low.
+                float snap = smooth(age / 2), settle = smooth((age - 3) / 5);
+                if (main) { spread = .3F - .06F * snap; height = -.34F; depth = -.3F - .28F * snap + .1F * settle; pitch = -88; yaw = 6; }
+                else { spread = .55F; height = -.66F; pitch = -45; }
+            }
+            case MATTER_PLANT -> {
+                // Both palms pressed down at the bottom of the view, then flicked up.
+                float press = smooth(age / 4), flick = smooth((age - 6) / 3);
+                spread = .36F; height = -.45F - .2F * press + .25F * flick; depth = -.42F; pitch = -60 + 40 * press - 70 * flick;
+            }
+            case MATTER_RAISE -> {
+                // Both hands rising from the bottom of the view to the top.
+                float lift = smooth(age / 10);
+                spread = .4F; height = -.7F + .75F * lift; depth = -.4F; pitch = -60 - 60 * lift;
+            }
+            case MATTER_STRIDE -> {
+                // Hands out low at both edges, palms down.
+                spread = .62F; height = -.55F; depth = -.38F; pitch = -70; roll = side * 35;
+            }
+            case MATTER_CALL -> {
+                // The open hand drawn back from the centre toward the chest.
+                float pull = smooth(age / 6);
+                if (main) { spread = .28F + .1F * pull; height = -.36F - .1F * pull; depth = -.55F + .25F * pull; pitch = -92 + 25 * pull; }
+                else { spread = .55F; height = -.65F; pitch = -50; }
             }
             case ELECTRO_REEL -> {
                 // The fist yanked back and down toward the edge of the view.

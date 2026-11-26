@@ -18,14 +18,18 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class AssemblyBlocks {
     private static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(HeroesEvolved.MOD_ID);
     public static final DeferredBlock<ConstructBlock> MATTER = BLOCKS.register("assembled_matter", () ->
-            new ConstructBlock(BlockBehaviour.Properties.of().strength(1.1F, 5F).sound(SoundType.COPPER)
-                    .lightLevel(state -> 4).noLootTable().pushReaction(PushReaction.BLOCK)
-                    .isSuffocating((state, level, pos) -> false)));
+            new ConstructBlock(BlockBehaviour.Properties.of().strength(1.1F, 5F).sound(SoundType.AMETHYST)
+                    .lightLevel(state -> 6).noLootTable().pushReaction(PushReaction.BLOCK).noOcclusion()
+                    .isSuffocating((state, level, pos) -> false).isViewBlocking((state, level, pos) -> false)));
     private AssemblyBlocks() {}
     public static void register(IEventBus bus) { BLOCKS.register(bus); }
 
     public static final class ConstructBlock extends Block {
         public ConstructBlock(Properties properties) { super(properties); }
+        /** Translucent crystal: faces between two cells aren't drawn, so a construct reads as one piece of crystal. */
+        @Override protected boolean skipRendering(BlockState state, BlockState adjacent, net.minecraft.core.Direction side) {
+            return adjacent.is(this) || super.skipRendering(state, adjacent, side);
+        }
         @Override protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState previous, boolean moved) {
             super.onPlace(state, level, pos, previous, moved);
             if (!level.isClientSide) level.scheduleTick(pos, this, 10);

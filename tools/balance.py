@@ -124,10 +124,10 @@ act("vibe_read", "vibe", 3, "skill", "replays a scene's fights", util=12)
 act("vibe_breach_guard", "vibe", 4, "skill", "a moving breach that swallows shots", util=22)
 act("vibe_frequency_lock", "vibe", 5, "ultimate", "Rift Fall: everyone in the ring drops out of a sky breach, 6 + 2/tier and a slow", dmg=9 * .75, n=4, ctrl=2, ult=True)
 # --- Matter Assembly
-act("matter_assembly_barricade", "matter_assembly", 1, "skill", "a 3x2 wall (also costs material)", util=12)
-act("matter_assembly_shard_lance", "matter_assembly", 1, "basic", "a shard up to 64 blocks", dmg=6)
+act("matter_assembly_barricade", "matter_assembly", 1, "basic", "a 3x2 crystal panel, floor or mirror (6 Matter)", util=8, cd=1.5)
+act("matter_assembly_shard_lance", "matter_assembly", 1, "basic", "a shard up to 64 blocks; ricochets twice off your own matter", dmg=6)
 act("matter_assembly_causeway", "matter_assembly", 2, "skill", "8 s of walking on air", util=20)
-act("matter_assembly_cage", "matter_assembly", 3, "heavy", "a cell round one enemy", ctrl=4, util=10)
+act("matter_assembly_cage", "matter_assembly", 3, "skill", "a Launch Pad for 20 s: throws friends, launches foes (4 Matter)", ctrl=3, util=10)
 act("matter_assembly_cathedral", "matter_assembly", 5, "ultimate", "three turrets for 20 s", util=55, ult=True)
 # --- Invisibility
 act("invisibility_fade", "invisibility", 1, "basic", "toggle; 2 a second, +1 per friend", fixed=6, cd=.5)
@@ -350,10 +350,9 @@ reviewed("empathic_mimicry_0_1", "mimicry/MimicryService#skill", "6+tier; one Bo
 utility_reviews("mimicry/MimicryService", [("empathic_mimicry_sense_powers", "detects powers"), ("empathic_mimicry_1_1", "Empathic Surge heals/buffs"),
     ("empathic_mimicry_overcharge", "strengthens a copied move, which still pays its own stamina"), ("empathic_mimicry_2_1", "Calm de-aggros"), ("empathic_mimicry_absorb_pain", "takes an ally's pain")])
 reviewed("matter_assembly_scattershot", "assembly/MatterAssemblyService#activate,firePaid,tickShard", "five projectiles of 5+.5*tier; simultaneous equal hits respect invulnerability", 6, n=3, factor=.75,
-         note="tickShard does NOT reset invulnerability: ordinary close overlap deals 6, not 30, to one body. Five rays can hit different bodies; material is also spent.")
-reviewed("matter_assembly_faultline", "assembly/MatterAssemblyService#tick", "5 for each raised block that intersects the body", 5, n=3, factor=.75, ctrl=.5, util=6,
-         note="Sixteen cells, four immediately then up to 24/tick: overlapping cells use ordinary invulnerability and cannot multiply the equal 5-damage hit.")
-utility_reviews("assembly/MatterAssemblyService", [("matter_assembly_switchback", "builds a route"), ("matter_assembly_drawbridge", "raises a bridge"),
+         note="tickShard does NOT reset invulnerability: ordinary close overlap deals 6, not 30, to one body. Five rays can hit different bodies. Ricochet and airborne bonuses are conditional rewards for setup.")
+utility_reviews("assembly/MatterAssemblyService", [("matter_assembly_faultline", "Kaleidoscope: a mirror ring that holds a foe; its damage is the Shards you fire in, each paid separately"),
+    ("matter_assembly_switchback", "builds a route"), ("matter_assembly_drawbridge", "raises a bridge"),
     ("matter_assembly_shelter", "builds shelter"), ("matter_assembly_cradle", "rescues and supports a friend")])
 reviewed("vibe_0_1", "vibe/VibeService#release", "7+1.5*tier; travelling narrow wave", 10, factor=.75, util=2)
 reviewed("vibe_reverb", "vibe/VibeService#release", "7+1.5*tier; both palms SHARE the UUID hit set", 13, n=2, factor=.75)

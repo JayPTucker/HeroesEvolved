@@ -1,26 +1,64 @@
 # Matter Assembly
 
-Matter Assembly treats the world as material. Matter tears up out of the ground (plates rip free all round,
-leaving puffs of dust, and fly up in arcs into place with bright seams behind them) and folds into lean,
-temporary constructs and physical Shards. It costs stamina, **never blocks from your inventory**, and every
-construct uses as few cells as it can: the look comes from the assembly, not from a pile of blocks. It creates
-real block collision; its projectiles travel and check every swept segment on the server.
+Matter Assembly is **the engineer**: it folds amber crystal out of thin air and builds things that work for you.
+Its constructs are real blocks you can stand on, hide behind and bounce shots off, and they all come apart again
+without leaving anything behind. It never takes a block from your inventory.
+
+## Matter
+
+You carry **Matter**: amber crystal fragments orbiting your chest, two rings turning opposite ways. Everyone can see
+how much you carry.
+
+- **Every cell of every construct costs one Matter.** Shards cost none (they are paid in stamina).
+- **It comes home.** Take a construct apart (Shift + any of your keys), or let it run its time out, and its
+  fragments lift off and arc back into your orbit. A cell someone else knocks out is lost.
+- **It regrows** one fragment every half second, once you have stopped building for a moment and a half.
+- **You carry 24** (32 from Power Level 15).
+- **Short of Matter, a construct builds as far as it can** rather than being refused, and Shard Lance always works,
+  so the kit never locks.
 
 ## Core kit
 
 The table uses ability tiers 1–5. These unlock at Power Levels 1, 3, 6, 10 and 15 respectively.
 
-| Tier | Action | Energy / cooldown | What it does |
+| Tier | Action | Stamina / cooldown | What it does |
 | --- | --- | --- | --- |
-| 1 | Foldwall | 12 / 3 seconds | A three-wide, two-high shield (six cells) two blocks ahead. Buttressed Corners folds a wing back on each side. |
-| 1 | Shard Lance | 14 / 1.5 seconds | Tears a Shard from the ground and fires it up to 64 blocks. It stops on terrain or its first valid enemy. Damage is 9.2–14 before ordinary damage rules. |
-| 2 | Skywalk | 22 / 8 seconds | For eight seconds, matter catches every step you take on air: a three-wide plate forms under your feet whenever there is nothing there. Walk out over gaps, jump to climb, crouch to drop through. Each plate crumbles a couple of seconds after you leave it. |
-| 3 | Compression Cage | 30 / 11 seconds | Targets a visible hostile up to 64 blocks away and closes a tight three-by-three cell round it, two high and roofed (25 cells). Skips occupied cells and lasts eight seconds. Allies, creative players, protected PvP targets and oversized creatures are rejected. |
-| 5 | Sentinel Engine | 70 / 50 seconds | Three turrets rise round you, each a two-cell pillar crowned with a turning crystal head, a ring of light and a searching beam. For twenty seconds each finds the nearest enemy it can see within 32 blocks and shoots Shards at it (fourteen each, staggered round the ring), while you stay within 48 blocks. A turret whose head is broken stops. |
+| 1 | **Panel** | 8 / 1.5 s | A pane of crystal three wide and two high where you aim: standing on the ground, against a wall, or five blocks out in mid-air. **Look steeply down** and it is a three-by-three floor at the level you stand on, two blocks ahead (over a drop, it is your next step); look nearly straight down and it goes right under your feet. Its blueprint is drawn first, then its cells land one a tick. Your Shards ricochet off it. You keep three; a fourth takes the oldest apart. Lasts 20 s. 1 Matter a cell. |
+| 1 | **Shard Lance** | 12 / 1 s | A crystal Shard forms at your hand and flies up to 64 blocks. It **ricochets off your own constructs twice**, a quarter harder after every bounce, and hits a foe a Launch Pad threw **half again as hard**. Damage starts at 8 + 1.2 per tier. No Matter. |
+| 2 | **Skywalk** | 20 / 6 s | For eight seconds, crystal catches every step you take on air: a three-wide plate forms under your feet. Walk out over gaps, jump to climb, crouch to drop through. Each plate crumbles a moment after you leave it and its Matter comes home, so a long walk costs only what is under you. |
+| 3 | **Launch Pad** | 19 / 5.75 s | A crystal pad where you aim on the ground (or hanging in the air when there is no ground in reach). **Friends and you** are thrown along the way you faced and land without fall damage; **foes** are thrown straight up and are **airborne** for two seconds (a reticle turns round them): your Shards hit them half again as hard and your turrets shoot them first. You keep two. Lasts 20 s. 4 Matter, returned when it ends. |
+| 5 | **Sentinel Engine** | 70 / 52 s | Three crystal turrets rise round you. For twenty seconds each finds the nearest enemy it can see within 32 blocks, **airborne ones first**, and shoots Shards at it that ricochet off your constructs like yours. 6 Matter. |
 
-Shift plus a core ability key dismantles your shapes. Unstable Lattice can turn up to six dismantled cells into
-outgoing Shards. Drawbridge's second cast retracts that crossing. Ordinary mining and explosions can break the
-constructs but give no items.
+**Shift plus any of your keys** takes all your constructs and pads apart and calls their Matter home. Drawbridge's
+second cast retracts that crossing. Ordinary mining and explosions can break constructs but give no items (and
+that Matter is lost).
+
+### Combinations worth knowing
+
+- **Trick shots.** A Panel at an angle turns a Shard round a corner, and every bounce adds damage. Bank Shot makes it
+  four bounces and +35% each.
+- **Juggle.** Launch Pad a foe, then hit it in the air: half again from every Shard, and your Sentinels switch to it.
+- **Jump pads.** A pad hanging in the air catches you as you fall and throws you on. Chain it with Skywalk and Panel
+  floors to cross what no one else can.
+- **Kaleidoscope** (Ballistics) closes mirrors round a foe; a Shard fired in rattles round inside, up to eight
+  bounces.
+
+## Look and sound
+
+Everything is one idea: **crystal folded out of thin air**, in amber.
+
+| Move | What you see |
+| --- | --- |
+| Matter | Fragments in two tilted rings round the chest, turning opposite ways; the ring thins and grows one fragment at a time. |
+| Panel | Both hands frame the shape. A thin blueprint of every cell appears; fragments arc from your hand into it; each cell snaps solid with a bright seam as it lands; a sheen sweeps across the finished pane. The cells are clear amber glass with a bright rim. |
+| Shard Lance | A flick of the hand; a crystal turning end over end with an amber tail. Every ricochet flashes on the face it hit, sprays chips and spreads a ring; the Shard grows brighter with each bounce. |
+| Launch Pad | Both palms pressed down, then flicked up. Fragments rain into a plate; two rings lock and chevrons run out along the throw. A throw bursts a ring and a column of light; a thrown foe wears a turning reticle. |
+| Skywalk | Arms out for balance; the air firms into a ring under your feet, and each plate's cells flash as they hold. |
+| Taking apart | An open hand drawn back to the chest; the fragments lift off and arc home into the orbit, each with a small glint. |
+| Sentinel Engine | Both arms swept up; three pillars, each crowned by a turning crystal head with a searching beam. |
+
+Sounds are amethyst and glass, pitched up: a crystalline snap for each Panel, a resonant ring and a whip for a
+Shard, rising pings for each ricochet, a wind-charge burst for a throw, and chimes as Matter comes home.
 
 ## Choices in the skill tree
 
@@ -29,16 +67,17 @@ normal server-validated purchase and loadout system. Explicit IDs and mechanics 
 [skill catalog](../src/main/resources/data/heroesevolved/skill_trees.json).
 
 **Architecture:** Load-Bearing absorbs falls onto your constructs. Switchback folds a narrow staircase through
-a right angle; the bend follows which side of the nearest compass direction you aim. Buttressed Corners adds
-flanking wings. Drawbridge projects a narrow twenty-block crossing and can retract it. Snap Rails adds guard
+a right angle; the bend follows which side of the nearest compass direction you aim. Buttressed Corners gives a
+standing Panel a wing folded back at each end. Drawbridge projects a narrow twenty-block crossing and can retract it. Snap Rails adds guard
 posts along Switchback and Drawbridge. Living Blueprint rebuilds a broken Sentinel Engine turret cell every
 half-second while you stay near.
 
-**Ballistics:** Bank Shot permits one reflection from your constructed matter. Scattershot fans five
-individually colliding Shards. Recall Angle redirects a banked Shard toward a nearby visible enemy. Faultline
-bursts pillars up in a travelling line and launches nearby enemies upward. Unstable Lattice releases matter
-during deliberate dismantling. Splinter Storm divides a direct Shard hit into up to two fragments aimed at
-different visible enemies; fragments never divide again.
+**Ballistics:** Bank Shot raises your ricochets from two to four, at +35% a bounce instead of +25%. Scattershot fans
+five individually colliding Shards. Recall Angle turns a Shard toward a visible enemy near where it bounced.
+**Kaleidoscope** (it kept Faultline's place) snaps a ring of crystal mirrors, two high and open to the sky, round
+the foe you aim at for seven seconds; your Shards ricochet off it up to eight times. Unstable Lattice throws up to
+six cells as Shards when you take constructs apart (that Matter is spent, not returned). Splinter Storm divides a
+direct Shard hit into up to two fragments aimed at different visible enemies; fragments never divide again.
 
 **Refuge:** Secret Threshold lets an empty hand open a two-block doorway in your matter, respecting build
 permissions. Folded Shelter raises a snug, roofed three-by-three hut round you with a doorway behind. Clean Exit
@@ -51,8 +90,8 @@ rescue. It is not immunity to later hits.
 
 ## Matter and world safety
 
-Matter is drawn from the world, never from the player: no inventory block is read or taken, so nothing in the
-inventory can be lost or duplicated by the power. The construct is a dedicated `heroesevolved:assembled_matter`
+Matter is folded out of thin air, never taken from the player: no inventory block is read or taken, so nothing in
+the inventory can be lost or duplicated by the power. The construct is a dedicated `heroesevolved:assembled_matter`
 block with no loot table, no BlockItem, no block entity and an immovable piston reaction. Silk Touch,
 explosions, cleanup and dismantling do not create resource outputs, so constructs cannot be cashed out into
 materials.
@@ -93,4 +132,18 @@ Each press of C plays one of three at random, never the one you used last. Monum
 
 ## Verification
 
-`MatterAssemblyGameTests` exercises building from an empty inventory (stamina and cooldown only), an inventory left untouched, Skywalk catching a step on air, Sentinel Engine's three turrets shooting an enemy, physical wall collision and no loot, cancelled claim placement/refunds, Adventure restrictions and container preservation, lease serialization/expiry/orphan recovery, later-edit preservation, a purchased and equipped Switchback's actual geometry/cost/cooldown, forty-block swept projectile hits, cover/team safety, runtime cancellation after power loss, directservice purchase/tier/rewind gates, disabled PvP, Bank Shot, Drawbridge retraction, and actual armored-survival versus fatal-rescue damage. Test sources are isolated from the released mod by the existing GameTest init script.
+`MatterAssemblyGameTests` (24 tests) exercises building from an empty inventory (stamina, cooldown and Matter
+only), an inventory left untouched, a Panel landing cell by cell with real collision, no loot and its Matter coming
+home (a mined cell's is lost), building as far as Matter allows and Matter regrowing, a fourth Panel taking the
+oldest apart, Shards ricocheting off your own Panel a quarter harder, a Launch Pad throwing a friend along (no fall
+damage) and a foe up (airborne), Kaleidoscope's open mirror ring, Skywalk catching a step on air, Sentinel Engine's
+turrets, cancelled claim placement, build restrictions and containers, lease expiry and rewind orphans, later player
+edits, Switchback and Drawbridge, Shard cover and allies, losing authorization mid-build, PvP, and Second Foundation.
+
+`./gradlew runClient --init-script tools/assembly-preview.init.gradle` photographs the whole kit into
+`build/assembly-preview/screenshots/` (25 shots: the orbit, a Panel from blueprint to sheen and in first person, a
+floor over a drop, a ricochet into a pillager, a Launch Pad laid, held and throwing a foe and the caster,
+Kaleidoscope, Sentinel Engine, Skywalk, Matter flying home, and minimal particles).
+
+Admins: `/heroesevolved matter status|fill|set <amount>|clear [targets]` reports or sets an assembler's Matter and
+takes their constructs apart.

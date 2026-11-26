@@ -257,10 +257,10 @@ each level after (21 at Level 15, 28 Evolved), plus training and story notes, ag
 
 | Key | Move | Level | Stamina | Cooldown | Was | Pays for |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | `matter_assembly_barricade` | 1 | 12 | 3.5s | 12 / 3s, Level 1 | a 3x2 wall (also costs material) |
-| 2 | `matter_assembly_shard_lance` | 1 | 12 | 1s | 14 / 1.5s, Level 1 | a shard up to 64 blocks |
+| 1 | `matter_assembly_barricade` | 1 | 8 | 1.5s | 12 / 3s, Level 1 | a 3x2 crystal panel, floor or mirror (6 Matter) |
+| 2 | `matter_assembly_shard_lance` | 1 | 12 | 1s | 14 / 1.5s, Level 1 | a shard up to 64 blocks; ricochets twice off your own matter |
 | 3 | `matter_assembly_causeway` | 3 | 20 | 6s | 22 / 8s, Level 3 | 8 s of walking on air |
-| 4 | `matter_assembly_cage` | 6 | 22 | 10s | 30 / 11s, Level 6 | a cell round one enemy |
+| 4 | `matter_assembly_cage` | 6 | 19 | 5.75s | 30 / 11s, Level 6 | a Launch Pad for 20 s: throws friends, launches foes (4 Matter) |
 | 5 | `matter_assembly_cathedral` | 15 | 70 | 52s | 70 / 50s, Level 15 | three turrets for 20 s |
 
 ### Invisibility
@@ -554,7 +554,7 @@ and 0.75.
 | matter_assembly | Switchback | skill | 20 | 6s |
 | matter_assembly | Drawbridge | skill | 20 (was 18) | 4s (was 3s) |
 | matter_assembly | Scattershot | skill | 21 (was 22) | 5s |
-| matter_assembly | Faultline | skill | 27 (was 28) | 9s |
+| matter_assembly | Kaleidoscope | skill | 27 (was 28) | 9s |
 | matter_assembly | Folded Shelter | skill | 21 (was 22) | 8s |
 | matter_assembly | Rescue Cradle | skill | 20 (was 18) | 6s |
 | matter_assembly | Forge Cannon | class:offense | 31 (was 30) | 18s |
@@ -705,8 +705,8 @@ a successful evasion; full holding time and an immediate shattering/releasing bl
 | `empathic_mimicry_overcharge` | 3 | 17 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: strengthens a copied move, which still pays its own stamina (`mimicry/MimicryService`) |
 | `empathic_mimicry_2_1` | 2 | 19 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Calm de-aggros (`mimicry/MimicryService`) |
 | `empathic_mimicry_absorb_pain` | 3 | 21 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: takes an ally's pain (`mimicry/MimicryService`) |
-| `matter_assembly_scattershot` | 2 | 21 | 3 | 0 | 0 / 0 blocks | 4.5 / 5.83 | within 30% | five projectiles of 5+.5*tier; simultaneous equal hits respect invulnerability. tickShard does NOT reset invulnerability: ordinary close overlap deals 6, not 30, to one body. Five rays can hit different bodies; material is also spent. (`assembly/MatterAssemblyService#activate,firePaid,tickShard`) |
-| `matter_assembly_faultline` | 3 | 27 | 3 | 0.5 | 6 / 0 blocks | 3.75 / 5.08 | within 30% | 5 for each raised block that intersects the body. Sixteen cells, four immediately then up to 24/tick: overlapping cells use ordinary invulnerability and cannot multiply the equal 5-damage hit. (`assembly/MatterAssemblyService#tick`) |
+| `matter_assembly_scattershot` | 2 | 21 | 3 | 0 | 0 / 0 blocks | 4.5 / 5.83 | within 30% | five projectiles of 5+.5*tier; simultaneous equal hits respect invulnerability. tickShard does NOT reset invulnerability: ordinary close overlap deals 6, not 30, to one body. Five rays can hit different bodies. Ricochet and airborne bonuses are conditional rewards for setup. (`assembly/MatterAssemblyService#activate,firePaid,tickShard`) |
+| `matter_assembly_faultline` | 3 | 27 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Kaleidoscope: a mirror ring that holds a foe; its damage is the Shards you fire in, each paid separately (`assembly/MatterAssemblyService`) |
 | `matter_assembly_switchback` | 2 | 20 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: builds a route (`assembly/MatterAssemblyService`) |
 | `matter_assembly_drawbridge` | 3 | 20 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: raises a bridge (`assembly/MatterAssemblyService`) |
 | `matter_assembly_shelter` | 2 | 21 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: builds shelter (`assembly/MatterAssemblyService`) |
