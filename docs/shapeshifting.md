@@ -136,7 +136,7 @@ Mobs ignore you while you wear the shape of their kind:
 **Suspicion** is a meter from 0 to 100 that you see as an eye filling on the HUD. These raise it:
 
 - attacking a creature of your form's kind (+40);
-- using a move your form couldn't make, such as a skill or class ability, where your kind can see you (+25);
+- using a move your form couldn't make, such as a skill or an Ultimate, where your kind can see you (+25);
 - hurting anything while your kind can see you (+15);
 - in a player form, a telepath or Vibe reading you (to 100 at once).
 
@@ -294,11 +294,13 @@ capstone.
 
 ## Class abilities
 
-| Class | Ability |
+Each class's ability is an **Ultimate** on a long wait (see [Classes](classes.md) for how they work):
+
+| Class | Ultimate |
 | --- | --- |
-| Offense | **Many Hands**: plated arms lash out from you to strike up to five foes within 8 blocks, one after another, for 5 + tier each. |
-| Defense | **Plate Mail**: scale armour locks over your torso for eight seconds. Shots skid off, you take 30% less damage, and the first blow sheds a Decoy. |
-| Support | **Masquerade**: you and up to four friends within 10 blocks take one creature's shape for twenty seconds: the one you wear, the newest you remember, or the nearest you can see. Its kind take you all for their own. |
+| Offense | **Apex Predator**: plates close over you and open on a ravager (a wolf where a ravager won't fit). It pins the foe in front of you, mauls it, tosses it and brings it down, then bursts into plates and you step out. 24 damage, and 5 to everyone near the landing. The foe is held the whole time. |
+| Defense | **Living Fortress**: for 12 seconds you wear plates of your own making from head to foot: blows land at less than half, nothing knocks you down, and anyone who strikes you cuts themselves on the edges. The plates burst off as it ends. |
+| Support | **Many Faces**: four copies of you walk off in four directions, and everything hunting you or a friend within 20 blocks goes after a copy instead. For 12 seconds friends within 12 blocks mend and move quicker. |
 
 **Evolved trial:** spend 30 minutes in total in disguise among your shape's own kind (within 8 blocks of one). Time in
 a person's shape doesn't count.
@@ -358,8 +360,7 @@ phases.
   - `SHIFT_DECOY`: the decoy shell, and its burst.
   - `SHIFT_NIGHTMARE`: sent to each viewer separately.
   - `SHIFT_LUNGE`
-  - `SHIFT_PLATES`: Plate Mail.
-  - `SHIFT_MANY`: Many Hands.
+  - `SHIFT_PLATES`: the plates of an apex form.
 - **Poses** (third person in `PowerArmPoses`, first person in `FirstPersonArmGeometry`):
   - `SHIFT_SWEEP`: one palm drawn down over the face, which starts the morph (built).
   - `SHIFT_STUDY`: two fingers at the temple, the other arm folded under the elbow (built).
@@ -397,7 +398,7 @@ phases.
   3. Player forms and chat with every safeguard. *(Built.)*
   4. Instinct for each form.
   5. Suspicion and the clues.
-  6. Tree, class abilities, trial and awakening.
+  6. Tree, Ultimates, trial and awakening.
   7. Tests and previews.
 - **Game tests** (`ShapeshiftGameTests`):
   - Level gates for forms.

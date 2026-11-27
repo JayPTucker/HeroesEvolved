@@ -335,17 +335,6 @@ public final class EarthPreview {
             case 850 -> server(mc, p -> { reset(p, 7, 0, true); DensityService.setNotch(p, DensityService.FULL_DENSE, 400); });
             case 854 -> side(3, 1.6, 2.5, 0, .8, 0);
             case 892 -> shoot("49-wait-and-listen.png");
-            // ---------------------------------------------------------- Classes
-            case 910 -> server(mc, p -> { reset(p, 8, 0, true); actor(p, 0, 9); actor(p, 1.5, 9.5); lookAt(p, 0, -.5, 9); });
-            case 914 -> side(9, 4, 3, 0, 2, 9);
-            case 920 -> server(mc, p -> log("barrage " + com.jayptucker.heroesevolved.styles.StyleCasts.cast(new com.jayptucker.heroesevolved.ability.AbilityUseContext(p, ModAbilities.PHASING_ID, 5, false), "phase_eruption")));
-            case 926 -> shoot("50-pillar-barrage-mark.png");
-            case 932 -> shoot("51-pillar-barrage.png");
-            case 960 -> server(mc, p -> reset(p, 0, 0, true));
-            case 964 -> side(7, 3, 3, 0, 1, 0);
-            case 970 -> server(mc, p -> log("tent " + com.jayptucker.heroesevolved.styles.StyleCasts.cast(new com.jayptucker.heroesevolved.ability.AbilityUseContext(p, ModAbilities.PHASING_ID, 5, false), "phase_field")));
-            case 976 -> shoot("52-earth-tent-closing.png");
-            case 990 -> shoot("53-earth-tent.png");
             // ---------------------------------------------------------- Rock Clap
             case 1010 -> server(mc, p -> {
                 reset(p, 1, 0, false);

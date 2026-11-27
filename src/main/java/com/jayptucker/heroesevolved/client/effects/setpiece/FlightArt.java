@@ -40,25 +40,6 @@ final class FlightArt {
             case FLIGHT_CURRENT -> current(c, at, a.target(), radius, time, alpha * .58F);
             case FLIGHT_THERMAL_MARK -> thermalMark(c, at, radius, t, alpha);
             case FLIGHT_THERMAL_RISE -> thermalRise(c, at, radius, (float) a.target().distanceTo(at), t, alpha);
-            case TEMPEST_DRILL -> {
-                Vec3 start = FlightVisualGeometry.bodyCenter(at);
-                Vec3 end = FlightVisualGeometry.bodyCenter(at.lerp(a.target(), smooth(0, 10, t)));
-                current(c, start, end, 1.55F, time * 2, alpha);
-                release(c, start, direction, 1.4F, t, alpha * .65F, 0);
-            }
-            case GALE_WALL -> {
-                Vec3 base = a.at(c);
-                for (int i = 0; i < (minimal() ? 3 : 6); i++) {
-                    float h = (t * .034F + hash(a.seed(), i)) % 1;
-                    arc(c, base.add(0, .17 + h * 2.9, 0), UP, radius, .22F,
-                            t * .23F + i * 1.9F, 2.65F, alpha * sin(h * PI));
-                }
-            }
-            case FORMATION_FLIGHT -> {
-                Vec3 base = a.at(c);
-                arc(c, base.add(0, .28, 0), UP, .83F, .10F, t * .16F, 4.4F, alpha * .75F);
-                if (!minimal()) spiral(c, base, UP, 1.4F, .68F, .40F, t * .25F, 5.4F, .085F, alpha * .7F);
-            }
             case FLIGHT_INTERCEPT -> {
                 float r = .22F + smooth(0, 9, t) * radius;
                 arc(c, at.add(direction.scale(t * .045)), direction, r, .055F,
@@ -593,5 +574,112 @@ final class FlightArt {
                 c.glow(foe.add(0, .5, 0), 1.4F * (1 - smooth(land, land + 4, t)), CORE, f * .6F * (1 - smooth(land, land + 4, t)));
             }
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Ultimates (flight/FlightUltimates)
+    // ------------------------------------------------------------------
+
+    /**
+     * Stratosphere ({@code FlightUltimates.Stratosphere}): the vapour streak of the tackle, rings of condensation burst
+     * off the climb every five blocks with a trail twisting up behind it, a thin halo of high air at the top, the vapour
+     * cone of the dive, and the crater of mist where it lands (the scale is the climb's height).
+     */
+    static void sky(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        net.minecraft.world.entity.Entity foe = UltArt.foe(c, a);
+        Vec3 base = a.target(), facing = a.facing();
+        double height = a.scale();
+        float phase = c.time() * .2F;
+        int seed = a.seed() * 7 + 3;
+        int grab = com.jayptucker.heroesevolved.flight.FlightUltimates.Stratosphere.GRAB,
+                climb = com.jayptucker.heroesevolved.flight.FlightUltimates.Stratosphere.CLIMB,
+                apex = com.jayptucker.heroesevolved.flight.FlightUltimates.Stratosphere.APEX,
+                over = com.jayptucker.heroesevolved.flight.FlightUltimates.Stratosphere.OVER,
+                impact = com.jayptucker.heroesevolved.flight.FlightUltimates.Stratosphere.IMPACT;
+        double now = com.jayptucker.heroesevolved.flight.FlightUltimates.Stratosphere.rise(t, height);
+        Vec3 body = foe != null ? foe.getPosition(c.partial).add(0, foe.getBbHeight() * .5, 0) : base.add(0, now + 1, 0);
+        // The tackle: a streak of vapour along the dive in.
+        float dive = UltArt.window(t, 0, grab + 10, 1, 8);
+        if (dive > 0) spiral(c, a.origin().add(0, 1, 0), base.subtract(a.origin()).multiply(1, 0, 1), (float) Math.max(.5, base.distanceTo(a.origin())),
+                .15F, .5F, phase, 4, .1F, dive);
+        // The climb: a twisting trail of condensation from the ground to the pair, and a ring burst every five blocks.
+        float trail = UltArt.window(t, climb, over + 6, 2, 8);
+        if (trail > 0 && now > .5) for (int s = 0; s < 2; s++)
+            spiral(c, base.add(0, .4, 0), UP, (float) Math.max(.5, Math.min(now, height)), .4F, 1.1F, phase + s * PI, 6, .16F, trail);
+        for (int i = 1; i * 5 < height; i++) {
+            double h = i * 5;
+            float crossed = -1;
+            for (int k = climb; k <= apex; k++) if (com.jayptucker.heroesevolved.flight.FlightUltimates.Stratosphere.rise(k, height) >= h) { crossed = k; break; }
+            if (crossed < 0 || t < crossed) continue;
+            float age = t - crossed;
+            if (age > 22) continue;
+            float k = smooth(0, 14, age), f = 1 - smooth(6, 22, age);
+            arc(c, base.add(0, h + .6, 0), UP, 1 + 3.2F * k, .3F * (1 - .5F * k), i * 1.3F + age * .05F, TWO_PI, f);
+        }
+        // The top: a still halo of thin air, and the sun's glare on it.
+        float top = UltArt.window(t, apex - 2, over + 2, 3, 3);
+        if (top > 0) {
+            arc(c, body, UP, 2.4F + .2F * sin(phase), .12F, phase, TWO_PI, top * .7F);
+            if (c.glow()) c.glow(body.add(0, 2, 0), 3, CORE, top * .2F);
+        }
+        // The dive: a cone of vapour shed back up the way they came.
+        if (t >= over && t < impact + 4) {
+            float f = UltArt.window(t, over, impact + 4, 1, 4);
+            release(c, body.add(0, 1, 0), new Vec3(0, -1, 0), 2.2F, t - over, f, phase);
+        }
+        // The landing: fronts of mist across the ground, a ring of dust rolling out.
+        if (t >= impact) {
+            float age = t - impact, f = fade(age, a.piece().ticks - impact, 0, 16);
+            impact(c, base.add(0, .1, 0), UP, 8, age, f, seed);
+            if (c.soft()) for (int i = 0; i < (minimal() ? 4 : 10); i++) {
+                float ang = i * TWO_PI / 10 + hash(seed, i);
+                double d = 1 + 5 * (1 - Math.exp(-age / 6));
+                c.cloud(base.add(cos(ang) * d, .4 + age * .02, sin(ang) * d), 1.1F, .6F, 1.1F, i, ang, .45F * f, Shades.smoke(c, CONDENSATION, 0));
+            }
+        }
+    }
+
+    /**
+     * Eye of the Storm, one second (re-sent each second; the second in the seed, -1 the break): a wall of wind wheeling
+     * round the flyer at the scale's radius, spirals climbing it and curling sheets at three heights; the break throws
+     * fronts out along the ground.
+     */
+    static void eye(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        net.minecraft.world.entity.Entity body = a.bound(c);
+        Vec3 feet = body != null ? body.getPosition(c.partial) : a.origin();
+        int second = a.seed();
+        float r = a.scale(), phase = c.time() * .35F;
+        if (second < 0) {
+            impact(c, feet.add(0, .2, 0), UP, r * 2.2F, t, 1, 9);
+            return;
+        }
+        boolean last = second >= com.jayptucker.heroesevolved.flight.FlightUltimates.EyeOfTheStorm.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(10, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        float grow = second == 0 ? smooth(0, 12, t) : 1;
+        int walls = minimal() ? 3 : 6;
+        for (int i = 0; i < walls; i++) {
+            float start = phase * 1.3F + i * TWO_PI / walls;
+            Vec3 at = feet.add(cos(start) * r * grow, 0, sin(start) * r * grow);
+            spiral(c, at, UP, 5 * grow, .3F, .8F, phase * 2 + i, 2.5F, .2F, f);
+        }
+        for (int h = 0; h < 3; h++) arc(c, feet.add(0, .6 + h * 1.6, 0), UP, r * grow * (1 + h * .08F), .45F, phase * (1.4F + h * .3F) + h, 4.6F, f * .9F);
+    }
+
+    /** Airlift's vapour wings on a friend (bound; scale their height), and the updraft under their feet. */
+    static void wings(Canvas c, Active a, float t) {
+        net.minecraft.world.entity.Entity body = a.bound(c);
+        if (body == null) return;
+        Vec3 feet = body.getPosition(c.partial);
+        float h = Math.max(.6F, a.scale()), life = a.piece().ticks, f = fade(t, life, 3, 6), phase = c.time() * .3F;
+        float yaw = body instanceof net.minecraft.world.entity.LivingEntity l ? Mth.rotLerp(c.partial, l.yBodyRotO, l.yBodyRot) * DEG_TO_RAD : 0;
+        Vec3 back = new Vec3(sin(yaw), 0, -cos(yaw)), right = new Vec3(-cos(yaw), 0, -sin(yaw));
+        Vec3 shoulders = feet.add(0, h * .72, 0).add(back.scale(.2));
+        for (int s = -1; s <= 1; s += 2) {
+            Vec3 axis = right.scale(s).add(back.scale(.7)).add(0, .35, 0).normalize();
+            arc(c, shoulders.add(right.scale(s * .3)), axis.cross(UP).normalize(), .9F, .22F, phase * .2F + (s > 0 ? 0 : PI), 2.2F, f);
+        }
+        spiral(c, feet.add(0, -1.2, 0), UP, 1.4F, .3F, .6F, phase * 2, 3, .1F, f * .7F);
     }
 }

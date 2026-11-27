@@ -117,8 +117,8 @@ player sees is in [docs/fighting-styles.md](../../docs/fighting-styles.md).
   input check: it presses the real attack key three times at a pillager and double-taps right and back for all ten
   styles, and prints `INPUT <power> ... PASS/FAIL` and `INPUT_RESULT`. Game tests call `strike`/`dodge` directly, so only
   this catches a broken click or double-tap on the client. Each preview driver
-  needs its own flag: `heroes.preview.styles` already belonged to `uitest/StylePreview`, and two drivers on one flag
-  started two worlds and photographed the dark. The preview's actors have no AI, so shoves don't move them; check
+  needs its own flag: two drivers on one flag (`heroes.preview.styles` once belonged to an older class-ability
+  preview) started two worlds and photographed the dark. The preview's actors have no AI, so shoves don't move them; check
   knockback in game tests.
 - **A brace on a dodge key, and a counter that answers.** Tiger and Crane (`phasing/EarthStyle`) has no evasion on its
   side dodges (`evadeTicks` returns 0 unless special): an Earth Slide is a `StyleMotion.skid` plus a `StyleMotion.brace`,

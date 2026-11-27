@@ -69,6 +69,9 @@ public final class TempestCamera {
         // A finisher of your own holds a still side view for its length.
         Shot finisher = com.jayptucker.heroesevolved.client.FinisherClient.shot();
         if (finisher != null) return finisher;
+        // An Ultimate of your own flies its own shots.
+        Shot ultimate = com.jayptucker.heroesevolved.client.UltimateCamera.shot(partial);
+        if (ultimate != null) return ultimate;
         if (spot == null || spotOld == null) return null;
         Vec3 at = spotOld.lerp(spot, partial), look = focusOld.lerp(focus, partial).subtract(at);
         float yaw = (float) (Mth.atan2(-look.x, look.z) * Mth.RAD_TO_DEG);

@@ -31,8 +31,8 @@ Held powers (toggles, flights, beams, a stopped world) have a per-second drain i
 Unlock tiers: one new key at each stage, Power Level 1, 3, 6, 10, 15 (tiers 1-5). A kit whose first key is a toggle
 (Flight, Superspeed, Fade, Shift...) opens its second key at Level 1 too, so the first level has something to use.
 
-Skill-tree actives and class abilities keep their designed order and are pulled into the same bands
-(normalize_skills below).
+Skill-tree actives keep their designed order and are pulled into the same bands (normalize_skills below). Every class
+ability is an Ultimate, with one stamina price and one long cooldown per role (ULTIMATES).
 """
 
 import json
@@ -403,75 +403,77 @@ reviewed("amp_doorbuster", "amplify/AmpSkills#doorbuster", "3 -> 1.5 around the 
 utility_reviews("amplify/AmpSkills", [("amp_0_1", "Partner bonds an ally"), ("amp_hold_hands", "shares a separately paid Surge"),
     ("amp_overcharge_enemy", "makes the next enemy power misfire; damage depends on that power"), ("amp_2_1", "Burnout disables a power or projector")])
 
-# All three classes of every power, including the classes which cannot deal damage.
-for action, old, new, factor, n, ctrl, util, blocks, extra, old_extra in [
-    ("radiation_ground_zero",22,7.8,.75*1.1,3,0,0,0,4*.6,4*.6),
-    ("radiation_containment_dome",8,2.4,.6,2,0,15,0,5.5*.6,23*.6),
-    ("time_manipulation_hour_hand",15,9,.75*1.1,3,0,0,0,0,0),
-    ("pyrokinesis_sunfall",18,8.25,.75*1.1,3,0,0,0,5*.6,5*.6),
-    ("cryokinesis_hailstorm",40.5,14.4,.6*1.1,3,0,0,0,0,0),
-    ("electrokinesis_tesla_spire",66,13.8,.6*1.1,3,0,2,0,0,0),
-    ("quake_fissure_maw",16,10,.75*1.1,3,.5,0,0,0,0),
-    ("flight_tempest_drill",15,7.25,1.1,2,0,0,18,0,0),
-    ("telekinesis_implosion",18,8.25,.75*1.1,3,1.1,0,0,0,0),
-    ("telekinesis_debris_halo",51,5.95,.6,3,0,12,0,0,0),
-    ("telepathy_psychic_storm",24.5,9.8,.6*1.1,3,0,8,0,0,0),
-    ("regeneration_vital_burst",16,4.5,1.1,3,0,10,0,0,0),
-    ("sonic_resonance_resonance_cascade",18,9.25,.75*1.1,3,0,3,0,0,0),
-    ("superspeed_lightning_flurry",8,8,.85*1.1,3,0,4,0,0,0),
-    ("invisibility_shadow_strike",16.5,5,1.1,3,0,10,0,0,0),
-    ("phasing_phase_eruption",16,10,.75*1.1,3,.5,0,0,0,0),
-    ("empathic_mimicry_prismatic_overflow",13,6.75,1.1,3,0,0,0,3*.6,3*.6),
-    ("matter_assembly_forge_cannon",40,11.75,.85*1.1,2,0,0,0,0,0),
-    ("vibe_crosswave",11.5,11.5,.75*1.1,3,0,0,0,0,0),
-    ("shapeshifting_many_hands",8,8,1.1,3,0,0,0,0,0),
-    ("hydro_tsunami",16,11,.75*1.1,3,.5,0,0,0,0),
-    ("amp_lightning_cannon",16,7,.75*1.1,3,3,0,0,0,0),
+# Every class is an Ultimate (combat/Ultimates). An Offense Ultimate holds its foe for the whole cinematic (hard
+# control for that long) and lands its damage on it; anyone near the finish takes a splash, counted as two bystanders at
+# the usual 40%. Offense's compulsory 10% is included. Defense and Support Ultimates are shields, heals and buffs: their
+# retaliation and end bursts only land on foes who strike or stay close, so they are recorded as conditional riders.
+for action, held, splash, ctrl, formula in [
+    ("amp_lightning_cannon", 21.5, 5, 5, "five jolts of 1.5, then 14 as the ball is driven home; 5 to up to four near (AmpUltimates.FeedbackLoop)"),
+    ("matter_assembly_forge_cannon", 20, 6, 5.5, "2 as the cage shuts, 18 from the hammer; shards 6 within 6 (AssemblyUltimates.GrandDesign)"),
+    ("cryokinesis_hailstorm", 21, 6, 5, "3 as the prism seals, 18 as the glacier shatters it; 6 within the impact (CryoUltimates.GlacierFall)"),
+    ("electrokinesis_tesla_spire", 22, 4, 5.5, "five bolts of 2 in the cloud, 12 on the slam; 4 arcs into up to four near (ElectroUltimates.Thunderhead)"),
+    ("flight_tempest_drill", 21, 6, 6.5, "2 on the tackle, 19 on the drive down; 6 within 6 of the crater (FlightUltimates.Stratosphere)"),
+    ("hydro_tsunami", 25, 9, 5.5, "six tumbles of 1.5, 6 from the geyser, 10 from the slam; the closing barrel 6 and the whirlpool 3 to those near (HydroUltimates.RiptideBarrel)"),
+    ("invisibility_shadow_strike", 22, 6, 5, "four slams of 2.5, 12 as the box bursts; shards 6 within 5 (ForceUltimates.CrushBox)"),
+    ("empathic_mimicry_prismatic_overflow", 21.5, 4, 5.5, "one 2.5 strike per remembered power (three at least, five at most; three counted), 14 from the braided lance; 4 within 4 (MimicUltimates.EverythingAtOnce)"),
+    ("phasing_phase_eruption", 22, 6, 5.5, "8 as the walls clap, 2 from the pillar, 12 from the boulder; 6 within 4 (DensityUltimates.EarthsEmbrace)"),
+    ("pyrokinesis_sunfall", 23, 6, 5.5, "2 from the knee, six blows of 1.5, 4 from the wheel, 8 from the axe kick, with burning; 6 within 5 (PyroUltimates.RisingSun)"),
+    ("quake_fissure_maw", 23, 6, 5.5, "seven shakes of 1, 12 from the blast, 4 as the fault erupts; 6 along the fault (QuakeUltimates.Heartquake)"),
+    ("radiation_ground_zero", 21, 8, 5.5, "five burns of 1, 16 from the blast and a stage-II dose; 8 and a stage-I dose within 8 (RadiationUltimates.PointOfNoReturn)"),
+    ("regeneration_vital_burst", 23, 4, 5, "six blows of 1.5, 14 over the knee; 4 within 4; costs her 4 health, healed back as she lands blows (RegenUltimates.CantStopMe)"),
+    ("shapeshifting_many_hands", 24, 5, 5, "2 on the pounce, four mauls of 2.5, 12 on the slam; 5 within 5 (ShapeUltimates.ApexPredator)"),
+    ("sonic_resonance_resonance_cascade", 25, 6, 5.5, "five notes of 3, 10 from the scream; 6 in the cone (SonicUltimates.FinalMovement)"),
+    ("superspeed_lightning_flurry", 25, 6, 6.5, "3 from the jab, 10 from the uppercut, 2 on the way down, 10 on landing; 6 within 5 (SpeedUltimates.AroundTheWorld)"),
+    ("telekinesis_implosion", 22, 6, 5.5, "four swings into rock of 2.5, 12 from the spike; 6 within 5 as the ball bursts (KineticUltimates.WreckingHand)"),
+    ("telepathy_psychic_storm", 22, 4, 5.5, "three fears of 2, 16 from the spike, then a stun; 4 to minds near, which turn on one another (TelepathyUltimates.Mindbreak)"),
+    ("time_manipulation_hour_hand", 22, 6, 5, "eight cuts in stopped time, all landing at once for 22; 6 within 4 (TimeUltimates.TenPastTen)"),
+    ("vibe_crosswave", 24.5, 5, 5.5, "five blasts of 2.5 between breaches, 12 from the fall; 5 within 4 (VibeUltimates.DimensionDrop)"),
 ]:
-    reviewed(action, "styles/StyleCasts (or the power's delegated class cast)", {
-        "radiation_ground_zero":"10+2*tier+12*falloff -> 4+.6*tier+4*falloff; representative falloff .5; 8 s stage-I sickness",
-        "radiation_containment_dome":"8 direct pulses 1 -> .3; repeating dose capped at stage I, 11 s exposure including tail",
-        "cryokinesis_hailstorm":"9 pulses (16..80 step 8): 3+.5*tier -> 1+.2*tier",
-        "electrokinesis_tesla_spire":"12 pulses (10..120 step 10): 4+.5*tier -> .7+.15*tier",
-        "telekinesis_debris_halo":"17 pulses (0..160 step 10): 3 -> .35; blocks shots",
-        "telepathy_psychic_storm":"7 pulses (0..120 step 20): 2+.5*tier -> .5+.3*tier",
-        "matter_assembly_forge_cannon":"5 pulses (8,13,18,23,28): 5+tier -> 1.6+.25*tier",
-        "time_manipulation_hour_hand":"9+2*tier -> 6+tier, one sweep per UUID",
-        "pyrokinesis_sunfall":"12+2*tier -> 6+.75*tier, plus five seconds burning",
-        "quake_fissure_maw":"10+2*tier -> 7+tier, thrown set deduplicates the racing fissure",
-        "flight_tempest_drill":"9+2*tier -> 5+.75*tier, hit set deduplicates the 18-block dash",
-        "telekinesis_implosion":"12+2*tier -> 6+.75*tier after a 22-tick pull",
-        "regeneration_vital_burst":"10+2*tier -> 3+.5*tier; heals 2 per foe (capped 10) and also costs 4 health",
-        "sonic_resonance_resonance_cascade":"12+2*tier -> 7+.75*tier after 16 ticks",
-        "invisibility_shadow_strike":"(8+tier)*1.5 -> 3.5+.5*tier, once per mark; three marks maximum",
-        "phasing_phase_eruption":"10+2*tier -> 7+tier in Earthworks.barrage; the decorative columns deal zero",
-        "empathic_mimicry_prismatic_overflow":"8+2*remembered+tier -> 4+.5*remembered+.75*tier; minimum remembered=1, plus 3 s burn",
-        "hydro_tsunami":"10+2*tier -> 8+tier; one hit per rolling wave's struck UUID set",
-        "amp_lightning_cannon":"10+2*tier -> 4+tier; redHit also stuns for 60 ticks",
-        "superspeed_lightning_flurry":"5+tier once per mark, up to 6 marks; no repeated hit per mark",
-        "shapeshifting_many_hands":"5+tier once per mark, up to 5 marks",
-        "vibe_crosswave":"7+1.5*tier, both waves share struck UUIDs",
-    }.get(action, f"unlock-tier total {old:g} -> {new:g}; see the named cast's Java expression"),
-             old, new, factor=factor, n=n, ctrl=ctrl, util=util, blocks=blocks, extra=extra, old_extra=old_extra)
-utility_reviews("styles/StyleCasts; styles/StyleRuntime (class wards)", [
-    ("quake_stone_rampart","blocks shots and repels"), ("quake_bedrock_stance","resistance and knockback immunity"),
-    ("flight_gale_wall","reflects and repels"), ("flight_formation_flight","flight support buffs"),
-    ("cryokinesis_crystal_bastion","blocks shots and repels"), ("cryokinesis_aurora_veil","heals and soft-slows"),
-    ("electrokinesis_faraday_cage","reflects shots; melee retaliation is reviewed separately below"), ("electrokinesis_jumpstart","heals and cleanses"),
-    ("telekinesis_gathering_hand","gathers and protects friends"), ("telepathy_blind_spot","prevents target acquisition"), ("telepathy_hive_mind","shares wounds/voices"),
-    ("regeneration_undying","prevents death and heals"), ("regeneration_lifebloom","heals/cleanses"),
-    ("time_manipulation_time_loop","restores health and cleanses"), ("time_manipulation_borrowed_time","buffs speed/haste and restores stamina"),
-    ("radiation_reactor_hearth","regeneration, absorption and stamina"), ("sonic_resonance_silence_dome","slows shots and weakens"), ("sonic_resonance_battle_hymn","buffs strength/speed"),
-    ("superspeed_phase_blur","evades incoming blows"), ("superspeed_relay_run","brings allies home and buffs speed"),
-    ("pyrokinesis_ember_shroud","blocks shots/fire; melee retaliation reviewed separately below"), ("pyrokinesis_hearthfire","heals and grants fire resistance"),
-    ("invisibility_refraction_cloak","hides and refracts shots"), ("invisibility_prism_haze","hides/heals friends, blinds foes"),
-    ("phasing_dense_bulwark","resistance and knockback immunity"), ("phasing_phase_field","shelters friends in stone"),
-    ("empathic_mimicry_empathic_ward","negates three hits"), ("empathic_mimicry_kindred_light","heals/cleanses"),
-    ("matter_assembly_bulwark_lattice","absorption and projectile defense"), ("matter_assembly_mending_lattice","absorption/regeneration"),
-    ("vibe_mirror","reflects a separately supplied projectile; no fixed damage"), ("vibe_sanctuary","opens a sheltering breach"),
-    ("shapeshifting_plate_mail","damage reduction and a decoy"), ("shapeshifting_masquerade","disguises friends"),
-    ("hydro_tidal_dome","blocks shots, protects friends, soft-slows foes"), ("hydro_healing_spring","heals and cleanses"),
-    ("amp_lights_back_on","cleanses allies and jumpstarts devices"), ("amp_got_your_back","rushes to and Surges a friend")])
+    reviewed(action, "combat/Ultimates; " + formula[formula.rindex("(") + 1:-1], formula[:formula.rindex(" (")], 0, held,
+             factor=1.1, extra=splash * .8, old_extra=0, ctrl=ctrl,
+             note="An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%.")
+utility_reviews("combat/Ultimates (Defense and Support)", [
+    ("amp_lights_back_on", "Red Armour: 12 s supercharged, blows 40% lighter; a fork of 2 back into each striker and 3 into the nearest as it burns out (conditional)"),
+    ("amp_got_your_back", "Everyone, Now: 12 s Surge for every friend within 14"),
+    ("matter_assembly_bulwark_lattice", "Shell of Twelve: each panel stops shots from its side; halves blows once whole"),
+    ("matter_assembly_mending_lattice", "Field Hospital: 14 s of mending, cleansing and a layer of hearts under a roof that stops shots"),
+    ("cryokinesis_crystal_bastion", "Winter Citadel: walls stop shots, freeze and repel; blows a third lighter; shards as it ends"),
+    ("cryokinesis_aurora_veil", "Hibernation: frost armour, a mending cocoon once, chill on foes"),
+    ("electrokinesis_faraday_cage", "Storm Shell: shots struck down, strikers shocked and jammed, banked charge poured into the nearest (conditional)"),
+    ("electrokinesis_jumpstart", "Restart: three beats, then health, cleansing, stamina and a 12 s boost for friends within 16"),
+    ("flight_gale_wall", "Eye of the Storm: shots flung away, foes thrown out, blows lighter; 4 to those near when it breaks (conditional)"),
+    ("flight_formation_flight", "Airlift: friends lifted out of reach, mending, shots halved"),
+    ("hydro_tidal_dome", "Undertow Dome: shots sink, foes swept out and soaked, a third less harm inside; 4 to those near as it falls (conditional)"),
+    ("hydro_healing_spring", "Monsoon: 15 s of rain that mends and cleanses, two springs, soaks and slows foes"),
+    ("invisibility_refraction_cloak", "Aegis: shots turned back at the shooter, blows under half, strikers rippled back"),
+    ("invisibility_prism_haze", "Vanishing Act: friends hidden in 10-point bubbles, foes dazzled"),
+    ("empathic_mimicry_empathic_ward", "Mirror Soul: blows halved, the other half (up to 8) sent back at the striker (conditional)"),
+    ("empathic_mimicry_kindred_light", "Shared Gift: heals and cleanses friends and lends each a remembered power for 15 s"),
+    ("phasing_dense_bulwark", "Stone Fortress: half harm, slabs stop shots, close foes shackled; 5 from each flung slab (conditional)"),
+    ("phasing_phase_field", "Mountain Hall: a dome that stops shots, pushes foes out, mends and halves harm"),
+    ("pyrokinesis_ember_shroud", "Living Flame: fireproof, blows 40% lighter, shots burnt up, strikers ignited and thrown; a ring of fire as it ends (conditional)"),
+    ("pyrokinesis_hearthfire", "Bonfire Vigil: 15 s of healing, warmth and a flame cocoon once; foes driven back burning"),
+    ("quake_stone_rampart", "Pressure Barrier: shots turned back, strikers blown away for 2, a third less harm; 3 as it pops (conditional)"),
+    ("quake_bedrock_stance", "Groundswell: friends can't be knocked down, take less harm, and their blows carry a shockwave"),
+    ("radiation_containment_dome", "Lead Heart: shots swallowed, blows 40% lighter and banked as heat; the blast is 2 + banked/3, at most 10 (conditional)"),
+    ("radiation_reactor_hearth", "Cherenkov Hearth: 15 s of mending, a layer of hearts, faster stamina and cured sickness; foes close are dosed"),
+    ("regeneration_undying", "Unkillable: the last heart can't be taken, blows halved and banked, a heart a second; the banked burst is conditional"),
+    ("regeneration_lifebloom", "Lifeblood: half health back to friends within 16 and one caught killing blow each"),
+    ("shapeshifting_plate_mail", "Living Fortress: blows under half, no knockback, 2 back to each striker, 4 as the plates burst (conditional)"),
+    ("shapeshifting_masquerade", "Many Faces: four copies draw every hunter; friends mend and move quicker"),
+    ("sonic_resonance_silence_dome", "Dead Air: shots drop, foes inside hushed, weakened and slowed; 4 to those inside as it breaks (conditional)"),
+    ("sonic_resonance_battle_hymn", "Anthem: chords every 2 s that mend, strengthen and harden friends"),
+    ("superspeed_phase_blur", "Between Heartbeats: every blow and shot finds an afterimage; 3 back to each striker, 2 per afterimage as it ends (conditional)"),
+    ("superspeed_relay_run", "Rescue Run: every friend within 32 brought to your side, healed 6 + tier, cleansed and quickened"),
+    ("telekinesis_debris_halo", "Stop Everything: shots stopped ten blocks out and thrown back, foes held at arm's length"),
+    ("telekinesis_gathering_hand", "Cradle: friends gathered under two hands that stop shots, swat foes back for 2 and halve harm"),
+    ("telepathy_blind_spot", "Not Here: hunters within 24 lose you and follow three copies"),
+    ("telepathy_hive_mind", "One Mind: up to eight friends share wounds, voices, sight of foes, haste, strength and mending"),
+    ("time_manipulation_time_loop", "Second Chance: a killing blow sends you back to the marked moment and freezes your attackers"),
+    ("time_manipulation_borrowed_time", "Borrowed Hours: friends quickened, 20 stamina back and cooldowns halved; foes slowed"),
+    ("vibe_mirror", "Between Worlds: blows pass through you, shots go back out beside the shooter"),
+    ("vibe_sanctuary", "Safe Harbor: friends brought through breaches to your side and hidden from hunters while they mend"),
+])
 
 # Every fighting move is reviewed separately, even when two hands share a formula or two moves share a price.
 # Knockback impulses are not a multi-second root; only sustained lifts/holds get the hard-control rate.
@@ -551,10 +553,6 @@ amended_review("radiation_1_1", "radiation/RadiationSkills#onHurt", "repeated do
                factor=.6, util=16, note="Retaliation no longer refreshes its own pulse timer on every melee blow or climbs to stage VI. Lead Skin still protects its owner.")
 amended_review("phasing_2_1", "phasing/DensityService#surface", "6+tier -> 3+tier on surfacing; Uproot doubles a previously embedded target", 8, 5, n=2, ctrl=.5, util=4)
 DAMAGE_AUDIT["phasing_0_1"]["ctrl"] = 2.5  # A wall pin is 50 ticks; an unobstructed drag is only 14.
-amended_review("electrokinesis_faraday_cage", "styles/StyleRuntime#incoming", "4 -> .5 per incoming melee hit; 6 s ward, representative 2 attacks/s", 12*4, 12*.5,
-               util=14, note="The 30-tick slowness is soft control; all twelve possible representative retaliations are counted, plus projectile defense.")
-amended_review("pyrokinesis_ember_shroud", "styles/StyleRuntime#incoming", "3 -> .125 per incoming melee hit; ignition 4 -> 1 s, 8 s ward at 2 attacks/s", 16*3, 16*.125,
-               extra=8*.6, old_extra=11*.6, util=12, note="Refreshed burning is one ongoing burn, not sixteen independent four-second burns.")
 
 for power, old, new, factor, extra, old_extra, ctrl, blocks in [
     ("pyrokinesis", 2.4*2.2, 1*2.2, 1, .6, 5*.6, 0, 4.8),
@@ -615,7 +613,10 @@ def damage_reviews(trees):
         raise ValueError(f"Damage review coverage: missing {sorted(missing)}, obsolete {sorted(obsolete)}")
     rows = []
     for action, a in DAMAGE_AUDIT.items():
-        cost = a["cost"] if a["cost"] is not None else nodes[action]["energy"]
+        node = nodes.get(action, {})
+        cost = a["cost"] if a["cost"] is not None else node["energy"]
+        if a["cost"] is None and node.get("role"):
+            cost += ULTIMATE_PREMIUM * node["cooldown"] / 20
         spread = 1 + .4 * min(max(a["n"], 1) - 1, 4)
         reserve = value(n=a["n"], ctrl=a["ctrl"], util=a["util"], blocks=a["blocks"])
         budget = max(0, (cost - reserve) / (2 * spread))
@@ -691,39 +692,26 @@ def core_table(dump):
     return rows
 
 
-# Skill-tree actives and class abilities: keep each node's place relative to its neighbours, pull it into its band.
+# Skill-tree actives: keep each node's place relative to its neighbours, pull it into its band.
 SKILL_BANDS = {"early": (12, 26, 20), "late": (14, 32, 24), "signature": (45, 60, 52)}
-CLASS_BANDS = {"offense": (28, 40, 34), "defense": (22, 34, 28), "support": (22, 34, 28)}
+# Every class ability is an Ultimate: one stamina price and one long cooldown per role (seconds). The long wait is part
+# of the price: each second of it is worth ULTIMATE_PREMIUM stamina of effect in the damage review.
+ULTIMATES = {"offense": (58, 150), "defense": (50, 120), "support": (52, 135)}
+ULTIMATE_PREMIUM = 0.2
 LANE_LEVELS = [1, 2, 3, 3, 4, 5]
 
 # Player-facing formulas belong beside the reviewed damage, so regeneration cannot restore old numbers.
 DESCRIPTION_EDITS = {
     "quake_0_1": [("7 + level damage", "10 + level damage")],
-    "quake_fissure_maw": [("10 + 2 per tier", "7 + tier")],
-    "flight_tempest_drill": [("9 + 2 per tier", "5 + 0.75 per tier")],
     "electrokinesis_ground_sink": [("discharge up to 16 stored damage nearby", "discharge nearby for 4 + half the stored damage, using up to 16 stored damage")],
-    "electrokinesis_tesla_spire": [("4 damage each", "0.7 + 0.15 per tier damage each")],
-    "electrokinesis_faraday_cage": [("shocked for 4", "shocked for 0.5")],
-    "telekinesis_implosion": [("12 + 2 per tier", "6 + 0.75 per tier")],
-    "regeneration_vital_burst": [("10 + 2 per tier", "3 + 0.5 per tier")],
     "time_manipulation_shared_blink": [("6 + level", "2 + level")],
-    "time_manipulation_hour_hand": [("9 + 2 per tier", "6 + tier")],
     "radiation_0_1": [("8 + level damage", "4 + 0.5 per level damage")],
     "radiation_1_1": [("anything that hits you in melee meanwhile is dosed", "melee attackers without Radiation Sickness receive a first-stage dose; further hits do not stack or refresh it")],
-    "radiation_ground_zero": [("10 + 2 per tier, plus up to 12", "4 + 0.6 per tier, plus up to 4")],
-    "sonic_resonance_resonance_cascade": [("12 + 2 per tier", "7 + 0.75 per tier")],
     "pyrokinesis_blue_lance": [("(8 + level) x 1.5", "(3 + 0.5 per level) x 1.5"), ("2.5 damage every four ticks", "0.5 damage every four ticks")],
-    "pyrokinesis_sunfall": [("12 + 2 per tier", "6 + 0.75 per tier")],
     "invisibility_cloak_field": [("One press of Crush closes them all.", "One press of Crush closes them all, each dealing 12% of a single Bubble's crush damage.")],
-    "invisibility_shadow_strike": [("for half again as much as usual", "for 3.5 + 0.5 per tier damage each")],
     "phasing_phase_carry": [("for 5 + level", "for 0.8 + 0.2 per level")],
-    "phasing_phase_eruption": [("10 + 2 per tier", "7 + tier")],
-    "empathic_mimicry_prismatic_overflow": [("8 + 2 per remembered power + tier", "4 + 0.5 per remembered power + 0.75 per tier")],
-    "matter_assembly_forge_cannon": [("5 + tier", "1.6 + 0.25 per tier")],
     "vibe_rift_beast": [("half a minute", "45 seconds")],
-    "hydro_tsunami": [("10 + 2 x level", "8 + level")],
     "amp_1_1": [("everyone within five blocks takes 6 + level (more with Charge), double where you're closed in", "everyone within five blocks is stunned for five seconds. It spends up to 30 Charge for damage equal to Charge spent / 30, doubled where you're closed in"), ("foes left at half a heart are stunned for five seconds", "damage leaves at least half a heart")],
-    "amp_lightning_cannon": [("10 + 2 x level", "4 + level")],
 }
 DESCRIPTION_DETAILS = {
     "flight_2_1": "The updraft deals 6 damage.",
@@ -731,14 +719,9 @@ DESCRIPTION_DETAILS = {
     "cryokinesis_0_1": "The lance deals 8 + tier damage.",
     "cryokinesis_2_1": "The front deals 5 damage before shattering bonuses.",
     "cryokinesis_brittle_constellation": "Each fracture deals 6 damage, or 9 with the stronger chain upgrade.",
-    "cryokinesis_hailstorm": "Each of nine hail strikes deals 1 + 0.2 per tier damage.",
-    "telekinesis_debris_halo": "Each half-second contact deals 0.35 damage.",
-    "telepathy_psychic_storm": "Each one-second pulse deals 0.5 + 0.3 per tier damage.",
     "time_manipulation_singularity": "Core tears deal 0.6 + 0.1 per tier each half-second; collapse deals 3 + 0.5 per tier before falloff.",
     "radiation_heat_vent": "The hit deals 1.5 + Core vented / 30, plus four seconds of burning.",
-    "radiation_containment_dome": "Contacts deal 0.3 each second, with sickness capped at its first stage.",
     "pyrokinesis_1_1": "The aura deals 0.1 damage each second and keeps enemies burning.",
-    "pyrokinesis_ember_shroud": "Melee retaliation deals 0.125 damage and ignites for one second.",
     "phasing_2_1": "The uppercut deals 3 + tier damage.",
     "hydro_pressure_jet": "Each tenth-second contact deals 0.65 + 0.1 per tier damage.",
     "amp_doorbuster": "The blast deals 1.5 damage.",
@@ -807,15 +790,13 @@ def normalize_skills(trees):
                 n["energy"], n["cooldown"] = energy, cooldown
                 changes.append((power, nid, n["name"], "skill", old_e, energy, old_cd, cooldown, level))
         for s in tree.get("styles", []):
-            lo, hi, centre = CLASS_BANDS[s["role"]]
-            s.setdefault("design_energy", s["energy"])
-            s.setdefault("design_cooldown", s["cooldown"])
-            old_e, old_cd = s["design_energy"], s["design_cooldown"]
-            energy = pull(old_e, lo, hi, centre)
-            cd_s = max(.45 * energy, min(.75 * energy, old_cd / 20))
-            cooldown = int(round(cd_s * 4) / 4 * 20)
+            # An Ultimate is priced by its role alone: designed and balanced numbers are the same.
+            energy, seconds = ULTIMATES[s["role"]]
+            cooldown = seconds * 20
+            old_e, old_cd = energy, cooldown
+            s["design_energy"], s["design_cooldown"] = energy, cooldown
             s["energy"], s["cooldown"] = energy, cooldown
-            changes.append((power, s["id"], s["name"], "class:" + s["role"], old_e, energy, old_cd, cooldown, s.get("level", 3)))
+            changes.append((power, s["id"], s["name"], "ultimate:" + s["role"], old_e, energy, old_cd, cooldown, s.get("level", 3)))
     return changes
 
 
@@ -961,9 +942,14 @@ def doc(rows, dump, skill_changes, reviews):
     w("## Skill-tree and class abilities")
     w("")
     w("Actives keep their designed order and are pulled 30% toward the middle of their band, then clamped: early actives")
-    w("(row 2) 12-26, later actives 14-32, signatures 45-60, Offense classes 28-40, Defense and Support 22-34. A skill's")
-    w("cooldown is held between 0.2 and 0.8 seconds per stamina (25-45 s for a signature), a class ability's between 0.45")
-    w("and 0.75.")
+    w("(row 2) 12-26, later actives 14-32, signatures 45-60. A skill's cooldown is held between 0.2 and 0.8 seconds per")
+    w("stamina (25-45 s for a signature).")
+    w("")
+    off, dfn, sup = ULTIMATES["offense"], ULTIMATES["defense"], ULTIMATES["support"]
+    w(f"Every class ability is an Ultimate with one price per role: Offense {off[0]} stamina and {off[1]} s, Defense {dfn[0]}")
+    w(f"and {dfn[1]} s, Support {sup[0]} and {sup[1]} s. The long wait is part of the price: in the damage review each second")
+    w(f"of an Ultimate's cooldown is worth {ULTIMATE_PREMIUM:g} stamina of effect, and an Offense Ultimate's hold on its foe")
+    w("is its control.")
     w("")
     w("| Power | Skill | Kind | Stamina | Cooldown |")
     w("| --- | --- | --- | --- | --- |")
@@ -974,10 +960,10 @@ def doc(rows, dump, skill_changes, reviews):
     w("")
     w("## Every damage review")
     w("")
-    w(f"Checked {sum(not r['action'].startswith('style_') for r in reviews)} tree actives, signatures and class abilities, "
+    w(f"Checked {sum(not r['action'].startswith('style_') for r in reviews)} tree actives, signatures and Ultimates, "
       f"and {sum(r['action'].startswith('style_') for r in reviews)} fighting-style moves across all 20 powers.")
     w("Each complete sequence is measured at its unlock tier, before optional upgrades, stored-resource bonuses, armor or resistance.")
-    w("Offense classes include their compulsory 10% damage bonus. Typical targets are one for a single hit, two for a narrow")
+    w("Offense Ultimates include their compulsory 10% damage bonus. Typical targets are one for a single hit, two for a narrow")
     w("fan or small patch, and three for a broad area; a four-body Shell uses four. The per-move assumptions are below.")
     w("Damage is weighted before comparison: direct x1, repeated damage over time x0.6, flurries x0.85, telegraphed hits x0.75.")
     w("Burning is counted once across its refreshed duration. Simultaneous equal projectiles which respect ordinary damage immunity")

@@ -515,4 +515,106 @@ final class ShapeArt {
             if (c.soft()) scale(c, s, at, s.lean + age * .3F, age * .45F, 1, face(s), alpha * fadeOut);
         });
     }
+
+    // ------------------------------------------------------------------
+    // Ultimates (shapeshift/ShapeUltimates)
+    // ------------------------------------------------------------------
+
+    /** Three claw slashes across {@code at}, raked along {@code dir}: slate gouges with a sheen along their edges. */
+    private static void slashes(Canvas c, Vec3 at, Vec3 dir, float size, float k, float alpha, int seed) {
+        if (alpha < .01F) return;
+        Vec3 side = new Vec3(-dir.z, 0, dir.x).normalize();
+        for (int i = -1; i <= 1; i++) {
+            Vec3 from = at.add(side.scale(i * .18 * size)).add(0, .5 * size, 0).subtract(dir.scale(.1));
+            Vec3 to = from.add(0, -size, 0).add(side.scale(.25 * size)).add(dir.scale(.2));
+            Vec3 tip = from.lerp(to, k);
+            if (c.soft()) c.line(from, tip, .05F * size, SHADOW, alpha * .6F, alpha * .2F);
+            if (c.glow()) {
+                c.line(from, tip, .03F * size, SHEEN, alpha, alpha * .3F);
+                c.line(from, tip, .01F * size, HIGHLIGHT, alpha, alpha * .3F);
+            }
+        }
+    }
+
+    /**
+     * Apex Predator ({@code ShapeUltimates.ApexPredator}): the seam of light as the shifter becomes the beast, a slash of
+     * claws at the pounce and every maul, a streak up as the foe is tossed and down as it is slammed, and the ring of the
+     * landing. The beast itself is a real shape decoy; the plates are {@code SHIFT_PLATES}.
+     */
+    static void apex(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity foe = UltArt.foe(c, a);
+        Vec3 base = a.target(), facing = a.facing();
+        float h = Math.max(.8F, a.scale());
+        int seed = a.seed() * 3 + 9;
+        int shift = com.jayptucker.heroesevolved.shapeshift.ShapeUltimates.ApexPredator.SHIFT,
+                pounce = com.jayptucker.heroesevolved.shapeshift.ShapeUltimates.ApexPredator.POUNCE,
+                maul = com.jayptucker.heroesevolved.shapeshift.ShapeUltimates.ApexPredator.MAUL,
+                mauls = com.jayptucker.heroesevolved.shapeshift.ShapeUltimates.ApexPredator.MAULS,
+                every = com.jayptucker.heroesevolved.shapeshift.ShapeUltimates.ApexPredator.EVERY,
+                toss = com.jayptucker.heroesevolved.shapeshift.ShapeUltimates.ApexPredator.TOSS,
+                slam = com.jayptucker.heroesevolved.shapeshift.ShapeUltimates.ApexPredator.SLAM;
+        Vec3 chest = (foe != null ? foe.getPosition(c.partial) : base).add(0, h * .55, 0);
+        // The change: a vertical seam of light where the shifter stood, opening.
+        if (t >= shift - 2 && t < shift + 10 && c.glow()) {
+            float k = smooth(shift - 2, shift + 2, t), f = 1 - smooth(shift + 2, shift + 10, t);
+            Vec3 o = a.origin();
+            c.line(o, o.add(0, 2.2 * k, 0), .12F, SHEEN, f, f);
+            c.line(o, o.add(0, 2.2 * k, 0), .04F, HIGHLIGHT, f, f);
+            c.ring(o.add(0, .05, 0), UP, .3F + 1.4F * k, .04F, 0, TWO_PI, SLATE, f);
+        }
+        // Claws: the pounce and each maul.
+        for (int i = 0; i <= mauls; i++) {
+            float at = i == 0 ? pounce : maul + (i - 1) * every, age = t - at;
+            if (age < -2 || age > 10) continue;
+            float k = smooth(-2, 1, age), f = 1 - smooth(3, 10, age);
+            Vec3 dir = i % 2 == 0 ? facing : facing.scale(-1);
+            slashes(c, chest, dir, h * .55F, k, f, seed + i);
+            if (age > 0 && c.glow()) c.ring(chest, facing, .2F + .9F * smooth(0, 8, age), .03F, 0, TWO_PI, SHEEN, f);
+        }
+        // The toss and the slam.
+        if (t >= toss && t < slam + 4 && c.glow()) {
+            float f = UltArt.window(t, toss, slam + 4, 1, 3);
+            c.line(base.add(0, .2, 0), chest, .08F, SLATE, f * .5F, f * .2F);
+        }
+        if (t >= slam) {
+            float age = t - slam, f = fade(age, a.piece().ticks - slam, 0, 12);
+            if (c.glow()) {
+                c.ring(base.add(0, .06, 0), UP, .4F + 4.5F * smooth(0, 10, age), .08F, 0, TWO_PI, SHEEN, f * (1 - smooth(4, 12, age)));
+                c.ring(base.add(0, .06, 0), UP, .4F + 4.5F * smooth(0, 10, age), .03F, 0, TWO_PI, HIGHLIGHT, f * (1 - smooth(4, 12, age)));
+            }
+            if (c.soft()) for (int i = 0; i < 6; i++) {
+                float g = i * TWO_PI / 6 + hash(seed, i);
+                Vec3 p = base.add(cos(g) * (1 + age * .2), .3 + age * .05, sin(g) * (1 + age * .2));
+                c.cloud(p, .5F, .35F, .5F, i, g, .4F * f, Shades.smoke(c, new float[]{.6F, .56F, .5F}, 0));
+            }
+        }
+    }
+
+    /**
+     * Living Fortress, one second (re-sent each second; the second in the seed, -1 the plates bursting off): overlapping
+     * plates over the whole body (the shifter's own plates, held), or plates flung out in every direction.
+     */
+    static void fortress(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity body = a.bound(c);
+        if (body == null) return;
+        int second = a.seed();
+        if (second < 0) {
+            Vec3 feet = body.getPosition(c.partial);
+            float f = 1 - smooth(6, a.piece().ticks, t);
+            for (int i = 0; i < 16; i++) {
+                float g = hash(a.seed() + 31, i) * TWO_PI, up = .3F + hash(a.seed() + 37, i) * 1.5F;
+                Vec3 dir = new Vec3(cos(g), up * .4, sin(g));
+                Vec3 p = feet.add(0, up, 0).add(dir.scale(t * .3)).add(0, -.01 * t * t, 0);
+                if (c.solid()) c.box(p, .14F, .03F, .18F, g + t * .3F, t * .2F, i, SLATE, 1);
+                if (c.glow()) c.glow(p, .1F, SHEEN, f * .5F);
+            }
+            return;
+        }
+        boolean last = second >= com.jayptucker.heroesevolved.shapeshift.ShapeUltimates.LivingFortress.TICKS / 20 - 1;
+        float hold = second == 0 ? Math.min(t, 6) : 6;
+        if (last && t > 14) hold = Math.min(12, 6 + (t - 14));
+        ShapeTrickArt.plates(c, a, hold, body);
+    }
 }

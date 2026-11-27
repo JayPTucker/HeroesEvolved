@@ -24,10 +24,7 @@ final class ElectroArt {
     private ElectroArt() {}
 
     static void draw(Canvas c, Active a, float t) {
-        if (c.solid()) {
-            if (a.piece() == Piece.TESLA_SPIRE) ElementArt.teslaMast(c, a, t);
-            return;
-        }
+        if (c.solid()) return;
         Vec3 at = a.origin(), end = a.target();
         Player owner = a.bound(c) instanceof Player p ? p : null;
         Vec3 feet = owner == null ? at : owner.getPosition(c.partial);
@@ -124,8 +121,8 @@ final class ElectroArt {
                 fork(c, at, runner, .049F + size * .04F, alpha, seed, 1);
                 if (c.glow()) c.glow(runner, .43F, ION, alpha * .62F);
             }
-            case ELECTRO_SCREEN, FARADAY_CAGE -> {
-                Vec3 floor = (a.piece() == Piece.FARADAY_CAGE ? a.at(c) : at).add(0, .045, 0);
+            case ELECTRO_SCREEN -> {
+                Vec3 floor = at.add(0, .045, 0);
                 float open = smooth(0, 8, t);
                 float radius = size * (.35F + .65F * open);
                 ring(c, floor, UP, radius, .081F, 0, TWO_PI, alpha * .8F);
@@ -138,15 +135,6 @@ final class ElectroArt {
                 }
                 ring(c, floor.add(0, size * .29 + .55, 0), UP, radius * .8F, .063F,
                         clock * .19F, TWO_PI - .68F, alpha * .58F);
-            }
-            case TESLA_SPIRE -> {
-                Vec3 crown = end.add(0, 3.2 * smooth(0, 10, t), 0);
-                corona(c, crown, .49F, clock, alpha, seed);
-                ring(c, end.add(0, .055, 0), UP, size, .067F, clock * .2F, TWO_PI - .48F, alpha * .46F);
-            }
-            case TESLA_ZAP -> {
-                fork(c, at, end, .09F, alpha, seed, 3);
-                if (c.glow()) c.glow(end, .75F, BLUE, alpha * .64F);
             }
             case ELECTRO_LANCE -> lance(c, owner, at, end, t, alpha, size, clock, seed);
             case ELECTRO_THREAD -> thread(c, at, end, t, alpha, seed);
@@ -183,11 +171,6 @@ final class ElectroArt {
                 float f = fade(t, a.piece().ticks, 2, 2);
                 taut(c, chest, at, f, clock, seed);
                 ring(c, chest, UP, Math.max(.35F, body.getBbWidth() * .75F), .045F, clock * .8F, TWO_PI - .9F, f * .8F);
-            }
-            case JUMPSTART -> {
-                Vec3 heart = ElectroGeometry.chest(end);
-                fork(c, ElectroGeometry.chest(at), heart, .07F, alpha * (1 - smooth(4, 9, t)), seed, 2);
-                ring(c, heart, UP, .24F + 1.45F * smooth(1, 12, t), .085F, 0, TWO_PI, alpha);
             }
             case ELECTRO_SPARK -> spark(c, owner, at, end, size, t, alpha, clock, seed);
             case ELECTRO_CLAP -> clap(c, owner, at, end, size, t, alpha, clock, seed);
@@ -847,5 +830,187 @@ final class ElectroArt {
         if (t >= land && t < land + 4)
             fork(c, feet.add(0, 1.3 + h * .5, 0), feet, .09F, f * (1 - smooth(land + 1, land + 4, t)), seed + 3, 4);
         if (t >= land) scorch(c, feet, .9F, f, seed);
+    }
+
+    // ------------------------------------------------------------------
+    // Ultimates (electro/ElectroUltimates)
+    // ------------------------------------------------------------------
+
+    /** The storm cloud's grey-indigo billows. */
+    private static final float[] STORM = rgb(0x2A3150), STORM_LIT = rgb(0x6874A8);
+
+    /**
+     * Thunderhead ({@code ElectroUltimates.Thunderhead}): the line of current lashed out and reeled taut, the uppercut's
+     * flash, a storm cloud boiling up overhead and lit from inside, the bolt both of them ride up, five bolts out of the
+     * cloud into the foe, the colossal bolt that brings them down, and the pulse and scorched star where it lands.
+     */
+    static void storm(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Player owner = a.bound(c) instanceof Player p ? p : null;
+        var foe = UltArt.foe(c, a);
+        Vec3 facing = a.facing();
+        Vec3 spot = com.jayptucker.heroesevolved.electro.ElectroUltimates.Thunderhead.reeled(a.origin(), facing);
+        float fh = foe != null ? foe.getBbHeight() : 1.8F;
+        Vec3 foeAt = foe != null ? foe.getPosition(c.partial) : spot.add(0, com.jayptucker.heroesevolved.electro.ElectroUltimates.Thunderhead.height(t), 0);
+        Vec3 chest = foeAt.add(0, fh * .6, 0);
+        float clock = c.time() * .3F;
+        int seed = a.seed() * 17 + 9;
+        int lash = com.jayptucker.heroesevolved.electro.ElectroUltimates.Thunderhead.LASH,
+                reeled = com.jayptucker.heroesevolved.electro.ElectroUltimates.Thunderhead.REELED,
+                upper = com.jayptucker.heroesevolved.electro.ElectroUltimates.Thunderhead.UPPER,
+                cloudAt = com.jayptucker.heroesevolved.electro.ElectroUltimates.Thunderhead.CLOUD,
+                strikes = com.jayptucker.heroesevolved.electro.ElectroUltimates.Thunderhead.STRIKES,
+                every = com.jayptucker.heroesevolved.electro.ElectroUltimates.Thunderhead.EVERY,
+                bolts = com.jayptucker.heroesevolved.electro.ElectroUltimates.Thunderhead.BOLTS,
+                ride = com.jayptucker.heroesevolved.electro.ElectroUltimates.Thunderhead.RIDE,
+                slam = com.jayptucker.heroesevolved.electro.ElectroUltimates.Thunderhead.SLAM;
+        // The lash: a line of current from the hand to the foe, then taut while it reels in.
+        if (t < reeled + 2 && owner != null) {
+            Vec3 palm = hand(c, owner, .7);
+            float f = UltArt.window(t, 0, reeled + 2, 1, 2);
+            fork(c, palm, palm.lerp(chest, smooth(0, lash, t)), .06F, f, seed + (int) t, 2);
+            if (t > lash) braid(c, palm, chest, .12F, clock * 3, f, 3);
+        }
+        // The uppercut.
+        if (t >= upper && t < upper + 8) {
+            float k = smooth(upper, upper + 6, t), f = 1 - k;
+            corona(c, chest, .4F + .4F * k, clock, f, seed);
+            ring(c, chest, UP, .3F + 1.4F * k, .06F, 0, TWO_PI, f);
+        }
+        // The storm cloud overhead: billows boiling up, lit from inside by flickers of lightning.
+        Vec3 cloud = spot.add(0, com.jayptucker.heroesevolved.electro.ElectroUltimates.Thunderhead.CLOUD_HEIGHT, 0);
+        float gather = smooth(lash, cloudAt, t), gone = 1 - smooth(slam + 6, a.piece().ticks, t);
+        float cf = gather * gone;
+        if (cf > .01F) {
+            int puffs = minimal() ? 6 : 14;
+            if (c.soft()) for (int i = 0; i < puffs; i++) {
+                float ang = hash(seed, i) * TWO_PI, r = (1.5F + hash(seed, i + 30) * 5.5F) * (.5F + .5F * gather);
+                float lit = (int) (c.time() + i * 3) % 9 == 0 ? 1 : 0;
+                Vec3 p = cloud.add(cos(ang + clock * .02F) * r, (hash(seed, i + 60) - .5) * 1.8, sin(ang + clock * .02F) * r);
+                c.cloud(p, 1.6F + hash(seed, i + 90) * 1.4F, 1.1F, 1.6F + hash(seed, i + 90) * 1.4F, i, clock * .03F + i, cf * .8F,
+                        Shades.smoke(c, mix(STORM, STORM_LIT, lit * .7F), 0));
+            }
+            if (c.glow()) {
+                for (int i = 0; i < 3; i++) {
+                    int s = seed + (int) (c.time() / 2) * 7 + i;
+                    if (hash(s, 1) > .55F) continue;
+                    Vec3 a0 = cloud.add((hash(s, 2) - .5) * 9, (hash(s, 3) - .5), (hash(s, 4) - .5) * 9);
+                    Vec3 a1 = cloud.add((hash(s, 5) - .5) * 9, (hash(s, 6) - .5), (hash(s, 7) - .5) * 9);
+                    fork(c, a0, a1, .05F, cf * .8F, s, 1);
+                    c.glow(a0.lerp(a1, .5), 3, BLUE, cf * .35F);
+                }
+            }
+        }
+        // The ride up: a bolt standing from the ground into the cloud.
+        float up = UltArt.window(t, upper, cloudAt + 4, 1, 4);
+        if (up > 0) fork(c, spot.add(0, .1, 0), cloud, .14F, up, seed + (int) (t / 2), 3);
+        // Five bolts out of the cloud into the foe.
+        for (int i = 0; i < bolts; i++) {
+            float at = strikes + i * every, age = t - at;
+            if (age < 0 || age > 6) continue;
+            float f = 1 - smooth(2, 6, age);
+            float ang = hash(seed, i + 300) * TWO_PI;
+            Vec3 from = cloud.add(cos(ang) * 4, -.5, sin(ang) * 4);
+            fork(c, from, chest, .1F, f, seed + i * 31, 3);
+            corona(c, chest, .5F, clock, f, seed + i);
+        }
+        // The colossal bolt down, and the landing.
+        float down = UltArt.window(t, ride, slam + 6, 1, 6);
+        if (down > 0) {
+            fork(c, cloud, spot, .42F, down, seed + 77, 5);
+            fork(c, cloud.add(1, 0, -1), spot, .16F, down * .7F, seed + 78, 2);
+            if (c.glow()) c.glow(spot.add(0, 2, 0), 5, BLUE, down * .4F);
+        }
+        if (t >= slam) {
+            float age = t - slam, f = fade(age, a.piece().ticks - slam, 0, 14);
+            pulse(c, spot, 7, age, f, seed + 90, true);
+            scorch(c, spot, 4, f, seed + 91);
+            if (age < 10) corona(c, spot.add(0, .6, 0), 1.2F * (1 - age / 10), clock, 1 - age / 10, seed + 92);
+        }
+    }
+
+    /** One arc of an Ultimate: a fork from the origin to the target (the scale its width), and a flash where it ends. */
+    static void arc(Canvas c, Active a, float t) {
+        float f = fade(t, a.piece().ticks, 0, 7), w = Math.max(.3F, a.scale());
+        Vec3 from = a.origin(), to = a.target();
+        fork(c, from, from.lerp(to, smooth(0, 2, t)), .06F * w, f, a.seed() * 13 + (int) (t / 2), 2);
+        if (t > 1.5F) corona(c, to, .25F * w * (1 - smooth(2, 8, t)), c.time() * .3F, f, a.seed());
+    }
+
+    /**
+     * Storm Shell, one second (re-sent each second; the second in the seed, -1 the discharge): a sphere of current
+     * round the body, arcs crawling over its skin, a ring of it on the ground. The first second snaps it into being;
+     * the discharge pulls it in and lets it go.
+     */
+    static void shell(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        var body = a.bound(c);
+        Vec3 feet = body != null ? body.getPosition(c.partial) : a.origin();
+        int second = a.seed();
+        float r = a.scale(), clock = c.time() * .3F;
+        Vec3 centre = feet.add(0, 1, 0);
+        if (second < 0) {
+            float k = smooth(0, 8, t), f = 1 - smooth(4, a.piece().ticks, t);
+            pulse(c, feet, r * 2, t, f, 501, true);
+            corona(c, centre, r * (1 - k) + .3F, clock, f, 502);
+            return;
+        }
+        boolean last = second >= com.jayptucker.heroesevolved.electro.ElectroUltimates.StormShell.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(10, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        float grow = second == 0 ? smooth(0, 6, t) : 1;
+        if (c.soft()) c.shell(centre, r * grow, r * .8F * grow, r * grow, PI, INDIGO, f * .14F, .2F,
+                (angle, pitch) -> .6F + .4F * sin(clock * 2 + 6 * angle + 4 * pitch), clock * .1F);
+        if (c.glow()) c.shell(centre, r * grow, r * .8F * grow, r * grow, PI, BLUE, f * .1F, 0, Canvas.PLAIN, 0);
+        int arcs = minimal() ? 3 : 8;
+        for (int i = 0; i < arcs; i++) {
+            int s = (int) (c.time() / 2) * 13 + i * 7 + second;
+            float a0 = hash(s, 1) * TWO_PI, p0 = hash(s, 2) * PI * .9F, a1 = a0 + (hash(s, 3) - .5F) * 1.4F, p1 = p0 + (hash(s, 4) - .5F) * 1.1F;
+            Vec3 x0 = centre.add(sin(p0) * cos(a0) * r * grow, cos(p0) * r * .8 * grow, sin(p0) * sin(a0) * r * grow);
+            Vec3 x1 = centre.add(sin(p1) * cos(a1) * r * grow, cos(p1) * r * .8 * grow, sin(p1) * sin(a1) * r * grow);
+            fork(c, x0, x1, .035F, f * .85F, s, 1);
+        }
+        ring(c, feet.add(0, .05, 0), UP, r * grow, .05F, clock, TWO_PI, f * .7F);
+        if (second == 0 && t < 8) corona(c, centre, .8F * (1 - t / 8), clock, 1 - t / 8, 503);
+    }
+
+    /**
+     * Restart, one friend (bound to them; the seed their order): a line of current from the electrokinetic to them that
+     * beats like a heart three times, each beat a bright pulse running down it, and a jolt on the friend at the third.
+     */
+    static void restart(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        var body = a.bound(c);
+        Vec3 from = a.origin().add(0, 1.2, 0);
+        Vec3 to = body != null ? body.getPosition(c.partial).add(0, Math.max(.6, a.scale()) * .6, 0) : a.target().add(0, 1, 0);
+        float life = a.piece().ticks, f = fade(t, life, 2, 10);
+        int beat = com.jayptucker.heroesevolved.electro.ElectroUltimates.Restart.BEAT,
+                every = com.jayptucker.heroesevolved.electro.ElectroUltimates.Restart.EVERY,
+                beats = com.jayptucker.heroesevolved.electro.ElectroUltimates.Restart.BEATS;
+        Vec3 d = to.subtract(from);
+        if (d.lengthSqr() > .2) {
+            // The line itself: a flat trace with a heartbeat spike where each pulse is.
+            Vec3 up = new Vec3(0, 1, 0);
+            int n = 28;
+            Vec3[] pts = new Vec3[n + 1];
+            for (int i = 0; i <= n; i++) {
+                float u = i / (float) n, spike = 0;
+                for (int b = 0; b < beats; b++) {
+                    float pos = (t - (beat + b * every)) / 6F;
+                    if (pos < 0 || pos > 1.2F) continue;
+                    float dist = Math.abs(u - pos);
+                    if (dist < .05F) spike += (1 - dist / .05F) * (dist < .02F ? -.5F : 1F) * .5F;
+                }
+                pts[i] = from.add(d.scale(u)).add(up.scale(spike));
+            }
+            stroke(c, pts, .035F, f * .8F);
+        }
+        for (int b = 0; b < beats; b++) {
+            float age = t - (beat + b * every) - 6;
+            if (age < 0 || age > 10) continue;
+            float k = smooth(0, 8, age), g = 1 - k;
+            boolean lastBeat = b == beats - 1;
+            ring(c, to, UP, .3F + (lastBeat ? 1.6F : .8F) * k, .05F, 0, TWO_PI, g);
+            if (lastBeat) corona(c, to, .5F * g + .1F, c.time() * .3F, g, a.seed());
+        }
     }
 }

@@ -344,26 +344,6 @@ public final class ShapeshiftPreview {
             });
             case 1597 -> shot("41-doppelganger-a");
             case 1612 -> shot("41-doppelganger-b");
-            case 1620 -> onServer(mc, p -> {
-                p.teleportTo(p.serverLevel(), X + 0.5, Y, Z + 8.5, 0, 0);
-                place(p.serverLevel(), EntityType.PILLAGER, X + 3.5, Z + 10.5, 200);
-                place(p.serverLevel(), EntityType.PILLAGER, X - 2.5, Z + 10.5, 160);
-            });
-            case 1640 -> onServer(mc, p -> System.out.println("SHAPESHIFT_MANY " + com.jayptucker.heroesevolved.shapeshift.ShapeshiftSkills.cast(context(p),
-                    "shapeshifting_many_hands")));
-            case 1642 -> shot("42-many-hands-a");
-            case 1645 -> shot("42-many-hands-b");
-            case 1649 -> shot("42-many-hands-c");
-            case 1670 -> onServer(mc, p -> com.jayptucker.heroesevolved.shapeshift.ShapeshiftSkills.cast(context(p), "shapeshifting_plate_mail"));
-            case 1676 -> shot("43-plate-mail");
-            case 1680 -> onServer(mc, p -> p.teleportTo(p.serverLevel(), X + 4.5, Y, Z + 6.5, 180, 0));
-            case 1682 -> mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
-            case 1684 -> com.jayptucker.heroesevolved.client.effects.TempestCamera.fix(null, null);
-            case 1690 -> shot("43-plate-mail-front");
-            case 1700 -> { mc.options.setCameraType(CameraType.THIRD_PERSON_BACK); side();
-                onServer(mc, p -> System.out.println("SHAPESHIFT_MASQUERADE " + com.jayptucker.heroesevolved.shapeshift.ShapeshiftSkills.cast(context(p),
-                        "shapeshifting_masquerade"))); }
-            case 1710 -> shot("44-masquerade");
             case 1740 -> onServer(mc, p -> ShapeshiftService.revert(p));
             case 1770 -> onServer(mc, p -> {
                 ShapeshiftService.morph(p, EntityType.CHICKEN);

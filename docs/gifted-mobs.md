@@ -104,7 +104,7 @@ effects: Pyrokinesis's fire, Electrokinesis's forks, Quake's rings):
 | Flight | dive, gale | skyburst (dashes through you) |
 | Telepathy | dominate (monsters turn on you; a guardian turns monsters on each other), mind spike | mind crush |
 | Invisibility | vanish and strike from behind, force push | force bubble (held, then crushed) |
-| Density | reach through armour, embed in the floor | phase ambush (rises under you) |
+| Density (earthbending) | rock throw (a stone torn from the ground), embed (sunk to the waist in the floor) | pillar ambush (a marked pillar of rock rises under you) |
 | Matter Assembly | crossfire (marked), shield | shard storm (marked) |
 | Regeneration | reckless lunge, blood mend (heals it and its side) | sever; and a mini-boss **gets back up once** |
 | Hydrokinesis | water whip (pulls), drench | geyser (marked) |

@@ -33,6 +33,7 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 | One power | its row in "Powers" below: its agent notes and its player doc |
 | A power that fights hand to hand | [fighting-styles.md](docs/agents/fighting-styles.md). **Pyrokinesis is the bar** (see below) |
 | Finishers | [finishers.md](docs/agents/finishers.md) |
+| Classes and their Ultimates | [ultimates.md](docs/agents/ultimates.md) |
 | Awakenings, intros, saving someone in danger | [awakenings.md](docs/agents/awakenings.md) |
 | Two powers acting on each other | [power-interactions.md](docs/agents/power-interactions.md) |
 | Opening the End portal, shared channeling or a solo offering | [power-interactions.md](docs/agents/power-interactions.md), "End portal offerings", and [end-portal.md](docs/end-portal.md) |
@@ -80,7 +81,7 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 | Telekinesis | [powers/telekinesis.md](docs/agents/powers/telekinesis.md) (the far hand; hits that land as the drawing reaches them) | [telekinesis.md](docs/telekinesis.md) |
 
 Shared systems with player docs: [fighting-styles.md](docs/fighting-styles.md), [finishers.md](docs/finishers.md),
-[classes.md](docs/classes.md), [skill-trees.md](docs/skill-trees.md), [progression.md](docs/progression.md),
+[classes.md](docs/classes.md) (the Ultimates), [skill-trees.md](docs/skill-trees.md), [progression.md](docs/progression.md),
 [power-intros.md](docs/power-intros.md), [power-sounds.md](docs/power-sounds.md), [gifted-mobs.md](docs/gifted-mobs.md),
 [sylar.md](docs/sylar.md), [company-agents.md](docs/company-agents.md),
 [wither.md](docs/wither.md) (Containment Failure: the breach it is dragged through, the Ossuary, its death blast and exit),

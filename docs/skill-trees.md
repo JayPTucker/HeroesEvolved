@@ -5,7 +5,7 @@ Open your survival inventory and click **Skills** (the eclipse beside the recipe
 Mastery and stamina along the bottom, and five tabs run under the title (Tab and Shift+Tab switch
 between the first three):
 
-- **Loadout**: everything you can cast (your five core abilities, your class ability and the skills
+- **Loadout**: everything you can cast (your five core abilities, your class's Ultimate and the skills
   you've learned), each tagged Offense, Defense, Support or Utility, beside your eight ability keys.
   Select an ability, then click a key slot to put it there; right-click a slot to empty it.
   Switch to **Wheel** to assign favorites and pin the ability used by a tap of R. See

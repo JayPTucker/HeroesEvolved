@@ -7,37 +7,22 @@ package com.jayptucker.heroesevolved.styles;
  */
 public enum Piece {
     // Radiation
-    GROUND_ZERO(230), CONTAINMENT_DOME(160), REACTOR_HEARTH(200),
     // Space-Time
-    HOUR_HAND(34), TIME_LOOP(120), BORROWED_TIME(160),
     // Pyrokinesis
-    SUNFALL(90), EMBER_SHROUD(160), HEARTHFIRE(240),
     // Cryokinesis
-    HAILSTORM(96), CRYSTAL_BASTION(160), AURORA_VEIL(200),
     // Electrokinesis
-    TESLA_SPIRE(120), TESLA_ZAP(7), FARADAY_CAGE(120), JUMPSTART(16),
     // Quake
-    FISSURE_MAW(56), STONE_RAMPART(200), BEDROCK_STANCE(160),
     // Flight
-    TEMPEST_DRILL(30), GALE_WALL(160), FORMATION_FLIGHT(200),
     // Telekinesis's first class pieces, retired for KINETIC_CLENCH, KINETIC_WARD and KINETIC_GATHER (kept: ordinals)
     IMPLOSION(44), DEBRIS_HALO(160), GATHERING_HAND(34),
     // Telepathy
-    PSYCHIC_STORM(120), BLIND_SPOT(34), HIVE_MIND(200),
     // Regeneration
-    VITAL_BURST(28), UNDYING(120), LIFEBLOOM(240),
     // Sonic Resonance
-    RESONANCE_CASCADE(32), SILENCE_DOME(160), BATTLE_HYMN(200),
     // Superspeed
-    LIGHTNING_FLURRY(18), PHASE_BLUR(120), RELAY_RUN(18),
     // Invisibility
-    SHADOW_STRIKE(18), REFRACTION_CLOAK(120), PRISM_HAZE(200),
     // Density
-    PHASE_ERUPTION(34), DENSE_BULWARK(160), PHASE_FIELD(160),
     // Empathic Mimicry
-    PRISMATIC_OVERFLOW(34), EMPATHIC_WARD(160), KINDRED_LIGHT(44),
     // Matter Assembly
-    FORGE_CANNON(44), FORGE_SLUG(8), BULWARK_LATTICE(160), MENDING_LATTICE(64),
     // Induced Radioactivity's Critical Mass, drawn as the vision's blast
     EXPLODING_MAN(600),
     // Superspeed's own: the wind a sudden stop throws ahead, and outrunning the last minute (leaving, arriving)
@@ -212,7 +197,7 @@ public enum Piece {
     // ground; scale half its width), an Octopus Form arm lashing out (bound; origin the arm's root, target the foe), every
     // arm thrown out at once (bound; scale the burst's radius), a splash anywhere (scale its radius), Maelstrom's opening
     // whirlpool (scale its ring) and the Deluge it comes down as (scale its reach).
-    HYDRO_WHIP(12), HYDRO_SNARE(14), HYDRO_WAVE(28), HYDRO_TSUNAMI(40), HYDRO_TENDRIL(9), HYDRO_BURST(16), HYDRO_SPLASH(16),
+    HYDRO_WHIP(12), HYDRO_SNARE(14), HYDRO_WAVE(28), HYDRO_TENDRIL(9), HYDRO_BURST(16), HYDRO_SPLASH(16),
     HYDRO_WHIRLPOOL(36), HYDRO_DELUGE(26),
     // Waterbending (bound to the bender): a lash (scale 1 / .6, + 4 when Turn the Tide loaded it), one ice dagger (origin
     // the hands), a Water Wheel (scale its radius), a Flow Step (origin and target the feet before and after), a Geyser
@@ -224,8 +209,8 @@ public enum Piece {
     // scale half its width), Healing Water wrapping its target (bound to it), a Rain Call cloud (bound to the caller,
     // re-sent; scale its radius), a Tidal Dome and a Healing Spring (re-sent; scale the radius), and the awakening (bound;
     // target the ward)
-    HYDRO_GEYSER_MARK(16), HYDRO_GEYSER(24), HYDRO_JET(4), HYDRO_WALL(12), HYDRO_HEAL(20), HYDRO_RAIN(12), HYDRO_DOME(12),
-    HYDRO_SPRING(12), HYDRO_AWAKEN(30),
+    HYDRO_GEYSER_MARK(16), HYDRO_GEYSER(24), HYDRO_JET(4), HYDRO_WALL(12), HYDRO_HEAL(20), HYDRO_RAIN(12),
+    HYDRO_AWAKEN(30),
     // Fighting styles, drawn by StyleArt. Force Palm (in the force fields' lenses and panes, bound to the fighter): a jab
     // through a lens on the knuckles (origin the fist, target the end; scale 1 on a hit, .6 a miss), one shard of a
     // released Pressure (origin the fist), a Force Burst's fan of lenses (origin the chest, target its far middle; scale
@@ -394,7 +379,98 @@ public enum Piece {
     RAD_STAR_CHARGE(32), RAD_STAR(3), RAD_STAR_BLAST(34), SONIC_STANDING(22), SONIC_STANDING_BREAK(26),
     SPEED_ROUND(10), SPEED_ROUND_HIT(8), FORCE_BASTION(22), FORCE_BASTION_BURST(24), DENSITY_ARMOR(22), DENSITY_ARMOR_BURST(26),
     MIMIC_CHORUS(22), MIMIC_VOICE(12), MATTER_BALLISTA(22), MATTER_TURRET(20),
-    HYDRO_LEVIATHAN_RISE(12), HYDRO_LEVIATHAN_STRIKE(18), HYDRO_LEVIATHAN_DIVE(12), AMP_OVERDRIVE(22), AMP_DISCHARGE(12);
+    HYDRO_LEVIATHAN_RISE(12), HYDRO_LEVIATHAN_STRIKE(18), HYDRO_LEVIATHAN_DIVE(12), AMP_OVERDRIVE(22), AMP_DISCHARGE(12),
+    // The class Ultimates (combat/Ultimates). ULT_HIDE: the body it is bound to is not drawn (re-sent every 8 ticks while
+    // hidden); ULT_SHOW ends that at once. ULT_CUT: an Ultimate cut short; every Ultimate piece bound to the same body
+    // stops drawing at once.
+    ULT_HIDE(12), ULT_SHOW(2), ULT_CUT(2),
+    // Superspeed. SPEED_ULT_WORLD: Around the World, the whole sequence (bound to the speedster, the foe's id in the
+    // seed; origin where it began, target the foe). SPEED_ULT_HEART: Between Heartbeats held (re-sent each second, the
+    // second in the seed) and SPEED_ULT_DODGE one sidestep's afterimage (origin where it stood, target where it went).
+    // SPEED_ULT_RESCUE: Rescue Run's route (origin the speedster, target one friend, seed the friend's order).
+    SPEED_ULT_WORLD(140), SPEED_ULT_HEART(24), SPEED_ULT_DODGE(14), SPEED_ULT_RESCUE(40),
+    // Pyrokinesis. PYRO_ULT_SUN: Rising Sun, the whole sequence (bound to the firebender, the foe's id in the seed; target
+    // the foe). PYRO_ULT_FLAME: Living Flame held (re-sent each second, the second in the seed); PYRO_ULT_FLARE a jet at an
+    // attacker (seed 0) or a shot burned up (seed 1); PYRO_ULT_NOVA its end (scale the radius). PYRO_ULT_BONFIRE: Bonfire
+    // Vigil (re-sent each second; scale its reach); PYRO_ULT_COCOON a friend wrapped in flame (bound; scale their height).
+    PYRO_ULT_SUN(120), PYRO_ULT_FLAME(24), PYRO_ULT_FLARE(12), PYRO_ULT_NOVA(26), PYRO_ULT_BONFIRE(24), PYRO_ULT_COCOON(30),
+    // Electrokinesis. ELECTRO_ULT_STORM: Thunderhead, the whole sequence (bound to the caster, the foe's id in the seed).
+    // ELECTRO_ULT_ARC: one fork from origin to target (scale its width). ELECTRO_ULT_SHELL: Storm Shell held (re-sent each
+    // second, the second in the seed, -1 its discharge; scale its radius). ELECTRO_ULT_PULSE: Restart's line to one friend
+    // (bound to them; scale their height; seed their order).
+    ELECTRO_ULT_STORM(120), ELECTRO_ULT_ARC(10), ELECTRO_ULT_SHELL(24), ELECTRO_ULT_PULSE(60),
+    // Hydrokinesis. HYDRO_ULT_BARREL: Riptide Barrel (bound to the caster, the foe's id in the seed). HYDRO_ULT_CITADEL:
+    // Tidal Citadel (re-sent each second; -1 its fall; scale its radius) and HYDRO_ULT_SPLASH a shot swallowed.
+    // HYDRO_ULT_MONSOON: the rain (re-sent each second; scale its radius); HYDRO_ULT_SPRING a spring under a friend (bound).
+    HYDRO_ULT_BARREL(120), HYDRO_ULT_CITADEL(24), HYDRO_ULT_SPLASH(10), HYDRO_ULT_MONSOON(24), HYDRO_ULT_SPRING(24),
+    // Cryokinesis. CRYO_ULT_GLACIER: Glacier Fall (bound to the caster, the foe's id in the seed, scale the foe's height).
+    // CRYO_ULT_CITADEL: Winter Citadel's walls (re-sent each second; -1 the burst; scale the ring's radius) and
+    // CRYO_ULT_SHARD a shot shattering on them. CRYO_ULT_SNOW: Hibernation's snow (re-sent each second; scale its radius),
+    // CRYO_ULT_ARMOUR frost armour on a friend and CRYO_ULT_COCOON a friend's crystal cocoon (both bound; scale their height).
+    CRYO_ULT_GLACIER(110), CRYO_ULT_CITADEL(24), CRYO_ULT_SHARD(12), CRYO_ULT_SNOW(24), CRYO_ULT_ARMOUR(40), CRYO_ULT_COCOON(50),
+    // Flight. FLIGHT_ULT_SKY: Stratosphere (bound to the flyer, the foe's id in the seed, scale the climb's height).
+    // FLIGHT_ULT_EYE: Eye of the Storm (re-sent each second, -1 the break; scale its radius). FLIGHT_ULT_WINGS: Airlift's
+    // wings on a friend (bound; re-sent every three seconds; scale their height).
+    FLIGHT_ULT_SKY(140), FLIGHT_ULT_EYE(24), FLIGHT_ULT_WINGS(64),
+    // Quake. QUAKE_ULT_HEART: Heartquake (bound to her, the foe's id in the seed, scale its height). QUAKE_ULT_BARRIER: the
+    // Pressure Barrier (re-sent each second, -1 the pop; scale its radius). QUAKE_ULT_RIPPLE: a ring across a blow (origin
+    // where, target from where; scale its size). QUAKE_ULT_SWELL: Groundswell on a friend (bound; re-sent every two seconds).
+    QUAKE_ULT_HEART(120), QUAKE_ULT_BARRIER(24), QUAKE_ULT_RIPPLE(12), QUAKE_ULT_SWELL(42),
+    // Sonic Resonance. SONIC_ULT_FINAL: Final Movement (bound to her, the foe's id in the seed, scale its height).
+    // SONIC_ULT_DEAD: Dead Air (re-sent each second, -1 the break; scale its radius); SONIC_ULT_HUSHED a shot dying in it.
+    // SONIC_ULT_ANTHEM: the Anthem's stave (bound; re-sent each second; scale its reach).
+    SONIC_ULT_FINAL(120), SONIC_ULT_DEAD(24), SONIC_ULT_HUSHED(12), SONIC_ULT_ANTHEM(24),
+    // Telepathy. TELE_ULT_MIND: Mindbreak (bound to the telepath, the foe's id in the seed, scale its height); TELE_ULT_FEARS
+    // the foe's fears, copies of it walking through it (bound to the foe; BodyCopies). TELE_ULT_DOUBLES: Not Here's three
+    // doubles walking away, the body hidden (bound to the telepath; BodyCopies; target a step along the facing);
+    // TELE_ULT_POP one coming apart. TELE_ULT_LINK: One Mind on a friend (bound; re-sent every three seconds).
+    TELE_ULT_MIND(120), TELE_ULT_FEARS(80), TELE_ULT_DOUBLES(200), TELE_ULT_POP(16), TELE_ULT_LINK(64),
+    // Telekinesis. KINETIC_ULT_WRECK: Wrecking Hand (bound to the caster, the foe's id in the seed, scale its height).
+    // KINETIC_ULT_STOP: Stop Everything's raised hand (bound; re-sent each second; scale the reach); KINETIC_ULT_HELD a shot
+    // held still (bound to the shot). KINETIC_ULT_CRADLE: the cupped hands (re-sent each second; scale the radius);
+    // KINETIC_SWAT_ULT a foe batted back out of it (origin the foe, target the middle).
+    KINETIC_ULT_WRECK(120), KINETIC_ULT_STOP(24), KINETIC_ULT_HELD(200), KINETIC_ULT_CRADLE(24), KINETIC_SWAT_ULT(12),
+    // Space-Time. TIME_ULT_STOPPED: Ten Past Ten (bound to the caster, the foe's id in the seed, scale its height);
+    // TIME_ULT_COPIES the caster frozen at every step (bound to the caster; BodyCopies). TIME_ULT_MARK: Second Chance's mark
+    // (re-sent each second) and TIME_ULT_REWIND the rewind back to it (seed 0) or the hours given back (seed 1).
+    // TIME_ULT_HOURS: Borrowed Hours on a friend (seed 0) or a foe (seed 1) (bound; re-sent every three seconds).
+    TIME_ULT_STOPPED(110), TIME_ULT_COPIES(110), TIME_ULT_MARK(24), TIME_ULT_REWIND(30), TIME_ULT_HOURS(64),
+    // Regeneration. REGEN_ULT_BRAWL: Can't Stop Me (bound to her, the foe's id in the seed, scale its height).
+    // REGEN_ULT_UNDYING: Unkillable (bound; re-sent each second; -1 the burst). REGEN_ULT_BLOOD: Lifeblood to one friend
+    // (bound to them, her id in the seed, scale their height); REGEN_ULT_SAVED a friend held at their last heart (bound).
+    REGEN_ULT_BRAWL(110), REGEN_ULT_UNDYING(24), REGEN_ULT_BLOOD(64), REGEN_ULT_SAVED(30),
+    // Invisibility. FORCE_ULT_BOX: Crush Box (bound to her, the foe's id in the seed, scale its height). FORCE_ULT_AEGIS:
+    // Aegis (bound; re-sent each second; -1 the shedding). FORCE_ULT_BUBBLE: a friend's Vanishing Act bubble (bound).
+    FORCE_ULT_BOX(110), FORCE_ULT_AEGIS(24), FORCE_ULT_BUBBLE(64),
+    // Empathic Mimicry. MIMIC_ULT_ALL: Everything at Once (bound to him, the foe's id in the seed, scale its height), its
+    // voices in MIMIC_ULT_VOICES (bound to him, packed in the seed like a Chorus; draws nothing). MIMIC_ULT_GIFT: a gift to
+    // a friend (bound to them, his id in the seed, the power's index in the scale).
+    MIMIC_ULT_ALL(120), MIMIC_ULT_VOICES(120), MIMIC_ULT_GIFT(40),
+    // Matter Assembly. MATTER_ULT_DESIGN: Grand Design (bound to her, the foe's id in the seed, scale its height).
+    // MATTER_ULT_CITADEL: the Citadel's panels (bound; re-sent each second; -1 coming apart; scale the radius).
+    // MATTER_ULT_HOSPITAL: the Field Hospital (re-sent each second, bound to her for the fragments' source; -1 coming apart).
+    MATTER_ULT_DESIGN(120), MATTER_ULT_CITADEL(24), MATTER_ULT_HOSPITAL(24),
+    // Vibe. VIBE_ULT_DROP: Dimension Drop (bound to him, the foe's id in the seed). VIBE_ULT_GHOST: Between Worlds, the body
+    // as a blue ghost (bound; re-sent each second; BodyCopies). VIBE_ULT_PASS: a breach pair (origin in, target out).
+    // VIBE_ULT_HARBOR: Safe Harbor's breach overhead (re-sent each second; scale its radius).
+    VIBE_ULT_DROP(120), VIBE_ULT_GHOST(24), VIBE_ULT_PASS(16), VIBE_ULT_HARBOR(24),
+    // Power Amplification. AMP_ULT_FEEDBACK: Feedback Loop (bound to him, the foe's id in the seed, scale its height).
+    // AMP_ULT_ARMOR: Red Armor (bound; re-sent each second; scale his height). AMP_ULT_LINK: Everyone, Now on a friend
+    // (bound to them, his id in the seed; re-sent every three seconds).
+    AMP_ULT_FEEDBACK(110), AMP_ULT_ARMOR(24), AMP_ULT_LINK(64),
+    // Shapeshifting. SHIFT_ULT_APEX: Apex Predator (bound to the shifter, the foe's id in the seed, scale its height).
+    // SHIFT_ULT_FORTRESS: Living Fortress's plates (bound; re-sent each second; -1 the plates bursting off).
+    SHIFT_ULT_APEX(110), SHIFT_ULT_FORTRESS(24),
+    // Density. EARTH_ULT_EMBRACE: Earth's Embrace (bound to her, the foe's id in the seed, scale its height); its rock's
+    // block in EARTH_ULT_ROCK (bound to her, the block id in the seed; draws nothing). EARTH_ULT_FORTRESS: Stone Fortress's
+    // slabs and EARTH_ULT_HALL: Mountain Hall's dome (re-sent each second; the block id in the seed's low 24 bits, the second
+    // in its top byte, 255 the end; scale the radius). EARTH_ULT_CHIP: a shot breaking on rock (the block id in the seed).
+    EARTH_ULT_EMBRACE(120), EARTH_ULT_ROCK(120), EARTH_ULT_FORTRESS(24), EARTH_ULT_HALL(24), EARTH_ULT_CHIP(12),
+    // Induced Radioactivity. RAD_PULSE, RAD_DOSE, RAD_CHAIN, RAD_FALLOUT: the older short effects as shapes (a pulse of
+    // heat, a dose settling on a body, sickness jumping, ash falling; the scale their size). RAD_ULT_POINT: Point of No
+    // Return (bound to him, the foe's id in the seed). RAD_ULT_LEAD: Lead Heart's dome (bound; re-sent each second; -1 the
+    // panels blown out; scale its radius). RAD_ULT_HEARTH: the Cherenkov Hearth (re-sent each second; scale its reach).
+    RAD_PULSE(16), RAD_DOSE(16), RAD_CHAIN(18), RAD_FALLOUT(60), RAD_ULT_POINT(120), RAD_ULT_LEAD(24), RAD_ULT_HEARTH(24);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

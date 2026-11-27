@@ -19,9 +19,9 @@ Damage, stamina, cooldowns, melee reach and explosion radii keep their own balan
 | Arc Lance | 80 |
 | Vibe Blast / Return Fire | 48 |
 | Vibe Lance | 72 |
-| Reverb / Crosswave | 40 |
+| Reverb | 40 |
 | Waterbending's Ice Daggers | 40 |
-| Crashing Wave / Tsunami | 32 / 48 from the wave's leading starting position |
+| Crashing Wave | 32 from the wave's leading starting position |
 | Force Push / Hard Push | 24 / 32 |
 | Meltdown Beam / Gamma Lance | 64 / 80 |
 | Focused Shriek | 80 |

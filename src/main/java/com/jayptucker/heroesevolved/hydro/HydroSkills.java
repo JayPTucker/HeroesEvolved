@@ -5,7 +5,6 @@ import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.SimpleAction;
 import com.jayptucker.heroesevolved.ability.Targeting;
-import com.jayptucker.heroesevolved.ability.service.PowerRules;
 import com.jayptucker.heroesevolved.combat.StyleMotion;
 import com.jayptucker.heroesevolved.network.ArmPosePayload;
 import com.jayptucker.heroesevolved.network.CameraShakePayload;
@@ -410,76 +409,9 @@ public final class HydroSkills {
                 double angle = age * .7;
                 HydroService.douse(field.owner, field.center.add(Math.cos(angle) * field.radius * .6, .5, Math.sin(angle) * field.radius * .6), 1);
             }
-            case HYDRO_DOME -> {
-                for (Projectile shot : field.level.getEntitiesOfClass(Projectile.class, box.inflate(1))) {
-                    if (shot.getOwner() == field.owner || shot.getOwner() instanceof LivingEntity shooter && HydroService.friend(field.owner, shooter)) continue;
-                    double d = shot.position().distanceTo(field.center.add(0, .5, 0));
-                    if (d <= field.radius + .6 && d >= field.radius - 1.4) swallow(field.owner, shot);
-                }
-                if (age % 10 != 0) return true;
-                for (LivingEntity e : field.level.getEntitiesOfClass(LivingEntity.class, box,
-                        e -> e.position().distanceTo(field.center) <= field.radius)) {
-                    if (e == field.owner || HydroService.friend(field.owner, e))
-                        e.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 20, 0, false, false, true));
-                    else if (HydroService.hostile(field.owner, e)) {
-                        HydroService.soak(e, 60);
-                        e.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 20, 2));
-                    }
-                }
-            }
-            case HYDRO_SPRING -> {
-                if (age % 10 != 0) return true;
-                for (LivingEntity e : field.level.getEntitiesOfClass(LivingEntity.class, box,
-                        e -> (e == field.owner || HydroService.friend(field.owner, e))
-                                && e.position().subtract(field.center).horizontalDistance() <= field.radius)) {
-                    e.heal(1 + field.level2 * .2F);
-                    if (e.isOnFire()) e.clearFire();
-                    e.removeEffect(MobEffects.POISON);
-                    e.removeEffect(MobEffects.WITHER);
-                }
-            }
             default -> { }
         }
         return true;
-    }
-
-    // ------------------------------------------------------------------
-    // Class abilities
-    // ------------------------------------------------------------------
-
-    public static boolean canCast(AbilityUseContext c, String mechanic) { return HydroService.canStartCast(c.player()); }
-
-    public static boolean cast(AbilityUseContext c, String mechanic) {
-        ServerPlayer player = c.player();
-        int lvl = Math.max(1, c.abilityLevel());
-        switch (mechanic) {
-            case "hydro_tsunami" -> {
-                HydroService.Draw draw = HydroService.draw(player, 30);
-                HydroService.roll(player, HydroGeometry.level(player.getLookAngle(), player.getYRot()), Piece.HYDRO_TSUNAMI,
-                        HydroGeometry.TSUNAMI_REACH, HydroGeometry.TSUNAMI_HALF_WIDTH * (draw.thin() ? .8 : 1),
-                        (8 + lvl) * draw.power(), draw.thin(), player.position());
-                ArmPosePayload.show(player, ArmPose.WATER_HEAVE, 16);
-                HydroService.sound(player, SoundEvents.GENERIC_SPLASH, 1.8F, .45F);
-                CameraShakePayload.sendAround(player.serverLevel(), player.position(), 24, .35F, 10);
-                return true;
-            }
-            case "hydro_tidal_dome" -> {
-                HydroService.draw(player, 20);
-                field(player, Piece.HYDRO_DOME, player.position(), 5, 120, lvl);
-                ArmPosePayload.show(player, ArmPose.WATER_DOME, 18);
-                HydroService.sound(player, SoundEvents.BUBBLE_COLUMN_UPWARDS_INSIDE, 1.4F, .6F);
-                return true;
-            }
-            case "hydro_healing_spring" -> {
-                HydroService.draw(player, 16);
-                Vec3 ground = HydroGeometry.ground(player.serverLevel(), player.position(), 1, 4);
-                field(player, Piece.HYDRO_SPRING, ground != null ? ground : player.position(), 3.5, 160, lvl);
-                ArmPosePayload.show(player, ArmPose.WATER_HEAL, 20);
-                HydroService.sound(player, SoundEvents.CONDUIT_ACTIVATE, .9F, 1.3F);
-                return true;
-            }
-            default -> { return false; }
-        }
     }
 
     // ------------------------------------------------------------------

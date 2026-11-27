@@ -67,8 +67,8 @@ public final class AmpSkills {
             GOT_YOUR_BACK = "amp_got_your_back", LIGHTNING_CANNON = "amp_lightning_cannon", LIGHTS_BACK_ON = "amp_lights_back_on";
     /** Second Wind is part of Red Lightning's capstone row: every Supercharge arms the next bolt (The Second Coming's partner). */
     public static final String SECOND_WIND = "amp_second_wind";
-    public static final double VAN_RADIUS = 5, CANNON_LENGTH = 18, CANNON_WIDTH = 1.5;
-    public static final int BURNOUT_TICKS = 80, WILD_TICKS = 200, CANNON_WINDUP = 40;
+    public static final double VAN_RADIUS = 5;
+    public static final int BURNOUT_TICKS = 80, WILD_TICKS = 200;
 
     private static final Map<UUID, Long> HESITATED = new HashMap<>();
 
@@ -279,95 +279,10 @@ public final class AmpSkills {
     }
 
     // ------------------------------------------------------------------
-    // Class abilities
-    // ------------------------------------------------------------------
-
-    public static boolean canCast(AbilityUseContext c, String mechanic) { return AmpService.canCast(c.player()); }
-
-    public static boolean cast(AbilityUseContext c, String mechanic) {
-        ServerPlayer p = c.player();
-        return switch (mechanic) {
-            case GOT_YOUR_BACK -> gotYourBack(p);
-            case LIGHTNING_CANNON -> {
-                AmpService.Amp a = AmpService.amp(p);
-                a.cannonAt = p.serverLevel().getGameTime() + CANNON_WINDUP;
-                ArmPosePayload.show(p, ArmPose.AMP_CUP, CANNON_WINDUP + 2);
-                SetPiecePayload.send(p.serverLevel(), Piece.AMP_GATHER, p.position(), p.position().add(p.getLookAngle()), 2, p);
-                AmpService.sound(p, SoundEvents.BEACON_ACTIVATE, 1, 1.8F);
-                yield true;
-            }
-            case LIGHTS_BACK_ON -> { lightsBackOn(p); yield true; }
-            default -> false;
-        };
-    }
-
-    /**
-     * Got Your Back: a dash to your partner's side (or the nearest friend, pet or friendly villager) that Surges them on
-     * arrival. With nobody to reach, you dash six blocks ahead and your next Red Lightning comes fully charged.
-     */
-    public static boolean gotYourBack(ServerPlayer p) {
-        LivingEntity friend = AmpService.partner(p);
-        if (friend == null || friend.level() != p.level() || friend.distanceToSqr(p) > 24 * 24)
-            friend = p.serverLevel().getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(16), e -> AmpService.ally(p, e)).stream()
-                    .min(java.util.Comparator.comparingDouble(e -> e.distanceToSqr(p))).orElse(null);
-        Vec3 from = p.position();
-        if (friend != null) {
-            Vec3 side = p.position().subtract(friend.position()).multiply(1, 0, 1);
-            side = side.lengthSqr() < 1e-4 ? StyleHits.level(p).scale(-1) : side.normalize();
-            Vec3 to = SpeedService.swept(p, friend.position().add(side.scale(1.3)).subtract(p.position()));
-            StyleHits.blink(p, to);
-            AmpService.surge(p, friend);
-        } else {
-            Vec3 to = SpeedService.swept(p, StyleHits.level(p).scale(6));
-            StyleHits.blink(p, to);
-            AmpService.amp(p).primed = true;
-            AmpService.addCharge(p, 20);
-        }
-        SetPiecePayload.send(p.serverLevel(), Piece.AMP_BOLT, from.add(0, 1, 0), p.position().add(0, 1, 0), 1.2F, null, p.getRandom().nextInt());
-        AmpService.sound(p, SoundEvents.LIGHTNING_BOLT_IMPACT, .6F, 1.9F);
-        return true;
-    }
-
-    /** Lightning Cannon's release: a wide beam that knocks down everything in its path. */
-    public static int cannon(ServerPlayer p) {
-        Vec3 eye = p.getEyePosition(), aim = p.getLookAngle().normalize();
-        Vec3 end = StyleHits.reach(p, eye, aim, CANNON_LENGTH);
-        AmpService.burnThrough(p, eye, end);
-        int hit = 0;
-        float damage = 4 + AmpService.tier(p);
-        for (LivingEntity e : AmpService.line(p, eye, aim, eye.distanceTo(end), CANNON_WIDTH, has(p, SECOND_COMING))) {
-            AmpService.redHit(p, e, damage, 60);
-            StyleHits.shove(e, aim.scale(1.4).add(0, .45, 0));
-            hit++;
-        }
-        SetPiecePayload.send(p.serverLevel(), Piece.AMP_BEAM, AmpGeometry.hand(p), end, 3, p, p.getRandom().nextInt());
-        ArmPosePayload.show(p, ArmPose.AMP_BEAM, 16);
-        AmpService.sound(p, SoundEvents.LIGHTNING_BOLT_THUNDER, 1, 1.5F);
-        CameraShakePayload.sendAround(p.serverLevel(), p.position(), 24, .3F, 8);
-        return hit;
-    }
-
-    /** Lights Back On: Shock Therapy for every friend within eight blocks (you too), and every machine there jumpstarted. */
-    public static int lightsBackOn(ServerPlayer p) {
-        int cleared = 0;
-        for (LivingEntity e : StyleOps.friends(p, p.position(), 8)) cleared += AmpService.shock(p, e);
-        AmpService.jumpMachines(p, p.position(), 8, AmpService.JUMPSTART_TICKS);
-        SetPiecePayload.send(p.serverLevel(), Piece.AMP_WAVE, p.position(), p.position().add(0, 1, 0), 8, p);
-        ArmPosePayload.show(p, ArmPose.AMP_RAISE, 16);
-        AmpService.sound(p, SoundEvents.BEACON_ACTIVATE, 1, 1.8F);
-        return cleared;
-    }
-
-    // ------------------------------------------------------------------
     // What ticks
     // ------------------------------------------------------------------
 
     static void tick(ServerPlayer p, AmpService.Amp a, long now) {
-        if (a.cannonAt >= 0) {
-            if ((a.cannonAt - now) % 10 == 0) ArmPosePayload.show(p, ArmPose.AMP_CUP, 14);
-            if (!AmpService.canCast(p)) a.cannonAt = -1;
-            else if (now >= a.cannonAt) { a.cannonAt = -1; cannon(p); }
-        }
         // Sparks for Show: crouched, empty-handed, with a little Charge: sparks dance between the fingers.
         boolean showing = has(p, SPARKS_FOR_SHOW) && p.isCrouching() && p.getMainHandItem().isEmpty() && a.charge >= 10;
         if (showing != a.showing) { a.showing = showing; AmpService.sync(a, true); }

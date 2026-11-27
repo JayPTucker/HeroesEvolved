@@ -5,7 +5,8 @@ Open the hero menu with **P** (or your rebound Powers key), or the eclipse butto
 story leads and discovered records.
 
 The Guide explains things a player cannot easily infer from the world: assigning learned abilities, unbound
-keys, the wheel, stamina, Mastery, fighting controls, carrying people, equipment, machine recipes and the powered
+keys, the wheel, stamina, Mastery, fighting controls, your class's Ultimate (Fighting & rescue), carrying people,
+equipment, machine recipes and the powered
 End portal. Its instructions show your current key bindings. **Key bindings…** opens the binding list directly.
 Scroll, use the arrow buttons, or use Up/Down and Page Up/Page Down to read; Left/Right changes topic.
 Growing stronger also shows your own Evolved trial and progress after awakening.

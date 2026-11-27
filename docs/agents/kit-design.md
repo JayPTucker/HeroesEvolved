@@ -24,7 +24,8 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 | An awakening and the dangers it answers | intro `Spec` in `PowerIntroService`, `Danger`'s sets, a case in `intro/PerilRelease` | [awakenings.md](awakenings.md) |
 | A colour and an icon | `mimicry/MimicColors`, `PowerIcons` | Mimicry's threads and the wheel use the colour |
 | Echoes of it work | ownership gates ask `MimicryService.isBorrowing...` | [powers/mimicry.md](powers/mimicry.md) |
-| The tree and three classes | `skill_trees.json`, `SkillCatalog.Node.action`, `StyleCasts`, `SkillTreeService.bonus`'s no-stat list, `EvolutionTrials` | [powers/shapeshifting.md](powers/shapeshifting.md), "Wiring a new power's tree and classes"; [powers/radiation.md](powers/radiation.md) |
+| The tree and three classes | `skill_trees.json`, `SkillCatalog.Node.action`, `SkillTreeService.bonus`'s no-stat list, `EvolutionTrials` | [powers/shapeshifting.md](powers/shapeshifting.md), "Wiring a new power's tree and classes"; [powers/radiation.md](powers/radiation.md) |
+| Three Ultimates (the classes' abilities) | a `<Power>Ultimates` class, its rows in `combat/UltimateTable`, `<POWER>_ULT_*` pieces in the power's art | [ultimates.md](ultimates.md) |
 | Names that match | `en_us.json`; `python tools/verify-skill-content.py` | keep node and action IDs when reworking ([powers/radiation.md](powers/radiation.md)) |
 | Three finishers | `Takedowns.FINISHERS`, `FINISHER_POWERS` in `tools/balance.py`, a lang line each | [finishers.md](finishers.md) |
 | Sounds | the tables at the top of `sounds/PowerSounds` | [audio.md](audio.md) |
@@ -154,7 +155,7 @@ Armor, Chorus, Ballista, Leviathan, Overdrive) share one runner, `expansion/Sign
   (`energy/HeldWindGameTests`, `meltdownBeamPaysStaminaEverySecondItIsHeld`). Hold-to-charge moves that fire once on
   release (spears, Inferno, Crescendo, Rock Strike) are one cast and don't drain.
 - **Damage answers to its stamina.** `tools/balance.py` keeps a `DAMAGE_AUDIT` entry for every tree active, signature,
-  class ability and fighting-style move, measured from the Java (the full sequence on one target at the unlock tier,
+  Ultimate and fighting-style move, measured from the Java (the full sequence on one target at the unlock tier,
   pulses and hops counted, invulnerability resets checked), and fails if one is missing or more than 30% off what its
   cost buys. A new or reworked move adds its `reviewed(...)` line in the same change; fix a miss by changing the
   damage in code, not by inventing a utility reserve.

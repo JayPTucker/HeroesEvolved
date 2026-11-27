@@ -172,33 +172,6 @@ public final class ShapeshiftSkillsGameTests {
         h.succeed();
     }
 
-    @GameTest(template = "rewind_empty", batch = "shapeshift.classes", timeoutTicks = 60)
-    public static void manyHandsStrikesEveryFoeInTurn(GameTestHelper h) {
-        ServerPlayer p = shifter(h, 4);
-        var first = mob(h, EntityType.PILLAGER, 3, 6);
-        var second = mob(h, EntityType.PILLAGER, 6, 5);
-        float a = first.getHealth(), b = second.getHealth();
-        try { h.assertTrue(ShapeshiftSkills.manyHands(p), "Many Hands"); }
-        catch (RuntimeException e) { ShapeshiftService.forget(p); throw e; }
-        h.runAfterDelay(ShapeshiftSkills.MANY_HANDS_GAP * 2 + 2, () -> {
-            try { h.assertTrue(first.getHealth() < a && second.getHealth() < b, "Both foes are struck, one after the other"); }
-            finally { ShapeshiftService.forget(p); }
-            h.succeed();
-        });
-    }
-
-    @GameTest(template = "rewind_empty", batch = "shapeshift.classes")
-    public static void plateMailAndMasquerade(GameTestHelper h) {
-        ServerPlayer p = shifter(h, 4);
-        mob(h, EntityType.HUSK, 3, 7);
-        try {
-            h.assertTrue(ShapeshiftSkills.plateMail(p) && ShapeshiftSkills.plated(p), "Plate Mail locks on");
-            h.assertTrue(ShapeshiftSkills.masquerade(p), "Masquerade with nobody else near");
-            h.assertTrue(ShapeshiftService.form(p) == EntityType.HUSK && ShapeshiftSkills.masked(p), "takes the nearest creature's shape for you");
-        } finally { ShapeshiftService.forget(p); }
-        h.succeed();
-    }
-
     @GameTest(template = "rewind_empty", batch = "shapeshift.awakening")
     public static void theAwakeningTurnsThreatsOnTheirOwnKind(GameTestHelper h) {
         ServerPlayer p = shifter(h, 1);

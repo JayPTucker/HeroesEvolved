@@ -476,4 +476,130 @@ final class RegenArt {
             fan(c, feet.add(0, 1, 0), new Vec3(cos(ang), .35, sin(ang)), t, a.seed() + i);
         }
     }
+
+    // ------------------------------------------------------------------
+    // Ultimates (regeneration/RegenUltimates)
+    // ------------------------------------------------------------------
+
+    /**
+     * Can't Stop Me ({@code RegenUltimates.CantStopMe}): the gash the foe opens across her chest, closing from the edges
+     * in over the rest of it; a heartbeat ring and a flash of life-gold at every blow she lands (a wound closing); blood
+     * thrown out of the foe at each; a smear of it as she lifts the foe; and the slam's ring of blood and bone.
+     */
+    static void brawl(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        net.minecraft.world.entity.Entity her = a.bound(c), foe = UltArt.foe(c, a);
+        Vec3 facing = a.facing();
+        float h = Math.max(.8F, a.scale());
+        int seed = a.seed() * 13 + 3;
+        int walk = com.jayptucker.heroesevolved.regeneration.RegenUltimates.CantStopMe.WALK,
+                first = com.jayptucker.heroesevolved.regeneration.RegenUltimates.CantStopMe.FIRST,
+                every = com.jayptucker.heroesevolved.regeneration.RegenUltimates.CantStopMe.EVERY,
+                blows = com.jayptucker.heroesevolved.regeneration.RegenUltimates.CantStopMe.BLOWS,
+                slam = com.jayptucker.heroesevolved.regeneration.RegenUltimates.CantStopMe.SLAM,
+                closed = com.jayptucker.heroesevolved.regeneration.RegenUltimates.CantStopMe.CLOSED;
+        if (her != null && t >= walk) {
+            // The gash across her chest, closing from both ends toward the middle as the fight goes on.
+            Vec3 chest = her.getPosition(c.partial).add(0, 1.3, 0).add(facing.scale(.22));
+            Vec3 across = UltArt.side(facing).scale(.32);
+            float open = 1 - smooth(walk + 4, closed, t);
+            if (open > .02F) gash(c, chest.subtract(across.scale(open)), chest.add(across.scale(open)).add(0, -.18 * open, 0), seed, .06F, 1);
+            if (t < walk + 10) drops(c, chest, chest.add(facing.scale(.6)).add(0, -1.2, 0), (t - walk) / 10F, 5, .05F, 1 - smooth(walk + 4, walk + 10, t), .1F);
+            if (t >= closed && t < closed + 14) {
+                float k = smooth(closed, closed + 14, t);
+                if (c.glow()) c.glow(chest, .8F * (1 - k), LIFE, 1 - k);
+                beat(c, chest, facing, 1.4F, t - closed, 1);
+            }
+        }
+        Vec3 foeChest = foe != null ? foe.getPosition(c.partial).add(0, foe.getBbHeight() * .6, 0) : a.target().add(0, h * .6, 0);
+        for (int i = 0; i < blows; i++) {
+            float at = first + i * every, age = t - at;
+            if (age < 0 || age > 14) continue;
+            float f = 1 - smooth(2, 14, age);
+            fan(c, foeChest, facing, age, seed + i * 7);
+            if (her != null) {
+                Vec3 heart = her.getPosition(c.partial).add(0, 1.25, 0);
+                beat(c, heart, UP, .9F, age, f);
+                if (c.glow()) c.glow(heart, .45F * (1 - smooth(0, 6, age)), LIFE, f);
+            }
+        }
+        if (t >= slam) {
+            float age = t - slam, f = fade(age, a.piece().ticks - slam, 0, 14);
+            Vec3 floor = (foe != null ? foe.getPosition(c.partial) : a.target()).add(0, .05, 0);
+            beat(c, floor, UP, 4.5F, age, f);
+            for (int i = 0; i < 8; i++) {
+                float ang = i * TWO_PI / 8 + hash(seed, i);
+                gash(c, floor, floor.add(Math.cos(ang) * (1.2 + 1.6 * smooth(0, 6, age)), 0, Math.sin(ang) * (1.2 + 1.6 * smooth(0, 6, age))), seed + i, .05F, f * .8F);
+                fan(c, floor.add(0, .3, 0), new Vec3(Math.cos(ang), .5, Math.sin(ang)), age, seed + 40 + i);
+            }
+            if (c.soft() && age < 10) for (int i = 0; i < 5; i++) {
+                float ang = i * TWO_PI / 5 + hash(seed, i + 60);
+                Vec3 p = floor.add(Math.cos(ang) * age * .2, .2 + age * .12 - .015 * age * age, Math.sin(ang) * age * .2);
+                c.shard(p, p.add(Math.cos(ang) * .2, .15, Math.sin(ang) * .2), .05F, 3, ang + age, BONE, f);
+            }
+        }
+    }
+
+    /**
+     * Unkillable, one second (re-sent each second; the second in the seed, -1 the burst): her veins lit gold under the
+     * skin, a heartbeat ring every second, blood beading and drawn back in; the burst is a ring of blood thrown out.
+     */
+    static void undying(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        net.minecraft.world.entity.Entity body = a.bound(c);
+        Vec3 feet = body != null ? body.getPosition(c.partial) : a.origin();
+        int second = a.seed();
+        if (second < 0) {
+            float f = 1 - smooth(4, a.piece().ticks, t);
+            beat(c, feet.add(0, .06, 0), UP, 6, t, 1);
+            for (int i = 0; i < 12; i++) {
+                float ang = i * TWO_PI / 12;
+                Vec3 dir = new Vec3(Math.cos(ang), .35, Math.sin(ang));
+                drops(c, feet.add(0, 1.2, 0), feet.add(dir.scale(5)), smooth(0, 14, t) * .9F, 3, .07F, f, 1.2F);
+            }
+            return;
+        }
+        boolean last = second >= com.jayptucker.heroesevolved.regeneration.RegenUltimates.Unkillable.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(10, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        Vec3 heart = feet.add(0, 1.25, 0);
+        beat(c, heart, UP, 1.6F, t, f);
+        if (c.glow()) {
+            c.glow(heart, .35F + .1F * net.minecraft.util.Mth.sin(t * .6F), LIFE, f * .6F);
+            for (int i = 0; i < 6; i++) {
+                float ang = i * TWO_PI / 6 + second * .3F;
+                Vec3 tip = feet.add(Math.cos(ang) * .3, .3 + i * .22, Math.sin(ang) * .3);
+                c.line(heart, tip, .02F, LIFE, f * .6F, f * .2F);
+            }
+        }
+        if (second == 0) beat(c, feet.add(0, .06, 0), UP, 3, t, 1);
+    }
+
+    /**
+     * Lifeblood to one friend (bound to them; her id in the seed): a strand of blood from her open palm to them with
+     * beads running along it, a heartbeat ring on them as it arrives.
+     */
+    static void lifeblood(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        net.minecraft.world.entity.Entity friend = a.bound(c), her = a.seed() >= 0 ? c.level.getEntity(a.seed()) : null;
+        float h = Math.max(.6F, a.scale()), life = a.piece().ticks, f = fade(t, life, 2, 12);
+        Vec3 to = friend != null ? friend.getPosition(c.partial).add(0, h * .6, 0) : a.target().add(0, 1, 0);
+        Vec3 from = her != null ? UltArt.hand(her, c.partial, 1, .55) : a.origin().add(0, 1.3, 0);
+        float reach = smooth(0, 10, t);
+        strand(c, from, from.lerp(to, reach), t * .05F, .05F, f, .35F);
+        drops(c, from, to, t * .04F, 4, .06F, f * reach, .35F);
+        if (t >= 10) beat(c, to, UP, 1.3F, t - 10, f);
+    }
+
+    /** A friend held at their last heart by Lifeblood: a gold flash, a heartbeat and the ECG coming back. */
+    static void saved(Canvas c, Active a, float t) {
+        net.minecraft.world.entity.Entity friend = a.bound(c);
+        Vec3 feet = friend != null ? friend.getPosition(c.partial) : a.origin();
+        float h = Math.max(.6F, a.scale()), f = fade(t, a.piece().ticks, 0, 10);
+        Vec3 chest = feet.add(0, h * .6, 0);
+        if (c.glow()) c.glow(chest, 1.2F * (1 - smooth(0, 8, t)), LIFE, f);
+        beat(c, chest, UP, 2, t, f);
+        Vec3 view = c.camera().subtract(chest).multiply(1, 0, 1);
+        Vec3 right = view.lengthSqr() < 1e-4 ? new Vec3(1, 0, 0) : new Vec3(-view.z, 0, view.x).normalize();
+        ecg(c, chest.add(0, h * .6, 0), right, 1.2F, t * .08F, f, 1 - smooth(0, 14, t));
+    }
 }

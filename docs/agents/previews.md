@@ -165,7 +165,7 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | `earth-preview.init.gradle` | Density's earthbending: every key, Tiger and Crane, the tree, the classes, Rock Clap, first person, the Root ring | |
 | `electro-preview.init.gradle`, `lightning-preview.init.gradle` | Electrokinesis, and its lightning style | |
 | `skill-anim-preview.init.gradle` | Electrokinesis and Superspeed skills | |
-| `flight-preview.init.gradle`, `rework-preview.init.gradle` | Flight maneuvers; Tempest, a standing tornado, Matter Assembly, Starfall | |
+| `flight-preview.init.gradle`, `rework-preview.init.gradle` | Flight maneuvers; Tempest, a standing tornado, Matter Assembly | |
 | `flight-carry-preview.init.gradle` | Villagers and pigs carried through hover, acceleration, horizontal cruise, turns, first person, Skyburst and braking | Checks horizontal cruise and retained carry links; 16 photographs |
 | `hydro-preview.init.gradle` | Hydrokinesis: kit, waterbending, tree, classes | |
 | `invisibility-preview.init.gradle` | Fade and the force fields | |
@@ -188,10 +188,10 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | `cryoart-preview.init.gradle` | Cryokinesis in one palette: Ice Blast, the frost effects sampler, Prison and its shatter, Whiteout, a Sculpt wall, the skater's jab, Absolute Zero | prints `CRYO_ART PASS/FAIL` |
 | `regenart-preview.init.gradle` | Regeneration in one palette: Regrowth's veins at three levels, Mending, Blood Gift and a Bond, Second Life, revive, a reckless punch and an ejected bullet, Last One Standing and its release | prints `REGEN_ART PASS/FAIL` |
 | `sigset-preview.init.gradle` | The twelve signatures run by `expansion/Signatures`, each staged with foes and shot from the side at its own class's ticks: Epicenter, Microburst, Puppeteer, Fission Star, Standing Wave, Lightning Round, Bastion, Mountain Armor, Chorus, Ballista, Leviathan, Overdrive (and their second presses) | prints `SIG_SET PASS/FAIL` |
-| `telekinesis-preview.init.gradle` | Telekinesis, the far hand: Shove, Grip (held, swung, thrown), Bullet Catch (and first person), Disarm and fling, the Storm, Pin, Juggle and Spike, Skyfall, Levitate, Round Up, Clench, Warding Hands, a swat, minimal | prints `KINETIC PASS/FAIL` |
+| `telekinesis-preview.init.gradle` | Telekinesis, the far hand: Shove, Grip (held, swung, thrown), Bullet Catch (and first person), Disarm and fling, the Storm, Pin, Juggle and Spike, Skyfall, Levitate, Round Up, a swat, minimal | prints `KINETIC PASS/FAIL` |
 | `fighting-preview.init.gradle` | every shared fighting style | `-Ponly=telekinesis,quake`, `-Pinput` (presses the real keys and prints `INPUT_RESULT`) |
 | `flight-roll-preview.init.gradle` | Flight's Barrel Roll on the real strafe keys: both directions, near misses, chat, the ground, a rebound key, its card in the tree, and its HUD ring ready, recharging and low | Prints `ROLL_INPUT` lines and fails on any wrong case |
-| `style-preview.init.gradle` | every class ability's set piece | |
+| `ultimate-preview.init.gradle` | every class Ultimate, staged with two foes and a tamed wolf, through its own camera and from the side | `-Ponly=sunfall,phase_blur` or a power's id; prints `ULTIMATE PASS/FAIL` |
 | `finisher-preview.init.gradle` | the glisten, the prompt and every finisher | `-Ponly=telepathy` or `-Ponly=hearth,phoenix_kick` |
 | `projectile-preview.init.gradle` | projectile ranges | |
 | `weapons-preview.init.gradle`, `dampener-preview.init.gradle` | the TaCZ guns and EMP grenade; the Ability Dampener and Nullifier | |

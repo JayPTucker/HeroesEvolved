@@ -1,14 +1,14 @@
 # Power sounds
 
 Every power sounds like itself. Each one has a small palette of original, synthesized cues, and every action it has
-(core moves, follow-ups, skill-tree actives, class abilities, fighting-style blows) plays from that palette.
+(core moves, follow-ups, skill-tree actives, Ultimates, fighting-style blows) plays from that palette.
 
 ## What you hear
 
 | Cue | When it plays |
 | --- | --- |
 | **Cast** | Most presses: a core move, a skill-tree active. |
-| **Heavy** | An ultimate (the fifth key), a class ability, a signature move, Earthquake, Dive Bomb, Lightspeed. Louder, and heard further away. |
+| **Heavy** | An ultimate (the fifth key), a class Ultimate, a signature move, Earthquake, Dive Bomb, Lightspeed. Louder, and heard further away. |
 | **Charge** | The press that starts a wind-up: Cinder Spear, Inferno, Skyburst, Critical Mass, Cyclone, Sunfall, Crescendo. Letting go plays the move itself. |
 | **Impact** | Where a power's blow lands on someone, and the free second press of a two-stage move (a slam, a crush, a shatter). |
 | **End** | Letting go of something held, or dismissing it with Shift. |
@@ -42,8 +42,8 @@ Each power has its own material, so you can tell who is fighting by ear:
 
 - **Most powers layer their cue over a move's existing sounds.** Space-Time, Sonic Resonance and Vibe already had
   hand-made sounds, so for them a cue plays only when a move makes no sound of its own.
-- **Stealthy moves are quiet to others.** Fade, Vanishing Touch, Vanishing Squad, Refraction Cloak, Read Mind,
-  Suggestion, Mind Link, Far Hearing, Memory Walk, Blind Spot and Read the Vibe play their cue to you alone.
+- **Stealthy moves are quiet to others.** Fade, Vanishing Touch, Vanishing Squad, Read Mind,
+  Suggestion, Mind Link, Far Hearing, Memory Walk, Read the Vibe and the Not Here Ultimate play their cue to you alone.
   Surgical Fracture with Surgical Silence plays none.
 - **Impacts don't spam.** A target rings at most every half second, an area blow plays once, and damage over time
   (a dose, a burn) makes no impact sound. A plain punch or a weapon sounds like a punch or a weapon, not the power.

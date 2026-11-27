@@ -127,11 +127,13 @@ runs out, or when you **press again**, the plates **blast off**: **5 + tier** to
 
 ## Classes
 
-| Role | Class ability |
+Each class's ability is an **Ultimate** on a long wait (see [Classes](classes.md) for how they work):
+
+| Role | Ultimate |
 | --- | --- |
-| Offense | **Pillar Barrage**: a fan of stone columns erupts round a point up to 20 blocks away; foes within 3.5 blocks take 7 + tier and are thrown into the air. |
-| Defense | **Unmoving Mountain**: Horse Stance, free, for 8 seconds, set so deep that nothing moves you and you take far less damage, but you are slow. When it ends you stand back up, unless you were already in Horse Stance. |
-| Support | **Earth Tent**: a dome of rock closes over you and the friends beside you for 8 seconds. Shots stop on it, and those inside take less harm. Break a block of it to leave early. |
+| Offense | **Earth's Embrace**: a stomp swallows the foe in front of you to the waist, two walls of rock clap shut on it, a pillar throws it up, and you heave a boulder out of the ground and punt it into the falling foe. 22 damage, and 6 to everyone near where the boulder bursts. The foe is held the whole time. |
+| Defense | **Stone Fortress**: four slabs of rock tear out of the ground and turn round you for 12 seconds. You sink into Horse Stance, free, and take half of every blow; shots stop on the slabs; foes who come close are shackled into the ground. When it ends the slabs are flung outward. |
+| Support | **Mountain Hall**: a dome of rock rises over you and everyone within 5 blocks for 12 seconds. Every shot breaks on it, foes are pushed out, and everyone inside mends and takes half the harm. |
 
 ## Finishers: Six Feet, Rock Clap, Heavy Hand
 

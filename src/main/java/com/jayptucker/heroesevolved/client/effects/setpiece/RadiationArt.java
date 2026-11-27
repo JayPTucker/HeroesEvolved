@@ -6,9 +6,12 @@ import com.jayptucker.heroesevolved.client.effects.intro.CloudMesh;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 
 import static com.jayptucker.heroesevolved.client.effects.setpiece.Canvas.UP;
+import static com.jayptucker.heroesevolved.client.effects.setpiece.Canvas.fade;
+import static com.jayptucker.heroesevolved.client.effects.setpiece.Canvas.mix;
 import static com.jayptucker.heroesevolved.client.effects.setpiece.Canvas.hash;
 import static com.jayptucker.heroesevolved.client.effects.setpiece.Canvas.rgb;
 import static com.jayptucker.heroesevolved.client.effects.setpiece.Canvas.smooth;
@@ -17,9 +20,10 @@ import static net.minecraft.util.Mth.cos;
 import static net.minecraft.util.Mth.sin;
 
 /**
- * Induced Radioactivity drawn as heat and contamination. One idea runs through it: a reactor's light. Heat is
+ * Induced Radioactivity, all of it drawn here (the older short effects in {@code RadiationEffects} and
+ * {@code NuclearEffects} forward to these pieces). One idea runs through it: a reactor's light. Heat is
  * orange going white-hot (the cone, the beam, the blasts), sickness and contaminated ground are a sickly
- * yellow-green, the EMP is a cold electric blue. Every blast is the same shape at a different size: a white
+ * yellow-green, the EMP and a reactor's own glow are a cold Cherenkov blue. The hands are {@code RadiationGeometry}'s. Every blast is the same shape at a different size: a white
  * flash, a hot shock ring racing over the ground, a green ring following it, smoke and grit thrown up.
  */
 final class RadiationArt {
@@ -58,7 +62,8 @@ final class RadiationArt {
             Vec3 look = e.getViewVector(c.partial);
             return c.camera().add(look.scale(.7)).add(0, -.32, 0);
         }
-        float yaw = (e instanceof net.minecraft.world.entity.LivingEntity l ? l.yBodyRot : e.getYRot()) * Mth.DEG_TO_RAD;
+        if (e instanceof net.minecraft.world.entity.LivingEntity l) return com.jayptucker.heroesevolved.radiation.RadiationGeometry.cupped(l, c.partial);
+        float yaw = e.getYRot() * Mth.DEG_TO_RAD;
         return e.getPosition(c.partial).add(-Mth.sin(yaw) * .5, 1.1, Mth.cos(yaw) * .5);
     }
 
@@ -616,6 +621,184 @@ final class RadiationArt {
             float burst = 1 - smooth(flash, flash + 6, t);
             c.glow(chest, (.6F + h * .8F) * burst, WHITE_HOT, f * burst);
             c.ring(feet.add(0, .08, 0), UP, .5F + 2.5F * smooth(flash, flash + 10, t), .07F, 0, TWO_PI, EMBER, f * (1 - smooth(flash, flash + 10, t)));
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // The older short effects, drawn here now (RadiationEffects and NuclearEffects forward to these)
+    // ------------------------------------------------------------------
+
+    /** A small pulse of heat (scale its radius): a white flash, a hot ring and a green ring following it out. */
+    static void pulse(Canvas c, Active a, float t) {
+        Vec3 o = a.origin();
+        float r = Math.max(.4F, a.scale()), life = a.piece().ticks, k = out(t / (life * .7F)), f = 1 - smooth(life * .4F, life, t);
+        if (c.glow()) {
+            if (t < 3) c.glow(o, r * .8F * (1 - t / 3), WHITE_HOT, 1 - t / 3);
+            c.ring(o, UP, r * k, .06F, 0, TWO_PI, HEAT, f);
+            c.ring(o, UP, r * k * .8F, .04F, 0, TWO_PI, TOXIC, f * .8F);
+        }
+    }
+
+    /** A dose of sickness settling on a body (origin its middle, scale its width): green motes spiralling in, a flash. */
+    static void dose(Canvas c, Active a, float t) {
+        Vec3 mid = a.origin();
+        float w = Math.max(.4F, a.scale()), life = a.piece().ticks, f = fade(t, life, 0, 6);
+        if (!c.glow()) return;
+        for (int i = 0; i < (UltArt.minimal() ? 4 : 9); i++) {
+            float k = Mth.clamp((t - i * .6F) / 10, 0, 1), ang = i * 2.4F + k * 4;
+            float r = w * (1.4F - 1.2F * k);
+            Vec3 p = mid.add(Mth.cos(ang) * r, (hash(a.seed(), i) - .5F) * 1.4F * (1 - k), Mth.sin(ang) * r);
+            c.glow(p, .07F, i % 3 == 0 ? WHITE_HOT : TOXIC, f * (1 - k * .5F));
+        }
+        if (t > 8) c.glow(mid, w * .9F * (1 - smooth(8, 14, t)), TOXIC_DEEP, f * .6F);
+    }
+
+    /** Sickness jumping from body to body (origin the centre, scale its reach): green arcs reaching out and a ring. */
+    static void chain(Canvas c, Active a, float t) {
+        Vec3 o = a.origin().add(0, 1, 0);
+        float r = Math.max(1, a.scale()), life = a.piece().ticks, k = out(t / 10), f = 1 - smooth(life * .5F, life, t);
+        if (!c.glow()) return;
+        for (int i = 0; i < 6; i++) {
+            float ang = i * TWO_PI / 6 + hash(a.seed(), i);
+            Vec3 tip = o.add(Mth.cos(ang) * r * k, -.6 + hash(a.seed(), i + 9) * .6, Mth.sin(ang) * r * k);
+            c.bolt(o, tip, a.seed() + i * 7 + (int) (t / 2), .3F, .05F, TOXIC, f);
+            c.bolt(o, tip, a.seed() + i * 7 + (int) (t / 2), .3F, .018F, WHITE_HOT, f * .7F);
+        }
+        c.ring(a.origin().add(0, .05, 0), UP, r * k, .05F, 0, TWO_PI, TOXIC_DEEP, f);
+    }
+
+    /** Fallout: grey-green ash drifting down over the scale's radius. */
+    static void fallout(Canvas c, Active a, float t) {
+        Vec3 o = a.origin();
+        float r = Math.max(2, a.scale()), life = a.piece().ticks, f = fade(t, life, 6, 20);
+        if (!c.glow()) return;
+        int n = UltArt.minimal() ? 12 : 36;
+        for (int i = 0; i < n; i++) {
+            float ang = hash(a.seed(), i) * TWO_PI, d = Mth.sqrt(hash(a.seed(), i + 40)) * r;
+            float y = 6 * (1 - ((t * .02F + hash(a.seed(), i + 80)) % 1));
+            Vec3 p = o.add(Mth.cos(ang) * d + Mth.sin(t * .05F + i) * .3, y, Mth.sin(ang) * d);
+            c.glow(p, .06F, i % 4 == 0 ? TOXIC : DUST, f * .55F);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Ultimates (radiation/RadiationUltimates)
+    // ------------------------------------------------------------------
+
+    /**
+     * Point of No Return ({@code RadiationUltimates.PointOfNoReturn}): the core in his chest climbing from orange to
+     * white, light running out through his veins, rings of heat shimmering up off him, the foe reddening in his grip;
+     * the white-out; the blast in small, its fireball rolling up into a mushroom cloud; and the green-lit crater.
+     */
+    static void point(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity him = a.bound(c), foe = UltArt.foe(c, a);
+        int grab = com.jayptucker.heroesevolved.radiation.RadiationUltimates.PointOfNoReturn.GRAB,
+                blastAt = com.jayptucker.heroesevolved.radiation.RadiationUltimates.PointOfNoReturn.BLAST;
+        float heat = com.jayptucker.heroesevolved.radiation.RadiationUltimates.PointOfNoReturn.heat(t);
+        float[] glow = mix(mix(EMBER, HEAT, Math.min(1, heat * 2)), WHITE_HOT, Math.max(0, heat * 2 - 1));
+        if (him instanceof LivingEntity body && t < blastAt + 2) {
+            Vec3 core = com.jayptucker.heroesevolved.radiation.RadiationGeometry.core(body, c.partial);
+            Vec3 feet = body.getPosition(c.partial);
+            if (c.glow()) {
+                c.glow(core, .3F + .9F * heat, glow, .4F + .6F * heat);
+                c.glow(core, .12F + .3F * heat, WHITE_HOT, .5F + .5F * heat);
+                // Veins: lines of light running out from the core over the body, more of them the hotter it runs.
+                int veins = (int) (4 + 10 * heat);
+                for (int i = 0; i < veins; i++) {
+                    float ang = hash(a.seed(), i) * TWO_PI, len = .3F + .9F * hash(a.seed(), i + 30);
+                    Vec3 tip = core.add(Mth.cos(ang) * .3, (hash(a.seed(), i + 60) - .5) * 1.6 * len, Mth.sin(ang) * .3);
+                    c.bolt(core, tip, a.seed() + i, .08F, .02F, glow, heat);
+                }
+            }
+            // Heat shimmering up off him in rings.
+            for (int i = 0; i < 3; i++) {
+                float k = ((t * .05F) + i / 3F) % 1;
+                if (c.glow()) c.ring(feet.add(0, .2 + k * 2.4, 0), UP, .6F + .3F * k, .03F, 0, TWO_PI, HEAT, heat * (1 - k) * .7F);
+            }
+        }
+        // The foe reddening in his grip.
+        if (foe != null && t >= grab && t < blastAt && c.glow()) {
+            Vec3 chest = foe.getPosition(c.partial).add(0, foe.getBbHeight() * .55, 0);
+            c.glow(chest, foe.getBbHeight() * .5F, EMBER, heat * .4F);
+        }
+        // The blast in small: the vision's blast, its fireball rolling up into a mushroom cloud.
+        if (t >= blastAt) {
+            Vec3 at = him != null ? him.getPosition(c.partial) : a.origin();
+            float age = t - blastAt, life = a.piece().ticks - blastAt;
+            // Twice Critical Mass's size for its reach (radius / 80): a cloud you can see, but a blast in small.
+            MiniBlast.draw(c, at, com.jayptucker.heroesevolved.radiation.RadiationUltimates.PointOfNoReturn.BLAST_RADIUS / 40F,
+                    com.jayptucker.heroesevolved.radiation.RadiationUltimates.PointOfNoReturn.BLAST_RADIUS * 1.15F, age, life);
+            if (c.soft()) c.disc(at.add(0, .04, 0), UP, 2.2F, SMOKE, .6F * fade(age, life, 2, 20), .1F);
+            if (c.glow()) c.ring(at.add(0, .06, 0), UP, 2.4F, .06F, 0, TWO_PI, TOXIC, fade(age, life, 6, 20) * .6F);
+        }
+    }
+
+    /**
+     * Lead Heart, one second (re-sent each second; the second in the seed, -1 the panels blowing out): a dome of lead-glass
+     * panels round him at the scale's radius, dark grey with green light in the seams, a hot glow inside; the end throws
+     * the panels out on a wave of heat.
+     */
+    static void lead(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity body = a.bound(c);
+        Vec3 feet = body != null ? body.getPosition(c.partial) : a.origin();
+        int second = a.seed();
+        float r = a.scale();
+        int panels = 10;
+        if (second < 0) {
+            blast(c, feet, r * 1.6F, t, a.piece().ticks, 51, false);
+            return;
+        }
+        boolean last = second >= com.jayptucker.heroesevolved.radiation.RadiationUltimates.LeadHeart.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(10, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        float lock = second == 0 ? smooth(0, 14, t) : 1;
+        for (int row = 0; row < 2; row++)
+            for (int i = 0; i < panels; i++) {
+                float a0 = (i + row * .5F) * TWO_PI / panels, a1 = a0 + TWO_PI / panels;
+                float y0 = row * r * .55F, y1 = (row + 1) * r * .55F;
+                float rr0 = r * (row == 0 ? 1 : .82F), rr1 = r * (row == 0 ? .82F : .4F);
+                float drop = (1 - lock) * 2;
+                Vec3 p0 = feet.add(Mth.cos(a0) * rr0, y0 + drop, Mth.sin(a0) * rr0), p1 = feet.add(Mth.cos(a1) * rr0, y0 + drop, Mth.sin(a1) * rr0);
+                Vec3 p2 = feet.add(Mth.cos(a1) * rr1, y1 + drop, Mth.sin(a1) * rr1), p3 = feet.add(Mth.cos(a0) * rr1, y1 + drop, Mth.sin(a0) * rr1);
+                if (c.soft()) {
+                    c.tri(p0, p1, p2, SMOKE, f * .45F * lock, f * .45F * lock, f * .45F * lock);
+                    c.tri(p0, p2, p3, SMOKE, f * .45F * lock, f * .45F * lock, f * .45F * lock);
+                }
+                if (c.glow()) {
+                    c.line(p0, p1, .03F, TOXIC, f * lock, f * lock);
+                    c.line(p1, p2, .03F, TOXIC, f * lock, f * lock);
+                }
+            }
+        if (c.glow()) c.glow(feet.add(0, 1, 0), r * .6F, HEAT, f * .18F);
+    }
+
+    /**
+     * Cherenkov Hearth, one second (re-sent each second; the second in the seed): a reactor's core rising at the spot,
+     * the blue of a reactor pool in a cage of dark rods, a blue ring on the ground at the scale's reach, motes rising.
+     */
+    static void hearth(Canvas c, Active a, float t) {
+        int second = a.seed();
+        boolean last = second >= com.jayptucker.heroesevolved.radiation.RadiationUltimates.CherenkovHearth.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(10, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        float rise = second == 0 ? smooth(0, 16, t) : 1, clock = now(c, t);
+        Vec3 base = a.origin();
+        Vec3 core = base.add(0, .4 + 1.0 * rise, 0);
+        // The cage of rods.
+        for (int i = 0; i < 6; i++) {
+            float ang = i * TWO_PI / 6 + clock * .01F;
+            Vec3 foot = base.add(Mth.cos(ang) * .7, 0, Mth.sin(ang) * .7);
+            if (c.solid()) c.box(foot.add(0, 1.0 * rise, 0), .06F, 1.0F * rise, .06F, ang, 0, 0, SMOKE, 1);
+        }
+        if (c.glow()) {
+            c.glow(core, 1.6F * rise, EMP, f * .35F);
+            c.glow(core, .6F * rise, EMP_PALE, f * .85F);
+            bead(c, core, .18F * rise, clock * .1F, f);
+            c.ring(base.add(0, .05, 0), UP, a.scale() * rise, .05F, 0, TWO_PI, EMP, f * .5F);
+            for (int i = 0; i < (UltArt.minimal() ? 6 : 16); i++) {
+                float k = ((clock * .02F) + hash(second, i)) % 1, ang = hash(i, 7) * TWO_PI, r = .3F + hash(i, 9) * 1.4F;
+                c.glow(base.add(Mth.cos(ang) * r, k * 3, Mth.sin(ang) * r), .05F, EMP_PALE, f * (1 - k));
+            }
         }
     }
 }

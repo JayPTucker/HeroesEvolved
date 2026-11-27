@@ -6,7 +6,6 @@ import com.jayptucker.heroesevolved.flight.FlightVisualGeometry;
 import com.jayptucker.heroesevolved.network.ClientFlightVisualState;
 import com.jayptucker.heroesevolved.pyro.PyroFlightGeometry;
 import com.jayptucker.heroesevolved.pyro.PyroGeometry;
-import com.jayptucker.heroesevolved.styles.StyleCasts;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.ParticleStatus;
 import net.minecraft.world.entity.HumanoidArm;
@@ -84,10 +83,10 @@ final class PyroArt {
                 jet(c, at, end, .13F, -phase * 1.9F, alpha, fire, minimal() ? 1 : 3, .38F);
                 orb(c, end, .20F, phase, alpha, fire);
             }
-            case PYRO_MANTLE, EMBER_SHROUD -> {
+            case PYRO_MANTLE -> {
                 Vec3 body = a.at(c).add(0, .25, 0);
                 float clear = smooth(.4F, 2.4F, (float) c.camera().distanceTo(body));
-                curtain(c, body, a.piece() == com.jayptucker.heroesevolved.styles.Piece.EMBER_SHROUD ? 2.6F : size,
+                curtain(c, body, size,
                         1.45F, phase, alpha * (.27F + clear * .73F), fire);
             }
             case PYRO_CAUTERIZE -> {
@@ -153,16 +152,6 @@ final class PyroArt {
                     flame(c, plume.getFirst(), plume.getLast(), .24F, phase + i * 1.2F, visible, fire);
                 }
                 if (c.glow()) c.glow(bird.head(), .33F, fire.gold, visible * .4F);
-            }
-            case SUNFALL -> {
-                float drop = StyleCasts.STARFALL_FALL;
-                if (t < drop) fall(c, end.subtract(a.facing().scale(13)).add(0, 39, 0), end,
-                        size, drop, t, phase, alpha, fire);
-                else burst(c, end, size, t - drop, alpha * (1 - smooth(drop + 14, drop + 45, t)), phase, fire, a.seed());
-            }
-            case HEARTHFIRE -> {
-                marker(c, at, size, -phase, alpha * .65F, fire);
-                jet(c, at.add(0, .05, 0), at.add(0, 2.8, 0), .58F, phase, alpha, fire, minimal() ? 2 : 6, .75F);
             }
             case PYRO_JAB -> jab(c, a, at, end, size, t, phase, alpha, fire);
             case PYRO_KICK -> {
@@ -748,5 +737,200 @@ final class PyroArt {
                 if (spooling && c.glow()) c.glow(palm, .65F, fire.gold, clear * .55F);
             }
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Ultimates (pyro/PyroUltimates)
+    // ------------------------------------------------------------------
+
+    private static float clock(Canvas c) { return (c.level.getGameTime() % 2400 + c.partial) * .33F; }
+
+    /**
+     * Rising Sun ({@code PyroUltimates.RisingSun}): the jet-step in, a crescent off the rising knee, a jet of fire from
+     * each fist of the flurry, boot jets as the firebender climbs, a wheel of flame round the kicking leg turning blue,
+     * the blue axe kick's crescent and the streak it drives down, the dome of fire where the foe lands, and the sun
+     * that rises out of it.
+     */
+    static void sun(Canvas c, Active a, float t) {
+        if (c.solid() || UltArt.cut(c, a)) return;
+        Player runner = a.bound(c) instanceof Player p ? p : null;
+        var foe = UltArt.foe(c, a);
+        Vec3 base = a.target(), facing = a.facing(), side = UltArt.side(facing);
+        float phase = clock(c);
+        int seed = a.seed() * 13 + 3;
+        float fh = foe != null ? foe.getBbHeight() : 1.8F;
+        Vec3 foeAt = foe != null ? foe.getPosition(c.partial) : base.add(0, com.jayptucker.heroesevolved.pyro.PyroUltimates.RisingSun.height(t), 0);
+        Vec3 chest = foeAt.add(0, fh * .6, 0);
+        int knee = com.jayptucker.heroesevolved.pyro.PyroUltimates.RisingSun.KNEE, flurry = com.jayptucker.heroesevolved.pyro.PyroUltimates.RisingSun.FLURRY,
+                every = com.jayptucker.heroesevolved.pyro.PyroUltimates.RisingSun.EVERY, blows = com.jayptucker.heroesevolved.pyro.PyroUltimates.RisingSun.BLOWS,
+                rise = com.jayptucker.heroesevolved.pyro.PyroUltimates.RisingSun.RISE, wheel = com.jayptucker.heroesevolved.pyro.PyroUltimates.RisingSun.WHEEL,
+                axe = com.jayptucker.heroesevolved.pyro.PyroUltimates.RisingSun.AXE, impact = com.jayptucker.heroesevolved.pyro.PyroUltimates.RisingSun.IMPACT;
+        // The jet-step: fire blasting back from the feet as the body crosses the gap.
+        if (t < knee + 2 && runner != null) {
+            Vec3 feet = runner.getPosition(c.partial).add(0, .15, 0);
+            jet(c, feet, feet.subtract(facing.scale(1.6)).add(0, .2, 0), .22F, phase, UltArt.window(t, 0, knee + 2, 1, 3), EMBER, 3, .12F);
+        }
+        // The rising knee: a crescent of flame swept up under the foe.
+        if (t >= knee && t < knee + 12) {
+            float k = smooth(knee, knee + 4, t), f = 1 - smooth(knee + 4, knee + 12, t);
+            crescent(c, base.add(0, .9, 0).subtract(facing.scale(.3)), UP, facing, 1.1F, -PI * .6F, PI * .4F, k, .22F, phase, f, EMBER, seed);
+            if (c.glow()) c.glow(chest, 1.1F * f, EMBER.gold, f * .5F);
+        }
+        // The flurry: each blow a jet of fire from the fist that threw it, a burst where it lands.
+        for (int i = 0; i < blows; i++) {
+            float at = flurry + i * every, age = t - at;
+            if (age < 0 || age > 10) continue;
+            float f = 1 - smooth(3, 10, age);
+            Vec3 fist = runner != null ? PyroGeometry.hand(runner, c.partial, i % 2 == 0) : chest.subtract(facing.scale(1));
+            Vec3 tip = fist.lerp(chest, smooth(0, 2, age));
+            billows(c, fist, tip.add(facing.scale(.4)), .16F, .22F, phase + i, f, EMBER, seed + i);
+            if (age > 1.5F) burst(c, chest.subtract(0, .4, 0), 1.1F, age - 1.5F, f * .7F, phase, EMBER, seed + i * 7);
+        }
+        // Boot jets while they climb above the foe and hang there; a wheel of flame round the kicking leg that turns blue.
+        if (runner != null && t > rise && t < axe + 2) {
+            float f = UltArt.window(t, rise, axe + 2, 2, 2);
+            Vec3 feet = runner.getPosition(c.partial).add(0, .1, 0);
+            for (int s = -1; s <= 1; s += 2) {
+                Vec3 boot = feet.add(side.scale(.14 * s));
+                jet(c, boot, boot.add(0, -1.3, 0), .14F, phase + s, f, t > wheel + 4 ? BLUE : EMBER, 3, .08F);
+            }
+            if (t > wheel) {
+                float spin = (t - wheel) * .9F;
+                Fire fire = t > wheel + 5 ? BLUE : EMBER;
+                Vec3 hip = runner.getPosition(c.partial).add(0, .7, 0);
+                crescent(c, hip, facing, UP, 1, spin, spin + PI * 1.4F, 1, .2F, .2F, phase, f, fire, seed + 40);
+                if (c.glow()) c.glow(hip, .9F, fire.gold, f * .45F);
+            }
+        }
+        // The axe kick: a blue crescent swept down onto the foe, and the streak it drives it down along.
+        if (t >= axe && t < impact + 8) {
+            float k = smooth(axe, axe + 3, t), f = 1 - smooth(impact, impact + 8, t);
+            Vec3 top = base.add(0, com.jayptucker.heroesevolved.pyro.PyroUltimates.RisingSun.ABOVE + .6, 0).subtract(facing.scale(.6));
+            crescent(c, top.lerp(chest, .5), facing, UP, 2.2F, PI * .1F, PI * 1.2F, k, .32F, .24F, phase, f, BLUE, seed + 60);
+            billows(c, base.add(0, com.jayptucker.heroesevolved.pyro.PyroUltimates.RisingSun.LIFT + 1, 0), foeAt.add(0, fh * .5, 0), .3F, .3F, phase, f, BLUE, seed + 61);
+        }
+        // The landing: a dome of fire blooms, then a sun rises out of the crater, rays turning slowly.
+        if (t >= impact) {
+            float age = t - impact, life = a.piece().ticks - impact, f = fade(age, life, 0, 18);
+            burst(c, base, 5, age, f, phase, EMBER, seed + 80);
+            if (age < 10) burst(c, base, 2.4F, age * 1.4F, f * (1 - age / 10), phase, BLUE, seed + 81);
+            float up = smooth(4, 30, age);
+            Vec3 sun = base.add(facing.scale(1.6)).add(0, -1.2 + 3.2 * up, 0);
+            float r = .6F + 1.5F * up;
+            if (c.soft()) c.shell(sun, r, r, r, PI, EMBER.body, f * .55F * up, .7F,
+                    (theta, phi) -> .8F + .2F * sin(theta * 6 + phase), phase * .1F);
+            if (c.glow()) {
+                c.glow(sun, r * 2.4F, EMBER.gold, f * .45F * up);
+                c.glow(sun, r * 1.1F, WHITE_HOT, f * .6F * up);
+                Vec3 face = facing.scale(-1);
+                for (int i = 0; i < 12; i++)
+                    c.spoke(sun, face, i * TWO_PI / 12 + phase * .05F, r * 1.15F, r * (1.8F + .4F * sin(phase + i)), .08F, EMBER.gold, f * .5F * up);
+            }
+        }
+    }
+
+    /**
+     * Living Flame, one second of it (re-sent each second; the second in the seed, 0 the start): tongues of fire over the
+     * whole body, a blue heart at the chest, a ring of heat at the feet. The first second roars up from the ground.
+     */
+    static void livingFlame(Canvas c, Active a, float t) {
+        if (c.solid() || UltArt.cut(c, a)) return;
+        var body = a.bound(c);
+        if (body == null) return;
+        int second = a.seed();
+        boolean last = second >= com.jayptucker.heroesevolved.pyro.PyroUltimates.LivingFlame.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(8, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        float phase = clock(c);
+        Vec3 feet = body.getPosition(c.partial);
+        float h = body.getBbHeight();
+        float grow = second == 0 ? smooth(0, 10, t) : 1;
+        // Tongues licking up from shoulders, arms, hips and back, the body's silhouette in flame.
+        int n = UltArt.minimal() ? 6 : 14;
+        for (int i = 0; i < n; i++) {
+            float ang = i * TWO_PI / n + hash(i, 3) * .4F;
+            float y = (.15F + .75F * hash(i, 7)) * h * grow;
+            Vec3 root = feet.add(cos(ang) * .3, y, sin(ang) * .3);
+            Vec3 tip = root.add(cos(ang) * .25, .5 + .35 * sin(phase + i), sin(ang) * .25);
+            flame(c, root, tip, .14F, phase + i * 1.7F, f, EMBER);
+        }
+        curtain(c, feet, .45F, .8F * grow, phase, f * .8F, EMBER);
+        Vec3 heart = feet.add(0, h * .62, 0);
+        if (c.glow()) {
+            c.glow(heart, .5F, BLUE.gold, f * .7F);
+            c.glow(heart, 1.4F, EMBER.body, f * .25F);
+            c.ring(feet.add(0, .05, 0), UP, 1.1F + .1F * sin(phase), .05F, 0, TWO_PI, EMBER.gold, f * .5F);
+        }
+        if (second == 0) burst(c, feet, 2.4F, t * 1.4F, 1 - smooth(4, 20, t), phase, EMBER, a.seed() + 5);
+    }
+
+    /** A flare off Living Flame: a jet thrown at someone who struck (seed 0) or a shot burned up (seed 1). */
+    static void flare(Canvas c, Active a, float t) {
+        if (c.solid()) return;
+        float f = fade(t, a.piece().ticks, 0, 7), phase = clock(c);
+        Vec3 from = a.origin(), to = a.target();
+        if (a.seed() == 1) {
+            orb(c, to, .18F * (1 - smooth(0, 8, t)), phase, f, EMBER);
+            sparks(c, to, .7F, t, f, EMBER, (int) (to.x * 31));
+            return;
+        }
+        billows(c, from, from.lerp(to, smooth(0, 3, t)), .2F, .3F, phase, f, EMBER, (int) (to.z * 17));
+        if (t > 2) burst(c, to.subtract(0, .5, 0), 1.2F, t - 2, f, phase, EMBER, (int) (to.x * 11));
+    }
+
+    /** Living Flame's end: the heat taken in goes out in a ring of fire (the scale its radius). */
+    static void nova(Canvas c, Active a, float t) {
+        if (c.solid()) return;
+        float life = a.piece().ticks, f = fade(t, life, 0, 12), phase = clock(c);
+        float r = a.scale() * smooth(0, 10, t);
+        curtain(c, a.origin(), .5F + r, 1.2F + .6F * (1 - smooth(0, life, t)), phase, f, EMBER);
+        burst(c, a.origin(), 2, t, f, phase, BLUE, a.seed());
+        if (c.glow()) c.ring(a.origin().add(0, .1, 0), UP, .5F + r, .12F, 0, TWO_PI, EMBER.gold, f * .7F);
+    }
+
+    /**
+     * Bonfire Vigil, one second (re-sent each second; the second in the seed, 0 the lighting): a pyre of flame tongues
+     * standing taller than a person, a hot heart, embers drifting out over everyone it shelters, and a warm ring on the
+     * ground where its shelter ends (the scale its radius).
+     */
+    static void bonfire(Canvas c, Active a, float t) {
+        if (c.solid()) return;
+        int second = a.seed();
+        boolean last = second >= com.jayptucker.heroesevolved.pyro.PyroUltimates.BonfireVigil.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(6, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        float phase = clock(c), grow = second == 0 ? smooth(0, 16, t) : 1;
+        Vec3 at = a.origin();
+        jet(c, at.add(0, .1, 0), at.add(0, 1.2 + 3.8 * grow, 0), .55F, phase, f, EMBER, UltArt.minimal() ? 3 : 7, .5F);
+        curtain(c, at, .9F * grow + .2F, 2.2F * grow, phase, f, EMBER);
+        orb(c, at.add(0, .8, 0), .45F * grow, phase, f, EMBER);
+        float radius = a.scale();
+        if (c.glow()) {
+            c.glow(at.add(0, 1.5, 0), 4.5F * grow, EMBER.body, f * .22F);
+            c.ring(at.add(0, .05, 0), UP, radius, .06F, 0, TWO_PI, EMBER.gold, f * .35F);
+            int embers = UltArt.minimal() ? 10 : 34;
+            for (int i = 0; i < embers; i++) {
+                float k = frac((c.time() * .006F) + hash(second, i) + i / (float) embers);
+                float ang = hash(i, 11) * TWO_PI + k * 1.3F, r = .4F + k * radius * .9F;
+                Vec3 p = at.add(cos(ang) * r, 1.5 + 4 * sin(k * PI), sin(ang) * r);
+                c.glow(p, .06F, i % 4 == 0 ? WHITE_HOT : EMBER.gold, f * .8F * (1 - k * .6F));
+            }
+        }
+        smoke(c, at.add(0, 3, 0), 6 + t * .3F, f * .7F, second);
+    }
+
+    /** A friend wrapped in Bonfire Vigil's cocoon of flame (bound to them; scale their height), closing and healing. */
+    static void cocoon(Canvas c, Active a, float t) {
+        if (c.solid()) return;
+        var body = a.bound(c);
+        Vec3 feet = body != null ? body.getPosition(c.partial) : a.origin();
+        float life = a.piece().ticks, f = fade(t, life, 2, 10), phase = clock(c), h = Math.max(.6F, a.scale());
+        float close = 1 - smooth(0, 10, t) * .55F;
+        int n = UltArt.minimal() ? 5 : 9;
+        for (int i = 0; i < n; i++) {
+            float ang = i * TWO_PI / n + phase * .05F;
+            Vec3 root = feet.add(cos(ang) * .8 * close, .05, sin(ang) * .8 * close);
+            Vec3 tip = feet.add(cos(ang + .6F) * .2, h * 1.05, sin(ang + .6F) * .2);
+            flame(c, root, tip, .16F, phase + i, f * .9F, EMBER);
+        }
+        if (c.glow()) c.glow(feet.add(0, h * .55, 0), h * .7F, EMBER.gold, f * .5F * smooth(6, 16, t));
     }
 }

@@ -123,6 +123,15 @@ Every move is drawn in 3D on every nearby client (`client/effects/setpiece/Radia
   smoke where it lands.
 - **Critical Mass:** you swell with light as you rise, rings of heat collapse in on you faster and faster, the
   ground under you cracks and glows, and dust lifts off it. Then the blast below.
+- **Poses:** every move has its own, and its light leaves the palm you can see (first person too): both hands cupped
+  round the light while heat or a star gathers, palms pushed out as heat and the beam pour from them, both hands
+  flared open for the EMP, Lead Skin and a blast, a grip for a finisher that takes hold, and a pointed hand for a lance
+  or a chain. The light is shapes, not particles.
+- **Ultimates** ([Classes](classes.md)): **Point of No Return** runs the glow in your chest from orange to white with
+  light spreading through your veins before it goes off; **Lead Heart** locks lead-glass panels into a dome;
+  **Cherenkov Hearth** raises a reactor's heart glowing blue behind a cage of rods.
+- Gifted mobs, villagers and the story's radioactive characters draw the same shapes: their older effects start these
+  pieces on your screen.
 
 ## Awakening and stress
 
@@ -220,8 +229,8 @@ shock and a ring of dust rolling past the blast radius and settling. The billows
 are real geometry lit by the sun and their own heat; the cloud thins away over
 its last five seconds. The awakening blast (radius 48) is twice the size of a
 later one (radius 24). Anyone arriving late sees it at the age it has reached.
-The fast ground shockwave remains. Radiation's Offense class ability,
-**Ground Zero**, throws a small version of the same blast. Independent packets
+The fast ground shockwave remains. Radiation's Offense Ultimate,
+**Point of No Return**, goes off at point-blank range in a small version of the same blast. Independent packets
 reach observers within four hundred blocks, refresh their age, and initialize
 players entering the area. Clouds cool into smoke, last thirty seconds and
 fade over their final five seconds. Rendering remains visible on Minimal

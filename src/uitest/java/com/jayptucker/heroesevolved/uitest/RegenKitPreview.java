@@ -10,7 +10,6 @@ import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.regeneration.RegenSkills;
 import com.jayptucker.heroesevolved.regeneration.RegenerationService;
 import com.jayptucker.heroesevolved.skills.SkillActionService;
-import com.jayptucker.heroesevolved.styles.StyleCasts;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -174,14 +173,7 @@ public final class RegenKitPreview {
             case 736 -> onServer(mc, p -> check(AdvancedTechniques.activate(context(p), "revive"), "revive"));
             case 742 -> pending = "k6-revive-a.png";
             case 752 -> pending = "k6-revive-b.png";
-            // ---------------- Styles ----------------
-            case 790 -> { camera(mc, CameraType.THIRD_PERSON_FRONT); onServer(mc, p -> { friend.discard(); place(p, 3200, 0, 0, 5); check(StyleCasts.cast(context(p), "vital_burst"), "vital burst"); }); }
-            case 794 -> pending = "t1-vital-burst.png";
-            case 820 -> onServer(mc, p -> { place(p, 3220, 0, 0, 5); check(StyleCasts.cast(context(p), "undying"), "undying"); });
-            case 826 -> pending = "t2-undying.png";
-            case 850 -> onServer(mc, p -> { place(p, 3240, 0, 0, 5); check(StyleCasts.cast(context(p), "lifebloom"), "lifebloom"); });
-            case 862 -> pending = "t3-lifebloom.png";
-            case 890 -> PreviewQuiet.quit();
+            case 790 -> PreviewQuiet.quit();
             default -> { }
         }
     }

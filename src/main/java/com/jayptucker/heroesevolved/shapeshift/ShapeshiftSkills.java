@@ -2,17 +2,13 @@ package com.jayptucker.heroesevolved.shapeshift;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.ability.AbilityAction;
-import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.SimpleAction;
-import com.jayptucker.heroesevolved.ability.Targeting;
 import com.jayptucker.heroesevolved.network.ArmPosePayload;
 import com.jayptucker.heroesevolved.network.SetPiecePayload;
-import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.skills.SkillCatalog;
 import com.jayptucker.heroesevolved.skills.SkillTreeService;
 import com.jayptucker.heroesevolved.styles.Piece;
-import com.jayptucker.heroesevolved.styles.StyleOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -26,7 +22,6 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.Wolf;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.raid.Raider;
 import net.minecraft.world.level.block.Blocks;
@@ -38,10 +33,8 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -63,8 +56,7 @@ public final class ShapeshiftSkills {
             LONG_CON = "shapeshifting_long_con", DOPPELGANGER = "shapeshifting_doppelganger", SOCIAL = "shapeshifting_social_engineering",
             MANY_HANDS = "shapeshifting_many_hands", PLATE_MAIL = "shapeshifting_plate_mail", MASQUERADE = "shapeshifting_masquerade";
 
-    public static final int HYBRID_TICKS = 400, CHIMERA_TICKS = 400, APEX_TICKS = 240, PLATE_TICKS = 160, MASQUERADE_TICKS = 400,
-            BORROW_TICKS = 160, AMBUSH_WINDOW = 40, MANY_HANDS_GAP = 3;
+    public static final int HYBRID_TICKS = 400, CHIMERA_TICKS = 400, APEX_TICKS = 240, BORROW_TICKS = 160, AMBUSH_WINDOW = 40;
     public static final double APEX_SCALE = 2.5, PACK_RANGE = 12, FACELESS_CROWD = 8, FACELESS_REACH = 4;
     private static final ResourceLocation APEX_SIZE = id("shapeshift_apex_size"), APEX_HEALTH = id("shapeshift_apex_health"),
             APEX_ATTACK = id("shapeshift_apex_attack");
@@ -75,13 +67,10 @@ public final class ShapeshiftSkills {
             ShapeshiftTraits.Trait.CREEPER_REPELLENT);
 
     private record Timed<T>(T value, long until) {}
-    private record Strike(long at, ServerPlayer player, LivingEntity target, int index) {}
 
     private static final Map<UUID, Timed<Set<ShapeshiftTraits.Trait>>> HYBRIDS = new HashMap<>();
     private static final Map<UUID, Timed<InstinctMove>> CHIMERAS = new HashMap<>();
-    private static final Map<UUID, Long> APEXES = new HashMap<>(), PLATES = new HashMap<>(), PLATE_SHED = new HashMap<>();
-    private static final Map<UUID, Timed<ServerPlayer>> MASKED = new HashMap<>();
-    private static final List<Strike> STRIKES = new ArrayList<>();
+    private static final Map<UUID, Long> APEXES = new HashMap<>();
 
     private ShapeshiftSkills() {}
 
@@ -105,16 +94,6 @@ public final class ShapeshiftSkills {
                     case DOPPELGANGER -> ShapeshiftTricks.doppelganger(c.player());
                     default -> false;
                 }).build();
-    }
-
-    /** The class abilities, cast through {@code StyleCasts}. */
-    public static boolean cast(AbilityUseContext c, String mechanic) {
-        return switch (mechanic) {
-            case MANY_HANDS -> manyHands(c.player());
-            case PLATE_MAIL -> plateMail(c.player());
-            case MASQUERADE -> masquerade(c.player());
-            default -> false;
-        };
     }
 
     // ---- Infiltrator ----
@@ -262,90 +241,6 @@ public final class ShapeshiftSkills {
         instance.addTransientModifier(new AttributeModifier(id, amount, op));
     }
 
-    // ---- Class abilities ----
-
-    /** Plated arms lash out at up to five foes, one after another. */
-    static boolean manyHands(ServerPlayer player) {
-        List<LivingEntity> foes = new ArrayList<>(player.serverLevel().getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(8),
-                e -> ShapeshiftInstinct.hostile(player, e) && !(e instanceof ShapeDecoy) && e.distanceToSqr(player) <= 64 && player.hasLineOfSight(e)));
-        if (foes.isEmpty()) { ShapeshiftService.say(player, "many_hands_none"); return false; }
-        foes.sort(java.util.Comparator.comparingDouble(e -> e.distanceToSqr(player)));
-        long now = now(player);
-        for (int i = 0; i < Math.min(5, foes.size()); i++) STRIKES.add(new Strike(now + (long) i * MANY_HANDS_GAP, player, foes.get(i), i));
-        return true;
-    }
-
-    private static void strike(Strike s) {
-        ServerPlayer player = s.player();
-        LivingEntity target = s.target();
-        if (!player.isAlive() || !target.isAlive() || target.level() != player.level()) return;
-        Vec3 shoulder = ShapeshiftGeometry.shoulder(player, 1);
-        Vec3 chest = target.position().add(0, target.getBbHeight() * .6, 0);
-        target.hurt(player.damageSources().mobAttack(player), 5 + PlayerProgressionService.getLevel(player));
-        ShapeshiftInstinct.knock(target, chest.subtract(shoulder).normalize().scale(.35).add(0, .15, 0));
-        SetPiecePayload.send(player.serverLevel(), Piece.SHIFT_LUNGE, shoulder, chest, 1, player);
-        ArmPosePayload.show(player, ArmPose.SHIFT_LUNGE, 6);
-        sound(player, s.index() % 2 == 0 ? SoundEvents.PLAYER_ATTACK_SWEEP : SoundEvents.PLAYER_ATTACK_STRONG, .9F, 1.2F + s.index() * .08F);
-    }
-
-    /** Eight seconds of plates: shots skid off, 30% less from everything else, and the first blow sheds a Decoy. */
-    static boolean plateMail(ServerPlayer player) {
-        PLATES.put(player.getUUID(), now(player) + PLATE_TICKS);
-        PLATE_SHED.remove(player.getUUID());
-        showPlates(player);
-        ArmPosePayload.show(player, ArmPose.SHIFT_GUARD, 16);
-        sound(player, SoundEvents.ARMOR_EQUIP_NETHERITE.value(), 1, .8F);
-        return true;
-    }
-
-    private static void showPlates(ServerPlayer player) {
-        SetPiecePayload.send(player.serverLevel(), Piece.SHIFT_PLATES, player.position(), player.position().add(0, player.getBbHeight(), 0),
-                player.getBbWidth(), player);
-    }
-
-    public static boolean plated(ServerPlayer player) {
-        Long until = PLATES.get(player.getUUID());
-        return until != null && now(player) < until;
-    }
-
-    /**
-     * You and up to four friends take one creature's shape for twenty seconds: the one you wear, else the newest you
-     * remember, else the nearest creature you can see.
-     */
-    static boolean masquerade(ServerPlayer player) {
-        ShapeshiftForm worn = ShapeshiftService.worn(player);
-        ShapeshiftForm form = worn != null && !worn.person() ? worn : ShapeshiftService.lastCreature(player);
-        if (form == null) {
-            LivingEntity seen = null;
-            for (Mob mob : player.serverLevel().getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(16),
-                    m -> m.isAlive() && !(m instanceof ShapeDecoy) && player.hasLineOfSight(m) && ShapeshiftForms.requiredLevel(m) != ShapeshiftForms.NEVER))
-                if (seen == null || mob.distanceToSqr(player) < seen.distanceToSqr(player)) seen = mob;
-            if (seen != null) form = ShapeshiftService.formOf(seen);
-        }
-        if (form == null) { ShapeshiftService.say(player, "masquerade_none"); return false; }
-        List<ServerPlayer> party = new ArrayList<>();
-        for (LivingEntity e : StyleOps.friends(player, player.position(), 10))
-            if (e instanceof ServerPlayer friend && (friend == player || !ShapeshiftService.owns(friend)) && party.size() < 5) party.add(friend);
-        int given = 0;
-        for (ServerPlayer friend : party) {
-            ShapeshiftForm theirs = ShapeshiftService.worn(friend);
-            if (theirs != null && theirs.key().equals(form.key())) { given++; continue; }
-            if (!ShapeshiftService.morph(friend, form, false)) continue;
-            MASKED.put(friend.getUUID(), new Timed<>(friend, now(player) + MASQUERADE_TICKS));
-            if (friend == player) { given++; continue; }
-            SetPiecePayload.send(player.serverLevel(), Piece.SHIFT_INSTINCT, player.position().add(0, player.getBbHeight() * .6, 0),
-                    friend.position().add(0, friend.getBbHeight() * .6, 0), InstinctMove.FAMILIAR.ordinal(), player);
-            given++;
-        }
-        if (given == 0) return false;
-        ArmPosePayload.show(player, ArmPose.SHIFT_GIFT, 16);
-        sound(player, SoundEvents.AMETHYST_BLOCK_CHIME, 1, .6F);
-        return true;
-    }
-
-    /** Whether a player wears a shape a Masquerade gave them. */
-    public static boolean masked(ServerPlayer player) { return MASKED.containsKey(player.getUUID()); }
-
     // ---- Questions the core asks ----
 
     /** Suspicion gained, after Blend In, Practised Manner and Faceless. */
@@ -404,13 +299,10 @@ public final class ShapeshiftSkills {
         endHybrid(player);
         CHIMERAS.remove(player.getUUID());
         endApex(player);
-        PLATES.remove(player.getUUID());
-        PLATE_SHED.remove(player.getUUID());
-        STRIKES.removeIf(s -> s.player() == player);
     }
 
     static void clear() {
-        HYBRIDS.clear(); CHIMERAS.clear(); APEXES.clear(); PLATES.clear(); PLATE_SHED.clear(); MASKED.clear(); STRIKES.clear();
+        HYBRIDS.clear(); CHIMERAS.clear(); APEXES.clear();
     }
 
     private static void sound(ServerPlayer player, SoundEvent sound, float volume, float pitch) {
@@ -420,13 +312,6 @@ public final class ShapeshiftSkills {
     // ---- Events ----
 
     @SubscribeEvent public static void serverTick(ServerTickEvent.Post event) {
-        for (Iterator<Strike> it = STRIKES.iterator(); it.hasNext(); ) {
-            Strike s = it.next();
-            if (s.player().isRemoved()) { it.remove(); continue; }
-            if (now(s.player()) < s.at()) continue;
-            it.remove();
-            strike(s);
-        }
         for (var it = HYBRIDS.entrySet().iterator(); it.hasNext(); ) {
             var e = it.next();
             ServerPlayer p = event.getServer().getPlayerList().getPlayer(e.getKey());
@@ -441,40 +326,16 @@ public final class ShapeshiftSkills {
             if (p == null) { it.remove(); continue; }
             if (now(p) >= e.getValue()) endApex(p);
         }
-        for (var it = PLATES.entrySet().iterator(); it.hasNext(); ) {
-            var e = it.next();
-            ServerPlayer p = event.getServer().getPlayerList().getPlayer(e.getKey());
-            if (p == null || now(p) >= e.getValue()) { it.remove(); continue; }
-            if ((now(p) - (e.getValue() - PLATE_TICKS)) % 10 == 0) showPlates(p);
-        }
-        for (var it = MASKED.entrySet().iterator(); it.hasNext(); ) {
-            var e = it.next();
-            ServerPlayer p = e.getValue().value();
-            if (p.isRemoved() || !ShapeshiftService.morphed(p)) { it.remove(); continue; }
-            if (now(p) < e.getValue().until()) continue;
-            it.remove();
-            if (!ShapeshiftService.revert(p)) ShapeshiftService.forget(p);
-        }
     }
 
-    /** Plate Mail: shots skid off, other blows land 30% lighter, the first sheds a Decoy. Faceless: far shots miss. */
+    /** Faceless: far shots miss. */
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void guard(LivingIncomingDamageEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         var source = event.getSource();
         boolean shot = source.getDirectEntity() instanceof Projectile;
-        if (shot && crowded(player) && source.getEntity() != null && source.getEntity().distanceTo(player) > FACELESS_REACH) {
+        if (shot && crowded(player) && source.getEntity() != null && source.getEntity().distanceTo(player) > FACELESS_REACH)
             event.setCanceled(true);
-            return;
-        }
-        if (!plated(player)) return;
-        if (shot) {
-            event.setCanceled(true);
-            sound(player, SoundEvents.SHIELD_BLOCK, .8F, 1.3F);
-            return;
-        }
-        event.setAmount(event.getAmount() * .7F);
-        if (source.getEntity() != null && PLATE_SHED.putIfAbsent(player.getUUID(), now(player)) == null) ShapeshiftTricks.decoy(player);
     }
 
     /** Pack Leader: wolves (and, as a raider, raiders) join in on whatever you strike. */

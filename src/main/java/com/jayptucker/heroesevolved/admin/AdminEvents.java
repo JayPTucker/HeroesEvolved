@@ -72,6 +72,13 @@ public final class AdminEvents {
                 + "Cancel recalls agents, releases prisoners and clears queued operations.",
                 !CompanyOps.all().isEmpty() || player && CompanyOps.pending(target), player,
                 "Investigate", "Convoy", "Home raid"));
+        boolean playing = !com.jayptucker.heroesevolved.combat.Ultimates.live().isEmpty();
+        out.add(entry("ultimate", "Class Ultimates", false, (player ? target.getName().getString() : "Select an online player")
+                        + " / cancel: this player (no selection: every Ultimate playing)",
+                com.jayptucker.heroesevolved.combat.UltimateCommands.status(server, target)
+                        + " Cast ignores stamina and the wait; Offense still needs a foe in front of the player.",
+                player ? com.jayptucker.heroesevolved.combat.Ultimates.running(target) : playing, player,
+                "Cast their class's Ultimate", "Ready it again"));
         out.add(entry("wither", "Wither: Containment Failure", true, near + " / phase and cancel: all fighters",
                 com.jayptucker.heroesevolved.wither.WitherArena.status(server),com.jayptucker.heroesevolved.wither.WitherArena.busy(server),player,
                 "Open breach", "Enter fight", "Advance phase", "Finish it", "Break ward"));
@@ -126,6 +133,8 @@ public final class AdminEvents {
                     HeroesEvolvedConfig.COMMON.overloadTicks.get()) != null ? "Started " + entry.starts().get(variant) + "."
                     : "No eligible grown villager within 64 blocks.";
             case "starfall" -> { Starfall.force(server, true); yield "Started Starfall in the Overworld."; }
+            case "ultimate" -> variant == 0 ? com.jayptucker.heroesevolved.combat.UltimateCommands.cast(target, null)
+                    : com.jayptucker.heroesevolved.combat.UltimateCommands.reset(target);
             case "meteors" -> {
                 if (variant == 2) yield incident(target, Kind.METEOR);
                 if (variant == 0) {
@@ -190,6 +199,8 @@ public final class AdminEvents {
             case "starfall" -> { Starfall.force(server, false); Meteors.cancelAll(); VillageIncidents.cancel(Kind.METEOR); yield "Cancelled Starfall and all falling / queued meteors."; }
             case "meteors" -> "Cancelled " + (VillageIncidents.cancel(Kind.METEOR) + Meteors.cancelAll()) + " meteor(s) / queued starts. The shower schedule is unchanged.";
             case "company" -> "Called off " + CompanyOps.callOffAll() + " Company operation(s) and cleared queued operations.";
+            case "ultimate" -> target != null ? com.jayptucker.heroesevolved.combat.UltimateCommands.stop(target)
+                    : "Stopped " + com.jayptucker.heroesevolved.combat.UltimateCommands.stopAll() + " Ultimate(s); held foes were let go.";
             case "raid" -> {
                 var raid = target == null ? null : raidAt(target);
                 if (raid == null) yield "No active raid within 64 blocks of the selected player.";

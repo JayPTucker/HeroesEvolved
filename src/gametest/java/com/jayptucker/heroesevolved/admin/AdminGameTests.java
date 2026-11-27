@@ -242,4 +242,54 @@ public final class AdminGameTests {
             remove(admin); remove(target);
         }
     }
+
+    /** The console's Ultimates row and {@code /heroesevolved ultimate}: cast a class's Ultimate, stop it, ready it again. */
+    @GameTest(template = "rewind_empty", batch = "admin.ultimate", timeoutTicks = 40)
+    public static void ultimateRowCastsStopsAndReadiesAClassUltimate(GameTestHelper helper) {
+        var player = player(helper);
+        var server = helper.getLevel().getServer();
+        var foe = net.minecraft.world.entity.EntityType.PILLAGER.create(helper.getLevel());
+        try {
+            var power = ModAbilities.SUPERSPEED_ID;
+            player.setData(com.jayptucker.heroesevolved.data.ModDataAttachments.PLAYER_ABILITIES,
+                    com.jayptucker.heroesevolved.ability.data.PlayerAbilityData.empty().assignDormant(power).unlock(power));
+            com.jayptucker.heroesevolved.progression.PlayerProgressionService.setLevel(player, 5);
+            helper.assertTrue(server.getCommands().getDispatcher().getRoot().getChild("heroesevolved").getChild("ultimate") != null,
+                    "/heroesevolved ultimate is registered for the Commands tab");
+            helper.assertTrue(com.jayptucker.heroesevolved.combat.UltimateCommands.cast(player, null).contains("no class"),
+                    "With no class, a cast asks for a mechanic");
+            helper.assertTrue(com.jayptucker.heroesevolved.skills.SkillTreeService.purchase(player, "superspeed_lightning_flurry"), "Offense chosen");
+            foe.setNoAi(true);
+            foe.setPersistenceRequired();
+            foe.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(200);
+            foe.setHealth(200);
+            foe.moveTo(player.getX(), player.getY(), player.getZ() + 3.5, 180, 0);
+            helper.getLevel().addFreshEntity(foe);
+            player.setYRot(0);
+            player.setXRot(0);
+            player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, foe.getBoundingBox().getCenter());
+            var row = AdminEvents.describe(server, player).stream().filter(e -> e.id().equals("ultimate")).findFirst().orElseThrow();
+            helper.assertTrue(row.canStart() && !row.active(), "The row can cast for a selected player, and nothing is playing yet");
+            String cast = AdminEvents.start(server, player, "ultimate", 0);
+            helper.assertTrue(cast.startsWith("Cast lightning_flurry") && com.jayptucker.heroesevolved.combat.Ultimates.running(player),
+                    "Cast plays the player's class Ultimate: " + cast);
+            helper.assertTrue(AdminEvents.describe(server, player).stream().anyMatch(e -> e.id().equals("ultimate") && e.active()),
+                    "The row shows it playing");
+            String stop = AdminEvents.cancel(server, player, "ultimate");
+            helper.assertTrue(stop.startsWith("Stopped") && !com.jayptucker.heroesevolved.combat.Ultimates.running(player),
+                    "Cancel stops it: " + stop);
+            helper.assertTrue(foe.isNoAi(), "The foe keeps the mind it had (this one never had AI)");
+            com.jayptucker.heroesevolved.cooldown.CooldownService.startCooldown(player,
+                    net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("heroesevolved", "superspeed_lightning_flurry"), 3000);
+            helper.assertTrue(AdminEvents.start(server, player, "ultimate", 1).contains("ready again")
+                    && !com.jayptucker.heroesevolved.cooldown.CooldownService.isOnCooldown(player,
+                    net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("heroesevolved", "superspeed_lightning_flurry")),
+                    "Ready it again clears the wait");
+            helper.succeed();
+        } finally {
+            com.jayptucker.heroesevolved.combat.Ultimates.stop(player);
+            foe.discard();
+            remove(player);
+        }
+    }
 }

@@ -1,216 +1,51 @@
 package com.jayptucker.heroesevolved.client.effects;
 
+import com.jayptucker.heroesevolved.client.effects.setpiece.SetPieceClient;
 import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
-import net.minecraft.client.Minecraft;
+import com.jayptucker.heroesevolved.styles.Piece;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
-import static com.jayptucker.heroesevolved.client.effects.PowerParticle.Shape.*;
-
 /**
- * Matter Assembly draws discrete courses of material, not spell circles. Every endpoint is recorded in world space
- * and every piece expires in at most 32 ticks. All pieces share the ordinary ability particle budget, including
- * delayed pieces.
+ * The older short Matter Assembly effects ({@code MATTER_*}), which gifted mobs, the awakening rescues and the ward
+ * still send, drawn in {@code AssemblyArt}'s language: each starts the matching piece here on the client, so a gifted
+ * builder's construct, shard and break look like the player's. The player's own kit sends those pieces directly.
+ * <ul>
+ *     <li>{@code MATTER_WEAVE} (from, centre, size): a construct folding together at the centre.</li>
+ *     <li>{@code MATTER_SHARD} (from, to): a crystal shard crossing, and the flash where it lands.</li>
+ *     <li>{@code MATTER_COLLAPSE} (at, size): matter breaking apart, a flash, ring and chips.</li>
+ *     <li>{@code MATTER_SHIELD} (at, facing, size): a pane assembling toward the facing, with a flash on its face.</li>
+ * </ul>
  */
 final class ConstructPowerEffects {
-    private static final Vec3 UP = new Vec3(0, 1, 0);
-    private static final Vec3 X = new Vec3(1, 0, 0);
-    private static final Vec3 Z = new Vec3(0, 0, 1);
-    private static final int SLATE = 0x89908D, STONE = 0xB6A68D, AMBER = 0xEDB76C, SEAM = 0xFFF0C5;
-
     private ConstructPowerEffects() {}
 
-    static boolean play(ClientLevel level, Kind kind, Vec3 origin, Vec3 target,
-                        float scale, boolean detail, int density) {
+    static boolean play(ClientLevel level, Kind kind, Vec3 origin, Vec3 target, float scale, boolean detail, int density) {
         switch (kind) {
             case MATTER_WEAVE, MATTER_SHARD, MATTER_COLLAPSE, MATTER_SHIELD -> { }
             default -> { return false; }
         }
-        if (!valid(origin) || !valid(target)
-                || !Float.isFinite(scale)) return true;
-        float size = Math.clamp(scale, .1F, 16);
-        boolean rich = detail && density >= 16;
-        Brush brush = new Brush(level, rich ? 76 : detail ? 48 : 28);
+        if (!valid(origin) || !valid(target) || !Float.isFinite(scale)) return true;
+        int seed = (int) (origin.x * 37 + origin.z * 11 + level.getGameTime());
         switch (kind) {
-            case MATTER_WEAVE -> weave(brush, origin, target, Math.clamp(size, .4F, 1.8F), detail, rich);
-            case MATTER_SHARD -> shard(brush, origin, limit(origin, target, 12), Math.clamp(size, .4F, 1.8F), detail);
-            case MATTER_COLLAPSE -> collapse(brush, origin, Math.clamp(size, .7F, 8), detail, rich);
-            case MATTER_SHIELD -> shield(brush, origin, target, Math.clamp(size, 1, 6), detail, rich);
+            case MATTER_WEAVE -> SetPieceClient.play(Piece.MATTER_RISE, target, origin.subtract(0, 1.3, 0), Mth.clamp(scale * 1.2F, .6F, 4), -1, seed);
+            case MATTER_SHARD -> {
+                Vec3 end = origin.distanceTo(target) > 24 ? origin.add(target.subtract(origin).normalize().scale(24)) : target;
+                SetPieceClient.play(Piece.MATTER_SHARD, origin, end, Mth.clamp(scale, 1, 2.5F), -1, seed);
+                SetPieceClient.play(Piece.MATTER_BOUNCE, end, origin, Mth.clamp(scale, 1, 3), -1, seed + 1);
+            }
+            case MATTER_COLLAPSE -> SetPieceClient.play(Piece.MATTER_BOUNCE, origin, origin.add(0, 1, 0), Mth.clamp(scale, 1, 5), -1, seed);
+            case MATTER_SHIELD -> {
+                Vec3 facing = target.subtract(origin);
+                Vec3 ahead = facing.lengthSqr() < 1e-4 ? origin.add(0, 0, 1) : origin.add(facing.normalize());
+                SetPieceClient.play(Piece.MATTER_PANEL, ahead.subtract(0, 1, 0), ahead.add(facing).subtract(0, 1, 0), 0, -1, seed);
+                SetPieceClient.play(Piece.MATTER_BOUNCE, ahead, ahead.add(facing), Mth.clamp(scale, 1, 4), -1, seed + 1);
+            }
             default -> { }
         }
         return true;
     }
 
-    /** Courses click into place; the actual server-owned blocks remain visible between the seams. */
-    private static void weave(Brush b, Vec3 from, Vec3 center, float scale, boolean detail, boolean rich) {
-        // Outside the real cube faces: an inset lattice is completely hidden by block depth tests.
-        double half = .515 * scale;
-        int courses = detail ? 3 : 2;
-        for (int row = 0; row < courses; row++) {
-            double y = -half + (row + .5) * 2 * half / courses;
-            int delay = row * 3;
-            rectangle(b, center.add(0, y, 0), X, Z, half, half, .024F, 16, delay, AMBER, .68F);
-        }
-        // Vertical seams are staggered like masonry instead of drawn as one luminous cube.
-        for (int i = 0; i < 4; i++) {
-            double x = (i & 1) == 0 ? -half : half, z = (i & 2) == 0 ? -half : half;
-            b.line(center.add(x, -half, z), center.add(x, half, z), .016F, 18, i, SEAM, .56F);
-        }
-        int pieces = rich ? 8 : detail ? 5 : 3;
-        for (int i = 0; i < pieces; i++) {
-            Vec3 radial = cardinal(i).add(0, i % 2 == 0 ? .35 : -.25, 0).normalize();
-            Vec3 start = center.add(radial.scale(.9 + scale * .28));
-            Vec3 destination = center.add(radial.scale(half * .8));
-            Vec3 travel = destination.subtract(start).scale(1 / 10.0);
-            b.crystal(start, radial, .08F * scale, .045F * scale, 10, i % 3 * 2, SLATE, .75F, travel);
-            if (rich) b.line(start, destination, .01F, 9, i % 3 * 2, STONE, .27F);
-        }
-        if (detail && from.distanceToSqr(center) > 1 && from.distanceToSqr(center) < 24 * 24) {
-            Vec3 end = center.add(0, half, 0), midpoint = from.lerp(end, .5).add(0, -.15, 0);
-            b.line(midpoint, end, .011F, 12, 0, AMBER, .32F);
-        }
-    }
-
-    /** A short, layered stone dart; six simultaneous projectiles must not each spawn a full burst. */
-    private static void shard(Brush b, Vec3 from, Vec3 to, float scale, boolean detail) {
-        Vec3 axis = direction(from, to), side = right(axis), up = side.cross(axis).normalize();
-        Vec3 point = to.subtract(axis.scale(.15));
-        b.crystal(point, axis, .1F * scale, .04F * scale, 5, 0, STONE, .9F, Vec3.ZERO);
-        b.line(from, to, .025F * scale, 6, 0, AMBER, .64F);
-        if (!detail) return;
-        Vec3 tail = point.subtract(axis.scale(.48 * scale));
-        for (int i = 0; i < 3; i++) {
-            double angle = i * Math.PI * 2 / 3;
-            Vec3 edge = tail.add(side.scale(Math.cos(angle) * .16 * scale)).add(up.scale(Math.sin(angle) * .16 * scale));
-            b.line(edge, point.add(axis.scale(.2 * scale)), .018F, 5, 0, i == 0 ? SEAM : SLATE, .8F);
-        }
-        if (from.distanceToSqr(to) > .06) {
-            b.crystal(from.lerp(to, .35), axis, .04F * scale, .005F, 7, 0, SLATE, .5F, axis.scale(-.025));
-        }
-    }
-
-    /** Broken courses contract into their anchor while individual facets tumble outward. */
-    private static void collapse(Brush b, Vec3 center, float radius, boolean detail, boolean rich) {
-        int sides = detail ? 8 : 4;
-        for (int i = 0; i < sides; i++) {
-            double angle = i * Math.PI * 2 / sides;
-            Vec3 radial = new Vec3(Math.cos(angle), .12 + (i % 3) * .18, Math.sin(angle)).normalize();
-            Vec3 side = UP.cross(radial).normalize();
-            Vec3 base = center.add(radial.scale(radius * .72));
-            Vec3 inward = center.add(radial.scale(radius * .15));
-            b.line(base.subtract(side.scale(.28)), base.add(side.scale(.28)), .045F, 14, i % 3, AMBER, .62F);
-            b.line(base, inward, .012F, 11, i % 3, SEAM, .43F);
-            b.crystal(base, side.add(0, .4, 0), .09F + radius * .009F, .016F, 18, i % 3,
-                    i % 2 == 0 ? SLATE : STONE, .78F, radial.scale(-radius * .025).add(0, -.018, 0));
-            if (rich) {
-                Vec3 high = base.add(0, .55, 0);
-                b.crystal(high, radial, .065F, .012F, 22, 0, SLATE, .65F,
-                        radial.scale(.04).add(0, -.025, 0));
-            }
-        }
-        terminal(b, center.add(0, .06, 0), X, Z, Math.min(.5, radius * .2), 2, SEAM, false);
-    }
-
-    /** Three segmented armor panels with visible joints, oriented to the supplied facing vector. */
-    private static void shield(Brush b, Vec3 center, Vec3 toward, float radius, boolean detail, boolean rich) {
-        Vec3 direction = direction(center, toward);
-        // The masonry stays upright even when the owner looks straight up or down.
-        Vec3 forward = new Vec3(direction.x, 0, direction.z);
-        if (forward.lengthSqr() < .001) forward = Z;
-        forward = forward.normalize();
-        Vec3 side = UP.cross(forward).normalize();
-        double width = Math.clamp(radius * .26, .45, 1.25), height = Math.clamp(radius * .4, .8, 1.65);
-        int panels = detail ? 3 : 1;
-        for (int panel = 0; panel < panels; panel++) {
-            int offset = panels == 1 ? 0 : panel - 1;
-            Vec3 normal = forward.add(side.scale(offset * -.23)).normalize();
-            Vec3 across = UP.cross(normal).normalize();
-            Vec3 at = center.add(forward.scale(.8 + radius * .08)).add(side.scale(offset * width * 1.7));
-            int delay = Math.abs(offset) * 2;
-            rectangle(b, at, across, UP, width * .78, height, .025F, 13, delay, AMBER, .68F);
-            int rows = rich ? 4 : 2;
-            for (int row = 1; row < rows; row++) {
-                Vec3 course = at.add(0, -height + row * 2 * height / rows, 0);
-                b.line(course.subtract(across.scale(width * .75)), course.add(across.scale(width * .75)),
-                        .017F, 12, delay + row, SEAM, .51F);
-            }
-            if (rich) {
-                // A broad gray backing strip supplies weight without an opaque screen-filling flash.
-                Vec3 back = at.subtract(normal.scale(.025));
-                b.line(back.add(0, -height * .78, 0), back.add(0, height * .78, 0),
-                        (float) (width * .53), 11, delay, SLATE, .17F);
-                b.line(at.add(0, -.4 * height, 0), at.add(0, .4 * height, 0), .012F, 12, delay, AMBER, .49F);
-            }
-        }
-    }
-
-    private static void terminal(Brush b, Vec3 at, Vec3 right, Vec3 up, double half,
-                                 int delay, int color, boolean detail) {
-        // The source can be the local player's eyes; a terminal through the near plane obscures aim.
-        var minecraft = Minecraft.getInstance();
-        if (minecraft != null && minecraft.gameRenderer != null
-                && minecraft.gameRenderer.getMainCamera().getPosition().distanceToSqr(at) < .35 * .35) return;
-        rectangle(b, at, right, up, half, half, .016F, 17, delay, color, .7F);
-        if (detail) b.crystal(at, up, .026F, .009F, 13, delay, color, .8F, Vec3.ZERO);
-    }
-
-    private static void rectangle(Brush b, Vec3 at, Vec3 horizontal, Vec3 vertical,
-                                  double width, double height, float thickness,
-                                  int life, int delay, int color, float alpha) {
-        Vec3 h = horizontal.scale(width), v = vertical.scale(height);
-        Vec3 a = at.subtract(h).subtract(v), c = at.add(h).add(v);
-        Vec3 d = at.subtract(h).add(v), e = at.add(h).subtract(v);
-        b.line(a, e, thickness, life, delay, color, alpha);
-        b.line(e, c, thickness, life, delay, color, alpha);
-        b.line(c, d, thickness, life, delay, color, alpha);
-        b.line(d, a, thickness, life, delay, color, alpha);
-    }
-
-    private static Vec3 cardinal(int index) {
-        return switch (index & 3) { case 0 -> X; case 1 -> Z; case 2 -> X.scale(-1); default -> Z.scale(-1); };
-    }
-
-    private static Vec3 direction(Vec3 from, Vec3 to) {
-        Vec3 delta = to.subtract(from);
-        return delta.lengthSqr() < .0001 ? Z : delta.normalize();
-    }
-
-    private static Vec3 right(Vec3 normal) {
-        return Math.abs(normal.y) > .98 ? X : normal.cross(UP).normalize();
-    }
-
-    private static Vec3 limit(Vec3 from, Vec3 to, double range) {
-        return from.distanceToSqr(to) <= range * range ? to : from.add(direction(from, to).scale(range));
-    }
-
-    private static boolean valid(Vec3 point) {
-        return Double.isFinite(point.lengthSqr()) && Math.abs(point.x) <= 32_000_000
-                && Math.abs(point.y) <= 32_000_000 && Math.abs(point.z) <= 32_000_000;
-    }
-
-    /** Per-event caps complement the renderer's per-tick and particle-engine group caps. */
-    private static final class Brush {
-        private final ClientLevel level;
-        private int remaining;
-
-        private Brush(ClientLevel level, int limit) { this.level = level; remaining = limit; }
-
-        private void line(Vec3 from, Vec3 to, float width, int life, int delay, int color, float alpha) {
-            if (remaining <= 0 || from.distanceToSqr(to) < .00001) return;
-            remaining--;
-            // The shared ribbon sprite feathers across most of its width; leave a readable core
-            // at ordinary play distances without adding another glow layer or extra particles.
-            float visibleWidth = width < .1F ? width * 2.8F : width;
-            AbilityEffectRenderer.add(new PowerParticle(level, STREAK, from, to, visibleWidth, visibleWidth * .48F,
-                    life, delay, color, Math.min(.95F, alpha * 1.15F)));
-        }
-
-        private void crystal(Vec3 at, Vec3 axis, float start, float end, int life, int delay,
-                             int color, float alpha, Vec3 velocity) {
-            if (remaining <= 0) return;
-            remaining--;
-            AbilityEffectRenderer.add(new PowerParticle(level, CRYSTAL, at, axis, start * 1.25F, end * 1.25F,
-                    life, delay, color, alpha).moving(velocity));
-        }
-    }
+    private static boolean valid(Vec3 v) { return Double.isFinite(v.x) && Double.isFinite(v.y) && Double.isFinite(v.z); }
 }

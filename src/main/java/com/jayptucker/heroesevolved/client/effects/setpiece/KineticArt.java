@@ -894,4 +894,143 @@ final class KineticArt {
         }
         dent(c, at.add(dir.scale(radius)), dir, radius, (clock * .05F) % 1, alpha * .6F);
     }
+
+    // =====================================================================================================
+    // Ultimates (telekinesis/KineticUltimates)
+    // =====================================================================================================
+
+    /** A chunk of torn-up ground: a lit stone block, turning, with dust trailing off it. */
+    private static void chunk(Canvas c, Vec3 at, float size, float spin, float alpha, int seed) {
+        if (alpha < .01F) return;
+        if (c.solid()) {
+            c.box(at, size * .55F, size * .42F, size * .5F, spin, spin * .7F + seed, seed * .3F, STONE, 1);
+            c.box(at.add(0, size * .32, 0), size * .5F, size * .12F, size * .45F, spin, spin * .7F + seed, seed * .3F, mix(STONE, DUST, .5F), 1);
+        }
+        if (c.glow()) c.ring(at, UP, size * .9F, .025F, spin, spin + 2.2F, ORCHID, alpha * .45F);
+    }
+
+    /**
+     * Wrecking Hand ({@code KineticUltimates.WreckingHand}): the claw closing over the foe and lifting it, six chunks of
+     * ground torn up (a dent and grit where each came from) and circling it, a ripple of bent air along each swing and a
+     * dent where each lands, the rubble crushing into a ball, and the spike into the ground where it bursts.
+     */
+    static void wreck(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity foe = UltArt.foe(c, a);
+        Vec3 base = a.target();
+        float h = Math.max(.8F, a.scale()), clock = clock(c);
+        int seed = a.seed() * 3 + 1;
+        int grip = com.jayptucker.heroesevolved.telekinesis.KineticUltimates.WreckingHand.GRIP,
+                tear = com.jayptucker.heroesevolved.telekinesis.KineticUltimates.WreckingHand.TEAR,
+                orbit = com.jayptucker.heroesevolved.telekinesis.KineticUltimates.WreckingHand.ORBIT,
+                swing = com.jayptucker.heroesevolved.telekinesis.KineticUltimates.WreckingHand.SWING,
+                every = com.jayptucker.heroesevolved.telekinesis.KineticUltimates.WreckingHand.EVERY,
+                slams = com.jayptucker.heroesevolved.telekinesis.KineticUltimates.WreckingHand.SLAMS,
+                crush = com.jayptucker.heroesevolved.telekinesis.KineticUltimates.WreckingHand.CRUSH,
+                spike = com.jayptucker.heroesevolved.telekinesis.KineticUltimates.WreckingHand.SPIKE,
+                landed = com.jayptucker.heroesevolved.telekinesis.KineticUltimates.WreckingHand.LANDED;
+        Vec3 feet = foe != null ? foe.getPosition(c.partial) : base.add(0, com.jayptucker.heroesevolved.telekinesis.KineticUltimates.WreckingHand.HEIGHT, 0);
+        float w = foe != null ? foe.getBbWidth() : .6F;
+        // The claw over the foe, all the way to the spike.
+        float held = UltArt.window(t, 0, landed + 2, 2, 2);
+        claw(c, feet, h, w, smooth(0, grip, t), smooth(crush, spike, t), held, clock, seed);
+        // The chunks: torn out of the ground in turn, circling, crushed in; gone at the spike.
+        float present = UltArt.window(t, tear, spike + 1, 1, 1);
+        for (int i = 0; i < 6; i++) {
+            float out = tear + i * 2;
+            if (t < out) continue;
+            Vec3 ground = base.add(Math.cos(i * Math.PI / 3) * 2.6, 0, Math.sin(i * Math.PI / 3) * 2.6);
+            Vec3 orbitAt = com.jayptucker.heroesevolved.telekinesis.KineticUltimates.WreckingHand.chunk(base, i, t);
+            Vec3 at = ground.lerp(orbitAt, smooth(out, out + 10, t));
+            chunk(c, at, 1.1F, clock * .05F + i, present, seed + i);
+            if (t < out + 10) {
+                dent(c, ground.add(0, .05, 0), UP, 1.2F, smooth(out, out + 10, t), 1);
+                grit(c, ground.add(0, .1, 0), UP, 1.2F, t - out, 1, seed + i * 7);
+            }
+        }
+        // Each swing: a ripple of bent air along it, a dent where it lands.
+        for (int n = 0; n < slams; n++) {
+            float hitAt = swing + n * every + 6, age = t - hitAt;
+            if (age < -6 || age > 12) continue;
+            int target = com.jayptucker.heroesevolved.telekinesis.KineticUltimates.WreckingHand.target(n);
+            Vec3 to = com.jayptucker.heroesevolved.telekinesis.KineticUltimates.WreckingHand.chunk(base, target, hitAt);
+            if (age < 0) ripple(c, feet.add(0, h * .5, 0), to, smooth(-6, 0, age), .8F);
+            else {
+                dent(c, to, feet.add(0, h * .5, 0).subtract(to), 1.6F, smooth(0, 10, age), 1);
+                grit(c, to, feet.subtract(to), 1.4F, age, 1, seed + n * 11);
+            }
+        }
+        // The spike: the ball driven down, and the burst where it lands.
+        if (t >= spike && t < landed + 2) streaks(c, feet.add(0, h * .5, 0), new Vec3(0, -1, 0), 3, .8F, 1, seed);
+        if (t >= landed) {
+            float age = t - landed, f = fade(age, a.piece().ticks - landed, 0, 14);
+            dent(c, base.add(0, .06, 0), UP, 6, smooth(0, 16, age), f);
+            for (int i = 0; i < 6; i++) {
+                float ang = i * TWO_PI / 6 + hash(seed, i);
+                Vec3 dir = new Vec3(cos(ang), .7, sin(ang));
+                Vec3 at = base.add(dir.scale(age * .35)).add(0, -.02 * age * age + .5, 0);
+                if (age < 16) chunk(c, at, .5F, age * .3F + i, f, seed + 20 + i);
+                grit(c, base.add(0, .3, 0), dir, 2, age, f, seed + 30 + i);
+            }
+        }
+    }
+
+    /**
+     * Stop Everything, one second (re-sent each second; the second in the seed): a great open hand raised before the
+     * telekinetic, palm out, and a ring of bent air at the reach (the scale) where shots stop.
+     */
+    static void stop(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity body = a.bound(c);
+        if (!(body instanceof Player p)) return;
+        int second = a.seed();
+        boolean last = second >= com.jayptucker.heroesevolved.telekinesis.KineticUltimates.StopEverything.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(10, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        float clock = clock(c), grow = second == 0 ? smooth(0, 8, t) : 1;
+        Vec3 look = flat(p.getViewVector(c.partial));
+        Vec3 palm = p.getPosition(c.partial).add(look.scale(1.6)).add(0, .3, 0);
+        hand(c, palm, UP, look, 2.2F * grow, .05F, .9F, f * .85F, clock);
+        if (c.glow()) {
+            Vec3 feet = p.getPosition(c.partial).add(0, 1, 0);
+            float r = a.scale() * grow;
+            c.ring(feet, UP, r, .06F, clock * .02F, clock * .02F + TWO_PI, DEEP, f * .35F);
+            c.ring(feet, UP, r, .02F, clock * .02F, clock * .02F + TWO_PI, BLUSH, f * .6F);
+        }
+    }
+
+    /** A shot held still in the air by Stop Everything (bound to it): a small hand of bent air closed round it, until it moves again. */
+    static void held(Canvas c, Active a, float t) {
+        Entity shot = a.bound(c);
+        if (shot == null || shot.getDeltaMovement().lengthSqr() > .01 && t > 4) return;
+        Vec3 at = shot.getPosition(c.partial);
+        float f = Math.clamp(t / 3, 0, 1) * fade(t, a.piece().ticks, 0, 10), clock = clock(c);
+        claw(c, at.subtract(0, .25, 0), .5F, .3F, 1, .3F, f * .8F, clock, a.seed());
+        if (c.glow()) c.glow(at, .25F, BLUSH, f * .4F);
+    }
+
+    /**
+     * Cradle, one second (re-sent each second; the second in the seed): two great cupped hands of bent air closing over
+     * the place (the scale its radius), fingers meeting overhead, refraction sliding across them.
+     */
+    static void cradle(Canvas c, Active a, float t) {
+        int second = a.seed();
+        boolean last = second >= com.jayptucker.heroesevolved.telekinesis.KineticUltimates.Cradle.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(10, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        float close = second == 0 ? smooth(0, 16, t) : 1, clock = clock(c), r = a.scale();
+        Vec3 centre = a.origin();
+        for (int s = -1; s <= 1; s += 2) {
+            Vec3 side = new Vec3(s, 0, 0);
+            Vec3 wrist = centre.add(side.scale(r * 1.1)).add(0, .1, 0);
+            Vec3 along = new Vec3(-s * .55 * close, 1, 0).normalize();
+            hand(c, wrist, along, side.reverse(), r * 1.15F, .35F + .25F * close, .6F, f * .8F, clock + s * 5);
+        }
+        if (c.soft()) c.shell(centre.add(0, .2, 0), r, r * .95F, r, HALF_PI, SHADOW, f * .08F * close, .3F, PLAIN, 0);
+        if (c.glow()) c.ring(centre.add(0, .05, 0), UP, r, .04F, 0, TWO_PI, ORCHID, f * .5F);
+    }
+
+    /** Cradle's swat at a foe reaching in (origin the foe, target the middle of the cradle): a hand batting it back out. */
+    static void cradleSwat(Canvas c, Active a, float t) {
+        Vec3 at = a.origin(), away = at.subtract(a.target());
+        swat(c, new Active(a.piece(), at, at.add(away.normalize()), 1, -1, a.seed(), a.start()), t);
+    }
 }

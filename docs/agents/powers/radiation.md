@@ -6,6 +6,17 @@ Part of the notes for coding agents: start at [AGENTS.md](../../../AGENTS.md).
 
 ## Reusable patterns from the Induced Radioactivity rework
 
+- **One hand, read by both sides.** `RadiationGeometry` (`hand`, `offHand`, `cupped`, `core`) is where light leaves the body; the server
+  (`RadiationService.hand`) and `RadiationArt` both read it, so the heat leaves the hand you see, first person
+  included. The power has its own poses (`ArmPose.RAD_CUP`, `RAD_PALMS`, `RAD_FLARE`, `RAD_GRIP`, `RAD_RAISE`,
+  `RAD_POINT`, drawn in `client/RadiationPoses`, dispatched from `PowerArmPoses` and `FirstPersonArmGeometry`) instead
+  of borrowing Pyrokinesis's and Electrokinesis's.
+- **Old effect kinds forward to the new pieces.** Gifted mobs, villagers, the facility and the story still send
+  `RADIATION_*` and `NUCLEAR_*` kinds; `client/effects/RadiationEffects` and `NuclearEffects` start the matching
+  `RAD_*` piece on the client (`RAD_HEAT`, `RAD_BEAM`, `RAD_PULSE`, `RAD_ZONE`, `RAD_DOSE`, `RAD_CHAIN`, `RAD_EMP`,
+  `RAD_LEAP`, `RAD_FALLOUT`), so nothing radioactive draws particles any more. Copy this (it is `TelekinesisEffects`'
+  pattern) whenever a power's art is redrawn: never leave the old kinds drawing the old way.
+
 The radiation power (`radiation/`, art in `client/effects/setpiece/RadiationArt`) was reworked in November 2026
 to be more fun: a mobility move, punchier hits, faster blasts. What the player sees is in
 [docs/induced-radioactivity.md](../../../docs/induced-radioactivity.md).

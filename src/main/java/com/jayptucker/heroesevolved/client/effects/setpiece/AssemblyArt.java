@@ -732,4 +732,248 @@ final class AssemblyArt {
             if (c.soft()) c.ring(feet.add(0, .1, 0), Canvas.UP, .5F + age * .12F, .4F, 0, Mth.TWO_PI, DUST, f * .35F * (1 - smooth(0, 8, age)));
         }
     }
+
+    // ------------------------------------------------------------------ Ultimates (assembly/AssemblyUltimates)
+
+    /** A seam of light between two points: a dark seam behind it in the soft pass so it reads at noon, honey and a hot core. */
+    private static void seam(Canvas c, Vec3 a, Vec3 b, float width, float alpha) {
+        if (alpha < .01F) return;
+        if (c.soft()) c.line(a, b, width * 2.2F, DEEP, alpha * .35F, alpha * .35F);
+        if (c.glow()) {
+            c.line(a, b, width, SEAM, alpha, alpha);
+            c.line(a, b, width * .35F, CORE, alpha, alpha);
+        }
+    }
+
+    /** The twelve edges of a box (half sizes, turned by {@code yaw} and tipped by {@code pitch}). */
+    private static Vec3[][] boxEdges(Vec3 centre, double hx, double hy, double hz, float yaw, float pitch) {
+        Vec3[] corner = new Vec3[8];
+        float cy = Mth.cos(yaw), sy = Mth.sin(yaw), cp = Mth.cos(pitch), sp = Mth.sin(pitch);
+        for (int i = 0; i < 8; i++) {
+            double x = (i & 1) == 0 ? -hx : hx, y = (i & 2) == 0 ? -hy : hy, z = (i & 4) == 0 ? -hz : hz;
+            double y2 = y * cp - z * sp, z2 = y * sp + z * cp;
+            corner[i] = centre.add(x * cy - z2 * sy, y2, x * sy + z2 * cy);
+        }
+        int[][] e = {{0, 1}, {2, 3}, {4, 5}, {6, 7}, {0, 2}, {1, 3}, {4, 6}, {5, 7}, {0, 4}, {1, 5}, {2, 6}, {3, 7}};
+        Vec3[][] out = new Vec3[12][];
+        for (int i = 0; i < 12; i++) out[i] = new Vec3[]{corner[e[i][0]], corner[e[i][1]]};
+        return out;
+    }
+
+    /** A built part: a lit amber slab with its seams, and a flare along them for the few ticks after it snaps in. */
+    private static void builtBox(Canvas c, Vec3 centre, float hx, float hy, float hz, float yaw, float pitch, float alpha, float flare) {
+        if (alpha < .01F) return;
+        if (c.solid()) c.box(centre, hx, hy, hz, yaw, pitch, 0, PLATE, 1);
+        for (Vec3[] e : boxEdges(centre, hx + .01, hy + .01, hz + .01, yaw, pitch)) seam(c, e[0], e[1], .02F + .03F * flare, alpha * (.45F + .55F * flare));
+    }
+
+    /**
+     * Grand Design ({@code AssemblyUltimates.GrandDesign}): the cage's plan, its bars flying from her hand and locking in
+     * on the server's ticks; the hammer's plan overhead, its parts flying up and snapping in, the sheen; the swing; the
+     * shattering, shards thrown at everyone near; and every fragment flying home.
+     */
+    static void design(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Player p = a.bound(c) instanceof Player pl ? pl : null;
+        var foe = UltArt.foe(c, a);
+        Vec3 base = a.target(), facing = a.facing();
+        float h = Math.max(.8F, a.scale());
+        int seed = a.seed() * 7 + 5;
+        Vec3 handAt = p != null ? hand(c, p, .62) : a.origin().add(0, 1.3, 0);
+        int plan = com.jayptucker.heroesevolved.assembly.AssemblyUltimates.GrandDesign.CAGE_PLAN,
+                bars = com.jayptucker.heroesevolved.assembly.AssemblyUltimates.GrandDesign.BARS,
+                hammerPlan = com.jayptucker.heroesevolved.assembly.AssemblyUltimates.GrandDesign.HAMMER_PLAN,
+                parts = com.jayptucker.heroesevolved.assembly.AssemblyUltimates.GrandDesign.PARTS,
+                sheen = com.jayptucker.heroesevolved.assembly.AssemblyUltimates.GrandDesign.SHEEN,
+                impact = com.jayptucker.heroesevolved.assembly.AssemblyUltimates.GrandDesign.IMPACT,
+                home = com.jayptucker.heroesevolved.assembly.AssemblyUltimates.GrandDesign.HOME;
+        Vec3 feet = foe != null ? foe.getPosition(c.partial) : base;
+        Vec3 cageAt = feet.add(0, h * .5, 0);
+        float yaw = (float) Math.atan2(facing.z, facing.x);
+        // The cage: plan first, then each bar flies in and locks.
+        float cageAlive = UltArt.window(t, plan, impact + 1, 2, 1);
+        Vec3[][] cage = boxEdges(cageAt, .75, h * .55 + .1, .75, yaw, 0);
+        for (int i = 0; i < bars; i++) {
+            int lands = com.jayptucker.heroesevolved.assembly.AssemblyUltimates.GrandDesign.bar(i);
+            Vec3 mid = cage[i][0].lerp(cage[i][1], .5);
+            if (t < lands) {
+                seam(c, cage[i][0], cage[i][1], .008F, cageAlive * .5F);
+                flight(c, handAt, mid, (t - (lands - 8)) / 8F, 1.1F, .12F, seed + i, cageAlive);
+            } else {
+                Vec3 d = cage[i][1].subtract(cage[i][0]);
+                float flare = 1 - smooth(lands, lands + 6, t);
+                if (c.solid() && cageAlive > .01F) c.shard(cage[i][0], cage[i][1], .06F, 4, i, AMBER, 1);
+                seam(c, cage[i][0], cage[i][1], .02F + .03F * flare, cageAlive * (.5F + .5F * flare));
+                if (flare > 0 && c.glow()) c.glow(mid, .3F * flare, CORE, cageAlive);
+            }
+        }
+        // The hammer overhead: plan, parts flying up and snapping in, the sheen, then the swing down.
+        float swing = com.jayptucker.heroesevolved.assembly.AssemblyUltimates.GrandDesign.swing(t);
+        float ang = swing * Mth.PI * .55F;
+        Vec3 pivot = base.subtract(facing.scale(2.2)).add(0, com.jayptucker.heroesevolved.assembly.AssemblyUltimates.GrandDesign.HAMMER_HEIGHT - .4, 0);
+        Vec3 arm = facing.scale(2.2 * Math.cos(ang - .1) + .3).add(0, -(2.2 * Math.sin(ang)) + .4, 0);
+        Vec3 head = pivot.add(arm);
+        float pitch = -ang;
+        float hammerAlive = UltArt.window(t, hammerPlan, impact + 1, 2, 1);
+        float[][] partBox = {{-.75F, 0, 0, .7F, .65F, .6F}, {.75F, 0, 0, .7F, .65F, .6F}, {0, .7F, 0, 1.45F, .12F, .65F},
+                {0, -1.4F, 0, .14F, .75F, .14F}, {0, -2.6F, 0, .12F, .5F, .12F}, {0, -3.2F, 0, .22F, .14F, .22F}};
+        Vec3 handleDir = pivot.subtract(head).normalize();
+        Vec3 across = new Vec3(-facing.z, 0, facing.x);
+        for (int i = 0; i < parts; i++) {
+            int lands = com.jayptucker.heroesevolved.assembly.AssemblyUltimates.GrandDesign.part(i);
+            float[] b = partBox[i];
+            Vec3 at = i < 3 ? head.add(across.scale(b[0])).add(0, b[1], 0) : head.add(handleDir.scale(-b[1]));
+            float pyaw = yaw + Mth.HALF_PI;
+            if (t < lands) {
+                for (Vec3[] e : boxEdges(at, b[3], b[4], b[5], pyaw, i < 3 ? pitch : pitch)) seam(c, e[0], e[1], .008F, hammerAlive * .5F);
+                flight(c, handAt, at, (t - (lands - 10)) / 10F, 3.5F, .14F, seed + 20 + i, hammerAlive);
+            } else {
+                builtBox(c, at, b[3], b[4], b[5], pyaw, pitch, hammerAlive, 1 - smooth(lands, lands + 6, t));
+            }
+        }
+        if (t >= sheen && t < sheen + 8 && c.glow()) {
+            float s = smooth(sheen, sheen + 8, t);
+            Vec3 a0 = head.add(across.scale(-1.5 + 3 * s)).add(0, -.7, 0), a1 = a0.add(0, 1.5, 0);
+            c.line(a0, a1, .16F, CORE, (1 - s) * hammerAlive, (1 - s) * hammerAlive);
+        }
+        // The shattering: amber shards thrown out, a flash, a ring along the ground.
+        if (t >= impact) {
+            float age = t - impact, f = Canvas.fade(age, a.piece().ticks - impact, 0, 14);
+            Vec3 at = feet.add(0, .6, 0);
+            for (int i = 0; i < (minimal() ? 8 : 18); i++) {
+                float g = hash(seed, i) * Mth.TWO_PI;
+                Vec3 dir = new Vec3(Mth.cos(g), .3 + hash(seed, i + 40), Mth.sin(g));
+                Vec3 q = at.add(dir.scale(age * .3)).add(0, -.012 * age * age, 0);
+                if (age < home - impact) fragment(c, q, dir, .16F, age * .4F + i, f);
+            }
+            if (c.glow()) {
+                if (age < 5) c.glow(at, 2.4F * (1 - age / 5), CORE, 1 - age / 5);
+                c.ring(feet.add(0, .06, 0), UP, .5F + 6 * smooth(0, 10, age), .07F, 0, Mth.TWO_PI, HONEY, f * (1 - smooth(0, 14, age)));
+            }
+        }
+        // Home: every fragment arcing back into her orbit.
+        if (t >= home) {
+            int n = minimal() ? 8 : 18;
+            for (int i = 0; i < n; i++) {
+                float k = (t - home - i * .8F) / 14F;
+                float g = hash(seed, i) * Mth.TWO_PI;
+                Vec3 from = feet.add(Mth.cos(g) * 1.5, .5 + hash(seed, i + 40), Mth.sin(g) * 1.5);
+                flight(c, from, handAt, k, 1.2F, .12F, seed + 50 + i, 1);
+            }
+        }
+    }
+
+    /** The {@code i}th Citadel panel's corners round {@code feet}: a quad on a hexagonal shell, the lower ring first. */
+    private static Vec3[] citadelPanel(Vec3 feet, float r, int i) {
+        double a = com.jayptucker.heroesevolved.assembly.AssemblyUltimates.Citadel.angle(i), half = Math.PI / 6;
+        double y0 = i < 6 ? 0 : 1.25, y1 = i < 6 ? 1.3 : 2.5;
+        double r1 = i < 6 ? r : r * .82;
+        Vec3 a0 = feet.add(Math.cos(a - half) * r, y0, Math.sin(a - half) * r), a1 = feet.add(Math.cos(a + half) * r, y0, Math.sin(a + half) * r);
+        Vec3 b0 = feet.add(Math.cos(a - half) * r1, y1, Math.sin(a - half) * r1), b1 = feet.add(Math.cos(a + half) * r1, y1, Math.sin(a + half) * r1);
+        return new Vec3[]{a0, a1, b1, b0};
+    }
+
+    /** A crystal panel: amber glass, its four seams lit, a flare along them as it snaps in. */
+    private static void glassPanel(Canvas c, Vec3[] q, float alpha, float flare) {
+        if (alpha < .01F) return;
+        if (c.soft()) {
+            c.tri(q[0], q[1], q[2], AMBER, alpha * .28F, alpha * .28F, alpha * .28F);
+            c.tri(q[0], q[2], q[3], AMBER, alpha * .28F, alpha * .28F, alpha * .28F);
+        }
+        for (int e = 0; e < 4; e++) seam(c, q[e], q[(e + 1) % 4], .02F + .03F * flare, alpha * (.55F + .45F * flare));
+        if (flare > 0 && c.glow()) c.glow(q[0].lerp(q[2], .5), .5F * flare, CORE, alpha);
+    }
+
+    /**
+     * Citadel, one second (re-sent each second; the second in the seed, -1 coming apart): the shell's twelve panels round
+     * the builder; the first second draws the plan and each panel flying in from the hand and locking at its tick.
+     */
+    static void citadelUlt(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Player p = a.bound(c) instanceof Player pl ? pl : null;
+        Vec3 feet = p != null ? p.getPosition(c.partial) : a.origin();
+        float r = a.scale();
+        int second = a.seed(), panels = com.jayptucker.heroesevolved.assembly.AssemblyUltimates.Citadel.PANELS;
+        if (second < 0) {
+            Vec3 to = p != null ? hand(c, p, .62) : feet.add(0, 1.3, 0);
+            for (int i = 0; i < panels; i++) {
+                Vec3[] q = citadelPanel(feet, r, i);
+                flight(c, q[0].lerp(q[2], .5), to, (t - i * .6F) / 12, 1, .13F, i * 7, 1);
+            }
+            return;
+        }
+        boolean last = second >= com.jayptucker.heroesevolved.assembly.AssemblyUltimates.Citadel.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(10, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        Vec3 handAt = p != null ? hand(c, p, .62) : feet.add(0, 1.3, 0);
+        for (int i = 0; i < panels; i++) {
+            Vec3[] q = citadelPanel(feet, r, i);
+            if (second == 0) {
+                int lands = com.jayptucker.heroesevolved.assembly.AssemblyUltimates.Citadel.panel(i);
+                if (t < lands) {
+                    for (int e = 0; e < 4; e++) seam(c, q[e], q[(e + 1) % 4], .008F, .5F);
+                    flight(c, handAt, q[0].lerp(q[2], .5), (t - (lands - 6)) / 6F, .8F, .13F, i * 5, 1);
+                    continue;
+                }
+                glassPanel(c, q, f, 1 - smooth(lands, lands + 6, t));
+            } else glassPanel(c, q, f, 0);
+        }
+    }
+
+    /**
+     * Field Hospital, one second (re-sent each second; the second in the seed, -1 coming apart): four pillars and an
+     * eight-panel roof over the place; the first second draws the plan, the pillars and panels flying in from the hand
+     * and locking at their ticks, and a sheen across the roof.
+     */
+    static void hospital(Canvas c, Active a, float t) {
+        Player p = a.bound(c) instanceof Player pl ? pl : null;
+        Vec3 centre = a.origin();
+        float r = a.scale();
+        double height = com.jayptucker.heroesevolved.assembly.AssemblyUltimates.FieldHospital.HEIGHT;
+        int second = a.seed();
+        int pillars = com.jayptucker.heroesevolved.assembly.AssemblyUltimates.FieldHospital.PILLARS,
+                panels = com.jayptucker.heroesevolved.assembly.AssemblyUltimates.FieldHospital.PANELS;
+        Vec3 handAt = p != null ? hand(c, p, .62) : centre.add(0, 1.3, 0);
+        Vec3 apex = centre.add(0, height + 1.1, 0);
+        if (second < 0) {
+            for (int i = 0; i < pillars + panels; i++) {
+                double g = i * Math.PI * 2 / 8;
+                Vec3 from = centre.add(Math.cos(g) * r * .7, height, Math.sin(g) * r * .7);
+                flight(c, from, handAt, (t - i * .6F) / 12, 1.4F, .13F, i * 9, 1);
+            }
+            return;
+        }
+        boolean last = second >= com.jayptucker.heroesevolved.assembly.AssemblyUltimates.FieldHospital.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(10, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        for (int i = 0; i < pillars; i++) {
+            double g = Math.PI / 4 + i * Math.PI / 2;
+            Vec3 foot = centre.add(Math.cos(g) * r * .85, 0, Math.sin(g) * r * .85), top = foot.add(0, height, 0);
+            int lands = com.jayptucker.heroesevolved.assembly.AssemblyUltimates.FieldHospital.pillar(i);
+            if (second == 0 && t < lands) {
+                seam(c, foot, top, .008F, .5F);
+                flight(c, handAt, foot.lerp(top, .5), (t - (lands - 6)) / 6F, 1, .13F, i * 11, 1);
+            } else builtBox(c, foot.lerp(top, .5), .12F, (float) height * .5F, .12F, (float) g, 0, f, second == 0 ? 1 - smooth(lands, lands + 6, t) : 0);
+        }
+        for (int i = 0; i < panels; i++) {
+            double g0 = i * Math.PI * 2 / panels, g1 = (i + 1) * Math.PI * 2 / panels;
+            Vec3 e0 = centre.add(Math.cos(g0) * r, height, Math.sin(g0) * r), e1 = centre.add(Math.cos(g1) * r, height, Math.sin(g1) * r);
+            Vec3[] q = {e0, e1, apex, apex};
+            int lands = com.jayptucker.heroesevolved.assembly.AssemblyUltimates.FieldHospital.roof(i);
+            if (second == 0 && t < lands) {
+                seam(c, e0, e1, .008F, .5F);
+                seam(c, e0, apex, .008F, .5F);
+                flight(c, handAt, e0.lerp(e1, .5).lerp(apex, .3), (t - (lands - 8)) / 8F, 1.6F, .13F, i * 13, 1);
+                continue;
+            }
+            if (c.soft()) c.tri(e0, e1, apex, AMBER, f * .25F, f * .25F, f * .25F);
+            float flare = second == 0 ? 1 - smooth(lands, lands + 6, t) : 0;
+            seam(c, e0, e1, .02F + .03F * flare, f);
+            seam(c, e0, apex, .02F + .03F * flare, f * .8F);
+        }
+        int sheen = com.jayptucker.heroesevolved.assembly.AssemblyUltimates.FieldHospital.SHEEN;
+        if (second == 0 && t >= sheen && t < sheen + 8 && c.glow()) {
+            float s = smooth(sheen, sheen + 8, t);
+            c.ring(centre.add(0, height + .5 * s, 0), UP, r * (1 - .8F * s), .1F, 0, Mth.TWO_PI, CORE, 1 - s);
+        }
+        if (c.glow()) c.ring(centre.add(0, .05, 0), UP, r, .03F, 0, Mth.TWO_PI, HONEY, f * .4F);
+    }
 }

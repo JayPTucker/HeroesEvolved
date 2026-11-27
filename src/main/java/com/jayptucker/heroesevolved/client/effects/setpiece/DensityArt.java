@@ -8,9 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.ParticleStatus;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.Set;
@@ -18,22 +16,21 @@ import java.util.Set;
 import static com.jayptucker.heroesevolved.client.effects.setpiece.Canvas.*;
 
 /**
- * Density's skill tree, in the power's grammar: surfaces that ripple like water where something passes into them, and
- * stone. Every piece is built from four primitives:
+ * Density's skill tree (earthbending), in {@code EarthArt}'s grammar and colours: stone, dark cracks, and a thin jade seam
+ * where the bender's will is in the ground. Every piece is built from three primitives:
  * <ul>
- *   <li>{@link #ripple}: rings opening across a surface, each wider and fainter, wobbling so they never look machined;</li>
- *   <li>{@link #oval}: a standing, body-sized ripple (a wall left open, a body passed through, a shell left behind);</li>
+ *   <li>{@link #ripple}: seismic rings opening across the ground, each wider and fainter, wobbling so they never look machined;</li>
  *   <li>{@link #slab}: a block of stone, drawn solid and lit by the sun;</li>
- *   <li>{@link #crack}: a jagged dark line across the ground.</li>
+ *   <li>{@link #crack}: a jagged dark line across the ground with jade light in it.</li>
  * </ul>
- * Ghost is teal and pale; Dense is slate, stone and dark cracks with pale light in them. The palette matches the core
- * kit's {@code DensityEffects}.
+ * (Density was once D.L. Hawkins's phasing, drawn in ghostly teal; it gave that up to become earthbending.)
  */
 final class DensityArt {
-    private static final float[] TEAL = rgb(0x7FE8D8), PALE = rgb(0xD8F4EE), DEEP = rgb(0x2E8F86), SLATE = rgb(0x6E7F86),
-            STONE = rgb(0x9A9284), DARK = rgb(0x3E4A4E);
-    /** Drawn with normal blending behind the light, so ripples hold against a bright sky. */
-    private static final float[] INK = rgb(0x163331);
+    // Earthbending's own colours (EarthArt's): the jade seam of the bender's will, stone, and dark cracks.
+    private static final float[] TEAL = EarthArt.JADE, PALE = EarthArt.JADE_PALE, DEEP = EarthArt.JADE_DEEP, SLATE = EarthArt.GREY,
+            STONE = rgb(0x9A9284), DARK = EarthArt.CRACK;
+    /** Drawn with normal blending behind the light, so rings hold against a bright sky. */
+    private static final float[] INK = EarthArt.MUD;
 
     private DensityArt() {}
 
@@ -76,32 +73,6 @@ final class DensityArt {
             c.ring(at, normal, ri, w * 2.6F, 0, Mth.TWO_PI, DEEP, .3F * ai);
             c.ring(at, normal, ri, w, 0, Mth.TWO_PI, body, .8F * ai);
             c.ring(at, normal, ri, w * .3F, 0, Mth.TWO_PI, PALE, .75F * ai);
-        }
-    }
-
-    /**
-     * A standing, body-sized ripple across {@code normal}: {@code rings} wavering ovals {@code rx} wide and {@code ry}
-     * tall, drifting outward by {@code phase} (0 to 1, wrapping).
-     */
-    private static void oval(Canvas c, Vec3 at, Vec3 normal, float rx, float ry, int rings, float phase, int seed, float alpha) {
-        if (alpha <= .003F) return;
-        Vec3 n = normal.lengthSqr() < 1.0E-6 ? new Vec3(0, 0, 1) : normal.normalize();
-        Vec3 side = Math.abs(n.y) > .9 ? new Vec3(1, 0, 0) : n.cross(UP).normalize();
-        Vec3 up = side.cross(n).normalize();
-        if (up.y < 0) up = up.reverse();
-        int steps = minimal() ? 20 : 36;
-        for (int i = 0; i < rings; i++) {
-            float k = ((i + phase) / rings) % 1F, s = .25F + .75F * k, ai = alpha * Mth.sin(k * Mth.PI);
-            Vec3[] pts = new Vec3[steps + 1];
-            for (int j = 0; j <= steps; j++) {
-                float ang = j * Mth.TWO_PI / steps, wob = 1 + Mth.sin(ang * 5 + i * 1.7F + seed) * .05F;
-                pts[j] = at.add(side.scale(Mth.cos(ang) * rx * s * wob)).add(up.scale(Mth.sin(ang) * ry * s * wob));
-            }
-            if (c.soft()) c.ribbon(pts, .1F, INK, .22F * ai, .22F * ai);
-            if (!c.glow()) continue;
-            c.ribbon(pts, .12F, DEEP, .3F * ai, .3F * ai);
-            c.ribbon(pts, .045F, TEAL, .8F * ai, .8F * ai);
-            c.ribbon(pts, .016F, PALE, .8F * ai, .8F * ai);
         }
     }
 

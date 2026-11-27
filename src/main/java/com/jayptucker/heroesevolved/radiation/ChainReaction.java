@@ -37,7 +37,7 @@ public final class ChainReaction {
             ServerPlayer p = run.player;
             Takedowns.show(run.level(), Piece.FINISH_CHAIN, p.getEyePosition().add(0, -.4, 0), run.anchor,
                     Math.max(.6F, run.target.getBbHeight()), run.target, p.getId());
-            ArmPosePayload.show(p, ArmPose.ELECTRO_POINT, 8);
+            ArmPosePayload.show(p, ArmPose.RAD_POINT, 8);
             Takedowns.sound(run, p.position(), SoundEvents.BEACON_POWER_SELECT, .8F, 1.8F);
         }
 

@@ -166,22 +166,6 @@ public final class VibeKitGameTests {
         }));
     }
 
-    @GameTest(template = "rewind_empty", batch = "vibe.kit")
-    public static void crosswavesSecondFrontCatchesAnEnemyOffTheFirstLine(GameTestHelper h) {
-        ServerPlayer p = viber(h, "vibe_crosswave");
-        // Work out where the off-hand front runs, the same way the release does, and stand an enemy on it.
-        Vec3 look = p.getLookAngle(), eye = p.getEyePosition();
-        Vec3 end = VibeGeometry.clip(p, eye, eye.add(look.scale(24)));
-        Vec3 offHand = VibeGeometry.hand(p, look, 1, true);
-        Vec3 offEnd = end.add(VibeGeometry.side(look).reverse().scale(3));
-        Vec3 point = offHand.lerp(offEnd, .85);
-        Pillager flank = target(h, new Vec3(point.x, p.getY(), point.z));
-        var cleanup = track(p, flank);
-        step(cleanup, () -> cast(h, p, "vibe_crosswave"));
-        h.runAfterDelay(20, () -> finish(h, cleanup, () -> h.assertTrue(flank.getHealth() < 24,
-                "The diverging second front reaches an enemy the main wave passes by")));
-    }
-
     private static Arrow shot(GameTestHelper h, Entity owner) {
         Arrow arrow = EntityType.ARROW.create(h.getLevel());
         arrow.setOwner(owner);
@@ -293,25 +277,6 @@ public final class VibeKitGameTests {
         }));
     }
 
-    @GameTest(template = "rewind_empty", batch = "vibe.kit")
-    public static void mirrorBreachCatchesShotsTheNormalGuardWouldMiss(GameTestHelper h) {
-        ServerPlayer p = viber(h, "vibe_mirror");
-        Pillager shooter = target(h, p, 0, 6);
-        var cleanup = track(p, shooter);
-        finish(h, cleanup, () -> {
-            Vec3 to = p.position().add(1.6, 1.23, 0), from = to.add(0, 0, 6);
-            Arrow first = EntityType.ARROW.create(h.getLevel());
-            first.setOwner(shooter);
-            h.assertTrue(VibeService.guard(p, false), "A normal guard opens");
-            h.assertFalse(VibeService.intercept(h.getLevel(), first, from, to), "1.6 blocks off centre is outside a 1.28 guard");
-            VibeService.closeGuard(p);
-            cast(h, p, "vibe_mirror");
-            h.assertTrue(VibeService.intercept(h.getLevel(), first, from, to) && first.isRemoved(),
-                    "Mirror Breach's 2.05-block horizon catches the same shot");
-            first.discard();
-        });
-    }
-
     // ------------------------------------------------------------------ Breaching
 
     @GameTest(template = "rewind_empty", batch = "vibe.kit")
@@ -350,22 +315,6 @@ public final class VibeKitGameTests {
             h.assertTrue(p.getZ() - start.z > 4 && Math.abs(p.getY() - start.y) < .6,
                     "Flashstep lands on the aimed ground ahead: " + p.position().subtract(start));
         });
-    }
-
-    @GameTest(template = "rewind_empty", batch = "vibe.kit")
-    public static void sanctuaryBreachShieldsAndCoolsTravelers(GameTestHelper h) {
-        ServerPlayer p = traveler(h, "vibe_sanctuary");
-        Vec3 start = p.position();
-        p.setXRot(13);
-        var cleanup = track(p);
-        step(cleanup, () -> cast(h, p, "vibe_sanctuary"));
-        h.runAfterDelay(11, () -> p.igniteForSeconds(4));
-        h.runAfterDelay(12, () -> p.setPos(start.add(0, 0, 2.35)));
-        h.runAfterDelay(14, () -> finish(h, cleanup, () -> {
-            h.assertTrue(p.position().distanceToSqr(start) > 25, "Sanctuary's route carries the traveler");
-            h.assertTrue(p.hasEffect(MobEffects.DAMAGE_RESISTANCE) && p.getRemainingFireTicks() <= 0,
-                    "Crossing a Sanctuary Breach puts out fire and gives Resistance");
-        }));
     }
 
     // ------------------------------------------------------------------ Dimensional Sight

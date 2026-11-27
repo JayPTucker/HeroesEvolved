@@ -303,4 +303,101 @@ final class MimicArt {
             if (bloom > 0) ring(c, heart, heart.subtract(from).normalize(), .2F + .6F * smooth(land, land + 6, t), .05F, CORE, bloom * f);
         }
     }
+
+    // ------------------------------------------------------------------
+    // Ultimates (mimicry/MimicUltimates)
+    // ------------------------------------------------------------------
+
+    /** The voices of an Ultimate, read from the companion piece bound to the empath (packed like a Chorus). */
+    private static int[] voices(Canvas c, int entity) {
+        Active v = SetPieceClient.boundTo(com.jayptucker.heroesevolved.styles.Piece.MIMIC_ULT_VOICES, entity);
+        int packed = v == null ? (3 << 27) : v.seed(), n = Math.max(1, Math.min(5, packed >>> 27 & 7));
+        int[] out = new int[n];
+        for (int i = 0; i < n; i++) out[i] = packed >>> (i * 5) & 31;
+        return out;
+    }
+
+    /**
+     * Everything at Once ({@code MimicUltimates.EverythingAtOnce}): gold threads taking hold of the foe; for each
+     * remembered power a strike in its own colour (a bolt from the hand, a ring and a bloom where it lands, a ring left
+     * turning on the foe); then every colour braided into one twisting rope and driven through as a white-gold lance.
+     */
+    static void everything(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity empath = a.bound(c), foe = UltArt.foe(c, a);
+        float h = Math.max(.8F, a.scale()), clock = c.time();
+        Vec3 chest = empath != null ? empath.getPosition(c.partial).add(0, empath.getBbHeight() * .62, 0) : a.origin().add(0, 1.1, 0);
+        Vec3 target = (foe != null ? foe.getPosition(c.partial) : a.target()).add(0, h * .55, 0);
+        int[] voices = voices(c, a.entity());
+        int hold = com.jayptucker.heroesevolved.mimicry.MimicUltimates.EverythingAtOnce.HOLD,
+                first = com.jayptucker.heroesevolved.mimicry.MimicUltimates.EverythingAtOnce.FIRST,
+                every = com.jayptucker.heroesevolved.mimicry.MimicUltimates.EverythingAtOnce.EVERY,
+                braid = com.jayptucker.heroesevolved.mimicry.MimicUltimates.EverythingAtOnce.BRAID,
+                lance = com.jayptucker.heroesevolved.mimicry.MimicUltimates.EverythingAtOnce.LANCE;
+        // The hold: gold threads.
+        float held = UltArt.window(t, 0, lance + 2, 3, 2);
+        for (int i = 0; i < 3; i++)
+            thread(c, strand(chest, chest.lerp(target, smooth(0, hold, t)), .3F, clock * .1F + i * 2.1F, .18F), .03F, held * .8F);
+        // Each remembered power in its own colour.
+        for (int i = 0; i < voices.length; i++) {
+            float at = first + i * every, age = t - at;
+            if (age < -2) continue;
+            float[] tint = rgb(MimicColors.color(voices[i]));
+            if (age < 12) {
+                float k = smooth(-2, 1, age), f = 1 - smooth(4, 12, age);
+                if (c.glow()) {
+                    c.bolt(chest, chest.lerp(target, k), i * 31 + 7, .25F, .07F, tint, f * .8F);
+                    c.bolt(chest, chest.lerp(target, k), i * 31 + 7, .25F, .025F, CORE, f);
+                }
+                if (age >= 1) {
+                    float b = smooth(1, 10, age);
+                    ring(c, target, target.subtract(chest), .2F + 1.1F * b, .05F, tint, f * (1 - b));
+                    if (c.glow()) c.glow(target, .5F + .8F * b, tint, f * (1 - b) * .8F);
+                }
+            }
+            // A ring of that colour left turning round the foe until the lance.
+            if (age >= 1 && t < lance + 4) {
+                float stay = UltArt.window(t, at + 1, lance + 4, 3, 4);
+                Vec3 axis = new Vec3(Math.cos(i * 1.3 + clock * .05), .8, Math.sin(i * 1.3 + clock * .05));
+                ring(c, target, axis, .7F + .12F * i, .025F, tint, stay * .8F);
+            }
+        }
+        // The braid: every colour twisted into one rope, then the lance.
+        float braiding = UltArt.window(t, braid, lance + 10, 4, 8);
+        if (braiding > 0) {
+            float tight = smooth(braid, lance, t);
+            for (int i = 0; i < voices.length; i++) {
+                Vec3[] pts = strand(chest, target, .15F * (1 - tight), clock * .3F + i * TWO_PI / voices.length, .3F * (1 - tight) + .05F);
+                float[] w = widths(pts.length, .04F);
+                if (c.glow()) c.ribbon(pts, w, rgb(MimicColors.color(voices[i])), scaled(widths(pts.length, 1), braiding * .8F));
+            }
+        }
+        if (t >= lance && t < lance + 18) {
+            float age = t - lance, f = 1 - smooth(4, 18, age);
+            Vec3 beyond = target.add(target.subtract(chest).normalize().scale(3));
+            if (c.glow()) {
+                c.line(chest, beyond, .3F, THREAD, f * .5F, f * .3F);
+                c.line(chest, beyond, .09F, CORE, f, f * .6F);
+                c.glow(target, 1.6F * (1 - smooth(0, 6, age)), CORE, f);
+            }
+            for (int i = 0; i < voices.length; i++)
+                ring(c, target, target.subtract(chest), .3F + 2.4F * smooth(0, 12, age - i), .05F, rgb(MimicColors.color(voices[i])), f);
+        }
+    }
+
+    /** A gift carried to a friend (bound to them; the empath's id in the seed, the power's index in the scale): a thread of its colour and a bloom on them. */
+    static void gift(Canvas c, Active a, float t) {
+        Entity friend = a.bound(c), empath = a.seed() >= 0 ? c.level.getEntity(a.seed()) : null;
+        if (friend == null) return;
+        float[] tint = rgb(MimicColors.color((int) Math.floor(a.scale())));
+        float f = fade(t, a.piece().ticks, 2, 12), k = smooth(0, 10, t);
+        Vec3 to = friend.getPosition(c.partial).add(0, friend.getBbHeight() * .6, 0);
+        Vec3 from = empath != null ? empath.getPosition(c.partial).add(0, empath.getBbHeight() * .62, 0) : a.origin().add(0, 1.1, 0);
+        thread(c, strand(from, from.lerp(to, k), .4F, c.time() * .1F, .1F), .03F, f);
+        if (t >= 10) {
+            float b = smooth(10, 24, t);
+            ring(c, to, UP, .3F + 1.1F * b, .05F, tint, f * (1 - b));
+            if (c.glow()) c.glow(to, .6F, tint, f * .5F * (1 - b));
+        }
+    }
 }

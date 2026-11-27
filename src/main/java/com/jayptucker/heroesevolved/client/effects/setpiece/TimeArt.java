@@ -537,4 +537,107 @@ final class TimeArt {
         if (age < 0 || age >= life) return 0;
         return (in > 0 ? smooth(0, in, age) : 1) * (out > 0 ? 1 - smooth(life - out, life, age) : 1);
     }
+
+    // ------------------------------------------------------------------
+    // Ultimates (time/TimeUltimates)
+    // ------------------------------------------------------------------
+
+    /**
+     * Ten Past Ten ({@code TimeUltimates.TenPastTen}): stopped time round the foe (motes hanging perfectly still, a cold
+     * clock under it with its hands at ten past ten, a cage of still rings), a cut of light left hanging across the foe
+     * at every step, all of them flashing at once on the snap, and the clock shattering into its hour marks.
+     */
+    static void tenPastTen(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        net.minecraft.world.entity.Entity foe = UltArt.foe(c, a);
+        Vec3 base = a.target(), facing = a.facing();
+        float h = Math.max(.8F, a.scale());
+        int seed = a.seed() * 7 + 2;
+        int stop = com.jayptucker.heroesevolved.time.TimeUltimates.TenPastTen.STOP,
+                cut = com.jayptucker.heroesevolved.time.TimeUltimates.TenPastTen.CUT,
+                cuts = com.jayptucker.heroesevolved.time.TimeUltimates.TenPastTen.CUTS,
+                every = com.jayptucker.heroesevolved.time.TimeUltimates.TenPastTen.EVERY,
+                snap = com.jayptucker.heroesevolved.time.TimeUltimates.TenPastTen.SNAP;
+        Vec3 feet = foe != null ? foe.getPosition(c.partial) : base;
+        Vec3 mid = feet.add(0, h * .55, 0);
+        float still = UltArt.window(t, stop, snap + 1, 3, 1);
+        if (still > 0) {
+            face(c, base.add(0, .06, 0), UP, 2.4F, 10 / 12F, 10 / 60F, VIOLET, still);
+            motes(c, base, 3.2F, 3, seed, 26, 0, 0, ICE, still * .9F);
+            for (int i = 0; i < 3; i++) {
+                Vec3 axis = new Vec3(Math.cos(i * 2.1), .5, Math.sin(i * 2.1)).normalize();
+                if (c.glow()) c.ring(mid, axis, .9F + .1F * i, .025F, 0, Mth.TWO_PI, ICE, still * .6F);
+            }
+            if (c.soft()) c.shell(mid, 3, 2.4F, 3, Mth.PI, DUSK, still * .12F, .3F, Canvas.PLAIN, 0);
+        }
+        // The cuts: a seam of light across the foe from each step, hanging there until the snap.
+        for (int i = 0; i < cuts; i++) {
+            float at = cut + i * every + 1;
+            if (t < at) break;
+            float flash = t >= snap ? 1 - smooth(snap, snap + 8, t) : 1;
+            if (flash <= 0) continue;
+            Vec3 from = com.jayptucker.heroesevolved.time.TimeUltimates.TenPastTen.step(base, facing, i).add(0, 1.2, 0);
+            Vec3 dir = mid.subtract(from).normalize();
+            Vec3 a0 = mid.subtract(dir.scale(1.3)).add(0, (i % 2 == 0 ? .5 : -.4), 0), a1 = mid.add(dir.scale(1.3)).add(0, (i % 2 == 0 ? -.5 : .4), 0);
+            float grow = smooth(at, at + 2, t);
+            float boost = t >= snap ? 1 + 2 * (1 - smooth(snap, snap + 4, t)) : 1;
+            seam(c, a0, a0.lerp(a1, grow), .05F * boost, t >= snap ? PALE : GOLD, flash * .9F);
+        }
+        // The snap: every cut lands, the clock breaks into its hour marks, a ring runs out.
+        if (t >= snap) {
+            float age = t - snap, f = 1 - smooth(6, 30, age);
+            if (c.glow() && age < 6) c.glow(mid, 2.2F * (1 - age / 6), PALE, 1 - age / 6);
+            for (int i = 0; i < 12; i++) {
+                float ang = i * Mth.TWO_PI / 12;
+                Vec3 dir = new Vec3(Mth.cos(ang), .3 + .2 * hash(seed, i), Mth.sin(ang));
+                Vec3 p = base.add(Mth.cos(ang) * 2.2, .1, Mth.sin(ang) * 2.2).add(dir.scale(age * .25)).add(0, -.01 * age * age, 0);
+                seam(c, p, p.add(dir.scale(.3)), .03F, i % 3 == 0 ? PALE : VIOLET, f);
+            }
+            if (c.glow()) c.ring(base.add(0, .08, 0), UP, .5F + 6 * smooth(0, 12, age), .06F, 0, Mth.TWO_PI, VIOLET, f * (1 - smooth(0, 14, age)));
+        }
+    }
+
+    /** Second Chance's mark (re-sent each second; the second in the seed): a gold clock on the ground, its hands turning backward. */
+    static void markUlt(Canvas c, Active a, float t) {
+        int second = a.seed();
+        boolean last = second >= com.jayptucker.heroesevolved.time.TimeUltimates.SecondChance.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(10, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        float now = c.level.getGameTime() + c.partial;
+        face(c, a.origin().add(0, .06, 0), UP, 1.3F, -(now / 2400F) % 1, -(now / 120F) % 1, GOLD, f * .8F);
+        motes(c, a.origin(), 1.2F, 2.2F, 41, 10, -.01F, now, AMBER, f * .6F);
+    }
+
+    /**
+     * A rewind (seed 0): a violet trail drawn from where they were back to the mark, ghosts along it newest first, and
+     * the mark's clock spinning back; or (seed 1) the hours given back, a gold pulse where they stand.
+     */
+    static void rewindUlt(Canvas c, Active a, float t) {
+        float life = a.piece().ticks, f = fade(t, life, 0, 12);
+        if (a.seed() == 1) {
+            face(c, a.origin().add(0, .06, 0), UP, .5F + 1.5F * smooth(0, 10, t), -t / 20F, -t / 6F, GOLD, f);
+            if (c.glow()) c.glow(a.origin().add(0, 1, 0), 1.2F * (1 - smooth(0, 10, t)), PALE, f);
+            return;
+        }
+        Vec3 from = a.origin().add(0, 1, 0), to = a.target().add(0, 1, 0);
+        float k = smooth(0, 8, t);
+        seam(c, from.lerp(to, k), from, .06F, VIOLET, f);
+        face(c, a.target().add(0, .06, 0), UP, 1.4F, -t / 8F, -t / 2F, VIOLET, f);
+        if (c.glow() && t < 8) c.glow(to, 1.2F * (1 - t / 8), PALE, 1 - t / 8);
+    }
+
+    /**
+     * Borrowed Hours on a body (bound; re-sent every three seconds): seed 0, a friend, a gold clock under their feet with
+     * its hands racing; seed 1, a foe, a violet clock over its head with its hands barely crawling.
+     */
+    static void hours(Canvas c, Active a, float t) {
+        net.minecraft.world.entity.Entity body = a.bound(c);
+        if (body == null) return;
+        float h = Math.max(.6F, a.scale()), f = fade(t, a.piece().ticks, 3, 6), now = c.level.getGameTime() + c.partial;
+        if (a.seed() == 0) {
+            face(c, body.getPosition(c.partial).add(0, .06, 0), UP, .7F, (now / 40F) % 1, (now / 6F) % 1, GOLD, f);
+            motes(c, body.getPosition(c.partial), .6F, h, body.getId(), 6, .08F, now, AMBER, f * .7F);
+        } else {
+            face(c, body.getPosition(c.partial).add(0, h + .5, 0), UP, .4F, (now / 9600F) % 1, (now / 1600F) % 1, VIOLET, f);
+        }
+    }
 }

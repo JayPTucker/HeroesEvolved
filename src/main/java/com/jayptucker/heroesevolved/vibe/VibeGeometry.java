@@ -16,7 +16,7 @@ import org.joml.Vector3d;
 /** The planes, timings and hand anchors shared by gameplay and the breach renderer. */
 public final class VibeGeometry {
     public static final double PORTAL_HEIGHT = 1.27, PORTAL_WIDTH = .96;
-    public static final float GUARD_WIDTH = 1.28F, HORIZON_WIDTH = 2.05F;
+    public static final float GUARD_WIDTH = 1.28F;
     public static final int BREACH_OPEN_TICKS = 8, LOCK_WARNING_TICKS = 16;
     public static final Vec3 UP = new Vec3(0, 1, 0);
 

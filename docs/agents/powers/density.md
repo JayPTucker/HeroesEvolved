@@ -66,6 +66,12 @@ still match (each node slot now holds its earthbending node).
 - **One idea, a few primitives.** `EarthArt` is `chunk` (a lit, uneven lump in the SOLID pass that shrinks rather than
   fades), `crack` (a dark jagged split in the SOFT pass, with an optional jade seam in GLOW), `dust` (a `Shades.smoke`
   billow) and `seam` (a three-layer jade ring). Jade appears only where the bender's will is in the ground.
+- **Finish a move to a new idea everywhere it is drawn.** After the rework, phasing was still on screen in four places:
+  `DensityArt`'s own violet palette, `DensityEffects`' phase ripples, the awakening's `PowerIntroService` spec, and the
+  gifted mobs' moves (`MobMoves`: reach through, embed, phase ambush). `DensityArt` now aliases `EarthArt`'s constants
+  (`JADE`, `JADE_PALE`, `JADE_DEEP`, `GREY`, `CRACK`, `MUD`), the awakening is `0x5FA36A` with `DENSITY_SLAM` and
+  `DENSITY_RIPPLE`, and a gifted earthbender throws rock, embeds and raises a marked pillar through `EarthGeometry.show`,
+  so a mob's move looks like the player's. Grep the old palette's hex and the old move names before calling it done.
 
 ### Ticking and tests
 

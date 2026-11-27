@@ -141,6 +141,8 @@ geyser) follow it, each with its own character. Not every power should: a telepa
    | Telekinesis | `2A1030` plum (refraction shadow, soft pass), `8A2C6E` deep orchid (halo), `D65AA8` orchid (body), `FFB3DE` blush (rim, glints), `FFF3FA` core, dust (all in `KineticArt`) |
    | Regeneration | `3A060C` clot (dark veins, soft pass), `B0101C` blood, `FF4050` bright, `FFD9A0` life gold, `EDE3D0` bone, `FFF4F0` core (all in `RegenArt`; Regrowth's veins in `RegrowthLayer`) |
    | Matter Assembly | `7A4513` deep amber (dark seams, soft pass), `F2A848` amber, `FFC766` honey, `FFE3A0` seam, `FFF1C8` core, `BFE8FF` ice glint (all in `AssemblyArt`; the block texture from `tools/GenerateAssemblyTextures.java`) |
+   | Density (earthbending) | `2B241E` crack, `4A3A2C` mud, `7A6450` soil, `A8946E` dust, `8A8580` grey stone, `2E5E3A` deep jade, `5FA36A` jade (the stance's glow and seams), `CFEBC9` pale jade (all in `EarthArt`; `DensityArt` borrows the same constants, and the awakening and gifted mobs use them too) |
+   | Induced Radioactivity | `FF4A0C` ember, `FF9330` heat, `FFF2D2` white-hot (the core running hotter), `5FAE1E`/`C4F23C` sickness, `9ADCFF`/`E6F6FF` Cherenkov blue (the Hearth, the EMP), smoke and dust for blasts (all in `RadiationArt`; the hand is `RadiationGeometry.hand`) |
 
    Flight is also a good model of a whole power built from one shape language: every Flight set piece is drawn
    by `FlightArt` from three shared primitives (a translucent `arc` sheet with a turning lip, a broken tapered
@@ -182,7 +184,7 @@ geyser) follow it, each with its own character. Not every power should: a telepa
 | Need | Use | Examples |
 | --- | --- | --- |
 | A quick strike, ring, bolt or crack (under about a second) | `AbilityEffects.send(level, Kind, origin, target, scale)` → a case in the power's `*Effects.play` → `LightningRenderer.stroke` / `star` | Quake's rings, time's clock, speed trail |
-| A staged animation with a fixed length (a few seconds) | **Set piece**: `Piece` + `SetPiecePayload.send` → `PieceArt` → a method in a `*Art` class drawing on `Canvas` | stop gust, Overrun depart/arrive, Matter rise, Starfall |
+| A staged animation with a fixed length (a few seconds) | **Set piece**: `Piece` + `SetPiecePayload.send` → `PieceArt` → a method in a `*Art` class drawing on `Canvas` | stop gust, Overrun depart/arrive, Matter rise, every class Ultimate |
 | Something with no fixed length that follows state | A client state mirror (fed by its own payload) drawn every frame from `drawLive(Canvas)` | Cyclone and tornado, Overrun wake, rewind trail, Flight's wind round charging and diving flyers (`FlightArt.drawLive`) |
 | An animation timed by a state change | Bit flags in the power's visual-state payload; the client stamps the time a flag changes and animations read the phase's age | Flight's `FlightVisualStatePayload` flags and `ClientFlightVisualState.phaseAge` |
 | The player's body | `ArmPose` + `PowerArmPoses` (third person) + `FirstPersonArmGeometry` (first person), sent with `ArmPosePayload.show` | Wind Arms, Flight's coil, brace, roll, clap and cast, Quake strain, cryo lance |

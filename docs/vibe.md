@@ -128,7 +128,7 @@ Every passive ties two moves together.
 - **Concussion.** **Through the Seam** sends a blast that crosses one of your open Breaches on out of the other mouth. **Return Address** marks whoever fires a shot your guard catches. **Backscatter** makes each banked shot hit harder on Return Fire, and **Overflow** bursts a bank of three or more into interference where Return Fire stops. **Vibe Lance** is a narrow long-range shot, and **Reverb** opens with both palms.
 - **Breaching.** **Slingshot** makes your next blast instant and 30% harder for three seconds after you cross your own Breach. **Wayfarer** and **Safe Horizon** give travelers Speed, Resistance and put out their fire. **Glimpse** opens a window to one of your frequencies for ten seconds: you can see the place through it, but nothing crosses (blasts included). **World Frequency** reaches frequencies in other dimensions and holds two more. **Flashstep** folds a short distance in one motion. **Rift Beast**, the signature ability under World Frequency, opens a breach to a hostile world and pulls a Nether beast through to fight for you for 30 to 50 seconds (longer at higher tiers, and tougher). Like a tamed wolf it follows you, goes for whatever you hit, whoever hits you or anything hunting you, and never turns on you or your friends; if it falls more than 22 blocks behind, it breaches back to your side. Press again to send it at whatever you look at (or, looking at nothing, back to heel); Shift-press sends it home. It never zombifies, drops nothing, and goes back through a breach when its time is up.
 - **Dimensional Sight.** **Residual Sense** marks anyone who hurts you for six seconds. **Deep Read** replays more hits and marks for longer. **Co-Vibe** lets allies see a replay with you. **Afterimage** makes a blast slow marked targets, and **Prism Lock** collapses a zone of interference that damages and slows (and stops a speedster's run); **Fixed Point** holds a read enemy in Prism Lock or Rift Fall longer.
-- The class abilities are **Crosswave** (Offense), **Mirror Breach** (Defense) and **Sanctuary Breach** (Support). Sanctuary extinguishes travelers and gives them Resistance. Catch 40 hostile projectiles with a guard for the Evolved trial.
+- The classes' Ultimates ([Classes](classes.md)) are **Dimension Drop** (Offense: the foe in front of you falls through a breach, is blasted from breach to breach five times and dropped out of the sky, 24.5 damage), **Between Worlds** (Defense: for 10 seconds blows pass through you and shots come back out beside the shooter) and **Safe Harbor** (Support: breaches bring friends within 20 blocks to your side and a wide breach over you all hides you from hunters for 12 seconds while you mend). Catch 40 hostile projectiles with a guard for the Evolved trial.
 
 ## Breach Boxing (fighting style)
 
@@ -156,7 +156,7 @@ Test the power with `/heroesevolved power give @s vibe` on a player without an a
   covers frequency slots, tuning, renaming, the wheel's free press, breaches and glimpses to a frequency, the terrain
   each mouth is sent and the view's turn; `VibeCombatGameTests` covers floor breaches, the Rift Beast and Breach Boxing;
   `VibeKitGameTests` covers every active
-  skill, the class abilities, the passives that link two moves, the speedster rule and both outcomes of the awakening;
+  skill, the Ultimates, the passives that link two moves, the speedster rule and both outcomes of the awakening;
   `VibeVisionGameTests` covers the held breach (the slow channel, following the look, letting go early, the last
   frequency and Shift) and visions (an ally below three hearts more than 40 blocks off, touching another player's
   chest or tamed wolf, the double and being torn back, the hologram and its voice, only
@@ -166,7 +166,7 @@ Test the power with `/heroesevolved power give @s vibe` on a player without an a
   them with the rest of the suite: `./gradlew runGameTestServer --init-script tools/rewind-gametest.init.gradle`, or
   on their own with `tools/vibe-gametest.init.gradle`.
 - **Photographs:** `./gradlew runClient --init-script tools/vibe-preview.init.gradle` casts every core move, active skill,
-  class ability, Through the Seam, Overflow, the awakening, the frequency wheel and rename field, and the view through a
+  Ultimate, Through the Seam, Overflow, the awakening, the frequency wheel and rename field, and the view through a
   breach to a walled garden (from behind, first person, at an angle, up close, looking back and through a glimpse). It saves shots to
   `build/vibe-preview/screenshots/`. `./gradlew runClient --init-script tools/vibe-vision-preview.init.gradle`
   photographs a held breach from the side, in first person and turning with the look, a vision from inside it, a

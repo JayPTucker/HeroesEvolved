@@ -117,7 +117,7 @@ Three lanes of six. In each lane the 2nd and 5th are active skills and the 6th i
    player behind a Lens Shield twice as hard.
 5. **Overcharge the Enemy** *(active).* Pour red energy into a powered foe within 16 blocks. Its next move goes wild: the
    move is lost, the caster takes 4, and a gifted mob's power lashes its own side. Sylar is stalled instead.
-6. **The Second Coming** *(capstone).* Stop holding back: red lightning, Van Full and Lightning Cannon hit twice as hard
+6. **The Second Coming** *(capstone).* Stop holding back: red lightning and Van Full hit twice as hard
    and kill, and a supercharged friend in a beam's path takes it too.
 
 ### Fixer (useful anywhere)
@@ -144,14 +144,16 @@ linked body to the nearest foe within 8 blocks**, **4 + tier** each (alone, you 
 
 ## Classes
 
-- **Got Your Back** (support). A dash to your partner's side, or the nearest friend, pet or friendly villager within
-  16 blocks, and a Surge on arrival. With nobody to reach, a six-block dash ahead with your next red lightning at full
-  strength.
-- **Lightning Cannon** (offense). Two seconds with cupped hands, then a beam three blocks wide and 18 long (4 + tier)
-  that knocks down everything in its path. While you have this class, every Supercharge you give arms your next red
-  lightning at full strength.
-- **Lights Back On** (defense). Shock Therapy on every friend within eight blocks (you too), and every furnace and battery
-  there jumpstarted.
+Each class's ability is an **Ultimate** on a long wait (see [Classes](classes.md) for how they work):
+
+- **Feedback Loop** (offense). Take the foe in front of you by the wrist and turn its own life up until it can't hold
+  it: five jolts, then you draw the overflow into a ball of red lightning and drive it back into its chest, 21.5 damage
+  in all. The burst forks into up to four foes near for 5 each. The foe is held the whole time. While you have this
+  class, every Supercharge you give arms your next red lightning at full strength.
+- **Red Armour** (defense). Twelve seconds supercharged: blows land two-fifths lighter, each one throws a fork back into
+  whoever struck, and you are quicker on your feet. When it burns out, it burns out into the nearest foes.
+- **Everyone, Now** (support). A red thread runs to every friend within 14 blocks and Surges them all for 12 seconds:
+  their powers stronger and further-reaching, and themselves quicker and harder-hitting.
 
 ## Finishers: Sidekick Juice, Red Wave, Shock Therapy Reversed
 

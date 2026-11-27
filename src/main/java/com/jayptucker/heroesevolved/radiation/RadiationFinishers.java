@@ -43,7 +43,7 @@ public final class RadiationFinishers {
         @Override public void start(Run run) {
             ServerPlayer p = run.player;
             Takedowns.show(run.level(), Piece.FINISH_HALF_LIFE, run.anchor, p.position(), Math.max(.6F, run.target.getBbHeight()), run.target, p.getId());
-            ArmPosePayload.show(p, ArmPose.ELECTRO_TOUCH, 8);
+            ArmPosePayload.show(p, ArmPose.RAD_GRIP, 8);
             Takedowns.sound(run, run.anchor, SoundEvents.BEACON_POWER_SELECT, .7F, 1.4F);
         }
 
@@ -83,7 +83,7 @@ public final class RadiationFinishers {
         @Override public void start(Run run) {
             ServerPlayer p = run.player;
             Takedowns.show(run.level(), Piece.FINISH_POCKET_SUN, run.anchor, p.position(), Math.max(.6F, run.target.getBbHeight()), null, p.getId());
-            ArmPosePayload.show(p, ArmPose.ELECTRO_CUP, SUN_PRESS);
+            ArmPosePayload.show(p, ArmPose.RAD_CUP, SUN_PRESS);
             Takedowns.sound(run, p.position(), SoundEvents.BEACON_ACTIVATE, .7F, 1.8F);
         }
 
@@ -92,7 +92,7 @@ public final class RadiationFinishers {
             if (age > SUN_FORM && age < SUN_PRESS && age % 3 == 0)
                 Takedowns.sound(run, run.player.position(), SoundEvents.BEACON_AMBIENT, .8F, 1F + age * .06F);
             if (age == SUN_PRESS) {
-                ArmPosePayload.show(run.player, ArmPose.QUAKE_PALM, 8);
+                ArmPosePayload.show(run.player, ArmPose.RAD_PALMS, 8);
                 Takedowns.flinch(run.target);
             }
         }

@@ -9,7 +9,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.ParticleStatus;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.HumanoidArm;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
@@ -537,4 +536,99 @@ final class AmpArt {
     private static boolean firstPerson() { return Minecraft.getInstance().options.getCameraType() == CameraType.FIRST_PERSON; }
 
     private static boolean minimal() { return Minecraft.getInstance().options.particles().get() == ParticleStatus.MINIMAL; }
+
+    // ------------------------------------------------------------------
+    // Ultimates (amplify/AmpUltimates)
+    // ------------------------------------------------------------------
+
+    /**
+     * Feedback Loop ({@code AmpUltimates.FeedbackLoop}): a red line from his hand to the foe's wrist, red lightning
+     * climbing the foe thicker with every jolt and a flash at each, the overflow drawn back along the line into a ball
+     * between his palms that grows and spits, and the ball driven home with a burst.
+     */
+    static void feedback(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity amp = a.bound(c), foe = UltArt.foe(c, a);
+        float h = Math.max(.8F, a.scale());
+        int seed = a.seed() * 11 + 7;
+        int grab = com.jayptucker.heroesevolved.amplify.AmpUltimates.FeedbackLoop.GRAB,
+                surge = com.jayptucker.heroesevolved.amplify.AmpUltimates.FeedbackLoop.SURGE,
+                jolts = com.jayptucker.heroesevolved.amplify.AmpUltimates.FeedbackLoop.JOLTS,
+                every = com.jayptucker.heroesevolved.amplify.AmpUltimates.FeedbackLoop.EVERY,
+                draw = com.jayptucker.heroesevolved.amplify.AmpUltimates.FeedbackLoop.DRAW,
+                drive = com.jayptucker.heroesevolved.amplify.AmpUltimates.FeedbackLoop.DRIVE;
+        Vec3 feet = foe != null ? foe.getPosition(c.partial) : a.target();
+        Vec3 chest = feet.add(0, h * .6, 0);
+        Vec3 hand = amp != null ? UltArt.hand(amp, c.partial, 1, .6) : a.origin().add(0, 1.3, 0);
+        Vec3 palms = amp != null ? amp.getPosition(c.partial).add(0, 1.25, 0).add(amp.getViewVector(c.partial).multiply(1, 0, 1).normalize().scale(.55)) : hand;
+        // The line to the wrist.
+        float link = UltArt.window(t, 0, drive + 2, 2, 2);
+        if (link > 0) fork(c, hand, hand.lerp(chest.subtract(0, h * .15, 0), smooth(0, grab, t)), .03F, link, seed + (int) (t / 2), 1);
+        // The foe lit up from inside, more with each jolt.
+        float lit = UltArt.window(t, surge, drive + 4, 2, 4);
+        if (lit > 0) {
+            int count = 4 + (int) (Math.min(jolts, (t - surge) / every) * 3);
+            climb(c, feet, h, Math.max(.3F, h * .25F), lit, seed + (int) (t / 2) * 13, minimal() ? 3 : count);
+            if (c.glow()) c.glow(chest, h * .5F, RED, lit * .25F);
+        }
+        for (int i = 0; i < jolts; i++) {
+            float age = t - (surge + i * every);
+            if (age < 0 || age > 6) continue;
+            float f = 1 - age / 6;
+            ring(c, chest, UP, .3F + 1.1F * (age / 6), .05F, f);
+            if (c.glow()) c.glow(chest, .8F * f, HOT, f);
+        }
+        // The overflow drawn out along the line into a ball between his palms, growing.
+        float ball = UltArt.window(t, draw, drive + 2, 2, 1);
+        if (ball > 0) {
+            float grow = smooth(draw, drive, t), r = .12F + .38F * grow;
+            for (int i = 0; i < 3; i++) {
+                float k = ((t - draw) * .12F + i / 3F) % 1;
+                Vec3 bead = chest.lerp(palms, k);
+                if (c.glow()) c.glow(bead, .12F, HOT, ball * (1 - k));
+            }
+            if (c.glow()) {
+                c.glow(palms, r * 2.6F, RED, ball * .45F);
+                c.glow(palms, r, CORE, ball);
+            }
+            ballSparks(c, palms, r, ball, seed + (int) t);
+            ring(c, palms, new Vec3(cos(t * .3F), .6, sin(t * .3F)), r * 1.4F, .03F, ball);
+        }
+        // Driven home.
+        if (t >= drive && t < drive + 18) {
+            float age = t - drive, f = 1 - smooth(4, 18, age);
+            fork(c, palms, chest, .09F, f, seed + 99, 3);
+            ring(c, chest, chest.subtract(palms), .3F + 2.2F * smooth(0, 10, age), .07F, f);
+            if (c.glow() && age < 6) c.glow(chest, 2 * (1 - age / 6), CORE, 1 - age / 6);
+        }
+    }
+
+    /** Red Armor, one second (re-sent each second; the second in the seed): red lightning crawling over the whole body, a ring turning at the waist. */
+    static void redArmor(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity body = a.bound(c);
+        if (body == null) return;
+        int second = a.seed();
+        boolean last = second >= com.jayptucker.heroesevolved.amplify.AmpUltimates.RedArmor.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(10, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        Vec3 feet = body.getPosition(c.partial);
+        float h = Math.max(.6F, a.scale()), clock = c.level.getGameTime() % 2400 + c.partial;
+        climb(c, feet, h, Math.max(.3F, body.getBbWidth() * .65F), f, (int) (clock / 2) * 7 + second, minimal() ? 3 : 9);
+        ring(c, feet.add(0, h * .5, 0), new Vec3(sin(clock * .1F) * .2, 1, cos(clock * .13F) * .2).normalize(), .6F, .04F, f * .8F);
+        if (c.glow()) c.glow(feet.add(0, h * .55, 0), h * .65F, RED, f * .22F);
+        if (second == 0 && t < 10) ring(c, feet.add(0, .1, 0), UP, .4F + 3 * (t / 10), .08F, 1 - t / 10);
+    }
+
+    /** Everyone, Now on a friend (bound; his id in the seed; re-sent every three seconds): a red thread from his hand and lightning settling over them. */
+    static void ampLink(Canvas c, Active a, float t) {
+        Entity friend = a.bound(c), amp = a.seed() >= 0 ? c.level.getEntity(a.seed()) : null;
+        if (friend == null) return;
+        float h = Math.max(.6F, a.scale()), f = fade(t, a.piece().ticks, 3, 8);
+        Vec3 feet = friend.getPosition(c.partial), to = feet.add(0, h * .6, 0);
+        if (amp != null && amp != friend) {
+            Vec3 from = UltArt.hand(amp, c.partial, 1, .55);
+            fork(c, from, from.lerp(to, smooth(0, 6, t)), .025F, f * (1 - smooth(10, 24, t) * .7F), a.seed() + (int) (t / 2), 1);
+        }
+        climb(c, feet, h, Math.max(.3F, friend.getBbWidth() * .6F), f * .7F, friend.getId() * 3 + (int) (t / 2), minimal() ? 2 : 4);
+    }
 }

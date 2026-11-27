@@ -10,7 +10,7 @@ public final class ProjectileRanges {
     public static final double ICE_STREAM = 24, ICE_BOLT = 48, CRYSTAL_LANCE = 64, ICE_SHARDS = 24;
     public static final double CHAIN_LIGHTNING = 64, LIVE_CURRENT = 24, BALL_LIGHTNING = 64;
     public static final double VIBE_PALM = 48, VIBE_LANCE = 72, VIBE_HEAVY = 40;
-    public static final double WATER_DAGGERS = 40, WATER_WAVE = 32, TSUNAMI = 48;
+    public static final double WATER_DAGGERS = 40, WATER_WAVE = 32;
     public static final double FORCE_PUSH = 24, HARD_FORCE_PUSH = 32;
     public static final double RADIATION_BEAM = 64, GAMMA_LANCE = 80;
     public static final double ARC_LANCE = 80, FOCUSED_SHRIEK = 80;

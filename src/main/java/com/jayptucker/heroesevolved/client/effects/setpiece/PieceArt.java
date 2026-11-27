@@ -26,32 +26,30 @@ final class PieceArt {
             case END_PORTAL_DORMANT, END_PORTAL_CHANNEL, END_PORTAL_IMPRINT, END_PORTAL_OPEN, END_PORTAL_CANCEL -> PortalArt.draw(c, a, t);
             case OVEREXERTION -> OverexertionArt.draw(c, a, t);
             case FLIGHT_RELEASE, FLIGHT_SKYBURST, FLIGHT_IMPACT, FLIGHT_RESCUE, FLIGHT_SHELTER,
-                    FLIGHT_CURRENT, FLIGHT_THERMAL_MARK, FLIGHT_THERMAL_RISE, FLIGHT_INTERCEPT,
-                    TEMPEST_DRILL, GALE_WALL, FORMATION_FLIGHT -> FlightArt.draw(c, a, t);
+                    FLIGHT_CURRENT, FLIGHT_THERMAL_MARK, FLIGHT_THERMAL_RISE, FLIGHT_INTERCEPT -> FlightArt.draw(c, a, t);
             case PYRO_FORGE, PYRO_SPEAR, PYRO_BREATH, PYRO_FIRESTORM_PRIME, PYRO_FIRESTORM,
                     PYRO_COLLAPSE, PYRO_BURST, PYRO_SUN_CHARGE, PYRO_SUN_DROP, PYRO_LASH, PYRO_MANTLE,
                     PYRO_CAUTERIZE, PYRO_MINE_ARM, PYRO_MINE_WARN, PYRO_LANCE, PYRO_SHEPHERD, PYRO_TAKEOFF, PYRO_PHOENIX, PYRO_WAKE,
-                    SUNFALL, EMBER_SHROUD, HEARTHFIRE, PYRO_JAB, PYRO_KICK, PYRO_SWEEP_KICK, PYRO_JET_STEP, PYRO_FLIP,
+                    PYRO_JAB, PYRO_KICK, PYRO_SWEEP_KICK, PYRO_JET_STEP, PYRO_FLIP,
                     PYRO_COUNTER, FINISH_DRAGON, FINISH_PHOENIX, FINISH_HEARTH -> PyroArt.draw(c, a, t);
             case ELECTRO_DRAW, ELECTRO_ARC, ELECTRO_CURRENT, ELECTRO_ORB, ELECTRO_PRIME, ELECTRO_WARN,
                     ELECTRO_DEVICE, ELECTRO_JAM, ELECTRO_HAUL, ELECTRO_REEL,
                     ELECTRO_STRIKE, ELECTRO_PULSE, ELECTRO_RIDE, ELECTRO_SCAR, ELECTRO_COIL, ELECTRO_SIPHON,
                     ELECTRO_BLACKOUT, ELECTRO_AURA, ELECTRO_FIELD, ELECTRO_SCREEN,
-                    TESLA_SPIRE, TESLA_ZAP, FARADAY_CAGE, JUMPSTART, ELECTRO_LANCE, ELECTRO_THREAD,
+                    ELECTRO_LANCE, ELECTRO_THREAD,
                     ELECTRO_OVERCHARGE, ELECTRO_SINK, ELECTRO_SINK_BURST, ELECTRO_ANCHOR, ELECTRO_WIRE,
                     ELECTRO_SPARK, ELECTRO_CLAP, ELECTRO_GROUND_ARC, ELECTRO_ARC_STEP, ELECTRO_DECOY, ELECTRO_GROUND_OUT,
                     ELECTRO_LOADED -> ElectroArt.draw(c, a, t);
             case MIMIC_ATTUNE, MIMIC_IMPRINT, MIMIC_SHIFT -> MimicArt.draw(c, a, t);
             case SONIC_CRY, SONIC_SCREAM, SONIC_NOTE, SONIC_NOTE_BURST, SONIC_WALL, SONIC_WALL_PUSH, SONIC_VAULT,
                     SONIC_DIVE, SONIC_LANDING, SONIC_GATHER, SONIC_CRESCENDO, SONIC_SHRIEK, SONIC_RING, SONIC_SHATTER,
-                    SONIC_DISSONANCE, SONIC_ECHO, SONIC_GUARD, SONIC_QUIET,
-                    RESONANCE_CASCADE, SILENCE_DOME, BATTLE_HYMN -> SonicArt.draw(c, a, t);
+                    SONIC_DISSONANCE, SONIC_ECHO, SONIC_GUARD, SONIC_QUIET -> SonicArt.draw(c, a, t);
             case QUAKE_DUST, QUAKE_SHATTER, QUAKE_LANCE, QUAKE_SHELL, QUAKE_BRACE, QUAKE_DASH, QUAKE_SEAM, QUAKE_TRACE ->
                     QuakeArt.draw(c, a, t);
             case REGEN_STREAM, REGEN_FAN, REGEN_IMPACT, REGEN_PAYBACK, REGEN_FEIGN, REGEN_CPR -> RegenArt.draw(c, a, t);
             case TELE_COMMAND, TELE_LISTEN, TELE_VOICE, TELE_WEAVE, TELE_PERSUADE, TELE_WON, TELE_RECALL, TELE_MEMORY,
                     TELE_ECHO, TELE_LOST, TELE_FRIGHT, TELE_HIVE_LINK, TELE_HALO, TELE_PROJECT,
-                    PSYCHIC_STORM, BLIND_SPOT, HIVE_MIND, FINISH_LIGHTS -> TelepathyArt.draw(c, a, t);
+                    FINISH_LIGHTS -> TelepathyArt.draw(c, a, t);
             case VIBE_GATHER, VIBE_WAVE, VIBE_CROSSWAVE, VIBE_HIT, VIBE_BREACH_SEED, VIBE_BREACH_OPEN,
                     VIBE_BREACH_ARRIVE, VIBE_BREACH_CLOSE, VIBE_TRANSIT, VIBE_TOUCH, VIBE_ECHO, VIBE_GUARD,
                     VIBE_GUARD_CLOSE, VIBE_LOCK_WARN, VIBE_LOCK, VIBE_AWAKEN, VIBE_BEAST, VIBE_KICK, VIBE_SEAM,
@@ -68,37 +66,6 @@ final class PieceArt {
             case AMP_ZAP, AMP_SURGE, AMP_OVERCHARGE, AMP_BOLT, AMP_BEAM, AMP_BURST, AMP_SHOCK, AMP_JUMP, AMP_GATHER, AMP_WAVE,
                     AMP_THREAD, AMP_BURNOUT, AMP_WILD, AMP_DOOR, AMP_DOME, AMP_STORM, AMP_AWAKEN, AMP_BACKLASH,
                     FINISH_JUICE, FINISH_RED_WAVE, FINISH_REVERSE -> AmpArt.draw(c, a, t);
-            case GROUND_ZERO -> ElementArt.groundZero(c, a, t);
-            case CONTAINMENT_DOME -> ElementArt.containment(c, a, t);
-            case REACTOR_HEARTH -> ElementArt.reactor(c, a, t);
-            case HOUR_HAND -> MotionArt.hourHand(c, a, t);
-            case TIME_LOOP -> MotionArt.timeLoop(c, a, t);
-            case BORROWED_TIME -> MotionArt.borrowedTime(c, a, t);
-            case HAILSTORM -> ElementArt.hailstorm(c, a, t);
-            case CRYSTAL_BASTION -> ElementArt.bastion(c, a, t);
-            case AURORA_VEIL -> ElementArt.aurora(c, a, t);
-            case FISSURE_MAW -> ElementArt.fissure(c, a, t);
-            case STONE_RAMPART -> ElementArt.rampart(c, a, t);
-            case BEDROCK_STANCE -> ElementArt.bedrock(c, a, t);
-            case VITAL_BURST -> MindArt.vitalBurst(c, a, t);
-            case UNDYING -> MindArt.undying(c, a, t);
-            case LIFEBLOOM -> MindArt.lifebloom(c, a, t);
-            case LIGHTNING_FLURRY -> MotionArt.flurry(c, a, t);
-            case RELAY_RUN -> MotionArt.relay(c, a, t);
-            case PHASE_BLUR -> MotionArt.phaseBlur(c, a, t);
-            case SHADOW_STRIKE -> MotionArt.shadowStrike(c, a, t);
-            case REFRACTION_CLOAK -> MotionArt.refraction(c, a, t);
-            case PRISM_HAZE -> MotionArt.prismHaze(c, a, t);
-            case PHASE_ERUPTION -> MotionArt.eruption(c, a, t);
-            case DENSE_BULWARK -> MotionArt.dense(c, a, t);
-            case PHASE_FIELD -> MotionArt.phaseField(c, a, t);
-            case PRISMATIC_OVERFLOW -> MindArt.overflow(c, a, t);
-            case EMPATHIC_WARD -> MindArt.ward(c, a, t);
-            case KINDRED_LIGHT -> MindArt.kindred(c, a, t);
-            case FORGE_CANNON -> MindArt.cannon(c, a, t);
-            case FORGE_SLUG -> MindArt.slug(c, a, t);
-            case BULWARK_LATTICE -> MindArt.lattice(c, a, t);
-            case MENDING_LATTICE -> MindArt.mending(c, a, t);
             case EXPLODING_MAN -> MiniBlast.draw(c, a.origin(), a.scale() / 80F, a.scale() * 1.15F, t, a.piece().ticks);
             case SPEED_GUST -> SpeedArt.gust(c, a, t);
             case SPEED_SHARED_TIME -> SpeedArt.sharedTime(c, a, t);
@@ -169,9 +136,9 @@ final class PieceArt {
             case SHIFT_STUDY, SHIFT_TOUCH, SHIFT_LUNGE, SHIFT_INSTINCT, SHIFT_HOLD, SHIFT_SONIC, SHIFT_GAZE,
                  SHIFT_DECOY, SHIFT_DECOY_BURST, SHIFT_REFLECT, SHIFT_NIGHTMARE, SHIFT_EXPOSED, SHIFT_DAZE, SHIFT_PLATES -> ShapeArt.draw(c, a, t);
             case DAMPENER_FIELD, DAMPENER_SHOT, DAMPENER_HIT, DAMPENER_MARK, DAMPENER_CHARGE -> DampenerArt.draw(c, a, t);
-            case HYDRO_WHIP, HYDRO_SNARE, HYDRO_WAVE, HYDRO_TSUNAMI, HYDRO_TENDRIL, HYDRO_BURST, HYDRO_SPLASH, HYDRO_WHIRLPOOL,
+            case HYDRO_WHIP, HYDRO_SNARE, HYDRO_WAVE, HYDRO_TENDRIL, HYDRO_BURST, HYDRO_SPLASH, HYDRO_WHIRLPOOL,
                     HYDRO_DELUGE, HYDRO_LASH, HYDRO_DAGGER, HYDRO_WHEEL, HYDRO_FLOW, HYDRO_VAULT, HYDRO_UNDERTOW, HYDRO_LOADED,
-                    HYDRO_GEYSER_MARK, HYDRO_GEYSER, HYDRO_JET, HYDRO_WALL, HYDRO_HEAL, HYDRO_RAIN, HYDRO_DOME, HYDRO_SPRING,
+                    HYDRO_GEYSER_MARK, HYDRO_GEYSER, HYDRO_JET, HYDRO_WALL, HYDRO_HEAL, HYDRO_RAIN,
                     HYDRO_AWAKEN -> HydroArt.draw(c, a, t);
             case STYLE_LENS_JAB, STYLE_SHARDS, STYLE_FORCE_BURST, STYLE_FIELD_SLAM, STYLE_LENS_SLIDE,
                     STYLE_BOUNCE -> StyleArt.draw(c, a, t);
@@ -209,6 +176,91 @@ final class PieceArt {
             case FINISH_HAMMER, FINISH_ORBIT -> AssemblyArt.alternates(c, a, t);
             case FINISH_ECHO, FINISH_BORROW -> MimicArt.alternates(c, a, t);
             case FINISH_APEX, FINISH_FACE -> ShapeArt.alternates(c, a, t);
+            // The class Ultimates, each in its power's own art class. The engine's own pieces draw nothing.
+            case ULT_HIDE, ULT_SHOW, ULT_CUT -> { }
+            case RAD_PULSE -> RadiationArt.pulse(c, a, t);
+            case RAD_DOSE -> RadiationArt.dose(c, a, t);
+            case RAD_CHAIN -> RadiationArt.chain(c, a, t);
+            case RAD_FALLOUT -> RadiationArt.fallout(c, a, t);
+            case RAD_ULT_POINT -> RadiationArt.point(c, a, t);
+            case RAD_ULT_LEAD -> RadiationArt.lead(c, a, t);
+            case RAD_ULT_HEARTH -> RadiationArt.hearth(c, a, t);
+            case EARTH_ULT_EMBRACE -> EarthArt.embrace(c, a, t);
+            case EARTH_ULT_ROCK -> { }
+            case EARTH_ULT_FORTRESS -> EarthArt.fortress(c, a, t);
+            case EARTH_ULT_HALL -> EarthArt.hall(c, a, t);
+            case EARTH_ULT_CHIP -> EarthArt.chip(c, a, t);
+            case SHIFT_ULT_APEX -> ShapeArt.apex(c, a, t);
+            case SHIFT_ULT_FORTRESS -> ShapeArt.fortress(c, a, t);
+            case MATTER_ULT_DESIGN -> AssemblyArt.design(c, a, t);
+            case MATTER_ULT_CITADEL -> AssemblyArt.citadelUlt(c, a, t);
+            case MATTER_ULT_HOSPITAL -> AssemblyArt.hospital(c, a, t);
+            case VIBE_ULT_DROP -> VibeArt.drop(c, a, t);
+            case VIBE_ULT_GHOST -> VibeArt.between(c, a, t);
+            case VIBE_ULT_PASS -> VibeArt.pass(c, a, t);
+            case VIBE_ULT_HARBOR -> VibeArt.harbor(c, a, t);
+            case AMP_ULT_FEEDBACK -> AmpArt.feedback(c, a, t);
+            case AMP_ULT_ARMOR -> AmpArt.redArmor(c, a, t);
+            case AMP_ULT_LINK -> AmpArt.ampLink(c, a, t);
+            case REGEN_ULT_BRAWL -> RegenArt.brawl(c, a, t);
+            case REGEN_ULT_UNDYING -> RegenArt.undying(c, a, t);
+            case REGEN_ULT_BLOOD -> RegenArt.lifeblood(c, a, t);
+            case REGEN_ULT_SAVED -> RegenArt.saved(c, a, t);
+            case FORCE_ULT_BOX -> ForceArt.crushBox(c, a, t);
+            case FORCE_ULT_AEGIS -> ForceArt.aegis(c, a, t);
+            case FORCE_ULT_BUBBLE -> ForceArt.vanishBubble(c, a, t);
+            case MIMIC_ULT_ALL -> MimicArt.everything(c, a, t);
+            case MIMIC_ULT_VOICES -> { }
+            case MIMIC_ULT_GIFT -> MimicArt.gift(c, a, t);
+            case TELE_ULT_MIND -> TelepathyArt.mind(c, a, t);
+            case TELE_ULT_FEARS, TELE_ULT_DOUBLES, TIME_ULT_COPIES -> { }
+            case TELE_ULT_POP -> TelepathyArt.pop(c, a, t);
+            case TELE_ULT_LINK -> TelepathyArt.link(c, a, t);
+            case KINETIC_ULT_WRECK -> KineticArt.wreck(c, a, t);
+            case KINETIC_ULT_STOP -> KineticArt.stop(c, a, t);
+            case KINETIC_ULT_HELD -> KineticArt.held(c, a, t);
+            case KINETIC_ULT_CRADLE -> KineticArt.cradle(c, a, t);
+            case KINETIC_SWAT_ULT -> KineticArt.cradleSwat(c, a, t);
+            case TIME_ULT_STOPPED -> TimeArt.tenPastTen(c, a, t);
+            case TIME_ULT_MARK -> TimeArt.markUlt(c, a, t);
+            case TIME_ULT_REWIND -> TimeArt.rewindUlt(c, a, t);
+            case TIME_ULT_HOURS -> TimeArt.hours(c, a, t);
+            case FLIGHT_ULT_SKY -> FlightArt.sky(c, a, t);
+            case FLIGHT_ULT_EYE -> FlightArt.eye(c, a, t);
+            case FLIGHT_ULT_WINGS -> FlightArt.wings(c, a, t);
+            case QUAKE_ULT_HEART -> QuakeArt.heart(c, a, t);
+            case QUAKE_ULT_BARRIER -> QuakeArt.barrier(c, a, t);
+            case QUAKE_ULT_RIPPLE -> QuakeArt.ripple(c, a, t);
+            case QUAKE_ULT_SWELL -> QuakeArt.swell(c, a, t);
+            case SONIC_ULT_FINAL -> SonicArt.finalMovement(c, a, t);
+            case SONIC_ULT_DEAD -> SonicArt.deadAir(c, a, t);
+            case SONIC_ULT_HUSHED -> SonicArt.hushed(c, a, t);
+            case SONIC_ULT_ANTHEM -> SonicArt.anthem(c, a, t);
+            case SPEED_ULT_WORLD -> SpeedArt.world(c, a, t);
+            case SPEED_ULT_HEART -> SpeedArt.heart(c, a, t);
+            case SPEED_ULT_DODGE -> SpeedArt.dodge(c, a, t);
+            case SPEED_ULT_RESCUE -> SpeedArt.rescue(c, a, t);
+            case PYRO_ULT_SUN -> PyroArt.sun(c, a, t);
+            case PYRO_ULT_FLAME -> PyroArt.livingFlame(c, a, t);
+            case PYRO_ULT_FLARE -> PyroArt.flare(c, a, t);
+            case PYRO_ULT_NOVA -> PyroArt.nova(c, a, t);
+            case PYRO_ULT_BONFIRE -> PyroArt.bonfire(c, a, t);
+            case PYRO_ULT_COCOON -> PyroArt.cocoon(c, a, t);
+            case ELECTRO_ULT_STORM -> ElectroArt.storm(c, a, t);
+            case ELECTRO_ULT_ARC -> ElectroArt.arc(c, a, t);
+            case ELECTRO_ULT_SHELL -> ElectroArt.shell(c, a, t);
+            case ELECTRO_ULT_PULSE -> ElectroArt.restart(c, a, t);
+            case HYDRO_ULT_BARREL -> HydroArt.barrel(c, a, t);
+            case HYDRO_ULT_CITADEL -> HydroArt.citadel(c, a, t);
+            case HYDRO_ULT_SPLASH -> HydroArt.swallow(c, a, t);
+            case HYDRO_ULT_MONSOON -> HydroArt.monsoon(c, a, t);
+            case HYDRO_ULT_SPRING -> HydroArt.ultSpring(c, a, t);
+            case CRYO_ULT_GLACIER -> CryoArt.glacier(c, a, t);
+            case CRYO_ULT_CITADEL -> CryoArt.citadel(c, a, t);
+            case CRYO_ULT_SHARD -> CryoArt.wallShard(c, a, t);
+            case CRYO_ULT_SNOW -> CryoArt.hibernation(c, a, t);
+            case CRYO_ULT_ARMOUR -> CryoArt.frostArmour(c, a, t);
+            case CRYO_ULT_COCOON -> CryoArt.cocoon(c, a, t);
         }
     }
 }

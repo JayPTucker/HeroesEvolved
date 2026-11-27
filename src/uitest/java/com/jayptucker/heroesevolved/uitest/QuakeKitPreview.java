@@ -10,7 +10,6 @@ import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.quake.QuakeKit;
 import com.jayptucker.heroesevolved.quake.QuakeService;
 import com.jayptucker.heroesevolved.quake.QuakeSkills;
-import com.jayptucker.heroesevolved.styles.StyleCasts;
 import com.jayptucker.heroesevolved.weapons.PowerWeapons;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
@@ -249,14 +248,7 @@ public final class QuakeKitPreview {
             case 1054 -> onServer(mc, p -> check(ExpansionSkills.activate(context(p), "seamfinder"), "surgical fracture"));
             case 1057 -> pending = "k6-seam-touch.png";
             case 1064 -> pending = "k6-seam-cracks.png";
-            // ---------------- Styles ----------------
-            case 1100 -> { camera(mc, CameraType.THIRD_PERSON_BACK); onServer(mc, p -> { place(p, 2320, 0, 0, 15); check(StyleCasts.cast(context(p), "fissure_maw"), "fissure maw"); }); }
-            case 1106 -> pending = "t1-fissure-maw.png";
-            case 1140 -> { camera(mc, CameraType.THIRD_PERSON_BACK); onServer(mc, p -> { place(p, 2340, 0, 0, 10); check(StyleCasts.cast(context(p), "stone_rampart"), "stone rampart"); }); }
-            case 1146 -> pending = "t2-stone-rampart.png";
-            case 1180 -> onServer(mc, p -> { place(p, 2360, 0, 0, 10); check(StyleCasts.cast(context(p), "bedrock_stance"), "bedrock stance"); });
-            case 1188 -> pending = "t3-bedrock-stance.png";
-            case 1220 -> PreviewQuiet.quit();
+            case 1100 -> PreviewQuiet.quit();
             default -> { }
         }
     }

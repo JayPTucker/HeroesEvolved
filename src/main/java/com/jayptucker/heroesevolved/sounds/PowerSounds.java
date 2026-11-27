@@ -37,8 +37,8 @@ import java.util.function.Supplier;
  * ability has a sound, including the many that had none:
  *
  * <ul>
- *   <li><b>Presses</b> ({@link #used}) play the action's cue: {@code HEAVY} for ultimates, class abilities and
- *       signature moves, {@code CHARGE} for wind-ups a release finishes, {@code CAST} for the rest.</li>
+ *   <li><b>Presses</b> ({@link #used}) play the action's cue: {@code HEAVY} for ultimates and signature moves (a
+ *       class's Ultimate plays its own as it opens), {@code CHARGE} for wind-ups a release finishes, {@code CAST} for the rest.</li>
  *   <li><b>Follow-ups</b> play {@code IMPACT}, <b>dismissals</b> {@code END}, and a <b>release</b> that finishes a
  *       charge plays the move itself.</li>
  *   <li><b>Blows</b> a power lands ({@link #damaged}) play its {@code IMPACT} where they land; fighting-style
@@ -61,7 +61,7 @@ public final class PowerSounds {
     /** Presses that start a wind-up; the release that follows plays the move. */
     private static final Set<String> CHARGES = Set.of(
             "pyro_flare", "pyro_inferno", "flight_launch", "radiation_exploding_man", "speed_cyclone",
-            "pyrokinesis_sunfall", "sonic_crescendo");
+            "sonic_crescendo");
 
     /** Presses whose cue is set by hand rather than by tier or node kind. */
     private static final Map<String, PowerCue> PRESS = Map.of(
@@ -78,9 +78,9 @@ public final class PowerSounds {
 
     /** Stealthy moves: only the one who used them hears the cue. */
     private static final Set<String> PRIVATE = Set.of(
-            "invisibility_fade", "invisibility_0_1", "invisibility_smoke_and_mirrors", "invisibility_refraction_cloak",
+            "invisibility_fade", "invisibility_0_1", "invisibility_smoke_and_mirrors",
             "telepathy_read_mind", "telepathy_suggestion", "telepathy_mind_link", "telepathy_1_1",
-            "telepathy_memory_walk", "telepathy_blind_spot", "vibe_read");
+            "telepathy_memory_walk", "vibe_read");
 
     /** How long a key must be held before its release counts as letting go of a held effect. */
     private static final int HELD = 10;
@@ -155,7 +155,9 @@ public final class PowerSounds {
         PowerCue fixed = PRESS.get(path);
         if (fixed != null) return fixed;
         var node = SkillCatalog.find(power, path);
-        if (node.isPresent()) return node.get().style() || node.get().signature() ? PowerCue.HEAVY : PowerCue.CAST;
+        // A class's Ultimate plays its own heavy cue as it opens (combat/Ultimates), so the press makes none.
+        if (node.isPresent() && node.get().style()) return null;
+        if (node.isPresent()) return node.get().signature() ? PowerCue.HEAVY : PowerCue.CAST;
         return unlock >= 5 ? PowerCue.HEAVY : PowerCue.CAST;
     }
 

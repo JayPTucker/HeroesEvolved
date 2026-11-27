@@ -74,8 +74,8 @@ through a group and follow its finale with another pass.
 - Rescue Rush traces a winding path to the catch. Wind Sanctuary raises a shallow wind dome
   and marks hostile shots as it deflects them. Jetstream draws moving crests down a lane.
   Thermal Lance tightens a ground ring and opens it into a column. Vacuum Clap sweeps the
-  hands together and reverses the incoming wind into an expanding front. Tempest Drill,
-  Gale Wall and Formation Flight use the same wind shapes. Reduced particle settings keep
+  hands together and reverses the incoming wind into an expanding front. The Ultimates
+  (Stratosphere, Eye of the Storm, Airlift) use the same wind shapes. Reduced particle settings keep
   the strongest cues.
 
 ## Purchasable skills

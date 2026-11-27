@@ -581,9 +581,6 @@ public final class TelepathySkills {
         return List.copyOf(minds);
     }
 
-    /** Psychic Storm threads the foes it catches a little deeper each second. */
-    public static void stormThread(ServerPlayer p, LivingEntity t) { TelepathyFocus.deepen(p, t, 10, 100); }
-
     // ------------------------------------------------------------------
     // Ticking
     // ------------------------------------------------------------------

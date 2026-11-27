@@ -127,7 +127,7 @@ How each skill looks:
 | Arc Lattice | A two-finger flick sends a spark to the surface, where a small three-pronged pylon is planted. Anchors are joined by taut, slightly sagging wires with a bead of light running along them. |
 | Blackout | See below. |
 
-The styles have their own pieces too: Tesla Spire's mast and zaps, Faraday Cage's struts, and Jumpstart's heart rings.
+The class Ultimates have their own pieces too ([Classes](classes.md)): Thunderhead's storm cloud and colossal bolt, Storm Shell's crawling shell, and Restart's heartbeat running from friend to friend.
 
 ### Machines and magnetism
 

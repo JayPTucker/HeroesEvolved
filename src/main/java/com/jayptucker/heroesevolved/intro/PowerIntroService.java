@@ -72,7 +72,7 @@ public final class PowerIntroService {
             Map.entry("regeneration", new Spec(50, 40, 0xFFD89B, ArmPose.ARMS_WIDE, Kind.REGEN_AWAKEN_CHARGE, Kind.REGEN_AWAKEN_RELEASE)),
             Map.entry("pyrokinesis", new Spec(50, 40, 0xFF8A2A, ArmPose.TWO_HANDS_STRAIN, Kind.PYRO_AWAKEN_CHARGE, Kind.PYRO_AWAKEN_RELEASE)),
             Map.entry("invisibility", new Spec(40, 40, 0xCFD8E0, ArmPose.ARMS_WIDE, Kind.OPTIC_FADE, Kind.OPTIC_BURST)),
-            Map.entry("phasing", new Spec(40, 40, 0x9FE3D6, ArmPose.TWO_HANDS, Kind.DENSITY_GHOST, Kind.DENSITY_RIPPLE)),
+            Map.entry("phasing", new Spec(40, 40, 0x5FA36A, ArmPose.TWO_HANDS, Kind.DENSITY_SLAM, Kind.DENSITY_RIPPLE)),
             Map.entry("empathic_mimicry", new Spec(50, 40, 0xE8C27A, ArmPose.TEMPLE, Kind.PROPHECY_THREAD, Kind.PSYCHIC_AWAKEN_RELEASE)),
             Map.entry("matter_assembly", new Spec(50, 40, 0xE7B771, ArmPose.TWO_HANDS, Kind.MATTER_WEAVE, Kind.MATTER_SHIELD)),
             Map.entry("vibe", new Spec(28, 25, 0x46BDFF, ArmPose.VIBE_READ, null, null)),

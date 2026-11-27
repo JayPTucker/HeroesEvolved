@@ -127,25 +127,26 @@ each level after (21 at Level 15, 28 Evolved), plus training and story notes, ag
 - **hydro_pressure_jet**: 19*(1.5+.25*tier) -> 19*(.65+.1*tier) over 40 ticks, ages 2..38. Weighted damage at unlock: 28.5 -> 12; budget 12.5 from 25 stamina. Code: `hydro/HydroSkills#tickJet`.
 - **amp_1_1**: 6+tier+spent/10 -> spent/30; enclosure and Second Coming x2 each. Weighted damage at unlock: 8 -> 0; budget 0 from 20 stamina. Code: `amplify/AmpSkills#vanFull`.
 - **amp_doorbuster**: 3 -> 1.5 around the broken door; three-second stun. Weighted damage at unlock: 3 -> 1.5; budget 1.5 from 18 stamina. Code: `amplify/AmpSkills#doorbuster`.
-- **radiation_ground_zero**: 10+2*tier+12*falloff -> 4+.6*tier+4*falloff; representative falloff .5; 8 s stage-I sickness. Weighted damage at unlock: 20.6 -> 8.84; budget 10.6 from 38 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
-- **radiation_containment_dome**: 8 direct pulses 1 -> .3; repeating dose capped at stage I, 11 s exposure including tail. Weighted damage at unlock: 18.6 -> 4.74; budget 5 from 29 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
-- **time_manipulation_hour_hand**: 9+2*tier -> 6+tier, one sweep per UUID. Weighted damage at unlock: 12.4 -> 7.43; budget 8.61 from 31 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
-- **pyrokinesis_sunfall**: 12+2*tier -> 6+.75*tier, plus five seconds burning. Weighted damage at unlock: 17.9 -> 9.81; budget 9.72 from 35 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
-- **cryokinesis_hailstorm**: 9 pulses (16..80 step 8): 3+.5*tier -> 1+.2*tier. Weighted damage at unlock: 26.7 -> 9.5; budget 9.72 from 35 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
-- **electrokinesis_tesla_spire**: 12 pulses (10..120 step 10): 4+.5*tier -> .7+.15*tier. Weighted damage at unlock: 43.6 -> 9.11; budget 9.17 from 35 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
-- **quake_fissure_maw**: 10+2*tier -> 7+tier, thrown set deduplicates the racing fissure. Weighted damage at unlock: 13.2 -> 8.25; budget 8.97 from 35 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
-- **flight_tempest_drill**: 9+2*tier -> 5+.75*tier, hit set deduplicates the 18-block dash. Weighted damage at unlock: 16.5 -> 7.98; budget 8.11 from 31 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
-- **telekinesis_implosion**: 12+2*tier -> 6+.75*tier after a 22-tick pull. Weighted damage at unlock: 14.9 -> 6.81; budget 8.07 from 35 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
-- **telekinesis_debris_halo**: 17 pulses (0..160 step 10): 3 -> .35; blocks shots. Weighted damage at unlock: 30.6 -> 3.57; budget 3.89 from 26 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
-- **telepathy_psychic_storm**: 7 pulses (0..120 step 20): 2+.5*tier -> .5+.3*tier. Weighted damage at unlock: 16.2 -> 6.47; budget 7.5 from 35 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
-- **regeneration_vital_burst**: 10+2*tier -> 3+.5*tier; heals 2 per foe (capped 10) and also costs 4 health. Weighted damage at unlock: 17.6 -> 4.95; budget 5 from 28 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
-- **sonic_resonance_resonance_cascade**: 12+2*tier -> 7+.75*tier after 16 ticks. Weighted damage at unlock: 14.9 -> 7.63; budget 8.89 from 35 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
-- **invisibility_shadow_strike**: (8+tier)*1.5 -> 3.5+.5*tier, once per mark; three marks maximum. Weighted damage at unlock: 18.2 -> 5.5; budget 5.83 from 31 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
-- **phasing_phase_eruption**: 10+2*tier -> 7+tier in Earthworks.barrage; the decorative columns deal zero. Weighted damage at unlock: 13.2 -> 8.25; budget 7.86 from 31 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
-- **empathic_mimicry_prismatic_overflow**: 8+2*remembered+tier -> 4+.5*remembered+.75*tier; minimum remembered=1, plus 3 s burn. Weighted damage at unlock: 16.1 -> 9.23; budget 9.72 from 35 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
-- **matter_assembly_forge_cannon**: 5 pulses (8,13,18,23,28): 5+tier -> 1.6+.25*tier. Weighted damage at unlock: 37.4 -> 11; budget 11.1 from 31 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
-- **hydro_tsunami**: 10+2*tier -> 8+tier; one hit per rolling wave's struck UUID set. Weighted damage at unlock: 13.2 -> 9.08; budget 9.81 from 38 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
-- **amp_lightning_cannon**: 10+2*tier -> 4+tier; redHit also stuns for 60 ticks. Weighted damage at unlock: 13.2 -> 5.78; budget 5.78 from 37 stamina. Code: `styles/StyleCasts (or the power's delegated class cast)`.
+- **amp_lightning_cannon**: five jolts of 1.5, then 14 as the ball is driven home; 5 to up to four near. Weighted damage at unlock: 0 -> 27.7; budget 36.5 from 88 stamina. Code: `combat/Ultimates; AmpUltimates.FeedbackLoop`.
+- **matter_assembly_forge_cannon**: 2 as the cage shuts, 18 from the hammer; shards 6 within 6. Weighted damage at unlock: 0 -> 26.8; budget 35.8 from 88 stamina. Code: `combat/Ultimates; AssemblyUltimates.GrandDesign`.
+- **cryokinesis_hailstorm**: 3 as the prism seals, 18 as the glacier shatters it; 6 within the impact. Weighted damage at unlock: 0 -> 27.9; budget 36.5 from 88 stamina. Code: `combat/Ultimates; CryoUltimates.GlacierFall`.
+- **electrokinesis_tesla_spire**: five bolts of 2 in the cloud, 12 on the slam; 4 arcs into up to four near. Weighted damage at unlock: 0 -> 27.4; budget 35.8 from 88 stamina. Code: `combat/Ultimates; ElectroUltimates.Thunderhead`.
+- **flight_tempest_drill**: 2 on the tackle, 19 on the drive down; 6 within 6 of the crater. Weighted damage at unlock: 0 -> 27.9; budget 34.2 from 88 stamina. Code: `combat/Ultimates; FlightUltimates.Stratosphere`.
+- **hydro_tsunami**: six tumbles of 1.5, 6 from the geyser, 10 from the slam; the closing barrel 6 and the whirlpool 3 to those near. Weighted damage at unlock: 0 -> 34.7; budget 35.8 from 88 stamina. Code: `combat/Ultimates; HydroUltimates.RiptideBarrel`.
+- **invisibility_shadow_strike**: four slams of 2.5, 12 as the box bursts; shards 6 within 5. Weighted damage at unlock: 0 -> 29; budget 36.5 from 88 stamina. Code: `combat/Ultimates; ForceUltimates.CrushBox`.
+- **empathic_mimicry_prismatic_overflow**: one 2.5 strike per remembered power (three at least, five at most; three counted), 14 from the braided lance; 4 within 4. Weighted damage at unlock: 0 -> 26.9; budget 35.8 from 88 stamina. Code: `combat/Ultimates; MimicUltimates.EverythingAtOnce`.
+- **phasing_phase_eruption**: 8 as the walls clap, 2 from the pillar, 12 from the boulder; 6 within 4. Weighted damage at unlock: 0 -> 29; budget 35.8 from 88 stamina. Code: `combat/Ultimates; DensityUltimates.EarthsEmbrace`.
+- **pyrokinesis_sunfall**: 2 from the knee, six blows of 1.5, 4 from the wheel, 8 from the axe kick, with burning; 6 within 5. Weighted damage at unlock: 0 -> 30.1; budget 35.8 from 88 stamina. Code: `combat/Ultimates; PyroUltimates.RisingSun`.
+- **quake_fissure_maw**: seven shakes of 1, 12 from the blast, 4 as the fault erupts; 6 along the fault. Weighted damage at unlock: 0 -> 30.1; budget 35.8 from 88 stamina. Code: `combat/Ultimates; QuakeUltimates.Heartquake`.
+- **radiation_ground_zero**: five burns of 1, 16 from the blast and a stage-II dose; 8 and a stage-I dose within 8. Weighted damage at unlock: 0 -> 29.5; budget 35.8 from 88 stamina. Code: `combat/Ultimates; RadiationUltimates.PointOfNoReturn`.
+- **regeneration_vital_burst**: six blows of 1.5, 14 over the knee; 4 within 4; costs her 4 health, healed back as she lands blows. Weighted damage at unlock: 0 -> 28.5; budget 36.5 from 88 stamina. Code: `combat/Ultimates; RegenUltimates.CantStopMe`.
+- **shapeshifting_many_hands**: 2 on the pounce, four mauls of 2.5, 12 on the slam; 5 within 5. Weighted damage at unlock: 0 -> 30.4; budget 36.5 from 88 stamina. Code: `combat/Ultimates; ShapeUltimates.ApexPredator`.
+- **sonic_resonance_resonance_cascade**: five notes of 3, 10 from the scream; 6 in the cone. Weighted damage at unlock: 0 -> 32.3; budget 35.8 from 88 stamina. Code: `combat/Ultimates; SonicUltimates.FinalMovement`.
+- **superspeed_lightning_flurry**: 3 from the jab, 10 from the uppercut, 2 on the way down, 10 on landing; 6 within 5. Weighted damage at unlock: 0 -> 32.3; budget 34.2 from 88 stamina. Code: `combat/Ultimates; SpeedUltimates.AroundTheWorld`.
+- **telekinesis_implosion**: four swings into rock of 2.5, 12 from the spike; 6 within 5 as the ball bursts. Weighted damage at unlock: 0 -> 29; budget 35.8 from 88 stamina. Code: `combat/Ultimates; KineticUltimates.WreckingHand`.
+- **telepathy_psychic_storm**: three fears of 2, 16 from the spike, then a stun; 4 to minds near, which turn on one another. Weighted damage at unlock: 0 -> 27.4; budget 35.8 from 88 stamina. Code: `combat/Ultimates; TelepathyUltimates.Mindbreak`.
+- **time_manipulation_hour_hand**: eight cuts in stopped time, all landing at once for 22; 6 within 4. Weighted damage at unlock: 0 -> 29; budget 36.5 from 88 stamina. Code: `combat/Ultimates; TimeUltimates.TenPastTen`.
+- **vibe_crosswave**: five blasts of 2.5 between breaches, 12 from the fall; 5 within 4. Weighted damage at unlock: 0 -> 31; budget 35.8 from 88 stamina. Code: `combat/Ultimates; VibeUltimates.DimensionDrop`.
 - **style_pyrokinesis_lead**: 2+.4*tier + 2 s ignition -> .8+.2*tier, no normal-jab ignition; loaded ignition remains. Weighted damage at unlock: 3.6 -> 1; budget 1 from 2 stamina. Code: `pyro/PyroCombat`.
 - **style_pyrokinesis_rear**: 2+.4*tier + 2 s ignition -> .8+.2*tier, no normal-jab ignition; loaded ignition remains. Weighted damage at unlock: 3.6 -> 1; budget 1 from 2 stamina. Code: `pyro/PyroCombat`.
 - **style_pyrokinesis_flourish**: 3+tier + 4 s ignition -> .4+.2*tier + 1 s ignition. Weighted damage at unlock: 7.4 -> 1.4; budget 1.39 from 5 stamina. Code: `pyro/PyroCombat`.
@@ -192,8 +193,6 @@ each level after (21 at Level 15, 28 Evolved), plus training and story notes, ag
 - **style_vibe_low**: unlock-tier low strike 3.5 -> 1.2. Weighted damage at unlock: 3.5 -> 1.2; budget 1.11 from 5 stamina. Code: `vibe/VibeStyle`.
 - **radiation_1_1**: repeated doses stacking to amplifier 5 -> stage-I dose only when not already sick; at most 13 s stage I including tail. Weighted damage at unlock: 21.6 -> 3.9; budget 3.5 from 23 stamina. Code: `radiation/RadiationSkills#onHurt`.
 - **phasing_2_1**: 6+tier -> 3+tier on surfacing; Uproot doubles a previously embedded target. Weighted damage at unlock: 8 -> 5; budget 4.61 from 19 stamina. Code: `phasing/DensityService#surface`.
-- **electrokinesis_faraday_cage**: 4 -> .5 per incoming melee hit; 6 s ward, representative 2 attacks/s. Weighted damage at unlock: 48 -> 6; budget 6 from 26 stamina. Code: `styles/StyleRuntime#incoming`.
-- **pyrokinesis_ember_shroud**: 3 -> .125 per incoming melee hit; ignition 4 -> 1 s, 8 s ward at 2 attacks/s. Weighted damage at unlock: 54.6 -> 6.8; budget 7 from 26 stamina. Code: `styles/StyleRuntime#incoming`.
 - **style_pyrokinesis_counter**: loaded (.8+.2*tier)*2.2; ignition 5 -> 1 s (normal strike's old base 2+.4*tier). Weighted damage at unlock: 8.28 -> 2.8; budget 2.16 from 8 stamina. Code: `pyro/PyroCombat`.
 - **style_electrokinesis_counter**: loaded (2+.4*tier)*1.6 -> (.8+.2*tier)*1.5; three .7x hops add .84x at 40% spread. Weighted damage at unlock: 7.07 -> 2.76; budget 2.21 from 8 stamina. Code: `electro/ElectroCombat`.
 - **style_hydrokinesis_counter**: loaded (2+.4*tier)*1.6 -> (.8+.2*tier)*1.6, plus a short pull. Weighted damage at unlock: 3.84 -> 1.6; budget 1.82 from 8 stamina. Code: `hydro/HydroCombat`.
@@ -423,9 +422,13 @@ foe gives 10 stamina back. Entries: `finisher_pyrokinesis`, `finisher_time_manip
 ## Skill-tree and class abilities
 
 Actives keep their designed order and are pulled 30% toward the middle of their band, then clamped: early actives
-(row 2) 12-26, later actives 14-32, signatures 45-60, Offense classes 28-40, Defense and Support 22-34. A skill's
-cooldown is held between 0.2 and 0.8 seconds per stamina (25-45 s for a signature), a class ability's between 0.45
-and 0.75.
+(row 2) 12-26, later actives 14-32, signatures 45-60. A skill's cooldown is held between 0.2 and 0.8 seconds per
+stamina (25-45 s for a signature).
+
+Every class ability is an Ultimate with one price per role: Offense 58 stamina and 150 s, Defense 50
+and 120 s, Support 52 and 135 s. The long wait is part of the price: in the damage review each second
+of an Ultimate's cooldown is worth 0.2 stamina of effect, and an Offense Ultimate's hold on its foe
+is its control.
 
 | Power | Skill | Kind | Stamina | Cooldown |
 | --- | --- | --- | --- | --- |
@@ -436,9 +439,9 @@ and 0.75.
 | quake | Counterforce | skill | 17 (was 14) | 3.5s (was 1s) |
 | quake | Pressure Step | skill | 21 (was 22) | 5s |
 | quake | Surgical Fracture | skill | 21 (was 20) | 6s |
-| quake | Fissure Maw | class:offense | 35 | 18s |
-| quake | Stone Rampart | class:defense | 26 (was 25) | 19.5s (was 22s) |
-| quake | Bedrock Stance | class:support | 26 (was 25) | 19.5s (was 24s) |
+| quake | Heartquake | ultimate:offense | 58 | 150s |
+| quake | Pressure Barrier | ultimate:defense | 50 | 120s |
+| quake | Groundswell | ultimate:support | 52 | 135s |
 | flight | Rescue Rush | skill | 20 | 6s |
 | flight | Wind Sanctuary | skill | 27 (was 28) | 12s |
 | flight | Barrel Roll | skill | 19 (was 18) | 5s |
@@ -446,9 +449,9 @@ and 0.75.
 | flight | Thermal Lance | skill | 23 (was 24) | 8s |
 | flight | Vacuum Clap | skill | 28 (was 30) | 9s |
 | flight | Microburst | skill | 52 | 35s |
-| flight | Tempest Drill | class:offense | 31 (was 30) | 15s |
-| flight | Gale Wall | class:defense | 26 (was 25) | 19.5s (was 22s) |
-| flight | Formation Flight | class:support | 26 (was 25) | 19.5s (was 24s) |
+| flight | Stratosphere | ultimate:offense | 58 | 150s |
+| flight | Eye of the Storm | ultimate:defense | 50 | 120s |
+| flight | Airlift | ultimate:support | 52 | 135s |
 | cryokinesis | Crystal Lance | skill | 24 (was 26) | 5s |
 | cryokinesis | Rime Loom | skill | 24 | 7s |
 | cryokinesis | Frost Armor | skill | 26 (was 30) | 13s |
@@ -456,9 +459,9 @@ and 0.75.
 | cryokinesis | Cold Snap | skill | 26 (was 32) | 9s |
 | cryokinesis | Brittle Constellation | skill | 27 (was 28) | 9s |
 | cryokinesis | Absolute Zero | skill | 52 | 35s |
-| cryokinesis | Hailstorm | class:offense | 35 | 20s |
-| cryokinesis | Crystal Bastion | class:defense | 29 (was 30) | 21.75s (was 24s) |
-| cryokinesis | Aurora Veil | class:support | 26 (was 25) | 19.5s (was 26s) |
+| cryokinesis | Glacier Fall | ultimate:offense | 58 | 150s |
+| cryokinesis | Winter Citadel | ultimate:defense | 50 | 120s |
+| cryokinesis | Hibernation | ultimate:support | 52 | 135s |
 | electrokinesis | Arc Lance | skill | 26 (was 28) | 5.25s (was 5s) |
 | electrokinesis | Circuit Thread | skill | 23 (was 22) | 5s |
 | electrokinesis | Static Screen | skill | 26 (was 28) | 11s |
@@ -466,9 +469,9 @@ and 0.75.
 | electrokinesis | Blackout | skill | 47 (was 45) | 30s |
 | electrokinesis | Overcharge | skill | 24 (was 25) | 11s |
 | electrokinesis | Arc Lattice | skill | 14 (was 10) | 2.75s (was 1s) |
-| electrokinesis | Tesla Spire | class:offense | 35 | 20s |
-| electrokinesis | Faraday Cage | class:defense | 26 (was 25) | 19.5s (was 22s) |
-| electrokinesis | Jumpstart | class:support | 22 (was 20) | 16.5s (was 18s) |
+| electrokinesis | Thunderhead | ultimate:offense | 58 | 150s |
+| electrokinesis | Storm Shell | ultimate:defense | 50 | 120s |
+| electrokinesis | Restart | ultimate:support | 52 | 135s |
 | telekinesis | Pin | skill | 23 (was 24) | 5s |
 | telekinesis | Beckon | skill | 14 (was 8) | 2.75s (was 2s) |
 | telekinesis | Round Up | skill | 26 (was 35) | 12s |
@@ -476,9 +479,9 @@ and 0.75.
 | telekinesis | Skyfall | skill | 52 | 35s |
 | telekinesis | Vector Step | skill | 21 (was 22) | 8s |
 | telekinesis | Levitate | skill | 18 (was 16) | 5s |
-| telekinesis | Clench | class:offense | 35 | 20s |
-| telekinesis | Warding Hands | class:defense | 26 (was 25) | 19.5s (was 22s) |
-| telekinesis | Gathering Hand | class:support | 26 (was 25) | 19.5s (was 20s) |
+| telekinesis | Wrecking Hand | ultimate:offense | 58 | 150s |
+| telekinesis | Stop Everything | ultimate:defense | 50 | 120s |
+| telekinesis | Cradle | ultimate:support | 52 | 135s |
 | telepathy | Drop It | skill | 21 (was 22) | 8s |
 | telepathy | Persuasion | skill | 32 (was 40) | 20s |
 | telepathy | Puppeteer | skill | 52 | 35s |
@@ -486,9 +489,9 @@ and 0.75.
 | telepathy | Memory Walk | skill | 20 (was 18) | 10s |
 | telepathy | Dream Double | skill | 26 (was 32) | 9s |
 | telepathy | Hive Link | skill | 25 (was 26) | 20s (was 30s) |
-| telepathy | Psychic Storm | class:offense | 35 | 22s |
-| telepathy | Blind Spot | class:defense | 22 (was 20) | 16.5s (was 20s) |
-| telepathy | Hive Mind | class:support | 26 (was 25) | 19.5s (was 26s) |
+| telepathy | Mindbreak | ultimate:offense | 58 | 150s |
+| telepathy | Not Here | ultimate:defense | 50 | 120s |
+| telepathy | One Mind | ultimate:support | 52 | 135s |
 | regeneration | Bloodletting | skill | 23 (was 24) | 8s |
 | regeneration | Take the Wound | skill | 18 (was 16) | 8s |
 | regeneration | Adrenal Rush | skill | 26 (was 30) | 12s |
@@ -496,9 +499,9 @@ and 0.75.
 | regeneration | Last One Standing | skill | 52 | 35s |
 | regeneration | Play Dead | skill | 23 (was 24) | 15s |
 | regeneration | Revive | skill | 28 (was 30) | 20s |
-| regeneration | Vital Burst | class:offense | 28 (was 25) | 15s |
-| regeneration | Undying | class:defense | 29 (was 30) | 21.75s (was 45s) |
-| regeneration | Lifebloom | class:support | 26 (was 25) | 19.5s (was 26s) |
+| regeneration | Can't Stop Me | ultimate:offense | 58 | 150s |
+| regeneration | Unkillable | ultimate:defense | 50 | 120s |
+| regeneration | Lifeblood | ultimate:support | 52 | 135s |
 | time_manipulation | Selective Stasis | skill | 21 (was 22) | 8s |
 | time_manipulation | Stasis Seal | skill | 24 | 10s |
 | time_manipulation | Spatial Anchor | skill | 16 (was 15) | 3.25s (was 3s) |
@@ -506,9 +509,9 @@ and 0.75.
 | time_manipulation | Singularity | skill | 51 (was 50) | 35s |
 | time_manipulation | Second Chance | skill | 26 (was 30) | 20s |
 | time_manipulation | Fast Forward | skill | 21 (was 20) | 12s |
-| time_manipulation | Hour Hand | class:offense | 31 (was 30) | 15s |
-| time_manipulation | Time Loop | class:defense | 29 (was 30) | 21.75s (was 30s) |
-| time_manipulation | Borrowed Time | class:support | 26 (was 25) | 19.5s (was 24s) |
+| time_manipulation | Ten Past Ten | ultimate:offense | 58 | 150s |
+| time_manipulation | Second Chance | ultimate:defense | 50 | 120s |
+| time_manipulation | Borrowed Hours | ultimate:support | 52 | 135s |
 | radiation | Gamma Lance | skill | 19 (was 18) | 5s |
 | radiation | Heat Vent | skill | 14 (was 10) | 10s |
 | radiation | Fission Star | skill | 52 | 35s |
@@ -516,9 +519,9 @@ and 0.75.
 | radiation | Reactor Core | skill | 14 (was 6) | 11.25s (was 15s) |
 | radiation | Decontaminate | skill | 20 | 12s |
 | radiation | Glowing Path | skill | 27 (was 28) | 20s |
-| radiation | Ground Zero | class:offense | 38 (was 40) | 22s |
-| radiation | Containment Dome | class:defense | 29 (was 30) | 21.75s (was 24s) |
-| radiation | Reactor Hearth | class:support | 29 (was 30) | 21.75s (was 26s) |
+| radiation | Point of No Return | ultimate:offense | 58 | 150s |
+| radiation | Lead Heart | ultimate:defense | 50 | 120s |
+| radiation | Cherenkov Hearth | ultimate:support | 52 | 135s |
 | sonic_resonance | Focused Shriek | skill | 24 (was 26) | 5s |
 | sonic_resonance | Shatter Note | skill | 21 (was 20) | 6s |
 | sonic_resonance | Standing Wave | skill | 52 | 35s |
@@ -526,9 +529,9 @@ and 0.75.
 | sonic_resonance | Echo Map | skill | 18 (was 16) | 14.5s (was 20s) |
 | sonic_resonance | Resonant Guard | skill | 26 (was 30) | 11s |
 | sonic_resonance | Quiet Zone | skill | 25 (was 26) | 20s |
-| sonic_resonance | Resonance Cascade | class:offense | 35 | 18s |
-| sonic_resonance | Silence Dome | class:defense | 26 (was 25) | 19.5s (was 22s) |
-| sonic_resonance | Battle Hymn | class:support | 26 (was 25) | 19.5s (was 24s) |
+| sonic_resonance | Final Movement | ultimate:offense | 58 | 150s |
+| sonic_resonance | Dead Air | ultimate:defense | 50 | 120s |
+| sonic_resonance | Anthem | ultimate:support | 52 | 135s |
 | superspeed | Reflex Focus | skill | 20 | 8s |
 | superspeed | Speed Mirage | skill | 21 (was 20) | 12s |
 | superspeed | Momentum Strike | skill | 26 (was 28) | 9s |
@@ -536,9 +539,9 @@ and 0.75.
 | superspeed | Lightning Round | skill | 52 | 35s |
 | superspeed | Slipstream Rescue | skill | 23 (was 24) | 6s |
 | superspeed | Perception | skill | 23 (was 22) | 15s |
-| superspeed | Lightning Flurry | class:offense | 31 (was 30) | 15s |
-| superspeed | Phase Blur | class:defense | 26 (was 25) | 19.5s (was 24s) |
-| superspeed | Relay Run | class:support | 26 (was 25) | 19.5s (was 20s) |
+| superspeed | Around the World | ultimate:offense | 58 | 150s |
+| superspeed | Between Heartbeats | ultimate:defense | 50 | 120s |
+| superspeed | Rescue Run | ultimate:support | 52 | 135s |
 | pyrokinesis | Ember Lash | skill | 21 (was 22) | 4.25s (was 4s) |
 | pyrokinesis | Ember Mine | skill | 21 (was 20) | 5s |
 | pyrokinesis | Heat Mantle | skill | 26 (was 28) | 12s |
@@ -546,9 +549,9 @@ and 0.75.
 | pyrokinesis | Cauterizing Flame | skill | 23 (was 24) | 15s |
 | pyrokinesis | Fire Shepherd | skill | 14 (was 10) | 6s |
 | pyrokinesis | Phoenix | skill | 54 (was 55) | 30s |
-| pyrokinesis | Starfall | class:offense | 35 | 18s |
-| pyrokinesis | Ember Shroud | class:defense | 26 (was 25) | 19.5s (was 24s) |
-| pyrokinesis | Hearthfire | class:support | 26 (was 25) | 19.5s (was 26s) |
+| pyrokinesis | Rising Sun | ultimate:offense | 58 | 150s |
+| pyrokinesis | Living Flame | ultimate:defense | 50 | 120s |
+| pyrokinesis | Bonfire Vigil | ultimate:support | 52 | 135s |
 | invisibility | Vanishing Touch | skill | 19 (was 18) | 10s |
 | invisibility | Vanishing Squad | skill | 28 (was 30) | 22.5s (was 30s) |
 | invisibility | Force Barrier | skill | 23 (was 24) | 15s |
@@ -556,9 +559,9 @@ and 0.75.
 | invisibility | Bastion | skill | 52 | 35s |
 | invisibility | Pinpoint | skill | 16 (was 14) | 6s |
 | invisibility | Kinetic Shell | skill | 28 (was 30) | 20s |
-| invisibility | Shadow Strike | class:offense | 31 (was 30) | 16s |
-| invisibility | Refraction Cloak | class:defense | 26 (was 25) | 19.5s (was 22s) |
-| invisibility | Prism Haze | class:support | 26 (was 25) | 19.5s (was 26s) |
+| invisibility | Crush Box | ultimate:offense | 58 | 150s |
+| invisibility | Aegis | ultimate:defense | 50 | 120s |
+| invisibility | Vanishing Act | ultimate:support | 52 | 135s |
 | phasing | Earth Gauntlet | skill | 21 (was 22) | 8s |
 | phasing | Avalanche | skill | 25 (was 26) | 10s |
 | phasing | Stone Skin | skill | 20 | 15s |
@@ -566,9 +569,9 @@ and 0.75.
 | phasing | Mountain Armor | skill | 52 | 35s |
 | phasing | Tunnel | skill | 19 (was 18) | 12s |
 | phasing | Earth Surf | skill | 23 (was 22) | 10s |
-| phasing | Pillar Barrage | class:offense | 31 (was 30) | 16s |
-| phasing | Unmoving Mountain | class:defense | 26 (was 25) | 19.5s (was 24s) |
-| phasing | Earth Tent | class:support | 26 (was 25) | 19.5s (was 24s) |
+| phasing | Earth's Embrace | ultimate:offense | 58 | 150s |
+| phasing | Stone Fortress | ultimate:defense | 50 | 120s |
+| phasing | Mountain Hall | ultimate:support | 52 | 135s |
 | empathic_mimicry | Borrowed Strike | skill | 21 (was 22) | 5s |
 | empathic_mimicry | Sense Powers | skill | 18 (was 16) | 14.5s (was 20s) |
 | empathic_mimicry | Empathic Surge | skill | 24 (was 26) | 15s |
@@ -576,9 +579,9 @@ and 0.75.
 | empathic_mimicry | Chorus | skill | 52 | 35s |
 | empathic_mimicry | Calm | skill | 19 (was 18) | 12s |
 | empathic_mimicry | Absorb Pain | skill | 21 (was 20) | 12s |
-| empathic_mimicry | Prismatic Overflow | class:offense | 35 | 18s |
-| empathic_mimicry | Empathic Ward | class:defense | 26 (was 25) | 19.5s (was 24s) |
-| empathic_mimicry | Kindred Light | class:support | 26 (was 25) | 19.5s (was 20s) |
+| empathic_mimicry | Everything at Once | ultimate:offense | 58 | 150s |
+| empathic_mimicry | Mirror Soul | ultimate:defense | 50 | 120s |
+| empathic_mimicry | Shared Gift | ultimate:support | 52 | 135s |
 | matter_assembly | Switchback | skill | 20 | 6s |
 | matter_assembly | Drawbridge | skill | 20 (was 18) | 4s (was 3s) |
 | matter_assembly | Scattershot | skill | 21 (was 22) | 5s |
@@ -586,9 +589,9 @@ and 0.75.
 | matter_assembly | Ballista | skill | 52 | 35s |
 | matter_assembly | Folded Shelter | skill | 21 (was 22) | 8s |
 | matter_assembly | Rescue Cradle | skill | 20 (was 18) | 6s |
-| matter_assembly | Forge Cannon | class:offense | 31 (was 30) | 18s |
-| matter_assembly | Bulwark Lattice | class:defense | 26 (was 25) | 19.5s (was 24s) |
-| matter_assembly | Mending Lattice | class:support | 26 (was 25) | 19.5s (was 22s) |
+| matter_assembly | Grand Design | ultimate:offense | 58 | 150s |
+| matter_assembly | Shell of Twelve | ultimate:defense | 50 | 120s |
+| matter_assembly | Field Hospital | ultimate:support | 52 | 135s |
 | vibe | Vibe Lance | skill | 19 (was 18) | 4.25s |
 | vibe | Reverb | skill | 27 (was 29) | 7.25s |
 | vibe | Glimpse | skill | 12 (was 8) | 2.5s |
@@ -596,9 +599,9 @@ and 0.75.
 | vibe | Rift Beast | skill | 52 | 45s |
 | vibe | Co-Vibe | skill | 16 (was 14) | 5.25s |
 | vibe | Prism Lock | skill | 31 (was 34) | 13s |
-| vibe | Crosswave | class:offense | 34 | 15.25s (was 11s) |
-| vibe | Mirror Breach | class:defense | 27 (was 26) | 12.5s |
-| vibe | Sanctuary Breach | class:support | 28 | 13s |
+| vibe | Dimension Drop | ultimate:offense | 58 | 150s |
+| vibe | Between Worlds | ultimate:defense | 50 | 120s |
+| vibe | Safe Harbor | ultimate:support | 52 | 135s |
 | shapeshifting | Quick Change | skill | 13 (was 10) | 3s |
 | shapeshifting | Shed | skill | 17 (was 14) | 8s |
 | shapeshifting | Hybrid | skill | 17 (was 16) | 13.5s (was 20s) |
@@ -606,9 +609,9 @@ and 0.75.
 | shapeshifting | Apex Form | skill | 51 (was 50) | 45s |
 | shapeshifting | Borrowed Face | skill | 19 (was 18) | 15s |
 | shapeshifting | Doppelganger | skill | 21 (was 20) | 15s |
-| shapeshifting | Many Hands | class:offense | 34 | 15.25s (was 12s) |
-| shapeshifting | Plate Mail | class:defense | 27 (was 26) | 15s |
-| shapeshifting | Masquerade | class:support | 31 (was 32) | 20s |
+| shapeshifting | Apex Predator | ultimate:offense | 58 | 150s |
+| shapeshifting | Living Fortress | ultimate:defense | 50 | 120s |
+| shapeshifting | Many Faces | ultimate:support | 52 | 135s |
 | hydrokinesis | Geyser | skill | 20 | 4.5s |
 | hydrokinesis | Pressure Jet | skill | 25 (was 26) | 7s |
 | hydrokinesis | Leviathan | skill | 52 | 35s |
@@ -616,9 +619,9 @@ and 0.75.
 | hydrokinesis | Water Spout | skill | 24 | 8s |
 | hydrokinesis | Healing Water | skill | 17 (was 16) | 5s |
 | hydrokinesis | Rain Call | skill | 28 (was 30) | 20s |
-| hydrokinesis | Tsunami | class:offense | 38 (was 40) | 17s (was 13s) |
-| hydrokinesis | Tidal Dome | class:defense | 28 | 13s |
-| hydrokinesis | Healing Spring | class:support | 27 (was 26) | 12.25s (was 12s) |
+| hydrokinesis | Riptide Barrel | ultimate:offense | 58 | 150s |
+| hydrokinesis | Undertow Dome | ultimate:defense | 50 | 120s |
+| hydrokinesis | Monsoon | ultimate:support | 52 | 135s |
 | power_amplification | Partner | skill | 13 (was 10) | 5s |
 | power_amplification | Hold Hands | skill | 23 (was 22) | 10s |
 | power_amplification | Van Full | skill | 20 | 8s |
@@ -626,15 +629,15 @@ and 0.75.
 | power_amplification | Overdrive | skill | 52 | 35s |
 | power_amplification | Burnout | skill | 19 (was 18) | 10s |
 | power_amplification | Doorbuster | skill | 18 (was 16) | 8s |
-| power_amplification | Lightning Cannon | class:offense | 37 (was 38) | 16.75s (was 15s) |
-| power_amplification | Lights Back On | class:defense | 27 (was 26) | 13s |
-| power_amplification | Got Your Back | class:support | 24 (was 22) | 12s |
+| power_amplification | Feedback Loop | ultimate:offense | 58 | 150s |
+| power_amplification | Red Armour | ultimate:defense | 50 | 120s |
+| power_amplification | Everyone, Now | ultimate:support | 52 | 135s |
 
 ## Every damage review
 
-Checked 200 tree actives, signatures and class abilities, and 77 fighting-style moves across all 20 powers.
+Checked 200 tree actives, signatures and Ultimates, and 77 fighting-style moves across all 20 powers.
 Each complete sequence is measured at its unlock tier, before optional upgrades, stored-resource bonuses, armor or resistance.
-Offense classes include their compulsory 10% damage bonus. Typical targets are one for a single hit, two for a narrow
+Offense Ultimates include their compulsory 10% damage bonus. Typical targets are one for a single hit, two for a narrow
 fan or small patch, and three for a broad area; a four-body Shell uses four. The per-move assumptions are below.
 Damage is weighted before comparison: direct x1, repeated damage over time x0.6, flurries x0.85, telegraphed hits x0.75.
 Burning is counted once across its refreshed duration. Simultaneous equal projectiles which respect ordinary damage immunity
@@ -783,64 +786,66 @@ a successful evasion; full holding time and an immediate shattering/releasing bl
 | `amp_hold_hands` | 4 | 23 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: shares a separately paid Surge (`amplify/AmpSkills`) |
 | `amp_overcharge_enemy` | 4 | 24 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: makes the next enemy power misfire; damage depends on that power (`amplify/AmpSkills`) |
 | `amp_2_1` | 2 | 19 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Burnout disables a power or projector (`amplify/AmpSkills`) |
-| `radiation_ground_zero` | 3 | 38 | 3 | 0 | 0 / 0 blocks | 8.84 / 10.6 | changed | 10+2*tier+12*falloff -> 4+.6*tier+4*falloff; representative falloff .5; 8 s stage-I sickness (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `radiation_containment_dome` | 3 | 29 | 2 | 0 | 15 / 0 blocks | 4.74 / 5 | changed | 8 direct pulses 1 -> .3; repeating dose capped at stage I, 11 s exposure including tail (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `time_manipulation_hour_hand` | 3 | 31 | 3 | 0 | 0 / 0 blocks | 7.43 / 8.61 | changed | 9+2*tier -> 6+tier, one sweep per UUID (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `pyrokinesis_sunfall` | 3 | 35 | 3 | 0 | 0 / 0 blocks | 9.81 / 9.72 | changed | 12+2*tier -> 6+.75*tier, plus five seconds burning (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `cryokinesis_hailstorm` | 3 | 35 | 3 | 0 | 0 / 0 blocks | 9.5 / 9.72 | changed | 9 pulses (16..80 step 8): 3+.5*tier -> 1+.2*tier (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `electrokinesis_tesla_spire` | 3 | 35 | 3 | 0 | 2 / 0 blocks | 9.11 / 9.17 | changed | 12 pulses (10..120 step 10): 4+.5*tier -> .7+.15*tier (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `quake_fissure_maw` | 3 | 35 | 3 | 0.5 | 0 / 0 blocks | 8.25 / 8.97 | changed | 10+2*tier -> 7+tier, thrown set deduplicates the racing fissure (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `flight_tempest_drill` | 3 | 31 | 2 | 0 | 0 / 18 blocks | 7.98 / 8.11 | changed | 9+2*tier -> 5+.75*tier, hit set deduplicates the 18-block dash (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `telekinesis_implosion` | 3 | 35 | 3 | 1.1 | 0 / 0 blocks | 6.81 / 8.07 | changed | 12+2*tier -> 6+.75*tier after a 22-tick pull (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `telekinesis_debris_halo` | 3 | 26 | 3 | 0 | 12 / 0 blocks | 3.57 / 3.89 | changed | 17 pulses (0..160 step 10): 3 -> .35; blocks shots (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `telepathy_psychic_storm` | 3 | 35 | 3 | 0 | 8 / 0 blocks | 6.47 / 7.5 | changed | 7 pulses (0..120 step 20): 2+.5*tier -> .5+.3*tier (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `regeneration_vital_burst` | 3 | 28 | 3 | 0 | 10 / 0 blocks | 4.95 / 5 | changed | 10+2*tier -> 3+.5*tier; heals 2 per foe (capped 10) and also costs 4 health (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `sonic_resonance_resonance_cascade` | 3 | 35 | 3 | 0 | 3 / 0 blocks | 7.63 / 8.89 | changed | 12+2*tier -> 7+.75*tier after 16 ticks (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `superspeed_lightning_flurry` | 3 | 31 | 3 | 0 | 4 / 0 blocks | 7.48 / 7.5 | within 30% | 5+tier once per mark, up to 6 marks; no repeated hit per mark (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `invisibility_shadow_strike` | 3 | 31 | 3 | 0 | 10 / 0 blocks | 5.5 / 5.83 | changed | (8+tier)*1.5 -> 3.5+.5*tier, once per mark; three marks maximum (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `phasing_phase_eruption` | 3 | 31 | 3 | 0.5 | 0 / 0 blocks | 8.25 / 7.86 | changed | 10+2*tier -> 7+tier in Earthworks.barrage; the decorative columns deal zero (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `empathic_mimicry_prismatic_overflow` | 3 | 35 | 3 | 0 | 0 / 0 blocks | 9.23 / 9.72 | changed | 8+2*remembered+tier -> 4+.5*remembered+.75*tier; minimum remembered=1, plus 3 s burn (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `matter_assembly_forge_cannon` | 3 | 31 | 2 | 0 | 0 / 0 blocks | 11 / 11.1 | changed | 5 pulses (8,13,18,23,28): 5+tier -> 1.6+.25*tier (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `vibe_crosswave` | 3 | 34 | 3 | 0 | 0 / 0 blocks | 9.49 / 9.44 | within 30% | 7+1.5*tier, both waves share struck UUIDs (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `shapeshifting_many_hands` | 3 | 34 | 3 | 0 | 0 / 0 blocks | 8.8 / 9.44 | within 30% | 5+tier once per mark, up to 5 marks (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `hydro_tsunami` | 3 | 38 | 3 | 0.5 | 0 / 0 blocks | 9.08 / 9.81 | changed | 10+2*tier -> 8+tier; one hit per rolling wave's struck UUID set (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `amp_lightning_cannon` | 3 | 37 | 3 | 3 | 0 / 0 blocks | 5.78 / 5.78 | changed | 10+2*tier -> 4+tier; redHit also stuns for 60 ticks (`styles/StyleCasts (or the power's delegated class cast)`) |
-| `quake_stone_rampart` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: blocks shots and repels (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `quake_bedrock_stance` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: resistance and knockback immunity (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `flight_gale_wall` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: reflects and repels (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `flight_formation_flight` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: flight support buffs (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `cryokinesis_crystal_bastion` | 3 | 29 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: blocks shots and repels (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `cryokinesis_aurora_veil` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: heals and soft-slows (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `electrokinesis_jumpstart` | 3 | 22 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: heals and cleanses (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `telekinesis_gathering_hand` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: gathers and protects friends (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `telepathy_blind_spot` | 3 | 22 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: prevents target acquisition (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `telepathy_hive_mind` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: shares wounds/voices (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `regeneration_undying` | 3 | 29 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: prevents death and heals (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `regeneration_lifebloom` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: heals/cleanses (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `time_manipulation_time_loop` | 3 | 29 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: restores health and cleanses (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `time_manipulation_borrowed_time` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: buffs speed/haste and restores stamina (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `radiation_reactor_hearth` | 3 | 29 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: regeneration, absorption and stamina (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `sonic_resonance_silence_dome` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: slows shots and weakens (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `sonic_resonance_battle_hymn` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: buffs strength/speed (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `superspeed_phase_blur` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: evades incoming blows (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `superspeed_relay_run` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: brings allies home and buffs speed (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `pyrokinesis_hearthfire` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: heals and grants fire resistance (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `invisibility_refraction_cloak` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: hides and refracts shots (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `invisibility_prism_haze` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: hides/heals friends, blinds foes (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `phasing_dense_bulwark` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: resistance and knockback immunity (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `phasing_phase_field` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: shelters friends in stone (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `empathic_mimicry_empathic_ward` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: negates three hits (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `empathic_mimicry_kindred_light` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: heals/cleanses (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `matter_assembly_bulwark_lattice` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: absorption and projectile defense (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `matter_assembly_mending_lattice` | 3 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: absorption/regeneration (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `vibe_mirror` | 3 | 27 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: reflects a separately supplied projectile; no fixed damage (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `vibe_sanctuary` | 3 | 28 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: opens a sheltering breach (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `shapeshifting_plate_mail` | 3 | 27 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: damage reduction and a decoy (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `shapeshifting_masquerade` | 3 | 31 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: disguises friends (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `hydro_tidal_dome` | 3 | 28 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: blocks shots, protects friends, soft-slows foes (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `hydro_healing_spring` | 3 | 27 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: heals and cleanses (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `amp_lights_back_on` | 3 | 27 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: cleanses allies and jumpstarts devices (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
-| `amp_got_your_back` | 3 | 24 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: rushes to and Surges a friend (`styles/StyleCasts; styles/StyleRuntime (class wards)`) |
+| `amp_lightning_cannon` | 3 | 88 | 1 | 5 | 0 / 0 blocks | 27.7 / 36.5 | changed | five jolts of 1.5, then 14 as the ball is driven home; 5 to up to four near. An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%. (`combat/Ultimates; AmpUltimates.FeedbackLoop`) |
+| `matter_assembly_forge_cannon` | 3 | 88 | 1 | 5.5 | 0 / 0 blocks | 26.8 / 35.8 | changed | 2 as the cage shuts, 18 from the hammer; shards 6 within 6. An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%. (`combat/Ultimates; AssemblyUltimates.GrandDesign`) |
+| `cryokinesis_hailstorm` | 3 | 88 | 1 | 5 | 0 / 0 blocks | 27.9 / 36.5 | changed | 3 as the prism seals, 18 as the glacier shatters it; 6 within the impact. An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%. (`combat/Ultimates; CryoUltimates.GlacierFall`) |
+| `electrokinesis_tesla_spire` | 3 | 88 | 1 | 5.5 | 0 / 0 blocks | 27.4 / 35.8 | changed | five bolts of 2 in the cloud, 12 on the slam; 4 arcs into up to four near. An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%. (`combat/Ultimates; ElectroUltimates.Thunderhead`) |
+| `flight_tempest_drill` | 3 | 88 | 1 | 6.5 | 0 / 0 blocks | 27.9 / 34.2 | changed | 2 on the tackle, 19 on the drive down; 6 within 6 of the crater. An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%. (`combat/Ultimates; FlightUltimates.Stratosphere`) |
+| `hydro_tsunami` | 3 | 88 | 1 | 5.5 | 0 / 0 blocks | 34.7 / 35.8 | changed | six tumbles of 1.5, 6 from the geyser, 10 from the slam; the closing barrel 6 and the whirlpool 3 to those near. An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%. (`combat/Ultimates; HydroUltimates.RiptideBarrel`) |
+| `invisibility_shadow_strike` | 3 | 88 | 1 | 5 | 0 / 0 blocks | 29 / 36.5 | changed | four slams of 2.5, 12 as the box bursts; shards 6 within 5. An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%. (`combat/Ultimates; ForceUltimates.CrushBox`) |
+| `empathic_mimicry_prismatic_overflow` | 3 | 88 | 1 | 5.5 | 0 / 0 blocks | 26.9 / 35.8 | changed | one 2.5 strike per remembered power (three at least, five at most; three counted), 14 from the braided lance; 4 within 4. An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%. (`combat/Ultimates; MimicUltimates.EverythingAtOnce`) |
+| `phasing_phase_eruption` | 3 | 88 | 1 | 5.5 | 0 / 0 blocks | 29 / 35.8 | changed | 8 as the walls clap, 2 from the pillar, 12 from the boulder; 6 within 4. An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%. (`combat/Ultimates; DensityUltimates.EarthsEmbrace`) |
+| `pyrokinesis_sunfall` | 3 | 88 | 1 | 5.5 | 0 / 0 blocks | 30.1 / 35.8 | changed | 2 from the knee, six blows of 1.5, 4 from the wheel, 8 from the axe kick, with burning; 6 within 5. An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%. (`combat/Ultimates; PyroUltimates.RisingSun`) |
+| `quake_fissure_maw` | 3 | 88 | 1 | 5.5 | 0 / 0 blocks | 30.1 / 35.8 | changed | seven shakes of 1, 12 from the blast, 4 as the fault erupts; 6 along the fault. An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%. (`combat/Ultimates; QuakeUltimates.Heartquake`) |
+| `radiation_ground_zero` | 3 | 88 | 1 | 5.5 | 0 / 0 blocks | 29.5 / 35.8 | changed | five burns of 1, 16 from the blast and a stage-II dose; 8 and a stage-I dose within 8. An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%. (`combat/Ultimates; RadiationUltimates.PointOfNoReturn`) |
+| `regeneration_vital_burst` | 3 | 88 | 1 | 5 | 0 / 0 blocks | 28.5 / 36.5 | changed | six blows of 1.5, 14 over the knee; 4 within 4; costs her 4 health, healed back as she lands blows. An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%. (`combat/Ultimates; RegenUltimates.CantStopMe`) |
+| `shapeshifting_many_hands` | 3 | 88 | 1 | 5 | 0 / 0 blocks | 30.4 / 36.5 | changed | 2 on the pounce, four mauls of 2.5, 12 on the slam; 5 within 5. An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%. (`combat/Ultimates; ShapeUltimates.ApexPredator`) |
+| `sonic_resonance_resonance_cascade` | 3 | 88 | 1 | 5.5 | 0 / 0 blocks | 32.3 / 35.8 | changed | five notes of 3, 10 from the scream; 6 in the cone. An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%. (`combat/Ultimates; SonicUltimates.FinalMovement`) |
+| `superspeed_lightning_flurry` | 3 | 88 | 1 | 6.5 | 0 / 0 blocks | 32.3 / 34.2 | changed | 3 from the jab, 10 from the uppercut, 2 on the way down, 10 on landing; 6 within 5. An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%. (`combat/Ultimates; SpeedUltimates.AroundTheWorld`) |
+| `telekinesis_implosion` | 3 | 88 | 1 | 5.5 | 0 / 0 blocks | 29 / 35.8 | changed | four swings into rock of 2.5, 12 from the spike; 6 within 5 as the ball bursts. An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%. (`combat/Ultimates; KineticUltimates.WreckingHand`) |
+| `telepathy_psychic_storm` | 3 | 88 | 1 | 5.5 | 0 / 0 blocks | 27.4 / 35.8 | changed | three fears of 2, 16 from the spike, then a stun; 4 to minds near, which turn on one another. An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%. (`combat/Ultimates; TelepathyUltimates.Mindbreak`) |
+| `time_manipulation_hour_hand` | 3 | 88 | 1 | 5 | 0 / 0 blocks | 29 / 36.5 | changed | eight cuts in stopped time, all landing at once for 22; 6 within 4. An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%. (`combat/Ultimates; TimeUltimates.TenPastTen`) |
+| `vibe_crosswave` | 3 | 88 | 1 | 5.5 | 0 / 0 blocks | 31 / 35.8 | changed | five blasts of 2.5 between breaches, 12 from the fall; 5 within 4. An Offense Ultimate: the foe is held for the whole cinematic, so the hold is its control; the splash is two bystanders at 40%. (`combat/Ultimates; VibeUltimates.DimensionDrop`) |
+| `amp_lights_back_on` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Red Armour: 12 s supercharged, blows 40% lighter; a fork of 2 back into each striker and 3 into the nearest as it burns out (conditional) (`combat/Ultimates (Defense and Support)`) |
+| `amp_got_your_back` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Everyone, Now: 12 s Surge for every friend within 14 (`combat/Ultimates (Defense and Support)`) |
+| `matter_assembly_bulwark_lattice` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Shell of Twelve: each panel stops shots from its side; halves blows once whole (`combat/Ultimates (Defense and Support)`) |
+| `matter_assembly_mending_lattice` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Field Hospital: 14 s of mending, cleansing and a layer of hearts under a roof that stops shots (`combat/Ultimates (Defense and Support)`) |
+| `cryokinesis_crystal_bastion` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Winter Citadel: walls stop shots, freeze and repel; blows a third lighter; shards as it ends (`combat/Ultimates (Defense and Support)`) |
+| `cryokinesis_aurora_veil` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Hibernation: frost armour, a mending cocoon once, chill on foes (`combat/Ultimates (Defense and Support)`) |
+| `electrokinesis_faraday_cage` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Storm Shell: shots struck down, strikers shocked and jammed, banked charge poured into the nearest (conditional) (`combat/Ultimates (Defense and Support)`) |
+| `electrokinesis_jumpstart` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Restart: three beats, then health, cleansing, stamina and a 12 s boost for friends within 16 (`combat/Ultimates (Defense and Support)`) |
+| `flight_gale_wall` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Eye of the Storm: shots flung away, foes thrown out, blows lighter; 4 to those near when it breaks (conditional) (`combat/Ultimates (Defense and Support)`) |
+| `flight_formation_flight` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Airlift: friends lifted out of reach, mending, shots halved (`combat/Ultimates (Defense and Support)`) |
+| `hydro_tidal_dome` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Undertow Dome: shots sink, foes swept out and soaked, a third less harm inside; 4 to those near as it falls (conditional) (`combat/Ultimates (Defense and Support)`) |
+| `hydro_healing_spring` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Monsoon: 15 s of rain that mends and cleanses, two springs, soaks and slows foes (`combat/Ultimates (Defense and Support)`) |
+| `invisibility_refraction_cloak` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Aegis: shots turned back at the shooter, blows under half, strikers rippled back (`combat/Ultimates (Defense and Support)`) |
+| `invisibility_prism_haze` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Vanishing Act: friends hidden in 10-point bubbles, foes dazzled (`combat/Ultimates (Defense and Support)`) |
+| `empathic_mimicry_empathic_ward` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Mirror Soul: blows halved, the other half (up to 8) sent back at the striker (conditional) (`combat/Ultimates (Defense and Support)`) |
+| `empathic_mimicry_kindred_light` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Shared Gift: heals and cleanses friends and lends each a remembered power for 15 s (`combat/Ultimates (Defense and Support)`) |
+| `phasing_dense_bulwark` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Stone Fortress: half harm, slabs stop shots, close foes shackled; 5 from each flung slab (conditional) (`combat/Ultimates (Defense and Support)`) |
+| `phasing_phase_field` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Mountain Hall: a dome that stops shots, pushes foes out, mends and halves harm (`combat/Ultimates (Defense and Support)`) |
+| `pyrokinesis_ember_shroud` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Living Flame: fireproof, blows 40% lighter, shots burnt up, strikers ignited and thrown; a ring of fire as it ends (conditional) (`combat/Ultimates (Defense and Support)`) |
+| `pyrokinesis_hearthfire` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Bonfire Vigil: 15 s of healing, warmth and a flame cocoon once; foes driven back burning (`combat/Ultimates (Defense and Support)`) |
+| `quake_stone_rampart` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Pressure Barrier: shots turned back, strikers blown away for 2, a third less harm; 3 as it pops (conditional) (`combat/Ultimates (Defense and Support)`) |
+| `quake_bedrock_stance` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Groundswell: friends can't be knocked down, take less harm, and their blows carry a shockwave (`combat/Ultimates (Defense and Support)`) |
+| `radiation_containment_dome` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Lead Heart: shots swallowed, blows 40% lighter and banked as heat; the blast is 2 + banked/3, at most 10 (conditional) (`combat/Ultimates (Defense and Support)`) |
+| `radiation_reactor_hearth` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Cherenkov Hearth: 15 s of mending, a layer of hearts, faster stamina and cured sickness; foes close are dosed (`combat/Ultimates (Defense and Support)`) |
+| `regeneration_undying` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Unkillable: the last heart can't be taken, blows halved and banked, a heart a second; the banked burst is conditional (`combat/Ultimates (Defense and Support)`) |
+| `regeneration_lifebloom` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Lifeblood: half health back to friends within 16 and one caught killing blow each (`combat/Ultimates (Defense and Support)`) |
+| `shapeshifting_plate_mail` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Living Fortress: blows under half, no knockback, 2 back to each striker, 4 as the plates burst (conditional) (`combat/Ultimates (Defense and Support)`) |
+| `shapeshifting_masquerade` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Many Faces: four copies draw every hunter; friends mend and move quicker (`combat/Ultimates (Defense and Support)`) |
+| `sonic_resonance_silence_dome` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Dead Air: shots drop, foes inside hushed, weakened and slowed; 4 to those inside as it breaks (conditional) (`combat/Ultimates (Defense and Support)`) |
+| `sonic_resonance_battle_hymn` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Anthem: chords every 2 s that mend, strengthen and harden friends (`combat/Ultimates (Defense and Support)`) |
+| `superspeed_phase_blur` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Between Heartbeats: every blow and shot finds an afterimage; 3 back to each striker, 2 per afterimage as it ends (conditional) (`combat/Ultimates (Defense and Support)`) |
+| `superspeed_relay_run` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Rescue Run: every friend within 32 brought to your side, healed 6 + tier, cleansed and quickened (`combat/Ultimates (Defense and Support)`) |
+| `telekinesis_debris_halo` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Stop Everything: shots stopped ten blocks out and thrown back, foes held at arm's length (`combat/Ultimates (Defense and Support)`) |
+| `telekinesis_gathering_hand` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Cradle: friends gathered under two hands that stop shots, swat foes back for 2 and halve harm (`combat/Ultimates (Defense and Support)`) |
+| `telepathy_blind_spot` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Not Here: hunters within 24 lose you and follow three copies (`combat/Ultimates (Defense and Support)`) |
+| `telepathy_hive_mind` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: One Mind: up to eight friends share wounds, voices, sight of foes, haste, strength and mending (`combat/Ultimates (Defense and Support)`) |
+| `time_manipulation_time_loop` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Second Chance: a killing blow sends you back to the marked moment and freezes your attackers (`combat/Ultimates (Defense and Support)`) |
+| `time_manipulation_borrowed_time` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Borrowed Hours: friends quickened, 20 stamina back and cooldowns halved; foes slowed (`combat/Ultimates (Defense and Support)`) |
+| `vibe_mirror` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Between Worlds: blows pass through you, shots go back out beside the shooter (`combat/Ultimates (Defense and Support)`) |
+| `vibe_sanctuary` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Safe Harbor: friends brought through breaches to your side and hidden from hunters while they mend (`combat/Ultimates (Defense and Support)`) |
 | `style_pyrokinesis_lead` | 1 | 2 | 1 | 0 | 0 / 0 blocks | 1 / 1 | changed | 2+.4*tier + 2 s ignition -> .8+.2*tier, no normal-jab ignition; loaded ignition remains (`pyro/PyroCombat`) |
 | `style_pyrokinesis_rear` | 1 | 2 | 1 | 0 | 0 / 0 blocks | 1 / 1 | changed | 2+.4*tier + 2 s ignition -> .8+.2*tier, no normal-jab ignition; loaded ignition remains (`pyro/PyroCombat`) |
 | `style_pyrokinesis_flourish` | 2 | 5 | 3 | 0 | 0 / 0 blocks | 1.4 / 1.39 | changed | 3+tier + 4 s ignition -> .4+.2*tier + 1 s ignition (`pyro/PyroCombat`) |
@@ -907,8 +912,6 @@ a successful evasion; full holding time and an immediate shattering/releasing bl
 | `radiation_glowing_path` | 3 | 27 | 2 | 0 | 0 / 0 blocks | 11.7 / 9.64 | within 30% | 8 s laying 5 s patches; sickness capped at amplifier 2 (1.5/s); overlapping patches do not deal separate direct hits. Upper bound 13 s including the last patch's sickness tail; first stages are weaker. Half-Life/Catastrophe are optional upgrades. (`radiation/RadiationSkills#tick; radiation/RadiationService#tick; radiation/RadiationSickness#applyEffectTick`) |
 | `radiation_1_1` | 2 | 23 | 1 | 0 | 16 / 0 blocks | 3.9 / 3.5 | changed | repeated doses stacking to amplifier 5 -> stage-I dose only when not already sick; at most 13 s stage I including tail. Retaliation no longer refreshes its own pulse timer on every melee blow or climbs to stage VI. Lead Skin still protects its owner. (`radiation/RadiationSkills#onHurt`) |
 | `phasing_2_1` | 2 | 19 | 2 | 0.5 | 4 / 0 blocks | 5 / 4.61 | changed | 6+tier -> 3+tier on surfacing; Uproot doubles a previously embedded target (`phasing/DensityService#surface`) |
-| `electrokinesis_faraday_cage` | 3 | 26 | 1 | 0 | 14 / 0 blocks | 6 / 6 | changed | 4 -> .5 per incoming melee hit; 6 s ward, representative 2 attacks/s. The 30-tick slowness is soft control; all twelve possible representative retaliations are counted, plus projectile defense. (`styles/StyleRuntime#incoming`) |
-| `pyrokinesis_ember_shroud` | 3 | 26 | 1 | 0 | 12 / 0 blocks | 6.8 / 7 | changed | 3 -> .125 per incoming melee hit; ignition 4 -> 1 s, 8 s ward at 2 attacks/s. Refreshed burning is one ongoing burn, not sixteen independent four-second burns. (`styles/StyleRuntime#incoming`) |
 | `style_pyrokinesis_counter` | 2 | 8 | 1 | 0 | 0 / 4.8 blocks | 2.8 / 2.16 | changed | loaded (.8+.2*tier)*2.2; ignition 5 -> 1 s (normal strike's old base 2+.4*tier). Includes the paid dodge's travel. Full freeze/grip duration and immediate loaded release are alternatives, not additive control. Counter requires a successfully evaded blow. (`pyro/PyroCombat`) |
 | `style_electrokinesis_counter` | 2 | 8 | 1 | 0 | 0 / 4.5 blocks | 2.76 / 2.21 | changed | loaded (2+.4*tier)*1.6 -> (.8+.2*tier)*1.5; three .7x hops add .84x at 40% spread. Includes the paid dodge's travel. Full freeze/grip duration and immediate loaded release are alternatives, not additive control. Counter requires a successfully evaded blow. (`electro/ElectroCombat`) |
 | `style_hydrokinesis_counter` | 2 | 8 | 1 | 0.25 | 0 / 4.6 blocks | 1.6 / 1.82 | changed | loaded (2+.4*tier)*1.6 -> (.8+.2*tier)*1.6, plus a short pull. Includes the paid dodge's travel. Full freeze/grip duration and immediate loaded release are alternatives, not additive control. Counter requires a successfully evaded blow. (`hydro/HydroCombat`) |

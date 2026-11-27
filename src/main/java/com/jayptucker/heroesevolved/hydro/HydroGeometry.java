@@ -41,8 +41,6 @@ public final class HydroGeometry {
     public static final double WAVE_REACH = ProjectileRanges.WATER_WAVE, WAVE_HALF_WIDTH = 2.5, WAVE_HEIGHT = 2.6;
     /** A wave rises for WAVE_RISE ticks, rolls for the rest of its piece's length less WAVE_BREAK, then breaks. */
     public static final int WAVE_RISE = 4, WAVE_BREAK = 8;
-    /** Tsunami (the class ability): a far bigger wave. */
-    public static final double TSUNAMI_REACH = ProjectileRanges.TSUNAMI, TSUNAMI_HALF_WIDTH = 4.5;
     /** Octopus Form: how long it can last, its tentacles' reach, where shots are swallowed, and how many arms. */
     public static final int OCTOPUS_TICKS = 200, ARMS = 8, LASH_EVERY = 8;
     public static final double OCTOPUS_REACH = 5, OCTOPUS_CATCH = 3.2, OCTOPUS_BURST = 6;

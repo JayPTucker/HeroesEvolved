@@ -258,5 +258,9 @@ public enum ArmPose {
      *  thrust straight up, the hand open and straining (held). Beckon: a palm turned up, fingers curling in. Juggle: a palm
      *  flicked up from the hip. */
     KINETIC_PIN, KINETIC_CATCH, KINETIC_PLUCK, KINETIC_FLING, KINETIC_STORM, KINETIC_SLAM, KINETIC_LEVITATE,
-    KINETIC_SKYFALL, KINETIC_BECKON, KINETIC_JUGGLE
+    KINETIC_SKYFALL, KINETIC_BECKON, KINETIC_JUGGLE,
+    /** Induced Radioactivity (client/RadiationPoses). Cup: both palms round a core at the chest, trembling. Palms: both
+     *  thrust along the aim, heels together. Flare: arms flung wide and up as the core lets go. Grip: a fist at a foe's
+     *  collar, the other drawn back. Raise: the core lifted overhead. Point: two fingers flicked at the target. */
+    RAD_CUP, RAD_PALMS, RAD_FLARE, RAD_GRIP, RAD_RAISE, RAD_POINT
 }

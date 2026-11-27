@@ -5,6 +5,7 @@ import com.jayptucker.heroesevolved.client.effects.SpeedOverrunClient;
 import com.jayptucker.heroesevolved.client.effects.intro.CloudMesh;
 import com.jayptucker.heroesevolved.client.effects.setpiece.SetPieceClient.Active;
 import com.jayptucker.heroesevolved.speed.SpeedOverrun;
+import com.jayptucker.heroesevolved.speed.SpeedUltimates;
 import com.jayptucker.heroesevolved.speed.TornadoShape;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
@@ -1121,5 +1122,323 @@ public final class SpeedArt {
             }
             if (c.glow()) c.glow(chest, 1.2F * (1 - smooth(land, land + 3, t)), HOT, f * (1 - smooth(land, land + 3, t)));
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Ultimates (speed/SpeedUltimates)
+    // ------------------------------------------------------------------
+
+    /** A figure of light standing at {@code feet}: legs, torso and head filled faintly gold with a hot rim. */
+    private static void figure(Canvas c, Vec3 feet, Vec3 smear, float alpha) {
+        if (alpha <= .01F) return;
+        Vec3 legs = feet.add(0, .4, 0).add(smear), torso = feet.add(0, 1.12, 0).add(smear.scale(.6)), head = feet.add(0, 1.68, 0).add(smear.scale(.3));
+        if (c.soft()) {
+            c.shell(legs, .2F, .4F, .14F, PI, GOLD, .3F * alpha, .55F, Canvas.PLAIN, 0);
+            c.shell(torso, .27F, .36F, .16F, PI, GOLD, .32F * alpha, .55F, Canvas.PLAIN, 0);
+            c.shell(head, .19F, .2F, .19F, PI, GOLD, .32F * alpha, .55F, Canvas.PLAIN, 0);
+        }
+        if (c.glow()) {
+            c.shell(torso, .29F, .38F, .18F, PI, HOT, .45F * alpha, 0, Canvas.PLAIN, 0);
+            c.shell(legs, .22F, .42F, .16F, PI, HOT, .35F * alpha, 0, Canvas.PLAIN, 0);
+            c.shell(head, .21F, .22F, .21F, PI, HOT, .45F * alpha, 0, Canvas.PLAIN, 0);
+        }
+    }
+
+    /** A line of light in three layers: a wide amber halo, the gold body and a hot core. */
+    private static void triple(Canvas c, Vec3[] points, float width, float alpha) {
+        if (!c.glow() || alpha <= .01F) return;
+        c.ribbon(points, width * 2.6F, AMBER, alpha * .3F, alpha * .3F);
+        c.ribbon(points, width, GOLD, alpha * .85F, alpha * .85F);
+        c.ribbon(points, width * .32F, HOT, alpha, alpha);
+    }
+
+    /**
+     * Around the World, the whole sequence ({@code speed/SpeedUltimates.AroundTheWorld}'s beats): the dash and the jab,
+     * the foe hanging in slowed time with sand standing still round it, a bolt out to the horizon, a ring of gold
+     * lightning racing once round the whole horizon, the sonic boom of the return, lightning crawling up the arm as the
+     * fist winds, the uppercut's column, the spiral run up the air, and the slam's crater.
+     */
+    static void world(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity runner = a.bound(c), foe = UltArt.foe(c, a);
+        Vec3 base = a.target(), facing = a.facing(), side = UltArt.side(facing);
+        int seed = a.seed() * 31 + 5;
+        float fh = foe != null ? foe.getBbHeight() : 1.8F;
+        Vec3 foeAt = foe != null ? foe.getPosition(c.partial) : base.add(0, SpeedUltimates.AroundTheWorld.height(t), 0);
+        Vec3 chest = foeAt.add(0, fh * .62, 0);
+        Vec3 front = base.subtract(facing.scale(1.4));
+        // The dash in: a low gold streak from where they stood.
+        float dash = UltArt.window(t, 0, SpeedUltimates.AroundTheWorld.JAB + 8, 1, 6);
+        if (dash > 0) triple(c, new Vec3[]{a.origin().add(0, .9, 0), front.add(0, .9, 0)}, .12F, dash);
+        // The jab: a flash on the face and a ring across the blow.
+        int jab = SpeedUltimates.AroundTheWorld.JAB;
+        if (t >= jab && t < jab + 8 && c.glow()) {
+            float k = smooth(jab, jab + 6, t), f = 1 - k;
+            Vec3 face = foeAt.add(0, fh * .85, 0);
+            c.glow(face, .8F * f, HOT, f);
+            c.ring(face, facing, .2F + 1.1F * k, .06F, 0, TWO_PI, GOLD, f);
+            c.ring(face, facing, .15F + .8F * k, .025F, 0, TWO_PI, HOT, f);
+        }
+        // Slowed time round the foe: a faint amber bubble and sand that hangs in the air, barely falling.
+        float slow = UltArt.window(t, jab, SpeedUltimates.AroundTheWorld.UPPER + 2, 4, 6);
+        if (slow > 0) {
+            if (c.soft()) c.shell(chest, 2.6F, 2.2F, 2.6F, PI, AMBER, .045F * slow, .15F, Canvas.PLAIN, 0);
+            if (c.glow()) {
+                int motes = UltArt.minimal() ? 10 : 30;
+                for (int i = 0; i < motes; i++) {
+                    float ang = hash(seed, i) * TWO_PI, r = .6F + hash(seed, i + 40) * 2.2F;
+                    float drift = (t - jab) * .004F * (hash(seed, i + 80) + .3F);
+                    Vec3 p = base.add(cos(ang) * r, .2 + hash(seed, i + 120) * 2.6 - drift, sin(ang) * r);
+                    c.glow(p, .05F + .04F * hash(seed, i + 160), i % 3 == 0 ? HOT : GOLD, .7F * slow);
+                }
+            }
+        }
+        // Gone: a bolt out to the horizon.
+        int leave = SpeedUltimates.AroundTheWorld.LEAVE;
+        float out = UltArt.window(t, leave, leave + 14, 1, 10);
+        if (out > 0 && c.glow()) {
+            Vec3 from = front.add(0, 1, 0), to = base.add(facing.scale(-SpeedUltimates.AroundTheWorld.LAP_RADIUS)).add(0, 4, 0);
+            Vec3 head = from.lerp(to, smooth(leave, leave + 4, t));
+            c.bolt(from, head, seed + 1, 1.2F, .18F, AMBER, out * .5F);
+            c.bolt(from, head, seed + 1, 1.2F, .06F, HOT, out);
+            c.glow(from, 1.4F * (1 - smooth(leave, leave + 4, t)), HOT, out);
+        }
+        lap(c, a, t, base, facing, seed);
+        // The return: a sonic boom where they arrive, and dust thrown out in a ring.
+        int arrive = SpeedUltimates.AroundTheWorld.ARRIVE;
+        float boom = UltArt.window(t, arrive, arrive + 14, 1, 10);
+        if (boom > 0) {
+            float k = smooth(arrive, arrive + 10, t);
+            if (c.glow()) for (int i = 0; i < 4; i++)
+                c.ring(front.add(0, 1, 0).subtract(facing.scale(i * .8 * k)), facing, (.6F + i * .5F) * (.4F + k), .05F, 0, TWO_PI, i < 2 ? HOT : WIND, boom * (.9F - i * .15F));
+            if (c.soft()) for (int i = 0; i < 8; i++) {
+                float ang = i * TWO_PI / 8 + hash(seed, i + 300);
+                Vec3 p = front.add(cos(ang) * (.6 + 2.4 * k), .3 + .2 * k, sin(ang) * (.6 + 2.4 * k));
+                c.cloud(p, .5F + .4F * k, .35F, .5F + .4F * k, i, ang, .45F * boom, Shades.smoke(c, DUST, 0));
+            }
+        }
+        // The wind-up: lightning crawling up the striking arm, a ball of it gathering in the fist.
+        int upper = SpeedUltimates.AroundTheWorld.UPPER;
+        float wind = UltArt.window(t, arrive + 2, upper + 2, 4, 2);
+        if (wind > 0 && runner != null && c.glow()) {
+            Vec3 fist = UltArt.hand(runner, c.partial, 1, .55);
+            Vec3 shoulder = runner.getPosition(c.partial).add(0, 1.4, 0);
+            float grow = smooth(arrive + 2, upper, t);
+            for (int i = 0; i < 4; i++) {
+                int s = seed + (int) t * 7 + i;
+                c.bolt(shoulder.add(side.scale(.2)), fist, s, .2F, .025F, GOLD, wind * .9F);
+                Vec3 off = new Vec3(hash(s, 1) - .5, hash(s, 2) - .5, hash(s, 3) - .5).scale(.9 * grow);
+                c.bolt(fist, fist.add(off), s + 9, .15F, .02F, HOT, wind);
+            }
+            c.glow(fist, .25F + .45F * grow, GOLD, wind * .8F);
+            c.glow(fist, .1F + .2F * grow, HOT, wind);
+        }
+        // The uppercut: a flash under the chin, a ring, and a column of gold where the foe went up.
+        float up = UltArt.window(t, upper, upper + 16, 1, 10);
+        if (up > 0 && c.glow()) {
+            float k = smooth(upper, upper + 6, t);
+            Vec3 chin = base.add(0, fh * .8 + SpeedUltimates.AroundTheWorld.height(Math.min(t, upper + 1)), 0);
+            c.glow(chin, 1.2F * (1 - k), HOT, up);
+            c.ring(chin, UP, .3F + 1.6F * k, .07F, 0, TWO_PI, GOLD, up * (1 - k));
+            triple(c, new Vec3[]{base.add(0, .2, 0), foeAt.add(0, fh * .5, 0)}, .16F, up * .8F);
+        }
+        // The climb: a spiral trail of lightning run up the air round the foe's column, after the runner.
+        int climbEnd = SpeedUltimates.AroundTheWorld.CLIMB_END;
+        float climb = UltArt.window(t, upper, climbEnd + 12, 1, 10);
+        if (climb > 0) {
+            float k = smooth(upper, climbEnd, t);
+            int n = 32;
+            Vec3[] p = new Vec3[n + 1];
+            for (int i = 0; i <= n; i++) p[i] = SpeedUltimates.AroundTheWorld.climb(base, facing, k * i / n).add(0, .9, 0);
+            triple(c, p, .09F, climb);
+            if (c.glow() && k < 1) c.bolt(p[Math.max(0, n - 4)], p[n], seed + (int) t, .3F, .04F, HOT, climb);
+        }
+        // The slam: a streak down to the ground, then the crater.
+        int slam = SpeedUltimates.AroundTheWorld.SLAM, landed = SpeedUltimates.AroundTheWorld.LANDED;
+        float drop = UltArt.window(t, slam, landed + 6, 1, 5);
+        if (drop > 0 && c.glow()) {
+            Vec3 top = base.add(0, SpeedUltimates.AroundTheWorld.THROW + 2, 0);
+            c.bolt(top, foeAt.add(0, fh * .5, 0), seed + 7, .5F, .12F, AMBER, drop * .5F);
+            c.bolt(top, foeAt.add(0, fh * .5, 0), seed + 7, .5F, .04F, HOT, drop);
+        }
+        crater(c, base, facing, t - landed, a.piece().ticks - landed, seed);
+    }
+
+    /** The lap: a ring of gold lightning racing once round the whole horizon, then fading where it ran. */
+    private static void lap(Canvas c, Active a, float t, Vec3 base, Vec3 facing, int seed) {
+        int lap = SpeedUltimates.AroundTheWorld.LAP, end = SpeedUltimates.AroundTheWorld.LAP_END;
+        if (t < lap || t > end + 12) return;
+        float k = Mth.clamp((t - lap) / (end - lap), 0, 1), after = 1 - smooth(end, end + 12, t);
+        double r = SpeedUltimates.AroundTheWorld.LAP_RADIUS, start = Math.atan2(-facing.z, -facing.x);
+        // The head runs once round; the trail behind it is a third of the way round, all of it once the lap closes.
+        // The whole way it has run stays lit, so the lap closes into a burning ring round the world.
+        double head = start + k * Math.PI * 2, tail = start;
+        int n = UltArt.minimal() ? 24 : 64;
+        Vec3[] p = new Vec3[n + 1];
+        float[] alpha = new float[n + 1], width = new float[n + 1];
+        for (int i = 0; i <= n; i++) {
+            double ang = tail + (head - tail) * i / n;
+            double rise = 4 + 5 * Math.sin(ang * 3 + seed % 7) + 3 * Math.sin(ang * 7 + 1.3);
+            p[i] = base.add(Math.cos(ang) * r, rise, Math.sin(ang) * r);
+            float along = i / (float) n;
+            float near = (float) Math.min(1, (head - (tail + (head - tail) * i / n)) / 1.2);
+            alpha[i] = after * (t > end ? .85F : .55F + .45F * (1 - near));
+            width[i] = 1.4F + 1.2F * (1 - near);
+        }
+        if (c.glow()) {
+            float[] halo = new float[n + 1], body = new float[n + 1], core = new float[n + 1];
+            for (int i = 0; i <= n; i++) { halo[i] = width[i] * 3; body[i] = width[i]; core[i] = width[i] * .3F; }
+            float[] a1 = alpha.clone(), a2 = alpha.clone();
+            for (int i = 0; i <= n; i++) a1[i] *= .3F;
+            c.ribbon(p, halo, AMBER, a1);
+            c.ribbon(p, body, GOLD, alpha);
+            c.ribbon(p, core, HOT, a2);
+            if (t <= end) {
+                Vec3 h = p[n];
+                c.glow(h, 11, GOLD, .7F);
+                c.glow(h, 4.5F, HOT, 1);
+                for (int i = 0; i < 4; i++) c.bolt(p[Math.max(0, n - 6)], h.add((hash(seed, i + (int) t) - .5) * 10, hash(seed, i + 9) * 8, (hash(seed, i + 17) - .5) * 10),
+                        seed + (int) t * 3 + i, 2.6F, .45F, HOT, .9F);
+                // Lightning thrown down to the ground where the head passes.
+                for (int i = 0; i < 2; i++) c.bolt(h, h.add((hash(seed, i + 30 + (int) t) - .5) * 6, -9, (hash(seed, i + 40 + (int) t) - .5) * 6),
+                        seed + (int) t * 5 + i, 1.8F, .3F, GOLD, .8F);
+            }
+        }
+        // Dust thrown up where the head passes.
+        if (c.soft() && t <= end && !UltArt.minimal()) {
+            Vec3 h = p[n];
+            for (int i = 0; i < 4; i++)
+                c.cloud(h.add(0, -3 - i, 0).subtract(new Vec3(Math.cos(head + Math.PI / 2), 0, Math.sin(head + Math.PI / 2)).scale(i * 3)),
+                        4 + i, 2.5F, 4 + i, i, (float) head, .4F * (1 - i / 4F), Shades.smoke(c, DUST, 0));
+        }
+    }
+
+    /** The slam's crater, {@code age} ticks after it lands: a scorched floor, dark cracks, gold rings and a ring of dust. */
+    private static void crater(Canvas c, Vec3 at, Vec3 facing, float age, float life, int seed) {
+        if (age < 0) return;
+        float f = Canvas.fade(age, life, 0, 12), k = smooth(0, 8, age);
+        Vec3 floor = at.add(0, .04, 0);
+        if (c.soft()) {
+            c.disc(floor, UP, 1.2F + 1.6F * k, SOOT, .6F * f, .0F);
+            for (int i = 0; i < 9; i++) {
+                float ang = i * TWO_PI / 9 + hash(seed, i + 500) * .6F, len = (1.6F + 2.2F * hash(seed, i + 520)) * k;
+                Vec3[] p = new Vec3[5];
+                for (int j = 0; j < 5; j++) {
+                    float d = len * j / 4, wob = (hash(seed, i * 5 + j + 540) - .5F) * .5F;
+                    p[j] = floor.add(cos(ang + wob * j * .3F) * d, .01, sin(ang + wob * j * .3F) * d);
+                }
+                c.ribbon(p, .06F, SOOT, .8F * f, .1F * f);
+            }
+            for (int i = 0; i < (UltArt.minimal() ? 4 : 10); i++) {
+                float ang = i * TWO_PI / 10 + hash(seed, i + 600);
+                double d = 1 + 3.8 * (1 - Math.exp(-age / 7));
+                c.cloud(floor.add(cos(ang) * d, .4 + age * .02, sin(ang) * d), .9F + age * .03F, .55F, .9F + age * .03F, i, ang,
+                        .5F * f * (1 - smooth(10, life, age) * .6F), Shades.smoke(c, DUST, 0));
+            }
+        }
+        if (c.glow()) {
+            float ring = smooth(0, 10, age), gone = 1 - smooth(4, 16, age);
+            c.ring(floor.add(0, .1, 0), UP, .5F + 6F * ring, .25F, 0, TWO_PI, AMBER, gone * .35F);
+            c.ring(floor.add(0, .1, 0), UP, .5F + 6F * ring, .08F, 0, TWO_PI, HOT, gone);
+            c.glow(at.add(0, .6, 0), 2.5F * (1 - smooth(0, 5, age)), HOT, 1 - smooth(0, 5, age));
+            // Two scorched skid marks where the runner came down.
+            Vec3 s = UltArt.side(facing).scale(.18);
+            Vec3 a0 = at.subtract(facing.scale(2.2)).add(0, .03, 0), a1 = at.subtract(facing.scale(.9)).add(0, .03, 0);
+            c.line(a0.add(s), a1.add(s), .05F, AMBER, .5F * f, .2F * f);
+            c.line(a0.subtract(s), a1.subtract(s), .05F, AMBER, .5F * f, .2F * f);
+        }
+    }
+
+    /**
+     * Between Heartbeats, one second of it (re-sent each second; the second in the seed, 0 the start): a heartbeat ring
+     * across the ground, sand hanging round the speedster, and two figures of light circling them, the next places they
+     * will be. The first second opens with a boom of amber.
+     */
+    static void heart(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity body = a.bound(c);
+        Vec3 feet = body != null ? body.getPosition(c.partial) : a.origin();
+        int second = a.seed();
+        boolean last = second >= SpeedUltimates.BetweenHeartbeats.TICKS / 20 - 1;
+        float f = Mth.clamp(t / 2, 0, 1) * (last ? 1 - smooth(10, 22, t) : Mth.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        float beat = smooth(0, 10, t);
+        if (c.glow()) {
+            c.ring(feet.add(0, .06, 0), UP, .4F + 3.4F * beat, .14F, 0, TWO_PI, AMBER, f * .3F * (1 - beat));
+            c.ring(feet.add(0, .06, 0), UP, .4F + 3.4F * beat, .04F, 0, TWO_PI, HOT, f * (1 - beat));
+            int motes = UltArt.minimal() ? 6 : 18;
+            for (int i = 0; i < motes; i++) {
+                float ang = hash(second * 7 + 3, i) * TWO_PI, r = .8F + hash(i, 40) * 1.8F;
+                Vec3 p = feet.add(cos(ang) * r, .3 + hash(i, 60) * 2.2 - t * .003, sin(ang) * r);
+                c.glow(p, .05F, i % 3 == 0 ? HOT : GOLD, .65F * f);
+            }
+        }
+        float clock = c.time();
+        for (int i = 0; i < 2; i++) {
+            float ang = clock * .21F + i * PI;
+            Vec3 spot = feet.add(cos(ang) * 1.7, 0, sin(ang) * 1.7);
+            figure(c, spot, new Vec3(-sin(ang), 0, cos(ang)).scale(-.15), .45F * f);
+        }
+        if (second == 0 && c.glow()) {
+            float k = smooth(0, 8, t);
+            c.shell(feet.add(0, 1, 0), .5F + 3 * k, .5F + 2.4F * k, .5F + 3 * k, PI, AMBER, .3F * (1 - k), 0, Canvas.PLAIN, 0);
+        }
+    }
+
+    /**
+     * One beat of a speedster's Ultimate: a sidestep (seed 0) leaves a figure of light where they stood and a low
+     * streak to where they went; a shot plucked out of the air (seed 1) is a quick flick of gold to the hand; a strike
+     * back (seed 2) is a streak from the afterimage into the one who swung, with a ring where it lands.
+     */
+    static void dodge(Canvas c, Active a, float t) {
+        Vec3 from = a.origin(), to = a.target();
+        float life = a.piece().ticks, f = Canvas.fade(t, life, 0, 8);
+        switch (a.seed()) {
+            case 0 -> {
+                Vec3 smear = to.subtract(from).multiply(1, 0, 1);
+                smear = smear.lengthSqr() < 1e-4 ? Vec3.ZERO : smear.normalize().scale(-.15);
+                figure(c, from, smear, f);
+                triple(c, new Vec3[]{from.add(0, .5, 0), to.add(0, .5, 0)}, .06F, f * (1 - smooth(0, 8, t)));
+            }
+            case 1 -> {
+                if (!c.glow()) return;
+                Vec3 head = from.lerp(to, smooth(0, 4, t));
+                c.line(from, head, .03F, GOLD, f * .4F, f);
+                c.glow(from, .3F * (1 - smooth(0, 4, t)), HOT, f);
+            }
+            default -> {
+                if (!c.glow()) return;
+                float k = smooth(0, 3, t);
+                Vec3 head = from.add(0, 1, 0).lerp(to, k);
+                c.bolt(from.add(0, 1, 0), head, (int) (from.x * 13 + to.z * 7), .3F, .05F, GOLD, f);
+                c.bolt(from.add(0, 1, 0), head, (int) (from.x * 13 + to.z * 7), .3F, .02F, HOT, f);
+                if (t >= 3) {
+                    float r = smooth(3, 10, t);
+                    Vec3 axis = to.subtract(from).normalize();
+                    c.ring(to, axis, .2F + .8F * r, .04F, 0, TWO_PI, HOT, f * (1 - r));
+                }
+            }
+        }
+    }
+
+    /**
+     * Rescue Run, one friend (seed their place on the route): a gold lane out to where they stood and back, burning in
+     * and cooling, and a glint where they were picked up.
+     */
+    static void rescue(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Vec3 home = a.origin().add(0, .6, 0), there = a.target().add(0, .6, 0);
+        float life = a.piece().ticks, f = Canvas.fade(t, life, 0, 18);
+        Vec3 d = there.subtract(home);
+        Vec3 lateral = UltArt.side(d.multiply(1, 0, 1).lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : d.multiply(1, 0, 1).normalize()).scale(.9);
+        int n = 16;
+        Vec3[] p = new Vec3[n + 1];
+        float run = smooth(0, 5, t);
+        for (int i = 0; i <= n; i++) {
+            float k = i / (float) n * run, loop = Mth.sin(k * PI);
+            float along = k < .5F ? k * 2 : 2 - k * 2;
+            p[i] = home.add(d.scale(along)).add(lateral.scale(loop * (k < .5F ? 1 : -1)));
+        }
+        triple(c, p, .07F, f);
+        if (c.glow() && t < 8) c.glow(there, .7F * (1 - t / 8), HOT, f);
     }
 }

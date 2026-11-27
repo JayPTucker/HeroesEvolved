@@ -96,7 +96,7 @@ ability you can cast, core or learned, can go on any key, or on none.
 On the **Loadout** page of the hero menu, everything you can cast is listed with a tag for what it is
 for (Offense, Defense, Support or Utility) and the key it is on. Select an ability, then click one of
 the eight key slots beside the list to put it there; click its slot again, or right-click a slot, to
-empty it. Your class ability (see [Classes](classes.md)) is bound the same way. An ability is on one
+empty it. Your class's Ultimate (see [Classes](classes.md)) is bound the same way. An ability is on one
 key at most; moving it puts the key it left back to its default, or leaves it empty if that default
 is already somewhere else. Flight's double-jump always toggles flight, whatever is on key 1.
 
@@ -111,7 +111,7 @@ Open **Powers → Loadout → Wheel** to put abilities into eight fixed position
 from the list and click a position to assign it. Right-click a position to clear it. Select a
 wheel ability and click **Tap R** to pin it. Your layout is saved for each power.
 
-The wheel starts with your learned class ability and unlocked moves that have no assigned key.
+The wheel starts with your class's Ultimate and unlocked moves that have no assigned key.
 Newly learned abilities can fill unused positions. You can also put a keyed ability on the wheel.
 
 - **Hold R** to open it around the cursor. Flick toward an ability and **let go** to cast it.

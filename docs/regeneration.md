@@ -135,8 +135,9 @@ back. Line of sight is needed, so a wall still shelters a foe.
 | **Field Medic** | Revive reaches 16 blocks. |
 | **Second Wind** | Revive also clears harmful effects and grants strong absorption. |
 
-The three styles keep their effects and have their own poses: **Vital Burst** (a fist beaten against the chest),
-**Undying** (arms out, palms open, daring it) and **Lifebloom** (palms raised).
+The three classes' Ultimates ([Classes](classes.md)) have their own poses: **Can't Stop Me** (walking into the blow,
+then six closing wounds), **Unkillable** (arms out, palms open, daring it) and **Lifeblood** (a palm opened as the
+threads run out).
 
 ## Look and sound
 

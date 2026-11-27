@@ -74,11 +74,13 @@ it out of the air instead.
 
 ## Classes
 
-| Class | Ability | What it does |
+Each class's ability is an **Ultimate** on a long wait (see [Classes](classes.md) for how they work):
+
+| Class | Ultimate | What it does |
 | --- | --- | --- |
-| Offence | **Clench** | A great far hand over a point (24 blocks) closes slowly into a fist, dragging foes within 6 blocks in, then crushes them (6 + 0.75 per tier) and slams them down. |
-| Defence | **Warding Hands** | Two far hands circle you for 8 seconds, swatting shots away and batting anyone who comes close. |
-| Support | **Gathering Hand** | The far hand scoops every friend within 16 blocks up and sets them at your side, with strong damage resistance for 5 seconds. |
+| Offence | **Wrecking Hand** | The far hand lifts the foe in front of you, tears six chunks of ground free to circle it and swings it into four of them, then crushes the rubble into a ball round it and spikes it into the ground. 22 damage, and 6 to everyone near the burst. The foe is held the whole time. |
+| Defence | **Stop Everything** | For 10 seconds everything thrown or fired at you stops dead ten blocks out, and anyone who closes in is held off at arm's length. When it ends, everything held is thrown back at whoever threw it. |
+| Support | **Cradle** | Two great hands gather every friend within 12 blocks to your side and close over them for 12 seconds. Shots break on the hands, foes who reach in are swatted out, and everyone inside mends and takes half the harm. |
 
 ## What you see
 

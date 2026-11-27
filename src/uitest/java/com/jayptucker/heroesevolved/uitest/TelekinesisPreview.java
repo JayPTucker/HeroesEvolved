@@ -1,6 +1,5 @@
 package com.jayptucker.heroesevolved.uitest;
 
-import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.ability.data.PlayerAbilityData;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.client.effects.TempestCamera;
@@ -10,7 +9,6 @@ import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.skills.SkillTreeData;
 import com.jayptucker.heroesevolved.story.bunker.CryoChamberService;
 import com.jayptucker.heroesevolved.story.prologue.PrologueService;
-import com.jayptucker.heroesevolved.styles.StyleCasts;
 import com.jayptucker.heroesevolved.telekinesis.KineticStyle;
 import com.jayptucker.heroesevolved.telekinesis.TelekinesisService;
 import com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService;
@@ -280,23 +278,6 @@ public final class TelekinesisPreview {
                 TempestCamera.fix(new Vec3(X + 139, Y + 4, Z + 4), new Vec3(X + 132, Y + 1, Z + 8.5));
             });
             case 675 -> photo("24-round-up");
-
-            // ---- Classes: Clench and Warding Hands.
-            case 700 -> server(mc, p -> {
-                reset(p); place(p, 146, 0, 0, 8);
-                puppet(p, EntityType.PILLAGER, 146, 9); puppet(p, EntityType.PILLAGER, 148, 10);
-                aim(p, new Vec3(X + 147, Y, Z + 9.5));
-                check("clench", StyleCasts.cast(new AbilityUseContext(p, ModAbilities.TELEKINESIS_ID, 5, false), "implosion"));
-                TempestCamera.fix(new Vec3(X + 153, Y + 5, Z + 4), new Vec3(X + 147, Y + 2.5, Z + 9.5));
-            });
-            case 712 -> photo("25-clench-closing");
-            case 724 -> photo("26-clench-crush");
-            case 740 -> server(mc, p -> {
-                reset(p); place(p, 160, 0, 0, 8);
-                check("warding hands", StyleCasts.cast(new AbilityUseContext(p, ModAbilities.TELEKINESIS_ID, 5, false), "debris_halo"));
-                TempestCamera.fix(new Vec3(X + 164, Y + 2.6, Z + 3.5), new Vec3(X + 160, Y + 1.2, Z));
-            });
-            case 755 -> photo("27-warding-hands");
 
             // ---- The Puppeteer's swat, and a Vector Step.
             case 780 -> server(mc, p -> {

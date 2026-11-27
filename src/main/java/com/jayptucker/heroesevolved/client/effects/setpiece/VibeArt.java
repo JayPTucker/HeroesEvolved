@@ -901,4 +901,117 @@ final class VibeArt {
             c.glow(at, .5F * (1 - k), WHITE, f * (1 - k));
         }
     }
+
+    // ------------------------------------------------------------------
+    // Ultimates (vibe/VibeUltimates)
+    // ------------------------------------------------------------------
+
+    /** A breach that opens over {@code open} ticks from {@code from}, holds, and slams shut by {@code shut}. */
+    private static void breachAt(Canvas c, Vec3 at, Vec3 normal, double size, float t, float from, float shut, float time) {
+        if (t < from || t > shut + 4) return;
+        float open = smooth(from, from + 4, t) * (1 - smooth(shut, shut + 3, t));
+        float alpha = 1 - smooth(shut + 1, shut + 4, t);
+        iris(c, at, normal, size, size * 1.4, open, alpha, time, false, 0);
+        if (t >= shut && t < shut + 4 && c.glow()) c.glow(at, (float) size * 1.2F * (1 - (t - shut) / 4), WHITE, 1 - (t - shut) / 4);
+    }
+
+    /**
+     * Dimension Drop ({@code VibeUltimates.DimensionDrop}): a breach under the foe that swallows it; breaches opening in
+     * the air round it, each blast of his palm a streak into the foe and a flash as it goes into the next; the breach high
+     * in the sky it falls out of; and the landing's ring.
+     */
+    static void drop(Canvas c, SetPieceClient.Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Vec3 base = a.target(), facing = a.facing();
+        float time = clock(a, t);
+        int open = com.jayptucker.heroesevolved.vibe.VibeUltimates.DimensionDrop.OPEN,
+                dropAt = com.jayptucker.heroesevolved.vibe.VibeUltimates.DimensionDrop.DROP,
+                first = com.jayptucker.heroesevolved.vibe.VibeUltimates.DimensionDrop.FIRST,
+                every = com.jayptucker.heroesevolved.vibe.VibeUltimates.DimensionDrop.EVERY,
+                bounces = com.jayptucker.heroesevolved.vibe.VibeUltimates.DimensionDrop.BOUNCES,
+                sky = com.jayptucker.heroesevolved.vibe.VibeUltimates.DimensionDrop.SKY,
+                fall = com.jayptucker.heroesevolved.vibe.VibeUltimates.DimensionDrop.FALL,
+                land = com.jayptucker.heroesevolved.vibe.VibeUltimates.DimensionDrop.LAND;
+        breachAt(c, base.add(0, .06, 0), new Vec3(0, 1, 0), 1.1, t, 0, dropAt + 4, time);
+        net.minecraft.world.entity.Entity vibe = a.bound(c), foe = UltArt.foe(c, a);
+        Vec3 palm = vibe != null ? vibe.getPosition(c.partial).add(0, 1.3, 0).add(facing.scale(.5)) : a.origin().add(0, 1.3, 0);
+        for (int i = 0; i < bounces; i++) {
+            int out = first + i * every;
+            Vec3 at = com.jayptucker.heroesevolved.vibe.VibeUltimates.DimensionDrop.breach(base, facing, i);
+            Vec3 next = i + 1 < bounces ? com.jayptucker.heroesevolved.vibe.VibeUltimates.DimensionDrop.breach(base, facing, i + 1)
+                    : base.add(0, com.jayptucker.heroesevolved.vibe.VibeUltimates.DimensionDrop.SKY_HEIGHT, 0);
+            Vec3 normal = next.subtract(at).normalize();
+            breachAt(c, at, normal, .9, t, out - 4, out + every - 1, time);
+            float blast = t - (out + 2);
+            if (blast >= 0 && blast < 8) {
+                Vec3 to = foe != null ? foe.getPosition(c.partial).add(0, foe.getBbHeight() * .5, 0) : at;
+                float k = smooth(0, 2, blast), f = 1 - smooth(2, 8, blast);
+                stroke(c, new Vec3[]{palm, palm.lerp(to, k)}, .06F, f, ICE);
+                if (blast > 2 && c.glow()) c.ring(to, normal, .3F + 1.2F * smooth(2, 8, blast), .04F, 0, Mth.TWO_PI, WHITE, f);
+            }
+        }
+        breachAt(c, base.add(0, com.jayptucker.heroesevolved.vibe.VibeUltimates.DimensionDrop.SKY_HEIGHT + .5, 0), new Vec3(0, -1, 0), 1.3, t, sky - 2, fall + 4, time);
+        if (t >= land) {
+            float age = t - land, f = fade(age, a.piece().ticks - land, 0, 14);
+            if (c.glow()) {
+                c.ring(base.add(0, .06, 0), new Vec3(0, 1, 0), .4F + 5 * smooth(0, 12, age), .08F, 0, Mth.TWO_PI, BLUE, f * (1 - smooth(4, 14, age)));
+                c.ring(base.add(0, .06, 0), new Vec3(0, 1, 0), .4F + 5 * smooth(0, 12, age), .03F, 0, Mth.TWO_PI, WHITE, f * (1 - smooth(4, 14, age)));
+                if (age < 5) c.glow(base.add(0, .8, 0), 2.2F * (1 - age / 5), WHITE, 1 - age / 5);
+            }
+            fragments(c, a, base.add(0, .2, 0), new Vec3(0, 1, 0), age, a.piece().ticks - land, 3);
+        }
+    }
+
+    /**
+     * Between Worlds, one second (re-sent each second; the second in the seed): the body half out of the world (drawn as
+     * a cold blue ghost by {@code BodyCopies}), filaments trailing off it, and a small breach turning before the chest.
+     */
+    static void between(Canvas c, SetPieceClient.Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        net.minecraft.world.entity.Entity body = a.bound(c);
+        if (body == null) return;
+        int second = a.seed();
+        boolean last = second >= com.jayptucker.heroesevolved.vibe.VibeUltimates.BetweenWorlds.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(10, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        float time = clock(a, t);
+        Vec3 chest = body.getPosition(c.partial).add(0, 1.2, 0);
+        Vec3 look = body.getViewVector(c.partial).multiply(1, 0, 1);
+        if (look.lengthSqr() < 1e-4) look = new Vec3(0, 0, 1);
+        look = look.normalize();
+        iris(c, chest.add(look.scale(.9)), look, .45, .6, .8F, f * .7F, time, true, 0);
+        for (int i = 0; i < 4; i++) {
+            float g = i * Mth.TWO_PI / 4 + time * .04F;
+            Vec3 tip = chest.add(Mth.cos(g) * .8, -.6 + .4 * Mth.sin(time * .1F + i), Mth.sin(g) * .8);
+            filament(c, chest, tip, .1F, time, f * .6F, GHOST);
+        }
+    }
+
+    /** A breach pair: a shot or a friend going in at the origin and out at the target (one breach if they are the same). */
+    static void pass(Canvas c, SetPieceClient.Active a, float t) {
+        float time = clock(a, t), life = a.piece().ticks;
+        Vec3 from = a.origin(), to = a.target();
+        Vec3 d = to.subtract(from);
+        Vec3 n = d.lengthSqr() < 1e-3 ? new Vec3(0, 0, 1) : d.normalize();
+        breachAt(c, from, n, .6, t, 0, life - 6, time);
+        if (d.lengthSqr() > 1e-3) {
+            breachAt(c, to, n, .6, t, 1, life - 5, time);
+            if (t < 6) filament(c, from, to, .2F, time, (1 - t / 6) * .5F, ICE);
+        }
+    }
+
+    /** Safe Harbor, one second (re-sent each second; the second in the seed): a wide breach turning flat overhead, filaments down to a ring round the shelter. */
+    static void harbor(Canvas c, SetPieceClient.Active a, float t) {
+        int second = a.seed();
+        boolean last = second >= com.jayptucker.heroesevolved.vibe.VibeUltimates.SafeHarbor.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(10, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        float time = clock(a, t), r = a.scale(), grow = second == 0 ? smooth(0, 12, t) : 1;
+        Vec3 centre = a.origin();
+        iris(c, centre.add(0, 3.6, 0), new Vec3(0, -1, 0), r * .75 * grow, r * .75 * grow, grow, f * .8F, time, true, 2);
+        for (int i = 0; i < 6; i++) {
+            float g = i * Mth.TWO_PI / 6 + time * .02F;
+            Vec3 foot = centre.add(Mth.cos(g) * r, .05, Mth.sin(g) * r);
+            filament(c, centre.add(Mth.cos(g) * r * .7, 3.5, Mth.sin(g) * r * .7), foot, .15F, time, f * .5F, ICE);
+        }
+        if (c.glow()) c.ring(centre.add(0, .05, 0), new Vec3(0, 1, 0), r * grow, .04F, 0, Mth.TWO_PI, BLUE, f * .6F);
+    }
 }

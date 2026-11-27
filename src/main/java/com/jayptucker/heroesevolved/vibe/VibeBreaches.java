@@ -149,7 +149,6 @@ public final class VibeBreaches {
         /** The near mouth turns with the viber's look while a keyed breach is still opening, so neither mouth is final. */
         Mouth entry, exit;
         final Kind kind;
-        final boolean sanctuary;
         final long started;
         final int lifetime, id;
         /** How long the breach takes to open: a keyed breach is channelled ({@link VibeGeometry#channelTicks}). */
@@ -167,12 +166,11 @@ public final class VibeBreaches {
         final Map<UUID, Long> dropped = new HashMap<>();
         long opened = -1;
 
-        Gate(ServerPlayer owner, Mouth entry, Mouth exit, Kind kind, boolean sanctuary) {
+        Gate(ServerPlayer owner, Mouth entry, Mouth exit, Kind kind) {
             this.owner = owner;
             this.entry = entry;
             this.exit = exit;
             this.kind = kind;
-            this.sanctuary = sanctuary;
             started = entry.level().getGameTime();
             lifetime = (kind == Kind.GLIMPSE ? GLIMPSE_LIFETIME : kind == Kind.FREQUENCY ? FAR_LIFETIME : LIFETIME)
                     * (com.jayptucker.heroesevolved.amplify.Amplification.surged(owner) ? 2 : 1);
@@ -247,7 +245,7 @@ public final class VibeBreaches {
         keyed = true;
         try {
             boolean opened;
-            if (pick == null || pick == -1) opened = open(player, false);
+            if (pick == null || pick == -1) opened = open(player);
             else if (pick == VibeFrequencies.VISION) opened = openToVision(player);
             else opened = openTo(player, pick, Kind.FREQUENCY);
             if (opened && pick != null && pick != VibeFrequencies.VISION) VibeFrequencies.remember(player, pick);
@@ -457,7 +455,7 @@ public final class VibeBreaches {
         }
         Mouth exit = frequencyExit(player, target, frequency);
         if (exit == null) return fail(player, "no_exit");
-        return begin(player, new Gate(player, entry, exit, kind, false));
+        return begin(player, new Gate(player, entry, exit, kind));
     }
 
     /** A breach to the place a vision just showed ({@link VibeVisions#spot}): beside the ally, or into the village. */
@@ -473,7 +471,7 @@ public final class VibeBreaches {
         if (!entryFits(player, entry)) return fail(player, "blocked");
         Mouth exit = frequencyExit(player, target, spot);
         if (exit == null) return fail(player, "no_exit");
-        return begin(player, new Gate(player, entry, exit, Kind.FREQUENCY, false));
+        return begin(player, new Gate(player, entry, exit, Kind.FREQUENCY));
     }
 
     private static Mouth frequencyExit(ServerPlayer player, ServerLevel level, VibeFrequencies.Frequency frequency) {
@@ -513,32 +511,31 @@ public final class VibeBreaches {
                 && (!player.isVehicle() || EntityCarryService.isCarrying(player));
     }
 
-    /** A breach to where the viber looks. Sanctuary Breach falls back to five blocks ahead. */
-    public static boolean open(ServerPlayer player, boolean sanctuary) {
+    /** A breach to where the viber looks. */
+    public static boolean open(ServerPlayer player) {
         if (!canOpen(player) || GATES.containsKey(player.getUUID())) return false;
         if (!travelWorld(player.serverLevel())) return fail(player, "restricted");
         Mouth entry = entry(player);
         if (!entryFits(player, entry)) return fail(player, "blocked");
-        if (entry.flat()) return dropAhead(player, entry, sanctuary);
-        Mouth exit = aimedExit(player, entry, sanctuary);
+        if (entry.flat()) return dropAhead(player, entry);
+        Mouth exit = aimedExit(player, entry);
         if (exit == null) return fail(player, "no_exit");
-        return begin(player, new Gate(player, entry, exit, Kind.AIMED, sanctuary));
+        return begin(player, new Gate(player, entry, exit, Kind.AIMED));
     }
 
-    private static Mouth aimedExit(ServerPlayer player, Mouth entry, boolean sanctuary) {
+    private static Mouth aimedExit(ServerPlayer player, Mouth entry) {
         Vec3 normal = entry.direction(), eye = player.getEyePosition();
         BlockHitResult hit = aimHit(player, normal, aimRange(player));
         Vec3 target = hit.getLocation();
         boolean surface = hit.getType() == HitResult.Type.BLOCK;
         boolean groundHit = surface && hit.getDirection() == Direction.UP;
-        if (groundHit || Math.abs(normal.y) < .08 || sanctuary) {
+        if (groundHit || Math.abs(normal.y) < .08) {
             Vec3 landing = ground(player, surface ? target.subtract(normal.scale(.65)) : target);
             Vec3 forward = Vec3.directionFromRotation(0, player.getYRot());
             if (groundHit && !entry.airborne() && landing != null && landing.distanceToSqr(entry.feet()) < 9) {
                 // The ray meets the floor too close to fit two mouths. Keep the tilt and open farther along the floor.
                 landing = ground(player, player.position().add(forward.scale(7)).add(0, .75, 0));
             }
-            if (landing == null && sanctuary) landing = ground(player, player.position().add(forward.scale(5)));
             if (landing != null) {
                 for (int offset = 0; offset < 4; offset++) {
                     Vec3 floor = offset == 0 ? landing : ground(player, landing.subtract(forward.scale(offset)).add(0, .7, 0));
@@ -559,18 +556,18 @@ public final class VibeBreaches {
     }
 
     /** A floor breach where you look down: you drop out of the air about twelve blocks ahead (nearer if that's blocked). */
-    private static boolean dropAhead(ServerPlayer player, Mouth entry, boolean sanctuary) {
+    private static boolean dropAhead(ServerPlayer player, Mouth entry) {
         Vec3 target = aimedGround(player, aimRange(player));
         if (target != null && target.distanceToSqr(entry.feet()) >= 25) {
             Mouth exit = Mouth.flat(player.serverLevel(), target.add(0, DROP, 0), player.getYRot());
-            if (exitFits(player, exit)) return begin(player, new Gate(player, entry, exit, Kind.AIMED, sanctuary));
+            if (exitFits(player, exit)) return begin(player, new Gate(player, entry, exit, Kind.AIMED));
         }
         Vec3 ahead = Vec3.directionFromRotation(0, player.getYRot());
         for (double reach = 12; reach >= 5; reach -= 1.5) {
             Vec3 ground = ground(player, player.position().add(ahead.scale(reach)).add(0, 1.2, 0));
             if (ground == null || Math.abs(ground.y - player.getY()) > 6) continue;
             Mouth exit = Mouth.flat(player.serverLevel(), ground.add(0, DROP, 0), player.getYRot());
-            if (exitFits(player, exit)) return begin(player, new Gate(player, entry, exit, Kind.AIMED, sanctuary));
+            if (exitFits(player, exit)) return begin(player, new Gate(player, entry, exit, Kind.AIMED));
         }
         return fail(player, "no_exit");
     }
@@ -783,7 +780,7 @@ public final class VibeBreaches {
                 }
                 if (gate.keyed && gate.kind == Kind.AIMED && !gate.flat() && gate.owner.getLookAngle().dot(gate.look) < .999) {
                     // The tear turned as it opened: the far mouth goes where the viber looks now.
-                    Mouth exit = aimedExit(gate.owner, gate.entry, gate.sanctuary);
+                    Mouth exit = aimedExit(gate.owner, gate.entry);
                     if (exit != null) {
                         gate.exit = exit;
                         gate.hold(exit);
@@ -959,7 +956,7 @@ public final class VibeBreaches {
         if (traveler == gate.owner) VibeService.prime(gate.owner);
         if (SkillTreeService.has(gate.owner, "vibe_wayfarer"))
             StyleOps.effect(traveler, net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED, 100, 0);
-        if (gate.sanctuary || SkillTreeService.has(gate.owner, "vibe_horizon")) {
+        if (SkillTreeService.has(gate.owner, "vibe_horizon")) {
             traveler.clearFire();
             StyleOps.effect(traveler, net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE, 80, 0);
         }

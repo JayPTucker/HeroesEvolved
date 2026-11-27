@@ -142,7 +142,7 @@ public final class VibeCombatGameTests {
                         p.setYRot(0);
                         p.setXRot(45);
                         p.setOnGround(true);
-                        h.assertTrue(VibeBreaches.open(p, false) && !VibeBreaches.flat(p) && VibeBreaches.mouthAt(p, 1).z > start.z + 5,
+                        h.assertTrue(VibeBreaches.open(p) && !VibeBreaches.flat(p) && VibeBreaches.mouthAt(p, 1).z > start.z + 5,
                                 "Aiming diagonally down at nearby ground opens a tilted breach with room to cross");
                     } finally {
                         clean(cleanup);
@@ -180,7 +180,7 @@ public final class VibeCombatGameTests {
             VibeBreaches.close(p);
             p.setPos(start);
             p.setOnGround(true);
-            h.assertTrue(VibeBreaches.open(p, false), "Another floor breach can open at the same spot");
+            h.assertTrue(VibeBreaches.open(p), "Another floor breach can open at the same spot");
             ceiling[0] = VibeBreaches.mouthAt(p, 1);
             p.setPos(start.add(2, 0, 0));
         }));

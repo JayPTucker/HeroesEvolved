@@ -16,7 +16,7 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 public final class EffectsSettingsScreen extends Screen {
     private static final double[] STEPS = {1.0D, 0.75D, 0.5D, 0.25D, 0.0D};
     private static final int PANEL_WIDTH = 260;
-    private static final int PANEL_HEIGHT = 190;
+    private static final int PANEL_HEIGHT = 240;
 
     private final Screen parent;
 
@@ -52,10 +52,21 @@ public final class EffectsSettingsScreen extends Screen {
                 })
                 .bounds(x, top + 130, buttonWidth, 20)
                 .build());
+        addRenderableWidget(Button.builder(ultimateLabel(), button -> {
+                    ClientVisualSettings.ULTIMATE_CAMERA.set(!ClientVisualSettings.ULTIMATE_CAMERA.get());
+                    ClientVisualSettings.SPEC.save();
+                    button.setMessage(ultimateLabel());
+                })
+                .bounds(x, top + 154, buttonWidth, 20)
+                .build());
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> onClose())
                 .bounds(left + PANEL_WIDTH / 2 - 40, top + PANEL_HEIGHT - 28, 80, 20)
                 .build());
+    }
+
+    private static Component ultimateLabel() {
+        return Component.literal("Ultimate camera: " + (ClientVisualSettings.ULTIMATE_CAMERA.get() ? "Cinematic" : "Your own eyes"));
     }
 
     private static Component limbsLabel() {
@@ -110,13 +121,13 @@ public final class EffectsSettingsScreen extends Screen {
         graphics.drawCenteredString(font, title, width / 2, top + 12, 0xFFFFD7DC);
         graphics.drawCenteredString(font, Component.literal(
                         "Only changes what you see. Click to cycle."),
-                width / 2, top + 134, 0xFFB89A9F);
+                width / 2, top + 182, 0xFFB89A9F);
         graphics.drawCenteredString(font, Component.literal(
                         "Minecraft's Hide Lightning Flashes and Distortion"),
-                width / 2, top + 146, 0xFF8A7075);
+                width / 2, top + 194, 0xFF8A7075);
         graphics.drawCenteredString(font, Component.literal(
                         "Effects options are respected too."),
-                width / 2, top + 156, 0xFF8A7075);
+                width / 2, top + 204, 0xFF8A7075);
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 

@@ -43,7 +43,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class VibeService {
-    public enum Blast { PALM, LANCE, REVERB, CROSSWAVE }
+    public enum Blast { PALM, LANCE, REVERB }
 
     private record Shot(ServerPlayer owner, ServerLevel level, Vec3 position, Vec3 aim, double range, Blast kind, int tier, long due,
                         float boost) {}
@@ -57,17 +57,15 @@ public final class VibeService {
         final long started;
         final float width;
         final int duration;
-        final boolean mirror;
         int stored;
         Vec3 lastCenter;
 
-        Guard(ServerPlayer owner, boolean mirror) {
+        Guard(ServerPlayer owner) {
             this.owner = owner;
             this.level = owner.serverLevel();
             this.started = level.getGameTime();
-            this.mirror = mirror;
-            width = mirror ? VibeGeometry.HORIZON_WIDTH : VibeGeometry.GUARD_WIDTH;
-            duration = mirror ? 100 : 70;
+            width = VibeGeometry.GUARD_WIDTH;
+            duration = 70;
         }
     }
 
@@ -137,7 +135,6 @@ public final class VibeService {
             case PALM -> ProjectileRanges.VIBE_PALM;
             case LANCE -> ProjectileRanges.VIBE_LANCE;
             case REVERB -> ProjectileRanges.VIBE_HEAVY;
-            case CROSSWAVE -> ProjectileRanges.VIBE_HEAVY;
         };
         Vec3 end = VibeGeometry.clip(player, eye, eye.add(direction.scale(range)));
         if (hand.distanceToSqr(end) < .2 || end.subtract(eye).dot(direction) < .8) return VibeBreaches.fail(player, "blocked");
@@ -148,7 +145,7 @@ public final class VibeService {
         ArmPose pose = switch (kind) {
             case PALM -> ArmPose.VIBE_PALM;
             case LANCE -> ArmPose.VIBE_LANCE;
-            case REVERB, CROSSWAVE -> ArmPose.VIBE_CROSS;
+            case REVERB -> ArmPose.VIBE_CROSS;
         };
         ArmPosePayload.show(player, pose, 17);
         SetPiecePayload.send(player.serverLevel(), Piece.VIBE_GATHER, hand, end, windup, player);
@@ -286,9 +283,8 @@ public final class VibeService {
             case PALM -> .85F;
             case LANCE -> .48F;
             case REVERB -> 1.45F;
-            case CROSSWAVE -> 1.8F;
         };
-        boolean doublePalm = shot.kind() == Blast.REVERB || shot.kind() == Blast.CROSSWAVE;
+        boolean doublePalm = shot.kind() == Blast.REVERB;
         Set<UUID> struck = new HashSet<>();
         float damage = (shot.kind() == Blast.PALM ? 4 + shot.tier() : 7 + shot.tier() * 1.5F) * shot.boost();
         if (shot.boost() > 1) SetPiecePayload.send(shot.level(), Piece.VIBE_HIT, hand, hand.add(direction), 1.1F, player);
@@ -299,12 +295,10 @@ public final class VibeService {
             Vec3 side = VibeGeometry.side(direction);
             if (player.getMainArm() == HumanoidArm.RIGHT) side = side.reverse();
             Vec3 offHand = VibeGeometry.hand(player, direction, 1, true);
-            Vec3 offEnd = VibeGeometry.clip(player, offHand, end.add(side.scale(shot.kind() == Blast.CROSSWAVE ? 3 : .85)));
+            Vec3 offEnd = VibeGeometry.clip(player, offHand, end.add(side.scale(.85)));
             if (offEnd.subtract(offHand).dot(direction) > .2)
                 wave(player, offHand, offEnd, scale * .82F, damage, true, true, struck);
         }
-        if (shot.kind() == Blast.CROSSWAVE)
-            CameraShakePayload.sendAround(shot.level(), hand, 26, .27F, 11);
     }
 
     private static void wave(ServerPlayer player, Vec3 hand, Vec3 end, float scale, float damage, boolean heavy,
@@ -374,10 +368,10 @@ public final class VibeService {
         return age >= Math.ceil(wave.travel() * 1.06);
     }
 
-    public static boolean guard(ServerPlayer player, boolean mirror) {
+    public static boolean guard(ServerPlayer player) {
         if (!ready(player)) return false;
         if (GUARDS.containsKey(player.getUUID())) return VibeBreaches.fail(player, "guard_empty");
-        Guard guard = new Guard(player, mirror);
+        Guard guard = new Guard(player);
         GUARDS.put(player.getUUID(), guard);
         ArmPosePayload.show(player, ArmPose.VIBE_GUARD, 14);
         StyleOps.sound(guard.level, player.position(), ModSounds.VIBE_BREACH.get(), .65F, 1.58F);

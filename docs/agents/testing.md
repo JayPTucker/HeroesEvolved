@@ -218,7 +218,7 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 | Every balance entry being a real action | `PowerBalanceGameTests`, `BalanceDumpGameTests` |
 | Gifted mobs, raids and moves | `GiftedMobGameTests` (`GiftedMob.land`, `Renegades.hurry`) |
 | Finishers | `TakedownGameTests` |
-| Every class ability casting alone | `ClassAbilityGameTests.everyClassAbilityCasts` |
+| Every class Ultimate, cast for real | `UltimateGameTests` (a `@GameTestGenerator`, one batch per Ultimate) |
 | One generated test per power from a table | `AmplificationGameTests.BOOSTED` (a `@GameTestGenerator`; see [powers/amplification.md](powers/amplification.md)) |
 | A real player that area searches can find | `AmplificationGameTests.findable` (`addNewPlayer`, then `removePlayerImmediately`) |
 | Something that needs a custom dimension | the game-test server loads only the vanilla dimensions, so `TemporalSnapshotService.beginSnapshot` refuses there. Plant a map entry instead (`WorldCloseGameTests`) |

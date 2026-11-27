@@ -790,4 +790,209 @@ final class CryoArt {
             c.glow(chest, .3F * (1 - creep), WARM, alpha * .6F * (1 - creep));
         }
     }
+
+    // ------------------------------------------------------------------
+    // Ultimates (cryo/CryoUltimates)
+    // ------------------------------------------------------------------
+
+    /** A faceted shard of ice from {@code base} to {@code tip}: a translucent body, a bright edge and a glint. */
+    private static void crystal(Canvas c, Vec3 base, Vec3 tip, float radius, int sides, float twist, float alpha) {
+        if (alpha < .01F) return;
+        if (c.soft()) c.shard(base, tip, radius, sides, twist, ICE, alpha * .6F);
+        if (c.soft()) c.shard(base, base.lerp(tip, .6), radius * 1.06F, sides, twist, DEEP, alpha * .18F);
+        if (c.glow()) {
+            c.line(base, tip, radius * .18F, CORE, alpha * .7F, alpha * .25F);
+            c.glow(tip, radius * 1.2F, RIME, alpha * .3F);
+        }
+    }
+
+    /** A prism of ice round a body: shards standing round it and leaning in, grown from the feet up to {@code grow}. */
+    private static void prism(Canvas c, Vec3 feet, float h, float grow, float alpha, int seed) {
+        int n = minimal() ? 5 : 9;
+        for (int i = 0; i < n; i++) {
+            float ang = i * TWO_PI / n + hash(seed, i) * .4F, r = .55F + .2F * hash(seed, i + 9);
+            Vec3 root = feet.add(cos(ang) * r, 0, sin(ang) * r);
+            Vec3 tip = feet.add(cos(ang) * r * .35, h * (.85 + .35 * hash(seed, i + 19)) * grow, sin(ang) * r * .35);
+            crystal(c, root, root.lerp(tip, Math.max(.05F, grow)), .26F, 5, ang, alpha);
+        }
+        if (c.soft()) c.shell(feet.add(0, h * .5 * grow, 0), .7F, h * .55F * grow, .7F, PI, ICE, alpha * .16F, .3F, PLAIN, 0);
+    }
+
+    /** One block of the glacier: its blueprint edges, or (grown) a lit slab of ice. */
+    private static void block(Canvas c, Vec3 centre, float sx, float sy, float sz, float yaw, float grow, float plan, float alpha) {
+        if (plan > .01F && c.glow()) {
+            Vec3[] corners = new Vec3[8];
+            float cy = cos(yaw), syw = sin(yaw);
+            for (int i = 0; i < 8; i++) {
+                double x = ((i & 1) == 0 ? -sx : sx), y = ((i & 2) == 0 ? -sy : sy), z = ((i & 4) == 0 ? -sz : sz);
+                corners[i] = centre.add(x * cy - z * syw, y, x * syw + z * cy);
+            }
+            int[][] edges = {{0, 1}, {2, 3}, {4, 5}, {6, 7}, {0, 2}, {1, 3}, {4, 6}, {5, 7}, {0, 4}, {1, 5}, {2, 6}, {3, 7}};
+            for (int[] e : edges) frostLine(c, corners[e[0]], corners[e[1]], .02F, plan * alpha * .7F, plan * alpha * .7F);
+        }
+        if (grow > .01F) {
+            if (c.soft()) c.box(centre, sx * grow, sy * grow, sz * grow, yaw, 0, 0, ICE, alpha * .7F);
+            if (c.glow()) c.glow(centre, Math.max(sx, sz) * 1.2F * grow, RIME, alpha * .12F);
+        }
+    }
+
+    /**
+     * Glacier Fall ({@code CryoUltimates.GlacierFall}): frost racing over the ground to the foe and climbing it into a
+     * prism, the glacier's plan drawn overhead and its blocks growing into it with a sheen, the fall, the shattering
+     * (prism and glacier together, shards thrown, a hexagonal rime ring) and the foe's warmth rising into the palm.
+     */
+    static void glacier(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity caster = a.bound(c), foe = UltArt.foe(c, a);
+        Vec3 base = a.target(), facing = a.facing();
+        float h = Math.max(.8F, a.scale());
+        int seed = a.seed() * 11 + 5;
+        int creep = com.jayptucker.heroesevolved.cryo.CryoUltimates.GlacierFall.CREEP,
+                sealed = com.jayptucker.heroesevolved.cryo.CryoUltimates.GlacierFall.SEALED,
+                plan = com.jayptucker.heroesevolved.cryo.CryoUltimates.GlacierFall.PLAN,
+                built = com.jayptucker.heroesevolved.cryo.CryoUltimates.GlacierFall.BUILT,
+                drop = com.jayptucker.heroesevolved.cryo.CryoUltimates.GlacierFall.DROP,
+                impact = com.jayptucker.heroesevolved.cryo.CryoUltimates.GlacierFall.IMPACT,
+                warmth = com.jayptucker.heroesevolved.cryo.CryoUltimates.GlacierFall.WARMTH;
+        // Frost across the ground to the foe: a line of rime with feathers growing off it.
+        float frost = UltArt.window(t, 0, impact + 4, 1, 6);
+        if (frost > 0) {
+            Vec3 from = a.origin().add(0, .03, 0), to = base.add(0, .03, 0);
+            float reach = smooth(0, creep, t);
+            frostLine(c, from, from.lerp(to, reach), .05F, frost, frost);
+            int feathers = minimal() ? 3 : 6;
+            for (int i = 0; i < feathers; i++) {
+                float u = (i + .5F) / feathers;
+                if (u > reach) break;
+                feather(c, from.lerp(to, u), UP, .6F, smooth(u * creep, u * creep + 6, t), frost * .8F, seed + i);
+            }
+        }
+        // The prism round the foe, climbing from its feet.
+        float sealedK = smooth(creep - 4, sealed, t), standing = 1 - smooth(impact, impact + 1, t);
+        if (sealedK > 0 && standing > 0) prism(c, foe != null ? foe.getPosition(c.partial) : base, h, sealedK, standing, seed + 20);
+        // The glacier overhead: its plan, then the blocks growing in, a sheen across it, then the fall.
+        Vec3 top = base.add(0, com.jayptucker.heroesevolved.cryo.CryoUltimates.GlacierFall.GLACIER, 0);
+        float fall = com.jayptucker.heroesevolved.cryo.CryoUltimates.GlacierFall.fall(t);
+        Vec3 g = top.lerp(base.add(0, h + 1.2, 0), fall);
+        float present = UltArt.window(t, plan, impact + 1, 2, 1);
+        if (present > 0) {
+            int blocks = 7;
+            for (int i = 0; i < blocks; i++) {
+                float ang = i * TWO_PI / (blocks - 1), r = i == 0 ? 0 : 1.6F;
+                Vec3 at = g.add(cos(ang) * r, (i == 0 ? .4 : -.1) + hash(seed, i + 40) * .5, sin(ang) * r);
+                float start = plan + 4 + i * 2, grown = smooth(start, start + 5, t);
+                float sx = .9F + .4F * hash(seed, i + 50), sy = .8F + .5F * hash(seed, i + 60), sz = .9F + .4F * hash(seed, i + 70);
+                block(c, at, sx, sy, sz, ang + hash(seed, i) * .5F, grown, smooth(plan, plan + 3, t) * (1 - grown), present);
+                if (t >= start && t < start + 5 && c.glow()) c.glow(at, 1.1F * (1 - smooth(start, start + 5, t)), CORE, present);
+            }
+            // The sheen once it is whole.
+            if (t >= built && t < built + 6 && c.glow()) {
+                float s = smooth(built, built + 6, t);
+                c.line(g.add(-2.6 + 5.2 * s, -1.2, -2), g.add(-2.6 + 5.2 * s, 1.6, 2), .18F, CORE, (1 - s) * present, (1 - s) * present);
+            }
+        }
+        // The shattering.
+        if (t >= impact) {
+            float age = t - impact, f = fade(age, a.piece().ticks - impact, 0, 14);
+            Vec3 at = base.add(0, h * .5, 0);
+            for (int i = 0; i < 6; i++) {
+                float ang = i * TWO_PI / 6 + hash(seed, i + 80);
+                chips(c, at, new Vec3(cos(ang), .6, sin(ang)), 2.2F, age, f, seed + i * 9);
+            }
+            hexRing(c, base.add(0, .05, 0), UP, .6F + 6.5F * smooth(0, 12, age), .06F, age * .02F, f * (1 - smooth(8, 20, age)));
+            if (c.soft() && age < 20) for (int i = 0; i < (minimal() ? 3 : 7); i++) {
+                float ang = i * TWO_PI / 7 + hash(seed, i + 90);
+                double d = 1 + 3.5 * (1 - Math.exp(-age / 6));
+                c.cloud(base.add(cos(ang) * d, .5 + age * .03, sin(ang) * d), 1, .6F, 1, i, ang, .5F * f * (1 - age / 20), frost(c));
+            }
+            if (age < 4 && c.glow()) c.glow(at, 3, CORE, 1 - age / 4);
+            snowfall(c, base, 4, 5, .01F, f * .8F, seed + 99);
+        }
+        // The foe's warmth drawn up out of the wreck into the palm.
+        if (t >= warmth && t < warmth + 26 && caster instanceof Player p && c.glow()) {
+            float k = smooth(warmth, warmth + 20, t), f = 1 - smooth(warmth + 20, warmth + 26, t);
+            Vec3 to = palm(c, p, 1), from = base.add(0, .6, 0);
+            Vec3 ember = from.lerp(to, k).add(0, sin(k * PI) * 1.2, 0);
+            c.glow(ember, .3F, WARM, f);
+            c.glow(ember, .12F, WARM_CORE, f);
+            c.line(from.lerp(to, Math.max(0, k - .25F)).add(0, sin(Math.max(0, k - .25F) * PI) * 1.2, 0), ember, .05F, WARM, 0, f * .6F);
+        }
+    }
+
+    /**
+     * Winter Citadel, one second (re-sent each second; the second in the seed, -1 its bursting): ice walls in a ring
+     * round the scale's radius, grown from the ground on the first second, snow falling inside; the burst throws shards
+     * out from every wall.
+     */
+    static void citadel(Canvas c, Active a, float t) {
+        int second = a.seed();
+        Vec3 centre = a.origin();
+        float r = a.scale();
+        int walls = com.jayptucker.heroesevolved.cryo.CryoUltimates.WinterCitadel.WALLS;
+        if (second < 0) {
+            float f = 1 - smooth(4, a.piece().ticks, t);
+            for (int i = 0; i < walls; i++) {
+                float ang = i * TWO_PI / walls;
+                chips(c, centre.add(cos(ang) * r, 1.2, sin(ang) * r), new Vec3(cos(ang), .4, sin(ang)), 2.4F, t, f, i * 13 + 5);
+            }
+            hexRing(c, centre.add(0, .05, 0), UP, r + 4 * smooth(0, 12, t), .06F, 0, f);
+            return;
+        }
+        boolean last = second >= com.jayptucker.heroesevolved.cryo.CryoUltimates.WinterCitadel.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(10, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        float grow = second == 0 ? smooth(0, 12, t) : 1;
+        for (int i = 0; i < walls; i++) {
+            float ang = (i + .5F) * TWO_PI / walls, h = 2.6F + .6F * hash(i, 31);
+            Vec3 foot = centre.add(cos(ang) * r, 0, sin(ang) * r);
+            // A slab standing tangent to the ring, with a crest of shards along its top.
+            if (c.soft()) c.box(foot.add(0, h * .5 * grow, 0), 1.2F, h * .5F * grow, .3F, -ang + HALF_PI, 0, 0, ICE, f * .55F);
+            crystal(c, foot.add(0, h * grow * .8, 0), foot.add(0, (h + .7) * grow, 0), .25F, 4, ang, f);
+            if (c.glow()) c.line(foot.add(0, .05, 0), foot.add(0, h * grow, 0), .04F, CORE, f * .5F, f * .2F);
+        }
+        hexRing(c, centre.add(0, .05, 0), UP, r, .05F, c.time() * .005F, f * .7F);
+        snowfall(c, centre, r * .9F, 4, .01F, f, 7);
+    }
+
+    /** A shot shattering on an ice wall: chips thrown back off it. */
+    static void wallShard(Canvas c, Active a, float t) {
+        Vec3 d = a.origin().subtract(a.target());
+        chips(c, a.origin(), d, 1.2F, t, fade(t, a.piece().ticks, 0, 6), a.seed());
+    }
+
+    /** Hibernation, one second (re-sent each second; the second in the seed): soft snow over the scale's radius and rime on the ground. */
+    static void hibernation(Canvas c, Active a, float t) {
+        int second = a.seed();
+        boolean last = second >= com.jayptucker.heroesevolved.cryo.CryoUltimates.Hibernation.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(10, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        float grow = second == 0 ? smooth(0, 16, t) : 1;
+        Vec3 centre = a.origin();
+        snowfall(c, centre, a.scale() * grow, 7, .006F, f, 13);
+        snowfall(c, centre, a.scale() * .6F * grow, 5, -.008F, f, 14);
+        hexRing(c, centre.add(0, .05, 0), UP, a.scale() * grow, .04F, 0, f * .5F);
+        if (c.soft()) c.disc(centre.add(0, .03, 0), UP, a.scale() * grow, RIME, f * .12F, f * .03F);
+    }
+
+    /** A friend armoured in frost by Hibernation (bound; scale their height): feathers of frost over the body, settling to a glint. */
+    static void frostArmour(Canvas c, Active a, float t) {
+        Entity body = a.bound(c);
+        if (body == null) return;
+        Vec3 feet = body.getPosition(c.partial);
+        float h = Math.max(.6F, a.scale()), f = fade(t, a.piece().ticks, 2, 12), grow = smooth(0, 10, t);
+        Vec3 chest = feet.add(0, h * .62, 0);
+        Vec3 look = body.getViewVector(c.partial).multiply(1, 0, 1);
+        if (look.lengthSqr() < 1e-4) look = new Vec3(0, 0, 1);
+        feather(c, chest.add(look.normalize().scale(.3)), look, .45F, grow, f, a.seed());
+        hexRing(c, chest, UP, .55F * grow, .025F, t * .05F, f);
+    }
+
+    /** A friend sealed in Hibernation's crystal cocoon (bound; scale their height), melting open in a warm glow. */
+    static void cocoon(Canvas c, Active a, float t) {
+        Entity body = a.bound(c);
+        Vec3 feet = body != null ? body.getPosition(c.partial) : a.origin();
+        float h = Math.max(.6F, a.scale()), life = a.piece().ticks;
+        float close = smooth(0, 8, t), melt = smooth(life - 12, life, t), f = 1 - melt;
+        if (c.soft()) c.shell(feet.add(0, h * .5, 0), .75F * close, h * .62F * close, .75F * close, PI, ICE, f * .35F, .4F, PLAIN, 0);
+        prism(c, feet, h * 1.05F, close, f, a.seed() + 3);
+        if (c.glow() && melt > 0) c.glow(feet.add(0, h * .5, 0), h * .9F, WARM, melt * (1 - melt) * 2);
+    }
 }

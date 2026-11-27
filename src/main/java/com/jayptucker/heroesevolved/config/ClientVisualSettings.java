@@ -19,6 +19,8 @@ public final class ClientVisualSettings {
     public static final ModConfigSpec.BooleanValue STYLE_STRIKES, STYLE_DODGES;
     /** Finishers: the gold glisten on foes low enough to finish, and the camera that pulls back to frame the move. */
     public static final ModConfigSpec.BooleanValue FINISHER_GLISTEN, FINISHER_CAMERA;
+    /** Ultimates: the cinematic camera (and letterbox) that frames your own Ultimate. */
+    public static final ModConfigSpec.BooleanValue ULTIMATE_CAMERA;
 
     static {
         var b = new ModConfigSpec.Builder();
@@ -42,6 +44,9 @@ public final class ClientVisualSettings {
         FINISHER_CAMERA = b.comment("Finishers: the camera pulls back to a still side view while your finisher plays. Off: the",
                         "camera stays where it is.")
                 .define("finisherCamera", true);
+        ULTIMATE_CAMERA = b.comment("Ultimates: the camera flies the shots of your own Ultimate, with letterbox bars, and your",
+                        "feet stay put while it plays. Off: the camera stays where it is and you keep walking.")
+                .define("ultimateCamera", true);
         SPEC = b.build();
     }
 

@@ -12,7 +12,6 @@ import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.skills.SkillActionService;
 import com.jayptucker.heroesevolved.skills.SkillTreeData;
 import com.jayptucker.heroesevolved.styles.Piece;
-import com.jayptucker.heroesevolved.styles.StyleCasts;
 import com.jayptucker.heroesevolved.telepathy.MindMemory;
 import com.jayptucker.heroesevolved.telepathy.TelepathyFocus;
 import com.jayptucker.heroesevolved.telepathy.TelepathyGeometry;
@@ -271,20 +270,7 @@ public final class TelepathyKitPreview {
             case 926 -> pending = "k8-project-front.png";
             case 932 -> camera(mc, CameraType.FIRST_PERSON);
             case 936 -> pending = "k8-project-firstperson.png";
-            // ---------------- Styles ----------------
-            case 960 -> { camera(mc, CameraType.THIRD_PERSON_BACK); onServer(mc, p -> { clearMobs(); place(p, 1680, 0, 0, 15);
-                target = mob(p, EntityType.ZOMBIE, 1680, 12); check(StyleCasts.cast(context(p), "psychic_storm"), "psychic storm"); }); }
-            case 966 -> pending = "t1-storm-cast.png";
-            case 990 -> pending = "t1-storm.png";
-            case 1000 -> { camera(mc, CameraType.THIRD_PERSON_FRONT); onServer(mc, p -> { place(p, 1680, 0, 0, 15); StyleCasts.cast(context(p), "psychic_storm"); }); }
-            case 1006 -> pending = "t1-storm-front.png";
-            case 1030 -> { camera(mc, CameraType.THIRD_PERSON_FRONT); onServer(mc, p -> { clearMobs(); place(p, 1700, 0, 0, 5); check(StyleCasts.cast(context(p), "blind_spot"), "blind spot"); }); }
-            case 1036 -> pending = "t2-blind-spot.png";
-            case 1060 -> { camera(mc, CameraType.THIRD_PERSON_BACK); onServer(mc, p -> { place(p, 1720, 0, 0, 5); check(StyleCasts.cast(context(p), "hive_mind"), "hive mind"); }); }
-            case 1068 -> pending = "t3-hive-mind.png";
-            case 1076 -> camera(mc, CameraType.THIRD_PERSON_FRONT);
-            case 1080 -> pending = "t3-hive-mind-front.png";
-            case 1100 -> PreviewQuiet.quit();
+            case 960 -> PreviewQuiet.quit();
             default -> { }
         }
         if (t == 220) onServer(mc, p -> TelepathyFocus.forget(p));

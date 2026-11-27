@@ -50,6 +50,12 @@ Part of the notes for coding agents: start at [AGENTS.md](../../../AGENTS.md).
   glints; the first try, a diagonal lattice, read as wooden crates); the model uses `render_type` translucent and
   the block skips faces between its own cells (`skipRendering`), so a construct reads as one piece of crystal.
 
+- **The old effect kinds draw in the new art.** `MATTER_WEAVE`, `MATTER_SHARD`, `MATTER_COLLAPSE` and `MATTER_SHIELD`
+  (still sent by gifted mobs, the awakening rescues and the ward) are forwarded in `client/effects/ConstructPowerEffects`
+  to `MATTER_RISE`, `MATTER_SHARD` with a `MATTER_BOUNCE` where it lands, `MATTER_BOUNCE`, and `MATTER_PANEL` with a
+  flash on its face. `MatterAssemblyService` itself no longer sends them: the awakening, Pressure Valve and Second
+  Foundation send `MATTER_RISE`/`MATTER_BOUNCE` pieces directly.
+
 ## Previewing
 
 `tools/assembly-preview.init.gradle` (`uitest/AssemblyPreview`, flag `heroes.preview.assembly`) photographs 25

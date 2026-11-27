@@ -8,7 +8,6 @@ import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.sonic.SonicService;
 import com.jayptucker.heroesevolved.sonic.SonicSkills;
-import com.jayptucker.heroesevolved.styles.StyleCasts;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -205,16 +204,7 @@ public final class SonicKitPreview {
             case 910 -> { camera(mc, CameraType.THIRD_PERSON_FRONT); onServer(mc, p -> { place(p, 1700, 0, 0, 5); check(SonicSkills.technique(p, "quiet_zone"), "quiet zone"); }); }
             case 916 -> pending = "k6-quiet-hush.png";
             case 930 -> { camera(mc, CameraType.THIRD_PERSON_BACK); pending = "k6-quiet-zone.png"; }
-            // ---------------- Styles ----------------
-            case 960 -> { camera(mc, CameraType.THIRD_PERSON_BACK); onServer(mc, p -> { place(p, 1720, 0, 0, 20); check(StyleCasts.cast(context(p), "resonance_cascade"), "cascade"); }); }
-            case 966 -> pending = "t1-cascade-conduct.png";
-            case 975 -> pending = "t1-cascade-stack.png";
-            case 979 -> pending = "t1-cascade-burst.png";
-            case 1000 -> { camera(mc, CameraType.THIRD_PERSON_FRONT); onServer(mc, p -> { place(p, 1740, 0, 0, 10); check(StyleCasts.cast(context(p), "silence_dome"), "silence dome"); }); }
-            case 1014 -> pending = "t2-silence-dome.png";
-            case 1040 -> onServer(mc, p -> { place(p, 1760, 0, 0, 10); check(StyleCasts.cast(context(p), "battle_hymn"), "battle hymn"); });
-            case 1052 -> pending = "t3-battle-hymn.png";
-            case 1080 -> PreviewQuiet.quit();
+            case 960 -> PreviewQuiet.quit();
             default -> { }
         }
     }

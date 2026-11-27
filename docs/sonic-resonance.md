@@ -86,9 +86,9 @@ Node IDs are unchanged, so earlier purchases carry over.
 | **Long Silence** | The Quiet Zone lasts fifteen seconds. |
 | **Harmonist** | Friends inside the Quiet Zone slowly heal. |
 
-The three styles keep their effects and have new poses and drawings: **Resonance Cascade** (a conductor's
-four downbeats as the waves stack), **Silence Dome** (palms pressed down; slate rings close inward) and
-**Battle Hymn** (arms opened in song; a stave circles you and notes rise off it).
+The three classes' Ultimates ([Classes](classes.md)) have their own poses and drawings: **Final Movement** (a stave
+closes round the foe, five sung notes ring it through, and a scream breaks it), **Dead Air** (palms pressed down; a
+dome of silence) and **Anthem** (arms opened in song; a stave circles everyone near and chords rise off it).
 
 ### Signature: Standing Wave
 

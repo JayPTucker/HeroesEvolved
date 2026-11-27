@@ -127,7 +127,7 @@ Every power got a palette of original synthesized cues in November 2026 (`sounds
 `tools/generate-power-audio.py`). What the player hears is in [docs/power-sounds.md](../../docs/power-sounds.md).
 
 - **One hook gives every action a sound.** `AbilityUseService` calls `PowerSounds.used` after each press, follow-up,
-  dismissal and release, so core moves, skill-tree actives and class abilities all sound without per-move code. Pick a
+  dismissal and release, so core moves and skill-tree actives all sound without per-move code (a class's Ultimate plays its own cue as it opens). Pick a
   different cue in the tables at the top of `PowerSounds`, not at the call site.
 - **Did the action already make a sound?** `mixin/ServerSoundCountMixin` counts every `ServerLevel.playSeededSound`;
   take `PowerSounds.mark()` before something runs and compare after. Space-Time, Sonic Resonance and Vibe (hand-made

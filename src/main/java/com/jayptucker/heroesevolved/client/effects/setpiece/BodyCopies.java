@@ -103,9 +103,68 @@ public final class BodyCopies {
         }
     }
 
+    /** An Ultimate's piece whose Ultimate was cut short: a newer ULT_CUT bound to the same body. */
+    private static boolean ultCut(Active a, LivingEntity entity) {
+        return SetPieceClient.superseded(a, java.util.Set.of(com.jayptucker.heroesevolved.styles.Piece.ULT_CUT), entity.level().getGameTime());
+    }
+
     /** The rules, one per piece, timed by the same beats as the server ({@link FinisherBeats}). */
     private static Plan plan(Active a, LivingEntity entity, float t) {
         switch (a.piece()) {
+            case ULT_HIDE -> {
+                // An Ultimate has taken the body away (a speedster gone round the world); a newer ULT_SHOW brings it back.
+                return SetPieceClient.superseded(a, java.util.Set.of(com.jayptucker.heroesevolved.styles.Piece.ULT_SHOW,
+                        com.jayptucker.heroesevolved.styles.Piece.ULT_CUT), entity.level().getGameTime()) ? Plan.NONE : new Plan(true, List.of());
+            }
+            case TELE_ULT_FEARS -> {
+                // Mindbreak: the foe's own fears, copies of it the colour of a bruise, walk in from three sides and through it.
+                if (ultCut(a, entity)) return Plan.NONE;
+                List<Copy> out = new ArrayList<>();
+                for (int i = 0; i < com.jayptucker.heroesevolved.telepathy.TelepathyUltimates.Mindbreak.FEARS; i++) {
+                    float d = com.jayptucker.heroesevolved.telepathy.TelepathyUltimates.Mindbreak.fearDistance(i, t);
+                    float start = com.jayptucker.heroesevolved.telepathy.TelepathyUltimates.Mindbreak.FEAR - 10
+                            + i * com.jayptucker.heroesevolved.telepathy.TelepathyUltimates.Mindbreak.EVERY;
+                    if (t < start || d <= .05F) continue;
+                    double ang = i * Math.PI * 2 / 3 + .5;
+                    Vec3 off = new Vec3(Math.cos(ang) * d, 0, Math.sin(ang) * d);
+                    float face = (float) (Mth.atan2(-off.x, off.z) * Mth.RAD_TO_DEG);
+                    out.add(new Copy(off, face, .82F, .23F, .36F, false, true));
+                }
+                return new Plan(false, out);
+            }
+            case TELE_ULT_DOUBLES -> {
+                // Not Here: the telepath is gone, and three copies of them walk away from where they stood.
+                if (ultCut(a, entity) || t > com.jayptucker.heroesevolved.telepathy.TelepathyUltimates.NotHere.TICKS) return Plan.NONE;
+                Vec3 facing = a.facing(), here = entity.getPosition(0);
+                List<Copy> out = new ArrayList<>();
+                for (int i = 0; i < 3; i++) {
+                    Vec3 at = com.jayptucker.heroesevolved.telepathy.TelepathyUltimates.NotHere.double_(a.origin(), facing, i, t);
+                    Vec3 walk = at.subtract(a.origin());
+                    float face = walk.lengthSqr() < 1e-4 ? Float.NaN : (float) (Mth.atan2(-walk.x, walk.z) * Mth.RAD_TO_DEG);
+                    out.add(new Copy(at.subtract(here), face, .86F, .8F, 1, false, true));
+                }
+                return new Plan(true, out);
+            }
+            case VIBE_ULT_GHOST -> {
+                // Between Worlds: the body half out of the world, drawn as a cold blue ghost of itself.
+                if (ultCut(a, entity)) return Plan.NONE;
+                return new Plan(true, List.of(new Copy(Vec3.ZERO, Float.NaN, .42F, .66F, 1, false, true)));
+            }
+            case TIME_ULT_COPIES -> {
+                // Ten Past Ten: a copy of the time-bender frozen at every place they cut from, until time runs again.
+                int snap = com.jayptucker.heroesevolved.time.TimeUltimates.TenPastTen.SNAP;
+                if (ultCut(a, entity) || t >= snap + 2) return Plan.NONE;
+                Vec3 here = entity.getPosition(0), foe = a.target(), facing = a.facing();
+                List<Copy> out = new ArrayList<>();
+                for (int i = 0; i < com.jayptucker.heroesevolved.time.TimeUltimates.TenPastTen.CUTS; i++) {
+                    int at = com.jayptucker.heroesevolved.time.TimeUltimates.TenPastTen.CUT + (i + 1) * com.jayptucker.heroesevolved.time.TimeUltimates.TenPastTen.EVERY;
+                    if (t < at) break;
+                    Vec3 spot = com.jayptucker.heroesevolved.time.TimeUltimates.TenPastTen.step(foe, facing, i);
+                    Vec3 toFoe = foe.subtract(spot);
+                    out.add(new Copy(spot.subtract(here), (float) (Mth.atan2(-toFoe.x, toFoe.z) * Mth.RAD_TO_DEG), .62F, .52F, 1, false, true));
+                }
+                return new Plan(false, out);
+            }
             case END_BATTLE_RELEASE -> {
                 var v=com.jayptucker.heroesevolved.endgame.EndClientState.view();
                 float age=v.stage()==com.jayptucker.heroesevolved.endgame.EndBattle.VICTORY?com.jayptucker.heroesevolved.endgame.EndClientState.age(0):t;

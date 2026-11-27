@@ -572,4 +572,155 @@ final class EarthArt {
         }
         dust(c, feet.add(dir.scale(.3)).add(0, .2, 0), .3F + .2F * go, .45F * f, a.seed() & 7);
     }
+
+    // ------------------------------------------------------------------
+    // Ultimates (phasing/DensityUltimates)
+    // ------------------------------------------------------------------
+
+    /** The block id in an Ultimate piece's seed (its low 24 bits). */
+    private static int blockOf(int seed) { return seed & 0xFFFFFF; }
+
+    /**
+     * Earth's Embrace ({@code DensityUltimates.EarthsEmbrace}): a crack running to the foe and the ground closing round
+     * its legs, two walls of rock rising either side and clapped shut, a pillar throwing it up, a boulder heaved out of the
+     * ground and punted into it, and the boulder bursting. The rock's block rides in the companion {@code EARTH_ULT_ROCK}.
+     */
+    static void embrace(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity foe = UltArt.foe(c, a);
+        Active rockPiece = SetPieceClient.boundTo(com.jayptucker.heroesevolved.styles.Piece.EARTH_ULT_ROCK, a.entity());
+        int block = rockPiece != null ? blockOf(rockPiece.seed()) : 1;
+        float[] col = colour(c, block);
+        Vec3 base = a.target(), facing = a.facing(), sideways = side(facing);
+        float h = Math.max(.8F, a.scale());
+        int seed = a.seed() * 7 + 3;
+        int swallow = com.jayptucker.heroesevolved.phasing.DensityUltimates.EarthsEmbrace.SWALLOW,
+                walls = com.jayptucker.heroesevolved.phasing.DensityUltimates.EarthsEmbrace.WALLS,
+                clap = com.jayptucker.heroesevolved.phasing.DensityUltimates.EarthsEmbrace.CLAP,
+                pillarAt = com.jayptucker.heroesevolved.phasing.DensityUltimates.EarthsEmbrace.PILLAR,
+                heave = com.jayptucker.heroesevolved.phasing.DensityUltimates.EarthsEmbrace.HEAVE,
+                impact = com.jayptucker.heroesevolved.phasing.DensityUltimates.EarthsEmbrace.IMPACT;
+        Vec3 feet = foe != null ? foe.getPosition(c.partial) : base.add(0, com.jayptucker.heroesevolved.phasing.DensityUltimates.EarthsEmbrace.height(t), 0);
+        // The crack to the foe, jade in it.
+        float run = smooth(0, swallow, t), cracked = fade(t, a.piece().ticks, 0, 20);
+        Vec3 from = a.origin();
+        float ang = (float) Math.atan2(base.z - from.z, base.x - from.x);
+        crack(c, from, ang, (float) Math.sqrt(base.subtract(from).horizontalDistanceSqr()) * run, seed, 1 - smooth(swallow, swallow + 10, t), cracked);
+        // The ground closing round its legs until the pillar.
+        float legs = fade(t - swallow, pillarAt - swallow + 4, 3, 4);
+        if (legs > 0) {
+            for (int i = 0; i < 7; i++) {
+                float g = i * Mth.TWO_PI / 7 + hash(seed, i);
+                Vec3 at = base.add(Mth.cos(g) * .45, .2 + .25 * hash(seed, i + 9), Mth.sin(g) * .45);
+                chunk(c, at, .32F, g, .3F, .2F, col, legs, seed + i);
+            }
+            if (t < swallow + 8) dust(c, base.add(0, .3, 0), .8F, .5F * (1 - (t - swallow) / 8), seed);
+        }
+        // The walls: up either side, clapped shut, then crumbling away.
+        float wallsUp = smooth(walls, walls + 8, t), shut = smooth(clap - 3, clap, t), gone = 1 - smooth(clap + 6, clap + 14, t);
+        if (t >= walls && gone > 0) {
+            for (int s = -1; s <= 1; s += 2) {
+                double off = s * (1.7 - 1.15 * shut);
+                Vec3 at = base.add(sideways.scale(off)).add(0, -1.2 + 2.4 * wallsUp, 0);
+                if (c.solid()) c.box(at, .3F * gone, 1.2F * gone, .9F * gone, (float) Math.atan2(facing.z, facing.x), 0, 0, col, 1);
+                if (t < walls + 8) dust(c, base.add(sideways.scale(off)).add(0, .3, 0), .7F, .5F, seed + s);
+            }
+            if (t >= clap && t < clap + 8) dust(c, base.add(0, 1.2, 0), 1.2F, .6F * (1 - (t - clap) / 8), seed + 5);
+        }
+        // The pillar under the foe.
+        if (t >= pillarAt && t < impact + 6) {
+            float f = UltArt.window(t, pillarAt, impact + 6, 1, 6);
+            double top = feet.y - base.y;
+            int n = Math.max(1, (int) (top / .9));
+            for (int i = 0; i < n; i++) chunk(c, base.add(0, i * .9 + .45, 0), .55F, i * .7F, 0, 0, col, f, seed + 30 + i);
+            if (t < pillarAt + 6) seam(c, base.add(0, .05, 0), UP, 1.2F + .8F * smooth(pillarAt, pillarAt + 6, t), .06F, 0, Mth.TWO_PI, 1 - smooth(pillarAt, pillarAt + 6, t));
+        }
+        // The boulder: heaved up, punted, bursting on the foe.
+        if (t >= heave && t < impact) {
+            Vec3 at = com.jayptucker.heroesevolved.phasing.DensityUltimates.EarthsEmbrace.boulder(a.origin(), facing, base, t);
+            float grow = smooth(heave, heave + 10, t);
+            chunk(c, at, .5F + .55F * grow, t * .2F, t * .15F, .1F, col, 1, seed + 50);
+            if (t < heave + 8) dust(c, a.origin().add(facing.scale(1.6)).add(0, .2, 0), .7F, .5F, seed + 51);
+        }
+        if (t >= impact) {
+            float age = t - impact, life = a.piece().ticks - impact;
+            burst(c, feet.add(0, h * .5, 0), facing, 12, .35F, .2F, age, life, col, seed + 60);
+            if (age < 12) dust(c, feet.add(0, h * .5, 0), 1 + age * .1F, .6F * (1 - age / 12), seed + 61);
+        }
+    }
+
+    /**
+     * Stone Fortress, one second (re-sent each second; the block in the seed's low bits, the second in its top byte, 255
+     * the slabs flung out): four slabs standing round her, turning slowly, rising out of the ground on the first second;
+     * a jade ring where her stance is set.
+     */
+    static void fortress(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity body = a.bound(c);
+        Vec3 feet = body != null ? body.getPosition(c.partial) : a.origin();
+        int second = a.seed() >>> 24 & 0xFF;
+        float[] col = colour(c, blockOf(a.seed()));
+        float r = a.scale();
+        int slabs = com.jayptucker.heroesevolved.phasing.DensityUltimates.StoneFortress.SLABS;
+        if (second == 0xFF) {
+            float life = a.piece().ticks;
+            for (int i = 0; i < slabs; i++) {
+                double g = com.jayptucker.heroesevolved.phasing.DensityUltimates.StoneFortress.angle(i, com.jayptucker.heroesevolved.phasing.DensityUltimates.StoneFortress.TICKS);
+                Vec3 at = feet.add(Math.cos(g) * (r + t * .5), 1.1 + .15 * t - .02 * t * t, Math.sin(g) * (r + t * .5));
+                if (c.solid()) c.box(at, .2F * (1 - t / life), 1.1F * (1 - t / life), .7F * (1 - t / life), (float) g, t * .1F, 0, col, 1);
+                dust(c, at, .5F, .4F * (1 - t / life), i);
+            }
+            return;
+        }
+        boolean last = second >= com.jayptucker.heroesevolved.phasing.DensityUltimates.StoneFortress.TICKS / 20 - 1;
+        float f = last ? 1 - smooth(14, 22, t) : 1;
+        float rise = second == 0 ? smooth(0, 10, t) : 1;
+        float age = second * 20 + t;
+        for (int i = 0; i < slabs; i++) {
+            double g = com.jayptucker.heroesevolved.phasing.DensityUltimates.StoneFortress.angle(i, age);
+            Vec3 at = feet.add(Math.cos(g) * r, -1.1 + 2.2 * rise, Math.sin(g) * r);
+            if (c.solid() && f > .01F) c.box(at, .2F, 1.1F, .7F, (float) g, 0, 0, col, 1);
+            if (second == 0 && t < 10) dust(c, feet.add(Math.cos(g) * r, .3, Math.sin(g) * r), .6F, .5F * (1 - t / 10), i);
+        }
+        seam(c, feet.add(0, .05, 0), UP, .9F, .05F, 0, Mth.TWO_PI, f * .7F);
+    }
+
+    /**
+     * Mountain Hall, one second (re-sent each second; the block in the seed's low bits, the second in its top byte, 255
+     * its crumbling): a dome of rock chunks over the shelter, rising row by row on the first second, falling outward at
+     * the end.
+     */
+    static void hall(Canvas c, Active a, float t) {
+        int second = a.seed() >>> 24 & 0xFF;
+        float[] col = colour(c, blockOf(a.seed()));
+        Vec3 centre = a.origin();
+        float r = a.scale();
+        int rows = 3, per = minimal() ? 9 : 16;
+        boolean crumbling = second == 0xFF;
+        for (int row = 0; row < rows; row++) {
+            double lat = (row + .5) / rows * Math.PI / 2;
+            double ring = r * Math.cos(lat), y = r * .75 * Math.sin(lat);
+            float rise = second == 0 ? smooth(row * 5, row * 5 + 8, t) : 1;
+            for (int i = 0; i < per; i++) {
+                double g = (i + row * .5) * Math.PI * 2 / per;
+                Vec3 at = centre.add(Math.cos(g) * ring, y * rise - (1 - rise) * .8, Math.sin(g) * ring);
+                float scale = 1;
+                if (crumbling) {
+                    at = at.add(Math.cos(g) * t * .2, -.02 * t * t, Math.sin(g) * t * .2);
+                    scale = 1 - smooth(4, a.piece().ticks, t);
+                }
+                chunk(c, at, .62F - row * .08F, (float) g, (float) lat, 0, col, scale, row * 31 + i);
+            }
+        }
+        if (second == 0 && t < 16) for (int i = 0; i < 6; i++) {
+            double g = i * Math.PI / 3;
+            dust(c, centre.add(Math.cos(g) * r, .3, Math.sin(g) * r), .9F, .5F * (1 - t / 16), i);
+        }
+        if (!crumbling) seam(c, centre.add(0, .05, 0), UP, r, .05F, 0, Mth.TWO_PI, .5F);
+    }
+
+    /** A shot breaking on rock: chips thrown back off it (the block in the seed). */
+    static void chip(Canvas c, Active a, float t) {
+        burst(c, a.origin(), a.origin().subtract(a.target()), 5, .12F, .12F, t, a.piece().ticks, colour(c, blockOf(a.seed())), a.seed());
+    }
 }

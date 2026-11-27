@@ -129,7 +129,7 @@ on a low stance, and the vault is a backflip. Calls raise both arms and circle t
 | Slipstream | 1 | Flow Steps leave a slick of water for three seconds that slows and soaks enemies on it, and your next lash reaches half again as far. |
 | **Tide Wall** (active) | 2 | A bowed wall of standing water two blocks ahead for five seconds, foam along its top, water running down its face. It swallows shots, soaks and slows enemies who walk through it, and a Water Whip cast through it is twice as thick and reaches farther. |
 | Child of the Sea | 2 | See clearly underwater, Octopus Form's arms reach twice as far in water, and Wave Rider runs half again as fast and twice as long on water. |
-| Return Current | 3 | Shots your Octopus Form, Tide Wall or Tidal Dome swallow are flung back at whoever fired them. |
+| Return Current | 3 | Shots your Octopus Form or Tide Wall swallow are flung back at whoever fired them. |
 | **Water Spout** (active) | 4 | Ride a spiralling pillar of water up to eight blocks high for six seconds, drifting where you look and knocking enemies from its foot. Press again to crash down in a splash (5 + level). |
 | Endless Tide | 5 | Wave Rider refills your water as you ride, and leaping off its crest lands as a Crashing Wave rolling on the way you rode. |
 
@@ -154,11 +154,13 @@ Then it dives back down. **Press again** to send it down after the strike in pro
 
 ### Classes
 
-| Class ability | Role | What it does |
+Each class's ability is an **Ultimate** on a long wait (see [Classes](classes.md) for how they work):
+
+| Ultimate | Role | What it does |
 | --- | --- | --- |
-| **Tsunami** | Offense | A great wave nine blocks wide rolls 48 blocks ahead, carrying everything before it (8 + level). |
-| **Tidal Dome** | Defense | A dome of clear water over you for six seconds, ripples running round it and foam at its foot. It swallows shots from outside; friends inside gain Resistance and enemies inside are slowed and Soaked. |
-| **Healing Spring** | Support | A clear pool wells up at your feet with a little fountain, light lifting off it, for eight seconds: friends standing in it heal and lose their fire, poison and wither. |
+| **Riptide Barrel** | Offense | Ride a wave in and curl its lip over the foe in front of you: it tumbles round inside the barrel, a geyser throws it clear, and two whips wrap it and slam it into a whirlpool. 25 damage; the wave and the whirlpool soak and hit everyone near. The foe is held the whole time. |
+| **Undertow Dome** | Defense | A dome of moving water six blocks across stands round you for 12 seconds. Shots slow and sink in it, foes who wade in are swept out and soaked, and everyone inside is put out, mends and takes a third less harm. |
+| **Monsoon** | Support | Rain falls over 14 blocks for 15 seconds: friends under it mend, are put out and cleansed; foes are soaked and slowed. Twice, a spring bursts up under every friend and heals them. |
 
 ## Awakening
 

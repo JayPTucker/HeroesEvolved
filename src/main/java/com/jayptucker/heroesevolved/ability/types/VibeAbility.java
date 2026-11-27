@@ -29,7 +29,7 @@ public final class VibeAbility implements Ability {
             AbilitySlot.QUATERNARY, SimpleAction.builder("vibe_breach_guard", 4).cost(() -> 21, () -> 170)
                     .followUp(c -> !c.modifierHeld() && VibeService.returnFire(c))
                     .deactivate(c -> VibeService.closeGuard(c.player()))
-                    .activate(c -> VibeService.guard(c.player(), false)).build(),
+                    .activate(c -> VibeService.guard(c.player())).build(),
             // Rift Fall (the id is Frequency Lock's, so loadouts and the balance table carry over).
             AbilitySlot.QUINARY, SimpleAction.builder("vibe_frequency_lock", 5).cost(() -> 42, () -> 340)
                     .activate(com.jayptucker.heroesevolved.vibe.RiftFall::cast).build());

@@ -379,7 +379,7 @@ public final class HydroGameTests {
     }
 
     @GameTest(template = "rewind_empty", batch = "hydro.healing", timeoutTicks = 100)
-    public static void healingWaterAndTheSpringHealFriends(GameTestHelper h) {
+    public static void healingWaterHealsFriends(GameTestHelper h) {
         ServerPlayer p = bender(h, 5, "hydro_2_1");
         var friend = EntityType.VILLAGER.create(h.getLevel());
         friend.setNoAi(true);
@@ -390,8 +390,6 @@ public final class HydroGameTests {
         guard(p, () -> h.assertTrue(HydroSkills.healingWater(context(p, false)), "Healing Water wraps the friend in sight")).run();
         later(h, p, 62, () -> {
             h.assertTrue(friend.getHealth() > 10, "The friend heals over three seconds, " + friend.getHealth());
-            h.assertTrue(HydroSkills.cast(context(p, false), "hydro_healing_spring"), "A Healing Spring wells up");
-            h.assertTrue(HydroSkills.fields(p, Piece.HYDRO_SPRING) == 1, "It is running");
             forget(p);
             friend.discard();
             h.succeed();
@@ -399,7 +397,7 @@ public final class HydroGameTests {
     }
 
     @GameTest(template = "rewind_empty", batch = "hydro.skills", timeoutTicks = 60)
-    public static void theTreesActivesAndTheClassesAllDoSomething(GameTestHelper h) {
+    public static void theTreesActivesAllDoSomething(GameTestHelper h) {
         ServerPlayer p = bender(h, 5, "hydro_pressure_jet", "hydro_water_spout", "hydro_rain_call");
         LivingEntity foe = foe(h, p, 4, 0);
         aim(p, foe);
@@ -409,10 +407,6 @@ public final class HydroGameTests {
             h.assertTrue(HydroSkills.jetting(p), "And holds");
             h.assertTrue(HydroSkills.rainCall(context(p, false)), "Rain Call");
             h.assertTrue(HydroSkills.fields(p, Piece.HYDRO_RAIN) == 1, "The cloud is overhead");
-            h.assertTrue(HydroSkills.cast(context(p, false), "hydro_tsunami"), "Tsunami");
-            h.assertTrue(HydroService.waves(p) == 1, "The great wave rolls");
-            h.assertTrue(HydroSkills.cast(context(p, false), "hydro_tidal_dome"), "Tidal Dome");
-            h.assertTrue(HydroSkills.fields(p, Piece.HYDRO_DOME) == 1, "The dome stands");
         }).run();
         later(h, p, 6, () -> {
             h.assertTrue(foe.getHealth() < before, "The jet hurts what it touches");

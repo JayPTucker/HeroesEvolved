@@ -96,7 +96,7 @@ public final class AmpService {
     static final class Amp {
         final ServerPlayer player;
         float charge = REST;
-        long lastFelt = -1000, pressStart = -1, gatherStart = -1, thousandAt = -1, lockUntil = -1, nextSpark, cannonAt = -1;
+        long lastFelt = -1000, pressStart = -1, gatherStart = -1, thousandAt = -1, lockUntil = -1, nextSpark;
         LivingEntity pressTarget;
         float windupDamage;
         boolean showing, primed;

@@ -107,8 +107,8 @@ Node IDs are unchanged, so earlier purchases carry over.
 | **Wider Incision** | Surgical Fracture examines twelve blocks. |
 | **Master Incision** | Surgical Fracture reaches hardness 4 and adds no fresh Sylar attention. |
 
-The three styles keep their effects and have their own poses: **Fissure Maw** (fists driven down and pulled
-apart), **Stone Rampart** (palms swept up) and **Bedrock Stance** (a wide, rooted stance).
+The three classes' Ultimates ([Classes](classes.md)) have their own poses: **Heartquake** (feet planted, both palms
+drawn back and driven forward), **Pressure Barrier** (a guard inside the sphere) and **Groundswell** (a wide, rooted stance).
 
 ### Signature: Epicenter
 

@@ -36,7 +36,7 @@ public final class FissionStar {
     public static boolean activate(ServerPlayer p, int tier) {
         Run run = new Run(p, tier);
         if (!Signatures.start(ID, run)) return false;
-        ArmPosePayload.show(p, ArmPose.TWO_HANDS_STRAIN, CHARGE);
+        ArmPosePayload.show(p, ArmPose.RAD_CUP, CHARGE);
         SetPiecePayload.send(run.level, Piece.RAD_STAR_CHARGE, p.position(), p.getEyePosition(), CHARGE, p);
         run.level.playSound(null, p.blockPosition(), SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS, 1.2F, .5F);
         return true;
@@ -62,7 +62,7 @@ public final class FissionStar {
             Vec3 look = player.getLookAngle();
             core = player.getEyePosition().add(look.scale(.9)).add(0, -.25, 0);
             velocity = look.scale(SPEED);
-            ArmPosePayload.show(player, ArmPose.ONE_HAND, 10);
+            ArmPosePayload.show(player, ArmPose.RAD_POINT, 10);
             level.playSound(null, player.blockPosition(), SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, 1, .5F);
         }
 

@@ -72,6 +72,26 @@ public final class CooldownService {
         player.setData(ModDataAttachments.PLAYER_COOLDOWNS.get(), data.removeExpired(gameTime).startCooldown(abilityId, gameTime));
     }
 
+    /**
+     * Shortens every cooldown the player has running to {@code factor} of what is left (Borrowed Hours), except those
+     * {@code keep} answers true for. Returns how many it touched.
+     */
+    public static int hasten(ServerPlayer player, double factor, java.util.function.Predicate<ResourceLocation> keep) {
+        Objects.requireNonNull(player, "Player cannot be null.");
+        long gameTime = player.serverLevel().getGameTime();
+        PlayerCooldownData data = player.getData(ModDataAttachments.PLAYER_COOLDOWNS.get()).removeExpired(gameTime);
+        int n = 0;
+        for (var e : java.util.List.copyOf(data.expirationTimes().entrySet())) {
+            if (keep.test(e.getKey())) continue;
+            long left = e.getValue() - gameTime;
+            if (left <= 0) continue;
+            data = data.startCooldown(e.getKey(), gameTime + Math.round(left * factor));
+            n++;
+        }
+        player.setData(ModDataAttachments.PLAYER_COOLDOWNS.get(), data);
+        return n;
+    }
+
     /** Ends every cooldown the player has. Used by the admin menu. */
     public static void clearAll(ServerPlayer player) {
         Objects.requireNonNull(player, "Player cannot be null.");

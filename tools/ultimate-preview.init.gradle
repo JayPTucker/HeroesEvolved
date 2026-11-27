@@ -1,0 +1,28 @@
+// Every class Ultimate (combat/Ultimates), staged with foes and a friend and photographed through its own camera and
+// from the side. Never bundled into the mod JAR.
+//   ./gradlew runClient --init-script tools/ultimate-preview.init.gradle
+//   -Ponly=lightning_flurry,phase_blur      (class mechanics, or a power's id path such as superspeed)
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('ultimatePreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/ultimate-preview')
+                        programArguments.addAll('--width', '1200', '--height', '800')
+                        systemProperty('heroes.preview.ultimate', 'true')
+                        if (project.hasProperty('only')) systemProperty('heroes.preview.only', project.property('only'))
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('ultimatePreviewClasses')) }
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

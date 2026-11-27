@@ -28,7 +28,7 @@ Shapeshifting (`shapeshift/`, stand-ins in `client/MorphClient`, art in `client/
   `scale`, `face`) and the palette (`SHADOW 1F2A3D`, `SLATE 3E6F86`, `SHEEN 8FCFC6`, `BRASS C29A5E`, `HIGHLIGHT F1ECE2`).
   `ShapeInstinctArt` adds `around` (a ring of plates about any axis), `streak`, `seamRing` and `loose` (a tumbling
   plate), shared with `ShapeTrickArt`. New moves reuse pieces where they can: Hybrid is `SHIFT_TOUCH` on yourself,
-  Chimera `SHIFT_STUDY`, Many Hands a string of `SHIFT_LUNGE`s, Apex Form's growth a `SHIFT_DECOY_BURST`.
+  Chimera `SHIFT_STUDY`, Apex Form's growth a `SHIFT_DECOY_BURST`.
 
 - **A power still being built.** Put it in `ModAbilities.IN_DEVELOPMENT` (empty now). `ModAbilities.rollable` keeps it
   out of every random pick (the Eclipse, the Formula, gifted villagers, retired-power swaps) while admins can still give
@@ -124,18 +124,18 @@ Shapeshifting (`shapeshift/`, stand-ins in `client/MorphClient`, art in `client/
 - **Wiring a new power's tree and classes.**
   - **The tree:** the power's entry in `skill_trees.json` (three lanes of six nodes; positions 1 and 4 active, 5 the
     capstone; a signature appended to a lane with `"requires"` set to that lane's mastery, `_1_2`).
-  - **Routing:** a line in `SkillCatalog.Node.action` routes the tree to the power's own class. A case in `StyleCasts`
-    (`canUse` and `cast`) routes the classes.
+  - **Routing:** a line in `SkillCatalog.Node.action` routes the tree to the power's own class. The classes are
+    Ultimates: three rows in `combat/UltimateTable` and a `<Power>Ultimates` class ([ultimates.md](../ultimates.md)).
   - **Bookkeeping:**
     - an entry in `SkillTreeService.bonus`'s no-stat-bonus list, and a `forget` call where that class handles a respec;
     - an entry in `EvolutionTrials`;
     - a `case` in `PowerIntroService`'s release for the awakening.
   - **Names:** must match `en_us.json`; check with `python tools/verify-skill-content.py`.
-- **Every class ability must cast alone.** `ClassAbilityGameTests.everyClassAbilityCasts` casts each one with only a
-  pillager near. Masquerade, which needs friends, now includes the caster and falls back to the nearest creature seen.
+- **Every Ultimate must cast alone.** `UltimateGameTests` casts each one with only a pillager near (and no friends), so
+  a Support Ultimate must also help its caster.
 - **A short history of shapes.** `ShapeshiftService` remembers the last eight shapes worn (`previous`, `history`,
-  `lastCreature`) and when each change happened (`lastChange`). Quick Change, Hybrid, Chimera, Masquerade and Ambush
-  Shift all read it; record it wherever a form starts or ends (`morph` and `end` both call `remember`).
+  `lastCreature`) and when each change happened (`lastChange`). Quick Change, Hybrid, Chimera and Ambush Shift
+  all read it; record it wherever a form starts or ends (`morph` and `end` both call `remember`).
 - **Borrowing gifts without a shape.** Hybrid's traits come back from `ShapeshiftService.traits(player)` when no shape
   is worn, so every damage and fire hook that already asks about traits works for it unchanged. Its own tick calls
   `ShapeshiftTraitService.tick`. Gifts a client draws (wall climbing, the glowing senses) are left out: the client

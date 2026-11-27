@@ -417,4 +417,143 @@ final class QuakeArt {
             grit(c, feet, UP.scale(.2), 8, 1.2F, t - land, 10, a.seed());
         }
     }
+
+    // ------------------------------------------------------------------
+    // Ultimates (quake/QuakeUltimates)
+    // ------------------------------------------------------------------
+
+    /** The cost on the body: red and white strain. */
+    private static final float[] STRAIN = rgb(0xFF5A5A);
+
+    /**
+     * Heartquake ({@code QuakeUltimates.Heartquake}): a ring locking round the foe and a column of rings lifting it,
+     * rings shivering up and down it as it shakes, strain cracking red and white up her forearms as she draws back, the
+     * tube of rings that blasts it along the ground (each ring a moment after the last, so the wave is seen to travel),
+     * the fault ploughed behind it, and the fault erupting along its length.
+     */
+    static void heart(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity caster = a.bound(c), foe = UltArt.foe(c, a);
+        Vec3 base = a.target(), facing = a.facing();
+        Vec3 side = new Vec3(-facing.z, 0, facing.x);
+        float h = Math.max(.8F, a.scale()), phase = c.time() * .9F;
+        int seed = a.seed() * 5 + 7;
+        int lock = com.jayptucker.heroesevolved.quake.QuakeUltimates.Heartquake.LOCK,
+                shake = com.jayptucker.heroesevolved.quake.QuakeUltimates.Heartquake.SHAKE,
+                draw = com.jayptucker.heroesevolved.quake.QuakeUltimates.Heartquake.DRAW,
+                blast = com.jayptucker.heroesevolved.quake.QuakeUltimates.Heartquake.BLAST,
+                blasted = com.jayptucker.heroesevolved.quake.QuakeUltimates.Heartquake.BLASTED,
+                erupt = com.jayptucker.heroesevolved.quake.QuakeUltimates.Heartquake.ERUPT;
+        double throwLen = com.jayptucker.heroesevolved.quake.QuakeUltimates.Heartquake.THROW;
+        Vec3 landing = base.add(facing.scale(throwLen));
+        Vec3 foeAt = foe != null ? foe.getPosition(c.partial) : base;
+        // The lock: a ring closing round the foe's middle.
+        float locked = UltArt.window(t, 0, blast + 1, 4, 1);
+        if (locked > 0) {
+            float close = smooth(0, lock, t);
+            pressure(c, foeAt.add(0, h * .55, 0), UP, 2.6F - 1.8F * close, .07F, locked, .03F, phase);
+        }
+        // The shaking: rings running up and down the body and a column of them lifting it off the ground.
+        float shaking = UltArt.window(t, shake, blast + 1, 3, 1);
+        if (shaking > 0) {
+            for (int i = 0; i < 4; i++) {
+                float y = (float) (.5 + .5 * Math.sin(phase * .7F + i * 1.6F));
+                pressure(c, foeAt.add(0, h * y, 0), UP, .55F + .1F * i, .04F, shaking * .8F, .08F, phase + i);
+            }
+            for (int i = 0; i < 5; i++) {
+                double y = foeAt.y - base.y;
+                if (y < .2) break;
+                pressure(c, base.add(0, y * i / 5 + .05, 0), UP, .7F - .05F * i, .05F, shaking * .6F, .05F, phase * 1.3F + i);
+            }
+        }
+        // The strain: red and white cracks running up her forearms as she draws back.
+        float strain = UltArt.window(t, draw, blast + 8, 4, 6);
+        if (strain > 0 && caster != null && c.glow()) {
+            for (int s = -1; s <= 1; s += 2) {
+                Vec3 hand = UltArt.hand(caster, c.partial, s, .5), elbow = UltArt.hand(caster, c.partial, s, .15).add(0, -.1, 0);
+                c.bolt(hand, elbow, seed + s * 7 + (int) (t / 3), .06F, .03F, STRAIN, strain);
+                c.bolt(hand, elbow, seed + s * 11 + (int) (t / 3), .05F, .012F, CORE, strain);
+            }
+        }
+        // The blast: a tube of rings opening along the ground from her palms to where the foe lands.
+        if (t >= blast && t < blast + 22) {
+            Vec3 palms = a.origin().add(0, 1.2, 0).add(facing.scale(.8));
+            float age = t - blast, f = 1 - smooth(10, 22, age);
+            int rings = minimal() ? 6 : 12;
+            for (int i = 0; i < rings; i++) {
+                float d = (float) (i * (throwLen + 2) / rings), delay = d / 3, k = age - delay;
+                if (k < 0) continue;
+                float life = 1 - smooth(4, 12, k);
+                pressure(c, palms.add(facing.scale(d)), facing, .18F + .55F * (float) Math.sqrt(d) * smooth(0, 3, k), .06F, f * life, .04F, phase + i);
+            }
+            if (c.glow() && age < 4) c.glow(palms, 1.2F * (1 - age / 4), CORE, 1 - age / 4);
+        }
+        // The fault ploughed behind the foe, and the dust it throws.
+        if (t > blast) {
+            float run = smooth(blast, blasted, t), f = fade(t - blast, a.piece().ticks - blast, 0, 14);
+            Vec3 from = base.add(0, .05, 0), to = from.lerp(landing.add(0, .05, 0), run);
+            crack(c, from, to, seed, .14F, f);
+            crack(c, from.add(side.scale(.25)), to.add(side.scale(.2)), seed + 1, .05F, f * .7F);
+            if (t < blasted + 6) grit(c, to, facing.scale(-1.2).add(0, .8, 0), 14, .6F, (t - blast) % 8, 8, seed + (int) ((t - blast) / 8));
+        }
+        // The eruption: pressure bursting up all along the fault, slabs of dust thrown.
+        if (t >= erupt) {
+            float age = t - erupt, f = fade(age, a.piece().ticks - erupt, 0, 14);
+            int n = minimal() ? 4 : 8;
+            for (int i = 0; i < n; i++) {
+                float u = (i + .5F) / n, k = age - u * 4;
+                if (k < 0) continue;
+                Vec3 at = base.lerp(landing, u).add(0, .1, 0);
+                pressure(c, at, UP, .3F + 2.4F * smooth(0, 10, k), .08F, f * (1 - smooth(6, 14, k)), .05F, phase + i);
+                grit(c, at, new Vec3(0, 1.6, 0), 10, .9F, k, 14, seed + i * 9);
+                dust(c, at, at.subtract(facing), k, 1.6F, seed + i);
+            }
+        }
+    }
+
+    /**
+     * Pressure Barrier, one second (re-sent each second; the second in the seed, -1 its pop): a sphere of shimmering
+     * rings round the body at the scale's radius, each turning on its own axis; the pop throws them outward.
+     */
+    static void barrier(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity body = a.bound(c);
+        Vec3 centre = (body != null ? body.getPosition(c.partial) : a.origin()).add(0, 1, 0);
+        int second = a.seed();
+        float r = a.scale(), phase = c.time() * .4F;
+        if (second < 0) {
+            float k = smooth(0, 10, t), f = 1 - smooth(4, a.piece().ticks, t);
+            for (int i = 0; i < 4; i++) pressure(c, centre, new Vec3(cos(i * 1.3F), .6, sin(i * 1.3F)), r * (1 + 1.6F * k), .1F, f, .05F, phase);
+            return;
+        }
+        boolean last = second >= com.jayptucker.heroesevolved.quake.QuakeUltimates.PressureBarrier.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(10, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        float grow = second == 0 ? smooth(0, 8, t) : 1;
+        int rings = minimal() ? 3 : 6;
+        for (int i = 0; i < rings; i++) {
+            float ang = phase * (.5F + .1F * i) + i * 1.05F;
+            Vec3 axis = new Vec3(cos(ang), .4 + .3 * sin(ang * .7F + i), sin(ang));
+            pressure(c, centre, axis, r * grow, .05F, f * .8F, .025F, phase * 2 + i);
+        }
+        if (c.soft()) c.shell(centre, r * grow, r * grow, r * grow, PI, WAVE, f * .05F, .2F, PLAIN, 0);
+    }
+
+    /** A ripple across a blow: a pressure ring on the plane across it, opening (scale its size). */
+    static void ripple(Canvas c, Active a, float t) {
+        Vec3 axis = a.origin().subtract(a.target());
+        float k = smooth(0, 8, t), f = 1 - smooth(3, a.piece().ticks, t);
+        pressure(c, a.origin(), axis, (.2F + 1.2F * k) * Math.max(.4F, a.scale()), .05F, f, .04F, t);
+    }
+
+    /** Groundswell on a friend (bound; re-sent every two seconds): a ring running out over the ground from their feet, rings round their fists. */
+    static void swell(Canvas c, Active a, float t) {
+        Entity body = a.bound(c);
+        if (body == null) return;
+        Vec3 feet = body.getPosition(c.partial).add(0, .06, 0);
+        float k = smooth(0, 20, t), f = fade(t, a.piece().ticks, 2, 10), phase = c.time() * .6F;
+        pressure(c, feet, UP, .4F + 2.4F * k, .06F, f * (1 - k), .04F, phase);
+        pressure(c, feet, UP, .7F, .04F, f * .5F, .03F, phase);
+        for (int s = -1; s <= 1; s += 2)
+            pressure(c, UltArt.hand(body, c.partial, s, .5), UP, .18F, .02F, f * .6F, .04F, phase + s);
+    }
 }

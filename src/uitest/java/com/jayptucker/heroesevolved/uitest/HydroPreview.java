@@ -13,7 +13,6 @@ import com.jayptucker.heroesevolved.electro.ElectroService;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.hydro.HydroCombat;
 import com.jayptucker.heroesevolved.hydro.HydroService;
-import com.jayptucker.heroesevolved.hydro.HydroSkills;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.skills.SkillCatalog;
 import com.jayptucker.heroesevolved.skills.SkillTreeData;
@@ -331,7 +330,7 @@ public final class HydroPreview {
             case 800 -> capture = "46-vault-late.png";
             // Skills: Geyser, Pressure Jet, Tide Wall, Water Spout, Healing Water, Rain Call
             case 820 -> server(mc, p -> { reset(p, 600, 22); actor(p, 0, 4.5); });
-            case 826 -> server(mc, p -> log("geyser " + HydroSkills.cast(context(p, false), "x") + " " + useNode(p, "hydro_0_1")));
+            case 826 -> server(mc, p -> log("geyser " + useNode(p, "hydro_0_1")));
             case 832 -> capture = "47-geyser-mark.png";
             case 843 -> capture = "48-geyser-burst.png";
             case 848 -> capture = "49-geyser-late.png";
@@ -367,19 +366,6 @@ public final class HydroPreview {
             case 1040 -> server(mc, p -> log("rain " + useNode(p, "hydro_rain_call")));
             case 1050 -> side(-9, 4, -6, 0, 3, 2);
             case 1054 -> capture = "58-rain-call.png";
-            // Classes: Tsunami, Tidal Dome, Healing Spring
-            case 1075 -> server(mc, p -> { reset(p, 720, 0); actor(p, -2, 9); actor(p, 2, 12); });
-            case 1080 -> server(mc, p -> log("tsunami " + HydroSkills.cast(context(p, false), "hydro_tsunami")));
-            case 1088 -> capture = "59-tsunami.png";
-            case 1096 -> capture = "60-tsunami-late.png";
-            case 1120 -> server(mc, p -> reset(p, 750, 0));
-            case 1124 -> server(mc, p -> log("dome " + HydroSkills.cast(context(p, false), "hydro_tidal_dome")));
-            case 1130 -> side(8, 3, 6, 0, 1.5, 0);
-            case 1134 -> capture = "61-tidal-dome.png";
-            case 1150 -> server(mc, p -> reset(p, 770, 0));
-            case 1154 -> server(mc, p -> log("spring " + HydroSkills.cast(context(p, false), "hydro_healing_spring")));
-            case 1160 -> side(4, 2.5, 4, 0, .5, 0);
-            case 1166 -> capture = "62-healing-spring.png";
             // First person
             case 1185 -> {
                 mc.options.setCameraType(CameraType.FIRST_PERSON);

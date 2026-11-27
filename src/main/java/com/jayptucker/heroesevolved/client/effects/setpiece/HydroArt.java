@@ -62,7 +62,7 @@ final class HydroArt {
                 }
             }
             case HYDRO_SNARE -> snare(c, a, at, size, t, alpha * k, phase, seed, pale);
-            case HYDRO_WAVE, HYDRO_TSUNAMI -> wave(c, a, at, end, size, t, alpha, phase, seed, pale);
+            case HYDRO_WAVE -> wave(c, a, at, end, size, t, alpha, phase, seed, pale);
             case HYDRO_TENDRIL -> {
                 // An arm of the octopus lashes out to its foe and recoils.
                 float out = smooth(0, 3, t), back = smooth(4, 9, t);
@@ -130,8 +130,6 @@ final class HydroArt {
             case HYDRO_WALL -> wall(c, at, end, size, fade(t, a.piece().ticks, 2, 2) * (thin ? .75F : 1), phase, seed, pale);
             case HYDRO_HEAL -> heal(c, a, at, end, size, t, alpha, phase, seed);
             case HYDRO_RAIN -> rain(c, owner != null ? owner.getPosition(c.partial) : at, size, fade(t, a.piece().ticks, 2, 2), phase, seed);
-            case HYDRO_DOME -> dome(c, at, size, fade(t, a.piece().ticks, 2, 2), phase, seed);
-            case HYDRO_SPRING -> spring(c, at, size, fade(t, a.piece().ticks, 2, 2), phase, seed);
             case HYDRO_AWAKEN -> awaken(c, owner != null ? owner.getPosition(c.partial) : at, end, t, alpha, phase, seed);
             default -> { }
         }
@@ -1469,5 +1467,152 @@ final class HydroArt {
             foam(c, ring, w, al);
             spray(c, foe.add(0, .3, 0), UP, 1.2F * size, .25F, t - land, 14, f, a.seed(), 10, 0);
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Ultimates (hydro/HydroUltimates)
+    // ------------------------------------------------------------------
+
+    /** A hoop of water round {@code centre} in the plane across {@code axis}, spinning: one band of a tumbling drum. */
+    private static void hoop(Canvas c, Vec3 centre, Vec3 axis, float radius, float thick, float spin, float alpha, float pale) {
+        Vec3 n = axis.normalize(), u = (Math.abs(n.y) > .9 ? new Vec3(1, 0, 0) : UP).cross(n).normalize(), v = n.cross(u).normalize();
+        int count = minimal() ? 10 : 18;
+        Vec3[] spine = new Vec3[count];
+        float[] r = new float[count], a = new float[count];
+        for (int i = 0; i < count; i++) {
+            float ang = spin + i * TWO_PI / (count - 1);
+            spine[i] = centre.add(u.scale(cos(ang) * radius)).add(v.scale(sin(ang) * radius));
+            r[i] = thick * (.8F + .2F * sin(ang * 3 + spin));
+            a[i] = alpha * clearance(c, spine[i], .8F);
+        }
+        tube(c, spine, r, a, pale);
+    }
+
+    /**
+     * Riptide Barrel ({@code HydroUltimates.RiptideBarrel}): the wave rising behind the waterbender and carrying them
+     * in, its lip curling over the foe, the barrel closing into a drum of water that tumbles it, the geyser under it,
+     * the two whips that wrap it and pull it down, and the whirlpool that swallows the landing.
+     */
+    static void barrel(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity rider = a.bound(c), foe = UltArt.foe(c, a);
+        Vec3 base = a.target(), facing = a.facing(), right = UltArt.side(facing);
+        float phase = c.time() * .3F;
+        int seed = a.seed() * 7 + 1;
+        float fh = foe != null ? foe.getBbHeight() : 1.8F;
+        Vec3 foeAt = foe != null ? foe.getPosition(c.partial) : base.add(0, com.jayptucker.heroesevolved.hydro.HydroUltimates.RiptideBarrel.height(t), 0);
+        Vec3 chest = foeAt.add(0, fh * .55, 0);
+        int rise = com.jayptucker.heroesevolved.hydro.HydroUltimates.RiptideBarrel.RISE,
+                close = com.jayptucker.heroesevolved.hydro.HydroUltimates.RiptideBarrel.CLOSE,
+                tumble = com.jayptucker.heroesevolved.hydro.HydroUltimates.RiptideBarrel.TUMBLE,
+                geyserAt = com.jayptucker.heroesevolved.hydro.HydroUltimates.RiptideBarrel.GEYSER,
+                whips = com.jayptucker.heroesevolved.hydro.HydroUltimates.RiptideBarrel.WHIPS,
+                wrap = com.jayptucker.heroesevolved.hydro.HydroUltimates.RiptideBarrel.WRAP,
+                slam = com.jayptucker.heroesevolved.hydro.HydroUltimates.RiptideBarrel.SLAM;
+        // The wave: a wall of curling water behind the rider, its lip reaching further forward until it closes over the foe.
+        float wave = UltArt.window(t, 0, close + 6, 4, 6);
+        if (wave > 0) {
+            Vec3 behind = rider != null ? rider.getPosition(c.partial).subtract(facing.scale(.6)) : a.origin();
+            Vec3 foot = new Vec3(behind.x, a.origin().y, behind.z);
+            float height = (float) com.jayptucker.heroesevolved.hydro.HydroUltimates.RiptideBarrel.CREST * smooth(0, rise, t);
+            float reach = (float) (.6 + 2.4 * smooth(rise, close, t));
+            int strands = minimal() ? 4 : 8;
+            for (int s = 0; s < strands; s++) {
+                float lat = (s / (strands - 1F) - .5F) * 6;
+                int n = 12;
+                Vec3[] spine = new Vec3[n];
+                float[] r = new float[n], al = new float[n];
+                for (int i = 0; i < n; i++) {
+                    float u = i / (n - 1F), up = sin(u * PI * .62F), fwd = (1 - cos(u * PI)) * .5F;
+                    spine[i] = foot.add(right.scale(lat * (1 - .15 * u))).add(0, height * up + .1, 0).add(facing.scale(reach * fwd * (1 + .15F * sin(phase + s))));
+                    r[i] = (.7F - .4F * u) * (.7F + .3F * smooth(0, rise, t));
+                    al[i] = wave * (.85F - .25F * u);
+                }
+                tube(c, spine, r, al, .1F + .2F * (s % 2));
+                if (t > 4) splash(c, spine[n - 1], .5F, (t + s * 3) % 10, wave * .6F, seed + s, .6F, false);
+            }
+        }
+        // The drum: hoops of water spinning round the foe, a shell of it over them.
+        float drum = UltArt.window(t, close, geyserAt + 2, 3, 3);
+        if (drum > 0) {
+            float spin = t * .5F;
+            for (int i = 0; i < 4; i++) hoop(c, chest.add(right.scale((i - 1.5) * .45)), right, 1.4F, .22F, spin + i * .7F, drum, .15F + .1F * i);
+            orb(c, chest, 1.5F, phase, drum * .45F, .1F);
+            bubbles(c, chest, 1.2F, t - close, drum, seed);
+        }
+        // The geyser under it.
+        if (t >= geyserAt && t < geyserAt + 24)
+            geyser(c, base, 1.1F, (float) com.jayptucker.heroesevolved.hydro.HydroUltimates.RiptideBarrel.THROW + 1, t - geyserAt, 24, 1, phase, seed + 30, .25F);
+        // The whips: cracked up from both hands, wrapping the foe, then hauled down.
+        if (t >= whips && t < slam + 8 && rider instanceof Player p) {
+            float gone = 1 - smooth(slam + 4, slam + 8, t);
+            for (int side = 0; side < 2; side++) {
+                Vec3 hand = hand(c, p, side == 0);
+                whip(c, hand, chest, t - whips, 5, .14F, gone, phase, seed + 40 + side, right.scale(side == 0 ? 1 : -1).add(0, .6, 0), .3F);
+            }
+            if (t >= wrap) for (int i = 0; i < 3; i++) hoop(c, chest.add(0, (i - 1) * .4, 0), UP, .55F, .08F, t * .8F + i, gone, .35F);
+        }
+        // The landing: a hard splash and a whirlpool that drags them under.
+        if (t >= slam + 4) {
+            float age = t - slam - 4, f = fade(age, a.piece().ticks - slam - 4, 0, 12);
+            splash(c, base, 3, age, f, seed + 50, .5F, true);
+            whirlpool(c, base, 3.6F, age + 20, f, phase, seed + 51, .2F);
+            ripple(c, base.add(0, .05, 0), 1 + 7 * smooth(0, 14, age), .12F, f * (1 - smooth(6, 16, age)));
+        }
+    }
+
+    /**
+     * Tidal Citadel, one second (re-sent each second; the second in the seed, -1 its fall): the dome of moving water
+     * (the scale its radius), rising out of the ground on the first second, and falling outward as a ring of surf.
+     */
+    static void citadel(Canvas c, Active a, float t) {
+        int second = a.seed();
+        float phase = c.time() * .3F, r = a.scale();
+        Vec3 centre = a.origin();
+        if (second < 0) {
+            float k = smooth(0, 12, t), f = 1 - smooth(6, a.piece().ticks, t);
+            int n = minimal() ? 6 : 14;
+            for (int i = 0; i < n; i++) {
+                float ang = i * TWO_PI / n;
+                splash(c, centre.add(cos(ang) * r * (1 + k * .6), 0, sin(ang) * r * (1 + k * .6)), 1.2F, t, f, i * 7 + 3, .4F, true);
+            }
+            ripple(c, centre.add(0, .05, 0), r * (1 + k), .14F, f);
+            return;
+        }
+        boolean last = second >= com.jayptucker.heroesevolved.hydro.HydroUltimates.TidalCitadel.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(10, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        float grow = second == 0 ? smooth(0, 14, t) : 1;
+        dome(c, centre, r * grow, f, phase, 61);
+        if (second == 0 && t < 14) for (int i = 0; i < 8; i++) {
+            float ang = i * TWO_PI / 8;
+            spray(c, centre.add(cos(ang) * r, 0, sin(ang) * r), UP, .5F, .3F, t, 14, 1 - t / 14, i * 5, 6, .3F);
+        }
+    }
+
+    /** A shot swallowed by the citadel: a small splash where it went in. */
+    static void swallow(Canvas c, Active a, float t) {
+        splash(c, a.origin(), .5F, t, fade(t, a.piece().ticks, 0, 6), a.seed(), .5F, false);
+    }
+
+    /**
+     * Monsoon, one second (re-sent each second; the second in the seed): the rain cloud and its rain over the scale's
+     * radius, gathering on the first second.
+     */
+    static void monsoon(Canvas c, Active a, float t) {
+        int second = a.seed();
+        boolean last = second >= com.jayptucker.heroesevolved.hydro.HydroUltimates.Monsoon.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(10, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        float grow = second == 0 ? smooth(0, 18, t) : 1;
+        rain(c, a.origin(), a.scale() * (.4F + .6F * grow), f * grow, c.time() * .3F, 71);
+        if (c.soft()) c.disc(a.origin().add(0, .04, 0), UP, a.scale(), SEA, f * .08F, f * .02F);
+    }
+
+    /** A spring bursting up under a friend in the Monsoon (bound; scale their height). */
+    static void ultSpring(Canvas c, Active a, float t) {
+        Entity body = a.bound(c);
+        Vec3 feet = body != null ? body.getPosition(c.partial) : a.origin();
+        float life = a.piece().ticks, f = fade(t, life, 1, 10);
+        geyser(c, feet, .55F, Math.max(.6F, a.scale()) * 1.4F, t, (int) life, f, c.time() * .3F, a.seed(), .6F);
+        spring(c, feet, 1, f, c.time() * .3F, a.seed());
     }
 }

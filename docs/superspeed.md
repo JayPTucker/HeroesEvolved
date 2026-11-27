@@ -300,7 +300,7 @@ player's real afterimages rather than sprites:
 | Lightning Throw | The arm cocks back over the shoulder as lightning gathers in the hand, then whips through like a javelin; the bolt leaves the hand a moment later and bursts where it lands. Charged Throw's hops follow on without a wind-up. |
 | Slipstream Rescue | One arm reaches round the person beside you. Your path is a gold ribbon with afterimages; theirs is a pale ribbon of pressed wind wrapped in rings. |
 | Perception | Open hands held a little out from your sides, perfectly still, while the gold clock rings ripple out. |
-| Relay Run (style) | Each friend is fetched along a gold arc, their outline fading where they stood, and a ring closes round them as they land in the circle. |
+| Rescue Run (Support Ultimate) | Each friend is fetched along a gold arc, their outline fading where they stood, and a ring closes round them as they land beside you. |
 
 Learn and equip these with the inventory **Skills** button. Passive discounts apply to initial activation costs and cooldowns, not ongoing running or dodge costs. Running earns Mastery for actual stamina spent. Each running interval is paid upfront so toggling cannot avoid the drain; walking does not consume running stamina.
 

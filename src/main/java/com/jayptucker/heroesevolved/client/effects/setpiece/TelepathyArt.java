@@ -55,9 +55,6 @@ final class TelepathyArt {
             case TELE_HIVE_LINK -> hiveLink(c, a, bound, t, clock);
             case TELE_HALO -> halo(c, a, bound, t, clock);
             case TELE_PROJECT -> project(c, a, bound, t, clock);
-            case PSYCHIC_STORM -> storm(c, a, t, clock);
-            case BLIND_SPOT -> blindSpot(c, a, bound, t, clock);
-            case HIVE_MIND -> hiveMind(c, a, bound, t, clock);
             case FINISH_LIGHTS -> lightsOut(c, a, bound, t, clock);
             default -> { }
         }
@@ -771,4 +768,77 @@ final class TelepathyArt {
     }
 
     private static boolean minimal() { return Minecraft.getInstance().options.particles().get() == ParticleStatus.MINIMAL; }
+
+    // ------------------------------------------------------------------
+    // Ultimates (telepathy/TelepathyUltimates)
+    // ------------------------------------------------------------------
+
+    /**
+     * Mindbreak ({@code TelepathyUltimates.Mindbreak}): the thread from the temple, the dark closing round the foe, an
+     * iris turning over its head, splinters of memory circling it and driving in as the hand closes, and the spike of
+     * light that breaks the mind (the fears themselves are copies of the foe, drawn by {@code BodyCopies}).
+     */
+    static void mind(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity caster = a.bound(c), foe = UltArt.foe(c, a);
+        Vec3 base = a.target();
+        float h = Math.max(.8F, a.scale()), clock = c.time() * .05F;
+        Vec3 head = (foe != null ? foe.getPosition(c.partial) : base).add(0, h * .9, 0);
+        Vec3 temple = caster instanceof Player p ? templeOf(c, p) : a.origin().add(0, 1.6, 0);
+        int dark = com.jayptucker.heroesevolved.telepathy.TelepathyUltimates.Mindbreak.DARK,
+                close = com.jayptucker.heroesevolved.telepathy.TelepathyUltimates.Mindbreak.CLOSE,
+                spike = com.jayptucker.heroesevolved.telepathy.TelepathyUltimates.Mindbreak.SPIKE;
+        // The thread, temple to head, beads running along it.
+        float link = UltArt.window(t, 0, spike + 6, 3, 6);
+        thread(c, temple, head, new Vec3(0, .4, 0), smooth(0, 8, t), .05F, LILAC, link, clock, 4);
+        // The dark: a dome of dusk round the foe, and an iris turning over its head.
+        float dusk = UltArt.window(t, dark, spike + 10, 6, 10);
+        if (dusk > 0) {
+            Vec3 feet = foe != null ? foe.getPosition(c.partial) : base;
+            if (c.soft()) c.shell(feet.add(0, 1, 0), 3.6F, 2.8F, 3.6F, PI, SHADOW, dusk * .45F, .5F, PLAIN, 0);
+            iris(c, head.add(0, .9, 0), UP, .8F, VIOLET, dusk, clock * 4, .35F + .2F * smooth(close, spike, t));
+        }
+        // Splinters of memory circling the head, then driven in.
+        float splinters = UltArt.window(t, dark + 4, spike + 2, 6, 1);
+        if (splinters > 0) {
+            float in = smooth(close, spike, t);
+            int n = minimal() ? 5 : 10;
+            for (int i = 0; i < n; i++) {
+                float ang = clock * 3 + i * TWO_PI / n, r = (1.5F + .3F * hash(i, 4)) * (1 - in);
+                Vec3 at = head.add(cos(ang) * r, sin(ang * 2 + i) * .4 * (1 - in), sin(ang) * r);
+                Vec3 tip = at.add(head.subtract(at).normalize().scale(.25));
+                if (c.soft()) c.shard(at, tip, .06F, 3, ang, PALE, splinters * .6F);
+                if (c.glow()) c.glow(at, .1F, i % 3 == 0 ? FEAR : LILAC, splinters * .8F);
+            }
+        }
+        // The spike: a lance of light from the temple, and the burst where the mind breaks.
+        if (t >= spike && t < spike + 24) {
+            float age = t - spike, f = 1 - smooth(4, 24, age);
+            if (c.glow()) {
+                c.line(temple, head, .12F, VIOLET, f * .5F, f * .6F);
+                c.line(temple, head, .04F, CORE, f, f);
+                c.glow(head, 1.4F * (1 - smooth(0, 6, age)), CORE, f);
+            }
+            for (int i = 0; i < 3; i++) ripple(c, head, UP, .3F + 2.4F * smooth(0, 14, age - i * 3), .06F, LILAC, f * (1 - i * .25F), clock, 5);
+        }
+    }
+
+    /** A double of Not Here coming apart where it walked to: a violet ring and a murmur, gone. */
+    static void pop(Canvas c, Active a, float t) {
+        float k = smooth(0, 12, t), f = 1 - k;
+        Vec3 at = a.origin().add(0, 1, 0);
+        ripple(c, at, UP, .3F + 1.6F * k, .05F, LILAC, f, t, 4);
+        murmur(c, at.add(0, 1, 0), c.camera().subtract(at), .4F, PALE, f);
+    }
+
+    /** One Mind on a friend (bound; re-sent every three seconds): a thread back to the telepath and a halo over the head. */
+    static void link(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity body = a.bound(c);
+        if (body == null) return;
+        float h = Math.max(.6F, a.scale()), f = fade(t, a.piece().ticks, 3, 6), clock = c.time() * .05F;
+        Vec3 headTop = body.getPosition(c.partial).add(0, h + .3, 0);
+        thread(c, a.origin().add(0, 1.6, 0), headTop, new Vec3(0, .8, 0), smooth(0, 8, t), .03F, LILAC, f * .8F, clock, 2);
+        closingHalo(c, headTop, .35F, f);
+    }
 }

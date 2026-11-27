@@ -752,4 +752,102 @@ final class ForceArt {
                         .1F, t - land, .03F, f * (1 - smooth(land + 4, land + 10, t)));
         }
     }
+
+    // ------------------------------------------------------------------
+    // Ultimates (invisibility/ForceUltimates)
+    // ------------------------------------------------------------------
+
+    /** A box of six panes round {@code centre}, {@code half} each way, with stress cracks spreading as {@code stress} rises. */
+    private static void box(Canvas c, Vec3 centre, double half, float alpha, float stress, float flash, int seed) {
+        Vec3 x = new Vec3(half * 2, 0, 0), y = new Vec3(0, half * 2, 0), z = new Vec3(0, 0, half * 2);
+        Vec3 lo = centre.subtract(half, half, half);
+        float a = alpha * (1 + flash);
+        pane(c, lo, x, y, a, .45F, true);
+        pane(c, lo.add(z), x, y, a, .45F, true);
+        pane(c, lo, z, y, a, .45F, true);
+        pane(c, lo.add(x), z, y, a, .45F, true);
+        pane(c, lo, x, z, a, .45F, true);
+        pane(c, lo.add(y), x, z, a, .45F, true);
+        if (stress > .02F && c.soft()) for (int i = 0; i < 10; i++) {
+            Vec3 from = centre.add((hash(seed, i) - .5) * half * 2, (hash(seed, i + 9) - .5) * half * 2, (hash(seed, i + 19) - .5) * half * 2);
+            Vec3 dir = new Vec3(hash(seed, i + 29) - .5, hash(seed, i + 39) - .5, hash(seed, i + 49) - .5).normalize().scale(half * stress);
+            c.bolt(from, from.add(dir), seed + i, .08F, .025F, STRESS, alpha * stress);
+        }
+    }
+
+    /**
+     * Crush Box ({@code ForceUltimates.CrushBox}): six panes snapping shut round the foe one after another, the box
+     * flashing at every slam with a ring across the blow, closing in on itself with stress cracks spreading over it,
+     * and bursting into a storm of facets.
+     */
+    static void crushBox(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity foe = UltArt.foe(c, a);
+        float h = Math.max(.8F, a.scale());
+        int seed = a.seed() * 7 + 11;
+        int shut = com.jayptucker.heroesevolved.invisibility.ForceUltimates.CrushBox.SHUT,
+                slam = com.jayptucker.heroesevolved.invisibility.ForceUltimates.CrushBox.SLAM,
+                every = com.jayptucker.heroesevolved.invisibility.ForceUltimates.CrushBox.EVERY,
+                slams = com.jayptucker.heroesevolved.invisibility.ForceUltimates.CrushBox.SLAMS,
+                squeeze = com.jayptucker.heroesevolved.invisibility.ForceUltimates.CrushBox.SQUEEZE,
+                burst = com.jayptucker.heroesevolved.invisibility.ForceUltimates.CrushBox.BURST;
+        Vec3 centre = (foe != null ? foe.getPosition(c.partial) : a.target()).add(0, h * .5, 0);
+        double half = (Math.max(h, 1) * .55 + .15) * com.jayptucker.heroesevolved.invisibility.ForceUltimates.CrushBox.size(t);
+        float present = UltArt.window(t, 0, burst + 1, 2, 1);
+        float closing = smooth(0, shut, t);
+        if (present > 0) {
+            float flash = 0;
+            for (int n = 0; n < slams; n++) {
+                float age = t - (slam + n * every + 4);
+                if (age >= 0 && age < 6) flash = Math.max(flash, 1 - age / 6);
+            }
+            box(c, centre, half * (1.6 - .6 * closing), present * closing, smooth(squeeze, burst, t), flash, seed);
+        }
+        for (int n = 0; n < slams; n++) {
+            float age = t - (slam + n * every + 4);
+            if (age < 0 || age > 10) continue;
+            Vec3 axis = n % 3 == 0 ? UP : new Vec3(1, 0, 0);
+            float k = smooth(0, 8, age);
+            line3(c, loop(centre.subtract(axis.scale(half)), across(axis), (float) half * (1 + 1.2F * k), axis, 0, 32), .05F, 1 - k);
+        }
+        if (t >= burst) {
+            float age = t - burst, f = Canvas.fade(age, a.piece().ticks - burst, 0, 12);
+            for (int i = 0; i < (minimal() ? 8 : 18); i++) facet(c, centre, seed, i, .3F + age * .35F, age, .2F, f);
+            cage(c, centre, (float) half * (1 + 3 * smooth(0, 10, age)), age * .1F, UP, f * (1 - smooth(0, 12, age)), .5F, EDGE);
+            if (c.glow() && age < 5) c.glow(centre, 2 * (1 - age / 5), EDGE, 1 - age / 5);
+        }
+    }
+
+    /**
+     * Aegis, one second (re-sent each second; the second in the seed, -1 the shedding): a shell of force fitted close to
+     * the body, a lens circling it at chest height, the shell's sheen turning; the shedding is a cage running outward.
+     */
+    static void aegis(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity body = a.bound(c);
+        Vec3 centre = (body != null ? body.getPosition(c.partial) : a.origin()).add(0, .95, 0);
+        int second = a.seed();
+        float clock = clock(c, t);
+        if (second < 0) {
+            float k = smooth(0, 12, t);
+            cage(c, centre, 1 + 3 * k, clock * .05F, UP, 1 - k, .6F, EDGE);
+            return;
+        }
+        boolean last = second >= com.jayptucker.heroesevolved.invisibility.ForceUltimates.Aegis.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(10, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        float grow = second == 0 ? smooth(0, 8, t) : 1;
+        cage(c, centre, 1.05F * grow, clock * .03F, UP, f, .5F, EDGE);
+        float ang = clock * .08F;
+        Vec3 lensAt = centre.add(Math.cos(ang) * 1.5, .2 * Math.sin(ang * 1.7), Math.sin(ang) * 1.5);
+        lens(c, lensAt, lensAt.subtract(centre), .45F * grow, .08F, clock * .02F, f, 0);
+    }
+
+    /** A friend's Vanishing Act bubble (bound; re-sent every three seconds): a cage round them, faint, its sheen turning. */
+    static void vanishBubble(Canvas c, Active a, float t) {
+        Entity body = a.bound(c);
+        if (body == null) return;
+        float h = Math.max(.6F, a.scale()), f = Canvas.fade(t, a.piece().ticks, 3, 6), clock = clock(c, t);
+        Vec3 centre = body.getPosition(c.partial).add(0, h * .5, 0);
+        cage(c, centre, Math.max(.7F, h * .65F), clock * .02F, UP, f * .7F, .8F, SHEEN);
+    }
 }

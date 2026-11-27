@@ -4,13 +4,11 @@ import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.assembly.MatterAssemblyService;
-import com.jayptucker.heroesevolved.client.effects.setpiece.SetPieceClient;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
 import com.jayptucker.heroesevolved.energy.PlayerEnergyService;
 import com.jayptucker.heroesevolved.flight.FlightService;
 import com.jayptucker.heroesevolved.progression.PlayerProgressionService;
 import com.jayptucker.heroesevolved.speed.SpeedKit;
-import com.jayptucker.heroesevolved.styles.Piece;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -189,17 +187,7 @@ public final class ReworkPreview {
             case 604 -> mc.options.keyUp.setDown(true);
             case 618 -> { look(mc, true); shot("3g-skywalk"); }
             case 626 -> { mc.options.keyUp.setDown(false); shot("3h-skywalk"); }
-            // Starfall from high in the sky.
-            case 640 -> { look(mc, false); onServer(mc, p -> {
-                p.teleportTo(p.serverLevel(), 400.5, -60, 580.5, 0, -18);
-                stand(p, new Vec3(380.5, -54, 600.5), -110, -16);
-            }); }
-            case 650 -> { look(mc, true); SetPieceClient.play(Piece.SUNFALL, new Vec3(400.5, -60, 580.5), new Vec3(400.5, -60, 604.5), 5, -1, 11); }
-            case 656 -> shot("4-starfall-high");
-            case 666 -> shot("4b-starfall");
-            case 676 -> shot("4c-starfall-low");
-            case 684 -> shot("4d-starfall-impact");
-            case 700 -> PreviewQuiet.quit();
+            case 640 -> PreviewQuiet.quit();
             default -> { }
         }
     }

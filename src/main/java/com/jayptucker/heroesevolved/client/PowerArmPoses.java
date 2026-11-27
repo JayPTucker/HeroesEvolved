@@ -160,6 +160,10 @@ public final class PowerArmPoses {
             model.leftSleeve.copyFrom(model.leftArm);
             return;
         }
+        if (RadiationPoses.owns(pose)) {
+            RadiationPoses.third(model, pose, id, ageInTicks, aimX, aimY, main, rightHanded ? model.leftArm : model.rightArm, inward);
+            return;
+        }
         if (KineticPoses.owns(pose)) {
             KineticPoses.third(model, pose, id, ageInTicks, aimX, aimY, main, rightHanded ? model.leftArm : model.rightArm, inward);
             model.rightSleeve.copyFrom(model.rightArm);

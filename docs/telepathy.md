@@ -161,10 +161,11 @@ Hearing.
 | | Shared Senses | Whatever hunts a linked mind glows for the whole link, and each of you is told what it is and where. |
 | | Mind Network | Your voice reaches inside the head of every player you hold a 30+ thread to, anywhere in the world, and theirs comes back to you; no link or consent needed. With your inner voice on, only they hear you. |
 
-The styles keep their mechanics and gain their own poses: Psychic Storm (hands at the temples thrown at
-the point; each second in it threads a foe 10 Focus deeper), Blind Spot (a hand drawn across the face)
-and Hive Mind (hands clasped, then spread; for its ten seconds, teammates and crouching volunteers in it
-hear each other's voices from anywhere).
+The classes' Ultimates ([Classes](classes.md)): **Mindbreak** (two fingers to the temple; the world goes dark round
+the foe while its own fears walk through it, then a spike of light breaks its mind for 22 damage and a stun), **Not
+Here** (for 10 seconds hunters within 24 blocks lose you and follow three copies instead) and **One Mind** (up to eight
+friends share wounds and sight of every foe for 15 seconds; teammates and crouching volunteers among them hear each
+other's voices from anywhere).
 
 ### Signature: Puppeteer
 
@@ -176,7 +177,7 @@ takes **3 + tier** and is left **slow and weak** for two seconds. Bosses can't b
 
 ## Voices
 
-Mind Link, Far Hearing, Hive Link, Mind Network and Hive Mind relay real Simple Voice Chat audio. The
+Mind Link, Far Hearing, Hive Link, Mind Network and One Mind relay real Simple Voice Chat audio. The
 server works out every route each tick and the voice chat thread sends each microphone packet on:
 
 - **Far Hearing** plays a distant voice from a point a few blocks away in the speaker's direction:
@@ -184,7 +185,7 @@ server works out every route each tick and the voice chat thread sends each micr
   turn toward it (3 blocks). A small murmur mark floats in the voice's direction, the speaker glows for
   you, and the action bar names up to three speakers with their distance and bearing. Whispers carry
   only 48 blocks.
-- **Mind Link, Hive Link, Hive Mind and Mind Network** play the voice inside the listener's head, with
+- **Mind Link, Hive Link, One Mind and Mind Network** play the voice inside the listener's head, with
   no position, **distorted like a thought**: thinned to a narrower band, doubled by two slowly drifting
   copies a few milliseconds behind (a shimmer), given a short echo off the inside of the skull and a
   faint tremble, then softly limited. Each speaker has their own decoder, effect and encoder, so the
@@ -203,7 +204,7 @@ server works out every route each tick and the voice chat thread sends each micr
   already hear each other). `telepathy.hearsVoices = false` turns all of it off.
 - **Being listened to can be felt.** After about ten seconds of being heard by someone who isn't a friend,
   the speaker is told the back of their neck prickles (once per listening session).
-- Nobody is linked without their say: Hive Link and Hive Mind's voices only take teammates and players
+- Nobody is linked without their say: Hive Link and One Mind's voices only take teammates and players
   who crouch to volunteer.
 
 Only `telepathy/MindVoice` imports the voice chat API (it is found by Simple Voice Chat's

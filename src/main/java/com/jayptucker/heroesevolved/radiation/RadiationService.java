@@ -2,7 +2,6 @@ package com.jayptucker.heroesevolved.radiation;
 
 import com.jayptucker.heroesevolved.ability.ProjectileRanges;
 import com.jayptucker.heroesevolved.ability.ArmPose;
-import com.jayptucker.heroesevolved.ability.Targeting;
 import com.jayptucker.heroesevolved.ability.AbilityRanges;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.data.ModDataAttachments;
@@ -223,7 +222,7 @@ public final class RadiationService {
         SetPiecePayload.send(level, Piece.RAD_HEAT, hand(player), eye.add(aim.scale(reach)), critical ? 1.4F : hot ? 1.15F : 1.0F, null);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.FIRECHARGE_USE, SoundSource.PLAYERS, 0.9F, 0.6F);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, 0.5F, 0.5F);
-        ArmPosePayload.show(player, ArmPose.TWO_HANDS, 10);
+        ArmPosePayload.show(player, ArmPose.RAD_PALMS, 10);
         addMass(player, searing && targets.size() >= 3 ? 12 : 6);
         MasteryService.markPowerUse(player, ModAbilities.RADIATION_ID);
         return true;
@@ -239,13 +238,8 @@ public final class RadiationService {
      * The casting palm: the main arm's shoulder (1.375 up, or 1.17 crouching, 0.3125 out from the body's facing), then
      * most of an arm's length along the look. Beams leave here, beside the body, so they read from behind too.
      */
-    public static Vec3 hand(ServerPlayer player) {
-        Vec3 look = player.getLookAngle();
-        double side = player.getMainArm() == net.minecraft.world.entity.HumanoidArm.LEFT ? 1 : -1;
-        double yaw = Math.toRadians(player.yBodyRot);
-        return player.position().add(Math.cos(yaw) * side * 0.3125D, player.isCrouching() ? 1.17D : 1.375D,
-                Math.sin(yaw) * side * 0.3125D).add(look.scale(0.64D));
-    }
+    /** The palm the heat leaves from: {@link RadiationGeometry#hand}, where the art draws it too. */
+    public static Vec3 hand(ServerPlayer player) { return RadiationGeometry.hand(player, 1); }
 
     /** Close-range heat boils water, thaws ice and melts metal locks. */
     private static boolean heatBlock(ServerPlayer player) {
@@ -266,7 +260,7 @@ public final class RadiationService {
         if (water) level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
         else if (ice) level.setBlock(pos, level.dimensionType().ultraWarm() ? Blocks.AIR.defaultBlockState() : Blocks.WATER.defaultBlockState(), 3);
         else if (!level.destroyBlock(pos, metal, player)) return false;
-        level.sendParticles(ParticleTypes.CLOUD, pos.getX() + .5, pos.getY() + .7, pos.getZ() + .5, 20, .3, .4, .3, .04);
+        level.sendParticles(ParticleTypes.CLOUD, pos.getX() + .5, pos.getY() + .7, pos.getZ() + .5, 5, .3, .4, .3, .03);
         level.playSound(null, pos, SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 1, 0.8F);
         AbilityEffects.send(level, Kind.NUCLEAR_CHARGE, Vec3.atBottomCenterOf(pos), Vec3.atCenterOf(pos), .5);
         return true;
@@ -352,7 +346,7 @@ public final class RadiationService {
                 .withStyle(ChatFormatting.AQUA), true);
         level.playSound(null, player.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 1.4F, 0.6F);
         level.playSound(null, player.blockPosition(), SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 0.8F, 0.6F);
-        ArmPosePayload.show(player, ArmPose.ARMS_WIDE, 12);
+        ArmPosePayload.show(player, ArmPose.RAD_FLARE, 12);
         MasteryService.markPowerUse(player, ModAbilities.RADIATION_ID);
     }
 
@@ -382,7 +376,7 @@ public final class RadiationService {
         com.jayptucker.heroesevolved.energy.StaminaDrain.start(player, EMISSION_ID,
                 com.jayptucker.heroesevolved.ability.PowerBalance.drain(EMISSION_ID, EMISSION_DRAIN), false,
                 () -> { if (EMISSIONS.remove(player.getUUID()) != null) endEmission(player); });
-        ArmPosePayload.show(player, ArmPose.TWO_HANDS, EMISSION_MAX_TICKS + 10);
+        ArmPosePayload.show(player, ArmPose.RAD_PALMS, EMISSION_MAX_TICKS + 10);
         player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.RESPAWN_ANCHOR_CHARGE, SoundSource.PLAYERS, 1.0F, 1.6F);
         return true;
     }
@@ -502,13 +496,13 @@ public final class RadiationService {
     }
 
     private static void showDetonationEffects(ServerPlayer player) {
-        ArmPosePayload.show(player, ArmPose.ARMS_WIDE, 40);
+        ArmPosePayload.show(player, ArmPose.RAD_FLARE, 40);
         ScreenTintPayload.send(player, DETONATION_TINT, 40, ScreenTintPayload.Style.HOLD);
     }
 
     public static void clearDetonationEffects(ServerPlayer player) {
         ScreenTintPayload.send(player, DETONATION_TINT, 0, ScreenTintPayload.Style.HOLD);
-        ArmPosePayload.clearIf(player, ArmPose.ARMS_WIDE);
+        ArmPosePayload.clearIf(player, ArmPose.RAD_FLARE);
         MeltdownField.end(player);
     }
 
@@ -631,12 +625,11 @@ public final class RadiationService {
         MeltdownField.end(owner);
         NuclearFallout.begin(owner, awakening);
 
-        level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, center.x, center.y + 1.0D,
-                center.z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+        // The blast is drawn as a shape (the white flash, the shock ring, the fireball): no vanilla explosion cloud on top.
+        com.jayptucker.heroesevolved.network.SetPiecePayload.send(level, com.jayptucker.heroesevolved.styles.Piece.RAD_SLAM,
+                center, center.add(0, 1, 0), 9, null);
         level.sendParticles(ParticleTypes.FLASH, center.x, center.y + 1.0D, center.z,
                 1, 0.0D, 0.0D, 0.0D, 0.0D);
-        level.sendParticles(WHITE_HOT, center.x, center.y + 1.0D, center.z,
-                32, 2, 2, 2, 0.0D);
         level.playSound(null, center.x, center.y, center.z,
                 com.jayptucker.heroesevolved.sounds.ModSounds.NUCLEAR_BLAST.get(), SoundSource.PLAYERS, 4.0F, 1.0F);
         level.playSound(null, center.x, center.y, center.z,
@@ -722,9 +715,9 @@ public final class RadiationService {
             player.serverLevel().playSound(null, player.getX(), player.getY() + 1, player.getZ(), SoundEvents.NOTE_BLOCK_HAT.value(),
                     SoundSource.PLAYERS, 0.25F, 1.7F + player.getRandom().nextFloat() * 0.3F);
 
-        if (mass >= GLOW_THRESHOLD && gameTime % 4 == 0) {
+        if (mass >= GLOW_THRESHOLD && gameTime % 8 == 0) {
             player.serverLevel().sendParticles(RADIANCE, player.getX(), player.getY() + 1.0D,
-                    player.getZ(), 2, 0.35D, 0.6D, 0.35D, 0.0D);
+                    player.getZ(), 1, 0.35D, 0.6D, 0.35D, 0.0D);
         }
         if (mass >= GLOW_THRESHOLD && gameTime % 40 == 0) {
             // The leak reaches enemies only: your friends are close to you on purpose.

@@ -1,7 +1,6 @@
 package com.jayptucker.heroesevolved.radiation;
 
 import com.jayptucker.heroesevolved.ability.ProjectileRanges;
-import com.jayptucker.heroesevolved.ability.AbilityRanges;
 import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
@@ -111,7 +110,7 @@ public final class RadiationSkills {
         SetPiecePayload.send(level, Piece.RAD_LANCE, RadiationService.hand(p), end, charged ? 1.4F : 0.9F, null);
         level.playSound(null, p.blockPosition(), SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS, 1.2F, charged ? 0.6F : 1.2F);
         level.playSound(null, end.x, end.y, end.z, SoundEvents.FIRECHARGE_USE, SoundSource.PLAYERS, 0.8F, 1.4F);
-        ArmPosePayload.show(p, ArmPose.ONE_HAND, 8);
+        ArmPosePayload.show(p, ArmPose.RAD_POINT, 8);
         if (!charged) RadiationService.addMass(p, 6);
         MasteryService.markPowerUse(p, ModAbilities.RADIATION_ID);
         return true;
@@ -126,7 +125,7 @@ public final class RadiationSkills {
         LEAD_SKIN.put(p.getUUID(), now(p) + LEAD_SKIN_TICKS);
         SetPiecePayload.send(p.serverLevel(), Piece.RAD_EMP, p.position(), p.position().add(0, 1, 0), 3, null);
         p.serverLevel().playSound(null, p.blockPosition(), SoundEvents.ARMOR_EQUIP_NETHERITE.value(), SoundSource.PLAYERS, 1.2F, 0.7F);
-        ArmPosePayload.show(p, ArmPose.ARMS_WIDE, 8);
+        ArmPosePayload.show(p, ArmPose.RAD_FLARE, 8);
         return true;
     }
 
@@ -181,7 +180,7 @@ public final class RadiationSkills {
         SetPiecePayload.send(level, Piece.RAD_HEAT, eye.add(aim.scale(0.6)).add(0, -0.3, 0), eye.add(aim.scale(9)), 1.2F + vented / 30F, null);
         level.playSound(null, p.blockPosition(), SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, 1.4F, 0.5F);
         CameraShakePayload.sendAround(level, p.position(), 12, 0.5F, 6);
-        ArmPosePayload.show(p, ArmPose.TWO_HANDS, 10);
+        ArmPosePayload.show(p, ArmPose.RAD_PALMS, 10);
         if (vented > 0) p.displayClientMessage(Component.literal("You vent " + vented + " Core.").withStyle(ChatFormatting.GOLD), true);
         return true;
     }

@@ -110,9 +110,7 @@ final class SonicArt {
                 }
                 if (c.soft()) c.disc(at.add(0, 0.04, 0), UP, size, TONES[3], 0.05F * alpha, 0);
             }
-            case SONIC_QUIET, SILENCE_DOME -> hush(c, at, t, size, clock, life);
-            case RESONANCE_CASCADE -> cascade(c, end, t, size, clock);
-            case BATTLE_HYMN -> hymn(c, a.at(c), t, clock, life);
+            case SONIC_QUIET -> hush(c, at, t, size, clock, life);
             default -> { }
         }
     }
@@ -717,6 +715,126 @@ final class SonicArt {
             front(c, note, dir, .3F + 2.6F * k, .07F, 1, f * (1 - k), .2F, clock * 6);
             front(c, chest, dir, .2F + 1.8F * k, .05F, .5F, f * (1 - k), .3F, clock * 6);
             if (c.glow()) c.glow(note, .9F * (1 - k), GOLD, f * (1 - k));
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Ultimates (sonic/SonicUltimates)
+    // ------------------------------------------------------------------
+
+    /**
+     * Final Movement ({@code SonicUltimates.FinalMovement}): five lines of a stave closing round the foe as a cage, one
+     * per tone; each sung note a glyph flying from her mouth along a waveform to the foe, flashing its own ring and
+     * cracking it; the breath tightening what is left; the scream's cone of fronts shattering the cage, and its shards.
+     */
+    static void finalMovement(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity singer = a.bound(c), foe = UltArt.foe(c, a);
+        Vec3 base = a.target(), facing = a.facing();
+        float h = Math.max(.8F, a.scale()), clock = c.time() * .1F;
+        int caged = com.jayptucker.heroesevolved.sonic.SonicUltimates.FinalMovement.CAGED,
+                note = com.jayptucker.heroesevolved.sonic.SonicUltimates.FinalMovement.NOTE,
+                every = com.jayptucker.heroesevolved.sonic.SonicUltimates.FinalMovement.EVERY,
+                notes = com.jayptucker.heroesevolved.sonic.SonicUltimates.FinalMovement.NOTES,
+                breath = com.jayptucker.heroesevolved.sonic.SonicUltimates.FinalMovement.BREATH,
+                scream = com.jayptucker.heroesevolved.sonic.SonicUltimates.FinalMovement.SCREAM;
+        Vec3 foeAt = foe != null ? foe.getPosition(c.partial) : base;
+        Vec3 mouth = singer instanceof Player p ? mouth(c, p) : a.origin().add(0, 1.6, 0);
+        // The cage: five rings, one per tone, closing in; each cracks and fades once its note is sung.
+        for (int i = 0; i < notes; i++) {
+            float sung = note + i * every;
+            float alive = 1 - smooth(sung, sung + 5, t);
+            if (t > scream) alive = 0;
+            float close = smooth(0, caged, t), tight = smooth(breath, scream, t);
+            float r = (3 - 1.8F * close) * (1 - .3F * tight);
+            Vec3 at = foeAt.add(0, h * (.1 + .2 * i), 0);
+            float f = UltArt.window(t, 0, scream + 1, 3, 1) * Math.max(alive, 0);
+            front(c, at, UP, r, .05F, i * .2F, f, .03F, clock * 20 + i);
+            // A note's flash: its ring brightens and cracks into arcs as it is sung.
+            if (t >= sung && t < sung + 8 && c.glow()) {
+                float k = smooth(sung, sung + 8, t);
+                c.ring(at, UP, r, .12F, 0, TWO_PI, tone(i * .2F), (1 - k) * .9F);
+                for (int s = 0; s < 6; s++) {
+                    float from = s * TWO_PI / 6 + k;
+                    c.ring(at, UP, r + .4F * k, .04F, from, from + .5F, CORE, (1 - k));
+                }
+            }
+            // The note itself, flying from her mouth along a waveform.
+            float flight = t - (sung - 4);
+            if (flight >= 0 && flight < 5) {
+                float k = smooth(0, 4, flight);
+                Vec3 head = mouth.lerp(at, k);
+                trace(c, mouth, head, .05F, .2F, 3, clock * 30, .04F, i * .2F, 1 - smooth(3, 5, flight), null);
+                glyph(c, head, .14F, tone(i * .2F), 1 - smooth(3.5F, 5, flight), i % 2 == 0);
+            }
+        }
+        // The breath: gold gathering at her mouth.
+        float gather = UltArt.window(t, breath, scream + 2, 4, 2);
+        if (gather > 0 && c.glow()) c.glow(mouth, .2F + .5F * smooth(breath, scream, t), GOLD, gather * .7F);
+        // The scream: a cone of fronts out along the facing, and the cage's shards scattering.
+        if (t >= scream && t < scream + 26) {
+            float age = t - scream, f = 1 - smooth(12, 26, age);
+            int fronts = minimal() ? 5 : 10;
+            for (int i = 0; i < fronts; i++) {
+                float d = i * 1.4F, k = age - d / 3;
+                if (k < 0) continue;
+                front(c, mouth.add(facing.scale(d + .4)), facing, .3F + d * .32F, .07F, i * .1F, f * (1 - smooth(6, 14, k)), .06F, clock * 30 + i);
+            }
+            if (c.glow()) for (int i = 0; i < 16; i++) {
+                float ang = hash(a.seed(), i) * TWO_PI, up = hash(a.seed(), i + 20) * 2 - .5F;
+                Vec3 dir = facing.scale(1.2).add(cos(ang) * .8, up, sin(ang) * .8).normalize();
+                Vec3 p = base.add(0, h * .5, 0).add(dir.scale(age * .35));
+                c.line(p, p.add(dir.scale(.35)), .04F, tone(i * .2F), f, f * .3F);
+            }
+        }
+    }
+
+    /**
+     * Dead Air, one second (re-sent each second; the second in the seed, -1 the silence breaking): the hush's dark dome
+     * and its rings closing inward, at the scale's radius; the break is a gold front running out.
+     */
+    static void deadAir(Canvas c, Active a, float t) {
+        int second = a.seed();
+        float r = a.scale(), clock = c.time() * .1F;
+        if (second < 0) {
+            float k = smooth(0, 12, t), f = 1 - smooth(6, a.piece().ticks, t);
+            front(c, a.origin().add(0, 1, 0), UP, r * (.2F + k), .12F, .4F, f, .08F, clock * 20);
+            if (c.glow()) c.ring(a.origin().add(0, .1, 0), UP, r * (.2F + k), .05F, 0, TWO_PI, GOLD, f);
+            return;
+        }
+        boolean last = second >= com.jayptucker.heroesevolved.sonic.SonicUltimates.DeadAir.TICKS / 20 - 1;
+        float life = last ? 24 : 1000;
+        hush(c, a.origin(), second == 0 ? t : t + 8, r, clock, life);
+    }
+
+    /** A shot dying in Dead Air: a small dark ring closing on it. */
+    static void hushed(Canvas c, Active a, float t) {
+        float k = smooth(0, 10, t), f = 1 - k;
+        if (c.soft()) c.ring(a.origin(), UP, .5F * (1 - k) + .05F, .04F, 0, TWO_PI, HUSH, f);
+        if (c.glow()) c.ring(a.origin(), UP, .5F * (1 - k) + .05F, .015F, 0, TWO_PI, HUSH_EDGE, f * .7F);
+    }
+
+    /**
+     * Anthem, one second (re-sent each second; the second in the seed): a five-line stave of light circling the singer
+     * at the scale's radius, turning, with notes riding round it; each chord a front sweeping out.
+     */
+    static void anthem(Canvas c, Active a, float t) {
+        if (UltArt.cut(c, a)) return;
+        Entity body = a.bound(c);
+        Vec3 feet = body != null ? body.getPosition(c.partial) : a.origin();
+        int second = a.seed();
+        boolean last = second >= com.jayptucker.heroesevolved.sonic.SonicUltimates.Anthem.TICKS / 20 - 1;
+        float f = Math.clamp(t / 2 + (second > 0 ? .5F : 0), 0, 1) * (last ? 1 - smooth(10, 22, t) : Math.clamp((a.piece().ticks - t) / 2 + .3F, 0, 1));
+        float clock = c.time() * .02F, r = Math.min(4.5F, a.scale() * .35F);
+        float turn = clock * 1.5F;
+        staff(c, feet.add(0, 1.6, 0), r, turn, turn + PI * 1.4F, clock * 4, f);
+        for (int i = 0; i < 6; i++) {
+            float ang = turn + i * PI * 1.4F / 6;
+            glyph(c, feet.add(cos(ang) * r, 1.65 + .1 * (i % 5), sin(ang) * r), .12F, tone(i * .2F + clock), f, i % 2 == 1);
+        }
+        if (second % 2 == 0) {
+            float k = smooth(0, 16, t);
+            front(c, feet.add(0, .1, 0), UP, .5F + a.scale() * k, .06F, clock, f * (1 - k), .04F, c.time());
         }
     }
 }

@@ -528,35 +528,48 @@ public final class MobMoves {
                         });
                     }),
 
-            // ---- Density: a hand through armour, the floor going soft, an ambush from below ----
-            m("reach_through", DENSITY, 8, 150, 0, 3.5, false, Pose.POINT,
-                    (g, l, t, p) -> sound(l, g.mob.position(), SoundEvents.AMETHYST_BLOCK_RESONATE, .8F, .5F),
-                    (g, l, t, p) -> AbilityEffects.send(l, Kind.DENSITY_GHOST, g.mob.position(), g.mob.position(), .5),
+            // ---- Density (earthbending): a stone torn up and thrown, the ground closing on the legs, a pillar from below ----
+            m("rock_throw", DENSITY, 10, 150, 2, 14, true, Pose.POINT,
                     (g, l, t, p) -> {
-                        if (magic(g, t, 7 * p)) com.jayptucker.heroesevolved.phasing.DensityService.seal(t, 80);
-                        AbilityEffects.send(l, Kind.DENSITY_REACH, hand(g.mob), chest(t), 1);
-                        sound(l, t.position(), SoundEvents.WARDEN_HEARTBEAT, 1, 1.4F);
+                        // The tell: a stone tears up out of the ground in front of it and hangs there.
+                        Vec3 at = g.mob.position().add(flat(t.position().subtract(g.mob.position())).scale(1.1));
+                        com.jayptucker.heroesevolved.phasing.EarthGeometry.show(l, Piece.EARTH_LIFT, at, at.add(0, 1, 0), 1, null, null);
+                        sound(l, at, SoundEvents.DEEPSLATE_BREAK, .9F, .7F);
+                    },
+                    NOTHING,
+                    (g, l, t, p) -> {
+                        Vec3 from = g.mob.position().add(flat(t.position().subtract(g.mob.position())).scale(1.1)).add(0, 1.2, 0);
+                        com.jayptucker.heroesevolved.phasing.EarthGeometry.show(l, Piece.EARTH_THROW, from, from.add(chest(t).subtract(from).normalize()), 1, g.mob, null);
+                        if (hurt(g, t, 7 * p)) push(t, flat(t.position().subtract(g.mob.position())).scale(.8).add(0, .35, 0));
+                        sound(l, t.position(), SoundEvents.STONE_BREAK, 1.2F, .6F);
                     }),
             m("embed", DENSITY, 16, 320, 0, 8, true, Pose.SLAM,
                     (g, l, t, p) -> sound(l, t.position(), SoundEvents.DEEPSLATE_BREAK, .8F, .5F),
+                    // The ground cracks round its feet: the tell.
                     (g, l, t, p) -> AbilityEffects.send(l, Kind.DENSITY_RIPPLE, t.position().add(0, .05, 0), t.position().add(0, 1, 0), 1.2),
-                    (g, l, t, p) -> com.jayptucker.heroesevolved.phasing.DensityService.embed(t, g.mob, 50, false, .4)),
-            sig("phase_ambush", DENSITY, 20, 380, 2, 18, false, Pose.SLAM,
                     (g, l, t, p) -> {
-                        g.mob.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 22, 0, false, false));
-                        AbilityEffects.send(l, Kind.DENSITY_SHIFT, g.mob.position(), g.mob.position(), 1.2);
-                        sound(l, g.mob.position(), SoundEvents.AMETHYST_BLOCK_RESONATE, .8F, .4F);
+                        com.jayptucker.heroesevolved.phasing.DensityService.embed(t, g.mob, 50, false, .4);
+                        com.jayptucker.heroesevolved.phasing.EarthGeometry.show(l, Piece.EARTH_SHACKLE, t.position(), g.mob.position(), t.getBbWidth(), t, null);
+                    }),
+            sig("pillar_ambush", DENSITY, 20, 380, 2, 18, false, Pose.SLAM,
+                    // The ground cracks in a ring under its target, fixed where it stood, while a jade arc fills: get off it.
+                    (g, l, t, p) -> {
+                        com.jayptucker.heroesevolved.phasing.EarthGeometry.show(l, Piece.EARTH_MOUNTAIN_MARK, g.mark(), g.mark().add(0, 1, 0), 1.6F, null, null);
+                        sound(l, g.mark(), SoundEvents.WARDEN_DIG, .9F, .8F);
                     },
-                    // The ground ripples under its target: the tell.
-                    (g, l, t, p) -> AbilityEffects.send(l, Kind.DENSITY_RIPPLE, t.position().add(0, .05, 0), t.position().add(0, 1, 0), 1.6),
+                    NOTHING,
                     (g, l, t, p) -> {
-                        g.mob.removeEffect(MobEffects.INVISIBILITY);
-                        Vec3 at = free(g.mob, t.position()) ? t.position() : t.position().add(flat(g.mob.position().subtract(t.position())).scale(1.1));
-                        g.mob.teleportTo(at.x, at.y, at.z);
-                        AbilityEffects.send(l, Kind.DENSITY_SURFACE, at, at.add(0, 1, 0), 1.4);
-                        hurt(g, t, 9 * p);
-                        push(t, new Vec3(0, 1.2, 0));
+                        Vec3 at = g.mark();
+                        com.jayptucker.heroesevolved.phasing.EarthGeometry.show(l, Piece.EARTH_PILLAR, at, at.add(0, 3, 0), 3, null, null);
+                        for (LivingEntity hit : l.getEntitiesOfClass(LivingEntity.class, new net.minecraft.world.phys.AABB(at, at).inflate(1.6, 2, 1.6),
+                                e -> e != g.mob && e.isAlive() && e.position().distanceToSqr(at) < 1.6 * 1.6)) {
+                            if (hit == t || hit instanceof ServerPlayer) {
+                                hurt(g, hit, 9 * p);
+                                push(hit, new Vec3(0, 1.2, 0));
+                            }
+                        }
                         sound(l, at, SoundEvents.DEEPSLATE_BREAK, 1.2F, .7F);
+                        CameraShakePayload.sendAround(l, at, 14, .3F, 6);
                     }),
 
             // ---- Matter Assembly: a crossfire, a shield, a storm of shards ----
@@ -781,7 +794,7 @@ public final class MobMoves {
                     }),
             sig("apex_form", SHIFT, 20, 600, 0, 24, false, Pose.CAST,
                     (g, l, t, p) -> sound(l, g.mob.position(), SoundEvents.EVOKER_PREPARE_SUMMON, 1, .6F),
-                    (g, l, t, p) -> AbilityEffects.send(l, Kind.DENSITY_SHIFT, g.mob.position(), g.mob.position(), 1),
+                    (g, l, t, p) -> SetPiecePayload.send(l, Piece.SHIFT_PLATES, g.mob.position(), g.mob.position().add(0, g.mob.getBbHeight(), 0), g.mob.getBbWidth(), g.mob),
                     (g, l, t, p) -> {
                         // It grows half again its size, and hits like it.
                         SetPiecePayload.send(l, Piece.SHIFT_DECOY_BURST, g.mob.position(), g.mob.position().add(0, 1, 0), 1.5F, null);

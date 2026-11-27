@@ -6,10 +6,8 @@ import com.jayptucker.heroesevolved.ability.AbilityUseContext;
 import com.jayptucker.heroesevolved.ability.registry.ModAbilities;
 import com.jayptucker.heroesevolved.ability.service.PlayerAbilityService;
 import com.jayptucker.heroesevolved.ability.service.PowerRules;
-import com.jayptucker.heroesevolved.effects.AbilityEffects;
 import com.jayptucker.heroesevolved.effects.WorldMutationPolicy;
 import com.jayptucker.heroesevolved.mimicry.MimicryService;
-import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 import com.jayptucker.heroesevolved.network.ArmPosePayload;
 import com.jayptucker.heroesevolved.network.SetPiecePayload;
 import com.jayptucker.heroesevolved.progression.EvolutionTrials;
@@ -708,8 +706,9 @@ public final class MatterAssemblyService {
     /** The awakening is visual and kinetic; it does not grant free building resources beyond a full orbit. */
     public static void awaken(ServerPlayer p) {
         Vec3 at = p.position().add(0, 1, 0);
-        AbilityEffects.send(p.serverLevel(), Kind.MATTER_SHIELD, at, at.add(p.getLookAngle()), 5);
-        AbilityEffects.send(p.serverLevel(), Kind.MATTER_WEAVE, at.add(0, 4, 0), at, 5);
+        // Matter answers all at once: a construct folds together round the body and a ring of it throws foes back.
+        SetPiecePayload.send(p.serverLevel(), Piece.MATTER_RISE, at.add(0, .4, 0), p.position(), 3, p);
+        SetPiecePayload.send(p.serverLevel(), Piece.MATTER_BOUNCE, p.position().add(0, .1, 0), p.position().add(0, 1, 0), 5, null);
         for (LivingEntity target : enemies(p, p.position(), 7)) if (visible(p, p.getEyePosition(), target)) {
             Vec3 away = target.position().subtract(p.position()).normalize();
             target.setDeltaMovement(target.getDeltaMovement().add(away.scale(1.4)).add(0, .3, 0)); target.hurtMarked = true;
@@ -813,7 +812,10 @@ public final class MatterAssemblyService {
                 && cells(p).stream().anyMatch(pos -> pos.distSqr(p.blockPosition()) <= 10)) {
             Vec3 away = attacker.position().subtract(p.position()).normalize();
             attacker.setDeltaMovement(attacker.getDeltaMovement().add(away.scale(1.3)).add(0, .2, 0)); attacker.hurtMarked = true;
-            VALVES.put(p.getUUID(), now + 40); AbilityEffects.at(p, Kind.MATTER_SHIELD, 2);
+            VALVES.put(p.getUUID(), now + 40);
+            // The flash, ring and chips on the face of the matter between them, toward the one thrown off.
+            Vec3 face = p.getBoundingBox().getCenter().add(away.scale(.7));
+            SetPiecePayload.send(p.serverLevel(), Piece.MATTER_BOUNCE, face, face.add(away), 2, null);
         }
     }
     /** Armor and potion reductions are final here; absorption is applied immediately after this event. */
@@ -827,7 +829,7 @@ public final class MatterAssemblyService {
             Job emergency = new Job(p, shelter(p), 160, "shelter", true); build(emergency, 12, 72);
             if (emergency.built.size() >= 4) {
                 event.setNewDamage(Math.max(0, p.getHealth() + p.getAbsorptionAmount() - 1)); FOUNDATIONS.put(p.getUUID(), now + 1200);
-                AbilityEffects.at(p, Kind.MATTER_SHIELD, 3);
+                SetPiecePayload.send(p.serverLevel(), Piece.MATTER_BOUNCE, p.getBoundingBox().getCenter(), p.position().add(0, 3, 0), 3, null);
             }
         }
     }

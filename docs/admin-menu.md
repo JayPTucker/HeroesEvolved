@@ -32,6 +32,7 @@ or the whole server. Scroll the event list to find more entries on a small scree
 | Overload storms | Wildfire, Supercell or Blizzard in a nearby villager; **Find village** queues a random storm farther away | Ends all overloads and queued overload starts without declaring a victory or failure. |
 | Starfall shower | Start the shower in the Overworld, whatever the time | Stops the shower, live meteors and queued great meteors. A naturally scheduled shower stays off for the rest of that night; future nights still work. |
 | Falling meteors | Falling star nearby, great meteor at the selected player's location, or find a village for a great meteor | Cancels all falling and queued meteors. To stop further scheduled stars too, cancel the Starfall shower. |
+| Class Ultimates | Cast the selected player's class Ultimate (no stamina or wait; Offense still needs a foe in front of them), or ready it again | Stops the selected player's Ultimate, or every Ultimate playing when no player is selected; held foes are let go. Also `/heroesevolved ultimate list`, `cast [player] [mechanic]`, `stop [player]` and `reset [player]`. |
 | Village raid | Starts at a loaded village bell within 64 blocks of the selected player | Stops the raid at their position or nearby bell. Surviving raiders remain. |
 | Company operations | Investigator, prisoner convoy or home raid | Recalls all operations, releases prisoners and clears queued investigations. Attention and future automatic scheduling remain. |
 

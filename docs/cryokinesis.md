@@ -199,7 +199,7 @@ a cloud of particles any more.
   of the deck. The deck stays pale and clear so players can see where to step.
 - Short palm bursts form Crystal Prison, the lance, armor, Cold Snap, the Stillheart shell,
   and the first star in Brittle Constellation. Whiteout casts frost into the storm and feeds
-  its growing spires. Hailstorm and Crystal Bastion open with the same frost spray.
+  its growing spires. The Ultimates (Glacier Fall, Winter Citadel, Hibernation) open with the same frost spray.
 - Glacier Ride bends a continuous ice ribbon through turns; the body banks and the stance
   follows the skates. Frost and fragments trail the route.
 - Prison cracks become more pronounced as a trapped player fights the shell.
